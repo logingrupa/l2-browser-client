@@ -107,6 +107,8 @@ All shipped characters are procedural placeholders. The optional GLB loader requ
 
 Four converted GLBs and offline conversion tools were subsequently located in the user-supplied local workspace. Their animation names need explicit mapping in the current loader. Structural inspection has been performed; destination rendering/skinning verification and integration are still pending. The asset follow-up and exact local paths are recorded in [docs/ROADMAP.md](docs/ROADMAP.md).
 
+The follow-up must adapt client loading, character assembly and animation resolution to the existing asset structure, preserving its native names, rigs, part relationships and authored proportions. The foundation loader's generic aliases and fixed-height normalization are temporary implementation assumptions. See [the architecture direction](docs/ARCHITECTURE.md#asset-structure-guides-the-client).
+
 The build currently emits a Babylon/Editor runtime chunk of approximately 3.6 MB before gzip (0.88 MB gzip) and reports Vite's large-chunk warning. It runs standalone; further download-size optimization and physical-device performance testing are future work.
 
 Phase 1 excludes Mobius networking, authentication, character selection against a server, Interlude packets, relay services, SpacetimeDB, combat calculations, quests, progression, gacha, and original L2 map conversion. Future **Real M0 networking** connects at `GameWorldAdapter`; the current developer commands are synthetic intents and need an explicit support policy in a real adapter.

@@ -12,6 +12,8 @@ The baseline passed strict typechecking, build, 37 Vitest tests, and nine Playwr
 
 The next asset task is a local 3D art exercise: inspect existing converted models, verify conversion correctness in this browser client, and integrate working models. Here **usable** means technically correct geometry, materials, skinning, animation, scale, and runtime behavior. File availability, structural validity, visual correctness, and publication provenance are separate findings.
 
+**The client must adapt to the asset structure.** Preserve the original character, equipment, skeleton, attachment, material and animation relationships represented by the assets and manifests. Refactor loading, character assembly, animation resolution and scale handling to match those inputs. The current generic clip aliases, single-container expectation, uniform height normalization and blanket animation looping are prototype assumptions to audit. Map client states to native clip names and preserve authored proportions and resource boundaries. Change converted content only for demonstrated defects or lost source relationships, not to make valid assets fit the prototype.
+
 The user identified the local source workspace as `C:\laragon\www\lineagen`. Inspection confirmed:
 
 - Converted models: `.assets\converted\MFighter.glb`, `FFighter.glb`, `MMagic.glb`, and `FMagic.glb`, with matching Blender files and manifests.
@@ -23,7 +25,7 @@ All four files parsed as GLB v2 during read-only structural inspection. They con
 
 Consume the existing outputs first. The tooling-equipped session can make targeted conversion repairs if actual defects are found. Keep the source workspace unchanged and direct repair outputs/logs to a destination scratch directory; the source conversion wrapper defaults to replacing outputs and writing logs in the source workspace.
 
-The task also updates stale **Markdown documentation**. The user's correction does not request a stylesheet overhaul. Retain the mobile HUD and share actual screenshots at visible asset-integration milestones. The [copy-ready handoff](../.planning/asset-integration-prompt.md) supplies the scope and verification requirements. No converted model has been copied into or rendered by this destination during the documentation update.
+The task also updates stale **Markdown documentation**. The user's correction does not request a stylesheet overhaul. Retain the mobile HUD and share actual screenshots at visible asset-integration milestones. The [copy-ready handoff](../.planning/asset-integration-prompt.md) is under 4,000 characters and states the goal and current state; the [detailed requirements](../.planning/asset-integration-details.md) hold the full asset contract, tooling instructions and acceptance checks. No converted model has been copied into or rendered by this destination during the documentation update.
 
 ## Phase 2 — Real M0 networking
 

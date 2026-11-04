@@ -86,7 +86,7 @@ Every dynamic spawn, state update, model change, and removal crosses this bounda
 - Orientation uses the shortest angular difference and the same exponential convergence rate. Interpolation never writes back to adapter state.
 - The authored camera starts at radius 26 meters, with a 10–38 meter zoom range and vertical orbit limits of 0.35–1.45 radians.
 
-Meter units intentionally differ from the stock Editor template's centimeter conventions. Inspect import scaling when bringing assets through the Editor. The runtime optional model loader normalizes a usable model to 1.8 meters high; it does not assume the source model's unit scale.
+Meter units intentionally differ from the stock Editor template's centimeter conventions. Inspect import scaling when bringing assets through the Editor. The foundation's optional model loader currently normalizes a model to 1.8 meters high and recenters its bounds. These are prototype assumptions to replace in the asset follow-up: derive unit/orientation handling from the observed asset structure, apply it at the assembly root, and preserve authored proportions, origins and attachment alignment while keeping world coordinates in meters.
 
 ## Entity and asset ownership
 
@@ -97,6 +97,16 @@ The registry owns one `CharacterVisual`, `PositionInterpolator`, and `EntityLabe
 `CharacterAnimator` preserves the selected state when switching drivers. Procedural animation blends articulated idle breathing, run strides, and attack swings. Model animation accepts documented case-insensitive idle/run/attack aliases and crossfades groups over 0.16 seconds. Models without recognized required clips retain the procedural fallback; this can indicate a mapping mismatch rather than a conversion defect. No external character GLB is bundled; model-driver tests use synthetic fixtures, not a claim of compatibility with arbitrary rigs.
 
 The local asset follow-up found `wait_Hand`, `run_Hand` and `Atk01_Hand` in four converted candidates. Explicit mapping and actual destination rendering remain pending. Model and animation import work belongs in the asset/animation modules and must preserve the adapter boundary. See [ROADMAP.md](ROADMAP.md).
+
+### Asset structure guides the client
+
+The user's requirement for the follow-up is to adapt the client to the original asset organization and relationships represented by the converted files and manifests. Current loader contracts are implementation details, not requirements imposed on valid source content. Inspect the actual character parts, skeletons, attachments, equipment variants, material references and animation families before defining the client-side model descriptors and assembly rules.
+
+Preserve native asset and clip identifiers, bone hierarchy, bind poses and useful resource separation. Resolve semantic animation states to the correct existing clips in client data; do not rename source clips to generic aliases. Separate animation resources or equipment parts must remain supportable where the supplied structure uses them. Adapt looping, root motion, origins and unit conversion to observed behavior rather than automatically rebaking files or forcing every model to one height.
+
+The initial loader currently assumes one asset container with all required animation states, and its animation driver loops every selected clip. Audit and replace those assumptions where they conflict with the actual assets. Conversion repairs are appropriate for demonstrated defects or loss of required source relationships, with evidence recorded separately from client compatibility work. Build only the assembly features needed by available assets; this is not an instruction to add speculative equipment gameplay.
+
+These changes remain in presentation and asset resolution. `GameWorldAdapter` continues to deliver entity lifecycle and semantic state, so a future network adapter can supply appearance references without importing rendering or asset-format details into transport code. This section describes the required follow-up direction; the refactor has not been implemented by this documentation change.
 
 `EntityLabel` projects a point above the interpolated character into the viewport, hides off-screen labels, writes names with `textContent`, and exposes selection buttons and health meters. `WorldInterface` owns the compact HUD and dispatches all entity-changing controls to the adapter. Its health values and cosmetic attacks do not introduce combat calculations.
 

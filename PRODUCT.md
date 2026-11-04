@@ -13,6 +13,8 @@ Developers evaluating a standalone browser client foundation for later Interlude
 ## Capabilities and constraints
 Exactly six initial characters, animation, interpolation, camera, targeting and lifecycle demonstrations. Static environment stays editable in Babylon.js Editor. The published foundation uses procedural characters. Converted local models are candidates for technical inspection and local integration; geometry, skinning, animation and runtime correctness determine technical usability. Preserve provenance separately from that assessment. Networking, progression and deployment are absent from Phase 1.
 
+The asset structure guides the client implementation. Preserve the original character-part, equipment, skeleton, attachment, material and animation relationships represented by the supplied files and manifests. Adapt loaders, assembly rules, animation mapping and unit handling to that evidence; valid content must not be renamed, flattened, rebaked or uniformly resized to satisfy prototype assumptions. Conversion changes require a demonstrated defect or loss of required source structure. Keep asset resolution separate from the world adapter and future networking.
+
 ## Interface commitment
 The user selected a game-like scene with compact controls. Diagnostics and demonstration controls remain visible. All entity data is synthetic.
 
