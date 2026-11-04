@@ -1,0 +1,394 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-04T00:31:26.373Z",
+  "title": "Design System: L2 Browser Client",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Pale Gold",
+        "tonalRamp": [
+          "oklch(15.00% 0.0306 85.62)",
+          "oklch(26.43% 0.0614 85.62)",
+          "oklch(37.86% 0.0835 85.62)",
+          "oklch(49.29% 0.0939 85.62)",
+          "oklch(60.71% 0.0909 85.62)",
+          "oklch(72.14% 0.0752 85.62)",
+          "oklch(83.57% 0.0488 85.62)",
+          "oklch(95.00% 0.0155 85.62)"
+        ]
+      },
+      "bronze": {
+        "role": "primary",
+        "displayName": "Weathered Bronze",
+        "tonalRamp": [
+          "oklch(15.00% 0.0244 84.33)",
+          "oklch(26.43% 0.0488 84.33)",
+          "oklch(37.86% 0.0664 84.33)",
+          "oklch(49.29% 0.0746 84.33)",
+          "oklch(60.71% 0.0722 84.33)",
+          "oklch(72.14% 0.0597 84.33)",
+          "oklch(83.57% 0.0388 84.33)",
+          "oklch(95.00% 0.0123 84.33)"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Green Charcoal Panel",
+        "tonalRamp": [
+          "oklch(15.00% 0.0023 164.27)",
+          "oklch(26.43% 0.0046 164.27)",
+          "oklch(37.86% 0.0063 164.27)",
+          "oklch(49.29% 0.0071 164.27)",
+          "oklch(60.71% 0.0069 164.27)",
+          "oklch(72.14% 0.0057 164.27)",
+          "oklch(83.57% 0.0037 164.27)",
+          "oklch(95.00% 0.0012 164.27)"
+        ]
+      },
+      "border": {
+        "role": "primary",
+        "displayName": "Translucent Bronze Border",
+        "tonalRamp": [
+          "oklch(15.00% 0.0256 87.25)",
+          "oklch(26.43% 0.0514 87.25)",
+          "oklch(37.86% 0.0699 87.25)",
+          "oklch(49.29% 0.0785 87.25)",
+          "oklch(60.71% 0.0761 87.25)",
+          "oklch(72.14% 0.0629 87.25)",
+          "oklch(83.57% 0.0408 87.25)",
+          "oklch(95.00% 0.0130 87.25)"
+        ]
+      },
+      "backdrop": {
+        "role": "neutral",
+        "displayName": "Green Charcoal Backdrop",
+        "tonalRamp": [
+          "oklch(15.00% 0.0030 159.40)",
+          "oklch(26.43% 0.0059 159.40)",
+          "oklch(37.86% 0.0081 159.40)",
+          "oklch(49.29% 0.0091 159.40)",
+          "oklch(60.71% 0.0088 159.40)",
+          "oklch(72.14% 0.0073 159.40)",
+          "oklch(83.57% 0.0047 159.40)",
+          "oklch(95.00% 0.0015 159.40)"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Warm Ivory",
+        "tonalRamp": [
+          "oklch(15.00% 0.0091 86.65)",
+          "oklch(26.43% 0.0183 86.65)",
+          "oklch(37.86% 0.0249 86.65)",
+          "oklch(49.29% 0.0280 86.65)",
+          "oklch(60.71% 0.0271 86.65)",
+          "oklch(72.14% 0.0224 86.65)",
+          "oklch(83.57% 0.0146 86.65)",
+          "oklch(95.00% 0.0046 86.65)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted Parchment",
+        "tonalRamp": [
+          "oklch(15.00% 0.0108 87.30)",
+          "oklch(26.43% 0.0216 87.30)",
+          "oklch(37.86% 0.0294 87.30)",
+          "oklch(49.29% 0.0330 87.30)",
+          "oklch(60.71% 0.0320 87.30)",
+          "oklch(72.14% 0.0264 87.30)",
+          "oklch(83.57% 0.0172 87.30)",
+          "oklch(95.00% 0.0055 87.30)"
+        ]
+      },
+      "button": {
+        "role": "neutral",
+        "displayName": "Deep Moss",
+        "tonalRamp": [
+          "oklch(15.00% 0.0058 161.46)",
+          "oklch(26.43% 0.0117 161.46)",
+          "oklch(37.86% 0.0159 161.46)",
+          "oklch(49.29% 0.0179 161.46)",
+          "oklch(60.71% 0.0173 161.46)",
+          "oklch(72.14% 0.0143 161.46)",
+          "oklch(83.57% 0.0093 161.46)",
+          "oklch(95.00% 0.0030 161.46)"
+        ]
+      },
+      "attack": {
+        "role": "secondary",
+        "displayName": "Fired Umber",
+        "tonalRamp": [
+          "oklch(15.00% 0.0180 51.89)",
+          "oklch(26.43% 0.0361 51.89)",
+          "oklch(37.86% 0.0491 51.89)",
+          "oklch(49.29% 0.0551 51.89)",
+          "oklch(60.71% 0.0534 51.89)",
+          "oklch(72.14% 0.0441 51.89)",
+          "oklch(83.57% 0.0287 51.89)",
+          "oklch(95.00% 0.0091 51.89)"
+        ]
+      },
+      "hover": {
+        "role": "neutral",
+        "displayName": "Raised Moss",
+        "tonalRamp": [
+          "oklch(15.00% 0.0084 143.04)",
+          "oklch(26.43% 0.0168 143.04)",
+          "oklch(37.86% 0.0228 143.04)",
+          "oklch(49.29% 0.0257 143.04)",
+          "oklch(60.71% 0.0249 143.04)",
+          "oklch(72.14% 0.0206 143.04)",
+          "oklch(83.57% 0.0133 143.04)",
+          "oklch(95.00% 0.0042 143.04)"
+        ]
+      },
+      "pressed": {
+        "role": "neutral",
+        "displayName": "Pressed Olive",
+        "tonalRamp": [
+          "oklch(15.00% 0.0181 96.43)",
+          "oklch(26.43% 0.0362 96.43)",
+          "oklch(37.86% 0.0493 96.43)",
+          "oklch(49.29% 0.0554 96.43)",
+          "oklch(60.71% 0.0536 96.43)",
+          "oklch(72.14% 0.0443 96.43)",
+          "oklch(83.57% 0.0288 96.43)",
+          "oklch(95.00% 0.0092 96.43)"
+        ]
+      },
+      "health-player": {
+        "role": "secondary",
+        "displayName": "Player Red",
+        "tonalRamp": [
+          "oklch(15.00% 0.0449 30.87)",
+          "oklch(26.43% 0.0900 30.87)",
+          "oklch(37.86% 0.1224 30.87)",
+          "oklch(49.29% 0.1375 30.87)",
+          "oklch(60.71% 0.1332 30.87)",
+          "oklch(72.14% 0.1101 30.87)",
+          "oklch(83.57% 0.0715 30.87)",
+          "oklch(95.00% 0.0228 30.87)"
+        ]
+      },
+      "health-friendly": {
+        "role": "secondary",
+        "displayName": "Friendly Sage",
+        "tonalRamp": [
+          "oklch(15.00% 0.0223 163.82)",
+          "oklch(26.43% 0.0447 163.82)",
+          "oklch(37.86% 0.0608 163.82)",
+          "oklch(49.29% 0.0683 163.82)",
+          "oklch(60.71% 0.0662 163.82)",
+          "oklch(72.14% 0.0547 163.82)",
+          "oklch(83.57% 0.0355 163.82)",
+          "oklch(95.00% 0.0113 163.82)"
+        ]
+      },
+      "health-monster": {
+        "role": "secondary",
+        "displayName": "Monster Copper",
+        "tonalRamp": [
+          "oklch(15.00% 0.0298 48.43)",
+          "oklch(26.43% 0.0598 48.43)",
+          "oklch(37.86% 0.0813 48.43)",
+          "oklch(49.29% 0.0913 48.43)",
+          "oklch(60.71% 0.0885 48.43)",
+          "oklch(72.14% 0.0731 48.43)",
+          "oklch(83.57% 0.0475 48.43)",
+          "oklch(95.00% 0.0151 48.43)"
+        ]
+      },
+      "focus": {
+        "role": "primary",
+        "displayName": "Focus Gold",
+        "tonalRamp": [
+          "oklch(15.00% 0.0275 83.91)",
+          "oklch(26.43% 0.0551 83.91)",
+          "oklch(37.86% 0.0750 83.91)",
+          "oklch(49.29% 0.0842 83.91)",
+          "oklch(60.71% 0.0816 83.91)",
+          "oklch(72.14% 0.0675 83.91)",
+          "oklch(83.57% 0.0438 83.91)",
+          "oklch(95.00% 0.0139 83.91)"
+        ]
+      },
+      "label-backing": {
+        "role": "neutral",
+        "displayName": "Charcoal Name Backing",
+        "tonalRamp": [
+          "oklch(15.00% 0.0023 164.27)",
+          "oklch(26.43% 0.0046 164.27)",
+          "oklch(37.86% 0.0063 164.27)",
+          "oklch(49.29% 0.0071 164.27)",
+          "oklch(60.71% 0.0069 164.27)",
+          "oklch(72.14% 0.0057 164.27)",
+          "oklch(83.57% 0.0037 164.27)",
+          "oklch(95.00% 0.0012 164.27)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Compact Location",
+        "purpose": "Serif location heading on compact screens."
+      },
+      "display-wide": {
+        "displayName": "Wide Location",
+        "purpose": "Location heading from the 760px breakpoint."
+      },
+      "player-title": {
+        "displayName": "Player Identity",
+        "purpose": "Compact local-player identity."
+      },
+      "body": {
+        "displayName": "Short Instructions",
+        "purpose": "Brief disclosure help; not long-form reading."
+      },
+      "action": {
+        "displayName": "Action Label",
+        "purpose": "Plain language beneath original line icons."
+      },
+      "metadata": {
+        "displayName": "Supporting Value",
+        "purpose": "Short adjacent health, role, and synthetic labels."
+      },
+      "diagnostics": {
+        "displayName": "World Measurements",
+        "purpose": "FPS, entity counts, and coordinates with tabular numerals."
+      }
+    },
+    "shadows": [
+      {
+        "name": "location-text",
+        "value": "0 2px 4px #101715",
+        "purpose": "Text shadow for the location over the scene; not panel elevation."
+      },
+      {
+        "name": "diagnostic-text",
+        "value": "0 1px 3px #101715",
+        "purpose": "Text shadow behind measured diagnostics."
+      },
+      {
+        "name": "name-text",
+        "value": "0 1px 2px #101715, 1px 0 3px #101715",
+        "purpose": "Text shadow behind entity names, used with the dark name backing."
+      }
+    ],
+    "motion": [
+      {
+        "name": "action-state",
+        "value": "background-color 120ms ease-out, border-color 120ms ease-out",
+        "purpose": "Action hover/press feedback; disabled for reduced-motion preferences."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "wide-hud",
+        "value": "760px"
+      },
+      {
+        "name": "short-landscape-height",
+        "value": "500px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Attack Action",
+      "kind": "button",
+      "refersTo": "button-attack",
+      "description": "The differentiated cosmetic attack control.",
+      "html": "<button type=\"button\" class=\"ds-action ds-attack\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m7 17 11-13 2 1-1 4L8 19M5 14l5 6M3 21l4-4\"/></svg><span>Attack</span></button>",
+      "css": ".ds-action{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:59px;padding:5px;color:#f5ecd8;border:1px solid #7d735b;border-radius:0;font:11px 'Segoe UI',system-ui,sans-serif;cursor:pointer;transition:background-color 120ms ease-out,border-color 120ms ease-out}.ds-action svg{width:24px;height:24px;stroke:var(--gold,#edcd88);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.ds-action:hover{background:#4b574a;border-color:var(--gold,#edcd88)}.ds-action:active{background:#79704a}.ds-action:disabled{opacity:.45;cursor:default}.ds-action:focus-visible,.ds-utility:focus-visible,.ds-label:focus-visible,.ds-disclosure summary:focus-visible{outline:2px solid #ffe0a3;outline-offset:3px;}@media(prefers-reduced-motion:reduce){.ds-action{transition:none}}.ds-attack{background:#654430;border-color:#b79760}"
+    },
+    {
+      "name": "Standard Action",
+      "kind": "button",
+      "refersTo": "button-action",
+      "description": "Shared action treatment for run, idle, teleport, and spawn.",
+      "html": "<button type=\"button\" class=\"ds-action ds-standard\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 4v16M4 12h16\"/></svg><span>Spawn</span></button>",
+      "css": ".ds-standard{background:#303b35}.ds-action{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:59px;padding:5px;color:#f5ecd8;border:1px solid #7d735b;border-radius:0;font:11px 'Segoe UI',system-ui,sans-serif;cursor:pointer;transition:background-color 120ms ease-out,border-color 120ms ease-out}.ds-action svg{width:24px;height:24px;stroke:var(--gold,#edcd88);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.ds-action:hover{background:#4b574a;border-color:var(--gold,#edcd88)}.ds-action:active{background:#79704a}.ds-action:disabled{opacity:.45;cursor:default}.ds-action:focus-visible,.ds-utility:focus-visible,.ds-label:focus-visible,.ds-disclosure summary:focus-visible{outline:2px solid #ffe0a3;outline-offset:3px;}@media(prefers-reduced-motion:reduce){.ds-action{transition:none}}"
+    },
+    {
+      "name": "Utility Action",
+      "kind": "button",
+      "refersTo": "button-utility",
+      "description": "Secondary commands inside the demo disclosure.",
+      "html": "<button type=\"button\" class=\"ds-utility\">Pause</button>",
+      "css": ".ds-utility{min-height:44px;padding:8px;background:#303b35;color:#f5ecd8;border:1px solid var(--line,rgb(191 167 111 / 55%));border-radius:0;font:12px 'Segoe UI',system-ui,sans-serif;cursor:pointer}.ds-utility:hover:enabled{background:#4b574a}.ds-utility:disabled{opacity:.45;cursor:default}.ds-action:focus-visible,.ds-utility:focus-visible,.ds-label:focus-visible,.ds-disclosure summary:focus-visible{outline:2px solid #ffe0a3;outline-offset:3px;}"
+    },
+    {
+      "name": "Target Strip",
+      "kind": "custom",
+      "refersTo": "target-strip",
+      "description": "The selected name and health form one wrapping field.",
+      "html": "<div class=\"ds-target\"><span>Target</span><strong>Elyra</strong><small>100 / 100 HP</small></div>",
+      "css": ".ds-target{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;justify-content:center;padding:8px 12px;background:var(--panel,rgb(24 28 26 / 94%));color:#f5ecd8;border:1px solid var(--line,rgb(191 167 111 / 55%));font-family:'Segoe UI',system-ui,sans-serif}.ds-target>span{color:var(--gold,#edcd88);font-size:10px;text-transform:uppercase;letter-spacing:.08em}.ds-target strong{font-size:13px;font-weight:500}.ds-target small{font-size:10px;color:var(--muted,#d0c6af)}"
+    },
+    {
+      "name": "Character Nameplate",
+      "kind": "custom",
+      "refersTo": "entity-name",
+      "description": "A projected selection button with a thin health meter.",
+      "html": "<button type=\"button\" class=\"ds-label\" aria-label=\"Select Elyra\" aria-pressed=\"true\"><span>Elyra</span><span class=\"ds-health\" role=\"meter\" aria-label=\"Elyra health\" aria-valuemin=\"0\" aria-valuemax=\"100\" aria-valuenow=\"100\"><span></span></span></button>",
+      "css": ".ds-label{min-height:44px;min-width:70px;padding:10px 7px 4px;background:transparent;border:0;color:#fff4d8;font:11px/1.2 'Segoe UI',sans-serif;text-shadow:0 1px 2px #101715,1px 0 3px #101715;white-space:nowrap;cursor:pointer}.ds-label>span:first-child{background:rgb(24 28 26 / 80%);padding:1px 4px}.ds-label[aria-pressed=true]{color:#ffe3a5}.ds-label[aria-pressed=true]>span:first-child{text-decoration:underline;text-underline-offset:3px}.ds-health{display:block;height:4px;max-width:72px;margin:4px auto 0;border:1px solid rgb(18 25 22 / 90%);background:#492f27}.ds-health>span{display:block;height:100%;background:#87bea4}.ds-action:focus-visible,.ds-utility:focus-visible,.ds-label:focus-visible,.ds-disclosure summary:focus-visible{outline:2px solid #ffe0a3;outline-offset:3px;}"
+    },
+    {
+      "name": "Player Panel",
+      "kind": "custom",
+      "refersTo": "player-panel",
+      "description": "Identity and health remain readable in a compact anchored panel.",
+      "html": "<div class=\"ds-player\"><svg viewBox=\"0 0 48 48\" aria-hidden=\"true\"><path d=\"M24 5 39 14v17L24 43 9 31V14Z\"/><path d=\"m16 32 8-20 8 20M19 26h10\"/></svg><div class=\"ds-player-info\"><strong>Elyra <span>You</span></strong><div class=\"ds-player-health\"><span></span><b>HP <output>100 / 100</output></b></div><small>Synthetic world</small></div></div>",
+      "css": ".ds-player{display:flex;align-items:center;gap:8px;width:180px;padding:6px 8px 6px 4px;background:var(--panel,rgb(24 28 26 / 94%));border:1px solid var(--line,rgb(191 167 111 / 55%));color:#f5ecd8;font-family:'Segoe UI',system-ui,sans-serif}.ds-player>svg{width:40px;flex:0 0 40px;stroke:var(--gold,#edcd88);fill:#394440;stroke-width:1.4}.ds-player-info{flex:1;min-width:0}.ds-player-info strong{display:flex;justify-content:space-between;font-size:13px;font-weight:600}.ds-player-info strong span,.ds-player-info small{font-size:10px;font-weight:400;color:var(--muted,#d0c6af)}.ds-player-health{position:relative;height:15px;margin-top:4px;background:#361c17;border:1px solid #bc9172}.ds-player-health>span{display:block;height:100%;background:#a33d2e}.ds-player-health b{position:absolute;inset:0 4px;display:flex;justify-content:space-between;font-size:10px;font-weight:500;line-height:12px}"
+    },
+    {
+      "name": "Demo Disclosure",
+      "kind": "custom",
+      "refersTo": "demo-disclosure",
+      "description": "Secondary commands and concise instructions collapse beneath the action bar.",
+      "html": "<details class=\"ds-disclosure\"><summary>Demo controls</summary><div><p>Tap a character to target. Tap the ground to move.</p><p>All names, health and movement are synthetic.</p></div></details>",
+      "css": ".ds-disclosure{background:var(--panel,rgb(24 28 26 / 94%));border:1px solid var(--line,rgb(191 167 111 / 55%));color:#f5ecd8;font-family:'Segoe UI',system-ui,sans-serif}.ds-disclosure summary{min-height:44px;padding:13px 14px;color:var(--gold,#edcd88);font-size:12px;cursor:pointer}.ds-disclosure[open] summary{border-bottom:1px solid var(--line,rgb(191 167 111 / 55%))}.ds-disclosure>div{max-height:27dvh;overflow-y:auto;padding:10px 12px;scrollbar-color:var(--bronze,#a58c59) #202522;scrollbar-width:thin}.ds-disclosure p{margin:10px 0 0;font-size:11px;line-height:1.5;color:var(--muted,#d0c6af)}.ds-action:focus-visible,.ds-utility:focus-visible,.ds-label:focus-visible,.ds-disclosure summary:focus-visible{outline:2px solid #ffe0a3;outline-offset:3px;}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Classic Fantasy HUD",
+    "overview": "The classic fantasy HUD frames a playable 3D world with bronze hairlines, green-charcoal panels, and warm ivory lettering. Controls remain compact and familiar, with touch-sized actions and clear targeting feedback. The scene supplies the dimensional content; the interface supplies readable state.\n\nCormorant Garamond gives location names their fantasy character, while ordinary sans-serif labels keep actions and health understandable. The system uses original vector icons and procedural 3D content. It does not reproduce pixels, proprietary artwork, or simulated metal textures from the reference.",
+    "keyCharacteristics": [
+      "Flat dark panels with bronze borders.",
+      "Warm serif location titles and practical sans-serif controls.",
+      "Touch-sized actions with compact supporting measurements.",
+      "Selection expressed by name emphasis, target details, and a ring in the world."
+    ],
+    "rules": [
+      {
+        "name": "The Readable Overlay Rule",
+        "body": "Text above the moving scene receives a stable dark backing or a soft text shadow; selection remains visible without relying on color alone.",
+        "section": "colors"
+      },
+      {
+        "name": "The Measured Type Rule",
+        "body": "Reserve monospace and tabular numerals for FPS, entity count, and coordinates.",
+        "section": "typography"
+      },
+      {
+        "name": "The Scene Depth Rule",
+        "body": "Let the rendered world provide depth. HUD panels remain flat, separated by thin borders rather than decorative bevels or large shadows.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do preserve the bronze, green-charcoal, and warm ivory relationship.",
+      "Do retain at least 44px-high interactive controls and visible keyboard focus.",
+      "Do pair icons with action labels and keep synthetic data identified.",
+      "Do keep entity names readable against changes in the 3D background."
+    ],
+    "donts": [
+      "Don't copy proprietary game artwork or reference screenshot pixels.",
+      "Don't replace measured diagnostics with decorative charts or marketing statistics.",
+      "Don't use a serif display face for dense instructions or numeric diagnostics.",
+      "Don't add decorative material effects that compete with the rendered scene."
+    ]
+  }
+}

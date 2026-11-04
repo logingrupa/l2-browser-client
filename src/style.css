@@ -1,0 +1,32 @@
+@font-face {
+  font-family: "Cormorant Garamond Variable";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("@fontsource-variable/cormorant-garamond/files/cormorant-garamond-latin-wght-normal.woff2") format("woff2");
+}
+
+:root {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  color: #f5ecd8;
+  background: #202522;
+  --panel: rgb(24 28 26 / 94%);
+  --bronze: #a58c59;
+  --gold: #edcd88;
+  --muted: #d0c6af;
+  --line: rgb(191 167 111 / 55%);
+  color-scheme: dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+* { box-sizing: border-box; }
+html, body, #app { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+body { min-width: 320px; }
+button, summary { -webkit-tap-highlight-color: transparent; }
+button { font: inherit; cursor: pointer; color: inherit; }
+button:disabled { cursor: default; opacity: .45; }
+button:focus-visible, summary:focus-visible, canvas:focus-visible { outline: 2px solid #ffe0a3; outline-offset: 3px; }
+::selection { background: #c7a565; color: #171d1a; }
+* { scrollbar-color: var(--bronze) #202522; scrollbar-width: thin; }
+#canvas { display: block; width: 100%; height: 100%; touch-action: none; outline: none; }
+.loading-message { position: fixed; inset: 45% 20px auto; text-align: center; padding: 22px; background: var(--panel); border: 1px solid var(--line); }

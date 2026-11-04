@@ -1,0 +1,303 @@
+{
+  "meshes": [
+    {
+      "name": "Meadow",
+      "id": "Meadow",
+      "uniqueId": 11,
+      "type": "GroundMesh",
+      "position": [
+        0,
+        -0.07,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scaling": [
+        1,
+        1,
+        1
+      ],
+      "localMatrix": {
+        "0": 1,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 1,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0,
+        "10": 1,
+        "11": 0,
+        "12": 0,
+        "13": 0,
+        "14": 0,
+        "15": 1
+      },
+      "isEnabled": true,
+      "isVisible": true,
+      "infiniteDistance": false,
+      "pickable": false,
+      "receiveShadows": false,
+      "billboardMode": 0,
+      "visibility": 1,
+      "alwaysSelectAsActiveMesh": false,
+      "checkCollisions": false,
+      "ellipsoid": [
+        0.5,
+        1,
+        0.5
+      ],
+      "ellipsoidOffset": [
+        0,
+        0,
+        0
+      ],
+      "doNotSyncBoundingInfo": false,
+      "isBlocker": false,
+      "sideOrientation": 1,
+      "isUnIndexed": false,
+      "subMeshes": [
+        {
+          "materialIndex": 0,
+          "verticesStart": 0,
+          "verticesCount": 4,
+          "indexStart": 0,
+          "indexCount": 6
+        }
+      ],
+      "materialUniqueId": 5,
+      "materialId": "Moss green meadow",
+      "instances": [],
+      "animations": [],
+      "ranges": [],
+      "layerMask": 268435455,
+      "alphaIndex": 1.7976931348623157e+308,
+      "hasVertexAlpha": false,
+      "overlayAlpha": 0.5,
+      "overlayColor": [
+        1,
+        0,
+        0
+      ],
+      "applyFog": true,
+      "subdivisionsX": 1,
+      "subdivisionsY": 1,
+      "minX": -90,
+      "maxX": 90,
+      "minZ": -90,
+      "maxZ": 90,
+      "width": 180,
+      "height": 180,
+      "positions": [
+        -90,
+        0,
+        90,
+        90,
+        0,
+        90,
+        -90,
+        0,
+        -90,
+        90,
+        0,
+        -90
+      ],
+      "normals": [
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0
+      ],
+      "uvs": [
+        0,
+        1,
+        1,
+        1,
+        0,
+        0,
+        1,
+        0
+      ],
+      "indices": [
+        3,
+        1,
+        0,
+        2,
+        3,
+        0
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "tags": null,
+      "ambient": [
+        0,
+        0,
+        0
+      ],
+      "diffuse": [
+        0.39215686274509803,
+        0.4823529411764706,
+        0.3843137254901961
+      ],
+      "specular": [
+        0.06,
+        0.06,
+        0.06
+      ],
+      "emissive": [
+        0,
+        0,
+        0
+      ],
+      "specularPower": 64,
+      "useAlphaFromDiffuseTexture": false,
+      "useEmissiveAsIllumination": false,
+      "linkEmissiveWithDiffuse": false,
+      "useSpecularOverAlpha": false,
+      "useReflectionOverAlpha": false,
+      "disableLighting": false,
+      "useObjectSpaceNormalMap": false,
+      "useParallax": false,
+      "useParallaxOcclusion": false,
+      "parallaxScaleBias": 0.05,
+      "roughness": 0,
+      "indexOfRefraction": 0.98,
+      "invertRefractionY": true,
+      "alphaCutOff": 0.4,
+      "useLightmapAsShadowmap": false,
+      "useReflectionFresnelFromSpecular": false,
+      "useGlossinessFromSpecularMapAlpha": false,
+      "maxSimultaneousLights": 4,
+      "invertNormalMapX": false,
+      "invertNormalMapY": false,
+      "twoSidedLighting": false,
+      "applyDecalMapAfterDetailMap": false,
+      "_imageProcessingConfiguration": {
+        "tags": null,
+        "colorCurves": {
+          "tags": null,
+          "_globalHue": 30,
+          "_globalDensity": 0,
+          "_globalSaturation": 0,
+          "_globalExposure": 0,
+          "_highlightsHue": 30,
+          "_highlightsDensity": 0,
+          "_highlightsSaturation": 0,
+          "_highlightsExposure": 0,
+          "_midtonesHue": 30,
+          "_midtonesDensity": 0,
+          "_midtonesSaturation": 0,
+          "_midtonesExposure": 0
+        },
+        "_colorCurvesEnabled": false,
+        "_colorGradingEnabled": false,
+        "_colorGradingWithGreenDepth": true,
+        "_colorGradingBGR": true,
+        "_exposure": 1,
+        "_toneMappingEnabled": false,
+        "_toneMappingType": 0,
+        "_contrast": 1,
+        "_whiteBalanceEnabled": false,
+        "_temperature": 6500,
+        "_tint": 0,
+        "vignetteStretch": 0,
+        "vignetteCenterX": 0,
+        "vignetteCenterY": 0,
+        "vignetteWeight": 1.5,
+        "vignetteColor": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "vignetteCameraFov": 0.5,
+        "_vignetteBlendMode": 0,
+        "_vignetteEnabled": false,
+        "_ditheringEnabled": false,
+        "_ditheringIntensity": 0.00392156862745098,
+        "_skipFinalColorClamp": false,
+        "_applyByPostProcess": false,
+        "_isEnabled": true,
+        "outputTextureWidth": 0,
+        "outputTextureHeight": 0
+      },
+      "pointsCloud": false,
+      "fillMode": 0,
+      "id": "Moss green meadow",
+      "name": "Moss green meadow",
+      "checkReadyOnEveryCall": false,
+      "checkReadyOnlyOnce": false,
+      "state": "",
+      "alpha": 1,
+      "backFaceCulling": true,
+      "textureRepetitionMode": 0,
+      "textureRepetitionHexTilingParams": [
+        1,
+        0.6,
+        7,
+        0.5
+      ],
+      "cullBackFaces": true,
+      "_alphaMode": [
+        2
+      ],
+      "_needDepthPrePass": false,
+      "disableDepthWrite": false,
+      "disableColorWrite": false,
+      "forceDepthWrite": false,
+      "depthFunction": 0,
+      "separateCullingPass": false,
+      "fogEnabled": true,
+      "pointSize": 1,
+      "zOffset": 0,
+      "zOffsetUnits": 0,
+      "_isVertexOutputInvariant": false,
+      "stencil": {
+        "tags": null,
+        "func": 519,
+        "backFunc": 519,
+        "funcRef": 1,
+        "funcMask": 255,
+        "opStencilFail": 7680,
+        "opDepthFail": 7680,
+        "opStencilDepthPass": 7681,
+        "backOpStencilFail": 7680,
+        "backOpDepthFail": 7680,
+        "backOpStencilDepthPass": 7681,
+        "mask": 255,
+        "enabled": false
+      },
+      "uniqueId": 5,
+      "plugins": {
+        "DetailMapConfiguration": {
+          "tags": null,
+          "normalBlendMethod": 0,
+          "isEnabled": false,
+          "diffuseBlendLevel": 1,
+          "roughnessBlendLevel": 1,
+          "bumpLevel": 1,
+          "name": "DetailMap",
+          "priority": 140,
+          "resolveIncludes": false,
+          "registerForExtraEvents": false
+        }
+      }
+    }
+  ],
+  "metadata": {}
+}

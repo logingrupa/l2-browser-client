@@ -1,0 +1,128 @@
+{
+  "tags": null,
+  "inertialAlphaOffset": 0,
+  "inertialBetaOffset": 0,
+  "inertialRadiusOffset": 0,
+  "panningInertia": 0.9,
+  "zoomToMouseLocation": false,
+  "alpha": -1.5707963267948966,
+  "beta": 1.05,
+  "radius": 26,
+  "target": [
+    0,
+    0.8,
+    1
+  ],
+  "lowerBetaLimit": 0.35,
+  "upperBetaLimit": 1.45,
+  "lowerRadiusLimit": 10,
+  "upperRadiusLimit": 38,
+  "lowerTargetYLimit": null,
+  "inertialPanningX": 0,
+  "inertialPanningY": 0,
+  "pinchToPanMaxDistance": 20,
+  "panningOriginTarget": [
+    0,
+    0,
+    0
+  ],
+  "zoomOnFactor": 1,
+  "targetScreenOffset": [
+    0,
+    0
+  ],
+  "allowUpsideDown": true,
+  "useInputToRestoreState": true,
+  "restoreStateInterpolationFactor": 0,
+  "updateUpVectorFromRotation": false,
+  "rotation": [
+    0,
+    0,
+    0
+  ],
+  "speed": 2,
+  "inertia": 0.7,
+  "mode": 0,
+  "position": [
+    1.3809731997487208e-15,
+    13.7368472451849,
+    -21.553003865444442
+  ],
+  "upVector": [
+    0,
+    1,
+    0
+  ],
+  "fov": 0.9,
+  "projectionPlaneTilt": 0,
+  "minZ": 0.1,
+  "maxZ": 250,
+  "layerMask": 268435455,
+  "fovMode": 1,
+  "cameraRigMode": 0,
+  "ignoreCameraMaxZ": false,
+  "name": "World camera",
+  "id": "World camera",
+  "state": "",
+  "metadata": {},
+  "uniqueId": 263,
+  "type": "ArcRotateCamera",
+  "inputsmgr": {
+    "ArcRotateCameraKeyboardMoveInput": {
+      "tags": null,
+      "useAltToZoom": true,
+      "keysUp": [
+        38
+      ],
+      "keysDown": [
+        40
+      ],
+      "keysLeft": [
+        37
+      ],
+      "keysRight": [
+        39
+      ],
+      "keysReset": [
+        220
+      ],
+      "keysZoomIn": [
+        187,
+        107
+      ],
+      "keysZoomOut": [
+        189,
+        109
+      ],
+      "panningSensibility": 50,
+      "zoomingSensibility": 25,
+      "angularSpeed": 0.01
+    },
+    "ArcRotateCameraMouseWheelInput": {
+      "tags": null,
+      "wheelPrecision": 3,
+      "zoomToMouseLocation": false,
+      "wheelDeltaPercentage": 0
+    },
+    "ArcRotateCameraPointersInput": {
+      "tags": null,
+      "buttons": [
+        0,
+        1,
+        2
+      ],
+      "angularSensibilityX": 1000,
+      "angularSensibilityY": 1000,
+      "pinchPrecision": 12,
+      "pinchDeltaPercentage": 0,
+      "useNaturalPinchZoom": false,
+      "panningSensibility": 1000,
+      "pinchZoom": true,
+      "multiTouchPanning": true,
+      "multiTouchPanAndZoom": true
+    }
+  },
+  "animations": [],
+  "ranges": [],
+  "isEnabled": true
+}
