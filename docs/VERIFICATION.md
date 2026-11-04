@@ -2,6 +2,8 @@
 
 Verification date: **2026-11-04**. Environment: Windows, Node.js **24.15.0**, pnpm **10.32.1**, and Playwright Chromium using software WebGL rendering. Dependencies and tools are pinned in `package.json` and `pnpm-lock.yaml`.
 
+These results cover the procedural foundation in commit `3b16f1c317e20ee636a3b3f83bddafc15096740a`. The subsequent Markdown update did not change runtime code or rerun these application checks. Local converted GLBs were located and structurally inspected, but their rendering, skinning, animation and integration in this destination remain unverified. Prior evidence from the conversion workspace is not a result for this client. See [ROADMAP.md](ROADMAP.md) for current scope and Phase 2.
+
 ## Commands and observed results
 
 | Check | Result |

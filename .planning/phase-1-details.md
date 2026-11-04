@@ -1,6 +1,6 @@
 # Phase 1 implementation requirements
 
-This file supplies the full requirements for [the main implementation prompt](goal.md). Read both before implementing. This planning task only prepares the prompt; implementation, commits and pushes described below belong to execution of that prompt.
+This file preserves the original full requirements for [the foundation implementation prompt](goal.md). The procedural foundation has since been implemented and pushed; [the verification record](../docs/VERIFICATION.md) distinguishes passed checks from outstanding Editor/MCP checks. The current local converted-asset follow-up and stale Markdown corrections are defined in [asset-integration-prompt.md](asset-integration-prompt.md). [The roadmap](../docs/ROADMAP.md) retains Phase 2 Real M0 networking as a separate later step. The original acceptance requirements below remain a historical baseline, not a claim that local converted assets have been tested or integrated.
 
 ## 1. Outcome and repository boundaries
 

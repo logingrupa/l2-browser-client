@@ -1,5 +1,7 @@
 # Phase 1 - L2 Browser Client Foundation
 
+> Original foundation brief, retained for requirements and acceptance history. The implementation was pushed in commit `3b16f1c317e20ee636a3b3f83bddafc15096740a`; see [verification](../docs/VERIFICATION.md) for actual checks and gaps. The current local asset follow-up is defined in [asset-integration-prompt.md](asset-integration-prompt.md). [The roadmap](../docs/ROADMAP.md) preserves Phase 2 Real M0 networking as the later step.
+
 Implement and verify a standalone Babylon.js + strict TypeScript browser client in https://github.com/logingrupa/l2-browser-client. Reuse proven rendering code from https://github.com/logingrupa/linegen after reviewing its license. Deliver a working synthetic demo, not just a proposal.
 
 Read and follow [the detailed requirements, folder structure and acceptance checks](phase-1-details.md) before implementation. Repository-relative path: `.planning/phase-1-details.md`. That file is part of this task; this prompt summarizes it.

@@ -119,6 +119,8 @@ Cormorant Garamond gives location names their fantasy character, while ordinary 
 
 This record reflects `src/style.css`, `src/ui/worldStyles.ts`, and `src/ui/WorldInterface.ts`, reviewed against desktop and compact portrait captures. The machine-readable tokens above are normative. The companion sidecar's synthesized tonal ramps are preview aids, not additional runtime palette tokens.
 
+This is the reviewed procedural foundation's interface. The next local task evaluates converted character assets while preserving the HUD; its visual results are not yet part of this record. The user's stale-file correction concerns Markdown, not a stylesheet redesign. Current asset scope and the separate Phase 2 networking milestone are in [docs/ROADMAP.md](docs/ROADMAP.md).
+
 ## Colors
 
 Warm highlights sit on a subdued green-charcoal foundation; health colors carry state rather than decoration.

@@ -14,4 +14,4 @@ FIRST VIEWPORT: A full-screen courtyard; compact health and location above; a sm
 
 FORM: User-pinned mobile game HUD. seed:f8067ac85ba6da9a. The physical reference's small desktop controls become 44px or larger touch targets.
 
-FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+FINISH: the procedural foundation's mobile and desktop captures were reviewed with disposition **ship** and documented in [DESIGN.md](../DESIGN.md) and [screenshots/README.md](screenshots/README.md). New model integration needs its own visible review and progress screenshots. Preserve this HUD direction while updating stale Markdown; a stylesheet overhaul was not requested. The current task and later networking milestone are in [ROADMAP.md](ROADMAP.md).

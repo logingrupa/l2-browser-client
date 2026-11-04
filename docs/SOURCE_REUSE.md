@@ -1,6 +1,8 @@
 # Source review and provenance
 
-## Review outcome
+## Foundation source-review outcome
+
+This section records the provenance decision for the published procedural foundation. The later local asset inventory below is a separate technical investigation; the original Git-tree inspection did not establish that local converted binaries were absent or incorrectly converted.
 
 The Phase 1 implementation reviewed all seven requested rendering files in
 [`logingrupa/linegen`](https://github.com/logingrupa/linegen) at commit
@@ -29,6 +31,23 @@ this repository**. Its implementation was used for behavioral review and
 pitfall identification; Phase 1 implements the requested behaviors
 independently with Babylon.js public APIs. These replacements must not be
 described as licensed source adaptations or a clean-room implementation.
+
+## Subsequent local asset inventory
+
+The user identified `C:\laragon\www\lineagen` as the workspace used by a separate session with conversion tooling. Read-only filesystem and GLB-structure inspection on 2026-11-04 confirmed these files in `.assets\converted\`:
+
+| File | Bytes | Animation clips |
+| --- | ---: | ---: |
+| `MFighter.glb` | 16,393,204 | 121 |
+| `FFighter.glb` | 17,366,848 | 123 |
+| `MMagic.glb` | 16,565,352 | 114 |
+| `FMagic.glb` | 15,377,048 | 109 |
+
+Each parsed as GLB v2 with seven meshes, one skin and seven embedded images. Matching `.blend` files, per-model manifests and `manifest.json` also exist. The workspace contains offline tools in `.assets\conversion\` and prior reports/captures in `.assets\evidence\`. No model was copied or rendered in this destination during this inventory, and no converter or source application was run.
+
+All four models contain `wait_Hand`, `run_Hand` and `Atk01_Hand`; the destination's current generic aliases do not recognize those names. Add explicit mapping and inspect actual playback before classifying a conversion as faulty. Structural validity and prior source reports do not verify destination appearance, skin deformation, transitions or mobile performance.
+
+For the follow-up, **usable** means technically converted correctly and working in the destination browser client. Missing publication-license metadata does not establish a technical conversion defect. Keep provenance findings and local technical results distinct. [ROADMAP.md](ROADMAP.md) records the follow-up boundaries and Phase 2; the [handoff prompt](../.planning/asset-integration-prompt.md) gives the actual folders and tooling cautions.
 
 ## Seven-file inventory
 
@@ -67,8 +86,8 @@ bringing those systems into Phase 1.
 
 The inspected source's character documentation describes converted external
 character GLBs and hundreds of supplied clips, but provides no redistribution
-license for those inputs. The tracked repository does not itself include the
-required character binaries. No original Lineage II maps, characters,
+license for those inputs. The inspected tracked revision does not itself include the
+required character binaries; the later local inventory above confirms converted binaries outside that tracked tree. No original Lineage II maps, characters,
 textures, audio or converted assets are included here.
 
 The Phase 1 characters and environment are procedural project assets. Loading

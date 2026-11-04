@@ -94,7 +94,9 @@ The registry owns one `CharacterVisual`, `PositionInterpolator`, and `EntityLabe
 
 `CharacterVisual` returns a usable procedural character synchronously. If an optional model URL exists, it fetches with an abort signal, checks HTTP success and the binary glTF header, and asks Babylon to load an asset container. `prepareCharacterModel` verifies usable geometry and required clips, normalizes scale/origin, assigns picking metadata, and attaches the container. Failure retains the placeholder and reports a visible status message. A late result for a removed entity or disposed scene is disposed rather than reintroduced.
 
-`CharacterAnimator` preserves the selected state when switching drivers. Procedural animation blends articulated idle breathing, run strides, and attack swings. Model animation accepts documented case-insensitive idle/run/attack aliases and crossfades groups over 0.16 seconds. Models without the required clips are unsuitable and retain the procedural fallback. No licensed external character GLB is bundled; model-driver tests use synthetic fixtures, not a claim of compatibility with arbitrary rigs.
+`CharacterAnimator` preserves the selected state when switching drivers. Procedural animation blends articulated idle breathing, run strides, and attack swings. Model animation accepts documented case-insensitive idle/run/attack aliases and crossfades groups over 0.16 seconds. Models without recognized required clips retain the procedural fallback; this can indicate a mapping mismatch rather than a conversion defect. No external character GLB is bundled; model-driver tests use synthetic fixtures, not a claim of compatibility with arbitrary rigs.
+
+The local asset follow-up found `wait_Hand`, `run_Hand` and `Atk01_Hand` in four converted candidates. Explicit mapping and actual destination rendering remain pending. Model and animation import work belongs in the asset/animation modules and must preserve the adapter boundary. See [ROADMAP.md](ROADMAP.md).
 
 `EntityLabel` projects a point above the interpolated character into the viewport, hides off-screen labels, writes names with `textContent`, and exposes selection buttons and health meters. `WorldInterface` owns the compact HUD and dispatches all entity-changing controls to the adapter. Its health values and cosmetic attacks do not introduce combat calculations.
 
@@ -106,8 +108,8 @@ Stopping the scene removes the frame observer, pointer targeting, camera control
 
 MCP is an authoring tool outside this runtime. It does not appear in `GameWorldAdapter`, cannot be required for browser startup, and has no runtime service configuration in this repository.
 
-## Future Interlude adapter
+## Phase 2 — future Interlude adapter
 
 `createWorldRuntime` is the single composition point that selects `MockWorldAdapter`. A future adapter can supply the same initial state and ordered entity events without importing transport details into presentation modules. It must establish snapshot/subscription ordering, normalize positions into meters and time into seconds, and mark teleports explicitly.
 
-The current `WorldCommand` union includes synthetic developer intents such as spawn, pause, forced animation, and intentional asset failure. A real adapter must map supported player actions and explicitly reject or disable unsupported demo intents; replacing the constructor alone does not turn those controls into network features. Authentication, character selection, world entry, packet codecs, relays, clock synchronization, and production networking belong to the later Real M0 phase and are absent here.
+The current `WorldCommand` union includes synthetic developer intents such as spawn, pause, forced animation, and intentional asset failure. A real adapter must map supported player actions and explicitly reject or disable unsupported demo intents; replacing the constructor alone does not turn those controls into network features. Phase 2's concrete outcome is real Interlude authentication, character selection and world entry against stock Mobius. Protocol and transport design belong to that later task and are absent here. Asset integration remains a Phase 1 follow-up; production deployment is outside the current roadmap scope.
