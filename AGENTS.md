@@ -41,7 +41,10 @@ Browser client for Lineage II Interlude on Babylon.js WebGPU. These rules are sp
 - No dead code. Delete unused functions, exports, files, flags and assets in the same change that makes them unused. No commented-out code.
 - DRY and single responsibility. One owner per piece of logic. Reuse before adding.
 - No speculative abstractions, options, or compatibility shims for paths that no longer exist.
-- Comments only when the code cannot say it: 1 to 3 factual lines about the current constraint. Never narrate history, root causes, or how something was fixed.
+- No comments in code. Ever. The code explains itself.
+- Every function, variable, type and file name says what it does or holds, in full words (`decodeSkillgrpRecords`, not `decode` or `parse2`). If a name cannot explain it, split or rename until it can.
+- The only exception is machine directives a tool needs to work: `@ts-expect-error` with no prose, `eslint-disable-next-line` for a named rule, a shebang. They are not explanations.
+- When you change code, remove the existing comments in that code and make the names carry the meaning instead.
 - Fix the root cause, not the symptom. No retries, sleeps or tolerances that hide a bug.
 - Validate at trust boundaries (decoded files, server messages) with guard clauses and clear errors. Inside the code, trust the types.
 - Small files with explicit names. Split a file that grows past about 400 lines or mixes concerns.
