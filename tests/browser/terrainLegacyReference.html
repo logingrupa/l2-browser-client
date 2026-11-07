@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ordered terrain reference experiments</title>
+  <style>
+    body { font: 15px/1.45 system-ui, sans-serif; margin: 24px; color: #e4e8ee; background: #18202a; }
+    h1 { font-size: 24px; margin-bottom: 8px; } p { max-width: 80ch; }
+    #cases { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 12px; }
+    article { background: #24313f; padding: 12px; border: 1px solid #475567; }
+    article canvas { width: 48px; height: 48px; float: left; margin-right: 12px; image-rendering: pixelated; }
+    article p { clear: both; margin-bottom: 0; font-size: 13px; }
+    output { font-family: monospace; font-size: 12px; display: block; }
+    #gpu { position: absolute; left: -1000px; width: 8px; height: 8px; }
+    .pass { color: #a5ecc5; } .fail { color: #ff9e9e; }
+    body.uv-only article[data-suite="legacy"] { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Ordered terrain reference experiments</h1>
+  <p>Actual Babylon WebGL framebuffer readbacks from synthetic inputs. Each layer writes a separate pass. These fixtures test explicit assumptions; they do not identify the native renderer's current settings or certify native parity.</p>
+  <p id="status">Compiling reference renderer…</p>
+  <label><input id="uv-only" type="checkbox" /> Show only native UV branch cases</label>
+  <canvas id="gpu" width="8" height="8" aria-hidden="true"></canvas>
+  <main id="cases"></main>
+  <script type="module" src="./terrainLegacyReference.ts"></script>
+</body>
+</html>

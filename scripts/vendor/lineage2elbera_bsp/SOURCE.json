@@ -1,0 +1,90 @@
+{
+  "repository": "https://github.com/elberacasa/Lineage2Elbera",
+  "revision": "12c9656e2f053b233ec3fd87056491a6a6da8b0c",
+  "license": "MIT",
+  "licenseSha256": "c7a6d658f809d36546b926b01428ba499cae6db4f42bf80c817b7b2977444ee4",
+  "selectedSymbols": [
+    {
+      "source": "tools/l2lib/ue2package.py",
+      "sourceSha256": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe",
+      "symbol": "BspNode",
+      "firstLine": 906,
+      "lastLine": 928,
+      "sha256": "324ef633948ad819f6f92b65a11f9cb7e9228b4055b62a08c525346bb547a71b"
+    },
+    {
+      "source": "tools/l2lib/ue2package.py",
+      "sourceSha256": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe",
+      "symbol": "BspSurf",
+      "firstLine": 931,
+      "lastLine": 934,
+      "sha256": "a23aed591f01d6fac5020a2651f4f1222e8cbb087ec204ce417ff3a8ad7eed48"
+    },
+    {
+      "source": "tools/l2lib/ue2package.py",
+      "sourceSha256": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe",
+      "symbol": "Model",
+      "firstLine": 944,
+      "lastLine": 954,
+      "sha256": "19f5acde1de7aa8bf67c938762511ca5edda9bbf31368297621a683208dca3e2"
+    },
+    {
+      "source": "tools/l2lib/ue2package.py",
+      "sourceSha256": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe",
+      "symbol": "_read_fplane",
+      "firstLine": 957,
+      "lastLine": 958,
+      "sha256": "a457cacf16b26f28bbc39af31426be7ef36efaf07ef737635c65c88fd3dbdac3"
+    },
+    {
+      "source": "tools/l2lib/ue2package.py",
+      "sourceSha256": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe",
+      "symbol": "_read_model",
+      "firstLine": 961,
+      "lastLine": 1116,
+      "sha256": "02a86c72e95bc2c93bff9e50a9621504007e8db43c0a91b7e7c6583e75206fbf"
+    },
+    {
+      "source": "tools/world/export_bsp_collision.py",
+      "sourceSha256": "ae5e7233cb15b838470474ec815badaa1784d9ddb8d5e5e799a3f2a594c0088d",
+      "symbol": "level_model_binding",
+      "firstLine": 136,
+      "lastLine": 220,
+      "sha256": "8ae2353e46a1b6c91fbb72afbc24ab6743afd0f6af6caae9294e6a692380583e"
+    },
+    {
+      "source": "tools/world/export_bsp_collision.py",
+      "sourceSha256": "ae5e7233cb15b838470474ec815badaa1784d9ddb8d5e5e799a3f2a594c0088d",
+      "symbol": "finite",
+      "firstLine": 223,
+      "lastLine": 225,
+      "sha256": "cf6e69656f3637bdb9a152ac73eb266745bc8ee6cd0b5c904925da38948a7c74"
+    },
+    {
+      "source": "tools/world/export_bsp_collision.py",
+      "sourceSha256": "ae5e7233cb15b838470474ec815badaa1784d9ddb8d5e5e799a3f2a594c0088d",
+      "symbol": "index",
+      "firstLine": 228,
+      "lastLine": 230,
+      "sha256": "7022d1be2590da59d55cde0d13e414553d165a1c2c67edb930e81382659225f8"
+    },
+    {
+      "source": "tools/world/export_bsp_collision.py",
+      "sourceSha256": "ae5e7233cb15b838470474ec815badaa1784d9ddb8d5e5e799a3f2a594c0088d",
+      "symbol": "validate_graph",
+      "firstLine": 233,
+      "lastLine": 254,
+      "sha256": "0ab1ebe21c691d7d57613aff072f4555e81f0447a8bd48266c7a6ad0f5fcdb27"
+    },
+    {
+      "source": "tools/world/export_bsp_collision.py",
+      "sourceSha256": "ae5e7233cb15b838470474ec815badaa1784d9ddb8d5e5e799a3f2a594c0088d",
+      "symbol": "validate_model",
+      "firstLine": 257,
+      "lastLine": 307,
+      "sha256": "afe6856d165a5e103c6629953e039b1938ddb78fa7c7b6a8a55833171d575dc8"
+    }
+  ],
+  "moduleSha256": "572bd29fd5dbe54e369005d502fc05355512535bf99d42a060c81e6d9df3c1cd",
+  "adaptation": "Exact selected function/class source text; local Reader/qualified-reference adapters and empty-properties gate replace unrelated full-package reader/property fallback. No native code or exporter executed."
+}

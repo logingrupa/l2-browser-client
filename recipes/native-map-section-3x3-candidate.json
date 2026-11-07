@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-terrain-section",
+  "terrainSectorRectangle": {
+    "minOffset": [144, 80],
+    "maxOffset": [176, 112]
+  },
+  "cachedSectorBoundsPolicy": "require-xy-preserve-z-discrepancies",
+  "referenceActor": "20_20.PlayerStart0",
+  "staticActorOriginZ": [-3350, -2400],
+  "maxStaticModels": 128,
+  "description": "Candidate only, not the default or native-camera match: 3x3 contiguous native sectors around TerrainSector106, XY [18432,75776]..[24576,81920], 61.44 m square. Preserve exact source samples, transforms, topology and UVs; retain known cached Z-bound discrepancies without fitting. Keep the earlier explicit source Z window for this initial output and report all excluded actor origins. This omits most subterranean town structures; PlayerStart0 is not a certified surface spawn."
+}
