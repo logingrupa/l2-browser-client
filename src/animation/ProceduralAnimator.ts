@@ -68,8 +68,8 @@ export class ProceduralAnimator implements CharacterAnimationDriver {
 
   constructor(private readonly joints: CharacterJoints) {}
 
-  setState(state: AnimationState): void {
-    if (this.isDisposed || state === this.state) return;
+  setState(state: AnimationState, retrigger = false): void {
+    if (this.isDisposed || (state === this.state && !retrigger)) return;
     this.previousPose = this.currentPose;
     this.state = state;
     this.elapsedSeconds = 0;

@@ -2,6 +2,8 @@ import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
 import type { AssetContainer } from "@babylonjs/core/assetContainer";
 import type { Scene } from "@babylonjs/core/scene";
 import "@babylonjs/loaders/glTF";
+import "./package/nativeSkinWeights";
+import { GLTFLoaderAnimationStartMode } from "@babylonjs/loaders/glTF/glTFFileLoader";
 
 /** Validate the response before Babylon parses it; HTML fallbacks are common in dev servers. */
 export async function loadCharacterModel(
@@ -17,7 +19,13 @@ export async function loadCharacterModel(
     || header.getUint32(8, true) !== bytes.byteLength) {
     throw new Error("Model response is not a valid glTF 2 binary.");
   }
-  const container = await LoadAssetContainerAsync(bytes, scene, { pluginExtension: ".glb" });
+  // Binary input still needs a base URL for folder-relative dependencies.
+  const resolvedUrl = new URL(response.url || modelUrl, globalThis.location?.href ?? "http://localhost/");
+  const container = await LoadAssetContainerAsync(bytes, scene, {
+    pluginExtension: ".glb", rootUrl: new URL(".", resolvedUrl).href,
+    name: resolvedUrl.pathname.split("/").at(-1) ?? "character.glb",
+    pluginOptions: { gltf: { animationStartMode: GLTFLoaderAnimationStartMode.NONE } },
+  });
   if (signal.aborted || scene.isDisposed) {
     container.dispose();
     signal.throwIfAborted();

@@ -1,6 +1,22 @@
 # Converted-asset integration requirements
 
-This is the detailed scope for the [short handoff prompt](asset-integration-prompt.md). Read [the current roadmap](../docs/ROADMAP.md) for implementation state and the later Phase 2 milestone. These requirements describe pending work; the converted models have not yet been visually verified or integrated in this destination.
+**Current direction, 2026-11-07:** this file retains the original character
+integration acceptance brief. For current native-world work, first read
+[the rendering handoff](rendering-direction-20261107.md) and
+[docs/RENDERING.md](../docs/RENDERING.md). WebGPU is implemented; profile and
+optimize supported content while remaining fidelity work continues. Preserve
+required appearance/behavior without unnecessary legacy Direct3D emulation.
+Historical prototype assumptions below are not a current task backlog.
+
+**Mandatory clarification, 2026-11-06:** overall 1:1 includes original Interlude
+audio. Read [NATIVE_AUDIO.md](../docs/NATIVE_AUDIO.md) and
+[the audio continuation](native-audio-continuation.md). Native identity,
+trigger/selection/loop/timing/spatial rules and actual audible world playback
+require evidence. Partial exports, successful decoding and inspector-only
+playback cannot satisfy this acceptance. Existing terrain work, source/authoring
+protection and Phase 2 boundaries remain in force.
+
+This is the acceptance brief for the [short handoff prompt](asset-integration-prompt.md). The requirements below retain the original task contract, including prototype assumptions identified before implementation. The client now has local character profiles, native clip mappings and preserved exported assembly transforms; read [the current roadmap](../docs/ROADMAP.md), [asset audit](../docs/ASSET_AUDIT.md) and [verification record](../docs/VERIFICATION.md) for actual implementation, evidence and remaining gaps. Asset integration remains a Phase 1 follow-up; Phase 2 networking is still planned.
 
 Work on the existing browser-based 3D art project. Validate the models already converted locally, integrate working models, and correct stale Markdown documentation.
 

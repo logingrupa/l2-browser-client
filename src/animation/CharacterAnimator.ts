@@ -1,9 +1,18 @@
 import type { AnimationState } from "../world/worldTypes";
 
 export interface CharacterAnimationDriver {
-  setState(state: AnimationState): void;
+  readonly playback?: CharacterPlayback;
+  setState(state: AnimationState, retrigger?: boolean): void;
   update(deltaTimeSeconds: number): void;
   dispose(): void;
+}
+
+export interface CharacterPlayback {
+  readonly activeClip: string;
+  readonly frame: number;
+  readonly looping: boolean;
+  readonly playing: boolean;
+  readonly weights: readonly { readonly name: string; readonly weight: number }[];
 }
 
 /** Presentation follows the requested state; it never changes world state. */
@@ -17,10 +26,12 @@ export class CharacterAnimator {
     return this.currentState;
   }
 
-  setState(state: AnimationState): void {
-    if (this.isDisposed || this.currentState === state) return;
+  get playback(): CharacterPlayback | undefined { return this.driver.playback; }
+
+  setState(state: AnimationState, retrigger = false): void {
+    if (this.isDisposed || (this.currentState === state && !retrigger)) return;
     this.currentState = state;
-    this.driver.setState(state);
+    this.driver.setState(state, retrigger);
   }
 
   update(deltaTimeSeconds: number): void {

@@ -5,15 +5,15 @@ import { createCharacterVisual } from "../../src/assets/CharacterVisual";
 import { createInitialWorld } from "../../src/world/createInitialWorld";
 
 /** Original, embedded test triangle with three named transform clips; no external artwork. */
-function createBinaryModel(clipNames = ["idle", "run", "attack"]): ArrayBuffer {
+function createBinaryModel(clipNames = ["idle", "run", "attack"], offset = 0, height = 2): ArrayBuffer {
   const geometry = new Float32Array([
-    -0.5, 0, 0, 0.5, 0, 0, 0, 2, 0,
+    -0.5 + offset, offset, 0, 0.5 + offset, offset, 0, offset, height + offset, 0,
     0, 1,
     0, 0, 0, 0, 0.05, 0,
   ]);
   const description = {
     asset: { version: "2.0" }, scene: 0,
-    scenes: [{ nodes: [0] }], nodes: [{ mesh: 0 }],
+    scenes: [{ nodes: [0] }], nodes: [{ mesh: 0, name: "native-body", extras: { sourcePart: "upper", entityId: "original-extra" } }],
     meshes: [{ primitives: [{ attributes: { POSITION: 0 } }] }],
     buffers: [{ byteLength: geometry.byteLength }],
     bufferViews: [
@@ -22,7 +22,7 @@ function createBinaryModel(clipNames = ["idle", "run", "attack"]): ArrayBuffer {
       { buffer: 0, byteOffset: 44, byteLength: 24 },
     ],
     accessors: [
-      { bufferView: 0, componentType: 5126, count: 3, type: "VEC3", min: [-0.5, 0, 0], max: [0.5, 2, 0] },
+      { bufferView: 0, componentType: 5126, count: 3, type: "VEC3", min: [-0.5 + offset, offset, 0], max: [0.5 + offset, height + offset, 0] },
       { bufferView: 1, componentType: 5126, count: 2, type: "SCALAR", min: [0], max: [1] },
       { bufferView: 2, componentType: 5126, count: 2, type: "VEC3" },
     ],
@@ -59,7 +59,7 @@ describe("binary character model integration", () => {
   beforeEach(() => { engine = new NullEngine(); scene = new Scene(engine); });
   afterEach(() => { scene.dispose(); engine.dispose(); vi.unstubAllGlobals(); });
 
-  it("loads a real synthetic GLB, grounds it at the current world position and preserves requested animation", async () => {
+  it("loads a synthetic GLB without resizing, preserves metadata and requested animation at the current world position", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(createBinaryModel())));
     const status = vi.fn<(message: string) => void>();
     const visual = createCharacterVisual(scene, { ...entity, modelUrl: "/fixture.glb" }, status);
@@ -71,14 +71,35 @@ describe("binary character model integration", () => {
     for (const mesh of visual.root.getChildMeshes()) mesh.computeWorldMatrix(true);
     const bounds = visual.root.getHierarchyBoundingVectors();
     expect(bounds.min.y).toBeCloseTo(3);
-    expect(bounds.max.y).toBeCloseTo(4.8);
+    expect(bounds.max.y).toBeCloseTo(5);
     expect((bounds.min.x + bounds.max.x) / 2).toBeCloseTo(13);
+    expect(scene.getMeshByName("native-body")?.metadata).toMatchObject({
+      clientEntityId: entity.id, gltf: { extras: { sourcePart: "upper", entityId: "original-extra" } },
+    });
+    expect(visual.bounds.maximum.y).toBeCloseTo(2);
     expect(scene.animationGroups.some(group => group.name === "run" && group.isPlaying)).toBe(true);
     expect(scene.meshes.some(mesh => mesh.name.endsWith(":torso"))).toBe(false);
     visual.dispose();
     expect(scene.meshes).toHaveLength(0);
     expect(scene.animationGroups).toHaveLength(0);
     expect(scene.transformNodes).toHaveLength(0);
+  });
+
+  it("maps a native profile without changing clip names, authored offsets or character stature", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(createBinaryModel(["wait_Hand", "run_Hand", "Atk01_Hand"], 0.3, 2.4))));
+    const visual = createCharacterVisual(scene, entity);
+    visual.root.position.set(7, 3, 2);
+    await vi.waitFor(() => expect(visual.isFallback).toBe(false));
+    expect(visual.modelId).toBe("FFighter");
+    expect(visual.bounds.minimum.y).toBeCloseTo(0.3);
+    expect(visual.bounds.maximum.y).toBeCloseTo(2.7);
+    expect(Math.abs((visual.bounds.minimum.x + visual.bounds.maximum.x) / 2)).toBeCloseTo(0.3);
+    expect(scene.animationGroups.map(group => group.name)).toEqual(["wait_Hand", "run_Hand", "Atk01_Hand"]);
+    expect(visual.animation.playback?.activeClip).toBe("wait_Hand");
+    visual.dispose();
+    expect(scene.meshes).toHaveLength(0);
+    expect(scene.transformNodes).toHaveLength(0);
+    expect(scene.animationGroups).toHaveLength(0);
   });
 
   it("retains the placeholder and disposes models that lack a required animation", async () => {

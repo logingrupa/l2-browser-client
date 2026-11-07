@@ -7,7 +7,7 @@ import { createInitialWorld } from "../../src/world/createInitialWorld";
 describe("character fallback and cleanup", () => {
   let engine: NullEngine;
   let scene: Scene;
-  const entity = createInitialWorld()[0];
+  const entity = createInitialWorld()[3];
   if (!entity) throw new Error("Initial world needs a local player.");
 
   beforeEach(() => { engine = new NullEngine(); scene = new Scene(engine); });
@@ -45,6 +45,18 @@ describe("character fallback and cleanup", () => {
     expect(visual.animation.state).toBe("attack");
     expect(visual.root.getChildMeshes().length).toBeGreaterThan(15);
     visual.dispose();
+    expect(scene.meshes).toHaveLength(0);
+  });
+
+  it("retains a procedural character for unknown or inherited appearance identifiers", () => {
+    const fetchModel = vi.fn();
+    vi.stubGlobal("fetch", fetchModel);
+    for (const appearanceId of ["unavailable", "constructor", "toString"]) {
+      const visual = createCharacterVisual(scene, { ...entity, appearanceId });
+      expect(visual.isFallback).toBe(true);
+      visual.dispose();
+    }
+    expect(fetchModel).not.toHaveBeenCalled();
     expect(scene.meshes).toHaveLength(0);
   });
 
