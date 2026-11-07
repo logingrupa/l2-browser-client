@@ -1,0 +1,306 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-combat-audio-bundle",
+  "description": "Combat hit-sound dependencies for the 20_20 slice, following the statically proved Q4 routes (native-sound-answers-20261107 REPORT.md Q4). Route A AttackItem: chargrp attack_sound (fist_1..3, [CharSound] Vol/Radius) or the right-hand weapongrp item_sound (Short Sword item 1, [ItemSound] Vol/Radius). Route B AttackVoice: chargrp voice_snd_hand. Route C AttackShot: target defense (npcgrp defense_sound1 / armorgrp item_sound / chargrp defense_sound) then damage (npcgrp damage_sound gated by npc random / chargrp damage_sound gated by [CharSound] Random). Greater Musveren numeric fields use native meaning (radius 50, volume 250, random 70; the decoded labels sound_vol/sound_radius are swapped). [EtcSound] critical and soulshot sounds are staged for later server flags. Power Strike (skill 3 level 1) cast/shot remain name-match presentation candidates. Sound identities stay unique package+leaf candidates.",
+  "referencePolicy": {
+    "exactIdentity": "full-object-casefold",
+    "groupLessCandidates": "unique-package-leaf-candidate-admitted-as-presentation",
+    "nativeLookupVerified": false,
+    "slotSelection": "runtime-appRand-modulo",
+    "roleMapping": "native-q4-static-routes",
+    "scope": "Pinned corpus inventory only; admitted candidates are labelled presentation dependencies, not native lookup proof."
+  },
+  "corpus": {
+    "root": "artifacts/native-parity/research/native-world-audio-20261106/sound-batch-integration/build-corrected",
+    "inventory": {
+      "path": "artifacts/native-parity/research/native-world-audio-20261106/sound-batch-integration/build-corrected/inventory.json",
+      "bytes": 8802158,
+      "sha256": "ca6157d9db575099e075249c093625f7c688306f32015da340d004863b4ce9fa"
+    },
+    "coverage": {
+      "path": "artifacts/native-parity/research/native-world-audio-20261106/sound-batch-integration/build-corrected/coverage.json",
+      "bytes": 12247412,
+      "sha256": "3a1eb06d9103165aace23fd62eb1aaf7adb79d26f5aeec733bc6654966dd8532"
+    }
+  },
+  "tables": {
+    "chargrp": {
+      "original": {
+        "path": "artifacts/native-parity/inputs/IMPORTA-PC/system/chargrp.dat",
+        "bytes": 2480,
+        "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
+      },
+      "decoded": {
+        "path": "artifacts/native-client-audit/chargrp-interlude.json",
+        "bytes": 80353,
+        "sha256": "4e838b2df926f5c8551b57c0f47c16d85bdad47d89e69906edf977e9124c9b8f"
+      }
+    },
+    "npcgrp": {
+      "original": {
+        "path": "artifacts/native-parity/inputs/IMPORTA-PC/system/npcgrp.dat",
+        "bytes": 234544,
+        "sha256": "8ac7ce502769e25e503047e3a477da54703fc4e7f92aeb4c8c621e2729688d57"
+      },
+      "decoded": {
+        "path": "artifacts/native-parity/research/presentation-tables/npcgrp.json",
+        "bytes": 16260366,
+        "sha256": "4a02e453d553161bf133d052aa7d9a4756e3e9f0798af7469d9f4aa5e8b738b8"
+      }
+    },
+    "armorgrp": {
+      "original": {
+        "path": "artifacts/native-parity/inputs/IMPORTA-PC/system/armorgrp.dat",
+        "bytes": 101552,
+        "sha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3"
+      },
+      "decoded": {
+        "path": "artifacts/native-parity/research/presentation-tables/armorgrp.json",
+        "bytes": 13433370,
+        "sha256": "11a0083764ebada2fc93a1d08f491a142c7b2487bd9773e5c39b5950837befe8"
+      }
+    },
+    "weapongrp": {
+      "original": {
+        "path": "artifacts/native-parity/inputs/IMPORTA-PC/system/weapongrp.dat",
+        "bytes": 78128,
+        "sha256": "eea267ac21afa5f2e148349d5aaab9670dbc67cde3878f1a8db5aba2364550b9"
+      },
+      "decoded": {
+        "path": "artifacts/native-parity/research/presentation-tables/weapongrp.json",
+        "bytes": 4133275,
+        "sha256": "735aeb20f032c16a5181556aef1b56f75ad708ea3ce6523eded5ebcde4add20a"
+      }
+    },
+    "skillsoundgrp": {
+      "original": {
+        "path": "artifacts/native-parity/inputs/IMPORTA-PC/system/skillsoundgrp.dat",
+        "bytes": 28080,
+        "sha256": "14c9df542ccb0b342f1fd091b7177438cdf3705fb43581d0fc69b6c9ceeb14f5"
+      },
+      "decoded": {
+        "path": "artifacts/native-parity/research/native-human-skill-audio-20261107/skill-source/skillsoundgrp.decoded.json",
+        "bytes": 3103303,
+        "sha256": "8d635c56473759f8ff5982ee29d4b02db1bbace4ebc742b2484517293254afcc"
+      }
+    }
+  },
+  "config": {
+    "alaudio": {
+      "original": {
+        "path": "artifacts/native-parity/research/native-world-audio-20261106/backend-closure/inputs/IMPORTA-PC/20261106-191945-Europe-Riga-eb2c028f/files/system/ALAudio.int",
+        "bytes": 2658,
+        "sha256": "25f4e583409d798cd10cdca79eb8620395ca383a50cdecedd2ab3d501eba803c"
+      },
+      "sections": {
+        "CharSound": ["Random", "Vol", "Radius"],
+        "ItemSound": ["Random", "Vol", "Radius"],
+        "EtcSound": ["CriticalSound", "CriticalSound_Vol", "CriticalSound_Radius", "SoulShotSound", "SoulShotSound_Vol", "SoulShotSound_Radius"]
+      }
+    }
+  },
+  "selections": [
+    {
+      "id": "human-male-fighter",
+      "kind": "actor",
+      "label": "Human male fighter (chargrp row by body mesh)",
+      "catalogId": "human-male-fighter:0",
+      "sourceObject": "Fighter.MFighter_m001_u",
+      "table": "chargrp",
+      "match": [
+        {
+          "pointer": "/body_mesh/body_mesh1",
+          "value": "Fighter.MFighter_m001_u"
+        }
+      ],
+      "roles": {
+        "attackItem": "attack_sound",
+        "attackVoice": "voice_snd_hand",
+        "defense": "defense_sound",
+        "damage": "damage_sound"
+      }
+    },
+    {
+      "id": "human-female-fighter",
+      "kind": "actor",
+      "label": "Human female fighter (chargrp row by body mesh)",
+      "catalogId": "human-female-fighter:0",
+      "sourceObject": "Fighter.FFighter_m001_u",
+      "table": "chargrp",
+      "match": [
+        {
+          "pointer": "/body_mesh/body_mesh1",
+          "value": "Fighter.FFighter_m001_u"
+        }
+      ],
+      "roles": {
+        "attackItem": "attack_sound",
+        "attackVoice": "voice_snd_hand",
+        "defense": "defense_sound",
+        "damage": "damage_sound"
+      }
+    },
+    {
+      "id": "greater-musveren",
+      "kind": "actor",
+      "label": "Greater Musveren (npcgrp npc_id 21622)",
+      "catalogId": "musveren:0",
+      "sourceObject": "LineageMonsters.field_stalker_m00",
+      "table": "npcgrp",
+      "match": [
+        {
+          "pointer": "/npc_id",
+          "value": 21622
+        }
+      ],
+      "join": [
+        {
+          "pointer": "/mesh_name",
+          "value": "LineageMonsters.field_stalker_m00"
+        }
+      ],
+      "roles": {
+        "attackItem": "attack_sound1",
+        "defense": "defense_sound1",
+        "damage": "damage_sound"
+      },
+      "nativeNumeric": {
+        "soundRadius": "sound_vol",
+        "soundVolume": "sound_radius",
+        "soundRandom": "sound_random"
+      }
+    },
+    {
+      "id": "armor-22-leather-shirt",
+      "kind": "armor",
+      "label": "Leather Shirt (armorgrp object_id 22)",
+      "itemId": 22,
+      "table": "armorgrp",
+      "match": [
+        {
+          "pointer": "/object_id",
+          "value": 22
+        }
+      ],
+      "roles": {
+        "defense": "item_sound"
+      },
+      "numericFields": [
+        "body_part",
+        "armor_type"
+      ]
+    },
+    {
+      "id": "weapon-1-short-sword",
+      "kind": "weapon",
+      "label": "Short Sword (weapongrp object_id 1), 1HS candidate",
+      "itemId": 1,
+      "table": "weapongrp",
+      "match": [
+        {
+          "pointer": "/object_id",
+          "value": 1
+        }
+      ],
+      "roles": {
+        "attackItem": "item_sound"
+      },
+      "numericFields": [
+        "handness",
+        "weapon_type"
+      ]
+    },
+    {
+      "id": "skill-3-level-1-power-strike",
+      "kind": "skill",
+      "label": "Power Strike (skillsoundgrp skill 3 level 1)",
+      "skillId": 3,
+      "level": 1,
+      "table": "skillsoundgrp",
+      "match": [
+        {
+          "pointer": "/skill_id",
+          "value": 3
+        },
+        {
+          "pointer": "/skill_level",
+          "value": 1
+        }
+      ],
+      "roles": {
+        "cast": "spelleffect_sound_1",
+        "shot": "spelleffect_sound_2"
+      },
+      "numericFields": [
+        "spelleffect_sound_vol_1",
+        "spelleffect_sound_rad_1",
+        "spelleffect_sound_vol_2",
+        "spelleffect_sound_rad_2"
+      ]
+    },
+    {
+      "id": "alaudio-combat-config",
+      "kind": "config",
+      "label": "ALAudio.int [CharSound]/[ItemSound]/[EtcSound]",
+      "table": "alaudio",
+      "match": [
+        {
+          "pointer": "/source",
+          "value": "ALAudio.int"
+        }
+      ],
+      "roles": {
+        "critical": "EtcSound.CriticalSound",
+        "soulshot": "EtcSound.SoulShotSound"
+      },
+      "numericFields": [
+        "CharSound.Random",
+        "CharSound.Vol",
+        "CharSound.Radius",
+        "ItemSound.Random",
+        "ItemSound.Vol",
+        "ItemSound.Radius",
+        "EtcSound.CriticalSound_Vol",
+        "EtcSound.CriticalSound_Radius",
+        "EtcSound.SoulShotSound_Vol",
+        "EtcSound.SoulShotSound_Radius"
+      ]
+    }
+  ],
+  "supportingEvidence": [
+    {
+      "path": "artifacts/native-parity/research/native-sound-answers-20261107/REPORT.md",
+      "bytes": 27856,
+      "sha256": "85066228e28c67bb24131765da30a768cedd4aa7acddf59188e1a5b5c66a2499"
+    },
+    {
+      "path": "artifacts/native-parity/research/native-sound-answers-20261107/evidence/q4-hit-sounds-verify/verify_anchors.json",
+      "bytes": 6715,
+      "sha256": "03c3a03627d8c71527ef93c23f79cc574b34d27450b76a3b7a7d44810a4ab785"
+    },
+    {
+      "path": "artifacts/native-parity/research/native-human-skill-audio-20261107/attack-source/ATTACK_SOURCE.json",
+      "bytes": 632951,
+      "sha256": "90716adca1e22445dd43ecd7e29378d3bb849f38fd7d56921666be74b07bae4d"
+    },
+    {
+      "path": "artifacts/native-client-audit/character-class-probe/scripts/Engine.Pawn.uc",
+      "bytes": 81271,
+      "sha256": "97d0e4bf98256ffaa8e711de370e649e731c105a476d66b3df9c8b318f87da31"
+    }
+  ],
+  "expectedCoverage": {
+    "selections": 7,
+    "slots": 53,
+    "admittedSlots": 52,
+    "slotStatuses": {
+      "empty": 1,
+      "unique-package-leaf-candidate": 52
+    },
+    "candidateProductStatuses": {
+      "verified-export": 52
+    },
+    "dependencies": 43,
+    "wavFiles": 43
+  }
+}
