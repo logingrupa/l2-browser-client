@@ -8,6 +8,8 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+__pycache__/
+*.pyc
 dist
 dist-ssr
 *.local
@@ -24,6 +26,7 @@ dist-ssr
 *.sw?
 .bjseditor
 public/scene/
+public/vendor/babylon/
 test-results/
 playwright-report/
 .impeccable/*
@@ -32,3 +35,19 @@ artifacts/
 assets/.export-cache.json
 .env
 .env.*
+
+# Local converted artwork and captures: never publish with the source project.
+public/assets/characters/
+public/assets/world/
+public/l2/
+.assets/world-screenshots/
+.assets/private-preview/
+docs/screenshots/asset-*.png
+# Actual Editor saves use local binary geometry and a scene thumbnail.
+assets/native-parity.scene/geometries/*.babylonbinarymeshdata
+assets/native-parity.scene/*.png
+# Imported native authoring scene and editable texture sources remain local.
+assets/native-world.scene/
+assets/native-generated/
+assets/native-sky-textures/
+assets/*.scene.native-editor-channels.json
