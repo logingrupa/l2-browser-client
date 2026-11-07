@@ -1,32 +1,35 @@
 # Input for /gsd-ingest-docs --mode new --manifest .planning/ingest-manifest.yaml
-# Lower precedence wins a conflict. Owner requirements first, then the measured scope.
+# Lower precedence wins a conflict.
+# docs/PORT_SCOPE.md holds the owner decisions of 2026-11-07 (full converted client
+# first, server replaceable through GameWorldAdapter), so it outranks the older goal
+# and roadmap order. PRODUCT.md stays first for the fidelity requirements.
 docs:
   - path: PRODUCT.md
     type: PRD
     precedence: 0
-  - path: .planning/goal.md
-    type: PRD
-    precedence: 1
   - path: docs/PORT_SCOPE.md
     type: PRD
+    precedence: 1
+  - path: .planning/goal.md
+    type: PRD
     precedence: 2
-  - path: docs/ROADMAP.md
-    type: DOC
-    precedence: 3
   - path: docs/ARCHITECTURE.md
     type: SPEC
-    precedence: 4
+    precedence: 3
   - path: docs/NATIVE_PARITY.md
     type: SPEC
-    precedence: 5
+    precedence: 4
   - path: docs/ASSET_PIPELINE.md
     type: SPEC
-    precedence: 6
+    precedence: 5
   - path: docs/RENDERING.md
     type: SPEC
-    precedence: 7
+    precedence: 6
   - path: docs/NATIVE_AUDIO.md
     type: SPEC
+    precedence: 7
+  - path: docs/ROADMAP.md
+    type: DOC
     precedence: 8
   - path: DESIGN.md
     type: DOC
