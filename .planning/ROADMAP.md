@@ -2,7 +2,7 @@
 
 ## Overview
 
-Breadth first (DEC-OWN-1). Phase 1 fixes contracts, the reference tree lock, the table inventory and a sandbox shell. Phase 2 converts the whole client across three lanes plus integration. Phase 3 proves each part side by side against L2.exe on IMPORTA-PC and fixes converters. Phase 4 plugs a server in through `GameWorldAdapter`. Phases 5 and 6 are the later polish stage: fixed native-parity thresholds, deferred slice items, GTX 1060 performance and per-tile Editor scenes.
+Breadth first (DEC-OWN-1). Phase 1 fixes contracts, the reference tree lock, the table inventory and a sandbox shell, and takes Babylon.js Editor off the build and runtime path (DEC-OWN-8) so no lane builds on it. Phase 2 converts the whole client across three lanes plus integration. Phase 3 proves each part side by side against L2.exe on IMPORTA-PC and fixes converters. Phase 4 plugs a server in through `GameWorldAdapter`. Phases 5 and 6 are the later polish stage: fixed native-parity thresholds, deferred slice items, GTX 1060 performance and reproducible builds. Per-tile Editor scenes are not planned; opening tiles in the Editor is optional viewer work (VIEW-01, v2).
 
 ## Phase mapping (GSD number vs docs/PORT_SCOPE.md section 8)
 
@@ -13,7 +13,7 @@ Breadth first (DEC-OWN-1). Phase 1 fixes contracts, the reference tree lock, the
 | 3 | 2 | Stage A checks |
 | 4 | 3 | Stage B adapter |
 | 5 | later (polish stage) | Native-parity polish |
-| 6 | later (polish stage) | Performance and per-tile Editor scenes |
+| 6 | later (polish stage) | Performance and build reproducibility |
 
 GSD phase = PORT_SCOPE phase + 1 for phases 1 to 4. Phases 5 and 6 have no PORT_SCOPE number.
 
@@ -23,25 +23,27 @@ GSD phase = PORT_SCOPE phase + 1 for phases 1 to 4. Phases 5 and 6 have no PORT_
 - Integer phases (1, 2, 3): planned milestone work
 - Decimal phases (2.1, 2.2): urgent insertions (marked INSERTED)
 
-- [ ] **Phase 1: Foundations** - Contracts, IMPORTA-PC hash lock, `.dat` inventory, sandbox shell
+- [ ] **Phase 1: Foundations** - Contracts, IMPORTA-PC hash lock, `.dat` inventory, sandbox shell, Editor off the build and runtime path
 - [ ] **Phase 2: Stage A breadth** - Convert the whole client in three lanes plus integration
 - [ ] **Phase 3: Stage A checks** - Side-by-side checks against L2.exe on IMPORTA-PC, converter fixes
 - [ ] **Phase 4: Stage B adapter** - Mobius through `GameWorldAdapter`, server-driven windows
 - [ ] **Phase 5: Native-parity polish** - Fixed thresholds, audio rules, deferred slice items, gap burn-down
-- [ ] **Phase 6: Performance and Editor scenes** - GTX 1060 120 FPS, optimizations, per-tile Editor scenes
+- [ ] **Phase 6: Performance and build reproducibility** - GTX 1060 120 FPS, optimizations, one reproducible build command
 
 ## Phase Details
 
 ### Phase 1: Foundations
 **Goal**: Three lanes can start in parallel against frozen contracts, a locked reference tree and a table inventory, with a sandbox shell ready to receive content.
 **Depends on**: Nothing (first phase). Work is committed first; lanes start only from committed code.
-**Requirements**: FOUND-01, FOUND-02, FOUND-03, FOUND-04, ARCH-01, ARCH-02, ARCH-03, ARCH-04, SAND-01
+**Requirements**: FOUND-01, FOUND-02, FOUND-03, FOUND-04, ARCH-01, ARCH-02, ARCH-03, ARCH-04, SAND-01, NOED-01, NOED-02, NOED-03, NOED-04, NOED-05
+**Editor removal** (NOED-01..05, DEC-OWN-8): integration thread, merged before any Phase 2 lane starts, so lanes never build on the Editor path.
 **Success Criteria** (what must be TRUE):
   1. A recorded full-tree hash lock shows `E:/Lineage2-client` equal to IMPORTA-PC `C:/Lineage2-client` (files, bytes, per-file SHA-256) or lists every difference, and conversion refuses to read E: while the lock is missing or stale.
   2. One inventory lists all 40 `.dat` tables with route (local descriptor, Elbera, none), record count and status, and exists before further decoding.
   3. In the sandbox shell a developer can issue spawn NPC, equip item, cast skill and open window by ID with no server; an ID without a converted asset shows a visible missing-asset diagnostic, not a stand-in.
   4. A contract test fails if the five `GameWorldAdapter` methods change, and the written output contract says how `asset.json` records units and handedness per route and how the catalog lists assets, with hash-pinned fixtures that run without the private client.
   5. A new lane can start on a `<part>/<slug>` branch and knows where its STATUS line, folder ownership (`.planning/lanes.json`) and `docs/parts/<part>/EVIDENCE.md` live.
+  6. `pnpm dev` and `pnpm build` run without `babylonjs-editor-cli pack` or the Editor repair scripts (they sit in an optional `pnpm generate:editor`), `?world=interlude` loads the native world straight from the `.l2asset` catalog with no Editor scene, and `?inspect=1` opens Babylon Inspector, lazy-loaded.
 **Plans**: TBD
 
 ### Phase 2: Stage A breadth
@@ -97,15 +99,15 @@ GSD phase = PORT_SCOPE phase + 1 for phases 1 to 4. Phases 5 and 6 have no PORT_
   4. The stage A gap list is shorter: each gap is converted or still listed with a stated reason.
 **Plans**: TBD
 
-### Phase 6: Performance and Editor scenes
-**Goal**: The client holds the GTX 1060 target and every converted tile is editable in Babylon.js Editor.
+### Phase 6: Performance and build reproducibility
+**Goal**: The client holds the GTX 1060 target and one documented command rebuilds the converted client reproducibly.
 **Depends on**: Phase 5
 **Requirements**: PERF-01, PERF-02, EDIT-01, EDIT-02
 **Success Criteria** (what must be TRUE):
   1. On DATABASE-PC's GTX 1060 at 1920 x 1080, DPR 1, the protocol workload (32 actors, eight Power Strike effects every 2 s, three trials of 15 s warmup and 90 s measurement) records median and p95 frame intervals, draw calls and memory; 120 FPS is sustained on a 120 Hz or faster display, or the report gives labelled timings and the presentation limit with no estimated pass.
-  2. Instancing, GPU texture compression and culling each show before/after numbers on the same workload, with no regression in startup, movement or cleanup on source-loaded and authored routes.
-  3. A developer opens any converted tile as a Babylon.js Editor scene in Editor 5.5.3, changes it, saves, reopens, rebuilds and sees the change in the browser; regeneration does not overwrite saved edits.
-  4. One documented command runs inventory, conversion, validation and benchmark, and a clean repeat build reproduces matching outputs with conversion cache hits.
+  2. Instancing, GPU texture compression and culling each show before/after numbers on the same workload, with no regression in startup, movement or cleanup on the native catalog route.
+  3. One documented command runs inventory, conversion, validation and benchmark, and a clean repeat build reproduces matching outputs with conversion cache hits.
+  (Opening converted tiles in Babylon.js Editor is optional viewer work, VIEW-01 in v2, and is not a success criterion; DEC-OWN-8.)
 **Plans**: TBD
 
 ## Progress
@@ -120,11 +122,11 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 (Phase 5 may start b
 | 3. Stage A checks | 0/TBD | Not started | - |
 | 4. Stage B adapter | 0/TBD | Not started | - |
 | 5. Native-parity polish | 0/TBD | Not started | - |
-| 6. Performance and Editor scenes | 0/TBD | Not started | - |
+| 6. Performance and build reproducibility | 0/TBD | Not started | - |
 
 ## Coverage
 
-52 of 52 v1 requirements mapped, each to exactly one phase (Phase 1: 9, Phase 2: 22, Phase 3: 5, Phase 4: 8, Phase 5: 4, Phase 6: 4). Per-requirement traceability: `.planning/REQUIREMENTS.md`. Deferred to v2: GEO-01, LATE-01. Superseded: REQ-work-order-v2-depth-first.
+56 of 56 v1 requirements mapped, each to exactly one phase (Phase 1: 14, Phase 2: 22, Phase 3: 5, Phase 4: 8, Phase 5: 4, Phase 6: 3). Per-requirement traceability: `.planning/REQUIREMENTS.md`. Deferred to v2: GEO-01, LATE-01, VIEW-01 (optional Editor viewer). Superseded: REQ-work-order-v2-depth-first, EDIT-01 (DEC-OWN-8).
 
 ---
-*Roadmap created: 2026-11-08*
+*Roadmap created: 2026-11-08. Updated 2026-11-08 for DEC-OWN-8.*

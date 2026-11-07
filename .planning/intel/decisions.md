@@ -136,3 +136,18 @@ The owner answered every WARNING in .planning/INGEST-CONFLICTS.md in this ingest
 - source: owner, ingest conflict gate 2026-11-08 (resolves WARNING "One pipeline run over every tile")
 - status: locked
 - decision: Stage A converts, for all 153 tiles, geometry (terrain, static meshes, BSP) with the tile-general UV rule, plus sky, ambient and placement audio. Each 20_20 hand step becomes a tile-general converter step. A tile that fails a step is listed as a gap, not hand-fixed. Per-tile Babylon.js Editor scenes come later (not stage A).
+
+## DEC-OWN-8: Babylon.js Editor leaves the build and runtime path; Babylon.js stays the engine
+- source: owner, 2026-11-08, relayed from the IMPORTA-PC session after the ingest
+- status: locked
+- decision:
+  1. The native world loads directly from the `.l2asset` catalog (`loadNativeSection`). The Editor-authored route (`authored=1`) becomes optional.
+  2. `pnpm dev` and `pnpm build` stop running `babylonjs-editor-cli pack` and the Editor repair scripts. Those move to an optional `pnpm generate:editor`. The legacy courtyard demo, which loads an Editor scene, is retired or kept only behind that optional step.
+  3. The sandbox gets Babylon Inspector behind `?inspect=1`, lazy-loaded, for day-to-day inspection.
+  4. The Editor remains an optional viewer: `project.bjseditor` and `pnpm assets:editor` stay, nothing depends on them.
+  5. Revisit the Editor only if the SpacetimeDB route starts authoring new, non-L2 content.
+- evidence (owner): `package.json` `generate` (run by dev and build) is `babylonjs-editor-cli pack` wrapped in repair scripts for Editor 5.5.3 behaviour (ensure-webgpu-project, preserve-native-editor-uv2, preserve-native-editor-fog, share-native-terrain-export-materials, validate-editor-materials, stage-webgpu-compilers) plus the l2-editor-webgpu-compat plugin. docs/EDITOR_ROUNDTRIP.md, EDITOR_MCP.md and NATIVE_EDITOR_WORLD.md record a blank Play viewport with unknown cause, checkerboard terrain from relative texture path rewriting, `isReady` false while visible and a cold-load delay. `native-world.scene` is 21.6 MB for one tile. The world's source of truth is the original client plus the converter; an Editor hand edit is lost on reconversion or is an invented change.
+- found while recording (2026-11-08, from this repo):
+  - `scripts/stage-webgpu-compilers.mjs` is not an Editor repair. It copies glslang and twgsl from `@babylonjs/core` into `public/vendor/babylon/9.27.1/`, and `src/engine/createWebGPUEngine.ts` loads them at runtime. It stays in `pnpm dev` and `pnpm build`.
+  - The default native route (`?world=interlude` without `authored=1`) also boots through an Editor-packed scene, `native-parity.babylon`, via `loadScene` from `babylonjs-editor-tools` (`src/scene/loadEnvironment.ts`). Its settings (player profile, clips, material override) are Editor inspector fields in `src/scripts/nativeParity.ts`. Taking the Editor off the path therefore includes building that scene in code.
+- supersedes: PRODUCT.md "Static environment stays editable in Babylon.js Editor"; the "per-tile Editor authoring files stay compatible" clause of DEC-ASSET-1; "Per-tile Editor scenes come later" in DEC-OWN-7; the Editor-authoring requirement REQ-editor-authoring-preserved.

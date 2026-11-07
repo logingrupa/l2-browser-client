@@ -23,7 +23,7 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 Phase: 1 of 6 (Foundations)
 Plan: 0 of TBD in current phase
 Status: Ready to plan
-Last activity: 2026-11-08 - Roadmap created from the docs ingest (52 v1 requirements, 6 phases)
+Last activity: 2026-11-08 - DEC-OWN-8 recorded: Editor off the build and runtime path (56 v1 requirements, 6 phases)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -46,12 +46,13 @@ Progress: [░░░░░░░░░░] 0%
 
 ### Decisions
 
-Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..7 and DEC-PORT-1..3.
+Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..8 and DEC-PORT-1..3.
 
 - [Roadmap]: Breadth-first; REQ-work-order-v2-depth-first is superseded (DEC-OWN-1).
 - [Roadmap]: Phase 2 is organised as lanes L1 world, L2 actors, L3 data + UI, plus integration; UI runs in parallel from the start (DEC-OWN-6).
 - [Roadmap]: Stage A bar is the lighter per-part check; fixed thresholds live in Phases 5 and 6 (DEC-OWN-3).
 - [Roadmap]: Phase numbering is PORT_SCOPE phase + 1 for phases 1 to 4; Phases 5 and 6 are the polish stage.
+- [DEC-OWN-8]: Babylon.js Editor leaves the build and runtime path. NOED-01..05 are Phase 1 integration work, merged before any Phase 2 lane starts. Per-tile Editor scenes are dropped; optional viewer work is VIEW-01 (v2). `stage-webgpu-compilers` stays in dev and build (runtime needs glslang/twgsl).
 
 ### Pending Todos
 

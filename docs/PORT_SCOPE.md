@@ -7,6 +7,10 @@ Measured on 2026-11-07 from the client at `E:\Lineage2-client` on DATABASE-PC
 record counts from those trees. Where a line is a judgement rather than a
 count, it says so.
 
+The measurements come from the DATABASE-PC copy. The authoritative reference
+is IMPORTA-PC `C:\Lineage2-client`, and every L2.exe comparison runs there.
+See decision 5 below.
+
 ## Owner decisions, 2026-11-07
 
 1. First goal: a working browser client with every client asset converted.
@@ -17,6 +21,57 @@ count, it says so.
    world but a different gameplay loop.
 3. Because of 2, the client never computes gameplay outcomes. It displays what
    a server sends.
+
+## Owner decisions, 2026-11-08
+
+These were answered at the planning ingest gate and after it. They narrow
+the sections below, and `.planning/PROJECT.md` holds them as DEC-OWN-1 to
+DEC-OWN-8.
+
+4. Work order is breadth first, as in section 6. The open items of the human
+   and 20_20 slice (stair routing, the upper-landing roof camera, surface
+   footsteps, specialized attack sounds) go to the polish list unless they
+   block the sandbox. The other human classes come with "all player
+   characters".
+5. IMPORTA-PC `C:\Lineage2-client` is authoritative and L2.exe comparisons run
+   there. DATABASE-PC `E:\Lineage2-client` may be used for conversion only
+   after a one-time full-tree hash lock proves it equal to IMPORTA-PC. The
+   lock is done before stage A.
+6. Stage A uses a lighter bar per part: converted, loads in the sandbox, and a
+   side-by-side screenshot or listen check against L2.exe. The fixed
+   thresholds (pixel tolerances, GTX 1060 at 120 FPS, audio rules) stay
+   unchanged as the goal of a later polish stage. Audio is converted and bound
+   per bundle in stage A. Research into native audio rules waits.
+7. The repo's local pinned descriptor route is the authoritative `.dat`
+   decoder where it covers a table. Elbera decoders are used only for tables
+   it lacks (hairgrp, helmetgrp and others), behind an adapter. The decoder
+   work writes the combined inventory first.
+8. The output contract stays the existing `.l2asset` packages plus the
+   catalog. `recipes/native-inputs.lock.json` stays input-only. Units and
+   handedness are recorded per route in `asset.json`. There is no new merged
+   file.
+9. At most 3 lanes plus integration in the main checkout. L1 world: 153 tiles,
+   streaming and LOD, minimap. L2 actors: all characters, NPCs and monsters,
+   items and equipment, their animations, sounds and skill visuals. L3 data
+   and UI: all 40 `.dat` tables, UI windows from `interface.xdat`, sandbox
+   controls. UI runs in parallel from the start.
+10. Stage A world scope: for all 153 tiles, geometry (terrain, static meshes,
+    BSP) with the tile-general UV rule, plus sky, ambient and placement audio.
+    Each 20_20 hand step becomes a tile-general converter step. A tile that
+    fails a step is listed as a gap, not hand-fixed.
+11. Babylon.js Editor leaves the build and runtime path. Babylon.js stays the
+    engine. The native world loads directly from the `.l2asset` catalog
+    (`loadNativeSection`), and the Editor-authored route (`authored=1`)
+    becomes optional. `pnpm dev` and `pnpm build` stop running
+    `babylonjs-editor-cli pack` and the Editor repair scripts, which move to
+    an optional `pnpm generate:editor`. The legacy courtyard demo is retired
+    or kept only behind that step. The sandbox gets Babylon Inspector behind
+    `?inspect=1`, lazy-loaded. `project.bjseditor` and `pnpm assets:editor`
+    stay as an optional viewer that nothing depends on. Per-tile Editor scenes
+    are not planned. Revisit the Editor only if the SpacetimeDB route starts
+    authoring new, non-L2 content. The reason: the world's source of truth is
+    the original client plus the converter, so a hand edit in an Editor scene
+    is either lost on reconversion or an invented change.
 
 ## 1. Client data versus server data
 
@@ -138,9 +193,13 @@ X 15 to 26 and Y 10 to 26, so 153 of the 204 cells exist. The other 10 are
 `Lobby` (the character select scene), `entry`, `skylevel`, `ship_position` and
 `Auto0` to `Auto5`. Nobody has checked yet what the Auto maps are.
 
-All 153 tiles share one file format. Converting the world is one pipeline run
-over every tile, not a job per area. Elbera's `tools/world/convert.py 17_25`
-converted Talking Island in a few minutes and placed 987 props.
+All 153 tiles share one file format, so the world converts with one set of
+tile-general converter steps, not a job per area. This repo's 20_20 result is
+not that yet. It is a chain of hand-qualified steps, and several of them are
+limited to 20_20 today: the terrain UV rule, the Brush397 BSP floor and the
+surrounding terrain coverage. Each becomes a tile-general step (decision 10).
+Elbera's `tools/world/convert.py 17_25`, a different pipeline, converted
+Talking Island in a few minutes and placed 987 props.
 
 ### UI
 
@@ -287,9 +346,20 @@ this repo on 2026-11-07, taken from the code, `docs/ROADMAP.md` and the
 This follows the owner decision above: the full converted client first, the
 server adapter after.
 
-Stage A converts the whole client and proves it in the offline sandbox:
-1. Decode all 40 `.dat` tables to JSON and fix the sysstring/systemmsg count.
-2. Batch-convert all 153 tiles with the pipeline that already converts 20_20.
+Before stage A, the integration thread takes Babylon.js Editor off the build
+and runtime path (decision 11) and the full-tree hash lock proves the E: copy
+equal to IMPORTA-PC (decision 5). Lanes start only after both.
+
+Stage A converts the whole client and proves it in the offline sandbox. The
+items are grouped by lane in section 8 and run in parallel. UI starts on day
+one, not after skills.
+1. Write the combined inventory of all 40 `.dat` tables (table, route, record
+   count, status), then decode the rest to JSON and fix the sysstring/systemmsg
+   count. The local pinned descriptor route wins where it covers a table, and
+   Elbera decoders fill the rest behind an adapter (decision 7).
+2. Convert all 153 tiles: geometry (terrain, static meshes, BSP) with the
+   tile-general UV rule, plus sky, ambient and placement audio. A tile that
+   fails a step is listed as a gap (decision 10).
 3. All player characters, every race, gender and class.
 4. NPCs and monsters from npcgrp, item and armor meshes.
 5. Skill visuals and sounds bound through skillgrp, skillsoundgrp and npcgrp.
@@ -297,7 +367,10 @@ Stage A converts the whole client and proves it in the offline sandbox:
 
 The sandbox is the acceptance tool for stage A. It can walk any tile, spawn any
 NPC by ID, equip any item, play any skill's visual and sound and open any
-window. Each part is checked there against the real L2.exe.
+window. Each part is checked there against the real L2.exe on IMPORTA-PC.
+The stage A bar per part is: converted, loads in the sandbox, and passes a
+side-by-side screenshot or listen check. The fixed thresholds wait for the
+polish stage (decision 6).
 
 Stage B plugs in a server through `GameWorldAdapter`:
 1. Mobius adapter: login, character select, world entry, then event dispatch
@@ -335,8 +408,11 @@ Mobius sees anything, log which account came from which address, and only
 connect to the configured Mobius ports.
 
 Native-parity research on one detail at a time goes to a polish list, for
-example the footstep rules recovered from ALAudio.dll. It comes back once
-stage A has every tile and character in the sandbox.
+example the footstep rules recovered from ALAudio.dll. The open slice items go
+there too: stair routing, the upper-landing roof camera, surface footsteps and
+specialized attack sounds, unless one blocks the sandbox. The list comes back
+once stage A has every tile and character in the sandbox, together with the
+fixed thresholds.
 
 ## 7. Working with several agents at once
 
@@ -344,10 +420,15 @@ Commit first. Parallel agents work from git branches and worktrees, and they
 can only start from committed code.
 
 Contracts the integration lane owns:
-- Asset manifest. Every converted file records its source path and SHA-256, the
-  client build, units (metres, Y up) and the converter version. The client
-  loads assets only through the manifest. Extend
-  `recipes/native-inputs.lock.json` instead of adding a second lock file.
+- Output contract. Converted assets stay `.l2asset` packages plus the runtime
+  catalog (decision 8). Each package's `asset.json` records its source path
+  and SHA-256, the client build, the converter version, and the units and
+  handedness of its route. The client loads assets only through the catalog.
+  `recipes/native-inputs.lock.json` stays a lock of input files only.
+- Build path. `pnpm dev` and `pnpm build` do not run Babylon.js Editor
+  packing or its repair scripts, and the native world loads from the catalog
+  with no Editor scene (decision 11). `stage-webgpu-compilers` stays in the
+  build, because the WebGPU engine loads glslang and twgsl from it at runtime.
 - Adapter boundary. The five methods of `GameWorldAdapter` stay frozen, and
   gameplay state enters the client only through it. Below it, each adapter
   turns its server's messages into typed records with no Babylon types.
@@ -396,15 +477,18 @@ the shape is the integration thread in the main checkout plus up to 3 lane
 threads. Each lane thread can fan out its own subagents, for example GSD's wave
 parallelism, so the agent counts below are totals across those threads.
 
-| Phase | Agents | Lanes |
+| Phase | Threads | Work |
 |---|---|---|
-| 0, now | 2 | Integration (commit, contracts, STATUS.md, sandbox shell), decoders (all 40 tables to JSON) |
-| 1, stage A breadth | 6 | Integration, world tiles, characters and NPCs, items and equipment, skill visuals and audio, UI windows |
-| 2, stage A checks | 6 | Integration plus one checker per area (world, characters and NPCs, skills and audio, UI) comparing the sandbox with L2.exe, and one converter fixer |
-| 3, stage B | 5 | Integration, adapter login and world entry, adapter event dispatch, combat and stats display, dialogs and shops |
+| 0, now | Integration plus up to 3 lanes | Integration: commit, contracts, STATUS.md, Editor off the build path, sandbox shell. Lanes: `.dat` inventory, full-tree hash lock |
+| 1, stage A breadth | Integration plus 3 lanes | L1 world: 153 tiles, streaming and LOD, minimap. L2 actors: characters, NPCs and monsters, items and equipment, animations, sounds, skill visuals. L3 data and UI: 40 `.dat` tables, `interface.xdat` windows, sandbox controls |
+| 2, stage A checks | Integration plus 3 lanes | One checker per lane (world, actors, data and UI) comparing the sandbox with L2.exe on IMPORTA-PC. Fixes go back into the shared converters |
+| 3, stage B | Integration plus up to 3 lanes | Adapter login and world entry, adapter event dispatch, combat and stats display with dialogs and shops |
 
-Steady state is 6, five workers plus integration, with a ceiling of 7. One
-agent per part (19) would produce more branches than one person can review.
+That is 4 threads at most, integration plus 3 lanes, in every phase (decision
+9). Each lane thread can fan out its own subagents, so the number of agents
+can be higher than the number of threads. The number of open branches cannot.
+One agent per part (19) would produce more branches than one person can
+review.
 
 ## 9. What to take from Elbera
 
@@ -413,7 +497,8 @@ Elbera is a three.js browser port of Interlude against aCis 409
 DATABASE-PC, both at `12c9656`).
 
 For stage A, ranked by value for the effort:
-1. Decoders with no build pins: `tools/l2lib`, `tools/dat/*.py` (the table
+1. Decoders with no build pins, for the tables the local descriptor route
+   lacks (decision 7): `tools/l2lib`, `tools/dat/*.py` (the table
    layouts), `tools/xdat/parse_xdat.py`, `tools/dat/export_quests.py`.
 2. World conversion: `tools/world/convert.py`, `bsp.py`, `lightmap.py`,
    `bsplight.py`.

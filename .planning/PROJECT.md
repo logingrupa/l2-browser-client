@@ -25,7 +25,7 @@ Full list with IDs and traceability: `.planning/REQUIREMENTS.md`.
 
 ### Active
 
-Stage A breadth-first conversion of the whole client (Phases 1 to 3), stage B server adapter (Phase 4), then native-parity polish and performance with per-tile Editor scenes (Phases 5 and 6).
+Stage A breadth-first conversion of the whole client (Phases 1 to 3), stage B server adapter (Phase 4), then native-parity polish and performance (Phases 5 and 6). Babylon.js Editor is off the build and runtime path (DEC-OWN-8); taking it off is Phase 1 integration work, done before the Phase 2 lanes start.
 
 ### Out of Scope
 
@@ -46,7 +46,7 @@ Stage A breadth-first conversion of the whole client (Phases 1 to 3), stage B se
 
 ## Constraints
 
-- **Stack**: Node 22.12.0+, pnpm 10.32.1, Babylon.js 9.27.1, Editor tools/CLI 5.5.3, TypeScript 7.0.2, Vite 7.3.7, Vitest 5.1.0, Playwright 1.64.1. Strict TS, no `any`, pnpm only.
+- **Stack**: Node 22.12.0+, pnpm 10.32.1, Babylon.js 9.27.1, Editor tools/CLI 5.5.3 (optional viewer only, DEC-OWN-8; not in `pnpm dev` or `pnpm build`), TypeScript 7.0.2, Vite 7.3.7, Vitest 5.1.0, Playwright 1.64.1. Strict TS, no `any`, pnpm only.
 - **Adapter boundary**: `GameWorldAdapter` is the only way gameplay state enters the client; its five methods (`getInitialState`, `subscribe`, `dispatch`, `advance`, `dispose`) stay frozen; no Babylon types below it.
 - **Output contract**: `.l2asset` packages plus runtime catalog (128 MiB archive, 96 MiB payload, 256 entries). `recipes/native-inputs.lock.json` is input-only. Units and handedness are recorded per route in `asset.json`.
 - **Conversion**: independent per-system scripts; UModel build1590 pinned (SHA-256 `13502e5a...364a0`); no normalization, ground fitting or weight changes; unbound materials become visible magenta diagnostics; no procedural stand-ins on the native route.
@@ -65,7 +65,8 @@ Stage A breadth-first conversion of the whole client (Phases 1 to 3), stage B se
 - DEC-OWN-4: The repo's local hash-pinned descriptor (`06_interlude.xml`) is the authoritative `.dat` decoder where it covers a table; Elbera fills gaps (hairgrp, helmetgrp, others) behind an adapter. The combined decoded-table inventory (table, route, record count, status) is written first.
 - DEC-OWN-5: Output contract stays `.l2asset` + catalog; `recipes/native-inputs.lock.json` stays input-only; units and handedness recorded per route in `asset.json`; no new merged manifest.
 - DEC-OWN-6: Three lanes plus integration. L1 world (153 tiles, streaming/LOD, minimap). L2 actors (characters, NPCs/monsters, items/equipment, animations, sounds, skill visuals). L3 data + UI (40 `.dat` tables, `interface.xdat` windows, sandbox controls). UI runs in parallel from the start.
-- DEC-OWN-7: Stage A world = geometry (terrain, static meshes, BSP) with the tile-general UV rule plus sky, ambient and placement audio, for all 153 tiles. Each 20_20 hand step becomes a tile-general converter step. A failing tile is listed as a gap, not hand-fixed. Per-tile Editor scenes come later.
+- DEC-OWN-7: Stage A world = geometry (terrain, static meshes, BSP) with the tile-general UV rule plus sky, ambient and placement audio, for all 153 tiles. Each 20_20 hand step becomes a tile-general converter step. A failing tile is listed as a gap, not hand-fixed. Per-tile Editor scenes are not planned (DEC-OWN-8).
+- DEC-OWN-8 (2026-11-08): Babylon.js Editor leaves the build and runtime path; Babylon.js stays the engine. The native world loads directly from the `.l2asset` catalog (`loadNativeSection`), and the Editor-authored route (`authored=1`) becomes optional. `pnpm dev` and `pnpm build` stop running `babylonjs-editor-cli pack` and the Editor repair scripts, which move to an optional `pnpm generate:editor`. The legacy courtyard demo is retired or kept only behind that step. The sandbox gets Babylon Inspector behind `?inspect=1`, lazy-loaded. `project.bjseditor` and `pnpm assets:editor` stay as an optional viewer that nothing depends on. Revisit only if the SpacetimeDB route starts authoring new, non-L2 content. Reason: the world's source of truth is the original client plus the converter, so an Editor hand edit is lost on reconversion or is an invented change; the Editor path needs repair scripts plus a compat plugin and still shows open defects (blank Play viewport, relative texture path rewriting, `isReady` false while visible). Supersedes PRODUCT.md "Static environment stays editable in Babylon.js Editor".
 
 ## Carried, not locked (proposed in sources, consistent with the locked set)
 
@@ -75,7 +76,7 @@ Stage A breadth-first conversion of the whole client (Phases 1 to 3), stage B se
 - DEC-ARCH-1 / DEC-ARCH-2: modern Babylon.js WebGPU preserving the game; asset resolution and playback stay outside the adapter.
 - DEC-PARITY-1: acceptance thresholds are never relaxed to fit a result. DEC-PARITY-2: optimize the supported slice now; whole-client parity is not a prerequisite.
 - DEC-PIPE-1 / DEC-PIPE-2: independent per-system scripts, orchestrator optional; source-preserving conversion with pinned tools.
-- DEC-ASSET-1: one persistent runtime scene with bounded cells; per-tile Editor authoring files stay compatible.
+- DEC-ASSET-1: one persistent runtime scene with bounded cells. Its "per-tile Editor authoring files stay compatible" clause is superseded by DEC-OWN-8.
 - DEC-SRC-1 / DEC-SRC-2: no copied `linegen` source; IMPORTA-PC reference (completed by DEC-OWN-2).
 </decisions>
 
@@ -87,7 +88,8 @@ Stage A breadth-first conversion of the whole client (Phases 1 to 3), stage B se
 | Lighter stage A bar, fixed thresholds in polish | Capture path fails the 30 FPS gate and no 120 Hz display exists; thresholds stay unrelaxed | Pending |
 | Local descriptor first, Elbera behind adapter | Local route is hash-pinned and already decodes 8 tables; Elbera covers gaps | Pending |
 | `.l2asset` + catalog as output contract | Already implemented and verified; avoids a third merged manifest | Pending |
+| Editor off the build and runtime path | World comes from client plus converter; Editor path needs repair scripts and has open defects | Pending (Phase 1) |
 | Dumb WebSocket relay for Mobius | Reusable if server becomes SpacetimeDB | Pending (recommendation) |
 
 ---
-*Last updated: 2026-11-08 after roadmap creation from the docs ingest*
+*Last updated: 2026-11-08 after DEC-OWN-8 (Editor off the build and runtime path)*
