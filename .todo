@@ -1,0 +1,40 @@
+# Sky time and world events
+
+Requested 2026-11-07 after testing the sky-color comparison.
+Research: [time, Seven Signs and cursed-weapon findings](docs/NATIVE_SKY_TIME_EVENTS.md).
+
+- [x] Research whether the color rows represent time of day. Original tables
+  contain T=0..24 keys and comments for night, dawn, morning, midday and sunset.
+- [x] Identify the four source presets: default (0), Dusk (1), Dawn (2),
+  cursed sword (3), from the original EnvType declarations and Korean comments.
+- [x] Research world events. Historical Seven Signs notes describe Dawn's
+  violet sky/solar eclipse and Dusk's green sky/eye in the moon. Cursed-weapon
+  drops cause a brief world effect; Interlude emulator code sends ExRedSky(10).
+- [x] Check moon-phase evidence. Moon color/scale are time-keyed; an ordinary
+  waxing/waning calendar is not established. Keep that question open.
+
+Implementation and remaining research:
+
+- [ ] Confirm the pinned native client's ClientSetTime, SSQInfo and ExRedSky
+  consumers: time units, environment selection, duration units and restoration.
+  The source comments and public emulator agree on intended roles; the exact
+  packet-to-timeenv mapping still needs client evidence.
+- [ ] Establish native table consumption/interpolation, T=24 midnight wrap and
+  transition behavior. Resolve timeenv3 SkyBoxColor NUM=1 versus 25 physical
+  rows and duplicate HSVTerrainLight sections before choosing a loader policy.
+- [ ] Implement ordinary accelerated game time with an explicit offline clock
+  input and a future server-time input. Interlude emulator reference: rate 6,
+  one game day per four real hours. Keep local wall time separate from game time.
+- [ ] Keep Seven Signs environment state separate from time of day. Support
+  normal/competition, Dawn validation, Dusk validation and validation-end reset;
+  retain the current event state when entering the world.
+- [ ] Implement the temporary cursed-weapon sky effect separately. Verify
+  overlap/retrigger rules, event priority and restoration to the underlying
+  Seven Signs state at the current game time, rather than a fixed daytime row.
+- [ ] Identify and integrate original sun, moon, stars and eclipse/eye assets,
+  visibility, movement, color and scale. Investigate any additional lunar-phase
+  driver before adding a lunar calendar.
+- [ ] Verify dawn/dusk/night/noon and midnight continuity, Seven Signs changes,
+  entry during an event, cursed-weapon effect start/end and overlapping effects
+  on both source and authored routes, desktop and mobile. Preserve authored
+  materials and terrain data; keep the literal-row comparison available.
