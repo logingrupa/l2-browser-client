@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-stepsound-package-bundle",
+  "package": {
+    "objectPrefix": "stepsound",
+    "relativePath": "sounds/stepsound.uax",
+    "sha256": "e4243b4bbcb4cd1dde927e4f4dec45caba5796385ad655855e87bd8572d57f05",
+    "bytes": 1941334
+  },
+  "corpus": {
+    "root": "artifacts/native-parity/research/native-world-audio-20261106/sound-batch-integration/build-corrected",
+    "inventory": {
+      "path": "artifacts/native-parity/research/native-world-audio-20261106/sound-batch-integration/build-corrected/inventory.json",
+      "bytes": 8802158,
+      "sha256": "ca6157d9db575099e075249c093625f7c688306f32015da340d004863b4ce9fa"
+    },
+    "coverage": {
+      "path": "artifacts/native-parity/research/native-world-audio-20261106/sound-batch-integration/build-corrected/coverage.json",
+      "bytes": 12247412,
+      "sha256": "3a1eb06d9103165aace23fd62eb1aaf7adb79d26f5aeec733bc6654966dd8532"
+    }
+  },
+  "surfaces": [
+    { "id": "Default", "group": "Default", "gaitSplit": true, "expected": { "walk": 3, "run": 3 } },
+    { "id": "Grass", "group": "Grass", "gaitSplit": true, "expected": { "walk": 3, "run": 3 } },
+    { "id": "Stone", "group": "Stone", "gaitSplit": true, "expected": { "walk": 2, "run": 2 } },
+    { "id": "Stone_Hard", "label": "Stone hard", "group": "Stone_Hard", "gaitSplit": true, "expected": { "walk": 3, "run": 3 } },
+    { "id": "Stone_Gritty", "label": "Stone gritty", "group": "Stone_Gritty", "gaitSplit": true, "expected": { "walk": 3, "run": 3 } },
+    { "id": "Carpet", "group": "Carpet", "gaitSplit": true, "expected": { "walk": 3, "run": 3 } },
+    { "id": "Dirt", "group": "Dirt", "gaitSplit": true, "expected": { "walk": 3, "run": 3 } },
+    { "id": "Gravel", "group": "Gravel", "gaitSplit": true, "expected": { "walk": 3, "run": 3 } },
+    { "id": "Ice", "group": "Ice", "gaitSplit": true, "expected": { "walk": 3, "run": 3 } },
+    { "id": "Marsh", "group": "Marsh", "gaitSplit": true, "expected": { "walk": 3, "run": 3 } },
+    { "id": "Metal", "group": "Metal", "gaitSplit": true, "expected": { "walk": 3, "run": 3 } },
+    { "id": "Sand", "group": "Sand", "gaitSplit": true, "expected": { "walk": 3, "run": 3 } },
+    { "id": "Snow", "group": "Snow", "gaitSplit": true, "expected": { "walk": 3, "run": 3 } },
+    { "id": "Wood", "group": "Wood", "gaitSplit": true, "expected": { "walk": 3, "run": 3 } },
+    { "id": "Water_Shalow", "label": "Water shallow", "group": "water", "namePrefix": "water_shalow", "gaitSplit": false, "expected": { "any": 3 } },
+    { "id": "Water_Deep", "label": "Water deep", "group": "water", "namePrefix": "water_deep", "gaitSplit": false, "expected": { "any": 3 } }
+  ],
+  "events": [
+    { "id": "Water_In", "group": "water", "name": "Water_In" },
+    { "id": "Water_Out", "group": "water", "name": "Water_Out" }
+  ],
+  "layers": [
+    { "id": "noise_boots", "group": "noise_boots", "namePrefix": "noise", "expected": 3 }
+  ],
+  "placementAudio": {
+    "manifest": {
+      "path": "artifacts/native-parity/research/native-placement-audio-20261107/bundle/manifest.json",
+      "bytes": 136561,
+      "sha256": "035ce6cce2e9c2d10f6bba7e33ed824ba9921dcc779ccf33348fb9f92e05208f"
+    },
+    "sectionManifestSha256": "2e73654e644bfe983021fbe5fdce01a907ac94c288702b4b7df77b4f74ee8d8a"
+  },
+  "expectedCoverage": {
+    "sounds": 93,
+    "wavFiles": 93,
+    "surfaces": 16,
+    "gaitSurfaces": 14,
+    "events": 2,
+    "layers": 1,
+    "declaredPlacements": 8,
+    "omittedPlacements": 149,
+    "placementSlots": 24
+  }
+}

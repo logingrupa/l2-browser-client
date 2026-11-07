@@ -173,13 +173,16 @@ describe("accepted navigation substeps", () => {
 });
 
 describe("adapter accepted-contact lifetime", () => {
-  it("starts unknown, accepts real move support, and preserves it through query, destination, pause, death and gait changes", () => {
+  it("seeds support at spawn, accepts real move support, and preserves it through query, destination, pause, death and gait changes", () => {
     const { floor } = fixture(), terrain = floor("terrain", -10, 10, -10, 10, 0);
     const base = createWorldNavigation({ terrainMeshes: [terrain], obstacleMeshes: () => [], origin: zero });
     const queried = vi.fn(base.groundContact!), navigation: WorldNavigation = { ...base, groundContact: queried };
-    const adapter = nativeAdapter(zero, navigation); expect(adapter.groundContact).toBeNull();
+    // The spawn is an accepted position: its support is queried once so footsteps resolve before the first move.
+    const adapter = nativeAdapter(zero, navigation); expect(queried).toHaveBeenCalledExactlyOnceWith(zero);
+    const spawned = adapter.groundContact!; position(spawned.position, zero);
+    for (const sample of spawned.samples) source(sample, terrain);
     base.ground({ x: 1, y: 0, z: 1 }); base.destination({ x: 2, y: 0, z: 2 }); base.spawn(zero);
-    adapter.dispatch({ type: "move-local", position: { x: 2, y: 0, z: 0 } }); expect(adapter.groundContact).toBeNull();
+    adapter.dispatch({ type: "move-local", position: { x: 2, y: 0, z: 0 } }); expect(adapter.groundContact).toEqual(spawned);
     adapter.advance(.5); position(player(adapter).position, { x: .35, y: 0, z: 0 });
     const accepted = adapter.groundContact!; position(accepted.position, { x: .35, y: 0, z: 0 });
     for (const sample of accepted.samples) source(sample, terrain);
@@ -191,7 +194,7 @@ describe("adapter accepted-contact lifetime", () => {
     expect(adapter.groundContact).toEqual(accepted);
     adapter.dispatch({ type: "set-health", entityId: "local-player", health: 100 }); adapter.advance(.5);
     position(player(adapter).position, { x: .7, y: 0, z: 0 }); position(adapter.groundContact!.position, { x: .7, y: 0, z: 0 });
-    expect(queried).not.toHaveBeenCalled(); expect(player(adapter).locomotion).toBe("walk");
+    expect(queried).toHaveBeenCalledTimes(1); expect(player(adapter).locomotion).toBe("walk");
   });
 
   it("keeps prior contact on a fully blocked move but clears it if a legacy navigation result changes position without support evidence", () => {
