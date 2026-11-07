@@ -54,7 +54,7 @@ async function readEntity(page: Page, entityId: string): Promise<EntitySnapshot>
 
 async function openDemoControls(page: Page): Promise<void> {
   if (!(await page.getByRole("button", { name: "Pause", exact: true }).isVisible())) {
-    await page.getByText("Demo controls", { exact: true }).click();
+    await page.getByTestId("dev-sheet-toggle").click();
   }
 }
 
@@ -82,8 +82,8 @@ test.beforeEach(async ({ page, hasTouch }) => {
     await touchSession.send("Emulation.setTouchEmulationEnabled", { enabled: true, maxTouchPoints: 5 });
     touchSessions.set(page, touchSession);
   }
-  await page.goto("/");
-  await expect(page.getByTestId("world-status")).toHaveText("World ready");
+  await page.goto("/?world=courtyard");
+  await expect(page.getByTestId("entity-count")).toHaveText("6");
   await openDemoControls(page);
 });
 
@@ -193,7 +193,7 @@ test("ground clicks move authoritative and rendered positions to the picked dest
   expect(Math.hypot(destination.x - arrivedPlayer.authoritativePosition.x, destination.z - arrivedPlayer.authoritativePosition.z)).toBeLessThan(0.1);
 });
 
-test("transitions between idle, run and attack with animated procedural joints", async ({ page }) => {
+test("transitions between idle, run and attack with animated character joints", async ({ page }) => {
   await page.getByRole("button", { name: "Pause", exact: true }).click();
   const initialPlayer = await readEntity(page, "local-player");
   expect(initialPlayer.animation).toBe("idle");
@@ -288,7 +288,7 @@ test.describe("compact touch viewport", () => {
     }
     await page.getByRole("button", { name: "Spawn", exact: true }).tap();
     await expect(page.getByTestId("entity-count")).toHaveText("7");
-    await page.getByText("Demo controls", { exact: true }).tap();
+    await page.getByTestId("dev-sheet-toggle").tap();
 
     const beforeOrbit = (await readWorld(page)).camera.alpha;
     expect(await page.evaluate(() => navigator.maxTouchPoints)).toBeGreaterThanOrEqual(2);
