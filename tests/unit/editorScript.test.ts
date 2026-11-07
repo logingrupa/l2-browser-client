@@ -6,6 +6,26 @@ import { fileURLToPath } from "node:url";
 import { build, type Plugin } from "esbuild";
 import { expect, it } from "vitest";
 
+// The desktop Editor adds these plugins when it regenerates src/scripts.ts.
+// CLI packing uses a smaller entry, so a production build alone misses absent
+// plugin dependencies that break Vite after Editor reopen/Play.
+it("bundles the desktop Editor's browser plugins without unresolved external dependencies", async () => {
+  const result = await build({
+    stdin: {
+      contents: [
+        'import "babylonjs-editor-tools/loading/gaussian-splatting";',
+        'import "babylonjs-editor-tools/loading/script/preload/plugins/gui";',
+        'import "babylonjs-editor-tools/loading/script/preload/plugins/navmesh";',
+      ].join("\n"),
+      resolveDir: fileURLToPath(new URL("../../", import.meta.url)),
+    },
+    bundle: true, platform: "browser", format: "esm", target: "es2022",
+    write: false, metafile: true,
+  });
+  expect(Object.keys(result.metafile!.inputs).some(path => path.endsWith("/plugins/navmesh.js"))).toBe(true);
+  expect(Object.values(result.metafile!.outputs).flatMap(output => output.imports).filter(item => item.external)).toEqual([]);
+});
+
 /**
  * Emulates the official v5.5.3 editor/src/tools/compile.ts contract.
  * This checks bundle compatibility, not desktop Editor execution.

@@ -1,8 +1,21 @@
 {
-    "plugins": [],
-    "version": "5.0.0",
+    "plugins": [{ "nameOrPath": "l2-editor-webgpu-compat" }],
+    "version": "5.5.3",
     "packageManager": "pnpm",
-    "lastOpenedScene": "/assets/example.scene",
+    "isWebGPU": true,
+    "lastOpenedScene": "/assets/native-world.scene",
+    "compressedTextureSoftware": "PVRTexTool",
     "compressedTexturesEnabled": false,
-    "compressedTexturesEnabledInPreview": false
+    "compressedTexturesEnabledInPreview": false,
+    "compressedEtc2Enabled": false,
+    "compressedPvrtcEnabled": false,
+    "compressedTextureQuality": "very-fast",
+    "gizmoSnap": {
+        "translationEnabled": false,
+        "translationStep": 1,
+        "rotationEnabled": false,
+        "rotationStepDegrees": 15,
+        "scaleEnabled": false,
+        "scaleStep": 0.25
+    }
 }

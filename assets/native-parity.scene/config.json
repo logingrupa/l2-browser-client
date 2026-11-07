@@ -1,0 +1,233 @@
+{
+    "clearColor": [
+        0.49,
+        0.59,
+        0.56,
+        1
+    ],
+    "ambientColor": [
+        0,
+        0,
+        0
+    ],
+    "environment": {
+        "iblIntensity": 1,
+        "environmentIntensity": 1
+    },
+    "fog": {
+        "fogEnabled": true,
+        "fogMode": 0,
+        "fogStart": 32,
+        "fogEnd": 85,
+        "fogDensity": 0.006,
+        "fogColor": [
+            0.49,
+            0.59,
+            0.56
+        ]
+    },
+    "physics": {
+        "gravity": [
+            0,
+            -9.81,
+            0
+        ]
+    },
+    "volumetricLightingRenderingPipelineConfiguration": null,
+    "rendering": [
+        {
+            "cameraId": "3cc9ef80-8c60-43e0-bcc4-1b55ff36010d",
+            "ssao2RenderingPipeline": null,
+            "vlsPostProcess": null,
+            "ssrRenderingPipeline": null,
+            "motionBlurPostProcess": null,
+            "defaultRenderingPipeline": null,
+            "taaRenderingPipeline": null,
+            "iblShadowsRenderPipeline": null
+        },
+        {
+            "cameraId": "World camera"
+        }
+    ],
+    "metadata": {
+        "scripts": [
+            {
+                "_id": "native-parity-runtime",
+                "enabled": true,
+                "key": "scripts/nativeParity.ts",
+                "values": {
+                    "leatherShirt": {
+                        "type": "boolean",
+                        "value": true
+                    },
+                    "origin": {
+                        "type": "vector3",
+                        "value": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    "fighterIdle": {
+                        "type": "string",
+                        "value": "Wait_1HS_MFighter"
+                    },
+                    "fighterRun": {
+                        "type": "string",
+                        "value": "Run_Hand_MFighter"
+                    },
+                    "fighterAttack": {
+                        "type": "string",
+                        "value": "Atk01_Hand_MFighter"
+                    },
+                    "fighterDeath": {
+                        "type": "string",
+                        "value": "Death_MFighter"
+                    },
+                    "materialOverrideEnabled": {
+                        "type": "boolean",
+                        "value": false
+                    },
+                    "materialEntityId": {
+                        "type": "string",
+                        "value": "local-player"
+                    },
+                    "materialSource": {
+                        "type": "string",
+                        "value": "MFighter.UpBody.MFighter_m001_t04_u"
+                    },
+                    "materialTint": {
+                        "type": "vector3",
+                        "description": "Linear RGB multipliers on the original material. Converted textures remain unchanged.",
+                        "value": [
+                            0.45,
+                            1,
+                            0.6
+                        ]
+                    },
+                    "materialRoughness": {
+                        "type": "number",
+                        "value": 0.45
+                    }
+                },
+                "debugOnly": false
+            }
+        ],
+        "rendering": [
+            {
+                "cameraId": "World camera"
+            }
+        ],
+        "volumetricLightingRenderingPipelineConfiguration": null,
+        "physicsGravity": [
+            0,
+            -9.81,
+            0
+        ]
+    },
+    "editorCamera": {
+        "tags": null,
+        "ellipsoid": [
+            0.5,
+            1,
+            0.5
+        ],
+        "ellipsoidOffset": [
+            0,
+            0,
+            0
+        ],
+        "checkCollisions": false,
+        "applyGravity": false,
+        "updateUpVectorFromRotation": false,
+        "rotation": [
+            0.38,
+            -0.6,
+            0
+        ],
+        "speed": 0.3,
+        "inertia": 0.5,
+        "mode": 0,
+        "position": [
+            1,
+            1,
+            -2
+        ],
+        "upVector": [
+            0,
+            1,
+            0
+        ],
+        "fov": 0.8,
+        "projectionPlaneTilt": 0,
+        "minZ": 0.005,
+        "maxZ": 250,
+        "layerMask": 268435455,
+        "fovMode": 0,
+        "cameraRigMode": 0,
+        "ignoreCameraMaxZ": false,
+        "name": "Editor preview",
+        "id": "3cc9ef80-8c60-43e0-bcc4-1b55ff36010d",
+        "state": "",
+        "type": "EditorCamera",
+        "inputsmgr": {
+            "FreeCameraKeyboardMoveInput": {
+                "tags": null,
+                "keysUp": [
+                    87
+                ],
+                "keysUpward": [
+                    69
+                ],
+                "keysDown": [
+                    83
+                ],
+                "keysDownward": [
+                    81
+                ],
+                "keysLeft": [
+                    65
+                ],
+                "keysRight": [
+                    68
+                ],
+                "rotationSpeed": 0.5,
+                "keysRotateLeft": [],
+                "keysRotateRight": [],
+                "keysRotateUp": [],
+                "keysRotateDown": []
+            },
+            "FreeCameraMouseInput": {
+                "tags": null,
+                "buttons": [
+                    0,
+                    1,
+                    2
+                ],
+                "angularSensibility": 500
+            },
+            "FreeCameraMouseWheelInput": {
+                "tags": null,
+                "wheelXMoveRelative": 0,
+                "wheelYMoveRelative": 2,
+                "wheelPrecisionX": 3,
+                "wheelPrecisionY": 3,
+                "wheelPrecisionZ": 3
+            },
+            "EditorFreeCameraPanInput": {
+                "tags": null
+            }
+        },
+        "animations": [],
+        "ranges": [],
+        "isEnabled": true
+    },
+    "animations": [],
+    "clusteredLight": {
+        "maxRange": 16383,
+        "depthSlices": 16,
+        "verticalTiles": 64,
+        "horizontalTiles": 64,
+        "lights": []
+    }
+}
