@@ -7,11 +7,54 @@
     <meta name="theme-color" content="#202522" />
     <link rel="icon" href="data:," />
     <title>Proving grounds · L2 Browser Client</title>
+    <style>
+      /* Available before the app module; retain dimensions for hidden startup. */
+      body[data-world-state="loading"] :is(#canvas, .world-interface, .entity-labels) { visibility: hidden; }
+    </style>
   </head>
-  <body>
+  <body data-world-state="loading">
     <noscript>JavaScript is required to enter this synthetic world.</noscript>
-    <main id="app"><canvas id="canvas" tabindex="0" aria-label="Synthetic world. Tap characters to select, tap ground to move, drag to orbit, pinch to zoom."></canvas></main>
-    <p id="loading" class="loading-message" role="status">Entering the proving grounds…</p>
+    <main id="app" inert><canvas id="canvas" tabindex="0" aria-label="Synthetic world. Tap characters to select, tap ground to move, drag to orbit, pinch to zoom."></canvas></main>
+    <section id="loading" class="loading-message" aria-labelledby="loading-title" data-stage="world">
+      <h1 id="loading-title">Entering the proving grounds</h1>
+      <div class="loading-stage" data-loading-only>
+        <p id="loading-stage-status" role="status" aria-live="polite" aria-atomic="true">Loading world data</p>
+        <span id="loading-step-count">Step 1 of 4</span>
+      </div>
+      <div class="loading-progress" role="progressbar" aria-label="Loading world data" aria-valuemin="0" aria-valuemax="100" aria-valuetext="In progress; total not yet known" data-indeterminate="true" data-loading-only><span></span></div>
+      <div class="loading-readout" data-loading-only>
+        <p id="loading-detail">Waiting for world data…</p>
+        <span id="loading-measure">In progress</span>
+      </div>
+      <ol class="loading-steps" aria-label="Loading steps" data-loading-only>
+        <li data-loading-step="world" data-state="current" aria-current="step"><span>World data</span></li>
+        <li data-loading-step="assets" data-state="upcoming"><span>Meshes &amp; textures</span></li>
+        <li data-loading-step="graphics" data-state="upcoming"><span>Graphics</span></li>
+        <li data-loading-step="enter" data-state="upcoming"><span>Enter world</span></li>
+      </ol>
+      <p id="loading-pun" class="loading-pun" data-loading-only>Taking the scenic route, byte by byte.</p>
+      <p id="loading-error" class="loading-error" hidden></p>
+      <button id="loading-retry" class="loading-retry" type="button" hidden>Reload and retry</button>
+    </section>
     <script src="/src/main.ts" type="module"></script>
+    <script>
+      // This recovery path also works if the application module never downloads.
+      window.addEventListener("error", function (event) {
+        if (!(event.target instanceof HTMLScriptElement) || event.target.type !== "module") return;
+        var panel = document.getElementById("loading");
+        if (!panel) return;
+        panel.hidden = false;
+        panel.dataset.state = "error";
+        document.getElementById("loading-title").textContent = "Unable to enter the world";
+        panel.querySelectorAll("[data-loading-only]").forEach(function (node) { node.hidden = true; });
+        var message = document.getElementById("loading-error");
+        message.textContent = "The game client could not be downloaded. Check your connection and reload to try again.";
+        message.hidden = false;
+        message.setAttribute("role", "alert");
+        var retry = document.getElementById("loading-retry");
+        retry.hidden = false;
+        retry.onclick = function () { window.location.reload(); };
+      }, true);
+    </script>
   </body>
 </html>

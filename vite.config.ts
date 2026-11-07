@@ -15,6 +15,9 @@ export default defineConfig({
 	server: {
 		port: 5173,
 		strictPort: true,
+		// Native captures/conversion evidence are not application inputs.
+		// Watching this large scratch tree delays development-server startup.
+		watch: { ignored: ["**/artifacts/**"] },
 	},
 	build: {
 		target: "es2022",
