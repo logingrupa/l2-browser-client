@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "sourceManifest": "recipes/native-inputs.lock.json",
+  "acceptance": "recipes/native-parity.acceptance.json",
+  "knownDefects": [
+    {
+      "object": "LineageMonsters.field_stalker_m00",
+      "feature": "native-redundant-weight-source-selection",
+      "status": "unverified",
+      "sourceSha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9",
+      "detail": "Both serialized FVertInfluence and LineageWedges streams are retained. The restored source is the one selected by the reviewed exporter; native runtime selection where the two differ is not yet established."
+    }
+  ],
+  "jobs": [
+    {
+      "id": "human-male-fighter",
+      "adapter": "assets",
+      "recipe": "recipes/native-mfighter.json"
+    },
+    {
+      "id": "fighter-equipment",
+      "adapter": "assets",
+      "recipe": "recipes/native-equipment.json"
+    },
+    {
+      "id": "musveren",
+      "adapter": "assets",
+      "recipe": "recipes/native-musveren.json"
+    },
+    {
+      "id": "native-npc-profiles",
+      "adapter": "npc-profiles",
+      "recipe": "recipes/native-npc-profiles.json"
+    },
+    {
+      "id": "map-20-20",
+      "adapter": "map",
+      "recipe": "recipes/native-map-20_20.json"
+    },
+    {
+      "id": "map-20-20-textures",
+      "adapter": "assets",
+      "recipe": "recipes/native-terrain-textures.json"
+    },
+    {
+      "id": "map-20-20-section",
+      "adapter": "map-section",
+      "mapJob": "map-20-20",
+      "recipe": "recipes/native-map-debug-location.json"
+    },
+    {
+      "id": "power-strike-source-dispatch",
+      "adapter": "effect",
+      "recipe": "recipes/native-power-strike.json"
+    }
+  ],
+  "resolvedDefects": [
+    {
+      "object": "LineageMonsters.field_stalker_m00",
+      "feature": "source-float-skin-weights",
+      "status": "source-float-attributes-restored-with-explicit-Babylon-adapter",
+      "sourceSha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9",
+      "verifiedExportVertices": 1591,
+      "changedWeightVectors": 681,
+      "maxAbsolutePerBoneWeightChange": 0.00260929448,
+      "evidence": "artifacts/native-parity/research/musveren-equipment/native-weight-audit.json",
+      "smallestRepair": "Add a bounded native influence reader and verified vertex/bone mapping; replace only WEIGHTS_0 with original float32 influences. Retain original float rows and resolve native sum handling before accepting deformation parity.",
+      "resolution": "Original serialized float slots are retained as _L2_NATIVE_WEIGHTS/_L2_NATIVE_JOINTS; Babylon consumes them without normalization. Portable glTF attributes remain a derivative when required by glTF sum rules."
+    }
+  ]
+}

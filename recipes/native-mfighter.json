@@ -1,0 +1,56 @@
+[
+  {
+    "kind": "model",
+    "name": "MFighter-native-body-face0-hair0",
+    "animation": "MFighter_anim",
+    "withEventAudio": true,
+    "animationFamilyBinding": {
+      "file": "system/LineageWarrior.int",
+      "sha256": "8d951cbccd010a849f05df827d7065ec5f9372245953e71f3e88344cf8189485",
+      "sourceHost": "IMPORTA-PC",
+      "sourcePath": "C:/Lineage2-client/system/LineageWarrior.int",
+      "section": "MFighter",
+      "class": "Engine.Pawn",
+      "classPackageSha256": "9b04ff5cb4258e84dfa8efbdd85d9121f3bdcb5822a9a21ca69d200d05a69761"
+    },
+    "limitations": ["Body and face choice0 follow native chargrp row0. Hair meshes follow native MFighter actor defaults; matching native hair texture color0 is an explicit recipe appearance choice, not a recovered hairgrp default.", "Rigid face/hair parts follow the source actor HeadBone through a dedicated skin palette. Native C++ face aim/rotation and submesh attachment formulas remain unimplemented."],
+    "parts": [
+      {
+        "package": "Fighter", "object": "MFighter_m001_u",
+        "materials": ["0=MFighter.MFighter_m001_t02_u"],
+        "sourceBinding": {"table":"chargrp","sourceSha256":"2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f","meshPath":["Char",0,"body_mesh","body_mesh1"],"texturePath":["Char",0,"body_texture","body_texture1"]}
+      },
+      {
+        "package": "Fighter", "object": "MFighter_m001_l",
+        "materials": ["0=MFighter.MFighter_m001_t02_l"],
+        "sourceBinding": {"table":"chargrp","sourceSha256":"2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f","meshPath":["Char",0,"body_mesh","body_mesh2"],"texturePath":["Char",0,"body_texture","body_texture2"]}
+      },
+      {
+        "package": "Fighter", "object": "MFighter_m001_g",
+        "materials": ["0=MFighter.MFighter_m001_t02_g"],
+        "sourceBinding": {"table":"chargrp","sourceSha256":"2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f","meshPath":["Char",0,"body_mesh","body_mesh3"],"texturePath":["Char",0,"body_texture","body_texture3"]}
+      },
+      {
+        "package": "Fighter", "object": "MFighter_m001_b",
+        "materials": ["0=MFighter.MFighter_m001_t02_b"],
+        "sourceBinding": {"table":"chargrp","sourceSha256":"2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f","meshPath":["Char",0,"body_mesh","body_mesh4"],"texturePath":["Char",0,"body_texture","body_texture4"]}
+      },
+      {
+        "package": "Fighter", "object": "MFighter_m000_f",
+        "materials": ["0=MFighter.MFighter_m000_t00_f"],
+        "rigidAttachment": {"bone":"Bip01_head","source":{"class":"LineageWarrior.MFighter","packageSha256":"747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558","bonePath":["HeadBone"],"meshPath":["Mesh"]}},
+        "sourceBinding": {"table":"chargrp","sourceSha256":"2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f","meshPath":["Char",0,"face_mesh",0,"param_face_mesh"],"texturePath":["Char",0,"face_texture",0,"param_face_texture"]}
+      },
+      {
+        "package": "Fighter", "object": "MFighter_m000_m00_ah",
+        "materials": ["0=MFighter.Hair.MFighter_m000_t00_m00_ah"],
+        "rigidAttachment": {"bone":"Bip01_head","source":{"class":"LineageWarrior.MFighter","packageSha256":"747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558","bonePath":["HeadBone"],"meshPath":["SubMeshes",4]}}
+      },
+      {
+        "package": "Fighter", "object": "MFighter_m000_m00_bh",
+        "materials": ["0=MFighter.Hair.MFighter_m000_t00_m00_bh"],
+        "rigidAttachment": {"bone":"Bip01_head","source":{"class":"LineageWarrior.MFighter","packageSha256":"747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558","bonePath":["HeadBone"],"meshPath":["SubMeshes",5]}}
+      }
+    ]
+  }
+]

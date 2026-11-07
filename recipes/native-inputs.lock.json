@@ -1,0 +1,730 @@
+{
+  "schemaVersion": 1,
+  "sourceHost": "IMPORTA-PC",
+  "sourceRoot": "C:/Lineage2-client",
+  "protectedIntegrity": {
+    "relativePath": "system/l2.ini",
+    "sha256": "e0e4a52ee3e539472eeae49cc34852ad8845592995809a69982a2b4f056acfde",
+    "handling": "integrity-hash-only-never-staged",
+    "previousRecordedSha256": "d5f4905e6c892f2ecf32f465b70890c2bb59e8195d47083cfeceefa0ec4f522a",
+    "observation": "Current Debug profile, independently observed 2026-11-05; original profile hash retained. Source INI is never staged or changed."
+  },
+  "scope": "Pinned source closure for the four-case raw migration milestone, exact NPC-name/presentation joins and read-only Engine.dll dispatch evidence; not the entire native client.",
+  "files": [
+    {
+      "relativePath": "system/Engine.dll",
+      "bytes": 30704468,
+      "sha256": "4dd2f63c606df5671702911fa1f8ddcc4099bf2b98b81e8aa88eed47f5405b08"
+    },
+    {
+      "relativePath": "system/npcname-e.dat",
+      "bytes": 51248,
+      "sha256": "84c79b73a97e489b455f44f21d8c8cba0f4df401ccb1d56887a1eacc62285b9a"
+    },
+    {
+      "relativePath": "animations/DarkElf.ukx",
+      "bytes": 15300290,
+      "sha256": "977ff856c180f78d91a541a5de85ca13b64ee5b0fbbb11d852f9a2a02fb9048d"
+    },
+    {
+      "relativePath": "animations/Dwarf.ukx",
+      "bytes": 14327652,
+      "sha256": "600b189af6001a2cdc59e9c675c3682e76f977ad616d1a3d6d1052095472124e"
+    },
+    {
+      "relativePath": "animations/Elf.ukx",
+      "bytes": 15961904,
+      "sha256": "c522c829f9fde7ec2e8bfcb3a59061faf7e5ada607847cf02ca03f88c52006d3"
+    },
+    {
+      "relativePath": "animations/Fighter.ukx",
+      "bytes": 19349878,
+      "sha256": "8a22d41ceaa78d52a10b856b923462eb8eb08d61b203d0d7904e464857ae988c"
+    },
+    {
+      "relativePath": "animations/LineageEffectMeshes.ukx",
+      "bytes": 1192230,
+      "sha256": "4377fe134f8bf778b934de1d96cc9226ca022bff10aac5c7f8e03d6c8944c7db"
+    },
+    {
+      "relativePath": "animations/LineageMonsters.ukx",
+      "bytes": 206730178,
+      "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
+    },
+    {
+      "relativePath": "animations/LineageNpcs.ukx",
+      "bytes": 126877440,
+      "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
+    },
+    {
+      "relativePath": "animations/LineageWeapons.ukx",
+      "bytes": 7967105,
+      "sha256": "b97f44a3a0ba917c0fed80d3492e56bc94f751aff698995fa3351b59321d548c"
+    },
+    {
+      "relativePath": "animations/Magic.ukx",
+      "bytes": 15979569,
+      "sha256": "26443ed7a5b972010c614f74ac8b625e3ae2dbbaa12f7d0a0fa9302622326fa2"
+    },
+    {
+      "relativePath": "animations/Orc.ukx",
+      "bytes": 14592552,
+      "sha256": "95876b32a7c5a80a580d62297111e8f378a86eecafeab0429b7a56a43e04f9a5"
+    },
+    {
+      "relativePath": "animations/Shaman.ukx",
+      "bytes": 15126076,
+      "sha256": "103cd8166f7f0f31e8294b11d52cb2cc0eae9c9fda0a1572174ae93be5d41adc"
+    },
+    {
+      "relativePath": "animations/Skill.usk",
+      "bytes": 50885,
+      "sha256": "30b9a60d2a27c12d7fb9826a38772b3932c4ad66ab5f0638e8128813898463f5"
+    },
+    {
+      "relativePath": "maps/20_20.unr",
+      "bytes": 11131253,
+      "sha256": "1beddad24c10a35a1b2e9151727a85158e3e01992299a6671de876645eb1f1e4"
+    },
+    {
+      "relativePath": "sounds/ambsound.uax",
+      "bytes": 74160470,
+      "sha256": "e116c5f1381930cbb7e961fdc1944e54214468e759b12a0be387305d8997de53"
+    },
+    {
+      "relativePath": "sounds/AmbSound2.uax",
+      "bytes": 27137943,
+      "sha256": "60711a53cfcab8b16f268fb70683fa7382c8066e89d0f022a96b9b21ba85e53f"
+    },
+    {
+      "relativePath": "sounds/chrsound.uax",
+      "bytes": 44340416,
+      "sha256": "a0afd64d23e7e2c89d2d89b196dc082080da89b17bfd6ac3e15ae0bb2d5b919e"
+    },
+    {
+      "relativePath": "sounds/chrsound2.uax",
+      "bytes": 1932390,
+      "sha256": "451fba0025b68e0a0af5d939c22dc4ed366347d3218617e2cdbc61eca714b3ce"
+    },
+    {
+      "relativePath": "sounds/itemsound.uax",
+      "bytes": 18938678,
+      "sha256": "e16cd1701b485f4b76de4938af5674699b8622cb6e0c418c2c313044c485365d"
+    },
+    {
+      "relativePath": "sounds/ItemSound2.uax",
+      "bytes": 5420090,
+      "sha256": "7353f87065b4b0e154a580926f50fa5caafb1deb9b678b2dc22711af86618116"
+    },
+    {
+      "relativePath": "sounds/ItemSound3.uax",
+      "bytes": 7770666,
+      "sha256": "7f34951ffb002cccac526e13600dd3dbdb2c3a4da747f01a8aa780617a706f0a"
+    },
+    {
+      "relativePath": "sounds/monsound.uax",
+      "bytes": 81334481,
+      "sha256": "8386ca2cbf0d45a7bca1a32d2139317c3d0bcaf62b5bd88ba80ac326af372b26"
+    },
+    {
+      "relativePath": "sounds/monsound2.uax",
+      "bytes": 16335543,
+      "sha256": "f2ab082d2a4f2f5541c1194d823364c3eb5c4383c3fbf8b9d5aa060c0ea2cb19"
+    },
+    {
+      "relativePath": "sounds/monsound3.uax",
+      "bytes": 15248780,
+      "sha256": "9de143ebbb8d479810017970b5dcd0e13d8b28a0bef7210b499439a37f0a0743"
+    },
+    {
+      "relativePath": "sounds/monsound4.uax",
+      "bytes": 12725273,
+      "sha256": "c931b1d9fb46e5bb32b4ccfb23c24b3668d717eb1b89b7f22cc657e322f187be"
+    },
+    {
+      "relativePath": "sounds/monsound5.uax",
+      "bytes": 43847844,
+      "sha256": "802b7dee689b31833e4167ac0e3f318c38622213396eb3b857a01e16f970c82a"
+    },
+    {
+      "relativePath": "sounds/MonSound7.uax",
+      "bytes": 12180108,
+      "sha256": "28cdb96ae651bf8edcbe5c8ca3a658897569e9a22c84581ce94f10ed1590e0b3"
+    },
+    {
+      "relativePath": "sounds/skillsound.uax",
+      "bytes": 19422267,
+      "sha256": "8485f32f6674b1e1020415678428429ac79027dc3cc7a4d66644275c2ab9aee2"
+    },
+    {
+      "relativePath": "sounds/skillsound2.uax",
+      "bytes": 48716499,
+      "sha256": "e0225a18d92b8fdd759429226d50b6548017a6a2af8b2abaf601007098d12804"
+    },
+    {
+      "relativePath": "sounds/SkillSound3.uax",
+      "bytes": 18490441,
+      "sha256": "e5edfa4b9a2fa92ee26246679f2002a1efa21865f60616cfa71467f50a8da84c"
+    },
+    {
+      "relativePath": "sounds/SkillSound5.uax",
+      "bytes": 16084966,
+      "sha256": "31e47a7fb68ecc720746921ad5dc71353e78dd5ea7134d6010b80ac87fc4d348"
+    },
+    {
+      "relativePath": "sounds/stepsound.uax",
+      "bytes": 1941334,
+      "sha256": "e4243b4bbcb4cd1dde927e4f4dec45caba5796385ad655855e87bd8572d57f05"
+    },
+    {
+      "relativePath": "staticmeshes/dion_tree_s.usx",
+      "bytes": 6694175,
+      "sha256": "4326a6ea88488a1cdf4e704f95ff98ae6b5ff053e9b5f4e56940bef85d427554"
+    },
+    {
+      "relativePath": "staticmeshes/dungeon_deco_s.usx",
+      "bytes": 13543,
+      "sha256": "68104219ba2d061be75f885d2548412ca02745a94e06e0659f0f478fb080073d"
+    },
+    {
+      "relativePath": "staticmeshes/field_deco_artifact_s.usx",
+      "bytes": 18750454,
+      "sha256": "7d44217266e47b85efe2958587f925a084c93c5210c60981b8b2daae9cfe247d"
+    },
+    {
+      "relativePath": "staticmeshes/field_deco_S.usx",
+      "bytes": 17908640,
+      "sha256": "205b3ec267f792944d500afeacdacf6e3a7465a529d1b348ca154851c18d0838"
+    },
+    {
+      "relativePath": "staticmeshes/FX_E_S.usx",
+      "bytes": 1841383,
+      "sha256": "259ed78d45a1ac4780cd3f8eb34c2907cac0e702518dc39c78d81825d6e00a98"
+    },
+    {
+      "relativePath": "staticmeshes/fx_m_s.usx",
+      "bytes": 21723,
+      "sha256": "cb81033fe5242d75c08ad7fde9b6c3d6ce2abcffb886be42ab0ca28fa594b444"
+    },
+    {
+      "relativePath": "staticmeshes/gludio_tree_s.usx",
+      "bytes": 4568150,
+      "sha256": "49b957c5e9a334088f1c53c3d8d5bf6aee75dcf86ea8ead17e0830ccb2e686d2"
+    },
+    {
+      "relativePath": "staticmeshes/godard_village_s.usx",
+      "bytes": 17217903,
+      "sha256": "a147714d8abfaa1ee3831cf093699743d714bf6eb295e82f697ae34079353a3d"
+    },
+    {
+      "relativePath": "staticmeshes/interior_aa_s.usx",
+      "bytes": 8656905,
+      "sha256": "146e2cca8b453024b973a9d02f6be0aa07d5b6a2e5796246227643e0b22a9316"
+    },
+    {
+      "relativePath": "staticmeshes/interior_b_elf_s.usx",
+      "bytes": 2207225,
+      "sha256": "8ecdd9010391fd8fb756a4c0f8e66517e8d3a636f18dca81ff303074f941c036"
+    },
+    {
+      "relativePath": "staticmeshes/interior_b_orc_s.usx",
+      "bytes": 5225859,
+      "sha256": "673a6d03e8085c3c04aa070c89c6e4800edc31d99bb28624a4fc785508daa73b"
+    },
+    {
+      "relativePath": "staticmeshes/interior_b_s.usx",
+      "bytes": 14346627,
+      "sha256": "543fd3e3aecde174ce96fd6eed0c3fc1e3810e676506847a9b817f5ecb078810"
+    },
+    {
+      "relativePath": "staticmeshes/l2fortress_01_s.usx",
+      "bytes": 19925034,
+      "sha256": "77292ab59a910121235debd4a84ada6babc4a5607942b4130d66a35dad6649b3"
+    },
+    {
+      "relativePath": "staticmeshes/l2fortress_02_s.usx",
+      "bytes": 14432862,
+      "sha256": "1049a1075c90cdd3ecb9d739eb1828ffead45b3ad52661079552e60fe3b608b6"
+    },
+    {
+      "relativePath": "staticmeshes/LineageEffectsStaticmeshes.usx",
+      "bytes": 5818303,
+      "sha256": "c3e790b26f2d77a25d2486a47f1af88787fa9898c1668f08e0c572ef01a3a578"
+    },
+    {
+      "relativePath": "staticmeshes/old_war_s.usx",
+      "bytes": 2207255,
+      "sha256": "ebb594fd2218e84fe964d57790563f529d4b46d4781dd1ee6016962480f591a1"
+    },
+    {
+      "relativePath": "staticmeshes/oren_hed_enterance.usx",
+      "bytes": 1462181,
+      "sha256": "02e3074827be12d58aca2fc89d7fb7d1dab52b4be7a9c4f2267b1d0bb6296925"
+    },
+    {
+      "relativePath": "staticmeshes/oren_hed_s.usx",
+      "bytes": 4093686,
+      "sha256": "c06a85088a92b4e28461cf895e9720036fa706c086e4eea6a438856a99ba363f"
+    },
+    {
+      "relativePath": "staticmeshes/oren_hev_lod_s.usx",
+      "bytes": 457565,
+      "sha256": "d61e5ef8d33cd1ad1192245e519ef97a06bbf70253840324ee84ae040bbdbfd6"
+    },
+    {
+      "relativePath": "staticmeshes/oren_hev_s.usx",
+      "bytes": 7407514,
+      "sha256": "eadcc324927f8756259b8891325371b99ad4f98b8b2beaa56f3d3d804e6432a6"
+    },
+    {
+      "relativePath": "staticmeshes/oren_tree_s.usx",
+      "bytes": 6707058,
+      "sha256": "74072d7fce630aa045870be3ccd541bbe62ca34fc382987be6851037afd8dafb"
+    },
+    {
+      "relativePath": "staticmeshes/ruins_renewal_s.usx",
+      "bytes": 4719625,
+      "sha256": "b6659c5909fb9ee538fe27b4f7e3618a5e90f570b4dc2e72e0881681280c570d"
+    },
+    {
+      "relativePath": "staticmeshes/rune_village_s.usx",
+      "bytes": 27906857,
+      "sha256": "1119bbdaff3a1b5c1b24f238bbcb3f6b5a2a39bc5a6607ade34a939083794844"
+    },
+    {
+      "relativePath": "staticmeshes/v_obj_orc_s.usx",
+      "bytes": 3611321,
+      "sha256": "d8b69bbf8007d1ee1c120408e013b80e104f500c4da7935b5a99cb4ffeebf9f0"
+    },
+    {
+      "relativePath": "system/armorgrp.dat",
+      "bytes": 101552,
+      "sha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3"
+    },
+    {
+      "relativePath": "system/chargrp.dat",
+      "bytes": 2480,
+      "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
+    },
+    {
+      "relativePath": "system/Core.u",
+      "bytes": 65662,
+      "sha256": "de5f0ee0a773327bce13c96622fd3c654cff7db88b9be065d1232590c140fda0"
+    },
+    {
+      "relativePath": "system/Engine.u",
+      "bytes": 2805259,
+      "sha256": "9b04ff5cb4258e84dfa8efbdd85d9121f3bdcb5822a9a21ca69d200d05a69761"
+    },
+    {
+      "relativePath": "system/Fire.u",
+      "bytes": 15491,
+      "sha256": "6933afddb8830aafa754a59b97782fe66dda102c58395b3776e4672aeef76527"
+    },
+    {
+      "relativePath": "system/GamePlay.u",
+      "bytes": 212008,
+      "sha256": "714639cdad265a7caeaf0f91ce76bb50492390eaa3faea15ed5a28a3e830b64a"
+    },
+    {
+      "relativePath": "system/lineageeffect.u",
+      "bytes": 2006536,
+      "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+    },
+    {
+      "relativePath": "system/LineageMonster.u",
+      "bytes": 176945,
+      "sha256": "f06ac53f7df24bd13d6e7a0d25d9e3ca4e4502af2437518e49d96a053987d7b6"
+    },
+    {
+      "relativePath": "system/lineagenpc.u",
+      "bytes": 91687,
+      "sha256": "22208e416e5b986042fb5d67bca3a519329d81b289843b5ea442d73b2495f7d0"
+    },
+    {
+      "relativePath": "system/LineageWarrior.int",
+      "bytes": 193542,
+      "sha256": "8d951cbccd010a849f05df827d7065ec5f9372245953e71f3e88344cf8189485"
+    },
+    {
+      "relativePath": "system/LineageWarrior.u",
+      "bytes": 31540,
+      "sha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558"
+    },
+    {
+      "relativePath": "system/mobskillanimgrp.dat",
+      "bytes": 67632,
+      "sha256": "332606a16ec24dd050abb597604eaed95280cd1887dddc0177858c20c025ff18"
+    },
+    {
+      "relativePath": "system/npcgrp.dat",
+      "bytes": 234544,
+      "sha256": "8ac7ce502769e25e503047e3a477da54703fc4e7f92aeb4c8c621e2729688d57"
+    },
+    {
+      "relativePath": "system/skillgrp.dat",
+      "bytes": 159152,
+      "sha256": "ab9b9849ff1012adb7bfdd95ae8b6e26115641e4b5aafb6e8af19bc9d7a54ded"
+    },
+    {
+      "relativePath": "system/skillsoundgrp.dat",
+      "bytes": 28080,
+      "sha256": "14c9df542ccb0b342f1fd091b7177438cdf3705fb43581d0fc69b6c9ceeb14f5"
+    },
+    {
+      "relativePath": "system/UWindow.u",
+      "bytes": 693798,
+      "sha256": "eac8be32d9039d415989e93d8af549dc0bffe1d811e3cf46268318708e8fd3d4"
+    },
+    {
+      "relativePath": "system/weapongrp.dat",
+      "bytes": 78128,
+      "sha256": "eea267ac21afa5f2e148349d5aaab9670dbc67cde3878f1a8db5aba2364550b9"
+    },
+    {
+      "relativePath": "systextures/cubemaps.utx",
+      "bytes": 50404,
+      "sha256": "076305e38dcc588b6ae303a8050891c25cc7b331b3044f0d11262c690e5638d5"
+    },
+    {
+      "relativePath": "systextures/fdarkelf.utx",
+      "bytes": 63136268,
+      "sha256": "54905a7f0700c51ee25a166e3eafa9ceac5dbb87011edffd9a40f6e9268f062a"
+    },
+    {
+      "relativePath": "systextures/fdwarf.utx",
+      "bytes": 61462100,
+      "sha256": "5fb797d70ef79640f7690b4c4b67b1ea8468236ab4dd4615ed75aa7ab315797c"
+    },
+    {
+      "relativePath": "systextures/felf.utx",
+      "bytes": 64866375,
+      "sha256": "899d776c820cb90e9bae9a9e10bb24faaacbc30bc564f657570a97451eba5225"
+    },
+    {
+      "relativePath": "systextures/FFighter.utx",
+      "bytes": 57262720,
+      "sha256": "f5500fb38b4ea649de6da5fa0dcecc6d148eb7a5dcc57e62c3c46f4e3a6aaaa3"
+    },
+    {
+      "relativePath": "systextures/FMagic.utx",
+      "bytes": 51292372,
+      "sha256": "dc2560d92a103067dfa9a8f71252b1beda84a68dfbb95dc193b5900c9673b2a3"
+    },
+    {
+      "relativePath": "systextures/FOrc.utx",
+      "bytes": 55119773,
+      "sha256": "8a72033b5d119f4452386cffde6847310574c0ebfdd5ab0f2030972bd61edc36"
+    },
+    {
+      "relativePath": "systextures/FShaman.utx",
+      "bytes": 42691835,
+      "sha256": "b6f7055c86350206dda6047d20391df41ad9dff42441c7a1101af673f08fa1b3"
+    },
+    {
+      "relativePath": "systextures/goldcubes.utx",
+      "bytes": 11289360,
+      "sha256": "98d0acf19a0d583077050bb84e901e364195f2a5f8b7952cf405d6427950d93f"
+    },
+    {
+      "relativePath": "systextures/LineageAccessoryTex.utx",
+      "bytes": 4323570,
+      "sha256": "bf5b04f219165193ac100d1eeb2ea187c5eb012c2211278a59b7664de76e02e9"
+    },
+    {
+      "relativePath": "systextures/lineagedecostex.utx",
+      "bytes": 1425232,
+      "sha256": "d7b2dfba1e9373151889991a42249144006f0be97ee68c1d80dc41275c7bfea8"
+    },
+    {
+      "relativePath": "systextures/LineageEffectsTextures.utx",
+      "bytes": 32500953,
+      "sha256": "a261094ed224c0e46bbdb6ff88883b0a531740759d1345f1e2fd5407b28fe314"
+    },
+    {
+      "relativePath": "systextures/LineageEffectsTextures2.utx",
+      "bytes": 4621088,
+      "sha256": "57ccc1547325b018b6106b9d55eebd82116502d0caf942d0482970ea48a8a632"
+    },
+    {
+      "relativePath": "systextures/lineagemonsterstex.utx",
+      "bytes": 131721485,
+      "sha256": "6a2547fac503b908f88c2a3d95582c784f98b13d6422474ca0e33cc8eff59f93"
+    },
+    {
+      "relativePath": "systextures/LineageMonstersTex3.utx",
+      "bytes": 56981676,
+      "sha256": "39e37acd138d3548041050d7e918c8ecb639982b1d4589718d89695e150897a0"
+    },
+    {
+      "relativePath": "systextures/LineageNpcsTex.utx",
+      "bytes": 75105204,
+      "sha256": "1b015dc71b60f89b89b611680b5694633c09ca2fd80f87ecbfbad8ff808d6a3e"
+    },
+    {
+      "relativePath": "systextures/LineageNpcsTex2.utx",
+      "bytes": 13737571,
+      "sha256": "20d3c65c5d6063bad9d68e708c169dce763894b86ed82dff09323183c7af2682"
+    },
+    {
+      "relativePath": "systextures/LineageWeaponsTex.utx",
+      "bytes": 27008427,
+      "sha256": "155c7e0e60a790d5d3d4a8cfd6bdab4c89ed8a20a5db66a1950e8a6e78bde0c5"
+    },
+    {
+      "relativePath": "systextures/mdarkelf.utx",
+      "bytes": 62516700,
+      "sha256": "1b7d6e58c3a57965b1c15f8371d27e9b1e54a33537a80626fe906ee745c0a004"
+    },
+    {
+      "relativePath": "systextures/mdwarf.utx",
+      "bytes": 57782459,
+      "sha256": "8a8124a82bd09d368af44f6282d48cb4ac77052c4c72f5ca62e5749803e322ab"
+    },
+    {
+      "relativePath": "systextures/melf.utx",
+      "bytes": 58092132,
+      "sha256": "ebeb34a3dde5b05ad4b19ff5918d9568b5ed670a0039d029225ab751fc32d5c9"
+    },
+    {
+      "relativePath": "systextures/MFighter.utx",
+      "bytes": 59149024,
+      "sha256": "3703fce6acde1a7541f6b722743cb66444750fe8a09cb9448e22447f7650ec06"
+    },
+    {
+      "relativePath": "systextures/MShaman.utx",
+      "bytes": 42149937,
+      "sha256": "bc38cf10895bdafeb88584154c50443dcf49e283cc8aeb5e71b4a24ebd5cccdb"
+    },
+    {
+      "relativePath": "textures/aden_castle_t.utx",
+      "bytes": 3420118,
+      "sha256": "b6107593353ae076a3f4e60bc8762e20107b5a8b46169ab5bd74363b0ed68702"
+    },
+    {
+      "relativePath": "textures/aden_giantcave_t.utx",
+      "bytes": 7260577,
+      "sha256": "085c6252365586b93d6b62bed9a9f7ed4ab866c21a47982b6ddb67d44ee53421"
+    },
+    {
+      "relativePath": "textures/aden_village_t.utx",
+      "bytes": 5580677,
+      "sha256": "dab7a7690b078de4676176d0dadc7e01f80a54c4bff65ba96505e66e93f7efdd"
+    },
+    {
+      "relativePath": "textures/dion_tree_t.utx",
+      "bytes": 11095981,
+      "sha256": "e48a4b7e54558d8f7e79b787c3d65083ea94ca9d0e3db53894e669090eb8c946"
+    },
+    {
+      "relativePath": "textures/dungeon_deco_t.utx",
+      "bytes": 724209,
+      "sha256": "e8ae12c0280f40428c36e1cdd7481f352f4831b34891957a0a0394dc7089be25"
+    },
+    {
+      "relativePath": "textures/field_deco_artifact_t.utx",
+      "bytes": 11978008,
+      "sha256": "fd52feb270ee024d2fe2ca6f2eb156ff79336daec1a7451d02697aee85c54c33"
+    },
+    {
+      "relativePath": "textures/field_deco_T.utx",
+      "bytes": 23675134,
+      "sha256": "b07694455db90f8983cad065372cd4cec3d1651453a0044abd46967029bd81ab"
+    },
+    {
+      "relativePath": "textures/FX_E_T.utx",
+      "bytes": 19648404,
+      "sha256": "cbc082f0f042dbd57f7bd3e1410e6afa05e6b08ef40b9891efbf70e69a2db78c"
+    },
+    {
+      "relativePath": "textures/fx_m_t.utx",
+      "bytes": 318846,
+      "sha256": "ceb895e38e520531ab6eb7d3b42b4365ebc5a4bb0379f968c4f14701a207ec81"
+    },
+    {
+      "relativePath": "textures/g_ruin_t.utx",
+      "bytes": 1222261,
+      "sha256": "b8c22379cc71d322f2fb7d0a057c6fcd0e20a1e2f8774d67079bffd6814e2b3b"
+    },
+    {
+      "relativePath": "textures/gl_cv_t.utx",
+      "bytes": 2363697,
+      "sha256": "a0f1ff801041ce748de5d5f6aa081c67ac8abc465d9de98748777c12b8bcb13d"
+    },
+    {
+      "relativePath": "textures/gludio_port_t.utx",
+      "bytes": 2148290,
+      "sha256": "b6c1c32484fe555bcce853f39e8ce320302dc6887af46d0696ad01c29be377c6"
+    },
+    {
+      "relativePath": "textures/gludio_tree_t.utx",
+      "bytes": 10603824,
+      "sha256": "e59e75736a6fec257250a894fdc44fb29adbd8a210a0351a03896876ce915808"
+    },
+    {
+      "relativePath": "textures/godad_castle_t.utx",
+      "bytes": 8528956,
+      "sha256": "f2d19123eff834682513577151ca96adb510efdce77de831f199df3589aabf36"
+    },
+    {
+      "relativePath": "textures/godad_catacomb_t.utx",
+      "bytes": 15049210,
+      "sha256": "ea94f73dcec16026431a318f01e09a894e42e28f9f62c451c2cbb1872bc001a5"
+    },
+    {
+      "relativePath": "textures/godard_village_t.utx",
+      "bytes": 4545468,
+      "sha256": "b5e9e272ae3bf2a1b514bb3c9587800688ac321d47a18a5de8f95e36806ea23f"
+    },
+    {
+      "relativePath": "textures/interior_a_t.utx",
+      "bytes": 13067459,
+      "sha256": "02fec24ed03ee399ee0a593b387abf20f4c734244d5b8e9bbdad4f682f48696f"
+    },
+    {
+      "relativePath": "textures/interior_aa_t.utx",
+      "bytes": 10100883,
+      "sha256": "04af1b959d233811c5fbd79ca70a127ebf1d7761eea17cf05e4e644190fc8067"
+    },
+    {
+      "relativePath": "textures/interior_b_elf_t.utx",
+      "bytes": 3270246,
+      "sha256": "65ee93be0fa2d7b044f6741a4c219a0de9e6b4f7526bc835a0c86b788015a61d"
+    },
+    {
+      "relativePath": "textures/interior_b_orc_t.utx",
+      "bytes": 3740973,
+      "sha256": "7631343985f397ad579387acad22e6a52668bb6e7357e7ee2927d9d6438ce62b"
+    },
+    {
+      "relativePath": "textures/interior_b_t.utx",
+      "bytes": 8278730,
+      "sha256": "c88efd452488eb6878918f1aee3108fb51d3543d59c6f650d71d26195958e2bd"
+    },
+    {
+      "relativePath": "textures/l2_etc_textures.utx",
+      "bytes": 8395,
+      "sha256": "bb0ef35a6d5843f7b60a25a18875b45d8390c7374bf70813cc0a05ec090f21de"
+    },
+    {
+      "relativePath": "textures/l2_skies.utx",
+      "bytes": 24702516,
+      "sha256": "9c45f311e9668f745ef983ef2dbdf1b4ea250c30c30e453a66910f6a261e860f"
+    },
+    {
+      "relativePath": "textures/L2DecoLayer.utx",
+      "bytes": 33955163,
+      "sha256": "d79f041617b9d05d998fec3e1cdd9935757fb0a0fab4fb3c26aff1e1bc189ffa"
+    },
+    {
+      "relativePath": "textures/l2fortress_01_t.utx",
+      "bytes": 4172788,
+      "sha256": "31bb796ea93c510bbfe155b912a9352811a098e6fa72f0b5e1c264a3f483c234"
+    },
+    {
+      "relativePath": "textures/l2fortress_02_t.utx",
+      "bytes": 3067208,
+      "sha256": "28160a5574aba0c1915d7348a2b62ede66acd6753f814f81a19be04a4d1f887a"
+    },
+    {
+      "relativePath": "textures/l2fortress_snow_t.utx",
+      "bytes": 2388177,
+      "sha256": "ba21217e331654f7ac526887e8c4ad07d8df53d026aa2092b13475c7d1fa1442"
+    },
+    {
+      "relativePath": "textures/old_war_t.utx",
+      "bytes": 996501,
+      "sha256": "e38c0237154c15d3b4db48205b2131231b959ae83768a683ce882a3453e5a75a"
+    },
+    {
+      "relativePath": "textures/oren_dev_t.utx",
+      "bytes": 3497759,
+      "sha256": "c2baf0bb628020b33b78230d7c36f54ea52ae9a5157140f6224bf0b8abd70ea0"
+    },
+    {
+      "relativePath": "textures/oren_hed_t2.utx",
+      "bytes": 3704917,
+      "sha256": "1380c8760a5b210800ca24b9ec391ed7788cbc905240f129ee290a9ad89a8c66"
+    },
+    {
+      "relativePath": "textures/oren_hev_lod_t.utx",
+      "bytes": 78734,
+      "sha256": "3eeb57ff8c74ce4706efb7114bd84ef53b1dc4b9690a3ebf79a153877f493e09"
+    },
+    {
+      "relativePath": "textures/oren_hev_t.utx",
+      "bytes": 5192508,
+      "sha256": "46fdc00c5bf20704a20c9647042ba8547864bcabc703f76e5ccf0e6d8640c03e"
+    },
+    {
+      "relativePath": "textures/oren_tree_t.utx",
+      "bytes": 8545441,
+      "sha256": "cda4148cd5931fe55ba88ea10104bfecade4a989c39abbbd92a058f32324eacf"
+    },
+    {
+      "relativePath": "textures/rune_village_01_t.utx",
+      "bytes": 8288024,
+      "sha256": "cbb67b38c2496391724f2488b2a6ea6ebc7a607d74a11402e5389a5795b4f95a"
+    },
+    {
+      "relativePath": "textures/rune_village_02_t.utx",
+      "bytes": 10618653,
+      "sha256": "7c132a31c813496098c8e727a1bb20e7cf689f4809aa4abf55b52131a7032076"
+    },
+    {
+      "relativePath": "textures/rune_village_03_t.utx",
+      "bytes": 5746841,
+      "sha256": "390e8688e69620d3ae20f2c85aacda312509f3c66ba4fed149c061c2eda18b91"
+    },
+    {
+      "relativePath": "textures/schtgart_silentmona_t.utx",
+      "bytes": 8939326,
+      "sha256": "cf74203334885728d7bc4e8733bc44116c643e0c5f18ef3d6d3d149822d0bcb6"
+    },
+    {
+      "relativePath": "textures/si_v_t.utx",
+      "bytes": 2176195,
+      "sha256": "766f78d7ff47a98d7ebe289e848186f84a6f09ee99cdb7813c88ed6239e829f7"
+    },
+    {
+      "relativePath": "textures/speaking2f_t.utx",
+      "bytes": 5373590,
+      "sha256": "09e42ec2a272ed8683e363aa66857dffb8a5f3cba33af225cf64ff7501fac095"
+    },
+    {
+      "relativePath": "textures/speaking3f_t.utx",
+      "bytes": 1827427,
+      "sha256": "a7a2329048600a14b4ebb9b2cf76b0c489e37ce4a02e3f0e19c0165e440056ce"
+    },
+    {
+      "relativePath": "textures/speaking_tree_t.utx",
+      "bytes": 2279661,
+      "sha256": "19d8a830c9f6a7349c7027c86885cfe20f721fdcd73e72abe4345dc1ecd2bdce"
+    },
+    {
+      "relativePath": "textures/T_20_20.utx",
+      "bytes": 4068848,
+      "sha256": "e113df8ca85cac06d6816345ec66a7aaa3740d2cae8b33868c9c3cf47e4150f3"
+    },
+    {
+      "relativePath": "textures/t_oren.utx",
+      "bytes": 2768166,
+      "sha256": "56d933e6f535e4a6502304ada321950767b24ffd7772d0581f34739a4770d674"
+    },
+    {
+      "relativePath": "textures/T_texture.utx",
+      "bytes": 396847,
+      "sha256": "3ee1168f1302ad7ad37e91df23baabdfebefcc3ebc95d0454595211c21d610f4"
+    },
+    {
+      "relativePath": "textures/v_obj_orc_t.utx",
+      "bytes": 1262742,
+      "sha256": "e2f9a511bd640b7a5e816fb68ada493b4486ecf4343dbed341d25f7de20b2ad8"
+    },
+    {
+      "relativePath": "textures/v_obj_t.utx",
+      "bytes": 1561337,
+      "sha256": "080ca71ddf4ac7fba6691d558b09f4b44eb630c0108cca7a4fa9605ffc999db2"
+    }
+  ]
+}

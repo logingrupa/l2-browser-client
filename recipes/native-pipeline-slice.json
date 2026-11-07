@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-offline-asset-batch",
+  "id": "interlude-supported-slice",
+  "sources": {
+    "interlude": {
+      "root": "artifacts/native-parity/inputs/IMPORTA-PC",
+      "lock": "recipes/native-inputs.lock.json"
+    },
+    "environment": {
+      "root": "artifacts/native-parity/research/terrain-mask-native-rea-followup/continuation-20261106-ongoing/sky-environment-source-20261107/original",
+      "lock": "recipes/native-environment.inputs.json"
+    }
+  },
+  "jobs": [
+    {"id":"representative-assets","adapter":"assets","source":"interlude","recipe":"recipes/native-pipeline-slice-assets.json"},
+    {"id":"source-sky","adapter":"sky","source":"interlude"},
+    {"id":"environment-tables","adapter":"environment","source":"environment","files":["Env.int","timeenv0.int","timeenv1.int","timeenv2.int","timeenv3.int"]}
+  ]
+}

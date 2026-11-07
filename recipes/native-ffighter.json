@@ -1,0 +1,156 @@
+[
+  {
+    "kind": "model",
+    "name": "FFighter-native-body-face0-hair0",
+    "animation": "FFighter_anim",
+    "withEventAudio": true,
+    "animationFamilyBinding": {
+      "file": "system/LineageWarrior.int",
+      "sha256": "8d951cbccd010a849f05df827d7065ec5f9372245953e71f3e88344cf8189485",
+      "sourceHost": "IMPORTA-PC",
+      "sourcePath": "C:/Lineage2-client/system/LineageWarrior.int",
+      "section": "FFighter",
+      "class": "Engine.Pawn",
+      "classPackageSha256": "9b04ff5cb4258e84dfa8efbdd85d9121f3bdcb5822a9a21ca69d200d05a69761"
+    },
+    "limitations": [
+      "Body and face choice0 follow native chargrp row1. Hair meshes follow exact native FFighter actor defaults; matching native hair texture color0 is an explicit recipe appearance choice, not a recovered hairgrp default.",
+      "The chargrp row1 DarkElf hair placeholder is not used. The two identical FFighter SpAtk05AnimName[0] source rows must be preserved by the animation-family reader; no native precedence policy is inferred.",
+      "Original event audio is requested for export. This recipe does not establish world dispatch, footstep surfaces, skill timing or full audible behavior.",
+      "Face and hair preserve the existing exporter-selected native FVertInfluence skin to Bip01_head. Alternative serialized rigid streams are retained in source evidence; native selection, facial aim/rotation and C++ submesh attachment behavior remain unverified."
+    ],
+    "parts": [
+      {
+        "package": "Fighter",
+        "object": "FFighter_m001_u",
+        "materials": [
+          "0=FFighter.FFighter_m001_t02_u"
+        ],
+        "sourceBinding": {
+          "table": "chargrp",
+          "sourceSha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f",
+          "meshPath": [
+            "Char",
+            1,
+            "body_mesh",
+            "body_mesh1"
+          ],
+          "texturePath": [
+            "Char",
+            1,
+            "body_texture",
+            "body_texture1"
+          ]
+        }
+      },
+      {
+        "package": "Fighter",
+        "object": "FFighter_m001_l",
+        "materials": [
+          "0=FFighter.FFighter_m001_t02_l"
+        ],
+        "sourceBinding": {
+          "table": "chargrp",
+          "sourceSha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f",
+          "meshPath": [
+            "Char",
+            1,
+            "body_mesh",
+            "body_mesh2"
+          ],
+          "texturePath": [
+            "Char",
+            1,
+            "body_texture",
+            "body_texture2"
+          ]
+        }
+      },
+      {
+        "package": "Fighter",
+        "object": "FFighter_m001_g",
+        "materials": [
+          "0=FFighter.FFighter_m001_t02_g"
+        ],
+        "sourceBinding": {
+          "table": "chargrp",
+          "sourceSha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f",
+          "meshPath": [
+            "Char",
+            1,
+            "body_mesh",
+            "body_mesh3"
+          ],
+          "texturePath": [
+            "Char",
+            1,
+            "body_texture",
+            "body_texture3"
+          ]
+        }
+      },
+      {
+        "package": "Fighter",
+        "object": "FFighter_m001_b",
+        "materials": [
+          "0=FFighter.FFighter_m001_t02_b"
+        ],
+        "sourceBinding": {
+          "table": "chargrp",
+          "sourceSha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f",
+          "meshPath": [
+            "Char",
+            1,
+            "body_mesh",
+            "body_mesh4"
+          ],
+          "texturePath": [
+            "Char",
+            1,
+            "body_texture",
+            "body_texture4"
+          ]
+        }
+      },
+      {
+        "package": "Fighter",
+        "object": "FFighter_m000_f",
+        "materials": [
+          "0=FFighter.FFighter_m000_t00_f"
+        ],
+        "sourceBinding": {
+          "table": "chargrp",
+          "sourceSha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f",
+          "meshPath": [
+            "Char",
+            1,
+            "face_mesh",
+            0,
+            "param_face_mesh"
+          ],
+          "texturePath": [
+            "Char",
+            1,
+            "face_texture",
+            0,
+            "param_face_texture"
+          ]
+        }
+      },
+      {
+        "package": "Fighter",
+        "object": "FFighter_m000_m00_ah",
+        "materials": [
+          "0=FFighter.Hair.FFighter_m000_t00_m00_ah"
+        ]
+      },
+      {
+        "package": "Fighter",
+        "object": "FFighter_m000_m00_bh",
+        "materials": [
+          "0=FFighter.Hair.FFighter_m000_t00_m00_bh"
+        ]
+      }
+    ]
+  }
+]

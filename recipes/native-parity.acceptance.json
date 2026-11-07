@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "id": "interlude-native-parity-v1",
+  "definedBeforeImplementation": "2026-11-05",
+  "source": {
+    "host": "IMPORTA-PC",
+    "clientRoot": "C:/Lineage2-client",
+    "protectedFiles": ["system/l2.ini"],
+    "requireSourceAndDependencyHashes": true,
+    "requireNativeAttackMotionReferenceBeforeImplementation": true
+  },
+  "cases": [
+    { "id": "human-male-fighter", "required": ["native-body", "equipment-swap", "idle", "run", "full-attack", "bone-attachments"] },
+    { "id": "greater-musveren", "mesh": "LineageMonsters.field_stalker_m00", "required": ["idle", "attack", "death", "death-final-pose"] },
+    { "id": "power-strike", "skillId": 3, "level": 1, "required": ["source-dispatch", "character-motion", "effect", "attachments", "onset-impact-expiry"] },
+    { "id": "map-20-20-section", "package": "20_20.unr", "required": ["declared-source-region", "terrain", "placements", "materials", "walkable-support"] }
+  ],
+  "reference": {
+    "minimumCaptureFramesPerSecond": 30,
+    "minimumIndependentParticleRepetitions": 5,
+    "requireActualChangingMotionFrames": true,
+    "requireMatchedClientViewport": true,
+    "requireRecordedCameraPoseLightingEquipmentAndTiming": true,
+    "allowSingleFrozenCameraCalibrationPerCase": true,
+    "allowSingleMeasuredTimelineOffsetPerRecording": true,
+    "allowPerFrameAlignmentOrWarping": false,
+    "allowMismatchMasking": false,
+    "allowCropping": "only-recorded-operating-system-window-border-to-client-rectangle",
+    "unknownReferenceConditions": "unverified-not-pass"
+  },
+  "structural": {
+    "maximumPositionErrorMetres": 0.00001,
+    "maximumNormalAngularErrorDegrees": 0.01,
+    "maximumUvAbsoluteError": 0.000001,
+    "maximumQuaternionAngularErrorDegrees": 0.01,
+    "maximumClipOrNotifyTimeErrorSeconds": 0.00001,
+    "requiredSourceTriangleAndMaterialSlotCoverage": 1,
+    "requireNativeNamesHierarchyBindMatricesAndAttachments": true,
+    "requireExplicitUnsupportedRecords": true
+  },
+  "visual": {
+    "pixelThresholdReferenceHeight": 1080,
+    "minimumSilhouetteIntersectionOverUnion": 0.97,
+    "maximumLandmarkMedianErrorPixels": 2,
+    "maximumLandmarkP95ErrorPixels": 5,
+    "maximumAttachmentErrorPixels": 3,
+    "maximumFullFrameLinearRgbMeanAbsoluteError": 0.04,
+    "maximumFullFrameLinearRgbP95AbsoluteError": 0.15,
+    "minimumFullFrameSsim": 0.95,
+    "maximumMotionOnsetImpactCompletionErrorSeconds": 0.03333333333333333,
+    "particles": {
+      "maximumMeanOccupancyRelativeError": 0.1,
+      "maximumSpatialCentroidP95ErrorPixels": 8,
+      "maximumOnsetPeakExpiryErrorSeconds": 0.05,
+      "compareIndependentNativeRepetitionsAgainstDeclaredBrowserSeeds": true,
+      "alsoRetainUnmaskedFullFrameMetrics": true
+    },
+    "unknownOrOccludedRequiredLandmarks": "unverified-not-pass"
+  },
+  "performance": {
+    "host": "DATABASE-PC",
+    "requiredGpu": "NVIDIA GeForce GTX 1060",
+    "viewport": { "width": 1920, "height": 1080, "devicePixelRatio": 1 },
+    "warmupSeconds": 15,
+    "sampleSeconds": 90,
+    "repetitions": 3,
+    "crowdActors": 32,
+    "concurrentPowerStrikeEffects": 8,
+    "effectRepeatSeconds": 2,
+    "targetFramesPerSecond": 120,
+    "maximumP95FrameMilliseconds": 8.333333333333334,
+    "minimumMeasuredFramesPerSecond": 119,
+    "requireAtLeast120HzActiveDisplayForPresentationPass": true,
+    "requireHardwareRendererIdentity": true,
+    "requireForegroundUnthrottledPage": true,
+    "allowRecordingDuringMeasurement": false,
+    "requireIdenticalBaselineAndOptimizedScenarioHashes": true,
+    "requireMetrics": ["frame-median", "frame-p95", "actual-fps", "cpu-when-available", "gpu-when-available", "draw-calls", "triangles", "loading", "transfer-bytes", "memory-with-source-and-limitations"],
+    "unavailableGpuTiming": "report-unavailable-do-not-estimate",
+    "displayLimitedResult": "separate-workload-timings-no-120fps-certification",
+    "nativeSpeedComparison": "same-host-and-conditions-only"
+  },
+  "editor": {
+    "version": "5.5.3",
+    "requireActualDesktopOpenEditSaveReopenRebuildAndBrowserProof": true,
+    "requiredEdits": ["equipment", "animation", "effect-timing", "material", "camera"],
+    "requireAuthoredEditsSurviveRegeneration": true
+  },
+  "resultPolicy": {
+    "missingEvidence": "unverified",
+    "thresholdFailure": "fail",
+    "allowThresholdWeakening": false,
+    "allowScaffoldingOrSingleModelToCompleteGoal": false,
+    "requireCoverageAndGapsReport": true
+  }
+}

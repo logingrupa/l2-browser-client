@@ -1,0 +1,5 @@
+[
+  {"kind":"model","package":"staticmeshes/l2fortress_01_s.usx","object":"l2fortress_01_s.fort01_wall_deco01"},
+  {"kind":"texture","package":"T_texture","object":"T_texture.Texture.Base"},
+  {"kind":"audio","package":"sounds/skillsound.uax","object":"skillsound.power_strike.power_strike_cast"}
+]

@@ -1,0 +1,7 @@
+[
+  {"kind":"model","package":"speaking1f_s","object":"wall03"},
+  {"kind":"model","package":"Fighter","object":"MFighter_m000_u","animation":"MFighter_anim","withEventAudio":true},
+  {"kind":"texture","package":"FFighter","object":"FFighter_m010_t59_l_ori"},
+  {"kind":"audio","package":"skillsound","object":"power_strike_cast"},
+  {"kind":"audio","media":"music/b01_f.ogg"}
+]

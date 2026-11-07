@@ -1,0 +1,15 @@
+[
+  {
+    "kind": "model",
+    "name": "Greater-Musveren-field-stalker-native",
+    "package": "LineageMonsters",
+    "object": "field_stalker_m00",
+    "animation": "field_stalker_anim",
+    "withEventAudio": true,
+    "limitations": [
+      "The requested Greater Musveren reference identifies this mesh. It is shared by 22 npcgrp rows; no NPC ID, actor DrawScale or gameplay identity is inferred from the mesh name.",
+      "All nine native sequences, including death and deathwait, retain their source names, keys and durations. Runtime death must play once and retain its final pose; this export does not supply gameplay state transitions.",
+      "Native Shader and FinalBlend graphs are retained in provenance. Their complete lighting and blending behavior requires a separate Babylon material adapter and visual comparison."
+    ]
+  }
+]

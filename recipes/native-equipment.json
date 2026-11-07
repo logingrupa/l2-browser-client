@@ -1,0 +1,31 @@
+[
+  {
+    "kind": "model",
+    "name": "MFighter-Leather-Shirt-ClassID22",
+    "package": "Fighter",
+    "object": "MFighter_m001_u",
+    "animation": "MFighter_anim",
+    "materials": ["0=MFighter.MFighter_m001_t04_u"],
+    "sourceBinding": {
+      "table": "armorgrp",
+      "sourceSha256": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+      "meshPath": ["item", 1, "m_HumnFigh", "var_0_", "for_mtx_size_1_", 0, "mtx_mesh_"],
+      "texturePath": ["item", 1, "m_HumnFigh", "var_0_", "for_mtx_size_2_", 0, "mtx_text_"]
+    },
+    "limitations": ["This native Human male fighter upper-body part replaces the upper-body slot. Its native rig and all source clips are retained; it is not a complete character assembly."]
+  },
+  {
+    "kind": "model",
+    "name": "Native-Small-Sword-ClassID1",
+    "package": "LineageWeapons",
+    "object": "small_sword_m00_wp",
+    "materials": ["0=LineageWeaponsTex.small_sword_t00_wp"],
+    "sourceBinding": {
+      "table": "weapongrp",
+      "sourceSha256": "eea267ac21afa5f2e148349d5aaab9670dbc67cde3878f1a8db5aba2364550b9",
+      "meshPath": ["item", 0, "wp_mesh", "mesh_0_", 0, "mesh0"],
+      "texturePath": ["item", 0, "texture", 0, "texture0"]
+    },
+    "limitations": ["Native item 1 is a one-handed sword (weapon_type=1, handness=1). This standalone bind-pose export preserves source mesh transforms. The Human male fighter actor names Weapon_R_Bone, but its native C++ weapon attachment transform is not established by this export."]
+  }
+]

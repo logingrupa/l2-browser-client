@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-player-stage",
+  "models": [
+    {
+      "catalogId": "human-female-fighter:0",
+      "archive": "artifacts/native-parity/research/native-ffighter-expansion-20261107/build-corrected/jobs/human-female-fighter/ce3984dded01419ce9fc1ec1644ffe06346803f889d5925684d583a154015990/asset.l2asset",
+      "archiveSha256": "ce3984dded01419ce9fc1ec1644ffe06346803f889d5925684d583a154015990"
+    },
+    {
+      "catalogId": "female-fighter-equipment:0",
+      "archive": "artifacts/native-parity/research/native-ffighter-world-20261107/equipment/jobs/female-fighter-equipment/a1e8135b3bd7ed74adda8d79ab86bf547848aedfcd7fb63e3d02be1f38c5f745/asset.l2asset",
+      "archiveSha256": "a1e8135b3bd7ed74adda8d79ab86bf547848aedfcd7fb63e3d02be1f38c5f745"
+    }
+  ],
+  "profiles": [
+    {
+      "id": "human-female-fighter",
+      "name": "Human female fighter",
+      "catalogId": "human-female-fighter:0",
+      "assetId": "interlude:assembly:FFighter-native-body-face0-hair0",
+      "sourceObject": "Fighter.FFighter_m001_u",
+      "sourceSha256": "8a22d41ceaa78d52a10b856b923462eb8eb08d61b203d0d7904e464857ae988c",
+      "clips": {
+        "idle": "Wait_Hand_FFighter",
+        "run": "Run_Hand_FFighter",
+        "attack": "Atk01_Hand_FFighter",
+        "death": "Death_FFighter"
+      },
+      "forwardAxis": [1, 0, 0],
+      "actorScale": [1, 1, 1],
+      "collisionRadius": 8,
+      "collisionHeight": 23.5,
+      "sourceUnitsPerMetre": 100,
+      "upperItems": [
+        {
+          "itemId": 22,
+          "catalogId": "female-fighter-equipment:0",
+          "sourceObject": "Fighter.FFighter_m001_u",
+          "sourceSha256": "8a22d41ceaa78d52a10b856b923462eb8eb08d61b203d0d7904e464857ae988c"
+        }
+      ],
+      "sourceEvidence": {
+        "report": "artifacts/native-parity/research/native-ffighter-world-20261107/source/REPORT.md",
+        "sourceManifestSha256": "85f3218bcca14306e22d43b1f82ca49f648f240d3ba6c438a8eb9d8daa014b34",
+        "facing": "Independent transformed native ankle-to-toe vectors establish +X.",
+        "class": "LineageWarrior.FFighter inherited Engine.Actor scale and exact collision dimensions.",
+        "equipment": "armorgrp item 22 f_HumnFigh binds Fighter.FFighter_m001_u to FFighter.FFighter_m001_t04_u.",
+        "audio": "Direct original AnimNotify_Sound dependencies travel in the character archive; specialized attack dispatch stays uncovered."
+      },
+      "limitations": [
+        "Human female fighter base appearance only; other human classes, skills and appearances are unfinished.",
+        "PrePivot is absent through checked ancestry and unresolved; no native zero-pivot claim or extra offset is applied.",
+        "Navigation uses the existing browser capsule/step/slope policy, not a native collision reconstruction.",
+        "Death and action choices are explicit browser previews; complete native dispatch, listener/spatial/random rules remain unverified.",
+        "Four direct death cues are resolved. AttackVoice, AttackItem and AttackShot events remain uncovered; no substitute audio is added.",
+        "Existing male authored clip/material settings remain authoritative. This profile does not overwrite saved Editor content."
+      ]
+    }
+  ]
+}
