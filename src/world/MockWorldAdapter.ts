@@ -2,6 +2,7 @@ import type { GameWorldAdapter } from "./GameWorldAdapter";
 import { createInitialWorld } from "./createInitialWorld";
 import { moveTowards, simulateRemotePlayer } from "./syntheticMovement";
 import type { WorldCommand, WorldEntity, WorldEvent, WorldPosition } from "./worldTypes";
+import type { WorldNavigation } from "./WorldNavigation";
 
 const updateIntervalSeconds = 0.1;
 const localMovementMetresPerSecond = 4;
@@ -20,9 +21,17 @@ export class MockWorldAdapter implements GameWorldAdapter {
   private spawnedEntityCount = 0;
   private isPaused = false;
   private isDisposed = false;
+  private readonly initialPositions = new Map<string, WorldPosition>();
+  private teleportCount = 0;
 
-  constructor() {
-    for (const entity of createInitialWorld()) this.entities.set(entity.id, copyEntity(entity));
+  constructor(private readonly navigation?: WorldNavigation) {
+    for (const entity of createInitialWorld()) {
+      const grounded = navigation?.spawn({ x: entity.position.x * .5, y: 0, z: entity.position.z * .5 }, [...this.entities.values()].map(other => other.position));
+      if (navigation && !grounded) throw new Error(`No supported spawn for ${entity.displayName}.`);
+      const initial = copyEntity(grounded ? { ...entity, position: grounded } : entity);
+      this.entities.set(initial.id, initial);
+      this.initialPositions.set(initial.id, initial.position);
+    }
   }
 
   getInitialState(): readonly WorldEntity[] {
@@ -43,22 +52,34 @@ export class MockWorldAdapter implements GameWorldAdapter {
       case "set-paused":
         this.isPaused = command.isPaused;
         break;
-      case "set-animation":
-        this.localDestination = undefined;
-        if (localPlayer) this.updateEntity({ ...localPlayer, animation: command.animation });
+      case "set-animation": {
+        const entity = this.entities.get(command.entityId ?? "local-player");
+        if (entity) {
+          if (entity.id === "local-player") this.localDestination = undefined;
+          this.updateEntity({ ...entity, animation: command.animation, animationSequence: (entity.animationSequence ?? 0) + 1 });
+        }
         break;
+      }
       case "move-local":
         if (localPlayer && Object.values(command.position).every(Number.isFinite)) {
-          this.localDestination = { ...command.position, y: 0 };
-          this.updateEntity({ ...localPlayer, animation: "run" });
+          const destination = this.navigation ? this.navigation.destination(command.position) : { ...command.position, y: 0 };
+          if (destination) {
+            this.localDestination = destination;
+            this.updateEntity({ ...localPlayer, animation: "run" });
+          }
         }
         break;
       case "teleport-local":
         this.localDestination = undefined;
         if (localPlayer) {
+          this.teleportCount++;
+          const destination = this.navigation
+            ? this.navigation.spawn({ x: this.teleportCount % 2 ? 3.5 : -3.5, y: 0, z: 0 }, [...this.entities.values()].filter(other => other.id !== localPlayer.id).map(other => other.position))
+            : { x: localPlayer.position.x < 4 ? 7 : -7, y: 0, z: 0 };
+          if (!destination) break;
           this.updateEntity({
             ...localPlayer,
-            position: { x: localPlayer.position.x < 4 ? 7 : -7, y: 0, z: 0 },
+            position: destination,
             animation: "idle",
           }, true);
         }
@@ -93,6 +114,7 @@ export class MockWorldAdapter implements GameWorldAdapter {
     this.isDisposed = true;
     this.listeners.clear();
     this.entities.clear();
+    this.initialPositions.clear();
     this.localDestination = undefined;
   }
 
@@ -101,9 +123,21 @@ export class MockWorldAdapter implements GameWorldAdapter {
     const elapsedSeconds = this.simulationTicks * updateIntervalSeconds;
     for (const entity of this.entities.values()) {
       if (entity.kind === "remote-player") {
-        this.updateEntity(simulateRemotePlayer(entity, elapsedSeconds));
+        if (this.navigation) {
+          const center = this.initialPositions.get(entity.id)!;
+          const direction = entity.id === "remote-1" ? 1 : -1, phase = elapsedSeconds * .45;
+          const destination = { x: center.x + Math.sin(phase) * direction, y: entity.position.y, z: center.z + Math.cos(phase) - 1 };
+          const desired = moveTowards(entity, destination, 2 * updateIntervalSeconds);
+          const moved = this.navigation.move(entity.position, desired.position);
+          this.updateEntity({ ...desired, position: moved.position, animation: moved.blocked ? "idle" : "run" });
+        } else this.updateEntity(simulateRemotePlayer(entity, elapsedSeconds));
       } else if (entity.kind === "local-player" && this.localDestination) {
-        const movedEntity = moveTowards(entity, this.localDestination, localMovementMetresPerSecond * updateIntervalSeconds);
+        let movedEntity = moveTowards(entity, this.localDestination, (this.navigation ? 2 : localMovementMetresPerSecond) * updateIntervalSeconds);
+        if (this.navigation) {
+          const moved = this.navigation.move(entity.position, movedEntity.position);
+          const arrived = Math.hypot(moved.position.x - this.localDestination.x, moved.position.z - this.localDestination.z) < .01;
+          movedEntity = { ...movedEntity, position: moved.position, animation: moved.blocked || arrived ? "idle" : "run" };
+        }
         this.updateEntity(movedEntity);
         if (movedEntity.animation === "idle") this.localDestination = undefined;
       } else if (entity.kind === "monster") {
@@ -116,11 +150,14 @@ export class MockWorldAdapter implements GameWorldAdapter {
 
   private spawnEntity(shouldUseMissingModel: boolean): void {
     this.spawnedEntityCount += 1;
+    const flatPosition = { x: -6 + (this.spawnedEntityCount % 5) * 2.5, y: 0, z: -6 };
+    const spawnPosition = this.navigation ? this.navigation.spawn({ x: flatPosition.x * .5, y: 0, z: flatPosition.z * .5 }, [...this.entities.values()].map(other => other.position)) : flatPosition;
+    if (!spawnPosition) return;
     const entity: WorldEntity = copyEntity({
       id: `spawned-${this.spawnedEntityCount}`,
       kind: "monster",
       displayName: shouldUseMissingModel ? "Fallback Sentinel" : `Sentinel ${this.spawnedEntityCount}`,
-      position: { x: -6 + (this.spawnedEntityCount % 5) * 2.5, y: 0, z: -6 },
+      position: spawnPosition,
       orientationRadians: 0,
       health: 100,
       maximumHealth: 100,

@@ -138,6 +138,30 @@ describe("synthetic world adapter", () => {
     adapter.dispose();
   });
 
+  it("targets repeated monster attacks without interrupting local movement and ignores unknown targets", () => {
+    const adapter = new MockWorldAdapter();
+    const monster = adapter.getInitialState().find(entity => entity.kind === "monster")!;
+    adapter.dispatch({ type: "move-local", position: { x: 3, y: 0, z: 0 } });
+    const movingPlayer = adapter.getInitialState().find(entity => entity.id === "local-player"), events: WorldEvent[] = [];
+    adapter.subscribe(event => events.push(event));
+    adapter.dispatch({ type: "set-animation", entityId: monster.id, animation: "attack" });
+    adapter.dispatch({ type: "set-animation", entityId: monster.id, animation: "attack" });
+    expect(events).toEqual([
+      { type: "update", entity: { ...monster, animation: "attack", animationSequence: 1 }, shouldSnap: false },
+      { type: "update", entity: { ...monster, animation: "attack", animationSequence: 2 }, shouldSnap: false },
+    ]);
+    expect(adapter.getInitialState().find(entity => entity.id === "local-player")).toEqual(movingPlayer);
+    const beforeUnknown = adapter.getInitialState();
+    adapter.dispatch({ type: "set-animation", entityId: "unknown", animation: "idle" });
+    expect(adapter.getInitialState()).toEqual(beforeUnknown);
+    expect(events).toHaveLength(2);
+    adapter.advance(.1);
+    expect(adapter.getInitialState().find(entity => entity.id === "local-player")).toMatchObject({
+      position: { x: .4, y: 0, z: 0 }, animation: "run",
+    });
+    adapter.dispose();
+  });
+
   it("rejects invalid time and ignores invalid movement destinations", () => {
     const adapter = new MockWorldAdapter();
     for (const elapsedSeconds of [-1, Number.NaN, Number.POSITIVE_INFINITY]) {
