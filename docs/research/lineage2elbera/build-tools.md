@@ -1,0 +1,17 @@
+# `tools/build-tools.sh` review
+
+Reviewed upstream commit `12c9656e2f053b233ec3fd87056491a6a6da8b0c`. Inventory: this entry is one 112-line shell script; both referenced patches were also read. **Verdict: reference only for this Windows client; adapt selected capture capabilities only if a concrete comparison needs them.**
+
+The script bootstraps three native executables: export-oriented `umodel`, rendering-enabled `umodel-view`, and encryption/decryption CLI `l2encdec` (`tools/build-tools.sh:8–11`, `:44–58`, `:60–97`, `:99–110`). It consumes network source archives/repositories and local patches, not game packages. All build/install destinations are repository-local `tools/{src,vendor,bin}` (`:14–18`, `:27`, `:78`, `:104–106`); this is not an asset converter, browser inspector, or standalone fidelity verifier.
+
+Portability is explicitly macOS ARM64: Bash, Git, curl, tar, a native compiler/build environment, macOS CMake archive, `.dylib` detection and `CMAKE_OSX_ARCHITECTURES=arm64` (`:1–2`, `:18–22`, `:32–33`, `:47–53`, `:68–81`). The capture patch links Apple's OpenGL framework and resolves SDL2 relative to the executable (`tools/patches/ueviewer-macos-render.patch:170`, `:183–187`), so copying only `umodel-view` is insufficient. “Headless” means a hidden SDL OpenGL window, not a demonstrated display-independent renderer (`:29–47`).
+
+CMake 3.30.5 and SDL2 2.30.5 have versioned URLs, but downloads have no checksum validation. Existing PATH CMake overrides the named version; SSE2NEON follows `master`; UEViewer and open-l2encdec use shallow default-branch clones without commit checkout (`tools/build-tools.sh:18–22`, `:30–41`, `:47`, `:62–63`, `:83`, `:102`). Executable existence and substring patch guards substitute for provenance. `--force` rebuilds existing sources without refreshing or resetting them; both UModel variants share a subsequently render-patched checkout (`:24–25`, `:45–53`, `:83–93`). A forced rebuild therefore does not restore the original CLI build state.
+
+The client already rejects any UModel except reviewed Windows build1590 (`scripts/native_assets.py:30–31`, `:140–146`), preserves command logs/errors (`:206–219`), and embeds its hash in cache identity/provenance (`:535`, `:673`). Fresh read-only hashing confirmed installed SHA-256 `13502e5a4d8f6b5f32252afebd6360f7302ccfaccf6b8dda65beff0be2d364a0`. Replacing it with these outputs would invalidate that contract. Existing Elbera BSP reuse remains separately pinned (`docs/SOURCE_REUSE.md:9–15`).
+
+Smallest useful follow-up: specify a separately pinned capture executable, source/patch/dependency hashes and retained licenses; then compare one known asset and fixed pose/camera against retained native evidence. Require stable captures and documented rendering differences; UModel screenshots alone cannot establish official-client or Babylon runtime parity.
+
+Elbera-authored code is MIT; its license explicitly excludes native game assets and identifies open-l2encdec/SSE2NEON as MIT and SDL2 as zlib (`LICENSE:25–38`). Installed `umodel/LICENSE.txt:1–13` separately grants MIT (Konstantin Nosov). Downloaded revisions, CMake and bundled transitive notices were unavailable here and were not independently audited.
+
+Executed only source reads/searches and installed-executable hashing. No builds, dependency downloads, installs, native execution, or asset conversion occurred; no private fixture was exercised.

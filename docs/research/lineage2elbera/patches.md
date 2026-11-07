@@ -1,0 +1,15 @@
+# Patches investigation
+
+Reviewed upstream revision `12c9656e2f053b233ec3fd87056491a6a6da8b0c`. Complete tracked inventory: `tools/patches/ueviewer-macos-arm64.patch` and `tools/patches/ueviewer-macos-render.patch`; both were read completely. Evidence below uses upstream paths unless prefixed **local**.
+
+The ARM64 patch is a native UEViewer build adaptation: SSE-to-NEON inclusion (`ueviewer-macos-arm64.patch:9`), texture/cubemap exports when rendering is disabled (`:27`), Apple `stat` (`:58`), macOS compiler/library configuration (`:78`), bundled libpng compatibility (`:117`, `:132`) and NVTT ARM detection (`:141`, `:155`). The Linux/ARM comment does not establish Linux portability: `-msse2` is removed only for platform `osx` (`:78`). These are source diffs, not standalone converters or browser code.
+
+The rendering patch enables macOS OpenGL/SDL viewing (`ueviewer-macos-render.patch:80`, `:182`) and adds environment-controlled viewport, hidden window, camera, automatic screenshots and animation looping (`:31`, `:57`, `:95`, `:139`). Inputs are UEViewer sources and native packages; outputs are separately built CLI/viewer executables and captured images. Hidden SDL windows still require an OpenGL context. Screenshot frame counts do not establish an exact animation timestamp, and viewer appearance is not official-client rendering proof.
+
+Build integration applies ARM64 then rendering patches (`tools/build-tools.sh:85`). It requires a compiler/build shell, bundled zlib/libpng/NVTT, sse2neon, and SDL2 **2.30.5**; fallback CMake is **3.30.5** (`:18`, `:62`). UEViewer is shallow-cloned without a revision pin (`:47`); sse2neon follows `master` (`:20`). Patch blob hashes are not a complete source-version pin. Reusing one mutated checkout also means a later forced CLI rebuild can inherit rendering changes.
+
+Elbera-authored changes are MIT (`LICENSE:1`); `LICENSE:36` explicitly separates UEViewer's license, SDL2's zlib license and sse2neon's MIT license. The expected UEViewer/vendor directories are absent, so their bundled notices and exact versions were unavailable for inspection.
+
+**Verdict: reference only now; adapt capture hooks if a separate comparison viewer becomes useful.** Local `scripts/native_assets.py:30` pins Windows UModel build1590 to SHA-256 `13502e5a4d8f6b5f32252afebd6360f7302ccfaccf6b8dda65beff0be2d364a0`, rejects replacements (`:145`) and records provenance (`:673`). Local `scripts/native_assets_lib/static_materials.py:20` separately pins reviewed UEViewer source revision `a0bfb468d42be831b126632fd8a0ae6b3614f981`. Existing BSP reuse already pins Elbera's same revision in local `scripts/vendor/lineage2elbera_bsp/SOURCE.json:3`.
+
+Smallest future proof: pin an independent viewer source/dependency set, port only capture controls, then verify one licensed fixture's object identity, image dimensions, camera and repeatable fixed pose. Keep source-record and rendered comparisons separate. This review executed inventory/search/read operations only; no patch application, build, native execution or visual comparison occurred.
