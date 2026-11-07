@@ -1,0 +1,13 @@
+{
+  "source_path": "C:/laragon/www/l2-browser-client-plan/docs/RENDERING.md",
+  "type": "SPEC",
+  "confidence": "medium",
+  "manifest_override": true,
+  "title": "Modern world rendering direction",
+  "summary": "Rendering direction for a Babylon.js WebGPU world renderer: current implementation checkpoint, ordered implementation sequence, and frame, memory and loading acceptance boundaries.",
+  "scope": ["Babylon.js WebGPU", "createWebGPUEngine", "native Interlude world loader", "Talking Island world loader", "grass batches", "distance visibility", "terrain and flame texture upload", "static scenery instancing", "world streaming and residency", "terrain and mesh LOD", "GPU texture compression", "culling", "GameWorldAdapter", "GTX 1060 1080p 120 FPS acceptance workload"],
+  "cross_refs": ["NATIVE_PARITY.md", "NATIVE_TEXTURES.md", "../src/engine/createWebGPUEngine.ts", "../src/scene/world/loadNativeSection.ts", "../src/scene/world/loadImportedWorld.ts", "../src/scene/world/grassInstances.ts", "../src/scene/world/worldVisibility.ts", "../src/scene/world/nativeTerrainPreview.ts", "../src/scene/world/nativeFlameMaterials.ts"],
+  "locked": false,
+  "precedence": 6,
+  "notes": "Manifest-declared SPEC (manifest_override true, precedence 6). Classification is medium confidence because the document is a direction and sequencing plan with implementation constraints, not an endpoint or schema contract. Owner or dated decisions and work-order statements for the synthesizer to check for conflicts: (1) Header, 'Updated: 2026-11-07. This is the current rendering direction; older migration-first handoffs describe earlier sequencing.' (dated supersession of earlier sequencing). (2) 'Preserve the game, modernize the renderer' section: 'Source assets and authored Editor edits remain authoritative.' (3) 'Acceptance boundaries' section: 'Keep the existing GTX 1060, 1080p/DPR 1, 120 FPS acceptance workload and its display requirements in NATIVE_PARITY.md'; 'A smaller slice is development evidence'. (4) 'Acceptance boundaries' section: 'Preserve completed conversion outputs, the closed 735-V correction, UV2 and authored edits. Keep GameWorldAdapter intact for the planned networking phase. This direction adds no deployment or native-runtime capture authorization.' (5) 'Next implementation sequence' section: numbered order 1 Measure, 2 Instance static scenery, 3 Partition and stream, 4 Terrain and mesh LOD, 5 GPU texture compression, 6 Cull before submitting work. Stated as: 'The order after measurement can change with the measured bottleneck.' (6) 'Do not wait for whole-client visual parity to begin these improvements.' Document states no content, race, class or map priority order."
+}

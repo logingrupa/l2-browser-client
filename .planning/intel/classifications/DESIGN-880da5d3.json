@@ -1,0 +1,13 @@
+{
+  "source_path": "C:/laragon/www/l2-browser-client-plan/DESIGN.md",
+  "type": "DOC",
+  "confidence": "medium",
+  "manifest_override": true,
+  "title": "Design System: L2 Browser Client",
+  "summary": "Design system for the L2 Browser Client: a compact fantasy HUD with bronze borders, green-charcoal panels, color and type tokens, and component rules.",
+  "scope": ["L2 Browser Client HUD", "design tokens (colors, typography, rounded, spacing)", "action buttons", "utility buttons and disclosure", "target strip", "floating character labels", "player panel", "focus and status", "src/style.css", "src/ui/worldStyles.ts", "src/ui/WorldInterface.ts"],
+  "cross_refs": ["docs/ROADMAP.md"],
+  "locked": false,
+  "precedence": null,
+  "notes": "Ambiguity DOC vs SPEC: the YAML front matter defines machine-readable design tokens and components, and the Overview states 'The machine-readable tokens above are normative', but the body is mainly design rationale with Do/Don't guidance, so classified DOC. No MANIFEST_PRECEDENCE given, so precedence is null. Owner or work-order statements recorded for the synthesizer: (1) Overview: 'The next local task evaluates converted character assets while preserving the HUD; its visual results are not yet part of this record.' (2) Overview: 'The user's stale-file correction concerns Markdown, not a stylesheet redesign.' (3) Overview: 'Current asset scope and the separate Phase 2 networking milestone are in docs/ROADMAP.md.' (4) Components, Focus and status: 'There are no text-entry fields or primary navigation components in this phase.' No dated decisions recorded."
+}

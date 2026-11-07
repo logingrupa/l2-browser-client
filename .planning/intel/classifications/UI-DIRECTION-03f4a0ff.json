@@ -1,0 +1,13 @@
+{
+  "source_path": "C:/laragon/www/l2-browser-client-plan/docs/UI_DIRECTION.md",
+  "type": "DOC",
+  "confidence": "medium",
+  "manifest_override": true,
+  "title": "Mobile scene interface",
+  "summary": "Design direction for a mobile-first fantasy game HUD over a 3D courtyard scene, with touch-sized actions, health display, and a pinned visual style.",
+  "scope": ["mobile scene interface", "game HUD", "courtyard scene", "health display", "touch controls", "character selection", "animation change", "teleport", "spawn", "bronze hairlines", "deep green-charcoal panels", "Cormorant Garamond heading", "portrait 390 x 844 layout", "desktop controls"],
+  "cross_refs": ["../DESIGN.md", "screenshots/README.md", "ROADMAP.md"],
+  "locked": false,
+  "precedence": null,
+  "notes": "No frontmatter, no filename convention, no ADR status/Decision+Consequences, no user stories or acceptance criteria; prose design brief classed as DOC (design rationale). MANIFEST_TYPE DOC applied as authoritative. Owner/dated decisions recorded for synthesizer conflict check: Header (opening para): 'The user chose a game-like scene with compact controls, then specified mobile first and supplied a classic Lineage II HUD reference. This pins the direction over the design skill's random selection (seed:f8067ac85ba6da9a).' FORM section: 'User-pinned mobile game HUD. seed:f8067ac85ba6da9a. The physical reference's small desktop controls become 44px or larger touch targets.' FIRST VIEWPORT section: 'Portrait 390 x 844 is the primary layout.' FINISH section: 'the procedural foundation's mobile and desktop captures were reviewed with disposition ship and documented in DESIGN.md and screenshots/README.md. New model integration needs its own visible review and progress screenshots.' FINISH section: 'Preserve this HUD direction while updating stale Markdown; a stylesheet overhaul was not requested.' FINISH section: 'The current task and later networking milestone are in ROADMAP.md.' No dated decision statements beyond the seed reference."
+}
