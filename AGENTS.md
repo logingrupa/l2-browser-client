@@ -44,7 +44,7 @@ Browser client for Lineage II Interlude on Babylon.js WebGPU. These rules are sp
 - No comments in code. Ever. The code explains itself.
 - Every function, variable, type and file name says what it does or holds, in full words (`decodeSkillgrpRecords`, not `decode` or `parse2`). If a name cannot explain it, split or rename until it can.
 - The only exception is machine directives a tool needs to work: `@ts-expect-error` with no prose, `eslint-disable-next-line` for a named rule, a shebang. They are not explanations.
-- When you change code, remove the existing comments in that code and make the names carry the meaning instead.
+- Comment cleanup happens per file as work goes. When you touch a file, remove every comment in the whole file, not only in the lines you changed, and rename whatever those comments were explaining. There is no separate repo-wide comment sweep.
 - Fix the root cause, not the symptom. No retries, sleeps or tolerances that hide a bug.
 - Validate at trust boundaries (decoded files, server messages) with guard clauses and clear errors. Inside the code, trust the types.
 - Small files with explicit names. Split a file that grows past about 400 lines or mixes concerns.
