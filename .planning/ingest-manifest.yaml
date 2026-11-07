@@ -1,0 +1,46 @@
+# Input for /gsd-ingest-docs --mode new --manifest .planning/ingest-manifest.yaml
+# Lower precedence wins a conflict. Owner requirements first, then the measured scope.
+docs:
+  - path: PRODUCT.md
+    type: PRD
+    precedence: 0
+  - path: .planning/goal.md
+    type: PRD
+    precedence: 1
+  - path: docs/PORT_SCOPE.md
+    type: PRD
+    precedence: 2
+  - path: docs/ROADMAP.md
+    type: DOC
+    precedence: 3
+  - path: docs/ARCHITECTURE.md
+    type: SPEC
+    precedence: 4
+  - path: docs/NATIVE_PARITY.md
+    type: SPEC
+    precedence: 5
+  - path: docs/ASSET_PIPELINE.md
+    type: SPEC
+    precedence: 6
+  - path: docs/RENDERING.md
+    type: SPEC
+    precedence: 7
+  - path: docs/NATIVE_AUDIO.md
+    type: SPEC
+    precedence: 8
+  - path: DESIGN.md
+    type: DOC
+  - path: README.md
+    type: DOC
+  - path: docs/UI_DIRECTION.md
+    type: DOC
+  - path: docs/SOURCE_REUSE.md
+    type: DOC
+  - path: docs/LINEAGE2ELBERA_REUSE_AUDIT.md
+    type: DOC
+  - path: docs/NATIVE_CLIENT_AUDIT.md
+    type: DOC
+  - path: docs/NATIVE_WORLD.md
+    type: DOC
+  - path: docs/ASSET_BATCHING.md
+    type: DOC
