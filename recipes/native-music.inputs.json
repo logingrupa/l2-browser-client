@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "sourceHost": "IMPORTA-PC",
+  "sourceRoot": "C:/Lineage2-client",
+  "scope": "Nine original 20_20 music files (L2SD-signed Ogg Vorbis) copied over the read-only fleet route and hash-matched to MUSIC_ID_JOIN.json. Kept separate from native-inputs.lock.json because existing exporter receipts and the runtime catalog pin that lock's SHA-256.",
+  "joinEvidence": {
+    "path": "artifacts/native-parity/research/terrain-mask-native-rea-followup/continuation-20261106-ongoing/post-migration-visibility-20261106/music-id-evidence/MUSIC_ID_JOIN.json",
+    "sha256": "9dbb003ccbd389afb96391da0dbc6f17b0ecb3fd2fc0b016de75b598c1b8a1f4"
+  },
+  "files": [
+    {"relativePath":"music/d03_f.ogg","bytes":2725755,"sha256":"86104b32bb956906e860e5966da1506cf2c60d223fa0865f35f81f87232bb276"},
+    {"relativePath":"music/d03_s01.ogg","bytes":1169438,"sha256":"331496ee4637681369a942b018ddf8d2168a67bda51eee6edbe0c6078f0f32bf"},
+    {"relativePath":"music/d03_s02.ogg","bytes":2864451,"sha256":"5200c0d8a4890b0f2390e642121de4b2df15ef76afdfa30634bea8dee03e6a56"},
+    {"relativePath":"music/f04_f.ogg","bytes":495429,"sha256":"4c3551f7210458d91b52fa626a277cec2e91e42b946f2b8b3e18e71cd791eaa5"},
+    {"relativePath":"music/f04_s01.ogg","bytes":471602,"sha256":"ed98312e0963bea50c6bb6b1d84499bc42fbf1dad1b2d4645376951396ef62b8"},
+    {"relativePath":"music/f09_f.ogg","bytes":405603,"sha256":"c8d6af028e1e9c76cfc0e16ef630909c107139f365db13152db6e45933215171"},
+    {"relativePath":"music/f09_s01.ogg","bytes":357733,"sha256":"8b129d5380b53a391fcb9a471028efedaeb5c8ae352bae78bc69c3973bb8ad7a"},
+    {"relativePath":"music/f10_f.ogg","bytes":495760,"sha256":"3af979b12cb7944c359745fa4b91d3bb744216a7212f0ea6e80fe623048049fb"},
+    {"relativePath":"music/f10_s01.ogg","bytes":395124,"sha256":"229b3ef71212d1b70d7821fecf3a6dd251edd989b5b633b5d8f6ce0fe9bc8869"}
+  ]
+}
