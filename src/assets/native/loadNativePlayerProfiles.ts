@@ -1,5 +1,9 @@
 import { sha256, validatePackageModel, type AssetPackage } from "../package/readAssetPackage";
 import { nativeResourceUrl } from "./nativeResourceUrl";
+import {
+  boundAliasStatuses, isNativeAnimationAlias, requiredNativeAliases, unboundAliasStatuses,
+  type NativeAliasEvidence, type NativeAliasEvidenceRow, type NativeAliasStatus, type NativePlayerClips,
+} from "./nativeAnimationAliases";
 
 export interface NativePlayerProfile {
   readonly id: string;
@@ -8,7 +12,12 @@ export interface NativePlayerProfile {
   readonly assetId: string;
   readonly sourceObject: string;
   readonly sourceSha256: string;
-  readonly clips: Readonly<Record<"idle" | "run" | "attack" | "death", string>>;
+  /** Native-family alias map: idle/run/attack/death required, every other
+   * key optional (src/assets/native/nativeAnimationAliases.ts). Missing
+   * optional aliases are reported through aliasEvidence, never invented. */
+  readonly clips: NativePlayerClips;
+  /** Per-alias native key/status/reason from scripts/prepare-native-player-aliases.py. */
+  readonly aliasEvidence?: NativeAliasEvidence;
   readonly forwardAxis: readonly [number, number, number];
   readonly actorScale: readonly [number, number, number];
   readonly collisionRadius: number;
@@ -48,10 +57,52 @@ function dimension(value: unknown): number {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0 || value > 10000) throw new Error("Native player collision dimension is invalid.");
   return value;
 }
+const profileFields = new Set(["id", "name", "catalogId", "assetId", "sourceObject", "sourceSha256", "clips", "forwardAxis", "actorScale",
+  "collisionRadius", "collisionHeight", "sourceUnitsPerMetre", "upperItems", "sourceEvidence", "limitations", "aliasEvidence"]);
+function parseClips(value: unknown): NativePlayerClips {
+  const raw = object(value), clips: Record<string, string> = {};
+  for (const alias of requiredNativeAliases) if (!Object.hasOwn(raw, alias)) throw new Error(`Native player clip alias ${alias} is required.`);
+  if (Object.keys(raw).length > 64) throw new Error("Native player clip mapping is invalid.");
+  for (const [alias, clip] of Object.entries(raw)) {
+    if (!isNativeAnimationAlias(alias)) throw new Error(`Native player clip alias ${alias} is unknown.`);
+    clips[alias] = string(clip);
+  }
+  return clips as NativePlayerClips;
+}
+const bound: ReadonlySet<string> = new Set(boundAliasStatuses), unbound: ReadonlySet<string> = new Set(unboundAliasStatuses);
+const evidenceFields = ["generator", "report", "reportSha256", "family", "familySource", "familySourceSha256", "rows"];
+const evidenceRowFields = ["alias", "key", "status", "reference", "line", "selectionPath", "reason"];
+function parseAliasEvidence(value: unknown, clips: NativePlayerClips): NativeAliasEvidence {
+  const row = object(value);
+  if (Object.keys(row).some(key => !evidenceFields.includes(key)) || !Array.isArray(row.rows) || !row.rows.length || row.rows.length > 64) {
+    throw new Error("Native player alias evidence is invalid.");
+  }
+  const seen = new Set<string>();
+  const rows = row.rows.map((value: unknown): NativeAliasEvidenceRow => {
+    const entry = object(value), alias = string(entry.alias), status = string(entry.status);
+    if (!isNativeAnimationAlias(alias) || seen.has(alias) || (!bound.has(status) && !unbound.has(status)) ||
+      Object.keys(entry).some(key => !evidenceRowFields.includes(key))) throw new Error("Native player alias evidence row is invalid or duplicated.");
+    seen.add(alias);
+    const clip = clips[alias];
+    // A bound native status needs its clip; an unbound one needs a reason and no clip.
+    if (bound.has(status) ? clip === undefined : clip !== undefined || entry.reason === undefined) {
+      throw new Error(`Native player alias ${alias} evidence disagrees with its clip.`);
+    }
+    if (entry.line !== undefined && (!Number.isSafeInteger(entry.line) || (entry.line as number) <= 0)) throw new Error("Native player alias evidence line is invalid.");
+    return { alias, key: string(entry.key), status: status as NativeAliasStatus,
+      ...(entry.reference !== undefined ? { reference: string(entry.reference) } : {}),
+      ...(entry.line !== undefined ? { line: entry.line as number } : {}),
+      ...(entry.selectionPath !== undefined ? { selectionPath: string(entry.selectionPath) } : {}),
+      ...(entry.reason !== undefined ? { reason: string(entry.reason) } : {}) };
+  });
+  for (const alias of Object.keys(clips)) if (!seen.has(alias)) throw new Error(`Native player alias ${alias} has no evidence row.`);
+  return { generator: string(row.generator), report: string(row.report), reportSha256: string(row.reportSha256, hash),
+    family: string(row.family), familySource: string(row.familySource), familySourceSha256: string(row.familySourceSha256, hash), rows };
+}
 function parseProfile(value: unknown): NativePlayerProfile {
-  const row = object(value), rawClips = object(row.clips);
-  const clips = { idle: string(rawClips.idle), run: string(rawClips.run), attack: string(rawClips.attack), death: string(rawClips.death) };
-  if (Object.keys(rawClips).length !== 4) throw new Error("Native player clip mapping is invalid.");
+  const row = object(value);
+  if (Object.keys(row).some(key => !profileFields.has(key))) throw new Error("Native player profile has unknown fields.");
+  const clips = parseClips(row.clips);
   const axis = row.forwardAxis;
   if (!Array.isArray(axis) || axis.length !== 3 || !axis.every(v => typeof v === "number" && Number.isFinite(v)) ||
     axis[1] !== 0 || Math.abs(Math.hypot(axis[0], axis[2]) - 1) > 1e-6) throw new Error("Native player forward axis must be a horizontal unit vector.");
@@ -71,14 +122,29 @@ function parseProfile(value: unknown): NativePlayerProfile {
   if (!Object.keys(sourceEvidence).length) throw new Error("Native player profile source evidence is missing.");
   return { id: string(row.id, identity), name: string(row.name), catalogId: string(row.catalogId, identity),
     assetId: string(row.assetId), sourceObject: string(row.sourceObject, qualified), sourceSha256: string(row.sourceSha256, hash),
-    clips, forwardAxis: [axis[0], axis[1], axis[2]], actorScale: [scale[0], scale[1], scale[2]], collisionRadius: dimension(row.collisionRadius),
+    clips, ...(row.aliasEvidence !== undefined ? { aliasEvidence: parseAliasEvidence(row.aliasEvidence, clips) } : {}),
+    forwardAxis: [axis[0], axis[1], axis[2]], actorScale: [scale[0], scale[1], scale[2]], collisionRadius: dimension(row.collisionRadius),
     collisionHeight: dimension(row.collisionHeight), sourceUnitsPerMetre: 100, upperItems,
     sourceEvidence, limitations: row.limitations.map((v: unknown) => string(v)) };
+}
+
+/** A staged row may carry the built-in male fighter's alias map only when its
+ * package, source, scale, collision, facing, equipment and core clips are the
+ * built-in values exactly; the default player stays that male fighter. */
+function supersedesBuiltIn(profile: NativePlayerProfile): boolean {
+  const builtIn = defaultNativePlayerProfile;
+  return profile.catalogId === builtIn.catalogId && profile.assetId === builtIn.assetId && profile.sourceObject === builtIn.sourceObject &&
+    profile.sourceSha256 === builtIn.sourceSha256 && profile.collisionRadius === builtIn.collisionRadius &&
+    profile.collisionHeight === builtIn.collisionHeight && profile.forwardAxis.every((value, index) => value === builtIn.forwardAxis[index]) &&
+    profile.actorScale.every((value, index) => value === builtIn.actorScale[index]) &&
+    requiredNativeAliases.every(alias => profile.clips[alias] === builtIn.clips[alias]) &&
+    JSON.stringify(profile.upperItems) === JSON.stringify(builtIn.upperItems);
 }
 
 export async function loadNativePlayerProfiles(records: unknown, signal: AbortSignal): Promise<ReadonlyMap<string, NativePlayerProfile>> {
   if (!Array.isArray(records) || records.length > 16) throw new Error("Native player profile catalog is invalid.");
   const profiles = new Map([[defaultNativePlayerProfile.id, defaultNativePlayerProfile]]), bundles = new Set<string>();
+  let replacedBuiltIn = false;
   for (const value of records) {
     const entry = object(value), id = string(entry.id, identity), expectedHash = string(entry.manifestSha256, hash);
     if (bundles.has(id) || entry.manifest !== `/l2/player-profiles/${expectedHash}/manifest.json` ||
@@ -93,7 +159,10 @@ export async function loadNativePlayerProfiles(records: unknown, signal: AbortSi
       !manifest.profiles.length || manifest.profiles.length > 128) throw new Error("Native player manifest is invalid.");
     for (const row of manifest.profiles) {
       const profile = parseProfile(row);
-      if (profiles.has(profile.id)) throw new Error("Native player profile identity is duplicated.");
+      const builtIn = profile.id === defaultNativePlayerProfile.id && !replacedBuiltIn;
+      if (builtIn && !supersedesBuiltIn(profile)) throw new Error("Native player profile differs from the built-in male fighter identity.");
+      if (profiles.has(profile.id) && !builtIn) throw new Error("Native player profile identity is duplicated.");
+      if (builtIn) replacedBuiltIn = true;
       profiles.set(profile.id, profile);
     }
   }

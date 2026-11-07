@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "sourceHost": "IMPORTA-PC",
+  "sourceRoot": "C:/Lineage2-client",
+  "scope": "Pinned source closure for the Human male/female mystic (MMagic/FMagic) player packages: recipes/native-pipeline-mmagic.json and recipes/native-pipeline-fmagic.json. Every pin except systextures/MMagic.utx is byte-identical to recipes/native-inputs.lock.json; MMagic.utx is the one additive original input, copied read-only from IMPORTA-PC C:/Lineage2-client/systextures/MMagic.utx (remote SHA-256 checked before and after copy). The main lock is intentionally unchanged because existing batch owners, the migration coverage and public/l2/catalog.json pin its SHA-256.",
+  "additiveInputs": [
+    {
+      "relativePath": "systextures/MMagic.utx",
+      "copiedFrom": "IMPORTA-PC:C:/Lineage2-client/systextures/MMagic.utx",
+      "remoteSha256": "759853dee9344555fb3569ffae4ef11694eb5850a790b7245c986710ce1036e8",
+      "remoteLastWriteUtc": "2007-02-27T14:26:50Z",
+      "copiedOn": "2026-11-07",
+      "method": "scp -p -P 2026"
+    }
+  ],
+  "sharedPinsFrom": {
+    "lock": "recipes/native-inputs.lock.json",
+    "sha256AtCreation": "d1fcb6bae55d3e51f409d5a704ea534403315b0f405246f0dd39b544bb19ddde"
+  },
+  "files": [
+    {
+      "relativePath": "animations/Magic.ukx",
+      "bytes": 15979569,
+      "sha256": "26443ed7a5b972010c614f74ac8b625e3ae2dbbaa12f7d0a0fa9302622326fa2"
+    },
+    {
+      "relativePath": "sounds/chrsound.uax",
+      "bytes": 44340416,
+      "sha256": "a0afd64d23e7e2c89d2d89b196dc082080da89b17bfd6ac3e15ae0bb2d5b919e"
+    },
+    {
+      "relativePath": "sounds/chrsound2.uax",
+      "bytes": 1932390,
+      "sha256": "451fba0025b68e0a0af5d939c22dc4ed366347d3218617e2cdbc61eca714b3ce"
+    },
+    {
+      "relativePath": "sounds/itemsound.uax",
+      "bytes": 18938678,
+      "sha256": "e16cd1701b485f4b76de4938af5674699b8622cb6e0c418c2c313044c485365d"
+    },
+    {
+      "relativePath": "sounds/monsound2.uax",
+      "bytes": 16335543,
+      "sha256": "f2ab082d2a4f2f5541c1194d823364c3eb5c4383c3fbf8b9d5aa060c0ea2cb19"
+    },
+    {
+      "relativePath": "sounds/stepsound.uax",
+      "bytes": 1941334,
+      "sha256": "e4243b4bbcb4cd1dde927e4f4dec45caba5796385ad655855e87bd8572d57f05"
+    },
+    {
+      "relativePath": "system/chargrp.dat",
+      "bytes": 2480,
+      "sha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f"
+    },
+    {
+      "relativePath": "system/Engine.u",
+      "bytes": 2805259,
+      "sha256": "9b04ff5cb4258e84dfa8efbdd85d9121f3bdcb5822a9a21ca69d200d05a69761"
+    },
+    {
+      "relativePath": "system/LineageWarrior.int",
+      "bytes": 193542,
+      "sha256": "8d951cbccd010a849f05df827d7065ec5f9372245953e71f3e88344cf8189485"
+    },
+    {
+      "relativePath": "system/LineageWarrior.u",
+      "bytes": 31540,
+      "sha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558"
+    },
+    {
+      "relativePath": "systextures/FMagic.utx",
+      "bytes": 51292372,
+      "sha256": "dc2560d92a103067dfa9a8f71252b1beda84a68dfbb95dc193b5900c9673b2a3"
+    },
+    {
+      "relativePath": "systextures/MMagic.utx",
+      "bytes": 48775538,
+      "sha256": "759853dee9344555fb3569ffae4ef11694eb5850a790b7245c986710ce1036e8"
+    }
+  ]
+}

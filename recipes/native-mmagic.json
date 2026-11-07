@@ -1,0 +1,59 @@
+[
+  {
+    "kind": "model",
+    "name": "MMagic-native-body-face0-hair0",
+    "animation": "MMagic_anim",
+    "withEventAudio": true,
+    "animationFamilyBinding": {
+      "file": "system/LineageWarrior.int",
+      "sha256": "8d951cbccd010a849f05df827d7065ec5f9372245953e71f3e88344cf8189485",
+      "sourceHost": "IMPORTA-PC",
+      "sourcePath": "C:/Lineage2-client/system/LineageWarrior.int",
+      "section": "MMagic",
+      "class": "Engine.Pawn",
+      "classPackageSha256": "9b04ff5cb4258e84dfa8efbdd85d9121f3bdcb5822a9a21ca69d200d05a69761"
+    },
+    "limitations": [
+      "Body and face choice0 follow native chargrp row8 (Human male mystic): body_mesh1..4 Magic.MMagic_m005_u/m003_l/m005_g/m003_b with their row8 body_texture1..4. Hair meshes follow exact native LineageWarrior.MMagic SubMeshes[4]/[5]; matching native hair texture color0 is an explicit recipe appearance choice, not a recovered hairgrp default.",
+      "The chargrp row8 DarkElf hair placeholder is not used. Native scale only: converter 0.01 metre/source unit plus the dedicated native MeshOrigin/RotOrigin/MeshScale parent; no height fitting, recentering or grounding is applied.",
+      "Original event audio is requested for export. This recipe does not establish world dispatch, footstep surfaces, skill timing or full audible behavior.",
+      "Face and back hair keep their exporter-selected native skin influences. Front hair MMagic_m000_m00_ah is a proven root-bound rigid part and follows the LineageWarrior.MMagic HeadBone (Bip01_head) through a dedicated skin palette; its object spelling cites the class SubMeshes[4] reference. Native face aim/rotation and C++ submesh attachment behavior remain unverified."
+    ],
+    "parts": [
+      {
+        "package": "Magic", "object": "MMagic_m005_u",
+        "materials": ["0=MMagic.MMagic_m005_t02_u"],
+        "sourceBinding": {"table": "chargrp", "sourceSha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f", "meshPath": ["Char", 8, "body_mesh", "body_mesh1"], "texturePath": ["Char", 8, "body_texture", "body_texture1"]}
+      },
+      {
+        "package": "Magic", "object": "MMagic_m003_l",
+        "materials": ["0=MMagic.MMagic_m003_t02_l"],
+        "sourceBinding": {"table": "chargrp", "sourceSha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f", "meshPath": ["Char", 8, "body_mesh", "body_mesh2"], "texturePath": ["Char", 8, "body_texture", "body_texture2"]}
+      },
+      {
+        "package": "Magic", "object": "MMagic_m005_g",
+        "materials": ["0=MMagic.MMagic_m005_t02_g"],
+        "sourceBinding": {"table": "chargrp", "sourceSha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f", "meshPath": ["Char", 8, "body_mesh", "body_mesh3"], "texturePath": ["Char", 8, "body_texture", "body_texture3"]}
+      },
+      {
+        "package": "Magic", "object": "MMagic_m003_b",
+        "materials": ["0=MMagic.MMagic_m003_t02_b"],
+        "sourceBinding": {"table": "chargrp", "sourceSha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f", "meshPath": ["Char", 8, "body_mesh", "body_mesh4"], "texturePath": ["Char", 8, "body_texture", "body_texture4"]}
+      },
+      {
+        "package": "Magic", "object": "MMagic_m000_f",
+        "materials": ["0=MMagic.MMagic_m000_t00_f"],
+        "sourceBinding": {"table": "chargrp", "sourceSha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f", "meshPath": ["Char", 8, "face_mesh", 0, "param_face_mesh"], "texturePath": ["Char", 8, "face_texture", 0, "param_face_texture"]}
+      },
+      {
+        "package": "Magic", "object": "magic.MMagic_m000_m00_ah",
+        "rigidAttachment": {"bone": "Bip01_head", "source": {"class": "LineageWarrior.MMagic", "packageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558", "bonePath": ["HeadBone"], "meshPath": ["SubMeshes", 4]}},
+        "materials": ["0=MMagic.Hair.MMagic_m000_t00_m00_ah"]
+      },
+      {
+        "package": "Magic", "object": "MMagic_m000_m00_bh",
+        "materials": ["0=MMagic.Hair.MMagic_m000_t00_m00_bh"]
+      }
+    ]
+  }
+]

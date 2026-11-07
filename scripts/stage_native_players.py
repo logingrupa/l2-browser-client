@@ -26,6 +26,22 @@ CATALOG_ID = re.compile(r'[a-z0-9][a-z0-9:-]{0,95}')
 OBJECT = re.compile(r'[A-Za-z_][A-Za-z_0-9]*(?:\.[A-Za-z_][A-Za-z_0-9]*)+')
 BUNDLE_ID = 'native-player-profiles'
 MAX_MANIFEST = 2_000_000
+BUILT_IN = 'human-male-fighter'
+# Same keys and order as src/assets/native/nativeAnimationAliases.ts.
+REQUIRED_ALIASES = ('idle', 'run', 'attack', 'death')
+PLAYER_ALIASES = (
+    'idle', 'walk', 'run', 'turn', 'atkWait', 'attack', 'atk02', 'atk03', 'shieldAtk',
+    'castShort', 'castMid', 'castLong', 'castEnd', 'magicShot', 'magicThrow', 'magicNoTarget',
+    'sit', 'sitWait', 'stand', 'chairSit', 'chairWait', 'chairStand', 'pickup',
+    'death', 'deathWait', 'deathStand', 'damage', 'damageFly', 'fall',
+    'swim', 'swimWait', 'swimAtkWait', 'swimDeath', 'swimDeathWait',
+    *(f'social{index}' for index in range(2, 14)))
+BOUND_STATUSES = frozenset({'exact', 'case-only'})
+UNBOUND_STATUSES = frozenset({'no-family-value', 'no-native-field', 'missing-clip', 'conflict-unresolved', 'ambiguous', 'unsupported-syntax'})
+EVIDENCE_FIELDS = {'generator', 'report', 'reportSha256', 'family', 'familySource', 'familySourceSha256', 'rows'}
+EVIDENCE_ROW_FIELDS = {'alias', 'key', 'status', 'reference', 'line', 'selectionPath', 'reason'}
+# An alias/evidence update may change only these profile fields.
+SUPERSEDABLE_FIELDS = {'clips', 'aliasEvidence'}
 
 
 def require(condition, message):
@@ -116,13 +132,35 @@ def model_record(catalog_id, path, expected_hash):
     return record, asset, clip_names(model), files
 
 
+def alias_evidence_shape(evidence, clips):
+    require(isinstance(evidence, dict) and set(evidence) == EVIDENCE_FIELDS, 'Invalid player alias evidence fields')
+    require(all(browser_string(evidence[name]) for name in ('generator', 'report', 'family', 'familySource')) and
+            all(isinstance(evidence[name], str) and HASH.fullmatch(evidence[name]) for name in ('reportSha256', 'familySourceSha256')),
+            'Invalid player alias evidence source')
+    rows = evidence['rows']
+    require(isinstance(rows, list) and 0 < len(rows) <= 64, 'Invalid player alias evidence rows')
+    seen = set()
+    for row in rows:
+        require(isinstance(row, dict) and {'alias', 'key', 'status'} <= set(row) <= EVIDENCE_ROW_FIELDS, 'Invalid player alias evidence row fields')
+        alias, status = row['alias'], row['status']
+        require(alias in PLAYER_ALIASES and alias not in seen, 'Unknown/duplicate player alias evidence: ' + str(alias))
+        seen.add(alias)
+        require(status in BOUND_STATUSES or status in UNBOUND_STATUSES, 'Unknown player alias status: ' + str(status))
+        require(browser_string(row['key'], 128) and all(browser_string(row[name]) for name in ('reference', 'selectionPath', 'reason') if name in row),
+                'Invalid player alias evidence strings')
+        require('line' not in row or (type(row['line']) is int and 0 < row['line'] <= 2**31 - 1), 'Invalid player alias evidence line')
+        # Bound statuses select exactly the profile clip; unbound ones keep the alias empty and say why.
+        require((alias in clips) if status in BOUND_STATUSES else (alias not in clips and 'reason' in row),
+                'Player alias evidence disagrees with its clip: ' + alias)
+    require(set(clips) <= seen, 'Player clip aliases lack evidence rows')
+
+
 def profile_shape(profile):
     fields = {'id', 'name', 'catalogId', 'assetId', 'sourceObject', 'sourceSha256', 'clips', 'forwardAxis', 'actorScale',
               'collisionRadius', 'collisionHeight', 'sourceUnitsPerMetre', 'upperItems', 'sourceEvidence', 'limitations'}
-    require(isinstance(profile, dict) and set(profile) == fields, 'Invalid player profile fields')
+    require(isinstance(profile, dict) and set(profile) in (fields, fields | {'aliasEvidence'}), 'Invalid player profile fields')
     require(isinstance(profile['id'], str) and ID.fullmatch(profile['id']) and
             isinstance(profile['name'], str) and 0 < len(profile['name']) <= 128, 'Invalid player profile identity')
-    require(profile['id'] != 'human-male-fighter', 'Built-in human-male-fighter profile cannot be replaced')
     require(isinstance(profile['catalogId'], str) and CATALOG_ID.fullmatch(profile['catalogId']) and
             browser_string(profile['assetId']) and
             browser_string(profile['sourceObject']) and OBJECT.fullmatch(profile['sourceObject']) and
@@ -140,8 +178,10 @@ def profile_shape(profile):
             all(type(value) in (int, float) and math.isfinite(value) and 0 < value <= 100 for value in scale),
             'Player actorScale must contain three positive finite presentation-axis values')
     clips = profile['clips']
-    require(isinstance(clips, dict) and set(clips) == {'idle', 'run', 'attack', 'death'} and
+    require(isinstance(clips, dict) and set(REQUIRED_ALIASES) <= set(clips) <= set(PLAYER_ALIASES) and
             all(isinstance(value, str) and 0 < len(value) <= 128 for value in clips.values()), 'Invalid player clip selection')
+    if 'aliasEvidence' in profile:
+        alias_evidence_shape(profile['aliasEvidence'], clips)
     require(isinstance(profile['sourceEvidence'], dict) and profile['sourceEvidence'], 'Player profile requires source evidence')
     require(isinstance(profile['limitations'], list) and 0 < len(profile['limitations']) <= 64 and
             all(browser_string(value) for value in profile['limitations']), 'Player profile requires explicit limitations')
@@ -167,10 +207,18 @@ def stage(recipe_path, destination, expected_catalog_sha256, *, plan_only=False,
     require(recipe_path.is_relative_to(root) and not recipe_path.is_relative_to(destination), 'Recipe must be a project input outside public/l2')
     recipe_bytes = recipe_path.read_bytes()
     recipe = decode(recipe_bytes)
-    require(isinstance(recipe, dict) and set(recipe) == {'schemaVersion', 'kind', 'models', 'profiles'} and
+    require(isinstance(recipe, dict) and set(recipe) in ({'schemaVersion', 'kind', 'models', 'profiles'},
+                                                         {'schemaVersion', 'kind', 'models', 'profiles', 'supersedes'}) and
             recipe['schemaVersion'] == 1 and recipe['kind'] == 'native-player-stage', 'Invalid player staging recipe')
-    require(isinstance(recipe['models'], list) and 0 < len(recipe['models']) <= 128 and
+    # A profile-only update (supersedes) reuses already staged, verified packages.
+    require(isinstance(recipe['models'], list) and (0 if 'supersedes' in recipe else 1) <= len(recipe['models']) <= 128 and
             isinstance(recipe['profiles'], list) and 0 < len(recipe['profiles']) <= 128, 'Player staging needs bounded models and profiles')
+    supersedes = recipe.get('supersedes', {})
+    require(isinstance(supersedes, dict) and len(supersedes) <= 128 and
+            all(isinstance(key, str) and (value == 'built-in' if key == BUILT_IN else isinstance(value, str) and HASH.fullmatch(value))
+                for key, value in supersedes.items()) and
+            set(supersedes) <= {profile.get('id') for profile in recipe['profiles'] if isinstance(profile, dict)},
+            'Invalid player profile supersede pins')
     require(isinstance(expected_catalog_sha256, str) and HASH.fullmatch(expected_catalog_sha256), 'Invalid expected catalog hash')
     catalog_path = child(destination, 'catalog.json')
     catalog_bytes = catalog_path.read_bytes()
@@ -252,14 +300,25 @@ def stage(recipe_path, destination, expected_catalog_sha256, *, plan_only=False,
         loaded[identifier] = (asset, clips)
         return asset, clips
 
-    additions, recipe_ids = [], set()
+    additions, replacements, recipe_ids = [], [], set()
     for profile in recipe['profiles']:
         profile_shape(profile)
         identifier = profile['id']
         require(identifier not in recipe_ids, 'Duplicate requested player profile')
         recipe_ids.add(identifier)
         old = all_profiles.get(identifier)
-        require(old is None or old == profile, 'Existing player profile conflicts; no overwrite: ' + identifier)
+        pin = supersedes.get(identifier)
+        # The browser-built male fighter is replaced only by an explicit opt-in;
+        # the browser still requires the built-in package/source/scale identity.
+        require(identifier != BUILT_IN or pin is not None or old is not None, 'Built-in human-male-fighter profile cannot be replaced')
+        if old is not None and old != profile:
+            require(pin is not None and pin != 'built-in' and digest(json_bytes(old)) == pin,
+                    'Existing player profile conflicts; no overwrite: ' + identifier)
+            require(identifier in {row['id'] for row in managed_profiles}, 'Only the managed player manifest can be superseded: ' + identifier)
+            changed = {name for name in set(old) | set(profile) if old.get(name) != profile.get(name)}
+            require(changed <= SUPERSEDABLE_FIELDS and all(old['clips'][alias] == profile['clips'][alias] for alias in REQUIRED_ALIASES),
+                    'A supersede may change only optional aliases and their evidence: ' + identifier)
+        require(old is not None or pin in (None, 'built-in'), 'Supersede pin names an unstaged player profile: ' + identifier)
         asset, clips = load_existing(profile['catalogId'])
         require(asset['id'] == profile['assetId'] and asset['source']['object'] == profile['sourceObject'] and
                 asset['source']['sha256'] == profile['sourceSha256'], 'Profile/model source identities differ')
@@ -273,8 +332,13 @@ def stage(recipe_path, destination, expected_catalog_sha256, *, plan_only=False,
         if old is None:
             additions.append(profile)
             all_profiles[identifier] = profile
+        elif old != profile:
+            replacements.append(profile)
+            all_profiles[identifier] = profile
     require(len(all_profiles) <= 128, 'Too many staged player profiles')
-    if additions:
+    if additions or replacements:
+        superseded = {profile['id']: profile for profile in replacements}
+        managed_profiles = [superseded.get(row['id'], row) for row in managed_profiles]
         manifest_bytes = json_bytes({'schemaVersion': 1, 'kind': 'native-player-profiles', 'profiles': [*managed_profiles, *additions]})
         require(len(manifest_bytes) <= MAX_MANIFEST, 'Player manifest exceeds browser limit')
         identity = digest(manifest_bytes)
@@ -315,6 +379,7 @@ def stage(recipe_path, destination, expected_catalog_sha256, *, plan_only=False,
     return {'status': 'planned' if plan_only else 'verified' if verify_only else 'staged' if missing or desired != catalog_bytes else 'unchanged',
             'catalogBeforeSha256': digest(catalog_bytes), 'resultingCatalogSha256': digest(desired),
             'recipeSha256': digest(recipe_bytes), 'addedModels': added_models, 'addedProfiles': [profile['id'] for profile in additions],
+            'supersededProfiles': [profile['id'] for profile in replacements],
             'requestedProfiles': [profile['id'] for profile in recipe['profiles']], 'verifiedResources': len(files),
             'newResources': missing, 'filesWritten': 0 if plan_only or verify_only else len(missing) + int(desired != catalog_bytes),
             'worldCatalogEntriesPreserved': True, 'authoredSceneEdits': False,
