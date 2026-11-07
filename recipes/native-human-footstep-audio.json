@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-animation-audio-bundle",
+  "inventory": {
+    "path": "artifacts/native-parity/research/native-ffighter-world-20261107/HUMAN_COVERAGE.json",
+    "sha256": "e59fc58b9d0cef1e6954ffe68fc788fde0a1d7db8fe800e5f2957f3d862242ce",
+    "bytes": 132066,
+    "eventsPointer": "/locomotion/events",
+    "dependenciesPointer": "/locomotion/dependencies"
+  },
+  "arrayProperties": [
+    "DefaultActorRunSound",
+    "DefaultActorWalkSound",
+    "DefaultRunSound",
+    "DefaultWalkSound",
+    "GrassRunSound",
+    "GrassWalkSound",
+    "WaterRunSound",
+    "WaterWalkSound"
+  ],
+  "actors": [
+    {
+      "catalogId": "human-male-fighter:0",
+      "assetId": "interlude:assembly:MFighter-native-body-face0-hair0",
+      "archive": {
+        "path": "public/l2/678067311414990c82307a045f01b3da0cb083d2075ed927c83372ca647bd2d5/asset.l2asset",
+        "sha256": "678067311414990c82307a045f01b3da0cb083d2075ed927c83372ca647bd2d5",
+        "bytes": 49257599
+      },
+      "clips": [
+        {
+          "name": "Walk_Hand_MFighter",
+          "gait": "walk"
+        },
+        {
+          "name": "Run_Hand_MFighter",
+          "gait": "run"
+        }
+      ]
+    },
+    {
+      "catalogId": "human-female-fighter:0",
+      "assetId": "interlude:assembly:FFighter-native-body-face0-hair0",
+      "archive": {
+        "path": "artifacts/native-parity/research/native-ffighter-expansion-20261107/build-corrected/jobs/human-female-fighter/ce3984dded01419ce9fc1ec1644ffe06346803f889d5925684d583a154015990/asset.l2asset",
+        "sha256": "ce3984dded01419ce9fc1ec1644ffe06346803f889d5925684d583a154015990",
+        "bytes": 51934425
+      },
+      "clips": [
+        {
+          "name": "Walk_Hand_FFighter",
+          "gait": "walk"
+        },
+        {
+          "name": "Run_Hand_FFighter",
+          "gait": "run"
+        }
+      ]
+    }
+  ]
+}

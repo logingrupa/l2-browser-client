@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-map-ambient-audio",
+  "source": { "host": "IMPORTA-PC", "root": "C:/Lineage2-client" },
+  "map": {
+    "file": "maps/20_20.unr",
+    "bytes": 11131253,
+    "sha256": "1beddad24c10a35a1b2e9151727a85158e3e01992299a6671de876645eb1f1e4"
+  },
+  "selection": "all-exact-Engine.AmbientSoundObject-exports-no-spatial-filter",
+  "referenceProperty": "AmbientSound",
+  "expectedInventory": {
+    "declarations": 2622,
+    "authoredReferences": 2620,
+    "distinctReferences": 106,
+    "omittedReferences": 2
+  }
+}

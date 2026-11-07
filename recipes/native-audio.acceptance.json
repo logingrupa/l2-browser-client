@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "id": "interlude-native-audio-v1",
+  "clarifiedByUser": "2026-11-06",
+  "requiredForOverallOneToOne": true,
+  "supplements": "native-parity.acceptance.json",
+  "source": {
+    "host": "IMPORTA-PC",
+    "clientRoot": "C:/Lineage2-client",
+    "edition": "Interlude",
+    "requireSourceAndDependencyHashes": true,
+    "allowOtherEditionWithoutProvenSourceEquality": false
+  },
+  "requiredCategoriesWherePresent": [
+    "background-region-music",
+    "environment-ambient-positioned-looping-emitters",
+    "surface-selected-footsteps",
+    "character-npc-monster-voices-actions-death",
+    "combat-weapon-skill-cast-impact-effects",
+    "ui-interaction-sounds"
+  ],
+  "requiredNativeEvidence": [
+    "source-identity-and-default-resolution",
+    "trigger-timing-and-conditions",
+    "random-selection-and-probability",
+    "loop-transition-interruption-behavior",
+    "volume-and-attenuation",
+    "spatial-and-listener-behavior"
+  ],
+  "requiredRuntimeEvidence": [
+    "actual-world-playback",
+    "trusted-gesture-unlock-and-retry",
+    "mute-and-volume-controls",
+    "source-and-event-identities",
+    "scheduled-and-observed-output-timing",
+    "lifecycle-cancellation-and-resource-cleanup",
+    "native-browser-audio-comparison"
+  ],
+  "tolerances": {
+    "status": "unestablished",
+    "requireDefinedBeforeParityImplementationAndComparison": true,
+    "allowPostResultRelaxation": false
+  },
+  "coverageRules": {
+    "separateSourceExportRuntimeAndNativeValidation": true,
+    "unknownSourceUniverseIsIncomplete": true,
+    "extractionOrDecodingAloneIsNotPlayback": true,
+    "inspectorOnlyPlaybackIsInsufficient": true,
+    "silentWorldCannotPass": true,
+    "unverifiedBehaviorCannotPass": true
+  }
+}
