@@ -7,7 +7,7 @@ import type { NativeSectionManifest } from "../../src/scene/world/loadNativeSect
 const stagedNativeCatalogPath = resolve("public/l2/catalog.json");
 
 interface WebGPUProbe {
-  contexts: string[]; devices: number; submissions: number; errors: string[];
+  contexts: string[]; deviceRequests: number; devices: number; submissions: number; errors: string[];
   adapters: { vendor: string; architecture: string; device: string; description: string; fallback: boolean }[];
 }
 
@@ -21,7 +21,7 @@ declare global {
 
 async function observeGraphics(page: Page): Promise<void> {
   await page.addInitScript(() => {
-    const probe: WebGPUProbe = window.__webgpuProbe = { contexts: [], devices: 0, submissions: 0, errors: [], adapters: [] };
+    const probe: WebGPUProbe = window.__webgpuProbe = { contexts: [], deviceRequests: 0, devices: 0, submissions: 0, errors: [], adapters: [] };
     const getContext = HTMLCanvasElement.prototype.getContext;
     Object.defineProperty(HTMLCanvasElement.prototype, "getContext", {
       configurable: true,
@@ -33,6 +33,7 @@ async function observeGraphics(page: Page): Promise<void> {
     if (typeof GPUAdapter === "undefined") return;
     const requestDevice = GPUAdapter.prototype.requestDevice;
     GPUAdapter.prototype.requestDevice = async function (descriptor) {
+      probe.deviceRequests++;
       const device = await requestDevice.call(this, descriptor);
       probe.devices++;
       const info = this.info;
@@ -53,7 +54,6 @@ async function observeGraphics(page: Page): Promise<void> {
 async function graphicsSnapshot(page: Page) {
   return page.evaluate(async () => {
     await window.__webgpuProbeDevice?.queue.onSubmittedWorkDone();
-    await new Promise<void>(resolve => setTimeout(resolve, 0));
     const canvas = document.querySelector<HTMLCanvasElement>("#canvas");
     return { ...window.__webgpuProbe!, engine: canvas?.dataset.engine,
       context: canvas?.dataset.engine === "WebGPU" && Boolean(canvas.getContext("webgpu")),
@@ -103,8 +103,9 @@ test("WebGPU device loss after entry reports failure without reviving a disposed
   await expect(page.getByRole("alert")).toContainText(/WebGPU graphics connection/i);
   await expect(page.getByRole("button", { name: "Reload and retry" })).toBeVisible();
   await expect(page.locator("#canvas")).toBeHidden();
-  await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 100)));
-  expect(await page.evaluate(() => window.__webgpuProbe!.devices)).toBe(1);
+  await expect(page.locator("body")).toHaveAttribute("data-world-state", "loading");
+  await expect.poll(() => page.evaluate(() => window.__nativeSlice === undefined)).toBe(true);
+  expect(await page.evaluate(() => window.__webgpuProbe!)).toMatchObject({ deviceRequests: 1, devices: 1 });
   expect(errors).toEqual([]);
 });
 
