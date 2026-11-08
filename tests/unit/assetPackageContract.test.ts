@@ -78,15 +78,25 @@ describe("golden fixtures for the asset output contract", () => {
     expect(versionOne.manifest.model?.file).toBe("model.glb");
   });
 
+  it.each(["model-v1.l2asset", "model-v2.l2asset", "audio-v2.l2asset"])("accepts the unedited repack of %s", async path => {
+    const repacked = await readAssetPackage(await repackedWithManifest(path, () => {}));
+    const original = await readAssetPackage(await readPinnedGoldenFixture(path));
+    expect(repacked.manifest).toEqual(original.manifest);
+  });
+
+  const unsupportedSchemaMessage = "asset.json has an unsupported schema or asset kind.";
+  const modelCoordinatesMessage = "asset.json v2 model needs coordinates in metres, right-handed, Y up, with a 16-number source transform.";
   it.each([
-    ["schemaVersion 3", "model-v2.l2asset", (manifest: Record<string, unknown>) => { manifest.schemaVersion = 3; }],
-    ["schemaVersion 0", "model-v1.l2asset", (manifest: Record<string, unknown>) => { manifest.schemaVersion = 0; }],
-    ["left-handed coordinates", "model-v2.l2asset", (manifest: Record<string, unknown>) => { (manifest.coordinates as Record<string, unknown>).handedness = "left"; }],
-    ["a v2 model without coordinates", "model-v2.l2asset", (manifest: Record<string, unknown>) => { delete manifest.coordinates; }],
-    ["a v2 package without clientBuild", "audio-v2.l2asset", (manifest: Record<string, unknown>) => { delete manifest.clientBuild; }],
-    ["a v2 package without source.path", "audio-v2.l2asset", (manifest: Record<string, unknown>) => { delete (manifest.source as Record<string, unknown>).path; }],
-  ] as const)("rejects %s", async (_label, path, editManifest) => {
-    await expect(readAssetPackage(await repackedWithManifest(path, editManifest))).rejects.toThrow(/asset\.json/);
+    ["schemaVersion 3", "model-v2.l2asset", unsupportedSchemaMessage, (manifest: Record<string, unknown>) => { manifest.schemaVersion = 3; }],
+    ["schemaVersion 0", "model-v1.l2asset", unsupportedSchemaMessage, (manifest: Record<string, unknown>) => { manifest.schemaVersion = 0; }],
+    ["left-handed coordinates", "model-v2.l2asset", modelCoordinatesMessage, (manifest: Record<string, unknown>) => { (manifest.coordinates as Record<string, unknown>).handedness = "left"; }],
+    ["a v2 model without coordinates", "model-v2.l2asset", modelCoordinatesMessage, (manifest: Record<string, unknown>) => { delete manifest.coordinates; }],
+    ["a v2 package without clientBuild", "audio-v2.l2asset", "asset.json v2 needs clientBuild with the tree lock and Engine.dll SHA-256.",
+      (manifest: Record<string, unknown>) => { delete manifest.clientBuild; }],
+    ["a v2 package without source.path", "audio-v2.l2asset", "asset.json v2 needs source.path with the converting host and absolute path.",
+      (manifest: Record<string, unknown>) => { delete (manifest.source as Record<string, unknown>).path; }],
+  ] as const)("rejects %s with its exact reason", async (_label, path, expectedMessage, editManifest) => {
+    await expect(readAssetPackage(await repackedWithManifest(path, editManifest))).rejects.toHaveProperty("message", expectedMessage);
   });
 
   it("serves the fixture catalog through readNativeCatalog and indexes its synthetic skill and tile keys", async () => {
