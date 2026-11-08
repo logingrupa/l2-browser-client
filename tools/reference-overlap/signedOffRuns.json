@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "runs": [
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/shared/math/vector3.ts",
+      "tokenCount": 20,
+      "sourceTokensSha256": "c14c1a1eb19f99a6153cbc2507ed78ae43079f40a62bd58a0d7ecc3a631c9c67",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/unreal/skills/skill-program.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-08",
+      "review": "Three independent fresh-context reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) unanimously judged this run a generic shape, not a port, with high confidence.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/shared/math/vector3.ts",
+      "tokenCount": 23,
+      "sourceTokensSha256": "5bdaab0054a1d840c2ce06a4c67a70efcf755d974ef41368b3deebddff7c0cf6",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/objects/zone-object.ts",
+        ".assets/reference/lineage2js/src/rendering/door-portals.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-08",
+      "review": "Three independent fresh-context reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) unanimously judged this run a generic shape, not a port, with high confidence.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/shared/math/vector3.ts",
+      "tokenCount": 20,
+      "sourceTokensSha256": "a23e0ecc6c07502315eaf8bb3ed81e2e19d3729c5665e43f0ba3855a9a7e98d0",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/unreal/skeletal-mesh/un-skeletal-mesh.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-08",
+      "review": "Three independent fresh-context reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) unanimously judged this run a generic shape, not a port, with high confidence.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/shared/typedPayload.ts",
+      "tokenCount": 20,
+      "sourceTokensSha256": "bf71790ddfe674e4243f89984edf64f3b7f691dbe7c8b32a7ade55000900f080",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decode-worker/decode-engine.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-08",
+      "review": "Three independent fresh-context reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) unanimously judged this run a generic shape, not a port, with high confidence.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/shared/typedPayload.ts",
+      "tokenCount": 20,
+      "sourceTokensSha256": "19322aef8b51d388738a821240b4a81edf9726394fb19aac57921510f22c40d5",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decoders/material-decoder.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-08",
+      "review": "Three independent fresh-context reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) unanimously judged this run a generic shape, not a port, with high confidence.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/shared/typedPayload.ts",
+      "tokenCount": 26,
+      "sourceTokensSha256": "db5305c4d25e2a394c9a66811cb9074c6e4b5a02eb301ffbca2445e5ac8a2730",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decoders/object3d-decoder.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-08",
+      "review": "Three independent fresh-context reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) unanimously judged this run a generic shape, not a port, with high confidence.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/shared/typedPayload.ts",
+      "tokenCount": 23,
+      "sourceTokensSha256": "4b761b32af894202d466bf3fa7868c13dbad57229c52588421ecb7467ac19495",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/objects/components/animation-component.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-08",
+      "review": "Three independent fresh-context reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) unanimously judged this run a generic shape, not a port, with high confidence.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/shared/typedPayload.ts",
+      "tokenCount": 21,
+      "sourceTokensSha256": "992289f87a700b16500f19125c7da6aab03f7e1953eed222f44609c5679f8a2e",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decoders/material-decoder.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-08",
+      "review": "Three independent fresh-context reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) unanimously judged this run a generic shape, not a port, with high confidence.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "movement",
+      "sourceFile": "src/shared/fixedStep.ts",
+      "tokenCount": 21,
+      "sourceTokensSha256": "03e74f1d0d368768a195f97d7c22c9e93f421ec861be0d88e9ec02b8dcfc1b3a",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/physics/collision-octree.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-08",
+      "review": "Three independent fresh-context reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) unanimously judged this run a generic shape, not a port, with high confidence.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "movement",
+      "sourceFile": "src/shared/fixedStep.ts",
+      "tokenCount": 23,
+      "sourceTokensSha256": "4adac4dd79def4e519d25b75c8d92aa95f68a6cceba86da2fc0e2c5fe8bc0707",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/objects/components/pawn-attack-component.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-08",
+      "review": "Three independent fresh-context reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) unanimously judged this run a generic shape, not a port, with high confidence.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "movement",
+      "sourceFile": "src/shared/fixedStep.ts",
+      "tokenCount": 24,
+      "sourceTokensSha256": "ccbf0b2eb50757a5eabc17a894350ed79fd01df9b9d0d83b5e122d6c8a435f57",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/objects/components/pawn-attack-component.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-08",
+      "review": "Three independent fresh-context reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) unanimously judged this run a generic shape, not a port, with high confidence.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "movement",
+      "sourceFile": "src/shared/fixedStep.ts",
+      "tokenCount": 21,
+      "sourceTokensSha256": "ef87fb8eb796eecd152ecc42ba82ca93052023a30efae3eb6bb5fc1a4a64d645",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/physics/components/pawn-movement-component.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-08",
+      "review": "Three independent fresh-context reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) unanimously judged this run a generic shape, not a port, with high confidence.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "movement",
+      "sourceFile": "src/world/sourceFrame.ts",
+      "tokenCount": 22,
+      "sourceTokensSha256": "5cb9a7789199de53109e5f2dcf5bb8cbeec558e9e0eae234ddaadb80705fca37",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/unreal/un-matrix.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-08",
+      "review": "Three independent fresh-context reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) unanimously judged this run a generic shape, not a port, with high confidence.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "particles",
+      "sourceFile": "src/shared/presentationClock.ts",
+      "tokenCount": 22,
+      "sourceTokensSha256": "0231f9a7ff3896e50ba5f022d06f3fce112b09e288f8fa69336c0ad5ba3febf2",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/unreal/asset-handle.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-08",
+      "review": "Three independent fresh-context reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) unanimously judged this run a generic shape, not a port, with high confidence.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "particles",
+      "sourceFile": "src/shared/presentationClock.ts",
+      "tokenCount": 27,
+      "sourceTokensSha256": "e9c7a78cbca5311aa6fb45bf02dd3c7c2be19f34186a54408445cbcea039306c",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decoders/object3d-decoder.ts",
+        ".assets/reference/lineage2js/src/objects/emitters/base-emitter.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-08",
+      "review": "Three independent fresh-context reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) unanimously judged this run a generic shape, not a port, with high confidence.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "particles",
+      "sourceFile": "src/shared/presentationClock.ts",
+      "tokenCount": 22,
+      "sourceTokensSha256": "295208f5fa3470db39f18f32a6b162e114f2f492fc73f1738b791435a9260f50",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/physics/components/pawn-movement-component.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-08",
+      "review": "Three independent fresh-context reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) unanimously judged this run a generic shape, not a port, with high confidence.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "particles",
+      "sourceFile": "src/shared/presentationClock.ts",
+      "tokenCount": 21,
+      "sourceTokensSha256": "5f4e7a1f800731637e73b1c148b87aa76920b3c7169235e307c818dcd2b59edc",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decode-worker/library-serializer.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/conf-files/un-conf-hair.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/skill-effect-placement.ts",
+        ".assets/reference/lineage2js/src/objects/colliding-mesh.ts",
+        ".assets/reference/lineage2js/src/objects/emitters/vert-mesh-emitter.ts",
+        ".assets/reference/lineage2js/src/physics/components/pawn-movement-component.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-08",
+      "review": "Three independent fresh-context reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) unanimously judged this run a generic shape, not a port, with high confidence.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    }
+  ]
+}

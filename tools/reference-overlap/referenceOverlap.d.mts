@@ -41,13 +41,38 @@ export interface ReferenceMatch {
   readonly referenceEndLine: number;
 }
 
+export interface SignedOffRun {
+  readonly area: string;
+  readonly sourceFile: string;
+  readonly tokenCount: number;
+  readonly sourceTokensSha256: string;
+  readonly referenceFiles: readonly string[];
+  readonly verdict: string;
+  readonly reviewedOn: string;
+  readonly review: string;
+  readonly evidence: string;
+}
+
+export interface SignedOffRuns {
+  readonly schemaVersion: number;
+  readonly runs: readonly SignedOffRun[];
+}
+
+export interface ReviewerSignOff {
+  readonly verdict: string;
+  readonly reviewedOn: string;
+  readonly evidence: string;
+}
+
 export interface ReviewerRun {
   readonly sourceFile: string;
   readonly sourceStartLine: number;
   readonly sourceEndLine: number;
   readonly tokenCount: number;
+  readonly sourceTokensSha256: string;
   readonly allowlistedConstant: { readonly constantName: string; readonly kind: string } | null;
   readonly referenceMatches: readonly ReferenceMatch[];
+  readonly signedOff: ReviewerSignOff | null;
 }
 
 export interface ReferenceOverlapReport {
@@ -57,6 +82,8 @@ export interface ReferenceOverlapReport {
   readonly sourceFiles: readonly string[];
   readonly referenceFileCount: number;
   readonly reviewerRuns: readonly ReviewerRun[];
+  readonly signedOffRunCount: number;
+  readonly staleSignedOffRuns: readonly SignedOffRun[];
   readonly blockingRuns: readonly ReviewerRun[];
 }
 
@@ -65,6 +92,7 @@ export interface ReferenceOverlapOptions {
   readonly repositoryRoot?: string;
   readonly referenceRoot?: string;
   readonly overlapAreas?: OverlapAreas;
+  readonly signedOffRuns?: SignedOffRuns;
 }
 
 export class ReferenceOverlapSetupError extends Error {}
