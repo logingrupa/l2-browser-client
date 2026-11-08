@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "bindings": [
+    {
+      "windowId": "StatusWnd",
+      "controlName": "HPBarTex",
+      "worldField": "health",
+      "maximumField": "maximumHealth",
+      "fillTextureRef": "L2UI_CH3.StatusWnd.StatusHPCenter_Gauge",
+      "gapReason": null,
+      "status": "unverified",
+      "source": {
+        "document": "Lineage2Elbera 12c9656 tools/xdat/parse_xdat.py line 542",
+        "sha256": "aeb7ebed22d68fdca8f8a9828c32620c01be4ca03623c4a020dc0fcbf2ea5409",
+        "excerpt": "(ps_hpbar, ps_mpbar, ps_cpbar), which is why the status bars rendered"
+      }
+    },
+    {
+      "windowId": "StatusWnd",
+      "controlName": "CPBarTex",
+      "worldField": null,
+      "maximumField": null,
+      "fillTextureRef": "L2UI_CH3.StatusWnd.StatusCPCenter_Gauge",
+      "gapReason": "adapter-field-absent:cp",
+      "status": "unverified",
+      "source": {
+        "document": "Lineage2Elbera 12c9656 docs/ui-port-handoff.md line 96",
+        "sha256": "ec0b3682a2e8cd43cb3c29993ef5fd85345a070df5798fe1bfb8d33cbb8a553e",
+        "excerpt": "gauges from the real `ps_*bar` art, HP readout, low-HP `ps_hpbarwarn` swap,"
+      }
+    },
+    {
+      "windowId": "StatusWnd",
+      "controlName": "MPBarTex",
+      "worldField": null,
+      "maximumField": null,
+      "fillTextureRef": "L2UI_CH3.StatusWnd.StatusMPCenter_Gauge",
+      "gapReason": "adapter-field-absent:mp",
+      "status": "unverified",
+      "source": {
+        "document": "Lineage2Elbera 12c9656 docs/ui-port-handoff.md line 96",
+        "sha256": "ec0b3682a2e8cd43cb3c29993ef5fd85345a070df5798fe1bfb8d33cbb8a553e",
+        "excerpt": "gauges from the real `ps_*bar` art, HP readout, low-HP `ps_hpbarwarn` swap,"
+      }
+    }
+  ]
+}

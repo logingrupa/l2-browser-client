@@ -1,9 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { readWindowCatalogRecord } from "../../src/assets/native/nativeCatalogRecords";
-import {
-  NativeWindowManifestError, nativeWindowAnchorProof, parseNativeWindowManifest,
-} from "../../src/ui/nativeWindows/nativeWindowLayoutTree";
+import { nativeWindowAnchorProof } from "../../src/ui/nativeWindows/nativeWindowAnchors";
+import { NativeWindowManifestError, parseNativeWindowManifest } from "../../src/ui/nativeWindows/nativeWindowLayoutTree";
 
 const tailHash = "a".repeat(64);
 const laneStoreRoot = "artifacts/lane-store/data-ui/l2";

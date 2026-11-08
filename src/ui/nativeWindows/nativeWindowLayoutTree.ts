@@ -1,7 +1,7 @@
 import { windowIdPattern } from "../../assets/native/nativeCatalogRecords";
+import { nativeWindowAnchorProof } from "./nativeWindowAnchors";
 
 export const nativeWindowLayoutKind = "native-window-layout";
-export const nativeWindowAnchorProof = "Elbera NWindow af6c3437 proof, unverified on IMPORTA 7c12fb6b";
 const maximumNodeDepth = 64;
 const maximumNodeCount = 4096;
 const maximumAnchorEnum = 9;
