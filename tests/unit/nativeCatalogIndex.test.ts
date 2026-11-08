@@ -1,8 +1,10 @@
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { defaultNativePlayerProfile } from "../../src/assets/native/loadNativePlayerProfiles";
 import {
-  buildNativeCatalogIndex, describeNativeCatalogLookup, itemCatalogKey, unavailableNativeCatalogIndex, npcCatalogKey, skillCatalogKey, tileCatalogKey, windowCatalogKey,
+  buildNativeCatalogIndex, characterCatalogKey, describeNativeCatalogLookup, itemCatalogKey, unavailableNativeCatalogIndex, npcCatalogKey, skillCatalogKey,
+  tableCatalogKey, tileCatalogKey, windowCatalogKey,
 } from "../../src/assets/native/nativeCatalogIndex";
 import { readNativeCatalog, type NativeCatalog } from "../../src/assets/native/readNativeCatalog";
 import { sha256 } from "../../src/assets/package/readAssetPackage";
@@ -130,6 +132,125 @@ describe("native catalog L2-ID index", () => {
     expect(() => tileCatalogKey("20-20")).toThrow(RangeError);
     expect(() => tileCatalogKey("2_20")).toThrow(RangeError);
   });
+
+  it("builds table, character and ordinal window keys and rejects malformed ones", () => {
+    expect(tableCatalogKey("itemname-e")).toBe("table:itemname-e");
+    expect(() => tableCatalogKey("SkillGrp")).toThrow(RangeError);
+    expect(() => tableCatalogKey("")).toThrow(RangeError);
+    expect(characterCatalogKey(0)).toBe("character:0");
+    expect(() => characterCatalogKey(-1)).toThrow(RangeError);
+    expect(() => characterCatalogKey(1.5)).toThrow(RangeError);
+    expect(windowCatalogKey("StatusWnd#2")).toBe("window:StatusWnd#2");
+    expect(() => windowCatalogKey("StatusWnd#0")).toThrow(RangeError);
+  });
+
+  it("describes a gap answer with its reason", () => {
+    expect(describeNativeCatalogLookup({ status: "gap", key: "npc:20001", reason: "skeletal-licensee-unsupported:123/30", coverageStatus: "gap" }))
+      .toBe("npc:20001 gap: skeletal-licensee-unsupported:123/30");
+  });
+});
+
+const tableManifestSha256 = "5e4cbff3f9a9bb05450e6b39c5f8abdd25cd964542ac7a7033cec2781205d3d1";
+function tableRecord(id: string) {
+  return { id, manifest: `/l2/tables/${tableManifestSha256}/${id}.json`, manifestSha256: tableManifestSha256, manifestBytes: 343,
+    recordCount: 1, sourceSha256: "8".repeat(64) };
+}
+
+describe("native catalog table and window keys", () => {
+  it("answers the golden table and window records and keeps the agreed key list", async () => {
+    const { index } = await goldenCatalogIndex();
+    expect(index.lookup(tableCatalogKey("syntheticfixture"))).toEqual({ status: "converted", key: "table:syntheticfixture", record: {
+      table: "syntheticfixture", manifest: `/l2/tables/${tableManifestSha256}/syntheticfixture.json`, manifestSha256: tableManifestSha256,
+      manifestBytes: 343, recordCount: 1, sourceSha256: "87ee2596f2296f45554c8d048b5b270e409be68c3120048871fa1d2e84bffde6" } });
+    expect(index.lookup(tableCatalogKey("npcgrp"))).toEqual({ status: "not-in-catalog", key: "table:npcgrp", reason: "not in catalog" });
+    expect(index.lookup(windowCatalogKey("SyntheticFixtureWnd"))).toMatchObject({ status: "converted", record: { window: "SyntheticFixtureWnd" } });
+    expect(index.lookup(windowCatalogKey("StatusWnd"))).toEqual({ status: "not-in-catalog", key: "window:StatusWnd", reason: "not in catalog" });
+  });
+
+  it("keeps the UI-01 window reason while a catalog has no window records", async () => {
+    const index = await indexOf({ tables: [tableRecord("npcgrp")] });
+    expect(index.lookup(windowCatalogKey("StatusWnd"))).toEqual({ status: "not-in-catalog", key: "window:StatusWnd",
+      reason: "interface windows are not converted yet (UI-01)" });
+  });
+
+  it("keeps adjacent table names apart and lists table keys in order", async () => {
+    const index = await indexOf({ tables: [tableRecord("skillname-e"), tableRecord("skillgrp")] });
+    expect(index.keys("table:")).toEqual(["table:skillgrp", "table:skillname-e"]);
+    expect(index.lookup(tableCatalogKey("skillgrp"))).toMatchObject({ status: "converted", record: { table: "skillgrp" } });
+  });
+
+  it("answers not in catalog for table keys of an empty tables slice", async () => {
+    const index = await indexOf({});
+    expect(index.lookup(tableCatalogKey("skillgrp"))).toEqual({ status: "not-in-catalog", key: "table:skillgrp", reason: "not in catalog" });
+  });
+
+  it.each([
+    ["tables", { tables: [{ ...tableRecord("npcgrp"), manifest: `/l2/tables/${tableManifestSha256}/itemgrp.json` }] }],
+    ["tables", { tables: [{ ...tableRecord("npcgrp"), recordCount: -1 }] }],
+    ["tables", { tables: [{ ...tableRecord("npcgrp"), sourceSha256: "abc" }] }],
+    ["tables", { tables: [{ ...tableRecord("npcgrp"), manifestBytes: 33_554_433 }] }],
+    ["windows", { windows: [{ id: "StatusWnd#0", manifest: `/l2/windows/${"6".repeat(64)}/window.json`, manifestSha256: "6".repeat(64), manifestBytes: 1 }] }],
+  ])("refuses a malformed %s record", async (sliceName, slices) => {
+    await expect(indexOf(slices)).rejects.toThrow(`Native catalog ${sliceName} entry is invalid.`);
+  });
+});
+
+async function playerProfileManifest(profiles: unknown[]) {
+  const bytes = new TextEncoder().encode(JSON.stringify({ schemaVersion: 1, kind: "native-player-profiles", profiles }));
+  const manifestSha256 = await sha256(bytes);
+  return { bytes, record: { id: "native-player-profiles", manifest: `/l2/player-profiles/${manifestSha256}/manifest.json`, manifestSha256, manifestBytes: bytes.length } };
+}
+
+const femaleFighterProfile = { ...defaultNativePlayerProfile, id: "human-female-fighter", name: "Human female fighter", catalogId: "human-female-fighter:0" };
+const femaleMysticProfile = { ...femaleFighterProfile, id: "human-female-mystic", catalogId: "human-female-mystic:0" };
+
+async function profileCatalog(npcProfiles: unknown[], playerProfiles: unknown[], models: unknown[]) {
+  const npcManifest = await npcProfileManifest(npcProfiles), playerManifest = await playerProfileManifest(playerProfiles);
+  serveFiles(new Map([[npcManifest.record.manifest, npcManifest.bytes], [playerManifest.record.manifest, playerManifest.bytes]]));
+  return catalogWith({ models, npcProfiles: [npcManifest.record], playerProfiles: [playerManifest.record] });
+}
+
+describe("native catalog NPC model and character joins", () => {
+  const sharedMesh = "LineageMonsters.unconverted_m00";
+  const pinnedProfile = { ...unconvertedProfile, modelCatalogId: "npc-model:20001" };
+
+  it("selects the model a profile names by modelCatalogId even when two models share its mesh", async () => {
+    const catalog = await profileCatalog([pinnedProfile, musverenProfile], [femaleFighterProfile],
+      [model("npc-model:20001", sharedMesh), model("npc-model:20001-other", sharedMesh), model("musveren:0", musverenProfile.mesh)]);
+    const index = await buildNativeCatalogIndex(catalog, new AbortController().signal);
+    expect(index.lookup(npcCatalogKey(20001))).toEqual({ status: "converted", key: "npc:20001",
+      record: { npcId: 20001, profileId: "npc:20001", modelCatalogId: "npc-model:20001" } });
+    expect(index.lookup(npcCatalogKey(21622))).toMatchObject({ status: "converted", record: { modelCatalogId: "musveren:0" } });
+  });
+
+  it("answers not in catalog with the model id when the named model is missing", async () => {
+    const catalog = await profileCatalog([pinnedProfile], [femaleFighterProfile], [model("npc-model:20002", sharedMesh)]);
+    const index = await buildNativeCatalogIndex(catalog, new AbortController().signal);
+    expect(index.lookup(npcCatalogKey(20001))).toEqual({ status: "not-in-catalog", key: "npc:20001",
+      reason: "NPC profile model npc-model:20001 is not in the catalog" });
+  });
+
+  it("refuses a malformed modelCatalogId in an NPC profile", async () => {
+    const catalog = await profileCatalog([{ ...unconvertedProfile, modelCatalogId: "NPC Model" }], [femaleFighterProfile], []);
+    await expect(buildNativeCatalogIndex(catalog, new AbortController().signal)).rejects.toThrow("Native NPC profile modelCatalogId is invalid.");
+  });
+
+  it("answers a character key from a player profile chargrpIndex whose model is staged", async () => {
+    const catalog = await profileCatalog([musverenProfile], [{ ...femaleFighterProfile, chargrpIndex: 3 }, { ...femaleMysticProfile, chargrpIndex: 4 }],
+      [model("human-female-fighter:0", "Fixture.Female")]);
+    const index = await buildNativeCatalogIndex(catalog, new AbortController().signal);
+    expect(index.lookup(characterCatalogKey(3))).toEqual({ status: "converted", key: "character:3",
+      record: { chargrpIndex: 3, playerProfileId: "human-female-fighter", catalogId: "human-female-fighter:0" } });
+    expect(index.lookup(characterCatalogKey(4))).toEqual({ status: "not-in-catalog", key: "character:4",
+      reason: "player profile human-female-mystic model human-female-mystic:0 is not in the catalog" });
+    expect(index.keys("character:")).toEqual(["character:3", "character:4"]);
+  });
+
+  it("refuses two player profiles with one chargrpIndex", async () => {
+    const catalog = await profileCatalog([musverenProfile], [{ ...femaleFighterProfile, chargrpIndex: 3 }, { ...femaleMysticProfile, chargrpIndex: 3 }],
+      [model("human-female-fighter:0", "Fixture.Female")]);
+    await expect(buildNativeCatalogIndex(catalog, new AbortController().signal)).rejects.toThrow("Native catalog has duplicate entries for character:3.");
+  });
 });
 
 const goldenStoreRoot = "tests/fixtures/golden/l2";
@@ -172,10 +293,9 @@ describe("native catalog L2-ID index on the golden catalog", () => {
       manifest: `/l2/tiles/${tileManifestSha256}/tile.json`, manifestSha256: tileManifestSha256, manifestBytes: 620 } });
   });
 
-  it("derives only keys that the 02-04 key fixture lists", async () => {
+  it("derives exactly the keys that the 02-04 key fixture lists", async () => {
     const { index } = await goldenCatalogIndex();
-    const fixtureKeys = await catalogIndexKeysFixture();
-    for (const key of index.keys("")) expect(fixtureKeys, key).toContain(key);
+    expect(index.keys("")).toEqual(await catalogIndexKeysFixture());
   });
 });
 

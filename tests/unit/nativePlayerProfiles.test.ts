@@ -61,6 +61,16 @@ describe("native player profile loading and source boundaries", () => {
     const input = await manifest([{ ...profile, ...patch }]); serve(new Map([[input.record.manifest, input.bytes]]));
     await expect(loadNativePlayerProfiles([input.record], new AbortController().signal)).rejects.toThrow();
   });
+  it("keeps a chargrpIndex of a staged profile and gives the built-in default none", async () => {
+    const input = await manifest([{ ...profile, chargrpIndex: 3 }]); serve(new Map([[input.record.manifest, input.bytes]]));
+    const profiles = await loadNativePlayerProfiles([input.record], new AbortController().signal);
+    expect(profiles.get(profile.id)!.chargrpIndex).toBe(3);
+    expect(profiles.get(defaultNativePlayerProfile.id)).not.toHaveProperty("chargrpIndex");
+  });
+  it.each([-1, "3", 1.5])("refuses the chargrpIndex %j", async chargrpIndex => {
+    const input = await manifest([{ ...profile, chargrpIndex }]); serve(new Map([[input.record.manifest, input.bytes]]));
+    await expect(loadNativePlayerProfiles([input.record], new AbortController().signal)).rejects.toThrow("Native player profile chargrpIndex is invalid.");
+  });
   it("refuses duplicate profile identities", async () => {
     const input = await manifest([profile, profile]); serve(new Map([[input.record.manifest, input.bytes]]));
     await expect(loadNativePlayerProfiles([input.record], new AbortController().signal)).rejects.toThrow("duplicated");
