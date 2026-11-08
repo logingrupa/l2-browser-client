@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 1
 current_phase_name: Foundations
 status: executing
-stopped_at: Completed 01-07-PLAN.md
-last_updated: "2026-11-08T04:55:50.576Z"
+stopped_at: Completed 01-08-PLAN.md
+last_updated: "2026-11-08T05:12:47.941Z"
 last_activity: 2026-11-08
 last_activity_desc: Phase 1 execution started
-state_head: 7fcf5381d01e1aa05b8e3d51fda9a8f35690f0fc
+state_head: c6f2e6ad1b6415170830b2b89534cd0552afc3e8
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 17
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 1 (Foundations) — EXECUTING
-Plan: 3 of 17
+Plan: 4 of 17
 Status: Ready to execute
 Last activity: 2026-11-08 — Phase 1 execution started
 
@@ -54,6 +54,7 @@ Progress: [░░░░░░░░░░] 0%
 |------|----------|-------|-------|
 | Phase 1 P02 | 15 min | 2 tasks | 11 files |
 | Phase 01 P07 | 11 min | 3 tasks | 13 files |
+| Phase 01 P08 | 13 min | 3 tasks | 20 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,8 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..8 and DEC-PORT-1..3.
 - [Phase 1]: 01-02: FOUND-03 stays pending until plan 01-13 records recipes/reference-client-tree.lock.json; the guard and tooling exist and are tested on synthetic trees
 - [Phase 1]: 01-02: lock hashingScriptSha256 covers the walker with CRLF normalised to LF
 - [Phase 01]: 01-07: MapSources.get carries the per-file require_equal_file check for every map package reader; world entry points call require_reference_client right after parse_args
+- [Phase 01]: Plan 01-08: the scan test tests/pipeline/test_client_entry_points.py fails if any --client entry point skips require_reference_client; all 23 call it
+- [Phase 01]: Plan 01-08: the UModel -path gap is recorded in deferred-items.md (OVERNIGHT-DECISIONS row 21) and must close before plan 01-13's lock enables E: conversion
 
 ### Pending Todos
 
@@ -101,6 +104,6 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..8 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-08T04:55:50.527Z
-Stopped at: Completed 01-07-PLAN.md
+Last session: 2026-11-08T05:12:47.889Z
+Stopped at: Completed 01-08-PLAN.md
 Resume file: None
