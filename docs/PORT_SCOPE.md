@@ -198,6 +198,9 @@ tile-general converter steps, not a job per area. This repo's 20_20 result is
 not that yet. It is a chain of hand-qualified steps, and several of them are
 limited to 20_20 today: the terrain UV rule, the Brush397 BSP floor and the
 surrounding terrain coverage. Each becomes a tile-general step (decision 10).
+Starting input for the world lane:
+[research/genericity-audit-20261108.md](research/genericity-audit-20261108.md)
+(warning 7).
 Elbera's `tools/world/convert.py 17_25`, a different pipeline, converted
 Talking Island in a few minutes and placed 987 props.
 
@@ -359,7 +362,9 @@ one, not after skills.
    Elbera decoders fill the rest behind an adapter (decision 7).
 2. Convert all 153 tiles: geometry (terrain, static meshes, BSP) with the
    tile-general UV rule, plus sky, ambient and placement audio. A tile that
-   fails a step is listed as a gap (decision 10).
+   fails a step is listed as a gap (decision 10). Start from
+   [research/genericity-audit-20261108.md](research/genericity-audit-20261108.md)
+   (warning 7).
 3. All player characters, every race, gender and class.
 4. NPCs and monsters from npcgrp, item and armor meshes.
 5. Skill visuals and sounds bound through skillgrp, skillsoundgrp and npcgrp.
@@ -439,8 +444,8 @@ Contracts the integration lane owns:
   30 KB.
 - Folder ownership in `.planning/lanes.json`. Converter agents own
   `scripts/**` and `recipes/**`, UI agents own `src/ui/**`, adapter agents own
-  `src/world/protocol/**`. Only the integration lane edits README, ROADMAP and
-  the status files.
+  `src/world/protocol/**`. Only the integration lane edits README,
+  `.planning/ROADMAP.md`, `.planning/STATE.md` and the status files.
 
 Working rules:
 - One part per thread per branch, named `<part>/<slug>`, for example
