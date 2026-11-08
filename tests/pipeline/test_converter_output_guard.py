@@ -10,6 +10,8 @@ OUTPUT_OPTION = '--output'
 LANE_SCRIPT_FOLDERS = ('world', 'actors', 'data')
 DEDUPLICATED_HELPER_NAMES = {'checked', 'child', 'relative_name', 'safe_relative'}
 STORE_PATH_HELPER_NAMES = {'refuse_reparse_points', 'confined_child_path', 'require_portable_relative_path'}
+OUTPUT_GUARDED_MAIN_ENTRY_POINTS = ('scripts/data/convert_tables.py', 'scripts/native_catalog/cli.py')
+ARGUMENT_ERROR_METHOD_NAME = 'error'
 
 
 def called_function_name(call):
@@ -50,6 +52,13 @@ def lane_entry_points():
                   if registers_output_option(parse_script(path.relative_to(REPOSITORY_ROOT).as_posix())))
 
 
+def first_work_after_argument_parsing(main_function):
+    parse_line = calls_named(main_function, 'parse_args')[0].lineno
+    later_calls = [call for call in ast.walk(main_function) if isinstance(call, ast.Call) and call.lineno > parse_line
+                   and called_function_name(call) != ARGUMENT_ERROR_METHOD_NAME]
+    return min(call.lineno for call in later_calls)
+
+
 def top_level_function_names(relative_path):
     return {node.name for node in parse_script(relative_path).body if isinstance(node, ast.FunctionDef)}
 
@@ -73,6 +82,14 @@ class ConverterOutputGuardScanTests(unittest.TestCase):
     def test_every_lane_entry_point_with_an_output_option_calls_the_guard(self):
         entry_points = lane_entry_points()
         self.assertEqual(output_entry_point_violations({path: parse_script(path) for path in entry_points}), [])
+
+    def test_entry_points_guard_their_output_right_after_argument_parsing(self):
+        for relative_path in OUTPUT_GUARDED_MAIN_ENTRY_POINTS:
+            with self.subTest(relative_path=relative_path):
+                main_function = function_named(parse_script(relative_path).body, 'main')
+                guard_calls = calls_named(main_function, OUTPUT_GUARD_NAME)
+                self.assertTrue(guard_calls, f'{relative_path} main must call {OUTPUT_GUARD_NAME}')
+                self.assertEqual(guard_calls[0].lineno, first_work_after_argument_parsing(main_function))
 
     def test_scan_flags_an_output_option_without_the_guard(self):
         unguarded = ast.parse("parser.add_argument('--output')\noutput = arguments.output\n")

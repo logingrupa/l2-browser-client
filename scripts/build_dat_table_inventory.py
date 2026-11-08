@@ -4,19 +4,22 @@ import json
 from pathlib import Path
 import re
 import sys
-import xml.etree.ElementTree as ElementTree
 
 from hash_reference_client_tree import canonical_json_bytes
-from native_catalog.tables import SCHEMA_HASHES, SCHEMA_ROOT, TABLES, checked_bytes, decode_table
+from native_catalog.table_source_resolver import descriptor_layout_for_file_name, descriptor_layout_links
+from native_catalog.tables import DESCRIPTOR_FILE, SCHEMA_HASHES, SCHEMA_ROOT, checked_bytes
+from native_store.catalog_writer import validate_catalog_record
+from native_store.gap_rows import read_gap_rows
 from reference_client_guard import require_reference_client
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_INVENTORY_OUTPUT_PATH = REPOSITORY_ROOT / 'docs' / 'parts' / 'data' / 'dat-table-inventory.json'
+DEFAULT_DECODED_TABLES_CATALOG_PATH = REPOSITORY_ROOT / 'artifacts' / 'lane-store' / 'data-ui' / 'l2' / 'catalog.json'
 DEFAULT_ELBERA_ROOT = Path('E:/Lineage2Elbera')
+DECODED_TABLES_LANE_NAME = 'data-ui'
+DECODE_STEP = 'decode'
 INVENTORY_SCHEMA_VERSION = 1
 EXPECTED_DAT_TABLE_COUNT = 40
-DESCRIPTOR_NAME = 'CT0 Interlude'
-DESCRIPTOR_FILE = '06_interlude.xml'
 SYSTEM_DAT_PATH_PATTERN = re.compile(r'system/([^/]+)\.dat', re.IGNORECASE)
 UNKNOWN_RECORD_COUNT = 'unknown'
 ELBERA_EVIDENCE_COUNT_SOURCE = 'docs/PORT_SCOPE.md section 2 (Elbera extract_gamedata.py)'
@@ -39,35 +42,21 @@ ELBERA_PARSER_SOURCES = {
     'hairaccessarygrp': ('tools/ui/check_hair_selection_native.py', 'keyed_hair_pairs'),
 }
 ELBERA_PARSER_PRESENT_STATUS = 'Elbera parser present, unverified'
+LAYOUT_NOT_DECODED_STATUS = 'layout pinned, not decoded'
 ROUTES = ('local-decoded', 'local-layout-only', 'elbera', 'none')
 ROW_FIELDS = ('table', 'file', 'descriptorLayout', 'layout', 'route', 'recordCount', 'countSource', 'status')
 NOT_LOCK_EQUAL_STATUS = 'E: copy not equal to IMPORTA-PC'
-LOCAL_DECODE_COUNT_SOURCE_PREFIX = 'scripts/native_catalog/tables.py decode_table on '
+DECODED_TABLE_COUNT_SOURCE = 'scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/'
 
 
 class DatTableInventoryError(ValueError):
     pass
 
 
-def descriptor_layout_links(descriptor_bytes):
-    descriptor = ElementTree.fromstring(descriptor_bytes)
-    if descriptor.get('name') != DESCRIPTOR_NAME:
-        raise DatTableInventoryError(f'descriptor is not {DESCRIPTOR_NAME}: {descriptor.get("name")!r}')
-    links = [(link.get('pattern'), link.get('file')) for link in descriptor.iter('link')]
-    if any(not pattern or not layout for pattern, layout in links):
-        raise DatTableInventoryError('descriptor link without pattern or file')
-    return links
-
-
 def classify_dat_table(file_name, links, elbera_parser_statuses):
-    matched_layouts = [layout for pattern, layout in links if re.fullmatch(pattern, file_name, re.IGNORECASE)]
-    if len(matched_layouts) > 1:
-        raise DatTableInventoryError(f'descriptor matches more than one layout for {file_name}: {matched_layouts}')
-    layout = matched_layouts[0] if matched_layouts else None
+    layout = descriptor_layout_for_file_name(file_name, links)
     table = file_name.removesuffix('.dat')
-    if layout in TABLES:
-        route = 'local-decoded'
-    elif layout is not None:
+    if layout is not None:
         route = 'local-layout-only'
     elif elbera_parser_statuses.get(table):
         route = 'elbera'
@@ -95,13 +84,6 @@ def reference_side_dat_file_names(lock):
     return file_names
 
 
-def decoded_record_count(decoded_table):
-    record_lists = [value for value in decoded_table['data'].values() if isinstance(value, list)]
-    if len(record_lists) != 1:
-        raise DatTableInventoryError(f'decoded {decoded_table["source"]} has {len(record_lists)} top-level record lists, expected 1')
-    return len(record_lists[0])
-
-
 def describe_decode_against_elbera(table, record_count):
     elbera_count = ELBERA_EVIDENCE_RECORD_COUNTS.get(table)
     if elbera_count is None:
@@ -111,39 +93,47 @@ def describe_decode_against_elbera(table, record_count):
     return f'decoded, Elbera evidence differs ({elbera_count})'
 
 
-def is_recorded_not_lock_equal(client_access, relative_path):
-    if not client_access.requires_lock:
-        return False
-    record = client_access.lock.record(relative_path)
-    return record is None or record['class'] != 'equal'
+def read_decoded_table_records(catalog_path):
+    if not Path(catalog_path).is_file():
+        return []
+    catalog = json.loads(Path(catalog_path).read_bytes().decode('utf-8'))
+    return [validate_catalog_record('tables', record) for record in catalog.get('tables', [])]
 
 
-def local_decode_count_source(client_access, file_name):
-    lock_equal_qualifier = 'lock-equal ' if client_access.requires_lock else ''
-    return f'{LOCAL_DECODE_COUNT_SOURCE_PREFIX}{lock_equal_qualifier}{client_access.root.as_posix()}/system/{file_name}'
-
-
-def count_local_decoded_table(client_access, row, schema_root):
-    if is_recorded_not_lock_equal(client_access, 'system/' + row['file']):
-        return {'recordCount': UNKNOWN_RECORD_COUNT, 'countSource': None, 'status': NOT_LOCK_EQUAL_STATUS}
-    source_filename = row['file'] if row['layout'] == 'npcname' else None
-    decoded_table = decode_table(client_access.root, row['layout'], schema_root, source_filename=source_filename)
-    record_count = decoded_record_count(decoded_table)
-    return {'recordCount': record_count, 'countSource': local_decode_count_source(client_access, row['file']),
-        'status': describe_decode_against_elbera(row['table'], record_count)}
-
-
-def count_undecoded_table(row, elbera_parser_statuses):
-    if row['route'] == 'elbera':
-        status = elbera_parser_statuses[row['table']]
-    elif row['route'] == 'local-layout-only':
-        status = 'layout pinned, not decoded'
-    else:
-        status = 'no descriptor layout and no Elbera parser'
-    elbera_count = ELBERA_EVIDENCE_RECORD_COUNTS.get(row['table'])
+def undecoded_count(table, status):
+    elbera_count = ELBERA_EVIDENCE_RECORD_COUNTS.get(table)
     if elbera_count is None:
         return {'recordCount': UNKNOWN_RECORD_COUNT, 'countSource': None, 'status': status}
     return {'recordCount': elbera_count, 'countSource': ELBERA_EVIDENCE_COUNT_SOURCE, 'status': status}
+
+
+def lock_equal_source_sha256(client_access, file_name):
+    relative_path = f'system/{file_name}'
+    lock_record = client_access.lock.record(relative_path)
+    if lock_record is None or lock_record['class'] != 'equal':
+        return None
+    client_access.require_equal_file(relative_path)
+    return lock_record['eSha256']
+
+
+def count_descriptor_linked_table(row, source_sha256, decoded_records_by_table, decode_gap_rows_by_key):
+    if source_sha256 is None:
+        return {'route': 'local-layout-only', 'recordCount': UNKNOWN_RECORD_COUNT, 'countSource': None, 'status': NOT_LOCK_EQUAL_STATUS}
+    decoded_record = decoded_records_by_table.get(row['table'])
+    if decoded_record is not None and decoded_record['sourceSha256'] == source_sha256:
+        return {'route': 'local-decoded', 'recordCount': decoded_record['recordCount'],
+                'countSource': f'{DECODED_TABLE_COUNT_SOURCE}system/{row["file"]}',
+                'status': describe_decode_against_elbera(row['table'], decoded_record['recordCount'])}
+    gap_row = decode_gap_rows_by_key.get(f'table:{row["table"]}')
+    if gap_row is not None and gap_row['sourceIdentity']['sha256'] == source_sha256:
+        return {'route': 'local-layout-only', **undecoded_count(row['table'], gap_row['reason'])}
+    return {'route': 'local-layout-only', **undecoded_count(row['table'], LAYOUT_NOT_DECODED_STATUS)}
+
+
+def count_table_without_layout(row, elbera_parser_statuses):
+    if row['route'] == 'elbera':
+        return undecoded_count(row['table'], elbera_parser_statuses[row['table']])
+    return undecoded_count(row['table'], 'no descriptor layout and no Elbera parser')
 
 
 def validate_dat_table_inventory(inventory):
@@ -157,25 +147,29 @@ def validate_dat_table_inventory(inventory):
         if tuple(sorted(row)) != tuple(sorted(ROW_FIELDS)) or row['route'] not in ROUTES:
             raise DatTableInventoryError(f'inventory row {row.get("table")} has unexpected fields or route')
         count = row['recordCount']
+        minimum_count = 0 if row['route'] == 'local-decoded' else 1
         if count == UNKNOWN_RECORD_COUNT:
             if row['countSource'] is not None:
                 raise DatTableInventoryError(f'unknown count of {row["table"]} names a source')
-        elif not isinstance(count, int) or isinstance(count, bool) or count < 1 or not row['countSource']:
-            raise DatTableInventoryError(f'record count of {row["table"]} is not a sourced positive integer')
+        elif not isinstance(count, int) or isinstance(count, bool) or count < minimum_count or not row['countSource']:
+            raise DatTableInventoryError(
+                f'record count of {row["table"]} is not a sourced integer of at least {minimum_count} on route {row["route"]}')
     return inventory
 
 
-def build_dat_table_inventory(client_access, elbera_root, schema_root=SCHEMA_ROOT):
-    descriptor_bytes = checked_bytes(Path(schema_root) / DESCRIPTOR_FILE, SCHEMA_HASHES[DESCRIPTOR_FILE])
-    links = descriptor_layout_links(descriptor_bytes)
+def build_dat_table_inventory(client_access, elbera_root, decoded_table_records, gap_rows, schema_root=SCHEMA_ROOT):
+    links = descriptor_layout_links(checked_bytes(Path(schema_root) / DESCRIPTOR_FILE, SCHEMA_HASHES[DESCRIPTOR_FILE]))
     elbera_parser_statuses = elbera_parser_presence(elbera_root)
+    decoded_records_by_table = {record['id']: record for record in decoded_table_records}
+    decode_gap_rows_by_key = {row['key']: row for row in gap_rows if row['step'] == DECODE_STEP}
     rows = []
     for file_name in reference_side_dat_file_names(client_access.lock):
         row = classify_dat_table(file_name, links, elbera_parser_statuses)
-        if row['route'] == 'local-decoded':
-            row.update(count_local_decoded_table(client_access, row, schema_root))
+        if row['layout'] is not None:
+            source_sha256 = lock_equal_source_sha256(client_access, file_name)
+            row.update(count_descriptor_linked_table(row, source_sha256, decoded_records_by_table, decode_gap_rows_by_key))
         else:
-            row.update(count_undecoded_table(row, elbera_parser_statuses))
+            row.update(count_table_without_layout(row, elbera_parser_statuses))
         rows.append(row)
     return validate_dat_table_inventory({
         'schemaVersion': INVENTORY_SCHEMA_VERSION,
@@ -190,13 +184,16 @@ def dat_table_inventory_bytes(inventory):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description='Write the 40-table .dat inventory from the locked reference client tree.')
+    parser = argparse.ArgumentParser(description='Write the 40-table .dat inventory from the locked reference client tree and sealed table decodes.')
     parser.add_argument('--client', type=Path, required=True)
     parser.add_argument('--output', type=Path, default=DEFAULT_INVENTORY_OUTPUT_PATH)
     parser.add_argument('--elbera-root', type=Path, default=DEFAULT_ELBERA_ROOT)
+    parser.add_argument('--decoded-tables-catalog', type=Path, default=DEFAULT_DECODED_TABLES_CATALOG_PATH)
     arguments = parser.parse_args(argv)
     try:
-        inventory = build_dat_table_inventory(require_reference_client(arguments.client), arguments.elbera_root)
+        client_access = require_reference_client(arguments.client)
+        inventory = build_dat_table_inventory(client_access, arguments.elbera_root, read_decoded_table_records(arguments.decoded_tables_catalog),
+                                              read_gap_rows(REPOSITORY_ROOT, DECODED_TABLES_LANE_NAME))
         arguments.output.parent.mkdir(parents=True, exist_ok=True)
         arguments.output.write_bytes(dat_table_inventory_bytes(inventory))
     except (OSError, ValueError) as error:

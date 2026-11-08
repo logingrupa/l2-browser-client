@@ -4,16 +4,16 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
-import build_dat_table_inventory
-from build_dat_table_inventory import (ELBERA_EVIDENCE_COUNT_SOURCE, ELBERA_EVIDENCE_RECORD_COUNTS, ELBERA_PARSER_PRESENT_STATUS,
-    ELBERA_PARSER_SOURCES, LOCAL_DECODE_COUNT_SOURCE_PREFIX, NOT_LOCK_EQUAL_STATUS, DatTableInventoryError, classify_dat_table,
-    count_local_decoded_table, descriptor_layout_links, elbera_parser_presence, validate_dat_table_inventory)
+from build_dat_table_inventory import (DECODED_TABLE_COUNT_SOURCE, ELBERA_EVIDENCE_COUNT_SOURCE, ELBERA_EVIDENCE_RECORD_COUNTS,
+    ELBERA_PARSER_PRESENT_STATUS, ELBERA_PARSER_SOURCES, LAYOUT_NOT_DECODED_STATUS, NOT_LOCK_EQUAL_STATUS, DatTableInventoryError,
+    classify_dat_table, count_descriptor_linked_table, elbera_parser_presence, lock_equal_source_sha256,
+    validate_dat_table_inventory)
+from native_catalog.table_source_resolver import TableSourceResolutionError, descriptor_layout_links
 from native_catalog.tables import TABLES
-from reference_client_guard import ReferenceClientLockError, require_reference_client
+from reference_client_guard import require_reference_client
 from reference_client_lock_fixture import use_reference_client_lock
 from test_reference_client_guard import SyntheticReferenceClientTrees
 
@@ -34,6 +34,8 @@ OVERLAPPING_DESCRIPTOR = b'''<list name="CT0 Interlude">
 </list>
 '''
 NO_ELBERA_PARSERS = {}
+DESCRIPTOR_LINKED_TABLE_COUNT = 37
+SYNTHETIC_MANIFEST_SHA256 = 'c' * 64
 
 
 def committed_inventory():
@@ -60,16 +62,16 @@ class DescriptorClassificationTests(unittest.TestCase):
         self.links = descriptor_layout_links(SYNTHETIC_DESCRIPTOR)
 
     def test_commented_links_vanish(self):
-        self.assertEqual([layout for _, layout in self.links], ['actionname', 'skillsoundgrp'])
+        self.assertEqual([link.layout for link in self.links], ['actionname', 'skillsoundgrp'])
 
     def test_file_names_match_case_insensitively(self):
         row = classify_dat_table('actionname-e.dat', self.links, NO_ELBERA_PARSERS)
         self.assertEqual((row['table'], row['layout'], row['route'], row['descriptorLayout']),
                          ('actionname-e', 'actionname', 'local-layout-only', True))
-        self.assertEqual(classify_dat_table('skillsoundgrp.dat', self.links, NO_ELBERA_PARSERS)['route'], 'local-decoded')
+        self.assertEqual(classify_dat_table('SkillSoundGrp.dat', self.links, NO_ELBERA_PARSERS)['layout'], 'skillsoundgrp')
 
     def test_two_layouts_for_one_file_name_raise(self):
-        with self.assertRaisesRegex(DatTableInventoryError, 'more than one layout'):
+        with self.assertRaisesRegex(TableSourceResolutionError, 'more than one layout for itemname-e.dat: itemname, itemname_copy'):
             classify_dat_table('itemname-e.dat', descriptor_layout_links(OVERLAPPING_DESCRIPTOR), NO_ELBERA_PARSERS)
 
     def test_table_without_layout_routes_to_elbera_only_with_a_parser(self):
@@ -106,17 +108,18 @@ class CommittedDatTableInventoryTests(unittest.TestCase):
     def test_route_tally(self):
         routes = [row['route'] for row in self.rows]
         self.assertEqual(len(self.rows), 40)
-        self.assertEqual(routes.count('local-decoded'), len(TABLES))
-        self.assertEqual(routes.count('local-layout-only'), 29)
+        self.assertEqual(len(TABLES), DESCRIPTOR_LINKED_TABLE_COUNT)
+        self.assertEqual(routes.count('local-decoded') + routes.count('local-layout-only'), DESCRIPTOR_LINKED_TABLE_COUNT)
         self.assertEqual(sorted(row['table'] for row in self.rows if row['route'] in ('elbera', 'none')), list(ELBERA_CANDIDATE_TABLES))
-        self.assertEqual(sorted(row['layout'] for row in self.rows if row['route'] == 'local-decoded'), sorted(TABLES))
+        self.assertEqual(sorted(row['layout'] for row in self.rows if row['descriptorLayout']), sorted(TABLES))
 
-    def test_local_decoded_counts_are_integers_from_the_pinned_decode_of_the_locked_conversion_root(self):
+    def test_local_decoded_counts_are_integers_from_sealed_decodes_of_the_locked_conversion_root(self):
         conversion_root = json.loads(COMMITTED_REFERENCE_CLIENT_LOCK_PATH.read_bytes())['conversionRoot']
+        self.assertTrue(DECODED_TABLE_COUNT_SOURCE.endswith(f'lock-equal {conversion_root}/'))
         for row in self.rows:
-            if row['route'] == 'local-decoded' and row['recordCount'] != 'unknown':
+            if row['route'] == 'local-decoded':
                 self.assertIsInstance(row['recordCount'], int, row['table'])
-                self.assertEqual(row['countSource'], f'{LOCAL_DECODE_COUNT_SOURCE_PREFIX}lock-equal {conversion_root}/system/{row["file"]}')
+                self.assertEqual(row['countSource'], f'{DECODED_TABLE_COUNT_SOURCE}system/{row["file"]}')
 
     def test_counts_without_a_decode_are_elbera_evidence_or_unknown(self):
         for row in self.rows:
@@ -132,7 +135,7 @@ class CommittedDatTableInventoryTests(unittest.TestCase):
         self.assertEqual(ELBERA_EVIDENCE_RECORD_COUNTS, port_scope_elbera_record_counts())
 
 
-class LocalDecodedCountTests(unittest.TestCase):
+class SealedDecodeCountTests(unittest.TestCase):
     def setUp(self):
         temporary_directory = tempfile.TemporaryDirectory()
         self.addCleanup(temporary_directory.cleanup)
@@ -140,30 +143,48 @@ class LocalDecodedCountTests(unittest.TestCase):
         use_reference_client_lock(self, self.trees.lock_path)
         self.trees.write_lock()
         self.conversion_access = require_reference_client(self.trees.conversion_root)
+        self.row = {'table': 'npcgrp', 'file': 'npcgrp.dat', 'layout': 'npcgrp'}
+        self.source_sha256 = lock_equal_source_sha256(self.conversion_access, 'npcgrp.dat')
 
-    def test_a_table_the_lock_marks_not_equal_is_recorded_without_decoding(self):
+    def decoded_records(self, source_sha256):
+        return {'npcgrp': {'id': 'npcgrp', 'manifest': f'/l2/tables/{SYNTHETIC_MANIFEST_SHA256}/npcgrp.json',
+                           'manifestSha256': SYNTHETIC_MANIFEST_SHA256, 'manifestBytes': 10, 'recordCount': 6519,
+                           'sourceSha256': source_sha256}}
+
+    def decode_gap_rows(self, source_sha256):
+        return {'table:npcgrp': {'key': 'table:npcgrp', 'part': 'data', 'step': 'decode', 'status': 'gap',
+                                 'reason': 'decode-failed:UnicodeDecodeError', 'evidence': 'work/table__npcgrp/decode/receipt.json',
+                                 'sourceIdentity': {'path': 'system/npcgrp.dat', 'sha256': source_sha256}}}
+
+    def test_the_source_sha256_is_the_lock_record_of_a_checked_equal_file(self):
+        self.assertEqual(self.source_sha256, self.conversion_access.lock.record('system/npcgrp.dat')['eSha256'])
+        self.assertIsNone(lock_equal_source_sha256(self.conversion_access, 'chargrp.dat'))
+
+    def test_a_sealed_record_of_the_locked_source_is_local_decoded_with_its_count(self):
+        counted = count_descriptor_linked_table(self.row, self.source_sha256, self.decoded_records(self.source_sha256), {})
+        self.assertEqual(counted, {'route': 'local-decoded', 'recordCount': 6519, 'countSource': f'{DECODED_TABLE_COUNT_SOURCE}system/npcgrp.dat',
+                                   'status': 'decoded, matches Elbera evidence'})
+
+    def test_a_record_of_another_source_is_ignored(self):
+        counted = count_descriptor_linked_table(self.row, self.source_sha256, self.decoded_records('d' * 64), {})
+        self.assertEqual(counted, {'route': 'local-layout-only', 'recordCount': 6519, 'countSource': ELBERA_EVIDENCE_COUNT_SOURCE,
+                                   'status': LAYOUT_NOT_DECODED_STATUS})
+
+    def test_a_decode_failed_gap_row_keeps_the_layout_route_and_names_its_reason(self):
+        counted = count_descriptor_linked_table(self.row, self.source_sha256, {}, self.decode_gap_rows(self.source_sha256))
+        self.assertEqual((counted['route'], counted['status']), ('local-layout-only', 'decode-failed:UnicodeDecodeError'))
+        stale_gap = count_descriptor_linked_table(self.row, self.source_sha256, {}, self.decode_gap_rows('d' * 64))
+        self.assertEqual(stale_gap['status'], LAYOUT_NOT_DECODED_STATUS)
+
+    def test_no_record_and_no_gap_keeps_the_layout_route_with_elbera_evidence_or_unknown(self):
+        row = {'table': 'castlename-e', 'file': 'castlename-e.dat', 'layout': 'castlename'}
+        self.assertEqual(count_descriptor_linked_table(row, self.source_sha256, {}, {}),
+                         {'route': 'local-layout-only', 'recordCount': 'unknown', 'countSource': None, 'status': LAYOUT_NOT_DECODED_STATUS})
+
+    def test_a_table_the_lock_marks_not_equal_gets_no_count(self):
         row = {'table': 'chargrp', 'file': 'chargrp.dat', 'layout': 'chargrp'}
-        with patch.object(build_dat_table_inventory, 'decode_table', side_effect=AssertionError('a differing table must not be decoded')):
-            self.assertEqual(count_local_decoded_table(self.conversion_access, row, None),
-                             {'recordCount': 'unknown', 'countSource': None, 'status': NOT_LOCK_EQUAL_STATUS})
-
-    def test_the_count_source_names_the_root_that_was_read_and_whether_the_lock_applied(self):
-        row = {'table': 'npcgrp', 'file': 'npcgrp.dat', 'layout': 'npcgrp'}
-        decoded = {'source': 'system/npcgrp.dat', 'data': {'npc': [{'id': 1}, {'id': 2}]}}
-        reference_access = require_reference_client(self.trees.importa_root)
-        with patch.object(build_dat_table_inventory, 'decode_table', return_value=decoded):
-            for client_access, expected_source in (
-                    (self.conversion_access, f'{LOCAL_DECODE_COUNT_SOURCE_PREFIX}lock-equal {self.trees.conversion_root.as_posix()}/system/npcgrp.dat'),
-                    (reference_access, f'{LOCAL_DECODE_COUNT_SOURCE_PREFIX}{self.trees.importa_root.as_posix()}/system/npcgrp.dat')):
-                with self.subTest(root=client_access.root):
-                    self.assertEqual(count_local_decoded_table(client_access, row, None)['countSource'], expected_source)
-
-    def test_a_stale_lock_on_an_equal_table_stops_the_inventory(self):
-        row = {'table': 'npcgrp', 'file': 'npcgrp.dat', 'layout': 'npcgrp'}
-        stale_lock = ReferenceClientLockError('reference client lock is stale for system/npcgrp.dat; re-lock ordered')
-        with patch.object(build_dat_table_inventory, 'decode_table', side_effect=stale_lock):
-            with self.assertRaisesRegex(ReferenceClientLockError, 'stale for system/npcgrp.dat'):
-                count_local_decoded_table(self.conversion_access, row, None)
+        self.assertEqual(count_descriptor_linked_table(row, None, self.decoded_records(self.source_sha256), {}),
+                         {'route': 'local-layout-only', 'recordCount': 'unknown', 'countSource': None, 'status': NOT_LOCK_EQUAL_STATUS})
 
 
 class InventoryValidationBoundaryTests(unittest.TestCase):
@@ -188,13 +209,22 @@ class InventoryValidationBoundaryTests(unittest.TestCase):
         with self.assertRaisesRegex(DatTableInventoryError, 'sorted'):
             validate_dat_table_inventory(reversed_inventory)
 
-    def test_zero_or_unsourced_counts_fail(self):
+    def test_zero_off_the_decoded_route_or_unsourced_counts_fail(self):
         for replacement in ({'recordCount': 0}, {'countSource': None}, {'recordCount': 12.5}):
             broken = copy.deepcopy(self.inventory)
-            sourced_row = next(row for row in broken['rows'] if isinstance(row['recordCount'], int))
+            sourced_row = next(row for row in broken['rows'] if isinstance(row['recordCount'], int) and row['route'] != 'local-decoded')
             sourced_row.update(replacement)
-            with self.assertRaisesRegex(DatTableInventoryError, 'sourced positive integer'):
+            with self.assertRaisesRegex(DatTableInventoryError, 'is not a sourced integer of at least 1'):
                 validate_dat_table_inventory(broken)
+
+    def test_zero_is_accepted_only_on_a_sourced_local_decoded_row(self):
+        decoded = copy.deepcopy(self.inventory)
+        decoded_row = next(row for row in decoded['rows'] if row['route'] == 'local-decoded')
+        decoded_row['recordCount'] = 0
+        validate_dat_table_inventory(decoded)
+        decoded_row['countSource'] = None
+        with self.assertRaisesRegex(DatTableInventoryError, 'is not a sourced integer of at least 0'):
+            validate_dat_table_inventory(decoded)
 
     def test_unknown_count_with_a_source_fails(self):
         broken = copy.deepcopy(self.inventory)

@@ -13,7 +13,7 @@
    "table": "actionname-e"
   },
   {
-   "countSource": "scripts/native_catalog/tables.py decode_table on lock-equal E:/Lineage2-client/system/armorgrp.dat",
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/armorgrp.dat",
    "descriptorLayout": true,
    "file": "armorgrp.dat",
    "layout": "armorgrp",
@@ -33,7 +33,7 @@
    "table": "castlename-e"
   },
   {
-   "countSource": "scripts/native_catalog/tables.py decode_table on lock-equal E:/Lineage2-client/system/chargrp.dat",
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/chargrp.dat",
    "descriptorLayout": true,
    "file": "chargrp.dat",
    "layout": "chargrp",
@@ -43,13 +43,13 @@
    "table": "chargrp"
   },
   {
-   "countSource": null,
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/classinfo-e.dat",
    "descriptorLayout": true,
    "file": "classinfo-e.dat",
    "layout": "classinfo",
-   "recordCount": "unknown",
-   "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "recordCount": 10,
+   "route": "local-decoded",
+   "status": "decoded",
    "table": "classinfo-e"
   },
   {
@@ -93,13 +93,13 @@
    "table": "entereventgrp"
   },
   {
-   "countSource": "docs/PORT_SCOPE.md section 2 (Elbera extract_gamedata.py)",
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/etcitemgrp.dat",
    "descriptorLayout": true,
    "file": "etcitemgrp.dat",
    "layout": "etcitemgrp",
    "recordCount": 6911,
-   "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "route": "local-decoded",
+   "status": "decoded, matches Elbera evidence",
    "table": "etcitemgrp"
   },
   {
@@ -183,13 +183,13 @@
    "table": "huntingzone-e"
   },
   {
-   "countSource": "docs/PORT_SCOPE.md section 2 (Elbera extract_gamedata.py)",
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/itemname-e.dat",
    "descriptorLayout": true,
    "file": "itemname-e.dat",
    "layout": "itemname",
    "recordCount": 9238,
-   "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "route": "local-decoded",
+   "status": "decoded, matches Elbera evidence",
    "table": "itemname-e"
   },
   {
@@ -203,7 +203,7 @@
    "table": "logongrp"
   },
   {
-   "countSource": "scripts/native_catalog/tables.py decode_table on lock-equal E:/Lineage2-client/system/mobskillanimgrp.dat",
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/mobskillanimgrp.dat",
    "descriptorLayout": true,
    "file": "mobskillanimgrp.dat",
    "layout": "mobskillanimgrp",
@@ -223,7 +223,7 @@
    "table": "musicinfo"
   },
   {
-   "countSource": "scripts/native_catalog/tables.py decode_table on lock-equal E:/Lineage2-client/system/npcgrp.dat",
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/npcgrp.dat",
    "descriptorLayout": true,
    "file": "npcgrp.dat",
    "layout": "npcgrp",
@@ -233,7 +233,7 @@
    "table": "npcgrp"
   },
   {
-   "countSource": "scripts/native_catalog/tables.py decode_table on lock-equal E:/Lineage2-client/system/npcname-e.dat",
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/npcname-e.dat",
    "descriptorLayout": true,
    "file": "npcname-e.dat",
    "layout": "npcname",
@@ -303,7 +303,7 @@
    "table": "servername-e"
   },
   {
-   "countSource": "scripts/native_catalog/tables.py decode_table on lock-equal E:/Lineage2-client/system/skillgrp.dat",
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/skillgrp.dat",
    "descriptorLayout": true,
    "file": "skillgrp.dat",
    "layout": "skillgrp",
@@ -313,17 +313,17 @@
    "table": "skillgrp"
   },
   {
-   "countSource": "docs/PORT_SCOPE.md section 2 (Elbera extract_gamedata.py)",
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/skillname-e.dat",
    "descriptorLayout": true,
    "file": "skillname-e.dat",
    "layout": "skillname",
    "recordCount": 29812,
-   "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "route": "local-decoded",
+   "status": "decoded, matches Elbera evidence",
    "table": "skillname-e"
   },
   {
-   "countSource": "scripts/native_catalog/tables.py decode_table on lock-equal E:/Lineage2-client/system/skillsoundgrp.dat",
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/skillsoundgrp.dat",
    "descriptorLayout": true,
    "file": "skillsoundgrp.dat",
    "layout": "skillsoundgrp",
@@ -383,7 +383,7 @@
    "table": "variationeffectgrp-e"
   },
   {
-   "countSource": "scripts/native_catalog/tables.py decode_table on lock-equal E:/Lineage2-client/system/weapongrp.dat",
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/weapongrp.dat",
    "descriptorLayout": true,
    "file": "weapongrp.dat",
    "layout": "weapongrp",

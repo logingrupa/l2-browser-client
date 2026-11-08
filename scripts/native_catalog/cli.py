@@ -11,6 +11,7 @@ import sys
 
 from .ue2 import FormatError, Package, summary
 from .tables import CRYPTO_SOURCE, SCHEMA_ROOT, TABLES, decode_table
+from native_store.store_paths import REPOSITORY_ROOT, require_converter_output
 from native_assets_lib.umodel_import_closure import index_package_files_by_casefolded_stem, require_lock_equal_import_closure, resolve_package_path
 from reference_client_guard import require_reference_client
 
@@ -230,6 +231,7 @@ def main(argv=None):
     parser.add_argument('--verify', action='store_true', help='Recheck source and output hashes without running tools or rewriting reports.')
     args = parser.parse_args(argv)
     try:
+        output = require_converter_output(REPOSITORY_ROOT, args.output)
         client_access = require_reference_client(args.client)
         table_sources = {}
         for selection in args.table_source:
@@ -240,7 +242,6 @@ def main(argv=None):
         client = args.client.resolve(strict=True)
         if not client.is_dir():
             raise FormatError('Native client must be a directory')
-        output = args.output.resolve()
         if output.is_relative_to(client):
             raise FormatError('Output must be outside the read-only native client')
         if args.verify:

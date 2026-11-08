@@ -17,7 +17,7 @@ from native_assets_lib.asset_manifest import reference_client_build
 from native_assets_lib.texture_mips import REVIEWED_VERSIONS
 from native_catalog.cli import NATIVE, inspect_header
 from native_catalog.skeletal import SkeletalReader
-from native_catalog.tables import TABLES, decode_table
+from native_catalog.tables import decode_table
 from native_catalog.ue2 import FormatError
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import replace_file
@@ -29,6 +29,7 @@ from reference_client_guard import require_reference_client
 REPOSITORY_ROOT = SCRIPTS_ROOT.parent
 ACTOR_UNIT_CENSUS_PATH = REPOSITORY_ROOT / ACTOR_UNIT_CENSUS_RELATIVE_PATH
 ACTOR_UNIT_CENSUS_SCHEMA_VERSION = 1
+ACTOR_CENSUS_TABLES = ('armorgrp', 'chargrp', 'mobskillanimgrp', 'npcgrp', 'npcname', 'skillgrp', 'skillsoundgrp', 'weapongrp')
 ACTORS_LANE_NAME = 'actors'
 CENSUS_GAP_ROW_STEP = 'census'
 SKELETAL_PACKAGE_DIRECTORY = 'animations'
@@ -200,7 +201,7 @@ def build_actor_census(client_access, tables, armor_mesh_columns):
 
 
 def decode_actor_tables(client_root):
-    return {table_name: decode_table(client_root, table_name) for table_name in TABLES}
+    return {table_name: decode_table(client_root, table_name) for table_name in ACTOR_CENSUS_TABLES}
 
 
 def write_actor_census(census, path):
