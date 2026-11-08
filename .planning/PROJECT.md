@@ -35,18 +35,18 @@ Stage A breadth-first conversion of the whole client (Phases 1 to 3), stage B se
 - Copying `linegen` source or assets (no redistribution licence found).
 - Elbera's three.js runtime, native verifiers pinned to Engine.dll `07b24af4...`, `elbera-acis.patch`, deviceId auto login, and a smart JSON gateway (doubles per-packet work, thrown away if SpacetimeDB is chosen).
 - Reproducing legacy Direct3D internals unless they explain a visible difference or required behaviour.
-- Depth-first work order from docs/ROADMAP.md, ASSET_PIPELINE.md, NATIVE_AUDIO.md, ASSET_BATCHING.md (superseded by DEC-OWN-1).
+- Depth-first work order (human fighters and 20_20 before other races or tiles); DEC-OWN-1 sets breadth-first stage A.
 
 ## Context
 
 - Reference: IMPORTA-PC `C:/Lineage2-client` (modified third-party Interlude client, not an untouched official build; Engine.dll SHA-256 `4dd2f63c606d...`). DATABASE-PC `E:/Lineage2-client` is a conversion source only after the full-tree hash lock (DEC-OWN-2). Native client facts on IMPORTA-PC: ssh `fleet-importa-pc`, T3 thread 28fd5fa6 (env 20b54a96).
 - Elbera (`C:\laragon\www\Lineage2Elbera` on IMPORTA-PC, `E:\Lineage2Elbera` on DATABASE-PC, commit `12c9656`) is a source of reusable decoders and conversion code, MIT.
 - Planning intel: `.planning/intel/SYNTHESIS.md` (entry), conflict resolutions in `.planning/INGEST-CONFLICTS.md`. Primary scope doc: `docs/PORT_SCOPE.md`.
-- The ~48 continuation prompts in `.planning/` are history. Keep status files small (PORT_SCOPE section 10 warns about 271 KB progress files).
+- Resume point: `.planning/STATE.md` for status and `.planning/ROADMAP.md` for order. Continuation and handoff prompts are not kept in `.planning/`; git history has them. Keep status files small (PORT_SCOPE section 10 warns about 271 KB progress files).
 
 ## Constraints
 
-- **Stack**: Node 22.12.0+, pnpm 10.32.1, Babylon.js 9.27.1, Editor tools/CLI 5.5.3 (optional viewer only, DEC-OWN-8; not in `pnpm dev` or `pnpm build`), TypeScript 7.0.2, Vite 7.3.7, Vitest 5.1.0, Playwright 1.64.1. Strict TS, no `any`, pnpm only.
+- **Stack**: Node 22.12.0+, pnpm 10.32.1, Babylon.js 9.27.1, Editor tools/CLI 5.5.3 (optional viewer only, DEC-OWN-8; not in `pnpm dev` or `pnpm build`), TypeScript 7.0.2, Vite 7.3.7, Vitest 5.1.0, Playwright 1.64.1. Strict TS, no `any`, pnpm only. Code rules: `AGENTS.md`.
 - **Adapter boundary**: `GameWorldAdapter` is the only way gameplay state enters the client; its five methods (`getInitialState`, `subscribe`, `dispatch`, `advance`, `dispose`) stay frozen; no Babylon types below it.
 - **Output contract**: `.l2asset` packages plus runtime catalog (128 MiB archive, 96 MiB payload, 256 entries). `recipes/native-inputs.lock.json` is input-only. Units and handedness are recorded per route in `asset.json`.
 - **Conversion**: independent per-system scripts; UModel build1590 pinned (SHA-256 `13502e5a...364a0`); no normalization, ground fitting or weight changes; unbound materials become visible magenta diagnostics; no procedural stand-ins on the native route.
@@ -85,7 +85,7 @@ Stage A breadth-first conversion of the whole client (Phases 1 to 3), stage B se
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
 | Breadth-first, stage A before stage B | Owner decision; sandbox is the acceptance tool and a server is replaceable | Pending |
-| Lighter stage A bar, fixed thresholds in polish | Capture path fails the 30 FPS gate and no 120 Hz display exists; thresholds stay unrelaxed | Pending |
+| Lighter stage A bar, fixed thresholds in polish | Capture path fails the 30 FPS gate; DATABASE-PC (GTX 1060 PERF-01 host) has no 120 Hz display, and IMPORTA-PC is 144 Hz-capable with a 120 Hz mode enumerated but not selected (docs/NATIVE_PARITY.md); thresholds stay unrelaxed | Pending |
 | Local descriptor first, Elbera behind adapter | Local route is hash-pinned and already decodes 8 tables; Elbera covers gaps | Pending |
 | `.l2asset` + catalog as output contract | Already implemented and verified; avoids a third merged manifest | Pending |
 | Editor off the build and runtime path | World comes from client plus converter; Editor path needs repair scripts and has open defects | Pending (Phase 1) |

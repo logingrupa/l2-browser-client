@@ -8,6 +8,8 @@ No blockers. The three cross-reference cycles from revision 1 were waived by the
 
 ### WARNINGS (7)
 
+All 7 warnings below are answered by DEC-OWN-1..7, and the Editor parts by DEC-OWN-8; see "Owner resolutions" at the end. Quotes are as of the ingest on 2026-11-08. Current homes: docs/ROADMAP.md content is in .planning/ROADMAP.md and .planning/STATE.md; docs/ASSET_BATCHING.md is in docs/ASSET_PIPELINE.md; Editor docs are in docs/EDITOR_VIEWER.md.
+
 [WARNING] Competing work-order variants: depth-first human slice versus breadth-first full conversion
   Found: docs/PORT_SCOPE.md section 6 "Order of work" (PRD, precedence 1) orders the work breadth-first: "This follows the owner decision above: the full converted client first, the server adapter after. Stage A converts the whole client and proves it in the offline sandbox: 1. Decode all 40 `.dat` tables ... 2. Batch-convert all 153 tiles with the pipeline that already converts 20_20. 3. All player characters, every race, gender and class. 4. NPCs and monsters ... 5. Skill visuals and sounds ... 6. UI windows". Stage B then "plugs in a server through `GameWorldAdapter`".
   Found: docs/ROADMAP.md "Current direction and next work - 2026-11-07" (DOC, precedence 8) orders it depth-first: "The user's latest sequencing is explicit: **finish human male/female, their class skills and usable 20_20 traversal before expanding to other races or map tiles**."
@@ -52,7 +54,7 @@ No blockers. The three cross-reference cycles from revision 1 were waived by the
   Found: docs/ASSET_PIPELINE.md (SPEC, 5): "Whole map conversion, effect simulation, skills, runtime appearance selection, actor collision, and native gameplay require their own source-backed adapters". docs/ASSET_BATCHING.md: the selected 20_20 content "is not the whole map or all neighboring tiles"; item 4: "keep the qualified UV scope bounded". docs/NATIVE_PARITY.md: the 735-V terrain UV correction is accepted "for the retained `20_20` scope only". docs/SOURCE_REUSE.md: BSP floor import, "Only the exact map/Brush397 branch is supported." docs/NATIVE_WORLD.md: "Surrounding terrain, full geometry/material coverage and native visibility remain incomplete." docs/ARCHITECTURE.md: "`loadNativeSection` eagerly loads terrain, additive patches and every model template".
   Found: PRODUCT.md (precedence 0): "Static environment stays editable in Babylon.js Editor." docs/ROADMAP.md records the single 20_20 authored world at 2,244 recovered files / 53,057,535 bytes; docs/ASSET_BATCHING.md: "Separate Editor authoring files per tile remain compatible."
   Impact: The existing 20_20 result is a chain of additive, source-qualified steps (nine-sector terrain selection, TerrainSector247, Actor3703 model append, Brush397 BSP slab, sky, PointRegion ambient reader, placement audio), several explicitly limited to 20_20. PORT_SCOPE (1) outranks these sources, so auto-resolution would assume a generic one-run tile pipeline, but the capability documents state the adapters are tile-specific today. The "few minutes" figure in PORT_SCOPE refers to Elbera's own `convert.py`, a different pipeline. Stage A item 2 may therefore be a large adapter-building effort rather than a batch run, and the Editor-editability requirement is unscoped for 152 more tiles.
-  → Owner or integration lane decides whether stage A item 2 includes building tile-general versions of the terrain UV rule, BSP, sky, ambient and placement-audio steps (and per-tile Editor scenes), or covers only geometry and terrain first.
+  → Owner or integration lane decides whether stage A item 2 includes building tile-general versions of the terrain UV rule, BSP, sky, ambient and placement-audio steps (and per-tile Editor scenes), or covers only geometry and terrain first. Answered by DEC-OWN-7 (tile-general steps, failing tiles listed as gaps) and DEC-OWN-8 (per-tile Editor scenes are not planned).
 
 ### INFO (11)
 
@@ -91,7 +93,7 @@ No blockers. The three cross-reference cycles from revision 1 were waived by the
 
 ## Owner resolutions (2026-11-08)
 
-The owner answered all 7 WARNINGS at the conflict gate and approved the ingest. Full text is in .planning/intel/decisions.md as DEC-OWN-1 to DEC-OWN-7 (locked).
+The owner answered all 7 WARNINGS at the conflict gate and approved the ingest. Full text is in .planning/intel/decisions.md as DEC-OWN-1 to DEC-OWN-7 (locked). DEC-OWN-8 (locked, 2026-11-08) takes Babylon.js Editor off the build and runtime path and supersedes PRODUCT.md "Static environment stays editable in Babylon.js Editor".
 
 [INFO] Resolved: work order
   Note: Breadth-first per docs/PORT_SCOPE.md section 6 (DEC-OWN-1). Open slice items go to the polish list unless they block the sandbox.
@@ -106,4 +108,4 @@ The owner answered all 7 WARNINGS at the conflict gate and approved the ingest. 
 [INFO] Resolved: lanes and UI ordering
   Note: L1 world, L2 actors, L3 data + UI, plus integration; UI parallel from the start (DEC-OWN-6).
 [INFO] Resolved: tile pipeline scope
-  Note: Geometry with the tile-general UV rule plus sky, ambient and placement audio for all 153 tiles; failing tiles listed as gaps; Editor scenes later (DEC-OWN-7).
+  Note: Geometry with the tile-general UV rule plus sky, ambient and placement audio for all 153 tiles; failing tiles listed as gaps (DEC-OWN-7). Per-tile Editor scenes are not planned; the Editor is an optional viewer (DEC-OWN-8).

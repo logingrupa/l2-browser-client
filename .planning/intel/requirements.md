@@ -2,17 +2,19 @@
 
 Sources: PRD documents PRODUCT.md (precedence 0), docs/PORT_SCOPE.md (1), .planning/goal.md (2). None of the three has user stories or formal acceptance-criteria sections; where the source states no acceptance test, the entry says "absent in source". The depth-first work-order variant (REQ-work-order-v2) is drawn from docs/ROADMAP.md (DOC, precedence 8) and corroborating SPEC text, because that is where the depth-first order is actually written; .planning/goal.md only contributes the scope boundary (see its entry).
 
+Current state: the owner answered every WARNING at the conflict gate (DEC-OWN-1..8, 2026-11-08); the active requirement IDs are in .planning/REQUIREMENTS.md. Source citations quote the docs as of the ingest: docs/ROADMAP.md content is in .planning/ROADMAP.md and .planning/STATE.md, docs/ASSET_BATCHING.md is in docs/ASSET_PIPELINE.md, and Editor docs are in docs/EDITOR_VIEWER.md.
+
 ## REQ-work-order-v1-breadth-first
 - source: docs/PORT_SCOPE.md, section 6 "Order of work" (PRD, precedence 1)
 - description: "This follows the owner decision above: the full converted client first, the server adapter after." Stage A "converts the whole client and proves it in the offline sandbox": (1) decode all 40 `.dat` tables to JSON and fix the sysstring/systemmsg count; (2) batch-convert all 153 tiles with the pipeline that already converts 20_20; (3) all player characters, every race, gender and class; (4) NPCs and monsters from npcgrp, item and armor meshes; (5) skill visuals and sounds bound through skillgrp, skillsoundgrp and npcgrp; (6) UI windows read from the decoded interface layout, filled with sandbox data. Stage B "plugs in a server through `GameWorldAdapter`": (1) Mobius adapter (login, character select, world entry, then event dispatch one packet type at a time); (2) combat, dialogs, shops, social and quest windows, which mostly display server data; (3) if Mobius does not fit, a SpacetimeDB adapter emitting the same adapter events.
 - acceptance: "The sandbox is the acceptance tool for stage A. It can walk any tile, spawn any NPC by ID, equip any item, play any skill's visual and sound and open any window. Each part is checked there against the real L2.exe."
-- scope: whole project sequencing. VARIANT v1 of 2. Competes with REQ-work-order-v2-depth-first. Not merged; owner decides at the conflict gate.
+- scope: whole project sequencing. VARIANT v1 of 2. This is the work order (DEC-OWN-1); REQ-work-order-v2-depth-first is rejected.
 
 ## REQ-work-order-v2-depth-first
 - source: docs/ROADMAP.md, "Current direction and next work - 2026-11-07" (DOC, precedence 8); corroborated by docs/ASSET_PIPELINE.md (SPEC, 5), docs/NATIVE_AUDIO.md "Current sequencing and system bundles - 2026-11-07" (SPEC, 7), docs/ASSET_BATCHING.md "Next work, in the user's order" (DOC, unnumbered). .planning/goal.md (PRD, 2) is the pointer the owner cited; its text is the Phase 1 foundation brief and does not itself state this order (see REQ-phase1-foundation).
 - description: ROADMAP.md: "The user's latest sequencing is explicit: **finish human male/female, their class skills and usable 20_20 traversal before expanding to other races or map tiles**." ASSET_BATCHING.md next work: (1) preserve scoped male/female world profiles, complete remaining human bases, appearance and equipment, footsteps, interactive Editor save proof; (2) establish the human class and skill inventory and complete their character/animation/effect/audio bundles; (3) preserve the indoor-stair repair, with automatic routing around turns, indoor camera obstruction and complete 20_20 traversal open; (4) "Only after this human/class-skill/20_20 milestone, extend other races/sexes and map tiles through independently runnable system scripts"; (5) one persistent runtime Scene with bounded cells, residency/LOD/instancing as measured.
 - acceptance: absent as a single criterion. ROADMAP.md states "No complete 20_20 or all-human acceptance is claimed" and lists open items: automatic routing around turns, upper-landing camera roof occlusion, other human bases/classes, skills, automatic surface footsteps, a new interactive Editor save. docs/NATIVE_PARITY.md (SPEC, 4) adds "Batch only supported asset routes after the slice works; publish coverage and explicit gaps, not a complete-client claim."
-- scope: whole project sequencing. VARIANT v2 of 2. Competes with REQ-work-order-v1-breadth-first. Not merged.
+- scope: whole project sequencing. VARIANT v2 of 2. Rejected by DEC-OWN-1 (breadth-first). Its open items are POL-02, POL-03 and ACT-01 in .planning/REQUIREMENTS.md.
 
 ## REQ-full-converted-client
 - source: docs/PORT_SCOPE.md, "Owner decisions" item 1 and section 2 (precedence 1)
@@ -24,13 +26,13 @@ Sources: PRD documents PRODUCT.md (precedence 0), docs/PORT_SCOPE.md (1), .plann
 - source: docs/PORT_SCOPE.md, sections 2, 3, 5 part 1, 6 stage A item 1 (precedence 1)
 - description: Decode all 40 `.dat` tables to JSON. "The other 29 tables have not been decoded to JSON yet" (11 done via Elbera's `tools/dat/extract_gamedata.py`: npcgrp, npcname-e, itemname-e, etcitemgrp, weapongrp, armorgrp, skillgrp, skillname-e, sysstring-e, systemmsg-e, actionname-e). "sysstring-e and systemmsg-e report the same count [2,083]. That looks like a parser quirk and needs a check before anything depends on it."
 - acceptance: absent in source other than "fix the sysstring/systemmsg count".
-- scope: part 1 (Cv), layer 0. Decoder route is disputed, see WARNING on .dat decoder route.
+- scope: part 1 (Cv), layer 0. Decoder route set by DEC-OWN-4: local hash-pinned descriptor first, Elbera fills gaps behind an adapter.
 
 ## REQ-world-tiles-batch
 - source: docs/PORT_SCOPE.md, sections 2 and 6 stage A item 2 (precedence 1)
 - description: "All 153 tiles share one file format. Converting the world is one pipeline run over every tile, not a job per area." Batch-convert all 153 tiles with the pipeline that already converts 20_20. The 10 non-tile maps (`Lobby`, `entry`, `skylevel`, `ship_position`, `Auto0` to `Auto5`) are noted; "Nobody has checked yet what the Auto maps are."
 - acceptance: sandbox can walk any tile; checked against L2.exe.
-- scope: part 3 (Cv+Cl), layer 1. Depends on streaming/LOD (docs/ARCHITECTURE.md: "Neither route currently implements a bounded world-streaming cache or terrain/mesh LOD").
+- scope: part 3 (Cv+Cl), layer 1. DEC-OWN-7 narrows "one pipeline run" to tile-general converter steps, with failing tiles listed as gaps (WORLD-01). Depends on streaming/LOD (docs/ARCHITECTURE.md: "Neither route currently implements a bounded world-streaming cache or terrain/mesh LOD").
 
 ## REQ-player-characters
 - source: docs/PORT_SCOPE.md, section 5 part 4 and section 6 stage A item 3 (precedence 1)
@@ -53,7 +55,7 @@ Sources: PRD documents PRODUCT.md (precedence 0), docs/PORT_SCOPE.md (1), .plann
 ## REQ-offline-sandbox
 - source: docs/PORT_SCOPE.md, section 5 part 2 and section 6 (precedence 1)
 - description: "Offline sandbox: spawn, equip, cast, open any window without a server." Must "walk any tile, spawn any NPC by ID, equip any item, play any skill's visual and sound and open any window."
-- acceptance: "Each part is checked there against the real L2.exe." Which L2.exe/host and which tolerances apply is not stated; see WARNINGs.
+- acceptance: "Each part is checked there against the real L2.exe." L2.exe on IMPORTA-PC is the reference (DEC-OWN-2); stage A uses the per-part screenshot / listen check and fixed thresholds apply to Phases 5-6 (DEC-OWN-3).
 - scope: part 2 (Cl), layer 0. State: `MockWorldAdapter` and `NativeSliceAdapter` exist; "no by-ID spawning yet".
 
 ## REQ-client-displays-server-outcomes
@@ -88,9 +90,9 @@ Sources: PRD documents PRODUCT.md (precedence 0), docs/PORT_SCOPE.md (1), .plann
 
 ## REQ-multi-agent-workflow
 - source: docs/PORT_SCOPE.md, sections 7 and 8 (precedence 1)
-- description: Commit first; one part per thread per branch named `<part>/<slug>`; lanes via `lane.ps1` or plain `git worktree`, at most 3 lanes, no `lane new`/`lane rm` on Thu 19:00-21:30 and Sun 10:00-14:00; scripts writing the native store run only in the main checkout; `STATUS.md` one line per part, `DECISIONS.md` append-only; merge one branch at a time; contract changes merge first. Contracts the integration lane owns: asset manifest (extend `recipes/native-inputs.lock.json`), frozen adapter boundary, golden fixtures, one evidence doc per part `docs/parts/<part>/EVIDENCE.md` under about 30 KB, folder ownership in `.planning/lanes.json`. Agent counts per phase: 2, 6, 6, 5; steady state 6, ceiling 7.
+- description: Commit first; one part per thread per branch named `<part>/<slug>`; lanes via `lane.ps1` or plain `git worktree`, at most 3 lanes, no `lane new`/`lane rm` on Thu 19:00-21:30 and Sun 10:00-14:00; scripts writing the native store run only in the main checkout; `STATUS.md` one line per part, `DECISIONS.md` append-only; merge one branch at a time; contract changes merge first. Contracts the integration lane owns: output contract (`.l2asset` packages plus runtime catalog; `recipes/native-inputs.lock.json` stays input-only, DEC-OWN-5), frozen adapter boundary, golden fixtures, one evidence doc per part `docs/parts/<part>/EVIDENCE.md` under about 30 KB, folder ownership in `.planning/lanes.json`. Lane count: three lanes plus integration (DEC-OWN-6).
 - acceptance: absent in source.
-- scope: process. Internal tension between lane cap and per-area lanes, see WARNING.
+- scope: process. Lane cap versus per-area lanes is set by DEC-OWN-6 (L1 world, L2 actors, L3 data + UI, plus integration).
 
 ## REQ-client-side-behaviors
 - source: docs/PORT_SCOPE.md, section 1 (precedence 1)
@@ -123,6 +125,7 @@ Sources: PRD documents PRODUCT.md (precedence 0), docs/PORT_SCOPE.md (1), .plann
 - scope: native route startup.
 
 ## REQ-editor-authoring-preserved
+- current: superseded by DEC-OWN-8. Babylon.js Editor is an optional viewer (VIEW-01, v2); the reproducible build is EDIT-02.
 - source: PRODUCT.md (precedence 0); docs/ARCHITECTURE.md "One authored scene, two entry workflows" (SPEC, 3)
 - description: "Static environment stays editable in Babylon.js Editor." Persistent world editing uses `native-world.scene` imported with `pnpm assets:editor`; generated assets must not overwrite saved Editor edits. docs/NATIVE_PARITY.md (SPEC, 4) requires an actual Babylon Editor 5.5.3 round trip, not an automated packer test.
 - acceptance: PRODUCT.md: partial proof recorded (equipment, clip, camera, material tint/roughness, world placement); "Full native shader authoring and effect timing remain unfinished."
@@ -150,10 +153,10 @@ Sources: PRD documents PRODUCT.md (precedence 0), docs/PORT_SCOPE.md (1), .plann
 - source: PRODUCT.md "Rendering direction" (precedence 0, "Existing fidelity and hardware acceptance thresholds remain unchanged"); docs/NATIVE_PARITY.md (SPEC, 4); docs/RENDERING.md "Acceptance boundaries" (SPEC, 6)
 - description: Native-parity visual acceptance on four cases (Human male fighter equipment/animation, Greater Musveren including death, Power Strike skill 3 with coordinated motion/effect, a declared representative section of `20_20.unr`) and a sustained 120 FPS target on DATABASE-PC's GTX 1060 at 1920 x 1080, DPR 1, with 32 actors and eight simultaneous Power Strike effects. PRODUCT.md adds that "Its RTX 4090 cannot certify the GTX 1060 target."
 - acceptance: Defined in `recipes/native-parity.acceptance.json` (not in the prose) and summarized in constraints.md entries "Native parity fixed acceptance contract", "Native parity visual evidence rules", "Performance protocol and target". "Missing or uncertain evidence is **unverified**, never a pass." docs/NATIVE_PARITY.md states no pass has been claimed: capture cadence failed the fixed 30 FPS reference gate and no 120 Hz presentation display is available on the benchmark host.
-- scope: fidelity and performance. Interaction with stage A acceptance is an open WARNING in .planning/INGEST-CONFLICTS.md.
+- scope: fidelity and performance. Fixed thresholds apply to Phases 5-6; stage A uses the lighter per-part check (DEC-OWN-3).
 
 ## REQ-independent-system-scripts
 - source: docs/ROADMAP.md "Current direction and next work" (DOC, 8); docs/ASSET_PIPELINE.md opening (SPEC, 5); docs/ASSET_BATCHING.md "Architecture" (DOC, unnumbered); docs/NATIVE_AUDIO.md (SPEC, 7)
 - description: ASSET_BATCHING.md: "A selected system or asset must be convertible without running all extraction or other unrelated systems. Shared format readers, identity validation and packaging helpers may be reused; they are not a reason to require a monolithic command." The `assets:pipeline` orchestrator is "optional convenience for explicit jobs. Dedicated commands remain primary". ROADMAP.md: "Further orchestration is not the next milestone." Recipes select variants and source objects "without copying format readers for every race, building or tile."
 - acceptance: absent as a test; ASSET_BATCHING.md records exit codes for the orchestrator (0 requested conversion coverage complete, 2 explicit partial coverage, 1 failure; "None means gameplay or native acceptance complete").
-- scope: converter architecture. Relevant to PORT_SCOPE stage A item 2 ("one pipeline run over every tile"); see WARNING on all-tiles pipeline readiness.
+- scope: converter architecture. Relevant to PORT_SCOPE stage A item 2 ("one pipeline run over every tile"); DEC-OWN-7 sets tile-general converter steps with failing tiles listed as gaps.

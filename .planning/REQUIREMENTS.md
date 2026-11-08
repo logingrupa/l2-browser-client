@@ -48,7 +48,7 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 
 ### World lane L1 (Phase 2)
 
-- [ ] **WORLD-01**: All 153 tiles (`XX_YY` grid) converted by tile-general converter steps: terrain, static meshes and BSP with the tile-general UV rule. Each 20_20 hand step (nine-sector terrain selection, TerrainSector247, model append, Brush397 BSP slab) becomes a tile-general step.
+- [ ] **WORLD-01**: All 153 tiles (`XX_YY` grid) converted by tile-general converter steps: terrain, static meshes and BSP with the tile-general UV rule. Each 20_20 hand step (nine-sector terrain selection, TerrainSector247, model append, Brush397 BSP slab, Brush610 command-hall BSP) becomes a tile-general step.
 - [ ] **WORLD-02**: Sky, ambient (PointRegion) and placement audio converted for all 153 tiles through recipes and scripts, original audio bytes preserved.
 - [ ] **WORLD-03**: A coverage manifest records pass or gap per tile per step; failing tiles are listed as gaps and never hand-fixed. The 10 non-tile maps (`Lobby`, `entry`, `skylevel`, `ship_position`, `Auto0` to `Auto5`) are classified; `Lobby` status is known before Phase 4.
 - [ ] **WORLD-04**: One persistent runtime scene with bounded cells: baseline measured first, then residency cache and terrain/mesh LOD with traceable derivatives; reveal readiness and nearby collision preserved; visual LOD never redefines collision.

@@ -2,9 +2,11 @@
 
 Running notes keyed by topic. Each block cites its source; quoted text is verbatim. DOC-type sources included: docs/ROADMAP.md, README.md, DESIGN.md, docs/UI_DIRECTION.md, docs/SOURCE_REUSE.md, docs/LINEAGE2ELBERA_REUSE_AUDIT.md, docs/NATIVE_WORLD.md, docs/ASSET_BATCHING.md, docs/NATIVE_CLIENT_AUDIT.md. The two cross-reference cycles involving ASSET_BATCHING and NATIVE_CLIENT_AUDIT were waived by the owner on 2026-11-08.
 
+Source citations quote the docs as of the ingest on 2026-11-08. Current homes: docs/ROADMAP.md content is in .planning/ROADMAP.md (order) and .planning/STATE.md (status); docs/ASSET_BATCHING.md is in docs/ASSET_PIPELINE.md; docs/UI_DIRECTION.md is in DESIGN.md; Editor docs are in docs/EDITOR_VIEWER.md. Current decisions are in .planning/PROJECT.md `<decisions>`.
+
 ## Topic: Project status and work sequence as of 2026-11-07
 - source: docs/ROADMAP.md, "Current direction and next work - 2026-11-07" (DOC, precedence 8)
-- "The end goal is reusable conversion of native characters/races, male/female variants, equipment, animations/effects and map blocks, with original audio connected to gameplay. The user's latest sequencing is explicit: **finish human male/female, their class skills and usable 20_20 traversal before expanding to other races or map tiles**."
+- "The end goal is reusable conversion of native characters/races, male/female variants, equipment, animations/effects and map blocks, with original audio connected to gameplay. The user's latest sequencing is explicit: **finish human male/female, their class skills and usable 20_20 traversal before expanding to other races or map tiles**." [Superseded by DEC-OWN-1: the work order is breadth-first stage A.]
 - "Use independently runnable small scripts per game system with shared readers and packaging helpers. Running one system must not require all extraction."
 - Female fighter recipe: seven parts, 113 clips, 323 events, 61 linked sounds; female-world integration passes source/authored desktop and mobile hardware WebGPU checks; six specialized female attack events unresolved.
 - Indoor-stair repair passes male/female source/authored hardware WebGPU ascent/descent; "Automatic routing around turns and upper-landing camera roof occlusion remain open. ... No complete 20_20 or all-human acceptance is claimed."
@@ -19,9 +21,9 @@ Running notes keyed by topic. Each block cites its source; quoted text is verbat
 ## Topic: Phase 1 and Phase 2 as written in ROADMAP
 - source: docs/ROADMAP.md, "Phase 1 - browser foundation", "Phase 1 follow-up - converted asset integration", "Phase 2 - Real M0 networking"
 - Phase 1 implemented and pushed in commit `3b16f1c317e20ee636a3b3f83bddafc15096740a`; baseline passed strict typecheck, build, 37 Vitest tests, nine Playwright tests; "Desktop Editor import/edit/save/reopen/play and live official MCP authoring were not performed because those tools were unavailable."
-- Asset follow-up: client adapts to four existing converted GLBs (MFighter, FFighter, MMagic, FMagic) staged from `C:\laragon\www\lineagen\.assets\converted`; 467 clips validated; destination pinned to Babylon 9.27.1.
+- Asset follow-up (history; the lineagen GLB character path is superseded by the native route): client adapted four converted GLBs (MFighter, FFighter, MMagic, FMagic) from the lineagen converted folder; 467 clips validated; destination pinned to Babylon 9.27.1.
 - "**Planned, not implemented:** establish Interlude authentication, character selection, and world entry against stock Mobius. Keep `GameWorldAdapter` as the integration boundary."
-- "The asset follow-up preserves this boundary. Real combat calculations, quests, progression, gacha, broad map reconversion and production deployment remain outside the current scope." (Superseded in part by docs/PORT_SCOPE.md; see INFO in .planning/INGEST-CONFLICTS.md.)
+- "The asset follow-up preserves this boundary. Real combat calculations, quests, progression, gacha, broad map reconversion and production deployment remain outside the current scope." (Superseded: broad map reconversion is in scope per docs/PORT_SCOPE.md and DEC-OWN-7; see INFO in .planning/INGEST-CONFLICTS.md.)
 
 ## Topic: README overview and run instructions
 - source: README.md (DOC, no precedence)
@@ -47,7 +49,7 @@ Running notes keyed by topic. Each block cites its source; quoted text is verbat
 - linegen reviewed at commit `05296faf6cba7bf0bb0840349dc38e669d8b532d`; "No redistribution license was found for `linegen`"; no code copied. Babylon.js Editor Vanilla template revision `e3fce2cea68c6a32fdbacbb4c5aa4e6a0f154db7` (Apache-2.0, retained in `docs/licenses/BabylonJS-Editor.txt`). Cormorant Garamond via Fontsource under SIL OFL 1.1.
 - Lineage2Elbera pinned at `12c9656e2f053b233ec3fd87056491a6a6da8b0c` (MIT), with ten BSP reader symbols vendored in `scripts/vendor/lineage2elbera_bsp`.
 - Authoritative fleet snapshot 2026-11-05: "**143 files / 2,511,063,181 bytes**", including `system/Engine.dll` (30,704,468 bytes, SHA-256 `4dd2f63c606df5671702911fa1f8ddcc4099bf2b98b81e8aa88eed47f5405b08`) read only as dispatch evidence. "Fresh IMPORTA-PC hash equality preceded the E: candidate copy."
-- Earlier statement, 2026-11-04: "The user selected `E:/Lineage2-client` as the source of truth for new assets." Later text: "The current native reference is **IMPORTA-PC, `C:/Lineage2-client`**."
+- Superseded statement, 2026-11-04 (DEC-OWN-2 replaces it): "The user selected `E:/Lineage2-client` as the source of truth for new assets." Later text: "The current native reference is **IMPORTA-PC, `C:/Lineage2-client`**."
 - Converted binaries, native audio, captures stay under ignored `artifacts/`; "No original Lineage II maps, characters, textures, audio or converted binaries are committed or published by this task."
 
 ## Topic: Lineage2Elbera reuse audit
@@ -61,7 +63,7 @@ Running notes keyed by topic. Each block cites its source; quoted text is verbat
 ## Topic: Native Interlude world preview status
 - source: docs/NATIVE_WORLD.md (DOC, no precedence)
 - `/?world=interlude` loads the staged native map section (PlayerStart10 area, 62 models / 157 placements / 4,992 terrain triangles), Human male fighter and Greater Musveren, with live FPS. Startup location: `20_20.PlayerStart10` at native XYZ `[10536, 95034, -3374.786376953125]` is "source-backed startup selection, not observation of the current live pawn or camera."
-- Coordinates: "glTF XYZ = .01 * native XZY"; the Editor packer serializes left-handed by default and the native scene script "establishes right-handed coordinates after parsing and before any native GLB load."
+- Coordinates: "glTF XYZ = .01 * native XZY"; the Editor packer serializes left-handed by default (an Editor route detail; NOED-01 builds the native scene in code) and the native scene script "establishes right-handed coordinates after parsing and before any native GLB load."
 - Terrain: 735 V fields corrected by `(grid + 0.5)/256 - max(grid - 240, 0)/4096` for the proved `20_20` route. Native draws are "**offscreen submissions**"; they do not establish visible native pixels.
 - Open: native shader/particle execution, live camera/location alignment, full attack and Power Strike parity, sword attachment, effect-timing authoring, hardware performance acceptance. Musveren death pose still intersects terrain by up to 0.119400140 m (660/1,591 vertices).
 
@@ -72,7 +74,7 @@ Running notes keyed by topic. Each block cites its source; quoted text is verbat
 - Coverage table (verbatim limits): world/buildings "Current selected 20_20 content has 62 models / 157 placements, terrain extension and four qualified BSP resources including the restored room shell. This is not the whole map or all neighboring tiles." Sounds: 4,773 exports from 18 locked UAX packages; "nine more packages in the dated census and complete standalone music/voice coverage remain outside this batch." Effects/skills: "Complete Power Strike presentation, all skills and general particle execution are unfinished." Legacy migration adapter: "Its retained 61/151 map output is historical; automatically staging it would replace the newer 62/157 catalog."
 - Skill tables: 29,812 skill rows and 1,398 sound rows; current recipe selects Power Strike 3/1 only (two original WAVs). Counts are non-additive: 4,773 sound exports, 75 embedded actor WAVs, nine connected world cues (female route nine, thirteen definitions across both variants, twenty-one including both special previews).
 - Orchestrator proof: clean/repeat/verify/reuse with 62 focused cases (61 pass, 1 Windows symlink skip). WebGPU measurement checkpoint "provides opt-in instrumentation and a bounded pilot, not a performance acceptance pass."
-- Next work in the user's order: (1) preserve scoped male/female profiles and complete remaining human bases, appearance, equipment, footsteps, interactive Editor save; (2) human class and skill inventory and bundles; (3) preserve the stair repair, with routing, camera obstruction and full 20_20 traversal open; (4) only then other races/sexes and tiles; (5) one persistent Scene with bounded cells. Item 4 adds: "Preserve exact source rigs, terrain seams, placements, dependencies and cross-tile identity; derive bounds from complete geometry and keep the qualified UV scope bounded."
+- Next work in the user's order [superseded by DEC-OWN-1 breadth-first order and DEC-OWN-8 Editor removal; kept as ingest quote]: (1) preserve scoped male/female profiles and complete remaining human bases, appearance, equipment, footsteps, interactive Editor save; (2) human class and skill inventory and bundles; (3) preserve the stair repair, with routing, camera obstruction and full 20_20 traversal open; (4) only then other races/sexes and tiles; (5) one persistent Scene with bounded cells. Item 4 adds: "Preserve exact source rigs, terrain seams, placements, dependencies and cross-tile identity; derive bounds from complete geometry and keep the qualified UV scope bounded."
 
 ## Topic: Installed native client audit (NATIVE_CLIENT_AUDIT)
 - source: docs/NATIVE_CLIENT_AUDIT.md (DOC, no precedence)

@@ -23,7 +23,7 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 Phase: 1 of 6 (Foundations)
 Plan: 0 of TBD in current phase
 Status: Ready to plan
-Last activity: 2026-11-08 - DEC-OWN-8 recorded: Editor off the build and runtime path (56 v1 requirements, 6 phases)
+Last activity: 2026-11-08 - docs cleanup: continuation and handoff prompts are not kept in `.planning/` (git history has them); this file and ROADMAP.md are the resume point. DEC-OWN-8 recorded: Editor off the build and runtime path (56 v1 requirements, 6 phases)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -56,7 +56,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..8 and DEC-PORT-1..3.
 
 ### Pending Todos
 
-- Commit the working tree before lanes start (lanes branch from committed code only).
+- Commit the main checkout's uncommitted code before lanes start (lanes branch from committed code only). Planning files are committed (1b1b0b7).
 - Seed STATUS.md / DECISIONS.md in Phase 1; keep each under a few KB.
 
 ### Blockers/Concerns
@@ -69,7 +69,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..8 and DEC-PORT-1..3.
 - Native UI layouts from `interface.xdat` versus DESIGN.md mobile-first tokens: skin approach to settle when planning Phase 2 UI.
 - Mobius transport (dumb relay) is a recommendation, not decided; decide at the start of Phase 4. Elbera `gateway/` and `editor/` are unaudited.
 - Whether client-side collision survives next to a server-authoritative adapter is open (Phase 4 design).
-- Lane tool support was uncommitted on DATABASE-PC; use plain `git worktree` until it lands.
+- Lane tool support for this repo is not available on DATABASE-PC yet; use plain `git worktree` until it lands.
 - Count differences to check in the decoder inventory: 435 vs 433 `.utx`, `chargrp` has 15 rows.
 
 ## Deferred Items
@@ -86,5 +86,5 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..8 and DEC-PORT-1..3.
 ## Session Continuity
 
 Last session: 2026-11-08
-Stopped at: Wrote PROJECT.md, REQUIREMENTS.md, ROADMAP.md, STATE.md; nothing committed
+Stopped at: Planning files committed (df34528, 1b1b0b7); docs cleanup on branch docs/cleanup; Phase 1 ready to plan
 Resume file: None

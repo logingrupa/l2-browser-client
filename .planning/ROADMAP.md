@@ -37,6 +37,7 @@ GSD phase = PORT_SCOPE phase + 1 for phases 1 to 4. Phases 5 and 6 have no PORT_
 **Depends on**: Nothing (first phase). Work is committed first; lanes start only from committed code.
 **Requirements**: FOUND-01, FOUND-02, FOUND-03, FOUND-04, ARCH-01, ARCH-02, ARCH-03, ARCH-04, SAND-01, NOED-01, NOED-02, NOED-03, NOED-04, NOED-05
 **Editor removal** (NOED-01..05, DEC-OWN-8): integration thread, merged before any Phase 2 lane starts, so lanes never build on the Editor path.
+**Verification note**: the dev cold start is unexplained (dev suite 17/18, first courtyard goto over 45 s, 262/288 JS requests, 21-23 s module gap; evidence artifacts/native-parity/research/editor-dev-startup). Re-measure dev startup after NOED-02 and NOED-03 remove the Editor pack; removing a suspected cause does not prove the gap is gone.
 **Success Criteria** (what must be TRUE):
   1. A recorded full-tree hash lock shows `E:/Lineage2-client` equal to IMPORTA-PC `C:/Lineage2-client` (files, bytes, per-file SHA-256) or lists every difference, and conversion refuses to read E: while the lock is missing or stale.
   2. One inventory lists all 40 `.dat` tables with route (local descriptor, Elbera, none), record count and status, and exists before further decoding.
@@ -102,7 +103,7 @@ GSD phase = PORT_SCOPE phase + 1 for phases 1 to 4. Phases 5 and 6 have no PORT_
 ### Phase 6: Performance and build reproducibility
 **Goal**: The client holds the GTX 1060 target and one documented command rebuilds the converted client reproducibly.
 **Depends on**: Phase 5
-**Requirements**: PERF-01, PERF-02, EDIT-01, EDIT-02
+**Requirements**: PERF-01, PERF-02, EDIT-02
 **Success Criteria** (what must be TRUE):
   1. On DATABASE-PC's GTX 1060 at 1920 x 1080, DPR 1, the protocol workload (32 actors, eight Power Strike effects every 2 s, three trials of 15 s warmup and 90 s measurement) records median and p95 frame intervals, draw calls and memory; 120 FPS is sustained on a 120 Hz or faster display, or the report gives labelled timings and the presentation limit with no estimated pass.
   2. Instancing, GPU texture compression and culling each show before/after numbers on the same workload, with no regression in startup, movement or cleanup on the native catalog route.

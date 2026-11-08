@@ -2,11 +2,13 @@
 
 No document in this ingest set is an ADR. Classification `locked` is false for all 17 documents, so nothing below is ADR-locked. The first three entries are the owner decisions of 2026-11-07 recorded at the top of docs/PORT_SCOPE.md (PRD, precedence 1). They are marked `proposed` only because the classification carries `locked: false` and no ADR status field exists. They are owner-declared and are not contradicted by any higher-precedence source. The roadmapper should treat them as owner-authoritative and may promote them to locked at the conflict gate.
 
+Current lock state: DEC-PORT-1..3 and the DEC-OWN-1..8 block below are locked by owner decision at the conflict gate (2026-11-08); the other entries stay proposed. Source citations quote the docs as of the ingest on 2026-11-08: docs/ROADMAP.md content is in .planning/ROADMAP.md and .planning/STATE.md, docs/ASSET_BATCHING.md is in docs/ASSET_PIPELINE.md, and Editor docs are in docs/EDITOR_VIEWER.md.
+
 ## DEC-PORT-1: First goal is a working browser client with every client asset converted
 - source: docs/PORT_SCOPE.md, section "Owner decisions, 2026-11-07", item 1 (precedence 1)
 - status: proposed (owner decision 2026-11-07; classification locked=false, not an ADR)
 - decision: "First goal: a working browser client with every client asset converted. That means the world, characters, NPCs, items, `.dat` data, skill visuals, sounds and UI."
-- scope: overall project goal and ordering (full converted client before server adapter). Operationalised in docs/PORT_SCOPE.md section 6 as stage A (convert everything, prove in offline sandbox) then stage B (plug in a server). Competes with the depth-first order in docs/ROADMAP.md; see WARNING in .planning/INGEST-CONFLICTS.md and variants REQ-work-order-v1 / REQ-work-order-v2 in requirements.md.
+- scope: overall project goal and ordering (full converted client before server adapter). Operationalised in docs/PORT_SCOPE.md section 6 as stage A (convert everything, prove in offline sandbox) then stage B (plug in a server). Breadth-first order is the work order (DEC-OWN-1); REQ-work-order-v2 depth-first is rejected.
 
 ## DEC-PORT-2: The server is replaceable; stock L2J Mobius first, SpacetimeDB possible
 - source: docs/PORT_SCOPE.md, section "Owner decisions, 2026-11-07", item 2 (precedence 1)
@@ -30,13 +32,13 @@ No document in this ingest set is an ADR. Classification `locked` is false for a
 - source: docs/PORT_SCOPE.md, section 6, closing paragraph (precedence 1)
 - status: proposed
 - decision: "Native-parity research on one detail at a time goes to a polish list, for example the footstep rules recovered from ALAudio.dll. It comes back once stage A has every tile and character in the sandbox."
-- scope: sequencing of fidelity research versus breadth conversion. Tension with PRODUCT.md and docs/NATIVE_AUDIO.md mandatory 1:1 audio; see WARNING in .planning/INGEST-CONFLICTS.md.
+- scope: sequencing of fidelity research versus breadth conversion. Audio is converted and bound per bundle in stage A; native-rule audio research waits for polish (DEC-OWN-3).
 
 ## DEC-PORT-6: Elbera is a source of reusable decoders and conversion code; leave its pinned verifiers and three.js runtime behind
 - source: docs/PORT_SCOPE.md, section 9 (precedence 1); corroborated by docs/LINEAGE2ELBERA_REUSE_AUDIT.md "Decision" (DOC, no precedence)
 - status: proposed
 - decision: Stage A takes, ranked: (1) decoders with no build pins (`tools/l2lib`, `tools/dat/*.py`, `tools/xdat/parse_xdat.py`, `tools/dat/export_quests.py`); (2) world conversion (`tools/world/convert.py`, `bsp.py`, `lightmap.py`, `bsplight.py`); (3) renderer-free modules (`geodata.js`, `terrain-collision.js`, `cylinder-collision.js`, `moveactor-arithmetic.js`, `nativecoords.js`). Stage B takes gateway crypto/framing, packet decoders behind a `GatewayWorldAdapter`, and offline protocol tests, with an audit of `gateway/` and `editor/` first. Leave behind: Elbera native verifiers pinned to Engine.dll `07b24af4...` (this client is `4dd2f63c...`), `deploy/server-mods/elbera-acis.patch`, deviceId auto login, the three.js runtime, and UI code that hardcodes control names.
-- scope: code reuse. docs/LINEAGE2ELBERA_REUSE_AUDIT.md "Decision": "Use Lineage2Elbera as a source of reusable implementations, fixtures and format knowledge before writing another decoder." Both sources agree on direction; they differ on decoder-route priority, see WARNING on .dat decoder route.
+- scope: code reuse. docs/LINEAGE2ELBERA_REUSE_AUDIT.md "Decision": "Use Lineage2Elbera as a source of reusable implementations, fixtures and format knowledge before writing another decoder." Both sources agree on direction. Decoder-route priority is set by DEC-OWN-4: local descriptor first, Elbera fills gaps behind an adapter.
 
 ## DEC-SRC-1: Published foundation contains no copied linegen source or assets
 - source: docs/SOURCE_REUSE.md, "Foundation source-review outcome" (DOC, no precedence)
@@ -48,7 +50,7 @@ No document in this ingest set is an ADR. Classification `locked` is false for a
 - source: README.md "Convert new assets from the native client"; docs/SOURCE_REUSE.md "Authoritative fleet snapshot - 2026-11-05"; docs/NATIVE_AUDIO.md "Required coverage" (DOC and SPEC, mixed). Same position stated in docs/NATIVE_PARITY.md ("The authoritative reference is IMPORTA-PC's `C:/Lineage2-client`") and docs/NATIVE_CLIENT_AUDIT.md ("the current authority is IMPORTA-PC's `C:/Lineage2-client`").
 - status: proposed
 - decision: README.md: "IMPORTA-PC's `C:/Lineage2-client` is the authoritative native reference. ... `E:/Lineage2-client` is a reusable local copy only after fresh source-hash equality." docs/NATIVE_AUDIO.md: "Use the current hash-identified Interlude client on IMPORTA-PC."
-- scope: source of truth for conversion and parity comparison. docs/SOURCE_REUSE.md also records an earlier 2026-11-04 statement that "The user selected `E:/Lineage2-client` as the source of truth for new assets", superseded by the 2026-11-05 snapshot. Open question whether docs/PORT_SCOPE.md (measured on DATABASE-PC `E:\Lineage2-client`) changes this; see WARNING on reference client and host.
+- scope: source of truth for conversion and parity comparison. docs/SOURCE_REUSE.md also records an earlier 2026-11-04 statement that "The user selected `E:/Lineage2-client` as the source of truth for new assets", superseded by the 2026-11-05 snapshot. DEC-OWN-2 keeps IMPORTA-PC as the reference; `E:\Lineage2-client` (where docs/PORT_SCOPE.md measured) is a conversion source only after the full-tree hash lock.
 
 ## DEC-ARCH-1: Rendering policy is modern Babylon.js WebGPU preserving the game, not Direct3D internals
 - source: docs/ARCHITECTURE.md "Rendering policy - 2026-11-07"; PRODUCT.md "Rendering direction - 2026-11-07" (precedence 0)
@@ -66,7 +68,7 @@ No document in this ingest set is an ADR. Classification `locked` is false for a
 - source: docs/NATIVE_PARITY.md, "Fixed acceptance contract" (SPEC, precedence 4); echoed in docs/NATIVE_AUDIO.md "Evidence required to pass" and docs/RENDERING.md "Acceptance boundaries"
 - status: proposed
 - decision: "Every result must record this file's SHA-256. Do not relax its thresholds in response to a failure. Missing or uncertain evidence is **unverified**, never a pass." For audio: "Define timing/amplitude/spatial tolerances and a single measured alignment method **before** parity implementation/comparison; do not tune thresholds to a result."
-- scope: visual, performance and audio acceptance. Its interaction with the stage A sandbox check is an open WARNING.
+- scope: visual, performance and audio acceptance. Fixed thresholds apply to the polish stage (Phases 5 and 6); stage A uses the lighter per-part check (DEC-OWN-3).
 
 ## DEC-PARITY-2: Rendering optimization proceeds now on the supported slice; whole-client parity is not a prerequisite
 - source: docs/NATIVE_PARITY.md "Rendering direction clarification - 2026-11-07"; docs/RENDERING.md; PRODUCT.md "Rendering direction - 2026-11-07" (precedence 0)
@@ -87,6 +89,7 @@ No document in this ingest set is an ADR. Classification `locked` is false for a
 - scope: all native asset conversion. Note the legacy Unity-derived GLBs already carry a 1.8 m normalization the new pipeline does not repeat (docs/ARCHITECTURE.md, docs/ROADMAP.md).
 
 ## DEC-ASSET-1: One persistent runtime scene with bounded cells; Editor authoring files may be per tile
+- current: the per-tile Editor authoring clause is superseded by DEC-OWN-8 (Editor is an optional viewer).
 - source: docs/ASSET_BATCHING.md "Next work, in the user's order" item 5 (DOC, unnumbered)
 - status: proposed
 - decision: "Keep one persistent runtime Scene with bounded cells and shared resources. Add residency/LOD/instancing according to measurements as the supported slice requires. Separate Editor authoring files per tile remain compatible."
@@ -135,7 +138,7 @@ The owner answered every WARNING in .planning/INGEST-CONFLICTS.md in this ingest
 ## DEC-OWN-7: Stage A world = geometry with the tile-general UV rule plus sky, ambient and placement audio, for all 153 tiles
 - source: owner, ingest conflict gate 2026-11-08 (resolves WARNING "One pipeline run over every tile")
 - status: locked
-- decision: Stage A converts, for all 153 tiles, geometry (terrain, static meshes, BSP) with the tile-general UV rule, plus sky, ambient and placement audio. Each 20_20 hand step becomes a tile-general converter step. A tile that fails a step is listed as a gap, not hand-fixed. Per-tile Babylon.js Editor scenes come later (not stage A).
+- decision: Stage A converts, for all 153 tiles, geometry (terrain, static meshes, BSP) with the tile-general UV rule, plus sky, ambient and placement audio. Each 20_20 hand step becomes a tile-general converter step. A tile that fails a step is listed as a gap, not hand-fixed. Per-tile Babylon.js Editor scenes come later (not stage A). [Superseded by DEC-OWN-8: per-tile Editor scenes are not planned.]
 
 ## DEC-OWN-8: Babylon.js Editor leaves the build and runtime path; Babylon.js stays the engine
 - source: owner, 2026-11-08, relayed from the IMPORTA-PC session after the ingest
