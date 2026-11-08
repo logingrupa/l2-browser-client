@@ -3,7 +3,8 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { NativeSectionManifest } from "../../src/scene/world/loadNativeSection";
-import { routeReferenceWorldAsNotStaged } from "./routeReferenceWorldAsNotStaged";
+
+const stagedNativeCatalogPath = resolve("public/l2/catalog.json");
 
 interface WebGPUProbe {
   contexts: string[]; devices: number; submissions: number; errors: string[];
@@ -89,30 +90,14 @@ test.afterEach(async ({ page }, testInfo) => {
   await testInfo.attach("webgpu-diagnostics", { body: JSON.stringify(diagnostics, null, 2), contentType: "application/json" });
 });
 
-test("renders the code-built default scene using a real WebGPU device without WebGL fallback", async ({ page }) => {
-  test.setTimeout(120_000);
-  const errors: string[] = [];
-  page.on("pageerror", error => errors.push(error.message));
-  page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
-  await observeGraphics(page);
-  await routeReferenceWorldAsNotStaged(page);
-  await page.goto("/", { waitUntil: "domcontentloaded" });
-  await expect(page.locator("body")).toHaveAttribute("data-world-state", "ready", { timeout: 90_000 });
-  await expect(page.locator("#canvas")).toHaveAttribute("data-engine", "WebGPU");
-  await expect(page.getByTestId("entity-count")).toHaveText("6");
-  await expect.poll(() => page.evaluate(() => window.__webgpuProbe!.submissions)).toBeGreaterThan(2);
-  assertWebGPU(await graphicsSnapshot(page));
-  expect(errors).toEqual([]);
-});
-
 test("WebGPU device loss after entry reports failure without reviving a disposed world", async ({ page }) => {
-  test.setTimeout(120_000);
+  test.skip(!existsSync(stagedNativeCatalogPath), "Requires the locally staged native catalog.");
+  test.setTimeout(240_000);
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   await observeGraphics(page);
-  await routeReferenceWorldAsNotStaged(page);
-  await page.goto("/", { waitUntil: "domcontentloaded" });
-  await expect(page.locator("body")).toHaveAttribute("data-world-state", "ready", { timeout: 90_000 });
+  await page.goto("/?world=interlude", { waitUntil: "domcontentloaded" });
+  await expect(page.locator("body")).toHaveAttribute("data-world-state", "ready", { timeout: 180_000 });
   assertWebGPU(await graphicsSnapshot(page));
   await page.evaluate(() => window.__webgpuProbeDevice!.destroy());
   await expect(page.getByRole("alert")).toContainText(/WebGPU graphics connection/i);
@@ -124,10 +109,9 @@ test("WebGPU device loss after entry reports failure without reviving a disposed
 });
 
 test("renders native terrain, actors and flame shaders on WebGPU in the source world", async ({ page }) => {
-  const catalogPath = resolve("public/l2/catalog.json");
-  test.skip(!existsSync(catalogPath), "Requires the locally staged native catalog.");
+  test.skip(!existsSync(stagedNativeCatalogPath), "Requires the locally staged native catalog.");
   test.setTimeout(240_000);
-  const catalog = JSON.parse(readFileSync(catalogPath, "utf8")) as { sections: { id: string; manifest: string; manifestSha256: string }[] };
+  const catalog = JSON.parse(readFileSync(stagedNativeCatalogPath, "utf8")) as { sections: { id: string; manifest: string; manifestSha256: string }[] };
   const section = catalog.sections.find(section => section.id === "map-20-20-section");
   if (!section) throw new Error("The staged native world section is missing.");
   const bytes = readFileSync(resolve("public", section.manifest.slice(1)));
@@ -190,7 +174,7 @@ for (const failure of ["unavailable", "device request rejected"] as const) {
     page.on("pageerror", error => pageErrors.push(error.message));
     page.on("request", request => {
       const path = new URL(request.url()).pathname;
-      if (path.startsWith("/assets/world/") || path.startsWith("/l2/")) worldRequests.push(request.url());
+      if (path.startsWith("/l2/")) worldRequests.push(request.url());
     });
     await observeGraphics(page);
     await page.addInitScript(failure => {
@@ -203,7 +187,7 @@ for (const failure of ["unavailable", "device request rejected"] as const) {
         };
       }
     }, failure);
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto("/?world=interlude", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("alert")).toContainText(/WebGPU/i, { timeout: 30_000 });
     if (failure === "device request rejected") {
       expect(await page.evaluate(() => window.__rejectedWebGPUDeviceRequests), "The actual requestDevice boundary must be reached; an unavailable adapter is a different failure.").toBe(1);

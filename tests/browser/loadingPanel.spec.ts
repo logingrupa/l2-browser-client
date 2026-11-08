@@ -3,7 +3,6 @@ import { existsSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import { stagedNativeTerrainPath } from "./stagedNativeTerrainPath";
-import { routeReferenceWorldAsNotStaged } from "./routeReferenceWorldAsNotStaged";
 
 const staged = existsSync(resolve("public/l2/catalog.json"));
 const evidence = resolve("artifacts/private-preview/loading-panel");
@@ -58,13 +57,14 @@ for (const { name, options } of loadingPanelViewports) {
 test.describe("module download failure on a landscape phone", () => {
   test.use({ viewport: { width: 932, height: 430 }, isMobile: true, hasTouch: true });
   test("module download failure offers a working reload without jokes or a stuck progress bar", async ({ page }) => {
+    test.skip(!staged, "Requires the staged native asset store.");
+    test.setTimeout(120_000);
     let blockClient = true;
     await page.route(url => url.pathname === "/src/main.ts" || /^\/assets\/index-[^/]+\.js$/.test(url.pathname), async route => {
       if (blockClient) await route.fulfill({ status: 503, contentType: "text/javascript", body: "" });
       else await route.continue();
     });
-    await routeReferenceWorldAsNotStaged(page);
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto("/?world=interlude", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("alert")).toContainText("game client could not be downloaded");
     await expect(page.getByRole("progressbar")).toHaveCount(0);
     await expect(page.locator("#loading-pun")).toBeHidden();

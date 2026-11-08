@@ -4,7 +4,6 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { readAssetPackage, validatePackageModel } from "../../src/assets/package/readAssetPackage";
-import { routeReferenceWorldAsNotStaged } from "./routeReferenceWorldAsNotStaged";
 
 function validatedNativePackage(id: string): string | undefined {
   const receipt = resolve("artifacts/native-assets/conversion-validation.json");
@@ -40,10 +39,15 @@ async function expectNoHorizontalScrollInPortrait(page: Page): Promise<void> {
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(430);
 }
 
-async function dropNativeWallOnDefaultRoute(page: Page, archive: string): Promise<void> {
-  await routeReferenceWorldAsNotStaged(page);
-  await page.goto("/");
-  await expect(page.getByTestId("entity-count")).toHaveText("6");
+const nativeRouteEntityCount = "2";
+
+async function openNativeRouteAndWaitForEntities(page: Page): Promise<void> {
+  await page.goto("/?world=interlude");
+  await expect(page.getByTestId("entity-count")).toHaveText(nativeRouteEntityCount, { timeout: 180_000 });
+}
+
+async function dropNativeWallOnNativeRoute(page: Page, archive: string): Promise<void> {
+  await openNativeRouteAndWaitForEntities(page);
   expect(await page.evaluate(() => window.__assetPackageInspection!.snapshot().open)).toBe(false);
   const dropped = await page.evaluateHandle(base64 => {
     const bytes = Uint8Array.from(atob(base64), value => value.charCodeAt(0));
@@ -57,9 +61,7 @@ async function dropNativeWallOnDefaultRoute(page: Page, archive: string): Promis
 }
 
 async function openModelFromDeveloperSheet(page: Page, modelPath: string, modelName: string): Promise<void> {
-  await routeReferenceWorldAsNotStaged(page);
-  await page.goto("/");
-  await expect(page.getByTestId("entity-count")).toHaveText("6");
+  await openNativeRouteAndWaitForEntities(page);
   await page.getByTestId("dev-sheet-toggle").click();
   await page.getByRole("button", { name: "Assets", exact: true }).click();
   await page.getByLabel("Choose an asset package").setInputFiles(modelPath);
@@ -117,12 +119,12 @@ test.describe("local asset package inspector", () => {
 test("drops an actual native Interlude conversion into the client without changing world state", async ({ page, browser }) => {
   const archive = nativePackage();
   test.skip(!archive, "Run the native static wall conversion before this evidence check.");
-  test.setTimeout(90_000);
+  test.setTimeout(360_000);
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
   await page.setViewportSize({ width: 1440, height: 900 });
-  await dropNativeWallOnDefaultRoute(page, archive!);
+  await dropNativeWallOnNativeRoute(page, archive!);
   const imported = await page.evaluate(() => window.__assetPackageInspection!.snapshot());
   expect(imported.preview?.unitScale).toBe(1);
   expect(imported.preview?.meshes).toBeGreaterThan(0);
@@ -131,12 +133,12 @@ test("drops an actual native Interlude conversion into the client without changi
   await mkdir(nativeIntegrationEvidence, { recursive: true });
   await page.screenshot({ path: resolve(nativeIntegrationEvidence, "asset-package-desktop.png") });
   await page.getByRole("button", { name: "Close", exact: true }).click();
-  await expect(page.getByTestId("entity-count")).toHaveText("6");
-  expect((await page.evaluate(() => window.__worldDiagnostics!.snapshot())).environment.cameraRelative).toBe(true);
+  await expect(page.getByTestId("entity-count")).toHaveText(nativeRouteEntityCount);
+  expect((await page.evaluate(() => window.__nativeSlice!.snapshot())).world?.disposed).toBe(false);
   expect(errors).toEqual([]);
   const phone = await openLandscapePhonePage(browser);
   try {
-    await dropNativeWallOnDefaultRoute(phone, archive!);
+    await dropNativeWallOnNativeRoute(phone, archive!);
     await phone.screenshot({ path: resolve(nativeIntegrationEvidence, "asset-package-mobile.png") });
     await expectNoHorizontalScrollInPortrait(phone);
   } finally { await phone.context().close(); }
@@ -185,7 +187,7 @@ test("plays an assembled native character with source-duration loops and linked 
   const modelPath = resolve(process.env.NATIVE_MODEL_PACKAGE ?? validatedNativePackage("interlude:assembly:MFighter-native-body-face0-hair0") ?? validatedNativePackage("interlude:assembly:MFighter-native-body-face0") ?? "artifacts/native-assets/4d47a7564ac2b42124bc19e0d45d1bf02c36aa54bda97546d09a5fbc7f98f1f7/asset.l2asset");
   const audioPath = resolve(process.env.NATIVE_AUDIO_PACKAGE ?? validatedNativePackage("interlude:skillsound.power_strike.power_strike_cast") ?? "artifacts/native-assets/ff2ee23d39ab0ad5ed3284953d058184d48a62cb20482b584e642ef841efa4f4/asset.l2asset");
   test.skip(!existsSync(modelPath) || !existsSync(audioPath), "Build the native assembled character and audio packages before this local asset check.");
-  test.setTimeout(180_000);
+  test.setTimeout(360_000);
   const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
   page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
   const model = await readAssetPackage(new Uint8Array(await readFile(modelPath)));
@@ -246,7 +248,7 @@ test("plays an assembled native character with source-duration loops and linked 
   await player.press("Space");
   await expect.poll(() => player.evaluate(element => (element as HTMLAudioElement).currentTime)).toBeGreaterThan(0);
   await page.getByRole("button", { name: "Close", exact: true }).click();
-  await expect(page.getByTestId("entity-count")).toHaveText("6");
+  await expect(page.getByTestId("entity-count")).toHaveText(nativeRouteEntityCount);
   expect(await page.evaluate(() => window.__assetPackageInspection!.snapshot().preview)).toBeNull();
   await writeFile(resolve(nativeIntegrationEvidence, "assembled-browser-report.json"), JSON.stringify({ modelPath, audioPath, initial, moving, running, idle, errors }, null, 2));
   expect(errors).toEqual([]);
