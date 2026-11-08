@@ -35,7 +35,8 @@
 		"assets:convert": "python scripts/native_assets.py convert",
 		"assets:batch": "python scripts/native_assets.py batch",
 		"assets:verify": "python scripts/native_assets.py verify",
-		"test:pipeline": "python scripts/test_pipeline.py"
+		"test:pipeline": "python scripts/test_pipeline.py",
+		"report:coverage": "python -B scripts/native_store/build_coverage_report.py"
 	},
 	"dependencies": {
 		"@babylonjs/addons": "9.27.1",
