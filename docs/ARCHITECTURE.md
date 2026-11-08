@@ -1,215 +1,150 @@
 # Architecture
 
-## Rendering policy — 2026-11-07
+This doc describes the runtime: how the native world loads, where gameplay
+state enters, and who owns what. Status lives in
+[.planning/STATE.md](../.planning/STATE.md). Work order lives in
+[.planning/ROADMAP.md](../.planning/ROADMAP.md). The evidence index is
+[VERIFICATION.md](VERIFICATION.md).
 
-The renderer already requires WebGPU through the shared `createWebGPUEngine`
-factory. Preserve source assets, visible material intent and gameplay behavior
-while using modern rendering/resource management. Legacy Direct3D implementation
-details are evidence for specific fidelity problems, not an architectural
-requirement. [RENDERING.md](RENDERING.md) owns the current optimization plan.
+Babylon.js is the engine. The Babylon.js Editor is an optional viewer
+(DEC-OWN-8), described in [EDITOR_VIEWER.md](EDITOR_VIEWER.md). The world's
+source of truth is the original client plus the converter.
 
-Native `loadNativeSection` eagerly loads terrain, additive patches and every
-model template, then clones placements with `doNotInstantiate: true`. The authored
-route attaches existing saved geometry. Neither route currently implements a
-bounded world-streaming cache or terrain/mesh LOD. Babylon mesh frustum culling
-exists; application-level spatial visibility and occlusion need separate work.
+## Routes
 
-The older Talking Island loader already has on-demand scenery loading, ordinary
-placement instancing, distance visibility and cell-based grass thin instances.
-Its scenery stays resident until disposal, and those capabilities are not yet
-shared by the native loader. Native terrain/flame materials currently upload
-decoded RGBA; retained DDS products alone do not provide runtime compression.
+| Route | What loads |
+| --- | --- |
+| `/?world=interlude` | Native slice: the 20_20 section from the `.l2asset` catalog through `loadNativeSection`, native actors, `NativeSliceAdapter`. |
+| `/?world=interlude&character=<id>` | Same slice with a staged native player profile (all four Humans). |
+| `/?world=interlude&authored=1` | Optional Editor-authored route. See [Editor-authored route (optional)](#editor-authored-route-optional). |
+| `/` | Talking Island bundles through `loadImportedWorld`, `MockWorldAdapter`. |
+| `/?world=courtyard` | Legacy courtyard demo from `assets/example.scene`. NOED-03 retires it. |
 
-Profile the current supported slice and apply bounded improvements alongside
-remaining migration/fidelity work. Streaming must preserve initial reveal
-readiness, nearby collision, authored placement identity and clear resource
-ownership; visual LOD must not redefine collision or the adapter contract.
+Today `loadEnvironment` still parses an Editor export as the scene shell
+(`native-parity.babylon`, or `example.babylon` for the other routes) through
+`babylonjs-editor-tools.loadScene`. The attached `NativeParityScript` then
+calls `createNativeSliceRuntime`, which loads the world from the catalog.
+NOED-01 builds the native scene (camera, lights, readiness barrier) in code
+and turns the script's inspector fields (player profile, clips, material
+override) into typed config on the dev sheet.
+
+## Rendering policy
+
+The renderer requires WebGPU through the shared `createWebGPUEngine` factory.
+It keeps camera-relative rendering and initializes the pinned local
+GLSL-to-WGSL compilers (glslang, twgsl from `/vendor/babylon/9.27.1/`) before
+custom materials load. Unsupported adapters and failed device creation show
+the startup error panel. Asset previews and capture tools use the same factory.
+
+Preserve source assets, visible material intent and gameplay behaviour while
+using modern rendering and resource management. Legacy Direct3D details are
+evidence for specific fidelity problems, not an architectural requirement.
+[RENDERING.md](RENDERING.md) owns the optimization plan.
+
+- `loadNativeSection` eagerly loads terrain, additive patches and every model
+  template, then clones placements with `doNotInstantiate: true`.
+- No bounded world-streaming cache or terrain/mesh LOD exists yet (WORLD-04).
+  Babylon mesh frustum culling exists; application-level visibility and
+  occlusion need separate work.
+- The Talking Island loader has on-demand scenery loading, placement
+  instancing, distance visibility and cell-based grass thin instances. Its
+  scenery stays resident until disposal. The native loader does not share
+  these yet.
+- Native terrain and flame materials upload decoded RGBA. Retained DDS
+  products alone do not give runtime compression.
+- Streaming must keep reveal readiness, nearby collision, placement identity
+  and clear resource ownership. Visual LOD never redefines collision or the
+  adapter contract.
+
+## Native world from the catalog
+
+The offline `scripts/native_migration.py` pipeline owns source inventories,
+content-addressed model packages, raw map and effect bundles and a bounded
+terrain/scenery section under ignored `artifacts/native-parity/`. It reads
+recipes and the pinned IMPORTA-PC snapshot. `--stage-runtime` copies verified
+outputs into ignored `public/l2`. See [NATIVE_MIGRATION.md](NATIVE_MIGRATION.md)
+and [ASSET_PIPELINE.md](ASSET_PIPELINE.md).
+
+- The output contract is `.l2asset` packages plus the runtime catalog
+  (DEC-OWN-5). `recipes/native-inputs.lock.json` is input-only. Units and
+  handedness are recorded per route in `asset.json`.
+- `readAssetPackage` verifies ZIP structure, paths, CRCs, every file's
+  SHA-256, source edition and self-contained GLB resources before loading.
+- The default section recipe selects the PlayerStart10 area (nine sectors, 61
+  models, 151 placements). Guarded additive derivatives select 62 models / 157
+  placements plus BSP floor and sky. See [NATIVE_WORLD.md](NATIVE_WORLD.md) and
+  [NATIVE_BSP_FLOOR.md](NATIVE_BSP_FLOOR.md).
+- Unsupported native material graphs keep explicit diagnostic materials and
+  per-placement coverage. Conversion errors stay separate from runtime
+  material gaps, so a raw-data success never becomes a visual acceptance claim.
+- The flame's 12 instances use an optional verified-archive presentation owner.
+  It binds only unchanged diagnostic surfaces, uses separate browser replay
+  clocks and reversible billboard wrappers, and releases effects before
+  section teardown, including on cancellation. See
+  [NATIVE_FLAMES.md](NATIVE_FLAMES.md).
+- The scene establishes right-handed coordinates, then loads the section
+  before creating actors.
+- App-required startup rejects a missing or failed map, enabled flame
+  preparation or terrain material.
+
+### Native actors
+
+`createNativeSliceRuntime` composes `NativeSliceAdapter`, the `EntityRegistry`
+and HUD, and presentation-owned `NativeActor` instances.
+
+- Native parts keep separate skeletons, original mesh identities and exact
+  source clocks.
+- The explicit loader adapter consumes `_L2_NATIVE_WEIGHTS` /
+  `_L2_NATIVE_JOINTS` without normalization. Portable glTF weights are a
+  separate derivative.
+- Upper-body replacement is asynchronous and transactional. A failed
+  replacement after startup keeps the prior appearance. Initial equipment is
+  part of startup readiness.
+- Death plays once and holds. Revival restores the requested locomotion.
+  Explicit actions retrigger attacks.
+- Native package failures reject startup. No procedural marker is allocated.
+- `loadNativeActorCatalog` reads model and NPC profile declarations from one
+  catalog snapshot. The exact NPC 21622 join gives Greater Musveren its 0.36 m
+  collision height and scale 1.2. See [NATIVE_NPC_PROFILES.md](NATIVE_NPC_PROFILES.md).
+- Entity positions are support points. Presentation places each native pivot
+  with a verified profile collision half-height when one exists, otherwise a
+  fixed idle-pose clearance.
+- `NativeCharacterProfile.actorScale` applies outside the whole mesh
+  hierarchy, including its native origin transform. It never multiplies
+  collision height or rewrites rig data.
+- Missing, corrupt or incompatible required profiles reject native startup.
+- Camera tracking keeps the orbit angles at native world coordinates.
+- A source-texture preview keeps original pixels and UV matrices and labels
+  its blending, filtering and lighting as candidates. Neutral mode and
+  inspection diagnostics stay available.
 
 ## Audio ownership
 
-Audio is a required presentation subsystem for 1:1 Interlude behavior.
-The world now has nine original preview cues: six death and three Musveren attack
-events, with gesture unlock, mute, volume and disposal. Independent clips share
-one verified asset and one actor audio owner. Other categories and native playback rules remain
-incomplete; the completed 4,773-sound export/decode batch adds no runtime policy.
-[NATIVE_AUDIO.md](NATIVE_AUDIO.md) defines its
-ownership and acceptance: one world-owned, gesture-unlocked mixer, source-backed
-event/region/emitter resolution, independent authored overrides, and lifecycle
-cleanup. Native audio selection/timing/spatial policies must be established from
-evidence; the inspector's diagnostic player is not that policy. Keep asset and
-playback interpretation outside `GameWorldAdapter` and preserve terrain work.
+Audio is a required presentation subsystem. [NATIVE_AUDIO.md](NATIVE_AUDIO.md)
+owns the rules and the current audible inventory.
 
-## World and asset ownership
+- One world-owned, gesture-unlocked `WorldAudioMixer` with master, music,
+  ambience and effects buses. Mute, volume and disposal go through it.
+- Scripts and recipes produce all staged audio.
+- Event, region and emitter resolution is source-backed. Independent clips
+  share one verified asset and one actor audio owner.
+- Native selection, timing and spatial rules come from evidence (POL-02).
+  The package inspector's diagnostic player is not that policy.
+- Asset and playback interpretation stay outside `GameWorldAdapter`.
 
-The optional native authoring import creates a separate `native-world.scene`.
-Its scene-owned terrain/scenery stays editable; runtime attachment adapts only
-the dedicated coordinate wrapper and camera, then restores them on disposal.
-It does not dispose saved meshes/materials or load duplicate map GLBs. The
-source snapshot and recovery record live separately from authored changes;
-prepack restores only demonstrated missing UV2 when other geometry matches.
-See [NATIVE_EDITOR_WORLD.md](NATIVE_EDITOR_WORLD.md).
+## Adapter boundary
 
-The environment and dynamic world have separate owners. Native Editor resources own the fallback courtyard, lights and initial camera. The browser optionally loads the pinned Talking Island bundles through `scene/world/loadImportedWorld.ts` before the attached scene script starts. `GameWorldAdapter` owns dynamic entity state. Presentation creates and disposes visuals in response to that boundary.
-
-The offline `scripts/native_migration.py` pipeline owns generated source inventories, content-addressed model packages, raw map/effect bundles and a bounded native terrain/scenery section under ignored `artifacts/native-parity/`. It reads recipes and the pinned IMPORTA-PC snapshot; it does not regenerate authored Editor resources. `--stage-runtime` copies verified outputs into ignored `public/l2`. The native section does not replace the legacy island loader. See [NATIVE_MIGRATION.md](NATIVE_MIGRATION.md).
-
-The default section recipe now selects the source-backed PlayerStart10 area
-(nine sectors, 61 models, 151 placements). Guarded additive derivatives currently
-select 62 models/157 placements plus BSP floor and sky; the [single-model
-appender](NATIVE_MAP_MODEL_APPEND.md) adds new source graphs without regenerating
-authored records. The base recipe itself is unchanged. Unsupported native material graphs
-remain editable source data with explicit diagnostic materials and per-placement
-coverage. The flame's 12 instances now use an optional verified-archive
-presentation owner on both source and authored routes. It binds only unchanged
-diagnostic surfaces, uses separate browser replay clocks and reversible
-billboard wrappers, and releases effects before section teardown, including
-cancellation. [NATIVE_FLAMES.md](NATIVE_FLAMES.md) records its source formulas
-and unresolved native lighting, clock and camera equivalence. Conversion errors remain separate from runtime
-material gaps so a raw-data success cannot become a visual acceptance claim.
-
-`pnpm generate` first enforces the WebGPU project settings and stages the pinned
-local shader compilers, then runs a read-only authored-material preflight and the
-source-checked native-world UV2 recovery, then the official Editor packer
-followed by a narrow adapter for
-the native scene's fog-enable flag, which Editor 5.5.3 omits. Disabled authored
-fog maps to generated Babylon mode 0; enabled fog retains its authored mode.
-The final step shares compatible exported native terrain materials. These
-adapters preserve saved Editor edits without
-overriding the live Editor scene in the runtime script.
-
-The preflight rejects meshes referencing the identified internal
-`BABYLON.ShaderMaterial` with both shader stages named `lightProxy`. It follows
-direct, numeric-only and MultiMaterial references, including LODs. It reports
-the affected authored records and stops before packing; it never repairs or
-rewrites them. Generic material names alone do not trigger rejection. This
-contains a demonstrated Editor material-ID collision; it does not fix the
-installed Editor's loader.
-
-`NativeParityScript` also owns optional persistent actor-material settings:
-entity ID, exact converted material identity, linear RGB multiplier and preview
-roughness. `createNativeMaterialOverrides` clones only matching actor materials,
-tracks asynchronous equipment replacements, preserves source textures/alpha/UVs,
-and restores/releases its bindings before model disposal. It is disabled by
-default and in the normal authored preview. Settings remain in the Editor scene;
-migration never rewrites them. Vector3 text fields provide RGB editing because
-Editor 5.5.3's script Color3 numeric inputs omit their persistence callback.
-These presentation overrides do not implement native shaders or particle timing.
-
-Actual Editor Play uses a different host contract: its installed loader UMD
-exports the glTF extension registry through `GLTF2`, and its fetch override
-resolves relative paths under the project's public directory. Native resource
-paths adapt only at fetch boundaries on file pages; hash/path validation and
-HTTP-browser URLs are unchanged. `getWorldCanvas` uses the public input canvas
-for controls/labels because Editor renders through a detached working canvas.
-The HUD reserves the measured toolbar strip. The native scene now saves fog
-mode None because in-process Play bypasses the CLI fog adapter. These are client
-and authoring adaptations, not changes to converted native assets.
-
-`/?world=interlude` loads the separately authored `native-parity.scene`. Its script establishes right-handed coordinates after Editor scene parsing, then loads the verified native map section before creating actors. It composes `NativeSliceAdapter`, the existing `EntityRegistry`/HUD and presentation-owned `NativeActor` instances. Native parts retain separate skeletons, original mesh identities and exact source clocks. The explicit Babylon loader adapter consumes `_L2_NATIVE_WEIGHTS`/`_L2_NATIVE_JOINTS` without normalization; portable glTF weights remain a separately documented derivative. Upper-body replacement is asynchronous and transactional; failed replacements after startup retain the prior appearance. Initial equipment is part of startup readiness. Death plays once and holds, revival restores requested locomotion, and explicit actions retrigger attacks. Scene/cancellation ownership disposes pending assets, controls and observers. Native package failures reject startup; no procedural marker is allocated. App-required worlds reject a missing/failed map or enabled flame preparation. Optional Editor inspection can retain the authored inspection area or world with an explicit world/effect failure diagnostic.
-
-Native terrain supplies local geometric support. Entity positions remain support points; presentation places each native pivot using a verified profile collision half-height when available, otherwise a fixed idle-pose clearance. `loadNativeActorCatalog` reads model and NPC profile declarations from one catalog snapshot. The exact NPC 21622 name/group/class join supplies Musveren's 0.36 m height and scale 1.2. `NativeCharacterProfile.actorScale` applies outside the complete mesh hierarchy, including its native origin transform; it does not multiply collision height or rewrite rig data. Missing, corrupt or incompatible required profiles reject native startup. PrePivot remains explicitly unresolved. This local point-support policy does not reproduce native collision and still intersects the final corpse; see [NATIVE_ACTOR_PLACEMENT.md](NATIVE_ACTOR_PLACEMENT.md) and [NATIVE_NPC_PROFILES.md](NATIVE_NPC_PROFILES.md). Camera tracking preserves authored orbit angles at native world coordinates. A separate source-texture preview preserves original pixels and UV matrices while labeling its blending/filtering/lighting as candidates; neutral mode and optional inspection diagnostics remain available. App-required startup rejects a terrain material failure. See [NATIVE_WORLD.md](NATIVE_WORLD.md). Native/scenery collision, particles, complete weapon attachments and visual parity remain unfinished. `GameWorldAdapter` remains the semantic state boundary.
-
-## Native browser startup readiness
-
-The Editor loader resolving does not mean its scene-attached runtime is ready:
-`onStart` runs during the first render and native world/actor assembly is
-asynchronous. Earlier eventual-load tests missed the resulting premature reveal,
-which the user's phone captures exposed. [VERIFICATION.md](VERIFICATION.md)
-separates that earlier evidence from the current transition checks.
-
-`loadEnvironment` declares the native runtime required before loading the scene.
-`NativeParityScript` registers its real runtime promise. `prepareSceneForReveal`
-runs the first lifecycle frame with canvas/HUD concealed and input inert, stops
-the unnecessary render loop while downloads and assembly settle, and verifies
-that every required script registered. The promise includes terrain/camera
-attachment, enabled flame setup, the current entity registry and initial
-equipment, material overrides and runtime controls.
-
-Once the runtime promise resolves, rendering resumes. The barrier requires a
-frame whose geometry, textures and materials are ready before and after drawing.
-Only then does `App` reveal the canvas/HUD, enable input and remove the loader in
-the same completion step. No fixed extra delay controls reveal. Disposal, abort,
-context loss, failed resources, missing scripts, render errors and the bounded
-startup deadline reject the barrier and release partial ownership. Optional
-Editor Play has no `App` reveal owner; it reports startup failures visibly and
-retains only the explicitly supported inspection fallback behavior.
-
-This describes the verified staged implementation in
-`artifacts/private-preview/native-reveal/dist-stage/`. The live private preview
-still serves the preceding build: the current terrain task explicitly forbids
-service changes and deployment. [VERIFICATION.md](VERIFICATION.md) retains the
-passing transition checks and the corrected facing-test input history.
-
-The island loader preserves RH source coordinates, instanced scenery, mirrored clones, explicit foliage corrections and terrain source-layer materials. `EngineHost` enables Babylon camera-relative rendering. Runtime composition supplies a geometry-backed `WorldNavigation` to the synthetic adapter and presentation grounding; the adapter interface remains independent of Babylon. Navigation indexes original transformed triangles, checks a finite character footprint, limits slopes/steps, sweeps a capsule against walls/ceilings and blocks movement while nearby colliders load. Hidden scenery retains collision. This local collision policy is not multiplayer authority or pathfinding: clicks move directly toward a destination and stop at obstructions.
-
-## Native template and final layout
-
-The starting point is Babylon.js Editor 5.5.3's `templates/vanillajs` at revision `e3fce2cea68c6a32fdbacbb4c5aa4e6a0f154db7`. Vite is the template's native bundler. The template entry names, metadata, asset paths, and official scene export/loader are retained. pnpm replaces the template's package-manager selection, strict checking and tests are added, and unused example assets/physics are removed.
-
-```text
-project.bjseditor              Native Editor project metadata; pnpm selected
-assets/
-  example.scene/
-    config.json               Scene settings and world.ts attachment
-    cameras/                  Authored orbit camera and limits
-    lights/                   Sunlight and sky fill
-    meshes/                   Ground, courtyard, stonework, pillars, trees
-public/scene/                 Generated CLI export; ignored by Git
-public/l2/                    Staged native packages, profiles and catalog.json; ignored
-public/assets/world/          Legacy lineagen Talking Island (dev only, never built); ignored
-scripts/stage_native_players.py  Stage native player packages/profiles (pnpm assets:stage)
-src/
-  main.ts                     Native browser entry; startup errors and shutdown
-  App.ts                      Browser application lifecycle
-  scripts.ts                  Official CLI-generated script map
-  scripts/world.ts            Scene-attached Editor behavior
-  runtime/createWorldRuntime.ts  Adapter selection and runtime composition
-  engine/                     Engine, render loop, resize, disposal
-  scene/                      Official loading, startup guard and ready-frame reveal
-  camera/                     Attach orbit/zoom input to the authored camera
-  world/                      Adapter contract and synthetic state producer
-  entities/                   Entity registry, selection, pointer picking
-  interpolation/              Presentation position smoothing and snapping
-  animation/                  State facade, procedural poses, model clip blending
-  assets/                     Character visuals, model loading and validation
-  ui/                         Floating names/health, controls, diagnostics
-  ui/worldStyles.ts           Scoped shared HUD styles for browser/Editor
-  style.css                   Browser page layout and self-hosted font
-tests/unit/                   Vitest behavior tests
-tests/browser/                Playwright browser tests
-tests/browser/nativeSection.html  Development-only native section inspection
-docs/                         Architecture, provenance, Editor/MCP record
-```
-
-`assets/` contains authored content; `src/assets/` contains runtime code. `public/scene/` is the template-supported packing output rather than a second authored environment. Extra native scene subdirectories may be created by the CLI or Editor when their corresponding features are used.
-
-## One authored scene, two entry workflows
-
-`pnpm dev` and `pnpm build` begin with `babylonjs-editor-cli pack`. The official packer reads `assets/example.scene/`, exports `public/scene/example.babylon`, and regenerates `src/scripts.ts` from attached script metadata. The original static environment was serialized into editable resources once; there is no bootstrap generator in these commands that can overwrite later Editor edits.
-
-In the browser, `main.ts` creates `App`, which awaits `EngineHost.create` and calls `loadEnvironment` only after WebGPU initializes. The shared `createWebGPUEngine` factory requires WebGPU, retains camera-relative rendering, and initializes the pinned local GLSL-to-WGSL compilers before loading custom materials. Unsupported adapters and failed device creation use the startup error panel. Disposal during initialization releases a late engine without starting a scene. Asset previews and editor capture tools use the same factory.
-
-`loadEnvironment` uses `babylonjs-editor-tools.loadScene` with the generated script map, then selects the authored **World camera**. A missing or incorrectly typed camera produces an explicit startup error. `App` then awaits `prepareSceneForReveal`; loader completion alone no longer reveals the scene. Both GLSL and WGSL built-in shaders are registered before serialized materials are parsed.
-
-The scene's `metadata.scripts` attaches `scripts/world.ts`. Its constructor receives the scene. `onStart` calls `createWorldRuntime`; `onStop` invokes the returned cleanup function. The official Editor's **Play current scene** pipeline uses the same scene export, script map, and attachment lifecycle. **Play project as-is** invokes `pnpm dev`. Actual native-scene Play, UI save/reopen and partial authoring preservation were exercised on 2026-11-05; native material/effect authoring remains incomplete. See [EDITOR_ROUNDTRIP.md](EDITOR_ROUNDTRIP.md) and [EDITOR_MCP.md](EDITOR_MCP.md).
-
-Courtyard camera settings remain in editable JSON. Imported mode follows the local player, starts at radius 8 source units and allows radius 1–50. `WorldCamera.ts` attaches orbit/zoom input and disables panning. Runtime lookup still requires **World camera**; **Courtyard ground** is used only by fallback movement picking.
-
-## Adapter event flow
-
-`GameWorldAdapter` is transport-independent and contains no Babylon types:
+`GameWorldAdapter` is the only way gameplay state enters the client. It is
+transport-independent, holds no Babylon types, and its five methods stay
+frozen:
 
 | Method | Responsibility |
 | --- | --- |
 | `getInitialState()` | Return the current complete entity snapshot. |
-| `subscribe(listener)` | Deliver ordered `spawn`, `update`, and `despawn` events; return an unsubscribe function. |
+| `subscribe(listener)` | Deliver ordered `spawn`, `update` and `despawn` events; return an unsubscribe function. |
 | `dispatch(command)` | Receive a typed user intent. The adapter decides how it changes authoritative state. |
-| `advance(deltaTimeSeconds)` | Advance the synthetic producer; a future transport-backed adapter may leave this empty. |
+| `advance(deltaTimeSeconds)` | Advance a synthetic producer; a transport-backed adapter may leave this empty. |
 | `dispose()` | Release adapter-owned subscriptions and state. |
-
-`EntityRegistry` subscribes and reads the initial snapshot synchronously before the frame loop starts. Each entity has a stable identifier, kind, display name, position, orientation, health, maximum health and animation state. Optional `appearanceId` selects a presentation profile, while `animationSequence` changes for an explicit repeated action so an ordinary snapshot does not restart a completed attack. An optional ad-hoc `modelUrl` remains for independent fixtures and failure demonstrations. Updates carry a complete replacement state, with an optional `shouldSnap` flag. The mock freezes outgoing entities, nested positions, snapshot arrays and event objects to prevent subscribers from altering its state.
-
-The flow is:
 
 ```text
 UI / ground input -> adapter.dispatch(intent)
@@ -218,67 +153,350 @@ adapter event    -> registry -> visual / animation / label
 frame clock      -> interpolation / animation / label projection / diagnostics
 ```
 
-Every dynamic spawn, state update, appearance/model change and removal crosses this boundary. Camera changes, target selection and interpolation are presentation state and do not need adapter commands. `window.__worldDiagnostics.snapshot()` exposes read-only copies for browser verification, including active model identity, native playback, bounds, parts and skeleton counts; `projectPosition()` projects world coordinates to canvas pixels. Neither exposes command or mutation hooks.
+- `EntityRegistry` subscribes and reads the initial snapshot synchronously
+  before the frame loop starts.
+- Each entity has a stable identifier, kind, display name, position,
+  orientation, health, maximum health and animation state. Optional
+  `appearanceId` selects a presentation profile. `animationSequence` changes
+  for an explicit repeated action, so an ordinary snapshot never restarts a
+  finished attack. Optional `modelUrl` serves independent fixtures and failure
+  demonstrations.
+- Updates carry a complete replacement state with an optional `shouldSnap`.
+- Camera, target selection and interpolation are presentation state and need
+  no adapter command.
+- `window.__worldDiagnostics.snapshot()` returns read-only copies (active
+  model identity, native playback, bounds, parts, skeleton counts).
+  `projectPosition()` projects world coordinates to canvas pixels. Neither has
+  command or mutation hooks.
 
-`MockWorldAdapter` supplies exactly six initial entities. It advances on deterministic 0.1-second ticks, publishes remote movement, advances local click-to-move at 4 meters per second, and schedules cosmetic monster animation states. Its spawn, teleport, pause, animation, removal, and missing-model demonstrations use the same event path as normal updates. Pausing stops synthetic ticks while presentation and explicit commands remain usable.
+### Adapters
+
+- `MockWorldAdapter` supplies exactly six initial entities. It advances on
+  deterministic 0.1 s ticks, publishes remote movement, moves the local player
+  by click at 4 m/s and schedules cosmetic monster animation states. Spawn,
+  teleport, pause, animation, removal and missing-model demonstrations use the
+  normal event path. Pause stops ticks; presentation and explicit commands
+  keep working. It freezes outgoing entities, positions, snapshot arrays and
+  events.
+- `NativeSliceAdapter` drives the native slice. Local walk and run speeds
+  come from a `NativeSliceSpeedProfile`; the aCis human fighter values (walk
+  80, run 115 source units/s, run start after 12/30 s) are server data a
+  networked client would receive, not client data.
+- `createWorldRuntime` is the single composition point that chooses
+  `MockWorldAdapter`.
+
+## Startup readiness barrier
+
+Loader completion is not readiness: scene scripts start on the first render
+and native world and actor assembly is asynchronous.
+
+1. `loadEnvironment` declares the native runtime required
+   (`requireSceneStartup`) before loading the scene.
+2. `NativeParityScript` registers its real runtime promise. The promise covers
+   terrain and camera attachment, enabled flame setup, the current entity
+   registry and initial equipment, material overrides and runtime controls.
+3. `prepareSceneForReveal` runs the first lifecycle frame with canvas and HUD
+   concealed and input inert. It stops the render loop while downloads and
+   assembly settle and checks that every required script registered.
+4. After the promise resolves, rendering resumes. The barrier needs a frame
+   whose geometry, textures and materials are ready before and after drawing.
+5. Only then does `App` reveal canvas and HUD, enable input and remove the
+   loader, in one step. No fixed delay controls reveal.
+
+Disposal, abort, context loss, failed resources, missing scripts, render
+errors and the bounded startup deadline reject the barrier and release partial
+ownership.
+
+`CharacterVisual.ready` resolves after native parts, clips and the current
+initial equipment request are installed; failures reject it.
+`EntityRegistry.whenReady()` awaits the current set, repeats if an entity is
+replaced, and never lets a removed visual's cancellation reject its
+replacement. Registry disposal cancels readiness. The native route never
+substitutes a procedural character.
+
+## Dev sheet
+
+`src/ui/devSheet/` is the single home for developer and debug controls. It
+follows the owner preference: a pinnable sheet with hover-cards that show
+variables, never a cramped toggle list (SAND-02).
+
+- Desktop (fine pointer, 760 px or wider) and short landscape: a right-side
+  sheet (30% of the stage, 380-520 px). Phones: a bottom sheet with peek, half
+  (55%) and full snaps, drag or flick to resize.
+- Sticky is on by default. A sticky sheet docks: the canvas shrinks and a
+  `resize` event drives `engine.resize()`. Off, it is an overlay that closes
+  on a world pointerdown or Escape.
+- Sections are tabs; groups collapse. Open, sticky, snap, tab and collapsed
+  groups persist in `localStorage` (`l2.devSheet.v1`), and every storage access
+  is guarded.
+- Keys: backtick toggles the sheet, `/` focuses the filter, Escape closes
+  cards, then clears the filter, then closes.
+- Every control can carry `VariableInfo` rows (name, value, source, status
+  `native`, `presentation` or `unverified`) shown in hover-cards.
+- `createNativeSliceRuntime` adds the audio, movement, combat, character,
+  world, effects and debug sections, with hover-card helpers from
+  `nativeSliceSheet.ts`. `WorldInterface` adds the general section.
 
 ## Coordinates and timing
 
-Native assets from the pinned IMPORTA-PC snapshot enter through a separate `.l2asset` contract, described in [ASSET_PIPELINE.md](ASSET_PIPELINE.md). The offline converter owns native package decoding, dependency resolution, unit/basis conversion and content-addressed receipts. Standalone textures retain native mip/palette sidecars and supported DDS derivatives; the package inspector still uses the editable PNG preview. `readAssetPackage` verifies ZIP structure, paths, CRCs, every file's SHA-256, source edition and self-contained GLB resources before loading. `AssetImportPanel` hosts a separate preview scene; it suspends the world's rendering without changing adapter state. Closing the inspector disposes its resources and restores Babylon's global floating-origin matrix overrides, which disposal of a second engine otherwise resets in 9.27.1.
+- The native route uses right-handed source coordinates. Characters are native
+  Interlude packages with their own recorded conversion (exporter 0.01 m per
+  source unit, actor DrawScale, class collision data) and no height fitting.
+- Talking Island keeps unchanged right-handed source coordinates; these are
+  not asserted to be physical meters.
+- The courtyard is Babylon left-handed, +Y up, X/Z ground, one unit per meter.
+  Its camera starts at radius 26 m, zooms 10-38 m and limits vertical orbit to
+  0.35-1.45 rad. Imported mode follows the local player, starts at radius 8
+  source units and allows radius 1-50. `WorldCamera.ts` attaches orbit and
+  zoom input and disables panning.
+- Yaw is around +Y in radians. Deltas and animation durations are in seconds;
+  engine milliseconds convert at the composition boundary.
+- The frame loop caps elapsed time at 0.1 s after a stall. This slows the
+  synthetic clock instead of replaying a hidden-tab backlog; it is not network
+  clock synchronization.
+- `PositionInterpolator` converges with `1 - exp(-12 x elapsedSeconds)`.
+  Equal total elapsed time gives the same position regardless of frame
+  subdivision. Zero time leaves the position unchanged; negative or non-finite
+  time and non-finite coordinates are rejected.
+- An explicit `shouldSnap` or a gap greater than 8 world units snaps. A gap of
+  exactly 8 smooths. Imported presentation projects the interpolated position
+  onto nearby support. There are no timestamps, prediction, extrapolation or
+  reorder buffer.
+- Orientation uses the shortest angular difference at the same rate.
+  Interpolation never writes back to adapter state.
 
-`PackagePreview` retains source mesh transforms and a scale-one outer root. Native animation playback uses the recorded source duration and original channel keys, including the final-to-first interpolation interval; Babylon's ordinary group loop would end at the last stored key. Optional linked-sound playback previews verified direct native Sound references at notification times. It does not emulate native random selection, volume/radius rules, surface routing or gameplay. Human appearances in the courtyard and Talking Island routes now use the staged native player profiles through `nativeOrProceduralCharacter.ts` (procedural while loading or on failure); other entities keep the procedural or ad-hoc-URL path below.
-
-- The courtyard is Babylon left-handed, **+Y up**, X/Z ground, one unit per meter. Talking Island uses unchanged right-handed source coordinates; these are not asserted to be physical meters. Characters are native Interlude packages with their own recorded coordinate conversion (exporter 0.01 m per source unit, actor DrawScale, class collision data) and no height fitting; the Unity-character height correction (`legacyWorldScale.ts`) has been removed with the lineagen GLBs. Yaw is around +Y in radians.
-- Delta values and animation durations are in **seconds**. Runtime engine milliseconds are converted at the composition boundary.
-- The frame loop caps elapsed time at **0.1 seconds** after a stall. It intentionally slows the synthetic clock rather than replaying a long hidden-tab backlog; this is not a network clock synchronization scheme.
-- `PositionInterpolator` performs exponential convergence with `1 - exp(-12 × elapsedSeconds)`. Equal total elapsed time produces the same position for an unchanged target regardless of frame subdivision. Zero time leaves the position unchanged; negative or non-finite time and non-finite coordinates are rejected.
-- An explicit `shouldSnap` update or a positional gap **greater than 8 world units** snaps immediately. A gap of exactly 8 units still smooths unless explicitly marked. Imported presentation projects the interpolated position onto nearby support. No timestamps, prediction, extrapolation, or transport reorder buffer are implemented.
-- Orientation uses the shortest angular difference and the same exponential convergence rate. Interpolation never writes back to adapter state.
-- The authored camera starts at radius 26 meters, with a 10–38 meter zoom range and vertical orbit limits of 0.35–1.45 radians.
-
-Meter units intentionally differ from the stock Editor template's centimeter conventions. `CharacterModelProfile` (ad-hoc `modelUrl` models only) states `metresPerUnit` and `facingYawRadians`; conversion is applied once at the presentation assembly root. Native player profiles carry their own forward axis and actor scale; the client never fits models to a bounding height or recenters their origins. The retired lineagen GLBs had been normalized to 1.8 m by their earlier conversion; [ASSET_AUDIT.md](ASSET_AUDIT.md) keeps that history.
+`EngineHost` enables camera-relative rendering. Runtime composition gives the
+Talking Island adapter and presentation grounding a geometry-backed
+`WorldNavigation`; the adapter interface stays independent of Babylon.
+Navigation indexes transformed source triangles, checks a finite footprint,
+limits slopes and steps, sweeps a capsule against walls and ceilings, and
+blocks movement while nearby colliders load. Hidden scenery keeps collision.
+This is local collision, not multiplayer authority or pathfinding: a click
+moves straight toward the destination and stops at obstructions.
 
 ## Entity and asset ownership
 
-The registry owns one `CharacterVisual`, `PositionInterpolator` and `EntityLabel` per entity, plus a shared selection ring. Spawn creates those resources immediately. Update changes the target transform, animation state and label data; a model URL, appearance identifier or kind change rebuilds the visual while preserving selection. A changed action sequence retriggers the requested clip. Despawn removes the visual and label and clears selected-target state if necessary. Duplicate spawn replaces the prior presentation; an update for an unknown identifier is ignored, so producers must send spawn before update.
+The registry owns one `CharacterVisual`, `PositionInterpolator` and
+`EntityLabel` per entity, plus one shared selection ring.
 
-The legacy `createCharacterVisual` returns a usable procedural character synchronously. For an explicit `modelUrl` it resolves a profile in `src/assets/characterProfiles.ts` (appearance ids never resolve to a GLB), fetches the GLB with an abort signal, checks HTTP success and the complete glTF v2 header, and loads an asset container with Babylon animation autoplay disabled. Even binary input receives a resource base URL, derived from the response URL, for folder-relative dependencies. `prepareCharacterModel` validates geometry and selected clips, applies the profile's unit/facing transform, and parents only imported top-level nodes to the assembly root. All internal hierarchy and source transforms remain intact. This legacy path retains its placeholder and visible failure status. A late result for a removed entity or disposed scene is disposed rather than reintroduced.
+- Spawn creates those resources immediately. Update changes the target
+  transform, animation state and label. A model URL, appearance or kind change
+  rebuilds the visual and keeps selection. A changed action sequence retriggers
+  the clip.
+- Despawn removes visual and label and clears the selected target.
+- A duplicate spawn replaces the prior presentation. An update for an unknown
+  identifier is ignored, so producers send spawn before update.
 
-Native visuals use a separate factory: an initially disabled transform and a
-mesh-free animation state holder preserve semantic requests while the source
-assembly loads. `CharacterVisual.ready` resolves after native parts, clips and
-the current initial equipment request are installed; failures reject it.
-`EntityRegistry.whenReady()` awaits the current set, repeats if an entity was
-replaced, and does not let a removed visual's cancellation reject its replacement.
-Registry disposal cancels readiness. This contract prevents native startup from
-substituting a procedural character while preserving the legacy demo's fallback.
+Character paths:
 
-`CharacterAnimator` preserves the selected state when switching drivers. Procedural animation blends articulated idle breathing, run strides and attack swings. Profile-backed model animation resolves exact native identifiers and per-state loop/transition policies. The current unarmed profiles map idle to `wait_Hand` (0.18 s transition), run to `run_Hand` (0.12 s) and attack to `Atk01_Hand` (0.08 s). These transition durations are client presentation choices; native clip durations remain unchanged. Idle and run loop, while attack plays once and fades visually to idle near its end without changing authoritative semantic state. Another explicit action sequence retriggers it; repeated ordinary snapshots do not. Interrupted blends preserve current contributing weights rather than jumping back to a bind pose.
+- Native players: `pnpm assets:stage` runs `scripts/stage_native_players.py`,
+  which adds the four native Human packages and profiles to ignored
+  `public/l2/` with SHA-256 pins. Human appearances on the Talking Island and
+  courtyard routes use these profiles through `nativeOrProceduralCharacter.ts`,
+  procedural while loading or on failure. Initial players select FFighter,
+  MFighter and MMagic; three monsters stay procedural.
+- Native visuals use their own factory: an initially disabled transform and a
+  mesh-free animation state holder keep semantic requests while the assembly
+  loads.
+- Ad-hoc `modelUrl`: `createCharacterVisual` returns a procedural character
+  synchronously, then resolves a profile in `src/assets/characterProfiles.ts`
+  (appearance ids never resolve to a GLB). It fetches the GLB with an abort
+  signal, checks HTTP success and the glTF v2 header, and loads an asset
+  container with autoplay off. Binary input gets a resource base URL from the
+  response URL. `prepareCharacterModel` validates geometry and clips, applies
+  the profile's `metresPerUnit` and `facingYawRadians` once at the assembly
+  root, and parents only top-level nodes. This path keeps its placeholder and
+  visible failure status, and the case-insensitive generic clip aliases.
+- A late result for a removed entity or disposed scene is disposed.
+- The client never fits models to a bounding height or recenters origins.
+  Native player profiles carry their own forward axis and actor scale.
 
-Ad-hoc model URLs retain the documented case-insensitive generic aliases for independent fixtures. Missing mapped clips retain the procedural fallback and report the incompatibility; that does not alone demonstrate a conversion defect. Models remain local: `pnpm assets:stage` runs `scripts/stage_native_players.py`, which adds the four native Human packages and profiles to ignored `public/l2/` with SHA-256 pins. Initial players select FFighter/MFighter/MMagic (native packages, procedural until loaded or on failure), while three monsters remain procedural; all four Humans are selectable on `/?world=interlude&character=<id>`. The current verification record is in [ASSET_AUDIT.md](ASSET_AUDIT.md) and [VERIFICATION.md](VERIFICATION.md).
+`PackagePreview` keeps source mesh transforms and a scale-one outer root.
+Native playback uses the recorded source duration and original channel keys,
+including the final-to-first interval. Optional linked-sound playback previews
+verified direct Sound references at notification times. It does not emulate
+native random selection, volume and radius rules, surface routing or gameplay.
+`AssetImportPanel` hosts a separate preview scene and suspends world rendering
+without changing adapter state. Closing it disposes its resources and restores
+Babylon's global floating-origin matrix overrides, which disposing a second
+engine resets in 9.27.1.
 
-### Asset structure guides the client
+`CharacterAnimator` keeps the selected state when switching drivers.
+Procedural animation blends idle breathing, run strides and attack swings.
+Native player profiles resolve exact native clips through the alias keys in
+`nativeAnimationAliases.ts` (required: idle, run, attack, death); the bindings
+come from `scripts/prepare-native-player-aliases.py` and are staged by
+`scripts/stage_native_players.py`, never written in client code. Model
+animation applies per-state loop and transition policies; transition
+durations are client presentation choices and native clip durations stay
+unchanged. Attack plays once and fades to idle near its end without changing
+semantic state. Interrupted blends keep current weights instead of jumping to
+a bind pose. A missing mapped clip keeps the procedural fallback and reports
+the incompatibility.
 
-The observed structure is `<Variant>_Character` → `<Variant>_Rig`, containing seven separate skinned parts and the native `bip01` hierarchy. All seven parts share one canonical exported skeleton. Weapon, shield, cape and sheath helper bones remain, but no weapon meshes or separate attachment objects are supplied. Material names, alpha modes, texture references and imported extras stay unchanged. Mesh picking adds the namespaced `clientEntityId` field without replacing imported metadata; non-object source metadata is retained as `sourceMetadata`. Targeting also supports the procedural visuals' existing `entityId` field.
+- Mesh picking adds the namespaced `clientEntityId` without replacing imported
+  metadata. Non-object source metadata is kept as `sourceMetadata`. Targeting
+  also supports the procedural visuals' `entityId`.
+- Adapter coordinates drive the outer entity root; animation moves the body
+  inside it. Native root-motion channels are kept.
+- Bound measurements give label height, selection-ring radius and diagnostic
+  picking height. They never change size or origin, and are taken before the
+  assembly attaches to the moving root.
+- `EntityLabel` projects a point above the interpolated character, hides
+  off-screen labels, writes names with `textContent`, and shows selection
+  buttons and health meters. `WorldInterface` owns the HUD and dispatches
+  every entity-changing control to the adapter. Health values and cosmetic
+  attacks add no combat calculation (DEC-PORT-3).
+- The HUD injects a scoped stylesheet from `src/ui/worldStyles.ts` and removes
+  it on shutdown, because the Editor compiles attached scripts as CommonJS and
+  loads no CSS bundle. Overlays track the rendering canvas rectangle. The Vite
+  page self-hosts the heading font; Editor Play falls back to serif.
 
-Every current GLB contains all its animations and embedded images; there are no separate animation files or external texture dependencies in this converted inventory. A profile therefore describes one demonstrated resource plus unit/facing and animation data. No speculative multi-resource assembly or equipment gameplay system is added. If later inputs supply separate resources, extend the presentation descriptors and target resolution to their verified identities instead of requiring asset rebaking or flattening to fit this implementation.
+## Build and generation today
 
-The native root-motion channels are retained. Earlier conversion already removed net horizontal drift and applied sampled vertical floor corrections, so runtime assembly does not repeat those operations. Adapter coordinates drive the outer entity root while animation controls body movement inside it. Conversion repairs require demonstrated defects or lost source relationships and are recorded separately from client changes in the asset audit.
+`pnpm dev` and `pnpm build` both run `pnpm generate`, which today runs, in
+order:
 
-These changes remain in presentation and asset resolution. `GameWorldAdapter` delivers entity lifecycle, semantic state and appearance references without Babylon or asset-format dependencies. Bound measurements provide label height, selection-ring radius and diagnostic picking height; measurements do not modify character size or origin. They are taken before attaching the assembly to the moving entity root, so an asynchronous load cannot incorporate a stale world position into its anchors.
+1. `ensure-webgpu-project.mjs` (restores `isWebGPU: true` in
+   `project.bjseditor`).
+2. `stage-webgpu-compilers.mjs` (stages glslang and twgsl).
+3. `validate-editor-materials.mjs`: a read-only guard that rejects meshes
+   referencing the internal `BABYLON.ShaderMaterial` with both shader stages
+   named `lightProxy`. It follows direct, numeric-only and MultiMaterial
+   references, including LODs, names the affected file and mesh, and stops
+   before packing. Generic names such as `ProxyMaterial` alone pass. On
+   failure, restore the affected records from a verified copy; the guard
+   cannot rebuild a lost material.
+4. `preserve-native-editor-uv2.mjs` (restores demonstrated missing UV2).
+5. `babylonjs-editor-cli pack` (exports `public/scene/*.babylon` and
+   regenerates `src/scripts.ts`).
+6. `preserve-native-editor-fog.mjs`: Editor 5.5.3 drops the native scene's
+   fog-enable switch, so disabled fog maps to Babylon mode 0 and enabled fog
+   keeps its authored mode.
+7. `share-native-terrain-export-materials.mjs`.
 
-`EntityLabel` projects a point above the interpolated character into the viewport, hides off-screen labels, writes names with `textContent`, and exposes selection buttons and health meters. `WorldInterface` owns the compact HUD and dispatches all entity-changing controls to the adapter. Its health values and cosmetic attacks do not introduce combat calculations.
+NOED-02 moves every step except `stage-webgpu-compilers` to an optional
+`pnpm generate:editor`. Then the code-built native scene sets fog explicitly
+(`fogEnabled = false` with mode 3; Babylon defaults to `fogEnabled = true`).
 
-The HUD injects a scoped stylesheet from TypeScript and removes it on shutdown. This avoids CSS/font imports in the Editor's CommonJS script compiler. Both overlays track the rendering canvas rectangle, including an embedded Editor preview. The Vite page self-hosts the heading font; Editor scene play uses the serif fallback when that browser-page font is absent. The main health/name display also reads adapter state.
+`package.json` pins `@babylonjs/addons` 9.27.1 and `@recast-navigation/core` /
+`generators` 0.43.0 only because the desktop Editor's generated script entry
+imports plugins that CLI pack omits. Evidence:
+`artifacts/native-parity/research/editor-plugin-dependencies/README.md`.
 
-## Shutdown and authoring separation
+## Editor-authored route (optional)
 
-Stopping the scene removes the frame observer, pointer targeting, camera controls, adapter subscription, entity visuals and labels, selection resources, HUD, diagnostic handle, and adapter state. Character cleanup aborts pending loads and disposes animation drivers, asset containers, procedural meshes/materials, and roots. Browser page shutdown and Vite hot replacement dispose `App`; the engine host removes resize handling, stops rendering, and disposes the engine. Scene loading failures dispose partial scene resources before reporting the error.
+`/?world=interlude&authored=1` loads `native-world.babylon`, the saved
+`assets/native-world.scene` from `pnpm assets:editor`. NOED-01 keeps it
+reachable only by a dynamic import. Runtime facts in the code today:
 
-MCP is an authoring tool outside this runtime. It does not appear in `GameWorldAdapter`, cannot be required for browser startup, and has no runtime service configuration in this repository.
+- Incremental loading: `loadEnvironment` sets
+  `SceneLoaderFlags.ForceFullSceneLoadingForIncremental` while parsing the
+  authored scene, then restores the prior value. Offscreen geometry loads
+  before placement validation and script startup. Other routes keep their
+  loading behaviour.
+- Z reflection: `attachAuthoredNativeSection` attaches the parsed world
+  without importing a second copy. The dedicated root reflects Z for the
+  Editor's left-handed viewport; mesh winding and camera orientation adapt on
+  entry to the right-handed runtime and restore on disposal. Source placement
+  metadata and authored child edits stay intact; the scene owns every saved
+  node, texture and material. Removing or duplicating declared placements
+  fails validation.
+- No second GLB fetch: the runtime never fetches the map GLBs again on this
+  route.
+- ShaderMaterial recovery: Editor 5.5.3 Play drops every
+  `BABYLON.ShaderMaterial`. `restoreEditorAuthoredMaterials.ts` recovers only
+  an omitted terrain material from the live authoring scene on the same
+  engine, and requires matching scene, manifest, root and mesh identities. It
+  serializes and parses an owned copy, keeping unsaved shader edits, and never
+  shares the source material or replaces an existing assignment. Both `null`
+  and `undefined` unresolved-material results are handled. Stop, abort or
+  failure disposes only the owned copy and restores the original assignment.
+  It uses the absolute authoring texture root, because the Editor's relative
+  path rewriting gives checkerboard terrain on WebGPU. The CLI export includes
+  the authored shader and needs no recovery.
 
-## Phase 2 — future Interlude adapter
+Actor material overrides (`src/assets/native/nativeMaterialOverrides.ts`,
+`createNativeMaterialOverrides`):
 
-`createWorldRuntime` is the single composition point that selects `MockWorldAdapter`. A future adapter can supply the same initial state and ordered entity events without importing transport details into presentation modules. It must establish snapshot/subscription ordering, normalize positions into meters and time into seconds, and mark teleports explicitly.
+- Selected by exact entity ID plus qualified source material name, with a
+  linear RGB multiplier and preview roughness, each in `[0, 1]`.
+- Clones only the matching actor's PBR material. Textures, alpha mode, UV
+  transforms and other settings survive; source materials and converted
+  payloads stay unchanged.
+- Tracks asynchronous equipment replacement by identity. Removing a part
+  releases its override; stopping restores source materials before the model
+  owner disposes.
+- Disabled by default. Diagnostics expose matching counts and the applied
+  colour and roughness. Eight focused tests cover isolation, source
+  preservation, ownership and rollback.
+- These overrides do not implement native shaders or particle timing.
+  Settings live today in `NativeParityScript` inspector fields and move to
+  typed sandbox config with NOED-01.
 
-The current `WorldCommand` union includes synthetic developer intents such as spawn, pause, forced animation, and intentional asset failure. A real adapter must map supported player actions and explicitly reject or disable unsupported demo intents; replacing the constructor alone does not turn those controls into network features. Phase 2's concrete outcome is real Interlude authentication, character selection and world entry against stock Mobius. Protocol and transport design belong to that later task and are absent here. Asset integration remains a Phase 1 follow-up; production deployment is outside the current roadmap scope.
+Editor Play host adaptations in client code (`GLTF2` loader namespace, `/l2`
+fetch-path adaptation, `getWorldCanvas` input canvas, HUD toolbar inset) are
+listed in [EDITOR_VIEWER.md](EDITOR_VIEWER.md).
+
+## Shutdown
+
+Stopping the scene removes the frame observer, pointer targeting, camera
+controls, adapter subscription, entity visuals and labels, selection
+resources, HUD, diagnostic handle and adapter state. Character cleanup aborts
+pending loads and disposes animation drivers, asset containers, procedural
+meshes and materials, and roots. Page shutdown and Vite hot replacement
+dispose `App`; the engine host removes resize handling, stops rendering and
+disposes the engine. Scene loading failures dispose partial resources before
+reporting the error.
+
+## Stage B adapter
+
+A server adapter (stock L2J Mobius first, DEC-PORT-2) plugs in at
+`createWorldRuntime` and supplies the same initial state and ordered events.
+Transport details stay out of presentation modules. Its duties (NET-04):
+snapshot and subscription ordering, positions in meters, time in seconds,
+explicit teleports. The `WorldCommand` union holds synthetic developer
+intents (spawn, pause, forced animation, intentional asset failure); a real
+adapter maps supported player actions and rejects or disables the rest.
+Replacing the constructor alone does not make those controls network features.
+
+## Source layout
+
+```text
+project.bjseditor             Optional Editor viewer project (DEC-OWN-8)
+assets/                       Editor scenes: example, native-parity, native-world
+public/scene/                 Generated CLI export; ignored
+public/l2/                    Staged native packages, profiles and catalog.json; ignored
+public/assets/world/          Legacy lineagen Talking Island (dev only, never built); ignored
+scripts/stage_native_players.py  Stage native player packages/profiles (pnpm assets:stage)
+src/
+  main.ts, App.ts             Browser entry, startup errors, reveal, shutdown
+  scripts.ts, scripts/        CLI-generated script map; nativeParity.ts, world.ts
+  runtime/                    createWorldRuntime, createNativeSliceRuntime, sheet wiring
+  engine/                     WebGPU engine, render loop, resize, disposal
+  scene/                      loadEnvironment, startup guard, ready-frame reveal
+  scene/world/                loadNativeSection, authored section, sky, flames, BSP
+  world/                      GameWorldAdapter, MockWorldAdapter, NativeSliceAdapter
+  entities/                   Entity registry, selection, picking
+  interpolation/              Position smoothing and snapping
+  animation/                  State facade, procedural poses, clip blending
+  assets/, assets/native/     Character visuals, native actors, catalog, overrides
+  audio/                      WorldAudioMixer, music, ambience, footsteps, combat
+  editor/                     Editor capture and authored-material recovery
+  ui/, ui/devSheet/           Labels, HUD, loading screen, dev sheet
+tests/unit/                   Vitest behaviour tests
+tests/browser/                Playwright browser tests; nativeSection.html inspection page
+```
+
+## Known limits
+
+These are covered by requirements; status is in
+[.planning/STATE.md](../.planning/STATE.md).
+
+- Musveren's local point-support placement does not reproduce native
+  collision; the final corpse still intersects terrain and PrePivot is
+  unresolved (POL-01). See [NATIVE_NPC_PROFILES.md](NATIVE_NPC_PROFILES.md).
+- Full weapon attachments (ACT-03), particles and skill effects (ACT-06) and
+  visual parity (POL-01) are unfinished.
+- The Editor is off the build and runtime path only after NOED-01 to NOED-04
+  land.
