@@ -1,8 +1,3 @@
-"""Audit exact ALAudio footstep text against locked source Sound objects.
-
-Only exact object joins are extracted. Unknown references remain explicit gaps.
-No client binaries, native playback, browser or production catalog are invoked.
-"""
 from __future__ import annotations
 
 import argparse
@@ -20,10 +15,13 @@ from native_assets_lib.footstep_config import (
 )
 from native_audio import decode_native_audio
 from native_catalog.ue2 import FormatError, Package
-from reference_client_guard import require_reference_client
+from reference_client_guard import require_confined_relative_path, require_reference_client
 
 
 ROOT = Path(__file__).resolve().parent.parent
+AUDIT_DESCRIPTION = ('Audit exact ALAudio footstep text against locked source Sound objects. '
+    'Only exact object joins are extracted. Unknown references remain explicit gaps. '
+    'No client binaries, native playback, browser or production catalog are invoked.')
 
 
 def reject_links(path):
@@ -135,11 +133,11 @@ def run(args):
             continue
         pin = pins[0]
         relative_path = pin['relativePath']
-        source = client_access.require_equal_file(relative_path)
         if relative_path not in packages:
-            if not source.is_file():
+            if not (client_access.root / require_confined_relative_path(relative_path)).is_file():
                 row['status'] = 'locked-package-not-staged'
                 continue
+            source = client_access.require_equal_file(relative_path)
             data = read(source, 'source:' + lock['sourceHost'] + ':' + lock['sourceRoot'] + '/' + relative_path)
             require(len(data) == pin['bytes'] and digest(data) == pin['sha256'], 'Locked source package hash/length mismatch: ' + relative_path)
             package = Package(data, source.name)
@@ -222,7 +220,7 @@ def run(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=AUDIT_DESCRIPTION)
     parser.add_argument('--config', type=Path, required=True)
     parser.add_argument('--config-sha256', required=True)
     parser.add_argument('--config-source-host', required=True)

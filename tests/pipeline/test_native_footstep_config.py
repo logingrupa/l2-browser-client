@@ -16,7 +16,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/'scripts'))
 from native_assets_lib import footstep_config as foot
 from native_catalog.ue2 import FormatError, Reader
-from reference_client_lock_fixture import lock_client_as_reference_root
+from reference_client_guard import ReferenceClientLockError
+from reference_client_lock_fixture import lock_client_as_checked_conversion_root, lock_client_as_reference_root
 
 spec = importlib.util.spec_from_file_location('audit_native_footstep_config', ROOT/'scripts/audit-native-footstep-config.py')
 audit = importlib.util.module_from_spec(spec)
@@ -193,6 +194,27 @@ class FootstepConfigTests(unittest.TestCase):
             for destination in (source/'new', root, source):
                 with self.subTest(destination=destination), self.assertRaises(FormatError):
                     audit.safe_destination(destination, (source,))
+
+    def test_locked_package_absent_from_a_lock_checked_root_is_reported_not_staged(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            args = self.fixture(root, b'[L2FootStepSound]\nDefWalkSound1=StepSound.Default.Step_1\n')
+            lock_client_as_checked_conversion_root(self, args.client_snapshot, root/'reference', ['sounds/stepsound.uax'])
+            (args.client_snapshot/'sounds/stepsound.uax').unlink()
+            audit.run(args)
+            result = json.loads((args.output/'coverage.json').read_text())
+            self.assertEqual(result['rows'][0]['status'], 'locked-package-not-staged')
+            self.assertEqual(result['packages'], [])
+
+    def test_present_package_on_a_lock_checked_root_still_needs_lock_equal_bytes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            args = self.fixture(root, b'[L2FootStepSound]\nDefWalkSound1=StepSound.Default.Step_1\n')
+            lock_client_as_checked_conversion_root(self, args.client_snapshot, root/'reference', ['sounds/stepsound.uax'])
+            (args.client_snapshot/'sounds/stepsound.uax').write_bytes(b'mocked-native-packagE')
+            with self.assertRaisesRegex(ReferenceClientLockError, 'stale for sounds/stepsound.uax'):
+                audit.run(args)
+            self.assertFalse(args.output.exists())
 
     def test_unresolved_group_less_values_never_extract(self):
         with tempfile.TemporaryDirectory() as tmp:
