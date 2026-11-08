@@ -45,7 +45,7 @@ GSD phase = PORT_SCOPE phase + 1 for phases 1 to 4. Phases 5 and 6 have no PORT_
   4. A contract test fails if the five `GameWorldAdapter` methods change, and the written output contract says how `asset.json` records units and handedness per route and how the catalog lists assets, with hash-pinned fixtures that run without the private client.
   5. A new lane can start on a `<part>/<slug>` branch and knows where its STATUS line, folder ownership (`.planning/lanes.json`) and `docs/parts/<part>/EVIDENCE.md` live.
   6. `pnpm dev` and `pnpm build` run without `babylonjs-editor-cli pack` or the Editor repair scripts (they sit in an optional `pnpm generate:editor`), `?world=interlude` loads the native world straight from the `.l2asset` catalog with no Editor scene, and `?inspect=1` opens Babylon Inspector, lazy-loaded.
-**Plans**: 12/17 plans executed in 6 waves
+**Plans**: 13/17 plans executed in 6 waves
 
 Plans:
 **Wave 1**
@@ -66,7 +66,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 - [x] 01-09-PLAN.md - Editor off dev and build, Editor tests under test:editor, static graph test (NOED-02, NOED-05)
-- [ ] 01-11-PLAN.md - Missing-model demo and URL model loader deleted (ARCH-03, SAND-01)
+- [x] 01-11-PLAN.md - Missing-model demo and URL model loader deleted (ARCH-03, SAND-01)
 - [x] 01-13-PLAN.md - Full-tree hash lock run and the 40-table .dat inventory (FOUND-03, FOUND-04)
 
 **Wave 5** *(blocked on Wave 4 completion)*
@@ -148,7 +148,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 (Phase 5 may start b
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundations | 12/17 | In Progress | - |
+| 1. Foundations | 13/17 | In Progress | - |
 | 2. Stage A breadth | 0/TBD | Not started | - |
 | 3. Stage A checks | 0/TBD | Not started | - |
 | 4. Stage B adapter | 0/TBD | Not started | - |
