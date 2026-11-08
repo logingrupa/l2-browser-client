@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-03-PLAN.md
-last_updated: "2026-11-08T16:15:51.447Z"
+stopped_at: Completed 02-06-PLAN.md
+last_updated: "2026-11-08T16:34:46.944Z"
 last_activity: 2026-11-08
 last_activity_desc: Phase 02 plan 02-02 complete (machine schedule, unit ledger and gap rows)
-state_head: f505646dd8ba36e0034dde0850feb2b965ff0900
+state_head: 318a8956d11fae64a6c4499e724baa21e13b29a7
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 86
-  completed_plans: 22
+  completed_plans: 23
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 02 (Stage A breadth) - EXECUTING
-Plan: 02-03 complete, 5 of 69 plans executed
+Plan: 02-06 complete, 6 of 69 plans executed
 Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-08 - Plan 02-03 complete: one catalog writer library (`scripts/native_store/catalog_writer.py`) under every stager and importer, and `write_lane_catalog.py` with `--lane`, `--union` and `--plan`, pinning lane catalogs to the shared store's catalog SHA-256. Earlier: plan 02-02, one Riga machine schedule owner (`scripts/check-machine-schedule.mjs`, guarded in both Playwright configs), the resumable `UnitLedger` with `require_batch_preflight`, and the gap-row schema with the closed reason list. Earlier: applied the Lineage2JS reference handoff (DEC-OWN-12): eight provisional requirements MAT-01, MAT-02, VIS-01, MOVE-01, FX-01 (Phase 2) and MOVE-02, NET-09, NET-10 (Phase 4), v1 now 66; earlier the native-world-slice merge (DEC-OWN-11) left only the native routes
+Last activity: 2026-11-08 - Plan 02-06 complete: the serve-only `NATIVE_STORE_ROOT` dev switch (`vite/nativeStoreRootPlugin.ts`) serves `/l2/` from a lane store or the committed fixture store on port 5175, with catalog and coverage only from that root, proven absent from the production bundle; the load-check record format and its atomic per-key writer (`tests/browser/support/loadCheckRecordFile.ts`). Earlier: plan 02-03, one catalog writer library (`scripts/native_store/catalog_writer.py`) under every stager and importer, and `write_lane_catalog.py` with `--lane`, `--union` and `--plan`, pinning lane catalogs to the shared store's catalog SHA-256. Earlier: plan 02-02, one Riga machine schedule owner (`scripts/check-machine-schedule.mjs`, guarded in both Playwright configs), the resumable `UnitLedger` with `require_batch_preflight`, and the gap-row schema with the closed reason list. Earlier: applied the Lineage2JS reference handoff (DEC-OWN-12): eight provisional requirements MAT-01, MAT-02, VIS-01, MOVE-01, FX-01 (Phase 2) and MOVE-02, NET-09, NET-10 (Phase 4), v1 now 66; earlier the native-world-slice merge (DEC-OWN-11) left only the native routes
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -74,6 +74,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P01 | 25 min | 3 tasks | 33 files |
 | Phase 02 P02 | 16 min | 3 tasks | 14 files |
 | Phase 2 P03 | 20min | 3 tasks | 17 files |
+| Phase 2 P06 | 20min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -136,6 +137,9 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 2]: 02-02: gap rows use one schema and a closed reason list; lanes extend it in recipes/<lane>/gap-reasons.json (rows 108, 111)
 - [Phase 2]: 02-02: INT-01 and WORLD-03 stay Pending (row 112)
 - [Phase 2]: Plan 02-03: lane converters write through catalog_writer (read_store_catalog, merge_catalog_slice, add_store_file, write_store) and pin with write_lane_catalog.py; identical duplicate records kept once, differing refused; --plan prints the pre-02-24 restage line (OVERNIGHT-DECISIONS rows 114 to 122)
+- [Phase 2]: 02-06: NATIVE_STORE_ROOT takes the lanes.json keys plus fixture (committed tests/fixtures/lane-store/l2); catalog and coverage only from the selected root, other /l2/ paths fall back to public/l2 read only, X-Native-Store-Source names the store (rows 123-125)
+- [Phase 2]: 02-06: the switch is serve-only and proven absent by resolveConfig in both modes plus a publicDir false bundle grep; no THIRD_PARTY_NOTICES.md, attribution stays in docs/SOURCE_REUSE.md (rows 126-127)
+- [Phase 2]: 02-06: load-check records live in artifacts/lane-store/<lane>/load-checks/<catalogSha256>.json, one record per key, sorted, atomic rewrite; INT-01 and WORLD-05 stay Pending (row 130)
 
 ### Pending Todos
 
@@ -186,6 +190,6 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-08T16:15:51.026Z
-Stopped at: Completed 02-03-PLAN.md
+Last session: 2026-11-08T16:34:37.295Z
+Stopped at: Completed 02-06-PLAN.md
 Resume file: None
