@@ -1,12 +1,22 @@
 import { createHash } from "node:crypto";
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { effectFrames, loadNativeEffectComponents, parseEffectManifest, type EffectManifest, type EffectResource } from "../../src/effects/nativeEffectComponents";
 
 const retainedSourceDerivedStageDirectory = resolve("artifacts/native-parity/research/native-power-strike-components-20261107/staging/output/82e36ae7305abade2520dba335839c7422d878e6c07caa95323b47f7626f0afd");
-const retainedBytes = new Uint8Array(await readFile(resolve(retainedSourceDerivedStageDirectory, "manifest.json")));
-const retained = JSON.parse(new TextDecoder().decode(retainedBytes)) as EffectManifest;
+const retainedManifestPath = resolve(retainedSourceDerivedStageDirectory, "manifest.json");
+const retainedResearchOutputPresent = existsSync(retainedManifestPath);
+const retainedResearchOutputAbsentReason = `needs the gitignored retained Power Strike research output at ${retainedManifestPath}`;
+let retainedBytes: Uint8Array;
+let retained: EffectManifest;
+beforeAll(async () => {
+  if (!retainedResearchOutputPresent) return;
+  retainedBytes = new Uint8Array(await readFile(retainedManifestPath));
+  retained = JSON.parse(new TextDecoder().decode(retainedBytes)) as EffectManifest;
+});
+beforeEach(context => { context.skip(!retainedResearchOutputPresent, retainedResearchOutputAbsentReason); });
 const targetId = "interlude:skill:3:level:1:raw-source-dispatch";
 const sha256Hex = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
 const encodeJson = (value: unknown) => new TextEncoder().encode(JSON.stringify(value));

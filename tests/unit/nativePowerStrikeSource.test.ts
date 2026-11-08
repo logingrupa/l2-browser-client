@@ -1,5 +1,6 @@
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { readAssetPackage, type AssetPackage } from "../../src/assets/package/readAssetPackage";
 import { loadNativeNpcProfiles, type NativeNpcProfile } from "../../src/assets/native/loadNativeNpcProfiles";
 import { resolveNativePowerStrikeShotSource, resolveNativePowerStrikeShotTarget } from "../../src/effects/nativePowerStrikeSource";
@@ -10,19 +11,25 @@ const variants = [
   { sex: "female", archive: "ce3984dded01419ce9fc1ec1644ffe06346803f889d5925684d583a154015990", clip: "SpAtk01_1HS_FFighter",
     index: 40, normalized: 0.5808510184288025, seconds: 0.9099999288717906, event: "Fighter.AnimNotify_AttackShot69" },
 ] as const;
+const npcProfileManifestSha256 = "5bb30f9f869b39e0421de07939798bebec094758228db9784ab2c18da3b4096f";
+const npcProfileManifestPath = `public/l2/npc-profiles/${npcProfileManifestSha256}/manifest.json`;
+const stagedInputPaths = [...variants.map(row => `public/l2/${row.archive}/asset.l2asset`), npcProfileManifestPath];
+const missingStagedInputPaths = stagedInputPaths.filter(path => !existsSync(path));
+const stagedStoreAbsentReason = `needs the gitignored staged native store; missing ${missingStagedInputPaths.join(", ")}`;
 const packages: AssetPackage[] = [];
 let profile: NativeNpcProfile;
 beforeAll(async () => {
+  if (missingStagedInputPaths.length > 0) return;
   for (const row of variants) packages.push(await readAssetPackage(new Uint8Array(await readFile(`public/l2/${row.archive}/asset.l2asset`))));
-  const hash = "5bb30f9f869b39e0421de07939798bebec094758228db9784ab2c18da3b4096f";
-  const bytes = new Uint8Array(await readFile(`public/l2/npc-profiles/${hash}/manifest.json`));
+  const bytes = new Uint8Array(await readFile(npcProfileManifestPath));
   vi.stubGlobal("fetch", vi.fn(async () => new Response(bytes.slice())));
   try {
-    const profiles = await loadNativeNpcProfiles([{ id: "native-npc-profiles", manifest: `/l2/npc-profiles/${hash}/manifest.json`,
-      manifestBytes: bytes.length, manifestSha256: hash }], new AbortController().signal);
+    const profiles = await loadNativeNpcProfiles([{ id: "native-npc-profiles", manifest: `/l2/npc-profiles/${npcProfileManifestSha256}/manifest.json`,
+      manifestBytes: bytes.length, manifestSha256: npcProfileManifestSha256 }], new AbortController().signal);
     profile = profiles.get("npc:21622")!;
   } finally { vi.unstubAllGlobals(); }
 }, 60_000);
+beforeEach(context => { context.skip(missingStagedInputPaths.length > 0, stagedStoreAbsentReason); });
 afterEach(() => vi.unstubAllGlobals());
 function fixture(index = 0): AssetPackage {
   return { manifest: structuredClone(packages[index]!.manifest), files: new Map(packages[index]!.files) };
