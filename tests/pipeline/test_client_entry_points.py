@@ -9,6 +9,7 @@ REFERENCE_CLIENT_GUARD_NAME = 'require_reference_client'
 PER_FILE_GUARD_METHOD_NAME = 'require_equal_file'
 REFERENCE_CLIENT_GUARD_MODULE_NAME = 'reference_client_guard'
 SCRIPT_FILE_LOADER_NAME = 'spec_from_file_location'
+ARGUMENT_PARSING_METHOD_NAME = 'parse_args'
 KNOWN_CLIENT_ENTRY_POINTS = {
     'scripts/audit-native-footstep-config.py',
     'scripts/audit_musveren_weights.py',
@@ -61,10 +62,18 @@ def registers_client_option(module_tree):
     return bool(client_option_destinations(module_tree))
 
 
+def parsed_argument_names(module_tree):
+    return {target.id for node in ast.walk(module_tree)
+            if isinstance(node, ast.Assign) and isinstance(node.value, ast.Call) and called_function_name(node.value) == ARGUMENT_PARSING_METHOD_NAME
+            for target in node.targets if isinstance(target, ast.Name)}
+
+
 def guarded_client_destinations(module_tree):
+    argument_names = parsed_argument_names(module_tree)
     return {call.args[0].attr for call in ast.walk(module_tree)
             if isinstance(call, ast.Call) and called_function_name(call) == REFERENCE_CLIENT_GUARD_NAME
-            and call.args and isinstance(call.args[0], ast.Attribute) and isinstance(call.args[0].value, ast.Name)}
+            and call.args and isinstance(call.args[0], ast.Attribute) and isinstance(call.args[0].value, ast.Name)
+            and call.args[0].value.id in argument_names}
 
 
 def module_name_of(relative_path):
@@ -196,7 +205,7 @@ class ClientEntryPointScanTests(unittest.TestCase):
         selected = {relative_script_path(module_name) for module_name in client_entry_point_module_names(script_trees_by_module_name())}
         self.assertLessEqual(KNOWN_CLIENT_ENTRY_POINTS, selected, KNOWN_CLIENT_ENTRY_POINTS - selected)
 
-    def test_every_client_entry_point_guards_its_parsed_client_option_and_reads_through_the_per_file_lock_check(self):
+    def test_every_client_entry_point_guards_its_parsed_client_option_and_references_the_per_file_lock_check(self):
         self.assertEqual(entry_point_guard_failures(script_trees_by_module_name()), {})
 
     def test_scan_flags_a_client_option_without_a_guard_call(self):
@@ -209,6 +218,13 @@ class ClientEntryPointScanTests(unittest.TestCase):
         trees_by_module_name = synthetic_trees(
             fixed_root=CLIENT_OPTION_SOURCE + "require_reference_client('E:/client').require_equal_file('system/a.dat')\n")
         self.assertEqual(entry_point_guard_failures(trees_by_module_name), {'fixed_root': 'no reference client guard on the parsed client_snapshot'})
+
+    def test_scan_flags_a_guard_on_an_attribute_of_anything_but_the_parsed_arguments(self):
+        trees_by_module_name = synthetic_trees(
+            instance_attribute=CLIENT_OPTION_SOURCE + "class Reader:\n    def __init__(self, client_snapshot):\n        self.client_snapshot = client_snapshot\n"
+                "    def read(self):\n        return require_reference_client(self.client_snapshot).require_equal_file('system/a.dat').read_bytes()\n",
+            parsed_arguments=CLIENT_OPTION_SOURCE + "require_reference_client(args.client_snapshot).require_equal_file('system/a.dat').read_bytes()\n")
+        self.assertEqual(entry_point_guard_failures(trees_by_module_name), {'instance_attribute': 'no reference client guard on the parsed client_snapshot'})
 
     def test_scan_flags_a_script_that_reads_client_files_without_the_per_file_lock_check(self):
         trees_by_module_name = synthetic_trees(
