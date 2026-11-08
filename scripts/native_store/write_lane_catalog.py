@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 from pathlib import Path
 import sys
 
@@ -10,16 +9,16 @@ SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS_ROOT))
 
 from native_assets_lib.gltf import json_bytes
-from native_store.catalog_writer import (KNOWN_CATALOG_SLICES, add_store_file, merge_catalog_slice, read_store_catalog, sha256_hex,
-                                         sha256_of_file, verify_store_destinations, write_store)
+from native_store.catalog_writer import (KNOWN_CATALOG_SLICES, add_store_file, merge_catalog_slice, pinned_store_files, read_store_catalog,
+                                         sha256_hex, sha256_of_file, verify_store_destinations, write_store)
+from native_store.merge_lane_store import main_checkout_root
 from native_store.store_paths import REPOSITORY_ROOT, confined_child_path, lane_store_root, read_lane_parts_by_name
 
 LANE_CATALOG_DESCRIPTION = ('Pin a lane store catalog to the SHA-256 of the shared public/l2 catalog it was built on, '
-                            'union other lane stores into it, or print the restage line with --plan.')
+                            'union other lane stores into it, or print the exact restage command with --plan.')
 UNION_EXCLUDED_STORE_FILES = ('catalog.json', 'coverage.json')
-RECORD_REFERENCE_FIELDS = (('manifest', 'manifestSha256', 'manifestBytes'), ('archive', 'archiveSha256', None),
-                           ('model', 'modelSha256', None), ('image', 'imageSha256', 'imageBytes'))
-NATIVE_RESOURCE_PREFIX = '/l2/'
+MERGE_LANE_STORE_SCRIPT = Path(__file__).resolve().parent / 'merge_lane_store.py'
+MAIN_CHECKOUT_STORE_TARGET = 'public/l2'
 
 
 class LaneCatalogError(ValueError):
@@ -31,31 +30,6 @@ def base_catalog_sha256(project_root):
     if not base_catalog_path.is_file():
         raise LaneCatalogError(f'base catalog is missing: {base_catalog_path}')
     return sha256_of_file(base_catalog_path)
-
-
-def catalog_record_references(catalog):
-    references = []
-    for slice_name in KNOWN_CATALOG_SLICES:
-        for record in catalog.get(slice_name, []):
-            for path_field, sha256_field, bytes_field in RECORD_REFERENCE_FIELDS:
-                if path_field not in record:
-                    continue
-                path, sha256 = record[path_field], record.get(sha256_field)
-                if not (isinstance(path, str) and path.startswith(NATIVE_RESOURCE_PREFIX) and isinstance(sha256, str)):
-                    raise LaneCatalogError(f'catalog {slice_name} record {record.get("id")} has no /l2 {path_field} with {sha256_field}')
-                references.append((path[len(NATIVE_RESOURCE_PREFIX):], sha256, record.get(bytes_field) if bytes_field else None))
-    return references
-
-
-def verify_lane_catalog_references(store_root, catalog):
-    for relative, sha256, byte_length in catalog_record_references(catalog):
-        path = confined_child_path(store_root, relative)
-        if not path.is_file():
-            raise LaneCatalogError(f'lane catalog record file is missing from the lane store: {relative}')
-        if sha256_of_file(path) != sha256:
-            raise LaneCatalogError(f'lane catalog record file SHA-256 differs: {relative}')
-        if byte_length is not None and path.stat().st_size != byte_length:
-            raise LaneCatalogError(f'lane catalog record file byte length differs: {relative}')
 
 
 def records_by_slice(catalog):
@@ -78,7 +52,7 @@ def merge_union_lane(project_root, union_lane_name, base_sha256, catalog, files)
     if union_base_sha256 != base_sha256:
         raise LaneCatalogError(f'union lane {union_lane_name} was built on base catalog sha256 {union_base_sha256}; '
                                f'the current base catalog sha256 is {base_sha256}')
-    verify_lane_catalog_references(union_store_root, union_catalog)
+    pinned_store_files(union_store_root, union_catalog)
     for relative in union_lane_store_relative_paths(union_store_root):
         add_store_file(files, relative, confined_child_path(union_store_root, relative).read_bytes())
     for slice_name in KNOWN_CATALOG_SLICES:
@@ -97,11 +71,13 @@ def require_distinct_union_lanes(lane_name, union_lane_names):
             raise LaneCatalogError(f'union lane {union_lane_name} is listed twice')
 
 
-def restage_instruction(project_root, lane_name, lane_catalog_sha256, base_sha256):
-    main_checkout_root = Path(os.path.realpath(Path(project_root) / 'public' / 'l2')).parent.parent
-    return (f'restage {lane_store_root(project_root, lane_name).as_posix()} into {(main_checkout_root / "public" / "l2").as_posix()} '
-            f'from the main checkout with the lane store merge tool of plan 02-24 '
-            f'(expected base catalog sha256 {base_sha256}, lane catalog sha256 {lane_catalog_sha256})')
+def restage_command(project_root, lane_name, base_sha256):
+    main_checkout, merge_script, lane_store = (main_checkout_root(project_root).as_posix(), MERGE_LANE_STORE_SCRIPT.as_posix(),
+                                               lane_store_root(project_root, lane_name).as_posix())
+    if any(character.isspace() for path in (main_checkout, merge_script, lane_store) for character in path):
+        raise LaneCatalogError(f'a restage command path holds whitespace and would not run unquoted: {main_checkout}, {merge_script}, {lane_store}')
+    return (f'cd {main_checkout} && python -B {merge_script} --lane-store {lane_store} --target {MAIN_CHECKOUT_STORE_TARGET} '
+            f'--expected-base-catalog-sha256 {base_sha256}')
 
 
 def write_lane_catalog(project_root, lane_name, union_lane_names=(), plan_only=False):
@@ -112,7 +88,7 @@ def write_lane_catalog(project_root, lane_name, union_lane_names=(), plan_only=F
     catalog, before = read_store_catalog(store_root)
     if plan_only and before is None:
         raise LaneCatalogError(f'lane {lane_name} has no catalog: {store_root / "catalog.json"}')
-    verify_lane_catalog_references(store_root, catalog)
+    pinned_store_files(store_root, catalog)
     files = {}
     for union_lane_name in union_lane_names:
         catalog = merge_union_lane(project_root, union_lane_name, base_sha256, catalog, files)
@@ -124,7 +100,7 @@ def write_lane_catalog(project_root, lane_name, union_lane_names=(), plan_only=F
         if verify_store_destinations(store_root, files) or after != before:
             raise LaneCatalogError(f'lane {lane_name} is not written yet; run write_lane_catalog.py without --plan first')
         return {**summary, 'filesWritten': 0,
-                'restageInstruction': restage_instruction(project_root, lane_name, summary['catalogSha256'], base_sha256)}
+                'restageCommand': restage_command(project_root, lane_name, base_sha256)}
     return {**summary, 'filesWritten': write_store(store_root, files, before, after)['filesWritten']}
 
 
@@ -140,7 +116,7 @@ def main(argv=None):
     except (ValueError, OSError) as error:
         print(str(error), file=sys.stderr)
         return 1
-    print(summary['restageInstruction'] if arguments.plan else json.dumps(summary, sort_keys=True))
+    print(summary['restageCommand'] if arguments.plan else json.dumps(summary, sort_keys=True))
     return 0
 
 

@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import argparse
 import io
 import json
+import os
 from pathlib import Path
+import subprocess
 import sys
+from typing import NamedTuple
 import zipfile
 
 SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
@@ -16,14 +20,54 @@ from native_store.catalog_writer import (KNOWN_CATALOG_SLICES, decode_store_cata
                                          read_current_catalog_bytes, sha256_hex, validate_catalog_record, verify_store_destinations, write_store)
 from native_store.store_paths import SHA256_PATTERN, confined_child_path, refuse_reparse_points
 
+LANE_STORE_MERGE_DESCRIPTION = ('Merge one verified lane store into the main checkout public/l2 store: every check runs before the first '
+                                'write and catalog.json is written last. Run only by the integration thread in the main checkout.')
 LANE_CATALOG_TOP_LEVEL_FIELDS = ('schemaVersion', 'sourceCatalogSha256')
 LANE_ARCHIVE_SUFFIX = '.l2asset'
 LANE_ARCHIVE_SCHEMA_VERSION = 2
 ASSET_MANIFEST_NAME = 'asset.json'
+MAIN_CHECKOUT_STORE_PARTS = ('public', 'l2')
+MAIN_CHECKOUT_ONLY_MESSAGE = 'merge_lane_store runs only in the main checkout (integration thread); this is a linked worktree'
 
 
 class LaneStoreMergeRefusedError(ValueError):
     pass
+
+
+class GitCheckoutPaths(NamedTuple):
+    git_directory: Path
+    common_directory: Path
+    top_level: Path
+
+
+def read_git_checkout_paths(directory):
+    completed = subprocess.run(['git', 'rev-parse', '--path-format=absolute', '--git-dir', '--git-common-dir', '--show-toplevel'],
+                               cwd=directory, capture_output=True, text=True, check=False)
+    lines = completed.stdout.splitlines()
+    if completed.returncode != 0 or len(lines) != 3:
+        raise LaneStoreMergeRefusedError(f'not a git checkout: {directory}')
+    return GitCheckoutPaths(*(Path(os.path.realpath(line)) for line in lines))
+
+
+def main_checkout_root(directory):
+    return read_git_checkout_paths(directory).common_directory.parent
+
+
+def require_main_checkout(current_directory):
+    checkout_paths = read_git_checkout_paths(current_directory)
+    if checkout_paths.git_directory != checkout_paths.common_directory:
+        raise LaneStoreMergeRefusedError(MAIN_CHECKOUT_ONLY_MESSAGE)
+    if checkout_paths.top_level != Path(os.path.realpath(current_directory)):
+        raise LaneStoreMergeRefusedError(f'run merge_lane_store from the main checkout root {checkout_paths.top_level}, not {current_directory}')
+    return checkout_paths.top_level
+
+
+def require_main_checkout_store_target(main_checkout, target):
+    expected_target = Path(os.path.realpath(main_checkout.joinpath(*MAIN_CHECKOUT_STORE_PARTS)))
+    if Path(os.path.realpath(target)) != expected_target:
+        raise LaneStoreMergeRefusedError(f'--target must be {"/".join(MAIN_CHECKOUT_STORE_PARTS)} of the main checkout '
+                                         f'({expected_target}): {target}')
+    return target
 
 
 def require_sha256(value, label):
@@ -124,3 +168,25 @@ def merge_lane_store(lane_store_root, target_root, expected_base_catalog_sha256)
         raise
     except ValueError as error:
         raise LaneStoreMergeRefusedError(str(error)) from error
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=LANE_STORE_MERGE_DESCRIPTION)
+    parser.add_argument('--lane-store', required=True)
+    parser.add_argument('--target', required=True)
+    parser.add_argument('--expected-base-catalog-sha256', required=True)
+    arguments = parser.parse_args(argv)
+    try:
+        require_sha256(arguments.expected_base_catalog_sha256, '--expected-base-catalog-sha256')
+        main_checkout = require_main_checkout(Path.cwd())
+        target = require_main_checkout_store_target(main_checkout, arguments.target)
+        result = merge_lane_store(arguments.lane_store, target, arguments.expected_base_catalog_sha256)
+    except (ValueError, OSError) as error:
+        print(f'Lane store merge refused: {error}', file=sys.stderr)
+        return 1
+    print(json.dumps(result, indent=2))
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

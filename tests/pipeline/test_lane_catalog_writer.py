@@ -5,6 +5,7 @@ import io
 import json
 import os
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -17,6 +18,7 @@ from native_assets_lib.gltf import json_bytes
 from native_store import catalog_writer
 from native_store.catalog_writer import (CatalogWriteError, NATIVE_RESOURCE_PATH_PATTERN, add_store_file, merge_catalog_slice,
                                          read_store_catalog, write_store)
+from native_store.merge_lane_store import main_checkout_root
 from native_store.store_paths import StorePathError, lane_store_root
 from native_store import write_lane_catalog as lane_catalog_module
 from native_store.write_lane_catalog import LaneCatalogError, write_lane_catalog
@@ -53,6 +55,11 @@ except (ImportError, AttributeError) as error:
 
 def sha256_hex(payload):
     return hashlib.sha256(payload).hexdigest()
+
+
+def git_absolute_path(directory, query):
+    completed = subprocess.run(['git', 'rev-parse', '--path-format=absolute', query], cwd=directory, check=True, capture_output=True, text=True)
+    return completed.stdout.strip()
 
 
 def snapshot_tree(root):
@@ -255,13 +262,25 @@ class LaneCatalogWriterTests(unittest.TestCase):
         self.stage_model_version_two(self.world_store)
         archive = self.world_store / MODEL_VERSION_TWO_ARCHIVE
         archive.write_bytes(b'different archive bytes')
-        with self.assertRaisesRegex(LaneCatalogError, 'SHA-256 differs: ' + MODEL_VERSION_TWO_ARCHIVE):
+        with self.assertRaisesRegex(CatalogWriteError, 'SHA-256 differs from its pin [0-9a-f]{64}: ' + MODEL_VERSION_TWO_ARCHIVE):
             write_lane_catalog(self.project, 'world')
         archive.unlink()
         catalog_bytes = (self.world_store / 'catalog.json').read_bytes()
-        with self.assertRaisesRegex(LaneCatalogError, 'missing from the lane store: ' + MODEL_VERSION_TWO_ARCHIVE):
+        with self.assertRaisesRegex(CatalogWriteError, 'pinned store file is missing from .*: ' + MODEL_VERSION_TWO_ARCHIVE):
             write_lane_catalog(self.project, 'world')
         self.assertEqual((self.world_store / 'catalog.json').read_bytes(), catalog_bytes)
+
+    def test_lane_catalog_follows_the_pins_of_a_pinned_tile_manifest(self):
+        catalog, before = read_store_catalog(self.world_store)
+        catalog = merge_catalog_slice(catalog, 'tiles', GOLDEN_CATALOG['tiles'][0], 1)
+        files = {}
+        tile_manifest_relative, chunk_manifest_relative = golden_store_relative_paths('tiles')
+        add_store_file(files, tile_manifest_relative, (GOLDEN_ROOT / 'l2' / tile_manifest_relative).read_bytes())
+        write_store(self.world_store, files, before, json_bytes(catalog))
+        snapshot = snapshot_tree(self.project)
+        with self.assertRaisesRegex(CatalogWriteError, 'pinned store file is missing from .*: ' + chunk_manifest_relative):
+            write_lane_catalog(self.project, 'world')
+        self.assertEqual(snapshot_tree(self.project), snapshot)
 
     def test_lane_catalog_refuses_a_missing_base_catalog_naming_the_path(self):
         base_catalog_path = self.project / 'public' / 'l2' / 'catalog.json'
@@ -339,19 +358,25 @@ class LaneCatalogWriterTests(unittest.TestCase):
         for lane_name in ('actors', 'data-ui', 'integration', 'world'):
             self.assertIn(lane_name, errors)
 
-    def test_plan_prints_one_restage_line_and_writes_nothing(self):
+    def test_plan_prints_the_exact_merge_command_and_writes_nothing(self):
+        subprocess.run(['git', 'init', '--quiet', str(self.project)], check=True, capture_output=True)
         self.build_world_and_actors_lanes()
-        lane_catalog_sha256 = sha256_hex((self.world_store / 'catalog.json').read_bytes())
+        source_catalog_sha256 = json.loads((self.world_store / 'catalog.json').read_bytes())['sourceCatalogSha256']
         snapshot = snapshot_tree(self.project)
         exit_code, output, errors = self.run_main(['--lane', 'world', '--plan'])
         self.assertEqual((exit_code, errors), (0, ''))
-        lines = output.splitlines()
-        self.assertEqual(len(lines), 1)
-        self.assertTrue(lines[0].startswith('restage '))
-        for expected in (self.world_store.as_posix(), (self.project / 'public' / 'l2').as_posix(),
-                         sha256_hex(GOLDEN_CATALOG_BYTES), lane_catalog_sha256):
-            self.assertIn(expected, lines[0])
+        main_checkout = Path(git_absolute_path(self.project, '--git-common-dir')).resolve().parent
+        merge_script = ROOT / 'scripts' / 'native_store' / 'merge_lane_store.py'
+        self.assertEqual(output.splitlines(), [f'cd {main_checkout.as_posix()} && python -B {merge_script.as_posix()} '
+                                               f'--lane-store {self.world_store.as_posix()} --target public/l2 '
+                                               f'--expected-base-catalog-sha256 {source_catalog_sha256}'])
+        self.assertEqual(source_catalog_sha256, sha256_hex(GOLDEN_CATALOG_BYTES))
         self.assertEqual(snapshot_tree(self.project), snapshot)
+
+    def test_main_checkout_of_this_checkout_is_the_parent_of_its_git_common_directory(self):
+        expected = Path(git_absolute_path(ROOT, '--git-common-dir')).resolve().parent
+        self.assertEqual(main_checkout_root(ROOT), expected)
+        self.assertTrue((expected / 'public' / 'l2').exists())
 
     def test_plan_refuses_a_lane_without_a_catalog_or_with_unwritten_changes(self):
         exit_code, output, errors = self.run_main(['--lane', 'integration', '--plan'])
