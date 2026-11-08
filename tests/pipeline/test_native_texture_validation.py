@@ -33,7 +33,7 @@ class TextureValidationTests(unittest.TestCase):
         preview = root / 'preview.png'
         preview.write_bytes(b'\x89PNG\r\n\x1a\n')
         with patch('native_assets.UMODEL_SHA256', sha(tool.read_bytes())):
-            converter = Converter(client, root / 'output', tool)
+            converter = Converter(client, root / 'artifacts' / 'output', tool, project_root=root)
         original_builder = build_texture_dds
 
         def derivative_builder(native, files):

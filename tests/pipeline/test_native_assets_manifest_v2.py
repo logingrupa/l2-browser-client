@@ -61,6 +61,7 @@ class ConverterManifestTests(unittest.TestCase):
         self.addCleanup(temporary_directory.cleanup)
         self.root = Path(temporary_directory.name)
         self.client = self.root / 'source'
+        self.output = self.root / 'artifacts' / 'output'
         self.client.mkdir()
         self.media = self.client / 'sample.wav'
         self.media.write_bytes(synthetic_wav())
@@ -69,7 +70,7 @@ class ConverterManifestTests(unittest.TestCase):
 
     def convert_sample(self):
         with patch('native_assets.UMODEL_SHA256', sha(self.tool.read_bytes())):
-            return Converter(self.client, self.root / 'output', self.tool).convert({'kind': 'audio', 'media': 'sample.wav'})
+            return Converter(self.client, self.output, self.tool, project_root=self.root).convert({'kind': 'audio', 'media': 'sample.wav'})
 
     def test_converter_writes_a_v2_manifest_with_derived_source_path_build_and_version(self):
         lock_path = lock_client_as_reference_root(self, self.client)
@@ -85,7 +86,7 @@ class ConverterManifestTests(unittest.TestCase):
         use_reference_client_lock(self, self.root / 'absent.lock.json')
         with self.assertRaisesRegex(ValueError, 'reference client lock missing'):
             self.convert_sample()
-        self.assertFalse((self.root / 'output').exists())
+        self.assertFalse(self.output.exists())
 
     def test_converter_refuses_to_stamp_a_build_its_client_engine_library_does_not_match(self):
         lock_client_as_reference_root(self, self.client)
@@ -96,7 +97,7 @@ class ConverterManifestTests(unittest.TestCase):
                 change_engine_library()
                 with self.assertRaisesRegex(ValueError, 'system/Engine.dll under .* is missing or differs from the locked reference build'):
                     self.convert_sample()
-                self.assertEqual(list((self.root / 'output').rglob('asset.l2asset')), [])
+                self.assertEqual(list(self.output.rglob('asset.l2asset')), [])
 
 
 if __name__ == '__main__':

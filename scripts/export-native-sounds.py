@@ -1,13 +1,4 @@
 #!/usr/bin/env python3
-"""Batch every exact Sound export in the recipe's locked UAX packages, offline.
-
-python -B scripts/export-native-sounds.py --output artifacts/<fresh-destination>
-Repeat for verified Converter cache hits; --verify-only performs no writes.
-Use --reuse-from <completed-old-output> only with a fresh destination to import
-verified unchanged conversions across this wrapper's name-policy correction.
-Exit 0: complete selected coverage; 2: retained unsupported/partial coverage;
-1: integrity, ownership or execution failure. No catalog/runtime staging occurs.
-"""
 from __future__ import annotations
 
 import argparse
@@ -26,6 +17,17 @@ from native_assets_lib.footstep_config import sound_payload
 from native_audio import decode_native_audio
 from native_catalog.ue2 import FormatError
 from reference_client_guard import require_reference_client
+
+SOUND_EXPORT_DESCRIPTION = (
+    "Batch every exact Sound export in the recipe's locked UAX packages, offline.\n"
+    '\n'
+    'python -B scripts/export-native-sounds.py --output artifacts/<fresh-destination>\n'
+    'Repeat for verified Converter cache hits; --verify-only performs no writes.\n'
+    'Use --reuse-from <completed-old-output> only with a fresh destination to import\n'
+    "verified unchanged conversions across this wrapper's name-policy correction.\n"
+    'Exit 0: complete selected coverage; 2: retained unsupported/partial coverage;\n'
+    '1: integrity, ownership or execution failure. No catalog/runtime staging occurs.'
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 map_audio_exporter_spec = importlib.util.spec_from_file_location('_native_sound_batch_helpers',
@@ -359,7 +361,7 @@ def run(args):
             if reuse:
                 print('Importing %d verified cached Sounds' % len(reuse['reusedIds']), file=sys.stderr, flush=True)
                 copy_verified_cache_files(reuse, output)
-            converter = Converter(snapshot, output/'cache', args.umodel)
+            converter = Converter(snapshot, output/'cache', args.umodel, project_root=ROOT)
             results = []
             for index, row in enumerate(document['sounds'], 1):
                 if index == 1 or index % 100 == 0 or index == len(document['sounds']):
@@ -409,7 +411,7 @@ def run(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=SOUND_EXPORT_DESCRIPTION)
     parser.add_argument('--client-snapshot', type=Path, default=ROOT/'artifacts/native-parity/inputs/IMPORTA-PC')
     parser.add_argument('--input-lock', type=Path, default=ROOT/'recipes/native-inputs.lock.json')
     parser.add_argument('--recipe', type=Path, default=ROOT/'recipes/native-sounds-staged.json')

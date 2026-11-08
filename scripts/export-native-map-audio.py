@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-"""Inventory, export and verify all exact AmbientSoundObject dependencies offline.
-
-python scripts/export-native-map-audio.py --output artifacts/<fresh-run>
-Repeat the command to verify/reuse unchanged products; add --verify-only for a
-read-only source/product closure check. This never stages a browser catalog.
-"""
 from __future__ import annotations
 
 import argparse
@@ -27,6 +21,14 @@ from native_audio import decode_native_audio
 from native_catalog.ue2 import FormatError, Package
 from native_map import ambient_sound_object, property_value
 from reference_client_guard import require_reference_client
+
+MAP_AUDIO_EXPORT_DESCRIPTION = (
+    'Inventory, export and verify all exact AmbientSoundObject dependencies offline.\n'
+    '\n'
+    'python scripts/export-native-map-audio.py --output artifacts/<fresh-run>\n'
+    'Repeat the command to verify/reuse unchanged products; add --verify-only for a\n'
+    'read-only source/product closure check. This never stages a browser catalog.'
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 HASH = re.compile(r'[a-f0-9]{64}')
@@ -400,7 +402,7 @@ def run(args):
             write_exact(output, 'inventory.json', canonical(document))
             for name, payload in products.items():
                 write_exact(output, name, payload)
-            converter = Converter(snapshot, output/'cache', args.umodel)
+            converter = Converter(snapshot, output/'cache', args.umodel, project_root=ROOT)
             results = []
             for row in document['sounds']:
                 result = {'referenceKey': row['referenceKey'], 'status': 'unresolved-source-object'}
@@ -445,7 +447,7 @@ def run(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=MAP_AUDIO_EXPORT_DESCRIPTION)
     parser.add_argument('--client-snapshot', type=Path, default=ROOT/'artifacts/native-parity/inputs/IMPORTA-PC')
     parser.add_argument('--input-lock', type=Path, default=ROOT/'recipes/native-inputs.lock.json')
     parser.add_argument('--recipe', type=Path, default=ROOT/'recipes/native-ambient-20_20.json')

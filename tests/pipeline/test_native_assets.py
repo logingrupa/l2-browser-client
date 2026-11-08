@@ -123,7 +123,7 @@ class CacheTests(unittest.TestCase):
             tool = root / 'tool.exe'
             tool.write_bytes(b'not executed by the media adapter')
             with patch('native_assets.UMODEL_SHA256', sha(tool.read_bytes())):
-                converter = Converter(client, root / 'output', tool)
+                converter = Converter(client, root / 'artifacts' / 'output', tool, project_root=root)
                 request = {'kind': 'audio', 'media': 'sample.wav'}
                 first = converter.convert(request)
                 self.assertFalse(first['cacheHit'])
@@ -321,7 +321,7 @@ class NativeOracleTests(unittest.TestCase):
             self.skipTest('Pinned UModel fixture unavailable')
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            converter = Converter(NATIVE.parents[1], root / 'output', UMODEL)
+            converter = Converter(NATIVE.parents[1], root / 'artifacts' / 'output', UMODEL, project_root=root)
             _, package = converter.package('skillsound')
             item = converter.select(package, 'power_strike_cast', 'Sound')
             payload, mime, metadata = converter.sound(root, package, item)

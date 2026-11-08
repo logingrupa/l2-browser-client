@@ -229,9 +229,10 @@ class ReferenceClientGuardTests(GuardedConversionRootTestCase):
 class CentralReadHelperBindingTests(GuardedConversionRootTestCase):
     def create_converter(self):
         from native_assets import Converter
-        umodel = write_tree_file(Path(self.temporary_directory.name), 'tools/umodel.exe', b'dummy umodel')
+        project = Path(self.temporary_directory.name)
+        umodel = write_tree_file(project, 'tools/umodel.exe', b'dummy umodel')
         with patch('native_assets.UMODEL_SHA256', hashlib.sha256(umodel.read_bytes()).hexdigest()):
-            return Converter(self.trees.conversion_root, Path(self.temporary_directory.name) / 'output', umodel)
+            return Converter(self.trees.conversion_root, project / 'artifacts' / 'output', umodel, project_root=project)
 
     def test_converter_on_conversion_root_without_lock_is_refused_before_indexing(self):
         with patch('pathlib.Path.rglob') as package_index, self.assertRaisesRegex(ReferenceClientLockError, 'reference client lock missing'):

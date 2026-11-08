@@ -40,7 +40,7 @@ class UModelImportClosureTests(unittest.TestCase):
         tool = root / 'umodel.exe'
         tool.write_bytes(b'stand-in tool, never executed by these tests')
         with patch('native_assets.UMODEL_SHA256', sha(tool.read_bytes())), patch('native_assets.require_reference_client', return_value=ReferenceClientAccess(client.resolve(), lock, requires_lock=True)):
-            return Converter(client, root / 'output', tool), client
+            return Converter(client, root / 'artifacts' / 'output', tool, project_root=root), client
 
     def run_umodel(self, converter, client, root):
         work = root / 'work'

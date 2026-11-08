@@ -25,7 +25,9 @@ from native_assets_lib.static_materials import native_static_materials
 from native_assets_lib.texture_mips import build_texture_source, UnsupportedTextureSource
 from native_assets_lib.texture_dds import build_texture_dds, UnsupportedTextureDDS
 from reference_client_guard import ENGINE_LIBRARY_RELATIVE_PATH, require_reference_client
+from native_store.store_paths import require_converter_output
 
+REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
 CONVERTER_DESCRIPTION = 'Convert native Interlude client objects into reproducible .l2asset packages with the pinned UModel; see docs/ASSET_PIPELINE.md.'
 
 UMODEL = Path('C:/laragon/www/lineagen/.assets/skill-assets/work/native/tools/umodel/umodel.exe')
@@ -139,8 +141,9 @@ def implementation_hash():
 
 
 class Converter:
-    def __init__(self, client, output, umodel):
-        self.client, self.output, self.umodel = Path(client).resolve(), Path(output).resolve(), Path(umodel).resolve()
+    def __init__(self, client, output, umodel, *, project_root=REPOSITORY_ROOT):
+        self.output = require_converter_output(project_root, output)
+        self.client, self.umodel = Path(client).resolve(), Path(umodel).resolve()
         self.reference_client = require_reference_client(self.client)
         if self.output.is_relative_to(self.client):
             raise ValueError('Output must be outside the read-only source client')
