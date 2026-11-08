@@ -1,24 +1,32 @@
 # Native doors and gates
 
-The eight `Engine.Mover` actors in the retained `20_20` map now have a dedicated
+The eight `Engine.Mover` actors in the retained `20_20` map have a dedicated
 source conversion bundle and a shared browser runtime loader. Each leaf or gate
 keeps its original mesh, placement, hinge and open endpoint. Hover selects one
 leaf; a click approaches it when necessary, then toggles it after the player
 reaches proximity. A second nearby click closes the same leaf.
 
-The bundle is staged as a separate `catalog.movers` entry. Both the source
-section and saved Editor loading routes attach it through the same runtime
-path. Additive staging preserves existing section manifests, Editor assets,
-terrain, BSP and audio. Conversion regressions, the production build and both
-source/authored desktop hardware WebGPU interaction cases passed.
+The bundle is staged as a separate `catalog.movers` entry. The runtime attaches
+it after section loading from the `.l2asset` catalog. Additive staging preserves
+existing section manifests, terrain, BSP and audio. Conversion regressions, the
+production build and the desktop hardware WebGPU interaction cases pass.
+
+## Scope
+
+Current coverage is the eight movers of `20_20`. The stage A target is every
+tile: under DEC-OWN-7 the mover extraction, conversion and staging below run as
+a tile-general converter step for all 153 tiles (WORLD-01). PORT_SCOPE part 11
+counts 547 doors. A tile that fails is listed as a gap, not hand-fixed. Status
+and order live in [.planning/STATE.md](../.planning/STATE.md) and
+[.planning/ROADMAP.md](../.planning/ROADMAP.md).
 
 ## Source evidence
 
 The retained `maps/20_20.unr` has SHA256
 `1beddad24c10a35a1b2e9151727a85158e3e01992299a6671de876645eb1f1e4`.
 It contains eight `Engine.Mover` actors with two distinct static mesh references.
-All eight actor property blocks and both exact mesh references were checked
-directly against the package, independently of the earlier raw JSON output.
+All eight actor property blocks and both exact mesh references are checked
+directly against the package, independently of the raw JSON output.
 
 The command hall entries match the entrance coordinates. The first six actors
 below use the original `L2fortress_02_s.Fort02_indoor` mesh; the last two are
@@ -120,7 +128,7 @@ The descriptor SHA256 is
 The bundle SHA256 is
 `30ac72ee7ad874999444636302ac9235cc7d65d83f30c2e309aebb40a4edd50d`.
 Original geometry buffers and embedded PNG bytes are unchanged from the pinned
-UModel exports. No alpha or two-sided override was introduced; generated
+UModel exports. No alpha or two-sided override is applied; generated
 materials remain opaque and single-sided. Per-export offsets, lengths and
 hashes for both meshes and all actors are retained with the raw property data.
 
@@ -134,8 +142,8 @@ is `artifacts/native-parity/research/native-door-movers-20261107/STAGING.json`.
 `src/scene/world/loadNativeMovers.ts` matches the terrain binding, verifies the
 descriptor and GLB hashes, and creates independent mutable actor roots from
 shared model templates. Unexpected skeletal or animation resources are rejected.
-`createNativeSliceRuntime.ts` attaches the result after either section loading
-route. Mover roots and meshes are excluded from Editor serialization.
+`createNativeSliceRuntime.ts` attaches the result after section loading.
+Mover roots and meshes are excluded from scene serialization.
 Cancellation, partial load failure and disposal release owned resources.
 
 To reproduce extraction and additive staging:
@@ -173,9 +181,9 @@ leaf before its projected geometry sweeps through the player and permits motion
 to resume after the player moves away. This is not a claim of native continuous
 collision or server permission/replication parity.
 
-## Verification and remaining limits
+## Verification
 
-The 12 tests in `tests/pipeline/test_native_map_movers.py` passed with the actual
+The 12 tests in `tests/pipeline/test_native_map_movers.py` pass with the actual
 retained client and extracted bundle present. They cover the complete actor and
 server ID census, original yaw signs and fixed hinges, gate lift, defaults,
 preserved indexed/raw data, state sentinels, operator/default tampering, all
@@ -188,33 +196,40 @@ Additional focused regression coverage is in:
   idempotence, preservation of unrelated assets/catalog records, conflicting
   ownership and concurrent catalog changes.
 - `tests/unit/nativeMoverLoader.test.ts`: independent mutable leaves, shared
-  original materials, Editor serialization exclusion, terrain bindings,
+  original materials, scene serialization exclusion, terrain bindings,
   resource tampering, unexpected animation rollback and cancellation cleanup.
 - `tests/unit/nativeDoors.test.ts`: manifest validation, independent hover and
   toggles, approach-before-activation, blocked/replaced approaches, death/action
   cancellation, pause/resume, player obstruction and translating gates.
 
-The production build, including global typecheck, passed. The focused runtime,
-adapter, navigation and hand-anchor suite passed 149 tests. Retained
+The production build, including global typecheck, passes. The focused runtime,
+adapter, navigation and hand-anchor suite passes 149 tests. Retained
 `GLB_VALIDATION.json` records zero errors and zero warnings for both models;
 unused source accessors and one material produce informational messages only.
 
-The final `browser-run-6/RESULTS.json` records passing source and authored
-desktop cases on NVIDIA/Pascal hardware WebGPU. Trusted pointer input verifies
+The final `browser-run-6/RESULTS.json` records passing desktop cases on
+NVIDIA/Pascal hardware WebGPU. Trusted pointer input verifies
 hover, walking into proximity before opening, independent leaves, clicking an
 open leaf closed, closed collision/open passage, swing obstruction/resume,
 replacement cancellation and the translating gate's original 1.36 m lift and
 closing click. Existing hand-anchor readiness and runtime/registry/audio cleanup
-pass, with no unexpected GPU error or device loss. Captures were visually
+pass, with no unexpected GPU error or device loss. Captures are visually
 inspected. This does not certify every entrance or physical mobile devices.
-Earlier harness failures remain retained as historical evidence. Exact receipts,
-preservation attribution and tested-build limits are in the checkpoint
-`REPORT.md`, `FINAL_RECEIPT.json` and `FINAL_IDENTITIES.json`. No native client
-was launched for this conversion.
+Failed harness runs are kept as evidence. Exact receipts, preservation
+attribution and tested-build limits are in
+`artifacts/native-parity/research/native-door-movers-20261107/` (`REPORT.md`,
+`FINAL_RECEIPT.json` and `FINAL_IDENTITIES.json`). No native client is launched
+for this conversion. The audit and collector in that research directory are
+source evidence only. The evidence index is [VERIFICATION.md](VERIFICATION.md).
 
-Native server authority, request packets, permissions, replication, damage/grade
-selection, exact interpolation and original sound dispatch remain unverified.
-`RangeDelta[0..3]` remains preserved source data; its meaning as a selection,
-footprint or interaction boundary has not been qualified. The original audit
-and collector remain in the research directory as historical source evidence;
-their earlier “unimplemented” status predates this conversion and runtime.
+## Open
+
+- Tile-general mover conversion for all 153 tiles (WORLD-01). Real
+  geodata-backed movement stays deferred (GEO-01).
+- Original sound dispatch. The `ItemSound2.Castle` references are preserved
+  and not played (WORLD-02, POL-02).
+- Native server authority, request packets, permissions and replication (NET-04).
+- Damage and grade selection from `MeshGrade` variants.
+- Exact native interpolation, glide and encroachment. No requirement covers them.
+- `RangeDelta[0..3]` is preserved source data. Its meaning as a selection,
+  footprint or interaction boundary is not qualified. No requirement covers it.

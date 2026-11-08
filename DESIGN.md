@@ -1,6 +1,6 @@
 ---
 name: L2 Browser Client
-description: A compact fantasy HUD for an editable synthetic 3D world.
+description: A compact, mobile-first fantasy HUD for the Lineage II browser client sandbox.
 colors:
   primary: "#edcd88"
   bronze: "#a58c59"
@@ -100,7 +100,7 @@ components:
     padding: "13px 14px"
 ---
 
-# Design System: L2 Browser Client
+# Design system: L2 Browser Client
 
 ## Overview
 
@@ -108,7 +108,7 @@ components:
 
 The classic fantasy HUD frames a playable 3D world with bronze hairlines, green-charcoal panels, and warm ivory lettering. Controls remain compact and familiar, with touch-sized actions and clear targeting feedback. The scene supplies the dimensional content; the interface supplies readable state.
 
-Cormorant Garamond gives location names their fantasy character, while ordinary sans-serif labels keep actions and health understandable. The system uses original vector icons and procedural 3D content. It does not reproduce pixels, proprietary artwork, or simulated metal textures from the reference.
+Cormorant Garamond gives location names their fantasy character, while ordinary sans-serif labels keep actions and health understandable. The HUD uses original geometry and authored SVG icons. It does not reproduce pixels, proprietary artwork, or simulated metal textures from the reference, and it uses no decorative raster assets.
 
 **Key Characteristics:**
 
@@ -117,9 +117,20 @@ Cormorant Garamond gives location names their fantasy character, while ordinary 
 - Touch-sized actions with compact supporting measurements.
 - Selection expressed by name emphasis, target details, and a ring in the world.
 
-This record reflects `src/style.css`, `src/ui/worldStyles.ts`, and `src/ui/WorldInterface.ts`, reviewed against desktop and compact portrait captures. The machine-readable tokens above are normative. The companion sidecar's synthesized tonal ramps are preview aids, not additional runtime palette tokens.
+This record reflects `src/style.css`, `src/ui/worldStyles.ts`, and `src/ui/WorldInterface.ts`, reviewed against the desktop and compact portrait captures in [docs/screenshots/README.md](docs/screenshots/README.md). The machine-readable tokens above are normative. The companion sidecar `.impeccable/design.json` holds synthesized tonal ramps; they are preview aids, not additional runtime palette tokens.
 
-This is the reviewed procedural foundation's interface. The next local task evaluates converted character assets while preserving the HUD; its visual results are not yet part of this record. The user's stale-file correction concerns Markdown, not a stylesheet redesign. Current asset scope and the separate Phase 2 networking milestone are in [docs/ROADMAP.md](docs/ROADMAP.md).
+The HUD keeps this direction while converted assets enter the sandbox. Converted parts need their own visible review against L2.exe. Work order and status are in [.planning/ROADMAP.md](.planning/ROADMAP.md) and [.planning/STATE.md](.planning/STATE.md). Stage A (Phases 1 to 3) converts the client into the offline sandbox. Networking is stage B (Phase 4).
+
+## Direction
+
+The user pinned this direction: a classic Lineage II HUD reference, mobile first. It overrides the design skill's random pick (seed:f8067ac85ba6da9a).
+
+- Mode: operate. The primary task is inspecting and interacting with a 3D world.
+- Health sits at the upper left; touch-sized actions sit at the bottom.
+- Portrait 390 x 844 is the primary layout.
+- The reference's small desktop controls become touch targets of at least 44px.
+- Selection joins a ground ring to the name and the target strip.
+- Bronze hairlines, deep green-charcoal panels, warm ivory text, Cormorant Garamond headings, and ordinary sans-serif controls. Dense information, restrained chrome.
 
 ## Colors
 
@@ -168,13 +179,13 @@ The display face provides a narrow, high-contrast serif voice without making but
 
 ## Layout
 
-The HUD overlays the rendering canvas and follows its bounds, including an embedded Editor preview. It uses pointer-transparent framing with pointer-enabled controls and entity labels. The primary compact layout has safe-area-aware top/bottom spacing and 12px horizontal insets.
+The HUD overlays the rendering canvas and follows its bounds. It uses pointer-transparent framing with pointer-enabled controls and entity labels. The primary compact layout has safe-area-aware top/bottom spacing and 12px horizontal insets.
 
 The header separates player information from location identity. The target strip centers beneath it and wraps if necessary. Five equal action columns sit in a bordered bottom panel, with diagnostics and a concise status above and secondary controls in a disclosure below.
 
 At 760px and wider, the outer inset becomes 22px vertically and 26px horizontally, the player panel grows from 180px to 225px, and the bottom control group narrows to 420px. Portrait controls can use up to 500px. A short landscape layout below 500px height places a 360px control group at the right, reduces action height to the 44px touch minimum, and hides the status line. These are observed HUD adaptations, not a global page-layout prescription.
 
-## Elevation & Depth
+## Elevation and depth
 
 Panels have thin borders and translucent dark fills; there are no panel box shadows. Depth belongs to the Babylon scene and its real perspective. Soft text shadows preserve legibility over changing scenery: location text uses a downward 2px offset with 4px blur; diagnostics use a 1px offset with 3px blur; names combine small soft offsets over a dark backing.
 
@@ -210,7 +221,7 @@ A geometric emblem sits beside the local player's identity, a red health bar wit
 
 Controls use a 2px Focus Gold outline with 3px offset. The short status message uses a dark backing and a live region. Initial loading and startup failures use a clear text panel. There are no text-entry fields or primary navigation components in this phase.
 
-## Do's and Don'ts
+## Do's and don'ts
 
 ### Do:
 
@@ -225,3 +236,7 @@ Controls use a 2px Focus Gold outline with 3px offset. The short status message 
 - **Don't** replace measured diagnostics with decorative charts or marketing statistics.
 - **Don't** use a serif display face for dense instructions or numeric diagnostics.
 - **Don't** add decorative material effects that compete with the rendered scene.
+
+## Open
+
+- Native windows built from decoded `interface.xdat` layouts (UI-01, UI-02) versus these mobile-first tokens (UI-03): the skin approach is unsettled. It is settled when Phase 2 UI is planned; see [.planning/STATE.md](.planning/STATE.md).
