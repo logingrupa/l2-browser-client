@@ -41,7 +41,6 @@ public/assets/world/
 public/l2/
 .assets/world-screenshots/
 .assets/private-preview/
-docs/screenshots/asset-*.png
 # Actual Editor saves use local binary geometry and a scene thumbnail.
 assets/native-parity.scene/geometries/*.babylonbinarymeshdata
 assets/native-parity.scene/*.png

@@ -82,7 +82,7 @@ Plans:
 **Depends on**: Phase 1
 **Requirements**: SAND-02, DATA-01, DATA-02, DATA-03, UI-01, UI-02, UI-03, WORLD-01, WORLD-02, WORLD-03, WORLD-04, WORLD-05, WORLD-06, WORLD-07, WORLD-08, ACT-01, ACT-02, ACT-03, ACT-04, ACT-05, ACT-06, INT-01, CONV-01, CONV-02
 **Lane map** (DEC-OWN-6, at most 3 lanes plus integration; UI runs in parallel from day one):
-  - L1 world: WORLD-01..08 (WORLD-07 and WORLD-08 provisional, owner review). Starting input: [genericity audit](../docs/research/genericity-audit-20261108.md) (Warning 7)
+  - L1 world: WORLD-01..08 (WORLD-07 and WORLD-08 provisional, owner review). Starting input: [NATIVE_WORLD](../docs/NATIVE_WORLD.md) (Warning 7)
   - L2 actors: ACT-01..06
   - L3 data + UI: DATA-01..03, UI-01..03, SAND-02
   - Integration: INT-01; CONV-01 and CONV-02 govern all lanes
