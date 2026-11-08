@@ -37,7 +37,7 @@ function fixture(origin: WorldPosition = { x: .75, y: 0, z: -1.5 }) {
     return new NativeMover(source, root, [mesh]);
   });
   let blocked = false;
-  const navigation: WorldNavigation = { origin, ground: p => ({ ...p, y: 0 }), destination: p => ({ ...p, y: 0 }), spawn: p => p,
+  const navigation: WorldNavigation = { origin, ground: p => ({ ...p, y: 0 }), destination: p => ({ ...p, y: 0 }), spawn: () => origin,
     move: (from, to) => ({ position: blocked ? from : to, blocked }) };
   const adapter = new NativeSliceAdapter(origin, navigation);
   const dispatch = (command: WorldCommand) => adapter.dispatch(command);

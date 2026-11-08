@@ -40,7 +40,7 @@ try {
   const index = await fs.readFile(path.join(project, 'dist/index.html'));
   const asset = index.toString('utf8').match(/src="(\/assets\/[^"?]+\.js)"/)?.[1];
   assert(Boolean(asset), 'Production JavaScript asset found');
-  for (const target of ['/', privatePreviewWorldPath, asset, privatePreviewCatalogPath]) {
+  for (const target of [privatePreviewWorldPath, asset, privatePreviewCatalogPath]) {
     const response = await request(target);
     assert(response.status === 403 && !response.headers['set-cookie'], `Anonymous resource denied: ${target}`);
   }
@@ -95,6 +95,7 @@ try {
   await fs.writeFile(evidence, `${JSON.stringify({ verifiedAtUtc: new Date().toISOString(), passed: checks.length, checks, finalStatus: 'running', port: 8189, privateInviteFile: path.join(privateDir, 'private-invite.txt') }, null, 2)}\n`);
   console.log(JSON.stringify({ passed: checks.length, finalStatus: 'running', port: 8189, evidence }, null, 2));
 } catch (error) {
-  console.error(error instanceof Error && error.message.startsWith('Private preview') ? error.message : 'Private preview verification failed; sensitive diagnostics suppressed.');
+  const isKeyFreeFailureMessage = error instanceof Error && error.message.startsWith('Private preview');
+  console.error(isKeyFreeFailureMessage ? error.message : 'Private preview verification failed; sensitive diagnostics suppressed.');
   process.exitCode = 1;
 }

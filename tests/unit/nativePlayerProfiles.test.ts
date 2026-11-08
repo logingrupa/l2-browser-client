@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { defaultNativePlayerProfile, loadNativePlayerProfiles, validateNativePlayerAssets, type NativePlayerProfile } from "../../src/assets/native/loadNativePlayerProfiles";
-import { loadNativeActorCatalog, loadNativePlayerPackages } from "../../src/assets/native/loadNativeCatalog";
+import { loadNativeActorCatalog } from "../../src/assets/native/loadNativeCatalog";
 import { nativeAliasCoverage, nativeAliasCoverageText, nativeAnimationAliases } from "../../src/assets/native/nativeAnimationAliases";
 import { readAssetPackage, sha256 } from "../../src/assets/package/readAssetPackage";
 import { assetFixture } from "../fixtures/assetPackageFixture";
@@ -107,20 +107,6 @@ describe("native player profile loading and source boundaries", () => {
     expect([...loaded.models.keys()]).toEqual(selected); expect(loaded.playerProfile).toEqual(profile);
     expect(fetcher.mock.calls.some(([url]) => url.includes(otherHash))).toBe(false);
     await expect(loadNativeActorCatalog(new AbortController().signal, "not-staged")).rejects.toThrow("not staged");
-  });
-  it("loads several staged player packages and reports the ones that are not staged or invalid", async () => {
-    const input = await manifest([profile, { ...profile, id: "human-male-mystic", name: "Human male mystic", catalogId: "human-male-mystic:0", upperItems: [] }]);
-    const fixture = await assetFixture("model", { source: { edition: "interlude", package: "Fixture", object: profile.sourceObject,
-      sha256: profile.sourceSha256, assembly: [profile.sourceObject] } });
-    const archiveSha256 = await sha256(fixture.bytes), archive = `/l2/${archiveSha256}/asset.l2asset`;
-    const catalog = { schemaVersion: 1, playerProfiles: [input.record], npcProfiles: [],
-      models: [profile.catalogId, profile.upperItems[0]!.catalogId].map(id => ({ id, archive, archiveSha256 })) };
-    serve(new Map([["/l2/catalog.json", encoder.encode(JSON.stringify(catalog))], [input.record.manifest, input.bytes], [archive, fixture.bytes]]));
-    const loaded = await loadNativePlayerPackages(new AbortController().signal, [profile.id, "human-male-mystic", "human-female-mystic"]);
-    expect([...loaded.profiles.keys()]).toEqual([profile.id]);
-    expect([...loaded.models.keys()]).toEqual([profile.catalogId, profile.upperItems[0]!.catalogId]);
-    expect(loaded.failures.get("human-male-mystic")).toContain("body source identity mismatch");
-    expect(loaded.failures.get("human-female-mystic")).toContain("not staged");
   });
 });
 

@@ -4,7 +4,7 @@ Part `adapter-dispatch`, lane `integration`. What passes now, what is open, and 
 
 ## Passes now
 
-- The sandbox command contract has 14 WorldCommand members, adding `spawn-character` (chargrp template index) and `play-clip` (entity id and exact clip name), and both MockWorldAdapter and NativeSliceAdapter dispatch exhaustively with a `never` default (plan 02-10). Evidence: `tests/unit/gameWorldAdapterContract.test.ts` and `tests/unit/sandboxCommands.test.ts`.
+- The sandbox command contract has 12 WorldCommand members, adding `spawn-character` (chargrp template index) and `play-clip` (entity id and exact clip name) in plan 02-10 and dropping the courtyard-only `teleport-local` and `spawn` with `MockWorldAdapter` (DEC-OWN-11). `NativeSliceAdapter`, the only adapter, dispatches exhaustively with a `never` default. Evidence: `tests/unit/gameWorldAdapterContract.test.ts` and `tests/unit/sandboxCommands.test.ts`.
 
 ## Open
 

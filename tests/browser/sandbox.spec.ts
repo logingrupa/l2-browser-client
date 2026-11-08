@@ -28,7 +28,7 @@ test("sandbox sheet spawns, equips and opens by ID and marks missing assets with
   test.setTimeout(300_000);
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
-  await page.goto("/?world=interlude");
+  await page.goto("/");
   await expect(page.locator('body[data-world-state="ready"]')).toHaveCount(1, { timeout: 240_000 });
   await page.getByTestId("dev-sheet-toggle").click();
   await page.getByTestId("dev-tab-sandbox").click();
@@ -44,7 +44,7 @@ test("sandbox sheet spawns, equips and opens by ID and marks missing assets with
   const afterMissing = await entities(page);
   expect(afterMissing).toHaveLength(startingCount + 1);
   expect(afterMissing.find(entity => entity.id === "npc-12345-1")).toMatchObject({
-    missingAssetDiagnostic: "npc:12345 not in catalog", meshCount: 0, skeletons: [], modelId: null, isFallback: false });
+    missingAssetDiagnostic: "npc:12345 not in catalog", meshCount: 0, skeletons: [], modelId: null, hasNativeModel: false });
   await page.screenshot({ path: resolve("test-results/sandbox-missing-asset.png") });
 
   await submitIdEntry(page, "sandbox-spawn-npc", { npcId: "21622" });

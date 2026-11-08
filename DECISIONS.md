@@ -23,7 +23,8 @@ Append-only, one dated line per decision. The full text of each decision lives i
 - 2026-11-08 DEC-PIPE-1: Carried, not locked: conversion uses independent per-system scripts with an optional orchestrator. Full text: .planning/PROJECT.md
 - 2026-11-08 DEC-PIPE-2: Carried, not locked: conversion is source-preserving with pinned tools. Full text: .planning/PROJECT.md
 - 2026-11-08 DEC-ASSET-1: Carried, not locked: one persistent runtime scene with bounded cells, its per-tile Editor clause superseded by DEC-OWN-8. Full text: .planning/PROJECT.md
-- 2026-11-08 DEC-SRC-1: Carried, not locked: no copied linegen source. Full text: .planning/PROJECT.md
+- 2026-11-08 DEC-SRC-1: Carried, not locked: no source or assets copied from other workspaces or unlicensed projects. Full text: .planning/PROJECT.md
 - 2026-11-08 DEC-SRC-2: Carried, not locked: IMPORTA-PC is the reference client, completed by DEC-OWN-2. Full text: .planning/PROJECT.md
 - 2026-11-08 DEC-OWN-9: The default phone is the iPhone 15 Pro Max in landscape, 932 x 430, used for phone screenshots and the primary phone layout, with a 430 x 932 portrait horizontal-scroll check. Full text: .planning/PROJECT.md
 - 2026-11-08 DEC-OWN-10: The only game interface is the original Interlude interface from interface.xdat and converted client UI textures, and DESIGN.md with its custom HUD direction is removed. Full text: .planning/PROJECT.md
+- 2026-11-08 DEC-OWN-11: Only the native routes stay: / opens the native sandbox, ?authored=1 and ?character=<id> stay, the world query parameter is gone, and the repo is self-contained with the pinned conversion tools in the ignored .assets/native-tools/. Full text: .planning/PROJECT.md

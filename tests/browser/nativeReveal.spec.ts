@@ -8,7 +8,7 @@ import { stagedNativeTerrainPath } from "./stagedNativeTerrainPath";
 const catalogFile = resolve("public/l2/catalog.json");
 const staged = existsSync(catalogFile);
 const evidence = resolve(process.env.NATIVE_REVEAL_EVIDENCE ?? "artifacts/private-preview/native-reveal");
-const route = "/?world=interlude";
+const route = "/";
 const starterMaterial = "MFighter.UpBody.MFighter_m001_t02_u";
 const leatherMaterial = "MFighter.UpBody.MFighter_m001_t04_u";
 
@@ -23,7 +23,7 @@ interface RevealSample {
   worldState: string | null;
   terrainReady: boolean;
   nativeActorCount: number;
-  fallbackCount: number;
+  actorsWithoutNativeModelCount: number;
   equipmentReady: boolean;
   hudReady: boolean;
   complete: boolean;
@@ -84,7 +84,7 @@ async function observeReveal(page: Page, leather: boolean, sectionCounts: { mode
       const terrainReady = Boolean(snapshot?.nativeTerrain === "source-section-loaded" && snapshot.world &&
         snapshot.world.texturesReady && snapshot.world.terrainTriangles > 0 && snapshot.world.modelCount === sectionCounts.models &&
         snapshot.world.placementCount === sectionCounts.placements && snapshot.world.finiteBounds && !snapshot.worldFailure && !snapshot.world.materialFailure);
-      const nativeActorCount = entities.filter(entity => !entity.isFallback && entity.meshCount > 0 &&
+      const nativeActorCount = entities.filter(entity => entity.hasNativeModel && entity.meshCount > 0 &&
         entity.skeletons.some(skeleton => skeleton.bones > 0) && Boolean(entity.playback?.activeClip)).length;
       const equipmentReady = Boolean(fighter?.parts.some(part => part.enabled && part.material === (leather ? leatherMaterial : starterMaterial)) &&
         (!leather || fighter.parts.some(part => !part.enabled && part.material === starterMaterial)));
@@ -93,7 +93,7 @@ async function observeReveal(page: Page, leather: boolean, sectionCounts: { mode
       const readyFrame = Number(document.getElementById("canvas")?.dataset.readyFrame ?? 0);
       const worldState = document.body?.dataset.worldState ?? null;
       const value: RevealSample = { time: performance.now(), source, loaderPresent: Boolean(loader), loaderVisible: visible(loader),
-        canvasVisible, hudVisible, readyFrame, worldState, terrainReady, nativeActorCount, fallbackCount: entities.filter(entity => entity.isFallback).length,
+        canvasVisible, hudVisible, readyFrame, worldState, terrainReady, nativeActorCount, actorsWithoutNativeModelCount: entities.filter(entity => !entity.hasNativeModel).length,
         equipmentReady, hudReady, complete: terrainReady && entities.length === 2 && nativeActorCount === 2 && equipmentReady && hudReady &&
           readyFrame > 0 && worldState === "ready" };
       state.samples.push(value);
@@ -152,7 +152,7 @@ async function assertCompleteReveal(page: Page) {
   expect(observation.firstReveal, "The loader removal must itself be observed.").not.toBeNull();
   expect(observation.firstReveal!.source).toBe("mutation");
   expect(observation.firstReveal!.complete, "The first exposed frame requires terrain, native actors, saved equipment and initialized HUD.").toBe(true);
-  expect(observation.firstReveal!.fallbackCount).toBe(0);
+  expect(observation.firstReveal!.actorsWithoutNativeModelCount).toBe(0);
   expect(observation.violations, "No frame may expose an unfinished world or procedural fallback.").toEqual([]);
   return observation;
 }

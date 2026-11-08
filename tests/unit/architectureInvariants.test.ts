@@ -10,7 +10,7 @@ type SkillCastEvent = Extract<WorldEvent, { type: "skill-cast" }>;
 describe("server boundary invariants", () => {
   it("scans the ui and runtime modules", () => {
     expect(presentationModules).toContain("src/ui/nativeLocomotionControls.ts");
-    expect(presentationModules).toContain("src/runtime/createWorldRuntime.ts");
+    expect(presentationModules).toContain("src/runtime/createNativeSliceRuntime.ts");
   });
 
   it("never imports a decoded display-copy table or a pipeline script into ui or runtime code", () => {

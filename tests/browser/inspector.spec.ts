@@ -39,7 +39,7 @@ test("inspect=1 lazy-loads Babylon Inspector from the local dev server and shows
   const pageErrors: string[] = [];
   page.on("pageerror", error => pageErrors.push(error.message));
   const traffic = recordTraffic(page);
-  await openWorldAndWaitForReady(page, "/?world=interlude&inspect=1");
+  await openWorldAndWaitForReady(page, "/?inspect=1");
   const inspectorRoot = page.locator(inspectorRootSelector);
   await expect(inspectorRoot).toBeVisible({ timeout: 30_000 });
   await expect(inspectorRoot.getByText("Scene Explorer", { exact: true }).first()).toBeVisible({ timeout: 30_000 });
@@ -52,7 +52,7 @@ test("inspect=1 lazy-loads Babylon Inspector from the local dev server and shows
 test("the sandbox route without inspect requests no Inspector code and shows no Inspector", async ({ page }) => {
   test.setTimeout(120_000);
   const traffic = recordTraffic(page);
-  await openWorldAndWaitForReady(page, "/?world=interlude");
+  await openWorldAndWaitForReady(page, "/");
   await expect(page.locator(inspectorRootSelector)).toHaveCount(0);
   expect(traffic.requestUrls.filter(isInspectorRequest)).toEqual([]);
   expect(hostsOtherThanLoopback(traffic)).toEqual([]);

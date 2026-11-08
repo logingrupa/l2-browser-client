@@ -3,7 +3,7 @@ import { readAssetPackage, assetPackageLimits, type AssetPackageManifest } from 
 import { createPackagePreview, type PackagePreview } from "../assets/package/PackagePreview";
 import { assetSourceMetadataRows } from "./assetSourceMetadataRows";
 
-export interface AssetImportOptions { host?: HTMLElement; onOpenChange?: (open: boolean) => void }
+export interface AssetImportOptions { host: HTMLElement; onOpenChange?: (open: boolean) => void }
 export interface AssetPackageInspection {
   open: boolean; loading: boolean; name: string | null; kind: string | null; sourceEdition: string | null;
   clips: PackagePreview["clips"];
@@ -14,7 +14,6 @@ declare global { interface Window { __assetPackageInspection?: { snapshot(): Ass
 const styles = String.raw`
 .asset-import-open,.asset-import-panel{font-family:"Segoe UI",system-ui,sans-serif;color:#f5ecd8;color-scheme:dark}
 .asset-import-open{min-height:44px;padding:8px 14px;border:1px solid rgb(191 167 111 / 55%);background:#303b35;font-size:12px;cursor:pointer}
-.asset-import-open.asset-import-floating{position:fixed;left:max(12px,env(safe-area-inset-left));top:104px;z-index:3}
 .asset-import-panel{width:min(1100px,calc(100vw - 48px));height:min(850px,calc(100dvh - 48px));max-width:none;max-height:none;margin:auto;padding:0;border:1px solid #a58c59;background:#202522;overflow:hidden}
 .asset-import-panel[open]{display:flex;flex-direction:column}
 .asset-import-panel::backdrop{background:rgb(12 18 15 / 78%)}
@@ -75,14 +74,13 @@ const styles = String.raw`
 @media(max-height:500px) and (min-width:701px){.asset-import-panel{height:100dvh;width:100vw;border:0}.asset-import-header{padding:8px 12px}.asset-import-header p{display:none}.asset-import-toolbar{padding:6px 12px}.asset-import-body{grid-template-columns:minmax(0,1fr) 250px}}
 `;
 
-export function attachAssetImport(worldScene: Scene, canvas: HTMLCanvasElement, options: AssetImportOptions = {}): () => void {
+export function attachAssetImport(worldScene: Scene, canvas: HTMLCanvasElement, options: AssetImportOptions): () => void {
   const events = new AbortController(), stylesheet = document.createElement("style");
   stylesheet.textContent = styles; document.head.append(stylesheet);
   const button = document.createElement("button");
   button.type = "button"; button.className = "asset-import-open"; button.textContent = "Assets";
   button.setAttribute("aria-haspopup", "dialog"); button.dataset.testid = "asset-import-open";
-  if (!options.host) button.classList.add("asset-import-floating");
-  (options.host ?? document.body).append(button);
+  options.host.append(button);
   const dialog = document.createElement("dialog"); dialog.className = "asset-import-panel"; dialog.setAttribute("aria-label", "Asset inspector");
   dialog.innerHTML = `<header class="asset-import-header"><div><h2>Asset inspector</h2><p>Interlude assets, in their own scene. The world stays separate.</p></div><button type="button" data-close>Close</button></header>
     <div class="asset-import-toolbar"><button type="button" data-browse>Browse packages</button><span>Drop a .l2asset package here or onto the world.</span><input type="file" accept=".l2asset" aria-label="Choose an asset package" hidden></div>

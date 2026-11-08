@@ -4,7 +4,7 @@ Part `world`, lane `world`. What passes now, what is open, and where the proof l
 
 ## Passes now
 
-Nothing has passed the stage A check yet (DEC-OWN-3). Working on 2026-11-07, per PORT_SCOPE section 5: The 20_20 and Talking Island bundles.
+Nothing has passed the stage A check yet (DEC-OWN-3). Working on 2026-11-07, per PORT_SCOPE section 5: the 20_20 section. The Talking Island reference route was removed on 2026-11-08 (DEC-OWN-11).
 
 ## Open
 
@@ -73,4 +73,4 @@ Provisional, owner review. The verdicts below are copied from the reviewer's ans
 
 ## Evidence
 
-World docs: `docs/NATIVE_WORLD.md`, `docs/WORLD_ASSETS.md`. Recipes: `recipes/native-map-20_20.json`, `recipes/native-map-section.json`.
+World docs: `docs/NATIVE_WORLD.md`. Recipes: `recipes/native-map-20_20.json`, `recipes/native-map-section.json`.

@@ -21,7 +21,7 @@ describe("entity startup readiness", () => {
   beforeEach(() => { engine = new NullEngine(); scene = new Scene(engine); });
   afterEach(() => { registry?.dispose(); scene.dispose(); engine.dispose(); });
 
-  function setup(initial: WorldEntity[] = [player], deferred = true) {
+  function setup(initial: WorldEntity[] = [player]) {
     let emit!: (event: WorldEvent) => void;
     const adapter: GameWorldAdapter = { getInitialState: () => initial,
       subscribe(listener) { emit = listener; return () => {}; }, dispatch() {}, advance() {}, dispose() {} };
@@ -33,9 +33,10 @@ describe("entity startup readiness", () => {
         void ready.catch(() => undefined);
         const root = new TransformNode(entity.id, scene);
         const animation = new CharacterAnimator({ setState() {}, update() {}, dispose() {} });
-        const visual: CharacterVisual = { root, animation, isFallback: false, modelId: entity.appearanceId ?? null,
-          bounds: { minimum: Vector3.Zero(), maximum: Vector3.One(), labelHeight: 1, pickingHeight: .5, selectionRadius: .5 },
-          ...deferred ? { ready } : {},
+        const visual: CharacterVisual = { root, animation, ready, hasNativeModel: true, modelId: entity.appearanceId ?? null,
+          bounds: { minimum: Vector3.Zero(), maximum: Vector3.One(), labelHeight: 1, selectionRadius: .5 },
+          groundClearance: 0, forwardDirection: null,
+          attachmentSnapshot: () => [], attachmentAnchor: () => null, sourceClock: () => null, setEntity() {},
           dispose() { reject(new DOMException("Removed", "AbortError")); animation.dispose(); root.dispose(); } };
         loads.push({ resolve, reject, visual }); return visual;
       },
@@ -65,11 +66,9 @@ describe("entity startup readiness", () => {
     loads[1]!.resolve(); await waiting; expect(done).toHaveBeenCalledOnce();
   });
 
-  it("rejects a disposed registry and preserves immediately usable factory support", async () => {
+  it("rejects a disposed registry", async () => {
     const { registry: pending } = setup(); const waiting = pending.whenReady(); pending.dispose();
     await expect(waiting).rejects.toHaveProperty("name", "AbortError");
     await expect(pending.whenReady()).rejects.toHaveProperty("name", "AbortError");
-    const { registry: procedural } = setup([player], false);
-    await expect(procedural.whenReady()).resolves.toBeUndefined();
   });
 });

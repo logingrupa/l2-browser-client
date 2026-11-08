@@ -4,7 +4,7 @@ import { Scene } from "@babylonjs/core/scene";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { nativeResourceUrl } from "../../src/assets/native/nativeResourceUrl";
-import { loadNativePlayerPackages } from "../../src/assets/native/loadNativeCatalog";
+import { loadNativeActorCatalog } from "../../src/assets/native/loadNativeCatalog";
 import { sha256 } from "../../src/assets/package/readAssetPackage";
 import { loadNativeSection } from "../../src/scene/world/loadNativeSection";
 import { applyNativeTerrainPreview } from "../../src/scene/world/nativeTerrainPreview";
@@ -24,7 +24,7 @@ describe("native public resources in browser and Editor Play", () => {
     }
   });
 
-  it.each(["https:", "file:"])("loads exact package bytes and rejects corruption under %s", async protocol => {
+  it.each(["https:", "file:"])("hash-checks the exact package bytes before the player identity check and rejects corruption under %s", async protocol => {
     vi.stubGlobal("location", { protocol });
     const prefix = protocol === "file:" ? "l2/" : "/l2/";
     const fixture = await assetFixture(), hash = await sha256(fixture.bytes);
@@ -40,12 +40,11 @@ describe("native public resources in browser and Editor Play", () => {
     });
     vi.stubGlobal("fetch", fetcher);
     const signal = new AbortController().signal;
-    const loaded = await loadNativePlayerPackages(signal, ["human-male-fighter"]);
-    expect(loaded.models.get("human-male-fighter:0")?.manifest).toEqual(fixture.readManifest);
+    await expect(loadNativeActorCatalog(signal)).rejects.toThrow("Native player body source identity mismatch.");
     expect(fetcher.mock.calls.map(([url]) => url)).toEqual([...responses.keys()]);
     expect(fetcher).toHaveBeenLastCalledWith(`${prefix}${hash}/asset.l2asset`, { signal });
     responses.set(`${prefix}${hash}/asset.l2asset`, new Uint8Array([1, 2, 3]));
-    await expect(loadNativePlayerPackages(signal, ["human-male-fighter"])).rejects.toThrow("archive hash mismatch");
+    await expect(loadNativeActorCatalog(signal)).rejects.toThrow("archive hash mismatch");
   });
 
   it.each(["https:", "file:"])("retains section hash validation and cleanup under %s", async protocol => {

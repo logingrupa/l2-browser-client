@@ -74,7 +74,7 @@ plan_head_after: 5436dd70be4de90962f2b368ffdc3d86e0d0a272
 
 Every Playwright check now opens `?world=interlude` or a harness page. The full e2e suite passes on PROMINENCE-PC with port 5173 free. The private preview scripts target `/?world=interlude` through one shared module, and the dev cold start was re-measured on port 5175 with zero Editor-tools requests.
 
-The plan was resumed from the WIP commits 017904c and 084cc14 after owner decision row 42, which removes the Talking Island reference route and lineagen. Nothing was built on the reference route.
+The plan was resumed from the WIP commits 017904c and 084cc14 after owner decision row 42, which removes the Talking Island reference route and every dependency on the retired sibling workspaces. Nothing was built on the reference route.
 
 ## Commits
 

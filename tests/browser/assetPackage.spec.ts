@@ -54,7 +54,7 @@ async function expectNoHorizontalScrollInPortrait(page: Page): Promise<void> {
 const nativeRouteEntityCount = "2";
 
 async function openNativeRouteAndWaitForEntities(page: Page): Promise<void> {
-  await page.goto("/?world=interlude");
+  await page.goto("/");
   await expect(page.getByTestId("entity-count")).toHaveText(nativeRouteEntityCount, { timeout: 180_000 });
 }
 

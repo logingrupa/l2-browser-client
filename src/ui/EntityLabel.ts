@@ -30,8 +30,6 @@ export class EntityLabel {
   setState(entity: WorldEntity): void {
     this.name.textContent = entity.displayName;
     this.element.setAttribute("aria-label", `Select ${entity.displayName}`);
-    this.element.dataset.animation = entity.animation;
-    this.element.dataset.health = String(entity.health);
     const fraction = entity.maximumHealth > 0 ? Math.max(0, Math.min(1, entity.health / entity.maximumHealth)) : 0;
     this.fill.style.transform = `scaleX(${fraction})`;
     this.health.setAttribute("role", "meter");
@@ -41,7 +39,7 @@ export class EntityLabel {
     this.health.setAttribute("aria-valuenow", String(entity.health));
   }
 
-  update(scene: Scene, position: Vector3, height = 2.25): void {
+  update(scene: Scene, position: Vector3, height: number): void {
     const camera = scene.activeCamera;
     if (!camera) return;
     const engine = scene.getEngine();
@@ -51,8 +49,6 @@ export class EntityLabel {
     this.element.hidden = projected.z < 0 || projected.z > 1 || projected.x < 0 || projected.x > canvas.clientWidth || projected.y < 0 || projected.y > canvas.clientHeight;
     this.element.style.left = `${projected.x}px`;
     this.element.style.top = `${projected.y}px`;
-    this.element.dataset.visualX = position.x.toFixed(4);
-    this.element.dataset.visualZ = position.z.toFixed(4);
   }
 
   setDiagnostic(text: string | null): void {

@@ -37,14 +37,14 @@ GSD phase = PORT_SCOPE phase + 1 for phases 1 to 4. Phases 5 and 6 have no PORT_
 **Depends on**: Nothing (first phase). Work is committed first; lanes start only from committed code.
 **Requirements**: FOUND-01, FOUND-02, FOUND-03, FOUND-04, ARCH-01, ARCH-02, ARCH-03, ARCH-04, SAND-01, NOED-01, NOED-02, NOED-03, NOED-04, NOED-05
 **Editor removal** (NOED-01..05, DEC-OWN-8): integration thread, merged before any Phase 2 lane starts, so lanes never build on the Editor path.
-**Verification note**: the dev cold start is unexplained (dev suite 17/18, first courtyard goto over 45 s, 262/288 JS requests, 21-23 s module gap; evidence artifacts/native-parity/research/editor-dev-startup). Re-measure dev startup after NOED-02 and NOED-03 remove the Editor pack; removing a suspected cause does not prove the gap is gone.
+**Verification note**: the dev cold start is unexplained (dev suite 17/18, first goto of the since-removed courtyard route over 45 s, 262/288 JS requests, 21-23 s module gap; evidence artifacts/native-parity/research/editor-dev-startup). Re-measure dev startup on `/` after NOED-02 and NOED-03 remove the Editor pack; removing a suspected cause does not prove the gap is gone.
 **Success Criteria** (what must be TRUE):
   1. A recorded full-tree hash lock shows `E:/Lineage2-client` equal to IMPORTA-PC `C:/Lineage2-client` (files, bytes, per-file SHA-256) or lists every difference, and conversion refuses to read E: while the lock is missing or stale.
   2. One inventory lists all 40 `.dat` tables with route (local descriptor, Elbera, none), record count and status, and exists before further decoding.
   3. In the sandbox shell a developer can issue spawn NPC, equip item, cast skill and open window by ID with no server; an ID without a converted asset shows a visible missing-asset diagnostic, not a stand-in.
   4. A contract test fails if the five `GameWorldAdapter` methods change, and the written output contract says how `asset.json` records units and handedness per route and how the catalog lists assets, with hash-pinned fixtures that run without the private client.
   5. A new lane can start on a `<part>/<slug>` branch and knows where its STATUS line, folder ownership (`.planning/lanes.json`) and `docs/parts/<part>/EVIDENCE.md` live.
-  6. `pnpm dev` and `pnpm build` run without `babylonjs-editor-cli pack` or the Editor repair scripts (they sit in an optional `pnpm generate:editor`), `?world=interlude` loads the native world straight from the `.l2asset` catalog with no Editor scene, and `?inspect=1` opens Babylon Inspector, lazy-loaded.
+  6. `pnpm dev` and `pnpm build` run without `babylonjs-editor-cli pack` or the Editor repair scripts (they sit in an optional `pnpm generate:editor`), `/` loads the native world straight from the `.l2asset` catalog with no Editor scene, and `?inspect=1` opens Babylon Inspector, lazy-loaded.
 **Plans**: 17/17 plans executed in 6 waves
 
 Plans:
@@ -215,4 +215,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 (Phase 5 may start b
 58 of 58 v1 requirements mapped, each to exactly one phase (Phase 1: 14, Phase 2: 24, Phase 3: 5, Phase 4: 8, Phase 5: 4, Phase 6: 3). Per-requirement traceability: `.planning/REQUIREMENTS.md`. Deferred to v2: GEO-01, LATE-01, VIEW-01 (optional Editor viewer). Superseded: REQ-work-order-v2-depth-first, EDIT-01 (DEC-OWN-8).
 
 ---
-*Roadmap created: 2026-11-08. Updated 2026-11-08 for DEC-OWN-8.*
+*Roadmap created: 2026-11-08. Updated 2026-11-08 for DEC-OWN-8 and DEC-OWN-11.*

@@ -16,7 +16,7 @@ const sectionRecord = { manifest: `${sectionBase}map-section-runtime/manifest.js
 
 describe("private preview targets", () => {
   it("opens the native sandbox world through the code-built route", () => {
-    expect(privatePreviewWorldPath).toBe("/?world=interlude");
+    expect(privatePreviewWorldPath).toBe("/");
     expect(privatePreviewCatalogPath).toBe("/l2/catalog.json");
     expect(privatePreviewOrigin).toBe("https://l2.kingdom.lv");
   });

@@ -2,8 +2,7 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Scene } from "@babylonjs/core/scene";
 import { CharacterAnimator, type CharacterAnimationDriver } from "../animation/CharacterAnimator";
-import type { CharacterBounds } from "../assets/characterBounds";
-import type { CharacterVisual, CharacterVisualFactory } from "../assets/CharacterVisual";
+import type { CharacterBounds, CharacterVisual, CharacterVisualFactory } from "../assets/CharacterVisual";
 import { describeNativeCatalogLookup, npcCatalogKey, type NativeCatalogIndex } from "../assets/native/nativeCatalogIndex";
 import type { WorldEntity } from "../world/worldTypes";
 
@@ -15,7 +14,7 @@ export type SandboxNpcPresentation =
 
 const missingAssetMarkerPresentationBounds: CharacterBounds = Object.freeze({
   minimum: new Vector3(-.4, 0, -.4), maximum: new Vector3(.4, 1.8, .4),
-  labelHeight: 2.25, selectionRadius: .825, pickingHeight: 1,
+  labelHeight: 2.25, selectionRadius: .825,
 });
 
 const motionlessAnimationDriver: CharacterAnimationDriver = { setState() {}, update() {}, dispose() {} };
@@ -37,7 +36,9 @@ export function createMissingAssetMarkerVisual(scene: Scene, entity: WorldEntity
   const animation = new CharacterAnimator(motionlessAnimationDriver);
   animation.setState(entity.animation);
   return {
-    root, animation, isFallback: false, bounds: missingAssetMarkerPresentationBounds, modelId: null, missingAssetDiagnostic,
+    root, animation, hasNativeModel: false, bounds: missingAssetMarkerPresentationBounds, modelId: null, missingAssetDiagnostic,
+    ready: Promise.resolve(), groundClearance: 0, forwardDirection: null,
+    attachmentSnapshot: () => [], attachmentAnchor: () => null, sourceClock: () => null, setEntity() {},
     dispose() { animation.dispose(); root.dispose(); },
   };
 }

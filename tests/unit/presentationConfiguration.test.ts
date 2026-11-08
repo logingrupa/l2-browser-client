@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
-  formerlyEditorAuthoredStatusLabel, nativeSandboxPresentation, referenceWorldPresentation, talkingIslandCameraOverrides,
+  formerlyEditorAuthoredStatusLabel, nativeSandboxPresentation,
   type PresentationConfiguration, type PresentationSourceFiles,
 } from "../../src/scene/presentationConfiguration";
 import { nativeSandboxConfiguration } from "../../src/runtime/nativeSandboxConfiguration";
@@ -50,17 +50,6 @@ describe("presentation values formerly authored in Editor scenes", () => {
     expect(nativeSandboxPresentation.fog.mode).toBe(0);
   });
 
-  it("reference world presentation names the retired example scene files at commit 58ac027 as provenance", () => {
-    expect(referenceWorldPresentation.source).toEqual({
-      camera: "assets/example.scene/cameras/world-camera.json at commit 58ac027",
-      skyLight: "assets/example.scene/lights/sky-light.json at commit 58ac027",
-      sunlight: "assets/example.scene/lights/sunlight.json at commit 58ac027",
-      config: "assets/example.scene/config.json at commit 58ac027",
-    });
-    expect(referenceWorldPresentation.statusLabel).toBe(formerlyEditorAuthoredStatusLabel);
-    expect(referenceWorldPresentation.fog.mode).toBe(3);
-  });
-
   it("native sandbox settings equal every saved Editor script value", () => {
     const config = readSavedEditorJson("assets/native-parity.scene/config.json");
     const script = (config.metadata as { scripts: { key: string; values: Record<string, { value: unknown }> }[] }).scripts[0]!;
@@ -75,7 +64,7 @@ describe("presentation values formerly authored in Editor scenes", () => {
 
   it("labels every carried value as presentation, not Lineage II", () => {
     expect(formerlyEditorAuthoredStatusLabel).toBe("presentation, formerly Editor-authored, not L2");
-    expect(talkingIslandCameraOverrides.statusLabel).toBe(formerlyEditorAuthoredStatusLabel);
+    expect(nativeSandboxPresentation.statusLabel).toBe(formerlyEditorAuthoredStatusLabel);
     expect(nativeSandboxConfiguration.statusLabel).toBe(formerlyEditorAuthoredStatusLabel);
   });
 });

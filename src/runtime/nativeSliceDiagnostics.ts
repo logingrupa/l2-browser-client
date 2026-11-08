@@ -90,7 +90,8 @@ function nativeSliceSnapshot(inputs: NativeSliceDiagnosticInputs) {
     world: section ? { manifestSha256: section.manifestSha256, ...section.inspection(),
       sourceSpawn: [origin.x * 100, origin.z * 100, origin.y * 100], nativeLocationMatch: "unverified",
       navigation: section.supportMeshes?.length ? "local terrain and source-declared static/BSP triangle support; native collision/geodata unverified" : "local terrain support only; native/scenery collision unverified" } : null,
-    fps: scene.getEngine().getFps(), camera: { target: camera.target.asArray(), alpha: camera.alpha, beta: camera.beta, radius: camera.radius } };
+    fps: scene.getEngine().getFps(), camera: { target: camera.target.asArray(), alpha: camera.alpha, beta: camera.beta, radius: camera.radius,
+      lowerRadiusLimit: camera.lowerRadiusLimit, upperRadiusLimit: camera.upperRadiusLimit, lowerBetaLimit: camera.lowerBetaLimit, upperBetaLimit: camera.upperBetaLimit } };
 }
 
 export function attachNativeSliceDiagnostics(inputs: NativeSliceDiagnosticInputs): () => void {
@@ -155,4 +156,5 @@ declare global { interface Window { __nativeSlice?: { snapshot(): { entities: Re
   flameReplay?: (ReturnType<NativeFlameReplayClock["inspect"]> & { billboardTarget: string }) | null;
   fog?: { enabled: boolean; mode: number; start: number; end: number };
   world?: (ReturnType<NativeSection["inspection"]> & { manifestSha256: string; sourceSpawn: number[]; nativeLocationMatch: string; navigation: string }) | null;
-  fps?: number; camera?: { target: number[]; alpha: number; beta: number; radius: number } }; dispatch: NativeSliceAdapter["dispatch"]; performance(): Promise<ReturnType<typeof createWorldPerformanceProbe>>; captureAudio?(): MediaStream | null; setWorldAudioEnabled?(enabled: boolean): void; setFlameReplay?(time: NativeFlameReplayTime): void; frameFlame?(placementId: string): void; interactDoor?(id: string): void } } }
+  fps?: number; camera?: { target: number[]; alpha: number; beta: number; radius: number;
+    lowerRadiusLimit: number | null; upperRadiusLimit: number | null; lowerBetaLimit: number | null; upperBetaLimit: number | null } }; dispatch: NativeSliceAdapter["dispatch"]; performance(): Promise<ReturnType<typeof createWorldPerformanceProbe>>; captureAudio?(): MediaStream | null; setWorldAudioEnabled?(enabled: boolean): void; setFlameReplay?(time: NativeFlameReplayTime): void; frameFlame?(placementId: string): void; interactDoor?(id: string): void } } }

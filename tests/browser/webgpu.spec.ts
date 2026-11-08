@@ -83,7 +83,7 @@ test.afterEach(async ({ page }, testInfo) => {
         world: world ? { manifestSha256: world.manifestSha256, disposed: world.disposed, modelCount: world.modelCount,
           placementCount: world.placementCount, terrainTriangles: world.terrainTriangles, terrainMaterial: world.terrainMaterial,
           texturesReady: world.texturesReady, materialFailure: world.materialFailure } : null,
-        actors: state.entities.map(actor => ({ id: actor.id, fallback: actor.isFallback, meshCount: actor.meshCount,
+        actors: state.entities.map(actor => ({ id: actor.id, hasNativeModel: actor.hasNativeModel, meshCount: actor.meshCount,
           activeClip: actor.playback?.activeClip })),
         flames: state.nativeFlames, flameFailure: state.flameFailure, materialOverrideFailure: state.materialOverride?.failure } : null };
   }).catch(error => ({ captureError: String(error) }));
@@ -96,7 +96,7 @@ test("WebGPU device loss after entry reports failure without reviving a disposed
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   await observeGraphics(page);
-  await page.goto("/?world=interlude", { waitUntil: "domcontentloaded" });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
   await expect(page.locator("body")).toHaveAttribute("data-world-state", "ready", { timeout: 180_000 });
   assertWebGPU(await graphicsSnapshot(page));
   await page.evaluate(() => window.__webgpuProbeDevice!.destroy());
@@ -124,7 +124,7 @@ test("renders native terrain, actors and flame shaders on WebGPU in the source w
   page.on("pageerror", error => errors.push(error.message));
   page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
   await observeGraphics(page);
-  await page.goto("/?world=interlude", { waitUntil: "domcontentloaded" });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
   await expect(page.locator("body")).toHaveAttribute("data-world-state", "ready", { timeout: 180_000 });
   await expect(page.locator("#canvas")).toHaveAttribute("data-engine", "WebGPU");
   await expect(page.locator("#canvas")).toBeVisible();
@@ -139,7 +139,7 @@ test("renders native terrain, actors and flame shaders on WebGPU in the source w
   expect(initial.world!.terrainTriangles).toBeGreaterThan(0);
   expect(initial.entities).toHaveLength(2);
   for (const actor of initial.entities) {
-    expect(actor.isFallback).toBe(false);
+    expect(actor.hasNativeModel).toBe(true);
     expect(actor.meshCount).toBeGreaterThan(0);
     expect(actor.skeletons.some(skeleton => skeleton.bones > 0)).toBe(true);
     expect(actor.playback?.activeClip).toBeTruthy();
@@ -188,7 +188,7 @@ for (const failure of ["unavailable", "device request rejected"] as const) {
         };
       }
     }, failure);
-    await page.goto("/?world=interlude", { waitUntil: "domcontentloaded" });
+    await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("alert")).toContainText(/WebGPU/i, { timeout: 30_000 });
     if (failure === "device request rejected") {
       expect(await page.evaluate(() => window.__rejectedWebGPUDeviceRequests), "The actual requestDevice boundary must be reached; an unavailable adapter is a different failure.").toBe(1);

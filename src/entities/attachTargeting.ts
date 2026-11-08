@@ -8,8 +8,7 @@ import type { DoorTargeting } from "../scene/world/nativeDoorInteractions";
 
 function readEntityIdentifier(metadata: unknown): string | null {
   if (typeof metadata !== "object" || metadata === null) return null;
-  if ("clientEntityId" in metadata && typeof metadata.clientEntityId === "string") return metadata.clientEntityId;
-  return "entityId" in metadata && typeof metadata.entityId === "string" ? metadata.entityId : null;
+  return "clientEntityId" in metadata && typeof metadata.clientEntityId === "string" ? metadata.clientEntityId : null;
 }
 
 export function attachTargeting(scene: Scene, registry: EntityRegistry, adapter: GameWorldAdapter, navigation?: WorldNavigation, interactions?: DoorTargeting): () => void {

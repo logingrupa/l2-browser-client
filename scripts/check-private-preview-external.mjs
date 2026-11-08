@@ -61,8 +61,8 @@ async function observeStartup(page) {
       result.firstReveal = {
         readyFrame: Number(canvas?.dataset.readyFrame ?? 0), worldState: document.body.dataset.worldState,
         terrainReady: state?.nativeTerrain === 'source-section-loaded' && state.world?.texturesReady && state.world.terrainTriangles > 0,
-        nativeActors: actors.filter(actor => !actor.isFallback && actor.meshCount > 0).length,
-        fallbacks: actors.filter(actor => actor.isFallback).length,
+        nativeActors: actors.filter(actor => actor.hasNativeModel && actor.meshCount > 0).length,
+        actorsWithoutNativeModel: actors.filter(actor => !actor.hasNativeModel).length,
         hudEntities: document.querySelector('[data-testid=entity-count]')?.textContent,
         visible: Boolean(visible(canvas) && visible(hud)),
       };
@@ -81,7 +81,7 @@ async function verifyStartup(page, label) {
   const startup = await page.evaluate(() => window.__privateReveal);
   const first = startup.firstReveal;
   assert(startup.earlyExposure === 0 && first.readyFrame > 0 && first.worldState === 'ready' && first.terrainReady &&
-    first.nativeActors === 2 && first.fallbacks === 0 && first.hudEntities === '2' && first.visible,
+    first.nativeActors === 2 && first.actorsWithoutNativeModel === 0 && first.hudEntities === '2' && first.visible,
   `${label} first reveal contains terrain, two native actors and initialized HUD with no early exposure`);
   return startup;
 }
@@ -134,14 +134,14 @@ try {
     await page.waitForURL(base + route, { timeout: 120_000 });
     await page.waitForFunction(() => {
       const snapshot = window.__nativeSlice?.snapshot();
-      return snapshot?.entities?.filter(actor => !actor.isFallback).length === 2 && snapshot.nativeFlames?.placementCounts?.active === 12;
+      return snapshot?.entities?.filter(actor => actor.hasNativeModel).length === 2 && snapshot.nativeFlames?.placementCounts?.active === 12;
     }, undefined, { timeout: 180_000 });
     await page.waitForLoadState('networkidle', { timeout: 180_000 });
     const desktopStartup = await verifyStartup(page, 'External desktop');
     const desktop = await page.evaluate(() => {
       const s = window.__nativeSlice.snapshot();
       const canvas = document.querySelector('canvas'), gl = canvas?.getContext('webgl2'), extension = gl?.getExtension('WEBGL_debug_renderer_info');
-      return { entities: s.entities.map(actor => ({ id: actor.id, isFallback: actor.isFallback, animation: actor.animation })),
+      return { entities: s.entities.map(actor => ({ id: actor.id, hasNativeModel: actor.hasNativeModel, animation: actor.animation })),
         world: s.world, worldFailure: s.worldFailure, flameFailure: s.flameFailure,
         flames: s.nativeFlames.placementCounts,
         renderer: extension ? gl.getParameter(extension.UNMASKED_RENDERER_WEBGL) : null };
@@ -151,7 +151,8 @@ try {
     assert(errors.length === 0, 'External browser has no page/console errors');
     await page.screenshot({ path: resolve(evidence, 'desktop.png') });
     const mobile = await browser.newContext({ viewport: landscapePhoneViewport, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
-    await mobile.addCookies(await context.cookies(base));
+    const hostSessionCookiesInMemory = await context.cookies(base);
+    await mobile.addCookies(hostSessionCookiesInMemory);
     const mobilePage = await mobile.newPage();
     await observeStartup(mobilePage);
     const mobileDelivery = observeDelivery(mobilePage);
@@ -160,7 +161,7 @@ try {
     await mobilePage.goto(base + route, { waitUntil: 'domcontentloaded', timeout: 120_000 });
     await mobilePage.waitForFunction(() => {
       const s = window.__nativeSlice?.snapshot();
-      return s?.entities.filter(actor => !actor.isFallback).length === 2 && s.world?.modelCount === 61 && s.world?.placementCount === 151 && s.nativeFlames?.placementCounts?.active === 12 && s.worldFailure === null && s.flameFailure === null;
+      return s?.entities.filter(actor => actor.hasNativeModel).length === 2 && s.world?.modelCount === 61 && s.world?.placementCount === 151 && s.nativeFlames?.placementCounts?.active === 12 && s.worldFailure === null && s.flameFailure === null;
     }, undefined, { timeout: 180_000 });
     await mobilePage.waitForLoadState('networkidle', { timeout: 180_000 });
     const mobileStartup = await verifyStartup(mobilePage, 'External mobile');

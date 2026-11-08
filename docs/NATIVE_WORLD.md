@@ -4,7 +4,7 @@ Terrain, static meshes, section loader. One hand-built `20_20` section loads tod
 
 ## Now
 
-- `/?world=interlude` loads catalog section `map-20-20-section` via `src/scene/world/loadNativeSection.ts`: hash and identity checks, visible failure, no stand-in. Limits: 128 models, 4,096 placements. No `?map=`, streaming or LOD.
+- `/` loads catalog section `map-20-20-section` via `src/scene/world/loadNativeSection.ts`: hash and identity checks, visible failure, no stand-in. Limits: 128 models, 4,096 placements. No `?map=`, streaming or LOD.
 - Two checkpoints, never mixed in a baseline: `recipes/native-map-debug-location.json` (nine sectors around `PlayerStart10`, 61 models, 151 placements) and the live section (62 models, 157 placements, BSP, sky).
 - The live section ends a seven-link `migrate-*` / `derive-*` chain (each pins its predecessor's hash) on terrain from research map `audio-world-20261106/map-correction-first`; no commit rebuilds it. Only 9 of 115 steps are scripted and tile-general (audit).
 - `scripts/native_map.py` and `native_map_geometry.py` accept only UE123 / licensee 28: 67 of 153 tiles.

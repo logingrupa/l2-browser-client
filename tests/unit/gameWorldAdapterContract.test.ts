@@ -1,13 +1,9 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import type { GameWorldAdapter } from "../../src/world/GameWorldAdapter";
-import { MockWorldAdapter } from "../../src/world/MockWorldAdapter";
 import { NativeSliceAdapter } from "../../src/world/NativeSliceAdapter";
 import type { WorldCommand, WorldEntity, WorldEvent } from "../../src/world/worldTypes";
 
-const adapterFactories: ReadonlyArray<readonly [string, () => GameWorldAdapter]> = [
-  ["MockWorldAdapter", () => new MockWorldAdapter()],
-  ["NativeSliceAdapter", () => new NativeSliceAdapter({ x: 0, y: 0, z: 0 })],
-];
+const createNativeSliceAdapter = (): GameWorldAdapter => new NativeSliceAdapter({ x: 0, y: 0, z: 0 });
 
 describe("GameWorldAdapter contract", () => {
   it("keeps exactly the five frozen methods with their signatures", () => {
@@ -21,7 +17,7 @@ describe("GameWorldAdapter contract", () => {
 
   it("enumerates the full sandbox command set and the spawn-character and play-clip shapes", () => {
     expectTypeOf<WorldCommand["type"]>().toEqualTypeOf<
-      | "set-animation" | "preview-action" | "set-locomotion" | "move-local" | "teleport-local" | "spawn" | "spawn-npc"
+      | "set-animation" | "preview-action" | "set-locomotion" | "move-local" | "spawn-npc"
       | "despawn" | "set-paused" | "equip-item" | "cast-skill" | "set-health" | "spawn-character" | "play-clip"
     >();
     expectTypeOf<Extract<WorldCommand, { readonly type: "spawn-character" }>>()
@@ -30,16 +26,16 @@ describe("GameWorldAdapter contract", () => {
       .toEqualTypeOf<{ readonly type: "play-clip"; readonly entityId: string; readonly clipName: string }>();
   });
 
-  it.each(adapterFactories)("%s refuses a command type it does not know with a RangeError naming the type", (_name, createAdapter) => {
-    const adapter = createAdapter();
+  it("NativeSliceAdapter refuses a command type it does not know with a RangeError naming the type", () => {
+    const adapter = createNativeSliceAdapter();
     const unknownCommand = { type: "no-such-command" } as unknown as WorldCommand;
     expect(() => adapter.dispatch(unknownCommand)).toThrow(RangeError);
     expect(() => adapter.dispatch(unknownCommand)).toThrow(/no-such-command/);
     adapter.dispose();
   });
 
-  it.each(adapterFactories)("%s answers all five methods at runtime", (_name, createAdapter) => {
-    const adapter = createAdapter();
+  it("NativeSliceAdapter answers all five methods at runtime", () => {
+    const adapter = createNativeSliceAdapter();
     const initialState = adapter.getInitialState();
     expect(initialState.some(entity => entity.id === "local-player")).toBe(true);
     const receivedEvents: WorldEvent[] = [];

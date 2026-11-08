@@ -49,7 +49,7 @@ describe("native character presentation boundary", () => {
   }
   function materials() { return scene.meshes.filter(mesh => mesh.getTotalVertices() && mesh.isEnabled()).map(mesh => mesh.material?.name).sort(); }
   function update(visual: CharacterVisual, entity: WorldEntity) {
-    visual.setEntity?.(entity); visual.animation.setState(entity.animation);
+    visual.setEntity(entity); visual.animation.setState(entity.animation);
   }
 
   it("uses the latest state after loading, preserves source dimensions/world transform and tags picking meshes", async () => {
@@ -57,7 +57,7 @@ describe("native character presentation boundary", () => {
     visual.root.position.set(13, 3, -8); visual.root.rotation.y = .6;
     await gate.ready; update(visual, { ...initial, animation: "run" }); gate.release();
     await visual.ready;
-    expect(visual.isFallback).toBe(false);
+    expect(visual.hasNativeModel).toBe(true);
     expect(visual.root.position.asArray()).toEqual([13, 3, -8]); expect(visual.root.rotation.y).toBe(.6);
     expect(visual.root.scaling.asArray()).toEqual([1, 1, 1]);
     expect(visual.bounds.minimum.y).toBeCloseTo(0); expect(visual.bounds.maximum.y).toBeCloseTo(2);
@@ -66,7 +66,6 @@ describe("native character presentation boundary", () => {
     for (const mesh of visual.root.getChildMeshes().filter(mesh => mesh.getTotalVertices())) {
       expect(mesh.metadata?.clientEntityId).toBe(initial.id); expect(mesh.isPickable).toBe(true);
     }
-    expect(scene.getTransformNodeByName(`${initial.id}:placeholder`)).toBeNull();
   });
 
   it("previews one exact package clip without changing the requested state, then resumes that state", async () => {
@@ -87,7 +86,7 @@ describe("native character presentation boundary", () => {
     const interruptPreviewWithSemanticAnimationChange = () => update(visual, { ...initial, animation: "run" });
     interruptPreviewWithSemanticAnimationChange();
     expect(visual.animation.playback?.activeClip).toBe(nativeVisualClips.run); expect(hub.previewing(initial.id)).toBeNull();
-    visual.setEntity?.({ ...initial, animation: "run", health: 0 });
+    visual.setEntity({ ...initial, animation: "run", health: 0 });
     expect(hub.play(initial.id, nativeVisualClips.idle)).toContain("Revive");
     visual.dispose();
     expect(hub.play(initial.id, nativeVisualClips.idle)).toBe("The native model has not loaded yet.");
@@ -97,8 +96,7 @@ describe("native character presentation boundary", () => {
     const { visual, status } = await create({ asset: await nativeVisualFixture({ omitDeath: true }) });
     await expect(visual.ready).rejects.toThrow("Native_Death is missing");
     expect(status).toHaveBeenCalledWith(expect.stringContaining("Native_Death is missing"));
-    expect(visual.isFallback).toBe(true); expect(visual.modelId).toBeNull();
-    expect(scene.getTransformNodeByName(`${initial.id}:placeholder`)).toBeNull();
+    expect(visual.hasNativeModel).toBe(false); expect(visual.modelId).toBeNull();
     expect(scene.animationGroups).toHaveLength(0); expect(scene.meshes).toHaveLength(0);
     expect(scene.transformNodes).toHaveLength(0);
   });
@@ -106,7 +104,7 @@ describe("native character presentation boundary", () => {
   it("aligns a verified +X native facing axis with semantic movement in every horizontal direction", async () => {
     scene.useRightHandedSystem = true;
     const { visual } = await create({ forwardAxis: Vector3.Right() });
-    if (visual.isFallback) expect(visual.forwardDirection).toBeNull();
+    if (!visual.hasNativeModel) expect(visual.forwardDirection).toBeNull();
     await visual.ready;
     const placement = scene.getTransformNodeByName(`${initial.id}:native-actor-placement`)!;
     expect(placement.rotation.y).toBe(-Math.PI / 2);
@@ -126,7 +124,7 @@ describe("native character presentation boundary", () => {
       verticalMotion: { idle: [.25, .25], attack: [0, 1], death: [0, -1] } });
     const { visual } = await create({ asset }, { ...initial, animation: "attack" });
     visual.root.position.set(13, 3, -8); visual.root.rotation.y = .6;
-    await vi.waitFor(() => expect(visual.isFallback).toBe(false));
+    await vi.waitFor(() => expect(visual.hasNativeModel).toBe(true));
     const meshes = visual.root.getChildMeshes().filter(mesh => mesh.getTotalVertices());
     expect(meshes).toHaveLength(2); expect(new Set(meshes.map(mesh => mesh.skeleton)).size).toBe(2);
     const keys = () => scene.animationGroups.map(group => ({ name: group.name, channels: group.targetedAnimations.map(({ animation }) =>
@@ -161,8 +159,7 @@ describe("native character presentation boundary", () => {
     const { visual, status } = await create({ asset: await nativeVisualFixture({ height: 0 }) });
     await expect(visual.ready).rejects.toThrow("finite visible bounds");
     expect(status).toHaveBeenCalledWith(expect.stringContaining("finite visible bounds"));
-    expect(visual.isFallback).toBe(true); expect(scene.animationGroups).toHaveLength(0);
-    expect(scene.getTransformNodeByName(`${initial.id}:placeholder`)).toBeNull();
+    expect(visual.hasNativeModel).toBe(false); expect(scene.animationGroups).toHaveLength(0);
     expect(scene.meshes).toHaveLength(0);
   });
 
@@ -170,11 +167,11 @@ describe("native character presentation boundary", () => {
     const asset = await nativeVisualFixture({ minimumY: -.12, skinned: true,
       verticalMotion: { idle: [0, 0], death: [0, -.28] } });
     const { visual } = await create({ asset, collisionHalfHeight: .36 });
-    await vi.waitFor(() => expect(visual.isFallback).toBe(false));
+    await vi.waitFor(() => expect(visual.hasNativeModel).toBe(true));
     const positions = visual.root.getChildMeshes().filter(mesh => mesh.getTotalVertices())
       .map(mesh => Array.from(mesh.getVerticesData(VertexBuffer.PositionKind)!));
     expect(visual.groundClearance).toBe(.36);
-    expect(visual.bounds.minimum.y + visual.groundClearance!).toBeCloseTo(.24);
+    expect(visual.bounds.minimum.y + visual.groundClearance).toBeCloseTo(.24);
     update(visual, { ...initial, health: 0 }); visual.animation.update(10);
     expect(visual.animation.playback).toMatchObject({ activeClip: nativeVisualClips.death, playing: false });
     expect(visual.groundClearance).toBe(.36);
@@ -190,7 +187,7 @@ describe("native character presentation boundary", () => {
     const { visual, status } = await create({ collisionHalfHeight });
     await expect(visual.ready).rejects.toThrow("collision half-height must be finite and positive");
     expect(status).toHaveBeenCalledWith(expect.stringContaining("collision half-height must be finite and positive"));
-    expect(visual.isFallback).toBe(true); expect(visual.groundClearance).toBe(0);
+    expect(visual.hasNativeModel).toBe(false); expect(visual.groundClearance).toBe(0);
     expect(scene.animationGroups).toHaveLength(0);
   });
 
@@ -198,7 +195,7 @@ describe("native character presentation boundary", () => {
     const asset = await nativeVisualFixture({ minimumY: -.12, skinned: true, nativeParentTranslation: [1, 2, 3],
       verticalMotion: { idle: [0, 0], death: [0, -.28] } });
     const { visual } = await create({ asset, collisionHalfHeight: .36, actorScale: new Vector3(1.2, 1.2, 1.2) });
-    await vi.waitFor(() => expect(visual.isFallback).toBe(false));
+    await vi.waitFor(() => expect(visual.hasNativeModel).toBe(true));
     expect(visual.root.scaling.asArray()).toEqual([1, 1, 1]);
     expect(visual.groundClearance).toBe(.36);
     expect(visual.bounds.minimum.y).toBeCloseTo((2 - .12) * 1.2);
@@ -222,7 +219,7 @@ describe("native character presentation boundary", () => {
 
   it("holds death despite ordinary state updates and restores the requested locomotion on revival", async () => {
     const { visual } = await create({}, { ...initial, animation: "run" });
-    await vi.waitFor(() => expect(visual.isFallback).toBe(false));
+    await vi.waitFor(() => expect(visual.hasNativeModel).toBe(true));
     update(visual, { ...initial, animation: "run", health: 0 }); visual.animation.update(10);
     expect(visual.animation.playback).toMatchObject({ activeClip: nativeVisualClips.death, looping: false, playing: false });
     update(visual, { ...initial, animation: "run", health: 0 }); visual.animation.update(1);
@@ -232,7 +229,7 @@ describe("native character presentation boundary", () => {
   });
 
   it("plays one attack, returns visually to idle and retriggers only an explicit repeated action", async () => {
-    const { visual } = await create(); await vi.waitFor(() => expect(visual.isFallback).toBe(false));
+    const { visual } = await create(); await vi.waitFor(() => expect(visual.hasNativeModel).toBe(true));
     visual.animation.setState("attack"); visual.animation.update(.5);
     expect(visual.animation.playback).toMatchObject({ activeClip: nativeVisualClips.attack, frame: 30, looping: false });
     visual.animation.setState("attack"); expect(visual.animation.playback?.frame).toBe(30);
@@ -315,13 +312,12 @@ describe("native character presentation boundary", () => {
     const actual = NativeActor.create.bind(NativeActor);
     vi.spyOn(NativeActor, "create").mockImplementationOnce(async (...args) => { await gate; return actual(...args); });
     const { visual } = await create();
-    const onReady = vi.fn(); void visual.ready!.then(onReady);
+    const onReady = vi.fn(); void visual.ready.then(onReady);
     await Promise.resolve();
     expect(onReady).not.toHaveBeenCalled();
     expect(scene.meshes).toHaveLength(0);
-    expect(scene.getTransformNodeByName(`${initial.id}:placeholder`)).toBeNull();
     release(); await visual.ready;
-    expect(onReady).toHaveBeenCalledOnce(); expect(visual.isFallback).toBe(false);
+    expect(onReady).toHaveBeenCalledOnce(); expect(visual.hasNativeModel).toBe(true);
   });
 
   it("waits for initial equipment, tags its meshes and never enables the starter appearance first", async () => {
@@ -333,9 +329,9 @@ describe("native character presentation boundary", () => {
     });
     const { visual } = await create({ upperItems: new Map([[22, await nativeVisualFixture({ parts: ["Upper"], material: "leather" })]]) },
       { ...initial, equipment: { upper: 22 } });
-    const onReady = vi.fn(); void visual.ready!.then(onReady);
+    const onReady = vi.fn(); void visual.ready.then(onReady);
     await vi.waitFor(() => expect(replace).toHaveBeenCalledOnce());
-    expect(materials()).toEqual([]); expect(onReady).not.toHaveBeenCalled(); expect(visual.isFallback).toBe(true);
+    expect(materials()).toEqual([]); expect(onReady).not.toHaveBeenCalled(); expect(visual.hasNativeModel).toBe(false);
     release(); await visual.ready;
     expect(materials()).toEqual(["base:Lower", "leather:Upper"]);
     for (const mesh of visual.root.getChildMeshes().filter(mesh => mesh.getTotalVertices() && mesh.isEnabled())) {

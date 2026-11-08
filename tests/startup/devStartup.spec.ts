@@ -2,7 +2,7 @@ import { expect, test, type Request } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 
 const readyBudgetMilliseconds = 240_000;
-const nativeSandboxRoute = { name: "native-sandbox", path: "/?world=interlude" };
+const nativeSandboxRoute = { name: "native-sandbox", path: "/" };
 
 interface CompletedRequest { resourceType: string; completedAtMilliseconds: number; responseBodyBytes: number }
 

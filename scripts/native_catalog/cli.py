@@ -15,7 +15,7 @@ from native_assets_lib.umodel_import_closure import index_package_files_by_casef
 from reference_client_guard import require_reference_client
 
 NATIVE = {'.ukx', '.uax', '.usx', '.utx', '.unr', '.u', '.uix', '.usk'}
-UMODEL = Path(os.environ.get('L2_UMODEL', 'C:/laragon/www/lineagen/.assets/skill-assets/work/native/tools/umodel/umodel.exe'))
+UMODEL = Path(os.environ.get('L2_UMODEL', 'C:/laragon/www/l2-browser-client/.assets/native-tools/umodel/umodel.exe'))
 UMODEL_SHA256 = '13502e5a4d8f6b5f32252afebd6360f7302ccfaccf6b8dda65beff0be2d364a0'
 
 

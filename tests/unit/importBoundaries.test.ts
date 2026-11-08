@@ -3,7 +3,7 @@ import { staticImportClosure } from "../support/staticImportGraph";
 import { listTypeScriptModules, readSourceImports } from "../support/sourceImportSpecifiers";
 
 const worldModules = listTypeScriptModules("src/world");
-const concreteAdapterModules = ["src/world/MockWorldAdapter.ts", "src/world/NativeSliceAdapter.ts"];
+const concreteAdapterModules = ["src/world/NativeSliceAdapter.ts"];
 const presentationAndRuntimeFolders = ["src/assets/", "src/audio/", "src/effects/", "src/scene/", "src/ui/", "src/entities/", "src/camera/", "src/engine/", "src/runtime/"];
 
 describe("src/world import boundary", () => {

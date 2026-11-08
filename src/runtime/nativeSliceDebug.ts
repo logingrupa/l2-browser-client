@@ -50,12 +50,9 @@ export function attachNativeSliceDebugSection(section: DevSection, options: Nati
   });
   const urlVariable = (name: string, values: string, source: string): VariableInfo =>
     ({ name: `url.${name}`, value: () => currentQueryParameters().get(name) ?? "(not set)", values, source, status: "presentation" });
-  readout(url, "world", () => currentQueryParameters().get("world") ?? "(not set)", "native-debug-url-world",
-    "world=interlude opens this 20_20 native slice. Any other value or leaving it out opens the reference Talking Island world on a code-built scene, or a not-staged status when it is not staged.",
-    () => [urlVariable("world", "interlude | (not set)", "src/scene/loadEnvironment.ts")]);
   readout(url, "authored", () => currentQueryParameters().get("authored") ?? "(not set)", "native-debug-url-authored",
     "authored=1 loads the Babylon Editor saved world (public/scene/native-world.babylon) instead of building the scene in code and loading the staged source section.",
-    () => [urlVariable("authored", "1 | (not set)", "src/scene/loadEnvironment.ts (with world=interlude)")]);
+    () => [urlVariable("authored", "1 | (not set)", "src/scene/loadEnvironment.ts")]);
   readout(url, "character", () => currentQueryParameters().get("character") ?? `(not set → ${playerProfile.id})`, "native-debug-url-character",
     "Player profile id from catalog.playerProfiles. Use Character › Play as… to switch.", () => [
       urlVariable("character", [...playerChoices.keys()].join(" | "), "catalog.playerProfiles (src/runtime/createNativeSliceRuntime.ts)"),
@@ -63,15 +60,14 @@ export function attachNativeSliceDebugSection(section: DevSection, options: Nati
         source: "loadNativeActorCatalog playerProfile", status: "native" },
     ]);
   const addWorldReloadButton = (label: string, testId: string, authored: boolean, hint: string) => {
-    const current = currentQueryParameters().get("world") === "interlude" && (currentQueryParameters().get("authored") === "1") === authored;
+    const current = (currentQueryParameters().get("authored") === "1") === authored;
     const button = url.button({ label, testId, hint, disabled: current });
     button.addEventListener("click", () => {
       const next = new URL(globalThis.location.href);
-      next.searchParams.set("world", "interlude");
       if (authored) next.searchParams.set("authored", "1"); else next.searchParams.delete("authored");
       globalThis.location.assign(next.href);
     }, { signal: events });
   };
-  addWorldReloadButton("Open source world", "native-debug-open-source", false, "Reload with world=interlude: the scene is built in code and the staged source section loads at startup.");
-  addWorldReloadButton("Open authored world", "native-debug-open-authored", true, "Reload with world=interlude&authored=1: the Babylon Editor saved native world.");
+  addWorldReloadButton("Open source world", "native-debug-open-source", false, "Reload without authored=1: the scene is built in code and the staged source section loads at startup.");
+  addWorldReloadButton("Open authored world", "native-debug-open-authored", true, "Reload with authored=1: the Babylon Editor saved native world.");
 }

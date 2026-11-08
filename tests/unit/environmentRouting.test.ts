@@ -1,32 +1,24 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
 import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
-import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { createNativeSliceRuntime } from "../../src/runtime/createNativeSliceRuntime";
 import { loadEnvironment } from "../../src/scene/loadEnvironment";
 import { isSceneStartupRequired } from "../../src/scene/prepareSceneForReveal";
-import { nativeSandboxPresentation, referenceWorldPresentation } from "../../src/scene/presentationConfiguration";
+import { nativeSandboxPresentation } from "../../src/scene/presentationConfiguration";
 import { catalogNativeSliceWorldSource } from "../../src/runtime/nativeSliceWorldSource";
-import type { createWorldRuntime } from "../../src/runtime/createWorldRuntime";
 
 const boundary = vi.hoisted(() => ({
   startRuntime: vi.fn<typeof createNativeSliceRuntime>(),
-  startWorldRuntime: vi.fn<typeof createWorldRuntime>(),
-  importedWorld: vi.fn(),
 }));
 vi.mock("../../src/runtime/createNativeSliceRuntime", () => ({ createNativeSliceRuntime: boundary.startRuntime }));
-vi.mock("../../src/runtime/createWorldRuntime", () => ({ createWorldRuntime: boundary.startWorldRuntime }));
-vi.mock("../../src/scene/world/loadImportedWorld", () => ({ loadImportedWorld: boundary.importedWorld }));
 
 describe("environment routing", () => {
   let engine: NullEngine;
   beforeEach(() => {
     engine = new NullEngine();
-    vi.stubGlobal("window", Object.assign(new EventTarget(), { location: { search: "?world=interlude" } }));
+    vi.stubGlobal("window", Object.assign(new EventTarget(), { location: { search: "" } }));
     vi.stubGlobal("document", Object.assign(new EventTarget(), { title: "Initial title" }));
     boundary.startRuntime.mockReset();
-    boundary.startWorldRuntime.mockReset();
-    boundary.importedWorld.mockReset();
   });
   afterEach(() => {
     engine.dispose();
@@ -57,7 +49,6 @@ describe("environment routing", () => {
     expect(settings.leatherShirt).toBe(true);
     expect(settings.materialTint?.asArray()).toEqual([0.45, 1, 0.6]);
     expect(options?.requireWorld).toBe(true);
-    expect(boundary.importedWorld).not.toHaveBeenCalled();
     await Promise.resolve();
     scene.dispose();
     expect(signal.aborted).toBe(true);
@@ -75,60 +66,14 @@ describe("environment routing", () => {
     expect(lateStop).toHaveBeenCalledTimes(1);
   });
 
-  it("treats any authored value other than 1 as the code-built native route", async () => {
-    window.location.search = "?world=interlude&authored=0";
+  it.each(["?authored=0", "?character=human-female-fighter", "?world=interlude", "?world=courtyard"])("opens the code-built native sandbox for search %j", async search => {
+    window.location.search = search;
     boundary.startRuntime.mockResolvedValue(vi.fn());
     const scene = await loadEnvironment(engine);
     expect(scene.activeCamera?.name).toBe("World camera");
+    expect((scene.activeCamera as ArcRotateCamera).alpha).toBe(nativeSandboxPresentation.camera.alpha);
+    expect(isSceneStartupRequired(scene, "native-world")).toBe(true);
     expect(boundary.startRuntime).toHaveBeenCalledTimes(1);
-  });
-
-  it.each(["", "?world=courtyard", "?authored=1"])("builds the reference scene in code with no staged world for search %j", async search => {
-    window.location.search = search;
-    boundary.importedWorld.mockResolvedValue(null);
-    const stopWorldRuntime = vi.fn();
-    boundary.startWorldRuntime.mockReturnValue(stopWorldRuntime);
-    const scene = await loadEnvironment(engine);
-    const camera = scene.activeCamera as ArcRotateCamera;
-    expect(camera).toBeInstanceOf(ArcRotateCamera);
-    expect([camera.alpha, camera.beta, camera.radius, camera.maxZ]).toEqual([referenceWorldPresentation.camera.alpha,
-      referenceWorldPresentation.camera.beta, referenceWorldPresentation.camera.radius, referenceWorldPresentation.camera.maxZ]);
-    expect(scene.clearColor.asArray()).toEqual([...referenceWorldPresentation.clearColor]);
-    expect(scene.useRightHandedSystem).toBe(true);
-    expect(document.title).toBe("Initial title");
-    expect(boundary.importedWorld).toHaveBeenCalledExactlyOnceWith(scene);
-    expect(boundary.startWorldRuntime).toHaveBeenCalledExactlyOnceWith(scene, camera);
-    expect(boundary.startRuntime).not.toHaveBeenCalled();
-    expect(isSceneStartupRequired(scene, "native-world")).toBe(false);
     scene.dispose();
-    expect(stopWorldRuntime).toHaveBeenCalledTimes(1);
-  });
-
-  it("applies the Talking Island camera overrides when the reference world is staged", async () => {
-    window.location.search = "";
-    const spawnPoint = new Vector3(10, 2, -4);
-    const disposeWorld = vi.fn();
-    boundary.importedWorld.mockResolvedValue({ spawnPoint, dispose: disposeWorld });
-    boundary.startWorldRuntime.mockReturnValue(vi.fn());
-    const scene = await loadEnvironment(engine);
-    const camera = scene.activeCamera as ArcRotateCamera;
-    expect(camera.alpha).toBe(-Math.PI / 2.5);
-    expect([camera.beta, camera.radius, camera.lowerRadiusLimit, camera.upperRadiusLimit, camera.minZ, camera.maxZ]).toEqual([1.1, 8, 1, 50, 0.05, 4000]);
-    expect(camera.target.asArray()).toEqual([10, 2.5, -4]);
-    expect(scene.clearColor.asArray()).toEqual([0.58, 0.71, 0.8, 1]);
-    expect(scene.useRightHandedSystem).toBe(true);
-    expect(document.title).toBe("Talking Island · L2 Browser Client");
-    expect(boundary.startWorldRuntime).toHaveBeenCalledExactlyOnceWith(scene, camera);
-    scene.dispose();
-    expect(disposeWorld).toHaveBeenCalledTimes(1);
-  });
-
-  it("disposes the reference scene when the world runtime fails to start", async () => {
-    window.location.search = "";
-    boundary.importedWorld.mockResolvedValue(null);
-    const failure = new Error("The world needs a rendering canvas.");
-    boundary.startWorldRuntime.mockImplementation(() => { throw failure; });
-    await expect(loadEnvironment(engine)).rejects.toBe(failure);
-    expect(engine.scenes).toHaveLength(0);
   });
 });

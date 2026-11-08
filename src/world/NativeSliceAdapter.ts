@@ -138,9 +138,6 @@ export class NativeSliceAdapter implements GameWorldAdapter {
       case "move-local":
         if (player) this.moveLocalPlayer(player, command.position);
         break;
-      case "teleport-local":
-      case "spawn":
-        break;
       default: {
         const unhandledCommand: never = command;
         throw unknownWorldCommandError(unhandledCommand);

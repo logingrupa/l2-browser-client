@@ -16,10 +16,10 @@ test("ground taps turn the native fighter toward two perpendicular movement dire
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
-  await page.goto("/?world=interlude");
+  await page.goto("/");
   await expect(page.locator("#loading")).toHaveCount(0, { timeout: 120_000 });
   await expect(page.locator("#canvas")).toBeVisible();
-  await expect.poll(async () => page.evaluate(() => window.__nativeSlice?.snapshot().entities.filter(entity => !entity.isFallback).length), { timeout: 120_000 }).toBe(2);
+  await expect.poll(async () => page.evaluate(() => window.__nativeSlice?.snapshot().entities.filter(entity => entity.hasNativeModel).length), { timeout: 120_000 }).toBe(2);
   const savedCamera = nativeSandboxPresentation.camera;
   const engine = new NullEngine({ renderWidth: 1440, renderHeight: 900, textureSize: 512, deterministicLockstep: false, lockstepMaxSteps: 4 });
   const scene = new Scene(engine); scene.useRightHandedSystem = true;

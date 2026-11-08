@@ -10,7 +10,7 @@ from .tables import decode_table
 from .ue2 import FormatError, Package, Reader, unwrap
 from reference_client_guard import require_reference_client
 
-UELIB = Path('C:/laragon/www/lineagen/.assets/skill-assets/work/native/tools/ue-explorer/Eliot.UELib.dll')
+UELIB = Path('C:/laragon/www/l2-browser-client/.assets/native-tools/ue-explorer/Eliot.UELib.dll')
 UELIB_SHA256 = '64ebfa8b290429b9d5b5e81f5018734c03ded27bb814c69b904cc269268f7bbc'
 POWERSHELL = Path('C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe')
 ENGINE_CLASSES = ['Object', 'Actor', 'SkillAction', 'SkillVisualEffect', 'SkillAction_LocateEffect',

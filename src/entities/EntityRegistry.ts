@@ -3,14 +3,13 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
-import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import type { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Scene } from "@babylonjs/core/scene";
 import type { GameWorldAdapter } from "../world/GameWorldAdapter";
 import type { WorldEntity, WorldEvent, WorldPosition } from "../world/worldTypes";
 import { PositionInterpolator } from "../interpolation/PositionInterpolator";
-import { createCharacterVisual, type CharacterVisual, type CharacterVisualFactory } from "../assets/CharacterVisual";
+import type { CharacterVisual, CharacterVisualFactory } from "../assets/CharacterVisual";
 import { EntityLabel } from "../ui/EntityLabel";
-import { projectPosition } from "../scene/projectPosition";
 
 interface EntityPresentation {
   entity: WorldEntity;
@@ -19,10 +18,9 @@ interface EntityPresentation {
   readonly interpolation: PositionInterpolator;
 }
 
-export interface EntityPresentationOptions {
-  readonly scale?: number | ((entity: WorldEntity) => number);
+interface EntityPresentationOptions {
   readonly ground?: (position: WorldPosition) => WorldPosition | null;
-  readonly createVisual?: CharacterVisualFactory;
+  readonly createVisual: CharacterVisualFactory;
 }
 
 export interface EntityPivotView {
@@ -41,7 +39,7 @@ export class EntityRegistry {
   selectedEntityId: string | null = null;
 
   constructor(private readonly scene: Scene, adapter: GameWorldAdapter, private readonly labels: HTMLElement, private readonly onAssetStatus: (message: string) => void,
-    private readonly options: EntityPresentationOptions = {}) {
+    private readonly options: EntityPresentationOptions) {
     this.selectionMaterial = new StandardMaterial("Target indicator", scene);
     this.selectionMaterial.diffuseColor = Color3.FromHexString("#f6d884");
     this.selectionMaterial.emissiveColor = Color3.FromHexString("#b88c32");
@@ -58,7 +56,7 @@ export class EntityRegistry {
     for (;;) {
       if (this.isDisposed) throw new DOMException("Entity loading was cancelled.", "AbortError");
       const pending = [...this.entities.values()];
-      await Promise.all(pending.map(presentation => presentation.visual.ready?.catch((error: unknown) => {
+      await Promise.all(pending.map(presentation => presentation.visual.ready.catch((error: unknown) => {
         if (this.entities.get(presentation.entity.id) === presentation) throw error;
       })));
       if (this.isDisposed) throw new DOMException("Entity loading was cancelled.", "AbortError");
@@ -74,11 +72,11 @@ export class EntityRegistry {
   }
 
   attachmentAnchor(entityId: string, anchorId: string) {
-    return this.isDisposed ? null : this.entities.get(entityId)?.visual.attachmentAnchor?.(anchorId) ?? null;
+    return this.isDisposed ? null : this.entities.get(entityId)?.visual.attachmentAnchor(anchorId) ?? null;
   }
 
   sourceClock(entityId: string) {
-    return this.isDisposed ? null : this.entities.get(entityId)?.visual.sourceClock?.() ?? null;
+    return this.isDisposed ? null : this.entities.get(entityId)?.visual.sourceClock() ?? null;
   }
 
   entity(entityId: string): WorldEntity | null {
@@ -106,9 +104,7 @@ export class EntityRegistry {
 
   private spawn(entity: WorldEntity): void {
     this.remove(entity.id);
-    const visual = (this.options.createVisual ?? createCharacterVisual)(this.scene, entity, this.onAssetStatus);
-    const scale = typeof this.options.scale === "function" ? this.options.scale(entity) : this.options.scale ?? 1;
-    visual.root.scaling.setAll(scale);
+    const visual = this.options.createVisual(this.scene, entity, this.onAssetStatus);
     visual.root.position.set(entity.position.x, entity.position.y, entity.position.z);
     visual.root.rotation.y = entity.orientationRadians;
     const label = new EntityLabel(this.labels, entity, () => this.select(entity.id));
@@ -130,7 +126,7 @@ export class EntityRegistry {
     }
     const shouldRetrigger = (presentation.entity.animationSequence ?? 0) !== (event.entity.animationSequence ?? 0);
     presentation.entity = event.entity;
-    presentation.visual.setEntity?.(event.entity);
+    presentation.visual.setEntity(event.entity);
     presentation.interpolation.setTarget(event.entity.position, event.shouldSnap ?? false);
     const position = presentation.interpolation.position;
     presentation.visual.root.position.set(position.x, position.y, position.z);
@@ -147,51 +143,50 @@ export class EntityRegistry {
     this.entities.delete(entityId);
   }
 
+  private presentedGroundClearance(visual: CharacterVisual): number {
+    return this.options.ground ? visual.groundClearance : 0;
+  }
+
   update(deltaTimeSeconds: number): void {
     this.entities.forEach((presentation) => {
       const interpolatedPosition = presentation.interpolation.update(deltaTimeSeconds);
       const supportedPosition = this.options.ground?.(interpolatedPosition) ?? interpolatedPosition;
-      const pivotClearanceAboveSupport = this.options.ground ? (presentation.visual.groundClearance ?? 0) * presentation.visual.root.scaling.y : 0;
+      const pivotClearanceAboveSupport = this.presentedGroundClearance(presentation.visual);
       presentation.visual.root.position.set(supportedPosition.x, supportedPosition.y + pivotClearanceAboveSupport, supportedPosition.z);
       const difference = Math.atan2(Math.sin(presentation.entity.orientationRadians - presentation.visual.root.rotation.y), Math.cos(presentation.entity.orientationRadians - presentation.visual.root.rotation.y));
       presentation.visual.root.rotation.y += difference * (1 - Math.exp(-12 * deltaTimeSeconds));
       presentation.visual.animation.update(deltaTimeSeconds);
-      presentation.label.update(this.scene, presentation.visual.root.position, presentation.visual.bounds.labelHeight * presentation.visual.root.scaling.y);
+      presentation.label.update(this.scene, presentation.visual.root.position, presentation.visual.bounds.labelHeight);
     });
     const selected = this.entities.get(this.selectedEntityId ?? "");
     if (selected) {
-      const visualScale = selected.visual.root.scaling.y;
       const bounds = selected.visual.bounds;
       const ringHeight = bounds.minimum.y + Math.min(.07, Math.max(.005, (bounds.maximum.y - bounds.minimum.y) * .03));
-      this.selectionRing.position.copyFrom(selected.visual.root.position).addInPlaceFromFloats(0, ringHeight * visualScale, 0);
-      const scale = selected.visual.bounds.selectionRadius / 0.825 * visualScale;
-      this.selectionRing.scaling.set(scale, visualScale, scale);
+      this.selectionRing.position.copyFrom(selected.visual.root.position).addInPlaceFromFloats(0, ringHeight, 0);
+      const scale = bounds.selectionRadius / 0.825;
+      this.selectionRing.scaling.set(scale, 1, scale);
     }
   }
 
   snapshot() {
-    return [...this.entities.values()].map(({ entity, visual }) => {
-      const bodyPosition = visual.root.position.add(new Vector3(0, visual.bounds.pickingHeight * visual.root.scaling.y, 0));
-      const projected = projectPosition(this.scene, bodyPosition);
-      return {
-        id: entity.id, position: { x: visual.root.position.x, y: visual.root.position.y, z: visual.root.position.z },
-        groundClearance: this.options.ground ? (visual.groundClearance ?? 0) * visual.root.scaling.y : 0,
-        authoritativePosition: { ...entity.position }, animation: visual.animation.state,
-        locomotion: entity.locomotion ?? "run",
-        actionPreview: entity.actionPreview ?? null,
-        actionTargetId: entity.actionTargetId ?? null,
-        orientationRadians: visual.root.rotation.y, authoritativeOrientationRadians: entity.orientationRadians,
-        forwardDirection: visual.forwardDirection?.asArray() ?? null,
-        isFallback: visual.isFallback, missingAssetDiagnostic: visual.missingAssetDiagnostic ?? null, screenPosition: { x: projected.x, y: projected.y },
-        modelId: visual.modelId, playback: visual.animation.playback, animationSequence: entity.animationSequence ?? 0,
-        attachments: visual.attachmentSnapshot?.() ?? [],
-        bounds: { minimum: visual.bounds.minimum.asArray(), maximum: visual.bounds.maximum.asArray(), labelHeight: visual.bounds.labelHeight, selectionRadius: visual.bounds.selectionRadius },
-        skeletons: [...new Set(visual.root.getChildMeshes().flatMap(mesh => mesh.skeleton ? [mesh.skeleton] : []))].map(skeleton => ({ name: skeleton.name, bones: skeleton.bones.length })),
-        parts: visual.root.getChildMeshes().filter(mesh => mesh.getTotalVertices() > 0).map(mesh => ({ name: mesh.name, enabled: mesh.isEnabled(), vertices: mesh.getTotalVertices(), material: mesh.material?.name ?? null })),
-        meshCount: visual.root.getChildMeshes().length,
-        pose: visual.root.getDescendants().map((node) => node instanceof TransformNode ? (node.rotationQuaternion?.asArray() ?? node.rotation.asArray()) : []),
-      };
-    });
+    return [...this.entities.values()].map(({ entity, visual }) => ({
+      id: entity.id, position: { x: visual.root.position.x, y: visual.root.position.y, z: visual.root.position.z },
+      groundClearance: this.presentedGroundClearance(visual),
+      authoritativePosition: { ...entity.position }, animation: visual.animation.state,
+      locomotion: entity.locomotion ?? "run",
+      actionPreview: entity.actionPreview ?? null,
+      actionTargetId: entity.actionTargetId ?? null,
+      orientationRadians: visual.root.rotation.y, authoritativeOrientationRadians: entity.orientationRadians,
+      forwardDirection: visual.forwardDirection?.asArray() ?? null,
+      hasNativeModel: visual.hasNativeModel, missingAssetDiagnostic: visual.missingAssetDiagnostic ?? null,
+      modelId: visual.modelId, playback: visual.animation.playback, animationSequence: entity.animationSequence ?? 0,
+      attachments: visual.attachmentSnapshot(),
+      bounds: { minimum: visual.bounds.minimum.asArray(), maximum: visual.bounds.maximum.asArray(), labelHeight: visual.bounds.labelHeight, selectionRadius: visual.bounds.selectionRadius },
+      skeletons: [...new Set(visual.root.getChildMeshes().flatMap(mesh => mesh.skeleton ? [mesh.skeleton] : []))].map(skeleton => ({ name: skeleton.name, bones: skeleton.bones.length })),
+      parts: visual.root.getChildMeshes().filter(mesh => mesh.getTotalVertices() > 0).map(mesh => ({ name: mesh.name, enabled: mesh.isEnabled(), vertices: mesh.getTotalVertices(), material: mesh.material?.name ?? null })),
+      meshCount: visual.root.getChildMeshes().length,
+      pose: visual.root.getDescendants().map((node) => node instanceof TransformNode ? (node.rotationQuaternion?.asArray() ?? node.rotation.asArray()) : []),
+    }));
   }
 
   dispose(): void {

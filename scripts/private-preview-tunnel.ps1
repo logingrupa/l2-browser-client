@@ -76,5 +76,5 @@ for ($attempt = 0; $attempt -lt 15; $attempt++) {
     if (-not (Get-Process -Id $connectorId -ErrorAction SilentlyContinue)) { break }
     Start-Sleep -Seconds 1
 }
-@{hostname=$identity.hostname;pid=$connectorId;connected=$ready;url='https://l2.kingdom.lv/?world=interlude'} | ConvertTo-Json
+@{hostname=$identity.hostname;pid=$connectorId;connected=$ready;url='https://l2.kingdom.lv/'} | ConvertTo-Json
 if (-not $ready) { throw 'Connector is not ready; private diagnostics remain under .assets/private-preview/tunnel.' }

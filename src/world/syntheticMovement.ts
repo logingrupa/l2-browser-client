@@ -23,20 +23,3 @@ export function moveTowards(
     animation: hasArrived ? "idle" : "run",
   };
 }
-
-export function simulateRemotePlayer(entity: WorldEntity, elapsedSeconds: number): WorldEntity {
-  const direction = entity.id === "remote-1" ? 1 : -1;
-  const centerX = direction === 1 ? -5 : 5;
-  const centerZ = direction === 1 ? -3 : 2;
-  const phase = elapsedSeconds * 0.45;
-  return {
-    ...entity,
-    position: {
-      x: centerX + Math.sin(phase) * 2 * direction,
-      y: 0,
-      z: centerZ + (Math.cos(phase) - 1) * 2,
-    },
-    orientationRadians: Math.atan2(Math.cos(phase) * direction, -Math.sin(phase)),
-    animation: "run",
-  };
-}

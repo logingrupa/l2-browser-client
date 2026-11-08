@@ -69,21 +69,7 @@ export interface PresentationConfiguration {
   source: PresentationSourceFiles;
 }
 
-export interface TalkingIslandCameraOverrides {
-  clearColor: ColorRgbaTuple;
-  alpha: number;
-  beta: number;
-  radius: number;
-  lowerRadiusLimit: number;
-  upperRadiusLimit: number;
-  minZ: number;
-  maxZ: number;
-  targetOffsetAboveSpawnPoint: Vector3Tuple;
-  statusLabel: typeof formerlyEditorAuthoredStatusLabel;
-  source: string;
-}
-
-const lightsSavedInBothEditorScenes: PresentationConfiguration["lights"] = {
+const lightsSavedInNativeParityScene: PresentationConfiguration["lights"] = {
   sky: {
     name: "Sky light",
     intensity: 0.65,
@@ -101,8 +87,6 @@ const lightsSavedInBothEditorScenes: PresentationConfiguration["lights"] = {
     specular: [1, 1, 1],
   },
 };
-
-const fogDistancesSavedInBothEditorScenes = { enabled: true, start: 32, end: 85, density: 0.006, color: [0.49, 0.59, 0.56] } as const;
 
 export const nativeSandboxPresentation: PresentationConfiguration = {
   camera: {
@@ -125,10 +109,10 @@ export const nativeSandboxPresentation: PresentationConfiguration = {
     pinchToPanMaxDistance: 20,
     allowUpsideDown: true,
   },
-  lights: lightsSavedInBothEditorScenes,
+  lights: lightsSavedInNativeParityScene,
   clearColor: [0.49, 0.59, 0.56, 1],
   ambientColor: [0, 0, 0],
-  fog: { ...fogDistancesSavedInBothEditorScenes, mode: 0 },
+  fog: { enabled: true, mode: 0, start: 32, end: 85, density: 0.006, color: [0.49, 0.59, 0.56] },
   statusLabel: formerlyEditorAuthoredStatusLabel,
   source: {
     camera: "assets/native-parity.scene/cameras/World camera.json",
@@ -136,52 +120,4 @@ export const nativeSandboxPresentation: PresentationConfiguration = {
     sunlight: "assets/native-parity.scene/lights/Sunlight.json",
     config: "assets/native-parity.scene/config.json",
   },
-};
-
-export const referenceWorldPresentation: PresentationConfiguration = {
-  camera: {
-    name: "World camera",
-    alpha: -1.5707963267948966,
-    beta: 1.05,
-    radius: 26,
-    target: [0, 0.8, 1],
-    minZ: 0.1,
-    maxZ: 250,
-    fov: 0.9,
-    fovMode: 1,
-    lowerRadiusLimit: 10,
-    upperRadiusLimit: 38,
-    lowerBetaLimit: 0.35,
-    upperBetaLimit: 1.45,
-    inertia: 0.7,
-    panningInertia: 0.9,
-    speed: 2,
-    pinchToPanMaxDistance: 20,
-    allowUpsideDown: true,
-  },
-  lights: lightsSavedInBothEditorScenes,
-  clearColor: [0.49, 0.59, 0.56, 1],
-  ambientColor: [0, 0, 0],
-  fog: { ...fogDistancesSavedInBothEditorScenes, mode: 3 },
-  statusLabel: formerlyEditorAuthoredStatusLabel,
-  source: {
-    camera: "assets/example.scene/cameras/world-camera.json at commit 58ac027",
-    skyLight: "assets/example.scene/lights/sky-light.json at commit 58ac027",
-    sunlight: "assets/example.scene/lights/sunlight.json at commit 58ac027",
-    config: "assets/example.scene/config.json at commit 58ac027",
-  },
-};
-
-export const talkingIslandCameraOverrides: TalkingIslandCameraOverrides = {
-  clearColor: [0.58, 0.71, 0.8, 1],
-  alpha: -Math.PI / 2.5,
-  beta: 1.1,
-  radius: 8,
-  lowerRadiusLimit: 1,
-  upperRadiusLimit: 50,
-  minZ: 0.05,
-  maxZ: 4000,
-  targetOffsetAboveSpawnPoint: [0, 0.5, 0],
-  statusLabel: formerlyEditorAuthoredStatusLabel,
-  source: "src/scene/loadEnvironment.ts at commit 58ac027",
 };

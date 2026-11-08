@@ -1,19 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { GameWorldAdapter } from "../../src/world/GameWorldAdapter";
-import { MockWorldAdapter } from "../../src/world/MockWorldAdapter";
 import { NativeSliceAdapter } from "../../src/world/NativeSliceAdapter";
 import type { WorldNavigation } from "../../src/world/WorldNavigation";
 import type { WorldEntity, WorldEvent, WorldPosition } from "../../src/world/worldTypes";
 
-const adapterFactories: ReadonlyArray<readonly [string, (navigation?: WorldNavigation) => GameWorldAdapter]> = [
-  ["MockWorldAdapter", navigation => new MockWorldAdapter(navigation)],
-  ["NativeSliceAdapter", navigation => new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, navigation)],
-];
+const createAdapter = (navigation?: WorldNavigation): GameWorldAdapter => new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, navigation);
 
-const planStartNpcPositionsByAdapter: Readonly<Record<string, readonly WorldPosition[]>> = {
-  MockWorldAdapter: [{ x: -3.5, y: 0, z: -6 }, { x: -1, y: 0, z: -6 }, { x: 1.5, y: 0, z: -6 }],
-  NativeSliceAdapter: [{ x: 1.4, y: 0, z: 0 }, { x: 2.8, y: 0, z: 0 }, { x: 1.4 * 3, y: 0, z: 0 }],
-};
+const planStartNpcPositions: readonly WorldPosition[] = [{ x: 1.4, y: 0, z: 0 }, { x: 2.8, y: 0, z: 0 }, { x: 1.4 * 3, y: 0, z: 0 }];
 
 function createSwitchableSpawnNavigation() {
   const spawnAvailability = { hasFreeSpawnPoint: true };
@@ -37,7 +30,7 @@ function spawnedEntities(events: readonly WorldEvent[]) {
   return events.flatMap(event => event.type === "spawn" ? [event.entity] : []);
 }
 
-describe.each(adapterFactories)("sandbox by-ID commands on %s", (_name, createAdapter) => {
+describe("sandbox by-ID commands on NativeSliceAdapter", () => {
   it("spawns an NPC entity carrying its L2 NPC ID", () => {
     const adapter = createAdapter();
     const receivedEvents = recordEvents(adapter);
@@ -142,7 +135,7 @@ describe.each(adapterFactories)("sandbox by-ID commands on %s", (_name, createAd
   });
 });
 
-describe.each(adapterFactories)("spawn-character on %s", (adapterName, createAdapter) => {
+describe("spawn-character on NativeSliceAdapter", () => {
   it("spawns a remote-player entity that carries only its chargrp template index and the sandbox defaults", () => {
     const adapter = createAdapter();
     const receivedEvents = recordEvents(adapter);
@@ -188,7 +181,7 @@ describe.each(adapterFactories)("spawn-character on %s", (adapterName, createAda
     adapter.dispatch({ type: "spawn-character", characterTemplateIndex: 3 });
     adapter.dispatch({ type: "spawn-npc", npcId: 5 });
     expect(spawnedEntities(receivedEvents).map(entity => entity.id)).toEqual(["character-3-1", "npc-5-1"]);
-    expect(spawnedEntities(receivedEvents).map(entity => entity.position)).toEqual(planStartNpcPositionsByAdapter[adapterName]!.slice(0, 2));
+    expect(spawnedEntities(receivedEvents).map(entity => entity.position)).toEqual(planStartNpcPositions.slice(0, 2));
     adapter.dispose();
   });
 
@@ -196,7 +189,7 @@ describe.each(adapterFactories)("spawn-character on %s", (adapterName, createAda
     const adapter = createAdapter();
     const receivedEvents = recordEvents(adapter);
     for (const npcId of [1, 2, 3]) adapter.dispatch({ type: "spawn-npc", npcId });
-    expect(spawnedEntities(receivedEvents).map(entity => entity.position)).toEqual(planStartNpcPositionsByAdapter[adapterName]);
+    expect(spawnedEntities(receivedEvents).map(entity => entity.position)).toEqual(planStartNpcPositions);
     adapter.dispose();
   });
 
@@ -243,33 +236,7 @@ describe.each(adapterFactories)("spawn-character on %s", (adapterName, createAda
   });
 });
 
-describe("spawn-character on MockWorldAdapter simulation", () => {
-  function spawnCharacterAndAdvance(adapter: GameWorldAdapter): readonly [WorldEntity, WorldEntity] {
-    const receivedEvents = recordEvents(adapter);
-    adapter.dispatch({ type: "spawn-character", characterTemplateIndex: 7 });
-    const spawnedCharacter = spawnedEntities(receivedEvents)[0]!;
-    adapter.advance(10);
-    const advancedCharacter = adapter.getInitialState().find(entity => entity.id === spawnedCharacter.id)!;
-    return [spawnedCharacter, advancedCharacter];
-  }
-
-  it("leaves a spawned character standing still without navigation while the start remote players move", () => {
-    const adapter = new MockWorldAdapter();
-    const [spawnedCharacter, advancedCharacter] = spawnCharacterAndAdvance(adapter);
-    expect(advancedCharacter.position).toEqual(spawnedCharacter.position);
-    expect(adapter.getInitialState().find(entity => entity.id === "remote-1")!.position).not.toEqual({ x: -5, y: 0, z: -3 });
-    adapter.dispose();
-  });
-
-  it("leaves a spawned character standing still with navigation", () => {
-    const adapter = new MockWorldAdapter(createSwitchableSpawnNavigation().navigation);
-    const [spawnedCharacter, advancedCharacter] = spawnCharacterAndAdvance(adapter);
-    expect(advancedCharacter.position).toEqual(spawnedCharacter.position);
-    adapter.dispose();
-  });
-});
-
-describe.each(adapterFactories)("play-clip on %s", (_name, createAdapter) => {
+describe("play-clip on NativeSliceAdapter", () => {
   function updatedEntities(events: readonly WorldEvent[]) {
     return events.flatMap(event => event.type === "update" ? [event.entity] : []);
   }

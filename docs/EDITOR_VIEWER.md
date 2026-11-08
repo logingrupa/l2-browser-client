@@ -10,7 +10,7 @@ Babylon.js Editor 5.5.3 is an optional viewer for converted scenes (DEC-OWN-8, N
 - Open `project.bjseditor` through Import project in the Dashboard. Tracked scene: `assets/native-parity.scene`.
 - A save drops `isWebGPU`. Run `pnpm renderer:ensure` before reopening.
 - `tools/editor-webgpu-compat/` fixes GLSL compiler setup and UV2 at Save and Play. It throws unless Babylon is 9.27.1 and the Editor is 5.5.3 with the pinned writer hash.
-- Browser route: `/?world=interlude&authored=1` ([ARCHITECTURE.md](ARCHITECTURE.md)).
+- Browser route: `/?authored=1` ([ARCHITECTURE.md](ARCHITECTURE.md)).
 - Known Editor defects: blank Play viewport (reopen the project from the Dashboard), Play drops every `BABYLON.ShaderMaterial`, relative texture paths give checkerboard terrain on WebGPU, raw Play reports `scene.isReady()` false while visible. A blank capture is never evidence.
 
 ## Open

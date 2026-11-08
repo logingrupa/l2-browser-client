@@ -5,7 +5,7 @@ The original `20_20` sky and its environment color tables. The browser shows a f
 ## Now
 
 - The sky is a separate final-BSP sky room: 53 polygons, 182 vertices, 76 triangles, three material chains. `scripts/native_sky.py --client <inputs> --output <dir>` reads it from hash-pinned `20_20.unr`, `Engine.u` and `l2_skies.utx`. Serialized FColor is RGBA.
-- `scripts/stage-native-sky.mjs --source <snapshot> --apply` writes immutable `public/l2/skies/<hash>`; without `--apply` it is a dry run. `src/scene/world/nativeSkyPresentation.ts` loads it on `/?world=interlude`.
+- `scripts/stage-native-sky.mjs --source <snapshot> --apply` writes immutable `public/l2/skies/<hash>`; without `--apply` it is a dry run. `src/scene/world/nativeSkyPresentation.ts` loads it on `/`.
 - Browser policy, not native rules: the sky follows the camera, draws first, writes no depth, keeps texture alpha and skips fog.
 - `scripts/export-native-environment.py --input-dir <copies> --output <dir>` converts `Env.int` and `timeenv0..3`: 1,681 properties, 20 sky, haze and cloud tables, 500 color rows, anomalies kept. `scripts/stage-native-environment.mjs` stages them for `/l2/environments/<hash>/`.
 - The World sheet Sky group can **Load sky color tables**, **Compare selected sky row** and **Restore stored sky**: a reversible row comparison, not time of day.

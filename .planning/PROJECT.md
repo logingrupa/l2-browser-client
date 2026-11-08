@@ -20,8 +20,8 @@ Full list with IDs and traceability: `.planning/REQUIREMENTS.md`.
 
 ### Validated
 
-- Phase 1 foundation (standalone Babylon.js client, `GameWorldAdapter`, `MockWorldAdapter`, synthetic entities) shipped in commit `3b16f1c317e20ee636a3b3f83bddafc15096740a`. Original brief kept in `.planning/goal.md` as history.
-- Current slice (2026-11-07, PORT_SCOPE section 5): human fighters native, 20_20 world and Talking Island bundles, Greater Musveren, Power Strike and 20_20 audio in progress, human mystic export in progress, UI is a development sheet only.
+- Phase 1 foundation (standalone Babylon.js client, `GameWorldAdapter`, `MockWorldAdapter`, synthetic entities) shipped in commit `3b16f1c317e20ee636a3b3f83bddafc15096740a`; the synthetic demo was removed on 2026-11-08 (DEC-OWN-11). Original brief kept in `.planning/goal.md` as history.
+- Current slice (2026-11-07, PORT_SCOPE part 5): human fighters native, 20_20 world section, Greater Musveren, Power Strike and 20_20 audio in progress, human mystic export in progress, UI is a development sheet only.
 
 ### Active
 
@@ -32,7 +32,7 @@ Stage A breadth-first conversion of the whole client (Phases 1 to 3), stage B se
 - Production deployment (excluded in every source).
 - Client-side gameplay math, combat calculation, quest logic or progression (DEC-PORT-3: the client displays server outcomes).
 - Committing or publishing converted Lineage II binaries, captures or native audio; they stay under ignored `artifacts/` and `public/l2`.
-- Copying source or assets from the retired sibling browser-client workspaces (no redistribution licence found); the repository depends on no files there.
+- Copying source or assets from other workspaces or from projects without a redistribution licence.
 - Elbera's three.js runtime, native verifiers pinned to Engine.dll `07b24af4...`, `elbera-acis.patch`, deviceId auto login, and a smart JSON gateway (doubles per-packet work, thrown away if SpacetimeDB is chosen).
 - Reproducing legacy Direct3D internals unless they explain a visible difference or required behaviour.
 - Depth-first work order (human fighters and 20_20 before other races or tiles); DEC-OWN-1 sets breadth-first stage A.
@@ -50,7 +50,7 @@ Stage A breadth-first conversion of the whole client (Phases 1 to 3), stage B se
 - **Adapter boundary**: `GameWorldAdapter` is the only way gameplay state enters the client; its five methods (`getInitialState`, `subscribe`, `dispatch`, `advance`, `dispose`) stay frozen; no Babylon types below it.
 - **Output contract**: `.l2asset` packages plus runtime catalog (128 MiB archive, 96 MiB payload, 256 entries). `recipes/native-inputs.lock.json` is input-only. Units and handedness are recorded per route in `asset.json`.
 - **Conversion**: independent per-system scripts; UModel build1590 pinned (SHA-256 `13502e5a...364a0`); no normalization, ground fitting or weight changes; unbound materials become visible magenta diagnostics; no procedural stand-ins on the native route.
-- **Parallel work**: at most 3 lanes plus integration; one part per branch `<part>/<slug>`; scripts writing the native store (`assets:*`, `world:stage`, `assets:stage`, `stage_*`, `derive-*`, `migrate-*`) run only in the main checkout; `lane new`/`lane rm` refused Thu 19:00-21:30 and Sun 10:00-14:00; merge one branch at a time, contract changes first.
+- **Parallel work**: at most 3 lanes plus integration; one part per branch `<part>/<slug>`; scripts writing the native store (`assets:*`, `assets:stage`, `stage_*`, `derive-*`, `migrate-*`) run only in the main checkout; `lane new`/`lane rm` refused Thu 19:00-21:30 and Sun 10:00-14:00; merge one branch at a time, contract changes first.
 - **Preferences (user memory)**: dev and sandbox controls are a pinnable sheet with hover-cards showing variables, never a cramped toggle scroll list; all staged media comes from our recipes and scripts; prefer audible labelled results over more research.
 
 <decisions>
@@ -69,6 +69,7 @@ Stage A breadth-first conversion of the whole client (Phases 1 to 3), stage B se
 - DEC-OWN-8 (2026-11-08): Babylon.js Editor leaves the build and runtime path; Babylon.js stays the engine. The native world loads directly from the `.l2asset` catalog (`loadNativeSection`), and the Editor-authored route (`authored=1`) becomes optional. `pnpm dev` and `pnpm build` stop running `babylonjs-editor-cli pack` and the Editor repair scripts, which move to an optional `pnpm generate:editor`. The legacy courtyard demo is retired or kept only behind that step. The sandbox gets Babylon Inspector behind `?inspect=1`, lazy-loaded. `project.bjseditor` and `pnpm assets:editor` stay as an optional viewer that nothing depends on. Revisit only if the SpacetimeDB route starts authoring new, non-L2 content. Reason: the world's source of truth is the original client plus the converter, so an Editor hand edit is lost on reconversion or is an invented change; the Editor path needs repair scripts plus a compat plugin and still shows open defects (blank Play viewport, relative texture path rewriting, `isReady` false while visible). Supersedes PRODUCT.md "Static environment stays editable in Babylon.js Editor".
 - DEC-OWN-9 (2026-11-08): The default phone is the iPhone 15 Pro Max held sideways, 932 x 430 CSS px in landscape with touch. Phone screenshots and the primary phone layout use it; portrait 430 x 932 stays a horizontal-scroll check, and desktop screenshots stay 1440 x 900. Reason: the game is played with the phone held sideways.
 - DEC-OWN-10 (2026-11-08): The only game interface is the original Interlude interface. Window layout comes from `interface.xdat`; skin, fonts and icons come from the client's converted UI textures. DESIGN.md, `.impeccable/design.json` and the custom HUD direction (dark translucent panels, bronze borders, Cormorant Garamond headings) are removed. The procedural HUD stays only as a stand-in until native windows replace it and gets no design work. Supersedes the mobile-first HUD wording in UI-03 and PRODUCT.md.
+- DEC-OWN-11 (2026-11-08): Only the native routes stay. `/` opens the native sandbox; `?authored=1` and `?character=<id>` stay and the `world` query parameter is gone. The Talking Island reference route, the courtyard demo with `MockWorldAdapter` and procedural characters, and the converted character GLB path are removed, with everything only they used. The repo is self-contained: nothing reads or reuses another workspace; the pinned conversion tools live in the ignored `.assets/native-tools/`.
 
 ## Carried, not locked (proposed in sources, consistent with the locked set)
 
@@ -79,7 +80,7 @@ Stage A breadth-first conversion of the whole client (Phases 1 to 3), stage B se
 - DEC-PARITY-1: acceptance thresholds are never relaxed to fit a result. DEC-PARITY-2: optimize the supported slice now; whole-client parity is not a prerequisite.
 - DEC-PIPE-1 / DEC-PIPE-2: independent per-system scripts, orchestrator optional; source-preserving conversion with pinned tools.
 - DEC-ASSET-1: one persistent runtime scene with bounded cells. Its "per-tile Editor authoring files stay compatible" clause is superseded by DEC-OWN-8.
-- DEC-SRC-1 / DEC-SRC-2: no copied source from the retired sibling browser-client workspaces; IMPORTA-PC reference (completed by DEC-OWN-2).
+- DEC-SRC-1 / DEC-SRC-2: no source or assets copied from other workspaces or unlicensed projects; IMPORTA-PC reference (completed by DEC-OWN-2).
 </decisions>
 
 ## Key Decisions
@@ -94,4 +95,4 @@ Stage A breadth-first conversion of the whole client (Phases 1 to 3), stage B se
 | Dumb WebSocket relay for Mobius | Reusable if server becomes SpacetimeDB | Pending (recommendation) |
 
 ---
-*Last updated: 2026-11-08 after DEC-OWN-10 (only the original Interlude interface)*
+*Last updated: 2026-11-08 after DEC-OWN-11 (only the native routes stay)*

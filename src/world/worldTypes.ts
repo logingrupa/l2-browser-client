@@ -7,7 +7,7 @@ export interface WorldPosition {
 export type AnimationState = "idle" | "run" | "attack";
 export type LocomotionMode = "walk" | "run";
 export type SourceActionPreview = "special-attack";
-export type EntityKind = "local-player" | "remote-player" | "monster";
+type EntityKind = "local-player" | "remote-player" | "monster";
 export type EquipmentSlot = "upper";
 
 export interface WorldEntity {
@@ -51,8 +51,6 @@ export type WorldCommand =
   | { readonly type: "preview-action"; readonly action: SourceActionPreview; readonly targetId?: string }
   | { readonly type: "set-locomotion"; readonly mode: LocomotionMode }
   | { readonly type: "move-local"; readonly position: WorldPosition }
-  | { readonly type: "teleport-local" }
-  | { readonly type: "spawn" }
   | { readonly type: "spawn-npc"; readonly npcId: number }
   | { readonly type: "spawn-character"; readonly characterTemplateIndex: number }
   | { readonly type: "play-clip"; readonly entityId: string; readonly clipName: string }

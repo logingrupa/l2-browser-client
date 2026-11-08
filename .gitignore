@@ -1,4 +1,3 @@
-# Logs
 logs
 *.log
 npm-debug.log*
@@ -14,7 +13,6 @@ dist
 dist-ssr
 *.local
 
-# Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -35,16 +33,12 @@ assets/.export-cache.json
 .env
 .env.*
 
-# Local converted artwork and captures: never publish with the source project.
-public/assets/characters/
-public/assets/world/
 public/l2/
-.assets/world-screenshots/
 .assets/private-preview/
-# Actual Editor saves use local binary geometry and a scene thumbnail.
+.assets/native-tools/
+.assets/reference/
 assets/native-parity.scene/geometries/*.babylonbinarymeshdata
 assets/native-parity.scene/*.png
-# Imported native authoring scene and editable texture sources remain local.
 assets/native-world.scene/
 assets/native-generated/
 assets/native-sky-textures/

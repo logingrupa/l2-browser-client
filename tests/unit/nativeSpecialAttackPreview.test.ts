@@ -109,7 +109,7 @@ describe("native visual source-action selection and lifetime", () => {
     const visual = nativeCharacterFactory(new Map([["fixture", { asset,
       clips: { ...nativeVisualClips, specialAttack: nativeVisualClips.run } }]]))(scene, entity);
     releases.push(() => visual.dispose()); await visual.ready;
-    function update(next: WorldEntity, retrigger = false) { visual.setEntity?.(next); visual.animation.setState(next.animation, retrigger); }
+    function update(next: WorldEntity, retrigger = false) { visual.setEntity(next); visual.animation.setState(next.animation, retrigger); }
     return { visual, entity, update, scene };
   }
   it("plays the selected source once, returns to idle and retains normal attack mapping", async () => {

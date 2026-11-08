@@ -65,7 +65,7 @@ function nativeStoreWriterScriptPaths(): string[] {
   const writerFileNamePattern = /^scripts\/(stage|derive-|migrate-)[^/]*$/;
   const packageScripts = (JSON.parse(readFileSync("package.json", "utf8")) as { scripts: Record<string, string> }).scripts;
   const writerCommandPaths = Object.entries(packageScripts)
-    .filter(([name]) => name.startsWith("assets:") || name === "world:stage" || name.startsWith("preview"))
+    .filter(([name]) => name.startsWith("assets:") || name.startsWith("preview"))
     .flatMap(([, command]) => command.match(/scripts\/[A-Za-z0-9._/-]+/g) ?? []);
   return [...trackedScriptPaths.filter((path) => writerFileNamePattern.test(path)), ...writerCommandPaths];
 }

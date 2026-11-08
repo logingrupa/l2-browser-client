@@ -30,7 +30,7 @@ from native_store.store_paths import require_converter_output
 REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
 CONVERTER_DESCRIPTION = 'Convert native Interlude client objects into reproducible .l2asset packages with the pinned UModel; see docs/ASSET_PIPELINE.md.'
 
-UMODEL = Path('C:/laragon/www/lineagen/.assets/skill-assets/work/native/tools/umodel/umodel.exe')
+UMODEL = Path('C:/laragon/www/l2-browser-client/.assets/native-tools/umodel/umodel.exe')
 UMODEL_SHA256 = '13502e5a4d8f6b5f32252afebd6360f7302ccfaccf6b8dda65beff0be2d364a0'
 SOURCE_TO_GLTF = [.01, 0, 0, 0, 0, 0, .01, 0, 0, .01, 0, 0, 0, 0, 0, 1]
 MAX_ARCHIVE = 128 * 1024 * 1024

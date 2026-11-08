@@ -3,7 +3,7 @@
 **Defined:** 2026-11-08
 **Core Value:** A fully converted Lineage II Interlude client that runs in the browser and matches L2.exe side by side, driven only by what a server sends.
 
-Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md` at commit `9c64e61` (removed from the tree on 2026-11-08). Locked owner decisions DEC-OWN-1..10 and DEC-PORT-1..3 override any conflicting variant. Stage A "passes" means the DEC-OWN-3 bar (converted, loads in the sandbox, side-by-side screenshot / listen check against L2.exe on IMPORTA-PC). Fixed thresholds apply only to POL and PERF requirements.
+Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md` at commit `9c64e61` (removed from the tree on 2026-11-08). Locked owner decisions DEC-OWN-1..11 and DEC-PORT-1..3 override any conflicting variant. Stage A "passes" means the DEC-OWN-3 bar (converted, loads in the sandbox, side-by-side screenshot / listen check against L2.exe on IMPORTA-PC). Fixed thresholds apply only to POL and PERF requirements.
 
 ## v1 Requirements
 
@@ -23,15 +23,15 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 
 ### Editor off the build and runtime path (Phase 1, integration thread, before Phase 2 lanes start; DEC-OWN-8)
 
-- [x] **NOED-01**: The native route boots without an Editor scene. `?world=interlude` builds its scene (camera, lights, readiness barrier) in code and loads the world from the `.l2asset` catalog through `loadNativeSection`. The `native-parity.babylon` bootstrap goes away, and the settings now held as Editor inspector fields in `src/scripts/nativeParity.ts` (player profile, clips, material override) become typed config shown on the sandbox sheet. `authored=1` stays optional and is reached only by a dynamic import.
+- [x] **NOED-01**: The native route boots without an Editor scene. `/` builds its scene (camera, lights, readiness barrier) in code and loads the world from the `.l2asset` catalog through `loadNativeSection`. The `native-parity.babylon` bootstrap goes away, and the settings now held as Editor inspector fields in `src/scripts/nativeParity.ts` (player profile, clips, material override) become typed config shown on the sandbox sheet. `?authored=1` stays optional and is reached only by a dynamic import.
 - [x] **NOED-02**: `pnpm dev` and `pnpm build` no longer run `babylonjs-editor-cli pack`, `ensure-webgpu-project`, `validate-editor-materials`, `preserve-native-editor-uv2`, `preserve-native-editor-fog` or `share-native-terrain-export-materials`, and do not need the l2-editor-webgpu-compat plugin. These move to an optional `pnpm generate:editor`. `stage-webgpu-compilers` stays in dev and build, because `src/engine/createWebGPUEngine.ts` loads glslang and twgsl from `/vendor/babylon/9.27.1/` at runtime. A test fails if the default entry statically imports `babylonjs-editor-tools` or the generated `src/scripts.ts`.
-- [x] **NOED-03**: The legacy courtyard demo (`assets/example.scene`, loaded through `loadScene` in `src/scene/loadEnvironment.ts`) is retired, or kept only behind `pnpm generate:editor`. A clean checkout's default view no longer loads an Editor scene.
+- [x] **NOED-03**: The legacy courtyard demo (`assets/example.scene`) is retired (2026-11-08, DEC-OWN-11). A clean checkout's default view loads no Editor scene.
 - [x] **NOED-04**: Babylon Inspector opens in the sandbox with `?inspect=1`, lazy-loaded by dynamic import and absent from the default bundle; `@babylonjs/inspector` is pinned to the same exact version as `@babylonjs/core`.
 - [x] **NOED-05**: The Editor stays an optional viewer: `project.bjseditor` and `pnpm assets:editor` remain, and no test, build step, lane or phase gate depends on them. Revisit only if the SpacetimeDB route starts authoring new, non-L2 content.
 
 ### Sandbox
 
-- [x] **SAND-01** (Phase 1): Offline sandbox shell with no server: spawn NPC by ID, equip item by ID, cast skill by ID, open window by ID, on `MockWorldAdapter` / `NativeSliceAdapter`. An ID without a converted asset shows an explicit missing-asset diagnostic.
+- [x] **SAND-01** (Phase 1): Offline sandbox shell with no server: spawn NPC by ID, equip item by ID, cast skill by ID, open window by ID, on `NativeSliceAdapter`. An ID without a converted asset shows an explicit missing-asset diagnostic.
 - [ ] **SAND-02** (Phase 2): Sandbox controls are a pinnable developer sheet with hover-cards showing variables (tile picker and walk, spawn, equip, cast, open window, audio mute/volume), not a cramped toggle list.
 
 ### Data lane L3 (Phase 2)
@@ -117,7 +117,7 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 | Production deployment | Excluded in every source |
 | Client-side gameplay math, quests logic, progression, gacha | DEC-PORT-3: client displays server outcomes |
 | Publishing converted Lineage II binaries or audio | Stay untracked and local |
-| Copying source or assets from the retired sibling browser-client workspaces | No redistribution licence |
+| Copying source or assets from other workspaces or unlicensed projects | No redistribution licence |
 | Elbera three.js runtime, pinned verifiers, smart JSON gateway | DEC-PORT-6 / DEC-PORT-4 |
 | Legacy Direct3D internals for their own sake | DEC-ARCH-1 |
 
@@ -226,4 +226,4 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 
 ---
 *Requirements defined: 2026-11-08*
-*Last updated: 2026-11-08 after the phase 1 verification ticked ARCH-04 and NOED-05*
+*Last updated: 2026-11-08 after DEC-OWN-11 (only the native routes stay)*

@@ -105,7 +105,8 @@ describe("original footprint support evidence", () => {
     expect(moved.blocked).toBe(false); expect(moved.position).toEqual({ x: 0, y: .25, z: 0 });
     expect(moved.contact?.queryPosition).toEqual(zero); expect(moved.contact?.controllingSample).toBe(1);
     source(moved.contact!.samples[0]!, terrain); source(moved.contact!.samples[1]!, peripheral);
-    expect(navigation.groundContact!({ x: 0, y: .25, z: 0 })).toBeNull();
+    const raisedCenterReachingUpperSlabWhileOtherSamplesStayLow = { x: 0, y: .25, z: 0 };
+    expect(navigation.groundContact!(raisedCenterReachingUpperSlabWhileOtherSamplesStayLow)).toBeNull();
     const withoutUpperSlab = createWorldNavigation({ terrainMeshes: [terrain], obstacleMeshes: () => [peripheral], origin: from, capsule: { radius: .1, height: .2 } });
     expect(contact(withoutUpperSlab, { x: 0, y: .25, z: 0 }).position).toEqual({ x: 0, y: .25, z: 0 });
   });
@@ -142,7 +143,7 @@ describe("accepted navigation substeps", () => {
     for (const sample of moved.contact!.samples) source(sample, left);
   });
 
-  it("omits contact for invalid, unsupported, unready or overlong moves", () => {
+  it("omits contact for invalid, unsupported or overlong moves", () => {
     const { floor, mesh } = fixture(), terrain = floor("terrain", -3, 3, -3, 3, 0);
     const navigation = createWorldNavigation({ terrainMeshes: [terrain], obstacleMeshes: () => [], origin: zero });
     for (const point of [{ x: NaN, y: 0, z: 0 }, { x: 0, y: Infinity, z: 0 }, { x: 1e7, y: 0, z: 0 }]) {
@@ -151,8 +152,6 @@ describe("accepted navigation substeps", () => {
     expect(navigation.move(zero, { x: 100, y: 0, z: 0 })).toEqual({ position: zero, blocked: true });
     const empty = createWorldNavigation({ terrainMeshes: [], obstacleMeshes: () => [], origin: zero });
     expect(empty.groundContact!(zero)).toBeNull(); expect(empty.move(zero, { x: .2, y: 0, z: 0 })).toEqual({ position: zero, blocked: true });
-    const unready = createWorldNavigation({ terrainMeshes: [terrain], obstacleMeshes: () => [], origin: zero, isReady: () => false });
-    expect(unready.groundContact!(zero)).toBeNull(); expect(unready.move(zero, { x: .2, y: 0, z: 0 })).toEqual({ position: zero, blocked: true });
     const steep = mesh("steep", [-2, -4, -2, -2, -4, 2, 2, 4, 2, 2, 4, -2]);
     expect(createWorldNavigation({ terrainMeshes: [steep], obstacleMeshes: () => [], origin: zero }).groundContact!(zero)).toBeNull();
   });

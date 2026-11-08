@@ -1,7 +1,3 @@
-/** Bounded hardware WebGPU development measurement; never final acceptance.
- * Serves built dist through in-process HTTPS fulfillment, without a listener.
- * No recordings, per-frame snapshots, CPU profiler or screenshots in samples.
- */
 import { chromium } from '@playwright/test';
 import { readFile, writeFile, mkdir, realpath } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
@@ -96,7 +92,7 @@ try {
     });
     try {
       const began=performance.now();
-      await page.goto(`${origin}/?world=interlude${variant==='authored'?'&authored=1':''}`,{waitUntil:'domcontentloaded'});
+      await page.goto(`${origin}/${variant==='authored'?'?authored=1':''}`,{waitUntil:'domcontentloaded'});
       await page.waitForFunction(()=>document.body.dataset.worldState==='ready'&&!!window.__nativeSlice,null,{timeout:240000});
       await page.locator('#loading').waitFor({state:'detached',timeout:240000});
       receipt.loadReadyMs=performance.now()-began;
@@ -111,14 +107,12 @@ try {
       const native=receipt.ready.native;
       check(native.world?.modelCount===62&&native.world?.placementCount===157&&native.world.texturesReady&&!native.worldFailure,'World scope/readiness changed');
       check(native.nativeSky?.meshes===3&&native.nativeSky.texturesReady&&!native.skyFailure,'Sky missing');
-      check(native.entities.length===2&&native.entities.every(e=>!e.isFallback),'Two native actors missing');
-      // Registered sounds = action cues + footstep notifies + optional stepsound/combat bundles
-      // (each optional bundle may fail without failing the world); audio must still be locked.
-      check(native.nativeAudio.state==='locked'&&native.nativeAudio.locked!==false&&native.nativeAudio.registered>=9,'Audio preview changed');
+      check(native.entities.length===2&&native.entities.every(e=>e.hasNativeModel),'Two native actors missing');
+      const minimumRegisteredSoundsWithoutOptionalBundles=9;
+      check(native.nativeAudio.state==='locked'&&native.nativeAudio.locked!==false&&native.nativeAudio.registered>=minimumRegisteredSoundsWithoutOptionalBundles,'Audio preview changed');
       check(native.nativeAudio.stepSounds&&'failure'in native.nativeAudio.stepSounds&&'combatFailure'in native.nativeAudio&&native.nativeAudio.worldAudio,'Optional audio diagnostics missing');
-      // The trusted clicks below would unlock audio (decodes, music and ambience
-      // fetches) mid-capture; this scenario measures the silent world.
-      await page.evaluate(()=>window.__nativeSlice.setWorldAudioEnabled?.(false));
+      const silenceWorldAudioBeforeTrustedClicksUnlockIt=()=>window.__nativeSlice.setWorldAudioEnabled?.(false);
+      await page.evaluate(silenceWorldAudioBeforeTrustedClicksUnlockIt);
       check(!receipt.requests.some(r=>r.url.includes('/worldPerformanceProbe-')),'Performance module loaded before explicit request');
       if(view==='wide'){
         await page.getByTestId('dev-sheet-toggle').click();
@@ -139,8 +133,8 @@ try {
       },{view});
       receipt.scenarioSha256=sha(Buffer.from(JSON.stringify(receipt.scenario)));
       await page.screenshot({path:join(output,`${variant}-before.png`)});
-      // Screenshots and diagnostics are settled before recording any sample.
-      await page.waitForTimeout(1000);
+      const settleScreenshotAndDiagnosticsBeforeSamplingMs=1000;
+      await page.waitForTimeout(settleScreenshotAndDiagnosticsBeforeSamplingMs);
       const cdp=await context.newCDPSession(page);await cdp.send('Performance.enable');
       for(let repetition=1;repetition<=repetitions;repetition++){
         const beforeMetrics=await cdp.send('Performance.getMetrics'),requestsBefore=receipt.requests.length;

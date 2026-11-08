@@ -39,8 +39,10 @@ describe("sandbox NPC presentation through the catalog index", () => {
       const root = new TransformNode(`entity:${entity.id}`, visualScene);
       MeshBuilder.CreateBox(`${entity.id}-body`, {}, visualScene).parent = root;
       const animation = new CharacterAnimator({ setState() {}, update() {}, dispose() {} });
-      const visual: CharacterVisual = { root, animation, isFallback: false, modelId: entity.appearanceId ?? null,
-        bounds: { minimum: Vector3.Zero(), maximum: Vector3.One(), labelHeight: 1, pickingHeight: .5, selectionRadius: .5 },
+      const visual: CharacterVisual = { root, animation, hasNativeModel: true, modelId: entity.appearanceId ?? null,
+        bounds: { minimum: Vector3.Zero(), maximum: Vector3.One(), labelHeight: 1, selectionRadius: .5 },
+        ready: Promise.resolve(), groundClearance: 0, forwardDirection: null,
+        attachmentSnapshot: () => [], attachmentAnchor: () => null, sourceClock: () => null, setEntity() {},
         dispose() { animation.dispose(); root.dispose(); } };
       return visual;
     });
@@ -65,7 +67,7 @@ describe("sandbox NPC presentation through the catalog index", () => {
     expect(nativeFactory).not.toHaveBeenCalled();
     expect(visual.root.getChildMeshes()).toHaveLength(0);
     expect(visual.missingAssetDiagnostic).toBe("npc:12345 not in catalog");
-    expect(visual.isFallback).toBe(false);
+    expect(visual.hasNativeModel).toBe(false);
     expect(visual.modelId).toBeNull();
     visual.dispose();
     expect(visual.root.isDisposed()).toBe(true);
@@ -75,7 +77,7 @@ describe("sandbox NPC presentation through the catalog index", () => {
     const { registry, spawnNpc, labelOf } = registryWithSandboxFactory(nativeFactoryDouble());
     spawnNpc(12345, 1);
     const row = registry.snapshot().find(entity => entity.id === "npc-12345-1");
-    expect(row).toMatchObject({ meshCount: 0, missingAssetDiagnostic: "npc:12345 not in catalog", isFallback: false, modelId: null });
+    expect(row).toMatchObject({ meshCount: 0, missingAssetDiagnostic: "npc:12345 not in catalog", hasNativeModel: false, modelId: null });
     const diagnostic = labelOf("npc-12345-1").querySelector(".entity-diagnostic")!;
     expect(diagnostic.hidden).toBe(false);
     expect(diagnostic.textContent).toBe("npc:12345 not in catalog");
@@ -118,9 +120,10 @@ describe("sandbox NPC presentation through the catalog index", () => {
     visual.dispose();
   });
 
-  it("builds a marker that holds no ready promise, so a later spawn never re-blocks the startup barrier", async () => {
+  it("builds a marker whose ready promise is already settled, so a later spawn never re-blocks the startup barrier", async () => {
     const marker = createMissingAssetMarkerVisual(scene, createSpawnedNpcEntity(7, 1, { x: 0, y: 0, z: 0 }), "npc:7 not in catalog");
-    expect(marker.ready).toBeUndefined();
+    const settlement = await Promise.race([marker.ready.then(() => "settled"), Promise.resolve().then(() => "pending")]);
+    expect(settlement).toBe("settled");
     const { registry, spawnNpc } = registryWithSandboxFactory(nativeFactoryDouble());
     await registry.whenReady();
     spawnNpc(12345, 1);

@@ -29,7 +29,7 @@ for (const { name, options } of loadingPanelViewports) {
         await route.fulfill({ response });
       });
       try {
-        await page.goto("/?world=interlude", { waitUntil: "domcontentloaded" });
+        await page.goto("/", { waitUntil: "domcontentloaded" });
         await expect(page.locator("#loading-detail")).toHaveText("Preparing native terrain and scenery…", { timeout: 90_000 });
         await expect(page.locator("#loading")).toHaveAttribute("data-stage", "assets");
         await expect(page.locator("[data-loading-step='assets']")).toHaveAttribute("aria-current", "step");
@@ -64,7 +64,7 @@ test.describe("module download failure on a landscape phone", () => {
       if (blockClient) await route.fulfill({ status: 503, contentType: "text/javascript", body: "" });
       else await route.continue();
     });
-    await page.goto("/?world=interlude", { waitUntil: "domcontentloaded" });
+    await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("alert")).toContainText("game client could not be downloaded");
     await expect(page.getByRole("progressbar")).toHaveCount(0);
     await expect(page.locator("#loading-pun")).toBeHidden();

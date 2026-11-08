@@ -111,11 +111,11 @@ function errorsFor(page: Page) {
   return errors;
 }
 async function ready(page: Page, sandbox: SandboxState) {
-  await page.goto("/?world=interlude");
+  await page.goto("/");
   await expect(page.locator("#loading")).toHaveCount(0, { timeout: 120_000 });
   await expect(page.locator("#canvas")).toBeVisible();
   await expect(page.getByTestId("entity-count")).toHaveText("2", { timeout: 120_000 });
-  await expect.poll(async () => (await read(page)).entities.filter(item => !item.isFallback).length, { timeout: 90_000 }).toBe(2);
+  await expect.poll(async () => (await read(page)).entities.filter(item => item.hasNativeModel).length, { timeout: 90_000 }).toBe(2);
   await waitForEquipment(page, sandbox.settings.leatherShirt);
   await expect.poll(async () => (await entity(page)).playback?.activeClip).toBe(sandbox.clips.idle);
   const state = await read(page);
@@ -286,7 +286,7 @@ test("missing native catalog entries keep the world concealed and offer a retry"
       await route.fulfill({ contentType: "application/json", body: JSON.stringify({ schemaVersion: 1, models: [] }) });
     } else await route.continue();
   });
-  await page.goto("/?world=interlude");
+  await page.goto("/");
   await expect(page.getByRole("alert")).toContainText(/native/i, { timeout: 90_000 });
   await expect(page.locator("#loading")).toHaveAttribute("data-state", "error");
   await expect(page.getByRole("button", { name: "Reload and retry" })).toBeVisible();
@@ -302,7 +302,7 @@ test("missing native catalog entries keep the world concealed and offer a retry"
     await expect(page.getByTestId("entity-count")).toHaveText("2");
     const recovered = await read(page);
     expect(recovered.entities).toHaveLength(2);
-    expect(recovered.entities.every(item => !item.isFallback)).toBe(true);
+    expect(recovered.entities.every(item => item.hasNativeModel)).toBe(true);
     expect(recovered.nativeTerrain).toBe("source-section-loaded");
     expect(recovered.worldFailure).toBeNull();
   }

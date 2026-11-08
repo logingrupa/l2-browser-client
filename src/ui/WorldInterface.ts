@@ -3,7 +3,7 @@ import type { GameWorldAdapter } from "../world/GameWorldAdapter";
 import type { WorldCommand } from "../world/worldTypes";
 import { worldStyles } from "./worldStyles";
 import { canvasHudInset } from "./canvasHudInset";
-import { DevSheet, type DevGroup } from "./devSheet/DevSheet";
+import { DevSheet } from "./devSheet/DevSheet";
 import type { DevSheetStorage } from "./devSheet/devSheetState";
 import { iconMarkup } from "./devSheet/icons";
 
@@ -19,13 +19,12 @@ export interface StatusOptions {
 }
 
 const soundGestureStates = new Set(["locked", "suspended", "interrupted", "unlocking"]);
-export const transientStatusSeconds = 4;
+const transientStatusSeconds = 4;
 
 export class WorldInterface {
   readonly root = document.createElement("section");
   readonly labels = document.createElement("div");
   readonly sheet: DevSheet;
-  readonly generalGroup: DevGroup;
   private readonly events = new AbortController();
   private isPaused = false;
   private elapsedSeconds = 0;
@@ -43,7 +42,7 @@ export class WorldInterface {
   private readonly resizeObserver: ResizeObserver | null;
 
   constructor(private readonly adapter: GameWorldAdapter, private readonly getRegistry: () => EntityRegistry, private readonly canvas: HTMLCanvasElement,
-    private readonly environment: { location: string; coordinateUnit: string } = { location: "Proving grounds", coordinateUnit: "m" },
+    private readonly environment: { location: string; coordinateUnit: string },
     options: WorldInterfaceOptions = {}) {
     this.stylesheet.textContent = worldStyles;
     document.head.append(this.stylesheet);
@@ -55,7 +54,7 @@ export class WorldInterface {
           <div class="player-emblem" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M24 5 39 14v17L24 43 9 31V14Z"/><path d="m16 32 8-20 8 20M19 26h10"/></svg></div>
           <div class="player-information"><strong><span data-testid="player-name">Entering…</span><span>You</span></strong><div class="player-health"><span></span><b>HP <output data-testid="player-health">—</output></b></div><small>Synthetic world</small></div>
         </div>
-        <div class="world-location"><h1>Proving grounds</h1><span>Client foundation · Phase 1</span></div>
+        <div class="world-location"><h1></h1><span></span></div>
       </header>
       <div class="target-panel" aria-live="polite"><span>Target</span><strong data-testid="target-name">No target</strong><small data-testid="target-health">Tap a character to select</small></div>
       <div class="world-bottom">
@@ -67,8 +66,6 @@ export class WorldInterface {
             <button type="button" data-action="attack" class="attack-action">${swordIcon}<span>Attack</span></button>
             <button type="button" data-action="run"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="15" cy="4" r="2"/><path d="m4 12 5-4 6 2 2 4h4M13 10l-3 6-5 4M10 16l6 2v4"/></svg><span>Run</span></button>
             <button type="button" data-action="idle"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4" r="2"/><path d="M12 7v9m-6-5 6-3 6 3m-6 5-4 6m4-6 4 6"/></svg><span>Idle</span></button>
-            <button type="button" data-action="teleport"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m13 2-8 11h6l-1 9 9-12h-7Z"/></svg><span>Teleport</span></button>
-            <button type="button" data-action="spawn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M4 12h16"/></svg><span>Spawn</span></button>
           </div>
           <button type="button" class="dev-sheet-toggle" data-testid="dev-sheet-toggle" aria-expanded="false" aria-label="Developer sheet">${iconMarkup("sheet")}<span aria-hidden="true">Dev</span></button>
         </div>
@@ -87,11 +84,10 @@ export class WorldInterface {
       bottomReserve: () => this.bottomReserve(),
       onLayoutChange: () => this.updateBounds(),
     });
-    this.generalGroup = this.sheet.section("general", { title: "General", icon: "general", order: 0 }).group("session", "Session", {
+    const sessionGroup = this.sheet.section("general", { title: "General", icon: "general", order: 0 }).group("session", "Session", {
       hint: "Attack, Run and Idle are animation demonstrations. Pause stops the synthetic simulation; camera controls and manual commands keep working.",
     });
-    this.generalGroup.element.classList.add("demo-controls-body");
-    this.generalGroup.element.innerHTML = `<div class="secondary-actions"><button type="button" data-action="pause">Pause</button><button type="button" data-action="despawn" disabled>Despawn target</button></div>
+    sessionGroup.element.innerHTML = `<div class="secondary-actions"><button type="button" data-action="pause">Pause</button><button type="button" data-action="despawn" disabled>Despawn target</button></div>
       <p class="dev-hud-help">Tap to target or move · drag to orbit · pinch or scroll to zoom.</p>`;
     this.sheet.describe(this.element(".dev-hud-help"), {
       title: "World controls",
@@ -138,8 +134,6 @@ export class WorldInterface {
     let command: WorldCommand;
     switch (action) {
       case "attack": case "run": case "idle": command = { type: "set-animation", animation: action }; break;
-      case "teleport": command = { type: "teleport-local" }; break;
-      case "spawn": command = { type: "spawn" }; break;
       case "despawn": {
         const selected = this.getRegistry().selectedEntityId;
         if (!selected) return;

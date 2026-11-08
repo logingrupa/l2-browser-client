@@ -20,7 +20,6 @@ export interface MeshNavigationOptions {
   readonly obstacleMeshes: () => readonly AbstractMesh[];
   readonly dynamicObstacleMeshes?: () => readonly AbstractMesh[];
   readonly origin: WorldPosition;
-  readonly isReady?: (from: WorldPosition, to: WorldPosition) => boolean;
 }
 const vector = (point: WorldPosition): Vector3 => new Vector3(point.x, point.y, point.z);
 const position = (point: Vector3): WorldPosition => ({ x: point.x, y: point.y, z: point.z });
@@ -210,7 +209,7 @@ export function createWorldNavigation(options: MeshNavigationOptions): WorldNavi
     return highest;
   }
   function grounded(point: WorldPosition, maxDrop = maxStep + skin): WorldGroundContact | null {
-    if (!finite(point) || options.isReady?.(point, point) === false) return null;
+    if (!finite(point)) return null;
     let highest = -Infinity, lowest = Infinity, controllingSample = 0;
     const samples: WorldSupportSample[] = [];
     for (const offset of footprint) {
@@ -225,7 +224,6 @@ export function createWorldNavigation(options: MeshNavigationOptions): WorldNavi
       position: { x: point.x, y: highest, z: point.z }, samples, controllingSample } : null;
   }
   function sweep(from: WorldPosition, to: WorldPosition): boolean {
-    if (options.isReady?.(from, to) === false) return false;
     const midpoint = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2, z: (from.z + to.z) / 2 };
     const reach = Math.hypot(to.x - from.x, to.z - from.z) / 2 + radius + skin;
     const triangles: Triangle[] = [];

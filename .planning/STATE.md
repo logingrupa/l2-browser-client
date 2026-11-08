@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 Phase: 02 (Stage A breadth) - EXECUTING
 Plan: 02-01 complete, 3 of 55 plans executed
 Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-08 - Plan 02-01 store paths and output guard complete
+Last activity: 2026-11-08 - Merged native-world-slice (DEC-OWN-11): only the native routes stay, `/` opens the code-built native sandbox, the `world` query parameter, Talking Island route, courtyard demo and `MockWorldAdapter` are gone, native tools default to `.assets/native-tools/`
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -77,7 +77,7 @@ Progress: [░░░░░░░░░░] 0%
 
 ### Decisions
 
-Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..10 and DEC-PORT-1..3.
+Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..11 and DEC-PORT-1..3.
 
 - [Roadmap]: Breadth-first; REQ-work-order-v2-depth-first is superseded (DEC-OWN-1).
 - [Roadmap]: Phase 2 is organised as lanes L1 world, L2 actors, L3 data + UI, plus integration; UI runs in parallel from the start (DEC-OWN-6).
@@ -126,9 +126,11 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..10 and DEC-PORT-1..3.
 - [Phase 02]: Plan 02-01: scripts/native_store/store_paths.py owns the path helpers and require_converter_output; Converter.__init__ and native_batch.prepare call it first, proven against real NTFS junctions (OVERNIGHT-DECISIONS rows 71-76)
 - [Phase 02]: Plan 02-01: converter outputs live only in a dedicated folder under artifacts/; the export scripts pass their ROOT to Converter; scratch/ converter caches are refused (rows 74 and 79)
 - [Phase 02]: Plan 02-01: measured red baseline is the 2 nativeNpcProfiles cases plus at most one load-dependent 5000 ms timeout; no timeout or worker count changed (row 77)
+- [Merge]: native-world-slice merged (DEC-OWN-11): `/` opens the code-built native sandbox, the `world` parameter, Talking Island route, courtyard demo, `MockWorldAdapter` and procedural characters are gone, and `NativeSliceAdapter` is the only adapter (OVERNIGHT-DECISIONS row 80)
 
 ### Pending Todos
 
+- Unexecuted Phase 2 plans written before the merge still name removed code: 02-20 and 02-41 build their tracers on `MockWorldAdapter` (use `NativeSliceAdapter`), and 02-23 opens `/?world=interlude&map=20_21` (use `/?map=20_21`).
 - Commit the main checkout's uncommitted code before lanes start (lanes branch from committed code only). Planning files are committed (1b1b0b7).
 
 ### Blockers/Concerns

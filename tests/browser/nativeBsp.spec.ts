@@ -18,7 +18,7 @@ test("qualified BSP floor supports stairs and blocks building walls on the sourc
   test.skip(!existsSync(resolve(actor940ContactPin.path)), "Requires the pinned Actor940 contact oracle under artifacts/.");
   const contactOracle = readActor940ContactOracle(resolve(actor940ContactPin.path));
   const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
-  await page.goto("/?world=interlude");
+  await page.goto("/");
   await expect(page.locator("#loading")).toHaveCount(0, { timeout: 120_000 });
   const initial = await player(page);
   const profile = await page.evaluate(() => window.__nativeSlice!.snapshot().playerProfile);
@@ -29,7 +29,7 @@ test("qualified BSP floor supports stairs and blocks building walls on the sourc
   expect(initial.authoritativePosition.x).toBeGreaterThan(103.8);
   const entered = await move(page, 98, -34.26, 950.15);
   expect(entered.x).toBeCloseTo(98, 5); expect(entered.z).toBeCloseTo(950.15, 5);
-  expect(entered.y).toBeCloseTo(-34.26, 5); expect((await player(page)).isFallback).toBe(false);
+  expect(entered.y).toBeCloseTo(-34.26, 5); expect((await player(page)).hasNativeModel).toBe(true);
   const blocked = await move(page, 98, -34.55, 942);
   expect(blocked.z).toBeGreaterThan(944.5); expect(blocked.z).toBeLessThan(950);
   const contact = actor940ContactExpectation(contactOracle, blocked, profile.collisionRadius / profile.sourceUnitsPerMetre);
@@ -51,8 +51,8 @@ test("qualified BSP floor supports stairs and blocks building walls on the sourc
 test("missing BSP geometry prevents revealing an incomplete source world", async ({ page }) => {
   test.skip(!staged, "Scoped BSP source bundle must be staged."); test.setTimeout(180_000);
   await page.route("**/map-section-bsp/bsp-floor.glb", route => route.fulfill({ status: 404, body: "missing required source slab" }));
-  await page.goto("/?world=interlude");
+  await page.goto("/");
   await expect(page.locator("#loading")).toContainText("404", { timeout: 120_000 });
-  await expect(page.locator("#world-interface")).toBeHidden();
+  await expect(page.locator(".world-interface")).toBeHidden();
   expect(await page.evaluate(() => window.__nativeSlice === undefined)).toBe(true);
 });

@@ -74,5 +74,6 @@ it(`compiles the scene script with the CJS bundle contract of ${editorCompileCon
   const script = result.outputFiles.find(file => file.path.endsWith("script.cjs"))?.text;
   expect(script).toContain("NativeParityScript");
   expect(script).toContain("scripts/nativeParity.ts");
+  expect(script).not.toContain("scripts/world.ts");
   expect(script).toContain("module.exports");
 });

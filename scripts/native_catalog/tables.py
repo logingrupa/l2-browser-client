@@ -9,8 +9,8 @@ import zlib
 from .ue2 import FormatError, Reader
 from reference_client_guard import require_reference_client
 
-SCHEMA_ROOT = Path(os.environ.get('L2_SCHEMA_ROOT', 'C:/laragon/www/lineagen/.assets/skill-assets/work/native/tools/l2-editor-f2a2cc16120dd8ffabd60255aaad59fa4d6b6f53/dat_engine/data/structure'))
-CRYPTO_SOURCE = Path(os.environ.get('L2_CRYPTO_SOURCE', 'E:/linegen/tools/open-l2encdec-source/src/l2encdec.cpp'))
+SCHEMA_ROOT = Path(os.environ.get('L2_SCHEMA_ROOT', 'C:/laragon/www/l2-browser-client/.assets/native-tools/dat-schema/dat_engine/data/structure'))
+CRYPTO_SOURCE = Path(os.environ.get('L2_CRYPTO_SOURCE', 'C:/laragon/www/l2-browser-client/.assets/native-tools/open-l2encdec/src/l2encdec.cpp'))
 SCHEMA_HASHES = {
     '06_interlude.xml': '5df8b7af1b510daa26008fa4fe91e100253f40161f1f1f9560e3569d539cdef6',
     'dats/skillgrp.xml': 'ad5be4b6daa6c942f1f238de3d77b92b828c97d2d45a4360e4159db199992da1',

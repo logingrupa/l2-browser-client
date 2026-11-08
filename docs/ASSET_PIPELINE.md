@@ -8,7 +8,7 @@ How client files become `.l2asset` packages and catalog entries ([OUTPUT_CONTRAC
 - `scripts/native_assets.py`: `pnpm assets:convert`, `assets:batch <recipe>`, `assets:verify <archive>`. Recipes are JSON request arrays: `materials: ["0=Package.Group.Material"]` binds slots, an assembly takes up to 16 `parts`, `sourceBinding` pins a DAT hash and fields.
 - `pnpm assets:pipeline` is optional. Exit 0 complete, 2 partial, 1 failure; none means native acceptance.
 - `assets:convert` and `assets:effects` default to `E:/lineage2-client`, where `scripts/reference_client_guard.py` reads only files the tree lock (`recipes/reference-client-tree.lock.json`) classes `equal`.
-- UModel build1590 is SHA-256 pinned (`13502e5a...364a0`). `--umodel` and `L2_UMODEL`, `L2_UELIB`, `L2_POWERSHELL`, `L2_SCHEMA_ROOT`, `L2_CRYPTO_SOURCE` move tools; pinned hashes still apply.
+- The pinned tools live in the main checkout's ignored `.assets/native-tools/` (`umodel`, `ue-explorer`, `dat-schema`, `open-l2encdec`), and lanes use them through absolute defaults. UModel build1590 is SHA-256 pinned (`13502e5a...364a0`). `--umodel` and `L2_UMODEL`, `L2_UELIB`, `L2_POWERSHELL`, `L2_SCHEMA_ROOT`, `L2_CRYPTO_SOURCE` move tools; pinned hashes still apply.
 - No height normalization, ground fitting, root-drift removal or weight normalization (CONV-02). An unbound material slot is a named magenta diagnostic; no texture is guessed by name.
 - `stage_native_runtime.py` (`assets:migrate --stage-runtime`) replaces the catalog ([NATIVE_MIGRATION.md](NATIVE_MIGRATION.md)). Other `stage_native_*.py` stagers take the expected catalog hash and add only their records. Store writers run only in the main checkout (INT-01).
 

@@ -19,7 +19,7 @@ describe("authored environment routing", () => {
   let engine: NullEngine;
   beforeEach(() => {
     engine = new NullEngine();
-    vi.stubGlobal("window", Object.assign(new EventTarget(), { location: { search: "?world=interlude&authored=1" } }));
+    vi.stubGlobal("window", Object.assign(new EventTarget(), { location: { search: "?authored=1" } }));
     vi.stubGlobal("document", Object.assign(new EventTarget(), { title: "Initial title" }));
     boundary.startRuntime.mockReset();
     boundary.loadEditorScene.mockReset();

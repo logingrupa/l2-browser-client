@@ -154,7 +154,7 @@ describe("Babylon Inspector query flag", () => {
     consoleError.mockRestore();
   });
 
-  it.each(["", "?inspect=0", "?inspect=true", "?world=interlude"])("does not open the Inspector for the query %j", async search => {
+  it.each(["", "?inspect=0", "?inspect=true", "?character=human-male-fighter"])("does not open the Inspector for the query %j", async search => {
     location.search = search;
     await app.init();
     expect(boundary.openInspector).not.toHaveBeenCalled();

@@ -4,10 +4,9 @@ How the browser runtime builds scenes, reads converted assets and takes gameplay
 
 ## Now
 
-- `src/scene/loadEnvironment.ts` picks the route. The `/` and native scenes are built in code from `presentationConfiguration.ts`, labelled "presentation, formerly Editor-authored, not L2".
-  - `/`: reference Talking Island (`loadImportedWorld`) with `MockWorldAdapter` via `createWorldRuntime`, or "Reference world not staged".
-  - `/?world=interlude`: `startNativeSandboxRuntime` runs `createNativeSliceRuntime` with `NativeSliceAdapter`; `loadNativeSection` loads the section from the staged catalog. `&character=<id>` picks a staged player profile.
-  - `&authored=1`: optional Editor export, only through a dynamic import of `authoredNativeWorld.ts`.
+- `src/scene/loadEnvironment.ts` serves only the native sandbox (DEC-OWN-11). Its scene is built in code from `presentationConfiguration.ts`, labelled "presentation, formerly Editor-authored, not L2".
+  - `/`: `startNativeSandboxRuntime` runs `createNativeSliceRuntime` with `NativeSliceAdapter`; `loadNativeSection` loads the section from the staged catalog. `?character=<id>` picks a staged player profile.
+  - `?authored=1`: the optional Editor export `public/scene/native-world.babylon`, only through a dynamic import of `authoredNativeWorld.ts`.
 - `pnpm dev` and `pnpm build` run no Editor step. `tests/unit/defaultEntryImportGraph.test.ts` fails if `src/main.ts` statically reaches Editor code.
 - WebGPU only; engine setup in [RENDERING.md](RENDERING.md).
 - The `/l2/` store is read only through `readNativeCatalog` (`/l2/catalog.json`); `buildNativeCatalogIndex` keys it by L2 ID. Contract: [OUTPUT_CONTRACT.md](OUTPUT_CONTRACT.md).
@@ -35,4 +34,4 @@ How the browser runtime builds scenes, reads converted assets and takes gameplay
 
 ## Pointers
 
-`src/world/`, `src/runtime/`, `src/scene/`, `src/scene/world/`, `src/assets/native/`, `src/audio/WorldAudioMixer.ts`. `window.__worldDiagnostics` is a read-only snapshot on `/`. Related: [RENDERING.md](RENDERING.md), [NATIVE_AUDIO.md](NATIVE_AUDIO.md).
+`src/world/`, `src/runtime/`, `src/scene/`, `src/scene/world/`, `src/assets/native/`, `src/audio/WorldAudioMixer.ts`. Related: [RENDERING.md](RENDERING.md), [NATIVE_AUDIO.md](NATIVE_AUDIO.md).

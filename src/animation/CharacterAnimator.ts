@@ -12,10 +12,8 @@ export interface CharacterPlayback {
   readonly frame: number;
   readonly looping: boolean;
   readonly playing: boolean;
-  readonly weights: readonly { readonly name: string; readonly weight: number }[];
 }
 
-/** Presentation follows the requested state; it never changes world state. */
 export class CharacterAnimator {
   private currentState: AnimationState = "idle";
   private isDisposed = false;

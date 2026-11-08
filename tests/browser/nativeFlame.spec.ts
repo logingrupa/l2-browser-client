@@ -17,11 +17,11 @@ const observe = (page: Page) => {
   return { errors };
 };
 async function ready(page: Page) {
-  await page.goto("/?world=interlude");
+  await page.goto("/");
   await expect(page.locator("#loading")).toHaveCount(0, { timeout: 120_000 });
   await expect(page.locator("#canvas")).toBeVisible();
   await expect(page.getByTestId("entity-count")).toHaveText("2", { timeout: 120_000 });
-  await expect.poll(async () => (await read(page)).entities.filter(actor => !actor.isFallback).length, { timeout: 90_000 }).toBe(2);
+  await expect.poll(async () => (await read(page)).entities.filter(actor => actor.hasNativeModel).length, { timeout: 90_000 }).toBe(2);
   const initial = await read(page);
   expect(initial.worldFailure).toBeNull(); expect(initial.flameFailure).toBeNull();
   expect(initial.nativeFlames).toMatchObject({ status: "ready", nativeParity: "unverified",

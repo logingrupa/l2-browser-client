@@ -1,6 +1,6 @@
 export const privatePreviewHostname = 'l2.kingdom.lv';
 export const privatePreviewOrigin = `https://${privatePreviewHostname}`;
-export const privatePreviewWorldPath = '/?world=interlude';
+export const privatePreviewWorldPath = '/';
 export const privatePreviewCatalogPath = '/l2/catalog.json';
 
 const sha256Pattern = /^[a-f0-9]{64}$/;

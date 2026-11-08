@@ -16,7 +16,7 @@ test("a failed hash-addressed section resource reports a retryable error instead
     failures++;
     await route.fulfill({ status: 502, contentType: "text/plain", body: "Intentional startup section failure" });
   });
-  await page.goto("/?world=interlude");
+  await page.goto("/");
   await expect(page.getByRole("alert")).toContainText("Native section resource returned HTTP 502", { timeout: 90_000 });
   await expect(page.getByRole("button", { name: "Reload and retry" })).toBeVisible();
   expect(failures).toBeGreaterThan(0);
@@ -30,7 +30,7 @@ test("a missing native catalog reports that the native asset store is not staged
   const pageErrors: string[] = [];
   page.on("pageerror", error => pageErrors.push(error.message));
   await page.route(url => url.pathname === "/l2/catalog.json", route => route.fulfill({ status: 404, contentType: "text/plain", body: "" }));
-  await page.goto("/?world=interlude");
+  await page.goto("/");
   await expect(page.locator("#loading-error")).toContainText("Native asset store not staged", { timeout: 90_000 });
   await expect(page.getByRole("button", { name: "Reload and retry" })).toBeVisible();
   expect(await page.evaluate(() => window.__nativeSlice === undefined)).toBe(true);

@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 const staged = existsSync(resolve("public/l2/catalog.json"));
 
 async function openMovementTab(page: Page, characterId: string) {
-  await page.goto(`/?world=interlude&character=${characterId}`);
+  await page.goto(`/?character=${characterId}`);
   await expect(page.locator('body[data-world-state="ready"]')).toHaveCount(1, { timeout: 240_000 });
   await page.getByTestId("dev-sheet-toggle").click();
   await page.getByTestId("dev-tab-movement").click();
