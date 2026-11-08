@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 1
 current_phase_name: Foundations
 status: executing
-stopped_at: Completed 01-03-PLAN.md
-last_updated: "2026-11-08T05:49:16.968Z"
+stopped_at: Completed 01-04-PLAN.md
+last_updated: "2026-11-08T06:06:57.096Z"
 last_activity: 2026-11-08
 last_activity_desc: Phase 1 execution started
-state_head: f9b0ca4d4950b5a99af0dfbe37ede6ba636e7623
+state_head: 96181452f66fe9693115ca6329f48fe80ba3115d
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 17
-  completed_plans: 6
+  completed_plans: 7
   percent: 0
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 1 (Foundations) — EXECUTING
-Plan: 7 of 17
+Plan: 8 of 17
 Status: Ready to execute
 Last activity: 2026-11-08 — Phase 1 execution started
 
@@ -58,6 +58,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P01 | 8 min | 2 tasks | 26 files |
 | Phase 01 P13 | 9 min | 2 tasks | 8 files |
 | Phase 01 P03 | 13 min | 3 tasks | 16 files |
+| Phase 01 P04 | 15min | 2 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,8 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..8 and DEC-PORT-1..3.
 - [Phase 01]: 01-13: dat inventory counts are decode list lengths or quoted Elbera evidence, else unknown; no UModel conversion on E: until plan 01-12
 - [Phase 01]: Plan 01-03: item:<id> is one converted record listing every backing equipment model and player profile; section and mover loaders return null when the native store is not staged (OVERNIGHT-DECISIONS row 26)
 - [Phase 01]: Plan 01-03: readNativeCatalog is the only /l2/catalog.json reader (memoised per AbortSignal); L2-ID keys npc:, item:, skill:<id>:<level>, window:, tile:<XX_YY> resolve through buildNativeCatalogIndex
+- [Phase 01]: 01-04: native route builds scene, camera, lights and fog in code from presentationConfiguration (saved Editor values, labelled presentation, formerly Editor-authored, not L2); authored=1 only via dynamic import of authoredNativeWorld.ts
+- [Phase 01]: 01-04: NativeParityScript field defaults read nativeSandboxConfiguration; parity test pins both configs to the saved Editor JSON
 
 ### Pending Todos
 
@@ -112,6 +115,6 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..8 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-08T05:49:16.910Z
-Stopped at: Completed 01-03-PLAN.md
+Last session: 2026-11-08T06:06:57.036Z
+Stopped at: Completed 01-04-PLAN.md
 Resume file: None

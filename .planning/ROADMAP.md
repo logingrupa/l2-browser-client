@@ -45,14 +45,14 @@ GSD phase = PORT_SCOPE phase + 1 for phases 1 to 4. Phases 5 and 6 have no PORT_
   4. A contract test fails if the five `GameWorldAdapter` methods change, and the written output contract says how `asset.json` records units and handedness per route and how the catalog lists assets, with hash-pinned fixtures that run without the private client.
   5. A new lane can start on a `<part>/<slug>` branch and knows where its STATUS line, folder ownership (`.planning/lanes.json`) and `docs/parts/<part>/EVIDENCE.md` live.
   6. `pnpm dev` and `pnpm build` run without `babylonjs-editor-cli pack` or the Editor repair scripts (they sit in an optional `pnpm generate:editor`), `?world=interlude` loads the native world straight from the `.l2asset` catalog with no Editor scene, and `?inspect=1` opens Babylon Inspector, lazy-loaded.
-**Plans**: 6/17 plans executed in 6 waves
+**Plans**: 7/17 plans executed in 6 waves
 
 Plans:
 **Wave 1**
 - [x] 01-01-PLAN.md - Lane process files: lanes.json, ownership check, STATUS, DECISIONS, one EVIDENCE.md per part (FOUND-01)
 - [x] 01-02-PLAN.md - Reference tree hash tooling and the E: guard at the central read helpers (FOUND-03)
 - [x] 01-03-PLAN.md - One validated catalog reader and the L2-ID index (FOUND-02, SAND-01)
-- [ ] 01-04-PLAN.md - Native route scene built in code from typed config; authored=1 behind a dynamic import (NOED-01)
+- [x] 01-04-PLAN.md - Native route scene built in code from typed config; authored=1 behind a dynamic import (NOED-01)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 01-05-PLAN.md - Native runtime split, injected world source, presentation provenance on the sheet (NOED-01, ARCH-03)
@@ -148,7 +148,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 (Phase 5 may start b
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundations | 6/17 | In Progress | - |
+| 1. Foundations | 7/17 | In Progress | - |
 | 2. Stage A breadth | 0/TBD | Not started | - |
 | 3. Stage A checks | 0/TBD | Not started | - |
 | 4. Stage B adapter | 0/TBD | Not started | - |
