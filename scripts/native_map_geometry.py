@@ -22,6 +22,7 @@ import zipfile
 from native_assets_lib.gltf import json_bytes
 from native_catalog.ue2 import FormatError, Package, Reader
 from native_map import actor_properties, file_hash, property_value, safe_path, sha, verify_map, MapSources, static_mesh_request
+from reference_client_guard import require_reference_client
 
 REFERENCE_REPO = 'emmanuelgoldstein1337/UT2004_CMAKE'
 REFERENCE_COMMIT = 'deda0fb464371b661b616b4e58ff4d53f6f011f1'
@@ -33,14 +34,11 @@ REFERENCE_FILES = {
     'Engine/Inc/AActor.h': '66cee801be28d23fa21f26375603648c41c84a52e49dbce290b2f23325b6b2e5',
     'Core/Src/UnObj.cpp': '4aa6ad2216ab4ad83c8c2b957bb948fc05bfb3092fa0d1a5d07988f9bf0094b0',
 }
-# Declared before implementation; native units, not metres. No fitting to bounds.
 BOUND_TOLERANCE = 0.001
 UV_TOLERANCE = 0.00001
 MAX_DECLARED_STATIC_MODELS = 1024
 SOURCE_TO_GLTF = [.01, 0, 0, 0, 0, 0, .01, 0, 0, .01, 0, 0, 0, 0, 0, 1]
-# Only the retained 20_20 source/section/resource route has a qualified native
-# submission. Other terrain selections keep the existing inspection candidate.
-MASK_UV_SOURCE_SHA256 = '1beddad24c10a35a1b2e9151727a85158e3e01992299a6671de876645eb1f1e4'
+QUALIFIED_MASK_UV_SOURCE_SHA256 = '1beddad24c10a35a1b2e9151727a85158e3e01992299a6671de876645eb1f1e4'
 MASK_UV_LAYER_PAIRS = (
     ('T_texture.Texture.Base', 'T_texture.Texture.layer0'),
     ('t_oren.Obase_1', 'T_20_20.Height.20_20_BASE_C'),
@@ -89,13 +87,11 @@ def native_to_gltf(point):
 
 
 def coords_point(coords, point):
-    """FVector::TransformPointBy: subtract Origin, then dot each axis."""
     delta = [f32(a-b) for a, b in zip(point, coords['origin'])]
     return [f32(sum(f32(a*b) for a, b in zip(delta, axis))) for axis in coords['axes']]
 
 
 def calculated_coords(location, scale, width, height):
-    """ATerrainInfo::CalcCoords; actor DrawScale/Rotation are not used."""
     if any(v <= 0 for v in scale):
         raise FormatError('Unsupported non-positive terrain scale')
     origin = [f32(f32(-location[0]/scale[0]) + width//2),
@@ -166,7 +162,6 @@ def bit(words, width, x, y):
 
 
 def quad_triangles(a, b, c, d, turned, native_render_order=False):
-    """c=(x,y+1), d=(x+1,y+1); native Turned means the b--c diagonal."""
     faces = [(a, b, c), (c, b, d)] if turned else [(a, b, d), (a, d, c)]
     return [(a, c, b) for a, b, c in faces] if native_render_order else faces
 
@@ -199,12 +194,6 @@ def sector_oracle(native, points):
 
 
 def select_terrain_sectors(native, oracle, recipe):
-    """Select native sector origins, never resample or fit to cached Z bounds.
-
-    The legacy single-sector gate stays strict. Rectangles require a complete,
-    contiguous Cartesian grid and an explicit policy before retaining stale Z
-    bounds. A rectangle's bounds describe reconstructed original source points.
-    """
     if ('terrainSector' in recipe) == ('terrainSectorRectangle' in recipe):
         raise FormatError('Declare exactly one terrainSector or terrainSectorRectangle')
     policy = recipe.get('cachedSectorBoundsPolicy', 'require-all')
@@ -288,8 +277,6 @@ def validate_static_requests(requests, placements, recipe):
 
 
 def vertex_normal(points, words, width, height, x, y):
-    # Native GetVertexNormal sums both normalized faces of each of the four
-    # adjoining cells, including hidden cells; it is not an area-weighted sum.
     normals = []
     for cy in (y, y-1):
         for cx in (x, x-1):
@@ -323,9 +310,8 @@ def texture_uv(matrix, native_point):
 
 
 def qualified_mask_uv_rule(native, selected, package, source_path, layers):
-    """Select the observed submitted-coordinate rule, not a global UE2 policy."""
     if (source_path.replace('\\', '/').casefold() != 'maps/20_20.unr' or
-            package.source_hash != MASK_UV_SOURCE_SHA256 or
+            package.source_hash != QUALIFIED_MASK_UV_SOURCE_SHA256 or
             native['object'].casefold() != '20_20.terraininfo0' or
             (native['width'], native['height']) != (256, 256) or
             selected['offset'] != [64, 208] or selected['quads'] != [48, 47]):
@@ -362,7 +348,6 @@ def terrain_mask_uv(x, y, width, height, qualified_rule=None):
 
 
 def layer_sampling_source(layer, package, terrain_export, source_path):
-    """Keep title-specific sampling inputs as authored data, never a shader rule."""
     names = ('Scale', 'ToWorld', 'ToMaskmap', 'bUseAlpha')
     properties = []
     start, end = terrain_export['offset'], terrain_export['offset'] + terrain_export['size']
@@ -400,9 +385,6 @@ def layer_records(terrain, native, package, source_path):
         if not texture or not texture['object'] or not alpha or not alpha['object']:
             continue
         matrix = serialized_matrix(props)
-        # This case has XY, zero rotation and zero pan. Validate the serialized
-        # XY coefficients against CalcLayerTexCoords; preserve other cases as
-        # unsupported rather than substituting grid UVs.
         scale = [property_value(props, name) for name in ('UScale', 'VScale')]
         rot = property_value(props, 'LayerRotation')
         if property_value(props, 'TextureMapAxis') != 0 or property_value(props, 'TextureRotation') != 0 or rot != {'Pitch': 0, 'Yaw': 0, 'Roll': 0}:
@@ -486,7 +468,6 @@ def resolved_static_values(actor, evidence):
 
 
 def rotation_rows(rotation):
-    """UE2 FRotationMatrix with native 14-bit trig-table angle quantization."""
     def sine(value):
         index = (int(value) >> 2) & 16383
         return f32(math.sin(index*2*math.pi/16384))
@@ -497,7 +478,6 @@ def rotation_rows(rotation):
 
 
 def static_matrix(values):
-    """Native row-vector matrix: T(-PrePivot) * S(DrawScale3D*DrawScale) * R * T(Location)."""
     location, pivot, scale3 = (xyz(values[name]['value']) for name in ('Location', 'PrePivot', 'DrawScale3D'))
     uniform = values['DrawScale']['value']
     if not math.isfinite(uniform) or uniform == 0 or any(v == 0 for v in scale3):
@@ -509,12 +489,11 @@ def static_matrix(values):
 
 
 def gltf_placement(native_rows):
-    # Local meshes already use x,z,y and metres in existing UModel GLBs.
-    # Conjugate the native placement by that basis; do not scale them twice.
-    permutation = (0, 2, 1)
-    result = [[native_rows[permutation[i]][permutation[j]] for j in range(3)]+[0] for i in range(3)]
-    result.append([native_rows[3][axis]*.01 for axis in permutation]+[1])
-    return [v for row in result for v in row]  # native row-major == glTF transposed column-major
+    umodel_xzy_basis_permutation = (0, 2, 1)
+    result = [[native_rows[umodel_xzy_basis_permutation[i]][umodel_xzy_basis_permutation[j]] for j in range(3)]+[0] for i in range(3)]
+    result.append([native_rows[3][axis]*.01 for axis in umodel_xzy_basis_permutation]+[1])
+    native_row_major_as_gltf_column_major = [v for row in result for v in row]
+    return native_row_major_as_gltf_column_major
 
 
 class GltfBuilder:
@@ -807,7 +786,6 @@ def build_geometry(client, raw_output, recipe, output, defaults_cache=None):
 
 
 def reference_surface_candidate(manifest, points, maps, origins):
-    """Sample the original triangle at exact authored reference XY, not its Z."""
     native = manifest['nativeTerrain']
     region = manifest.get('selectedRegion', manifest.get('selectedSector'))
     ox, oy = region['offset']
@@ -953,12 +931,6 @@ def verify_section_runtime(client, raw_output, section_output, model_output, run
 
 
 def build_section_runtime(client, raw_output, section_output, model_output, runtime_output, umodel=None):
-    """Convert only the declared section, then write local runtime bindings.
-
-    Use sibling map-section/, map-section-models/, map-section-runtime/ names
-    under both ordinary and clean-build parents for path-independent receipts.
-    This deliberately does not stage anything into public/.
-    """
     from native_assets import Converter, UMODEL, UMODEL_SHA256, implementation_hash as converter_hash, verify_archive
     client, raw_output, section_output = Path(client).resolve(), Path(raw_output).resolve(), Path(section_output).resolve()
     model_output, runtime_output = Path(model_output).resolve(), Path(runtime_output).resolve()
@@ -1047,6 +1019,7 @@ def main():
     parser.add_argument('--runtime-output', type=Path, help='Runtime manifest output; requires --model-output')
     parser.add_argument('--verify', action='store_true')
     args = parser.parse_args()
+    require_reference_client(args.client)
     if args.verify:
         result = verify_geometry(args.client, args.map_output, args.output)
     else:

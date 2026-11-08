@@ -14,6 +14,7 @@ from native_assets import archive_bytes, verify_archive
 from native_assets_lib.gltf import json_bytes, safe_name
 from native_assets_lib.static_normals import TREE_PROOF_SHA256, restore_glb_static_normals
 from native_catalog.ue2 import Package
+from reference_client_guard import require_reference_client
 
 
 def sha(data):
@@ -26,6 +27,7 @@ def require(value, message):
 
 
 def derive(archive_path, archive_sha256, client, proof_path, output):
+    client_access = require_reference_client(client)
     archive_path, client, proof_path, output = (Path(path).resolve() for path in (archive_path, client, proof_path, output))
     require(not output.is_relative_to(client), 'Normal output must stay outside the source client')
     original = archive_path.read_bytes()
@@ -34,8 +36,7 @@ def derive(archive_path, archive_sha256, client, proof_path, output):
     proof_bytes = proof_path.read_bytes()
     require(sha(proof_bytes) == TREE_PROOF_SHA256, 'Unqualified native normal source proof')
     proof = json.loads(proof_bytes)
-    package_path = (client / safe_name(proof['source']['package'])).resolve()
-    require(package_path.is_relative_to(client), 'Native normal package escapes source client')
+    package_path = client_access.require_equal_file(safe_name(proof['source']['package']))
     source_bytes = package_path.read_bytes()
     package = Package(source_bytes, package_path.name)
     matches = [item for item in package.exports if item['exportIndex'] == proof['source']['exportIndex']]
@@ -50,8 +51,7 @@ def derive(archive_path, archive_sha256, client, proof_path, output):
               'sourceProof': {'sha256': sha(proof_bytes), 'bytes': len(proof_bytes)},
               'dependencies': {}}
     for name, expected in provenance['dependencies'].items():
-        path = (client / safe_name(name)).resolve()
-        require(path.is_relative_to(client), 'Native normal dependency escapes source client')
+        path = client_access.require_equal_file(safe_name(name))
         payload = path.read_bytes()
         require(sha(payload) == expected, 'Native normal dependency changed: ' + name)
         inputs['dependencies'][name] = {'sha256': expected, 'bytes': len(payload)}
@@ -99,7 +99,7 @@ def derive(archive_path, archive_sha256, client, proof_path, output):
     require(archive_path.read_bytes() == original and proof_path.read_bytes() == proof_bytes,
             'Normal-restoration input changed during derivation')
     for name, identity in inputs['dependencies'].items():
-        require(sha((client / name).read_bytes()) == identity['sha256'], 'Source dependency changed during derivation')
+        require(sha(client_access.require_equal_file(name).read_bytes()) == identity['sha256'], 'Source dependency changed during derivation')
     verify_archive(destination / 'asset.l2asset')
     return {'status': 'unchanged' if unchanged else 'created', 'archive': str(destination / 'asset.l2asset'),
             'archiveSha256': content_hash, 'glbSha256': repair['glbAfterSha256'],
@@ -115,6 +115,7 @@ def main():
     parser.add_argument('--source-proof', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
+    require_reference_client(args.client)
     print(json.dumps(derive(args.archive, args.archive_sha256, args.client, args.source_proof, args.output), indent=2))
 
 

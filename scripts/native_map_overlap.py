@@ -17,6 +17,7 @@ import zipfile
 from native_assets import verify_archive
 from native_assets_lib.gltf import json_bytes
 from native_catalog.ue2 import FormatError
+from reference_client_guard import require_reference_client
 from native_map import (COLLISION, TRANSFORMS, MapSources, actor_properties,
                         decode_property, explicit_properties, file_hash,
                         property_value, safe_path, sha)
@@ -61,12 +62,6 @@ def verify_file(root, relative, expected, checked=None):
 
 
 def parse_glb(data):
-    """Read the bounded static layout actually emitted by our retained converter.
-
-    Unsupported layouts fail rather than producing approximate bounds. Accessor
-    strides/offsets are honored; sparse, compressed, transformed or animated mesh
-    layouts require a separate implementation before they can be selected.
-    """
     require(isinstance(data, bytes) and 28 <= len(data) <= 96*1024*1024,
             'Invalid or oversized GLB')
     require(struct.unpack_from('<III', data) == (0x46546c67, 2, len(data)),
@@ -159,12 +154,6 @@ def transform_positions(positions, matrix):
 
 
 def triangle_rectangle_overlap(triangle, rectangle):
-    """Clip a glTF triangle against native-XY-as-glTF-XZ rectangle, without fitting.
-
-    Return the clipped polygon and its projected area. Edge/point contacts and
-    triangles with zero projected area do not qualify. Binary64 arithmetic and
-    strict area > 0 are documented selection semantics, not parity tolerances.
-    """
     require(len(triangle) == 3 and all(len(p) == 3 and all(finite_number(v) for v in p)
                                      for p in triangle), 'Invalid triangle')
     require(len(rectangle) == 4 and all(finite_number(v) for v in rectangle) and
@@ -185,10 +174,9 @@ def triangle_rectangle_overlap(triangle, rectangle):
         poly = clipped
         if not poly:
             return [], 0.0
-    # Subtract one origin before cross products to avoid cancellation from large
-    # world offsets. This preserves the selection rule without a fitted epsilon.
-    origin = poly[0]
-    area = abs(sum((a[0]-origin[0])*(b[2]-origin[2])-(b[0]-origin[0])*(a[2]-origin[2])
+    cancellation_avoiding_origin = poly[0]
+    area = abs(sum((a[0]-cancellation_avoiding_origin[0])*(b[2]-cancellation_avoiding_origin[2])
+                   -(b[0]-cancellation_avoiding_origin[0])*(a[2]-cancellation_avoiding_origin[2])
                    for a, b in zip(poly, poly[1:]+poly[:1])))/2
     require(finite_number(area), 'Nonfinite clipped polygon area')
     return (poly, area) if area > 0 else ([], 0.0)
@@ -204,11 +192,6 @@ def source_placement(actor, model, evidence):
 
 
 def select_overlaps(actors, runtime, geometry, model_loader):
-    """Pure deterministic selection; caller must verify inputs before production use.
-
-    model_loader(model-record) returns parse_glb() primitives. Existing runtime
-    placements are never changed. Unknown model identities are counted explicitly.
-    """
     region = geometry.get('selectedRegion', geometry.get('selectedSector', {}))
     bounds = region.get('bounds')
     require(isinstance(bounds, list) and len(bounds) == 6 and all(finite_number(v) for v in bounds),
@@ -329,7 +312,6 @@ def select_overlaps(actors, runtime, geometry, model_loader):
 
 def audit_overlap(client_root, raw_root, runtime_manifest_path, class_evidence_root, *,
                   expected_runtime_sha256, recipe_path=None):
-    """Verify retained evidence and return selection, without extraction or writes."""
     client, raw = Path(client_root).resolve(), Path(raw_root).resolve()
     runtime_path = Path(runtime_manifest_path).resolve()
     runtime_root, bundle = runtime_path.parent, runtime_path.parent.parent
@@ -374,9 +356,6 @@ def audit_overlap(client_root, raw_root, runtime_manifest_path, class_evidence_r
     actors = read_json(safe_path(raw, raw_manifest['files']['actors']))
     by_export = {a['exportIndex']: a for a in actors}
     require(len(by_export) == len(actors), 'Duplicate raw actor export')
-    # Verify the actor projection actually used by this selection against native
-    # tagged properties. Retained exporter version changes are not a reason to
-    # regenerate terrain or overwrite source artifacts.
     static_exports = [e for e in package.exports if e['classObject'] == 'Engine.StaticMeshActor']
     require(len(static_exports) == sum(a['class'] == 'StaticMeshActor' for a in actors), 'Static source census differs')
     for item in static_exports:
@@ -445,6 +424,7 @@ def main():
     parser.add_argument('--recipe')
     parser.add_argument('--output', help='Exclusive new scratch JSON report; omitted means stdout only')
     args = parser.parse_args()
+    require_reference_client(args.client)
     report = audit_overlap(args.client, args.raw, args.runtime_manifest, args.class_evidence,
                            expected_runtime_sha256=args.runtime_sha256, recipe_path=args.recipe)
     payload = json_bytes(report)

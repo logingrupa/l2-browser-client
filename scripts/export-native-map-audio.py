@@ -26,6 +26,7 @@ from native_assets_lib.gltf import safe_name
 from native_audio import decode_native_audio
 from native_catalog.ue2 import FormatError, Package
 from native_map import ambient_sound_object, property_value
+from reference_client_guard import require_reference_client
 
 ROOT = Path(__file__).resolve().parent.parent
 HASH = re.compile(r'[a-f0-9]{64}')
@@ -220,8 +221,6 @@ def inventory(sources, recipe):
             row['packageCandidates'] = sorted(matches)
             continue
         name = matches[0]
-        # A wrong input hash is fatal before output creation, never an optional
-        # unsupported-codec row. Missing files remain explicit dependencies.
         try:
             if name not in sources.checked:
                 sources.read(name)
@@ -353,9 +352,6 @@ def verify_output(output, owner, inventory_document, products, resolved):
 
 
 def clean_adapter_work(cache):
-    # The shared Converter leaves random temporary job directories even on
-    # success. Its deterministic content directory already retains evidence.
-    # This cache belongs exclusively to this invocation under .run.lock.
     work = child(cache, '.work')
     if work.exists():
         for path in work.iterdir():
@@ -454,8 +450,10 @@ def main():
     parser.add_argument('--umodel', type=Path, default=native_assets.UMODEL)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--verify-only', action='store_true')
+    args = parser.parse_args()
     try:
-        result = run(parser.parse_args())
+        require_reference_client(args.client_snapshot)
+        result = run(args)
     except (ValueError, OSError, KeyError, TypeError, EOFError, wave.Error, struct.error) as error:
         print(json.dumps({'status': 'failed', 'error': str(error)}, indent=2), file=sys.stderr)
         return 1
