@@ -58,7 +58,7 @@ Execution constraints for this run (owner rules, binding on every plan):
 
 ### F. UI lane and sandbox (UI-01..03, SAND-02)
 - Elbera `parse_xdat` behind an adapter decodes `interface.xdat`; type-dependent record tails are kept as hashed opaque spans; the source hash is pinned.
-- Skin: native windows use the decoded geometry plus UI textures converted by recipe (local outputs only; DESIGN.md's "no reference pixels" is read as no screenshot pixels). The mobile HUD stays on DESIGN.md tokens. Recorded in DECISIONS.md as an owner-review item.
+- Interface (owner decision DEC-OWN-10, 2026-11-08, commit 62741d8): the only game interface is the original Interlude interface. The UI lane builds native windows only: window layout from the decoded `interface.xdat`, and skin, fonts and icons from the client's UI textures converted by recipe (lane-local outputs). No custom HUD, no design tokens, no custom styling; DESIGN.md is deleted. The procedural HUD and the developer sheet are stand-ins and development tools only and get no styling or polish. Design skills (impeccable, frontend-design) are never used for game UI.
 - Tracer: `window:StatusWnd` with `StatusLeftTex`, `CPBarTex`, `HPBarTex`, `MPBarTex`, filled from `MockWorldAdapter` values.
 - SAND-02: `DevSheet.ts` (734 lines) is split when the tile, spawn, equip, cast, window and audio pickers are added; pinnable sheet with hover-cards showing variables (owner preference).
 
