@@ -6,7 +6,7 @@ One line per part, in PORT_SCOPE section 5 order, rewritten in place by the inte
 - sandbox | data-ui | by-ID spawn, equip, cast and open window with a missing-asset marker on NativeSliceAdapter; browser checks on the native sandbox route / only; dev cold start re-measured on PROMINENCE-PC and DATABASE-PC (first runtime module 39 s to 4-6 s, a first-run completion gap remains open) | docs/parts/sandbox/EVIDENCE.md
 - world | world | 20_20 world section; WORLD-07 packet reviewed (74/74 re-hashed, 47 verdicts, owner review), layer-order and music-join fixtures in tests/fixtures/world-07 | docs/parts/world/EVIDENCE.md
 - player-characters | actors | human fighters native, human mystic export in progress | docs/parts/player-characters/EVIDENCE.md
-- ui | data-ui | development sheet only | docs/parts/ui/EVIDENCE.md
+- ui | data-ui | development sheet only; header census of 48 systextures packages: 28 reviewed, 20 texture-licensee-unsupported (L2UI_CH3, l2ui and L2_RadarMap are 118/0) | docs/parts/ui/EVIDENCE.md
 - npcs | actors | 1 (Greater Musveren) | docs/parts/npcs/EVIDENCE.md
 - items | actors | not seen in the code | docs/parts/items/EVIDENCE.md
 - skills-effects | actors | Power Strike in progress | docs/parts/skills-effects/EVIDENCE.md
