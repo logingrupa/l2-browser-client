@@ -157,9 +157,7 @@ class Converter:
         self.lock_equal_import_closures = set()
         self.client_build = None
         self.logs = []
-        self.table_cache = {}
-        self.package_cache = {}
-        self.class_cache = {}
+        self.table_cache, self.package_cache, self.class_cache = {}, {}, {}
 
     def source(self, path):
         path = Path(path).resolve()
@@ -178,8 +176,7 @@ class Converter:
     def measured_client_build(self):
         if self.client_build is None:
             client_build = reference_client_build(self.reference_client.lock)
-            if (not (self.client / ENGINE_LIBRARY_RELATIVE_PATH).is_file()
-                    or self.source_digests.digest_of(ENGINE_LIBRARY_RELATIVE_PATH) != client_build['engineDllSha256']):
+            if not (self.client / ENGINE_LIBRARY_RELATIVE_PATH).is_file() or self.source_digests.digest_of(ENGINE_LIBRARY_RELATIVE_PATH) != client_build['engineDllSha256']:
                 raise ValueError(f'{ENGINE_LIBRARY_RELATIVE_PATH} under {self.client} is missing or differs from the locked reference build')
             self.client_build = client_build
         return self.client_build
@@ -440,7 +437,7 @@ class Converter:
         evidence = attachment['source']
         reference = evidence['class']
         source_path, _ = self.package(reference.split('.')[0])
-        if hash_file(source_path) != evidence['packageSha256']:
+        if self.recorded_source_sha256(source_path) != evidence['packageSha256']:
             raise ValueError('Rigid attachment class package differs from the cited native source')
         if reference not in self.class_cache:
             self.class_cache[reference] = read_class_defaults(self.client, reference, work / 'actor-defaults')
@@ -465,10 +462,10 @@ class Converter:
         from native_animation_families import build_animation_families, decode_localization111, resolve_animation_references
         from native_catalog.effects import read_class_defaults
         source_path = self.source(self.client / binding['file'])
-        if hash_file(source_path) != binding['sha256']:
+        if self.recorded_source_sha256(source_path) != binding['sha256']:
             raise ValueError('Animation-family localization differs from its source pin')
         class_path, _ = self.package(binding['class'].split('.')[0])
-        if hash_file(class_path) != binding['classPackageSha256']:
+        if self.recorded_source_sha256(class_path) != binding['classPackageSha256']:
             raise ValueError('Animation-family class differs from its source pin')
         evidence = work / 'animation-families'
         definition = read_class_defaults(self.client, binding['class'], evidence)
@@ -494,7 +491,7 @@ class Converter:
         binding = request['sourceBinding']
         name = binding['table']
         path = self.source(self.client / 'system' / (name + '.dat'))
-        if hash_file(path) != binding['sourceSha256']:
+        if self.recorded_source_sha256(path) != binding['sourceSha256']:
             raise ValueError('Recipe table hash does not match this native client')
         if name not in self.table_cache:
             self.table_cache[name] = decode_table(self.client, name)
@@ -543,7 +540,8 @@ class Converter:
             if hash_file(UELIB) != UELIB_SHA256:
                 raise ValueError('UELib differs from the pinned native class reader')
             format_pins['native-class-reader'] = UELIB_SHA256
-        base_key = sha(json_bytes({'request': request, 'implementation': implementation_hash(), 'umodel': UMODEL_SHA256}))
+        converter_version = implementation_hash()
+        base_key = sha(json_bytes({'request': request, 'implementation': converter_version, 'umodel': UMODEL_SHA256}))
         index = self.output / 'index' / (base_key + '.json')
         if index.exists():
             record = json.loads(index.read_text(encoding='utf-8'))
@@ -555,9 +553,7 @@ class Converter:
         work_root = self.output / '.work'
         work_root.mkdir(exist_ok=True)
         work = Path(tempfile.mkdtemp(prefix=base_key[:12] + '-', dir=work_root))
-        files, limitations, metadata = {}, [], {}
-        mime = {}
-        events = []
+        files, limitations, metadata, mime, events = {}, [], {}, {}, []
         try:
             kind = request['kind']
             if request.get('media'):
@@ -682,7 +678,7 @@ class Converter:
                     primary = 'audio.ogg' if media_mime == 'audio/ogg' else 'audio.wav'
                     files[primary], mime[primary] = payload, media_mime
             converted_source_path = source_path_record(socket.gethostname().upper(), source_path.resolve().as_posix())
-            provenance = {'schemaVersion': 1, 'request': request, 'source': {**source, 'path': converted_source_path}, 'dependencies': self.dependencies, 'converterSha256': implementation_hash(), 'tool': {'name': 'UEViewer UModel build1590', 'sha256': UMODEL_SHA256}, 'formatDefinitionPins': format_pins, 'metadata': metadata}
+            provenance = {'schemaVersion': 1, 'request': request, 'source': {**source, 'path': converted_source_path}, 'dependencies': self.dependencies, 'converterSha256': converter_version, 'tool': {'name': 'UEViewer UModel build1590', 'sha256': UMODEL_SHA256}, 'formatDefinitionPins': format_pins, 'metadata': metadata}
             files['provenance.json'], mime['provenance.json'] = json_bytes(provenance), 'application/json'
             model_extras = {}
             if kind == 'model' and metadata.get('nativeMaterialGraph'):
@@ -691,7 +687,7 @@ class Converter:
                 model_extras['nativeSkinAdapter'] = 'L2NativeSkinWeights/1'
             manifest = build_asset_manifest(
                 identity=identity, kind=kind, source=source, source_path=converted_source_path,
-                client_build=self.measured_client_build(), converter_version=implementation_hash(),
+                client_build=self.measured_client_build(), converter_version=converter_version,
                 limitations=limitations, animation_events=events, primary_file=primary,
                 coordinates=asset_coordinates_record(SOURCE_TO_GLTF, 100) if kind == 'model' else None, model_extras=model_extras, files=[])
             if kind == 'texture' and metadata.get('nativeTextureDDS', {}).get('status') == 'available':
