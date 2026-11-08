@@ -8,10 +8,8 @@ import type { GameWorldAdapter } from "../../src/world/GameWorldAdapter";
 import type { WorldEntity, WorldEvent, WorldPosition } from "../../src/world/worldTypes";
 import { nativeVisualClips, nativeVisualFixture } from "../fixtures/nativeVisualFixture";
 
-// Only DOM labels are outside this test. Registry placement, the glTF loader,
-// skinning, native animation and entity updates execute normally.
 vi.mock("../../src/ui/EntityLabel", () => ({ EntityLabel: class {
-  select() {} setState() {} update() {} dispose() {}
+  select() {} setState() {} setDiagnostic() {} update() {} dispose() {}
 } }));
 
 describe("native entity support placement", () => {

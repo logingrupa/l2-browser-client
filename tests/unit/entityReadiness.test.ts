@@ -10,7 +10,7 @@ import type { GameWorldAdapter } from "../../src/world/GameWorldAdapter";
 import type { WorldEntity, WorldEvent } from "../../src/world/worldTypes";
 
 vi.mock("../../src/ui/EntityLabel", () => ({ EntityLabel: class {
-  select() {} setState() {} update() {} dispose() {}
+  select() {} setState() {} setDiagnostic() {} update() {} dispose() {}
 } }));
 
 const player: WorldEntity = { id: "fighter", kind: "local-player", displayName: "Fighter", appearanceId: "fixture",

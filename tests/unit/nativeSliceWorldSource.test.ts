@@ -10,6 +10,11 @@ import { catalogNativeSliceWorldSource, type NativeSliceWorldSource } from "../.
 const boundaries = vi.hoisted(() => ({ section: vi.fn(), catalog: vi.fn() }));
 vi.mock("../../src/scene/world/loadNativeSection", () => ({ loadNativeSection: boundaries.section }));
 vi.mock("../../src/assets/native/loadNativeCatalog", () => ({ loadNativeActorCatalog: boundaries.catalog }));
+vi.mock("../../src/assets/native/readNativeCatalog", async importOriginal => ({
+  ...await importOriginal<typeof import("../../src/assets/native/readNativeCatalog")>(),
+  readNativeCatalog: async () => ({ schemaVersion: 1, models: [], textures: [], sections: [], movers: [], npcProfiles: [], playerProfiles: [],
+    animationAudio: [], combatAudio: [], worldAudio: [], effectComponents: [] }),
+}));
 
 const settings: NativeSliceSettings = { origin: new Vector3(0, 0, 0), leatherShirt: false,
   fighterIdle: "Wait", fighterRun: "Run", fighterAttack: "Attack", fighterDeath: "Death" };
