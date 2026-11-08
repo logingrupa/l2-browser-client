@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 1
 current_phase_name: Foundations
 status: executing
-stopped_at: Completed 01-08-PLAN.md
-last_updated: "2026-11-08T05:12:47.941Z"
+stopped_at: Completed 01-01-PLAN.md
+last_updated: "2026-11-08T05:24:10.860Z"
 last_activity: 2026-11-08
 last_activity_desc: Phase 1 execution started
-state_head: c6f2e6ad1b6415170830b2b89534cd0552afc3e8
+state_head: b9c0ca6fc99dd6e641cfd7277e6ccbab151bce39
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 17
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 1 (Foundations) — EXECUTING
-Plan: 4 of 17
+Plan: 5 of 17
 Status: Ready to execute
 Last activity: 2026-11-08 — Phase 1 execution started
 
@@ -55,6 +55,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 1 P02 | 15 min | 2 tasks | 11 files |
 | Phase 01 P07 | 11 min | 3 tasks | 13 files |
 | Phase 01 P08 | 13 min | 3 tasks | 20 files |
+| Phase 01 P01 | 8 min | 2 tasks | 26 files |
 
 ## Accumulated Context
 
@@ -72,11 +73,12 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..8 and DEC-PORT-1..3.
 - [Phase 01]: 01-07: MapSources.get carries the per-file require_equal_file check for every map package reader; world entry points call require_reference_client right after parse_args
 - [Phase 01]: Plan 01-08: the scan test tests/pipeline/test_client_entry_points.py fails if any --client entry point skips require_reference_client; all 23 call it
 - [Phase 01]: Plan 01-08: the UModel -path gap is recorded in deferred-items.md (OVERNIGHT-DECISIONS row 21) and must close before plan 01-13's lock enables E: conversion
+- [Phase 1]: 01-01: lane ownership is by lane (world, actors, data-ui, integration) in .planning/lanes.json; Stage B parts 12-19 sit in integration until Phase 4
+- [Phase 1]: 01-01: every native-store writer script stays integration-owned; scripts/check-lane-ownership.mjs exits 1 on foreign paths and 2 on a part/slug branch whose part names no lane (OVERNIGHT-DECISIONS row 22)
 
 ### Pending Todos
 
 - Commit the main checkout's uncommitted code before lanes start (lanes branch from committed code only). Planning files are committed (1b1b0b7).
-- Seed STATUS.md / DECISIONS.md in Phase 1; keep each under a few KB.
 
 ### Blockers/Concerns
 
@@ -104,6 +106,6 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..8 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-08T05:12:47.889Z
-Stopped at: Completed 01-08-PLAN.md
+Last session: 2026-11-08T05:24:10.803Z
+Stopped at: Completed 01-01-PLAN.md
 Resume file: None
