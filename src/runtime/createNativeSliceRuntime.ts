@@ -261,8 +261,8 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       locomotionClips, specialAttackPreview, world, audio: nativeAudio, footsteps, footstepGround, combatAudio, combatFailure, effects,
       cameraControls: { follow, frameWorld, frameFlame, flamePlacementIds, isFollowingFighter: () => followFighter },
       focusEffectCamera: () => effectCamera?.focus(), isDisposed: () => disposed, addRelease });
-    attachSandboxCommandSheet({ section: ui.sheet.section("sandbox", { title: "Sandbox", order: 5 }), adapter, index: catalogIndex,
-      appearanceOfModel: sandboxNpcAppearanceOfModel });
+    boundaryReleases.push(attachSandboxCommandSheet({ section: ui.sheet.section("sandbox", { title: "Sandbox", order: 5 }), adapter,
+      index: catalogIndex, appearanceOfModel: sandboxNpcAppearanceOfModel, selectedEntityId: () => registry.selectedEntityId, powerStrike }));
     const failFlames = (error: unknown) => nativeSliceSheet.failFlames(error);
     const observer = scene.onBeforeRenderObservable.add(() => {
       if (isSceneSuspended(scene)) { audio.setPaused(true); return; }

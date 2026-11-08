@@ -29,7 +29,9 @@ const boundaries = vi.hoisted(() => ({
   sheetGroups: new Map<string, { variables?: () => VariableInfo[] }>(),
 }));
 vi.mock("../../src/assets/native/loadNativeCatalog", () => ({ loadNativeActorCatalog: boundaries.load }));
-vi.mock("../../src/effects/nativeEffectComponents", () => ({ loadNativeEffectComponents: boundaries.effectBundle }));
+vi.mock("../../src/effects/nativeEffectComponents", async importOriginal => ({
+  ...await importOriginal<typeof import("../../src/effects/nativeEffectComponents")>(), loadNativeEffectComponents: boundaries.effectBundle,
+}));
 vi.mock("../../src/ui/nativeEffectComponentControls", () => ({ attachNativeEffectComponentControls: () => ({ dispose() {} }) }));
 vi.mock("../../src/ui/nativeEffectInitControls", () => ({ attachNativeEffectInitControls: () => ({ dispose() {} }) }));
 vi.mock("../../src/scene/world/nativeFlamePresentation", () => ({ createNativeFlamePresentation: boundaries.flames }));
