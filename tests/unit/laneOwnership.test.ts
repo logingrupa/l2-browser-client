@@ -65,9 +65,16 @@ function nativeStoreWriterScriptPaths(): string[] {
   const writerFileNamePattern = /^scripts\/(stage|derive-|migrate-)[^/]*$/;
   const packageScripts = (JSON.parse(readFileSync("package.json", "utf8")) as { scripts: Record<string, string> }).scripts;
   const writerCommandPaths = Object.entries(packageScripts)
-    .filter(([name]) => name.startsWith("assets:") || name === "world:stage")
+    .filter(([name]) => name.startsWith("assets:") || name === "world:stage" || name.startsWith("preview"))
     .flatMap(([, command]) => command.match(/scripts\/[A-Za-z0-9._/-]+/g) ?? []);
   return [...trackedScriptPaths.filter((path) => writerFileNamePattern.test(path)), ...writerCommandPaths];
+}
+
+function decisionIdentifiersDefinedInProject(): string[] {
+  return readFileSync(".planning/PROJECT.md", "utf8")
+    .split(/\r?\n/)
+    .map((line) => /^- (DEC-[A-Z]+-\d+)\b/.exec(line)?.[1])
+    .filter((identifier): identifier is string => identifier !== undefined);
 }
 
 describe("lane ownership check", () => {
@@ -196,7 +203,7 @@ describe("repository lanes.json", () => {
 
   it("keeps every native-store writer script in the integration lane", () => {
     const writerPaths = nativeStoreWriterScriptPaths();
-    expect(writerPaths.length).toBeGreaterThan(0);
+    expect(writerPaths).toContain("scripts/private-preview.mjs");
     for (const writerPath of writerPaths) {
       expect({ writerPath, lane: ownerLaneOfPath(ownership, writerPath) }).toEqual({ writerPath, lane: "integration" });
     }
@@ -225,7 +232,7 @@ describe("shared process files", () => {
     }
   });
 
-  it("has one dated DECISIONS.md line per unique decision ID pointing at PROJECT.md", () => {
+  it("has one dated DECISIONS.md line per unique decision ID pointing at PROJECT.md, for every decision PROJECT.md defines", () => {
     const decisionLinePattern = /^- \d{4}-\d{2}-\d{2} (DEC-[A-Z]+-\d+): .+ Full text: \.planning\/PROJECT\.md$/;
     const decisionIdentifiers = bulletLinesOf("DECISIONS.md").map((line) => {
       const match = decisionLinePattern.exec(line);
@@ -233,10 +240,8 @@ describe("shared process files", () => {
       return match?.[1] ?? "";
     });
     expect(new Set(decisionIdentifiers).size).toBe(decisionIdentifiers.length);
-    const requiredIdentifiers = [
-      ...Array.from({ length: 9 }, (_, index) => `DEC-OWN-${index + 1}`),
-      ...Array.from({ length: 3 }, (_, index) => `DEC-PORT-${index + 1}`),
-    ];
+    const requiredIdentifiers = decisionIdentifiersDefinedInProject();
+    expect(requiredIdentifiers).toContain("DEC-OWN-10");
     expect(decisionIdentifiers).toEqual(expect.arrayContaining(requiredIdentifiers));
   });
 });
