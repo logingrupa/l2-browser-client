@@ -1,3 +1,4 @@
+import ast
 from pathlib import Path
 import sys
 import tempfile
@@ -30,6 +31,34 @@ def write_raw_map_output(raw_output, map_relative_path, dependencies):
     receipt = {'schemaVersion': SCHEMA, 'kind': 'native-map-raw', 'recipeSha256': sha(json_bytes(manifest['recipe'])),
                'implementation': implementation(), 'dependencies': dependencies, 'outputs': {'manifest.json': recorded_file(manifest_path)}}
     write_tree_file(raw_output, 'receipt.json', json_bytes(receipt))
+
+
+def write_overlap_audit_bundle(base, section_source_dependencies):
+    bundle = base / 'bundle'
+    terrain = write_tree_file(bundle / 'map-section', 'terrain.bin', b'terrain fixture')
+    recipe = {'map': EQUAL_TABLE}
+    write_tree_file(bundle / 'map-section', 'manifest.json', json_bytes({'recipe': recipe}))
+    section_receipt = write_tree_file(bundle / 'map-section', 'receipt.json', json_bytes({
+        'kind': 'native-terrain-section', 'outputs': {}, 'sourceDependencies': section_source_dependencies,
+        'recipeSha256': sha(json_bytes(recipe))}))
+    runtime_manifest = write_tree_file(bundle / 'map-section-runtime', 'manifest.json', json_bytes({
+        'kind': 'native-map-section-runtime', 'resourceRoots': {'models': '../map-section-models', 'terrain': '../map-section'},
+        'terrain': {'file': 'terrain.bin', **recorded_file(terrain)}, 'models': []}))
+    write_tree_file(bundle / 'map-section-runtime', 'receipt.json', json_bytes({
+        'kind': 'native-map-section-runtime', 'manifestSha256': file_hash(runtime_manifest), 'sectionReceiptSha256': file_hash(section_receipt)}))
+    return runtime_manifest
+
+
+def write_overlap_audit_raw_inventory(raw_output, dependencies):
+    write_tree_file(raw_output, 'manifest.json', json_bytes({'kind': 'native-map-raw', 'recipe': {'map': EQUAL_TABLE}, 'unsupported': []}))
+    write_tree_file(raw_output, 'receipt.json', json_bytes({'kind': 'native-map-raw', 'outputs': {}, 'dependencies': dependencies}))
+
+
+def client_rooted_read_helpers_of_overlap_audit():
+    module_tree = ast.parse(Path(native_map_overlap.__file__).read_text(encoding='utf-8'))
+    audit = next(node for node in module_tree.body if isinstance(node, ast.FunctionDef) and node.name == 'audit_overlap')
+    return [call.func.id for call in ast.walk(audit) if isinstance(call, ast.Call) and isinstance(call.func, ast.Name)
+            and call.args and isinstance(call.args[0], ast.Name) and call.args[0].id == 'client']
 
 
 class MapReadPathLockTests(unittest.TestCase):
@@ -88,6 +117,26 @@ class MapReadPathLockTests(unittest.TestCase):
                          recorded_file(self.client / EQUAL_TABLE), checked_hashes), self.client / EQUAL_TABLE)
         with self.assertRaisesRegex(ReferenceClientLockError, 'system/chargrp.dat is differing, not equal'):
             native_map_overlap.verify_lock_equal_client_file(self.client, DIFFERING_TABLE, self.differing_table_record(), checked_hashes)
+
+    def run_overlap_audit(self, runtime_manifest):
+        return native_map_overlap.audit_overlap(self.client, self.raw_output, runtime_manifest, self.base / 'class-evidence',
+                                                expected_runtime_sha256=file_hash(runtime_manifest))
+
+    def test_overlap_audit_refuses_a_section_source_dependency_the_lock_marks_differing(self):
+        runtime_manifest = write_overlap_audit_bundle(self.base, {DIFFERING_TABLE: self.differing_table_record()['sha256']})
+        with self.assertRaisesRegex(ReferenceClientLockError, 'system/chargrp.dat is differing, not equal'):
+            self.run_overlap_audit(runtime_manifest)
+
+    def test_overlap_audit_refuses_a_raw_dependency_the_lock_marks_differing(self):
+        runtime_manifest = write_overlap_audit_bundle(self.base, {EQUAL_TABLE: recorded_file(self.client / EQUAL_TABLE)['sha256']})
+        write_overlap_audit_raw_inventory(self.raw_output, {DIFFERING_TABLE: self.differing_table_record()})
+        with self.assertRaisesRegex(ReferenceClientLockError, 'system/chargrp.dat is differing, not equal'):
+            self.run_overlap_audit(runtime_manifest)
+
+    def test_overlap_audit_reads_every_client_file_through_the_lock_equal_check(self):
+        client_reads = client_rooted_read_helpers_of_overlap_audit()
+        self.assertEqual(client_reads.count('verify_lock_equal_client_file'), 3)
+        self.assertEqual(set(client_reads) - {'verify_lock_equal_client_file', 'MapSources', 'read_class_evidence'}, set())
 
     def test_map_sources_read_only_lock_equal_packages(self):
         with patch.object(native_map, 'Package', lambda data, name: data):
