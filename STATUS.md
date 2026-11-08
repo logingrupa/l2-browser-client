@@ -2,7 +2,7 @@
 
 One line per part, in PORT_SCOPE section 5 order, rewritten in place by the integration thread. Format: part | lane | state | evidence doc. States are from PORT_SCOPE section 5 (2026-11-07). Lane ownership: `.planning/lanes.json`.
 
-- data | data-ui | E: locked against IMPORTA-PC; 40-table inventory: 8 decoded locally, 29 layout only, 3 on the Elbera route; coverage 0/40 converted, 40 gap, loads 0 pass (docs/coverage.md) | docs/parts/data/EVIDENCE.md
+- data | data-ui | E: locked against IMPORTA-PC; 40-table inventory from sealed lane-store decodes: 13 decoded locally (all 37 layouts pinned), 24 layout only (sysstring-e decode-failed), 3 on the Elbera route; DATA-03 count-unresolved (systemmsg-e 2083 strict, sysstring-e header 2083, strict decode fails); lane store not restaged; coverage 0/40 converted, 40 gap, loads 0 pass (docs/coverage.md) | docs/parts/data/EVIDENCE.md
 - sandbox | data-ui | by-ID spawn, equip, cast and open window with a missing-asset marker on NativeSliceAdapter; browser checks on the native sandbox route / only; dev cold start re-measured on PROMINENCE-PC and DATABASE-PC (first runtime module 39 s to 4-6 s, a first-run completion gap remains open); coverage 0/unknown converted, 0 gap, loads 0 pass (docs/coverage.md) | docs/parts/sandbox/EVIDENCE.md
 - world | world | 20_20 world section; WORLD-07 packet reviewed (74/74 re-hashed, 47 verdicts, owner review), layer-order and music-join fixtures in tests/fixtures/world-07; coverage 1/163 converted, 162 gap, loads 0 pass (docs/coverage.md) | docs/parts/world/EVIDENCE.md
 - player-characters | actors | human fighters native, human mystic export in progress; coverage 0/15 converted, 4 gap, loads 0 pass (docs/coverage.md) | docs/parts/player-characters/EVIDENCE.md
