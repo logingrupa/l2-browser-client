@@ -46,6 +46,13 @@ export function readEnumOrdinal(node: MaterialProgramNode, fieldName: string): n
   throw fieldError(node, fieldName, "is not an enum value.");
 }
 
+export function readEnumName(node: MaterialProgramNode, fieldName: string): string | null {
+  const value = declaredValue(node, fieldName);
+  if (value === undefined || value === null) return null;
+  if (isValueRecord(value) && typeof value.name === "string") return value.name;
+  throw fieldError(node, fieldName, "is not a named enum value.");
+}
+
 export function readReferenceField(node: MaterialProgramNode, fieldName: string): MaterialReference {
   const value = declaredValue(node, fieldName);
   if (value === undefined || value === null) return { kind: "none" };

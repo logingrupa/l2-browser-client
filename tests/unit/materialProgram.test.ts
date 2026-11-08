@@ -3,9 +3,10 @@ import { Constants } from "@babylonjs/core/Engines/constants";
 import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
 import { Scene } from "@babylonjs/core/scene";
 import { afterEach, describe, expect, it } from "vitest";
-import { createNativeMaterial } from "../../src/materials/ue2/babylon/material";
+import { createNativeMaterial, particleFragmentChain, selectTextureFrame } from "../../src/materials/ue2/babylon/material";
 import { nativeMaterialProgramPath, type LoadedNativeMaterial } from "../../src/materials/ue2/babylon/loadNativeMaterial";
 import { blendFactorsForMaterial } from "../../src/materials/ue2/model/blendTable";
+import { evaluateFogState, FOG_DISABLED } from "../../src/materials/ue2/model/fog";
 import { readRotatorField } from "../../src/materials/ue2/model/materialFieldValues";
 import { MaterialProgramError, parseMaterialProgram, programNode } from "../../src/materials/ue2/model/materialProgram";
 import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
@@ -17,6 +18,7 @@ import {
 const fixtureStoreRoot = new URL("../fixtures/lane-store/", import.meta.url);
 const swatchImage = textureImageFor(swatchTexturePng());
 const scenes: Scene[] = [];
+const testMaterialOptions = { sessionSeed: 1 };
 
 function parsed(program: FixtureProgram) {
   return parseMaterialProgram(JSON.parse(JSON.stringify(program)));
@@ -110,7 +112,7 @@ describe("createNativeMaterial", () => {
     const loaded = loadedMaterial(syntheticSwatchProgram(swatchImage));
     const blend = blendFactorsForMaterial(loaded.program);
     expect(blend).toMatchObject({ status: "resolved", source: "final-blend", pair: { source: "one", destination: "zero" }, depthWrite: true, fogFamily: "fog-colour" });
-    const nativeMaterial = createNativeMaterial(nullScene(), loaded);
+    const nativeMaterial = createNativeMaterial(nullScene(), loaded, testMaterialOptions);
     const inspection = nativeMaterial.inspect();
     expect(inspection.status).toBe("compiled");
     expect(inspection.blend).toMatchObject({ pair: blend.status === "resolved" ? blend.pair : null, babylonAlphaMode: "ALPHA_DISABLE" });
@@ -124,13 +126,13 @@ describe("createNativeMaterial", () => {
     const program = syntheticSwatchProgram(swatchImage);
     program.root = "SyntheticSwatch.SwatchShader";
     program.nodes[1]!.fields[2] = field("OutputBlending", enumValue(5, "OB_Brighten"));
-    const nativeMaterial = createNativeMaterial(nullScene(), loadedMaterial(program));
+    const nativeMaterial = createNativeMaterial(nullScene(), loadedMaterial(program), testMaterialOptions);
     expect(nativeMaterial.inspect().blend).toMatchObject({ pair: { source: "one", destination: "inverse-source-colour" }, babylonAlphaMode: "ALPHA_SCREENMODE", depthWrite: false });
     expect(nativeMaterial.material.alphaMode).toBe(Constants.ALPHA_SCREENMODE);
   });
 
   it("renders an unported class as the named magenta diagnostic", () => {
-    const nativeMaterial = createNativeMaterial(nullScene(), loadedMaterial(syntheticUnportedProgram()));
+    const nativeMaterial = createNativeMaterial(nullScene(), loadedMaterial(syntheticUnportedProgram()), testMaterialOptions);
     expect(nativeMaterial.inspect()).toMatchObject({ status: "diagnostic", unportedClass: "Engine.TexOscillatorTriggered",
       reasons: expect.arrayContaining(["material-class-unported:Engine.TexOscillatorTriggered"]) });
   });
@@ -138,7 +140,40 @@ describe("createNativeMaterial", () => {
   it("renders a Modulate pair Babylon has no preset for as a named diagnostic", () => {
     const program = syntheticSwatchProgram(swatchImage);
     program.nodes[0]!.fields[1] = field("FrameBufferBlending", enumValue(1, "FB_Modulate"));
-    expect(createNativeMaterial(nullScene(), loadedMaterial(program)).inspect()).toMatchObject({
+    expect(createNativeMaterial(nullScene(), loadedMaterial(program), testMaterialOptions).inspect()).toMatchObject({
       status: "diagnostic", reasons: ["babylon-blend-pair-unavailable:destination-colour,source-colour"] });
+  });
+
+  it("binds the frame and fog state the model evaluates on update", () => {
+    const program = syntheticSwatchProgram(swatchImage);
+    program.nodes[1]!.fields[0] = field("Diffuse", nodeReference("SyntheticSwatch.Panner"));
+    program.nodes.push(reviewedNode("SyntheticSwatch.Panner", "Engine.TexPanner", [field("Material", nodeReference("SyntheticSwatch.SwatchTexture")),
+      field("PanRate", 2), field("PanDirection", rawStruct("Rotator", "000000000000000000000000"), "authored", "raw")]));
+    const nativeMaterial = createNativeMaterial(nullScene(), loadedMaterial(program), testMaterialOptions);
+    const fog = evaluateFogState({ environmentPreset: null, cameraZone: null, waterVolume: null,
+      fogInfo: { colourBytes: [10, 20, 30], startSourceUnits: 100, endSourceUnits: 900 } });
+    nativeMaterial.update({ levelSeconds: 0.25, hour: 6.5, environmentType: 2, fog });
+    const inspection = nativeMaterial.inspect();
+    expect(inspection.uniforms).toEqual({ levelSeconds: 0.25, hour: 6.5, environmentType: 2, fog });
+    expect(inspection.frame?.samplerMatrices).toEqual([[1, 0, 0.5, 0, 1, 0]]);
+    expect(fog.fogEnd).toBe(900);
+  });
+
+  it("names the coordinate generators the binding cannot draw yet", () => {
+    const program = syntheticSwatchProgram(swatchImage);
+    program.nodes[1]!.fields[0] = field("Diffuse", nodeReference("SyntheticSwatch.EnvironmentMap"));
+    program.nodes.push(reviewedNode("SyntheticSwatch.EnvironmentMap", "Engine.TexEnvMap", [field("Material", nodeReference("SyntheticSwatch.SwatchTexture"))]));
+    expect(createNativeMaterial(nullScene(), loadedMaterial(program), testMaterialOptions).inspect())
+      .toMatchObject({ status: "diagnostic", reasons: ["material-feature-unported:EnvMapType"] });
+  });
+
+  it("exports the particle fragment hook and texture frames for the actors render stage", () => {
+    const translucent = particleFragmentChain(3);
+    expect(translucent).toMatchObject({ fragmentFunctionName: "ue2ParticleFragment", babylonBlend: { alphaMode: Constants.ALPHA_SCREENMODE }, blend: { fogFamily: "black" } });
+    expect(translucent.fragmentFunctionSource).toContain("vec4 ue2ParticleFragment(vec4 sourceColour, float viewDepth)");
+    expect(particleFragmentChain(6).babylonBlend.alphaMode).toBe(Constants.ALPHA_ONEONE);
+    expect(() => particleFragmentChain(2)).toThrow(/destination-colour,source-colour has no Babylon blend state/);
+    expect(selectTextureFrame({ kind: "anim-next", frameCount: 4, maximumFrameRate: 10 }, 0.25).index).toBe(2);
+    expect(FOG_DISABLED.fogEnd).toBeNull();
   });
 });

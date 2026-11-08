@@ -7,6 +7,7 @@ import { Scene } from "@babylonjs/core/scene";
 import { createWebGPUEngine } from "../../../src/engine/createWebGPUEngine";
 import { createNativeMaterial, type NativeMaterialInspection } from "../../../src/materials/ue2/babylon/material";
 import { loadNativeMaterial } from "../../../src/materials/ue2/babylon/loadNativeMaterial";
+import { FOG_DISABLED } from "../../../src/materials/ue2/model/fog";
 import { readMaterialSwatchParameters, type MaterialSwatchParameters } from "./materialSwatchParameters";
 
 export interface MaterialSwatchState {
@@ -23,6 +24,7 @@ declare global {
 }
 
 const swatchFramesBeforeReadback = 4;
+const swatchSessionSeed = 0;
 const swatchState: MaterialSwatchState = { status: "loading", parameters: null, material: null, centrePixel: null, canvasFormat: null, failure: null };
 window.__materialSwatch = swatchState;
 
@@ -59,7 +61,8 @@ async function renderSwatch(): Promise<void> {
   camera.orthoBottom = -1;
   const quad = MeshBuilder.CreatePlane("material-swatch-quad", { size: 2 }, scene);
   const controller = new AbortController();
-  const nativeMaterial = createNativeMaterial(scene, await loadNativeMaterial(parameters.materialId, controller.signal));
+  const nativeMaterial = createNativeMaterial(scene, await loadNativeMaterial(parameters.materialId, controller.signal), { sessionSeed: swatchSessionSeed });
+  nativeMaterial.update({ levelSeconds: parameters.levelSeconds, hour: parameters.hour, environmentType: parameters.environmentType, fog: FOG_DISABLED });
   quad.material = nativeMaterial.material;
   swatchState.material = nativeMaterial.inspect();
   await scene.whenReadyAsync();

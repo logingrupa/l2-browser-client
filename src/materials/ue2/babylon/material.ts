@@ -6,12 +6,32 @@ import { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial";
 import { RawTexture } from "@babylonjs/core/Materials/Textures/rawTexture";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import type { Scene } from "@babylonjs/core/scene";
+import { createRandomStream, deriveStreamSeed, type RandomStream } from "../../../shared/random";
 import type { ResolvedMaterialBlend } from "../model/blendTable";
 import { DIAGNOSTIC_CONSTANTS } from "../model/constants/diagnosticConstants";
+import { FOG_DISABLED, type FogState } from "../model/fog";
+import { evaluateMaterialFrame, type MaterialFrameState } from "../model/materialFrame";
+import { programNode } from "../model/materialProgram";
+import { textureCoordinateSourceChannel } from "../model/modifiers";
 import type { CompiledMaterialStagePlan } from "../model/stagePlan";
 import { babylonBlendStateForPair, blendFactorPairKey, type BabylonBlendState } from "./blendState";
-import { buildFragmentChain, colourSourceUniformName, fogUniformNames, samplerUniformName, textureCoordinateRowUName, textureCoordinateRowVName } from "./fragmentChain";
+import { bindFogUniforms } from "./fogUniforms";
+import { buildFragmentChain, colourSourceUniformName, samplerUniformName, textureCoordinateRowUName, textureCoordinateRowVName } from "./fragmentChain";
 import type { LoadedNativeMaterial } from "./loadNativeMaterial";
+
+export { particleFragmentChain, type ParticleFragmentChain } from "./particleFragmentChain";
+export { selectTextureFrame, type SelectedTextureFrame, type TextureFrameSource } from "../model/textureFrames";
+
+export interface NativeMaterialUniforms {
+  readonly levelSeconds: number;
+  readonly hour: number;
+  readonly environmentType: number;
+  readonly fog: FogState;
+}
+
+export interface NativeMaterialOptions {
+  readonly sessionSeed: number;
+}
 
 export interface NativeMaterialBlendInspection extends Omit<ResolvedMaterialBlend, "status"> {
   readonly babylonAlphaMode: string;
@@ -26,10 +46,13 @@ export interface NativeMaterialInspection {
   readonly blend: NativeMaterialBlendInspection | null;
   readonly samplerCount: number;
   readonly colourSourceCount: number;
+  readonly uniforms: NativeMaterialUniforms | null;
+  readonly frame: MaterialFrameState | null;
 }
 
 export interface NativeMaterial {
   readonly material: ShaderMaterial;
+  update(uniforms: NativeMaterialUniforms): void;
   inspect(): NativeMaterialInspection;
   dispose(): void;
 }
@@ -62,9 +85,12 @@ function createDiagnosticMaterial(scene: Scene, loaded: LoadedNativeMaterial, re
   });
   material.doNotSerialize = true;
   material.setColor4(diagnosticColourUniform, new Color4(...DIAGNOSTIC_CONSTANTS.magenta.runtimeDefault));
+  let lastUniforms: NativeMaterialUniforms | null = null;
   return {
     material,
-    inspect: () => ({ materialId: loaded.materialId, root: loaded.program.root, status: "diagnostic", reasons: [...reasons], unportedClass, blend: null, samplerCount: 0, colourSourceCount: 0 }),
+    update: uniforms => { lastUniforms = uniforms; },
+    inspect: () => ({ materialId: loaded.materialId, root: loaded.program.root, status: "diagnostic", reasons: [...reasons], unportedClass, blend: null,
+      samplerCount: 0, colourSourceCount: 0, uniforms: lastUniforms, frame: null }),
     dispose: () => material.dispose(true, false),
   };
 }
@@ -95,9 +121,32 @@ function applyBlendState(material: ShaderMaterial, blend: ResolvedMaterialBlend,
   material.backFaceCulling = !blend.twoSided;
 }
 
-function createCompiledMaterial(scene: Scene, loaded: LoadedNativeMaterial, plan: CompiledMaterialStagePlan): NativeMaterial {
+function unsupportedCoordinateReason(loaded: LoadedNativeMaterial, plan: CompiledMaterialStagePlan): string | null {
+  for (const modifierId of plan.samplers.flatMap(sampler => sampler.textureCoordinateModifiers)) {
+    const modifier = programNode(loaded.program, modifierId);
+    if (modifier.class === "Engine.TexEnvMap") return "material-feature-unported:EnvMapType";
+    if (modifier.class === "Engine.TexCoordSource" && textureCoordinateSourceChannel(modifier) !== 0) return "material-feature-unported:SourceChannel";
+  }
+  return null;
+}
+
+function bindFrame(material: ShaderMaterial, textures: readonly RawTexture[][], frame: MaterialFrameState): void {
+  textures.forEach((frames, samplerIndex) => {
+    const matrix = frame.samplerMatrices[samplerIndex]!;
+    material.setTexture(samplerUniformName(samplerIndex), frames[frame.samplerFrameIndices[samplerIndex]!]!);
+    material.setVector3(textureCoordinateRowUName(samplerIndex), new Vector3(matrix[0], matrix[1], matrix[2]));
+    material.setVector3(textureCoordinateRowVName(samplerIndex), new Vector3(matrix[3], matrix[4], matrix[5]));
+  });
+  frame.colourSourceValues.forEach((colour, colourSourceIndex) => material.setColor4(colourSourceUniformName(colourSourceIndex), new Color4(...colour)));
+}
+
+function createCompiledMaterial(scene: Scene, loaded: LoadedNativeMaterial, plan: CompiledMaterialStagePlan, jitterStream: RandomStream): NativeMaterial {
   const babylonBlend = babylonBlendStateForPair(plan.blend.pair);
   if (!babylonBlend) return createDiagnosticMaterial(scene, loaded, [`babylon-blend-pair-unavailable:${blendFactorPairKey(plan.blend.pair)}`], null);
+  const coordinateReason = unsupportedCoordinateReason(loaded, plan);
+  if (coordinateReason) return createDiagnosticMaterial(scene, loaded, [coordinateReason], null);
+  const initialFrame = evaluateMaterialFrame(loaded.program, plan, 0, jitterStream);
+  if (initialFrame.status === "unported") return createDiagnosticMaterial(scene, loaded, [initialFrame.reason], null);
   const chain = buildFragmentChain(plan);
   const textures = createSamplerTextures(scene, loaded, plan);
   const material = new ShaderMaterial(`UE2 material: ${plan.root}`, scene, { vertexSource, fragmentSource: chain.fragmentSource }, {
@@ -106,20 +155,25 @@ function createCompiledMaterial(scene: Scene, loaded: LoadedNativeMaterial, plan
   });
   material.doNotSerialize = true;
   applyBlendState(material, plan.blend, babylonBlend);
-  textures.forEach((frames, samplerIndex) => {
-    material.setTexture(samplerUniformName(samplerIndex), frames[0]!);
-    material.setVector3(textureCoordinateRowUName(samplerIndex), new Vector3(1, 0, 0));
-    material.setVector3(textureCoordinateRowVName(samplerIndex), new Vector3(0, 1, 0));
-  });
-  plan.colourSources.forEach((_, colourSourceIndex) => material.setColor4(colourSourceUniformName(colourSourceIndex), new Color4(1, 1, 1, 1)));
-  material.setColor4(fogUniformNames.range, new Color4(0, 0, 0, 0));
-  material.setColor4(fogUniformNames.colour, new Color4(0, 0, 0, 0));
+  bindFrame(material, textures, initialFrame);
+  bindFogUniforms(material, plan.blend.fogFamily, FOG_DISABLED);
+  let lastUniforms: NativeMaterialUniforms | null = null;
+  let lastFrame: MaterialFrameState = initialFrame;
   const { status: _status, ...blendRecord } = plan.blend;
   return {
     material,
+    update: uniforms => {
+      const frame = evaluateMaterialFrame(loaded.program, plan, uniforms.levelSeconds, jitterStream);
+      if (frame.status === "unported") throw new Error(`UE2 material ${plan.root}: ${frame.reason} appeared after creation.`);
+      bindFrame(material, textures, frame);
+      bindFogUniforms(material, plan.blend.fogFamily, uniforms.fog);
+      lastUniforms = uniforms;
+      lastFrame = frame;
+    },
     inspect: () => ({
       materialId: loaded.materialId, root: plan.root, status: "compiled", reasons: [], unportedClass: null,
       blend: { ...blendRecord, babylonAlphaMode: babylonBlend.alphaModeName }, samplerCount: plan.samplers.length, colourSourceCount: plan.colourSources.length,
+      uniforms: lastUniforms, frame: lastFrame,
     }),
     dispose: () => {
       material.dispose(true, false);
@@ -128,7 +182,8 @@ function createCompiledMaterial(scene: Scene, loaded: LoadedNativeMaterial, plan
   };
 }
 
-export function createNativeMaterial(scene: Scene, loaded: LoadedNativeMaterial): NativeMaterial {
+export function createNativeMaterial(scene: Scene, loaded: LoadedNativeMaterial, options: NativeMaterialOptions): NativeMaterial {
   if (loaded.plan.status === "diagnostic") return createDiagnosticMaterial(scene, loaded, loaded.plan.reasons, loaded.plan.unportedClass);
-  return createCompiledMaterial(scene, loaded, loaded.plan);
+  const jitterStream = createRandomStream(deriveStreamSeed(options.sessionSeed, "tex-jitter", [loaded.materialId]));
+  return createCompiledMaterial(scene, loaded, loaded.plan, jitterStream);
 }
