@@ -1,6 +1,7 @@
 import type { Scene } from "@babylonjs/core/scene";
 import { readAssetPackage, assetPackageLimits, type AssetPackageManifest } from "../assets/package/readAssetPackage";
 import { createPackagePreview, type PackagePreview } from "../assets/package/PackagePreview";
+import { assetSourceMetadataRows } from "./assetSourceMetadataRows";
 
 export interface AssetImportOptions { host?: HTMLElement; onOpenChange?: (open: boolean) => void }
 export interface AssetPackageInspection {
@@ -74,7 +75,6 @@ const styles = String.raw`
 @media(max-height:500px) and (min-width:701px){.asset-import-panel{height:100dvh;width:100vw;border:0}.asset-import-header{padding:8px 12px}.asset-import-header p{display:none}.asset-import-toolbar{padding:6px 12px}.asset-import-body{grid-template-columns:minmax(0,1fr) 250px}}
 `;
 
-/** Adds one utility control and an isolated viewer; imported assets never enter the game scene. */
 export function attachAssetImport(worldScene: Scene, canvas: HTMLCanvasElement, options: AssetImportOptions = {}): () => void {
   const events = new AbortController(), stylesheet = document.createElement("style");
   stylesheet.textContent = styles; document.head.append(stylesheet);
@@ -144,9 +144,7 @@ export function attachAssetImport(worldScene: Scene, canvas: HTMLCanvasElement, 
       find("[data-sounds]").toggleAttribute("hidden", !candidate.snapshot().linkedSounds?.available);
       find<HTMLInputElement>("[data-sounds] input").checked = false;
       find("[data-source]").removeAttribute("hidden"); find("[data-metadata]").replaceChildren();
-      metadataRow("Edition", "Interlude"); metadataRow("Package", manifest.source.package); metadataRow("Object", manifest.source.object);
-      if (manifest.model) { metadataRow("Unit", `1 metre = ${manifest.model.sourceUnitsPerMetre} source units`); metadataRow("Viewer scale", "1:1 — no size normalization"); }
-      metadataRow("Source SHA-256", manifest.source.sha256);
+      for (const [label, value] of assetSourceMetadataRows(manifest)) metadataRow(label, value);
       find("[data-limitations]").replaceChildren(...(manifest.limitations.length ? manifest.limitations : ["No conversion limitations recorded."]).map(message => { const item = document.createElement("li"); item.textContent = message; return item; }));
       find("[data-events]").toggleAttribute("hidden", !manifest.animationEvents?.length);
       find("[data-events] pre").textContent = manifest.animationEvents ? JSON.stringify(manifest.animationEvents, null, 2) : "";

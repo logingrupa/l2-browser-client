@@ -3,11 +3,13 @@ export interface AssetModelCoordinates { unit: "metre"; sourceUnitsPerMetre: num
 export interface AssetPackageSourcePath { host: string; absolutePath: string }
 export interface AssetPackageClientBuild { referenceTreeLockSha256: string; engineDllSha256: string }
 export interface AssetPackageSource { edition: "interlude"; package: string; object: string; sha256: string; [key: string]: unknown }
-interface AssetPackageManifestFields {
+interface AssetModelEntry { file: string }
+interface AssetModelEntryVersionOne extends AssetModelEntry { unit: "metre"; sourceUnitsPerMetre: number; sourceToGltf: number[] }
+interface AssetPackageManifestFields<ModelEntry extends AssetModelEntry> {
   id: string;
   name: string;
   kind: "model" | "audio" | "texture";
-  model?: { file: string; [key: string]: unknown };
+  model?: ModelEntry;
   audio?: { file: string };
   image?: { file: string };
   coordinates?: AssetModelCoordinates;
@@ -15,8 +17,8 @@ interface AssetPackageManifestFields {
   limitations: string[];
   animationEvents?: unknown[];
 }
-export interface AssetPackageManifestVersionOne extends AssetPackageManifestFields { schemaVersion: 1; source: AssetPackageSource }
-export interface AssetPackageManifestVersionTwo extends AssetPackageManifestFields {
+export interface AssetPackageManifestVersionOne extends AssetPackageManifestFields<AssetModelEntryVersionOne> { schemaVersion: 1; source: AssetPackageSource }
+export interface AssetPackageManifestVersionTwo extends AssetPackageManifestFields<AssetModelEntry> {
   schemaVersion: 2;
   source: AssetPackageSource & { path: AssetPackageSourcePath };
   clientBuild: AssetPackageClientBuild;

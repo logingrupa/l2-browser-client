@@ -77,6 +77,7 @@ test.describe("local asset package inspector", () => {
     const fixture = await assetFixture();
     await page.getByLabel("Choose an asset package").setInputFiles({ name: "model.l2asset", mimeType: "application/zip", buffer: Buffer.from(fixture.bytes) });
     await expect(page.getByRole("status")).toContainText("Native model fixture ready", { timeout: 30_000 });
+    await expect(page.locator(".asset-import-details [data-metadata]")).toContainText("Unit1 metre = 100 source units");
     let snapshot = await page.evaluate(() => window.__assetPackageInspection!.snapshot());
     expect(snapshot.preview?.unitScale).toBe(1); expect(snapshot.clips.map(clip => clip.name)).toEqual(["Wait_Native"]);
     expect(snapshot.preview?.bounds).toEqual([[-1, 0, 0], [1, 3, 0]]);
