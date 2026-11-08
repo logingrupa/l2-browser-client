@@ -51,8 +51,8 @@ export function attachNativeSliceDebugSection(section: DevSection, options: Nati
   const urlVariable = (name: string, values: string, source: string): VariableInfo =>
     ({ name: `url.${name}`, value: () => currentQueryParameters().get(name) ?? "(not set)", values, source, status: "presentation" });
   readout(url, "world", () => currentQueryParameters().get("world") ?? "(not set)", "native-debug-url-world",
-    "world=interlude opens this 20_20 native slice. world=courtyard opens the synthetic courtyard; leaving it out opens the imported Talking Island preview.",
-    () => [urlVariable("world", "interlude | courtyard | (not set)", "src/scene/loadEnvironment.ts")]);
+    "world=interlude opens this 20_20 native slice. Any other value or leaving it out opens the reference Talking Island world on a code-built scene, or a not-staged status when it is not staged.",
+    () => [urlVariable("world", "interlude | (not set)", "src/scene/loadEnvironment.ts")]);
   readout(url, "authored", () => currentQueryParameters().get("authored") ?? "(not set)", "native-debug-url-authored",
     "authored=1 loads the Babylon Editor saved world (public/scene/native-world.babylon) instead of building the scene in code and loading the staged source section.",
     () => [urlVariable("authored", "1 | (not set)", "src/scene/loadEnvironment.ts (with world=interlude)")]);

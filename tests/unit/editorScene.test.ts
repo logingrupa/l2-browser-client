@@ -21,13 +21,6 @@ function objectArray(value: unknown): Record<string, unknown>[] {
   return value.map(objectValue);
 }
 
-function numericArray(value: unknown): number[] {
-  if (!Array.isArray(value) || !value.every((coordinate: unknown) => typeof coordinate === "number" && Number.isFinite(coordinate))) {
-    throw new Error("Expected finite serialized coordinates.");
-  }
-  return value as number[];
-}
-
 async function readObject(path: string): Promise<Record<string, unknown>> {
   const contents: unknown = JSON.parse(await readFile(path, "utf8"));
   return objectValue(contents);
@@ -38,11 +31,14 @@ function requireFixtureDirectory(): string {
   return fixtureDirectory;
 }
 
+function toEditorCliPosixPath(path: string): string {
+  return path.replaceAll("\\", "/");
+}
+
 async function exportFixture(): Promise<Record<string, unknown>> {
   const fixture = requireFixtureDirectory();
-  // The official CLI uses POSIX path joins internally, including on Windows.
-  await pack(fixture.replaceAll("\\", "/"), { optimize: false });
-  return readObject(join(fixture, "public/scene/example.babylon"));
+  await pack(toEditorCliPosixPath(fixture), { optimize: false });
+  return readObject(join(fixture, "public/scene/native-parity.babylon"));
 }
 
 function namedObject(value: unknown, name: string): Record<string, unknown> {
@@ -58,8 +54,8 @@ describe("official Editor CLI scene export", () => {
     await mkdir(join(fixture, "src/scripts"), { recursive: true });
     await Promise.all([
       cp(join(projectDirectory, "project.bjseditor"), join(fixture, "project.bjseditor")),
-      cp(join(projectDirectory, "assets/example.scene"), join(fixture, "assets/example.scene"), { recursive: true }),
-      cp(join(projectDirectory, "src/scripts/world.ts"), join(fixture, "src/scripts/world.ts")),
+      cp(join(projectDirectory, "assets/native-parity.scene"), join(fixture, "assets/native-parity.scene"), { recursive: true }),
+      cp(join(projectDirectory, "src/scripts/nativeParity.ts"), join(fixture, "src/scripts/nativeParity.ts")),
     ]);
   });
 
@@ -73,16 +69,9 @@ describe("official Editor CLI scene export", () => {
     fixtureDirectory = undefined;
   });
 
-  it("preserves editable ground geometry, authored camera and lights, and the runtime script attachment", async () => {
+  it("preserves the authored camera and lights and the runtime script attachment", async () => {
     const exportedScene = await exportFixture();
-    const ground = namedObject(exportedScene.meshes, "Courtyard ground");
-    const positions = numericArray(ground.positions);
-    const horizontalCoordinates = positions.filter((_, index) => index % 3 === 0);
-    expect(positions.length).toBeGreaterThanOrEqual(12);
-    expect(Math.max(...horizontalCoordinates) - Math.min(...horizontalCoordinates)).toBe(28);
-    expect(numericArray(ground.indices).length).toBeGreaterThanOrEqual(6);
-
-    const nativeCamera = await readObject(join(projectDirectory, "assets/example.scene/cameras/world-camera.json"));
+    const nativeCamera = await readObject(join(projectDirectory, "assets/native-parity.scene/cameras/World camera.json"));
     const camera = namedObject(exportedScene.cameras, "World camera");
     expect(camera.type).toBe("ArcRotateCamera");
     for (const property of ["alpha", "beta", "radius", "target", "lowerBetaLimit", "upperBetaLimit", "lowerRadiusLimit", "upperRadiusLimit"]) {
@@ -92,19 +81,19 @@ describe("official Editor CLI scene export", () => {
     expect(namedObject(exportedScene.lights, "Sky light").intensity).toBe(0.65);
 
     const scripts = objectArray(objectValue(exportedScene.metadata).scripts);
-    expect(scripts).toContainEqual(expect.objectContaining({ enabled: true, key: "scripts/world.ts" }));
+    expect(scripts).toContainEqual(expect.objectContaining({ enabled: true, key: "scripts/nativeParity.ts" }));
     const generatedScripts = await readFile(join(requireFixtureDirectory(), "src/scripts.ts"), "utf8");
-    expect(generatedScripts).toContain('from "./scripts/world"');
-    expect(generatedScripts).toContain('"scripts/world.ts": scripts_world');
+    expect(generatedScripts).toContain('from "./scripts/nativeParity"');
+    expect(generatedScripts).toContain('"scripts/nativeParity.ts": scripts_nativeParity');
   });
 
   it("exports a saved native light edit on repack without modifying the original environment", async () => {
-    const originalLightPath = join(projectDirectory, "assets/example.scene/lights/sunlight.json");
+    const originalLightPath = join(projectDirectory, "assets/native-parity.scene/lights/Sunlight.json");
     const originalLightText = await readFile(originalLightPath, "utf8");
     const firstExport = await exportFixture();
     expect(namedObject(firstExport.lights, "Sunlight").intensity).toBe(0.65);
 
-    const fixtureLightPath = join(requireFixtureDirectory(), "assets/example.scene/lights/sunlight.json");
+    const fixtureLightPath = join(requireFixtureDirectory(), "assets/native-parity.scene/lights/Sunlight.json");
     const editedLight = await readObject(fixtureLightPath);
     editedLight.intensity = 0.42;
     await writeFile(fixtureLightPath, JSON.stringify(editedLight, null, 2), "utf8");

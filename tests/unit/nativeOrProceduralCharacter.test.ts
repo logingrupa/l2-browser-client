@@ -10,7 +10,7 @@ import { createInitialWorld } from "../../src/world/createInitialWorld";
 import type { WorldEntity } from "../../src/world/worldTypes";
 import { nativeVisualClips, nativeVisualFixture } from "../fixtures/nativeVisualFixture";
 
-describe("courtyard Human characters use native packages, never lineagen GLBs", () => {
+describe("default route Human characters use native packages, never lineagen GLBs", () => {
   let engine: NullEngine, scene: Scene, visuals: CharacterVisual[];
   const [elyra, orin, seren, golem] = createInitialWorld() as [WorldEntity, WorldEntity, WorldEntity, WorldEntity];
   beforeEach(() => { engine = new NullEngine(); scene = new Scene(engine); GetEnvironmentBRDFTexture(scene); visuals = []; });

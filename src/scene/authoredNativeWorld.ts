@@ -1,3 +1,7 @@
+import "@babylonjs/core/Shaders/lightProxy.vertex";
+import "@babylonjs/core/Shaders/lightProxy.fragment";
+import "@babylonjs/core/ShadersWGSL/lightProxy.vertex";
+import "@babylonjs/core/ShadersWGSL/lightProxy.fragment";
 import type { Scene } from "@babylonjs/core/scene";
 import { SceneLoaderFlags } from "@babylonjs/core/Loading/sceneLoaderFlags";
 import { loadScene } from "babylonjs-editor-tools";

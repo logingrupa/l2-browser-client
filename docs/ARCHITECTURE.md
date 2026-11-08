@@ -14,19 +14,15 @@ source of truth is the original client plus the converter.
 
 | Route | What loads |
 | --- | --- |
-| `/?world=interlude` | Native slice: the 20_20 section from the `.l2asset` catalog through `loadNativeSection`, native actors, `NativeSliceAdapter`. |
+| `/?world=interlude` | Native catalog sandbox on a code-built scene: the 20_20 section from the `.l2asset` catalog through `loadNativeSection`, native actors, `NativeSliceAdapter`. |
 | `/?world=interlude&character=<id>` | Same slice with a staged native player profile (all four Humans). |
-| `/?world=interlude&authored=1` | Optional Editor-authored route. See [Editor-authored route (optional)](#editor-authored-route-optional). |
-| `/` | Talking Island bundles through `loadImportedWorld`, `MockWorldAdapter`. |
-| `/?world=courtyard` | Legacy courtyard demo from `assets/example.scene`. NOED-03 retires it. |
+| `/?world=interlude&authored=1` | Optional Editor-authored world, loaded through a dynamic import. See [Editor-authored route (optional)](#editor-authored-route-optional). |
+| `/` | Reference Talking Island world on a code-built scene through `loadImportedWorld`, `MockWorldAdapter`. When the world is not staged, the route reaches ready with mock actors and the status "Reference world not staged". |
 
-Today `loadEnvironment` still parses an Editor export as the scene shell
-(`native-parity.babylon`, or `example.babylon` for the other routes) through
-`babylonjs-editor-tools.loadScene`. The attached `NativeParityScript` then
-calls `createNativeSliceRuntime`, which loads the world from the catalog.
-NOED-01 builds the native scene (camera, lights, readiness barrier) in code
-and turns the script's inspector fields (player profile, clips, material
-override) into typed config on the dev sheet.
+`loadEnvironment` builds the default and native scenes in code from
+`presentationConfiguration.ts` through `buildPresentationScene`. Only
+`authored=1` reaches the Editor tools, through a dynamic import of
+`authoredNativeWorld.ts`.
 
 ## Rendering policy
 
@@ -244,8 +240,8 @@ variables, never a cramped toggle list (SAND-02).
   source unit, actor DrawScale, class collision data) and no height fitting.
 - Talking Island keeps unchanged right-handed source coordinates; these are
   not asserted to be physical meters.
-- The courtyard is Babylon left-handed, +Y up, X/Z ground, one unit per meter.
-  Its camera starts at radius 26 m, zooms 10-38 m and limits vertical orbit to
+- The default reference scene is right-handed, +Y up. With no staged world its
+  camera starts at radius 26, zooms 10-38 and limits vertical orbit to
   0.35-1.45 rad. Imported mode follows the local player, starts at radius 8
   source units and allows radius 1-50. `WorldCamera.ts` attaches orbit and
   zoom input and disables panning.
@@ -291,8 +287,8 @@ Character paths:
 
 - Native players: `pnpm assets:stage` runs `scripts/stage_native_players.py`,
   which adds the four native Human packages and profiles to ignored
-  `public/l2/` with SHA-256 pins. Human appearances on the Talking Island and
-  courtyard routes use these profiles through `nativeOrProceduralCharacter.ts`,
+  `public/l2/` with SHA-256 pins. Human appearances on the default
+  reference route use these profiles through `nativeOrProceduralCharacter.ts`,
   procedural while loading or on failure. Initial players select FFighter,
   MFighter and MMagic; three monsters stay procedural.
 - Native visuals use their own factory: an initially disabled transform and a

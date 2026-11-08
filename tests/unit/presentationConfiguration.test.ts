@@ -50,13 +50,14 @@ describe("presentation values formerly authored in Editor scenes", () => {
     expect(nativeSandboxPresentation.fog.mode).toBe(0);
   });
 
-  it("reference world presentation equals the saved example scene field by field", () => {
-    expectPresentationEqualsSavedScene(referenceWorldPresentation, {
-      camera: "assets/example.scene/cameras/world-camera.json",
-      skyLight: "assets/example.scene/lights/sky-light.json",
-      sunlight: "assets/example.scene/lights/sunlight.json",
-      config: "assets/example.scene/config.json",
+  it("reference world presentation names the retired example scene files at commit 58ac027 as provenance", () => {
+    expect(referenceWorldPresentation.source).toEqual({
+      camera: "assets/example.scene/cameras/world-camera.json at commit 58ac027",
+      skyLight: "assets/example.scene/lights/sky-light.json at commit 58ac027",
+      sunlight: "assets/example.scene/lights/sunlight.json at commit 58ac027",
+      config: "assets/example.scene/config.json at commit 58ac027",
     });
+    expect(referenceWorldPresentation.statusLabel).toBe(formerlyEditorAuthoredStatusLabel);
     expect(referenceWorldPresentation.fog.mode).toBe(3);
   });
 
