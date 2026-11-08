@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -11,10 +10,13 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
+sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
+from catalog_store_fixture import model_record, write_profile_manifest, write_store_catalog
 from native_store.build_coverage_report import (CoverageReportError, build_coverage_report, coverage_markdown, coverage_output_path,
                                                 coverage_report_bytes, main, validate_coverage_report)
-from native_store.gap_rows import write_gap_rows
+from native_store.coverage_denominators import COVERAGE_PART_ORDER, coverage_denominators
+from native_store.gap_rows import stage_a_part_names, write_gap_rows
 from native_store.load_check_records import LoadCheckRecordError, read_load_check_records
 from native_store.store_paths import lane_load_check_path
 
@@ -24,6 +26,9 @@ TABLE_MANIFEST_SHA256 = 'a' * 64
 SOURCE_SHA256 = 'b' * 64
 DECODE_FAILED_REASON = 'decode-failed:cp1252 codec error'
 ALL_LANE_NAMES = ('actors', 'data-ui', 'integration', 'world')
+NON_TILE_MAP_NAMES = ('Auto0', 'Auto1', 'Auto2', 'Auto3', 'Auto4', 'Auto5', 'Lobby', 'entry', 'ship_position', 'skylevel')
+ACTOR_DENOMINATORS = (('npcs', 'npcgrp', 6519), ('items', 'itemname-e', 9238), ('skills-effects', 'skillgrp', 29812),
+                      ('player-characters', 'chargrp', 15))
 COVERAGE_MODULE_PATHS = (ROOT / 'scripts' / 'native_store' / 'build_coverage_report.py',
                          ROOT / 'scripts' / 'native_store' / 'coverage_denominators.py')
 
@@ -33,16 +38,15 @@ def table_record(table_name):
             'manifestSha256': TABLE_MANIFEST_SHA256, 'manifestBytes': 10, 'recordCount': 1, 'sourceSha256': SOURCE_SHA256}
 
 
-def write_store_catalog(store_root, catalog):
-    store_root.mkdir(parents=True, exist_ok=True)
-    payload = json.dumps(catalog, sort_keys=True).encode()
-    (store_root / 'catalog.json').write_bytes(payload)
-    return hashlib.sha256(payload).hexdigest()
-
-
 def table_gap_row(key, step, status, reason):
     return {'key': key, 'part': 'data', 'step': step, 'status': status, 'reason': reason,
             'sourceIdentity': {'path': 'system/npcgrp.dat', 'sha256': SOURCE_SHA256}, 'evidence': 'docs/parts/data/EVIDENCE.md'}
+
+
+def world_gap_row(key, step, status, reason):
+    return {'key': key, 'part': 'world', 'step': step, 'status': status, 'reason': reason,
+            'sourceIdentity': {'path': f'maps/{key.split(":", 1)[1]}.unr', 'sha256': SOURCE_SHA256},
+            'evidence': 'docs/parts/world/EVIDENCE.md'}
 
 
 def load_check_record(key, status='pass', reason=None):
@@ -193,6 +197,59 @@ class CoverageOutputTests(CoverageProjectTestCase):
                          run_command=self.schedule_runner(0, None))
         self.assertEqual(exit_code, 1)
         self.assertFalse((self.project_root / 'public' / 'l2' / 'coverage.md').exists())
+
+
+class CoverageReportAllPartsTests(CoverageProjectTestCase):
+    def test_denominators_come_from_the_reference_lock_and_the_inventory(self):
+        denominators = coverage_denominators()
+        self.assertEqual(tuple(denominators), COVERAGE_PART_ORDER)
+        self.assertEqual(set(COVERAGE_PART_ORDER), stage_a_part_names())
+        world_keys = denominators['world']['keys']
+        self.assertEqual((denominators['world']['count'], len(world_keys)), (163, 163))
+        self.assertEqual(len([key for key in world_keys if key.startswith('tile:')]), 153)
+        self.assertEqual(sorted(key for key in world_keys if key.startswith('map:')), sorted(f'map:{name}' for name in NON_TILE_MAP_NAMES))
+        self.assertIn('recipes/reference-client-tree.lock.json', denominators['world']['source'])
+        for part, table_name, count in ACTOR_DENOMINATORS:
+            with self.subTest(part):
+                self.assertEqual((denominators[part]['count'], denominators[part]['keys']), (count, None))
+                self.assertIn(f'docs/parts/data/dat-table-inventory.json {table_name} recordCount', denominators[part]['source'])
+        self.assertEqual(denominators['ui'], {'count': 'unknown', 'keys': None, 'source': 'no committed window census yet (UI-01, plan 02-19)'})
+        for part in ('sandbox', 'audio', 'minimap', 'movement-geodata'):
+            with self.subTest(part):
+                self.assertEqual((denominators[part]['count'], denominators[part]['keys']), ('unknown', None))
+
+    def test_world_rows_list_every_step_and_default_to_census_pending(self):
+        write_gap_rows(self.project_root, 'world', 'raw', [world_gap_row('tile:20_21', 'raw', 'pass', None)])
+        write_gap_rows(self.project_root, 'world', 'terrain', [world_gap_row('tile:20_21', 'terrain', 'pending', 'step-pending:terrain')])
+        report = self.build_report()
+        report_rows = rows_by_key(report)
+        self.assertEqual(len([row for row in report['rows'] if row['part'] == 'world']), 163)
+        self.assertEqual(report_rows['tile:20_21']['steps'], [{'step': 'raw', 'status': 'pass', 'reason': None},
+                                                              {'step': 'terrain', 'status': 'pending', 'reason': 'step-pending:terrain'}])
+        self.assertEqual((report_rows['tile:20_21']['status'], report_rows['tile:20_21']['reason']), ('pending', 'step-pending:terrain'))
+        for key in ('tile:20_20', 'map:Lobby'):
+            with self.subTest(key):
+                self.assertEqual((report_rows[key]['status'], report_rows[key]['reason'], report_rows[key]['steps']),
+                                 ('gap', 'census-pending', []))
+        self.assertEqual(report['parts']['world'], {'denominator': 163, 'converted': 0, 'loads': {'pass': 0, 'failed': 0, 'unverified': 0},
+                                                    'gap': 162, 'pending': 1})
+
+    def test_a_counted_denominator_reports_unlisted_keys_as_pending(self):
+        npc_profiles = write_profile_manifest(self.store_root, 'native-npc-profiles',
+                                              [{'npcId': 21622, 'mesh': 'LineageMonsters.field_stalker_m00'}])
+        write_store_catalog(self.store_root, {'schemaVersion': 1, 'models': [model_record('musveren:0', 'LineageMonsters.field_stalker_m00')],
+                                              'npcProfiles': [npc_profiles], 'sections': [{'id': 'map-20-20-section'}]})
+        report = self.build_report()
+        self.assertEqual(report['parts']['npcs'], {'denominator': 6519, 'converted': 1, 'loads': {'pass': 0, 'failed': 0, 'unverified': 1},
+                                                   'gap': 0, 'pending': 6518})
+        self.assertEqual(rows_by_key(report)['npc:21622']['status'], 'pass')
+        self.assertEqual(rows_by_key(report)['tile:20_20']['converted'], True)
+        self.assertEqual(report['parts']['ui']['pending'], 'unknown')
+
+    def test_a_converted_key_outside_an_enumerated_denominator_is_refused(self):
+        write_store_catalog(self.store_root, {'schemaVersion': 1, 'models': [], 'sections': [{'id': 'map-99-99-section'}]})
+        with self.assertRaisesRegex(CoverageReportError, 'tile:99_99'):
+            self.build_report()
 
 
 class CoverageDenominatorSourceTests(unittest.TestCase):
