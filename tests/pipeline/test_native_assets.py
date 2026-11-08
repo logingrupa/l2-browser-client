@@ -16,6 +16,7 @@ from native_assets_lib.gltf import Document
 from native_assets_lib.animation import read_track, decode_tracks, add_animations
 from native_assets_lib.rigid import is_root_rigid, attach_rigid_part
 from native_catalog.ue2 import Package, Reader, FormatError
+from reference_client_lock_fixture import lock_client_as_reference_root
 
 
 class PackageTests(unittest.TestCase):
@@ -116,6 +117,7 @@ class CacheTests(unittest.TestCase):
             root = Path(directory)
             client = root / 'source'
             client.mkdir()
+            lock_client_as_reference_root(self, client)
             media = client / 'sample.wav'
             media.write_bytes(wav(1))
             tool = root / 'tool.exe'
@@ -140,18 +142,15 @@ class CacheTests(unittest.TestCase):
 
 class TrackTests(unittest.TestCase):
     def test_native_track_count_and_time_validation(self):
-        # compact counts <64 use a single byte; no quaternion or position keys.
-        valid = struct.pack('<I', 0) + b'\0\0\0'
-        self.assertEqual(read_track(Reader(valid))['times'], [])
-        invalid = struct.pack('<I', 0) + b'\0\0\2' + struct.pack('<2f', 1, 0)
+        empty_track_with_single_byte_compact_counts = struct.pack('<I', 0) + b'\0\0\0'
+        self.assertEqual(read_track(Reader(empty_track_with_single_byte_compact_counts))['times'], [])
+        track_with_two_times_and_no_keys = struct.pack('<I', 0) + b'\0\0\2' + struct.pack('<2f', 1, 0)
         with self.assertRaises(FormatError):
-            read_track(Reader(invalid))
+            read_track(Reader(track_with_two_times_and_no_keys))
         with self.assertRaises(FormatError):
-            read_track(Reader(valid[:-1]))
+            read_track(Reader(empty_track_with_single_byte_compact_counts[:-1]))
 
-    def test_native_quarter_turn_axes_survive_gltf_conversion(self):
-        # Native CAxis::UnTransformVector maps a positive X quarter-turn's
-        # glTF Y axis toward glTF +Z. A mistaken W flip reverses that direction.
+    def test_native_positive_x_quarter_turn_maps_gltf_y_toward_positive_z_without_a_w_flip(self):
         q = 2 ** -.5
         sequence = {'name': 'quarter-turn', 'numFrames': 1, 'rate': 30, 'sourceDurationSeconds': 1/30}
         metadata = {'trackTime': 1, 'sha256': 'fixture', 'rootSpeed3D': [0, 0, 0], 'startBone': 0, 'flags': 0}
@@ -206,13 +205,11 @@ class RigidAttachmentTests(unittest.TestCase):
             self.assertEqual(bytes(document.binary[:len(original)]), original)
             self.assertEqual(bytes(document.binary[-64:]), original[-64:])
             self.assertEqual(result['originalBoneIndex'], 1)
-            # The point (0,2,0) is one unit above the head pivot (0,1,0).
-            # A 90-degree head Z rotation must put it at (-1,1,0), whereas
-            # the original root palette would leave it at (0,2,0).
             inverse = struct.unpack('<16f', document.binary[-64:])
-            local = (0, 2 + inverse[13], 0)
-            deformed = (-local[1], local[0] + 1, local[2])
-            self.assertEqual(deformed, (-1, 1, 0))
+            point_one_unit_above_head_pivot = (0, 2 + inverse[13], 0)
+            point_after_head_z_quarter_turn = (-point_one_unit_above_head_pivot[1], point_one_unit_above_head_pivot[0] + 1,
+                point_one_unit_above_head_pivot[2])
+            self.assertEqual(point_after_head_z_quarter_turn, (-1, 1, 0))
 
     def test_rigid_attachment_rejects_missing_bone_and_weighted_geometry(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -287,15 +284,12 @@ class NativeOracleTests(unittest.TestCase):
     def test_exported_rotation_axes_match_native_skinning_not_conjugated_bind(self):
         document = Document(GLTF)
         report = add_animations(document, self.package, self.item)
-        def native_axis(q):
-            # Independent reference: UEViewer Core/Math3D.cpp CQuat::ToAxis.
-            # CAxis stores basis columns; UnTransformVector sums the columns.
+        def ueviewer_cquat_to_axis_basis_columns(q):
             x, y, z, w = q
             return [[1 - 2 * (y*y + z*z), 2 * (x*y - w*z), 2 * (x*z + w*y)],
                 [2 * (x*y + w*z), 1 - 2 * (x*x + z*z), 2 * (y*z - w*x)],
                 [2 * (x*z - w*y), 2 * (y*z + w*x), 1 - 2 * (x*x + y*y)]]
-        def gltf_axis(q):
-            # Standard right-handed glTF quaternion matrix, column vectors.
+        def right_handed_gltf_quaternion_matrix_columns(q):
             x, y, z, w = q
             return [[1 - 2 * (y*y + z*z), 2 * (x*y + w*z), 2 * (x*z - w*y)],
                 [2 * (x*y - w*z), 1 - 2 * (x*x + z*z), 2 * (y*z + w*x)],
@@ -312,9 +306,9 @@ class NativeOracleTests(unittest.TestCase):
                 for key, native in enumerate(source):
                     if mesh_index == 0:
                         native = (-native[0], -native[1], -native[2], native[3])
-                    expected = native_axis(native)
+                    expected = ueviewer_cquat_to_axis_basis_columns(native)
                     exported = struct.unpack_from('<4f', document.binary, view['byteOffset'] + 16 * key)
-                    actual = gltf_axis(exported)
+                    actual = right_handed_gltf_quaternion_matrix_columns(exported)
                     for column in range(3):
                         for row in range(3):
                             self.assertAlmostEqual(actual[column][row], expected[order[column]][order[row]], places=6)

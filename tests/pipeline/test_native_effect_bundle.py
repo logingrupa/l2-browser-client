@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 import native_effect_bundle as bundle
 from native_catalog.ue2 import FormatError
+from reference_client_lock_fixture import lock_client_as_reference_root
 
 
 def recipe():
@@ -93,6 +94,7 @@ class SourceDispatchTests(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.client = Path(self.directory.name)
+        lock_client_as_reference_root(self, self.client)
         self.binary = self.client / 'system/Engine.dll'
         self.binary.parent.mkdir()
         image = one_section_pe_with_offset_virtual_addresses_and_skill_three_selected_by_third_byte()
@@ -280,6 +282,7 @@ class ReceiptTests(unittest.TestCase):
         self.root = Path(self.directory.name)
         self.client = self.root / 'client'
         self.client.mkdir()
+        lock_client_as_reference_root(self, self.client)
         self.source = self.client / 'native.u'
         self.source.write_bytes(b'original native data')
         self.output = self.root / 'output'

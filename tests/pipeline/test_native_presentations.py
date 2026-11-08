@@ -1,4 +1,3 @@
-"""Bounds and independent native-source oracles for the vertical-slice inputs."""
 import hashlib
 import json
 from pathlib import Path
@@ -19,6 +18,7 @@ from native_catalog.tables import (
     read_nodes, read_value, table_definition_pins, table_source_path,
 )
 from native_catalog.ue2 import FormatError, Package, Reader, animation_layout
+from reference_client_lock_fixture import lock_client_as_reference_root
 
 CLIENT = ROOT / 'artifacts/native-parity/inputs/IMPORTA-PC'
 NPCNAME_CLIENT = ROOT / 'artifacts/native-parity/research/npc-actor-profiles/inputs/IMPORTA-PC'
@@ -26,8 +26,7 @@ PSA = ROOT / 'artifacts/native-parity/research/field-stalker-source/psa/LineageM
 RESULTS = ROOT / 'artifacts/native-parity/research/musveren-equipment/conversion-results.json'
 
 
-def source_psa_parity(animation, motions, data):
-    """Compare independent UModel PSA samples at original integer frame keys."""
+def umodel_psa_parity_at_original_integer_frame_keys(animation, motions, data):
     position, chunks = 0, {}
     while position < len(data):
         name, _, size, count = struct.unpack_from('<20siii', data, position)
@@ -87,13 +86,13 @@ class PresentationFormatTests(unittest.TestCase):
             client = Path(directory).resolve()
             system = client / 'system'
             system.mkdir()
+            lock_client_as_reference_root(self, client)
             (system / 'npcname.dat').write_bytes(b'not a language file')
-            (system / 'NPCName-e.dat').write_bytes(b'not the exact schema pattern')
+            inexact_spelling_of_the_english_table = system / 'NPCName-e.dat'
+            inexact_spelling_of_the_english_table.write_bytes(b'not the exact schema pattern')
             with self.assertRaisesRegex(FormatError, 'one matching language'):
                 table_source_path(client, 'npcname', pattern)
-            # Remove the intentionally wrong spelling before creating its
-            # case-insensitive Windows alias with the actual source spelling.
-            (system / 'NPCName-e.dat').unlink()
+            inexact_spelling_of_the_english_table.unlink()
             english = system / 'npcname-e.dat'
             english.write_bytes(b'english')
             self.assertEqual(table_source_path(client, 'npcname', pattern), english)
@@ -142,15 +141,13 @@ class PresentationFormatTests(unittest.TestCase):
         with self.assertRaisesRegex(FormatError, 'overwrite'):
             read_nodes(Reader(struct.pack('<2i', 2, 3)), layout)
 
-    def test_material_sections_keep_multiline_second_slot_before_later_lods(self):
-        # Real Musveren dump has an inline Shader and multiline FinalBlend.
-        # A one-line-only regex silently substituted LOD1 slot0 for slot1.
-        dump = "Sections[2] = {\n Sections[0] = { Material=Shader'body', FirstIndex=0 }\n Sections[1] =\n {\n Material = FinalBlend'eyes'\n FirstIndex = 3\n }\n}\nSections[0] = { Material=Shader'body', FirstIndex=0 }"
+    def test_material_sections_keep_the_multiline_final_blend_second_slot_after_an_inline_shader_before_later_lods(self):
+        musveren_style_material_dump = "Sections[2] = {\n Sections[0] = { Material=Shader'body', FirstIndex=0 }\n Sections[1] =\n {\n Material = FinalBlend'eyes'\n FirstIndex = 3\n }\n}\nSections[0] = { Material=Shader'body', FirstIndex=0 }"
         converter = object.__new__(Converter)
         package = type('PackageStub', (), {'imports': [{'object': 'Pkg.body', 'name': 'body', 'className': 'Shader'}, {'object': 'Pkg.eyes', 'name': 'eyes', 'className': 'FinalBlend'}], 'exports': []})()
         document = type('DocumentStub', (), {'data': {'materials': [{}, {}]}, 'image': lambda *args: 0})()
         with patch.object(converter, 'material_texture', side_effect=lambda work, ref: (b'png', {}, ref, [])):
-            slots, _ = converter.materials(None, package, document, dump, {})
+            slots, _ = converter.materials(None, package, document, musveren_style_material_dump, {})
         self.assertEqual([slot['sourceReference'] for slot in slots], ['Pkg.body', 'Pkg.eyes'])
 
 
@@ -225,8 +222,8 @@ class NativeNpcNameTableTests(unittest.TestCase):
         rows = table['data']['npc']
         self.assertEqual((table['data']['data'], len(rows), len({row['id'] for row in rows})), (6519, 6519, 6519))
         self.assertTrue(all(set(row) == {'id', 'name', 'nick', 'nickcolor'} for row in rows))
-        # Independently decoded native bytes at [36805,36832), not a mesh/name guess.
-        self.assertEqual(rows[1431], {'id': 21622, 'name': 'Greater Musveren', 'nick': '', 'nickcolor': '9CE8A9FF'})
+        greater_musveren_row_decoded_from_native_bytes_36805_to_36832 = rows[1431]
+        self.assertEqual(greater_musveren_row_decoded_from_native_bytes_36805_to_36832, {'id': 21622, 'name': 'Greater Musveren', 'nick': '', 'nickcolor': '9CE8A9FF'})
         self.assertGreater(len(rows), len({row['name'] for row in rows}))
 
     def test_repeated_display_names_survive_but_duplicate_ids_fail(self):
@@ -294,7 +291,7 @@ class NativeMonsterOracleTests(unittest.TestCase):
         self.assertTrue(all(event['sourceFrames'] == 91 and event['sourceRate'] == 30 for event in death))
 
     def test_original_keys_agree_with_independent_psa(self):
-        results = source_psa_parity(self.animation, self.motions, PSA.read_bytes())
+        results = umodel_psa_parity_at_original_integer_frame_keys(self.animation, self.motions, PSA.read_bytes())
         self.assertEqual(len(results), 9)
         self.assertGreater(sum(row['comparedKeys'] for row in results), 10000)
         for row in results:
@@ -329,8 +326,8 @@ class NativeMonsterOracleTests(unittest.TestCase):
                         expected = (original[0] * .01, original[2] * .01, original[1] * .01) if path == 'translation' else (original[0], original[2], original[1], original[3])
                         if path == 'rotation' and mesh_bone == 0:
                             expected = (-expected[0], -expected[1], -expected[2], expected[3])
-                        # Compare to float32 representation, not a loose pose tolerance.
-                        self.assertEqual(exported, struct.unpack('<' + 'f' * width, struct.pack('<' + 'f' * width, *expected)))
+                        expected_as_float32 = struct.unpack('<' + 'f' * width, struct.pack('<' + 'f' * width, *expected))
+                        self.assertEqual(exported, expected_as_float32)
                     expected_times = [key * sequence['numFrames'] / len(source) / sequence['rate'] for key in range(len(source))] if len(source) == 1 or not track['times'] else [time * sequence['numFrames'] / metadata['trackTime'] / sequence['rate'] for time in track['times']]
                     actual_times = [row[0] for row in values(sampler['input'], 1)]
                     for actual_time, expected_time in zip(actual_times, expected_times):
@@ -343,14 +340,12 @@ class NativeMonsterOracleTests(unittest.TestCase):
         document = Document(self.gltf)
         report = add_animations(document, self.package, self.item)
         joints = document.data['skins'][0]['joints']
-        # Independent reference equations: UEViewer CQuat::ToAxis and
-        # CAxis::UnTransformVector, compared with a glTF quaternion matrix.
-        def native_axis(q):
+        def ueviewer_cquat_to_axis_basis_columns(q):
             x, y, z, w = q
             return [[1 - 2 * (y*y + z*z), 2 * (x*y - w*z), 2 * (x*z + w*y)],
                     [2 * (x*y + w*z), 1 - 2 * (x*x + z*z), 2 * (y*z - w*x)],
                     [2 * (x*z - w*y), 2 * (y*z + w*x), 1 - 2 * (x*x + y*y)]]
-        def gltf_axis(q):
+        def right_handed_gltf_quaternion_matrix_columns(q):
             x, y, z, w = q
             return [[1 - 2 * (y*y + z*z), 2 * (x*y + w*z), 2 * (x*z - w*y)],
                     [2 * (x*y - w*z), 1 - 2 * (x*x + z*z), 2 * (y*z + w*x)],
@@ -367,9 +362,9 @@ class NativeMonsterOracleTests(unittest.TestCase):
                 for key, source in enumerate(motion['tracks'][entry['animationIndex']]['rotations']):
                     if mesh_bone == 0:
                         source = (-source[0], -source[1], -source[2], source[3])
-                    native = native_axis(source)
+                    native = ueviewer_cquat_to_axis_basis_columns(source)
                     converted = struct.unpack_from('<4f', document.binary, view.get('byteOffset', 0) + key * 16)
-                    gltf = gltf_axis(converted)
+                    gltf = right_handed_gltf_quaternion_matrix_columns(converted)
                     native_deformed = [sum(native[column][row] * native_vector[column] for column in range(3)) for row in range(3)]
                     gltf_deformed = [sum(gltf[column][row] * gltf_vector[column] for column in range(3)) for row in range(3)]
                     for row in range(3):

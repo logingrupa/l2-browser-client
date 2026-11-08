@@ -2,15 +2,15 @@ import hashlib
 import json
 import os
 from pathlib import Path, PurePosixPath
+import socket
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
-DATABASE_PC_CONVERSION_ROOT = Path('E:/Lineage2-client')
 REFERENCE_CLIENT_LOCK_PATH = REPOSITORY_ROOT / 'recipes' / 'reference-client-tree.lock.json'
 REFERENCE_CLIENT_LOCK_SCHEMA_VERSION = 1
 REFERENCE_CLIENT_LOCK_FILE_FIELDS = ['class', 'importaBytes', 'importaSha256', 'eBytes', 'eSha256', 'eModifiedNanoseconds']
 ENGINE_LIBRARY_RELATIVE_PATH = 'system/Engine.dll'
 MISSING_LOCK_MESSAGE = ('reference client lock missing: recipes/reference-client-tree.lock.json; '
-    'the integration thread runs the hash lock before any E: read')
+    'the integration thread runs the hash lock before any client read')
 
 
 class ReferenceClientLockError(ValueError):
@@ -32,12 +32,21 @@ def sha256_of_file(path):
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
+class ReferenceClientLock:
+    def __init__(self, document, records_by_casefolded_path):
+        self.document = document
+        self.records_by_casefolded_path = records_by_casefolded_path
+
+
 def read_reference_client_lock(lock_path):
     if not lock_path.is_file():
         raise ReferenceClientLockError(MISSING_LOCK_MESSAGE)
     lock = json.loads(lock_path.read_bytes().decode('utf-8'))
     if not isinstance(lock, dict) or lock.get('schemaVersion') != REFERENCE_CLIENT_LOCK_SCHEMA_VERSION:
         raise ReferenceClientLockError(f'reference client lock schemaVersion must be {REFERENCE_CLIENT_LOCK_SCHEMA_VERSION}: {lock_path}')
+    for field in ('referenceHost', 'referenceRoot'):
+        if not isinstance(lock.get(field), str) or not lock[field]:
+            raise ReferenceClientLockError(f'reference client lock needs a {field}: {lock_path}')
     if lock.get('fileFields') != REFERENCE_CLIENT_LOCK_FILE_FIELDS or not isinstance(lock.get('files'), dict):
         raise ReferenceClientLockError(f'reference client lock has an unexpected file table: {lock_path}')
     records_by_casefolded_path = {}
@@ -48,7 +57,17 @@ def read_reference_client_lock(lock_path):
         if path.casefold() in records_by_casefolded_path:
             raise ReferenceClientLockError(f'reference client lock repeats a casefolded path: {path}')
         records_by_casefolded_path[path.casefold()] = record
-    return records_by_casefolded_path
+    return ReferenceClientLock(lock, records_by_casefolded_path)
+
+
+def current_host_name():
+    return socket.gethostname().upper()
+
+
+def is_locked_reference_root(resolved_root, lock):
+    if current_host_name() != lock.document['referenceHost'].upper():
+        return False
+    return str(resolved_root).casefold() == str(Path(lock.document['referenceRoot'])).casefold()
 
 
 class ReferenceClientAccess:
@@ -92,18 +111,18 @@ def lock_file_identity(lock_path):
     return (status.st_size, status.st_mtime_ns)
 
 
-def require_reference_client(root, *, lock_path=None, conversion_root=None):
+def open_reference_client_access(resolved_root, lock):
+    if is_locked_reference_root(resolved_root, lock):
+        return ReferenceClientAccess(resolved_root, None)
+    access = ReferenceClientAccess(resolved_root, lock.records_by_casefolded_path)
+    access.require_equal_file(ENGINE_LIBRARY_RELATIVE_PATH)
+    return access
+
+
+def require_reference_client(root):
     resolved_root = Path(root).resolve()
-    resolved_conversion_root = Path(DATABASE_PC_CONVERSION_ROOT if conversion_root is None else conversion_root).resolve()
-    if str(resolved_root).casefold() != str(resolved_conversion_root).casefold():
-        cache_key = (str(resolved_root), None, None)
-        if cache_key not in accesses_by_root_and_lock:
-            accesses_by_root_and_lock[cache_key] = ReferenceClientAccess(resolved_root, None)
-        return accesses_by_root_and_lock[cache_key]
-    resolved_lock_path = Path(REFERENCE_CLIENT_LOCK_PATH if lock_path is None else lock_path).resolve()
+    resolved_lock_path = REFERENCE_CLIENT_LOCK_PATH.resolve()
     cache_key = (str(resolved_root).casefold(), str(resolved_lock_path), lock_file_identity(resolved_lock_path))
     if cache_key not in accesses_by_root_and_lock:
-        access = ReferenceClientAccess(resolved_root, read_reference_client_lock(resolved_lock_path))
-        access.require_equal_file(ENGINE_LIBRARY_RELATIVE_PATH)
-        accesses_by_root_and_lock[cache_key] = access
+        accesses_by_root_and_lock[cache_key] = open_reference_client_access(resolved_root, read_reference_client_lock(resolved_lock_path))
     return accesses_by_root_and_lock[cache_key]

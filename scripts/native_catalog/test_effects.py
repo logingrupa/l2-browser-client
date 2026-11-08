@@ -6,11 +6,13 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'tests' / 'pipeline'))
 from native_catalog.cli import file_hash, json_bytes
 from native_catalog.effects import (SourcePackages, extract, merge_properties,
     parse_uc, parse_value, read_class_defaults, references, select_skill_rows, skill_actions, verify, UELIB)
 from native_catalog.ue2 import FormatError
 from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH
+from reference_client_lock_fixture import lock_client_as_reference_root
 
 CLIENT = Path('E:/Lineage2-client')
 GRAPH = Path(__file__).resolve().parents[2] / 'artifacts/native-effects/heal.json'
@@ -91,6 +93,7 @@ class EffectReceiptTests(unittest.TestCase):
         self.base = Path(self.temp.name).resolve()
         self.client = self.base / 'client'
         self.client.mkdir()
+        lock_client_as_reference_root(self, self.client)
         self.source = self.client / 'native.bin'
         self.source.write_bytes(b'unchanged source bytes')
         self.artifact = self.base / 'class.uc'

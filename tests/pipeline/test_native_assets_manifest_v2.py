@@ -15,6 +15,7 @@ GOLDEN = ROOT / 'tests' / 'fixtures' / 'golden'
 sys.path.insert(0, str(ROOT / 'scripts'))
 from native_assets import Converter, archive_bytes, implementation_hash, sha, verify_archive
 from native_assets_lib.asset_manifest import reference_client_build
+from reference_client_lock_fixture import lock_client_as_reference_root
 
 
 def golden_manifest(name):
@@ -60,6 +61,7 @@ class ConverterManifestTests(unittest.TestCase):
             root = Path(directory)
             client = root / 'source'
             client.mkdir()
+            lock_client_as_reference_root(self, client)
             media = client / 'sample.wav'
             media.write_bytes(synthetic_wav())
             tool = root / 'tool.exe'
@@ -79,6 +81,7 @@ class ConverterManifestTests(unittest.TestCase):
             root = Path(directory)
             client = root / 'source'
             client.mkdir()
+            lock_client_as_reference_root(self, client)
             (client / 'sample.wav').write_bytes(synthetic_wav())
             tool = root / 'tool.exe'
             tool.write_bytes(b'not executed by the media adapter')

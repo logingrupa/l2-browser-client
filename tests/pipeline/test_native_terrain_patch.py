@@ -12,6 +12,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from native_catalog.ue2 import Package
 from native_map import actor_properties, bitmap_words, read_g16
 from native_map_geometry import native_terrain, coords_point, native_to_gltf
+from reference_client_lock_fixture import lock_client_as_reference_root
 
 SPEC = importlib.util.spec_from_file_location('native_terrain_patch', ROOT / 'scripts/extract-native-terrain-patch.py')
 PATCH = importlib.util.module_from_spec(SPEC)
@@ -76,6 +77,7 @@ class OfflinePatchSafetyTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             client, raw, reference = [root / name for name in ('client', 'raw', 'reference')]
+            lock_client_as_reference_root(self, client)
             for protected in (client, raw, reference):
                 with self.subTest(protected=protected), self.assertRaisesRegex(ValueError, 'outside all source/reference'):
                     PATCH.extract(client, raw, reference, protected / 'output')

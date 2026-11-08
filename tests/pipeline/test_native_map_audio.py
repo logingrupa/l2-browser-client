@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/'scripts'))
 import native_assets
 from native_catalog.ue2 import Package
+from reference_client_lock_fixture import lock_client_as_reference_root
 
 spec = importlib.util.spec_from_file_location('export_native_map_audio', ROOT/'scripts/export-native-map-audio.py')
 audio = importlib.util.module_from_spec(spec)
@@ -69,9 +70,8 @@ def wav_bytes(with_smpl=True):
         wav.writeframes(struct.pack('<4h', -32768, -100, 100, 32767))
     data = stream.getvalue()
     if with_smpl:
-        # Preserve the ancillary bytes; neither this fixture nor the exporter
-        # claims this chunk selects a native engine looping policy.
-        data += b'smpl' + struct.pack('<I', 36) + bytes(range(36))
+        preserved_ancillary_smpl_chunk = b'smpl' + struct.pack('<I', 36) + bytes(range(36))
+        data += preserved_ancillary_smpl_chunk
         data = data[:4] + struct.pack('<I', len(data)-8) + data[8:]
     return data
 
@@ -100,12 +100,12 @@ def map_package(grouped=True, invalid_property=False, null_reference=False):
         location = tag(names, 'Location', 10, struct.pack('<3f', 1000000, -2000000, -200), 'Vector')
         unknown = tag(names, 'UnknownMapProperty', 11, b'\x11\x22\x33')
         return sound + location + unknown + compact(names['None']) + b'\xab\xcd'
+    export_of_another_class_with_a_matching_leaf_class_name = {'name': 'Unrelated0', 'class': -7, 'body': body}
     return package_bytes(['AmbientSound', 'Location', 'Vector', 'UnknownMapProperty'], imports, [
         {'name': 'AmbientSoundObject0', 'class': -2, 'body': body},
         {'name': 'AmbientSoundObject1', 'class': -2, 'body': body},
         {'name': 'AmbientSoundObject4093', 'class': -2, 'body': lambda offset, names: compact(names['None'])},
-        # Matching leaf class names are not enough to inventory another class.
-        {'name': 'Unrelated0', 'class': -7, 'body': body},
+        export_of_another_class_with_a_matching_leaf_class_name,
     ])
 
 
@@ -126,6 +126,7 @@ class NativeMapAudioTests(unittest.TestCase):
         snapshot = self.root/'artifacts/inputs/IMPORTA-PC'
         (snapshot/'maps').mkdir(parents=True)
         (snapshot/'sounds').mkdir()
+        lock_client_as_reference_root(self, snapshot)
         (snapshot/'maps/20_20.unr').write_bytes(map_package(**{key: options[key] for key in ('grouped', 'invalid_property', 'null_reference') if key in options}))
         (snapshot/'sounds/AmbSound.uax').write_bytes(sound_package(**{key: options[key] for key in ('payload', 'duplicate', 'wrong_class', 'bad_boundary') if key in options}))
         (self.root/'recipes').mkdir()
@@ -242,7 +243,8 @@ class NativeMapAudioTests(unittest.TestCase):
         self.assertEqual(result['counts']['failedReferencedDependencies'], 1)
         self.assertIn('exact qualified', self.read(args, 'inventory.json')['sounds'][0]['error'])
         self.assertFalse(list(args.output.rglob('asset.l2asset')))
-        self.assertEqual(converter.call_count, 1)  # Constructor only; no convertible exact source.
+        constructor_only_call_count = 1
+        self.assertEqual(converter.call_count, constructor_only_call_count)
 
     def test_ambiguous_exact_object_does_not_export(self):
         args = self.fixture(duplicate=True)
@@ -276,7 +278,8 @@ class NativeMapAudioTests(unittest.TestCase):
 
     def test_wav_codec_rejection_is_explicit_failed_coverage(self):
         payload = bytearray(wav_bytes())
-        struct.pack_into('<H', payload, 20, 3)  # Unsupported IEEE-float codec, valid RIFF framing.
+        wav_format_tag_offset, unsupported_ieee_float_format_tag = 20, 3
+        struct.pack_into('<H', payload, wav_format_tag_offset, unsupported_ieee_float_format_tag)
         args = self.fixture(payload=bytes(payload))
         result = audio.run(args)
         self.assertFalse(result['success'])
@@ -302,7 +305,8 @@ class NativeMapAudioTests(unittest.TestCase):
     def test_explicit_null_reference_is_separate_from_omission(self):
         args = self.fixture(null_reference=True)
         result = audio.run(args)
-        self.assertFalse(result['success'])  # Recipe intentionally still expects two references.
+        recipe_still_expecting_two_references_succeeded = result['success']
+        self.assertFalse(recipe_still_expecting_two_references_succeeded)
         self.assertEqual([row['status'] for row in self.read(args, 'inventory.json')['objects']],
                          ['serialized-null-reference', 'serialized-null-reference', 'omitted-reference-unresolved'])
 

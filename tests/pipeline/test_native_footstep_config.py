@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/'scripts'))
 from native_assets_lib import footstep_config as foot
 from native_catalog.ue2 import FormatError, Reader
+from reference_client_lock_fixture import lock_client_as_reference_root
 
 spec = importlib.util.spec_from_file_location('audit_native_footstep_config', ROOT/'scripts/audit-native-footstep-config.py')
 audit = importlib.util.module_from_spec(spec)
@@ -136,6 +137,7 @@ class FootstepConfigTests(unittest.TestCase):
         config.write_bytes(encoded(text))
         snapshot = root/'client'
         (snapshot/'sounds').mkdir(parents=True)
+        lock_client_as_reference_root(self, snapshot)
         package = snapshot/'sounds/stepsound.uax'
         package.write_bytes(b'mocked-native-package')
         lock = inputs/'lock.json'

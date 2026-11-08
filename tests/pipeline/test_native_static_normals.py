@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from native_assets_lib.static_normals import restore_mapped_static_normals, restore_glb_static_normals, read_proven_normal_streams
 from native_catalog.ue2 import Package
+from reference_client_lock_fixture import lock_client_as_reference_root
 cli_spec = importlib.util.spec_from_file_location('static_normal_cli', ROOT / 'scripts/restore-native-static-normals.py')
 normal_cli = importlib.util.module_from_spec(cli_spec)
 cli_spec.loader.exec_module(normal_cli)
@@ -110,6 +111,7 @@ class StaticNormalTests(unittest.TestCase):
             root = Path(directory)
             client = root / 'client'
             client.mkdir()
+            lock_client_as_reference_root(self, client)
             archive = root / 'original.l2asset'
             archive.write_bytes(b'untouched-input')
             with self.assertRaisesRegex(ValueError, 'outside the source'):
@@ -160,14 +162,13 @@ class StaticNormalTests(unittest.TestCase):
         spans = set()
         source = json.loads(proof)
         vertex_field = next(row for row in source['sourceFieldRanges'] if row['field'] == 'vertices')
-        # The pinned527-vertex compact count occupies two bytes. Compare each
-        # source float's original bytes directly, without numeric normalization.
+        compact_vertex_count_bytes = 2
         for row in report['sections']:
             start = report['glbBinaryOffset'] + row['byteOffset']
             for index, source_index in enumerate(row['sourceVertexFirstUse']):
-                base = vertex_field['offset'] + 2 + source_index * 24
-                expected = b''.join(package.data[base + axis * 4:base + axis * 4 + 4] for axis in (3, 5, 4))
-                self.assertEqual(changed[start + index * 12:start + (index + 1) * 12], expected)
+                base = vertex_field['offset'] + compact_vertex_count_bytes + source_index * 24
+                original_source_float_bytes = b''.join(package.data[base + axis * 4:base + axis * 4 + 4] for axis in (3, 5, 4))
+                self.assertEqual(changed[start + index * 12:start + (index + 1) * 12], original_source_float_bytes)
             spans.update(range(start, start + row['bytes']))
         self.assertEqual(len(changed), len(original))
         self.assertTrue(all(a == b for index, (a, b) in enumerate(zip(original, changed)) if index not in spans))

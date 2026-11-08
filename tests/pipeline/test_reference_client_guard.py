@@ -2,6 +2,7 @@ import hashlib
 import importlib.util
 import os
 from pathlib import Path
+import shutil
 import sys
 import tempfile
 import unittest
@@ -9,12 +10,16 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
+import build_reference_client_lock
 import reference_client_guard
 from build_reference_client_lock import classify_reference_client_trees, write_reference_client_lock
 from hash_reference_client_tree import hash_tree
-from reference_client_guard import ReferenceClientLockError, require_reference_client
+from reference_client_guard import (ReferenceClientLock, ReferenceClientLockError, current_host_name, is_locked_reference_root,
+    require_reference_client)
+from reference_client_lock_fixture import use_reference_client_lock
 
 HASHING_SCRIPT_SHA256 = '0' * 64
+BACKSLASH = chr(92)
 
 
 def write_tree_file(root, relative_path, payload):
@@ -22,6 +27,15 @@ def write_tree_file(root, relative_path, payload):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(payload)
     return path
+
+
+def windows_share_spelling(local_path, server):
+    drive, rest = os.path.splitdrive(str(local_path))
+    return BACKSLASH * 2 + server + BACKSLASH + drive.rstrip(':') + '$' + rest
+
+
+def device_spelling(local_path):
+    return BACKSLASH * 2 + '?' + BACKSLASH + str(local_path)
 
 
 class SyntheticReferenceClientTrees:
@@ -38,8 +52,13 @@ class SyntheticReferenceClientTrees:
         write_tree_file(self.importa_root, 'system/l2.ini', b'[Engine]')
         write_tree_file(self.conversion_root, 'system/l2.ini', b'[Engine]')
 
+    def origins(self):
+        return {'REFERENCE_HOST': current_host_name(), 'REFERENCE_ROOT': self.importa_root.as_posix(),
+                'CONVERSION_HOST': current_host_name(), 'CONVERSION_ROOT': self.conversion_root.as_posix()}
+
     def write_lock(self):
-        lock = classify_reference_client_trees(hash_tree(str(self.importa_root)), hash_tree(str(self.conversion_root)), HASHING_SCRIPT_SHA256)
+        with patch.multiple(build_reference_client_lock, **self.origins()):
+            lock = classify_reference_client_trees(hash_tree(str(self.importa_root)), hash_tree(str(self.conversion_root)), HASHING_SCRIPT_SHA256)
         write_reference_client_lock(lock, self.lock_path)
         return lock
 
@@ -49,24 +68,18 @@ class GuardedConversionRootTestCase(unittest.TestCase):
         self.temporary_directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary_directory.cleanup)
         self.trees = SyntheticReferenceClientTrees(Path(self.temporary_directory.name).resolve())
-        for name, value in (('DATABASE_PC_CONVERSION_ROOT', self.trees.conversion_root), ('REFERENCE_CLIENT_LOCK_PATH', self.trees.lock_path)):
-            patcher = patch.object(reference_client_guard, name, value)
-            patcher.start()
-            self.addCleanup(patcher.stop)
-        cache_patcher = patch.dict(reference_client_guard.accesses_by_root_and_lock, clear=True)
-        cache_patcher.start()
-        self.addCleanup(cache_patcher.stop)
+        use_reference_client_lock(self, self.trees.lock_path)
 
 
 class ReferenceClientGuardTests(GuardedConversionRootTestCase):
-    def test_conversion_root_without_lock_is_refused(self):
-        with self.assertRaisesRegex(ReferenceClientLockError, 'reference client lock missing'):
-            require_reference_client(self.trees.conversion_root)
+    def test_every_root_without_lock_is_refused(self):
+        for root in (self.trees.conversion_root, self.trees.importa_root):
+            with self.subTest(root=root), self.assertRaisesRegex(ReferenceClientLockError, 'reference client lock missing'):
+                require_reference_client(root)
 
-    def test_conversion_root_spelling_is_compared_casefolded(self):
-        spelled_differently = Path(str(self.trees.conversion_root).upper())
-        with self.assertRaisesRegex(ReferenceClientLockError, 'reference client lock missing'):
-            require_reference_client(spelled_differently)
+    def test_reference_root_spelled_in_another_case_is_the_reference_root(self):
+        self.trees.write_lock()
+        self.assertFalse(require_reference_client(Path(str(self.trees.importa_root).upper())).requires_lock)
 
     def test_equal_file_is_accepted(self):
         self.trees.write_lock()
@@ -103,13 +116,71 @@ class ReferenceClientGuardTests(GuardedConversionRootTestCase):
         with self.assertRaisesRegex(ReferenceClientLockError, 'stale for system/Engine.dll'):
             require_reference_client(self.trees.conversion_root)
 
-    def test_other_roots_only_confine_paths(self):
+    def test_locked_reference_root_on_the_reference_host_only_confines_paths(self):
+        self.trees.write_lock()
         access = require_reference_client(self.trees.importa_root)
         self.assertFalse(access.requires_lock)
         self.assertEqual(access.require_equal_file('system/l2.ini'), self.trees.importa_root / 'system/l2.ini')
         for relative_path in ('../x', 'system/../../x', '/system/Engine.dll', 'C:/Windows/win.ini', 'system\\Engine.dll', '', 'system//Engine.dll'):
             with self.subTest(path=relative_path), self.assertRaises(ReferenceClientLockError):
                 access.require_equal_file(relative_path)
+
+    def test_reference_root_on_another_host_requires_the_lock(self):
+        self.trees.write_lock()
+        with patch.object(reference_client_guard, 'current_host_name', lambda: 'ANOTHER-HOST'):
+            access = require_reference_client(self.trees.importa_root)
+        self.assertTrue(access.requires_lock)
+        with self.assertRaisesRegex(ReferenceClientLockError, 'system/chargrp.dat is differing, not equal'):
+            access.require_equal_file('system/chargrp.dat')
+
+    def test_root_outside_the_lock_requires_the_lock(self):
+        self.trees.write_lock()
+        copied_root = Path(self.temporary_directory.name).resolve() / 'copied'
+        shutil.copytree(self.trees.importa_root, copied_root)
+        access = require_reference_client(copied_root)
+        self.assertTrue(access.requires_lock)
+        with self.assertRaisesRegex(ReferenceClientLockError, 'system/chargrp.dat is differing, not equal'):
+            access.require_equal_file('system/chargrp.dat')
+        (copied_root / 'system/Engine.dll').write_bytes(b'another engine')
+        reference_client_guard.accesses_by_root_and_lock.clear()
+        with self.assertRaisesRegex(ReferenceClientLockError, 'stale for system/Engine.dll'):
+            require_reference_client(copied_root)
+
+    @unittest.skipUnless(sys.platform == 'win32', 'device and share spellings are Windows paths')
+    def test_device_and_share_spellings_of_the_reference_root_require_the_lock(self):
+        self.trees.write_lock()
+        for spelling in (device_spelling(self.trees.importa_root), windows_share_spelling(self.trees.importa_root, 'localhost'),
+                         windows_share_spelling(self.trees.importa_root, '127.0.0.1')):
+            with self.subTest(spelling=spelling):
+                if not os.path.isdir(spelling):
+                    self.skipTest(f'{spelling} is not reachable on this host')
+                access = require_reference_client(spelling)
+                self.assertTrue(access.requires_lock)
+                with self.assertRaisesRegex(ReferenceClientLockError, 'system/chargrp.dat is differing, not equal'):
+                    access.require_equal_file('system/chargrp.dat')
+
+    @unittest.skipUnless(sys.platform == 'win32', 'drive, share and device spellings are Windows paths')
+    def test_only_the_exact_reference_root_on_the_reference_host_skips_the_lock(self):
+        lock = ReferenceClientLock({'referenceHost': 'IMPORTA-PC', 'referenceRoot': 'C:/Lineage2-client'}, {})
+        local_root = Path('C:/Lineage2-client')
+        other_spellings = (
+            windows_share_spelling(local_root, 'IMPORTA-PC'),
+            windows_share_spelling(local_root, 'localhost'),
+            windows_share_spelling(local_root, '127.0.0.1'),
+            device_spelling(local_root),
+            BACKSLASH * 2 + '?' + BACKSLASH + 'UNC' + BACKSLASH + 'IMPORTA-PC' + BACKSLASH + 'C$' + BACKSLASH + 'Lineage2-client',
+            'Z:/Lineage2-client',
+            'E:/Lineage2-client',
+        )
+        with patch.object(reference_client_guard, 'current_host_name', lambda: 'IMPORTA-PC'):
+            for spelling in ('C:/Lineage2-client', 'c:\\lineage2-client'):
+                with self.subTest(spelling=spelling):
+                    self.assertTrue(is_locked_reference_root(Path(spelling), lock))
+            for spelling in other_spellings:
+                with self.subTest(spelling=spelling):
+                    self.assertFalse(is_locked_reference_root(Path(spelling), lock))
+        with patch.object(reference_client_guard, 'current_host_name', lambda: 'DATABASE-PC'):
+            self.assertFalse(is_locked_reference_root(local_root, lock))
 
 
 class CentralReadHelperBindingTests(GuardedConversionRootTestCase):

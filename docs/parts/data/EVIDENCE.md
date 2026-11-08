@@ -28,7 +28,7 @@ Recorded 2026-11-08 (FOUND-03) in `recipes/reference-client-tree.lock.json`, che
 - E: only: the nested `L2FileEdit-master/L2FileEdit-master/` copy (4,108 files with its siblings), `L2FileEdit-master.zip`, `Start-Kingdom.cmd`, `Start-Local.cmd`.
 - Volatile config: every `*.ini`, `*.log`, `*.bak` and `*.bak-*` path, for example `system/l2.ini` and `system/l2.ini.bak-20261104-111916`.
 - `system/Engine.dll` (spelled `system/engine.dll` on both disks) is equal, SHA-256 `4dd2f63c606df5671702911fa1f8ddcc4099bf2b98b81e8aa88eed47f5405b08`, the same as `recipes/native-inputs.lock.json`. All 40 `system/*.dat` files are equal.
-- The guard (`scripts/reference_client_guard.py`) reads an E: file only when its lock class is equal. It accepts `system/Engine.dll` and refuses `system/l2.ini` on the real tree.
+- The guard (`scripts/reference_client_guard.py`) reads a client file only when its lock class is equal, for every root except the lock's exact reference root on its reference host. It accepts `system/Engine.dll` and refuses `system/l2.ini` on the real tree.
 
 ## Dat table inventory
 

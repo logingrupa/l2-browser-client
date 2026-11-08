@@ -12,6 +12,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/'scripts'))
 import native_assets
+from reference_client_lock_fixture import lock_client_as_reference_root
 from test_native_map_audio import compact, package_bytes, sound_package, wav_bytes
 
 spec = importlib.util.spec_from_file_location('export_native_sounds', ROOT/'scripts/export-native-sounds.py')
@@ -51,6 +52,7 @@ class NativeSoundBatchTests(unittest.TestCase):
     def fixture(self, **options):
         snapshot = self.root/'artifacts/inputs/IMPORTA-PC'
         (snapshot/'sounds').mkdir(parents=True)
+        lock_client_as_reference_root(self, snapshot)
         source = snapshot/'sounds/AmbSound.uax'
         hyphen = options.pop('hyphen', False)
         mixed = options.pop('mixed', False)

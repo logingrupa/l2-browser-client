@@ -1,4 +1,3 @@
-"""Guards for the source-specific read-only research probe."""
 from pathlib import Path
 import struct
 import sys
@@ -8,6 +7,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from audit_musveren_weights import accessor, source_arrays, source_package
+from reference_client_lock_fixture import lock_client_as_reference_root
 
 
 class WeightAuditGuardTests(unittest.TestCase):
@@ -15,6 +15,7 @@ class WeightAuditGuardTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             client = Path(directory)
             (client / 'animations').mkdir()
+            lock_client_as_reference_root(self, client)
             source = client / 'animations/LineageMonsters.ukx'
             raw = b'wrong native source fixture'
             source.write_bytes(raw)

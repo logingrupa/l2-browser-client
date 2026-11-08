@@ -1,4 +1,3 @@
-"""Migration must reject self-consistent derivative hashes with altered source blocks."""
 import json
 from pathlib import Path
 import sys
@@ -14,6 +13,10 @@ from native_assets_lib.texture_dds import build_texture_dds, UnsupportedTextureD
 from native_texture_validation import verify_texture_products
 from test_texture_mips import fixture
 from native_assets import Converter, sha
+from reference_client_lock_fixture import lock_client_as_reference_root
+
+DXT5_FOURCC_BYTE_OFFSET = 84
+DXT5_ALPHA_SELECTOR_BYTE_OFFSET = 130
 
 
 class TextureValidationTests(unittest.TestCase):
@@ -22,6 +25,7 @@ class TextureValidationTests(unittest.TestCase):
         package, item, _, _ = fixture(fmt=8, levels=[(4, 4, block)]) if format_id == 8 else fixture()
         client = root / 'source'
         client.mkdir()
+        lock_client_as_reference_root(self, client)
         source = client / 'Fixture.utx'
         source.write_bytes(package.data)
         tool = root / 'tool.exe'
@@ -127,7 +131,7 @@ class TextureValidationTests(unittest.TestCase):
 
     def test_dxt5_alpha_payload_and_fourcc_cannot_change_even_with_rewritten_derivative_hashes(self):
         import hashlib
-        for offset in (84,130):  # FourCC and a three-bit alpha selector byte.
+        for offset in (DXT5_FOURCC_BYTE_OFFSET, DXT5_ALPHA_SELECTOR_BYTE_OFFSET):
             with self.subTest(offset=offset),tempfile.TemporaryDirectory() as directory:
                 root=Path(directory);metadata=self.write_fixture(root,dxt5=True)
                 self.assertTrue(verify_texture_products(root,metadata)['nativeMipPayloadsIdentical'])

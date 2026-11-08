@@ -6,8 +6,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from build_reference_client_lock import FILE_CLASSES, FILE_FIELDS, hashing_script_sha256
-from reference_client_guard import (DATABASE_PC_CONVERSION_ROOT, REFERENCE_CLIENT_LOCK_PATH, ReferenceClientLockError,
-    require_reference_client)
+from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, ReferenceClientLockError, require_reference_client
 
 NATIVE_INPUTS_LOCK_PATH = ROOT / 'recipes' / 'native-inputs.lock.json'
 MAXIMUM_LOCK_BYTES = 4 * 1024 * 1024
@@ -63,15 +62,18 @@ class CommittedReferenceClientLockTests(unittest.TestCase):
         self.assertEqual(self.lock['hashingScriptSha256'], hashing_script_sha256())
 
 
-@unittest.skipUnless(DATABASE_PC_CONVERSION_ROOT.is_dir(), 'E:/Lineage2-client is not present on this machine')
+CONVERSION_ROOT = Path(committed_reference_client_lock()['conversionRoot'])
+
+
+@unittest.skipUnless(CONVERSION_ROOT.is_dir(), f'{CONVERSION_ROOT.as_posix()} is not present on this machine')
 class RealConversionTreeGuardTests(unittest.TestCase):
     def test_guard_accepts_the_equal_engine_library(self):
-        path = require_reference_client(DATABASE_PC_CONVERSION_ROOT).require_equal_file(ENGINE_LIBRARY_PATH)
+        path = require_reference_client(CONVERSION_ROOT).require_equal_file(ENGINE_LIBRARY_PATH)
         self.assertTrue(path.is_file())
 
     def test_guard_refuses_the_volatile_client_config(self):
         with self.assertRaisesRegex(ReferenceClientLockError, 'volatile-config'):
-            require_reference_client(DATABASE_PC_CONVERSION_ROOT).require_equal_file(VOLATILE_CLIENT_CONFIG_PATH)
+            require_reference_client(CONVERSION_ROOT).require_equal_file(VOLATILE_CLIENT_CONFIG_PATH)
 
 
 if __name__ == '__main__':

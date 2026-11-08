@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 import native_actor_profiles as profiles
 from native_catalog.ue2 import FormatError
+from reference_client_lock_fixture import lock_client_as_reference_root
 
 
 def recipe():
@@ -93,6 +94,7 @@ class ReceiptTests(unittest.TestCase):
         self.root = Path(temporary.name)
         self.client = self.root / 'client'
         self.client.mkdir()
+        lock_client_as_reference_root(self, self.client)
         self.source = self.client / 'Actor.u'
         self.source.write_bytes(b'original native class')
         self.output = self.root / 'output'
