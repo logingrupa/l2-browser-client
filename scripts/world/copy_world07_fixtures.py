@@ -19,7 +19,9 @@ PACKET_RELATIVE_ROOT = 'post-migration-visibility-20261106'
 PACKET_MANIFEST_NAME = 'SHA256_MANIFEST.json'
 PACKET_FILES_OUTSIDE_MANIFEST = frozenset({PACKET_MANIFEST_NAME, 'DELIVERY_VERIFICATION.json'})
 WORLD07_FIXTURE_SOURCES = {
+    'composition-submission/BROWSER_TEST_CASES.md': 'browser-test-cases.md',
     'composition-submission/DISCRIMINATING_CASES.json': 'discriminating-cases.json',
+    'music-id-evidence/MUSIC_ID_JOIN.json': 'music-id-join.json',
 }
 JSON_FIXTURE_TRANSFORM = 'canonical-json-absolute-path-fields-reduced-to-basename'
 MARKDOWN_FIXTURE_TRANSFORM = 'verbatim-markdown'

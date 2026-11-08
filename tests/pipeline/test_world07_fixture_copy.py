@@ -15,8 +15,12 @@ from world.copy_world07_fixtures import (World07FixtureCopyError, World07PacketM
 
 COMMITTED_FIXTURE_DIRECTORY = ROOT / 'tests' / 'fixtures' / 'world-07'
 BACKSLASH = chr(92)
+BROWSER_TEST_CASES_SOURCE = 'composition-submission/BROWSER_TEST_CASES.md'
 DISCRIMINATING_CASES_SOURCE = 'composition-submission/DISCRIMINATING_CASES.json'
+MUSIC_ID_JOIN_SOURCE = 'music-id-evidence/MUSIC_ID_JOIN.json'
+SYNTHETIC_BROWSER_TEST_CASES = b'# Cases\n'
 SYNTHETIC_DISCRIMINATING_CASES = {'adjacent': [{'id': 'shared-edge', 'triangles': [{'layers': [0]}, {'layers': [0, 6]}]}]}
+SYNTHETIC_MUSIC_ID_JOIN = {'joins': [{'storedString': 'D03_F', 'filenameMatches': [{'path': 'C:/client/music/d03_f.ogg', 'bytes': 7}]}]}
 
 
 def write_packet_file(packet_root, relative_path, payload):
@@ -36,8 +40,8 @@ def write_packet_manifest(packet_root, rows):
 def write_synthetic_packet(packet_root):
     payloads = {
         DISCRIMINATING_CASES_SOURCE: json.dumps(SYNTHETIC_DISCRIMINATING_CASES).encode('utf-8'),
-        'REPORT.md': b'# Report\n',
-        'music-id-evidence/notes.md': b'notes\n',
+        BROWSER_TEST_CASES_SOURCE: SYNTHETIC_BROWSER_TEST_CASES,
+        MUSIC_ID_JOIN_SOURCE: json.dumps(SYNTHETIC_MUSIC_ID_JOIN).encode('utf-8'),
     }
     for relative_path, payload in payloads.items():
         write_packet_file(packet_root, relative_path, payload)
@@ -66,7 +70,7 @@ class World07PacketManifestTest(unittest.TestCase):
             write_packet_manifest(self.packet_root, [])
 
         def missing_file():
-            (self.packet_root / 'REPORT.md').unlink()
+            (self.packet_root / BROWSER_TEST_CASES_SOURCE).unlink()
 
         def wrong_byte_count():
             rows = [manifest_row(path, payload) for path, payload in self.payloads.items()]
@@ -74,26 +78,28 @@ class World07PacketManifestTest(unittest.TestCase):
             write_packet_manifest(self.packet_root, rows)
 
         def wrong_sha256():
-            write_packet_file(self.packet_root, 'REPORT.md', b'# Repors\n')
+            write_packet_file(self.packet_root, BROWSER_TEST_CASES_SOURCE, b'# Casex\n')
 
         def unlisted_extra_file():
             write_packet_file(self.packet_root, 'extra.json', b'{}')
 
         def parent_directory_path():
-            write_packet_manifest(self.packet_root, [manifest_row('../REPORT.md', b'# Report\n')])
+            write_packet_manifest(self.packet_root, [manifest_row('../' + BROWSER_TEST_CASES_SOURCE, SYNTHETIC_BROWSER_TEST_CASES)])
 
         def backslash_path():
-            write_packet_manifest(self.packet_root, [manifest_row('music-id-evidence' + BACKSLASH + 'notes.md', b'notes\n')])
+            backslash_source = BROWSER_TEST_CASES_SOURCE.replace('/', BACKSLASH)
+            write_packet_manifest(self.packet_root, [manifest_row(backslash_source, SYNTHETIC_BROWSER_TEST_CASES)])
 
         def absolute_path():
-            write_packet_manifest(self.packet_root, [manifest_row('C:/REPORT.md', b'# Report\n')])
+            write_packet_manifest(self.packet_root, [manifest_row('C:/' + BROWSER_TEST_CASES_SOURCE, SYNTHETIC_BROWSER_TEST_CASES)])
 
         def duplicated_row():
             rows = [manifest_row(path, payload) for path, payload in self.payloads.items()]
             write_packet_manifest(self.packet_root, rows + rows[:1])
 
-        breakages = [(zero_rows, 'no rows'), (missing_file, 'file missing: REPORT.md'), (wrong_byte_count, 'byte count mismatch'),
-                     (wrong_sha256, 'sha256 mismatch: REPORT.md'), (unlisted_extra_file, 'not listed in the manifest: extra.json'),
+        breakages = [(zero_rows, 'no rows'), (missing_file, f'file missing: {BROWSER_TEST_CASES_SOURCE}'),
+                     (wrong_byte_count, 'byte count mismatch'), (wrong_sha256, f'sha256 mismatch: {BROWSER_TEST_CASES_SOURCE}'),
+                     (unlisted_extra_file, 'not listed in the manifest: extra.json'),
                      (parent_directory_path, 'escapes the packet'), (backslash_path, 'forward slashes'),
                      (absolute_path, 'forward slashes'), (duplicated_row, 'listed twice')]
         for breakage, expected_message in breakages:
@@ -157,16 +163,26 @@ class World07FixtureCopyTest(unittest.TestCase):
     def read_destination(self):
         return {path.name: path.read_bytes() for path in sorted(self.destination.iterdir())}
 
-    def test_copy_writes_the_fixture_and_index_and_a_rerun_is_byte_identical(self):
+    def replace_packet_source(self, source_path, payload):
+        write_packet_file(self.packet_root, source_path, payload)
+        rows = json.loads((self.packet_root / 'SHA256_MANIFEST.json').read_bytes())['files']
+        write_packet_manifest(self.packet_root, [manifest_row(source_path, payload) if row['path'] == source_path else row for row in rows])
+
+    def test_copy_writes_the_fixtures_and_index_and_a_rerun_is_byte_identical(self):
         verification = copy_world07_fixtures(self.packet_root, self.destination)
         first_copy = self.read_destination()
         copy_world07_fixtures(self.packet_root, self.destination)
         self.assertEqual(self.read_destination(), first_copy)
-        self.assertEqual(sorted(first_copy), ['discriminating-cases.json', 'fixtures.json'])
+        self.assertEqual(sorted(first_copy), ['browser-test-cases.md', 'discriminating-cases.json', 'fixtures.json', 'music-id-join.json'])
+        self.assertEqual(first_copy['browser-test-cases.md'], SYNTHETIC_BROWSER_TEST_CASES)
         self.assertEqual(json.loads(first_copy['discriminating-cases.json']), SYNTHETIC_DISCRIMINATING_CASES)
+        self.assertEqual(json.loads(first_copy['music-id-join.json']),
+                         {'joins': [{'storedString': 'D03_F', 'filenameMatches': [{'pathBasename': 'd03_f.ogg', 'bytes': 7}]}]})
         fixture_index = json.loads(first_copy['fixtures.json'])
         self.assertEqual(fixture_index['packetManifestSha256'], verification['manifestSha256'])
-        self.assertEqual([row['sourcePath'] for row in fixture_index['fixtures']], [DISCRIMINATING_CASES_SOURCE])
+        self.assertEqual([(row['sourcePath'], row['droppedPointers']) for row in fixture_index['fixtures']],
+                         [(BROWSER_TEST_CASES_SOURCE, []), (DISCRIMINATING_CASES_SOURCE, []),
+                          (MUSIC_ID_JOIN_SOURCE, ['/joins/0/filenameMatches/0/path'])])
         self.assertEqual([entry.name for entry in self.destination.parent.iterdir()], ['world-07'])
 
     def test_failure_mid_copy_leaves_the_previous_destination_unchanged(self):
@@ -183,23 +199,25 @@ class World07FixtureCopyTest(unittest.TestCase):
         with patch.object(world07_fixture_copy, 'write_fixture_text', write_then_fail):
             with self.assertRaisesRegex(OSError, 'disk full'):
                 copy_world07_fixtures(self.packet_root, self.destination)
-        self.assertEqual(written_names, ['discriminating-cases.json', 'fixtures.json'])
+        self.assertEqual(written_names, ['browser-test-cases.md', 'discriminating-cases.json', 'music-id-join.json', 'fixtures.json'])
         self.assertEqual(self.read_destination(), previous_copy)
         self.assertEqual([entry.name for entry in self.destination.parent.iterdir()], ['world-07'])
 
     def test_manifest_mismatch_copies_nothing(self):
-        write_packet_file(self.packet_root, 'REPORT.md', b'changed\n')
+        write_packet_file(self.packet_root, BROWSER_TEST_CASES_SOURCE, b'changed\n')
         with self.assertRaises(World07PacketManifestError):
             copy_world07_fixtures(self.packet_root, self.destination)
         self.assertFalse(self.destination.parent.joinpath('world-07').exists())
 
     def test_long_binary_run_in_a_source_is_refused(self):
-        payload = json.dumps({'blob': 'ab' * 65}).encode('utf-8')
-        write_packet_file(self.packet_root, DISCRIMINATING_CASES_SOURCE, payload)
-        rows = json.loads((self.packet_root / 'SHA256_MANIFEST.json').read_bytes())['files']
-        rows[0] = manifest_row(DISCRIMINATING_CASES_SOURCE, payload)
-        write_packet_manifest(self.packet_root, rows)
+        self.replace_packet_source(DISCRIMINATING_CASES_SOURCE, json.dumps({'blob': 'ab' * 65}).encode('utf-8'))
         with self.assertRaisesRegex(World07FixtureCopyError, 'longer than 128'):
+            copy_world07_fixtures(self.packet_root, self.destination)
+        self.assertEqual([entry.name for entry in self.destination.parent.iterdir()], [])
+
+    def test_absolute_path_in_a_markdown_source_is_refused(self):
+        self.replace_packet_source(BROWSER_TEST_CASES_SOURCE, ('see C:' + BACKSLASH + 'Users' + BACKSLASH + 'reader\n').encode('utf-8'))
+        with self.assertRaisesRegex(World07FixtureCopyError, 'absolute or private path'):
             copy_world07_fixtures(self.packet_root, self.destination)
         self.assertEqual([entry.name for entry in self.destination.parent.iterdir()], [])
 

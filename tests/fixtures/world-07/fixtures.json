@@ -2,10 +2,46 @@
   "fixtures": [
     {
       "droppedPointers": [],
+      "fixture": "browser-test-cases.md",
+      "sourceBytes": 1967,
+      "sourcePath": "composition-submission/BROWSER_TEST_CASES.md",
+      "sourceSha256": "09ea5b39831a69aad3db75e652be034a253013555ca929d1689a6e677aba6b1e",
+      "transform": "verbatim-markdown"
+    },
+    {
+      "droppedPointers": [],
       "fixture": "discriminating-cases.json",
       "sourceBytes": 24885,
       "sourcePath": "composition-submission/DISCRIMINATING_CASES.json",
       "sourceSha256": "7a78d17825bc7e692ad46ead4e0579b4aa9cb1e61ac9f698790d2e41f9a2e8dc",
+      "transform": "canonical-json-absolute-path-fields-reduced-to-basename"
+    },
+    {
+      "droppedPointers": [
+        "/volumeEvidenceNote/path",
+        "/sourceTables/0/source/path",
+        "/sourceTables/0/decodedPin/path",
+        "/sourceTables/0/manifestPin/path",
+        "/sourceTables/0/schema/path",
+        "/sourceTables/1/source/path",
+        "/sourceTables/1/decodedPin/path",
+        "/sourceTables/1/manifestPin/path",
+        "/sourceTables/1/schema/path",
+        "/filenameSearch/root",
+        "/joins/0/filenameJoins/0/filenameMatches/0/path",
+        "/joins/0/filenameJoins/1/filenameMatches/0/path",
+        "/joins/0/filenameJoins/2/filenameMatches/0/path",
+        "/joins/1/filenameJoins/0/filenameMatches/0/path",
+        "/joins/1/filenameJoins/1/filenameMatches/0/path",
+        "/joins/1/filenameJoins/2/filenameMatches/0/path",
+        "/joins/1/filenameJoins/3/filenameMatches/0/path",
+        "/joins/1/filenameJoins/4/filenameMatches/0/path",
+        "/joins/1/filenameJoins/5/filenameMatches/0/path"
+      ],
+      "fixture": "music-id-join.json",
+      "sourceBytes": 10391,
+      "sourcePath": "music-id-evidence/MUSIC_ID_JOIN.json",
+      "sourceSha256": "9dbb003ccbd389afb96391da0dbc6f17b0ecb3fd2fc0b016de75b598c1b8a1f4",
       "transform": "canonical-json-absolute-path-fields-reduced-to-basename"
     }
   ],
