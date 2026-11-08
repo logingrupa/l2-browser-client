@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 import native_assets
 import reference_client_guard
-from native_assets import Converter, sha
+from native_assets import Converter
 from reference_client_guard import read_reference_client_lock
 from test_native_assets_manifest_v2 import synthetic_wav
 from test_reference_client_guard import GuardedConversionRootTestCase, write_tree_file
@@ -57,7 +57,8 @@ class LockedSourceTestCase(GuardedConversionRootTestCase):
         self.trees.write_lock()
         self.project = Path(self.temporary_directory.name).resolve()
         self.umodel = write_tree_file(self.project, 'tools/umodel.exe', b'dummy umodel')
-        umodel_patcher = patch.object(native_assets, 'UMODEL_SHA256', hashlib.sha256(self.umodel.read_bytes()).hexdigest())
+        self.umodel_sha256 = hashlib.sha256(self.umodel.read_bytes()).hexdigest()
+        umodel_patcher = patch.object(native_assets, 'UMODEL_SHA256', self.umodel_sha256)
         umodel_patcher.start()
         self.addCleanup(umodel_patcher.stop)
 

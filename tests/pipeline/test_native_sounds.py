@@ -426,6 +426,18 @@ class NativeSoundBatchTests(unittest.TestCase):
             batch.run(args)
         self.assertEqual(path.read_bytes(), b'corrupt')
 
+    def test_forged_converter_export_manifest_is_rejected_even_if_manifest_rehashed(self):
+        args = self.fixture()
+        batch.run(args)
+        row = self.read(args, 'coverage.json')['sounds'][0]
+        export_manifest = args.output/row['products']['archive']['path'].removesuffix('asset.l2asset')/'evidence/export-manifest.json'
+        forged = batch.load_json(export_manifest.read_bytes())
+        forged['files'] = []
+        self.rewrite(export_manifest, forged)
+        self.rehash(args)
+        with self.assertRaisesRegex(ValueError, 'Converter export manifest differs'):
+            batch.run(args)
+
     def test_rehashed_unknown_files_and_coverage_counter_forgery_rejected(self):
         args = self.fixture()
         batch.run(args)

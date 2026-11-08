@@ -6,7 +6,6 @@ import json
 import math
 from pathlib import Path
 import re
-import shutil
 import socket
 import subprocess
 import sys
@@ -25,6 +24,7 @@ from native_assets_lib.static_materials import native_static_materials
 from native_assets_lib.texture_mips import build_texture_source, UnsupportedTextureSource
 from native_assets_lib.texture_dds import build_texture_dds, UnsupportedTextureDDS
 from native_assets_lib.converter_source_digests import ConverterSourceDigests
+from native_assets_lib.conversion_evidence import write_conversion_evidence
 from reference_client_guard import ENGINE_LIBRARY_RELATIVE_PATH, require_reference_client
 from native_store.store_paths import require_converter_output
 
@@ -711,7 +711,7 @@ class Converter:
                 for name, value in products.items():
                     (target / name).parent.mkdir(parents=True, exist_ok=True)
                     (target / name).write_bytes(value)
-                shutil.copytree(work, target / 'evidence')
+                write_conversion_evidence(work, target / 'evidence', UMODEL_SHA256)
             record = {'directory': content_key, 'dependencies': self.dependencies, 'outputs': {name: sha(value) for name, value in products.items()}}
             index.parent.mkdir(exist_ok=True)
             index.write_bytes(json_bytes(record))

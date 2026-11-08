@@ -13,6 +13,7 @@ import zipfile
 
 import native_assets
 from native_assets import Converter, verify_archive
+from native_assets_lib.conversion_evidence import EXPORT_MANIFEST_NAME, EXPORT_MANIFEST_SCHEMA_VERSION
 from native_assets_lib.footstep_config import sound_payload
 from native_audio import decode_native_audio
 from native_catalog.ue2 import FormatError
@@ -208,8 +209,15 @@ def verify_product(output, row, result, impl, decoded):
         product_hashes['asset.l2asset'] = content
         expected_paths.add(folder_name + '/asset.l2asset')
     evidence_name = 'evidence/sound-' + row['export']['object'] + ('.ogg' if row['nativeSound']['nativeFormat'].casefold() == 'ogg' else '.wav')
-    require(child(folder, evidence_name).read_bytes() == child(output, row['nativePayload']['path']).read_bytes(), 'Original converter evidence differs')
+    evidence_payload = child(folder, evidence_name).read_bytes()
+    require(evidence_payload == child(output, row['nativePayload']['path']).read_bytes(), 'Original converter evidence differs')
     expected_paths.add(folder_name + '/' + evidence_name)
+    export_manifest_name = 'evidence/' + EXPORT_MANIFEST_NAME
+    require(load_json(child(folder, export_manifest_name).read_bytes()) == {
+        'schemaVersion': EXPORT_MANIFEST_SCHEMA_VERSION, 'umodelSha256': native_assets.UMODEL_SHA256,
+        'files': [{'path': evidence_name.removeprefix('evidence/'), 'sha256': digest(evidence_payload), 'bytes': len(evidence_payload), 'retained': True}]},
+        'Converter export manifest differs')
+    expected_paths.add(folder_name + '/' + export_manifest_name)
     index_name = 'cache/index/' + cache_key(row, impl) + '.json'
     index = load_json(child(output, index_name).read_bytes())
     require(index == {'directory': content, 'dependencies': provenance['dependencies'], 'outputs': product_hashes}, 'Converter cache index differs')
