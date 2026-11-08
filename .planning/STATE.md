@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-21-PLAN.md
-last_updated: "2026-11-08T18:34:00.938Z"
+stopped_at: Completed 02-32-PLAN.md
+last_updated: "2026-11-08T18:44:20.909Z"
 last_activity: 2026-11-08
-last_activity_desc: Phase 02 plan 02-21 complete (actors census and unit inventory)
-state_head: c62b0bf09c7bd591348cbc5329ffdbc122149307
+last_activity_desc: Phase 02 plan 02-32 complete (multi-slot verify_binding)
+state_head: 37ebdb6bc226a3344bd92b7b4966addaa0c86ba2
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 86
-  completed_plans: 29
+  completed_plans: 30
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 02 (Stage A breadth) - EXECUTING
-Plan: 02-21 complete, 12 of 69 plans executed
+Plan: 02-32 complete, 13 of 69 plans executed
 Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-08 - Plan 02-21 complete: `python -B scripts/actors/actor_census.py --client E:/Lineage2-client [--check]` reads the 20 lock `animations/` package headers and the 27 texture packages actor rows name through `require_equal_file`, and commits `docs/parts/npcs/actor-unit-census.json` with 7,532 units (633 NPC units per exact mesh and ordered textures, 15 chargrp rows with 30 hair and helmet gaps, 523 weapon and 4,688 armor units, 245 skill roots, 1,398 skill sound rows); every one of the 38,673 npc, character, weapon and armor item, and skill rows has one census gap row in `artifacts/lane-store/actors/gap-rows/census.json`; ACT-01, 02, 03, 05 and 06 stay Pending. Earlier: plan 02-18 complete: `scripts/data/texture_package_census.py` reads only the 128-byte header of each of the 48 lock-equal `systextures/*.utx` packages through `require_equal_file` and commits `docs/parts/ui/texture-package-census.json`: 28 on reviewed texture versions, 20 `texture-licensee-unsupported` (L2UI_CH3, l2ui, L2_RadarMap at 118/0, town_map at 123/23), no decode failures. Earlier: plan 02-04 complete: the catalog writer refuses malformed `tiles`, `tables` and `windows` records in every merge (`validate_catalog_record`), `scripts/native_store/tile_manifest_validation.py` validates `native-tile-runtime` and `native-tile-chunk-runtime` v1 against the world-owned `recipes/world/tile-manifest-vocabulary.json` (created by 02-16), the golden store gains tile 00_00, table syntheticfixture and window SyntheticFixtureWnd, `tests/fixtures/catalog-index-keys.json` pins the golden index keys, and `docs/OUTPUT_CONTRACT.md` states the contract the 02-05 reader implements. Earlier: plan 02-56, the shared Babylon-free modules, typed payload reader and source frame. Earlier: plan 02-09 complete: `Converter` takes every client digest from the reference client guard through `scripts/native_assets_lib/converter_source_digests.py` (one SHA-256 per file identity per process on lock-checked roots, every read on the reference root), pins compare against `recorded_source_sha256`, `implementation_hash` runs once per conversion, and new outputs keep logs, non-glTF exports and `evidence/export-manifest.json` through `scripts/native_assets_lib/conversion_evidence.py` instead of the whole work tree. Earlier: plan 02-08, CONV-02 and CONV-01 contract tests (`tests/pipeline/test_source_preservation_contract.py`, `tests/pipeline/test_converter_independence.py`), the OUTPUT_CONTRACT "Source preservation" section with 15 repair, restore and preserve steps, and the Editor round-trip block removed from `recipes/native-parity.acceptance.json` with every POL-01 member pinned. Earlier: plan 02-06, the serve-only `NATIVE_STORE_ROOT` dev switch (`vite/nativeStoreRootPlugin.ts`) serves `/l2/` from a lane store or the committed fixture store on port 5175, with catalog and coverage only from that root, proven absent from the production bundle; the load-check record format and its atomic per-key writer (`tests/browser/support/loadCheckRecordFile.ts`). Earlier: plan 02-03, one catalog writer library (`scripts/native_store/catalog_writer.py`) under every stager and importer, and `write_lane_catalog.py` with `--lane`, `--union` and `--plan`, pinning lane catalogs to the shared store's catalog SHA-256. Earlier: plan 02-02, one Riga machine schedule owner (`scripts/check-machine-schedule.mjs`, guarded in both Playwright configs), the resumable `UnitLedger` with `require_batch_preflight`, and the gap-row schema with the closed reason list. Earlier: applied the Lineage2JS reference handoff (DEC-OWN-12): eight provisional requirements MAT-01, MAT-02, VIS-01, MOVE-01, FX-01 (Phase 2) and MOVE-02, NET-09, NET-10 (Phase 4), v1 now 66; earlier the native-world-slice merge (DEC-OWN-11) left only the native routes
+Last activity: 2026-11-08 - Plan 02-32 complete: `Converter.verify_binding` verifies `sourceBinding.slotBindings: [{slot, texturePath}]` or the unchanged single form through `scripts/native_assets_lib/source_table_binding.py`; only table-cited slots bind with `native-table-selection`, uncited slots stay magenta, every override must be cited, and npcgrp npc 20003 (`LineageMonsters.goblin_m00`, two textures) verifies on the conversion client; ACT-02 stays Pending for 02-34. Earlier: plan 02-21 complete: `python -B scripts/actors/actor_census.py --client E:/Lineage2-client [--check]` reads the 20 lock `animations/` package headers and the 27 texture packages actor rows name through `require_equal_file`, and commits `docs/parts/npcs/actor-unit-census.json` with 7,532 units (633 NPC units per exact mesh and ordered textures, 15 chargrp rows with 30 hair and helmet gaps, 523 weapon and 4,688 armor units, 245 skill roots, 1,398 skill sound rows); every one of the 38,673 npc, character, weapon and armor item, and skill rows has one census gap row in `artifacts/lane-store/actors/gap-rows/census.json`; ACT-01, 02, 03, 05 and 06 stay Pending. Earlier: plan 02-18 complete: `scripts/data/texture_package_census.py` reads only the 128-byte header of each of the 48 lock-equal `systextures/*.utx` packages through `require_equal_file` and commits `docs/parts/ui/texture-package-census.json`: 28 on reviewed texture versions, 20 `texture-licensee-unsupported` (L2UI_CH3, l2ui, L2_RadarMap at 118/0, town_map at 123/23), no decode failures. Earlier: plan 02-04 complete: the catalog writer refuses malformed `tiles`, `tables` and `windows` records in every merge (`validate_catalog_record`), `scripts/native_store/tile_manifest_validation.py` validates `native-tile-runtime` and `native-tile-chunk-runtime` v1 against the world-owned `recipes/world/tile-manifest-vocabulary.json` (created by 02-16), the golden store gains tile 00_00, table syntheticfixture and window SyntheticFixtureWnd, `tests/fixtures/catalog-index-keys.json` pins the golden index keys, and `docs/OUTPUT_CONTRACT.md` states the contract the 02-05 reader implements. Earlier: plan 02-56, the shared Babylon-free modules, typed payload reader and source frame. Earlier: plan 02-09 complete: `Converter` takes every client digest from the reference client guard through `scripts/native_assets_lib/converter_source_digests.py` (one SHA-256 per file identity per process on lock-checked roots, every read on the reference root), pins compare against `recorded_source_sha256`, `implementation_hash` runs once per conversion, and new outputs keep logs, non-glTF exports and `evidence/export-manifest.json` through `scripts/native_assets_lib/conversion_evidence.py` instead of the whole work tree. Earlier: plan 02-08, CONV-02 and CONV-01 contract tests (`tests/pipeline/test_source_preservation_contract.py`, `tests/pipeline/test_converter_independence.py`), the OUTPUT_CONTRACT "Source preservation" section with 15 repair, restore and preserve steps, and the Editor round-trip block removed from `recipes/native-parity.acceptance.json` with every POL-01 member pinned. Earlier: plan 02-06, the serve-only `NATIVE_STORE_ROOT` dev switch (`vite/nativeStoreRootPlugin.ts`) serves `/l2/` from a lane store or the committed fixture store on port 5175, with catalog and coverage only from that root, proven absent from the production bundle; the load-check record format and its atomic per-key writer (`tests/browser/support/loadCheckRecordFile.ts`). Earlier: plan 02-03, one catalog writer library (`scripts/native_store/catalog_writer.py`) under every stager and importer, and `write_lane_catalog.py` with `--lane`, `--union` and `--plan`, pinning lane catalogs to the shared store's catalog SHA-256. Earlier: plan 02-02, one Riga machine schedule owner (`scripts/check-machine-schedule.mjs`, guarded in both Playwright configs), the resumable `UnitLedger` with `require_batch_preflight`, and the gap-row schema with the closed reason list. Earlier: applied the Lineage2JS reference handoff (DEC-OWN-12): eight provisional requirements MAT-01, MAT-02, VIS-01, MOVE-01, FX-01 (Phase 2) and MOVE-02, NET-09, NET-10 (Phase 4), v1 now 66; earlier the native-world-slice merge (DEC-OWN-11) left only the native routes
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -81,6 +81,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P04 | 25min | 3 tasks | 17 files |
 | Phase 02 P18 | 8 min | 2 tasks | 5 files |
 | Phase 02 P21 | 25 min | 3 tasks | 14 files |
+| Phase 02 P32 | 12 min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -165,6 +166,8 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-21: conversion unit key is <kind>:<sha256> over canonical ASCII JSON of the exact selection, owned by actors.actor_unit_inventory.conversion_unit_key (OVERNIGHT-DECISIONS 176)
 - [Phase 02]: 02-21: actor census resolves textures against lock-equal .utx and .ukx, hair groups gate only the hair gap unit, census rows carry no sourceIdentity.object, --check compares parsed content (rows 179-182)
 - [Phase 02]: 02-21: ACT-01, ACT-02, ACT-03, ACT-05, ACT-06 stay Pending; the census gives every actor row a status but converts nothing (row 186)
+- [Phase 02]: 02-32: sourceBinding.slotBindings request field and one binding evidence shape for both forms; source_table_binding.py owns the check and override parsing (row 187)
+- [Phase 02]: 02-32: ACT-02 stays Pending; the verifier widening converts nothing, 02-34 converts the multi-texture NPC units (row 188)
 
 ### Pending Todos
 
@@ -215,6 +218,6 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-08T18:34:00.612Z
-Stopped at: Completed 02-21-PLAN.md
+Last session: 2026-11-08T18:44:20.549Z
+Stopped at: Completed 02-32-PLAN.md
 Resume file: None
