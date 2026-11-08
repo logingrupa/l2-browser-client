@@ -2,12 +2,6 @@ import { WORLD_AUDIO_MAX_BUS_VOLUME, worldAudioLimiterDefaults, type WorldAudioB
 import { ambienceTimeChoices, nativeAmbientRules, type AmbienceTimeOfDay, type WorldAmbience } from "./worldAmbience";
 import { nativeMusicRules, type WorldMusic } from "./worldMusic";
 
-/** Plain DOM world-audio controls for the developer sheet. Audio is on by
- * default and starts with the first trusted gesture (the runtime attaches
- * WorldAudioMixer.attachGestureUnlock); the button remains as an explicit
- * enable/retry. describe() returns live hover-card rows; cards() says which
- * rows belong to which control. Refreshes run only while the controls are
- * visible (sheet open on the Audio tab). */
 export interface WorldAudioControlDescription {
   name: string;
   value(): string | number | boolean;
@@ -21,9 +15,7 @@ export interface WorldAudioCard { testId: string; title: string; description?: s
 export interface WorldAudioSources {
   music: WorldMusic | null;
   ambience: WorldAmbience | null;
-  /** Load/verification failure of the staged world-audio bundles, if any. */
   failure: string | null;
-  /** True while the optional bundles are still loading. */
   loading?: boolean;
 }
 
@@ -32,14 +24,10 @@ export interface WorldAudioControlOptions {
   ambience?: WorldAmbience | null;
   worldAudioFailure?: string | null;
   worldAudioLoading?: boolean;
-  /** Minimum milliseconds between DOM refreshes from update(). */
   refreshIntervalMs?: number;
-  /** Visibility gate; default: the controls' root is rendered. */
   isVisible?: () => boolean;
 }
 
-/** Native file levels (pinned l2.ini: MusicVolume 0.1 applied per track,
- * AmbientVolume/SoundVolume 1.0), so every user level defaults to 100 %. */
 export const worldAudioDefaults: Readonly<Record<WorldAudioBus, number>> = { music: 1, ambience: 1, effects: 1 };
 
 export function applyWorldAudioDefaults(mixer: WorldAudioMixer): void {
@@ -48,19 +36,19 @@ export function applyWorldAudioDefaults(mixer: WorldAudioMixer): void {
   }
 }
 
-const PRESENTATION = "presentation choice — native rule unverified";
+const PRESENTATION = "presentation choice - native rule unverified";
 const percent = (value: number) => `${Math.round(value * 100)} %`;
 const shortSound = (key: string) => key.split(".").at(-1) ?? key;
 const timeLabels: Record<AmbienceTimeOfDay, string> = { auto: "Auto", day: "Day", night: "Night" };
 
 const busInfo: Record<WorldAudioBus, { label: string; max: number; values: string; source: string; status: string }> = {
-  music: { label: "Music", max: WORLD_AUDIO_MAX_BUS_VOLUME, values: "0–1000 % (100 % = native gain 0.1), On/Off",
+  music: { label: "Music", max: WORLD_AUDIO_MAX_BUS_VOLUME, values: "0-1000 % (100 % = native gain 0.1), On/Off",
     source: "Effective gain = l2.ini MusicVolume 0.1 (pinned file value, ALAudio PlayMusic gain) × this level",
     status: `100 % is the native file value; boosting above it is a ${PRESENTATION}` },
-  ambience: { label: "Ambience", max: 1, values: "0–100 %, On/Off",
+  ambience: { label: "Ambience", max: 1, values: "0-100 %, On/Off",
     source: "Multiplies the native ambient gain (l2.ini SoundVolume 1.0 and AmbientVolume 1.0, pinned file values)",
     status: `100 % keeps the native file level; the user level is a ${PRESENTATION}` },
-  effects: { label: "Effects", max: 1, values: "0–100 %, On/Off",
+  effects: { label: "Effects", max: 1, values: "0-100 %, On/Off",
     source: "Footsteps, hits and action cues (l2.ini SoundVolume 1.0, pinned file value)",
     status: `100 % keeps the native file level; the user level is a ${PRESENTATION}` },
 };
@@ -75,7 +63,7 @@ function visibleByLayout(element: HTMLElement): boolean {
 export function attachWorldAudioControls(host: HTMLElement, mixer: WorldAudioMixer, options: WorldAudioControlOptions = {}) {
   let music = options.music ?? null, ambience = options.ambience ?? null;
   let failure = options.worldAudioFailure ?? null, loading = options.worldAudioLoading ?? false;
-  const refreshMs = options.refreshIntervalMs ?? 250;
+  const minimumRefreshIntervalMs = options.refreshIntervalMs ?? 250;
   const lifetime = new AbortController(), signal = lifetime.signal, root = document.createElement("div");
   const isVisible = options.isVisible ?? (() => visibleByLayout(root));
   root.dataset.testid = "native-audio-controls";
@@ -88,15 +76,14 @@ export function attachWorldAudioControls(host: HTMLElement, mixer: WorldAudioMix
   };
   applyWorldAudioDefaults(mixer);
   let nextId = 0;
-  const row = (testid: string, label: string) => {
-    const container = element("div", testid, undefined, "dev-row world-audio-row");
+  const createLabelledRow = (testid: string, label: string, alignsSliderOnSharedLevelColumns = false) => {
+    const container = element("div", testid, undefined, alignsSliderOnSharedLevelColumns ? "dev-row dev-level-row world-audio-row" : "dev-row world-audio-row");
     container.dataset.info = "";
     const text = element("span", undefined, label, "dev-row-label"), control = element("div", undefined, undefined, "dev-row-control");
     container.append(text, control);
     return { container, text, control };
   };
-  /** Chip group (≤ 4 options), the sheet's radiogroup markup. */
-  const chips = <T extends string>(label: string, testid: string, values: readonly T[], names: Record<T, string>, select: (value: T) => void):
+  const createSegmentedRadioChips = <T extends string>(label: string, testid: string, values: readonly T[], names: Record<T, string>, select: (value: T) => void):
     { group: HTMLDivElement; set: (value: T | null, disabled?: boolean) => void } => {
     const group = element("div", testid, undefined, "dev-chips dev-choice");
     group.dataset.display = "segmented"; group.setAttribute("role", "radiogroup"); group.setAttribute("aria-label", label);
@@ -122,15 +109,13 @@ export function attachWorldAudioControls(host: HTMLElement, mixer: WorldAudioMix
     }, { signal });
     return { group, set };
   };
-  const range = (name: string, testid: string, max: number, value: number) => {
-    const wrapper = element("div", undefined, undefined, "dev-range-control");
-    const input = element("input", `${testid}-input`, undefined, "dev-range"), output = element("output", undefined, undefined, "dev-range-value");
+  const createLevelSliderWithReadout = (name: string, testid: string, max: number, value: number) => {
+    const input = element("input", `${testid}-input`, undefined, "dev-range"), output = element("output", `${testid}-value`, undefined, "dev-range-value");
     input.type = "range"; input.min = "0"; input.max = String(Math.round(max * 100)); input.step = max > 1 ? "10" : "1";
     input.value = String(Math.round(value * 100)); input.id = `world-audio-range-${nextId++}`; output.setAttribute("for", input.id);
     input.setAttribute("aria-label", `${name} level`);
     output.textContent = percent(value);
-    wrapper.append(input, output);
-    return { wrapper, input, output };
+    return { input, output };
   };
 
   const status = element("p", "world-audio-status", undefined, "dev-readout"); status.setAttribute("role", "status");
@@ -139,25 +124,29 @@ export function attachWorldAudioControls(host: HTMLElement, mixer: WorldAudioMix
   const mute = element("button", "mute-world-audio"); mute.type = "button";
   buttons.append(enable, mute);
 
-  const masterRow = row("world-audio-volume-master", "Master");
-  const master = range("Master", "world-audio-volume-master", 1, mixer.inspection({ levels: false }).volume);
-  masterRow.control.append(master.wrapper);
+  const masterRow = createLabelledRow("world-audio-volume-master", "Master", true);
+  const master = createLevelSliderWithReadout("Master", "world-audio-volume-master", 1, mixer.inspection({ levels: false }).volume);
+  const emptyMasterToggleSlotKeepingTrackAligned = element("span", undefined, undefined, "dev-level-toggle");
+  masterRow.control.append(master.input, master.output, emptyMasterToggleSlotKeepingTrackAligned);
+  const musicGainNoteUnderLabel = element("small", "world-audio-volume-music-gain", undefined, "dev-level-note");
   const busControls = Object.fromEntries((["music", "ambience", "effects"] as const).map(bus => {
-    const info = busInfo[bus], line = row(`world-audio-volume-${bus}`, bus === "music" ? "Music level" : info.label);
-    const slider = range(info.label, `world-audio-volume-${bus}`, info.max, mixer.busState(bus).volume);
-    const toggle = chips(`${info.label} on or off`, `world-audio-mute-${bus}`, ["on", "off"] as const, { on: "On", off: "Off" },
+    const info = busInfo[bus], line = createLabelledRow(`world-audio-volume-${bus}`, bus === "music" ? "Music level" : info.label, true);
+    const slider = createLevelSliderWithReadout(info.label, `world-audio-volume-${bus}`, info.max, mixer.busState(bus).volume);
+    const toggle = createSegmentedRadioChips(`${info.label} on or off`, `world-audio-mute-${bus}`, ["on", "off"] as const, { on: "On", off: "Off" },
       value => mixer.setBusMuted(bus, value === "off"));
-    line.control.append(slider.wrapper, toggle.group);
+    toggle.group.className += " dev-level-toggle";
+    line.control.append(slider.input, slider.output, toggle.group);
+    if (bus === "music") line.text.append(musicGainNoteUnderLabel);
     slider.input.addEventListener("input", () => { mixer.setBusVolume(bus, Number(slider.input.value) / 100); refresh(); }, { signal });
     return [bus, { line, slider, toggle }];
-  })) as Record<WorldAudioBus, { line: ReturnType<typeof row>; slider: ReturnType<typeof range>; toggle: { group: HTMLDivElement; set: (value: "on" | "off" | null, disabled?: boolean) => void } }>;
+  })) as Record<WorldAudioBus, { line: ReturnType<typeof createLabelledRow>; slider: ReturnType<typeof createLevelSliderWithReadout>; toggle: { group: HTMLDivElement; set: (value: "on" | "off" | null, disabled?: boolean) => void } }>;
 
   const nowRow = element("div", "world-music-now-playing", undefined, "world-audio-readout");
   const nowPlaying = element("p", undefined, undefined, "dev-readout");
   const next = element("button", "world-music-next", "Pick another track"); next.type = "button";
   nowRow.append(nowPlaying);
-  const timeRow = row("world-ambience-time", "Game hour");
-  const time = chips("Ambient game hour", "world-ambience-time-chips", ambienceTimeChoices, timeLabels, value => ambience?.setTimeOfDay(value));
+  const timeRow = createLabelledRow("world-ambience-time", "Game hour");
+  const time = createSegmentedRadioChips("Ambient game hour", "world-ambience-time-chips", ambienceTimeChoices, timeLabels, value => ambience?.setTimeOfDay(value));
   timeRow.control.append(time.group);
   const nearbyRow = element("div", "world-ambience-nearby", undefined, "world-audio-readout");
   const nearby = element("p", undefined, undefined, "dev-readout");
@@ -177,9 +166,12 @@ export function attachWorldAudioControls(host: HTMLElement, mixer: WorldAudioMix
     }
     if (state.state === "waiting-for-unlock") return `Music ready: ${state.nextPick?.replace("music:", "") ?? "?"} starts on your first tap · ${region}`;
     if (state.state === "loading") return `Music loading ${state.nextPick?.replace("music:", "") ?? ""} · ${region}`;
-    if (state.state === "gap") return `Silence ${Math.ceil(state.gapRemainingSeconds ?? 0)} s, then a new pick (native 30 s gap) · ${region}`;
+    if (state.state === "gap") {
+      const preRolledNextPickPreloadingDuringGap = state.nextPick ? ` → ${state.nextPick.replace("music:", "")}` : " → new pick";
+      return `Gap ${Math.ceil(state.gapRemainingSeconds ?? 0)} s left${preRolledNextPickPreloadingDuringGap} (native ${nativeMusicRules.gapSeconds} s silence after each track) · ${region}`;
+    }
     if (state.state === "failed") return `Music failed: ${Object.values(state.failures)[0] ?? "no playable track"}`;
-    return state.volume ? `Music: ${region}` : "Music: outside every MusicVolume — silent (native: 20_20 has no default music).";
+    return state.volume ? `Music: ${region}` : "Music: outside every MusicVolume - silent (native: 20_20 has no default music).";
   };
   const ambienceText = () => {
     if (!ambience) return loading ? "Ambience loading…" : failure ? `Ambience unavailable: ${failure}` : "Map ambience is not staged.";
@@ -187,16 +179,17 @@ export function attachWorldAudioControls(host: HTMLElement, mixer: WorldAudioMix
     if (!state.enabled) return "Ambience off.";
     const sounds = new Map<string, number[]>();
     for (const loop of state.loops) { const name = shortSound(loop.sound); sounds.set(name, [...(sounds.get(name) ?? []), loop.distance]); }
-    const names = [...sounds].slice(0, 4).map(([name, distances]) => `${name} ${Math.round(Math.min(...distances))}${distances.length > 1 ? `–${Math.round(Math.max(...distances))}` : ""} m`).join(", ");
+    const names = [...sounds].slice(0, 4).map(([name, distances]) => `${name} ${Math.round(Math.min(...distances))}${distances.length > 1 ? `-${Math.round(Math.max(...distances))}` : ""} m`).join(", ");
     return `${state.candidates} emitters in range · ${state.gated} gated (${state.isDay ? "day" : "night"}) · ${state.voices.active}/${state.voices.limit} voices: ${state.loops.length} loops${names ? ` (${names})` : ""}, ${state.oneShots.active} one-shots.`;
   };
   const refresh = () => {
     if (disposed) return;
     lastRefresh = performance.now();
     const state = mixer.inspection({ levels: false }), errors = Object.keys(state.decodeErrors).length;
-    const running = state.state === "running";
-    enable.textContent = unlocking ? "Preparing audio…" : running && !errors ? "Audio enabled" : state.error ? "Retry audio" : "Enable audio";
-    enable.disabled = unlocking || (running && !errors);
+    const playingWhileQueuedDecodesFinish = state.state === "unlocking" && !mixer.locked;
+    const running = state.state === "running" || playingWhileQueuedDecodesFinish;
+    enable.textContent = unlocking && !running ? "Preparing audio…" : running && !errors ? "Audio enabled" : state.error ? "Retry audio" : "Enable audio";
+    enable.disabled = (unlocking && !running) || (running && !errors);
     mute.textContent = state.muted ? "Unmute audio" : "Mute audio"; mute.setAttribute("aria-pressed", String(state.muted));
     status.textContent = state.error ? `Audio unavailable: ${state.error}` :
       running ? `Audio on${state.paused ? " · paused" : state.muted ? " · muted" : ""} · ${state.decoded} sounds decoded${state.queuedDecodes ? ` (${state.queuedDecodes} queued)` : ""}${errors ? ` · ${errors} could not decode (retry)` : ""}.` :
@@ -205,21 +198,23 @@ export function attachWorldAudioControls(host: HTMLElement, mixer: WorldAudioMix
     for (const bus of ["music", "ambience", "effects"] as const) {
       const control = busControls[bus], setting = state.buses[bus];
       control.toggle.set(setting.muted ? "off" : "on");
-      control.slider.output.textContent = bus === "music" ? `${percent(setting.volume)} (gain ${(setting.volume * nativeMusicRules.musicVolume).toFixed(2)})` : percent(setting.volume);
+      control.slider.output.textContent = percent(setting.volume);
     }
+    musicGainNoteUnderLabel.textContent = `gain ${(state.buses.music.volume * nativeMusicRules.musicVolume).toFixed(2)}`;
     next.disabled = !music || !music.enabled || !music.inspection().volume;
     time.set(ambience?.timeOfDay ?? null, !ambience);
     nowPlaying.textContent = musicText();
     nearby.textContent = ambienceText();
   };
   enable.addEventListener("click", () => {
-    // unlock() calls AudioContext.resume synchronously inside this gesture.
-    const task = mixer.unlock(); unlocking = true; refresh();
-    void task.catch(() => undefined).finally(() => { unlocking = false; refresh(); });
+    const unlockResumingContextInsideGesture = mixer.unlock(); unlocking = true; refresh();
+    void unlockResumingContextInsideGesture.catch(() => undefined).finally(() => { unlocking = false; refresh(); });
   }, { signal });
   mute.addEventListener("click", () => { mixer.setMuted(!mixer.inspection({ levels: false }).muted); refresh(); }, { signal });
   master.input.addEventListener("input", () => { mixer.setVolume(Number(master.input.value) / 100); refresh(); }, { signal });
   next.addEventListener("click", () => { music?.next(); refresh(); }, { signal });
+  const stopRefreshingOnEveryLockChange = mixer.onLockChange(() => refresh());
+  signal.addEventListener("abort", stopRefreshingOnEveryLockChange, { once: true });
   refresh();
 
   const ambienceState = () => ambience?.inspection() ?? null;
@@ -234,7 +229,7 @@ export function attachWorldAudioControls(host: HTMLElement, mixer: WorldAudioMix
       { name: "Limiter", value: () => { const limiter = mixer.inspection({ levels: false }).limiter; return limiter ? `${limiter.reductionDb === null ? "?" : limiter.reductionDb.toFixed(1)} dB reduction` : "unavailable"; },
         values: `${worldAudioLimiterDefaults.headroomDb} dB headroom, threshold ${worldAudioLimiterDefaults.thresholdDb} dBFS, ratio ${worldAudioLimiterDefaults.ratio}, knee ${worldAudioLimiterDefaults.kneeDb}`,
         source: "Master → headroom gain → DynamicsCompressorNode → analyser → destination", status: `Overlapping cues never clip; ${PRESENTATION}.` },
-      { name: "Master volume", value: () => percent(mixer.inspection({ levels: false }).volume), values: "0–100 %",
+      { name: "Master volume", value: () => percent(mixer.inspection({ levels: false }).volume), values: "0-100 %",
         source: "WorldAudioMixer master gain", status: `User level; ${PRESENTATION}.` },
       ...(["music", "ambience", "effects"] as const).map(bus => ({
         name: bus === "music" ? "Music level" : `${busInfo[bus].label} volume`,
@@ -244,7 +239,7 @@ export function attachWorldAudioControls(host: HTMLElement, mixer: WorldAudioMix
         values: musicState ? (musicState.candidates.length ? musicState.candidates.map(key => key.replace("music:", "")).map(name => musicState.track?.storedString === name ? `[${name}]` : name).join(" | ") : "outside every MusicVolume: none") : "not staged",
         source: "20_20.unr MusicVolume → nMusicID → musicinfo.dat strings (MUSIC_ID_JOIN.json) → original music/*.ogg via scripts/export-native-music.py",
         status: "Track list from source data; the pick is uniform random (GetMusicName names[appRand() % count])." },
-      { name: "Music rule", value: () => { const state = music?.inspection(); return state ? `${state.state}${state.gapRemainingSeconds !== null ? ` (${Math.ceil(state.gapRemainingSeconds)} s left)` : ""}${state.fading.length ? ` · fading ${state.fading.join(", ")}` : ""}` : "n/a"; },
+      { name: "Music rule", value: () => { const state = music?.inspection(); return state ? `${state.state}${state.gapRemainingSeconds !== null ? ` (${Math.ceil(state.gapRemainingSeconds)} s left${state.nextPick ? `, next ${state.nextPick.replace("music:", "")} pre-rolled to preload` : ""})` : ""}${state.fading.length ? ` · fading ${state.fading.join(", ")}` : ""}` : "n/a"; },
         values: `uniform random · no loop · no fade-in · ${nativeMusicRules.gapSeconds} s gap then re-pick · ${nativeMusicRules.changeFadeSeconds} s linear fade-out on volume change · finish-then-silence outside volumes`,
         source: nativeMusicRules.evidence, status: "Proved from bytes (REPORT.md Q2)." },
       { name: "Music region", value: () => music?.inspection().volume?.id ?? "outside every MusicVolume",
@@ -270,7 +265,7 @@ export function attachWorldAudioControls(host: HTMLElement, mixer: WorldAudioMix
         source: "ALAudio.int [AmbientSound] AmbientSoundSlot=16; same object never twice",
         status: `Slot count is native; the loop cap and loudest-first priority are a ${PRESENTATION}.` },
       { name: "Ambient gain rule", value: () => { const loop = ambienceState()?.loops[0]; return loop ? `${shortSound(loop.sound)} ${loop.distance.toFixed(1)} m → ${loop.gain.toFixed(3)}` : "no loop playing"; },
-        values: "gain = (Vol/255) × SoundVolume × (50R − d)/(50R) × R/(R + 0.5(d − R)); rate = clamp(Pitch/64, 0.5, 2); Random 100 loops, 1–99 one roll per WAV length from StartTime",
+        values: "gain = (Vol/255) × SoundVolume × (50R − d)/(50R) × R/(R + 0.5(d − R)); rate = clamp(Pitch/64, 0.5, 2); Random 100 loops, 1-99 one roll per WAV length from StartTime",
         source: nativeAmbientRules.evidence, status: "Proved from bytes (REPORT.md Q3)." },
       { name: "Ambient listener", value: () => "local pawn", values: "local pawn",
         source: "Native listener comes from the render scene node (camera or pawn not proved)",
@@ -294,13 +289,12 @@ export function attachWorldAudioControls(host: HTMLElement, mixer: WorldAudioMix
 
   return {
     update(force = false) {
-      if (disposed || (!force && performance.now() - lastRefresh < refreshMs)) return;
+      if (disposed || (!force && performance.now() - lastRefresh < minimumRefreshIntervalMs)) return;
       if (!force && !isVisible()) { lastRefresh = performance.now(); return; }
       refresh();
     },
     describe,
     cards,
-    /** Late attachment once the optional world-audio bundles settle. */
     setWorldAudio(sources: WorldAudioSources) {
       if (disposed) return;
       music = sources.music; ambience = sources.ambience; failure = sources.failure; loading = sources.loading ?? false;

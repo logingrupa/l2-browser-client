@@ -1,17 +1,7 @@
-/** Native Human animation aliases: profile keys for Engine.Pawn localized
- * animation fields (WT_HAND family, index 0) and the PcSocialAnimName slots.
- *
- * Bindings and their evidence are never written here. They come from
- * scripts/prepare-native-player-aliases.py, which reads the verified
- * scripts/report-native-animation-aliases.py coverage report, and are staged
- * into the player profile manifest by scripts/stage_native_players.py.
- * scripts/stage_native_players.py keeps the same key list (PLAYER_ALIASES). */
-
 export const requiredNativeAliases = ["idle", "run", "attack", "death"] as const;
 
 export type NativeAliasGroup = "locomotion" | "combat" | "magic" | "rest" | "death" | "swim" | "social";
 
-/** Ordered for display. `field` is the Engine.Pawn localized array the alias reads. */
 export const nativeAnimationAliases = [
   { alias: "idle", field: "WaitAnimName", group: "locomotion" },
   { alias: "walk", field: "WalkAnimName", group: "locomotion" },
@@ -57,20 +47,16 @@ export type NativePlayerClips = Readonly<Record<NativeRequiredAlias, string>> & 
 const aliasSet: ReadonlySet<string> = new Set(nativeAnimationAliases.map(row => row.alias));
 export function isNativeAnimationAlias(value: string): value is NativeAnimationAlias { return aliasSet.has(value); }
 
-/** Report statuses. exact/case-only bind a clip; the others leave the alias empty with a reason. */
 export const boundAliasStatuses = ["exact", "case-only"] as const;
 export const unboundAliasStatuses = ["no-family-value", "no-native-field", "missing-clip", "conflict-unresolved", "ambiguous", "unsupported-syntax"] as const;
 export type NativeAliasStatus = typeof boundAliasStatuses[number] | typeof unboundAliasStatuses[number];
 
 export interface NativeAliasEvidenceRow {
   readonly alias: NativeAnimationAlias;
-  /** Native localized key, e.g. WaitAnimName[0] or PcSocialAnimName[2]. */
   readonly key: string;
   readonly status: NativeAliasStatus;
-  /** Localized value as written in LineageWarrior.int, and its line. */
   readonly reference?: string;
   readonly line?: number;
-  /** base-class-direct-getter (reviewed Engine.Pawn getter) or unverified. */
   readonly selectionPath?: string;
   readonly reason?: string;
 }
@@ -80,24 +66,23 @@ export interface NativeAliasEvidence {
   readonly report: string;
   readonly reportSha256: string;
   readonly family: string;
-  /** Localized family document: the package's animation-families.json, or the
-   * report's conflict-preserving document when the converter refused one. */
   readonly familySource: string;
   readonly familySourceSha256: string;
   readonly rows: readonly NativeAliasEvidenceRow[];
 }
+
+export type NativeAliasCoverageStatus = NativeAliasStatus | "authored-override" | "no-evidence";
 
 export interface NativeAliasCoverageRow {
   readonly alias: NativeAnimationAlias;
   readonly group: NativeAliasGroup;
   readonly field: string;
   readonly key: string;
-  /** Clip that plays for this alias in the browser, or null. */
-  readonly clip: string | null;
-  /** Clip the native evidence binds, when the browser plays a different (authored) one. */
   readonly nativeClip: string | null;
-  readonly status: NativeAliasStatus | "authored-override" | "no-evidence";
+  readonly clip: string | null;
+  readonly status: NativeAliasCoverageStatus;
   readonly reason: string | null;
+  readonly summary: string | null;
   readonly reference: string | null;
   readonly line: number | null;
   readonly selectionPath: string | null;
@@ -109,21 +94,42 @@ export interface NativeAliasCoverage {
   readonly rows: readonly NativeAliasCoverageRow[];
 }
 
-/** Per-alias coverage for one profile. `effective` is what the browser plays
- * (the Editor's saved male clips override the four core aliases). */
+const unboundSummaries: Readonly<Record<string, string>> = {
+  "no-family-value": "not assigned in this class section",
+  "no-native-field": "no native field",
+  "missing-clip": "named clip not in the package",
+  "conflict-unresolved": "conflicting source rows",
+  ambiguous: "ambiguous clip match",
+  "unsupported-syntax": "unsupported source syntax",
+  "no-evidence": "no staged alias evidence",
+};
+
+function summarizeMissingHitReactionClip(rows: NativeAliasCoverageRow[]): void {
+  const damage = rows.findIndex(row => row.alias === "damage"), damageFly = rows.find(row => row.alias === "damageFly");
+  if (damage >= 0 && rows[damage]!.summary !== null && rows[damage]!.status !== "no-evidence") {
+    rows[damage] = { ...rows[damage]!, summary: `Interlude has no hit-reaction clip; DamageFly = knock-back${damageFly?.nativeClip ? ` (${damageFly.nativeClip})` : ""}` };
+  }
+}
+
 export function nativeAliasCoverage(clips: NativePlayerClips, evidence: NativeAliasEvidence | undefined,
-  effective: Readonly<Partial<Record<string, string>>> = clips): NativeAliasCoverage {
+  clipsPlayedBySemanticState: Readonly<Partial<Record<string, string>>> = clips): NativeAliasCoverage {
   const rows: NativeAliasCoverageRow[] = [];
   const evidenceRows = new Map((evidence?.rows ?? []).map(row => [row.alias, row]));
   for (const definition of nativeAnimationAliases) {
     const row = evidenceRows.get(definition.alias);
-    if (!row && !evidence && clips[definition.alias] === undefined) continue;
-    const native = clips[definition.alias] ?? null, played = effective[definition.alias] ?? native;
+    const native = clips[definition.alias] ?? null, played = clipsPlayedBySemanticState[definition.alias] ?? native;
     const key = row?.key ?? (definition.field === "PcSocialAnimName" ? `PcSocialAnimName[${definition.alias.slice(6)}]` : `${definition.field}[0]`);
-    const status = !row ? "no-evidence" : played !== null && native !== null && played !== native ? "authored-override" : row.status;
-    rows.push({ alias: definition.alias, group: definition.group, field: definition.field, key, clip: played,
-      nativeClip: native, status, reason: row?.reason ?? null, reference: row?.reference ?? null,
-      line: row?.line ?? null, selectionPath: row?.selectionPath ?? null });
+    const status: NativeAliasCoverageStatus = !row ? "no-evidence" : played !== null && native !== null && played !== native ? "authored-override" : row.status;
+    const unbound = native === null && played === null;
+    const reason = row?.reason ?? (unbound ? "This profile carries no staged alias evidence (scripts/prepare-native-player-aliases.py → stage_native_players.py)." : null);
+    rows.push({ alias: definition.alias, group: definition.group, field: definition.field, key, nativeClip: native, clip: played,
+      status, reason, summary: unbound ? unboundSummaries[row?.status ?? "no-evidence"] ?? "no native clip" : null,
+      reference: row?.reference ?? null, line: row?.line ?? null, selectionPath: row?.selectionPath ?? null });
   }
-  return { bound: rows.filter(row => row.clip !== null).length, total: rows.length, rows };
+  summarizeMissingHitReactionClip(rows);
+  return { bound: rows.filter(row => row.summary === null).length, total: rows.length, rows };
+}
+
+export function nativeAliasCoverageText(coverage: NativeAliasCoverage): string {
+  return `${coverage.bound} of ${coverage.total} aliases`;
 }

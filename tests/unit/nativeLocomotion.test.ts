@@ -110,9 +110,22 @@ describe("verified locomotion pair selection", () => {
     const asset = await nativeVisualFixture(), other: AssetPackage = { manifest: structuredClone(asset.manifest), files: asset.files };
     const definitions = [...pair(other), ...pair(asset)], before = definitions.map(row => ({ ...row }));
     expect(resolveNativeLocomotionClips(asset, "OriginalRunningClip", definitions))
-      .toEqual({ walkClip: "OriginalWalkingClip", runClip: "OriginalRunningClip", reason: null });
+      .toEqual({ walkClip: "OriginalWalkingClip", runClip: "OriginalRunningClip", walkSource: "footstep-pair", reason: null });
     expect(resolveNativeLocomotionClips(asset, "OriginalRunningClip", pair(other)).walkClip).toBeNull();
     expect(definitions).toEqual(before);
+  });
+
+  it("walks on the profile's native WalkAnimName alias only when the bundle has no gait row for the package", async () => {
+    const asset = await nativeVisualFixture(), other: AssetPackage = { manifest: structuredClone(asset.manifest), files: asset.files };
+    expect(resolveNativeLocomotionClips(asset, "Run_Hand_MMagic", pair(other), "Walk_Hand_MMagic"))
+      .toEqual({ walkClip: "Walk_Hand_MMagic", runClip: "Run_Hand_MMagic", walkSource: "profile-alias", reason: null });
+    const verifiedPairWinsOverAlias = resolveNativeLocomotionClips(asset, "OriginalRunningClip", pair(asset), "Walk_Hand_MMagic");
+    expect(verifiedPairWinsOverAlias).toMatchObject({ walkClip: "OriginalWalkingClip", walkSource: "footstep-pair" });
+    const partialBundleNotPatchedByAlias = resolveNativeLocomotionClips(asset, "OriginalRunningClip", [pair(asset)[1]!], "Walk_Hand_MMagic");
+    expect(partialBundleNotPatchedByAlias).toMatchObject({ walkClip: null, walkSource: null });
+    const contradictingBundleNotPatchedByAlias = resolveNativeLocomotionClips(asset, "AuthoredWeaponRun", pair(asset), "Walk_Hand_MMagic");
+    expect(contradictingBundleNotPatchedByAlias).toMatchObject({ walkClip: null, walkSource: null });
+    expect(resolveNativeLocomotionClips(asset, "Run_Hand_MMagic", [])).toMatchObject({ walkClip: null, reason: expect.any(String) });
   });
 
   it("preserves an authored different run selection instead of replacing its family", async () => {
@@ -131,9 +144,7 @@ describe("verified locomotion pair selection", () => {
 });
 
 const walkClip = "Native_Walk";
-/** Test-local GLB derivative only. It exercises the real actor/driver and clock;
- * it is not original Interlude animation or a native walking-speed oracle. */
-async function walkingFixture(options: Parameters<typeof nativeVisualFixture>[0] = {}): Promise<AssetPackage> {
+async function testOnlyWalkingFixtureCopiedFromIdle(options: Parameters<typeof nativeVisualFixture>[0] = {}): Promise<AssetPackage> {
   const input = await nativeVisualFixture(options), original = input.files.get("model.glb")!;
   const originalView = new DataView(original.buffer, original.byteOffset, original.byteLength), jsonSize = originalView.getUint32(12, true);
   const document = JSON.parse(new TextDecoder().decode(original.subarray(20, 20 + jsonSize)));
@@ -154,23 +165,22 @@ function update(visual: CharacterVisual, state: WorldEntity) { visual.setEntity?
 async function createVisual(profile: Partial<NativeCharacterProfile> = {}, footsteps?: ReturnType<typeof createNativeFootstepPreview>, entity = initial) {
   const engine = new NullEngine(), scene = new Scene(engine); GetEnvironmentBRDFTexture(scene);
   disposals.push(() => { scene.dispose(); engine.dispose(); });
-  const configured: NativeCharacterProfile = { asset: await walkingFixture(), clips: { ...nativeVisualClips, walk: walkClip }, ...profile };
+  const configured: NativeCharacterProfile = { asset: await testOnlyWalkingFixtureCopiedFromIdle(), clips: { ...nativeVisualClips, walk: walkClip }, ...profile };
   const visual = nativeCharacterFactory(new Map([["fixture", configured]]), undefined, footsteps)(scene, entity);
   disposals.push(() => visual.dispose()); await visual.ready; return { visual, scene, asset: configured.asset };
 }
 
 describe("native moving gait presentation and source-clock boundary", () => {
   it("uses the walk clip clock for repeated footsteps and preserves it across ordinary updates and equipment replacement", async () => {
-    const body = await walkingFixture(), shirt = await walkingFixture({ parts: ["Upper"], material: "shirt" });
+    const body = await testOnlyWalkingFixtureCopiedFromIdle(), shirt = await testOnlyWalkingFixtureCopiedFromIdle({ parts: ["Upper"], material: "shirt" });
     const before = body.files.get("model.glb")!.slice(); let nextId = 0;
     const output = { stopOwner: vi.fn<(owner: string) => void>(), play: vi.fn((key: string, owner: string, offsetSeconds = 0): WorldAudioPlaybackReceipt =>
       ({ id: ++nextId, key, owner, offsetSeconds, contextTime: 10, durationSeconds: 2 })) };
-    const definition = (gait: "walk" | "run", clip: string, times: number[]): NativeFootstepDefinition => ({ asset: body, gait, clip, durationSeconds: 2,
+    const definitionWithLandDefaultArrays = (gait: "walk" | "run", clip: string, times: number[]): NativeFootstepDefinition => ({ asset: body, gait, clip, durationSeconds: 2,
       events: times.map((timeSeconds, ordinal) => ({ ordinal, timeSeconds, notify: `Fixture.${gait}${ordinal}`,
         arrays: { DefaultWalkSound: [{ reference: "Fixture.Walk", key: "walk" }], DefaultRunSound: [{ reference: "Fixture.Run", key: "run" }] } })) });
-    // Auto without a support context resolves LAND (Default arrays) by the clip's gait.
-    const footsteps = createNativeFootstepPreview([definition("walk", walkClip, [.5, 1.5]), definition("run", nativeVisualClips.run, [.25, 1.25])], output,
-      { initialSelection: NATIVE_FOOTSTEP_WORLD_DEFAULT });
+    const footsteps = createNativeFootstepPreview([definitionWithLandDefaultArrays("walk", walkClip, [.5, 1.5]),
+      definitionWithLandDefaultArrays("run", nativeVisualClips.run, [.25, 1.25])], output, { initialSelection: NATIVE_FOOTSTEP_WORLD_DEFAULT });
     disposals.push(() => footsteps.dispose());
     const { visual, scene } = await createVisual({ asset: body, upperItems: new Map([[22, shirt]]) }, footsteps);
     const walking: WorldEntity = { ...initial, animation: "run", locomotion: "walk" };

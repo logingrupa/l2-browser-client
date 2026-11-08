@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "native-combat-audio-bundle",
-  "description": "Combat hit-sound dependencies for the 20_20 slice, following the statically proved Q4 routes (native-sound-answers-20261107 REPORT.md Q4). Route A AttackItem: chargrp attack_sound (fist_1..3, [CharSound] Vol/Radius) or the right-hand weapongrp item_sound (Short Sword item 1, [ItemSound] Vol/Radius). Route B AttackVoice: chargrp voice_snd_hand. Route C AttackShot: target defense (npcgrp defense_sound1 / armorgrp item_sound / chargrp defense_sound) then damage (npcgrp damage_sound gated by npc random / chargrp damage_sound gated by [CharSound] Random). Greater Musveren numeric fields use native meaning (radius 50, volume 250, random 70; the decoded labels sound_vol/sound_radius are swapped). [EtcSound] critical and soulshot sounds are staged for later server flags. Power Strike (skill 3 level 1) cast/shot remain name-match presentation candidates. Sound identities stay unique package+leaf candidates.",
+  "description": "Combat hit-sound dependencies for the 20_20 slice, following the statically proved Q4 routes (native-sound-answers-20261107 REPORT.md Q4). Human players: chargrp rows for MFighter, FFighter, MMagic and FMagic (selected by body mesh). Route A AttackItem: chargrp attack_sound (fist_1..3, [CharSound] Vol/Radius) or the right-hand weapongrp item_sound (Short Sword item 1, [ItemSound] Vol/Radius). Route B AttackVoice: chargrp voice_snd_hand. Route C AttackShot: target defense (npcgrp defense_sound1 / armorgrp item_sound / chargrp defense_sound) then damage (npcgrp damage_sound gated by npc random / chargrp damage_sound gated by [CharSound] Random). Greater Musveren numeric fields use native meaning (radius 50, volume 250, random 70; the decoded labels sound_vol/sound_radius are swapped). [EtcSound] critical and soulshot sounds are staged for later server flags. Power Strike (skill 3 level 1) cast/shot remain name-match presentation candidates. Sound identities stay unique package+leaf candidates.",
   "referencePolicy": {
     "exactIdentity": "full-object-casefold",
     "groupLessCandidates": "unique-package-leaf-candidate-admitted-as-presentation",
@@ -131,6 +131,46 @@
         {
           "pointer": "/body_mesh/body_mesh1",
           "value": "Fighter.FFighter_m001_u"
+        }
+      ],
+      "roles": {
+        "attackItem": "attack_sound",
+        "attackVoice": "voice_snd_hand",
+        "defense": "defense_sound",
+        "damage": "damage_sound"
+      }
+    },
+    {
+      "id": "human-male-mystic",
+      "kind": "actor",
+      "label": "Human male mystic (chargrp row by body mesh; staged source object Magic.MMagic_M005_u, same name casefolded)",
+      "catalogId": "human-male-mystic:0",
+      "sourceObject": "Magic.MMagic_M005_u",
+      "table": "chargrp",
+      "match": [
+        {
+          "pointer": "/body_mesh/body_mesh1",
+          "value": "Magic.MMagic_m005_u"
+        }
+      ],
+      "roles": {
+        "attackItem": "attack_sound",
+        "attackVoice": "voice_snd_hand",
+        "defense": "defense_sound",
+        "damage": "damage_sound"
+      }
+    },
+    {
+      "id": "human-female-mystic",
+      "kind": "actor",
+      "label": "Human female mystic (chargrp row by body mesh)",
+      "catalogId": "human-female-mystic:0",
+      "sourceObject": "Magic.FMagic_m003_u",
+      "table": "chargrp",
+      "match": [
+        {
+          "pointer": "/body_mesh/body_mesh1",
+          "value": "Magic.FMagic_m003_u"
         }
       ],
       "roles": {
@@ -290,17 +330,17 @@
     }
   ],
   "expectedCoverage": {
-    "selections": 7,
-    "slots": 53,
-    "admittedSlots": 52,
+    "selections": 9,
+    "slots": 85,
+    "admittedSlots": 84,
     "slotStatuses": {
       "empty": 1,
-      "unique-package-leaf-candidate": 52
+      "unique-package-leaf-candidate": 84
     },
     "candidateProductStatuses": {
-      "verified-export": 52
+      "verified-export": 84
     },
-    "dependencies": 43,
-    "wavFiles": 43
+    "dependencies": 59,
+    "wavFiles": 59
   }
 }

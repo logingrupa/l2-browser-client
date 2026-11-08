@@ -4,14 +4,22 @@ import { Scene } from "@babylonjs/core/scene";
 import { GetEnvironmentBRDFTexture } from "@babylonjs/core/Misc/brdfTextureTools";
 import { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { VertexBuffer } from "@babylonjs/core/Buffers/buffer";
+import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { NativeActor } from "../../src/assets/native/NativeActor";
 import { nativeCharacterFactory, type NativeCharacterProfile } from "../../src/assets/native/NativeCharacterVisual";
+import { createNativeClipPreviewHub } from "../../src/assets/native/nativeClipPreview";
 import type { CharacterVisual } from "../../src/assets/CharacterVisual";
 import type { WorldEntity } from "../../src/world/worldTypes";
 import { nativeVisualClips, nativeVisualFixture } from "../fixtures/nativeVisualFixture";
 
 const initial: WorldEntity = { id: "fixture-player", kind: "local-player", displayName: "Fixture player", appearanceId: "fixture",
   health: 100, maximumHealth: 100, position: { x: 0, y: 0, z: 0 }, orientationRadians: 0, animation: "idle" };
+
+function refreshLinkedBoneTransformsWithoutRendering(mesh: AbstractMesh) {
+  const skeleton = mesh.skeleton!;
+  skeleton.prepare(true); skeleton.computeAbsoluteMatrices(true); mesh.computeWorldMatrix(true);
+  mesh.refreshBoundingInfo({ applySkeleton: true });
+}
 
 describe("native character presentation boundary", () => {
   let engine: NullEngine, scene: Scene, visuals: CharacterVisual[], releases: (() => void)[], pending: Promise<unknown>[];
@@ -61,6 +69,30 @@ describe("native character presentation boundary", () => {
     expect(scene.getTransformNodeByName(`${initial.id}:placeholder`)).toBeNull();
   });
 
+  it("previews one exact package clip without changing the requested state, then resumes that state", async () => {
+    const hub = createNativeClipPreviewHub(), status = vi.fn<(message: string) => void>();
+    const visual = nativeCharacterFactory(new Map([["fixture", { asset: await nativeVisualFixture(), clips: nativeVisualClips }]]), undefined, undefined, hub)(scene, initial, status);
+    visuals.push(visual);
+    expect(hub.play(initial.id, nativeVisualClips.death)).toBe("The native model has not loaded yet.");
+    await visual.ready;
+    expect(hub.available(initial.id)).toEqual(expect.arrayContaining(Object.values(nativeVisualClips)));
+    expect(hub.play(initial.id, "Native_Missing")).toContain("not a clip of this package");
+    expect(hub.play(initial.id, nativeVisualClips.death)).toBeNull();
+    expect(visual.animation.playback?.activeClip).toBe(nativeVisualClips.death);
+    expect(visual.animation.playback?.looping).toBe(false);
+    expect(visual.animation.state).toBe("idle"); expect(hub.previewing(initial.id)).toBe(nativeVisualClips.death);
+    visual.animation.update(5);
+    expect(visual.animation.playback?.activeClip).toBe(nativeVisualClips.idle); expect(hub.previewing(initial.id)).toBeNull();
+    expect(hub.play(initial.id, nativeVisualClips.attack)).toBeNull();
+    const interruptPreviewWithSemanticAnimationChange = () => update(visual, { ...initial, animation: "run" });
+    interruptPreviewWithSemanticAnimationChange();
+    expect(visual.animation.playback?.activeClip).toBe(nativeVisualClips.run); expect(hub.previewing(initial.id)).toBeNull();
+    visual.setEntity?.({ ...initial, animation: "run", health: 0 });
+    expect(hub.play(initial.id, nativeVisualClips.idle)).toContain("Revive");
+    visual.dispose();
+    expect(hub.play(initial.id, nativeVisualClips.idle)).toBe("The native model has not loaded yet.");
+  });
+
   it("rejects and disposes a model missing a required native clip without creating a dummy", async () => {
     const { visual, status } = await create({ asset: await nativeVisualFixture({ omitDeath: true }) });
     await expect(visual.ready).rejects.toThrow("Native_Death is missing");
@@ -100,9 +132,9 @@ describe("native character presentation boundary", () => {
     const keys = () => scene.animationGroups.map(group => ({ name: group.name, channels: group.targetedAnimations.map(({ animation }) =>
       animation.getKeys().map(key => ({ frame: key.frame, value: key.value instanceof Vector3 ? key.value.asArray() : null }))) }));
     const originalKeys = keys();
+    const idleSupportDatumY = -.75 + .25;
     const check = (boneY: number) => {
-      // Idle's -.75 + .25 support datum is retained even when another clip was requested before loading.
-      expect(visual.groundClearance).toBeCloseTo(.5);
+      expect(visual.groundClearance).toBeCloseTo(-idleSupportDatumY);
       expect(visual.bounds.minimum.y).toBeCloseTo(-.5); expect(visual.bounds.maximum.y).toBeCloseTo(1.5);
       expect(visual.root.position.asArray()).toEqual([13, 3, -8]); expect(visual.root.rotation.y).toBe(.6);
       expect(visual.root.scaling.asArray()).toEqual([1, 1, 1]);
@@ -114,9 +146,7 @@ describe("native character presentation boundary", () => {
         expect(skeleton.bones[0]!.getTransformNode()!.position.asArray()).toEqual([0, 0, 0]);
         expect(skeleton.bones[1]!.getTransformNode()!.position.y).toBeCloseTo(boneY);
         for (const bone of skeleton.bones) expect(Array.from(bone.getRestMatrix().asArray())).toEqual(Array.from(Matrix.IdentityReadOnly.asArray()));
-        // NullEngine does not render frames here, so refresh linked bone transforms explicitly.
-        skeleton.prepare(true); skeleton.computeAbsoluteMatrices(true); mesh.computeWorldMatrix(true);
-        mesh.refreshBoundingInfo({ applySkeleton: true });
+        refreshLinkedBoneTransformsWithoutRendering(mesh);
         expect(mesh.getBoundingInfo().boundingBox.minimum.y).toBeCloseTo(-.75 + boneY);
       }
       expect(keys()).toEqual(originalKeys);

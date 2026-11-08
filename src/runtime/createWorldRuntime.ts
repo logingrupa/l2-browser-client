@@ -14,10 +14,9 @@ import { createWorldNavigation } from "../world/meshNavigation";
 import type { ImportedWorldInspection } from "../scene/world/loadImportedWorld";
 import { attachAssetImport } from "../ui/AssetImportPanel";
 import { isSceneSuspended, setSceneSuspended } from "../engine/renderSuspension";
-import { legacyWorldCharacterScale } from "../assets/legacyWorldScale";
+import { loadNativeAppearanceSet, nativeOrProceduralCharacterFactory } from "../assets/native/nativeOrProceduralCharacter";
 import { getWorldCanvas } from "../scene/getWorldCanvas";
 
-/** This is the only composition point that chooses the synthetic adapter. */
 export function createWorldRuntime(scene: Scene, suppliedAdapter?: GameWorldAdapter): () => void {
   const canvas = getWorldCanvas(scene.getEngine());
   if (!canvas) throw new Error("The world needs a rendering canvas.");
@@ -28,12 +27,18 @@ export function createWorldRuntime(scene: Scene, suppliedAdapter?: GameWorldAdap
     isReady: (from, to) => world.isReadyAt(from, 1) && world.isReadyAt(to, 1),
   }) : undefined;
   const adapter = suppliedAdapter ?? new MockWorldAdapter(navigation);
+  const standOnNavigationSupportOrCourtyardPlane = navigation
+    ? (position: WorldPosition) => navigation.ground(position)
+    : (position: WorldPosition) => position;
   let isDisposed = false;
   let registry: EntityRegistry;
   const interfaceView = new WorldInterface(adapter, () => registry, canvas, world ? { location: "Talking Island", coordinateUnit: "" } : undefined);
-  registry = new EntityRegistry(scene, adapter, interfaceView.labels, (message) => interfaceView.showStatus(message), navigation ? {
-    scale: legacyWorldCharacterScale, ground: position => navigation.ground(position),
-  } : {});
+  const nativeLoads = new AbortController();
+  const createNativeHumanOrProceduralVisual = nativeOrProceduralCharacterFactory(loadNativeAppearanceSet(nativeLoads.signal));
+  registry = new EntityRegistry(scene, adapter, interfaceView.labels, (message) => interfaceView.showStatus(message), {
+    createVisual: createNativeHumanOrProceduralVisual,
+    ground: standOnNavigationSupportOrCourtyardPlane,
+  });
   const detachCamera = attachWorldCamera(scene, canvas);
   const detachTargeting = attachTargeting(scene, registry, adapter, navigation);
   const importHost = interfaceView.root.querySelector<HTMLElement>(".secondary-actions");
@@ -58,7 +63,7 @@ export function createWorldRuntime(scene: Scene, suppliedAdapter?: GameWorldAdap
       canvas.dataset.cameraRadius = String(camera.radius);
     }
   });
-  const diagnostics = {
+  const readOnlyDiagnostics = {
     projectPosition: (position: WorldPosition) => {
       const projected = projectPosition(scene, position);
       return { x: projected.x, y: projected.y };
@@ -81,8 +86,7 @@ export function createWorldRuntime(scene: Scene, suppliedAdapter?: GameWorldAdap
       };
     },
   };
-  // Read-only observability, deliberately without command/mutation hooks.
-  window.__worldDiagnostics = diagnostics;
+  window.__worldDiagnostics = readOnlyDiagnostics;
   if (world && registry.localPlayerPosition && scene.activeCamera instanceof ArcRotateCamera) {
     scene.activeCamera.setTarget(registry.localPlayerPosition.add(new Vector3(0, 0.5, 0)));
   }
@@ -90,10 +94,11 @@ export function createWorldRuntime(scene: Scene, suppliedAdapter?: GameWorldAdap
   return () => {
     if (isDisposed) return;
     isDisposed = true;
+    nativeLoads.abort();
     scene.onBeforeRenderObservable.remove(observer);
     detachAssetImport(); setSceneSuspended(scene, false);
     detachTargeting(); detachCamera(); registry.dispose(); interfaceView.dispose(); adapter.dispose();
-    if (window.__worldDiagnostics === diagnostics) delete window.__worldDiagnostics;
+    if (window.__worldDiagnostics === readOnlyDiagnostics) delete window.__worldDiagnostics;
   };
 }
 

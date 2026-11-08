@@ -8,23 +8,20 @@ import type { CharacterBounds } from "../prepareCharacterModel";
 import type { AssetPackage } from "../package/readAssetPackage";
 import { NativeActor, type NativeBoneAnchor } from "./NativeActor";
 import type { NativeActionCuePlayer, NativeActionCuePreview } from "../../audio/nativeActionCuePreview";
+import type { NativeClipPreviewHub } from "./nativeClipPreview";
 
 export interface NativeCharacterProfile {
   readonly asset: AssetPackage;
   readonly clips: Readonly<Record<AnimationState | "death", string> & { walk?: string; specialAttack?: string }>;
   readonly upperItems?: ReadonlyMap<number, AssetPackage>;
-  /** Native actor collision half-height in metres, when established for this
-   * reference/profile. Independent of the mesh's idle bounds and animation. */
   readonly collisionHalfHeight?: number;
-  /** Presentation-owned actor scale outside the complete native mesh transform.
-   * Does not change collision half-height or rewrite any imported node/key. */
   readonly actorScale?: Vector3;
-  /** Facing axis after the complete imported mesh transform, before semantic
-   * entity heading. Profiles supply this only when established from the asset. */
   readonly forwardAxis?: Vector3;
-  /** Qualified exact base-part joints. Identity children preserve imported
-   * transforms; this is not a native effect/equipment attachment equation. */
   readonly boneAnchors?: readonly { id: string; sourceObject: string; boneName: string }[];
+}
+
+function stateToResumeWithoutReplayingAttack(state: AnimationState): AnimationState {
+  return state === "attack" ? "idle" : state;
 }
 
 class NativeActorDriver implements CharacterAnimationDriver {
@@ -32,7 +29,8 @@ class NativeActorDriver implements CharacterAnimationDriver {
   private locomotion: LocomotionMode = "run";
   private actionPreview: SourceActionPreview | undefined;
   private dead = false;
-  private showing: AnimationState | "walk" | "death" | "specialAttack" = "idle";
+  private showing: AnimationState | "walk" | "death" | "specialAttack" | "clipPreview" = "idle";
+  private previewClip: string | null = null;
   constructor(private readonly actor: NativeActor, private readonly clips: NativeCharacterProfile["clips"],
     private readonly cuePlayers: readonly NativeActionCuePlayer[] = []) { this.show("idle"); }
   private show(state: AnimationState | "death") {
@@ -41,15 +39,21 @@ class NativeActorDriver implements CharacterAnimationDriver {
     const clip = this.clips[displayed];
     if (!clip) throw new Error(displayed === "walk" ? "Native walking requires an explicit verified source clip." :
       "Native special attack preview requires an explicit verified source clip.");
+    this.previewClip = null;
     this.showing = displayed; this.actor.play(clip, state === "attack" || state === "death" ? "once" : "loop");
     for (const cues of this.cuePlayers) cues.start(this.actor.clock());
   }
-  setActionPreview(action: SourceActionPreview | undefined): void {
+  get previewing(): string | null { return this.previewClip; }
+  playClipOnceKeepingRequestedState(clip: string): void {
+    if (this.dead) throw new Error("Revive the character to preview its clips.");
+    this.actor.play(clip, "once");
+    this.previewClip = clip; this.showing = "clipPreview";
+    for (const cues of this.cuePlayers) cues.start(this.actor.clock());
+  }
+  selectActionPreviewWithoutRestartingClip(action: SourceActionPreview | undefined): void {
     if (action !== undefined && (action !== "special-attack" || !this.clips.specialAttack)) {
       throw new Error("Native special attack preview requires an explicit verified source clip.");
     }
-    // Selection alone never restarts a clip. Explicit animationSequence changes
-    // still own retriggering through GameWorldAdapter and CharacterAnimator.
     this.actionPreview = action;
   }
   setLocomotion(mode: LocomotionMode): void {
@@ -65,9 +69,7 @@ class NativeActorDriver implements CharacterAnimationDriver {
   setDead(dead: boolean): void {
     if (this.dead === dead) return;
     this.dead = dead;
-    // Revival resumes locomotion, but does not issue a new one-shot attack.
-    // A completed/interrupted action needs another explicit animation sequence.
-    if (!dead && this.requested === "attack") this.requested = "idle";
+    if (!dead) this.requested = stateToResumeWithoutReplayingAttack(this.requested);
     this.show(dead ? "death" : this.requested);
   }
   update(seconds: number): void {
@@ -76,6 +78,7 @@ class NativeActorDriver implements CharacterAnimationDriver {
     const current = this.actor.clock();
     for (const cues of this.cuePlayers) cues.advance(previous, current);
     if ((this.showing === "attack" || this.showing === "specialAttack") && current.completed) this.show("idle");
+    else if (this.showing === "clipPreview" && current.completed) this.show(stateToResumeWithoutReplayingAttack(this.requested));
   }
   get playback(): CharacterPlayback {
     const state = this.actor.snapshot();
@@ -86,23 +89,21 @@ class NativeActorDriver implements CharacterAnimationDriver {
 }
 
 export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeCharacterProfile>, actionCuePreview?: NativeActionCuePreview,
-  footstepPreview?: Pick<NativeActionCuePreview, "bindActor">) {
+  footstepPreview?: Pick<NativeActionCuePreview, "bindActor">, clipPreview?: Pick<NativeClipPreviewHub, "register">) {
   return (scene: Scene, initial: WorldEntity, status?: (message: string) => void): CharacterVisual => {
+    let unregisterPreview: (() => void) | undefined;
     const root = new TransformNode(`entity:${initial.id}`, scene);
     root.setEnabled(false);
-    // Native startup has no procedural stand-in. Keep the semantic animation
-    // request while the complete assembly is unavailable, without making meshes.
-    const animation = new CharacterAnimator({ setState() {}, update() {}, dispose() {} });
+    const meshlessDriverWhileAssemblyLoads: CharacterAnimationDriver = { setState() {}, update() {}, dispose() {} };
+    const animation = new CharacterAnimator(meshlessDriverWhileAssemblyLoads);
     animation.setState(initial.animation);
     const lifetime = new AbortController();
     let current = initial, actor: NativeActor | undefined, driver: NativeActorDriver | undefined, disposed = false;
-    let pendingDriver: NativeActorDriver | undefined;
+    let unpublishedDriverOwningCleanup: NativeActorDriver | undefined;
     const anchors: { id: string; handle: NativeBoneAnchor }[] = [];
     let placement: TransformNode | undefined, initialized = false, readySettled = false;
     let resolveReady!: () => void, rejectReady!: (error: unknown) => void;
     const ready = new Promise<void>((resolve, reject) => { resolveReady = resolve; rejectReady = reject; });
-    // Editor previews may not await startup; failures still belong to ready and
-    // must remain observable to the browser owner without an unhandled promise.
     void ready.catch(() => undefined);
     let upper: number | undefined, committedUpper: number | undefined, replacedObject: string | undefined, equipmentRequest = 0;
     let equipmentTask = Promise.resolve();
@@ -144,13 +145,22 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
       if (disposed) return;
       disposed = true; lifetime.abort();
       if (!readySettled) { readySettled = true; rejectReady(new DOMException("Native character loading was cancelled.", "AbortError")); }
-      animation.dispose(); pendingDriver?.dispose();
+      unregisterPreview?.(); unregisterPreview = undefined;
+      animation.dispose(); unpublishedDriverOwningCleanup?.dispose();
       for (const anchor of anchors) anchor.handle.dispose();
       actor?.dispose(); placement?.dispose(); root.dispose();
-      actor = undefined; driver = undefined; pendingDriver = undefined; initialized = false;
+      actor = undefined; driver = undefined; unpublishedDriverOwningCleanup = undefined; initialized = false;
       scene.onDisposeObservable.remove(observer);
     };
     const observer = scene.onDisposeObservable.add(dispose);
+    const settleLatestEquipmentRequest = async (): Promise<void> => {
+      for (;;) {
+        const task = updateEquipment();
+        try { await task; } catch (error) { if (task === equipmentTask) throw error; }
+        lifetime.signal.throwIfAborted();
+        if (task === equipmentTask && upper === current.equipment?.upper) return;
+      }
+    };
     const initialize = async (): Promise<void> => {
       if (!profile) throw new Error(`${initial.displayName}: native profile unavailable.`);
       const loaded = await NativeActor.create(scene, profile.asset, lifetime.signal);
@@ -174,36 +184,36 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
       }
       placement = new TransformNode(`${initial.id}:native-actor-placement`, scene);
       placement.scaling.copyFrom(profile.actorScale ?? Vector3.OneReadOnly);
-      // Adapter heading zero means +Z. Apply the asset-basis correction outside
-      // the complete assembly so body parts, equipment, rigs and clips agree.
-      const forward = profile.forwardAxis ?? Vector3.Forward();
-      placement.rotation.y = -Math.atan2(forward.x, forward.z);
+      const assetForwardAxis = profile.forwardAxis ?? Vector3.Forward();
+      const yawAligningAssetForwardWithAdapterHeadingZero = -Math.atan2(assetForwardAxis.x, assetForwardAxis.z);
+      placement.rotation.y = yawAligningAssetForwardWithAdapterHeadingZero;
       loaded.root.parent = placement;
       for (const name of Object.values(profile.clips)) if (!loaded.clips.some(clip => clip.name === name)) throw new Error(`Native profile clip ${name} is missing.`);
       const cuePlayers = [actionCuePreview?.bindActor(initial.id, profile.asset), footstepPreview?.bindActor(initial.id, profile.asset)]
         .filter((player): player is NativeActionCuePlayer => player !== undefined);
       const candidateDriver = new NativeActorDriver(loaded, profile.clips, cuePlayers);
-      // Own cleanup before equipment awaits; failed startup must release audio.
-      pendingDriver = candidateDriver;
-      // Equipment events can arrive while either the base or a previous part is
-      // pending. Startup belongs to the latest request, never a superseded one.
-      for (;;) {
-        const task = updateEquipment();
-        try { await task; } catch (error) { if (task === equipmentTask) throw error; }
-        lifetime.signal.throwIfAborted();
-        if (task === equipmentTask && upper === current.equipment?.upper) break;
+      unpublishedDriverOwningCleanup = candidateDriver;
+      await settleLatestEquipmentRequest();
+      const idleReferenceBounds = loaded.measureBounds(), idleReferenceSize = idleReferenceBounds.max.subtract(idleReferenceBounds.min);
+      if (![...idleReferenceBounds.min.asArray(), ...idleReferenceBounds.max.asArray()].every(Number.isFinite) || idleReferenceSize.y <= 0) {
+        throw new Error("Native model has no finite visible bounds.");
       }
-      // Measure the idle reference datum once; do not cancel animated vertical
-      // motion or recenter native meshes, bones, roots or keys every frame.
-      const measured = loaded.measureBounds(), size = measured.max.subtract(measured.min);
-      if (![...measured.min.asArray(), ...measured.max.asArray()].every(Number.isFinite) || size.y <= 0) throw new Error("Native model has no finite visible bounds.");
-      bounds = { minimum: measured.min, maximum: measured.max,
-        labelHeight: measured.max.y + Math.max(.06, size.y * .12), selectionRadius: Math.max(size.x, size.z) / 2 + .04,
-        pickingHeight: measured.min.y + size.y * .55 };
+      bounds = { minimum: idleReferenceBounds.min, maximum: idleReferenceBounds.max,
+        labelHeight: idleReferenceBounds.max.y + Math.max(.06, idleReferenceSize.y * .12),
+        selectionRadius: Math.max(idleReferenceSize.x, idleReferenceSize.z) / 2 + .04,
+        pickingHeight: idleReferenceBounds.min.y + idleReferenceSize.y * .55 };
       candidateDriver.setLocomotion(current.locomotion ?? "run");
-      candidateDriver.setActionPreview(current.actionPreview);
+      candidateDriver.selectActionPreviewWithoutRestartingClip(current.actionPreview);
       candidateDriver.setState(current.animation); candidateDriver.setDead(current.health <= 0);
-      driver = candidateDriver; animation.replaceDriver(driver); pendingDriver = undefined;
+      driver = candidateDriver; animation.replaceDriver(driver); unpublishedDriverOwningCleanup = undefined;
+      if (clipPreview) {
+        const previewDriver = candidateDriver, names = loaded.clips.map(clip => clip.name);
+        unregisterPreview = clipPreview.register(initial.id, {
+          play: clip => { if (disposed || driver !== previewDriver) throw new Error("The native model was replaced."); previewDriver.playClipOnceKeepingRequestedState(clip); },
+          get previewing() { return driver === previewDriver ? previewDriver.previewing : null; },
+          clips: names,
+        });
+      }
       placement.parent = root; tagMeshes(actor);
       initialized = true; loaded.root.setEnabled(true); root.setEnabled(true);
       readySettled = true; resolveReady(); status?.(`${initial.displayName}: native model loaded.`);
@@ -232,7 +242,7 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
       get groundClearance() { return initialized ? profile!.collisionHalfHeight ?? -bounds.minimum.y : 0; },
       setEntity(entity) {
         current = entity;
-        driver?.setActionPreview(entity.actionPreview);
+        driver?.selectActionPreviewWithoutRestartingClip(entity.actionPreview);
         driver?.setDead(entity.health <= 0);
         driver?.setLocomotion(entity.locomotion ?? "run");
         updateEquipment();

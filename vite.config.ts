@@ -1,25 +1,53 @@
 // Adapted from the Apache-2.0 Babylon.js Editor v5.5.3 Vanilla template.
-import { defineConfig } from "vite";
+import { cpSync, existsSync } from "node:fs";
+import { relative, resolve, sep } from "node:path";
+import { defineConfig, loadEnv, type Plugin } from "vite";
 
-export default defineConfig({
-	plugins: [{
+export const buildExcludedPublicPaths = ["assets/characters", "assets/world"] as const;
+
+const editorProjectRunnerReadyMarker = "Ready";
+const unwatchedNativeEvidenceScratchTree = "**/artifacts/**";
+const keepBundleOutputOverCollidingPublicFile = { force: false, errorOnExist: false } as const;
+
+export function isBuildExcludedPublicPath(publicDir: string, source: string): boolean {
+	const path = relative(publicDir, source).split(sep).join("/");
+	return buildExcludedPublicPaths.some(excluded => path === excluded || path.startsWith(`${excluded}/`));
+}
+
+function announceReadyToEditorProjectRunner(): Plugin {
+	return {
 		name: "editor-run-ready",
 		configureServer(server) {
-			// Editor 5.5.3's project runner waits for the capitalized Ready marker.
 			server.httpServer?.once("listening", () => {
 				const address = server.httpServer?.address();
-				if (address && typeof address !== "string") setTimeout(() => server.config.logger.info(`Ready http://localhost:${address.port}`), 0);
+				if (address && typeof address !== "string") setTimeout(() => server.config.logger.info(`${editorProjectRunnerReadyMarker} http://localhost:${address.port}`), 0);
 			});
 		},
-	}],
+	};
+}
+
+function copyPublicDirWithoutLineagenMediaInPlaceOfViteCopy(): Plugin {
+	let publicDir = "", outDir = "";
+	return {
+		name: "public-without-lineagen-media",
+		apply: "build",
+		configResolved(config) { publicDir = config.publicDir; outDir = resolve(config.root, config.build.outDir); },
+		writeBundle() {
+			if (!publicDir || !existsSync(publicDir)) return;
+			cpSync(publicDir, outDir, { recursive: true, ...keepBundleOutputOverCollidingPublicFile, filter: source => !isBuildExcludedPublicPath(publicDir, source) });
+		},
+	};
+}
+
+export default defineConfig(({ mode }) => ({
+	plugins: [announceReadyToEditorProjectRunner(), copyPublicDirWithoutLineagenMediaInPlaceOfViteCopy()],
 	server: {
-		port: 5173,
+		port: Number(loadEnv(mode, process.cwd(), "").DEV_PORT || 5173),
 		strictPort: true,
-		// Native captures/conversion evidence are not application inputs.
-		// Watching this large scratch tree delays development-server startup.
-		watch: { ignored: ["**/artifacts/**"] },
+		watch: { ignored: [unwatchedNativeEvidenceScratchTree] },
 	},
 	build: {
 		target: "es2022",
+		copyPublicDir: false,
 	},
-});
+}));

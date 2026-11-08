@@ -1,9 +1,3 @@
-"""Human mystic player recipes, input lock, profile evidence and staging.
-
-Recipe/lock checks are static. Evidence, batch and staging checks use the real
-outputs in verify-only mode and are skipped when those outputs are absent.
-Nothing here writes to public/l2, the native inputs or the batch outputs.
-"""
 import hashlib
 import json
 from pathlib import Path
@@ -19,8 +13,10 @@ MODELS = ROOT / 'artifacts/native-parity/research/dev-sheet-audio-20261107/model
 MAIN_LOCK = ROOT / 'recipes/native-inputs.lock.json'
 MAGIC_LOCK = ROOT / 'recipes/native-pipeline-magic.inputs.lock.json'
 STAGE = ROOT / 'recipes/native-player-mystics-stage.json'
+ALIAS_UPDATE_STAGE = ROOT / 'recipes/native-player-aliases-stage.json'
 CHARGRP = '2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f'
 CLASSES = {'MMagic': ('human-male-mystic', 8), 'FMagic': ('human-female-mystic', 9)}
+HEIGHT_FITTING_AND_SCALE_OVERRIDE_KEYS = {'scale', 'height', 'drawScale', 'recenter', 'ground'}
 
 
 def load(path):
@@ -64,8 +60,7 @@ class RecipeTests(unittest.TestCase):
                     self.assertEqual(attachment['bone'], 'Bip01_head')
                     self.assertEqual(attachment['source']['class'], 'LineageWarrior.' + name)
                     self.assertEqual(attachment['source']['meshPath'], ['SubMeshes', index])
-            # No height fitting or scale override can enter through the recipe.
-            self.assertFalse({'scale', 'height', 'drawScale', 'recenter', 'ground'} & {key.casefold() for key in request})
+            self.assertFalse(HEIGHT_FITTING_AND_SCALE_OVERRIDE_KEYS & {key.casefold() for key in request})
         self.assertIn('animationFamilyBinding', load(ROOT / 'recipes/native-mmagic.json')[0])
         self.assertNotIn('animationFamilyBinding', load(ROOT / 'recipes/native-fmagic.json')[0])
 
@@ -115,9 +110,8 @@ class OutputVerificationTests(unittest.TestCase):
             if not (output / 'complete.json').is_file():
                 self.skipTest('Mystic batch output is absent')
             owner = load(output / 'owner.json')
-            if owner['jobs'][0]['descriptor']['adapterPins'].get('fingerprint:native-assets') != native_assets.implementation_hash():
-                # Any edit under scripts/native_assets_lib changes the converter fingerprint;
-                # a batch is then reusable only as a fresh rebuild (see the provenance-only check below).
+            staged_converter_fingerprint = owner['jobs'][0]['descriptor']['adapterPins'].get('fingerprint:native-assets')
+            if staged_converter_fingerprint != native_assets.implementation_hash():
                 self.skipTest('Converter fingerprint changed since the staged mystic batch; rebuild into a fresh output to verify')
             result = native_batch.run(ROOT / f'recipes/native-pipeline-{name.lower()}.json', output, verify_only=True)
             self.assertEqual((result['mode'], result['status'], result['writes'], result['adapterExecutions']), ('verify', 'converted', 0, 0))
@@ -150,8 +144,28 @@ class OutputVerificationTests(unittest.TestCase):
         ids = {row['id'] for row in load(catalog)['models']}
         if not {model['catalogId'] for model in stage['models']} <= ids:
             self.skipTest('Mystics are not staged in this tree')
-        result = stage_native_players.stage(STAGE, ROOT / 'public/l2', sha(catalog), verify_only=True)
-        self.assertEqual((result['status'], result['filesWritten'], result['addedModels'], result['addedProfiles']), ('verified', 0, [], []))
+        staged = staged_profiles(catalog)
+        if all(staged.get(row['id']) == row for row in stage['profiles']):
+            result = stage_native_players.stage(STAGE, ROOT / 'public/l2', sha(catalog), verify_only=True)
+            self.assertEqual((result['status'], result['filesWritten'], result['addedModels'], result['addedProfiles']), ('verified', 0, [], []))
+            return
+        self.assert_alias_update_superseded_only_optional_alias_fields(stage['profiles'], staged)
+        result = stage_native_players.stage(ALIAS_UPDATE_STAGE, ROOT / 'public/l2', sha(catalog), verify_only=True)
+        self.assertEqual((result['status'], result['filesWritten']), ('verified', 0))
+
+    def assert_alias_update_superseded_only_optional_alias_fields(self, stage_profiles, staged):
+        for row in stage_profiles:
+            current = staged[row['id']]
+            self.assertLessEqual({key for key in set(row) | set(current) if row.get(key) != current.get(key)},
+                                 stage_native_players.SUPERSEDABLE_FIELDS)
+            self.assertEqual({alias: current['clips'][alias] for alias in row['clips']}, row['clips'])
+
+
+def staged_profiles(catalog):
+    for bundle in load(catalog).get('playerProfiles', []):
+        if bundle['id'] == stage_native_players.BUNDLE_ID:
+            return {row['id']: row for row in load(ROOT / 'public' / bundle['manifest'].lstrip('/'))['profiles']}
+    return {}
 
 
 if __name__ == '__main__':

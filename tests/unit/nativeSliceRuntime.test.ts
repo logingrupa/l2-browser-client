@@ -34,6 +34,7 @@ vi.mock("../../src/audio/nativeFootstepControls", () => ({ attachNativeFootstepC
 vi.mock("../../src/audio/nativeCombatAudioControls", () => ({ attachNativeCombatAudioControls: () => ({ update() {}, dispose() {}, describe: () => [], cards: () => [] }) }));
 vi.mock("../../src/ui/nativePowerStrikeControls", () => ({ attachNativePowerStrikeControls: () => ({ dispose() {} }) }));
 vi.mock("../../src/ui/nativeLocomotionControls", () => ({ attachNativeLocomotionControls: () => ({ dispose() {} }) }));
+vi.mock("../../src/ui/nativeAnimationAliasTable", () => ({ attachNativeAnimationAliasTable: () => ({ refresh() {}, dispose() {} }) }));
 vi.mock("../../src/ui/AssetImportPanel", () => ({ attachAssetImport: boundaries.assetImport }));
 vi.mock("../../src/scene/world/loadNativeSection", async importOriginal => ({
   ...await importOriginal<typeof import("../../src/scene/world/loadNativeSection")>(), loadNativeSection: boundaries.section,
@@ -43,15 +44,16 @@ vi.mock("../../src/entities/attachTargeting", () => ({ attachTargeting: boundari
 vi.mock("../../src/assets/native/NativeCharacterVisual", () => ({ nativeCharacterFactory: boundaries.factory }));
 vi.mock("../../src/ui/WorldInterface", () => ({ WorldInterface: class {
   readonly labels = {}; readonly dispose = vi.fn(); readonly update = vi.fn(); readonly showStatus = vi.fn();
-  // HUD hooks: sound cue, gait toggle and status clearing (WorldInterface).
   readonly clearStatus = vi.fn(); readonly watchSound = vi.fn(() => () => {}); readonly bindGait = vi.fn(() => () => {});
   readonly root = { querySelector: () => ({ append() {}, remove() {}, after() {}, setAttribute() {}, addEventListener() {}, textContent: "" }) };
-  // Developer sheet boundary: groups host plain DOM; hover-cards are inert here.
   readonly sheet = (() => {
-    const node = () => Object.assign(new EventTarget(), { dataset: {}, disabled: false, hidden: false, textContent: "",
+    const plainDomNode = () => Object.assign(new EventTarget(), { dataset: {}, disabled: false, hidden: false, textContent: "",
       append() {}, remove() {}, after() {}, setAttribute() {}, querySelector: () => null, querySelectorAll: () => [] });
-    const group = () => ({ element: node(), button: node, note: node, readout: () => ({ element: node(), output: node(), refresh() {} }) });
-    return { section: () => ({ group }), describe: () => () => {}, inspect: () => ({ open: false }) };
+    const group = () => ({ element: plainDomNode(), button: plainDomNode, note: plainDomNode,
+      readout: () => ({ element: plainDomNode(), output: plainDomNode(), refresh() {} }),
+      choice: () => ({ element: plainDomNode(), value: "", set() {}, setOptions() {}, setDisabled() {} }) });
+    const inertHoverCardDescribe = () => () => {};
+    return { section: () => ({ group }), describe: inertHoverCardDescribe, inspect: () => ({ open: false }) };
   })();
   constructor(readonly adapter: NativeSliceAdapter) { boundaries.uis.push(this); }
 } }));
@@ -61,9 +63,6 @@ vi.mock("../../src/entities/EntityRegistry", () => ({ EntityRegistry: class {
   constructor() { boundaries.registries.push(this); }
 } }));
 
-/** UI and camera attachment are controlled boundaries here. The actual scene,
- * observer lifetime and synthetic adapter run normally; rendering is covered
- * by the browser tests and native visual's real-loader integration suite. */
 describe("native slice runtime lifetime", () => {
   let engine: NullEngine, scene: Scene, stops: (() => void)[];
   const settings: NativeSliceSettings = { origin: new Vector3(2, 3, 4), leatherShirt: true,
@@ -92,7 +91,7 @@ describe("native slice runtime lifetime", () => {
   afterEach(() => { for (const stop of stops) stop(); scene.dispose(); engine.dispose(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
   it("keeps the required world playable when optional effect metadata fails", async () => {
-    sourceWorld(); boundaries.effectBundle.mockRejectedValueOnce(new Error("Effect manifest hash differs"));
+    mockSourceSectionWithRealTerrain(); boundaries.effectBundle.mockRejectedValueOnce(new Error("Effect manifest hash differs"));
     stops.push(await createNativeSliceRuntime(scene, settings, new AbortController().signal, { requireWorld: true }));
     expect(window.__nativeSlice!.snapshot()).toMatchObject({ effectComponents: null,
       effectComponentFailure: "Effect manifest hash differs", worldFailure: null, nativeTerrain: "source-section-loaded" });
@@ -123,8 +122,7 @@ describe("native slice runtime lifetime", () => {
     expect(boundaries.camera).not.toHaveBeenCalled(); expect(window.__nativeSlice).toBeUndefined();
   });
 
-  /** Real saved-world adapter/navigation, with only UI/actor loading mocked. */
-  function authoredWorld(rootZ: -1 | 1 = -1) {
+  function createSavedAuthoredWorld(rootZ: -1 | 1 = -1) {
     scene.useRightHandedSystem = true;
     const hash = "a".repeat(64), sourceMatrix = [...Matrix.Translation(214, -29, 795).asArray()];
     const manifest: NativeSectionManifest = {
@@ -154,30 +152,28 @@ describe("native slice runtime lifetime", () => {
     return { root, ground, tree, hidden, placement, material, camera, cameraBefore, manifest };
   }
 
-  function expectAuthoredCamera(camera: ArcRotateCamera, expected: ReturnType<typeof authoredWorld>["cameraBefore"]) {
+  function expectAuthoredCamera(camera: ArcRotateCamera, expected: ReturnType<typeof createSavedAuthoredWorld>["cameraBefore"]) {
     expect(camera.alpha).toBe(expected.alpha); expect(camera.beta).toBe(expected.beta); expect(camera.radius).toBe(expected.radius);
     expect(camera.target).toEqual(expected.target); expect(camera.minZ).toBe(expected.minZ); expect(camera.maxZ).toBe(expected.maxZ);
     expect(camera.upperRadiusLimit).toBe(expected.upperRadiusLimit);
   }
 
-  /** Real terrain support with a controlled section/presentation boundary. */
-  function sourceWorld(materialFailure?: string) {
+  function mockSourceSectionWithRealTerrain(materialFailure?: string) {
     const authored = MeshBuilder.CreateBox("Retained inspection floor", {}, scene);
     let ground!: ReturnType<typeof MeshBuilder.CreateGround>;
     let lifetime: AbortSignal;
-    const dispose = () => { lifetime.removeEventListener("abort", dispose); ground.dispose(); };
+    const disposeGround = () => { lifetime.removeEventListener("abort", disposeGround); ground.dispose(); };
+    const subscribeGroundDisposalBeforeRuntimeLikeRealSection = (signal: AbortSignal) => signal.addEventListener("abort", disposeGround, { once: true });
     boundaries.section.mockImplementationOnce(async (_scene: Scene, signal: AbortSignal) => {
       lifetime = signal;
       ground = MeshBuilder.CreateGround("Source terrain", { width: 20, height: 20 }, scene); ground.position.set(210, -30, 790);
-      // Match the real section's earlier subscription: runtime must release its
-      // dependent presentation before allowing this signal to dispose geometry.
-      signal.addEventListener("abort", dispose, { once: true });
+      subscribeGroundDisposalBeforeRuntimeLikeRealSection(signal);
       return { manifest: { terrain: { sha256: "a".repeat(64) }, unsupportedRuntimeMaterials: [] }, terrainMeshes: [ground], spawnCandidate: new Vector3(210, -30, 790),
-        minimum: new Vector3(200, -30, 780), maximum: new Vector3(220, -30, 800), manifestSha256: "a".repeat(64), dispose,
+        minimum: new Vector3(200, -30, 780), maximum: new Vector3(220, -30, 800), manifestSha256: "a".repeat(64), dispose: disposeGround,
         setTerrainPreview: vi.fn(), inspection: () => ({ modelCount: 1, placementCount: 1, terrainTriangles: 2, collisionVerified: false,
           ...materialFailure ? { materialFailure } : {} }) };
     });
-    return { authored, get ground() { return ground; }, dispose };
+    return { authored, get ground() { return ground; }, dispose: disposeGround };
   }
 
   function presentationFixture(order: string[] = []) {
@@ -196,7 +192,7 @@ describe("native slice runtime lifetime", () => {
   }
 
   it.each(["source", "authored"] as const)("feeds independent uncapped flame clocks while actors retain their capped step in the %s world", async path => {
-    if (path === "source") sourceWorld(); else authoredWorld();
+    if (path === "source") mockSourceSectionWithRealTerrain(); else createSavedAuthoredWorld();
     const { owner, inspection } = presentationFixture(), controller = new AbortController();
     const replay = { ...settings, flameTextureSeconds: 2.25, flameFadeSeconds: 8.5, flameTextureRate: 3, flameFadeRate: 0.25 };
     const stop = await createNativeSliceRuntime(scene, replay, controller.signal); stops.push(stop);
@@ -228,7 +224,7 @@ describe("native slice runtime lifetime", () => {
   });
 
   it("keeps a valid world and the previous replay time after rejected seeks", async () => {
-    sourceWorld(); const { owner } = presentationFixture();
+    mockSourceSectionWithRealTerrain(); const { owner } = presentationFixture();
     stops.push(await createNativeSliceRuntime(scene, { ...settings, flameTextureSeconds: 5, flameFadeSeconds: 8 }, new AbortController().signal));
     const previous = window.__nativeSlice!.snapshot().flameReplay, calls = owner.update.mock.calls.length;
     expect(() => window.__nativeSlice!.setFlameReplay!({ textureSeconds: -1, fadeSeconds: 0 })).toThrow("finite and nonnegative");
@@ -242,7 +238,7 @@ describe("native slice runtime lifetime", () => {
   });
 
   it("reports an actual seek update failure immediately without waiting for another frame", async () => {
-    sourceWorld(); const { owner, inspection } = presentationFixture();
+    mockSourceSectionWithRealTerrain(); const { owner, inspection } = presentationFixture();
     const elements: (EventTarget & { id?: string; hidden?: boolean; textContent?: string })[] = [];
     vi.stubGlobal("document", Object.assign(new EventTarget(), { createElement: () => { const element = Object.assign(new EventTarget(), { dataset: {} }); elements.push(element); return element; } }));
     stops.push(await createNativeSliceRuntime(scene, settings, new AbortController().signal));
@@ -255,14 +251,14 @@ describe("native slice runtime lifetime", () => {
   });
 
   it.each(["source", "authored"] as const)("passes disabled preview intent through without creating a presentation in the %s world", async path => {
-    if (path === "source") sourceWorld(); else authoredWorld();
+    if (path === "source") mockSourceSectionWithRealTerrain(); else createSavedAuthoredWorld();
     stops.push(await createNativeSliceRuntime(scene, { ...settings, flamePreviewEnabled: false, flameTextureRate: NaN }, new AbortController().signal));
     expect(boundaries.flames).not.toHaveBeenCalled();
     expect(window.__nativeSlice!.snapshot()).toMatchObject({ nativeTerrain: "source-section-loaded", worldFailure: null, nativeFlames: null, flameReplay: null, flameFailure: null });
   });
 
   it("releases a not-present presentation and omits its replay diagnostics", async () => {
-    sourceWorld();
+    mockSourceSectionWithRealTerrain();
     const owner = { update: vi.fn(), inspect: () => ({ status: "not-present", failure: null }), dispose: vi.fn() };
     boundaries.flames.mockResolvedValueOnce(owner);
     const stop = await createNativeSliceRuntime(scene, settings, new AbortController().signal); stops.push(stop);
@@ -272,7 +268,7 @@ describe("native slice runtime lifetime", () => {
   });
 
   it("reports invalid replay settings without losing a valid world or preparing flame assets", async () => {
-    sourceWorld();
+    mockSourceSectionWithRealTerrain();
     stops.push(await createNativeSliceRuntime(scene, { ...settings, flameFadeRate: -1 }, new AbortController().signal));
     expect(boundaries.flames).not.toHaveBeenCalled();
     expect(window.__nativeSlice!.snapshot()).toMatchObject({ nativeTerrain: "source-section-loaded", worldFailure: null, nativeFlames: null, flameReplay: null });
@@ -280,7 +276,7 @@ describe("native slice runtime lifetime", () => {
   });
 
   it.each(["source", "authored"] as const)("contains initial flame-update failures within the valid %s world", async path => {
-    if (path === "source") sourceWorld(); else authoredWorld();
+    if (path === "source") mockSourceSectionWithRealTerrain(); else createSavedAuthoredWorld();
     const { owner } = presentationFixture(); owner.update.mockImplementationOnce(() => { throw new Error("Flame initial update failed"); });
     const stop = await createNativeSliceRuntime(scene, settings, new AbortController().signal); stops.push(stop);
     const section = boundaries.flames.mock.calls[0]![1] as NativeSection;
@@ -292,7 +288,7 @@ describe("native slice runtime lifetime", () => {
   });
 
   it.each(["source", "authored"] as const)("retains the %s world after a presentation-local aborted load", async path => {
-    if (path === "source") sourceWorld(); else authoredWorld();
+    if (path === "source") mockSourceSectionWithRealTerrain(); else createSavedAuthoredWorld();
     boundaries.flames.mockRejectedValueOnce(new DOMException("Flame asset load aborted", "AbortError"));
     stops.push(await createNativeSliceRuntime(scene, settings, new AbortController().signal));
     const section = boundaries.flames.mock.calls[0]![1] as NativeSection;
@@ -302,7 +298,7 @@ describe("native slice runtime lifetime", () => {
   });
 
   it.each(["source", "authored"] as const)("stops failed flame frames without disposing the valid %s world or actor loop", async path => {
-    if (path === "source") sourceWorld(); else authoredWorld();
+    if (path === "source") mockSourceSectionWithRealTerrain(); else createSavedAuthoredWorld();
     const { owner } = presentationFixture();
     const stop = await createNativeSliceRuntime(scene, settings, new AbortController().signal); stops.push(stop);
     const section = boundaries.flames.mock.calls[0]![1] as NativeSection;
@@ -320,7 +316,7 @@ describe("native slice runtime lifetime", () => {
     ["source", "preparation", "failed"], ["source", "preparation", "aborted"], ["source", "frame", "failed"], ["source", "frame", "aborted"],
     ["authored", "preparation", "failed"], ["authored", "preparation", "aborted"], ["authored", "frame", "failed"], ["authored", "frame", "aborted"],
   ] as const)("retains the %s world when presentation %s reports %s without throwing", async (path, phase, status) => {
-    if (path === "source") sourceWorld(); else authoredWorld();
+    if (path === "source") mockSourceSectionWithRealTerrain(); else createSavedAuthoredWorld();
     const { owner, inspection } = presentationFixture();
     const fail = () => { inspection.status = status; inspection.failure = `Presentation ${status} during ${phase}`; };
     if (phase === "preparation") fail();
@@ -340,7 +336,7 @@ describe("native slice runtime lifetime", () => {
     ["source", "stop"], ["source", "abort"], ["source", "startup-failure"],
     ["authored", "stop"], ["authored", "abort"], ["authored", "startup-failure"],
   ] as const)("releases flame presentation before the %s section on %s", async (path, end) => {
-    const authored = path === "authored" ? authoredWorld() : undefined, source = path === "source" ? sourceWorld() : undefined;
+    const authored = path === "authored" ? createSavedAuthoredWorld() : undefined, source = path === "source" ? mockSourceSectionWithRealTerrain() : undefined;
     const order: string[] = [], { owner } = presentationFixture(order), controller = new AbortController();
     const atRelease: { groundDisposed: boolean; authoredZ: number | undefined }[] = [];
     owner.dispose.mockImplementation(() => {
@@ -362,7 +358,7 @@ describe("native slice runtime lifetime", () => {
   });
 
   it.each(["source", "authored"] as const)("releases a late flame owner before the %s section when startup is cancelled", async path => {
-    const authored = path === "authored" ? authoredWorld() : undefined, source = path === "source" ? sourceWorld() : undefined;
+    const authored = path === "authored" ? createSavedAuthoredWorld() : undefined, source = path === "source" ? mockSourceSectionWithRealTerrain() : undefined;
     const controller = new AbortController(), order: string[] = [], owner = { update: vi.fn(), inspect: () => null, dispose: vi.fn(() => { order.push("flames"); }) };
     let release!: () => void, begin!: () => void, presentationSignal!: AbortSignal; const started = new Promise<void>(resolve => { begin = resolve; });
     const atPresentationAbort: { groundDisposed: boolean; authoredZ: number | undefined }[] = [];
@@ -387,12 +383,12 @@ describe("native slice runtime lifetime", () => {
     expect(ui.adapter.getInitialState()[0]).toMatchObject({ position: { x: 2, y: 3, z: 4 }, equipment: { upper: 22 } });
     ui.adapter.dispatch({ type: "move-local", position: { x: 5, y: 3, z: 4 } });
     scene.onBeforeRenderObservable.notifyObservers(scene);
-    // aCis walk speed 80 UU/s ÷ 100 for the first 0.4 s of a run: 0.1 s → 0.08 m.
-    expect(ui.adapter.getInitialState()[0]!.position.x).toBeCloseTo(2.08);
+    const positionXAfterOneTenthSecondAtRunStartWalkSpeed = 2.08;
+    expect(ui.adapter.getInitialState()[0]!.position.x).toBeCloseTo(positionXAfterOneTenthSecondAtRunStartWalkSpeed);
     expect(registry.update).toHaveBeenLastCalledWith(.1);
     ui.adapter.dispatch({ type: "set-paused", isPaused: true }); scene.onBeforeRenderObservable.notifyObservers(scene);
     expect(registry.update).toHaveBeenCalledTimes(3); expect(registry.update).toHaveBeenLastCalledWith(0);
-    expect(ui.adapter.getInitialState()[0]!.position.x).toBeCloseTo(2.08); expect(ui.update).toHaveBeenCalledTimes(2);
+    expect(ui.adapter.getInitialState()[0]!.position.x).toBeCloseTo(positionXAfterOneTenthSecondAtRunStartWalkSpeed); expect(ui.update).toHaveBeenCalledTimes(2);
     expect(window.__nativeSlice?.snapshot()).toMatchObject({ nativeAttackReference: "unverified", phase2Networking: false });
     stop(); stop();
     expect(boundaries.detachCamera).toHaveBeenCalledTimes(1); expect(boundaries.detachTargeting).toHaveBeenCalledTimes(1);
@@ -402,7 +398,7 @@ describe("native slice runtime lifetime", () => {
   });
 
   it.each(["source", "authored"] as const)("opens package inspection from %s world controls without advancing or changing the world", async route => {
-    if (route === "source") sourceWorld(); else authoredWorld();
+    if (route === "source") mockSourceSectionWithRealTerrain(); else createSavedAuthoredWorld();
     const { owner } = presentationFixture();
     const stopVoices = vi.spyOn(WorldAudioMixer.prototype, "stopAll");
     stops.push(await createNativeSliceRuntime(scene, settings, new AbortController().signal));
@@ -419,9 +415,8 @@ describe("native slice runtime lifetime", () => {
     options.onOpenChange!(true);
     expect(isSceneSuspended(scene)).toBe(true); expect(ui.adapter.isPaused).toBe(false);
     expect(audio.inspection().paused).toBe(true); expect(stopVoices).toHaveBeenCalled();
-    // EngineHost skips scene.render while suspended. The observer guard also
-    // covers callers such as Editor Play that may still request a scene frame.
-    scene.onBeforeRenderObservable.notifyObservers(scene);
+    const requestSceneFrameWhileSuspendedLikeEditorPlay = () => scene.onBeforeRenderObservable.notifyObservers(scene);
+    requestSceneFrameWhileSuspendedLikeEditorPlay();
     expect(adapterAdvance).not.toHaveBeenCalled(); expect(registry.update).toHaveBeenCalledTimes(registryCalls);
     expect(owner.update).toHaveBeenCalledTimes(flameCalls); expect(ui.update).toHaveBeenCalledTimes(uiCalls);
     expect(ui.adapter.getInitialState()).toEqual(entities);
@@ -491,8 +486,8 @@ describe("native slice runtime lifetime", () => {
     expect(boundaries.detachAssetImport).toHaveBeenCalledTimes(1);
     expect(isSceneSuspended(scene)).toBe(false); expect(audio.inspection().state).toBe("disposed");
     expect(boundaries.registries[0]!.dispose).toHaveBeenCalledTimes(1); expect(boundaries.uis[0]!.dispose).toHaveBeenCalledTimes(1);
-    // Detached/in-flight UI work cannot re-suspend a released runtime.
-    options.onOpenChange!(true); options.onOpenChange!(false);
+    const lateInFlightInspectorNotifications = () => { options.onOpenChange!(true); options.onOpenChange!(false); };
+    lateInFlightInspectorNotifications();
     expect(isSceneSuspended(scene)).toBe(false);
   });
 
@@ -547,7 +542,7 @@ describe("native slice runtime lifetime", () => {
   });
 
   it("rejects a native assembly failure and releases the unpublished world, UI and adapter", async () => {
-    const source = sourceWorld(); boundaries.assembly.mockRejectedValueOnce(new Error("Native equipment failed"));
+    const source = mockSourceSectionWithRealTerrain(); boundaries.assembly.mockRejectedValueOnce(new Error("Native equipment failed"));
     await expect(createNativeSliceRuntime(scene, settings, new AbortController().signal, { requireWorld: true }))
       .rejects.toThrow("Native equipment failed");
     expect(boundaries.registries[0]!.dispose).toHaveBeenCalledOnce(); expect(boundaries.uis[0]!.dispose).toHaveBeenCalledOnce();
@@ -563,7 +558,6 @@ describe("native slice runtime lifetime", () => {
     await vi.waitFor(() => expect(boundaries.assembly).toHaveBeenCalledOnce());
     const registry = boundaries.registries[0]!, ui = boundaries.uis[0]!;
     if (lifetime === "abort") controller.abort(); else scene.dispose();
-    // Cleanup must not depend on a stalled model or equipment promise resolving.
     expect(registry.dispose).toHaveBeenCalledOnce(); expect(ui.dispose).toHaveBeenCalledOnce();
     expect(ui.adapter.getInitialState()).toEqual([]); expect(boundaries.camera).not.toHaveBeenCalled();
     release();
@@ -616,6 +610,27 @@ describe("native slice runtime lifetime", () => {
       .toMatchObject({ appearanceId: `native-player:${female.id}`, displayName: female.name });
   });
 
+  it("starts a mystic without the saved leather shirt it has no part for, walking on its native walk alias", async () => {
+    const mystic = { ...defaultNativePlayerProfile, id: "human-male-mystic", name: "Human male mystic", catalogId: "human-male-mystic:0",
+      collisionRadius: 7.5, collisionHeight: 22.8, upperItems: [],
+      clips: { idle: "Wait_Hand_MMagic", walk: "Walk_Hand_MMagic", run: "Run_Hand_MMagic", attack: "Atk01_Hand_MMagic", death: "Death_MMagic" } };
+    const catalog = await boundaries.load(); boundaries.load.mockClear();
+    const body = {};
+    boundaries.load.mockResolvedValueOnce({ ...catalog, playerProfile: mystic,
+      playerProfiles: new Map([[defaultNativePlayerProfile.id, defaultNativePlayerProfile], [mystic.id, mystic]]),
+      models: new Map([[mystic.catalogId, body], ["musveren:0", catalog.models.get("musveren:0")]]) });
+    Object.assign(window, { location: { search: "?world=interlude&character=human-male-mystic" } });
+    const documentCreatingRemovableHudWalkButton = Object.assign(new EventTarget(), { createElement: () => Object.assign(new EventTarget(), { dataset: {}, remove() {} }) });
+    vi.stubGlobal("document", documentCreatingRemovableHudWalkButton);
+    stops.push(await createNativeSliceRuntime(scene, { ...settings, leatherShirt: true }, new AbortController().signal));
+    const actor = boundaries.factory.mock.calls[0]![0].get(`native-player:${mystic.id}`);
+    expect(actor.clips).toMatchObject(mystic.clips); expect(actor.upperItems.size).toBe(0);
+    const player = boundaries.uis[0]!.adapter.getInitialState().find(entity => entity.id === "local-player")!;
+    expect(player.equipment?.upper).toBeUndefined();
+    boundaries.uis[0]!.adapter.dispatch({ type: "set-locomotion", mode: "walk" });
+    expect(boundaries.uis[0]!.adapter.getInitialState().find(entity => entity.id === "local-player")!.locomotion).toBe("walk");
+  });
+
   it.each(["missing", "failed"] as const)("rejects a %s world on the required browser route", async failure => {
     if (failure === "failed") boundaries.section.mockRejectedValueOnce(new Error("World source hash differs"));
     await expect(createNativeSliceRuntime(scene, settings, new AbortController().signal, { requireWorld: true }))
@@ -624,7 +639,7 @@ describe("native slice runtime lifetime", () => {
   });
 
   it("rejects missing native terrain materials instead of revealing neutral ground", async () => {
-    const source = sourceWorld("Terrain layer texture failed");
+    const source = mockSourceSectionWithRealTerrain("Terrain layer texture failed");
     await expect(createNativeSliceRuntime(scene, settings, new AbortController().signal, { requireWorld: true }))
       .rejects.toThrow("Native terrain materials failed: Terrain layer texture failed");
     expect(source.ground.isDisposed()).toBe(true); expect(source.authored.isEnabled()).toBe(true);
@@ -632,7 +647,7 @@ describe("native slice runtime lifetime", () => {
   });
 
   it.each(["prepare", "failed-state", "initial-update"] as const)("rejects flame %s failures on the required browser route", async failure => {
-    const source = sourceWorld();
+    const source = mockSourceSectionWithRealTerrain();
     if (failure === "prepare") boundaries.flames.mockRejectedValueOnce(new Error("Flame preparation failed"));
     else {
       const { owner, inspection } = presentationFixture();
@@ -781,7 +796,7 @@ describe("native slice runtime lifetime", () => {
   });
 
   it("uses saved native world geometry without another import, preserves edited objects and restores the LH camera on stop", async () => {
-    const value = authoredWorld(), { root, ground, tree, hidden, material, camera, cameraBefore } = value;
+    const value = createSavedAuthoredWorld(), { root, ground, tree, hidden, material, camera, cameraBefore } = value;
     const savedMeshes = [...scene.meshes], transforms = [...scene.transformNodes], materials = [...scene.materials];
     const materialDispose = vi.spyOn(material, "dispose"), groundDispose = vi.spyOn(ground, "dispose");
     const metadataBefore = JSON.stringify(root.metadata);
@@ -806,22 +821,21 @@ describe("native slice runtime lifetime", () => {
   });
 
   it("restores saved world and camera immediately when authored terrain cannot support the requested spawn", async () => {
-    const { root, ground, material, camera, cameraBefore } = authoredWorld();
+    const { root, ground, material, camera, cameraBefore } = createSavedAuthoredWorld();
     const stop = await createNativeSliceRuntime(scene, { ...settings, origin: new Vector3(100, 3, 4) }, new AbortController().signal); stops.push(stop);
     expect(boundaries.section).not.toHaveBeenCalled();
     expect(window.__nativeSlice?.snapshot()).toMatchObject({ world: null, worldFailure: "The staged native surface does not support the requested actor origin." });
     expect(root.scaling.z).toBe(-1); expect(ground.isEnabled()).toBe(true); expect(ground.material).toBe(material);
     expectAuthoredCamera(camera, cameraBefore);
-    camera.alpha = .33; camera.setTarget(new Vector3(9, 8, 7), false, false, true);
+    const editCameraInRetainedInspectionScene = () => { camera.alpha = .33; camera.setTarget(new Vector3(9, 8, 7), false, false, true); };
+    editCameraInRetainedInspectionScene();
     stop();
-    // Failure rollback already released the temporary coordinate adapter. Later
-    // camera edits in the retained inspection scene must not be restored again.
     expect(camera.alpha).toBe(.33); expect(camera.target.asArray()).toEqual([9, 8, 7]);
     expect(ground.isDisposed()).toBe(false);
   });
 
   it.each(["stop", "abort"] as const)("does not reflect an authored RH camera when the world root is already identity, and restores it on %s", async lifetime => {
-    const { root, ground, tree, camera, cameraBefore } = authoredWorld(1), controller = new AbortController();
+    const { root, ground, tree, camera, cameraBefore } = createSavedAuthoredWorld(1), controller = new AbortController();
     const orientations = [ground.sideOrientation, tree.sideOrientation];
     boundaries.camera.mockImplementationOnce(() => {
       expectAuthoredCamera(camera, cameraBefore);
@@ -842,7 +856,7 @@ describe("native slice runtime lifetime", () => {
   });
 
   it("restores an attached saved world on cancellation and releases runtime boundaries without disposing authored objects", async () => {
-    const { root, ground, material, camera, cameraBefore } = authoredWorld(), controller = new AbortController();
+    const { root, ground, material, camera, cameraBefore } = createSavedAuthoredWorld(), controller = new AbortController();
     const stop = await createNativeSliceRuntime(scene, settings, controller.signal); stops.push(stop);
     const terrainDispose = vi.spyOn(ground, "dispose"), materialDispose = vi.spyOn(material, "dispose");
     controller.abort(); stop();
@@ -853,7 +867,7 @@ describe("native slice runtime lifetime", () => {
   });
 
   it("rolls back reflected authored coordinates when a later runtime attachment fails", async () => {
-    const { root, ground, material, camera, cameraBefore } = authoredWorld();
+    const { root, ground, material, camera, cameraBefore } = createSavedAuthoredWorld();
     boundaries.targeting.mockImplementationOnce(() => { throw Error("Targeting fixture failure"); });
     await expect(createNativeSliceRuntime(scene, settings, new AbortController().signal)).rejects.toThrow("Targeting fixture failure");
     expect(root.scaling.z).toBe(-1); expectAuthoredCamera(camera, cameraBefore); expect(ground.material).toBe(material);
@@ -861,7 +875,7 @@ describe("native slice runtime lifetime", () => {
   });
 
   it("does not replace a malformed saved world with a newly imported source world", async () => {
-    const { root, ground, camera, cameraBefore } = authoredWorld(); root.metadata.nativeWorldRoot.manifestSha256 = "invalid";
+    const { root, ground, camera, cameraBefore } = createSavedAuthoredWorld(); root.metadata.nativeWorldRoot.manifestSha256 = "invalid";
     stops.push(await createNativeSliceRuntime(scene, settings, new AbortController().signal));
     expect(boundaries.section).not.toHaveBeenCalled(); expect(root.scaling.z).toBe(-1); expectAuthoredCamera(camera, cameraBefore);
     expect(ground.isEnabled()).toBe(true); expect(window.__nativeSlice?.snapshot()?.worldFailure).toContain("invalid schema or manifest identity");

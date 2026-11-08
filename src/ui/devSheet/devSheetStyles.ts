@@ -1,8 +1,3 @@
-/** Developer sheet styles. Kept in TypeScript for the Editor script compiler.
- * Tokens extend the HUD's (--panel, --bronze, --gold, --muted, --line). The
- * `.dev-group-body` rules normalise plain DOM appended by existing control
- * modules (label/select/range/checkbox/button/p) so they need no rewrite;
- * `.dev-chips` is the shared radio-chip contract for owner modules. */
 export const devSheetStyles = String.raw`
 .dev-sheet, .dev-hovercard {
   --dev-surface: rgb(19 23 21 / 97%); --dev-raised: #242c28; --dev-inset: #141917; --dev-hairline: rgb(191 167 111 / 20%);
@@ -19,9 +14,6 @@ export const devSheetStyles = String.raw`
 .world-interface[data-dev-docked] > .dev-sheet[data-mode="side"] { right: auto; left: 100%; box-shadow: none; }
 .dev-sheet[data-mode="side"][data-state="closed"] { transform: translateX(18px); opacity: 0; visibility: hidden;
   transition: transform 140ms ease-in, opacity 120ms ease-in, visibility 0s linear 140ms; }
-/* Bottom sheet: opaque so the HUD never ghosts through. While sticky it is
-   docked below the shrunken canvas (the HUD root ends where the canvas
-   ends), so it hangs --dev-sheet-dock below the root and grows upward. */
 .dev-sheet[data-mode="bottom"] { left: 0; right: 0; bottom: 0; height: var(--dev-sheet-height, 50%); max-height: 100dvh;
   background: rgb(19 23 21); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom);
   transition: transform 220ms cubic-bezier(.2, .8, .2, 1), height 200ms cubic-bezier(.2, .8, .2, 1); }
@@ -34,7 +26,6 @@ export const devSheetStyles = String.raw`
 .dev-sheet :focus-visible { outline: 2px solid #ffe0a3; outline-offset: 2px; }
 .dev-sheet svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
 
-/* Chrome: grip (bottom only), one-line header, one toolbar row. */
 .dev-sheet-grip { display: none; }
 .dev-sheet[data-mode="bottom"] .dev-sheet-grip { display: flex; align-items: center; justify-content: center; width: 100%; height: 14px;
   flex: 0 0 14px; padding: 0; border: 0; background: transparent; touch-action: none; cursor: grab; }
@@ -62,7 +53,6 @@ export const devSheetStyles = String.raw`
 .dev-pin[aria-pressed="true"] .dev-pin-state { border: 1px solid var(--gold); background: var(--gold); color: #1d1a12; }
 
 .dev-sheet-toolbar { display: grid; gap: 8px; padding: 8px 12px 9px; flex: 0 0 auto; border-bottom: 1px solid var(--dev-hairline); }
-/* Tabs: always one row; scroll with fades on the overflowing edges. */
 .dev-tabs { display: flex; flex-wrap: nowrap; gap: 4px; min-width: 0; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain;
   scrollbar-width: none; scroll-padding-inline: 24px; -webkit-overflow-scrolling: touch; }
 .dev-tabs::-webkit-scrollbar { display: none; }
@@ -76,7 +66,6 @@ export const devSheetStyles = String.raw`
 .dev-tab svg { width: 15px; height: 15px; }
 .dev-tab:hover { color: var(--dev-bright); border-color: var(--line); }
 .dev-tab[aria-selected="true"] { color: var(--dev-bright); border-color: var(--gold); background: rgb(237 205 136 / 12%); box-shadow: inset 0 -2px 0 var(--gold); }
-/* Counts float on the tab corner: filtering never reflows the row. */
 .dev-tab-count { position: absolute; top: 2px; right: 2px; min-width: 15px; padding: 1px 3px; background: var(--gold); color: #1d1a12;
   font: 700 9.5px/1.1 var(--dev-mono); text-align: center; }
 .dev-tab-count:empty { display: none; }
@@ -119,11 +108,19 @@ export const devSheetStyles = String.raw`
 .dev-sheet[data-filtering] .dev-group[data-collapsed] > .dev-group-body { display: grid; }
 .dev-sheet [data-dev-filtered="out"] { display: none !important; }
 
-/* Rows created by DevGroup helpers: label | control | (i), on one label column. */
 .dev-row { display: grid; grid-template-columns: var(--dev-label-column) minmax(0, 1fr); align-items: center; gap: 4px 8px; min-height: var(--dev-control); }
 .dev-row[data-info] { grid-template-columns: var(--dev-label-column) minmax(0, 1fr) auto; }
 .dev-row[data-layout="stacked"] { grid-template-columns: minmax(0, 1fr) auto; }
 .dev-row[data-layout="stacked"] > .dev-row-control { grid-column: 1 / -1; grid-row: 2; }
+.dev-row.dev-level-row { grid-template-columns: var(--dev-label-column) minmax(0, 1fr); }
+.dev-level-row > .dev-row-control { display: grid; grid-template-columns: minmax(0, 1fr) var(--dev-level-value, 7ch) var(--dev-level-toggle, 7em);
+  align-items: center; gap: 8px; }
+.dev-level-row > .dev-row-control > input[type="range"] { grid-column: 1; grid-row: 1; width: 100%; min-width: 0; }
+.dev-level-row > .dev-row-control > .dev-range-value { grid-column: 2; grid-row: 1; min-width: 0; overflow: hidden; white-space: nowrap;
+  font: 500 11px/1 var(--dev-mono); font-variant-numeric: tabular-nums; color: var(--dev-bright); text-align: right; }
+.dev-level-row > .dev-row-control > .dev-level-toggle { grid-column: 3; grid-row: 1; width: 100%; min-width: 0; }
+.dev-level-note { display: block; margin-top: 1px; font: 500 10px/1.2 var(--dev-mono); font-variant-numeric: tabular-nums; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dev-row-label { font-size: 12px; color: #efe4cb; overflow-wrap: normal; }
 .dev-row-control { min-width: 0; display: flex; align-items: center; gap: 8px; }
 .dev-row-control > * { min-width: 0; }
@@ -143,9 +140,6 @@ export const devSheetStyles = String.raw`
 .dev-chip[aria-checked="true"] { background: rgb(237 205 136 / 17%); border-color: var(--gold); color: var(--dev-bright); box-shadow: inset 0 0 0 1px rgb(237 205 136 / 30%); }
 .dev-choice[data-display="segmented"] .dev-chip[aria-checked="true"] { box-shadow: inset 0 -2px 0 var(--gold); }
 
-/* Shared radio-chip contract for owner modules:
-   <div class="dev-chips" role="radiogroup" aria-label="…"><button type="button" role="radio" aria-checked="…" data-value="…">…</button></div>
-   Up to four chips read as one segmented control; more wrap as chips. */
 .dev-sheet .dev-chips { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; width: 100%; }
 .dev-sheet .dev-chips > [role="radio"] { flex: 0 0 auto; min-height: var(--dev-chip); min-width: var(--dev-chip); margin: 0; padding: 3px 10px;
   border: 1px solid var(--dev-hairline); border-radius: 0; background: var(--dev-inset); color: var(--muted); font-size: 12px; line-height: 1.2;
@@ -156,7 +150,7 @@ export const devSheetStyles = String.raw`
   box-shadow: inset 0 0 0 1px rgb(237 205 136 / 30%); }
 .dev-sheet .dev-chips > [role="radio"]:is(:disabled, [aria-disabled="true"]) { opacity: .5; }
 .dev-sheet .dev-chips:not(:has(> :nth-child(5))) { flex-wrap: nowrap; gap: 0; border: 1px solid var(--line); background: var(--dev-inset); }
-.dev-sheet .dev-chips:not(:has(> :nth-child(5))) > [role="radio"] { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+.dev-sheet .dev-chips:not(:has(> :nth-child(5))) > [role="radio"] { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
   border: 0; border-right: 1px solid var(--dev-hairline); }
 .dev-sheet .dev-chips:not(:has(> :nth-child(5))) > [role="radio"]:last-child { border-right: 0; }
 .dev-sheet .dev-chips:not(:has(> :nth-child(5))) > [role="radio"][aria-checked="true"] { box-shadow: inset 0 -2px 0 var(--gold); }
@@ -172,19 +166,13 @@ export const devSheetStyles = String.raw`
 .dev-range-control > .dev-range { flex: 1; }
 .dev-range-value { min-width: 4ch; font: 500 11px/1 var(--dev-mono); color: var(--dev-bright); text-align: right; }
 
-/* Plain DOM from existing control modules. Module roots are a 2-column grid:
-   content | (i). Everything spans both columns except a row followed by its
-   (i) (or a label followed by its value output), which share one line. */
 .dev-group-body :where(div) { min-width: 0; }
-.dev-group-body :where(div[data-testid]:not([class*="dev-"])) { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 8px; align-items: center; }
-.dev-group-body :where(div[data-testid]:not([class*="dev-"])) > * { grid-column: 1 / -1; }
-.dev-group-body :where(div[data-testid]:not([class*="dev-"])) > :where(:has(+ .dev-info-after), label:has(+ output)) { grid-column: 1; }
-.dev-group-body :where(div[data-testid]:not([class*="dev-"])) > :where(.dev-info-after, label + output) { grid-column: 2; justify-self: end; }
-.dev-group-body :where(div[data-testid]:not([class*="dev-"])) > :where(label + output) { min-width: 4ch; font: 500 11px/1 var(--dev-mono); color: var(--dev-bright); text-align: right; }
+.dev-group-body :where(div[data-testid]:not([class*="dev-"], [data-dev-layout="own"])) { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 8px; align-items: center; }
+.dev-group-body :where(div[data-testid]:not([class*="dev-"], [data-dev-layout="own"])) > * { grid-column: 1 / -1; }
+.dev-group-body :where(div[data-testid]:not([class*="dev-"], [data-dev-layout="own"])) > :where(:has(+ .dev-info-after), label:has(+ output)) { grid-column: 1; }
+.dev-group-body :where(div[data-testid]:not([class*="dev-"], [data-dev-layout="own"])) > :where(.dev-info-after, label + output) { grid-column: 2; justify-self: end; }
+.dev-group-body :where(div[data-testid]:not([class*="dev-"], [data-dev-layout="own"])) > :where(label + output) { min-width: 4ch; font: 500 11px/1 var(--dev-mono); color: var(--dev-bright); text-align: right; }
 .dev-group-body :where(div[hidden]) { display: none; }
-/* Plain labels: text on the shared label column, the control beside it, and
-   any trailing checkbox or (i) on the same line. Range labels use fixed
-   trailing columns so every slider track starts and ends at the same x. */
 .dev-group-body :where(label:not(.dev-row-label)) { display: grid; grid-template-columns: var(--dev-label-column) minmax(0, 1fr); grid-auto-flow: column;
   grid-auto-columns: auto; align-items: center; gap: 4px 8px; min-height: var(--dev-control); font-size: 12px; color: #efe4cb; }
 .dev-group-body :where(label:not(.dev-row-label):has(> input[type="range"])) { grid-auto-flow: row; grid-template-columns: var(--dev-label-column) minmax(0, 1fr) 18px 18px; }
@@ -208,7 +196,6 @@ export const devSheetStyles = String.raw`
 .dev-group-body :where(button:not(.dev-info, .dev-chip, .dev-switch):active:enabled) { background: #79704a; }
 .dev-group-body :where(button[aria-pressed="true"]) { border-color: var(--gold); background: #4a3e25; }
 
-/* (i) buttons: small mark, 36px (44px on touch) hit area, always inline. */
 .dev-info { position: relative; display: inline-grid; place-items: center; width: 18px; height: 18px; flex: 0 0 auto; padding: 0;
   border: 1px solid var(--dev-hairline); border-radius: 50%; background: transparent; color: var(--muted);
   font: italic 600 11px/1 Georgia, "Times New Roman", serif; cursor: help; transition: opacity 120ms ease-out; }
@@ -225,7 +212,6 @@ export const devSheetStyles = String.raw`
   .dev-sheet[data-mode="side"] .dev-info:is(:hover, :focus-visible, [aria-expanded="true"]) { opacity: 1; }
 }
 
-/* Touch and phone: 44px targets; 16px inputs so iOS never zooms on focus. */
 .dev-sheet[data-mode="bottom"] { --dev-control: 44px; --dev-chip: 44px; --dev-label-column: 7.5em; }
 @media (pointer: coarse) {
   .dev-sheet { --dev-control: 44px; --dev-chip: 44px; } .dev-info::before { inset: -13px; } .dev-tab { min-height: 44px; }
@@ -235,9 +221,11 @@ export const devSheetStyles = String.raw`
 .dev-sheet[data-mode="bottom"] .dev-tab { min-height: 44px; padding-inline: 10px; }
 .dev-sheet[data-mode="bottom"] .dev-info::before { inset: -13px; }
 .dev-sheet[data-mode="bottom"] :is(.dev-chip, .dev-chips > [role="radio"]) { padding-inline: 12px; }
+.dev-sheet[data-mode="bottom"] .dev-row.dev-level-row { grid-template-columns: minmax(0, 1fr); row-gap: 0; }
+.dev-sheet[data-mode="bottom"] .dev-level-row { --dev-level-toggle: 8em; }
+.dev-sheet[data-mode="bottom"] .dev-level-row > .dev-row-label { min-height: 22px; display: flex; align-items: baseline; gap: 8px; padding-top: 4px; }
+.dev-sheet[data-mode="bottom"] .dev-level-note { display: inline; margin-top: 0; }
 
-/* Phone chrome: slim grip, one-line header (title · Sticky · close), and one
-   toolbar row (scrolling tabs + a search icon that expands into the filter). */
 .dev-sheet[data-mode="bottom"] .dev-sheet-header { padding: 0 6px 4px 12px; gap: 6px; background: none; touch-action: none; }
 .dev-sheet[data-mode="bottom"] .dev-sheet-heading > svg { display: none; }
 .dev-sheet[data-mode="bottom"] .dev-sheet-titles h2 { font-size: 18px; }
@@ -255,7 +243,6 @@ export const devSheetStyles = String.raw`
 .dev-sheet[data-mode="bottom"][data-filter-open] .dev-tabs { flex: 1 1 38%; }
 .dev-sheet[data-mode="bottom"] .dev-sheet-body { padding-top: 0; }
 
-/* Narrow bodies (320px phones): stack label above control. */
 @container (max-width: 270px) {
   .dev-row[data-layout="inline"] { grid-template-columns: minmax(0, 1fr) auto; }
   .dev-row[data-layout="inline"] > .dev-row-control { grid-column: 1 / -1; grid-row: 2; }
@@ -267,8 +254,6 @@ export const devSheetStyles = String.raw`
   .dev-sheet-toolbar { padding-block: 5px 6px; gap: 6px; }
 }
 
-/* Hover-card: an item-inspection tooltip with provenance marks. Compact
-   (40vh, 320px); hover/focus cards are read-only and never catch clicks. */
 .dev-hovercard { position: fixed; z-index: 30; left: 0; top: 0; width: max-content; max-width: min(320px, calc(100vw - 16px));
   max-height: 40vh; overflow-y: auto; overscroll-behavior: contain; padding: 9px 12px; pointer-events: auto;
   background: rgb(13 16 15 / 97%); border: 1px solid var(--bronze); font-size: 12px; line-height: 1.4;
@@ -287,13 +272,11 @@ export const devSheetStyles = String.raw`
 .dev-hovercard:is([data-trigger="hover"], [data-trigger="focus"]) .dev-hovercard-description {
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; line-clamp: 4; overflow: hidden; }
 .dev-variables { display: grid; margin: 0; padding: 2px 0 0; border-top: 1px solid rgb(191 167 111 / 26%); }
-/* Name and value share a line when they fit; otherwise the value wraps
-   below. Names break only after a dot, never mid-word. */
 .dev-variable { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 10px; padding: 5px 0; }
 .dev-variable + .dev-variable { border-top: 1px dashed rgb(191 167 111 / 18%); }
 .dev-variable-name { flex: 0 1 auto; min-width: 0; margin: 0; }
 .dev-variable-name code { font: 11px/1.3 var(--dev-mono); color: #e9dcc0; overflow-wrap: normal; word-break: normal; }
-.dev-variable-data { flex: 1 1 12ch; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-end; gap: 3px 6px; margin: 0; text-align: right; }
+.dev-variable-data { flex: 1 1 auto; min-width: 0; max-width: 100%; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-end; gap: 3px 6px; margin: 0; text-align: right; }
 .dev-variable-value { min-width: 0; font: 600 11px/1.3 var(--dev-mono); font-variant-numeric: tabular-nums; color: var(--dev-bright); overflow-wrap: anywhere; }
 .dev-variable-meta { flex: 1 1 100%; margin: 1px 0 0; color: var(--muted); font-size: 10.5px; line-height: 1.45; }
 .dev-variable-meta summary { width: fit-content; color: var(--bronze); font-size: 10.5px; letter-spacing: .06em; cursor: pointer; }

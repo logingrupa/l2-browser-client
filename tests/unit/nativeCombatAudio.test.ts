@@ -5,7 +5,7 @@ import { readAssetPackage, sha256, type AssetPackage } from "../../src/assets/pa
 import type { WorldAudioPlaybackReceipt, WorldAudioVoice, WorldAudioVoiceOptions } from "../../src/audio/WorldAudioMixer";
 import type { WorldEntity } from "../../src/world/worldTypes";
 import { createNativeCombatAudio, nativeAttackEvents, nativeAttackShotRoute, nativeCombatGain, nativePercentChance, summarizeNativeCombatDispatch,
-  APP_RAND_RANGE, FALLBACK_SHOT_FRACTION, OFFLINE_OUTCOME, type NativeCombatActor, type NativeCombatAudioOptions } from "../../src/audio/nativeCombatAudio";
+  APP_RAND_RANGE, FALLBACK_SHOT_FRACTION, OFFLINE_OUTCOME, PRESENTATION_STATUS, type NativeCombatActor, type NativeCombatAudioOptions } from "../../src/audio/nativeCombatAudio";
 import { loadNativeCombatAudio, parseNativeCombatManifest, type NativeCombatAudioBundle, type NativeCombatRole,
   type NativeCombatSelection, type NativeCombatSoundSet } from "../../src/audio/loadNativeCombatAudio";
 import { attachNativeCombatAudioControls } from "../../src/audio/nativeCombatAudioControls";
@@ -71,8 +71,7 @@ const entity = (id: string, kind: WorldEntity["kind"], x: number, patch: Partial
   ({ id, kind, displayName: id, position: { x, y: 0, z: 0 }, orientationRadians: 0, health: 100, maximumHealth: 100, animation: "idle", ...patch });
 const clock = (clip: string | null, elapsedSeconds: number, patch: Partial<NativeActorClock> = {}): NativeActorClock =>
   ({ clip, mode: "once", elapsedSeconds, durationSeconds: 1.4333, playing: true, completed: false, ...patch });
-/** random() value whose appRand() is exactly `value`. */
-const rand = (value: number) => (value + .5) / APP_RAND_RANGE;
+const randomForAppRand = (value: number) => (value + .5) / APP_RAND_RANGE;
 
 function fakeMixer() {
   let next = 0, now = 10, accepting = true;
@@ -152,8 +151,8 @@ describe("browser combat hit sounds (native Q4 routes)", () => {
     step("local-player", clock("Atk01_Hand", .32));
     expect(fake.voices.map(voice => [voice.key, voice.owner, voice.bus])).toEqual([["key:ChrSound.MHFighter_1H_Atk_1", "native-combat:local-player", "effects"]]);
     expect(fake.voices[0]!.offsetSeconds).toBeCloseTo(.01, 9);
-    // No listener: flat volume/255 and no panner position.
-    expect(fake.voices[0]!.position).toBeUndefined(); expect(fake.voices[0]!.gain).toBeCloseTo(250 / 255, 12);
+    const voiceWithoutListener = fake.voices[0]!, flatVolumeGain = 250 / 255;
+    expect(voiceWithoutListener.position).toBeUndefined(); expect(voiceWithoutListener.gain).toBeCloseTo(flatVolumeGain, 12);
     step("local-player", clock("Atk01_Hand", .43));
     expect(keys(fake).slice(1)).toEqual(["key:ItemSound.fist_1", "key:MonSound.Hit_Bone_6", "key:MonSound.field_stalker_dmg_1"]);
     expect(fake.voices.slice(1).map(voice => voice.owner)).toEqual(["native-combat:local-player", "native-combat:native-musveren", "native-combat:native-musveren"]);
@@ -195,47 +194,46 @@ describe("browser combat hit sounds (native Q4 routes)", () => {
   });
 
   it("gates AttackVoice by appRand()%100 <= 50 and the NPC damage by <= 70, and picks appRand()%n", () => {
-    // voice roll 51 (skip) · fist pick 4 % 3 = 1 → fist_2 · defense pick 3 % 2 = 1 → Hit_Wet_2 · damage roll 71 (skip)
-    const fake = fixture({}, [rand(51), rand(4), rand(3), rand(71)]);
+    const skippedVoiceRoll = randomForAppRand(51), fistTwoPick = randomForAppRand(4), hitWetTwoPick = randomForAppRand(3), skippedDamageRoll = randomForAppRand(71);
+    const fake = fixture({}, [skippedVoiceRoll, fistTwoPick, hitWetTwoPick, skippedDamageRoll]);
     fake.step("local-player", clock("Atk01_Hand", .016)); fake.step("local-player", clock("Atk01_Hand", .43));
     expect(keys(fake)).toEqual(["key:ItemSound.fist_2", "key:MonSound.Hit_Wet_2"]);
     const [voice, item, shot] = fake.combat.inspection().recent;
     expect(voice).toMatchObject({ outcome: "skipped", skipped: [{ role: "attackVoice", reason: "chance" }] });
     expect(item!.sounds[0]).toMatchObject({ slotIndex: 1, slotCount: 3 });
     expect(shot).toMatchObject({ outcome: "played", skipped: [{ role: "damage", reason: "chance" }] });
-    // Boundary values play: voice 50, damage 70.
-    const edge = fixture({}, [rand(50), 0, 0, rand(70)]);
-    edge.step("local-player", clock("Atk01_Hand", .016)); edge.step("local-player", clock("Atk01_Hand", .43));
-    expect(keys(edge)).toEqual(["key:ChrSound.MHFighter_1H_Atk_1", "key:ItemSound.fist_1", "key:MonSound.Hit_Bone_6", "key:MonSound.field_stalker_dmg_1"]);
+    const playingBoundaryVoiceRoll = randomForAppRand(50), playingBoundaryDamageRoll = randomForAppRand(70);
+    const boundaryRollsPlay = fixture({}, [playingBoundaryVoiceRoll, 0, 0, playingBoundaryDamageRoll]);
+    boundaryRollsPlay.step("local-player", clock("Atk01_Hand", .016)); boundaryRollsPlay.step("local-player", clock("Atk01_Hand", .43));
+    expect(keys(boundaryRollsPlay)).toEqual(["key:ChrSound.MHFighter_1H_Atk_1", "key:ItemSound.fist_1", "key:MonSound.Hit_Bone_6", "key:MonSound.field_stalker_dmg_1"]);
   });
 
   it("skips AttackItem/AttackVoice while the same sound still plays on that pawn, including a direct cue's sound", () => {
     const fake = fixture();
     fake.step("local-player", clock("Atk01_Hand", .016)); fake.step("local-player", clock("Atk01_Hand", .85));
-    // Second voice and fist picks repeat the still-playing slot 0 sounds: both skipped; route C (no IsPlaying rule) plays again.
-    const recent = fake.combat.inspection().recent;
-    expect(recent.map(row => [row.route, row.outcome])).toEqual([["B", "played"], ["A", "played"], ["C", "played"], ["B", "skipped"], ["A", "skipped"], ["C", "played"]]);
-    expect(recent[4]!.skipped[0]).toMatchObject({ role: "attackItem", reason: "still-playing" });
+    const recentWithRepeatedSlotZeroPicksSkippedAndRouteCReplayed = fake.combat.inspection().recent;
+    expect(recentWithRepeatedSlotZeroPicksSkippedAndRouteCReplayed.map(row => [row.route, row.outcome]))
+      .toEqual([["B", "played"], ["A", "played"], ["C", "played"], ["B", "skipped"], ["A", "skipped"], ["C", "played"]]);
+    expect(recentWithRepeatedSlotZeroPicksSkippedAndRouteCReplayed[4]!.skipped[0]).toMatchObject({ role: "attackItem", reason: "still-playing" });
     expect(fake.combat.describe().find(row => row.name === "combat.isPlayingSkip")!.value()).toContain("still playing on local-player");
-    // A direct AnimNotify_Sound cue registered in the shared ledger blocks the same fist pick (fist_2 = appRand 1).
-    const other = fixture({}, [rand(99), rand(1)]);
-    const ledger = nativePawnSoundLedger(other.mixer);
-    ledger.started("local-player", "ItemSound.Group.fist_2", "native-action:1:local-player", 10.5);
-    other.step("local-player", clock("Atk01_Hand", .016)); other.step("local-player", clock("Atk01_Hand", .37));
-    expect(other.combat.inspection().recent.at(-1)).toMatchObject({ route: "A", outcome: "skipped", skipped: [{ reason: "still-playing" }] });
-    ledger.release("native-action:1:local-player"); other.queue.push(rand(99), rand(1));
-    other.step("local-player", clock("Atk01_Hand", .016)); other.step("local-player", clock("Atk01_Hand", .37));
-    expect(other.combat.inspection().recent.at(-1)).toMatchObject({ route: "A", outcome: "played" });
+    const skippedVoiceRoll = randomForAppRand(99), fistTwoPick = randomForAppRand(1);
+    const directCueBlocksFistPick = fixture({}, [skippedVoiceRoll, fistTwoPick]);
+    const sharedPawnSoundLedger = nativePawnSoundLedger(directCueBlocksFistPick.mixer);
+    sharedPawnSoundLedger.started("local-player", "ItemSound.Group.fist_2", "native-action:1:local-player", 10.5);
+    directCueBlocksFistPick.step("local-player", clock("Atk01_Hand", .016)); directCueBlocksFistPick.step("local-player", clock("Atk01_Hand", .37));
+    expect(directCueBlocksFistPick.combat.inspection().recent.at(-1)).toMatchObject({ route: "A", outcome: "skipped", skipped: [{ reason: "still-playing" }] });
+    sharedPawnSoundLedger.release("native-action:1:local-player"); directCueBlocksFistPick.queue.push(skippedVoiceRoll, fistTwoPick);
+    directCueBlocksFistPick.step("local-player", clock("Atk01_Hand", .016)); directCueBlocksFistPick.step("local-player", clock("Atk01_Hand", .37));
+    expect(directCueBlocksFistPick.combat.inspection().recent.at(-1)).toMatchObject({ route: "A", outcome: "played" });
   });
 
   it("Musveren: empty attack_sound1 stays silent, no AttackVoice for NPCs, fighter defense/damage via chargrp or chest armor (conditional)", () => {
-    // Draws: empty attack_sound1 pick, defense pick, damage roll 51.
-    const fake = fixture({}, [0, 0, rand(51)]);
+    const emptyAttackSoundPick = 0, defensePick = 0, skippedPlayerDamageRollAboveCharSoundRandom = randomForAppRand(51);
+    const fake = fixture({}, [emptyAttackSoundPick, defensePick, skippedPlayerDamageRollAboveCharSoundRandom]);
     fake.step("native-musveren", clock("atk01", .02, { durationSeconds: 1.8333 })); fake.step("native-musveren", clock("atk01", .75, { durationSeconds: 1.8333 }));
     const [item, shot] = fake.combat.inspection().recent;
     expect(item).toMatchObject({ route: "A", outcome: "no-sound", skipped: [{ role: "attackItem", reason: "empty-slot" }] });
     expect(shot!.sounds.map(sound => [sound.reference, sound.entityId, sound.volume, sound.radiusUnits])).toEqual([["ItemSound.armor_underwear_1", "local-player", 250, 30]]);
-    // Player damage: appRand()%100 <= [CharSound] Random (50); 51 rolled out.
     expect(shot!.skipped).toEqual([{ role: "damage", reason: "chance", detail: "appRand()%100 > 50 (p 0.510)" }]);
     fake.entities.set("local-player", entity("local-player", "local-player", 0, { equipment: { upper: 22 } }));
     fake.step("native-musveren", clock("atk01", .02, { durationSeconds: 1.8333 })); fake.step("native-musveren", clock("atk01", .75, { durationSeconds: 1.8333 }));
@@ -279,8 +277,8 @@ describe("browser combat hit sounds (native Q4 routes)", () => {
   });
 
   it("right-hand Short Sword replaces the fist list with [ItemSound] Vol/Radius", () => {
-    // Draws: voice roll, voice pick, sword pick 1 % 2.
-    const fake = fixture({}, [0, 0, rand(1)]);
+    const voiceRoll = 0, voicePick = 0, swordBigSevenPick = randomForAppRand(1);
+    const fake = fixture({}, [voiceRoll, voicePick, swordBigSevenPick]);
     fake.combat.setWeapon("weapon:1");
     fake.step("local-player", clock("Atk01_Hand", .016)); fake.step("local-player", clock("Atk01_Hand", .37));
     expect(fake.combat.inspection().recent.at(-1)!.sounds[0]).toMatchObject({ reference: "ItemSound.sword_big_7", volume: 250, radiusUnits: 40, slotCount: 2 });
@@ -289,7 +287,7 @@ describe("browser combat hit sounds (native Q4 routes)", () => {
   });
 
   it("test auditions: full impact ignoring reach and probabilities; later server flags take their native branch", () => {
-    const fake = fixture({ enabled: false }, [rand(99), rand(99), rand(99), rand(99)]);
+    const fake = fixture({ enabled: false }, [randomForAppRand(99), randomForAppRand(99), randomForAppRand(99), randomForAppRand(99)]);
     fake.entities.set("native-musveren", entity("native-musveren", "monster", 40));
     expect(fake.combat.test("musveren-hit")).toMatchObject({ attackerId: "native-musveren", targetId: "local-player", outcome: "played" });
     expect(keys(fake)).toEqual(["key:ItemSound.armor_underwear_1", "key:ChrSound.MHFighter_Dmg_1"]);
@@ -351,7 +349,7 @@ describe("browser combat hit sounds (native Q4 routes)", () => {
     expect(row("combat.reachMetres").value()).toBe("1.5");
     fake.combat.setReach(2.5); expect(row("combat.reachMetres").value()).toBe("2.5");
     expect(row("combat.rightHand").value()).toBe("Empty hand (fist)"); fake.combat.setWeapon("weapon:1"); expect(row("combat.rightHand").value()).toBe("Short Sword");
-    expect(row("combat.targetRule").detail).toContain("presentation choice — native rule unverified");
+    expect(row("combat.targetRule").detail).toContain(PRESENTATION_STATUS);
     expect(row("combat.attackOutcome")).toMatchObject({ status: "presentation" }); expect(row("combat.attackOutcome").source).toContain(OFFLINE_OUTCOME);
     expect(row("combat.attackItem").status).toBe("native"); expect(row("combat.damageSound").values).toContain("p 71.1%");
     expect(row("combat.attackVoice").values).toContain("p 51.0%");
@@ -488,7 +486,7 @@ describe.skipIf(!stagedCatalog?.combatAudio)("staged combat bundle with the real
 
   it("loads the native-meaning numbers and ALAudio.int config, and plays both Hand AttackShots on Musveren", async () => {
     const staged = (await loadNativeCombatAudio(new AbortController().signal, { fetch: disk }))!;
-    expect(staged.sounds.length).toBe(43);
+    expect(staged.sounds.length).toBe(59);
     const musveren = staged.selections.find(row => row.id === "greater-musveren")!;
     expect(musveren.numeric).toEqual({ soundRadius: 50, soundVolume: 250, soundRandom: 70 });
     const config = staged.selections.find(row => row.kind === "config")!;
@@ -504,7 +502,7 @@ describe.skipIf(!stagedCatalog?.combatAudio)("staged combat bundle with the real
       { entityId: "local-player", catalogId: "human-male-fighter:0", asset: fighter, collisionRadiusMetres: .09 },
       { entityId: "native-musveren", catalogId: "musveren:0", asset: monster, collisionRadiusMetres: .18 }], { random: () => 0 });
     expect(combat.inspection().diagnostics).toEqual([]);
-    expect(fake.mixer.register).toHaveBeenCalledTimes(43);
+    expect(fake.mixer.register).toHaveBeenCalledTimes(59);
     const step = (id: string, value: NativeActorClock) => { clocks.set(id, value); combat.update(); };
     step("local-player", clock("Atk01_Hand_MFighter", .01, { durationSeconds: 43 / 30 })); fake.endAll();
     step("local-player", clock("Atk01_Hand_MFighter", 1, { durationSeconds: 43 / 30 }));
@@ -521,6 +519,39 @@ describe.skipIf(!stagedCatalog?.combatAudio)("staged combat bundle with the real
     expect(combat.inspection().lastHit!.sounds.map(sound => [sound.reference, sound.radiusUnits])).toEqual([["ItemSound.armor_underwear_1", 30], ["ChrSound.MHFighter_Dmg_1", 30]]);
   });
 
+  const appRandZeroAlwaysPlayingAttackVoice = () => 0;
+  it.each([
+    ["human-female-fighter:0", "FFighter", "Fighter", "chrsound.FHFighter_Normal_Attack.FHFighter_1H_Atk_1", "ChrSound.FHFighter_Dmg_1"],
+    ["human-male-mystic:0", "MMagic", "Magic", "chrsound.MHMagician_Normal_Attack.MHMagician_1H_Atk_1", "ChrSound.MHMagician_Dmg_1"],
+    ["human-female-mystic:0", "FMagic", "Magic", "chrsound.FHMagician_Normal_Attack.FHMagician_1H_Atk_1", "ChrSound.FHMagician_Dmg_1"],
+  ])("%s plays its own fist, attack voice and hurt voice from the staged bundle", async (catalogId, cls, pkg, voice, hurt) => {
+    const staged = (await loadNativeCombatAudio(new AbortController().signal, { fetch: disk }))!;
+    const [player, monster] = await Promise.all([archive(catalogId), archive("musveren:0")]);
+    const attack = `Atk01_Hand_${cls}`, first = (player.manifest.animationEvents ?? [])
+      .find(row => (row as { clip?: string }).clip === attack) as { sourceFrames: number; sourceRate: number };
+    const durationSeconds = first.sourceFrames / first.sourceRate;
+    const entities = new Map([["local-player", entity("local-player", "local-player", 0)], ["native-musveren", entity("native-musveren", "monster", 1.4)]]);
+    const clocks = new Map<string, NativeActorClock>();
+    const fake = fakeMixer();
+    const combat = createNativeCombatAudio(staged, fake.mixer, { entity: id => entities.get(id) ?? null, sourceClock: id => clocks.get(id) ?? null,
+      selectedEntityId: () => "native-musveren", paused: () => false }, [
+      { entityId: "local-player", catalogId, asset: player, collisionRadiusMetres: .09 },
+      { entityId: "native-musveren", catalogId: "musveren:0", asset: monster, collisionRadiusMetres: .18 }], { random: appRandZeroAlwaysPlayingAttackVoice });
+    expect(combat.inspection().diagnostics).toEqual([]);
+    const step = (id: string, value: NativeActorClock) => { clocks.set(id, value); combat.update(); };
+    step("local-player", clock(attack, .01, { durationSeconds })); fake.endAll();
+    step("local-player", clock(attack, durationSeconds - .01, { durationSeconds }));
+    const recent = combat.inspection().recent;
+    expect(recent.slice(0, 3).map(row => [row.route, row.notify.split(".")[0], row.sounds.map(sound => sound.object)])).toEqual([
+      ["B", pkg, [voice]], ["A", pkg, ["itemsound.Weapon_Fist.fist_1"]],
+      ["C", pkg, ["monsound.Public_Hit_Bone.Hit_Bone_6", "monsound.field_stalker.field_stalker_dmg_1"]]]);
+    expect(recent.filter(row => row.route === "C").map(row => row.shot)).toEqual([{ index: 1, count: 2 }, { index: 2, count: 2 }]);
+    step("native-musveren", clock("atk01", .01, { durationSeconds: 55 / 30 }));
+    step("native-musveren", clock("atk01", .75, { durationSeconds: 55 / 30 }));
+    expect(combat.inspection().lastHit!.sounds.map(sound => sound.reference)).toEqual(["ItemSound.armor_underwear_1", hurt]);
+    combat.dispose();
+  });
+
   it("female special attack: the direct fist_2 cue blocks a fist_2 AttackItem pick on the same pawn (shared IsPlaying)", async () => {
     const staged = (await loadNativeCombatAudio(new AbortController().signal, { fetch: disk }))!;
     const female = await archive("human-female-fighter:0"), monster = await archive("musveren:0");
@@ -530,8 +561,8 @@ describe.skipIf(!stagedCatalog?.combatAudio)("staged combat bundle with the real
     const player = cues.bindActor("local-player", female);
     const special = (elapsedSeconds: number): NativeActorClock => ({ clip: "SpAtk01_1HS_FFighter", mode: "once", elapsedSeconds,
       durationSeconds: 47 / 30, playing: true, completed: false });
-    // Draws: Power Strike cast pick, then the AttackItem56 fist pick appRand 1 → fist_2 (slot 1 of 3).
-    const randoms = [0, rand(1)];
+    const powerStrikeCastPick = 0, attackItemFistTwoPick = randomForAppRand(1);
+    const randoms = [powerStrikeCastPick, attackItemFistTwoPick];
     const entities = new Map([["local-player", entity("local-player", "local-player", 0, { animation: "attack", actionPreview: "special-attack" })]]);
     const clocks = new Map<string, NativeActorClock>();
     const combat = createNativeCombatAudio(staged, fake.mixer, { entity: id => entities.get(id) ?? null, sourceClock: id => clocks.get(id) ?? null,

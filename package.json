@@ -23,7 +23,7 @@
 		"test:unit": "vitest run",
 		"test:e2e": "playwright test",
 		"test:setup": "playwright install chromium",
-		"assets:stage": "node scripts/stage-character-assets.mjs",
+		"assets:stage": "python -B scripts/stage_native_players.py",
 		"assets:catalog": "python scripts/native_catalog.py",
 		"assets:migrate": "python scripts/native_migration.py",
 		"assets:pipeline": "python -B scripts/native_batch.py",

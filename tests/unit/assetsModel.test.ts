@@ -4,8 +4,7 @@ import { Scene } from "@babylonjs/core/scene";
 import { createCharacterVisual } from "../../src/assets/CharacterVisual";
 import { createInitialWorld } from "../../src/world/createInitialWorld";
 
-/** Original, embedded test triangle with three named transform clips; no external artwork. */
-function createBinaryModel(clipNames = ["idle", "run", "attack"], offset = 0, height = 2): ArrayBuffer {
+function createEmbeddedTriangleModelWithNamedClips(clipNames = ["idle", "run", "attack"], offset = 0, height = 2): ArrayBuffer {
   const geometry = new Float32Array([
     -0.5 + offset, offset, 0, 0.5 + offset, offset, 0, offset, height + offset, 0,
     0, 1,
@@ -60,7 +59,7 @@ describe("binary character model integration", () => {
   afterEach(() => { scene.dispose(); engine.dispose(); vi.unstubAllGlobals(); });
 
   it("loads a synthetic GLB without resizing, preserves metadata and requested animation at the current world position", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(createBinaryModel())));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(createEmbeddedTriangleModelWithNamedClips())));
     const status = vi.fn<(message: string) => void>();
     const visual = createCharacterVisual(scene, { ...entity, modelUrl: "/fixture.glb" }, status);
     visual.root.position.set(13, 3, -8);
@@ -85,25 +84,21 @@ describe("binary character model integration", () => {
     expect(scene.transformNodes).toHaveLength(0);
   });
 
-  it("maps a native profile without changing clip names, authored offsets or character stature", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(createBinaryModel(["wait_Hand", "run_Hand", "Atk01_Hand"], 0.3, 2.4))));
-    const visual = createCharacterVisual(scene, entity);
-    visual.root.position.set(7, 3, 2);
-    await vi.waitFor(() => expect(visual.isFallback).toBe(false));
-    expect(visual.modelId).toBe("FFighter");
-    expect(visual.bounds.minimum.y).toBeCloseTo(0.3);
-    expect(visual.bounds.maximum.y).toBeCloseTo(2.7);
-    expect(Math.abs((visual.bounds.minimum.x + visual.bounds.maximum.x) / 2)).toBeCloseTo(0.3);
-    expect(scene.animationGroups.map(group => group.name)).toEqual(["wait_Hand", "run_Hand", "Atk01_Hand"]);
-    expect(visual.animation.playback?.activeClip).toBe("wait_Hand");
-    visual.dispose();
+  it("never resolves a semantic Human appearance to a GLB file (no Unity-derived lineagen models)", async () => {
+    const fetchModel = vi.fn().mockResolvedValue(new Response(createEmbeddedTriangleModelWithNamedClips(["wait_Hand", "run_Hand", "Atk01_Hand"], 0.3, 2.4)));
+    vi.stubGlobal("fetch", fetchModel);
+    for (const appearanceId of ["MFighter", "FFighter", "MMagic", "FMagic"]) {
+      const visual = createCharacterVisual(scene, { ...entity, appearanceId });
+      await new Promise<void>(resolve => setTimeout(resolve, 5));
+      expect(visual.isFallback).toBe(true); expect(visual.modelId).toBeNull();
+      visual.dispose();
+    }
+    expect(fetchModel).not.toHaveBeenCalled();
     expect(scene.meshes).toHaveLength(0);
-    expect(scene.transformNodes).toHaveLength(0);
-    expect(scene.animationGroups).toHaveLength(0);
   });
 
   it("retains the placeholder and disposes models that lack a required animation", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(createBinaryModel(["idle", "run"]))));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(createEmbeddedTriangleModelWithNamedClips(["idle", "run"]))));
     const status = vi.fn<(message: string) => void>();
     const visual = createCharacterVisual(scene, { ...entity, modelUrl: "/incomplete.glb" }, status);
     await vi.waitFor(() => expect(status).toHaveBeenCalledOnce());
@@ -119,7 +114,7 @@ describe("binary character model integration", () => {
     const status = vi.fn<(message: string) => void>();
     const visual = createCharacterVisual(scene, { ...entity, modelUrl: "/late.glb" }, status);
     visual.dispose();
-    resolveRequest?.(new Response(createBinaryModel()));
+    resolveRequest?.(new Response(createEmbeddedTriangleModelWithNamedClips()));
     await new Promise<void>(resolve => setTimeout(resolve, 20));
     expect(status).not.toHaveBeenCalled();
     expect(scene.meshes).toHaveLength(0);
