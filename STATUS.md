@@ -7,7 +7,7 @@ One line per part, in PORT_SCOPE section 5 order, rewritten in place by the inte
 - world | world | 20_20 world section; WORLD-07 packet reviewed (74/74 re-hashed, 47 verdicts, owner review), layer-order and music-join fixtures in tests/fixtures/world-07 | docs/parts/world/EVIDENCE.md
 - player-characters | actors | human fighters native, human mystic export in progress | docs/parts/player-characters/EVIDENCE.md
 - ui | data-ui | development sheet only; header census of 48 systextures packages: 28 reviewed, 20 texture-licensee-unsupported (L2UI_CH3, l2ui and L2_RadarMap are 118/0) | docs/parts/ui/EVIDENCE.md
-- npcs | actors | 1 (Greater Musveren) | docs/parts/npcs/EVIDENCE.md
+- npcs | actors | 1 (Greater Musveren); actor unit census: 20 animations package headers gated, 633 NPC units (88 pass the header gates), every npcgrp row has one census status (1,148 pending, 5,371 gap) | docs/parts/npcs/EVIDENCE.md
 - items | actors | not seen in the code | docs/parts/items/EVIDENCE.md
 - skills-effects | actors | Power Strike in progress | docs/parts/skills-effects/EVIDENCE.md
 - audio | actors | 20_20 footsteps, ambience and music in progress | docs/parts/audio/EVIDENCE.md
