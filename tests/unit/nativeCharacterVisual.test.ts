@@ -266,6 +266,28 @@ describe("native character presentation boundary", () => {
     await vi.waitFor(() => expect(materials()).toEqual(["base:Lower", "base:Upper"]));
   });
 
+  it("attempts a rejected equip once per equipment change instead of on every movement update", async () => {
+    const upperItems = new Map([[23, await nativeVisualFixture({ parts: ["Upper"], material: "invalid", omitDeath: true })]]);
+    const { visual, status } = await create({ upperItems });
+    await visual.ready;
+    const replacePart = vi.spyOn(NativeActor.prototype, "replacePart");
+    const flushEquipmentTasks = () => new Promise(resolve => setTimeout(resolve, 0));
+    const retainedStatuses = () => status.mock.calls.filter(([message]) => message.includes("Previous appearance retained"));
+    const moveWearing = async (upper: number) => {
+      for (const x of [1, 2, 3, 4, 5]) { update(visual, { ...initial, position: { x, y: 0, z: 0 }, equipment: { upper } }); await flushEquipmentTasks(); }
+    };
+    await moveWearing(23);
+    await vi.waitFor(() => expect(retainedStatuses()).toHaveLength(1));
+    expect(replacePart).toHaveBeenCalledTimes(1);
+    await moveWearing(999);
+    await vi.waitFor(() => expect(retainedStatuses()).toHaveLength(2));
+    expect(retainedStatuses()[1]![0]).toContain("Native item 999 has no verified upper-body binding");
+    await moveWearing(23);
+    await vi.waitFor(() => expect(retainedStatuses()).toHaveLength(3));
+    expect(replacePart).toHaveBeenCalledTimes(2);
+    expect(materials()).toEqual(["base:Lower", "base:Upper"]);
+  });
+
   it("disposes a late load after visual removal without resurrecting meshes or sending a loaded status", async () => {
     const gate = gateCreate(), { visual, status } = await create();
     const actor = await gate.ready; visual.dispose(); visual.dispose();

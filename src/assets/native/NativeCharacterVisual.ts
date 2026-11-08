@@ -106,6 +106,7 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
     const ready = new Promise<void>((resolve, reject) => { resolveReady = resolve; rejectReady = reject; });
     void ready.catch(() => undefined);
     let upper: number | undefined, committedUpper: number | undefined, replacedObject: string | undefined, equipmentRequest = 0;
+    let rejectedEquipment: { readonly upper: number | undefined } | undefined;
     let equipmentTask = Promise.resolve();
     let bounds: CharacterBounds = { minimum: new Vector3(-.2, 0, -.2), maximum: new Vector3(.2, .45, .2),
       labelHeight: .6, selectionRadius: .25, pickingHeight: .25 };
@@ -114,8 +115,10 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
       for (const mesh of owner.ownedMeshes()) { mesh.isPickable = mesh.getTotalVertices() > 0; mesh.metadata = { ...mesh.metadata, clientEntityId: initial.id }; }
     };
     const updateEquipment = (): Promise<void> => {
-      if (!actor || !profile || upper === current.equipment?.upper) return equipmentTask;
-      const item = current.equipment?.upper, owner = actor;
+      const item = current.equipment?.upper;
+      if (rejectedEquipment && rejectedEquipment.upper !== item) rejectedEquipment = undefined;
+      if (!actor || !profile || upper === item || rejectedEquipment) return equipmentTask;
+      const owner = actor;
       const replacement = item === undefined ? undefined : profile.upperItems?.get(item);
       const sourceObject = replacement?.manifest.source.object ?? replacedObject;
       upper = item;
@@ -133,6 +136,7 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
         if (!disposed && request === equipmentRequest) {
           upper = committedUpper;
           if (initialized && !(error instanceof DOMException && error.name === "AbortError")) {
+            rejectedEquipment = { upper: item };
             status?.(`${error instanceof Error ? error.message : "Equipment could not be loaded."} Previous appearance retained.`);
           }
         }
