@@ -1,18 +1,18 @@
 ---
 gsd_state_version: "1.0"
-current_phase: 01
-current_phase_name: Foundations
+current_phase: 02
+current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 01-17-PLAN.md
-last_updated: "2026-11-08T09:13:19.779Z"
+stopped_at: Completed 02-10-PLAN.md
+last_updated: "2026-11-08T12:44:31.000Z"
 last_activity: 2026-11-08
-last_activity_desc: Phase 01 execution started
-state_head: 5436dd70be4de90962f2b368ffdc3d86e0d0a272
+last_activity_desc: Phase 02 plan 02-10 complete (first Phase 2 plan executed)
+state_head: d7f587051cbfc3924342230859c813d17901e406
 progress:
   total_phases: 6
   completed_phases: 0
-  total_plans: 17
-  completed_plans: 17
+  total_plans: 72
+  completed_plans: 18
   percent: 0
 ---
 
@@ -23,14 +23,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-11-08)
 
 **Core value:** A fully converted Lineage II Interlude client that runs in the browser and matches L2.exe side by side, driven only by what a server sends.
-**Current focus:** Phase 01 — Foundations
+**Current focus:** Phase 02 - Stage A breadth (Phase 1 verification deferred to the owner)
 
 ## Current Position
 
-Phase: 01 (Foundations) — EXECUTING
-Plan: 17 of 17
-Status: Ready to execute
-Last activity: 2026-11-08 — Phase 01 execution started
+Phase: 02 (Stage A breadth) - EXECUTING
+Plan: 02-10 complete, 1 of 55 plans executed
+Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
+Last activity: 2026-11-08 - Plan 02-10 WorldCommand sandbox contract complete
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -69,6 +69,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P14 | 16 min | 3 tasks | 23 files |
 | Phase 01 P16 | 14 min | 2 tasks | 8 files |
 | Phase 01 P17 | 50min | 4 tasks | 27 files |
+| Phase 02 P10 | 15 min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -113,6 +114,10 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..10 and DEC-PORT-1..3.
 - [Phase 01]: 01-16: Babylon Inspector 9.27.1 lazy-loaded behind ?inspect=1; peers pinned exactly after an automated legitimacy check (OVERNIGHT-DECISIONS row 39); Playwright check runs on the sandbox route
 - [Phase 01]: Plan 01-17 deletes browser cases that only exercised the Talking Island reference route and re-points the generic WebGPU, loading-panel and asset-package checks to ?world=interlude (OVERNIGHT-DECISIONS row 44)
 - [Phase 01]: The private preview scripts read the ?world=interlude route, catalog path and origin from scripts/private-preview-targets.mjs; the burst diagnosis HEADs the built catalog and section resources
+- [Phase 02]: Plan 02-10: only spawn-character and play-clip join WorldCommand (14 members); tile stays a ?map= reload, audio stays on the mixer (OVERNIGHT-DECISIONS row 60, owner review)
+- [Phase 02]: Plan 02-10: spawned characters are remote-player entities carrying only characterTemplateIndex; presentation reads characterTemplateIndex and requestedClip { clipName, requestSequence } (rows 61 and 62)
+- [Phase 02]: Plan 02-10: both adapters dispatch exhaustively; an unknown runtime command type throws a RangeError; clip names are 1 to 128 UTF-16 code units kept verbatim (rows 63 and 64)
+- [Phase 02]: Plan 02-10: ACT-01 and ACT-04 stay Pending; 02-36, 02-37, 02-39 and 02-40 deliver the rest of each requirement (row 66)
 
 ### Pending Todos
 
@@ -160,6 +165,6 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..10 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-08T09:13:19.745Z
-Stopped at: Completed 01-17-PLAN.md
+Last session: 2026-11-08T12:42:59.561Z
+Stopped at: Completed 02-10-PLAN.md
 Resume file: None

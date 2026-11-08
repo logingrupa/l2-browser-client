@@ -123,6 +123,10 @@ metrics:
 
 - The full `pnpm test:unit` does not fail only on a recorded baseline. 02-01 has not run, and the extra failures are load timeouts outside this plan's files. They were deferred rather than hidden with longer timeouts.
 
+## Requirements
+
+ACT-01 and ACT-04 stay Pending in REQUIREMENTS.md. This plan delivers only their adapter contract. 02-40, 02-36, 02-37 and 02-39 deliver the visuals and clip playback (OVERNIGHT-DECISIONS row 66).
+
 ## Known Stubs
 
 None. The spawned character carries no appearance on purpose (CONTEXT decision I). 02-37 presents it from the catalog or as the missing marker.

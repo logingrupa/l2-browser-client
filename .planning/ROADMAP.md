@@ -92,7 +92,62 @@ Plans:
   3. A developer casts any skill by ID and level and sees its visual and hears its sound where the source resolves them; effects that need missing native behaviour show as explicit gaps.
   4. All 40 tables are available as JSON with the inventory showing route and status each (sysstring/systemmsg count resolved), and the developer opens any of the about 140 `interface.xdat` windows from the pinnable sandbox sheet, filled with sandbox data.
   5. One coverage report lists converted, loads and gap counts per part, and walking across tile borders loads and unloads bounded cells without losing nearby collision, with a recorded baseline measurement.
-**Plans**: TBD
+**Plans**: 1/55 plans executed
+- [ ] 02-01-PLAN.md
+- [ ] 02-02-PLAN.md
+- [ ] 02-03-PLAN.md
+- [ ] 02-04-PLAN.md
+- [ ] 02-05-PLAN.md
+- [ ] 02-06-PLAN.md
+- [ ] 02-07-PLAN.md
+- [ ] 02-08-PLAN.md
+- [ ] 02-09-PLAN.md
+- [x] 02-10-PLAN.md
+- [ ] 02-11-PLAN.md
+- [ ] 02-12-PLAN.md
+- [ ] 02-13-PLAN.md
+- [ ] 02-14-PLAN.md
+- [ ] 02-15-PLAN.md
+- [ ] 02-16-PLAN.md
+- [ ] 02-17-PLAN.md
+- [ ] 02-18-PLAN.md
+- [ ] 02-19-PLAN.md
+- [ ] 02-20-PLAN.md
+- [ ] 02-21-PLAN.md
+- [ ] 02-22-PLAN.md
+- [ ] 02-23-PLAN.md
+- [ ] 02-24-PLAN.md
+- [ ] 02-25-PLAN.md
+- [ ] 02-26-PLAN.md
+- [ ] 02-27-PLAN.md
+- [ ] 02-28-PLAN.md
+- [ ] 02-29-PLAN.md
+- [ ] 02-30-PLAN.md
+- [ ] 02-31-PLAN.md
+- [ ] 02-32-PLAN.md
+- [ ] 02-33-PLAN.md
+- [ ] 02-34-PLAN.md
+- [ ] 02-35-PLAN.md
+- [ ] 02-36-PLAN.md
+- [ ] 02-37-PLAN.md
+- [ ] 02-38-PLAN.md
+- [ ] 02-39-PLAN.md
+- [ ] 02-40-PLAN.md
+- [ ] 02-41-PLAN.md
+- [ ] 02-42-PLAN.md
+- [ ] 02-43-PLAN.md
+- [ ] 02-44-PLAN.md
+- [ ] 02-45-PLAN.md
+- [ ] 02-46-PLAN.md
+- [ ] 02-47-PLAN.md
+- [ ] 02-48-PLAN.md
+- [ ] 02-49-PLAN.md
+- [ ] 02-50-PLAN.md
+- [ ] 02-51-PLAN.md
+- [ ] 02-52-PLAN.md
+- [ ] 02-53-PLAN.md
+- [ ] 02-54-PLAN.md
+- [ ] 02-55-PLAN.md
 **UI hint**: yes
 
 ### Phase 3: Stage A checks
@@ -149,7 +204,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 (Phase 5 may start b
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundations | 17/17 | In Progress | - |
-| 2. Stage A breadth | 0/TBD | Not started | - |
+| 2. Stage A breadth | 1/55 | In Progress | - |
 | 3. Stage A checks | 0/TBD | Not started | - |
 | 4. Stage B adapter | 0/TBD | Not started | - |
 | 5. Native-parity polish | 0/TBD | Not started | - |
