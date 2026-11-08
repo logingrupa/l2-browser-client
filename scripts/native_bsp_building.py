@@ -16,6 +16,7 @@ from native_bsp_floor import (ROOT, MAP_SHA, MODEL_SHA, GLB_SHA, GLB_RELATIVE,
     TEXTURE_PACKAGE_SHA, PackageAdapter, cross, difference, dot, f32,
     pinned_bytes, require, reviewed_reader, sha, source_nodes, write_unchanged_or_new)
 from native_map import MapSources
+from reference_client_guard import require_reference_client
 
 BRUSH = '20_20.Brush610'
 SUPPORT = 'interlude:20_20.StaticMeshActor1913'
@@ -37,12 +38,11 @@ PARTS = {
 }
 
 
-def convex_triangles(points, normal):
-    """Exact convex triangulation retaining collinear native boundary vertices.
+def xzy_reflected_winding(first, second, third):
+    return (first, third, second)
 
-    A simple fan creates zero-area triangles on these saved CSG polygons. Ears
-    containing another boundary point are deferred; no vertex is moved/dropped.
-    """
+
+def convex_triangles_keeping_collinear_boundary_vertices(points, normal):
     require(3 <= len(points) <= 64 and len({tuple(p) for p in points}) == len(points),
             'Unsupported/duplicate BSP polygon vertices')
     q = [[Fraction(v) for v in p] for p in points]
@@ -64,18 +64,18 @@ def convex_triangles(points, normal):
             if any(all(turn(u, v, p) >= 0 for u, v in ((a, b), (b, c), (c, a)))
                    for p in remaining if p not in (a, b, c)):
                 continue
-            result.extend((a, c, b))  # one XZY reflection
+            result.extend(xzy_reflected_winding(a, b, c))
             del remaining[k]
             break
         else:
             raise ValueError('Cannot triangulate the exact convex source boundary')
     require(turn(*remaining) > 0, 'Degenerate final BSP triangle')
-    result.extend((remaining[0], remaining[2], remaining[1]))
+    result.extend(xzy_reflected_winding(*remaining))
     return result
 
 
 def building_nodes(map_data):
-    source, _, proof = source_nodes(map_data)  # retain existing strict map/model/reader pins
+    source, _, proof = source_nodes(map_data)
     adapter, reader = PackageAdapter(source), reviewed_reader()
     export, _ = reader.level_model_binding(adapter)
     model = reader._read_model(adapter, export, True)
@@ -131,7 +131,7 @@ def geometry(nodes, part_name, material):
     for row in nodes:
         points, normal = row['nativePositions'], row['sourcePlane'][:3]
         start, index_start = len(result['positions'])//3, len(result['indices'])
-        indices = convex_triangles(points, normal)
+        indices = convex_triangles_keeping_collinear_boundary_vertices(points, normal)
         for p in points:
             result['positions'].extend(f32(p[i]*.01) for i in (0, 2, 1))
             result['normals'].extend(f32(normal[i]) for i in (0, 2, 1))
@@ -150,9 +150,8 @@ def geometry(nodes, part_name, material):
 
 
 def embedded_glb(g, png):
-    # The existing one-material BSP writer already preserves all float32 channels.
-    from native_bsp_floor import embedded_glb as floor_glb
-    raw = floor_glb(g, png)
+    from native_bsp_floor import embedded_glb as float32_preserving_floor_glb
+    raw = float32_preserving_floor_glb(g, png)
     size = struct.unpack_from('<I', raw, 12)[0]
     doc, binary = json.loads(raw[20:20+size]), raw[28+size:]
     doc['asset']['generator'] = 'native_bsp_building.py'
@@ -166,7 +165,8 @@ def embedded_glb(g, png):
 
 
 def build(client, bundle):
-    nodes, proof = building_nodes(pinned_bytes(Path(client)/'maps/20_20.unr', MAP_SHA))
+    client_access = require_reference_client(client)
+    nodes, proof = building_nodes(pinned_bytes(client_access.require_equal_file('maps/20_20.unr'), MAP_SHA))
     files, resources = {}, []
     for name, part in PARTS.items():
         png, material = original_texture(client, bundle, part)
@@ -197,6 +197,7 @@ def main():
     parser.add_argument('--source-bundle', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
+    require_reference_client(args.client)
     target = args.output.resolve()
     require(target.is_relative_to(ROOT/'artifacts') and target != ROOT/'artifacts', 'Use dedicated artifacts scratch')
     require(not any(target.is_relative_to(p.resolve()) or p.resolve().is_relative_to(target)

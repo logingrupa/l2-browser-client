@@ -18,6 +18,7 @@ from types import SimpleNamespace
 
 from native_catalog.ue2 import FormatError, Package
 from native_assets_lib.gltf import json_bytes
+from reference_client_guard import require_reference_client
 from native_map import COLLISION, MapSources, actor_properties, property_value
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -71,7 +72,6 @@ def dot(a, b):
 
 
 class PackageAdapter:
-    """Keep our bounded package table decoder; adapt only the reviewed API."""
     def __init__(self, source):
         self.source, self.data, self.path = source, source.data, source.filename
         self.file_version = source.summary['version']
@@ -86,8 +86,11 @@ class PackageAdapter:
     def export_name(self, export):
         return self.source.exports[export.index]['name']
 
+    def require_resolvable_reference(self, reference):
+        self.source.object_name(reference)
+
     def resolve_ref(self, reference):
-        self.source.object_name(reference)  # validates every non-null reference
+        self.require_resolvable_reference(reference)
         if reference > 0:
             return self.exports[reference-1]
         if reference < 0:
@@ -102,7 +105,6 @@ def reviewed_reader():
 
 
 def source_nodes(map_data):
-    """Return only the ten verified final-model nodes, with the actual binding."""
     require(sha(map_data) == MAP_SHA, 'Only the qualified original 20_20 map is supported')
     source = Package(map_data, '20_20.unr')
     require((source.summary['version'], source.summary['licenseeVersion']) == (123, 28),
@@ -114,7 +116,8 @@ def source_nodes(map_data):
             'Saved Level.Model differs from the qualified model')
     raw = source.data[export.serial_offset:export.serial_offset+export.serial_size]
     require(sha(raw) == MODEL_SHA, 'Qualified final BSP model changed')
-    model = reader._read_model(package, export, True)  # exact file123/licensee28 branch
+    file123_licensee28_extra_field = True
+    model = reader._read_model(package, export, file123_licensee28_extra_field)
     checks = reader.validate_model(model)
     selected = []
     for index, node in enumerate(model.nodes):
@@ -170,17 +173,18 @@ def extract_texture(glb):
     return png, copy.deepcopy(material)
 
 
+def xzy_reflected_fan_triangle(index):
+    return (0, index+1, index)
+
+
 def polygon_geometry(node, width, height):
-    """Strict planar/convex source fan; no repair or approximate triangulation."""
     points, normal = node['nativePositions'], node['sourcePlane'][:3]
     require(len(points) in (4, 8) and width > 0 and height > 0, 'Unsupported polygon/dimensions')
     require(all(len(p) == 3 and all(math.isfinite(v) for v in p) for p in points), 'Nonfinite polygon')
     require(abs(dot(normal, normal)-1) < .002, 'Invalid source normal')
-    # Check the stored vertex geometry exactly. Native plane normals are rounded
-    # float32 and are retained verbatim; they are not an exact plane equation.
     rational = [[Fraction(v) for v in p] for p in points]
-    geometric_normal = cross(difference(rational[1], rational[0]), difference(rational[2], rational[0]))
-    require(any(geometric_normal) and all(dot(difference(p, rational[0]), geometric_normal) == 0
+    exact_vertex_plane_normal = cross(difference(rational[1], rational[0]), difference(rational[2], rational[0]))
+    require(any(exact_vertex_plane_normal) and all(dot(difference(p, rational[0]), exact_vertex_plane_normal) == 0
                                         for p in rational), 'Nonplanar/degenerate polygon')
     for i in range(len(points)):
         edge1 = difference(points[(i+1) % len(points)], points[i])
@@ -196,7 +200,7 @@ def polygon_geometry(node, width, height):
     for i in range(1, len(points)-1):
         require(dot(cross(difference(points[i], points[0]), difference(points[i+1], points[0])), normal) > 0,
                 'Invalid source fan winding')
-        indices.extend((0, i+1, i))  # XZY basis reflects handedness once.
+        indices.extend(xzy_reflected_fan_triangle(i))
     return positions, normals, uvs, indices
 
 
@@ -219,9 +223,9 @@ def geometry_from_nodes(nodes):
     return result
 
 
-def actor_collision_evidence(source, client, bundle, source_material):
+def actor_collision_evidence(source, client_access, bundle, source_material):
     from native_catalog.effects import parse_uc
-    pinned_bytes(client/'system/Engine.u', ENGINE_SHA)
+    pinned_bytes(client_access.require_equal_file('system/Engine.u'), ENGINE_SHA)
     evidence = {}
     for name, expected in CLASS_SCRIPT_SHA.items():
         script = pinned_bytes(bundle/f'map-section/native-defaults/{name}.uc', expected)
@@ -284,8 +288,9 @@ def embedded_glb(geometry, png):
 
 
 def build(client, source_bundle):
+    client_access = require_reference_client(client)
     client, source_bundle = Path(client), Path(source_bundle)
-    source, nodes, proof = source_nodes(pinned_bytes(client/'maps/20_20.unr', MAP_SHA))
+    source, nodes, proof = source_nodes(pinned_bytes(client_access.require_equal_file('maps/20_20.unr'), MAP_SHA))
     png, source_material = extract_texture(pinned_bytes(source_bundle/GLB_RELATIVE, GLB_SHA))
     geometry = geometry_from_nodes(nodes)
     require(len(geometry['positions']) == 48*3 and len(geometry['indices']) == 28*3,
@@ -303,7 +308,7 @@ def build(client, source_bundle):
         'nativeTexturePackage': texture_path, 'nativeTexturePackageSha256': texture_package.source_hash,
         'nativeTextureExportIndex': item['exportIndex'],
         'nativeTextureExportSha256': texture_export_sha}
-    geometry['collisionDeclarations'] = actor_collision_evidence(source, client, source_bundle, source_material)
+    geometry['collisionDeclarations'] = actor_collision_evidence(source, client_access, source_bundle, source_material)
     geometry['limitations'] = ['Only the ten qualified final Brush397 nodes of this exact20_20 map are supported.',
         'No native visible pixels or complete map parity is established.',
         'Native source lightmap indices are retained; render/lightmap tail is fingerprinted, not decoded or rendered.',
@@ -320,7 +325,6 @@ def build(client, source_bundle):
 
 
 def write_unchanged_or_new(output, files):
-    """Never overwrite changed output or authored files; identical reruns skip."""
     output = Path(output)
     if output.exists():
         require(output.is_dir(), 'Output is not a directory')
@@ -343,6 +347,7 @@ def main():
     parser.add_argument('--source-bundle', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
+    require_reference_client(args.client)
     target = args.output.resolve()
     require(target.is_relative_to((ROOT/'artifacts').resolve()) and target != (ROOT/'artifacts').resolve(),
             'Output must be a dedicated project artifacts/ scratch directory')

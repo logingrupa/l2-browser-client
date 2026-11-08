@@ -1,4 +1,3 @@
-"""Command-hall regressions against the retained, unchanged native map."""
 import hashlib
 import json
 from pathlib import Path
@@ -8,7 +7,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/'scripts'))
-from native_bsp_building import PARTS, build, building_nodes, convex_triangles
+from native_bsp_building import PARTS, build, building_nodes, convex_triangles_keeping_collinear_boundary_vertices
 from native_catalog.ue2 import FormatError
 from native_map_overlap import parse_glb
 
@@ -63,18 +62,17 @@ def ray_hits(mesh, origin, direction):
 
 class BuildingTriangulationTests(unittest.TestCase):
     def test_collinear_boundary_vertices_preserve_full_area_and_facing(self):
-        # A fan from vertex zero would produce degenerate triangles here.
-        points = [[0, 0, 0], [2, 0, 0], [4, 0, 0], [4, 2, 0],
-                  [4, 4, 0], [2, 4, 0], [0, 4, 0], [0, 2, 0]]
-        indices = convex_triangles(points, [0, 0, 1])
-        self.assertEqual(len(indices)//3, len(points)-2)
-        self.assertEqual(set(indices), set(range(len(points))))
+        points_degenerating_a_vertex_zero_fan = [[0, 0, 0], [2, 0, 0], [4, 0, 0], [4, 2, 0],
+                                                 [4, 4, 0], [2, 4, 0], [0, 4, 0], [0, 2, 0]]
+        indices = convex_triangles_keeping_collinear_boundary_vertices(points_degenerating_a_vertex_zero_fan, [0, 0, 1])
+        self.assertEqual(len(indices)//3, len(points_degenerating_a_vertex_zero_fan)-2)
+        self.assertEqual(set(indices), set(range(len(points_degenerating_a_vertex_zero_fan))))
         area = 0
         for offset in range(0, len(indices), 3):
-            a, b, c = [points[i] for i in indices[offset:offset+3]]
-            twice_area = cross(sub(b, a), sub(c, a))[2]
-            self.assertLess(twice_area, 0)  # the declared single XZY reflection
-            area += abs(twice_area)/2
+            a, b, c = [points_degenerating_a_vertex_zero_fan[i] for i in indices[offset:offset+3]]
+            twice_area_with_xzy_reflected_winding = cross(sub(b, a), sub(c, a))[2]
+            self.assertLess(twice_area_with_xzy_reflected_winding, 0)
+            area += abs(twice_area_with_xzy_reflected_winding)/2
             reflected = [[p[0], p[2], p[1]] for p in (a, b, c)]
             self.assertGreater(dot(cross(sub(reflected[1], reflected[0]),
                                          sub(reflected[2], reflected[0])), [0, 1, 0]), 0)
@@ -88,7 +86,7 @@ class BuildingTriangulationTests(unittest.TestCase):
         }
         for reason, points in cases.items():
             with self.subTest(reason=reason), self.assertRaisesRegex(FormatError, reason):
-                convex_triangles(points, [0, 0, 1])
+                convex_triangles_keeping_collinear_boundary_vertices(points, [0, 0, 1])
 
     def test_unqualified_source_is_refused_before_parsing(self):
         with self.assertRaisesRegex(FormatError, 'qualified original'):

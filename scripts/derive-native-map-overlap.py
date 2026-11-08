@@ -14,6 +14,7 @@ from pathlib import Path
 from native_assets_lib.gltf import json_bytes
 from native_map_overlap import audit_overlap
 from stage_native_runtime import immutable_write, replace_file
+from reference_client_guard import require_reference_client
 
 ROOT = Path(__file__).resolve().parent.parent
 BASE = '9841a8fa0e53f441b24d07949360e5fdd18a5d790497d017419722f89d670dc2'
@@ -95,11 +96,17 @@ def derive(files, report):
     result[MANIFEST_FILE] = payload
     result['map-section-runtime/receipt.json'] = json_bytes(receipt)
     result['map-section-runtime/overlap-selection.json'] = audit_bytes
-    # Explicit preservation invariant, including all terrain and model bytes.
-    changed = [name for name in files if files[name] != result[name]]
-    if set(changed) != {MANIFEST_FILE, 'map-section-runtime/receipt.json'}:
+    changed_resource_names = [name for name in files if files[name] != result[name]]
+    if set(changed_resource_names) != {MANIFEST_FILE, 'map-section-runtime/receipt.json'}:
         raise ValueError('Unexpected resource mutation')
     return next_hash, result
+
+
+def require_existing_targets_match_before_writing(directory, derived, message):
+    for name, data in derived.items():
+        target = local(directory, name)
+        if target.exists() and target.read_bytes() != data:
+            raise ValueError(message)
 
 
 def run(args):
@@ -125,11 +132,7 @@ def run(args):
         actual = {p.relative_to(bundle).as_posix() for p in bundle.rglob('*') if p.is_file()}
         if actual - expected:
             raise ValueError('Unexpected files in immutable output')
-    # Preflight every existing destination before writing anything.
-    for name, data in derived.items():
-        target = local(bundle, name)
-        if target.exists() and target.read_bytes() != data:
-            raise ValueError('Scratch bundle differs; use a new output')
+    require_existing_targets_match_before_writing(bundle, derived, 'Scratch bundle differs; use a new output')
     for name, data in derived.items():
         immutable_write(local(bundle, name), data)
     immutable_write(local(output, 'overlap-selection.json'), json_bytes(report))
@@ -148,21 +151,16 @@ def run(args):
         if selected['manifest'] != '/l2/maps/' + selected['manifestSha256'] + '/' + MANIFEST_FILE:
             raise ValueError('Selected catalog path differs from identity')
         destination = ROOT / 'public/l2/maps' / next_hash
-        for name, data in derived.items():
-            target = local(destination, name)
-            if target.exists() and target.read_bytes() != data:
-                raise ValueError('Immutable public resource differs')
+        require_existing_targets_match_before_writing(destination, derived, 'Immutable public resource differs')
         for name, data in derived.items():
             immutable_write(local(destination, name), data)
         if path.read_bytes() != before:
             raise ValueError('Catalog changed concurrently; no pointer replacement')
-        # Preserve all catalog formatting/unknown fields: only the selected
-        # section's two occurrences of its hash change.
         if selected['manifestSha256'] == BASE:
-            text = before.decode('utf-8')
-            if text.count(BASE) != 2:
+            catalog_text_with_original_formatting = before.decode('utf-8')
+            if catalog_text_with_original_formatting.count(BASE) != 2:
                 raise ValueError('Ambiguous base hash in catalog')
-            after = text.replace(BASE, next_hash).encode('utf-8')
+            after = catalog_text_with_original_formatting.replace(BASE, next_hash).encode('utf-8')
             expected_catalog = copy.deepcopy(catalog)
             item = next(row for row in expected_catalog['sections'] if row['id'] == SECTION)
             item.update(manifestSha256=next_hash, manifest='/l2/maps/' + next_hash + '/' + MANIFEST_FILE)
@@ -184,4 +182,6 @@ if __name__ == '__main__':
     parser.add_argument('--recipe', type=Path, default=ROOT / 'recipes/native-map-debug-location.json')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--stage', action='store_true')
-    print(json.dumps(run(parser.parse_args()), indent=2))
+    args = parser.parse_args()
+    require_reference_client(args.client)
+    print(json.dumps(run(args), indent=2))

@@ -23,6 +23,7 @@ import zlib
 
 from native_assets_lib.gltf import json_bytes, safe_name
 from native_catalog.ue2 import FormatError, Package, Reader
+from reference_client_guard import require_reference_client
 
 SCHEMA = 1
 HAS_STACK = 0x02000000
@@ -90,7 +91,6 @@ def source_range(data, path, start, end):
 
 
 def actor_properties(package, item):
-    """UE123 state frame precedes UObject properties when RF_HasStack is set."""
     if package.summary['version'] != 123 or package.summary['licenseeVersion'] != 28:
         raise FormatError('Map actor layout supports only verified UE123/licensee28')
     reader = Reader(package.data, item['offset'], item['offset'] + item['size'])
@@ -175,12 +175,6 @@ def explicit_properties(properties, names):
 
 
 def ambient_sound_object(package, item, raw_path):
-    """Interlude Engine.AmbientSoundObject extends LevelObject, not Actor.
-
-    Its property list has no Actor state frame. Preserve authored tags and raw
-    spans, including unknown fields/tail, without inventing defaults or audio
-    dispatch. Do not apply Actor collision, transform or section/Z policies.
-    """
     if item['classObject'] != 'Engine.AmbientSoundObject' or item['flags'] & HAS_STACK:
         raise FormatError('Unsupported ambient LevelObject class/state-frame layout')
     props, tail, state, prefix_end = actor_properties(package, item)
@@ -205,7 +199,6 @@ def selected_by_origin(properties, section):
 
 
 def read_g16(package, item):
-    """Verified Lineage UE123/28 UMaterial prefix + FMipmap TLazyArray layout."""
     if package.summary['version'] != 123 or package.summary['licenseeVersion'] != 28:
         raise FormatError('G16 texture layout supports only verified UE123/licensee28')
     properties, reader = package.properties(item)
@@ -236,7 +229,6 @@ def read_g16(package, item):
 
 
 def png16(raw, width, height):
-    """16-bit grayscale PNG, exact samples/order; no normalization or palette."""
     if len(raw) != width * height * 2:
         raise ValueError('PNG dimensions disagree with G16 bytes')
     big = bytearray(len(raw))
@@ -265,6 +257,7 @@ def validate_recipe(recipe):
 
 class MapSources:
     def __init__(self, client):
+        self.client_access = require_reference_client(client)
         self.client, self.dependencies, self.loaded, self.paths = client, {}, {}, {}
         for folder in ('maps', 'staticmeshes', 'textures', 'systextures', 'system', 'animations', 'sounds'):
             if not (client / folder).is_dir():
@@ -276,6 +269,7 @@ class MapSources:
     def get(self, relative):
         if relative not in self.loaded:
             path = safe_path(self.client, relative)
+            self.client_access.require_equal_file(relative)
             data = path.read_bytes()
             self.dependencies[relative] = {'sha256': sha(data), 'bytes': len(data)}
             self.loaded[relative] = Package(data, path.name)
@@ -293,8 +287,6 @@ class MapSources:
 
 
 def static_mesh_request(relative, item):
-    # Converter resolves native materials automatically. Its optional `materials`
-    # field is a list of explicit slot=object overrides, never an enable flag.
     return {'kind': 'model', 'package': relative, 'object': item['object']}
 
 
@@ -479,7 +471,6 @@ def migrate_map(client, recipe, output):
         receipt = {'schemaVersion': SCHEMA, 'kind': 'native-map-raw', 'recipeSha256': sha(json_bytes(recipe)),
                    'implementation': implementation(), 'dependencies': dependencies, 'outputs': files}
         (work / 'receipt.json').write_bytes(json_bytes(receipt))
-        # Check that input files remained unchanged during extraction.
         for relative, entry in dependencies.items():
             if file_hash(safe_path(client, relative)) != entry['sha256']:
                 raise ValueError('Map source changed during extraction: ' + relative)
@@ -489,7 +480,6 @@ def migrate_map(client, recipe, output):
                 target = safe_path(output, path.relative_to(work).as_posix())
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(path, target)
-        # Remove only stale files explicitly owned by an earlier map receipt.
         for relative in (prior or {}).get('outputs', {}):
             if relative not in files:
                 safe_path(output, relative).unlink(missing_ok=True)
@@ -503,6 +493,7 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--verify', action='store_true')
     args = parser.parse_args()
+    require_reference_client(args.client)
     if args.verify:
         result = verify_map(args.client, args.output)
     else:
