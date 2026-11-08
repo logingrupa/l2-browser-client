@@ -135,6 +135,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..10 and DEC-PORT-1..3.
 
 - Needs Human (plan 01-12): restage `public/l2` to asset.json v2 from the main checkout (integration thread only; lanes never restage the store). Converters now write v2; the staged store is still v1.
 - Needs Human (plan 01-12): after that restage, delete v1 acceptance in `src/assets/package/readAssetPackage.ts`, `src/effects/nativePowerStrikeSource.ts` and `scripts/native_assets_lib/asset_manifest.py`, and regenerate the golden fixtures without `model-v1.l2asset` (see docs/OUTPUT_CONTRACT.md, "Transition from v1").
+- Needs Human (independent review IR-08): `scripts/build_dat_table_inventory.py` records the Elbera evidence counts of sysstring-e and systemmsg-e as 2083 each, copied from docs/PORT_SCOPE.md section 2. Two tables with the same count may be a copy error in the source note; confirm both counts against the reference client before DATA-03 relies on them.
 
 ## Deferred Items
 
