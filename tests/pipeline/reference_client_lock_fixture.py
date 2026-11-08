@@ -14,7 +14,8 @@ SYNTHETIC_ENGINE_LIBRARY_BYTES = b'synthetic engine library of a locked referenc
 
 def use_reference_client_lock(test_case, lock_path):
     for patcher in (patch.object(reference_client_guard, 'REFERENCE_CLIENT_LOCK_PATH', Path(lock_path)),
-                    patch.dict(reference_client_guard.accesses_by_root_and_lock, clear=True)):
+                    patch.dict(reference_client_guard.accesses_by_root_and_lock, clear=True),
+                    patch.dict(reference_client_guard.sha256_by_file_identity, clear=True)):
         patcher.start()
         test_case.addCleanup(patcher.stop)
 

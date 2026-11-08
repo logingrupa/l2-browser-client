@@ -32,6 +32,16 @@ def sha256_of_file(path):
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
+sha256_by_file_identity = {}
+
+
+def sha256_of_file_cached_by_identity(path, status):
+    identity = (str(path).casefold(), status.st_size, status.st_mtime_ns)
+    if identity not in sha256_by_file_identity:
+        sha256_by_file_identity[identity] = sha256_of_file(path)
+    return sha256_by_file_identity[identity]
+
+
 class ReferenceClientLock:
     def __init__(self, document, records_by_path):
         self.document = document
@@ -101,9 +111,7 @@ class ReferenceClientAccess:
                 f'reference client root {self.root.as_posix()} has no {relative_path}; a lock-checked root must hold every file it reads') from None
         except OSError as error:
             raise ReferenceClientLockError(f'reference client lock is stale for {relative_path}; re-lock ordered ({type(error).__name__})') from error
-        if (status.st_size, status.st_mtime_ns) == (record['eBytes'], record['eModifiedNanoseconds']):
-            return
-        if sha256_of_file(path) != record['eSha256']:
+        if status.st_size != record['eBytes'] or sha256_of_file_cached_by_identity(path, status) != record['eSha256']:
             raise ReferenceClientLockError(f'reference client lock is stale for {relative_path}; re-lock ordered')
 
 

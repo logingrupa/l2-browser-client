@@ -103,6 +103,30 @@ class ReferenceClientGuardTests(GuardedConversionRootTestCase):
         os.utime(package, ns=(status.st_atime_ns, status.st_mtime_ns + 1))
         self.assertEqual(access.require_equal_file('animations/Fighter.ukx'), package)
 
+    def test_changed_bytes_with_the_locked_size_and_modification_time_report_a_stale_lock(self):
+        self.trees.write_lock()
+        access = require_reference_client(self.trees.conversion_root)
+        package = self.trees.conversion_root / 'animations/Fighter.ukx'
+        locked_status = os.stat(package)
+        package.write_bytes(b'edited packag')
+        os.utime(package, ns=(locked_status.st_atime_ns, locked_status.st_mtime_ns))
+        self.assertEqual((os.stat(package).st_size, os.stat(package).st_mtime_ns), (locked_status.st_size, locked_status.st_mtime_ns))
+        with self.assertRaisesRegex(ReferenceClientLockError, 'reference client lock is stale for animations/Fighter.ukx; re-lock ordered'):
+            access.require_equal_file('animations/Fighter.ukx')
+
+    def test_unchanged_file_is_hashed_once_per_size_and_modification_time(self):
+        self.trees.write_lock()
+        access = require_reference_client(self.trees.conversion_root)
+        package = self.trees.conversion_root / 'animations/Fighter.ukx'
+        with patch.object(reference_client_guard, 'sha256_of_file', wraps=reference_client_guard.sha256_of_file) as hashing:
+            for _ in range(3):
+                access.require_equal_file('animations/Fighter.ukx')
+            self.assertEqual(hashing.call_count, 1)
+            status = os.stat(package)
+            os.utime(package, ns=(status.st_atime_ns, status.st_mtime_ns + 1_000_000_000))
+            access.require_equal_file('animations/Fighter.ukx')
+            self.assertEqual(hashing.call_count, 2)
+
     def test_changed_bytes_report_a_stale_lock(self):
         self.trees.write_lock()
         access = require_reference_client(self.trees.conversion_root)
