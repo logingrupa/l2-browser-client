@@ -1,6 +1,8 @@
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { defineConfig, devices } from "@playwright/test";
+import { refuseTestRunInsideMachineWindow } from "./tests/browser/support/machineScheduleConfigGuard";
+refuseTestRunInsideMachineWindow();
 const envFile = fileURLToPath(new URL(".env", import.meta.url));
 if (existsSync(envFile)) process.loadEnvFile(envFile);
 const baseURL = `http://127.0.0.1:${Number(process.env.DEV_PORT || 5173)}`;

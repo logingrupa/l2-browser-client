@@ -1,5 +1,8 @@
 import { defineConfig } from "@playwright/test";
 import base from "./playwright.config";
+import { refuseTestRunInsideMachineWindow } from "./tests/browser/support/machineScheduleConfigGuard";
+
+refuseTestRunInsideMachineWindow();
 
 const startupMeasurementBaseUrl = "http://127.0.0.1:5175";
 
