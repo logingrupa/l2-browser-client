@@ -268,3 +268,93 @@ describe("spawn-character on MockWorldAdapter simulation", () => {
     adapter.dispose();
   });
 });
+
+describe.each(adapterFactories)("play-clip on %s", (_name, createAdapter) => {
+  function updatedEntities(events: readonly WorldEvent[]) {
+    return events.flatMap(event => event.type === "update" ? [event.entity] : []);
+  }
+
+  function localPlayer(adapter: GameWorldAdapter): WorldEntity {
+    return adapter.getInitialState().find(entity => entity.id === "local-player")!;
+  }
+
+  it("emits one update carrying the exact clip name and request sequence and changes no gameplay state", () => {
+    const adapter = createAdapter();
+    adapter.dispatch({ type: "equip-item", slot: "upper", itemId: 22 });
+    const playerBefore = localPlayer(adapter);
+    const receivedEvents = recordEvents(adapter);
+    adapter.dispatch({ type: "play-clip", entityId: "local-player", clipName: "Wait" });
+    expect(receivedEvents).toHaveLength(1);
+    const [updated] = updatedEntities(receivedEvents);
+    expect(updated!.requestedClip).toEqual({ clipName: "Wait", requestSequence: 1 });
+    const { requestedClip: _requestedClip, ...gameplayState } = updated!;
+    expect(gameplayState).toEqual(playerBefore);
+    adapter.dispose();
+  });
+
+  it("keeps two identical requests as two sequenced requests and sequences each entity on its own", () => {
+    const adapter = createAdapter();
+    const receivedEvents = recordEvents(adapter);
+    adapter.dispatch({ type: "spawn-npc", npcId: 12345 });
+    const npc = spawnedEntities(receivedEvents)[0]!;
+    adapter.dispatch({ type: "play-clip", entityId: "local-player", clipName: "Wait" });
+    adapter.dispatch({ type: "play-clip", entityId: "local-player", clipName: "Wait" });
+    adapter.dispatch({ type: "play-clip", entityId: npc.id, clipName: "Wait" });
+    expect(updatedEntities(receivedEvents).map(entity => [entity.id, entity.requestedClip])).toEqual([
+      ["local-player", { clipName: "Wait", requestSequence: 1 }],
+      ["local-player", { clipName: "Wait", requestSequence: 2 }],
+      [npc.id, { clipName: "Wait", requestSequence: 1 }],
+    ]);
+    adapter.dispose();
+  });
+
+  it("keeps clip names as exact UTF-16 strings with no trimming, case folding or normalisation", () => {
+    const adapter = createAdapter();
+    const receivedEvents = recordEvents(adapter);
+    const clipNames = ["Wait", "wait", " Wait ", "Café", "Café"];
+    for (const clipName of clipNames) adapter.dispatch({ type: "play-clip", entityId: "local-player", clipName });
+    expect(updatedEntities(receivedEvents).map(entity => entity.requestedClip?.clipName)).toEqual(clipNames);
+    adapter.dispose();
+  });
+
+  it("accepts a 128-code-unit name and refuses an empty name, a 129-code-unit name and an unknown entity", () => {
+    const adapter = createAdapter();
+    const receivedEvents = recordEvents(adapter);
+    adapter.dispatch({ type: "play-clip", entityId: "local-player", clipName: "" });
+    adapter.dispatch({ type: "play-clip", entityId: "local-player", clipName: "a".repeat(129) });
+    adapter.dispatch({ type: "play-clip", entityId: "no-such-entity", clipName: "Wait" });
+    expect(receivedEvents).toEqual([]);
+    adapter.dispatch({ type: "play-clip", entityId: "local-player", clipName: "a".repeat(128) });
+    expect(updatedEntities(receivedEvents).map(entity => entity.requestedClip)).toEqual([{ clipName: "a".repeat(128), requestSequence: 1 }]);
+    adapter.dispose();
+  });
+
+  it("emits nothing after dispose", () => {
+    const adapter = createAdapter();
+    const receivedEvents = recordEvents(adapter);
+    adapter.dispose();
+    adapter.dispatch({ type: "play-clip", entityId: "local-player", clipName: "Wait" });
+    expect(receivedEvents).toEqual([]);
+  });
+
+  it("keeps a moving local player moving toward its destination", () => {
+    const adapter = createAdapter();
+    adapter.dispatch({ type: "move-local", position: { x: 0, y: 0, z: 20 } });
+    adapter.advance(.5);
+    const positionBeforeClip = localPlayer(adapter).position;
+    adapter.dispatch({ type: "play-clip", entityId: "local-player", clipName: "Wait" });
+    expect(localPlayer(adapter).animation).toBe("run");
+    adapter.advance(.5);
+    expect(localPlayer(adapter).position.z).toBeGreaterThan(positionBeforeClip.z);
+    adapter.dispose();
+  });
+
+  it("leaves requestedClip absent on every entity that never received play-clip", () => {
+    const adapter = createAdapter();
+    adapter.dispatch({ type: "spawn-npc", npcId: 12345 });
+    adapter.dispatch({ type: "spawn-character", characterTemplateIndex: 7 });
+    adapter.dispatch({ type: "play-clip", entityId: "local-player", clipName: "Wait" });
+    for (const entity of adapter.getInitialState().filter(entity => entity.id !== "local-player")) expect(entity).not.toHaveProperty("requestedClip");
+    adapter.dispose();
+  });
+});

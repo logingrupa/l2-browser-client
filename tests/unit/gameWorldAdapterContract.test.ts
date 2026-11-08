@@ -19,13 +19,15 @@ describe("GameWorldAdapter contract", () => {
     expectTypeOf<GameWorldAdapter["dispose"]>().toEqualTypeOf<() => void>();
   });
 
-  it("enumerates the full sandbox command set and the spawn-character shape", () => {
+  it("enumerates the full sandbox command set and the spawn-character and play-clip shapes", () => {
     expectTypeOf<WorldCommand["type"]>().toEqualTypeOf<
       | "set-animation" | "preview-action" | "set-locomotion" | "move-local" | "teleport-local" | "spawn" | "spawn-npc"
-      | "despawn" | "set-paused" | "equip-item" | "cast-skill" | "set-health" | "spawn-character"
+      | "despawn" | "set-paused" | "equip-item" | "cast-skill" | "set-health" | "spawn-character" | "play-clip"
     >();
     expectTypeOf<Extract<WorldCommand, { readonly type: "spawn-character" }>>()
       .toEqualTypeOf<{ readonly type: "spawn-character"; readonly characterTemplateIndex: number }>();
+    expectTypeOf<Extract<WorldCommand, { readonly type: "play-clip" }>>()
+      .toEqualTypeOf<{ readonly type: "play-clip"; readonly entityId: string; readonly clipName: string }>();
   });
 
   it.each(adapterFactories)("%s refuses a command type it does not know with a RangeError naming the type", (_name, createAdapter) => {
