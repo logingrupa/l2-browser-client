@@ -5,6 +5,7 @@ export interface NativeLocomotionSpeeds {
   readonly walkMetresPerSecond: number;
   readonly runMetresPerSecond: number;
   readonly runStartSeconds: number;
+  readonly isSourced: boolean;
 }
 
 export interface NativeLocomotionControlTarget extends Pick<GameWorldAdapter, "dispatch" | "subscribe"> {
@@ -32,8 +33,9 @@ export function attachNativeLocomotionControls(host: HTMLElement, controlTarget:
   const update = () => {
     const mode = controlTarget.locomotionMode, profile = controlTarget.speedProfile;
     for (const [value, button] of buttons) button.setAttribute("aria-checked", String(value === mode));
-    speed.textContent = mode === "walk" ? `${profile.walkMetresPerSecond.toFixed(2)} m/s` :
+    const gaitSpeedText = mode === "walk" ? `${profile.walkMetresPerSecond.toFixed(2)} m/s` :
       `${profile.runMetresPerSecond.toFixed(2)} m/s (walk speed for the first ${profile.runStartSeconds} s)`;
+    speed.textContent = profile.isSourced ? gaitSpeedText : `${gaitSpeedText}, speed unresolved`;
   };
   update();
   const unsubscribe = controlTarget.subscribe(update);

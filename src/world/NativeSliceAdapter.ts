@@ -13,17 +13,25 @@ export interface NativeSliceSpeedProfile {
   readonly runMetresPerSecond: number;
   readonly runStartSeconds: number;
   readonly source: string;
+  readonly isSourced: boolean;
 }
 export const SYNTHETIC_SLICE_SPEED: NativeSliceSpeedProfile = Object.freeze({
-  walkMetresPerSecond: .7, runMetresPerSecond: .7, runStartSeconds: 0, source: "synthetic slice speed (presentation choice)" });
+  walkMetresPerSecond: .7, runMetresPerSecond: .7, runStartSeconds: 0, source: "synthetic slice speed (presentation choice)", isSourced: false });
 export const ACIS_HUMAN_FIGHTER_SPEED = Object.freeze({ walkUnitsPerSecond: 80, runUnitsPerSecond: 115, runStartSeconds: 12 / 30,
   source: "aCis server data, not client data (humanFighter.xml line 6, sha256 6f7ef9f6b5cb8e5e…, class 0, both sexes: walkSpd 80, runSpd 115 UU/s, move multiplier 1.0; " +
     `chargrp walkanimframe 12/30 s run start, rows 0..13, ${runStartAtWalkSpeedRoutine}; no acceleration ramp, ${velocityWithoutAccelerationRampRoutine})` });
-export function nativeSliceSpeedProfile(sourceUnitsPerMetre: number): NativeSliceSpeedProfile {
+const sourcedServerSpeedByPlayerProfileId: ReadonlyMap<string, typeof ACIS_HUMAN_FIGHTER_SPEED> = new Map([
+  ["human-male-fighter", ACIS_HUMAN_FIGHTER_SPEED], ["human-female-fighter", ACIS_HUMAN_FIGHTER_SPEED]]);
+export function nativeSliceSpeedProfile(playerProfileId: string, sourceUnitsPerMetre: number): NativeSliceSpeedProfile {
   if (!Number.isFinite(sourceUnitsPerMetre) || sourceUnitsPerMetre <= 0) throw new Error("Invalid source units per metre.");
-  return Object.freeze({ walkMetresPerSecond: ACIS_HUMAN_FIGHTER_SPEED.walkUnitsPerSecond / sourceUnitsPerMetre,
-    runMetresPerSecond: ACIS_HUMAN_FIGHTER_SPEED.runUnitsPerSecond / sourceUnitsPerMetre,
-    runStartSeconds: ACIS_HUMAN_FIGHTER_SPEED.runStartSeconds, source: ACIS_HUMAN_FIGHTER_SPEED.source });
+  const sourcedServerSpeed = sourcedServerSpeedByPlayerProfileId.get(playerProfileId);
+  if (!sourcedServerSpeed) {
+    return Object.freeze({ ...SYNTHETIC_SLICE_SPEED,
+      source: `speed unresolved for ${playerProfileId}: no sourced server speed is recorded for this class; ${SYNTHETIC_SLICE_SPEED.source}` });
+  }
+  return Object.freeze({ walkMetresPerSecond: sourcedServerSpeed.walkUnitsPerSecond / sourceUnitsPerMetre,
+    runMetresPerSecond: sourcedServerSpeed.runUnitsPerSecond / sourceUnitsPerMetre,
+    runStartSeconds: sourcedServerSpeed.runStartSeconds, source: sourcedServerSpeed.source, isSourced: true });
 }
 
 export class NativeSliceAdapter implements GameWorldAdapter {

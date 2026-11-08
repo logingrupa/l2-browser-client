@@ -139,7 +139,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     const adapter = new NativeSliceAdapter(origin, navigation, startingUpperItemId,
       { displayName: playerProfile.name, appearanceId }, { walkSupported: locomotionClips.walkClip !== null,
         specialAttackPreviewSupported: specialAttackPreview.clip !== null,
-        speed: nativeSliceSpeedProfile(playerProfile.sourceUnitsPerMetre) });
+        speed: nativeSliceSpeedProfile(playerProfile.id, playerProfile.sourceUnitsPerMetre) });
     boundaryReleases.push(() => adapter.dispose());
     const footstepGround = createFootstepGroundSampler(scene, { decoGrass: decoGrass.field, sourceUnitsPerMetre: playerProfile.sourceUnitsPerMetre });
     boundaryReleases.push(() => footstepGround.dispose());

@@ -115,7 +115,9 @@ function attachMovementSection(section: DevSection, context: NativeSliceSheetCon
   context.addRelease(() => locomotionControls.dispose());
   const locomotionRoot = gaitGroup.element.querySelector<HTMLElement>('[data-testid="native-locomotion-controls"]');
   const locomotionNote = locomotionClips.reason ? "" : describe.foldStaticNoteIntoDescription(locomotionRoot?.querySelector<HTMLElement>("p"));
-  describe.element(locomotionRoot, { title: "Walk / run", description: `${locomotionNote} Speeds are aCis server data (walk 80, run 115 units/s); a run starts at walk speed for 0.4 s. Footsteps follow the armed gait.`.trim(), variables: gaitVariables });
+  const speed = adapter.speedProfile;
+  const speedOrigin = speed.isSourced ? "Speeds are aCis server data" : `Speed unresolved for ${context.playerProfile.name}, synthetic stand-in`;
+  describe.element(locomotionRoot, { title: "Walk / run", description: `${locomotionNote} ${speedOrigin} (walk ${speed.walkMetresPerSecond.toFixed(2)}, run ${speed.runMetresPerSecond.toFixed(2)} m/s); a run starts at walk speed for ${speed.runStartSeconds} s. Footsteps follow the armed gait.`.trim(), variables: gaitVariables });
   const groundContext = () => footstepGround.describe(adapter.groundContact);
   const resolvedSurface = () => footsteps.autoSurface().resolve(groundContext());
   groundGroup.readout({ label: "Ground", testId: "native-ground-readout", value: () => resolvedSurface().summary,
@@ -269,7 +271,10 @@ export function attachNativeSliceSheet(context: NativeSliceSheetContext): Native
     { name: "movement.runClip", value: () => locomotionClips.runClip, values: "original clip name", source: "player profile run clip (RunAnimName[0])", status: "native" },
     { name: "movement.speed", value: () => `${adapter.currentSpeed.toFixed(2)} m/s now`,
       values: `walk ${adapter.speedProfile.walkMetresPerSecond.toFixed(2)} | run ${adapter.speedProfile.runMetresPerSecond.toFixed(2)} m/s (walk speed for the first ${adapter.speedProfile.runStartSeconds} s of a run)`,
-      source: `${adapter.speedProfile.source} ÷ sourceUnitsPerMetre ${playerProfile.sourceUnitsPerMetre}. Speeds are server data (no client file holds them); no acceleration ramp (APawn::calcVelocity).`, status: "presentation" },
+      source: adapter.speedProfile.isSourced
+        ? `${adapter.speedProfile.source} ÷ sourceUnitsPerMetre ${playerProfile.sourceUnitsPerMetre}. Speeds are server data (no client file holds them); no acceleration ramp (APawn::calcVelocity).`
+        : adapter.speedProfile.source,
+      status: adapter.speedProfile.isSourced ? "presentation" : "unverified" },
     { name: "movement.clipRate", value: () => "1.0", values: "1.0 × NonAttackSpeedRate (1.0)", source: "UpdateMovementAnimation 0x10624cc0: walk/run clips are not stretched to the travel speed", status: "native" },
   ];
   attachHeadsUpDisplayCards(context, tools, gaitVariables);
