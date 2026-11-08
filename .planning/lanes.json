@@ -121,6 +121,7 @@
         "docs/parts/sandbox/**",
         "docs/parts/ui/**",
         "recipes/data/**",
+        "scripts/build_dat_table_inventory.py",
         "scripts/data/**",
         "scripts/native_catalog/**",
         "src/ui/**"

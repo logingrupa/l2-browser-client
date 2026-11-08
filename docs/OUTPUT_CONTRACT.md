@@ -82,6 +82,38 @@ Any other key answers `not-in-catalog` with a reason. The client loads assets
 only through `readNativeCatalog`. `recipes/native-inputs.lock.json` pins
 converter inputs only; it is not an output catalog (DEC-OWN-5).
 
+## Lane stores
+
+Each lane writes its own store under `artifacts/lane-store/<lane>/l2/`, for
+the lanes `world`, `actors`, `data-ui` and `integration` named in
+`.planning/lanes.json`. The folder is ignored by git.
+`scripts/native_store/store_paths.py` builds every lane path
+(`lane_store_root`, `lane_work_root`, `lane_gap_rows_path`,
+`lane_load_check_path`) and refuses an unknown lane name.
+
+A lane store reuses the shared store prefixes exactly:
+
+| Prefix | What sits there |
+| --- | --- |
+| `<archiveSha256>/` | Model and texture archives: `asset.l2asset` with `model.glb` or `texture.png` beside it, no kind prefix |
+| `maps/<manifestSha256>/map-section-runtime/` | Section runtime manifests (`manifest.json`) |
+| `npc-profiles/<sha>/`, `player-profiles/<sha>/` | NPC and player profiles |
+| `world-audio/<sha>/`, `animation-audio/<sha>/`, `combat-audio/<sha>/`, `step-sounds/<sha>/` | Audio bundles |
+| `effects/<sha>/`, `movers/<sha>/` | Effect components and movers |
+| `skies/`, `environments/` | Outside the catalog |
+
+The prefix `/l2/models/<sha>/` is never used. New kinds get new prefixes in
+plan 02-04. Every resource name satisfies the `nativeResourceUrl.ts` path
+rule. Beside `l2/`, a lane folder holds `work/` (the unit ledger, plan 02-02),
+`gap-rows/` (plan 02-02) and `load-checks/` (plan 02-06).
+
+Output guard: `require_converter_output` accepts only a dedicated folder under
+`artifacts/`. It refuses `artifacts/` itself, anything at or under the
+realpath of `public/l2`, and any path with a junction or symlink on it, before
+the first write. `Converter`, `native_batch.prepare` and every lane entry point
+with an `--output` option call it. Restaging a lane store into the shared
+store is integration work in the main checkout only.
+
 ## Golden fixtures
 
 `tests/fixtures/golden/` holds synthetic fixtures with no Lineage II bytes:
