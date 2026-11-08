@@ -18,6 +18,7 @@
     "test_command": "pnpm typecheck && pnpm test:unit",
     "build_command": "pnpm build",
     "ai_integration_phase": false,
+    "compact_content": true,
     "skip_discuss": false,
     "discuss_mode": "discuss"
   }
