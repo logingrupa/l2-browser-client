@@ -44,6 +44,13 @@ describe("WorldInterface developer sheet compatibility", () => {
     expect(sheet.contains(extra)).toBe(true);
   });
 
+  it("holds only the pause and despawn session actions and no missing-model action", () => {
+    const { ui, root } = create();
+    const sessionActions = ui.generalGroup.element.querySelector(".secondary-actions") as unknown as FakeElement;
+    expect(sessionActions.children.map(button => button.dataset.action)).toEqual(["pause", "despawn"]);
+    expect(root.querySelector('[data-action="missing-model"]')).toBeNull();
+  });
+
   it("keeps HUD actions, diagnostics and test ids in the DOM", () => {
     const { ui, root } = create();
     for (const action of ["attack", "run", "idle", "teleport", "spawn", "pause", "despawn"]) expect(root.querySelector(`[data-action="${action}"]`), action).not.toBeNull();
