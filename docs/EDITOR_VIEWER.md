@@ -25,7 +25,8 @@ Commands that exist today in `package.json`:
 
 - `pnpm assets:editor` runs `scripts/native_editor_import.mjs` and writes `assets/native-world.scene`. `--snapshot-only` and `--from-snapshot` split capture from scene writing.
 - `pnpm renderer:ensure` restores the project WebGPU flag, which an Editor save drops.
-- `pnpm generate` runs the Editor repair scripts and `babylonjs-editor-cli pack`. Today `pnpm dev` and `pnpm build` call it. NOED-02 moves it to an optional `pnpm generate:editor`, which does not exist yet.
+- `pnpm generate:editor` runs the Editor repair scripts and `babylonjs-editor-cli pack`, which packs `public/scene/*.babylon` and regenerates `src/scripts.ts`. It is optional: `pnpm dev` and `pnpm build` run only `stage-webgpu-compilers` before Vite (NOED-02).
+- `pnpm test:editor` runs the Editor-path tests in `tests/editor/`. `pnpm test:unit` does not run them (NOED-05).
 
 The authored browser route is `/?world=interlude&authored=1`. NOED-01 keeps it reachable only by a dynamic import.
 
@@ -60,7 +61,7 @@ Version gate. Review on every Babylon or Editor upgrade:
 ## Known defects
 
 - **Blank Play viewport.** Repeated Play/Stop, source changes during a session, hot restart or scene switching can leave the viewport blank, also in authoring mode. The cause is unknown. Reopening the scene does not help. Close the project window normally, return to the Dashboard and reopen the project. Blank captures never count as evidence.
-- **Raw Play readiness and UV2.** Raw Play reports `scene.isReady()` false while output is visible. Without the compat plugin, Save and raw Play drop terrain UV2 (4,704 float32 values, 18,816 bytes) and raw Play overwrites public output. With the plugin, Save and raw Play in an isolated copy preserve every channel of both terrain meshes. After direct Play, run `pnpm generate` with Play stopped and check the generated references.
+- **Raw Play readiness and UV2.** Raw Play reports `scene.isReady()` false while output is visible. Without the compat plugin, Save and raw Play drop terrain UV2 (4,704 float32 values, 18,816 bytes) and raw Play overwrites public output. With the plugin, Save and raw Play in an isolated copy preserve every channel of both terrain meshes. After direct Play, run `pnpm generate:editor` with Play stopped and check the generated references.
 - **Play drops materials and fog.** Play removes every `BABYLON.ShaderMaterial`; the client recovers only an omitted terrain material from the live authoring scene. Play bypasses the post-pack fog fix; keep fog mode None.
 - **WebGPU textures.** Relative texture path rewriting and the WebGL-only texture hook give checkerboard terrain on WebGPU. The client uses the absolute authoring texture root.
 - **Serialization side effects.** A save changes PBR `maxSimultaneousLights` from 4 to 8 (413 materials), resets 20 inactive overlay settings, removes unused geometry paths and the thumbnail, renames resources and moves geometry into `.babylonbinarymeshdata`. Audits match intrinsic identities, not filenames.
@@ -91,7 +92,7 @@ NOED-01 and NOED-02 decide what of this stays. The authored-route runtime (incre
 ## Open
 
 - Upstream Editor reports for the Color3 callback and the proxy-material ID collision are not filed.
-- The Addons 9.27.1 / Recast 0.43.0 pins become removable once NOED-02 takes the generated entry out of the default build.
+- The default build no longer packs the generated entry (NOED-02), so the Addons 9.27.1 / Recast 0.43.0 pins become removable once nothing in the default entry needs them. Removing them is an owner decision.
 - `native-world.scene` has no regenerate-from-catalog path.
 - The serialization side effects are recorded, not corrected.
 - An example-scene save lost Meadow/Sunlight and replaced a pine material; the cause is unproven (moot if NOED-03 retires the courtyard).

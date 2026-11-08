@@ -350,8 +350,11 @@ the incompatibility.
 
 ## Build and generation today
 
-`pnpm dev` and `pnpm build` both run `pnpm generate`, which today runs, in
-order:
+`pnpm dev` and `pnpm build` run only `stage-webgpu-compilers.mjs` before
+Vite (NOED-02). `tests/unit/defaultEntryImportGraph.test.ts` fails if the
+static import graph of `src/main.ts` reaches an Editor package, the generated
+`src/scripts.ts` or the authored world modules. The optional
+`pnpm generate:editor` runs the Editor steps, in order:
 
 1. `ensure-webgpu-project.mjs` (restores `isWebGPU: true` in
    `project.bjseditor`).
@@ -371,9 +374,9 @@ order:
    keeps its authored mode.
 7. `share-native-terrain-export-materials.mjs`.
 
-NOED-02 moves every step except `stage-webgpu-compilers` to an optional
-`pnpm generate:editor`. Then the code-built native scene sets fog explicitly
-(`fogEnabled = false` with mode 3; Babylon defaults to `fogEnabled = true`).
+The code-built native scene sets fog explicitly (`fogEnabled = false` with
+mode 3; Babylon defaults to `fogEnabled = true`). `pnpm test:editor` runs the
+Editor-path tests in `tests/editor/`; `pnpm test:unit` does not.
 
 `package.json` pins `@babylonjs/addons` 9.27.1 and `@recast-navigation/core` /
 `generators` 0.43.0 only because the desktop Editor's generated script entry

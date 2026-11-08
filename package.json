@@ -21,6 +21,7 @@
 		"typecheck": "tsc --noEmit",
 		"test": "pnpm test:unit && pnpm test:e2e",
 		"test:unit": "vitest run",
+		"test:editor": "vitest run --config vitest.editor.config.ts",
 		"test:e2e": "playwright test",
 		"test:setup": "playwright install chromium",
 		"assets:stage": "python -B scripts/stage_native_players.py",

@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
 import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import type { Scene } from "@babylonjs/core/scene";
 import type { createNativeSliceRuntime } from "../../src/runtime/createNativeSliceRuntime";
 import { loadEnvironment } from "../../src/scene/loadEnvironment";
 import { isSceneStartupRequired } from "../../src/scene/prepareSceneForReveal";
@@ -13,13 +12,10 @@ import type { createWorldRuntime } from "../../src/runtime/createWorldRuntime";
 const boundary = vi.hoisted(() => ({
   startRuntime: vi.fn<typeof createNativeSliceRuntime>(),
   startWorldRuntime: vi.fn<typeof createWorldRuntime>(),
-  loadEditorScene: vi.fn(),
   importedWorld: vi.fn(),
 }));
 vi.mock("../../src/runtime/createNativeSliceRuntime", () => ({ createNativeSliceRuntime: boundary.startRuntime }));
 vi.mock("../../src/runtime/createWorldRuntime", () => ({ createWorldRuntime: boundary.startWorldRuntime }));
-vi.mock("babylonjs-editor-tools", () => ({ loadScene: boundary.loadEditorScene }));
-vi.mock("../../src/scripts", () => ({ scriptsMap: {} }));
 vi.mock("../../src/scene/world/loadImportedWorld", () => ({ loadImportedWorld: boundary.importedWorld }));
 
 describe("environment routing", () => {
@@ -30,7 +26,6 @@ describe("environment routing", () => {
     vi.stubGlobal("document", Object.assign(new EventTarget(), { title: "Initial title" }));
     boundary.startRuntime.mockReset();
     boundary.startWorldRuntime.mockReset();
-    boundary.loadEditorScene.mockReset();
     boundary.importedWorld.mockReset();
   });
   afterEach(() => {
@@ -62,7 +57,6 @@ describe("environment routing", () => {
     expect(settings.leatherShirt).toBe(true);
     expect(settings.materialTint?.asArray()).toEqual([0.45, 1, 0.6]);
     expect(options?.requireWorld).toBe(true);
-    expect(boundary.loadEditorScene).not.toHaveBeenCalled();
     expect(boundary.importedWorld).not.toHaveBeenCalled();
     await Promise.resolve();
     scene.dispose();
@@ -87,33 +81,6 @@ describe("environment routing", () => {
     const scene = await loadEnvironment(engine);
     expect(scene.activeCamera?.name).toBe("World camera");
     expect(boundary.startRuntime).toHaveBeenCalledTimes(1);
-    expect(boundary.loadEditorScene).not.toHaveBeenCalled();
-  });
-
-  it("loads the authored native world through the Editor loader only under authored=1", async () => {
-    window.location.search = "?world=interlude&authored=1";
-    boundary.loadEditorScene.mockImplementation(async (_root: string, _file: string, loadedScene: Scene) => {
-      new ArcRotateCamera("World camera", 1.8, 1.15, 4.25, Vector3.Zero(), loadedScene);
-    });
-    const scene = await loadEnvironment(engine);
-    expect(isSceneStartupRequired(scene, "native-world")).toBe(true);
-    expect(boundary.loadEditorScene).toHaveBeenCalledExactlyOnceWith("/scene/", "native-world.babylon", scene, {},
-      { quality: "high", onProgress: expect.any(Function) });
-    expect(scene.activeCamera).toBe(scene.getCameraByName("World camera"));
-    expect(boundary.startRuntime).not.toHaveBeenCalled();
-  });
-
-  it("disposes the partial scene when the authored native world fails to load", async () => {
-    window.location.search = "?world=interlude&authored=1";
-    const failure = new Error("Offscreen binary geometry failed to load");
-    let loadedScene: Scene | undefined;
-    boundary.loadEditorScene.mockImplementation(async (_root: string, _file: string, sceneBeingLoaded: Scene) => {
-      loadedScene = sceneBeingLoaded;
-      throw failure;
-    });
-    await expect(loadEnvironment(engine)).rejects.toBe(failure);
-    expect(loadedScene?.isDisposed).toBe(true);
-    expect(engine.scenes).toHaveLength(0);
   });
 
   it.each(["", "?world=courtyard", "?authored=1"])("builds the reference scene in code with no staged world for search %j", async search => {
@@ -131,7 +98,6 @@ describe("environment routing", () => {
     expect(document.title).toBe("Initial title");
     expect(boundary.importedWorld).toHaveBeenCalledExactlyOnceWith(scene);
     expect(boundary.startWorldRuntime).toHaveBeenCalledExactlyOnceWith(scene, camera);
-    expect(boundary.loadEditorScene).not.toHaveBeenCalled();
     expect(boundary.startRuntime).not.toHaveBeenCalled();
     expect(isSceneStartupRequired(scene, "native-world")).toBe(false);
     scene.dispose();
@@ -153,7 +119,6 @@ describe("environment routing", () => {
     expect(scene.useRightHandedSystem).toBe(true);
     expect(document.title).toBe("Talking Island · L2 Browser Client");
     expect(boundary.startWorldRuntime).toHaveBeenCalledExactlyOnceWith(scene, camera);
-    expect(boundary.loadEditorScene).not.toHaveBeenCalled();
     scene.dispose();
     expect(disposeWorld).toHaveBeenCalledTimes(1);
   });

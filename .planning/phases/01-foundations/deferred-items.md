@@ -43,3 +43,8 @@ Out-of-scope issues found while executing plans. Not fixed by the plan that foun
 ## From plan 01-12
 
 - `scripts/native_catalog/cli.py` reads client files outside `require_equal_file`: `inventory` hashes every file under `--client`, and `catalog_package` runs UModel `-list` with `-path=<client>` on a package resolved through `within`, not through the guard. Only the entry guard (`require_reference_client`) applies. It writes a catalog, not converted assets, so it is outside the `Converter.run` gap plan 01-12 closed. Fix: route `catalog_package` sources through `require_equal_file` and limit `inventory` against E: to lock-equal files, or keep the catalog CLI on IMPORTA-PC only. Owner: the data lane or the integration thread.
+
+## From plan 01-09
+
+- `tests/editor/editorGeometryCompat.test.ts` (moved from `tests/unit`) still fails at collection with `Installed Editor writer fixture changed.`: the SHA-256 of `tests/fixtures/editor-5.5.3-geometry.cjs` differs from the pinned writer hash. It now runs only under `pnpm test:editor`, so `pnpm test:unit` no longer fails on it. Owner: whoever next works on the optional Editor viewer.
+- `tests/unit/nativeSliceRuntime.test.ts` still exercises the authored native world source (`src/editor/authoredNativeWorldSource.ts`) beside the catalog source in parameterised cases. It imports no Editor package or generated script, so the `editorIndependence.test.ts` scan (Editor packages and `src/scripts`) passes, but the plan's wider markers (`src/editor/`, `authoredNativeWorld`) would match it. Fix: split the authored cases into `tests/editor/` and add those two markers to the scan. Owner: plan 01-17 or the integration thread (OVERNIGHT-DECISIONS row 34).

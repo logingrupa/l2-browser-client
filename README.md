@@ -30,7 +30,7 @@ pnpm dev
 
 Open http://127.0.0.1:5173. Port 5173 is the default. A second checkout sets `DEV_PORT=<n>` in its gitignored `.env`; `pnpm dev` and Playwright both use that port.
 
-Today `pnpm dev` and `pnpm build` run `pnpm generate` first, which packs the Editor scene and runs the Editor repair scripts. DEC-OWN-8 takes the Editor off the build and runtime path and moves that step to an optional `pnpm generate:editor` (Phase 1 work, see [.planning/STATE.md](.planning/STATE.md)). The Editor is an optional viewer; see [docs/EDITOR_VIEWER.md](docs/EDITOR_VIEWER.md).
+`pnpm dev` and `pnpm build` stage the WebGPU shader compilers and then run Vite; no Editor step runs (DEC-OWN-8). The Editor is an optional viewer: `pnpm generate:editor` packs its scenes and `pnpm test:editor` runs the Editor-path tests. See [docs/EDITOR_VIEWER.md](docs/EDITOR_VIEWER.md).
 
 ## Routes
 
