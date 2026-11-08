@@ -16,6 +16,7 @@ from native_map_geometry import (GltfBuilder, native_terrain, terrain_points, se
                                  vertex_normal, native_to_gltf, bit, quad_triangles,
                                  layer_records, texture_uv, qualified_mask_uv_rule, terrain_mask_uv)
 from native_assets_lib.gltf import json_bytes
+from reference_client_guard import require_reference_client
 
 MAP_SHA = '1beddad24c10a35a1b2e9151727a85158e3e01992299a6671de876645eb1f1e4'
 HEIGHT_SHA = 'e113df8ca85cac06d6816345ec66a7aaa3740d2cae8b33868c9c3cf47e4150f3'
@@ -39,14 +40,16 @@ def pin_bytes(data):
     return {'bytes': len(data), 'sha256': sha(data)}
 
 
+def unqualified_corrected_mask_uv(ordinary, x, y):
+    return [ordinary[0] - max(x - 240, 0) / 4096, ordinary[1] - max(y - 240, 0) / 4096]
+
+
 def patch_mask_uv(x, y, width, height, variant):
     require(variant in VARIANTS, 'Unknown offline mask comparison variant')
     ordinary = terrain_mask_uv(x, y, width, height)
     if variant == 'ordinary':
         return ordinary
-    # Formula is intentionally evaluated without passing a fabricated qualified
-    # rule to the shared production helper. These coordinates are unqualified.
-    return [ordinary[0] - max(x - 240, 0) / 4096, ordinary[1] - max(y - 240, 0) / 4096]
+    return unqualified_corrected_mask_uv(ordinary, x, y)
 
 
 def channel_rows(glb):
@@ -159,6 +162,7 @@ def write_products(output, products, protected_roots):
 
 
 def extract(client, raw, reference, output):
+    client_access = require_reference_client(client)
     client, raw, reference, output = (Path(path).resolve() for path in (client, raw, reference, output))
     protected_roots = [client, raw, reference]
     require(not any(output.is_relative_to(root) for root in protected_roots), 'Offline output must be outside all source/reference roots')
@@ -169,8 +173,8 @@ def extract(client, raw, reference, output):
         observed[name] = pin_bytes(value)
         source_data[path] = value
         return value
-    package = Package(read(client / 'maps/20_20.unr', 'client/maps/20_20.unr', MAP_SHA), '20_20.unr')
-    heights = Package(read(client / 'textures/T_20_20.utx', 'client/textures/T_20_20.utx', HEIGHT_SHA), 'T_20_20.utx')
+    package = Package(read(client_access.require_equal_file('maps/20_20.unr'), 'client/maps/20_20.unr', MAP_SHA), '20_20.unr')
+    heights = Package(read(client_access.require_equal_file('textures/T_20_20.utx'), 'client/textures/T_20_20.utx', HEIGHT_SHA), 'T_20_20.utx')
     terrain = json.loads(read(raw / 'terrain.json', 'raw/terrain.json', RAW_TERRAIN_SHA))[0]
     manifest = json.loads(read(reference / 'manifest.json', 'reference/manifest.json', REFERENCE_MANIFEST_SHA))
     old_glb = read(reference / 'terrain.glb', 'reference/terrain.glb', REFERENCE_GLB_SHA)
@@ -262,6 +266,7 @@ def main():
     parser.add_argument('--reference-section', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
+    require_reference_client(args.client)
     print(json.dumps(extract(args.client, args.raw, args.reference_section, args.output), indent=2))
 
 

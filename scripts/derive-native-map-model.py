@@ -16,6 +16,7 @@ from native_map import (MapSources, actor_properties, decode_property,
                         explicit_properties, property_value, TRANSFORMS)
 from native_map_geometry import read_class_evidence, gltf_placement
 from native_map_overlap import parse_glb, source_placement, transform_positions, triangle_rectangle_overlap
+from reference_client_guard import require_reference_client
 
 ROOT = Path(__file__).resolve().parent.parent
 spec = importlib.util.spec_from_file_location('native_bsp_derivation_io', Path(__file__).with_name('derive-native-map-bsp.py'))
@@ -190,4 +191,6 @@ if __name__ == '__main__':
     parser.add_argument('--client', type=Path, default=ROOT/'artifacts/native-parity/inputs/IMPORTA-PC')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--stage', action='store_true')
-    print(json.dumps(run(parser.parse_args()),indent=2))
+    args = parser.parse_args()
+    require_reference_client(args.client)
+    print(json.dumps(run(args),indent=2))

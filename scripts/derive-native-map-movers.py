@@ -10,15 +10,18 @@ from pathlib import Path
 
 from native_assets import UMODEL
 from native_map_movers import export
+from reference_client_guard import require_reference_client
 
 
-def run(args):
-    return export(args.client, args.output, args.umodel)
-
-
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--client', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--umodel', type=Path, default=UMODEL)
-    print(json.dumps(run(parser.parse_args()), indent=2))
+    args = parser.parse_args()
+    require_reference_client(args.client)
+    print(json.dumps(export(args.client, args.output, args.umodel), indent=2))
+
+
+if __name__ == '__main__':
+    main()

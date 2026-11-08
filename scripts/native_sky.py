@@ -21,6 +21,7 @@ from native_bsp_floor import (ROOT, MAP_SHA, ENGINE_SHA, PackageAdapter, reviewe
     require, sha, pinned_bytes, f32, cross, difference, dot, write_unchanged_or_new)
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib.texture_dds import build_texture_dds
+from reference_client_guard import require_reference_client
 
 SKY_SHA = '9c45f311e9668f745ef983ef2dbdf1b4ea250c30c30e453a66910f6a261e860f'
 SKY_ORIGIN = [292.2027587890625, 264403.15625, 24503.01953125]
@@ -43,12 +44,6 @@ LIMITS = ['Frozen authored sky source state; no native visible-pixel parity is e
 
 
 class ExactSkyPackage(Package):
-    """One exact UE118/0 table layout; inherited property reader stays bounded.
-
-    Table order agrees with the pinned Elbera reader (12c9656e); packed tags
-    and mip end boundaries were independently compared in the source receipt.
-    The generic Package and texture_mips version gates are untouched.
-    """
     def __init__(self, raw):
         require(sha(raw) == SKY_SHA, 'Only the qualified original l2_skies.utx is supported')
         self.filename, self.package_name, self.source_hash = 'l2_skies.utx', 'l2_skies', SKY_SHA
@@ -163,7 +158,7 @@ def geometry(map_raw, graph, texture_receipts):
         graph_node = next(n for n in graph if n['source']['object'] == root)
         root_tags = graph_node['propertyTags']; color_tag = unique(root_tags, 'Color')
         require(color_tag['structName'] == 'Color', 'Sky tint is not a Color struct')
-        rgba = list(bytes.fromhex(color_tag['payloadHex']))  # UE1/2 FColor archive order is RGBA.
+        rgba = list(bytes.fromhex(color_tag['payloadHex']))
         require(rgba == EXPECTED_COLORS[root], 'Authored source tint changed')
         alpha_tags = [t for t in root_tags if t['name'] == 'AlphaBlend']
         alpha = alpha_tags[0]['value'] if alpha_tags else True
@@ -253,10 +248,10 @@ def glb(snapshot, files):
 
 
 def build(client):
-    client = Path(client)
-    map_data = pinned_bytes(client/'maps/20_20.unr', MAP_SHA)
-    pinned_bytes(client/'system/Engine.u', ENGINE_SHA)
-    sky = ExactSkyPackage(pinned_bytes(client/'textures/l2_skies.utx', SKY_SHA))
+    client_access = require_reference_client(client)
+    map_data = pinned_bytes(client_access.require_equal_file('maps/20_20.unr'), MAP_SHA)
+    pinned_bytes(client_access.require_equal_file('system/Engine.u'), ENGINE_SHA)
+    sky = ExactSkyPackage(pinned_bytes(client_access.require_equal_file('textures/l2_skies.utx'), SKY_SHA))
     graph = material_graph(sky); receipts, files = {}, {}
     for name in TEXTURES:
         receipts[name], products = texture_products(sky,name); files.update(products)
@@ -272,7 +267,7 @@ def build(client):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--client',type=Path,required=True);parser.add_argument('--output',type=Path,required=True)
-    args=parser.parse_args();target=args.output.resolve()
+    args=parser.parse_args();require_reference_client(args.client);target=args.output.resolve()
     require(target.is_relative_to((ROOT/'artifacts').resolve()) and target != (ROOT/'artifacts').resolve(), 'Use a dedicated artifacts scratch output')
     require(not target.is_relative_to(args.client.resolve()), 'Output must not modify native inputs')
     files=build(args.client);status=write_unchanged_or_new(target,files)
