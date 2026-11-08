@@ -122,6 +122,71 @@ the first write. `Converter`, `native_batch.prepare` and every lane entry point
 with an `--output` option call it. Restaging a lane store into the shared
 store is integration work in the main checkout only.
 
+## Dev store switch
+
+`vite/nativeStoreRootPlugin.ts` lets the dev server on port 5175 serve a lane
+store without touching `public/l2`. `NATIVE_STORE_ROOT` takes the
+`.planning/lanes.json` keys (`world`, `actors`, `data-ui`, `integration`),
+which serve `artifacts/lane-store/<lane>/l2`, or `fixture`, which serves the
+committed `tests/fixtures/lane-store/l2` (one golden model and its catalog).
+Unset, the plugin does nothing. An unknown value, a missing folder, a root
+whose realpath differs from its path (a junction or symlink on the way) or a
+root at or under the realpath of `public/l2` stops Vite with the reason.
+
+- `/l2/catalog.json` and `/l2/coverage.json` come only from the selected root.
+  When the root lacks them the answer is 404, never the shared store's copy.
+- Every other `/l2/` path comes from the selected root first, then from
+  `public/l2`, read only. Each file must be a regular file whose path and
+  realpath stay under its root.
+- The header `X-Native-Store-Source: lane` or `shared` names which store
+  answered. A missing file answers 404 instead of the SPA page; only GET and
+  HEAD are served.
+- Request paths are checked against a copy of the `nativeResourceUrl.ts`
+  regex after one decode. `tests/unit/nativeStoreRootPlugin.test.ts` feeds the
+  same cases to both and checks that the copy's source text appears in
+  `nativeResourceUrl.ts`. Encoded traversal such as `/l2/%2e%2e/package.json`
+  answers 400.
+- Content types: `.json` `application/json`, `.glb` `model/gltf-binary`,
+  `.png` `image/png`, `.ogg` `audio/ogg`, `.wav` `audio/wav`, `.l2asset`
+  `application/zip`, anything else `application/octet-stream`.
+- One byte range answers 206 with `Content-Range`; an unsatisfiable range
+  answers 416 with `Content-Range: bytes */<size>`; several ranges or a
+  malformed header get the full 200 body.
+- The plugin has `apply: "serve"`. `tests/unit/nativeStoreRootBuildAbsence.test.ts`
+  resolves `vite.config.ts` in both modes and finds `native-store-root` only
+  in serve mode. A production bundle built with `publicDir: false` holds
+  neither `NATIVE_STORE_ROOT` nor `native-store-root`. Plain `pnpm build`
+  is not used for this check, because it would copy the `public/l2` junction.
+
+## Load-check records
+
+A browser check that loads a catalog key records the result in
+`artifacts/lane-store/<lane>/load-checks/<catalogSha256>.json`, written by
+`tests/browser/support/loadCheckRecordFile.ts`. `fixture` is not a lane and
+gets no records.
+
+```
+{"schemaVersion": 1, "lane": "<lane>", "catalogSha256": "<64 hex>",
+ "records": [{"key", "status", "reason", "atRiga", "assetManifestSchemaVersion"}]}
+```
+
+- `key` is a gap-row catalog key (`tile`, `map`, `npc`, `item`, `skill`,
+  `table`, `window`, `character`).
+- `status` is `pass` with `reason` null, or `failed` with a non-empty reason.
+  Only what a browser check observed is recorded; an unverified key has no
+  record.
+- `atRiga` is ISO 8601 with the Riga offset, for example
+  `2026-11-08T15:05:00+02:00`.
+- `assetManifestSchemaVersion` is 1, 2 or null (keys with no asset package,
+  such as tiles or windows). It notes v1 or v2 because an overlay lane store
+  mixes the v1 shared store with v2 lane archives until the restage.
+- One record per key, sorted by key. Each write replaces that key's record and
+  rewrites the file through a temp file in the same folder and a rename.
+- The file is pinned to the served catalog: `hashServedLaneCatalog(baseUrl)`
+  gives the SHA-256, and a new catalog SHA-256 starts a new file. A reader
+  refuses a file whose `lane` or `catalogSha256` differs from its path.
+- Coverage counts "loads" only from these records.
+
 ## Golden fixtures
 
 `tests/fixtures/golden/` holds synthetic fixtures with no Lineage II bytes:
