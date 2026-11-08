@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-11-08T13:38:33.136Z"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-11-08T15:55:07.856Z"
 last_activity: 2026-11-08
-last_activity_desc: Phase 02 plan 02-11 complete (WORLD-07 independent review)
-state_head: 693e4b2619d9ddb0fdadcb1c96e9ae8a04d92d2b
+last_activity_desc: Phase 02 plan 02-02 complete (machine schedule, unit ledger and gap rows)
+state_head: 968d35260cb732b55394e91cc73fadcf5f451685
 progress:
   total_phases: 6
   completed_phases: 0
-  total_plans: 72
-  completed_plans: 20
+  total_plans: 86
+  completed_plans: 21
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 02 (Stage A breadth) - EXECUTING
-Plan: 02-01 complete, 3 of 55 plans executed
+Plan: 02-02 complete, 4 of 69 plans executed
 Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-08 - Applied the Lineage2JS reference handoff (DEC-OWN-12): eight provisional requirements MAT-01, MAT-02, VIS-01, MOVE-01, FX-01 (Phase 2) and MOVE-02, NET-09, NET-10 (Phase 4), v1 now 66; earlier the native-world-slice merge (DEC-OWN-11) left only the native routes
+Last activity: 2026-11-08 - Plan 02-02 complete: one Riga machine schedule owner (`scripts/check-machine-schedule.mjs`, guarded in both Playwright configs), the resumable `UnitLedger` with `require_batch_preflight`, and the gap-row schema with the closed reason list. Earlier: applied the Lineage2JS reference handoff (DEC-OWN-12): eight provisional requirements MAT-01, MAT-02, VIS-01, MOVE-01, FX-01 (Phase 2) and MOVE-02, NET-09, NET-10 (Phase 4), v1 now 66; earlier the native-world-slice merge (DEC-OWN-11) left only the native routes
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -72,6 +72,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P10 | 15 min | 3 tasks | 9 files |
 | Phase 02 P11 | 24 min | 3 tasks | 13 files |
 | Phase 02 P01 | 25 min | 3 tasks | 33 files |
+| Phase 02 P02 | 16 min | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -129,6 +130,10 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Merge]: native-world-slice merged (DEC-OWN-11): `/` opens the code-built native sandbox, the `world` parameter, Talking Island route, courtyard demo, `MockWorldAdapter` and procedural characters are gone, and `NativeSliceAdapter` is the only adapter (OVERNIGHT-DECISIONS row 80)
 - [DEC-OWN-12]: UE2 materials and fog, the BSP visibility walk, MoveActor and APawn movement, particle emitters, and network framing, codec and replay are our own code modelled on Lineage2JS (notes in `.planning/reference/lineage2js/`); the owner-delegated defaults D1-D7 are in PROJECT.md. MAT-01, MAT-02, VIS-01, MOVE-01 and FX-01 are Phase 2, MOVE-02, NET-09 and NET-10 Phase 4, all provisional, owner review (OVERNIGHT-DECISIONS rows 81-88)
 - [DEC-OWN-12]: Under MAT-02, fog and lighting move from presentationConfiguration to L2 data (ZoneInfo, L2FogInfo, Env.int); presentationConfiguration then keeps only camera and debug values. Until MAT-02 lands, its saved Editor fog and light values are the interim state
+- [Phase 2]: 02-02: one seal driver, scripts/native_store/unit_ledger.py, over native_batch adapters (OVERNIGHT row 103)
+- [Phase 2]: 02-02: Playwright machine-window guard runs at config load, not globalSetup (row 104)
+- [Phase 2]: 02-02: gap rows use one schema and a closed reason list; lanes extend it in recipes/<lane>/gap-reasons.json (rows 108, 111)
+- [Phase 2]: 02-02: INT-01 and WORLD-03 stay Pending (row 112)
 
 ### Pending Todos
 
@@ -179,6 +184,6 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-08T13:38:32.772Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-11-08T15:55:04.257Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
