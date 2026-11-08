@@ -27,8 +27,6 @@ How the browser runtime builds scenes, reads converted assets and takes gameplay
 
 ## Open
 
-- Sandbox by-ID actions and the visible missing-asset marker (SAND-01, ARCH-03, plan 01-14). ARCH-04 stays pending until then.
-- Babylon Inspector behind `?inspect=1` is not in `src` yet (NOED-04, plan 01-16).
 - Native `interface.xdat` windows replace the stand-in HUD (UI-01 to UI-03).
 - A stage B server adapter implements the same interface and maps or rejects the sandbox `WorldCommand` intents (NET-04).
 

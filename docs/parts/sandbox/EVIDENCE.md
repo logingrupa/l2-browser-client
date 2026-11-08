@@ -5,7 +5,7 @@ Part `sandbox`, lane `data-ui`. What passes now, what is open, and where the pro
 ## Passes now
 
 - SAND-01: the sandbox sheet on `/` spawns an NPC, equips an item and opens a window by ID on `NativeSliceAdapter`, and an ID without a converted asset shows the missing-asset marker with no stand-in (browser check `tests/browser/sandbox.spec.ts`). Cast by ID and the command rules are covered by the unit tests `tests/unit/sandboxCommands.test.ts`, `tests/unit/sandboxCommandSheet.test.ts`, `tests/unit/sandboxMissingAsset.test.ts`.
-- NOED-01 and NOED-03: every browser check opens `/` (the code-built native sandbox, `?world=interlude` before DEC-OWN-11) or a test harness page; no spec uses the `world` query parameter, `authored=1` or `public/scene`. A missing `/l2/catalog.json` shows "Native asset store not staged" (`tests/browser/nativeStartup.spec.ts`). Full `pnpm test:e2e` on PROMINENCE-PC, 2026-11-08 11:03 Riga, port 5173 free: 36 tests, 31 passed, 5 skipped, 0 failed. The 5 skips need local artifacts this machine does not have: three `assetPackage.spec.ts` cases (converted native packages), `nativeTexture.spec.ts` (migration coverage) and one `nativeBsp.spec.ts` case (Actor940 contact oracle).
+- NOED-01 and NOED-03: every browser check opens `/` (the code-built native sandbox, `?world=interlude` before DEC-OWN-11) or a test harness page; no spec uses the `world` query parameter, `authored=1` or `public/scene`. A missing `/l2/catalog.json` shows "Native asset store not staged" (`tests/browser/nativeStartup.spec.ts`). Full `pnpm test:e2e` on DATABASE-PC after the native-world-slice merge (8ec3278), 2026-11-08 16:15 Riga, port 5173 free: 41 tests, 36 passed, 5 skipped, 0 failed, including the owner's orbit camera checks in `tests/browser/nativeCamera.spec.ts`. The 5 skips need local artifacts this machine does not have: three `assetPackage.spec.ts` cases (converted native packages), `nativeTexture.spec.ts` (migration coverage) and one `nativeBsp.spec.ts` case (Actor940 contact oracle).
 - NOED-04: `?inspect=1` lazy-loads Babylon Inspector over the sandbox (`tests/browser/inspector.spec.ts`, plan 01-16).
 - Private preview: the five preview scripts open `/` from `scripts/private-preview-targets.mjs`, pinned by `tests/unit/privatePreviewTargets.test.ts`. `preview:private` itself was not run.
 
@@ -38,7 +38,7 @@ Same machine, different route: the baseline route `?world=courtyard` is retired,
 - Dev cold start: the 41.9 s first-run completion gap on DATABASE-PC has no established cause (open observation, not a NOED-02 failure).
 - SAND-02: pinnable developer sheet with hover-cards (Phase 2).
 - UI-01: `interface.xdat` decoded to a layout tree, so native Interlude windows can replace the procedural HUD stand-in.
-- The 5 e2e cases that skip on PROMINENCE-PC run only where their artifacts exist.
+- The 5 e2e cases that skip on DATABASE-PC and PROMINENCE-PC run only where their artifacts exist.
 
 ## Evidence
 
