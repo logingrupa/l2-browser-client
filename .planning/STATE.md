@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 01
 current_phase_name: Foundations
 status: executing
-stopped_at: Completed 01-16-PLAN.md
-last_updated: "2026-11-08T08:22:22.851Z"
+stopped_at: Completed 01-17-PLAN.md
+last_updated: "2026-11-08T09:13:19.779Z"
 last_activity: 2026-11-08
 last_activity_desc: Phase 01 execution started
-state_head: 67e917557d7d189e8ac477fbc170e47fba9b09e2
+state_head: 5436dd70be4de90962f2b368ffdc3d86e0d0a272
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 17
-  completed_plans: 16
+  completed_plans: 17
   percent: 0
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 01 (Foundations) — EXECUTING
-Plan: 16 of 17
+Plan: 17 of 17
 Status: Ready to execute
 Last activity: 2026-11-08 — Phase 01 execution started
 
@@ -68,6 +68,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P15 | 5 min | 2 tasks | 13 files |
 | Phase 01 P14 | 16 min | 3 tasks | 23 files |
 | Phase 01 P16 | 14 min | 2 tasks | 8 files |
+| Phase 01 P17 | 50min | 4 tasks | 27 files |
 
 ## Accumulated Context
 
@@ -110,6 +111,8 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..10 and DEC-PORT-1..3.
 - [Phase 01]: navigation.origin is built from x, y, z; spreading a Babylon Vector3 dropped every sandbox spawn on the native section (OVERNIGHT-DECISIONS row 38)
 - [Phase 01]: Catalog lookup text has one owner (describeNativeCatalogLookup) and the Power Strike bundle id one name (powerStrikeEffectBundleId)
 - [Phase 01]: 01-16: Babylon Inspector 9.27.1 lazy-loaded behind ?inspect=1; peers pinned exactly after an automated legitimacy check (OVERNIGHT-DECISIONS row 39); Playwright check runs on the sandbox route
+- [Phase 01]: Plan 01-17 deletes browser cases that only exercised the Talking Island reference route and re-points the generic WebGPU, loading-panel and asset-package checks to ?world=interlude (OVERNIGHT-DECISIONS row 44)
+- [Phase 01]: The private preview scripts read the ?world=interlude route, catalog path and origin from scripts/private-preview-targets.mjs; the burst diagnosis HEADs the built catalog and section resources
 
 ### Pending Todos
 
@@ -146,6 +149,6 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..10 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-08T08:22:22.817Z
-Stopped at: Completed 01-16-PLAN.md
+Last session: 2026-11-08T09:13:19.745Z
+Stopped at: Completed 01-17-PLAN.md
 Resume file: None
