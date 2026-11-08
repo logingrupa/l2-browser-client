@@ -13,6 +13,8 @@ INTERFACE_XDAT_SHA256 = 'b5b37678674162f3a19380e86fa357a44e330f99607504c927c41e3
 ELBERA_PARSE_XDAT_PATH = 'tools/xdat/parse_xdat.py'
 ELBERA_PARSE_XDAT_SHA256 = 'aeb7ebed22d68fdca8f8a9828c32620c01be4ca03623c4a020dc0fcbf2ea5409'
 WINDOW_ANCHOR_PROOF = 'Elbera NWindow af6c3437 proof, unverified on IMPORTA 7c12fb6b'
+ELBERA_INTERFACE_JSON_PATH = 'assets/gamedata/interface.json'
+ELBERA_INTERFACE_XDAT_SHA256 = 'a7969a86d3b676d95cfd42cfd6cd0742c07d7941250dbb63a2ba6d937961c1f4'
 NATIVE_WINDOW_LAYOUT_KIND = 'native-window-layout'
 NATIVE_WINDOW_LAYOUT_SCHEMA_VERSION = 1
 INTERFACE_WINDOW_CENSUS_SCHEMA_VERSION = 1
@@ -112,7 +114,7 @@ def window_layout_manifest(window_id, root_node, record_of_node, data):
             'textureRefs': list(texture_references), 'anchorProof': WINDOW_ANCHOR_PROOF}
 
 
-def interface_window_census(layout, elbera_parser_sha256):
+def interface_window_census(layout, elbera_parser_sha256, elbera_cross_check):
     root_name_occurrences = Counter(root['name'] for root in layout.roots)
     return {
         'schemaVersion': INTERFACE_WINDOW_CENSUS_SCHEMA_VERSION, 'sourcePath': INTERFACE_XDAT_PATH, 'sourceSha256': layout.source_sha256,
@@ -125,7 +127,19 @@ def interface_window_census(layout, elbera_parser_sha256):
         'duplicateRootNames': [{'name': name, 'occurrences': occurrences}
                                for name, occurrences in root_name_occurrences.items() if occurrences > 1],
         'controlNames': sorted({record['name'] for record in layout.records}),
+        'elberaCrossCheck': elbera_cross_check,
     }
+
+
+def elbera_interface_cross_check(interface_json_bytes, source):
+    try:
+        document = json.loads(interface_json_bytes)
+    except ValueError as error:
+        raise InterfaceLayoutError(f'Elbera interface cross-check {source} is not JSON: {error}') from error
+    if not (isinstance(document, dict) and type(document.get('declaredWindows')) is int and isinstance(document.get('windows'), list)):
+        raise InterfaceLayoutError(f'Elbera interface cross-check {source} needs an integer declaredWindows and a windows list')
+    return {'source': source, 'sourceSha256': sha256_hex(interface_json_bytes), 'declaredWindows': document['declaredWindows'],
+            'rootWindows': len(document['windows']), 'note': f'different Interface.xdat ({ELBERA_INTERFACE_XDAT_SHA256}), cross-check only'}
 
 
 def interface_layout_json_bytes(value):

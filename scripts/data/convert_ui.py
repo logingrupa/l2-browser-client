@@ -10,14 +10,15 @@ import json
 import struct
 
 from hash_reference_client_tree import canonical_json_bytes
-from interface_layout_adapter import (ELBERA_PARSE_XDAT_PATH, ELBERA_PARSE_XDAT_SHA256, INTERFACE_XDAT_PATH, decode_interface_layout,
-                                      interface_layout_json_bytes, interface_window_census, window_identifiers, window_layout_manifest)
+from interface_layout_adapter import (ELBERA_INTERFACE_JSON_PATH, ELBERA_PARSE_XDAT_PATH, ELBERA_PARSE_XDAT_SHA256, INTERFACE_XDAT_PATH,
+                                      decode_interface_layout, elbera_interface_cross_check, interface_layout_json_bytes,
+                                      interface_window_census, window_identifiers, window_layout_manifest)
 from lane_unit_outcomes import seal_unit_decode_failure, seal_unit_manifest, write_pinned_manifest_to_store
 from native_store.catalog_writer import replace_file, sha256_hex, validate_catalog_record
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root, require_converter_output
 from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, UnitLedger, locked_input_records, require_batch_preflight,
                                       run_at_below_normal_priority)
-from pinned_elbera_module import ELBERA_ROOT, load_pinned_elbera_module
+from pinned_elbera_module import ELBERA_ROOT, load_pinned_elbera_module, resolve_elbera_path
 import reference_client_guard
 from reference_client_guard import require_reference_client
 
@@ -104,6 +105,13 @@ def convert_layout_step(unit_plan, data, parse_xdat_module, requested_window_ids
     return results, layout
 
 
+def write_interface_window_census(layout, elbera_root):
+    elbera_interface_json_path = resolve_elbera_path(ELBERA_INTERFACE_JSON_PATH, elbera_root)
+    cross_check = elbera_interface_cross_check(elbera_interface_json_path.read_bytes(), elbera_interface_json_path.as_posix())
+    census = interface_window_census(layout, ELBERA_PARSE_XDAT_SHA256, cross_check)
+    replace_file(INTERFACE_WINDOW_CENSUS_PATH, interface_layout_json_bytes(census))
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description='Convert the Interlude interface into the data-ui lane store, one sealed unit per root window.')
     parser.add_argument('--step', choices=(LAYOUT_STEP,), required=True)
@@ -132,7 +140,7 @@ def main(argv=None):
         for result in results:
             print(json.dumps(result, sort_keys=True), flush=True)
         if requested_window_ids is None:
-            replace_file(INTERFACE_WINDOW_CENSUS_PATH, interface_layout_json_bytes(interface_window_census(layout, ELBERA_PARSE_XDAT_SHA256)))
+            write_interface_window_census(layout, arguments.elbera_root)
             print(json.dumps({'census': INTERFACE_WINDOW_CENSUS_PATH.relative_to(REPOSITORY_ROOT).as_posix(),
                               'rootWindowCount': len(layout.roots)}, sort_keys=True), flush=True)
     except (OSError, ValueError) as error:

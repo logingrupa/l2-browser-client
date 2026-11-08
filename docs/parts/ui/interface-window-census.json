@@ -2232,6 +2232,13 @@
    "occurrences": 3
   }
  ],
+ "elberaCrossCheck": {
+  "declaredWindows": 165,
+  "note": "different Interface.xdat (a7969a86d3b676d95cfd42cfd6cd0742c07d7941250dbb63a2ba6d937961c1f4), cross-check only",
+  "rootWindows": 248,
+  "source": "E:/Lineage2Elbera/assets/gamedata/interface.json",
+  "sourceSha256": "8b58a939568407e9f003eb1069427240c9c01fa4616eb6a20149318920500c53"
+ },
  "elberaParser": {
   "commit": "12c9656",
   "path": "tools/xdat/parse_xdat.py",

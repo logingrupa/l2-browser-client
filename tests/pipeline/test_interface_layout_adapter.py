@@ -126,7 +126,7 @@ class SyntheticInterfaceLayoutTests(unittest.TestCase):
         self.assertEqual(status_manifest['sourceSha256'], hashlib.sha256(self.data).hexdigest())
 
     def test_census_lists_roots_in_source_order_with_duplicate_ids_and_sorted_control_names(self):
-        census = adapter.interface_window_census(self.layout, adapter.ELBERA_PARSE_XDAT_SHA256)
+        census = adapter.interface_window_census(self.layout, adapter.ELBERA_PARSE_XDAT_SHA256, None)
         self.assertEqual((census['declaredWindowCount'], census['scannedRecordCount'], census['rootWindowCount']), (4, 7, 5))
         self.assertEqual([row['windowId'] for row in census['windows']], ['SyntheticStatusWnd', 'SyntheticRepeatedWnd#1', 'SyntheticRepeatedTex',
                                                                          'SyntheticPlainWnd', 'SyntheticRepeatedWnd#2'])
@@ -137,10 +137,26 @@ class SyntheticInterfaceLayoutTests(unittest.TestCase):
         self.assertEqual(census['elberaParser'], {'path': adapter.ELBERA_PARSE_XDAT_PATH, 'sha256': adapter.ELBERA_PARSE_XDAT_SHA256,
                                                   'commit': '12c9656'})
 
+    def test_elbera_cross_check_is_recorded_beside_the_decode_and_never_feeds_its_counts(self):
+        elbera_document = json.dumps({'declaredWindows': 999, 'windows': [{}] * 37, 'controlRefs': []}).encode()
+        cross_check = adapter.elbera_interface_cross_check(elbera_document, 'synthetic/interface.json')
+        census = adapter.interface_window_census(self.layout, adapter.ELBERA_PARSE_XDAT_SHA256, cross_check)
+        self.assertEqual((census['declaredWindowCount'], census['scannedRecordCount'], census['rootWindowCount']), (4, 7, 5))
+        self.assertEqual(census['elberaCrossCheck'], {
+            'source': 'synthetic/interface.json', 'sourceSha256': hashlib.sha256(elbera_document).hexdigest(), 'declaredWindows': 999,
+            'rootWindows': 37, 'note': f'different Interface.xdat ({adapter.ELBERA_INTERFACE_XDAT_SHA256}), cross-check only'})
+
     def test_committed_synthetic_layout_fixture_regenerates_byte_identically(self):
         committed = SYNTHETIC_WINDOW_LAYOUT_PATH.read_bytes().replace(b'\r\n', b'\n')
         self.assertEqual(synthetic_window_layout_bytes(self.parse_xdat_module), committed)
         self.assertEqual(synthetic_window_layout_bytes(pinned_parse_xdat_module()), committed)
+
+
+class ElberaCrossCheckRefusalTests(unittest.TestCase):
+    def test_a_cross_check_without_declared_windows_and_a_windows_list_is_refused(self):
+        for payload in (b'not json', b'[]', b'{"declaredWindows": "165", "windows": []}', b'{"declaredWindows": 165}'):
+            with self.subTest(payload=payload), self.assertRaises(adapter.InterfaceLayoutError):
+                adapter.elbera_interface_cross_check(payload, 'synthetic/interface.json')
 
 
 class CommittedInterfaceWindowCensusTests(unittest.TestCase):
@@ -168,6 +184,13 @@ class CommittedInterfaceWindowCensusTests(unittest.TestCase):
         self.assertEqual(names, sorted(set(names)))
         self.assertLessEqual({row['name'] for row in self.census['windows']}, set(names))
         self.assertLessEqual(len(names), self.census['scannedRecordCount'])
+
+    def test_elbera_cross_check_names_its_counts_apart_from_the_decoded_counts(self):
+        cross_check = self.census['elberaCrossCheck']
+        self.assertEqual(set(cross_check), {'source', 'sourceSha256', 'declaredWindows', 'rootWindows', 'note'})
+        self.assertTrue(cross_check['source'].endswith('/' + adapter.ELBERA_INTERFACE_JSON_PATH))
+        self.assertIn(adapter.ELBERA_INTERFACE_XDAT_SHA256, cross_check['note'])
+        self.assertNotEqual(adapter.ELBERA_INTERFACE_XDAT_SHA256, self.census['sourceSha256'])
 
     @unittest.skipUnless(LANE_STORE_CATALOG_PATH.is_file(), 'data-ui lane store has no catalog')
     def test_every_lane_store_window_record_is_a_census_window(self):
