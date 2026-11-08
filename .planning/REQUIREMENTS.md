@@ -18,7 +18,7 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 
 - [x] **ARCH-01**: The client never computes gameplay outcomes; it displays what a server sends. Tooltips read server-side stats, not the `.dat` display copies in `weapongrp`, `armorgrp`, `skillgrp`.
 - [x] **ARCH-02**: `GameWorldAdapter` is the only way gameplay state enters the client; its five methods stay frozen (a contract test fails on change); adapters emit typed records with no Babylon types.
-- [ ] **ARCH-03**: The native route reports missing or failed resources visibly and never presents procedural stand-ins; the startup readiness barrier is kept. Inherited by every later phase.
+- [x] **ARCH-03**: The native route reports missing or failed resources visibly and never presents procedural stand-ins; the startup readiness barrier is kept. Inherited by every later phase.
 - [ ] **ARCH-04**: Client-owned behaviour stays in presentation: animation, camera, UI, choosing which footstep or hit sound plays, effect timing, smoothing movement between server updates. Asset resolution and audio playback stay outside the adapter.
 
 ### Editor off the build and runtime path (Phase 1, integration thread, before Phase 2 lanes start; DEC-OWN-8)
@@ -31,7 +31,7 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 
 ### Sandbox
 
-- [ ] **SAND-01** (Phase 1): Offline sandbox shell with no server: spawn NPC by ID, equip item by ID, cast skill by ID, open window by ID, on `MockWorldAdapter` / `NativeSliceAdapter`. An ID without a converted asset shows an explicit missing-asset diagnostic.
+- [x] **SAND-01** (Phase 1): Offline sandbox shell with no server: spawn NPC by ID, equip item by ID, cast skill by ID, open window by ID, on `MockWorldAdapter` / `NativeSliceAdapter`. An ID without a converted asset shows an explicit missing-asset diagnostic.
 - [ ] **SAND-02** (Phase 2): Sandbox controls are a pinnable developer sheet with hover-cards showing variables (tile picker and walk, spawn, equip, cast, open window, audio mute/volume), not a cramped toggle list.
 
 ### Data lane L3 (Phase 2)
@@ -166,9 +166,9 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 | FOUND-04 | Phase 1 | Complete |
 | ARCH-01 | Phase 1 | Complete |
 | ARCH-02 | Phase 1 | Complete |
-| ARCH-03 | Phase 1 | In progress (later plans carry it) |
+| ARCH-03 | Phase 1 | Complete |
 | ARCH-04 | Phase 1 | Pending |
-| SAND-01 | Phase 1 | Pending |
+| SAND-01 | Phase 1 | Complete |
 | NOED-01 | Phase 1 | In progress (later plans carry it) |
 | NOED-02 | Phase 1 | Pending |
 | NOED-03 | Phase 1 | Pending |

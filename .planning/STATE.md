@@ -1,18 +1,18 @@
 ---
 gsd_state_version: "1.0"
-current_phase: 1
+current_phase: 01
 current_phase_name: Foundations
 status: executing
-stopped_at: Completed 01-15-PLAN.md
-last_updated: "2026-11-08T07:37:52.376Z"
+stopped_at: Completed 01-14-PLAN.md
+last_updated: "2026-11-08T08:06:35.834Z"
 last_activity: 2026-11-08
-last_activity_desc: Phase 1 execution started
-state_head: 8a1df8b394c6b09c398cb3ec1d959f5f035c461d
+last_activity_desc: Phase 01 execution started
+state_head: 7d0177b75c4cc72b6242adafe251371e4b2bd34d
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 17
-  completed_plans: 14
+  completed_plans: 15
   percent: 0
 ---
 
@@ -23,14 +23,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-11-08)
 
 **Core value:** A fully converted Lineage II Interlude client that runs in the browser and matches L2.exe side by side, driven only by what a server sends.
-**Current focus:** Phase 1 — Foundations
+**Current focus:** Phase 01 — Foundations
 
 ## Current Position
 
-Phase: 1 (Foundations) — EXECUTING
+Phase: 01 (Foundations) — EXECUTING
 Plan: 15 of 17
 Status: Ready to execute
-Last activity: 2026-11-08 — Phase 1 execution started
+Last activity: 2026-11-08 — Phase 01 execution started
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -66,6 +66,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P09 | 8min | 2 tasks | 28 files |
 | Phase 01 P11 | 6 min | 2 tasks | 24 files |
 | Phase 01 P15 | 5 min | 2 tasks | 13 files |
+| Phase 01 P14 | 16 min | 3 tasks | 23 files |
 
 ## Accumulated Context
 
@@ -104,6 +105,9 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..10 and DEC-PORT-1..3.
 - [Phase 01]: 01-09: tests/unit Editor scan covers Editor packages and src/scripts; splitting the authored cases of nativeSliceRuntime.test.ts is deferred (OVERNIGHT-DECISIONS row 34)
 - [Phase 01]: 01-11: createCharacterVisual is the procedural character only; factories share the CharacterVisualFactory type
 - [Phase 01]: 01-15: ARCH-04 stays pending until 01-14 lands its ARCH-04 edge truth; the src/world import boundary is now tested
+- [Phase 01]: Sandbox NPC presentation resolves through the catalog index; an ID without a converted, loaded model gets a meshless label-only marker (npc:<id> not in catalog), never a stand-in body
+- [Phase 01]: navigation.origin is built from x, y, z; spreading a Babylon Vector3 dropped every sandbox spawn on the native section (OVERNIGHT-DECISIONS row 38)
+- [Phase 01]: Catalog lookup text has one owner (describeNativeCatalogLookup) and the Power Strike bundle id one name (powerStrikeEffectBundleId)
 
 ### Pending Todos
 
@@ -140,6 +144,6 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..10 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-08T07:37:52.304Z
-Stopped at: Completed 01-15-PLAN.md
+Last session: 2026-11-08T08:06:35.800Z
+Stopped at: Completed 01-14-PLAN.md
 Resume file: None
