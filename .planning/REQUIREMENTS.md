@@ -16,8 +16,8 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 
 ### Architecture invariants (Phase 1)
 
-- [ ] **ARCH-01**: The client never computes gameplay outcomes; it displays what a server sends. Tooltips read server-side stats, not the `.dat` display copies in `weapongrp`, `armorgrp`, `skillgrp`.
-- [ ] **ARCH-02**: `GameWorldAdapter` is the only way gameplay state enters the client; its five methods stay frozen (a contract test fails on change); adapters emit typed records with no Babylon types.
+- [x] **ARCH-01**: The client never computes gameplay outcomes; it displays what a server sends. Tooltips read server-side stats, not the `.dat` display copies in `weapongrp`, `armorgrp`, `skillgrp`.
+- [x] **ARCH-02**: `GameWorldAdapter` is the only way gameplay state enters the client; its five methods stay frozen (a contract test fails on change); adapters emit typed records with no Babylon types.
 - [ ] **ARCH-03**: The native route reports missing or failed resources visibly and never presents procedural stand-ins; the startup readiness barrier is kept. Inherited by every later phase.
 - [ ] **ARCH-04**: Client-owned behaviour stays in presentation: animation, camera, UI, choosing which footstep or hit sound plays, effect timing, smoothing movement between server updates. Asset resolution and audio playback stay outside the adapter.
 
@@ -164,8 +164,8 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 | FOUND-02 | Phase 1 | Complete |
 | FOUND-03 | Phase 1 | Complete |
 | FOUND-04 | Phase 1 | Complete |
-| ARCH-01 | Phase 1 | Pending |
-| ARCH-02 | Phase 1 | Pending |
+| ARCH-01 | Phase 1 | Complete |
+| ARCH-02 | Phase 1 | Complete |
 | ARCH-03 | Phase 1 | In progress (later plans carry it) |
 | ARCH-04 | Phase 1 | Pending |
 | SAND-01 | Phase 1 | Pending |
