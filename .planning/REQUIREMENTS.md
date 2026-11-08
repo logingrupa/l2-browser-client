@@ -3,7 +3,7 @@
 **Defined:** 2026-11-08
 **Core Value:** A fully converted Lineage II Interlude client that runs in the browser and matches L2.exe side by side, driven only by what a server sends.
 
-Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md`. Locked owner decisions DEC-OWN-1..8 and DEC-PORT-1..3 override any conflicting variant. Stage A "passes" means the DEC-OWN-3 bar (converted, loads in the sandbox, side-by-side screenshot / listen check against L2.exe on IMPORTA-PC). Fixed thresholds apply only to POL and PERF requirements.
+Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md` at commit `9c64e61` (removed from the tree on 2026-11-08). Locked owner decisions DEC-OWN-1..8 and DEC-PORT-1..3 override any conflicting variant. Stage A "passes" means the DEC-OWN-3 bar (converted, loads in the sandbox, side-by-side screenshot / listen check against L2.exe on IMPORTA-PC). Fixed thresholds apply only to POL and PERF requirements.
 
 ## v1 Requirements
 

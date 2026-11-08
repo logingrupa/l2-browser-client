@@ -28,6 +28,15 @@ Browser client for Lineage II Interlude on Babylon.js WebGPU. These rules are sp
 - The Babylon.js Editor is not in the build path (DEC-OWN-8, NOED-01 to NOED-05). Do not add Editor steps to `pnpm dev` or `pnpm build`.
 - `stage-webgpu-compilers` stays in dev and build, because the runtime loads those compilers.
 
+### Test process cleanup
+- After every plan, verification and phase, stop what your runs started: dev servers, Vite preview, Playwright and other headless browsers, e2e runners and Vitest workers.
+- Stop them by the PID your command started, or by a command line that holds your own worktree path or dev port. Never by image name (`node.exe`, `chrome.exe`, `msedge.exe`, `chrome-headless-shell.exe`): other lanes and the owner run the same executables.
+- Before a done claim, check that nothing you started still runs: no listener on your dev port, and no browser or node process with your worktree path in its command line.
+
+### Machine schedule
+- DATABASE-PC relays the church livestream Sun 10:00-14:00 and Thu 19:00-21:30 Riga time. In those windows run no builds, dev servers, tests, installs, hashing or conversions.
+- Run heavy commands at BelowNormal priority.
+
 ### Docs
 - One evidence doc per part, `docs/parts/<part>/EVIDENCE.md`, under about 30 KB. It states what passes now, what is open, and where the evidence is.
 - Status goes in `STATUS.md` (one line per part, rewritten in place). Decisions go in `DECISIONS.md` (append-only, one dated line each).

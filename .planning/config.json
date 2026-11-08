@@ -1,0 +1,24 @@
+{
+  "mode": "yolo",
+  "model_profile": "inherit",
+  "commit_docs": true,
+  "parallelization": true,
+  "git": {
+    "branching_strategy": "none"
+  },
+  "workflow": {
+    "research": true,
+    "plan_check": true,
+    "verifier": true,
+    "code_review": true,
+    "nyquist_validation": true,
+    "text_mode": true,
+    "use_worktrees": false,
+    "subagent_timeout": 900000,
+    "test_command": "pnpm typecheck && pnpm test:unit",
+    "build_command": "pnpm build",
+    "ai_integration_phase": false,
+    "skip_discuss": false,
+    "discuss_mode": "discuss"
+  }
+}

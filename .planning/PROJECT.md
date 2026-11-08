@@ -41,7 +41,7 @@ Stage A breadth-first conversion of the whole client (Phases 1 to 3), stage B se
 
 - Reference: IMPORTA-PC `C:/Lineage2-client` (modified third-party Interlude client, not an untouched official build; Engine.dll SHA-256 `4dd2f63c606d...`). DATABASE-PC `E:/Lineage2-client` is a conversion source only after the full-tree hash lock (DEC-OWN-2). Native client facts on IMPORTA-PC: ssh `fleet-importa-pc`, T3 thread 28fd5fa6 (env 20b54a96).
 - Elbera (`C:\laragon\www\Lineage2Elbera` on IMPORTA-PC, `E:\Lineage2Elbera` on DATABASE-PC, commit `12c9656`) is a source of reusable decoders and conversion code, MIT.
-- Planning intel: `.planning/intel/SYNTHESIS.md` (entry), conflict resolutions in `.planning/INGEST-CONFLICTS.md`. Primary scope doc: `docs/PORT_SCOPE.md`.
+- Primary scope doc: `docs/PORT_SCOPE.md`. The planning ingest output (`.planning/intel/`, `.planning/INGEST-CONFLICTS.md`) was removed on 2026-11-08 because GSD reads it only during `ingest-docs`; it stays in git history at commit `9c64e61`. Research folders are rated in `docs/research/INDEX.md`.
 - Resume point: `.planning/STATE.md` for status and `.planning/ROADMAP.md` for order. Continuation and handoff prompts are not kept in `.planning/`; git history has them. Keep status files small (PORT_SCOPE section 10 warns about 271 KB progress files).
 
 ## Constraints
