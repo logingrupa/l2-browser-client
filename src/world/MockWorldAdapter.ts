@@ -86,10 +86,7 @@ export class MockWorldAdapter implements GameWorldAdapter {
         }
         break;
       case "spawn":
-        this.spawnEntity(false);
-        break;
-      case "load-missing-model":
-        this.spawnEntity(true);
+        this.spawnEntity();
         break;
       case "spawn-npc":
         this.spawnNpc(command.npcId);
@@ -184,20 +181,19 @@ export class MockWorldAdapter implements GameWorldAdapter {
     this.emit({ type: "spawn", entity });
   }
 
-  private spawnEntity(shouldUseMissingModel: boolean): void {
+  private spawnEntity(): void {
     this.spawnedEntityCount += 1;
     const spawnPosition = this.spawnPlacement(this.spawnedEntityCount);
     if (!spawnPosition) return;
     const entity: WorldEntity = copyEntity({
       id: `spawned-${this.spawnedEntityCount}`,
       kind: "monster",
-      displayName: shouldUseMissingModel ? "Fallback Sentinel" : `Sentinel ${this.spawnedEntityCount}`,
+      displayName: `Sentinel ${this.spawnedEntityCount}`,
       position: spawnPosition,
       orientationRadians: 0,
       health: 100,
       maximumHealth: 100,
       animation: "idle",
-      ...(shouldUseMissingModel ? { modelUrl: "/assets/missing-character.glb" } : {}),
     });
     this.entities.set(entity.id, entity);
     this.emit({ type: "spawn", entity });

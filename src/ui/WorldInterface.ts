@@ -11,33 +11,20 @@ const swordIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 17 11
 const speakerIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6L8 10Z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/></svg>';
 
 export interface WorldInterfaceOptions {
-  /** Developer sheet persistence; undefined uses localStorage, null disables. */
   storage?: DevSheetStorage | null;
 }
 
 export interface StatusOptions {
-  /** Transient statuses (action demonstrations, hints) clear after
-   * `transientStatusSeconds` or as soon as the local player starts moving. */
   transient?: boolean;
 }
 
-/** Audio states that need a user gesture before sound can play. */
 const soundGestureStates = new Set(["locked", "suspended", "interrupted", "unlocking"]);
 export const transientStatusSeconds = 4;
 
-/** HUD plus the developer sheet (`sheet`, see devSheet/DevSheet.ts). Legacy
- * hosts stay valid: the General › Session group body is `.demo-controls-body`
- * and its first child is `.secondary-actions`, so runtime code that appends
- * into either renders inside the sheet unchanged.
- *
- * Runtime hooks: `watchSound(read, unlock)` shows a "Tap anywhere for sound"
- * chip while the audio state needs a gesture; `bindGait(read)` marks the
- * armed Run/Walk action (aria-pressed); `showStatus(text, { transient })`. */
 export class WorldInterface {
   readonly root = document.createElement("section");
   readonly labels = document.createElement("div");
   readonly sheet: DevSheet;
-  /** General › Session: pause/despawn/missing-model and legacy appends. */
   readonly generalGroup: DevGroup;
   private readonly events = new AbortController();
   private isPaused = false;
@@ -93,7 +80,6 @@ export class WorldInterface {
     this.status = this.element('[data-testid="world-status"]');
     this.soundCue = this.element('[data-testid="hud-sound-cue"]') as HTMLButtonElement;
     this.sheet = new DevSheet({
-      // Only the canvas is a world tap; label taps (targeting) keep it open.
       host: this.root, canvas, worldTargets: [canvas],
       toggle: this.element('[data-testid="dev-sheet-toggle"]') as HTMLButtonElement,
       ...(options.storage !== undefined ? { storage: options.storage } : {}),
@@ -105,7 +91,7 @@ export class WorldInterface {
       hint: "Attack, Run and Idle are animation demonstrations. Pause stops the synthetic simulation; camera controls and manual commands keep working.",
     });
     this.generalGroup.element.classList.add("demo-controls-body");
-    this.generalGroup.element.innerHTML = `<div class="secondary-actions"><button type="button" data-action="pause">Pause</button><button type="button" data-action="despawn" disabled>Despawn target</button><button type="button" data-action="missing-model">Missing model</button></div>
+    this.generalGroup.element.innerHTML = `<div class="secondary-actions"><button type="button" data-action="pause">Pause</button><button type="button" data-action="despawn" disabled>Despawn target</button></div>
       <p class="dev-hud-help">Tap to target or move · drag to orbit · pinch or scroll to zoom.</p>`;
     this.sheet.describe(this.element(".dev-hud-help"), {
       title: "World controls",
@@ -113,10 +99,7 @@ export class WorldInterface {
     });
     this.updateBounds();
     this.root.addEventListener("click", (event) => this.handleClick(event), { signal: this.events.signal });
-    this.soundCue.addEventListener("click", () => { try { void this.soundUnlock?.(); } catch { /* the gesture listener retries */ } this.renderSound(); }, { signal: this.events.signal });
-    // Re-measure the sheet's top/bottom HUD reserves once the HUD has its
-    // final size (web fonts, wrapped titles, status/cue changes), also after
-    // a reload restores an open sheet.
+    this.soundCue.addEventListener("click", () => { try { void this.soundUnlock?.(); } catch { this.renderSound(); return; } this.renderSound(); }, { signal: this.events.signal });
     this.resizeObserver = typeof ResizeObserver === "function" ? new ResizeObserver(() => this.sheet.layout()) : null;
     for (const selector of [".world-header", ".target-panel", ".world-bottom"]) {
       const element = this.root.querySelector(selector);
@@ -132,7 +115,6 @@ export class WorldInterface {
     return element;
   }
 
-  /** Bottom of the top HUD (header and target panel) from the stage top. */
   private topReserve(): number {
     const stageTop = this.canvas.parentElement?.getBoundingClientRect().top ?? 0;
     let bottom = 0;
@@ -143,7 +125,6 @@ export class WorldInterface {
     return bottom > 0 ? Math.ceil(bottom - stageTop) : 0;
   }
 
-  /** The bottom HUD (cue, status, action bar) plus the HUD's bottom padding. */
   private bottomReserve(): number {
     const rect = this.root.querySelector(".world-bottom")?.getBoundingClientRect();
     return rect && rect.height > 0 ? Math.ceil(rect.height + 18) : 0;
@@ -168,20 +149,13 @@ export class WorldInterface {
         this.isPaused = !this.isPaused;
         button.textContent = this.isPaused ? "Resume" : "Pause";
         command = { type: "set-paused", isPaused: this.isPaused }; break;
-      case "missing-model": command = { type: "load-missing-model" }; break;
-      // Runtime-owned actions (e.g. the native Walk) dispatch themselves.
       default: this.renderGait(); return;
     }
     this.adapter.dispatch(command);
     this.renderGait();
-    if (action !== "pause") {
-      if (action === "missing-model") this.showStatus("Loading a missing model to test the fallback…");
-      else this.showStatus(`${button.textContent?.trim()} demonstration`, { transient: true });
-    }
+    if (action !== "pause") this.showStatus(`${button.textContent?.trim()} demonstration`, { transient: true });
   }
 
-  /** Persistent by default (failures, readiness); `transient` for action
-   * demonstrations and hints that go stale once the player moves. */
   showStatus(message: string, options: StatusOptions = {}): void {
     this.status.textContent = message;
     this.statusTransient = options.transient === true && message.length > 0;
@@ -191,17 +165,12 @@ export class WorldInterface {
 
   clearStatus(): void { this.showStatus(""); }
 
-  /** Shows "Tap anywhere for sound" while `read()` reports that audio needs a
-   * gesture: `true` (e.g. WorldAudioMixer.locked) or a state string
-   * (locked/suspended/interrupted/unlocking). `unlock` runs on a chip tap;
-   * any trusted tap anywhere also unlocks via the mixer's gesture hook. */
   watchSound(read: () => boolean | string | null | undefined, unlock?: () => unknown): () => void {
     this.soundState = read; this.soundUnlock = unlock ?? null;
     this.renderSound();
     return () => { if (this.soundState !== read) return; this.soundState = null; this.soundUnlock = null; this.renderSound(); };
   }
 
-  /** Marks the armed gait on the Run/Walk actions (aria-pressed). */
   bindGait(read: () => string | null | undefined): () => void {
     this.gait = read;
     this.renderGait();
@@ -256,7 +225,6 @@ export class WorldInterface {
       Object.assign(overlay.style, { inset: "auto", left: `${bounds.x}px`, top: `${bounds.y + inset}px`, width: `${bounds.width}px`, height: `${bounds.height - inset}px` });
     }
     this.labels.style.clipPath = topInset ? `inset(${topInset}px 0 0)` : "";
-    // Undefined only while the sheet constructor docks a restored sticky state.
     (this.sheet as DevSheet | undefined)?.layout();
   }
 

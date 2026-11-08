@@ -32,10 +32,9 @@ describe("WorldInterface developer sheet compatibility", () => {
     expect(sheet.contains(body)).toBe(true);
     expect(body).toBe(ui.generalGroup.element);
     expect(ui.generalGroup.section.id).toBe("general");
-    // Runtime code takes the first .secondary-actions for its buttons.
     const actions = root.querySelector(".secondary-actions")!;
     expect(actions.parentElement).toBe(body);
-    expect(actions.children.map(button => button.dataset.action)).toEqual(["pause", "despawn", "missing-model"]);
+    expect(actions.children.map(button => button.dataset.action)).toEqual(["pause", "despawn"]);
     expect(root.querySelector('[data-action="despawn"]')!.disabled).toBe(true);
     const appended = dom.document.createElement("p"); appended.id = "native-flame-status";
     root.querySelector(".demo-controls-body")!.append(appended);
@@ -47,7 +46,7 @@ describe("WorldInterface developer sheet compatibility", () => {
 
   it("keeps HUD actions, diagnostics and test ids in the DOM", () => {
     const { ui, root } = create();
-    for (const action of ["attack", "run", "idle", "teleport", "spawn", "pause", "despawn", "missing-model"]) expect(root.querySelector(`[data-action="${action}"]`), action).not.toBeNull();
+    for (const action of ["attack", "run", "idle", "teleport", "spawn", "pause", "despawn"]) expect(root.querySelector(`[data-action="${action}"]`), action).not.toBeNull();
     for (const testId of ["fps", "entity-count", "coordinates", "world-status", "player-name", "player-health", "target-name", "target-health", "dev-sheet-toggle"]) {
       expect(root.querySelector(`[data-testid="${testId}"]`), testId).not.toBeNull();
     }
@@ -102,7 +101,6 @@ describe("WorldInterface developer sheet compatibility", () => {
     expect(cue.hidden).toBe(false);
     stopSound();
     expect(cue.hidden).toBe(true);
-    // WorldAudioMixer.locked (boolean) works the same way.
     let locked = true;
     const stopLocked = ui.watchSound(() => locked);
     expect(cue.hidden).toBe(false);
@@ -153,7 +151,6 @@ describe("WorldInterface developer sheet compatibility", () => {
     root.querySelector(".target-panel")!.rect = { left: 100, top: 86, width: 190, height: 34 };
     root.querySelector(".world-bottom")!.rect = { left: 12, top: 700, width: 366, height: 62 };
     ui.sheet.open(); ui.sheet.setSnap("full");
-    // 844 - 120 (target panel bottom) - (62 + 18) - 8.
     expect(ui.sheet.inspect()).toMatchObject({ mode: "bottom", snap: "full", docked: true, dock: "height", height: 636 });
     expect(canvas.style.height).toBe("calc(100% - 636px)");
     ui.sheet.setSnap("half");

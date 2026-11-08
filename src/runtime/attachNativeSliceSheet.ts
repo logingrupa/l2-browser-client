@@ -242,7 +242,7 @@ function attachAssetInspector(section: DevSection, context: NativeSliceSheetCont
 
 export function attachNativeSliceSheet(context: NativeSliceSheetContext): NativeSliceSheet {
   const { ui, adapter, registry, playerProfile, locomotionClips, world: { section, flames } } = context;
-  for (const name of ["spawn", "teleport", "missing-model"]) ui.root.querySelector(`[data-action="${name}"]`)?.remove();
+  for (const name of ["spawn", "teleport"]) ui.root.querySelector(`[data-action="${name}"]`)?.remove();
   const label = ui.root.querySelector(".world-location > span");
   const pendingEffects = section?.manifest.unsupportedRuntimeMaterials?.reduce((total, gap) => total + gap.placementIds.length, 0) ?? 0;
   if (label) label.textContent = section ? `Debug match unverified${pendingEffects ? flames.presentation ? " · flame preview" : ` · ${pendingEffects} effects pending` : ""}` : "Native rigs · synthetic behavior";

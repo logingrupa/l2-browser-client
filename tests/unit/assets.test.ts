@@ -33,20 +33,6 @@ describe("character fallback and cleanup", () => {
     expect(scene.materials).toHaveLength(0);
   });
 
-  it("keeps a fully animated fallback after a missing model response", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("Missing", { status: 404 })));
-    const status = vi.fn<(message: string) => void>();
-    const visual = createCharacterVisual(scene, { ...entity, modelUrl: "/missing.glb" }, status);
-    await vi.waitFor(() => expect(status).toHaveBeenCalledOnce());
-    expect(status).toHaveBeenCalledWith(expect.stringContaining("HTTP 404"));
-    expect(visual.isFallback).toBe(true);
-    visual.animation.setState("attack");
-    visual.animation.update(0.3);
-    expect(visual.animation.state).toBe("attack");
-    expect(visual.root.getChildMeshes().length).toBeGreaterThan(15);
-    visual.dispose();
-    expect(scene.meshes).toHaveLength(0);
-  });
 
   it("retains a procedural character for unknown or inherited appearance identifiers", () => {
     const fetchModel = vi.fn();
@@ -60,30 +46,18 @@ describe("character fallback and cleanup", () => {
     expect(scene.meshes).toHaveLength(0);
   });
 
-  it("handles a dev server HTML response as a recoverable model failure", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("<!doctype html><title>App</title>", { status: 200 })));
-    const status = vi.fn<(message: string) => void>();
-    const visual = createCharacterVisual(scene, { ...entity, modelUrl: "/missing.glb" }, status);
-    await vi.waitFor(() => expect(status).toHaveBeenCalledOnce());
-    expect(status).toHaveBeenCalledWith(expect.stringContaining("not a valid glTF"));
-    expect(visual.isFallback).toBe(true);
-  });
 
-  it("aborts an outstanding fetch when the entity despawns without reporting a load error", async () => {
-    let requestSignal: AbortSignal | undefined;
-    vi.stubGlobal("fetch", (_input: RequestInfo | URL, options?: RequestInit): Promise<Response> => {
-      requestSignal = options?.signal ?? undefined;
-      return new Promise((_resolve, reject) => {
-        requestSignal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
-      });
-    });
-    const status = vi.fn<(message: string) => void>();
-    const visual = createCharacterVisual(scene, { ...entity, modelUrl: "/pending.glb" }, status);
-    visual.dispose();
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(requestSignal?.aborted).toBe(true);
-    expect(status).not.toHaveBeenCalled();
+
+  it("never resolves a semantic Human appearance to a model request", () => {
+    const fetchModel = vi.fn();
+    vi.stubGlobal("fetch", fetchModel);
+    for (const appearanceId of ["MFighter", "FFighter", "MMagic", "FMagic"]) {
+      const visual = createCharacterVisual(scene, { ...entity, appearanceId });
+      expect(visual.isFallback).toBe(true);
+      expect(visual.modelId).toBeNull();
+      visual.dispose();
+    }
+    expect(fetchModel).not.toHaveBeenCalled();
     expect(scene.meshes).toHaveLength(0);
   });
 

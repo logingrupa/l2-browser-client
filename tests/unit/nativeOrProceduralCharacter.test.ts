@@ -3,7 +3,7 @@ import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
 import { Scene } from "@babylonjs/core/scene";
 import { GetEnvironmentBRDFTexture } from "@babylonjs/core/Misc/brdfTextureTools";
 import { createCharacterVisual, type CharacterVisual } from "../../src/assets/CharacterVisual";
-import { nativeAppearanceProfileId, nativeAppearanceProfiles, resolveCharacterProfile } from "../../src/assets/characterProfiles";
+import { nativeAppearanceProfileId, nativeAppearanceProfiles } from "../../src/assets/characterProfiles";
 import { nativeOrProceduralCharacterFactory, nativePlayerCharacterProfile, type NativeAppearanceSet } from "../../src/assets/native/nativeOrProceduralCharacter";
 import { defaultNativePlayerProfile } from "../../src/assets/native/loadNativePlayerProfiles";
 import { createInitialWorld } from "../../src/world/createInitialWorld";
@@ -30,8 +30,6 @@ describe("default route Human characters use native packages, never lineagen GLB
       MMagic: "human-male-mystic", FMagic: "human-female-mystic" });
     expect(nativeAppearanceProfileId(elyra)).toBe("human-female-fighter");
     expect(nativeAppearanceProfileId(golem)).toBeUndefined();
-    expect(nativeAppearanceProfileId({ ...elyra, modelUrl: "/fixture.glb" })).toBeUndefined();
-    expect(resolveCharacterProfile(elyra)).toBeUndefined();
   });
 
   it("shows the native package at its own scale with the latest requested state and no procedural stand-in", async () => {

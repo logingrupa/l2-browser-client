@@ -24,7 +24,6 @@ export interface WorldEntity {
   readonly locomotion?: LocomotionMode;
   readonly appearanceId?: string;
   readonly animationSequence?: number;
-  readonly modelUrl?: string;
   readonly npcId?: number;
   readonly equipment?: Readonly<Partial<Record<EquipmentSlot, number>>>;
 }
@@ -55,7 +54,6 @@ export type WorldCommand =
   | { readonly type: "spawn-npc"; readonly npcId: number }
   | { readonly type: "despawn"; readonly entityId: string }
   | { readonly type: "set-paused"; readonly isPaused: boolean }
-  | { readonly type: "load-missing-model" }
   | { readonly type: "equip-item"; readonly slot: EquipmentSlot; readonly itemId: number | null; readonly entityId?: string }
   | { readonly type: "cast-skill"; readonly skillId: number; readonly level: number; readonly targetId?: string }
   | { readonly type: "set-health"; readonly entityId: string; readonly health: number };

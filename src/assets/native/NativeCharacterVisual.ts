@@ -4,7 +4,7 @@ import type { Scene } from "@babylonjs/core/scene";
 import type { WorldEntity, AnimationState, LocomotionMode, SourceActionPreview } from "../../world/worldTypes";
 import { CharacterAnimator, type CharacterAnimationDriver, type CharacterPlayback } from "../../animation/CharacterAnimator";
 import type { CharacterVisual } from "../CharacterVisual";
-import type { CharacterBounds } from "../prepareCharacterModel";
+import type { CharacterBounds } from "../characterBounds";
 import type { AssetPackage } from "../package/readAssetPackage";
 import { NativeActor, type NativeBoneAnchor } from "./NativeActor";
 import type { NativeActionCuePlayer, NativeActionCuePreview } from "../../audio/nativeActionCuePreview";

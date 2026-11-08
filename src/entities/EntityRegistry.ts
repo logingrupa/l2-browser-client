@@ -8,7 +8,7 @@ import type { Scene } from "@babylonjs/core/scene";
 import type { GameWorldAdapter } from "../world/GameWorldAdapter";
 import type { WorldEntity, WorldEvent, WorldPosition } from "../world/worldTypes";
 import { PositionInterpolator } from "../interpolation/PositionInterpolator";
-import { createCharacterVisual, type CharacterVisual } from "../assets/CharacterVisual";
+import { createCharacterVisual, type CharacterVisual, type CharacterVisualFactory } from "../assets/CharacterVisual";
 import { EntityLabel } from "../ui/EntityLabel";
 import { projectPosition } from "../scene/projectPosition";
 
@@ -22,7 +22,7 @@ interface EntityPresentation {
 export interface EntityPresentationOptions {
   readonly scale?: number | ((entity: WorldEntity) => number);
   readonly ground?: (position: WorldPosition) => WorldPosition | null;
-  readonly createVisual?: typeof createCharacterVisual;
+  readonly createVisual?: CharacterVisualFactory;
 }
 
 export interface EntityPivotView {
@@ -124,7 +124,7 @@ export class EntityRegistry {
     if (event.type === "skill-cast") return;
     const presentation = this.entities.get(event.entity.id);
     if (!presentation) return;
-    if (presentation.entity.modelUrl !== event.entity.modelUrl || presentation.entity.appearanceId !== event.entity.appearanceId || presentation.entity.kind !== event.entity.kind) {
+    if (presentation.entity.appearanceId !== event.entity.appearanceId || presentation.entity.kind !== event.entity.kind) {
       const wasSelected = this.selectedEntityId === event.entity.id;
       this.spawn(event.entity);
       if (wasSelected) this.select(event.entity.id);

@@ -1,13 +1,4 @@
-import type { CharacterAnimationProfile } from "../animation/ModelAnimator";
 import type { WorldEntity } from "../world/worldTypes";
-
-export interface CharacterModelProfile {
-  readonly id: string;
-  readonly resource: { readonly url: string };
-  readonly metresPerUnit: number;
-  readonly facingYawRadians: number;
-  readonly animations?: CharacterAnimationProfile;
-}
 
 export const nativeAppearanceProfiles: Readonly<Record<string, string>> = {
   MFighter: "human-male-fighter",
@@ -17,10 +8,6 @@ export const nativeAppearanceProfiles: Readonly<Record<string, string>> = {
 };
 
 export function nativeAppearanceProfileId(entity: WorldEntity): string | undefined {
-  return !entity.modelUrl && entity.appearanceId && Object.hasOwn(nativeAppearanceProfiles, entity.appearanceId)
+  return entity.appearanceId && Object.hasOwn(nativeAppearanceProfiles, entity.appearanceId)
     ? nativeAppearanceProfiles[entity.appearanceId] : undefined;
-}
-
-export function resolveCharacterProfile(entity: WorldEntity): CharacterModelProfile | undefined {
-  return entity.modelUrl ? { id: entity.modelUrl, resource: { url: entity.modelUrl }, metresPerUnit: 1, facingYawRadians: 0 } : undefined;
 }

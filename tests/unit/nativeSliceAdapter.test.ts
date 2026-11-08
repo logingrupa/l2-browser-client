@@ -27,7 +27,6 @@ describe("native slice adapter boundary", () => {
     adapter.dispatch({ type: "set-animation", animation: "attack" });
     adapter.advance(10);
     expect(player(adapter)).toMatchObject({ position: origin, animation: "attack", animationSequence: 2 });
-    expect(player(adapter).modelUrl).toBeUndefined();
     adapter.dispose();
   });
 

@@ -54,15 +54,6 @@ describe("synthetic world adapter", () => {
     adapter.dispose();
   });
 
-  it("provides a missing model URL as ordinary world data for asset fallback", () => {
-    const adapter = new MockWorldAdapter();
-    adapter.dispatch({ type: "load-missing-model" });
-    expect(adapter.getInitialState().find((entity) => entity.id === "spawned-1")).toMatchObject({
-      displayName: "Fallback Sentinel",
-      modelUrl: "/assets/missing-character.glb",
-    });
-    adapter.dispose();
-  });
 
   it("does not publish movement before a 100 ms update boundary", () => {
     const adapter = new MockWorldAdapter();

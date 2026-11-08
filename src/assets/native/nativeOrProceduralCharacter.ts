@@ -3,8 +3,8 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Scene } from "@babylonjs/core/scene";
 import { CharacterAnimator, type CharacterAnimationDriver, type CharacterPlayback } from "../../animation/CharacterAnimator";
 import type { AnimationState, WorldEntity } from "../../world/worldTypes";
-import { createCharacterVisual, type CharacterVisual } from "../CharacterVisual";
-import type { CharacterBounds } from "../prepareCharacterModel";
+import { createCharacterVisual, type CharacterVisual, type CharacterVisualFactory } from "../CharacterVisual";
+import type { CharacterBounds } from "../characterBounds";
 import type { AssetPackage } from "../package/readAssetPackage";
 import { nativeAppearanceProfileId, nativeAppearanceProfiles } from "../characterProfiles";
 import { loadNativePlayerPackages } from "./loadNativeCatalog";
@@ -52,7 +52,7 @@ class CurrentPresentationForwardingDriver implements CharacterAnimationDriver {
 }
 
 export function nativeOrProceduralCharacterFactory(appearances: Promise<NativeAppearanceSet>,
-  procedural: typeof createCharacterVisual = createCharacterVisual): typeof createCharacterVisual {
+  procedural: CharacterVisualFactory = createCharacterVisual): CharacterVisualFactory {
   void appearances.catch(() => undefined);
   return (scene: Scene, initial: WorldEntity, status?: (message: string) => void): CharacterVisual => {
     if (!nativeAppearanceProfileId(initial)) return procedural(scene, initial, status);
