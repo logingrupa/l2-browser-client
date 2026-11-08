@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "thresholds": {
+    "reviewerRunTokens": 12,
+    "blockingRunTokens": 20
+  },
+  "referenceClones": [
+    {
+      "name": "lineage2js",
+      "path": ".assets/reference/lineage2js",
+      "commit": "854f62920319c458f9d339f8463b2ec8ed16fa9a"
+    },
+    {
+      "name": "l2js-core",
+      "path": ".assets/reference/l2js-core",
+      "commit": "4aac1bd28945746aa2ecddd72c96e473592ee0bd"
+    }
+  ],
+  "areas": {
+    "materials": {
+      "sourceGlobs": [
+        "src/materials/**/*.{ts,wgsl,glsl,fx}"
+      ],
+      "referenceGlobs": [
+        ".assets/reference/lineage2js/src/materials/**/*.{ts,glsl,vs,fs}",
+        ".assets/reference/lineage2js/src/rendering/**/*.ts",
+        ".assets/reference/lineage2js/src/objects/**/*.ts",
+        ".assets/reference/lineage2js/src/assets/**/*.ts",
+        ".assets/reference/l2js-core/src/unreal/**/*.ts"
+      ],
+      "constantAllowlist": []
+    },
+    "bsp-visibility": {
+      "sourceGlobs": [
+        "src/scene/world/bspVisibility/**/*.ts",
+        "src/shared/math/vector3.ts",
+        "src/shared/math/affineMatrix.ts",
+        "src/shared/math/plane.ts",
+        "src/shared/typedPayload.ts"
+      ],
+      "referenceGlobs": [
+        ".assets/reference/lineage2js/src/objects/**/*.ts",
+        ".assets/reference/lineage2js/src/rendering/**/*.ts",
+        ".assets/reference/lineage2js/src/assets/**/*.ts",
+        ".assets/reference/l2js-core/src/unreal/**/*.ts"
+      ],
+      "constantAllowlist": [
+        {
+          "sourceFile": "src/shared/math/affineMatrix.ts",
+          "constantName": "IDENTITY_AFFINE_MATRIX",
+          "kind": "identity-matrix"
+        }
+      ]
+    },
+    "movement": {
+      "sourceGlobs": [
+        "src/scene/world/movement/**/*.ts",
+        "src/shared/math/rotator.ts",
+        "src/shared/fixedStep.ts",
+        "src/world/sourceFrame.ts"
+      ],
+      "referenceGlobs": [
+        ".assets/reference/lineage2js/src/physics/**/*.ts",
+        ".assets/reference/lineage2js/src/game/**/*.ts",
+        ".assets/reference/lineage2js/src/rendering/camera/**/*.ts",
+        ".assets/reference/lineage2js/src/network/network-movement.ts",
+        ".assets/reference/lineage2js/src/objects/**/*.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/**/*.ts",
+        ".assets/reference/lineage2js/src/player.ts",
+        ".assets/reference/lineage2js/src/base-actor.ts"
+      ],
+      "constantAllowlist": []
+    },
+    "particles": {
+      "sourceGlobs": [
+        "src/effects/particles/**/*.{ts,wgsl,glsl,fx}",
+        "src/shared/random.ts",
+        "src/shared/presentationClock.ts"
+      ],
+      "referenceGlobs": [
+        ".assets/reference/lineage2js/src/objects/**/*.ts",
+        ".assets/reference/lineage2js/src/assets/**/*.ts",
+        ".assets/reference/lineage2js/src/materials/particle-material/**/*.{ts,glsl,vs,fs}",
+        ".assets/reference/lineage2js/src/skills/**/*.ts",
+        ".assets/reference/lineage2js/src/physics/**/*.ts",
+        ".assets/reference/l2js-core/src/unreal/**/*.ts"
+      ],
+      "constantAllowlist": []
+    },
+    "network": {
+      "sourceGlobs": [
+        "src/net/**/*.ts",
+        "src/world/mobius/**/*.ts"
+      ],
+      "referenceGlobs": [
+        ".assets/reference/lineage2js/src/network/**/*.ts",
+        ".assets/reference/l2js-core/src/crypto/**/*.ts"
+      ],
+      "constantAllowlist": []
+    }
+  }
+}
