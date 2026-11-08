@@ -1,4 +1,3 @@
-// Adapted from the audited local Lineagen terrain preview; see docs/WORLD_ASSETS.md.
 import { Color3, Color4 } from '@babylonjs/core/Maths/math.color';
 import { Vector2, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
@@ -78,8 +77,20 @@ void main(void) {
   gl_Position = probeMode > 0.5 ? vec4(position.xy, 0.0, 1.0) : worldViewProjection * vec4(position, 1.0);
 }`;
 
-/** A deliberately small diffuse shader; the Unity water/effect stages are omitted. */
-function fragmentSource(runtime: RuntimeSurface): string {
+function decodeBeforeInterpolationMaskFunction(maskIndex: number): string {
+  return `vec4 sourceMask${maskIndex}(vec2 sourceUV, vec2 size) {
+  vec2 p = vec2(sourceUV.y, 1.0 - sourceUV.x) * size - 0.5;
+  vec2 base = (floor(p) + 0.5) / size;
+  vec2 t = fract(p);
+  vec4 a = decodeSRGB(texture2D(masks${maskIndex}, base));
+  vec4 b = decodeSRGB(texture2D(masks${maskIndex}, base + vec2(1.0, 0.0) / size));
+  vec4 c = decodeSRGB(texture2D(masks${maskIndex}, base + vec2(0.0, 1.0) / size));
+  vec4 d = decodeSRGB(texture2D(masks${maskIndex}, base + vec2(1.0, 1.0) / size));
+  return mix(mix(a, b, t.x), mix(c, d, t.x), t.y);
+}`;
+}
+
+export function sourceLayerDiffuseFragmentSource(runtime: RuntimeSurface): string {
   const f = (value: number) => value.toFixed(12);
   const sampleLayer = (layer: SourceLayer) => `texture2D(layer${layer.layer}, sourceUV * vec2(${layer.repeat.map(f).join(',')}) + vec2(${layer.offset.map(f).join(',')})).rgb`;
   const weightFor = (layer: SourceLayer) => {
@@ -102,26 +113,12 @@ vec3 encodeSRGB(vec3 c) {
   c = max(c, vec3(0.0));
   return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c));
 }
-vec4 sourceMask(sampler2D maskTexture, vec2 sourceUV, vec2 size) {
-  // Raw packed PNGs use nearest sampling. Decode each source texel BEFORE
-  // interpolation, matching sRGB Texture2DArray reads. New bundles use opaque
-  // RGB masks so WebKit cannot discard data stored under transparent alpha.
-  vec2 p = vec2(sourceUV.y, 1.0 - sourceUV.x) * size - 0.5;
-  vec2 base = (floor(p) + 0.5) / size;
-  vec2 t = fract(p);
-  vec4 a = decodeSRGB(texture2D(maskTexture, base));
-  vec4 b = decodeSRGB(texture2D(maskTexture, base + vec2(1.0, 0.0) / size));
-  vec4 c = decodeSRGB(texture2D(maskTexture, base + vec2(0.0, 1.0) / size));
-  vec4 d = decodeSRGB(texture2D(maskTexture, base + vec2(1.0, 1.0) / size));
-  return mix(mix(a, b, t.x), mix(c, d, t.x), t.y);
-}
+${runtime.masks.map((_, index) => decodeBeforeInterpolationMaskFunction(index)).join('\n')}
 void main(void) {
   vec2 sourceUV = probeMode > 0.5 ? probeUV : vUV;
-  ${runtime.masks.map((mask, index) => `vec4 weights${index} = sourceMask(masks${index}, sourceUV, vec2(${f(mask.width)},${f(mask.height)}));`).join('\n')}
+  ${runtime.masks.map((mask, index) => `vec4 weights${index} = sourceMask${index}(sourceUV, vec2(${f(mask.width)},${f(mask.height)}));`).join('\n')}
   vec3 color = ${sampleLayer(runtime.layers[0]!)};
   ${runtime.layers.slice(1).map(layer => `color = mix(color, ${sampleLayer(layer)}, ${weightFor(layer)});`).join('\n')}
-  // Source layer textures use hardware sRGB buffers, so filtering and the
-  // ordered lerps above take place in linear colour. Probe pixels omit light.
   float light = probeMode > 0.5 ? 1.0 : 0.45 + 0.55 * max(dot(normalize(vNormal), normalize(lightDirection)), 0.0);
   gl_FragColor = vec4(encodeSRGB(color * light), 1.0);
 }`;
@@ -154,8 +151,7 @@ function validateRuntime(runtime: RuntimeSurface): void {
   }
 }
 
-/** GPU readbacks check landmarks and every populated source mask channel. */
-async function verifyBlendPixels(scene: Scene, material: ShaderMaterial, samples: BlendSample[]): Promise<number[]> {
+async function verifyBlendPixelsByGpuReadback(scene: Scene, material: ShaderMaterial, samples: BlendSample[]): Promise<number[]> {
   const plane = CreatePlane('surface-blend-probe', { size: 2 }, scene);
   plane.material = material; plane.isPickable = false; plane.isVisible = false; plane.alwaysSelectAsActiveMesh = true;
   const target = new RenderTargetTexture('surface-blend-probe', 1, scene, { generateMipMaps: false, generateDepthBuffer: false });
@@ -168,7 +164,6 @@ async function verifyBlendPixels(scene: Scene, material: ShaderMaterial, samples
       if (!finite(sample.uv, 2) || !finite(sample.srgbRGBBytes, 3)) throw new Error('Invalid terrain blend validation point.');
       material.setFloat('probeMode', 1); material.setVector2('probeUV', Vector2.FromArray(sample.uv));
       material.backFaceCulling = false; plane.isVisible = true;
-      // Keep the probe visible only during this synchronous offscreen render.
       try { target.render(false); } finally { plane.isVisible = false; material.setFloat('probeMode', 0); material.backFaceCulling = culling; }
       const result = await target.readPixels();
       if (!(result instanceof Uint8Array) || result[3] !== 255) throw new Error('Terrain GPU blend probe returned no valid pixel.');
@@ -183,7 +178,6 @@ async function verifyBlendPixels(scene: Scene, material: ShaderMaterial, samples
   }
 }
 
-/** Apply audited source layers, with baked fallback, to already transformed geometry. */
 export async function applyTerrainSurfaces(scene: Scene, meshes: AbstractMesh[], manifest: SurfaceManifest, onReady?: (dispose: () => void) => void): Promise<SurfaceInspection> {
   if (manifest.schemaVersion !== 1 || manifest.sourceRoute !== 'unity-reference' || manifest.sourceVersion !== SOURCE ||
       manifest.tiles?.length !== 4 || !Array.isArray(manifest.files)) throw new Error('Terrain surface source version does not match.');
@@ -208,9 +202,6 @@ export async function applyTerrainSurfaces(scene: Scene, meshes: AbstractMesh[],
       if (actual !== entry.sha256) throw new Error(`Terrain texture hash mismatch: ${file}`);
       const blob = new Blob([bytes], { type: 'image/png' });
       const bitmap = kind === 'baked' ? undefined : await createImageBitmap(blob, {
-        // An explicit ImageBitmap decode avoids premultiplied packed alpha and
-        // browser colour conversion. Original PNGs need their Unity row flip;
-        // packed masks and existing bakes already have logical v=0 on row zero.
         imageOrientation: kind === 'source' ? 'flipY' : 'none', premultiplyAlpha: 'none', colorSpaceConversion: 'none',
       });
       if (bitmap) bitmaps.push(bitmap);
@@ -221,8 +212,6 @@ export async function applyTerrainSurfaces(scene: Scene, meshes: AbstractMesh[],
             noMipmap: kind === 'mask', invertY: false, useSRGBBuffer: kind === 'source',
             samplingMode: kind === 'mask' ? Texture.NEAREST_SAMPLINGMODE : Texture.TRILINEAR_SAMPLINGMODE,
             ...(bitmap ? { buffer: bitmap } : {}), forcedExtension: '.png',
-            // ImageBitmap uploads can finish inside the Texture constructor.
-            // Defer access until its returned instance has been initialized.
             onLoad: () => queueMicrotask(() => resolve(item)),
             onError: message => queueMicrotask(() => { item.dispose(); reject(new Error(message ?? 'Terrain texture decoding failed.')); }),
           });
@@ -275,9 +264,7 @@ export async function applyTerrainSurfaces(scene: Scene, meshes: AbstractMesh[],
         uv[vertex * 2] = u;
         uv[vertex * 2 + 1] = v;
       }
-      // GLB vertex order need not match Unity vertex order. Resolve each of the
-      // three asymmetric source vertices by canonical world position instead.
-      const landmarkErrors = tile.landmarks.map(landmark => {
+      const landmarkErrorsMatchedByCanonicalWorldPosition = tile.landmarks.map(landmark => {
         if (!finite(landmark.canonicalWorld, 3) || !finite(landmark.sourceUV0, 2)) throw new Error('Invalid terrain surface landmark.');
         let nearest = Infinity, found = -1;
         for (let vertex = 0; vertex < mesh.getTotalVertices(); vertex++) {
@@ -302,7 +289,7 @@ export async function applyTerrainSurfaces(scene: Scene, meshes: AbstractMesh[],
           }
           const runtime = tile.runtime;
           const sourceMaterial = new ShaderMaterial(`${name}:source-layers`, scene,
-            { vertexSource, fragmentSource: fragmentSource(runtime) }, {
+            { vertexSource, fragmentSource: sourceLayerDiffuseFragmentSource(runtime) }, {
               attributes: ['position', 'normal', 'uv'],
               uniforms: ['world', 'worldViewProjection', 'probeMode', 'probeUV', 'lightDirection'],
               samplers: [...runtime.layers.map(layer => `layer${layer.layer}`), ...runtime.masks.map((_, index) => `masks${index}`)],
@@ -312,7 +299,7 @@ export async function applyTerrainSurfaces(scene: Scene, meshes: AbstractMesh[],
           sourceMaterial.setVector3('lightDirection', new Vector3(scene.useRightHandedSystem ? .5 : -.5, 1, .4));
           for (const layer of runtime.layers) sourceMaterial.setTexture(`layer${layer.layer}`, await loadTexture(layer.file, 'source'));
           for (const [index, mask] of runtime.masks.entries()) sourceMaterial.setTexture(`masks${index}`, await loadTexture(mask.file, 'mask'));
-          blendPixelErrors = await verifyBlendPixels(scene, sourceMaterial, runtime.samples);
+          blendPixelErrors = await verifyBlendPixelsByGpuReadback(scene, sourceMaterial, runtime.samples);
           material = sourceMaterial; method = 'source-layers'; samplers = runtime.samplers;
         } catch (error) {
           fallbackReason = error instanceof Error ? error.message : String(error);
@@ -326,9 +313,8 @@ export async function applyTerrainSurfaces(scene: Scene, meshes: AbstractMesh[],
         fallback.diffuseTexture = await loadTexture(tile.texture, 'baked');
         material = fallback;
       }
-      prepared.push({ tile, mesh, uv, landmarkErrors, material, method, samplers, blendPixelErrors, fallbackReason });
+      prepared.push({ tile, mesh, uv, landmarkErrors: landmarkErrorsMatchedByCanonicalWorldPosition, material, method, samplers, blendPixelErrors, fallbackReason });
     }
-    // Apply only after all four tiles pass source, geometry, UV, and hash checks.
     for (const item of prepared) {
       item.mesh.setVerticesData(VertexBuffer.UVKind, item.uv, false, 2);
       item.mesh.material = item.material;
