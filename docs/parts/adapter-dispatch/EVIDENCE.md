@@ -56,25 +56,39 @@ Result: bsp-visibility signs off 8 runs, movement 5 and particles 4. All three a
 
 Rule: any edit to signed-off code changes the hash, even a rename or a reformatted number that keeps the normalised shape. The run then blocks again and its old entry turns stale. A new match in a reference file outside the entry also blocks. A stale entry exits 1 as well, so dead sign-offs get removed. The run stays blocked until a reviewer who did not write the code re-reviews it and the entry is rewritten from the tool's report.
 
+### Reviewer run sign-offs
+
+Method: two fresh-context Claude reviewers who did not write the code (provenance and skeptic lenses) reviewed every unsigned reviewer run in the nine shared files. Any run either lens did not mark generic went to three more reviewers (idiom, provenance, skeptic) and was signed off only on a unanimous generic verdict with high confidence.
+
+Totals (2026-11-08, source at `606ae66`, clones at `854f629` and `4aac1bd`): 956 runs, 8 escalated, 956 signed off. The 956 are every reviewer run that the tool reports without an entry in `signedOffRuns.json`. 955 have 12 to 19 tokens, and one has 20 or more but lies inside the allowlisted `IDENTITY_AFFINE_MATRIX`, as do 6 of the shorter ones. The record matches the tool's report run for run (lines, token count and `sourceTokensSha256`). The file hash is the SHA-256 of the committed file, with LF line endings. A checkout with `core.autocrlf` true holds CRLF and hashes differently, so compare against `git show 606ae66:<file>`.
+
+| Area | Source file | File SHA-256 (first 12) | Runs | Escalated |
+|---|---|---|---|---|
+| bsp-visibility | `src/shared/math/affineMatrix.ts` | `87e9830c35dd` | 181 | 0 |
+| bsp-visibility | `src/shared/math/plane.ts` | `c550b8d48437` | 66 | 0 |
+| bsp-visibility | `src/shared/math/vector3.ts` | `9cdf05c5190b` | 132 | 0 |
+| bsp-visibility | `src/shared/typedPayload.ts` | `db37c665c538` | 220 | 0 |
+| movement | `src/shared/fixedStep.ts` | `6c61f50c53f8` | 37 | 0 |
+| movement | `src/shared/math/rotator.ts` | `052f32944d9c` | 74 | 2 |
+| movement | `src/world/sourceFrame.ts` | `b7273972cd01` | 34 | 0 |
+| particles | `src/shared/presentationClock.ts` | `9e150ca63138` | 37 | 0 |
+| particles | `src/shared/random.ts` | `989668863f7e` | 175 | 6 |
+
+Escalated runs:
+- `src/shared/math/rotator.ts` has 2. Line 74 is the sine table fill. It does the same job as the reference table init, and its operand order (index times two pi over the table length) is the canonical sine formula, not a borrowed one. Lines 77-80 are the end of one function and the header of the next, a shape with no logic in it.
+- `src/shared/random.ts` has 6, all in the `randomRange` signature and the first token of its body (lines 95-96). The matches are signature shapes in unrelated reference helpers, but `randomRange` does the same job as a reference range helper, so all six went to the full panel. The function body was written independently. The reference formula is recorded as the unconfirmed constant row `fx.frange-draw` in `random.ts`, to be re-derived from Core.dll under POL-04, not followed blindly.
+
+Rule: an edit to any of these nine files changes its file hash and invalidates its sign-offs. A reviewer who did not write the code then re-reviews the affected runs, matched by `sourceTokensSha256`: every run in the tool's new report whose hash is not in the record. The tool does not read this record, so this check is done by hand.
+
+Record: `docs/parts/adapter-dispatch/reference-overlap-reviewer-runs.json`, one line per run. `runFields` names the tuple columns: lines, token count, `sourceTokensSha256`, reference file count, allowlisted constant, escalated flag and reason.
+
 ## Open
 
 279 Mobius server packet classes to decode and dispatch into typed adapter events, and 215 client packet classes to build, one packet type at a time with synthetic fixtures and capture-gated checks (NET-04). Conditional SpacetimeDB adapter (NET-08).
 
 Shared modules: the rotator table-or-exact choice per use, the sine table and its half-turn entry, the FRange draw and the unit-vector draws run as unconfirmed defaults until the POL-04 re-derivation against Interlude Core.dll `9462f87a` (FGlobalMath SinTab, FRange::GetRand). The placement converter `scripts/native_map_geometry.py` builds its own table without the half-turn entry (4.05e-21 apart at units 32768 to 32771). The world and actors conversions in `src/scene/world/nativeFlameBillboards.ts` and `src/effects/nativePowerStrikeSource.ts` move to `sourceFrame` in 02-63 and 02-68. Consumers still to land: 02-30 (Python payload writer), 02-48 and 02-65 (collision and movement), 02-60 (materials), 02-61 and 02-63 (BSP visibility), 02-68 (particles).
 
-Reference overlap: later plans that add area sources (02-48, 02-60 to 02-69) stop on any blocking run, and every new blocking run needs its own review by someone who did not write the code before it can be signed off. The 12-token rule is not met yet: 955 reviewer runs of 12 to 19 tokens in the nine shared files have no sign-off. `--area <name>` lists each one under `reviewerRuns`; that review runs next.
-
-| Area | Source file | Unsigned runs of 12 to 19 tokens |
-|---|---|---|
-| bsp-visibility | `src/shared/math/affineMatrix.ts` | 180, of which 6 lie inside the allowlisted `IDENTITY_AFFINE_MATRIX` |
-| bsp-visibility | `src/shared/math/plane.ts` | 66 |
-| bsp-visibility | `src/shared/math/vector3.ts` | 132 |
-| bsp-visibility | `src/shared/typedPayload.ts` | 220 |
-| movement | `src/shared/fixedStep.ts` | 37 |
-| movement | `src/shared/math/rotator.ts` | 74 |
-| movement | `src/world/sourceFrame.ts` | 34 |
-| particles | `src/shared/presentationClock.ts` | 37 |
-| particles | `src/shared/random.ts` | 175 |
+Reference overlap: later plans that add area sources (02-48, 02-60 to 02-69) stop on any blocking run, and every new blocking run needs its own review by someone who did not write the code before it can be signed off. So does every new reviewer run of 12 or more tokens (see "Reviewer run sign-offs").
 
 Materials (plan 02-59): the six unported classes need reviews before they render (MAT-01); `MaterialSequence.SequenceItems` and other ArrayProperty children are not followed until the array layout is reviewed; 14 intrinsic classes have no script export (`Engine.StaticMesh`, `Engine.Model`, `Core.Package` and others) and are listed under `unresolvedClasses` with their counts, because there is no script chain to check. The census counts classes, not property use: feature gaps show when a lane converts a root. Data-ui approval is still needed for `read_class_defaults` in `scripts/native_catalog/effects.py` to become a thin caller of the new reader; actors moves `DefaultReader` in 02-43 and world calls the reader from 02-30. Consumers still to land: 02-60 (runtime library), 02-30, 02-45, 02-61 and 02-62 (world roots), the actors emitter and skeletal roots.
 
