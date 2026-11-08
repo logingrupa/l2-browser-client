@@ -36,10 +36,13 @@ TILE_KIND = 'tile'
 NON_TILE_KIND = 'non-tile'
 GATE_PASS = 'pass'
 GATE_FAIL = 'fail'
-GATE_NOT_EVALUATED = 'not-evaluated'
+GATE_MISSING = 'missing'
+GATE_NOT_APPLICABLE = 'not-applicable'
+TILE_TERRAIN_HEIGHT_GATES = (GATE_PASS, GATE_FAIL, GATE_MISSING)
+TERRAIN_HEIGHT_PACKAGE_PATH_FORMAT ='textures/T_{tile_id}.utx'
+TERRAIN_HEIGHT_PACKAGE_MISSING_REASON = 'terrain-height-package-missing'
 ELIGIBLE_STATUS = 'eligible'
 GAP_STATUS = 'gap'
-CENSUS_PENDING_REASON = 'census-pending'
 ELIGIBLE_GAP_ROW_STATUS = 'pending'
 ELIGIBLE_GAP_ROW_REASON = 'step-pending:raw'
 CENSUS_ROW_FIELDS = ('map', 'kind', 'key', 'packageVersion', 'licensee', 'wrapper', 'mapReaderGate', 'terrainHeightGate',
@@ -99,12 +102,34 @@ def map_reader_gate(header):
     return GATE_PASS, None
 
 
-def census_row(client_access, census_key):
+def terrain_height_gate_by_package_name(client_access, lock_records, tile_id):
+    terrain_package_path = TERRAIN_HEIGHT_PACKAGE_PATH_FORMAT.format(tile_id=tile_id)
+    lock_path = min((path for path in lock_records if path.casefold() == terrain_package_path.casefold()), default=None)
+    if lock_path is None:
+        return GATE_MISSING, TERRAIN_HEIGHT_PACKAGE_MISSING_REASON
+    header = read_package_header(client_access, lock_path)
+    if 'error' in header:
+        raise TileCensusError(f'terrain height package {lock_path} header is unreadable ({header["error"]}); no listed gap reason covers it')
+    if header['packageVersion'] != SUPPORTED_PACKAGE_VERSION:
+        return GATE_FAIL, f'terrain-height-version-unsupported:{header["packageVersion"]}'
+    if header['licensee'] != SUPPORTED_PACKAGE_LICENSEE:
+        return GATE_FAIL, f'terrain-height-licensee-unsupported:{SUPPORTED_PACKAGE_VERSION}/{header["licensee"]}'
+    return GATE_PASS, None
+
+
+def census_row(client_access, lock_records, census_key):
     header = read_package_header(client_access, census_key['map'])
     map_gate, map_reason = map_reader_gate(header)
+    if census_key['kind'] == TILE_KIND:
+        terrain_gate, terrain_reason = terrain_height_gate_by_package_name(client_access, lock_records, census_key['key'].split(':', 1)[1])
+    elif map_reason is None:
+        raise TileCensusError(f'non-tile map {census_key["map"]} passes the map reader gate; no listed status covers a non-tile map that reads')
+    else:
+        terrain_gate, terrain_reason = GATE_NOT_APPLICABLE, None
+    reason = map_reason if map_reason is not None else terrain_reason
     return {**census_key, 'packageVersion': header.get('packageVersion'), 'licensee': header.get('licensee'), 'wrapper': header.get('wrapper'),
-            'mapReaderGate': map_gate, 'terrainHeightGate': GATE_NOT_EVALUATED, 'terrainMapPackage': None, 'status': GAP_STATUS,
-            'reason': CENSUS_PENDING_REASON if map_reason is None else map_reason}
+            'mapReaderGate': map_gate, 'terrainHeightGate': terrain_gate, 'terrainMapPackage': None,
+            'status': ELIGIBLE_STATUS if reason is None and terrain_gate == GATE_PASS else GAP_STATUS, 'reason': reason}
 
 
 def census_gap_row(row, lock_records):
@@ -126,7 +151,7 @@ def reference_tree_lock_sha256(lock):
 
 
 def build_tile_census(client_access, lock, lock_records):
-    rows = [census_row(client_access, census_key) for census_key in map_census_keys(lock_records)]
+    rows = [census_row(client_access, lock_records, census_key) for census_key in map_census_keys(lock_records)]
     census = {'schemaVersion': TILE_CENSUS_SCHEMA_VERSION, 'referenceTreeLockSha256': reference_tree_lock_sha256(lock), 'maps': rows}
     tile_census_gap_rows(census, lock_records)
     return census
@@ -137,6 +162,11 @@ def require_census_row_rules(row):
         raise TileCensusError(f'tile census row must hold exactly {", ".join(CENSUS_ROW_FIELDS)}: {row!r}')
     if row['kind'] not in (TILE_KIND, NON_TILE_KIND) or row['status'] not in (ELIGIBLE_STATUS, GAP_STATUS):
         raise TileCensusError(f'tile census row {row["key"]} has an unknown kind or status: {row["kind"]!r} {row["status"]!r}')
+    allowed_terrain_gates = TILE_TERRAIN_HEIGHT_GATES if row['kind'] == TILE_KIND else (GATE_NOT_APPLICABLE,)
+    if row['mapReaderGate'] not in (GATE_PASS, GATE_FAIL) or row['terrainHeightGate'] not in allowed_terrain_gates:
+        raise TileCensusError(f'tile census row {row["key"]} has gates {row["mapReaderGate"]!r}/{row["terrainHeightGate"]!r} outside its kind')
+    if row['terrainMapPackage'] is not None:
+        raise TileCensusError(f'tile census row {row["key"]} names a terrainMapPackage, but the terrain gate is by package name only')
     both_gates_pass = row['mapReaderGate'] == GATE_PASS and row['terrainHeightGate'] == GATE_PASS
     if (row['status'] == ELIGIBLE_STATUS) != both_gates_pass:
         raise TileCensusError(f'tile census row {row["key"]} is {row["status"]} but its gates are {row["mapReaderGate"]}/{row["terrainHeightGate"]}')

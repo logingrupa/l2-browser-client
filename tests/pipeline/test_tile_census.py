@@ -135,7 +135,7 @@ class SyntheticTileCensusTests(unittest.TestCase):
 
     def test_an_unreadable_header_is_a_gap_row_and_does_not_stop_the_census(self):
         census = self.client.census()
-        self.assertEqual(len(census['maps']), len(SYNTHETIC_MAP_PACKAGES))
+        self.assertEqual(len(census['maps']), sum(path.startswith('maps/') for path in SYNTHETIC_MAP_PACKAGES))
         self.assertEqual(rows_by_key(census)['tile:17_21']['status'], 'gap')
 
     def test_rows_are_sorted_by_key_and_two_builds_are_byte_identical(self):
@@ -168,13 +168,21 @@ class SyntheticTileCensusTests(unittest.TestCase):
             validate_tile_census(self.client.census())
 
 
-class UnlistedTerrainPackageTests(unittest.TestCase):
-    def test_a_terrain_package_of_another_version_or_unreadable_stops_the_census_naming_it(self):
-        for payload in (plain_package_header(118, 28), UNREADABLE_PACKAGE_HEADER):
-            with self.subTest(payload=payload[:8]):
-                client = SyntheticMapClient(self, {'maps/20_21.unr': plain_package_header(123, 28), 'textures/T_20_21.utx': payload})
-                with self.assertRaisesRegex(TileCensusError, 'textures/T_20_21.utx'):
-                    client.census()
+class TerrainPackageVersionTests(unittest.TestCase):
+    def test_a_terrain_package_of_another_ue_version_is_a_lane_listed_gap(self):
+        client = SyntheticMapClient(self, {'maps/20_21.unr': plain_package_header(123, 28), 'textures/t_20_21.utx': plain_package_header(118, 11)})
+        row = rows_by_key(client.census())['tile:20_21']
+        self.assertEqual((row['terrainHeightGate'], row['status'], row['reason']), ('fail', 'gap', 'terrain-height-version-unsupported:118'))
+
+    def test_an_unreadable_terrain_package_stops_the_census_naming_it(self):
+        client = SyntheticMapClient(self, {'maps/20_21.unr': plain_package_header(123, 28), 'textures/T_20_21.utx': UNREADABLE_PACKAGE_HEADER})
+        with self.assertRaisesRegex(TileCensusError, 'textures/T_20_21.utx'):
+            client.census()
+
+    def test_a_non_tile_map_that_passes_the_map_gate_stops_the_census(self):
+        client = SyntheticMapClient(self, {'maps/20_21.unr': plain_package_header(123, 28), 'maps/Lobby.unr': plain_package_header(123, 28)})
+        with self.assertRaisesRegex(TileCensusError, 'maps/Lobby.unr'):
+            client.census()
 
 
 class CommittedTileCensusTests(unittest.TestCase):

@@ -71,6 +71,20 @@ Provisional, owner review. The verdicts below are copied from the reviewer's ans
 | W07-46 | REPORT.md, section "Terrain evidence after the UV migration"; BROWSER_HANDOFF.md, section "Additive terrain and music handoff" | The packet's requested T3 Codex review did not run because of a provider usage limit, so the packet had no independent review. | rejected | Process status, not a terrain or music step; review/REVIEW_STATUS.json confirms status not_performed |
 | W07-47 | REPORT.md, section "Precise remaining observations"; BROWSER_HANDOFF.md, section "Acceptance and ownership" | The pilot permission is used up, no new launch, input, injection, replay or observer ran, protected files, assets and tolerances were kept, and no performance or whole-client completion is claimed. | rejected | Process status, not actionable |
 
+## Tile census
+
+Committed in `docs/parts/world/tile-census.json` (plan 02-12, WORLD-03). Header reads only, through `require_equal_file`; the file holds names, header integers and gate results, no Lineage II bytes.
+
+- Command: `node scripts/check-machine-schedule.mjs && python -B scripts/world/tile_census.py --client E:/Lineage2-client`. It also writes the world census gap rows to `artifacts/lane-store/world/gap-rows/census.json`, which the coverage report reads.
+- `referenceTreeLockSha256` `1957c96800aa45cb10c984f3f2e6f8d1f5f0b1713f086f20560db01f4d1d2b52`.
+- 163 maps: 153 tiles, 10 non-tile. Status: 39 eligible, 124 gap. Tile gaps: 86 map licensee, 26 terrain-height licensee (123/25: 13, 123/23: 8, 123/12: 2, 123/19, 123/20 and 123/22: 1 each), 2 terrain-height package missing (`19_11`, `20_11`).
+- Map gate: pass only for UE 123 licensee 28. Tile map licensees: 28: 67, 23: 38, 25: 17, 30: 15, 18: 6, 31: 6, 16: 2, 19: 1, 20: 1.
+- Eligible: 16_25, 17_12, 18_10, 18_11, 18_12, 18_17, 18_20, 18_22, 19_10, 19_16, 19_17, 19_22, 19_24, 20_10, 20_14, 20_17, 20_20, 20_21, 20_23, 21_15, 21_16, 21_22, 21_24, 22_14, 22_15, 22_16, 22_18, 22_20, 22_23, 23_13, 23_14, 23_16, 23_17, 23_21, 23_22, 24_15, 24_19, 24_22, 25_19.
+- Non-tile: `Auto0` to `Auto5` and `skylevel` 118/0 and `ship_position` (Lineage2Ver111) 118/6 are `map-version-unsupported:118`; `entry` (Lineage2Ver111) 123/0 is `map-licensee-unsupported:123/0`; `Lobby` 123/30 is `map-licensee-unsupported:123/30`. Lobby's status is known: a gap until the map reader grows licensee 30.
+- Terrain-height gate: by package name only. It reads `textures/T_XX_YY.utx` (casefolded lock lookup) and `terrainMapPackage` is null on every row until plan 02-13 reads `TerrainInfo.TerrainMap` (research assumption A11, not proven). A T package of another UE version is `terrain-height-version-unsupported:<version>` (`recipes/world/gap-reasons.json`); `t_17_23.utx` is 118/11, behind a failing map gate.
+- Research cross-check (printed beside, never written as data): the licensee histogram and the non-tile headers match; the 39 eligible tiles match research section 5.1 with no extra and no missing tile.
+- Tests: `python -B -m unittest discover -s tests/pipeline -p test_tile_census.py`.
+
 ## Evidence
 
 World docs: `docs/NATIVE_WORLD.md`. Recipes: `recipes/native-map-20_20.json`, `recipes/native-map-section.json`.
