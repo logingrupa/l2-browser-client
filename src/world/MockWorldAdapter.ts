@@ -2,6 +2,7 @@ import type { GameWorldAdapter } from "./GameWorldAdapter";
 import { createInitialWorld } from "./createInitialWorld";
 import { moveTowards, simulateRemotePlayer } from "./syntheticMovement";
 import type { WorldCommand, WorldEntity, WorldEvent, WorldPosition } from "./worldTypes";
+import { createSpawnedNpcEntity, isLineageIdentifier } from "./sandboxCommands";
 import type { WorldNavigation } from "./WorldNavigation";
 
 const updateIntervalSeconds = 0.1;
@@ -11,7 +12,6 @@ function copyEntity(entity: WorldEntity): WorldEntity {
   return Object.freeze({ ...entity, position: Object.freeze({ ...entity.position }) });
 }
 
-/** Entirely local, deterministic data producer. It never creates scene objects. */
 export class MockWorldAdapter implements GameWorldAdapter {
   private readonly entities = new Map<string, WorldEntity>();
   private readonly listeners = new Set<(event: WorldEvent) => void>();
@@ -19,6 +19,7 @@ export class MockWorldAdapter implements GameWorldAdapter {
   private pendingSeconds = 0;
   private simulationTicks = 0;
   private spawnedEntityCount = 0;
+  private spawnedNpcCount = 0;
   private isPaused = false;
   private isDisposed = false;
   private readonly initialPositions = new Map<string, WorldPosition>();
@@ -90,6 +91,9 @@ export class MockWorldAdapter implements GameWorldAdapter {
       case "load-missing-model":
         this.spawnEntity(true);
         break;
+      case "spawn-npc":
+        this.spawnNpc(command.npcId);
+        break;
       case "despawn":
         if (this.entities.delete(command.entityId)) {
           if (command.entityId === "local-player") this.localDestination = undefined;
@@ -148,10 +152,25 @@ export class MockWorldAdapter implements GameWorldAdapter {
     }
   }
 
+  private spawnPlacement(spawnSequence: number): WorldPosition | null {
+    const flatPosition = { x: -6 + (spawnSequence % 5) * 2.5, y: 0, z: -6 };
+    return this.navigation ? this.navigation.spawn({ x: flatPosition.x * .5, y: 0, z: flatPosition.z * .5 }, [...this.entities.values()].map(other => other.position)) : flatPosition;
+  }
+
+  private spawnNpc(npcId: number): void {
+    if (!isLineageIdentifier(npcId)) return;
+    const spawnSequence = this.spawnedNpcCount + 1;
+    const spawnPosition = this.spawnPlacement(spawnSequence);
+    if (!spawnPosition) return;
+    this.spawnedNpcCount = spawnSequence;
+    const entity = createSpawnedNpcEntity(npcId, spawnSequence, spawnPosition);
+    this.entities.set(entity.id, entity);
+    this.emit({ type: "spawn", entity });
+  }
+
   private spawnEntity(shouldUseMissingModel: boolean): void {
     this.spawnedEntityCount += 1;
-    const flatPosition = { x: -6 + (this.spawnedEntityCount % 5) * 2.5, y: 0, z: -6 };
-    const spawnPosition = this.navigation ? this.navigation.spawn({ x: flatPosition.x * .5, y: 0, z: flatPosition.z * .5 }, [...this.entities.values()].map(other => other.position)) : flatPosition;
+    const spawnPosition = this.spawnPlacement(this.spawnedEntityCount);
     if (!spawnPosition) return;
     const entity: WorldEntity = copyEntity({
       id: `spawned-${this.spawnedEntityCount}`,
