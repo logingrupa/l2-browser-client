@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 1
 current_phase_name: Foundations
 status: executing
-stopped_at: Planning files committed (df34528, 1b1b0b7); docs cleanup on branch docs/cleanup; Phase 1 ready to plan
-last_updated: "2026-11-08T04:26:11.873Z"
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-11-08T04:43:50.212Z"
 last_activity: 2026-11-08
-last_activity_desc: "docs cleanup: continuation and handoff prompts are not kept in `.planning/` (git history has them); this file and ROADMAP.md are the resume point. DEC-OWN-8 recorded: Editor off the build and runtime path (56 v1 requirements, 6 phases)"
-state_head: 58ac02769f16f00f80b4d72b322d5e0672e1c4b2
+last_activity_desc: Phase 1 execution started
+state_head: a661e6e91ef573860d40978ca1a0d795edcef17a
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 17
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -23,14 +23,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-11-08)
 
 **Core value:** A fully converted Lineage II Interlude client that runs in the browser and matches L2.exe side by side, driven only by what a server sends.
-**Current focus:** Phase 1: Foundations (GSD 1 = PORT_SCOPE phase 0)
+**Current focus:** Phase 1 — Foundations
 
 ## Current Position
 
-Phase: 1 (Foundations) — READY TO EXECUTE
-Plan: 0 of TBD in current phase
+Phase: 1 (Foundations) — EXECUTING
+Plan: 2 of 17
 Status: Ready to execute
-Last activity: 2026-11-08 - docs cleanup: continuation and handoff prompts are not kept in `.planning/` (git history has them); this file and ROADMAP.md are the resume point. DEC-OWN-8 recorded: Editor off the build and runtime path (56 v1 requirements, 6 phases)
+Last activity: 2026-11-08 — Phase 1 execution started
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -48,6 +48,11 @@ Progress: [░░░░░░░░░░] 0%
 | - | - | - | - |
 
 *Updated after each plan completion*
+**Per-Plan Metrics:**
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 1 P02 | 15 min | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -60,6 +65,8 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..8 and DEC-PORT-1..3.
 - [Roadmap]: Stage A bar is the lighter per-part check; fixed thresholds live in Phases 5 and 6 (DEC-OWN-3).
 - [Roadmap]: Phase numbering is PORT_SCOPE phase + 1 for phases 1 to 4; Phases 5 and 6 are the polish stage.
 - [DEC-OWN-8]: Babylon.js Editor leaves the build and runtime path. NOED-01..05 are Phase 1 integration work, merged before any Phase 2 lane starts. Per-tile Editor scenes are dropped; optional viewer work is VIEW-01 (v2). `stage-webgpu-compilers` stays in dev and build (runtime needs glslang/twgsl).
+- [Phase 1]: 01-02: FOUND-03 stays pending until plan 01-13 records recipes/reference-client-tree.lock.json; the guard and tooling exist and are tested on synthetic trees
+- [Phase 1]: 01-02: lock hashingScriptSha256 covers the walker with CRLF normalised to LF
 
 ### Pending Todos
 
@@ -92,6 +99,6 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..8 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-08
-Stopped at: Planning files committed (df34528, 1b1b0b7); docs cleanup on branch docs/cleanup; Phase 1 ready to plan
+Last session: 2026-11-08T04:43:50.159Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None
