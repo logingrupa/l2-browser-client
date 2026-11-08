@@ -3,9 +3,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import re
-import tempfile
 
 from native_store.canonical_json import canonical_json_bytes
+from native_store.catalog_writer import replace_file
 from native_store.store_paths import (REPOSITORY_ROOT, SHA256_PATTERN, STEP_NAME_PATTERN, StorePathError, lane_gap_rows_folder,
                                       lane_gap_rows_path, read_lane_parts_by_name, require_portable_relative_path)
 
@@ -160,15 +160,7 @@ def write_gap_rows(project_root, lane_name, step, rows):
         seen_keys.add(row['key'])
     document = {'schemaVersion': GAP_ROW_FILE_SCHEMA_VERSION, 'lane': lane_name, 'step': step,
                 'reasonListVersions': gap_reason_list_versions(), 'rows': sorted_gap_rows(rows)}
-    gap_rows_path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(dir=gap_rows_path.parent, prefix=f'.{step}.', suffix='.tmp', delete=False) as stream:
-        stream.write(canonical_json_bytes(document))
-        temporary_path = Path(stream.name)
-    try:
-        temporary_path.replace(gap_rows_path)
-    except OSError:
-        temporary_path.unlink(missing_ok=True)
-        raise
+    replace_file(gap_rows_path, canonical_json_bytes(document))
     return document
 
 

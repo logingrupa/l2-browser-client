@@ -371,7 +371,8 @@ row is exactly `{key, part, step, status, reason, sourceIdentity, evidence}`:
 `write_gap_rows` writes one file per lane and step,
 `artifacts/lane-store/<lane>/gap-rows/<step>.json`, as
 `{schemaVersion: 1, lane, step, reasonListVersions, rows}` with rows sorted by
-key and one row per key.
+key and one row per key, through the one atomic writer
+`catalog_writer.replace_file`.
 
 ## Coverage report
 
