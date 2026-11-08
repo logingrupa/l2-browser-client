@@ -16,19 +16,21 @@ How the browser runtime builds scenes, reads converted assets and takes gameplay
 
 ## Server boundary and presentation invariants
 
-`GameWorldAdapter` has five frozen methods: `getInitialState`, `subscribe`, `dispatch`, `advance`, `dispose`. The world frame is metres, Y up, right-handed. Mesh navigation (`src/scene/navigation/meshNavigation.ts`) implements the Babylon-free `WorldNavigation`; UI drives the adapter through narrow interfaces such as `NativeLocomotionControlTarget`.
+`GameWorldAdapter` has five frozen methods: `getInitialState`, `subscribe`, `dispatch`, `advance`, `dispose`. The world frame is metres, Y up, right-handed, matching `useRightHandedSystem = true`: `world = (x, z, y) * 0.01` from UE2 source units, through `src/world/sourceFrame.ts` once it lands (DEC-OWN-12). Mesh navigation (`src/scene/navigation/meshNavigation.ts`) implements the Babylon-free `WorldNavigation`; UI drives the adapter through narrow interfaces such as `NativeLocomotionControlTarget`.
 
 | Invariant | Test in `tests/unit/` |
 | --- | --- |
 | ARCH-01: no client-computed damage, stats, quest or progression; tooltips never read `weapongrp`, `armorgrp` or `skillgrp` display copies. `src/ui` and `src/runtime` import none of them and nothing from `scripts/`. `skill-cast` carries only `casterId`, `skillId`, `level`, `targetId`. | `architectureInvariants.test.ts` |
 | ARCH-02: `GameWorldAdapter` is the only entry for gameplay state. | `gameWorldAdapterContract.test.ts` |
 | ARCH-02: `src/world` imports no `@babylonjs` and nothing outside itself; only `src/runtime` imports the concrete adapters. | `importBoundaries.test.ts` |
-| ARCH-04: animation, camera, UI, sound choice, effect timing and smoothing stay in presentation; `src/world` imports no presentation or runtime folder. | `importBoundaries.test.ts` |
+| ARCH-04: animation, camera, UI, sound choice, effect timing, particle emitter simulation, pawn movement between server updates and time-of-day lighting stay in presentation; `src/world` imports no presentation or runtime folder. | `importBoundaries.test.ts` |
 
 ## Open
 
 - Native `interface.xdat` windows replace the stand-in HUD (UI-01 to UI-03).
 - A stage B server adapter implements the same interface and maps or rejects the sandbox `WorldCommand` intents (NET-04).
+- Entities with movement records are moved by the movement presenter (MOVE-01), and position reports leave as `WorldCommand` intents, never as state writes (MOVE-02).
+- Babylon-free cores (DEC-OWN-12, provisional, owner review): `src/shared`, `src/materials/ue2/model`, `src/scene/world/bspVisibility/core`, `src/scene/world/movement/core`, and `src/effects/particles/sim` with `effectScheduler.ts` import no `@babylonjs/*`, package or DOM, and nothing outside themselves except `src/shared/**`; `src/net` imports nothing outside itself. Babylon stays in render folders such as `src/effects/particles/render/**`. Each area adds its own `tests/unit/importBoundaries.<area>.test.ts`, for example `importBoundaries.particles.test.ts` for FX-01.
 
 ## Pointers
 

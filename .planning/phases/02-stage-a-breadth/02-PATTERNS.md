@@ -34,7 +34,7 @@ All analog paths below are git-tracked source in this worktree. Line numbers are
 | `docs/coverage.md` | 02-07 | doc | - | `docs/parts/data/EVIDENCE.md` | role |
 | CONV tests (`tests/pipeline/test_conversion_contract.py`) | 02-08 | test (scan) | - | `tests/unit/architectureInvariants.test.ts:1-33`; `tests/pipeline/test_static_materials.py:178` | role |
 | `src/world/worldTypes.ts` (+2 commands) | 02-44 | model | event-driven | itself `:47-59` | modify |
-| `src/world/MockWorldAdapter.ts`, `NativeSliceAdapter.ts` (exhaustive `never`) | 02-44 | service | event-driven | `MockWorldAdapter.ts:52-116` | modify |
+| `src/world/NativeSliceAdapter.ts` (exhaustive `never`; `MockWorldAdapter.ts` removed by DEC-OWN-11) | 02-44 | service | event-driven | `MockWorldAdapter.ts:52-116` | modify |
 | `tests/unit/gameWorldAdapterContract.test.ts` | 02-44 | test | - | itself | modify |
 | `scripts/world/freeze_world_oracle.py` | 02-13 | CLI | transform (read-only) | `scripts/build_dat_table_inventory.py:157-190` | role |
 | `scripts/world/tile_census.py` -> `docs/parts/world/tile-census.json` | 02-13, 02-50 | CLI | batch (header-only) | `scripts/build_dat_table_inventory.py` | exact |
@@ -454,7 +454,7 @@ No comments (strip the whole file, incl. docstrings like `native_batch.py:1-4`, 
 | `scripts/ui/interface_layout_tree.py` tail hashing and window-id duplicate rule | adapter | transform | Elbera `parse_xdat` is external; only the pinned-import pattern is local |
 | `vite/nativeStoreRootPlugin.ts` overlay + Range handling | middleware | request-response | no `/l2` middleware exists; only plugin skeletons |
 | `meshNavigation.ts` cell add/remove | service | event-driven | navigation appends obstacles only today |
-| WORLD-04 ring calculator and `addLODLevel(distance, null)` | service | streaming | no LOD in `src/` (11.9); radius load/dispose in `loadImportedWorld.ts:24, :111-133` is the nearest |
+| WORLD-04 ring calculator and `addLODLevel(distance, null)` | service | streaming | no LOD in `src/` (11.9); radius load/dispose was in `loadImportedWorld.ts:24, :111-133`, removed with the reference route (DEC-OWN-11); no analog remains |
 | `THIRD_PARTY_NOTICES.md` | doc | - | new file |
 | WORLD-07 review fixtures `tests/fixtures/world-07/` | fixture | - | copied from the main-checkout packet, read-only source (11.14) |
 

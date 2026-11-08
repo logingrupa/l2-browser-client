@@ -6,7 +6,7 @@
 <domain>
 ## Phase Boundary
 
-Every part of the native client is converted, or listed as an explicit gap, and loads in the offline sandbox. Requirements: SAND-02, DATA-01..03, UI-01..03, WORLD-01..08 (WORLD-07 and WORLD-08 provisional, owner review), ACT-01..06, INT-01, CONV-01, CONV-02. Lanes (DEC-OWN-6): L1 world, L2 actors, L3 data + UI, integration.
+Every part of the native client is converted, or listed as an explicit gap, and loads in the offline sandbox. Requirements: SAND-02, DATA-01..03, UI-01..03, WORLD-01..08, MAT-01, MAT-02, VIS-01, MOVE-01, ACT-01..06, FX-01, INT-01, CONV-01, CONV-02 (WORLD-07, WORLD-08 and the DEC-OWN-12 IDs MAT-01, MAT-02, VIS-01, MOVE-01 and FX-01 provisional, owner review). Lanes (DEC-OWN-6): L1 world (with VIS-01, MOVE-01 and MAT-02), L2 actors (with FX-01), L3 data + UI, integration (with MAT-01).
 
 The full client is far larger than one unattended run. This phase delivers converters, contracts, tests and one end-to-end tracer per lane that is real and verified, plus census-based gap records for everything not yet converted. Breadth batches are resumable and continue in later runs. Unverified is never a pass.
 
@@ -40,7 +40,7 @@ Execution constraints for this run (owner rules, binding on every plan):
 
 ### C. WORLD-07 and WORLD-08 (provisional, owner review)
 - WORLD-07: a separate read-only reviewer subagent (not the author) re-verifies the 74-file packet's manifest hashes, then gives each finding one verdict (adopted, rejected, polish) in `docs/parts/world/EVIDENCE.md`, with the reviewer identity recorded. Adopted findings become tile-general steps with tests.
-- WORLD-08: converter-side collision extraction from source declarations; Elbera's static and BSP collision exporters serve as pinned cross-checks behind an adapter, run by path, not vendored. Unreadable collision is a per-object gap.
+- WORLD-08: converter-side collision extraction from source declarations into the native-tile-collision resource. Converter collision feeds the MOVE-01 port, which moves pawns between server updates and drives sandbox walking; the server stays authoritative (MOVE-02); Phase 4 settles correction thresholds only. Unreadable collision is a per-object gap. No Elbera collision exporter runs; the vendored `scripts/vendor/lineage2elbera_bsp/` reader is the in-repo, world-owned source of the BSP data.
 
 ### D. Data lane (DATA-01..03)
 - The generic `decode_table` decodes all 37 descriptor-linked tables (widen `TABLES`, keep the hash pins). Elbera structure parsers behind an adapter decode hairgrp, helmetgrp and hairaccessarygrp, with field meanings labelled "Elbera 07b24 proof, unverified on 4dd2". L2FileEdit `.ddf` files are a cross-check only.
@@ -53,18 +53,18 @@ Execution constraints for this run (owner rules, binding on every plan):
 - Conversion unit = unique mesh (about 554 NPC, 390 weapon, 1,355 armor) with a content-addressed cache; JSON profiles per row.
 - Tracer: `npc:20001` Gremlin (`LineageMonsters.gremlin_m00`) through row, profile, mesh, animation, sounds and spawn by ID in the sandbox.
 - A census of the 20 `.ukx` licensees comes first; packages outside 28/30 are gaps until the skeletal reader grows.
-- Skills: a binding table for all skill id and level rows; assets only for effect classes the existing converter supports; everything else an explicit gap.
+- Skills: a binding table for all skill id and level rows; bundles for Sprite, Mesh, Beam, Ribbon and VertMesh emitters, with simulation coverage following FX-01 (decision J); Spark, Trail and every class the simulator does not run yet are explicit gaps (`emitter-class-unported:<class>`).
 - Missing hair and helmet layouts are explicit gaps for ACT-01; no guessed hair selection.
 
 ### F. UI lane and sandbox (UI-01..03, SAND-02)
 - Elbera `parse_xdat` behind an adapter decodes `interface.xdat`; type-dependent record tails are kept as hashed opaque spans; the source hash is pinned.
 - Interface (owner decision DEC-OWN-10, 2026-11-08, commit 62741d8): the only game interface is the original Interlude interface. The UI lane builds native windows only: window layout from the decoded `interface.xdat`, and skin, fonts and icons from the client's UI textures converted by recipe (lane-local outputs). No custom HUD, no design tokens, no custom styling; DESIGN.md is deleted. The procedural HUD and the developer sheet are stand-ins and development tools only and get no styling or polish. Design skills (impeccable, frontend-design) are never used for game UI.
-- Tracer: `window:StatusWnd` with `StatusLeftTex`, `CPBarTex`, `HPBarTex`, `MPBarTex`, filled from `MockWorldAdapter` values.
+- Tracer: `window:StatusWnd` with `StatusLeftTex`, `CPBarTex`, `HPBarTex`, `MPBarTex`, filled from the `NativeSliceAdapter` local player. DEC-OWN-11 removed `MockWorldAdapter`, `createWorldRuntime`, the courtyard and the procedural characters; a unit test may use a test-only double of `GameWorldAdapter`, never a second runtime adapter.
 - SAND-02: `DevSheet.ts` (734 lines) is split when the tile, spawn, equip, cast, window and audio pickers are added; pinnable sheet with hover-cards showing variables (owner preference).
 
 ### G. Coverage report and order (INT-01, CONV-01, CONV-02)
 - One script reads any catalog root plus denominators from decoded tables and the world census (not PORT_SCOPE estimates) and writes `coverage.json` and an EVIDENCE table. "Loads" comes only from a recorded browser check; otherwise unverified.
-- Plan order: contract plans first (lane store and output guard, catalog keys `tables`, `windows`, `tiles`, coverage skeleton); then one tracer per lane (data generic decode plus DATA-03, UI StatusWnd, world 20_21 terrain walk with the other steps as gaps, actors Gremlin); then breadth plans per lane (world meshes, BSP and WORLD-08, audio and sky, eligible-39 batch, streaming baseline, minimap, WORLD-07; actors characters, NPC batch, items, skills, audio; UI window registry).
+- Plan order: contract plans first (lane store and output guard, catalog keys `tables`, `windows`, `tiles`, coverage skeleton, and for decision J the shared Babylon-free modules, the import boundaries, the adapter record types and the class-default and material graph readers); then one tracer per lane (data generic decode plus DATA-03, UI StatusWnd, world 20_21 terrain walk with the other steps as gaps, actors Gremlin); then breadth plans per lane (world meshes, BSP and WORLD-08, audio and sky, map emitters and BSP visibility, lighting, the movement port, eligible-39 batch, streaming baseline, minimap, WORLD-07; actors characters, NPC batch, items, skills, the emitter port, audio; UI window registry; integration the material library and the runtime wiring of movement, environment and translucent order).
 - Done for this run: the four tracers plus census-based gap coverage for every part, with breadth batches resumable through `native_batch`-style seals.
 
 ### H. Recipe audit inputs (owner, 2026-11-08 10:25)
@@ -78,8 +78,14 @@ Hand-typed recipe values with no recorded source must first become visibly unres
 
 ### I. Self-contained repo (owner, 2026-11-08 10:50)
 - No dependency on the retired sibling browser-client workspaces: no path, import, schema root, tool path or doc reference into them. The only sanctioned inputs outside the repository are the reference client trees (IMPORTA-PC `C:/Lineage2-client`, and `E:/Lineage2-client` through the lock, DEC-OWN-2) and the pinned Elbera checkout used by path behind adapters (DEC-OWN-4); Mobius is cited by its upstream repository and commit. Native tools live in the repo-owned, gitignored `.assets/native-tools/` (`umodel`, `ue-explorer`, `dat-schema`, and open-l2encdec), with absolute defaults to the main checkout `C:\laragon\www\l2-browser-client\.assets\native-tools\...` so lanes share them; that move lands on native-world-slice from the owner's self-contained-repo thread and is merged here before Phase 2 executes.
-- The Talking Island reference route, its five externally adapted modules in `src/scene/world/`, `scripts/stage-world-assets.mjs`, the external-media vite plugin and the converted character GLB path are removed; `/` opens the native route. No Phase 2 plan builds on the reference route or the procedural characters.
+- The Talking Island reference route, its five externally adapted modules in `src/scene/world/`, `scripts/stage-world-assets.mjs`, the external-media vite plugin and the converted character GLB path are removed; `/` opens the native route. DEC-OWN-11 (2026-11-08) also removed the courtyard demo with `MockWorldAdapter`, `createWorldRuntime` and the procedural characters, and the `world` query parameter; `?authored=1` and `?character=<id>` stay. No Phase 2 plan builds on any of them: adapter work uses `NativeSliceAdapter` or a test-only double, and every route is `/` plus query parameters, never `?world=`.
 - Deleted by the owner (commit d05e7eb): PRODUCT.md, NOTICE, docs/research/genericity-audit-20261108.md (its evidence stays in the artifacts folder genericity-audit-20261108; the world lane's starting input is docs/NATIVE_WORLD.md), docs/screenshots/, and recipes native-starter.json, native-pipeline-slice.json, native-pipeline-slice-assets.json. No plan cites or recreates them.
+
+### J. Own implementations of five areas (owner, DEC-OWN-12, 2026-11-08)
+- UE2 materials and fog (MAT-01, integration, `src/materials/ue2/**`; MAT-02 lighting, world), the BSP visibility walk (VIS-01, world), the MoveActor and APawn movement port (MOVE-01, world, part movement-geodata) and the particle emitter simulation (FX-01, actors) are our own code, modelled on Lineage2JS as a read-only behaviour reference in the ignored `.assets/reference/` (never copied, installed, built or run; `tools/reference-overlap/` and a reviewer check overlap). No vendor supplies their semantics. Network framing and replay is Phase 4.
+- Owner-delegated defaults, applied as written in `.planning/PROJECT.md`: D1 `WorldEntity` stays metres through `src/world/sourceFrame.ts`, movement events and intents carry source units; D2 MAT-02 is Phase 2 and BSP lightmaps convert in Phase 2; D3 committed fixtures are synthetic or indices and hashes, real-client cases read `--client` and skip with a reason; D4 Phase 2 runs reference values as unconfirmed defaults and static re-derivation is POL-04, binaries read, never run; D5 the BSP section key is material, PF_Unlit, lightmap texture and outdoor class; D6 the adapter contract grows by record types only, in one integration commit before adapter code, with the five methods frozen; D7 `@recast-navigation/*` leaves the runtime dependencies and an import-boundary test keeps it, `@babylonjs/materials` and `@babylonjs/node-particle-editor` out of `src/**` outside the lazy inspector entry.
+- Shared Babylon-free modules land first in integration: `src/shared/` (typed payload reader, math, rotator, seeded random, presentation clock, fixed step) and `src/world/sourceFrame.ts`. Each Babylon-free core (`src/shared`, `src/materials/ue2/model`, `src/scene/world/bspVisibility/core`, `src/scene/world/movement/core`, `src/effects/particles/sim` with `effectScheduler.ts`) imports only `src/shared/**` outside itself, checked by one `tests/unit/importBoundaries.<area>.test.ts` per area.
+- Constants registries share one row shape `{id, value, provenance, status, interludeEvidence, runtimeDefault}` with status `ue2-data`, `unconfirmed`, `confirmed-interlude`, `corrected-interlude` or `unknown`. Gap reasons follow `<domain>-class-unported:<class>` and `<domain>-feature-unported:<property>`; the lane that owns the part writes the row.
 
 ### Claude's Discretion
 - Plan split, wave order and file layout within AGENTS.md code rules (no comments, full-word names, files under about 400 lines, Vitest per behaviour change, Playwright for UI, no dead code, never invent L2 values).
@@ -89,13 +95,13 @@ Hand-typed recipe values with no recorded source must first become visibly unres
 <code_context>
 ## Existing Code Insights
 
-Full analyzer output with file:line evidence: `C:\Users\rolan\AppData\Local\Temp\l2b-autonomous\phase2-analyzer.md` (scratch; the essentials are below).
+The full analyzer output with file:line evidence was a scratch file outside the repository; the essentials are below.
 
 ### Reusable Assets
 - `scripts/native_catalog/tables.py`: generic `decode_table` (:207-251) with hash-pinned layout, exact consumed bytes, SafePackage trailer; only 8 tables in `TABLES` (:29). Schemas and UModel read by pinned path from `.assets/native-tools/` (repo-owned, gitignored; moved there by the self-contained repo change).
 - `scripts/native_batch.py` with 6 adapters (`native_batch_adapters.py:20`); `--prove-rebuild` rebuilt 52/52 products on 20_21.
 - `scripts/vendor/lineage2elbera_bsp` (BSP node reader, pinned in SOURCE.json); raw extractor; class-defaults reader; `native_map.py:48-50` extracts actor collision flags.
-- Elbera: `E:\Lineage2Elbera\tools\xdat\parse_xdat.py` (headers, anchors, children, texture refs; tails not decoded); `tools\ui\check_hair_selection_native.py:23-45` (hair parsers); `tools\world\export_static_collision.py`, `export_bsp_collision.py`; `tools\dat\extract_gamedata.py:420-489` (systemmsg tail scanning).
+- Elbera: `E:\Lineage2Elbera\tools\xdat\parse_xdat.py` (headers, anchors, children, texture refs; tails not decoded); `tools\ui\check_hair_selection_native.py:23-45` (hair parsers); `tools\world\export_static_collision.py` and `export_bsp_collision.py` (read-only behaviour references, never run; decision C); `tools\dat\extract_gamedata.py:420-489` (systemmsg tail scanning).
 - Phase 1 delivers: `.planning/lanes.json` and `scripts/check-lane-ownership.mjs`; the reference-client lock and guard (`scripts/reference_client_guard.py`, `require_reference_client`); one catalog reader with an L2-ID index; asset.json v2; sandbox by-ID commands; Editor off the build path; the 40-table inventory.
 
 ### Established Patterns
@@ -115,7 +121,7 @@ Full analyzer output with file:line evidence: `C:\Users\rolan\AppData\Local\Temp
 
 - Owner UX preference: pinnable sheet plus hover-cards with variables, never a cramped toggle scroll list.
 - Prefer audible, labelled results over more research; all staged media from our recipes and scripts.
-- Collision is sandbox and presentation support only; server authority over movement is a Phase 4 decision.
+- Converter collision feeds the MOVE-01 port, which moves pawns between server updates and drives sandbox walking; the server stays authoritative (MOVE-02); Phase 4 settles correction thresholds only.
 
 </specifics>
 

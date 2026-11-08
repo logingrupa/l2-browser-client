@@ -8,7 +8,7 @@ Part `adapter-dispatch`, lane `integration`. What passes now, what is open, and 
 
 ## Open
 
-215 / 279 packets on Mobius dispatched one packet type at a time into typed adapter events with golden fixtures (NET-04). Conditional SpacetimeDB adapter (NET-08).
+279 Mobius server packet classes to decode and dispatch into typed adapter events, and 215 client packet classes to build, one packet type at a time with synthetic fixtures and capture-gated checks (NET-04). Conditional SpacetimeDB adapter (NET-08).
 
 ## Evidence
 

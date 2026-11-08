@@ -8,7 +8,7 @@ Nothing has passed the stage A check yet (DEC-OWN-3). Working on 2026-11-07, per
 
 ## Open
 
-Geodata and 547 doors. No geodata files exist on DATABASE-PC; real geodata-backed movement is GEO-01 (v2). Walking converted tiles with terrain collision is WORLD-05.
+Geodata and 547 doors. No geodata files exist on DATABASE-PC; real geodata-backed movement is GEO-01 (v2). Walking converted tiles with terrain collision is WORLD-05. MoveActor and APawn port (MOVE-01) over converted collision, Babylon-free, Lineage2JS as behavioural reference.
 
 ## Evidence
 

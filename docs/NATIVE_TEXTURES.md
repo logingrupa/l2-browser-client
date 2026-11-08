@@ -18,7 +18,7 @@ What a texture archive keeps and what the runtime uses. Native mips, palettes an
 - Textures inside model GLBs are PNG derivatives; only texture archives and `preserve-native-graph` model archives keep native mips and DDS (CONV-02, PERF-02).
 - GPU compressed textures with measured residency, P8 compression, mobile transcoding (PERF-02).
 - DXT3 and other unsupported layouts (WORLD-01, CONV-02).
-- Native sampling, colour space, DXT1 alpha and terrain blends (POL-04).
+- Colour space and terrain layer blending: MAT-01, MAT-02. Native sampling parity and DXT1 alpha: POL-04.
 
 ## Pointers
 

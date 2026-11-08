@@ -15,7 +15,7 @@ Babylon.js Editor 5.5.3 is an optional viewer for converted scenes (DEC-OWN-8, N
 
 ## Open
 
-- `@babylonjs/addons` 9.27.1 and `@recast-navigation/*` 0.43.0 stay only for the Editor's generated script entry. Removing them is an owner decision.
+- `@babylonjs/addons` 9.27.1 and `@recast-navigation/*` 0.43.0 stay only for the Editor's generated script entry. `@recast-navigation/*` leaves the runtime dependencies (DEC-OWN-12, D7); removing `@babylonjs/addons` is an owner decision. Movement never uses recast or a navmesh (MOVE-01).
 - `assets/native-world.scene` cannot be regenerated from the catalog, so reconversion leaves it stale (VIEW-01).
 
 ## Pointers

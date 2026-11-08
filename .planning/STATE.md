@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 Phase: 02 (Stage A breadth) - EXECUTING
 Plan: 02-01 complete, 3 of 55 plans executed
 Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-08 - Merged native-world-slice (DEC-OWN-11): only the native routes stay, `/` opens the code-built native sandbox, the `world` query parameter, Talking Island route, courtyard demo and `MockWorldAdapter` are gone, native tools default to `.assets/native-tools/`
+Last activity: 2026-11-08 - Applied the Lineage2JS reference handoff (DEC-OWN-12): eight provisional requirements MAT-01, MAT-02, VIS-01, MOVE-01, FX-01 (Phase 2) and MOVE-02, NET-09, NET-10 (Phase 4), v1 now 66; earlier the native-world-slice merge (DEC-OWN-11) left only the native routes
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -77,7 +77,7 @@ Progress: [░░░░░░░░░░] 0%
 
 ### Decisions
 
-Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..11 and DEC-PORT-1..3.
+Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 
 - [Roadmap]: Breadth-first; REQ-work-order-v2-depth-first is superseded (DEC-OWN-1).
 - [Roadmap]: Phase 2 is organised as lanes L1 world, L2 actors, L3 data + UI, plus integration; UI runs in parallel from the start (DEC-OWN-6).
@@ -127,11 +127,14 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..11 and DEC-PORT-1..3.
 - [Phase 02]: Plan 02-01: converter outputs live only in a dedicated folder under artifacts/; the export scripts pass their ROOT to Converter; scratch/ converter caches are refused (rows 74 and 79)
 - [Phase 02]: Plan 02-01: measured red baseline is the 2 nativeNpcProfiles cases plus at most one load-dependent 5000 ms timeout; no timeout or worker count changed (row 77)
 - [Merge]: native-world-slice merged (DEC-OWN-11): `/` opens the code-built native sandbox, the `world` parameter, Talking Island route, courtyard demo, `MockWorldAdapter` and procedural characters are gone, and `NativeSliceAdapter` is the only adapter (OVERNIGHT-DECISIONS row 80)
+- [DEC-OWN-12]: UE2 materials and fog, the BSP visibility walk, MoveActor and APawn movement, particle emitters, and network framing, codec and replay are our own code modelled on Lineage2JS (notes in `.planning/reference/lineage2js/`); the owner-delegated defaults D1-D7 are in PROJECT.md. MAT-01, MAT-02, VIS-01, MOVE-01 and FX-01 are Phase 2, MOVE-02, NET-09 and NET-10 Phase 4, all provisional, owner review (OVERNIGHT-DECISIONS rows 81-88)
+- [DEC-OWN-12]: Under MAT-02, fog and lighting move from presentationConfiguration to L2 data (ZoneInfo, L2FogInfo, Env.int); presentationConfiguration then keeps only camera and debug values. Until MAT-02 lands, its saved Editor fog and light values are the interim state
 
 ### Pending Todos
 
 - Unexecuted Phase 2 plans written before the merge still name removed code: 02-20 and 02-41 build their tracers on `MockWorldAdapter` (use `NativeSliceAdapter`), and 02-23 opens `/?world=interlude&map=20_21` (use `/?map=20_21`).
 - Commit the main checkout's uncommitted code before lanes start (lanes branch from committed code only). Planning files are committed (1b1b0b7).
+- Data-ui approval is still needed for `read_class_defaults` (`scripts/native_catalog/effects.py:264`) to become a thin caller of the integration `scripts/native_assets_lib/class_defaults.py` or be removed; actors approved the same for `DefaultReader` in `scripts/native_effect_bundle.py` (Lineage2JS handoff, FX-01).
 
 ### Blockers/Concerns
 
@@ -141,8 +144,9 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..11 and DEC-PORT-1..3.
 - Streaming/LOD (WORLD-04) is a dependency of walking 153 tiles; the current native loader loads eagerly.
 - Native reference capture fails the fixed 30 FPS cadence gate (4.1 FPS) and DATABASE-PC has no 120 Hz display; both gate Phases 5 and 6, not stage A (screenshots and listen checks).
 - Native UI layouts from `interface.xdat` versus custom HUD tokens: settled by DEC-OWN-10 (2026-11-08, commit 62741d8): the original Interlude interface only, skin, fonts and icons from converted UI textures; DESIGN.md deleted.
-- Mobius transport (dumb relay) is a recommendation, not decided; decide at the start of Phase 4. Elbera `gateway/` and `editor/` are unaudited.
-- Whether client-side collision survives next to a server-authoritative adapter is open (Phase 4 design).
+- Mobius transport (dumb relay) is a recommendation, not decided; decide at the start of Phase 4. Elbera `gateway/` and `editor/` are read-only behaviour references, not port sources (NET-03, DEC-OWN-12).
+- Client-side collision next to a server-authoritative adapter: settled by DEC-OWN-12 (2026-11-08): converter collision feeds the MOVE-01 port, which moves pawns between server updates and drives sandbox walking; the server stays authoritative (MOVE-02); Phase 4 settles correction thresholds only.
+- If main is ever merged with this branch, bce4a04/06bdbda edit docs/ROADMAP.md, PRODUCT.md and NOTICE, which this branch deleted: keep the deletions.
 - Lane tool support for this repo is not available on DATABASE-PC yet; use plain `git worktree` until it lands.
 - Count differences to check in the decoder inventory: 435 vs 433 `.utx`, `chargrp` has 15 rows.
 
@@ -166,7 +170,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..11 and DEC-PORT-1..3.
 
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
-| Polish list | Automatic stair routing around turns | Phase 5 (POL-03) | 2026-11-08 | v1 |
+| Polish list | Stair turns walked as in L2.exe, with no client routing | Phase 5 (POL-03) | 2026-11-08 | v1 |
 | Polish list | Upper-landing camera roof occlusion | Phase 5 (POL-03) | 2026-11-08 | v1 |
 | Polish list | Automatic surface footsteps (ALAudio.dll rules) | Phase 5 (POL-02) | 2026-11-08 | v1 |
 | Polish list | Specialized attack sounds (six female events unresolved) | Phase 5 (POL-02) | 2026-11-08 | v1 |

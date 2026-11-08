@@ -6,7 +6,8 @@ Source-formula preview of `FX_E_S.Flameset.Default_Flame01` at its twelve `20_20
 
 - The loader checks the section archive's length and hash, the model identity and the twelve declared placements before binding. Corrupt or unsupported effect data keeps the valid world and original materials and shows a status message.
 - Placements bind through retained material `gltf.extras` and source placement metadata, never by mesh name.
-- Recovered blend factors: flame `ONE / ONE_MINUS_SRC_COLOR`, glow `ONE / ONE`, depth writes off. Never call the result native lighting.
+- Recovered blend factors: flame `ONE / ONE_MINUS_SRC_COLOR`, glow `ONE / ONE`, depth writes off. Never call the result native lighting. These factors are the Interlude evidence for OB_Brighten and OB_Translucent in the MAT-01 blend table; the flame shaders move onto the library.
+- Flames are static-mesh placements, not Emitter actors (`20_20.unr` has none). They do not use the FX-01 simulator.
 - Texture and fade clocks start at 0 with rate 1 (`src/runtime/nativeSandboxConfiguration.ts`), advance on the uncapped engine frame delta and pause with the local adapter.
 - Dev > World > Flames > Inspect flame cycles the placements; Follow fighter returns. With the adapter paused, `window.__nativeSlice.setFlameReplay({ textureSeconds, fadeSeconds })` seeks each clock.
 - `tests/browser/nativeFlame.spec.ts` checks 24 active bindings, 17 textures, unlit output and texture frame 6 at 0.21 s. It skips when `public/l2/catalog.json` is missing. Evidence: `artifacts/native-parity/research/flame-runtime/`.

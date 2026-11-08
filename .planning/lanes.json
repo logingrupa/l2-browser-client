@@ -8,6 +8,7 @@
       "tests/browser/**",
       "tests/fixtures/**",
       "tests/pipeline/**",
+      "tests/support/**",
       "tests/unit/**"
     ]
   },
@@ -146,6 +147,7 @@
         "docs/parts/social/**",
         "package.json",
         "pnpm-lock.yaml",
+        "scripts/audit-material-census.py",
         "scripts/derive-native-map-bsp.py",
         "scripts/derive-native-map-building.py",
         "scripts/derive-native-map-model.py",
@@ -157,6 +159,7 @@
         "scripts/migrate-native-terrain-runtime.py",
         "scripts/migrate-native-terrain-uv.mjs",
         "scripts/native_assets.py",
+        "scripts/native_assets_lib/**",
         "scripts/native_batch.py",
         "scripts/native_catalog.py",
         "scripts/native_editor_import.mjs",
@@ -174,13 +177,18 @@
         "scripts/stage_native_stepsound_deco_grass.py",
         "scripts/stage_native_stepsound_package.py",
         "scripts/stage_native_world_audio.py",
+        "src/materials/**",
+        "src/net/**",
         "src/runtime/**",
         "src/scene/getWorldCanvas.ts",
         "src/scene/guardSceneStartup.ts",
         "src/scene/loadEnvironment.ts",
         "src/scene/prepareSceneForReveal.ts",
         "src/scene/projectPosition.ts",
-        "src/world/**"
+        "src/shared/**",
+        "src/world/**",
+        "tools/net-relay/**",
+        "tools/reference-overlap/**"
       ]
     }
   }

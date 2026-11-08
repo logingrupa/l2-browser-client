@@ -10,7 +10,7 @@ Terrain, static meshes, section loader. One hand-built `20_20` section loads tod
 - `scripts/native_map.py` and `native_map_geometry.py` accept only UE123 / licensee 28: 67 of 153 tiles.
 - `scripts/native_map_overlap.py` selects a static actor by a positive-area indexed triangle inside the section, not by origin; meshes are never clipped or moved.
 - Mask UV: `(grid + 0.5)/H` if `(GIsL2Seamless == 0 || GIsEditor != 0) && gbStretchTerrainMask == 0`, else minus `max(grid - 240, 0)/4096`. 20_20 uses the latter, baked behind its map hash.
-- Units and handedness: [OUTPUT_CONTRACT.md](OUTPUT_CONTRACT.md). Native scene fog is off (mode 0 in `src/scene/presentationConfiguration.ts`).
+- Units and handedness: [OUTPUT_CONTRACT.md](OUTPUT_CONTRACT.md). Babylon scene fog stays off. L2 fog comes from water volumes, L2FogInfo actors, ZoneInfo distance fog (bDistanceFog, DistanceFogColor, DistanceFogStart, DistanceFogEnd) and the Env.int preset through our per-material fog math (MAT-01, MAT-02). Mode 0 in `src/scene/presentationConfiguration.ts` is the interim state.
 - **Source textures** (World sheet) is a labelled candidate material (`nativeTerrainPreview.ts`), not native blending; its 9-layer and mask-size pins fail on 20_21.
 
 ## Open

@@ -32,9 +32,9 @@ Stage A breadth-first conversion of the whole client (Phases 1 to 3), stage B se
 - Production deployment (excluded in every source).
 - Client-side gameplay math, combat calculation, quest logic or progression (DEC-PORT-3: the client displays server outcomes).
 - Committing or publishing converted Lineage II binaries, captures or native audio; they stay under ignored `artifacts/` and `public/l2`.
-- Copying source or assets from other workspaces or from projects without a redistribution licence.
+- Copying source or assets from other workspaces or from projects without a redistribution licence. Pinned read-only references inside the repo (`.assets/reference/lineage2js` at `854f629...`, `.assets/reference/l2js-core` at `4aac1bd...`) may be read to learn mechanisms; no code is copied or lightly edited, and a reviewer checks overlap (DEC-OWN-12).
 - Elbera's three.js runtime, native verifiers pinned to Engine.dll `07b24af4...`, `elbera-acis.patch`, deviceId auto login, and a smart JSON gateway (doubles per-packet work, thrown away if SpacetimeDB is chosen).
-- Reproducing legacy Direct3D internals unless they explain a visible difference or required behaviour.
+- Reproducing legacy Direct3D internals unless they explain a visible difference or required behaviour. UE2 material, blend and distance-fog math is required behaviour (MAT-01); D3D state caching, device caps and driver workarounds are not.
 - Depth-first work order (human fighters and 20_20 before other races or tiles); DEC-OWN-1 sets breadth-first stage A.
 
 ## Context
@@ -70,6 +70,14 @@ Stage A breadth-first conversion of the whole client (Phases 1 to 3), stage B se
 - DEC-OWN-9 (2026-11-08): The default phone is the iPhone 15 Pro Max held sideways, 932 x 430 CSS px in landscape with touch. Phone screenshots and the primary phone layout use it; portrait 430 x 932 stays a horizontal-scroll check, and desktop screenshots stay 1440 x 900. Reason: the game is played with the phone held sideways.
 - DEC-OWN-10 (2026-11-08): The only game interface is the original Interlude interface. Window layout comes from `interface.xdat`; skin, fonts and icons come from the client's converted UI textures. DESIGN.md, `.impeccable/design.json` and the custom HUD direction (dark translucent panels, bronze borders, Cormorant Garamond headings) are removed. The procedural HUD stays only as a stand-in until native windows replace it and gets no design work. Supersedes the mobile-first HUD wording in UI-03 and PRODUCT.md.
 - DEC-OWN-11 (2026-11-08): Only the native routes stay. `/` opens the native sandbox; `?authored=1` and `?character=<id>` stay and the `world` query parameter is gone. The Talking Island reference route, the courtyard demo with `MockWorldAdapter` and procedural characters, and the converted character GLB path are removed, with everything only they used. The repo is self-contained: nothing reads or reuses another workspace; the pinned conversion tools live in the ignored `.assets/native-tools/`.
+- DEC-OWN-12 (2026-11-08): Five areas are our own implementations, modelled on Lineage2JS as a clean-room reference, with no vendor dependencies: UE2 materials and fog, the BSP visibility walk, the MoveActor and APawn movement port, the particle emitter simulation, and network framing, packet codec and replay. The notes are in `.planning/reference/lineage2js/` (reference notes, not decisions; this file and REQUIREMENTS.md win). The pinned example code is read-only in the ignored `.assets/reference/` (Lineage2JS `854f62920319c458f9d339f8463b2ec8ed16fa9a`, l2js-core `4aac1bd28945746aa2ecddd72c96e473592ee0bd`): read to learn mechanisms, never copied, installed, built or run. The requirements MAT-01, MAT-02, VIS-01, MOVE-01, MOVE-02, FX-01, NET-09 and NET-10 are provisional, owner review. The owner delegated these defaults ("you know better"):
+  - D1: `WorldEntity` positions stay metres through `src/world/sourceFrame.ts`. Movement events and the `report-position` and `cannot-move` intents carry source units, wire integers inbound and float32 Location outbound, so truncation matches L2.exe. One `NET-04` text covers both.
+  - D2: `MAT-02` is Phase 2, world lane. BSP lightmaps convert in Phase 2, which reverses `02-30-PLAN.md:309`, because unlit BSP fails the stage A side-by-side anyway.
+  - D3: Committed fixtures are synthetic, or indices and hashes only. Real-client tests read `--client` and skip with a reason when it is missing. `PROJECT.md:34` stays as it is.
+  - D4: Phase 2 runs reference values as unconfirmed defaults. Static re-derivation against Interlude binaries is Phase 5 (`POL-04`), unless a Phase 2 result cannot appear without it, and then the step records why. Binaries are read, never run.
+  - D5: The BSP section key is material, PF_Unlit, lightmap texture and outdoor class. Material-only grouping goes.
+  - D6: The adapter contract grows by record types only, in one integration commit before adapter code: `command-rejected`, `AccountSession`, `environment`, `move`, `stop`, `correct`, `teleport`, `report-position`, `cannot-move`, an origin on `move-local`, and EntityKind `npc`. The five `GameWorldAdapter` methods stay frozen.
+  - D7: `@recast-navigation/*` leaves runtime dependencies. An import-boundary test keeps `@recast-navigation/*`, `@babylonjs/materials` and `@babylonjs/node-particle-editor` out of `src/**` outside the lazy inspector entry.
 
 ## Carried, not locked (proposed in sources, consistent with the locked set)
 
@@ -95,4 +103,4 @@ Stage A breadth-first conversion of the whole client (Phases 1 to 3), stage B se
 | Dumb WebSocket relay for Mobius | Reusable if server becomes SpacetimeDB | Pending (recommendation) |
 
 ---
-*Last updated: 2026-11-08 after DEC-OWN-11 (only the native routes stay)*
+*Last updated: 2026-11-08 after DEC-OWN-12 (own implementations of five areas, Lineage2JS as reference)*

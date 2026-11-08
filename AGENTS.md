@@ -5,7 +5,7 @@ Browser client for Lineage II Interlude on Babylon.js WebGPU. These rules are sp
 ## Project rules
 
 ### Decisions and planning
-- Current decisions live in [.planning/PROJECT.md](.planning/PROJECT.md) (DEC-OWN-1 to DEC-OWN-11). They win over every other doc. [docs/PORT_SCOPE.md](docs/PORT_SCOPE.md) holds the scope tables those decisions cite.
+- Current decisions live in [.planning/PROJECT.md](.planning/PROJECT.md) (DEC-OWN-1 to DEC-OWN-12). They win over every other doc. [docs/PORT_SCOPE.md](docs/PORT_SCOPE.md) holds the scope tables those decisions cite.
 - Requirements, phases and state: [.planning/REQUIREMENTS.md](.planning/REQUIREMENTS.md), [.planning/ROADMAP.md](.planning/ROADMAP.md), [.planning/STATE.md](.planning/STATE.md).
 - The docs in `docs/` are short summaries of current facts, not decisions. When a doc and `.planning` disagree, `.planning` wins and you fix the doc in the same change. Older detail lives in git history.
 
@@ -23,7 +23,8 @@ Use the smallest command that fits the work.
 - Never invent Lineage II values (sizes, timings, colors, offsets, sounds, stats, names).
 - Every value comes from the reference client, IMPORTA-PC `C:/Lineage2-client`, through a pinned recipe or script, and records its source.
 - `E:/Lineage2-client` is a conversion source only after the full-tree hash lock (FOUND-03).
-- Other workspaces under `C:\laragon\www` are unrelated projects. Do not read or reuse them for this client. The only exception is the pinned Elbera source that [.planning/PROJECT.md](.planning/PROJECT.md) names.
+- Other workspaces under `C:\laragon\www` are unrelated projects. Do not read or reuse them for this client. Two exceptions: the pinned Elbera source that [.planning/PROJECT.md](.planning/PROJECT.md) names, and the in-repo clones in the ignored `.assets/reference/` (Lineage2JS `854f629`, l2js-core `4aac1bd`; DEC-OWN-12). The clones are read-only clean-room references: read them to understand mechanisms, never copy their code, and never install, build or run them.
+- A constant learned from those references is an unconfirmed default until it is re-derived against the Interlude binaries (POL-04).
 - An unresolved value stays visibly unresolved. No procedural stand-ins on the native route.
 
 ### Interface

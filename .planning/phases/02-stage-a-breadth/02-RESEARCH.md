@@ -34,7 +34,7 @@ Copied from 02-CONTEXT.md `<decisions>`:
 
 **C. WORLD-07 and WORLD-08 (provisional, owner review)**
 - WORLD-07: a separate read-only reviewer subagent (not the author) re-verifies the 74-file packet's manifest hashes, then gives each finding one verdict (adopted, rejected, polish) in `docs/parts/world/EVIDENCE.md`, with the reviewer identity recorded. Adopted findings become tile-general steps with tests.
-- WORLD-08: converter-side collision extraction from source declarations; Elbera's static and BSP collision exporters serve as pinned cross-checks behind an adapter, run by path, not vendored. Unreadable collision is a per-object gap.
+- WORLD-08: converter-side collision extraction from source declarations into the native-tile-collision resource; converter collision feeds the MOVE-01 port, which moves pawns between server updates and drives sandbox walking, and the server stays authoritative (MOVE-02). Unreadable collision is a per-object gap. Superseded by CONTEXT decisions C and J (DEC-OWN-12): no Elbera collision exporter runs.
 
 **D. Data lane (DATA-01..03)**
 - The generic `decode_table` decodes all 37 descriptor-linked tables (widen `TABLES`, keep the hash pins). Elbera structure parsers behind an adapter decode hairgrp, helmetgrp and hairaccessarygrp, with field meanings labelled "Elbera 07b24 proof, unverified on 4dd2". L2FileEdit `.ddf` files are a cross-check only.
@@ -53,7 +53,7 @@ Copied from 02-CONTEXT.md `<decisions>`:
 **F. UI lane and sandbox (UI-01..03, SAND-02)**
 - Elbera `parse_xdat` behind an adapter decodes `interface.xdat`; type-dependent record tails are kept as hashed opaque spans; the source hash is pinned.
 - Interface (DEC-OWN-10, commit 62741d8): the only game interface is the original Interlude interface; the UI lane builds native windows only, layout from the decoded `interface.xdat`, skin, fonts and icons from UI textures converted by recipe (lane-local outputs). No custom HUD, no design tokens; DESIGN.md is deleted; the procedural HUD and developer sheet are unstyled stand-ins; design skills are never used for game UI.
-- Tracer: `window:StatusWnd` with `StatusLeftTex`, `CPBarTex`, `HPBarTex`, `MPBarTex`, filled from `MockWorldAdapter` values.
+- Tracer: `window:StatusWnd` with `StatusLeftTex`, `CPBarTex`, `HPBarTex`, `MPBarTex`, filled from the `NativeSliceAdapter` local player (DEC-OWN-11 removed `MockWorldAdapter` after this research).
 - SAND-02: `DevSheet.ts` (734 lines) is split when the tile, spawn, equip, cast, window and audio pickers are added; pinnable sheet with hover-cards showing variables (owner preference).
 
 **G. Coverage report and order (INT-01, CONV-01, CONV-02)**
@@ -91,7 +91,7 @@ Copied from 02-CONTEXT.md `<decisions>`:
 | WORLD-05 | Walk any converted tile with terrain collision | 5.1 | 02-16 |
 | WORLD-06 | Minimap and world map from `MinimapCtrl`, `zonename`, `huntingzone` | 5.1 | 02-31 |
 | WORLD-07 | Independent review of the 74-file packet, one verdict each | 5.1 | 02-24 |
-| WORLD-08 | Collision from source declarations only; per-object gaps | 5.1 | 02-26 |
+| WORLD-08 | Collision from source declarations only; per-object gaps; feeds the MOVE-01 port | 5.1 | 02-26 |
 | ACT-01 | All chargrp characters; hair and helmet gaps | 5.2 | 02-37 |
 | ACT-02 | npcgrp NPCs by ID; mesh name never selects a profile | 5.2 | 02-18, 02-35, 02-36 |
 | ACT-03 | Items equip by ID, sockets preserved | 5.2 | 02-38, 02-39 |
@@ -113,7 +113,7 @@ Breadth is blocked by three things, not by reader code. First, missing contracts
 
 ## 2. Architectural responsibility
 
-Guarded Python readers own client bytes. Lane converters (`scripts/<lane>/`) orchestrate the shared readers. The filesystem lane store mirrors `public/l2` prefixes. A dev-only Vite plugin serves it. The browser owns catalog validation, the ID index, streaming and the collision ring. `GameWorldAdapter`/`MockWorldAdapter` owns HP, CP and MP, and the client never computes them. Coverage is a Python report fed by browser load-check records.
+Guarded Python readers own client bytes. Lane converters (`scripts/<lane>/`) orchestrate the shared readers. The filesystem lane store mirrors `public/l2` prefixes. A dev-only Vite plugin serves it. The browser owns catalog validation, the ID index, streaming and the collision ring. `GameWorldAdapter` (today `NativeSliceAdapter`; `MockWorldAdapter` was removed by DEC-OWN-11) owns HP, CP and MP, and the client never computes them. Coverage is a Python report fed by browser load-check records.
 
 ## 3. Standard stack and reuse
 
@@ -144,7 +144,8 @@ No new packages are needed. **No installs** (relay rule) and **no Package Legiti
 | Catalog writes | per-lane catalog JSON writers | The catalog writer library extracted from `stage_native_runtime.py:273-339` (02-03) |
 | Table decoding | new dat readers | `decode_table` plus pins; Elbera only for the 3 hair tables |
 | xdat parsing | a fresh xdat reader | `parse_xdat.scan` / `build_tree` by pinned import |
-| BSP and collision readers | new BSP code | The vendored reader; Elbera exporters as cross-check |
+| BSP and collision readers | new BSP package readers | The vendored reader (in-repo, world-owned, pinned in SOURCE.json); Elbera collision modules only as read-only behaviour references |
+| Runtime BSP visibility walk | a vendor or engine culler | our own walk over converted node, zone and portal data (VIS-01) |
 | Hashing client files | `native_catalog/cli.py inventory()` (whole 7.84 GB tree) | Lock `eSha256` plus the guard's stat check |
 
 ## 4. Architecture and contracts
@@ -202,7 +203,7 @@ Recommended `scripts/native_store/unit_ledger.py` [INF]:
 - Fingerprint = lock SHA-256 of inputs + step `algorithmVersion` + config. Never implementation self-hashes (today `native_bsp_floor.py:299`, `native_bsp_building.py:176`, `native_map_overlap.py:422-433` embed them, so a comment edit rehashes the chain).
 - Preflight: refuse inside relay windows (Riga time), below a configured free-disk floor, or through `public/l2`; run at BelowNormal.
 
-Gap row, shared by all lanes and read by coverage: `{key, part, step, status: "pass"|"gap"|"pending"|"failed", reason, sourceIdentity, evidence}` with `key` one of `tile:XX_YY`, `npc:<id>`, `item:<id>`, `skill:<id>:<level>`, `table:<name>`, `window:<name>`. Reasons are a closed, versioned list extended by lane plans. Seed: `map-licensee-unsupported:<v>/<lic>`, `terrain-height-package-missing`, `skeletal-licensee-unsupported:<v>/<lic>`, `no-mesh-in-row`, `animation-reference-missing`, `actor-default-unresolved:<field>`, `multi-slot-binding-unsupported`, `hair-layout-undecoded`, `helmet-layout-undecoded`, `native-skill-dispatch-required`, `no-exact-skillsound-row`, `effect-class-unsupported:<class>`, `sound-identity-unresolved`, `decode-failed:<error>`, `control-type-unsupported:<type>`, `collision-unreadable`, `adapter-field-absent:<field>`.
+Gap row, shared by all lanes and read by coverage: `{key, part, step, status: "pass"|"gap"|"pending"|"failed", reason, sourceIdentity, evidence}` with `key` one of `tile:XX_YY`, `npc:<id>`, `item:<id>`, `skill:<id>:<level>`, `table:<name>`, `window:<name>`. Reasons are a closed, versioned list extended by lane plans. Seed: `map-licensee-unsupported:<v>/<lic>`, `terrain-height-package-missing`, `skeletal-licensee-unsupported:<v>/<lic>`, `no-mesh-in-row`, `animation-reference-missing`, `actor-default-unresolved:<field>`, `multi-slot-binding-unsupported`, `hair-layout-undecoded`, `helmet-layout-undecoded`, `native-skill-dispatch-required`, `no-exact-skillsound-row`, `effect-class-unsupported:<class>` (renamed under DEC-OWN-12: the integration seed drops it with a `listVersion` bump and actors registers `emitter-class-unported:<class>` and `emitter-feature-unported:<property>` in `recipes/actors/gap-reasons.json`), `sound-identity-unresolved`, `decode-failed:<error>`, `control-type-unsupported:<type>`, `collision-unreadable`, `adapter-field-absent:<field>`.
 
 ### 4.5 Catalog writer and lane catalog (contract 02-03)
 
@@ -299,7 +300,7 @@ Rules:
 
 **Gremlin tracer:** rows from `decode_table`; generated request with `sourceBinding` paths (`verify_binding` walks them); animation from the serialized `Animation` reference (`skeletal.py:181`), never a synthesized `gremlin_anim`, else `animation-reference-missing`; profile via `native_actor_profiles` with raises turned into gap rows; exact `MonSound.*` labelled `unique-package-leaf-candidate` (`combat_audio_bundle.py:30-33`); effect as binding record only; lane catalog `models[]` plus `npcProfiles[]`; spawn through 01-14's `sandboxNpcVisual.ts` on 5175 with Playwright for render, clips and the `npc:20002` missing marker.
 
-**Hard-codes to remove when touched:** `loadNativeCatalog.ts:8,50` (`musveren:0`); `nativeHumanHandAnchor.ts:13-17` (two rigs, `Weapon_R_Bone`); `src/world/worldTypes.ts:11` `export type EquipmentSlot = "upper";` (integration); `nativeEffectInitTimeline.ts:12-16`; `loadEffectComponent.ts:149` (Sprite and Mesh emitters only).
+**Hard-codes to remove when touched:** `loadNativeCatalog.ts:8,50` (`musveren:0`); `nativeHumanHandAnchor.ts:13-17` (two rigs, `Weapon_R_Bone`); `src/world/worldTypes.ts:11` `export type EquipmentSlot = "upper";` (integration); `nativeEffectInitTimeline.ts:12-16`; `loadEffectComponent.ts:149` (Sprite and Mesh emitters only, as the code stands; under DEC-OWN-12 the bundles also carry Beam, Ribbon and VertMesh emitters, simulation coverage follows FX-01, and Spark and Trail are gaps).
 
 **Census first:** only Fighter/Magic (123/30) and LineageMonsters/LineageWeapons (123/28) licensees are known; census the other 15 `.ukx` plus `Skill.usk` with header-only `inspect_header` (`native_catalog/cli.py:85-92`) through the guard. All 20 `animations/` files are lock-equal.
 
@@ -323,7 +324,7 @@ A cp1252 `UnicodeDecodeError` (`ue2.py:71-78`) escapes `except FormatError`; cat
 
 **UI-01:** `system/interface.xdat` is lock-equal, 725,233 B, SHA `b5b37678…1b641`, first u32 = 165. Elbera pins a different `Interface.xdat` (`a7969a86…`) and NWindow (`af6c3437…`); our `nwindow.dll` is `differing`. So: anchors labelled "Elbera NWindow af6c3437 proof, unverified on IMPORTA 7c12fb6b"; never `parse_xdat main --check` (edition guards `:770-773`); set module `data_g` before `build_tree` (`:584, :610-622`) or drop tail fields; keep headers plus hashed `[off, end)` tails. Elbera's local `interface.json` (248 roots, 2,638 nodes, 165 declared) is a cross-check target only. Names repeat (`btnClose`, `CPBar`×4, `PartyStatusWnd0`×3), so window ids need a duplicate rule.
 
-**UI-02 StatusWnd:** 256×92; `StatusLeftTex` 4×72 at (79,11); `CPBarTex` at (81,13) with `CPTex_*` and `CPBarName`/`CPBarValue`; `HPBarTex` anchor 7 to `CPBarTex` (0,3); `MPBarTex` to `HPBarTex` (0,1). `WorldEntity` has only `health`/`maximumHealth` (`worldTypes.ts:13-30`; `MockWorldAdapter.ts:197-198` sets 100/100), so **CP and MP are `adapter-field-absent` gaps**; tail labels unresolved; gauge fill a labelled unverified presentation rule. DOM renderer under `src/ui/nativeWindows/`, with a zero-literal-names test. UI `.utx` are Ver121, lock-equal (`L2UI_CH3.utx` 209 MB), licensee vs the 20/28/30 gate unchecked; convert through guarded `native_assets.py convert --kind texture` with lane output [INF], else per-control texture gaps.
+**UI-02 StatusWnd:** 256×92; `StatusLeftTex` 4×72 at (79,11); `CPBarTex` at (81,13) with `CPTex_*` and `CPBarName`/`CPBarValue`; `HPBarTex` anchor 7 to `CPBarTex` (0,3); `MPBarTex` to `HPBarTex` (0,1). `WorldEntity` has only `health`/`maximumHealth` (`worldTypes.ts:13-30`; the removed `MockWorldAdapter.ts:197-198` set 100/100; read the `NativeSliceAdapter` local player instead), so **CP and MP are `adapter-field-absent` gaps**; tail labels unresolved; gauge fill a labelled unverified presentation rule. DOM renderer under `src/ui/nativeWindows/`, with a zero-literal-names test. UI `.utx` are Ver121, lock-equal (`L2UI_CH3.utx` 209 MB), licensee vs the 20/28/30 gate unchecked; convert through guarded `native_assets.py convert --kind texture` with lane output [INF], else per-control texture gaps.
 
 **UI-03 (superseded, see 11.15):** DESIGN.md and its tokens were deleted by DEC-OWN-10 (commit `62741d8`); UI-03 now reads "Only the original Interlude interface: window layout from `interface.xdat`, and skin, fonts and icons from the client's converted UI textures. No custom HUD styling (DEC-OWN-10)." [V REQUIREMENTS.md:47]. Phone size is DEC-OWN-9: 932 x 430 landscape, 430 x 932 portrait horizontal-scroll check [V PROJECT.md:70].
 
@@ -368,7 +369,7 @@ A cp1252 `UnicodeDecodeError` (`ue2.py:71-78`) escapes `except FormatError`; cat
 |---|---|---|---|
 | 02-10 Data tracer: generic decode plus DATA-03 | data-ui, `data` | 1. 29 pins (split into a pins module), case-insensitive pattern resolver shared with the inventory, real `source`, data-driven uniqueness. 2. `scripts/data/convert_tables.py` with ledger seals into `lane-store/data-ui/l2/tables/<sha>/`. 3. Strict sysstring-e and systemmsg-e decode; DATA-03 verdict into inventory and EVIDENCE; update `test_dat_table_inventory.py` tallies | 02-01, 02-02, 02-04 |
 | 02-11 UI-01 layout tree | data-ui, `ui` | 1. Pinned-path adapter for `scan`/`build_tree` (`data_g` set, no bytecode, SHA pin, commit 12c9656), header fields plus hashed opaque tails, window-id duplicate rule. 2. Synthetic xdat fixtures (Elbera test style) plus a validator. 3. Tree into the lane store; counts cross-checked against Elbera `interface.json` as evidence only | 02-01, 02-02 |
-| 02-12 UI tracer `window:StatusWnd` | data-ui, `ui` | 1. DOM renderer from the tree plus the anchor resolver labelled unverified, with a zero-literal-names test. 2. HP from `MockWorldAdapter`; CP and MP `adapter-field-absent`; labels unresolved. 3. UI textures by recipe through the guarded converter, or per-control texture gaps; Playwright screenshot | 02-11, 02-05, 02-06, 01-14 |
+| 02-12 UI tracer `window:StatusWnd` | data-ui, `ui` | 1. DOM renderer from the tree plus the anchor resolver labelled unverified, with a zero-literal-names test. 2. HP from the `NativeSliceAdapter` local player; CP and MP `adapter-field-absent`; labels unresolved. 3. UI textures by recipe through the guarded converter, or per-control texture gaps; Playwright screenshot | 02-11, 02-05, 02-06, 01-14 |
 | 02-13 World oracle and census (WORLD-03) | world, `world` | 1. `freeze_world_oracle.py` reads the junction read-only into `recipes/world/oracle/20_20/expected.json` (counts, hashes, catalog SHA; no L2 bytes). 2. `tile_census.py` (153 tiles plus 10 non-tile, licensee, wrapper, gate results, Lobby status) into `docs/parts/world/tile-census.json`. 3. World gap rows for every ineligible tile into coverage | 02-02, 02-07 |
 | 02-14 World raw step | world | 1. Split `native_map.py` under 400 lines and make the section box optional. 2. `raw_map_step.py --map` on the ledger. 3. Synthetic pytest plus a real-client 20_21 run that skips when E: is absent | 02-13 |
 | 02-15 Chunk planner and terrain step | world | 1. `tile_chunk_plan.py` (frame from TerrainInfo, 4x4 chunks, first enabled PlayerStart). 2. Per-chunk terrain with the `extrapolated` mask-UV label. 3. Split `native_map_geometry.py` (1,043 lines) | 02-14 |
@@ -403,7 +404,7 @@ A cp1252 `UnicodeDecodeError` (`ue2.py:71-78`) escapes `except FormatError`; cat
 | 02-37 Player characters (ACT-01) | actors | chargrp assemblies (body parts plus face, `rigidAttachment` from defaults); hair and helmet gaps; class to template mapping a gap until `classinfo-e` | 02-36, 02-20 |
 | 02-38 `EquipmentSlot` widening | integration | Slots from source `body_part` values once decoded meanings exist, else a gap; no invented names | 02-20 |
 | 02-39 Items (ACT-03) | actors | 391 weapon units, armor per race column, socket sidecars kept, hand anchor from class defaults or a gap | 02-37, 02-38 |
-| 02-40 Skill binding table (ACT-06) | actors | All 29,812 rows to root, `native-skill-dispatch-required` or gap; exact sound row or unresolved; bundles for Sprite/Mesh emitters only | 02-17 |
+| 02-40 Skill binding table (ACT-06) | actors | All 29,812 rows to root, `native-skill-dispatch-required` or gap; exact sound row or unresolved; bundles for Sprite, Mesh, Beam, Ribbon and VertMesh emitters; simulation coverage follows FX-01; Spark and Trail are gaps | 02-17 |
 | 02-41a/b Clip playback (ACT-04) | actors + data-ui | Split per 11.12; events per 11.11 | 02-18, 02-22, 02-44 |
 | 02-42 Audio bindings (ACT-05) | actors | Per-bundle sound manifest, exact vs leaf-candidate labels, unresolved records, inputs via the guard, audible labelled browser check | 02-36, 02-40 |
 | 02-43 Integration lane store and restage handoff | integration | Union the lane stores, re-run coverage, append Needs Human commands | the tracers, then each breadth slice |
@@ -481,7 +482,7 @@ A cp1252 `UnicodeDecodeError` (`ue2.py:71-78`) escapes `except FormatError`; cat
 
 **11.8 `.ddf` cross-check.** [V lock] The nested `L2FileEdit-master/L2FileEdit-master/…` copies (4,069) are `e-only`; the flat `L2FileEdit-master/data/l2asm-disasm/DAT_defs/…` copies (4,069) are `equal` (`…/Interlude/hairgrp.ddf`, 1,729 B). Read the flat copy through the guard. Interlude has only `hairgrp.ddf` and `hairaccessorylocgrp.ddf`, so only hairgrp is cross-checked.
 
-**11.9 WORLD-04 LOD (Babylon 9.27.1).** [V typings] `Mesh.addLODLevel(distanceOrScreenCoverage, mesh: Nullable<Mesh>)` (`mesh.pure.d.ts:492`), `removeLODLevel` `:506`, `getLOD` `:514`; `AssetContainer` add/remove/dispose (`assetContainer.d.ts:223-248`). No LOD in `src/`; radius load and dispose in `loadImportedWorld.ts:24, :111-133`. [INF] One container per chunk, add and remove at the ring edge, dispose beyond a wider ring; Phase 2 visual LOD = `addLODLevel(distance, null)` culling (distance a `presentation` variable); a simplified mesh is a derivative recorded `{fromSha256, algorithm, algorithmVersion}` or a `lod-derivative-unplanned` gap; navigation takes collision resources only.
+**11.9 WORLD-04 LOD (Babylon 9.27.1).** [V typings] `Mesh.addLODLevel(distanceOrScreenCoverage, mesh: Nullable<Mesh>)` (`mesh.pure.d.ts:492`), `removeLODLevel` `:506`, `getLOD` `:514`; `AssetContainer` add/remove/dispose (`assetContainer.d.ts:223-248`). No LOD in `src/`; radius load and dispose was in `loadImportedWorld.ts:24, :111-133`, which the native-world-slice cleanup removed with the reference route (DEC-OWN-11). [INF] One container per chunk, add and remove at the ring edge, dispose beyond a wider ring; Phase 2 visual LOD = `addLODLevel(distance, null)` culling (distance a `presentation` variable); a simplified mesh is a derivative recorded `{fromSha256, algorithm, algorithmVersion}` or a `lod-derivative-unplanned` gap; navigation takes collision resources only.
 
 **11.10 UI-01 count verdict.** [V] Elbera `assets/gamedata/interface.json`: `declaredWindows: 165`, `windows` 248, `controlRefs` 134. The local header also declares 165, so 248 is Elbera's parsed list from another file. 02-11 task 3 records declared, root and control counts of `b5b37678` (DATA-03 style); the test asserts 165; the REQUIREMENTS.md UI-01 text fix goes in its docs commit.
 

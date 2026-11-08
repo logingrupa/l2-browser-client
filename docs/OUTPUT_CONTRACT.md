@@ -103,7 +103,15 @@ A lane store reuses the shared store prefixes exactly:
 | `skies/`, `environments/` | Outside the catalog |
 
 The prefix `/l2/models/<sha>/` is never used. New kinds get new prefixes in
-plan 02-04. Every resource name satisfies the `nativeResourceUrl.ts` path
+plan 02-04. That one contract change registers three tile resource kinds
+together (DEC-OWN-12, provisional, owner review): `bsp-visibility` (one per
+tile, VIS-01), `native-tile-collision` (BSPT per map; VOLS, SMSH, PLAC, TERR
+and MOVR per chunk; WORLD-08, MOVE-01) and `lighting` (one per tile, MAT-02).
+Each is an `.l2asset` whose `asset.json` records units (source) and axes
+(UE2, Z up), written by `scripts/world/typed_payload.py` and read by
+`src/shared/typedPayload.ts`. The per-tile Emitter actor export (FX-01) is
+registered in the same change, as its own kind or as a field of an existing
+kind. Every resource name satisfies the `nativeResourceUrl.ts` path
 rule. Beside `l2/`, a lane folder holds `work/` (the unit ledger, plan 02-02),
 `gap-rows/` (plan 02-02) and `load-checks/` (plan 02-06).
 

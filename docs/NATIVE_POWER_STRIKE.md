@@ -14,7 +14,8 @@ Source migration of the skill 3 level 1 effect classes that reviewed Engine.dll 
 
 ## Open
 
-- Native emission, lifetimes, DrawScale, fades and cleanup. Mesh emitters declare `UseMeshBlendMode=false` and `RenderTwoSided=true`, which the GLBs lack (ACT-06, POL-01).
+- Emission, lifetimes, fades and cleanup run in the FX-01 simulator (rules in `docs/parts/skills-effects/PARTICLE_SEMANTICS.md`, written with FX-01). Actor DrawScale is not applied to particles unless the Interlude re-derivation shows otherwise. Mesh emitters with `UseMeshBlendMode=false` take the DrawStyle particle material and `RenderTwoSided` from the record, not from the GLB (ACT-06, POL-01).
+- The weapon trail `LineageEffect.RibbonSet` through `APawn::AttachTrailer` (Interlude thunk `0x103110FE`) is unconfirmed for skill 3. It plays as a default until POL-04 confirms it, before POL-01.
 - Live attachment, native shot location, target reaction, effective `SkillHitTime` (POL-01). Source timing: `artifacts/native-parity/research/fighter-action-reference/`.
 - Table-sound lookup and onset (ACT-05, POL-02); visual and audio parity (POL-01, POL-02); eight-effect workload (PERF-01).
 

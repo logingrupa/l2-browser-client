@@ -17,7 +17,7 @@ The profile adapter reads an NPC's name, mesh, class, DrawScale and collision fr
 - Profiles for all 6,519 `npcgrp` rows, spawnable by ID (ACT-02).
 - Death pose at scale 1.2: 660 of 1,591 vertices end below terrain, up to 0.1194 m (`artifacts/native-parity/research/musveren-death/`). Clips match the native decode; fix placement from evidence (PrePivot, location after `FarMoveActor`), never by rebake or offset (ACT-02, CHECK-01, POL-01).
 - Native constructor values, material, camera, lighting and timing (POL-01).
-- Actor collision sweep and contact; no requirement ID.
+- Actor collision sweep and contact (MOVE-01).
 - Server NPC statistics (NET-05).
 
 ## Pointers

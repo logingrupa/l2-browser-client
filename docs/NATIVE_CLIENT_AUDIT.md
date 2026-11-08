@@ -17,7 +17,7 @@ Reference client identity, source formats, decoders and pinned tools. Folder cou
 
 - Tables without a local layout (`hairgrp`, `helmetgrp`): [reuse audit](LINEAGE2ELBERA_REUSE_AUDIT.md) (DATA-02). NPC `PrePivot` and DrawScale: [NATIVE_NPC_PROFILES.md](NATIVE_NPC_PROFILES.md).
 - ACT-04 only partly covers conditional notify events.
-- Attachment formulas, `bFaceRotation`, particle integration and blend equations are not recovered (ACT-03, ACT-06, POL-01).
+- Particle integration (FX-01) and material blend and fog equations (MAT-01) are ported from UE2 semantics with Lineage2JS as behavioural reference and re-derived against Interlude in POL-04. Attachment formulas and `bFaceRotation` stay open (ACT-03, POL-01).
 
 ## Pointers
 

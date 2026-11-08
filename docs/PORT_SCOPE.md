@@ -55,7 +55,7 @@ Layers run from 0 (foundations) to 4. States are the 2026-11-07 snapshot; live s
 | 8 | Skill visuals, effects (skills-effects) | 2 | Power Strike in progress |
 | 9 | Audio (audio) | 2 | 20_20 footsteps, ambience, music in progress |
 | 10 | Minimap, world map (minimap) | 2 | Not started |
-| 11 | Movement, geodata, 547 doors (movement-geodata) | 2 | Synthetic movement; no geodata on DATABASE-PC |
+| 11 | Movement, geodata, 547 doors (movement-geodata) | 2 | Synthetic movement, to be replaced by the MoveActor and APawn port (MOVE-01); no geodata on DATABASE-PC |
 | 12 | Adapter login, world entry (adapter-login) | 3 | Not started |
 | 13 | Adapter event dispatch (adapter-dispatch) | 3 | Not started |
 | 14 | Combat and stats display (combat-display) | 3 | Fighter versus Musveren demo |
@@ -87,10 +87,10 @@ Review and merge speed is the limit, so each phase runs integration plus at most
 
 ## 9. What to take from Elbera
 
-Elbera (three.js, aCis 409, MIT, commit `12c9656`): `C:\laragon\www\Lineage2Elbera` on IMPORTA-PC, `E:\Lineage2Elbera` on DATABASE-PC.
+Elbera (three.js, aCis 409, MIT; `gateway/package.json` declares ISC, settled in the NET-03 review; commit `12c9656`): `C:\laragon\www\Lineage2Elbera` on IMPORTA-PC, `E:\Lineage2Elbera` on DATABASE-PC.
 
-- Stage A: `tools/l2lib` and `tools/dat/*.py` for tables the local route lacks (DEC-OWN-4), `tools/xdat/parse_xdat.py` (UI-01). From `tools/world/` only pinned functions behind an adapter, as in `scripts/vendor/lineage2elbera_bsp/`, never the `convert.py` or `bsp.py` pipelines (CONV-02). `lightmap.py` and `bsplight.py` wait for polish (DEC-PORT-5). Renderer-free `editor/world/js/` modules (`geodata.js`, `terrain-collision.js`, `nativecoords.js`) only after the `editor/` audit (NET-03).
-- Stage B: after the `gateway/` audit (NET-03), `gateway/src/` crypto, framing and `gameclient.js` packet decoders, re-checked against stock Mobius, one packet type at a time.
+- Stage A: `tools/l2lib` and `tools/dat/*.py` for tables the local route lacks (DEC-OWN-4), `tools/xdat/parse_xdat.py` (UI-01). From `tools/world/` only pinned functions behind an adapter, as in `scripts/vendor/lineage2elbera_bsp/`, never the `convert.py` or `bsp.py` pipelines (CONV-02). Our own BSP lightmap export is MAT-02; Elbera's `lightmap.py` and `bsplight.py` stay a read-only cross-check. Elbera `geodata.js`, `terrain-collision.js` and `cylinder-collision.js` are read-only behaviour cross-checks, not ports (MOVE-01). The vendored `scripts/vendor/lineage2elbera_bsp/` is in-repo, world-owned converter code.
+- Stage B: our own TypeScript framing (2-byte little-endian length), PacketReader and PacketWriter, login and game crypt (own Blowfish, raw RSA through BigInt modpow because WebCrypto has no unpadded RSA, XOR game cipher) and a replay harness over local Mobius captures with synthetic committed fixtures (NET-04, NET-09). Lineage2JS `src/network` is a behaviour reference, and Elbera `gateway/` is a read-only cross-check.
 - Leave behind: verifiers pinned to Engine.dll `07b24af4...` (this client is `4dd2f63c...`), `elbera-acis.patch`, deviceId auto login, the three.js runtime.
 
 Per-tool verdicts for `tools/`: [LINEAGE2ELBERA_REUSE_AUDIT.md](LINEAGE2ELBERA_REUSE_AUDIT.md).
