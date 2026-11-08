@@ -37,6 +37,12 @@ Browser client for Lineage II Interlude on Babylon.js WebGPU. These rules are sp
 - DATABASE-PC relays the church livestream Sun 10:00-14:00 and Thu 19:00-21:30 Riga time. In those windows run no builds, dev servers, tests, installs, hashing or conversions.
 - Run heavy commands at BelowNormal priority.
 
+### Screenshots and viewports
+- Phone screenshots are landscape, 844 x 390 with touch, because the game is played with the phone held sideways. In this repo this replaces the global 390 px portrait default.
+- Desktop screenshots stay 1440 x 900.
+- Portrait 390 x 844 is still checked for horizontal scroll, but it is not the evidence screenshot.
+- Headless e2e runs WebGPU on SwiftShader, a CPU adapter (`playwright.config.ts`), so its FPS readout is not a measurement. FPS and performance claims come only from runs with `WORLD_HARDWARE_TEST=1` on the GTX 1060, outside the relay windows.
+
 ### Docs
 - One evidence doc per part, `docs/parts/<part>/EVIDENCE.md`, under about 30 KB. It states what passes now, what is open, and where the evidence is.
 - Status goes in `STATUS.md` (one line per part, rewritten in place). Decisions go in `DECISIONS.md` (append-only, one dated line each).

@@ -25,3 +25,4 @@ Append-only, one dated line per decision. The full text of each decision lives i
 - 2026-11-08 DEC-ASSET-1: Carried, not locked: one persistent runtime scene with bounded cells, its per-tile Editor clause superseded by DEC-OWN-8. Full text: .planning/PROJECT.md
 - 2026-11-08 DEC-SRC-1: Carried, not locked: no copied linegen source. Full text: .planning/PROJECT.md
 - 2026-11-08 DEC-SRC-2: Carried, not locked: IMPORTA-PC is the reference client, completed by DEC-OWN-2. Full text: .planning/PROJECT.md
+- 2026-11-08 Owner: phone screenshots and the primary phone layout are landscape 844 x 390; portrait 390 x 844 stays a horizontal-scroll check. Full text: AGENTS.md, DESIGN.md
