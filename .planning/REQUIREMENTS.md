@@ -42,7 +42,7 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 
 ### UI lane L3 (Phase 2)
 
-- [ ] **UI-01**: `interface.xdat` (plain; 248 top-level records, 2,638 controls, about 140 real windows) is decoded to a layout tree with a source-hash pin.
+- [x] **UI-01**: `interface.xdat` (lock-equal, SHA-256 `b5b37678...1b641`; 165 declared windows, 248 root records and 2,638 records decoded by the pinned Elbera parser) is decoded to a layout tree with a source-hash pin.
 - [ ] **UI-02**: Windows are built from the decoded layout and filled with sandbox data; no hardcoded control names (this client uses `StatusLeftTex`, `CPBarTex`, `HPBarTex`, `MPBarTex`); each window opens by ID in the sandbox.
 - [ ] **UI-03**: Only the original Interlude interface: window layout from `interface.xdat`, and skin, fonts and icons from the client's converted UI textures. No custom HUD styling (DEC-OWN-10).
 
@@ -187,7 +187,7 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 | DATA-01 | Phase 2 | Pending |
 | DATA-02 | Phase 2 | Pending |
 | DATA-03 | Phase 2 | Pending |
-| UI-01 | Phase 2 | Pending |
+| UI-01 | Phase 2 | Complete |
 | UI-02 | Phase 2 | Pending |
 | UI-03 | Phase 2 | Pending |
 | WORLD-01 | Phase 2 | Pending |
