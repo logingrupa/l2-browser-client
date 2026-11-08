@@ -1,16 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { NativeCatalog } from "../../src/assets/native/readNativeCatalog";
 import { buildNativeCatalogIndexOrUnavailable } from "../../src/runtime/buildNativeCatalogIndexOrUnavailable";
+import { catalogWith, serveFiles } from "../support/nativeCatalogIndexFixtures";
 
 const pendingProfileManifestSha256 = "b".repeat(64);
 const pendingNpcProfileRecord = { id: "native-npc-profiles", manifest: `/l2/npc-profiles/${pendingProfileManifestSha256}/manifest.json`,
   manifestSha256: pendingProfileManifestSha256, manifestBytes: 1 };
-
-function catalogWith(slices: Partial<NativeCatalog>): NativeCatalog {
-  return { schemaVersion: 1, models: [], textures: [], sections: [], movers: [], npcProfiles: [], playerProfiles: [],
-    animationAudio: [], combatAudio: [], worldAudio: [], effectComponents: [], tables: [], windows: [], tiles: [],
-    servedCatalogSha256: "c".repeat(64), ...slices };
-}
 
 function holdEveryFetchUntilAbort() {
   let markFetchStarted!: () => void;
@@ -43,6 +37,7 @@ describe("native catalog index with an unavailable fallback", () => {
   });
 
   it("returns the built index with no failure when the catalog indexes", async () => {
+    serveFiles(new Map());
     const outcome = await buildNativeCatalogIndexOrUnavailable(catalogWith({}), new AbortController().signal);
     expect(outcome.catalogIndexFailure).toBeNull();
     expect(outcome.catalogIndex.keys("npc:")).toEqual([]);

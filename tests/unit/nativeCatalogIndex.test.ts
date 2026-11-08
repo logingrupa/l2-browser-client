@@ -7,38 +7,9 @@ import {
   tableCatalogKey, tileCatalogKey, windowCatalogKey,
 } from "../../src/assets/native/nativeCatalogIndex";
 import { readNativeCatalog, type NativeCatalog } from "../../src/assets/native/readNativeCatalog";
-import { sha256 } from "../../src/assets/package/readAssetPackage";
-
-const musverenProfile = { id: "npc:21622", npcId: 21622, name: "Greater Musveren", mesh: "LineageMonsters.field_stalker_m00",
-  actorClass: "LineageMonster.field_stalker_20_bi", drawScale: 1.2, drawScale3D: [1, 1, 1], collisionRadius: 18,
-  collisionHeight: 36, sourceUnitsPerMetre: 100, unsupportedFields: [{ field: "prePivot", reason: "Unverified." }] };
-const unconvertedProfile = { ...musverenProfile, id: "npc:20001", npcId: 20001, mesh: "LineageMonsters.unconverted_m00" };
-
-async function npcProfileManifest(profiles: unknown[]) {
-  const bytes = new TextEncoder().encode(JSON.stringify({ schemaVersion: 1, kind: "native-npc-profiles",
-    support: "source-profile-fields-ready", profiles, unsupported: [] }));
-  const manifestSha256 = await sha256(bytes);
-  return { bytes, record: { id: "native-npc-profiles", manifest: `/l2/npc-profiles/${manifestSha256}/manifest.json`, manifestSha256, manifestBytes: bytes.length } };
-}
-
-function serveFiles(files: ReadonlyMap<string, Uint8Array>) {
-  vi.stubGlobal("fetch", vi.fn(async (url: string) => {
-    if (url === "/l2/coverage.json") return new Response("missing", { status: 404 });
-    const bytes = files.get(url);
-    if (!bytes) throw new Error(`Unexpected request ${url}`);
-    return new Response(bytes.slice());
-  }));
-}
-
-function model(id: string, sourceObject: string) {
-  return { id, archive: `/l2/${"a".repeat(64)}/asset.l2asset`, archiveSha256: "a".repeat(64), source: { object: sourceObject } };
-}
-
-function catalogWith(slices: Partial<NativeCatalog>): NativeCatalog {
-  return { schemaVersion: 1, models: [], textures: [], sections: [], movers: [], npcProfiles: [], playerProfiles: [],
-    animationAudio: [], combatAudio: [], worldAudio: [], effectComponents: [], tables: [], windows: [], tiles: [],
-    servedCatalogSha256: "c".repeat(64), ...slices };
-}
+import {
+  catalogWith, goldenCatalogIndex, goldenCatalogSha256, model, musverenProfile, npcProfileManifest, playerProfileManifest, serveFiles, unconvertedProfile,
+} from "../support/nativeCatalogIndexFixtures";
 
 async function inlineCatalog(profiles: unknown[] = [musverenProfile, unconvertedProfile]) {
   const manifest = await npcProfileManifest(profiles);
@@ -195,12 +166,6 @@ describe("native catalog table and window keys", () => {
   });
 });
 
-async function playerProfileManifest(profiles: unknown[]) {
-  const bytes = new TextEncoder().encode(JSON.stringify({ schemaVersion: 1, kind: "native-player-profiles", profiles }));
-  const manifestSha256 = await sha256(bytes);
-  return { bytes, record: { id: "native-player-profiles", manifest: `/l2/player-profiles/${manifestSha256}/manifest.json`, manifestSha256, manifestBytes: bytes.length } };
-}
-
 const femaleFighterProfile = { ...defaultNativePlayerProfile, id: "human-female-fighter", name: "Human female fighter", catalogId: "human-female-fighter:0" };
 const femaleMysticProfile = { ...femaleFighterProfile, id: "human-female-mystic", catalogId: "human-female-mystic:0" };
 
@@ -253,23 +218,7 @@ describe("native catalog NPC model and character joins", () => {
   });
 });
 
-const goldenStoreRoot = "tests/fixtures/golden/l2";
 const catalogIndexKeysFixturePath = "tests/fixtures/catalog-index-keys.json";
-
-function serveGoldenStore() {
-  vi.stubGlobal("fetch", vi.fn(async (url: string) => {
-    const path = `${goldenStoreRoot}${url.replace(/^\/l2/, "")}`;
-    if (!url.startsWith("/l2/") || !existsSync(path)) return new Response("missing", { status: 404 });
-    return new Response(await readFile(path));
-  }));
-}
-
-async function goldenCatalogIndex() {
-  serveGoldenStore();
-  const signal = new AbortController().signal;
-  const catalog = await readNativeCatalog(signal);
-  return { catalog, index: await buildNativeCatalogIndex(catalog, signal) };
-}
 
 async function catalogIndexKeysFixture(): Promise<readonly string[]> {
   return (JSON.parse(await readFile(catalogIndexKeysFixturePath, "utf-8")) as { keys: string[] }).keys;
@@ -288,7 +237,7 @@ async function indexOf(slices: Partial<NativeCatalog>) {
 describe("native catalog L2-ID index on the golden catalog", () => {
   it("reads tile 00_00 from the tiles record of the golden catalog bytes", async () => {
     const { catalog, index } = await goldenCatalogIndex();
-    expect(catalog.servedCatalogSha256).toBe(await sha256(new Uint8Array(await readFile(`${goldenStoreRoot}/catalog.json`))));
+    expect(catalog.servedCatalogSha256).toBe(await goldenCatalogSha256());
     expect(index.lookup(tileCatalogKey("00_00"))).toEqual({ status: "converted", key: "tile:00_00", record: { tile: "00_00", tileCatalogId: "00_00",
       manifest: `/l2/tiles/${tileManifestSha256}/tile.json`, manifestSha256: tileManifestSha256, manifestBytes: 620 } });
   });
@@ -349,6 +298,7 @@ describe.skipIf(!existsSync(stagedCatalogPath))("native catalog L2-ID index on t
   it("resolves the staged NPC, item, skill and tile through the one catalog reader", async () => {
     const readStagedFile = vi.fn(async (url: string) => {
       if (!url.startsWith("/l2/")) throw new Error(`Unexpected request ${url}`);
+      if (!existsSync(`public${url}`)) return new Response("missing", { status: 404 });
       return new Response(await readFile(`public${url}`));
     });
     vi.stubGlobal("fetch", readStagedFile);
