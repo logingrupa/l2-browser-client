@@ -91,13 +91,16 @@ class ReferenceClientAccess:
         self.requires_lock = requires_lock
 
     def require_equal_file(self, relative_path):
+        return self.require_equal_file_with_locked_sha256(relative_path)[0]
+
+    def require_equal_file_with_locked_sha256(self, relative_path):
         require_confined_relative_path(relative_path)
         path = (self.root / relative_path).resolve()
         if not path.is_relative_to(self.root):
             raise ReferenceClientLockError(f'reference client path escapes its root: {relative_path}')
-        if self.requires_lock:
-            self.require_lock_equal_record(relative_path, path)
-        return path
+        if not self.requires_lock:
+            return path, None
+        return path, self.require_lock_equal_record(relative_path, path)['eSha256']
 
     def require_lock_equal_record(self, relative_path, path):
         record = self.lock.record(relative_path)
@@ -113,6 +116,7 @@ class ReferenceClientAccess:
             raise ReferenceClientLockError(f'reference client lock is stale for {relative_path}; re-lock ordered ({type(error).__name__})') from error
         if status.st_size != record['eBytes'] or sha256_of_file_cached_by_identity(path, status) != record['eSha256']:
             raise ReferenceClientLockError(f'reference client lock is stale for {relative_path}; re-lock ordered')
+        return record
 
 
 accesses_by_root_and_lock = {}

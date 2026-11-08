@@ -24,6 +24,7 @@ from native_assets_lib.weights import restore_native_weights
 from native_assets_lib.static_materials import native_static_materials
 from native_assets_lib.texture_mips import build_texture_source, UnsupportedTextureSource
 from native_assets_lib.texture_dds import build_texture_dds, UnsupportedTextureDDS
+from native_assets_lib.converter_source_digests import ConverterSourceDigests
 from reference_client_guard import ENGINE_LIBRARY_RELATIVE_PATH, require_reference_client
 from native_store.store_paths import require_converter_output
 
@@ -145,6 +146,7 @@ class Converter:
         self.output = require_converter_output(project_root, output)
         self.client, self.umodel = Path(client).resolve(), Path(umodel).resolve()
         self.reference_client = require_reference_client(self.client)
+        self.source_digests = ConverterSourceDigests(self.reference_client)
         if self.output.is_relative_to(self.client):
             raise ValueError('Output must be outside the read-only source client')
         if hash_file(self.umodel) != UMODEL_SHA256:
@@ -164,26 +166,27 @@ class Converter:
         if not path.is_relative_to(self.client) or not path.is_file():
             raise ValueError(f'Source is outside client or missing: {path}')
         relative = path.relative_to(self.client).as_posix()
-        self.reference_client.require_equal_file(relative)
-        digest = hash_file(path)
+        digest = self.source_digests.digest_of(relative)
         if relative in self.dependencies and self.dependencies[relative] != digest:
             raise ValueError(f'Source changed during conversion: {relative}')
         self.dependencies[relative] = digest
         return path
 
+    def recorded_source_sha256(self, path):
+        return self.dependencies[Path(path).resolve().relative_to(self.client).as_posix()]
+
     def measured_client_build(self):
         if self.client_build is None:
             client_build = reference_client_build(self.reference_client.lock)
-            engine_library = self.reference_client.require_equal_file(ENGINE_LIBRARY_RELATIVE_PATH)
-            if not engine_library.is_file() or hash_file(engine_library) != client_build['engineDllSha256']:
+            if (not (self.client / ENGINE_LIBRARY_RELATIVE_PATH).is_file()
+                    or self.source_digests.digest_of(ENGINE_LIBRARY_RELATIVE_PATH) != client_build['engineDllSha256']):
                 raise ValueError(f'{ENGINE_LIBRARY_RELATIVE_PATH} under {self.client} is missing or differs from the locked reference build')
             self.client_build = client_build
         return self.client_build
 
     def require_unchanged_dependencies(self):
         for name, digest in self.dependencies.items():
-            if hash_file(self.client / name) != digest:
-                raise ValueError(f'Source changed during conversion: {name}')
+            self.source_digests.require_unchanged(name, digest)
 
     def package(self, name):
         path = self.source(resolve_package_path(self.client, self.package_files_by_casefolded_stem, name))
@@ -544,7 +547,7 @@ class Converter:
         index = self.output / 'index' / (base_key + '.json')
         if index.exists():
             record = json.loads(index.read_text(encoding='utf-8'))
-            valid = all((self.client / name).is_file() and hash_file(self.client / name) == digest for name, digest in record['dependencies'].items())
+            valid = all((self.client / name).is_file() and self.source_digests.digest_of(name) == digest for name, digest in record['dependencies'].items())
             target = self.output / record['directory']
             valid = valid and all((target / name).is_file() and hash_file(target / name) == digest for name, digest in record['outputs'].items())
             if valid:
@@ -562,7 +565,7 @@ class Converter:
                 payload, media_mime, metadata = decode_native_audio(source_path)
                 primary = 'audio.ogg' if media_mime == 'audio/ogg' else 'audio.wav'
                 files[primary], mime[primary] = payload, media_mime
-                source = {'edition': 'interlude', 'package': source_path.parent.name, 'object': source_path.relative_to(self.client).as_posix(), 'sha256': hash_file(source_path)}
+                source = {'edition': 'interlude', 'package': source_path.parent.name, 'object': source_path.relative_to(self.client).as_posix(), 'sha256': self.recorded_source_sha256(source_path)}
                 identity = source['object']
             else:
                 initial_request = request.get('parts', [request])[0]
