@@ -130,8 +130,8 @@ function laneOfCurrentBranch(ownership, part) {
 }
 
 function changedPathsSince(baseReference) {
-  const output = execFileSync("git", ["diff", "--name-only", `${baseReference}...HEAD`], { encoding: "utf8" });
-  return output.split("\n").filter((line) => line.length > 0);
+  const output = execFileSync("git", ["diff", "--name-only", "--no-renames", "-z", `${baseReference}...HEAD`], { encoding: "utf8" });
+  return output.split("\0").filter((path) => path.length > 0);
 }
 
 function runLaneOwnershipCheck() {

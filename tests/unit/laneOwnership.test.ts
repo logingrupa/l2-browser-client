@@ -162,15 +162,34 @@ describe("lane ownership command line", () => {
     return { exitCode: result.status ?? -1, output: result.stdout + result.stderr };
   }
 
-  it("flags every path outside the world lane on branch world/batch-tiles", () => {
+  function createLaneRepository(baseFiles: Record<string, string>): string {
     const repositoryDirectory = mkdtempSync(join(tmpdir(), "lane-ownership-repository-"));
+    runGit(repositoryDirectory, ["init", "--quiet", "--initial-branch=main"]);
+    writeRepositoryFile(repositoryDirectory, "scripts/check-lane-ownership.mjs", readFileSync("scripts/check-lane-ownership.mjs", "utf8"));
+    writeRepositoryFile(repositoryDirectory, ".planning/lanes.json", JSON.stringify(sampleLaneOwnership()));
+    for (const [relativePath, content] of Object.entries(baseFiles)) writeRepositoryFile(repositoryDirectory, relativePath, content);
+    runGit(repositoryDirectory, ["add", "."]);
+    runGit(repositoryDirectory, ["commit", "--quiet", "-m", "base"]);
+    runGit(repositoryDirectory, ["checkout", "--quiet", "-b", "world/batch-tiles"]);
+    return repositoryDirectory;
+  }
+
+  it("flags a file renamed out of another lane's paths, and reads non-ASCII paths unquoted", () => {
+    const repositoryDirectory = createLaneRepository({ "src/ui/owned-by-data-ui.ts": "data and UI lane file\n" });
     try {
-      runGit(repositoryDirectory, ["init", "--quiet", "--initial-branch=main"]);
-      writeRepositoryFile(repositoryDirectory, "scripts/check-lane-ownership.mjs", readFileSync("scripts/check-lane-ownership.mjs", "utf8"));
-      writeRepositoryFile(repositoryDirectory, ".planning/lanes.json", JSON.stringify(sampleLaneOwnership()));
+      writeRepositoryFile(repositoryDirectory, "src/scene/world/līnija.ts", "world lane file\n");
+      runGit(repositoryDirectory, ["mv", "src/ui/owned-by-data-ui.ts", "src/scene/world/owned-by-data-ui.ts"]);
       runGit(repositoryDirectory, ["add", "."]);
-      runGit(repositoryDirectory, ["commit", "--quiet", "-m", "base"]);
-      runGit(repositoryDirectory, ["checkout", "--quiet", "-b", "world/batch-tiles"]);
+      runGit(repositoryDirectory, ["commit", "--quiet", "-m", "move a data and UI file into the world lane"]);
+      expect(runLaneCheck(repositoryDirectory, ["--base", "main"])).toEqual({ exitCode: 1, output: "lane world: 1 foreign paths\nsrc/ui/owned-by-data-ui.ts\n" });
+    } finally {
+      rmSync(repositoryDirectory, { recursive: true, force: true });
+    }
+  });
+
+  it("flags every path outside the world lane on branch world/batch-tiles", () => {
+    const repositoryDirectory = createLaneRepository({});
+    try {
       expect(runLaneCheck(repositoryDirectory, ["--base", "main"])).toEqual({ exitCode: 0, output: "lane world: 0 foreign paths\n" });
       for (const changedPath of ["src/scene/world/a.ts", "tests/unit/a.test.ts", "src/ui/b.ts", "package.json"]) {
         writeRepositoryFile(repositoryDirectory, changedPath, "changed\n");
