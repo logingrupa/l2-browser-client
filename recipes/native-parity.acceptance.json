@@ -80,12 +80,6 @@
     "displayLimitedResult": "separate-workload-timings-no-120fps-certification",
     "nativeSpeedComparison": "same-host-and-conditions-only"
   },
-  "editor": {
-    "version": "5.5.3",
-    "requireActualDesktopOpenEditSaveReopenRebuildAndBrowserProof": true,
-    "requiredEdits": ["equipment", "animation", "effect-timing", "material", "camera"],
-    "requireAuthoredEditsSurviveRegeneration": true
-  },
   "resultPolicy": {
     "missingEvidence": "unverified",
     "thresholdFailure": "fail",

@@ -70,6 +70,38 @@ fails when a rule below drifts from the code.
 | Rule | Value | Where | Enforced by |
 | --- | --- | --- | --- |
 | UModel pin | build1590, SHA-256 `13502e5a4d8f6b5f32252afebd6360f7302ccfaccf6b8dda65beff0be2d364a0` | `scripts/native_assets.py` `UMODEL_SHA256`; the tool is read from `.assets/native-tools/umodel/` (`UMODEL`, the `--umodel` default) | `Converter.__init__` refuses any other tool bytes; `UmodelPinContractTests` |
+| Archive limits | 128 MiB per archive, 96 MiB per payload, 256 entries including `asset.json`, ZIP_STORED only | `scripts/native_assets.py` `MAX_ARCHIVE`, `MAX_PAYLOAD`, `archive_bytes`, `verify_archive` | `ArchiveLimitContractTests`: 255 payloads pass, 256 are refused; a payload or archive at the limit passes, one byte over is refused |
+| Magenta diagnostic | Unbound slot named `UNBOUND_SOURCE_SLOT_<index>` with `baseColorFactor` [1, 0, 1, 1] and a `Material slot <index>:` limitation; no texture is guessed | `scripts/native_assets.py` `Converter.materials` | `MagentaSlotContractTests` |
+| Normalisation ban | No identifier names height, scale or weight normalisation, ground fitting or root-drift and root-motion removal in `scripts/**/*.py`, `scripts/**/*.mjs` (vendor excluded) or `src/**/*.ts` | Allow-list: `scripts/audit_musveren_weights.py`, which measures UModel's packed-weight renormalisation and applies none | `NormalisationIdentifierBanTests`; the allow-list entry must still suppress a hit |
+| Skin-weight attribute | Only three modules reference `WEIGHTS_0` | `scripts/native_assets_lib/weights.py` (`restore_native_weights` restores source float influences), `scripts/native_assets_lib/rigid.py` (`is_root_rigid` reads weights to prove a root-only rigid skin), `scripts/audit_musveren_weights.py` (read-only audit of exporter weights) | `SkinWeightAttributeAllowListTests`; a new module that touches skin weights fails until it is listed |
+
+Every repair, restore and preserve step is listed below: Python functions
+named `repair_*`, `restore_*` or `preserve_*` under `scripts/` (vendor
+excluded), files directly under `scripts/` named `repair-*`, `restore-*` or
+`preserve-*`, glTF repair record kinds written by `scripts/native_assets_lib`,
+and `fnRepair*` or `repair*` exports under `src/` (none today). The defect
+evidence is a repo path that shows the defect, or an explicit unresolved note
+naming the missing proof. `SourcePreservationCensusTests` fails on a missing
+step, on a row for a step that no longer exists and on evidence that is
+neither.
+
+| Step | Kind | Where | Defect evidence | Preserves |
+| --- | --- | --- | --- | --- |
+| `repair_empty_primitives` | function | `scripts/native_assets_lib/empty_primitives.py` | `tests/pipeline/test_empty_primitives.py:39` | Buffer bytes, nodes and material slots; removed primitives, accessors and views and every remap are recorded |
+| `omit-empty-native-primitives` | record kind | `scripts/native_assets_lib/empty_primitives.py` | `tests/pipeline/test_empty_primitives.py:39` | `bytesPreserved`, `materialSlotsPreserved` and `materialSlotCount` in the record |
+| `repair_bounds` | function | `scripts/native_assets_lib/gltf.py` `Document` | `tests/pipeline/test_native_assets.py:61` | Buffer bytes, including inverse bind matrices; only accessor `min` and `max` are recomputed from them |
+| `repair_vertex_metadata` | function | `scripts/native_assets_lib/gltf.py` `Document` | unresolved: no test or evidence doc reproduces the zero-vector tangents build1590 is said to emit | The tangent accessor and its bytes; only the primitive's `TANGENT` attribute is dropped, and buffer view targets are set |
+| `omit-zero-tangent-attribute` | record kind | `scripts/native_assets_lib/gltf.py` | unresolved: no test or evidence doc reproduces the zero-vector tangents build1590 is said to emit | The removed accessor index with `bytesPreserved` |
+| `preserve_material_graph` | function | `scripts/native_assets_lib/material_graph.py` | `scripts/native_assets.py:350` | The raw native material graph, texture sources and dependency hashes under `native-materials/`; glTF slots stay diagnostic |
+| `restore_mapped_static_normals` | function | `scripts/native_assets_lib/static_normals.py` | `tests/pipeline/test_native_static_normals.py:147` | Source normal floats without renormalisation (`normalizationApplied: false`); every other byte, with before and after hashes |
+| `restore_native_static_normals` | function | `scripts/native_assets_lib/static_normals.py` | `tests/pipeline/test_native_static_normals.py:147` | As `restore_mapped_static_normals`, plus the qualified source proof |
+| `restore_glb_static_normals` | function | `scripts/native_assets_lib/static_normals.py` | `tests/pipeline/test_native_static_normals.py:147` | The original GLB JSON bytes and every byte outside the normal spans |
+| `restore-original-static-normal-floats` | record kind | `scripts/native_assets_lib/static_normals.py` | `tests/pipeline/test_native_static_normals.py:147` | `allNonNormalBytesUnchanged`, `jsonMetadataUnchanged` and the binary hashes in the record |
+| `restore-native-static-normals.py` | file | `scripts/restore-native-static-normals.py` | `tests/pipeline/test_native_static_normals.py:147` | Writes a new derived archive; the source archive and exports stay unchanged |
+| `restore_native_weights` | function | `scripts/native_assets_lib/weights.py` | `tests/pipeline/test_native_weights.py:122` | The original exporter buffer (`originalBufferBytesPreserved`, `originalBufferSha256`) and `originalAttributes`; exact source slots travel in `_L2_NATIVE_WEIGHTS` and `_L2_NATIVE_JOINTS` |
+| `restore_l2_ogg` | function | `scripts/native_assets_lib/world_music.py` | `tests/pipeline/test_native_music.py:49` | The original L2SD payload path, size and SHA-256 and the reversible patch, checked by `unpatch` |
+| `preserve-native-editor-uv2.mjs` | file | `scripts/preserve-native-editor-uv2.mjs` | `tests/editor/nativeEditorUv2.test.ts:78` | Authored Editor state and the original file; only lost UV2 is appended to a new addressed binary |
+| `preserve-native-editor-fog.mjs` | file | `scripts/preserve-native-editor-fog.mjs` | `tests/editor/editorFogExport.test.ts:7` | Saved Editor resources; only the packed scene's `fogMode` follows the saved `fogEnabled` |
 
 ## How the catalog lists assets
 
