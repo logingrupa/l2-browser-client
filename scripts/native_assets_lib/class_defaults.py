@@ -44,6 +44,18 @@ class ClassDefaultValue:
         return {'field': self.field, 'value': self.value, 'provenance': self.provenance, 'declaringClass': self.declaring_class}
 
 
+@dataclass(frozen=True)
+class ClassFieldDeclaration:
+    field: str
+    declared_type: str
+    declaring_class: str
+    enum_members: tuple[str, ...] | None
+
+    def to_record(self):
+        return {'field': self.field, 'declaredType': self.declared_type, 'declaringClass': self.declaring_class,
+                'enumMembers': None if self.enum_members is None else list(self.enum_members)}
+
+
 class ReferenceClientClassScripts:
     def __init__(self, client_root):
         self.client_root = Path(client_root).resolve(strict=True)
@@ -92,20 +104,25 @@ def top_level_statements(script_text):
     return [statement.strip() for statement in statements if statement.strip()]
 
 
-def declared_field_names(script_text):
-    names = set()
+def declared_fields(script_text):
+    fields = []
     for statement in top_level_statements(script_text):
         if not VARIABLE_STATEMENT_PATTERN.match(statement):
             continue
         declaration = VARIABLE_DECLARATION_PATTERN.fullmatch(statement)
         if declaration is None:
             raise ClassDefaultError(f'decompiled variable declaration is malformed: {statement[:120]}')
+        declared_type = None
         for declarator in declaration[1].split(','):
             name = DECLARED_NAME_PATTERN.search(declarator)
             if name is None:
                 raise ClassDefaultError(f'decompiled variable declaration has no name: {statement[:120]}')
-            names.add(name[1].casefold())
-    return names
+            if declared_type is None:
+                declared_type = ' '.join(declarator[:name.start()].split())
+                if not declared_type:
+                    raise ClassDefaultError(f'decompiled variable declaration has no type: {statement[:120]}')
+            fields.append({'name': name[1], 'type': declared_type})
+    return fields
 
 
 def require_field_list(fields):
@@ -136,8 +153,9 @@ def decompiled_class_definition(identity, class_scripts, cache_folder):
         raise ClassDefaultError(f'decompiled class {class_object} has unparsed default properties: {parsed["unparsed"][0]["text"]}')
     if leaf_class_name(parsed['superClass']) != leaf_class_name(identity['superClass']):
         raise ClassDefaultError(f'decompiled superclass {parsed["superClass"]} of {class_object} differs from the export table {identity["superClass"]}')
+    enums = {name: [member for member, _ in sorted(members.items(), key=lambda entry: entry[1])] for name, members in parsed['enums'].items()}
     return {'schemaVersion': CLASS_DEFAULT_CACHE_SCHEMA_VERSION, 'identity': identity, 'properties': parsed['properties'],
-            'declaredFields': sorted(declared_field_names(script_text)),
+            'declaredFields': declared_fields(script_text), 'enums': enums,
             'scriptSha256': hashlib.sha256(script_text.encode('utf-8')).hexdigest()}
 
 
@@ -201,9 +219,19 @@ def property_value(definition, field):
     return (True, definition['properties'][matches[0]]) if matches else (False, None)
 
 
+def declares_field(definition, field):
+    return any(declared['name'].casefold() == field.casefold() for declared in definition['declaredFields'])
+
+
+def nearest_declaring_position(field, chain):
+    return next((position for position, definition in enumerate(chain) if declares_field(definition, field)), None)
+
+
 def class_default_value(field, chain):
+    declaring_position = nearest_declaring_position(field, chain)
+    visible_chain = chain if declaring_position is None else chain[:declaring_position + 1]
     setters = []
-    for definition in chain:
+    for definition in visible_chain:
         is_set, value = property_value(definition, field)
         if is_set:
             setters.append((definition, value))
@@ -214,17 +242,42 @@ def class_default_value(field, chain):
         nearest_setter = setters[0][0]
         provenance = 'authored' if nearest_setter is chain[0] else 'class-default'
         return ClassDefaultValue(field, value, provenance, nearest_setter['identity']['object'])
-    declaring = [definition for definition in chain if field.casefold() in definition['declaredFields']]
-    if not declaring:
+    if declaring_position is None:
         raise ClassDefaultError(f'{field} is not declared by the class chain of {chain[0]["identity"]["object"]}')
-    if len(declaring) > 1:
-        raise ClassDefaultError(f'{field} is declared by more than one class in the chain of {chain[0]["identity"]["object"]}')
-    return ClassDefaultValue(field, None, 'ue-zero', declaring[0]['identity']['object'])
+    return ClassDefaultValue(field, None, 'ue-zero', chain[declaring_position]['identity']['object'])
+
+
+def enum_members_of_type(declared_type, chain):
+    type_name = declared_type.split()[-1]
+    owner_name, _, enum_name = type_name.rpartition('.')
+    for definition in chain:
+        if owner_name and leaf_class_name(definition['identity']['object']) != owner_name.casefold():
+            continue
+        if enum_name in definition['enums']:
+            return tuple(definition['enums'][enum_name])
+    return None
+
+
+def cached_class_chain(class_name, work_root, class_scripts):
+    require_qualified_class_name(class_name)
+    cache_folder = require_converter_output(REPOSITORY_ROOT, Path(work_root) / CLASS_DEFAULT_CACHE_FOLDER_NAME)
+    return read_class_chain(class_name, class_scripts, cache_folder)
 
 
 def read_class_defaults_with_provenance(class_name, fields, work_root, class_scripts):
     requested_fields = require_field_list(fields)
-    require_qualified_class_name(class_name)
-    cache_folder = require_converter_output(REPOSITORY_ROOT, Path(work_root) / CLASS_DEFAULT_CACHE_FOLDER_NAME)
-    chain = read_class_chain(class_name, class_scripts, cache_folder)
+    chain = cached_class_chain(class_name, work_root, class_scripts)
     return [class_default_value(field, chain) for field in requested_fields]
+
+
+def read_class_field_declarations(class_name, work_root, class_scripts):
+    chain = cached_class_chain(class_name, work_root, class_scripts)
+    visible_declarations, visible_names = [], set()
+    for definition in chain:
+        for declared in reversed(definition['declaredFields']):
+            if declared['name'].casefold() in visible_names:
+                continue
+            visible_names.add(declared['name'].casefold())
+            visible_declarations.append(ClassFieldDeclaration(declared['name'], declared['type'], definition['identity']['object'],
+                                                              enum_members_of_type(declared['type'], chain)))
+    return list(reversed(visible_declarations))

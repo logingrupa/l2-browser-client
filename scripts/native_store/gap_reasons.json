@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 1,
+  "listVersion": 2,
   "reasons": [
     "map-licensee-unsupported:<v>/<lic>",
     "map-version-unsupported:<version>",
@@ -16,7 +16,6 @@
     "helmet-layout-undecoded",
     "native-skill-dispatch-required",
     "no-exact-skillsound-row",
-    "effect-class-unsupported:<class>",
     "sound-identity-unresolved",
     "decode-failed:<error>",
     "control-type-unsupported:<type>",
@@ -29,6 +28,8 @@
     "static-material-layout-unreviewed:<v>/<lic>",
     "equipment-slot-meaning-undecoded:<bodyPart>",
     "class-template-mapping-undecoded",
-    "step-pending:<step>"
+    "step-pending:<step>",
+    "material-class-unported:<class>",
+    "material-feature-unported:<property>"
   ]
 }

@@ -268,6 +268,7 @@ A lane store reuses the shared store prefixes exactly:
 | `world-audio/<sha>/`, `animation-audio/<sha>/`, `combat-audio/<sha>/`, `step-sounds/<sha>/` | Audio bundles |
 | `effects/<sha>/`, `movers/<sha>/` | Effect components and movers |
 | `tiles/<sha>/tile.json`, `maps/<sha>/native-tile-chunk-runtime/manifest.json` | Tile and chunk manifests (see "Manifest kinds") |
+| `native-materials/<sha>/graph.json`, `native-materials/<sha>/program.json` | Source-preserving UE2 material graph of one root and its typed program (plan 02-59, `write_native_material_resources`). `<sha>` is the SHA-256 of `program.json`, which holds the graph's `graphSha256`. Every program field is `authored`, `class-default` or `ue-zero` |
 | `skies/`, `environments/` | Outside the catalog |
 
 The prefix `/l2/models/<sha>/` is never used. The tile resource kinds,

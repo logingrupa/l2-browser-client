@@ -66,7 +66,7 @@ class GapRowValidationTests(unittest.TestCase):
 
     def test_every_seed_reason_accepts_a_sample_value(self):
         seed = json.loads(SEED_GAP_REASONS_PATH.read_text(encoding='utf-8'))
-        self.assertEqual((seed['schemaVersion'], seed['listVersion'], len(seed['reasons'])), (1, 1, 28))
+        self.assertEqual((seed['schemaVersion'], seed['listVersion'], len(seed['reasons'])), (1, 2, 29))
         for pattern in seed['reasons']:
             with self.subTest(pattern=pattern):
                 validate_gap_row(gap_row(reason=sample_reason_for_pattern(pattern)))
@@ -105,7 +105,7 @@ class GapReasonListTests(unittest.TestCase):
         validate_gap_row(gap_row(reason='player-start-missing'), patterns)
         with self.assertRaises(GapRowError):
             validate_gap_row(gap_row(reason='player-start-missing'))
-        self.assertEqual(gap_reason_list_versions(repository_root=self.repository), {'seed': 1, 'world': 2})
+        self.assertEqual(gap_reason_list_versions(repository_root=self.repository), {'seed': 2, 'world': 2})
 
     def test_a_pattern_listed_in_two_files_is_refused(self):
         self.write_lane_reasons('actors', {'schemaVersion': 1, 'listVersion': 1, 'reasons': ['census-pending']})

@@ -1,4 +1,5 @@
-"""Explicit raw material preservation; diagnostic slots never impersonate a shader."""
+from collections import deque
+import copy
 import hashlib
 from pathlib import Path
 
@@ -11,6 +12,18 @@ from native_catalog.ue2 import FormatError
 POLICY = 'preserve-native-graph'
 REVIEWED_NODE_CLASSES = {'Texture', 'Shader', 'Combiner', 'FadeColor', 'Palette'}
 MAX_NODES = 128
+REVIEWED_MATERIAL_CLASSES = ('Engine.Shader', 'Engine.Combiner', 'Engine.FinalBlend', 'Engine.ColorModifier', 'Engine.FadeColor',
+                             'Engine.ConstantColor', 'Engine.TexPanner', 'Engine.TexRotator', 'Engine.TexOscillator',
+                             'Engine.TexScaler', 'Engine.TexEnvMap', 'Engine.TexCoordSource', 'Engine.MaterialSequence',
+                             'Engine.Texture')
+PRESERVED_MATERIAL_DATA_CLASSES = ('Engine.Palette',)
+MATERIAL_GRAPH_SCHEMA_VERSION = 1
+MATERIAL_GRAPH_KIND = 'ue2-material-graph'
+MATERIAL_CLASS_UNPORTED_REASON_PREFIX = 'material-class-unported:'
+MATERIAL_FEATURE_UNPORTED_REASON_PREFIX = 'material-feature-unported:'
+OBJECT_PROPERTY_TYPE = 5
+ARRAY_PROPERTY_TYPE = 9
+ANIMATION_CHAIN_PROPERTY = 'AnimNext'
 MANIFEST = 'native-materials/graph.json'
 RUNTIME_GAPS = ['native-billboarding', 'texture-AnimNext-timing', 'FadeColor-phase-and-period',
                 'Combiner-color-alpha-operations', 'native-Shader-output-blending']
@@ -26,13 +39,6 @@ def _sha(data):
 
 
 def preserve_material_graph(converter, work, document, source_item, native_materials):
-    """Return slots, limitations, graph summary and archive files; source is read-only.
-
-    Only invoked by an explicit exact StaticMesh request policy. Supported
-    material classes here mean source preservation, never runtime evaluation.
-    """
-    # Reuse proven fixed-array and inheritance readers after native_assets has
-    # loaded; native_effect_bundle imports Converter and cannot be imported early.
     from native_effect_bundle import DefaultReader, object_values
 
     _require(source_item['classObject'] == 'Engine.StaticMesh', 'Raw material policy requires exact Engine.StaticMesh')
@@ -157,3 +163,117 @@ def preserve_material_graph(converter, work, document, source_item, native_mater
               'Pending Babylon behavior: native billboarding, AnimNext frame selection/rates, FadeColor timing, Combiner operations and Shader output blends.']
     limits.extend('Raw material texture gap '+row['object']+': '+row['reason'] for row in gaps)
     return slots, limits, summary, files
+
+
+class MaterialGraphError(FormatError):
+    pass
+
+
+def material_class_unported_reason(class_object):
+    return MATERIAL_CLASS_UNPORTED_REASON_PREFIX + class_object
+
+
+def material_feature_unported_reason(property_name):
+    return MATERIAL_FEATURE_UNPORTED_REASON_PREFIX + property_name
+
+
+def material_node_status(class_object):
+    if class_object in REVIEWED_MATERIAL_CLASSES:
+        return 'reviewed'
+    if class_object in PRESERVED_MATERIAL_DATA_CLASSES:
+        return 'preserved-data'
+    return 'unported'
+
+
+def source_span_record(package, start, end):
+    if not 0 <= start <= end <= len(package.data):
+        raise MaterialGraphError(f'material source span {start}..{end} lies outside {package.filename}')
+    return {'offset': start, 'bytes': end - start, 'sha256': _sha(bytes(package.data[start:end]))}
+
+
+def require_package_export(package, root_export):
+    export_index = root_export.get('exportIndex') if isinstance(root_export, dict) else None
+    if not (type(export_index) is int and 1 <= export_index <= len(package.exports) and package.exports[export_index - 1] is root_export):
+        raise MaterialGraphError(f'material root is not an export of {package.filename}: {root_export!r}')
+    return export_index
+
+
+def object_reference_index(package, tag):
+    value = tag.get('value')
+    if not (tag.get('status') == 'decoded' and isinstance(value, dict) and type(value.get('index')) is int):
+        raise MaterialGraphError(f'object property {tag.get("name")!r} is not a decoded object reference')
+    if value.get('object') != package.object_name(value['index']):
+        raise MaterialGraphError(f'object property {tag["name"]} names {value.get("object")!r}, not its table entry')
+    return value['index']
+
+
+def material_graph_node(package, item, tags, tail):
+    status = material_node_status(item['classObject'])
+    if status == 'unported':
+        reasons = {material_class_unported_reason(item['classObject'])}
+    elif status == 'reviewed':
+        reasons = {material_feature_unported_reason(tag['name']) for tag in tags if tag['type'] == ARRAY_PROPERTY_TYPE}
+    else:
+        reasons = set()
+    return {'object': item['object'], 'exportIndex': item['exportIndex'], 'classObject': item['classObject'], 'status': status,
+            'gapReasons': sorted(reasons), 'export': source_span_record(package, item['offset'], item['offset'] + item['size']),
+            'propertyTags': copy.deepcopy(tags), 'nativeTail': source_span_record(package, tail.position, tail.end)}
+
+
+def material_reference(package, item, tag, target_index):
+    reference = {'from': item['object'], 'property': tag['name'], 'arrayIndex': tag['arrayIndex'], 'to': tag['value']['object']}
+    if target_index > 0:
+        return {**reference, 'target': 'export', 'exportIndex': target_index}
+    imported = package.imports[-target_index - 1]
+    return {**reference, 'target': 'import', 'importClass': f'{imported["classPackage"]}.{imported["className"]}'}
+
+
+def reaches(export_edges, start_index, goal_index):
+    pending, visited = [start_index], set()
+    while pending:
+        index = pending.pop()
+        if index == goal_index:
+            return True
+        if index in visited:
+            continue
+        visited.add(index)
+        pending.extend(target_index for target_index, _ in export_edges.get(index, ()))
+    return False
+
+
+def require_no_cycle_outside_animation_chains(package, export_edges):
+    for source_index, edges in export_edges.items():
+        for target_index, property_name in edges:
+            if property_name != ANIMATION_CHAIN_PROPERTY and reaches(export_edges, target_index, source_index):
+                raise MaterialGraphError(f'material graph reference cycle through {package.exports[source_index - 1]["object"]}.{property_name}')
+
+
+def read_material_graph(package, root_export):
+    root_index = require_package_export(package, root_export)
+    pending, nodes_by_index, references, export_edges = deque([root_index]), {}, [], {}
+    while pending:
+        index = pending.popleft()
+        if index in nodes_by_index:
+            continue
+        if len(nodes_by_index) >= MAX_NODES:
+            raise MaterialGraphError(f'material graph of {root_export["object"]} exceeds {MAX_NODES} nodes')
+        item = package.exports[index - 1]
+        tags, tail = package.properties(item)
+        nodes_by_index[index] = material_graph_node(package, item, tags, tail)
+        for tag in tags:
+            if tag['type'] != OBJECT_PROPERTY_TYPE:
+                continue
+            target_index = object_reference_index(package, tag)
+            if target_index == 0:
+                continue
+            references.append(material_reference(package, item, tag, target_index))
+            if target_index > 0:
+                export_edges.setdefault(index, []).append((target_index, tag['name']))
+                pending.append(target_index)
+    require_no_cycle_outside_animation_chains(package, export_edges)
+    nodes = [nodes_by_index[index] for index in sorted(nodes_by_index)]
+    return {'schemaVersion': MATERIAL_GRAPH_SCHEMA_VERSION, 'kind': MATERIAL_GRAPH_KIND,
+            'package': {'file': package.filename, 'sha256': package.source_hash,
+                        'packageVersion': package.summary['version'], 'licensee': package.summary['licenseeVersion']},
+            'root': root_export['object'], 'nodes': nodes, 'references': references,
+            'gapReasons': sorted({reason for node in nodes for reason in node['gapReasons']})}
