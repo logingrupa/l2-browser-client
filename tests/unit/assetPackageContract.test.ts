@@ -55,7 +55,9 @@ describe("golden fixtures for the asset output contract", () => {
     expect(new Set(paths).size).toBe(paths.length);
     expect(paths).toEqual(["audio-v2.l2asset", "l2/catalog.json",
       "l2/maps/9b72bc07057c7db92dfb479c4a74135dfac8a5be276a0b52e359c141674f3c5d/native-tile-chunk-runtime/manifest.json",
+      "l2/tables/5e4cbff3f9a9bb05450e6b39c5f8abdd25cd964542ac7a7033cec2781205d3d1/syntheticfixture.json",
       "l2/tiles/bda58735e24af8da075d8acc808efdb632711c9f5ea6fa60067a7ccbc5bde5ef/tile.json",
+      "l2/windows/6ed18b1c35fedb7962c38aafacf0306df7f0dc25c7b888f647635737b6b86ac3/window.json",
       "model-v1.l2asset", "model-v2.l2asset", "reference-client-tree.lock.json"]);
   });
 

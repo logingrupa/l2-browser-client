@@ -1,6 +1,7 @@
 import copy
 import json
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -11,8 +12,9 @@ ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_ROOT = ROOT / 'scripts'
 sys.path.insert(0, str(SCRIPTS_ROOT))
 
-from native_store.catalog_writer import (NATIVE_RESOURCE_PATH_PATTERN, CatalogWriteError, merge_catalog_slice,
-                                         validate_catalog_record)
+from native_assets_lib.gltf import json_bytes
+from native_store.catalog_writer import (NATIVE_RESOURCE_PATH_PATTERN, TABLE_ID_PATTERN, TABLE_MANIFEST_MAXIMUM_BYTES, CatalogWriteError,
+                                         merge_catalog_slice, validate_catalog_record)
 from native_store import tile_manifest_validation
 from native_store.tile_manifest_validation import (MASK_UV_RULES_BASE, TILE_RESOURCE_KINDS_BASE, VOCABULARY_FILE, TileManifestError,
                                                    load_tile_manifest_vocabulary, validate_tile_chunk_manifest, validate_tile_manifest)
@@ -20,6 +22,10 @@ from native_store.tile_manifest_validation import (MASK_UV_RULES_BASE, TILE_RESO
 GOLDEN_ROOT = ROOT / 'tests' / 'fixtures' / 'golden'
 GOLDEN_CATALOG = json.loads((GOLDEN_ROOT / 'l2' / 'catalog.json').read_bytes())
 BROWSER_RESOURCE_URL_SOURCE = ROOT / 'src' / 'assets' / 'native' / 'nativeResourceUrl.ts'
+CATALOG_INDEX_KEYS_PATH = ROOT / 'tests' / 'fixtures' / 'catalog-index-keys.json'
+TABLE_INVENTORY_PATH = ROOT / 'docs' / 'parts' / 'data' / 'dat-table-inventory.json'
+SKILL_EFFECT_COMPONENT_PATTERN = re.compile(r'^interlude:skill:(\d+):level:(\d+):')
+LEGACY_SECTION_TILE_PATTERN = re.compile(r'^map-(\d{2})-(\d{2})-section$')
 FIRST_WORLD_VOCABULARY = {'schemaVersion': 1, 'listVersion': 1, 'resourceKinds': [], 'maskUvRules': []}
 MOVERS_VOCABULARY = {'schemaVersion': 1, 'listVersion': 2, 'resourceKinds': ['movers'], 'maskUvRules': []}
 FOUR_KIND_VOCABULARY = {'schemaVersion': 1, 'listVersion': 5, 'resourceKinds': ['movers', 'sky', 'world-audio', 'minimap'], 'maskUvRules': []}
@@ -41,6 +47,8 @@ def golden_store_json(resource_path):
 
 
 GOLDEN_TILE_RECORD = GOLDEN_CATALOG['tiles'][0]
+GOLDEN_TABLE_RECORD = GOLDEN_CATALOG['tables'][0]
+GOLDEN_WINDOW_RECORD = GOLDEN_CATALOG['windows'][0]
 GOLDEN_TILE_MANIFEST = golden_store_json(GOLDEN_TILE_RECORD['manifest'])
 GOLDEN_CHUNK_MANIFEST = golden_store_json(GOLDEN_TILE_MANIFEST['chunks'][0]['manifest'])
 SHA256_A, SHA256_B = 'a' * 64, 'b' * 64
@@ -92,10 +100,85 @@ class CatalogRecordShapeTests(unittest.TestCase):
 
     def test_python_path_pattern_matches_browser_regex(self):
         self.assertIn('/' + NATIVE_RESOURCE_PATH_PATTERN.pattern + '/', BROWSER_RESOURCE_URL_SOURCE.read_text(encoding='utf-8'))
-        golden_paths = [GOLDEN_TILE_RECORD['manifest'], *(chunk['manifest'] for chunk in GOLDEN_TILE_MANIFEST['chunks'])]
+        golden_paths = [GOLDEN_TILE_RECORD['manifest'], GOLDEN_TABLE_RECORD['manifest'], GOLDEN_WINDOW_RECORD['manifest'],
+                        *(chunk['manifest'] for chunk in GOLDEN_TILE_MANIFEST['chunks'])]
         for path in golden_paths:
             with self.subTest(path):
                 self.assertTrue(NATIVE_RESOURCE_PATH_PATTERN.fullmatch(path))
+
+    def test_golden_tables_record_passes_and_an_empty_table_is_representable(self):
+        self.assertEqual(validate_catalog_record('tables', GOLDEN_TABLE_RECORD), GOLDEN_TABLE_RECORD)
+        self.assertEqual(validate_catalog_record('tables', changed(GOLDEN_TABLE_RECORD, recordCount=0))['recordCount'], 0)
+
+    def test_tables_record_refusals(self):
+        other_manifest = GOLDEN_TABLE_RECORD['manifest'].rsplit('/', 1)[0] + '/other.json'
+        cases = {
+            'upper case id': (changed(GOLDEN_TABLE_RECORD, id='NpcGrp'), 'id must match'),
+            'two-letter suffix': (changed(GOLDEN_TABLE_RECORD, id='npcgrp-ee'), 'id must match'),
+            'other file name': (changed(GOLDEN_TABLE_RECORD, manifest=other_manifest), 'file name must be the record id'),
+            'zero bytes': (changed(GOLDEN_TABLE_RECORD, manifestBytes=0), 'byte length'),
+            'over the bound': (changed(GOLDEN_TABLE_RECORD, manifestBytes=TABLE_MANIFEST_MAXIMUM_BYTES + 1), 'byte length'),
+            'negative count': (changed(GOLDEN_TABLE_RECORD, recordCount=-1), 'recordCount must be a safe integer'),
+            'fractional count': (changed(GOLDEN_TABLE_RECORD, recordCount=1.5), 'recordCount must be a safe integer'),
+            'short source hash': (changed(GOLDEN_TABLE_RECORD, sourceSha256='x'), 'sourceSha256 must be 64'),
+            'inlined records': (changed(GOLDEN_TABLE_RECORD, records=[{'id': 0}]), 'must hold exactly'),
+        }
+        self.assertEqual(TABLE_MANIFEST_MAXIMUM_BYTES, 32 * 1024 * 1024)
+        for label, (record, message) in cases.items():
+            with self.subTest(label), self.assertRaisesRegex(CatalogWriteError, message):
+                validate_catalog_record('tables', record)
+
+    def test_golden_windows_record_and_an_ordinal_window_pass(self):
+        self.assertEqual(validate_catalog_record('windows', GOLDEN_WINDOW_RECORD), GOLDEN_WINDOW_RECORD)
+        self.assertEqual(validate_catalog_record('windows', changed(GOLDEN_WINDOW_RECORD, id='StatusWnd#2'))['id'], 'StatusWnd#2')
+
+    def test_windows_record_refusals(self):
+        cases = {
+            'ordinal zero': (changed(GOLDEN_WINDOW_RECORD, id='StatusWnd#0'), 'id must match'),
+            'ordinal only': (changed(GOLDEN_WINDOW_RECORD, id='#2'), 'id must match'),
+            'space': (changed(GOLDEN_WINDOW_RECORD, id='Status Wnd'), 'id must match'),
+            'outside windows': (changed(GOLDEN_WINDOW_RECORD, manifest=f'/l2/tiles/{GOLDEN_WINDOW_RECORD["manifestSha256"]}/window.json'),
+                                'path must match'),
+        }
+        for label, (record, message) in cases.items():
+            with self.subTest(label), self.assertRaisesRegex(CatalogWriteError, message):
+                validate_catalog_record('windows', record)
+
+    def test_every_inventory_table_name_passes_the_table_id_pattern(self):
+        table_names = [row['table'] for row in json.loads(TABLE_INVENTORY_PATH.read_text(encoding='utf-8'))['rows']]
+        self.assertEqual(len(table_names), 40)
+        self.assertEqual(len(set(table_names)), len(table_names))
+        for table_name in table_names:
+            with self.subTest(table_name):
+                self.assertTrue(TABLE_ID_PATTERN.fullmatch(table_name))
+
+    def test_tables_merge_is_idempotent_and_refuses_a_differing_record(self):
+        catalog = merge_catalog_slice({'schemaVersion': 1, 'models': []}, 'tables', GOLDEN_TABLE_RECORD, 40)
+        catalog_bytes = json_bytes(catalog)
+        self.assertEqual(json_bytes(merge_catalog_slice(catalog, 'tables', copy.deepcopy(GOLDEN_TABLE_RECORD), 40)), catalog_bytes)
+        with self.assertRaisesRegex(CatalogWriteError, 'record syntheticfixture differs; preserved'):
+            merge_catalog_slice(catalog, 'tables', changed(GOLDEN_TABLE_RECORD, recordCount=2), 40)
+
+    def test_catalog_index_keys_match_the_golden_catalog(self):
+        key_contract = json.loads(CATALOG_INDEX_KEYS_PATH.read_bytes())
+        self.assertEqual(sorted(key_contract), ['catalog', 'keys', 'schemaVersion'])
+        self.assertEqual((key_contract['schemaVersion'], key_contract['catalog']), (1, 'tests/fixtures/golden/l2/catalog.json'))
+        keys = key_contract['keys']
+        self.assertEqual(keys, sorted(set(keys)))
+        section_matches = (LEGACY_SECTION_TILE_PATTERN.fullmatch(section['id']) for section in GOLDEN_CATALOG['sections'])
+        section_tiles = [f'{match[1]}_{match[2]}' for match in section_matches if match]
+        component_matches = (SKILL_EFFECT_COMPONENT_PATTERN.match(component['id']) for component in GOLDEN_CATALOG['effectComponents'])
+        skill_levels = [f'{match[1]}:{match[2]}' for match in component_matches if match]
+        expected_keys = {
+            'skill': set(skill_levels),
+            'table': {record['id'] for record in GOLDEN_CATALOG['tables']},
+            'tile': {record['id'] for record in GOLDEN_CATALOG['tiles']} | set(section_tiles),
+            'window': {record['id'] for record in GOLDEN_CATALOG['windows']},
+        }
+        for kind, identities in expected_keys.items():
+            with self.subTest(kind):
+                self.assertEqual({key.split(':', 1)[1] for key in keys if key.startswith(kind + ':')}, identities)
+        self.assertEqual(sum(map(len, expected_keys.values())), len(keys))
 
 
 class TileManifestVocabularyTests(unittest.TestCase):

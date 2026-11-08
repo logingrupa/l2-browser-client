@@ -11,7 +11,7 @@ from typing import NamedTuple
 from native_store.store_paths import SHA256_PATTERN, confined_child_path, refuse_reparse_points, require_portable_relative_path
 
 KNOWN_CATALOG_SLICES = ('models', 'textures', 'sections', 'movers', 'npcProfiles', 'playerProfiles',
-                        'animationAudio', 'combatAudio', 'worldAudio', 'effectComponents', 'tiles')
+                        'animationAudio', 'combatAudio', 'worldAudio', 'effectComponents', 'tiles', 'tables', 'windows')
 NATIVE_RESOURCE_PATH_PATTERN = re.compile(r'^\/l2\/(?:[A-Za-z0-9_-][A-Za-z0-9._-]*\/)*[A-Za-z0-9_-][A-Za-z0-9._-]*$')
 MAXIMUM_CATALOG_BYTES = 32 * 1024 * 1024
 MAXIMUM_SAFE_INTEGER = 2 ** 53 - 1
@@ -19,7 +19,14 @@ STORE_CATALOG_NAME = 'catalog.json'
 TILE_ID_PATTERN = re.compile(r'^\d{2}_\d{2}$')
 TILE_MANIFEST_PATH_PATTERN = re.compile(r'^/l2/tiles/(?P<sha256>[a-f0-9]{64})/tile\.json$')
 TILE_MANIFEST_MAXIMUM_BYTES = 8_000_000
+TABLE_ID_PATTERN = re.compile(r'^[a-z][a-z0-9_]*(?:-[a-z])?$')
+TABLE_MANIFEST_PATH_PATTERN = re.compile(r'^/l2/tables/(?P<sha256>[a-f0-9]{64})/(?P<id>[a-z][a-z0-9_]*(?:-[a-z])?)\.json$')
+TABLE_MANIFEST_MAXIMUM_BYTES = 32 * 1024 * 1024
+WINDOW_ID_PATTERN = re.compile(r'^[A-Za-z][A-Za-z0-9_]{0,63}(?:#[1-9]\d{0,3})?$')
+WINDOW_MANIFEST_PATH_PATTERN = re.compile(r'^/l2/windows/(?P<sha256>[a-f0-9]{64})/window\.json$')
+WINDOW_MANIFEST_MAXIMUM_BYTES = 8_000_000
 PINNED_MANIFEST_RECORD_FIELDS = ('id', 'manifest', 'manifestSha256', 'manifestBytes')
+TABLE_RECORD_FIELDS = (*PINNED_MANIFEST_RECORD_FIELDS, 'recordCount', 'sourceSha256')
 
 
 class CatalogWriteError(ValueError):
@@ -36,6 +43,9 @@ class PinnedManifestRecordShape(NamedTuple):
 PINNED_MANIFEST_RECORD_SHAPES = {
     'tiles': PinnedManifestRecordShape(PINNED_MANIFEST_RECORD_FIELDS, TILE_ID_PATTERN, TILE_MANIFEST_PATH_PATTERN,
                                        TILE_MANIFEST_MAXIMUM_BYTES),
+    'tables': PinnedManifestRecordShape(TABLE_RECORD_FIELDS, TABLE_ID_PATTERN, TABLE_MANIFEST_PATH_PATTERN, TABLE_MANIFEST_MAXIMUM_BYTES),
+    'windows': PinnedManifestRecordShape(PINNED_MANIFEST_RECORD_FIELDS, WINDOW_ID_PATTERN, WINDOW_MANIFEST_PATH_PATTERN,
+                                         WINDOW_MANIFEST_MAXIMUM_BYTES),
 }
 
 
@@ -153,6 +163,14 @@ def validate_pinned_manifest_record(slice_name, record, shape):
     require_byte_length(record['manifestBytes'], shape.maximum_manifest_bytes, CatalogWriteError, f'{label} manifest')
 
 
+def validate_table_record_source(record):
+    label = f'catalog tables record {record["id"]}'
+    if not is_safe_integer(record['recordCount'], 0):
+        raise CatalogWriteError(f'{label} recordCount must be a safe integer of at least 0: {record["recordCount"]!r}')
+    if not (isinstance(record['sourceSha256'], str) and SHA256_PATTERN.fullmatch(record['sourceSha256'])):
+        raise CatalogWriteError(f'{label} sourceSha256 must be 64 lowercase hex characters: {record["sourceSha256"]!r}')
+
+
 def validate_catalog_record(slice_name, record):
     if slice_name not in KNOWN_CATALOG_SLICES:
         raise CatalogWriteError(f'unknown catalog slice {slice_name}; slices: {", ".join(KNOWN_CATALOG_SLICES)}')
@@ -160,6 +178,8 @@ def validate_catalog_record(slice_name, record):
         raise CatalogWriteError(f'catalog {slice_name} record needs a string id')
     if slice_name in PINNED_MANIFEST_RECORD_SHAPES:
         validate_pinned_manifest_record(slice_name, record, PINNED_MANIFEST_RECORD_SHAPES[slice_name])
+    if slice_name == 'tables':
+        validate_table_record_source(record)
     return record
 
 

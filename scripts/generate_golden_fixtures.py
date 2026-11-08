@@ -29,6 +29,9 @@ SYNTHETIC_TILE_CHUNK_ID = 'chunk-0-0'
 SYNTHETIC_TILE_SOURCE_SHA256 = hashlib.sha256(b'synthetic tile source for golden fixtures').hexdigest()
 SYNTHETIC_TILE_PENDING_STEPS = ('bsp', 'collision', 'meshes', 'terrain')
 CONTRACT_EVIDENCE_PATH = 'docs/OUTPUT_CONTRACT.md'
+SYNTHETIC_TABLE_ID = 'syntheticfixture'
+SYNTHETIC_WINDOW_ID = 'SyntheticFixtureWnd'
+WINDOW_ANCHOR_PROOF = 'Elbera NWindow af6c3437 proof, unverified on IMPORTA 7c12fb6b'
 REFERENCE_CLIENT_LOCK_NAME = 'reference-client-tree.lock.json'
 FIXTURES_LOCK_NAME = 'fixtures.lock.json'
 
@@ -128,6 +131,24 @@ def synthetic_tile_files():
     return {chunk_path: chunk_bytes, tile_path: tile_bytes}, {'id': SYNTHETIC_TILE_ID, **tile_pin}
 
 
+def synthetic_table_files():
+    source_sha256 = sha(b'synthetic table source for golden fixtures')
+    table = {'kind': 'native-table', 'schemaVersion': 1, 'table': SYNTHETIC_TABLE_ID, 'sourcePath': f'system/{SYNTHETIC_TABLE_ID}.dat',
+        'sourceSha256': source_sha256, 'descriptorSha256': sha(b'synthetic table descriptor for golden fixtures'), 'route': 'local-descriptor',
+        'recordCount': 1, 'records': [{'id': 0}]}
+    table_path, table_bytes, table_pin = pinned_json_manifest('l2/tables/{sha256}/' + SYNTHETIC_TABLE_ID + '.json', table)
+    return {table_path: table_bytes}, {'id': SYNTHETIC_TABLE_ID, **table_pin, 'recordCount': table['recordCount'], 'sourceSha256': source_sha256}
+
+
+def synthetic_window_files():
+    window = {'kind': 'native-window-layout', 'schemaVersion': 1, 'windowId': SYNTHETIC_WINDOW_ID, 'name': SYNTHETIC_WINDOW_ID,
+        'sourceSha256': sha(b'synthetic interface source for golden fixtures'), 'sourceOffset': 0,
+        'root': {'name': SYNTHETIC_WINDOW_ID, 'children': [], 'tail': {'offset': 0, 'end': 0, 'sha256': sha(b'')}},
+        'textureRefs': [], 'anchorProof': WINDOW_ANCHOR_PROOF}
+    window_path, window_bytes, window_pin = pinned_json_manifest('l2/windows/{sha256}/window.json', window)
+    return {window_path: window_bytes}, {'id': SYNTHETIC_WINDOW_ID, **window_pin}
+
+
 def golden_fixture_files(lock_directory):
     reference_lock = synthetic_reference_client_lock()
     reference_lock_bytes = json_bytes(reference_lock)
@@ -139,12 +160,15 @@ def golden_fixture_files(lock_directory):
     model_v2 = version_two_package('model', 'SyntheticModelVersionTwo', 'model.glb', glb, 'model/gltf-binary', client_build)
     audio_v2 = version_two_package('audio', 'SyntheticSound', 'audio.wav', synthetic_wav(), 'audio/wav', client_build)
     tile_files, tile_record = synthetic_tile_files()
+    table_files, table_record = synthetic_table_files()
+    window_files, window_record = synthetic_window_files()
     catalog = {'schemaVersion': 1,
         'models': [catalog_model_record(model_v1, 'SyntheticModelVersionOne'), catalog_model_record(model_v2, 'SyntheticModelVersionTwo')],
-        'sections': [{'id': SYNTHETIC_SECTION_ID}], 'effectComponents': [{'id': SYNTHETIC_SKILL_EFFECT_COMPONENT_ID}], 'tiles': [tile_record]}
+        'sections': [{'id': SYNTHETIC_SECTION_ID}], 'effectComponents': [{'id': SYNTHETIC_SKILL_EFFECT_COMPONENT_ID}], 'tiles': [tile_record],
+        'tables': [table_record], 'windows': [window_record]}
     return {
         REFERENCE_CLIENT_LOCK_NAME: reference_lock_bytes, 'model-v1.l2asset': model_v1, 'model-v2.l2asset': model_v2,
-        'audio-v2.l2asset': audio_v2, 'l2/catalog.json': json_bytes(catalog), **tile_files,
+        'audio-v2.l2asset': audio_v2, 'l2/catalog.json': json_bytes(catalog), **tile_files, **table_files, **window_files,
     }
 
 

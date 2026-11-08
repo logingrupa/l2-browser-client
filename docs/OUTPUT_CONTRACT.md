@@ -107,10 +107,13 @@ neither.
 
 `/l2/catalog.json` is schemaVersion 1. Its slices are `models`, `textures`,
 `sections`, `movers`, `npcProfiles`, `playerProfiles`, `animationAudio`,
-`combatAudio`, `worldAudio`, `effectComponents` and `tiles`. A model record
-carries `id`, `archive` (`/l2/<archiveSha256>/asset.l2asset`), `archiveSha256`
-and `source.object`; manifest records carry `id`, `manifest`, `manifestSha256`
-and `manifestBytes`.
+`combatAudio`, `worldAudio`, `effectComponents`, `tiles`, `tables` and
+`windows`. A model record carries `id`, `archive`
+(`/l2/<archiveSha256>/asset.l2asset`), `archiveSha256` and `source.object`;
+manifest records carry `id`, `manifest`, `manifestSha256` and
+`manifestBytes`. A lane catalog also carries the top-level
+`sourceCatalogSha256`: the SHA-256 of the shared catalog it was built on
+(`write_lane_catalog.py`, plan 02-03).
 
 `merge_catalog_slice` in `scripts/native_store/catalog_writer.py` calls
 `validate_catalog_record(slice_name, record)` before it merges, so a lane
@@ -120,21 +123,33 @@ new slices hold exactly these fields:
 | Slice | Record | Bounds |
 | --- | --- | --- |
 | `tiles` | `{id, manifest, manifestSha256, manifestBytes}` | `id` is `XX_YY`; `manifest` is `/l2/tiles/<manifestSha256>/tile.json`; `manifestBytes` 1 to 8,000,000 (`TILE_MANIFEST_MAXIMUM_BYTES`) |
+| `tables` | `{id, manifest, manifestSha256, manifestBytes, recordCount, sourceSha256}` | `id` is the inventory table name, lower case only (`^[a-z][a-z0-9_]*(?:-[a-z])?$`, for example `npcgrp`, `skillname-e`); `manifest` is `/l2/tables/<manifestSha256>/<id>.json`; `manifestBytes` 1 to 32 MiB (`TABLE_MANIFEST_MAXIMUM_BYTES`); `recordCount` a safe integer of at least 0; `sourceSha256` 64 hex. The records stay in the manifest, fetched on demand, never inlined |
+| `windows` | `{id, manifest, manifestSha256, manifestBytes}` | `id` is `<name>` or `<name>#<ordinal>` (`^[A-Za-z][A-Za-z0-9_]{0,63}(?:#[1-9]\d{0,3})?$`); `manifest` is `/l2/windows/<manifestSha256>/window.json`; `manifestBytes` 1 to 8,000,000 (`WINDOW_MANIFEST_MAXIMUM_BYTES`) |
 
 Every manifest path also matches the `nativeResourceUrl.ts` path rule, and
-the SHA-256 in the path equals the pinned `manifestSha256`.
+the SHA-256 in the path equals the pinned `manifestSha256`. A record whose id
+already exists with other content is refused ("differs; preserved"); an
+identical one is kept once, so a re-merge leaves the catalog bytes unchanged.
+New records are appended after the existing ones.
 
-`buildNativeCatalogIndex` turns the catalog into L2-ID keys:
+`buildNativeCatalogIndex` turns the catalog into L2-ID keys. A lookup answers
+`converted`, `not-in-catalog` with a reason, or `gap` with the reason of a
+`/l2/coverage.json` row whose key the catalog lacks:
 
 | Key | Converted when |
 | --- | --- |
-| `npc:<npcId>` | A staged NPC profile's mesh matches a model's `source.object` |
+| `npc:<npcId>` | A staged NPC profile carries `modelCatalogId` naming a `models` record. A profile without that field (the currently staged store) keeps the exact single-mesh join on `source.object` until the restage |
 | `item:<itemId>` | A staged player profile lists the item with a staged model |
 | `skill:<skillId>:<level>` | An effect component id has the form `interlude:skill:<id>:level:<level>:` |
-| `window:<name>` | Never yet; interface windows are not converted (UI-01) |
-| `tile:<XX_YY>` | A section id has the form `map-XX-YY-section` |
+| `table:<name>` | A `tables` record has that id |
+| `window:<id>` | A `windows` record has that id. Until a catalog has window records, a missing window answers "interface windows are not converted yet (UI-01)" |
+| `tile:<XX_YY>` | A `tiles` record has that id; a legacy section id `map-XX-YY-section` still answers when no tiles record exists for that tile |
+| `character:<chargrpIndex>` | A staged player profile carries `chargrpIndex` |
 
-Any other key answers `not-in-catalog` with a reason. The client loads assets
+The two optional profile fields are `modelCatalogId` (pattern
+`^[a-z0-9][a-z0-9:-]{0,95}$`, the `id` of a `models` record) and
+`chargrpIndex` (a safe integer of at least 0). Any other key answers
+`not-in-catalog` with a reason. The client loads assets
 only through `readNativeCatalog`. `recipes/native-inputs.lock.json` pins
 converter inputs only; it is not an output catalog (DEC-OWN-5).
 
@@ -176,6 +191,22 @@ rows keyed `tile:<tileId>`, one per step, sorted by step.
 Component resource paths are hash-addressed like tile resources, with the
 SHA-256 in the path equal to `sha256`. The old `map-section-runtime` kind stays
 until the 20_20 chain retires.
+
+`native-table` v1, at `/l2/tables/<sha>/<table>.json`, one per decoded table:
+`{kind: "native-table", schemaVersion: 1, table, sourcePath, sourceSha256,
+descriptorSha256, route, recordCount, records}`. `route` is
+`local-descriptor` or `elbera-adapter`; `recordCount` equals the length of
+`records` and the catalog record's `recordCount`.
+
+`native-window-layout` v1, at `/l2/windows/<sha>/window.json`, one per root
+window of `interface.xdat` (the original Interlude interface, DEC-OWN-10):
+`{kind: "native-window-layout", schemaVersion: 1, windowId, name,
+sourceSha256, sourceOffset, root, textureRefs, anchorProof}`. `root` holds the
+header fields, `children` and `tail: {offset, end, sha256}`. `anchorProof` is
+"Elbera NWindow af6c3437 proof, unverified on IMPORTA 7c12fb6b". Duplicate
+rule: a root name that appears once keeps its bare name as `windowId`; a
+repeated root name gives every occurrence `<name>#<ordinal>`, 1-based in
+source order.
 
 ### Tile manifest vocabulary
 
@@ -316,13 +347,73 @@ gets no records.
   refuses a file whose `lane` or `catalogSha256` differs from its path.
 - Coverage counts "loads" only from these records.
 
+## Gap rows
+
+`scripts/native_store/gap_rows.py` (plan 02-02) owns the row schema. A gap
+row is exactly `{key, part, step, status, reason, sourceIdentity, evidence}`:
+
+- `key` is a catalog key: `tile:<XX_YY>`, `map:<name>` (the non-tile maps),
+  `npc:<id>`, `item:<id>`, `skill:<id>:<level>`, `table:<name>`,
+  `window:<id>` or `character:<chargrpIndex>`.
+- `part` is a Stage A part of the `world`, `actors` or `data-ui` lane in
+  `.planning/lanes.json`; `step` matches `^[a-z][a-z0-9-]{0,63}$`.
+- `status` is `pass`, `gap`, `pending` or `failed`. `pass` has `reason`
+  null; every other status needs a listed reason.
+- Reasons form a closed list. The seed is `scripts/native_store/gap_reasons.json`
+  (`{schemaVersion: 1, listVersion, reasons}`); a lane adds a reason only to
+  its own `recipes/world/gap-reasons.json`, `recipes/actors/gap-reasons.json`
+  or `recipes/data/gap-reasons.json` and bumps that file's `listVersion`.
+  `<name>` placeholders match any text; `step-pending:<step>` is the one reason
+  for a step that has not run yet.
+- `sourceIdentity` is `{path, sha256, object?}` with a relative path and a
+  qualified object name; `evidence` is a repository- or lane-relative path.
+
+`write_gap_rows` writes one file per lane and step,
+`artifacts/lane-store/<lane>/gap-rows/<step>.json`, as
+`{schemaVersion: 1, lane, step, reasonListVersions, rows}` with rows sorted by
+key and one row per key.
+
+## Coverage report
+
+`coverage.json` v1 lives at `<store root>/coverage.json`, served as
+`/l2/coverage.json`, outside the catalog so that no SHA-256 becomes circular.
+Plan 02-07 writes it and 02-26 completes it.
+
+```
+{"schemaVersion": 1, "catalogSha256": "<64 hex>", "storeRoot": "<path>",
+ "generatedAtRiga": "<ISO 8601 with the Riga offset>",
+ "denominators": {"<part>": {"count": <integer> | "unknown", "source": "<committed file>"}},
+ "parts": {"<part>": {"denominator", "converted", "loads": {"pass", "failed", "unverified"}, "gap", "pending"}},
+ "rows": [{"key", "part", "status", "reason", "converted", "loads", "steps": [{"step", "status", "reason"}]}]}
+```
+
+- `rows` holds one row per denominator key. `steps` lists that key's gap
+  rows, one per step, so each tile records pass or gap per step (WORLD-03).
+- A reader refuses a coverage file whose `catalogSha256` differs from the
+  served catalog.
+- "Loads" counts only from load-check records; everything else is
+  `unverified`.
+
 ## Golden fixtures
 
 `tests/fixtures/golden/` holds synthetic fixtures with no Lineage II bytes:
 `model-v1.l2asset`, `model-v2.l2asset`, `audio-v2.l2asset`, a synthetic
 `reference-client-tree.lock.json` (the fixture `clientBuild` source) and
 `l2/catalog.json` (two models, one skill effect component, section
-`map-00-00-section`, which is outside the real map grid).
+`map-00-00-section`, tile `00_00`, table `syntheticfixture` and window
+`SyntheticFixtureWnd`). Tile `00_00` lies outside the real map grid. Its
+`native-tile-runtime` manifest sits under `l2/tiles/<sha>/tile.json` and lists
+one `native-tile-chunk-runtime` manifest, `chunk-0-0`, under
+`l2/maps/<sha>/native-tile-chunk-runtime/manifest.json`, with terrain, bsp
+and collision null and a `step-pending:<step>` row per step. The table and
+window manifests sit under `l2/tables/<sha>/syntheticfixture.json` and
+`l2/windows/<sha>/window.json`. Every value in them is synthetic.
+
+`tests/fixtures/catalog-index-keys.json` is the key list the key table above
+gives for the golden catalog: `skill:0:1`, `table:syntheticfixture`,
+`tile:00_00` (from the tiles record and the legacy section) and
+`window:SyntheticFixtureWnd`. The writer half owns it; the browser index
+(02-05) and the Python report (02-07) both assert equality with it.
 
 `tests/fixtures/golden/fixtures.lock.json` pins each fixture by SHA-256 and
 byte length, in sorted path order. Binaries are hashed raw; JSON is hashed in
