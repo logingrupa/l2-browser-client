@@ -1,21 +1,26 @@
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { createServer, request as sendHttpRequest, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { nativeResourceUrl } from "../../src/assets/native/nativeResourceUrl";
 import {
 	NATIVE_STORE_FIXTURE_NAME,
+	NATIVE_STORE_PATH_PATTERN,
 	createNativeStoreRequestHandler,
 	nativeStoreContentType,
 	nativeStoreRequestPath,
 	nativeStoreRootFromEnvironment,
 	nativeStoreRootNames,
+	parseSingleByteRange,
 	resolveNativeStoreRoot,
 } from "../../vite/nativeStoreRootPlugin";
 
 const archiveSha256 = "a".repeat(64);
 const sharedOnlySha256 = "b".repeat(64);
+const musicTrackPath = `/l2/world-audio/${"d".repeat(64)}/track.ogg`;
+const musicTrackBytes = Uint8Array.from({ length: 100 }, (_, index) => index);
 const temporaryFolders: string[] = [];
 
 function temporaryFolder(): string {
@@ -35,6 +40,7 @@ function laneStoreProject(): string {
 	writeProjectFile(projectRoot, "package.json", "{\"name\":\"outside-the-store\"}");
 	writeProjectFile(projectRoot, "artifacts/lane-store/world/l2/catalog.json", "{\"schemaVersion\":1,\"lane\":true}");
 	writeProjectFile(projectRoot, `artifacts/lane-store/world/l2/${archiveSha256}/asset.l2asset`, new Uint8Array([1, 2, 3, 4]));
+	writeProjectFile(projectRoot, `artifacts/lane-store/world${musicTrackPath}`, musicTrackBytes);
 	writeProjectFile(projectRoot, "public/l2/catalog.json", "{\"schemaVersion\":1,\"shared\":true}");
 	writeProjectFile(projectRoot, "public/l2/coverage.json", "{\"shared\":true}");
 	writeProjectFile(projectRoot, `public/l2/${sharedOnlySha256}/asset.l2asset`, new Uint8Array([9, 8, 7]));
@@ -124,6 +130,37 @@ describe("native store request paths and content types", () => {
 		expect(nativeStoreRequestPath("/l2/")).toBeNull();
 	});
 
+	it("accepts and refuses the same paths as nativeResourceUrl", () => {
+		const agreementCases = ["/l2/catalog.json", "/l2/a/b.glb", "/l2/.hidden", "/l2/a/../b", "/l2/a//b", "/l2/a b", "/l2/", "/l3/a", "/l2/a%2Fb"];
+		const browserAccepts = (path: string) => {
+			try {
+				nativeResourceUrl(path);
+				return true;
+			} catch {
+				return false;
+			}
+		};
+		expect(agreementCases.map((path) => NATIVE_STORE_PATH_PATTERN.test(path))).toEqual(agreementCases.map(browserAccepts));
+		expect(agreementCases.map(browserAccepts)).toEqual([true, true, false, false, false, false, false, false, false]);
+	});
+
+	it("copies the regex source text of nativeResourceUrl.ts", () => {
+		expect(readFileSync("src/assets/native/nativeResourceUrl.ts", "utf8")).toContain(`/${NATIVE_STORE_PATH_PATTERN.source}/`);
+	});
+
+	it("parses one satisfiable byte range", () => {
+		expect(parseSingleByteRange("bytes=0-15", 100)).toEqual({ start: 0, end: 15 });
+		expect(parseSingleByteRange("bytes=90-", 100)).toEqual({ start: 90, end: 99 });
+		expect(parseSingleByteRange("bytes=-10", 100)).toEqual({ start: 90, end: 99 });
+		expect(parseSingleByteRange("bytes=0-200", 100)).toEqual({ start: 0, end: 99 });
+	});
+
+	it("marks ranges past the end unsatisfiable and ignores several or malformed ranges", () => {
+		expect(parseSingleByteRange("bytes=100-", 100)).toBe("unsatisfiable");
+		expect(parseSingleByteRange("bytes=-0", 100)).toBe("unsatisfiable");
+		for (const header of ["bytes=0-1,4-5", "items=0-1", "bytes=5-2", undefined]) expect(parseSingleByteRange(header, 100)).toBeNull();
+	});
+
 	it("maps file extensions to content types", () => {
 		expect(["a.json", "a.glb", "a.png", "a.ogg", "a.wav", "a.l2asset", "a.bin"].map(nativeStoreContentType)).toEqual([
 			"application/json",
@@ -211,6 +248,28 @@ describe("native store request handler", () => {
 	it("answers 405 for other methods", async () => {
 		const answer = await rawRequest(server, "POST", "/l2/catalog.json");
 		expect([answer.status, answer.headers.allow]).toEqual([405, "GET, HEAD"]);
+	});
+
+	it("answers a single byte range with 206 and Content-Range", async () => {
+		const answer = await rawRequest(server, "GET", musicTrackPath, { Range: "bytes=0-15" });
+		expect([answer.status, answer.headers["content-range"], answer.headers["content-length"], answer.headers["content-type"]]).toEqual([206, "bytes 0-15/100", "16", "audio/ogg"]);
+		expect([...answer.body]).toEqual([...musicTrackBytes.slice(0, 16)]);
+	});
+
+	it("answers an unsatisfiable range with 416 and the size", async () => {
+		const answer = await rawRequest(server, "GET", musicTrackPath, { Range: "bytes=100-" });
+		expect([answer.status, answer.headers["content-range"], answer.body.length]).toEqual([416, "bytes */100", 0]);
+	});
+
+	it("answers several ranges with the whole file", async () => {
+		const answer = await rawRequest(server, "GET", musicTrackPath, { Range: "bytes=0-1,4-5" });
+		expect([answer.status, answer.headers["content-range"]]).toEqual([200, undefined]);
+		expect([...answer.body]).toEqual([...musicTrackBytes]);
+	});
+
+	it("answers HEAD with headers only", async () => {
+		const answer = await rawRequest(server, "HEAD", musicTrackPath);
+		expect([answer.status, answer.headers["content-length"], answer.headers["x-native-store-source"], answer.body.length]).toEqual([200, "100", "lane", 0]);
 	});
 
 	it("passes paths outside /l2/ to the next middleware", async () => {
