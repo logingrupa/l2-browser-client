@@ -2,7 +2,7 @@ import type { GameWorldAdapter } from "./GameWorldAdapter";
 import { createInitialWorld } from "./createInitialWorld";
 import { moveTowards, simulateRemotePlayer } from "./syntheticMovement";
 import type { WorldCommand, WorldEntity, WorldEvent, WorldPosition } from "./worldTypes";
-import { createSpawnedCharacterEntity, createSpawnedNpcEntity, entityWithClampedHealth, entityWithEquippedItem, isLineageIdentifier, skillCastEvent, unknownWorldCommandError } from "./sandboxCommands";
+import { createSpawnedCharacterEntity, createSpawnedNpcEntity, entityWithClampedHealth, entityWithEquippedItem, entityWithRequestedClip, isLineageIdentifier, skillCastEvent, unknownWorldCommandError } from "./sandboxCommands";
 import type { WorldNavigation } from "./WorldNavigation";
 
 const updateIntervalSeconds = 0.1;
@@ -110,6 +110,11 @@ export class MockWorldAdapter implements GameWorldAdapter {
       case "cast-skill": {
         const castEvent = skillCastEvent(this.entities, command);
         if (castEvent) this.emit(castEvent);
+        break;
+      }
+      case "play-clip": {
+        const clipRequestedEntity = entityWithRequestedClip(this.entities, command);
+        if (clipRequestedEntity) this.updateEntity(clipRequestedEntity);
         break;
       }
       case "despawn":

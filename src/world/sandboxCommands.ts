@@ -2,8 +2,11 @@ import type { EquipmentSlot, WorldCommand, WorldEntity, WorldEvent, WorldPositio
 
 type EquipItemCommand = Extract<WorldCommand, { readonly type: "equip-item" }>;
 type CastSkillCommand = Extract<WorldCommand, { readonly type: "cast-skill" }>;
+type PlayClipCommand = Extract<WorldCommand, { readonly type: "play-clip" }>;
 
 const equipmentSlots: readonly EquipmentSlot[] = ["upper"];
+
+export const maximumSandboxClipNameLength = 128;
 
 export function isLineageIdentifier(value: number): boolean {
   return Number.isSafeInteger(value) && value >= 0;
@@ -56,6 +59,18 @@ export function entityWithEquippedItem(entities: ReadonlyMap<string, WorldEntity
   const otherSlots = Object.fromEntries(Object.entries(entity.equipment ?? {}).filter(([slot]) => slot !== command.slot));
   const equipment = Object.freeze(command.itemId === null ? otherSlots : { ...otherSlots, [command.slot]: command.itemId });
   return { ...entity, equipment };
+}
+
+export function isSandboxClipName(value: unknown): value is string {
+  return typeof value === "string" && value.length >= 1 && value.length <= maximumSandboxClipNameLength;
+}
+
+export function entityWithRequestedClip(entities: ReadonlyMap<string, WorldEntity>, command: PlayClipCommand): WorldEntity | null {
+  if (!isSandboxClipName(command.clipName)) return null;
+  const entity = entities.get(command.entityId);
+  if (!entity) return null;
+  const requestedClip = Object.freeze({ clipName: command.clipName, requestSequence: (entity.requestedClip?.requestSequence ?? 0) + 1 });
+  return { ...entity, requestedClip };
 }
 
 export function skillCastEvent(entities: ReadonlyMap<string, WorldEntity>, command: CastSkillCommand): WorldEvent | null {

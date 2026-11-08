@@ -2,7 +2,7 @@ import type { GameWorldAdapter } from "./GameWorldAdapter";
 import type { LocomotionMode, WorldCommand, WorldEntity, WorldEvent, WorldPosition } from "./worldTypes";
 import type { WorldGroundContact, WorldNavigation } from "./WorldNavigation";
 import { moveTowards } from "./syntheticMovement";
-import { createSpawnedCharacterEntity, createSpawnedNpcEntity, entityWithClampedHealth, entityWithEquippedItem, isLineageIdentifier, skillCastEvent, unknownWorldCommandError } from "./sandboxCommands";
+import { createSpawnedCharacterEntity, createSpawnedNpcEntity, entityWithClampedHealth, entityWithEquippedItem, entityWithRequestedClip, isLineageIdentifier, skillCastEvent, unknownWorldCommandError } from "./sandboxCommands";
 
 type PreviewActionCommand = Extract<WorldCommand, { readonly type: "preview-action" }>;
 
@@ -116,6 +116,11 @@ export class NativeSliceAdapter implements GameWorldAdapter {
       case "cast-skill": {
         const castEvent = skillCastEvent(this.entities, command);
         if (castEvent) this.emit(castEvent);
+        break;
+      }
+      case "play-clip": {
+        const clipRequestedEntity = entityWithRequestedClip(this.entities, command);
+        if (clipRequestedEntity) this.update(clipRequestedEntity);
         break;
       }
       case "preview-action":

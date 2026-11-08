@@ -26,6 +26,7 @@ export interface WorldEntity {
   readonly animationSequence?: number;
   readonly npcId?: number;
   readonly characterTemplateIndex?: number;
+  readonly requestedClip?: { readonly clipName: string; readonly requestSequence: number };
   readonly equipment?: Readonly<Partial<Record<EquipmentSlot, number>>>;
 }
 
@@ -54,6 +55,7 @@ export type WorldCommand =
   | { readonly type: "spawn" }
   | { readonly type: "spawn-npc"; readonly npcId: number }
   | { readonly type: "spawn-character"; readonly characterTemplateIndex: number }
+  | { readonly type: "play-clip"; readonly entityId: string; readonly clipName: string }
   | { readonly type: "despawn"; readonly entityId: string }
   | { readonly type: "set-paused"; readonly isPaused: boolean }
   | { readonly type: "equip-item"; readonly slot: EquipmentSlot; readonly itemId: number | null; readonly entityId?: string }
