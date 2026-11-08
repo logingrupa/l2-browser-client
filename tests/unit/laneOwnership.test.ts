@@ -225,13 +225,20 @@ describe("shared process files", () => {
     }
   });
 
-  it("has one dated DECISIONS.md line per unique decision ID pointing at PROJECT.md", () => {
-    const decisionLinePattern = /^- \d{4}-\d{2}-\d{2} (DEC-[A-Z]+-\d+): .+ Full text: \.planning\/PROJECT\.md$/;
-    const decisionIdentifiers = bulletLinesOf("DECISIONS.md").map((line) => {
-      const match = decisionLinePattern.exec(line);
-      expect(match, line).not.toBeNull();
-      return match?.[1] ?? "";
-    });
+  it("has one dated DECISIONS.md line per decision, each decision ID once and pointing at PROJECT.md", () => {
+    const datedDecisionLinePattern = /^- \d{4}-\d{2}-\d{2} [^:]+: .+ Full text: .+$/;
+    const identifiedDecisionLinePattern = /^- \d{4}-\d{2}-\d{2} (DEC-[A-Z]+-\d+): .+ Full text: \.planning\/PROJECT\.md$/;
+    const decisionLines = bulletLinesOf("DECISIONS.md");
+    for (const line of decisionLines) {
+      expect(datedDecisionLinePattern.test(line), line).toBe(true);
+    }
+    const decisionIdentifiers = decisionLines
+      .filter((line) => / DEC-[A-Z]+-\d+: /.test(line))
+      .map((line) => {
+        const match = identifiedDecisionLinePattern.exec(line);
+        expect(match, line).not.toBeNull();
+        return match?.[1] ?? "";
+      });
     expect(new Set(decisionIdentifiers).size).toBe(decisionIdentifiers.length);
     const requiredIdentifiers = [
       ...Array.from({ length: 8 }, (_, index) => `DEC-OWN-${index + 1}`),
