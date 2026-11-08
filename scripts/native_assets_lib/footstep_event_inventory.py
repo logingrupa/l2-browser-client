@@ -4,7 +4,8 @@ import copy
 
 from native_assets_lib.animation_audio_bundle import OBJECT, Inputs, pointer
 from native_assets_lib.gltf import json_bytes
-from stage_native_players import checked, child, decode, digest, require, CATALOG_ID
+from native_store.store_paths import confined_child_path, refuse_reparse_points
+from stage_native_players import decode, digest, require, CATALOG_ID
 
 KIND = 'native-footstep-event-inventory'
 RECIPE_KIND = 'native-footstep-event-inventory-recipe'
@@ -48,7 +49,7 @@ def copy_exporter_event_row_and_authored_references(actor, manifest_hash, source
 
 def build_footstep_event_inventory(root, recipe_path):
     inputs = Inputs(root)
-    recipe_path = checked(recipe_path)
+    recipe_path = refuse_reparse_points(recipe_path)
     require(recipe_path.is_relative_to(inputs.root), 'Recipe must stay within project root')
     recipe_bytes = recipe_path.read_bytes()
     recipe = decode(inputs.read({'path': recipe_path.relative_to(inputs.root).as_posix(), 'sha256': digest(recipe_bytes)}))
@@ -106,27 +107,27 @@ def build_footstep_event_inventory(root, recipe_path):
 def run(root, recipe_path, output, *, plan=False, verify_only=False):
     require(not (plan and verify_only), 'Plan and verify-only are mutually exclusive')
     inventory, payloads, inputs = build_footstep_event_inventory(root, recipe_path)
-    output = checked(output)
+    output = refuse_reparse_points(output)
     require(any(output != inputs.root / name and output.is_relative_to(inputs.root / name)
                 for name in ('artifacts', 'scratch', '.scratch')), 'Output must be a named artifacts/scratch subdirectory')
     for name in inputs.records:
-        source = child(inputs.root, name)
+        source = confined_child_path(inputs.root, name)
         require(not source.is_relative_to(output) and not output.is_relative_to(source.parent),
                 'Output overlaps an input or its retained directory')
     exists = output.exists()
     if exists:
         require(output.is_dir(), 'Output is not a directory')
-        actual = {path.relative_to(output).as_posix() for path in output.rglob('*') if checked(path).is_file()}
+        actual = {path.relative_to(output).as_posix() for path in output.rglob('*') if refuse_reparse_points(path).is_file()}
         require(actual == set(payloads), 'Existing output file set differs; preserved')
         for name, value in payloads.items():
-            require(child(output, name).read_bytes() == value, 'Existing immutable output differs; preserved: ' + name)
+            require(confined_child_path(output, name).read_bytes() == value, 'Existing immutable output differs; preserved: ' + name)
     require(not verify_only or exists, 'Verify-only requires a complete existing output')
     status = 'planned' if plan else 'verified' if verify_only else 'preserved' if exists else 'produced'
     written = 0
     if status == 'produced':
         output.mkdir(parents=True, exist_ok=False)
         for name, value in payloads.items():
-            with child(output, name).open('xb') as handle: handle.write(value)
+            with confined_child_path(output, name).open('xb') as handle: handle.write(value)
             written += 1
     inputs.unchanged()
     return {'status': status, 'inventorySha256': digest(payloads['inventory.json']), 'coverage': inventory['coverage'],

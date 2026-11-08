@@ -1,8 +1,3 @@
-"""One offline, recipe-driven entry point for existing native converters.
-
-Never stages public assets, edits Editor scenes or invokes a native game client.
-An unchanged batch is reused after hash verification, without rerunning adapters.
-"""
 from __future__ import annotations
 
 import argparse
@@ -12,11 +7,18 @@ import os
 from pathlib import Path
 import re
 import shutil
-import stat
 import subprocess
 import sys
 
 import native_batch_adapters as adapters
+from native_store.store_paths import confined_child_path, refuse_reparse_points, require_converter_output, require_portable_relative_path
+
+NATIVE_BATCH_DESCRIPTION = (
+    'One offline, recipe-driven entry point for existing native converters.\n'
+    '\n'
+    'Never stages public assets, edits Editor scenes or invokes a native game client.\n'
+    'An unchanged batch is reused after hash verification, without rerunning adapters.'
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 ID = re.compile(r'[a-z0-9][a-z0-9-]{0,79}')
@@ -42,34 +44,8 @@ def file_hash(path):
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
-def safe_relative(value):
-    require(isinstance(value, str) and value and '\\' not in value, 'Expected portable relative path')
-    for part in value.split('/'):
-        require(part and part not in ('.', '..') and not re.search(r'[:\x00-\x1f]', part)
-                and not part.endswith(('.', ' ')) and not re.fullmatch(r'(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\..*)?', part, re.I),
-                'Unsafe relative path: ' + value)
-    return value
-
-
-def checked(path):
-    path = Path(path).absolute()
-    for parent in (path, *path.parents):
-        if parent.exists() or parent.is_symlink():
-            info = parent.lstat()
-            require(not stat.S_ISLNK(info.st_mode) and not (getattr(info, 'st_file_attributes', 0) & 0x400),
-                    'Symlink/junction/reparse boundary refused: ' + str(parent))
-    return path.resolve()
-
-
-def child(root, relative):
-    root = checked(root)
-    path = checked(root / safe_relative(relative))
-    require(path.is_relative_to(root) and path != root, 'Path escapes declared root')
-    return path
-
-
 def load_json(path):
-    path = checked(path)
+    path = refuse_reparse_points(path)
     require(path.is_file() and 0 < path.stat().st_size <= MAX_JSON, 'JSON input missing or too large: ' + str(path))
     def unique(pairs):
         result = {}
@@ -93,12 +69,12 @@ def verify_lock(root, lock_path):
     require(len(lock['files']) <= 100_000, 'Source lock is too large')
     pins, names = {}, set()
     for item in lock['files']:
-        name = safe_relative(item['relativePath'])
+        name = require_portable_relative_path(item['relativePath'])
         require(name.casefold() not in names, 'Duplicate/case-colliding source identity')
         names.add(name.casefold())
         require(type(item.get('bytes')) is int and item['bytes'] > 0 and isinstance(item.get('sha256'), str)
                 and HASH.fullmatch(item['sha256']), 'Invalid source pin: ' + name)
-        path = child(root, name)
+        path = confined_child_path(root, name)
         require(path.is_file() and path.stat().st_size == item['bytes'] and file_hash(path) == item['sha256'],
                 'Source hash/size differs: ' + name)
         pins[name] = {'bytes': item['bytes'], 'sha256': item['sha256']}
@@ -106,8 +82,8 @@ def verify_lock(root, lock_path):
 
 
 def prepare(recipe_path, output, project_root=ROOT):
-    project_root = checked(project_root)
-    recipe_path = checked(recipe_path)
+    project_root = refuse_reparse_points(project_root)
+    recipe_path = refuse_reparse_points(recipe_path)
     require(recipe_path.is_relative_to(project_root), 'Batch recipe must be inside project')
     recipe = load_json(recipe_path)
     require(set(recipe) == {'schemaVersion', 'kind', 'id', 'sources', 'jobs'} and recipe['schemaVersion'] == 1
@@ -115,14 +91,12 @@ def prepare(recipe_path, output, project_root=ROOT):
             'Invalid offline batch recipe')
     require(isinstance(recipe['sources'], dict) and 0 < len(recipe['sources']) <= 16, 'Declare source sets')
     require(isinstance(recipe['jobs'], list) and 0 < len(recipe['jobs']) <= 256, 'Declare 1..256 jobs')
-    output = checked(output)
-    artifacts = checked(project_root / 'artifacts')
-    require(output.is_relative_to(artifacts) and output != artifacts, 'Batch output must be a dedicated artifacts subdirectory')
+    output = require_converter_output(project_root, output)
     require(not recipe_path.is_relative_to(output), 'Output overlaps batch recipe')
     sources = {}
     for name, source in recipe['sources'].items():
         require(ID.fullmatch(name) and isinstance(source, dict) and set(source) == {'root', 'lock'}, 'Invalid source set')
-        root, lock = child(project_root, source['root']), child(project_root, source['lock'])
+        root, lock = confined_child_path(project_root, source['root']), confined_child_path(project_root, source['lock'])
         require(root.is_dir(), 'Source root missing')
         require(not root.is_relative_to(output) and not output.is_relative_to(root) and not lock.is_relative_to(output),
                 'Output overlaps source input/lock')
@@ -141,15 +115,14 @@ def prepare(recipe_path, output, project_root=ROOT):
         source = sources[job['source']]
         recipe_pins = {}
         for path in adapters.recipe_paths(job, project_root):
-            path = checked(path)
+            path = refuse_reparse_points(path)
             require(path.is_relative_to(project_root) and not path.is_relative_to(output), 'Job recipe escapes project/overlaps output')
             recipe_pins[path.relative_to(project_root).as_posix()] = file_hash(path)
         pins = adapters.adapter_pins(job['adapter'])
         descriptor = {'request': job, 'source': source, 'recipePins': recipe_pins, 'adapterPins': pins,
                       'collectorSha256': file_hash(Path(adapters.__file__))}
         planned.append({'id': job['id'], 'fingerprint': digest(canonical(descriptor)), 'descriptor': descriptor})
-        # Validate the exact command during preflight, before any output writes.
-        adapters.command(job, child(project_root, source['root']), child(project_root, source['lock']),
+        adapters.command(job, confined_child_path(project_root, source['root']), confined_child_path(project_root, source['lock']),
                          output / 'jobs' / job['id'], project_root)
     owner = {'schemaVersion': 1, 'kind': recipe['kind'], 'id': recipe['id'], 'recipe': recipe,
              'recipeSha256': file_hash(recipe_path), 'orchestratorSha256': file_hash(Path(__file__)),
@@ -163,7 +136,7 @@ def product_receipt(root, names):
     require(len({name.casefold() for name in names}) == len(names), 'Duplicate/case-colliding products')
     result = {}
     for name in sorted(names):
-        path = child(root, name)
+        path = confined_child_path(root, name)
         require(path.is_file(), 'Product is missing: ' + name)
         result[name] = {'bytes': path.stat().st_size, 'sha256': file_hash(path)}
     return result
@@ -176,7 +149,7 @@ def verify_products(root, products):
 
 
 def verify_batch(output, owner=None):
-    output = checked(output)
+    output = refuse_reparse_points(output)
     require(not (output / '.running.json').exists(), 'Batch is active/interrupted; retained output is not a completed cache')
     recorded = load_json(output / 'owner.json')
     if owner is not None:
@@ -215,8 +188,8 @@ def coverage(status):
 def run(recipe_path, output, *, plan_only=False, verify_only=False, reuse_from=None, project_root=ROOT, execute=subprocess.run):
     require(not (plan_only and verify_only), 'Plan and verify-only are separate modes')
     require(not (reuse_from and (plan_only or verify_only)), 'Reuse is only for a fresh conversion batch')
-    project_root = checked(project_root)
-    output = checked(output)
+    project_root = refuse_reparse_points(project_root)
+    output = refuse_reparse_points(output)
     owner = prepare(recipe_path, output, project_root)
     if plan_only:
         return {'mode': 'plan', 'output': str(output), 'owner': owner, 'writes': 0}
@@ -230,7 +203,7 @@ def run(recipe_path, output, *, plan_only=False, verify_only=False, reuse_from=N
     require(not verify_only, 'Verify-only requires a complete existing batch')
     reuse = None
     if reuse_from:
-        reuse_from = checked(reuse_from)
+        reuse_from = refuse_reparse_points(reuse_from)
         require(not output.is_relative_to(reuse_from) and not reuse_from.is_relative_to(output), 'Reuse and output overlap')
         reuse = verify_batch(reuse_from)
     output.mkdir(parents=True, exist_ok=False)
@@ -252,15 +225,15 @@ def run(recipe_path, output, *, plan_only=False, verify_only=False, reuse_from=N
                               and row['status'] in ('converted', 'partial')), None) if reuse else None
                 if prior:
                     for name in prior['products']:
-                        original = child(reuse_from / 'jobs' / job['id'], name)
-                        destination = child(base, name)
+                        original = confined_child_path(reuse_from / 'jobs' / job['id'], name)
+                        destination = confined_child_path(base, name)
                         destination.parent.mkdir(parents=True, exist_ok=True)
                         with original.open('rb') as src, destination.open('xb') as dst:
                             shutil.copyfileobj(src, dst)
                     verify_products(base, prior['products'])
                     mode = 'verified-product-copy'
                 else:
-                    argv = adapters.command(job, child(project_root, source['root']), child(project_root, source['lock']), base, project_root)
+                    argv = adapters.command(job, confined_child_path(project_root, source['root']), confined_child_path(project_root, source['lock']), base, project_root)
                     logs = output / 'diagnostics'
                     logs.mkdir(exist_ok=True)
                     print(json.dumps({'job': job['id'], 'state': 'started', 'adapter': job['adapter']}), flush=True)
@@ -269,7 +242,7 @@ def run(recipe_path, output, *, plan_only=False, verify_only=False, reuse_from=N
                     executions += 1
                     require(completed.returncode in (0, 2), f'Adapter failed with exit {completed.returncode}; inspect retained diagnostics')
                     mode = 'adapter-executed'
-                collected = adapters.collect(job, base, child(project_root, source['lock']), project_root)
+                collected = adapters.collect(job, base, confined_child_path(project_root, source['lock']), project_root)
                 require(collected['status'] in ('converted', 'partial'), 'Invalid adapter status')
                 if not prior:
                     require(completed.returncode == (0 if collected['status'] == 'converted' else 2), 'Adapter exit and coverage disagree')
@@ -282,7 +255,6 @@ def run(recipe_path, output, *, plan_only=False, verify_only=False, reuse_from=N
             except (ValueError, OSError, KeyError, TypeError, subprocess.SubprocessError) as error:
                 results.append({**result, 'status': 'failed', 'error': str(error), 'coverage': coverage('failed')})
                 print(json.dumps({'job': job['id'], 'state': 'failed', 'error': str(error)}), flush=True)
-        # Rehash locked originals after conversion before sealing a result.
         require(prepare(recipe_path, output, project_root) == owner,
                 'Sources, recipes or implementation changed during batch')
         receipt = {'schemaVersion': 1, 'kind': 'native-offline-asset-batch-result', 'id': owner['id'],
@@ -296,7 +268,6 @@ def run(recipe_path, output, *, plan_only=False, verify_only=False, reuse_from=N
         write_new(output / 'complete.json', {'schemaVersion': 1, 'ownerSha256': digest(canonical(owner)),
                                            'batchSha256': file_hash(output / 'batch.json')})
     except BaseException:
-        # Retain interrupted output and its lock; it must never look reusable.
         raise
     else:
         (output / '.running.json').unlink()
@@ -305,7 +276,7 @@ def run(recipe_path, output, *, plan_only=False, verify_only=False, reuse_from=N
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=NATIVE_BATCH_DESCRIPTION)
     parser.add_argument('--recipe', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     mode = parser.add_mutually_exclusive_group()

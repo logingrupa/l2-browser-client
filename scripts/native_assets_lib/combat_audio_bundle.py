@@ -1,17 +1,3 @@
-"""Selected original combat sound table rows and existing verified WAV exports.
-
-Joins explicitly selected chargrp/npcgrp/armorgrp/weapongrp/skillsoundgrp rows
-and selected ALAudio.int [CharSound]/[ItemSound]/[EtcSound] values to products
-already verified by export-native-sounds.py. No sound conversion, native
-lookup, slot choice, onset timing or playback policy is decided here.
-
-Role names follow the statically proved Q4 routes (native-sound-answers-
-20261107 REPORT.md Q4: AttackItem/AttackVoice/AttackShot -> GetAttackItemSound,
-GetAttackVoiceSound, GetDefenseItemSound, GetDamageSound, [EtcSound]).
-Decoded labels that native code reads differently are renamed explicitly via
-``nativeNumeric`` (npcgrp sound_vol/sound_radius are swapped in the decoded
-table; native reads radius +0xcc, volume +0xd0, random +0xd4).
-"""
 from __future__ import annotations
 
 import copy
@@ -23,7 +9,8 @@ from native_assets_lib.footstep_config import decode_config
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib.placement_audio import index
 from native_assets_lib.skill_audio_bundle import REFERENCE, corpus_dependency, reference_candidates
-from stage_native_players import checked, child, decode, digest, relative_name, require, HASH, ID
+from native_store.store_paths import confined_child_path, refuse_reparse_points, require_portable_relative_path
+from stage_native_players import decode, digest, require, HASH, ID
 
 KIND = 'native-combat-audio-dependencies'
 RECIPE_KIND = 'native-combat-audio-bundle'
@@ -59,12 +46,6 @@ def load_table(inputs, name, spec):
 
 
 def config_sections(decoded, wanted):
-    """Exact key=value records of the wanted sections, with byte offsets.
-
-    Only the selected sections are parsed; duplicate sections or keys and
-    malformed selected lines fail closed. Values stay original strings; a
-    value is also given as a number only when it is a plain decimal literal.
-    """
     starts, offset = [], 0
     for raw in decoded.splitlines(keepends=True):
         stripped = raw.rstrip(b'\r\n').strip()
@@ -107,7 +88,6 @@ def config_sections(decoded, wanted):
 
 
 def load_config(inputs, spec):
-    """ALAudio.int values as one pseudo-row keyed `Section.Key` (original strings or plain numbers)."""
     require(isinstance(spec, dict) and set(spec) == {'original', 'sections'}, 'Unsupported config pin')
     decoded, decoder = decode_config(inputs.read(spec['original']))
     values = config_sections(decoded, spec['sections'])
@@ -118,7 +98,6 @@ def load_config(inputs, spec):
 
 
 def lookup(document, path):
-    """JSON pointer read that reports absence instead of raising."""
     require(isinstance(path, str) and path.startswith('/') and len(path) <= 256, 'Invalid row pointer')
     for part in path[1:].split('/'):
         key = part.replace('~1', '/').replace('~0', '~')
@@ -144,7 +123,6 @@ def select_row(rows, match, name):
 
 
 def slots(row, field, pointer_prefix):
-    """Original field values in order; single-key wrapper objects keep their key."""
     if field not in row: return 'omitted', []
     value = row[field]
     if value is None or isinstance(value, str): return 'scalar', [(pointer_prefix + '/' + field, value)]
@@ -198,7 +176,6 @@ def numeric(row, fields):
 
 
 def native_numeric(row, mapping, pointer_prefix):
-    """Native meaning -> decoded field, for labels the decoded table names differently."""
     require(isinstance(mapping, dict) and 0 < len(mapping) <= 16, 'Invalid native numeric mapping')
     values, sources = {}, {}
     for name, field in mapping.items():
@@ -251,7 +228,7 @@ def selection_record(spec, rows, table_name, resolver):
 
 
 def prepare(root, recipe_path):
-    inputs = Inputs(root); recipe_path = checked(recipe_path)
+    inputs = Inputs(root); recipe_path = refuse_reparse_points(recipe_path)
     require(recipe_path.is_relative_to(inputs.root), 'Recipe must stay within project root')
     raw = recipe_path.read_bytes()
     recipe = decode(inputs.read({'path': recipe_path.relative_to(inputs.root).as_posix(), 'sha256': digest(raw)}))
@@ -264,7 +241,7 @@ def prepare(root, recipe_path):
     config = recipe.get('config', {})
     require(isinstance(config, dict) and set(config) <= {CONFIG_TABLE}, 'Invalid config pin set')
     if CONFIG_TABLE in config: loaded[CONFIG_TABLE] = load_config(inputs, config[CONFIG_TABLE])
-    corpus = recipe['corpus']; corpus_root = relative_name(corpus['root'])
+    corpus = recipe['corpus']; corpus_root = require_portable_relative_path(corpus['root'])
     inventory_bytes = inputs.read(corpus['inventory']); inventory = decode(inventory_bytes, max_bytes=32 * 1024 * 1024)
     coverage = decode(inputs.read(corpus['coverage']), max_bytes=32 * 1024 * 1024)
     require(inventory.get('kind') == 'native-staged-sound-inventory' and coverage.get('kind') == 'native-staged-sound-coverage' and
@@ -312,27 +289,27 @@ def prepare(root, recipe_path):
 
 def run(root, recipe_path, output, *, plan=False, verify_only=False):
     require(not (plan and verify_only), 'Plan and verify-only are mutually exclusive')
-    manifest, payloads, inputs = prepare(root, recipe_path); output = checked(output)
+    manifest, payloads, inputs = prepare(root, recipe_path); output = refuse_reparse_points(output)
     require(any(output != inputs.root / name and output.is_relative_to(inputs.root / name)
                 for name in ('artifacts', 'scratch', '.scratch')), 'Output must be a named artifacts/scratch subdirectory')
     for name in inputs.records:
-        source = child(inputs.root, name)
+        source = confined_child_path(inputs.root, name)
         require(not source.is_relative_to(output) and not output.is_relative_to(source.parent), 'Output overlaps an input or retained directory')
     exists = output.exists()
     if exists:
         require(output.is_dir(), 'Output is not a directory'); actual = set()
         for path in output.rglob('*'):
-            checked(path)
+            refuse_reparse_points(path)
             if path.is_file(): actual.add(path.relative_to(output).as_posix())
         require(actual == set(payloads), 'Existing output file set differs; preserved')
         for name, data in payloads.items():
-            require(child(output, name).read_bytes() == data, 'Existing immutable output differs; preserved: ' + name)
+            require(confined_child_path(output, name).read_bytes() == data, 'Existing immutable output differs; preserved: ' + name)
     require(not verify_only or exists, 'Verify-only requires a complete existing output')
     status = 'planned' if plan else 'verified' if verify_only else 'preserved' if exists else 'produced'; written = 0
     if status == 'produced':
         output.mkdir(parents=True, exist_ok=False)
         for name in sorted(payloads, key=lambda name: name == 'manifest.json'):
-            path = child(output, name); path.parent.mkdir(parents=True, exist_ok=True); checked(path.parent)
+            path = confined_child_path(output, name); path.parent.mkdir(parents=True, exist_ok=True); refuse_reparse_points(path.parent)
             with path.open('xb') as stream: stream.write(payloads[name])
             written += 1
     inputs.unchanged()

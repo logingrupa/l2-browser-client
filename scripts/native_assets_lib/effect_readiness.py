@@ -1,8 +1,3 @@
-"""Read retained native-effect bundles; do not execute native or browser code.
-
-Resource identity is compared with converted GLB primitives/materials. Neither
-declared source pins nor retained effective defaults are re-derived from originals.
-"""
 from __future__ import annotations
 
 from collections import Counter
@@ -10,7 +5,8 @@ from pathlib import Path, PurePosixPath
 import struct
 
 from native_assets_lib.gltf import json_bytes
-from stage_native_players import checked, child, decode, digest, relative_name, require, HASH
+from native_store.store_paths import confined_child_path, refuse_reparse_points, require_portable_relative_path
+from stage_native_players import decode, digest, require, HASH
 
 ENUM_FIELDS = {
     'DrawStyle': 'EParticleDrawStyle', 'CoordinateSystem': 'EParticleCoordinateSystem',
@@ -42,9 +38,9 @@ def indexed(rows, key, label):
 
 class Bundle:
     def __init__(self, path):
-        path = checked(path)
+        path = refuse_reparse_points(path)
         self.root = path if path.is_dir() else path.parent
-        manifest_path = child(self.root, 'manifest.json')
+        manifest_path = confined_child_path(self.root, 'manifest.json')
         require(path.is_dir() or path == manifest_path, 'Expected bundle directory or manifest.json')
         self.manifest_bytes = manifest_path.read_bytes()
         self.manifest = decode(self.manifest_bytes, max_bytes=32 * 1024 * 1024)
@@ -52,23 +48,22 @@ class Bundle:
                 'Unsupported effect bundle schema')
         self.files = {}; self.snapshots = {'manifest.json': digest(self.manifest_bytes)}
         for spec in self.manifest['files']:
-            name = relative_name(spec['file']); key = name.casefold()
+            name = require_portable_relative_path(spec['file']); key = name.casefold()
             require(key != 'manifest.json' and key not in self.files, 'Duplicate declared output: ' + name)
             require(type(spec.get('bytes')) is int and spec['bytes'] >= 0 and
                     isinstance(spec.get('sha256'), str) and HASH.fullmatch(spec['sha256']), 'Invalid file pin: ' + name)
-            data = child(self.root, name).read_bytes()
+            data = confined_child_path(self.root, name).read_bytes()
             require(len(data) == spec['bytes'] and digest(data) == spec['sha256'], 'Declared file bytes/hash differ: ' + name)
             self.files[key] = spec; self.snapshots[name] = spec['sha256']
-        # Also refuse case-insensitive file/directory collisions on POSIX hosts.
         for name in self.files:
             require(not any(str(p) in self.files for p in PurePosixPath(name).parents if str(p) != '.'),
                     'Conflicting declared output paths: ' + name)
 
     def read(self, name):
-        name = relative_name(name)
+        name = require_portable_relative_path(name)
         spec = self.files.get(name.casefold())
         require(spec is not None and spec['file'] == name, 'Undeclared or differently cased bundle reference: ' + name)
-        data = child(self.root, name).read_bytes()
+        data = confined_child_path(self.root, name).read_bytes()
         require(len(data) == spec['bytes'] and digest(data) == spec['sha256'], 'Bundle changed during inspection: ' + name)
         return data
 
@@ -77,7 +72,7 @@ class Bundle:
 
     def unchanged(self):
         for name, expected in self.snapshots.items():
-            require(digest(child(self.root, name).read_bytes()) == expected, 'Bundle changed during inspection: ' + name)
+            require(digest(confined_child_path(self.root, name).read_bytes()) == expected, 'Bundle changed during inspection: ' + name)
 
 
 def asset_records(bundle):
@@ -86,7 +81,7 @@ def asset_records(bundle):
     claimed = set(); records = {}
     for key, item in assets.items():
         for field in ('manifest', 'archive', 'primary'):
-            name = relative_name(item[field])
+            name = require_portable_relative_path(item[field])
             require(name.casefold() not in claimed, 'Duplicate asset output reference: ' + name)
             claimed.add(name.casefold()); bundle.read(name)
         require(digest(bundle.read(item['archive'])) == item['archiveSha256'], 'Asset archive hash differs')
@@ -96,14 +91,14 @@ def asset_records(bundle):
         prefix = PurePosixPath(item['manifest']).parent
         internal = set()
         for file in asset['files']:
-            name = relative_name(file['path'])
+            name = require_portable_relative_path(file['path'])
             require(name.casefold() not in internal, 'Duplicate asset payload: ' + name)
             internal.add(name.casefold()); raw = bundle.read((prefix / name).as_posix())
             require(type(file.get('bytes')) is int and len(raw) == file['bytes'] and digest(raw) == file['sha256'],
                     'Asset payload pin differs: ' + name)
         kind_field = {'model': 'model', 'texture': 'image', 'audio': 'audio'}.get(item['kind'])
         if kind_field:
-            primary = relative_name(asset[kind_field]['file'])
+            primary = require_portable_relative_path(asset[kind_field]['file'])
             require(primary.casefold() in internal and (prefix / primary).as_posix() == item['primary'], 'Asset primary binding differs')
         records[key] = {'object': item['object'], 'id': item['id'], 'kind': item['kind'], 'source': asset['source'],
                         'manifest': item['manifest'], 'primary': item['primary'], 'primarySha256': digest(bundle.read(item['primary'])),
@@ -199,7 +194,7 @@ def enum_records(component, classes):
 
 def inspect(bundle_path):
     bundle = Bundle(bundle_path); manifest = bundle.manifest
-    graph_path = relative_name(manifest['sourceGraph']); graph = bundle.json(graph_path)
+    graph_path = require_portable_relative_path(manifest['sourceGraph']); graph = bundle.json(graph_path)
     require(graph.get('skillRow', {}).get('skill_id') == manifest.get('skillId') and
             graph.get('skillRow', {}).get('skill_level') == manifest.get('level'), 'Source graph skill binding differs')
     require(graph.get('associations') == manifest.get('associations'), 'Source graph associations differ')
@@ -290,7 +285,7 @@ def inspect(bundle_path):
 
 
 def run(bundle_path, output, *, verify=False):
-    report, bundle = inspect(bundle_path); output = checked(output)
+    report, bundle = inspect(bundle_path); output = refuse_reparse_points(output)
     require(output != bundle.root and not output.is_relative_to(bundle.root), 'Report output must stay outside the input bundle')
     data = json_bytes(report) + b'\n'
     bundle.unchanged()
@@ -299,7 +294,7 @@ def run(bundle_path, output, *, verify=False):
         status = 'verified' if verify else 'preserved'
     else:
         require(not verify, 'Verify requires an existing report')
-        output.parent.mkdir(parents=True, exist_ok=True); checked(output.parent)
+        output.parent.mkdir(parents=True, exist_ok=True); refuse_reparse_points(output.parent)
         with output.open('xb') as stream: stream.write(data)
         status = 'produced'
     return {'status': status, 'reportSha256': digest(data), 'coverage': report['coverage'], 'bundleUnchanged': True}

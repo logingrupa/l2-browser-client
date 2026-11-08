@@ -1,8 +1,3 @@
-"""Additive player staging in isolated synthetic project roots only.
-
-No converter, native package, actual public tree, browser, or Editor is run.
-GLB fixtures exercise staging metadata, not skeletal/rendering correctness.
-"""
 from __future__ import annotations
 
 import copy
@@ -77,7 +72,6 @@ class PlayerStageTests(unittest.TestCase):
         path = self.root / ('artifacts/' + identifier.replace(':', '-') + '.l2asset')
         path.parent.mkdir(exist_ok=True)
         path.write_bytes(payload)
-        # Unlisted work beside the package must never become a public resource.
         (path.parent / '.work').write_bytes(b'private scratch')
         return {'catalogId': identifier, 'archive': path.relative_to(self.root).as_posix(), 'archiveSha256': sha(payload)}
 
@@ -307,7 +301,7 @@ class PlayerStageTests(unittest.TestCase):
             with self.subTest(name=name):
                 self.recipe['models'][0]['archive'] = name
                 self.save_recipe()
-                self.assert_read_only_failure('Unsafe player staging path')
+                self.assert_read_only_failure('Unsafe relative path')
         self.recipe['models'][0]['archive'] = 'public/l2/source.l2asset'
         self.save_recipe()
         self.assert_read_only_failure('source/output overlap')

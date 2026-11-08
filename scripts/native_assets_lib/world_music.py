@@ -1,17 +1,3 @@
-"""Bundle original 20_20 region music keyed on the map's MusicVolume actors.
-
-Reads exact MusicVolume declarations and their convex brush BSP from the locked
-map, joins nMusicID to ordered musicinfo strings through the pinned
-MUSIC_ID_JOIN receipt, resolves every string to a locked original music file,
-and emits a deterministic bundle. No native client, live service, Editor
-project or runtime file is touched; staging is a separate step.
-
-Original L2 music files are Ogg Vorbis with an L2SD capture on page 0 and a
-small trailer after the EOS page. The bundle carries the byte-restored Ogg
-(identical Vorbis pages) plus the exact reversible patch, and a labelled AAC
-derivative for browsers that cannot decode Ogg Vorbis. Playback policy
-(selection, transitions, gain, bForcePlayMusic priority) remains unverified.
-"""
 from __future__ import annotations
 
 import copy
@@ -23,7 +9,8 @@ import subprocess
 import tempfile
 
 from native_assets_lib.gltf import json_bytes
-from stage_native_players import checked, child, decode, digest, require, relative_name, HASH
+from native_store.store_paths import confined_child_path, refuse_reparse_points, require_portable_relative_path
+from stage_native_players import decode, digest, require, HASH
 
 KIND = 'native-map-music'
 TRANSFORMS = ('Location', 'Rotation', 'DrawScale', 'DrawScale3D', 'PrePivot')
@@ -52,11 +39,6 @@ def ogg_crc(page):
 
 
 def restore_l2_ogg(data):
-    """Validate an L2SD-signed Ogg Vorbis stream and return (restored, facts).
-
-    Every page must carry a valid standard Ogg CRC (computed with the OggS
-    capture), so restoring the capture is provably the only container change.
-    """
     require(isinstance(data, (bytes, bytearray)) and 64 < len(data) <= MAX_TRACK_BYTES, 'Invalid music payload size')
     data = bytes(data)
     capture = data[:4]
@@ -101,19 +83,17 @@ def restore_l2_ogg(data):
 
 
 def unpatch(restored, patch):
-    """Reverse the documented restoration exactly; used by verification."""
     return patch['originalCapture'].encode('ascii') + restored[4:] + bytes.fromhex(patch['trailerHex'])
 
 
 class Inputs:
-    """Hash-pinned project files and locked native snapshot reads."""
     def __init__(self, root):
-        self.root, self.records = checked(root), {}
+        self.root, self.records = refuse_reparse_points(root), {}
 
     def read(self, name, sha256, size=None):
-        name = relative_name(name)
+        name = require_portable_relative_path(name)
         require(isinstance(sha256, str) and HASH.fullmatch(sha256) is not None, 'Invalid input SHA256: ' + name)
-        data = child(self.root, name).read_bytes()
+        data = confined_child_path(self.root, name).read_bytes()
         require(digest(data) == sha256 and (size is None or len(data) == size), 'Input hash/size differs: ' + name)
         record = {'path': name, 'bytes': len(data), 'sha256': sha256}
         require(self.records.get(name, record) == record, 'Input changed while reading: ' + name)
@@ -121,7 +101,7 @@ class Inputs:
         return data
 
     def pin(self, name):
-        data = child(self.root, relative_name(name)).read_bytes()
+        data = confined_child_path(self.root, require_portable_relative_path(name)).read_bytes()
         return self.read(name, digest(data))
 
     def unchanged(self):
@@ -134,7 +114,7 @@ def lock_pins(document, label):
             isinstance(document.get('sourceHost'), str) and isinstance(document.get('sourceRoot'), str), 'Invalid source lock: ' + label)
     pins = {}
     for row in document['files']:
-        name = relative_name(row['relativePath'])
+        name = require_portable_relative_path(row['relativePath'])
         require(name.casefold() not in pins and type(row.get('bytes')) is int and row['bytes'] > 0 and
                 isinstance(row.get('sha256'), str) and HASH.fullmatch(row['sha256']), 'Invalid/duplicate lock row: ' + name)
         pins[name.casefold()] = row
@@ -142,7 +122,6 @@ def lock_pins(document, label):
 
 
 def music_volumes(map_data, map_label):
-    """Decode every exact Engine.MusicVolume and its convex brush BSP."""
     from native_catalog.ue2 import Package
     import native_map
     import native_bsp_floor
@@ -161,7 +140,6 @@ def music_volumes(map_data, map_label):
                 'MusicVolume lacks nMusicID or Brush: ' + item['object'])
         transform = native_map.explicit_properties(decoded, TRANSFORMS)
         for name in ('Rotation', 'DrawScale', 'DrawScale3D'):
-            # Non-identity brush transforms are not supported; never guess them.
             require(transform[name]['status'] == 'omitted-class-default-unresolved', 'Unsupported serialized brush transform: ' + name)
         location = transform['Location'].get('value') or {'X': 0.0, 'Y': 0.0, 'Z': 0.0}
         pivot = transform['PrePivot'].get('value') or {'X': 0.0, 'Y': 0.0, 'Z': 0.0}
@@ -171,8 +149,6 @@ def music_volumes(map_data, map_label):
         require(not model.zones and 4 <= len(model.nodes) <= 64, 'MusicVolume brush is not a small non-level BSP')
         planes = []
         for index, node in enumerate(model.nodes):
-            # A convex brush BSP is a single back-chain: front is outside, the
-            # last back child is the inside leaf. Anything else is refused.
             require(node.i_front == -1 and node.i_plane == -1 and node.i_back == (index + 1 if index + 1 < len(model.nodes) else -1),
                     'MusicVolume brush BSP is not a convex back-chain: ' + item['object'])
             nx, ny, nz, w = node.plane
@@ -222,7 +198,7 @@ def encode(encoder, args, restored):
 
 def prepare(root, recipe_path, encoder=None):
     inputs = Inputs(root)
-    recipe_path = checked(recipe_path)
+    recipe_path = refuse_reparse_points(recipe_path)
     require(recipe_path.is_relative_to(inputs.root), 'Recipe must stay within the project root')
     recipe_bytes = inputs.pin(recipe_path.relative_to(inputs.root).as_posix())
     recipe = decode(recipe_bytes)
@@ -310,32 +286,32 @@ def prepare(root, recipe_path, encoder=None):
 
 
 def write_bundle(root, output, payloads, inputs, *, plan=False, verify_only=False):
-    output = checked(output)
+    output = refuse_reparse_points(output)
     require(any(output != inputs.root / name and output.is_relative_to(inputs.root / name)
                 for name in ('artifacts', 'scratch', '.scratch')), 'Output must be a named artifacts/scratch subdirectory')
     for name in inputs.records:
-        source = child(inputs.root, name)
+        source = confined_child_path(inputs.root, name)
         require(not source.is_relative_to(output) and not output.is_relative_to(source.parent), 'Output overlaps an input')
     exists = output.exists()
     if exists:
         require(output.is_dir(), 'Output is not a directory')
         actual = set()
         for path in output.rglob('*'):
-            checked(path)
+            refuse_reparse_points(path)
             if path.is_file():
                 actual.add(path.relative_to(output).as_posix())
         require(actual == set(payloads), 'Existing output file set differs; preserved')
         for name, value in payloads.items():
-            require(child(output, name).read_bytes() == value, 'Existing immutable output differs; preserved: ' + name)
+            require(confined_child_path(output, name).read_bytes() == value, 'Existing immutable output differs; preserved: ' + name)
     require(not verify_only or exists, 'Verify-only requires a complete existing output')
     status = 'planned' if plan else 'verified' if verify_only else 'preserved' if exists else 'produced'
     written = 0
     if status == 'produced':
         output.mkdir(parents=True, exist_ok=False)
-        for name in sorted(payloads, key=lambda name: name == 'manifest.json'):  # manifest last = completion marker
-            path = child(output, name)
+        for name in sorted(payloads, key=lambda name: name == 'manifest.json'):
+            path = confined_child_path(output, name)
             path.parent.mkdir(parents=True, exist_ok=True)
-            checked(path.parent)
+            refuse_reparse_points(path.parent)
             with path.open('xb') as handle:
                 handle.write(payloads[name])
             written += 1

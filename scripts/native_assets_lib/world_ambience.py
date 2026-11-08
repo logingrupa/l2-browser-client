@@ -1,12 +1,3 @@
-"""Bundle a verified 20_20 ambient export as a compact runtime emitter table.
-
-Input is an existing `export-native-map-audio.py` output whose receipts are
-hash-pinned by the recipe. Original PCM WAV payloads are copied unchanged.
-Authored emitter fields are retained with nulls for omitted values; no class
-default, activation, loop, random or attenuation rule is inferred here. The
-only native scalar read is the static initializer of Core.dll's exported
-GAudioMaxRadiusMultiplier, recorded with its exact source identity.
-"""
 from __future__ import annotations
 
 import copy
@@ -14,7 +5,8 @@ import struct
 
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib.world_music import Inputs, write_bundle
-from stage_native_players import checked, decode, digest, require
+from native_store.store_paths import refuse_reparse_points
+from stage_native_players import decode, digest, require
 
 KIND = 'native-map-ambience'
 FIELDS = ['id', 'exportIndex', 'x', 'y', 'z', 'soundRadius', 'soundVolume', 'soundPitch', 'ambientSoundType',
@@ -23,7 +15,6 @@ MAX_WAV = 8_000_000
 
 
 def pe_export_f32(data, symbol):
-    """Read a 4-byte initialized-data export from a PE32 image (no execution)."""
     require(data[:2] == b'MZ', 'Not a PE image')
     pe = struct.unpack_from('<I', data, 0x3C)[0]
     require(data[pe:pe + 4] == b'PE\0\0' and struct.unpack_from('<H', data, pe + 24)[0] == 0x10B, 'Not a PE32 image')
@@ -110,7 +101,7 @@ def emitter_row(item, sound_keys):
 
 def prepare(root, recipe_path):
     inputs = Inputs(root)
-    recipe_path = checked(recipe_path)
+    recipe_path = refuse_reparse_points(recipe_path)
     require(recipe_path.is_relative_to(inputs.root), 'Recipe must stay within the project root')
     recipe = decode(inputs.pin(recipe_path.relative_to(inputs.root).as_posix()))
     require(recipe.get('schemaVersion') == 1 and recipe.get('kind') == 'native-map-ambience-bundle', 'Unsupported ambience recipe')

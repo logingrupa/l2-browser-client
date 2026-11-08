@@ -1,8 +1,3 @@
-"""Selected original skill/sound rows and existing WAV dependencies.
-
-No conversion, sound-name policy, effect timeline, native lookup or playback.
-Global table ordinals and raw fields remain alongside candidate identities.
-"""
 from __future__ import annotations
 
 import copy
@@ -12,7 +7,8 @@ import re
 from native_assets_lib.animation_audio_bundle import Inputs, dependency, HASH
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib.placement_audio import index
-from stage_native_players import checked, child, decode, digest, relative_name, require
+from native_store.store_paths import confined_child_path, refuse_reparse_points, require_portable_relative_path
+from stage_native_players import decode, digest, require
 
 KIND = 'native-skill-audio-dependencies'
 GROUPS = ('spelleffect', 'shoteffect', 'expeffect')
@@ -55,7 +51,6 @@ def load_table(inputs, spec, name, collection):
 
 
 def reference_candidates(value, source_rows):
-    """Do not strip, lowercase, qualify, default or select the raw reference."""
     if value is None: return 'null', []
     require(isinstance(value, str), 'Sound reference must be a string or explicit null')
     if value == '': return 'empty', []
@@ -76,23 +71,19 @@ def corpus_dependency(inputs, corpus_root, item, covered):
             item['stableId'] == covered['stableId'] and exported['classObject'] == 'Engine.Sound', 'Unverified candidate source/export')
     archive, audio = covered['products']['archive'], covered['products']['audio']
     source_object = exported['object']
-    # The shared helper receives the candidate's already-qualified identity.
-    # The original possibly group-less reference stays in the field record.
     proof = {'authoredReference': source_object, 'sourceObject': source_object,
              'sourcePackageSha256': package['sha256'], 'exportIndex': exported['exportIndex'],
              'payload': {key: item['nativePayload'][key] for key in ('bytes', 'sha256')},
-             'existingExport': {'archivePath': corpus_root + '/' + relative_name(archive['path']), 'archiveSha256': archive['sha256'],
+             'existingExport': {'archivePath': corpus_root + '/' + require_portable_relative_path(archive['path']), 'archiveSha256': archive['sha256'],
                  'id': item['id'], 'sourceObject': source_object, 'sourcePackageSha256': package['sha256'],
                  'nativeExportIndex': exported['exportIndex'], 'stableId': item['stableId'],
-                 'wavPath': corpus_root + '/' + relative_name(audio['path']), 'wavSha256': audio['sha256'], 'wavBytes': audio['bytes']}}
+                 'wavPath': corpus_root + '/' + require_portable_relative_path(audio['path']), 'wavSha256': audio['sha256'], 'wavBytes': audio['bytes']}}
     sound, wav = dependency(inputs, proof)
-    # dependency() checks exact UAX identities. Its helper parameter name must
-    # not turn our candidate into a DAT-authored qualified reference in output.
     sound['provenance'] = {'kind': 'retained-uax-candidate-export-identity',
         'candidateIdentityReference': source_object,
         **{key: value for key, value in sound['provenance'].items() if key != 'authoredReference'}}
     source = item['nativePayload']
-    original = inputs.read({**source, 'path': corpus_root + '/' + relative_name(source['path'])})
+    original = inputs.read({**source, 'path': corpus_root + '/' + require_portable_relative_path(source['path'])})
     require(original == wav and item['nativeSound']['embeddedPayloadSha256'] == digest(wav) and
             item['nativeSound']['exportIndex'] == exported['exportIndex'], 'Candidate native payload differs')
     sound['source'].update(package=copy.deepcopy(package), serializedExport=copy.deepcopy(item['serializedExport']), nativeSound=copy.deepcopy(item['nativeSound']))
@@ -102,7 +93,7 @@ def corpus_dependency(inputs, corpus_root, item, covered):
 
 
 def prepare(root, recipe_path):
-    inputs = Inputs(root); recipe_path = checked(recipe_path)
+    inputs = Inputs(root); recipe_path = refuse_reparse_points(recipe_path)
     require(recipe_path.is_relative_to(inputs.root), 'Recipe must stay within project root')
     raw = recipe_path.read_bytes()
     recipe = decode(inputs.read({'path': recipe_path.relative_to(inputs.root).as_posix(), 'sha256': digest(raw)}))
@@ -117,7 +108,7 @@ def prepare(root, recipe_path):
         require(value not in selected, 'Duplicate recipe selection'); selected.append(value)
     skill_rows, skill_table = load_table(inputs, recipe['tables']['skillgrp'], 'skillgrp', 'skill')
     sound_rows, sound_table = load_table(inputs, recipe['tables']['skillsoundgrp'], 'skillsoundgrp', 'skillsound')
-    corpus = recipe['corpus']; corpus_root = relative_name(corpus['root'])
+    corpus = recipe['corpus']; corpus_root = require_portable_relative_path(corpus['root'])
     inventory_bytes = inputs.read(corpus['inventory']); inventory = decode(inventory_bytes, max_bytes=32 * 1024 * 1024)
     coverage = decode(inputs.read(corpus['coverage']), max_bytes=32 * 1024 * 1024)
     require(inventory.get('kind') == 'native-staged-sound-inventory' and coverage.get('kind') == 'native-staged-sound-coverage' and
@@ -192,27 +183,27 @@ def prepare(root, recipe_path):
 
 def run(root, recipe_path, output, *, plan=False, verify_only=False):
     require(not (plan and verify_only), 'Plan and verify-only are mutually exclusive')
-    manifest, payloads, inputs = prepare(root, recipe_path); output = checked(output)
+    manifest, payloads, inputs = prepare(root, recipe_path); output = refuse_reparse_points(output)
     require(any(output != inputs.root / name and output.is_relative_to(inputs.root / name)
                 for name in ('artifacts', 'scratch', '.scratch')), 'Output must be a named artifacts/scratch subdirectory')
     for name in inputs.records:
-        source = child(inputs.root, name)
+        source = confined_child_path(inputs.root, name)
         require(not source.is_relative_to(output) and not output.is_relative_to(source.parent), 'Output overlaps an input or retained directory')
     exists = output.exists()
     if exists:
         require(output.is_dir(), 'Output is not a directory'); actual = set()
         for path in output.rglob('*'):
-            checked(path)
+            refuse_reparse_points(path)
             if path.is_file(): actual.add(path.relative_to(output).as_posix())
         require(actual == set(payloads), 'Existing output file set differs; preserved')
         for name, data in payloads.items():
-            require(child(output, name).read_bytes() == data, 'Existing immutable output differs; preserved: ' + name)
+            require(confined_child_path(output, name).read_bytes() == data, 'Existing immutable output differs; preserved: ' + name)
     require(not verify_only or exists, 'Verify-only requires a complete existing output')
     status = 'planned' if plan else 'verified' if verify_only else 'preserved' if exists else 'produced'; written = 0
     if status == 'produced':
         output.mkdir(parents=True, exist_ok=False)
         for name in sorted(payloads, key=lambda name: name == 'manifest.json'):
-            path = child(output, name); path.parent.mkdir(parents=True, exist_ok=True); checked(path.parent)
+            path = confined_child_path(output, name); path.parent.mkdir(parents=True, exist_ok=True); refuse_reparse_points(path.parent)
             with path.open('xb') as stream: stream.write(payloads[name])
             written += 1
     inputs.unchanged()

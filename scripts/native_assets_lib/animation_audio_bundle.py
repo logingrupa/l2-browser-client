@@ -1,8 +1,3 @@
-"""Bundle authored animation sound dependencies from verified existing products.
-
-No exporter, native client, sound decoder or runtime selector runs here. The
-input recipe selects clips and array properties; raw events remain unchanged.
-"""
 from __future__ import annotations
 
 import copy
@@ -11,7 +6,8 @@ from pathlib import Path
 import re
 
 from native_assets_lib.gltf import json_bytes
-from stage_native_players import checked, child, decode, digest, require, relative_name
+from native_store.store_paths import confined_child_path, refuse_reparse_points, require_portable_relative_path
+from stage_native_players import decode, digest, require
 from stage_native_runtime import verified_archive
 
 HASH = re.compile(r'[a-f0-9]{64}')
@@ -29,12 +25,12 @@ def pointer(document, value):
 
 class Inputs:
     def __init__(self, root):
-        self.root, self.records = checked(root), {}
+        self.root, self.records = refuse_reparse_points(root), {}
 
     def read(self, record):
-        name = relative_name(record['path'])
+        name = require_portable_relative_path(record['path'])
         require(HASH.fullmatch(record['sha256']) is not None, 'Invalid input SHA256')
-        path = child(self.root, name)
+        path = confined_child_path(self.root, name)
         data = path.read_bytes()
         require(digest(data) == record['sha256'], 'Input hash differs: ' + name)
         require('bytes' not in record or len(data) == record['bytes'], 'Input size differs: ' + name)
@@ -45,9 +41,8 @@ class Inputs:
 
     def archive(self, record):
         self.read(record)
-        result, data, asset, payloads = verified_archive(child(self.root, record['path']), record['sha256'])
+        result, data, asset, payloads = verified_archive(confined_child_path(self.root, record['path']), record['sha256'])
         require(digest(data) == record['sha256'], 'Archive changed while reading')
-        # The shared verifier handles ZIP paths, manifest lengths and payloads.
         return result, decode(payloads['asset.json']), payloads
 
     def unchanged(self):
@@ -107,7 +102,7 @@ def dependency(inputs, row):
 
 def prepare(root, recipe_path):
     inputs = Inputs(root)
-    recipe_path = checked(recipe_path)
+    recipe_path = refuse_reparse_points(recipe_path)
     require(recipe_path.is_relative_to(inputs.root), 'Recipe must stay within project root')
     recipe_bytes = recipe_path.read_bytes()
     recipe_pin = {'path': recipe_path.relative_to(inputs.root).as_posix(), 'sha256': digest(recipe_bytes)}
@@ -170,8 +165,6 @@ def prepare(root, recipe_path):
                         require(sounds[key]['provenance'] == row, 'Conflicting stable sound identity')
                     slots.append({'index': index, 'reference': reference, 'dependencyId': key})
                 arrays.append({'property': property_name, 'slots': slots})
-            # Validate any retained native property offsets against the exact raw
-            # array entries; missing male offsets remain explicitly unresolved.
             for tag in proof['nativeNotification'].get('surfacePropertyTags', []):
                 require(raw['properties'][tag['name']][tag['arrayIndex']] == tag['reference'],
                         'Native property provenance differs from authored array')
@@ -217,11 +210,11 @@ def prepare(root, recipe_path):
 def run(root, recipe_path, output, *, plan=False, verify_only=False):
     require(not (plan and verify_only), 'Plan and verify-only are mutually exclusive')
     manifest, payloads, inputs = prepare(root, recipe_path)
-    output = checked(output)
+    output = refuse_reparse_points(output)
     require(any(output != inputs.root / name and output.is_relative_to(inputs.root / name)
                 for name in ('artifacts', 'scratch', '.scratch')), 'Output must be a named artifacts/scratch subdirectory')
     for name in inputs.records:
-        source = child(inputs.root, name)
+        source = confined_child_path(inputs.root, name)
         require(not source.is_relative_to(output) and not output.is_relative_to(source.parent),
                 'Output overlaps an input or its retained directory')
     exists = output.exists()
@@ -229,21 +222,20 @@ def run(root, recipe_path, output, *, plan=False, verify_only=False):
         require(output.is_dir(), 'Output is not a directory')
         actual = set()
         for path in output.rglob('*'):
-            checked(path)
+            refuse_reparse_points(path)
             if path.is_file():actual.add(path.relative_to(output).as_posix())
         require(actual == set(payloads), 'Existing output file set differs; preserved')
         for name, value in payloads.items():
-            require(child(output, name).read_bytes() == value, 'Existing immutable output differs; preserved: ' + name)
+            require(confined_child_path(output, name).read_bytes() == value, 'Existing immutable output differs; preserved: ' + name)
     require(not verify_only or exists, 'Verify-only requires a complete existing output')
     status = 'planned' if plan else 'verified' if verify_only else 'preserved' if exists else 'produced'
     written = 0
     if status == 'produced':
         output.mkdir(parents=True, exist_ok=False)
-        # Manifest is the completion marker; never replace an existing file.
         for name in sorted(payloads, key=lambda name: name == 'manifest.json'):
-            path = child(output, name)
+            path = confined_child_path(output, name)
             path.parent.mkdir(parents=True, exist_ok=True)
-            checked(path.parent)
+            refuse_reparse_points(path.parent)
             with path.open('xb') as handle:handle.write(payloads[name])
             written += 1
     inputs.unchanged()

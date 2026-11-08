@@ -235,5 +235,29 @@ class ConverterBindingTests(StorePathTestCase):
         self.assertFalse((target / 'out').exists())
 
 
+class NativeBatchBindingTests(StorePathTestCase):
+    def write_minimal_batch_recipe(self):
+        recipe_path = self.project / 'recipes' / 'batch.json'
+        recipe_path.parent.mkdir()
+        recipe_path.write_text(json.dumps({'schemaVersion': 1, 'kind': 'native-offline-asset-batch', 'id': 'guard-check',
+                                           'sources': {'client': {'root': 'inputs', 'lock': 'inputs.lock.json'}},
+                                           'jobs': [{'id': 'job'}]}), encoding='utf-8')
+        return recipe_path
+
+    def test_batch_prepare_refuses_the_public_store_junction_and_the_artifacts_folder(self):
+        self.require_junctions()
+        import native_batch
+        recipe_path = self.write_minimal_batch_recipe()
+        target = self.make_target_folder('shared-store')
+        before = snapshot_tree(target)
+        (self.project / 'public').mkdir()
+        self.make_junction(self.project / 'public' / 'l2', target)
+        with self.assertRaisesRegex(ConverterOutputRefusedError, '^Symlink/junction/reparse boundary refused: '):
+            native_batch.prepare(recipe_path, self.project / 'public' / 'l2' / 'out', project_root=self.project)
+        with self.assertRaisesRegex(ConverterOutputRefusedError, '^converter output must be a dedicated folder under '):
+            native_batch.prepare(recipe_path, self.project / 'artifacts', project_root=self.project)
+        self.assertEqual(snapshot_tree(target), before)
+
+
 if __name__ == '__main__':
     unittest.main()

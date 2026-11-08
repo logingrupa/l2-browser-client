@@ -1,10 +1,3 @@
-"""Stage a verified deco-grass footstep bundle as an additive catalog record.
-
-Adds one `animationAudio` entry with kind `native-stepsound-deco-grass` and the
-immutable manifest/grid under public/l2/step-sounds/<manifest>/. The grid is an
-approximation of the native deco instance count (the browser does not render
-decorations). No extraction, native execution, Editor save or policy change.
-"""
 from __future__ import annotations
 
 import argparse
@@ -12,8 +5,18 @@ import copy
 from pathlib import Path
 
 from native_assets_lib.gltf import json_bytes
-from stage_native_players import checked, child, decode, digest, require, HASH, ID
+from native_store.store_paths import confined_child_path, refuse_reparse_points
+from stage_native_players import decode, digest, require, HASH, ID
 from stage_native_runtime import immutable_write, replace_file
+
+STEPSOUND_DECO_GRASS_STAGE_DESCRIPTION = (
+    'Stage a verified deco-grass footstep bundle as an additive catalog record.\n'
+    '\n'
+    'Adds one `animationAudio` entry with kind `native-stepsound-deco-grass` and the\n'
+    'immutable manifest/grid under public/l2/step-sounds/<manifest>/. The grid is an\n'
+    'approximation of the native deco instance count (the browser does not render\n'
+    'decorations). No extraction, native execution, Editor save or policy change.'
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 KIND = 'native-stepsound-deco-grass'
@@ -24,15 +27,15 @@ def stage(bundle, manifest_sha256, expected_catalog_sha256, *, bundle_id='stepso
     require(not (plan and verify_only), 'Plan and verify-only are mutually exclusive')
     require(isinstance(bundle_id, str) and ID.fullmatch(bundle_id), 'Invalid deco-grass bundle identity')
     require(HASH.fullmatch(manifest_sha256) and HASH.fullmatch(expected_catalog_sha256), 'Invalid staging hash')
-    root, bundle = checked(root), checked(bundle)
+    root, bundle = refuse_reparse_points(root), refuse_reparse_points(bundle)
     require(bundle.is_relative_to(root) and bundle != root, 'Bundle must be a project child')
-    public = checked(root / 'public/l2')
-    catalog_path = child(public, 'catalog.json')
+    public = refuse_reparse_points(root / 'public/l2')
+    catalog_path = confined_child_path(public, 'catalog.json')
     before = catalog_path.read_bytes()
     require(digest(before) == expected_catalog_sha256, 'Catalog changed; preserve it and inspect the new baseline')
     catalog = decode(before)
     require(catalog.get('schemaVersion') == 1 and isinstance(catalog.get('models'), list), 'Invalid native catalog')
-    manifest_bytes = child(bundle, 'manifest.json').read_bytes()
+    manifest_bytes = confined_child_path(bundle, 'manifest.json').read_bytes()
     require(digest(manifest_bytes) == manifest_sha256, 'Deco-grass manifest hash differs')
     manifest = decode(manifest_bytes)
     require(manifest.get('schemaVersion') == 1 and manifest.get('kind') == KIND, 'Unsupported deco-grass bundle')
@@ -41,7 +44,7 @@ def stage(bundle, manifest_sha256, expected_catalog_sha256, *, bundle_id='stepso
             HASH.fullmatch(grid['sha256']) and grid.get('file') == 'grid/' + grid['sha256'] + '.bin' and
             type(grid.get('bytes')) is int and isinstance(terrain.get('quads'), list) and len(terrain['quads']) == 2 and
             grid['bytes'] == terrain['quads'][0] * terrain['quads'][1] * 2, 'Invalid deco-grass grid descriptor')
-    payload = child(bundle, grid['file']).read_bytes()
+    payload = confined_child_path(bundle, grid['file']).read_bytes()
     require(len(payload) == grid['bytes'] and digest(payload) == grid['sha256'], 'Deco-grass grid payload differs')
     prefix = 'step-sounds/' + manifest_sha256 + '/'
     files = {prefix + 'manifest.json': manifest_bytes, prefix + grid['file']: payload}
@@ -60,19 +63,18 @@ def stage(bundle, manifest_sha256, expected_catalog_sha256, *, bundle_id='stepso
     after = before if matching else json_bytes(updated)
     new_files = []
     for name, data in files.items():
-        target = child(public, name)
+        target = confined_child_path(public, name)
         if target.exists():
             require(target.read_bytes() == data, 'Existing immutable resource differs; preserved: ' + name)
         else:
             new_files.append(name)
     if verify_only:
         require(not new_files and before == after, 'Bundle is not completely staged')
-    # All validation/conflict checks precede writes; recheck the mutable catalog.
     require(catalog_path.read_bytes() == before, 'Catalog changed during staging')
     written = 0
     if not plan and not verify_only:
         for name, data in files.items():
-            immutable_write(child(public, name), data)
+            immutable_write(confined_child_path(public, name), data)
         require(catalog_path.read_bytes() == before, 'Catalog changed during resource staging')
         if before != after:
             replace_file(catalog_path, after)
@@ -85,7 +87,7 @@ def stage(bundle, manifest_sha256, expected_catalog_sha256, *, bundle_id='stepso
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=STEPSOUND_DECO_GRASS_STAGE_DESCRIPTION)
     parser.add_argument('--bundle', required=True, type=Path)
     parser.add_argument('--manifest-sha256', required=True)
     parser.add_argument('--expected-catalog-sha256', required=True)

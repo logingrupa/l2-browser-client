@@ -1,8 +1,3 @@
-"""Offline batch lifecycle tests; all converter execution is a controlled fake.
-
-Real source files, assets, UModel, browsers and completed sound corpora are never
-used. Adapter-format validation belongs to test_native_batch_adapters.py.
-"""
 from __future__ import annotations
 
 import contextlib
@@ -18,11 +13,12 @@ from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / 'scripts'))
+from native_store.store_paths import require_portable_relative_path
+
 FAKE_ADAPTERS = types.ModuleType('native_batch_adapters')
 SPEC = importlib.util.spec_from_file_location('_native_batch_lifecycle_test_subject', ROOT / 'scripts/native_batch.py')
 batch = importlib.util.module_from_spec(SPEC)
-# The isolated subject retains this module after the import patch is removed;
-# other suites still import the real adapters normally.
 with patch.dict(sys.modules, {'native_batch_adapters': FAKE_ADAPTERS}):
     SPEC.loader.exec_module(batch)
 
@@ -73,7 +69,6 @@ class BatchLifecycleTests(unittest.TestCase):
                 raise ValueError('Unknown fixture adapter')
 
         def command(job, source_root, source_lock, output, project_root=ROOT):
-            # Nothing in these tests is passed to a shell or external process.
             return ['fake-converter', '--id', job['id'], '--output', str(output)]
 
         def collect(job, output, source_lock, project_root=ROOT):
@@ -145,8 +140,8 @@ class BatchLifecycleTests(unittest.TestCase):
         for name in ['', '../x', 'x/../y', '/absolute', 'x//y', 'x\\y', 'C:/x', 'x:stream',
                      'NUL', 'con.txt', 'x/COM1.bin', 'x/last.', 'x/last ', 'x/\x00bad']:
             with self.subTest(name=name), self.assertRaises(ValueError):
-                batch.safe_relative(name)
-        self.assertEqual(batch.safe_relative('safe/sub-file.bin'), 'safe/sub-file.bin')
+                require_portable_relative_path(name)
+        self.assertEqual(require_portable_relative_path('safe/sub-file.bin'), 'safe/sub-file.bin')
         self.source.joinpath('A.bin').write_bytes(b'x')
         entries = [{'relativePath': name, 'bytes': 1, 'sha256': sha(b'x')} for name in ['A.bin', 'a.bin']]
         self.write_json(self.lock_path, {'schemaVersion': 1, 'files': entries})
@@ -203,9 +198,8 @@ class BatchLifecycleTests(unittest.TestCase):
     def test_output_must_be_artifacts_child_and_not_overlap_sources_or_recipes(self):
         outputs = [self.project / 'public/new', self.project / 'artifacts']
         for output in outputs:
-            with self.subTest(output=output), self.assertRaisesRegex(ValueError, 'artifacts subdirectory'):
+            with self.subTest(output=output), self.assertRaisesRegex(ValueError, 'converter output must be a dedicated folder under'):
                 self.run_batch(output=output)
-        # Move a fresh source fixture below artifacts to exercise both overlap directions.
         nested = self.project / 'artifacts/source'
         nested.mkdir(parents=True)
         (nested / 'source.bin').write_bytes(self.source_bytes)

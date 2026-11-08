@@ -1,8 +1,3 @@
-"""Stage a verified animation dependency sidecar without replacing actor assets.
-
-Dedicated, independently runnable staging for an already produced bundle.
-No extraction, native execution, Editor save or full-corpus operation.
-"""
 from __future__ import annotations
 
 import argparse
@@ -10,8 +5,16 @@ import copy
 from pathlib import Path
 
 from native_assets_lib.gltf import json_bytes
-from stage_native_players import checked, child, decode, digest, require, HASH, ID
+from native_store.store_paths import confined_child_path, refuse_reparse_points
+from stage_native_players import decode, digest, require, HASH, ID
 from stage_native_runtime import immutable_write, replace_file
+
+ANIMATION_AUDIO_STAGE_DESCRIPTION = (
+    'Stage a verified animation dependency sidecar without replacing actor assets.\n'
+    '\n'
+    'Dedicated, independently runnable staging for an already produced bundle.\n'
+    'No extraction, native execution, Editor save or full-corpus operation.'
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -21,15 +24,15 @@ def stage(bundle, manifest_sha256, expected_catalog_sha256, *, bundle_id='human-
     require(not (plan and verify_only), 'Plan and verify-only are mutually exclusive')
     require(isinstance(bundle_id, str) and ID.fullmatch(bundle_id), 'Invalid audio bundle identity')
     require(HASH.fullmatch(manifest_sha256) and HASH.fullmatch(expected_catalog_sha256), 'Invalid staging hash')
-    root, bundle = checked(root), checked(bundle)
+    root, bundle = refuse_reparse_points(root), refuse_reparse_points(bundle)
     require(bundle.is_relative_to(root) and bundle != root, 'Bundle must be a project child')
-    public = checked(root / 'public/l2')
-    catalog_path = child(public, 'catalog.json')
+    public = refuse_reparse_points(root / 'public/l2')
+    catalog_path = confined_child_path(public, 'catalog.json')
     before = catalog_path.read_bytes()
     require(digest(before) == expected_catalog_sha256, 'Catalog changed; preserve it and inspect the new baseline')
     catalog = decode(before)
     require(catalog.get('schemaVersion') == 1 and isinstance(catalog.get('models'), list), 'Invalid native catalog')
-    manifest_bytes = child(bundle, 'manifest.json').read_bytes()
+    manifest_bytes = confined_child_path(bundle, 'manifest.json').read_bytes()
     require(digest(manifest_bytes) == manifest_sha256, 'Animation-audio manifest hash differs')
     manifest = decode(manifest_bytes)
     require(manifest.get('schemaVersion') == 1 and manifest.get('kind') == 'native-animation-audio-dependencies',
@@ -58,7 +61,7 @@ def stage(bundle, manifest_sha256, expected_catalog_sha256, *, bundle_id='human-
         identity = sound.get('dependencyId')
         require(isinstance(identity, str) and identity not in dependencies, 'Duplicate/missing source sound identity')
         dependencies.add(identity)
-        payload = child(bundle, sound['file']).read_bytes()
+        payload = confined_child_path(bundle, sound['file']).read_bytes()
         require(len(payload) == sound['bytes'] and digest(payload) == sound['sha256'], 'Original audio payload differs')
         files[prefix + sound['file']] = payload
     entry = {'id': bundle_id, 'manifest': '/l2/' + prefix + 'manifest.json',
@@ -74,20 +77,18 @@ def stage(bundle, manifest_sha256, expected_catalog_sha256, *, bundle_id='human-
     after = before if matching else json_bytes(updated)
     new_files = []
     for name, payload in files.items():
-        target = child(public, name)
+        target = confined_child_path(public, name)
         if target.exists():
             require(target.read_bytes() == payload, 'Existing immutable audio resource differs; preserved: ' + name)
         else:
             new_files.append(name)
     if verify_only:
         require(not new_files and before == after, 'Bundle is not completely staged')
-    # All validation/conflict checks precede writes. Recheck mutable catalog
-    # immediately before committing its additive record.
     require(catalog_path.read_bytes() == before, 'Catalog changed during staging')
     written = 0
     if not plan and not verify_only:
         for name, payload in files.items():
-            immutable_write(child(public, name), payload)
+            immutable_write(confined_child_path(public, name), payload)
         require(catalog_path.read_bytes() == before, 'Catalog changed during resource staging')
         if before != after:
             replace_file(catalog_path, after)
@@ -101,7 +102,7 @@ def stage(bundle, manifest_sha256, expected_catalog_sha256, *, bundle_id='human-
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=ANIMATION_AUDIO_STAGE_DESCRIPTION)
     parser.add_argument('--bundle', required=True, type=Path)
     parser.add_argument('--manifest-sha256', required=True)
     parser.add_argument('--expected-catalog-sha256', required=True)

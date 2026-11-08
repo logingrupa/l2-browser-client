@@ -1,11 +1,3 @@
-"""Stage a verified world-audio bundle (map music or ambience) into public/l2.
-
-Additive and independently runnable: copies the bundle's manifest and listed
-payloads to immutable content-addressed paths and adds one catalog.worldAudio
-record. No extraction, conversion, Editor save or playback policy runs here.
-The mutable catalog is guarded by its expected SHA-256; re-read the baseline
-and rerun if another stager changed it.
-"""
 from __future__ import annotations
 
 import argparse
@@ -13,8 +5,19 @@ import copy
 from pathlib import Path
 
 from native_assets_lib.gltf import json_bytes
-from stage_native_players import checked, child, decode, digest, require, HASH, ID
+from native_store.store_paths import confined_child_path, refuse_reparse_points
+from stage_native_players import decode, digest, require, HASH, ID
 from stage_native_runtime import immutable_write, replace_file
+
+WORLD_AUDIO_STAGE_DESCRIPTION = (
+    'Stage a verified world-audio bundle (map music or ambience) into public/l2.\n'
+    '\n'
+    "Additive and independently runnable: copies the bundle's manifest and listed\n"
+    'payloads to immutable content-addressed paths and adds one catalog.worldAudio\n'
+    'record. No extraction, conversion, Editor save or playback policy runs here.\n'
+    'The mutable catalog is guarded by its expected SHA-256; re-read the baseline\n'
+    'and rerun if another stager changed it.'
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 KINDS = {'native-map-music': {'audio/ogg', 'audio/mp4'}, 'native-map-ambience': {'audio/wav'}}
@@ -25,15 +28,15 @@ def stage(bundle, manifest_sha256, expected_catalog_sha256, *, bundle_id, plan=F
     require(not (plan and verify_only), 'Plan and verify-only are mutually exclusive')
     require(isinstance(bundle_id, str) and ID.fullmatch(bundle_id), 'Invalid world-audio bundle identity')
     require(HASH.fullmatch(manifest_sha256) and HASH.fullmatch(expected_catalog_sha256), 'Invalid staging hash')
-    root, bundle = checked(root), checked(bundle)
+    root, bundle = refuse_reparse_points(root), refuse_reparse_points(bundle)
     require(bundle.is_relative_to(root) and bundle != root, 'Bundle must be a project child')
-    public = checked(root / 'public/l2')
-    catalog_path = child(public, 'catalog.json')
+    public = refuse_reparse_points(root / 'public/l2')
+    catalog_path = confined_child_path(public, 'catalog.json')
     before = catalog_path.read_bytes()
     require(digest(before) == expected_catalog_sha256, 'Catalog changed; preserve it and inspect the new baseline')
     catalog = decode(before)
     require(catalog.get('schemaVersion') == 1 and isinstance(catalog.get('models'), list), 'Invalid native catalog')
-    manifest_bytes = child(bundle, 'manifest.json').read_bytes()
+    manifest_bytes = confined_child_path(bundle, 'manifest.json').read_bytes()
     require(digest(manifest_bytes) == manifest_sha256, 'World-audio manifest hash differs')
     manifest = decode(manifest_bytes)
     kind = manifest.get('kind')
@@ -47,7 +50,7 @@ def stage(bundle, manifest_sha256, expected_catalog_sha256, *, bundle_id, plan=F
         require(isinstance(sha, str) and HASH.fullmatch(sha) and row.get('mime') in KINDS[kind] and
                 type(row.get('bytes')) is int and 0 < row['bytes'] <= MAX_FILE and isinstance(name, str) and
                 name.rsplit('/', 1)[-1].split('.')[0] == sha and prefix + name not in files, 'Invalid world-audio payload descriptor')
-        payload = child(bundle, name).read_bytes()
+        payload = confined_child_path(bundle, name).read_bytes()
         require(len(payload) == row['bytes'] and digest(payload) == sha, 'World-audio payload differs: ' + name)
         files[prefix + name] = payload
         total += len(payload)
@@ -66,7 +69,7 @@ def stage(bundle, manifest_sha256, expected_catalog_sha256, *, bundle_id, plan=F
     after = before if matching else json_bytes(updated)
     new_files = []
     for name, payload in files.items():
-        target = child(public, name)
+        target = confined_child_path(public, name)
         if target.exists():
             require(target.read_bytes() == payload, 'Existing immutable audio resource differs; preserved: ' + name)
         else:
@@ -77,7 +80,7 @@ def stage(bundle, manifest_sha256, expected_catalog_sha256, *, bundle_id, plan=F
     written = 0
     if not plan and not verify_only:
         for name, payload in files.items():
-            immutable_write(child(public, name), payload)
+            immutable_write(confined_child_path(public, name), payload)
         require(catalog_path.read_bytes() == before, 'Catalog changed during resource staging')
         if before != after:
             replace_file(catalog_path, after)
@@ -90,7 +93,7 @@ def stage(bundle, manifest_sha256, expected_catalog_sha256, *, bundle_id, plan=F
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=WORLD_AUDIO_STAGE_DESCRIPTION)
     parser.add_argument('--bundle', required=True, type=Path)
     parser.add_argument('--manifest-sha256', required=True)
     parser.add_argument('--expected-catalog-sha256', required=True)

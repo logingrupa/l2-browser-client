@@ -1,20 +1,3 @@
-"""Expected terrain-decoration instance counts for the GRASS footstep gate.
-
-Native rule (artifacts/native-parity/research/native-sound-answers-20261107/
-REPORT.md, Q1): on terrain, the local pawn's footstep is GRASS when
-``ATerrainInfo::GetDecoLayerAlpha(Location, 0, 0.0)`` counts more than one
-runtime-generated DecoInfo record of all DecoLayers within XY distance 64 in the
-nearest sector; otherwise LAND. Those records exist only at runtime (RenderDeco)
-and are never serialized, and the browser renders no decorations.
-
-This bundle therefore carries an APPROXIMATION, labelled as such everywhere:
-the expected number of generated instances per terrain quad, computed from the
-original DecoLayer declarations (DensityMap, DensityMultiplier, MaxPerQuad,
-ShowOnTerrain/ShowOnInvisibleTerrain) and the terrain transform/visibility of
-the original map. The native generator (0x10726230, seeded SRand) is not
-rebuilt and no instance position is claimed. Inputs are read-only and
-hash-pinned; outputs are refuse-overwrite with a zero-write repeat.
-"""
 from __future__ import annotations
 
 import math
@@ -26,7 +9,8 @@ from native_assets_lib.texture_mips import build_texture_source
 from native_catalog.ue2 import Package
 from native_map import actor_properties, decode_property, property_value
 from native_map_geometry import bit, native_terrain
-from stage_native_players import checked, child, decode, digest, relative_name, require
+from native_store.store_paths import confined_child_path, refuse_reparse_points, require_portable_relative_path
+from stage_native_players import decode, digest, require
 
 KIND = 'native-stepsound-deco-grass'
 RECIPE_KIND = 'native-stepsound-deco-grass-bundle'
@@ -35,7 +19,6 @@ GRID_SCALE = 256
 
 
 def dxt1_green(data, width, height):
-    """Green channel (RGB565 expanded to 8 bits) of a DXT1 level, rows top-first."""
     require(width > 0 and height > 0 and width % 4 == 0 and height % 4 == 0 and len(data) == width * height // 2,
             'DXT1 level size differs from its dimensions')
     out = bytearray(width * height)
@@ -44,7 +27,6 @@ def dxt1_green(data, width, height):
         c0, c1, bits = struct.unpack_from('<HHI', data, block * 8)
         g0, g1 = (c0 >> 5) & 63, (c1 >> 5) & 63
         g0, g1 = (g0 << 2) | (g0 >> 4), (g1 << 2) | (g1 >> 4)
-        # c0 <= c1 selects the three-colour mode whose index 3 is transparent black.
         palette = (g0, g1, (2 * g0 + g1) // 3, (g0 + 2 * g1) // 3) if c0 > c1 else (g0, g1, (g0 + g1) // 2, 0)
         top, left = (block // blocks_x) * 4, (block % blocks_x) * 4
         for pixel in range(16):
@@ -53,12 +35,6 @@ def dxt1_green(data, width, height):
 
 
 def quad_means(channel, texture_width, texture_height, heightmap_width, heightmap_height):
-    """Mean 0..1 value of the texels in each quad's cell [q, q+1) x texture/heightmap.
-
-    Texel = vertex x texture/heightmap size (the UT2004 GetLayerAlpha ratio
-    mapping), rows = grid Y. The footprint is a presentation choice; Interlude's
-    own density sampling is not reconstructed.
-    """
     quads_x, quads_y = heightmap_width - 1, heightmap_height - 1
     require(len(channel) == texture_width * texture_height and quads_x > 0 and quads_y > 0, 'Invalid density channel')
     columns = []
@@ -79,7 +55,6 @@ def quad_means(channel, texture_width, texture_height, heightmap_width, heightma
 
 
 def expected_capped(alpha, low, high, cap):
-    """E[min(cap, alpha * U(low, high))]: expected instances of one layer in one quad."""
     require(all(isinstance(v, (int, float)) and math.isfinite(v) for v in (alpha, low, high, cap)) and
             0 <= low <= high and cap >= 0 and 0 <= alpha <= 1, 'Invalid density expectation input')
     if alpha == 0 or cap == 0 or high == 0:
@@ -108,7 +83,6 @@ def flip_rows(values, columns):
 
 
 def build_grid(layers, quads_x, quads_y, visible):
-    """Sum of per-layer expectations per quad; invisible quads hold none."""
     grid = [0.0] * (quads_x * quads_y)
     for layer in layers:
         if layer['showOnTerrain'] != 1:
@@ -141,7 +115,7 @@ def export_named(package, reference, class_name):
 
 
 def pinned_package(inputs, client, record):
-    name = relative_name(record['path'])
+    name = require_portable_relative_path(record['path'])
     data = inputs.read({'path': client + '/' + name, 'sha256': record['sha256'], 'bytes': record['bytes']})
     return Package(data, name.split('/')[-1])
 
@@ -159,12 +133,12 @@ def decoded_level(package, reference, expected_size):
 
 def prepare(root, recipe_path):
     inputs = Inputs(root)
-    recipe_path = checked(recipe_path)
+    recipe_path = refuse_reparse_points(recipe_path)
     require(recipe_path.is_relative_to(inputs.root), 'Recipe must stay within project root')
     raw_recipe = recipe_path.read_bytes()
     recipe = decode(inputs.read({'path': recipe_path.relative_to(inputs.root).as_posix(), 'sha256': digest(raw_recipe)}))
     require(recipe.get('schemaVersion') == 1 and recipe.get('kind') == RECIPE_KIND, 'Unsupported deco-grass recipe')
-    client = relative_name(recipe['client'])
+    client = require_portable_relative_path(recipe['client'])
     rule = recipe['rule']
     require(rule.get('countRadius') == 64.0 and rule.get('grassMinimumCount') == 2 and rule.get('densityChannel') == 'green',
             'Recipe rule differs from the native GetDecoLayerAlpha gate (64 UU, count > 1)')
@@ -213,8 +187,6 @@ def prepare(root, recipe_path):
     grid = build_grid(layers, quads_x, quads_y, visible)
     payload = encode_grid(grid)
     grid_sha = digest(payload)
-    # Supporting orientation evidence only: layer 0 density against the grass and
-    # road alpha maps, same rows versus vertically flipped rows.
     check = recipe['orientationCheck']
     alpha_package = pinned_package(inputs, client, check['package'])
     orientation = {}
@@ -237,7 +209,6 @@ def prepare(root, recipe_path):
         'inputs': [{k: v for k, v in value.items() if k != 'mtimeNs'} for value in inputs.records.values()],
         'terrain': {'object': native['object'], 'exportIndex': native['exportIndex'], 'heightmap': [width, height],
                     'quads': [quads_x, quads_y], 'quadSize': quad_size,
-                    # toHeightmap: grid = (native - origin) . axes, so grid (0, 0) is this native XY.
                     'origin': [origin[0] + 0.0, origin[1] + 0.0],
                     'sectors': sectors,
                     'visibility': 'QuadVisibilityBitmap; ShowOnInvisibleTerrain=0 layers place nothing on invisible quads'},
@@ -272,29 +243,28 @@ def prepare(root, recipe_path):
 def run(root, recipe_path, output, *, plan=False, verify_only=False, prepare_bundle=prepare):
     require(not (plan and verify_only), 'Plan and verify-only are mutually exclusive')
     manifest, payloads, inputs = prepare_bundle(root, recipe_path)
-    output = checked(output)
+    output = refuse_reparse_points(output)
     require(any(output != inputs.root / name and output.is_relative_to(inputs.root / name)
                 for name in ('artifacts', 'scratch', '.scratch')), 'Output must be a named artifacts/scratch subdirectory')
     for name in inputs.records:
-        path = child(inputs.root, name)
+        path = confined_child_path(inputs.root, name)
         require(not path.is_relative_to(output) and not output.is_relative_to(path.parent), 'Output overlaps an input or retained directory')
     exists = output.exists()
     if exists:
         require(output.is_dir(), 'Output is not a directory')
-        actual = {path.relative_to(output).as_posix() for path in output.rglob('*') if checked(path).is_file()}
+        actual = {path.relative_to(output).as_posix() for path in output.rglob('*') if refuse_reparse_points(path).is_file()}
         require(actual == set(payloads), 'Existing output file set differs; preserved')
         for name, data in payloads.items():
-            require(child(output, name).read_bytes() == data, 'Existing immutable output differs; preserved: ' + name)
+            require(confined_child_path(output, name).read_bytes() == data, 'Existing immutable output differs; preserved: ' + name)
     require(not verify_only or exists, 'Verify-only requires a complete existing output')
     status = 'planned' if plan else 'verified' if verify_only else 'preserved' if exists else 'produced'
     written = 0
     if status == 'produced':
         output.mkdir(parents=True, exist_ok=False)
-        # The completion manifest is written last; all writes are exclusive.
         for name in sorted(payloads, key=lambda name: name == 'manifest.json'):
-            path = child(output, name)
+            path = confined_child_path(output, name)
             path.parent.mkdir(parents=True, exist_ok=True)
-            checked(path.parent)
+            refuse_reparse_points(path.parent)
             with path.open('xb') as stream:
                 stream.write(payloads[name])
             written += 1

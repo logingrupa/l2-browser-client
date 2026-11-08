@@ -36,7 +36,7 @@ def require_portable_relative_path(value):
 
 
 def is_reparse_entry(entry):
-    information = os.lstat(entry)
+    information = entry.lstat()
     return stat.S_ISLNK(information.st_mode) or bool(getattr(information, 'st_file_attributes', 0) & REPARSE_POINT_ATTRIBUTE)
 
 

@@ -1,11 +1,3 @@
-"""Package-keyed bundle of every original stepsound.uax Sound export.
-
-Reuses the verified sound corpus (inventory + coverage + cached archives/WAVs)
-and the animation bundler's checked input/archive/payload helpers. No exporter,
-decoder, native client or runtime selection policy runs here. Classification
-uses case-insensitive matching of the original object names only; exact names,
-casing and source hashes are preserved. Counts that differ from the recipe fail.
-"""
 from __future__ import annotations
 
 import copy
@@ -13,7 +5,8 @@ import re
 
 from native_assets_lib.animation_audio_bundle import Inputs, dependency, HASH, OBJECT
 from native_assets_lib.gltf import json_bytes
-from stage_native_players import checked, child, decode, digest, relative_name, require
+from native_store.store_paths import confined_child_path, refuse_reparse_points, require_portable_relative_path
+from stage_native_players import decode, digest, require
 
 KIND = 'native-stepsound-package'
 RECIPE_KIND = 'native-stepsound-package-bundle'
@@ -32,7 +25,6 @@ def unique_index(rows, field, label, limit=100000):
 
 
 def classifiers(recipe):
-    """Ordered (class, id, group, pattern, gait-capturing) rules from the recipe."""
     rules, ids = [], set()
     surfaces, events, layers = recipe.get('surfaces'), recipe.get('events'), recipe.get('layers')
     require(isinstance(surfaces, list) and 0 < len(surfaces) <= 64 and isinstance(events, list) and len(events) <= 16 and
@@ -99,7 +91,6 @@ def ordered(rows, label):
 
 
 def placement_declarations(inputs, spec, sounds):
-    """Join the separately produced placement-audio bundle by exact stable IDs."""
     manifest = decode(inputs.read(spec['manifest']), max_bytes=32 * 1024 * 1024)
     require(manifest.get('schemaVersion') == 1 and manifest.get('kind') == 'native-placement-audio-dependencies',
             'Unsupported placement-audio manifest')
@@ -137,7 +128,7 @@ def placement_declarations(inputs, spec, sounds):
 
 def prepare(root, recipe_path):
     inputs = Inputs(root)
-    recipe_path = checked(recipe_path)
+    recipe_path = refuse_reparse_points(recipe_path)
     require(recipe_path.is_relative_to(inputs.root), 'Recipe must stay within project root')
     raw_recipe = recipe_path.read_bytes()
     recipe = decode(inputs.read({'path': recipe_path.relative_to(inputs.root).as_posix(), 'sha256': digest(raw_recipe)}))
@@ -161,7 +152,7 @@ def prepare(root, recipe_path):
     covered = unique_index(coverage['sounds'], 'stableId', 'sound coverage')
     selected = [row for row in inventory['sounds'] if row['sourcePackage']['sha256'] == package['sha256']]
     require(len(selected) == enumerated['soundCount'], 'Package Sound rows differ from its enumerated count')
-    corpus_root = relative_name(corpus['root'])
+    corpus_root = require_portable_relative_path(corpus['root'])
     sounds, payloads, classes = {}, {}, {}
     for item in sorted(selected, key=lambda row: row['export']['exportIndex']):
         exported, key = item['export'], item['stableId']
@@ -174,13 +165,13 @@ def prepare(root, recipe_path):
         audio, archive = product['products']['audio'], product['products']['archive']
         row = {'authoredReference': exported['object'], 'sourceObject': exported['object'], 'sourcePackageSha256': package['sha256'],
                'exportIndex': exported['exportIndex'], 'payload': copy.deepcopy(item['nativePayload']),
-               'existingExport': {'archivePath': corpus_root + '/' + relative_name(archive['path']), 'archiveSha256': archive['sha256'],
+               'existingExport': {'archivePath': corpus_root + '/' + require_portable_relative_path(archive['path']), 'archiveSha256': archive['sha256'],
                                   'id': item['id'], 'sourceObject': exported['object'], 'sourcePackageSha256': package['sha256'],
                                   'nativeExportIndex': exported['exportIndex'], 'stableId': key,
-                                  'wavPath': corpus_root + '/' + relative_name(audio['path']),
+                                  'wavPath': corpus_root + '/' + require_portable_relative_path(audio['path']),
                                   'wavSha256': audio['sha256'], 'wavBytes': audio['bytes']}}
         sound, wav = dependency(inputs, row)
-        native = inputs.read({**item['nativePayload'], 'path': corpus_root + '/' + relative_name(item['nativePayload']['path'])})
+        native = inputs.read({**item['nativePayload'], 'path': corpus_root + '/' + require_portable_relative_path(item['nativePayload']['path'])})
         require(native == wav and item['nativeSound']['embeddedPayloadSha256'] == digest(wav) and
                 item['nativeSound']['exportIndex'] == exported['exportIndex'], 'Native source payload provenance differs')
         duration = audio.get('metadata', {}).get('durationSeconds')
@@ -242,33 +233,32 @@ def prepare(root, recipe_path):
 def run(root, recipe_path, output, *, plan=False, verify_only=False):
     require(not (plan and verify_only), 'Plan and verify-only are mutually exclusive')
     manifest, payloads, inputs = prepare(root, recipe_path)
-    output = checked(output)
+    output = refuse_reparse_points(output)
     require(any(output != inputs.root / name and output.is_relative_to(inputs.root / name)
                 for name in ('artifacts', 'scratch', '.scratch')), 'Output must be a named artifacts/scratch subdirectory')
     for name in inputs.records:
-        path = child(inputs.root, name)
+        path = confined_child_path(inputs.root, name)
         require(not path.is_relative_to(output) and not output.is_relative_to(path.parent), 'Output overlaps an input or retained directory')
     exists = output.exists()
     if exists:
         require(output.is_dir(), 'Output is not a directory')
         actual = set()
         for path in output.rglob('*'):
-            checked(path)
+            refuse_reparse_points(path)
             if path.is_file():
                 actual.add(path.relative_to(output).as_posix())
         require(actual == set(payloads), 'Existing output file set differs; preserved')
         for name, data in payloads.items():
-            require(child(output, name).read_bytes() == data, 'Existing immutable output differs; preserved: ' + name)
+            require(confined_child_path(output, name).read_bytes() == data, 'Existing immutable output differs; preserved: ' + name)
     require(not verify_only or exists, 'Verify-only requires a complete existing output')
     status = 'planned' if plan else 'verified' if verify_only else 'preserved' if exists else 'produced'
     written = 0
     if status == 'produced':
         output.mkdir(parents=True, exist_ok=False)
-        # The completion manifest is written last; all writes are exclusive.
         for name in sorted(payloads, key=lambda name: name == 'manifest.json'):
-            path = child(output, name)
+            path = confined_child_path(output, name)
             path.parent.mkdir(parents=True, exist_ok=True)
-            checked(path.parent)
+            refuse_reparse_points(path.parent)
             with path.open('xb') as stream:
                 stream.write(payloads[name])
             written += 1

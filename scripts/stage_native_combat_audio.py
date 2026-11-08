@@ -1,12 +1,3 @@
-"""Stage a verified combat-audio dependency bundle without replacing actor assets.
-
-Additive: writes /l2/combat-audio/<manifest-sha>/ and one catalog.combatAudio
-record, guarded by the expected catalog SHA-256. A different existing record
-with the same id is replaced only when --replace-manifest-sha256 names it;
-the superseded /l2/combat-audio/<old-sha>/ directory is then removed only if
-every file in it is exactly one listed by its own manifest. No extraction,
-native execution, Editor save, model change or playback policy.
-"""
 from __future__ import annotations
 
 import argparse
@@ -14,8 +5,20 @@ import copy
 from pathlib import Path
 
 from native_assets_lib.gltf import json_bytes
-from stage_native_players import checked, child, decode, digest, require, HASH, ID
+from native_store.store_paths import confined_child_path, refuse_reparse_points
+from stage_native_players import decode, digest, require, HASH, ID
 from stage_native_runtime import immutable_write, replace_file
+
+COMBAT_AUDIO_STAGE_DESCRIPTION = (
+    'Stage a verified combat-audio dependency bundle without replacing actor assets.\n'
+    '\n'
+    'Additive: writes /l2/combat-audio/<manifest-sha>/ and one catalog.combatAudio\n'
+    'record, guarded by the expected catalog SHA-256. A different existing record\n'
+    'with the same id is replaced only when --replace-manifest-sha256 names it;\n'
+    'the superseded /l2/combat-audio/<old-sha>/ directory is then removed only if\n'
+    'every file in it is exactly one listed by its own manifest. No extraction,\n'
+    'native execution, Editor save, model change or playback policy.'
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 KIND = 'native-combat-audio-dependencies'
@@ -23,11 +26,10 @@ CAPACITY = 8
 
 
 def retired_files(public, old_sha256):
-    """Exact files of a superseded staged bundle, verified against its own manifest."""
-    folder = child(public, 'combat-audio/' + old_sha256)
+    folder = confined_child_path(public, 'combat-audio/' + old_sha256)
     if not folder.exists(): return []
     require(folder.is_dir(), 'Superseded combat-audio path is not a directory; preserved')
-    manifest_bytes = child(folder, 'manifest.json').read_bytes()
+    manifest_bytes = confined_child_path(folder, 'manifest.json').read_bytes()
     require(digest(manifest_bytes) == old_sha256, 'Superseded combat-audio manifest differs; preserved')
     manifest = decode(manifest_bytes)
     require(manifest.get('kind') == KIND and isinstance(manifest.get('sounds'), list), 'Superseded combat-audio bundle is unsupported; preserved')
@@ -38,7 +40,7 @@ def retired_files(public, old_sha256):
         listed[sound['file']] = sound['sha256']
     found = []
     for path in sorted(folder.rglob('*')):
-        checked(path)
+        refuse_reparse_points(path)
         if path.is_dir(): continue
         name = path.relative_to(folder).as_posix()
         require(name in listed and digest(path.read_bytes()) == listed[name], 'Superseded combat-audio folder holds unlisted/changed files; preserved: ' + name)
@@ -53,15 +55,15 @@ def stage(bundle, manifest_sha256, expected_catalog_sha256, *, bundle_id='native
     require(HASH.fullmatch(manifest_sha256) and HASH.fullmatch(expected_catalog_sha256), 'Invalid staging hash')
     require(replace_manifest_sha256 is None or (HASH.fullmatch(replace_manifest_sha256) and replace_manifest_sha256 != manifest_sha256),
             'Invalid replaced combat-audio manifest hash')
-    root, bundle = checked(root), checked(bundle)
+    root, bundle = refuse_reparse_points(root), refuse_reparse_points(bundle)
     require(bundle.is_relative_to(root) and bundle != root, 'Bundle must be a project child')
-    public = checked(root / 'public/l2')
-    catalog_path = child(public, 'catalog.json')
+    public = refuse_reparse_points(root / 'public/l2')
+    catalog_path = confined_child_path(public, 'catalog.json')
     before = catalog_path.read_bytes()
     require(digest(before) == expected_catalog_sha256, 'Catalog changed; preserve it and inspect the new baseline')
     catalog = decode(before)
     require(catalog.get('schemaVersion') == 1 and isinstance(catalog.get('models'), list), 'Invalid native catalog')
-    manifest_bytes = child(bundle, 'manifest.json').read_bytes()
+    manifest_bytes = confined_child_path(bundle, 'manifest.json').read_bytes()
     require(digest(manifest_bytes) == manifest_sha256, 'Combat-audio manifest hash differs')
     manifest = decode(manifest_bytes)
     require(manifest.get('schemaVersion') == 1 and manifest.get('kind') == KIND, 'Unsupported combat-audio bundle')
@@ -88,7 +90,7 @@ def stage(bundle, manifest_sha256, expected_catalog_sha256, *, bundle_id='native
         identity = sound.get('dependencyId')
         require(isinstance(identity, str) and identity not in dependencies, 'Duplicate/missing source sound identity')
         dependencies.add(identity)
-        payload = child(bundle, sound['file']).read_bytes()
+        payload = confined_child_path(bundle, sound['file']).read_bytes()
         require(len(payload) == sound['bytes'] and digest(payload) == sound['sha256'], 'Original audio payload differs')
         files[prefix + sound['file']] = payload
     entry = {'id': bundle_id, 'manifest': '/l2/' + prefix + 'manifest.json',
@@ -111,25 +113,22 @@ def stage(bundle, manifest_sha256, expected_catalog_sha256, *, bundle_id='native
     retire = retired_files(public, replace_manifest_sha256) if replace_manifest_sha256 and replace_manifest_sha256 not in referenced else []
     new_files = []
     for name, payload in files.items():
-        target = child(public, name)
+        target = confined_child_path(public, name)
         if target.exists():
             require(target.read_bytes() == payload, 'Existing immutable audio resource differs; preserved: ' + name)
         else:
             new_files.append(name)
     if verify_only:
         require(not new_files and before == after, 'Bundle is not completely staged')
-    # All validation/conflict checks precede writes. Recheck mutable catalog
-    # immediately before committing its additive record.
     require(catalog_path.read_bytes() == before, 'Catalog changed during staging')
     written = removed = 0
     if not plan and not verify_only:
         for name, payload in files.items():
-            immutable_write(child(public, name), payload)
+            immutable_write(confined_child_path(public, name), payload)
         require(catalog_path.read_bytes() == before, 'Catalog changed during resource staging')
         if before != after:
             replace_file(catalog_path, after)
         written = len(new_files) + int(before != after)
-        # The catalog no longer references the superseded bundle; drop only its verified files.
         for path in retire:
             path.unlink(); removed += 1
         for folder in sorted({path.parent for path in retire}, key=lambda item: len(item.parts), reverse=True):
@@ -146,7 +145,7 @@ def stage(bundle, manifest_sha256, expected_catalog_sha256, *, bundle_id='native
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=COMBAT_AUDIO_STAGE_DESCRIPTION)
     parser.add_argument('--bundle', required=True, type=Path)
     parser.add_argument('--manifest-sha256', required=True)
     parser.add_argument('--expected-catalog-sha256', required=True)
