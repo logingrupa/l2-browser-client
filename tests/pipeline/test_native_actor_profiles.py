@@ -28,19 +28,19 @@ class SelectionTests(unittest.TestCase):
     def test_exact_id_selects_subclass_instead_of_another_npc_with_same_mesh(self):
         names, groups = tables()
         selection = recipe()['profiles'][0]
-        selected = profiles.select_rows(names, groups, selection)
+        selected = profiles.select_exact_npc_rows_without_mesh_substitution(names, groups, selection)
         self.assertEqual(selected[1][1]['class_name'], 'LineageMonster.field_stalker_20_bi')
         for key, value in [('expectedName', 'Musveren'), ('expectedActorClass', 'LineageMonster.field_stalker'),
                 ('expectedMesh', 'LineageMonsters.other'), ('npcId', 123456)]:
             with self.subTest(key=key), self.assertRaises(FormatError):
-                profiles.select_rows(names, groups, dict(selection, **{key: value}))
+                profiles.select_exact_npc_rows_without_mesh_substitution(names, groups, dict(selection, **{key: value}))
 
     def test_duplicate_ids_in_either_table_are_rejected(self):
         for index in range(2):
             values = tables()
             values[index]['data']['npc'].append(copy.deepcopy(values[index]['data']['npc'][1]))
             with self.subTest(index=index), self.assertRaisesRegex(FormatError, 'Duplicate'):
-                profiles.select_rows(*values, recipe()['profiles'][0])
+                profiles.select_exact_npc_rows_without_mesh_substitution(*values, recipe()['profiles'][0])
 
     def test_unknown_recipe_fields_and_ambiguous_or_missing_bindings_fail(self):
         for mutate in [lambda r: r.update(prePivot=[0, 0, 0]),

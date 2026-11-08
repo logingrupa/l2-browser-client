@@ -32,9 +32,6 @@ KNOWN_CLIENT_ENTRY_POINTS = {
     'scripts/restore-native-static-normals.py',
 }
 ENTRY_POINTS_NOT_YET_GUARDED = {
-    'scripts/native_actor_profiles.py',
-    'scripts/native_effect_bundle.py',
-    'scripts/native_effects.py',
     'scripts/native_migration.py',
     'scripts/prepare-native-player-aliases.py',
     'scripts/report-native-animation-aliases.py',

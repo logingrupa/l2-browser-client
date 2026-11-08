@@ -1,8 +1,3 @@
-"""Source-backed Interlude skill action and emitter-default extraction.
-
-This preserves native data and dependencies. It does not execute UnrealScript
-or implement the native engine's particle/attachment/skill dispatch functions.
-"""
 import copy
 import hashlib
 import json
@@ -13,6 +8,7 @@ import subprocess
 from .cli import file_hash, json_bytes, safe_output, within, write_output
 from .tables import decode_table
 from .ue2 import FormatError, Package, Reader, unwrap
+from reference_client_guard import require_reference_client
 
 UELIB = Path('C:/laragon/www/lineagen/.assets/skill-assets/work/native/tools/ue-explorer/Eliot.UELib.dll')
 UELIB_SHA256 = '64ebfa8b290429b9d5b5e81f5018734c03ded27bb814c69b904cc269268f7bbc'
@@ -20,6 +16,7 @@ POWERSHELL = Path('C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe')
 ENGINE_CLASSES = ['Object', 'Actor', 'SkillAction', 'SkillVisualEffect', 'SkillAction_LocateEffect',
     'ParticleEmitter', 'SpriteEmitter', 'MeshEmitter', 'BeamEmitter', 'Emitter']
 ACTION_ARRAYS = {'CastingActions', 'ChannelingActions', 'PreshotActions', 'ShotActions', 'ExplosionActions'}
+REFERENCE_IDENTITY_KEYS_SKIPPED_WHILE_DESCENDING_INTO_EMITTER_PROPERTIES = ('class', 'object')
 
 
 def split_fields(text):
@@ -149,10 +146,8 @@ def references(value, path=''):
     if isinstance(value, dict):
         if isinstance(value.get('object'), str) and isinstance(value.get('class'), str):
             yield path, value['class'], value['object']
-        # Emitter records also carry their own class/object identity. Continue
-        # into their properties so those records cannot hide asset references.
         for key, child in value.items():
-            if key not in ('class', 'object'):
+            if key not in REFERENCE_IDENTITY_KEYS_SKIPPED_WHILE_DESCENDING_INTO_EMITTER_PROPERTIES:
                 yield from references(child, path + '.' + key if path else key)
     elif isinstance(value, list):
         for index, child in enumerate(value):
@@ -174,6 +169,7 @@ def unparsed_values(value, path=''):
 class SourcePackages:
     def __init__(self, client):
         self.client, self.loaded = client, {}
+        self.client_access = require_reference_client(client)
         self.paths = {}
         for folder in ('animations', 'system', 'systextures', 'textures', 'sounds', 'staticmeshes'):
             directory = client / folder
@@ -192,6 +188,7 @@ class SourcePackages:
             if len(paths) != 1:
                 raise FormatError('Native package missing/ambiguous: ' + name)
             path = paths[0]
+            self.client_access.require_equal_file(path.relative_to(self.client).as_posix())
             self.loaded[key] = (path, Package(path.read_bytes(), path.name))
         return self.loaded[key]
 
@@ -262,11 +259,6 @@ def skill_actions(package, item):
 
 
 def read_class_defaults(client, reference, work_directory, library=UELIB, powershell=POWERSHELL):
-    """Recover one exact class's authored defaults into a destination-only workdir.
-
-    Returns properties without implicit/inherited values. Source offsets identify
-    the complete native UClass export, not individual default-property bytes.
-    """
     client, work = Path(client).resolve(strict=True), Path(work_directory).resolve()
     if work.is_relative_to(client):
         raise FormatError('Class-default output must be outside the native client')
@@ -309,7 +301,6 @@ def read_class_defaults(client, reference, work_directory, library=UELIB, powers
 
 
 def select_skill_rows(skill_table, sound_table, skill_id, level):
-    """Require exact authored rows and an explicit visual object binding."""
     skill_rows = [row for row in skill_table['data']['skill'] if row['skill_id'] == skill_id and row['skill_level'] == level]
     sound_rows = [row for row in sound_table['data']['skillsound'] if row['skill_id'] == skill_id and row['skill_level'] == level]
     if len(skill_rows) != 1 or len(sound_rows) != 1:
@@ -321,8 +312,8 @@ def select_skill_rows(skill_table, sound_table, skill_id, level):
 
 
 def verify(client, output):
-    """Rehash selected source bytes, graph, and every declared generated file."""
     client, output = client.resolve(strict=True), output.resolve(strict=True)
+    client_access = require_reference_client(client)
     if output.is_relative_to(client):
         raise FormatError('Effect output must be outside the native client')
     receipt = json.loads(output.with_suffix('.receipt.json').read_text())
@@ -336,7 +327,7 @@ def verify(client, output):
     if graph['sourceFiles'] != receipt['sourceFiles'] or graph['tools'] != receipt['tools']:
         raise FormatError('Effect receipt provenance differs from graph')
     for record in receipt['sourceFiles']:
-        path = within(client, record['path'])
+        path = client_access.require_equal_file(record['path'])
         if path.stat().st_size != record['bytes'] or file_hash(path) != record['sha256']:
             raise FormatError('Native effect source hash mismatch: ' + record['path'])
     for record in receipt['artifacts']:
@@ -457,7 +448,7 @@ def extract(client, output, skill_id=1011, level=1, library=UELIB, powershell=PO
             raise FormatError('Source package changed during extraction')
         source_records.append({'path': path.relative_to(client).as_posix(), 'bytes': path.stat().st_size, 'sha256': native.source_hash})
     for table in (skill_table, sound_table):
-        path = client / table['source']
+        path = packages.client_access.require_equal_file(table['source'])
         if file_hash(path) != table['sourceSha256']:
             raise FormatError('Source table changed during extraction')
         source_records.append({'path': table['source'], 'bytes': path.stat().st_size, 'sha256': table['sourceSha256']})

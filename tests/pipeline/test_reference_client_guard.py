@@ -1,4 +1,5 @@
 import hashlib
+import importlib.util
 import os
 from pathlib import Path
 import sys
@@ -143,6 +144,58 @@ class CentralReadHelperBindingTests(GuardedConversionRootTestCase):
             table_source_path(self.trees.conversion_root, 'npcname', r'npcname-e\.dat')
         with self.assertRaisesRegex(ReferenceClientLockError, 'is volatile-config, not equal'):
             table_source_path(self.trees.conversion_root, 'npcname', r'l2\.ini', 'l2.ini')
+
+
+def load_script_module(module_name, file_name):
+    specification = importlib.util.spec_from_file_location(module_name, ROOT / 'scripts' / file_name)
+    module = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(module)
+    return module
+
+
+class PerFileReaderBindingTests(GuardedConversionRootTestCase):
+    def setUp(self):
+        super().setUp()
+        write_tree_file(self.trees.importa_root, 'animations/Mage.ukx', b'importa package')
+        write_tree_file(self.trees.conversion_root, 'animations/Mage.ukx', b'conversion package differs')
+        self.trees.write_lock()
+
+    def locked_input_row(self, relative_path):
+        payload = (self.trees.conversion_root / relative_path).read_bytes()
+        return {'relativePath': relative_path, 'bytes': len(payload), 'sha256': hashlib.sha256(payload).hexdigest()}
+
+    def test_effect_source_packages_read_only_lock_equal_packages(self):
+        from native_catalog import effects
+        with patch.object(effects, 'Package', lambda data, name: data):
+            packages = effects.SourcePackages(self.trees.conversion_root)
+            self.assertEqual(packages.get('Fighter')[1], b'equal package')
+            with self.assertRaisesRegex(ReferenceClientLockError, 'animations/Mage.ukx is differing, not equal'):
+                packages.get('Mage')
+
+    def test_map_audio_sources_read_only_lock_equal_files(self):
+        map_audio = load_script_module('map_audio_sources_under_test', 'export-native-map-audio.py')
+        lock = {'schemaVersion': 1, 'sourceHost': 'TEST-HOST', 'sourceRoot': 'C:/test-client',
+            'files': [self.locked_input_row('animations/Fighter.ukx'), self.locked_input_row('animations/Mage.ukx')]}
+        sources = map_audio.Sources(self.trees.conversion_root, lock)
+        self.assertEqual(sources.read('animations/Fighter.ukx'), b'equal package')
+        with self.assertRaisesRegex(ReferenceClientLockError, 'animations/Mage.ukx is differing, not equal'):
+            sources.read('animations/Mage.ukx')
+
+    def test_effect_bundle_and_actor_profile_source_checks_refuse_differing_files(self):
+        import native_actor_profiles
+        import native_effect_bundle
+        equal_record, differing_record = ({'path': row.pop('relativePath'), **row} for row in
+            (self.locked_input_row('animations/Fighter.ukx'), self.locked_input_row('animations/Mage.ukx')))
+        for check_sources in (native_effect_bundle._check_sources, native_actor_profiles._check_sources):
+            with self.subTest(check_sources=check_sources.__module__):
+                check_sources(self.trees.conversion_root, [equal_record])
+                with self.assertRaisesRegex(ReferenceClientLockError, 'animations/Mage.ukx is differing, not equal'):
+                    check_sources(self.trees.conversion_root, [differing_record])
+
+    def test_musveren_probe_refuses_a_package_absent_from_the_lock(self):
+        from audit_musveren_weights import source_package
+        with self.assertRaisesRegex(ReferenceClientLockError, 'animations/LineageMonsters.ukx is absent, not equal'):
+            source_package(self.trees.conversion_root)
 
 
 if __name__ == '__main__':

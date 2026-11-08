@@ -10,6 +10,7 @@ from native_catalog.cli import file_hash, json_bytes
 from native_catalog.effects import (SourcePackages, extract, merge_properties,
     parse_uc, parse_value, read_class_defaults, references, select_skill_rows, skill_actions, verify, UELIB)
 from native_catalog.ue2 import FormatError
+from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH
 
 CLIENT = Path('E:/Lineage2-client')
 GRAPH = Path(__file__).resolve().parents[2] / 'artifacts/native-effects/heal.json'
@@ -74,8 +75,7 @@ defaultproperties
         with self.assertRaisesRegex(FormatError, 'unique'):
             select_skill_rows(skill, sound, 1011, 1)
 
-    def test_output_inside_source_is_rejected_before_any_write(self):
-        # The extraction path must be rejected even if the parser is absent.
+    def test_output_inside_source_is_rejected_before_any_write_even_without_the_parser(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
             output = root / 'do-not-create' / 'effects.json'
@@ -131,6 +131,7 @@ class EffectReceiptTests(unittest.TestCase):
 
 
 @unittest.skipUnless((CLIENT / 'animations/Skill.usk').is_file(), 'Original native client absent')
+@unittest.skipUnless(REFERENCE_CLIENT_LOCK_PATH.is_file(), 'Reference client lock absent; the guard refuses E: package reads until it is recorded')
 class NativeSkillEvidenceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

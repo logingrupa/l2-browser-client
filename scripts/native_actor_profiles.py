@@ -22,6 +22,7 @@ from native_catalog.tables import (SCHEMA_ROOT, SCHEMA_HASHES, checked_bytes,
     decode413, decode_table, read_nodes, read_value, table_definition_pins)
 from native_catalog.ue2 import FormatError, Reader
 from native_effect_bundle import DefaultReader, _tool_paths
+from reference_client_guard import require_reference_client
 
 OWNER_FILE = '.native-npc-profiles-owner.json'
 KIND = 'native-npc-profiles'
@@ -73,8 +74,7 @@ def _tool_pins():
         'formatDefinitions': {name: table_definition_pins(name) for name in ('npcname', 'npcgrp')}}
 
 
-def select_rows(names, groups, selection):
-    """Never substitute another NPC that happens to share this skeletal mesh."""
+def select_exact_npc_rows_without_mesh_substitution(names, groups, selection):
     selected = []
     for table, key in ((names, 'id'), (groups, 'npc_id')):
         rows = table['data']['npc']
@@ -93,9 +93,8 @@ def select_rows(names, groups, selection):
     return selected
 
 
-def audit_selected_row(client, table, index):
-    """Retain exact decoded row/field offsets; independently cross-check typed data."""
-    _, decoded = decode413(within(client, table['source']).read_bytes())
+def audit_selected_row_offsets_and_typed_values(client, table, index):
+    _, decoded = decode413(require_reference_client(client).require_equal_file(table['source']).read_bytes())
     if hashlib.sha256(decoded).hexdigest() != table['decodedSha256']:
         raise FormatError('NPC table changed during row audit')
     schema = table['schema']
@@ -181,7 +180,7 @@ def _extract_bundle(client, recipe, output, save):
     defaults = DefaultReader(client, packages, output / '.work', save)
     profiles, selections, mesh_sources = [], [], []
     for selection in recipe['profiles']:
-        rows = select_rows(tables['npcname'], tables['npcgrp'], selection)
+        rows = select_exact_npc_rows_without_mesh_substitution(tables['npcname'], tables['npcgrp'], selection)
         definition = defaults.get(selection['expectedActorClass'])
         if definition['object'] != selection['expectedActorClass']:
             raise FormatError('Actor class requires an exact qualified export identity')
@@ -198,12 +197,12 @@ def _extract_bundle(client, recipe, output, save):
         mesh_sources.append(mesh)
         profiles.append(resolved_profile(selection, definition, recipe['sourceUnitsPerMetre']))
         selections.append({'id': profiles[-1]['id'], 'classChain': chain, 'meshSource': mesh,
-            'nameRow': audit_selected_row(client, tables['npcname'], rows[0][0]),
-            'groupRow': audit_selected_row(client, tables['npcgrp'], rows[1][0])})
+            'nameRow': audit_selected_row_offsets_and_typed_values(client, tables['npcname'], rows[0][0]),
+            'groupRow': audit_selected_row_offsets_and_typed_values(client, tables['npcgrp'], rows[1][0])})
     source_files = {}
 
     def source(name, expected):
-        path = within(client, name)
+        path = require_reference_client(client).require_equal_file(name)
         if file_hash(path) != expected:
             raise FormatError('NPC profile source changed during extraction: ' + name)
         source_files[name] = {'path': name, 'bytes': path.stat().st_size, 'sha256': expected}
@@ -235,7 +234,7 @@ def _check_sources(client, records):
         if name.casefold() in seen:
             raise FormatError('Duplicate source file in NPC profile receipt')
         seen.add(name.casefold())
-        path = within(client, name)
+        path = require_reference_client(client).require_equal_file(name)
         if not path.is_file() or path.stat().st_size != record['bytes'] or file_hash(path) != record['sha256']:
             raise FormatError('NPC profile source hash/size mismatch: ' + name)
 
@@ -351,6 +350,7 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--verify', action='store_true')
     args = parser.parse_args()
+    require_reference_client(args.client)
     if args.verify:
         result = verify_npc_profiles(args.client, args.output)
     else:

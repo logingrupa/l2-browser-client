@@ -23,6 +23,7 @@ from native_catalog.effects import (SourcePackages, UELIB, UELIB_SHA256, POWERSH
 from native_catalog.tables import (decode_table, SCHEMA_ROOT, SCHEMA_HASHES,
     CRYPTO_SOURCE, CRYPTO_HASH, checked_bytes)
 from native_catalog.ue2 import FormatError
+from reference_client_guard import require_reference_client
 
 SCHEMA_VERSION = 1
 MAX_CLASSES = 96
@@ -38,19 +39,14 @@ def digest(value):
     return hashlib.sha256(json_bytes(value)).hexdigest()
 
 
-def merge_properties(base, override):
-    """Merge typed defaults while keeping undecoded native values opaque.
-
-    A raw property replaces the entire inherited value. Combining its bytes
-    with inherited struct components would falsely imply decoded components.
-    """
+def merge_typed_defaults_replacing_raw_values_whole(base, override):
     result = copy.deepcopy(base)
     for key, value in override.items():
         previous = result.get(key)
         if (isinstance(value, dict) and isinstance(previous, dict)
                 and 'object' not in value
                 and 'unparsedHex' not in value and 'unparsedHex' not in previous):
-            result[key] = merge_properties(previous, value)
+            result[key] = merge_typed_defaults_replacing_raw_values_whole(previous, value)
         else:
             result[key] = copy.deepcopy(value)
     return result
@@ -102,12 +98,10 @@ def _recipe(value):
         seen.add(item['object'].casefold())
     if 'sourceDispatch' in value:
         _dispatch_recipe(value['sourceDispatch'], seen)
-    # Canonical JSON also rejects NaN and unsupported recipe data before writes.
     return json.loads(json_bytes(value))
 
 
 def _dispatch_recipe(dispatch, effects):
-    """Keep reviewed observations separate from the machine-checked binding."""
     fields = {'binary', 'bindings', 'reviewedObservations', 'evidence', 'limitations'}
     if not isinstance(dispatch, dict) or set(dispatch) != fields:
         raise FormatError('sourceDispatch requires binary, bindings, reviewedObservations, evidence and limitations')
@@ -150,8 +144,7 @@ def _dispatch_recipe(dispatch, effects):
             raise FormatError('Dispatch binding requires superclass and authored-default pins')
 
 
-def _pe32_reader(data):
-    """Read only file-backed PE32 sections; never load or execute a DLL."""
+def _pe32_file_section_reader(data):
     try:
         pe = struct.unpack_from('<I', data, 0x3c)[0]
         machine, sections = struct.unpack_from('<HH', data, pe + 4)
@@ -186,10 +179,10 @@ def validate_source_dispatch(client, recipe):
         return None
     _dispatch_recipe(dispatch, {item['object'].casefold() for item in recipe['effectClasses']})
     _check_sources(client, [dispatch['binary']])
-    data = within(client, safe_name(dispatch['binary']['path'])).read_bytes()
+    data = require_reference_client(client).require_equal_file(safe_name(dispatch['binary']['path'])).read_bytes()
     if hashlib.sha256(data).hexdigest() != dispatch['binary']['sha256']:
         raise FormatError('Dispatch binary changed while reading')
-    read, checks = _pe32_reader(data), []
+    read, checks = _pe32_file_section_reader(data), []
     for binding in dispatch['bindings']:
         addresses = {key: int(binding[key], 16) for key in
             ('switchVA', 'selectorBase', 'targetTable', 'caseVA', 'classPushVA', 'classLiteralVA')}
@@ -223,8 +216,7 @@ def validate_dispatch_defaults(dispatch, effects):
             raise FormatError('Dispatch class authored defaults differ from reviewed source: ' + effect['object'])
 
 
-def select_rows(skill_table, sound_table, skill_id, level):
-    """Empty native descriptions are valid data, not an excuse to guess a join."""
+def select_exact_skill_and_sound_rows(skill_table, sound_table, skill_id, level):
     result = []
     for table, key in ((skill_table, 'skill'), (sound_table, 'skillsound')):
         rows = [row for row in table['data'][key]
@@ -236,7 +228,6 @@ def select_rows(skill_table, sound_table, skill_id, level):
 
 
 def select_effect_roots(packages, recipe, skill, dispatch=None):
-    """Associate only table actions or separately checked reviewed binary bindings."""
     root, stages, other, verified = None, [], [], {}
     description = skill.get('description')
     if description:
@@ -275,7 +266,6 @@ def select_effect_roots(packages, recipe, skill, dispatch=None):
 
 
 class DefaultReader:
-    """Resolve inheritance using package superIndex, not guessed class packages."""
     def __init__(self, client, packages, work, save):
         self.client, self.packages, self.work, self.save = client, packages, work, save
         self.definitions = {}
@@ -299,7 +289,7 @@ class DefaultReader:
             raise FormatError('Decompiled superclass differs from native export table: ' + record['object'])
         base = self.get(parent, trail + (key,))['effectiveProperties'] if parent else {}
         definition['nativeSuperClass'] = parent
-        definition['effectiveProperties'] = merge_properties(base, definition['properties'])
+        definition['effectiveProperties'] = merge_typed_defaults_replacing_raw_values_whole(base, definition['properties'])
         name = record['object']
         if not re.fullmatch(r'\w+(?:\.\w+)+', name):
             raise FormatError('Unsafe native class identity')
@@ -318,11 +308,6 @@ def _object_references(tags):
 
 
 def object_values(package, tags):
-    """An omitted fixed-array tag index is element zero, not a separate scalar.
-
-    Only apply that interpretation when this same native property also has an
-    explicitly indexed tag. Original tags remain untouched in the source graph.
-    """
     indexed = {tag['name'] for tag in tags if tag.get('arrayIndex') is not None}
     normalized, seen = [], set()
     for tag in tags:
@@ -346,7 +331,7 @@ def _normal_reason(error, client, output):
 def _extract_bundle(client, recipe, output, save):
     dispatch = validate_source_dispatch(client, recipe)
     skill_table, sound_table = decode_table(client, 'skillgrp'), decode_table(client, 'skillsoundgrp')
-    skill, sounds = select_rows(skill_table, sound_table, recipe['skillId'], recipe['level'])
+    skill, sounds = select_exact_skill_and_sound_rows(skill_table, sound_table, recipe['skillId'], recipe['level'])
     tables = [{key: value for key, value in table.items() if key != 'data'} for table in (skill_table, sound_table)]
     save('source/skill-rows.json', json_bytes({'skillRow': skill, 'soundRow': sounds, 'tables': tables}))
     packages = SourcePackages(client)
@@ -368,7 +353,7 @@ def _extract_bundle(client, recipe, output, save):
     for record in records:
         definition = copy.deepcopy(defaults.get(record['object']))
         for child in definition['children']:
-            child['effectiveProperties'] = merge_properties(defaults.get(child['class'])['effectiveProperties'], child['properties'])
+            child['effectiveProperties'] = merge_typed_defaults_replacing_raw_values_whole(defaults.get(child['class'])['effectiveProperties'], child['properties'])
             pending.extend((child['object'], field, expected, ref)
                 for field, expected, ref in references(child['effectiveProperties']))
         pending.extend((definition['object'], field, expected, ref)
@@ -376,7 +361,7 @@ def _extract_bundle(client, recipe, output, save):
         effects.append(definition)
     validate_dispatch_defaults(dispatch, effects)
     for stage in stages:
-        stage['effectiveProperties'] = merge_properties(defaults.get(stage['class'])['effectiveProperties'], stage['properties'])
+        stage['effectiveProperties'] = merge_typed_defaults_replacing_raw_values_whole(defaults.get(stage['class'])['effectiveProperties'], stage['properties'])
         pending.extend((stage['object'], field, expected, ref)
             for field, expected, ref in references(stage['effectiveProperties']))
     for field, reference in sounds.items():
@@ -420,7 +405,7 @@ def _extract_bundle(client, recipe, output, save):
             if item['className'] in MATERIAL_CLASSES:
                 try:
                     inherited = defaults.get(item['classObject'])
-                    node['effectiveProperties'] = merge_properties(inherited['effectiveProperties'], node['properties'])
+                    node['effectiveProperties'] = merge_typed_defaults_replacing_raw_values_whole(inherited['effectiveProperties'], node['properties'])
                     pending.extend((record['object'], 'inherited.' + prop, 'Object', ref)
                         for prop, _, ref in references(node['effectiveProperties']))
                 except FormatError as error:
@@ -475,7 +460,7 @@ def _extract_bundle(client, recipe, output, save):
         source_files[table['source']] = table['sourceSha256']
     checked_sources = []
     for name, expected_hash in sorted(source_files.items()):
-        path = within(client, safe_name(name))
+        path = require_reference_client(client).require_equal_file(safe_name(name))
         if file_hash(path) != expected_hash:
             raise FormatError('Source changed during effect migration: ' + name)
         checked_sources.append({'path': name, 'bytes': path.stat().st_size, 'sha256': expected_hash})
@@ -509,7 +494,7 @@ def _check_sources(client, records):
         if name.casefold() in seen:
             raise FormatError('Duplicate source file in effect receipt')
         seen.add(name.casefold())
-        path = within(client, name)
+        path = require_reference_client(client).require_equal_file(name)
         if not path.is_file() or path.stat().st_size != record['bytes'] or file_hash(path) != record['sha256']:
             raise FormatError('Effect source hash/size mismatch: ' + name)
 
@@ -580,7 +565,7 @@ def migrate_effect_bundle(client: Path, recipe: dict, output: Path):
             try:
                 _check_sources(client, receipt['sourceFiles'])
             except FormatError:
-                pass  # Changed source requests a new extraction; damaged output never passes cache reuse.
+                pass
             else:
                 return _summary(_verify(client, output, pins), output, True)
     artifacts = {}
@@ -627,6 +612,7 @@ def main():
     parser.add_argument('--verify', action='store_true')
     args = parser.parse_args()
     try:
+        require_reference_client(args.client)
         if args.verify:
             result = verify_effect_bundle(args.client, args.output)
         else:

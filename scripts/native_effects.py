@@ -5,6 +5,7 @@ import subprocess
 import sys
 from native_catalog.effects import extract, verify, UELIB, POWERSHELL
 from native_catalog.ue2 import FormatError
+from reference_client_guard import require_reference_client
 
 
 def main():
@@ -18,6 +19,7 @@ def main():
     parser.add_argument('--verify', action='store_true')
     args = parser.parse_args()
     try:
+        require_reference_client(args.client)
         client, output = args.client.resolve(strict=True), args.output.resolve()
         if output.is_relative_to(client):
             raise FormatError('Effect output must be outside the native client')

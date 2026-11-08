@@ -19,11 +19,30 @@ def recipe():
         'effectClasses': [{'object': 'Effects.Power', 'packageSha256': 'a' * 64}]}
 
 
+def one_section_pe_with_offset_virtual_addresses_and_skill_three_selected_by_third_byte():
+    image = bytearray(0x800)
+    image[:2] = b'MZ'
+    struct.pack_into('<I', image, 0x3c, 0x80)
+    image[0x80:0x84] = b'PE\0\0'
+    struct.pack_into('<HH', image, 0x84, 0x14c, 1)
+    struct.pack_into('<H', image, 0x94, 0xe0)
+    struct.pack_into('<H', image, 0x98, 0x10b)
+    struct.pack_into('<I', image, 0xb4, 0x10000000)
+    struct.pack_into('<IIII', image, 0x180, 0x600, 0x1000, 0x600, 0x200)
+    image[0x210:0x21e] = bytes.fromhex('0fb68000110010ff248520110010')
+    image[0x300:0x303] = bytes([7, 8, 2])
+    image[0x328:0x32c] = bytes.fromhex('00120010')
+    image[0x404:0x409] = bytes.fromhex('6800130010')
+    literal = 'Effects.Power\0'.encode('utf-16-le')
+    image[0x500:0x500 + len(literal)] = literal
+    return image
+
+
 class BindingTests(unittest.TestCase):
     def test_empty_description_is_preserved_without_inventing_skill_join(self):
         skill = {'skill_id': 3, 'skill_level': 1, 'description': '', 'animation': 'S', 'hit_time': 1.08}
         sound = {'skill_id': 3, 'skill_level': 1, 'sound': 'Skills.Power'}
-        selected = bundle.select_rows({'data': {'skill': [skill]}}, {'data': {'skillsound': [sound]}}, 3, 1)
+        selected = bundle.select_exact_skill_and_sound_rows({'data': {'skill': [skill]}}, {'data': {'skillsound': [sound]}}, 3, 1)
         self.assertEqual(selected, (skill, sound))
         class Packages:
             def resolve(self, reference, expected):
@@ -56,7 +75,7 @@ class BindingTests(unittest.TestCase):
         skill = {'skill_id': 3, 'skill_level': 1, 'description': ''}
         for rows, level in (([skill], 2), ([skill, skill], 1)):
             with self.subTest(rows=len(rows), level=level), self.assertRaises(FormatError):
-                bundle.select_rows({'data': {'skill': rows}}, {'data': {'skillsound': [skill]}}, 3, level)
+                bundle.select_exact_skill_and_sound_rows({'data': {'skill': rows}}, {'data': {'skillsound': [skill]}}, 3, level)
 
     def test_recipe_cannot_assert_a_verified_binding_or_hide_duplicate_candidates(self):
         malformed = recipe()
@@ -76,23 +95,7 @@ class SourceDispatchTests(unittest.TestCase):
         self.client = Path(self.directory.name)
         self.binary = self.client / 'system/Engine.dll'
         self.binary.parent.mkdir()
-        # A standalone PE fixture with one section. All VAs differ from raw
-        # offsets, and the selector for skill 3 is the third byte, not the first.
-        image = bytearray(0x800)
-        image[:2] = b'MZ'
-        struct.pack_into('<I', image, 0x3c, 0x80)
-        image[0x80:0x84] = b'PE\0\0'
-        struct.pack_into('<HH', image, 0x84, 0x14c, 1)
-        struct.pack_into('<H', image, 0x94, 0xe0)
-        struct.pack_into('<H', image, 0x98, 0x10b)
-        struct.pack_into('<I', image, 0xb4, 0x10000000)
-        struct.pack_into('<IIII', image, 0x180, 0x600, 0x1000, 0x600, 0x200)
-        image[0x210:0x21e] = bytes.fromhex('0fb68000110010ff248520110010')
-        image[0x300:0x303] = bytes([7, 8, 2])
-        image[0x328:0x32c] = bytes.fromhex('00120010')
-        image[0x404:0x409] = bytes.fromhex('6800130010')
-        literal = 'Effects.Power\0'.encode('utf-16-le')
-        image[0x500:0x500 + len(literal)] = literal
+        image = one_section_pe_with_offset_virtual_addresses_and_skill_three_selected_by_third_byte()
         self.binary.write_bytes(image)
         self.effect = {'object': 'Effects.Power', 'nativeSuperClass': 'Engine.Emitter',
             'properties': {'DrawScale': 0.05, 'AutoReplay': True, 'bUseDynamicLights': False},
@@ -124,9 +127,8 @@ class SourceDispatchTests(unittest.TestCase):
         self.assertEqual(records[0]['object'], 'Effects.Power')
         self.assertEqual(associations[0]['status'], 'verified-reviewed-native-dispatch')
         self.assertEqual(associations[0]['dispatchStages'], ['init'])
-        # Recipe assertions alone cannot change candidate status.
-        unchecked = bundle.select_effect_roots(Packages(), self.recipe, skill)[4]
-        self.assertEqual(unchecked[0]['status'], 'candidate-unverified')
+        associations_from_recipe_assertions_alone = bundle.select_effect_roots(Packages(), self.recipe, skill)[4]
+        self.assertEqual(associations_from_recipe_assertions_alone[0]['status'], 'candidate-unverified')
 
     def test_changed_or_missing_source_binary_is_rejected(self):
         self.binary.write_bytes(self.binary.read_bytes() + b'changed')
@@ -180,8 +182,8 @@ class SourceDispatchTests(unittest.TestCase):
     def test_pe_reader_rejects_truncated_non_pe_and_unbacked_addresses(self):
         for data in (b'MZ', b'not a PE image' * 40):
             with self.subTest(data=data[:20]), self.assertRaises(FormatError):
-                bundle._pe32_reader(data)
-        read = bundle._pe32_reader(self.binary.read_bytes())
+                bundle._pe32_file_section_reader(data)
+        read = bundle._pe32_file_section_reader(self.binary.read_bytes())
         with self.assertRaisesRegex(FormatError, 'not uniquely file-backed'):
             read(0x10001600, 1)
 
@@ -206,7 +208,7 @@ class InheritanceTests(unittest.TestCase):
         raw = {'unparsedHex': '808080ff', 'type': 10, 'struct': 'Color'}
         authored = {'Material': {'MipZero': raw}, 'Vector': {'X': 9}}
         originals = copy.deepcopy((inherited, authored))
-        merged = bundle.merge_properties(inherited, authored)
+        merged = bundle.merge_typed_defaults_replacing_raw_values_whole(inherited, authored)
         self.assertEqual(merged, {'Material': {'MipZero': raw, 'DetailScale': 1.0},
             'Vector': {'X': 9, 'Y': 2}})
         self.assertEqual((inherited, authored), originals)
@@ -215,7 +217,7 @@ class InheritanceTests(unittest.TestCase):
 
     def test_typed_overlay_replaces_opaque_base_without_retaining_its_bytes(self):
         inherited = {'Color': {'unparsedHex': '808080ff', 'type': 10, 'struct': 'Color'}}
-        self.assertEqual(bundle.merge_properties(inherited, {'Color': {'R': 128}}),
+        self.assertEqual(bundle.merge_typed_defaults_replacing_raw_values_whole(inherited, {'Color': {'R': 128}}),
             {'Color': {'R': 128}})
 
     def test_fixed_property_array_preserves_implicit_zero_and_explicit_later_index(self):
