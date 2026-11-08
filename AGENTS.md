@@ -52,14 +52,15 @@ Use the smallest command that fits the work.
 - Before a done claim, check that nothing you started still runs: no listener on your dev port, and no browser or node process with your worktree path in its command line.
 
 ### Machine schedule
-- DATABASE-PC relays the church livestream Sun 10:00-14:00 and Thu 19:00-21:30 Riga time. In those windows run no builds, dev servers, tests, installs, hashing or conversions.
+- DATABASE-PC is free all the time: builds, dev servers, tests, installs, hashing and conversions may run whenever the work needs them.
+- PROMINENCE-PC runs its nightly backup 23:15-03:45 Riga time. Start no heavy run there in that window.
 - Run heavy commands at BelowNormal priority.
 
 ### Screenshots and viewports
 - The default phone is the iPhone 15 Pro Max held sideways (DEC-OWN-9): 932 x 430 CSS px, landscape, with touch. Phone screenshots use it. In this repo this replaces the global 390 px portrait default.
 - Desktop screenshots stay 1440 x 900.
 - Portrait 430 x 932 is still checked for horizontal scroll, but it is not the evidence screenshot.
-- Headless e2e runs WebGPU on SwiftShader, a CPU adapter (`playwright.config.ts`), so its FPS readout is not a measurement. FPS and performance claims come only from runs with `WORLD_HARDWARE_TEST=1` on the GTX 1060, outside the relay windows.
+- Headless e2e runs WebGPU on SwiftShader, a CPU adapter (`playwright.config.ts`), so its FPS readout is not a measurement. FPS and performance claims come only from runs with `WORLD_HARDWARE_TEST=1` on the GTX 1060.
 
 ### Docs
 - One evidence doc per part, `docs/parts/<part>/EVIDENCE.md`, under about 30 KB. It states what passes now, what is open, and where the evidence is.

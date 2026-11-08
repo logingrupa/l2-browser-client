@@ -27,7 +27,7 @@ created: "2026-11-08"
 
 ## Sampling Rate
 
-- **Every run** starts with `node scripts/check-machine-schedule.mjs` once plan 02-02 lands (Riga relay windows Sun 10:00-14:00, Thu 19:00-21:30 on DATABASE-PC; PROMINENCE-PC nightly backup 23:15-03:45).
+- **Every run** starts with `node scripts/check-machine-schedule.mjs` once plan 02-02 lands (the only machine window is the PROMINENCE-PC nightly backup, 23:15-03:45 Riga; DATABASE-PC is free all the time).
 - **After every task commit:** the quick run command for the task's language.
 - **After every plan:** the full suite plus the plan's Playwright spec when the port rule allows, plus `node scripts/check-lane-ownership.mjs --part <slug>` before the docs commit.
 - **Phase gate:** full suite green except the known red baseline (2 cases of `nativeNpcProfiles.test.ts` until ACT-02 work fixes them), plus each tracer's recorded load-check and screenshot. "Loads" counts only from recorded load-check records; otherwise unverified.
@@ -59,7 +59,7 @@ The full map with file names and owning plans is the table "Phase requirements t
 
 | Behavior | Requirement | Why Manual | Test Instructions |
 |----------|-------------|------------|-------------------|
-| Staging lane outputs into the shared store `public\l2` | INT-01 | Store writers run only in the main checkout by the integration thread (owner rule) | Run the merge command the coverage report prints, in the main checkout, outside relay windows; then re-run the load sweeps against the shared store |
+| Staging lane outputs into the shared store `public\l2` | INT-01 | Store writers run only in the main checkout by the integration thread (owner rule) | Run the merge command the coverage report prints, in the main checkout, outside machine windows; then re-run the load sweeps against the shared store |
 | Side-by-side checks against L2.exe on IMPORTA-PC | all parts (Phase 3) | Needs the native client running on IMPORTA-PC | Phase 3 (CHECK-01..05) |
 
 ---

@@ -14,7 +14,7 @@ Execution constraints for this run (owner rules, binding on every plan):
 - Work only in this worktree `C:\Users\rolan\.t3\worktrees\l2-browser-client\autonomous-roadmap` (branch `plan/autonomous-roadmap`). `public\l2` is a read-only junction to the main checkout's 2.4 GB native store. Never run `assets:*`, `world:stage`, `assets:stage`, `stage_*`, `derive-*`, `migrate-*` or preview scripts against the main checkout or `public\l2`. Never `git worktree remove` this tree.
 - Converters may read `E:/Lineage2-client` only through the Phase 1 guard and only for lock-equal files; IMPORTA-PC is read-only over `ssh -p 2026 rolan@importa-pc.tail40ecb2.ts.net`.
 - Dev server: `pnpm dev --port 5175`. `pnpm test:e2e` uses port 5173; run it only while nothing listens on 5173.
-- No builds, dev servers, tests, installs, hashing or conversions Sun 10:00-14:00 and Thu 19:00-21:30 Riga. Heavy commands at BelowNormal. Check free disk space before a batch run.
+- DATABASE-PC is free all the time (owner, 2026-11-08); on PROMINENCE-PC no heavy run starts inside its nightly backup, 23:15-03:45 Riga. Heavy commands at BelowNormal. Check free disk space before a batch run.
 - After every plan and verification, stop what you started by PID or by a command line holding this worktree path or port, never by image name.
 - Commit only on this branch; no push, no merge.
 

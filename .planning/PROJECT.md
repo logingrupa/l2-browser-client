@@ -50,7 +50,7 @@ Stage A breadth-first conversion of the whole client (Phases 1 to 3), stage B se
 - **Adapter boundary**: `GameWorldAdapter` is the only way gameplay state enters the client; its five methods (`getInitialState`, `subscribe`, `dispatch`, `advance`, `dispose`) stay frozen; no Babylon types below it.
 - **Output contract**: `.l2asset` packages plus runtime catalog (128 MiB archive, 96 MiB payload, 256 entries). `recipes/native-inputs.lock.json` is input-only. Units and handedness are recorded per route in `asset.json`.
 - **Conversion**: independent per-system scripts; UModel build1590 pinned (SHA-256 `13502e5a...364a0`); no normalization, ground fitting or weight changes; unbound materials become visible magenta diagnostics; no procedural stand-ins on the native route.
-- **Parallel work**: at most 3 lanes plus integration; one part per branch `<part>/<slug>`; scripts writing the native store (`assets:*`, `assets:stage`, `stage_*`, `derive-*`, `migrate-*`) run only in the main checkout; `lane new`/`lane rm` refused Thu 19:00-21:30 and Sun 10:00-14:00; merge one branch at a time, contract changes first.
+- **Parallel work**: at most 3 lanes plus integration; one part per branch `<part>/<slug>`; scripts writing the native store (`assets:*`, `assets:stage`, `stage_*`, `derive-*`, `migrate-*`) run only in the main checkout; merge one branch at a time, contract changes first.
 - **Preferences (user memory)**: dev and sandbox controls are a pinnable sheet with hover-cards showing variables, never a cramped toggle scroll list; all staged media comes from our recipes and scripts; prefer audible labelled results over more research.
 
 <decisions>
