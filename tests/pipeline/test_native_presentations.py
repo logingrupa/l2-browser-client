@@ -18,10 +18,10 @@ from native_catalog.tables import (
     read_nodes, read_value, table_definition_pins, table_source_path,
 )
 from native_catalog.ue2 import FormatError, Package, Reader, animation_layout
+from reference_client_guard import ENGINE_LIBRARY_RELATIVE_PATH
 from reference_client_lock_fixture import lock_client_as_reference_root
 
 CLIENT = ROOT / 'artifacts/native-parity/inputs/IMPORTA-PC'
-NPCNAME_CLIENT = ROOT / 'artifacts/native-parity/research/npc-actor-profiles/inputs/IMPORTA-PC'
 PSA = ROOT / 'artifacts/native-parity/research/field-stalker-source/psa/LineageMonsters/field_stalker_anim.psa'
 RESULTS = ROOT / 'artifacts/native-parity/research/musveren-equipment/conversion-results.json'
 
@@ -197,11 +197,12 @@ class NativePresentationTableTests(unittest.TestCase):
                 table_definition_pins('armorgrp', root / 'structure')
 
 
-@unittest.skipUnless((NPCNAME_CLIENT / 'system/npcname-e.dat').is_file() and SCHEMA_ROOT.is_dir() and CRYPTO_SOURCE.is_file(), 'Staged native npcname table or pinned formats unavailable')
+@unittest.skipUnless((CLIENT / 'system/npcname-e.dat').is_file() and (CLIENT / ENGINE_LIBRARY_RELATIVE_PATH).is_file() and SCHEMA_ROOT.is_dir() and CRYPTO_SOURCE.is_file(),
+    'Staged native npcname table, its Engine.dll lock anchor or pinned formats unavailable')
 class NativeNpcNameTableTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.table = decode_table(NPCNAME_CLIENT, 'npcname', source_filename='npcname-e.dat')
+        cls.table = decode_table(CLIENT, 'npcname', source_filename='npcname-e.dat')
 
     @staticmethod
     def payload(ids=(21622,), name='Greater Musveren', nick=''):
@@ -228,12 +229,12 @@ class NativeNpcNameTableTests(unittest.TestCase):
 
     def test_repeated_display_names_survive_but_duplicate_ids_fail(self):
         with patch('native_catalog.tables.decode413', return_value=('fixture', self.payload((17, 99), 'Same NAME', 'Title'))):
-            table = decode_table(NPCNAME_CLIENT, 'npcname')
+            table = decode_table(CLIENT, 'npcname')
         self.assertEqual(table['data']['npc'], [
             {'id': value, 'name': 'Same NAME', 'nick': 'Title', 'nickcolor': '9CE8A9FF'} for value in (17, 99)])
         with patch('native_catalog.tables.decode413', return_value=('fixture', self.payload((17, 17)))):
             with self.assertRaisesRegex(FormatError, 'identifiers are not unique'):
-                decode_table(NPCNAME_CLIENT, 'npcname')
+                decode_table(CLIENT, 'npcname')
 
     def test_exact_safe_package_trailer_and_bounded_fields_are_required(self):
         good = self.payload()
@@ -244,7 +245,7 @@ class NativeNpcNameTableTests(unittest.TestCase):
         for payload in malformed:
             with self.subTest(payload=payload), patch('native_catalog.tables.decode413', return_value=('fixture', payload)):
                 with self.assertRaises(FormatError):
-                    decode_table(NPCNAME_CLIENT, 'npcname')
+                    decode_table(CLIENT, 'npcname')
 
     def test_rgba_primitive_source_pins_reject_tampering(self):
         pins = table_definition_pins('npcname')
