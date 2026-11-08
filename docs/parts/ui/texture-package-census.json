@@ -1,0 +1,342 @@
+{
+ "packages": [
+  {
+   "licensee": 23,
+   "packageVersion": 123,
+   "path": "systextures/cubemaps.utx",
+   "reason": "texture-licensee-unsupported:123/23",
+   "reviewed": false
+  },
+  {
+   "licensee": 20,
+   "packageVersion": 123,
+   "path": "systextures/default.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 0,
+   "packageVersion": 118,
+   "path": "systextures/Direction.utx",
+   "reason": "texture-licensee-unsupported:118/0",
+   "reviewed": false
+  },
+  {
+   "licensee": 28,
+   "packageVersion": 123,
+   "path": "systextures/DropItemsTex.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 27,
+   "packageVersion": 123,
+   "path": "systextures/fdarkelf.utx",
+   "reason": "texture-licensee-unsupported:123/27",
+   "reviewed": false
+  },
+  {
+   "licensee": 27,
+   "packageVersion": 123,
+   "path": "systextures/fdwarf.utx",
+   "reason": "texture-licensee-unsupported:123/27",
+   "reviewed": false
+  },
+  {
+   "licensee": 28,
+   "packageVersion": 123,
+   "path": "systextures/felf.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 28,
+   "packageVersion": 123,
+   "path": "systextures/FFighter.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 28,
+   "packageVersion": 123,
+   "path": "systextures/FMagic.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 28,
+   "packageVersion": 123,
+   "path": "systextures/FOrc.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 28,
+   "packageVersion": 123,
+   "path": "systextures/FShaman.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 25,
+   "packageVersion": 123,
+   "path": "systextures/goldcubes.utx",
+   "reason": "texture-licensee-unsupported:123/25",
+   "reviewed": false
+  },
+  {
+   "licensee": 28,
+   "packageVersion": 123,
+   "path": "systextures/Icon.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 0,
+   "packageVersion": 118,
+   "path": "systextures/L2_Pawn.utx",
+   "reason": "texture-licensee-unsupported:118/0",
+   "reviewed": false
+  },
+  {
+   "licensee": 0,
+   "packageVersion": 118,
+   "path": "systextures/L2_RadarMap.utx",
+   "reason": "texture-licensee-unsupported:118/0",
+   "reviewed": false
+  },
+  {
+   "licensee": 18,
+   "packageVersion": 123,
+   "path": "systextures/l2_skilltime.utx",
+   "reason": "texture-licensee-unsupported:123/18",
+   "reviewed": false
+  },
+  {
+   "licensee": 28,
+   "packageVersion": 123,
+   "path": "systextures/L2Font-e.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 30,
+   "packageVersion": 123,
+   "path": "systextures/L2Font.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 0,
+   "packageVersion": 118,
+   "path": "systextures/l2ui.utx",
+   "reason": "texture-licensee-unsupported:118/0",
+   "reviewed": false
+  },
+  {
+   "licensee": 0,
+   "packageVersion": 118,
+   "path": "systextures/L2UI_CH3.utx",
+   "reason": "texture-licensee-unsupported:118/0",
+   "reviewed": false
+  },
+  {
+   "licensee": 28,
+   "packageVersion": 123,
+   "path": "systextures/l2zonename.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 28,
+   "packageVersion": 123,
+   "path": "systextures/LineageAccessoryTex.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 27,
+   "packageVersion": 123,
+   "path": "systextures/lineagedecostex.utx",
+   "reason": "texture-licensee-unsupported:123/27",
+   "reviewed": false
+  },
+  {
+   "licensee": 28,
+   "packageVersion": 123,
+   "path": "systextures/LineageEffectsTextures.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 28,
+   "packageVersion": 123,
+   "path": "systextures/LineageEffectsTextures2.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 28,
+   "packageVersion": 123,
+   "path": "systextures/lineagemonsterstex.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 25,
+   "packageVersion": 123,
+   "path": "systextures/lineagemonsterstex2.utx",
+   "reason": "texture-licensee-unsupported:123/25",
+   "reviewed": false
+  },
+  {
+   "licensee": 28,
+   "packageVersion": 123,
+   "path": "systextures/LineageMonstersTex3.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 28,
+   "packageVersion": 123,
+   "path": "systextures/LineageNpcsTex.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 28,
+   "packageVersion": 123,
+   "path": "systextures/LineageNpcsTex2.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 28,
+   "packageVersion": 123,
+   "path": "systextures/LineageNpcsTexEV.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 28,
+   "packageVersion": 123,
+   "path": "systextures/LineageWeaponsTex.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 16,
+   "packageVersion": 123,
+   "path": "systextures/logbg.utx",
+   "reason": "texture-licensee-unsupported:123/16",
+   "reviewed": false
+  },
+  {
+   "licensee": 27,
+   "packageVersion": 123,
+   "path": "systextures/mdarkelf.utx",
+   "reason": "texture-licensee-unsupported:123/27",
+   "reviewed": false
+  },
+  {
+   "licensee": 28,
+   "packageVersion": 123,
+   "path": "systextures/mdwarf.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 28,
+   "packageVersion": 123,
+   "path": "systextures/melf.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 28,
+   "packageVersion": 123,
+   "path": "systextures/MFighter.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 28,
+   "packageVersion": 123,
+   "path": "systextures/MMagic.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 28,
+   "packageVersion": 123,
+   "path": "systextures/MOrc.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 28,
+   "packageVersion": 123,
+   "path": "systextures/MShaman.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 18,
+   "packageVersion": 123,
+   "path": "systextures/pledge.utx",
+   "reason": "texture-licensee-unsupported:123/18",
+   "reviewed": false
+  },
+  {
+   "licensee": 0,
+   "packageVersion": 118,
+   "path": "systextures/sek.utx",
+   "reason": "texture-licensee-unsupported:118/0",
+   "reviewed": false
+  },
+  {
+   "licensee": 28,
+   "packageVersion": 123,
+   "path": "systextures/slideshow-e.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 28,
+   "packageVersion": 123,
+   "path": "systextures/slideshow.utx",
+   "reason": null,
+   "reviewed": true
+  },
+  {
+   "licensee": 0,
+   "packageVersion": 118,
+   "path": "systextures/symbol.utx",
+   "reason": "texture-licensee-unsupported:118/0",
+   "reviewed": false
+  },
+  {
+   "licensee": 23,
+   "packageVersion": 123,
+   "path": "systextures/town_map.utx",
+   "reason": "texture-licensee-unsupported:123/23",
+   "reviewed": false
+  },
+  {
+   "licensee": 16,
+   "packageVersion": 123,
+   "path": "systextures/uwindowfonts.utx",
+   "reason": "texture-licensee-unsupported:123/16",
+   "reviewed": false
+  },
+  {
+   "licensee": 16,
+   "packageVersion": 123,
+   "path": "systextures/wareffectstextures.utx",
+   "reason": "texture-licensee-unsupported:123/16",
+   "reviewed": false
+  }
+ ],
+ "referenceTreeLockSha256": "1957c96800aa45cb10c984f3f2e6f8d1f5f0b1713f086f20560db01f4d1d2b52",
+ "schemaVersion": 1
+}

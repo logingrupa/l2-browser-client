@@ -1,3 +1,6 @@
+from contextlib import redirect_stdout
+import hashlib
+import io
 import json
 from pathlib import Path
 import struct
@@ -10,11 +13,12 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(ROOT / 'scripts' / 'data'))
 import texture_package_census
+from hash_reference_client_tree import canonical_json_bytes
 from native_assets_lib.texture_mips import REVIEWED_VERSIONS
-from reference_client_guard import ReferenceClientLock, require_reference_client
+from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, ReferenceClientLock, read_reference_client_lock, require_reference_client
 from reference_client_lock_fixture import lock_client_as_checked_conversion_root
-from texture_package_census import (HEADER_BYTE_COUNT, TexturePackageCensusError, build_texture_package_census, main,
-    texture_package_census_bytes, texture_package_census_row, validate_texture_package_census)
+from texture_package_census import (HEADER_BYTE_COUNT, TEXTURE_PACKAGE_PATH_PATTERN, TexturePackageCensusError, build_texture_package_census,
+    main, texture_package_census_bytes, texture_package_census_row, validate_texture_package_census)
 
 UNREAL_PACKAGE_SIGNATURE = 0x9E2A83C1
 LINEAGE_VERSION_121_WRAPPER = 'Lineage2Ver121'.encode('utf-16le')
@@ -150,9 +154,42 @@ class TexturePackageCensusBuildTests(unittest.TestCase):
     def test_main_writes_the_census_to_its_fixed_path(self):
         tree = self.synthetic_tree()
         output_path = tree.client_root.parent / 'census' / 'texture-package-census.json'
-        with patch.object(texture_package_census, 'TEXTURE_PACKAGE_CENSUS_PATH', output_path):
+        with patch.object(texture_package_census, 'TEXTURE_PACKAGE_CENSUS_PATH', output_path), redirect_stdout(io.StringIO()) as printed:
             self.assertEqual(main(['--client', str(tree.client_root)]), 0)
+        self.assertEqual(json.loads(printed.getvalue()), {'output': str(output_path), 'packages': 3, 'reviewed': 1})
         self.assertEqual(output_path.read_bytes(), texture_package_census_bytes(build_texture_package_census(tree.access, tree.access.lock)))
+
+
+class CommittedTexturePackageCensusTests(unittest.TestCase):
+    PACKAGES_LATER_PLANS_CONVERT = ('systextures/L2UI_CH3.utx', 'systextures/l2ui.utx', 'systextures/Icon.utx',
+        'systextures/L2_RadarMap.utx', 'systextures/town_map.utx', 'systextures/l2zonename.utx')
+    UNREVIEWED_REASON_PATTERN = r'texture-licensee-unsupported:\d+/\d+|decode-failed:\w+'
+
+    def setUp(self):
+        self.census = validate_texture_package_census(json.loads(texture_package_census.TEXTURE_PACKAGE_CENSUS_PATH.read_bytes().decode('utf-8')))
+        self.lock = read_reference_client_lock(REFERENCE_CLIENT_LOCK_PATH)
+
+    def test_census_has_one_row_per_lock_equal_texture_package_in_census_order(self):
+        lock_equal_package_paths = [path for path, record in self.lock.records_by_path.items()
+            if record['class'] == 'equal' and TEXTURE_PACKAGE_PATH_PATTERN.fullmatch(path)]
+        census_paths = [row['path'] for row in self.census['packages']]
+        self.assertEqual(sorted(census_paths), sorted(lock_equal_package_paths))
+        self.assertEqual(census_paths, sorted(census_paths, key=lambda path: (path.casefold(), path)))
+
+    def test_census_names_the_committed_lock(self):
+        self.assertEqual(self.census['referenceTreeLockSha256'], hashlib.sha256(canonical_json_bytes(self.lock.document)).hexdigest())
+
+    def test_every_unreviewed_row_states_its_reason(self):
+        for row in self.census['packages']:
+            if not row['reviewed']:
+                with self.subTest(path=row['path']):
+                    self.assertRegex(row['reason'], f'^(?:{self.UNREVIEWED_REASON_PATTERN})$')
+
+    def test_packages_later_plans_convert_are_censused(self):
+        census_paths = {row['path'] for row in self.census['packages']}
+        for path in self.PACKAGES_LATER_PLANS_CONVERT:
+            with self.subTest(path=path):
+                self.assertIn(path, census_paths)
 
 
 if __name__ == '__main__':
