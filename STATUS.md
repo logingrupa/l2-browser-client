@@ -2,17 +2,17 @@
 
 One line per part, in PORT_SCOPE section 5 order, rewritten in place by the integration thread. Format: part | lane | state | evidence doc. States are from PORT_SCOPE section 5 (2026-11-07). Lane ownership: `.planning/lanes.json`.
 
-- data | data-ui | E: locked against IMPORTA-PC; 40-table inventory: 8 decoded locally, 29 layout only, 3 on the Elbera route | docs/parts/data/EVIDENCE.md
-- sandbox | data-ui | by-ID spawn, equip, cast and open window with a missing-asset marker on NativeSliceAdapter; browser checks on the native sandbox route / only; dev cold start re-measured on PROMINENCE-PC and DATABASE-PC (first runtime module 39 s to 4-6 s, a first-run completion gap remains open) | docs/parts/sandbox/EVIDENCE.md
-- world | world | 20_20 world section; WORLD-07 packet reviewed (74/74 re-hashed, 47 verdicts, owner review), layer-order and music-join fixtures in tests/fixtures/world-07 | docs/parts/world/EVIDENCE.md
-- player-characters | actors | human fighters native, human mystic export in progress | docs/parts/player-characters/EVIDENCE.md
-- ui | data-ui | development sheet only; header census of 48 systextures packages: 28 reviewed, 20 texture-licensee-unsupported (L2UI_CH3, l2ui and L2_RadarMap are 118/0) | docs/parts/ui/EVIDENCE.md
-- npcs | actors | 1 (Greater Musveren); actor unit census: 20 animations package headers gated, 633 NPC units (88 pass the header gates), every npcgrp row has one census status (1,148 pending, 5,371 gap) | docs/parts/npcs/EVIDENCE.md
-- items | actors | not seen in the code | docs/parts/items/EVIDENCE.md
-- skills-effects | actors | Power Strike in progress | docs/parts/skills-effects/EVIDENCE.md
-- audio | actors | 20_20 footsteps, ambience and music in progress | docs/parts/audio/EVIDENCE.md
-- minimap | world | not started | docs/parts/minimap/EVIDENCE.md
-- movement-geodata | world | synthetic movement over WorldNavigation, no geodata files on DATABASE-PC | docs/parts/movement-geodata/EVIDENCE.md
+- data | data-ui | E: locked against IMPORTA-PC; 40-table inventory: 8 decoded locally, 29 layout only, 3 on the Elbera route; coverage 0/40 converted, 40 gap, loads 0 pass (docs/coverage.md) | docs/parts/data/EVIDENCE.md
+- sandbox | data-ui | by-ID spawn, equip, cast and open window with a missing-asset marker on NativeSliceAdapter; browser checks on the native sandbox route / only; dev cold start re-measured on PROMINENCE-PC and DATABASE-PC (first runtime module 39 s to 4-6 s, a first-run completion gap remains open); coverage 0/unknown converted, 0 gap, loads 0 pass (docs/coverage.md) | docs/parts/sandbox/EVIDENCE.md
+- world | world | 20_20 world section; WORLD-07 packet reviewed (74/74 re-hashed, 47 verdicts, owner review), layer-order and music-join fixtures in tests/fixtures/world-07; coverage 1/163 converted, 162 gap, loads 0 pass (docs/coverage.md) | docs/parts/world/EVIDENCE.md
+- player-characters | actors | human fighters native, human mystic export in progress; coverage 0/15 converted, 4 gap, loads 0 pass (docs/coverage.md) | docs/parts/player-characters/EVIDENCE.md
+- ui | data-ui | development sheet only; header census of 48 systextures packages: 28 reviewed, 20 texture-licensee-unsupported (L2UI_CH3, l2ui and L2_RadarMap are 118/0); coverage 0/unknown converted, 0 gap, loads 0 pass (docs/coverage.md) | docs/parts/ui/EVIDENCE.md
+- npcs | actors | 1 (Greater Musveren); actor unit census: 20 animations package headers gated, 633 NPC units (88 pass the header gates), every npcgrp row has one census status (1,148 pending, 5,371 gap); coverage 1/6519 converted, 5371 gap, loads 0 pass (docs/coverage.md) | docs/parts/npcs/EVIDENCE.md
+- items | actors | not seen in the code; coverage 1/9238 converted, 996 gap, loads 0 pass (docs/coverage.md) | docs/parts/items/EVIDENCE.md
+- skills-effects | actors | Power Strike in progress; coverage 1/29812 converted, 17576 gap, loads 0 pass (docs/coverage.md) | docs/parts/skills-effects/EVIDENCE.md
+- audio | actors | 20_20 footsteps, ambience and music in progress; coverage 0/unknown converted, 0 gap, loads 0 pass (docs/coverage.md) | docs/parts/audio/EVIDENCE.md
+- minimap | world | not started; coverage 0/unknown converted, 0 gap, loads 0 pass (docs/coverage.md) | docs/parts/minimap/EVIDENCE.md
+- movement-geodata | world | synthetic movement over WorldNavigation, no geodata files on DATABASE-PC; coverage 0/unknown converted, 0 gap, loads 0 pass (docs/coverage.md) | docs/parts/movement-geodata/EVIDENCE.md
 - adapter-login | integration | not started | docs/parts/adapter-login/EVIDENCE.md
 - adapter-dispatch | integration | 12-member sandbox command contract; shared Babylon-free modules, typed payload reader and source frame (02-56); tiles, tables and windows record shapes and tile manifest kinds, writer half (02-04); D7 vendor boundary test, recast as devDependency only and the reference overlap check for the five DEC-OWN-12 areas (02-57, shared modules await reviewer sign-off); one class-default reader with authored, class-default and ue-zero provenance, source-preserving material graph and typed program, native-materials writer and the Interlude material class census: 20 classes, 14 reviewed, 6 material-class-unported (02-59); packet dispatch not started | docs/parts/adapter-dispatch/EVIDENCE.md
 - combat-display | integration | fighter versus Musveren demo | docs/parts/combat-display/EVIDENCE.md
