@@ -1,10 +1,10 @@
-# L2 Browser Client — Phase 1
+# L2 Browser Client - Phase 1
 
 A standalone Babylon.js browser client with an editable courtyard and six synthetic characters. It demonstrates the rendering and world-data boundary for a later Interlude adapter. It does not connect to a game server.
 
 The project starts from Babylon.js Editor v5's native **Vanilla** template. Its Vite entry points, `project.bjseditor`, native scene directory, official packing CLI, and scene-attached runtime script are retained. The original static environment is stored as editable resources; runtime TypeScript creates the dynamic characters.
 
-**Current status:** the Phase 1 foundation is implemented and verified as recorded in [docs/VERIFICATION.md](docs/VERIFICATION.md). The next local task is technical validation/integration of already-converted assets and correction of stale Markdown. **Phase 2 remains Real M0 networking**: Interlude authentication, character selection, and world entry against stock Mobius. See [docs/ROADMAP.md](docs/ROADMAP.md) and the [asset handoff prompt](.planning/asset-integration-prompt.md).
+**Current status:** the Phase 1 foundation is implemented and verified as recorded in [docs/VERIFICATION.md](docs/VERIFICATION.md). The next local task is technical validation/integration of already-converted assets and correction of stale Markdown. **Phase 2 remains Real M0 networking**: Interlude authentication, character selection, and world entry against stock Mobius. See [docs/ROADMAP.md](docs/ROADMAP.md).
 
 <img src="docs/screenshots/mobile.png" alt="Mobile synthetic courtyard with six characters, selected player and compact action controls" width="260" />
 
@@ -99,13 +99,13 @@ No Babylon MCP server was connected during implementation, so no successful auth
 
 ## Architecture, source review, and limits
 
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) describes ownership, adapter events, units, timing, and where the future adapter connects. [docs/SOURCE_REUSE.md](docs/SOURCE_REUSE.md) records all seven requested `linegen` inspections and the exact revision.
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) describes ownership, adapter events, units, timing, and where the future adapter connects. [docs/SOURCE_REUSE.md](docs/SOURCE_REUSE.md) records the source-reuse rule and the licenses the foundation retains.
 
-The original source review found no redistribution license for `linegen` or its character assets, so the published foundation implements its behaviors independently and includes no copied source assets. This is a provenance decision about the published baseline, not a finding that locally converted models are technically unusable. The upstream Editor template is Apache-2.0; its license is retained in `docs/licenses/BabylonJS-Editor.txt`. Cormorant Garamond is distributed through its pinned Fontsource package under the SIL Open Font License. Babylon.js dependencies retain their own licenses.
+The original source review found no redistribution license for an earlier rendering repository or its character assets, so the published foundation implements its behaviors independently and contains no copied source or assets. The upstream Editor template is Apache-2.0; its license is retained in `docs/licenses/BabylonJS-Editor.txt`. Cormorant Garamond is distributed through its pinned Fontsource package under the SIL Open Font License. Babylon.js dependencies retain their own licenses.
 
 All shipped characters are procedural placeholders. The optional GLB loader requires valid binary glTF with recognizable idle, run, and attack clips; absent, malformed, or unsuitable models retain the placeholder. No externally licensed character model is bundled, and arbitrary third-party rigs have not been validated.
 
-Four converted GLBs and offline conversion tools were subsequently located in the user-supplied local workspace. Their animation names need explicit mapping in the current loader. Structural inspection has been performed; destination rendering/skinning verification and integration are still pending. The asset follow-up and exact local paths are recorded in [docs/ROADMAP.md](docs/ROADMAP.md).
+Converted character models are a separate follow-up: the loader needs explicit mapping to their native clip names, and rendering, skinning and integration are not verified in this client. The follow-up scope is in [docs/ROADMAP.md](docs/ROADMAP.md).
 
 The follow-up must adapt client loading, character assembly and animation resolution to the existing asset structure, preserving its native names, rigs, part relationships and authored proportions. The foundation loader's generic aliases and fixed-height normalization are temporary implementation assumptions. See [the architecture direction](docs/ARCHITECTURE.md#asset-structure-guides-the-client).
 

@@ -22,7 +22,7 @@ Mobile first. The user supplied a classic fantasy HUD reference: dark translucen
 
 ## Current documentation and asset work
 
-The user's request to fix stale files refers to **Markdown (.md)**, not stylesheets. Keep implementation claims and verification records current as assets are integrated. Local converted assets and tooling were confirmed under `C:\laragon\www\lineagen\.assets\`; paths, known clip-mapping requirements and the separate-session prompt are in [docs/ROADMAP.md](docs/ROADMAP.md).
+The user's request to fix stale files refers to **Markdown (.md)**, not stylesheets. Keep implementation claims and verification records current as assets are integrated. The asset follow-up scope is in [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Phase 2
 

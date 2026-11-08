@@ -1,4 +1,4 @@
-L2 Browser Client — Phase 1
+L2 Browser Client - Phase 1
 
 Based on the Babylon.js Editor v5.5.3 native Vanilla template:
 https://github.com/BabylonJS/Editor/tree/e3fce2cea68c6a32fdbacbb4c5aa4e6a0f154db7/templates/vanillajs
@@ -19,5 +19,5 @@ licensed under SIL Open Font License 1.1. See
 docs/licenses/Cormorant-Garamond.txt. Font files are self-hosted through the
 pinned @fontsource-variable/cormorant-garamond dependency.
 
-linegen was inspected as a behavioral reference, but no code or assets were
-copied because no redistribution license was found. See docs/SOURCE_REUSE.md.
+No code or assets were copied from other workspaces or from projects without
+a redistribution license. See docs/SOURCE_REUSE.md.
