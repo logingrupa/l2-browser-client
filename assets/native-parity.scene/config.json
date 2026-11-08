@@ -68,22 +68,6 @@
                             0
                         ]
                     },
-                    "fighterIdle": {
-                        "type": "string",
-                        "value": "Wait_1HS_MFighter"
-                    },
-                    "fighterRun": {
-                        "type": "string",
-                        "value": "Run_Hand_MFighter"
-                    },
-                    "fighterAttack": {
-                        "type": "string",
-                        "value": "Atk01_Hand_MFighter"
-                    },
-                    "fighterDeath": {
-                        "type": "string",
-                        "value": "Death_MFighter"
-                    },
                     "materialOverrideEnabled": {
                         "type": "boolean",
                         "value": false
