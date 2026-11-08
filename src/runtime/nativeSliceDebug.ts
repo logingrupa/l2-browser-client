@@ -4,6 +4,7 @@ import type { EntityRegistry } from "../entities/EntityRegistry";
 import type { DevSection } from "../ui/devSheet/DevSheet";
 import type { VariableInfo } from "../ui/devSheet/types";
 import type { NativePlayerProfile } from "../assets/native/loadNativePlayerProfiles";
+import { worldPositionToSource } from "../world/sourceFrame";
 import { readout } from "./nativeSliceSheet";
 
 export interface NativeSliceDebugOptions {
@@ -36,7 +37,7 @@ export function attachNativeSliceDebugSection(section: DevSection, options: Nati
   }, "native-debug-position", "Browser metres, right-handed, Y up. Native units are (X, Z, Y) × 100.", () => [
     { name: "debug.position.browser", value: () => { const current = position(); return current ? `${formatFinite(current.x, 3)}, ${formatFinite(current.y, 3)}, ${formatFinite(current.z, 3)}` : "unavailable"; },
       values: "metres (x, y, z)", source: "EntityRegistry.localPlayerPosition", status: "presentation" },
-    { name: "debug.position.native", value: () => { const current = position(); return current ? `${formatFinite(current.x * 100, 0)}, ${formatFinite(current.z * 100, 0)}, ${formatFinite(current.y * 100, 0)}` : "unavailable"; },
+    { name: "debug.position.native", value: () => { const current = position(); if (!current) return "unavailable"; const source = worldPositionToSource(current); return `${formatFinite(source.x, 0)}, ${formatFinite(source.y, 0)}, ${formatFinite(source.z, 0)}`; },
       values: "native units (X, Y, Z)", source: "section placement conversion: native = (x, z, y) × 100; native debug location match unverified", status: "unverified" },
   ]);
   readout(frame, "Camera", () => `r ${formatFinite(camera.radius, 1)} · α ${formatFinite(camera.alpha)} · β ${formatFinite(camera.beta)}`, "native-debug-camera",

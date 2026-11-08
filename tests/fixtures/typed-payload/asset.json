@@ -1,0 +1,36 @@
+{
+  "units": "source",
+  "axes": "ue2-z-up",
+  "sourceSha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  "converterVersion": "typed-payload-fixture-1",
+  "arrays": [
+    {
+      "name": "TEST.positions",
+      "type": "float32",
+      "count": 5,
+      "byteOffset": 0,
+      "byteLength": 20
+    },
+    {
+      "name": "TEST.indices",
+      "type": "int32",
+      "count": 4,
+      "byteOffset": 20,
+      "byteLength": 16
+    },
+    {
+      "name": "TEST.flags",
+      "type": "uint32",
+      "count": 3,
+      "byteOffset": 36,
+      "byteLength": 12
+    },
+    {
+      "name": "TEST.bytes",
+      "type": "uint8",
+      "count": 3,
+      "byteOffset": 48,
+      "byteLength": 3
+    }
+  ]
+}

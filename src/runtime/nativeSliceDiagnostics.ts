@@ -7,6 +7,7 @@ import type { EntityRegistry } from "../entities/EntityRegistry";
 import type { WorldInterface } from "../ui/WorldInterface";
 import type { NativeSection } from "../scene/world/loadNativeSection";
 import { inspectNativeGroundContact } from "../scene/world/nativeGroundContact";
+import { worldPositionToSource, type SourcePosition } from "../world/sourceFrame";
 import type { createNativeDoorInteractions } from "../scene/world/nativeDoorInteractions";
 import type { createNativeMaterialOverrides } from "../assets/native/nativeMaterialOverrides";
 import type { NativeFlamePresentation } from "../scene/world/nativeFlamePresentation";
@@ -56,6 +57,8 @@ export interface NativeSliceDiagnosticInputs {
   addRelease: (release: () => void) => void;
 }
 
+const sourcePositionComponents = (position: SourcePosition) => [position.x, position.y, position.z];
+
 function nativeSliceSnapshot(inputs: NativeSliceDiagnosticInputs) {
   const { scene, camera, registry, adapter, playerProfile, world, audio, effects, doors } = inputs;
   const { section, flames, origin } = world;
@@ -88,7 +91,7 @@ function nativeSliceSnapshot(inputs: NativeSliceDiagnosticInputs) {
     worldFailure: world.worldFailure ?? null,
     fog: { enabled: scene.fogEnabled, mode: scene.fogMode, start: scene.fogStart, end: scene.fogEnd },
     world: section ? { manifestSha256: section.manifestSha256, ...section.inspection(),
-      sourceSpawn: [origin.x * 100, origin.z * 100, origin.y * 100], nativeLocationMatch: "unverified",
+      sourceSpawn: sourcePositionComponents(worldPositionToSource(origin)), nativeLocationMatch: "unverified",
       navigation: section.supportMeshes?.length ? "local terrain and source-declared static/BSP triangle support; native collision/geodata unverified" : "local terrain support only; native/scenery collision unverified" } : null,
     fps: scene.getEngine().getFps(), camera: { target: camera.target.asArray(), alpha: camera.alpha, beta: camera.beta, radius: camera.radius,
       lowerRadiusLimit: camera.lowerRadiusLimit, upperRadiusLimit: camera.upperRadiusLimit, lowerBetaLimit: camera.lowerBetaLimit, upperBetaLimit: camera.upperBetaLimit } };
