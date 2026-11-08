@@ -32,7 +32,7 @@ Stage A breadth-first conversion of the whole client (Phases 1 to 3), stage B se
 - Production deployment (excluded in every source).
 - Client-side gameplay math, combat calculation, quest logic or progression (DEC-PORT-3: the client displays server outcomes).
 - Committing or publishing converted Lineage II binaries, captures or native audio; they stay under ignored `artifacts/` and `public/l2`.
-- Copying `linegen` source or assets (no redistribution licence found).
+- Copying source or assets from workspaces outside this repository (no redistribution licence found).
 - Elbera's three.js runtime, native verifiers pinned to Engine.dll `07b24af4...`, `elbera-acis.patch`, deviceId auto login, and a smart JSON gateway (doubles per-packet work, thrown away if SpacetimeDB is chosen).
 - Reproducing legacy Direct3D internals unless they explain a visible difference or required behaviour.
 - Depth-first work order (human fighters and 20_20 before other races or tiles); DEC-OWN-1 sets breadth-first stage A.
@@ -79,7 +79,7 @@ Stage A breadth-first conversion of the whole client (Phases 1 to 3), stage B se
 - DEC-PARITY-1: acceptance thresholds are never relaxed to fit a result. DEC-PARITY-2: optimize the supported slice now; whole-client parity is not a prerequisite.
 - DEC-PIPE-1 / DEC-PIPE-2: independent per-system scripts, orchestrator optional; source-preserving conversion with pinned tools.
 - DEC-ASSET-1: one persistent runtime scene with bounded cells. Its "per-tile Editor authoring files stay compatible" clause is superseded by DEC-OWN-8.
-- DEC-SRC-1 / DEC-SRC-2: no copied `linegen` source; IMPORTA-PC reference (completed by DEC-OWN-2).
+- DEC-SRC-1 / DEC-SRC-2: no copied source from workspaces outside this repository; IMPORTA-PC reference (completed by DEC-OWN-2).
 </decisions>
 
 ## Key Decisions

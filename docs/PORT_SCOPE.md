@@ -2,7 +2,7 @@
 
 Size of the Interlude port and how the work splits into parts and lanes. [.planning/PROJECT.md](../.planning/PROJECT.md) wins where this doc differs; order is in [ROADMAP.md](../.planning/ROADMAP.md), live status in [STATUS.md](../STATUS.md).
 
-Counts: DATABASE-PC, 2026-11-07, `E:\Lineage2-client`, aCis 409 (`E:\Lineage2Elbera\server`), Mobius CT_0 (`E:\linegen\source\L2J_Mobius\L2J_Mobius_CT_0_Interlude`). Converters read an E: file only when `recipes/reference-client-tree.lock.json` lists it equal to the IMPORTA-PC `C:\Lineage2-client` reference (DEC-OWN-2).
+Counts: DATABASE-PC, 2026-11-07, `E:\Lineage2-client`, aCis 409 (`E:\Lineage2Elbera\server`), Mobius CT_0 (upstream https://gitlab.com/MobiusDevelopment/L2J_Mobius, commit `417fd3bc13da66184ad4ec1db66c5b598e06bfb8` of 2026-11-03, folder `L2J_Mobius_CT_0_Interlude`). Converters read an E: file only when `recipes/reference-client-tree.lock.json` lists it equal to the IMPORTA-PC `C:\Lineage2-client` reference (DEC-OWN-2).
 
 ## 1. Client data versus server data
 

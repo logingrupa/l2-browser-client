@@ -656,8 +656,8 @@ The planner fills `owns` per lane from PORT_SCOPE parts; part slugs above are su
 | ssh to IMPORTA-PC (tailnet, port 2026) | FOUND-03 | Yes (listing ran) | MSYS bash, `MINGW64_NT-10.0-26300` | LAN alias `fleet-importa-pc` |
 | Python on IMPORTA-PC | Remote hashing | Yes | 3.11.9 (native Windows) | `pwsh` 7 at `/c/Program Files/PowerShell/7/pwsh`, `sha256sum` |
 | `E:/Lineage2-client` | FOUND-03 | Yes | 9,737 files | - |
-| `06_interlude.xml` schema root | FOUND-04 | Yes (outside repo, `C:/laragon/www/lineagen/.../dat_engine/data/structure`) | 239 entries in `dats/` | - |
-| `E:/linegen/tools/open-l2encdec-source/src/l2encdec.cpp` | Decoding 8 local tables | Yes | hash-pinned in `tables.py:31` | - |
+| `06_interlude.xml` schema root | FOUND-04 | Yes (at planning time outside the repo; moves to `.assets/native-tools/dat-schema`) | 239 entries in `dats/` | - |
+| open-l2encdec `src/l2encdec.cpp` (at planning time outside the repo; moves to `.assets/native-tools/`) | Decoding 8 local tables | Yes | hash-pinned in `tables.py` | - |
 | Locked `.dat` inputs | FOUND-04 counts | Yes, main checkout `artifacts/native-parity/inputs/IMPORTA-PC/system/` (8 files), read-only | - | E: after lock |
 | `@babylonjs/inspector` + peers | NOED-04 | No (not installed, not in store) | registry 9.27.1 | Record gap if online install not allowed |
 | Port 5173 free | `pnpm test:e2e` | Check at run time | - | Wait; never kill by image name |

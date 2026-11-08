@@ -77,8 +77,8 @@ Hand-typed recipe values with no recorded source must first become visibly unres
 - The plans that own these: actors lane (generated recipes, ACT-01, ACT-05), world lane (chunk planner, WORLD-01), integration (acceptance file cleanup, CONV-02). Each marks the old value unresolved in the first task that touches its recipe.
 
 ### I. Self-contained repo (owner, 2026-11-08 10:50)
-- No lineagen or linegen anywhere: no path, import, schema root, tool path or doc reference into `C:\laragon\www\lineagen` or `E:\linegen`. Native tools live in the repo-owned, gitignored `.assets/native-tools/` (`umodel`, `ue-explorer`, `dat-schema`, and open-l2encdec), with absolute defaults to the main checkout `C:\laragon\www\l2-browser-client\.assets\native-tools\...` so lanes share them; that move lands on native-world-slice from the thread "Remove lineagen from l2-browser-client" and is merged here before Phase 2 executes.
-- The Talking Island reference route, its five lineagen-adapted modules in `src/scene/world/`, `scripts/stage-world-assets.mjs`, the lineagen media vite plugin and the converted character GLB path are removed; `/` opens the native route. No Phase 2 plan builds on the reference route or the procedural characters.
+- No paths outside this repository: no path, import, schema root, tool path or doc reference into any other workspace. Native tools live in the repo-owned, gitignored `.assets/native-tools/` (`umodel`, `ue-explorer`, `dat-schema`, and open-l2encdec), with absolute defaults to the main checkout `C:\laragon\www\l2-browser-client\.assets\native-tools\...` so lanes share them; that move lands on native-world-slice from the owner's self-contained-repo thread and is merged here before Phase 2 executes.
+- The Talking Island reference route, its five externally adapted modules in `src/scene/world/`, `scripts/stage-world-assets.mjs`, the external-media vite plugin and the converted character GLB path are removed; `/` opens the native route. No Phase 2 plan builds on the reference route or the procedural characters.
 - Deleted by the owner (commit d05e7eb): PRODUCT.md, NOTICE, docs/research/genericity-audit-20261108.md (its evidence stays in the artifacts folder genericity-audit-20261108; the world lane's starting input is docs/NATIVE_WORLD.md), docs/screenshots/, and recipes native-starter.json, native-pipeline-slice.json, native-pipeline-slice-assets.json. No plan cites or recreates them.
 
 ### Claude's Discretion
@@ -92,7 +92,7 @@ Hand-typed recipe values with no recorded source must first become visibly unres
 Full analyzer output with file:line evidence: `C:\Users\rolan\AppData\Local\Temp\l2b-autonomous\phase2-analyzer.md` (scratch; the essentials are below).
 
 ### Reusable Assets
-- `scripts/native_catalog/tables.py`: generic `decode_table` (:207-251) with hash-pinned layout, exact consumed bytes, SafePackage trailer; only 8 tables in `TABLES` (:29). Schemas and UModel read by pinned path from lineagen (:16, `native_assets.py:30`).
+- `scripts/native_catalog/tables.py`: generic `decode_table` (:207-251) with hash-pinned layout, exact consumed bytes, SafePackage trailer; only 8 tables in `TABLES` (:29). Schemas and UModel read by pinned path from `.assets/native-tools/` (repo-owned, gitignored; moved there by the self-contained repo change).
 - `scripts/native_batch.py` with 6 adapters (`native_batch_adapters.py:20`); `--prove-rebuild` rebuilt 52/52 products on 20_21.
 - `scripts/vendor/lineage2elbera_bsp` (BSP node reader, pinned in SOURCE.json); raw extractor; class-defaults reader; `native_map.py:48-50` extracts actor collision flags.
 - Elbera: `E:\Lineage2Elbera\tools\xdat\parse_xdat.py` (headers, anchors, children, texture refs; tails not decoded); `tools\ui\check_hair_selection_native.py:23-45` (hair parsers); `tools\world\export_static_collision.py`, `export_bsp_collision.py`; `tools\dat\extract_gamedata.py:420-489` (systemmsg tail scanning).
