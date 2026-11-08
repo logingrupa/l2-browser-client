@@ -1,10 +1,10 @@
-// Bounded localhost HEAD diagnosis: no retry, no server mutation, no asset bodies.
 import http from 'node:http';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { nativeSectionResourcePaths, privatePreviewCatalogPath } from './private-preview-targets.mjs';
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(directory, '..');
@@ -21,31 +21,30 @@ const privateDirectory = path.join(root, '.assets/private-preview');
 const key = (await fs.readFile(path.join(privateDirectory, 'access-key'), 'utf8')).trim();
 if (!/^[a-f0-9]{64}$/.test(key)) throw Error('Invalid private access key; value suppressed.');
 const sanitize = value => String(value).replaceAll(key, '[private]').replace(/\/enter\?[^\s"']*/g, '/enter?[private]');
-const sceneBytes = await fs.readFile(path.join(root, 'dist/scene/native-world.babylon'));
-const scene = JSON.parse(sceneBytes);
-const geometries = new Set(scene.meshes.flatMap(mesh => mesh.delayLoadingFile ? [mesh.delayLoadingFile] : []));
-const textures = new Set(scene.materials.flatMap(material => ['diffuseTexture', 'albedoTexture', 'bumpTexture', 'opacityTexture']
-  .flatMap(slot => material[slot]?.name ? [material[slot].name] : [])));
-const paths = [...new Set([...geometries, ...textures])].map(relative => {
-  const url = new URL(relative, 'http://127.0.0.1:8189/scene/');
-  if (url.origin !== 'http://127.0.0.1:8189' || !url.pathname.startsWith('/scene/') || url.search) throw Error('Unexpected scene resource path.');
-  return url.pathname;
-});
+const distDirectory = path.join(root, 'dist');
+const readDistFile = urlPath => fs.readFile(path.join(distDirectory, `.${urlPath}`));
+const catalogBytes = await readDistFile(privatePreviewCatalogPath);
+const catalog = JSON.parse(catalogBytes);
+if (!Array.isArray(catalog.sections) || catalog.sections.length === 0) throw Error('The built native catalog lists no sections.');
+const sectionResourcePaths = await Promise.all(catalog.sections.map(async sectionRecord =>
+  nativeSectionResourcePaths(sectionRecord, JSON.parse(await readDistFile(sectionRecord.manifest)))));
+const paths = [...new Set([privatePreviewCatalogPath, ...sectionResourcePaths.flat()])];
 const concurrencyIndex = process.argv.indexOf('--concurrency');
 const requestedConcurrency = concurrencyIndex >= 0 ? Number(process.argv[concurrencyIndex + 1]) : null;
 if (concurrencyIndex >= 0 && (!Number.isSafeInteger(requestedConcurrency) || requestedConcurrency < 1 || requestedConcurrency > paths.length)) throw Error('--concurrency must be an integer within the resource count.');
 const waves = requestedConcurrency === null ? [64, 256, paths.length] : [requestedConcurrency];
 for (const resource of paths) {
-  const local = path.resolve(root, 'dist', `.${decodeURIComponent(resource)}`);
-  if (!local.startsWith(path.join(root, 'dist') + path.sep) || !(await fs.stat(local)).isFile()) throw Error('Scene resource is missing or outside dist.');
+  const local = path.resolve(distDirectory, `.${decodeURIComponent(resource)}`);
+  if (!local.startsWith(distDirectory + path.sep) || !(await fs.stat(local)).isFile()) throw Error('Native resource is missing or outside dist.');
 }
+const socketAndLogSettleMilliseconds = 250;
 const logFile = path.join(privateDirectory, 'origin-error.log');
 const readLog = async () => { try { return await fs.readFile(logFile, 'utf8'); } catch (error) { if (error.code === 'ENOENT') return ''; throw error; } };
 const report = {
   sourceHost: os.hostname(), utcStarted: new Date().toISOString(), method: 'HEAD', origin: 'http://127.0.0.1:8189',
   scope: 'Bounded waves of authenticated localhost HEAD requests. No retries or asset bodies. This measures listener/capacity behavior, not production GET transfer or GPU performance.',
-  sceneSha256: createHash('sha256').update(sceneBytes).digest('hex'),
-  inventory: { geometryUrls: geometries.size, primaryTextureUrls: textures.size, uniquePaths: paths.length },
+  catalogSha256: createHash('sha256').update(catalogBytes).digest('hex'),
+  inventory: { sections: catalog.sections.length, uniquePaths: paths.length },
   originBefore: JSON.parse(await fs.readFile(path.join(privateDirectory, 'origin-state.json'), 'utf8')),
   trials: [],
 };
@@ -91,8 +90,7 @@ for (const concurrency of waves) {
   }));
   trial.wallMs = Math.round((performance.now() - started) * 100) / 100;
   agent.destroy();
-  // Allow closed sockets/log writes to settle, without another request or retry.
-  await new Promise(resolve => setTimeout(resolve, 250));
+  await new Promise(resolve => setTimeout(resolve, socketAndLogSettleMilliseconds));
   const logAfter = await readLog();
   trial.newOriginLog = sanitize(logAfter.startsWith(logBefore) ? logAfter.slice(logBefore.length) : logAfter);
   report.trials.push(trial);

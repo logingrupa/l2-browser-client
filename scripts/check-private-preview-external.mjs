@@ -1,9 +1,9 @@
-/** Real external-origin checks. Private invite/cookies are never logged or traced. */
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { chromium, webkit } from '@playwright/test';
+import { privatePreviewCatalogPath, privatePreviewOrigin, privatePreviewWorldPath } from './private-preview-targets.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const outputIndex = process.argv.indexOf('--output');
@@ -11,8 +11,9 @@ const evidence = resolve(root, outputIndex < 0 ? 'artifacts/private-preview/exte
 await mkdir(evidence, { recursive: true });
 const key = (await readFile(resolve(root, '.assets/private-preview/access-key'), 'utf8')).trim();
 const invite = (await readFile(resolve(root, '.assets/private-preview/private-invite.txt'), 'utf8')).trim();
-const base = 'https://l2.kingdom.lv';
-const route = '/?world=interlude&authored=1';
+const base = privatePreviewOrigin;
+const route = privatePreviewWorldPath;
+const landscapePhoneViewport = { width: 932, height: 430 };
 const browserIndex = process.argv.indexOf('--browser');
 const browserName = browserIndex < 0 ? 'chromium' : process.argv[browserIndex + 1];
 if (!['chromium', 'webkit'].includes(browserName)) throw Error('--browser must be chromium or webkit.');
@@ -93,7 +94,7 @@ try {
   const index = await readFile(resolve(root, 'dist/index.html'));
   const js = index.toString().match(/src="(\/assets\/[^"?]+\.js)"/)?.[1];
   assert(Boolean(js), 'Built JavaScript entry exists');
-  for (const path of [route, '/l2/catalog.json', '/scene/native-world.babylon', js]) {
+  for (const path of [route, privatePreviewCatalogPath, js]) {
     const response = await request(path);
     assert(response.status === 403, `Anonymous HTTPS resource denied: ${path}`);
     assert(response.headers.get('server')?.toLowerCase() === 'cloudflare', 'Response traverses Cloudflare');
@@ -129,7 +130,6 @@ try {
     const desktopDelivery = observeDelivery(page);
     page.on('pageerror', error => errors.push(safe(error.message)));
     page.on('console', message => { if (message.type() === 'error') errors.push(safe(message.text())); });
-    // No tracing, HAR, video, request logging, or screenshot of the invite page.
     await page.goto(invite, { waitUntil: 'domcontentloaded', timeout: 120_000 });
     await page.waitForURL(base + route, { timeout: 120_000 });
     await page.waitForFunction(() => {
@@ -143,15 +143,14 @@ try {
       const canvas = document.querySelector('canvas'), gl = canvas?.getContext('webgl2'), extension = gl?.getExtension('WEBGL_debug_renderer_info');
       return { entities: s.entities.map(actor => ({ id: actor.id, isFallback: actor.isFallback, animation: actor.animation })),
         world: s.world, worldFailure: s.worldFailure, flameFailure: s.flameFailure,
-        flames: s.nativeFlames.placementCounts, fps: document.querySelector('[data-testid=fps]')?.textContent,
+        flames: s.nativeFlames.placementCounts,
         renderer: extension ? gl.getParameter(extension.UNMASKED_RENDERER_WEBGL) : null };
     });
     assert(desktop.worldFailure === null && desktop.flameFailure === null, 'External world and effects load successfully');
     assert(desktop.world.modelCount === 61 && desktop.world.placementCount === 151, 'Expected native world section is active');
     assert(errors.length === 0, 'External browser has no page/console errors');
     await page.screenshot({ path: resolve(evidence, 'desktop.png') });
-    const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
-    // Transfer only this host's authenticated session in memory; never persist storageState.
+    const mobile = await browser.newContext({ viewport: landscapePhoneViewport, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
     await mobile.addCookies(await context.cookies(base));
     const mobilePage = await mobile.newPage();
     await observeStartup(mobilePage);
@@ -170,7 +169,7 @@ try {
     assert(errors.length === 0, 'External mobile controls and assets load without errors');
     await mobilePage.screenshot({ path: resolve(evidence, 'mobile.png') });
     await writeFile(resolve(evidence, 'browser.json'), JSON.stringify({ utc: new Date().toISOString(), url: base + route, browser: browserName,
-      desktop: { ...desktop, startup: desktopStartup, delivery: desktopDelivery }, mobile: { viewport: [390, 844], runControl: true, startup: mobileStartup, delivery: mobileDelivery }, errors, checks,
+      desktop: { ...desktop, startup: desktopStartup, delivery: desktopDelivery }, mobile: { viewport: [landscapePhoneViewport.width, landscapePhoneViewport.height], runControl: true, startup: mobileStartup, delivery: mobileDelivery }, errors, checks,
       scope: 'Authenticated external delivery and functional rendering with desktop/mobile viewports. This is not a physical-phone, performance or native-parity result.' }, null, 2));
     console.log(JSON.stringify({ passed: checks.length, browser: `${browserName} desktop and mobile passed`, url: base + route }));
   }

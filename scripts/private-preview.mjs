@@ -6,6 +6,7 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import net from 'node:net';
 import http from 'node:http';
+import { privatePreviewHostname, privatePreviewOrigin, privatePreviewWorldPath } from './private-preview-targets.mjs';
 
 const execute = promisify(execFile);
 const project = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -19,7 +20,7 @@ const keyFile = path.join(directory, 'access-key');
 const inviteFile = path.join(directory, 'private-invite.txt');
 const dist = path.join(project, 'dist');
 const cookieName = '__Host-l2_preview';
-const hostname = 'l2.kingdom.lv';
+const hostname = privatePreviewHostname;
 const port = 8189;
 const slash = (value) => value.replaceAll('\\', '/');
 const quotePs = (value) => `'${value.replaceAll("'", "''")}'`;
@@ -71,7 +72,7 @@ async function initialize() {
   }
   const key = (await fs.readFile(keyFile, 'utf8')).trim();
   if (!/^[0-9a-f]{64}$/.test(key)) throw Error('Invalid private preview key.');
-  const invite = `https://${hostname}/enter?key=${key}\n`;
+  const invite = `${privatePreviewOrigin}/enter?key=${key}\n`;
   if (await exists(inviteFile)) {
     if (await fs.readFile(inviteFile, 'utf8') !== invite) throw Error('Private invite and key disagree.');
   } else await fs.writeFile(inviteFile, invite, { flag: 'wx' });
@@ -99,12 +100,9 @@ function configuration(key) {
     add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
     add_header Referrer-Policy "no-referrer" always;
     add_header X-Content-Type-Options "nosniff" always;`;
-  return `# Owned exclusively by scripts/private-preview.mjs. Contains a private key.
-worker_processes 1;
+  return `worker_processes 1;
 pid "${slash(pidFile)}";
 error_log "${slash(directory)}/origin-error.log" warn;
-# Windows nginx select is compiled with FD_SETSIZE=1024. The authored scene
-# has 595 unique geometry/primary-texture URLs; 512 reset burst requests.
 events { worker_connections 1024; }
 http {
   include "${path.posix.dirname(nginx)}/conf/mime.types";
@@ -138,7 +136,7 @@ http {
       if ($preview_key_ok = 0) { return 403; }
       add_header Set-Cookie $preview_set_cookie always;
       ${headers}
-      return 303 "/?world=interlude&authored=1";
+      return 303 "${privatePreviewWorldPath}";
     }
     location ~ (^|/)\\. { return 404; }
     location ~* \\.(map|ts|tsx|jsx|mjs|cjs)$ { return 404; }
@@ -238,7 +236,6 @@ try {
   }
   console.log(JSON.stringify(result, null, 2));
 } catch (error) {
-  // Never include child-process stdout/stderr, configuration bytes or invite URLs.
   console.error(error instanceof Error ? error.message : 'Private preview failed.');
   process.exitCode = 1;
 }
