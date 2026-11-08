@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 1
 current_phase_name: Foundations
 status: executing
-stopped_at: Completed 01-12-PLAN.md
-last_updated: "2026-11-08T07:05:15.835Z"
+stopped_at: Completed 01-06-PLAN.md
+last_updated: "2026-11-08T07:16:47.833Z"
 last_activity: 2026-11-08
 last_activity_desc: Phase 1 execution started
-state_head: 1355d7bc574f8b69a4a472ba3884731446464a33
+state_head: a3f6635d42a300caa292aac25723fcbd7bfc1af9
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 17
-  completed_plans: 10
+  completed_plans: 11
   percent: 0
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 1 (Foundations) — EXECUTING
-Plan: 11 of 17
+Plan: 12 of 17
 Status: Ready to execute
 Last activity: 2026-11-08 — Phase 1 execution started
 
@@ -62,6 +62,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P05 | 25min | 3 tasks | 26 files |
 | Phase 01 P10 | 12min | 2 tasks | 14 files |
 | Phase 01 P12 | 17min | 3 tasks | 26 files |
+| Phase 1 P06 | 10 min | 2 tasks | 22 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,8 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..8 and DEC-PORT-1..3.
 - [Phase 01]: Plan 01-10: MockWorldAdapter handles set-health through the clamp shared with NativeSliceAdapter (OVERNIGHT-DECISIONS row 31)
 - [Phase 01]: Plan 01-12: asset.json v2 (source.path, clientBuild from the tree lock, converterVersion, model coordinates right-handed Y up metres); readers accept v1 and v2 until the integration thread restages public/l2
 - [Phase 01]: Plan 01-12: Converter.run refuses before UModel starts unless the target package's transitive import closure is lock-equal (OVERNIGHT-DECISIONS row 32)
+- [Phase 1]: 01-06: the default route builds its scene in code and starts createWorldRuntime from loadEnvironment; an unstaged reference world shows a not-staged status; the courtyard Editor scene and WorldScript are deleted
+- [Phase 1]: 01-06: one shared attachScenePresentationGroup lists presentation values on both the default and native route sheets
 
 ### Pending Todos
 
@@ -130,6 +133,6 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..8 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-08T07:05:15.778Z
-Stopped at: Completed 01-12-PLAN.md
+Last session: 2026-11-08T07:16:47.716Z
+Stopped at: Completed 01-06-PLAN.md
 Resume file: None
