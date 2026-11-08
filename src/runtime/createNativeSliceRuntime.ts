@@ -32,7 +32,7 @@ import { createEffectInspectionCamera } from "../effects/nativeEffectInspectionC
 import { isSceneSuspended } from "../engine/renderSuspension";
 import { sandboxNpcVisualFactory } from "./sandboxNpcVisual";
 import { attachSandboxCommandSheet } from "./attachSandboxCommandSheet";
-import { failureText } from "./nativeSliceSheet";
+import { failureText } from "./settledTasks";
 
 const sandboxNpcAppearanceByModel: ReadonlyMap<string, string> = new Map([["musveren:0", "native-musveren"]]);
 const sandboxNpcAppearanceOfModel = (modelCatalogId: string) => sandboxNpcAppearanceByModel.get(modelCatalogId) ?? null;

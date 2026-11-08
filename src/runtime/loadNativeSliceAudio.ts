@@ -9,7 +9,7 @@ import { createWorldAmbience, type WorldAmbience } from "../audio/worldAmbience"
 import { createWorldMusic, type WorldMusic } from "../audio/worldMusic";
 import { loadNativeCombatAudio, type NativeCombatAudioBundle } from "../audio/loadNativeCombatAudio";
 import { createNativeCombatAudio, type NativeCombatActor, type NativeCombatAudio, type NativeCombatWorld } from "../audio/nativeCombatAudio";
-import { failureText, settle, type Settled } from "./nativeSliceSheet";
+import { failureText, settle, type Settled } from "./settledTasks";
 
 export interface NativeSliceAudioLoads {
   stepSounds: Promise<Settled<NativeStepSoundBundle>>;

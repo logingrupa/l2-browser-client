@@ -9,7 +9,7 @@ import { createNativeEffectInitPreview, type NativeEffectInitPreview } from "../
 import { createNativeEffectShotPreview, type NativeEffectShotPreview } from "../effects/nativeEffectShotPreview";
 import { createNativePowerStrikePreview, type NativePowerStrikePreview } from "../effects/nativePowerStrikePreview";
 import { resolveNativePowerStrikeShotSource, resolveNativePowerStrikeShotTarget } from "../effects/nativePowerStrikeSource";
-import { failureText } from "./nativeSliceSheet";
+import { failureText } from "./settledTasks";
 
 export interface NativeSliceEffects {
   effectComponents: NativeEffectComponentPreview | null;

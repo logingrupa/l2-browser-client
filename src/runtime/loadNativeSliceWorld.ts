@@ -13,6 +13,7 @@ import type { SceneStartupProgress } from "../scene/guardSceneStartup";
 import { createNativeSkyPresentation, type NativeSkyPresentation } from "../scene/world/nativeSkyPresentation";
 import type { NativeSliceWorldSource } from "./nativeSliceWorldSource";
 import type { NativeSliceSettings } from "./createNativeSliceRuntime";
+import { failureText } from "./settledTasks";
 
 export type NativeFlameReplayClock = ReturnType<typeof createNativeFlameReplayClock>;
 
@@ -66,7 +67,6 @@ export interface NativeSliceWorldOptions {
   playerCapsule: () => { radius: number; height: number };
 }
 
-const failureMessage = (error: unknown, fallback: string) => error instanceof Error ? error.message : fallback;
 
 async function prepareFlames(scene: Scene, section: NativeSection, settings: NativeSliceSettings, flames: NativeSliceFlames,
   signal: AbortSignal, options: NativeSliceWorldOptions): Promise<void> {
@@ -83,7 +83,7 @@ async function prepareFlames(scene: Scene, section: NativeSection, settings: Nat
     flames.dispose();
     options.validateLifetime();
     if (options.requireWorld) throw error;
-    flames.failure = failureMessage(error, "Native flame preview could not be verified.");
+    flames.failure = failureText(error, "Native flame preview could not be verified.");
   }
 }
 
@@ -138,7 +138,7 @@ export async function loadNativeSliceWorld(scene: Scene, camera: ArcRotateCamera
       releaseWorldSource?.(); releaseWorldSource = undefined;
       options.validateLifetime();
       if (options.requireWorld) throw error;
-      worldFailure = failureMessage(error, "Native world could not be verified.");
+      worldFailure = failureText(error, "Native world could not be verified.");
     }
     options.validateLifetime();
     let sky: NativeSkyPresentation | null = null, skyFailure: string | null = null;
@@ -149,7 +149,7 @@ export async function loadNativeSliceWorld(scene: Scene, camera: ArcRotateCamera
         if (sky) releases.push(() => sky?.dispose());
       } catch (error) {
         options.validateLifetime();
-        skyFailure = failureMessage(error, "Original sky preview failed.");
+        skyFailure = failureText(error, "Original sky preview failed.");
       }
     }
     return { section, movers, navigation, origin, worldFailure, flames, sky, skyFailure, release };
