@@ -39,7 +39,7 @@ Use the smallest command that fits the work.
 ### Lanes
 - Parallel work uses the `lane` skill. Load it when two or more agents work on this repo at once, or when your checkout is an `l2b-*` lane. A lane is a separate checkout in `C:\laragon\www\l2b-<slug>` with its own `node_modules` and dev server port. The skill creates, watches and removes lanes.
 - At most 3 lanes on DATABASE-PC, plus the integration thread in the main checkout. One part per branch, named `<part>/<slug>`.
-- Lanes never run scripts that write the main native store: `assets:*`, `assets:stage`, `stage_*`, `derive-*`, `migrate-*`, or preview scripts. Only the integration thread runs them, in the main checkout.
+- Lanes never run scripts that write the main native store: `assets:*`, `assets:stage`, `stage_*`, `derive-*`, `migrate-*`, `scripts/native_store/merge_lane_store.py`, or preview scripts. Only the integration thread runs them, in the main checkout.
 - Lanes start from committed code only. Merge one branch at a time; a contract change merges first.
 
 ### Build

@@ -32,6 +32,7 @@ LANE_ENTRY_POINT_SELECTORS = {
 CONVERTER_PACKAGE_SCRIPT_NAMES = ('convert:tables', 'convert:world', 'convert:actors', 'convert:ui')
 REFUSED_CONVERTER_NAME_PREFIXES = ('assets:', 'world:stage', 'preview')
 STORE_WRITER_FILE_PREFIXES = ('assets', 'stage_', 'stage-', 'derive-', 'migrate-')
+STORE_WRITER_FILE_NAMES = ('native_batch.py', 'merge_lane_store.py')
 CONVERTER_COMMAND_PREFIX = 'python -B scripts/'
 SCRIPT_PATH_PATTERN = re.compile(r'(?:^|[\s"\'=])(?:\./)?(scripts/[^\s"\'&|;]+)')
 CONTENT_DIRECTORY_PATTERN = re.compile(r'[0-9a-f]{64}')
@@ -106,7 +107,7 @@ def invoked_script_name(command):
 
 def banned_store_writer(script_file_name):
     name = script_file_name.casefold()
-    return name.startswith(STORE_WRITER_FILE_PREFIXES) or 'preview' in name or name == 'native_batch.py'
+    return name.startswith(STORE_WRITER_FILE_PREFIXES) or 'preview' in name or name in STORE_WRITER_FILE_NAMES
 
 
 def refused_converter_name(script_name):
@@ -258,7 +259,7 @@ class PackageScriptNamingTests(unittest.TestCase):
 
     def test_store_writers_are_banned_casefolded_and_by_file_name(self):
         for name in ('stage_native_runtime.py', 'STAGE_native_runtime.py', 'stage-world-assets.mjs', 'derive-native-map-model.py',
-                     'migrate-native-terrain-runtime.py', 'private-preview.mjs', 'native_batch.py', 'assets_stage.py'):
+                     'migrate-native-terrain-runtime.py', 'private-preview.mjs', 'native_batch.py', 'assets_stage.py', 'Merge_Lane_Store.py'):
             with self.subTest(name=name):
                 self.assertTrue(banned_store_writer(name))
         self.assertFalse(banned_store_writer('convert_tables.py'))
@@ -274,6 +275,12 @@ class PackageScriptNamingTests(unittest.TestCase):
                         'python -B scripts\\STAGE_native_runtime.py', 'python -B scripts/data/convert_tables.py && python -B scripts/stage_native_runtime.py'):
             with self.subTest(command=command):
                 self.assertNotEqual(converter_package_script_problems({'convert:tables': command}), [])
+
+    def test_a_converter_command_that_invokes_the_lane_store_merge_is_refused(self):
+        command = ('python -B scripts/data/convert_tables.py --table npcgrp && python -B scripts/native_store/merge_lane_store.py '
+                   '--lane-store artifacts/lane-store/data-ui/l2 --target public/l2 --expected-base-catalog-sha256 ' + '0' * 64)
+        self.assertEqual(converter_package_script_problems({'convert:tables': command}),
+                         [('convert:tables', 'command runs a store writer or native_batch.py')])
 
     def test_lane_entry_point_command_with_a_banned_token_inside_its_path_passes(self):
         with tempfile.TemporaryDirectory() as directory:
