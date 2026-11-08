@@ -1,10 +1,3 @@
-"""Append source-backed boundary overlaps using already converted mesh inputs.
-
-This scoped stage follows the completed 20_20 UV migration. It never invokes a
-converter or changes original assets. Missing mesh identities remain explicit
-coverage gaps. Run without --stage first; the authored append is a separate,
-guarded step so existing Editor work is never reimported.
-"""
 import argparse
 import copy
 import hashlib
@@ -13,8 +6,17 @@ from pathlib import Path
 
 from native_assets_lib.gltf import json_bytes
 from native_map_overlap import audit_overlap
-from stage_native_runtime import immutable_write, replace_file
+from native_store.catalog_writer import immutable_write, replace_file
 from reference_client_guard import require_reference_client
+
+OVERLAP_DERIVATION_DESCRIPTION = (
+    'Append source-backed boundary overlaps using already converted mesh inputs.\n'
+    '\n'
+    'This scoped stage follows the completed 20_20 UV migration. It never invokes a\n'
+    'converter or changes original assets. Missing mesh identities remain explicit\n'
+    'coverage gaps. Run without --stage first; the authored append is a separate,\n'
+    'guarded step so existing Editor work is never reimported.'
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 BASE = '9841a8fa0e53f441b24d07949360e5fdd18a5d790497d017419722f89d670dc2'
@@ -175,7 +177,7 @@ def run(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=OVERLAP_DERIVATION_DESCRIPTION)
     parser.add_argument('--client', type=Path, default=ROOT / 'artifacts/native-parity/inputs/IMPORTA-PC')
     parser.add_argument('--raw', type=Path, default=ROOT / 'artifacts/native-parity/migration/maps/map-20-20')
     parser.add_argument('--class-evidence', type=Path, default=ROOT / 'artifacts/native-parity/research/map-geometry/native-defaults')

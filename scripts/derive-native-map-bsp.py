@@ -1,10 +1,3 @@
-"""Derive one immutable map bundle with the source-backed Brush397 BSP floor.
-
-The pinned overlap bundle and extracted BSP payloads are read only. Preparation
-defaults to artifacts scratch; --stage additionally appends a content-addressed
-public bundle and changes only the selected catalog section's identity/path.
-This does not reimport Editor work or certify native pixels/collision/lighting.
-"""
 import argparse
 import copy
 import hashlib
@@ -13,7 +6,16 @@ from pathlib import Path
 import re
 
 from native_assets_lib.gltf import json_bytes
-from stage_native_runtime import replace_file
+from native_store.catalog_writer import replace_file
+
+BSP_FLOOR_DERIVATION_DESCRIPTION = (
+    'Derive one immutable map bundle with the source-backed Brush397 BSP floor.\n'
+    '\n'
+    'The pinned overlap bundle and extracted BSP payloads are read only. Preparation\n'
+    'defaults to artifacts scratch; --stage additionally appends a content-addressed\n'
+    "public bundle and changes only the selected catalog section's identity/path.\n"
+    'This does not reimport Editor work or certify native pixels/collision/lighting.'
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 BASE = 'fdee12862293d14bb9812eb63789aa336f91ffd18473623b6debd709bfffc3dc'
@@ -47,7 +49,6 @@ def read_json(data):
 
 
 def unlinked(path):
-    """Reject links on the full ancestry, including a linked supplied root."""
     path = Path(path).absolute()
     for part in [*reversed(path.parents), path]:
         if part.is_symlink() or getattr(part, 'is_junction', lambda: False)():
@@ -176,7 +177,6 @@ def derive(files, bsp, manifest_sha256):
 
 
 def value_spans(text, wanted):
-    """Locate selected JSON values while preserving every other byte."""
     decoder = json.JSONDecoder()
     spans = {}
     def whitespace(offset):
@@ -255,7 +255,6 @@ def preflight(root, files, optional=()):
 
 
 def immutable_write(path, data):
-    """Exclusive creation avoids replacing a concurrent writer's immutable file."""
     unlinked(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     try:
@@ -309,7 +308,6 @@ def run(args):
         scratch.update({'catalog.before.json': original_catalog, 'catalog.after.json': after})
         destination = local(root, 'public/l2/maps/' + digest)
         preflight(destination, derived)
-    # Preflight every receipt, bundle file, and public destination before writes.
     preflight(output, scratch, optional=('catalog.before.json', 'catalog.after.json') if not args.stage else ())
     for name, data in scratch.items():
         immutable_write(local(output, name), data)
@@ -324,7 +322,7 @@ def run(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=BSP_FLOOR_DERIVATION_DESCRIPTION)
     parser.add_argument('--bsp', type=Path, required=True, help='Verified four-file extraction directory')
     parser.add_argument('--bsp-sha256', required=True, help='Exact extraction manifest SHA256')
     parser.add_argument('--output', type=Path, required=True)

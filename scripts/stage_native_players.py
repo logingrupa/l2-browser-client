@@ -11,7 +11,8 @@ import struct
 import sys
 
 from native_assets_lib.gltf import json_bytes
-from stage_native_runtime import immutable_write, replace_file, verified_archive
+from native_store.catalog_writer import immutable_write, replace_file
+from stage_native_runtime import verified_archive
 from native_store.store_paths import confined_child_path, refuse_reparse_points, require_portable_relative_path
 
 PLAYER_STAGE_DESCRIPTION = (

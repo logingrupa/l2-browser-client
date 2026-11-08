@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-"""Stage an additive, verified mover bundle without reimporting the Editor world."""
 import argparse
 import json
 from pathlib import Path
@@ -8,7 +7,9 @@ from native_assets import verify_archive
 from native_assets_lib.gltf import json_bytes
 from native_map import safe_path, sha
 from native_map_movers import MAP_SHA
-from stage_native_runtime import immutable_write, replace_file
+from native_store.catalog_writer import immutable_write, replace_file
+
+MOVER_STAGE_DESCRIPTION = 'Stage an additive, verified mover bundle without reimporting the Editor world.'
 
 
 def stage(project, bundle_root, receipt_path=None):
@@ -61,7 +62,6 @@ def stage(project, bundle_root, receipt_path=None):
         raise ValueError('Refuse to replace a different existing mover catalog entry')
     if not existing:
         after.setdefault('movers', []).append(record)
-    # All existing catalog fields/records must remain identical.
     for key, value in before.items():
         if key != 'movers' and after[key] != value:
             raise ValueError('Unrelated catalog field changed: ' + key)
@@ -85,7 +85,7 @@ def stage(project, bundle_root, receipt_path=None):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=MOVER_STAGE_DESCRIPTION)
     parser.add_argument('--project', type=Path, default=Path(__file__).resolve().parents[1])
     parser.add_argument('--bundle', type=Path, required=True)
     parser.add_argument('--receipt', type=Path)

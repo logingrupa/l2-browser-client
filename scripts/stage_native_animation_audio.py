@@ -7,7 +7,7 @@ from pathlib import Path
 from native_assets_lib.gltf import json_bytes
 from native_store.store_paths import confined_child_path, refuse_reparse_points
 from stage_native_players import decode, digest, require, HASH, ID
-from stage_native_runtime import immutable_write, replace_file
+from native_store.catalog_writer import immutable_write, replace_file
 
 ANIMATION_AUDIO_STAGE_DESCRIPTION = (
     'Stage a verified animation dependency sidecar without replacing actor assets.\n'

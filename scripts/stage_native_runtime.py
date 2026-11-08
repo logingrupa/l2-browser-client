@@ -1,76 +1,40 @@
-"""Stage verified migration models/map sections for this local browser and Editor."""
 import argparse
-import hashlib
 import io
 import json
 import math
 from pathlib import Path
 import re
-import tempfile
 import zipfile
 
-from native_assets import hash_file, verify_archive
+from native_assets import verify_archive
 from native_assets_lib.gltf import json_bytes, safe_name
 from native_catalog.cli import json_bytes as profile_json_bytes
+from native_store.catalog_writer import add_store_file, read_current_catalog_bytes, sha256_hex, write_store
 
 ROOT = Path(__file__).resolve().parent.parent
+RUNTIME_STAGE_DESCRIPTION = 'Stage verified migration models/map sections for this local browser and Editor.'
 
 
 def contained(root, relative):
-    """Validate spelling and resolved containment, including filesystem links."""
     path = root / safe_name(relative)
     if not path.resolve().is_relative_to(root.resolve()):
         raise ValueError('Runtime resource path escapes its root: ' + relative)
     return path
 
 
-def digest(payload):
-    return hashlib.sha256(payload).hexdigest()
-
-
 def checked_payload(root, relative, expected_hash, expected_bytes=None):
     if not isinstance(expected_hash, str) or not re.fullmatch('[a-f0-9]{64}', expected_hash):
         raise ValueError('Invalid runtime resource hash: ' + str(relative))
     payload = contained(root, relative).read_bytes()
-    if digest(payload) != expected_hash or expected_bytes is not None and (type(expected_bytes) is not int or len(payload) != expected_bytes):
+    if sha256_hex(payload) != expected_hash or expected_bytes is not None and (type(expected_bytes) is not int or len(payload) != expected_bytes):
         raise ValueError('Runtime resource hash/length differs: ' + relative)
     return payload
-
-
-def replace_file(path, payload):
-    # Unique temporary files cannot follow a stale or planted .tmp symlink.
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(dir=path.parent, prefix=path.name + '.', suffix='.tmp', delete=False) as output:
-        temporary = Path(output.name)
-        output.write(payload)
-    try:
-        temporary.replace(path)
-    finally:
-        temporary.unlink(missing_ok=True)
-    if hash_file(path) != digest(payload):
-        raise ValueError('Runtime copy hash differs: ' + str(path))
-
-
-def immutable_write(path, payload):
-    if path.exists():
-        if hash_file(path) != digest(payload):
-            raise ValueError('Existing immutable runtime asset is corrupt; preserved: ' + str(path))
-        return
-    replace_file(path, payload)
-
-
-def add_file(files, relative, payload):
-    safe_name(relative)
-    key = relative.casefold()
-    if key in files and files[key] != (relative, payload):
-        raise ValueError('Conflicting runtime resource paths: ' + relative)
-    files[key] = (relative, payload)
 
 
 def verified_archive(path, expected_hash):
     result = verify_archive(path)
     payload = path.read_bytes()
-    if result['sha256'] != expected_hash or digest(payload) != expected_hash:
+    if result['sha256'] != expected_hash or sha256_hex(payload) != expected_hash:
         raise ValueError('Migration catalog archive hash differs')
     with zipfile.ZipFile(io.BytesIO(payload)) as archive:
         files = {name: archive.read(name) for name in archive.namelist()}
@@ -96,16 +60,16 @@ def section_files(migration, job, files):
         manifest.get('support') != 'section-products-ready-for-runtime-validation' or
         manifest.get('resourceRoots') != {'terrain': '../map-section', 'models': '../map-section-models'}):
         raise ValueError('Map section is incomplete or its resource roots are unsupported')
-    prefix = 'maps/' + digest(manifest_bytes) + '/'
-    add_file(files, prefix + 'map-section-runtime/manifest.json', manifest_bytes)
-    add_file(files, prefix + 'map-section-runtime/receipt.json', receipt_bytes)
+    prefix = 'maps/' + sha256_hex(manifest_bytes) + '/'
+    add_store_file(files, prefix + 'map-section-runtime/manifest.json', manifest_bytes)
+    add_store_file(files, prefix + 'map-section-runtime/receipt.json', receipt_bytes)
     terrain_receipt_bytes = checked_payload(terrain, 'receipt.json', receipt['sectionReceiptSha256'])
     terrain_receipt = json.loads(terrain_receipt_bytes)
     if terrain_receipt.get('kind') != 'native-terrain-section' or not isinstance(terrain_receipt.get('outputs'), dict):
         raise ValueError('Invalid terrain section receipt')
-    add_file(files, prefix + 'map-section/receipt.json', terrain_receipt_bytes)
+    add_store_file(files, prefix + 'map-section/receipt.json', terrain_receipt_bytes)
     for name, expected_hash in terrain_receipt['outputs'].items():
-        add_file(files, prefix + 'map-section/' + name, checked_payload(terrain, name, expected_hash))
+        add_store_file(files, prefix + 'map-section/' + name, checked_payload(terrain, name, expected_hash))
     record = manifest['terrain']
     if record['file'] != 'terrain.glb' or terrain_receipt['outputs'].get(record['file']) != record['sha256']:
         raise ValueError('Terrain resource differs from its receipt')
@@ -129,26 +93,22 @@ def section_files(migration, job, files):
             raise ValueError('Map model identity or standalone geometry differs from its archive')
         archive_pins[archive_record['file']] = archive_hash
         model_prefix = prefix + 'map-section-models/' + archive_hash + '/'
-        add_file(files, model_prefix + 'asset.l2asset', archive_bytes)
+        add_store_file(files, model_prefix + 'asset.l2asset', archive_bytes)
         for name, payload in payloads.items():
-            # Keep archive provenance and any packed editable sources, and
-            # reject stale/tampered unpacked copies rather than hiding them.
-            standalone = checked_payload(models, archive_hash + '/' + name, digest(payload), len(payload))
-            add_file(files, model_prefix + name, standalone)
-        # Converted PNG sources are retained beside the archive, with hashes
-        # pinned inside provenance.json. Do not copy arbitrary export/log files.
+            standalone = checked_payload(models, archive_hash + '/' + name, sha256_hex(payload), len(payload))
+            add_store_file(files, model_prefix + name, standalone)
         provenance = json.loads(payloads.get('provenance.json', b'{}'))
         for slot in provenance.get('metadata', {}).get('materialSlots', []):
             if 'texture' not in slot:
                 continue
             name = 'evidence/export/' + '/'.join(slot['texture'].split('.')) + '.png'
             payload = checked_payload(models, archive_hash + '/' + name, slot['textureSha256'])
-            add_file(files, model_prefix + name, payload)
+            add_store_file(files, model_prefix + name, payload)
     if archive_pins != receipt.get('modelArchives') or not model_ids:
         raise ValueError('Map model archive set differs from its receipt')
     if any(placement['modelId'] not in model_ids for placement in manifest['placements']):
         raise ValueError('Map placement refers to a missing model')
-    return {'id': identity, 'manifest': '/l2/' + prefix + 'map-section-runtime/manifest.json', 'manifestSha256': digest(manifest_bytes)}
+    return {'id': identity, 'manifest': '/l2/' + prefix + 'map-section-runtime/manifest.json', 'manifestSha256': sha256_hex(manifest_bytes)}
 
 
 def npc_profile_files(migration, job, files):
@@ -172,7 +132,7 @@ def npc_profile_files(migration, job, files):
         raise ValueError('NPC profile manifest is incomplete or unsupported')
     recipe = manifest['recipe']
     if (recipe.get('schemaVersion') != 1 or manifest.get('id') != recipe.get('id') or
-        recipe.get('sourceUnitsPerMetre') != 100 or receipt.get('recipeSha256') != digest(profile_json_bytes(recipe)) or
+        recipe.get('sourceUnitsPerMetre') != 100 or receipt.get('recipeSha256') != sha256_hex(profile_json_bytes(recipe)) or
         manifest.get('tools') != receipt.get('tools') or not isinstance(manifest.get('tools'), dict) or
         manifest.get('sourceFiles') != receipt.get('sourceFiles') or manifest.get('files') != receipt.get('files')):
         raise ValueError('NPC profile receipt differs from manifest metadata')
@@ -261,19 +221,16 @@ def npc_profile_files(migration, job, files):
                 any(type(v) not in (int, float) or not math.isfinite(v) or field == 'drawScale3D' and v <= 0 for v in value) or
                 value != [vector[key] for key in 'XYZ']):
                 raise ValueError('NPC profile vector differs from native class: ' + field)
-    prefix = 'npc-profiles/' + digest(manifest_bytes) + '/'
-    add_file(files, prefix + 'manifest.json', manifest_bytes)
-    add_file(files, prefix + 'receipt.json', receipt_bytes)
+    prefix = 'npc-profiles/' + sha256_hex(manifest_bytes) + '/'
+    add_store_file(files, prefix + 'manifest.json', manifest_bytes)
+    add_store_file(files, prefix + 'receipt.json', receipt_bytes)
     for name, payload in payloads.items():
-        add_file(files, prefix + name, payload)
+        add_store_file(files, prefix + name, payload)
     return {'id': identity, 'manifest': '/l2/' + prefix + 'manifest.json',
-            'manifestSha256': digest(manifest_bytes), 'manifestBytes': len(manifest_bytes)}
+            'manifestSha256': sha256_hex(manifest_bytes), 'manifestBytes': len(manifest_bytes)}
 
 
-def stage_runtime(migration, destination=ROOT / 'public/l2'):
-    migration, destination = Path(migration).resolve(strict=True), Path(destination).resolve()
-    if destination != (ROOT / 'public/l2').resolve() or not destination.is_relative_to(ROOT.resolve()):
-        raise ValueError('Local runtime staging writes only to this project public/l2 directory')
+def build_runtime_store_files(migration):
     coverage = json.loads((migration / 'coverage.json').read_text(encoding='utf-8'))
     validation = json.loads((migration / 'validation.json').read_text(encoding='utf-8'))
     if validation.get('passed') is not True or validation.get('errors') or any(job['support'] == 'failed' or job.get('unsupported') for job in coverage['jobs']):
@@ -301,46 +258,46 @@ def stage_runtime(migration, destination=ROOT / 'public/l2'):
         if result['kind'] == 'texture':
             image_path = safe_name(manifest['image']['file'])
             image = payloads[image_path]
-            add_file(files, result['sha256'] + '/asset.l2asset', archive_bytes)
-            add_file(files, result['sha256'] + '/' + image_path, image)
+            add_store_file(files, result['sha256'] + '/asset.l2asset', archive_bytes)
+            add_store_file(files, result['sha256'] + '/' + image_path, image)
             textures.append({'id': job['id'], 'assetId': manifest['id'], 'source': manifest['source'],
                              'archive': '/l2/' + result['sha256'] + '/asset.l2asset', 'archiveSha256': result['sha256'],
                              'image': '/l2/' + result['sha256'] + '/' + image_path,
-                             'imageSha256': digest(image), 'imageBytes': len(image)})
+                             'imageSha256': sha256_hex(image), 'imageBytes': len(image)})
             continue
         if result['kind'] != 'model':
             continue
         model = payloads[manifest['model']['file']]
-        add_file(files, result['sha256'] + '/asset.l2asset', archive_bytes)
-        add_file(files, result['sha256'] + '/model.glb', model)
+        add_store_file(files, result['sha256'] + '/asset.l2asset', archive_bytes)
+        add_store_file(files, result['sha256'] + '/model.glb', model)
         models.append({'id': job['id'], 'assetId': manifest['id'], 'source': manifest['source'],
                        'archive': '/l2/' + result['sha256'] + '/asset.l2asset', 'archiveSha256': result['sha256'],
-                       'model': '/l2/' + result['sha256'] + '/model.glb', 'modelSha256': hashlib.sha256(model).hexdigest(),
+                       'model': '/l2/' + result['sha256'] + '/model.glb', 'modelSha256': sha256_hex(model),
                        'nativeSkinAdapter': manifest['model'].get('nativeSkinAdapter'), 'limitations': manifest['limitations']})
     catalog = {'schemaVersion': 1, 'sourceHost': coverage['sourceHost'], 'models': models, 'sections': sections, 'textures': textures,
                'sourceManifestSha256': coverage['sourceManifestSha256'], 'acceptanceSha256': coverage['acceptanceSha256'],
                'scope': 'Local native model/map-section staging. This catalog does not assert playable/world/visual/performance acceptance.'}
     if npc_profiles:
         catalog['npcProfiles'] = npc_profiles
-    # Verify every destination before copying; a failure cannot publish a
-    # partially verified catalog or silently overwrite immutable local content.
-    for relative, payload in files.values():
-        path = contained(destination, relative)
-        if path.exists() and hash_file(path) != digest(payload):
-            raise ValueError('Existing immutable runtime asset is corrupt; preserved: ' + str(path))
-    catalog_path = contained(destination, 'catalog.json')
-    for relative, payload in files.values():
-        immutable_write(contained(destination, relative), payload)
-    destination.mkdir(parents=True, exist_ok=True)
-    replace_file(catalog_path, json_bytes(catalog))
-    result = {'models': len(models), 'sections': len(sections), 'textures': len(textures), 'catalog': str(catalog_path)}
-    if npc_profiles:
-        result['npcProfiles'] = len(npc_profiles)
+    return files, catalog
+
+
+def stage_runtime(migration, destination=ROOT / 'public/l2'):
+    migration = Path(migration).resolve(strict=True)
+    if Path(destination).absolute() != (ROOT / 'public/l2').absolute():
+        raise ValueError('Local runtime staging writes only to this project public/l2 directory')
+    files, catalog = build_runtime_store_files(migration)
+    before = read_current_catalog_bytes(destination)
+    write_store(destination, files, before, json_bytes(catalog))
+    result = {'models': len(catalog['models']), 'sections': len(catalog['sections']), 'textures': len(catalog['textures']),
+              'catalog': str(Path(destination).resolve() / 'catalog.json')}
+    if 'npcProfiles' in catalog:
+        result['npcProfiles'] = len(catalog['npcProfiles'])
     return result
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=RUNTIME_STAGE_DESCRIPTION)
     parser.add_argument('--migration', type=Path, default=ROOT / 'artifacts/native-parity/migration')
     args = parser.parse_args()
     print(json.dumps(stage_runtime(args.migration)))

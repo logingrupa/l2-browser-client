@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import argparse
-import copy
 from pathlib import Path
 
 from native_assets_lib.gltf import json_bytes
+from native_store.catalog_writer import add_store_file, merge_catalog_slice, verify_store_destinations, write_store
 from native_store.store_paths import confined_child_path, refuse_reparse_points
 from stage_native_players import decode, digest, require, HASH, ID
-from stage_native_runtime import immutable_write, replace_file
 
 WORLD_AUDIO_STAGE_DESCRIPTION = (
     'Stage a verified world-audio bundle (map music or ambience) into public/l2.\n'
@@ -44,47 +43,32 @@ def stage(bundle, manifest_sha256, expected_catalog_sha256, *, bundle_id, plan=F
     listed = manifest.get('files')
     require(isinstance(listed, list) and 0 < len(listed) <= 4096, 'Invalid world-audio file list')
     prefix = 'world-audio/' + manifest_sha256 + '/'
-    files, total = {prefix + 'manifest.json': manifest_bytes}, len(manifest_bytes)
+    files, total = {}, len(manifest_bytes)
+    add_store_file(files, prefix + 'manifest.json', manifest_bytes)
     for row in listed:
         name, sha = row.get('path'), row.get('sha256')
         require(isinstance(sha, str) and HASH.fullmatch(sha) and row.get('mime') in KINDS[kind] and
                 type(row.get('bytes')) is int and 0 < row['bytes'] <= MAX_FILE and isinstance(name, str) and
-                name.rsplit('/', 1)[-1].split('.')[0] == sha and prefix + name not in files, 'Invalid world-audio payload descriptor')
+                name.rsplit('/', 1)[-1].split('.')[0] == sha and (prefix + name).casefold() not in files, 'Invalid world-audio payload descriptor')
         payload = confined_child_path(bundle, name).read_bytes()
         require(len(payload) == row['bytes'] and digest(payload) == sha, 'World-audio payload differs: ' + name)
-        files[prefix + name] = payload
+        add_store_file(files, prefix + name, payload)
         total += len(payload)
     require(total <= MAX_TOTAL, 'World-audio bundle exceeds the staging budget')
     entry = {'id': bundle_id, 'kind': kind, 'manifest': '/l2/' + prefix + 'manifest.json',
              'manifestBytes': len(manifest_bytes), 'manifestSha256': manifest_sha256}
-    updated = copy.deepcopy(catalog)
-    records = updated.setdefault('worldAudio', [])
+    records = catalog.get('worldAudio', [])
     require(isinstance(records, list) and len(records) <= MAX_RECORDS, 'Invalid world-audio catalog')
-    matching = [item for item in records if item.get('id') == bundle_id]
-    require(len(matching) <= 1 and (not matching or matching[0] == entry), 'Existing world-audio identity differs; preserved')
     require(not any(item.get('kind') == kind and item.get('id') != bundle_id for item in records), 'Another bundle of this kind is staged; preserved')
-    if not matching:
-        require(len(records) < MAX_RECORDS, 'World-audio catalog capacity exceeded')
-        records.append(entry)
-    after = before if matching else json_bytes(updated)
-    new_files = []
-    for name, payload in files.items():
-        target = confined_child_path(public, name)
-        if target.exists():
-            require(target.read_bytes() == payload, 'Existing immutable audio resource differs; preserved: ' + name)
-        else:
-            new_files.append(name)
+    updated = merge_catalog_slice(catalog, 'worldAudio', entry, MAX_RECORDS)
+    after = before if updated == catalog else json_bytes(updated)
+    new_files = verify_store_destinations(public, files)
     if verify_only:
         require(not new_files and before == after, 'Bundle is not completely staged')
     require(catalog_path.read_bytes() == before, 'Catalog changed during staging')
     written = 0
     if not plan and not verify_only:
-        for name, payload in files.items():
-            immutable_write(confined_child_path(public, name), payload)
-        require(catalog_path.read_bytes() == before, 'Catalog changed during resource staging')
-        if before != after:
-            replace_file(catalog_path, after)
-        written = len(new_files) + int(before != after)
+        written = write_store(public, files, before, after)['filesWritten']
     return {'schemaVersion': 1, 'kind': 'native-world-audio-stage', 'mode': 'plan' if plan else 'verify' if verify_only else 'stage',
             'bundle': str(bundle.relative_to(root)).replace('\\', '/'), 'entry': entry,
             'sourceCatalogSha256': digest(before), 'resultingCatalogSha256': digest(after),

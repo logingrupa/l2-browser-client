@@ -1,9 +1,3 @@
-"""Derive the qualified 20_20 terrain runtime without reconverting its models.
-
-Default writes a verified, immutable scratch bundle. --stage additionally appends
-its resources to public/l2 and replaces only the selected catalog section entry.
-This is a derived runtime receipt, not a fresh full-migration validation receipt.
-"""
 import argparse
 import copy
 import hashlib
@@ -12,7 +6,16 @@ from pathlib import Path, PurePosixPath
 import struct
 
 from native_assets_lib.gltf import json_bytes
-from stage_native_runtime import immutable_write, replace_file, verified_archive
+from native_store.catalog_writer import immutable_write, replace_file
+from stage_native_runtime import verified_archive
+
+TERRAIN_RUNTIME_MIGRATION_DESCRIPTION = (
+    'Derive the qualified 20_20 terrain runtime without reconverting its models.\n'
+    '\n'
+    'Default writes a verified, immutable scratch bundle. --stage additionally appends\n'
+    'its resources to public/l2 and replaces only the selected catalog section entry.\n'
+    'This is a derived runtime receipt, not a fresh full-migration validation receipt.'
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 BASE_MANIFEST = '062218e6dc1c887e5018489f69b1faaed571b519d937cc0d7c7c9b8c1474e2c2'
@@ -128,8 +131,6 @@ def compare_geometry(old_files, new_files):
     start, length = primary_region(old_doc, old_bin)
     if primary_region(new_doc, new_bin) != (start, length) or len(old_bin) != len(new_bin):
         raise ValueError('Terrain buffer layout changed')
-    # All accessor definitions and primitive bindings must remain identical,
-    # including positions/normals/indices and diffuse TEXCOORD_1.
     for key in ('accessors', 'bufferViews'):
         if old_doc[key] != new_doc[key]:
             raise ValueError('Terrain accessor layout changed: ' + key)
@@ -236,8 +237,7 @@ def original_runtime(root):
     return manifest, receipt, receipt_data, geometry, models
 
 
-def catalog_replace(data, section):
-    """Replace only one JSON value span; preserve every byte outside that span."""
+def replace_catalog_section_span(data, section):
     text = data.decode('utf-8')
     catalog = decode(text)
     matches = [item for item in catalog.get('sections', []) if item.get('id') == SECTION]
@@ -283,7 +283,7 @@ def derivation(old_receipt, old_receipt_data, new_geometry, comparison):
     return {'schemaVersion': 1, 'kind': 'native-terrain-primary-uv-migration', 'rule': RULE,
         'scriptSha256': digest(Path(__file__).read_bytes()), 'handoffSha256': HANDOFF_SHA,
         'validatorImplementations': {name: digest((Path(__file__).parent / name).read_bytes())
-            for name in ('stage_native_runtime.py', 'native_assets.py', 'native_assets_lib/gltf.py')},
+            for name in ('stage_native_runtime.py', 'native_store/catalog_writer.py', 'native_assets.py', 'native_assets_lib/gltf.py')},
         'originalRuntimeManifestSha256': BASE_MANIFEST, 'originalRuntimeReceiptSha256': digest(old_receipt_data),
         'newGeometryReceiptSha256': digest(new_geometry['receipt.json']),
         'modelConversion': 'unchanged original archives; no reconversion or current-converter certification',
@@ -328,13 +328,12 @@ def prepare_bundle(root, geometry, output):
     else:
         before = current_catalog
     target_entry = {'id': SECTION, 'manifest': '/l2/' + prefix + 'map-section-runtime/manifest.json', 'manifestSha256': runtime_sha}
-    # Preserve unknown fields within the selected entry too.
     original_entry = next((item for item in decode(before).get('sections', []) if item.get('id') == SECTION), {})
     expected_old = '/l2/maps/' + BASE_MANIFEST + '/map-section-runtime/manifest.json'
     if original_entry.get('manifest') != expected_old or original_entry.get('manifestSha256') != BASE_MANIFEST:
         raise ValueError('Catalog no longer selects the pinned source; preserve newer work')
     target_entry = {**original_entry, **target_entry}
-    after, _ = catalog_replace(before, target_entry)
+    after, _ = replace_catalog_section_span(before, target_entry)
     if current_catalog not in (before, after):
         raise ValueError('Stale catalog: changed since the bundle was prepared')
     files.update({'catalog.before.json': before, 'catalog.after.json': after})
@@ -372,8 +371,6 @@ def stage_bundle(root, output):
     if (plan.get('kind') != 'native-terrain-runtime-migration' or plan.get('baseManifestSha256') != BASE_MANIFEST or
         plan.get('derivation', {}).get('scriptSha256') != digest(Path(__file__).read_bytes())):
         raise ValueError('Unsupported or stale bundle recipe')
-    # Reconstruct the entire plan from original immutable inputs and bundled
-    # geometry before any public write; receipts alone cannot bless tampering.
     geometry = local(output, 'maps/' + plan['manifestSha256'] + '/map-section')
     old_manifest, old_receipt, old_receipt_data, old_geometry, models = original_runtime(root)
     _, new_geometry = geometry_files(geometry)
@@ -405,7 +402,7 @@ def stage_bundle(root, output):
             raise ValueError('Derived model bytes changed')
     expected_entry = next(item for item in decode(before)['sections'] if item['id'] == SECTION)
     expected_entry = {**expected_entry, 'manifest': '/l2/' + prefix + 'map-section-runtime/manifest.json', 'manifestSha256': plan['manifestSha256']}
-    expected_catalog, _ = catalog_replace(before, expected_entry)
+    expected_catalog, _ = replace_catalog_section_span(before, expected_entry)
     if expected_catalog != after:
         raise ValueError('Catalog changed outside the selected section entry')
     catalog = local(root, 'public/l2/catalog.json')
@@ -432,7 +429,7 @@ def stage_bundle(root, output):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=TERRAIN_RUNTIME_MIGRATION_DESCRIPTION)
     parser.add_argument('--geometry', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--stage', action='store_true')
