@@ -675,7 +675,8 @@ class Converter:
                     payload, media_mime, metadata = self.sound(work, package, item)
                     primary = 'audio.ogg' if media_mime == 'audio/ogg' else 'audio.wav'
                     files[primary], mime[primary] = payload, media_mime
-            provenance = {'schemaVersion': 1, 'request': request, 'source': source, 'dependencies': self.dependencies, 'converterSha256': implementation_hash(), 'tool': {'name': 'UEViewer UModel build1590', 'sha256': UMODEL_SHA256}, 'formatDefinitionPins': format_pins, 'metadata': metadata}
+            converted_source_path = source_path_record(socket.gethostname().upper(), source_path.resolve().as_posix())
+            provenance = {'schemaVersion': 1, 'request': request, 'source': {**source, 'path': converted_source_path}, 'dependencies': self.dependencies, 'converterSha256': implementation_hash(), 'tool': {'name': 'UEViewer UModel build1590', 'sha256': UMODEL_SHA256}, 'formatDefinitionPins': format_pins, 'metadata': metadata}
             files['provenance.json'], mime['provenance.json'] = json_bytes(provenance), 'application/json'
             model_extras = {}
             if kind == 'model' and metadata.get('nativeMaterialGraph'):
@@ -683,7 +684,7 @@ class Converter:
             if kind == 'model' and weight_sources:
                 model_extras['nativeSkinAdapter'] = 'L2NativeSkinWeights/1'
             manifest = build_asset_manifest(
-                identity=identity, kind=kind, source=source, source_path=source_path_record(socket.gethostname().upper(), source_path.resolve().as_posix()),
+                identity=identity, kind=kind, source=source, source_path=converted_source_path,
                 client_build=reference_client_build(REFERENCE_CLIENT_LOCK_PATH), converter_version=implementation_hash(),
                 limitations=limitations, animation_events=events, primary_file=primary,
                 coordinates=asset_coordinates_record(SOURCE_TO_GLTF, 100) if kind == 'model' else None, model_extras=model_extras, files=[])

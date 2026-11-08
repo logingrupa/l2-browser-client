@@ -1,4 +1,4 @@
-import { crc32, sha256, type AssetPackageManifestVersionOne } from "../../src/assets/package/readAssetPackage";
+import { crc32, sha256, type AssetPackageManifest, type AssetPackageManifestVersionOne } from "../../src/assets/package/readAssetPackage";
 
 const encoder = new TextEncoder();
 export function storedPackage(entries: readonly { name: string; bytes: Uint8Array }[]): Uint8Array {
@@ -75,5 +75,7 @@ export async function assetFixture(kind: "model" | "audio" | "texture" = "model"
     files: [{ path: file, bytes: bytes.length, sha256: await sha256(bytes), mime: kind === "model" ? "model/gltf-binary" : kind === "audio" ? "audio/wav" : "image/png" }],
     limitations: ["Synthetic test fixture; not a game asset."], ...patch };
   const entries = [{ name: "asset.json", bytes: encoder.encode(JSON.stringify(manifest)) }, { name: file, bytes }];
-  return { bytes: storedPackage(entries), manifest, entries };
+  const model = manifest.model;
+  const readManifest: AssetPackageManifest = model ? { ...manifest, coordinates: { unit: "metre", sourceUnitsPerMetre: Number(model.sourceUnitsPerMetre), sourceToGltf: model.sourceToGltf as number[] } } : manifest;
+  return { bytes: storedPackage(entries), manifest, readManifest, entries };
 }

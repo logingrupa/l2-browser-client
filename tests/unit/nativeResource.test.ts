@@ -41,7 +41,7 @@ describe("native public resources in browser and Editor Play", () => {
     vi.stubGlobal("fetch", fetcher);
     const signal = new AbortController().signal;
     const loaded = await loadNativeCatalog(signal);
-    expect(loaded.get("human-male-fighter:0")?.manifest).toEqual(fixture.manifest);
+    expect(loaded.get("human-male-fighter:0")?.manifest).toEqual(fixture.readManifest);
     expect(fetcher.mock.calls.map(([url]) => url)).toEqual([...responses.keys()]);
     expect(fetcher).toHaveBeenLastCalledWith(`${prefix}${hash}/asset.l2asset`, { signal });
     responses.set(`${prefix}${hash}/asset.l2asset`, new Uint8Array([1, 2, 3]));
