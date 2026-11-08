@@ -12,7 +12,7 @@ const editorBuildSteps = [
   "preserve-native-editor-fog", "share-native-terrain-export-materials", "generate:editor",
 ];
 const optionalEditorScripts = ["generate:editor", "assets:editor"];
-const editorReferenceMarkers = ["babylonjs-editor-tools", "babylonjs-editor-cli", "l2-editor-webgpu-compat", "src/scripts\""];
+const editorReferenceMarkers = ["babylonjs-editor-tools", "babylonjs-editor-cli", "l2-editor-webgpu-compat", "src/scripts\"", "src/editor/", "authoredNativeWorld"];
 const editorGuardTestFiles = ["editorIndependence.test.ts", "defaultEntryImportGraph.test.ts"];
 
 describe("Editor independence of the default build and process", () => {
