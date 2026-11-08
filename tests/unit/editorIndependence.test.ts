@@ -13,7 +13,8 @@ const editorBuildSteps = [
 ];
 const optionalEditorScripts = ["generate:editor", "assets:editor"];
 const editorReferenceMarkers = ["babylonjs-editor-tools", "babylonjs-editor-cli", "l2-editor-webgpu-compat", "src/scripts\"", "src/editor/", "authoredNativeWorld"];
-const editorGuardTestFiles = ["editorIndependence.test.ts", "defaultEntryImportGraph.test.ts"];
+const editorGuardTestFiles = ["tests/unit/editorIndependence.test.ts", "tests/unit/defaultEntryImportGraph.test.ts"];
+const defaultSuiteTestDirectories = ["tests/unit/", "tests/support/"];
 
 describe("Editor independence of the default build and process", () => {
   it.each(["dev", "build"])("runs %s with the WebGPU compiler staging and no Editor step", scriptName => {
@@ -39,14 +40,14 @@ describe("Editor independence of the default build and process", () => {
     expect(editorVitestConfiguration.test?.include).toEqual(["tests/editor/**/*.test.ts"]);
   });
 
-  it("keeps every default unit test free of Editor packages and Editor-generated scripts", () => {
-    const unitTestDirectory = `${projectDirectory}tests/unit/`;
-    const unitTestsReferencingEditor = readdirSync(unitTestDirectory, { recursive: true, encoding: "utf8" })
-      .filter(relativePath => relativePath.endsWith(".ts") && !editorGuardTestFiles.includes(relativePath))
-      .filter(relativePath => {
-        const contents = readFileSync(`${unitTestDirectory}${relativePath}`, "utf8");
-        return editorReferenceMarkers.some(marker => contents.includes(marker));
-      });
-    expect(unitTestsReferencingEditor).toEqual([]);
+  it("keeps every default unit test and the shared test support it imports free of Editor packages and Editor-generated scripts", () => {
+    const defaultSuiteFiles = defaultSuiteTestDirectories.flatMap(testDirectory =>
+      readdirSync(`${projectDirectory}${testDirectory}`, { recursive: true, encoding: "utf8" })
+        .map(pathInsideDirectory => `${testDirectory}${pathInsideDirectory.replaceAll("\\", "/")}`));
+    expect(defaultSuiteFiles).toContain("tests/support/nativeSliceRuntimeHarness.ts");
+    const defaultSuiteFilesReferencingEditor = defaultSuiteFiles
+      .filter(projectPath => projectPath.endsWith(".ts") && !editorGuardTestFiles.includes(projectPath))
+      .filter(projectPath => editorReferenceMarkers.some(marker => readProjectFile(projectPath).includes(marker)));
+    expect(defaultSuiteFilesReferencingEditor).toEqual([]);
   });
 });
