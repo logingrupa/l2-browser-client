@@ -1,3 +1,4 @@
+import hashlib
 import os
 from pathlib import Path
 import sys
@@ -108,6 +109,40 @@ class ReferenceClientGuardTests(GuardedConversionRootTestCase):
         for relative_path in ('../x', 'system/../../x', '/system/Engine.dll', 'C:/Windows/win.ini', 'system\\Engine.dll', '', 'system//Engine.dll'):
             with self.subTest(path=relative_path), self.assertRaises(ReferenceClientLockError):
                 access.require_equal_file(relative_path)
+
+
+class CentralReadHelperBindingTests(GuardedConversionRootTestCase):
+    def create_converter(self):
+        from native_assets import Converter
+        umodel = write_tree_file(Path(self.temporary_directory.name), 'tools/umodel.exe', b'dummy umodel')
+        with patch('native_assets.UMODEL_SHA256', hashlib.sha256(umodel.read_bytes()).hexdigest()):
+            return Converter(self.trees.conversion_root, Path(self.temporary_directory.name) / 'output', umodel)
+
+    def test_converter_on_conversion_root_without_lock_is_refused_before_indexing(self):
+        with patch('pathlib.Path.rglob') as package_index, self.assertRaisesRegex(ReferenceClientLockError, 'reference client lock missing'):
+            self.create_converter()
+        package_index.assert_not_called()
+
+    def test_converter_source_accepts_equal_and_refuses_differing_files(self):
+        self.trees.write_lock()
+        converter = self.create_converter()
+        package = self.trees.conversion_root / 'animations/Fighter.ukx'
+        self.assertEqual(converter.source(package), package)
+        with self.assertRaisesRegex(ReferenceClientLockError, 'is differing, not equal'):
+            converter.source(self.trees.conversion_root / 'system/chargrp.dat')
+
+    def test_table_source_path_refuses_volatile_and_differing_system_files(self):
+        from native_catalog.tables import table_source_path
+        self.trees.write_lock()
+        self.assertEqual(table_source_path(self.trees.conversion_root, 'npcgrp', r'npcgrp\.dat'), self.trees.conversion_root / 'system/npcgrp.dat')
+        with self.assertRaisesRegex(ReferenceClientLockError, 'is differing, not equal'):
+            table_source_path(self.trees.conversion_root, 'chargrp', r'chargrp\.dat')
+        write_tree_file(self.trees.conversion_root, 'system/npcname-e.dat', b'conversion names')
+        self.trees.write_lock()
+        with self.assertRaisesRegex(ReferenceClientLockError, 'is e-only, not equal'):
+            table_source_path(self.trees.conversion_root, 'npcname', r'npcname-e\.dat')
+        with self.assertRaisesRegex(ReferenceClientLockError, 'is volatile-config, not equal'):
+            table_source_path(self.trees.conversion_root, 'npcname', r'l2\.ini', 'l2.ini')
 
 
 if __name__ == '__main__':
