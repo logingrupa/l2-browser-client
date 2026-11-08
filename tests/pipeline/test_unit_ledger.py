@@ -15,10 +15,12 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 
+from native_store.canonical_json import canonical_json_bytes
+from native_store.gap_rows import GapRowError
 from native_store.store_paths import StorePathError
 from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, BELOW_NORMAL_PRIORITY_CLASS, BatchPreflightRefusedError,
-                                      UnitLedger, UnitLedgerError, canonical_json_bytes, locked_input_records,
-                                      require_batch_preflight, unit_directory_name)
+                                      UnitLedger, UnitLedgerError, locked_input_records, require_batch_preflight,
+                                      unit_directory_name)
 from reference_client_guard import REFERENCE_CLIENT_LOCK_FILE_FIELDS
 
 try:
@@ -306,6 +308,22 @@ class UnitLedgerLifecycleTests(unittest.TestCase):
         self.assertEqual(sorted(path.name for path in step_directory.iterdir()), ['.running.json', 'owner.json'])
         with self.assertRaisesRegex(UnitLedgerError, 'begin was not called'):
             self.ledger().seal('tile:20_21', fingerprint, self.caller_receipt([output]))
+
+    def test_seal_validates_gap_rows_and_sorts_them_by_key_then_step(self):
+        ledger = self.ledger()
+        fingerprint = ledger.unit_fingerprint([FIRST_INPUT_SHA256, SECOND_INPUT_SHA256], TILE_CONFIG)
+        step_directory = ledger.begin('tile:20_21', fingerprint)
+        output = self.write_lane_output('l2/tiles/tile.json', b'{"tile":"20_21"}\n')
+        source_identity = {'path': 'maps/20_21.unr', 'sha256': FIRST_INPUT_SHA256}
+        unlisted_row = {'key': 'tile:20_21', 'part': 'world', 'step': 'raw', 'status': 'gap', 'reason': 'invented-reason',
+                        'sourceIdentity': source_identity, 'evidence': 'docs/parts/world/tile-census.json'}
+        with self.assertRaises(GapRowError):
+            ledger.seal('tile:20_21', fingerprint, {**self.caller_receipt([output]), 'gapRows': [unlisted_row]})
+        self.assertEqual(sorted(path.name for path in step_directory.iterdir()), ['.running.json', 'owner.json'])
+        terrain_row = {**unlisted_row, 'step': 'terrain', 'status': 'pending', 'reason': 'step-pending:terrain'}
+        raw_row = {**unlisted_row, 'status': 'pass', 'reason': None}
+        receipt = ledger.seal('tile:20_21', fingerprint, {**self.caller_receipt([output]), 'gapRows': [terrain_row, raw_row]})
+        self.assertEqual(receipt['gapRows'], [raw_row, terrain_row])
 
     def test_an_edited_copy_of_the_ledger_module_gives_the_same_fingerprint(self):
         module_copy = self.project / 'unit_ledger_edited_copy.py'
