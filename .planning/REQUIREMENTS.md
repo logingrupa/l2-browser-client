@@ -18,12 +18,12 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 
 - [ ] **ARCH-01**: The client never computes gameplay outcomes; it displays what a server sends. Tooltips read server-side stats, not the `.dat` display copies in `weapongrp`, `armorgrp`, `skillgrp`.
 - [ ] **ARCH-02**: `GameWorldAdapter` is the only way gameplay state enters the client; its five methods stay frozen (a contract test fails on change); adapters emit typed records with no Babylon types.
-- [ ] **ARCH-03**: The native route reports missing or failed resources visibly and never presents procedural stand-ins; the startup readiness barrier is kept. Inherited by every later phase.
+- [x] **ARCH-03**: The native route reports missing or failed resources visibly and never presents procedural stand-ins; the startup readiness barrier is kept. Inherited by every later phase.
 - [ ] **ARCH-04**: Client-owned behaviour stays in presentation: animation, camera, UI, choosing which footstep or hit sound plays, effect timing, smoothing movement between server updates. Asset resolution and audio playback stay outside the adapter.
 
 ### Editor off the build and runtime path (Phase 1, integration thread, before Phase 2 lanes start; DEC-OWN-8)
 
-- [ ] **NOED-01**: The native route boots without an Editor scene. `?world=interlude` builds its scene (camera, lights, readiness barrier) in code and loads the world from the `.l2asset` catalog through `loadNativeSection`. The `native-parity.babylon` bootstrap goes away, and the settings now held as Editor inspector fields in `src/scripts/nativeParity.ts` (player profile, clips, material override) become typed config shown on the sandbox sheet. `authored=1` stays optional and is reached only by a dynamic import.
+- [x] **NOED-01**: The native route boots without an Editor scene. `?world=interlude` builds its scene (camera, lights, readiness barrier) in code and loads the world from the `.l2asset` catalog through `loadNativeSection`. The `native-parity.babylon` bootstrap goes away, and the settings now held as Editor inspector fields in `src/scripts/nativeParity.ts` (player profile, clips, material override) become typed config shown on the sandbox sheet. `authored=1` stays optional and is reached only by a dynamic import.
 - [ ] **NOED-02**: `pnpm dev` and `pnpm build` no longer run `babylonjs-editor-cli pack`, `ensure-webgpu-project`, `validate-editor-materials`, `preserve-native-editor-uv2`, `preserve-native-editor-fog` or `share-native-terrain-export-materials`, and do not need the l2-editor-webgpu-compat plugin. These move to an optional `pnpm generate:editor`. `stage-webgpu-compilers` stays in dev and build, because `src/engine/createWebGPUEngine.ts` loads glslang and twgsl from `/vendor/babylon/9.27.1/` at runtime. A test fails if the default entry statically imports `babylonjs-editor-tools` or the generated `src/scripts.ts`.
 - [ ] **NOED-03**: The legacy courtyard demo (`assets/example.scene`, loaded through `loadScene` in `src/scene/loadEnvironment.ts`) is retired, or kept only behind `pnpm generate:editor`. A clean checkout's default view no longer loads an Editor scene.
 - [ ] **NOED-04**: Babylon Inspector opens in the sandbox with `?inspect=1`, lazy-loaded by dynamic import and absent from the default bundle; `@babylonjs/inspector` is pinned to the same exact version as `@babylonjs/core`.
@@ -166,10 +166,10 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 | FOUND-04 | Phase 1 | Complete |
 | ARCH-01 | Phase 1 | Pending |
 | ARCH-02 | Phase 1 | Pending |
-| ARCH-03 | Phase 1 | Pending |
+| ARCH-03 | Phase 1 | Complete |
 | ARCH-04 | Phase 1 | Pending |
 | SAND-01 | Phase 1 | Pending |
-| NOED-01 | Phase 1 | Pending |
+| NOED-01 | Phase 1 | Complete |
 | NOED-02 | Phase 1 | Pending |
 | NOED-03 | Phase 1 | Pending |
 | NOED-04 | Phase 1 | Pending |
