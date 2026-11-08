@@ -207,9 +207,9 @@ files_reviewed_list:
   - tests/pipeline/test_umodel_import_closure.py
 findings:
   critical: 6
-  warning: 31
-  info: 28
-  total: 65
+  warning: 40
+  info: 34
+  total: 80
   necessity: 5
 status: issues_found
 ---
@@ -794,6 +794,217 @@ class UModelImportClosureError(ValueError):
 ---
 
 _Reviewed: 2026-11-08T09:34:00Z_
+_Reviewer: Claude (gsd-code-reviewer)_
+_Depth: standard_
+
+
+## Iteration 2 re-review of the fix commits
+
+The --auto loop re-reviewed only what the fix commits changed (17a358d..), in two parallel reviewers: TypeScript (IDs 4NN) and Python and Node (IDs 5NN). Nine new warnings and six info items; the warnings were fixed in iteration 2. No iteration 3 re-review was run (OVERNIGHT-DECISIONS row 47).
+
+
+## Phase 1: Code review report (re-review, iteration 2, TypeScript side)
+
+**Reviewed:** 2026-11-08T11:17:16Z
+**Depth:** standard
+**Files Reviewed:** 59
+**Status:** issues_found
+
+### Summary
+
+Scope: the TypeScript files that the fix commits `17a358d..HEAD` changed. The Python and `.mjs` files go to a separate reviewer. I reviewed only the fix diffs and the code they call. Deliberately skipped findings (WR-106, WR-109, WR-110, WR-111, CR-202, WR-204, WR-209) and the original Info items are not re-reported.
+
+What the fixes resolve, checked against source:
+- CR-101: resolved. The speed is looked up per profile id, only the two human fighter ids get `ACIS_HUMAN_FIGHTER_SPEED`, and every other profile is marked `isSourced: false` with a visible "speed unresolved" readout. The card text is built from `adapter.speedProfile`, and no hardcoded "walk 80, run 115" text is left in `src/`.
+- CR-102: resolved. `fighterIdle/Run/Attack/Death`, `playerClips`, `authored-override` and `alias.editorClip` no longer appear in `src` or `tests`. Every profile plays `playerProfile.clips`.
+- WR-101: resolved. An ambiguous mesh now becomes a `not-in-catalog` entry. An index build failure falls back to `unavailableNativeCatalogIndex`, and the Sandbox tab shows a note.
+- WR-102: partly resolved. See WR-401: the new acceptance check reports a valid no-op equip as rejected.
+- WR-103: resolved in code and in the Vitest test. The Playwright check does not bite (WR-403).
+- WR-104, WR-105, WR-107, WR-108: resolved. No leftover `failureMessage` or `loadNativeCatalog` export remains, and `pnpm dev` already binds `--host 127.0.0.1`, so the startup URL still matches.
+- CR-201, WR-202, WR-203, WR-205, WR-206, WR-208, WR-210: resolved, and the assertions are not vacuous.
+- WR-201: resolved for `tests/unit`. The new `tests/support` directory is not guarded (WR-402).
+- WR-207: resolved. The case count reconciles: 54 original `it` declarations, of which 9 were world cases. Now there are 45 unique cases plus the 2 new sheet cases, and the 9 world cases are registered once for the source world (unit) and once for the authored world (editor).
+
+Other checks: no comments remain in any touched TS file, and the wording grep is clean for every file in scope (the hits it does print are in files outside this scope and in the skipped CR-202). No `any` was introduced and no Lineage II value was invented.
+
+### Warnings
+
+### WR-401: Equipping the item already worn is reported as "equip rejected by the adapter"
+
+**File:** `src/runtime/attachSandboxCommandSheet.ts:105-109` (with `src/world/sandboxCommands.ts:34` and `src/runtime/createNativeSliceRuntime.ts:137`)
+**Issue:** The WR-102 fix counts an equip as accepted only when an `update` event arrives that carries the item in the slot. `entityWithEquippedItem` returns `null` when the slot already holds that item (`entity.equipment?.[command.slot] === (command.itemId ?? undefined)`), so the adapter emits nothing. On the default route, `leatherShirt: true` starts the player with item 22, which is the only converted upper item. Submitting 22 on the Sandbox tab therefore shows "item:22: equip rejected by the adapter" as a warning, even though the requested state holds. The unit fake in `tests/unit/sandboxCommandSheet.test.ts:45` always emits an `update`, and `tests/browser/sandbox.spec.ts:58` only equips 999999, so neither test can catch this.
+**Fix:** Tell "no change" apart from "rejected". For example, have the sheet read the local player's current equipment before dispatch (pass `getInitialState`, or a `currentEquipment(slot)` accessor, through the context) and report "item:22 already equipped" when it already matches. Add a unit case where the fake adapter starts with item 22 equipped and emits no event.
+```ts
+const alreadyEquipped = context.equippedItemId(sandboxEquipmentSlot) === itemId;
+if (alreadyEquipped) showResult(`${lastLookup.key}: already equipped`, "info");
+else if (!accepted) showResult(`${lastLookup.key}: equip rejected by the adapter`, "warning");
+```
+
+### WR-402: The Editor-independence guard does not scan the new shared `tests/support` modules that the unit tests import
+
+**File:** `tests/unit/editorIndependence.test.ts:42-50`
+**Issue:** WR-201 moved the runtime harness and the shared world cases into `tests/support/nativeSliceRuntimeHarness.ts` and `tests/support/nativeSliceRuntimeWorldCases.ts`. Six default unit files import them. The guard only reads files under `tests/unit/`, so an `src/editor/` or `authoredNativeWorld` import added to either support module would run in the default `test:unit` suite with the guard still green. That is the regression WR-201 was meant to close.
+**Fix:** Scan every `.ts` file under `tests/support/` as well, or better, the import closure of `tests/unit/**`:
+```ts
+const guardedTestDirectories = ["tests/unit/", "tests/support/"];
+```
+Add a bite proof: put an Editor marker into a support file temporarily and show that the test fails.
+
+### WR-403: The WR-103 Playwright check uses an asset.json v1 fixture, so it passed before the fix too
+
+**File:** `tests/browser/assetPackage.spec.ts:77-80`
+**Issue:** The bug was that a v2 manifest has no `model.sourceUnitsPerMetre`. `assetFixture()` (`tests/fixtures/assetPackageFixture.ts:69-74`) builds a `schemaVersion: 1` model with `model.sourceUnitsPerMetre: 100`, and the pre-fix code read exactly that field. The new assertion `toContainText("Unit1 metre = 100 source units")` would therefore pass on the pre-fix `AssetImportPanel.ts`. The UI change has no Playwright check that covers the case it fixes (AGENTS.md: "UI changes also get a Playwright check").
+**Fix:** Load a v2 model package in the spec, for example the pinned golden `model-v2.l2asset` used by `tests/unit/assetPackageContract.test.ts`, and assert its `coordinates.sourceUnitsPerMetre` row.
+
+### WR-404: New UI copy file carries an em dash
+
+**File:** `src/ui/assetSourceMetadataRows.ts:11` (also asserted in `tests/unit/assetSourceMetadataRows.test.ts:22`)
+**Issue:** The fix created this file, and its "Viewer scale" value is `"1:1 — no size normalization"`. AGENTS.md says human-readable text, including UI copy, uses plain hyphens with no em or en dashes. Moving the string into a new file was the moment to fix it.
+**Fix:**
+```ts
+...(manifest.model ? [["Viewer scale", "1:1 - no size normalization"] as const] : []),
+```
+Update the unit assertion to match.
+
+### WR-405: The new catch-all rejection handler also swallows aborts, and no test covers an abort during the index build
+
+**File:** `src/runtime/createNativeSliceRuntime.ts:75-80,85`
+**Issue:** The WR-101 fix turns every rejection of `buildNativeCatalogIndex(..., signal)` into `unavailableNativeCatalogIndex`, including an `AbortError` from its `loadNativeNpcProfiles(..., signal)` fetch. Cancellation now depends only on the `validateLifetime()` call five lines later. The fix report says "Abort still propagates through validateLifetime", but none of the split runtime tests (`tests/unit/nativeSliceRuntimeCancellation.test.ts`) aborts while the index is building. If that call is ever moved, startup quietly continues on a cancelled signal, and nothing guards against it.
+**Fix:** Re-throw aborts in the rejection handler (`if (signal.aborted) throw error;`), or call `validateLifetime()` at the start of the handler. Add a cancellation case where `readCatalog` resolves, the NPC profile fetch is pending, the signal aborts, and the test expects `rejects.toHaveProperty("name", "AbortError")`.
+
+### Info
+
+### IN-401: Double blank line left where `failureMessage` was deleted
+
+**File:** `src/runtime/loadNativeSliceWorld.ts:69-70`
+**Issue:** The deletion left two consecutive empty lines between `NativeSliceWorldOptions` and `prepareFlames`.
+**Fix:** Remove one blank line.
+
+### IN-402: The acceptance check assumes `dispatch` emits its events synchronously, but the adapter contract does not say so
+
+**File:** `src/runtime/attachSandboxCommandSheet.ts:41-46`, `src/world/GameWorldAdapter.ts:6`
+**Issue:** `dispatchAndObserveAcceptance` unsubscribes as soon as `dispatch` returns. `GameWorldAdapter.dispatch(command): void` promises no synchronous emission, so a server-backed adapter would get every spawn, equip and cast labelled "rejected". The fixer marked this for human verification. It is recorded here so the limitation stays visible.
+**Fix:** When a server adapter lands, show the note when the matching event arrives, or on an explicit rejection event from the server, instead of inferring rejection when no event comes back.
+
+### IN-403: An ambiguous mesh match is labelled `not-in-catalog` even though the packages are in the catalog
+
+**File:** `src/assets/native/nativeCatalogIndex.ts:101-104`
+**Issue:** The note reads "npc:21622 not in catalog: mesh ... matches 2 converted packages (...)", and the status contradicts the reason. The `unavailableNativeCatalogIndex` lookups (`:85-88`) have the same mismatch.
+**Fix:** Consider a distinct lookup status such as `ambiguous` or `unavailable`, so callers and the sheet do not report converted packages as missing.
+
+### IN-404: The readout for an unresolved speed shows a meaningless "walk speed for the first 0 s" clause
+
+**File:** `src/ui/nativeLocomotionControls.ts:36-38`, `src/runtime/attachNativeSliceSheet.ts:119,272`
+**Issue:** For unresolved profiles, `runStartSeconds` comes from `SYNTHETIC_SLICE_SPEED` (0). The readout then says "0.70 m/s (walk speed for the first 0 s), speed unresolved", and the sheet description says "a run starts at walk speed for 0 s".
+**Fix:** Leave out the run-start clause when `isSourced` is false.
+
+---
+
+_Reviewed: 2026-11-08T11:17:16Z_
+_Reviewer: Claude (gsd-code-reviewer)_
+_Depth: standard_
+
+
+## Phase 1: Code review report (re-review, iteration 2)
+
+**Reviewed:** 2026-11-08T13:30:00Z
+**Depth:** standard
+**Files reviewed:** 37
+**Status:** issues_found
+
+### Summary
+
+Scope: only what commits `17a358d..HEAD` changed in the listed files. WR-309 and the original Info findings are excluded as instructed. I ran no repo scripts or test suites. Two read-only Python one-liners compared `recipes/reference-client-tree.lock.json` with `recipes/native-inputs.lock.json`, and a tokenizer pass scanned every touched `.py` file for comments and docstrings.
+
+Fix status per original finding:
+
+| Finding | Status | Evidence |
+|---|---|---|
+| CR-301 | Resolved | `scripts/reference_client_guard.py:71-74,118-123`: every root except the exact lock `referenceRoot` on the lock `referenceHost` now opens with `requires_lock=True` and checks `system/Engine.dll`. UNC, `\\?\`, admin-share and mapped spellings all fail closed. Tests at `tests/pipeline/test_reference_client_guard.py:128-183` cover this. |
+| CR-302 | Resolved | `scripts/native_catalog/cli.py:129-145`: the package goes through `require_equal_file` and the full UModel import closure is checked before UModel runs. `tests/pipeline/test_native_catalog_package_lock.py` checks that UModel is not called and no output is written. |
+| WR-301 | Resolved | `scripts/build_reference_client_lock.py:119-133`: host and normalised root are checked per side. Duplicated, swapped and foreign-host cases are tested. |
+| WR-302 | Resolved | `scripts/native_assets.py:171-178`: `clientBuild` is stamped only after the converted root's own `system/Engine.dll` hashes to the lock's `importaSha256`. Missing and differing cases are tested. |
+| WR-303 | Resolved in code, partly tested | `native_map.py:254-257,421-425,476`, `native_map_geometry.py:424,550,593`, `native_map_overlap.py:61-63,337,349,401`. See WR-504 for the untested overlap wiring. |
+| WR-304 | Resolved | `scripts/native_assets_lib/umodel_import_closure.py:9-10,48-51`: one owned error type, cause kept, and the guard error class stays distinct. |
+| WR-305 | Resolved | `scripts/build_dat_table_inventory.py:114-127`: the lock record decides the outcome, and other lock errors propagate to `main`. |
+| WR-306 | Resolved | `scripts/build_dat_table_inventory.py:122-124`: the source names `client_access.root` and adds `lock-equal` only when the lock applied. |
+| WR-307 | Resolved, one leftover constant | There is now one parser, `read_reference_client_lock`, and records are indexed by field name. The leftover duplicated lock path is IN-501. |
+| WR-308 | Resolved | `scripts/check-lane-ownership.mjs:133-134` uses `--no-renames -z`. The new test would fail without either flag. |
+| WR-310 | Partly resolved | The guard argument must now be the parsed option attribute. The "reads through the per-file lock check" part is still a whole-module presence check that the original CR-302 code passes (WR-501). |
+
+No new fail-open path was found in the guard itself. No comments, docstrings or dead code are left in the touched Python files or in `check-lane-ownership.mjs`. No forbidden workspace names were introduced.
+
+### Known consequence: snapshot roots now need the lock and `system/Engine.dll`
+
+- **Main snapshot `artifacts/native-parity/inputs/IMPORTA-PC`:** no existing caller breaks. All 143 files pinned in `recipes/native-inputs.lock.json`, including `system/Engine.dll` (`4dd2f63c...`), are class `equal` in the committed reference lock, and their `eSha256` matches the pinned SHA-256, so every pinned read passes the per-file check through the hash path. The only lock entries that are not `equal` and could sit in an IMPORTA-PC copy are `Start-LAN.cmd`, `Start-Tailscale.cmd`, `iwo/...dat`, `system/nwindow.dll`, `system/l2.zip`, `READ-ME.txt`, `Start-Client.ps1`, `Start-Debug.cmd` and `*.ini`. No script reads any of them (checked with grep). Callers that default to this root: `derive-native-map-model.py`, `derive-native-map-overlap.py`, `native_migration.py`, `prepare-native-player-aliases.py`, `report-native-animation-aliases.py`, `audit-native-footstep-config.py`, `export-native-map-audio.py`, `export-native-sounds.py`, the `native-pipeline-*.json` recipe roots passed by `native_batch_adapters.py`, and the snapshot tests (`test_native_bsp_building`, `test_native_bsp_floor`, `test_native_sky`, `test_native_map_geometry`, `test_native_presentations` `CLIENT`). The snapshot is gitignored and absent on this host, so this holds only while the DATABASE-PC copy matches its input lock.
+- **Research snapshot `artifacts/native-parity/research/npc-actor-profiles/inputs/IMPORTA-PC`:** this is not proven safe (WR-503).
+- **Cost:** a snapshot file's mtime almost never equals the E: `eModifiedNanoseconds`, so every snapshot read now re-hashes the whole file. That affects performance only, which is out of scope here.
+
+### Warnings
+
+### WR-501: The entry-point scan still passes the exact CR-302 defect, so its per-file check cannot fail for a mixed module
+
+**File:** `tests/pipeline/test_client_entry_points.py:107-117, 128, 149-152, 199-200`
+**Issue:** `index_module` computes `self.module_references[module_name]` with `referenced_definitions(module_name, module_tree, ...)`. That walks the whole module tree, including every function body. So `reaches_per_file_guard` returns True if `.require_equal_file` appears anywhere in the module, or if the module references any guarded definition anywhere. It does not show that the reads in the entry point go through the guard.
+
+Traced on the pre-fix `scripts/native_catalog/cli.py` (`git show 17a358d:scripts/native_catalog/cli.py`):
+1. Line 219 is `require_reference_client(args.client)`, so the option check passes.
+2. Line 251 calls `decode_table`, imported `from .tables`, which resolves to `('native_catalog.tables', 'decode_table')`.
+3. `decode_table` references `table_source_path`, whose body contains `.require_equal_file`, so propagation marks `decode_table` as guarded.
+
+The module therefore "reaches" the guard and the scan reports no failure, although `catalog_package` read, decoded and ran UModel on unguarded packages. The pre-fix `native_map.py` (WR-303) passes the same way through `MapSources.get` (line 272). The test name `test_every_client_entry_point_..._reads_through_the_per_file_lock_check` and the cited proof claim more than the check delivers. `guarded_client_destinations` (lines 64-67) also accepts any `<name>.<dest>` argument, so `require_reference_client(self.client)` in a class satisfies `--client` even if `main` never guards `args.client`.
+**Fix:** Either rename the test and its STATE.md citation to what it proves ("every client entry point guards its parsed option and touches the per-file check somewhere"), or add the behavioural test the original finding asked for. For each entry in `KNOWN_CLIENT_ENTRY_POINTS`, run its `main` against the `SyntheticReferenceClientTrees` conversion root with a request that reads `system/chargrp.dat` or `animations/Mage.ukx`, and assert `ReferenceClientLockError`. At minimum, restrict `guarded_client_destinations` to `call.args[0].value.id` equal to the name bound by `parser.parse_args(...)`, and add a synthetic case shaped like the pre-fix CLI (a guarded imported helper plus a raw `within(client, relative).read_bytes()` in another function) that must be flagged.
+
+### WR-502: A missing file under a lock-checked root orders a re-lock. Every non-reference root now hits this message
+
+**File:** `scripts/reference_client_guard.py:97-100` (reached from `open_reference_client_access` line 122)
+**Issue:** `require_lock_equal_record` turns any `OSError` from `os.stat` into `reference client lock is stale for <path>; re-lock ordered (FileNotFoundError)`. Before this fix, only E: reached that line. Now every root except the locked reference root does. Three cases give a wrong remediation:
+- A mistyped `--client`.
+- A partial or research snapshot without `system/Engine.dll` (WR-503).
+- A receipt dependency that was deleted from a snapshot (`native_map.verify_map` line 421 now runs the guard before its own "Map hash/length mismatch" check).
+
+In each case the message tells the integration thread to rerun the full-tree hash lock on DATABASE-PC, which is a heavy, schedule-bound job. The real fault is the selected root. AGENTS.md asks for clear errors at trust boundaries.
+**Fix:**
+```python
+        try:
+            status = os.stat(path)
+        except FileNotFoundError:
+            raise ReferenceClientLockError(
+                f'reference client root {self.root.as_posix()} has no {relative_path}; a lock-checked root must hold every file it reads') from None
+        except OSError as error:
+            raise ReferenceClientLockError(f'reference client lock is stale for {relative_path}; re-lock ordered ({type(error).__name__})') from error
+```
+Add a guard test that opens a root without `system/Engine.dll` and asserts the root-specific message.
+
+### WR-503: The research snapshot used by the npcname oracle tests is now a lock-checked root, and nothing shows it holds `system/Engine.dll`
+
+**File:** `tests/pipeline/test_native_presentations.py:24, 200-204, 231, 236, 247`
+**Issue:** `NPCNAME_CLIENT = ROOT / 'artifacts/native-parity/research/npc-actor-profiles/inputs/IMPORTA-PC'` is passed to `decode_table`. That calls `table_source_path`, then `require_reference_client(NPCNAME_CLIENT)`. The root is neither the reference root nor on IMPORTA-PC, so `open_reference_client_access` now requires `system/Engine.dll` there with the locked hash. The class skip guard checks only `system/npcname-e.dat`, `SCHEMA_ROOT` and `CRYPTO_SOURCE`. No committed lock or recipe records this research root's file set: `recipes/native-inputs.lock.json` covers only the main snapshot, and `docs/research/INDEX.md:80` lists only the README. On a host that holds this research root without `Engine.dll`, `NativeNpcNameTableTests.setUpClass` now errors with the misleading stale-lock message from WR-502 instead of running or skipping. I could not inspect the directory here, because `artifacts/` is gitignored and absent on PROMINENCE-PC. This is the one existing caller in the repo that the new snapshot rule may break. `system/npcname-e.dat` itself is `equal` in the lock (`84c79b73...`), so pointing the test at the main snapshot, which pins the same file and hash, would work.
+**Fix:** Point `NPCNAME_CLIENT` at the main snapshot `artifacts/native-parity/inputs/IMPORTA-PC`. It pins `system/npcname-e.dat` with the same SHA-256 the test asserts, plus `system/Engine.dll`. Then delete the research-root constant. If the research root has to stay, add `(NPCNAME_CLIENT / 'system/Engine.dll').is_file()` to the skip condition and record the decision.
+
+### WR-504: The WR-303 overlap-audit fix has no test that fails if its three call sites revert
+
+**File:** `scripts/native_map_overlap.py:337, 349, 401`; `tests/pipeline/test_native_map_lock.py:85-90`
+**Issue:** `test_overlap_audit_client_files_must_be_lock_equal` calls the new helper `verify_lock_equal_client_file` directly. Nothing calls `audit_overlap`: `tests/pipeline/test_native_map_overlap.py` imports only `parse_glb`, `select_overlaps`, `source_placement` and similar helpers. If any of the three `verify_lock_equal_client_file(client, ...)` calls in `audit_overlap` went back to `verify_file(client, ...)`, which is the WR-303 defect, no test would fail. The other WR-303 readers (`verify_map`, `verify_geometry`, `build_geometry`, `read_class_evidence`) are each exercised through their real entry function, so the overlap audit is the odd one out. AGENTS.md requires a test for each behaviour change.
+**Fix:** In `MapReadPathLockTests`, call `native_map_overlap.audit_overlap` with retained receipts whose `sourceDependencies` and raw `dependencies` name `system/chargrp.dat`, and assert `ReferenceClientLockError ... is differing, not equal` before any GLB parse. Alternatively, patch `native_map_overlap.verify_lock_equal_client_file` with a recording stub and assert that every client-side table goes through it.
+
+### Info
+
+### IN-501: The lock builder still defines its own copy of the lock path (WR-307 leftover)
+
+**File:** `scripts/build_reference_client_lock.py:13`
+**Issue:** `DEFAULT_LOCK_OUTPUT_PATH = REPOSITORY_ROOT / 'recipes' / 'reference-client-tree.lock.json'` duplicates `reference_client_guard.REFERENCE_CLIENT_LOCK_PATH` (line 8). The builder already imports from the guard for the field list and schema version.
+**Fix:** Import `REFERENCE_CLIENT_LOCK_PATH` from `reference_client_guard`, use it as the `--output` default, and delete the local constant.
+
+### IN-502: The catalog CLI repeats the converter's lock-equal package loader
+
+**File:** `scripts/native_catalog/cli.py:129-137`; `scripts/native_assets.py:159-192`
+**Issue:** `require_lock_equal_umodel_closure` rebuilds the same loader that `Converter.package` and `Converter.source` provide: index by stem, `resolve_package_path`, `require_equal_file`, then `Package(read_bytes)`. Only the index and resolve steps were moved into `umodel_import_closure.py`. Two owners now decide which file an import name loads and how it is lock-checked.
+**Fix:** Move a `lock_equal_package_loader(client_access)` factory into `native_assets_lib/umodel_import_closure.py` that returns `(path, Package)`. Use it in `cli.py` and have `Converter.package` call it, keeping only its dependency recording and cache.
+
+---
+
+_Reviewed: 2026-11-08T13:30:00Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
 
