@@ -1,0 +1,1477 @@
+{
+  "catalogSha256": "55c12147db306264deb2be33f6b9cd661d1376d12dc2aa6473be3700322972fe",
+  "environment": {
+    "files": [
+      {
+        "bytes": 3662,
+        "path": "conversion-manifest.json",
+        "sha256": "e10827c4e98daeed18062c9e85117a1f862a3e6dfcaad08638798f887081183d"
+      },
+      {
+        "bytes": 1820,
+        "path": "manifest.json",
+        "sha256": "6d23cdab2adb56110873ee1ab2c980038524504607a813949240cd66718b97b4"
+      },
+      {
+        "bytes": 232991,
+        "path": "sky-tables.json",
+        "sha256": "1dd8e88620ded38cc47e092fe68056dc2e12c3f8d1fdc2e2f7dad281c009151d"
+      }
+    ],
+    "manifestSha256": "e10827c4e98daeed18062c9e85117a1f862a3e6dfcaad08638798f887081183d"
+  },
+  "movers": {
+    "manifestSha256": "0de5d0831dd80866ccdef5084b0d658691ce81d9351222fba55257dc43b6e2e8",
+    "modelIds": [
+      "interlude:l2fortress_02_s.Fort02_indoor",
+      "interlude:l2fortress_02_s.fort02_wall_door"
+    ],
+    "moverIds": [
+      "interlude:20_20.Mover1",
+      "interlude:20_20.Mover192",
+      "interlude:20_20.Mover193",
+      "interlude:20_20.Mover194",
+      "interlude:20_20.Mover195",
+      "interlude:20_20.Mover24",
+      "interlude:20_20.Mover60",
+      "interlude:20_20.Mover61"
+    ],
+    "recordId": "map-20-20-movers",
+    "sourceMapSha256": "1beddad24c10a35a1b2e9151727a85158e3e01992299a6671de876645eb1f1e4",
+    "terrainSha256": "39417edb0294885ef6bd4107c85a917f6dcc4dc2985d11393bb41afa2e63a724"
+  },
+  "schemaVersion": 1,
+  "section": {
+    "bsp": [
+      {
+        "id": "interlude:20_20.Model798.Brush397",
+        "modelSha256": "1ac776f196e825e072bdd9bf9ff9d09c8253afdce85912b2217336baae4262c4",
+        "sourceBrush": "20_20.Brush397",
+        "sourceMapSha256": "1beddad24c10a35a1b2e9151727a85158e3e01992299a6671de876645eb1f1e4",
+        "sourceModel": "20_20.Model798",
+        "sourceSha256": "b67608e8face81bb6317ab9f1b6c554e55b03af4145e254a89a829f71aa2e719",
+        "supportPlacementIds": [
+          "interlude:20_20.StaticMeshActor940"
+        ],
+        "triangleCount": 28
+      },
+      {
+        "id": "interlude:20_20.Model798.Brush610.ceiling",
+        "modelSha256": "c9e575d4ee06eb4e3359c271aa078304f8cc595231ce46e85f0a8496e42c628d",
+        "sourceBrush": "20_20.Brush610",
+        "sourceMapSha256": "1beddad24c10a35a1b2e9151727a85158e3e01992299a6671de876645eb1f1e4",
+        "sourceModel": "20_20.Model798",
+        "sourceSha256": "6b847da3c285c9d0b33c43611090ddccd93e3c722ff0d30838288e7a716a3911",
+        "supportPlacementIds": [
+          "interlude:20_20.StaticMeshActor1913"
+        ],
+        "triangleCount": 6
+      },
+      {
+        "id": "interlude:20_20.Model798.Brush610.floor",
+        "modelSha256": "e0baac9da02c328d557a240f107a0a9f9d4277e3535a1ef221de9d842628bee0",
+        "sourceBrush": "20_20.Brush610",
+        "sourceMapSha256": "1beddad24c10a35a1b2e9151727a85158e3e01992299a6671de876645eb1f1e4",
+        "sourceModel": "20_20.Model798",
+        "sourceSha256": "3ff9d99e5b1c7fd725ec691022cedc0bad6c56becb727a0fae84d863120526fc",
+        "supportPlacementIds": [
+          "interlude:20_20.StaticMeshActor1913"
+        ],
+        "triangleCount": 6
+      },
+      {
+        "id": "interlude:20_20.Model798.Brush610.walls",
+        "modelSha256": "3688bf7913f763b53f6a28e5b8f9e5b1a309b9dc9f172d2c3b17a002c98c35e4",
+        "sourceBrush": "20_20.Brush610",
+        "sourceMapSha256": "1beddad24c10a35a1b2e9151727a85158e3e01992299a6671de876645eb1f1e4",
+        "sourceModel": "20_20.Model798",
+        "sourceSha256": "2a177662675b0ea3f8cbfc7de0162e88587f3d9b0c28682b1396c1be78a26286",
+        "supportPlacementIds": [
+          "interlude:20_20.StaticMeshActor1913"
+        ],
+        "triangleCount": 20
+      }
+    ],
+    "id": "map-20-20-section",
+    "manifestSha256": "2e73654e644bfe983021fbe5fdce01a907ac94c288702b4b7df77b4f74ee8d8a",
+    "modelCount": 62,
+    "models": [
+      {
+        "archiveSha256": "2bcf55b30efff7acfd0ea351549f94cc40f7f404d5f86d0f97ac86831f1376ed",
+        "id": "interlude:FX_E_S.Flameset.Default_Flame01",
+        "sourceObject": "FX_E_S.Flameset.Default_Flame01"
+      },
+      {
+        "archiveSha256": "4a800ae694cbf210835e14a3684763de8c0bc3258bdbce316f0bb7bda995ded3",
+        "id": "interlude:dion_tree_s.red_mt.dion_excute_tree1",
+        "sourceObject": "dion_tree_s.red_mt.dion_excute_tree1"
+      },
+      {
+        "archiveSha256": "920833a48fe3f72d3265b1a9d96700f9160b5409e7a771ee37c7f70ae748f496",
+        "id": "interlude:dion_tree_s.swamp.Dion_swamp_tree02",
+        "sourceObject": "dion_tree_s.swamp.Dion_swamp_tree02"
+      },
+      {
+        "archiveSha256": "f13ac8dceee62a8446f26f3ce5d6c208cf631def887d6f4be88802441ff4ec3f",
+        "id": "interlude:godard_village_s.godard_obj_box_B",
+        "sourceObject": "godard_village_s.godard_obj_box_B"
+      },
+      {
+        "archiveSha256": "240f5ccf3240dfc0faa21701df1ed21dd0c291d1626dafb3c43eda6c6d967e3b",
+        "id": "interlude:godard_village_s.godard_obj_box_C",
+        "sourceObject": "godard_village_s.godard_obj_box_C"
+      },
+      {
+        "archiveSha256": "5ceac2fb7b4f64e73726b8ef4b7953b1ab56acf7088ebd42ff4caf54b4c604fb",
+        "id": "interlude:godard_village_s.godard_obj_cart",
+        "sourceObject": "godard_village_s.godard_obj_cart"
+      },
+      {
+        "archiveSha256": "fa8248f6c57467c38d1c0c5d3c5ff23a56b622e995f931ca27fea8554c805264",
+        "id": "interlude:interior_aa_s.boox03_sadari",
+        "sourceObject": "interior_aa_s.boox03_sadari"
+      },
+      {
+        "archiveSha256": "02d269cff69d53f4f8137633b85abaae686b31e4cf463e5c00b3a97d594b5c82",
+        "id": "interlude:interior_aa_s.booxx",
+        "sourceObject": "interior_aa_s.booxx"
+      },
+      {
+        "archiveSha256": "5cbfef26964e7a85bcc8450382785d9039c7035bd65ab432f91e7baa103ea488",
+        "id": "interlude:interior_aa_s.booxx4",
+        "sourceObject": "interior_aa_s.booxx4"
+      },
+      {
+        "archiveSha256": "c5d72217d29da90acaa872c5bced3c09affae04abd38d72b6501f2e9377c0522",
+        "id": "interlude:interior_aa_s.boxgroup",
+        "sourceObject": "interior_aa_s.boxgroup"
+      },
+      {
+        "archiveSha256": "9b68fa499b2631f6fa0f44d8a3a68070d8745ac14872ce4d292adce62db03268",
+        "id": "interlude:interior_aa_s.boxgroup2",
+        "sourceObject": "interior_aa_s.boxgroup2"
+      },
+      {
+        "archiveSha256": "de78ea3f2a00278a726b7561ac7bce85a243168c50b045a43104ba3510ff4e75",
+        "id": "interlude:interior_aa_s.circlecarpet",
+        "sourceObject": "interior_aa_s.circlecarpet"
+      },
+      {
+        "archiveSha256": "f396876e596a19062f555c94d90d20b04d14aeaf8b9521de42d0def47db50ecb",
+        "id": "interlude:interior_aa_s.etcobject",
+        "sourceObject": "interior_aa_s.etcobject"
+      },
+      {
+        "archiveSha256": "2c21ce149c7f40630888fe7f792c4e25d03c2babe1614838e9485d3f1f89e700",
+        "id": "interlude:interior_aa_s.right_box",
+        "sourceObject": "interior_aa_s.right_box"
+      },
+      {
+        "archiveSha256": "b27a5c7aad141e431d277678c05b089dea43b67545a5ac8bb91b30baa951c97a",
+        "id": "interlude:interior_b_orc_s.Orc_in_weapon_04",
+        "sourceObject": "interior_b_orc_s.Orc_in_weapon_04"
+      },
+      {
+        "archiveSha256": "7522a731c9a1d690882516e6d14a01d5658ac56bc18ac9ee1544d97e680b64ba",
+        "id": "interlude:interior_b_s.interior_B_313",
+        "sourceObject": "interior_b_s.interior_B_313"
+      },
+      {
+        "archiveSha256": "c0a585fb17270a11d9890807cc277277872aef74b99f27a2333fb3912ce2464e",
+        "id": "interlude:l2fortress_01_s.Fort01_deffense",
+        "sourceObject": "l2fortress_01_s.Fort01_deffense"
+      },
+      {
+        "archiveSha256": "483ce5697be84237add849dd11e397324ff2d211e0665bca543c23f399eb54b0",
+        "id": "interlude:l2fortress_01_s.Fort01_medic_base",
+        "sourceObject": "l2fortress_01_s.Fort01_medic_base"
+      },
+      {
+        "archiveSha256": "cc83c7aab71fd08ca9ac0b6c0e3addf6142e58967eca2cf8f12c2b6fa7dd7f41",
+        "id": "interlude:l2fortress_01_s.Fort01_medic_cap",
+        "sourceObject": "l2fortress_01_s.Fort01_medic_cap"
+      },
+      {
+        "archiveSha256": "18ddd2a963844c2312c51fb629761fd41a0aaac1278dfb07c7911ba448af54b3",
+        "id": "interlude:l2fortress_01_s.Fort01_medic_pole",
+        "sourceObject": "l2fortress_01_s.Fort01_medic_pole"
+      },
+      {
+        "archiveSha256": "a394decfb4a512d8114000b96d9135b1f4f24d99ae41a668ebcb6cc157084eed",
+        "id": "interlude:l2fortress_01_s.Fort01_medic_trans",
+        "sourceObject": "l2fortress_01_s.Fort01_medic_trans"
+      },
+      {
+        "archiveSha256": "672b40c857e4f0cf8862381fb6f937b89330de3c6c8852fa467737f4029b1e03",
+        "id": "interlude:l2fortress_01_s.Fort01_protection",
+        "sourceObject": "l2fortress_01_s.Fort01_protection"
+      },
+      {
+        "archiveSha256": "43723ce4128f884b5ab5bfd3208289cb0080c86ef313c1865bc47baef1d74571",
+        "id": "interlude:l2fortress_01_s.Fort01_tower",
+        "sourceObject": "l2fortress_01_s.Fort01_tower"
+      },
+      {
+        "archiveSha256": "4a5ac9589ab0c3275d4f6ed9df19428e3912fd46791fdb0053f3e82f30fa15f9",
+        "id": "interlude:l2fortress_01_s.Fort01_tower_arrow",
+        "sourceObject": "l2fortress_01_s.Fort01_tower_arrow"
+      },
+      {
+        "archiveSha256": "8ebbe4ea7ebfe3c0dffbcf134524a8621efc84bddbe0eed26c331045d45f95a7",
+        "id": "interlude:l2fortress_01_s.Fort01_tower_stair",
+        "sourceObject": "l2fortress_01_s.Fort01_tower_stair"
+      },
+      {
+        "archiveSha256": "2ccc30e60d7cfc223cede91382881b1121e1b385b8649cfcaa127f580fca9433",
+        "id": "interlude:l2fortress_01_s.Fort01_warehouse",
+        "sourceObject": "l2fortress_01_s.Fort01_warehouse"
+      },
+      {
+        "archiveSha256": "7a39f65ba775d18067866603fb356d4de99094e63636fc5838c135fb816bdf54",
+        "id": "interlude:l2fortress_01_s.Fort02_warehouse_pole",
+        "sourceObject": "l2fortress_01_s.Fort02_warehouse_pole"
+      },
+      {
+        "archiveSha256": "3723bfc86d6766af51802ee5cd9c6ea4b0d5559cda185a041f09e32a9f74559a",
+        "id": "interlude:l2fortress_01_s.fort01_archer",
+        "sourceObject": "l2fortress_01_s.fort01_archer"
+      },
+      {
+        "archiveSha256": "bd7e2c136f4c8ef2e23399e2e953a682624e159354f65ad74ae46ab305b457cd",
+        "id": "interlude:l2fortress_01_s.fort01_archer_a",
+        "sourceObject": "l2fortress_01_s.fort01_archer_a"
+      },
+      {
+        "archiveSha256": "be2a6ca0b0a8bbdc32ff3f4b78134c5aeb256845312383a27be8af60567e27ef",
+        "id": "interlude:l2fortress_01_s.fort01_archer_stair",
+        "sourceObject": "l2fortress_01_s.fort01_archer_stair"
+      },
+      {
+        "archiveSha256": "84573fb544f918ed7bdac66e1db79f4c989f4f709b5cfbf764ded4f173c62499",
+        "id": "interlude:l2fortress_01_s.fort01_command_a",
+        "sourceObject": "l2fortress_01_s.fort01_command_a"
+      },
+      {
+        "archiveSha256": "f79fe77a2614d5c87e111dadc10c37c6b89de43b6cf83eb811ada5f7b88e8db9",
+        "id": "interlude:l2fortress_01_s.fort01_command_b",
+        "sourceObject": "l2fortress_01_s.fort01_command_b"
+      },
+      {
+        "archiveSha256": "cffc7165578218e5141a96d0bd3fb3d1a0e7b7f88143d3b11754be586f0678a5",
+        "id": "interlude:l2fortress_01_s.fort01_command_in",
+        "sourceObject": "l2fortress_01_s.fort01_command_in"
+      },
+      {
+        "archiveSha256": "74b66fadb94f591c03f6264c3468c6621db0d6bdcabac3b48093b0e9d27193ea",
+        "id": "interlude:l2fortress_01_s.fort01_command_in_obj05",
+        "sourceObject": "l2fortress_01_s.fort01_command_in_obj05"
+      },
+      {
+        "archiveSha256": "7d2a72fb9e9e52bb6227b81d94c667edca481259b8a36a7707087533e10b680f",
+        "id": "interlude:l2fortress_01_s.fort01_command_in_obj06",
+        "sourceObject": "l2fortress_01_s.fort01_command_in_obj06"
+      },
+      {
+        "archiveSha256": "4fa24698c348d05ab1bdc3bf3b6e6e6cfed87ec594e1e72b2f4494f2fd3c20d1",
+        "id": "interlude:l2fortress_01_s.fort01_command_in_obj07",
+        "sourceObject": "l2fortress_01_s.fort01_command_in_obj07"
+      },
+      {
+        "archiveSha256": "8d8d4a32d0f411575264fa57747675653718ba735400ef6390833df705e7e04a",
+        "id": "interlude:l2fortress_01_s.fort01_command_in_obj08",
+        "sourceObject": "l2fortress_01_s.fort01_command_in_obj08"
+      },
+      {
+        "archiveSha256": "3b85abd7d457e8a72092cb7f2309268d286e5bd0163613aab038b9863dccc5ba",
+        "id": "interlude:l2fortress_01_s.fort01_command_in_obj09",
+        "sourceObject": "l2fortress_01_s.fort01_command_in_obj09"
+      },
+      {
+        "archiveSha256": "1f7eeff2bc8dc377241429abb1d3a6877269cef4a6db67935ebd789a00c3f08d",
+        "id": "interlude:l2fortress_01_s.fort01_command_in_stair",
+        "sourceObject": "l2fortress_01_s.fort01_command_in_stair"
+      },
+      {
+        "archiveSha256": "cd9b26f39da84c3962da32f12f92a3ed941d070dd54ae319b5fd08b4c757a221",
+        "id": "interlude:l2fortress_01_s.fort01_command_stair01",
+        "sourceObject": "l2fortress_01_s.fort01_command_stair01"
+      },
+      {
+        "archiveSha256": "f3c9682a85d899bab0db5ecfc0a38fdaeeac0d9e382e482cedb04710dc940c3b",
+        "id": "interlude:l2fortress_01_s.fort01_command_stair02",
+        "sourceObject": "l2fortress_01_s.fort01_command_stair02"
+      },
+      {
+        "archiveSha256": "9cdaf78a82837dca3558b4e98b170a103c81d8bd2c36c1c0b0601c8416267869",
+        "id": "interlude:l2fortress_01_s.fort01_wall_deco01",
+        "sourceObject": "l2fortress_01_s.fort01_wall_deco01"
+      },
+      {
+        "archiveSha256": "21ebd0e17f7349ca062586f7a5759ae16864d3517d26ffd292f69e1e10571d45",
+        "id": "interlude:l2fortress_01_s.fort01_wall_deco02",
+        "sourceObject": "l2fortress_01_s.fort01_wall_deco02"
+      },
+      {
+        "archiveSha256": "c25e8ccce1bfde387acb6d41df5ff9253d79f9cfee9c322613cc3d13bea95c8a",
+        "id": "interlude:l2fortress_01_s.fort01_wall_deco03",
+        "sourceObject": "l2fortress_01_s.fort01_wall_deco03"
+      },
+      {
+        "archiveSha256": "c336148c8c2423fc6f188ab984c4ffc6a312e62516ba3445b41b5aa6fb599e7e",
+        "id": "interlude:l2fortress_01_s.fort01_wall_square02",
+        "sourceObject": "l2fortress_01_s.fort01_wall_square02"
+      },
+      {
+        "archiveSha256": "1ca539e935ebf431b0305f9489118a793bc5f6eb16e4b1f342696ec2b6d6cfb2",
+        "id": "interlude:l2fortress_02_s.Fort02_medic_bed",
+        "sourceObject": "l2fortress_02_s.Fort02_medic_bed"
+      },
+      {
+        "archiveSha256": "4bd4f43f50bec3660bb7ec55159fd0eb7c145fd67f243fc7f38a791c0ecbdf4c",
+        "id": "interlude:l2fortress_02_s.fort02_jail",
+        "sourceObject": "l2fortress_02_s.fort02_jail"
+      },
+      {
+        "archiveSha256": "ab8c386b708c1162b12c4ec87053503283effdcc88354c7fa061260002a17f7a",
+        "id": "interlude:old_war_s.Belfry_01",
+        "sourceObject": "old_war_s.Belfry_01"
+      },
+      {
+        "archiveSha256": "5d5959e60d4d5e4c35ae5ae2215a3a36e20fd6da5f76b6540c217f6ba0ac84a4",
+        "id": "interlude:old_war_s.Belfry_03",
+        "sourceObject": "old_war_s.Belfry_03"
+      },
+      {
+        "archiveSha256": "96f64b615402f3c46388bd2009330dc6ff4fc000c573aa6d3a6076e134efbe23",
+        "id": "interlude:old_war_s.WatchTower01",
+        "sourceObject": "old_war_s.WatchTower01"
+      },
+      {
+        "archiveSha256": "acc6338f9320fa85b27169366b69d095fc36c340bef41122e54ab0d5672e1872",
+        "id": "interlude:old_war_s.barricade03",
+        "sourceObject": "old_war_s.barricade03"
+      },
+      {
+        "archiveSha256": "bdb5d6282050aa536b3faec3afa78447ff7329377baac83f3baa277d337dec57",
+        "id": "interlude:old_war_s.barricade06",
+        "sourceObject": "old_war_s.barricade06"
+      },
+      {
+        "archiveSha256": "4d8446f13c39c7d78a737fa879e1022aab786e72dc3cd5c8a4bcec5f3b0cce29",
+        "id": "interlude:old_war_s.catapult_human",
+        "sourceObject": "old_war_s.catapult_human"
+      },
+      {
+        "archiveSha256": "b10b95415c03ad9709eae6ad4bbc73c4a072dc59c3092461004d6c42182f4ea8",
+        "id": "interlude:oren_tree_s.Elf_Colors.Oren_elf_tree02",
+        "sourceObject": "oren_tree_s.Elf_Colors.Oren_elf_tree02"
+      },
+      {
+        "archiveSha256": "6b204942da4e8d66d505c52deffa096cc529f60decfa2a2ab3bbdc82e7191252",
+        "id": "interlude:oren_tree_s.Elf_Colors.Oren_elf_tree03",
+        "sourceObject": "oren_tree_s.Elf_Colors.Oren_elf_tree03"
+      },
+      {
+        "archiveSha256": "9a7db0e2c5905a3d644302b55cb0d27098841e350d2965f75f4a3d169bd433be",
+        "id": "interlude:oren_tree_s.Elf_Colors.Oren_elf_tree05",
+        "sourceObject": "oren_tree_s.Elf_Colors.Oren_elf_tree05"
+      },
+      {
+        "archiveSha256": "672b6ce85e8ed19c1d7cc0e4d9917ff5670ed07ac24c8ecce1a57faf8d7d99f0",
+        "id": "interlude:oren_tree_s.Elf_Colors.Oren_elf_tree08",
+        "sourceObject": "oren_tree_s.Elf_Colors.Oren_elf_tree08"
+      },
+      {
+        "archiveSha256": "b7f55a8be67be0d22d4f835a421138c68bcdd76af48eb8ffccdbf570f8273b30",
+        "id": "interlude:oren_tree_s.Elf_Colors.Oren_elf_tree09",
+        "sourceObject": "oren_tree_s.Elf_Colors.Oren_elf_tree09"
+      },
+      {
+        "archiveSha256": "9adaaaf134e0bd5f790c855a8ce2f6bb8c64c55637a587a9f507e13345cf5f02",
+        "id": "interlude:oren_tree_s.Elf_Colors.Oren_elf_tree13",
+        "sourceObject": "oren_tree_s.Elf_Colors.Oren_elf_tree13"
+      },
+      {
+        "archiveSha256": "902accfc114d5aa9b1e154361e2977a218f3265dae50b863ec90f2c0877984bc",
+        "id": "interlude:ruins_renewal_s.Rebuild_pulley",
+        "sourceObject": "ruins_renewal_s.Rebuild_pulley"
+      },
+      {
+        "archiveSha256": "557d2c517553d970931729c87444057d99b980909f060ccf5438e56db2092c3e",
+        "id": "interlude:rune_village_s.rune_c_amorboard",
+        "sourceObject": "rune_village_s.rune_c_amorboard"
+      },
+      {
+        "archiveSha256": "7f6345caecfb18568f0bfb4e5e27604b6343ec6e94ac8ab0d334faa946b20365",
+        "id": "interlude:v_obj_orc_s.Orc_Obj_weapon",
+        "sourceObject": "v_obj_orc_s.Orc_Obj_weapon"
+      }
+    ],
+    "placementCount": 157,
+    "placements": [
+      {
+        "id": "interlude:20_20.StaticMeshActor1000",
+        "matrixCanonicalSha256": "28d5eb63550258583c3e06caa02a5e3996bb61b1c19b7382974998dd85c5a706",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco02",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco02"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1001",
+        "matrixCanonicalSha256": "6b0ed351250bfa1d7cb7692a4ba0da42ca815bddf5dbc98e0de3ce6cbf9b8153",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco02",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco02"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1002",
+        "matrixCanonicalSha256": "e3a8f8b364e442dd1a19645d74318d48d4116dfebc50f5d837595ca99e3e975d",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco01",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1003",
+        "matrixCanonicalSha256": "52f20f78d3259575e63fddf97e9daa8f441830915217cb6471773ddee963c7df",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco01",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1015",
+        "matrixCanonicalSha256": "f3fbb5ea45f256865dfe618ba23572e3733d2507251139d0ab576fe96f94d976",
+        "modelId": "interlude:v_obj_orc_s.Orc_Obj_weapon",
+        "sourceMesh": "V_Obj_Orc_S.Orc_Obj_weapon"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1016",
+        "matrixCanonicalSha256": "c0c9b295c0d192fa75ea8806d5c4eb5d95c9eae4d1ab2dfb59e29441026c819d",
+        "modelId": "interlude:interior_b_orc_s.Orc_in_weapon_04",
+        "sourceMesh": "interior_B_orc_S.Orc_in_weapon_04"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1019",
+        "matrixCanonicalSha256": "31b936adfecef436ce34d2d50c27bac23c4ccbd8d41c5bb0ad43af00c47720b7",
+        "modelId": "interlude:old_war_s.catapult_human",
+        "sourceMesh": "Old_War_s.catapult_human"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1020",
+        "matrixCanonicalSha256": "325411441d2e4429c5c00b7dd6e2931b76beb36eb2bb4f16c2b7187c0e249409",
+        "modelId": "interlude:old_war_s.catapult_human",
+        "sourceMesh": "Old_War_s.catapult_human"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1021",
+        "matrixCanonicalSha256": "99bc9295192edff2612bbaa00241ab2587faf5a21408ace55994eedc7d773187",
+        "modelId": "interlude:old_war_s.catapult_human",
+        "sourceMesh": "Old_War_s.catapult_human"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1027",
+        "matrixCanonicalSha256": "fa75d26c4476ab1005e798be87ea3b31560143b5c8df1c6455685f7836397943",
+        "modelId": "interlude:old_war_s.Belfry_03",
+        "sourceMesh": "Old_War_s.Belfry_03"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1028",
+        "matrixCanonicalSha256": "2ecef76bc7316eeba2a1b057733463aac077e7f19c9993073595411c0d199974",
+        "modelId": "interlude:old_war_s.Belfry_03",
+        "sourceMesh": "Old_War_s.Belfry_03"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1029",
+        "matrixCanonicalSha256": "97260d8200f9b7c2fd0874a739e2d6cab2ae1804dc4d14fa801d0cadcdb59c3f",
+        "modelId": "interlude:old_war_s.Belfry_01",
+        "sourceMesh": "Old_War_s.Belfry_01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1030",
+        "matrixCanonicalSha256": "3653cd0b81e25cd15c7403b59899409279fda0694bb9239dd64328a756a10a16",
+        "modelId": "interlude:old_war_s.Belfry_01",
+        "sourceMesh": "Old_War_s.Belfry_01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1031",
+        "matrixCanonicalSha256": "4acdd94dea1961f91ae09905dbc432b9fd90b65524c15aec2364d8f4cd47ba9a",
+        "modelId": "interlude:old_war_s.WatchTower01",
+        "sourceMesh": "Old_War_s.WatchTower01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1032",
+        "matrixCanonicalSha256": "2e1dc54082f2daa6deb9179d2a4ecd6e3ff02b8d44ea68add5e05e4d7e12ff7d",
+        "modelId": "interlude:old_war_s.WatchTower01",
+        "sourceMesh": "Old_War_s.WatchTower01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1034",
+        "matrixCanonicalSha256": "b4cef21626f1ae8011bec3ba6478f58b43537ab8b50edae3eb97297ab7f62571",
+        "modelId": "interlude:old_war_s.WatchTower01",
+        "sourceMesh": "Old_War_s.WatchTower01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1035",
+        "matrixCanonicalSha256": "4ea85f0724cfa20e75788b30f54cc1022eec633ffe0b09f94acd804f3e2b92b3",
+        "modelId": "interlude:old_war_s.WatchTower01",
+        "sourceMesh": "Old_War_s.WatchTower01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1037",
+        "matrixCanonicalSha256": "3a522981a170242b75a6f6f58a17dd049bb4400da5affefd8a3712e8f89d847c",
+        "modelId": "interlude:interior_aa_s.circlecarpet",
+        "sourceMesh": "interior_Aa_s.circlecarpet"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1044",
+        "matrixCanonicalSha256": "06b77abc2598ea81ae1036e32ec2385c2eb998ed37223a5e09bb2f428a925823",
+        "modelId": "interlude:rune_village_s.rune_c_amorboard",
+        "sourceMesh": "Rune_Village_S.rune_c_amorboard"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1045",
+        "matrixCanonicalSha256": "76c7557ec0a974eb606db01010aea4e6dceffe52eabd79cd5236261400b00541",
+        "modelId": "interlude:interior_aa_s.booxx4",
+        "sourceMesh": "interior_Aa_s.booxx4"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1046",
+        "matrixCanonicalSha256": "2fe87f1b743cc9b7b33800b60fec519d9ebef04844ff10ed821ea556cfeeec3d",
+        "modelId": "interlude:interior_aa_s.boox03_sadari",
+        "sourceMesh": "interior_Aa_s.boox03_sadari"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1047",
+        "matrixCanonicalSha256": "699d177fe33c441c5575202e2d4351d4470f8e442d9d43feb65010791b072ab6",
+        "modelId": "interlude:interior_aa_s.right_box",
+        "sourceMesh": "interior_Aa_s.right_box"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1048",
+        "matrixCanonicalSha256": "d756dd2e3020c30625693002cdd875dcd8b5ec528f66955c03236326fb35343d",
+        "modelId": "interlude:interior_aa_s.boxgroup2",
+        "sourceMesh": "interior_Aa_s.boxgroup2"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1049",
+        "matrixCanonicalSha256": "172b3d98071b11d83eadbcab80a33da558aabac680cd58f1d4ec07551eb74db5",
+        "modelId": "interlude:interior_aa_s.etcobject",
+        "sourceMesh": "interior_Aa_s.etcobject"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1063",
+        "matrixCanonicalSha256": "d8f0af9914aff4c1a4e3fb545080387e09cbd55a013f60aa099b55e73b0ccfec",
+        "modelId": "interlude:ruins_renewal_s.Rebuild_pulley",
+        "sourceMesh": "Ruins_Renewal_s.Rebuild_pulley"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1771",
+        "matrixCanonicalSha256": "ea8b28e69f80246ee167d24899fb2a5a4a5bf40a11a3130f016f2c32b28fd671",
+        "modelId": "interlude:oren_tree_s.Elf_Colors.Oren_elf_tree13",
+        "sourceMesh": "Oren_tree_S.Elf_Colors.Oren_elf_tree13"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1909",
+        "matrixCanonicalSha256": "816701048bc3487af098272ca0bc2e20048795fb6d3d846982c688a9a3924088",
+        "modelId": "interlude:l2fortress_01_s.fort01_command_b",
+        "sourceMesh": "L2fortress_01_S.fort01_command_b"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1910",
+        "matrixCanonicalSha256": "6d8fabe090abc6f5b5b74f68a29bebe59f4b0aaa6ecd40cd7b423318a9ea48d3",
+        "modelId": "interlude:l2fortress_01_s.fort01_command_stair01",
+        "sourceMesh": "L2fortress_01_S.fort01_command_stair01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1911",
+        "matrixCanonicalSha256": "6d8fabe090abc6f5b5b74f68a29bebe59f4b0aaa6ecd40cd7b423318a9ea48d3",
+        "modelId": "interlude:l2fortress_01_s.fort01_command_stair02",
+        "sourceMesh": "L2fortress_01_S.fort01_command_stair02"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1912",
+        "matrixCanonicalSha256": "6d8fabe090abc6f5b5b74f68a29bebe59f4b0aaa6ecd40cd7b423318a9ea48d3",
+        "modelId": "interlude:l2fortress_01_s.fort01_command_a",
+        "sourceMesh": "L2fortress_01_S.fort01_command_a"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1913",
+        "matrixCanonicalSha256": "286f2a7720f2cac4f662e6fe10e71b919c9e3c99f803378c12992268a214f7b3",
+        "modelId": "interlude:l2fortress_01_s.fort01_command_in",
+        "sourceMesh": "L2fortress_01_S.fort01_command_in"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1914",
+        "matrixCanonicalSha256": "286f2a7720f2cac4f662e6fe10e71b919c9e3c99f803378c12992268a214f7b3",
+        "modelId": "interlude:l2fortress_01_s.fort01_command_in_stair",
+        "sourceMesh": "L2fortress_01_S.fort01_command_in_stair"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1915",
+        "matrixCanonicalSha256": "90f1d8596473dff65b4d67eebf8ce206a817ee9c0ae7dfebb1daa1d46b66eb33",
+        "modelId": "interlude:l2fortress_01_s.fort01_command_in_obj05",
+        "sourceMesh": "L2fortress_01_S.fort01_command_in_obj05"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1916",
+        "matrixCanonicalSha256": "8ff0811f2a6fddfda73b3875c5db27977d91450b7d9fa4c9141381a5087981f9",
+        "modelId": "interlude:l2fortress_01_s.fort01_command_in_obj05",
+        "sourceMesh": "L2fortress_01_S.fort01_command_in_obj05"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1917",
+        "matrixCanonicalSha256": "f2302796a5170358468f87464ec10990d1fff221bfd5882ba244cc90f008530f",
+        "modelId": "interlude:l2fortress_01_s.fort01_command_in_obj05",
+        "sourceMesh": "L2fortress_01_S.fort01_command_in_obj05"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1918",
+        "matrixCanonicalSha256": "3f34a79e5349f2335f1937a5d8c416ea43081661ee14f421f3681e8a2cbb7c78",
+        "modelId": "interlude:l2fortress_01_s.fort01_command_in_obj05",
+        "sourceMesh": "L2fortress_01_S.fort01_command_in_obj05"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1919",
+        "matrixCanonicalSha256": "6aa9209c52cd7eafe237f7422045d8dbe98c49bd851c3e9edf96672ac841a52f",
+        "modelId": "interlude:l2fortress_01_s.fort01_command_in_obj05",
+        "sourceMesh": "L2fortress_01_S.fort01_command_in_obj05"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1920",
+        "matrixCanonicalSha256": "b1b48dd6f02d52b3cbe8dabdbe67708b4a064d904fe0426e094f1552522a2503",
+        "modelId": "interlude:l2fortress_01_s.fort01_command_in_obj05",
+        "sourceMesh": "L2fortress_01_S.fort01_command_in_obj05"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1921",
+        "matrixCanonicalSha256": "7d0b9e0ac0178bda1a7b390ae26fe2f927f767f6d8c49bf0dbbba10c5c85f710",
+        "modelId": "interlude:l2fortress_01_s.fort01_command_in_obj06",
+        "sourceMesh": "L2fortress_01_S.fort01_command_in_obj06"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1922",
+        "matrixCanonicalSha256": "2cb8bbcfe15a0abd034986245f4415980ac517b1cbba453ad4d602e5ce3b3fd3",
+        "modelId": "interlude:FX_E_S.Flameset.Default_Flame01",
+        "sourceMesh": "FX_E_S.Flameset.Default_Flame01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1923",
+        "matrixCanonicalSha256": "3f4089715626915549603251b1e1bfbe56bfd6c6560daed913b72dab4a0d06d8",
+        "modelId": "interlude:FX_E_S.Flameset.Default_Flame01",
+        "sourceMesh": "FX_E_S.Flameset.Default_Flame01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1924",
+        "matrixCanonicalSha256": "d60784ffd6225f97c19d248d09279e7e92ac885089baedaa96fcadd669e65ed3",
+        "modelId": "interlude:FX_E_S.Flameset.Default_Flame01",
+        "sourceMesh": "FX_E_S.Flameset.Default_Flame01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1925",
+        "matrixCanonicalSha256": "b0560b8a0ff3809ab604d5010a6ba8f6573d0e65be319a1caf826e20c4e4231c",
+        "modelId": "interlude:FX_E_S.Flameset.Default_Flame01",
+        "sourceMesh": "FX_E_S.Flameset.Default_Flame01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1926",
+        "matrixCanonicalSha256": "f4710fb0b7d63ddc58937b5a1e1ee71061a01c9613a96d142c707c5726a69dbd",
+        "modelId": "interlude:FX_E_S.Flameset.Default_Flame01",
+        "sourceMesh": "FX_E_S.Flameset.Default_Flame01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1927",
+        "matrixCanonicalSha256": "0d2216941350cf9f035288ad642016fb0aefdb17a0705d829e5606fde7bf3157",
+        "modelId": "interlude:FX_E_S.Flameset.Default_Flame01",
+        "sourceMesh": "FX_E_S.Flameset.Default_Flame01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1928",
+        "matrixCanonicalSha256": "bdbfc97fb7b8c5211700174dbea10b5ff059375aa89e43698af41e99b8b035e7",
+        "modelId": "interlude:FX_E_S.Flameset.Default_Flame01",
+        "sourceMesh": "FX_E_S.Flameset.Default_Flame01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1929",
+        "matrixCanonicalSha256": "955ed47b2b6a77a8a5ce449058e5219f0b6e4fcf32a8bdd23b5f0cb4e8843824",
+        "modelId": "interlude:l2fortress_01_s.fort01_command_in_obj06",
+        "sourceMesh": "L2fortress_01_S.fort01_command_in_obj06"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1930",
+        "matrixCanonicalSha256": "a4b7ab88451314dd654f5a422c9a2b35d103968b0dce3ef19530e2ff7670832d",
+        "modelId": "interlude:FX_E_S.Flameset.Default_Flame01",
+        "sourceMesh": "FX_E_S.Flameset.Default_Flame01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1931",
+        "matrixCanonicalSha256": "1a10eb223a8882448f03b0a6aecc3bf82fc35a95bf29d88374c3cc485fe7509e",
+        "modelId": "interlude:l2fortress_01_s.fort01_command_in_obj06",
+        "sourceMesh": "L2fortress_01_S.fort01_command_in_obj06"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1932",
+        "matrixCanonicalSha256": "3ee92e34a824a56b44c38636e5bfc268e9a62fc21dbba1f6d39fe253de740160",
+        "modelId": "interlude:FX_E_S.Flameset.Default_Flame01",
+        "sourceMesh": "FX_E_S.Flameset.Default_Flame01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1933",
+        "matrixCanonicalSha256": "f48ee034fb29b342a66616baebf48279d1acaad647ace2de48729fcd501fb219",
+        "modelId": "interlude:l2fortress_01_s.fort01_command_in_obj06",
+        "sourceMesh": "L2fortress_01_S.fort01_command_in_obj06"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1934",
+        "matrixCanonicalSha256": "45ac0f9443a6a5efe38ea3e62940918afd08c1f59150e26858e9a62c8f01ecc9",
+        "modelId": "interlude:FX_E_S.Flameset.Default_Flame01",
+        "sourceMesh": "FX_E_S.Flameset.Default_Flame01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1935",
+        "matrixCanonicalSha256": "ccdb5dfb308d86799ed2fc0967281eafe5d2368ae358b33f7254983a39a16fd0",
+        "modelId": "interlude:l2fortress_01_s.fort01_command_in_obj06",
+        "sourceMesh": "L2fortress_01_S.fort01_command_in_obj06"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1936",
+        "matrixCanonicalSha256": "f97736df46e6c533a6a4fc058d967e8af1615df51f3152de6b2c60b7b8c55af6",
+        "modelId": "interlude:FX_E_S.Flameset.Default_Flame01",
+        "sourceMesh": "FX_E_S.Flameset.Default_Flame01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1937",
+        "matrixCanonicalSha256": "2ada41f107cf92bcc774aa59a7e9aaeba15a74c640980622ec9f1f26255d1810",
+        "modelId": "interlude:l2fortress_01_s.fort01_command_in_obj06",
+        "sourceMesh": "L2fortress_01_S.fort01_command_in_obj06"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1938",
+        "matrixCanonicalSha256": "2270d0385d34cf0cb1cbb57661dd03c222641410a0504590211f8272f2146219",
+        "modelId": "interlude:FX_E_S.Flameset.Default_Flame01",
+        "sourceMesh": "FX_E_S.Flameset.Default_Flame01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1939",
+        "matrixCanonicalSha256": "d68c02d89d016d8ea194e0a6661401e38f172108e4308dcdd5f41ed021173e50",
+        "modelId": "interlude:l2fortress_01_s.fort01_command_in_obj09",
+        "sourceMesh": "L2fortress_01_S.fort01_command_in_obj09"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1940",
+        "matrixCanonicalSha256": "145191cf6bd9cb2afd82471edf68ce3e69d6de21af019ef5cf10e7ff4bb029b8",
+        "modelId": "interlude:rune_village_s.rune_c_amorboard",
+        "sourceMesh": "Rune_Village_S.rune_c_amorboard"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1941",
+        "matrixCanonicalSha256": "128f51b9729283aaa861387d6b21d0f2c90771d530180e423924d3d6ca8eee08",
+        "modelId": "interlude:interior_aa_s.right_box",
+        "sourceMesh": "interior_Aa_s.right_box"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1942",
+        "matrixCanonicalSha256": "8a27a1392597f4a5c17ec5850cc7a10fbb77c64796cd1064c74bb25e65b71c8e",
+        "modelId": "interlude:interior_aa_s.booxx4",
+        "sourceMesh": "interior_Aa_s.booxx4"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1943",
+        "matrixCanonicalSha256": "f6813924e49dffd1dd75102a073638346f8d9ec34f475326c726a4e04e95f85b",
+        "modelId": "interlude:l2fortress_01_s.fort01_command_in_obj09",
+        "sourceMesh": "L2fortress_01_S.fort01_command_in_obj09"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1944",
+        "matrixCanonicalSha256": "f66f20809ba0e99150d7705b971c9a98b900a94aa3df9c21dd5eddf8058430cc",
+        "modelId": "interlude:interior_aa_s.boxgroup2",
+        "sourceMesh": "interior_Aa_s.boxgroup2"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1945",
+        "matrixCanonicalSha256": "6a0da6595f42683e04f8258d13b55332d26e89cb26c1c2200e092e97a2793615",
+        "modelId": "interlude:l2fortress_01_s.fort01_command_in_obj08",
+        "sourceMesh": "L2fortress_01_S.fort01_command_in_obj08"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1946",
+        "matrixCanonicalSha256": "7d66363bf15bf47e8177f672793b934009067303911c6121b18c1b58791ba561",
+        "modelId": "interlude:l2fortress_01_s.fort01_command_in_obj08",
+        "sourceMesh": "L2fortress_01_S.fort01_command_in_obj08"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1947",
+        "matrixCanonicalSha256": "4a3233a7813346e4434602a51f0571af8fee746c405cc328e81cee32bcbbc084",
+        "modelId": "interlude:interior_aa_s.booxx",
+        "sourceMesh": "interior_Aa_s.booxx"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1948",
+        "matrixCanonicalSha256": "d1b04006f93ddc8be04c726b7b3b7c6481b8c0aa0a48ab649ff3da3087e895dc",
+        "modelId": "interlude:l2fortress_01_s.fort01_command_in_obj07",
+        "sourceMesh": "L2fortress_01_S.fort01_command_in_obj07"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1949",
+        "matrixCanonicalSha256": "ed8fe979bb8891cf904ab68c6619d0ab29aae9f66cabe1ae8d39fd3ecbd05018",
+        "modelId": "interlude:l2fortress_01_s.fort01_command_in_obj09",
+        "sourceMesh": "L2fortress_01_S.fort01_command_in_obj09"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1950",
+        "matrixCanonicalSha256": "beb2d9c38c772125939ee8619e4a6e7a4d48aaa5e0b3ca695f669de946f3bd47",
+        "modelId": "interlude:l2fortress_01_s.fort01_command_in_obj08",
+        "sourceMesh": "L2fortress_01_S.fort01_command_in_obj08"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1951",
+        "matrixCanonicalSha256": "591b21f7ae0ce036cd6dba82c96428a074cfcd94a327c67ed73735553c0ddbc9",
+        "modelId": "interlude:interior_aa_s.boxgroup",
+        "sourceMesh": "interior_Aa_s.boxgroup"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor1952",
+        "matrixCanonicalSha256": "9dd2dc858c19cb88fb781a30bbec2a24f320fe1aee1b369b38c178faf78cf8bf",
+        "modelId": "interlude:l2fortress_01_s.fort01_command_in_obj08",
+        "sourceMesh": "L2fortress_01_S.fort01_command_in_obj08"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor2064",
+        "matrixCanonicalSha256": "55ade9b2b01e347d1a1a5c8c04bcced3fe2b29a312896c2ee78ed9dc5d6c8bdb",
+        "modelId": "interlude:oren_tree_s.Elf_Colors.Oren_elf_tree08",
+        "sourceMesh": "Oren_tree_S.Elf_Colors.Oren_elf_tree08"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor2218",
+        "matrixCanonicalSha256": "d2602fbfb912fa2dd0e1b3ff108b4793a8c6c90eaa05d2a62a631b53a3a9306b",
+        "modelId": "interlude:oren_tree_s.Elf_Colors.Oren_elf_tree08",
+        "sourceMesh": "Oren_tree_S.Elf_Colors.Oren_elf_tree08"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor2270",
+        "matrixCanonicalSha256": "4825d783b735fd1796990736847e8dfbc7986132de8a2b3c29ae38952a6346a7",
+        "modelId": "interlude:oren_tree_s.Elf_Colors.Oren_elf_tree05",
+        "sourceMesh": "Oren_tree_S.Elf_Colors.Oren_elf_tree05"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor2287",
+        "matrixCanonicalSha256": "671cabe3ff2e040b2f7d48e489328839942098bcd7930c9cf27e3873d6e3bb48",
+        "modelId": "interlude:oren_tree_s.Elf_Colors.Oren_elf_tree03",
+        "sourceMesh": "Oren_tree_S.Elf_Colors.Oren_elf_tree03"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor3258",
+        "matrixCanonicalSha256": "663cf13e599c4b3e1894a39ef5dcad15dc67cdbf62aeda15900e6e7c36b8a6d8",
+        "modelId": "interlude:oren_tree_s.Elf_Colors.Oren_elf_tree09",
+        "sourceMesh": "Oren_tree_S.Elf_Colors.Oren_elf_tree09"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor3259",
+        "matrixCanonicalSha256": "c6df000c9f68bd525b99081451a91a3663749418d1d19518f8d0b78f09db2ca9",
+        "modelId": "interlude:oren_tree_s.Elf_Colors.Oren_elf_tree09",
+        "sourceMesh": "Oren_tree_S.Elf_Colors.Oren_elf_tree09"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor3261",
+        "matrixCanonicalSha256": "0cd9e75f8266f36434f497450c72d0ec7aec3ac6ae9e7dad0bbb54669474235d",
+        "modelId": "interlude:oren_tree_s.Elf_Colors.Oren_elf_tree09",
+        "sourceMesh": "Oren_tree_S.Elf_Colors.Oren_elf_tree09"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor3690",
+        "matrixCanonicalSha256": "7fa4de7f1fb333236d14bdfd554c8b58703e294bff094b73c92583ab854e7dc0",
+        "modelId": "interlude:dion_tree_s.swamp.Dion_swamp_tree02",
+        "sourceMesh": "Dion_tree_S.swamp.Dion_swamp_tree02"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor3691",
+        "matrixCanonicalSha256": "56242e44a4e5ddeebb1ffa68cfec65484d9dec75d93f74ce9832204855c23f0f",
+        "modelId": "interlude:dion_tree_s.swamp.Dion_swamp_tree02",
+        "sourceMesh": "Dion_tree_S.swamp.Dion_swamp_tree02"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor3692",
+        "matrixCanonicalSha256": "88bf966eafda9fb3c7274d4098c66f3eb9d2f54065b8d726c91293cf7a163d18",
+        "modelId": "interlude:dion_tree_s.swamp.Dion_swamp_tree02",
+        "sourceMesh": "Dion_tree_S.swamp.Dion_swamp_tree02"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor3693",
+        "matrixCanonicalSha256": "6fbfa039226db07e9056550106fdcf89e613db6220d6f5d9aff11c26a292d825",
+        "modelId": "interlude:dion_tree_s.swamp.Dion_swamp_tree02",
+        "sourceMesh": "Dion_tree_S.swamp.Dion_swamp_tree02"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor3694",
+        "matrixCanonicalSha256": "90e5b0e90dd601e9631cc55b797211fa3e15ed8fe648259d4c136a2d7053a86d",
+        "modelId": "interlude:dion_tree_s.swamp.Dion_swamp_tree02",
+        "sourceMesh": "Dion_tree_S.swamp.Dion_swamp_tree02"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor3701",
+        "matrixCanonicalSha256": "3aeb0bdcdb8232d1da58b5ac7db08ccec76f77a9262ad1ad508adf9bbf152dd0",
+        "modelId": "interlude:oren_tree_s.Elf_Colors.Oren_elf_tree09",
+        "sourceMesh": "Oren_tree_S.Elf_Colors.Oren_elf_tree09"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor3703",
+        "matrixCanonicalSha256": "1afa6e7a565ff1d2c6959e049f0f25fb9f476eccf7d06b11e87d736bd18089bd",
+        "modelId": "interlude:dion_tree_s.red_mt.dion_excute_tree1",
+        "sourceMesh": "Dion_tree_S.red_mt.dion_excute_tree1"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor3978",
+        "matrixCanonicalSha256": "97e8669ce10a8eac9932c10995fe21a19c887c1a1194585376b996f9510e5fe5",
+        "modelId": "interlude:oren_tree_s.Elf_Colors.Oren_elf_tree03",
+        "sourceMesh": "Oren_tree_S.Elf_Colors.Oren_elf_tree03"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor3979",
+        "matrixCanonicalSha256": "620a16c26d835c813d08c03b4006118e14ca549e24a2c1ba0722d0eea01e1b00",
+        "modelId": "interlude:l2fortress_02_s.Fort02_medic_bed",
+        "sourceMesh": "L2fortress_02_s.Fort02_medic_bed"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor3980",
+        "matrixCanonicalSha256": "c0900202d1d8ef04a510b67aa6db5d5b754d5b900c4f6045b36a697253f62f49",
+        "modelId": "interlude:l2fortress_02_s.Fort02_medic_bed",
+        "sourceMesh": "L2fortress_02_s.Fort02_medic_bed"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor3981",
+        "matrixCanonicalSha256": "df85a07e4684f50d40d33446eeb31107dbfc56340187ffa474135fa15397bea9",
+        "modelId": "interlude:l2fortress_02_s.Fort02_medic_bed",
+        "sourceMesh": "L2fortress_02_s.Fort02_medic_bed"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor3982",
+        "matrixCanonicalSha256": "d30473a1c18ac01498e86ac367af7666bf79fb9325353e868dddf5bc0db23a87",
+        "modelId": "interlude:l2fortress_02_s.Fort02_medic_bed",
+        "sourceMesh": "L2fortress_02_s.Fort02_medic_bed"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor3985",
+        "matrixCanonicalSha256": "119d9048f9f87c3db5cccef3a406931e8d0d84b0cfc140709a62bcc4a7fd510a",
+        "modelId": "interlude:old_war_s.barricade03",
+        "sourceMesh": "Old_War_s.barricade03"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor3986",
+        "matrixCanonicalSha256": "10bd5368f566c78b5095307f82f4bba2fc2d7db554d1e5ee14226cd48fb8fa21",
+        "modelId": "interlude:old_war_s.barricade06",
+        "sourceMesh": "Old_War_s.barricade06"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor3988",
+        "matrixCanonicalSha256": "78acad2ceee6431bf5d281579ece8c4d335ccad8f1705d0ca0379939ff327736",
+        "modelId": "interlude:l2fortress_01_s.Fort01_protection",
+        "sourceMesh": "L2fortress_01_S.Fort01_protection"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor3989",
+        "matrixCanonicalSha256": "dfb39fa4aad64a78295421c743f05ec1eaad7e0c752bc4eeffee95c94ed415f6",
+        "modelId": "interlude:l2fortress_01_s.Fort01_protection",
+        "sourceMesh": "L2fortress_01_S.Fort01_protection"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor3991",
+        "matrixCanonicalSha256": "5181518c8939996972638895d476e0584133cabfee62ee98d65643415dbebdda",
+        "modelId": "interlude:old_war_s.barricade03",
+        "sourceMesh": "Old_War_s.barricade03"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor3992",
+        "matrixCanonicalSha256": "f887deb0d50e1bacb167f3ec65f28715bde6b732155bdd0f7cf072f7e852ee26",
+        "modelId": "interlude:old_war_s.barricade06",
+        "sourceMesh": "Old_War_s.barricade06"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor3994",
+        "matrixCanonicalSha256": "89ac96b7a48659941818fb357369e09fb4e7e3301739194ce2535a2bb9ce5c5b",
+        "modelId": "interlude:l2fortress_01_s.Fort01_protection",
+        "sourceMesh": "L2fortress_01_S.Fort01_protection"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor3995",
+        "matrixCanonicalSha256": "69e9dcf2840ea35ea8160e1e65b323267db8bf3eca5abe5d487c6909b2a23966",
+        "modelId": "interlude:l2fortress_01_s.Fort01_protection",
+        "sourceMesh": "L2fortress_01_S.Fort01_protection"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor3996",
+        "matrixCanonicalSha256": "1503f0bdefc1391c06ea119f7c4ef80b7b565317ec24b50ebf2d2f30d863d5bb",
+        "modelId": "interlude:old_war_s.barricade03",
+        "sourceMesh": "Old_War_s.barricade03"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor3997",
+        "matrixCanonicalSha256": "82112cc0b284fc359523a0debfec5a8fd3b9b7f8b1ba1974f6db478ddf06aa82",
+        "modelId": "interlude:old_war_s.barricade03",
+        "sourceMesh": "Old_War_s.barricade03"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor4627",
+        "matrixCanonicalSha256": "89a329cd66dc59a856318440b3a24e6f469263805069500a02f638a05c9dd97b",
+        "modelId": "interlude:oren_tree_s.Elf_Colors.Oren_elf_tree03",
+        "sourceMesh": "Oren_tree_S.Elf_Colors.Oren_elf_tree03"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor4651",
+        "matrixCanonicalSha256": "09d24e3f7baea1cc8d20a8ffe53ae47352a60d419b9021dac0c2868d859d14e3",
+        "modelId": "interlude:oren_tree_s.Elf_Colors.Oren_elf_tree02",
+        "sourceMesh": "Oren_tree_S.Elf_Colors.Oren_elf_tree02"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor908",
+        "matrixCanonicalSha256": "7d7f5ecbd98679477890672f2ced4efc971475eb2ff221e617acbba563c21281",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_square02",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_square02"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor909",
+        "matrixCanonicalSha256": "6a58137e2f06dc1284f31d039bb830bc6dcbed11d7a4cb23bbaac4cd199f850b",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_square02",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_square02"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor910",
+        "matrixCanonicalSha256": "990179e73546e15b466f956bc6915d42cf724c22d8376c8f72cc224e70a1c087",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco03",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco03"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor911",
+        "matrixCanonicalSha256": "cd18e9709f07a2bf5b36e4c20582ca400ec74a9d6499f5c62712e673be0fcc2d",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco03",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco03"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor912",
+        "matrixCanonicalSha256": "003040f5f4a4574802b2b4ab21674a2a5bac64f787278b4b8d610f1c5f161eb7",
+        "modelId": "interlude:l2fortress_01_s.Fort01_medic_base",
+        "sourceMesh": "L2fortress_01_S.Fort01_medic_base"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor913",
+        "matrixCanonicalSha256": "003040f5f4a4574802b2b4ab21674a2a5bac64f787278b4b8d610f1c5f161eb7",
+        "modelId": "interlude:l2fortress_01_s.Fort01_medic_cap",
+        "sourceMesh": "L2fortress_01_S.Fort01_medic_cap"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor914",
+        "matrixCanonicalSha256": "003040f5f4a4574802b2b4ab21674a2a5bac64f787278b4b8d610f1c5f161eb7",
+        "modelId": "interlude:l2fortress_01_s.Fort01_medic_pole",
+        "sourceMesh": "L2fortress_01_S.Fort01_medic_pole"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor915",
+        "matrixCanonicalSha256": "3e442f8e2ff6bdf68deb80104583e816d74e6f1b17d9956e7084423d3e0a9ea5",
+        "modelId": "interlude:l2fortress_01_s.Fort01_medic_trans",
+        "sourceMesh": "L2fortress_01_S.Fort01_medic_trans"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor916",
+        "matrixCanonicalSha256": "9a58c09e963b698e2146bbd563db8f08da780f5e744f5340aa5a81347c3db1f2",
+        "modelId": "interlude:l2fortress_01_s.fort01_archer",
+        "sourceMesh": "L2fortress_01_S.fort01_archer"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor917",
+        "matrixCanonicalSha256": "9a58c09e963b698e2146bbd563db8f08da780f5e744f5340aa5a81347c3db1f2",
+        "modelId": "interlude:l2fortress_01_s.fort01_archer_a",
+        "sourceMesh": "L2fortress_01_S.fort01_archer_a"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor918",
+        "matrixCanonicalSha256": "9a58c09e963b698e2146bbd563db8f08da780f5e744f5340aa5a81347c3db1f2",
+        "modelId": "interlude:l2fortress_01_s.fort01_archer_stair",
+        "sourceMesh": "L2fortress_01_S.fort01_archer_stair"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor919",
+        "matrixCanonicalSha256": "767cb92821bfbbdacd79260ff9fcda358551025eb83eaa4ab9feb0ef2c6ce998",
+        "modelId": "interlude:l2fortress_01_s.Fort01_tower",
+        "sourceMesh": "L2fortress_01_S.Fort01_tower"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor920",
+        "matrixCanonicalSha256": "6e357d8a48f30d2f1f7767d2cffd03a0df4af5c38b732f4ee7e1e5485273fd41",
+        "modelId": "interlude:l2fortress_01_s.Fort01_tower_arrow",
+        "sourceMesh": "L2fortress_01_S.Fort01_tower_arrow"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor921",
+        "matrixCanonicalSha256": "767cb92821bfbbdacd79260ff9fcda358551025eb83eaa4ab9feb0ef2c6ce998",
+        "modelId": "interlude:l2fortress_01_s.Fort01_tower_stair",
+        "sourceMesh": "L2fortress_01_S.Fort01_tower_stair"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor922",
+        "matrixCanonicalSha256": "b3e7370e74dd4cf136157694988c9ba9bdeb3d5d654a6a158b041d54de060b7f",
+        "modelId": "interlude:l2fortress_01_s.Fort01_tower",
+        "sourceMesh": "L2fortress_01_S.Fort01_tower"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor923",
+        "matrixCanonicalSha256": "3f69bf724448390742650ea38bbb45b68f459b3e9c5a997b7b24366de153aba0",
+        "modelId": "interlude:l2fortress_01_s.Fort01_tower_arrow",
+        "sourceMesh": "L2fortress_01_S.Fort01_tower_arrow"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor924",
+        "matrixCanonicalSha256": "b3e7370e74dd4cf136157694988c9ba9bdeb3d5d654a6a158b041d54de060b7f",
+        "modelId": "interlude:l2fortress_01_s.Fort01_tower_stair",
+        "sourceMesh": "L2fortress_01_S.Fort01_tower_stair"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor925",
+        "matrixCanonicalSha256": "445558df0a9cc84150da229c3fe4f200e15326b0dbe9099211f989a1a73cf295",
+        "modelId": "interlude:l2fortress_01_s.Fort01_tower",
+        "sourceMesh": "L2fortress_01_S.Fort01_tower"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor926",
+        "matrixCanonicalSha256": "8ed052965585da557053dfc21fdb0f1dae852eed5522d75f5d58b052de4b8e73",
+        "modelId": "interlude:l2fortress_01_s.Fort01_tower_arrow",
+        "sourceMesh": "L2fortress_01_S.Fort01_tower_arrow"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor927",
+        "matrixCanonicalSha256": "445558df0a9cc84150da229c3fe4f200e15326b0dbe9099211f989a1a73cf295",
+        "modelId": "interlude:l2fortress_01_s.Fort01_tower_stair",
+        "sourceMesh": "L2fortress_01_S.Fort01_tower_stair"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor928",
+        "matrixCanonicalSha256": "81d4c04de4f0bc331c43d20cf8ad99b3ee320a0a8f4927cbcb2fd84bb95331c0",
+        "modelId": "interlude:l2fortress_01_s.Fort01_tower",
+        "sourceMesh": "L2fortress_01_S.Fort01_tower"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor929",
+        "matrixCanonicalSha256": "10fdc638e347a5333025d03207add6211589f5c27a36587accb888d43b33088c",
+        "modelId": "interlude:l2fortress_01_s.Fort01_tower_arrow",
+        "sourceMesh": "L2fortress_01_S.Fort01_tower_arrow"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor930",
+        "matrixCanonicalSha256": "81d4c04de4f0bc331c43d20cf8ad99b3ee320a0a8f4927cbcb2fd84bb95331c0",
+        "modelId": "interlude:l2fortress_01_s.Fort01_tower_stair",
+        "sourceMesh": "L2fortress_01_S.Fort01_tower_stair"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor940",
+        "matrixCanonicalSha256": "574816207dbe8d408a59689055bf19619561d73ae3eaea4d40d88ef6bb11caa8",
+        "modelId": "interlude:l2fortress_01_s.Fort01_deffense",
+        "sourceMesh": "L2fortress_01_S.Fort01_deffense"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor941",
+        "matrixCanonicalSha256": "b256b313144839b9dfdb91f256926137c22567d491b3ed90791a96d26b016259",
+        "modelId": "interlude:l2fortress_02_s.fort02_jail",
+        "sourceMesh": "L2fortress_02_s.fort02_jail"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor942",
+        "matrixCanonicalSha256": "2b0a77056d06f72a27a95b1cca9c0efb3796706407aa2c923b9d729f86f43ee3",
+        "modelId": "interlude:interior_b_s.interior_B_313",
+        "sourceMesh": "interior_B_S.interior_B_313"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor943",
+        "matrixCanonicalSha256": "e8e2a0c389f54b07c5256d7e40535f432cb89d1ca5d862468316f29f3ed66924",
+        "modelId": "interlude:l2fortress_01_s.Fort01_warehouse",
+        "sourceMesh": "L2fortress_01_S.Fort01_warehouse"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor944",
+        "matrixCanonicalSha256": "e8e2a0c389f54b07c5256d7e40535f432cb89d1ca5d862468316f29f3ed66924",
+        "modelId": "interlude:l2fortress_01_s.Fort02_warehouse_pole",
+        "sourceMesh": "L2fortress_01_S.Fort02_warehouse_pole"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor945",
+        "matrixCanonicalSha256": "ea7059fc2e20cfb5f8a9635fa19559ae652cb9ddf36cfcc43905c56f8525cd74",
+        "modelId": "interlude:godard_village_s.godard_obj_box_B",
+        "sourceMesh": "Godard_Village_S.godard_obj_box_B"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor946",
+        "matrixCanonicalSha256": "4e91ee88ed94fa29548476baf993480a908f0253b60bc52a6aabc2160e653a79",
+        "modelId": "interlude:godard_village_s.godard_obj_box_C",
+        "sourceMesh": "Godard_Village_S.godard_obj_box_C"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor947",
+        "matrixCanonicalSha256": "3c25678e9b54a01e103b84d0673f193076e2eecfe43dc828ff2e47aaeeb250cd",
+        "modelId": "interlude:godard_village_s.godard_obj_cart",
+        "sourceMesh": "Godard_Village_S.godard_obj_cart"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor975",
+        "matrixCanonicalSha256": "c2c82d23a6e2432702ad04d4bc814c303d15c819599637f69433da55ee576e9e",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco02",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco02"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor976",
+        "matrixCanonicalSha256": "9a691f6515d3e79246ec6c6a4fbd3d71f5f830d307c3c34b1fd10a85e6018655",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco02",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco02"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor977",
+        "matrixCanonicalSha256": "cc1bde5ca1dbaa0e5685eb7298a74296efa9ee0b58b99e5990b2e46dca9797aa",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco02",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco02"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor978",
+        "matrixCanonicalSha256": "974b39b7e996257e3aff6293725690b8c42a44e6b499db8e50772a13d97313c9",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco02",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco02"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor979",
+        "matrixCanonicalSha256": "9cc66098cc11614c74671e30482e2c14e44d8a9134f4813f382b31daacc84e1d",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco01",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor980",
+        "matrixCanonicalSha256": "29d9544b30ef107baa0a2a37d04777ca8099794c4a25eb1cf3ea19f1f0ddd7ed",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco01",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor981",
+        "matrixCanonicalSha256": "73a33158624a3da360691bb40afd0d119061545559fe85bd372350888af7194a",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco01",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor982",
+        "matrixCanonicalSha256": "cfe4d09449acc43708a2b7044e4bbf4aedd4f99b9a3412306d845f3bff9ccd38",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco01",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor983",
+        "matrixCanonicalSha256": "c591fca6dee20fa8e429974a213c592bf06d74cfe01c9bd0f4533d194e600907",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco02",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco02"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor984",
+        "matrixCanonicalSha256": "084692d8fa92dcfcd381ce25b20156076a1d172d5cbee6ca3ea0c54f13888a1a",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco02",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco02"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor985",
+        "matrixCanonicalSha256": "e9bf41dd2f860b4b23721750784f330a1499f050bf56f29cbd5670d4ac9ae196",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco02",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco02"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor986",
+        "matrixCanonicalSha256": "7bcae9837ff41f4a067f874228275ed5faf4764f0d46f3c04be59738ce713aa6",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco01",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor987",
+        "matrixCanonicalSha256": "83cd1a5173dca1ff2391f56bd64bd26c871b10a381667a821b4304488e6ce258",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco01",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor988",
+        "matrixCanonicalSha256": "a74316e799086272cef61bc445a563739b5530c3fafad15ee936c173d421df24",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco01",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor989",
+        "matrixCanonicalSha256": "eeb1d50760d322c7f7d259cd75bb0e42e30959acdca28e9ac5002d8355995119",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco01",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor990",
+        "matrixCanonicalSha256": "5977fd1c5f30288fb4a56c7b1ec6837f0018bd2c3b564d731a28dcfcc4dfeac0",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco02",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco02"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor991",
+        "matrixCanonicalSha256": "5d78c84d7c4a395468483eab5960212750cbc581e481f18b437e288524623e9e",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco01",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor992",
+        "matrixCanonicalSha256": "bae9bcc47a5d132ed3073aaf8a1c7c7bfbbaacaeb1fc4b699cac55cb9077be5a",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco02",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco02"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor993",
+        "matrixCanonicalSha256": "e0800d701b8dfe74f32b105ecd61829fcc1211a702220d5f8cfff7ce51f0d1c0",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco01",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor994",
+        "matrixCanonicalSha256": "188cafb98fd06cb60691599db9d062dd18fd48b752a283da35430f15d2a6df3f",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco02",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco02"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor995",
+        "matrixCanonicalSha256": "24fc6719309923c336b5328d3eb0a3c8f920f440d629b459cc22fd4992e31439",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco02",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco02"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor996",
+        "matrixCanonicalSha256": "e5c6c37788a37ccac7418bebe5472a780d9eb214b9a96a34b1aa42bd7809bdf9",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco01",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor997",
+        "matrixCanonicalSha256": "df691a59c0865a0f24776e6dd46d634a78126a655e972178257a6d480bac25b0",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco01",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor998",
+        "matrixCanonicalSha256": "09c3655f57dae936bc2cc6032ec12604b74284838cc1a1e6e8aab31bf96721be",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco01",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco01"
+      },
+      {
+        "id": "interlude:20_20.StaticMeshActor999",
+        "matrixCanonicalSha256": "758d9a2f7cc092a3629a587c31c67c54be666fd12d804b50d50cc3a1c4be0d73",
+        "modelId": "interlude:l2fortress_01_s.fort01_wall_deco01",
+        "sourceMesh": "L2fortress_01_S.fort01_wall_deco01"
+      }
+    ],
+    "terrain": {
+      "bytes": 376928,
+      "file": "terrain.glb",
+      "sha256": "39417edb0294885ef6bd4107c85a917f6dcc4dc2985d11393bb41afa2e63a724"
+    },
+    "terrainPatches": [
+      {
+        "id": "interlude:20_20.TerrainInfo0.TerrainSector247",
+        "modelSha256": "cee7f0f6eba0b62669cf3c1b2241c7671fa567ccbdfce2813633224fb238820a",
+        "sourceSha256": "d104d12169b427238103689d7d37dfcca220bfe0702ec626e127a8cd064e9c2b"
+      }
+    ],
+    "unsupportedRuntimeMaterialIds": [
+      "interlude:FX_E_S.Flameset.Default_Flame01"
+    ]
+  },
+  "sky": {
+    "files": [
+      {
+        "bytes": 640,
+        "path": "WhiteChip.dds",
+        "sha256": "3b2c0d01ec812c17cd3598a4a264794da592e6fbdb653ddb392ca1bad6e0f027"
+      },
+      {
+        "bytes": 1490,
+        "path": "WhiteChip.dds.json",
+        "sha256": "fba4bcc9c7e848a0aabf45a27a77a328484d592f5a7e6375bafbb3ba83afc890"
+      },
+      {
+        "bytes": 590,
+        "path": "WhiteChip.export.bin",
+        "sha256": "5913edf1e6527ec1de86deb955907a72370507b023811f2c937f6dea262d094a"
+      },
+      {
+        "bytes": 512,
+        "path": "WhiteChip.mip0.bin",
+        "sha256": "1eee1acaf47c9385a36af2f329b42d5538b456284d44b24469106a1ce9493f9e"
+      },
+      {
+        "bytes": 868,
+        "path": "WhiteChip.native.json",
+        "sha256": "20a3dd2334cc68c8c4e89c953b2c7fac2a72c762a5e3e986df1b9051631eff63"
+      },
+      {
+        "bytes": 101,
+        "path": "WhiteChip.png",
+        "sha256": "bca39d8ba477b3fbb6962bb4a74398d18eaf1b249adc920ee300ac4e4968f832"
+      },
+      {
+        "bytes": 1048704,
+        "path": "WhiteCloud.dds",
+        "sha256": "14ccf55695f9410eacd933bd24158be5f63e3f0aa8cbe5a709283647f02f87eb"
+      },
+      {
+        "bytes": 1551,
+        "path": "WhiteCloud.dds.json",
+        "sha256": "9e102a884c2e4b73757bf007c0e16f3cdb35b9c81a2a59cf5016434173304cd1"
+      },
+      {
+        "bytes": 1048649,
+        "path": "WhiteCloud.export.bin",
+        "sha256": "8b0dcf335d791eb0ef6397a72476b0811aa365a44f8efb0ef301db82271431ef"
+      },
+      {
+        "bytes": 1048576,
+        "path": "WhiteCloud.mip0.bin",
+        "sha256": "c547473dc6c7754b88a47e10e08703d882c1541a8ce51675b4a7a4bfb8118281"
+      },
+      {
+        "bytes": 885,
+        "path": "WhiteCloud.native.json",
+        "sha256": "e1690c9ab515f48a6baf217e0cec637f55b3408b3bf40ec8504417ca84f5a845"
+      },
+      {
+        "bytes": 430484,
+        "path": "WhiteCloud.png",
+        "sha256": "2c7657646b8c628adc6b16b4b9e7b59ed9d134811f3656df88d22bf9e2f4b516"
+      },
+      {
+        "bytes": 65664,
+        "path": "WhiteRing.dds",
+        "sha256": "d1a46ea36f022b26815d118aa9b710ec675d08f3eaae23524f6fb3813b5f607c"
+      },
+      {
+        "bytes": 1537,
+        "path": "WhiteRing.dds.json",
+        "sha256": "db46ba2889723b4ddfe8bc17f4c3476d6af66fdcb892af253c9c369e86d08a76"
+      },
+      {
+        "bytes": 65608,
+        "path": "WhiteRing.export.bin",
+        "sha256": "ff4bbb6eee9e7960af1ebe68aabf0a447d647c9676860bb27eddea51bc9756eb"
+      },
+      {
+        "bytes": 65536,
+        "path": "WhiteRing.mip0.bin",
+        "sha256": "966b44c9994dd70e44e718a6e6f06adc3d72d24ef6029fdaa9bfe7ed1ce2e11b"
+      },
+      {
+        "bytes": 874,
+        "path": "WhiteRing.native.json",
+        "sha256": "c6829bcddc753f1f46ad3a7c0d43bcbe211d7dde9f18e816d7cd5a21791a09cd"
+      },
+      {
+        "bytes": 9397,
+        "path": "WhiteRing.png",
+        "sha256": "741c98a90897ba335889f163cb7f6d720557ea4799b3b2424f362e4cd0790ab8"
+      },
+      {
+        "bytes": 451180,
+        "path": "sky.glb",
+        "sha256": "b8c5a64fb1682fa9865c202459c7516cf2690112a34ebb33a972cc2278c7f983"
+      },
+      {
+        "bytes": 124090,
+        "path": "sky.json",
+        "sha256": "f7790edc2ea03f78dd980d5b901b3acbfe3f8fad7ac46ce88444c6f328e6c88d"
+      }
+    ],
+    "manifestSha256": "f7a0b5ef1463d0b5fe47b210585e00d6011be3c3e3bddfec76df0eb08042f80b",
+    "sourceId": "interlude:20_20.Model798.SkyZoneInfo0"
+  }
+}
