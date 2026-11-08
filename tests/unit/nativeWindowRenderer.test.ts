@@ -5,7 +5,23 @@ import { parseNativeWindowManifest, type NativeWindowManifest } from "../../src/
 import type { NativeWindowTextureResolution } from "../../src/ui/nativeWindows/nativeWindowManifestLoader";
 import { nativeWindowRenderedControlTypes, renderNativeWindow } from "../../src/ui/nativeWindows/nativeWindowRenderer";
 import type { WorldEntity } from "../../src/world/worldTypes";
+import { listTypeScriptModules, readSourceModuleText } from "../support/sourceImportSpecifiers";
 import { installMiniDom, type FakeElement, type MiniDom } from "./support/miniDom";
+
+const stringLiteralPattern = /"((?:[^"\\\n]|\\.)*)"|'((?:[^'\\\n]|\\.)*)'|`((?:[^`\\]|\\.)*)`/g;
+const templateSubstitutionPattern = /\$\{[^}]*\}/;
+
+function moduleStringLiterals(sourceText: string): string[] {
+  return [...sourceText.matchAll(stringLiteralPattern)].flatMap(match =>
+    match[3] !== undefined ? match[3].split(templateSubstitutionPattern) : [match[1] ?? match[2]!]);
+}
+
+function decodedWindowAndControlNames(): ReadonlySet<string> {
+  const census = JSON.parse(readFileSync("docs/parts/ui/interface-window-census.json", "utf8")) as {
+    controlNames: string[]; windows: { name: string }[];
+  };
+  return new Set([...census.controlNames, ...census.windows.map(window => window.name)]);
+}
 
 const syntheticManifests = JSON.parse(readFileSync("tests/fixtures/xdat/synthetic-window-layout.json", "utf8")) as Record<string, unknown>[];
 const screen = { width: 1440, height: 900 };
@@ -137,5 +153,18 @@ describe("renderNativeWindow", () => {
 
   it("draws only the common control types", () => {
     expect(nativeWindowRenderedControlTypes).toEqual(["Window", "Texture", "Button", "TextBox"]);
+  });
+});
+
+describe("native window sources", () => {
+  it("hold no decoded window or control name as a string literal, and report decoded names equal to a rendered control type", () => {
+    const decodedNames = decodedWindowAndControlNames();
+    const modules = listTypeScriptModules("src/ui/nativeWindows");
+    expect(modules.length).toBeGreaterThanOrEqual(6);
+    const literalNames = modules.flatMap(modulePath => moduleStringLiterals(readSourceModuleText(modulePath))
+      .filter(literal => decodedNames.has(literal)).map(literal => `${modulePath}: ${literal}`));
+    const controlTypeNames = literalNames.filter(entry => nativeWindowRenderedControlTypes.some(type => entry.endsWith(`: ${type}`)));
+    expect(literalNames.filter(entry => !controlTypeNames.includes(entry))).toEqual([]);
+    expect(controlTypeNames).toEqual(["src/ui/nativeWindows/nativeWindowRenderer.ts: TextBox", "src/ui/nativeWindows/nativeWindowRenderer.ts: TextBox"]);
   });
 });
