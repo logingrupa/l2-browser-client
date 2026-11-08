@@ -27,6 +27,11 @@ WINDOW_MANIFEST_PATH_PATTERN = re.compile(r'^/l2/windows/(?P<sha256>[a-f0-9]{64}
 WINDOW_MANIFEST_MAXIMUM_BYTES = 8_000_000
 PINNED_MANIFEST_RECORD_FIELDS = ('id', 'manifest', 'manifestSha256', 'manifestBytes')
 TABLE_RECORD_FIELDS = (*PINNED_MANIFEST_RECORD_FIELDS, 'recordCount', 'sourceSha256')
+NATIVE_RESOURCE_PREFIX = '/l2/'
+PINNED_FILE_REFERENCE_FIELDS = (('manifest', 'manifestSha256', 'manifestBytes'), ('archive', 'archiveSha256', None),
+                                ('model', 'modelSha256', None), ('image', 'imageSha256', 'imageBytes'), ('resource', 'sha256', None))
+RELATIVE_FILE_PIN_FIELDS = ('file', 'sha256')
+PINNED_MANIFEST_SUFFIX = '.json'
 
 
 class CatalogWriteError(ValueError):
@@ -200,6 +205,71 @@ def merge_catalog_slice(catalog, slice_name, record, capacity):
         raise CatalogWriteError(f'catalog {slice_name} capacity {capacity} exceeded')
     records.append(copy.deepcopy(record))
     return merged
+
+
+class PinnedFileReference(NamedTuple):
+    relative: str
+    sha256: str
+    byte_length: int | None
+
+
+def is_file_pin(value, path_field, sha256_field):
+    if path_field not in value:
+        return False
+    return sha256_field in value or isinstance(value[path_field], str) and value[path_field].startswith(NATIVE_RESOURCE_PREFIX)
+
+
+def require_file_pin(value, path_field, sha256_field, bytes_field, label):
+    path, sha256 = value[path_field], value.get(sha256_field)
+    if not (isinstance(path, str) and path.startswith(NATIVE_RESOURCE_PREFIX) and isinstance(sha256, str) and SHA256_PATTERN.fullmatch(sha256)):
+        raise CatalogWriteError(f'{label} has no /l2 {path_field} with {sha256_field}')
+    return PinnedFileReference(path[len(NATIVE_RESOURCE_PREFIX):], sha256, value.get(bytes_field) if bytes_field else None)
+
+
+def pinned_file_references(value, label):
+    if isinstance(value, list):
+        return [reference for item in value for reference in pinned_file_references(item, label)]
+    if not isinstance(value, dict):
+        return []
+    if all(field in value for field in RELATIVE_FILE_PIN_FIELDS):
+        raise CatalogWriteError(f'{label} pins {value["file"]!r} by a relative file name; only /l2 resource pins can be followed')
+    references = [require_file_pin(value, path_field, sha256_field, bytes_field, label)
+                  for path_field, sha256_field, bytes_field in PINNED_FILE_REFERENCE_FIELDS if is_file_pin(value, path_field, sha256_field)]
+    return references + [reference for item in value.values() for reference in pinned_file_references(item, label)]
+
+
+def catalog_pinned_file_references(catalog):
+    return [reference for slice_name in KNOWN_CATALOG_SLICES for record in catalog.get(slice_name, [])
+            for reference in pinned_file_references(record, f'catalog {slice_name} record {record.get("id")}')]
+
+
+def read_pinned_file(store_root, reference):
+    path = confined_child_path(store_root, reference.relative)
+    if not path.is_file():
+        raise CatalogWriteError(f'pinned store file is missing from {store_root}: {reference.relative}')
+    payload = path.read_bytes()
+    if sha256_hex(payload) != reference.sha256:
+        raise CatalogWriteError(f'pinned store file SHA-256 differs from its pin {reference.sha256}: {reference.relative}')
+    if reference.byte_length is not None and len(payload) != reference.byte_length:
+        raise CatalogWriteError(f'pinned store file byte length differs from its pin {reference.byte_length}: {reference.relative}')
+    return payload
+
+
+def pinned_store_files(store_root, catalog):
+    files, pending = {}, list(catalog_pinned_file_references(catalog))
+    while pending:
+        reference = pending.pop(0)
+        already_collected = files.get(reference.relative.casefold())
+        if already_collected is not None:
+            if sha256_hex(already_collected[1]) != reference.sha256:
+                raise CatalogWriteError(f'store file {reference.relative} is pinned with two different SHA-256 values')
+            continue
+        payload = read_pinned_file(store_root, reference)
+        add_store_file(files, reference.relative, payload)
+        if reference.relative.endswith(PINNED_MANIFEST_SUFFIX):
+            manifest = json.loads(payload, object_pairs_hook=refuse_duplicate_json_keys, parse_constant=refuse_non_finite_json_number)
+            pending.extend(pinned_file_references(manifest, f'store file {reference.relative}'))
+    return files
 
 
 def verify_store_destinations(store_root, files):
