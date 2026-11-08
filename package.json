@@ -57,8 +57,6 @@
 		"@fluentui/react-motion-components-preview": "0.15.10",
 		"@fluentui/react-utilities": "9.27.0",
 		"@fontsource-variable/cormorant-garamond": "5.3.0",
-		"@recast-navigation/core": "0.43.0",
-		"@recast-navigation/generators": "0.43.0",
 		"babylonjs-editor-tools": "5.5.3",
 		"react": "19.3.1",
 		"react-dom": "19.3.1",
@@ -66,6 +64,8 @@
 	},
 	"devDependencies": {
 		"@playwright/test": "1.64.1",
+		"@recast-navigation/core": "0.43.0",
+		"@recast-navigation/generators": "0.43.0",
 		"@types/node": "22.19.15",
 		"@types/react": "19.3.0",
 		"@types/react-dom": "19.3.0",
