@@ -12,6 +12,7 @@ export interface SandboxCommandSheetContext {
   readonly section: DevSection;
   readonly adapter: Pick<GameWorldAdapter, "dispatch" | "subscribe">;
   readonly index: NativeCatalogIndex;
+  readonly indexFailure: string | null;
   readonly appearanceOfModel: SandboxAppearanceOfModel;
   readonly selectedEntityId: () => string | null;
   readonly powerStrike: Pick<NativePowerStrikePreview, "start"> | null;
@@ -146,6 +147,10 @@ function startsStagedPowerStrike(index: NativeCatalogIndex, event: Extract<World
 }
 
 export function attachSandboxCommandSheet(context: SandboxCommandSheetContext): () => void {
+  if (context.indexFailure !== null) {
+    context.section.group("catalog-index", "Catalog index").note(`Catalog index unavailable: ${context.indexFailure}`,
+      { tone: "warning", testId: "sandbox-catalog-index-failure" });
+  }
   attachSpawnNpcGroup(context);
   attachEquipItemGroup(context);
   attachCastSkillGroup(context);

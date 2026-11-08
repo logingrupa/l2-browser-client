@@ -82,6 +82,11 @@ function readModelSourceObjects(models: readonly unknown[]): ReadonlyMap<string,
   return sourceObjectsByModelId;
 }
 
+export function unavailableNativeCatalogIndex(failure: string): NativeCatalogIndex {
+  const reason = `catalog index unavailable: ${failure}`;
+  return { lookup: key => ({ status: "not-in-catalog", key, reason }), keys: () => [] };
+}
+
 export async function buildNativeCatalogIndex(catalog: NativeCatalog, signal: AbortSignal): Promise<NativeCatalogIndex> {
   const entries = new Map<string, NativeCatalogLookup>();
   const addEntry = (lookup: NativeCatalogLookup) => {
@@ -93,7 +98,10 @@ export async function buildNativeCatalogIndex(catalog: NativeCatalog, signal: Ab
   for (const profile of (await loadNativeNpcProfiles(catalog.npcProfiles, signal)).values()) {
     const key = npcCatalogKey(profile.npcId);
     const modelIds = [...sourceObjectsByModelId].filter(([, sourceObject]) => sourceObject === profile.mesh).map(([modelId]) => modelId);
-    if (modelIds.length > 1) throw duplicateEntries(key);
+    if (modelIds.length > 1) {
+      addEntry({ status: "not-in-catalog", key, reason: `mesh ${profile.mesh} matches ${modelIds.length} converted packages (${modelIds.sort().join(", ")})` });
+      continue;
+    }
     if (!modelIds.length) {
       addEntry({ status: "not-in-catalog", key, reason: `NPC profile staged but mesh ${profile.mesh} has no converted model` });
       continue;

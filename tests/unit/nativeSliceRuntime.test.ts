@@ -23,7 +23,7 @@ vi.mock("../../src/scene/world/loadNativeMovers", () => ({ loadNativeMovers: vi.
 
 const boundaries = vi.hoisted(() => ({
   load: vi.fn(), assembly: vi.fn<() => Promise<void>>(), section: vi.fn(), flames: vi.fn(), camera: vi.fn(), targeting: vi.fn(), detachCamera: vi.fn(), detachTargeting: vi.fn(),
-  assetImport: vi.fn(), detachAssetImport: vi.fn(), audioControls: vi.fn(), factory: vi.fn(), effectBundle: vi.fn(),
+  assetImport: vi.fn(), detachAssetImport: vi.fn(), audioControls: vi.fn(), factory: vi.fn(), effectBundle: vi.fn(), readCatalog: vi.fn(),
   uis: [] as { adapter: NativeSliceAdapter; dispose: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn>; showStatus: ReturnType<typeof vi.fn> }[],
   registries: [] as { dispose: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> }[],
   sheetGroups: new Map<string, { variables?: () => VariableInfo[] }>(),
@@ -48,9 +48,10 @@ vi.mock("../../src/scene/world/loadNativeSection", async importOriginal => ({
 }));
 vi.mock("../../src/assets/native/readNativeCatalog", async importOriginal => ({
   ...await importOriginal<typeof import("../../src/assets/native/readNativeCatalog")>(),
-  readNativeCatalog: async () => ({ schemaVersion: 1, models: [], textures: [], sections: [], movers: [], npcProfiles: [], playerProfiles: [],
-    animationAudio: [], combatAudio: [], worldAudio: [], effectComponents: [] }),
+  readNativeCatalog: boundaries.readCatalog,
 }));
+const emptyNativeCatalog = { schemaVersion: 1, models: [], textures: [], sections: [], movers: [], npcProfiles: [], playerProfiles: [],
+  animationAudio: [], combatAudio: [], worldAudio: [], effectComponents: [] };
 vi.mock("../../src/camera/WorldCamera", () => ({ attachWorldCamera: boundaries.camera }));
 vi.mock("../../src/entities/attachTargeting", () => ({ attachTargeting: boundaries.targeting }));
 vi.mock("../../src/assets/native/NativeCharacterVisual", () => ({ nativeCharacterFactory: boundaries.factory }));
@@ -89,6 +90,7 @@ describe("native slice runtime lifetime", () => {
     boundaries.load.mockReset(); boundaries.section.mockReset(); boundaries.flames.mockReset(); boundaries.camera.mockReset(); boundaries.targeting.mockReset();
     boundaries.assembly.mockReset().mockResolvedValue(undefined);
     boundaries.effectBundle.mockReset().mockResolvedValue(null);
+    boundaries.readCatalog.mockReset().mockResolvedValue(emptyNativeCatalog);
     boundaries.detachCamera.mockReset(); boundaries.detachTargeting.mockReset();
     boundaries.detachAssetImport.mockReset(); boundaries.assetImport.mockReset().mockReturnValue(boundaries.detachAssetImport);
     boundaries.audioControls.mockReset().mockReturnValue({ update() {}, dispose() {}, describe: () => [], cards: () => [], setWorldAudio() {} });
@@ -608,6 +610,18 @@ describe("native slice runtime lifetime", () => {
     boundaries.load.mockResolvedValueOnce({ models: new Map(), npcProfiles: new Map() });
     await expect(startRuntime(settings, new AbortController().signal)).rejects.toThrow("selected native character, Musveren or equipment");
     expect(boundaries.uis).toEqual([]); expect(boundaries.registries).toEqual([]); expect(boundaries.section).not.toHaveBeenCalled();
+  });
+
+  it("starts the sandbox and reports a catalog index failure on the Sandbox tab instead of failing startup", async () => {
+    boundaries.readCatalog.mockResolvedValue({ ...emptyNativeCatalog, models: [{ id: "musveren:0" }, { id: "musveren:0" }] });
+    stops.push(await startRuntime(settings, new AbortController().signal));
+    expect(boundaries.registries).toHaveLength(1);
+    expect(boundaries.sheetGroups.has("catalog-index")).toBe(true);
+  });
+
+  it("adds no catalog index note when the index builds", async () => {
+    stops.push(await startRuntime(settings, new AbortController().signal));
+    expect(boundaries.sheetGroups.has("catalog-index")).toBe(false);
   });
 
   it("keeps the default player identity and plays its sourced profile clips, never an Editor-saved override", async () => {

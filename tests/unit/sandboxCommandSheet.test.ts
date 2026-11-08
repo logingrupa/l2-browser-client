@@ -32,7 +32,7 @@ function sandboxSection(): DevSection {
   return sheet.section("sandbox", { title: "Sandbox" });
 }
 
-function attachWithFakes(selectedEntityId: string | null = "native-musveren") {
+function attachWithFakes(selectedEntityId: string | null = "native-musveren", indexFailure: string | null = null) {
   const dispatched: WorldCommand[] = [];
   const listeners = new Set<(event: WorldEvent) => void>();
   const adapter = {
@@ -47,7 +47,7 @@ function attachWithFakes(selectedEntityId: string | null = "native-musveren") {
   };
   const powerStrike = { start: vi.fn(async () => {}) };
   const section = sandboxSection();
-  const release = attachSandboxCommandSheet({ section, adapter, index: fakeCatalogIndex, appearanceOfModel: () => "native-musveren",
+  const release = attachSandboxCommandSheet({ section, adapter, index: fakeCatalogIndex, indexFailure, appearanceOfModel: () => "native-musveren",
     selectedEntityId: () => selectedEntityId, powerStrike });
   const panel = section.element as unknown as FakeElement;
   const submit = (testId: string, values: Record<string, string>) => {
@@ -56,11 +56,25 @@ function attachWithFakes(selectedEntityId: string | null = "native-musveren") {
     fire(form, "submit");
   };
   const note = (testId: string) => panel.querySelectorAll(`[data-testid="${testId}-note"]`);
-  return { dispatched, listeners, powerStrike, release, submit, note };
+  return { dispatched, listeners, powerStrike, release, submit, note, panel };
 }
 
 beforeEach(() => { dom = installMiniDom(); });
 afterEach(() => { sheet.dispose(); dom.restore(); });
+
+describe("sandbox catalog index failure", () => {
+  it("shows a warning note on the Sandbox tab when the catalog index could not be built", () => {
+    const { panel } = attachWithFakes("native-musveren", "Native catalog has duplicate entries for musveren:0.");
+    const failureNote = panel.querySelector('[data-testid="sandbox-catalog-index-failure"]')!;
+    expect(failureNote.textContent).toBe("Catalog index unavailable: Native catalog has duplicate entries for musveren:0.");
+    expect(failureNote.dataset.tone).toBe("warning");
+  });
+
+  it("shows no index note when the index was built", () => {
+    const { panel } = attachWithFakes();
+    expect(panel.querySelector('[data-testid="sandbox-catalog-index-failure"]')).toBeNull();
+  });
+});
 
 describe("sandbox equip item by ID", () => {
   it("equips converted item 22 in the upper slot and notes it as converted", () => {

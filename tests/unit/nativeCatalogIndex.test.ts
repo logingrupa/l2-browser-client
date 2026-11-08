@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  buildNativeCatalogIndex, itemCatalogKey, npcCatalogKey, skillCatalogKey, tileCatalogKey, windowCatalogKey,
+  buildNativeCatalogIndex, describeNativeCatalogLookup, itemCatalogKey, unavailableNativeCatalogIndex, npcCatalogKey, skillCatalogKey, tileCatalogKey, windowCatalogKey,
 } from "../../src/assets/native/nativeCatalogIndex";
 import { readNativeCatalog, type NativeCatalog } from "../../src/assets/native/readNativeCatalog";
 import { sha256 } from "../../src/assets/package/readAssetPackage";
@@ -93,10 +93,25 @@ describe("native catalog L2-ID index", () => {
     ["section ids", (catalog: NativeCatalog) => ({ ...catalog, sections: [{ id: "map-20-20-section" }, { id: "map-20-20-section" }] }), "map-20-20-section"],
     ["model ids", (catalog: NativeCatalog) => ({ ...catalog, models: [...catalog.models, model("musveren:0", "Other.mesh")] }), "musveren:0"],
     ["skill keys", (catalog: NativeCatalog) => ({ ...catalog, effectComponents: [{ id: "interlude:skill:3:level:1:a" }, { id: "interlude:skill:3:level:1:b" }] }), "skill:3:1"],
-    ["models sharing one NPC mesh", (catalog: NativeCatalog) => ({ ...catalog, models: [...catalog.models, model("musveren:1", "LineageMonsters.field_stalker_m00")] }), "npc:21622"],
   ])("rejects duplicate %s instead of resolving last-one-wins", async (_label, duplicate, key) => {
     const catalog = duplicate(await inlineCatalog());
     await expect(buildNativeCatalogIndex(catalog, new AbortController().signal)).rejects.toThrow(`Native catalog has duplicate entries for ${key}.`);
+  });
+
+  it("records an NPC whose mesh several converted packages share as not in catalog, without failing the index", async () => {
+    const catalog = await inlineCatalog();
+    const index = await buildNativeCatalogIndex({ ...catalog, models: [...catalog.models, model("musveren:1", "LineageMonsters.field_stalker_m00")] },
+      new AbortController().signal);
+    expect(index.lookup(npcCatalogKey(21622))).toEqual({ status: "not-in-catalog", key: "npc:21622",
+      reason: "mesh LineageMonsters.field_stalker_m00 matches 2 converted packages (musveren:0, musveren:1)" });
+    expect(index.lookup(skillCatalogKey(3, 1)).status).toBe("converted");
+  });
+
+  it("reports every lookup of an unavailable index as not in catalog with the failure", () => {
+    const index = unavailableNativeCatalogIndex("Native NPC profile manifest hash mismatch.");
+    expect(describeNativeCatalogLookup(index.lookup(npcCatalogKey(21622))))
+      .toBe("npc:21622 not in catalog: catalog index unavailable: Native NPC profile manifest hash mismatch.");
+    expect(index.keys("")).toEqual([]);
   });
 
   it.each([-1, 1.5, Number.NaN])("key builders reject %s", value => {
