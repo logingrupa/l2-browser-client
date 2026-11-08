@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-08-PLAN.md
-last_updated: "2026-11-08T16:54:10.842Z"
+stopped_at: Completed 02-09-PLAN.md
+last_updated: "2026-11-08T17:11:20.839Z"
 last_activity: 2026-11-08
-last_activity_desc: Phase 02 plan 02-08 complete (CONV-01 and CONV-02 contract tests, Source preservation section)
-state_head: a141d90938f4c90a9265884d64aff992961e2e87
+last_activity_desc: Phase 02 plan 02-09 complete (Converter source digests from the guard, evidence export manifest)
+state_head: 071288ed570e8d048505a0178748c88e09f209ec
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 86
-  completed_plans: 24
+  completed_plans: 25
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 02 (Stage A breadth) - EXECUTING
-Plan: 02-08 complete, 7 of 69 plans executed
+Plan: 02-09 complete, 8 of 69 plans executed
 Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-08 - Plan 02-08 complete: CONV-02 and CONV-01 contract tests (`tests/pipeline/test_source_preservation_contract.py`, `tests/pipeline/test_converter_independence.py`), the OUTPUT_CONTRACT "Source preservation" section with 15 repair, restore and preserve steps, and the Editor round-trip block removed from `recipes/native-parity.acceptance.json` with every POL-01 member pinned. Earlier: plan 02-06, the serve-only `NATIVE_STORE_ROOT` dev switch (`vite/nativeStoreRootPlugin.ts`) serves `/l2/` from a lane store or the committed fixture store on port 5175, with catalog and coverage only from that root, proven absent from the production bundle; the load-check record format and its atomic per-key writer (`tests/browser/support/loadCheckRecordFile.ts`). Earlier: plan 02-03, one catalog writer library (`scripts/native_store/catalog_writer.py`) under every stager and importer, and `write_lane_catalog.py` with `--lane`, `--union` and `--plan`, pinning lane catalogs to the shared store's catalog SHA-256. Earlier: plan 02-02, one Riga machine schedule owner (`scripts/check-machine-schedule.mjs`, guarded in both Playwright configs), the resumable `UnitLedger` with `require_batch_preflight`, and the gap-row schema with the closed reason list. Earlier: applied the Lineage2JS reference handoff (DEC-OWN-12): eight provisional requirements MAT-01, MAT-02, VIS-01, MOVE-01, FX-01 (Phase 2) and MOVE-02, NET-09, NET-10 (Phase 4), v1 now 66; earlier the native-world-slice merge (DEC-OWN-11) left only the native routes
+Last activity: 2026-11-08 - Plan 02-09 complete: `Converter` takes every client digest from the reference client guard through `scripts/native_assets_lib/converter_source_digests.py` (one SHA-256 per file identity per process on lock-checked roots, every read on the reference root), pins compare against `recorded_source_sha256`, `implementation_hash` runs once per conversion, and new outputs keep logs, non-glTF exports and `evidence/export-manifest.json` through `scripts/native_assets_lib/conversion_evidence.py` instead of the whole work tree. Earlier: plan 02-08, CONV-02 and CONV-01 contract tests (`tests/pipeline/test_source_preservation_contract.py`, `tests/pipeline/test_converter_independence.py`), the OUTPUT_CONTRACT "Source preservation" section with 15 repair, restore and preserve steps, and the Editor round-trip block removed from `recipes/native-parity.acceptance.json` with every POL-01 member pinned. Earlier: plan 02-06, the serve-only `NATIVE_STORE_ROOT` dev switch (`vite/nativeStoreRootPlugin.ts`) serves `/l2/` from a lane store or the committed fixture store on port 5175, with catalog and coverage only from that root, proven absent from the production bundle; the load-check record format and its atomic per-key writer (`tests/browser/support/loadCheckRecordFile.ts`). Earlier: plan 02-03, one catalog writer library (`scripts/native_store/catalog_writer.py`) under every stager and importer, and `write_lane_catalog.py` with `--lane`, `--union` and `--plan`, pinning lane catalogs to the shared store's catalog SHA-256. Earlier: plan 02-02, one Riga machine schedule owner (`scripts/check-machine-schedule.mjs`, guarded in both Playwright configs), the resumable `UnitLedger` with `require_batch_preflight`, and the gap-row schema with the closed reason list. Earlier: applied the Lineage2JS reference handoff (DEC-OWN-12): eight provisional requirements MAT-01, MAT-02, VIS-01, MOVE-01, FX-01 (Phase 2) and MOVE-02, NET-09, NET-10 (Phase 4), v1 now 66; earlier the native-world-slice merge (DEC-OWN-11) left only the native routes
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -76,6 +76,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 2 P03 | 20min | 3 tasks | 17 files |
 | Phase 2 P06 | 20min | 3 tasks | 13 files |
 | Phase 2 P08 | 20min | 3 tasks | 7 files |
+| Phase 02 P09 | 12min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -144,6 +145,9 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 2]: 02-08: CONV-02 contract in tests/pipeline/test_source_preservation_contract.py; normalisation ban allow-lists only scripts/audit_musveren_weights.py, WEIGHTS_0 allow-list adds rigid.py read-only (rows 132-133)
 - [Phase 2]: 02-08: editor member removed from recipes/native-parity.acceptance.json; POL-01 members pinned to plan-start bytes at bcb3b1a, new file SHA-256 bdbff732 in docs/NATIVE_PARITY.md (row 135)
 - [Phase 2]: 02-08: Source preservation lists 15 steps, 2 unresolved (zero-tangent repair); CONV-01 proven by import closure and selectors, receipts stay with 02-14 and 02-43; CONV-01 and CONV-02 stay Pending (rows 134, 137, 139)
+- [Phase 02]: 02-09: the owner's SHA-256 proof (a763a0c) wins over the plan's size and time shortcut; Converter digests come from the guard's identity-cached proof, no second memo (OVERNIGHT row 141)
+- [Phase 02]: 02-09: new converter outputs keep logs, non-glTF work files and evidence/export-manifest.json; intermediate .gltf and .bin are hash-listed only (row 144)
+- [Phase 02]: 02-09: export-native-sounds.py verifies the export manifest exactly; converterVersion change makes earlier cache records miss once (rows 145, 146)
 
 ### Pending Todos
 
@@ -194,6 +198,6 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-08T16:54:10.456Z
-Stopped at: Completed 02-08-PLAN.md
+Last session: 2026-11-08T17:11:11.725Z
+Stopped at: Completed 02-09-PLAN.md
 Resume file: None
