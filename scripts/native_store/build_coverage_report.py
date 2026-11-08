@@ -119,7 +119,7 @@ def count_part_rows(rows, denominator_count):
 def build_coverage_report(project_root, store_root, lane_names, generated_at_riga):
     catalog, catalog_sha256 = read_measured_catalog(store_root)
     denominators = coverage_denominators()
-    converted_keys = set(catalog_index_keys(catalog))
+    converted_keys = set(catalog_index_keys(store_root, catalog, Path(project_root) / 'public' / 'l2'))
     steps_by_part_and_key = gap_steps_by_part_and_key(project_root, lane_names)
     load_status_by_key = merged_load_statuses(project_root, lane_names, catalog_sha256)
     rows, parts = [], {}
