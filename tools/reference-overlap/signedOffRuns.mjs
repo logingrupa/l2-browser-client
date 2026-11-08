@@ -8,6 +8,7 @@ export const defaultSignedOffRunsPath = path.join(path.dirname(fileURLToPath(imp
 const supportedSchemaVersion = 1;
 const sourceTokenSeparator = "\u0001";
 const signedOffVerdict = "generic";
+const areasWithoutSignOffs = new Set(["network"]);
 const sha256HexPattern = /^[0-9a-f]{64}$/;
 const calendarDatePattern = /^\d{4}-\d{2}-\d{2}$/;
 const signedOffRunFieldNames = ["area", "sourceFile", "tokenCount", "sourceTokensSha256", "referenceFiles", "verdict", "reviewedOn", "review", "evidence"];
@@ -47,6 +48,9 @@ function requireSignedOffRun(entry, entryLabel, areaNames) {
   const blankFieldName = signedOffRunTextFieldNames.find(fieldName => typeof entry[fieldName] !== "string" || entry[fieldName] === "");
   if (blankFieldName !== undefined) throw new ReferenceOverlapSetupError(`${entryLabel} field ${blankFieldName} must be non-empty text`);
   if (!areaNames.includes(entry.area)) throw new ReferenceOverlapSetupError(`${entryLabel} names unknown area ${entry.area}; use one of ${areaNames.join(", ")}`);
+  if (areasWithoutSignOffs.has(entry.area)) {
+    throw new ReferenceOverlapSetupError(`${entryLabel} names area ${entry.area}, which takes no sign-offs: NET-09 allows no shared run of 20 or more tokens outside the constant allowlist`);
+  }
   if (!Number.isSafeInteger(entry.tokenCount) || entry.tokenCount < 1) throw new ReferenceOverlapSetupError(`${entryLabel} tokenCount must be a positive integer: ${entry.tokenCount}`);
   if (!sha256HexPattern.test(entry.sourceTokensSha256)) throw new ReferenceOverlapSetupError(`${entryLabel} sourceTokensSha256 must be 64 lower-case hex characters: ${entry.sourceTokensSha256}`);
   requireSortedUniqueReferenceFiles(entry.referenceFiles, entryLabel);
@@ -74,7 +78,8 @@ export function validateSignedOffRuns(signedOffRuns, areaNames) {
 }
 
 function signedOffRunCoversReviewerRun(signedOffRun, reviewerRun) {
-  return signedOffRun.sourceFile === reviewerRun.sourceFile
+  return signedOffRun.verdict === signedOffVerdict
+    && signedOffRun.sourceFile === reviewerRun.sourceFile
     && signedOffRun.tokenCount === reviewerRun.tokenCount
     && signedOffRun.sourceTokensSha256 === reviewerRun.sourceTokensSha256
     && reviewerRun.referenceMatches.every(referenceMatch => signedOffRun.referenceFiles.includes(referenceMatch.referenceFile));

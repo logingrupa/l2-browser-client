@@ -15,6 +15,11 @@ const punctuators = [
   "<<", ">>", "**",
 ];
 
+const statementBoundaryTokens = new Set([";", "{", "}"]);
+const importClausePunctuation = new Set(["*", ","]);
+const importAttributeValueTokens = new Set([":", ",", stringPlaceholder]);
+const importAttributesKeywords = new Set(["with", "assert"]);
+
 const numericLiteralPattern = /0[xX][0-9a-fA-F_]+n?|0[bB][01_]+n?|0[oO][0-7_]+n?|(?:\d[\d_]*(?:\.[\d_]*)?|\.\d[\d_]*)(?:[eE][+-]?\d+)?[fFuUn]?/y;
 const identifierPattern = /[\p{ID_Start}_$][\p{ID_Continue}$‌‍]*/uy;
 
@@ -87,16 +92,67 @@ function scanSourceTokens(text) {
   return tokens;
 }
 
-function startsImportDeclaration(tokens, index) {
-  const nextToken = tokens[index + 1];
-  return tokens[index].normalised === "import" && nextToken !== undefined && nextToken.normalised !== "(" && nextToken.normalised !== ".";
+function isNameToken(token) {
+  return token !== undefined && (token.normalised === identifierPlaceholder || keywords.has(token.normalised));
 }
 
-function importDeclarationEnd(tokens, startIndex) {
-  let index = startIndex + 1;
-  while (index < tokens.length && tokens[index].normalised !== stringPlaceholder) index += 1;
-  index += 1;
+function startsStatement(previousKeptToken) {
+  return previousKeptToken === undefined || statementBoundaryTokens.has(previousKeptToken.normalised);
+}
+
+function statementEnd(tokens, index) {
   return tokens[index]?.normalised === ";" ? index + 1 : index;
+}
+
+function importAttributesEnd(tokens, openingBraceIndex) {
+  for (let index = openingBraceIndex + 1; index < tokens.length; index += 1) {
+    const normalised = tokens[index].normalised;
+    if (normalised === "}") return index + 1;
+    if (!isNameToken(tokens[index]) && !importAttributeValueTokens.has(normalised)) return null;
+  }
+  return null;
+}
+
+function moduleSpecifierEnd(tokens, specifierIndex) {
+  const attributesKeyword = tokens[specifierIndex + 1];
+  if (attributesKeyword !== undefined && importAttributesKeywords.has(attributesKeyword.original) && tokens[specifierIndex + 2]?.normalised === "{") {
+    const attributesEnd = importAttributesEnd(tokens, specifierIndex + 2);
+    if (attributesEnd !== null) return statementEnd(tokens, attributesEnd);
+  }
+  return statementEnd(tokens, specifierIndex + 1);
+}
+
+function importEqualsEnd(tokens, importIndex, equalsIndex) {
+  const aliasShape = tokens.slice(importIndex + 1, equalsIndex).map(token => token.normalised).join(" ");
+  if (aliasShape !== identifierPlaceholder && aliasShape !== `type ${identifierPlaceholder}`) return null;
+  const targetIndex = equalsIndex + 1;
+  const isRequireCall = tokens[targetIndex]?.original === "require" && tokens[targetIndex + 1]?.normalised === "("
+    && tokens[targetIndex + 2]?.normalised === stringPlaceholder && tokens[targetIndex + 3]?.normalised === ")";
+  if (isRequireCall) return statementEnd(tokens, targetIndex + 4);
+  if (tokens[targetIndex]?.normalised !== identifierPlaceholder) return null;
+  let index = targetIndex + 1;
+  while (tokens[index]?.normalised === "." && tokens[index + 1]?.normalised === identifierPlaceholder) index += 2;
+  return statementEnd(tokens, index);
+}
+
+function importClauseEnd(tokens, importIndex) {
+  let braceDepth = 0;
+  for (let index = importIndex + 1; index < tokens.length; index += 1) {
+    const token = tokens[index];
+    if (braceDepth === 0 && token.original === "from" && tokens[index + 1]?.normalised === stringPlaceholder) return moduleSpecifierEnd(tokens, index + 1);
+    if (braceDepth === 0 && token.normalised === "=") return importEqualsEnd(tokens, importIndex, index);
+    if (token.normalised === "{") braceDepth += 1;
+    else if (token.normalised === "}") braceDepth -= 1;
+    else if (!isNameToken(token) && !importClausePunctuation.has(token.normalised) && !(braceDepth === 1 && token.normalised === stringPlaceholder)) return null;
+    if (braceDepth < 0 || braceDepth > 1) return null;
+  }
+  return null;
+}
+
+function importDeclarationEnd(tokens, index, previousKeptToken) {
+  if (tokens[index].normalised !== "import" || !startsStatement(previousKeptToken)) return null;
+  if (tokens[index + 1]?.normalised === stringPlaceholder) return moduleSpecifierEnd(tokens, index + 1);
+  return importClauseEnd(tokens, index);
 }
 
 export function normaliseSourceTokens(text) {
@@ -104,11 +160,12 @@ export function normaliseSourceTokens(text) {
   const tokens = [];
   let index = 0;
   while (index < scannedTokens.length) {
-    if (startsImportDeclaration(scannedTokens, index)) {
-      index = importDeclarationEnd(scannedTokens, index);
-    } else {
+    const declarationEnd = importDeclarationEnd(scannedTokens, index, tokens.at(-1));
+    if (declarationEnd === null) {
       tokens.push(scannedTokens[index]);
       index += 1;
+    } else {
+      index = declarationEnd;
     }
   }
   return tokens;

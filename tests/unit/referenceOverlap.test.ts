@@ -6,9 +6,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  ReferenceOverlapSetupError, findSharedTokenRuns, loadOverlapAreas, normaliseSourceTokens, runReferenceOverlap,
+  ReferenceOverlapSetupError, loadOverlapAreas, normaliseSourceTokens, runReferenceOverlap, signOffReviewerRuns,
   type OverlapAreas, type ReferenceOverlapReport, type SignedOffRun, type SignedOffRuns,
 } from "../../tools/reference-overlap/referenceOverlap.mjs";
+import { alternatingCoreText, sourceAndReferenceWithSharedCore } from "../support/sharedTokenCore";
 
 const fixtureDirectory = fileURLToPath(new URL("../fixtures/reference-overlap/", import.meta.url));
 const toolDirectory = fileURLToPath(new URL("../../tools/reference-overlap/", import.meta.url));
@@ -27,24 +28,6 @@ const temporaryWorkspaces: string[] = [];
 afterEach(() => {
   for (const workspace of temporaryWorkspaces.splice(0)) rmSync(workspace, { recursive: true, force: true });
 });
-
-function alternatingCoreText(tokenCount: number, identifierPrefix: string, replacedNumberIndex: number | null = null): string {
-  return Array.from({ length: tokenCount }, (_, index) => {
-    if (index % 2 === 0) return `${identifierPrefix}${index}`;
-    return String(index === replacedNumberIndex ? 9000 + index : 1000 + index);
-  }).join(" ");
-}
-
-function sharedRunLengths(sourceText: string, referenceText: string, minimumRun: number): number[] {
-  return findSharedTokenRuns(normaliseSourceTokens(sourceText), normaliseSourceTokens(referenceText), minimumRun).map(run => run.tokenCount);
-}
-
-function sourceAndReferenceWithSharedCore(tokenCount: number): { sourceText: string; referenceText: string } {
-  return {
-    sourceText: `7001 ${alternatingCoreText(tokenCount, "alpha")} 7002`,
-    referenceText: `8001 ${alternatingCoreText(tokenCount, "beta")} 8002`,
-  };
-}
 
 function createWorkspace(): string {
   const workspace = mkdtempSync(path.join(tmpdir(), "reference-overlap-"));
@@ -134,65 +117,6 @@ function overlapAreasWithMovementAllowlist(sourceFile: string, constantName: str
   const movementArea = overlapAreas.areas["movement"]!;
   return { ...overlapAreas, areas: { ...overlapAreas.areas, movement: { ...movementArea, constantAllowlist: [{ sourceFile, constantName, kind: "opcodes" }] } } };
 }
-
-describe("normaliseSourceTokens", () => {
-  it("replaces identifiers and strings with placeholders, strips comments and imports, and keeps canonical numbers", () => {
-    const tokens = normaliseSourceTokens('import { thing } from "./thing";\nconst label = "a"; // trailing\n/* block\n */ let count = 0x10 + 1_000;\nconst lazy = import("./lazy");');
-    expect(tokens.map(token => token.normalised)).toEqual([
-      "const", "<identifier>", "=", "<string>", ";",
-      "let", "<identifier>", "=", "16", "+", "1000", ";",
-      "const", "<identifier>", "=", "import", "(", "<string>", ")", ";",
-    ]);
-    expect(tokens.map(token => token.line)).toEqual([2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5]);
-  });
-
-  it("reads multi-character operators as one token", () => {
-    expect(normaliseSourceTokens("a >>>= b ?? c?.d === e").map(token => token.normalised))
-      .toEqual(["<identifier>", ">>>=", "<identifier>", "??", "<identifier>", "?.", "<identifier>", "===", "<identifier>"]);
-  });
-});
-
-describe("findSharedTokenRuns thresholds", () => {
-  it("gives no finding for 11 shared tokens and one finding for 12", () => {
-    const eleven = sourceAndReferenceWithSharedCore(11);
-    const twelve = sourceAndReferenceWithSharedCore(12);
-    expect(sharedRunLengths(eleven.sourceText, eleven.referenceText, 12)).toEqual([]);
-    expect(sharedRunLengths(twelve.sourceText, twelve.referenceText, 12)).toEqual([12]);
-  });
-
-  it("reports one maximal run for 20 shared tokens, not its sub-runs", () => {
-    const twenty = sourceAndReferenceWithSharedCore(20);
-    expect(sharedRunLengths(twenty.sourceText, twenty.referenceText, 12)).toEqual([20]);
-  });
-
-  it("is not hidden by renaming every identifier consistently", () => {
-    const sourceText = "const total = first + second * first ; return total - second ;";
-    const renamedText = "const sum = left + right * left ; return sum - right ;";
-    expect(sharedRunLengths(sourceText, renamedText, 12)).toEqual([14]);
-  });
-
-  it("separates identifiers that the reference keeps apart", () => {
-    const sourceText = "const total = first + second * first ; return total - second ;";
-    const differentlyBoundText = "const sum = left + right * right ; return sum - left ;";
-    expect(sharedRunLengths(sourceText, differentlyBoundText, 12)).toEqual([]);
-  });
-
-  it("is broken by changing one numeric literal", () => {
-    const changedSourceText = `7001 ${alternatingCoreText(20, "alpha", 9)} 7002`;
-    const referenceText = `8001 ${alternatingCoreText(20, "beta")} 8002`;
-    expect(sharedRunLengths(changedSourceText, referenceText, 12)).toEqual([]);
-  });
-
-  it("is not hidden by comments inside the run", () => {
-    const sourceCore = alternatingCoreText(12, "alpha").split(" ");
-    const commentedSourceText = `7001 ${sourceCore.slice(0, 6).join(" ")} /* note */ ${sourceCore.slice(6, 9).join(" ")} // note\n${sourceCore.slice(9).join(" ")} 7002`;
-    expect(sharedRunLengths(commentedSourceText, sourceAndReferenceWithSharedCore(12).referenceText, 12)).toEqual([12]);
-  });
-
-  it("refuses a minimum run that is not a positive integer", () => {
-    expect(() => findSharedTokenRuns([], [], 0)).toThrow(RangeError);
-  });
-});
 
 describe("reference overlap command over the movement area", () => {
   it.each([[19, 0, 1], [20, 1, 1]])("classifies a %i token run with exit %i and %i reviewer run", (tokenCount, expectedStatus, expectedReviewerRuns) => {
@@ -331,11 +255,21 @@ describe("reviewer sign-offs", () => {
     ["an unknown area", validEntry => signedOffRunsOf({ ...validEntry, area: "unknown-area" }), /names unknown area unknown-area/],
     ["a duplicate area, source and hash", validEntry => signedOffRunsOf(validEntry, { ...validEntry, review: "A second review of the same run." }), /sign-off runs\[1\] repeats area movement/],
     ["unsorted reference files", validEntry => signedOffRunsOf({ ...validEntry, referenceFiles: ["b.ts", "a.ts"] }), /referenceFiles must be sorted and unique/],
+    ["a derived verdict", validEntry => signedOffRunsOf({ ...validEntry, verdict: "derived" }), /sign-off runs\[0\] verdict must be generic: derived/],
+    ["the network area", validEntry => signedOffRunsOf({ ...validEntry, area: "network" }), /names area network, which takes no sign-offs/],
   ])("refuses sign-off data with %s", (_caseName, buildSignedOffRuns, expectedMessage) => {
     const malformedSignedOffRuns = buildSignedOffRuns(genericSignOff()) as SignedOffRuns;
     const runWithMalformedSignOffs = () => runMovementOverlap(createWorkspace(), malformedSignedOffRuns);
     expect(runWithMalformedSignOffs).toThrow(ReferenceOverlapSetupError);
     expect(runWithMalformedSignOffs).toThrow(expectedMessage);
+  });
+
+  it("never lets a sign-off without the generic verdict cover a run, even past validation", () => {
+    const report = runMovementOverlap(writeSharedCoreWorkspace(sharedCore.sourceText, sharedCoreReferenceTexts), noSignedOffRuns);
+    const derivedSignOff = genericSignOff({ verdict: "derived" });
+    const { reviewerRuns, staleSignedOffRuns } = signOffReviewerRuns(report.reviewerRuns, [derivedSignOff], "movement");
+    expect(reviewerRuns.map(run => run.signedOff)).toEqual([null]);
+    expect(staleSignedOffRuns).toEqual([derivedSignOff]);
   });
 
   it("exits 2 on the command line when the sign-off file is not JSON", () => {

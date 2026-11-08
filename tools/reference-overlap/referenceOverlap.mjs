@@ -9,6 +9,7 @@ import { normaliseSourceTokens } from "./sourceTokens.mjs";
 
 export { ReferenceOverlapSetupError } from "./referenceOverlapSetupError.mjs";
 export { findSharedTokenRuns } from "./sharedTokenRuns.mjs";
+export { signOffReviewerRuns } from "./signedOffRuns.mjs";
 export { normaliseSourceTokens } from "./sourceTokens.mjs";
 
 const exitCodeNoFinding = 0;

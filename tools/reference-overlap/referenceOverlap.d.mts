@@ -98,5 +98,8 @@ export interface ReferenceOverlapOptions {
 export class ReferenceOverlapSetupError extends Error {}
 export function normaliseSourceTokens(text: string): SourceToken[];
 export function findSharedTokenRuns(sourceTokens: readonly Pick<SourceToken, "normalised" | "original">[], referenceTokens: readonly Pick<SourceToken, "normalised" | "original">[], minimumRun: number): SharedTokenRun[];
+export function signOffReviewerRuns(
+  reviewerRuns: readonly Omit<ReviewerRun, "signedOff">[], validatedSignedOffRuns: readonly SignedOffRun[], areaName: string,
+): { readonly reviewerRuns: ReviewerRun[]; readonly staleSignedOffRuns: SignedOffRun[] };
 export function loadOverlapAreas(): OverlapAreas;
 export function runReferenceOverlap(options: ReferenceOverlapOptions): ReferenceOverlapReport;
