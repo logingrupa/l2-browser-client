@@ -14,6 +14,34 @@ import {
 } from "../../scripts/check-lane-ownership.mjs";
 
 const laneOwnershipFilePath = ".planning/lanes.json";
+const evidenceDocumentByteLimit = 30_720;
+const portScopePartSlugsInOrder = [
+  "data",
+  "sandbox",
+  "world",
+  "player-characters",
+  "ui",
+  "npcs",
+  "items",
+  "skills-effects",
+  "audio",
+  "minimap",
+  "movement-geodata",
+  "adapter-login",
+  "adapter-dispatch",
+  "combat-display",
+  "npc-dialogs",
+  "shops-trade",
+  "social",
+  "quests",
+  "late-systems",
+];
+
+function bulletLinesOf(filePath: string): string[] {
+  return readFileSync(filePath, "utf8")
+    .split(/\r?\n/)
+    .filter((line) => line.startsWith("- "));
+}
 
 function sampleLaneOwnership(): LaneOwnership {
   return {
@@ -162,11 +190,53 @@ describe("repository lanes.json", () => {
     expect(partSlugs).toHaveLength(19);
   });
 
+  it("assigns exactly the PORT_SCOPE parts", () => {
+    expect([...partSlugs].sort()).toEqual([...portScopePartSlugsInOrder].sort());
+  });
+
   it("keeps every native-store writer script in the integration lane", () => {
     const writerPaths = nativeStoreWriterScriptPaths();
     expect(writerPaths.length).toBeGreaterThan(0);
     for (const writerPath of writerPaths) {
       expect({ writerPath, lane: ownerLaneOfPath(ownership, writerPath) }).toEqual({ writerPath, lane: "integration" });
     }
+  });
+});
+
+describe("shared process files", () => {
+  const ownership = readLaneOwnership(laneOwnershipFilePath);
+
+  it("has one STATUS.md line per part in PORT_SCOPE order, with the owning lane and evidence doc", () => {
+    const statusFields = bulletLinesOf("STATUS.md").map((line) => line.slice(2).split(" | "));
+    expect(statusFields.map((fields) => fields[0])).toEqual(portScopePartSlugsInOrder);
+    for (const [part, lane, state, evidenceDocument, ...extraFields] of statusFields) {
+      expect(extraFields).toEqual([]);
+      expect(lane).toBe(laneOfPart(ownership, part ?? ""));
+      expect(state?.length).toBeGreaterThan(0);
+      expect(evidenceDocument).toBe(`docs/parts/${part}/EVIDENCE.md`);
+    }
+  });
+
+  it.each(portScopePartSlugsInOrder)("has an evidence doc for %s under 30 KB with the three sections", (part) => {
+    const evidenceDocument = readFileSync(`docs/parts/${part}/EVIDENCE.md`, "utf8");
+    expect(Buffer.byteLength(evidenceDocument, "utf8")).toBeLessThan(evidenceDocumentByteLimit);
+    for (const heading of ["## Passes now", "## Open", "## Evidence"]) {
+      expect(evidenceDocument.split(/\r?\n/)).toContain(heading);
+    }
+  });
+
+  it("has one dated DECISIONS.md line per unique decision ID pointing at PROJECT.md", () => {
+    const decisionLinePattern = /^- \d{4}-\d{2}-\d{2} (DEC-[A-Z]+-\d+): .+ Full text: \.planning\/PROJECT\.md$/;
+    const decisionIdentifiers = bulletLinesOf("DECISIONS.md").map((line) => {
+      const match = decisionLinePattern.exec(line);
+      expect(match, line).not.toBeNull();
+      return match?.[1] ?? "";
+    });
+    expect(new Set(decisionIdentifiers).size).toBe(decisionIdentifiers.length);
+    const requiredIdentifiers = [
+      ...Array.from({ length: 8 }, (_, index) => `DEC-OWN-${index + 1}`),
+      ...Array.from({ length: 3 }, (_, index) => `DEC-PORT-${index + 1}`),
+    ];
+    expect(decisionIdentifiers).toEqual(expect.arrayContaining(requiredIdentifiers));
   });
 });
