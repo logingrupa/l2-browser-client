@@ -31,11 +31,6 @@ KNOWN_CLIENT_ENTRY_POINTS = {
     'scripts/report-native-animation-aliases.py',
     'scripts/restore-native-static-normals.py',
 }
-ENTRY_POINTS_NOT_YET_GUARDED = {
-    'scripts/native_migration.py',
-    'scripts/prepare-native-player-aliases.py',
-    'scripts/report-native-animation-aliases.py',
-}
 
 
 def called_function_name(call):
@@ -81,8 +76,8 @@ class ClientEntryPointScanTests(unittest.TestCase):
         selected = set(client_entry_point_trees())
         self.assertLessEqual(KNOWN_CLIENT_ENTRY_POINTS, selected, KNOWN_CLIENT_ENTRY_POINTS - selected)
 
-    def test_only_the_listed_entry_points_still_skip_the_reference_client_guard(self):
-        self.assertEqual(unguarded_entry_points(client_entry_point_trees()), ENTRY_POINTS_NOT_YET_GUARDED)
+    def test_every_client_entry_point_calls_the_reference_client_guard(self):
+        self.assertEqual(unguarded_entry_points(client_entry_point_trees()), set())
 
     def test_scan_flags_a_client_option_without_a_guard_call(self):
         unguarded_source = "import argparse\nparser = argparse.ArgumentParser()\nparser.add_argument('--client-snapshot')\n"

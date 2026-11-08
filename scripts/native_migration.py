@@ -14,8 +14,10 @@ from native_assets import Converter, UMODEL, hash_file, verify_archive
 from native_assets_lib.gltf import json_bytes
 from native_source_stage import inventory, read_manifest, stage, verify_sources
 from native_texture_validation import verify_texture_products
+from reference_client_guard import require_reference_client
 
 ROOT = Path(__file__).resolve().parent.parent
+RECEIPT_KINDS_WITH_SOURCES_VERIFIED_THROUGH_PINNED_PRODUCTS = {'native-map-section-runtime'}
 DEFERRED = [
     'Native visual acceptance of equipment and attack/death playback, world gameplay/collision and native terrain layer rendering.',
     'Live Power Strike timing and attachment, complete character attack reference and Babylon effect simulation; reviewed source dispatch is preserved.',
@@ -92,7 +94,6 @@ def output_file(output, relative):
 
 
 def active_products(output):
-    """Only the current recipe's catalog, not superseded immutable cache entries."""
     coverage = read_json(Path(output) / 'coverage.json')
     archives, bundles = set(), []
     for job in coverage['jobs']:
@@ -140,9 +141,7 @@ def receipt_dependencies(receipt):
         return receipt['dependencies']
     if 'sourceDependencies' in receipt:
         return receipt['sourceDependencies']
-    if receipt.get('kind') == 'native-map-section-runtime':
-        # Runtime products pin the complete geometry receipt and every model
-        # archive; their source dependencies are verified through those products.
+    if receipt.get('kind') in RECEIPT_KINDS_WITH_SOURCES_VERIFIED_THROUGH_PINNED_PRODUCTS:
         return {}
     return {entry['path']: entry['sha256'] for entry in receipt['sourceFiles']}
 
@@ -179,7 +178,6 @@ def check_coverage(recipe, output):
 
 
 def product_files(output):
-    """Authored products only; diagnostics and validator timestamps are not products."""
     output = Path(output)
     products = {}
     archives, bundles = active_products(output)
@@ -211,7 +209,6 @@ def validate_products(output, client, manifest):
             asset = read_json(path.parent / 'asset.json')
             provenance = read_json(path.parent / 'provenance.json')
             dependency_pins(provenance['dependencies'], manifest)
-            # Validate unpacked payloads too: these are the files used by tools.
             for entry in asset['files']:
                 payload = (path.parent / entry['path']).resolve()
                 if not payload.is_relative_to(path.parent.resolve()) or hash_file(payload) != entry['sha256']:
@@ -356,7 +353,6 @@ def run_migration(recipe, client, output, manifest, source_inventory=None):
     verification = validate_products(output, client, manifest)
     write_json(output / 'validation.json', verification)
     write_json(output / 'products.json', product_files(output))
-    # Run cache flags do not alter deterministic migration products.
     write_json(output / 'run.json', {'jobs': run_rows})
     ok = verification['passed'] and all(job['support'] != 'failed' and not job.get('unsupported') for job in jobs)
     summary = {'passed': ok, 'output': str(output), 'jobs': len(jobs), 'archives': len(verification['archives']), 'cacheHits': sum(row['cacheHit'] for row in run_rows), 'cacheJobs': len(run_rows), 'failedJobs': [job['id'] for job in jobs if job['support'] == 'failed']}
@@ -377,6 +373,7 @@ def main():
     parser.add_argument('--prove-rebuild', action='store_true', help='After migration, test cache replay and rebuild into a genuinely empty retained directory')
     parser.add_argument('--stage-runtime', action='store_true', help='Stage current verified models into ignored public/l2 for local browser/Editor use')
     args = parser.parse_args()
+    require_reference_client(args.client)
     recipe = load_recipe(args.recipe)
     manifest = read_manifest(project_file(recipe['sourceManifest']))
     output = safe_output(args.output, args.client)

@@ -1,9 +1,3 @@
-"""Alias coverage must bind clips only through original localization values.
-
-Synthetic fixtures exercise the conflict-preserving reader and alias statuses;
-the optional integration case verifies the real four-package report without
-writing (skipped when the staged packages are absent).
-"""
 import hashlib
 import importlib.util
 import json
@@ -15,9 +9,10 @@ import unittest
 import zlib
 
 ROOT = Path(__file__).resolve().parents[2]
+IMPORTA_SNAPSHOT = ROOT / 'artifacts/native-parity/inputs/IMPORTA-PC'
 sys.path.insert(0, str(ROOT / 'scripts'))
-from native_animation_families import build_animation_families, resolve_animation_references, section_records  # noqa: E402
-from native_catalog.ue2 import FormatError  # noqa: E402
+from native_animation_families import build_animation_families, resolve_animation_references, section_records
+from native_catalog.ue2 import FormatError
 
 SPEC = importlib.util.spec_from_file_location('report_native_animation_aliases', ROOT / 'scripts/report-native-animation-aliases.py')
 subject = importlib.util.module_from_spec(SPEC)
@@ -99,7 +94,6 @@ class ConflictPreservingReaderTests(unittest.TestCase):
         self.assertEqual([candidate['value'] for candidate in field['candidates']], ['atkWait_1HS_FMagic', 'Atk02_1HS_FMagic'])
         self.assertEqual(built['conflictingDuplicates'][0]['key'], 'SpAtk13AnimName[1]')
         self.assertEqual(len(built['identicalDuplicates']), 1)
-        # Unrelated fields keep the shared reader's exact values and getters.
         self.assertEqual(built['families'][0]['fields']['WaitAnimName']['value'], 'wait_Hand_FMagic')
         self.assertIn('DamageFlyAnimName[0]', built['unverifiedSelectionKeys'])
 
@@ -130,7 +124,6 @@ class AliasRowTests(unittest.TestCase):
         self.assertEqual(self.rows['rebirth']['status'], 'no-native-field')
         self.assertEqual(self.rows['rebirth']['exportedClip'], 'Rebirth_FMagic')
         self.assertEqual(self.rows['rebirth']['exportedClipSelectedBy'], [])
-        # The WT_HAND report is unaffected by the WT_1HS conflict; nothing is inferred for it.
         self.assertEqual(self.rows['spAtk13']['status'], 'no-family-value')
         self.assertEqual(self.rows['walk']['status'], 'no-family-value')
 
@@ -145,6 +138,7 @@ class AliasRowTests(unittest.TestCase):
         self.assertEqual((rows['wait']['status'], rows['wait']['clip']), ('missing-clip', None))
 
 
+@unittest.skipUnless((IMPORTA_SNAPSHOT / subject.LOCALIZATION).is_file(), 'Private IMPORTA-PC localization input is not staged in this checkout')
 class RealReportTests(unittest.TestCase):
     def test_four_staged_packages_verify_without_writes(self):
         output = ROOT / 'artifacts/native-parity/research/dev-sheet-audio-20261107/models'
@@ -155,7 +149,7 @@ class RealReportTests(unittest.TestCase):
         if not {catalog_id for catalog_id, _, _ in subject.PACKAGES} <= ids:
             self.skipTest('Not all four Human packages are staged')
         before = {path: path.stat().st_mtime_ns for path in output.rglob('*') if path.is_file() and path.suffix in ('.json', '.md')}
-        result = subject.run(output, catalog, ROOT / 'artifacts/native-parity/inputs/IMPORTA-PC', ROOT / 'public/l2', verify_only=True)
+        result = subject.run(output, catalog, IMPORTA_SNAPSHOT, ROOT / 'public/l2', verify_only=True)
         self.assertEqual((result['status'], result['filesWritten']), ('verified', 0))
         self.assertEqual(before, {path: path.stat().st_mtime_ns for path in before})
         report = json.loads((output / 'ALIAS_COVERAGE.json').read_bytes())
@@ -178,7 +172,7 @@ class RealReportTests(unittest.TestCase):
             output = Path(directory)
             (output / 'ALIAS_COVERAGE.md').write_text('edited by hand', encoding='utf-8')
             with self.assertRaisesRegex(ValueError, 'refusing to overwrite'):
-                subject.run(output, catalog, ROOT / 'artifacts/native-parity/inputs/IMPORTA-PC', ROOT / 'public/l2')
+                subject.run(output, catalog, IMPORTA_SNAPSHOT, ROOT / 'public/l2')
             self.assertEqual((output / 'ALIAS_COVERAGE.md').read_text(encoding='utf-8'), 'edited by hand')
             self.assertFalse((output / 'ALIAS_COVERAGE.json').exists())
 

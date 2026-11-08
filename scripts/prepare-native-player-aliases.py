@@ -32,14 +32,14 @@ import sys
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / 'scripts'))
-from native_assets_lib.gltf import json_bytes  # noqa: E402
-from stage_native_players import (  # noqa: E402
+from native_assets_lib.gltf import json_bytes
+from reference_client_guard import require_reference_client
+from stage_native_players import (
     BOUND_STATUSES, BUILT_IN, BUNDLE_ID, PLAYER_ALIASES, REQUIRED_ALIASES, UNBOUND_STATUSES, decode, profile_shape)
 
 REPORT_DIRECTORY = 'artifacts/native-parity/research/dev-sheet-audio-20261107/models'
 GENERATOR = 'scripts/prepare-native-player-aliases.py'
-# Report alias -> profile alias where the names differ; socials become social<N>.
-RENAMED = {'wait': 'idle', 'atk01': 'attack', 'picItem': 'pickup'}
+PROFILE_ALIASES_BY_DIFFERENTLY_NAMED_REPORT_ALIAS = {'wait': 'idle', 'atk01': 'attack', 'picItem': 'pickup'}
 FAMILY = 'WT_HAND'
 
 
@@ -66,11 +66,10 @@ def load_report_module():
 def profile_alias(name):
     if name.startswith('social[') and name.endswith(']'):
         return 'social' + str(int(name[7:-1]))
-    return RENAMED.get(name, name)
+    return PROFILE_ALIASES_BY_DIFFERENTLY_NAMED_REPORT_ALIAS.get(name, name)
 
 
-def stripped(profile):
-    """The profile without any alias update: core clips only, no evidence."""
+def profile_with_core_clips_and_no_alias_evidence(profile):
     base = copy.deepcopy(profile)
     base['clips'] = {alias: profile['clips'][alias] for alias in REQUIRED_ALIASES}
     base.pop('aliasEvidence', None)
@@ -112,7 +111,6 @@ def alias_update(package, report_path, report_sha, report_directory):
             if row.get(name) is not None:
                 entry[name] = row[name]
         if alias == 'damage' and status != 'exact':
-            # The report's per-class answer: no hit-reaction clip; Damagefly is the DamageFlyAnimName knock-back.
             entry['reason'] = package['damage']['answer']
         if status in BOUND_STATUSES:
             require(isinstance(row.get('clip'), str) and row['clip'] in package['clips'], 'Report binds an unexported clip: ' + row['alias'])
@@ -130,7 +128,6 @@ def alias_update(package, report_path, report_sha, report_directory):
 
 def build(report_directory, catalog_path, public, client, base_path):
     report_module = load_report_module()
-    # Equivalent to report-native-animation-aliases.py --verify-only: rebuild and compare every output.
     verified = report_module.run(report_directory, catalog_path, client, public, verify_only=True)
     require(verified['status'] == 'verified', 'Alias report is not verified')
     report_file = report_directory / 'ALIAS_COVERAGE.json'
@@ -151,11 +148,11 @@ def build(report_directory, catalog_path, public, client, base_path):
             existing = [row for row in current if row['id'] == BUILT_IN]
             base = built_in
             if existing:
-                require(stripped(existing[0]) == built_in, 'Staged male fighter row differs from the built-in base recipe')
+                require(profile_with_core_clips_and_no_alias_evidence(existing[0]) == built_in, 'Staged male fighter row differs from the built-in base recipe')
         else:
             existing = [row for row in current if row['catalogId'] == package['catalogId']]
             require(len(existing) == 1, 'Expected one managed profile for ' + package['catalogId'])
-            base = stripped(existing[0])
+            base = profile_with_core_clips_and_no_alias_evidence(existing[0])
         require(base['assetId'] == package['assetId'] and base['sourceObject'] == package['sourceObject'] and
                 base['sourceSha256'] == package['sourceSha256'], 'Profile/report package identity differs: ' + package['catalogId'])
         clips, evidence = alias_update(package, portable(report_file), digest(report_bytes), report_directory)
@@ -168,7 +165,6 @@ def build(report_directory, catalog_path, public, client, base_path):
         profile_shape(updated)
         profiles.append(updated)
         if existing and existing[0] == updated:
-            # Already staged: pin the row this update first superseded (its stripped form).
             supersedes[updated['id']] = 'built-in' if updated['id'] == BUILT_IN else digest(json_bytes(base))
         elif existing:
             supersedes[updated['id']] = digest(json_bytes(existing[0]))
@@ -210,6 +206,7 @@ def main():
     modes.add_argument('--verify-only', action='store_true')
     args = parser.parse_args()
     try:
+        require_reference_client(args.client)
         result = run(args.output, args.report_dir, args.catalog, args.public, args.client, args.base,
                      plan_only=args.plan, verify_only=args.verify_only)
         print(json.dumps(result, indent=2))

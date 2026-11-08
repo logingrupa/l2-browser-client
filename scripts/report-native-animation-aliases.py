@@ -28,10 +28,11 @@ import sys
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / 'scripts'))
-from native_animation_families import (  # noqa: E402
+from native_animation_families import (
     IDENT, _decode_localization111, build_animation_families, class_getters, resolve_animation_references, section_records)
-from native_catalog.ue2 import FormatError  # noqa: E402
-from stage_native_runtime import verified_archive  # noqa: E402
+from native_catalog.ue2 import FormatError
+from reference_client_guard import require_reference_client
+from stage_native_runtime import verified_archive
 
 LOCALIZATION = 'system/LineageWarrior.int'
 LOCALIZATION_SHA256 = '8d951cbccd010a849f05df827d7065ec5f9372245953e71f3e88344cf8189485'
@@ -45,8 +46,7 @@ PACKAGES = (
     ('human-female-mystic:0', 'FMagic', 'Human female mystic'),
 )
 FAMILY = 'WT_HAND'
-# alias -> localized array (Engine.Pawn declaration name). None = no native field.
-ALIASES = (
+ENGINE_PAWN_LOCALIZED_ARRAY_OR_NONE_WITHOUT_NATIVE_FIELD_BY_ALIAS = (
     ('wait', 'WaitAnimName'), ('walk', 'WalkAnimName'), ('run', 'RunAnimName'), ('turn', 'TurnAnimName'),
     ('atkWait', 'AtkWaitAnimName'), ('atk01', 'Atk01AnimName'), ('atk02', 'Atk02AnimName'), ('atk03', 'Atk03AnimName'),
     ('castShort', 'CastShortAnimName'), ('castMid', 'CastMidAnimName'), ('castLong', 'CastLongAnimName'), ('castEnd', 'CastEndAnimName'),
@@ -81,12 +81,6 @@ def canonical(value):
 
 
 def section_records_preserving_conflicts(payload, section):
-    """Shared section_records rules, but nonidentical duplicates are retained.
-
-    Every physical record is kept. A key/index assigned with different bytes is
-    marked conflicting on every participating row; no precedence is chosen.
-    Without conflicts the result equals native_animation_families.section_records.
-    """
     require(re.fullmatch(IDENT, section) is not None, 'Invalid localization section')
     records, active, found, offset, seen, conflicts = [], False, 0, 0, {}, {}
     for line_number, raw in enumerate(payload.splitlines(keepends=True), 1):
@@ -132,13 +126,10 @@ def section_records_preserving_conflicts(payload, section):
 
 
 def build_families_preserving_conflicts(source_bytes, *, source, section, class_defaults, class_script_bytes):
-    """build_animation_families with conflict retention; identical output when there is no conflict."""
     require(sha256_of(source_bytes) == source['sha256'], 'Localization source hash mismatch')
     payload, framing = _decode_localization111(source_bytes)
     records, conflicts = section_records_preserving_conflicts(payload, section)
     if not conflicts:
-        # Without conflicts this parser must agree with the shared reader byte-for-byte;
-        # the shared reader then produces the document exactly like the converter.
         require(records == section_records(payload, section), 'Conflict-preserving parser differs from the shared reader')
         return build_animation_families(source_bytes, source=source, section=section,
                                         class_defaults=class_defaults, class_script_bytes=class_script_bytes)
@@ -224,8 +215,7 @@ def resolve_reference(value, clips):
     return ('exact' if matches[0] == value else 'case-only'), matches[0], matches
 
 
-def selecting_keys(family_document):
-    """Exported clip name -> localized keys whose value resolves to it."""
+def localized_keys_by_selected_exported_clip(family_document):
     result = {}
     for reference in family_document['clipResolution']['references']:
         if reference['status'] in ('exact', 'case-only'):
@@ -240,9 +230,9 @@ def alias_rows(family_document, clips, class_name):
     getters = {row['field'].casefold(): row for row in family_document['baseClassGetters']}
     records = family_document['records']
     declared = {row['arrayName'].casefold() for row in records if 'declaration' in row}
-    selected = selecting_keys(family_document)
+    selected = localized_keys_by_selected_exported_clip(family_document)
     rows = []
-    for alias, field in ALIASES:
+    for alias, field in ENGINE_PAWN_LOCALIZED_ARRAY_OR_NONE_WITHOUT_NATIVE_FIELD_BY_ALIAS:
         entry = {'alias': alias, 'family': FAMILY, 'familyIndex': index, 'field': field}
         if field is None:
             exported = [name for name in clips if name.casefold() == f'rebirth_{class_name}'.casefold()]
@@ -327,7 +317,7 @@ def load_inputs(catalog_path, client, public):
     catalog_bytes = catalog_path.read_bytes()
     catalog = json.loads(catalog_bytes)
     records = {row['id']: row for row in catalog['models']}
-    localization = (client / LOCALIZATION).read_bytes()
+    localization = require_reference_client(client).require_equal_file(LOCALIZATION).read_bytes()
     require(digest(localization) == LOCALIZATION_SHA256, 'LineageWarrior.int differs from its source pin')
     packages = []
     for catalog_id, class_name, label in PACKAGES:
@@ -360,7 +350,6 @@ def build_report(catalog_path, client, public):
         rebuilt['clipResolution'] = resolve_animation_references(rebuilt, clips)
         if 'animation-families.json' in files:
             staged = json.loads(files['animation-families.json'])
-            # The converter's archived family document must be reproducible from the pinned inputs.
             require(staged == rebuilt, 'Archived animation-families.json differs from a rebuild: ' + class_name)
             family_source = {'kind': 'staged-package', 'path': f'/l2/{package["record"]["archiveSha256"]}/animation-families.json',
                              'sha256': digest(files['animation-families.json']), 'rebuiltFromPinnedInputs': True}
@@ -371,7 +360,7 @@ def build_report(catalog_path, client, public):
             family_source = {'kind': 'conflict-preserving-report-product', 'path': name, 'sha256': digest(outputs[name]),
                              'reason': 'The shared converter reader refuses nonidentical duplicate assignments; see conflictingDuplicates.'}
         rows = alias_rows(rebuilt, clips, class_name)
-        bound = {row['clip'] for row in rows if row.get('clip')} | set(selecting_keys(rebuilt))
+        bound = {row['clip'] for row in rows if row.get('clip')} | set(localized_keys_by_selected_exported_clip(rebuilt))
         counts = {}
         for row in rows:
             counts[row['status']] = counts.get(row['status'], 0) + 1
@@ -383,7 +372,6 @@ def build_report(catalog_path, client, public):
                  'exportedClipsNotSelectedByAnyLocalizedValue': sorted((name for name in clips if name not in bound), key=str.casefold),
                  'damage': damage_answer(class_name, clips, rebuilt, rows), 'clips': clips}
         summary.append(entry)
-    # Pin only the four package records: other systems may restage unrelated catalog entries.
     report = {'schemaVersion': 1, 'kind': 'native-human-animation-alias-coverage',
               'inputs': {'catalogRecords': {package['catalogId']: {key: package['record'][key] for key in ('archive', 'archiveSha256', 'assetId', 'modelSha256')}
                                             for package in packages},
@@ -419,7 +407,7 @@ def markdown(report):
     lines += ['', 'Status meanings: `exact`/`case-only` = bound to an exported clip; `no-family-value` = the section assigns no value; '
               '`no-native-field` = no Engine.Pawn field exists; `missing-clip` = value names no exported clip; '
               '`conflict-unresolved` = nonidentical duplicate source rows.', '']
-    order = [alias for alias, _ in ALIASES]
+    order = [alias for alias, _ in ENGINE_PAWN_LOCALIZED_ARRAY_OR_NONE_WITHOUT_NATIVE_FIELD_BY_ALIAS]
     socials = sorted({row['alias'] for package in report['packages'] for row in package['aliases'] if row['alias'].startswith('social[')},
                      key=lambda value: int(value[7:-1]))
     lines += ['## WT_HAND aliases', '', '| Alias | Key | ' + ' | '.join(package['class'] for package in report['packages']) + ' |',
@@ -488,6 +476,7 @@ def main():
     modes.add_argument('--verify-only', action='store_true')
     args = parser.parse_args()
     try:
+        require_reference_client(args.client)
         print(json.dumps(run(args.output, args.catalog, args.client, args.public, plan_only=args.plan, verify_only=args.verify_only), indent=2))
         return 0
     except (OSError, ValueError, KeyError, TypeError, FormatError) as error:
