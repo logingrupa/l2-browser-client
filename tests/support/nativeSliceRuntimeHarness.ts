@@ -134,6 +134,10 @@ export function useNativeSliceRuntimeHarness(): NativeSliceRuntimeHarness {
     vi.spyOn(engine, "getDeltaTime").mockReturnValue(1000);
     vi.stubGlobal("window", new EventTarget());
     vi.stubGlobal("document", Object.assign(new EventTarget(), { createElement: () => Object.assign(new EventTarget(), { dataset: {} }) }));
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "/l2/coverage.json") return new Response("missing", { status: 404 });
+      throw new Error(`Unexpected request ${url}`);
+    }));
   });
   afterEach(() => { for (const stop of stops) stop(); scene.dispose(); engine.dispose(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 

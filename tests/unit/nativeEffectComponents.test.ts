@@ -140,7 +140,9 @@ describe("optional effect metadata and lazy resource loading", () => {
   });
   it("rejects a stale aborted catalog body even when the optional bundle is absent", async () => {
     const controller = new AbortController(), reason = Error("replaced scene");
-    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, status: 200, text: async () => { controller.abort(reason); return JSON.stringify({ schemaVersion: 1, models: [] }); } })));
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, status: 200, arrayBuffer: async () => {
+      controller.abort(reason); return new TextEncoder().encode(JSON.stringify({ schemaVersion: 1, models: [] })).buffer;
+    } })));
     await expect(loadNativeEffectComponents(controller.signal)).rejects.toBe(reason);
   });
   it("rejects a resource body that completes after cancellation without publishing stale bytes", async () => {

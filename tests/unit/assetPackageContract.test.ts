@@ -105,7 +105,8 @@ describe("golden fixtures for the asset output contract", () => {
   });
 
   it("serves the fixture catalog through readNativeCatalog and indexes its synthetic skill and tile keys", async () => {
-    vi.stubGlobal("fetch", vi.fn(async (url: string) => new Response((await readPinnedGoldenFixture(url.replace(/^\/l2\//, "l2/"))).slice())));
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => url === "/l2/coverage.json" ? new Response("missing", { status: 404 })
+      : new Response((await readPinnedGoldenFixture(url.replace(/^\/l2\//, "l2/"))).slice())));
     const signal = new AbortController().signal;
     const catalog = await readNativeCatalog(signal);
     expect(catalog.models).toHaveLength(2);

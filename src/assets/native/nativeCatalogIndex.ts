@@ -5,6 +5,7 @@ import {
   type NativeTableCatalogRecord, type NativeTileManifestCatalogRecord, type NativeWindowCatalogRecord,
 } from "./nativeCatalogRecords";
 import type { NativeCatalog } from "./readNativeCatalog";
+import { readNativeCoverageUnlessAbsent, type NativeCoverageStatus } from "./readNativeCoverage";
 
 export interface NativeNpcCatalogRecord { readonly npcId: number; readonly profileId: string; readonly modelCatalogId: string }
 export interface NativeItemCatalogRecord {
@@ -20,7 +21,7 @@ export type NativeCatalogRecord =
 export type NativeCatalogLookup =
   | { readonly status: "converted"; readonly key: string; readonly record: NativeCatalogRecord }
   | { readonly status: "not-in-catalog"; readonly key: string; readonly reason: string }
-  | { readonly status: "gap"; readonly key: string; readonly reason: string; readonly coverageStatus: "gap" | "pending" | "failed" };
+  | { readonly status: "gap"; readonly key: string; readonly reason: string; readonly coverageStatus: Exclude<NativeCoverageStatus, "pass"> };
 
 export interface NativeCatalogIndex {
   lookup(key: string): NativeCatalogLookup;
@@ -199,6 +200,11 @@ export async function buildNativeCatalogIndex(catalog: NativeCatalog, signal: Ab
     addEntry({ status: "converted", key: tileCatalogKey(record.tile), record });
   }
   for (const lookup of legacySectionTileLookups(catalog.sections)) if (!entries.has(lookup.key)) addEntry(lookup);
+
+  for (const row of (await readNativeCoverageUnlessAbsent(signal, catalog.servedCatalogSha256))?.rows ?? []) {
+    if (row.status === "pass" || entries.has(row.key)) continue;
+    addEntry({ status: "gap", key: row.key, reason: row.reason, coverageStatus: row.status });
+  }
 
   const missingWindowReason = catalog.windows.length ? notInCatalogReason : windowsNotConvertedReason;
   signal.throwIfAborted();
