@@ -1,6 +1,12 @@
 from pathlib import Path
 
+from reference_client_guard import ReferenceClientLockError
+
 UMODEL_PACKAGE_SUFFIXES = ('.ukx', '.utx', '.usx', '.uax', '.u', '.unr')
+
+
+class UModelImportClosureError(ValueError):
+    pass
 
 
 def index_package_files_by_casefolded_stem(client):
@@ -39,7 +45,9 @@ def require_lock_equal_import_closure(root_package_name, load_lock_equal_package
         checked_package_names.add(package_name.casefold())
         try:
             _, package = load_lock_equal_package(package_name)
+        except ReferenceClientLockError as error:
+            raise ReferenceClientLockError(f'UModel would read {package_name} while converting {root_package_name}: {error}') from error
         except ValueError as error:
-            raise type(error)(f'UModel would read {package_name} while converting {root_package_name}: {error}') from error
+            raise UModelImportClosureError(f'UModel would read {package_name} while converting {root_package_name}: {error}') from error
         pending_package_names.extend(top_level_import_package_names(package))
     return sorted(checked_package_names)

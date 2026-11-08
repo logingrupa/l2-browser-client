@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from native_assets import Converter, sha
+from native_assets_lib.umodel_import_closure import UModelImportClosureError, require_lock_equal_import_closure
 from reference_client_guard import ReferenceClientAccess, ReferenceClientLock, ReferenceClientLockError
 from test_native_map_audio import package_bytes
 
@@ -68,6 +69,16 @@ class UModelImportClosureTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'UModel would read Absent .*missing or ambiguous'):
                 self.run_umodel(converter, client, root)
             self.assertEqual(self.umodel_calls, 0)
+
+    def test_an_undecodable_package_name_keeps_its_cause_in_one_closure_error(self):
+        undecodable_name = UnicodeDecodeError('cp1252', bytes([0x81]), 0, 1, 'character maps to <undefined>')
+
+        def load_undecodable_package(package_name):
+            raise undecodable_name
+
+        with self.assertRaisesRegex(UModelImportClosureError, 'UModel would read Textures/Target.utx while converting Textures/Target.utx: .*0x81') as raised:
+            require_lock_equal_import_closure('Textures/Target.utx', load_undecodable_package)
+        self.assertIs(raised.exception.__cause__, undecodable_name)
 
     def test_runs_umodel_once_every_package_in_the_closure_is_lock_equal(self):
         with tempfile.TemporaryDirectory() as directory:
