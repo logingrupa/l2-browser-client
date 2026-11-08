@@ -2,16 +2,19 @@ import { expect, test } from "@playwright/test";
 import { existsSync, readFileSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
+import { nativeSandboxStaged, nativeSandboxStagingRequirement } from "./nativeSandboxRoute";
+import { desktopAndLandscapePhoneDevices, landscapePhone } from "./browserViewports";
 
 const sceneFile = resolve("public/scene/native-world.babylon");
 const staged = existsSync(sceneFile);
 const evidence = resolve("artifacts/private-preview/loading-panel");
+for (const device of desktopAndLandscapePhoneDevices) test.describe(`${device.name} loading panel`, () => {
+  test.use(device.use);
 
-for (const viewport of [{ name: "desktop", width: 1440, height: 900 }, { name: "mobile", width: 320, height: 568 }, { name: "landscape", width: 667, height: 375 }]) {
-  test(`loading panel shows measured progress, steps and puns at ${viewport.name} size`, async ({ page }) => {
+  test(`loading panel shows measured progress, steps and puns at ${device.name} size`, async ({ page }) => {
     test.skip(!staged, "Requires the staged authored native scene.");
     test.setTimeout(120_000);
-    await page.setViewportSize(viewport);
+    const viewport = device.use.viewport;
     await page.emulateMedia({ reducedMotion: "reduce" });
     const scene = JSON.parse(readFileSync(sceneFile, "utf8")) as { meshes: { delayLoadingFile?: string }[] };
     const resource = scene.meshes.find(mesh => mesh.delayLoadingFile)?.delayLoadingFile;
@@ -25,7 +28,7 @@ for (const viewport of [{ name: "desktop", width: 1440, height: 900 }, { name: "
       await route.fulfill({ response });
     });
     try {
-      await page.goto("/?world=interlude&authored=1", { waitUntil: "domcontentloaded" });
+      await page.goto("/?authored=1", { waitUntil: "domcontentloaded" });
       await expect(page.locator("#loading")).toHaveAttribute("data-stage", "assets", { timeout: 90_000 });
       await expect(page.locator("[data-loading-step='assets']")).toHaveAttribute("aria-current", "step");
       await expect(page.locator("#loading-pun")).toHaveText("No stone left unrendered.");
@@ -43,31 +46,36 @@ for (const viewport of [{ name: "desktop", width: 1440, height: 900 }, { name: "
       expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewport.width);
       expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(viewport.height);
       await mkdir(evidence, { recursive: true });
-      await page.screenshot({ path: resolve(evidence, `${viewport.name}-loading.png`) });
+      await page.screenshot({ path: resolve(evidence, `${device.name}-loading.png`) });
     } finally { release(); }
     await expect(page.locator("#loading")).toHaveCount(0, { timeout: 90_000 });
   });
-}
+});
 
-test("module download failure offers a working reload without jokes or a stuck progress bar", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  let blockClient = true;
-  await page.route(url => url.pathname === "/src/main.ts" || /^\/assets\/index-[^/]+\.js$/.test(url.pathname), async route => {
-    if (blockClient) await route.fulfill({ status: 503, contentType: "text/javascript", body: "" });
-    else await route.continue();
+test.describe("mobile module download failure", () => {
+  test.use(landscapePhone);
+
+  test("module download failure offers a working reload without jokes or a stuck progress bar", async ({ page }) => {
+    test.skip(!nativeSandboxStaged, nativeSandboxStagingRequirement);
+    test.setTimeout(180_000);
+    let blockClient = true;
+    await page.route(url => url.pathname === "/src/main.ts" || /^\/assets\/index-[^/]+\.js$/.test(url.pathname), async route => {
+      if (blockClient) await route.fulfill({ status: 503, contentType: "text/javascript", body: "" });
+      else await route.continue();
+    });
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("alert")).toContainText("game client could not be downloaded");
+    await expect(page.getByRole("progressbar")).toHaveCount(0);
+    await expect(page.locator("#loading-pun")).toBeHidden();
+    await mkdir(evidence, { recursive: true });
+    await page.screenshot({ path: resolve(evidence, "mobile-error.png") });
+    blockClient = false;
+    const retry = await page.getByRole("button", { name: "Reload and retry" }).boundingBox();
+    expect(retry).not.toBeNull();
+    await page.mouse.move(retry!.x + retry!.width / 2, retry!.y + retry!.height / 2);
+    await page.mouse.down();
+    await page.screenshot({ path: resolve(evidence, "mobile-error-pressed.png") });
+    await page.mouse.up();
+    await expect(page.locator("#loading")).toHaveCount(0, { timeout: 150_000 });
   });
-  await page.goto("/?world=courtyard", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("alert")).toContainText("game client could not be downloaded");
-  await expect(page.getByRole("progressbar")).toHaveCount(0);
-  await expect(page.locator("#loading-pun")).toBeHidden();
-  await mkdir(evidence, { recursive: true });
-  await page.screenshot({ path: resolve(evidence, "mobile-error.png") });
-  blockClient = false;
-  const retry = await page.getByRole("button", { name: "Reload and retry" }).boundingBox();
-  expect(retry).not.toBeNull();
-  await page.mouse.move(retry!.x + retry!.width / 2, retry!.y + retry!.height / 2);
-  await page.mouse.down();
-  await page.screenshot({ path: resolve(evidence, "mobile-error-pressed.png") });
-  await page.mouse.up();
-  await expect(page.locator("#loading")).toHaveCount(0, { timeout: 90_000 });
 });

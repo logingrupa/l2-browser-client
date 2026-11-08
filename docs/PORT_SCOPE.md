@@ -2,7 +2,7 @@
 
 Size of the Interlude port and how the work splits into parts and lanes. [.planning/PROJECT.md](../.planning/PROJECT.md) wins where this doc differs; order is in [ROADMAP.md](../.planning/ROADMAP.md), live status in [STATUS.md](../STATUS.md).
 
-Counts: DATABASE-PC, 2026-11-07, `E:\Lineage2-client`, aCis 409 (`E:\Lineage2Elbera\server`), Mobius CT_0 (`E:\linegen\source\L2J_Mobius\L2J_Mobius_CT_0_Interlude`). Converters read an E: file only when `recipes/reference-client-tree.lock.json` lists it equal to the IMPORTA-PC `C:\Lineage2-client` reference (DEC-OWN-2).
+Counts: DATABASE-PC, 2026-11-07, `E:\Lineage2-client`, aCis 409 (`E:\Lineage2Elbera\server`), Mobius CT_0 (the `L2J_Mobius_CT_0_Interlude` source tree on DATABASE-PC `E:`). Converters read an E: file only when `recipes/reference-client-tree.lock.json` lists it equal to the IMPORTA-PC `C:\Lineage2-client` reference (DEC-OWN-2).
 
 ## 1. Client data versus server data
 
@@ -32,7 +32,7 @@ Record counts from Elbera's `tools/dat/extract_gamedata.py` on this client, kept
 ## 3. How the files are scrambled and decoded
 
 - A 28-byte UTF-16 header `Lineage2VerNNN` names the method. Ver413 (`.dat`, `l2.ini`): one RSA exponentiation per 128-byte block, byte 3 is the payload length (max 124), then a 4-byte size and zlib. Ver111 (`.unr`, `.ukx`): XOR `0xAC`. Ver121 (`.utx`): XOR with a byte derived from the file name. `interface.xdat` is plain.
-- Modded clients use a community RSA key next to NCSoft's, so try both. `scripts/native_catalog/tables.py` tries the two Ver413 key blocks of open-l2encdec `src/l2encdec.cpp` (commit `6f335782`), hash-pinned.
+- Modded clients use a community RSA key next to NCSoft's, so try both. `scripts/native_catalog/tables.py` tries the two Ver413 key blocks of open-l2encdec `src/l2encdec.cpp` (commit `6f335782`), hash-pinned and kept in `.assets/native-tools/open-l2encdec/`.
 - Strip the 20-byte CRC32 tail only when the CRC matches. Re-saved files such as `maps/17_25.unr` have none.
 
 ## 4. The network protocol
@@ -46,8 +46,8 @@ Layers run from 0 (foundations) to 4. States are the 2026-11-07 snapshot; live s
 | # | Part (slug) | Layer | State |
 |---|---|---|---|
 | 1 | Decoders (data) | 0 | UE Viewer route on a pinned snapshot; 11 of 40 tables as JSON via Elbera |
-| 2 | Offline sandbox (sandbox) | 0 | `MockWorldAdapter`, `NativeSliceAdapter`; no by-ID spawning |
-| 3 | World, 153 tiles (world) | 1 | 20_20 and Talking Island bundles |
+| 2 | Offline sandbox (sandbox) | 0 | `NativeSliceAdapter`; no by-ID spawning |
+| 3 | World, 153 tiles (world) | 1 | 20_20 section |
 | 4 | Player characters (player-characters) | 1 | Human fighters native, mystic in progress |
 | 5 | UI windows (ui) | 1 | Development sheet only |
 | 6 | NPCs, monsters (npcs) | 2 | Greater Musveren |

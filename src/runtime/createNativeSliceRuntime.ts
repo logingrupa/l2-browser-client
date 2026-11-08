@@ -199,7 +199,7 @@ export async function createNativeSliceRuntime(scene: Scene, settings: NativeSli
         navigation = createWorldNavigation({ terrainMeshes: section.terrainMeshes, obstacleMeshes: () => section?.supportMeshes ?? [],
           origin: surfaceCandidateWithAuthoredOffset, dynamicObstacleMeshes: () => movers?.collisionMeshes ?? [],
           capsule: playerCapsuleFromSourceCollision() });
-        const previewTriangleSupportedSpawn = navigation.spawn({ x: 0, y: 0, z: 0 });
+        const previewTriangleSupportedSpawn = navigation.spawn();
         if (!previewTriangleSupportedSpawn) throw new Error("The staged native surface does not support the requested actor origin.");
         origin = new Vector3(previewTriangleSupportedSpawn.x, previewTriangleSupportedSpawn.y, previewTriangleSupportedSpawn.z);
         if (!authoredSection) {
@@ -489,7 +489,6 @@ export async function createNativeSliceRuntime(scene: Scene, settings: NativeSli
       });
       boundaryReleases.push(() => effectCamera?.dispose());
     }
-    for (const name of ["spawn", "teleport", "missing-model"]) ui.root.querySelector(`[data-action="${name}"]`)?.remove();
     const label = ui.root.querySelector(".world-location > span");
     const pendingEffects = section?.manifest.unsupportedRuntimeMaterials?.reduce((total, gap) => total + gap.placementIds.length, 0) ?? 0;
     if (label) label.textContent = section ? `Debug match unverified${pendingEffects ? flames ? " · flame preview" : ` · ${pendingEffects} effects pending` : ""}` : "Native rigs · synthetic behavior";
@@ -854,7 +853,8 @@ export async function createNativeSliceRuntime(scene: Scene, settings: NativeSli
       world: section ? { manifestSha256: section.manifestSha256, ...section.inspection(),
         sourceSpawn: [origin.x * 100, origin.z * 100, origin.y * 100], nativeLocationMatch: "unverified",
         navigation: section.supportMeshes?.length ? "local terrain and source-declared static/BSP triangle support; native collision/geodata unverified" : "local terrain support only; native/scenery collision unverified" } : null,
-      fps: scene.getEngine().getFps(), camera: { target: camera.target.asArray(), alpha: camera.alpha, beta: camera.beta, radius: camera.radius } }),
+      fps: scene.getEngine().getFps(), camera: { target: camera.target.asArray(), alpha: camera.alpha, beta: camera.beta, radius: camera.radius,
+        lowerRadiusLimit: camera.lowerRadiusLimit, upperRadiusLimit: camera.upperRadiusLimit, lowerBetaLimit: camera.lowerBetaLimit, upperBetaLimit: camera.upperBetaLimit } }),
       dispatch: adapter.dispatch.bind(adapter),
       async performance() {
         if (disposed) throw new Error("The native world is disposed.");
@@ -911,4 +911,5 @@ declare global { interface Window { __nativeSlice?: { snapshot(): { entities: Re
   flameReplay?: (ReturnType<ReturnType<typeof createNativeFlameReplayClock>["inspect"]> & { billboardTarget: string }) | null;
   fog?: { enabled: boolean; mode: number; start: number; end: number };
   world?: (ReturnType<NativeSection["inspection"]> & { manifestSha256: string; sourceSpawn: number[]; nativeLocationMatch: string; navigation: string }) | null;
-  fps?: number; camera?: { target: number[]; alpha: number; beta: number; radius: number } }; dispatch: NativeSliceAdapter["dispatch"]; performance(): Promise<ReturnType<typeof createWorldPerformanceProbe>>; captureAudio?(): MediaStream | null; setWorldAudioEnabled?(enabled: boolean): void; setFlameReplay?(time: NativeFlameReplayTime): void; frameFlame?(placementId: string): void; interactDoor?(id: string): void } } }
+  fps?: number; camera?: { target: number[]; alpha: number; beta: number; radius: number;
+    lowerRadiusLimit: number | null; upperRadiusLimit: number | null; lowerBetaLimit: number | null; upperBetaLimit: number | null } }; dispatch: NativeSliceAdapter["dispatch"]; performance(): Promise<ReturnType<typeof createWorldPerformanceProbe>>; captureAudio?(): MediaStream | null; setWorldAudioEnabled?(enabled: boolean): void; setFlameReplay?(time: NativeFlameReplayTime): void; frameFlame?(placementId: string): void; interactDoor?(id: string): void } } }

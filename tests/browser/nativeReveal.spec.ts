@@ -2,12 +2,14 @@ import { expect, test, type Page, type Route } from "@playwright/test";
 import { existsSync, readFileSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { nativeSandboxStaged, nativeSandboxStagingRequirement } from "./nativeSandboxRoute";
+import { desktopAndLandscapePhoneDevices, landscapePhone } from "./browserViewports";
 
 const sceneFile = resolve("public/scene/native-world.babylon");
 const catalogFile = resolve("public/l2/catalog.json");
 const staged = existsSync(sceneFile) && existsSync(catalogFile);
 const evidence = resolve(process.env.NATIVE_REVEAL_EVIDENCE ?? "artifacts/private-preview/native-reveal");
-const route = "/?world=interlude&authored=1";
+const route = "/?authored=1";
 const starterMaterial = "MFighter.UpBody.MFighter_m001_t02_u";
 const leatherMaterial = "MFighter.UpBody.MFighter_m001_t04_u";
 
@@ -22,7 +24,7 @@ interface RevealSample {
   worldState: string | null;
   terrainReady: boolean;
   nativeActorCount: number;
-  fallbackCount: number;
+  actorsWithoutNativeModelCount: number;
   equipmentReady: boolean;
   hudReady: boolean;
   complete: boolean;
@@ -39,6 +41,17 @@ declare global {
       stop(): void;
     };
   }
+}
+
+interface StagedWorldSectionCounts { modelCount: number; placementCount: number }
+
+function stagedWorldSection() {
+  const catalog = JSON.parse(readFileSync(catalogFile, "utf8")) as { sections: { id: string; manifest: string; manifestSha256: string }[] };
+  const section = catalog.sections.find(item => item.id === "map-20-20-section");
+  if (!section) throw new Error("The staged runtime world section is missing.");
+  const manifest = JSON.parse(readFileSync(resolve("public", `.${section.manifest}`), "utf8")) as { terrain: { file: string }; models: unknown[]; placements: unknown[] };
+  const counts: StagedWorldSectionCounts = { modelCount: manifest.models.length, placementCount: manifest.placements.length };
+  return { section, manifest, counts };
 }
 
 function inputs() {
@@ -58,13 +71,12 @@ function inputs() {
     terrain: new URL(terrain, "http://localhost/scene/").pathname,
     leather: scene.metadata.scripts.find(script => script.key === "scripts/nativeParity.ts")?.values.leatherShirt?.value ?? false,
     packages,
+    sectionCounts: stagedWorldSection().counts,
   };
 }
 
-/** Observe the boundary itself, including the mutation that removes the loader.
- * Eventual scene assertions alone passed while the phone showed unfinished frames. */
-async function observeReveal(page: Page, leather: boolean) {
-  await page.addInitScript(({ leather, starterMaterial, leatherMaterial }) => {
+async function observeEveryFrameAndLoaderRemoval(page: Page, leather: boolean, sectionCounts: StagedWorldSectionCounts) {
+  await page.addInitScript(({ leather, starterMaterial, leatherMaterial, sectionCounts }) => {
     const visible = (element: Element | null): boolean => {
       if (!element || !element.getClientRects().length) return false;
       for (let node: Element | null = element; node; node = node.parentElement) {
@@ -80,14 +92,14 @@ async function observeReveal(page: Page, leather: boolean) {
       if (!seenLoader) return;
       const canvasVisible = visible(document.getElementById("canvas"));
       const hudVisible = visible(document.querySelector(".world-interface"));
-      // Do not inspect the large placement array before it could be exposed.
-      const snapshot = !loader || canvasVisible || hudVisible ? window.__nativeSlice?.snapshot() : undefined;
+      const sceneCouldBeExposed = !loader || canvasVisible || hudVisible;
+      const snapshot = sceneCouldBeExposed ? window.__nativeSlice?.snapshot() : undefined;
       const entities = snapshot?.entities ?? [];
       const fighter = entities.find(entity => entity.id === "local-player");
       const terrainReady = Boolean(snapshot?.nativeTerrain === "source-section-loaded" && snapshot.world &&
-        snapshot.world.texturesReady && snapshot.world.terrainTriangles > 0 && snapshot.world.modelCount === 61 &&
-        snapshot.world.placementCount === 156 && snapshot.world.finiteBounds && !snapshot.worldFailure && !snapshot.world.materialFailure);
-      const nativeActorCount = entities.filter(entity => !entity.isFallback && entity.meshCount > 0 &&
+        snapshot.world.texturesReady && snapshot.world.terrainTriangles > 0 && snapshot.world.modelCount === sectionCounts.modelCount &&
+        snapshot.world.placementCount === sectionCounts.placementCount && snapshot.world.finiteBounds && !snapshot.worldFailure && !snapshot.world.materialFailure);
+      const nativeActorCount = entities.filter(entity => entity.hasNativeModel && entity.meshCount > 0 &&
         entity.skeletons.some(skeleton => skeleton.bones > 0) && Boolean(entity.playback?.activeClip)).length;
       const equipmentReady = Boolean(fighter?.parts.some(part => part.enabled && part.material === (leather ? leatherMaterial : starterMaterial)) &&
         (!leather || fighter.parts.some(part => !part.enabled && part.material === starterMaterial)));
@@ -96,13 +108,13 @@ async function observeReveal(page: Page, leather: boolean) {
       const readyFrame = Number(document.getElementById("canvas")?.dataset.readyFrame ?? 0);
       const worldState = document.body?.dataset.worldState ?? null;
       const value: RevealSample = { time: performance.now(), source, loaderPresent: Boolean(loader), loaderVisible: visible(loader),
-        canvasVisible, hudVisible, readyFrame, worldState, terrainReady, nativeActorCount, fallbackCount: entities.filter(entity => entity.isFallback).length,
+        canvasVisible, hudVisible, readyFrame, worldState, terrainReady, nativeActorCount, actorsWithoutNativeModelCount: entities.filter(entity => !entity.hasNativeModel).length,
         equipmentReady, hudReady, complete: terrainReady && entities.length === 2 && nativeActorCount === 2 && equipmentReady && hudReady &&
           readyFrame > 0 && worldState === "ready" };
       state.samples.push(value);
-      // The panel is not a fullscreen shield. Both canvas and HUD must remain
-      // concealed until there is a complete frame to show behind its removal.
-      if ((loader && (canvasVisible || hudVisible)) || (!loader && (!value.complete || !canvasVisible || !hudVisible))) state.violations.push(value);
+      const exposedWhileLoaderPresent = Boolean(loader) && (canvasVisible || hudVisible);
+      const incompleteAfterLoaderRemoval = !loader && (!value.complete || !canvasVisible || !hudVisible);
+      if (exposedWhileLoaderPresent || incompleteAfterLoaderRemoval) state.violations.push(value);
       if (!loader && !state.firstReveal) state.firstReveal = value;
     };
     const observer = new MutationObserver(records => {
@@ -120,7 +132,7 @@ async function observeReveal(page: Page, leather: boolean) {
       stop() { stopped = true; cancelAnimationFrame(frame); observer.disconnect(); } };
     window.__nativeRevealTest = state;
     frame = requestAnimationFrame(tick);
-  }, { leather, starterMaterial, leatherMaterial });
+  }, { leather, starterMaterial, leatherMaterial, sectionCounts });
 }
 
 async function frames(page: Page, count = 4) {
@@ -157,20 +169,22 @@ async function assertCompleteReveal(page: Page) {
   expect(observation.firstReveal, "The loader removal must itself be observed.").not.toBeNull();
   expect(observation.firstReveal!.source).toBe("mutation");
   expect(observation.firstReveal!.complete, "The first exposed frame requires terrain, native actors, saved equipment and initialized HUD.").toBe(true);
-  expect(observation.firstReveal!.fallbackCount).toBe(0);
+  expect(observation.firstReveal!.actorsWithoutNativeModelCount).toBe(0);
   expect(observation.violations, "No frame may expose an unfinished world or procedural fallback.").toEqual([]);
   return observation;
 }
 
-for (const viewport of [{ name: "desktop", width: 1440, height: 900 }, { name: "mobile", width: 390, height: 844 }]) {
-  test(`native scene stays concealed through delayed terrain, catalog, fighter and equipment at ${viewport.name} size`, async ({ page }, testInfo) => {
+for (const device of desktopAndLandscapePhoneDevices) test.describe(`${device.name} reveal`, () => {
+  test.use(device.use);
+
+  test(`native scene stays concealed through delayed terrain, catalog, fighter and equipment at ${device.name} size`, async ({ page }, testInfo) => {
     test.skip(!staged, "Requires locally staged native scene and packages.");
     test.setTimeout(240_000);
     const source = inputs();
-    const directory = resolve(evidence, `${testInfo.project.name}-${viewport.name}`);
+    const viewport = device.use.viewport;
+    const directory = resolve(evidence, `${testInfo.project.name}-${device.name}`);
     await mkdir(directory, { recursive: true });
-    await page.setViewportSize(viewport);
-    await observeReveal(page, source.leather);
+    await observeEveryFrameAndLoaderRemoval(page, source.leather, source.sectionCounts);
     const errors: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
     page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
@@ -198,46 +212,49 @@ for (const viewport of [{ name: "desktop", width: 1440, height: 900 }, { name: "
       expect(errors).toEqual([]);
     } finally { gates.forEach(gate => gate.release()); }
   });
-}
+});
 
-test("failed native fighter package retains the loading error and reload retries without revealing dummies", async ({ page }, testInfo) => {
-  test.skip(!staged, "Requires locally staged native scene and packages.");
-  test.setTimeout(240_000);
-  const source = inputs(), fighter = source.packages.find(item => item.id === "human-male-fighter:0")!;
-  const directory = resolve(evidence, `${testInfo.project.name}-retry`);
-  await mkdir(directory, { recursive: true });
-  await page.setViewportSize({ width: 390, height: 844 });
-  await observeReveal(page, source.leather);
-  const errors: string[] = [];
-  page.on("pageerror", error => errors.push(error.message));
-  let blocked = true, failures = 0;
-  await page.route(url => url.pathname === fighter.archive, async request => {
-    if (blocked) { failures++; await request.fulfill({ status: 502, contentType: "text/plain", body: "Intentional native package failure" }); }
-    else await request.continue();
+test.describe("mobile native package retry", () => {
+  test.use(landscapePhone);
+
+  test("failed native fighter package retains the loading error and reload retries without revealing dummies", async ({ page }, testInfo) => {
+    test.skip(!staged, "Requires locally staged native scene and packages.");
+    test.setTimeout(240_000);
+    const source = inputs(), fighter = source.packages.find(item => item.id === "human-male-fighter:0")!;
+    const directory = resolve(evidence, `${testInfo.project.name}-retry`);
+    await mkdir(directory, { recursive: true });
+    await observeEveryFrameAndLoaderRemoval(page, source.leather, source.sectionCounts);
+    const errors: string[] = [];
+    page.on("pageerror", error => errors.push(error.message));
+    let blocked = true, failures = 0;
+    await page.route(url => url.pathname === fighter.archive, async request => {
+      if (blocked) { failures++; await request.fulfill({ status: 502, contentType: "text/plain", body: "Intentional native package failure" }); }
+      else await request.continue();
+    });
+    await page.goto(route, { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("alert")).toContainText(/native/i, { timeout: 120_000 });
+    await expect(page.getByRole("button", { name: "Reload and retry" })).toBeVisible();
+    await expect(page.locator("#canvas")).toBeHidden();
+    await expect(page.locator(".world-interface")).toBeHidden();
+    expect(failures).toBeGreaterThan(0);
+    const failure = await page.evaluate(() => ({ firstReveal: window.__nativeRevealTest!.firstReveal, violations: window.__nativeRevealTest!.violations,
+      runtimePresent: Boolean(window.__nativeSlice) }));
+    expect(failure).toEqual({ firstReveal: null, violations: [], runtimePresent: false });
+    await page.screenshot({ path: resolve(directory, "native-package-error.png") });
+    blocked = false;
+    await page.getByRole("button", { name: "Reload and retry" }).click();
+    const observation = await assertCompleteReveal(page);
+    await page.screenshot({ path: resolve(directory, "retried-native-world.png") });
+    await writeFile(resolve(directory, "transition.json"), JSON.stringify({ failure, observation, failures, errors }, null, 2));
+    expect(errors).toEqual([]);
   });
-  await page.goto(route, { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("alert")).toContainText(/native/i, { timeout: 120_000 });
-  await expect(page.getByRole("button", { name: "Reload and retry" })).toBeVisible();
-  await expect(page.locator("#canvas")).toBeHidden();
-  await expect(page.locator(".world-interface")).toBeHidden();
-  expect(failures).toBeGreaterThan(0);
-  const failure = await page.evaluate(() => ({ firstReveal: window.__nativeRevealTest!.firstReveal, violations: window.__nativeRevealTest!.violations,
-    runtimePresent: Boolean(window.__nativeSlice) }));
-  expect(failure).toEqual({ firstReveal: null, violations: [], runtimePresent: false });
-  await page.screenshot({ path: resolve(directory, "native-package-error.png") });
-  blocked = false;
-  await page.getByRole("button", { name: "Reload and retry" }).click();
-  const observation = await assertCompleteReveal(page);
-  await page.screenshot({ path: resolve(directory, "retried-native-world.png") });
-  await writeFile(resolve(directory, "transition.json"), JSON.stringify({ failure, observation, failures, errors }, null, 2));
-  expect(errors).toEqual([]);
 });
 
 test("graphics context loss during native startup reports failure without revealing the scene", async ({ page }, testInfo) => {
   test.skip(!staged, "Requires locally staged native scene and packages.");
   test.setTimeout(180_000);
   const source = inputs();
-  await observeReveal(page, source.leather);
+  await observeEveryFrameAndLoaderRemoval(page, source.leather, source.sectionCounts);
   await page.addInitScript(() => {
     const requestDevice = GPUAdapter.prototype.requestDevice;
     GPUAdapter.prototype.requestDevice = async function (descriptor) {
@@ -272,14 +289,11 @@ test("graphics context loss during native startup reports failure without reveal
 });
 
 test("a failed runtime terrain download cannot reveal the native actor inspection fallback", async ({ page }, testInfo) => {
-  test.skip(!staged, "Requires locally staged native scene and packages.");
+  test.skip(!nativeSandboxStaged, nativeSandboxStagingRequirement);
   test.setTimeout(180_000);
-  const catalog = JSON.parse(readFileSync(catalogFile, "utf8")) as { sections: { id: string; manifest: string; manifestSha256: string }[] };
-  const section = catalog.sections.find(item => item.id === "map-20-20-section");
-  if (!section) throw new Error("The staged runtime world section is missing.");
-  const manifest = JSON.parse(readFileSync(resolve("public", `.${section.manifest}`), "utf8")) as { terrain: { file: string } };
+  const { section, manifest, counts } = stagedWorldSection();
   const terrain = `/l2/maps/${section.manifestSha256}/map-section/${manifest.terrain.file}`;
-  await observeReveal(page, false);
+  await observeEveryFrameAndLoaderRemoval(page, false, counts);
   const errors: string[] = [];
   let failures = 0;
   page.on("pageerror", error => errors.push(error.message));
@@ -287,7 +301,7 @@ test("a failed runtime terrain download cannot reveal the native actor inspectio
     failures++;
     await request.fulfill({ status: 502, contentType: "text/plain", body: "Intentional runtime terrain failure" });
   });
-  await page.goto("/?world=interlude", { waitUntil: "domcontentloaded" });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("alert")).toBeVisible({ timeout: 120_000 });
   await expect(page.getByRole("button", { name: "Reload and retry" })).toBeVisible();
   await expect(page.locator("#canvas")).toBeHidden();

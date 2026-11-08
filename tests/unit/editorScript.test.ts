@@ -1,14 +1,9 @@
-// Compiler settings adapted from BabylonJS/Editor v5.5.3 (Apache-2.0).
-// https://github.com/BabylonJS/Editor/blob/v5.5.3/editor/src/tools/compile.ts
 import { readFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build, type Plugin } from "esbuild";
 import { expect, it } from "vitest";
 
-// The desktop Editor adds these plugins when it regenerates src/scripts.ts.
-// CLI packing uses a smaller entry, so a production build alone misses absent
-// plugin dependencies that break Vite after Editor reopen/Play.
 it("bundles the desktop Editor's browser plugins without unresolved external dependencies", async () => {
   const result = await build({
     stdin: {
@@ -26,11 +21,7 @@ it("bundles the desktop Editor's browser plugins without unresolved external dep
   expect(Object.values(result.metafile!.outputs).flatMap(output => output.imports).filter(item => item.external)).toEqual([]);
 });
 
-/**
- * Emulates the official v5.5.3 editor/src/tools/compile.ts contract.
- * This checks bundle compatibility, not desktop Editor execution.
- */
-it("compiles the scene script using the Editor CJS contract without CSS or font outputs", async () => {
+it("compiles the native scene script using the Editor 5.5.3 compile.ts CJS contract without CSS or font outputs", async () => {
   const projectDirectory = fileURLToPath(new URL("../../", import.meta.url));
   const replaceImports: Plugin = {
     name: "replaceImports",
@@ -63,7 +54,6 @@ it("compiles the scene script using the Editor CJS contract without CSS or font 
     sourcemap: true,
     keepNames: true,
     loader: { ".ts": "ts", ".tsx": "tsx", ".node": "file" },
-    // The Editor overrides these modules. Its runtime tools must be bundled.
     external: [
       "sharp", "electron", "babylonjs-editor", "babylonjs", "babylonjs-gui",
       "babylonjs-loaders", "babylonjs-materials", "babylonjs-post-process",
@@ -78,7 +68,8 @@ it("compiles the scene script using the Editor CJS contract without CSS or font 
   expect(result.warnings).toEqual([]);
   expect(result.outputFiles.map(file => basename(file.path)).sort()).toEqual(["script.cjs", "script.cjs.map"]);
   const script = result.outputFiles.find(file => file.path.endsWith("script.cjs"))?.text;
-  expect(script).toContain("WorldScript");
-  expect(script).toContain("scripts/world.ts");
+  expect(script).toContain("NativeParityScript");
+  expect(script).toContain("scripts/nativeParity.ts");
+  expect(script).not.toContain("scripts/world.ts");
   expect(script).toContain("module.exports");
 });

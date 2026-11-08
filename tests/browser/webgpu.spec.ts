@@ -3,6 +3,9 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { NativeSectionManifest } from "../../src/scene/world/loadNativeSection";
+import { nativeSandboxStaged, nativeSandboxStagingRequirement } from "./nativeSandboxRoute";
+
+const babylonDeviceRestorationWindowMilliseconds = 100;
 
 interface WebGPUProbe {
   contexts: string[]; devices: number; submissions: number; errors: string[];
@@ -51,8 +54,8 @@ async function observeGraphics(page: Page): Promise<void> {
 async function graphicsSnapshot(page: Page) {
   return page.evaluate(async () => {
     await window.__webgpuProbeDevice?.queue.onSubmittedWorkDone();
-    // GPU validation errors are delivered as events after command submission.
-    await new Promise<void>(resolve => setTimeout(resolve, 0));
+    const deliverQueuedValidationErrorEvents = () => new Promise<void>(resolve => setTimeout(resolve, 0));
+    await deliverQueuedValidationErrorEvents();
     const canvas = document.querySelector<HTMLCanvasElement>("#canvas");
     return { ...window.__webgpuProbe!, engine: canvas?.dataset.engine,
       context: canvas?.dataset.engine === "WebGPU" && Boolean(canvas.getContext("webgpu")),
@@ -82,42 +85,27 @@ test.afterEach(async ({ page }, testInfo) => {
         world: world ? { manifestSha256: world.manifestSha256, disposed: world.disposed, modelCount: world.modelCount,
           placementCount: world.placementCount, terrainTriangles: world.terrainTriangles, terrainMaterial: world.terrainMaterial,
           texturesReady: world.texturesReady, materialFailure: world.materialFailure } : null,
-        actors: state.entities.map(actor => ({ id: actor.id, fallback: actor.isFallback, meshCount: actor.meshCount,
+        actors: state.entities.map(actor => ({ id: actor.id, hasNativeModel: actor.hasNativeModel, meshCount: actor.meshCount,
           activeClip: actor.playback?.activeClip })),
         flames: state.nativeFlames, flameFailure: state.flameFailure, materialOverrideFailure: state.materialOverride?.failure } : null };
   }).catch(error => ({ captureError: String(error) }));
   await testInfo.attach("webgpu-diagnostics", { body: JSON.stringify(diagnostics, null, 2), contentType: "application/json" });
 });
 
-test("renders the authored courtyard using a real WebGPU device without WebGL fallback", async ({ page }) => {
-  test.setTimeout(120_000);
-  const errors: string[] = [];
-  page.on("pageerror", error => errors.push(error.message));
-  page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
-  await observeGraphics(page);
-  await page.goto("/?world=courtyard", { waitUntil: "domcontentloaded" });
-  await expect(page.locator("body")).toHaveAttribute("data-world-state", "ready", { timeout: 90_000 });
-  await expect(page.locator("#canvas")).toHaveAttribute("data-engine", "WebGPU");
-  await expect(page.getByTestId("entity-count")).toHaveText("6");
-  await expect.poll(() => page.evaluate(() => window.__webgpuProbe!.submissions)).toBeGreaterThan(2);
-  assertWebGPU(await graphicsSnapshot(page));
-  expect(errors).toEqual([]);
-});
-
 test("WebGPU device loss after entry reports failure without reviving a disposed world", async ({ page }) => {
-  test.setTimeout(120_000);
+  test.skip(!nativeSandboxStaged, nativeSandboxStagingRequirement);
+  test.setTimeout(240_000);
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   await observeGraphics(page);
-  await page.goto("/?world=courtyard", { waitUntil: "domcontentloaded" });
-  await expect(page.locator("body")).toHaveAttribute("data-world-state", "ready", { timeout: 90_000 });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await expect(page.locator("body")).toHaveAttribute("data-world-state", "ready", { timeout: 180_000 });
   assertWebGPU(await graphicsSnapshot(page));
   await page.evaluate(() => window.__webgpuProbeDevice!.destroy());
   await expect(page.getByRole("alert")).toContainText(/WebGPU graphics connection/i);
   await expect(page.getByRole("button", { name: "Reload and retry" })).toBeVisible();
   await expect(page.locator("#canvas")).toBeHidden();
-  // Allow Babylon's former asynchronous restoration timer to run, if present.
-  await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 100)));
+  await page.evaluate(milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds)), babylonDeviceRestorationWindowMilliseconds);
   expect(await page.evaluate(() => window.__webgpuProbe!.devices)).toBe(1);
   expect(errors).toEqual([]);
 });
@@ -140,7 +128,7 @@ for (const authored of [false, true]) {
     page.on("pageerror", error => errors.push(error.message));
     page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
     await observeGraphics(page);
-    await page.goto(`/?world=interlude${authored ? "&authored=1" : ""}`, { waitUntil: "domcontentloaded" });
+    await page.goto(`/${authored ? "?authored=1" : ""}`, { waitUntil: "domcontentloaded" });
     await expect(page.locator("body")).toHaveAttribute("data-world-state", "ready", { timeout: 180_000 });
     await expect(page.locator("#canvas")).toHaveAttribute("data-engine", "WebGPU");
     await expect(page.locator("#canvas")).toBeVisible();
@@ -155,7 +143,7 @@ for (const authored of [false, true]) {
     expect(initial.world!.terrainTriangles).toBeGreaterThan(0);
     expect(initial.entities).toHaveLength(2);
     for (const actor of initial.entities) {
-      expect(actor.isFallback).toBe(false);
+      expect(actor.hasNativeModel).toBe(true);
       expect(actor.meshCount).toBeGreaterThan(0);
       expect(actor.skeletons.some(skeleton => skeleton.bones > 0)).toBe(true);
       expect(actor.playback?.activeClip).toBeTruthy();
@@ -168,9 +156,7 @@ for (const authored of [false, true]) {
         active: flamePlacements.length * 2, skipped: 0, released: 0 } } });
     assertWebGPU(await graphicsSnapshot(page));
 
-    // Bring a compiled custom GLSL flame material into the camera and submit
-    // additional frames; readiness alone can leave its draw pipeline untested.
-    const submissions = await page.evaluate(placementId => {
+    const submissionsBeforeFramedFlameDraws = await page.evaluate(placementId => {
       const runtime = window.__nativeSlice!;
       if (!runtime.frameFlame || !runtime.setFlameReplay) throw new Error("Native flame rendering controls are missing.");
       runtime.dispatch({ type: "set-paused", isPaused: true });
@@ -178,7 +164,7 @@ for (const authored of [false, true]) {
       runtime.frameFlame(placementId);
       return window.__webgpuProbe!.submissions;
     }, flamePlacements[0]!.id);
-    await expect.poll(() => page.evaluate(() => window.__webgpuProbe!.submissions), { timeout: 30_000 }).toBeGreaterThan(submissions + 2);
+    await expect.poll(() => page.evaluate(() => window.__webgpuProbe!.submissions), { timeout: 30_000 }).toBeGreaterThan(submissionsBeforeFramedFlameDraws + 2);
     const final = await page.evaluate(() => window.__nativeSlice!.snapshot());
     expect(final.flameFailure).toBeNull();
     expect(final.nativeFlames?.materials?.errors).toEqual([]);
@@ -204,7 +190,7 @@ for (const failure of ["unavailable", "device request rejected"] as const) {
         };
       }
     }, failure);
-    await page.goto("/?world=courtyard", { waitUntil: "domcontentloaded" });
+    await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("alert")).toContainText(/WebGPU/i, { timeout: 30_000 });
     if (failure === "device request rejected") {
       expect(await page.evaluate(() => window.__rejectedWebGPUDeviceRequests), "The actual requestDevice boundary must be reached; an unavailable adapter is a different failure.").toBe(1);

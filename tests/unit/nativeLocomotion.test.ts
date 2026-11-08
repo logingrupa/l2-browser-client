@@ -161,7 +161,7 @@ async function testOnlyWalkingFixtureCopiedFromIdle(options: Parameters<typeof n
 }
 const initial: WorldEntity = { id: "fixture-player", kind: "local-player", displayName: "Locomotion fixture", appearanceId: "fixture",
   health: 100, maximumHealth: 100, position: origin, orientationRadians: 0, animation: "idle" };
-function update(visual: CharacterVisual, state: WorldEntity) { visual.setEntity?.(state); visual.animation.setState(state.animation); }
+function update(visual: CharacterVisual, state: WorldEntity) { visual.setEntity(state); visual.animation.setState(state.animation); }
 async function createVisual(profile: Partial<NativeCharacterProfile> = {}, footsteps?: ReturnType<typeof createNativeFootstepPreview>, entity = initial) {
   const engine = new NullEngine(), scene = new Scene(engine); GetEnvironmentBRDFTexture(scene);
   disposals.push(() => { scene.dispose(); engine.dispose(); });

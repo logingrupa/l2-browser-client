@@ -1,6 +1,6 @@
 # Native flames
 
-Source-formula preview of `FX_E_S.Flameset.Default_Flame01` at its twelve `20_20` placements, loaded from the `.l2asset` catalog on the native route `/?world=interlude`. Output is unlit; native lighting, clock sync and visual parity are unverified. Decisions and order: [PROJECT.md](../.planning/PROJECT.md), [ROADMAP.md](../.planning/ROADMAP.md).
+Source-formula preview of `FX_E_S.Flameset.Default_Flame01` at its twelve `20_20` placements, loaded from the `.l2asset` catalog on the native route `/`. Output is unlit; native lighting, clock sync and visual parity are unverified. Decisions and order: [PROJECT.md](../.planning/PROJECT.md), [ROADMAP.md](../.planning/ROADMAP.md).
 
 ## Now
 

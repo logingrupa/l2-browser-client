@@ -21,15 +21,14 @@ Source citations quote the docs as of the ingest on 2026-11-08. Current homes: d
 ## Topic: Phase 1 and Phase 2 as written in ROADMAP
 - source: docs/ROADMAP.md, "Phase 1 - browser foundation", "Phase 1 follow-up - converted asset integration", "Phase 2 - Real M0 networking"
 - Phase 1 implemented and pushed in commit `3b16f1c317e20ee636a3b3f83bddafc15096740a`; baseline passed strict typecheck, build, 37 Vitest tests, nine Playwright tests; "Desktop Editor import/edit/save/reopen/play and live official MCP authoring were not performed because those tools were unavailable."
-- Asset follow-up (history; the lineagen GLB character path is superseded by the native route): client adapted four converted GLBs (MFighter, FFighter, MMagic, FMagic) from the lineagen converted folder; 467 clips validated; destination pinned to Babylon 9.27.1.
 - "**Planned, not implemented:** establish Interlude authentication, character selection, and world entry against stock Mobius. Keep `GameWorldAdapter` as the integration boundary."
 - "The asset follow-up preserves this boundary. Real combat calculations, quests, progression, gacha, broad map reconversion and production deployment remain outside the current scope." (Superseded: broad map reconversion is in scope per docs/PORT_SCOPE.md and DEC-OWN-7; see INFO in .planning/INGEST-CONFLICTS.md.)
 
 ## Topic: README overview and run instructions
 - source: README.md (DOC, no precedence)
-- "A standalone Babylon.js browser client with a locally staged Talking Island world and six synthetic characters. ... It does not connect to a game server."
-- Stack pins: Node 22.12.0+, pnpm 10.32.1, Babylon.js 9.27.1, Editor tools/CLI 5.5.3, TypeScript 7.0.2, Vite 7.3.7, Vitest 5.1.0, Playwright 1.64.1. Commands: `pnpm install`, `pnpm dev` (port 5173), `pnpm build`, `pnpm serve`, `pnpm test`, `pnpm typecheck`, `pnpm assets:migrate --prove-rebuild`, `pnpm assets:stage`, `pnpm world:stage`, `pnpm assets:editor`.
-- Routes: `/` (Talking Island or courtyard fallback), `/?world=interlude`, `/?world=interlude&authored=1`, `/?world=courtyard`.
+- A standalone Babylon.js browser client; "It does not connect to a game server."
+- Stack pins: Node 22.12.0+, pnpm 10.32.1, Babylon.js 9.27.1, Editor tools/CLI 5.5.3, TypeScript 7.0.2, Vite 7.3.7, Vitest 5.1.0, Playwright 1.64.1. Commands: `pnpm install`, `pnpm dev` (port 5173), `pnpm build`, `pnpm serve`, `pnpm test`, `pnpm typecheck`, `pnpm assets:migrate --prove-rebuild`, `pnpm assets:stage`, `pnpm assets:editor`.
+- Routes (DEC-OWN-11): `/` (native sandbox), `/?authored=1` (optional Editor export), `/?character=<id>` (staged player profile).
 - Private preview: l2.kingdom.lv serves the authored native world after invitation entry; DATABASE-PC hosts the build "and must stay running". Live URL "retains the earlier build" while the readiness fix is staged.
 - "Phase 1 excludes Mobius networking, authentication, character selection against a server, Interlude packets, relay services, SpacetimeDB, combat calculations, quests, progression and gacha."
 - Native reference: "**IMPORTA-PC's `C:/Lineage2-client` is the authoritative native reference.** ... `E:/Lineage2-client` is a reusable local copy only after fresh source-hash equality."
@@ -46,7 +45,7 @@ Source citations quote the docs as of the ingest on 2026-11-08. Current homes: d
 
 ## Topic: Source provenance and licensing
 - source: docs/SOURCE_REUSE.md (DOC, no precedence)
-- linegen reviewed at commit `05296faf6cba7bf0bb0840349dc38e669d8b532d`; "No redistribution license was found for `linegen`"; no code copied. Babylon.js Editor Vanilla template revision `e3fce2cea68c6a32fdbacbb4c5aa4e6a0f154db7` (Apache-2.0, retained in `docs/licenses/BabylonJS-Editor.txt`). Cormorant Garamond via Fontsource under SIL OFL 1.1.
+- No source copied from other workspaces or unlicensed projects. Babylon.js Editor Vanilla template revision `e3fce2cea68c6a32fdbacbb4c5aa4e6a0f154db7` (Apache-2.0, retained in `docs/licenses/BabylonJS-Editor.txt`). Cormorant Garamond via Fontsource under SIL OFL 1.1.
 - Lineage2Elbera pinned at `12c9656e2f053b233ec3fd87056491a6a6da8b0c` (MIT), with ten BSP reader symbols vendored in `scripts/vendor/lineage2elbera_bsp`.
 - Authoritative fleet snapshot 2026-11-05: "**143 files / 2,511,063,181 bytes**", including `system/Engine.dll` (30,704,468 bytes, SHA-256 `4dd2f63c606df5671702911fa1f8ddcc4099bf2b98b81e8aa88eed47f5405b08`) read only as dispatch evidence. "Fresh IMPORTA-PC hash equality preceded the E: candidate copy."
 - Superseded statement, 2026-11-04 (DEC-OWN-2 replaces it): "The user selected `E:/Lineage2-client` as the source of truth for new assets." Later text: "The current native reference is **IMPORTA-PC, `C:/Lineage2-client`**."
@@ -62,7 +61,7 @@ Source citations quote the docs as of the ingest on 2026-11-08. Current homes: d
 
 ## Topic: Native Interlude world preview status
 - source: docs/NATIVE_WORLD.md (DOC, no precedence)
-- `/?world=interlude` loads the staged native map section (PlayerStart10 area, 62 models / 157 placements / 4,992 terrain triangles), Human male fighter and Greater Musveren, with live FPS. Startup location: `20_20.PlayerStart10` at native XYZ `[10536, 95034, -3374.786376953125]` is "source-backed startup selection, not observation of the current live pawn or camera."
+- `/` loads the staged native map section (PlayerStart10 area, 62 models / 157 placements / 4,992 terrain triangles), Human male fighter and Greater Musveren, with live FPS. Startup location: `20_20.PlayerStart10` at native XYZ `[10536, 95034, -3374.786376953125]` is "source-backed startup selection, not observation of the current live pawn or camera."
 - Coordinates: "glTF XYZ = .01 * native XZY"; the Editor packer serializes left-handed by default (an Editor route detail; NOED-01 builds the native scene in code) and the native scene script "establishes right-handed coordinates after parsing and before any native GLB load."
 - Terrain: 735 V fields corrected by `(grid + 0.5)/256 - max(grid - 240, 0)/4096` for the proved `20_20` route. Native draws are "**offscreen submissions**"; they do not establish visible native pixels.
 - Open: native shader/particle execution, live camera/location alignment, full attack and Power Strike parity, sword attachment, effect-timing authoring, hardware performance acceptance. Musveren death pose still intersects terrain by up to 0.119400140 m (660/1,591 vertices).

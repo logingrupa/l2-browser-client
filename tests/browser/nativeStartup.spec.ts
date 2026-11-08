@@ -19,7 +19,7 @@ test("a failed authored geometry request reports a retryable error instead of wa
     failures++;
     await route.fulfill({ status: 502, contentType: "text/plain", body: "Intentional startup geometry failure" });
   });
-  await page.goto("/?world=interlude&authored=1");
+  await page.goto("/?authored=1");
   await expect(page.getByRole("alert")).toContainText("World geometry could not be loaded", { timeout: 90_000 });
   await expect(page.getByRole("alert")).toContainText("reload to try again");
   expect(failures).toBeGreaterThan(0);

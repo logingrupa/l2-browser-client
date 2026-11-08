@@ -106,11 +106,10 @@ describe("native visual source-action selection and lifetime", () => {
     const asset = await nativeVisualFixture({ skinned: true });
     const entity: WorldEntity = { id: "fixture", kind: "local-player", appearanceId: "fixture", displayName: "Fixture",
       health: 100, maximumHealth: 100, animation: "idle", position: { x: 2, y: 3, z: 4 }, orientationRadians: .2 };
-    // A distinct synthetic source clip tests routing, never a production alias.
     const visual = nativeCharacterFactory(new Map([["fixture", { asset,
       clips: { ...nativeVisualClips, specialAttack: nativeVisualClips.run } }]]))(scene, entity);
     releases.push(() => visual.dispose()); await visual.ready;
-    function update(next: WorldEntity, retrigger = false) { visual.setEntity?.(next); visual.animation.setState(next.animation, retrigger); }
+    function update(next: WorldEntity, retrigger = false) { visual.setEntity(next); visual.animation.setState(next.animation, retrigger); }
     return { visual, entity, update, scene };
   }
   it("plays the selected source once, returns to idle and retains normal attack mapping", async () => {

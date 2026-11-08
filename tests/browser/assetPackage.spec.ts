@@ -1,9 +1,13 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { assetFixture } from "../fixtures/assetPackageFixture";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { readAssetPackage, validatePackageModel } from "../../src/assets/package/readAssetPackage";
+import { nativeSandboxStaged, nativeSandboxStagingRequirement, openNativeSandbox } from "./nativeSandboxRoute";
+import { desktopViewport, expectNoHorizontalScrollOnPortraitPhone, landscapePhone } from "./browserViewports";
+
+const nativeIntegrationEvidence = resolve("artifacts/native-integration");
 
 function validatedNativePackage(id: string): string | undefined {
   const receipt = resolve("artifacts/native-assets/conversion-validation.json");
@@ -25,6 +29,24 @@ function nativePackage(): string | undefined {
   }
   return undefined;
 }
+async function readNativeWorldIdentity(page: Page) {
+  return page.evaluate(() => {
+    const runtime = window.__nativeSlice;
+    if (!runtime) throw new Error("The native sandbox runtime is not installed.");
+    const snapshot = runtime.snapshot();
+    return { nativeTerrain: snapshot.nativeTerrain, worldFailure: snapshot.worldFailure,
+      world: snapshot.world ? { manifestSha256: snapshot.world.manifestSha256, disposed: snapshot.world.disposed, modelCount: snapshot.world.modelCount,
+        placementCount: snapshot.world.placementCount, terrainTriangles: snapshot.world.terrainTriangles, texturesReady: snapshot.world.texturesReady } : null,
+      entities: snapshot.entities.map(entity => ({ id: entity.id, modelId: entity.modelId, hasNativeModel: entity.hasNativeModel, meshCount: entity.meshCount,
+        authoritativePosition: entity.authoritativePosition })) };
+  });
+}
+async function openAssetInspectorFromDeveloperSheet(page: Page) {
+  await page.getByTestId("dev-sheet-toggle").click();
+  await page.getByTestId("dev-tab-debug").click();
+  await page.getByTestId("asset-import-open").click();
+}
+const closeAssetInspector = (page: Page) => page.getByRole("dialog", { name: "Asset inspector" }).getByRole("button", { name: "Close", exact: true }).click();
 
 test.describe("local asset package inspector", () => {
   test.beforeEach(async ({ page }) => { await page.goto("/tests/browser/assetPackage.html"); await expect(page.getByRole("button", { name: "Assets", exact: true })).toBeVisible(); });
@@ -77,20 +99,21 @@ test.describe("local asset package inspector", () => {
 test("drops an actual native Interlude conversion into the client without changing world state", async ({ page }) => {
   const archive = nativePackage();
   test.skip(!archive, "Run the native static wall conversion before this evidence check.");
-  test.setTimeout(90_000);
+  test.skip(!nativeSandboxStaged, nativeSandboxStagingRequirement);
+  test.setTimeout(240_000);
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/?world=courtyard");
-  await expect(page.getByTestId("entity-count")).toHaveText("6");
+  await page.setViewportSize(desktopViewport);
+  await openNativeSandbox(page);
+  const worldBeforeInspector = await readNativeWorldIdentity(page);
   expect(await page.evaluate(() => window.__assetPackageInspection!.snapshot().open)).toBe(false);
   const dropped = await page.evaluateHandle(base64 => {
     const bytes = Uint8Array.from(atob(base64), value => value.charCodeAt(0));
     const transfer = new DataTransfer(); transfer.items.add(new File([bytes], "wall.l2asset", { type: "application/zip" }));
     return transfer;
   }, readFileSync(archive!).toString("base64"));
-  await page.locator("canvas").first().dispatchEvent("drop", { dataTransfer: dropped });
+  await page.locator("#canvas").dispatchEvent("drop", { dataTransfer: dropped });
   await dropped.dispose();
   await expect(page.getByRole("dialog", { name: "Asset inspector" })).toBeVisible();
   await expect(page.locator(".asset-import-status")).toContainText("speaking1f_s.wall03 ready");
@@ -99,14 +122,15 @@ test("drops an actual native Interlude conversion into the client without changi
   expect(imported.preview?.meshes).toBeGreaterThan(0);
   expect(imported.preview?.materials.length).toBeGreaterThan(0);
   expect(imported.sourceEdition).toBe("interlude");
-  await mkdir(resolve(".impeccable/review"), { recursive: true });
-  await page.screenshot({ path: resolve(".impeccable/review/desktop.png") });
-  await page.setViewportSize({ width: 390, height: 844 });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
-  await page.screenshot({ path: resolve(".impeccable/review/mobile.png") });
-  await page.getByRole("button", { name: "Close", exact: true }).click();
-  await expect(page.getByTestId("entity-count")).toHaveText("6");
-  expect((await page.evaluate(() => window.__worldDiagnostics!.snapshot())).environment.cameraRelative).toBe(true);
+  await mkdir(nativeIntegrationEvidence, { recursive: true });
+  await page.screenshot({ path: resolve(nativeIntegrationEvidence, "dropped-wall-desktop.png") });
+  await page.setViewportSize(landscapePhone.viewport);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(landscapePhone.viewport.width);
+  await page.screenshot({ path: resolve(nativeIntegrationEvidence, "dropped-wall-mobile.png") });
+  await expectNoHorizontalScrollOnPortraitPhone(page);
+  await closeAssetInspector(page);
+  await expect(page.getByTestId("entity-count")).toHaveText("2");
+  expect(await readNativeWorldIdentity(page)).toEqual(worldBeforeInspector);
   expect(errors).toEqual([]);
 });
 
@@ -144,8 +168,8 @@ test("decodes and plays actual converted L2SD music, then releases the audio res
   await expect(player).toHaveCount(0);
   expect(await page.evaluate(() => window.__assetHarness!())).toEqual({ engines: 1, precision: true, worldDisposed: false, paused: false });
   expect(await page.evaluate(() => window.__assetPackageInspection!.snapshot().preview)).toBeNull();
-  await mkdir(resolve("artifacts/native-integration"), { recursive: true });
-  await writeFile(resolve("artifacts/native-integration/music-browser-report.json"), JSON.stringify({ archive, audioFile, playback, errors }, null, 2));
+  await mkdir(nativeIntegrationEvidence, { recursive: true });
+  await writeFile(resolve(nativeIntegrationEvidence, "music-browser-report.json"), JSON.stringify({ archive, audioFile, playback, errors }, null, 2));
   expect(errors).toEqual([]);
 });
 
@@ -153,7 +177,8 @@ test("plays an assembled native character with source-duration loops and linked 
   const modelPath = resolve(process.env.NATIVE_MODEL_PACKAGE ?? validatedNativePackage("interlude:assembly:MFighter-native-body-face0-hair0") ?? validatedNativePackage("interlude:assembly:MFighter-native-body-face0") ?? "artifacts/native-assets/4d47a7564ac2b42124bc19e0d45d1bf02c36aa54bda97546d09a5fbc7f98f1f7/asset.l2asset");
   const audioPath = resolve(process.env.NATIVE_AUDIO_PACKAGE ?? validatedNativePackage("interlude:skillsound.power_strike.power_strike_cast") ?? "artifacts/native-assets/ff2ee23d39ab0ad5ed3284953d058184d48a62cb20482b584e642ef841efa4f4/asset.l2asset");
   test.skip(!existsSync(modelPath) || !existsSync(audioPath), "Build the native assembled character and audio packages before this local asset check.");
-  test.setTimeout(180_000);
+  test.skip(!nativeSandboxStaged, nativeSandboxStagingRequirement);
+  test.setTimeout(360_000);
   const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
   page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
   const model = await readAssetPackage(new Uint8Array(await readFile(modelPath)));
@@ -163,11 +188,10 @@ test("plays an assembled native character with source-duration loops and linked 
   const expectedMeshes = gltf.meshes.reduce((total, mesh) => total + mesh.primitives.length, 0);
   const expectedBones = gltf.skins.reduce((total, skin) => total + skin.joints.length, 0);
   const audio = await readAssetPackage(new Uint8Array(await readFile(audioPath)));
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/?world=courtyard");
-  await expect(page.getByTestId("entity-count")).toHaveText("6");
-  await page.getByTestId("dev-sheet-toggle").click();
-  await page.getByRole("button", { name: "Assets", exact: true }).click();
+  await page.setViewportSize(desktopViewport);
+  await openNativeSandbox(page);
+  const worldBeforeInspector = await readNativeWorldIdentity(page);
+  await openAssetInspectorFromDeveloperSheet(page);
   await page.getByLabel("Choose an asset package").setInputFiles(modelPath);
   await expect(page.locator(".asset-import-status")).toContainText(`${model.manifest.name} ready`, { timeout: 90_000 });
   const initial = await page.evaluate(() => window.__assetPackageInspection!.snapshot());
@@ -191,8 +215,7 @@ test("plays an assembled native character with source-duration loops and linked 
   const pausedTime = await page.evaluate(() => window.__assetPackageInspection!.snapshot().preview?.nativePlayback?.timeSeconds);
   await expect(page.getByRole("button", { name: "Play animation", exact: true })).toBeVisible();
   expect(await page.evaluate(() => window.__assetPackageInspection!.snapshot().preview?.nativePlayback?.timeSeconds)).toBe(pausedTime);
-  await mkdir(resolve("artifacts/native-integration"), { recursive: true });
-  await mkdir(resolve(".impeccable/review"), { recursive: true });
+  await mkdir(nativeIntegrationEvidence, { recursive: true });
   const capturePose = async (clip: string) => {
     await page.getByLabel("Native animation", { exact: true }).selectOption({ label: clip });
     await page.getByRole("button", { name: "Play animation", exact: true }).click();
@@ -203,22 +226,19 @@ test("plays an assembled native character with source-duration loops and linked 
     return { clip, state: await page.evaluate(() => window.__assetPackageInspection!.snapshot()), deformation };
   };
   const running = await capturePose("Run_Hand_MFighter");
-  await page.screenshot({ path: resolve("artifacts/native-integration/assembled-run-desktop.png") });
+  await page.screenshot({ path: resolve(nativeIntegrationEvidence, "assembled-run-desktop.png") });
   const idle = await capturePose("Wait_Hand_MFighter");
   expect(idle.deformation?.parts.map(part => part.checksum)).not.toEqual(running.deformation?.parts.map(part => part.checksum));
-  // This named human fixture's native wait is a standing pose. Finite skin
-  // matrices alone did not catch the earlier root rotation lying it sideways.
-  const idleParts = idle.deformation!.parts;
-  const idleExtents = [0, 1, 2].map(axis => Math.max(...idleParts.map(part => part.maximum[axis]!)) - Math.min(...idleParts.map(part => part.minimum[axis]!)));
+  const standingWaitParts = idle.deformation!.parts;
+  const standingWaitExtents = [0, 1, 2].map(axis => Math.max(...standingWaitParts.map(part => part.maximum[axis]!)) - Math.min(...standingWaitParts.map(part => part.minimum[axis]!)));
   const bindHeight = initial.preview!.bounds![1]![1]! - initial.preview!.bounds![0]![1]!;
-  expect(idleExtents[1]!, "Native standing wait retains the source vertical stature").toBeGreaterThan(bindHeight * .75);
-  expect(idleExtents[1]!, "Native standing wait is taller than its horizontal extents").toBeGreaterThan(Math.max(idleExtents[0]!, idleExtents[2]!));
-  await page.screenshot({ path: resolve("artifacts/native-integration/assembled-desktop.png") });
-  await page.screenshot({ path: resolve(".impeccable/review/desktop.png") });
-  await page.setViewportSize({ width: 390, height: 844 });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
-  await page.screenshot({ path: resolve("artifacts/native-integration/assembled-mobile.png") });
-  await page.screenshot({ path: resolve(".impeccable/review/mobile.png") });
+  expect(standingWaitExtents[1]!, "Native standing wait retains the source vertical stature").toBeGreaterThan(bindHeight * .75);
+  expect(standingWaitExtents[1]!, "Native standing wait is taller than its horizontal extents").toBeGreaterThan(Math.max(standingWaitExtents[0]!, standingWaitExtents[2]!));
+  await page.screenshot({ path: resolve(nativeIntegrationEvidence, "assembled-desktop.png") });
+  await page.setViewportSize(landscapePhone.viewport);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(landscapePhone.viewport.width);
+  await page.screenshot({ path: resolve(nativeIntegrationEvidence, "assembled-mobile.png") });
+  await expectNoHorizontalScrollOnPortraitPhone(page);
   await page.getByLabel("Choose an asset package").setInputFiles(audioPath);
   await expect(page.locator(".asset-import-status")).toContainText(`${audio.manifest.name} ready`, { timeout: 30_000 });
   const player = page.locator(".asset-import-panel audio");
@@ -226,9 +246,10 @@ test("plays an assembled native character with source-duration loops and linked 
   expect(await player.evaluate(element => (element as HTMLAudioElement).paused)).toBe(true);
   await player.press("Space");
   await expect.poll(() => player.evaluate(element => (element as HTMLAudioElement).currentTime)).toBeGreaterThan(0);
-  await page.getByRole("button", { name: "Close", exact: true }).click();
-  await expect(page.getByTestId("entity-count")).toHaveText("6");
+  await closeAssetInspector(page);
+  await expect(page.getByTestId("entity-count")).toHaveText("2");
+  expect(await readNativeWorldIdentity(page)).toEqual(worldBeforeInspector);
   expect(await page.evaluate(() => window.__assetPackageInspection!.snapshot().preview)).toBeNull();
-  await writeFile(resolve("artifacts/native-integration/assembled-browser-report.json"), JSON.stringify({ modelPath, audioPath, initial, moving, running, idle, errors }, null, 2));
+  await writeFile(resolve(nativeIntegrationEvidence, "assembled-browser-report.json"), JSON.stringify({ modelPath, audioPath, initial, moving, running, idle, errors }, null, 2));
   expect(errors).toEqual([]);
 });

@@ -12,13 +12,13 @@ Node.js 22.12.0 or later, pnpm 10.32.1, a WebGPU browser. Conversion also needs 
 - `pnpm typecheck`, `pnpm test:unit` (Vitest), `pnpm test:e2e` (Playwright, starts its own `pnpm dev`), `pnpm test` (both), `pnpm test:pipeline` (Python pipeline tests). `pnpm test:setup` installs Chromium once.
 - `pnpm build` writes `dist/`, `pnpm serve` previews it.
 - Optional Editor viewer: `pnpm generate:editor`, `pnpm test:editor`.
-- Native store writers (`assets:*`, `world:stage`) run only in the main checkout.
+- Native store writers (`assets:*`) run only in the main checkout.
 
 Headless e2e uses SwiftShader, so its FPS is not a measurement. Phone screenshots: iPhone 15 Pro Max landscape, 932 x 430 (DEC-OWN-9).
 
 ## Routes
 
-`/` is the reference Talking Island. `/?world=interlude` is the native 20_20 sandbox from `public/l2/`; add `&character=<id>` for a staged player profile or `&authored=1` for the optional Editor export. How each route loads and fails: [ARCHITECTURE](docs/ARCHITECTURE.md).
+`/` is the native 20_20 sandbox from `public/l2/`. Add `?character=<id>` for a staged player profile or `?authored=1` for the optional Editor export. How each route loads and fails: [ARCHITECTURE](docs/ARCHITECTURE.md).
 
 ## Docs
 
@@ -46,7 +46,6 @@ Headless e2e uses SwiftShader, so its FPS is not a measurement. Phone screenshot
 - [PRIVATE_PREVIEW](docs/PRIVATE_PREVIEW.md): private preview.
 - [SOURCE_REUSE](docs/SOURCE_REUSE.md): provenance.
 - [LINEAGE2ELBERA_REUSE_AUDIT](docs/LINEAGE2ELBERA_REUSE_AUDIT.md): Elbera reuse.
-- [WORLD_ASSETS](docs/WORLD_ASSETS.md): lineagen-adapted modules.
 
 ## Licences
 

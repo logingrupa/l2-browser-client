@@ -5,7 +5,7 @@ Browser client for Lineage II Interlude on Babylon.js WebGPU. These rules are sp
 ## Project rules
 
 ### Decisions and planning
-- Current decisions live in [.planning/PROJECT.md](.planning/PROJECT.md) (DEC-OWN-1 to DEC-OWN-10). They win over every other doc. [docs/PORT_SCOPE.md](docs/PORT_SCOPE.md) holds the scope tables those decisions cite.
+- Current decisions live in [.planning/PROJECT.md](.planning/PROJECT.md) (DEC-OWN-1 to DEC-OWN-11). They win over every other doc. [docs/PORT_SCOPE.md](docs/PORT_SCOPE.md) holds the scope tables those decisions cite.
 - Requirements, phases and state: [.planning/REQUIREMENTS.md](.planning/REQUIREMENTS.md), [.planning/ROADMAP.md](.planning/ROADMAP.md), [.planning/STATE.md](.planning/STATE.md).
 - The docs in `docs/` are short summaries of current facts, not decisions. When a doc and `.planning` disagree, `.planning` wins and you fix the doc in the same change. Older detail lives in git history.
 
@@ -23,6 +23,7 @@ Use the smallest command that fits the work.
 - Never invent Lineage II values (sizes, timings, colors, offsets, sounds, stats, names).
 - Every value comes from the reference client, IMPORTA-PC `C:/Lineage2-client`, through a pinned recipe or script, and records its source.
 - `E:/Lineage2-client` is a conversion source only after the full-tree hash lock (FOUND-03).
+- Other workspaces under `C:\laragon\www` are unrelated projects. Do not read or reuse them for this client. The only exception is the pinned Elbera source that [.planning/PROJECT.md](.planning/PROJECT.md) names.
 - An unresolved value stays visibly unresolved. No procedural stand-ins on the native route.
 
 ### Interface
@@ -37,7 +38,7 @@ Use the smallest command that fits the work.
 ### Lanes
 - Parallel work uses the `lane` skill. Load it when two or more agents work on this repo at once, or when your checkout is an `l2b-*` lane. A lane is a separate checkout in `C:\laragon\www\l2b-<slug>` with its own `node_modules` and dev server port. The skill creates, watches and removes lanes.
 - At most 3 lanes on DATABASE-PC, plus the integration thread in the main checkout. One part per branch, named `<part>/<slug>`.
-- Lanes never run scripts that write the main native store: `assets:*`, `world:stage`, `assets:stage`, `stage_*`, `derive-*`, `migrate-*`, or preview scripts. Only the integration thread runs them, in the main checkout.
+- Lanes never run scripts that write the main native store: `assets:*`, `assets:stage`, `stage_*`, `derive-*`, `migrate-*`, or preview scripts. Only the integration thread runs them, in the main checkout.
 - Lanes start from committed code only. Merge one branch at a time; a contract change merges first.
 
 ### Build

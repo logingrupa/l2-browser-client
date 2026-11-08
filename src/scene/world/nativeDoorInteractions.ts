@@ -13,9 +13,7 @@ export interface DoorActorPort {
   onCommand(listener: (command: WorldCommand) => void): () => void;
   paused(): boolean;
 }
-/** Explicit browser interaction policy. Source IDs, poses and MoveTime are
- * retained separately; proximity and approach are not a native-server claim. */
-export const nativeDoorInteractionPolicy = Object.freeze({ interactionDistanceMetres: 2, verticalToleranceMetres: 1.5, approachStandOffMetres: .8 });
+const browserDoorInteractionPolicy = Object.freeze({ interactionDistanceMetres: 2, verticalToleranceMetres: 1.5, approachStandOffMetres: .8 });
 export interface DoorTargeting {
   hover(mesh: AbstractMesh | null): void;
   activate(mesh: AbstractMesh | null): boolean;
@@ -23,7 +21,7 @@ export interface DoorTargeting {
 }
 export function createNativeDoorInteractions(scene: Scene, targets: readonly NativeMover[], actor: DoorActorPort,
   navigation: WorldNavigation, capsule: { radius: number; height: number }, onStatus: (message: string) => void = () => {}) {
-  const policy = nativeDoorInteractionPolicy, byMesh = new Map<AbstractMesh, NativeMover>(targets.flatMap(target => target.meshes.map(mesh => [mesh, target] as const)));
+  const policy = browserDoorInteractionPolicy, byMesh = new Map<AbstractMesh, NativeMover>(targets.flatMap(target => target.meshes.map(mesh => [mesh, target] as const)));
   const byId = new Map(targets.map(target => [target.source.id, target]));
   const canvas = scene.getEngine().getRenderingCanvas();
   let pending: NativeMover | null = null, hovered: NativeMover | null = null, disposed = false, ownCommand = false;
@@ -56,7 +54,6 @@ export function createNativeDoorInteractions(scene: Scene, targets: readonly Nat
     if (!player || player.health <= 0 || target.root.isDisposed()) return;
     cancel();
     if (inRange(target, player.position)) {
-      // Interaction replaces travel even when the player was walking elsewhere.
       if (actor.player()?.animation === "run") issue({ type: "set-animation", animation: "idle" });
       target.requestToggle(); return;
     }
@@ -64,8 +61,6 @@ export function createNativeDoorInteractions(scene: Scene, targets: readonly Nat
     if (length < 1e-8 || Math.abs(player.position.y - target.closedFootY) > policy.verticalToleranceMetres) { onStatus("Move onto the same level as the door."); return; }
     const destination = navigation.destination({ x: near.x + dx / length * policy.approachStandOffMetres, y: near.y,
       z: near.z + dz / length * policy.approachStandOffMetres });
-    // Existing navigation provides a direct reachable approach, not automatic
-    // routing around walls. Never open remotely after a blocked walk.
     if (!destination || !inRange(target, destination) || navigation.move(player.position, destination).blocked) {
       onStatus("The door cannot be reached from here."); return;
     }
@@ -76,7 +71,7 @@ export function createNativeDoorInteractions(scene: Scene, targets: readonly Nat
   const unsubscribe = actor.onCommand(command => {
     if (ownCommand || !pending) return;
     if (command.type === "move-local" || command.type === "set-animation" || command.type === "preview-action") cancel(false);
-    else if (command.type === "teleport-local" || (command.type === "set-health" && command.entityId === "local-player" && command.health <= 0)) cancel();
+    else if (command.type === "set-health" && command.entityId === "local-player" && command.health <= 0) cancel();
   });
   const leave = () => hover(null);
   canvas?.addEventListener("pointerleave", leave);
@@ -88,7 +83,6 @@ export function createNativeDoorInteractions(scene: Scene, targets: readonly Nat
   const targeting: DoorTargeting = { hover, cancel,
     activate(mesh) { const target = mesh && byMesh.get(mesh); if (!target) return false; activateTarget(target); return true; } };
   return { targeting, dispose,
-    /** The same guarded path is exposed for deterministic diagnostics. */
     activate(id: string) { const target = byId.get(id); if (!target) throw new Error("Unknown door target."); activateTarget(target); },
     update(seconds: number) {
       if (disposed) return;

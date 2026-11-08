@@ -1,14 +1,12 @@
 <!doctype html>
-<!-- Native Babylon.js Editor Vanilla HTML entry, modified for this client. -->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#202522" />
     <link rel="icon" href="data:," />
-    <title>Proving grounds · L2 Browser Client</title>
+    <title>Native asset slice · L2 Browser Client</title>
     <style>
-      /* Available before the app module; retain dimensions for hidden startup. */
       body[data-world-state="loading"] :is(#canvas, .world-interface, .entity-labels) { visibility: hidden; }
     </style>
   </head>
@@ -16,7 +14,7 @@
     <noscript>JavaScript is required to enter this synthetic world.</noscript>
     <main id="app" inert><canvas id="canvas" tabindex="0" aria-label="Synthetic world. Tap characters to select, tap ground to move, drag to orbit, pinch to zoom."></canvas></main>
     <section id="loading" class="loading-message" aria-labelledby="loading-title" data-stage="world">
-      <h1 id="loading-title">Entering the proving grounds</h1>
+      <h1 id="loading-title">Entering the world</h1>
       <div class="loading-stage" data-loading-only>
         <p id="loading-stage-status" role="status" aria-live="polite" aria-atomic="true">Loading world data</p>
         <span id="loading-step-count">Step 1 of 4</span>
@@ -38,7 +36,6 @@
     </section>
     <script src="/src/main.ts" type="module"></script>
     <script>
-      // This recovery path also works if the application module never downloads.
       window.addEventListener("error", function (event) {
         if (!(event.target instanceof HTMLScriptElement) || event.target.type !== "module") return;
         var panel = document.getElementById("loading");

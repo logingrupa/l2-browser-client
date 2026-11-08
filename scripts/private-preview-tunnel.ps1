@@ -1,4 +1,3 @@
-<# Starts/stops only this client's provisioned private-preview connector. #>
 [CmdletBinding()]
 param([ValidateSet('Start','Stop','Status')][string]$Action = 'Status')
 $ErrorActionPreference = 'Stop'
@@ -77,5 +76,5 @@ for ($attempt = 0; $attempt -lt 15; $attempt++) {
     if (-not (Get-Process -Id $connectorId -ErrorAction SilentlyContinue)) { break }
     Start-Sleep -Seconds 1
 }
-@{hostname=$identity.hostname;pid=$connectorId;connected=$ready;url='https://l2.kingdom.lv/?world=interlude&authored=1'} | ConvertTo-Json
+@{hostname=$identity.hostname;pid=$connectorId;connected=$ready;url='https://l2.kingdom.lv/?authored=1'} | ConvertTo-Json
 if (-not $ready) { throw 'Connector is not ready; private diagnostics remain under .assets/private-preview/tunnel.' }

@@ -13,7 +13,7 @@ from .ue2 import FormatError, Package, summary
 from .tables import CRYPTO_SOURCE, SCHEMA_ROOT, TABLES, decode_table
 
 NATIVE = {'.ukx', '.uax', '.usx', '.utx', '.unr', '.u', '.uix', '.usk'}
-UMODEL = Path(os.environ.get('L2_UMODEL', 'C:/laragon/www/lineagen/.assets/skill-assets/work/native/tools/umodel/umodel.exe'))
+UMODEL = Path(os.environ.get('L2_UMODEL', 'C:/laragon/www/l2-browser-client/.assets/native-tools/umodel/umodel.exe'))
 UMODEL_SHA256 = '13502e5a4d8f6b5f32252afebd6360f7302ccfaccf6b8dda65beff0be2d364a0'
 
 
@@ -56,7 +56,6 @@ def safe_output(client, path):
 
 def write_output(client, path, data):
     path = safe_output(client, path)
-    # No delete/move or source writes. Existing local reports are reproducible replacements.
     with path.open('wb') as stream:
         stream.write(data)
     if file_hash(path) != digest(data):

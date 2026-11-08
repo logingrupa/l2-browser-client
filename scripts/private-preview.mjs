@@ -138,7 +138,7 @@ http {
       if ($preview_key_ok = 0) { return 403; }
       add_header Set-Cookie $preview_set_cookie always;
       ${headers}
-      return 303 "/?world=interlude&authored=1";
+      return 303 "/?authored=1";
     }
     location ~ (^|/)\\. { return 404; }
     location ~* \\.(map|ts|tsx|jsx|mjs|cjs)$ { return 404; }
@@ -238,7 +238,6 @@ try {
   }
   console.log(JSON.stringify(result, null, 2));
 } catch (error) {
-  // Never include child-process stdout/stderr, configuration bytes or invite URLs.
   console.error(error instanceof Error ? error.message : 'Private preview failed.');
   process.exitCode = 1;
 }

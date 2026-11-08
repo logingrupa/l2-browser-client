@@ -1,8 +1,3 @@
-"""Source-backed Interlude skill action and emitter-default extraction.
-
-This preserves native data and dependencies. It does not execute UnrealScript
-or implement the native engine's particle/attachment/skill dispatch functions.
-"""
 import copy
 import hashlib
 import json
@@ -14,12 +9,13 @@ from .cli import file_hash, json_bytes, safe_output, within, write_output
 from .tables import decode_table
 from .ue2 import FormatError, Package, Reader, unwrap
 
-UELIB = Path('C:/laragon/www/lineagen/.assets/skill-assets/work/native/tools/ue-explorer/Eliot.UELib.dll')
+UELIB = Path('C:/laragon/www/l2-browser-client/.assets/native-tools/ue-explorer/Eliot.UELib.dll')
 UELIB_SHA256 = '64ebfa8b290429b9d5b5e81f5018734c03ded27bb814c69b904cc269268f7bbc'
 POWERSHELL = Path('C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe')
 ENGINE_CLASSES = ['Object', 'Actor', 'SkillAction', 'SkillVisualEffect', 'SkillAction_LocateEffect',
     'ParticleEmitter', 'SpriteEmitter', 'MeshEmitter', 'BeamEmitter', 'Emitter']
 ACTION_ARRAYS = {'CastingActions', 'ChannelingActions', 'PreshotActions', 'ShotActions', 'ExplosionActions'}
+REFERENCE_IDENTITY_KEYS_SKIPPED_WHILE_DESCENDING_INTO_EMITTER_PROPERTIES = ('class', 'object')
 
 
 def split_fields(text):
@@ -149,10 +145,8 @@ def references(value, path=''):
     if isinstance(value, dict):
         if isinstance(value.get('object'), str) and isinstance(value.get('class'), str):
             yield path, value['class'], value['object']
-        # Emitter records also carry their own class/object identity. Continue
-        # into their properties so those records cannot hide asset references.
         for key, child in value.items():
-            if key not in ('class', 'object'):
+            if key not in REFERENCE_IDENTITY_KEYS_SKIPPED_WHILE_DESCENDING_INTO_EMITTER_PROPERTIES:
                 yield from references(child, path + '.' + key if path else key)
     elif isinstance(value, list):
         for index, child in enumerate(value):
@@ -262,11 +256,6 @@ def skill_actions(package, item):
 
 
 def read_class_defaults(client, reference, work_directory, library=UELIB, powershell=POWERSHELL):
-    """Recover one exact class's authored defaults into a destination-only workdir.
-
-    Returns properties without implicit/inherited values. Source offsets identify
-    the complete native UClass export, not individual default-property bytes.
-    """
     client, work = Path(client).resolve(strict=True), Path(work_directory).resolve()
     if work.is_relative_to(client):
         raise FormatError('Class-default output must be outside the native client')
@@ -309,7 +298,6 @@ def read_class_defaults(client, reference, work_directory, library=UELIB, powers
 
 
 def select_skill_rows(skill_table, sound_table, skill_id, level):
-    """Require exact authored rows and an explicit visual object binding."""
     skill_rows = [row for row in skill_table['data']['skill'] if row['skill_id'] == skill_id and row['skill_level'] == level]
     sound_rows = [row for row in sound_table['data']['skillsound'] if row['skill_id'] == skill_id and row['skill_level'] == level]
     if len(skill_rows) != 1 or len(sound_rows) != 1:
@@ -321,7 +309,6 @@ def select_skill_rows(skill_table, sound_table, skill_id, level):
 
 
 def verify(client, output):
-    """Rehash selected source bytes, graph, and every declared generated file."""
     client, output = client.resolve(strict=True), output.resolve(strict=True)
     if output.is_relative_to(client):
         raise FormatError('Effect output must be outside the native client')

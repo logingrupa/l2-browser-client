@@ -5,11 +5,9 @@
 
 import { loadScene, scriptsDictionary, scriptAssetsCache, _applyScriptsForObject, _removeRegisteredScriptInstance, _preloadScriptsAssets } from "babylonjs-editor-tools";
 import * as scripts_nativeParity from "./scripts/nativeParity";
-import * as scripts_world from "./scripts/world";
 
 export const scriptsMap = {
-    "scripts/nativeParity.ts": scripts_nativeParity,
-	"scripts/world.ts": scripts_world
+    "scripts/nativeParity.ts": scripts_nativeParity
 };
 
 export { loadScene, scriptsDictionary, scriptAssetsCache, _applyScriptsForObject, _removeRegisteredScriptInstance, _preloadScriptsAssets };

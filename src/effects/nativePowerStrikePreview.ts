@@ -11,8 +11,6 @@ export interface PowerStrikeSelection {
   isValid(): boolean;
 }
 
-/** Preparation owns no gameplay clock. Dispatch happens once, only after both
- * visual stages are ready and the user's selected target still matches. */
 export function createNativePowerStrikePreview(init: EffectToggle, shot: EffectToggle,
   selected: () => PowerStrikeSelection | null, casterAlive: () => boolean,
   clearManual: () => Promise<void>, dispatch: (targetId: string) => void,
@@ -31,7 +29,7 @@ export function createNativePowerStrikePreview(init: EffectToggle, shot: EffectT
   };
   const unsubscribe = subscribeCommands(command => {
     if (!pending || ownDispatch) return;
-    if (command.type === "move-local" || command.type === "teleport-local" || command.type === "preview-action" ||
+    if (command.type === "move-local" || command.type === "preview-action" ||
       command.type === "set-animation" && (command.entityId === undefined || command.entityId === "local-player") ||
       command.type === "despawn" && command.entityId === target?.id ||
       command.type === "set-health" && command.health <= 0 && (command.entityId === "local-player" || command.entityId === target?.id)) {

@@ -1,4 +1,3 @@
-/** Real external-origin checks. Private invite/cookies are never logged or traced. */
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,7 +11,7 @@ await mkdir(evidence, { recursive: true });
 const key = (await readFile(resolve(root, '.assets/private-preview/access-key'), 'utf8')).trim();
 const invite = (await readFile(resolve(root, '.assets/private-preview/private-invite.txt'), 'utf8')).trim();
 const base = 'https://l2.kingdom.lv';
-const route = '/?world=interlude&authored=1';
+const route = '/?authored=1';
 const browserIndex = process.argv.indexOf('--browser');
 const browserName = browserIndex < 0 ? 'chromium' : process.argv[browserIndex + 1];
 if (!['chromium', 'webkit'].includes(browserName)) throw Error('--browser must be chromium or webkit.');
@@ -60,8 +59,8 @@ async function observeStartup(page) {
       result.firstReveal = {
         readyFrame: Number(canvas?.dataset.readyFrame ?? 0), worldState: document.body.dataset.worldState,
         terrainReady: state?.nativeTerrain === 'source-section-loaded' && state.world?.texturesReady && state.world.terrainTriangles > 0,
-        nativeActors: actors.filter(actor => !actor.isFallback && actor.meshCount > 0).length,
-        fallbacks: actors.filter(actor => actor.isFallback).length,
+        nativeActors: actors.filter(actor => actor.hasNativeModel && actor.meshCount > 0).length,
+        actorsWithoutNativeModel: actors.filter(actor => !actor.hasNativeModel).length,
         hudEntities: document.querySelector('[data-testid=entity-count]')?.textContent,
         visible: Boolean(visible(canvas) && visible(hud)),
       };
@@ -80,7 +79,7 @@ async function verifyStartup(page, label) {
   const startup = await page.evaluate(() => window.__privateReveal);
   const first = startup.firstReveal;
   assert(startup.earlyExposure === 0 && first.readyFrame > 0 && first.worldState === 'ready' && first.terrainReady &&
-    first.nativeActors === 2 && first.fallbacks === 0 && first.hudEntities === '2' && first.visible,
+    first.nativeActors === 2 && first.actorsWithoutNativeModel === 0 && first.hudEntities === '2' && first.visible,
   `${label} first reveal contains terrain, two native actors and initialized HUD with no early exposure`);
   return startup;
 }
@@ -129,19 +128,18 @@ try {
     const desktopDelivery = observeDelivery(page);
     page.on('pageerror', error => errors.push(safe(error.message)));
     page.on('console', message => { if (message.type() === 'error') errors.push(safe(message.text())); });
-    // No tracing, HAR, video, request logging, or screenshot of the invite page.
     await page.goto(invite, { waitUntil: 'domcontentloaded', timeout: 120_000 });
     await page.waitForURL(base + route, { timeout: 120_000 });
     await page.waitForFunction(() => {
       const snapshot = window.__nativeSlice?.snapshot();
-      return snapshot?.entities?.filter(actor => !actor.isFallback).length === 2 && snapshot.nativeFlames?.placementCounts?.active === 12;
+      return snapshot?.entities?.filter(actor => actor.hasNativeModel).length === 2 && snapshot.nativeFlames?.placementCounts?.active === 12;
     }, undefined, { timeout: 180_000 });
     await page.waitForLoadState('networkidle', { timeout: 180_000 });
     const desktopStartup = await verifyStartup(page, 'External desktop');
     const desktop = await page.evaluate(() => {
       const s = window.__nativeSlice.snapshot();
       const canvas = document.querySelector('canvas'), gl = canvas?.getContext('webgl2'), extension = gl?.getExtension('WEBGL_debug_renderer_info');
-      return { entities: s.entities.map(actor => ({ id: actor.id, isFallback: actor.isFallback, animation: actor.animation })),
+      return { entities: s.entities.map(actor => ({ id: actor.id, hasNativeModel: actor.hasNativeModel, animation: actor.animation })),
         world: s.world, worldFailure: s.worldFailure, flameFailure: s.flameFailure,
         flames: s.nativeFlames.placementCounts, fps: document.querySelector('[data-testid=fps]')?.textContent,
         renderer: extension ? gl.getParameter(extension.UNMASKED_RENDERER_WEBGL) : null };
@@ -150,9 +148,9 @@ try {
     assert(desktop.world.modelCount === 61 && desktop.world.placementCount === 151, 'Expected native world section is active');
     assert(errors.length === 0, 'External browser has no page/console errors');
     await page.screenshot({ path: resolve(evidence, 'desktop.png') });
-    const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
-    // Transfer only this host's authenticated session in memory; never persist storageState.
-    await mobile.addCookies(await context.cookies(base));
+    const mobile = await browser.newContext({ viewport: { width: 932, height: 430 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+    const hostSessionCookiesInMemory = await context.cookies(base);
+    await mobile.addCookies(hostSessionCookiesInMemory);
     const mobilePage = await mobile.newPage();
     await observeStartup(mobilePage);
     const mobileDelivery = observeDelivery(mobilePage);
@@ -161,7 +159,7 @@ try {
     await mobilePage.goto(base + route, { waitUntil: 'domcontentloaded', timeout: 120_000 });
     await mobilePage.waitForFunction(() => {
       const s = window.__nativeSlice?.snapshot();
-      return s?.entities.filter(actor => !actor.isFallback).length === 2 && s.world?.modelCount === 61 && s.world?.placementCount === 151 && s.nativeFlames?.placementCounts?.active === 12 && s.worldFailure === null && s.flameFailure === null;
+      return s?.entities.filter(actor => actor.hasNativeModel).length === 2 && s.world?.modelCount === 61 && s.world?.placementCount === 151 && s.nativeFlames?.placementCounts?.active === 12 && s.worldFailure === null && s.flameFailure === null;
     }, undefined, { timeout: 180_000 });
     await mobilePage.waitForLoadState('networkidle', { timeout: 180_000 });
     const mobileStartup = await verifyStartup(mobilePage, 'External mobile');
@@ -170,7 +168,7 @@ try {
     assert(errors.length === 0, 'External mobile controls and assets load without errors');
     await mobilePage.screenshot({ path: resolve(evidence, 'mobile.png') });
     await writeFile(resolve(evidence, 'browser.json'), JSON.stringify({ utc: new Date().toISOString(), url: base + route, browser: browserName,
-      desktop: { ...desktop, startup: desktopStartup, delivery: desktopDelivery }, mobile: { viewport: [390, 844], runControl: true, startup: mobileStartup, delivery: mobileDelivery }, errors, checks,
+      desktop: { ...desktop, startup: desktopStartup, delivery: desktopDelivery }, mobile: { viewport: [932, 430], runControl: true, startup: mobileStartup, delivery: mobileDelivery }, errors, checks,
       scope: 'Authenticated external delivery and functional rendering with desktop/mobile viewports. This is not a physical-phone, performance or native-parity result.' }, null, 2));
     console.log(JSON.stringify({ passed: checks.length, browser: `${browserName} desktop and mobile passed`, url: base + route }));
   }

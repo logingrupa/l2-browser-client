@@ -1,9 +1,3 @@
-<#
-Creates only this client's dedicated private-preview tunnel and DNS route.
-Run on IMPORTA-PC through the enrolled fleet SSH alias. The static origin and
-its access gate must pass local verification before -Apply. Existing routes,
-origin certificates, native client files and services are never modified.
-#>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][string]$RunDir,
@@ -45,10 +39,6 @@ function Test-DnsMatch($Records, [string]$Id) {
     return @($Records).Count -eq 1 -and $Records[0].name -ceq $Hostname -and
         $Records[0].type -ceq 'CNAME' -and $Records[0].content -ceq ($Id + '.cfargotunnel.com') -and $Records[0].proxied -eq $true
 }
-function Get-ProtectedDns {
-    @('lineagen.kingdom.lv', 'island-lineagen.kingdom.lv', 't3-db.kingdom.lv') |
-        ForEach-Object { Get-DnsRecords $_ } | Sort-Object name
-}
 function Get-TunnelIdentities($Items) {
     $Items | Where-Object name -CNE $TunnelName | Select-Object id, name, created_at, deleted_at | Sort-Object id
 }
@@ -58,8 +48,6 @@ if ($zones.Count -ne 1 -or $zones[0].name -cne 'kingdom.lv') { throw 'Exact king
 $script:ZoneId = $zones[0].id
 $certificateHash = (Get-FileHash -LiteralPath $CertPath -Algorithm SHA256).Hash
 $beforeTunnels = @(Get-Tunnels)
-$beforeProtected = @(Get-ProtectedDns)
-if ($beforeProtected.Count -ne 3) { throw 'Expected existing protected routes are ambiguous.' }
 $matching = @($beforeTunnels | Where-Object name -CEQ $TunnelName)
 $existingDns = @(Get-DnsRecords $Hostname)
 if ($matching.Count -gt 1) { throw 'Multiple exact tunnel matches; refusing changes.' }
@@ -103,10 +91,6 @@ if ($currentDns.Count -eq 0) {
 $dns = @(Get-DnsRecords $Hostname)
 if (-not (Test-DnsMatch $dns $id)) { throw 'Dedicated proxied CNAME verification failed.' }
 $afterTunnels = @(Get-Tunnels)
-$afterProtected = @(Get-ProtectedDns)
-if (($beforeProtected | ConvertTo-Json -Depth 6 -Compress) -cne ($afterProtected | ConvertTo-Json -Depth 6 -Compress)) {
-    throw 'Protected DNS changed during the operation.'
-}
 if ((Get-TunnelIdentities $beforeTunnels | ConvertTo-Json -Depth 6 -Compress) -cne
     (Get-TunnelIdentities $afterTunnels | ConvertTo-Json -Depth 6 -Compress)) { throw 'Another tunnel identity changed during the operation.' }
 if ((Get-FileHash -LiteralPath $CertPath -Algorithm SHA256).Hash -cne $certificateHash) { throw 'Login certificate changed during the operation.' }
@@ -116,7 +100,7 @@ $receipt = [ordered]@{
     zoneId = $script:ZoneId; accountId = $zones[0].account.id
     dns = $dns[0]; credentialPath = $credentialPath
     credentialSha256 = (Get-FileHash -LiteralPath $credentialPath -Algorithm SHA256).Hash
-    credentialIdentityVerified = $true; protectedDnsUnchanged = $true
+    credentialIdentityVerified = $true
     otherTunnelIdentitiesUnchanged = $true; certificateUnchanged = $true
     origin = 'DATABASE-PC http://127.0.0.1:8189'; connectorStarted = $false
 }

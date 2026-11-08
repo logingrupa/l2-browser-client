@@ -1,6 +1,3 @@
-/** Isolated adjacent-terrain comparison using the existing WebGPU application.
- * No source/catalog/Editor writes or servers. A fresh evidence directory is required.
- */
 import {createHash} from 'node:crypto';
 import {readFile,writeFile,mkdir,stat,readdir,lstat} from 'node:fs/promises';
 import {resolve,relative,dirname,isAbsolute,sep} from 'node:path';
@@ -57,12 +54,12 @@ const receipt={schemaVersion:1,kind:'isolated-terrain-patch-comparison',producti
 let failure;
 try{
   for(const route of ['source','authored']){
-    for(const [size,width,height] of [['desktop',1440,900],['mobile',390,844]]){
-      const page=await browser.newPage({viewport:{width,height},deviceScaleFactor:1});
+    for(const [size,width,height,isPhone] of [['desktop',1440,900,false],['mobile',932,430,true]]){
+      const page=await browser.newPage({viewport:{width,height},deviceScaleFactor:1,isMobile:isPhone,hasTouch:isPhone});
       const errors=[];page.on('pageerror',e=>errors.push(String(e)));
       const entry={route,size,errors,phases:[]};receipt.routes.push(entry);
       try{
-        await page.goto(`${url.origin}/?world=interlude${route==='authored'?'&authored=1':''}`);
+        await page.goto(`${url.origin}/${route==='authored'?'?authored=1':''}`);
         await page.waitForFunction(()=>!!window.__nativeSlice,null,{timeout:180000});
         await page.locator('#loading').waitFor({state:'detached',timeout:180000});
         await page.evaluate(async()=>{

@@ -56,7 +56,7 @@ Current state: the owner answered every WARNING at the conflict gate (DEC-OWN-1.
 - source: docs/PORT_SCOPE.md, section 5 part 2 and section 6 (precedence 1)
 - description: "Offline sandbox: spawn, equip, cast, open any window without a server." Must "walk any tile, spawn any NPC by ID, equip any item, play any skill's visual and sound and open any window."
 - acceptance: "Each part is checked there against the real L2.exe." L2.exe on IMPORTA-PC is the reference (DEC-OWN-2); stage A uses the per-part screenshot / listen check and fixed thresholds apply to Phases 5-6 (DEC-OWN-3).
-- scope: part 2 (Cl), layer 0. State: `MockWorldAdapter` and `NativeSliceAdapter` exist; "no by-ID spawning yet".
+- scope: part 2 (Cl), layer 0. State: `NativeSliceAdapter` exists; "no by-ID spawning yet".
 
 ## REQ-client-displays-server-outcomes
 - source: docs/PORT_SCOPE.md, "Owner decisions" item 3 and section 1 (precedence 1)
@@ -139,7 +139,7 @@ Current state: the owner answered every WARNING at the conflict gate (DEC-OWN-1.
 
 ## REQ-phase1-foundation
 - source: .planning/goal.md (PRD, precedence 2)
-- description: Standalone Babylon.js + strict TypeScript client in logingrupa/l2-browser-client from Babylon.js Editor v5 Vanilla template; pnpm only (pinned, `pnpm-lock.yaml`), Vitest, Playwright; clear English identifiers, no `any`; adapt reusable rendering code from linegen after license review (SpacetimeDB, Evenfall gameplay and server simulation removed); `GameWorldAdapter` and `MockWorldAdapter`; one player, two simulated remote players, three NPCs/monsters; floating names and health bars; interpolation with teleport snapping; idle/run/attack; mouse targeting; spawn/despawn; FPS/entity count/coordinates. Document README.md, docs/ARCHITECTURE.md, docs/SOURCE_REUSE.md, docs/EDITOR_MCP.md. Fresh clone supports `pnpm install`, `pnpm dev`, `pnpm build`, `pnpm test`.
+- description: Standalone Babylon.js + strict TypeScript client in logingrupa/l2-browser-client from Babylon.js Editor v5 Vanilla template; pnpm only (pinned, `pnpm-lock.yaml`), Vitest, Playwright; clear English identifiers, no `any`; adapt reusable rendering code from an earlier rendering repository after license review (SpacetimeDB, Evenfall gameplay and server simulation removed); `GameWorldAdapter` and `MockWorldAdapter`; one player, two simulated remote players, three NPCs/monsters; floating names and health bars; interpolation with teleport snapping; idle/run/attack; mouse targeting; spawn/despawn; FPS/entity count/coordinates. Document README.md, docs/ARCHITECTURE.md, docs/SOURCE_REUSE.md, docs/EDITOR_MCP.md. Fresh clone supports `pnpm install`, `pnpm dev`, `pnpm build`, `pnpm test`.
 - acceptance: "Run strict typechecking, build, Vitest and Playwright. Verify entity lifecycle, interpolation/teleports, camera/targeting, animation transitions, missing-asset fallback and absence of browser runtime errors. ... Document outcomes and unavailable checks honestly; never claim unperformed checks passed."
 - scope: HISTORICAL. goal.md header: "Original foundation brief, retained for requirements and acceptance history. The implementation was pushed in commit `3b16f1c317e20ee636a3b3f83bddafc15096740a`." Its only bearing on work order is the scope boundary below and the pointer to "../docs/ROADMAP.md".
 

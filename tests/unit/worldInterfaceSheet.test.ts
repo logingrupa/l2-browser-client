@@ -23,31 +23,21 @@ function create(storage: Parameters<typeof memoryStorage>[0] | "throwing" = {}) 
 beforeEach(() => { dom = installMiniDom(); });
 afterEach(() => { for (const ui of interfaces.splice(0)) ui.dispose(); dom.restore(); });
 
-describe("WorldInterface developer sheet compatibility", () => {
-  it("keeps the legacy hosts inside the sheet's General group", () => {
+describe("WorldInterface HUD and developer sheet", () => {
+  it("puts only the native session actions inside the sheet's General group", () => {
     const { ui, root } = create();
-    const body = root.querySelector(".demo-controls-body")!;
     const sheet = root.querySelector(".dev-sheet")!;
     expect(sheet).toBe(ui.sheet.element);
-    expect(sheet.contains(body)).toBe(true);
-    expect(body).toBe(ui.generalGroup.element);
-    expect(ui.generalGroup.section.id).toBe("general");
-    // Runtime code takes the first .secondary-actions for its buttons.
-    const actions = root.querySelector(".secondary-actions")!;
-    expect(actions.parentElement).toBe(body);
-    expect(actions.children.map(button => button.dataset.action)).toEqual(["pause", "despawn", "missing-model"]);
+    const sessionActions = root.querySelector(".secondary-actions")!;
+    expect(sheet.contains(sessionActions)).toBe(true);
+    expect(sessionActions.children.map(button => button.dataset.action)).toEqual(["pause", "despawn"]);
     expect(root.querySelector('[data-action="despawn"]')!.disabled).toBe(true);
-    const appended = dom.document.createElement("p"); appended.id = "native-flame-status";
-    root.querySelector(".demo-controls-body")!.append(appended);
-    const extra = dom.document.createElement("button"); extra.textContent = "Leather shirt";
-    root.querySelector(".secondary-actions")!.append(extra);
-    expect(ui.generalGroup.element.contains(appended as unknown as Node)).toBe(true);
-    expect(sheet.contains(extra)).toBe(true);
   });
 
   it("keeps HUD actions, diagnostics and test ids in the DOM", () => {
     const { ui, root } = create();
-    for (const action of ["attack", "run", "idle", "teleport", "spawn", "pause", "despawn", "missing-model"]) expect(root.querySelector(`[data-action="${action}"]`), action).not.toBeNull();
+    for (const action of ["attack", "run", "idle", "pause", "despawn"]) expect(root.querySelector(`[data-action="${action}"]`), action).not.toBeNull();
+    for (const removedAction of ["teleport", "spawn", "missing-model"]) expect(root.querySelector(`[data-action="${removedAction}"]`), removedAction).toBeNull();
     for (const testId of ["fps", "entity-count", "coordinates", "world-status", "player-name", "player-health", "target-name", "target-health", "dev-sheet-toggle"]) {
       expect(root.querySelector(`[data-testid="${testId}"]`), testId).not.toBeNull();
     }
@@ -59,7 +49,7 @@ describe("WorldInterface developer sheet compatibility", () => {
     expect(root.querySelector('[data-testid="entity-count"]')!.textContent).toBe("3");
   });
 
-  it("toggles the sheet from the HUD and dispatches legacy actions from inside it", () => {
+  it("toggles the sheet from the HUD and dispatches the session actions from inside it", () => {
     const { ui, root, dispatch } = create();
     const toggle = root.querySelector('[data-testid="dev-sheet-toggle"]')!;
     expect(toggle.getAttribute("aria-controls")).toBe(ui.sheet.element.id);
@@ -102,12 +92,11 @@ describe("WorldInterface developer sheet compatibility", () => {
     expect(cue.hidden).toBe(false);
     stopSound();
     expect(cue.hidden).toBe(true);
-    // WorldAudioMixer.locked (boolean) works the same way.
-    let locked = true;
-    const stopLocked = ui.watchSound(() => locked);
+    let worldAudioMixerLocked = true;
+    const stopLocked = ui.watchSound(() => worldAudioMixerLocked);
     expect(cue.hidden).toBe(false);
     expect(cue.dataset.state).toBe("locked");
-    locked = false; ui.update(.2, 60);
+    worldAudioMixerLocked = false; ui.update(.2, 60);
     expect(cue.hidden).toBe(true);
     stopLocked();
 
@@ -153,8 +142,8 @@ describe("WorldInterface developer sheet compatibility", () => {
     root.querySelector(".target-panel")!.rect = { left: 100, top: 86, width: 190, height: 34 };
     root.querySelector(".world-bottom")!.rect = { left: 12, top: 700, width: 366, height: 62 };
     ui.sheet.open(); ui.sheet.setSnap("full");
-    // 844 - 120 (target panel bottom) - (62 + 18) - 8.
-    expect(ui.sheet.inspect()).toMatchObject({ mode: "bottom", snap: "full", docked: true, dock: "height", height: 636 });
+    const viewportHeightMinusTargetPanelBottomMinusBottomHudReserveMinusGap = 844 - 120 - (62 + 18) - 8;
+    expect(ui.sheet.inspect()).toMatchObject({ mode: "bottom", snap: "full", docked: true, dock: "height", height: viewportHeightMinusTargetPanelBottomMinusBottomHudReserveMinusGap });
     expect(canvas.style.height).toBe("calc(100% - 636px)");
     ui.sheet.setSnap("half");
     expect(ui.sheet.inspect().height).toBe(464);

@@ -8,8 +8,6 @@ import type { GameWorldAdapter } from "../../src/world/GameWorldAdapter";
 import type { WorldEntity, WorldEvent, WorldPosition } from "../../src/world/worldTypes";
 import { nativeVisualClips, nativeVisualFixture } from "../fixtures/nativeVisualFixture";
 
-// Only DOM labels are outside this test. Registry placement, the glTF loader,
-// skinning, native animation and entity updates execute normally.
 vi.mock("../../src/ui/EntityLabel", () => ({ EntityLabel: class {
   select() {} setState() {} update() {} dispose() {}
 } }));
@@ -29,13 +27,13 @@ describe("native entity support placement", () => {
       verticalMotion: { idle: [.25, .25], attack: [0, 1], death: [0, -1] } });
     const ground = vi.fn((position: WorldPosition) => ({ ...position, y: 4 }));
     registry = new EntityRegistry(scene, adapter, {} as HTMLElement, () => {}, {
-      scale: 2, createVisual: nativeCharacterFactory(new Map([["fixture", { asset, clips: nativeVisualClips }]])),
+      createVisual: nativeCharacterFactory(new Map([["fixture", { asset, clips: nativeVisualClips }]])),
       ...withGround ? { ground } : {},
     });
-    await vi.waitFor(() => expect(registry!.snapshot()[0]!.isFallback).toBe(false));
+    await vi.waitFor(() => expect(registry!.snapshot()[0]!.hasNativeModel).toBe(true));
     const check = (boneY: number) => {
-      expect(registry!.snapshot()[0]).toMatchObject({ position: { x: 3, y: withGround ? 5 : 9, z: -2 },
-        groundClearance: withGround ? 1 : 0, authoritativePosition: initial.position });
+      expect(registry!.snapshot()[0]).toMatchObject({ position: { x: 3, y: withGround ? 4.5 : 9, z: -2 },
+        groundClearance: withGround ? .5 : 0, authoritativePosition: initial.position });
       const skeletons = scene.skeletons;
       expect(skeletons).toHaveLength(2);
       for (const skeleton of skeletons) expect(skeleton.bones[1]!.getTransformNode()!.position.y).toBeCloseTo(boneY);

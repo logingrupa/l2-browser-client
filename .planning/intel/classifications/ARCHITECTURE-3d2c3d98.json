@@ -5,7 +5,7 @@
   "manifest_override": true,
   "title": "Architecture",
   "summary": "Architecture of the Babylon.js WebGPU client: native asset loading, the GameWorldAdapter contract, audio and rendering ownership, startup readiness, and timing rules.",
-  "scope": ["Babylon.js client", "WebGPU rendering", "GameWorldAdapter", "EntityRegistry", "NativeParityScript", "NativeSliceAdapter", "native section loader", "Talking Island loader", "native audio", "asset pipeline (.l2asset)", "Editor integration", "startup readiness barrier", "PositionInterpolator", "CharacterAnimator", "MockWorldAdapter", "scripts/native_migration.py", "IMPORTA-PC snapshot"],
+  "scope": ["Babylon.js client", "WebGPU rendering", "GameWorldAdapter", "EntityRegistry", "NativeParityScript", "NativeSliceAdapter", "native section loader", "native audio", "asset pipeline (.l2asset)", "Editor integration", "startup readiness barrier", "PositionInterpolator", "CharacterAnimator", "scripts/native_migration.py", "IMPORTA-PC snapshot"],
   "cross_refs": ["RENDERING.md", "NATIVE_AUDIO.md", "NATIVE_EDITOR_WORLD.md", "NATIVE_MIGRATION.md", "NATIVE_MAP_MODEL_APPEND.md", "NATIVE_FLAMES.md", "NATIVE_ACTOR_PLACEMENT.md", "NATIVE_NPC_PROFILES.md", "NATIVE_WORLD.md", "VERIFICATION.md", "ASSET_PIPELINE.md", "ASSET_AUDIT.md", "EDITOR_ROUNDTRIP.md", "EDITOR_MCP.md"],
   "locked": false,
   "precedence": 3,

@@ -3,7 +3,6 @@ import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { WorldPosition } from "./worldTypes";
 import type { WorldGroundContact, WorldNavigation, WorldSupportSample } from "./WorldNavigation";
 
-// These are source-world units, matching the audited .4764767 visual scale.
 const maxStep = 0.3, skin = 0.002;
 const maxSlopeCosine = Math.cos(Math.PI / 4), cellSize = 8;
 const footprint = [[0, 0], ...Array.from({ length: 8 }, (_, i) => [Math.cos(i * Math.PI / 4), Math.sin(i * Math.PI / 4)])];
@@ -16,16 +15,11 @@ interface Geometry {
 }
 interface MeshEntry { mesh: AbstractMesh; supportsWalking: boolean; geometry?: Geometry }
 export interface MeshNavigationOptions {
-  /** Local sweep capsule dimensions. Native cylinders/geodata remain separate. */
   readonly capsule?: { radius: number; height: number };
   readonly terrainMeshes: readonly AbstractMesh[];
   readonly obstacleMeshes: () => readonly AbstractMesh[];
-  /** Rigid moving blockers, kept out of obstacleMeshes and walking support.
-   * Queries use their current world pose; this does not sweep their own motion. */
   readonly dynamicObstacleMeshes?: () => readonly AbstractMesh[];
   readonly origin: WorldPosition;
-  /** Must return false for missing/error collider geometry, regardless of visibility. */
-  readonly isReady?: (from: WorldPosition, to: WorldPosition) => boolean;
 }
 const vector = (point: WorldPosition): Vector3 => new Vector3(point.x, point.y, point.z);
 const position = (point: Vector3): WorldPosition => ({ x: point.x, y: point.y, z: point.z });
@@ -49,8 +43,8 @@ function buildGeometry(mesh: AbstractMesh): Geometry {
     positions.set(point.asArray(), offset);
   }
   const indices = Uint32Array.from(sourceIndices);
-  // Preserve upward-facing source floors under signed/mirrored placement transforms.
-  if (matrix.determinant() < 0) for (let i = 0; i < indices.length; i += 3) [indices[i + 1], indices[i + 2]] = [indices[i + 2]!, indices[i + 1]!];
+  const placementMirrorsWinding = matrix.determinant() < 0;
+  if (placementMirrorsWinding) for (let i = 0; i < indices.length; i += 3) [indices[i + 1], indices[i + 2]] = [indices[i + 2]!, indices[i + 1]!];
   const cells = new Map<string, number[]>();
   for (let offset = 0; offset < indices.length; offset += 3) {
     const a = indices[offset]! * 3, b = indices[offset + 1]! * 3, c = indices[offset + 2]! * 3;
@@ -73,8 +67,6 @@ function supportY([a, b, c]: Triangle, x: number, z: number, upwardOnly: boolean
   return a.y + u * ab.y + v * ac.y;
 }
 
-/** Clip a movement segment to a support triangle. Unioning these intervals
- * catches a gap narrower than movement sampling, including interior floors. */
 function supportInterval(tri: Triangle, from: WorldPosition, to: WorldPosition, upwardOnly: boolean): [number, number] | null {
   const [a, b, c] = tri, ab = b.subtract(a), ac = c.subtract(a), normal = Vector3.Cross(ab, ac), size = normal.length();
   if (size < 1e-10 || (upwardOnly ? normal.y : Math.abs(normal.y)) / size < maxSlopeCosine - 1e-7) return null;
@@ -99,8 +91,6 @@ function supportInterval(tri: Triangle, from: WorldPosition, to: WorldPosition, 
   return lower <= upper ? [Math.max(0, lower), Math.min(1, upper)] : null;
 }
 
-// Closest-point primitives allow continuous finite-capsule sweeps, including
-// wall/ceiling/edge contacts; ray samples alone miss thin walls and corners.
 function pointTriangleDistance(point: Vector3, [a, b, c]: Triangle): number {
   const ab = b.subtract(a), ac = c.subtract(a), ap = point.subtract(a);
   const d1 = Vector3.Dot(ab, ap), d2 = Vector3.Dot(ac, ap);
@@ -183,8 +173,6 @@ export function createWorldNavigation(options: MeshNavigationOptions): WorldNavi
     for (const mesh of new Set(options.dynamicObstacleMeshes?.() ?? [])) {
       if (mesh.isDisposed() || !mesh.getTotalVertices() || mesh.metadata?.worldCollision === false) continue;
       const matrix = mesh.computeWorldMatrix(true).asArray(), bounds = mesh.getBoundingInfo().boundingBox;
-      // Current bounds are checked directly, so removing or moving a door
-      // cannot leave an entry behind in its previous spatial cells.
       if (bounds.maximumWorld.x < point.x - reach || bounds.minimumWorld.x > point.x + reach ||
         bounds.maximumWorld.z < point.z - reach || bounds.minimumWorld.z > point.z + reach) continue;
       let cached = dynamicGeometry.get(mesh);
@@ -221,7 +209,7 @@ export function createWorldNavigation(options: MeshNavigationOptions): WorldNavi
     return highest;
   }
   function grounded(point: WorldPosition, maxDrop = maxStep + skin): WorldGroundContact | null {
-    if (!finite(point) || options.isReady?.(point, point) === false) return null;
+    if (!finite(point)) return null;
     let highest = -Infinity, lowest = Infinity, controllingSample = 0;
     const samples: WorldSupportSample[] = [];
     for (const offset of footprint) {
@@ -236,7 +224,6 @@ export function createWorldNavigation(options: MeshNavigationOptions): WorldNavi
       position: { x: point.x, y: highest, z: point.z }, samples, controllingSample } : null;
   }
   function sweep(from: WorldPosition, to: WorldPosition): boolean {
-    if (options.isReady?.(from, to) === false) return false;
     const midpoint = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2, z: (from.z + to.z) / 2 };
     const reach = Math.hypot(to.x - from.x, to.z - from.z) / 2 + radius + skin;
     const triangles: Triangle[] = [];
@@ -248,10 +235,6 @@ export function createWorldNavigation(options: MeshNavigationOptions): WorldNavi
       forCells(midpoint.x - reach, midpoint.z - reach, midpoint.x + reach, midpoint.z + reach, key => { for (const offset of source.cells.get(key) ?? []) offsets.add(offset); });
       for (const offset of offsets) {
         const tri = triangle(source, offset), [a, b, c] = tri;
-        // A cell is only a broad phase. Far-away triangles and floors wholly
-        // below the capsule cannot contact this sweep. Keeping those floors
-        // in conservative advancement makes every tiny step crawl at skin
-        // distance, even in a completely clear room.
         if (Math.max(a.y, b.y, c.y) <= Math.min(from.y, to.y) + skin * .5 ||
           Math.min(a.y, b.y, c.y) > Math.max(from.y, to.y) + height + skin ||
           Math.max(a.x, b.x, c.x) < Math.min(from.x, to.x) - radius || Math.min(a.x, b.x, c.x) > Math.max(from.x, to.x) + radius ||
@@ -305,16 +288,10 @@ export function createWorldNavigation(options: MeshNavigationOptions): WorldNavi
     }
     return true;
   }
-  function findSpawn(offset: WorldPosition, occupied: readonly WorldPosition[] = []): WorldPosition | null {
-    const target = { x: options.origin.x + offset.x, y: options.origin.y + offset.y, z: options.origin.z + offset.z };
-    // Search locally; never silently use an unsupported origin or put an actor on a roof.
+  function findSpawn(): WorldPosition | null {
+    const target = options.origin;
     for (let ring = 0; ring <= 8; ring++) for (let angle = 0; angle < (ring ? 12 : 1); angle++) {
       const candidate = { x: target.x + Math.cos(angle * Math.PI / 6) * ring * .5, y: target.y + maxStep, z: target.z + Math.sin(angle * Math.PI / 6) * ring * .5 };
-      // Synthetic cast layout only, not an inferred game collision rule. Two
-      // offset requests can otherwise resolve to the same nearby safe floor.
-      if (occupied.some(other => Math.hypot(other.x - candidate.x, other.z - candidate.z) < 1.4)) continue;
-      // Source music markers can sit above roofs. Establish terrain first, then
-      // consider nearby reachable floors using the ordinary step-height band.
       const terrainY = terrainGroundAt(candidate, 12);
       if (terrainY === null) continue;
       const point = grounded({ ...candidate, y: terrainY.position.y });

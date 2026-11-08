@@ -3,6 +3,8 @@ import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { desktopViewport, expectNoHorizontalScrollOnPortraitPhone, landscapePhone } from "./browserViewports";
+import { collectBrowserErrors } from "./browserErrors";
 
 const staged = existsSync(resolve("public/l2/catalog.json"));
 const evidence = resolve(process.env.NATIVE_SLICE_EVIDENCE ?? "artifacts/native-parity/browser");
@@ -14,6 +16,10 @@ const entity = async (page: Page, id = "local-player") => (await read(page)).ent
 const starterMaterial = "MFighter.UpBody.MFighter_m001_t02_u";
 const leatherMaterial = "MFighter.UpBody.MFighter_m001_t04_u";
 const hash = (bytes: string | Uint8Array) => createHash("sha256").update(bytes).digest("hex");
+const musverenCollisionHalfHeightMetres = .36;
+const musverenDrawScale = 1.2;
+const musverenUnitScaleIdleMinimumY = -.11751600205898288;
+const musverenUnitScaleIdleMaximumY = .2797630667686462;
 function object(value: unknown): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error("Expected an authored object.");
   return value as Record<string, unknown>;
@@ -22,9 +28,9 @@ function objects(value: unknown): Record<string, unknown>[] {
   if (!Array.isArray(value)) throw new Error("Expected an authored object array.");
   return value.map(object);
 }
-function setting(values: Record<string, unknown>, name: string, fallback: string): string;
-function setting(values: Record<string, unknown>, name: string, fallback: boolean): boolean;
-function setting(values: Record<string, unknown>, name: string, fallback: string | boolean): string | boolean {
+function savedSettingOrScriptDefault(values: Record<string, unknown>, name: string, fallback: string): string;
+function savedSettingOrScriptDefault(values: Record<string, unknown>, name: string, fallback: boolean): boolean;
+function savedSettingOrScriptDefault(values: Record<string, unknown>, name: string, fallback: string | boolean): string | boolean {
   if (!(name in values)) return fallback;
   const saved = object(values[name]);
   if (saved.type !== typeof fallback || typeof saved.value !== typeof fallback) throw new Error(`Invalid authored ${name}.`);
@@ -41,16 +47,14 @@ async function authoredState() {
   const attached = objects(object(config.metadata).scripts).filter(script => script._id === "native-parity-runtime" && script.key === "scripts/nativeParity.ts");
   expect(attached).toHaveLength(1); expect(attached[0]!.enabled).toBe(true);
   const values = object(attached[0]!.values);
-  // Missing overrides retain the actual script defaults; explicit typed Editor
-  // values must survive packing and runtime initialization unchanged.
   const settings = {
-    leatherShirt: setting(values, "leatherShirt", false),
-    fighterIdle: setting(values, "fighterIdle", "Wait_Hand_MFighter"),
-    fighterRun: setting(values, "fighterRun", "Run_Hand_MFighter"),
-    fighterAttack: setting(values, "fighterAttack", "Atk01_Hand_MFighter"),
-    materialOverrideEnabled: setting(values, "materialOverrideEnabled", false),
-    materialEntityId: setting(values, "materialEntityId", "local-player"),
-    materialSource: setting(values, "materialSource", leatherMaterial),
+    leatherShirt: savedSettingOrScriptDefault(values, "leatherShirt", false),
+    fighterIdle: savedSettingOrScriptDefault(values, "fighterIdle", "Wait_Hand_MFighter"),
+    fighterRun: savedSettingOrScriptDefault(values, "fighterRun", "Run_Hand_MFighter"),
+    fighterAttack: savedSettingOrScriptDefault(values, "fighterAttack", "Atk01_Hand_MFighter"),
+    materialOverrideEnabled: savedSettingOrScriptDefault(values, "materialOverrideEnabled", false),
+    materialEntityId: savedSettingOrScriptDefault(values, "materialEntityId", "local-player"),
+    materialSource: savedSettingOrScriptDefault(values, "materialSource", leatherMaterial),
     materialTint: [1, 1, 1],
     materialRoughness: 1,
   };
@@ -100,8 +104,6 @@ async function authoredState() {
     return { modelSha256, skeletonBones, skinMeshes, clips };
   };
   const [fighter, armor, musveren] = await Promise.all([rig("human-male-fighter:0"), rig("fighter-equipment:0"), rig("musveren:0")]);
-  // Keep the original independently inspected source rig contract as well as
-  // comparing the live replacement to its actual staged, hash-verified GLB.
   expect(fighter.skeletonBones).toEqual([70, 70, 70, 70, 1, 1, 1]); expect(fighter.skinMeshes).toBe(7);
   expect(armor.skeletonBones).toEqual([70]); expect(armor.skinMeshes).toBe(1);
   expect(musveren.skeletonBones).toEqual([49]); expect(musveren.skinMeshes).toBe(2);
@@ -147,19 +149,12 @@ async function assertMaterialOverride(page: Page, authored: AuthoredState) {
     }
   }
 }
-function errorsFor(page: Page) {
-  const errors: string[] = [];
-  page.on("pageerror", error => errors.push(error.message));
-  page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
-  return errors;
-}
 async function ready(page: Page, authored: AuthoredState) {
-  await page.goto("/?world=interlude");
+  await page.goto("/");
   await expect(page.locator("#loading")).toHaveCount(0, { timeout: 120_000 });
   await expect(page.locator("#canvas")).toBeVisible();
   await expect(page.getByTestId("entity-count")).toHaveText("2", { timeout: 120_000 });
-  await expect.poll(async () => (await read(page)).entities.filter(item => !item.isFallback).length, { timeout: 90_000 }).toBe(2);
-  // Check the saved initial armor at the completed reveal boundary as well.
+  await expect.poll(async () => (await read(page)).entities.filter(item => item.hasNativeModel).length, { timeout: 90_000 }).toBe(2);
   await waitForEquipment(page, authored.settings.leatherShirt);
   await expect.poll(async () => (await entity(page)).playback?.activeClip).toBe(authored.settings.fighterIdle);
   const state = await read(page);
@@ -173,9 +168,9 @@ async function ready(page: Page, authored: AuthoredState) {
 test("native packages retain rigs, change equipment, hold death, move and clean up", async ({ page }) => {
   test.skip(!staged, "Run pnpm assets:migrate --stage-runtime first.");
   test.setTimeout(240_000);
-  const errors = errorsFor(page);
+  const errors = collectBrowserErrors(page);
   const authored = await authoredState();
-  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.setViewportSize(desktopViewport);
   await ready(page, authored);
   const initial = await read(page);
   expect(initial.phase2Networking).toBe(false);
@@ -190,20 +185,16 @@ test("native packages retain rigs, change equipment, hold death, move and clean 
   expect(initial.worldFailure).toBeNull();
   expect(initial.world?.terrainMaterial).toBe("candidate-source-textures");
   expect(initial.world?.materialFailure).toBeNull();
-  expect(initial.fog?.mode).toBe(0); // The authored native scene disables fog; the CLI used to drop that choice.
+  expect(initial.fog?.mode, "The authored native scene disables fog").toBe(0);
   await expect(page.getByTestId("fps")).toBeVisible();
   assertRigs(initial, authored, authored.settings.leatherShirt);
   for (const actor of initial.entities) {
     expect(actor.groundClearance).toBeGreaterThan(0);
     expect(actor.position.y - actor.authoritativePosition.y).toBeCloseTo(actor.groundClearance, 4);
     if (actor.id === "native-musveren") {
-      // Native reference uses CollH=36 uu; a hovering creature's idle minimum
-      // must not be forced onto the surface. This is not a native collision test.
-      expect(actor.groundClearance).toBeCloseTo(.36, 8);
-      // Independent retained idle bounds at unit actor scale. The new outer
-      // scale must include the original native origin/rig transform as well.
-      expect(actor.bounds.minimum[1]).toBeCloseTo(-.11751600205898288 * 1.2, 5);
-      expect(actor.bounds.maximum[1]).toBeCloseTo(.2797630667686462 * 1.2, 5);
+      expect(actor.groundClearance, "A hovering creature keeps its source collision half height above the surface").toBeCloseTo(musverenCollisionHalfHeightMetres, 8);
+      expect(actor.bounds.minimum[1]).toBeCloseTo(musverenUnitScaleIdleMinimumY * musverenDrawScale, 5);
+      expect(actor.bounds.maximum[1]).toBeCloseTo(musverenUnitScaleIdleMaximumY * musverenDrawScale, 5);
       expect(actor.position.y + actor.bounds.minimum[1]! - actor.authoritativePosition.y).toBeGreaterThan(.2);
     } else {
       expect(actor.position.y + actor.bounds.minimum[1]! - actor.authoritativePosition.y).toBeCloseTo(0, 4);
@@ -246,7 +237,7 @@ test("native packages retain rigs, change equipment, hold death, move and clean 
   await expect.poll(async () => (await entity(page, "native-musveren")).playback?.playing, { timeout: 35_000 }).toBe(false);
   const dead = await entity(page, "native-musveren");
   expect(dead.playback).toMatchObject({ activeClip: "death", looping: false, playing: false });
-  expect(dead.groundClearance).toBeCloseTo(.36, 8);
+  expect(dead.groundClearance).toBeCloseTo(musverenCollisionHalfHeightMetres, 8);
   expect(dead.position).toEqual(initial.entities.find(actor => actor.id === "native-musveren")!.position);
   await mkdir(evidence, { recursive: true });
   await page.getByTestId("dev-sheet-toggle").click();
@@ -287,8 +278,8 @@ test("native packages retain rigs, change equipment, hold death, move and clean 
 test("native actors and equipment remain usable at a mobile viewport", async ({ browser }) => {
   test.skip(!staged, "Run pnpm assets:migrate --stage-runtime first.");
   test.setTimeout(180_000);
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
-  const page = await context.newPage(), errors = errorsFor(page);
+  const context = await browser.newContext(landscapePhone);
+  const page = await context.newPage(), errors = collectBrowserErrors(page);
   try {
     const authored = await authoredState();
     await ready(page, authored);
@@ -306,9 +297,10 @@ test("native actors and equipment remain usable at a mobile viewport", async ({ 
     await page.getByTestId("dev-sheet-toggle").tap();
     await page.getByRole("button", { name: "Select Human male fighter", exact: true }).tap();
     await expect(page.getByTestId("target-name")).toHaveText("Human male fighter");
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(landscapePhone.viewport.width);
     await mkdir(evidence, { recursive: true });
     await page.screenshot({ path: resolve(evidence, "native-mobile.png") });
+    await expectNoHorizontalScrollOnPortraitPhone(page);
     await writeFile(resolve(evidence, "native-mobile.json"), JSON.stringify({ authored, initial, state: await read(page), errors,
       scope: "Touch emulation and WebGPU; not physical mobile performance." }, null, 2));
     expect(errors).toEqual([]);
@@ -317,7 +309,7 @@ test("native actors and equipment remain usable at a mobile viewport", async ({ 
 
 test("missing native catalog entries keep the world concealed and offer a retry", async ({ page }) => {
   test.setTimeout(240_000);
-  const errors = errorsFor(page);
+  const errors = collectBrowserErrors(page);
   let missing = true, intercepted = 0;
   await page.route("**/l2/catalog.json", async route => {
     if (missing) {
@@ -325,7 +317,7 @@ test("missing native catalog entries keep the world concealed and offer a retry"
       await route.fulfill({ contentType: "application/json", body: JSON.stringify({ schemaVersion: 1, models: [] }) });
     } else await route.continue();
   });
-  await page.goto("/?world=interlude");
+  await page.goto("/");
   await expect(page.getByRole("alert")).toContainText(/native/i, { timeout: 90_000 });
   await expect(page.locator("#loading")).toHaveAttribute("data-state", "error");
   await expect(page.getByRole("button", { name: "Reload and retry" })).toBeVisible();
@@ -341,7 +333,7 @@ test("missing native catalog entries keep the world concealed and offer a retry"
     await expect(page.getByTestId("entity-count")).toHaveText("2");
     const recovered = await read(page);
     expect(recovered.entities).toHaveLength(2);
-    expect(recovered.entities.every(item => !item.isFallback)).toBe(true);
+    expect(recovered.entities.every(item => item.hasNativeModel)).toBe(true);
     expect(recovered.nativeTerrain).toBe("source-section-loaded");
     expect(recovered.worldFailure).toBeNull();
   }

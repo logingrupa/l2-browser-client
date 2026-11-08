@@ -39,7 +39,7 @@ try {
   const index = await fs.readFile(path.join(project, 'dist/index.html'));
   const asset = index.toString('utf8').match(/src="(\/assets\/[^"?]+\.js)"/)?.[1];
   assert(Boolean(asset), 'Production JavaScript asset found');
-  for (const target of ['/', '/?world=interlude&authored=1', asset, '/scene/native-world.babylon', '/l2/catalog.json']) {
+  for (const target of ['/', '/?authored=1', asset, '/scene/native-world.babylon', '/l2/catalog.json']) {
     const response = await request(target);
     assert(response.status === 403 && !response.headers['set-cookie'], `Anonymous resource denied: ${target}`);
   }
@@ -53,13 +53,13 @@ try {
   }
   const invitation = await request(`/enter?key=${key}`);
   const cookies = invitation.headers['set-cookie'] ?? [];
-  assert(invitation.status === 303 && invitation.headers.location === '/?world=interlude&authored=1', 'Valid invite redirects to authored native world');
+  assert(invitation.status === 303 && invitation.headers.location === '/?authored=1', 'Valid invite redirects to authored native world');
   assert(cookies.length === 1 && cookies[0] === `${cookie}; Path=/; Secure; HttpOnly; SameSite=Lax`, 'Invite issues only the scoped secure HttpOnly session cookie');
   for (const method of ['POST', 'PUT', 'DELETE', 'OPTIONS', 'TRACE']) {
     const response = await request(`/enter?key=${key}`, { method, authenticated: true });
     assert([403, 405].includes(response.status) && !response.headers['set-cookie'], `Method ${method} denied without issuing a cookie`);
   }
-  const page = await request('/?world=interlude&authored=1', { authenticated: true });
+  const page = await request('/?authored=1', { authenticated: true });
   assert(page.status === 200 && page.body.equals(index), 'Authenticated page exactly matches built dist');
   const javascript = await request(asset, { authenticated: true });
   assert(javascript.status === 200 && javascript.body.equals(await fs.readFile(path.join(project, 'dist', asset))), 'Authenticated asset exactly matches built dist');
@@ -94,7 +94,7 @@ try {
   await fs.writeFile(evidence, `${JSON.stringify({ verifiedAtUtc: new Date().toISOString(), passed: checks.length, checks, finalStatus: 'running', port: 8189, privateInviteFile: path.join(privateDir, 'private-invite.txt') }, null, 2)}\n`);
   console.log(JSON.stringify({ passed: checks.length, finalStatus: 'running', port: 8189, evidence }, null, 2));
 } catch (error) {
-  // Assertion names contain no invite value, cookie, response body, or request URL with a key.
-  console.error(error instanceof Error && error.message.startsWith('Private preview') ? error.message : 'Private preview verification failed; sensitive diagnostics suppressed.');
+  const isKeyFreeFailureMessage = error instanceof Error && error.message.startsWith('Private preview');
+  console.error(isKeyFreeFailureMessage ? error.message : 'Private preview verification failed; sensitive diagnostics suppressed.');
   process.exitCode = 1;
 }

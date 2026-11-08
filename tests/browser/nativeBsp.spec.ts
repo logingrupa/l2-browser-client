@@ -17,20 +17,18 @@ for (const authored of [false, true]) test(`qualified BSP floor supports stairs 
   test.skip(!staged, "Scoped BSP source bundle must be staged."); test.setTimeout(240_000);
   const contactOracle = readActor940ContactOracle(resolve(actor940ContactPin.path));
   const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
-  await page.goto(`/?world=interlude${authored ? "&authored=1" : ""}`);
+  await page.goto(`/${authored ? "?authored=1" : ""}`);
   await expect(page.locator("#loading")).toHaveCount(0, { timeout: 120_000 });
   const initial = await player(page);
   const profile = await page.evaluate(() => window.__nativeSlice!.snapshot().playerProfile);
   if (!profile) throw new Error("The selected native player profile is unavailable.");
-  // Later qualified BSP additions can advance the section identity. Require
-  // every original manifest field and the Actor940 slab to remain identical.
   const oracleManifest = JSON.parse(readFileSync(resolve("public/l2/maps", contactOracle.manifest.sha256, "map-section-runtime/manifest.json"), "utf8"));
-  expect({ ...manifest, bsp: oracleManifest.bsp }).toEqual(oracleManifest);
-  expect(manifest.bsp.find((item: { id: string }) => item.id === "interlude:20_20.Model798.Brush397")).toEqual(oracleManifest.bsp[0]);
+  expect({ ...manifest, bsp: oracleManifest.bsp }, "Only later qualified BSP additions may differ from the oracle manifest").toEqual(oracleManifest);
+  expect(manifest.bsp.find((item: { id: string }) => item.id === "interlude:20_20.Model798.Brush397"), "The Actor940 slab stays identical").toEqual(oracleManifest.bsp[0]);
   expect(initial.authoritativePosition.x).toBeGreaterThan(103.8);
   const entered = await move(page, 98, -34.26, 950.15);
   expect(entered.x).toBeCloseTo(98, 5); expect(entered.z).toBeCloseTo(950.15, 5);
-  expect(entered.y).toBeCloseTo(-34.26, 5); expect((await player(page)).isFallback).toBe(false);
+  expect(entered.y).toBeCloseTo(-34.26, 5); expect((await player(page)).hasNativeModel).toBe(true);
   const blocked = await move(page, 98, -34.55, 942);
   expect(blocked.z).toBeGreaterThan(944.5); expect(blocked.z).toBeLessThan(950);
   const contact = actor940ContactExpectation(contactOracle, blocked, profile.collisionRadius / profile.sourceUnitsPerMetre, authored);
@@ -52,8 +50,8 @@ for (const authored of [false, true]) test(`qualified BSP floor supports stairs 
 test("missing BSP geometry prevents revealing an incomplete source world", async ({ page }) => {
   test.skip(!staged, "Scoped BSP source bundle must be staged."); test.setTimeout(180_000);
   await page.route("**/map-section-bsp/bsp-floor.glb", route => route.fulfill({ status: 404, body: "missing required source slab" }));
-  await page.goto("/?world=interlude");
+  await page.goto("/");
   await expect(page.locator("#loading")).toContainText("404", { timeout: 120_000 });
-  await expect(page.locator("#world-interface")).toBeHidden();
+  await expect(page.locator(".world-interface")).toBeHidden();
   expect(await page.evaluate(() => window.__nativeSlice === undefined)).toBe(true);
 });

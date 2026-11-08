@@ -1,10 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
-import assert from "node:assert/strict";
+import assertWithoutTraceStep from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { relative, resolve, sep } from "node:path";
+import { desktopViewport, expectNoHorizontalScrollOnPortraitPhone, landscapePhone } from "./browserViewports";
 
+const float32RendererToleranceMetres = .0001;
 const sceneDirectory = resolve("assets/native-world.scene");
 const authoredAvailable = existsSync(sceneDirectory);
 const evidence = resolve(process.env.NATIVE_EDITOR_EVIDENCE ?? "artifacts/native-parity/editor/world-import/browser");
@@ -215,13 +217,11 @@ async function authoredState() {
   expect(marker.schemaVersion).toBe(1); expect(marker.manifestSha256).toMatch(/^[a-f0-9]{64}$/);
   const manifestPath = resolve(`public/l2/maps/${String(marker.manifestSha256)}/map-section-runtime/manifest.json`);
   const manifestBytes = await readFile(manifestPath);
-  // JSON.stringify in Editor normalizes -0 to 0. Compare numeric source values
-  // after the same JSON round trip; the original source bytes remain hash-checked.
-  const manifest = object(JSON.parse(JSON.stringify(JSON.parse(manifestBytes.toString("utf8")))));
-  expect(hash(manifestBytes)).toBe(marker.manifestSha256); expect(marker.manifest).toEqual(manifest);
-  const terrain = await terrainState(manifest, manifestPath, meshes);
-  expect(objects(manifest.models)).toHaveLength(62);
-  const sources = objects(manifest.placements); expect(sources).toHaveLength(157);
+  const manifestAfterEditorJsonRoundTrip = object(JSON.parse(JSON.stringify(JSON.parse(manifestBytes.toString("utf8")))));
+  expect(hash(manifestBytes)).toBe(marker.manifestSha256); expect(marker.manifest).toEqual(manifestAfterEditorJsonRoundTrip);
+  const terrain = await terrainState(manifestAfterEditorJsonRoundTrip, manifestPath, meshes);
+  expect(objects(manifestAfterEditorJsonRoundTrip.models)).toHaveLength(62);
+  const sources = objects(manifestAfterEditorJsonRoundTrip.placements); expect(sources).toHaveLength(157);
   expect(sources.filter(source => source.id === "interlude:20_20.StaticMeshActor3703"))
     .toMatchObject([{ modelId: "interlude:dion_tree_s.red_mt.dion_excute_tree1" }]);
   const saved = nodes.filter(node => node.data.metadata && object(node.data.metadata).nativePlacement !== undefined);
@@ -231,10 +231,9 @@ async function authoredState() {
     expect(matches).toHaveLength(1);
     const node = matches[0]!.data, metadata = object(node.metadata);
     expect(metadata.nativePlacement).toEqual(source);
-    // This fixture intentionally supports translations. Reject other authored
-    // transforms instead of incorrectly treating them as additive translations.
-    expect(node.rotation ?? [0, 0, 0]).toEqual([0, 0, 0]); expect(node.scaling).toEqual([1, 1, 1]);
-    expect(node.rotationQuaternion ?? [0, 0, 0, 1]).toEqual([0, 0, 0, 1]);
+    const onlyTranslationsSupportedMessage = `${String(source.id)}: only authored translations are supported`;
+    expect(node.rotation ?? [0, 0, 0], onlyTranslationsSupportedMessage).toEqual([0, 0, 0]); expect(node.scaling, onlyTranslationsSupportedMessage).toEqual([1, 1, 1]);
+    expect(node.rotationQuaternion ?? [0, 0, 0, 1], onlyTranslationsSupportedMessage).toEqual([0, 0, 0, 1]);
     expect(node.parentId === root.id || metadata.parentId === root.uniqueId).toBe(true);
     const position = numbers(node.position, 3), sourceMatrix = numbers(source.matrix, 16), localMatrix = numbers(node.localMatrix, 16);
     expect(localMatrix).toEqual(sourceMatrix.map(Math.fround));
@@ -269,20 +268,17 @@ function assertWorld(snapshot: Snapshot, authored: AuthoredState) {
   expect(world.textureCount).toBeGreaterThan(0); expect(world.placements).toHaveLength(157);
   expect(new Set(world.placements.map(placement => placement.id)).size).toBe(157);
   expect(world.terrainBounds).not.toBeNull();
-  authored.terrain.minimum.forEach((value, index) => expect(Math.abs(world.terrainBounds!.minimum[index]! - value)).toBeLessThan(.0001));
-  authored.terrain.maximum.forEach((value, index) => expect(Math.abs(world.terrainBounds!.maximum[index]! - value)).toBeLessThan(.0001));
+  authored.terrain.minimum.forEach((value, index) => expect(Math.abs(world.terrainBounds!.minimum[index]! - value)).toBeLessThan(float32RendererToleranceMetres));
+  authored.terrain.maximum.forEach((value, index) => expect(Math.abs(world.terrainBounds!.maximum[index]! - value)).toBeLessThan(float32RendererToleranceMetres));
   for (const expected of authored.placements) {
     const placement = world.placements.find(item => item.id === expected.id)!;
-    // These are already-captured data, not browser waits. Keep the same checks
-    // without recording thousands of individual runner steps in each trace.
-    assert.ok(placement, `Missing placement ${expected.id}`);
-    assert.deepStrictEqual(placement.sourceMatrix, expected.sourceMatrix, expected.id);
-    assert.strictEqual(placement.sourceMesh, expected.sourceMesh, expected.id);
-    assert.strictEqual(placement.modelId, expected.modelId, expected.id);
-    assert.ok(placement.meshes.length > 0, `${expected.id}: geometry`);
-    assert.ok(placement.meshes.every(mesh => mesh.material !== null), `${expected.id}: materials`);
-    // Existing float32 renderer tolerance in metres, not a visual parity tolerance.
-    expected.worldMatrix.forEach((value, index) => assert.ok(Math.abs(placement.worldMatrix[index]! - value) < .0001,
+    assertWithoutTraceStep.ok(placement, `Missing placement ${expected.id}`);
+    assertWithoutTraceStep.deepStrictEqual(placement.sourceMatrix, expected.sourceMatrix, expected.id);
+    assertWithoutTraceStep.strictEqual(placement.sourceMesh, expected.sourceMesh, expected.id);
+    assertWithoutTraceStep.strictEqual(placement.modelId, expected.modelId, expected.id);
+    assertWithoutTraceStep.ok(placement.meshes.length > 0, `${expected.id}: geometry`);
+    assertWithoutTraceStep.ok(placement.meshes.every(mesh => mesh.material !== null), `${expected.id}: materials`);
+    expected.worldMatrix.forEach((value, index) => assertWithoutTraceStep.ok(Math.abs(placement.worldMatrix[index]! - value) < float32RendererToleranceMetres,
       `${expected.id}: matrix[${index}] expected ${value}, received ${placement.worldMatrix[index]}`));
   }
   const edited = authored.placements.filter(placement => placement.sourceMatrix.some((value, index) => Math.abs(Math.fround(value) - placement.worldMatrix[index]!) > .00001)).map(placement => placement.id);
@@ -290,7 +286,7 @@ function assertWorld(snapshot: Snapshot, authored: AuthoredState) {
 }
 function assertActors(snapshot: Snapshot, authored: AuthoredState) {
   const fighter = snapshot.entities.find(item => item.id === "local-player")!, musveren = snapshot.entities.find(item => item.id === "native-musveren")!;
-  expect(snapshot.entities).toHaveLength(2); expect(snapshot.entities.every(item => !item.isFallback)).toBe(true);
+  expect(snapshot.entities).toHaveLength(2); expect(snapshot.entities.every(item => item.hasNativeModel)).toBe(true);
   expect(fighter.modelId).toBe(authored.actors.fighter); expect(musveren.modelId).toBe(authored.actors.musveren);
   expect(fighter.skeletons.map(skeleton => skeleton.bones).sort((a, b) => a - b)).toEqual([70, 70, 70, 70, 1, 1, 1, ...(authored.settings.leatherShirt ? [70] : [])].sort((a, b) => a - b));
   expect(musveren.skeletons.map(skeleton => skeleton.bones)).toEqual([49]);
@@ -318,11 +314,11 @@ async function assertMaterial(page: Page, authored: AuthoredState) {
 }
 async function ready(page: Page, authored: AuthoredState) {
   await observeGraphics(page);
-  await page.goto("/?world=interlude&authored=1");
+  await page.goto("/?authored=1");
   await expect(page.locator("#loading")).toHaveCount(0, { timeout: 120_000 });
   await expect(page.locator("#canvas")).toBeVisible();
   await expect(page.getByTestId("entity-count")).toHaveText("2", { timeout: 120_000 });
-  await expect.poll(async () => (await read(page)).entities.filter(item => !item.isFallback).length, { timeout: 90_000 }).toBe(2);
+  await expect.poll(async () => (await read(page)).entities.filter(item => item.hasNativeModel).length, { timeout: 90_000 }).toBe(2);
   await expect.poll(async () => {
     const fighter = await entity(page);
     return { parts: fighter.parts.length, enabled: fighter.parts.filter(part => part.enabled).length,
@@ -380,7 +376,7 @@ test("Editor world retains saved placements, native actors, material settings an
   test.setTimeout(240_000);
   const authored = await authoredState(), observed = observe(page);
   try {
-    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.setViewportSize(desktopViewport);
     const initial = await ready(page, authored);
     const patchDestination = await assertPatchDestination(page, authored);
     await mkdir(evidence, { recursive: true });
@@ -415,7 +411,7 @@ test("Editor world retains saved placements, native actors, material settings an
 });
 
 test.describe("Touch authoring", () => {
-test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
+test.use(landscapePhone);
 
 test("Editor world retains the saved native scene at a mobile viewport", async ({ page }) => {
   test.skip(!authoredAvailable, "assets/native-world.scene has not been authored.");
@@ -435,17 +431,15 @@ test("Editor world retains the saved native scene at a mobile viewport", async (
     await page.getByTestId("dev-sheet-toggle").tap();
     await page.getByRole("button", { name: "Select Human male fighter", exact: true }).tap();
     await expect(page.getByTestId("target-name")).toHaveText("Human male fighter");
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(landscapePhone.viewport.width);
     const final = await read(page); assertWorld(final, authored); assertActors(final, authored); await assertMaterial(page, authored);
     await mkdir(evidence, { recursive: true });
     await page.screenshot({ path: resolve(evidence, "native-editor-mobile.png") });
+    await expectNoHorizontalScrollOnPortraitPhone(page);
     expect(observed.actorArchives.length).toBeGreaterThan(0); expect(observed.mapGlbRequests).toEqual([]); expect(observed.errors).toEqual([]);
     const graphics = await assertGraphics(page);
     await writeFile(resolve(evidence, "native-editor-mobile.json"), JSON.stringify({ authored, initial, final, patchDestination, graphics, ...observed,
       scope: "Touch emulation and WebGPU functional check; not physical mobile performance or native visual parity." }, null, 2));
-  } finally {
-    // Preserve the receipt even if trace export fails during fixture teardown.
-    await verifyUnchanged(authored, "mobile");
-  }
+  } finally { await verifyUnchanged(authored, "mobile"); }
 });
 });

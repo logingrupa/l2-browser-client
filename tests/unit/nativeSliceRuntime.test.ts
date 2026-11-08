@@ -586,6 +586,8 @@ describe("native slice runtime lifetime", () => {
     expect(boundaries.load.mock.calls[0]![1]).toBe("human-male-fighter");
     const profiles = boundaries.factory.mock.calls[0]![0];
     expect(profiles.get("native-human-fighter").clips).toEqual({ idle: "Wait", run: "Run", attack: "Attack", death: "Death" });
+    expect(profiles.get("native-human-fighter").actorScale.asArray()).toEqual([...defaultNativePlayerProfile.actorScale]);
+    expect(profiles.get("native-human-fighter").forwardAxis.asArray()).toEqual([...defaultNativePlayerProfile.forwardAxis]);
     expect(boundaries.uis[0]!.adapter.getInitialState().find(entity => entity.id === "local-player"))
       .toMatchObject({ appearanceId: "native-human-fighter", displayName: "Human male fighter" });
   });
@@ -599,7 +601,7 @@ describe("native slice runtime lifetime", () => {
     boundaries.load.mockResolvedValueOnce({ ...catalog, playerProfile: female,
       playerProfiles: new Map([[defaultNativePlayerProfile.id, defaultNativePlayerProfile], [female.id, female]]),
       models: new Map([[female.catalogId, body], [female.upperItems[0]!.catalogId, equipment], ["musveren:0", catalog.models.get("musveren:0")]]) });
-    Object.assign(window, { location: { search: selection === "query" ? "?world=interlude&authored=1&character=human-female-fighter" : "?world=interlude" } });
+    Object.assign(window, { location: { search: selection === "query" ? "?authored=1&character=human-female-fighter" : "" } });
     stops.push(await createNativeSliceRuntime(scene, { ...settings, playerProfileId: selection === "authored" ? female.id : defaultNativePlayerProfile.id }, new AbortController().signal));
     expect(boundaries.load.mock.calls[0]![1]).toBe(female.id);
     const profiles = boundaries.factory.mock.calls[0]![0], actor = profiles.get(`native-player:${female.id}`);
@@ -619,7 +621,7 @@ describe("native slice runtime lifetime", () => {
     boundaries.load.mockResolvedValueOnce({ ...catalog, playerProfile: mystic,
       playerProfiles: new Map([[defaultNativePlayerProfile.id, defaultNativePlayerProfile], [mystic.id, mystic]]),
       models: new Map([[mystic.catalogId, body], ["musveren:0", catalog.models.get("musveren:0")]]) });
-    Object.assign(window, { location: { search: "?world=interlude&character=human-male-mystic" } });
+    Object.assign(window, { location: { search: "?character=human-male-mystic" } });
     const documentCreatingRemovableHudWalkButton = Object.assign(new EventTarget(), { createElement: () => Object.assign(new EventTarget(), { dataset: {}, remove() {} }) });
     vi.stubGlobal("document", documentCreatingRemovableHudWalkButton);
     stops.push(await createNativeSliceRuntime(scene, { ...settings, leatherShirt: true }, new AbortController().signal));

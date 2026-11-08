@@ -2,6 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { desktopViewport, expectNoHorizontalScrollOnPortraitPhone, landscapePhone } from "./browserViewports";
+import { collectBrowserErrors } from "./browserErrors";
 
 const staged = existsSync(resolve("public/l2/catalog.json"));
 const evidence = resolve(process.env.NATIVE_FLAME_EVIDENCE ?? "artifacts/native-parity/research/flame-runtime/browser");
@@ -10,18 +12,16 @@ const read = (page: Page) => page.evaluate(() => {
   return window.__nativeSlice.snapshot();
 });
 const observe = (page: Page) => {
-  const errors: string[] = [], requests: string[] = [];
-  page.on("pageerror", error => errors.push(error.message));
-  page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
+  const errors = collectBrowserErrors(page), requests: string[] = [];
   page.on("request", request => requests.push(new URL(request.url()).pathname));
   return { errors, requests };
 };
 async function ready(page: Page, authored: boolean) {
-  await page.goto(`/?world=interlude${authored ? "&authored=1" : ""}`);
+  await page.goto(`/${authored ? "?authored=1" : ""}`);
   await expect(page.locator("#loading")).toHaveCount(0, { timeout: 120_000 });
   await expect(page.locator("#canvas")).toBeVisible();
   await expect(page.getByTestId("entity-count")).toHaveText("2", { timeout: 120_000 });
-  await expect.poll(async () => (await read(page)).entities.filter(actor => !actor.isFallback).length, { timeout: 90_000 }).toBe(2);
+  await expect.poll(async () => (await read(page)).entities.filter(actor => actor.hasNativeModel).length, { timeout: 90_000 }).toBe(2);
   const initial = await read(page);
   expect(initial.worldFailure).toBeNull(); expect(initial.flameFailure).toBeNull();
   expect(initial.nativeFlames).toMatchObject({ status: "ready", nativeParity: "unverified",
@@ -54,7 +54,7 @@ for (const authored of [false, true]) test(`native flames render and seek indepe
   test.skip(!staged, "Run pnpm assets:migrate --stage-runtime first.");
   test.setTimeout(180_000);
   const observed = observe(page), label = authored ? "authored" : "source";
-  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.setViewportSize(desktopViewport);
   const initial = await ready(page, authored);
   const firstTime = initial.nativeFlames!.materials!.current.textureSeconds;
   await expect.poll(async () => (await read(page)).nativeFlames?.materials?.current.textureSeconds).toBeGreaterThan(firstTime);
@@ -100,7 +100,7 @@ for (const authored of [false, true]) test(`native flames render and seek indepe
 });
 
 test.describe("Mobile flame preview", () => {
-  test.use({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+  test.use(landscapePhone);
   test("authored native flames and world remain usable with touch controls", async ({ page }) => {
     test.skip(!staged, "Run pnpm assets:migrate --stage-runtime first."); test.setTimeout(180_000);
     const observed = observe(page), initial = await ready(page, true);
@@ -121,7 +121,8 @@ test.describe("Mobile flame preview", () => {
     await page.getByRole("button", { name: "Idle", exact: true }).tap();
     await page.getByTestId("dev-sheet-toggle").tap();
     await page.screenshot({ path: resolve(evidence, "authored-mobile-world.png") });
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(landscapePhone.viewport.width);
+    await expectNoHorizontalScrollOnPortraitPhone(page);
     expect(observed.errors).toEqual([]);
     await writeFile(resolve(evidence, "authored-mobile.json"), JSON.stringify({ initial, final: await read(page), observed,
       scope: "Touch emulation, WebGPU functional check; not physical mobile performance or native visual acceptance." }, null, 2));
@@ -142,7 +143,7 @@ test("a corrupt flame archive keeps the authored world concealed until a success
       await route.fulfill({ contentType: "application/octet-stream", body: Buffer.from("corrupt fixture") });
     } else await route.continue();
   });
-  await page.goto("/?world=interlude&authored=1");
+  await page.goto("/?authored=1");
   await expect(page.getByRole("alert")).toContainText("archive hash/length differs.", { timeout: 120_000 });
   await expect(page.locator("#loading")).toHaveAttribute("data-state", "error");
   await expect(page.getByRole("button", { name: "Reload and retry" })).toBeVisible();
@@ -159,7 +160,7 @@ test("a corrupt flame archive keeps the authored world concealed until a success
   await expect(page.locator("#loading")).toHaveCount(0, { timeout: 120_000 });
   await expect(page.getByTestId("entity-count")).toHaveText("2");
   const state = await read(page);
-  expect(state.entities).toHaveLength(2); expect(state.entities.every(actor => !actor.isFallback)).toBe(true);
+  expect(state.entities).toHaveLength(2); expect(state.entities.every(actor => actor.hasNativeModel)).toBe(true);
   expect(state.worldFailure).toBeNull(); expect(state.world?.placementCount).toBe(157);
   expect(state.flameFailure).toBeNull(); expect(state.nativeFlames?.status).toBe("ready");
   await page.getByRole("button", { name: "Run", exact: true }).click();

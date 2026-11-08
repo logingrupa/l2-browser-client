@@ -6,22 +6,18 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { SceneLoaderFlags } from "@babylonjs/core/Loading/sceneLoaderFlags";
 import { loadEnvironment } from "../../src/scene/loadEnvironment";
 
-const boundary = vi.hoisted(() => ({ load: vi.fn(), importedWorld: vi.fn(), scripts: { fixture: "authored-script-map" } }));
+const boundary = vi.hoisted(() => ({ load: vi.fn(), scripts: { fixture: "authored-script-map" } }));
 vi.mock("babylonjs-editor-tools", () => ({ loadScene: boundary.load }));
 vi.mock("../../src/scripts", () => ({ scriptsMap: boundary.scripts }));
-vi.mock("../../src/scene/world/loadImportedWorld", () => ({ loadImportedWorld: boundary.importedWorld }));
 
-/** Real Babylon scene lifetime and global loader flag; only the asynchronous
- * Editor loader boundary is controlled. This checks the flag at the point where
- * Editor tools decides whether to load offscreen incremental mesh geometry. */
-describe("authored environment incremental geometry loading", () => {
+describe("native environment loading", () => {
   let engine: NullEngine, priorFlag: boolean;
   beforeEach(() => {
     priorFlag = SceneLoaderFlags.ForceFullSceneLoadingForIncremental;
     engine = new NullEngine();
-    vi.stubGlobal("window", Object.assign(new EventTarget(), { location: { search: "?world=interlude&authored=1" } }));
+    vi.stubGlobal("window", Object.assign(new EventTarget(), { location: { search: "?authored=1" } }));
     vi.stubGlobal("document", Object.assign(new EventTarget(), { title: "Initial title" }));
-    boundary.load.mockReset(); boundary.importedWorld.mockReset(); boundary.importedWorld.mockResolvedValue(null);
+    boundary.load.mockReset();
   });
   afterEach(() => {
     engine.dispose(); SceneLoaderFlags.ForceFullSceneLoadingForIncremental = priorFlag;
@@ -48,8 +44,7 @@ describe("authored environment incremental geometry loading", () => {
     expect(SceneLoaderFlags.ForceFullSceneLoadingForIncremental).toBe(previous);
     expect(scene.isDisposed).toBe(false); expect(scene.useRightHandedSystem).toBe(true);
     expect(scene.activeCamera).toBe(scene.getCameraByName("World camera"));
-    expect(document.title).toBe("Native asset slice · L2 Browser Client");
-    expect(boundary.importedWorld).not.toHaveBeenCalled();
+    expect(document.title).toBe("Initial title");
   });
 
   it.each([false, true])("restores the prior %s flag and disposes the partial scene after an authored load failure", async previous => {
@@ -71,13 +66,12 @@ describe("authored environment incremental geometry loading", () => {
   });
 
   it.each([
-    { search: "?world=interlude", file: "native-parity.babylon", previous: false },
-    { search: "?world=interlude", file: "native-parity.babylon", previous: true },
-    { search: "?world=interlude&authored=0", file: "native-parity.babylon", previous: false },
-    { search: "?world=courtyard&authored=1", file: "example.babylon", previous: false },
-    { search: "?world=courtyard", file: "example.babylon", previous: true },
-    { search: "?authored=1", file: "example.babylon", previous: false },
-  ])("leaves ordinary-route loading unchanged for $search with prior $previous", async ({ search, file, previous }) => {
+    { search: "", previous: false },
+    { search: "", previous: true },
+    { search: "?authored=0", previous: false },
+    { search: "?character=human-female-fighter", previous: true },
+    { search: "?world=courtyard", previous: false },
+  ])("loads the source native scene on $search with incremental loading left at prior $previous", async ({ search, previous }) => {
     window.location.search = search;
     SceneLoaderFlags.ForceFullSceneLoadingForIncremental = previous;
     const observed: boolean[] = [];
@@ -88,9 +82,10 @@ describe("authored environment incremental geometry loading", () => {
       observed.push(SceneLoaderFlags.ForceFullSceneLoadingForIncremental);
     });
     const scene = await loadEnvironment(engine);
-    expect(boundary.load).toHaveBeenCalledExactlyOnceWith("/scene/", file, scene, boundary.scripts, { quality: "high", onProgress: expect.any(Function) });
+    expect(boundary.load).toHaveBeenCalledExactlyOnceWith("/scene/", "native-parity.babylon", scene, boundary.scripts, { quality: "high", onProgress: expect.any(Function) });
     expect(observed).toEqual([previous, previous]);
     expect(SceneLoaderFlags.ForceFullSceneLoadingForIncremental).toBe(previous);
-    expect(scene.isDisposed).toBe(false); expect(scene.activeCamera).toBe(scene.getCameraByName("World camera"));
+    expect(scene.isDisposed).toBe(false); expect(scene.useRightHandedSystem).toBe(true);
+    expect(scene.activeCamera).toBe(scene.getCameraByName("World camera"));
   });
 });

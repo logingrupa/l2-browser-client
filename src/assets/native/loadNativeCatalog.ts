@@ -1,7 +1,7 @@
 import { readAssetPackage, sha256, type AssetPackage } from "../package/readAssetPackage";
 import { nativeResourceUrl } from "./nativeResourceUrl";
 import { loadNativeNpcProfiles } from "./loadNativeNpcProfiles";
-import { defaultNativePlayerProfile, loadNativePlayerProfiles, validateNativePlayerAssets, type NativePlayerProfile } from "./loadNativePlayerProfiles";
+import { defaultNativePlayerProfile, loadNativePlayerProfiles, validateNativePlayerAssets } from "./loadNativePlayerProfiles";
 
 async function readCatalog(signal: AbortSignal) {
   const response = await fetch(nativeResourceUrl("/l2/catalog.json"), { signal });
@@ -36,21 +36,6 @@ async function loadModels(catalog: { models: unknown[] }, signal: AbortSignal,
 
 export async function loadNativeCatalog(signal: AbortSignal): Promise<ReadonlyMap<string, AssetPackage>> {
   return loadModels(await readCatalog(signal), signal);
-}
-
-export async function loadNativePlayerPackages(signal: AbortSignal, profileIds: readonly string[]) {
-  const catalog = await readCatalog(signal);
-  const playerProfiles = await loadNativePlayerProfiles(catalog.playerProfiles, signal);
-  const staged = profileIds.flatMap(id => playerProfiles.get(id) ?? []);
-  const models = await loadModels(catalog, signal, [...new Set(staged.flatMap(profile => [profile.catalogId, ...profile.upperItems.map(item => item.catalogId)]))]);
-  const profiles = new Map<string, NativePlayerProfile>(), failures = new Map<string, string>();
-  for (const id of profileIds) {
-    const profile = playerProfiles.get(id);
-    if (!profile) { failures.set(id, `Native player profile ${id} is not staged.`); continue; }
-    try { validateNativePlayerAssets(profile, models); profiles.set(id, profile); }
-    catch (error) { failures.set(id, error instanceof Error ? error.message : `Native player profile ${id} is invalid.`); }
-  }
-  return { profiles, models, failures };
 }
 
 export async function loadNativeActorCatalog(signal: AbortSignal, profileId = defaultNativePlayerProfile.id) {

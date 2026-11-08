@@ -3,8 +3,7 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Scene } from "@babylonjs/core/scene";
 import type { WorldEntity, AnimationState, LocomotionMode, SourceActionPreview } from "../../world/worldTypes";
 import { CharacterAnimator, type CharacterAnimationDriver, type CharacterPlayback } from "../../animation/CharacterAnimator";
-import type { CharacterVisual } from "../CharacterVisual";
-import type { CharacterBounds } from "../prepareCharacterModel";
+import type { CharacterBounds, CharacterVisual, CharacterVisualFactory } from "../CharacterVisual";
 import type { AssetPackage } from "../package/readAssetPackage";
 import { NativeActor, type NativeBoneAnchor } from "./NativeActor";
 import type { NativeActionCuePlayer, NativeActionCuePreview } from "../../audio/nativeActionCuePreview";
@@ -82,14 +81,13 @@ class NativeActorDriver implements CharacterAnimationDriver {
   }
   get playback(): CharacterPlayback {
     const state = this.actor.snapshot();
-    return { activeClip: state.clip ?? "", frame: state.timeSeconds * 60, looping: state.mode === "loop", playing: state.playing,
-      weights: state.clip ? [{ name: state.clip, weight: 1 }] : [] };
+    return { activeClip: state.clip ?? "", frame: state.timeSeconds * 60, looping: state.mode === "loop", playing: state.playing };
   }
   dispose(): void { for (const cues of this.cuePlayers) cues.dispose(); this.actor.pause(); }
 }
 
 export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeCharacterProfile>, actionCuePreview?: NativeActionCuePreview,
-  footstepPreview?: Pick<NativeActionCuePreview, "bindActor">, clipPreview?: Pick<NativeClipPreviewHub, "register">) {
+  footstepPreview?: Pick<NativeActionCuePreview, "bindActor">, clipPreview?: Pick<NativeClipPreviewHub, "register">): CharacterVisualFactory {
   return (scene: Scene, initial: WorldEntity, status?: (message: string) => void): CharacterVisual => {
     let unregisterPreview: (() => void) | undefined;
     const root = new TransformNode(`entity:${initial.id}`, scene);
@@ -108,7 +106,7 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
     let upper: number | undefined, committedUpper: number | undefined, replacedObject: string | undefined, equipmentRequest = 0;
     let equipmentTask = Promise.resolve();
     let bounds: CharacterBounds = { minimum: new Vector3(-.2, 0, -.2), maximum: new Vector3(.2, .45, .2),
-      labelHeight: .6, selectionRadius: .25, pickingHeight: .25 };
+      labelHeight: .6, selectionRadius: .25 };
     const profile = profiles.get(initial.appearanceId ?? "");
     const tagMeshes = (owner: NativeActor) => {
       for (const mesh of owner.ownedMeshes()) { mesh.isPickable = mesh.getTotalVertices() > 0; mesh.metadata = { ...mesh.metadata, clientEntityId: initial.id }; }
@@ -200,8 +198,7 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
       }
       bounds = { minimum: idleReferenceBounds.min, maximum: idleReferenceBounds.max,
         labelHeight: idleReferenceBounds.max.y + Math.max(.06, idleReferenceSize.y * .12),
-        selectionRadius: Math.max(idleReferenceSize.x, idleReferenceSize.z) / 2 + .04,
-        pickingHeight: idleReferenceBounds.min.y + idleReferenceSize.y * .55 };
+        selectionRadius: Math.max(idleReferenceSize.x, idleReferenceSize.z) / 2 + .04 };
       candidateDriver.setLocomotion(current.locomotion ?? "run");
       candidateDriver.selectActionPreviewWithoutRestartingClip(current.actionPreview);
       candidateDriver.setState(current.animation); candidateDriver.setDead(current.health <= 0);
@@ -224,7 +221,7 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
       status?.(error instanceof Error ? error.message : "Native model could not be loaded.");
       dispose();
     });
-    return { root, animation, ready, get isFallback() { return !initialized; }, get bounds() { return bounds; },
+    return { root, animation, ready, get hasNativeModel() { return initialized; }, get bounds() { return bounds; },
       get modelId() { return initialized ? profile!.asset.manifest.id : null; },
       attachmentSnapshot: () => anchors.map(({ id, handle }) => ({ id, ...handle.inspection() })),
       attachmentAnchor: id => {

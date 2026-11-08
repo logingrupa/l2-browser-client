@@ -8,7 +8,7 @@ The eight `Engine.Mover` actors of `20_20` become a separate bundle, staged as a
 - Endpoints follow `Engine.Mover.BeginPlay`: position = BasePos + KeyPos[KeyNum], rotation = BaseRot + KeyRot[KeyNum]. Recovered defaults: `MoveTime=1.0`, `StayOpenTime=4.0`, `bClosed=true`. `SavedPos` and `SavedRot` are sentinels, never placement.
 - `scripts/derive-native-map-movers.py --client <inputs> --output <dir>` builds the bundle with `native_map_movers.py`. `scripts/stage-native-movers.py --bundle <dir>` copies it to `public/l2/movers/<descriptorSHA>/` and adds `map-20-20-movers`, bound to the section's terrain hash. Both pin the 20_20 map; main checkout only.
 - `src/scene/world/loadNativeMovers.ts` checks hashes and the terrain binding. `nativeMovers.ts` and `nativeDoorInteractions.ts` handle hover, approach and toggle.
-- Browser policy, not native data: 2 m reach, 1.5 m vertical tolerance, 0.8 m stand-off (`nativeDoorInteractionPolicy`), no auto-close after `StayOpenTime`. Leaves move over the one-second `MoveTime` and block walking.
+- Browser policy, not native data: 2 m reach, 1.5 m vertical tolerance, 0.8 m stand-off (`browserDoorInteractionPolicy`), no auto-close after `StayOpenTime`. Leaves move over the one-second `MoveTime` and block walking.
 - Tests: `tests/pipeline/test_native_map_movers.py`, `test_native_mover_stage.py`, `tests/unit/nativeMoverLoader.test.ts`, `nativeDoors.test.ts`. Retained-input cases skip without the private bundle.
 
 ## Open

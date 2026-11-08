@@ -57,8 +57,6 @@ async function renameClip(asset: AssetPackage, name: string): Promise<AssetPacka
 const previews: NativeActionCuePreview[] = [];
 afterEach(() => { for (const preview of previews) preview.dispose(); previews.length = 0; vi.restoreAllMocks(); });
 
-// Licensed packages stay local. The real-input cases explicitly skip on a
-// source-only checkout; this workspace must run them, not count skips as proof.
 describe.skipIf(!existsSync(fighterPath) || !existsSync(monsterPath))("pinned native action cue sources and clock", () => {
   let fighter: AssetPackage, monster: AssetPackage;
   beforeAll(async () => {
@@ -165,7 +163,6 @@ describe.skipIf(!existsSync(fighterPath) || !existsSync(monsterPath))("pinned na
     else {
       const properties = event.properties as Record<string, unknown>;
       expect(properties.Random).toBeUndefined();
-      // A class default is not an authored tuple value or proved probability.
       properties.Random = 100;
     }
     const { preview, output } = await setup(fighter, corrupt), player = preview.bindActor("monster", corrupt);
@@ -197,7 +194,6 @@ describe.skipIf(!existsSync(fighterPath) || !existsSync(monsterPath))("pinned na
     player.start(clock(0)); player.advance(clock(0), clock(91 / 30));
     expect(output.play).toHaveBeenCalledTimes(2);
     expect(output.play.mock.calls[0]?.[2]).toBe(91 / 30 - monsterOnset);
-    // Mixer owns stale-offset refusal; the coordinator records the attempt once.
     player.advance(clock(91 / 30), clock(91 / 30)); expect(output.play).toHaveBeenCalledTimes(2);
   });
 
@@ -331,17 +327,17 @@ describe("native visual audio lifecycle (original synthetic geometry)", () => {
     const visual = nativeCharacterFactory(new Map([["fixture", { asset, clips: nativeVisualClips, upperItems: new Map([[22, item]]) }]]), preview)(scene, entity);
     try {
       await visual.ready;
-      visual.setEntity?.({ ...entity, health: 0 });
+      visual.setEntity({ ...entity, health: 0 });
       expect(cues.start.mock.calls.at(-1)?.[0]).toMatchObject({ clip: nativeVisualClips.death, elapsedSeconds: 0, mode: "once" });
       visual.animation.update(2);
       expect(cues.advance.mock.calls.at(-1)).toEqual([
         expect.objectContaining({ elapsedSeconds: 0, playing: true }), expect.objectContaining({ elapsedSeconds: 2, completed: true, playing: false }),
       ]);
       expect(cues.start.mock.calls.at(-1)?.[0].clip).toBe(nativeVisualClips.death);
-      visual.setEntity?.({ ...entity, health: 0, equipment: { upper: 22 } });
+      visual.setEntity({ ...entity, health: 0, equipment: { upper: 22 } });
       await vi.waitFor(() => expect(scene.materials.some(material => material.name === "replacement:Upper")).toBe(true));
       expect(preview.bindActor).toHaveBeenCalledTimes(1);
-      visual.setEntity?.(entity); expect(cues.start.mock.calls.at(-1)?.[0].clip).toBe(nativeVisualClips.idle);
+      visual.setEntity(entity); expect(cues.start.mock.calls.at(-1)?.[0].clip).toBe(nativeVisualClips.idle);
       visual.dispose(); expect(cues.dispose).toHaveBeenCalled();
     } finally { visual.dispose(); scene.dispose(); engine.dispose(); }
   });

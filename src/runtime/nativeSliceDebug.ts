@@ -18,8 +18,6 @@ export interface NativeSliceDebugOptions {
 const parameters = () => new URLSearchParams(globalThis.location?.search ?? "");
 const fixed = (value: number, digits = 2) => Number.isFinite(value) ? value.toFixed(digits) : "—";
 
-/** Debug › frame/position readouts and the URL parameters that choose this
- * world, each with a hover-card naming its allowed values and effect. */
 export function attachNativeSliceDebugSection(section: DevSection, options: NativeSliceDebugOptions): void {
   const { scene, camera, registry, playerProfile, playerChoices, events } = options;
   const frame = section.group("diagnostics", "Frame & position");
@@ -52,12 +50,9 @@ export function attachNativeSliceDebugSection(section: DevSection, options: Nati
   });
   const variable = (name: string, values: string, source: string): VariableInfo =>
     ({ name: `url.${name}`, value: () => parameters().get(name) ?? "(not set)", values, source, status: "presentation" });
-  readout(url, "world", () => parameters().get("world") ?? "(not set)", "native-debug-url-world",
-    "world=interlude opens this 20_20 native slice. world=courtyard opens the synthetic courtyard; leaving it out opens the imported Talking Island preview.",
-    () => [variable("world", "interlude | courtyard | (not set)", "src/scene/loadEnvironment.ts")]);
   readout(url, "authored", () => parameters().get("authored") ?? "(not set)", "native-debug-url-authored",
     "authored=1 loads the Babylon Editor saved world (public/scene/native-world.babylon) instead of importing the staged source section into native-parity.babylon.",
-    () => [variable("authored", "1 | (not set)", "src/scene/loadEnvironment.ts (with world=interlude)")]);
+    () => [variable("authored", "1 | (not set)", "src/scene/loadEnvironment.ts")]);
   readout(url, "character", () => parameters().get("character") ?? `(not set → ${playerProfile.id})`, "native-debug-url-character",
     "Player profile id from catalog.playerProfiles. Use Character › Play as… to switch.", () => [
       variable("character", [...playerChoices.keys()].join(" | "), "catalog.playerProfiles (src/runtime/createNativeSliceRuntime.ts)"),
@@ -65,15 +60,14 @@ export function attachNativeSliceDebugSection(section: DevSection, options: Nati
         source: "loadNativeActorCatalog playerProfile", status: "native" },
     ]);
   const open = (label: string, testId: string, authored: boolean, hint: string) => {
-    const current = parameters().get("world") === "interlude" && (parameters().get("authored") === "1") === authored;
+    const current = (parameters().get("authored") === "1") === authored;
     const button = url.button({ label, testId, hint, disabled: current });
     button.addEventListener("click", () => {
       const next = new URL(globalThis.location.href);
-      next.searchParams.set("world", "interlude");
       if (authored) next.searchParams.set("authored", "1"); else next.searchParams.delete("authored");
       globalThis.location.assign(next.href);
     }, { signal: events });
   };
-  open("Open source world", "native-debug-open-source", false, "Reload with world=interlude: the staged source section is imported at startup.");
-  open("Open authored world", "native-debug-open-authored", true, "Reload with world=interlude&authored=1: the Babylon Editor saved native world.");
+  open("Open source world", "native-debug-open-source", false, "Reload without authored=1: the staged source section is imported at startup.");
+  open("Open authored world", "native-debug-open-authored", true, "Reload with authored=1: the Babylon Editor saved native world.");
 }

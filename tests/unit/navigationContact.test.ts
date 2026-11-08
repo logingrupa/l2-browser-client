@@ -105,9 +105,8 @@ describe("original footprint support evidence", () => {
     expect(moved.blocked).toBe(false); expect(moved.position).toEqual({ x: 0, y: .25, z: 0 });
     expect(moved.contact?.queryPosition).toEqual(zero); expect(moved.contact?.controllingSample).toBe(1);
     source(moved.contact!.samples[0]!, terrain); source(moved.contact!.samples[1]!, peripheral);
-    // At raised Y the center can reach .5 while the other samples remain 0:
-    // the existing maximum footprint spread rejects that different decision.
-    expect(navigation.groundContact!({ x: 0, y: .25, z: 0 })).toBeNull();
+    const raisedCenterReachingUpperSlabWhileOtherSamplesStayLow = { x: 0, y: .25, z: 0 };
+    expect(navigation.groundContact!(raisedCenterReachingUpperSlabWhileOtherSamplesStayLow)).toBeNull();
     const withoutUpperSlab = createWorldNavigation({ terrainMeshes: [terrain], obstacleMeshes: () => [peripheral], origin: from, capsule: { radius: .1, height: .2 } });
     expect(contact(withoutUpperSlab, { x: 0, y: .25, z: 0 }).position).toEqual({ x: 0, y: .25, z: 0 });
   });
@@ -153,8 +152,6 @@ describe("accepted navigation substeps", () => {
     expect(navigation.move(zero, { x: 100, y: 0, z: 0 })).toEqual({ position: zero, blocked: true });
     const empty = createWorldNavigation({ terrainMeshes: [], obstacleMeshes: () => [], origin: zero });
     expect(empty.groundContact!(zero)).toBeNull(); expect(empty.move(zero, { x: .2, y: 0, z: 0 })).toEqual({ position: zero, blocked: true });
-    const unready = createWorldNavigation({ terrainMeshes: [terrain], obstacleMeshes: () => [], origin: zero, isReady: () => false });
-    expect(unready.groundContact!(zero)).toBeNull(); expect(unready.move(zero, { x: .2, y: 0, z: 0 })).toEqual({ position: zero, blocked: true });
     const steep = mesh("steep", [-2, -4, -2, -2, -4, 2, 2, 4, 2, 2, 4, -2]);
     expect(createWorldNavigation({ terrainMeshes: [steep], obstacleMeshes: () => [], origin: zero }).groundContact!(zero)).toBeNull();
   });
@@ -166,9 +163,7 @@ describe("accepted navigation substeps", () => {
     expect(bare.destination({ x: 0, y: .5, z: 0 })).toEqual(zero); expect(bare.destination({ x: 0, y: .81, z: 0 })).toBeNull();
     const interior = floor("interior", -4, 4, -4, 4, .25), roof = floor("roof", -4, 4, -4, 4, 2);
     const navigation = createWorldNavigation({ terrainMeshes: [terrain], obstacleMeshes: () => [interior, roof], origin: { x: 0, y: 4, z: 0 } });
-    expect(navigation.spawn(zero)).toEqual({ x: 0, y: .25, z: 0 });
-    const second = navigation.spawn({ x: .1, y: 0, z: .1 }, [{ x: 0, y: .25, z: 0 }])!;
-    expect(second.y).toBe(.25); expect(Math.hypot(second.x, second.z)).toBeGreaterThanOrEqual(1.4);
+    expect(navigation.spawn()).toEqual({ x: 0, y: .25, z: 0 });
   });
 });
 
@@ -177,11 +172,10 @@ describe("adapter accepted-contact lifetime", () => {
     const { floor } = fixture(), terrain = floor("terrain", -10, 10, -10, 10, 0);
     const base = createWorldNavigation({ terrainMeshes: [terrain], obstacleMeshes: () => [], origin: zero });
     const queried = vi.fn(base.groundContact!), navigation: WorldNavigation = { ...base, groundContact: queried };
-    // The spawn is an accepted position: its support is queried once so footsteps resolve before the first move.
     const adapter = nativeAdapter(zero, navigation); expect(queried).toHaveBeenCalledExactlyOnceWith(zero);
     const spawned = adapter.groundContact!; position(spawned.position, zero);
     for (const sample of spawned.samples) source(sample, terrain);
-    base.ground({ x: 1, y: 0, z: 1 }); base.destination({ x: 2, y: 0, z: 2 }); base.spawn(zero);
+    base.ground({ x: 1, y: 0, z: 1 }); base.destination({ x: 2, y: 0, z: 2 }); base.spawn();
     adapter.dispatch({ type: "move-local", position: { x: 2, y: 0, z: 0 } }); expect(adapter.groundContact).toEqual(spawned);
     adapter.advance(.5); position(player(adapter).position, { x: .35, y: 0, z: 0 });
     const accepted = adapter.groundContact!; position(accepted.position, { x: .35, y: 0, z: 0 });

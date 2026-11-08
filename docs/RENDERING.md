@@ -6,8 +6,7 @@ How the converted world renders on Babylon.js WebGPU and how it gets faster: the
 
 - Keep the game's look, scale, motion and material intent (DEC-ARCH-1). Reproduce Direct3D internals only where they explain a visible difference or a required behaviour ([PROJECT.md](../.planning/PROJECT.md), out of scope).
 - `createWebGPUEngine` requires WebGPU, uses large-world rendering and loads glslang and twgsl from `/vendor/babylon/9.27.1/`, which `scripts/stage-webgpu-compilers.mjs` stages in `pnpm dev` and `pnpm build`.
-- `?world=interlude`: `loadNativeSection` loads the section eagerly from the catalog and clones placements with `doNotInstantiate: true` (shared geometry and materials); no streaming or LOD yet.
-- Default route: `loadImportedWorld` loads nearby Talking Island scenery on demand, instances placements, hides distant ones with hysteresis and batches grass as thin instances. The collision index is not a rendering index.
+- `/`: `loadNativeSection` loads the section eagerly from the catalog and clones placements with `doNotInstantiate: true` (shared geometry and materials); no streaming or LOD yet.
 - The pipeline keeps original mips and supported DDS blocks; terrain and flames upload decoded RGBA ([NATIVE_TEXTURES.md](NATIVE_TEXTURES.md)).
 - `window.__nativeSlice.performance()` lazy-loads the probe. `WORLD_HARDWARE_TEST=1 node scripts/measure-native-world.mjs --label=<id> --route=source` measures built `dist`, as development evidence only.
 - Pilot lead, not PERF-01: GTX 1060, 1080p, DPR 1, 60 Hz, no GPU timestamps, source route 6.9 ms JS frame median, 98 draws (`artifacts/native-parity/research/webgpu-performance-20261107/REPORT.md`).
@@ -20,4 +19,4 @@ How the converted world renders on Babylon.js WebGPU and how it gets faster: the
 
 ## Pointers
 
-`src/engine/createWebGPUEngine.ts`, `src/engine/worldPerformanceProbe.ts`, `src/scene/world/` (loaders, `worldVisibility.ts`, `grassInstances.ts`, `nativeTerrainPreview.ts`, `nativeFlameMaterials.ts`), [research/INDEX.md](research/INDEX.md).
+`src/engine/createWebGPUEngine.ts`, `src/engine/worldPerformanceProbe.ts`, `src/scene/world/` (loaders, `nativeTerrainPreview.ts`, `nativeFlameMaterials.ts`), [research/INDEX.md](research/INDEX.md).

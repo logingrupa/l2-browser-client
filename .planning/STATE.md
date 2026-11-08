@@ -23,7 +23,7 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 Phase: 1 of 6 (Foundations)
 Plan: 0 of TBD in current phase
 Status: Ready to plan
-Last activity: 2026-11-08 - docs cleanup: continuation and handoff prompts are not kept in `.planning/` (git history has them); this file and ROADMAP.md are the resume point. DEC-OWN-8 recorded: Editor off the build and runtime path (56 v1 requirements, 6 phases)
+Last activity: 2026-11-08 - DEC-OWN-11 recorded: only the native routes stay; Talking Island route, courtyard demo and converted character GLB path removed; native tools moved into `.assets/native-tools/`
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -46,7 +46,7 @@ Progress: [░░░░░░░░░░] 0%
 
 ### Decisions
 
-Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..8 and DEC-PORT-1..3.
+Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..11 and DEC-PORT-1..3.
 
 - [Roadmap]: Breadth-first; REQ-work-order-v2-depth-first is superseded (DEC-OWN-1).
 - [Roadmap]: Phase 2 is organised as lanes L1 world, L2 actors, L3 data + UI, plus integration; UI runs in parallel from the start (DEC-OWN-6).
