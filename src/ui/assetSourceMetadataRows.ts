@@ -8,7 +8,7 @@ export function assetSourceMetadataRows(manifest: AssetPackageManifest): readonl
     ["Package", manifest.source.package],
     ["Object", manifest.source.object],
     ...(manifest.coordinates ? [["Unit", `1 metre = ${manifest.coordinates.sourceUnitsPerMetre} source units`] as const] : []),
-    ...(manifest.model ? [["Viewer scale", "1:1 — no size normalization"] as const] : []),
+    ...(manifest.model ? [["Viewer scale", "1:1 - no size normalization"] as const] : []),
     ["Source SHA-256", manifest.source.sha256],
   ];
 }

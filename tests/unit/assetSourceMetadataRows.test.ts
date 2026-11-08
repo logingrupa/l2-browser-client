@@ -19,7 +19,7 @@ const rowValue = (manifest: AssetPackageManifest, label: string) => assetSourceM
 describe("asset inspector source metadata rows", () => {
   it("reads the unit of an asset.json v2 model from its coordinates", () => {
     expect(rowValue(versionTwoModelManifest(), "Unit")).toBe("1 metre = 52.5 source units");
-    expect(rowValue(versionTwoModelManifest(), "Viewer scale")).toBe("1:1 — no size normalization");
+    expect(rowValue(versionTwoModelManifest(), "Viewer scale")).toBe("1:1 - no size normalization");
   });
 
   it("reads the unit of a normalized asset.json v1 model from its coordinates", async () => {
