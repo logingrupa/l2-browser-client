@@ -1,11 +1,4 @@
 #!/usr/bin/env python3
-"""Audit source section overlaps using retained converted meshes; never convert.
-
-Only positive-area indexed triangle projections inside the declared terrain XY
-rectangle qualify. This is partial coverage of already converted mesh identities,
-not native visibility, collision, an expanded Z policy, or full-world selection.
-The default CLI writes JSON to stdout; --output exclusively creates a new report.
-"""
 import argparse
 from collections import defaultdict
 import json
@@ -15,6 +8,7 @@ import struct
 import zipfile
 
 from native_assets import verify_archive
+from native_assets_lib.asset_manifest import asset_coordinates
 from native_assets_lib.gltf import json_bytes
 from native_catalog.ue2 import FormatError
 from reference_client_guard import require_reference_client
@@ -24,6 +18,9 @@ from native_map import (COLLISION, TRANSFORMS, MapSources, actor_properties,
 from native_map_geometry import (SOURCE_TO_GLTF, gltf_placement,
                                  read_class_evidence, resolved_static_values,
                                  static_matrix)
+
+OVERLAP_AUDIT_DESCRIPTION = ('Audit source section overlaps using retained converted meshes; never convert. '
+    'Writes JSON to stdout; --output exclusively creates a new report.')
 
 
 def require(condition, message):
@@ -390,9 +387,10 @@ def audit_overlap(client_root, raw_root, runtime_manifest_path, class_evidence_r
         with zipfile.ZipFile(archive_path) as archive:
             asset = json.loads(archive.read('asset.json'))
             provenance = json.loads(archive.read('provenance.json'))
+            coordinates = asset_coordinates(asset)
             require(archive.read('model.glb') == glb.read_bytes() and asset['source']['object'] == model['sourceObject'] and
-                    asset['model']['sourceToGltf'] == SOURCE_TO_GLTF and asset['model']['unit'] == 'metre' and
-                    asset['model']['sourceUnitsPerMetre'] == 100, 'Model bytes/source coordinate basis differ')
+                    coordinates['sourceToGltf'] == SOURCE_TO_GLTF and coordinates['unit'] == 'metre' and
+                    coordinates['sourceUnitsPerMetre'] == 100, 'Model bytes/source coordinate basis differ')
             for relative, expected in provenance['dependencies'].items():
                 verify_file(client, relative, expected, checked)
             _, mesh_package, mesh_item = sources.resolve(model['sourceObject'], 'StaticMesh')
@@ -415,7 +413,7 @@ def audit_overlap(client_root, raw_root, runtime_manifest_path, class_evidence_r
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=OVERLAP_AUDIT_DESCRIPTION)
     parser.add_argument('--client', required=True)
     parser.add_argument('--raw', required=True)
     parser.add_argument('--runtime-manifest', required=True)

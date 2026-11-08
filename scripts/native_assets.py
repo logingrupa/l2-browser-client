@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-"""Convert native Interlude client objects into reproducible .l2asset packages with the pinned UModel; see docs/ASSET_PIPELINE.md."""
 import argparse
 import hashlib
 import io
@@ -8,6 +7,7 @@ import math
 from pathlib import Path
 import re
 import shutil
+import socket
 import subprocess
 import sys
 import tempfile
@@ -16,13 +16,17 @@ import zipfile
 from native_audio import decode_native_audio
 from native_catalog.ue2 import Package
 from native_assets_lib.gltf import Document, json_bytes, safe_name
+from native_assets_lib.asset_manifest import asset_coordinates_record, build_asset_manifest, reference_client_build, require_supported_asset_manifest, source_path_record
+from native_assets_lib.umodel_import_closure import require_lock_equal_import_closure
 from native_assets_lib.animation import add_animations
 from native_assets_lib.rigid import is_root_rigid, attach_rigid_part
 from native_assets_lib.weights import restore_native_weights
 from native_assets_lib.static_materials import native_static_materials
 from native_assets_lib.texture_mips import build_texture_source, UnsupportedTextureSource
 from native_assets_lib.texture_dds import build_texture_dds, UnsupportedTextureDDS
-from reference_client_guard import require_reference_client
+from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, require_reference_client
+
+CONVERTER_DESCRIPTION = 'Convert native Interlude client objects into reproducible .l2asset packages with the pinned UModel; see docs/ASSET_PIPELINE.md.'
 
 UMODEL = Path('C:/laragon/www/lineagen/.assets/skill-assets/work/native/tools/umodel/umodel.exe')
 UMODEL_SHA256 = '13502e5a4d8f6b5f32252afebd6360f7302ccfaccf6b8dda65beff0be2d364a0'
@@ -112,8 +116,8 @@ def verify_archive(path):
         names = [safe_name(item.filename) for item in entries]
         if len({name.casefold() for name in names}) != len(names):
             raise ValueError('Duplicate archive name')
-        manifest = json.loads(archive.read('asset.json'))
-        if manifest['schemaVersion'] != 1 or set(names) != {'asset.json', *(item['path'] for item in manifest['files'])}:
+        manifest = require_supported_asset_manifest(json.loads(archive.read('asset.json')))
+        if set(names) != {'asset.json', *(item['path'] for item in manifest['files'])}:
             raise ValueError('Archive differs from manifest file table')
         for item in manifest['files']:
             payload = archive.read(item['path'])
@@ -148,6 +152,7 @@ class Converter:
             if path.is_file() and path.suffix.lower() in ('.ukx', '.utx', '.usx', '.uax', '.u', '.unr'):
                 self.package_files.setdefault(path.stem.casefold(), []).append(path)
         self.dependencies = {}
+        self.lock_equal_import_closures = set()
         self.logs = []
         self.table_cache = {}
         self.package_cache = {}
@@ -201,7 +206,14 @@ class Converter:
             require_unique_umodel_leaf_name(package, selected)
         return selected
 
+    def require_lock_equal_umodel_reads(self, package_path):
+        root_package_name = Path(package_path).resolve().relative_to(self.client).as_posix()
+        if root_package_name.casefold() not in self.lock_equal_import_closures:
+            require_lock_equal_import_closure(root_package_name, self.package)
+            self.lock_equal_import_closures.add(root_package_name.casefold())
+
     def run(self, work, package_path, item, operation='export'):
+        self.require_lock_equal_umodel_reads(package_path)
         arguments = [str(self.umodel), '-' + operation, '-game=l2', '-path=' + str(self.client), '-out=' + str(work / 'export')]
         if operation == 'export':
             arguments += ['-groups', '-gltf', '-png', '-sounds']
@@ -508,7 +520,7 @@ class Converter:
         return resolved
 
     def convert(self, request):
-        self.dependencies, self.logs = {}, []
+        self.dependencies, self.lock_equal_import_closures, self.logs = {}, set(), []
         request = {key: value for key, value in request.items() if value is not None}
         if 'materialPolicy' in request:
             from native_assets_lib.material_graph import POLICY
@@ -665,22 +677,23 @@ class Converter:
                     files[primary], mime[primary] = payload, media_mime
             provenance = {'schemaVersion': 1, 'request': request, 'source': source, 'dependencies': self.dependencies, 'converterSha256': implementation_hash(), 'tool': {'name': 'UEViewer UModel build1590', 'sha256': UMODEL_SHA256}, 'formatDefinitionPins': format_pins, 'metadata': metadata}
             files['provenance.json'], mime['provenance.json'] = json_bytes(provenance), 'application/json'
-            manifest = {'schemaVersion': 1, 'id': 'interlude:' + identity, 'name': identity, 'kind': kind, 'source': source, 'limitations': limitations, 'animationEvents': events}
-            if kind == 'model':
-                manifest['model'] = {'file': primary, 'unit': 'metre', 'sourceUnitsPerMetre': 100, 'sourceToGltf': SOURCE_TO_GLTF}
-                if metadata.get('nativeMaterialGraph'):
-                    manifest['model']['nativeMaterialGraph'] = metadata['nativeMaterialGraph']
-                if weight_sources:
-                    manifest['model']['nativeSkinAdapter'] = 'L2NativeSkinWeights/1'
-            else:
-                manifest['audio' if kind == 'audio' else 'image'] = {'file': primary}
-                if kind == 'texture' and metadata.get('nativeTextureDDS', {}).get('status') == 'available':
-                    derivative_format = derivative['format']
-                    if (derivative_format not in ('DXT1', 'DXT5') or
-                            derivative_format != native_texture['format']['name'] or
-                            files[derivative['file']][84:88] != derivative_format.encode('ascii')):
-                        raise ValueError('Texture DDS format differs from native source or FourCC')
-                    manifest['image']['derivatives'] = [{'file': 'texture.dds', 'manifest': 'native-texture-dds.json', 'format': derivative_format}]
+            model_extras = {}
+            if kind == 'model' and metadata.get('nativeMaterialGraph'):
+                model_extras['nativeMaterialGraph'] = metadata['nativeMaterialGraph']
+            if kind == 'model' and weight_sources:
+                model_extras['nativeSkinAdapter'] = 'L2NativeSkinWeights/1'
+            manifest = build_asset_manifest(
+                identity=identity, kind=kind, source=source, source_path=source_path_record(socket.gethostname().upper(), source_path.resolve().as_posix()),
+                client_build=reference_client_build(REFERENCE_CLIENT_LOCK_PATH), converter_version=implementation_hash(),
+                limitations=limitations, animation_events=events, primary_file=primary,
+                coordinates=asset_coordinates_record(SOURCE_TO_GLTF, 100) if kind == 'model' else None, model_extras=model_extras, files=[])
+            if kind == 'texture' and metadata.get('nativeTextureDDS', {}).get('status') == 'available':
+                derivative_format = derivative['format']
+                if (derivative_format not in ('DXT1', 'DXT5') or
+                        derivative_format != native_texture['format']['name'] or
+                        files[derivative['file']][84:88] != derivative_format.encode('ascii')):
+                    raise ValueError('Texture DDS format differs from native source or FourCC')
+                manifest['image']['derivatives'] = [{'file': 'texture.dds', 'manifest': 'native-texture-dds.json', 'format': derivative_format}]
             manifest['files'] = [{'path': name, 'sha256': sha(payload), 'bytes': len(payload), 'mime': mime[name]} for name, payload in sorted(files.items())]
             payload = archive_bytes(manifest, files)
             self.require_unchanged_dependencies()
@@ -741,7 +754,7 @@ def apply_native_mesh_transform(document, dump):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=CONVERTER_DESCRIPTION)
     commands = parser.add_subparsers(dest='command', required=True)
     for name in ('convert', 'batch'):
         command = commands.add_parser(name)
