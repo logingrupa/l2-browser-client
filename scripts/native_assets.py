@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only native Interlude extraction and reproducible .l2asset packaging.
-
-See docs/ASSET_PIPELINE.md. Geometry extraction uses the explicitly pinned UModel;
-native animation keys are decoded directly, without Blender or Unity intermediates.
-"""
+"""Convert native Interlude client objects into reproducible .l2asset packages with the pinned UModel; see docs/ASSET_PIPELINE.md."""
 import argparse
 import hashlib
 import io
@@ -26,6 +22,7 @@ from native_assets_lib.weights import restore_native_weights
 from native_assets_lib.static_materials import native_static_materials
 from native_assets_lib.texture_mips import build_texture_source, UnsupportedTextureSource
 from native_assets_lib.texture_dds import build_texture_dds, UnsupportedTextureDDS
+from reference_client_guard import require_reference_client
 
 UMODEL = Path('C:/laragon/www/lineagen/.assets/skill-assets/work/native/tools/umodel/umodel.exe')
 UMODEL_SHA256 = '13502e5a4d8f6b5f32252afebd6360f7302ccfaccf6b8dda65beff0be2d364a0'
@@ -35,12 +32,6 @@ MAX_PAYLOAD = 96 * 1024 * 1024
 
 
 def static_section_bindings(document):
-    """Retain UModel section identities after removing empty primitives.
-
-    The pinned exporter writes one material and one primitive per section,
-    with primitive.material equal to the section index. Our empty-primitive
-    repair preserves material indices and records the primitive remap.
-    """
     meshes, materials = document.data.get('meshes', []), document.data.get('materials', [])
     if len(meshes) != 1:
         raise ValueError('Pinned static exporter must produce exactly one mesh')
@@ -131,6 +122,12 @@ def verify_archive(path):
     return {'file': str(path), 'sha256': sha(data), 'bytes': len(data), 'kind': manifest['kind'], 'id': manifest['id'], 'files': len(entries)}
 
 
+def require_unique_umodel_leaf_name(package, selected):
+    same_leaf_exports = [item for item in package.exports if item['name'].casefold() == selected['name'].casefold() and item['className'] == selected['className']]
+    if len(same_leaf_exports) != 1:
+        raise ValueError('UModel cannot safely select this duplicate leaf name')
+
+
 def implementation_hash():
     scripts = Path(__file__).parent
     paths = [Path(__file__), scripts / 'native_audio.py', scripts / 'native_animation_families.py', scripts / 'native_effect_bundle.py', *(scripts / 'native_catalog').glob('*.py'), *(scripts / 'native_catalog').glob('*.ps1'), *(scripts / 'native_assets_lib').glob('*.py')]
@@ -140,6 +137,7 @@ def implementation_hash():
 class Converter:
     def __init__(self, client, output, umodel):
         self.client, self.output, self.umodel = Path(client).resolve(), Path(output).resolve(), Path(umodel).resolve()
+        self.reference_client = require_reference_client(self.client)
         if self.output.is_relative_to(self.client):
             raise ValueError('Output must be outside the read-only source client')
         if hash_file(self.umodel) != UMODEL_SHA256:
@@ -160,11 +158,17 @@ class Converter:
         if not path.is_relative_to(self.client) or not path.is_file():
             raise ValueError(f'Source is outside client or missing: {path}')
         relative = path.relative_to(self.client).as_posix()
+        self.reference_client.require_equal_file(relative)
         digest = hash_file(path)
         if relative in self.dependencies and self.dependencies[relative] != digest:
             raise ValueError(f'Source changed during conversion: {relative}')
         self.dependencies[relative] = digest
         return path
+
+    def require_unchanged_dependencies(self):
+        for name, digest in self.dependencies.items():
+            if hash_file(self.client / name) != digest:
+                raise ValueError(f'Source changed during conversion: {name}')
 
     def package(self, name):
         exact = (self.client / name).resolve()
@@ -184,13 +188,8 @@ class Converter:
 
     def select(self, package, name, class_name=None):
         prefix = package.package_name + '.'
-        # Qualified native identities take precedence over DAT references that
-        # omit groups. Engine.DefaultTexture and LevelInfo.DefaultTexture have
-        # the same leaf but different full names/classes.
         matches = [item for item in package.exports if item['object'].casefold() == name.casefold()
             and (not class_name or item['className'] == class_name)]
-        # Interlude DAT bindings often omit a texture's group. They still
-        # require a unique object within the explicitly named package.
         if name.casefold().startswith(prefix.casefold()) and '.' not in name[len(prefix):]:
             name = name[len(prefix):]
         if not matches:
@@ -198,9 +197,8 @@ class Converter:
         if len(matches) != 1:
             raise ValueError(f'Object missing or ambiguous: {name} ({class_name})')
         selected = matches[0]
-        # UModel CLI lookup accepts a leaf object name, so guard against collisions.
-        if selected['className'] != 'Sound' and len([item for item in package.exports if item['name'].casefold() == selected['name'].casefold() and item['className'] == selected['className']]) != 1:
-            raise ValueError('UModel cannot safely select this duplicate leaf name')
+        if selected['className'] != 'Sound':
+            require_unique_umodel_leaf_name(package, selected)
         return selected
 
     def run(self, work, package_path, item, operation='export'):
@@ -258,9 +256,6 @@ class Converter:
         return payload, texture_properties, qualified, graph
 
     def sound(self, work, package, item):
-        # UEViewer Unreal/UnSound.h: properties, FName format, TLazyArray<byte>.
-        # Selecting by verified export index also handles duplicate leaf names
-        # that UModel's command line cannot disambiguate.
         _, reader = package.properties(item)
         format_name = package.name(reader.compact())
         end = reader.number('i')
@@ -277,18 +272,16 @@ class Converter:
     def materials(self, work, package, document, dump, overrides, binding_provenance=None, native_materials=None):
         slots, limitations = [], []
         materials = document.data.get('materials', [])
-        # UModel prints longer sections over several lines. Stop when section
-        # numbering restarts for a later LOD; never borrow its material slots.
-        sources = []
+        lod0_section_materials = []
         for match in re.finditer(r'Sections\[(\d+)\]\s*=\s*\{\s*Material\s*=\s*([^,}\r\n]+)', dump):
             section = int(match[1])
-            if section < len(sources):
+            if section < len(lod0_section_materials):
                 break
-            if section != len(sources):
+            if section != len(lod0_section_materials):
                 raise ValueError('Native LOD0 material section order is incomplete')
-            sources.append(match[2])
+            lod0_section_materials.append(match[2])
         for index, material in enumerate(materials):
-            original = sources[index].strip() if index < len(sources) else 'unavailable'
+            original = lod0_section_materials[index].strip() if index < len(lod0_section_materials) else 'unavailable'
             reference, provenance = overrides.get(index), binding_provenance or 'explicit-recipe-override'
             native_slot = None
             if native_materials is not None:
@@ -690,10 +683,7 @@ class Converter:
                     manifest['image']['derivatives'] = [{'file': 'texture.dds', 'manifest': 'native-texture-dds.json', 'format': derivative_format}]
             manifest['files'] = [{'path': name, 'sha256': sha(payload), 'bytes': len(payload), 'mime': mime[name]} for name, payload in sorted(files.items())]
             payload = archive_bytes(manifest, files)
-            # Refuse a cache commit if any source was edited while the job ran.
-            for name, digest in self.dependencies.items():
-                if hash_file(self.client / name) != digest:
-                    raise ValueError(f'Source changed during conversion: {name}')
+            self.require_unchanged_dependencies()
             content_key = sha(payload)
             target = self.output / content_key
             products = {**files, 'asset.json': json_bytes(manifest), 'asset.l2asset': payload}
@@ -726,31 +716,27 @@ def apply_native_mesh_transform(document, dump):
     scale = vector('MeshScale', ('X', 'Y', 'Z'))
     yaw, pitch, roll = [value * math.pi / 32768 for value in vector('RotOrigin', ('Yaw', 'Pitch', 'Roll'))]
     sy, cy, sp, cp, sr, cr = math.sin(yaw), math.cos(yaw), math.sin(pitch), math.cos(pitch), math.sin(roll), math.cos(roll)
-    # UEViewer RotatorToAxis / CAxis::UnTransformVector, then conjugate the
-    # native affine matrix by the glTF X,Z,Y axis permutation.
     columns = [[cp * cy, cp * sy, sp], [sr * sp * cy - cr * sy, sr * sp * sy + cr * cy, -sr * cp], [-cr * sp * cy - sr * sy, -cr * sp * sy + sr * cy, cr * cp]]
     columns = [[value * scale[index] for value in column] for index, column in enumerate(columns)]
     translation = [-sum(columns[column][row] * origin[column] for column in range(3)) for row in range(3)]
-    order = [0, 2, 1]
-    matrix = [columns[column][row] for column in order for row in order for _ in [0]]
+    gltf_axis_order = [0, 2, 1]
+    matrix = [columns[column][row] for column in gltf_axis_order for row in gltf_axis_order for _ in [0]]
     matrix = [matrix[0], matrix[1], matrix[2], 0, matrix[3], matrix[4], matrix[5], 0, matrix[6], matrix[7], matrix[8], 0, translation[0] * .01, translation[2] * .01, translation[1] * .01, 1]
     scene = document.data['scenes'][document.data.get('scene', 0)]
     parent = len(document.data['nodes'])
-    # Skinning applies joint world matrices. Keep skinned mesh nodes at scene
-    # root and transform their joint hierarchy, avoiding ignored mesh parents.
-    children = []
-    mesh_roots = []
+    transformed_joint_roots = []
+    skinned_mesh_roots_kept_at_scene_root = []
     for root in scene['nodes']:
         node = document.data['nodes'][root]
         if 'skin' in node:
-            children.extend(node.pop('children', []))
-            mesh_roots.append(root)
+            transformed_joint_roots.extend(node.pop('children', []))
+            skinned_mesh_roots_kept_at_scene_root.append(root)
         else:
-            children.append(root)
-    if not children:
+            transformed_joint_roots.append(root)
+    if not transformed_joint_roots:
         raise ValueError('Native skeletal transform has no joint hierarchy')
-    document.data['nodes'].append({'name': 'NativeMeshOriginRotationScale', 'children': children, 'matrix': matrix})
-    scene['nodes'] = mesh_roots + [parent]
+    document.data['nodes'].append({'name': 'NativeMeshOriginRotationScale', 'children': transformed_joint_roots, 'matrix': matrix})
+    scene['nodes'] = skinned_mesh_roots_kept_at_scene_root + [parent]
     return {'MeshOrigin': origin, 'MeshScale': scale, 'RotOrigin': vector('RotOrigin', ('Yaw', 'Pitch', 'Roll')), 'gltfParentMatrix': matrix, 'basis': 'UEViewer SkelMeshInstance::SetMesh and RotatorToAxis; no height normalization'}
 
 
@@ -779,6 +765,7 @@ def main():
         if args.command == 'verify':
             print(json.dumps(verify_archive(args.archive), indent=2))
             return
+        require_reference_client(args.client)
         converter = Converter(args.client, args.output, args.umodel)
         requests = json.loads(args.recipe.read_text(encoding='utf-8')) if args.command == 'batch' else [{key: getattr(args, key) for key in ('kind', 'package', 'object', 'animation', 'media', 'materials', 'withEventAudio')}]
         for request in requests:

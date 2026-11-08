@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from native_catalog.cli import digest, file_hash, inventory, json_bytes, parse_umodel_listing, safe_output, verify, within
 from native_catalog.tables import decode_table, SCHEMA_ROOT, CRYPTO_SOURCE
 from native_catalog.ue2 import FormatError, Package, Reader, summary
+from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH
 
 CLIENT = Path('E:/lineage2-client')
 
@@ -103,6 +104,7 @@ class NativeSourceEvidenceTests(unittest.TestCase):
             Package(self.raw[:-10000], 'Fighter.ukx')
 
     @unittest.skipUnless(SCHEMA_ROOT.is_dir() and CRYPTO_SOURCE.is_file(), 'Pinned local schema/format resources absent')
+    @unittest.skipUnless(REFERENCE_CLIENT_LOCK_PATH.is_file(), 'Reference client lock absent; the guard refuses E: table reads until it is recorded')
     def test_interlude_descriptor_tables_consume_exact_source_bytes(self):
         expected = {'skillgrp': 29812, 'skillsoundgrp': 1398, 'mobskillanimgrp': 5463, 'chargrp': 15}
         for name, count in expected.items():

@@ -88,7 +88,7 @@ def lock_file_identity(lock_path):
     try:
         status = os.stat(lock_path)
     except FileNotFoundError:
-        raise ReferenceClientLockError(MISSING_LOCK_MESSAGE)
+        raise ReferenceClientLockError(MISSING_LOCK_MESSAGE) from None
     return (status.st_size, status.st_mtime_ns)
 
 

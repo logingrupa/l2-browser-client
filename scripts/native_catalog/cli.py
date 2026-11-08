@@ -11,6 +11,7 @@ import sys
 
 from .ue2 import FormatError, Package, summary
 from .tables import CRYPTO_SOURCE, SCHEMA_ROOT, TABLES, decode_table
+from reference_client_guard import require_reference_client
 
 NATIVE = {'.ukx', '.uax', '.usx', '.utx', '.unr', '.u', '.uix', '.usk'}
 UMODEL = Path(os.environ.get('L2_UMODEL', 'C:/laragon/www/lineagen/.assets/skill-assets/work/native/tools/umodel/umodel.exe'))
@@ -56,7 +57,6 @@ def safe_output(client, path):
 
 def write_output(client, path, data):
     path = safe_output(client, path)
-    # No delete/move or source writes. Existing local reports are reproducible replacements.
     with path.open('wb') as stream:
         stream.write(data)
     if file_hash(path) != digest(data):
@@ -216,6 +216,7 @@ def main(argv=None):
     parser.add_argument('--verify', action='store_true', help='Recheck source and output hashes without running tools or rewriting reports.')
     args = parser.parse_args(argv)
     try:
+        require_reference_client(args.client)
         table_sources = {}
         for selection in args.table_source:
             table, separator, filename = selection.partition('=')

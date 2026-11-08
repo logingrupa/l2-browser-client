@@ -1,8 +1,3 @@
-"""Native Interlude presentation tables, selected by a pinned Interlude descriptor.
-
-Only the current client's original DAT bytes are read. External schema files
-are data, never imported/executed Python or native scripts.
-"""
 import hashlib
 import os
 from pathlib import Path
@@ -12,6 +7,7 @@ import xml.etree.ElementTree as ET
 import zlib
 
 from .ue2 import FormatError, Reader
+from reference_client_guard import require_reference_client
 
 SCHEMA_ROOT = Path(os.environ.get('L2_SCHEMA_ROOT', 'C:/laragon/www/lineagen/.assets/skill-assets/work/native/tools/l2-editor-f2a2cc16120dd8ffabd60255aaad59fa4d6b6f53/dat_engine/data/structure'))
 CRYPTO_SOURCE = Path(os.environ.get('L2_CRYPTO_SOURCE', 'E:/linegen/tools/open-l2encdec-source/src/l2encdec.cpp'))
@@ -27,6 +23,7 @@ SCHEMA_HASHES = {
     'dats/npcname.xml': '18dc3bfb5de2055257e64818d55ca13354694961c08fee50b9b62951eedd681a',
 }
 CRYPTO_HASH = '600cc9d556c50fb3640075f65a4783bd66e0bd8f7a790b72391b4a2a59004c5b'
+SAFE_PACKAGE_TRAILER = b'\x0cSafePackage\0'
 TABLES = ('skillgrp', 'skillsoundgrp', 'mobskillanimgrp', 'chargrp', 'armorgrp', 'weapongrp', 'npcgrp', 'npcname')
 MTX_DEFINITION_EVIDENCE = {
     'revision': 'f2a2cc16120dd8ffabd60255aaad59fa4d6b6f53',
@@ -54,7 +51,6 @@ def checked_bytes(path, expected):
 
 
 def table_definition_pins(name, schema_root=SCHEMA_ROOT, crypto_source=CRYPTO_SOURCE):
-    """Check every retained format source used by the selected table adapter."""
     if name not in TABLES:
         raise FormatError('This adapter only supports the audited Interlude presentation tables')
     pins = {'crypto-definition': hashlib.sha256(checked_bytes(crypto_source, CRYPTO_HASH)).hexdigest()}
@@ -72,14 +68,12 @@ def decode413(raw, crypto_source=CRYPTO_SOURCE):
     if raw[:28].decode('utf-16le', errors='replace') != 'Lineage2Ver413':
         raise FormatError('Presentation table adapter requires native Ver413 bytes')
     source = checked_bytes(crypto_source, CRYPTO_HASH).decode('utf-8')
-    # These are public format constants from the retained open-l2encdec source,
-    # not service/user credentials. Native files are never re-encoded or changed.
-    blocks = [('modern', source.split('MODERN_RSA_PARAMS = {', 1)[1].split('};', 1)[0]),
+    public_open_l2encdec_key_blocks = [('modern', source.split('MODERN_RSA_PARAMS = {', 1)[1].split('};', 1)[0]),
         ('legacy413', source.split('{413, {', 1)[1].split('}}', 1)[0])]
     encrypted = raw[28:-20]
     if not encrypted or len(encrypted) % 128:
         raise FormatError('Malformed Ver413 block length')
-    for name, block in blocks:
+    for name, block in public_open_l2encdec_key_blocks:
         values = dict(re.findall(r'\.rsa_(\w+) = "([0-9a-f]+)"', block))
         modulus, exponent = int(values['modulus'], 16), int(values['private_exponent'], 16)
         payload = bytearray()
@@ -120,12 +114,8 @@ def read_value(reader, kind):
     if kind == 'CNTR':
         return reader.compact()
     if kind == 'RGBA':
-        # Pinned bytes.rs read_rgba/read_rgb emit the four bytes in source order.
-        # Preserve that exact string representation rather than guessing channels.
         return reader.take(4).hex().upper()
     if kind == 'MTX':
-        # Pinned definitions.xml MTX: two signed counts, each followed by
-        # UNICODE values. Retain authored field names and both independent lists.
         result = {}
         for number, collection, field in ((1, 'mesh', 'mtx_mesh_'), (2, 'texture', 'mtx_text_')):
             count = reader.number('i')
@@ -137,6 +127,10 @@ def read_value(reader, kind):
     raise FormatError('Unsupported table field reader: ' + kind)
 
 
+def unwrap_same_named_count_wrapper(value, name):
+    return value.get(name) if isinstance(value, dict) else value
+
+
 def read_nodes(reader, nodes):
     row = {}
     for node in nodes:
@@ -145,11 +139,7 @@ def read_nodes(reader, nodes):
             reference = node.get('param', '')
             if not reference.startswith('#') or reference[1:] not in row:
                 raise FormatError('Conditional table field requires a preceding count')
-            value = row[reference[1:]]
-            # The Interlude weapon layout wraps its wp_mesh count with the
-            # same name, then conditionally appends the second-hand fields.
-            if isinstance(value, dict):
-                value = value.get(reference[1:])
+            value = unwrap_same_named_count_wrapper(row[reference[1:]], reference[1:])
             if not isinstance(value, int):
                 raise FormatError('Conditional table field does not reference an integer')
             if value == int(node.get('val')):
@@ -178,8 +168,12 @@ def read_nodes(reader, nodes):
     return row
 
 
+def require_exact_directory_entry_spelling(directory, file_name):
+    if file_name not in {path.name for path in directory.iterdir() if path.is_file()}:
+        raise FormatError('Native npcname filename does not exactly match a source directory entry')
+
+
 def table_source_path(client, name, file_pattern, source_filename=None):
-    """Select a language file without preferring a locale or folding case."""
     system = client / 'system'
     if name == 'npcname':
         if source_filename is None:
@@ -190,10 +184,7 @@ def table_source_path(client, name, file_pattern, source_filename=None):
             source_filename = matches[0]
         if not isinstance(source_filename, str) or '/' in source_filename or '\\' in source_filename or not re.fullmatch(file_pattern, source_filename):
             raise FormatError('Native npcname filename must match the exact Interlude language-file pattern')
-        # Windows resolves case-insensitively; retain the supplied spelling only
-        # when it is also an actual directory entry, rather than guessing a name.
-        if source_filename not in {path.name for path in system.iterdir() if path.is_file()}:
-            raise FormatError('Native npcname filename does not exactly match a source directory entry')
+        require_exact_directory_entry_spelling(system, source_filename)
     else:
         if source_filename is not None and source_filename != name + '.dat':
             raise FormatError('Explicit source filename is unsupported for this table')
@@ -201,7 +192,7 @@ def table_source_path(client, name, file_pattern, source_filename=None):
     path = (system / source_filename).resolve(strict=True)
     if not path.is_relative_to(client):
         raise FormatError('Native table path escapes selected client')
-    return path
+    return require_reference_client(client).require_equal_file(path.relative_to(client).as_posix())
 
 
 def decode_table(client, name, schema_root=SCHEMA_ROOT, crypto_source=CRYPTO_SOURCE, *, source_filename=None):
@@ -226,8 +217,7 @@ def decode_table(client, name, schema_root=SCHEMA_ROOT, crypto_source=CRYPTO_SOU
     reader = Reader(decoded)
     rows = read_nodes(reader, layouts[0])
     trailer = decoded[reader.position:]
-    # Explicit UE safe-package trailer; reject arbitrary extra or truncated rows.
-    if trailer != b'\x0cSafePackage\0':
+    if trailer != SAFE_PACKAGE_TRAILER:
         raise FormatError(f'Unexpected safe-package trailer: {name}: {trailer.hex()}')
     if name in ('armorgrp', 'weapongrp', 'npcgrp', 'npcname'):
         collection, key = {'npcgrp': ('npc', 'npc_id'), 'npcname': ('npc', 'id')}.get(name, ('item', 'object_id'))
