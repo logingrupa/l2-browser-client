@@ -36,7 +36,9 @@ export class App {
     document.body.dataset.worldState = "ready";
     document.getElementById("app")?.removeAttribute("inert");
     document.getElementById("loading")?.remove();
-    if (new URLSearchParams(window.location.search).get("inspect") === "1") await this.openInspector(this.scene);
+    if (new URLSearchParams(window.location.search).get("inspect") === "1") {
+      await this.openInspector(this.scene).catch((error: unknown) => console.error("Babylon Inspector failed to open.", error));
+    }
   }
 
   dispose(): void {

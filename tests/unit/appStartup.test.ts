@@ -141,6 +141,19 @@ describe("Babylon Inspector query flag", () => {
     expect(worldStateWhenOpened).toEqual(["ready"]);
   });
 
+  it("keeps the ready world when the Inspector fails to open", async () => {
+    location.search = "?inspect=1";
+    const inspectorFailure = new Error("Inspector chunk failed to load.");
+    boundary.openInspector.mockRejectedValue(inspectorFailure);
+    scene.dispose.mockClear();
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    await expect(app.init()).resolves.toBeUndefined();
+    expect(body.dataset.worldState).toBe("ready");
+    expect(scene.dispose).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledWith("Babylon Inspector failed to open.", inspectorFailure);
+    consoleError.mockRestore();
+  });
+
   it.each(["", "?inspect=0", "?inspect=true", "?world=interlude"])("does not open the Inspector for the query %j", async search => {
     location.search = search;
     await app.init();
