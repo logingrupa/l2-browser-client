@@ -3,7 +3,7 @@
 One line per part, in PORT_SCOPE section 5 order, rewritten in place by the integration thread. Format: part | lane | state | evidence doc. States are from PORT_SCOPE section 5 (2026-11-07). Lane ownership: `.planning/lanes.json`.
 
 - data | data-ui | E: locked against IMPORTA-PC; 40-table inventory: 8 decoded locally, 29 layout only, 3 on the Elbera route | docs/parts/data/EVIDENCE.md
-- sandbox | data-ui | MockWorldAdapter and NativeSliceAdapter exist, no by-ID spawning yet | docs/parts/sandbox/EVIDENCE.md
+- sandbox | data-ui | by-ID spawn, equip, cast and open window with a missing-asset marker on NativeSliceAdapter; browser checks on ?world=interlude only; dev cold start re-measured on PROMINENCE-PC, DATABASE-PC re-measure pending | docs/parts/sandbox/EVIDENCE.md
 - world | world | 20_20 and Talking Island bundles | docs/parts/world/EVIDENCE.md
 - player-characters | actors | human fighters native, human mystic export in progress | docs/parts/player-characters/EVIDENCE.md
 - ui | data-ui | development sheet only | docs/parts/ui/EVIDENCE.md

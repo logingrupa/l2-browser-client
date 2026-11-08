@@ -9,5 +9,5 @@ export default defineConfig({
   workers: 1,
   outputDir: "test-results/startup",
   use: { ...base.use, baseURL: startupMeasurementBaseUrl, trace: "on" },
-  webServer: { command: "pnpm exec vite --host 127.0.0.1 --port 5175 --strictPort", url: startupMeasurementBaseUrl, reuseExistingServer: false, timeout: 120_000 },
+  webServer: { command: "pnpm exec vite --host 127.0.0.1 --port 5175 --strictPort", url: startupMeasurementBaseUrl, reuseExistingServer: false, timeout: 120_000, stdout: "pipe" },
 });
