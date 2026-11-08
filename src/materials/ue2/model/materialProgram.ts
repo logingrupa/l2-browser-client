@@ -171,8 +171,8 @@ function requireResolvedReferences(value: MaterialFieldValue, nodeIds: ReadonlyS
   for (const [member, memberValue] of Object.entries(record)) requireResolvedReferences(memberValue, nodeIds, `${label}.${member}`);
 }
 
-export function parseMaterialProgram(document: unknown): MaterialProgram {
-  const record = requireRecord(document, "program");
+export function parseMaterialProgram(programDocument: unknown): MaterialProgram {
+  const record = requireRecord(programDocument, "program");
   requireProgram(record.schemaVersion === 1, `schemaVersion ${String(record.schemaVersion)} is not 1.`);
   requireProgram(record.kind === "ue2-material-program", `kind ${String(record.kind)} is not ue2-material-program.`);
   requireProgram(typeof record.graphSha256 === "string" && sha256Pattern.test(record.graphSha256), "graphSha256 is not a SHA-256.");
