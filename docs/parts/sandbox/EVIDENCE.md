@@ -22,13 +22,20 @@ PROMINENCE-PC, Ryzen 7 7800X3D, not comparable to the DATABASE-PC baseline.
 
 Baseline (DATABASE-PC, route `?world=courtyard`, Editor pack in dev): 262 and 288 script requests, 7,537,124 and 8,748,728 bytes, first runtime module at 38.56 s and 39.25 s, longest gap 22.984 s and 21.528 s, Editor-tools closure 134 files.
 
-These numbers do not say whether the DATABASE-PC gap is gone, smaller or unchanged: the machine and the route differ from the baseline. The like-for-like DATABASE-PC re-measure is still to run. The runs do show that the dev cold start requests no Editor tools.
-
 Traces and JSON: `artifacts/dev-startup/prominence-run-1/` and `artifacts/dev-startup/prominence-run-2/` (`trace.zip`, `dev-startup-native-sandbox.json`).
+
+DATABASE-PC, same machine as the baseline, 2026-11-08 14:25 Riga, same config and spec, two runs back to back:
+
+| Run | Script requests | Script bytes | All requests | All bytes | First `src/runtime/` request | Longest completion gap | Ready | `babylonjs-editor-tools` requests |
+|-----|-----------------|--------------|--------------|-----------|------------------------------|------------------------|-------|-----------------------------------|
+| 1 | 633 | 13,542,594 | 929 | 133,516,754 | 6.116 s | 41.857 s | 64.635 s | 0 |
+| 2 | 633 | 13,542,594 | 929 | 133,516,423 | 4.192 s | 8.939 s | 37.530 s | 0 |
+
+Same machine, different route: the baseline route `?world=courtyard` is retired, so `?world=interlude` (which also loads about 133 MB of native assets) is the only comparable route. The wait before the first runtime module fell from about 39 s to 4 to 6 s, and no Editor tools are requested. The longest completion gap is not gone: 8.9 s on the second run, 41.9 s on the first. Its cause is not established; the first run's gap falls while the native assets load, which the courtyard baseline never did. Removing the Editor pack is not claimed to have fixed it.
 
 ## Open
 
-- NOED-02: the DATABASE-PC cold-start re-measure on the same machine as the baseline.
+- Dev cold start: the 41.9 s first-run completion gap on DATABASE-PC has no established cause (open observation, not a NOED-02 failure).
 - SAND-02: pinnable developer sheet with hover-cards (Phase 2).
 - UI-01: `interface.xdat` decoded to a layout tree, so native Interlude windows can replace the procedural HUD stand-in.
 - The 5 e2e cases that skip on PROMINENCE-PC run only where their artifacts exist.
