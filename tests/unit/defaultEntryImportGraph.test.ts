@@ -1,7 +1,9 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { staticImportClosure, type StaticImportClosure } from "../support/staticImportGraph";
 
-const editorPackagePrefixes = ["babylonjs-editor-tools", "babylonjs-editor-cli", "l2-editor-webgpu-compat", "@babylonjs/inspector"];
+const editorPackagePrefixes = ["babylonjs-editor-tools", "babylonjs-editor-cli", "l2-editor-webgpu-compat"];
+const inspectorPackagePrefixes = ["@babylonjs/inspector", "react", "react-dom", "@fluentui/", "@fluentui-contrib/"];
+const inspectorModulePath = "src/scene/openBabylonInspector.ts";
 const editorModulePaths = ["src/scripts.ts", "src/scene/world/loadAuthoredNativeSection.ts", "src/scene/authoredNativeWorld.ts"];
 const editorModuleFolders = ["src/scripts/", "src/editor/"];
 
@@ -30,5 +32,13 @@ describe("default entry static import graph", () => {
 
   it("reaches the authored native world only through a dynamic import", () => {
     expect(defaultEntryClosure.dynamicImportTargets).toContain("src/scene/authoredNativeWorld.ts");
+  });
+
+  it("reaches the Babylon Inspector only through a dynamic import", () => {
+    expect(defaultEntryClosure.dynamicImportTargets).toContain(inspectorModulePath);
+    expect(defaultEntryClosure.modules).not.toContain(inspectorModulePath);
+    const inspectorPackages = [...defaultEntryClosure.packages].filter(packagePath =>
+      inspectorPackagePrefixes.some(prefix => prefix.endsWith("/") ? packagePath.startsWith(prefix) : packagePath === prefix || packagePath.startsWith(`${prefix}/`)));
+    expect(inspectorPackages).toEqual([]);
   });
 });

@@ -1,4 +1,3 @@
-// Native Vanilla template entry, adapted from Babylon.js Editor (Apache-2.0).
 import type { Scene } from "@babylonjs/core/scene";
 import { EngineHost } from "./engine/EngineHost";
 import { loadEnvironment } from "./scene/loadEnvironment";
@@ -11,6 +10,7 @@ export class App {
   private isDisposed = false;
   private readonly lifetime = new AbortController();
   private isReady = false;
+  private closeInspector: (() => Promise<void>) | undefined;
 
   async init(): Promise<void> {
     if (this.isDisposed) return;
@@ -36,13 +36,23 @@ export class App {
     document.body.dataset.worldState = "ready";
     document.getElementById("app")?.removeAttribute("inert");
     document.getElementById("loading")?.remove();
+    if (new URLSearchParams(window.location.search).get("inspect") === "1") await this.openInspector(this.scene);
   }
 
   dispose(): void {
     if (this.isDisposed) return;
     this.isDisposed = true;
     this.lifetime.abort();
+    if (this.closeInspector) void this.closeInspector();
     this.scene?.dispose();
     this.host?.dispose();
+  }
+
+  private async openInspector(scene: Scene): Promise<void> {
+    const { openBabylonInspector } = await import("./scene/openBabylonInspector");
+    if (this.isDisposed) return;
+    const closeInspector = await openBabylonInspector(scene);
+    if (this.isDisposed) { void closeInspector(); return; }
+    this.closeInspector = closeInspector;
   }
 }
