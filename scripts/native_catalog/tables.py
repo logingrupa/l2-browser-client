@@ -29,11 +29,14 @@ def checked_bytes(path, expected):
     return data
 
 
+def interlude_descriptor_links(schema_root=SCHEMA_ROOT):
+    return descriptor_layout_links(checked_bytes(Path(schema_root) / DESCRIPTOR_FILE, SCHEMA_HASHES[DESCRIPTOR_FILE]))
+
+
 def interlude_table_layout(name, schema_root=SCHEMA_ROOT):
     if name not in TABLES:
         raise FormatError('This adapter only supports the pinned Interlude descriptor layouts: ' + str(name))
-    descriptor_bytes = checked_bytes(schema_root / DESCRIPTOR_FILE, SCHEMA_HASHES[DESCRIPTOR_FILE])
-    links = [link for link in descriptor_layout_links(descriptor_bytes) if link.layout == name]
+    links = [link for link in interlude_descriptor_links(schema_root) if link.layout == name]
     if len(links) != 1:
         raise FormatError('Missing unambiguous Interlude table descriptor: ' + name)
     schema_name = 'dats/' + name + '.xml'

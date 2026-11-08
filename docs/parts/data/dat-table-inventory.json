@@ -359,17 +359,17 @@
    "layout": "sysstring",
    "recordCount": 2083,
    "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "status": "decode-failed:FormatError",
    "table": "sysstring-e"
   },
   {
-   "countSource": "docs/PORT_SCOPE.md section 2 (Elbera extract_gamedata.py)",
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/systemmsg-e.dat",
    "descriptorLayout": true,
    "file": "systemmsg-e.dat",
    "layout": "systemmsg",
    "recordCount": 2083,
-   "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "route": "local-decoded",
+   "status": "decoded, matches Elbera evidence",
    "table": "systemmsg-e"
   },
   {

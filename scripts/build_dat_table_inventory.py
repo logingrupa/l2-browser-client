@@ -6,8 +6,8 @@ import re
 import sys
 
 from hash_reference_client_tree import canonical_json_bytes
-from native_catalog.table_source_resolver import descriptor_layout_for_file_name, descriptor_layout_links
-from native_catalog.tables import DESCRIPTOR_FILE, SCHEMA_HASHES, SCHEMA_ROOT, checked_bytes
+from native_catalog.table_source_resolver import descriptor_layout_for_file_name
+from native_catalog.tables import DESCRIPTOR_FILE, SCHEMA_HASHES, SCHEMA_ROOT, interlude_descriptor_links
 from native_store.catalog_writer import validate_catalog_record
 from native_store.gap_rows import read_gap_rows
 from reference_client_guard import require_reference_client
@@ -158,7 +158,7 @@ def validate_dat_table_inventory(inventory):
 
 
 def build_dat_table_inventory(client_access, elbera_root, decoded_table_records, gap_rows, schema_root=SCHEMA_ROOT):
-    links = descriptor_layout_links(checked_bytes(Path(schema_root) / DESCRIPTOR_FILE, SCHEMA_HASHES[DESCRIPTOR_FILE]))
+    links = interlude_descriptor_links(schema_root)
     elbera_parser_statuses = elbera_parser_presence(elbera_root)
     decoded_records_by_table = {record['id']: record for record in decoded_table_records}
     decode_gap_rows_by_key = {row['key']: row for row in gap_rows if row['step'] == DECODE_STEP}

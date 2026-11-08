@@ -11,8 +11,8 @@ import re
 
 from hash_reference_client_tree import canonical_json_bytes
 from native_catalog.table_layout_pins import CRYPTO_HASH, SCHEMA_HASHES
-from native_catalog.table_source_resolver import descriptor_layout_for_file_name, descriptor_layout_links
-from native_catalog.tables import DESCRIPTOR_FILE, SCHEMA_ROOT, checked_bytes, decode_table, decoded_table_record_count
+from native_catalog.table_source_resolver import descriptor_layout_for_file_name
+from native_catalog.tables import DESCRIPTOR_FILE, decode_table, decoded_table_record_count, interlude_descriptor_links
 from native_catalog.ue2 import FormatError
 from native_store.catalog_writer import (add_store_file, merge_catalog_slice, read_store_catalog, sha256_hex, validate_catalog_record,
                                          write_store)
@@ -39,10 +39,6 @@ SYSTEM_DAT_PATH_PATTERN = re.compile(r'system/([^/]+)\.dat', re.IGNORECASE)
 
 class ConvertTablesError(ValueError):
     pass
-
-
-def descriptor_links(schema_root=SCHEMA_ROOT):
-    return descriptor_layout_links(checked_bytes(Path(schema_root) / DESCRIPTOR_FILE, SCHEMA_HASHES[DESCRIPTOR_FILE]))
 
 
 def table_unit_plan(table, links):
@@ -172,7 +168,7 @@ def main(argv=None):
         require_batch_preflight(REPOSITORY_ROOT, LANE_NAME, BATCH_MINIMUM_FREE_BYTES)
         run_at_below_normal_priority()
         ledger = UnitLedger(lane_work_root(REPOSITORY_ROOT, LANE_NAME), DECODE_STEP, DECODE_TABLE_ALGORITHM_VERSION)
-        links = descriptor_links()
+        links = interlude_descriptor_links()
         if arguments.batch:
             convert_table_batch(REPOSITORY_ROOT, client_access, output_root, ledger, arguments.limit, links)
         for table in dict.fromkeys(arguments.table or ()):

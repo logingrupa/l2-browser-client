@@ -12,9 +12,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(ROOT / 'scripts' / 'data'))
 import convert_tables
-from convert_tables import (DECODE_TABLE_ALGORITHM_VERSION, LOCAL_DESCRIPTOR_ROUTE, convert_table_unit, descriptor_links,
-                            native_table_manifest)
-from native_catalog.tables import CRYPTO_SOURCE, SAFE_PACKAGE_TRAILER, SCHEMA_ROOT
+from convert_tables import DECODE_TABLE_ALGORITHM_VERSION, LOCAL_DESCRIPTOR_ROUTE, convert_table_unit, native_table_manifest
+from native_catalog.tables import CRYPTO_SOURCE, SAFE_PACKAGE_TRAILER, SCHEMA_ROOT, interlude_descriptor_links
 from native_store.catalog_writer import TABLE_MANIFEST_PATH_PATTERN, validate_catalog_record
 from native_store.gap_rows import read_gap_rows
 from native_store.store_paths import lane_store_root, lane_work_root
@@ -51,7 +50,7 @@ class ConvertTableUnitTests(unittest.TestCase):
         self.client_access = require_reference_client(client_root)
         self.output_root = lane_store_root(self.project_root, 'data-ui')
         self.catalog_path = self.output_root / 'catalog.json'
-        self.links = descriptor_links()
+        self.links = interlude_descriptor_links()
 
     def new_ledger(self):
         return UnitLedger(lane_work_root(self.project_root, 'data-ui'), 'decode', DECODE_TABLE_ALGORITHM_VERSION)

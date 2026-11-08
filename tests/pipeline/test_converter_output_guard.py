@@ -11,6 +11,7 @@ LANE_SCRIPT_FOLDERS = ('world', 'actors', 'data')
 DEDUPLICATED_HELPER_NAMES = {'checked', 'child', 'relative_name', 'safe_relative'}
 STORE_PATH_HELPER_NAMES = {'refuse_reparse_points', 'confined_child_path', 'require_portable_relative_path'}
 OUTPUT_GUARDED_MAIN_ENTRY_POINTS = ('scripts/data/convert_tables.py', 'scripts/native_catalog/cli.py')
+COMMITTED_REPORT_ENTRY_POINTS = ('scripts/data/sysstring_systemmsg_counts.py',)
 ARGUMENT_ERROR_METHOD_NAME = 'error'
 
 
@@ -90,6 +91,11 @@ class ConverterOutputGuardScanTests(unittest.TestCase):
                 guard_calls = calls_named(main_function, OUTPUT_GUARD_NAME)
                 self.assertTrue(guard_calls, f'{relative_path} main must call {OUTPUT_GUARD_NAME}')
                 self.assertEqual(guard_calls[0].lineno, first_work_after_argument_parsing(main_function))
+
+    def test_committed_report_entry_points_take_no_output_option(self):
+        for relative_path in COMMITTED_REPORT_ENTRY_POINTS:
+            with self.subTest(relative_path=relative_path):
+                self.assertFalse(registers_output_option(parse_script(relative_path)))
 
     def test_scan_flags_an_output_option_without_the_guard(self):
         unguarded = ast.parse("parser.add_argument('--output')\noutput = arguments.output\n")

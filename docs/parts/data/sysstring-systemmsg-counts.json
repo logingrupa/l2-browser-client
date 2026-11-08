@@ -1,0 +1,57 @@
+{
+  "comparison": {
+    "idSetsEqual": null,
+    "onlyInSysstringCount": null,
+    "onlyInSystemmsgCount": null,
+    "sharedIdCount": null
+  },
+  "elberaEvidence": {
+    "count": 2083,
+    "source": "docs/PORT_SCOPE.md section 2 (Elbera extract_gamedata.py)"
+  },
+  "referenceTreeLockSha256": "1957c96800aa45cb10c984f3f2e6f8d1f5f0b1713f086f20560db01f4d1d2b52",
+  "schemaVersion": 1,
+  "tables": [
+    {
+      "consumedBytes": null,
+      "declaredCount": 2083,
+      "decodeError": "Unterminated Unreal string",
+      "decodeStatus": "decode-failed:FormatError",
+      "decodedBytes": null,
+      "decodedRecordCount": null,
+      "distinctIdCount": null,
+      "duplicateIdCount": null,
+      "exactEnd": null,
+      "identifierField": "stringID",
+      "layout": "sysstring",
+      "maximumId": null,
+      "minimumId": null,
+      "missingIdCountInRange": null,
+      "sourcePath": "system/sysstring-e.dat",
+      "sourceSha256": "29d7dafa17e3d95578369f3b7864a52e4f011fb646345fbe0abd2c3dbc45b699",
+      "table": "sysstring-e",
+      "trailerHex": null
+    },
+    {
+      "consumedBytes": 233702,
+      "declaredCount": 2083,
+      "decodeError": null,
+      "decodeStatus": "decoded",
+      "decodedBytes": 233715,
+      "decodedRecordCount": 2083,
+      "distinctIdCount": 2083,
+      "duplicateIdCount": 0,
+      "exactEnd": true,
+      "identifierField": "id",
+      "layout": "systemmsg",
+      "maximumId": 2153,
+      "minimumId": 0,
+      "missingIdCountInRange": 71,
+      "sourcePath": "system/systemmsg-e.dat",
+      "sourceSha256": "d2b1f074dfd1898af83008c1850cc82be7adf0561508c3a7bf29f2afde53a164",
+      "table": "systemmsg-e",
+      "trailerHex": "0c536166655061636b61676500"
+    }
+  ],
+  "verdict": "count-unresolved"
+}
