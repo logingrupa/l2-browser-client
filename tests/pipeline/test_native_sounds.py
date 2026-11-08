@@ -81,15 +81,13 @@ class NativeSoundBatchTests(unittest.TestCase):
         path.write_bytes(batch.canonical(value))
 
     def rehash(self, args):
-        self.rewrite(args.output/'SHA256-MANIFEST.json', {'schemaVersion': 1, 'files': batch._helpers.files_receipt(args.output)})
+        self.rewrite(args.output/'SHA256-MANIFEST.json', {'schemaVersion': 1, 'files': batch.map_audio_exporter_guards.files_receipt(args.output)})
 
-    def legacy_output(self, args):
-        # Reconstruct the sole old policy difference using the real Converter,
-        # while explicitly pinning a different wrapper implementation identity.
-        legacy_impl = batch.implementation()
-        legacy_impl['files']['export-native-sounds.py'] = 'a07ac02e417616f0000754ee746cc19cd59ce5eee085cb2fb4fc20d1500c022f'
-        with patch.object(batch, 'FULL_OBJECT', batch._helpers.REFERENCE), \
-                patch.object(batch, 'implementation', return_value=legacy_impl):
+    def output_from_previous_name_policy_wrapper(self, args):
+        previous_wrapper_implementation = batch.implementation()
+        previous_wrapper_implementation['files']['export-native-sounds.py'] = 'a07ac02e417616f0000754ee746cc19cd59ce5eee085cb2fb4fc20d1500c022f'
+        with patch.object(batch, 'FULL_OBJECT', batch.map_audio_exporter_guards.REFERENCE), \
+                patch.object(batch, 'implementation', return_value=previous_wrapper_implementation):
             return batch.run(args)
 
     def test_real_converter_clean_repeat_and_cache_preserve_bytes_and_times(self):
@@ -141,13 +139,13 @@ class NativeSoundBatchTests(unittest.TestCase):
         row = self.read(args, 'inventory.json')['sounds'][0]
         self.assertEqual(row['export']['object'], 'AmbSound.Default.wind-loop')
         self.assertEqual(row['id'], 'interlude:AmbSound.Default.wind-loop')
-        self.assertIsNone(batch._helpers.REFERENCE.fullmatch(row['export']['object']))
+        self.assertIsNone(batch.map_audio_exporter_guards.REFERENCE.fullmatch(row['export']['object']))
         media = self.read(args, 'coverage.json')['sounds'][0]['products']['audio']
         self.assertEqual((args.output/media['path']).read_bytes(), wav_bytes())
 
     def test_reuse_partial_older_wrapper_preserves_old_tree_and_matches_clean_build(self):
         args = self.fixture(mixed=True)
-        self.assertFalse(self.legacy_output(args)['success'])
+        self.assertFalse(self.output_from_previous_name_policy_wrapper(args)['success'])
         previous = args.output
         old = self.snapshot(previous, True)
         args.output = self.root/'artifacts/reused'
@@ -171,7 +169,7 @@ class NativeSoundBatchTests(unittest.TestCase):
 
     def test_reuse_corrupt_previous_media_rejected_before_any_destination_write(self):
         args = self.fixture(mixed=True)
-        self.legacy_output(args)
+        self.output_from_previous_name_policy_wrapper(args)
         previous = args.output
         coverage = self.read(args, 'coverage.json')
         media = previous/coverage['sounds'][0]['products']['audio']['path']
@@ -186,7 +184,7 @@ class NativeSoundBatchTests(unittest.TestCase):
 
     def test_reuse_non_wrapper_tool_settings_or_source_pin_drift_rejected_without_writes(self):
         args = self.fixture()
-        self.legacy_output(args)
+        self.output_from_previous_name_policy_wrapper(args)
         previous = args.output
         original = self.read(args, 'run.json')
         mutations = [
@@ -209,7 +207,7 @@ class NativeSoundBatchTests(unittest.TestCase):
 
     def test_reuse_inventory_mutation_is_not_allowed_as_name_promotion(self):
         args = self.fixture(mixed=True)
-        self.legacy_output(args)
+        self.output_from_previous_name_policy_wrapper(args)
         previous = args.output
         document = self.read(args, 'inventory.json')
         document['sounds'][1]['serializedExport']['sha256'] = '0'*64
@@ -222,7 +220,7 @@ class NativeSoundBatchTests(unittest.TestCase):
 
     def test_reuse_overlap_existing_target_and_verify_only_are_refused(self):
         args = self.fixture()
-        self.legacy_output(args)
+        self.output_from_previous_name_policy_wrapper(args)
         previous = args.output
         old = self.snapshot(previous, True)
         for output in (previous, previous/'inside', previous.parent):
@@ -244,7 +242,7 @@ class NativeSoundBatchTests(unittest.TestCase):
 
     def test_reuse_unknown_files_busy_tree_and_source_change_fail_before_output(self):
         args = self.fixture()
-        self.legacy_output(args)
+        self.output_from_previous_name_policy_wrapper(args)
         previous = args.output
         (previous/'unowned.txt').write_bytes(b'preserve')
         self.rehash(args)
@@ -264,7 +262,7 @@ class NativeSoundBatchTests(unittest.TestCase):
 
     def test_reuse_symlink_is_rejected_without_target_writes(self):
         args = self.fixture()
-        self.legacy_output(args)
+        self.output_from_previous_name_policy_wrapper(args)
         link = self.root/'artifacts/linked-output'
         try:
             link.symlink_to(args.output, target_is_directory=True)

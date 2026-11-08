@@ -132,6 +132,7 @@ def exact_sound(package, reference):
 class Sources:
     def __init__(self, snapshot, lock):
         self.snapshot, self.lock, self.checked, self.packages = snapshot, lock, {}, {}
+        self.client_access = require_reference_client(snapshot)
         require(lock.get('schemaVersion') == 1 and isinstance(lock.get('sourceHost'), str) and
                 isinstance(lock.get('sourceRoot'), str) and isinstance(lock.get('files'), list), 'Invalid source lock')
         self.pins = {}
@@ -144,6 +145,7 @@ class Sources:
     def read(self, name):
         pin = self.pins.get(name.casefold())
         require(pin is not None and pin['relativePath'] == name, 'Source is not exactly locked: ' + name)
+        self.client_access.require_equal_file(name)
         path = child(self.snapshot, name)
         data = path.read_bytes()
         require(len(data) == pin['bytes'] and digest(data) == pin['sha256'], 'Locked source hash/length mismatch: ' + name)

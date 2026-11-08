@@ -20,13 +20,13 @@ from native_assets_lib.footstep_config import (
 )
 from native_audio import decode_native_audio
 from native_catalog.ue2 import FormatError, Package
+from reference_client_guard import require_reference_client
 
 
 ROOT = Path(__file__).resolve().parent.parent
 
 
 def reject_links(path):
-    """Reject symlinks and Windows reparse points, including existing ancestors."""
     for part in (path, *path.parents):
         if part.exists() or part.is_symlink():
             info = part.lstat()
@@ -57,6 +57,7 @@ def canonical(value):
 def run(args):
     config = args.config.absolute()
     snapshot = args.client_snapshot.absolute()
+    client_access = require_reference_client(snapshot)
     lock_path = args.input_lock.absolute()
     for path in (config, snapshot, lock_path):
         reject_links(path)
@@ -133,23 +134,21 @@ def run(args):
             row['packageCandidates'] = pins
             continue
         pin = pins[0]
-        relative = Path(pin['relativePath'])
-        require(not relative.is_absolute() and '..' not in relative.parts, 'Unsafe locked package path')
-        source = (snapshot/relative).resolve()
-        require(inside(source, snapshot.resolve()), 'Source package escapes snapshot')
-        if pin['relativePath'] not in packages:
+        relative_path = pin['relativePath']
+        source = client_access.require_equal_file(relative_path)
+        if relative_path not in packages:
             if not source.is_file():
                 row['status'] = 'locked-package-not-staged'
                 continue
-            data = read(source, 'source:' + lock['sourceHost'] + ':' + lock['sourceRoot'] + '/' + relative.as_posix())
-            require(len(data) == pin['bytes'] and digest(data) == pin['sha256'], 'Locked source package hash/length mismatch: ' + relative.as_posix())
+            data = read(source, 'source:' + lock['sourceHost'] + ':' + lock['sourceRoot'] + '/' + relative_path)
+            require(len(data) == pin['bytes'] and digest(data) == pin['sha256'], 'Locked source package hash/length mismatch: ' + relative_path)
             package = Package(data, source.name)
-            package_identity = {'host': lock['sourceHost'], 'path': lock['sourceRoot']+'/'+relative.as_posix(),
-                'relativePath': relative.as_posix(), 'sha256': digest(data), 'bytes': len(data), 'format': package.summary,
+            package_identity = {'host': lock['sourceHost'], 'path': lock['sourceRoot']+'/'+relative_path,
+                'relativePath': relative_path, 'sha256': digest(data), 'bytes': len(data), 'format': package.summary,
                 'soundExports': sum(ex['className'] == 'Sound' for ex in package.exports)}
-            packages[pin['relativePath']] = (package, package_identity)
+            packages[relative_path] = (package, package_identity)
             result['packages'].append(package_identity)
-        package, package_identity = packages[pin['relativePath']]
+        package, package_identity = packages[relative_path]
         row['sourcePackage'] = package_identity
         status, export, candidates = object_match(package, reference)
         row['status'] = status
@@ -165,11 +164,8 @@ def run(args):
         name = 'native/'+digest(payload)+'.bin'
         writes[name] = payload
         row['nativePayloadFile'] = name
-        # Decoding is performed only after exact source joins and output setup.
         row['status'] = 'source-extracted-pending-decode'
 
-    # All source/format/hash failures above precede output creation. A supported
-    # source payload can still be an unsupported browser codec; retain it as gap.
     output.mkdir(parents=True, exist_ok=False)
     for relative, data in writes.items():
         target = output/relative
@@ -235,6 +231,7 @@ def main():
     parser.add_argument('--input-lock', type=Path, default=Path('recipes/native-inputs.lock.json'))
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
+    require_reference_client(args.client_snapshot)
     require(re.fullmatch('[a-fA-F0-9]{64}', args.config_sha256) is not None, 'Invalid supplied config hash')
     print(json.dumps(run(args), indent=2))
 

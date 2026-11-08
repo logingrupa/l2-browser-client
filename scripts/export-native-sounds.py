@@ -25,17 +25,16 @@ from native_assets import Converter, verify_archive
 from native_assets_lib.footstep_config import sound_payload
 from native_audio import decode_native_audio
 from native_catalog.ue2 import FormatError
+from reference_client_guard import require_reference_client
 
 ROOT = Path(__file__).resolve().parent.parent
-# Fixed local module: reuse established path/input guards, not its ambient
-# selection policy or run function. Never replace any of its module functions.
-_spec = importlib.util.spec_from_file_location('_native_sound_batch_helpers',
+map_audio_exporter_spec = importlib.util.spec_from_file_location('_native_sound_batch_helpers',
     Path(__file__).resolve().with_name('export-native-map-audio.py'))
-_helpers = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_helpers)
-require, digest, canonical, load_json = _helpers.require, _helpers.digest, _helpers.canonical, _helpers.load_json
-reject_links, relative_name, child, write_exact = _helpers.reject_links, _helpers.relative_name, _helpers.child, _helpers.write_exact
-Sources = _helpers.Sources
+map_audio_exporter_guards = importlib.util.module_from_spec(map_audio_exporter_spec)
+map_audio_exporter_spec.loader.exec_module(map_audio_exporter_guards)
+require, digest, canonical, load_json = map_audio_exporter_guards.require, map_audio_exporter_guards.digest, map_audio_exporter_guards.canonical, map_audio_exporter_guards.load_json
+reject_links, relative_name, child, write_exact = map_audio_exporter_guards.reject_links, map_audio_exporter_guards.relative_name, map_audio_exporter_guards.child, map_audio_exporter_guards.write_exact
+Sources = map_audio_exporter_guards.Sources
 SELECTION = 'all-Sound-exports-in-all-locked-uax-packages'
 FULL_OBJECT = re.compile(r'[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)+')
 RUNTIME = {'worldPlaybackConnected': False, 'nativePlaybackVerified': False,
@@ -98,7 +97,6 @@ def inventory(sources, recipe, packages):
     for expected in packages:
         name = expected['file']
         print('Inventory ' + name, file=sys.stderr, flush=True)
-        # Hash/length/missing-source failures are fatal and happen before writes.
         sources.read(name)
         row = {'source': sources.identity(name), 'expectedSounds': expected['expectedSounds']}
         package_rows.append(row)
@@ -155,8 +153,7 @@ def source_bytes(sources, row):
     return raw, payload
 
 
-def codec_result(output, row):
-    """Only expected decoding failures become unsupported; I/O failures stay fatal."""
+def decoded_audio_or_expected_codec_error(output, row):
     path = child(output, row['nativePayload']['path'])
     try:
         decoded, mime, metadata = decode_native_audio(path)
@@ -176,7 +173,7 @@ def cache_key(row, impl):
 
 def verify_product(output, row, result, impl, decoded):
     content = result['contentSha256']
-    require(isinstance(content, str) and _helpers.HASH.fullmatch(content), 'Unsafe cache content directory')
+    require(isinstance(content, str) and map_audio_exporter_guards.HASH.fullmatch(content), 'Unsafe cache content directory')
     folder_name = 'cache/' + content
     folder = child(output, folder_name)
     archive_path = child(folder, 'asset.l2asset')
@@ -208,7 +205,6 @@ def verify_product(output, row, result, impl, decoded):
             expected_paths.add(folder_name + '/' + member)
         product_hashes['asset.l2asset'] = content
         expected_paths.add(folder_name + '/asset.l2asset')
-    # Converter retains the exact original payload in its evidence folder.
     evidence_name = 'evidence/sound-' + row['export']['object'] + ('.ogg' if row['nativeSound']['nativeFormat'].casefold() == 'ogg' else '.wav')
     require(child(folder, evidence_name).read_bytes() == child(output, row['nativePayload']['path']).read_bytes(), 'Original converter evidence differs')
     expected_paths.add(folder_name + '/' + evidence_name)
@@ -252,7 +248,7 @@ def verify_output(output, owner, document, sources, allow_lock=False):
             continue
         require(child(output, row['nativePayload']['path']).read_bytes() == payload, 'Native payload differs')
         allowed.add(row['nativePayload']['path'])
-        decoded, error = codec_result(output, row)
+        decoded, error = decoded_audio_or_expected_codec_error(output, row)
         if error is not None:
             require(result == {'stableId': row['stableId'], 'status': 'unsupported-codec', 'error': error}, 'Unsupported codec result differs')
             continue
@@ -265,7 +261,7 @@ def verify_output(output, owner, document, sources, allow_lock=False):
               if path.is_file() and path.relative_to(output).as_posix() != '.run.lock'}
     require(actual == allowed, 'Unexpected or missing output file paths')
     manifest = load_json((output/'SHA256-MANIFEST.json').read_bytes())
-    require(manifest == {'schemaVersion': 1, 'files': _helpers.files_receipt(output)}, 'Output manifest/file/hash closure differs')
+    require(manifest == {'schemaVersion': 1, 'files': map_audio_exporter_guards.files_receipt(output)}, 'Output manifest/file/hash closure differs')
     return coverage
 
 
@@ -280,13 +276,7 @@ def readonly_snapshot(root):
     return result
 
 
-def prepare_reuse(previous, output, protected, owner, document, sources):
-    """Read-only validation of an older owned tree before destination creation.
-
-    Only the wrapper implementation pin may differ. Source inventory changes
-    are restricted to formerly rejected hyphenated names now fully parsed from
-    the identical package; all other fields and results retain their identities.
-    """
+def validate_previous_output_for_name_policy_reuse(previous, output, protected, owner, document, sources):
     require(not output.exists(), 'Cache import requires a fresh nonexistent destination')
     previous = output_path(previous, (*protected, output))
     require(previous.is_dir() and (previous/'run.json').is_file(), 'Reuse source is not a completed owned output')
@@ -294,7 +284,7 @@ def prepare_reuse(previous, output, protected, owner, document, sources):
     before = readonly_snapshot(previous)
     old_owner = load_json((previous/'run.json').read_bytes())
     old_wrapper = old_owner['implementation']['files']['export-native-sounds.py']
-    require(isinstance(old_wrapper, str) and _helpers.HASH.fullmatch(old_wrapper), 'Invalid previous wrapper hash')
+    require(isinstance(old_wrapper, str) and map_audio_exporter_guards.HASH.fullmatch(old_wrapper), 'Invalid previous wrapper hash')
     compatible = load_json(canonical(old_owner))
     compatible['implementation']['files']['export-native-sounds.py'] = owner['implementation']['files']['export-native-sounds.py']
     require(compatible == owner, 'Reuse inputs/settings/tool or non-wrapper implementation differs')
@@ -307,7 +297,7 @@ def prepare_reuse(previous, output, protected, owner, document, sources):
             continue
         require(old.get('status') == 'unsupported-source-record' and current.get('status') == 'source-ready' and
                 old.get('error') == 'Unsupported full object identifier' and
-                _helpers.REFERENCE.fullmatch(current['export']['object']) is None and
+                map_audio_exporter_guards.REFERENCE.fullmatch(current['export']['object']) is None and
                 FULL_OBJECT.fullmatch(current['export']['object']) is not None,
                 'Reuse inventory change is not a qualified name-policy promotion')
         previous_row = {key: value for key, value in current.items() if key not in ('nativeSound', 'nativePayload')}
@@ -317,8 +307,6 @@ def prepare_reuse(previous, output, protected, owner, document, sources):
         promotions.append(current['stableId'])
     reconciled['counts']['unsupportedSourceRecords'] += len(promotions)
     require(reconciled == old_document, 'Reuse inventory differs beyond qualified source promotions')
-    # Reuse the full original verifier with the old document, whose only allowed
-    # difference was established above against freshly decoded current sources.
     coverage = verify_output(previous, old_owner, old_document, sources)
     require(readonly_snapshot(previous) == before, 'Reuse source changed during validation')
     cache_paths = [name for name in sorted(before) if name.startswith('cache/')]
@@ -327,9 +315,7 @@ def prepare_reuse(previous, output, protected, owner, document, sources):
             'promotions': promotions, 'manifestSha256': before['SHA256-MANIFEST.json']['sha256']}
 
 
-def import_verified_cache(reuse, output):
-    # Copy only the fully verified file graph into the new owned destination.
-    # No links, cache rebasing, source edits or old output writes are performed.
+def copy_verified_cache_files(reuse, output):
     for name in reuse['cachePaths']:
         data = child(reuse['root'], name).read_bytes()
         expected = reuse['before'][name]
@@ -357,7 +343,7 @@ def run(args):
              'inputLockSha256': digest(lock_bytes), 'source': recipe['source'], 'implementation': implementation(),
              'settings': {'selection': SELECTION, 'audioAdapter': 'native_assets.Converter',
                           'matching': 'exact-export-table-identity-no-configuration-resolution', 'runtimeStaging': False}}
-    reuse = prepare_reuse(reuse_from, output, protected, owner, document, sources) if reuse_from else None
+    reuse = validate_previous_output_for_name_policy_reuse(reuse_from, output, protected, owner, document, sources) if reuse_from else None
     prior = verify_output(output, owner, document, sources) if output.exists() else None
     require(not args.verify_only or prior is not None, 'Verify-only requires completed existing output')
     hits = 0
@@ -372,7 +358,7 @@ def run(args):
             write_exact(output, 'inventory.json', canonical(document))
             if reuse:
                 print('Importing %d verified cached Sounds' % len(reuse['reusedIds']), file=sys.stderr, flush=True)
-                import_verified_cache(reuse, output)
+                copy_verified_cache_files(reuse, output)
             converter = Converter(snapshot, output/'cache', args.umodel)
             results = []
             for index, row in enumerate(document['sounds'], 1):
@@ -386,12 +372,10 @@ def run(args):
                     result.update(status='unsupported-source-record', error=row['error'])
                     continue
                 write_exact(output, row['nativePayload']['path'], payload)
-                decoded, error = codec_result(output, row)
+                decoded, error = decoded_audio_or_expected_codec_error(output, row)
                 if error is not None:
                     result.update(status='unsupported-codec', error=error)
                     continue
-                # Once source parsing/decoding has succeeded, converter and
-                # validation exceptions are fatal, never relabeled unsupported.
                 converted = converter.convert(request_for(row))
                 require(not prior or converted.get('cacheHit') is True, 'Unchanged repeat missed converter cache')
                 require(not reuse or row['stableId'] not in reuse['reusedIds'] or converted.get('cacheHit') is True,
@@ -402,11 +386,11 @@ def run(args):
                 result.update(status='exported-and-verified', contentSha256=converted['sha256'])
                 products, _ = verify_product(output, row, result, owner['implementation'], decoded)
                 result['products'] = products
-                _helpers.clean_adapter_work(output/'cache')
+                map_audio_exporter_guards.clean_adapter_work(output/'cache')
             coverage = coverage_document(document, results)
             sources.verify_unchanged()
             write_exact(output, 'coverage.json', canonical(coverage))
-            write_exact(output, 'SHA256-MANIFEST.json', canonical({'schemaVersion': 1, 'files': _helpers.files_receipt(output)}))
+            write_exact(output, 'SHA256-MANIFEST.json', canonical({'schemaVersion': 1, 'files': map_audio_exporter_guards.files_receipt(output)}))
             verify_output(output, owner, document, sources, allow_lock=True)
         finally:
             (output/'.run.lock').unlink()
@@ -433,8 +417,10 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--verify-only', action='store_true')
     parser.add_argument('--reuse-from', type=Path, help='Read-only verified cache import from a completed owned output; fresh target only')
+    args = parser.parse_args()
     try:
-        result = run(parser.parse_args())
+        require_reference_client(args.client_snapshot)
+        result = run(args)
     except (ValueError, OSError, KeyError, TypeError, EOFError, wave.Error, struct.error) as error:
         print(canonical({'status': 'failed', 'error': str(error)}).decode('utf-8'), file=sys.stderr)
         return 1

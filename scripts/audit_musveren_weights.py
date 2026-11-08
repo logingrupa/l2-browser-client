@@ -18,22 +18,23 @@ import struct
 import sys
 
 from native_catalog.ue2 import Package, Reader
+from reference_client_guard import require_reference_client
 
 EXPECTED_SOURCE = '157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9'
 MESH = 'LineageMonsters.field_stalker_m00'
 SOURCE_REVISION = 'a0bfb468d42be831b126632fd8a0ae6b3614f981'
-# Reviewed source evidence; these are recorded definitions, not runtime inputs.
-FORMAT_SOURCE_PINS = {
+RECORDED_REVIEWED_FORMAT_SOURCE_PINS = {
     'Unreal/UnrealMesh/UnMesh2.h': '8557058200be31a6bd133e0a9bbd912b06360475dd10f7fcf085f311eb38dfcb',
     'Unreal/UnrealMesh/UnMesh2.cpp': 'c1c2778392b39aad168fe7a31893ea9f64b90e34945868d00b7bd948b373df46',
     'Unreal/Mesh/SkeletalMesh.cpp': 'e89dedb27660c014c78e27fada0841cf12536ade578afd44be201e34fea25517',
     'Exporters/ExportGLTF.cpp': '299f649d1d037b173fd150063f80653767ff512ee58e00802875b34d60a45e2c',
 }
 LOD_OFFSETS = (93356252, 93541284, 93666828, 93732662)
+BONE_FLAGS_FORMAT = 'I'
+JOINT_QUATERNION_POSITION_LENGTH_AND_SIZE_BYTES = 44
 
 
 def require(condition, message):
-    # These are input guards, so they must also execute under python -O.
     if not condition:
         raise ValueError(message)
 
@@ -43,7 +44,7 @@ def f32(value):
 
 
 def source_package(client):
-    path = Path(client).resolve(strict=True) / 'animations/LineageMonsters.ukx'
+    path = require_reference_client(client).require_equal_file('animations/LineageMonsters.ukx')
     raw = path.read_bytes()
     require(hashlib.sha256(raw).hexdigest() == EXPECTED_SOURCE, 'Research probe requires the exact reviewed LineageMonsters.ukx source hash')
     return path, Package(raw, path.name)
@@ -55,8 +56,8 @@ def source_bones(package, end):
     bones = []
     for _ in range(49):
         name = package.name(reader.compact())
-        reader.number('I')  # Flags
-        reader.take(44)  # VJointPos: quaternion, position, length, size
+        reader.number(BONE_FLAGS_FORMAT)
+        reader.take(JOINT_QUATERNION_POSITION_LENGTH_AND_SIZE_BYTES)
         children, parent = reader.number('i'), reader.number('i')
         require(0 <= parent < 49 and 0 <= children < 49, 'Native bone hierarchy exceeds bounds')
         bones.append({'name': name, 'parent': parent})
@@ -86,8 +87,7 @@ def source_arrays(package, end, offset):
     return result
 
 
-def packed(influences):
-    """Independent replay of reviewed ConvertWedges/FinalizeMesh float-to-byte steps."""
+def umodel_convert_wedges_and_finalize_mesh_packed_weights(influences):
     require(1 <= len(influences) <= 4, 'Native influence count is outside the reviewed range')
     entries = [[bone, round(f32(weight * 255))] for bone, weight in influences]
     cleanup, duplicate, zeros = False, False, 0
@@ -130,7 +130,7 @@ def audit_lods(package, end):
         changed_points, merged_points, renormalized_points = set(), set(), set()
         max_detail, converted = None, {}
         for wedge, (point, u, v) in enumerate(wedges):
-            entries, info = packed(by_point[point])
+            entries, info = umodel_convert_wedges_and_finalize_mesh_packed_weights(by_point[point])
             converted[wedge] = entries
             counts.update(key for key in ('cleanup', 'duplicate', 'renormalized') if info[key])
             counts['zeroInfluencesRemoved'] += info['zeroInfluences']
@@ -235,7 +235,7 @@ def audit(client, asset_directory):
     return {'schemaVersion': 1, 'nativeSourceSha256': EXPECTED_SOURCE, 'nativeSourcePath': str(native_path), 'mesh': MESH,
             'meshExportOffset': mesh['offset'], 'meshExportBytes': mesh['size'],
             'boneArrayOffset': 93297913, 'boneArrayEnd': 93300756,
-            'formatSourceRevision': SOURCE_REVISION, 'formatSourcePins': FORMAT_SOURCE_PINS,
+            'formatSourceRevision': SOURCE_REVISION, 'formatSourcePins': RECORDED_REVIEWED_FORMAT_SOURCE_PINS,
             'probeSha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
             'probeScope': 'Exact source-hash-specific bounded lazy-array research probe, not a production geometry decoder.',
             'lods': reports,
@@ -255,6 +255,7 @@ def main():
     parser.add_argument('--asset-directory', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
+    require_reference_client(args.client)
     output = args.output.resolve()
     require(output.suffix.lower() == '.json', 'Audit output must be a JSON report')
     for source in (args.client, args.asset_directory, Path(__file__).parent):
