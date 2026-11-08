@@ -4,7 +4,7 @@
 >
 > Current rules that override this brief: Babylon.js Editor is an optional viewer, off the build and runtime path (DEC-OWN-8), so the Editor template and editable-environment rules below do not apply. The current scope is [docs/PORT_SCOPE.md](../docs/PORT_SCOPE.md).
 
-Implement and verify a standalone Babylon.js + strict TypeScript browser client in https://github.com/logingrupa/l2-browser-client. Reuse proven rendering code from an earlier sibling project after reviewing its license (superseded: the repository is now self-contained, no paths outside it). Deliver a working synthetic demo, not just a proposal.
+Implement and verify a standalone Babylon.js + strict TypeScript browser client in https://github.com/logingrupa/l2-browser-client. Reuse proven rendering code from an earlier sibling project after reviewing its license (superseded 2026-11-08: the repository no longer depends on that project). Deliver a working synthetic demo, not just a proposal.
 
 The detailed requirements, folder structure and acceptance checks for this brief are history in git; this prompt summarizes them.
 
@@ -13,7 +13,7 @@ The detailed requirements, folder structure and acceptance checks for this brief
 - Start with Babylon.js Editor v5's native Vanilla template. Preserve its `.bjseditor` metadata, editable scenes, required paths and supported workflow. Use Vite only where compatible.
 - Use pnpm exclusively, pin its version and commit `pnpm-lock.yaml`. Do not generate npm or yarn lockfiles. Use Vitest and Playwright.
 - Use clear English identifiers, meaningful boolean names, no abbreviations or Hungarian notation, no `any`, and small cohesive modules. Preserve required external API names and serialized contracts.
-- Inspect the seven sibling-project files listed in the details. Adapt reusable rendering code; remove SpacetimeDB, Evenfall gameplay and server-simulation dependencies. Record provenance and attribution. Treat the sibling project as read-only: never modify or deploy it, or run its server, lab or database commands. (Superseded 2026-11-08: no paths outside this repository.)
+- Inspect the seven sibling-project files listed in the details. Adapt reusable rendering code; remove SpacetimeDB, Evenfall gameplay and server-simulation dependencies. Record provenance and attribution. Treat the sibling project as read-only: never modify or deploy it, or run its server, lab or database commands. (Superseded 2026-11-08: the repository no longer depends on that project.)
 
 ## Implementation
 

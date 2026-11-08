@@ -117,7 +117,7 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 | Production deployment | Excluded in every source |
 | Client-side gameplay math, quests logic, progression, gacha | DEC-PORT-3: client displays server outcomes |
 | Publishing converted Lineage II binaries or audio | Stay untracked and local |
-| Copying source or assets from workspaces outside this repository | No redistribution licence |
+| Copying source or assets from the retired sibling browser-client workspaces | No redistribution licence |
 | Elbera three.js runtime, pinned verifiers, smart JSON gateway | DEC-PORT-6 / DEC-PORT-4 |
 | Legacy Direct3D internals for their own sake | DEC-ARCH-1 |
 
