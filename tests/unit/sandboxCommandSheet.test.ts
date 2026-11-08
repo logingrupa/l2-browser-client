@@ -3,7 +3,7 @@ import { DevSheet, type DevSection } from "../../src/ui/devSheet/DevSheet";
 import type { NativeCatalogIndex, NativeCatalogLookup } from "../../src/assets/native/nativeCatalogIndex";
 import { powerStrikeEffectBundleId } from "../../src/effects/nativeEffectComponents";
 import { attachSandboxCommandSheet } from "../../src/runtime/attachSandboxCommandSheet";
-import type { WorldCommand, WorldEvent } from "../../src/world/worldTypes";
+import type { WorldCommand, WorldEntity, WorldEvent } from "../../src/world/worldTypes";
 import { fakeMedia, fire, installMiniDom, type FakeElement, type MiniDom } from "./support/miniDom";
 
 const convertedLookups: ReadonlyMap<string, NativeCatalogLookup> = new Map<string, NativeCatalogLookup>([
@@ -32,16 +32,25 @@ function sandboxSection(): DevSection {
   return sheet.section("sandbox", { title: "Sandbox" });
 }
 
-function attachWithFakes(selectedEntityId: string | null = "native-musveren", indexFailure: string | null = null) {
+const localPlayer: WorldEntity = { id: "local-player", kind: "local-player", displayName: "Human male fighter", position: { x: 0, y: 0, z: 0 },
+  orientationRadians: 0, health: 100, maximumHealth: 100, animation: "idle" };
+
+function acceptedEvent(command: WorldCommand): WorldEvent | null {
+  if (command.type === "cast-skill") return { type: "skill-cast", casterId: "local-player", skillId: command.skillId, level: command.level,
+    ...(command.targetId === undefined ? {} : { targetId: command.targetId }) };
+  if (command.type === "spawn-npc") return { type: "spawn", entity: { ...localPlayer, id: `npc-${command.npcId}-1`, kind: "monster", npcId: command.npcId } };
+  if (command.type === "equip-item" && command.itemId !== null) return { type: "update", entity: { ...localPlayer, equipment: { [command.slot]: command.itemId } } };
+  return null;
+}
+
+function attachWithFakes(selectedEntityId: string | null = "native-musveren", indexFailure: string | null = null, adapterAcceptsCommands = true) {
   const dispatched: WorldCommand[] = [];
   const listeners = new Set<(event: WorldEvent) => void>();
   const adapter = {
     dispatch: vi.fn((command: WorldCommand) => {
       dispatched.push(command);
-      if (command.type === "cast-skill") {
-        for (const listener of listeners) listener({ type: "skill-cast", casterId: "local-player", skillId: command.skillId, level: command.level,
-          ...(command.targetId === undefined ? {} : { targetId: command.targetId }) });
-      }
+      const event = adapterAcceptsCommands ? acceptedEvent(command) : null;
+      if (event) for (const listener of [...listeners]) listener(event);
     }),
     subscribe: vi.fn((listener: (event: WorldEvent) => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; }),
   };
@@ -143,6 +152,28 @@ describe("sandbox open window by ID", () => {
     expect(dispatched).toEqual([]);
     expect(note("sandbox-open-window")[0]!.textContent).toBe("window:StatusWnd not in catalog: interface windows are not converted yet (UI-01)");
     expect(note("sandbox-open-window")[0]!.dataset.tone).toBe("warning");
+  });
+});
+
+describe("sandbox notes follow the adapter's response", () => {
+  it.each([
+    ["sandbox-spawn-npc", { npcId: "21622" }, "npc:21622: spawn rejected by the adapter"],
+    ["sandbox-equip-item", { itemId: "22" }, "item:22: equip rejected by the adapter"],
+    ["sandbox-cast-skill", { skillId: "3", level: "1" }, "skill:3:1: cast rejected by the adapter"],
+  ])("reports %s as rejected when the adapter emits no matching event", (testId, values, expectedNote) => {
+    const { dispatched, powerStrike, submit, note } = attachWithFakes("native-musveren", null, false);
+    submit(testId, values);
+    expect(dispatched).toHaveLength(1);
+    expect(note(testId)[0]!.textContent).toBe(expectedNote);
+    expect(note(testId)[0]!.dataset.tone).toBe("warning");
+    expect(powerStrike.start).not.toHaveBeenCalled();
+  });
+
+  it("leaves no acceptance listener subscribed after a dispatch", () => {
+    const { listeners, submit } = attachWithFakes();
+    const subscribedBeforeDispatch = listeners.size;
+    submit("sandbox-spawn-npc", { npcId: "21622" });
+    expect(listeners.size).toBe(subscribedBeforeDispatch);
   });
 });
 

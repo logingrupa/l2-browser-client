@@ -5,12 +5,14 @@ import { powerStrikeEffectBundleId } from "../effects/nativeEffectComponents";
 import type { NativePowerStrikePreview } from "../effects/nativePowerStrikePreview";
 import type { DevGroup, DevSection } from "../ui/devSheet/DevSheet";
 import type { GameWorldAdapter } from "../world/GameWorldAdapter";
-import type { EquipmentSlot, WorldEvent } from "../world/worldTypes";
+import type { EquipmentSlot, WorldCommand, WorldEvent } from "../world/worldTypes";
 import { resolveSandboxNpcPresentation, type SandboxAppearanceOfModel, type SandboxNpcPresentation } from "./sandboxNpcVisual";
+
+type SandboxCommandAdapter = Pick<GameWorldAdapter, "dispatch" | "subscribe">;
 
 export interface SandboxCommandSheetContext {
   readonly section: DevSection;
-  readonly adapter: Pick<GameWorldAdapter, "dispatch" | "subscribe">;
+  readonly adapter: SandboxCommandAdapter;
   readonly index: NativeCatalogIndex;
   readonly indexFailure: string | null;
   readonly appearanceOfModel: SandboxAppearanceOfModel;
@@ -34,6 +36,13 @@ function submittedName(values: SubmittedValues, name: string): string {
   const value = values[name];
   if (typeof value !== "string") throw new Error(`Sandbox field ${name} was not submitted as a name.`);
   return value;
+}
+
+function dispatchAndObserveAcceptance(adapter: SandboxCommandAdapter, command: WorldCommand, isAcceptance: (event: WorldEvent) => boolean): boolean {
+  let accepted = false;
+  const unsubscribe = adapter.subscribe(event => { if (isAcceptance(event)) accepted = true; });
+  try { adapter.dispatch(command); } finally { unsubscribe(); }
+  return accepted;
 }
 
 function createResultNote(group: DevGroup, testId: string): (text: string, tone: ResultTone) => void {
@@ -68,9 +77,11 @@ function attachSpawnNpcGroup(context: SandboxCommandSheetContext): void {
     ],
     onSubmit: values => {
       const npcId = submittedInteger(values, "npcId");
-      context.adapter.dispatch({ type: "spawn-npc", npcId });
+      const accepted = dispatchAndObserveAcceptance(context.adapter, { type: "spawn-npc", npcId },
+        event => event.type === "spawn" && event.entity.npcId === npcId);
       lastSpawn = resolveSandboxNpcPresentation(context.index, npcId, context.appearanceOfModel);
-      showResult(describeSpawnPresentation(lastSpawn), "missingAssetDiagnostic" in lastSpawn ? "warning" : "info");
+      if (!accepted) showResult(`${lastSpawn.key}: spawn rejected by the adapter`, "warning");
+      else showResult(describeSpawnPresentation(lastSpawn), "missingAssetDiagnostic" in lastSpawn ? "warning" : "info");
     },
   });
 }
@@ -91,9 +102,11 @@ function attachEquipItemGroup(context: SandboxCommandSheetContext): void {
     ],
     onSubmit: values => {
       const itemId = submittedInteger(values, "itemId");
-      context.adapter.dispatch({ type: "equip-item", slot: sandboxEquipmentSlot, itemId });
+      const accepted = dispatchAndObserveAcceptance(context.adapter, { type: "equip-item", slot: sandboxEquipmentSlot, itemId },
+        event => event.type === "update" && event.entity.id === "local-player" && event.entity.equipment?.[sandboxEquipmentSlot] === itemId);
       lastLookup = context.index.lookup(itemCatalogKey(itemId));
-      showResult(describeNativeCatalogLookup(lastLookup), lookupTone(lastLookup));
+      if (!accepted) showResult(`${lastLookup.key}: equip rejected by the adapter`, "warning");
+      else showResult(describeNativeCatalogLookup(lastLookup), lookupTone(lastLookup));
     },
   });
 }
@@ -115,9 +128,11 @@ function attachCastSkillGroup(context: SandboxCommandSheetContext): void {
     onSubmit: values => {
       const skillId = submittedInteger(values, "skillId"), level = submittedInteger(values, "level");
       const targetId = context.selectedEntityId();
-      context.adapter.dispatch({ type: "cast-skill", skillId, level, ...(targetId === null ? {} : { targetId }) });
+      const accepted = dispatchAndObserveAcceptance(context.adapter, { type: "cast-skill", skillId, level, ...(targetId === null ? {} : { targetId }) },
+        event => event.type === "skill-cast" && event.skillId === skillId && event.level === level);
       lastLookup = context.index.lookup(skillCatalogKey(skillId, level));
-      showResult(describeNativeCatalogLookup(lastLookup), lookupTone(lastLookup));
+      if (!accepted) showResult(`${lastLookup.key}: cast rejected by the adapter`, "warning");
+      else showResult(describeNativeCatalogLookup(lastLookup), lookupTone(lastLookup));
     },
   });
 }
