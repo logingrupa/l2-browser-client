@@ -13,7 +13,7 @@ vi.mock("../../src/assets/native/loadNativeCatalog", () => ({ loadNativeActorCat
 vi.mock("../../src/assets/native/readNativeCatalog", async importOriginal => ({
   ...await importOriginal<typeof import("../../src/assets/native/readNativeCatalog")>(),
   readNativeCatalog: async () => ({ schemaVersion: 1, models: [], textures: [], sections: [], movers: [], npcProfiles: [], playerProfiles: [],
-    animationAudio: [], combatAudio: [], worldAudio: [], effectComponents: [] }),
+    animationAudio: [], combatAudio: [], worldAudio: [], effectComponents: [], tables: [], windows: [], tiles: [], servedCatalogSha256: "c".repeat(64) }),
 }));
 
 const settings: NativeSliceSettings = { origin: new Vector3(0, 0, 0), leatherShirt: false };

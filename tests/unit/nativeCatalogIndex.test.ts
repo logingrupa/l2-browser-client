@@ -21,6 +21,7 @@ async function npcProfileManifest(profiles: unknown[]) {
 
 function serveFiles(files: ReadonlyMap<string, Uint8Array>) {
   vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+    if (url === "/l2/coverage.json") return new Response("missing", { status: 404 });
     const bytes = files.get(url);
     if (!bytes) throw new Error(`Unexpected request ${url}`);
     return new Response(bytes.slice());
@@ -33,7 +34,8 @@ function model(id: string, sourceObject: string) {
 
 function catalogWith(slices: Partial<NativeCatalog>): NativeCatalog {
   return { schemaVersion: 1, models: [], textures: [], sections: [], movers: [], npcProfiles: [], playerProfiles: [],
-    animationAudio: [], combatAudio: [], worldAudio: [], effectComponents: [], ...slices };
+    animationAudio: [], combatAudio: [], worldAudio: [], effectComponents: [], tables: [], windows: [], tiles: [],
+    servedCatalogSha256: "c".repeat(64), ...slices };
 }
 
 async function inlineCatalog(profiles: unknown[] = [musverenProfile, unconvertedProfile]) {
@@ -127,6 +129,98 @@ describe("native catalog L2-ID index", () => {
     expect(() => windowCatalogKey("W".repeat(65))).toThrow(RangeError);
     expect(() => tileCatalogKey("20-20")).toThrow(RangeError);
     expect(() => tileCatalogKey("2_20")).toThrow(RangeError);
+  });
+});
+
+const goldenStoreRoot = "tests/fixtures/golden/l2";
+const catalogIndexKeysFixturePath = "tests/fixtures/catalog-index-keys.json";
+
+function serveGoldenStore() {
+  vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+    const path = `${goldenStoreRoot}${url.replace(/^\/l2/, "")}`;
+    if (!url.startsWith("/l2/") || !existsSync(path)) return new Response("missing", { status: 404 });
+    return new Response(await readFile(path));
+  }));
+}
+
+async function goldenCatalogIndex() {
+  serveGoldenStore();
+  const signal = new AbortController().signal;
+  const catalog = await readNativeCatalog(signal);
+  return { catalog, index: await buildNativeCatalogIndex(catalog, signal) };
+}
+
+async function catalogIndexKeysFixture(): Promise<readonly string[]> {
+  return (JSON.parse(await readFile(catalogIndexKeysFixturePath, "utf-8")) as { keys: string[] }).keys;
+}
+
+const tileManifestSha256 = "bda58735e24af8da075d8acc808efdb632711c9f5ea6fa60067a7ccbc5bde5ef";
+function tileRecord(id: string, overrides: Record<string, unknown> = {}) {
+  return { id, manifest: `/l2/tiles/${tileManifestSha256}/tile.json`, manifestSha256: tileManifestSha256, manifestBytes: 620, ...overrides };
+}
+
+async function indexOf(slices: Partial<NativeCatalog>) {
+  serveFiles(new Map());
+  return buildNativeCatalogIndex(catalogWith(slices), new AbortController().signal);
+}
+
+describe("native catalog L2-ID index on the golden catalog", () => {
+  it("reads tile 00_00 from the tiles record of the golden catalog bytes", async () => {
+    const { catalog, index } = await goldenCatalogIndex();
+    expect(catalog.servedCatalogSha256).toBe(await sha256(new Uint8Array(await readFile(`${goldenStoreRoot}/catalog.json`))));
+    expect(index.lookup(tileCatalogKey("00_00"))).toEqual({ status: "converted", key: "tile:00_00", record: { tile: "00_00", tileCatalogId: "00_00",
+      manifest: `/l2/tiles/${tileManifestSha256}/tile.json`, manifestSha256: tileManifestSha256, manifestBytes: 620 } });
+  });
+
+  it("derives only keys that the 02-04 key fixture lists", async () => {
+    const { index } = await goldenCatalogIndex();
+    const fixtureKeys = await catalogIndexKeysFixture();
+    for (const key of index.keys("")) expect(fixtureKeys, key).toContain(key);
+  });
+});
+
+describe("native catalog tile records", () => {
+  it.each([
+    ["a manifest outside /l2/tiles", tileRecord("20_20", { manifest: `/l2/maps/${tileManifestSha256}/tile.json` })],
+    ["a path SHA-256 that differs from the pin", tileRecord("20_20", { manifestSha256: "d".repeat(64) })],
+    ["a malformed tile id", tileRecord("0_00")],
+    ["an extra field", tileRecord("20_20", { sectionId: "map-20-20-section" })],
+    ["a missing manifestBytes", (({ manifestBytes: _manifestBytes, ...rest }) => rest)(tileRecord("20_20"))],
+    ["manifestBytes over 8,000,000", tileRecord("20_20", { manifestBytes: 8_000_001 })],
+    ["manifestBytes of zero", tileRecord("20_20", { manifestBytes: 0 })],
+  ])("refuses a tiles record with %s", async (_label, record) => {
+    await expect(indexOf({ tiles: [record] })).rejects.toThrow("Native catalog tiles entry is invalid.");
+  });
+
+  it("answers a tile from its tiles record and an adjacent tile from a legacy section", async () => {
+    const index = await indexOf({ tiles: [tileRecord("20_20")], sections: [{ id: "map-20-21-section" }] });
+    expect(index.lookup(tileCatalogKey("20_20"))).toMatchObject({ status: "converted", record: { tile: "20_20", tileCatalogId: "20_20" } });
+    expect(index.lookup(tileCatalogKey("20_21"))).toEqual({ status: "converted", key: "tile:20_21", record: { tile: "20_21", sectionId: "map-20-21-section" } });
+    expect(index.keys("tile:")).toEqual(["tile:20_20", "tile:20_21"]);
+  });
+
+  it("keeps one entry from the tiles record when a legacy section names the same tile", async () => {
+    const index = await indexOf({ tiles: [tileRecord("20_20")], sections: [{ id: "map-20-20-section" }] });
+    expect(index.lookup(tileCatalogKey("20_20"))).toMatchObject({ status: "converted", record: { tileCatalogId: "20_20" } });
+    expect(index.keys("tile:")).toEqual(["tile:20_20"]);
+  });
+
+  it("refuses two tiles records with one id", async () => {
+    await expect(indexOf({ tiles: [tileRecord("20_20"), tileRecord("20_20")] })).rejects.toThrow("Native catalog has duplicate entries for tile:20_20.");
+  });
+
+  it("lists tile keys in lexical order, identically across two builds of one catalog", async () => {
+    const slices = { tiles: [tileRecord("21_20"), tileRecord("19_22")], sections: [{ id: "map-20-21-section" }] };
+    const first = await indexOf(slices), second = await indexOf(slices);
+    expect(first.keys("tile:")).toEqual(["tile:19_22", "tile:20_21", "tile:21_20"]);
+    expect(second.keys("tile:")).toEqual(first.keys("tile:"));
+  });
+
+  it("answers not in catalog for every tile key of a catalog without tiles and sections", async () => {
+    const index = await indexOf({});
+    for (const tile of ["00_00", "20_20", "20_21"]) {
+      expect(index.lookup(tileCatalogKey(tile))).toEqual({ status: "not-in-catalog", key: `tile:${tile}`, reason: "not in catalog" });
+    }
   });
 });
 

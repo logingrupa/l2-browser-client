@@ -8,7 +8,8 @@ const pendingNpcProfileRecord = { id: "native-npc-profiles", manifest: `/l2/npc-
 
 function catalogWith(slices: Partial<NativeCatalog>): NativeCatalog {
   return { schemaVersion: 1, models: [], textures: [], sections: [], movers: [], npcProfiles: [], playerProfiles: [],
-    animationAudio: [], combatAudio: [], worldAudio: [], effectComponents: [], ...slices };
+    animationAudio: [], combatAudio: [], worldAudio: [], effectComponents: [], tables: [], windows: [], tiles: [],
+    servedCatalogSha256: "c".repeat(64), ...slices };
 }
 
 function holdEveryFetchUntilAbort() {

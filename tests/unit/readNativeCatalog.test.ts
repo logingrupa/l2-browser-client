@@ -1,5 +1,9 @@
+import { readFile } from "node:fs/promises";
 import { describe, expect, it, vi } from "vitest";
 import { NativeStoreNotStagedError, readNativeCatalog } from "../../src/assets/native/readNativeCatalog";
+import { sha256 } from "../../src/assets/package/readAssetPackage";
+
+const goldenCatalogPath = "tests/fixtures/golden/l2/catalog.json";
 
 function catalogFetch(response: () => Response) {
   return vi.fn(async (_url: string | URL | Request) => response()) as unknown as typeof fetch & ReturnType<typeof vi.fn>;
@@ -39,8 +43,38 @@ describe("native catalog reader", () => {
     ["missing models", { schemaVersion: 1 }],
     ["a non-array sections slice", { schemaVersion: 1, models: [], sections: {} }],
     ["an array body", [{ schemaVersion: 1, models: [] }]],
+    ["a non-array tiles slice", { schemaVersion: 1, models: [], tiles: {} }],
+    ["a non-array tables slice", { schemaVersion: 1, models: [], tables: "npcgrp" }],
+    ["a non-array windows slice", { schemaVersion: 1, models: [], windows: null }],
+    ["a sourceCatalogSha256 that is not 64 hex", { schemaVersion: 1, models: [], sourceCatalogSha256: "abc" }],
+    ["an upper-case sourceCatalogSha256", { schemaVersion: 1, models: [], sourceCatalogSha256: "A".repeat(64) }],
   ])("rejects a catalog with %s", async (_label, body) => {
     await expect(readNativeCatalog(new AbortController().signal, catalogFetch(() => Response.json(body))))
+      .rejects.toThrow("Native asset catalog is invalid.");
+  });
+
+  it("keeps the tiles, tables and windows slices and the SHA-256 of the served golden catalog bytes", async () => {
+    const bytes = new Uint8Array(await readFile(goldenCatalogPath));
+    const catalog = await readNativeCatalog(new AbortController().signal, catalogFetch(() => new Response(bytes.slice())));
+    expect(catalog.tiles).toEqual([expect.objectContaining({ id: "00_00" })]);
+    expect(catalog.tables).toEqual([expect.objectContaining({ id: "syntheticfixture", recordCount: 1 })]);
+    expect(catalog.windows).toEqual([expect.objectContaining({ id: "SyntheticFixtureWnd" })]);
+    expect(catalog.servedCatalogSha256).toBe(await sha256(bytes));
+    expect(catalog).not.toHaveProperty("sourceCatalogSha256");
+  });
+
+  it("keeps a lane catalog's sourceCatalogSha256 and fills absent new slices with empty arrays", async () => {
+    const catalog = await readNativeCatalog(new AbortController().signal,
+      catalogFetch(() => Response.json({ schemaVersion: 1, models: [], sourceCatalogSha256: "e".repeat(64) })));
+    expect(catalog.sourceCatalogSha256).toBe("e".repeat(64));
+    expect(catalog.tiles).toEqual([]);
+    expect(catalog.tables).toEqual([]);
+    expect(catalog.windows).toEqual([]);
+    expect(catalog.servedCatalogSha256).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it("rejects a body that is not UTF-8 as an invalid catalog", async () => {
+    await expect(readNativeCatalog(new AbortController().signal, catalogFetch(() => new Response(new Uint8Array([0x7b, 0xff, 0x7d])))))
       .rejects.toThrow("Native asset catalog is invalid.");
   });
 

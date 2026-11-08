@@ -1,5 +1,6 @@
 import { loadNativeNpcProfiles } from "./loadNativeNpcProfiles";
 import { loadNativePlayerProfiles } from "./loadNativePlayerProfiles";
+import { readTileCatalogRecord, type NativeTileManifestCatalogRecord } from "./nativeCatalogRecords";
 import type { NativeCatalog } from "./readNativeCatalog";
 
 export interface NativeNpcCatalogRecord { readonly npcId: number; readonly profileId: string; readonly modelCatalogId: string }
@@ -8,7 +9,8 @@ export interface NativeItemCatalogRecord {
 }
 export interface NativeSkillCatalogRecord { readonly skillId: number; readonly level: number; readonly effectComponentId: string }
 export interface NativeTileCatalogRecord { readonly tile: string; readonly sectionId: string }
-export type NativeCatalogRecord = NativeNpcCatalogRecord | NativeItemCatalogRecord | NativeSkillCatalogRecord | NativeTileCatalogRecord;
+export type NativeCatalogRecord =
+  | NativeNpcCatalogRecord | NativeItemCatalogRecord | NativeSkillCatalogRecord | NativeTileCatalogRecord | NativeTileManifestCatalogRecord;
 
 export type NativeCatalogLookup =
   | { readonly status: "converted"; readonly key: string; readonly record: NativeCatalogRecord }
@@ -132,6 +134,11 @@ export async function buildNativeCatalogIndex(catalog: NativeCatalog, signal: Ab
     addEntry({ status: "converted", key: skillCatalogKey(skillId, level), record: { skillId, level, effectComponentId: component.id } });
   }
 
+  for (const value of catalog.tiles) {
+    const record = readTileCatalogRecord(value);
+    addEntry({ status: "converted", key: tileCatalogKey(record.tile), record });
+  }
+
   const sectionIds = new Set<string>();
   for (const value of catalog.sections) {
     const section = catalogRecordIdentity(value, "section");
@@ -140,7 +147,9 @@ export async function buildNativeCatalogIndex(catalog: NativeCatalog, signal: Ab
     const match = sectionTilePattern.exec(section.id);
     if (!match) continue;
     const tile = `${match[1]}_${match[2]}`;
-    addEntry({ status: "converted", key: tileCatalogKey(tile), record: { tile, sectionId: section.id } });
+    const key = tileCatalogKey(tile);
+    if (entries.has(key)) continue;
+    addEntry({ status: "converted", key, record: { tile, sectionId: section.id } });
   }
 
   signal.throwIfAborted();
