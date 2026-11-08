@@ -10,3 +10,7 @@ Out-of-scope problems found while executing a plan. Each is left for its owning 
 ## Found during 02-12
 
 - `pnpm vitest run tests/unit/laneOwnership.test.ts`, 2026-11-09 01:06 Riga, at commit 7ee97ad: 1 of 36 fails, "has an evidence doc for adapter-dispatch under 30 KB": `docs/parts/adapter-dispatch/EVIDENCE.md` is 33,680 bytes. Plan 02-12 did not touch that file (lane integration). Owner: the adapter-dispatch evidence writer (02-57, 02-59, 02-60), which must shorten the doc to its current facts.
+
+## Found during 02-20
+
+- `pnpm test:unit`, 2026-11-09 01:34 Riga, at commit 92e27d2: 15 failed of 1,878. Rerun of the 7 failing files alone: only the known `laneOwnership.test.ts` adapter-dispatch evidence size case fails (33,680 bytes, recorded under 02-12); the others are parallel-load timeouts as in the 02-01 baseline, plus the 2 known `nativeNpcProfiles` cases. Plan 02-20 touched none of those files.
