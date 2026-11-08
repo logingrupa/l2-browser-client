@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "listVersion": 1,
+  "reasons": [
+    "conversion-pending",
+    "mesh-package-not-in-client:<package>",
+    "texture-package-not-in-client:<package>",
+    "package-name-ambiguous:<package>",
+    "skill-row-ambiguous:<count>"
+  ]
+}

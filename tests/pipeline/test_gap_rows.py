@@ -106,7 +106,6 @@ class GapReasonListTests(unittest.TestCase):
         with self.assertRaises(GapRowError):
             validate_gap_row(gap_row(reason='player-start-missing'))
         self.assertEqual(gap_reason_list_versions(repository_root=self.repository), {'seed': 1, 'world': 2})
-        self.assertEqual(gap_reason_list_versions(), {'seed': 1})
 
     def test_a_pattern_listed_in_two_files_is_refused(self):
         self.write_lane_reasons('actors', {'schemaVersion': 1, 'listVersion': 1, 'reasons': ['census-pending']})
@@ -133,7 +132,7 @@ class GapRowFileTests(unittest.TestCase):
         raw_path = self.gap_rows_folder / 'raw.json'
         self.assertEqual(json.loads(raw_path.read_text(encoding='utf-8')), document)
         self.assertEqual(document['schemaVersion'], 1)
-        self.assertEqual((document['lane'], document['step'], document['reasonListVersions']), ('world', 'raw', {'seed': 1}))
+        self.assertEqual((document['lane'], document['step'], document['reasonListVersions']), ('world', 'raw', gap_reason_list_versions()))
         self.assertEqual([row['key'] for row in document['rows']], ['map:Lobby', 'tile:20_21', 'tile:20_22'])
         first_bytes = raw_path.read_bytes()
         write_gap_rows(self.project, 'world', 'raw', list(reversed(rows)))
