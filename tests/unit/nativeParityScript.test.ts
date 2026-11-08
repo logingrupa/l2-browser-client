@@ -4,6 +4,7 @@ import { Scene } from "@babylonjs/core/scene";
 import { applyScriptOnObject } from "babylonjs-editor-tools";
 import type { createNativeSliceRuntime } from "../../src/runtime/createNativeSliceRuntime";
 import NativeParityScript from "../../src/scripts/nativeParity";
+import { nativeSandboxConfiguration } from "../../src/runtime/nativeSandboxConfiguration";
 
 const runtime = vi.hoisted(() => ({ start: vi.fn<typeof createNativeSliceRuntime>(), showError: vi.fn(),
   required: vi.fn(), register: vi.fn(), report: vi.fn() }));
@@ -34,6 +35,13 @@ describe("native Editor script lifetime", () => {
   afterEach(() => {
     script.onStop(); scene.dispose(); engine.dispose();
     vi.restoreAllMocks(); vi.unstubAllGlobals();
+  });
+
+  it("takes every field default from the typed native sandbox configuration", () => {
+    const { statusLabel: _statusLabel, source: _source, origin, materialTint, ...scalarSettings } = nativeSandboxConfiguration;
+    expect(script).toMatchObject(scalarSettings);
+    expect(script.origin.asArray()).toEqual(origin);
+    expect(script.materialTint.asArray()).toEqual(materialTint);
   });
 
   it("starts once through the pinned Editor loader and stops when the scene is disposed", async () => {

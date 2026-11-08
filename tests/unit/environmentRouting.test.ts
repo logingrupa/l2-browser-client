@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
 import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import type { Scene } from "@babylonjs/core/scene";
 import type { createNativeSliceRuntime } from "../../src/runtime/createNativeSliceRuntime";
 import { loadEnvironment } from "../../src/scene/loadEnvironment";
 import { isSceneStartupRequired } from "../../src/scene/prepareSceneForReveal";
@@ -16,7 +18,7 @@ vi.mock("babylonjs-editor-tools", () => ({ loadScene: boundary.loadEditorScene }
 vi.mock("../../src/scripts", () => ({ scriptsMap: {} }));
 vi.mock("../../src/scene/world/loadImportedWorld", () => ({ loadImportedWorld: boundary.importedWorld }));
 
-describe("native route without an Editor scene", () => {
+describe("environment routing", () => {
   let engine: NullEngine;
   beforeEach(() => {
     engine = new NullEngine();
@@ -70,5 +72,53 @@ describe("native route without an Editor scene", () => {
     finishStartup(lateStop);
     await Promise.resolve(); await Promise.resolve();
     expect(lateStop).toHaveBeenCalledTimes(1);
+  });
+
+  it("treats any authored value other than 1 as the code-built native route", async () => {
+    window.location.search = "?world=interlude&authored=0";
+    boundary.startRuntime.mockResolvedValue(vi.fn());
+    const scene = await loadEnvironment(engine);
+    expect(scene.activeCamera?.name).toBe("World camera");
+    expect(boundary.startRuntime).toHaveBeenCalledTimes(1);
+    expect(boundary.loadEditorScene).not.toHaveBeenCalled();
+  });
+
+  it("loads the authored native world through the Editor loader only under authored=1", async () => {
+    window.location.search = "?world=interlude&authored=1";
+    boundary.loadEditorScene.mockImplementation(async (_root: string, _file: string, loadedScene: Scene) => {
+      new ArcRotateCamera("World camera", 1.8, 1.15, 4.25, Vector3.Zero(), loadedScene);
+    });
+    const scene = await loadEnvironment(engine);
+    expect(isSceneStartupRequired(scene, "native-world")).toBe(true);
+    expect(boundary.loadEditorScene).toHaveBeenCalledExactlyOnceWith("/scene/", "native-world.babylon", scene, {},
+      { quality: "high", onProgress: expect.any(Function) });
+    expect(scene.activeCamera).toBe(scene.getCameraByName("World camera"));
+    expect(boundary.startRuntime).not.toHaveBeenCalled();
+  });
+
+  it("disposes the partial scene when the authored native world fails to load", async () => {
+    window.location.search = "?world=interlude&authored=1";
+    const failure = new Error("Offscreen binary geometry failed to load");
+    let loadedScene: Scene | undefined;
+    boundary.loadEditorScene.mockImplementation(async (_root: string, _file: string, sceneBeingLoaded: Scene) => {
+      loadedScene = sceneBeingLoaded;
+      throw failure;
+    });
+    await expect(loadEnvironment(engine)).rejects.toBe(failure);
+    expect(loadedScene?.isDisposed).toBe(true);
+    expect(engine.scenes).toHaveLength(0);
+  });
+
+  it.each(["?world=courtyard", "?world=courtyard&authored=1", "?authored=1"])("keeps the reference scene on the Editor loader for %s", async search => {
+    window.location.search = search;
+    boundary.importedWorld.mockResolvedValue(null);
+    boundary.loadEditorScene.mockImplementation(async (_root: string, _file: string, loadedScene: Scene) => {
+      new ArcRotateCamera("World camera", 1.8, 1.15, 4.25, Vector3.Zero(), loadedScene);
+    });
+    const scene = await loadEnvironment(engine);
+    expect(boundary.loadEditorScene).toHaveBeenCalledExactlyOnceWith("/scene/", "example.babylon", scene, {},
+      { quality: "high", onProgress: expect.any(Function) });
+    expect(isSceneStartupRequired(scene, "native-world")).toBe(false);
+    expect(boundary.startRuntime).not.toHaveBeenCalled();
   });
 });
