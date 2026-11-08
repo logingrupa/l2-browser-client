@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from native_assets import Converter, sha
-from reference_client_guard import ReferenceClientAccess, ReferenceClientLockError
+from reference_client_guard import ReferenceClientAccess, ReferenceClientLock, ReferenceClientLockError
 from test_native_map_audio import package_bytes
 
 
@@ -35,10 +35,10 @@ class UModelImportClosureTests(unittest.TestCase):
         for relative_path, imported_names in packages_by_relative_path.items():
             (client / relative_path).parent.mkdir(parents=True, exist_ok=True)
             (client / relative_path).write_bytes(synthetic_package(imported_names))
-        records = {relative_path.casefold(): lock_record(client / relative_path, lock_class) for relative_path, lock_class in lock_classes_by_relative_path.items()}
+        lock = ReferenceClientLock({}, {relative_path: lock_record(client / relative_path, lock_class) for relative_path, lock_class in lock_classes_by_relative_path.items()})
         tool = root / 'umodel.exe'
         tool.write_bytes(b'stand-in tool, never executed by these tests')
-        with patch('native_assets.UMODEL_SHA256', sha(tool.read_bytes())), patch('native_assets.require_reference_client', return_value=ReferenceClientAccess(client.resolve(), records)):
+        with patch('native_assets.UMODEL_SHA256', sha(tool.read_bytes())), patch('native_assets.require_reference_client', return_value=ReferenceClientAccess(client.resolve(), lock, requires_lock=True)):
             return Converter(client, root / 'output', tool), client
 
     def run_umodel(self, converter, client, root):

@@ -6,17 +6,17 @@ from pathlib import Path, PurePosixPath
 import re
 import sys
 
+from reference_client_guard import REFERENCE_CLIENT_LOCK_FILE_FIELDS, REFERENCE_CLIENT_LOCK_SCHEMA_VERSION
+
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 HASHING_SCRIPT_PATH = Path(__file__).with_name('hash_reference_client_tree.py')
 DEFAULT_LOCK_OUTPUT_PATH = REPOSITORY_ROOT / 'recipes' / 'reference-client-tree.lock.json'
-LOCK_SCHEMA_VERSION = 1
 MANIFEST_SCHEMA_VERSION = 1
 REFERENCE_HOST = 'IMPORTA-PC'
 REFERENCE_ROOT = 'C:/Lineage2-client'
 CONVERSION_HOST = 'DATABASE-PC'
 CONVERSION_ROOT = 'E:/Lineage2-client'
 VOLATILE_CONFIG_PATTERNS = ('*.ini', '*.log', '*.bak', '*.bak-*')
-FILE_FIELDS = ('class', 'importaBytes', 'importaSha256', 'eBytes', 'eSha256', 'eModifiedNanoseconds')
 FILE_CLASSES = ('equal', 'differing', 'importa-only', 'e-only', 'volatile-config', 'unreadable')
 SHA256_PATTERN = re.compile('[0-9a-f]{64}')
 LOCK_BUILDER_DESCRIPTION = 'Join the IMPORTA-PC and E: reference client manifests into recipes/reference-client-tree.lock.json.'
@@ -158,7 +158,7 @@ def classify_reference_client_trees(importa_manifest, e_manifest, hashing_script
     unreadable = [{'path': row['path'], 'side': side, 'reason': row['reason']}
         for side, manifest in (('importa', importa_manifest), ('e', e_manifest)) for row in manifest['unreadable']]
     return {
-        'schemaVersion': LOCK_SCHEMA_VERSION,
+        'schemaVersion': REFERENCE_CLIENT_LOCK_SCHEMA_VERSION,
         'referenceHost': REFERENCE_HOST,
         'referenceRoot': REFERENCE_ROOT,
         'conversionHost': CONVERSION_HOST,
@@ -167,7 +167,7 @@ def classify_reference_client_trees(importa_manifest, e_manifest, hashing_script
         'hosts': {'importa': summarise_side(importa_manifest), 'e': summarise_side(e_manifest)},
         'classCounts': class_counts,
         'volatileConfigPatterns': list(VOLATILE_CONFIG_PATTERNS),
-        'fileFields': list(FILE_FIELDS),
+        'fileFields': list(REFERENCE_CLIENT_LOCK_FILE_FIELDS),
         'files': files,
         'caseDifferences': sorted(case_differences, key=lambda pair: (pair[0].casefold(), pair[0], pair[1])),
         'unreadable': sorted(unreadable, key=lambda row: (row['path'].casefold(), row['path'], row['side'])),

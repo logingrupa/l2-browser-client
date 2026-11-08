@@ -15,6 +15,7 @@ from native_assets import SOURCE_TO_GLTF
 from native_assets_lib.asset_manifest import (SUPPORTED_ASSET_MANIFEST_VERSIONS, asset_coordinates, asset_coordinates_record,
     build_asset_manifest, reference_client_build, require_supported_asset_manifest, source_path_record)
 from native_assets_lib.gltf import json_bytes
+from reference_client_guard import ReferenceClientLockError
 
 
 def golden_manifest(name):
@@ -48,7 +49,7 @@ class ClientBuildTests(unittest.TestCase):
 
     def test_refuses_when_the_lock_is_missing(self):
         with tempfile.TemporaryDirectory() as directory:
-            with self.assertRaisesRegex(ValueError, 'reference client lock missing: asset.json v2 needs clientBuild'):
+            with self.assertRaisesRegex(ReferenceClientLockError, 'reference client lock missing'):
                 reference_client_build(Path(directory) / 'absent.lock.json')
 
     def test_refuses_when_engine_library_is_not_equal(self):
@@ -58,6 +59,15 @@ class ClientBuildTests(unittest.TestCase):
             path = Path(directory) / 'lock.json'
             path.write_bytes(json_bytes(lock))
             with self.assertRaisesRegex(ValueError, 'as equal'):
+                reference_client_build(path)
+
+    def test_refuses_a_lock_whose_file_fields_are_reordered(self):
+        lock = json.loads((GOLDEN / 'reference-client-tree.lock.json').read_bytes())
+        lock['fileFields'][2], lock['fileFields'][4] = lock['fileFields'][4], lock['fileFields'][2]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'lock.json'
+            path.write_bytes(json_bytes(lock))
+            with self.assertRaisesRegex(ReferenceClientLockError, 'unexpected file table'):
                 reference_client_build(path)
 
 

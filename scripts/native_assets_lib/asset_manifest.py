@@ -1,14 +1,13 @@
 import hashlib
-import json
 import math
 from pathlib import Path
 import re
 
 from native_assets_lib.gltf import json_bytes
+from reference_client_guard import ENGINE_LIBRARY_RELATIVE_PATH, read_reference_client_lock
 
 SUPPORTED_ASSET_MANIFEST_VERSIONS = (1, 2)
 ASSET_MANIFEST_VERSION = 2
-ENGINE_LIBRARY_LOCK_PATH = 'system/Engine.dll'
 ABSOLUTE_PATH_PATTERN = re.compile(r'^(/|[A-Za-z]:/)')
 HEX_DIGEST_PATTERN = re.compile(r'^[a-f0-9]{64}$')
 
@@ -35,20 +34,11 @@ def asset_coordinates_record(source_to_gltf, source_units_per_metre):
 
 
 def reference_client_build(lock_path):
-    lock_path = Path(lock_path)
-    if not lock_path.is_file():
-        raise ValueError('reference client lock missing: asset.json v2 needs clientBuild')
-    lock = json.loads(lock_path.read_bytes().decode('utf-8'))
-    fields, files = lock.get('fileFields'), lock.get('files')
-    if not isinstance(fields, list) or not isinstance(files, dict):
-        raise ValueError(f'reference client lock has no file table: {lock_path}')
-    engine_rows = [values for path, values in files.items() if path.casefold() == ENGINE_LIBRARY_LOCK_PATH.casefold()]
-    if len(engine_rows) != 1 or not isinstance(engine_rows[0], list) or len(engine_rows[0]) != len(fields):
-        raise ValueError(f'reference client lock has no single {ENGINE_LIBRARY_LOCK_PATH} record')
-    engine = dict(zip(fields, engine_rows[0]))
-    if engine.get('class') != 'equal' or not HEX_DIGEST_PATTERN.match(str(engine.get('importaSha256'))):
-        raise ValueError(f'reference client lock does not record {ENGINE_LIBRARY_LOCK_PATH} as equal')
-    return {'referenceTreeLockSha256': hashlib.sha256(json_bytes(lock)).hexdigest(), 'engineDllSha256': engine['importaSha256']}
+    lock = read_reference_client_lock(Path(lock_path))
+    engine = lock.record(ENGINE_LIBRARY_RELATIVE_PATH)
+    if engine is None or engine['class'] != 'equal' or not HEX_DIGEST_PATTERN.match(str(engine['importaSha256'])):
+        raise ValueError(f'reference client lock does not record {ENGINE_LIBRARY_RELATIVE_PATH} as equal')
+    return {'referenceTreeLockSha256': hashlib.sha256(json_bytes(lock.document)).hexdigest(), 'engineDllSha256': engine['importaSha256']}
 
 
 def source_path_record(host, absolute_path):

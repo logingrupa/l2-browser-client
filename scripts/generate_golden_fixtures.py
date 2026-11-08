@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from native_assets import SOURCE_TO_GLTF, archive_bytes, sha
 from native_assets_lib.asset_manifest import asset_coordinates_record, build_asset_manifest, reference_client_build, source_path_record
 from native_assets_lib.gltf import json_bytes
+from reference_client_guard import ENGINE_LIBRARY_RELATIVE_PATH, REFERENCE_CLIENT_LOCK_FILE_FIELDS, REFERENCE_CLIENT_LOCK_SCHEMA_VERSION
 
 SYNTHETIC_PACKAGE = 'SyntheticFixture'
 SYNTHETIC_HOST = 'SYNTHETIC-HOST'
@@ -22,7 +23,6 @@ SYNTHETIC_SOURCE_UNITS_PER_METRE = 100
 SYNTHETIC_CONVERTER_VERSION = hashlib.sha256(b'synthetic converter version for golden fixtures').hexdigest()
 SYNTHETIC_SKILL_EFFECT_COMPONENT_ID = 'interlude:skill:0:level:1:synthetic-fixture'
 SYNTHETIC_SECTION_ID = 'map-00-00-section'
-LOCK_FILE_FIELDS = ['class', 'importaBytes', 'importaSha256', 'eBytes', 'eSha256', 'eModifiedNanoseconds']
 REFERENCE_CLIENT_LOCK_NAME = 'reference-client-tree.lock.json'
 FIXTURES_LOCK_NAME = 'fixtures.lock.json'
 
@@ -48,9 +48,9 @@ def synthetic_reference_client_lock():
     engine_sha256 = sha(SYNTHETIC_ENGINE_LIBRARY_BYTES)
     engine_bytes = len(SYNTHETIC_ENGINE_LIBRARY_BYTES)
     return {
-        'schemaVersion': 1, 'referenceHost': 'SYNTHETIC-REFERENCE', 'referenceRoot': SYNTHETIC_CLIENT_ROOT,
-        'conversionHost': SYNTHETIC_HOST, 'conversionRoot': SYNTHETIC_CLIENT_ROOT, 'fileFields': LOCK_FILE_FIELDS,
-        'files': {'system/Engine.dll': ['equal', engine_bytes, engine_sha256, engine_bytes, engine_sha256, 0]},
+        'schemaVersion': REFERENCE_CLIENT_LOCK_SCHEMA_VERSION, 'referenceHost': 'SYNTHETIC-REFERENCE', 'referenceRoot': SYNTHETIC_CLIENT_ROOT,
+        'conversionHost': SYNTHETIC_HOST, 'conversionRoot': SYNTHETIC_CLIENT_ROOT, 'fileFields': REFERENCE_CLIENT_LOCK_FILE_FIELDS,
+        'files': {ENGINE_LIBRARY_RELATIVE_PATH: ['equal', engine_bytes, engine_sha256, engine_bytes, engine_sha256, 0]},
     }
 
 

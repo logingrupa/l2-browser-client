@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ElementTree
 
 from hash_reference_client_tree import canonical_json_bytes
 from native_catalog.tables import SCHEMA_HASHES, SCHEMA_ROOT, TABLES, checked_bytes, decode_table
-from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, ReferenceClientLockError, require_reference_client
+from reference_client_guard import ReferenceClientLockError, require_reference_client
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_INVENTORY_OUTPUT_PATH = REPOSITORY_ROOT / 'docs' / 'parts' / 'data' / 'dat-table-inventory.json'
@@ -86,9 +86,8 @@ def elbera_parser_presence(elbera_root):
 
 def reference_side_dat_file_names(lock):
     file_names = []
-    for path, values in lock['files'].items():
-        match = SYSTEM_DAT_PATH_PATTERN.fullmatch(path)
-        if match and values[2] is not None:
+    for path, record in lock.records_by_path.items():
+        if SYSTEM_DAT_PATH_PATTERN.fullmatch(path) and record['importaSha256'] is not None:
             file_names.append(path.split('/', 1)[1])
     if len(file_names) != EXPECTED_DAT_TABLE_COUNT:
         raise DatTableInventoryError(f'reference client lock lists {len(file_names)} system .dat files, expected {EXPECTED_DAT_TABLE_COUNT}')
@@ -154,12 +153,12 @@ def validate_dat_table_inventory(inventory):
     return inventory
 
 
-def build_dat_table_inventory(client_access, lock, elbera_root, schema_root=SCHEMA_ROOT):
+def build_dat_table_inventory(client_access, elbera_root, schema_root=SCHEMA_ROOT):
     descriptor_bytes = checked_bytes(Path(schema_root) / DESCRIPTOR_FILE, SCHEMA_HASHES[DESCRIPTOR_FILE])
     links = descriptor_layout_links(descriptor_bytes)
     elbera_parser_statuses = elbera_parser_presence(elbera_root)
     rows = []
-    for file_name in reference_side_dat_file_names(lock):
+    for file_name in reference_side_dat_file_names(client_access.lock):
         row = classify_dat_table(file_name, links, elbera_parser_statuses)
         if row['route'] == 'local-decoded':
             row.update(count_local_decoded_table(client_access, row, schema_root))
@@ -169,7 +168,7 @@ def build_dat_table_inventory(client_access, lock, elbera_root, schema_root=SCHE
     return validate_dat_table_inventory({
         'schemaVersion': INVENTORY_SCHEMA_VERSION,
         'descriptorSha256': SCHEMA_HASHES[DESCRIPTOR_FILE],
-        'referenceTreeLockSha256': hashlib.sha256(canonical_json_bytes(lock)).hexdigest(),
+        'referenceTreeLockSha256': hashlib.sha256(canonical_json_bytes(client_access.lock.document)).hexdigest(),
         'rows': sorted(rows, key=lambda row: row['table']),
     })
 
@@ -185,9 +184,7 @@ def main(argv=None):
     parser.add_argument('--elbera-root', type=Path, default=DEFAULT_ELBERA_ROOT)
     arguments = parser.parse_args(argv)
     try:
-        client_access = require_reference_client(arguments.client)
-        lock = json.loads(REFERENCE_CLIENT_LOCK_PATH.read_bytes().decode('utf-8'))
-        inventory = build_dat_table_inventory(client_access, lock, arguments.elbera_root)
+        inventory = build_dat_table_inventory(require_reference_client(arguments.client), arguments.elbera_root)
         arguments.output.parent.mkdir(parents=True, exist_ok=True)
         arguments.output.write_bytes(dat_table_inventory_bytes(inventory))
     except (OSError, ValueError) as error:

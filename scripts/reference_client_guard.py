@@ -33,9 +33,13 @@ def sha256_of_file(path):
 
 
 class ReferenceClientLock:
-    def __init__(self, document, records_by_casefolded_path):
+    def __init__(self, document, records_by_path):
         self.document = document
-        self.records_by_casefolded_path = records_by_casefolded_path
+        self.records_by_path = records_by_path
+        self.records_by_casefolded_path = {path.casefold(): record for path, record in records_by_path.items()}
+
+    def record(self, relative_path):
+        return self.records_by_casefolded_path.get(relative_path.casefold())
 
 
 def read_reference_client_lock(lock_path):
@@ -49,15 +53,15 @@ def read_reference_client_lock(lock_path):
             raise ReferenceClientLockError(f'reference client lock needs a {field}: {lock_path}')
     if lock.get('fileFields') != REFERENCE_CLIENT_LOCK_FILE_FIELDS or not isinstance(lock.get('files'), dict):
         raise ReferenceClientLockError(f'reference client lock has an unexpected file table: {lock_path}')
-    records_by_casefolded_path = {}
+    records_by_path, casefolded_paths = {}, set()
     for path, values in lock['files'].items():
         if not isinstance(values, list) or len(values) != len(REFERENCE_CLIENT_LOCK_FILE_FIELDS):
             raise ReferenceClientLockError(f'reference client lock record is malformed: {path}')
-        record = dict(zip(REFERENCE_CLIENT_LOCK_FILE_FIELDS, values))
-        if path.casefold() in records_by_casefolded_path:
+        if path.casefold() in casefolded_paths:
             raise ReferenceClientLockError(f'reference client lock repeats a casefolded path: {path}')
-        records_by_casefolded_path[path.casefold()] = record
-    return ReferenceClientLock(lock, records_by_casefolded_path)
+        casefolded_paths.add(path.casefold())
+        records_by_path[path] = dict(zip(REFERENCE_CLIENT_LOCK_FILE_FIELDS, values))
+    return ReferenceClientLock(lock, records_by_path)
 
 
 def current_host_name():
@@ -71,10 +75,10 @@ def is_locked_reference_root(resolved_root, lock):
 
 
 class ReferenceClientAccess:
-    def __init__(self, root, lock_records_by_casefolded_path):
+    def __init__(self, root, lock, requires_lock):
         self.root = root
-        self.requires_lock = lock_records_by_casefolded_path is not None
-        self.lock_records_by_casefolded_path = lock_records_by_casefolded_path
+        self.lock = lock
+        self.requires_lock = requires_lock
 
     def require_equal_file(self, relative_path):
         require_confined_relative_path(relative_path)
@@ -86,7 +90,7 @@ class ReferenceClientAccess:
         return path
 
     def require_lock_equal_record(self, relative_path, path):
-        record = self.lock_records_by_casefolded_path.get(relative_path.casefold())
+        record = self.lock.record(relative_path)
         if record is None or record['class'] != 'equal':
             lock_class = 'absent' if record is None else record['class']
             raise ReferenceClientLockError(f'reference client lock class of {relative_path} is {lock_class}, not equal; conversion may not read it')
@@ -113,8 +117,8 @@ def lock_file_identity(lock_path):
 
 def open_reference_client_access(resolved_root, lock):
     if is_locked_reference_root(resolved_root, lock):
-        return ReferenceClientAccess(resolved_root, None)
-    access = ReferenceClientAccess(resolved_root, lock.records_by_casefolded_path)
+        return ReferenceClientAccess(resolved_root, lock, requires_lock=False)
+    access = ReferenceClientAccess(resolved_root, lock, requires_lock=True)
     access.require_equal_file(ENGINE_LIBRARY_RELATIVE_PATH)
     return access
 
