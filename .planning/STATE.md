@@ -82,7 +82,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P18 | 8 min | 2 tasks | 5 files |
 | Phase 02 P21 | 25 min | 3 tasks | 14 files |
 | Phase 02 P32 | 12 min | 3 tasks | 3 files |
-| Phase 02 P57 | 25 min | 3 tasks tasks | 20 files files |
+| Phase 02 P57 | 25 min | 3 tasks | 22 files |
 | Phase 02 P59 | 35 min | 3 tasks | 20 files |
 | Phase 02 P05 | 16min | 3 tasks | 21 files |
 | Phase 02 P07 | 15min | 3 tasks | 13 files |
@@ -225,7 +225,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - Needs Human (01-VERIFICATION.md): choose the E: scope of `inventory()` in `scripts/native_catalog/cli.py`, lock-equal files only or IMPORTA-PC only; today it hashes every E: file behind the entry check.
 - Needs Human (01-VERIFICATION.md): confirm the five prohibitions that can only be judged, not tested.
 - Needs Human (phase 1 verification): Phase 1 is human_needed with 6 of 6 criteria verified; it stays pending until the items above are reviewed. The autonomous run continues with Phase 2 (OVERNIGHT-DECISIONS row 59); Phase 1 is not marked complete.
-- Needs Human (plan 02-57, OVERNIGHT-DECISIONS row 193): `node tools/reference-overlap/referenceOverlap.mjs --area <bsp-visibility|movement|particles> --reference-root C:/laragon/www/l2-browser-client` exits 1 with 17 blocking runs, all in the 02-56 shared modules (`src/shared/fixedStep.ts` 4, `presentationClock.ts` 4, `typedPayload.ts` 5, `math/vector3.ts` 3, `src/world/sourceFrame.ts` 1): argument guards, vector arithmetic and a tuple type matched against unrelated reference code. A reviewer who did not write `src/shared/**` signs off the spans in docs/parts/adapter-dispatch/EVIDENCE.md, or the owner narrows the area source globs or the normalisation in `tools/reference-overlap/`.
+- Resolved (plan 02-57, OVERNIGHT-DECISIONS rows 193 and 258): the 17 blocking runs and 956 reviewer runs in the 02-56 shared modules are signed off by independent fresh-context Claude reviewers (`tools/reference-overlap/signedOffRuns.json`, `docs/parts/adapter-dispatch/reference-overlap-reviewer-runs.json`); bsp-visibility, movement and particles exit 0. The owner may revoke any entry.
 - Needs Human (plan 02-05): after the restage that brings profiles with modelCatalogId (02-22 and later) into public/l2, delete the mesh-name NPC join for profiles without modelCatalogId in src/assets/native/nativeCatalogIndex.ts (an actors-lane change in a later plan)
 - Needs Human (plan 02-05, OVERNIGHT-DECISIONS row 211): `node scripts/check-lane-ownership.mjs --base 606ae66 --part npcs` lists one foreign path, `src/runtime/sandboxNpcVisual.ts` (integration), changed from `status === "not-in-catalog"` to `status !== "converted"` so the new `gap` lookup answer typechecks; the integration owner confirms or moves the line.
 - Needs Human (plans 02-17 and 02-19): restage C:/Users/rolan/.t3/worktrees/l2-browser-client/autonomous-roadmap/artifacts/lane-store/data-ui/l2 into C:/laragon/www/l2-browser-client/public/l2 from the main checkout with the lane store merge tool of plan 02-24 (expected base catalog sha256 55c12147db306264deb2be33f6b9cd661d1376d12dc2aa6473be3700322972fe, lane catalog sha256 89aa9e6a142fbb2b044784e8b7088c13a7908cac3d4f3a116692646a1d13cb58); printed by `python -B scripts/native_store/write_lane_catalog.py --lane data-ui --plan` after plan 02-19 added the 248 `windows` records
