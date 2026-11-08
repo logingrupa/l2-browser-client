@@ -98,7 +98,8 @@ The evidence index is [VERIFICATION.md](VERIFICATION.md).
 
 ## Open
 
-- Tile-general BSP converter step for all 153 tiles (WORLD-01). WORLD-01 names the Brush397 slab as a 20_20 hand step; Brush610 is a second one.
+- Tile-general BSP converter step for all 153 tiles (WORLD-01 names the Brush397 slab and the Brush610 command hall as 20_20 hand steps).
+- Stair traversal: one earlier WebGPU device-loss failure has no established cause. The four final stair cases report no GPU errors or device loss. No complete 20_20 or all-human acceptance is claimed. Evidence: `artifacts/native-parity/research/native-stair-traversal-20261107/IMPLEMENTATION.md`.
 - Complete BSP coverage beyond these two pieces (WORLD-01).
 - Native lightmaps. No requirement covers them.
 - Native submitted render UVs. No requirement covers them.

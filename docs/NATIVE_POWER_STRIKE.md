@@ -1,30 +1,14 @@
 # Native Power Strike source migration
 
-The main migration preserves the exact native skill 3 / level 1 effect classes
-selected by reviewed Engine.dll handlers. This establishes bounded source
-associations and reusable authored data. Complete native particle/skill behavior
-remains unverified; the bounded modern browser previews below are implemented
-separately from that acceptance claim.
+The migration preserves the exact native skill 3 / level 1 effect classes
+selected by reviewed Engine.dll handlers. It establishes bounded source
+associations and reusable authored data. Complete native particle and skill
+behavior is unverified. The bounded browser previews below are modern
+presentation, separate from that acceptance claim.
 
-## Current browser presentation — 2026-11-07
-
-The [manual component viewer](../artifacts/native-parity/research/native-power-strike-components-20261107/REPORT.md)
-loads all six original init/shot components with exact texture joins and a
-qualified human right-hand anchor. The later
-[timed init preview](../artifacts/native-parity/research/native-power-strike-init-20261107/REPORT.md)
-combines the three init components on the supported human male/female special
-animation clock. Enable **Power Strike init preview**, then use **Special attack
-preview**. Pause holds it; interruption/death clears it; a new explicit special
-generation reuses the prepared pool. Manual inspection remains separate.
-
-The finite 11/1/7 schedule, deterministic sampling, interpolation, fades, spin,
-drag and final texture-frame hold are explicit modern policies. The source
-lifetimes are not certified effective native lifetimes. No actor DrawScale,
-AutoReplay, conditional shot placement or guessed table-sound onset is added.
-The four original direct animation cues remain independently connected.
-The [implementation contract](../artifacts/native-parity/research/native-power-strike-init-20261107/IMPLEMENTATION.md)
-and final checkpoint receipts distinguish reusable rendering from full skill,
-native visible-pixel/audio, Editor and performance acceptance.
+Status and work order: [.planning/STATE.md](../.planning/STATE.md) and
+[.planning/ROADMAP.md](../.planning/ROADMAP.md). Evidence index:
+[VERIFICATION.md](VERIFICATION.md).
 
 | Source handler | Effect class | Direct superclass | Authored DrawScale | Emitters |
 | --- | --- | --- | ---: | ---: |
@@ -32,9 +16,9 @@ native visible-pixel/audio, Editor and performance acceptance.
 | Conditional shot | `LineageEffect.p_u004_a` | `Engine.Emitter` | 0.02 | 3 |
 
 Both actors author `AutoReplay=true`. Complete actor and emitter defaults are
-retained, including inherited properties and undecoded byte ranges. The older
+retained, including inherited properties and undecoded byte ranges. The
 `at_power_strike_cs` candidate has the same init emitter payloads but different
-actor defaults; it is not substituted for `s_u002_a`.
+actor defaults. It is not substituted for `s_u002_a`.
 
 ## Checked source and retained products
 
@@ -50,140 +34,173 @@ It separately verifies each direct superclass and hashes of complete authored
 actor properties and emitter payloads. Reviewed observation text is retained
 metadata, not executed or independently proven behavior.
 
-The active job is `power-strike-source-dispatch`; its output is
+The job is `power-strike-source-dispatch`. Its output is
 `artifacts/native-parity/migration/effects/power-strike-source-dispatch/`.
-`effect-source.json` retains the skill/sound rows, associations, source checks,
-defaults and dependency graph. The bundle contains **six emitters, 12 class
-definitions with inherited defaults, 20 raw native objects and 17 converted assets**: four models,
-11 textures and two sounds. All nine source files belong to the current input
-lock; there are zero unresolved dependencies. Palette objects remain raw data
-where no standalone browser adapter exists.
+`effect-source.json` retains the skill and sound rows, associations, source
+checks, defaults and dependency graph. The bundle contains **six emitters, 12
+class definitions with inherited defaults, 20 raw native objects and 17
+converted assets**: four models, 11 textures and two sounds. It adds two models,
+`Impact.shockwave00` and `Impact.sparkredcone00`, and leaves the other model
+GLBs and terrain unchanged. All nine source files belong to the input lock, with
+zero unresolved dependencies. Palette objects stay raw data where no standalone
+browser adapter exists. The `at_power_strike_cs` candidate output in
+`artifacts/native-parity/migration/effects/power-strike/` is evidence only.
 
-Fresh authoritative Engine hash and protected INI checks, followed by copying
-the matching E: candidate, are recorded in
+The Engine.dll hash and protected INI checks against the IMPORTA-PC reference,
+and the copy of the matching E: candidate, are recorded in
 `artifacts/native-parity/source-audit/power-strike-engine-staging-20261105T151212Z.json`.
-The staging adapter accepts only the exact `system/Engine.dll` binary path;
-it never executes it or copies the INI. The current lock contains **143 files /
-2,511,063,181 bytes**.
+Any further E: sourcing waits for the full-tree hash lock (DEC-OWN-2). The
+staging adapter accepts only the exact `system/Engine.dll` binary path. It never
+executes it or copies the INI. The input lock
+(`recipes/native-inputs.lock.json`, input-only, DEC-OWN-5) contains **143 files
+/ 2,511,063,181 bytes**. Outputs are `.l2asset` packages plus the runtime
+catalog.
 
-The combined migration passed **381 identical products**, **26/26 cache hits**,
-zero clean hits in `migration-clean-1to9688v/`, and **100 archives** (69 models,
-29 textures, two sounds). All **70 GLBs** have zero validator errors/warnings;
-**302 pipeline tests** passed with zero skips. Frozen receipts and preservation
-evidence are under `artifacts/native-parity/editor/material-authoring-20261105/`.
-The subsequent `--verify-only` passed; its log is
-`artifacts/native-parity/migration-power-strike-dispatch-verify.log`.
-All 67 previous model GLBs and terrain remain unchanged; the two additional
-models are `Impact.shockwave00` and `Impact.sparkredcone00`. The old candidate
-output remains in `migration/effects/power-strike/` as historical evidence.
+The `--verify-only` log is
+`artifacts/native-parity/migration-power-strike-dispatch-verify.log`. Run and verify the reusable
+pipeline as documented in [NATIVE_MIGRATION.md](NATIVE_MIGRATION.md). Source
+preservation and successful rebuilds do not certify native-to-browser visual
+parity.
 
-## Dedicated sound dependencies — 2026-11-07
+## Browser presentation
 
-The separate [selected-skill audio command](ASSET_PIPELINE.md) now packages
-Power Strike 3/1 without rerunning the effect migration. Its recipe is
-[`native-power-strike-audio.json`](../recipes/native-power-strike-audio.json);
-the [source report](../artifacts/native-parity/research/native-human-skill-audio-20261107/skill-source/REPORT.md)
+Controls live on the dev sheet:
+
+- **Dev → Effects › Power Strike components** offers Off and all six retained
+  init and shot components, with manual texture frames and enabled color keys.
+  **Inspect component** frames the selected resource at its preview scale.
+  Reselecting a frame can end inspection, so use Inspect again for a close view.
+- **Dev → Effects › Init effects** has **Power Strike init preview**. It
+  combines the three init components on the supported human male and female
+  special animation clock.
+- **Dev → Combat › Actions → Special attack preview** plays the existing source
+  clip and its direct cues. Component selection starts neither the clip nor
+  the init preview.
+
+With the init preview enabled, the next Special attack preview carries it.
+Pause holds it. Interruption or death clears it. A new explicit special
+generation reuses the prepared pool. Manual component inspection stays separate.
+
+The finite 11/1/7 schedule, deterministic sampling, interpolation, fades, spin,
+drag and final texture-frame hold are explicit modern policies. The source
+lifetimes are not certified effective native lifetimes. No actor DrawScale,
+AutoReplay, conditional shot placement or guessed table-sound onset is added.
+
+The viewer loads all six components with exact texture joins and the qualified
+human right-hand anchor. It follows that hand through movement and equipment
+changes, hides during death and releases resources on Off, cancellation and
+disposal. Character picking tags are restricted to owned body and equipment
+meshes, so foreign attached components are preserved.
+
+An independent stager copies four original GLBs and nine original PNGs plus an
+ordered manifest. The optional catalog-registration tool changes only the
+selected `effectComponents` entry. No source conversion or audio corpus run is
+repeated. The loader preserves source primitives, nodes, UVs and texture
+identity. The modern shader, sizing and billboard choices are explicit
+inspection policy.
+
+Evidence:
+
+- `artifacts/native-parity/research/native-power-strike-components-20261107/REPORT.md`
+- `artifacts/native-parity/research/native-power-strike-init-20261107/REPORT.md`
+- `artifacts/native-parity/research/native-power-strike-init-20261107/IMPLEMENTATION.md`
+
+The implementation contract separates reusable rendering from full skill,
+native visible-pixel and audio, and performance acceptance.
+
+## Sound dependencies
+
+The [selected-skill audio command](ASSET_PIPELINE.md) packages Power Strike 3/1
+without rerunning the effect migration. Its recipe is
+[`native-power-strike-audio.json`](../recipes/native-power-strike-audio.json).
+The source report
+`artifacts/native-parity/research/native-human-skill-audio-20261107/skill-source/REPORT.md`
 pins complete Interlude tables, row ordinals and exact existing products.
 
 `SkillSound.power_strike_cast` and `SkillSound.power_strike_shot` both occupy
-`spelleffect_sound_1/2`; the shot/exp slot groups and all thirty voice strings
-are empty. Both declare source volume 250 and radius 40, whose runtime units
-and application remain unproved. The exported objects include a `power_strike`
-group omitted in those raw strings. The new manifest preserves that difference
-and labels the two unique package/leaf matches as candidates, without asserting
-native lookup. The two original stereo WAVs match the existing exports exactly.
-Plan, clean/repeat/verify and 35 focused tests pass; no skill sound is newly
-connected in the browser.
+`spelleffect_sound_1/2`. The shot and exp slot groups and all thirty voice
+strings are empty. Both declare source volume 250 and radius 40, whose runtime
+units and application are unproved. The exported objects include a
+`power_strike` group omitted in those raw strings. The manifest preserves that
+difference and labels the two unique package/leaf matches as candidates,
+without asserting native lookup. The two original stereo WAVs match the
+existing exports exactly. Plan, clean, repeat and verify pass. No skill sound is
+connected in the browser; the two candidate DAT sounds stay disconnected.
 
-Separately, both existing male/female `SpAtk01_1HS` clips contain four direct
-Sound notifications each, verified against seven original WAVs. The later
-[world integration](../artifacts/native-parity/research/native-human-special-attack-20261107/REPORT.md)
-plays those clips/cues through **Dev → Combat › Actions → Special attack preview**,
-reusing the existing actor packages and source clocks. It preserves the normal
-Hand attack and adds no weapon or equipment selection. These cues do not
-establish live family/rate selection or synchronized skill/table/particle
-dispatch, and each clip retains two unresolved specialized events. Exact cue
-tuples and retained limits are in the [attack-source report](../artifacts/native-parity/research/native-human-skill-audio-20261107/attack-source/REPORT.md).
+Both male and female `SpAtk01_1HS` clips contain four direct Sound
+notifications each, verified against seven original WAVs. Special attack
+preview plays those clips and cues, reusing the existing actor packages and
+source clocks. It preserves the normal Hand attack and adds no weapon or
+equipment selection. These cues do not establish live family or rate selection,
+or synchronized skill, table and particle dispatch. Each clip keeps two
+unresolved specialized events. Exact cue tuples and limits are in
+`artifacts/native-parity/research/native-human-skill-audio-20261107/attack-source/REPORT.md`;
+the world integration is in
+`artifacts/native-parity/research/native-human-special-attack-20261107/REPORT.md`.
 
-## Timing, attachment and runtime limits
+## Mesh emitters and hand anchor
 
-The [retained-bundle comparison](../artifacts/native-parity/research/native-power-strike-effect-preview-20261107/REPORT.md)
-checks a specific renderer gap: the four converted meshes currently contain
-ordinary PBR materials, while the four mesh emitters declare
-`UseMeshBlendMode=false` and `RenderTwoSided=true`. The GLBs do not implement
-those emitter policies. This is a missing presentation adapter, not evidence
-that the original geometry needs reconversion. The six components retain their
-exact source order, raw/effective properties and resource identities through
-the dedicated `inspect-native-effect-bundle.py` command.
+The retained-bundle comparison
+(`artifacts/native-parity/research/native-power-strike-effect-preview-20261107/REPORT.md`)
+checks one renderer gap. The four converted meshes contain ordinary PBR
+materials, while the four mesh emitters declare `UseMeshBlendMode=false` and
+`RenderTwoSided=true`. The GLBs do not implement those emitter policies. This
+is a presentation-adapter matter, not evidence that the original geometry needs
+reconversion. The six components keep exact source order, raw and effective
+properties and resource identities through `inspect-native-effect-bundle.py`.
 
-Both human rigs contain the source `Weapon_R_Bone`. The later
-[hand-anchor implementation](../artifacts/native-parity/research/native-human-hand-anchor-20261107/REPORT.md)
+Both human rigs contain the source `Weapon_R_Bone`. The hand-anchor
+implementation
+(`artifacts/native-parity/research/native-human-hand-anchor-20261107/REPORT.md`)
 resolves the exact upper base part, source skin and original glTF-linked joint.
-Its owned identity child follows the existing rig through animation and shirt
-changes; source keys, pivots, actor placement and equipment mappings stay intact.
-The assembled skins repeat bone names and their joint indices differ, so global
+Its owned identity child follows the rig through animation and shirt changes.
+Source keys, pivots, actor placement and equipment mappings stay intact. The
+assembled skins repeat bone names and their joint indices differ, so global
 name lookup and a shared joint index are rejected. Runtime helper nodes are
-excluded from Babylon serialization; the original linked node remains present.
-This establishes a converted-rig attachment dependency. It does not establish
-native `AttachToBone` composition or apply the glove's unrelated `e_Hand` socket
-transform. No particle rendering, skill timing or selected table sound is added.
+excluded from Babylon serialization; the original linked node stays present.
+This is a converted-rig attachment dependency. It does not establish native
+`AttachToBone` composition or apply the glove's unrelated `e_Hand` socket
+transform.
 
-The skill row still has animation `S`, an empty description and hit time
+## Timing and runtime limits
+
+The skill row has animation `S`, an empty description and hit time
 `1.0800000429153442`. Its binary association does not populate that empty field
 or turn the static hit time into an effect timeline. Source research maps the
 fighter's family-1 special attack to `SpAtk01_1HS_MFighter`, 47 frames at 30 fps.
 Raw AttackShot and AttackItem notifications occur at approximately
 0.923333373 s and 0.876666600 s. Effective playback rate, tweening and runtime
-`SkillHitTime` remain conditional and unverified.
+`SkillHitTime` are conditional and unverified.
 
 Reviewed init observations include right-hand attachment through
 `GetRHandBoneName`/`AttachToBone` and writing `MagicInfo.ShotTime` to the effect.
 Shot requires `PendingNotify == 2` and a target or applicable associated-actor
 branch. Its reviewed placement is
 `target.Location - unitDirection(caster→target) * target.CollisionRadius / 2`.
-That divide formula also relies on separately reviewed Core.dll evidence;
-this adapter does not validate Core.dll or execute placement. The spawn helper
-can call `AdjustparticleLife(ShotTime + 1)` when `MagicAniStatus == 0`.
-Authored lifetimes remain separate from these conditional runtime adjustments.
+That divide formula also relies on separately reviewed Core.dll evidence; this
+adapter does not validate Core.dll or execute placement. The spawn helper can
+call `AdjustparticleLife(ShotTime + 1)` when `MagicAniStatus == 0`. Authored
+lifetimes stay separate from these conditional runtime adjustments.
 
-Live attachment transforms, conditional placement, lifetime/fade/particle-count
-adjustments, cleanup, target reaction and synchronized full fighter motion are
-still unverified. No browser particle simulation is implemented, and runtime
-staging does not expose an executable effect timeline. Source evidence is in
-`artifacts/native-parity/research/fighter-action-reference/`; the earlier
-standalone extraction is retained in `research/powerstrike-dispatch-migration/`
-under the same evidence root. Its original summary predates Engine's addition
-to the main lock; current main receipts establish the complete pinned closure.
+Source evidence is in `artifacts/native-parity/research/fighter-action-reference/`.
+The standalone extraction is in
+`artifacts/native-parity/research/powerstrike-dispatch-migration/`. Its summary
+does not cover Engine.dll in the main lock; the main receipts establish the
+complete pinned closure.
 
-Run and verify the reusable pipeline as documented in
-[NATIVE_MIGRATION.md](NATIVE_MIGRATION.md). Source preservation and successful
-rebuilds do not certify native-to-browser visual parity.
+## Open
 
-## Browser component viewer — 2026-11-07
+The browser has no emission simulation and no executable native skill
+timeline. Runtime staging exposes no effect timeline. Shot objects are
+inspected on the hand without native target placement. These stay unverified:
 
-The later [component checkpoint](../artifacts/native-parity/research/native-power-strike-components-20261107/REPORT.md)
-implements the missing bounded presentation adapter. **Dev → Effects ›
-Power Strike components** offers Off and all six retained components, with manual
-texture frames and enabled color keys. **Inspect component** frames the selected
-resource at its actual preview scale; reselecting a frame can end inspection,
-so use Inspect again for a close view. Special attack preview independently
-plays the existing source clip/direct cues. Selection does not start either.
+- Live attachment transforms and conditional shot placement.
+- Source DrawScale, effective lifetime and dispatch, lifetime, fade and
+  particle-count adjustments, particle distribution and cleanup.
+- Target reaction and synchronized full fighter motion.
+- Table-sound lookup and onset.
+- Native visual and audio parity, and performance acceptance.
 
-The independent stager copies four original GLBs and nine original PNGs plus
-an ordered manifest. The optional catalog-registration tool changes only the
-selected effectComponents entry. No source conversion or audio corpus run is
-repeated. The loader preserves source primitives, nodes, UVs and texture identity;
-the modern shader/sizing/billboard choices are explicit inspection policy.
-
-The viewer follows the qualified source hand through movement and equipment,
-hides during death and releases resources on Off/cancellation/disposal. An
-equipment-boundary repair restricts character picking tags to owned body and
-equipment meshes, preserving foreign attached components. The checkpoint links
-focused tests, frozen hardware cases, inspected captures and complete preservation.
-
-This viewer adds no emission simulation or executable native skill timeline.
-Shot objects are inspected on the hand without native target placement. Source
-DrawScale, effective lifetime/dispatch, particle distribution and table-sound
-lookup/onset remain unresolved. The two candidate DAT sounds remain disconnected;
-the original special-animation cues continue unchanged. Native visual/audio
-parity, an interactive Editor save and performance acceptance remain separate.
+Requirements: ACT-05 (skill sounds), ACT-06 (skill visuals cast by ID), POL-01
+(Power Strike visual case), POL-02 (audio parity), PERF-01 (eight Power Strike
+effects workload).
