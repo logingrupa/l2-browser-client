@@ -96,8 +96,11 @@ class ReferenceClientAccess:
             raise ReferenceClientLockError(f'reference client lock class of {relative_path} is {lock_class}, not equal; conversion may not read it')
         try:
             status = os.stat(path)
+        except FileNotFoundError:
+            raise ReferenceClientLockError(
+                f'reference client root {self.root.as_posix()} has no {relative_path}; a lock-checked root must hold every file it reads') from None
         except OSError as error:
-            raise ReferenceClientLockError(f'reference client lock is stale for {relative_path}; re-lock ordered ({type(error).__name__})')
+            raise ReferenceClientLockError(f'reference client lock is stale for {relative_path}; re-lock ordered ({type(error).__name__})') from error
         if (status.st_size, status.st_mtime_ns) == (record['eBytes'], record['eModifiedNanoseconds']):
             return
         if sha256_of_file(path) != record['eSha256']:

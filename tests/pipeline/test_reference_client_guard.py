@@ -116,6 +116,25 @@ class ReferenceClientGuardTests(GuardedConversionRootTestCase):
         with self.assertRaisesRegex(ReferenceClientLockError, 'stale for system/Engine.dll'):
             require_reference_client(self.trees.conversion_root)
 
+    def test_root_without_the_engine_library_names_the_root_and_orders_no_relock(self):
+        self.trees.write_lock()
+        partial_root = Path(self.temporary_directory.name).resolve() / 'partial'
+        write_tree_file(partial_root, 'animations/Fighter.ukx', b'equal package')
+        with self.assertRaises(ReferenceClientLockError) as refusal:
+            require_reference_client(partial_root)
+        self.assertEqual(str(refusal.exception),
+            f'reference client root {partial_root.as_posix()} has no system/Engine.dll; a lock-checked root must hold every file it reads')
+        self.assertNotIn('re-lock', str(refusal.exception))
+
+    def test_equal_file_missing_from_a_lock_checked_root_names_the_root_and_orders_no_relock(self):
+        self.trees.write_lock()
+        access = require_reference_client(self.trees.conversion_root)
+        (self.trees.conversion_root / 'animations/Fighter.ukx').unlink()
+        with self.assertRaises(ReferenceClientLockError) as refusal:
+            access.require_equal_file('animations/Fighter.ukx')
+        self.assertEqual(str(refusal.exception), f'reference client root {self.trees.conversion_root.as_posix()} has no animations/Fighter.ukx; '
+            'a lock-checked root must hold every file it reads')
+
     def test_locked_reference_root_on_the_reference_host_only_confines_paths(self):
         self.trees.write_lock()
         access = require_reference_client(self.trees.importa_root)
