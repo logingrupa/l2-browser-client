@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-11-PLAN.md
-last_updated: "2026-11-08T13:11:48.328Z"
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-11-08T13:38:33.136Z"
 last_activity: 2026-11-08
 last_activity_desc: Phase 02 plan 02-11 complete (WORLD-07 independent review)
-state_head: 97cc2bcfafc1cf576372f9e11844d3bbc64fb9f1
+state_head: 693e4b2619d9ddb0fdadcb1c96e9ae8a04d92d2b
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 72
-  completed_plans: 19
+  completed_plans: 20
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 02 (Stage A breadth) - EXECUTING
-Plan: 02-11 complete, 2 of 55 plans executed
+Plan: 02-01 complete, 3 of 55 plans executed
 Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-08 - Plan 02-11 WORLD-07 independent review complete
+Last activity: 2026-11-08 - Plan 02-01 store paths and output guard complete
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -71,6 +71,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P17 | 50min | 4 tasks | 27 files |
 | Phase 02 P10 | 15 min | 3 tasks | 9 files |
 | Phase 02 P11 | 24 min | 3 tasks | 13 files |
+| Phase 02 P01 | 25 min | 3 tasks | 33 files |
 
 ## Accumulated Context
 
@@ -122,6 +123,9 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..10 and DEC-PORT-1..3.
 - [Phase 02]: 02-11: WORLD-07 review ran before the world tracers; a fresh-context headless Claude reviewer re-hashed 74/74 rows and gave 47 verdicts (12 adopted, 21 rejected, 14 polish), owner review (OVERNIGHT-DECISIONS rows 67-68)
 - [Phase 02]: 02-11: absolute path fields in WORLD-07 fixtures are dropped with their JSON pointers and keep only a Basename sibling field; COMPOSITION_SUMMARY.json is not copied (row 69)
 - [Phase 02]: 02-11: WORLD-07 stays Pending until 02-15 and 02-45 deliver the converter steps for the adopted findings (row 70)
+- [Phase 02]: Plan 02-01: scripts/native_store/store_paths.py owns the path helpers and require_converter_output; Converter.__init__ and native_batch.prepare call it first, proven against real NTFS junctions (OVERNIGHT-DECISIONS rows 71-76)
+- [Phase 02]: Plan 02-01: converter outputs live only in a dedicated folder under artifacts/; the export scripts pass their ROOT to Converter; scratch/ converter caches are refused (rows 74 and 79)
+- [Phase 02]: Plan 02-01: measured red baseline is the 2 nativeNpcProfiles cases plus at most one load-dependent 5000 ms timeout; no timeout or worker count changed (row 77)
 
 ### Pending Todos
 
@@ -169,6 +173,6 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..10 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-08T13:11:47.968Z
-Stopped at: Completed 02-11-PLAN.md
+Last session: 2026-11-08T13:38:32.772Z
+Stopped at: Completed 02-01-PLAN.md
 Resume file: None

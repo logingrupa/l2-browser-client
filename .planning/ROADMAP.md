@@ -92,8 +92,8 @@ Plans:
   3. A developer casts any skill by ID and level and sees its visual and hears its sound where the source resolves them; effects that need missing native behaviour show as explicit gaps.
   4. All 40 tables are available as JSON with the inventory showing route and status each (sysstring/systemmsg count resolved), and the developer opens any of the about 140 `interface.xdat` windows from the pinnable sandbox sheet, filled with sandbox data.
   5. One coverage report lists converted, loads and gap counts per part, and walking across tile borders loads and unloads bounded cells without losing nearby collision, with a recorded baseline measurement.
-**Plans**: 2/55 plans executed
-- [ ] 02-01-PLAN.md
+**Plans**: 3/55 plans executed
+- [x] 02-01-PLAN.md
 - [ ] 02-02-PLAN.md
 - [ ] 02-03-PLAN.md
 - [ ] 02-04-PLAN.md
@@ -204,7 +204,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 (Phase 5 may start b
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundations | 17/17 | In Progress | - |
-| 2. Stage A breadth | 2/55 | In Progress | - |
+| 2. Stage A breadth | 3/55 | In Progress | - |
 | 3. Stage A checks | 0/TBD | Not started | - |
 | 4. Stage B adapter | 0/TBD | Not started | - |
 | 5. Native-parity polish | 0/TBD | Not started | - |
