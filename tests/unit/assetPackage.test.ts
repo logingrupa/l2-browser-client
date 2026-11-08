@@ -53,7 +53,7 @@ describe("local asset package integrity", () => {
 });
 
 describe("inspector disposal precision", () => {
-  it("restores floating-origin GPU matrix hooks for a surviving world after another engine closes", () => {
+  it("restores floating-origin GPU matrix hooks for a surviving world after the Babylon 9.27.1 global reset on another engine's close, and again after a repeated restore", () => {
     ResetMatrixFunctions();
     const baseline = Effect.prototype.setMatrix;
     const worldEngine = new NullEngine(), world = new Scene(worldEngine, { useFloatingOrigin: true });
@@ -62,11 +62,11 @@ describe("inspector disposal precision", () => {
       expect(world.floatingOriginMode).toBe(true);
       expect(Effect.prototype.setMatrix).not.toBe(baseline);
       inspector.dispose(); inspectorEngine.dispose();
-      expect(Effect.prototype.setMatrix).toBe(baseline); // Babylon 9.27.1 global reset regression.
+      expect(Effect.prototype.setMatrix).toBe(baseline);
       restoreWorldPrecision();
       expect(Effect.prototype.setMatrix).not.toBe(baseline);
       expect(world.isDisposed).toBe(false);
-      restoreWorldPrecision(); // Safe after repeated replace/close cleanup.
+      restoreWorldPrecision();
       expect(Effect.prototype.setMatrix).not.toBe(baseline);
     } finally { inspector.dispose(); inspectorEngine.dispose(); world.dispose(); worldEngine.dispose(); }
   });
