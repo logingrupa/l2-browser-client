@@ -54,6 +54,8 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 - [ ] **WORLD-04**: One persistent runtime scene with bounded cells: baseline measured first, then residency cache and terrain/mesh LOD with traceable derivatives; reveal readiness and nearby collision preserved; visual LOD never redefines collision.
 - [ ] **WORLD-05**: The sandbox can walk any converted tile with terrain collision.
 - [ ] **WORLD-06**: Minimap and world map from `MinimapCtrl`, `zonename`, `huntingzone`.
+- [ ] **WORLD-07** (provisional, owner review): The unreviewed 74-file post-migration terrain packet (`artifacts/native-parity/research/terrain-mask-native-rea-followup/continuation-20261106-ongoing/post-migration-visibility-20261106`, manifest fileCount 74) gets the independent review that never ran, by a reviewer that did not write it, after its manifest hashes are re-verified. Each finding gets one verdict (adopted, rejected or polish) recorded in `docs/parts/world/EVIDENCE.md`. Adopted findings become tile-general converter or runtime steps with tests: the layer-sequence fixtures and `DISCRIMINATING_CASES.json` test terrain layer ordering (no pruning rule and no `bUseAlpha` behaviour inferred), and the MusicVolume to `musicinfo` join becomes the per-tile music step of WORLD-02. Y>240 visibility, `bUseAlpha` and alpha-test precision stay open under POL-01. No native launch or capture.
+- [ ] **WORLD-08** (provisional, owner review): Static meshes and BSP of every converted tile carry collision taken from source declarations only: for static meshes the actor collision flags (`bCollideActors`, `bBlockActors`, `bBlockPlayers`, resolved through class defaults), material-slot `EnableCollision` and the mesh's serialized collision data; for BSP the whole-level BSP by source PolyFlags plus BlockingVolumes. An object whose collision cannot be read is a per-object gap in the coverage manifest; nothing is inferred from appearance or names. Collision is produced by converters, kept apart from visual LOD (WORLD-04), and is sandbox and presentation support only, not the native extent sweep or geodata (GEO-01). Server authority over movement is decided in Phase 4.
 
 ### Actors lane L2 (Phase 2)
 
@@ -185,6 +187,8 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 | WORLD-04 | Phase 2 | Pending |
 | WORLD-05 | Phase 2 | Pending |
 | WORLD-06 | Phase 2 | Pending |
+| WORLD-07 | Phase 2 | Pending (provisional, owner review) |
+| WORLD-08 | Phase 2 | Pending (provisional, owner review) |
 | ACT-01 | Phase 2 | Pending |
 | ACT-02 | Phase 2 | Pending |
 | ACT-03 | Phase 2 | Pending |
@@ -216,8 +220,8 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 | EDIT-02 | Phase 6 | Pending |
 
 **Coverage:**
-- v1 requirements: 56 total
-- Mapped to phases: 56
+- v1 requirements: 58 total (WORLD-07 and WORLD-08 provisional, owner review)
+- Mapped to phases: 58
 - Unmapped: 0
 
 ---

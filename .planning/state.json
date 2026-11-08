@@ -1,0 +1,43 @@
+{
+  "contract": "1.0.0",
+  "flavor": "core",
+  "milestone": null,
+  "phases": [
+    {
+      "number": "1",
+      "name": "Foundations",
+      "status": "in_progress"
+    },
+    {
+      "number": "2",
+      "name": "Stage A breadth",
+      "status": "pending"
+    },
+    {
+      "number": "3",
+      "name": "Stage A checks",
+      "status": "pending"
+    },
+    {
+      "number": "4",
+      "name": "Stage B adapter",
+      "status": "pending"
+    },
+    {
+      "number": "5",
+      "name": "Native-parity polish",
+      "status": "pending"
+    },
+    {
+      "number": "6",
+      "name": "Performance and build reproducibility",
+      "status": "pending"
+    }
+  ],
+  "next": {
+    "command": "/gsd-progress --next",
+    "label": "Advance to the next step",
+    "reason": "Phase 1 of 6 · 0% · executing"
+  },
+  "updated_at": "2026-11-08T04:55:43.771Z"
+}

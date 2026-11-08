@@ -80,9 +80,9 @@ Plans:
 ### Phase 2: Stage A breadth
 **Goal**: Every part of the native client is converted, or listed as an explicit gap, and loads in the offline sandbox.
 **Depends on**: Phase 1
-**Requirements**: SAND-02, DATA-01, DATA-02, DATA-03, UI-01, UI-02, UI-03, WORLD-01, WORLD-02, WORLD-03, WORLD-04, WORLD-05, WORLD-06, ACT-01, ACT-02, ACT-03, ACT-04, ACT-05, ACT-06, INT-01, CONV-01, CONV-02
+**Requirements**: SAND-02, DATA-01, DATA-02, DATA-03, UI-01, UI-02, UI-03, WORLD-01, WORLD-02, WORLD-03, WORLD-04, WORLD-05, WORLD-06, WORLD-07, WORLD-08, ACT-01, ACT-02, ACT-03, ACT-04, ACT-05, ACT-06, INT-01, CONV-01, CONV-02
 **Lane map** (DEC-OWN-6, at most 3 lanes plus integration; UI runs in parallel from day one):
-  - L1 world: WORLD-01..06. Starting input: [genericity audit](../docs/research/genericity-audit-20261108.md) (Warning 7)
+  - L1 world: WORLD-01..08 (WORLD-07 and WORLD-08 provisional, owner review). Starting input: [genericity audit](../docs/research/genericity-audit-20261108.md) (Warning 7)
   - L2 actors: ACT-01..06
   - L3 data + UI: DATA-01..03, UI-01..03, SAND-02
   - Integration: INT-01; CONV-01 and CONV-02 govern all lanes
@@ -157,7 +157,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 (Phase 5 may start b
 
 ## Coverage
 
-56 of 56 v1 requirements mapped, each to exactly one phase (Phase 1: 14, Phase 2: 22, Phase 3: 5, Phase 4: 8, Phase 5: 4, Phase 6: 3). Per-requirement traceability: `.planning/REQUIREMENTS.md`. Deferred to v2: GEO-01, LATE-01, VIEW-01 (optional Editor viewer). Superseded: REQ-work-order-v2-depth-first, EDIT-01 (DEC-OWN-8).
+58 of 58 v1 requirements mapped, each to exactly one phase (Phase 1: 14, Phase 2: 24, Phase 3: 5, Phase 4: 8, Phase 5: 4, Phase 6: 3). Per-requirement traceability: `.planning/REQUIREMENTS.md`. Deferred to v2: GEO-01, LATE-01, VIEW-01 (optional Editor viewer). Superseded: REQ-work-order-v2-depth-first, EDIT-01 (DEC-OWN-8).
 
 ---
 *Roadmap created: 2026-11-08. Updated 2026-11-08 for DEC-OWN-8.*
