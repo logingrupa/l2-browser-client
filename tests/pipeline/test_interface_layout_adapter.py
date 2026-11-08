@@ -1,3 +1,4 @@
+from collections import Counter
 import hashlib
 import json
 from pathlib import Path
@@ -17,10 +18,14 @@ from native_store.catalog_writer import WINDOW_MANIFEST_PATH_PATTERN, validate_c
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import UnitLedger
 from pinned_elbera_module import ELBERA_ROOT, load_pinned_elbera_module
-from synthetic_interface_xdat import SYNTHETIC_WINDOWS, synthetic_interface_xdat
+from synthetic_interface_xdat import (SYNTHETIC_WINDOW_LAYOUT_PATH, SYNTHETIC_WINDOWS, decode_synthetic_interface_layout,
+                                      synthetic_interface_xdat, synthetic_window_layout_bytes)
 
 ELBERA_PARSER_AVAILABLE = (ELBERA_ROOT / adapter.ELBERA_PARSE_XDAT_PATH).is_file()
 SYNTHETIC_INPUT_SHA256 = '1' * 64
+COMMITTED_CENSUS_PATH = ROOT / 'docs' / 'parts' / 'ui' / 'interface-window-census.json'
+LANE_STORE_CATALOG_PATH = ROOT / 'artifacts' / 'lane-store' / 'data-ui' / 'l2' / 'catalog.json'
+DECLARED_INTERFACE_WINDOW_COUNT = 165
 
 
 def manifest_nodes(node):
@@ -29,10 +34,23 @@ def manifest_nodes(node):
         yield from manifest_nodes(child)
 
 
-def decode_synthetic_layout(data):
-    parse_xdat_module = load_pinned_elbera_module(adapter.ELBERA_PARSE_XDAT_PATH, adapter.ELBERA_PARSE_XDAT_SHA256)
-    with patch.object(adapter, 'INTERFACE_XDAT_SHA256', hashlib.sha256(data).hexdigest()):
-        return adapter.decode_interface_layout(data, parse_xdat_module), parse_xdat_module
+def pinned_parse_xdat_module():
+    return load_pinned_elbera_module(adapter.ELBERA_PARSE_XDAT_PATH, adapter.ELBERA_PARSE_XDAT_SHA256)
+
+
+class WindowIdentifierTests(unittest.TestCase):
+    def roots(self, *names):
+        return [{'name': name} for name in names]
+
+    def test_repeated_root_names_get_one_based_ordinals_in_source_order(self):
+        self.assertEqual(adapter.window_identifiers(self.roots('A', 'B', 'A')), ['A#1', 'B', 'A#2'])
+
+    def test_a_root_name_that_appears_once_keeps_its_bare_name(self):
+        self.assertEqual(adapter.window_identifiers(self.roots('A')), ['A'])
+
+    def test_a_root_name_outside_the_window_id_rule_is_refused(self):
+        with self.assertRaisesRegex(adapter.InterfaceLayoutError, 'does not match'):
+            adapter.window_identifiers(self.roots('Has.Dot'))
 
 
 class DecodeRefusalTests(unittest.TestCase):
@@ -64,7 +82,8 @@ class DecodeRefusalTests(unittest.TestCase):
 class SyntheticInterfaceLayoutTests(unittest.TestCase):
     def setUp(self):
         self.data = synthetic_interface_xdat(SYNTHETIC_WINDOWS)
-        self.layout, self.parse_xdat_module = decode_synthetic_layout(self.data)
+        self.parse_xdat_module = pinned_parse_xdat_module()
+        self.layout = decode_synthetic_interface_layout(self.data, self.parse_xdat_module)
 
     def manifests(self):
         return [adapter.window_layout_manifest(window_id, root, self.layout.record_of_node, self.data)
@@ -105,6 +124,55 @@ class SyntheticInterfaceLayoutTests(unittest.TestCase):
         self.assertEqual(status_manifest['textureRefs'], ['SyntheticUI.StatusWnd.BackPlate', 'SyntheticUI.StatusWnd.GaugeFill',
                                                           'SyntheticUI.StatusWnd.GaugeBack'])
         self.assertEqual(status_manifest['sourceSha256'], hashlib.sha256(self.data).hexdigest())
+
+    def test_census_lists_roots_in_source_order_with_duplicate_ids_and_sorted_control_names(self):
+        census = adapter.interface_window_census(self.layout, adapter.ELBERA_PARSE_XDAT_SHA256)
+        self.assertEqual((census['declaredWindowCount'], census['scannedRecordCount'], census['rootWindowCount']), (4, 7, 5))
+        self.assertEqual([row['windowId'] for row in census['windows']], ['SyntheticStatusWnd', 'SyntheticRepeatedWnd#1', 'SyntheticRepeatedTex',
+                                                                         'SyntheticPlainWnd', 'SyntheticRepeatedWnd#2'])
+        self.assertEqual(census['windows'][2], {'windowId': 'SyntheticRepeatedTex', 'name': 'SyntheticRepeatedTex', 'type': 'Texture',
+                                                'sourceOffset': 922})
+        self.assertEqual(census['duplicateRootNames'], [{'name': 'SyntheticRepeatedWnd', 'occurrences': 2}])
+        self.assertEqual(census['controlNames'], sorted({record['name'] for record in self.layout.records}))
+        self.assertEqual(census['elberaParser'], {'path': adapter.ELBERA_PARSE_XDAT_PATH, 'sha256': adapter.ELBERA_PARSE_XDAT_SHA256,
+                                                  'commit': '12c9656'})
+
+    def test_committed_synthetic_layout_fixture_regenerates_byte_identically(self):
+        committed = SYNTHETIC_WINDOW_LAYOUT_PATH.read_bytes().replace(b'\r\n', b'\n')
+        self.assertEqual(synthetic_window_layout_bytes(self.parse_xdat_module), committed)
+        self.assertEqual(synthetic_window_layout_bytes(pinned_parse_xdat_module()), committed)
+
+
+class CommittedInterfaceWindowCensusTests(unittest.TestCase):
+    def setUp(self):
+        self.census = json.loads(COMMITTED_CENSUS_PATH.read_bytes())
+
+    def test_census_pins_the_lock_equal_source_and_the_parser(self):
+        self.assertEqual((self.census['sourcePath'], self.census['sourceSha256']), (adapter.INTERFACE_XDAT_PATH, adapter.INTERFACE_XDAT_SHA256))
+        self.assertEqual(self.census['elberaParser']['sha256'], adapter.ELBERA_PARSE_XDAT_SHA256)
+
+    def test_census_declares_165_windows_and_lists_each_decoded_root_once_in_source_order(self):
+        self.assertEqual(self.census['declaredWindowCount'], DECLARED_INTERFACE_WINDOW_COUNT)
+        rows = self.census['windows']
+        self.assertEqual(len(rows), self.census['rootWindowCount'])
+        self.assertEqual(len({row['windowId'] for row in rows}), len(rows))
+        offsets = [row['sourceOffset'] for row in rows]
+        self.assertEqual(offsets, sorted(set(offsets)))
+        self.assertEqual([row['windowId'] for row in rows], adapter.window_identifiers(rows))
+        repeated = {entry['name']: entry['occurrences'] for entry in self.census['duplicateRootNames']}
+        self.assertTrue(all(occurrences > 1 for occurrences in repeated.values()))
+        self.assertEqual(repeated, {name: count for name, count in Counter(row['name'] for row in rows).items() if count > 1})
+
+    def test_control_names_are_a_sorted_unique_set_covering_every_root(self):
+        names = self.census['controlNames']
+        self.assertEqual(names, sorted(set(names)))
+        self.assertLessEqual({row['name'] for row in self.census['windows']}, set(names))
+        self.assertLessEqual(len(names), self.census['scannedRecordCount'])
+
+    @unittest.skipUnless(LANE_STORE_CATALOG_PATH.is_file(), 'data-ui lane store has no catalog')
+    def test_every_lane_store_window_record_is_a_census_window(self):
+        catalog_window_ids = {record['id'] for record in json.loads(LANE_STORE_CATALOG_PATH.read_bytes()).get('windows', [])}
+        self.assertLessEqual(catalog_window_ids, {row['windowId'] for row in self.census['windows']})
 
 
 @unittest.skipUnless(ELBERA_PARSER_AVAILABLE, 'pinned Elbera checkout with tools/xdat/parse_xdat.py is absent')

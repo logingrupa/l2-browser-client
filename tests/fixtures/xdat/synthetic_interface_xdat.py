@@ -1,6 +1,19 @@
+import hashlib
+from pathlib import Path
 import struct
+import sys
 from typing import NamedTuple
+from unittest.mock import patch
 
+REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
+for script_folder in (REPOSITORY_ROOT / 'scripts', REPOSITORY_ROOT / 'scripts' / 'data'):
+    if str(script_folder) not in sys.path:
+        sys.path.insert(0, str(script_folder))
+
+import interface_layout_adapter
+from pinned_elbera_module import load_pinned_elbera_module
+
+SYNTHETIC_WINDOW_LAYOUT_PATH = Path(__file__).resolve().parent / 'synthetic-window-layout.json'
 WINDOW_PARENT_SENTINEL = 'undefined'
 SYNTHETIC_STATE_GROUP = 'SyntheticState'
 WINDOW_DRAWER_RESERVED_BYTES = 88
@@ -73,3 +86,21 @@ SYNTHETIC_WINDOWS = (
     SyntheticWindow('SyntheticPlainWnd', 48, 24, (9, 9, '', -12, -6), ()),
     SyntheticWindow('SyntheticRepeatedWnd', 64, 32, (7, 7, '', 4, 0), ()),
 )
+
+
+def decode_synthetic_interface_layout(data, parse_xdat_module):
+    with patch.object(interface_layout_adapter, 'INTERFACE_XDAT_SHA256', hashlib.sha256(data).hexdigest()):
+        return interface_layout_adapter.decode_interface_layout(data, parse_xdat_module)
+
+
+def synthetic_window_layout_bytes(parse_xdat_module):
+    data = synthetic_interface_xdat(SYNTHETIC_WINDOWS)
+    layout = decode_synthetic_interface_layout(data, parse_xdat_module)
+    manifests = [interface_layout_adapter.window_layout_manifest(window_id, root, layout.record_of_node, data)
+                 for window_id, root in zip(interface_layout_adapter.window_identifiers(layout.roots), layout.roots)]
+    return interface_layout_adapter.interface_layout_json_bytes(manifests)
+
+
+if __name__ == '__main__':
+    parse_xdat = load_pinned_elbera_module(interface_layout_adapter.ELBERA_PARSE_XDAT_PATH, interface_layout_adapter.ELBERA_PARSE_XDAT_SHA256)
+    SYNTHETIC_WINDOW_LAYOUT_PATH.write_bytes(synthetic_window_layout_bytes(parse_xdat))

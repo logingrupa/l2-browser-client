@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from collections import Counter
 import hashlib
+import json
 from typing import NamedTuple
 
 from native_store.catalog_writer import WINDOW_ID_PATTERN
+from pinned_elbera_module import ELBERA_COMMIT
 
 INTERFACE_XDAT_PATH = 'system/interface.xdat'
 INTERFACE_XDAT_SHA256 = 'b5b37678674162f3a19380e86fa357a44e330f99607504c927c41e3dcd31b641'
@@ -13,6 +15,7 @@ ELBERA_PARSE_XDAT_SHA256 = 'aeb7ebed22d68fdca8f8a9828c32620c01be4ca03623c4a020dc
 WINDOW_ANCHOR_PROOF = 'Elbera NWindow af6c3437 proof, unverified on IMPORTA 7c12fb6b'
 NATIVE_WINDOW_LAYOUT_KIND = 'native-window-layout'
 NATIVE_WINDOW_LAYOUT_SCHEMA_VERSION = 1
+INTERFACE_WINDOW_CENSUS_SCHEMA_VERSION = 1
 NODE_CHILDREN_FIELD = 'children'
 NODE_TEXTURES_FIELD = 'textures'
 
@@ -108,3 +111,22 @@ def window_layout_manifest(window_id, root_node, record_of_node, data):
             'name': root_node['name'], 'sourceSha256': sha256_hex(data), 'sourceOffset': root['sourceOffset'], 'root': root,
             'textureRefs': list(texture_references), 'anchorProof': WINDOW_ANCHOR_PROOF}
 
+
+def interface_window_census(layout, elbera_parser_sha256):
+    root_name_occurrences = Counter(root['name'] for root in layout.roots)
+    return {
+        'schemaVersion': INTERFACE_WINDOW_CENSUS_SCHEMA_VERSION, 'sourcePath': INTERFACE_XDAT_PATH, 'sourceSha256': layout.source_sha256,
+        'elberaParser': {'path': ELBERA_PARSE_XDAT_PATH, 'sha256': elbera_parser_sha256, 'commit': ELBERA_COMMIT},
+        'declaredWindowCount': layout.declared_window_count, 'scannedRecordCount': len(layout.records),
+        'rootWindowCount': len(layout.roots),
+        'windows': [{'windowId': window_id, 'name': root['name'], 'type': root['type'],
+                     'sourceOffset': layout.record_of_node(root)['off']}
+                    for window_id, root in zip(window_identifiers(layout.roots), layout.roots)],
+        'duplicateRootNames': [{'name': name, 'occurrences': occurrences}
+                               for name, occurrences in root_name_occurrences.items() if occurrences > 1],
+        'controlNames': sorted({record['name'] for record in layout.records}),
+    }
+
+
+def interface_layout_json_bytes(value):
+    return (json.dumps(value, indent=1, sort_keys=True, ensure_ascii=True, allow_nan=False) + '\n').encode('ascii')

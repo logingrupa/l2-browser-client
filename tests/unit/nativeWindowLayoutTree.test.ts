@@ -8,6 +8,7 @@ import {
 const tailHash = "a".repeat(64);
 const laneStoreRoot = "artifacts/lane-store/data-ui/l2";
 const laneStoreCatalogPath = `${laneStoreRoot}/catalog.json`;
+const syntheticWindowLayoutPath = "tests/fixtures/xdat/synthetic-window-layout.json";
 
 function laneStoreWindowManifests(): readonly unknown[] {
   const catalog = JSON.parse(readFileSync(laneStoreCatalogPath, "utf8")) as { readonly windows?: readonly unknown[] };
@@ -102,6 +103,16 @@ describe("native window layout manifest parser", () => {
   it("rejects a tree of more than 4096 nodes", () => {
     const children = Array.from({ length: 4096 }, (_, index) => literalNode(`LiteralChild${index}`, 100 + index));
     expect(() => parseNativeWindowManifest(literalManifest({ textureRefs: [] }, { children }))).toThrow(/exceeds 4096 nodes/);
+  });
+
+  it("parses every manifest the Python adapter generated from synthetic xdat bytes", () => {
+    const fixture = JSON.parse(readFileSync(syntheticWindowLayoutPath, "utf8")) as readonly unknown[];
+    const manifests = fixture.map(parseNativeWindowManifest);
+    expect(manifests.map(manifest => manifest.windowId)).toEqual([
+      "SyntheticStatusWnd", "SyntheticRepeatedWnd#1", "SyntheticRepeatedTex", "SyntheticPlainWnd", "SyntheticRepeatedWnd#2",
+    ]);
+    expect(manifests[0]?.root.children.map(child => child.name)).toEqual(["SyntheticBackTex", "SyntheticGaugeBar"]);
+    expect(manifests[2]?.root.parentResolution?.status).toBe("ambiguous");
   });
 
   it.skipIf(!existsSync(laneStoreCatalogPath))("parses every window manifest the layout step wrote to the data-ui lane store", () => {
