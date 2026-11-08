@@ -18,8 +18,15 @@ export function listTypeScriptModules(projectFolder: string): string[] {
     .sort();
 }
 
+export function readSourceModuleText(modulePath: string): string {
+  return readFileSync(path.join(projectDirectory, modulePath), "utf8");
+}
+
 export function readSourceImports(modulePath: string): SourceImport[] {
-  const sourceText = readFileSync(path.join(projectDirectory, modulePath), "utf8");
+  return readSourceTextImports(modulePath, readSourceModuleText(modulePath));
+}
+
+export function readSourceTextImports(modulePath: string, sourceText: string): SourceImport[] {
   const specifiers = [...sourceText.matchAll(staticSpecifierPattern), ...sourceText.matchAll(dynamicSpecifierPattern)]
     .map(match => match[1]!);
   return specifiers.map(specifier => ({ specifier, resolvedModulePath: resolveRelativeSpecifier(modulePath, specifier) }));
