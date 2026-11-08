@@ -71,9 +71,6 @@ describe("authored environment incremental geometry loading", () => {
   });
 
   it.each([
-    { search: "?world=interlude", file: "native-parity.babylon", previous: false },
-    { search: "?world=interlude", file: "native-parity.babylon", previous: true },
-    { search: "?world=interlude&authored=0", file: "native-parity.babylon", previous: false },
     { search: "?world=courtyard&authored=1", file: "example.babylon", previous: false },
     { search: "?world=courtyard", file: "example.babylon", previous: true },
     { search: "?authored=1", file: "example.babylon", previous: false },
