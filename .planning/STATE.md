@@ -109,6 +109,11 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..8 and DEC-PORT-1..3.
 - Lane tool support for this repo is not available on DATABASE-PC yet; use plain `git worktree` until it lands.
 - Count differences to check in the decoder inventory: 435 vs 433 `.utx`, `chargrp` has 15 rows.
 
+## Needs Human
+
+- Needs Human (plan 01-12): restage `public/l2` to asset.json v2 from the main checkout (integration thread only; lanes never restage the store). Converters now write v2; the staged store is still v1.
+- Needs Human (plan 01-12): after that restage, delete v1 acceptance in `src/assets/package/readAssetPackage.ts`, `src/effects/nativePowerStrikeSource.ts` and `scripts/native_assets_lib/asset_manifest.py`, and regenerate the golden fixtures without `model-v1.l2asset` (see docs/OUTPUT_CONTRACT.md, "Transition from v1").
+
 ## Deferred Items
 
 | Category | Item | Status | Deferred At | Milestone |
