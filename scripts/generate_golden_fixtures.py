@@ -13,7 +13,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from native_assets import SOURCE_TO_GLTF, archive_bytes, sha
 from native_assets_lib.asset_manifest import asset_coordinates_record, build_asset_manifest, reference_client_build, source_path_record
 from native_assets_lib.gltf import json_bytes
-from reference_client_guard import ENGINE_LIBRARY_RELATIVE_PATH, REFERENCE_CLIENT_LOCK_FILE_FIELDS, REFERENCE_CLIENT_LOCK_SCHEMA_VERSION
+from reference_client_guard import (ENGINE_LIBRARY_RELATIVE_PATH, REFERENCE_CLIENT_LOCK_FILE_FIELDS, REFERENCE_CLIENT_LOCK_SCHEMA_VERSION,
+    read_reference_client_lock)
 
 SYNTHETIC_PACKAGE = 'SyntheticFixture'
 SYNTHETIC_HOST = 'SYNTHETIC-HOST'
@@ -102,7 +103,7 @@ def golden_fixture_files(lock_directory):
     reference_lock_bytes = json_bytes(reference_lock)
     lock_directory.mkdir(parents=True, exist_ok=True)
     (lock_directory / REFERENCE_CLIENT_LOCK_NAME).write_bytes(reference_lock_bytes)
-    client_build = reference_client_build(lock_directory / REFERENCE_CLIENT_LOCK_NAME)
+    client_build = reference_client_build(read_reference_client_lock(lock_directory / REFERENCE_CLIENT_LOCK_NAME))
     glb = synthetic_glb()
     model_v1 = version_one_model_package('SyntheticModelVersionOne', glb)
     model_v2 = version_two_package('model', 'SyntheticModelVersionTwo', 'model.glb', glb, 'model/gltf-binary', client_build)

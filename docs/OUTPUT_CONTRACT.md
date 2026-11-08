@@ -31,7 +31,7 @@ is the Python validator and `readAssetPackage` is the browser validator.
 | `source.edition`, `package`, `object`, `sha256` | Source identity | Package bytes read through the reference client guard |
 | `source.path` | `{ host, absolutePath }` | `socket.gethostname()` (upper case) and the resolved POSIX path of the primary package |
 | `clientBuild.referenceTreeLockSha256` | 64 hex | SHA-256 of `json_bytes` of the parsed `recipes/reference-client-tree.lock.json` |
-| `clientBuild.engineDllSha256` | 64 hex | The lock's `system/Engine.dll` record, which must be class `equal` |
+| `clientBuild.engineDllSha256` | 64 hex | The lock's `system/Engine.dll` record, which must be class `equal` and match the converted root's own `system/Engine.dll` |
 | `converterVersion` | 64 hex | `implementation_hash()` over the converter and its libraries |
 | `coordinates` | Models only, see below | `asset_coordinates_record(SOURCE_TO_GLTF, 100)` |
 | `model`, `image` or `audio` | `{ file, ... }` | Primary payload name; models add `nativeMaterialGraph` and `nativeSkinAdapter` when present |

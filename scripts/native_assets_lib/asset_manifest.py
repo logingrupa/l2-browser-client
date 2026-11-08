@@ -1,10 +1,9 @@
 import hashlib
 import math
-from pathlib import Path
 import re
 
 from native_assets_lib.gltf import json_bytes
-from reference_client_guard import ENGINE_LIBRARY_RELATIVE_PATH, read_reference_client_lock
+from reference_client_guard import ENGINE_LIBRARY_RELATIVE_PATH
 
 SUPPORTED_ASSET_MANIFEST_VERSIONS = (1, 2)
 ASSET_MANIFEST_VERSION = 2
@@ -33,8 +32,7 @@ def asset_coordinates_record(source_to_gltf, source_units_per_metre):
     return {'unit': 'metre', 'sourceUnitsPerMetre': source_units_per_metre, 'handedness': 'right', 'upAxis': 'Y', 'sourceToGltf': list(source_to_gltf)}
 
 
-def reference_client_build(lock_path):
-    lock = read_reference_client_lock(Path(lock_path))
+def reference_client_build(lock):
     engine = lock.record(ENGINE_LIBRARY_RELATIVE_PATH)
     if engine is None or engine['class'] != 'equal' or not HEX_DIGEST_PATTERN.match(str(engine['importaSha256'])):
         raise ValueError(f'reference client lock does not record {ENGINE_LIBRARY_RELATIVE_PATH} as equal')

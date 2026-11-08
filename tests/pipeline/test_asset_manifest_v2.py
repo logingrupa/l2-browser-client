@@ -15,7 +15,7 @@ from native_assets import SOURCE_TO_GLTF
 from native_assets_lib.asset_manifest import (SUPPORTED_ASSET_MANIFEST_VERSIONS, asset_coordinates, asset_coordinates_record,
     build_asset_manifest, reference_client_build, require_supported_asset_manifest, source_path_record)
 from native_assets_lib.gltf import json_bytes
-from reference_client_guard import ReferenceClientLockError
+from reference_client_guard import ReferenceClientLockError, read_reference_client_lock
 
 
 def golden_manifest(name):
@@ -44,13 +44,8 @@ class ClientBuildTests(unittest.TestCase):
     def test_reads_the_canonical_lock_hash_and_engine_library_hash_from_the_lock(self):
         lock = json.loads((GOLDEN / 'reference-client-tree.lock.json').read_bytes())
         engine = dict(zip(lock['fileFields'], lock['files']['system/Engine.dll']))
-        self.assertEqual(reference_client_build(GOLDEN / 'reference-client-tree.lock.json'),
+        self.assertEqual(reference_client_build(read_reference_client_lock(GOLDEN / 'reference-client-tree.lock.json')),
             {'referenceTreeLockSha256': hashlib.sha256(json_bytes(lock)).hexdigest(), 'engineDllSha256': engine['importaSha256']})
-
-    def test_refuses_when_the_lock_is_missing(self):
-        with tempfile.TemporaryDirectory() as directory:
-            with self.assertRaisesRegex(ReferenceClientLockError, 'reference client lock missing'):
-                reference_client_build(Path(directory) / 'absent.lock.json')
 
     def test_refuses_when_engine_library_is_not_equal(self):
         lock = json.loads((GOLDEN / 'reference-client-tree.lock.json').read_bytes())
@@ -59,7 +54,7 @@ class ClientBuildTests(unittest.TestCase):
             path = Path(directory) / 'lock.json'
             path.write_bytes(json_bytes(lock))
             with self.assertRaisesRegex(ValueError, 'as equal'):
-                reference_client_build(path)
+                reference_client_build(read_reference_client_lock(path))
 
     def test_refuses_a_lock_whose_file_fields_are_reordered(self):
         lock = json.loads((GOLDEN / 'reference-client-tree.lock.json').read_bytes())
@@ -68,7 +63,7 @@ class ClientBuildTests(unittest.TestCase):
             path = Path(directory) / 'lock.json'
             path.write_bytes(json_bytes(lock))
             with self.assertRaisesRegex(ReferenceClientLockError, 'unexpected file table'):
-                reference_client_build(path)
+                reference_client_build(read_reference_client_lock(path))
 
 
 class SourcePathTests(unittest.TestCase):

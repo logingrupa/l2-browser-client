@@ -24,7 +24,7 @@ from native_assets_lib.weights import restore_native_weights
 from native_assets_lib.static_materials import native_static_materials
 from native_assets_lib.texture_mips import build_texture_source, UnsupportedTextureSource
 from native_assets_lib.texture_dds import build_texture_dds, UnsupportedTextureDDS
-from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, require_reference_client
+from reference_client_guard import ENGINE_LIBRARY_RELATIVE_PATH, require_reference_client
 
 CONVERTER_DESCRIPTION = 'Convert native Interlude client objects into reproducible .l2asset packages with the pinned UModel; see docs/ASSET_PIPELINE.md.'
 
@@ -150,6 +150,7 @@ class Converter:
         self.package_files_by_casefolded_stem = index_package_files_by_casefolded_stem(self.client)
         self.dependencies = {}
         self.lock_equal_import_closures = set()
+        self.client_build = None
         self.logs = []
         self.table_cache = {}
         self.package_cache = {}
@@ -166,6 +167,15 @@ class Converter:
             raise ValueError(f'Source changed during conversion: {relative}')
         self.dependencies[relative] = digest
         return path
+
+    def measured_client_build(self):
+        if self.client_build is None:
+            client_build = reference_client_build(self.reference_client.lock)
+            engine_library = self.reference_client.require_equal_file(ENGINE_LIBRARY_RELATIVE_PATH)
+            if not engine_library.is_file() or hash_file(engine_library) != client_build['engineDllSha256']:
+                raise ValueError(f'{ENGINE_LIBRARY_RELATIVE_PATH} under {self.client} is missing or differs from the locked reference build')
+            self.client_build = client_build
+        return self.client_build
 
     def require_unchanged_dependencies(self):
         for name, digest in self.dependencies.items():
@@ -675,7 +685,7 @@ class Converter:
                 model_extras['nativeSkinAdapter'] = 'L2NativeSkinWeights/1'
             manifest = build_asset_manifest(
                 identity=identity, kind=kind, source=source, source_path=converted_source_path,
-                client_build=reference_client_build(REFERENCE_CLIENT_LOCK_PATH), converter_version=implementation_hash(),
+                client_build=self.measured_client_build(), converter_version=implementation_hash(),
                 limitations=limitations, animation_events=events, primary_file=primary,
                 coordinates=asset_coordinates_record(SOURCE_TO_GLTF, 100) if kind == 'model' else None, model_extras=model_extras, files=[])
             if kind == 'texture' and metadata.get('nativeTextureDDS', {}).get('status') == 'available':

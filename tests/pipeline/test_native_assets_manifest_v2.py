@@ -15,7 +15,8 @@ GOLDEN = ROOT / 'tests' / 'fixtures' / 'golden'
 sys.path.insert(0, str(ROOT / 'scripts'))
 from native_assets import Converter, archive_bytes, implementation_hash, sha, verify_archive
 from native_assets_lib.asset_manifest import reference_client_build
-from reference_client_lock_fixture import lock_client_as_reference_root
+from reference_client_guard import read_reference_client_lock
+from reference_client_lock_fixture import lock_client_as_reference_root, use_reference_client_lock
 
 
 def golden_manifest(name):
@@ -55,39 +56,47 @@ class VerifyArchiveVersionTests(unittest.TestCase):
 
 
 class ConverterManifestTests(unittest.TestCase):
+    def setUp(self):
+        temporary_directory = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary_directory.cleanup)
+        self.root = Path(temporary_directory.name)
+        self.client = self.root / 'source'
+        self.client.mkdir()
+        self.media = self.client / 'sample.wav'
+        self.media.write_bytes(synthetic_wav())
+        self.tool = self.root / 'tool.exe'
+        self.tool.write_bytes(b'not executed by the media adapter')
+
+    def convert_sample(self):
+        with patch('native_assets.UMODEL_SHA256', sha(self.tool.read_bytes())):
+            return Converter(self.client, self.root / 'output', self.tool).convert({'kind': 'audio', 'media': 'sample.wav'})
+
     def test_converter_writes_a_v2_manifest_with_derived_source_path_build_and_version(self):
-        fixture_lock = GOLDEN / 'reference-client-tree.lock.json'
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            client = root / 'source'
-            client.mkdir()
-            lock_client_as_reference_root(self, client)
-            media = client / 'sample.wav'
-            media.write_bytes(synthetic_wav())
-            tool = root / 'tool.exe'
-            tool.write_bytes(b'not executed by the media adapter')
-            with patch('native_assets.UMODEL_SHA256', sha(tool.read_bytes())), patch('native_assets.REFERENCE_CLIENT_LOCK_PATH', fixture_lock):
-                result = Converter(client, root / 'output', tool).convert({'kind': 'audio', 'media': 'sample.wav'})
-            with zipfile.ZipFile(result['file']) as archive:
-                manifest = json.loads(archive.read('asset.json'))
+        lock_path = lock_client_as_reference_root(self, self.client)
+        with zipfile.ZipFile(self.convert_sample()['file']) as archive:
+            manifest = json.loads(archive.read('asset.json'))
         self.assertEqual(manifest['schemaVersion'], 2)
-        self.assertEqual(manifest['source']['path'], {'host': socket.gethostname().upper(), 'absolutePath': media.resolve().as_posix()})
-        self.assertEqual(manifest['clientBuild'], reference_client_build(fixture_lock))
+        self.assertEqual(manifest['source']['path'], {'host': socket.gethostname().upper(), 'absolutePath': self.media.resolve().as_posix()})
+        self.assertEqual(manifest['clientBuild'], reference_client_build(read_reference_client_lock(lock_path)))
         self.assertEqual(manifest['converterVersion'], implementation_hash())
         self.assertNotIn('coordinates', manifest)
 
     def test_converter_refuses_to_write_without_the_reference_lock(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            client = root / 'source'
-            client.mkdir()
-            lock_client_as_reference_root(self, client)
-            (client / 'sample.wav').write_bytes(synthetic_wav())
-            tool = root / 'tool.exe'
-            tool.write_bytes(b'not executed by the media adapter')
-            with patch('native_assets.UMODEL_SHA256', sha(tool.read_bytes())), patch('native_assets.REFERENCE_CLIENT_LOCK_PATH', root / 'absent.lock.json'):
-                with self.assertRaisesRegex(ValueError, 'reference client lock missing'):
-                    Converter(client, root / 'output', tool).convert({'kind': 'audio', 'media': 'sample.wav'})
+        use_reference_client_lock(self, self.root / 'absent.lock.json')
+        with self.assertRaisesRegex(ValueError, 'reference client lock missing'):
+            self.convert_sample()
+        self.assertFalse((self.root / 'output').exists())
+
+    def test_converter_refuses_to_stamp_a_build_its_client_engine_library_does_not_match(self):
+        lock_client_as_reference_root(self, self.client)
+        engine_library = self.client / 'system/Engine.dll'
+        for description, change_engine_library in (('differing', lambda: engine_library.write_bytes(b'another engine library')),
+                                                    ('missing', engine_library.unlink)):
+            with self.subTest(engine_library=description):
+                change_engine_library()
+                with self.assertRaisesRegex(ValueError, 'system/Engine.dll under .* is missing or differs from the locked reference build'):
+                    self.convert_sample()
+                self.assertEqual(list((self.root / 'output').rglob('asset.l2asset')), [])
 
 
 if __name__ == '__main__':

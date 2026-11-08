@@ -94,11 +94,11 @@ class SourceDispatchTests(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.client = Path(self.directory.name)
-        lock_client_as_reference_root(self, self.client)
         self.binary = self.client / 'system/Engine.dll'
         self.binary.parent.mkdir()
         image = one_section_pe_with_offset_virtual_addresses_and_skill_three_selected_by_third_byte()
         self.binary.write_bytes(image)
+        lock_client_as_reference_root(self, self.client)
         self.effect = {'object': 'Effects.Power', 'nativeSuperClass': 'Engine.Emitter',
             'properties': {'DrawScale': 0.05, 'AutoReplay': True, 'bUseDynamicLights': False},
             'children': [{'name': 'MeshEmitter2', 'class': 'Engine.MeshEmitter', 'properties': {'MaxParticles': 1}}]}
