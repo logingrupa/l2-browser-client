@@ -3,7 +3,7 @@ import type { VariableInfo } from "../ui/devSheet/types";
 import { attachNativeSkyEnvironmentControls } from "../scene/world/nativeSkyEnvironmentControls";
 import { nativeSandboxPresentation } from "../scene/presentationConfiguration";
 import type { NativeSliceSheetTools } from "./nativeSliceSheet";
-import { presentationConfigurationVariables } from "./presentationConfigurationVariables";
+import { attachScenePresentationGroup } from "./attachScenePresentationGroup";
 import type { NativeSliceSheetContext } from "./attachNativeSliceSheet";
 
 export interface NativeSliceCameraControls {
@@ -72,20 +72,10 @@ function attachFlameGroup(section: DevSection, context: NativeSliceSheetContext,
   return { showFlameFailure };
 }
 
-function attachScenePresentationGroup(section: DevSection): void {
-  const variables = presentationConfigurationVariables(nativeSandboxPresentation);
-  const presentationGroup = section.group("scene-presentation", "Scene presentation", {
-    hint: "Camera, lights, clear colour and fog the native sandbox scene is built from. They are browser presentation values carried over from the Editor scene, not Lineage II data.",
-    variables: () => variables,
-  });
-  presentationGroup.readout({ label: "Presentation", testId: "native-scene-presentation", value: () => `${variables.length} values · presentation, not L2`,
-    hint: "Hover for every camera, light, colour and fog value with its tracked source.", variables: () => variables });
-}
-
 export function attachNativeSliceWorldSheet(section: DevSection, context: NativeSliceSheetContext, tools: NativeSliceSheetTools): NativeSliceWorldSheet {
   attachCameraGroup(section, context, tools);
   attachSkyGroup(section, context, tools);
   const flameSheet = attachFlameGroup(section, context, tools);
-  attachScenePresentationGroup(section);
+  attachScenePresentationGroup(section, nativeSandboxPresentation, { sceneName: "native sandbox scene", readoutTestId: "native-scene-presentation" });
   return flameSheet;
 }

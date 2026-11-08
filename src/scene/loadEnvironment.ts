@@ -1,20 +1,19 @@
 import { Scene } from "@babylonjs/core/scene";
 import type { AbstractEngine } from "@babylonjs/core/Engines/abstractEngine";
-import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
+import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { Color4 } from "@babylonjs/core/Maths/math.color";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import "./registerSceneShaders";
-import { loadScene } from "babylonjs-editor-tools";
-import { scriptsMap } from "../scripts";
-import { loadImportedWorld } from "./world/loadImportedWorld";
+import { loadImportedWorld, type ImportedWorld } from "./world/loadImportedWorld";
 import { setImportedEnvironment } from "./environmentContext";
-import { guardSceneStartup, type SceneStartupOptions } from "./guardSceneStartup";
+import type { SceneStartupOptions } from "./guardSceneStartup";
 import { requireSceneStartup } from "./prepareSceneForReveal";
 import { buildPresentationScene } from "./buildPresentationScene";
-import { nativeSandboxPresentation, talkingIslandCameraOverrides } from "./presentationConfiguration";
+import { nativeSandboxPresentation, referenceWorldPresentation, talkingIslandCameraOverrides } from "./presentationConfiguration";
 import { nativeSliceDocumentTitle, talkingIslandDocumentTitle } from "./documentTitles";
 import { startNativeSandboxRuntime } from "../runtime/startNativeSandboxRuntime";
 import { nativeSandboxConfiguration } from "../runtime/nativeSandboxConfiguration";
+import { createWorldRuntime } from "../runtime/createWorldRuntime";
 
 type EnvironmentStatusListener = SceneStartupOptions["onStatus"];
 
@@ -30,29 +29,20 @@ function loadNativeSandboxWorld(engine: AbstractEngine): Scene {
   }
 }
 
-async function loadAuthoredNativeWorldOnDemand(scene: Scene, onStatus: EnvironmentStatusListener): Promise<void> {
-  requireSceneStartup(scene, "native-world");
-  const { loadAuthoredNativeWorld } = await import("./authoredNativeWorld");
-  await loadAuthoredNativeWorld(scene, onStatus);
+async function loadAuthoredNativeWorldOnDemand(engine: AbstractEngine, onStatus: EnvironmentStatusListener): Promise<Scene> {
+  const scene = new Scene(engine);
+  try {
+    requireSceneStartup(scene, "native-world");
+    const { loadAuthoredNativeWorld } = await import("./authoredNativeWorld");
+    await loadAuthoredNativeWorld(scene, onStatus);
+    return scene;
+  } catch (error: unknown) {
+    scene.dispose();
+    throw error;
+  }
 }
 
-async function loadReferenceWorld(scene: Scene, onStatus: EnvironmentStatusListener, isCourtyard: boolean): Promise<void> {
-  await guardSceneStartup(scene,
-    onProgress => loadScene("/scene/", "example.babylon", scene, scriptsMap, { quality: "high", onProgress }),
-    onStatus ? { onStatus } : {});
-  const camera = scene.getCameraByName("World camera");
-  if (!(camera instanceof ArcRotateCamera)) throw new Error("The authored World camera must be an ArcRotateCamera.");
-  scene.activeCamera = camera;
-  if (isCourtyard) return;
-  const authoredMeshes = [...scene.meshes];
-  scene.useRightHandedSystem = true;
-  const world = await loadImportedWorld(scene);
-  if (!world) {
-    scene.useRightHandedSystem = false;
-    return;
-  }
-  setImportedEnvironment(scene, world);
-  for (const mesh of authoredMeshes) mesh.setEnabled(false);
+function applyTalkingIslandCameraOverrides(scene: Scene, camera: ArcRotateCamera, world: ImportedWorld): void {
   scene.clearColor = Color4.FromArray(talkingIslandCameraOverrides.clearColor);
   camera.setTarget(world.spawnPoint.add(Vector3.FromArray(talkingIslandCameraOverrides.targetOffsetAboveSpawnPoint)));
   camera.alpha = talkingIslandCameraOverrides.alpha;
@@ -65,18 +55,26 @@ async function loadReferenceWorld(scene: Scene, onStatus: EnvironmentStatusListe
   document.title = talkingIslandDocumentTitle;
 }
 
-export async function loadEnvironment(engine: AbstractEngine, onStatus?: EnvironmentStatusListener): Promise<Scene> {
-  const query = new URLSearchParams(window.location.search);
-  const isNativeWorld = query.get("world") === "interlude";
-  const isAuthoredNativeWorld = isNativeWorld && query.get("authored") === "1";
-  if (isNativeWorld && !isAuthoredNativeWorld) return loadNativeSandboxWorld(engine);
-  const scene = new Scene(engine);
+async function loadReferenceWorld(engine: AbstractEngine): Promise<Scene> {
+  const { scene, camera } = buildPresentationScene(engine, referenceWorldPresentation);
   try {
-    if (isAuthoredNativeWorld) await loadAuthoredNativeWorldOnDemand(scene, onStatus);
-    else await loadReferenceWorld(scene, onStatus, query.get("world") === "courtyard");
+    const world = await loadImportedWorld(scene);
+    if (world) {
+      setImportedEnvironment(scene, world);
+      applyTalkingIslandCameraOverrides(scene, camera, world);
+    }
+    const stopWorldRuntime = createWorldRuntime(scene, camera);
+    scene.onDisposeObservable.addOnce(stopWorldRuntime);
     return scene;
   } catch (error: unknown) {
     scene.dispose();
     throw error;
   }
+}
+
+export async function loadEnvironment(engine: AbstractEngine, onStatus?: EnvironmentStatusListener): Promise<Scene> {
+  const query = new URLSearchParams(window.location.search);
+  if (query.get("world") !== "interlude") return loadReferenceWorld(engine);
+  if (query.get("authored") === "1") return loadAuthoredNativeWorldOnDemand(engine, onStatus);
+  return loadNativeSandboxWorld(engine);
 }

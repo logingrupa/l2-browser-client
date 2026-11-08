@@ -6,15 +6,18 @@ import type { Scene } from "@babylonjs/core/scene";
 import type { createNativeSliceRuntime } from "../../src/runtime/createNativeSliceRuntime";
 import { loadEnvironment } from "../../src/scene/loadEnvironment";
 import { isSceneStartupRequired } from "../../src/scene/prepareSceneForReveal";
-import { nativeSandboxPresentation } from "../../src/scene/presentationConfiguration";
+import { nativeSandboxPresentation, referenceWorldPresentation } from "../../src/scene/presentationConfiguration";
 import { catalogNativeSliceWorldSource } from "../../src/runtime/nativeSliceWorldSource";
+import type { createWorldRuntime } from "../../src/runtime/createWorldRuntime";
 
 const boundary = vi.hoisted(() => ({
   startRuntime: vi.fn<typeof createNativeSliceRuntime>(),
+  startWorldRuntime: vi.fn<typeof createWorldRuntime>(),
   loadEditorScene: vi.fn(),
   importedWorld: vi.fn(),
 }));
 vi.mock("../../src/runtime/createNativeSliceRuntime", () => ({ createNativeSliceRuntime: boundary.startRuntime }));
+vi.mock("../../src/runtime/createWorldRuntime", () => ({ createWorldRuntime: boundary.startWorldRuntime }));
 vi.mock("babylonjs-editor-tools", () => ({ loadScene: boundary.loadEditorScene }));
 vi.mock("../../src/scripts", () => ({ scriptsMap: {} }));
 vi.mock("../../src/scene/world/loadImportedWorld", () => ({ loadImportedWorld: boundary.importedWorld }));
@@ -26,6 +29,7 @@ describe("environment routing", () => {
     vi.stubGlobal("window", Object.assign(new EventTarget(), { location: { search: "?world=interlude" } }));
     vi.stubGlobal("document", Object.assign(new EventTarget(), { title: "Initial title" }));
     boundary.startRuntime.mockReset();
+    boundary.startWorldRuntime.mockReset();
     boundary.loadEditorScene.mockReset();
     boundary.importedWorld.mockReset();
   });
@@ -112,16 +116,54 @@ describe("environment routing", () => {
     expect(engine.scenes).toHaveLength(0);
   });
 
-  it.each(["?world=courtyard", "?world=courtyard&authored=1", "?authored=1"])("keeps the reference scene on the Editor loader for %s", async search => {
+  it.each(["", "?world=courtyard", "?authored=1"])("builds the reference scene in code with no staged world for search %j", async search => {
     window.location.search = search;
     boundary.importedWorld.mockResolvedValue(null);
-    boundary.loadEditorScene.mockImplementation(async (_root: string, _file: string, loadedScene: Scene) => {
-      new ArcRotateCamera("World camera", 1.8, 1.15, 4.25, Vector3.Zero(), loadedScene);
-    });
+    const stopWorldRuntime = vi.fn();
+    boundary.startWorldRuntime.mockReturnValue(stopWorldRuntime);
     const scene = await loadEnvironment(engine);
-    expect(boundary.loadEditorScene).toHaveBeenCalledExactlyOnceWith("/scene/", "example.babylon", scene, {},
-      { quality: "high", onProgress: expect.any(Function) });
-    expect(isSceneStartupRequired(scene, "native-world")).toBe(false);
+    const camera = scene.activeCamera as ArcRotateCamera;
+    expect(camera).toBeInstanceOf(ArcRotateCamera);
+    expect([camera.alpha, camera.beta, camera.radius, camera.maxZ]).toEqual([referenceWorldPresentation.camera.alpha,
+      referenceWorldPresentation.camera.beta, referenceWorldPresentation.camera.radius, referenceWorldPresentation.camera.maxZ]);
+    expect(scene.clearColor.asArray()).toEqual([...referenceWorldPresentation.clearColor]);
+    expect(scene.useRightHandedSystem).toBe(true);
+    expect(document.title).toBe("Initial title");
+    expect(boundary.importedWorld).toHaveBeenCalledExactlyOnceWith(scene);
+    expect(boundary.startWorldRuntime).toHaveBeenCalledExactlyOnceWith(scene, camera);
+    expect(boundary.loadEditorScene).not.toHaveBeenCalled();
     expect(boundary.startRuntime).not.toHaveBeenCalled();
+    expect(isSceneStartupRequired(scene, "native-world")).toBe(false);
+    scene.dispose();
+    expect(stopWorldRuntime).toHaveBeenCalledTimes(1);
+  });
+
+  it("applies the Talking Island camera overrides when the reference world is staged", async () => {
+    window.location.search = "";
+    const spawnPoint = new Vector3(10, 2, -4);
+    const disposeWorld = vi.fn();
+    boundary.importedWorld.mockResolvedValue({ spawnPoint, dispose: disposeWorld });
+    boundary.startWorldRuntime.mockReturnValue(vi.fn());
+    const scene = await loadEnvironment(engine);
+    const camera = scene.activeCamera as ArcRotateCamera;
+    expect(camera.alpha).toBe(-Math.PI / 2.5);
+    expect([camera.beta, camera.radius, camera.lowerRadiusLimit, camera.upperRadiusLimit, camera.minZ, camera.maxZ]).toEqual([1.1, 8, 1, 50, 0.05, 4000]);
+    expect(camera.target.asArray()).toEqual([10, 2.5, -4]);
+    expect(scene.clearColor.asArray()).toEqual([0.58, 0.71, 0.8, 1]);
+    expect(scene.useRightHandedSystem).toBe(true);
+    expect(document.title).toBe("Talking Island · L2 Browser Client");
+    expect(boundary.startWorldRuntime).toHaveBeenCalledExactlyOnceWith(scene, camera);
+    expect(boundary.loadEditorScene).not.toHaveBeenCalled();
+    scene.dispose();
+    expect(disposeWorld).toHaveBeenCalledTimes(1);
+  });
+
+  it("disposes the reference scene when the world runtime fails to start", async () => {
+    window.location.search = "";
+    boundary.importedWorld.mockResolvedValue(null);
+    const failure = new Error("The world needs a rendering canvas.");
+    boundary.startWorldRuntime.mockImplementation(() => { throw failure; });
+    await expect(loadEnvironment(engine)).rejects.toBe(failure);
+    expect(engine.scenes).toHaveLength(0);
   });
 });

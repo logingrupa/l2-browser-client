@@ -30,10 +30,6 @@ export function attachTargeting(scene: Scene, registry: EntityRegistry, adapter:
         const destination = navigation.destination(picked.pickedPoint);
         if (destination) adapter.dispatch({ type: "move-local", position: destination });
       }
-      return;
-    }
-    if (picked?.pickedPoint && picked.pickedMesh?.name === "Courtyard ground") {
-      adapter.dispatch({ type: "move-local", position: { x: Math.max(-10, Math.min(10, picked.pickedPoint.x)), y: 0, z: Math.max(-10, Math.min(10, picked.pickedPoint.z)) } });
     }
   });
   return () => { scene.onPointerObservable.remove(observer); };

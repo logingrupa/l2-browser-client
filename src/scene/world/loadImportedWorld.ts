@@ -33,7 +33,6 @@ interface Locations { sourceVersion: string; locations: { label: string; kind: s
 
 export interface ImportedWorld {
   terrainMeshes: AbstractMesh[];
-  /** Stable growing collection; collision is independent of visual visibility. */
   supportMeshes: AbstractMesh[];
   terrainSha256: string;
   spawnPoint: Vector3;
@@ -54,16 +53,18 @@ export interface ImportedWorldInspection {
   visibilityTransitions: number; limitations: string[];
 }
 
+const boundedLoadWorkerCount = 3;
+
 const finite = (input: unknown, length: number): input is number[] => Array.isArray(input) && input.length === length && input.every(Number.isFinite);
 
-/** An unstaged clean checkout keeps its authored courtyard; a corrupt staged world fails visibly. */
+const isViteIndexHtmlFallback = (content: string): boolean => /^\s*<!doctype html/i.test(content) || /^\s*<html/i.test(content);
+
 export async function readStagedWorld(): Promise<StagedWorld | null> {
   const response = await fetch("/assets/world/manifest.json");
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`World staging manifest returned HTTP ${response.status}.`);
   const content = await response.text();
-  // Vite's SPA fallback returns index.html for absent untracked assets.
-  if (/^\s*<!doctype html/i.test(content) || /^\s*<html/i.test(content)) return null;
+  if (isViteIndexHtmlFallback(content)) return null;
   const staged = JSON.parse(content) as StagedWorld;
   if (staged.schemaVersion !== 1 || staged.sourceRoute !== "unity-reference" || staged.sourceVersion !== WORLD_SOURCE ||
       staged.terrain?.sha256 !== WORLD_PINS.terrain || staged.bundles?.["world-models"]?.manifestSha256 !== WORLD_PINS.models ||
@@ -183,15 +184,14 @@ export async function loadImportedWorld(scene: Scene): Promise<ImportedWorld | n
     }
     pending.sort((a, b) => a.distance - b.distance);
     for (const { entry } of pending) {
-      if (active >= 3) break;
+      if (active >= boundedLoadWorkerCount) break;
       void load(entry).then(refresh, refresh);
     }
   }
   async function prepareAt(position: Point, radius = 24): Promise<void> {
     const pending = nearby(position, radius);
-    // Bounded workers avoid spiking memory with all town meshes at once.
     let cursor = 0;
-    await Promise.all(Array.from({ length: 3 }, async () => {
+    await Promise.all(Array.from({ length: boundedLoadWorkerCount }, async () => {
       while (cursor < pending.length) { const entry = pending[cursor++]; if (entry) await load(entry); }
     }));
   }
@@ -230,9 +230,6 @@ export async function loadImportedWorld(scene: Scene): Promise<ImportedWorld | n
         collisionPlacements.add(entry, { x: placement.position[0], y: placement.position[1], z: placement.position[2] }, entry.placementRadii[index]!);
       });
     }
-    // Prepare the same initial visual radius before the first world frame.
-    // Starting software WebGL with only the tiny collision area ready can
-    // starve each subsequent decode/upload callback behind expensive frames.
     await prepareAt(spawnPoint, reach);
     grass = await setupGrassStream(scene, { getTarget: () => target }, grassModels, () => !disposed);
     refresh();

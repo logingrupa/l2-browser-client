@@ -1,7 +1,6 @@
 import type { Scene } from "@babylonjs/core/scene";
 import type { ImportedWorld } from "./world/loadImportedWorld";
 
-// The Editor scene script starts on the first frame, after asynchronous world loading.
 const environments = new WeakMap<Scene, ImportedWorld>();
 
 export function setImportedEnvironment(scene: Scene, world: ImportedWorld): void {

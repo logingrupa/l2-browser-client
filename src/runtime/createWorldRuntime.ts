@@ -1,5 +1,5 @@
 import type { Scene } from "@babylonjs/core/scene";
-import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
+import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { MockWorldAdapter } from "../world/MockWorldAdapter";
 import type { GameWorldAdapter } from "../world/GameWorldAdapter";
@@ -16,28 +16,33 @@ import { attachAssetImport } from "../ui/AssetImportPanel";
 import { isSceneSuspended, setSceneSuspended } from "../engine/renderSuspension";
 import { loadNativeAppearanceSet, nativeOrProceduralCharacterFactory } from "../assets/native/nativeOrProceduralCharacter";
 import { getWorldCanvas } from "../scene/getWorldCanvas";
+import { referenceWorldPresentation } from "../scene/presentationConfiguration";
+import { attachScenePresentationGroup } from "./attachScenePresentationGroup";
 
-export function createWorldRuntime(scene: Scene, suppliedAdapter?: GameWorldAdapter): () => void {
+export const referenceWorldNotStagedStatus = "Reference world not staged: /assets/world/manifest.json is missing.";
+
+export function createWorldRuntime(scene: Scene, camera: ArcRotateCamera, suppliedAdapter?: GameWorldAdapter): () => void {
   const canvas = getWorldCanvas(scene.getEngine());
   if (!canvas) throw new Error("The world needs a rendering canvas.");
-  if (!(scene.getCameraByName("World camera") instanceof ArcRotateCamera)) throw new Error("The authored World camera must be an ArcRotateCamera.");
   const world = getImportedEnvironment(scene);
   const navigation = world ? createWorldNavigation({
     terrainMeshes: world.terrainMeshes, obstacleMeshes: () => world.supportMeshes, origin: world.spawnPoint,
     isReady: (from, to) => world.isReadyAt(from, 1) && world.isReadyAt(to, 1),
   }) : undefined;
   const adapter = suppliedAdapter ?? new MockWorldAdapter(navigation);
-  const standOnNavigationSupportOrCourtyardPlane = navigation
+  const standOnNavigationSupportOrOriginPlane = navigation
     ? (position: WorldPosition) => navigation.ground(position)
     : (position: WorldPosition) => position;
   let isDisposed = false;
   let registry: EntityRegistry;
   const interfaceView = new WorldInterface(adapter, () => registry, canvas, world ? { location: "Talking Island", coordinateUnit: "" } : undefined);
+  attachScenePresentationGroup(interfaceView.sheet.section("world", { title: "World", icon: "world", order: 50 }), referenceWorldPresentation,
+    { sceneName: "reference world scene", readoutTestId: "reference-scene-presentation" });
   const nativeLoads = new AbortController();
   const createNativeHumanOrProceduralVisual = nativeOrProceduralCharacterFactory(loadNativeAppearanceSet(nativeLoads.signal));
   registry = new EntityRegistry(scene, adapter, interfaceView.labels, (message) => interfaceView.showStatus(message), {
     createVisual: createNativeHumanOrProceduralVisual,
-    ground: standOnNavigationSupportOrCourtyardPlane,
+    ground: standOnNavigationSupportOrOriginPlane,
   });
   const detachCamera = attachWorldCamera(scene, canvas);
   const detachTargeting = attachTargeting(scene, registry, adapter, navigation);
@@ -51,46 +56,36 @@ export function createWorldRuntime(scene: Scene, suppliedAdapter?: GameWorldAdap
     adapter.advance(deltaTimeSeconds);
     registry.update(deltaTimeSeconds);
     interfaceView.update(deltaTimeSeconds, scene.getEngine().getFps());
-    const camera = scene.activeCamera;
-    if (camera instanceof ArcRotateCamera) {
-      const playerPosition = registry.localPlayerPosition;
-      if (world && playerPosition) {
-        camera.setTarget(playerPosition.add(new Vector3(0, 0.5, 0)));
-        world.update(camera.target, camera.radius);
-      }
-      canvas.dataset.cameraAlpha = String(camera.alpha);
-      canvas.dataset.cameraBeta = String(camera.beta);
-      canvas.dataset.cameraRadius = String(camera.radius);
+    const playerPosition = registry.localPlayerPosition;
+    if (world && playerPosition) {
+      camera.setTarget(playerPosition.add(new Vector3(0, 0.5, 0)));
+      world.update(camera.target, camera.radius);
     }
+    canvas.dataset.cameraAlpha = String(camera.alpha);
+    canvas.dataset.cameraBeta = String(camera.beta);
+    canvas.dataset.cameraRadius = String(camera.radius);
   });
   const readOnlyDiagnostics = {
     projectPosition: (position: WorldPosition) => {
       const projected = projectPosition(scene, position);
       return { x: projected.x, y: projected.y };
     },
-    snapshot: () => {
-      const camera = scene.activeCamera;
-      const ground = scene.getMeshByName("Courtyard ground");
-      const bounds = ground?.getBoundingInfo().boundingBox;
-      return {
-        entities: registry.snapshot(), selectedEntityId: registry.selectedEntityId,
-        sceneMeshCount: scene.meshes.length, isDisposed,
-        camera: camera instanceof ArcRotateCamera ? { alpha: camera.alpha, beta: camera.beta, radius: camera.radius } : null,
-        environment: {
-          mode: world ? "island" as const : "courtyard" as const,
-          groundWidth: world ? world.maximum.x - world.minimum.x : bounds ? bounds.maximumWorld.x - bounds.minimumWorld.x : 0,
-          lightIntensity: scene.getLightByName("Sunlight")?.intensity ?? 0,
-          cameraRelative: scene.floatingOriginMode,
-          world: world?.inspection() ?? null,
-        },
-      };
-    },
+    snapshot: () => ({
+      entities: registry.snapshot(), selectedEntityId: registry.selectedEntityId,
+      sceneMeshCount: scene.meshes.length, isDisposed,
+      camera: { alpha: camera.alpha, beta: camera.beta, radius: camera.radius },
+      environment: {
+        mode: world ? "island" as const : "not-staged" as const,
+        groundWidth: world ? world.maximum.x - world.minimum.x : 0,
+        lightIntensity: scene.getLightByName("Sunlight")?.intensity ?? 0,
+        cameraRelative: scene.floatingOriginMode,
+        world: world?.inspection() ?? null,
+      },
+    }),
   };
   window.__worldDiagnostics = readOnlyDiagnostics;
-  if (world && registry.localPlayerPosition && scene.activeCamera instanceof ArcRotateCamera) {
-    scene.activeCamera.setTarget(registry.localPlayerPosition.add(new Vector3(0, 0.5, 0)));
-  }
-  interfaceView.showStatus(world ? "Talking Island ready" : "World ready");
+  if (world && registry.localPlayerPosition) camera.setTarget(registry.localPlayerPosition.add(new Vector3(0, 0.5, 0)));
+  interfaceView.showStatus(world ? "Talking Island ready" : referenceWorldNotStagedStatus);
   return () => {
     if (isDisposed) return;
     isDisposed = true;
@@ -106,7 +101,7 @@ export type WorldDiagnostics = { projectPosition: (position: WorldPosition) => {
   entities: ReturnType<EntityRegistry["snapshot"]>;
   selectedEntityId: string | null; sceneMeshCount: number; isDisposed: boolean;
   camera: { alpha: number; beta: number; radius: number } | null;
-  environment: { mode: "island" | "courtyard"; groundWidth: number; lightIntensity: number; cameraRelative: boolean; world: ImportedWorldInspection | null };
+  environment: { mode: "island" | "not-staged"; groundWidth: number; lightIntensity: number; cameraRelative: boolean; world: ImportedWorldInspection | null };
 } };
 
 declare global { interface Window { __worldDiagnostics?: WorldDiagnostics } }
