@@ -1,0 +1,20 @@
+{
+  "gapReasons": [
+    "material-class-unported:Engine.TexOscillatorTriggered"
+  ],
+  "graphSha256": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+  "kind": "ue2-material-program",
+  "nodes": [
+    {
+      "class": "Engine.TexOscillatorTriggered",
+      "fields": [],
+      "gapReasons": [
+        "material-class-unported:Engine.TexOscillatorTriggered"
+      ],
+      "id": "SyntheticSwatch.TriggeredOscillator",
+      "status": "unported"
+    }
+  ],
+  "root": "SyntheticSwatch.TriggeredOscillator",
+  "schemaVersion": 1
+}

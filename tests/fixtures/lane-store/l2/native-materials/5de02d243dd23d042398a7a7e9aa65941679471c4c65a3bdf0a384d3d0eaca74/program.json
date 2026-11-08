@@ -1,0 +1,214 @@
+{
+  "gapReasons": [],
+  "graphSha256": "5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+  "kind": "ue2-material-program",
+  "nodes": [
+    {
+      "class": "Engine.FinalBlend",
+      "fields": [
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Material",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "node": "SyntheticSwatch.SwatchShader"
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "FrameBufferBlending",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": {
+            "name": "FB_Overwrite",
+            "ordinal": 0
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "ZWrite",
+          "provenance": "class-default",
+          "status": "typed",
+          "value": true
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "ZTest",
+          "provenance": "class-default",
+          "status": "typed",
+          "value": true
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "AlphaTest",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "TwoSided",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "AlphaRef",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": 0
+        }
+      ],
+      "gapReasons": [],
+      "id": "SyntheticSwatch.SwatchFinalBlend",
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.Shader",
+      "fields": [
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Diffuse",
+          "provenance": "authored",
+          "status": "typed",
+          "value": {
+            "node": "SyntheticSwatch.SwatchTexture"
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "Opacity",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "OutputBlending",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": {
+            "name": "OB_Normal",
+            "ordinal": 0
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "TwoSided",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "DetailScale",
+          "provenance": "class-default",
+          "status": "typed",
+          "value": 8
+        }
+      ],
+      "gapReasons": [],
+      "id": "SyntheticSwatch.SwatchShader",
+      "status": "reviewed"
+    },
+    {
+      "class": "Engine.Texture",
+      "fields": [
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "USize",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 4
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "VSize",
+          "provenance": "authored",
+          "status": "typed",
+          "value": 4
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "UClampMode",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": {
+            "name": "TC_Wrap",
+            "ordinal": 0
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "VClampMode",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": {
+            "name": "TC_Wrap",
+            "ordinal": 0
+          }
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "bMasked",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "bAlphaTexture",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": false
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "AnimNext",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": null
+        },
+        {
+          "declaredType": null,
+          "declaringClass": null,
+          "field": "MaxFrameRate",
+          "provenance": "ue-zero",
+          "status": "typed",
+          "value": 0
+        }
+      ],
+      "gapReasons": [],
+      "id": "SyntheticSwatch.SwatchTexture",
+      "image": {
+        "bytes": 75,
+        "path": "/l2/native-material-textures/7d9633bb09424392686fa1258f432f9d7bde6bfbb0710bced243525c27171e60/texture.png",
+        "sha256": "7d9633bb09424392686fa1258f432f9d7bde6bfbb0710bced243525c27171e60"
+      },
+      "status": "reviewed"
+    }
+  ],
+  "root": "SyntheticSwatch.SwatchFinalBlend",
+  "schemaVersion": 1
+}
