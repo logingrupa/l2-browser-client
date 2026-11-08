@@ -26,3 +26,4 @@ Append-only, one dated line per decision. The full text of each decision lives i
 - 2026-11-08 DEC-SRC-1: Carried, not locked: no copied linegen source. Full text: .planning/PROJECT.md
 - 2026-11-08 DEC-SRC-2: Carried, not locked: IMPORTA-PC is the reference client, completed by DEC-OWN-2. Full text: .planning/PROJECT.md
 - 2026-11-08 DEC-OWN-9: The default phone is the iPhone 15 Pro Max in landscape, 932 x 430, used for phone screenshots and the primary phone layout, with a 430 x 932 portrait horizontal-scroll check. Full text: .planning/PROJECT.md
+- 2026-11-08 DEC-OWN-10: The only game interface is the original Interlude interface from interface.xdat and converted client UI textures, and DESIGN.md with its custom HUD direction is removed. Full text: .planning/PROJECT.md

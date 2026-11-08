@@ -342,7 +342,7 @@ commit (WORLD-01, EDIT-02). See [genericity-audit-20261108.md](research/generici
 
 - The only UI is the developer sheet: pinnable, tabbed, filterable, with
   hover-cards that show each control's live variables and native-or-presentation
-  status. See [README.md](../README.md) and [DESIGN.md](../DESIGN.md).
+  status. See [README.md](../README.md).
 - 2026-11-06 loading panel: four ordered steps with measured progress. 4/4
   loading UI cases, 1/1 geometry-502 case, 1/1 module-failure reload. Retry
   pressed-state contrast 4.96:1; finish review disposition: ship. Evidence:

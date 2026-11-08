@@ -121,7 +121,7 @@ Pinned stack: Babylon.js 9.27.1, TypeScript 7.0.2, Vite 7.3.7, Vitest 5.1.0, Pla
 - [PRIVATE_PREVIEW](docs/PRIVATE_PREVIEW.md): the private preview host.
 - [genericity-audit-20261108](docs/research/genericity-audit-20261108.md): how generic the `20_20` world build is.
 
-UI direction is in [DESIGN.md](DESIGN.md) and [PRODUCT.md](PRODUCT.md).
+The game interface is the original Interlude interface only (DEC-OWN-10); see [PRODUCT.md](PRODUCT.md).
 
 ## Licences
 
