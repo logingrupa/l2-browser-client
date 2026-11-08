@@ -31,25 +31,7 @@ Blocking runs (plan 02-57, 2026-11-08, clones at `854f629` and `4aac1bd`): the 0
 
 Record: `tools/reference-overlap/signedOffRuns.json`, filled from the tool's report: area, file, token count, `sourceTokensSha256` (SHA-256 of the run's exact token text joined by U+0001), sorted reference files, verdict, date, method and this file. A generic entry covers a run with the same area, file, token count and hash whose matches all lie in its reference files. Files are in `src/shared/`, `src/shared/math/` or `src/world/`.
 
-| Area | File and lines | Tokens | Hash (first 12) | Reference files | Reason (all generic) |
-|---|---|---|---|---|---|
-| bsp-visibility | `vector3.ts` 16-20 | 20 | `c14c1a1eb19f` | 1 | end of vector scale, start of dot product; reference builds skill script nodes |
-| bsp-visibility | `vector3.ts` 20 | 23 | `5bdaab0054a1` | 2 | dot product; reference uses it for BSP plane and portal distances |
-| bsp-visibility | `vector3.ts` 31-33 | 20 | `a23e0ecc6c07` | 1 | length through `Math.hypot`; reference wraps x, y, z in its vector class |
-| bsp-visibility | `typedPayload.ts` 59-62 | 20 | `bf71790ddfe6` | 1 | end of the array record reader; reference ends a UI texture decoder |
-| bsp-visibility | `typedPayload.ts` 59-62 | 20 | `19322aef8b51` | 1 | end of the array record reader; reference ends a particle material descriptor |
-| bsp-visibility | `typedPayload.ts` 80-85 | 26 | `db5305c4d25e` | 1 | end of the record list check, start of the view builder; reference wraps a static mesh |
-| bsp-visibility | `typedPayload.ts` 80-85 | 23 | `4b761b32af89` | 1 | same span; reference caches an animation clip |
-| bsp-visibility | `typedPayload.ts` 81-85 | 21 | `992289f87a70` | 1 | same span; reference starts a texture material decoder |
-| movement | `fixedStep.ts` 11-13 | 21 | `03e74f1d0d36` | 1 | step settings and step length guard; reference guards a collision box |
-| movement | `fixedStep.ts` 12-13 | 23 | `4adac4dd79de` | 1 | step length guard; reference guards a pawn skill speed rate |
-| movement | `fixedStep.ts` 12-14 | 24 | `ccbf0b2eb507` | 1 | step length and cap guards; reference guards a pawn attack rate |
-| movement | `fixedStep.ts` 13-14 | 21 | `ef87fb8eb796` | 1 | step length and cap guards; reference guards pawn collision sizes |
-| movement | `sourceFrame.ts` 13-15 | 22 | `5cb9a7789199` | 1 | 3x3 rotation tuple and the 100-unit scale; reference types a 4x4 matrix array |
-| particles | `presentationClock.ts` 4-7 | 22 | `0231f9a7ff38` | 1 | clock interface members; reference types a browser file handle |
-| particles | `presentationClock.ts` 11-12 | 27 | `e9c7a78cbca5` | 2 | non-negative seconds guard; reference guards emitter lifetime and size |
-| particles | `presentationClock.ts` 11-12 | 22 | `295208f5fa34` | 1 | non-negative seconds guard; reference guards pawn speed and collision sizes |
-| particles | `presentationClock.ts` 12 | 21 | `5f4e7a1f8007` | 6 | non-negative seconds guard; six one-line guards in unrelated domains |
+The 17 entries sit in `vector3.ts` (3), `typedPayload.ts` (5), `fixedStep.ts` (4), `sourceFrame.ts` (1) and `presentationClock.ts` (4): argument guards, vector arithmetic, a tuple type and record reader boundaries. `signedOffRuns.json` holds each entry's file, token count, hash and reference files.
 
 Rule: an edit inside signed-off code changes its hash, even a rename that keeps the normalised shape, and a match in a reference file outside the entry also blocks. The old entry then turns stale and exits 1 until a reviewer who did not write the code re-reviews the run and the entry is rewritten from the tool's report.
 
@@ -75,11 +57,30 @@ Escalated runs:
 - `rotator.ts` has 2. Line 74 is the sine table fill: it does the same job as the reference table init, and its operand order (index times two pi over the table length) is the canonical formula. Lines 77-80 are a function boundary with no logic.
 - `random.ts` has 6, all in the `randomRange` signature and first body token (lines 95-96). The matches are signature shapes in unrelated helpers, but `randomRange` does the same job as a reference range helper, so all six went to the full panel. The body was written independently; the reference formula is the unconfirmed constant row `fx.frange-draw`, re-derived from Core.dll under POL-04, not followed blindly.
 
-Record: `tools/reference-overlap/reviewedRuns/<area>.json` (bsp-visibility 593 rows, movement 143, particles 212), one row per line. `reviews` lists each review with its `reviewedOn`, `method` and rows per source file, so a later review keeps its own date; `runFields` names the columns. A missing area file means no reviewed rows; network rows are allowed.
+Record: `tools/reference-overlap/reviewedRuns/<area>.json` (bsp-visibility 593 rows, movement 143, particles 212, materials 4,438), one row per line. `reviews` lists each review with its `reviewedOn`, `method` and rows per source file, so a later review keeps its own date; `runFields` names the columns. A missing area file means no reviewed rows; network rows are allowed.
 
 Rule: a row covers every run with its file, token count, `sourceTokensSha256` and `referenceFilesSha256` (SHA-256 of the sorted reference file paths joined by a line feed). There are no line numbers, so an edit elsewhere in the file keeps the review. An edit inside a run, or a new reference file for it, makes the run unreviewed and its row stale. `--require-reviewed` checks the 12-token rule: it exits 1 until a reviewer who did not write the code reviews each new run and the stale rows are removed.
 
-Result (2026-11-09, `--require-reviewed`): bsp-visibility 599 reviewed and 8 signed off, movement 145 and 5, particles 212 and 4, each with 0 unreviewed, stale or blocking runs, exit 0. Materials exits 1 on its blocking runs, with no reviewed rows yet; network has no sources.
+Result (2026-11-09, `--require-reviewed`): bsp-visibility 599 reviewed and 8 signed off, movement 145 and 5, particles 212 and 4, each with 0 unreviewed, stale or blocking runs, exit 0. Network has no sources.
+
+### Materials sign-offs
+
+Method (2026-11-09, plan 02-60 sources): three fresh-context Claude reviewers who did not write `src/materials/**` (idiom, provenance, skeptic) reviewed each blocking run, and two (provenance, skeptic) reviewed every other reviewer run. A run any lens did not mark generic with high confidence went to three more reviewers and was signed off only on a unanimous high-confidence generic verdict. The 02-60 author did not open the clones while writing the code.
+
+Totals: 171 blocking runs signed off in `signedOffRuns.json`; 4,560 reviewer runs, 14 escalated, 4,549 signed off as 4,438 rows in `reviewedRuns/materials.json`, 11 open. When runs with identical token text and reference files get different verdicts, the key stays open, because a sign-off never covers a sibling run the review left open.
+
+Open runs in `src/materials/ue2/`:
+- `babylon/fragmentChain.ts` 35, 14 tokens: provenance generic at medium confidence; the `combinerColour` parameters follow the UE2 Combiner order (operation, two materials, mask), as the reference's combiner record does.
+- `babylon/fragmentChain.ts` 50, 14 tokens: the review passed it, but it has the same text and reference files as line 35 (`combinerAlpha`), so it stays open with it.
+- `babylon/fragmentChain.ts` 35, 15 tokens: provenance at medium confidence, for the same Combiner parameter order.
+- `babylon/fragmentChain.ts` 50, 15 tokens: provenance at medium confidence, for the same Combiner parameter order.
+- `model/displayGamma.ts` 24, 12 tokens: the skeptic says derived at medium confidence, because the ramp combines contrast, gamma and brightness the way the reference's ramp setter does; the formula is an unconfirmed reference rule (POL-04).
+- `model/materialFieldValues.ts` 56-57, 14 tokens (`bae7740a1302`): provenance at medium confidence; a typed field reader signature and its first lookup, shaped like reference config accessors.
+- `model/materialFieldValues.ts` 56-57, 15 tokens: provenance at medium confidence, the same reader shape.
+- `model/materialFieldValues.ts` 56-57, 14 tokens (`5871d5361682`): provenance at medium confidence, the same reader shape.
+- `model/materialFieldValues.ts` 86-87, 15 tokens: provenance at medium confidence; the colour field reader, the same shape.
+- `model/materialFieldValues.ts` 86-87, 14 tokens: provenance at medium confidence, the same shape.
+- `model/materialProgram.ts` 196-197, 19 tokens: provenance at medium confidence; a case-insensitive field lookup header, like the reference's script field lookup.
 
 ## Open
 
@@ -93,7 +94,7 @@ Materials (plan 02-59): the six unported classes need reviews before they render
 
 Material library (plan 02-60): open constants rows, all runtime defaults until POL-04 or a swatch verdict: `FB_Add` (factors unknown, diagnostic), PTDS 3 and 6 (reference pairs recorded beside the shipped ones; the flip waits for a swatch comparison with L2.exe in `docs/parts/skills-effects/EVIDENCE.md`), `texture.particle-clock` (particle age or emitter clock, for 02-69), `gamma.ramp` and `gamma.brightness-contrast` (reference defaults until l2.ini and user.ini decode), `colour.byte-order` (B, G, R, A until an R != B fixture), `combiner.mask-channel` and `combiner.missing-mask-alpha`, `uv.rotator-component`, `uv.rotator-oscillation-units` and `uv.tex-scaler-order`, `texture.material-sequence-timing`, `blend.non-blending-root`. Not drawn yet, each a named diagnostic: Detail textures, TexEnvMap reflection coordinates and TexCoordSource channels above 0 on the GPU, the Modulate pair `DESTCOLOR, SRCCOLOR` (no Babylon preset), typed `MaterialSequence.SequenceItems` (the converter keeps the array unported). Lighting is `L = 1` until MAT-02. The display gamma ramp is evaluated in the model; the PostProcess that applies it to the frame belongs to the runtime wiring (02-67). Converter contract gap: 02-59 `program.json` Texture nodes carry no `image` pin yet, so real programs render `texture-image-absent:<node>` until the converter writes `{path, sha256, bytes}` for each texture (the fixture uses `/l2/native-material-textures/<sha>/texture.png`). Babylon's `ALPHA_SCREENMODE` blends alpha `ONE, INVSRCALPHA`, not the particle `ZERO, ONE`; the alpha pair is recorded per row. Headless swatch checks run on SwiftShader; no performance claim.
 
-Reference overlap, materials (plan 02-60, 2026-11-09, clones at `854f629` and `4aac1bd`): `node tools/reference-overlap/referenceOverlap.mjs --area materials --reference-root C:/laragon/www/l2-browser-client` exits 1 with 171 blocking runs and 4,730 reviewer runs over 27 source files. The author did not open the clones while writing the code. The blocking runs match generic shapes in unrelated reference files (1,487 matches in `lineage2js/src/assets` decoders and skills code, 95 in `src/objects`, 40 in `src/rendering`, 13 in `l2js-core`, 1 in `src/materials`): object literals of `key: literal` pairs, guard chains and error messages. The longest (32 tokens) is the `MATERIAL_CONSTANT_TABLES` object literal against a one-line type literal in `rendering/static-lighting.ts:9`; the only match in the reference materials folder is the `FOG_DISABLED` object literal (`src/materials/ue2/model/fog.ts:37`) against a default-field literal in `mesh-static-material/transform-stage.ts:17`. Report: `artifacts/02-60/reference-overlap-materials.json`. Open for a reviewer who did not write `src/materials/**`: sign off the spans here, or the owner narrows the normalisation; until then MAT-01 stays Pending.
+Reference overlap, materials (plan 02-60): the 171 blocking runs and 4,549 of the 4,560 reviewer runs are signed off, so `--area materials` exits 0, but `--require-reviewed` exits 1 on the 11 open runs listed under "Materials sign-offs". They need a fresh review by someone who did not write `src/materials/**`, or a rewrite of the spans; the `displayGamma.ts` ramp also waits for its POL-04 re-derivation. MAT-01 stays Pending for this and for the open material library items above and the 02-60 bullets.
 
 ## Evidence
 
@@ -103,3 +104,4 @@ Reference overlap, materials (plan 02-60, 2026-11-09, clones at `854f629` and `4
 - Plan 02-60: `pnpm typecheck` clean; `tests/unit/materialProgram.test.ts`, `materialSwatchParameters.test.ts`, `ue2Combiner.test.ts`, `ue2Modifiers.test.ts`, `ue2Fog.test.ts`, `ue2BlendTable.test.ts` and `importBoundaries.materials.test.ts` pass; `NATIVE_STORE_ROOT=fixture DEV_PORT=5175 pnpm test:e2e tests/browser/material-swatch.spec.ts` passes 3 of 3 on SwiftShader; `pnpm test:unit` shows only the known red baseline (the 2 `nativeNpcProfiles.test.ts` cases); lane ownership `--part adapter-dispatch` 0 foreign paths. Summary: `.planning/phases/02-stage-a-breadth/02-60-SUMMARY.md`.
 - Reference overlap sign-offs and import fix (2026-11-08): `tests/unit/referenceOverlap.test.ts` covers a signed-off run, an edit that blocks again and turns the entry stale, a match outside the entry, another area, a derived verdict, exits 0, 1 and 2, and eight kinds of malformed sign-off data. The old tokenizer dropped everything from any `import` not followed by `(` or `.` up to the next string; `referenceOverlapTokens.test.ts` covers the `import` key, member and `import X = A.B` forms and nine normal imports. The fix added 346 tokens in `l2js-core/src/unreal/un-package.ts` and changed no reviewer run.
 - Reviewed runs (2026-11-09): `tests/unit/referenceOverlapReviewedRuns.test.ts` covers a reviewed run, a moved run, an edit inside it, a new reference file, an allowlisted run, a missing area file, network rows, per-review dates, `--require-reviewed` exits 0, 1 and 2, and 14 refusals. All 956 rows of the former `reference-overlap-reviewer-runs.json` joined a current run on file, token count and token hash. `pnpm typecheck` is clean.
+- Materials sign-offs (2026-11-09): `--area materials` exits 0 with 171 signed off and 0 blocking; with `--require-reviewed` it exits 1 and lists exactly the 11 open runs, with 0 stale rows and 0 stale sign-offs. The other four areas exit 0 with `--require-reviewed`.
