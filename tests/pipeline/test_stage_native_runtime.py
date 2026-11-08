@@ -236,7 +236,7 @@ class RuntimeStagingTests(unittest.TestCase):
         record = json.loads(catalog)['npcProfiles'][0]
         path = self.destination / 'npc-profiles' / record['manifestSha256'] / 'source/npc-selections.json'
         path.write_bytes(b'local corruption retained for review')
-        with self.assertRaisesRegex(ValueError, 'corrupt; preserved'):
+        with self.assertRaisesRegex(ValueError, 'Existing immutable store file differs; preserved'):
             self.stage()
         self.assertEqual(path.read_bytes(), b'local corruption retained for review')
         self.assertEqual((self.destination / 'catalog.json').read_bytes(), catalog)
@@ -259,14 +259,12 @@ class RuntimeStagingTests(unittest.TestCase):
         self.assertEqual((profile['npcId'], profile['drawScale'], profile['collisionHeight']), (21622, 1.2, 36))
         self.assertNotIn('prePivot', profile)
 
-    def directory_link(self, link, target):
+    def directory_link_or_junction_without_symlink_privilege(self, link, target):
         try:
             link.symlink_to(target, target_is_directory=True)
         except OSError:
             if os.name != 'nt':
                 raise
-            # NTFS junctions exercise the same resolved-containment boundary
-            # without requiring the Windows symbolic-link privilege.
             import _winapi
             _winapi.CreateJunction(str(target), str(link))
 
@@ -386,7 +384,7 @@ class RuntimeStagingTests(unittest.TestCase):
         target.mkdir()
         (target / self.image.name).write_bytes(self.image.read_bytes())
         self.image.parent.rename(self.image.parent.with_name('Body-original'))
-        self.directory_link(self.image.parent, target)
+        self.directory_link_or_junction_without_symlink_privilege(self.image.parent, target)
         with self.assertRaisesRegex(ValueError, 'escapes its root'):
             self.stage()
 
@@ -394,8 +392,8 @@ class RuntimeStagingTests(unittest.TestCase):
         outside = Path(self.temporary.name) / 'outside'
         outside.mkdir()
         self.destination.mkdir(parents=True)
-        self.directory_link(self.destination / 'maps', outside)
-        with self.assertRaisesRegex(ValueError, 'escapes its root'):
+        self.directory_link_or_junction_without_symlink_privilege(self.destination / 'maps', outside)
+        with self.assertRaisesRegex(ValueError, 'Symlink/junction/reparse boundary refused'):
             self.stage()
         self.assertEqual(list(outside.iterdir()), [])
 
@@ -403,8 +401,8 @@ class RuntimeStagingTests(unittest.TestCase):
         outside = Path(self.temporary.name) / 'outside'
         outside.mkdir()
         self.destination.parent.mkdir(parents=True)
-        self.directory_link(self.destination, outside)
-        with self.assertRaisesRegex(ValueError, 'only to this project'):
+        self.directory_link_or_junction_without_symlink_privilege(self.destination, outside)
+        with self.assertRaisesRegex(ValueError, 'Symlink/junction/reparse boundary refused'):
             self.stage()
         self.assertEqual(list(outside.iterdir()), [])
 
@@ -422,7 +420,7 @@ class RuntimeStagingTests(unittest.TestCase):
         catalog = (self.destination / 'catalog.json').read_bytes()
         terrain = next((self.destination / 'maps').glob('*/map-section/terrain.glb'))
         terrain.write_bytes(b'local corruption to preserve')
-        with self.assertRaisesRegex(ValueError, 'corrupt; preserved'):
+        with self.assertRaisesRegex(ValueError, 'Existing immutable store file differs; preserved'):
             self.stage()
         self.assertEqual(terrain.read_bytes(), b'local corruption to preserve')
         self.assertEqual((self.destination / 'catalog.json').read_bytes(), catalog)

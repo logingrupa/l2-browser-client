@@ -1,4 +1,3 @@
-"""World-audio ambience bundle fields and additive public/l2 staging contract."""
 from __future__ import annotations
 
 import hashlib
@@ -11,9 +10,9 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from native_assets_lib.gltf import json_bytes  # noqa: E402
-from native_assets_lib import world_ambience as ambience  # noqa: E402
-import stage_native_world_audio as stager  # noqa: E402
+from native_assets_lib.gltf import json_bytes
+from native_assets_lib import world_ambience as ambience
+import stage_native_world_audio as stager
 
 CORE = ROOT / 'artifacts/native-parity/research/flame-runtime/inputs/Core.dll'
 
@@ -141,10 +140,7 @@ STAGED_AMBIENCE = ROOT / 'public/l2/world-audio/e2fe18be38caf3a8476e194b0ad1641b
 
 @unittest.skipUnless(CANONICAL.is_file() and STAGED_AMBIENCE.is_file(), 'Canonical ambient decode or staged ambience bundle is not present')
 class CanonicalDecodeTests(unittest.TestCase):
-    """The staged ambience bundle equals the canonical 20_20 decode (REPORT.md Q3,
-    ambient-sounds.json cf92df3f...) for every object; omitted fields stay null."""
-
-    def test_every_object_matches_the_canonical_decode(self):
+    def test_every_object_matches_the_canonical_decode_and_omitted_fields_stay_null(self):
         raw = CANONICAL.read_bytes()
         self.assertEqual(sha(raw), CANONICAL_SHA)
         canonical = json.loads(raw)['objects']
@@ -158,7 +154,7 @@ class CanonicalDecodeTests(unittest.TestCase):
         for item in canonical:
             row, props = rows[item['object']], {p['name']: p['value'] for p in item['properties']}
             for native, field in names.items():
-                self.assertEqual(row[field], props.get(native), (item['object'], native))  # omitted → None in both
+                self.assertEqual(row[field], props.get(native), (item['object'], native))
             location = props['Location']
             self.assertEqual([row['x'], row['y'], row['z']], [location['X'], location['Y'], location['Z']], item['object'])
             sound = props.get('AmbientSound')

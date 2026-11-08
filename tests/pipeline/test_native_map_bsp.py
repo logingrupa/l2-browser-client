@@ -173,11 +173,10 @@ class BspDerivationTests(unittest.TestCase):
         for name, data in self.files.items():
             self.assertEqual((self.base_root / name).read_bytes(), data)
 
-    def test_catalog_preserves_format_unknown_fields_and_unrelated_same_hash(self):
+    def test_catalog_preserves_format_unknown_fields_and_the_unrelated_first_section_with_the_same_hash(self):
         after = module.catalog_replace(self.catalog, self.base, '1' * 64)
-        expected = self.catalog.replace(self.base.encode(), b'1' * 64)
-        # The unrelated first section intentionally retains the exact same hash.
-        expected = expected.replace(b'"manifestSha256": "' + b'1' * 64 + b'"',
+        expected_with_every_hash_replaced = self.catalog.replace(self.base.encode(), b'1' * 64)
+        expected = expected_with_every_hash_replaced.replace(b'"manifestSha256": "' + b'1' * 64 + b'"',
                                     b'"manifestSha256": "' + self.base.encode() + b'"', 1)
         self.assertEqual(after, expected)
         self.assertEqual(module.catalog_replace(after, '1' * 64, self.base), self.catalog)
