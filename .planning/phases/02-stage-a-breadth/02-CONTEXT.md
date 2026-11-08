@@ -76,6 +76,11 @@ Hand-typed recipe values with no recorded source must first become visibly unres
 - `recipes/native-parity.acceptance.json` still has an Editor round-trip block superseded by DEC-OWN-8: remove that block (POL-01 thresholds otherwise unchanged; never relax them).
 - The plans that own these: actors lane (generated recipes, ACT-01, ACT-05), world lane (chunk planner, WORLD-01), integration (acceptance file cleanup, CONV-02). Each marks the old value unresolved in the first task that touches its recipe.
 
+### I. Self-contained repo (owner, 2026-11-08 10:50)
+- No lineagen or linegen anywhere: no path, import, schema root, tool path or doc reference into `C:\laragon\www\lineagen` or `E:\linegen`. Native tools live in the repo-owned, gitignored `.assets/native-tools/` (`umodel`, `ue-explorer`, `dat-schema`, and open-l2encdec), with absolute defaults to the main checkout `C:\laragon\www\l2-browser-client\.assets\native-tools\...` so lanes share them; that move lands on native-world-slice from the thread "Remove lineagen from l2-browser-client" and is merged here before Phase 2 executes.
+- The Talking Island reference route, its five lineagen-adapted modules in `src/scene/world/`, `scripts/stage-world-assets.mjs`, the lineagen media vite plugin and the converted character GLB path are removed; `/` opens the native route. No Phase 2 plan builds on the reference route or the procedural characters.
+- Deleted by the owner (commit d05e7eb): PRODUCT.md, NOTICE, docs/research/genericity-audit-20261108.md (its evidence stays in the artifacts folder genericity-audit-20261108; the world lane's starting input is docs/NATIVE_WORLD.md), docs/screenshots/, and recipes native-starter.json, native-pipeline-slice.json, native-pipeline-slice-assets.json. No plan cites or recreates them.
+
 ### Claude's Discretion
 - Plan split, wave order and file layout within AGENTS.md code rules (no comments, full-word names, files under about 400 lines, Vitest per behaviour change, Playwright for UI, no dead code, never invent L2 values).
 
