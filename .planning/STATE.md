@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 1
 current_phase_name: Foundations
 status: executing
-stopped_at: Completed 01-05-PLAN.md
-last_updated: "2026-11-08T06:33:16.498Z"
+stopped_at: Completed 01-10-PLAN.md
+last_updated: "2026-11-08T06:47:01.750Z"
 last_activity: 2026-11-08
 last_activity_desc: Phase 1 execution started
-state_head: 118defe92fc9c19e1348f4b5f8cc05448866adeb
+state_head: 015190186823ec157c9345b935a332f16663c3d2
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 17
-  completed_plans: 8
+  completed_plans: 9
   percent: 0
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 1 (Foundations) — EXECUTING
-Plan: 9 of 17
+Plan: 10 of 17
 Status: Ready to execute
 Last activity: 2026-11-08 — Phase 1 execution started
 
@@ -60,6 +60,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P03 | 13 min | 3 tasks | 16 files |
 | Phase 01 P04 | 15min | 2 tasks | 15 files |
 | Phase 01 P05 | 25min | 3 tasks | 26 files |
+| Phase 01 P10 | 12min | 2 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,8 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..8 and DEC-PORT-1..3.
 - [Phase 01]: Plan 01-05: createNativeSliceRuntime takes its camera and a NativeSliceWorldSource; the catalog source is the default and Editor world handling lives in src/editor/authoredNativeWorldSource.ts, passed only by NativeParityScript
 - [Phase 01]: Plan 01-05: PresentationConfiguration.source is named files; sheet variables cite them with the formerly Editor-authored label (OVERNIGHT-DECISIONS rows 28-29)
 - [Phase 01]: Plan 01-05: the dev sheet keeps its last tab; nativeSlice.spec selects the General tab before Resume (row 30)
+- [Phase 01]: Plan 01-10: both adapters share pure by-ID command helpers in src/world/sandboxCommands.ts; equip-item replaces equip-upper with slot upper only; cast-skill emits a skill-cast record and computes nothing
+- [Phase 01]: Plan 01-10: MockWorldAdapter handles set-health through the clamp shared with NativeSliceAdapter (OVERNIGHT-DECISIONS row 31)
 
 ### Pending Todos
 
@@ -119,6 +122,6 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..8 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-08T06:33:16.436Z
-Stopped at: Completed 01-05-PLAN.md
+Last session: 2026-11-08T06:47:01.687Z
+Stopped at: Completed 01-10-PLAN.md
 Resume file: None
