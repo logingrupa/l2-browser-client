@@ -67,6 +67,7 @@ Stage A breadth-first conversion of the whole client (Phases 1 to 3), stage B se
 - DEC-OWN-6: Three lanes plus integration. L1 world (153 tiles, streaming/LOD, minimap). L2 actors (characters, NPCs/monsters, items/equipment, animations, sounds, skill visuals). L3 data + UI (40 `.dat` tables, `interface.xdat` windows, sandbox controls). UI runs in parallel from the start.
 - DEC-OWN-7: Stage A world = geometry (terrain, static meshes, BSP) with the tile-general UV rule plus sky, ambient and placement audio, for all 153 tiles. Each 20_20 hand step becomes a tile-general converter step. A failing tile is listed as a gap, not hand-fixed. Per-tile Editor scenes are not planned (DEC-OWN-8).
 - DEC-OWN-8 (2026-11-08): Babylon.js Editor leaves the build and runtime path; Babylon.js stays the engine. The native world loads directly from the `.l2asset` catalog (`loadNativeSection`), and the Editor-authored route (`authored=1`) becomes optional. `pnpm dev` and `pnpm build` stop running `babylonjs-editor-cli pack` and the Editor repair scripts, which move to an optional `pnpm generate:editor`. The legacy courtyard demo is retired or kept only behind that step. The sandbox gets Babylon Inspector behind `?inspect=1`, lazy-loaded. `project.bjseditor` and `pnpm assets:editor` stay as an optional viewer that nothing depends on. Revisit only if the SpacetimeDB route starts authoring new, non-L2 content. Reason: the world's source of truth is the original client plus the converter, so an Editor hand edit is lost on reconversion or is an invented change; the Editor path needs repair scripts plus a compat plugin and still shows open defects (blank Play viewport, relative texture path rewriting, `isReady` false while visible). Supersedes PRODUCT.md "Static environment stays editable in Babylon.js Editor".
+- DEC-OWN-9 (2026-11-08): The default phone is the iPhone 15 Pro Max held sideways, 932 x 430 CSS px in landscape with touch. Phone screenshots and the primary phone layout use it; portrait 430 x 932 stays a horizontal-scroll check, and desktop screenshots stay 1440 x 900. Reason: the game is played with the phone held sideways.
 
 ## Carried, not locked (proposed in sources, consistent with the locked set)
 
@@ -92,4 +93,4 @@ Stage A breadth-first conversion of the whole client (Phases 1 to 3), stage B se
 | Dumb WebSocket relay for Mobius | Reusable if server becomes SpacetimeDB | Pending (recommendation) |
 
 ---
-*Last updated: 2026-11-08 after DEC-OWN-8 (Editor off the build and runtime path)*
+*Last updated: 2026-11-08 after DEC-OWN-9 (iPhone 15 Pro Max in landscape is the default phone)*

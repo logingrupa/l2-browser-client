@@ -5,7 +5,7 @@ Browser client for Lineage II Interlude on Babylon.js WebGPU. These rules are sp
 ## Project rules
 
 ### Decisions and planning
-- Current decisions live in [.planning/PROJECT.md](.planning/PROJECT.md) (DEC-OWN-1 to DEC-OWN-8) and [docs/PORT_SCOPE.md](docs/PORT_SCOPE.md). They win over every other doc.
+- Current decisions live in [.planning/PROJECT.md](.planning/PROJECT.md) (DEC-OWN-1 to DEC-OWN-9) and [docs/PORT_SCOPE.md](docs/PORT_SCOPE.md). They win over every other doc.
 - Requirements, phases and state: [.planning/REQUIREMENTS.md](.planning/REQUIREMENTS.md), [.planning/ROADMAP.md](.planning/ROADMAP.md), [.planning/STATE.md](.planning/STATE.md).
 - Plan and execute through GSD: `/gsd-quick` for small tasks, `/gsd-plan-phase` and `/gsd-execute-phase` for phase work.
 
@@ -38,7 +38,7 @@ Browser client for Lineage II Interlude on Babylon.js WebGPU. These rules are sp
 - Run heavy commands at BelowNormal priority.
 
 ### Screenshots and viewports
-- The default phone is the iPhone 15 Pro Max held sideways: 932 x 430 CSS px, landscape, with touch. Phone screenshots use it. In this repo this replaces the global 390 px portrait default.
+- The default phone is the iPhone 15 Pro Max held sideways (DEC-OWN-9): 932 x 430 CSS px, landscape, with touch. Phone screenshots use it. In this repo this replaces the global 390 px portrait default.
 - Desktop screenshots stay 1440 x 900.
 - Portrait 430 x 932 is still checked for horizontal scroll, but it is not the evidence screenshot.
 - Headless e2e runs WebGPU on SwiftShader, a CPU adapter (`playwright.config.ts`), so its FPS readout is not a measurement. FPS and performance claims come only from runs with `WORLD_HARDWARE_TEST=1` on the GTX 1060, outside the relay windows.
