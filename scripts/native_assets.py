@@ -21,6 +21,7 @@ from native_assets_lib.animation import add_animations
 from native_assets_lib.rigid import is_root_rigid, attach_rigid_part
 from native_assets_lib.weights import restore_native_weights
 from native_assets_lib.static_materials import native_static_materials
+from native_assets_lib.source_table_binding import material_overrides_by_slot, verify_source_table_binding
 from native_assets_lib.texture_mips import build_texture_source, UnsupportedTextureSource
 from native_assets_lib.texture_dds import build_texture_dds, UnsupportedTextureDDS
 from native_assets_lib.converter_source_digests import ConverterSourceDigests
@@ -356,12 +357,7 @@ class Converter:
         document = Document(self.exported(work, item, ('.gltf',)))
         weight_report, weight_source = (restore_native_weights(document, package, item)
             if item['className'] == 'SkeletalMesh' else (None, None))
-        overrides = {}
-        for value in request.get('materials', []):
-            slot, reference = value.split('=', 1)
-            if int(slot) in overrides:
-                raise ValueError('Duplicate material override')
-            overrides[int(slot)] = reference
+        overrides = material_overrides_by_slot(request.get('materials', []))
         evidence = self.verify_binding(request) if request.get('sourceBinding') else None
         static_materials = native_static_materials(package, item) if item['className'] == 'StaticMesh' else None
         section_bindings = static_section_bindings(document) if static_materials is not None else None
@@ -495,18 +491,7 @@ class Converter:
             raise ValueError('Recipe table hash does not match this native client')
         if name not in self.table_cache:
             self.table_cache[name] = decode_table(self.client, name)
-        table = self.table_cache[name]
-        def value(path):
-            result = table['data']
-            for key in path:
-                result = result[key]
-            return result
-        mesh, texture = value(binding['meshPath']), value(binding['texturePath'])
-        mesh_reference = request['object'] if '.' in request['object'] else request['package'] + '.' + request['object']
-        material = str(binding.get('slot', 0)) + '=' + texture
-        if mesh_reference.casefold() != mesh.casefold() or material.casefold() not in [entry.casefold() for entry in request.get('materials', [])]:
-            raise ValueError('Recipe mesh/texture binding differs from its cited native table fields')
-        return {**binding, 'meshReference': mesh, 'textureReference': texture, 'schema': table['schema'], 'decodedSha256': table['decodedSha256']}
+        return verify_source_table_binding(request, self.table_cache[name])
 
     def event_audio(self, work, events, files, mime):
         resolved = {}
