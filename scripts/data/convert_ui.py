@@ -14,13 +14,16 @@ from interface_layout_adapter import (ELBERA_INTERFACE_JSON_PATH, ELBERA_PARSE_X
                                       decode_interface_layout, elbera_interface_cross_check, interface_layout_json_bytes,
                                       interface_window_census, window_identifiers, window_layout_manifest)
 from lane_unit_outcomes import seal_unit_decode_failure, seal_unit_manifest, write_pinned_manifest_to_store
-from native_store.catalog_writer import replace_file, sha256_hex, validate_catalog_record
-from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root, require_converter_output
+from native_assets import UMODEL, UMODEL_SHA256, Converter, implementation_hash
+from native_store.catalog_writer import read_store_catalog, replace_file, sha256_hex, validate_catalog_record
+from native_store.store_paths import REPOSITORY_ROOT, confined_child_path, lane_store_root, lane_work_root, require_converter_output
 from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, UnitLedger, locked_input_records, require_batch_preflight,
                                       run_at_below_normal_priority)
 from pinned_elbera_module import ELBERA_ROOT, load_pinned_elbera_module, resolve_elbera_path
 import reference_client_guard
 from reference_client_guard import require_reference_client
+from ui_texture_step import (TEXTURES_STEP, UI_TEXTURE_ALGORITHM_VERSION, convert_window_textures, ui_texture_recipe_bytes,
+                             ui_texture_requests)
 
 LAYOUT_ALGORITHM_VERSION = 1
 LANE_NAME = 'data-ui'
@@ -30,6 +33,11 @@ WINDOWS_CATALOG_SLICE = 'windows'
 WINDOW_MANIFEST_FILE_NAME = 'window.json'
 LAYOUT_DECODE_ERRORS = (ValueError, IndexError, KeyError, TypeError, struct.error)
 INTERFACE_WINDOW_CENSUS_PATH = REPOSITORY_ROOT / 'docs' / 'parts' / 'ui' / 'interface-window-census.json'
+TEXTURE_PACKAGE_CENSUS_PATH = REPOSITORY_ROOT / 'docs' / 'parts' / 'ui' / 'texture-package-census.json'
+UI_TEXTURE_RECIPE_PATH = REPOSITORY_ROOT / 'recipes' / 'data' / 'ui-textures.json'
+WINDOW_FIELD_BINDINGS_PATH = REPOSITORY_ROOT / 'recipes' / 'data' / 'window-field-bindings.json'
+UI_TEXTURE_CONVERTER_FOLDER = 'ui-texture-converter'
+NATIVE_RESOURCE_PREFIX = '/l2/'
 
 
 class ConvertUiError(ValueError):
@@ -112,9 +120,60 @@ def write_interface_window_census(layout, elbera_root):
     replace_file(INTERFACE_WINDOW_CENSUS_PATH, interface_layout_json_bytes(census))
 
 
+def decoded_window_manifests(output_root):
+    catalog, _ = read_store_catalog(output_root)
+    manifests = []
+    for record in catalog.get(WINDOWS_CATALOG_SLICE, []):
+        manifest_bytes = confined_child_path(output_root, record['manifest'].removeprefix(NATIVE_RESOURCE_PREFIX)).read_bytes()
+        if (sha256_hex(manifest_bytes), len(manifest_bytes)) != (record['manifestSha256'], record['manifestBytes']):
+            raise ConvertUiError(f'window manifest {record["manifest"]} differs from its catalog SHA-256 or byte length')
+        manifests.append(json.loads(manifest_bytes))
+    if not manifests:
+        raise ConvertUiError(f'{output_root} has no decoded windows; run --step layout first')
+    return manifests
+
+
+def selected_texture_window_ids(manifests, requested_window_ids, limit):
+    window_ids = [manifest['windowId'] for manifest in manifests]
+    if requested_window_ids is None:
+        return window_ids[:limit]
+    missing = [window_id for window_id in requested_window_ids if window_id not in window_ids]
+    if missing:
+        raise ConvertUiError(f'the data-ui lane store has no decoded window {", ".join(missing)}')
+    return requested_window_ids
+
+
+def convert_textures_step(client, client_access, output_root, requested_window_ids, limit):
+    manifests = decoded_window_manifests(output_root)
+    texture_census = json.loads(TEXTURE_PACKAGE_CENSUS_PATH.read_bytes())
+    requests = ui_texture_requests(manifests, texture_census, client_access.lock)
+    replace_file(UI_TEXTURE_RECIPE_PATH, ui_texture_recipe_bytes(requests))
+    field_bindings_document = json.loads(WINDOW_FIELD_BINDINGS_PATH.read_bytes())
+    work_root = lane_work_root(REPOSITORY_ROOT, LANE_NAME)
+    converter = Converter(client, work_root / UI_TEXTURE_CONVERTER_FOLDER, UMODEL)
+    converter_identity = {'implementation': implementation_hash(), 'umodel': UMODEL_SHA256}
+    ledger = UnitLedger(work_root, TEXTURES_STEP, UI_TEXTURE_ALGORITHM_VERSION)
+    return [convert_window_textures(REPOSITORY_ROOT, window_id, requests, converter, ledger, output_root,
+                                    converter_identity=converter_identity, field_bindings_document=field_bindings_document)
+            for window_id in selected_texture_window_ids(manifests, requested_window_ids, limit)]
+
+
+def convert_layout_step_from_client(client_access, output_root, elbera_root, requested_window_ids, limit):
+    data = client_access.require_equal_file(INTERFACE_XDAT_PATH).read_bytes()
+    parse_xdat_module = load_pinned_elbera_module(ELBERA_PARSE_XDAT_PATH, ELBERA_PARSE_XDAT_SHA256, elbera_root=elbera_root)
+    ledger = UnitLedger(lane_work_root(REPOSITORY_ROOT, LANE_NAME), LAYOUT_STEP, LAYOUT_ALGORITHM_VERSION)
+    unit_plan = LayoutUnitPlan(REPOSITORY_ROOT, output_root, ledger,
+                               locked_input_records([INTERFACE_XDAT_PATH], reference_client_guard.REFERENCE_CLIENT_LOCK_PATH))
+    results, layout = convert_layout_step(unit_plan, data, parse_xdat_module, requested_window_ids, limit)
+    if requested_window_ids is None:
+        write_interface_window_census(layout, elbera_root)
+        results.append({'census': INTERFACE_WINDOW_CENSUS_PATH.relative_to(REPOSITORY_ROOT).as_posix(), 'rootWindowCount': len(layout.roots)})
+    return results
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description='Convert the Interlude interface into the data-ui lane store, one sealed unit per root window.')
-    parser.add_argument('--step', choices=(LAYOUT_STEP,), required=True)
+    parser.add_argument('--step', choices=(LAYOUT_STEP, TEXTURES_STEP), required=True)
     parser.add_argument('--client', type=Path, required=True)
     parser.add_argument('--output', type=Path)
     parser.add_argument('--elbera-root', type=Path, default=ELBERA_ROOT)
@@ -130,19 +189,14 @@ def main(argv=None):
         output_root = require_converter_output(REPOSITORY_ROOT, arguments.output or lane_store_root(REPOSITORY_ROOT, LANE_NAME))
         require_batch_preflight(REPOSITORY_ROOT, LANE_NAME, BATCH_MINIMUM_FREE_BYTES)
         run_at_below_normal_priority()
-        data = client_access.require_equal_file(INTERFACE_XDAT_PATH).read_bytes()
-        parse_xdat_module = load_pinned_elbera_module(ELBERA_PARSE_XDAT_PATH, ELBERA_PARSE_XDAT_SHA256, elbera_root=arguments.elbera_root)
-        ledger = UnitLedger(lane_work_root(REPOSITORY_ROOT, LANE_NAME), LAYOUT_STEP, LAYOUT_ALGORITHM_VERSION)
-        unit_plan = LayoutUnitPlan(REPOSITORY_ROOT, output_root, ledger,
-                                   locked_input_records([INTERFACE_XDAT_PATH], reference_client_guard.REFERENCE_CLIENT_LOCK_PATH))
         requested_window_ids = list(dict.fromkeys(arguments.window)) if arguments.window else None
-        results, layout = convert_layout_step(unit_plan, data, parse_xdat_module, requested_window_ids, arguments.limit or sys.maxsize)
+        limit = arguments.limit or sys.maxsize
+        if arguments.step == TEXTURES_STEP:
+            results = convert_textures_step(arguments.client, client_access, output_root, requested_window_ids, limit)
+        else:
+            results = convert_layout_step_from_client(client_access, output_root, arguments.elbera_root, requested_window_ids, limit)
         for result in results:
             print(json.dumps(result, sort_keys=True), flush=True)
-        if requested_window_ids is None:
-            write_interface_window_census(layout, arguments.elbera_root)
-            print(json.dumps({'census': INTERFACE_WINDOW_CENSUS_PATH.relative_to(REPOSITORY_ROOT).as_posix(),
-                              'rootWindowCount': len(layout.roots)}, sort_keys=True), flush=True)
     except (OSError, ValueError) as error:
         print(f'UI conversion failed: {error}', file=sys.stderr)
         return 1

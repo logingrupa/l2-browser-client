@@ -117,11 +117,15 @@ def validate_texture_package_census(census):
     return census
 
 
+def reference_tree_lock_sha256(lock):
+    return hashlib.sha256(canonical_json_bytes(lock.document)).hexdigest()
+
+
 def build_texture_package_census(client_access, lock):
     package_paths = lock_equal_texture_package_paths(lock)
     return validate_texture_package_census({
         'schemaVersion': TEXTURE_PACKAGE_CENSUS_SCHEMA_VERSION,
-        'referenceTreeLockSha256': hashlib.sha256(canonical_json_bytes(lock.document)).hexdigest(),
+        'referenceTreeLockSha256': reference_tree_lock_sha256(lock),
         'packages': [texture_package_census_row(client_access, path) for path in package_paths],
     })
 

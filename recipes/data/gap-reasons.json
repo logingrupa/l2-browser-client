@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "listVersion": 1,
+  "reasons": [
+    "texture-reference-unresolved",
+    "texture-not-in-catalog",
+    "anchor-unresolved:<reason>",
+    "label-unresolved"
+  ]
+}

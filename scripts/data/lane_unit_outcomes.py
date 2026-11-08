@@ -22,12 +22,16 @@ def lane_relative_path(ledger, path):
         raise LaneUnitOutcomeError(f'{path} is outside the {ledger.lane_name} lane folder {ledger.lane_folder}') from error
 
 
-def replace_unit_gap_row(project_root, ledger, unit_key, gap_row):
-    step_rows = [row for row in read_gap_rows(project_root, ledger.lane_name) if row['step'] == ledger.step]
+def replace_step_gap_row(project_root, lane_name, step, unit_key, gap_row):
+    step_rows = [row for row in read_gap_rows(project_root, lane_name) if row['step'] == step]
     kept_rows = [row for row in step_rows if row['key'] != unit_key]
     if gap_row is None and len(kept_rows) == len(step_rows):
         return
-    write_gap_rows(project_root, ledger.lane_name, ledger.step, kept_rows + ([gap_row] if gap_row else []))
+    write_gap_rows(project_root, lane_name, step, kept_rows + ([gap_row] if gap_row else []))
+
+
+def replace_unit_gap_row(project_root, ledger, unit_key, gap_row):
+    replace_step_gap_row(project_root, ledger.lane_name, ledger.step, unit_key, gap_row)
 
 
 def write_pinned_manifest_to_store(output_root, slice_name, record, manifest_relative, manifest_bytes, capacity):
