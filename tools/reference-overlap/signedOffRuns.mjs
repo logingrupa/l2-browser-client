@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -6,17 +5,12 @@ import { ReferenceOverlapSetupError } from "./referenceOverlapSetupError.mjs";
 
 export const defaultSignedOffRunsPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "signedOffRuns.json");
 const supportedSchemaVersion = 1;
-const sourceTokenSeparator = "\u0001";
 const signedOffVerdict = "generic";
 const areasWithoutSignOffs = new Set(["network"]);
 const sha256HexPattern = /^[0-9a-f]{64}$/;
 const calendarDatePattern = /^\d{4}-\d{2}-\d{2}$/;
 const signedOffRunFieldNames = ["area", "sourceFile", "tokenCount", "sourceTokensSha256", "referenceFiles", "verdict", "reviewedOn", "review", "evidence"];
 const signedOffRunTextFieldNames = ["area", "sourceFile", "sourceTokensSha256", "verdict", "reviewedOn", "review", "evidence"];
-
-export function sha256OfSourceTokens(sourceTokens) {
-  return createHash("sha256").update(sourceTokens.map(token => token.original).join(sourceTokenSeparator)).digest("hex");
-}
 
 export function loadSignedOffRuns(filePath = defaultSignedOffRunsPath) {
   let text;

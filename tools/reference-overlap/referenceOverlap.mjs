@@ -3,8 +3,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ReferenceOverlapSetupError } from "./referenceOverlapSetupError.mjs";
 import { expandRepositoryGlobs } from "./repositoryGlob.mjs";
+import { defaultReviewedRunsDirectory, loadReviewedRuns, markReviewedRuns, validateReviewedRuns } from "./reviewedRuns.mjs";
+import { sha256OfReferenceFiles, sha256OfSourceTokens } from "./runHashes.mjs";
 import { findSharedTokenRuns } from "./sharedTokenRuns.mjs";
-import { defaultSignedOffRunsPath, loadSignedOffRuns, sha256OfSourceTokens, signOffReviewerRuns, validateSignedOffRuns } from "./signedOffRuns.mjs";
+import { defaultSignedOffRunsPath, loadSignedOffRuns, signOffReviewerRuns, validateSignedOffRuns } from "./signedOffRuns.mjs";
 import { normaliseSourceTokens } from "./sourceTokens.mjs";
 
 export { ReferenceOverlapSetupError } from "./referenceOverlapSetupError.mjs";
@@ -13,7 +15,7 @@ export { signOffReviewerRuns } from "./signedOffRuns.mjs";
 export { normaliseSourceTokens } from "./sourceTokens.mjs";
 
 const exitCodeNoFinding = 0;
-const exitCodeBlockingOrStaleFinding = 1;
+const exitCodeFinding = 1;
 const exitCodeSetupFailure = 2;
 const toolDirectory = path.dirname(fileURLToPath(import.meta.url));
 const defaultRepositoryRoot = path.resolve(toolDirectory, "../..");
@@ -117,14 +119,25 @@ function groupRunsBySourceSpan(runs, sourceCorpus, referenceCorpus, allowlistedC
       referenceEndLine: referenceCorpus.tokens[run.referenceStart + run.tokenCount - 1].line,
     });
   }
-  return [...groupsBySpan.values()];
+  return [...groupsBySpan.values()].map(({ referenceMatches, ...group }) => ({
+    ...group,
+    referenceFilesSha256: sha256OfReferenceFiles(referenceMatches.map(referenceMatch => referenceMatch.referenceFile)),
+    referenceMatches,
+  }));
+}
+
+function compactUnreviewedRun({ sourceFile, sourceStartLine, sourceEndLine, tokenCount, sourceTokensSha256, referenceFilesSha256, referenceMatches }) {
+  return { sourceFile, sourceStartLine, sourceEndLine, tokenCount, sourceTokensSha256, referenceFilesSha256, referenceMatches };
 }
 
 export function runReferenceOverlap({
-  area: areaName, repositoryRoot = defaultRepositoryRoot, referenceRoot = repositoryRoot, overlapAreas = loadOverlapAreas(), signedOffRuns = loadSignedOffRuns(),
+  area: areaName, repositoryRoot = defaultRepositoryRoot, referenceRoot = repositoryRoot, overlapAreas = loadOverlapAreas(),
+  signedOffRuns = loadSignedOffRuns(), reviewedRuns = loadReviewedRuns(),
 }) {
   const area = requireArea(overlapAreas, areaName);
-  const validatedSignedOffRuns = validateSignedOffRuns(signedOffRuns, Object.keys(overlapAreas.areas));
+  const areaNames = Object.keys(overlapAreas.areas);
+  const validatedSignedOffRuns = validateSignedOffRuns(signedOffRuns, areaNames);
+  const areaReviewedRuns = validateReviewedRuns(reviewedRuns, areaNames).get(areaName) ?? [];
   const { reviewerRunTokens, blockingRunTokens } = overlapAreas.thresholds;
   const areaClones = [...new Set(area.referenceGlobs.map(referenceGlob => cloneForReferenceGlob(overlapAreas, referenceGlob)))];
   const referenceCommits = verifyReferenceClones(referenceRoot, areaClones);
@@ -134,8 +147,8 @@ export function runReferenceOverlap({
   const referenceCorpus = buildTokenCorpus(referenceRoot, referenceFiles, "reference");
   const allowlistedConstants = locateAllowlistedConstants(sourceCorpus, area.constantAllowlist);
   const sharedRuns = findSharedTokenRuns(sourceCorpus.tokens, referenceCorpus.tokens, reviewerRunTokens);
-  const { reviewerRuns, staleSignedOffRuns } = signOffReviewerRuns(
-    groupRunsBySourceSpan(sharedRuns, sourceCorpus, referenceCorpus, allowlistedConstants), validatedSignedOffRuns, areaName);
+  const signOffResult = signOffReviewerRuns(groupRunsBySourceSpan(sharedRuns, sourceCorpus, referenceCorpus, allowlistedConstants), validatedSignedOffRuns, areaName);
+  const { reviewerRuns, staleReviewedRuns } = markReviewedRuns(signOffResult.reviewerRuns, areaReviewedRuns);
   return {
     area: areaName,
     referenceCommits,
@@ -144,28 +157,45 @@ export function runReferenceOverlap({
     referenceFileCount: referenceFiles.length,
     reviewerRuns,
     signedOffRunCount: reviewerRuns.filter(run => run.signedOff !== null).length,
-    staleSignedOffRuns,
+    staleSignedOffRuns: signOffResult.staleSignedOffRuns,
+    reviewedRunCount: reviewerRuns.filter(run => run.reviewed !== null).length,
+    unreviewedRuns: reviewerRuns.filter(run => run.signedOff === null && run.reviewed === null).map(compactUnreviewedRun),
+    staleReviewedRuns,
     blockingRuns: reviewerRuns.filter(run => run.tokenCount >= blockingRunTokens && run.allowlistedConstant === null && run.signedOff === null),
   };
 }
 
 function readCommandLineOptions(argumentList) {
-  const optionKeys = { "--area": "area", "--repository-root": "repositoryRoot", "--reference-root": "referenceRoot", "--signed-off-runs": "signedOffRunsPath" };
-  const options = { signedOffRunsPath: defaultSignedOffRunsPath };
-  for (let index = 0; index < argumentList.length; index += 2) {
-    const optionKey = optionKeys[argumentList[index]];
+  const valueOptionKeys = {
+    "--area": "area", "--repository-root": "repositoryRoot", "--reference-root": "referenceRoot",
+    "--signed-off-runs": "signedOffRunsPath", "--reviewed-runs": "reviewedRunsDirectory",
+  };
+  const flagOptionKeys = { "--require-reviewed": "requireReviewed" };
+  const options = { signedOffRunsPath: defaultSignedOffRunsPath, reviewedRunsDirectory: defaultReviewedRunsDirectory, requireReviewed: false };
+  let index = 0;
+  while (index < argumentList.length) {
+    const flagOptionKey = flagOptionKeys[argumentList[index]];
+    if (flagOptionKey !== undefined) {
+      options[flagOptionKey] = true;
+      index += 1;
+      continue;
+    }
+    const optionKey = valueOptionKeys[argumentList[index]];
     const optionValue = argumentList[index + 1];
-    if (optionKey === undefined) throw new ReferenceOverlapSetupError(`unknown option ${argumentList[index]}; use --area <name> [--repository-root <dir>] [--reference-root <dir>] [--signed-off-runs <file>]`);
+    if (optionKey === undefined) {
+      throw new ReferenceOverlapSetupError(`unknown option ${argumentList[index]}; use --area <name> [--repository-root <dir>] [--reference-root <dir>] [--signed-off-runs <file>] [--reviewed-runs <dir>] [--require-reviewed]`);
+    }
     if (optionValue === undefined || optionValue === "") throw new ReferenceOverlapSetupError(`${argumentList[index]} needs a value`);
     options[optionKey] = optionKey === "area" ? optionValue : path.resolve(optionValue);
+    index += 2;
   }
   if (options.area === undefined) throw new ReferenceOverlapSetupError("--area <name> is required");
   return options;
 }
 
 function runReferenceOverlapCommand() {
-  const { signedOffRunsPath, ...options } = readCommandLineOptions(process.argv.slice(2));
-  const report = runReferenceOverlap({ ...options, signedOffRuns: loadSignedOffRuns(signedOffRunsPath) });
+  const { signedOffRunsPath, reviewedRunsDirectory, requireReviewed, ...options } = readCommandLineOptions(process.argv.slice(2));
+  const report = runReferenceOverlap({ ...options, signedOffRuns: loadSignedOffRuns(signedOffRunsPath), reviewedRuns: loadReviewedRuns(reviewedRunsDirectory) });
   console.log(JSON.stringify(report, null, 2));
   if (report.blockingRuns.length > 0) {
     console.error(`${report.blockingRuns.length} shared run(s) of ${report.thresholds.blockingRunTokens} or more tokens outside the constant allowlist and the sign-offs in area ${report.area}`);
@@ -173,7 +203,11 @@ function runReferenceOverlapCommand() {
   if (report.staleSignedOffRuns.length > 0) {
     console.error(`${report.staleSignedOffRuns.length} stale sign-off(s) in area ${report.area} match no reviewer run; remove them from ${signedOffRunsPath}`);
   }
-  return report.blockingRuns.length === 0 && report.staleSignedOffRuns.length === 0 ? exitCodeNoFinding : exitCodeBlockingOrStaleFinding;
+  const hasReviewFinding = requireReviewed && (report.unreviewedRuns.length > 0 || report.staleReviewedRuns.length > 0);
+  if (hasReviewFinding) {
+    console.error(`${report.unreviewedRuns.length} unreviewed reviewer run(s) and ${report.staleReviewedRuns.length} stale reviewed row(s) in area ${report.area}; every reviewer run of ${report.thresholds.reviewerRunTokens} or more tokens needs a row in ${path.join(reviewedRunsDirectory, `${report.area}.json`)}`);
+  }
+  return report.blockingRuns.length === 0 && report.staleSignedOffRuns.length === 0 && !hasReviewFinding ? exitCodeNoFinding : exitCodeFinding;
 }
 
 if (process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

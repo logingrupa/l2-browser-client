@@ -1,87 +1,22 @@
-import { spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  ReferenceOverlapSetupError, loadOverlapAreas, normaliseSourceTokens, runReferenceOverlap, signOffReviewerRuns,
-  type OverlapAreas, type ReferenceOverlapReport, type SignedOffRun, type SignedOffRuns,
+  ReferenceOverlapSetupError, normaliseSourceTokens, runReferenceOverlap, signOffReviewerRuns,
+  type ReferenceOverlapReport, type SignedOffRun, type SignedOffRuns,
 } from "../../tools/reference-overlap/referenceOverlap.mjs";
+import {
+  createWorkspace, generatedCoreClonePath, generatedCoreReferenceFile, generatedCoreSourceFile, lineage2jsClonePath, lineage2jsPinnedCommit,
+  movementSourceDirectory, overlapAreas, overlapAreasWithMovementAllowlist, readFixture, removeTemporaryWorkspaces,
+  runMovementOverlap, runOverlapCommand, sha256OfOriginalTokens, writeFixtureWorkspace, writeLineage2jsClone, writeSharedCoreWorkspace,
+} from "../support/referenceOverlapWorkspace";
 import { alternatingCoreText, sourceAndReferenceWithSharedCore } from "../support/sharedTokenCore";
 
-const fixtureDirectory = fileURLToPath(new URL("../fixtures/reference-overlap/", import.meta.url));
 const toolDirectory = fileURLToPath(new URL("../../tools/reference-overlap/", import.meta.url));
-const toolPath = path.join(toolDirectory, "referenceOverlap.mjs");
-const movementSourceDirectory = "src/scene/world/movement";
-const lineage2jsClonePath = ".assets/reference/lineage2js";
-const generatedCoreSourceFile = `${movementSourceDirectory}/generatedCore.ts`;
-const generatedCoreClonePath = "src/physics/generatedCore.ts";
-const generatedCoreReferenceFile = `${lineage2jsClonePath}/${generatedCoreClonePath}`;
-const noSignedOffRuns: SignedOffRuns = { schemaVersion: 1, runs: [] };
 const areaNames = ["materials", "bsp-visibility", "movement", "particles", "network"];
-const overlapAreas = loadOverlapAreas();
-const lineage2jsPinnedCommit = overlapAreas.referenceClones.find(clone => clone.name === "lineage2js")!.commit;
-const temporaryWorkspaces: string[] = [];
 
-afterEach(() => {
-  for (const workspace of temporaryWorkspaces.splice(0)) rmSync(workspace, { recursive: true, force: true });
-});
-
-function createWorkspace(): string {
-  const workspace = mkdtempSync(path.join(tmpdir(), "reference-overlap-"));
-  temporaryWorkspaces.push(workspace);
-  return workspace;
-}
-
-function writeWorkspaceFile(workspace: string, relativePath: string, text: string): void {
-  mkdirSync(path.dirname(path.join(workspace, relativePath)), { recursive: true });
-  writeFileSync(path.join(workspace, relativePath), text);
-}
-
-function writeLineage2jsClone(workspace: string, filesByClonePath: Readonly<Record<string, string>>, headCommit = lineage2jsPinnedCommit): void {
-  for (const [clonePath, text] of Object.entries(filesByClonePath)) writeWorkspaceFile(workspace, `${lineage2jsClonePath}/${clonePath}`, text);
-  writeWorkspaceFile(workspace, `${lineage2jsClonePath}/.git/HEAD`, `${headCommit}\n`);
-}
-
-function readFixture(relativePath: string): string {
-  return readFileSync(path.join(fixtureDirectory, relativePath), "utf8");
-}
-
-function writeFixtureWorkspace(sourceFileNames: readonly string[]): string {
-  const workspace = createWorkspace();
-  for (const fileName of sourceFileNames) {
-    writeWorkspaceFile(workspace, `${movementSourceDirectory}/${fileName}`, readFixture(`repository/${movementSourceDirectory}/${fileName}`));
-  }
-  writeLineage2jsClone(workspace, { "src/physics/fixtureReference.ts": readFixture("reference-clone/src/physics/fixtureReference.ts") });
-  return workspace;
-}
-
-function writeSharedCoreWorkspace(sourceText: string, referenceTextsByClonePath: Readonly<Record<string, string>>): string {
-  const workspace = createWorkspace();
-  writeWorkspaceFile(workspace, generatedCoreSourceFile, sourceText);
-  writeLineage2jsClone(workspace, referenceTextsByClonePath);
-  return workspace;
-}
-
-function runOverlapCommand(workspace: string, { referenceRoot = workspace, signedOffRunsText = JSON.stringify(noSignedOffRuns) }: { referenceRoot?: string; signedOffRunsText?: string } = {}) {
-  const signedOffRunsPath = path.join(workspace, "signedOffRuns.json");
-  writeFileSync(signedOffRunsPath, signedOffRunsText);
-  const completed = spawnSync(process.execPath, [
-    toolPath, "--area", "movement", "--repository-root", workspace, "--reference-root", referenceRoot, "--signed-off-runs", signedOffRunsPath,
-  ], { encoding: "utf8" });
-  const report = completed.stdout === "" ? null : JSON.parse(completed.stdout) as ReferenceOverlapReport;
-  return { status: completed.status, report, stderr: completed.stderr, signedOffRunsPath };
-}
-
-function runMovementOverlap(workspace: string, signedOffRuns: SignedOffRuns): ReferenceOverlapReport {
-  return runReferenceOverlap({ area: "movement", repositoryRoot: workspace, signedOffRuns });
-}
-
-function sha256OfOriginalTokens(originalTokens: readonly string[]): string {
-  return createHash("sha256").update(originalTokens.join("\u0001")).digest("hex");
-}
+afterEach(removeTemporaryWorkspaces);
 
 function genericSignOff(overrides: Partial<SignedOffRun> = {}): SignedOffRun {
   return {
@@ -111,11 +46,6 @@ function summariseRuns(report: ReferenceOverlapReport) {
     reviewer: report.reviewerRuns.map(run => `${path.posix.basename(run.sourceFile)}:${run.sourceStartLine}-${run.sourceEndLine}:${run.tokenCount}`),
     blocking: report.blockingRuns.map(run => `${path.posix.basename(run.sourceFile)}:${run.sourceStartLine}-${run.sourceEndLine}:${run.tokenCount}`),
   };
-}
-
-function overlapAreasWithMovementAllowlist(sourceFile: string, constantName: string): OverlapAreas {
-  const movementArea = overlapAreas.areas["movement"]!;
-  return { ...overlapAreas, areas: { ...overlapAreas.areas, movement: { ...movementArea, constantAllowlist: [{ sourceFile, constantName, kind: "opcodes" }] } } };
 }
 
 describe("reference overlap command over the movement area", () => {
@@ -166,8 +96,7 @@ describe("reference overlap command over the movement area", () => {
 describe("constant table allowlist", () => {
   it("turns a 20 or more token run inside an allowlisted constant table into a reviewer run only", () => {
     const workspace = writeFixtureWorkspace(["replyCodeTable.ts"]);
-    const report = runReferenceOverlap({
-      area: "movement", repositoryRoot: workspace,
+    const report = runMovementOverlap(workspace, {
       overlapAreas: overlapAreasWithMovementAllowlist(`${movementSourceDirectory}/replyCodeTable.ts`, "fixtureReplyCodeTable"),
     });
     expect(report.blockingRuns).toEqual([]);
@@ -177,7 +106,7 @@ describe("constant table allowlist", () => {
   it("refuses an allowlisted constant that the source does not declare", () => {
     const workspace = writeFixtureWorkspace(["replyCodeTable.ts"]);
     const overlapAreasWithMissingConstant = overlapAreasWithMovementAllowlist(`${movementSourceDirectory}/replyCodeTable.ts`, "missingTable");
-    expect(() => runReferenceOverlap({ area: "movement", repositoryRoot: workspace, overlapAreas: overlapAreasWithMissingConstant }))
+    expect(() => runMovementOverlap(workspace, { overlapAreas: overlapAreasWithMissingConstant }))
       .toThrow(ReferenceOverlapSetupError);
   });
 
@@ -192,13 +121,13 @@ describe("reviewer sign-offs", () => {
   const signedOffSharedCore = signedOffRunsOf(genericSignOff());
 
   it("hashes the exact original text of the run's source tokens joined by U+0001", () => {
-    const report = runMovementOverlap(writeSharedCoreWorkspace(sharedCore.sourceText, sharedCoreReferenceTexts), noSignedOffRuns);
+    const report = runMovementOverlap(writeSharedCoreWorkspace(sharedCore.sourceText, sharedCoreReferenceTexts));
     expect(report.reviewerRuns.map(run => run.sourceTokensSha256)).toEqual([sha256OfOriginalTokens(alternatingCoreText(20, "alpha").split(" "))]);
     expect(report.reviewerRuns.map(run => run.signedOff)).toEqual([null]);
   });
 
   it("takes a signed-off 20 token run out of blockingRuns and attaches its sign-off", () => {
-    const report = runMovementOverlap(writeSharedCoreWorkspace(sharedCore.sourceText, sharedCoreReferenceTexts), signedOffSharedCore);
+    const report = runMovementOverlap(writeSharedCoreWorkspace(sharedCore.sourceText, sharedCoreReferenceTexts), { signedOffRuns: signedOffSharedCore });
     expect(report.blockingRuns).toEqual([]);
     expect(report.reviewerRuns.map(run => run.signedOff)).toEqual([{ verdict: "generic", reviewedOn: "2026-11-08", evidence: "docs/parts/adapter-dispatch/EVIDENCE.md" }]);
     expect(report.signedOffRunCount).toBe(1);
@@ -208,7 +137,7 @@ describe("reviewer sign-offs", () => {
   it("blocks again when one source token keeps its normalised shape but changes its text, and reports the old sign-off stale", () => {
     const renamedSourceText = sharedCore.sourceText.replace("alpha0", "renamed0");
     expect(normaliseSourceTokens(renamedSourceText).map(token => token.normalised)).toEqual(normaliseSourceTokens(sharedCore.sourceText).map(token => token.normalised));
-    const report = runMovementOverlap(writeSharedCoreWorkspace(renamedSourceText, sharedCoreReferenceTexts), signedOffSharedCore);
+    const report = runMovementOverlap(writeSharedCoreWorkspace(renamedSourceText, sharedCoreReferenceTexts), { signedOffRuns: signedOffSharedCore });
     expect(report.blockingRuns.map(run => [run.tokenCount, run.signedOff])).toEqual([[20, null]]);
     expect(report.signedOffRunCount).toBe(0);
     expect(report.staleSignedOffRuns).toEqual(signedOffSharedCore.runs);
@@ -217,14 +146,14 @@ describe("reviewer sign-offs", () => {
   it("keeps a run blocking when it also matches a reference file outside the sign-off", () => {
     const secondCoreClonePath = "src/physics/secondCore.ts";
     const workspace = writeSharedCoreWorkspace(sharedCore.sourceText, { ...sharedCoreReferenceTexts, [secondCoreClonePath]: sharedCore.referenceText });
-    const report = runMovementOverlap(workspace, signedOffSharedCore);
+    const report = runMovementOverlap(workspace, { signedOffRuns: signedOffSharedCore });
     expect(report.blockingRuns.map(run => run.referenceMatches.map(referenceMatch => referenceMatch.referenceFile)))
       .toEqual([[generatedCoreReferenceFile, `${lineage2jsClonePath}/${secondCoreClonePath}`]]);
     expect(report.blockingRuns.map(run => run.signedOff)).toEqual([null]);
   });
 
   it("ignores a sign-off for another area", () => {
-    const report = runMovementOverlap(writeSharedCoreWorkspace(sharedCore.sourceText, sharedCoreReferenceTexts), signedOffRunsOf(genericSignOff({ area: "particles" })));
+    const report = runMovementOverlap(writeSharedCoreWorkspace(sharedCore.sourceText, sharedCoreReferenceTexts), { signedOffRuns: signedOffRunsOf(genericSignOff({ area: "particles" })) });
     expect(report.blockingRuns).toHaveLength(1);
     expect(report.signedOffRunCount).toBe(0);
     expect(report.staleSignedOffRuns).toEqual([]);
@@ -259,13 +188,13 @@ describe("reviewer sign-offs", () => {
     ["the network area", validEntry => signedOffRunsOf({ ...validEntry, area: "network" }), /names area network, which takes no sign-offs/],
   ])("refuses sign-off data with %s", (_caseName, buildSignedOffRuns, expectedMessage) => {
     const malformedSignedOffRuns = buildSignedOffRuns(genericSignOff()) as SignedOffRuns;
-    const runWithMalformedSignOffs = () => runMovementOverlap(createWorkspace(), malformedSignedOffRuns);
+    const runWithMalformedSignOffs = () => runMovementOverlap(createWorkspace(), { signedOffRuns: malformedSignedOffRuns });
     expect(runWithMalformedSignOffs).toThrow(ReferenceOverlapSetupError);
     expect(runWithMalformedSignOffs).toThrow(expectedMessage);
   });
 
   it("never lets a sign-off without the generic verdict cover a run, even past validation", () => {
-    const report = runMovementOverlap(writeSharedCoreWorkspace(sharedCore.sourceText, sharedCoreReferenceTexts), noSignedOffRuns);
+    const report = runMovementOverlap(writeSharedCoreWorkspace(sharedCore.sourceText, sharedCoreReferenceTexts));
     const derivedSignOff = genericSignOff({ verdict: "derived" });
     const { reviewerRuns, staleSignedOffRuns } = signOffReviewerRuns(report.reviewerRuns, [derivedSignOff], "movement");
     expect(reviewerRuns.map(run => run.signedOff)).toEqual([null]);
@@ -299,7 +228,7 @@ describe("overlap area map", () => {
 
   it("reads reference files as text only and never executes them", () => {
     const toolSources = readdirSync(toolDirectory).filter(fileName => fileName.endsWith(".mjs")).map(fileName => readFileSync(path.join(toolDirectory, fileName), "utf8"));
-    expect(toolSources.length).toBe(6);
+    expect(toolSources.length).toBe(8);
     for (const toolSource of toolSources) expect(toolSource).not.toMatch(/child_process|\bimport\(|\brequire\(|\beval\(|new Function|node:vm|node:worker_threads/);
   });
 });

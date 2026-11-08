@@ -64,6 +64,31 @@ export interface ReviewerSignOff {
   readonly evidence: string;
 }
 
+export type ReviewedRunRow = readonly [tokenCount: number, sourceTokensSha256: string, referenceFilesSha256: string, escalated: boolean, reason: string];
+
+export interface ReviewedRunsReview {
+  readonly reviewedOn: string;
+  readonly method: string;
+  readonly files: Readonly<Record<string, readonly ReviewedRunRow[]>>;
+}
+
+export interface ReviewedRunsFile {
+  readonly schemaVersion: number;
+  readonly area: string;
+  readonly runFields: readonly string[];
+  readonly reviews: readonly ReviewedRunsReview[];
+}
+
+export interface ReviewedRun {
+  readonly sourceFile: string;
+  readonly tokenCount: number;
+  readonly sourceTokensSha256: string;
+  readonly referenceFilesSha256: string;
+  readonly escalated: boolean;
+  readonly reason: string;
+  readonly reviewedOn: string;
+}
+
 export interface ReviewerRun {
   readonly sourceFile: string;
   readonly sourceStartLine: number;
@@ -71,9 +96,14 @@ export interface ReviewerRun {
   readonly tokenCount: number;
   readonly sourceTokensSha256: string;
   readonly allowlistedConstant: { readonly constantName: string; readonly kind: string } | null;
+  readonly referenceFilesSha256: string;
   readonly referenceMatches: readonly ReferenceMatch[];
   readonly signedOff: ReviewerSignOff | null;
+  readonly reviewed: { readonly reviewedOn: string } | null;
 }
+
+export type UnreviewedRun = Pick<ReviewerRun,
+  "sourceFile" | "sourceStartLine" | "sourceEndLine" | "tokenCount" | "sourceTokensSha256" | "referenceFilesSha256" | "referenceMatches">;
 
 export interface ReferenceOverlapReport {
   readonly area: string;
@@ -84,6 +114,9 @@ export interface ReferenceOverlapReport {
   readonly reviewerRuns: readonly ReviewerRun[];
   readonly signedOffRunCount: number;
   readonly staleSignedOffRuns: readonly SignedOffRun[];
+  readonly reviewedRunCount: number;
+  readonly unreviewedRuns: readonly UnreviewedRun[];
+  readonly staleReviewedRuns: readonly ReviewedRun[];
   readonly blockingRuns: readonly ReviewerRun[];
 }
 
@@ -93,13 +126,14 @@ export interface ReferenceOverlapOptions {
   readonly referenceRoot?: string;
   readonly overlapAreas?: OverlapAreas;
   readonly signedOffRuns?: SignedOffRuns;
+  readonly reviewedRuns?: Readonly<Record<string, ReviewedRunsFile>>;
 }
 
 export class ReferenceOverlapSetupError extends Error {}
 export function normaliseSourceTokens(text: string): SourceToken[];
 export function findSharedTokenRuns(sourceTokens: readonly Pick<SourceToken, "normalised" | "original">[], referenceTokens: readonly Pick<SourceToken, "normalised" | "original">[], minimumRun: number): SharedTokenRun[];
-export function signOffReviewerRuns(
-  reviewerRuns: readonly Omit<ReviewerRun, "signedOff">[], validatedSignedOffRuns: readonly SignedOffRun[], areaName: string,
-): { readonly reviewerRuns: ReviewerRun[]; readonly staleSignedOffRuns: SignedOffRun[] };
+export function signOffReviewerRuns<Run extends Omit<ReviewerRun, "signedOff" | "reviewed">>(
+  reviewerRuns: readonly Run[], validatedSignedOffRuns: readonly SignedOffRun[], areaName: string,
+): { readonly reviewerRuns: (Run & { readonly signedOff: ReviewerSignOff | null })[]; readonly staleSignedOffRuns: SignedOffRun[] };
 export function loadOverlapAreas(): OverlapAreas;
 export function runReferenceOverlap(options: ReferenceOverlapOptions): ReferenceOverlapReport;
