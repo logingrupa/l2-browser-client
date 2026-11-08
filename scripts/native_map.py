@@ -1,13 +1,4 @@
 #!/usr/bin/env python3
-"""Lossless, bounded UE123/28 map migration; deliberately no guessed world mesh.
-
-Usage: python scripts/native_map.py --client <staged-root> --recipe
-recipes/native-map-20_20.json --output <destination-job> [--verify]
-
-Extracts actor tags, exact native G16 samples, terrain layer/deco tags and bitmap
-words. The source package payload remains available for unsupported native data.
-Generated static-mesh requests feed the existing native_assets.py converter.
-"""
 import argparse
 from collections import Counter
 import hashlib
@@ -25,6 +16,11 @@ from native_assets_lib.gltf import json_bytes, safe_name
 from native_catalog.ue2 import FormatError, Package, Reader
 from reference_client_guard import require_reference_client
 
+MAP_MIGRATION_DESCRIPTION = ('Lossless, bounded UE123/28 map migration; deliberately no guessed world mesh. '
+    'Usage: python scripts/native_map.py --client <staged-root> --recipe recipes/native-map-20_20.json '
+    '--output <destination-job> [--verify]. Extracts actor tags, exact native G16 samples, terrain layer/deco tags '
+    'and bitmap words. The source package payload remains available for unsupported native data. '
+    'Generated static-mesh requests feed the existing native_assets.py converter.')
 SCHEMA = 1
 HAS_STACK = 0x02000000
 FORMAT_REFERENCES = {
@@ -255,9 +251,15 @@ def validate_recipe(recipe):
         raise ValueError('Map section has empty/reversed bounds')
 
 
+def require_lock_equal_client_path(client, relative):
+    path = safe_path(client, relative)
+    require_reference_client(client).require_equal_file(relative)
+    return path
+
+
 class MapSources:
     def __init__(self, client):
-        self.client_access = require_reference_client(client)
+        require_reference_client(client)
         self.client, self.dependencies, self.loaded, self.paths = client, {}, {}, {}
         for folder in ('maps', 'staticmeshes', 'textures', 'systextures', 'system', 'animations', 'sounds'):
             if not (client / folder).is_dir():
@@ -268,8 +270,7 @@ class MapSources:
 
     def get(self, relative):
         if relative not in self.loaded:
-            path = safe_path(self.client, relative)
-            self.client_access.require_equal_file(relative)
+            path = require_lock_equal_client_path(self.client, relative)
             data = path.read_bytes()
             self.dependencies[relative] = {'sha256': sha(data), 'bytes': len(data)}
             self.loaded[relative] = Package(data, path.name)
@@ -417,11 +418,11 @@ def verify_map(client, output):
         raise ValueError('Invalid map receipt')
     if receipt['implementation'] != implementation():
         raise ValueError('Map implementation/runtime differs from receipt; rebuild required')
-    for root, table in ((client, receipt['dependencies']), (output, receipt['outputs'])):
-        for relative, expected in table.items():
-            path = safe_path(root, relative)
-            if not path.is_file() or path.stat().st_size != expected['bytes'] or file_hash(path) != expected['sha256']:
-                raise ValueError('Map hash/length mismatch: ' + relative)
+    recorded_files = [(require_lock_equal_client_path(client, relative), relative, expected) for relative, expected in receipt['dependencies'].items()]
+    recorded_files += [(safe_path(output, relative), relative, expected) for relative, expected in receipt['outputs'].items()]
+    for path, relative, expected in recorded_files:
+        if not path.is_file() or path.stat().st_size != expected['bytes'] or file_hash(path) != expected['sha256']:
+            raise ValueError('Map hash/length mismatch: ' + relative)
     actual = {path.relative_to(output).as_posix() for path in output.rglob('*') if path.is_file()}
     if actual != {'receipt.json', *receipt['outputs']}:
         raise ValueError('Map output file set differs from receipt')
@@ -472,7 +473,7 @@ def migrate_map(client, recipe, output):
                    'implementation': implementation(), 'dependencies': dependencies, 'outputs': files}
         (work / 'receipt.json').write_bytes(json_bytes(receipt))
         for relative, entry in dependencies.items():
-            if file_hash(safe_path(client, relative)) != entry['sha256']:
+            if file_hash(require_lock_equal_client_path(client, relative)) != entry['sha256']:
                 raise ValueError('Map source changed during extraction: ' + relative)
         output.mkdir(parents=True, exist_ok=True)
         for path in sorted(work.rglob('*')):
@@ -487,7 +488,7 @@ def migrate_map(client, recipe, output):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=MAP_MIGRATION_DESCRIPTION)
     parser.add_argument('--client', type=Path, required=True)
     parser.add_argument('--recipe', type=Path)
     parser.add_argument('--output', type=Path, required=True)

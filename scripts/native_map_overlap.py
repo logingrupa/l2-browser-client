@@ -14,7 +14,7 @@ from native_catalog.ue2 import FormatError
 from reference_client_guard import require_reference_client
 from native_map import (COLLISION, TRANSFORMS, MapSources, actor_properties,
                         decode_property, explicit_properties, file_hash,
-                        property_value, safe_path, sha)
+                        property_value, require_lock_equal_client_path, safe_path, sha)
 from native_map_geometry import (SOURCE_TO_GLTF, gltf_placement,
                                  read_class_evidence, resolved_static_values,
                                  static_matrix)
@@ -56,6 +56,11 @@ def verify_file(root, relative, expected, checked=None):
             checked[key] = measured
     require(measured == digest, 'Input hash differs: ' + str(path))
     return path
+
+
+def verify_lock_equal_client_file(client, relative, expected, checked=None):
+    require_lock_equal_client_path(Path(client), relative)
+    return verify_file(client, relative, expected, checked)
 
 
 def parse_glb(data):
@@ -329,7 +334,7 @@ def audit_overlap(client_root, raw_root, runtime_manifest_path, class_evidence_r
     for relative, expected in section_receipt['outputs'].items():
         verify_file(section, relative, expected, checked)
     for relative, expected in section_receipt['sourceDependencies'].items():
-        verify_file(client, relative, expected, checked)
+        verify_lock_equal_client_file(client, relative, expected, checked)
     require(sha(json_bytes(geometry['recipe'])) == section_receipt['recipeSha256'], 'Section recipe mismatch')
     if recipe_path is not None:
         require(read_json(recipe_path) == geometry['recipe'], 'Selected recipe differs from retained section')
@@ -338,9 +343,10 @@ def audit_overlap(client_root, raw_root, runtime_manifest_path, class_evidence_r
     raw_receipt, raw_manifest = read_json(raw/'receipt.json'), read_json(raw/'manifest.json')
     require(raw_receipt.get('kind') == 'native-map-raw' and raw_manifest.get('kind') == 'native-map-raw' and
             not raw_manifest.get('unsupported'), 'Raw source inventory is incomplete/unsupported')
-    for root, table in ((raw, raw_receipt['outputs']), (client, raw_receipt['dependencies'])):
-        for relative, expected in table.items():
-            verify_file(root, relative, expected, checked)
+    for relative, expected in raw_receipt['outputs'].items():
+        verify_file(raw, relative, expected, checked)
+    for relative, expected in raw_receipt['dependencies'].items():
+        verify_lock_equal_client_file(client, relative, expected, checked)
     require(sha(json_bytes(raw_manifest['recipe'])) == raw_receipt['recipeSha256'], 'Raw recipe mismatch')
     source_map = raw_manifest['recipe']['map']
     source_hash = raw_manifest['sourcePackageSha256']
@@ -392,7 +398,7 @@ def audit_overlap(client_root, raw_root, runtime_manifest_path, class_evidence_r
                     coordinates['sourceToGltf'] == SOURCE_TO_GLTF and coordinates['unit'] == 'metre' and
                     coordinates['sourceUnitsPerMetre'] == 100, 'Model bytes/source coordinate basis differ')
             for relative, expected in provenance['dependencies'].items():
-                verify_file(client, relative, expected, checked)
+                verify_lock_equal_client_file(client, relative, expected, checked)
             _, mesh_package, mesh_item = sources.resolve(model['sourceObject'], 'StaticMesh')
             require(mesh_package.source_hash == asset['source']['sha256'] and mesh_item['object'] == model['sourceObject'],
                     'Converted model source package/object differs')

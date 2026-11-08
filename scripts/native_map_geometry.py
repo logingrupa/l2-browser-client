@@ -1,11 +1,4 @@
 #!/usr/bin/env python3
-"""Source-backed UE123/28 terrain section and static placement migration.
-
-No native client or source package is modified. The native TerrainInfo FCoords
-are the position oracle; serialized sector bounds are checked independently.
-Materials remain editable source relationships: this tool does not certify
-Lineage's terrain blending, lighting, navigation or native visual parity.
-"""
 import argparse
 import hashlib
 import json
@@ -21,9 +14,14 @@ import zipfile
 
 from native_assets_lib.gltf import json_bytes
 from native_catalog.ue2 import FormatError, Package, Reader
-from native_map import actor_properties, file_hash, property_value, safe_path, sha, verify_map, MapSources, static_mesh_request
+from native_map import (actor_properties, file_hash, property_value, require_lock_equal_client_path, safe_path, sha, verify_map,
+    MapSources, static_mesh_request)
 from reference_client_guard import require_reference_client
 
+TERRAIN_SECTION_MIGRATION_DESCRIPTION = ('Source-backed UE123/28 terrain section and static placement migration. '
+    'No native client or source package is modified. The native TerrainInfo FCoords are the position oracle; '
+    'serialized sector bounds are checked independently. Materials remain editable source relationships: '
+    "this tool does not certify Lineage's terrain blending, lighting, navigation or native visual parity.")
 REFERENCE_REPO = 'emmanuelgoldstein1337/UT2004_CMAKE'
 REFERENCE_COMMIT = 'deda0fb464371b661b616b4e58ff4d53f6f011f1'
 REFERENCE_FILES = {
@@ -423,7 +421,7 @@ def read_class_evidence(client, work, reusable=None):
         if base and (base/'defaults.json').is_file():
             result = json.loads((base/'defaults.json').read_text(encoding='utf-8'))
             script = safe_path(base, result['sourceScript']).read_bytes()
-            if sha(script) != result['sourceScriptSha256'] or file_hash(safe_path(client, result['source']['package'])) != result['source']['packageSha256']:
+            if sha(script) != result['sourceScriptSha256'] or file_hash(require_lock_equal_client_path(client, result['source']['package'])) != result['source']['packageSha256']:
                 raise FormatError('Reused native class evidence no longer matches sources')
         else:
             base = work/reference
@@ -549,7 +547,7 @@ def verify_geometry(client, raw_output, output):
         if file_hash(safe_path(output, relative)) != expected:
             raise ValueError('Geometry output hash mismatch: '+relative)
     for relative, expected in receipt['sourceDependencies'].items():
-        if file_hash(safe_path(client, relative)) != expected:
+        if file_hash(require_lock_equal_client_path(client, relative)) != expected:
             raise ValueError('Geometry native dependency changed: '+relative)
     files = {p.relative_to(output).as_posix() for p in output.rglob('*') if p.is_file()}
     if files != {'receipt.json', *receipt['outputs']}:
@@ -592,7 +590,7 @@ def build_geometry(client, raw_output, recipe, output, defaults_cache=None):
         raise ValueError('Refuse nonempty geometry output without a receipt')
     output.parent.mkdir(parents=True, exist_ok=True)
     raw_manifest = json.loads((raw_output/'manifest.json').read_text(encoding='utf-8'))
-    package = Package(safe_path(client, raw_manifest['recipe']['map']).read_bytes(), Path(raw_manifest['recipe']['map']).name)
+    package = Package(require_lock_equal_client_path(client, raw_manifest['recipe']['map']).read_bytes(), Path(raw_manifest['recipe']['map']).name)
     native = native_terrain(package)
     terrain = json.loads((raw_output/'terrain.json').read_text(encoding='utf-8'))[0]
     mip = terrain['height']['mips'][0]
@@ -1009,7 +1007,7 @@ def build_section_runtime(client, raw_output, section_output, model_output, runt
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=TERRAIN_SECTION_MIGRATION_DESCRIPTION)
     parser.add_argument('--client', type=Path, required=True)
     parser.add_argument('--map-output', type=Path, required=True)
     parser.add_argument('--recipe', type=Path)

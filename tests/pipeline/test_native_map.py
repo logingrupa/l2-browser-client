@@ -16,6 +16,7 @@ from native_map import (HAS_STACK, actor_properties, ambient_sound_object, bitma
                         decode_property, migrate_map, png16, read_g16, safe_path, selected_by_origin,
                         static_mesh_request, validate_recipe, verify_map)
 from native_assets import Converter
+from reference_client_lock_fixture import lock_client_as_reference_root
 
 
 def compact(value):
@@ -51,9 +52,7 @@ def recipe():
             'section': {'selection': 'serialized-origin-xy-inclusive', 'min': [0, 10], 'max': [2, 12]}}
 
 
-class PointRegionTests(unittest.TestCase):
-    # Exercise the actual tagged parser, including compact object references,
-    # rather than assuming a fixed-size C struct or mocking nested properties.
+class TaggedParserPointRegionTests(unittest.TestCase):
     names = ['None', 'Region', 'PointRegion', 'Zone', 'iLeaf', 'ZoneNumber', 'Unknown']
 
     def tag(self, name, kind, payload, struct_name=None):
@@ -267,6 +266,7 @@ class MapCacheTests(unittest.TestCase):
             root = Path(temporary)
             client, first, second = root / 'inputs', root / 'first', root / 'second'
             (client / 'maps').mkdir(parents=True)
+            lock_client_as_reference_root(self, client)
             source = client / 'maps/example.unr'
             source.write_bytes(b'native unchanged source')
             with patch('native_map.build_map', side_effect=self.build) as build:
@@ -292,6 +292,7 @@ class MapCacheTests(unittest.TestCase):
             root = Path(temporary)
             client = root / 'inputs'
             (client / 'maps').mkdir(parents=True)
+            lock_client_as_reference_root(self, client)
             (client / 'maps/example.unr').write_bytes(b'source')
             with self.assertRaises(ValueError):
                 migrate_map(client, recipe(), client / 'output')
@@ -358,7 +359,8 @@ class LocalMapSourceTests(unittest.TestCase):
                 missing += 1
             else:
                 references.add(sound['value']['object'])
-            self.assertNotIn('Random', obj)  # Missing defaults are not synthesized.
+            missing_default_is_not_synthesized = 'Random' not in obj
+            self.assertTrue(missing_default_is_not_synthesized)
             self.assertEqual(obj['nativePlayback'], 'unverified')
         self.assertEqual(missing, 2)
         self.assertEqual(len(references), 106)
@@ -372,9 +374,9 @@ class LocalMapSourceTests(unittest.TestCase):
         for row in java['staticMeshes']:
             actor = index[row['name']]
             self.assertEqual(actor['staticMesh']['object'], row['meshPath'])
+            java_four_decimal_rounding_delta = 0.000051
             for axis in 'xyz':
-                # Java's serializer rounds positions to four decimals; preserve source f32 here.
-                self.assertAlmostEqual(actor['sourceTransform']['Location']['value'][axis.upper()], row['location'][axis], delta=0.000051)
+                self.assertAlmostEqual(actor['sourceTransform']['Location']['value'][axis.upper()], row['location'][axis], delta=java_four_decimal_rounding_delta)
 
 
 if __name__ == '__main__':
