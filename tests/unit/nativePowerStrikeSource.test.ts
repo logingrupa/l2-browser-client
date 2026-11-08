@@ -13,7 +13,6 @@ const variants = [
 const packages: AssetPackage[] = [];
 let profile: NativeNpcProfile;
 beforeAll(async () => {
-  // Reuse the actual retained packages; no converter or original installation.
   for (const row of variants) packages.push(await readAssetPackage(new Uint8Array(await readFile(`public/l2/${row.archive}/asset.l2asset`))));
   const hash = "5bb30f9f869b39e0421de07939798bebec094758228db9784ab2c18da3b4096f";
   const bytes = new Uint8Array(await readFile(`public/l2/npc-profiles/${hash}/manifest.json`));
@@ -39,8 +38,6 @@ function alterSidecar(asset: AssetPackage, edit: (value: any) => void) {
   (asset.files as Map<string, Uint8Array>).set("animation-source.json", bytes);
 }
 function alterClipList(asset: AssetPackage, animations: unknown[]) {
-  // Mutate only the already-loaded model metadata boundary. Authentication of
-  // arbitrary byte inputs belongs to readAssetPackage, not this resolver.
   const original = asset.files.get("model.glb")!, bytes = original.slice(), view = new DataView(bytes.buffer);
   const length = view.getUint32(12, true), json = new TextEncoder().encode(JSON.stringify({ asset: { version: "2.0" }, animations, meshes: [] }));
   expect(json.length).toBeLessThan(length); bytes.fill(32, 20, 20 + length); bytes.set(json, 20);
@@ -75,8 +72,10 @@ describe("retained Power Strike source-event qualification", () => {
     ["model pin", (a: AssetPackage) => { a.manifest.files.find(f => f.path === "model.glb")!.sha256 = "0".repeat(64); }],
     ["animation-source pin", (a: AssetPackage) => { a.manifest.files.find(f => f.path === "animation-source.json")!.sha256 = "0".repeat(64); }],
     ["duplicate model inventory", (a: AssetPackage) => { a.manifest.files.push({ ...a.manifest.files.find(f => f.path === "model.glb")! }); }],
-    ["source unit", (a: AssetPackage) => { a.manifest.model!.sourceUnitsPerMetre = 1; }],
-    ["coordinate basis", (a: AssetPackage) => { a.manifest.model!.sourceToGltf[0] = 1; }],
+    ["source unit", (a: AssetPackage) => { a.manifest.coordinates!.sourceUnitsPerMetre = 1; }],
+    ["coordinate basis", (a: AssetPackage) => { a.manifest.coordinates!.sourceToGltf[0] = 1; }],
+    ["missing coordinates", (a: AssetPackage) => { delete a.manifest.coordinates; }],
+    ["schemaVersion 3", (a: AssetPackage) => { Object.assign(a.manifest, { schemaVersion: 3 }); }],
   ] as const)("rejects changed %s", (_label, mutate) => {
     const asset = fixture(); mutate(asset); const result = resolveNativePowerStrikeShotSource(asset, variants[0].clip);
     expect(result.source).toBeNull(); expect(result.reason).toEqual(expect.any(String));
@@ -137,6 +136,14 @@ describe("retained Power Strike source-event qualification", () => {
       expect(resolveNativePowerStrikeShotSource(asset, variants[0].clip).source).toBeNull();
       expect(asset.files.get("animation-source.json")).toEqual(before);
     }
+  });
+
+  it("accepts the same coordinate basis from an asset.json v2 manifest", () => {
+    const asset = fixture(), versionOne = asset.manifest;
+    asset.manifest = { ...versionOne, schemaVersion: 2, source: { ...versionOne.source, path: { host: "SYNTHETIC-HOST", absolutePath: "C:/SyntheticClient/Fighter.ukx" } },
+      clientBuild: { referenceTreeLockSha256: "a".repeat(64), engineDllSha256: "b".repeat(64) }, converterVersion: "c".repeat(64),
+      coordinates: { ...versionOne.coordinates!, handedness: "right", upAxis: "Y" } };
+    expect(resolveNativePowerStrikeShotSource(asset, variants[0].clip).reason).toBeNull();
   });
 
   it("returns detached immutable event values without changing the loaded package", () => {

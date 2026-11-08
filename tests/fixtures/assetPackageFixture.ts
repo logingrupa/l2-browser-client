@@ -1,4 +1,4 @@
-import { crc32, sha256, type AssetPackageManifest } from "../../src/assets/package/readAssetPackage";
+import { crc32, sha256, type AssetPackageManifestVersionOne } from "../../src/assets/package/readAssetPackage";
 
 const encoder = new TextEncoder();
 export function storedPackage(entries: readonly { name: string; bytes: Uint8Array }[]): Uint8Array {
@@ -66,10 +66,10 @@ export function fixturePng(): Uint8Array {
   for (const record of records) { result.set(record, offset); offset += record.length; }
   return result;
 }
-export async function assetFixture(kind: "model" | "audio" | "texture" = "model", patch: Partial<AssetPackageManifest> = {}) {
+export async function assetFixture(kind: "model" | "audio" | "texture" = "model", patch: Partial<AssetPackageManifestVersionOne> = {}) {
   const file = kind === "model" ? "model.glb" : kind === "audio" ? "sound.wav" : "texture.png";
   const bytes = kind === "model" ? fixtureGlb() : kind === "audio" ? fixtureWav() : fixturePng();
-  const manifest: AssetPackageManifest = { schemaVersion: 1, id: `fixture-${kind}`, name: `Native ${kind} fixture`, kind,
+  const manifest: AssetPackageManifestVersionOne = { schemaVersion: 1, id: `fixture-${kind}`, name: `Native ${kind} fixture`, kind,
     source: { edition: "interlude", package: "Fixture", object: "Fixture.Native", sha256: "a".repeat(64) },
     ...(kind === "model" ? { model: { file, unit: "metre" as const, sourceUnitsPerMetre: 100, sourceToGltf: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1] } } : kind === "audio" ? { audio: { file } } : { image: { file } }),
     files: [{ path: file, bytes: bytes.length, sha256: await sha256(bytes), mime: kind === "model" ? "model/gltf-binary" : kind === "audio" ? "audio/wav" : "image/png" }],

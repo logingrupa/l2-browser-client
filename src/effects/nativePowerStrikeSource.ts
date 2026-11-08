@@ -24,7 +24,6 @@ export interface NativePowerStrikeShotSource {
 export interface NativePowerStrikeShotTarget {
   readonly npcId: 21622;
   readonly profileId: "npc:21622";
-  /** Metres, from the source radius alone; never multiplied by DrawScale. */
   readonly collisionRadius: number;
   readonly sourceCollisionRadius: 18;
   readonly sourceUnitsPerMetre: 100;
@@ -43,9 +42,7 @@ const PACKAGE_HASH = "8a22d41ceaa78d52a10b856b923462eb8eb08d61b203d0d7904e464857
 const DURATION = 47 / 30;
 const TIMING_BASIS = "source normalized notification time * (NumFrames / Rate)";
 const SOURCE_TO_GLTF = [.01, 0, 0, 0, 0, 0, .01, 0, 0, .01, 0, 0, 0, 0, 0, 1];
-// Retained package/event joins in native-power-strike-shot-20261107/{source,
-// target}. These are two independent source times, not a shared cast policy.
-const SOURCES = {
+const RETAINED_POWER_STRIKE_SHOT_SOURCES_BY_ASSET_ID = {
   "interlude:assembly:MFighter-native-body-face0-hair0": {
     actor: "MFighter", clip: "SpAtk01_1HS_MFighter", eventIndex: 90, eventObject: "Fighter.AnimNotify_AttackShot167",
     normalizedTime: 0.5893617272377014, eventSeconds: 0.9233333726723989,
@@ -67,26 +64,21 @@ function ordered(a: unknown, b: readonly unknown[]): boolean {
 }
 const unavailable = (reason: string): NativePowerStrikeShotSourceResult => ({ source: null, reason });
 
-/** Qualify already-loaded, byte-authenticated package metadata. readAssetPackage
- * owns archive/member hashes; this resolver does not refetch/reopen assets or
- * authenticate arbitrary in-memory bytes. It defensively rechecks the exact
- * supported identities/event and the in-memory clip metadata before admission.
- * No sound/function/property is promoted into a runtime skill policy. */
 export function resolveNativePowerStrikeShotSource(asset: AssetPackage, specialClip: string | null): NativePowerStrikeShotSourceResult {
   const manifest = asset?.manifest;
-  if (!manifest || !Object.hasOwn(SOURCES, manifest.id)) return unavailable("No retained Power Strike shot event for this character.");
-  const expected = SOURCES[manifest.id as keyof typeof SOURCES], source = manifest.source;
+  if (!manifest || !Object.hasOwn(RETAINED_POWER_STRIKE_SHOT_SOURCES_BY_ASSET_ID, manifest.id)) return unavailable("No retained Power Strike shot event for this character.");
+  const expected = RETAINED_POWER_STRIKE_SHOT_SOURCES_BY_ASSET_ID[manifest.id as keyof typeof RETAINED_POWER_STRIKE_SHOT_SOURCES_BY_ASSET_ID], source = manifest.source;
   const sourceObject = `Fighter.${expected.actor}_m001_u`, animationSet = `Fighter.${expected.actor}_anim`;
   const assembly = ["m001_u", "m001_l", "m001_g", "m001_b", "m000_f", "m000_m00_ah", "m000_m00_bh"].map(part => `Fighter.${expected.actor}_${part}`);
-  if (manifest.schemaVersion !== 1 || manifest.kind !== "model" || !object(source) || source.edition !== "interlude" ||
+  if ((manifest.schemaVersion !== 1 && manifest.schemaVersion !== 2) || manifest.kind !== "model" || !object(source) || source.edition !== "interlude" ||
     source.package !== "Fighter" || source.object !== sourceObject || source.sha256 !== PACKAGE_HASH ||
     source.packageVersion !== 123 || source.licenseeVersion !== 30 || !ordered(source.assembly, assembly)) {
     return unavailable("The fighter package/source assembly differs from the retained shot event.");
   }
   if (specialClip !== expected.clip) return unavailable("The qualified original special-attack clip is unavailable or differs.");
-  const model = manifest.model;
-  if (!model || model.file !== "model.glb" || model.unit !== "metre" || model.sourceUnitsPerMetre !== 100 ||
-    !ordered(model.sourceToGltf, SOURCE_TO_GLTF) || !Array.isArray(manifest.files)) {
+  const model = manifest.model, coordinates = manifest.coordinates;
+  if (!model || model.file !== "model.glb" || !coordinates || coordinates.unit !== "metre" || coordinates.sourceUnitsPerMetre !== 100 ||
+    !ordered(coordinates.sourceToGltf, SOURCE_TO_GLTF) || !Array.isArray(manifest.files)) {
     return unavailable("The source model coordinate contract differs.");
   }
   const modelFiles = manifest.files.filter(file => file.path === model.file), animationFiles = manifest.files.filter(file => file.path === "animation-source.json");
@@ -130,10 +122,6 @@ export function resolveNativePowerStrikeShotSource(asset: AssetPackage, specialC
     policy: "retained-source-attack-shot-event" as const, hasDirectSound: false as const, nativeDispatchVerified: false as const }), reason: null };
 }
 
-/** Accept the exact retained NPC profile after loadNativeNpcProfiles verified
- * its catalog-selected bytes. That loader's authentication boundary is reused;
- * this type carries no original manifest hash and does not attest current native
- * radius overrides. Browser actor-root/target lifetime selection is the caller's. */
 export function resolveNativePowerStrikeShotTarget(profile: NativeNpcProfile | null | undefined): NativePowerStrikeShotTargetResult {
   if (!profile || profile.id !== "npc:21622" || profile.npcId !== 21622 || profile.name !== "Greater Musveren" ||
     profile.actorClass !== "LineageMonster.field_stalker_20_bi" || profile.mesh !== "LineageMonsters.field_stalker_m00" ||

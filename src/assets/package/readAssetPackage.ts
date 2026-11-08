@@ -1,17 +1,28 @@
 export interface AssetPackageFile { path: string; sha256: string; bytes: number; mime: string }
-export interface AssetPackageManifest {
-  schemaVersion: 1;
+export interface AssetModelCoordinates { unit: "metre"; sourceUnitsPerMetre: number; handedness?: "right"; upAxis?: "Y"; sourceToGltf: number[] }
+export interface AssetPackageSourcePath { host: string; absolutePath: string }
+export interface AssetPackageClientBuild { referenceTreeLockSha256: string; engineDllSha256: string }
+export interface AssetPackageSource { edition: "interlude"; package: string; object: string; sha256: string; [key: string]: unknown }
+interface AssetPackageManifestFields {
   id: string;
   name: string;
   kind: "model" | "audio" | "texture";
-  source: { edition: "interlude"; package: string; object: string; sha256: string; [key: string]: unknown };
-  model?: { file: string; unit: "metre"; sourceUnitsPerMetre: number; sourceToGltf: number[] };
+  model?: { file: string; [key: string]: unknown };
   audio?: { file: string };
   image?: { file: string };
+  coordinates?: AssetModelCoordinates;
   files: AssetPackageFile[];
   limitations: string[];
   animationEvents?: unknown[];
 }
+export interface AssetPackageManifestVersionOne extends AssetPackageManifestFields { schemaVersion: 1; source: AssetPackageSource }
+export interface AssetPackageManifestVersionTwo extends AssetPackageManifestFields {
+  schemaVersion: 2;
+  source: AssetPackageSource & { path: AssetPackageSourcePath };
+  clientBuild: AssetPackageClientBuild;
+  converterVersion: string;
+}
+export type AssetPackageManifest = AssetPackageManifestVersionOne | AssetPackageManifestVersionTwo;
 export interface AssetPackage { manifest: AssetPackageManifest; files: ReadonlyMap<string, Uint8Array> }
 export const assetPackageLimits = { archiveBytes: 128 * 1024 * 1024, fileBytes: 96 * 1024 * 1024, entries: 256 } as const;
 const decoder = new TextDecoder("utf-8", { fatal: true });
@@ -37,8 +48,6 @@ function storedZip(bytes: Uint8Array): Map<string, Uint8Array> {
   if (bytes.length > assetPackageLimits.archiveBytes) fail("This package exceeds the 128 MiB import limit.");
   if (bytes.length < 22) fail("This is not a complete .l2asset package.");
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  // The converter writes no ZIP comment. A strict end record also rejects
-  // appended content and avoids guessing which of several archives to use.
   const end = bytes.length - 22;
   if (view.getUint32(end, true) !== 0x06054b50 || view.getUint16(end + 20, true) !== 0) fail("Expected a ZIP_STORED .l2asset package from the conversion tool.");
   const count = view.getUint16(end + 10, true), directorySize = view.getUint32(end + 12, true), directory = view.getUint32(end + 16, true);
@@ -78,19 +87,36 @@ function storedZip(bytes: Uint8Array): Map<string, Uint8Array> {
 function record(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null && !Array.isArray(value); }
 function text(value: unknown): value is string { return typeof value === "string" && value.trim().length > 0 && value.length <= 4096; }
 function hash(value: unknown): value is string { return typeof value === "string" && /^[a-f0-9]{64}$/.test(value); }
+function absolutePath(value: unknown): value is string { return text(value) && /^(\/|[A-Za-z]:\/)/.test(value); }
+function finiteMatrix(value: unknown): value is number[] { return Array.isArray(value) && value.length === 16 && value.every(Number.isFinite); }
+function positiveNumber(value: unknown): value is number { return typeof value === "number" && Number.isFinite(value) && value > 0; }
+function validateVersionTwoFields(input: Record<string, unknown>, source: Record<string, unknown>): void {
+  const path = source.path, clientBuild = input.clientBuild;
+  if (!record(path) || !text(path.host) || !absolutePath(path.absolutePath)) fail("asset.json v2 needs source.path with the converting host and absolute path.");
+  if (!record(clientBuild) || !hash(clientBuild.referenceTreeLockSha256) || !hash(clientBuild.engineDllSha256)) fail("asset.json v2 needs clientBuild with the tree lock and Engine.dll SHA-256.");
+  if (!hash(input.converterVersion)) fail("asset.json v2 needs converterVersion as a SHA-256.");
+  if (input.kind !== "model") { if (input.coordinates !== undefined) fail("asset.json v2 records coordinates for models only."); return; }
+  const coordinates = input.coordinates;
+  if (!record(coordinates) || coordinates.unit !== "metre" || !positiveNumber(coordinates.sourceUnitsPerMetre) || coordinates.handedness !== "right" ||
+    coordinates.upAxis !== "Y" || !finiteMatrix(coordinates.sourceToGltf)) fail("asset.json v2 model needs coordinates in metres, right-handed, Y up, with a 16-number source transform.");
+}
+function versionOneModelCoordinates(entry: Record<string, unknown>): AssetModelCoordinates {
+  if (entry.unit !== "metre" || !positiveNumber(entry.sourceUnitsPerMetre) || !finiteMatrix(entry.sourceToGltf)) fail("The model needs its metre unit and source transform recorded by the converter.");
+  return { unit: "metre", sourceUnitsPerMetre: entry.sourceUnitsPerMetre, sourceToGltf: entry.sourceToGltf };
+}
 function validateManifest(input: unknown): AssetPackageManifest {
-  if (!record(input) || input.schemaVersion !== 1 || !text(input.id) || !text(input.name) || !["model", "audio", "texture"].includes(String(input.kind))) fail("asset.json has an unsupported schema or asset kind.");
+  if (!record(input) || (input.schemaVersion !== 1 && input.schemaVersion !== 2) || !text(input.id) || !text(input.name) || !["model", "audio", "texture"].includes(String(input.kind))) fail("asset.json has an unsupported schema or asset kind.");
   const source = input.source;
   if (!record(source) || source.edition !== "interlude" || !text(source.package) || !text(source.object) || !hash(source.sha256)) fail("This inspector expects an Interlude package with recorded source identity.");
+  if (input.schemaVersion === 2) validateVersionTwoFields(input, source);
   if (!Array.isArray(input.files) || !input.files.length || input.files.length >= assetPackageLimits.entries || !input.files.every(file => record(file) && typeof file.path === "string" && safePath(file.path) && file.path.toLowerCase() !== "asset.json" && hash(file.sha256) && Number.isSafeInteger(file.bytes) && Number(file.bytes) >= 0 && Number(file.bytes) <= assetPackageLimits.fileBytes && text(file.mime))) fail("asset.json has an invalid file inventory.");
   if (!Array.isArray(input.limitations) || !input.limitations.every(value => typeof value === "string") || (input.animationEvents !== undefined && !Array.isArray(input.animationEvents))) fail("asset.json has invalid limitation or animation-event metadata.");
   const entry = input.kind === "model" ? input.model : input.kind === "audio" ? input.audio : input.image;
   if (!record(entry) || typeof entry.file !== "string" || !safePath(entry.file)) fail("asset.json does not identify the asset file.");
-  if (input.kind === "model" && (entry.unit !== "metre" || typeof entry.sourceUnitsPerMetre !== "number" || !Number.isFinite(entry.sourceUnitsPerMetre) || entry.sourceUnitsPerMetre <= 0 || !Array.isArray(entry.sourceToGltf) || entry.sourceToGltf.length !== 16 || !entry.sourceToGltf.every(Number.isFinite))) fail("The model needs its metre unit and source transform recorded by the converter.");
+  if (input.kind === "model" && input.schemaVersion === 1) return { ...input, coordinates: versionOneModelCoordinates(entry) } as unknown as AssetPackageManifest;
   return input as unknown as AssetPackageManifest;
 }
 
-/** Verify every file before creating Babylon, image, or audio resources. */
 export async function readAssetPackage(input: ArrayBuffer | Uint8Array): Promise<AssetPackage> {
   const files = storedZip(input instanceof Uint8Array ? input : new Uint8Array(input));
   const descriptor = files.get("asset.json");
@@ -111,7 +137,6 @@ export async function readAssetPackage(input: ArrayBuffer | Uint8Array): Promise
   return { manifest, files };
 }
 
-/** A self-contained GLB prevents dropped content from requesting other files or remote URLs. */
 export interface PackageModelInfo {
   animations: { name: string | null; nativeDurationSeconds: number | null }[];
   meshes: { name: string | null; primitives: number }[];

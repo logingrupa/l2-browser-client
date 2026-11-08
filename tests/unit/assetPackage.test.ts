@@ -10,7 +10,9 @@ import { assetFixture, fixtureGlb, storedPackage } from "../fixtures/assetPackag
 describe("local asset package integrity", () => {
   it.each(["model", "audio", "texture"] as const)("reads a verified %s package without changing its content", async kind => {
     const fixture = await assetFixture(kind), result = await readAssetPackage(fixture.bytes);
-    expect(result.manifest).toEqual(fixture.manifest);
+    const model = fixture.manifest.model;
+    expect(result.manifest).toEqual(model ? { ...fixture.manifest,
+      coordinates: { unit: model.unit, sourceUnitsPerMetre: model.sourceUnitsPerMetre, sourceToGltf: model.sourceToGltf } } : fixture.manifest);
     expect(result.files.get(fixture.entries[1]!.name)).toEqual(fixture.entries[1]!.bytes);
   });
   it("rejects corrupt ZIP payloads before loading", async () => {
