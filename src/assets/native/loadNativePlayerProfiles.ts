@@ -22,6 +22,7 @@ export interface NativePlayerProfile {
   readonly upperItems: readonly { itemId: number; catalogId: string; sourceObject: string; sourceSha256: string }[];
   readonly sourceEvidence: Readonly<Record<string, unknown>>;
   readonly limitations: readonly string[];
+  readonly chargrpIndex?: number;
 }
 
 export const defaultNativePlayerProfile: NativePlayerProfile = {
@@ -52,7 +53,13 @@ function dimension(value: unknown): number {
   return value;
 }
 const profileFields = new Set(["id", "name", "catalogId", "assetId", "sourceObject", "sourceSha256", "clips", "forwardAxis", "actorScale",
-  "collisionRadius", "collisionHeight", "sourceUnitsPerMetre", "upperItems", "sourceEvidence", "limitations", "aliasEvidence"]);
+  "collisionRadius", "collisionHeight", "sourceUnitsPerMetre", "upperItems", "sourceEvidence", "limitations", "aliasEvidence",
+  "chargrpIndex"]);
+function optionalChargrpIndex(value: unknown): { readonly chargrpIndex?: number } {
+  if (value === undefined) return {};
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) throw new Error("Native player profile chargrpIndex is invalid.");
+  return { chargrpIndex: value };
+}
 function parseClips(value: unknown): NativePlayerClips {
   const raw = object(value), clips: Record<string, string> = {};
   for (const alias of requiredNativeAliases) if (!Object.hasOwn(raw, alias)) throw new Error(`Native player clip alias ${alias} is required.`);
@@ -118,7 +125,7 @@ function parseProfile(value: unknown): NativePlayerProfile {
     clips, ...(row.aliasEvidence !== undefined ? { aliasEvidence: parseAliasEvidence(row.aliasEvidence, clips) } : {}),
     forwardAxis: [axis[0], axis[1], axis[2]], actorScale: [scale[0], scale[1], scale[2]], collisionRadius: dimension(row.collisionRadius),
     collisionHeight: dimension(row.collisionHeight), sourceUnitsPerMetre: 100, upperItems,
-    sourceEvidence, limitations: row.limitations.map((v: unknown) => string(v)) };
+    sourceEvidence, limitations: row.limitations.map((v: unknown) => string(v)), ...optionalChargrpIndex(row.chargrpIndex) };
 }
 
 function matchesBuiltInMaleFighterIdentity(profile: NativePlayerProfile): boolean {

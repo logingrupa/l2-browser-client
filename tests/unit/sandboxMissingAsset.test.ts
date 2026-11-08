@@ -17,6 +17,7 @@ import { installMiniDom, type FakeElement, type MiniDom } from "./support/miniDo
 const convertedNpcLookups: ReadonlyMap<string, NativeCatalogLookup> = new Map([
   ["npc:21622", { status: "converted", key: "npc:21622", record: { npcId: 21622, profileId: "native-npc-profiles", modelCatalogId: "musveren:0" } }],
   ["npc:30001", { status: "converted", key: "npc:30001", record: { npcId: 30001, profileId: "native-npc-profiles", modelCatalogId: "unstaged:0" } }],
+  ["npc:20001", { status: "gap", key: "npc:20001", reason: "skeletal-licensee-unsupported:123/30", coverageStatus: "gap" }],
 ]);
 
 const fakeCatalogIndex: NativeCatalogIndex = {
@@ -71,6 +72,15 @@ describe("sandbox NPC presentation through the catalog index", () => {
     expect(visual.modelId).toBeNull();
     visual.dispose();
     expect(visual.root.isDisposed()).toBe(true);
+  });
+
+  it("gives an ID the coverage report marks as a gap a marker with the gap reason", () => {
+    const nativeFactory = nativeFactoryDouble();
+    const visual = sandboxNpcVisualFactory(fakeCatalogIndex, nativeFactory, appearanceOfModel)(scene, createSpawnedNpcEntity(20001, 1, { x: 0, y: 0, z: 0 }));
+    expect(nativeFactory).not.toHaveBeenCalled();
+    expect(visual.root.getChildMeshes()).toHaveLength(0);
+    expect(visual.missingAssetDiagnostic).toBe("npc:20001 gap: skeletal-licensee-unsupported:123/30");
+    visual.dispose();
   });
 
   it("keeps the missing NPC in the registry snapshot and shows the diagnostic on its label", () => {

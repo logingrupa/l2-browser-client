@@ -21,14 +21,17 @@ interface PinnedManifestRecordShape {
 
 interface PinnedManifestFields { readonly id: string; readonly manifest: string; readonly manifestSha256: string; readonly manifestBytes: number }
 
+export const tileIdPattern = /^\d{2}_\d{2}$/;
+export const tableIdPattern = /^[a-z][a-z0-9_]*(?:-[a-z])?$/;
+export const windowIdPattern = /^[A-Za-z][A-Za-z0-9_]{0,63}(?:#[1-9]\d{0,3})?$/;
 const sha256Pattern = /^[a-f0-9]{64}$/;
 const pinnedManifestRecordFields = ["id", "manifest", "manifestSha256", "manifestBytes"];
 const pinnedManifestRecordShapes: Readonly<Record<PinnedManifestSliceName, PinnedManifestRecordShape>> = {
-  tiles: { fields: pinnedManifestRecordFields, idPattern: /^\d{2}_\d{2}$/,
+  tiles: { fields: pinnedManifestRecordFields, idPattern: tileIdPattern,
     manifestPathPattern: /^\/l2\/tiles\/(?<sha256>[a-f0-9]{64})\/tile\.json$/, maximumManifestBytes: 8_000_000 },
-  tables: { fields: [...pinnedManifestRecordFields, "recordCount", "sourceSha256"], idPattern: /^[a-z][a-z0-9_]*(?:-[a-z])?$/,
+  tables: { fields: [...pinnedManifestRecordFields, "recordCount", "sourceSha256"], idPattern: tableIdPattern,
     manifestPathPattern: /^\/l2\/tables\/(?<sha256>[a-f0-9]{64})\/(?<id>[a-z][a-z0-9_]*(?:-[a-z])?)\.json$/, maximumManifestBytes: 33_554_432 },
-  windows: { fields: pinnedManifestRecordFields, idPattern: /^[A-Za-z][A-Za-z0-9_]{0,63}(?:#[1-9]\d{0,3})?$/,
+  windows: { fields: pinnedManifestRecordFields, idPattern: windowIdPattern,
     manifestPathPattern: /^\/l2\/windows\/(?<sha256>[a-f0-9]{64})\/window\.json$/, maximumManifestBytes: 8_000_000 },
 };
 

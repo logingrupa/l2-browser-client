@@ -1,6 +1,9 @@
-import { loadNativeNpcProfiles } from "./loadNativeNpcProfiles";
-import { loadNativePlayerProfiles } from "./loadNativePlayerProfiles";
-import { readTileCatalogRecord, type NativeTileManifestCatalogRecord } from "./nativeCatalogRecords";
+import { loadNativeNpcProfiles, type NativeNpcProfile } from "./loadNativeNpcProfiles";
+import { loadNativePlayerProfiles, type NativePlayerProfile } from "./loadNativePlayerProfiles";
+import {
+  readTableCatalogRecord, readTileCatalogRecord, readWindowCatalogRecord, tableIdPattern, tileIdPattern, windowIdPattern,
+  type NativeTableCatalogRecord, type NativeTileManifestCatalogRecord, type NativeWindowCatalogRecord,
+} from "./nativeCatalogRecords";
 import type { NativeCatalog } from "./readNativeCatalog";
 
 export interface NativeNpcCatalogRecord { readonly npcId: number; readonly profileId: string; readonly modelCatalogId: string }
@@ -9,20 +12,21 @@ export interface NativeItemCatalogRecord {
 }
 export interface NativeSkillCatalogRecord { readonly skillId: number; readonly level: number; readonly effectComponentId: string }
 export interface NativeTileCatalogRecord { readonly tile: string; readonly sectionId: string }
+export interface NativeCharacterCatalogRecord { readonly chargrpIndex: number; readonly playerProfileId: string; readonly catalogId: string }
 export type NativeCatalogRecord =
-  | NativeNpcCatalogRecord | NativeItemCatalogRecord | NativeSkillCatalogRecord | NativeTileCatalogRecord | NativeTileManifestCatalogRecord;
+  | NativeNpcCatalogRecord | NativeItemCatalogRecord | NativeSkillCatalogRecord | NativeTileCatalogRecord | NativeTileManifestCatalogRecord
+  | NativeTableCatalogRecord | NativeWindowCatalogRecord | NativeCharacterCatalogRecord;
 
 export type NativeCatalogLookup =
   | { readonly status: "converted"; readonly key: string; readonly record: NativeCatalogRecord }
-  | { readonly status: "not-in-catalog"; readonly key: string; readonly reason: string };
+  | { readonly status: "not-in-catalog"; readonly key: string; readonly reason: string }
+  | { readonly status: "gap"; readonly key: string; readonly reason: string; readonly coverageStatus: "gap" | "pending" | "failed" };
 
 export interface NativeCatalogIndex {
   lookup(key: string): NativeCatalogLookup;
   keys(prefix: string): readonly string[];
 }
 
-const windowNamePattern = /^[A-Za-z][A-Za-z0-9_]{0,63}$/;
-const tilePattern = /^\d{2}_\d{2}$/;
 const skillEffectComponentPattern = /^interlude:skill:(\d+):level:(\d+):/;
 const sectionTilePattern = /^map-(\d{2})-(\d{2})-section$/;
 const windowsNotConvertedReason = "interface windows are not converted yet (UI-01)";
@@ -45,18 +49,28 @@ export function skillCatalogKey(skillId: number, level: number): string {
   return `skill:${requireCatalogInteger(skillId, 0, "Skill id")}:${requireCatalogInteger(level, 1, "Skill level")}`;
 }
 
+export function characterCatalogKey(chargrpIndex: number): string {
+  return `character:${requireCatalogInteger(chargrpIndex, 0, "Chargrp index")}`;
+}
+
+export function tableCatalogKey(table: string): string {
+  if (!tableIdPattern.test(table)) throw new RangeError("Table must be a lower-case inventory table name.");
+  return `table:${table}`;
+}
+
 export function windowCatalogKey(name: string): string {
-  if (!windowNamePattern.test(name)) throw new RangeError("Window name must be a bounded interface window identifier.");
+  if (!windowIdPattern.test(name)) throw new RangeError("Window name must be a bounded interface window identifier.");
   return `window:${name}`;
 }
 
 export function tileCatalogKey(tile: string): string {
-  if (!tilePattern.test(tile)) throw new RangeError("Tile must be written as XX_YY.");
+  if (!tileIdPattern.test(tile)) throw new RangeError("Tile must be written as XX_YY.");
   return `tile:${tile}`;
 }
 
 export function describeNativeCatalogLookup(lookup: NativeCatalogLookup): string {
   if (lookup.status === "converted") return `${lookup.key} converted`;
+  if (lookup.status === "gap") return `${lookup.key} gap: ${lookup.reason}`;
   return lookup.reason === notInCatalogReason ? `${lookup.key} not in catalog` : `${lookup.key} not in catalog: ${lookup.reason}`;
 }
 
@@ -84,6 +98,74 @@ function readModelSourceObjects(models: readonly unknown[]): ReadonlyMap<string,
   return sourceObjectsByModelId;
 }
 
+function npcCatalogLookup(profile: NativeNpcProfile, sourceObjectsByModelId: ReadonlyMap<string, string | null>): NativeCatalogLookup {
+  const key = npcCatalogKey(profile.npcId);
+  const converted = (modelCatalogId: string): NativeCatalogLookup =>
+    ({ status: "converted", key, record: { npcId: profile.npcId, profileId: profile.id, modelCatalogId } });
+  if (profile.modelCatalogId !== undefined) {
+    if (!sourceObjectsByModelId.has(profile.modelCatalogId)) {
+      return { status: "not-in-catalog", key, reason: `NPC profile model ${profile.modelCatalogId} is not in the catalog` };
+    }
+    return converted(profile.modelCatalogId);
+  }
+  const modelIds = [...sourceObjectsByModelId].filter(([, sourceObject]) => sourceObject === profile.mesh).map(([modelId]) => modelId);
+  if (modelIds.length > 1) {
+    return { status: "not-in-catalog", key, reason: `mesh ${profile.mesh} matches ${modelIds.length} converted packages (${modelIds.sort().join(", ")})` };
+  }
+  if (!modelIds.length) return { status: "not-in-catalog", key, reason: `NPC profile staged but mesh ${profile.mesh} has no converted model` };
+  return converted(modelIds[0]!);
+}
+
+function upperItemLookups(playerProfiles: Iterable<NativePlayerProfile>, sourceObjectsByModelId: ReadonlyMap<string, string | null>): NativeCatalogLookup[] {
+  const upperItems = new Map<number, { catalogIds: Set<string>; playerProfileIds: Set<string> }>();
+  for (const profile of playerProfiles) {
+    for (const item of profile.upperItems) {
+      if (!sourceObjectsByModelId.has(item.catalogId)) continue;
+      const staged = upperItems.get(item.itemId) ?? { catalogIds: new Set<string>(), playerProfileIds: new Set<string>() };
+      staged.catalogIds.add(item.catalogId);
+      staged.playerProfileIds.add(profile.id);
+      upperItems.set(item.itemId, staged);
+    }
+  }
+  return [...upperItems].map(([itemId, staged]) => ({ status: "converted", key: itemCatalogKey(itemId), record: { itemId, slot: "upper",
+    catalogIds: [...staged.catalogIds].sort(), playerProfileIds: [...staged.playerProfileIds].sort() } }));
+}
+
+function characterLookup(profile: NativePlayerProfile, chargrpIndex: number, sourceObjectsByModelId: ReadonlyMap<string, string | null>): NativeCatalogLookup {
+  const key = characterCatalogKey(chargrpIndex);
+  if (!sourceObjectsByModelId.has(profile.catalogId)) {
+    return { status: "not-in-catalog", key, reason: `player profile ${profile.id} model ${profile.catalogId} is not in the catalog` };
+  }
+  return { status: "converted", key, record: { chargrpIndex, playerProfileId: profile.id, catalogId: profile.catalogId } };
+}
+
+function skillLookups(effectComponents: readonly unknown[]): NativeCatalogLookup[] {
+  const lookups: NativeCatalogLookup[] = [];
+  for (const value of effectComponents) {
+    const component = catalogRecordIdentity(value, "effect component");
+    const match = skillEffectComponentPattern.exec(component.id);
+    if (!match) continue;
+    const skillId = Number(match[1]), level = Number(match[2]);
+    lookups.push({ status: "converted", key: skillCatalogKey(skillId, level), record: { skillId, level, effectComponentId: component.id } });
+  }
+  return lookups;
+}
+
+function legacySectionTileLookups(sections: readonly unknown[]): NativeCatalogLookup[] {
+  const sectionIds = new Set<string>();
+  const lookups: NativeCatalogLookup[] = [];
+  for (const value of sections) {
+    const section = catalogRecordIdentity(value, "section");
+    if (sectionIds.has(section.id)) throw duplicateEntries(section.id);
+    sectionIds.add(section.id);
+    const match = sectionTilePattern.exec(section.id);
+    if (!match) continue;
+    const tile = `${match[1]}_${match[2]}`;
+    lookups.push({ status: "converted", key: tileCatalogKey(tile), record: { tile, sectionId: section.id } });
+  }
+  return lookups;
+}
+
 export function unavailableNativeCatalogIndex(failure: string): NativeCatalogIndex {
   const reason = `catalog index unavailable: ${failure}`;
   return { lookup: key => ({ status: "not-in-catalog", key, reason }), keys: () => [] };
@@ -97,67 +179,34 @@ export async function buildNativeCatalogIndex(catalog: NativeCatalog, signal: Ab
   };
   const sourceObjectsByModelId = readModelSourceObjects(catalog.models);
 
-  for (const profile of (await loadNativeNpcProfiles(catalog.npcProfiles, signal)).values()) {
-    const key = npcCatalogKey(profile.npcId);
-    const modelIds = [...sourceObjectsByModelId].filter(([, sourceObject]) => sourceObject === profile.mesh).map(([modelId]) => modelId);
-    if (modelIds.length > 1) {
-      addEntry({ status: "not-in-catalog", key, reason: `mesh ${profile.mesh} matches ${modelIds.length} converted packages (${modelIds.sort().join(", ")})` });
-      continue;
-    }
-    if (!modelIds.length) {
-      addEntry({ status: "not-in-catalog", key, reason: `NPC profile staged but mesh ${profile.mesh} has no converted model` });
-      continue;
-    }
-    addEntry({ status: "converted", key, record: { npcId: profile.npcId, profileId: profile.id, modelCatalogId: modelIds[0]! } });
+  for (const profile of (await loadNativeNpcProfiles(catalog.npcProfiles, signal)).values()) addEntry(npcCatalogLookup(profile, sourceObjectsByModelId));
+  const playerProfiles = [...(await loadNativePlayerProfiles(catalog.playerProfiles, signal)).values()];
+  for (const lookup of upperItemLookups(playerProfiles, sourceObjectsByModelId)) addEntry(lookup);
+  for (const profile of playerProfiles) {
+    if (profile.chargrpIndex !== undefined) addEntry(characterLookup(profile, profile.chargrpIndex, sourceObjectsByModelId));
   }
-
-  const upperItems = new Map<number, { catalogIds: Set<string>; playerProfileIds: Set<string> }>();
-  for (const profile of (await loadNativePlayerProfiles(catalog.playerProfiles, signal)).values()) {
-    for (const item of profile.upperItems) {
-      if (!sourceObjectsByModelId.has(item.catalogId)) continue;
-      const staged = upperItems.get(item.itemId) ?? { catalogIds: new Set<string>(), playerProfileIds: new Set<string>() };
-      staged.catalogIds.add(item.catalogId);
-      staged.playerProfileIds.add(profile.id);
-      upperItems.set(item.itemId, staged);
-    }
+  for (const lookup of skillLookups(catalog.effectComponents)) addEntry(lookup);
+  for (const value of catalog.tables) {
+    const record = readTableCatalogRecord(value);
+    addEntry({ status: "converted", key: tableCatalogKey(record.table), record });
   }
-  for (const [itemId, staged] of upperItems) {
-    addEntry({ status: "converted", key: itemCatalogKey(itemId), record: { itemId, slot: "upper",
-      catalogIds: [...staged.catalogIds].sort(), playerProfileIds: [...staged.playerProfileIds].sort() } });
+  for (const value of catalog.windows) {
+    const record = readWindowCatalogRecord(value);
+    addEntry({ status: "converted", key: windowCatalogKey(record.window), record });
   }
-
-  for (const value of catalog.effectComponents) {
-    const component = catalogRecordIdentity(value, "effect component");
-    const match = skillEffectComponentPattern.exec(component.id);
-    if (!match) continue;
-    const skillId = Number(match[1]), level = Number(match[2]);
-    addEntry({ status: "converted", key: skillCatalogKey(skillId, level), record: { skillId, level, effectComponentId: component.id } });
-  }
-
   for (const value of catalog.tiles) {
     const record = readTileCatalogRecord(value);
     addEntry({ status: "converted", key: tileCatalogKey(record.tile), record });
   }
+  for (const lookup of legacySectionTileLookups(catalog.sections)) if (!entries.has(lookup.key)) addEntry(lookup);
 
-  const sectionIds = new Set<string>();
-  for (const value of catalog.sections) {
-    const section = catalogRecordIdentity(value, "section");
-    if (sectionIds.has(section.id)) throw duplicateEntries(section.id);
-    sectionIds.add(section.id);
-    const match = sectionTilePattern.exec(section.id);
-    if (!match) continue;
-    const tile = `${match[1]}_${match[2]}`;
-    const key = tileCatalogKey(tile);
-    if (entries.has(key)) continue;
-    addEntry({ status: "converted", key, record: { tile, sectionId: section.id } });
-  }
-
+  const missingWindowReason = catalog.windows.length ? notInCatalogReason : windowsNotConvertedReason;
   signal.throwIfAborted();
   return {
     lookup(key) {
       const entry = entries.get(key);
       if (entry) return entry;
-      return { status: "not-in-catalog", key, reason: key.startsWith("window:") ? windowsNotConvertedReason : notInCatalogReason };
+      return { status: "not-in-catalog", key, reason: key.startsWith("window:") ? missingWindowReason : notInCatalogReason };
     },
     keys(prefix) {
       return [...entries.keys()].filter(key => key.startsWith(prefix)).sort();

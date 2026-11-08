@@ -13,6 +13,7 @@ export interface NativeNpcProfile {
   readonly collisionHeight: number;
   readonly sourceUnitsPerMetre: 100;
   readonly prePivot?: readonly [number, number, number];
+  readonly modelCatalogId?: string;
   readonly unsupportedFields: readonly { field: string; reason: string }[];
 }
 
@@ -26,12 +27,17 @@ function vector(value: unknown): [number, number, number] {
   }
   return [value[0] as number, value[1] as number, value[2] as number];
 }
+const modelCatalogIdPattern = /^[a-z0-9][a-z0-9:-]{0,95}$/;
+function optionalModelCatalogId(value: unknown): { readonly modelCatalogId?: string } {
+  if (value === undefined) return {};
+  if (typeof value !== "string" || !modelCatalogIdPattern.test(value)) throw new Error("Native NPC profile modelCatalogId is invalid.");
+  return { modelCatalogId: value };
+}
 function positive(value: unknown): number {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) throw new Error("Native NPC profile dimension is invalid.");
   return value;
 }
 
-/** Read actor metadata from the same catalog snapshot as the model packages. */
 export async function loadNativeNpcProfiles(records: unknown, signal: AbortSignal): Promise<ReadonlyMap<string, NativeNpcProfile>> {
   if (!Array.isArray(records) || records.length > 16) throw new Error("Native NPC profile catalog is invalid.");
   const result = new Map<string, NativeNpcProfile>(), bundles = new Set<string>();
@@ -71,7 +77,7 @@ export async function loadNativeNpcProfiles(records: unknown, signal: AbortSigna
       result.set(row.id as string, { id: row.id as string, npcId: row.npcId as number, name: row.name,
         mesh: row.mesh, actorClass: row.actorClass, drawScale: positive(row.drawScale), drawScale3D,
         collisionRadius: positive(row.collisionRadius), collisionHeight: positive(row.collisionHeight),
-        sourceUnitsPerMetre: 100, unsupportedFields, ...(prePivot ? { prePivot } : {}) });
+        sourceUnitsPerMetre: 100, unsupportedFields, ...(prePivot ? { prePivot } : {}), ...optionalModelCatalogId(row.modelCatalogId) });
     }
   }
   signal.throwIfAborted();

@@ -21,7 +21,7 @@ const motionlessAnimationDriver: CharacterAnimationDriver = { setState() {}, upd
 
 export function resolveSandboxNpcPresentation(index: NativeCatalogIndex, npcId: number, appearanceOfModel: SandboxAppearanceOfModel): SandboxNpcPresentation {
   const lookup = index.lookup(npcCatalogKey(npcId));
-  if (lookup.status === "not-in-catalog") return { key: lookup.key, missingAssetDiagnostic: describeNativeCatalogLookup(lookup) };
+  if (lookup.status !== "converted") return { key: lookup.key, missingAssetDiagnostic: describeNativeCatalogLookup(lookup) };
   if (!("modelCatalogId" in lookup.record)) throw new Error(`${lookup.key} does not hold an NPC catalog record.`);
   const { modelCatalogId } = lookup.record;
   const appearanceId = appearanceOfModel(modelCatalogId);
