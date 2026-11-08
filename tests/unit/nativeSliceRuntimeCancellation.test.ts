@@ -1,4 +1,4 @@
-import { baseRuntimeSettings, runtimeBoundaryMocks, useNativeSliceRuntimeHarness } from "../support/nativeSliceRuntimeHarness";
+import { baseRuntimeSettings, emptyNativeCatalog, runtimeBoundaryMocks, useNativeSliceRuntimeHarness } from "../support/nativeSliceRuntimeHarness";
 import { describe, expect, it, vi } from "vitest";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 
@@ -41,6 +41,23 @@ describe("native slice runtime cancellation and rollback", () => {
     const result = startRuntime(baseRuntimeSettings, aborted.signal);
     aborted.abort(); resolve({ models: new Map(), npcProfiles: new Map() });
     await expect(result).rejects.toHaveProperty("name", "AbortError");
+    expect(runtimeBoundaryMocks.uis).toEqual([]); expect(runtimeBoundaryMocks.registries).toEqual([]); expect(runtimeBoundaryMocks.camera).not.toHaveBeenCalled();
+  });
+
+  it("rejects with the abort and allocates no UI or registry when cancellation lands while the catalog index loads NPC profiles", async () => {
+    const pendingManifestSha256 = "b".repeat(64);
+    runtimeBoundaryMocks.readCatalog.mockResolvedValueOnce({ ...emptyNativeCatalog, npcProfiles: [{ id: "native-npc-profiles",
+      manifest: `/l2/npc-profiles/${pendingManifestSha256}/manifest.json`, manifestSha256: pendingManifestSha256, manifestBytes: 1 }] });
+    let markProfileFetchStarted!: () => void;
+    const profileFetchStarted = new Promise<void>(resolve => { markProfileFetchStarted = resolve; });
+    vi.stubGlobal("fetch", vi.fn((_url: string, init: { signal: AbortSignal }) => new Promise<Response>((_resolve, reject) => {
+      init.signal.addEventListener("abort", () => reject(init.signal.reason), { once: true });
+      markProfileFetchStarted();
+    })));
+    const controller = new AbortController(), pending = startRuntime(baseRuntimeSettings, controller.signal);
+    await profileFetchStarted;
+    controller.abort();
+    await expect(pending).rejects.toHaveProperty("name", "AbortError");
     expect(runtimeBoundaryMocks.uis).toEqual([]); expect(runtimeBoundaryMocks.registries).toEqual([]); expect(runtimeBoundaryMocks.camera).not.toHaveBeenCalled();
   });
 

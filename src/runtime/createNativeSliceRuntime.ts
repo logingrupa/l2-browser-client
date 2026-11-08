@@ -3,7 +3,6 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { loadNativeActorCatalog } from "../assets/native/loadNativeCatalog";
 import { readNativeCatalog } from "../assets/native/readNativeCatalog";
-import { buildNativeCatalogIndex, unavailableNativeCatalogIndex, type NativeCatalogIndex } from "../assets/native/nativeCatalogIndex";
 import { defaultNativePlayerProfile } from "../assets/native/loadNativePlayerProfiles";
 import type { AssetPackage } from "../assets/package/readAssetPackage";
 import { nativeCharacterFactory, type NativeCharacterProfile } from "../assets/native/NativeCharacterVisual";
@@ -32,7 +31,7 @@ import { createEffectInspectionCamera } from "../effects/nativeEffectInspectionC
 import { isSceneSuspended } from "../engine/renderSuspension";
 import { sandboxNpcVisualFactory } from "./sandboxNpcVisual";
 import { attachSandboxCommandSheet } from "./attachSandboxCommandSheet";
-import { failureText } from "./settledTasks";
+import { buildNativeCatalogIndexOrUnavailable } from "./buildNativeCatalogIndexOrUnavailable";
 
 const sandboxNpcAppearanceByModel: ReadonlyMap<string, string> = new Map([["musveren:0", "native-musveren"]]);
 const sandboxNpcAppearanceOfModel = (modelCatalogId: string) => sandboxNpcAppearanceByModel.get(modelCatalogId) ?? null;
@@ -72,12 +71,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
   options.onProgress?.({ stage: "assets", detail: "Loading native character and equipment packages…" });
   const selectedId = new URLSearchParams(window.location?.search ?? "").get("character") ?? settings.playerProfileId ?? defaultNativePlayerProfile.id;
   const catalog = await loadNativeActorCatalog(signal, selectedId);
-  const { catalogIndex, catalogIndexFailure } = await buildNativeCatalogIndex(await readNativeCatalog(signal), signal).then(
-    (index): { catalogIndex: NativeCatalogIndex; catalogIndexFailure: string | null } => ({ catalogIndex: index, catalogIndexFailure: null }),
-    (error: unknown) => {
-      const failure = failureText(error, "The native catalog index could not be built.");
-      return { catalogIndex: unavailableNativeCatalogIndex(failure), catalogIndexFailure: failure };
-    });
+  const { catalogIndex, catalogIndexFailure } = await buildNativeCatalogIndexOrUnavailable(await readNativeCatalog(signal), signal);
   const playerProfile = catalog.playerProfile ?? defaultNativePlayerProfile;
   const playerChoices = catalog.playerProfiles ?? new Map([[playerProfile.id, playerProfile]]);
   const usesDefaultPlayerProfile = playerProfile.id === defaultNativePlayerProfile.id;
