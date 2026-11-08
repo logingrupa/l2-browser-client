@@ -102,11 +102,13 @@ async function verified(path: string, expected: { sha256: string; bytes?: number
   signal.throwIfAborted(); return bytes;
 }
 
+export const powerStrikeEffectBundleId = "interlude:skill:3:level:1:raw-source-dispatch";
+
 export async function loadNativeEffectComponents(signal: AbortSignal): Promise<EffectBundle | null> {
   signal.throwIfAborted();
   const { effectComponents } = await readNativeCatalog(signal);
   requireValue(effectComponents.length <= 64, "invalid effect catalog entries");
-  const entries = effectComponents.filter(row => effectObject(row) && row.id === "interlude:skill:3:level:1:raw-source-dispatch");
+  const entries = effectComponents.filter(row => effectObject(row) && row.id === powerStrikeEffectBundleId);
   if (!entries.length) return null;
   requireValue(entries.length === 1 && effectObject(entries[0]) && digest(entries[0].manifestSha256), "ambiguous selected effect");
   const entry = entries[0], manifestSha256 = entry.manifestSha256 as string;
