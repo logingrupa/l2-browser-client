@@ -1,9 +1,9 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { assetFixture } from "../fixtures/assetPackageFixture";
+import { assetFixture, fixtureGlb, storedPackage } from "../fixtures/assetPackageFixture";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { readAssetPackage, validatePackageModel } from "../../src/assets/package/readAssetPackage";
+import { readAssetPackage, sha256, validatePackageModel } from "../../src/assets/package/readAssetPackage";
 
 function validatedNativePackage(id: string): string | undefined {
   const receipt = resolve("artifacts/native-assets/conversion-validation.json");
@@ -24,6 +24,18 @@ function nativePackage(): string | undefined {
     if (asset.source?.object === "speaking1f_s.wall03") return archive;
   }
   return undefined;
+}
+
+async function goldenVersionTwoModelWithVisibleGeometry() {
+  const golden = await readAssetPackage(new Uint8Array(await readFile("tests/fixtures/golden/model-v2.l2asset")));
+  if (golden.manifest.schemaVersion !== 2 || !golden.manifest.model) throw new Error("The golden model-v2 fixture must be an asset.json v2 model.");
+  const modelFile = golden.manifest.model.file, visibleGlb = fixtureGlb(), visibleGlbSha256 = await sha256(visibleGlb);
+  const manifest = { ...golden.manifest, source: { ...golden.manifest.source, sha256: visibleGlbSha256 },
+    files: golden.manifest.files.map(file => file.path === modelFile ? { ...file, bytes: visibleGlb.length, sha256: visibleGlbSha256 } : file) };
+  const files = new Map(golden.files).set(modelFile, visibleGlb);
+  const bytes = storedPackage([{ name: "asset.json", bytes: new TextEncoder().encode(JSON.stringify(manifest)) },
+    ...[...files].sort(([left], [right]) => left < right ? -1 : 1).map(([name, content]) => ({ name, bytes: content }))]);
+  return { bytes, manifest };
 }
 
 const nativeIntegrationEvidence = resolve("artifacts/native-integration");
@@ -96,6 +108,16 @@ test.describe("local asset package inspector", () => {
     await expect(page.getByRole("button", { name: "Assets", exact: true })).toBeFocused();
     expect(await page.evaluate(() => window.__assetPackageInspection!.snapshot().preview)).toBeNull();
     expect(errors).toEqual([]);
+  });
+
+  test("shows the unit row of an asset.json v2 model from its coordinates", async ({ page }) => {
+    const { bytes, manifest } = await goldenVersionTwoModelWithVisibleGeometry();
+    if (!manifest.coordinates) throw new Error("The golden model-v2 fixture must carry asset.json v2 coordinates.");
+    await page.getByRole("button", { name: "Assets", exact: true }).click();
+    await page.getByLabel("Choose an asset package").setInputFiles({ name: "model-v2.l2asset", mimeType: "application/zip", buffer: Buffer.from(bytes) });
+    await expect(page.getByRole("status")).toContainText(`${manifest.name} ready`, { timeout: 30_000 });
+    await expect(page.locator(".asset-import-details [data-metadata]"))
+      .toContainText(`Unit1 metre = ${manifest.coordinates.sourceUnitsPerMetre} source units`);
   });
 
   test("supports texture and audio packages on a compact viewport and closes with Escape", async ({ page }) => {
