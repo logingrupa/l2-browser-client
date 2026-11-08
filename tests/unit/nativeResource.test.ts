@@ -4,7 +4,7 @@ import { Scene } from "@babylonjs/core/scene";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { nativeResourceUrl } from "../../src/assets/native/nativeResourceUrl";
-import { loadNativeCatalog } from "../../src/assets/native/loadNativeCatalog";
+import { loadNativePlayerPackages } from "../../src/assets/native/loadNativeCatalog";
 import { sha256 } from "../../src/assets/package/readAssetPackage";
 import { loadNativeSection } from "../../src/scene/world/loadNativeSection";
 import { applyNativeTerrainPreview } from "../../src/scene/world/nativeTerrainPreview";
@@ -29,7 +29,7 @@ describe("native public resources in browser and Editor Play", () => {
     const prefix = protocol === "file:" ? "l2/" : "/l2/";
     const fixture = await assetFixture(), hash = await sha256(fixture.bytes);
     const archive = `/l2/${hash}/asset.l2asset`;
-    const catalog = { schemaVersion: 1, models: [{ id: "human-male-fighter:0", archive, archiveSha256: hash }] };
+    const catalog = { schemaVersion: 1, models: [{ id: "human-male-fighter:0", archive, archiveSha256: hash }], playerProfiles: [] };
     const responses = new Map<string, Uint8Array<ArrayBuffer>>([
       [`${prefix}catalog.json`, new TextEncoder().encode(JSON.stringify(catalog))],
       [`${prefix}${hash}/asset.l2asset`, new Uint8Array(fixture.bytes)],
@@ -40,12 +40,12 @@ describe("native public resources in browser and Editor Play", () => {
     });
     vi.stubGlobal("fetch", fetcher);
     const signal = new AbortController().signal;
-    const loaded = await loadNativeCatalog(signal);
-    expect(loaded.get("human-male-fighter:0")?.manifest).toEqual(fixture.readManifest);
+    const loaded = await loadNativePlayerPackages(signal, ["human-male-fighter"]);
+    expect(loaded.models.get("human-male-fighter:0")?.manifest).toEqual(fixture.readManifest);
     expect(fetcher.mock.calls.map(([url]) => url)).toEqual([...responses.keys()]);
     expect(fetcher).toHaveBeenLastCalledWith(`${prefix}${hash}/asset.l2asset`, { signal });
     responses.set(`${prefix}${hash}/asset.l2asset`, new Uint8Array([1, 2, 3]));
-    await expect(loadNativeCatalog(signal)).rejects.toThrow("archive hash mismatch");
+    await expect(loadNativePlayerPackages(signal, ["human-male-fighter"])).rejects.toThrow("archive hash mismatch");
   });
 
   it.each(["https:", "file:"])("retains section hash validation and cleanup under %s", async protocol => {

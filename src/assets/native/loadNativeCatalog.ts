@@ -4,8 +4,7 @@ import { loadNativeNpcProfiles } from "./loadNativeNpcProfiles";
 import { defaultNativePlayerProfile, loadNativePlayerProfiles, validateNativePlayerAssets, type NativePlayerProfile } from "./loadNativePlayerProfiles";
 import { readNativeCatalog, type NativeCatalog } from "./readNativeCatalog";
 
-async function loadModels(catalog: NativeCatalog, signal: AbortSignal,
-  wanted: readonly string[] = ["human-male-fighter:0", "fighter-equipment:0", "musveren:0"]): Promise<ReadonlyMap<string, AssetPackage>> {
+async function loadModels(catalog: NativeCatalog, signal: AbortSignal, wanted: readonly string[]): Promise<ReadonlyMap<string, AssetPackage>> {
   const result = new Map<string, AssetPackage>(), ids = new Set<string>();
   for (const record of catalog.models) {
     if (typeof record !== "object" || !record || !("id" in record) || typeof record.id !== "string" ||
@@ -22,10 +21,6 @@ async function loadModels(catalog: NativeCatalog, signal: AbortSignal,
     signal.throwIfAborted(); result.set(record.id, asset);
   }
   return result;
-}
-
-export async function loadNativeCatalog(signal: AbortSignal): Promise<ReadonlyMap<string, AssetPackage>> {
-  return loadModels(await readNativeCatalog(signal), signal);
 }
 
 export async function loadNativePlayerPackages(signal: AbortSignal, profileIds: readonly string[]) {
