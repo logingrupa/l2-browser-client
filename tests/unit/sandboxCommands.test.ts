@@ -57,4 +57,66 @@ describe.each(adapterFactories)("sandbox by-ID commands on %s", (_name, createAd
     expect(spawnedEntities(receivedEvents).map(entity => entity.npcId)).toEqual([7, 0, 9]);
     adapter.dispose();
   });
+
+  it("equips an item by ID into the upper slot once and clears it with null", () => {
+    const adapter = createAdapter();
+    const receivedEvents = recordEvents(adapter);
+    adapter.dispatch({ type: "equip-item", slot: "upper", itemId: 22 });
+    expect(receivedEvents).toHaveLength(1);
+    expect(receivedEvents[0]).toMatchObject({ type: "update", entity: { id: "local-player", equipment: { upper: 22 } } });
+    adapter.dispatch({ type: "equip-item", slot: "upper", itemId: 22 });
+    expect(receivedEvents).toHaveLength(1);
+    adapter.dispatch({ type: "equip-item", slot: "upper", itemId: null });
+    expect(receivedEvents).toHaveLength(2);
+    const cleared = receivedEvents[1];
+    expect(cleared?.type === "update" ? cleared.entity.equipment?.upper : "not an update").toBeUndefined();
+    adapter.dispatch({ type: "equip-item", slot: "upper", itemId: null });
+    expect(receivedEvents).toHaveLength(2);
+    adapter.dispose();
+  });
+
+  it("equips a named non-local entity and ignores unknown entities and invalid item IDs", () => {
+    const adapter = createAdapter();
+    const receivedEvents = recordEvents(adapter);
+    adapter.dispatch({ type: "spawn-npc", npcId: 12345 });
+    const npc = spawnedEntities(receivedEvents)[0]!;
+    adapter.dispatch({ type: "equip-item", slot: "upper", itemId: 22, entityId: npc.id });
+    expect(receivedEvents.at(-1)).toMatchObject({ type: "update", entity: { id: npc.id, npcId: 12345, equipment: { upper: 22 } } });
+    adapter.dispatch({ type: "equip-item", slot: "upper", itemId: 22, entityId: "no-such-entity" });
+    for (const itemId of [-1, .5, Number.NaN]) adapter.dispatch({ type: "equip-item", slot: "upper", itemId });
+    expect(receivedEvents).toHaveLength(2);
+    adapter.dispose();
+  });
+
+  it("emits a skill-cast record with the L2 skill ID and level and changes no health", () => {
+    const adapter = createAdapter();
+    const receivedEvents = recordEvents(adapter);
+    adapter.dispatch({ type: "spawn-npc", npcId: 12345 });
+    const target = spawnedEntities(receivedEvents)[0]!;
+    const healthBefore = adapter.getInitialState().map(entity => [entity.id, entity.health]);
+    adapter.dispatch({ type: "cast-skill", skillId: 3, level: 1, targetId: target.id });
+    expect(receivedEvents.slice(1)).toEqual([{ type: "skill-cast", casterId: "local-player", skillId: 3, level: 1, targetId: target.id }]);
+    adapter.dispatch({ type: "cast-skill", skillId: 3, level: 1 });
+    expect(receivedEvents.at(-1)).toEqual({ type: "skill-cast", casterId: "local-player", skillId: 3, level: 1 });
+    expect(adapter.getInitialState().map(entity => [entity.id, entity.health])).toEqual(healthBefore);
+    adapter.dispose();
+  });
+
+  it("ignores casts with invalid IDs, a missing or dead target, or a dead caster", () => {
+    const adapter = createAdapter();
+    const receivedEvents = recordEvents(adapter);
+    adapter.dispatch({ type: "spawn-npc", npcId: 12345 });
+    const target = spawnedEntities(receivedEvents)[0]!;
+    adapter.dispatch({ type: "cast-skill", skillId: -1, level: 1, targetId: target.id });
+    adapter.dispatch({ type: "cast-skill", skillId: 3, level: 0, targetId: target.id });
+    adapter.dispatch({ type: "cast-skill", skillId: 3.5, level: 1 });
+    adapter.dispatch({ type: "cast-skill", skillId: 3, level: 1, targetId: "no-such-entity" });
+    expect(receivedEvents).toHaveLength(1);
+    adapter.dispatch({ type: "set-health", entityId: target.id, health: 0 });
+    adapter.dispatch({ type: "cast-skill", skillId: 3, level: 1, targetId: target.id });
+    adapter.dispatch({ type: "set-health", entityId: "local-player", health: 0 });
+    adapter.dispatch({ type: "cast-skill", skillId: 3, level: 1 });
+    expect(receivedEvents.filter(event => event.type === "skill-cast")).toEqual([]);
+    adapter.dispose();
+  });
 });

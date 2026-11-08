@@ -28,9 +28,7 @@ export interface EntityPresentationOptions {
 export interface EntityPivotView {
   readonly entityId: string;
   readonly root: TransformNode;
-  /** This exact visual generation must still belong to the registry. */
   isValid(): boolean;
-  /** Presented actor pivot, including support clearance; never mesh bounds. */
   getWorldPositionToRef(out: Vector3): boolean;
 }
 
@@ -56,8 +54,6 @@ export class EntityRegistry {
   }
 
   get count(): number { return this.entities.size; }
-  /** Await the current set, repeating if an entity is replaced while loading.
-   * A removed visual's cancellation must not reject its replacement's startup. */
   async whenReady(): Promise<void> {
     for (;;) {
       if (this.isDisposed) throw new DOMException("Entity loading was cancelled.", "AbortError");
@@ -77,13 +73,10 @@ export class EntityRegistry {
     return [...this.entities.values()].find((presentation) => presentation.entity.kind === "local-player")?.visual.root.position ?? null;
   }
 
-  /** Borrow an exact source-qualified attachment without enumerating scene
-   * names, reparenting the rig or allocating the full diagnostic snapshot. */
   attachmentAnchor(entityId: string, anchorId: string) {
     return this.isDisposed ? null : this.entities.get(entityId)?.visual.attachmentAnchor?.(anchorId) ?? null;
   }
 
-  /** No hierarchy, pose or material diagnostics are allocated for this clock. */
   sourceClock(entityId: string) {
     return this.isDisposed ? null : this.entities.get(entityId)?.visual.sourceClock?.() ?? null;
   }
@@ -92,7 +85,6 @@ export class EntityRegistry {
     return this.isDisposed ? null : this.entities.get(entityId)?.entity ?? null;
   }
 
-  /** Borrow the actor pivot without transferring node or entity ownership. */
   actorPivot(entityId: string): EntityPivotView | null {
     const owner = this.entities.get(entityId);
     if (this.isDisposed || !owner || owner.visual.root.isDisposed()) return null;
@@ -129,6 +121,7 @@ export class EntityRegistry {
   private apply(event: WorldEvent): void {
     if (event.type === "despawn") { this.remove(event.entityId); return; }
     if (event.type === "spawn") { this.spawn(event.entity); return; }
+    if (event.type === "skill-cast") return;
     const presentation = this.entities.get(event.entity.id);
     if (!presentation) return;
     if (presentation.entity.modelUrl !== event.entity.modelUrl || presentation.entity.appearanceId !== event.entity.appearanceId || presentation.entity.kind !== event.entity.kind) {
@@ -158,13 +151,10 @@ export class EntityRegistry {
 
   update(deltaTimeSeconds: number): void {
     this.entities.forEach((presentation) => {
-      const interpolated = presentation.interpolation.update(deltaTimeSeconds);
-      // Interpolation between supported endpoints can otherwise cut into stairs or slopes.
-      const position = this.options.ground?.(interpolated) ?? interpolated;
-      // Adapter positions are local support points. Place the native pivot above
-      // that surface using its fixed profile/idle datum; source hierarchy stays intact.
-      const clearance = this.options.ground ? (presentation.visual.groundClearance ?? 0) * presentation.visual.root.scaling.y : 0;
-      presentation.visual.root.position.set(position.x, position.y + clearance, position.z);
+      const interpolatedPosition = presentation.interpolation.update(deltaTimeSeconds);
+      const supportedPosition = this.options.ground?.(interpolatedPosition) ?? interpolatedPosition;
+      const pivotClearanceAboveSupport = this.options.ground ? (presentation.visual.groundClearance ?? 0) * presentation.visual.root.scaling.y : 0;
+      presentation.visual.root.position.set(supportedPosition.x, supportedPosition.y + pivotClearanceAboveSupport, supportedPosition.z);
       const difference = Math.atan2(Math.sin(presentation.entity.orientationRadians - presentation.visual.root.rotation.y), Math.cos(presentation.entity.orientationRadians - presentation.visual.root.rotation.y));
       presentation.visual.root.rotation.y += difference * (1 - Math.exp(-12 * deltaTimeSeconds));
       presentation.visual.animation.update(deltaTimeSeconds);

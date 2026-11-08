@@ -11,7 +11,7 @@ function attachEquipmentGroup(section: DevSection, context: NativeSliceSheetCont
   const appearanceGroup = section.group("appearance", "Character & equipment");
   const equipmentVariables = (): VariableInfo[] => [
     { name: "equipment.upper", value: () => { const upper = registry.localPlayer?.equipment?.upper; return upper === undefined ? "starter shirt (none)" : `item ${upper}`; },
-      values: "22 (Leather Shirt) | none", source: "armorgrp item 22 package; equip-upper command", status: "native" },
+      values: "22 (Leather Shirt) | none", source: "armorgrp item 22 package; equip-item command, slot upper", status: "native" },
     { name: "character.profile", value: () => `${playerProfile.id} · ${playerProfile.name}`, values: [...playerChoices.values()].map(choice => choice.name).join(" | "), source: "catalog.playerProfiles (?character=)", status: "native" },
   ];
   if (playerChoices.size > 1) {
@@ -22,10 +22,10 @@ function attachEquipmentGroup(section: DevSection, context: NativeSliceSheetCont
       variables: equipmentVariables,
       onChange: id => { const url = new URL(window.location.href); url.searchParams.set("character", id); window.location.assign(url.href); } });
   }
-  tools.button(appearanceGroup, "Leather shirt", () => adapter.dispatch({ type: "equip-upper", itemId: 22 }),
+  tools.button(appearanceGroup, "Leather shirt", () => adapter.dispatch({ type: "equip-item", slot: "upper", itemId: 22 }),
     { hint: profileStagesLeatherShirt ? "Equips armorgrp item 22. Musveren's hits then use its own defense sounds." : `No item 22 upper part is staged for ${playerProfile.name}.`,
       variables: equipmentVariables, disabled: !profileStagesLeatherShirt });
-  tools.button(appearanceGroup, "Starter shirt", () => adapter.dispatch({ type: "equip-upper", itemId: null }),
+  tools.button(appearanceGroup, "Starter shirt", () => adapter.dispatch({ type: "equip-item", slot: "upper", itemId: null }),
     { hint: "Removes the upper armor and restores the starter body part.", variables: equipmentVariables, disabled: !profileStagesLeatherShirt });
 }
 

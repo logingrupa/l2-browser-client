@@ -105,8 +105,6 @@ describe("original footprint support evidence", () => {
     expect(moved.blocked).toBe(false); expect(moved.position).toEqual({ x: 0, y: .25, z: 0 });
     expect(moved.contact?.queryPosition).toEqual(zero); expect(moved.contact?.controllingSample).toBe(1);
     source(moved.contact!.samples[0]!, terrain); source(moved.contact!.samples[1]!, peripheral);
-    // At raised Y the center can reach .5 while the other samples remain 0:
-    // the existing maximum footprint spread rejects that different decision.
     expect(navigation.groundContact!({ x: 0, y: .25, z: 0 })).toBeNull();
     const withoutUpperSlab = createWorldNavigation({ terrainMeshes: [terrain], obstacleMeshes: () => [peripheral], origin: from, capsule: { radius: .1, height: .2 } });
     expect(contact(withoutUpperSlab, { x: 0, y: .25, z: 0 }).position).toEqual({ x: 0, y: .25, z: 0 });
@@ -177,7 +175,6 @@ describe("adapter accepted-contact lifetime", () => {
     const { floor } = fixture(), terrain = floor("terrain", -10, 10, -10, 10, 0);
     const base = createWorldNavigation({ terrainMeshes: [terrain], obstacleMeshes: () => [], origin: zero });
     const queried = vi.fn(base.groundContact!), navigation: WorldNavigation = { ...base, groundContact: queried };
-    // The spawn is an accepted position: its support is queried once so footsteps resolve before the first move.
     const adapter = nativeAdapter(zero, navigation); expect(queried).toHaveBeenCalledExactlyOnceWith(zero);
     const spawned = adapter.groundContact!; position(spawned.position, zero);
     for (const sample of spawned.samples) source(sample, terrain);
@@ -187,7 +184,7 @@ describe("adapter accepted-contact lifetime", () => {
     const accepted = adapter.groundContact!; position(accepted.position, { x: .35, y: 0, z: 0 });
     for (const sample of accepted.samples) source(sample, terrain);
     adapter.dispatch({ type: "move-local", position: { x: 3, y: 0, z: 0 } });
-    adapter.dispatch({ type: "set-locomotion", mode: "walk" }); adapter.dispatch({ type: "equip-upper", itemId: 22 });
+    adapter.dispatch({ type: "set-locomotion", mode: "walk" }); adapter.dispatch({ type: "equip-item", slot: "upper", itemId: 22 });
     adapter.dispatch({ type: "set-paused", isPaused: true }); adapter.advance(4);
     expect(adapter.groundContact).toEqual(accepted); expect(player(adapter).position.x).toBeCloseTo(.35);
     adapter.dispatch({ type: "set-paused", isPaused: false }); adapter.dispatch({ type: "set-health", entityId: "local-player", health: 0 }); adapter.advance(4);

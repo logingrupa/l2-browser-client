@@ -71,19 +71,19 @@ describe("native slice locomotion intent", () => {
   it("preserves pause and destination while changing gait and equipment", () => {
     const value = adapter(); value.dispatch({ type: "move-local", position: { x: 2, y: 3, z: 6.1 } });
     value.dispatch({ type: "set-paused", isPaused: true });
-    value.dispatch({ type: "set-locomotion", mode: "walk" }); value.dispatch({ type: "equip-upper", itemId: 22 }); value.advance(10);
+    value.dispatch({ type: "set-locomotion", mode: "walk" }); value.dispatch({ type: "equip-item", slot: "upper", itemId: 22 }); value.advance(10);
     expect(value.isPaused).toBe(true);
     expect(player(value)).toMatchObject({ position: origin, animation: "run", locomotion: "walk", equipment: { upper: 22 } });
     value.dispatch({ type: "set-paused", isPaused: false }); value.advance(1);
     expect(player(value).position.z).toBeCloseTo(4.7);
-    value.dispatch({ type: "equip-upper", itemId: null }); value.advance(2);
+    value.dispatch({ type: "equip-item", slot: "upper", itemId: null }); value.advance(2);
     expect(player(value)).toMatchObject({ position: { x: 2, y: 3, z: 6.1 }, animation: "idle", locomotion: "walk", equipment: {} });
   });
 
   it("keeps a dead actor stationary and resumes the preserved destination and gait after revival", () => {
     const value = adapter(); value.dispatch({ type: "move-local", position: { x: 2, y: 3, z: 6.8 } }); value.advance(.5);
     value.dispatch({ type: "set-health", entityId: "local-player", health: 0 }); const deadPosition = player(value).position;
-    value.dispatch({ type: "set-locomotion", mode: "walk" }); value.dispatch({ type: "equip-upper", itemId: 22 }); value.advance(5);
+    value.dispatch({ type: "set-locomotion", mode: "walk" }); value.dispatch({ type: "equip-item", slot: "upper", itemId: 22 }); value.advance(5);
     expect(player(value)).toMatchObject({ position: deadPosition, health: 0, locomotion: "walk", equipment: { upper: 22 } });
     value.dispatch({ type: "set-health", entityId: "local-player", health: 100 }); value.advance(1);
     expect(player(value).position.z).toBeCloseTo(5.05); expect(player(value).locomotion).toBe("walk");

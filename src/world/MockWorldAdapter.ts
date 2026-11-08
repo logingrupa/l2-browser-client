@@ -2,7 +2,7 @@ import type { GameWorldAdapter } from "./GameWorldAdapter";
 import { createInitialWorld } from "./createInitialWorld";
 import { moveTowards, simulateRemotePlayer } from "./syntheticMovement";
 import type { WorldCommand, WorldEntity, WorldEvent, WorldPosition } from "./worldTypes";
-import { createSpawnedNpcEntity, isLineageIdentifier } from "./sandboxCommands";
+import { createSpawnedNpcEntity, entityWithClampedHealth, entityWithEquippedItem, isLineageIdentifier, skillCastEvent } from "./sandboxCommands";
 import type { WorldNavigation } from "./WorldNavigation";
 
 const updateIntervalSeconds = 0.1;
@@ -94,6 +94,22 @@ export class MockWorldAdapter implements GameWorldAdapter {
       case "spawn-npc":
         this.spawnNpc(command.npcId);
         break;
+      case "set-health": {
+        const entity = this.entities.get(command.entityId);
+        const healthChanged = entity ? entityWithClampedHealth(entity, command.health) : null;
+        if (healthChanged) this.updateEntity(healthChanged);
+        break;
+      }
+      case "equip-item": {
+        const equippedEntity = entityWithEquippedItem(this.entities, command);
+        if (equippedEntity) this.updateEntity(equippedEntity);
+        break;
+      }
+      case "cast-skill": {
+        const castEvent = skillCastEvent(this.entities, command);
+        if (castEvent) this.emit(castEvent);
+        break;
+      }
       case "despawn":
         if (this.entities.delete(command.entityId)) {
           if (command.entityId === "local-player") this.localDestination = undefined;

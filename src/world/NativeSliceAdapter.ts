@@ -2,7 +2,7 @@ import type { GameWorldAdapter } from "./GameWorldAdapter";
 import type { LocomotionMode, WorldCommand, WorldEntity, WorldEvent, WorldPosition } from "./worldTypes";
 import type { WorldGroundContact, WorldNavigation } from "./WorldNavigation";
 import { moveTowards } from "./syntheticMovement";
-import { createSpawnedNpcEntity, isLineageIdentifier } from "./sandboxCommands";
+import { createSpawnedNpcEntity, entityWithClampedHealth, entityWithEquippedItem, isLineageIdentifier, skillCastEvent } from "./sandboxCommands";
 
 const sandboxActorSpacingMetres = 1.4;
 const velocityWithoutAccelerationRampRoutine = "APawn::calcVelocity 0x10639950";
@@ -81,13 +81,17 @@ export class NativeSliceAdapter implements GameWorldAdapter {
     }
     else if (command.type === "set-health") {
       const entity = this.entities.get(command.entityId);
-      if (entity && Number.isFinite(command.health)) this.update({ ...entity, health: Math.max(0, Math.min(entity.maximumHealth, command.health)) });
+      const healthChanged = entity ? entityWithClampedHealth(entity, command.health) : null;
+      if (healthChanged) this.update(healthChanged);
     } else if (command.type === "despawn" && command.entityId !== "local-player") {
       if (this.entities.delete(command.entityId)) for (const listener of this.listeners) listener({ type: "despawn", entityId: command.entityId });
     } else if (player && command.type === "spawn-npc") this.spawnNpc(player, command.npcId);
-    else if (player && command.type === "equip-upper") {
-      if (command.itemId !== null && (!Number.isSafeInteger(command.itemId) || command.itemId < 0)) return;
-      this.update({ ...player, equipment: command.itemId === null ? {} : { upper: command.itemId } });
+    else if (command.type === "equip-item") {
+      const equippedEntity = entityWithEquippedItem(this.entities, command);
+      if (equippedEntity) this.update(equippedEntity);
+    } else if (command.type === "cast-skill") {
+      const castEvent = skillCastEvent(this.entities, command);
+      if (castEvent) for (const listener of this.listeners) listener(castEvent);
     } else if (player && command.type === "preview-action") {
       if (command.action !== "special-attack" || !this.specialAttackPreviewSupported || player.health <= 0) return;
       const target = command.targetId === undefined ? null : this.entities.get(command.targetId);

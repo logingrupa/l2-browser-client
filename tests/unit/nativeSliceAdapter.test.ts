@@ -63,11 +63,11 @@ describe("native slice adapter boundary", () => {
     expect(player(adapter).health).toBe(0);
     adapter.dispatch({ type: "set-health", entityId: "local-player", health: 999 });
     adapter.dispatch({ type: "set-paused", isPaused: true }); adapter.advance(10);
-    adapter.dispatch({ type: "equip-upper", itemId: 22 });
+    adapter.dispatch({ type: "equip-item", slot: "upper", itemId: 22 });
     expect(player(adapter)).toMatchObject({ health: 100, position: origin, equipment: { upper: 22 } });
-    for (const itemId of [-1, .5, Number.NaN]) adapter.dispatch({ type: "equip-upper", itemId });
+    for (const itemId of [-1, .5, Number.NaN]) adapter.dispatch({ type: "equip-item", slot: "upper", itemId });
     expect(player(adapter).equipment).toEqual({ upper: 22 });
-    adapter.dispatch({ type: "equip-upper", itemId: null });
+    adapter.dispatch({ type: "equip-item", slot: "upper", itemId: null });
     expect(player(adapter).equipment?.upper).toBeUndefined();
     adapter.dispatch({ type: "set-paused", isPaused: false }); adapter.advance(.5);
     expect(player(adapter).position.x).toBeCloseTo(2.35);

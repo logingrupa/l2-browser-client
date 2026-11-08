@@ -35,7 +35,7 @@ describe("explicit special attack preview intent", () => {
 
   it("cancels travel and retriggers only the selected preview without changing gear, heading or another actor", () => {
     const adapter = createAdapter();
-    adapter.dispatch({ type: "equip-upper", itemId: 22 });
+    adapter.dispatch({ type: "equip-item", slot: "upper", itemId: 22 });
     adapter.dispatch({ type: "move-local", position: { x: 3, y: 3, z: 6 } }); adapter.advance(.5);
     const before = player(adapter), monster = adapter.getInitialState()[1];
     adapter.dispatch(preview); adapter.advance(10);
@@ -43,7 +43,7 @@ describe("explicit special attack preview intent", () => {
       equipment: { upper: 22 }, animation: "attack", actionPreview: "special-attack", animationSequence: 1 });
     adapter.dispatch(preview); expect(player(adapter).animationSequence).toBe(2);
     expect(adapter.getInitialState()[1]).toEqual(monster);
-    adapter.dispatch({ type: "equip-upper", itemId: null });
+    adapter.dispatch({ type: "equip-item", slot: "upper", itemId: null });
     expect(player(adapter)).toMatchObject({ actionPreview: "special-attack", animationSequence: 2, equipment: {} });
   });
 
@@ -106,7 +106,6 @@ describe("native visual source-action selection and lifetime", () => {
     const asset = await nativeVisualFixture({ skinned: true });
     const entity: WorldEntity = { id: "fixture", kind: "local-player", appearanceId: "fixture", displayName: "Fixture",
       health: 100, maximumHealth: 100, animation: "idle", position: { x: 2, y: 3, z: 4 }, orientationRadians: .2 };
-    // A distinct synthetic source clip tests routing, never a production alias.
     const visual = nativeCharacterFactory(new Map([["fixture", { asset,
       clips: { ...nativeVisualClips, specialAttack: nativeVisualClips.run } }]]))(scene, entity);
     releases.push(() => visual.dispose()); await visual.ready;

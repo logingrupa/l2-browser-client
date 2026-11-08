@@ -36,7 +36,14 @@ export type WorldEvent =
       readonly entity: WorldEntity;
       readonly shouldSnap?: boolean;
     }
-  | { readonly type: "despawn"; readonly entityId: string };
+  | { readonly type: "despawn"; readonly entityId: string }
+  | {
+      readonly type: "skill-cast";
+      readonly casterId: string;
+      readonly skillId: number;
+      readonly level: number;
+      readonly targetId?: string;
+    };
 
 export type WorldCommand =
   | { readonly type: "set-animation"; readonly animation: AnimationState; readonly entityId?: string }
@@ -49,5 +56,6 @@ export type WorldCommand =
   | { readonly type: "despawn"; readonly entityId: string }
   | { readonly type: "set-paused"; readonly isPaused: boolean }
   | { readonly type: "load-missing-model" }
-  | { readonly type: "equip-upper"; readonly itemId: number | null }
+  | { readonly type: "equip-item"; readonly slot: EquipmentSlot; readonly itemId: number | null; readonly entityId?: string }
+  | { readonly type: "cast-skill"; readonly skillId: number; readonly level: number; readonly targetId?: string }
   | { readonly type: "set-health"; readonly entityId: string; readonly health: number };
