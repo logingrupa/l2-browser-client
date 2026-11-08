@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 import build_dat_table_inventory
 from build_dat_table_inventory import (ELBERA_EVIDENCE_COUNT_SOURCE, ELBERA_EVIDENCE_RECORD_COUNTS, ELBERA_PARSER_PRESENT_STATUS,
-    ELBERA_PARSER_SOURCES, LOCAL_DECODE_COUNT_SOURCE, NOT_LOCK_EQUAL_STATUS, DatTableInventoryError, classify_dat_table,
+    ELBERA_PARSER_SOURCES, LOCAL_DECODE_COUNT_SOURCE_PREFIX, NOT_LOCK_EQUAL_STATUS, DatTableInventoryError, classify_dat_table,
     count_local_decoded_table, descriptor_layout_links, elbera_parser_presence, validate_dat_table_inventory)
 from native_catalog.tables import TABLES
 from reference_client_guard import ReferenceClientLockError, require_reference_client
@@ -18,6 +18,7 @@ from reference_client_lock_fixture import use_reference_client_lock
 from test_reference_client_guard import SyntheticReferenceClientTrees
 
 COMMITTED_INVENTORY_PATH = ROOT / 'docs' / 'parts' / 'data' / 'dat-table-inventory.json'
+COMMITTED_REFERENCE_CLIENT_LOCK_PATH = ROOT / 'recipes' / 'reference-client-tree.lock.json'
 PORT_SCOPE_PATH = ROOT / 'docs' / 'PORT_SCOPE.md'
 ELBERA_CANDIDATE_TABLES = ('hairaccessarygrp', 'hairgrp', 'helmetgrp')
 SYNTHETIC_DESCRIPTOR = b'''<?xml version="1.0" encoding="UTF-8"?>
@@ -110,11 +111,12 @@ class CommittedDatTableInventoryTests(unittest.TestCase):
         self.assertEqual(sorted(row['table'] for row in self.rows if row['route'] in ('elbera', 'none')), list(ELBERA_CANDIDATE_TABLES))
         self.assertEqual(sorted(row['layout'] for row in self.rows if row['route'] == 'local-decoded'), sorted(TABLES))
 
-    def test_local_decoded_counts_are_integers_from_the_pinned_decode(self):
+    def test_local_decoded_counts_are_integers_from_the_pinned_decode_of_the_locked_conversion_root(self):
+        conversion_root = json.loads(COMMITTED_REFERENCE_CLIENT_LOCK_PATH.read_bytes())['conversionRoot']
         for row in self.rows:
             if row['route'] == 'local-decoded' and row['recordCount'] != 'unknown':
                 self.assertIsInstance(row['recordCount'], int, row['table'])
-                self.assertEqual(row['countSource'], LOCAL_DECODE_COUNT_SOURCE + 'system/' + row['file'])
+                self.assertEqual(row['countSource'], f'{LOCAL_DECODE_COUNT_SOURCE_PREFIX}lock-equal {conversion_root}/system/{row["file"]}')
 
     def test_counts_without_a_decode_are_elbera_evidence_or_unknown(self):
         for row in self.rows:
@@ -144,6 +146,17 @@ class LocalDecodedCountTests(unittest.TestCase):
         with patch.object(build_dat_table_inventory, 'decode_table', side_effect=AssertionError('a differing table must not be decoded')):
             self.assertEqual(count_local_decoded_table(self.conversion_access, row, None),
                              {'recordCount': 'unknown', 'countSource': None, 'status': NOT_LOCK_EQUAL_STATUS})
+
+    def test_the_count_source_names_the_root_that_was_read_and_whether_the_lock_applied(self):
+        row = {'table': 'npcgrp', 'file': 'npcgrp.dat', 'layout': 'npcgrp'}
+        decoded = {'source': 'system/npcgrp.dat', 'data': {'npc': [{'id': 1}, {'id': 2}]}}
+        reference_access = require_reference_client(self.trees.importa_root)
+        with patch.object(build_dat_table_inventory, 'decode_table', return_value=decoded):
+            for client_access, expected_source in (
+                    (self.conversion_access, f'{LOCAL_DECODE_COUNT_SOURCE_PREFIX}lock-equal {self.trees.conversion_root.as_posix()}/system/npcgrp.dat'),
+                    (reference_access, f'{LOCAL_DECODE_COUNT_SOURCE_PREFIX}{self.trees.importa_root.as_posix()}/system/npcgrp.dat')):
+                with self.subTest(root=client_access.root):
+                    self.assertEqual(count_local_decoded_table(client_access, row, None)['countSource'], expected_source)
 
     def test_a_stale_lock_on_an_equal_table_stops_the_inventory(self):
         row = {'table': 'npcgrp', 'file': 'npcgrp.dat', 'layout': 'npcgrp'}

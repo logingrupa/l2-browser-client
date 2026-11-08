@@ -42,7 +42,7 @@ ELBERA_PARSER_PRESENT_STATUS = 'Elbera parser present, unverified'
 ROUTES = ('local-decoded', 'local-layout-only', 'elbera', 'none')
 ROW_FIELDS = ('table', 'file', 'descriptorLayout', 'layout', 'route', 'recordCount', 'countSource', 'status')
 NOT_LOCK_EQUAL_STATUS = 'E: copy not equal to IMPORTA-PC'
-LOCAL_DECODE_COUNT_SOURCE = 'scripts/native_catalog/tables.py decode_table on lock-equal E:/Lineage2-client/'
+LOCAL_DECODE_COUNT_SOURCE_PREFIX = 'scripts/native_catalog/tables.py decode_table on '
 
 
 class DatTableInventoryError(ValueError):
@@ -118,13 +118,18 @@ def is_recorded_not_lock_equal(client_access, relative_path):
     return record is None or record['class'] != 'equal'
 
 
+def local_decode_count_source(client_access, file_name):
+    lock_equal_qualifier = 'lock-equal ' if client_access.requires_lock else ''
+    return f'{LOCAL_DECODE_COUNT_SOURCE_PREFIX}{lock_equal_qualifier}{client_access.root.as_posix()}/system/{file_name}'
+
+
 def count_local_decoded_table(client_access, row, schema_root):
     if is_recorded_not_lock_equal(client_access, 'system/' + row['file']):
         return {'recordCount': UNKNOWN_RECORD_COUNT, 'countSource': None, 'status': NOT_LOCK_EQUAL_STATUS}
     source_filename = row['file'] if row['layout'] == 'npcname' else None
     decoded_table = decode_table(client_access.root, row['layout'], schema_root, source_filename=source_filename)
     record_count = decoded_record_count(decoded_table)
-    return {'recordCount': record_count, 'countSource': LOCAL_DECODE_COUNT_SOURCE + 'system/' + row['file'],
+    return {'recordCount': record_count, 'countSource': local_decode_count_source(client_access, row['file']),
         'status': describe_decode_against_elbera(row['table'], record_count)}
 
 
