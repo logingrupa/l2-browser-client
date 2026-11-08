@@ -67,6 +67,15 @@ Execution constraints for this run (owner rules, binding on every plan):
 - Plan order: contract plans first (lane store and output guard, catalog keys `tables`, `windows`, `tiles`, coverage skeleton); then one tracer per lane (data generic decode plus DATA-03, UI StatusWnd, world 20_21 terrain walk with the other steps as gaps, actors Gremlin); then breadth plans per lane (world meshes, BSP and WORLD-08, audio and sky, eligible-39 batch, streaming baseline, minimap, WORLD-07; actors characters, NPC batch, items, skills, audio; UI window registry).
 - Done for this run: the four tracers plus census-based gap coverage for every part, with breadth batches resumable through `native_batch`-style seals.
 
+### H. Recipe audit inputs (owner, 2026-11-08 10:25)
+Hand-typed recipe values with no recorded source must first become visibly unresolved (a recorded `unresolved` reason in the recipe and an explicit diagnostic at runtime, never a silent default), then be replaced by recipes generated from decoded rows (decision E) or from source class defaults:
+- Hair textures and hair colour in `recipes/native-mfighter.json`, `native-mmagic.json`, `native-fmagic.json` and `native-ffighter.json` (and their `native-pipeline-*` twins): unresolved until hairgrp/helmetgrp decode (DATA-02) and generated chargrp assemblies (ACT-01) provide them.
+- Female fighter collision 8 / 23.5 in the ffighter recipes: never checked against the class defaults; unresolved until read from the source class defaults (`CollisionRadius`, `CollisionHeight`) by the generator.
+- The role-to-column routing in `recipes/native-combat-audio.json`: unresolved until bound from decoded `npcgrp`/`skillsoundgrp` columns with exact source identities (ACT-05).
+- The XY windows in `recipes/native-map-20_20.json` and `native-map-debug-location.json`: replaced by the tile-general chunk planner (decision B, 4x4-sector chunks from TerrainInfo); until then labelled hand-chosen presentation windows, not source values.
+- `recipes/native-parity.acceptance.json` still has an Editor round-trip block superseded by DEC-OWN-8: remove that block (POL-01 thresholds otherwise unchanged; never relax them).
+- The plans that own these: actors lane (generated recipes, ACT-01, ACT-05), world lane (chunk planner, WORLD-01), integration (acceptance file cleanup, CONV-02). Each marks the old value unresolved in the first task that touches its recipe.
+
 ### Claude's Discretion
 - Plan split, wave order and file layout within AGENTS.md code rules (no comments, full-word names, files under about 400 lines, Vitest per behaviour change, Playwright for UI, no dead code, never invent L2 values).
 

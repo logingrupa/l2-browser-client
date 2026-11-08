@@ -21,7 +21,7 @@ Full list with IDs and traceability: `.planning/REQUIREMENTS.md`.
 ### Validated
 
 - Phase 1 foundation (standalone Babylon.js client, `GameWorldAdapter`, `MockWorldAdapter`, synthetic entities) shipped in commit `3b16f1c317e20ee636a3b3f83bddafc15096740a`. Original brief kept in `.planning/goal.md` as history.
-- Current slice (2026-11-07, PORT_SCOPE part 5): human fighters native, 20_20 world and Talking Island bundles, Greater Musveren, Power Strike and 20_20 audio in progress, human mystic export in progress, UI is a development sheet only.
+- Current slice (2026-11-07, PORT_SCOPE section 5): human fighters native, 20_20 world and Talking Island bundles, Greater Musveren, Power Strike and 20_20 audio in progress, human mystic export in progress, UI is a development sheet only.
 
 ### Active
 
