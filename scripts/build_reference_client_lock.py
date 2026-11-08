@@ -1,4 +1,3 @@
-"""Join the IMPORTA-PC and E: reference client manifests into recipes/reference-client-tree.lock.json."""
 import argparse
 from fnmatch import fnmatchcase
 import hashlib
@@ -20,6 +19,7 @@ VOLATILE_CONFIG_PATTERNS = ('*.ini', '*.log', '*.bak', '*.bak-*')
 FILE_FIELDS = ('class', 'importaBytes', 'importaSha256', 'eBytes', 'eSha256', 'eModifiedNanoseconds')
 FILE_CLASSES = ('equal', 'differing', 'importa-only', 'e-only', 'volatile-config', 'unreadable')
 SHA256_PATTERN = re.compile('[0-9a-f]{64}')
+LOCK_BUILDER_DESCRIPTION = 'Join the IMPORTA-PC and E: reference client manifests into recipes/reference-client-tree.lock.json.'
 
 
 class ReferenceClientManifestError(ValueError):
@@ -116,9 +116,21 @@ def summarise_side(manifest):
     }
 
 
+def normalised_tree_root(root):
+    return root.replace('\\', '/').rstrip('/').casefold()
+
+
+def require_manifest_origin(manifest, side, expected_host, expected_root):
+    if manifest['host'] != expected_host or normalised_tree_root(manifest['root']) != normalised_tree_root(expected_root):
+        raise ReferenceClientManifestError(
+            f'{side} manifest was hashed on {manifest["host"]} at {manifest["root"]}, expected {expected_host} at {expected_root}')
+
+
 def classify_reference_client_trees(importa_manifest, e_manifest, hashing_script_sha256):
     validate_reference_client_manifest(importa_manifest, 'IMPORTA-PC')
     validate_reference_client_manifest(e_manifest, 'E:')
+    require_manifest_origin(importa_manifest, 'IMPORTA-PC', REFERENCE_HOST, REFERENCE_ROOT)
+    require_manifest_origin(e_manifest, 'E:', CONVERSION_HOST, CONVERSION_ROOT)
     if not isinstance(hashing_script_sha256, str) or not SHA256_PATTERN.fullmatch(hashing_script_sha256):
         raise ReferenceClientManifestError('hashing script SHA-256 must be lowercase hex')
     importa_files, e_files = index_by_casefolded_path(importa_manifest['files']), index_by_casefolded_path(e_manifest['files'])
@@ -183,7 +195,7 @@ def read_reference_client_manifest(path):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=LOCK_BUILDER_DESCRIPTION)
     parser.add_argument('--importa-manifest', type=Path, required=True)
     parser.add_argument('--e-manifest', type=Path, required=True)
     parser.add_argument('--output', type=Path, default=DEFAULT_LOCK_OUTPUT_PATH)

@@ -2,13 +2,16 @@ import json
 import os
 import re
 from pathlib import Path
+import socket
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
+import build_reference_client_lock
 from build_reference_client_lock import (ReferenceClientManifestError, classify_reference_client_trees,
     hashing_script_sha256, write_reference_client_lock)
 from hash_reference_client_tree import canonical_json_bytes
@@ -60,6 +63,11 @@ class ReferenceClientTreeTests(unittest.TestCase):
         write_tree_file(self.e_root, 'system/l2.ini', b'[Engine]\nconversion')
         write_tree_file(self.importa_root, 'Music/Case.dat', b'case payload')
         write_tree_file(self.e_root, 'music/case.dat', b'case payload')
+        self.hashing_host = socket.gethostname().upper()
+        origin_patcher = patch.multiple(build_reference_client_lock, REFERENCE_HOST=self.hashing_host, REFERENCE_ROOT=self.importa_root.as_posix(),
+                                        CONVERSION_HOST=self.hashing_host, CONVERSION_ROOT=self.e_root.as_posix())
+        origin_patcher.start()
+        self.addCleanup(origin_patcher.stop)
 
     def build_lock(self):
         return classify_reference_client_trees(hash_tree_manifest(self.importa_root), hash_tree_manifest(self.e_root), hashing_script_sha256())
@@ -107,6 +115,25 @@ class ReferenceClientTreeTests(unittest.TestCase):
             classify_reference_client_trees(unsorted, manifest, hashing_script_sha256())
         with self.assertRaisesRegex(ReferenceClientManifestError, 'schemaVersion'):
             classify_reference_client_trees(dict(manifest, schemaVersion=2), manifest, hashing_script_sha256())
+
+    def test_duplicated_or_swapped_manifests_are_refused(self):
+        importa, e = hash_tree_manifest(self.importa_root), hash_tree_manifest(self.e_root)
+        for description, reference_manifest, conversion_manifest, refused_side in (
+                ('conversion tree twice', e, e, 'IMPORTA-PC'),
+                ('reference tree twice', importa, importa, 'E:'),
+                ('swapped trees', e, importa, 'IMPORTA-PC')):
+            with self.subTest(case=description), self.assertRaisesRegex(ReferenceClientManifestError, f'^{refused_side} manifest was hashed on'):
+                classify_reference_client_trees(reference_manifest, conversion_manifest, hashing_script_sha256())
+
+    def test_manifest_from_another_host_is_refused_even_at_the_expected_root(self):
+        importa, e = hash_tree_manifest(self.importa_root), hash_tree_manifest(self.e_root)
+        with self.assertRaisesRegex(ReferenceClientManifestError, '^E: manifest was hashed on ANOTHER-HOST'):
+            classify_reference_client_trees(importa, dict(e, host='ANOTHER-HOST'), hashing_script_sha256())
+
+    def test_lock_records_the_proven_origins(self):
+        lock = self.build_lock()
+        self.assertEqual((lock['referenceHost'], lock['referenceRoot'], lock['conversionHost'], lock['conversionRoot']),
+                         (self.hashing_host, self.importa_root.as_posix(), self.hashing_host, self.e_root.as_posix()))
 
     def test_unreadable_rows_are_classified_never_dropped(self):
         importa = hash_tree_manifest(self.importa_root)
