@@ -1,7 +1,7 @@
 {
 	"name": "l2-browser-client",
 	"version": "0.1.0",
-	"description": "Synthetic, Editor-authored Babylon.js client foundation",
+	"description": "Lineage II Interlude browser client on Babylon.js WebGPU",
 	"license": "Apache-2.0",
 	"packageManager": "pnpm@10.32.1",
 	"engines": {
@@ -12,9 +12,9 @@
 	"private": true,
 	"scripts": {
 		"start": "pnpm dev",
-		"dev": "pnpm generate && vite --host 127.0.0.1",
-		"build": "pnpm generate && pnpm typecheck && vite build",
-		"generate": "node scripts/ensure-webgpu-project.mjs && node scripts/stage-webgpu-compilers.mjs && node scripts/validate-editor-materials.mjs && node scripts/preserve-native-editor-uv2.mjs && babylonjs-editor-cli pack && node scripts/preserve-native-editor-fog.mjs && node scripts/share-native-terrain-export-materials.mjs",
+		"dev": "node scripts/stage-webgpu-compilers.mjs && vite --host 127.0.0.1",
+		"build": "node scripts/stage-webgpu-compilers.mjs && pnpm typecheck && vite build",
+		"generate:editor": "node scripts/ensure-webgpu-project.mjs && node scripts/stage-webgpu-compilers.mjs && node scripts/validate-editor-materials.mjs && node scripts/preserve-native-editor-uv2.mjs && babylonjs-editor-cli pack && node scripts/preserve-native-editor-fog.mjs && node scripts/share-native-terrain-export-materials.mjs",
 		"renderer:ensure": "node scripts/ensure-webgpu-project.mjs",
 		"serve": "vite preview --host 127.0.0.1",
 		"preview:private": "node scripts/private-preview.mjs",
