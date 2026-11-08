@@ -181,6 +181,22 @@ frame clock      -> interpolation / animation / label projection / diagnostics
 - `createWorldRuntime` is the single composition point that chooses
   `MockWorldAdapter`.
 
+## Server boundary and presentation invariants
+
+| Invariant | Enforced by |
+| --- | --- |
+| ARCH-01: the client displays what a server sends and computes no damage, stats, quest or progression outcome. Tooltips read server data, never the `.dat` display copies in `weapongrp`, `armorgrp` or `skillgrp`. No module under `src/ui` or `src/runtime` imports a decoded display-copy table or anything under `scripts/`, and a `skill-cast` event carries only `casterId`, `skillId`, `level` and `targetId`. | `tests/unit/architectureInvariants.test.ts` |
+| ARCH-02: `GameWorldAdapter` is the only entry for gameplay state and its five methods are frozen. | `tests/unit/gameWorldAdapterContract.test.ts` |
+| ARCH-02: adapters carry no Babylon types. No file under `src/world` imports `@babylonjs` by value or by type, every `src/world` import resolves inside `src/world`, and only `src/runtime` imports `MockWorldAdapter` or `NativeSliceAdapter`. | `tests/unit/importBoundaries.test.ts` |
+| ARCH-04: client-owned behaviour stays in presentation: animation, camera, UI, choosing which footstep or hit sound plays, effect timing and smoothing between server updates. Asset resolution (the catalog index) and audio playback stay outside the adapter: `src/world` imports nothing from `src/assets`, `src/audio`, `src/effects`, `src/scene`, `src/ui`, `src/entities`, `src/camera`, `src/engine` or `src/runtime`. | `tests/unit/importBoundaries.test.ts` |
+
+- The adapter world frame is metres, Y up, right-handed.
+- Babylon mesh navigation lives in `src/scene/navigation/meshNavigation.ts`
+  and implements the Babylon-free `WorldNavigation` interface from
+  `src/world`.
+- UI that drives the adapter takes a narrow interface such as
+  `NativeLocomotionControlTarget`, never a concrete adapter class.
+
 ## Startup readiness barrier
 
 Loader completion is not readiness: scene scripts start on the first render
