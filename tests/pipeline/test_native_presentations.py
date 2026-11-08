@@ -80,7 +80,7 @@ class PresentationFormatTests(unittest.TestCase):
             with self.subTest(size=size), self.assertRaisesRegex(FormatError, 'Truncated'):
                 read_value(Reader(b'\xff' * size), 'RGBA')
 
-    def test_npcname_source_requires_exact_pattern_and_unambiguous_language(self):
+    def test_npcname_source_requires_the_pattern_and_an_unambiguous_language(self):
         pattern = r'npcname-[\w]+\.dat'
         with tempfile.TemporaryDirectory() as directory:
             client = Path(directory).resolve()
@@ -88,21 +88,18 @@ class PresentationFormatTests(unittest.TestCase):
             system.mkdir()
             lock_client_as_reference_root(self, client)
             (system / 'npcname.dat').write_bytes(b'not a language file')
-            inexact_spelling_of_the_english_table = system / 'NPCName-e.dat'
-            inexact_spelling_of_the_english_table.write_bytes(b'not the exact schema pattern')
-            with self.assertRaisesRegex(FormatError, 'one matching language'):
-                table_source_path(client, 'npcname', pattern)
-            inexact_spelling_of_the_english_table.unlink()
+            with self.assertRaisesRegex(FormatError, 'matches 0 source files'):
+                table_source_path(client, pattern)
             english = system / 'npcname-e.dat'
             english.write_bytes(b'english')
-            self.assertEqual(table_source_path(client, 'npcname', pattern), english)
+            self.assertEqual(table_source_path(client, pattern), english)
             (system / 'npcname-ru.dat').write_bytes(b'russian')
-            with self.assertRaisesRegex(FormatError, 'one matching language'):
-                table_source_path(client, 'npcname', pattern)
-            self.assertEqual(table_source_path(client, 'npcname', pattern, 'npcname-e.dat'), english)
+            with self.assertRaisesRegex(FormatError, 'matches 2 source files, expected 1: npcname-e.dat, npcname-ru.dat'):
+                table_source_path(client, pattern)
+            self.assertEqual(table_source_path(client, pattern, 'npcname-e.dat'), english)
             for filename in ('npcname.dat', '../npcname-e.dat', 'sub/npcname-e.dat', 'sub\\npcname-e.dat', 'NPCName-e.dat', 'npcname-E.dat'):
                 with self.subTest(filename=filename), self.assertRaises(FormatError):
-                    table_source_path(client, 'npcname', pattern, filename)
+                    table_source_path(client, pattern, filename)
 
     def test_animation_guard_only_allows_reviewed_native_layouts(self):
         for version in (28, 30):

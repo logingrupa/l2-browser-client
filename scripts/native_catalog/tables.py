@@ -6,41 +6,20 @@ import struct
 import xml.etree.ElementTree as ET
 import zlib
 
+from .table_layout_pins import (CRYPTO_HASH, MTX_DEFINITION_EVIDENCE, RECORD_IDENTIFIER_FIELDS, RGBA_DEFINITION_EVIDENCE, SCHEMA_HASHES,
+                                TABLES)
+from .table_source_resolver import descriptor_layout_links, resolve_table_source_file_name
 from .ue2 import FormatError, Reader
 from reference_client_guard import require_reference_client
 
 SCHEMA_ROOT = Path(os.environ.get('L2_SCHEMA_ROOT', 'C:/laragon/www/l2-browser-client/.assets/native-tools/dat-schema/dat_engine/data/structure'))
 CRYPTO_SOURCE = Path(os.environ.get('L2_CRYPTO_SOURCE', 'C:/laragon/www/l2-browser-client/.assets/native-tools/open-l2encdec/src/l2encdec.cpp'))
-SCHEMA_HASHES = {
-    '06_interlude.xml': '5df8b7af1b510daa26008fa4fe91e100253f40161f1f1f9560e3569d539cdef6',
-    'dats/skillgrp.xml': 'ad5be4b6daa6c942f1f238de3d77b92b828c97d2d45a4360e4159db199992da1',
-    'dats/skillsoundgrp.xml': '373c724ff79e06b9e0b4146618a37c5bb73c86d092cf32ffacada20cb0868284',
-    'dats/mobskillanimgrp.xml': 'f94a21d1ead51c6606a95efdffa23257b5aa51ef89adfcb9c62e82267a040079',
-    'dats/chargrp.xml': 'e0513aba48dc728e30da8d1630e247f71fe01dc3baaa05c72b87fee32bbeebec',
-    'dats/armorgrp.xml': '1729aef2f79ed230b18d4c9b65eabb33c88717b89a97b9f0c02e19abc996d44b',
-    'dats/weapongrp.xml': '6f399ff5dbf928e07606bd74b15986df7585bd4af158984529fe7579c319f81d',
-    'dats/npcgrp.xml': 'bdb22cce0fb2e9e2abc29714ba425280dba032e51f87ceeccf2c8110e4af9f79',
-    'dats/npcname.xml': '18dc3bfb5de2055257e64818d55ca13354694961c08fee50b9b62951eedd681a',
-}
-CRYPTO_HASH = '600cc9d556c50fb3640075f65a4783bd66e0bd8f7a790b72391b4a2a59004c5b'
+DESCRIPTOR_FILE = '06_interlude.xml'
 SAFE_PACKAGE_TRAILER = b'\x0cSafePackage\0'
-TABLES = ('skillgrp', 'skillsoundgrp', 'mobskillanimgrp', 'chargrp', 'armorgrp', 'weapongrp', 'npcgrp', 'npcname')
-MTX_DEFINITION_EVIDENCE = {
-    'revision': 'f2a2cc16120dd8ffabd60255aaad59fa4d6b6f53',
-    'file': 'dat_engine/data/definitions.xml',
-    'sha256': 'ac56b72cbec18200b232557623bd9830f176b8819398a8d31d9f84c73daa6076',
-    'definition': 'MTX',
-}
-RGBA_DEFINITION_EVIDENCE = {
-    'revision': 'f2a2cc16120dd8ffabd60255aaad59fa4d6b6f53',
-    'definition': 'RGBA',
-    'files': {
-        'dat_engine/src/schema.rs': '3104e3795a7327e98c5a21cc1429b4496fe42d1dedb321376288f3ba3ccb89ac',
-        'dat_engine/src/reader.rs': '3b73a029df9ddef76ac3d775da2c2fa03dcce8105189a74d4c0191627f2bde73',
-        'dat_engine/src/bytes.rs': '2c20aeccf0dc28d107998be8e27d4281140d5ccbd572c76d6bfcee1abf7038b2',
-    },
-    'representation': 'Four source-order bytes as eight uppercase hexadecimal characters; no channel reordering or CSS interpretation.',
-}
+SYSTEM_FOLDER_NAME = 'system'
+TABLE_LIMITATIONS = ['Native client presentation bindings only, not authoritative gameplay.',
+    'Native field names and values retained; no cross-edition joins or fallback substitutions.',
+    'Skill action-code to skeletal animation dispatch and effect runtime equivalence require separate verification.']
 
 
 def checked_bytes(path, expected):
@@ -50,18 +29,41 @@ def checked_bytes(path, expected):
     return data
 
 
-def table_definition_pins(name, schema_root=SCHEMA_ROOT, crypto_source=CRYPTO_SOURCE):
+def interlude_table_layout(name, schema_root=SCHEMA_ROOT):
     if name not in TABLES:
-        raise FormatError('This adapter only supports the audited Interlude presentation tables')
+        raise FormatError('This adapter only supports the pinned Interlude descriptor layouts: ' + str(name))
+    descriptor_bytes = checked_bytes(schema_root / DESCRIPTOR_FILE, SCHEMA_HASHES[DESCRIPTOR_FILE])
+    links = [link for link in descriptor_layout_links(descriptor_bytes) if link.layout == name]
+    if len(links) != 1:
+        raise FormatError('Missing unambiguous Interlude table descriptor: ' + name)
+    schema_name = 'dats/' + name + '.xml'
+    schema_bytes = checked_bytes(schema_root / schema_name, SCHEMA_HASHES[schema_name])
+    layouts = [entry for entry in ET.fromstring(schema_bytes) if entry.get('pattern') == links[0].version]
+    if len(layouts) != 1 or layouts[0].get('isSafePackage') != 'true':
+        raise FormatError('Missing audited safe-package table layout: ' + name)
+    return links[0], layouts[0], schema_name
+
+
+def layout_reader_names(layout):
+    return {node.get('reader') for node in layout.iter() if node.get('reader')}
+
+
+def layout_definition_pins(schema_name, layout, schema_root, crypto_source):
     pins = {'crypto-definition': hashlib.sha256(checked_bytes(crypto_source, CRYPTO_HASH)).hexdigest()}
-    for relative in ('06_interlude.xml', 'dats/' + name + '.xml'):
+    for relative in (DESCRIPTOR_FILE, schema_name):
         pins[relative] = hashlib.sha256(checked_bytes(schema_root / relative, SCHEMA_HASHES[relative])).hexdigest()
-    if name == 'armorgrp':
+    reader_names = layout_reader_names(layout)
+    if 'MTX' in reader_names:
         pins['definitions.xml#MTX'] = hashlib.sha256(checked_bytes(schema_root.parent / 'definitions.xml', MTX_DEFINITION_EVIDENCE['sha256'])).hexdigest()
-    if name == 'npcname':
+    if 'RGBA' in reader_names:
         for relative, expected in RGBA_DEFINITION_EVIDENCE['files'].items():
             pins[relative + '#RGBA'] = hashlib.sha256(checked_bytes(schema_root.parents[2] / relative, expected)).hexdigest()
     return pins
+
+
+def table_definition_pins(name, schema_root=SCHEMA_ROOT, crypto_source=CRYPTO_SOURCE):
+    _, layout, schema_name = interlude_table_layout(name, schema_root)
+    return layout_definition_pins(schema_name, layout, schema_root, crypto_source)
 
 
 def decode413(raw, crypto_source=CRYPTO_SOURCE):
@@ -168,74 +170,50 @@ def read_nodes(reader, nodes):
     return row
 
 
-def require_exact_directory_entry_spelling(directory, file_name):
-    if file_name not in {path.name for path in directory.iterdir() if path.is_file()}:
-        raise FormatError('Native npcname filename does not exactly match a source directory entry')
+def table_source_path(client, file_pattern, source_filename=None):
+    file_names = [path.name for path in (client / SYSTEM_FOLDER_NAME).iterdir() if path.is_file()]
+    file_name = resolve_table_source_file_name(file_names, file_pattern, source_filename)
+    return require_reference_client(client).require_equal_file(f'{SYSTEM_FOLDER_NAME}/{file_name}')
 
 
-def table_source_path(client, name, file_pattern, source_filename=None):
-    system = client / 'system'
-    if name == 'npcname':
-        if source_filename is None:
-            matches = sorted(path.name for path in system.iterdir()
-                             if path.is_file() and re.fullmatch(file_pattern, path.name))
-            if len(matches) != 1:
-                raise FormatError('Native npcname requires one matching language file or an explicit source_filename')
-            source_filename = matches[0]
-        if not isinstance(source_filename, str) or '/' in source_filename or '\\' in source_filename or not re.fullmatch(file_pattern, source_filename):
-            raise FormatError('Native npcname filename must match the exact Interlude language-file pattern')
-        require_exact_directory_entry_spelling(system, source_filename)
-    else:
-        if source_filename is not None and source_filename != name + '.dat':
-            raise FormatError('Explicit source filename is unsupported for this table')
-        source_filename = name + '.dat'
-    path = (system / source_filename).resolve(strict=True)
-    if not path.is_relative_to(client):
-        raise FormatError('Native table path escapes selected client')
-    return require_reference_client(client).require_equal_file(path.relative_to(client).as_posix())
+def require_unique_record_identifiers(name, rows):
+    if name not in RECORD_IDENTIFIER_FIELDS:
+        return
+    collection, key = RECORD_IDENTIFIER_FIELDS[name]
+    identifiers = [row[key] for row in rows[collection]]
+    if rows['data'] != len(identifiers) or len(set(identifiers)) != len(identifiers):
+        raise FormatError('Native item/NPC identifiers are not unique or do not match the declared count')
+
+
+def decoded_table_record_count(decoded_table):
+    record_lists = [value for value in decoded_table['data'].values() if isinstance(value, list)]
+    if len(record_lists) != 1:
+        raise FormatError(f'decoded {decoded_table["source"]} has {len(record_lists)} top-level record lists, expected 1')
+    return len(record_lists[0])
 
 
 def decode_table(client, name, schema_root=SCHEMA_ROOT, crypto_source=CRYPTO_SOURCE, *, source_filename=None):
     client = client.resolve(strict=True)
-    if name not in TABLES:
-        raise FormatError('This adapter only supports the audited Interlude presentation tables')
-    definition_pins = table_definition_pins(name, schema_root, crypto_source)
-    descriptor_bytes = checked_bytes(schema_root / '06_interlude.xml', SCHEMA_HASHES['06_interlude.xml'])
-    descriptor = ET.fromstring(descriptor_bytes)
-    links = [entry for entry in descriptor if entry.get('file') == name]
-    if descriptor.get('name') != 'CT0 Interlude' or len(links) != 1:
-        raise FormatError('Missing unambiguous Interlude table descriptor')
-    pattern = links[0].get('version')
-    schema_name = 'dats/' + name + '.xml'
-    schema_bytes = checked_bytes(schema_root / schema_name, SCHEMA_HASHES[schema_name])
-    layouts = [entry for entry in ET.fromstring(schema_bytes) if entry.get('pattern') == pattern]
-    if len(layouts) != 1 or layouts[0].get('isSafePackage') != 'true':
-        raise FormatError('Missing audited safe-package table layout')
-    path = table_source_path(client, name, links[0].get('pattern'), source_filename)
+    link, layout, schema_name = interlude_table_layout(name, schema_root)
+    definition_pins = layout_definition_pins(schema_name, layout, schema_root, crypto_source)
+    path = table_source_path(client, link.pattern, source_filename)
     raw = path.read_bytes()
     key_family, decoded = decode413(raw, crypto_source)
     reader = Reader(decoded)
-    rows = read_nodes(reader, layouts[0])
+    rows = read_nodes(reader, layout)
     trailer = decoded[reader.position:]
     if trailer != SAFE_PACKAGE_TRAILER:
         raise FormatError(f'Unexpected safe-package trailer: {name}: {trailer.hex()}')
-    if name in ('armorgrp', 'weapongrp', 'npcgrp', 'npcname'):
-        collection, key = {'npcgrp': ('npc', 'npc_id'), 'npcname': ('npc', 'id')}.get(name, ('item', 'object_id'))
-        ids = [row[key] for row in rows[collection]]
-        if rows['data'] != len(ids) or len(set(ids)) != len(ids):
-            raise FormatError('Native item/NPC identifiers are not unique or do not match the declared count')
-    schema = {'descriptor': '06_interlude.xml', 'layout': pattern,
-        'descriptorSha256': SCHEMA_HASHES['06_interlude.xml'], 'file': schema_name, 'sha256': SCHEMA_HASHES[schema_name]}
-    if name == 'armorgrp':
+    require_unique_record_identifiers(name, rows)
+    schema = {'descriptor': DESCRIPTOR_FILE, 'layout': link.version, 'descriptorSha256': SCHEMA_HASHES[DESCRIPTOR_FILE],
+        'file': schema_name, 'sha256': SCHEMA_HASHES[schema_name], 'sourcePattern': link.pattern}
+    reader_names = layout_reader_names(layout)
+    if 'MTX' in reader_names:
         schema['compoundDefinitionEvidence'] = dict(MTX_DEFINITION_EVIDENCE)
-    if name == 'npcname':
+    if 'RGBA' in reader_names:
         schema['primitiveDefinitionEvidence'] = dict(RGBA_DEFINITION_EVIDENCE)
-        schema['sourcePattern'] = links[0].get('pattern')
-    source = path.relative_to(client).as_posix() if name == 'npcname' else 'system/' + name + '.dat'
-    return {'schemaVersion': 1, 'edition': 'interlude', 'source': source,
+    return {'schemaVersion': 1, 'edition': 'interlude', 'source': path.relative_to(client).as_posix(),
         'sourceSha256': hashlib.sha256(raw).hexdigest(), 'decodedSha256': hashlib.sha256(decoded).hexdigest(),
         'keyFamily': key_family, 'decodedBytes': len(decoded), 'consumedBytes': reader.position,
         'trailerHex': trailer.hex(), 'schema': schema, 'formatDefinitionPins': definition_pins,
-        'data': rows, 'limitations': ['Native client presentation bindings only, not authoritative gameplay.',
-            'Native field names and values retained; no cross-edition joins or fallback substitutions.',
-            'Skill action-code to skeletal animation dispatch and effect runtime equivalence require separate verification.']}
+        'data': rows, 'limitations': list(TABLE_LIMITATIONS)}

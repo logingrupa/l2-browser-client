@@ -263,15 +263,15 @@ class CentralReadHelperBindingTests(GuardedConversionRootTestCase):
     def test_table_source_path_refuses_volatile_and_differing_system_files(self):
         from native_catalog.tables import table_source_path
         self.trees.write_lock()
-        self.assertEqual(table_source_path(self.trees.conversion_root, 'npcgrp', r'npcgrp\.dat'), self.trees.conversion_root / 'system/npcgrp.dat')
+        self.assertEqual(table_source_path(self.trees.conversion_root, r'npcgrp\.dat'), self.trees.conversion_root / 'system/npcgrp.dat')
         with self.assertRaisesRegex(ReferenceClientLockError, 'is differing, not equal'):
-            table_source_path(self.trees.conversion_root, 'chargrp', r'chargrp\.dat')
+            table_source_path(self.trees.conversion_root, r'chargrp\.dat')
         write_tree_file(self.trees.conversion_root, 'system/npcname-e.dat', b'conversion names')
         self.trees.write_lock()
         with self.assertRaisesRegex(ReferenceClientLockError, 'is e-only, not equal'):
-            table_source_path(self.trees.conversion_root, 'npcname', r'npcname-e\.dat')
+            table_source_path(self.trees.conversion_root, r'npcname-e\.dat')
         with self.assertRaisesRegex(ReferenceClientLockError, 'is volatile-config, not equal'):
-            table_source_path(self.trees.conversion_root, 'npcname', r'l2\.ini', 'l2.ini')
+            table_source_path(self.trees.conversion_root, r'l2\.ini', 'l2.ini')
 
 
 def load_script_module(module_name, file_name):
