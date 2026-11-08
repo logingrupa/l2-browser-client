@@ -1,81 +1,23 @@
-import hashlib
 import json
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 import re
-import struct
 import sys
-import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from actors import actor_census
-from actors.actor_census import (ActorPackageCensus, build_actor_census, check_committed_census, lock_skeletal_package_paths, main,
-                                 skeletal_reader_gate, write_actor_census)
+from actors.actor_census import build_actor_census, check_committed_census, lock_skeletal_package_paths, main, skeletal_reader_gate, write_actor_census
 from actors.actor_unit_inventory import conversion_unit_key, npc_units_and_rows
+from actor_census_fixture import (SYNTHETIC_ARMOR_COLUMNS, SYNTHETIC_FIRST_TEXTURE, SYNTHETIC_MESH, SYNTHETIC_SECOND_TEXTURE, SyntheticActorClient,
+                                  synthetic_actor_tables, synthetic_npcgrp, unwrapped_package_header)
 from native_catalog.ue2 import summary
 from native_store.canonical_json import canonical_json_bytes
 from native_store.gap_rows import validate_gap_row
-from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, read_reference_client_lock, require_reference_client
-from reference_client_lock_fixture import lock_client_as_checked_conversion_root
-from test_texture_package_census import GARBAGE_HEADER, synthetic_wrapped_package_header
+from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, read_reference_client_lock
 
 CONVERSION_CLIENT_ROOT = Path('E:/Lineage2-client')
-UNREAL_PACKAGE_SIGNATURE = 0x9E2A83C1
 LONG_ENCODED_BYTES_PATTERN = re.compile(r'[A-Za-z0-9+/=]{129,}')
-SYNTHETIC_MESH = 'SyntheticMonsters.synthetic_m00'
-SYNTHETIC_FIRST_TEXTURE = 'SyntheticMonstersTex.synthetic_t00'
-SYNTHETIC_SECOND_TEXTURE = 'SyntheticMonstersTex.synthetic_t01'
-
-
-def unwrapped_package_header(package_version, licensee):
-    return struct.pack('<IHHIIIIIII', UNREAL_PACKAGE_SIGNATURE, package_version, licensee, 0, 1, 0, 1, 0, 1, 0).ljust(128, b'\0')
-
-
-def wrapped_package(relative_path, package_version, licensee):
-    return synthetic_wrapped_package_header(PurePosixPath(relative_path).name, package_version, licensee)
-
-
-SYNTHETIC_PACKAGES = {
-    'animations/SyntheticMonsters.ukx': wrapped_package('animations/SyntheticMonsters.ukx', 123, 28),
-    'animations/SyntheticHeroes.ukx': wrapped_package('animations/SyntheticHeroes.ukx', 123, 30),
-    'animations/SyntheticElders.ukx': wrapped_package('animations/SyntheticElders.ukx', 123, 23),
-    'animations/SyntheticSkill.usk': unwrapped_package_header(123, 28),
-    'animations/SyntheticBroken.ukx': GARBAGE_HEADER,
-    'animations/SyntheticTwin.ukx': wrapped_package('animations/SyntheticTwin.ukx', 123, 28),
-    'staticmeshes/syntheticTWIN.ukx': wrapped_package('staticmeshes/syntheticTWIN.ukx', 123, 28),
-    'systextures/SyntheticMonstersTex.utx': wrapped_package('systextures/SyntheticMonstersTex.utx', 123, 28),
-    'systextures/SyntheticEldersTex.utx': wrapped_package('systextures/SyntheticEldersTex.utx', 123, 23),
-    'systextures/SyntheticUnusedTex.utx': wrapped_package('systextures/SyntheticUnusedTex.utx', 123, 28),
-}
-
-
-class SyntheticActorClient:
-    def __init__(self, test_case, packages=SYNTHETIC_PACKAGES):
-        temporary_directory = tempfile.TemporaryDirectory()
-        test_case.addCleanup(temporary_directory.cleanup)
-        base = Path(temporary_directory.name).resolve()
-        self.client_root = base / 'conversion'
-        for relative_path, payload in packages.items():
-            path = self.client_root / relative_path
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_bytes(payload)
-        lock_client_as_checked_conversion_root(test_case, self.client_root, base / 'reference', list(packages))
-        self.access = require_reference_client(self.client_root)
-
-    def package_census(self):
-        return ActorPackageCensus(self.access, lock_skeletal_package_paths(self.access.lock))
-
-
-def synthetic_decoded_table(source, collection, rows):
-    return {'source': source, 'sourceSha256': hashlib.sha256(source.encode('ascii')).hexdigest(),
-            'data': {'data': len(rows), collection: rows}}
-
-
-def synthetic_npcgrp(npc_selections):
-    return synthetic_decoded_table('system/npcgrp.dat', 'npc', [
-        {'npc_id': npc_id, 'mesh_name': mesh, 'texture_name': [{'param_texture_name': texture} for texture in textures]}
-        for npc_id, (mesh, textures) in npc_selections.items()])
 
 
 def rows_by_key(rows):
@@ -192,29 +134,39 @@ class NpcUnitInventoryTests(unittest.TestCase):
 class ActorCensusBuildTests(unittest.TestCase):
     def setUp(self):
         self.client = SyntheticActorClient(self)
-        self.tables = {'npcgrp': synthetic_npcgrp({
+        self.tables = synthetic_actor_tables({
             7: (SYNTHETIC_MESH, [SYNTHETIC_SECOND_TEXTURE]),
             3: (SYNTHETIC_MESH, [SYNTHETIC_FIRST_TEXTURE]),
             5: ('', []),
-        })}
+        })
+
+    def build(self):
+        return build_actor_census(self.client.access, self.tables, SYNTHETIC_ARMOR_COLUMNS)
 
     def test_census_is_byte_identical_across_builds_and_sorted_by_unit_key(self):
-        first_census, first_rows = build_actor_census(self.client.access, self.tables)
-        second_census, second_rows = build_actor_census(self.client.access, self.tables)
+        first_census, first_rows = self.build()
+        second_census, second_rows = self.build()
         self.assertEqual(canonical_json_bytes(first_census), canonical_json_bytes(second_census))
         self.assertEqual(first_rows, second_rows)
         self.assertEqual([unit['key'] for unit in first_census['units']], sorted(unit['key'] for unit in first_census['units']))
-        self.assertEqual([row['key'] for row in first_rows], ['npc:7', 'npc:3', 'npc:5'])
-        self.assertEqual(first_census['tables'], [{'table': 'npcgrp', 'path': 'system/npcgrp.dat', 'rowCount': 3,
-                                                   'sha256': self.tables['npcgrp']['sourceSha256']}])
+        self.assertEqual([row['key'] for row in first_rows], ['npc:7', 'npc:3', 'npc:5', 'character:0', 'item:11', 'item:21', 'skill:3:1', 'skill:4:1'])
+        self.assertEqual([table['table'] for table in first_census['tables']], sorted(self.tables))
+        self.assertEqual(first_census['tables'][2], {'table': 'npcgrp', 'path': 'system/npcgrp.dat', 'rowCount': 3,
+                                                     'sha256': self.tables['npcgrp']['sourceSha256']})
+
+    def test_every_census_row_is_a_valid_gap_row(self):
+        _, rows = self.build()
+        for row in rows:
+            with self.subTest(key=row['key']):
+                validate_gap_row(row)
 
     def test_census_holds_no_encoded_bytes(self):
-        census, _ = build_actor_census(self.client.access, self.tables)
+        census, _ = self.build()
         for value in string_values(census):
             self.assertIsNone(LONG_ENCODED_BYTES_PATTERN.search(value), value)
 
     def test_check_reports_the_first_differing_unit_key(self):
-        census, _ = build_actor_census(self.client.access, self.tables)
+        census, _ = self.build()
         census_path = self.client.client_root.parent / 'census' / 'actor-unit-census.json'
         census_path.parent.mkdir()
         write_actor_census(census, census_path)
@@ -242,6 +194,13 @@ class CommittedActorCensusTests(unittest.TestCase):
         lock = read_reference_client_lock(REFERENCE_CLIENT_LOCK_PATH)
         self.assertEqual(sorted(row['path'] for row in census['packages'] if row['skeletalReaderGate'] != 'not-applicable'),
                          lock_skeletal_package_paths(lock))
+
+    def test_committed_census_holds_every_unit_kind_and_no_encoded_bytes(self):
+        census = json.loads(actor_census.ACTOR_UNIT_CENSUS_PATH.read_bytes())
+        self.assertEqual({unit['unitKind'] for unit in census['units']}, {
+            'npc-model', 'chargrp-row', 'chargrp-hair', 'chargrp-helmet', 'weapon-mesh', 'armor-mesh', 'skill-root', 'skill-sound-row'})
+        for value in string_values(census):
+            self.assertIsNone(LONG_ENCODED_BYTES_PATTERN.search(value), value)
 
 
 if __name__ == '__main__':

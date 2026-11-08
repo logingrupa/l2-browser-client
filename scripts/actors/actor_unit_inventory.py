@@ -10,6 +10,13 @@ NO_MESH_IN_ROW_REASON = 'no-mesh-in-row'
 MULTI_SLOT_BINDING_UNSUPPORTED_REASON = 'multi-slot-binding-unsupported'
 NPC_PART_NAME = 'npcs'
 NPC_MODEL_UNIT_KIND = 'npc-model'
+CHARACTER_PART_NAME = 'player-characters'
+CHARGRP_ROW_UNIT_KIND = 'chargrp-row'
+UNDECODED_CHARACTER_LAYOUT_UNITS = (('hair', 'chargrp-hair', 'hair-layout-undecoded'),
+                                    ('helmet', 'chargrp-helmet', 'helmet-layout-undecoded'))
+MESH_GROUP_NAME_SUFFIX = '_mesh'
+TEXTURE_GROUP_NAME_SUFFIX = '_texture'
+HAIR_GROUP_NAME_PREFIX = 'hair_'
 
 
 class ActorUnitInventoryError(ValueError):
@@ -52,13 +59,29 @@ def non_empty_values(values):
     return [value for value in values if value]
 
 
+def decoded_string_values(value):
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, dict):
+        return [string for item in value.values() for string in decoded_string_values(item)]
+    if isinstance(value, list):
+        return [string for item in value for string in decoded_string_values(item)]
+    return []
+
+
+def character_groups_named_with_suffix(character, suffix):
+    return {name: decoded_string_values(value) for name, value in character.items()
+            if name.endswith(suffix) and not name.startswith(HAIR_GROUP_NAME_PREFIX)}
+
+
+def mesh_and_texture_gap_reason(meshes, textures, package_census):
+    return first_gap_reason((*(package_census.mesh_gap_reason(mesh) for mesh in non_empty_values(meshes)),
+                             *(package_census.texture_gap_reason(texture) for texture in non_empty_values(textures))))
+
+
 def npc_model_gap_reason(selection, package_census):
-    textures = non_empty_values(selection['textures'])
-    return first_gap_reason((
-        package_census.mesh_gap_reason(selection['mesh']),
-        *(package_census.texture_gap_reason(texture) for texture in textures),
-        MULTI_SLOT_BINDING_UNSUPPORTED_REASON if len(textures) > 1 else None,
-    ))
+    return first_gap_reason((mesh_and_texture_gap_reason([selection['mesh']], selection['textures'], package_census),
+                             MULTI_SLOT_BINDING_UNSUPPORTED_REASON if len(non_empty_values(selection['textures'])) > 1 else None))
 
 
 def npc_model_unit(selection, package_census, table_identity):
@@ -81,3 +104,21 @@ def npc_units_and_rows(npcgrp, package_census):
             units_by_key[unit_key] = npc_model_unit(selection, package_census, table_identity)
         rows.append(census_row(row_key, NPC_PART_NAME, units_by_key[unit_key]['reason'], table_identity))
     return list(units_by_key.values()), rows
+
+
+def character_units_and_rows(chargrp, package_census):
+    table_identity = decoded_table_identity(chargrp)
+    units, rows = [], []
+    for index, character in enumerate(decoded_table_rows(chargrp)):
+        row_key = f'character:{index}'
+        selection = {'meshGroups': character_groups_named_with_suffix(character, MESH_GROUP_NAME_SUFFIX),
+                     'textureGroups': character_groups_named_with_suffix(character, TEXTURE_GROUP_NAME_SUFFIX)}
+        meshes = [mesh for group in selection['meshGroups'].values() for mesh in group]
+        textures = [texture for group in selection['textureGroups'].values() for texture in group]
+        reason = (mesh_and_texture_gap_reason(meshes, textures, package_census) if non_empty_values(meshes)
+                  else NO_MESH_IN_ROW_REASON)
+        units.append(conversion_unit(row_key, CHARACTER_PART_NAME, CHARGRP_ROW_UNIT_KIND, reason, table_identity, selection))
+        for layout_name, unit_kind, layout_reason in UNDECODED_CHARACTER_LAYOUT_UNITS:
+            units.append(conversion_unit(f'{row_key}:{layout_name}', CHARACTER_PART_NAME, unit_kind, layout_reason, table_identity, None))
+        rows.append(census_row(row_key, CHARACTER_PART_NAME, reason, table_identity))
+    return units, rows
