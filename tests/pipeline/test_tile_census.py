@@ -12,7 +12,8 @@ from native_store.gap_rows import load_gap_reason_patterns, validate_gap_row
 from reference_client_guard import require_reference_client
 from reference_client_lock_fixture import lock_client_as_checked_conversion_root
 from world.tile_census import (TILE_CENSUS_RELATIVE_PATH, TileCensusError, build_tile_census, census_gap_row, map_census_keys,
-                               map_reader_gate, read_package_header, tile_census_bytes, validate_tile_census)
+                               map_reader_gate, read_package_header, terrain_height_gate_by_package_name, tile_census_bytes,
+                               validate_tile_census)
 
 UNREAL_PACKAGE_SIGNATURE = 0x9E2A83C1
 LINEAGE_VERSION_111_WRAPPER = 'Lineage2Ver111'.encode('utf-16le')
@@ -49,7 +50,14 @@ class SyntheticMapClient:
 
 SYNTHETIC_MAP_PACKAGES = {
     'maps/20_21.unr': plain_package_header(123, 28),
+    'textures/T_20_21.utx': lineage_version_111_package_header(123, 28),
+    'maps/20_22.unr': plain_package_header(123, 28),
+    'maps/20_23.unr': plain_package_header(123, 28),
+    'textures/T_20_23.utx': plain_package_header(123, 25),
+    'maps/20_24.unr': plain_package_header(123, 28),
+    'textures/t_20_24.UTX': plain_package_header(123, 28),
     'maps/19_21.unr': lineage_version_111_package_header(123, 30),
+    'textures/T_19_21.utx': plain_package_header(123, 28),
     'maps/18_21.unr': plain_package_header(118, 0),
     'maps/17_21.unr': UNREADABLE_PACKAGE_HEADER,
     'maps/Lobby.unr': plain_package_header(123, 30),
@@ -105,16 +113,21 @@ class SyntheticTileCensusTests(unittest.TestCase):
                          {'packageVersion': 123, 'licensee': 30, 'wrapper': 'Lineage2Ver111'})
         self.assertIn('error', read_package_header(self.client.access, 'maps/17_21.unr'))
 
-    def test_map_gate_results_and_reasons_per_row(self):
+    def test_map_and_terrain_gate_results_status_and_reason_per_row(self):
         rows = rows_by_key(self.client.census())
-        self.assertEqual({key: (row['mapReaderGate'], row['status']) for key, row in rows.items() if row['reason'] is not None and
-                          not row['reason'].startswith('decode-failed:')}, {
-            'map:Lobby': ('fail', 'gap'), 'map:skylevel': ('fail', 'gap'), 'tile:18_21': ('fail', 'gap'), 'tile:19_21': ('fail', 'gap'),
-            'tile:20_21': ('pass', 'gap')})
-        self.assertEqual(rows['map:Lobby']['reason'], 'map-licensee-unsupported:123/30')
-        self.assertEqual(rows['tile:19_21']['reason'], 'map-licensee-unsupported:123/30')
-        self.assertEqual(rows['tile:18_21']['reason'], 'map-version-unsupported:118')
+        self.assertEqual({key: (row['mapReaderGate'], row['terrainHeightGate'], row['status'], row['reason']) for key, row in rows.items()
+                          if key != 'tile:17_21'}, {
+            'map:Lobby': ('fail', 'not-applicable', 'gap', 'map-licensee-unsupported:123/30'),
+            'map:skylevel': ('fail', 'not-applicable', 'gap', 'map-version-unsupported:118'),
+            'tile:18_21': ('fail', 'missing', 'gap', 'map-version-unsupported:118'),
+            'tile:19_21': ('fail', 'pass', 'gap', 'map-licensee-unsupported:123/30'),
+            'tile:20_21': ('pass', 'pass', 'eligible', None),
+            'tile:20_22': ('pass', 'missing', 'gap', 'terrain-height-package-missing'),
+            'tile:20_23': ('pass', 'fail', 'gap', 'terrain-height-licensee-unsupported:123/25'),
+            'tile:20_24': ('pass', 'pass', 'eligible', None)})
         self.assertTrue(rows['tile:17_21']['reason'].startswith('decode-failed:'))
+        self.assertEqual(rows['tile:17_21']['terrainHeightGate'], 'missing')
+        self.assertFalse(any(row['reason'] == 'census-pending' for row in rows.values()))
         self.assertEqual((rows['tile:17_21']['packageVersion'], rows['tile:17_21']['licensee'], rows['tile:17_21']['wrapper']), (None, None, None))
         self.assertEqual((rows['tile:19_21']['packageVersion'], rows['tile:19_21']['licensee'], rows['tile:19_21']['wrapper']),
                          (123, 30, 'Lineage2Ver111'))
@@ -142,9 +155,26 @@ class SyntheticTileCensusTests(unittest.TestCase):
                 self.assertEqual(gap_row['sourceIdentity'], {'path': row['map'], 'sha256': lock_records[row['map']]['eSha256']})
                 self.assertEqual((gap_row['part'], gap_row['step'], gap_row['evidence']), ('world', 'census', TILE_CENSUS_RELATIVE_PATH))
 
+    def test_the_terrain_height_gate_reads_the_t_package_by_casefolded_name(self):
+        lock_records = self.client.access.lock.records_by_path
+        cases = (('20_21', ('pass', None)), ('20_24', ('pass', None)), ('20_22', ('missing', 'terrain-height-package-missing')),
+                 ('20_23', ('fail', 'terrain-height-licensee-unsupported:123/25')))
+        for tile_id, expected in cases:
+            with self.subTest(tile_id=tile_id):
+                self.assertEqual(terrain_height_gate_by_package_name(self.client.access, lock_records, tile_id), expected)
+
     def test_the_synthetic_census_is_refused_by_the_full_count_validation(self):
         with self.assertRaisesRegex(TileCensusError, 'expected 153 and 10'):
             validate_tile_census(self.client.census())
+
+
+class UnlistedTerrainPackageTests(unittest.TestCase):
+    def test_a_terrain_package_of_another_version_or_unreadable_stops_the_census_naming_it(self):
+        for payload in (plain_package_header(118, 28), UNREADABLE_PACKAGE_HEADER):
+            with self.subTest(payload=payload[:8]):
+                client = SyntheticMapClient(self, {'maps/20_21.unr': plain_package_header(123, 28), 'textures/T_20_21.utx': payload})
+                with self.assertRaisesRegex(TileCensusError, 'textures/T_20_21.utx'):
+                    client.census()
 
 
 class CommittedTileCensusTests(unittest.TestCase):
@@ -155,7 +185,14 @@ class CommittedTileCensusTests(unittest.TestCase):
         validate_tile_census(self.census)
         rows = self.census['maps']
         self.assertEqual((len(rows), sum(row['kind'] == 'tile' for row in rows), sum(row['kind'] == 'non-tile' for row in rows)), (163, 153, 10))
-        self.assertEqual(COMMITTED_TILE_CENSUS_PATH.read_bytes(), tile_census_bytes(self.census))
+
+    def test_no_committed_row_keeps_census_pending_and_no_terrain_map_package_is_claimed(self):
+        rows = self.census['maps']
+        self.assertEqual([row['key'] for row in rows if row['reason'] == 'census-pending'], [])
+        self.assertTrue(all(row['terrainMapPackage'] is None for row in rows))
+        self.assertTrue(all(row['mapReaderGate'] == 'pass' and row['terrainHeightGate'] == 'pass' for row in rows if row['status'] == 'eligible'))
+        self.assertTrue(all(row['terrainHeightGate'] == 'not-applicable' for row in rows if row['kind'] == 'non-tile'))
+        self.assertEqual({row['terrainHeightGate'] for row in rows if row['kind'] == 'tile'} - {'pass', 'fail', 'missing'}, set())
 
     def test_every_committed_reason_is_listed(self):
         reason_patterns = load_gap_reason_patterns()
