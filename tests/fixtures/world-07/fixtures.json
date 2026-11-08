@@ -1,0 +1,15 @@
+{
+  "fixtures": [
+    {
+      "droppedPointers": [],
+      "fixture": "discriminating-cases.json",
+      "sourceBytes": 24885,
+      "sourcePath": "composition-submission/DISCRIMINATING_CASES.json",
+      "sourceSha256": "7a78d17825bc7e692ad46ead4e0579b4aa9cb1e61ac9f698790d2e41f9a2e8dc",
+      "transform": "canonical-json-absolute-path-fields-reduced-to-basename"
+    }
+  ],
+  "packetManifestSha256": "08ff99a814f892a827cf969f2f29712d9fbf4d89a8df49bff6a9987558ceba17",
+  "packetRelativeRoot": "post-migration-visibility-20261106",
+  "schemaVersion": 1
+}
