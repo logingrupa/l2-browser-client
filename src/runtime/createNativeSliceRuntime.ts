@@ -2,64 +2,44 @@ import type { Scene } from "@babylonjs/core/scene";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { loadNativeActorCatalog } from "../assets/native/loadNativeCatalog";
-import { defaultNativePlayerProfile, type NativePlayerProfile } from "../assets/native/loadNativePlayerProfiles";
-import type { NativeNpcProfile } from "../assets/native/loadNativeNpcProfiles";
+import { defaultNativePlayerProfile } from "../assets/native/loadNativePlayerProfiles";
 import type { AssetPackage } from "../assets/package/readAssetPackage";
 import { nativeCharacterFactory, type NativeCharacterProfile } from "../assets/native/NativeCharacterVisual";
 import { createNativeClipPreviewHub } from "../assets/native/nativeClipPreview";
 import { nativeAliasCoverage, nativeAliasCoverageText } from "../assets/native/nativeAnimationAliases";
 import { attachNativeAnimationAliasTable } from "../ui/nativeAnimationAliasTable";
-import { NativeSliceAdapter, nativeSliceSpeedProfile, type NativeSliceSpeedProfile } from "../world/NativeSliceAdapter";
+import { NativeSliceAdapter, nativeSliceSpeedProfile } from "../world/NativeSliceAdapter";
 import { EntityRegistry } from "../entities/EntityRegistry";
 import { WorldInterface } from "../ui/WorldInterface";
 import { attachTargeting } from "../entities/attachTargeting";
 import { attachWorldCamera } from "../camera/WorldCamera";
-import type { NativeSection } from "../scene/world/loadNativeSection";
-import { inspectNativeGroundContact } from "../scene/world/nativeGroundContact";
 import { createNativeDoorInteractions } from "../scene/world/nativeDoorInteractions";
 import { getWorldCanvas } from "../scene/getWorldCanvas";
 import { createNativeMaterialOverrides } from "../assets/native/nativeMaterialOverrides";
-import type { NativeFlamePresentation } from "../scene/world/nativeFlamePresentation";
-import type { NativeFlameReplayTime } from "../scene/world/nativeFlameMaterials";
 import type { SceneStartupProgress } from "../scene/guardSceneStartup";
-import type { NativeSkyPresentation } from "../scene/world/nativeSkyPresentation";
 import { catalogNativeSliceWorldSource, type NativeSliceWorldSource } from "./nativeSliceWorldSource";
-import { loadNativeSliceWorld, type NativeFlameReplayClock } from "./loadNativeSliceWorld";
-import { WorldAudioMixer } from "../audio/WorldAudioMixer";
-import { createNativeActionCuePreview } from "../audio/nativeActionCuePreview";
+import { loadNativeSliceWorld } from "./loadNativeSliceWorld";
+import { beginNativeSliceAudioLoads, createNativeSliceCombatAudio, loadNativeSliceAudio } from "./loadNativeSliceAudio";
+import { createNativeSliceEffects } from "./createNativeSliceEffects";
+import { attachNativeSliceDiagnostics } from "./nativeSliceDiagnostics";
 import { attachWorldAudioControls } from "../audio/worldAudioControls";
-import { loadNativeAnimationAudio } from "../assets/native/loadNativeAnimationAudio";
 import { createNativeFootstepPreview, NATIVE_FOOTSTEP_WORLD_DEFAULT } from "../audio/nativeFootstepPreview";
 import { attachNativeFootstepControls } from "../audio/nativeFootstepControls";
-import { loadNativeStepSounds, type NativeStepSoundBundle } from "../assets/native/loadNativeStepSounds";
-import { loadNativeStepDecoGrass, type NativeStepDecoGrassBundle } from "../assets/native/loadNativeStepDecoGrass";
 import { createFootstepGroundSampler } from "../audio/footstepSurfaceGround";
-import { loadNativeWorldAudio, readNativeWorldAudioRecords } from "../assets/native/loadNativeWorldAudio";
-import { createWorldAmbience, type WorldAmbience } from "../audio/worldAmbience";
-import { createWorldMusic, type WorldMusic } from "../audio/worldMusic";
-import { loadNativeCombatAudio } from "../audio/loadNativeCombatAudio";
-import { createNativeCombatAudio, type NativeCombatAudio, type NativeCombatInspection } from "../audio/nativeCombatAudio";
 import { attachNativeCombatAudioControls } from "../audio/nativeCombatAudioControls";
-import { createNativeEffectShotPreview, type NativeEffectShotPreview } from "../effects/nativeEffectShotPreview";
-import { createNativePowerStrikePreview, type NativePowerStrikePreview } from "../effects/nativePowerStrikePreview";
-import { resolveNativePowerStrikeShotSource, resolveNativePowerStrikeShotTarget } from "../effects/nativePowerStrikeSource";
 import { attachNativePowerStrikeControls } from "../ui/nativePowerStrikeControls";
 import type { DevGroup } from "../ui/devSheet/DevSheet";
 import type { VariableInfo } from "../ui/devSheet/types";
-import { PRESENTATION_CHOICE, SheetDescriber, failureText, pickRows, settle, worldAudioVariables } from "./nativeSliceSheet";
+import { PRESENTATION_CHOICE, SheetDescriber, pickRows, worldAudioVariables } from "./nativeSliceSheet";
 import { attachNativeSliceDebugSection } from "./nativeSliceDebug";
 import { resolveNativeLocomotionClips } from "../assets/native/nativeLocomotion";
 import { resolveNativeSpecialAttackPreview } from "../assets/native/nativeSpecialAttackPreview";
 import { resolveNativeHumanHandAnchor } from "../assets/native/nativeHumanHandAnchor";
-import { loadNativeEffectComponents } from "../effects/nativeEffectComponents";
-import { createNativeEffectComponentPreview, type NativeEffectComponentPreview } from "../effects/nativeEffectComponentPreview";
 import { createEffectInspectionCamera } from "../effects/nativeEffectInspectionCamera";
 import { attachNativeEffectComponentControls } from "../ui/nativeEffectComponentControls";
-import { createNativeEffectInitPreview, type NativeEffectInitPreview } from "../effects/nativeEffectInitPreview";
 import { attachNativeEffectInitControls } from "../ui/nativeEffectInitControls";
 import { attachNativeLocomotionControls } from "../ui/nativeLocomotionControls";
 import { attachNativeSkyEnvironmentControls } from "../scene/world/nativeSkyEnvironmentControls";
-import type { createWorldPerformanceProbe } from "../engine/worldPerformanceProbe";
 import { attachAssetImport } from "../ui/AssetImportPanel";
 import { isSceneSuspended, setSceneSuspended } from "../engine/renderSuspension";
 
@@ -136,10 +116,8 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     for (const release of boundaryReleases.reverse()) release();
     boundaryReleases.length = 0;
   };
-  const settledStepSoundLoad = settle(loadNativeStepSounds(catalog.animationAudio, signal));
-  const settledDecoGrassLoad = settle(loadNativeStepDecoGrass(catalog.animationAudio, signal));
-  const settledCombatAudioLoad = settle(loadNativeCombatAudio(signal));
-  const settledWorldAudioLoad = settle(readNativeWorldAudioRecords(signal).then(records => loadNativeWorldAudio(records, signal)));
+  const audioLoads = beginNativeSliceAudioLoads(catalog.animationAudio, signal);
+  const addRelease = (release: () => void) => { boundaryReleases.push(release); };
   try {
     const playerCapsuleFromSourceCollision = () => ({ radius: playerProfile.collisionRadius / playerProfile.sourceUnitsPerMetre,
       height: 2 * playerProfile.collisionHeight / playerProfile.sourceUnitsPerMetre });
@@ -149,54 +127,10 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     boundaryReleases.push(world.release);
     const { section, movers, navigation, origin, worldFailure, flames, sky, skyFailure } = world;
     let followFighter = true;
-    const audio = new WorldAudioMixer();
-    boundaryReleases.push(() => audio.dispose());
-    boundaryReleases.push(audio.attachGestureUnlock(window));
-    const actionCues = await createNativeActionCuePreview(assets, audio, {
-      activeCatalogIds: [playerProfile.catalogId, "musveren:0"], includeHumanSpecialAttackCues: true,
-    });
-    boundaryReleases.push(() => actionCues.dispose());
-    let footstepFailure: string | null = null;
-    let footstepBundle: Awaited<ReturnType<typeof loadNativeAnimationAudio>> = { definitions: [], sounds: [], manifests: [], retainedConditionalEvents: 0 };
-    try {
-      footstepBundle = await loadNativeAnimationAudio(catalog.animationAudio, assets, catalog.archiveHashes ?? new Map(), signal);
-      validateLifetime();
-      for (const sound of footstepBundle.sounds) audio.register(sound.key, sound.bytes);
-    } catch (error) {
-      validateLifetime();
-      footstepFailure = error instanceof Error ? error.message : "Original footstep dependencies failed to load.";
-      footstepBundle = { definitions: [], sounds: [], manifests: [], retainedConditionalEvents: 0 };
-    }
-    let stepSounds: NativeStepSoundBundle = { library: null, sounds: [], manifest: null }, stepSoundFailure: string | null = null;
-    const stepSoundResult = await settledStepSoundLoad;
-    validateLifetime();
-    if (stepSoundResult.ok) {
-      stepSounds = stepSoundResult.value;
-      for (const sound of stepSounds.sounds) audio.register(sound.key, sound.bytes);
-    } else stepSoundFailure = failureText(stepSoundResult.error, "Original stepsound package failed to load.");
-    const decoGrassResult = await settledDecoGrassLoad;
-    validateLifetime();
-    const decoGrass: NativeStepDecoGrassBundle = decoGrassResult.ok ? decoGrassResult.value : { field: null, manifest: null };
-    const decoGrassFailure = decoGrassResult.ok ? null : failureText(decoGrassResult.error, "Deco-grass footstep data failed to load.");
-    let ambience: WorldAmbience | null = null, music: WorldMusic | null = null, worldAudioFailure: string | null = null;
-    let worldAudioLoading = Boolean(section), refreshWorldAudioControls: (() => void) | null = null;
-    const listenerFollowsLocalPawn = () => ambience !== null || music !== null;
-    if (section) void settledWorldAudioLoad.then(result => {
-      if (disposed || signal.aborted || scene.isDisposed) return;
-      worldAudioLoading = false;
-      if (result.ok) {
-        try {
-          const { ambience: ambienceBundle, music: musicBundle } = result.value;
-          if (ambienceBundle) { const created = createWorldAmbience(ambienceBundle, audio); ambience = created; boundaryReleases.push(() => created.dispose()); }
-          if (musicBundle) { const created = createWorldMusic(musicBundle, audio); music = created; boundaryReleases.push(() => created.dispose()); }
-        } catch (error) { worldAudioFailure = failureText(error, "Map music and ambience could not be prepared."); }
-      } else worldAudioFailure = failureText(result.error, "Map music and ambience could not be verified.");
-      refreshWorldAudioControls?.();
-    });
-    const combatResult = await settledCombatAudioLoad;
-    validateLifetime();
-    let combatFailure = combatResult.ok ? null : failureText(combatResult.error, "Original combat sounds failed to load.");
-    const combatBundle = combatResult.ok ? combatResult.value : null;
+    const nativeAudio = await loadNativeSliceAudio(audioLoads, { assets, animationAudio: catalog.animationAudio,
+      archiveHashes: catalog.archiveHashes ?? new Map(), activeCatalogIds: [playerProfile.catalogId, "musveren:0"],
+      hasWorldSection: Boolean(section), signal, validateLifetime, isRuntimeStopped: () => disposed || signal.aborted || scene.isDisposed, addRelease });
+    const { mixer: audio, actionCues, footstepBundle, stepSounds, decoGrass, decoGrassFailure, footstepFailure, stepSoundFailure, listenerFollowsLocalPawn } = nativeAudio;
     const configuredPlayer = profiles.get(appearanceId)!;
     const locomotionClips = resolveNativeLocomotionClips(fighter, configuredPlayer.clips.run, footstepBundle.definitions, configuredPlayer.clips.walk);
     const specialAttackPreview = resolveNativeSpecialAttackPreview(fighter, actionCues.inspection().coverage);
@@ -242,25 +176,18 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       const pawn = listenerFollowsLocalPawn() ? registry.localPlayerPosition : null;
       return pawn ? [pawn.x, pawn.y + playerProfile.collisionHeight / playerProfile.sourceUnitsPerMetre, pawn.z] : null;
     };
-    let combatAudio: NativeCombatAudio | null = null;
-    try {
-      const created = createNativeCombatAudio(combatBundle, audio, {
-        entity: id => registry.entity(id), sourceClock: id => registry.sourceClock(id),
-        selectedEntityId: () => registry.selectedEntityId, paused: () => adapter.isPaused || isSceneSuspended(scene),
-        listener: localPawnListenerLocation,
-      }, [
-        { entityId: "local-player", catalogId: playerProfile.catalogId, asset: fighter,
-          collisionRadiusMetres: playerProfile.collisionRadius / playerProfile.sourceUnitsPerMetre,
-          collisionHeightMetres: playerProfile.collisionHeight / playerProfile.sourceUnitsPerMetre },
-        { entityId: "native-musveren", catalogId: "musveren:0", asset: monster,
-          collisionRadiusMetres: musveren.collisionRadius / musveren.sourceUnitsPerMetre,
-          collisionHeightMetres: musveren.collisionHeight / musveren.sourceUnitsPerMetre },
-      ]);
-      combatAudio = created;
-      boundaryReleases.push(() => created.dispose());
-    } catch (error) {
-      combatFailure ??= failureText(error, "Combat hit sounds could not be prepared.");
-    }
+    const { combatAudio, combatFailure } = createNativeSliceCombatAudio(nativeAudio, {
+      entity: id => registry.entity(id), sourceClock: id => registry.sourceClock(id),
+      selectedEntityId: () => registry.selectedEntityId, paused: () => adapter.isPaused || isSceneSuspended(scene),
+      listener: localPawnListenerLocation,
+    }, [
+      { entityId: "local-player", catalogId: playerProfile.catalogId, asset: fighter,
+        collisionRadiusMetres: playerProfile.collisionRadius / playerProfile.sourceUnitsPerMetre,
+        collisionHeightMetres: playerProfile.collisionHeight / playerProfile.sourceUnitsPerMetre },
+      { entityId: "native-musveren", catalogId: "musveren:0", asset: monster,
+        collisionRadiusMetres: musveren.collisionRadius / musveren.sourceUnitsPerMetre,
+        collisionHeightMetres: musveren.collisionHeight / musveren.sourceUnitsPerMetre },
+    ], addRelease);
     const doors = movers && navigation ? createNativeDoorInteractions(scene, movers.targets, {
       player: () => registry.localPlayer, dispatch: command => adapter.dispatch(command),
       onCommand: listener => adapter.subscribeCommands(listener), paused: () => adapter.isPaused || isSceneSuspended(scene),
@@ -274,63 +201,8 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     await registry.whenReady();
     validateLifetime();
     registry.update(0);
-    let effectComponents: NativeEffectComponentPreview | null = null, effectComponentFailure: string | null = null;
-    let initEffect: NativeEffectInitPreview | null = null;
-    let shotEffect: NativeEffectShotPreview | null = null, powerStrike: NativePowerStrikePreview | null = null;
-    let powerStrikeReason: string | null = "Original skill effect components are not staged.";
-    try {
-      const effectBundle = await loadNativeEffectComponents(signal);
-      validateLifetime();
-      if (effectBundle) {
-        effectComponents = createNativeEffectComponentPreview(scene, effectBundle,
-          () => registry.attachmentAnchor("local-player", "right-hand"),
-          () => (registry.localPlayer?.health ?? 0) > 0, signal);
-        boundaryReleases.push(() => effectComponents?.dispose());
-        if (specialAttackPreview.clip) {
-          initEffect = createNativeEffectInitPreview(scene, effectBundle, specialAttackPreview.clip, () => {
-            const player = registry.localPlayer;
-            return { anchor: registry.attachmentAnchor("local-player", "right-hand"), clock: registry.sourceClock("local-player"),
-              sequence: player?.animationSequence ?? 0, action: player?.actionPreview ?? null,
-              animation: player?.animation ?? "idle", alive: (player?.health ?? 0) > 0 };
-          }, signal);
-          boundaryReleases.push(() => initEffect?.dispose());
-          const detachManualComponentDisablesInit = effectComponents.subscribe(() => {
-            if (effectComponents?.snapshot().selection.component !== null) void initEffect?.setEnabled(false);
-          });
-          boundaryReleases.push(detachManualComponentDisablesInit);
-        }
-        const shotSource = resolveNativePowerStrikeShotSource(fighter, specialAttackPreview.clip);
-        const shotTarget = resolveNativePowerStrikeShotTarget(musveren);
-        powerStrikeReason = !initEffect ? specialAttackPreview.reason ?? "The original special-attack clip is unavailable." : shotSource.reason ?? shotTarget.reason;
-        if (initEffect && shotSource.source && shotTarget.target) {
-          const musverenShotTarget = shotTarget.target, init = initEffect;
-          const shot = createNativeEffectShotPreview(scene, effectBundle, shotSource.source, () => {
-            const player = registry.localPlayer, targetId = player?.actionTargetId ?? null;
-            const entity = targetId ? registry.entity(targetId) : null, pivot = targetId ? registry.actorPivot(targetId) : null;
-            return { caster: registry.actorPivot("local-player"), targetId,
-              target: entity && pivot && targetId === "native-musveren" ? { pivot, collisionRadius: musverenShotTarget.collisionRadius, profileId: musverenShotTarget.profileId, alive: entity.health > 0 } : null,
-              clock: registry.sourceClock("local-player"), sequence: player?.animationSequence ?? 0,
-              action: player?.actionPreview ?? null, animation: player?.animation ?? "idle", alive: (player?.health ?? 0) > 0 };
-          }, signal);
-          shotEffect = shot;
-          boundaryReleases.push(() => shot.dispose());
-          const created = createNativePowerStrikePreview(init, shot, () => {
-            const selectedOrOnlyNpcId = registry.selectedEntityId ?? "native-musveren";
-            const entity = selectedOrOnlyNpcId === "native-musveren" ? registry.entity(selectedOrOnlyNpcId) : null;
-            const pivot = entity ? registry.actorPivot(selectedOrOnlyNpcId) : null;
-            return entity && pivot ? { id: selectedOrOnlyNpcId, name: entity.displayName, rootUniqueId: pivot.root.uniqueId,
-              isValid: () => pivot.isValid() && (registry.entity(selectedOrOnlyNpcId)?.health ?? 0) > 0 } : null;
-          }, () => (registry.localPlayer?.health ?? 0) > 0, async () => { await effectComponents?.select(null); },
-          targetId => adapter.dispatch({ type: "preview-action", action: "special-attack", targetId }),
-          listener => adapter.subscribeCommands(listener));
-          powerStrike = created;
-          boundaryReleases.push(() => created.dispose());
-        }
-      }
-    } catch (error) {
-      validateLifetime();
-      effectComponentFailure = error instanceof Error ? error.message : "Original skill components could not be prepared.";
-    }
+    const effects = await createNativeSliceEffects({ scene, registry, adapter, fighter, musveren, specialAttackPreview, signal, validateLifetime, addRelease });
+    const { effectComponents, effectComponentFailure, initEffect, shotEffect, powerStrike, powerStrikeReason } = effects;
     const materialOverrides = createNativeMaterialOverrides(scene, settings.materialOverrideEnabled ? {
       entityId: settings.materialEntityId ?? "local-player",
       sourceMaterial: settings.materialSource ?? "MFighter.UpBody.MFighter_m001_t04_u",
@@ -515,10 +387,12 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     describe.element(ui.root.querySelector(".diagnostics"), { title: "World diagnostics", description: "Frame rate, entity count and fighter position in browser metres. Debug tab shows camera and native coordinates.",
       variables: () => [{ name: "debug.fps", value: () => String(Math.round(scene.getEngine().getFps())), values: "frames per second", source: "AbstractEngine.getFps()", status: "presentation" }] }, "none");
 
-    const audioControls = attachWorldAudioControls(groups.mixer.element, audio, { music, ambience, worldAudioFailure, worldAudioLoading });
+    const worldAudio = nativeAudio.worldAudio;
+    const audioControls = attachWorldAudioControls(groups.mixer.element, audio, { music: worldAudio.music, ambience: worldAudio.ambience,
+      worldAudioFailure: worldAudio.failure, worldAudioLoading: worldAudio.loading });
     boundaryReleases.push(() => audioControls.dispose());
-    refreshWorldAudioControls = () => audioControls.setWorldAudio({ music, ambience, failure: worldAudioFailure, loading: worldAudioLoading });
-    refreshWorldAudioControls();
+    worldAudio.onChange = () => audioControls.setWorldAudio({ music: worldAudio.music, ambience: worldAudio.ambience, failure: worldAudio.failure, loading: worldAudio.loading });
+    worldAudio.onChange();
     for (const card of audioControls.cards()) {
       describe.testId(groups.mixer.element, card.testId, { title: card.title, ...(card.description ? { description: card.description } : {}),
         variables: () => worldAudioVariables(audioControls.describe().filter(row => card.rows.includes(row.name))) });
@@ -708,7 +582,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       if (ear) {
         const headingX = camera.target.x - camera.globalPosition.x, headingZ = camera.target.z - camera.globalPosition.z;
         audio.setListener(ear, headingX * headingX + headingZ * headingZ > 1e-8 ? [headingX, 0, headingZ] : undefined);
-        ambience?.update(ear); music?.update(ear);
+        nativeAudio.worldAudio.ambience?.update(ear); nativeAudio.worldAudio.music?.update(ear);
       }
       materialOverrides.update();
       if (section && followFighter && registry.localPlayerPosition) camera.setTarget(registry.localPlayerPosition.add(new Vector3(.6, .35, 0)), false, false, true);
@@ -721,93 +595,10 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       combatControls.update();
     });
     boundaryReleases.push(() => { scene.onBeforeRenderObservable.remove(observer); });
-    let onDemandPerformanceProbe: ReturnType<typeof createWorldPerformanceProbe> | undefined;
-    boundaryReleases.push(() => onDemandPerformanceProbe?.dispose());
-    const diagnostics = { snapshot: () => ({ entities: registry.snapshot(), playerProfile,
-      handAnchor: { ...handAnchor, policy: "converted-source-rig" as const, nativeCompositionVerified: false as const },
-      specialAttackPreview: { ...specialAttackPreview, policy: "source-animation-preview" as const, nativeSkillVerified: false as const },
-      effectComponents: effectComponents?.snapshot() ?? null, effectComponentFailure,
-      nativeInitEffect: initEffect?.snapshot() ?? null,
-      locomotion: { mode: adapter.locomotionMode, ...locomotionClips, speed: adapter.speedProfile, currentMetresPerSecond: adapter.currentSpeed,
-        clipRate: 1, nativeSpeedVerified: false as const },
-      groundContact: inspectNativeGroundContact(scene, adapter.groundContact, section),
-      doors: doors ? { manifestSha256: movers!.manifestSha256, ...doors.inspection() } : null,
-      skinMeshes: scene.meshes.filter(mesh => mesh.metadata?.l2NativeSkinWeights).map(mesh => ({ name: mesh.name, ...mesh.metadata.l2NativeSkinWeights })),
-      nativeAttackReference: "unverified", nativeNpcProfile: musveren ?? null,
-      materialOverride: materialOverrides.snapshot(),
-      nativeFlames: flames.presentation?.inspect() ?? null, flameFailure: flames.failure ?? null,
-      nativeSky: sky?.inspection() ?? null, skyFailure,
-      nativeAudio: { ...audio.inspection(), cues: actionCues.inspection(), footsteps: footsteps.inspection(),
-        footstepBundle: { manifests: footstepBundle.manifests, retainedConditionalEvents: footstepBundle.retainedConditionalEvents },
-        footstepFailure, nativeParity: "unverified",
-        stepSounds: { manifest: stepSounds.manifest, failure: stepSoundFailure, ground: footstepGround.inspection(),
-          decoGrass: { manifest: decoGrass.manifest, failure: decoGrassFailure } },
-        worldAudio: { failure: worldAudioFailure, loading: worldAudioLoading, ambience: ambience?.inspection() ?? null, music: music?.inspection() ?? null },
-        combat: combatAudio?.inspection() ?? null, combatFailure },
-      powerStrike: { reason: powerStrikeReason, action: powerStrike?.snapshot() ?? null, shot: shotEffect?.snapshot() ?? null },
-      devSheet: ui.sheet.inspect(),
-      flameReplay: flames.clock ? { ...flames.clock.inspect(), billboardTarget: "browser camera position proxy; native viewport actor equality unverified" } : null,
-      nativeTerrain: section ? "source-section-loaded" : "not-loaded-in-actor-scene", phase2Networking: false,
-      worldFailure: worldFailure ?? null,
-      fog: { enabled: scene.fogEnabled, mode: scene.fogMode, start: scene.fogStart, end: scene.fogEnd },
-      world: section ? { manifestSha256: section.manifestSha256, ...section.inspection(),
-        sourceSpawn: [origin.x * 100, origin.z * 100, origin.y * 100], nativeLocationMatch: "unverified",
-        navigation: section.supportMeshes?.length ? "local terrain and source-declared static/BSP triangle support; native collision/geodata unverified" : "local terrain support only; native/scenery collision unverified" } : null,
-      fps: scene.getEngine().getFps(), camera: { target: camera.target.asArray(), alpha: camera.alpha, beta: camera.beta, radius: camera.radius } }),
-      dispatch: adapter.dispatch.bind(adapter),
-      async performance() {
-        if (disposed) throw new Error("The native world is disposed.");
-        const module = await import("../engine/worldPerformanceProbe");
-        if (disposed) throw new Error("The native world was disposed while loading diagnostics.");
-        return onDemandPerformanceProbe ??= module.createWorldPerformanceProbe(scene);
-      },
-      captureAudio: () => audio.captureStream(),
-      setWorldAudioEnabled(enabled: boolean) {
-        if (!enabled) audio.detachGestureUnlock(); else boundaryReleases.push(audio.attachGestureUnlock(window));
-        music?.setEnabled(enabled); ambience?.setEnabled(enabled);
-      },
-      frameFlame,
-      interactDoor(id: string) {
-        if (!doors) throw new Error("Native doors are unavailable.");
-        doors.activate(id);
-      },
-      setFlameReplay(time: NativeFlameReplayTime) {
-        if (!flames.presentation || !flames.clock) throw new Error("Native flame preview is unavailable.");
-        flames.presentation.validateReplayTime(time);
-        flames.clock.seek(time);
-        try { flames.update(time); }
-        catch (error) { failFlames(error); throw error; }
-      } };
-    window.__nativeSlice = diagnostics;
-    boundaryReleases.push(() => { if (window.__nativeSlice === diagnostics) delete window.__nativeSlice; });
+    boundaryReleases.push(attachNativeSliceDiagnostics({ scene, camera, registry, adapter, ui, playerProfile, musveren, handAnchor,
+      specialAttackPreview, locomotionClips, world, audio: nativeAudio, footsteps, footstepGround, combatAudio, combatFailure, effects,
+      doors, materialOverrides, frameFlame, failFlames, isDisposed: () => disposed, addRelease }));
     return stop;
   } catch (error) { stop(); throw error; }
 }
 
-declare global { interface Window { __nativeSlice?: { snapshot(): { entities: ReturnType<EntityRegistry["snapshot"]>; skinMeshes: unknown[];
-  playerProfile?: NativePlayerProfile;
-  handAnchor?: ReturnType<typeof resolveNativeHumanHandAnchor> & { policy: "converted-source-rig"; nativeCompositionVerified: false };
-  specialAttackPreview?: { clip: string | null; reason: string | null; policy: "source-animation-preview"; nativeSkillVerified: false };
-  effectComponents?: ReturnType<NativeEffectComponentPreview["snapshot"]> | null; effectComponentFailure?: string | null;
-  nativeInitEffect?: ReturnType<NativeEffectInitPreview["snapshot"]> | null;
-  locomotion?: { mode: "walk" | "run"; walkClip: string | null; runClip: string; reason: string | null; speed: NativeSliceSpeedProfile;
-    currentMetresPerSecond: number; clipRate: number; nativeSpeedVerified: false };
-  groundContact?: ReturnType<typeof inspectNativeGroundContact>;
-  doors?: (ReturnType<ReturnType<typeof createNativeDoorInteractions>["inspection"]> & { manifestSha256: string }) | null;
-  nativeAttackReference: string; nativeNpcProfile: NativeNpcProfile | null; nativeTerrain: string; phase2Networking: boolean; worldFailure: string | null;
-  materialOverride?: ReturnType<ReturnType<typeof createNativeMaterialOverrides>["snapshot"]>;
-  nativeFlames?: ReturnType<NativeFlamePresentation["inspect"]> | null; flameFailure?: string | null;
-  nativeSky?: ReturnType<NativeSkyPresentation["inspection"]> | null; skyFailure?: string | null;
-  nativeAudio?: ReturnType<WorldAudioMixer["inspection"]> & { cues: ReturnType<Awaited<ReturnType<typeof createNativeActionCuePreview>>["inspection"]>;
-    footsteps: ReturnType<ReturnType<typeof createNativeFootstepPreview>["inspection"]>;
-    footstepBundle: { manifests: string[]; retainedConditionalEvents: number }; footstepFailure: string | null; nativeParity: string;
-    stepSounds?: { manifest: string | null; failure: string | null; ground: ReturnType<ReturnType<typeof createFootstepGroundSampler>["inspection"]>;
-      decoGrass: { manifest: string | null; failure: string | null } };
-    worldAudio?: { failure: string | null; loading?: boolean; ambience: ReturnType<WorldAmbience["inspection"]> | null; music: ReturnType<WorldMusic["inspection"]> | null };
-    combat?: NativeCombatInspection | null; combatFailure?: string | null };
-  powerStrike?: { reason: string | null; action: ReturnType<NativePowerStrikePreview["snapshot"]> | null; shot: ReturnType<NativeEffectShotPreview["snapshot"]> | null };
-  devSheet?: ReturnType<WorldInterface["sheet"]["inspect"]>;
-  flameReplay?: (ReturnType<NativeFlameReplayClock["inspect"]> & { billboardTarget: string }) | null;
-  fog?: { enabled: boolean; mode: number; start: number; end: number };
-  world?: (ReturnType<NativeSection["inspection"]> & { manifestSha256: string; sourceSpawn: number[]; nativeLocationMatch: string; navigation: string }) | null;
-  fps?: number; camera?: { target: number[]; alpha: number; beta: number; radius: number } }; dispatch: NativeSliceAdapter["dispatch"]; performance(): Promise<ReturnType<typeof createWorldPerformanceProbe>>; captureAudio?(): MediaStream | null; setWorldAudioEnabled?(enabled: boolean): void; setFlameReplay?(time: NativeFlameReplayTime): void; frameFlame?(placementId: string): void; interactDoor?(id: string): void } } }
