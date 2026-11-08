@@ -5,8 +5,9 @@ Browser client for Lineage II Interlude on Babylon.js WebGPU. These rules are sp
 ## Project rules
 
 ### Decisions and planning
-- Current decisions live in [.planning/PROJECT.md](.planning/PROJECT.md) (DEC-OWN-1 to DEC-OWN-10) and [docs/PORT_SCOPE.md](docs/PORT_SCOPE.md). They win over every other doc.
+- Current decisions live in [.planning/PROJECT.md](.planning/PROJECT.md) (DEC-OWN-1 to DEC-OWN-10). They win over every other doc. [docs/PORT_SCOPE.md](docs/PORT_SCOPE.md) holds the scope tables those decisions cite.
 - Requirements, phases and state: [.planning/REQUIREMENTS.md](.planning/REQUIREMENTS.md), [.planning/ROADMAP.md](.planning/ROADMAP.md), [.planning/STATE.md](.planning/STATE.md).
+- The docs in `docs/` are short summaries of current facts, not decisions. When a doc and `.planning` disagree, `.planning` wins and you fix the doc in the same change. Older detail lives in git history.
 
 ### GSD workflow
 Use the smallest command that fits the work.
