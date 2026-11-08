@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 01
 current_phase_name: Foundations
 status: executing
-stopped_at: Completed 01-14-PLAN.md
-last_updated: "2026-11-08T08:06:35.834Z"
+stopped_at: Completed 01-16-PLAN.md
+last_updated: "2026-11-08T08:22:22.851Z"
 last_activity: 2026-11-08
 last_activity_desc: Phase 01 execution started
-state_head: 7d0177b75c4cc72b6242adafe251371e4b2bd34d
+state_head: 67e917557d7d189e8ac477fbc170e47fba9b09e2
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 17
-  completed_plans: 15
+  completed_plans: 16
   percent: 0
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 01 (Foundations) — EXECUTING
-Plan: 15 of 17
+Plan: 16 of 17
 Status: Ready to execute
 Last activity: 2026-11-08 — Phase 01 execution started
 
@@ -67,6 +67,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P11 | 6 min | 2 tasks | 24 files |
 | Phase 01 P15 | 5 min | 2 tasks | 13 files |
 | Phase 01 P14 | 16 min | 3 tasks | 23 files |
+| Phase 01 P16 | 14 min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -108,6 +109,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..10 and DEC-PORT-1..3.
 - [Phase 01]: Sandbox NPC presentation resolves through the catalog index; an ID without a converted, loaded model gets a meshless label-only marker (npc:<id> not in catalog), never a stand-in body
 - [Phase 01]: navigation.origin is built from x, y, z; spreading a Babylon Vector3 dropped every sandbox spawn on the native section (OVERNIGHT-DECISIONS row 38)
 - [Phase 01]: Catalog lookup text has one owner (describeNativeCatalogLookup) and the Power Strike bundle id one name (powerStrikeEffectBundleId)
+- [Phase 01]: 01-16: Babylon Inspector 9.27.1 lazy-loaded behind ?inspect=1; peers pinned exactly after an automated legitimacy check (OVERNIGHT-DECISIONS row 39); Playwright check runs on the sandbox route
 
 ### Pending Todos
 
@@ -144,6 +146,6 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..10 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-08T08:06:35.800Z
-Stopped at: Completed 01-14-PLAN.md
+Last session: 2026-11-08T08:22:22.817Z
+Stopped at: Completed 01-16-PLAN.md
 Resume file: None
