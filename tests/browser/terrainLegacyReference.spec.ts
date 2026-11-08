@@ -1,18 +1,22 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
-test("ordered legacy reference verifies explicit per-pass GPU states and discriminating pixels", async ({ page }, testInfo) => {
-  test.setTimeout(90_000);
-  const errors: string[] = [];
-  page.on("pageerror", error => errors.push(error.message));
-  page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
-  await page.setViewportSize({ width: 1440, height: 1100 });
+async function openReadyLegacyReference(page: Page): Promise<void> {
   await page.goto("/tests/browser/terrainLegacyReference.html");
   await expect.poll(() => page.evaluate(() => {
     const state = window.__terrainLegacyReference?.snapshot();
     return state?.failure ?? state?.ready ?? false;
   }), { timeout: 60_000 }).toBe(true);
+}
+
+test("ordered legacy reference verifies explicit per-pass GPU states and discriminating pixels", async ({ page, browser }, testInfo) => {
+  test.setTimeout(90_000);
+  const errors: string[] = [];
+  page.on("pageerror", error => errors.push(error.message));
+  page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await openReadyLegacyReference(page);
   const result = await page.evaluate(() => window.__terrainLegacyReference!.snapshot());
   const evidence = resolve(process.env.TERRAIN_REFERENCE_EVIDENCE ?? "artifacts/native-parity/research/terrain-uv-reference-20261106", testInfo.project.name);
   await mkdir(evidence, { recursive: true });
@@ -54,6 +58,11 @@ test("ordered legacy reference verifies explicit per-pass GPU states and discrim
   }
   await page.getByLabel("Show only native UV branch cases").check();
   await page.screenshot({ path: resolve(evidence, "uv-reference-desktop.png"), fullPage: true });
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({ path: resolve(evidence, "ordered-reference-mobile.png"), fullPage: true });
+  const phoneContext = await browser.newContext({ viewport: { width: 932, height: 430 }, isMobile: true, hasTouch: true });
+  try {
+    const phone = await phoneContext.newPage();
+    await openReadyLegacyReference(phone);
+    await phone.getByLabel("Show only native UV branch cases").check();
+    await phone.screenshot({ path: resolve(evidence, "ordered-reference-mobile.png"), fullPage: true });
+  } finally { await phoneContext.close(); }
 });

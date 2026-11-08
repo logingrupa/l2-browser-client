@@ -13,17 +13,16 @@ async function move(page: Page, x: number, y: number, z: number) {
   await expect.poll(async () => (await player(page)).animation, { timeout: 90_000 }).toBe("idle");
   return (await player(page)).authoritativePosition;
 }
-for (const authored of [false, true]) test(`qualified BSP floor supports stairs and blocks building walls on ${authored ? "authored" : "source"} route`, async ({ page }, testInfo) => {
+test("qualified BSP floor supports stairs and blocks building walls on the source route", async ({ page }, testInfo) => {
   test.skip(!staged, "Scoped BSP source bundle must be staged."); test.setTimeout(240_000);
+  test.skip(!existsSync(resolve(actor940ContactPin.path)), "Requires the pinned Actor940 contact oracle under artifacts/.");
   const contactOracle = readActor940ContactOracle(resolve(actor940ContactPin.path));
   const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
-  await page.goto(`/?world=interlude${authored ? "&authored=1" : ""}`);
+  await page.goto("/?world=interlude");
   await expect(page.locator("#loading")).toHaveCount(0, { timeout: 120_000 });
   const initial = await player(page);
   const profile = await page.evaluate(() => window.__nativeSlice!.snapshot().playerProfile);
   if (!profile) throw new Error("The selected native player profile is unavailable.");
-  // Later qualified BSP additions can advance the section identity. Require
-  // every original manifest field and the Actor940 slab to remain identical.
   const oracleManifest = JSON.parse(readFileSync(resolve("public/l2/maps", contactOracle.manifest.sha256, "map-section-runtime/manifest.json"), "utf8"));
   expect({ ...manifest, bsp: oracleManifest.bsp }).toEqual(oracleManifest);
   expect(manifest.bsp.find((item: { id: string }) => item.id === "interlude:20_20.Model798.Brush397")).toEqual(oracleManifest.bsp[0]);
@@ -33,7 +32,7 @@ for (const authored of [false, true]) test(`qualified BSP floor supports stairs 
   expect(entered.y).toBeCloseTo(-34.26, 5); expect((await player(page)).isFallback).toBe(false);
   const blocked = await move(page, 98, -34.55, 942);
   expect(blocked.z).toBeGreaterThan(944.5); expect(blocked.z).toBeLessThan(950);
-  const contact = actor940ContactExpectation(contactOracle, blocked, profile.collisionRadius / profile.sourceUnitsPerMetre, authored);
+  const contact = actor940ContactExpectation(contactOracle, blocked, profile.collisionRadius / profile.sourceUnitsPerMetre);
   expect(blocked.y).toBeCloseTo(contact.expectedY, 5);
   const back = await move(page, 98, -34.26, 950.15);
   expect(back.z).toBeCloseTo(950.15, 5);

@@ -1,8 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { nativeSandboxConfiguration } from "../../src/runtime/nativeSandboxConfiguration";
+import { nativeSandboxPresentation } from "../../src/scene/presentationConfiguration";
 
 const staged = existsSync(resolve("public/l2/catalog.json"));
 const evidence = resolve(process.env.NATIVE_SLICE_EVIDENCE ?? "artifacts/native-parity/browser");
@@ -15,63 +17,21 @@ const starterMaterial = "MFighter.UpBody.MFighter_m001_t02_u";
 const leatherMaterial = "MFighter.UpBody.MFighter_m001_t04_u";
 const hash = (bytes: string | Uint8Array) => createHash("sha256").update(bytes).digest("hex");
 function object(value: unknown): Record<string, unknown> {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error("Expected an authored object.");
+  if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error("Expected a source object.");
   return value as Record<string, unknown>;
 }
 function objects(value: unknown): Record<string, unknown>[] {
-  if (!Array.isArray(value)) throw new Error("Expected an authored object array.");
+  if (!Array.isArray(value)) throw new Error("Expected a source object array.");
   return value.map(object);
 }
-function setting(values: Record<string, unknown>, name: string, fallback: string): string;
-function setting(values: Record<string, unknown>, name: string, fallback: boolean): boolean;
-function setting(values: Record<string, unknown>, name: string, fallback: string | boolean): string | boolean {
-  if (!(name in values)) return fallback;
-  const saved = object(values[name]);
-  if (saved.type !== typeof fallback || typeof saved.value !== typeof fallback) throw new Error(`Invalid authored ${name}.`);
-  return saved.value as string | boolean;
-}
-function finite(value: unknown): number {
-  if (typeof value !== "number" || !Number.isFinite(value)) throw new Error("Expected a finite authored camera value.");
-  return value;
-}
 interface SourceRig { modelSha256: string; skeletonBones: number[]; skinMeshes: number; clips: string[] }
-async function authoredState() {
-  const configPath = resolve("assets/native-parity.scene/config.json");
-  const configText = await readFile(configPath, "utf8"), config = object(JSON.parse(configText));
-  const attached = objects(object(config.metadata).scripts).filter(script => script._id === "native-parity-runtime" && script.key === "scripts/nativeParity.ts");
-  expect(attached).toHaveLength(1); expect(attached[0]!.enabled).toBe(true);
-  const values = object(attached[0]!.values);
-  const settings = {
-    leatherShirt: setting(values, "leatherShirt", false),
-    fighterIdle: setting(values, "fighterIdle", "Wait_Hand_MFighter"),
-    fighterRun: setting(values, "fighterRun", "Run_Hand_MFighter"),
-    fighterAttack: setting(values, "fighterAttack", "Atk01_Hand_MFighter"),
-    materialOverrideEnabled: setting(values, "materialOverrideEnabled", false),
-    materialEntityId: setting(values, "materialEntityId", "local-player"),
-    materialSource: setting(values, "materialSource", leatherMaterial),
-    materialTint: [1, 1, 1],
-    materialRoughness: 1,
-  };
-  if (values.materialTint !== undefined) {
-    const tint = object(values.materialTint);
-    expect(tint.type).toBe("vector3"); expect(Array.isArray(tint.value)).toBe(true);
-    settings.materialTint = (tint.value as unknown[]).map(finite);
-    expect(settings.materialTint).toHaveLength(3);
-  }
-  if (values.materialRoughness !== undefined) {
-    const roughness = object(values.materialRoughness); expect(roughness.type).toBe("number");
-    settings.materialRoughness = finite(roughness.value);
-  }
-  const cameraDirectory = resolve("assets/native-parity.scene/cameras");
-  const cameras = await Promise.all((await readdir(cameraDirectory)).filter(file => file.endsWith(".json")).map(async file => {
-    const text = await readFile(resolve(cameraDirectory, file), "utf8");
-    return { file, text, data: object(JSON.parse(text)) };
-  }));
-  const selected = cameras.filter(camera => camera.data.id === "World camera" && camera.data.name === "World camera");
-  expect(selected).toHaveLength(1);
-  const savedCamera = selected[0]!;
-  const camera = { path: resolve(cameraDirectory, savedCamera.file), sha256: hash(savedCamera.text),
-    alpha: finite(savedCamera.data.alpha), beta: finite(savedCamera.data.beta), radius: finite(savedCamera.data.radius) };
+async function sandboxState() {
+  const { leatherShirt, fighterIdle, fighterRun, fighterAttack, materialOverrideEnabled, materialEntityId, materialSource,
+    materialTint, materialRoughness } = nativeSandboxConfiguration;
+  const settings = { leatherShirt, fighterIdle, fighterRun, fighterAttack, materialOverrideEnabled, materialEntityId, materialSource,
+    materialTint: [...materialTint], materialRoughness };
+  const { alpha, beta, radius } = nativeSandboxPresentation.camera;
+  const camera = { alpha, beta, radius };
   const catalog = object(JSON.parse(await readFile(resolve("public/l2/catalog.json"), "utf8")));
   const models = objects(catalog.models);
   const rig = async (id: string): Promise<SourceRig> => {
@@ -102,20 +62,20 @@ async function authoredState() {
   expect(armor.skeletonBones).toEqual([70]); expect(armor.skinMeshes).toBe(1);
   expect(musveren.skeletonBones).toEqual([49]); expect(musveren.skinMeshes).toBe(2);
   for (const clip of [settings.fighterIdle, settings.fighterRun, settings.fighterAttack]) expect(fighter.clips).toContain(clip);
-  return { config: { path: configPath, sha256: hash(configText), overrides: values }, settings, camera, fighter, armor, musveren };
+  return { settings, camera, fighter, armor, musveren };
 }
-type AuthoredState = Awaited<ReturnType<typeof authoredState>>;
-function assertRigs(snapshot: Awaited<ReturnType<typeof read>>, authored: AuthoredState, equipped: boolean, hasMusveren = true) {
+type SandboxState = Awaited<ReturnType<typeof sandboxState>>;
+function assertRigs(snapshot: Awaited<ReturnType<typeof read>>, sandbox: SandboxState, equipped: boolean, hasMusveren = true) {
   const fighter = snapshot.entities.find(item => item.id === "local-player")!;
-  const expectedBones = [...authored.fighter.skeletonBones, ...(equipped ? authored.armor.skeletonBones : [])];
+  const expectedBones = [...sandbox.fighter.skeletonBones, ...(equipped ? sandbox.armor.skeletonBones : [])];
   expect(fighter.skeletons.map(skeleton => skeleton.bones).sort((a, b) => a - b)).toEqual(expectedBones.sort((a, b) => a - b));
   expect(fighter.parts).toHaveLength(equipped ? 8 : 7);
   expect(fighter.parts.filter(part => part.enabled)).toHaveLength(7);
   expect(fighter.parts.find(part => part.material === starterMaterial)?.enabled).toBe(!equipped);
   if (equipped) expect(fighter.parts.find(part => part.material === leatherMaterial)?.enabled).toBe(true);
   else expect(fighter.parts.some(part => part.material === leatherMaterial)).toBe(false);
-  if (hasMusveren) expect(snapshot.entities.find(item => item.id === "native-musveren")!.skeletons.map(skeleton => skeleton.bones)).toEqual(authored.musveren.skeletonBones);
-  expect(snapshot.skinMeshes).toHaveLength(authored.fighter.skinMeshes + (equipped ? authored.armor.skinMeshes : 0) + (hasMusveren ? authored.musveren.skinMeshes : 0));
+  if (hasMusveren) expect(snapshot.entities.find(item => item.id === "native-musveren")!.skeletons.map(skeleton => skeleton.bones)).toEqual(sandbox.musveren.skeletonBones);
+  expect(snapshot.skinMeshes).toHaveLength(sandbox.fighter.skinMeshes + (equipped ? sandbox.armor.skinMeshes : 0) + (hasMusveren ? sandbox.musveren.skinMeshes : 0));
   expect(snapshot.skinMeshes.every(mesh => typeof mesh === "object" && mesh !== null && "applied" in mesh && mesh.applied === true && "normalized" in mesh && mesh.normalized === false)).toBe(true);
 }
 async function waitForEquipment(page: Page, equipped: boolean) {
@@ -126,8 +86,8 @@ async function waitForEquipment(page: Page, equipped: boolean) {
       leather: fighter.parts.some(part => part.material === leatherMaterial && part.enabled) };
   }, { timeout: 90_000 }).toEqual({ parts: equipped ? 8 : 7, enabled: 7, starter: !equipped, leather: equipped });
 }
-async function assertMaterialOverride(page: Page, authored: AuthoredState) {
-  const { settings } = authored;
+async function assertMaterialOverride(page: Page, sandbox: SandboxState) {
+  const { settings } = sandbox;
   const selected = (await read(page)).entities.find(item => item.id === settings.materialEntityId);
   const matched = settings.materialOverrideEnabled ? selected?.parts.filter(part => part.enabled && part.material === settings.materialSource).length ?? 0 : 0;
   await expect.poll(async () => (await read(page)).materialOverride?.matchedMeshes).toBe(matched);
@@ -149,29 +109,29 @@ function errorsFor(page: Page) {
   page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
   return errors;
 }
-async function ready(page: Page, authored: AuthoredState) {
+async function ready(page: Page, sandbox: SandboxState) {
   await page.goto("/?world=interlude");
   await expect(page.locator("#loading")).toHaveCount(0, { timeout: 120_000 });
   await expect(page.locator("#canvas")).toBeVisible();
   await expect(page.getByTestId("entity-count")).toHaveText("2", { timeout: 120_000 });
   await expect.poll(async () => (await read(page)).entities.filter(item => !item.isFallback).length, { timeout: 90_000 }).toBe(2);
-  await waitForEquipment(page, authored.settings.leatherShirt);
-  await expect.poll(async () => (await entity(page)).playback?.activeClip).toBe(authored.settings.fighterIdle);
+  await waitForEquipment(page, sandbox.settings.leatherShirt);
+  await expect.poll(async () => (await entity(page)).playback?.activeClip).toBe(sandbox.settings.fighterIdle);
   const state = await read(page);
-  expect(state.camera?.radius).toBeCloseTo(authored.camera.radius, 10);
-  expect(state.camera?.alpha).toBeCloseTo(authored.camera.alpha, 10);
-  expect(state.camera?.beta).toBeCloseTo(authored.camera.beta, 10);
-  assertRigs(state, authored, authored.settings.leatherShirt);
-  await assertMaterialOverride(page, authored);
+  expect(state.camera?.radius).toBeCloseTo(sandbox.camera.radius, 10);
+  expect(state.camera?.alpha).toBeCloseTo(sandbox.camera.alpha, 10);
+  expect(state.camera?.beta).toBeCloseTo(sandbox.camera.beta, 10);
+  assertRigs(state, sandbox, sandbox.settings.leatherShirt);
+  await assertMaterialOverride(page, sandbox);
 }
 
 test("native packages retain rigs, change equipment, hold death, move and clean up", async ({ page }) => {
   test.skip(!staged, "Run pnpm assets:migrate --stage-runtime first.");
   test.setTimeout(240_000);
   const errors = errorsFor(page);
-  const authored = await authoredState();
+  const sandbox = await sandboxState();
   await page.setViewportSize({ width: 1440, height: 900 });
-  await ready(page, authored);
+  await ready(page, sandbox);
   const initial = await read(page);
   expect(initial.phase2Networking).toBe(false);
   expect(initial.nativeAttackReference).toBe("unverified");
@@ -187,7 +147,7 @@ test("native packages retain rigs, change equipment, hold death, move and clean 
   expect(initial.world?.materialFailure).toBeNull();
   expect(initial.fog?.mode).toBe(0);
   await expect(page.getByTestId("fps")).toBeVisible();
-  assertRigs(initial, authored, authored.settings.leatherShirt);
+  assertRigs(initial, sandbox, sandbox.settings.leatherShirt);
   for (const actor of initial.entities) {
     expect(actor.groundClearance).toBeGreaterThan(0);
     expect(actor.position.y - actor.authoritativePosition.y).toBeCloseTo(actor.groundClearance, 4);
@@ -203,7 +163,7 @@ test("native packages retain rigs, change equipment, hold death, move and clean 
     }
   }
   await page.getByRole("button", { name: "Run", exact: true }).click();
-  await expect.poll(async () => (await entity(page)).playback?.activeClip).toBe(authored.settings.fighterRun);
+  await expect.poll(async () => (await entity(page)).playback?.activeClip).toBe(sandbox.settings.fighterRun);
   const pose = (await entity(page)).pose.flat();
   await expect.poll(async () => (await entity(page)).pose.flat().reduce((sum, value, index) => sum + Math.abs(value - (pose[index] ?? value)), 0)).toBeGreaterThan(.1);
   await page.getByTestId("dev-sheet-toggle").click();
@@ -214,7 +174,7 @@ test("native packages retain rigs, change equipment, hold death, move and clean 
   await page.screenshot({ path: resolve(evidence, "native-wide.png") });
   await page.getByTestId("dev-sheet-toggle").click();
   await page.getByRole("button", { name: "Follow fighter", exact: true }).click();
-  expect((await read(page)).camera?.radius).toBeCloseTo(authored.camera.radius, 10);
+  expect((await read(page)).camera?.radius).toBeCloseTo(sandbox.camera.radius, 10);
   await page.getByRole("button", { name: "Neutral terrain", exact: true }).click();
   expect((await read(page)).world?.terrainMaterial).toBe("neutral-inspection");
   await page.getByRole("button", { name: "Source textures", exact: true }).click();
@@ -223,17 +183,17 @@ test("native packages retain rigs, change equipment, hold death, move and clean 
   await page.getByRole("button", { name: "Leather shirt", exact: true }).click();
   await waitForEquipment(page, true);
   const equipped = await entity(page);
-  assertRigs(await read(page), authored, true);
-  expect(equipped.playback?.activeClip).toBe(authored.settings.fighterRun);
+  assertRigs(await read(page), sandbox, true);
+  expect(equipped.playback?.activeClip).toBe(sandbox.settings.fighterRun);
   await page.getByRole("button", { name: "Starter shirt", exact: true }).click();
   await waitForEquipment(page, false);
-  await assertMaterialOverride(page, authored);
-  assertRigs(await read(page), authored, false);
+  await assertMaterialOverride(page, sandbox);
+  assertRigs(await read(page), sandbox, false);
   expect((await read(page)).skinMeshes).toHaveLength(9);
   await page.getByRole("button", { name: "Leather shirt", exact: true }).click();
   await waitForEquipment(page, true);
-  await assertMaterialOverride(page, authored);
-  assertRigs(await read(page), authored, true);
+  await assertMaterialOverride(page, sandbox);
+  assertRigs(await read(page), sandbox, true);
   await page.getByTestId("dev-tab-combat").click();
   await page.getByRole("button", { name: "Musveren death", exact: true }).click();
   await expect.poll(async () => (await entity(page, "native-musveren")).playback?.playing, { timeout: 35_000 }).toBe(false);
@@ -246,13 +206,13 @@ test("native packages retain rigs, change equipment, hold death, move and clean 
   await page.screenshot({ path: resolve(evidence, "native-death.png") });
   await page.getByTestId("dev-sheet-toggle").click();
   await page.getByRole("button", { name: "Attack", exact: true }).click();
-  await expect.poll(async () => (await entity(page)).playback?.activeClip).toBe(authored.settings.fighterAttack);
-  await expect.poll(async () => (await entity(page)).playback?.activeClip, { timeout: 35_000 }).toBe(authored.settings.fighterIdle);
+  await expect.poll(async () => (await entity(page)).playback?.activeClip).toBe(sandbox.settings.fighterAttack);
+  await expect.poll(async () => (await entity(page)).playback?.activeClip, { timeout: 35_000 }).toBe(sandbox.settings.fighterIdle);
   expect((await entity(page, "native-musveren")).pose).toEqual(dead.pose);
   await page.getByTestId("dev-tab-general").click();
   await page.getByRole("button", { name: "Pause", exact: true }).click();
   await page.getByRole("button", { name: "Attack", exact: true }).click();
-  expect((await entity(page)).playback).toMatchObject({ activeClip: authored.settings.fighterAttack, frame: 0, looping: false });
+  expect((await entity(page)).playback).toMatchObject({ activeClip: sandbox.settings.fighterAttack, frame: 0, looping: false });
   await page.getByRole("button", { name: "Idle", exact: true }).click();
   await page.getByTestId("dev-tab-combat").click();
   await page.getByRole("button", { name: "Revive Musveren", exact: true }).click();
@@ -260,7 +220,7 @@ test("native packages retain rigs, change equipment, hold death, move and clean 
   await page.getByTestId("dev-sheet-toggle").click();
   await mkdir(evidence, { recursive: true });
   await page.screenshot({ path: resolve(evidence, "native-desktop.png") });
-  await writeFile(resolve(evidence, "native-desktop.json"), JSON.stringify({ authored, initial, equipped, dead, final: await read(page), errors,
+  await writeFile(resolve(evidence, "native-desktop.json"), JSON.stringify({ sandbox, initial, equipped, dead, final: await read(page), errors,
     scope: "WebGPU functional check; not native visual parity or a performance benchmark." }, null, 2));
   await page.getByTestId("dev-sheet-toggle").click();
   await page.getByTestId("dev-tab-world").click();
@@ -277,38 +237,40 @@ test("native packages retain rigs, change equipment, hold death, move and clean 
   await expect(page.getByTestId("target-name")).toHaveText("Greater Musveren");
   await page.getByRole("button", { name: "Despawn target", exact: true }).click();
   await expect(page.getByTestId("entity-count")).toHaveText("1");
-  assertRigs(await read(page), authored, true, false);
+  assertRigs(await read(page), sandbox, true, false);
   expect((await read(page)).skinMeshes).toHaveLength(8);
   expect(errors).toEqual([]);
 });
 
-test("native actors and equipment remain usable at a mobile viewport", async ({ browser }) => {
+test("native actors and equipment remain usable on a landscape phone", async ({ browser }) => {
   test.skip(!staged, "Run pnpm assets:migrate --stage-runtime first.");
   test.setTimeout(180_000);
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
+  const context = await browser.newContext({ viewport: { width: 932, height: 430 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
   const page = await context.newPage(), errors = errorsFor(page);
   try {
-    const authored = await authoredState();
-    await ready(page, authored);
+    const sandbox = await sandboxState();
+    await ready(page, sandbox);
     const initial = await read(page);
     await page.getByRole("button", { name: "Run", exact: true }).tap();
-    await expect.poll(async () => (await entity(page)).playback?.activeClip).toBe(authored.settings.fighterRun);
+    await expect.poll(async () => (await entity(page)).playback?.activeClip).toBe(sandbox.settings.fighterRun);
     await page.getByTestId("dev-sheet-toggle").tap();
     await page.getByTestId("dev-tab-character").tap();
     await page.getByRole("button", { name: "Leather shirt", exact: true }).tap();
     await waitForEquipment(page, true);
-    assertRigs(await read(page), authored, true);
+    assertRigs(await read(page), sandbox, true);
     await page.getByRole("button", { name: "Idle", exact: true }).tap();
     await page.getByTestId("dev-tab-general").tap();
     await page.getByRole("button", { name: "Pause", exact: true }).tap();
     await page.getByTestId("dev-sheet-toggle").tap();
     await page.getByRole("button", { name: "Select Human male fighter", exact: true }).tap();
     await expect(page.getByTestId("target-name")).toHaveText("Human male fighter");
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(932);
     await mkdir(evidence, { recursive: true });
     await page.screenshot({ path: resolve(evidence, "native-mobile.png") });
-    await writeFile(resolve(evidence, "native-mobile.json"), JSON.stringify({ authored, initial, state: await read(page), errors,
+    await writeFile(resolve(evidence, "native-mobile.json"), JSON.stringify({ sandbox, initial, state: await read(page), errors,
       scope: "Touch emulation and WebGPU; not physical mobile performance." }, null, 2));
+    await page.setViewportSize({ width: 430, height: 932 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(430);
     expect(errors).toEqual([]);
   } finally { await context.close(); }
 });

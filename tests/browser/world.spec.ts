@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import type { ImportedWorldInspection } from "../../src/scene/world/loadImportedWorld";
+import { referenceWorldManifestRoute, routeReferenceWorldAsNotStaged } from "./routeReferenceWorldAsNotStaged";
 
 const staged = existsSync(resolve("public/assets/world/manifest.json"));
 const evidence = resolve("artifacts/world-integration");
@@ -109,10 +110,10 @@ test("enters the imported island with grounded characters and keeps scenery stab
   expect(errors).toEqual([]);
 });
 
-test("the imported island supports compact touch controls", async ({ browser }) => {
+test("the imported island supports touch controls on a landscape phone", async ({ browser }) => {
   test.skip(!staged, "Run pnpm world:stage to verify the actual imported island.");
   test.setTimeout(180_000);
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  const context = await browser.newContext({ viewport: { width: 932, height: 430 }, hasTouch: true, isMobile: true });
   const page = await context.newPage();
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
@@ -126,20 +127,23 @@ test("the imported island supports compact touch controls", async ({ browser }) 
     await expect.poll(async () => (await snapshot(page)).entities.find(entity => entity.id === "local-player")!.position.x).not.toBe(before.position.x);
     await page.getByRole("button", { name: "Select Elyra", exact: true }).tap();
     await expect(page.getByTestId("target-name")).toHaveText("Elyra");
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(932);
     await mkdir(evidence, { recursive: true });
     await page.screenshot({ path: resolve(evidence, "island-mobile.png") });
+    await page.setViewportSize({ width: 430, height: 932 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(430);
     expect(errors).toEqual([]);
   } finally { await context.close(); }
 });
 
-test("an unstaged world retains the courtyard and a corrupt receipt fails visibly", async ({ page }) => {
-  await page.route("**/assets/world/manifest.json", route => route.fulfill({ contentType: "text/html", body: "<!doctype html><html></html>" }));
+test("an unstaged reference world shows the not-staged status and a corrupt receipt fails visibly", async ({ page }) => {
+  await routeReferenceWorldAsNotStaged(page);
   await page.goto("/");
-  await expect(page.getByTestId("entity-count")).toHaveText("6");
-  expect((await snapshot(page)).environment.mode).toBe("courtyard");
-  await page.unroute("**/assets/world/manifest.json");
-  await page.route("**/assets/world/manifest.json", route => route.fulfill({ contentType: "application/json", body: '{"schemaVersion":0}' }));
+  await expect(page.locator("body")).toHaveAttribute("data-world-state", "ready", { timeout: 90_000 });
+  await expect(page.getByTestId("world-status")).toContainText("Reference world not staged");
+  expect((await snapshot(page)).environment.mode).toBe("not-staged");
+  await page.unroute(referenceWorldManifestRoute);
+  await page.route(referenceWorldManifestRoute, route => route.fulfill({ contentType: "application/json", body: '{"schemaVersion":0}' }));
   await page.reload();
   await expect(page.getByRole("alert")).toContainText("does not match the audited");
   expect(await page.evaluate(() => Boolean(window.__worldDiagnostics))).toBe(false);
