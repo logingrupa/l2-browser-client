@@ -2,7 +2,7 @@ import type { GameWorldAdapter } from "./GameWorldAdapter";
 import { createInitialWorld } from "./createInitialWorld";
 import { moveTowards, simulateRemotePlayer } from "./syntheticMovement";
 import type { WorldCommand, WorldEntity, WorldEvent, WorldPosition } from "./worldTypes";
-import { createSpawnedNpcEntity, entityWithClampedHealth, entityWithEquippedItem, isLineageIdentifier, skillCastEvent } from "./sandboxCommands";
+import { createSpawnedCharacterEntity, createSpawnedNpcEntity, entityWithClampedHealth, entityWithEquippedItem, isLineageIdentifier, skillCastEvent, unknownWorldCommandError } from "./sandboxCommands";
 import type { WorldNavigation } from "./WorldNavigation";
 
 const updateIntervalSeconds = 0.1;
@@ -20,6 +20,8 @@ export class MockWorldAdapter implements GameWorldAdapter {
   private simulationTicks = 0;
   private spawnedEntityCount = 0;
   private spawnedNpcCount = 0;
+  private spawnedCharacterCount = 0;
+  private sandboxSpawnPlacementOrdinal = 0;
   private isPaused = false;
   private isDisposed = false;
   private readonly initialPositions = new Map<string, WorldPosition>();
@@ -91,6 +93,9 @@ export class MockWorldAdapter implements GameWorldAdapter {
       case "spawn-npc":
         this.spawnNpc(command.npcId);
         break;
+      case "spawn-character":
+        this.spawnCharacter(command.characterTemplateIndex);
+        break;
       case "set-health": {
         const entity = this.entities.get(command.entityId);
         const healthChanged = entity ? entityWithClampedHealth(entity, command.health) : null;
@@ -113,6 +118,13 @@ export class MockWorldAdapter implements GameWorldAdapter {
           this.emit({ type: "despawn", entityId: command.entityId });
         }
         break;
+      case "set-locomotion":
+      case "preview-action":
+        break;
+      default: {
+        const unhandledCommand: never = command;
+        throw unknownWorldCommandError(unhandledCommand);
+      }
     }
   }
 
@@ -139,11 +151,11 @@ export class MockWorldAdapter implements GameWorldAdapter {
     this.simulationTicks += 1;
     const elapsedSeconds = this.simulationTicks * updateIntervalSeconds;
     for (const entity of this.entities.values()) {
-      if (entity.kind === "remote-player") {
+      const initialPosition = this.initialPositions.get(entity.id);
+      if (entity.kind === "remote-player" && initialPosition) {
         if (this.navigation) {
-          const center = this.initialPositions.get(entity.id)!;
           const direction = entity.id === "remote-1" ? 1 : -1, phase = elapsedSeconds * .45;
-          const destination = { x: center.x + Math.sin(phase) * direction, y: entity.position.y, z: center.z + Math.cos(phase) - 1 };
+          const destination = { x: initialPosition.x + Math.sin(phase) * direction, y: entity.position.y, z: initialPosition.z + Math.cos(phase) - 1 };
           const desired = moveTowards(entity, destination, 2 * updateIntervalSeconds);
           const moved = this.navigation.move(entity.position, desired.position);
           this.updateEntity({ ...desired, position: moved.position, animation: moved.blocked ? "idle" : "run" });
@@ -170,15 +182,26 @@ export class MockWorldAdapter implements GameWorldAdapter {
     return this.navigation ? this.navigation.spawn({ x: flatPosition.x * .5, y: 0, z: flatPosition.z * .5 }, [...this.entities.values()].map(other => other.position)) : flatPosition;
   }
 
+  private nextSandboxSpawnPosition(): WorldPosition | null {
+    const spawnPosition = this.spawnPlacement(this.sandboxSpawnPlacementOrdinal + 1);
+    if (spawnPosition) this.sandboxSpawnPlacementOrdinal += 1;
+    return spawnPosition;
+  }
+
   private spawnNpc(npcId: number): void {
     if (!isLineageIdentifier(npcId)) return;
-    const spawnSequence = this.spawnedNpcCount + 1;
-    const spawnPosition = this.spawnPlacement(spawnSequence);
+    const spawnPosition = this.nextSandboxSpawnPosition();
     if (!spawnPosition) return;
-    this.spawnedNpcCount = spawnSequence;
-    const entity = createSpawnedNpcEntity(npcId, spawnSequence, spawnPosition);
-    this.entities.set(entity.id, entity);
-    this.emit({ type: "spawn", entity });
+    this.spawnedNpcCount += 1;
+    this.addSpawnedEntity(createSpawnedNpcEntity(npcId, this.spawnedNpcCount, spawnPosition));
+  }
+
+  private spawnCharacter(characterTemplateIndex: number): void {
+    if (!isLineageIdentifier(characterTemplateIndex)) return;
+    const spawnPosition = this.nextSandboxSpawnPosition();
+    if (!spawnPosition) return;
+    this.spawnedCharacterCount += 1;
+    this.addSpawnedEntity(createSpawnedCharacterEntity(characterTemplateIndex, this.spawnedCharacterCount, spawnPosition));
   }
 
   private spawnEntity(): void {
@@ -195,6 +218,10 @@ export class MockWorldAdapter implements GameWorldAdapter {
       maximumHealth: 100,
       animation: "idle",
     });
+    this.addSpawnedEntity(entity);
+  }
+
+  private addSpawnedEntity(entity: WorldEntity): void {
     this.entities.set(entity.id, entity);
     this.emit({ type: "spawn", entity });
   }

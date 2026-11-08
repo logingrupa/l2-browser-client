@@ -23,6 +23,25 @@ export function createSpawnedNpcEntity(npcId: number, spawnSequence: number, pos
   });
 }
 
+export function createSpawnedCharacterEntity(characterTemplateIndex: number, spawnSequence: number, position: WorldPosition): WorldEntity {
+  return Object.freeze({
+    id: `character-${characterTemplateIndex}-${spawnSequence}`,
+    kind: "remote-player",
+    displayName: `character:${characterTemplateIndex}`,
+    characterTemplateIndex,
+    position: Object.freeze({ x: position.x, y: position.y, z: position.z }),
+    orientationRadians: 0,
+    health: 100,
+    maximumHealth: 100,
+    animation: "idle",
+  });
+}
+
+export function unknownWorldCommandError(unhandledCommand: never): RangeError {
+  const commandType: unknown = (unhandledCommand as { readonly type?: unknown }).type;
+  return new RangeError(`Unknown world command type: ${String(commandType)}.`);
+}
+
 export function entityWithClampedHealth(entity: WorldEntity, health: number): WorldEntity | null {
   if (!Number.isFinite(health)) return null;
   return { ...entity, health: Math.max(0, Math.min(entity.maximumHealth, health)) };

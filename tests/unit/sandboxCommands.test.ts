@@ -2,12 +2,30 @@ import { describe, expect, it } from "vitest";
 import type { GameWorldAdapter } from "../../src/world/GameWorldAdapter";
 import { MockWorldAdapter } from "../../src/world/MockWorldAdapter";
 import { NativeSliceAdapter } from "../../src/world/NativeSliceAdapter";
-import type { WorldEvent } from "../../src/world/worldTypes";
+import type { WorldNavigation } from "../../src/world/WorldNavigation";
+import type { WorldEntity, WorldEvent, WorldPosition } from "../../src/world/worldTypes";
 
-const adapterFactories: ReadonlyArray<readonly [string, () => GameWorldAdapter]> = [
-  ["MockWorldAdapter", () => new MockWorldAdapter()],
-  ["NativeSliceAdapter", () => new NativeSliceAdapter({ x: 0, y: 0, z: 0 })],
+const adapterFactories: ReadonlyArray<readonly [string, (navigation?: WorldNavigation) => GameWorldAdapter]> = [
+  ["MockWorldAdapter", navigation => new MockWorldAdapter(navigation)],
+  ["NativeSliceAdapter", navigation => new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, navigation)],
 ];
+
+const planStartNpcPositionsByAdapter: Readonly<Record<string, readonly WorldPosition[]>> = {
+  MockWorldAdapter: [{ x: -3.5, y: 0, z: -6 }, { x: -1, y: 0, z: -6 }, { x: 1.5, y: 0, z: -6 }],
+  NativeSliceAdapter: [{ x: 1.4, y: 0, z: 0 }, { x: 2.8, y: 0, z: 0 }, { x: 1.4 * 3, y: 0, z: 0 }],
+};
+
+function createSwitchableSpawnNavigation() {
+  const spawnAvailability = { hasFreeSpawnPoint: true };
+  const navigation: WorldNavigation = {
+    origin: { x: 0, y: 0, z: 0 },
+    ground: position => position,
+    destination: position => position,
+    spawn: offset => spawnAvailability.hasFreeSpawnPoint ? { x: offset.x, y: offset.y, z: offset.z } : null,
+    move: (_from, to) => ({ position: to, blocked: false }),
+  };
+  return { navigation, spawnAvailability };
+}
 
 function recordEvents(adapter: GameWorldAdapter): WorldEvent[] {
   const receivedEvents: WorldEvent[] = [];
@@ -120,6 +138,133 @@ describe.each(adapterFactories)("sandbox by-ID commands on %s", (_name, createAd
     adapter.dispatch({ type: "set-health", entityId: "local-player", health: 0 });
     adapter.dispatch({ type: "cast-skill", skillId: 3, level: 1 });
     expect(receivedEvents.filter(event => event.type === "skill-cast")).toEqual([]);
+    adapter.dispose();
+  });
+});
+
+describe.each(adapterFactories)("spawn-character on %s", (adapterName, createAdapter) => {
+  it("spawns a remote-player entity that carries only its chargrp template index and the sandbox defaults", () => {
+    const adapter = createAdapter();
+    const receivedEvents = recordEvents(adapter);
+    adapter.dispatch({ type: "spawn-character", characterTemplateIndex: 7 });
+    expect(receivedEvents).toHaveLength(1);
+    const character = spawnedEntities(receivedEvents)[0]!;
+    expect(character).toMatchObject({ id: "character-7-1", kind: "remote-player", displayName: "character:7", characterTemplateIndex: 7,
+      health: 100, maximumHealth: 100, animation: "idle" });
+    for (const derivedField of ["appearanceId", "npcId", "equipment", "locomotion", "requestedClip"]) expect(character).not.toHaveProperty(derivedField);
+    expect(adapter.getInitialState().find(entity => entity.id === "character-7-1")).toMatchObject({ characterTemplateIndex: 7 });
+    adapter.dispose();
+  });
+
+  it("gives two spawns of one index two separate entities", () => {
+    const adapter = createAdapter();
+    const receivedEvents = recordEvents(adapter);
+    adapter.dispatch({ type: "spawn-character", characterTemplateIndex: 7 });
+    adapter.dispatch({ type: "spawn-character", characterTemplateIndex: 7 });
+    expect(spawnedEntities(receivedEvents).map(entity => entity.id)).toEqual(["character-7-1", "character-7-2"]);
+    expect(adapter.getInitialState().filter(entity => entity.characterTemplateIndex === 7)).toHaveLength(2);
+    adapter.dispose();
+  });
+
+  it("accepts index 0 and Number.MAX_SAFE_INTEGER and writes them as plain decimal integers", () => {
+    const adapter = createAdapter();
+    const receivedEvents = recordEvents(adapter);
+    adapter.dispatch({ type: "spawn-character", characterTemplateIndex: 0 });
+    adapter.dispatch({ type: "spawn-character", characterTemplateIndex: Number.MAX_SAFE_INTEGER });
+    expect(spawnedEntities(receivedEvents).map(entity => [entity.id, entity.displayName, entity.characterTemplateIndex])).toEqual([
+      ["character-0-1", "character:0", 0],
+      ["character-9007199254740991-2", "character:9007199254740991", Number.MAX_SAFE_INTEGER],
+    ]);
+    adapter.dispose();
+  });
+
+  it("refuses indexes that are not safe non-negative integers without rounding or advancing any counter", () => {
+    const adapter = createAdapter();
+    const receivedEvents = recordEvents(adapter);
+    for (const characterTemplateIndex of [-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, Number.MAX_SAFE_INTEGER + 1]) {
+      adapter.dispatch({ type: "spawn-character", characterTemplateIndex });
+    }
+    expect(receivedEvents).toEqual([]);
+    adapter.dispatch({ type: "spawn-character", characterTemplateIndex: 3 });
+    adapter.dispatch({ type: "spawn-npc", npcId: 5 });
+    expect(spawnedEntities(receivedEvents).map(entity => entity.id)).toEqual(["character-3-1", "npc-5-1"]);
+    expect(spawnedEntities(receivedEvents).map(entity => entity.position)).toEqual(planStartNpcPositionsByAdapter[adapterName]!.slice(0, 2));
+    adapter.dispose();
+  });
+
+  it("keeps the plan-start positions when only NPCs are spawned", () => {
+    const adapter = createAdapter();
+    const receivedEvents = recordEvents(adapter);
+    for (const npcId of [1, 2, 3]) adapter.dispatch({ type: "spawn-npc", npcId });
+    expect(spawnedEntities(receivedEvents).map(entity => entity.position)).toEqual(planStartNpcPositionsByAdapter[adapterName]);
+    adapter.dispose();
+  });
+
+  it("places an NPC and a character spawned back to back at different positions", () => {
+    const adapter = createAdapter();
+    const receivedEvents = recordEvents(adapter);
+    adapter.dispatch({ type: "spawn-npc", npcId: 12345 });
+    adapter.dispatch({ type: "spawn-character", characterTemplateIndex: 7 });
+    const [npc, character] = spawnedEntities(receivedEvents);
+    expect(character!.position).not.toEqual(npc!.position);
+    adapter.dispose();
+  });
+
+  it("emits mixed spawns in dispatch order with a sequence per kind starting at 1", () => {
+    const adapter = createAdapter();
+    const receivedEvents = recordEvents(adapter);
+    adapter.dispatch({ type: "spawn-npc", npcId: 7 });
+    adapter.dispatch({ type: "spawn-character", characterTemplateIndex: 3 });
+    adapter.dispatch({ type: "spawn-npc", npcId: 0 });
+    adapter.dispatch({ type: "spawn-character", characterTemplateIndex: 3 });
+    expect(spawnedEntities(receivedEvents).map(entity => entity.id)).toEqual(["npc-7-1", "character-3-1", "npc-0-2", "character-3-2"]);
+    adapter.dispose();
+  });
+
+  it("emits nothing and keeps the id sequence when navigation has no free spawn point", () => {
+    const { navigation, spawnAvailability } = createSwitchableSpawnNavigation();
+    const adapter = createAdapter(navigation);
+    const receivedEvents = recordEvents(adapter);
+    spawnAvailability.hasFreeSpawnPoint = false;
+    adapter.dispatch({ type: "spawn-character", characterTemplateIndex: 7 });
+    expect(receivedEvents).toEqual([]);
+    spawnAvailability.hasFreeSpawnPoint = true;
+    adapter.dispatch({ type: "spawn-character", characterTemplateIndex: 7 });
+    expect(spawnedEntities(receivedEvents).map(entity => entity.id)).toEqual(["character-7-1"]);
+    adapter.dispose();
+  });
+
+  it("emits nothing after dispose", () => {
+    const adapter = createAdapter();
+    const receivedEvents = recordEvents(adapter);
+    adapter.dispose();
+    adapter.dispatch({ type: "spawn-character", characterTemplateIndex: 7 });
+    expect(receivedEvents).toEqual([]);
+  });
+});
+
+describe("spawn-character on MockWorldAdapter simulation", () => {
+  function spawnCharacterAndAdvance(adapter: GameWorldAdapter): readonly [WorldEntity, WorldEntity] {
+    const receivedEvents = recordEvents(adapter);
+    adapter.dispatch({ type: "spawn-character", characterTemplateIndex: 7 });
+    const spawnedCharacter = spawnedEntities(receivedEvents)[0]!;
+    adapter.advance(10);
+    const advancedCharacter = adapter.getInitialState().find(entity => entity.id === spawnedCharacter.id)!;
+    return [spawnedCharacter, advancedCharacter];
+  }
+
+  it("leaves a spawned character standing still without navigation while the start remote players move", () => {
+    const adapter = new MockWorldAdapter();
+    const [spawnedCharacter, advancedCharacter] = spawnCharacterAndAdvance(adapter);
+    expect(advancedCharacter.position).toEqual(spawnedCharacter.position);
+    expect(adapter.getInitialState().find(entity => entity.id === "remote-1")!.position).not.toEqual({ x: -5, y: 0, z: -3 });
+    adapter.dispose();
+  });
+
+  it("leaves a spawned character standing still with navigation", () => {
+    const adapter = new MockWorldAdapter(createSwitchableSpawnNavigation().navigation);
+    const [spawnedCharacter, advancedCharacter] = spawnCharacterAndAdvance(adapter);
+    expect(advancedCharacter.position).toEqual(spawnedCharacter.position);
     adapter.dispose();
   });
 });

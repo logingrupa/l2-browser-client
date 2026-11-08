@@ -2,7 +2,9 @@ import type { GameWorldAdapter } from "./GameWorldAdapter";
 import type { LocomotionMode, WorldCommand, WorldEntity, WorldEvent, WorldPosition } from "./worldTypes";
 import type { WorldGroundContact, WorldNavigation } from "./WorldNavigation";
 import { moveTowards } from "./syntheticMovement";
-import { createSpawnedNpcEntity, entityWithClampedHealth, entityWithEquippedItem, isLineageIdentifier, skillCastEvent } from "./sandboxCommands";
+import { createSpawnedCharacterEntity, createSpawnedNpcEntity, entityWithClampedHealth, entityWithEquippedItem, isLineageIdentifier, skillCastEvent, unknownWorldCommandError } from "./sandboxCommands";
+
+type PreviewActionCommand = Extract<WorldCommand, { readonly type: "preview-action" }>;
 
 const sandboxActorSpacingMetres = 1.4;
 const velocityWithoutAccelerationRampRoutine = "APawn::calcVelocity 0x10639950";
@@ -44,6 +46,8 @@ export class NativeSliceAdapter implements GameWorldAdapter {
   private acceptedContact: WorldGroundContact | null = null;
   private secondsMovingSinceRest = 0;
   private spawnedNpcCount = 0;
+  private spawnedCharacterCount = 0;
+  private sandboxSpawnPlacementOrdinal = 0;
   private readonly speed: NativeSliceSpeedProfile;
   private readonly walkSupported: boolean;
   private readonly specialAttackPreviewSupported: boolean;
@@ -76,68 +80,117 @@ export class NativeSliceAdapter implements GameWorldAdapter {
   get groundContact(): WorldGroundContact | null { return this.acceptedContact ? structuredClone(this.acceptedContact) : null; }
   subscribe(listener: (event: WorldEvent) => void): () => void { this.listeners.add(listener); return () => this.listeners.delete(listener); }
   subscribeCommands(listener: (command: WorldCommand) => void): () => void { this.commandListeners.add(listener); return () => this.commandListeners.delete(listener); }
-  private update(entity: WorldEntity): void { this.entities.set(entity.id, entity); for (const listener of this.listeners) listener({ type: "update", entity }); }
+  private emit(event: WorldEvent): void { for (const listener of this.listeners) listener(event); }
+  private update(entity: WorldEntity): void { this.entities.set(entity.id, entity); this.emit({ type: "update", entity }); }
   dispatch(command: WorldCommand): void {
     if (this.disposed) return;
     for (const listener of this.commandListeners) listener(command);
     const player = this.entities.get("local-player");
-    if (command.type === "set-paused") this.paused = command.isPaused;
-    else if (player && command.type === "set-locomotion") {
-      if ((command.mode !== "walk" && command.mode !== "run") ||
-        (command.mode === "walk" && !this.walkSupported) || command.mode === this.locomotionMode) return;
-      this.update({ ...player, locomotion: command.mode });
-    }
-    else if (command.type === "set-health") {
-      const entity = this.entities.get(command.entityId);
-      const healthChanged = entity ? entityWithClampedHealth(entity, command.health) : null;
-      if (healthChanged) this.update(healthChanged);
-    } else if (command.type === "despawn" && command.entityId !== "local-player") {
-      if (this.entities.delete(command.entityId)) for (const listener of this.listeners) listener({ type: "despawn", entityId: command.entityId });
-    } else if (player && command.type === "spawn-npc") this.spawnNpc(player, command.npcId);
-    else if (command.type === "equip-item") {
-      const equippedEntity = entityWithEquippedItem(this.entities, command);
-      if (equippedEntity) this.update(equippedEntity);
-    } else if (command.type === "cast-skill") {
-      const castEvent = skillCastEvent(this.entities, command);
-      if (castEvent) for (const listener of this.listeners) listener(castEvent);
-    } else if (player && command.type === "preview-action") {
-      if (command.action !== "special-attack" || !this.specialAttackPreviewSupported || player.health <= 0) return;
-      const target = command.targetId === undefined ? null : this.entities.get(command.targetId);
-      if (command.targetId !== undefined && (!target || target.id === player.id || target.health <= 0 ||
-        ![target.position.x, target.position.y, target.position.z].every(Number.isFinite))) return;
-      this.destination = undefined;
-      const { actionTargetId: _previousTarget, ...unbound } = player;
-      this.update({ ...unbound, animation: "attack", actionPreview: command.action,
-        ...(target ? { actionTargetId: target.id, orientationRadians: Math.atan2(target.position.x - player.position.x, target.position.z - player.position.z) } : {}),
-        animationSequence: (player.animationSequence ?? 0) + 1 });
-    } else if (command.type === "set-animation") {
-      const entity = this.entities.get(command.entityId ?? "local-player");
-      if (entity) {
-        if (entity.id === "local-player") this.destination = undefined;
-        const { actionPreview: _preview, actionTargetId: _target, ...ordinary } = entity;
-        this.update({ ...ordinary, animation: command.animation, animationSequence: (entity.animationSequence ?? 0) + 1 });
+    switch (command.type) {
+      case "set-paused":
+        this.paused = command.isPaused;
+        break;
+      case "set-locomotion":
+        if (player) this.setLocomotion(player, command.mode);
+        break;
+      case "set-health": {
+        const entity = this.entities.get(command.entityId);
+        const healthChanged = entity ? entityWithClampedHealth(entity, command.health) : null;
+        if (healthChanged) this.update(healthChanged);
+        break;
       }
-    } else if (player && player.health > 0 && command.type === "move-local" && [command.position.x, command.position.y, command.position.z].every(Number.isFinite)) {
-      const target = this.navigation?.destination(command.position) ?? (!this.navigation ? { x: command.position.x, y: player.position.y, z: command.position.z } : null);
-      if (target) {
-        this.destination = target;
-        const { actionPreview: _preview, actionTargetId: _target, ...ordinary } = player;
-        this.update({ ...ordinary, animation: "run" });
+      case "despawn":
+        if (command.entityId !== "local-player" && this.entities.delete(command.entityId)) this.emit({ type: "despawn", entityId: command.entityId });
+        break;
+      case "spawn-npc":
+        if (player) this.spawnNpc(player, command.npcId);
+        break;
+      case "spawn-character":
+        if (player) this.spawnCharacter(player, command.characterTemplateIndex);
+        break;
+      case "equip-item": {
+        const equippedEntity = entityWithEquippedItem(this.entities, command);
+        if (equippedEntity) this.update(equippedEntity);
+        break;
+      }
+      case "cast-skill": {
+        const castEvent = skillCastEvent(this.entities, command);
+        if (castEvent) this.emit(castEvent);
+        break;
+      }
+      case "preview-action":
+        if (player) this.previewAction(player, command);
+        break;
+      case "set-animation": {
+        const entity = this.entities.get(command.entityId ?? "local-player");
+        if (entity) {
+          if (entity.id === "local-player") this.destination = undefined;
+          const { actionPreview: _preview, actionTargetId: _target, ...ordinary } = entity;
+          this.update({ ...ordinary, animation: command.animation, animationSequence: (entity.animationSequence ?? 0) + 1 });
+        }
+        break;
+      }
+      case "move-local":
+        if (player) this.moveLocalPlayer(player, command.position);
+        break;
+      case "teleport-local":
+      case "spawn":
+        break;
+      default: {
+        const unhandledCommand: never = command;
+        throw unknownWorldCommandError(unhandledCommand);
       }
     }
   }
-  private spawnNpc(player: WorldEntity, npcId: number): void {
-    if (!isLineageIdentifier(npcId)) return;
-    const spawnSequence = this.spawnedNpcCount + 1;
+  private setLocomotion(player: WorldEntity, mode: LocomotionMode): void {
+    if ((mode !== "walk" && mode !== "run") || (mode === "walk" && !this.walkSupported) || mode === this.locomotionMode) return;
+    this.update({ ...player, locomotion: mode });
+  }
+  private previewAction(player: WorldEntity, command: PreviewActionCommand): void {
+    if (command.action !== "special-attack" || !this.specialAttackPreviewSupported || player.health <= 0) return;
+    const target = command.targetId === undefined ? null : this.entities.get(command.targetId);
+    if (command.targetId !== undefined && (!target || target.id === player.id || target.health <= 0 ||
+      ![target.position.x, target.position.y, target.position.z].every(Number.isFinite))) return;
+    this.destination = undefined;
+    const { actionTargetId: _previousTarget, ...unbound } = player;
+    this.update({ ...unbound, animation: "attack", actionPreview: command.action,
+      ...(target ? { actionTargetId: target.id, orientationRadians: Math.atan2(target.position.x - player.position.x, target.position.z - player.position.z) } : {}),
+      animationSequence: (player.animationSequence ?? 0) + 1 });
+  }
+  private moveLocalPlayer(player: WorldEntity, requestedPosition: WorldPosition): void {
+    if (player.health <= 0 || ![requestedPosition.x, requestedPosition.y, requestedPosition.z].every(Number.isFinite)) return;
+    const target = this.navigation?.destination(requestedPosition) ?? (!this.navigation ? { x: requestedPosition.x, y: player.position.y, z: requestedPosition.z } : null);
+    if (!target) return;
+    this.destination = target;
+    const { actionPreview: _preview, actionTargetId: _target, ...ordinary } = player;
+    this.update({ ...ordinary, animation: "run" });
+  }
+  private nextSandboxSpawnPosition(player: WorldEntity): WorldPosition | null {
+    const placementOrdinal = this.sandboxSpawnPlacementOrdinal + 1;
     const occupied = [...this.entities.values()].map(entity => entity.position);
     const position = this.navigation
       ? this.navigation.spawn({ x: player.position.x - this.navigation.origin.x + sandboxActorSpacingMetres, y: player.position.y - this.navigation.origin.y, z: player.position.z - this.navigation.origin.z }, occupied)
-      : { x: player.position.x + sandboxActorSpacingMetres * spawnSequence, y: player.position.y, z: player.position.z };
+      : { x: player.position.x + sandboxActorSpacingMetres * placementOrdinal, y: player.position.y, z: player.position.z };
+    if (position) this.sandboxSpawnPlacementOrdinal = placementOrdinal;
+    return position;
+  }
+  private spawnNpc(player: WorldEntity, npcId: number): void {
+    if (!isLineageIdentifier(npcId)) return;
+    const position = this.nextSandboxSpawnPosition(player);
     if (!position) return;
-    this.spawnedNpcCount = spawnSequence;
-    const entity = createSpawnedNpcEntity(npcId, spawnSequence, position);
+    this.spawnedNpcCount += 1;
+    this.addSpawnedEntity(createSpawnedNpcEntity(npcId, this.spawnedNpcCount, position));
+  }
+  private spawnCharacter(player: WorldEntity, characterTemplateIndex: number): void {
+    if (!isLineageIdentifier(characterTemplateIndex)) return;
+    const position = this.nextSandboxSpawnPosition(player);
+    if (!position) return;
+    this.spawnedCharacterCount += 1;
+    this.addSpawnedEntity(createSpawnedCharacterEntity(characterTemplateIndex, this.spawnedCharacterCount, position));
+  }
+  private addSpawnedEntity(entity: WorldEntity): void {
     this.entities.set(entity.id, entity);
-    for (const listener of this.listeners) listener({ type: "spawn", entity });
+    this.emit({ type: "spawn", entity });
   }
   advance(seconds: number): void {
     if (!Number.isFinite(seconds) || seconds < 0) throw new Error("Invalid native slice elapsed time.");
