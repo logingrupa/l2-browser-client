@@ -43,7 +43,7 @@ describe("bounded native map section loading", () => {
       surfaceSpawnCandidate: { sourcePosition: [21300, 79100, -3000], gltfGroundPosition: [213, -30, 791], nativeSpawnVerified: false, collisionVerified: false },
     };
     const manifestBytes = new TextEncoder().encode(JSON.stringify(manifest)), hash = await sha256(manifestBytes), base = `/l2/maps/${hash}/`;
-    const catalog = { schemaVersion: 1, sections: [{ id: "map-20-20-section", manifestSha256: hash, manifest: `${base}map-section-runtime/manifest.json` }] };
+    const catalog = { schemaVersion: 1, models: [], sections: [{ id: "map-20-20-section", manifestSha256: hash, manifest: `${base}map-section-runtime/manifest.json` }] };
     const responses = new Map<string, Uint8Array<ArrayBuffer>>([
       ["/l2/catalog.json", new TextEncoder().encode(JSON.stringify(catalog))], [`${base}map-section-runtime/manifest.json`, manifestBytes],
       [`${base}map-section/terrain.glb`, terrainBytes], [`${base}map-section-models/${archiveHash}/model.glb`, modelBytes],
@@ -104,7 +104,7 @@ describe("bounded native map section loading", () => {
     const data = await fixture(), before = counts();
     const url = target === "catalog" ? "/l2/catalog.json" : target === "manifest" ? `${data.base}map-section-runtime/manifest.json`
       : [...data.responses.keys()].find(path => path.endsWith(target === "terrain" ? "/terrain.glb" : "/model.glb"))!;
-    data.responses.set(url, new TextEncoder().encode(target === "catalog" ? '{"schemaVersion":1,"sections":[{"id":"bad"}]}' : "corruption"));
+    data.responses.set(url, new TextEncoder().encode(target === "catalog" ? '{"schemaVersion":1,"models":[],"sections":[{"id":"bad"}]}' : "corruption"));
     await expect(load()).rejects.toThrow(target === "catalog" ? "catalog identity/hash/path" : "hash/length mismatch");
     expect(counts()).toEqual(before);
   });
@@ -135,8 +135,6 @@ describe("bounded native map section loading", () => {
     const dispose = vi.spyOn(late!, "dispose");
     if (lifetime === "abort") controller.abort(); else scene.dispose();
     release(); await expect(pending).rejects.toThrow("disposed during loading");
-    // Babylon also disposes detached containers on scene shutdown; late-loader
-    // cleanup remains safe after that automatic disposal.
     if (lifetime === "abort") expect(dispose).toHaveBeenCalledOnce(); else expect(dispose).toHaveBeenCalled();
     expect(late!.meshes).toHaveLength(0); expect(scene.meshes).toHaveLength(0); expect(scene.transformNodes).toHaveLength(0);
   });

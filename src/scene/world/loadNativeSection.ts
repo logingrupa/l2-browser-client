@@ -8,6 +8,7 @@ import type { Scene } from "@babylonjs/core/scene";
 import "@babylonjs/loaders/glTF";
 import { sha256 } from "../../assets/package/readAssetPackage";
 import { nativeResourceUrl } from "../../assets/native/nativeResourceUrl";
+import { readNativeCatalogUnlessNotStaged, type NativeCatalog } from "../../assets/native/readNativeCatalog";
 import { applyNativeTerrainPreview, type NativeTerrainPreview } from "./nativeTerrainPreview";
 import { attachNativeBspSupport } from "./nativeBspSupport";
 import { nativeBspResources } from "./nativeBspResources";
@@ -35,9 +36,7 @@ export interface NativeSectionManifest {
   support: "section-products-ready-for-runtime-validation"; errors: []; gaps: string[];
   surfaceSpawnCandidate?: SurfaceSpawnCandidate;
   unsupportedRuntimeMaterials?: UnsupportedRuntimeMaterial[];
-  /** Final ULevel.Model polygons, separately qualified from static models. */
   bsp?: NativeBspResource[];
-  /** Additive source-qualified geometry; the original terrain stays unchanged. */
   terrainPatches?: NativeTerrainPatch[];
 }
 interface SectionRecord { id: string; manifest: string; manifestSha256: string; }
@@ -64,7 +63,6 @@ function resource(value: unknown, expression: RegExp): value is Resource {
     Number.isSafeInteger(value.bytes) && value.bytes > 0 && value.bytes <= 128 * 1024 * 1024;
 }
 
-/** Reject unsupported relationships instead of silently dropping source data. */
 export function parseNativeSection(input: unknown): NativeSectionManifest {
   if (!object(input) || input.schemaVersion !== 1 || input.kind !== "native-map-section-runtime" ||
     input.support !== "section-products-ready-for-runtime-validation" || !Array.isArray(input.errors) || input.errors.length ||
@@ -97,15 +95,13 @@ export function parseNativeSection(input: unknown): NativeSectionManifest {
     if (!Array.isArray(input.bsp) || !input.bsp.length || input.bsp.length > 4) throw new Error("Native BSP scope is unsupported.");
     const ids = new Set<string>();
     for (const bsp of input.bsp) {
-      const qualified = object(bsp) && typeof bsp.id === "string" && Object.hasOwn(nativeBspResources, bsp.id) ? nativeBspResources[bsp.id] : undefined;
-      // This is deliberately a qualified scope, not a claim that arbitrary BSP
-      // polygons, flags, lightmaps or collision branches have been implemented.
-      if (!object(bsp) || !qualified || typeof bsp.id !== "string" || ids.has(bsp.id) || bsp.sourceModel !== "20_20.Model798" ||
-        bsp.sourceBrush !== qualified.brush || bsp.sourceMapSha256 !== "1beddad24c10a35a1b2e9151727a85158e3e01992299a6671de876645eb1f1e4" ||
-        !resource(bsp.model, /^bsp-(?:floor|command-(?:walls|floor|ceiling))\.glb$/) || bsp.model.file !== `${qualified.stem}.glb` ||
-        !resource(bsp.source, /^bsp-(?:floor|command-(?:walls|floor|ceiling))\.json$/) || bsp.source.file !== `${qualified.stem}.json` ||
+      const qualifiedBspScope = object(bsp) && typeof bsp.id === "string" && Object.hasOwn(nativeBspResources, bsp.id) ? nativeBspResources[bsp.id] : undefined;
+      if (!object(bsp) || !qualifiedBspScope || typeof bsp.id !== "string" || ids.has(bsp.id) || bsp.sourceModel !== "20_20.Model798" ||
+        bsp.sourceBrush !== qualifiedBspScope.brush || bsp.sourceMapSha256 !== "1beddad24c10a35a1b2e9151727a85158e3e01992299a6671de876645eb1f1e4" ||
+        !resource(bsp.model, /^bsp-(?:floor|command-(?:walls|floor|ceiling))\.glb$/) || bsp.model.file !== `${qualifiedBspScope.stem}.glb` ||
+        !resource(bsp.source, /^bsp-(?:floor|command-(?:walls|floor|ceiling))\.json$/) || bsp.source.file !== `${qualifiedBspScope.stem}.json` ||
         !Array.isArray(bsp.supportPlacementIds) || bsp.supportPlacementIds.length !== 1 ||
-        bsp.supportPlacementIds[0] !== qualified.placement || !placements.has(bsp.supportPlacementIds[0])) {
+        bsp.supportPlacementIds[0] !== qualifiedBspScope.placement || !placements.has(bsp.supportPlacementIds[0])) {
         throw new Error("Native BSP identity, resources or support scope is invalid.");
       }
       ids.add(bsp.id);
@@ -142,20 +138,17 @@ export function parseNativeSection(input: unknown): NativeSectionManifest {
   return input as unknown as NativeSectionManifest;
 }
 
-async function stagedSection(signal: AbortSignal, identity: string): Promise<{ record: SectionRecord; catalog: Record<string, unknown> } | null> {
-  const response = await fetch(nativeResourceUrl("/l2/catalog.json"), { signal });
-  if (response.status === 404) return null;
-  if (!response.ok) throw new Error(`Native catalog returned HTTP ${response.status}.`);
-  const content = await response.text();
-  if (/^\s*(?:<!doctype html|<html)/i.test(content)) return null;
-  const catalog: unknown = JSON.parse(content);
-  if (!object(catalog) || catalog.schemaVersion !== 1 || !Array.isArray(catalog.sections)) throw new Error("Native section catalog is invalid. Run pnpm assets:migrate --stage-runtime.");
+async function stagedSection(signal: AbortSignal, identity: string): Promise<{ record: SectionRecord; catalog: NativeCatalog } | null> {
+  const catalog = await readNativeCatalogUnlessNotStaged(signal);
+  if (!catalog) return null;
   const ids = new Set<string>();
   let found: SectionRecord | null = null;
-  for (const record of catalog.sections as unknown[]) {
+  for (const record of catalog.sections) {
     if (!object(record) || typeof record.id !== "string" || !/^[a-z0-9][a-z0-9-]{0,79}$/.test(record.id) || ids.has(record.id) ||
       typeof record.manifestSha256 !== "string" || !HASH.test(record.manifestSha256) ||
-      record.manifest !== `/l2/maps/${record.manifestSha256}/map-section-runtime/manifest.json`) throw new Error("Native section catalog identity/hash/path is invalid.");
+      record.manifest !== `/l2/maps/${record.manifestSha256}/map-section-runtime/manifest.json`) {
+      throw new Error("Native section catalog identity/hash/path is invalid. Stage the native world section from the main checkout.");
+    }
     ids.add(record.id);
     if (record.id === identity) found = record as unknown as SectionRecord;
   }
@@ -172,7 +165,6 @@ async function verifiedBytes(url: string, hash: string, signal: AbortSignal, len
   return bytes;
 }
 
-/** Staged GLBs embed their dependencies; reject an unpinned external fetch. */
 export function validateSectionGlb(bytes: Uint8Array<ArrayBuffer>): Record<string, unknown> {
   if (bytes.byteLength < 20) throw new Error("Native section resource is not a GLB.");
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -217,7 +209,25 @@ function inspect(terrain: readonly AbstractMesh[], instances: readonly Instance[
   };
 }
 
-/** Exact, bounded source placements. This importer supplies no terrain shader or collision policy. */
+function bindMeshExtrasByGltfPrimitivePointer(container: AssetContainer, document: Record<string, unknown>): void {
+  const sourceMeshes: unknown[] = Array.isArray(document.meshes) ? document.meshes : [];
+  for (const mesh of container.meshes) {
+    const pointers: unknown = mesh._internalMetadata?.gltf?.pointers;
+    if (!Array.isArray(pointers)) continue;
+    const pointer = pointers.find((value: unknown) => typeof value === "string" && /^\/meshes\/\d+\/primitives\//.test(value));
+    if (typeof pointer !== "string") continue;
+    const source = sourceMeshes[Number(pointer.split("/")[2])];
+    if (object(source) && object(source.extras)) mesh.metadata = { ...mesh.metadata,
+      gltf: { ...mesh.metadata?.gltf, extras: { ...mesh.metadata?.gltf?.extras, ...source.extras } } };
+  }
+}
+
+function disposeSceneNodesCreatedAfter(scene: Scene, existingNodes: ReadonlySet<unknown>): void {
+  for (const created of [...scene.meshes, ...scene.transformNodes, ...scene.skeletons, ...scene.animationGroups]) {
+    if (!existingNodes.has(created)) created.dispose();
+  }
+}
+
 export async function loadNativeSection(scene: Scene, signal: AbortSignal, identity = "map-20-20-section"): Promise<NativeSection | null> {
   signal.throwIfAborted();
   if (scene.isDisposed || !scene.useRightHandedSystem) throw new Error("Native section requires a live right-handed scene.");
@@ -242,18 +252,7 @@ export async function loadNativeSection(scene: Scene, signal: AbortSignal, ident
     const container = await LoadAssetContainerAsync(bytes, scene, { pluginExtension: ".glb", rootUrl: url.slice(0, url.lastIndexOf("/")+1),
       name: url.split("/").at(-1) ?? "section.glb", pluginOptions: { gltf: { animationStartMode: GLTFLoaderAnimationStartMode.NONE } } });
     if (disposed || scene.isDisposed) { container.dispose(); throw new Error("Native section was disposed during loading."); }
-    // Babylon's optional extras extension is not enabled by every Editor host.
-    // Bind retained mesh extras by the loader's exact glTF primitive pointer.
-    const sourceMeshes: unknown[] = Array.isArray(document.meshes) ? document.meshes : [];
-    for (const mesh of container.meshes) {
-      const pointers: unknown = mesh._internalMetadata?.gltf?.pointers;
-      if (!Array.isArray(pointers)) continue;
-      const pointer = pointers.find((value: unknown) => typeof value === "string" && /^\/meshes\/\d+\/primitives\//.test(value));
-      if (typeof pointer !== "string") continue;
-      const source = sourceMeshes[Number(pointer.split("/")[2])];
-      if (object(source) && object(source.extras)) mesh.metadata = { ...mesh.metadata,
-        gltf: { ...mesh.metadata?.gltf, extras: { ...mesh.metadata?.gltf?.extras, ...source.extras } } };
-    }
+    bindMeshExtrasByGltfPrimitivePointer(container, document);
     containers.push(container); return container;
   }
   try {
@@ -277,7 +276,7 @@ export async function loadNativeSection(scene: Scene, signal: AbortSignal, ident
       mesh.isPickable = true;
     }
     try {
-      if (Array.isArray(catalog.textures) && catalog.textures.length) {
+      if (catalog.textures.length) {
         preview = await applyNativeTerrainPreview(scene, terrainMeshes, catalog, lifetime.signal);
       }
     } catch (error) {
@@ -289,15 +288,11 @@ export async function loadNativeSection(scene: Scene, signal: AbortSignal, ident
     for (const placement of manifest.placements) {
       const template = templates.get(placement.modelId)!;
       const root = new TransformNode(placement.id, scene);
-      const previous = new Set([...scene.meshes, ...scene.transformNodes, ...scene.skeletons, ...scene.animationGroups]);
+      const nodesBeforeClone = new Set<unknown>([...scene.meshes, ...scene.transformNodes, ...scene.skeletons, ...scene.animationGroups]);
       let copy: InstantiatedEntries;
       try { copy = template.instantiateModelsToScene(name => name, false, { doNotInstantiate: true }); }
       catch (error) {
-        // Cloning is synchronous: a thrown clone can leave nodes in the scene
-        // before Babylon returns its ownership handle. Roll back just those nodes.
-        for (const created of [...scene.meshes, ...scene.transformNodes, ...scene.skeletons, ...scene.animationGroups]) {
-          if (!previous.has(created)) created.dispose();
-        }
+        disposeSceneNodesCreatedAfter(scene, nodesBeforeClone);
         root.dispose(); throw error;
       }
       instances.push({ source: placement, root, copy });

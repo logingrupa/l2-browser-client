@@ -1,30 +1,31 @@
 import { sha256 } from "../package/readAssetPackage";
 import { nativeResourceUrl } from "./nativeResourceUrl";
 import { nativeFlameNativeToBrowser } from "../../scene/world/nativeFlameBillboards";
+import { readNativeCatalog } from "./readNativeCatalog";
 
-/** Staged map music/ambience (catalog.worldAudio). Manifests are verified on
- * load; audio payloads are fetched lazily and hash-verified per request. No
- * playback, activation or attenuation policy lives here. */
 const hash = /^[a-f0-9]{64}$/;
 const MAX_PAYLOAD = 8_000_000;
+const ambientSoundObjectDefaultRadius = 64;
+const ambientSoundObjectDefaultVolume = 190;
 export const nativeAmbientEmitterFields = ["id", "exportIndex", "x", "y", "z", "soundRadius", "soundVolume", "soundPitch",
   "ambientSoundType", "ambientRandom", "ambientSoundStartTime", "sound", "zone", "zoneNumber", "group"] as const;
 
 export type NativeVector = [number, number, number];
+type NativeUnrealWorldUnitsVector = NativeVector;
+type BrowserMetresFromSectionPlacementAxes = NativeVector;
+type FieldNamesUsingEngineClassDefaults = string[];
+type NativeWorldPlaneInsideWhenNonPositive = [number, number, number, number];
 
 export interface NativeWorldAudioFile { file: string; bytes: number; sha256: string; mime: string }
 
 export interface NativeAmbientEmitter {
   id: string; exportIndex: number;
-  /** Native Unreal world units. */
-  native: NativeVector;
-  /** Browser metres, converted exactly like section placements: (X, Z, Y) * 0.01. */
-  position: NativeVector;
+  native: NativeUnrealWorldUnitsVector;
+  position: BrowserMetresFromSectionPlacementAxes;
   soundRadius: number; soundVolume: number; soundPitch: number | null;
   ambientSoundType: number | null; ambientRandom: number | null; ambientSoundStartTime: number | null;
   sound: string | null; zone: string | null; zoneNumber: number | null; group: string | null;
-  /** Fields omitted in the map (null in the bundle); Engine.u class defaults apply. */
-  defaults: string[];
+  defaults: FieldNamesUsingEngineClassDefaults;
 }
 
 export interface NativeAmbientSound extends NativeWorldAudioFile { key: string; object: string; durationSeconds: number }
@@ -45,8 +46,7 @@ export interface NativeMusicTrack {
 
 export interface NativeMusicVolume {
   id: string; object: string; exportIndex: number; musicId: number; forcePlayMusic: boolean | null; group: string | null;
-  /** Native world planes: inside when nx*X + ny*Y + nz*Z - w <= 0 for all. */
-  planes: [number, number, number, number][];
+  planes: NativeWorldPlaneInsideWhenNonPositive[];
   boundsNative: { min: NativeVector; max: NativeVector };
   tracks: string[];
 }
@@ -95,14 +95,8 @@ function audioFile(value: unknown, prefix: string, extension: string, mimes: rea
   return { file, bytes: Number(row.bytes), sha256: sha, mime: String(row.mime) };
 }
 
-/** Reads catalog.worldAudio. The actor catalog loader does not expose it, so
- * this small separate read keeps that loader unchanged. */
-export async function readNativeWorldAudioRecords(signal: AbortSignal): Promise<unknown> {
-  const response = await fetch(nativeResourceUrl("/l2/catalog.json"), { signal });
-  requireMatch(response.ok, "catalog is unavailable");
-  const catalog = object(await response.json(), "catalog");
-  signal.throwIfAborted();
-  return catalog.worldAudio ?? [];
+export async function readNativeWorldAudioRecords(signal: AbortSignal): Promise<readonly unknown[]> {
+  return (await readNativeCatalog(signal)).worldAudio;
 }
 
 function parseAmbience(manifest: Record<string, unknown>, manifestSha256: string, prefix: string): NativeAmbience {
@@ -125,12 +119,10 @@ function parseAmbience(manifest: Record<string, unknown>, manifestSha256: string
     const id = text(value("id"), "emitter id"), sound = optionalText(value("sound"), "emitter sound");
     requireMatch(!ids.has(id) && (sound === null || sounds.has(sound)), "duplicate emitter or unknown sound"); ids.add(id);
     const native: NativeVector = [finite(value("x"), "x"), finite(value("y"), "y"), finite(value("z"), "z")];
-    // Omitted fields stay null in the bundle; radius/volume fall back to the
-    // Engine.u AmbientSoundObject class defaults (64, 190) and are listed.
     const defaults = (["soundRadius", "soundVolume", "soundPitch", "ambientSoundType", "ambientRandom", "ambientSoundStartTime"] as const)
       .filter(name => value(name) === null || value(name) === undefined);
-    const radius = defaults.includes("soundRadius") ? 64 : finite(value("soundRadius"), "radius");
-    const volume = defaults.includes("soundVolume") ? 190 : finite(value("soundVolume"), "volume");
+    const radius = defaults.includes("soundRadius") ? ambientSoundObjectDefaultRadius : finite(value("soundRadius"), "radius");
+    const volume = defaults.includes("soundVolume") ? ambientSoundObjectDefaultVolume : finite(value("soundVolume"), "volume");
     requireMatch(radius > 0 && radius <= 100000 && Number.isInteger(volume) && volume >= 0 && volume <= 255, "invalid radius/volume");
     return { id, exportIndex: finite(value("exportIndex"), "export index"), native, position: nativeFlameNativeToBrowser(native),
       soundRadius: radius, soundVolume: volume, soundPitch: optionalNumber(value("soundPitch"), "pitch"),

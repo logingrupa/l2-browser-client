@@ -77,3 +77,11 @@ export function readNativeCatalog(signal: AbortSignal, fetchResource: typeof fet
   });
   return catalogRead;
 }
+
+export async function readNativeCatalogUnlessNotStaged(signal: AbortSignal): Promise<NativeCatalog | null> {
+  try { return await readNativeCatalog(signal); }
+  catch (error) {
+    if (error instanceof NativeStoreNotStagedError) return null;
+    throw error;
+  }
+}

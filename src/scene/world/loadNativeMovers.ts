@@ -8,6 +8,7 @@ import type { Scene } from "@babylonjs/core/scene";
 import "@babylonjs/loaders/glTF";
 import { sha256 } from "../../assets/package/readAssetPackage";
 import { nativeResourceUrl } from "../../assets/native/nativeResourceUrl";
+import { readNativeCatalogUnlessNotStaged } from "../../assets/native/readNativeCatalog";
 import { validateSectionGlb } from "./loadNativeSection";
 import { moverObject, nativeMoverMapSha256, parseNativeMoverManifest, type MoverResource } from "./nativeMoverManifest";
 import { NativeMover } from "./nativeMovers";
@@ -18,8 +19,6 @@ export interface NativeMovers {
   readonly manifestSha256: string;
   dispose(): void;
 }
-/** Additive source actors have their own content-addressed bundle. The saved
- * Editor world stays intact; both loading routes attach the same runtime set. */
 export async function loadNativeMovers(scene: Scene, terrainSha256: string, signal: AbortSignal): Promise<NativeMovers | null> {
   const lifetime = new AbortController(), templates: AssetContainer[] = [], copies: InstantiatedEntries[] = [];
   const roots: TransformNode[] = [];
@@ -44,13 +43,9 @@ export async function loadNativeMovers(scene: Scene, terrainSha256: string, sign
   }
   try {
     signal.throwIfAborted();
-    const response = await fetch(nativeResourceUrl("/l2/catalog.json"), { signal: lifetime.signal });
-    if (response.status === 404) { dispose(); return null; }
-    if (!response.ok) throw new Error(`Native mover catalog returned HTTP ${response.status}.`);
-    const catalog: unknown = await response.json();
-    if (!moverObject(catalog) || catalog.schemaVersion !== 1) throw new Error("Native mover catalog is invalid.");
-    if (catalog.movers === undefined) { dispose(); return null; }
-    if (!Array.isArray(catalog.movers) || catalog.movers.length > 32) throw new Error("Native mover catalog scope is invalid.");
+    const catalog = await readNativeCatalogUnlessNotStaged(lifetime.signal);
+    if (!catalog || !catalog.movers.length) { dispose(); return null; }
+    if (catalog.movers.length > 32) throw new Error("Native mover catalog scope is invalid.");
     const ids = new Set<string>();
     const matching = catalog.movers.filter(record => {
       if (!moverObject(record) || typeof record.id !== "string" || !/^[a-z0-9-]{1,80}$/.test(record.id) || ids.has(record.id) ||

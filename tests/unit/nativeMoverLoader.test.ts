@@ -40,7 +40,7 @@ describe("additive native mover loading", () => {
         closedMatrix: Array.from(Matrix.Translation(i * 4, 0, 0).asArray()), openMatrix: Array.from(Matrix.Translation(i * 4, 1.36, 0).asArray()),
         moveTimeSeconds: 1, initialKey: 0, initiallyClosed: true })) };
     const manifestBytes = encode(manifest), identity = await sha256(manifestBytes), base = `/l2/movers/${identity}/`;
-    const catalog = { schemaVersion: 1, movers: [{ id: "map-20-20-movers", manifest: base + "movers.json", manifestSha256: identity, terrainSha256: terrainHash, sourceMapSha256: nativeMoverMapSha256 }] };
+    const catalog = { schemaVersion: 1, models: [], movers: [{ id: "map-20-20-movers", manifest: base + "movers.json", manifestSha256: identity, terrainSha256: terrainHash, sourceMapSha256: nativeMoverMapSha256 }] };
     const responses = new Map<string, Uint8Array<ArrayBuffer>>([["/l2/catalog.json", encode(catalog)], [base + "movers.json", manifestBytes], [base + manifest.models[0]!.model.file, bytes]]);
     const fetcher = vi.fn(async (path: string) => new Response(responses.get(path)?.slice().buffer ?? "missing", { status: responses.has(path) ? 200 : 404 }));
     vi.stubGlobal("fetch", fetcher); vi.mocked(LoadAssetContainerAsync).mockImplementation(async () => container());
@@ -57,7 +57,7 @@ describe("additive native mover loading", () => {
     owner.dispose(); expect(scene.meshes).toHaveLength(0); expect(scene.transformNodes).toHaveLength(0); expect(scene.materials).toHaveLength(0);
   });
   it("keeps a section without registered movers unchanged", async () => {
-    const f = await fixture(); f.responses.set("/l2/catalog.json", encode({ schemaVersion: 1 }));
+    const f = await fixture(); f.responses.set("/l2/catalog.json", encode({ schemaVersion: 1, models: [] }));
     expect(await load()).toBeNull(); expect(LoadAssetContainerAsync).not.toHaveBeenCalled(); expect(scene.meshes).toHaveLength(0);
   });
   it("does not attach a bundle belonging to a different terrain", async () => {
