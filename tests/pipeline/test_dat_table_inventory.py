@@ -4,13 +4,18 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
+import build_dat_table_inventory
 from build_dat_table_inventory import (ELBERA_EVIDENCE_COUNT_SOURCE, ELBERA_EVIDENCE_RECORD_COUNTS, ELBERA_PARSER_PRESENT_STATUS,
-    ELBERA_PARSER_SOURCES, LOCAL_DECODE_COUNT_SOURCE, DatTableInventoryError, classify_dat_table, descriptor_layout_links,
-    elbera_parser_presence, validate_dat_table_inventory)
+    ELBERA_PARSER_SOURCES, LOCAL_DECODE_COUNT_SOURCE, NOT_LOCK_EQUAL_STATUS, DatTableInventoryError, classify_dat_table,
+    count_local_decoded_table, descriptor_layout_links, elbera_parser_presence, validate_dat_table_inventory)
 from native_catalog.tables import TABLES
+from reference_client_guard import ReferenceClientLockError, require_reference_client
+from reference_client_lock_fixture import use_reference_client_lock
+from test_reference_client_guard import SyntheticReferenceClientTrees
 
 COMMITTED_INVENTORY_PATH = ROOT / 'docs' / 'parts' / 'data' / 'dat-table-inventory.json'
 PORT_SCOPE_PATH = ROOT / 'docs' / 'PORT_SCOPE.md'
@@ -123,6 +128,29 @@ class CommittedDatTableInventoryTests(unittest.TestCase):
 
     def test_elbera_evidence_counts_equal_port_scope(self):
         self.assertEqual(ELBERA_EVIDENCE_RECORD_COUNTS, port_scope_elbera_record_counts())
+
+
+class LocalDecodedCountTests(unittest.TestCase):
+    def setUp(self):
+        temporary_directory = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary_directory.cleanup)
+        self.trees = SyntheticReferenceClientTrees(Path(temporary_directory.name).resolve())
+        use_reference_client_lock(self, self.trees.lock_path)
+        self.trees.write_lock()
+        self.conversion_access = require_reference_client(self.trees.conversion_root)
+
+    def test_a_table_the_lock_marks_not_equal_is_recorded_without_decoding(self):
+        row = {'table': 'chargrp', 'file': 'chargrp.dat', 'layout': 'chargrp'}
+        with patch.object(build_dat_table_inventory, 'decode_table', side_effect=AssertionError('a differing table must not be decoded')):
+            self.assertEqual(count_local_decoded_table(self.conversion_access, row, None),
+                             {'recordCount': 'unknown', 'countSource': None, 'status': NOT_LOCK_EQUAL_STATUS})
+
+    def test_a_stale_lock_on_an_equal_table_stops_the_inventory(self):
+        row = {'table': 'npcgrp', 'file': 'npcgrp.dat', 'layout': 'npcgrp'}
+        stale_lock = ReferenceClientLockError('reference client lock is stale for system/npcgrp.dat; re-lock ordered')
+        with patch.object(build_dat_table_inventory, 'decode_table', side_effect=stale_lock):
+            with self.assertRaisesRegex(ReferenceClientLockError, 'stale for system/npcgrp.dat'):
+                count_local_decoded_table(self.conversion_access, row, None)
 
 
 class InventoryValidationBoundaryTests(unittest.TestCase):

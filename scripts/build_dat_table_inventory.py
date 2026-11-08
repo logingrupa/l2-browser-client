@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ElementTree
 
 from hash_reference_client_tree import canonical_json_bytes
 from native_catalog.tables import SCHEMA_HASHES, SCHEMA_ROOT, TABLES, checked_bytes, decode_table
-from reference_client_guard import ReferenceClientLockError, require_reference_client
+from reference_client_guard import require_reference_client
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_INVENTORY_OUTPUT_PATH = REPOSITORY_ROOT / 'docs' / 'parts' / 'data' / 'dat-table-inventory.json'
@@ -41,6 +41,7 @@ ELBERA_PARSER_SOURCES = {
 ELBERA_PARSER_PRESENT_STATUS = 'Elbera parser present, unverified'
 ROUTES = ('local-decoded', 'local-layout-only', 'elbera', 'none')
 ROW_FIELDS = ('table', 'file', 'descriptorLayout', 'layout', 'route', 'recordCount', 'countSource', 'status')
+NOT_LOCK_EQUAL_STATUS = 'E: copy not equal to IMPORTA-PC'
 LOCAL_DECODE_COUNT_SOURCE = 'scripts/native_catalog/tables.py decode_table on lock-equal E:/Lineage2-client/'
 
 
@@ -110,12 +111,18 @@ def describe_decode_against_elbera(table, record_count):
     return f'decoded, Elbera evidence differs ({elbera_count})'
 
 
+def is_recorded_not_lock_equal(client_access, relative_path):
+    if not client_access.requires_lock:
+        return False
+    record = client_access.lock.record(relative_path)
+    return record is None or record['class'] != 'equal'
+
+
 def count_local_decoded_table(client_access, row, schema_root):
+    if is_recorded_not_lock_equal(client_access, 'system/' + row['file']):
+        return {'recordCount': UNKNOWN_RECORD_COUNT, 'countSource': None, 'status': NOT_LOCK_EQUAL_STATUS}
     source_filename = row['file'] if row['layout'] == 'npcname' else None
-    try:
-        decoded_table = decode_table(client_access.root, row['layout'], schema_root, source_filename=source_filename)
-    except ReferenceClientLockError:
-        return {'recordCount': UNKNOWN_RECORD_COUNT, 'countSource': None, 'status': 'E: copy not equal to IMPORTA-PC'}
+    decoded_table = decode_table(client_access.root, row['layout'], schema_root, source_filename=source_filename)
     record_count = decoded_record_count(decoded_table)
     return {'recordCount': record_count, 'countSource': LOCAL_DECODE_COUNT_SOURCE + 'system/' + row['file'],
         'status': describe_decode_against_elbera(row['table'], record_count)}
