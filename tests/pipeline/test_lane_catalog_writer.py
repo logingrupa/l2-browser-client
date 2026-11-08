@@ -1,5 +1,7 @@
+import contextlib
 import copy
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
@@ -16,6 +18,7 @@ from native_store import catalog_writer
 from native_store.catalog_writer import (CatalogWriteError, NATIVE_RESOURCE_PATH_PATTERN, add_store_file, merge_catalog_slice,
                                          read_store_catalog, write_store)
 from native_store.store_paths import StorePathError, lane_store_root
+from native_store import write_lane_catalog as lane_catalog_module
 from native_store.write_lane_catalog import LaneCatalogError, write_lane_catalog
 
 GOLDEN_ROOT = ROOT / 'tests' / 'fixtures' / 'golden'
@@ -24,6 +27,9 @@ GOLDEN_CATALOG = json.loads(GOLDEN_CATALOG_BYTES)
 MODEL_VERSION_TWO_BYTES = (GOLDEN_ROOT / 'model-v2.l2asset').read_bytes()
 MODEL_VERSION_TWO_RECORD = GOLDEN_CATALOG['models'][1]
 MODEL_VERSION_TWO_ARCHIVE = MODEL_VERSION_TWO_RECORD['archive'][len('/l2/'):]
+MODEL_VERSION_ONE_BYTES = (GOLDEN_ROOT / 'model-v1.l2asset').read_bytes()
+MODEL_VERSION_ONE_RECORD = GOLDEN_CATALOG['models'][0]
+MODEL_VERSION_ONE_ARCHIVE = MODEL_VERSION_ONE_RECORD['archive'][len('/l2/'):]
 BROWSER_RESOURCE_URL_SOURCE = ROOT / 'src' / 'assets' / 'native' / 'nativeResourceUrl.ts'
 
 try:
@@ -62,12 +68,37 @@ class LaneCatalogWriterTests(unittest.TestCase):
         self.addCleanup(os.rmdir, link)
         return link
 
-    def stage_model_version_two(self, store_root):
+    def stage_model(self, store_root, record, relative, payload, extra_files=()):
         catalog, before = read_store_catalog(store_root)
-        catalog = merge_catalog_slice(catalog, 'models', MODEL_VERSION_TWO_RECORD, 4)
+        catalog = merge_catalog_slice(catalog, 'models', record, 4)
         files = {}
-        add_store_file(files, MODEL_VERSION_TWO_ARCHIVE, MODEL_VERSION_TWO_BYTES)
+        add_store_file(files, relative, payload)
+        for extra_relative, extra_payload in extra_files:
+            add_store_file(files, extra_relative, extra_payload)
         return write_store(store_root, files, before, json_bytes(catalog))
+
+    def stage_model_version_two(self, store_root):
+        return self.stage_model(store_root, MODEL_VERSION_TWO_RECORD, MODEL_VERSION_TWO_ARCHIVE, MODEL_VERSION_TWO_BYTES)
+
+    def build_world_and_actors_lanes(self):
+        self.actors_store = lane_store_root(self.project, 'actors')
+        self.stage_model_version_two(self.world_store)
+        self.stage_model(self.actors_store, MODEL_VERSION_ONE_RECORD, MODEL_VERSION_ONE_ARCHIVE, MODEL_VERSION_ONE_BYTES,
+                         extra_files=(('notes/actors-only.bin', b'actors lane file'),))
+        (self.actors_store / 'coverage.json').write_bytes(b'{"lane":"actors"}')
+        write_lane_catalog(self.project, 'world')
+        write_lane_catalog(self.project, 'actors')
+        self.integration_store = lane_store_root(self.project, 'integration')
+
+    def run_main(self, arguments):
+        output, errors = io.StringIO(), io.StringIO()
+        with (patch.object(lane_catalog_module, 'REPOSITORY_ROOT', self.project),
+              contextlib.redirect_stdout(output), contextlib.redirect_stderr(errors)):
+            try:
+                exit_code = lane_catalog_module.main(arguments)
+            except SystemExit as exit_request:
+                exit_code = exit_request.code
+        return exit_code, output.getvalue(), errors.getvalue()
 
     def test_library_flow_writes_the_record_file_and_catalog(self):
         self.assertEqual(read_store_catalog(self.world_store), ({'schemaVersion': 1, 'models': []}, None))
@@ -208,6 +239,105 @@ class LaneCatalogWriterTests(unittest.TestCase):
 
     def test_resource_path_pattern_is_the_browser_regex(self):
         self.assertIn('/' + NATIVE_RESOURCE_PATH_PATTERN.pattern + '/', BROWSER_RESOURCE_URL_SOURCE.read_text(encoding='utf-8'))
+
+    def test_union_copies_lane_files_and_merges_records_in_order_byte_identically(self):
+        self.build_world_and_actors_lanes()
+        first = write_lane_catalog(self.project, 'integration', ('world', 'actors'))
+        catalog_bytes = (self.integration_store / 'catalog.json').read_bytes()
+        catalog = json.loads(catalog_bytes)
+        self.assertEqual(catalog['models'], [MODEL_VERSION_TWO_RECORD, MODEL_VERSION_ONE_RECORD])
+        self.assertEqual(catalog['sourceCatalogSha256'], sha256_hex(GOLDEN_CATALOG_BYTES))
+        self.assertEqual((self.integration_store / MODEL_VERSION_TWO_ARCHIVE).read_bytes(), MODEL_VERSION_TWO_BYTES)
+        self.assertEqual((self.integration_store / MODEL_VERSION_ONE_ARCHIVE).read_bytes(), MODEL_VERSION_ONE_BYTES)
+        self.assertEqual((self.integration_store / 'notes/actors-only.bin').read_bytes(), b'actors lane file')
+        self.assertFalse((self.integration_store / 'coverage.json').exists())
+        self.assertEqual((first['filesWritten'], first['recordsBySlice']), (4, {'models': 2}))
+        before_rerun = snapshot_tree(self.project)
+        self.assertEqual(write_lane_catalog(self.project, 'integration', ('world', 'actors'))['filesWritten'], 0)
+        self.assertEqual((self.integration_store / 'catalog.json').read_bytes(), catalog_bytes)
+        self.assertEqual(snapshot_tree(self.project), before_rerun)
+
+    def test_union_refuses_a_differing_duplicate_record_before_any_write_and_keeps_an_identical_one_once(self):
+        self.build_world_and_actors_lanes()
+        self.stage_model_version_two(self.actors_store)
+        write_lane_catalog(self.project, 'actors')
+        write_lane_catalog(self.project, 'integration', ('world', 'actors'))
+        models = json.loads((self.integration_store / 'catalog.json').read_bytes())['models']
+        self.assertEqual(models, [MODEL_VERSION_TWO_RECORD, MODEL_VERSION_ONE_RECORD])
+        data_ui_store = lane_store_root(self.project, 'data-ui')
+        differing = dict(MODEL_VERSION_TWO_RECORD, source={'object': 'SyntheticFixture.DifferentSource'})
+        self.stage_model(data_ui_store, differing, MODEL_VERSION_TWO_ARCHIVE, MODEL_VERSION_TWO_BYTES,
+                         extra_files=(('notes/data-ui-only.bin', b'data-ui lane file'),))
+        write_lane_catalog(self.project, 'data-ui')
+        snapshot = snapshot_tree(self.project)
+        with self.assertRaisesRegex(CatalogWriteError, f'catalog models record {MODEL_VERSION_TWO_RECORD["id"]} differs; preserved'):
+            write_lane_catalog(self.project, 'integration', ('world', 'data-ui'))
+        self.assertEqual(snapshot_tree(self.project), snapshot)
+
+    def test_union_refuses_another_base_a_missing_catalog_the_target_lane_and_a_repeated_lane(self):
+        self.build_world_and_actors_lanes()
+        with self.assertRaisesRegex(LaneCatalogError, 'union lane data-ui has no catalog'):
+            write_lane_catalog(self.project, 'integration', ('data-ui',))
+        with self.assertRaisesRegex(LaneCatalogError, 'target lane world cannot also be a union lane'):
+            write_lane_catalog(self.project, 'world', ('world',))
+        with self.assertRaisesRegex(LaneCatalogError, 'union lane actors is listed twice'):
+            write_lane_catalog(self.project, 'integration', ('actors', 'actors'))
+        old_base_sha256 = sha256_hex(GOLDEN_CATALOG_BYTES)
+        changed_base = GOLDEN_CATALOG_BYTES.replace(b'map-00-00-section', b'map-00-01-section')
+        (self.project / 'public' / 'l2' / 'catalog.json').write_bytes(changed_base)
+        with self.assertRaises(LaneCatalogError) as refusal:
+            write_lane_catalog(self.project, 'integration', ('world',))
+        self.assertIn(old_base_sha256, str(refusal.exception))
+        self.assertIn(sha256_hex(changed_base), str(refusal.exception))
+        self.assertFalse(self.integration_store.exists())
+
+    def test_union_refuses_two_lanes_holding_one_path_with_different_bytes(self):
+        self.build_world_and_actors_lanes()
+        (self.world_store / 'notes').mkdir()
+        (self.world_store / 'notes/actors-only.bin').write_bytes(b'world lane bytes at the same path')
+        with self.assertRaisesRegex(CatalogWriteError, 'Conflicting store file paths: notes/actors-only.bin'):
+            write_lane_catalog(self.project, 'integration', ('world', 'actors'))
+        self.assertFalse(self.integration_store.exists())
+
+    def test_unknown_lane_is_an_argument_error_listing_the_lanes(self):
+        exit_code, output, errors = self.run_main(['--lane', 'plan'])
+        self.assertEqual((exit_code, output), (2, ''))
+        for lane_name in ('actors', 'data-ui', 'integration', 'world'):
+            self.assertIn(lane_name, errors)
+
+    def test_plan_prints_one_restage_line_and_writes_nothing(self):
+        self.build_world_and_actors_lanes()
+        lane_catalog_sha256 = sha256_hex((self.world_store / 'catalog.json').read_bytes())
+        snapshot = snapshot_tree(self.project)
+        exit_code, output, errors = self.run_main(['--lane', 'world', '--plan'])
+        self.assertEqual((exit_code, errors), (0, ''))
+        lines = output.splitlines()
+        self.assertEqual(len(lines), 1)
+        self.assertTrue(lines[0].startswith('restage '))
+        for expected in (self.world_store.as_posix(), (self.project / 'public' / 'l2').as_posix(),
+                         sha256_hex(GOLDEN_CATALOG_BYTES), lane_catalog_sha256):
+            self.assertIn(expected, lines[0])
+        self.assertEqual(snapshot_tree(self.project), snapshot)
+
+    def test_plan_refuses_a_lane_without_a_catalog_or_with_unwritten_changes(self):
+        exit_code, output, errors = self.run_main(['--lane', 'integration', '--plan'])
+        self.assertEqual((exit_code, output), (1, ''))
+        self.assertIn('has no catalog', errors)
+        self.build_world_and_actors_lanes()
+        write_lane_catalog(self.project, 'integration')
+        snapshot = snapshot_tree(self.project)
+        exit_code, output, errors = self.run_main(['--lane', 'integration', '--union', 'world', '--plan'])
+        self.assertEqual((exit_code, output), (1, ''))
+        self.assertIn('is not written yet', errors)
+        self.assertEqual(snapshot_tree(self.project), snapshot)
+
+    def test_main_writes_the_lane_catalog_and_prints_the_summary(self):
+        self.build_world_and_actors_lanes()
+        exit_code, output, errors = self.run_main(['--lane', 'integration', '--union', 'world', '--union', 'actors'])
+        self.assertEqual((exit_code, errors), (0, ''))
+        summary = json.loads(output)
+        self.assertEqual(sorted(summary), ['catalogSha256', 'filesWritten', 'lane', 'laneStoreRoot', 'recordsBySlice', 'sourceCatalogSha256'])
+        self.assertEqual((summary['lane'], summary['filesWritten']), ('integration', 4))
 
 
 if __name__ == '__main__':
