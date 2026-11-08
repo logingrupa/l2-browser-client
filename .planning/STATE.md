@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-56-PLAN.md
-last_updated: "2026-11-08T17:30:52.737Z"
+stopped_at: Completed 02-04-PLAN.md
+last_updated: "2026-11-08T17:55:58.110Z"
 last_activity: 2026-11-08
-last_activity_desc: Phase 02 plan 02-56 complete (shared Babylon-free modules, typed payload reader and source frame)
-state_head: 34b5fea9749ea7dd5c589ffc6270ea159709a629
+last_activity_desc: Phase 02 plan 02-04 complete (catalog record shapes and tile manifest kinds, writer half)
+state_head: 15d86e362d7b8697644c094240a0d179e84d482d
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 86
-  completed_plans: 26
+  completed_plans: 27
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 02 (Stage A breadth) - EXECUTING
-Plan: 02-09 complete, 8 of 69 plans executed
+Plan: 02-04 complete, 10 of 69 plans executed
 Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-08 - Plan 02-09 complete: `Converter` takes every client digest from the reference client guard through `scripts/native_assets_lib/converter_source_digests.py` (one SHA-256 per file identity per process on lock-checked roots, every read on the reference root), pins compare against `recorded_source_sha256`, `implementation_hash` runs once per conversion, and new outputs keep logs, non-glTF exports and `evidence/export-manifest.json` through `scripts/native_assets_lib/conversion_evidence.py` instead of the whole work tree. Earlier: plan 02-08, CONV-02 and CONV-01 contract tests (`tests/pipeline/test_source_preservation_contract.py`, `tests/pipeline/test_converter_independence.py`), the OUTPUT_CONTRACT "Source preservation" section with 15 repair, restore and preserve steps, and the Editor round-trip block removed from `recipes/native-parity.acceptance.json` with every POL-01 member pinned. Earlier: plan 02-06, the serve-only `NATIVE_STORE_ROOT` dev switch (`vite/nativeStoreRootPlugin.ts`) serves `/l2/` from a lane store or the committed fixture store on port 5175, with catalog and coverage only from that root, proven absent from the production bundle; the load-check record format and its atomic per-key writer (`tests/browser/support/loadCheckRecordFile.ts`). Earlier: plan 02-03, one catalog writer library (`scripts/native_store/catalog_writer.py`) under every stager and importer, and `write_lane_catalog.py` with `--lane`, `--union` and `--plan`, pinning lane catalogs to the shared store's catalog SHA-256. Earlier: plan 02-02, one Riga machine schedule owner (`scripts/check-machine-schedule.mjs`, guarded in both Playwright configs), the resumable `UnitLedger` with `require_batch_preflight`, and the gap-row schema with the closed reason list. Earlier: applied the Lineage2JS reference handoff (DEC-OWN-12): eight provisional requirements MAT-01, MAT-02, VIS-01, MOVE-01, FX-01 (Phase 2) and MOVE-02, NET-09, NET-10 (Phase 4), v1 now 66; earlier the native-world-slice merge (DEC-OWN-11) left only the native routes
+Last activity: 2026-11-08 - Plan 02-04 complete: the catalog writer refuses malformed `tiles`, `tables` and `windows` records in every merge (`validate_catalog_record`), `scripts/native_store/tile_manifest_validation.py` validates `native-tile-runtime` and `native-tile-chunk-runtime` v1 against the world-owned `recipes/world/tile-manifest-vocabulary.json` (created by 02-16), the golden store gains tile 00_00, table syntheticfixture and window SyntheticFixtureWnd, `tests/fixtures/catalog-index-keys.json` pins the golden index keys, and `docs/OUTPUT_CONTRACT.md` states the contract the 02-05 reader implements. Earlier: plan 02-56, the shared Babylon-free modules, typed payload reader and source frame. Earlier: plan 02-09 complete: `Converter` takes every client digest from the reference client guard through `scripts/native_assets_lib/converter_source_digests.py` (one SHA-256 per file identity per process on lock-checked roots, every read on the reference root), pins compare against `recorded_source_sha256`, `implementation_hash` runs once per conversion, and new outputs keep logs, non-glTF exports and `evidence/export-manifest.json` through `scripts/native_assets_lib/conversion_evidence.py` instead of the whole work tree. Earlier: plan 02-08, CONV-02 and CONV-01 contract tests (`tests/pipeline/test_source_preservation_contract.py`, `tests/pipeline/test_converter_independence.py`), the OUTPUT_CONTRACT "Source preservation" section with 15 repair, restore and preserve steps, and the Editor round-trip block removed from `recipes/native-parity.acceptance.json` with every POL-01 member pinned. Earlier: plan 02-06, the serve-only `NATIVE_STORE_ROOT` dev switch (`vite/nativeStoreRootPlugin.ts`) serves `/l2/` from a lane store or the committed fixture store on port 5175, with catalog and coverage only from that root, proven absent from the production bundle; the load-check record format and its atomic per-key writer (`tests/browser/support/loadCheckRecordFile.ts`). Earlier: plan 02-03, one catalog writer library (`scripts/native_store/catalog_writer.py`) under every stager and importer, and `write_lane_catalog.py` with `--lane`, `--union` and `--plan`, pinning lane catalogs to the shared store's catalog SHA-256. Earlier: plan 02-02, one Riga machine schedule owner (`scripts/check-machine-schedule.mjs`, guarded in both Playwright configs), the resumable `UnitLedger` with `require_batch_preflight`, and the gap-row schema with the closed reason list. Earlier: applied the Lineage2JS reference handoff (DEC-OWN-12): eight provisional requirements MAT-01, MAT-02, VIS-01, MOVE-01, FX-01 (Phase 2) and MOVE-02, NET-09, NET-10 (Phase 4), v1 now 66; earlier the native-world-slice merge (DEC-OWN-11) left only the native routes
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -78,6 +78,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 2 P08 | 20min | 3 tasks | 7 files |
 | Phase 02 P09 | 12min | 3 tasks | 10 files |
 | Phase 02 P56 | 17 min | 3 tasks | 28 files |
+| Phase 02 P04 | 25min | 3 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -153,6 +154,10 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: Plan 02-56: sourceFrame heading 0 along source +X, 16384 along source +Y, as Babylon rotation.y = -heading * pi / 32768 (row 151)
 - [Phase 02]: Plan 02-56: placement uses the sine table like native_map_geometry.py; the half-turn entry is its own unconfirmed row (row 152)
 - [Phase 02]: Plan 02-56: MOVE-01, VIS-01, MAT-01 and FX-01 stay Pending; shared foundations only (row 156)
+- [Phase 02]: Plan 02-04: tiles, tables and windows records validated by validate_catalog_record inside merge_catalog_slice; native-tile-runtime and native-tile-chunk-runtime v1 layouts, 4x4 chunk id rule and size bounds (rows 159, 163, 164)
+- [Phase 02]: Plan 02-04: tile resource kinds and mask UV rules beyond the base come from the world-owned recipes/world/tile-manifest-vocabulary.json, which the loader requires; 02-16 creates it with empty lists, world plans append and bump listVersion (row 160)
+- [Phase 02]: Plan 02-04: tests/fixtures/catalog-index-keys.json is the writer-half key contract that 02-05 and 02-07 assert; coverage rows carry steps (rows 162, 165)
+- [Phase 02]: Plan 02-04: INT-01, WORLD-01, UI-01 and DATA-01 stay Pending; writer half only (row 169)
 
 ### Pending Todos
 
@@ -203,6 +208,6 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-08T17:30:52.400Z
-Stopped at: Completed 02-56-PLAN.md
+Last session: 2026-11-08T17:55:57.734Z
+Stopped at: Completed 02-04-PLAN.md
 Resume file: None
