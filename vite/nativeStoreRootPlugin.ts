@@ -24,6 +24,7 @@ const nativeStoreContentTypes: Readonly<Record<string, string>> = {
 	".l2asset": "application/zip",
 };
 const unknownNativeStoreContentType = "application/octet-stream";
+const singleByteRangePattern = /^bytes=(\d*)-(\d*)$/;
 
 export type NativeStoreSource = "lane" | "shared";
 
@@ -31,6 +32,11 @@ export interface NativeStoreRoot {
 	readonly rootName: string;
 	readonly storeRoot: string;
 	readonly sharedStoreRoot: string;
+}
+
+export interface SingleByteRange {
+	readonly start: number;
+	readonly end: number;
 }
 
 interface NativeStoreFile {
@@ -92,6 +98,21 @@ export function nativeStoreContentType(fileName: string): string {
 	return nativeStoreContentTypes[extname(fileName).toLowerCase()] ?? unknownNativeStoreContentType;
 }
 
+export function parseSingleByteRange(header: string | undefined, size: number): SingleByteRange | "unsatisfiable" | null {
+	const match = header === undefined ? null : singleByteRangePattern.exec(header.trim());
+	if (match === null) return null;
+	const [, startText = "", endText = ""] = match;
+	if (startText === "" && endText === "") return null;
+	if (startText === "") {
+		const suffixLength = Number(endText);
+		return suffixLength === 0 || size === 0 ? "unsatisfiable" : { start: Math.max(0, size - suffixLength), end: size - 1 };
+	}
+	const start = Number(startText);
+	if (endText !== "" && Number(endText) < start) return null;
+	if (start >= size) return "unsatisfiable";
+	return { start, end: endText === "" ? size - 1 : Math.min(Number(endText), size - 1) };
+}
+
 function regularFileStats(filePath: string): Stats | undefined {
 	try {
 		const stats = lstatSync(filePath);
@@ -124,17 +145,26 @@ function answerWithStatus(response: ServerResponse, statusCode: number): void {
 }
 
 function sendNativeStoreFile(request: IncomingMessage, response: ServerResponse, nativeStoreFile: NativeStoreFile): void {
-	response.statusCode = 200;
 	response.setHeader("Content-Type", nativeStoreContentType(nativeStoreFile.filePath));
-	response.setHeader("Content-Length", String(nativeStoreFile.size));
 	response.setHeader("Accept-Ranges", "bytes");
 	response.setHeader("Cache-Control", "no-store");
 	response.setHeader(NATIVE_STORE_SOURCE_HEADER, nativeStoreFile.source);
-	if (request.method === "HEAD") {
+	const byteRange = parseSingleByteRange(request.headers.range, nativeStoreFile.size);
+	if (byteRange === "unsatisfiable") {
+		response.statusCode = 416;
+		response.setHeader("Content-Range", `bytes */${nativeStoreFile.size}`);
 		response.end();
 		return;
 	}
-	createReadStream(nativeStoreFile.filePath)
+	const servedRange = byteRange ?? { start: 0, end: nativeStoreFile.size - 1 };
+	response.statusCode = byteRange === null ? 200 : 206;
+	if (byteRange !== null) response.setHeader("Content-Range", `bytes ${byteRange.start}-${byteRange.end}/${nativeStoreFile.size}`);
+	response.setHeader("Content-Length", String(Math.max(0, servedRange.end - servedRange.start + 1)));
+	if (request.method === "HEAD" || nativeStoreFile.size === 0) {
+		response.end();
+		return;
+	}
+	createReadStream(nativeStoreFile.filePath, servedRange)
 		.on("error", (error) => response.destroy(error))
 		.pipe(response);
 }
