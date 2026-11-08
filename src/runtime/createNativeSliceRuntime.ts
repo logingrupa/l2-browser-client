@@ -6,8 +6,6 @@ import { defaultNativePlayerProfile } from "../assets/native/loadNativePlayerPro
 import type { AssetPackage } from "../assets/package/readAssetPackage";
 import { nativeCharacterFactory, type NativeCharacterProfile } from "../assets/native/NativeCharacterVisual";
 import { createNativeClipPreviewHub } from "../assets/native/nativeClipPreview";
-import { nativeAliasCoverage, nativeAliasCoverageText } from "../assets/native/nativeAnimationAliases";
-import { attachNativeAnimationAliasTable } from "../ui/nativeAnimationAliasTable";
 import { NativeSliceAdapter, nativeSliceSpeedProfile } from "../world/NativeSliceAdapter";
 import { EntityRegistry } from "../entities/EntityRegistry";
 import { WorldInterface } from "../ui/WorldInterface";
@@ -22,26 +20,14 @@ import { loadNativeSliceWorld } from "./loadNativeSliceWorld";
 import { beginNativeSliceAudioLoads, createNativeSliceCombatAudio, loadNativeSliceAudio } from "./loadNativeSliceAudio";
 import { createNativeSliceEffects } from "./createNativeSliceEffects";
 import { attachNativeSliceDiagnostics } from "./nativeSliceDiagnostics";
-import { attachWorldAudioControls } from "../audio/worldAudioControls";
+import { attachNativeSliceSheet } from "./attachNativeSliceSheet";
 import { createNativeFootstepPreview, NATIVE_FOOTSTEP_WORLD_DEFAULT } from "../audio/nativeFootstepPreview";
-import { attachNativeFootstepControls } from "../audio/nativeFootstepControls";
 import { createFootstepGroundSampler } from "../audio/footstepSurfaceGround";
-import { attachNativeCombatAudioControls } from "../audio/nativeCombatAudioControls";
-import { attachNativePowerStrikeControls } from "../ui/nativePowerStrikeControls";
-import type { DevGroup } from "../ui/devSheet/DevSheet";
-import type { VariableInfo } from "../ui/devSheet/types";
-import { PRESENTATION_CHOICE, SheetDescriber, pickRows, worldAudioVariables } from "./nativeSliceSheet";
-import { attachNativeSliceDebugSection } from "./nativeSliceDebug";
 import { resolveNativeLocomotionClips } from "../assets/native/nativeLocomotion";
 import { resolveNativeSpecialAttackPreview } from "../assets/native/nativeSpecialAttackPreview";
 import { resolveNativeHumanHandAnchor } from "../assets/native/nativeHumanHandAnchor";
 import { createEffectInspectionCamera } from "../effects/nativeEffectInspectionCamera";
-import { attachNativeEffectComponentControls } from "../ui/nativeEffectComponentControls";
-import { attachNativeEffectInitControls } from "../ui/nativeEffectInitControls";
-import { attachNativeLocomotionControls } from "../ui/nativeLocomotionControls";
-import { attachNativeSkyEnvironmentControls } from "../scene/world/nativeSkyEnvironmentControls";
-import { attachAssetImport } from "../ui/AssetImportPanel";
-import { isSceneSuspended, setSceneSuspended } from "../engine/renderSuspension";
+import { isSceneSuspended } from "../engine/renderSuspension";
 
 export interface NativeSliceSettings {
   playerProfileId?: string;
@@ -233,9 +219,9 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       camera.setTarget(section.minimum.add(section.maximum).scale(.5), false, false, true);
       camera.radius = Math.max(12, section.maximum.subtract(section.minimum).length() * .85);
     };
-    const flamePlacements = section?.manifest.placements?.filter(placement => placement.sourceMesh === "FX_E_S.Flameset.Default_Flame01") ?? [];
+    const flamePlacementIds = section?.manifest.placements?.filter(placement => placement.sourceMesh === "FX_E_S.Flameset.Default_Flame01").map(placement => placement.id) ?? [];
     const frameFlame = (placementId: string) => {
-      if (!flamePlacements.some(placement => placement.id === placementId)) throw new Error("Unknown flame placement.");
+      if (!flamePlacementIds.includes(placementId)) throw new Error("Unknown flame placement.");
       const root = scene.transformNodes.find(node => node.metadata?.nativePlacement?.id === placementId);
       if (!root) throw new Error("Flame placement is unavailable.");
       const bounds = root.getHierarchyBoundingVectors(true);
@@ -261,309 +247,12 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       });
       boundaryReleases.push(() => effectCamera?.dispose());
     }
-    for (const name of ["spawn", "teleport", "missing-model"]) ui.root.querySelector(`[data-action="${name}"]`)?.remove();
-    const label = ui.root.querySelector(".world-location > span");
-    const pendingEffects = section?.manifest.unsupportedRuntimeMaterials?.reduce((total, gap) => total + gap.placementIds.length, 0) ?? 0;
-    if (label) label.textContent = section ? `Debug match unverified${pendingEffects ? flames.presentation ? " · flame preview" : ` · ${pendingEffects} effects pending` : ""}` : "Native rigs · synthetic behavior";
-    const sheet = ui.sheet, describe = new SheetDescriber(sheet, boundaryReleases);
-    const sections = {
-      audio: sheet.section("audio", { title: "Audio", icon: "audio", order: 10 }),
-      movement: sheet.section("movement", { title: "Movement", icon: "movement", order: 20 }),
-      combat: sheet.section("combat", { title: "Combat", icon: "combat", order: 30 }),
-      character: sheet.section("character", { title: "Character", icon: "character", order: 40 }),
-      world: sheet.section("world", { title: "World", icon: "world", order: 50 }),
-      effects: sheet.section("effects", { title: "Effects", icon: "effects", order: 60 }),
-      debug: sheet.section("debug", { title: "Debug", icon: "debug", order: 70 }),
-    };
-    const groups = {
-      mixer: sections.audio.group("mixer", "Mixer, music & ambience", { hint: "One AudioContext graph with master, music, ambience and effects channels. It starts on your first tap, click or key press; music and ambience then begin by themselves. Native mix rules are unverified." }),
-      gait: sections.movement.group("gait", "Walk / run"),
-      ground: sections.movement.group("ground", "Ground under fighter"),
-      footsteps: sections.movement.group("footsteps", "Footsteps"),
-      actions: sections.combat.group("actions", "Actions"),
-      hits: sections.combat.group("hit-sounds", "Hit sounds"),
-      powerStrike: sections.combat.group("power-strike", "Power Strike at target"),
-      life: sections.combat.group("life", "Life"),
-      appearance: sections.character.group("appearance", "Character & equipment"),
-      camera: sections.world.group("camera", "Camera & terrain"),
-      sky: sections.world.group("sky", "Sky"),
-      flames: sections.world.group("flames", "Flames"),
-      components: sections.effects.group("components", "Power Strike components"),
-      init: sections.effects.group("init", "Init effects"),
-    };
-    const events = new AbortController();
-    boundaryReleases.push(() => events.abort());
-    attachNativeSliceDebugSection(sections.debug, { scene, camera, registry: () => registry, playerProfile, playerChoices, events: events.signal });
-    const assetGroup = sections.debug.group("assets", "Asset inspector", {
-      hint: "Opens a local converted asset package in its own preview scene. The world is suspended while the inspector is open and resumes unchanged.",
-    });
-    let inspectorOpen = false, suspensionBeforeInspector = false;
-    const suspendWorldAndCuesForInspector = () => {
-      if (disposed || inspectorOpen) return;
-      suspensionBeforeInspector = isSceneSuspended(scene);
-      inspectorOpen = true;
-      setSceneSuspended(scene, true);
-      audio.setPaused(true);
-    };
-    const restoreInspectorSuspension = () => {
-      if (!inspectorOpen) return;
-      inspectorOpen = false;
-      setSceneSuspended(scene, suspensionBeforeInspector);
-      audio.setPaused(adapter.isPaused || suspensionBeforeInspector);
-    };
-    let detachAssetImport: (() => void) | undefined;
-    boundaryReleases.push(() => {
-      try { detachAssetImport?.(); }
-      finally { restoreInspectorSuspension(); }
-    });
-    detachAssetImport = attachAssetImport(scene, canvas, {
-      host: assetGroup.element,
-      onOpenChange(open) {
-        if (open) suspendWorldAndCuesForInspector();
-        else restoreInspectorSuspension();
-      },
-    });
-    const flameFailureNote = document.createElement("p");
-    flameFailureNote.id = "native-flame-status"; flameFailureNote.role = "status";
-    const updateFlameFailureNote = () => {
-      flameFailureNote.hidden = !flames.failure;
-      flameFailureNote.textContent = flames.failure ? `${flames.failure} World and saved materials retained.` : "";
-    };
-    updateFlameFailureNote();
-    groups.flames.element.append(flameFailureNote);
-    const failFlames = (error: unknown) => {
-      flames.fail(error);
-      ui.showStatus(`${flames.failure} World and saved materials retained.`);
-      updateFlameFailureNote();
-      if (label) label.textContent = `Debug match unverified · ${pendingEffects} effects pending`;
-    };
-    const player = () => registry.localPlayer;
-    const entityState = (id: string) => () => {
-      const entity = registry.entity(id);
-      return entity ? `${entity.animation}${entity.actionPreview ? ` (${entity.actionPreview})` : ""} · HP ${entity.health}/${entity.maximumHealth}` : "despawned";
-    };
-    const clipOf = (id: string) => () => registry.sourceClock(id)?.clip ?? "-";
-    const actorVariables = (id: string, label: string): VariableInfo[] => [
-      { name: `${label}.state`, value: entityState(id), values: "idle | run | attack · HP (last requested action)", source: "NativeSliceAdapter (synthetic behavior); the clip actually playing is the .clip row", status: "presentation" },
-      { name: `${label}.clip`, value: clipOf(id), values: "original clip names", source: "actor package animation (source clock)", status: "native" },
-    ];
-    const button = (group: DevGroup, label: string, action: () => void, info: { testId?: string; hint?: string; variables?: () => VariableInfo[]; disabled?: boolean } = {}) => {
-      const element = group.button({ label, ...info });
-      element.addEventListener("click", action, { signal: events.signal });
-      return element;
-    };
-
-    const hudRunButton = ui.root.querySelector<HTMLElement>('[data-action="run"]');
-    hudRunButton?.addEventListener("click", () => adapter.dispatch({ type: "set-locomotion", mode: "run" }), { signal: events.signal });
-    const gaitVariables = (): VariableInfo[] => [
-      { name: "movement.gait", value: () => adapter.locomotionMode, values: locomotionClips.walkClip ? "walk | run" : "run", source: "set-locomotion command → source walk/run clip", status: "native" },
-      { name: "movement.walkClip", value: () => locomotionClips.walkClip ?? "unavailable", values: "original clip name",
-        source: locomotionClips.walkSource === "profile-alias" ? "profile WalkAnimName[0] alias (no staged footstep pair: walking is silent)" : "actor animation archive + staged footstep notify pair (catalog.animationAudio)", status: "native" },
-      { name: "movement.runClip", value: () => locomotionClips.runClip, values: "original clip name", source: "player profile run clip (RunAnimName[0])", status: "native" },
-      { name: "movement.speed", value: () => `${adapter.currentSpeed.toFixed(2)} m/s now`,
-        values: `walk ${adapter.speedProfile.walkMetresPerSecond.toFixed(2)} | run ${adapter.speedProfile.runMetresPerSecond.toFixed(2)} m/s (walk speed for the first ${adapter.speedProfile.runStartSeconds} s of a run)`,
-        source: `${adapter.speedProfile.source} ÷ sourceUnitsPerMetre ${playerProfile.sourceUnitsPerMetre}. Speeds are server data (no client file holds them); no acceleration ramp (APawn::calcVelocity).`, status: "presentation" },
-      { name: "movement.clipRate", value: () => "1.0", values: "1.0 × NonAttackSpeedRate (1.0)", source: "UpdateMovementAnimation 0x10624cc0: walk/run clips are not stretched to the travel speed", status: "native" },
-    ];
-    if (locomotionClips.walkClip && hudRunButton) {
-      const hudWalkButton = document.createElement("button");
-      hudWalkButton.type = "button"; hudWalkButton.dataset.action = "walk"; hudWalkButton.dataset.testid = "native-walk-action";
-      hudWalkButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="13" cy="4" r="2"/><path d="m9 21 2-6 3 3v3M11 15l1-6 3 3 3 1M12 9l-3 2-1 4"/></svg><span>Walk</span>';
-      hudRunButton.after(hudWalkButton);
-      boundaryReleases.push(() => hudWalkButton.remove());
-      hudWalkButton.addEventListener("click", () => {
-        adapter.dispatch({ type: "set-locomotion", mode: "walk" });
-        adapter.dispatch({ type: "set-animation", animation: "run" });
-        ui.showStatus("Walk demonstration · tap the ground to walk there", { transient: true });
-      }, { signal: events.signal });
-      describe.element(hudWalkButton, { title: "Walk", description: "Switches the fighter to the original walk clip (and its walk footsteps). Tap the ground to walk there; Run switches back.", variables: gaitVariables }, "none");
-    }
-    describe.element(hudRunButton, { title: "Run", description: "Switches the fighter to the original run clip and its run footsteps. Tap the ground to run there.", variables: gaitVariables }, "none");
-    boundaryReleases.push(ui.bindGait(() => adapter.locomotionMode));
-    describe.element(ui.root.querySelector(".world-location"), { title: section ? "20_20 native world section" : "Native asset slice",
-      description: section ? "Source-derived location; native debug location and terrain materials remain unverified." : "Native rigs with synthetic behavior; no native world section is staged." }, "none");
-    describe.element(ui.root.querySelector('[data-action="attack"]'), { title: "Attack", description: "Plays the fighter's original attack clip. Fist and voice sounds play at its AttackItem/AttackVoice notifies (hit or miss); each AttackShot plays the target's defense and damage sounds on the selected or nearest target in reach.",
-      variables: () => [...actorVariables("local-player", "fighter"), ...(combatAudio ? pickRows(combatAudio.describe(), ["combat.hitSounds", "combat.lastHit"]) : [])] }, "none");
-    describe.element(ui.root.querySelector(".diagnostics"), { title: "World diagnostics", description: "Frame rate, entity count and fighter position in browser metres. Debug tab shows camera and native coordinates.",
-      variables: () => [{ name: "debug.fps", value: () => String(Math.round(scene.getEngine().getFps())), values: "frames per second", source: "AbstractEngine.getFps()", status: "presentation" }] }, "none");
-
-    const worldAudio = nativeAudio.worldAudio;
-    const audioControls = attachWorldAudioControls(groups.mixer.element, audio, { music: worldAudio.music, ambience: worldAudio.ambience,
-      worldAudioFailure: worldAudio.failure, worldAudioLoading: worldAudio.loading });
-    boundaryReleases.push(() => audioControls.dispose());
-    worldAudio.onChange = () => audioControls.setWorldAudio({ music: worldAudio.music, ambience: worldAudio.ambience, failure: worldAudio.failure, loading: worldAudio.loading });
-    worldAudio.onChange();
-    for (const card of audioControls.cards()) {
-      describe.testId(groups.mixer.element, card.testId, { title: card.title, ...(card.description ? { description: card.description } : {}),
-        variables: () => worldAudioVariables(audioControls.describe().filter(row => card.rows.includes(row.name))) });
-    }
-
-    const locomotionControls = attachNativeLocomotionControls(groups.gait.element, adapter, locomotionClips.walkClip !== null, locomotionClips.reason);
-    boundaryReleases.push(() => locomotionControls.dispose());
-    {
-      const root = groups.gait.element.querySelector<HTMLElement>('[data-testid="native-locomotion-controls"]');
-      const note = locomotionClips.reason ? "" : describe.fold(root?.querySelector<HTMLElement>("p"));
-      describe.element(root, { title: "Walk / run", description: `${note} Speeds are aCis server data (walk 80, run 115 units/s); a run starts at walk speed for 0.4 s. Footsteps follow the armed gait.`.trim(), variables: gaitVariables });
-    }
-    const groundContext = () => footstepGround.describe(adapter.groundContact);
-    groups.ground.readout({ label: "Ground", testId: "native-ground-readout", value: () => footsteps.autoSurface().resolve(groundContext()).summary,
-      hint: "Live support under the fighter (seeded at spawn, then from accepted moves) and what Auto footsteps resolve for it in the native order.",
-    variables: () => {
-      const resolved = () => footsteps.autoSurface().resolve(groundContext());
-      return [
-        { name: "ground.contact", value: () => groundContext().kind, values: "terrain | terrain-patch | placement | bsp | mesh | none", source: "WorldGroundContact (accepted capsule support) standing in for native Pawn.Base", status: "unverified" },
-        { name: "ground.source", value: () => groundContext().sourceId ?? groundContext().meshName ?? "-", values: "placement / BSP / terrain id", source: "mesh metadata markers", status: "native" },
-        { name: "ground.material", value: () => groundContext().material ?? "-", values: "support triangle material", source: "Not read by the native footstep notify (no material footstep field exists)", status: "unverified" },
-        { name: "ground.decoGrass", value: () => { const reading = groundContext().decoGrass; return reading ? `${reading.expected.toFixed(2)} expected (${reading.grass ? "≥" : "<"} ${reading.threshold}) · sector ${reading.sector ?? "-"}` : "-"; },
-          values: "expected deco instances within 64 units XY", source: `${decoGrass.field?.label ?? "deco-grass bundle not staged"}${decoGrassFailure ? ` (${decoGrassFailure})` : ""}`, status: "presentation" },
-        { name: "ground.autoSurface", value: () => `${resolved().rule} · ${resolved().summary}`, values: "native order: support StepSound → volumes → ACTOR → GRASS/LAND",
-          source: resolved().reason, status: resolved().status },
-      ];
-    } });
-    const footstepControls = attachNativeFootstepControls(groups.footsteps.element, footsteps, footstepFailure,
-      { stepSoundFailure, decoGrassFailure, isVisible: () => ui.sheet.isOpen });
-    boundaryReleases.push(() => footstepControls.dispose());
-    {
-      const cards: [string, string, string[], string?][] = [
-        ["footsteps.mode", "Footstep mode", ["footsteps.mode"], "Auto follows the native order: boots, the support's own StepSound, water/step volumes, ACTOR (Stone_Hard walk set) on other support, then GRASS or LAND on terrain. Steps always fire at the original notify times."],
-        ["footsteps.renderDecoGrass", "RenderDeco grass footsteps", ["footsteps.renderDecoGrass", "footsteps.auto.terrain"], "On terrain the local player hears Grass where the expected decoration count within 64 units reaches 2, else Default. Approximation of the native deco instance count - the browser does not render decorations."],
-        ["footsteps.surface", "Surface", ["footsteps.surface", "footsteps.auto.supportStepSounds", "footsteps.auto.actor", "footsteps.auto.terrain"], "All 16 original stepsound.uax groups (Water_Shalow keeps its spelling). Tapping one while Auto is on switches to Manual."],
-        ["footsteps.variation", "Variation", ["footsteps.variation"], "Manual clip choice from the actual clips: ordinary Stone has two, the other surfaces three."],
-        ["footsteps.bootsLayer", "Boot noise", ["footsteps.bootsLayer"]],
-        ["footsteps.waterTransitions", "Water test", ["footsteps.waterTransitions"]],
-        ["footsteps.readout", "Last footstep", ["footsteps.gait", "footsteps.auto.rule", "footsteps.auto.support", "footsteps.playback", "footsteps.lastClip"]],
-      ];
-      for (const [variable, title, names, description] of cards) {
-        describe.element(groups.footsteps.element.querySelector(`[data-footstep-variable="${variable}"]`), { title, ...(description ? { description } : {}),
-          variables: () => pickRows(footstepControls.describe(), names) });
-      }
-    }
-
-    const specialAttackText = specialAttackPreview.reason ??
-      "Original special-attack animation with its direct sound cues, the optional timed init effects (Effects tab) and hit sounds at its AttackShot. Full native skill playback remains unverified.";
-    button(groups.actions, "Fighter attack", () => adapter.dispatch({ type: "set-animation", entityId: "local-player", animation: "attack" }),
-      { testId: "native-fighter-attack", hint: "Same as the HUD Attack action: the original attack clip, with hit sounds at AttackShot.", variables: () => actorVariables("local-player", "fighter") });
-    button(groups.actions, "Special attack preview", () => adapter.dispatch({ type: "preview-action", action: "special-attack" }),
-      { testId: "native-special-attack-preview", disabled: specialAttackPreview.clip === null, hint: specialAttackText,
-        variables: () => [{ name: "specialAttack.clip", value: () => specialAttackPreview.clip ?? "unavailable", values: "original clip", source: "fighter animation archive", status: "native" }, ...actorVariables("local-player", "fighter")] });
-    button(groups.actions, "Musveren attack", () => adapter.dispatch({ type: "set-animation", entityId: "native-musveren", animation: "attack" }),
-      { hint: "Greater Musveren plays its original atk01 clip (its own direct cues). Its AttackShot plays the fighter's defense and damage sounds - conditional: native route C, but no server record proves the hit.", variables: () => actorVariables("native-musveren", "musveren") });
-    button(groups.actions, "Musveren death", () => adapter.dispatch({ type: "set-health", entityId: "native-musveren", health: 0 }),
-      { hint: "Sets Musveren's synthetic health to 0: original death clip and its death cue.", variables: () => actorVariables("native-musveren", "musveren") });
-    button(groups.actions, "Revive Musveren", () => adapter.dispatch({ type: "set-health", entityId: "native-musveren", health: 100 }),
-      { hint: "Restores Musveren's synthetic health.", variables: () => actorVariables("native-musveren", "musveren") });
-    if (specialAttackPreview.reason) groups.actions.note(specialAttackPreview.reason, { tone: "warning", testId: "native-special-attack-status" });
-    const combatControls = attachNativeCombatAudioControls(groups.hits.element, combatAudio, combatFailure, () => audio.unlock());
-    boundaryReleases.push(() => combatControls.dispose());
-    {
-      const rows = combatControls.describe();
-      for (const card of combatControls.cards()) {
-        const description = card.description ?? rows.find(row => row.name === card.names[0])?.detail;
-        describe.element(card.element, { title: card.title, ...(description ? { description } : {}), variables: () => pickRows(rows, card.names) });
-      }
-    }
-    const powerStrikeControls = attachNativePowerStrikeControls(groups.powerStrike.element, powerStrike, shotEffect, powerStrikeReason, () => effectCamera?.focus());
-    boundaryReleases.push(() => powerStrikeControls.dispose());
-    describe.testId(groups.powerStrike.element, "native-power-strike-controls", { title: "Power Strike at target",
-      description: `Charges the original init effects, then plays the special-attack clip at Greater Musveren (selected, or the only NPC when nothing is selected) and shows the original impact components at its AttackShot. Its hit sounds play at any distance (no reach check for this explicit target). Cast/shot sounds are skillsoundgrp name-match candidates; targeting and particle policy are a ${PRESENTATION_CHOICE}. No damage is applied.`,
-      variables: () => [
-        { name: "powerStrike.pending", value: () => String(powerStrike?.snapshot().pending ?? false), values: "true | false", source: "nativePowerStrikePreview", status: "presentation" },
-        { name: "powerStrike.target", value: () => powerStrike?.snapshot().targetName ?? registry.selectedEntity?.displayName ?? "Greater Musveren (default)", values: "Greater Musveren", source: "selection, else the slice's only NPC", status: "presentation" },
-        { name: "powerStrike.impact", value: () => shotEffect?.snapshot().status ?? "unavailable", values: "off | loading | armed | waiting | playing | completed | failed", source: "AttackShot event of the original SpAtk01_1HS clip", status: "native" },
-        ...(combatAudio ? pickRows(combatAudio.describe(), ["combat.powerStrikeSounds"]) : []),
-      ] });
-    button(groups.life, "Fighter death", () => adapter.dispatch({ type: "set-health", entityId: "local-player", health: 0 }),
-      { hint: "Sets the fighter's synthetic health to 0: original death clip and death cue.", variables: () => actorVariables("local-player", "fighter") });
-    button(groups.life, "Revive fighter", () => adapter.dispatch({ type: "set-health", entityId: "local-player", health: 100 }),
-      { hint: "Restores the fighter's synthetic health.", variables: () => actorVariables("local-player", "fighter") });
-
-    const equipmentVariables = (): VariableInfo[] => [
-      { name: "equipment.upper", value: () => { const upper = player()?.equipment?.upper; return upper === undefined ? "starter shirt (none)" : `item ${upper}`; },
-        values: "22 (Leather Shirt) | none", source: "armorgrp item 22 package; equip-upper command", status: "native" },
-      { name: "character.profile", value: () => `${playerProfile.id} · ${playerProfile.name}`, values: [...playerChoices.values()].map(choice => choice.name).join(" | "), source: "catalog.playerProfiles (?character=)", status: "native" },
-    ];
-    if (playerChoices.size > 1) {
-      groups.appearance.choice({ label: "Play as", testId: "native-play-as", display: "chips", value: playerProfile.id,
-        options: [...playerChoices.values()].map(choice => ({ value: choice.id, label: choice.name.replace(/^Human (\w)/, (_, first: string) => first.toUpperCase()),
-          hint: `Reloads with ?character=${choice.id}. Native scale: collision ${choice.collisionRadius}/${choice.collisionHeight} source units, DrawScale ${choice.actorScale.join("/")}.` })),
-        hint: "Each choice reloads the slice with ?character=<id> and its own staged native package and clips (no height fitting).",
-        variables: equipmentVariables,
-        onChange: id => { const url = new URL(window.location.href); url.searchParams.set("character", id); window.location.assign(url.href); } });
-    }
-    button(groups.appearance, "Leather shirt", () => adapter.dispatch({ type: "equip-upper", itemId: 22 }),
-      { hint: profileStagesLeatherShirt ? "Equips armorgrp item 22. Musveren's hits then use its own defense sounds." : `No item 22 upper part is staged for ${playerProfile.name}.`,
-        variables: equipmentVariables, disabled: !profileStagesLeatherShirt });
-    button(groups.appearance, "Starter shirt", () => adapter.dispatch({ type: "equip-upper", itemId: null }),
-      { hint: "Removes the upper armor and restores the starter body part.", variables: equipmentVariables, disabled: !profileStagesLeatherShirt });
-
-    const aliasEvidence = playerProfile.aliasEvidence;
-    const aliasCoverage = nativeAliasCoverage(playerProfile.clips, aliasEvidence, playerClipsWithSavedFighterEdits());
-    const archiveSha256 = catalog.archiveHashes?.get(playerProfile.catalogId) ?? null;
-    const aliasGroup = sections.character.group("aliases", "Animation aliases", {
-      hint: "Every native animation alias of this model: the Engine.Pawn localized key (WT_HAND family, index 0; socials PcSocialAnimName[N]) and the exact package clip it names. Tap a clip to play it once on your character. 'damage' stays empty: no class section assigns DamageAnimName and Interlude has no hit-reaction clip; Damagefly_<Class> (DamageFlyAnimName) is a knock-back.",
-      variables: () => [
-        { name: "aliases.coverage", value: () => nativeAliasCoverageText(aliasCoverage), values: `0-${aliasCoverage.total} of the browser's alias list`,
-          source: aliasEvidence ? `${aliasEvidence.report} · sha ${aliasEvidence.reportSha256.slice(0, 12)}…` : "no staged alias evidence for this profile", status: aliasEvidence ? "native" : "unverified" },
-        { name: "aliases.family", value: () => aliasEvidence?.family ?? "-", values: "WT_HAND (unarmed)",
-          source: aliasEvidence ? `${aliasEvidence.familySource} · sha ${aliasEvidence.familySourceSha256.slice(0, 12)}…` : "-", status: aliasEvidence ? "native" : "unverified" },
-        { name: "aliases.package", value: () => playerProfile.catalogId, values: "catalog.models id",
-          source: `${playerProfile.assetId} · archive ${archiveSha256 ? `${archiveSha256.slice(0, 12)}…` : "unknown"}`, status: "native" },
-        { name: "aliases.preview", value: () => clipPreview.previewing("local-player") ?? "-", values: "clip name while a preview plays",
-          source: `one pass on the local actor, then the requested state (${PRESENTATION_CHOICE})`, status: "presentation" },
-      ] });
-    aliasGroup.readout({ label: "Coverage", testId: "native-alias-coverage", value: () => `${nativeAliasCoverageText(aliasCoverage)} · ${playerProfile.name}`,
-      hint: "Aliases with an exact package clip, out of every alias the browser knows. Missing aliases are listed with their reason, never invented." });
-    aliasGroup.readout({ label: "Clip now", testId: "native-alias-clip-now", value: () => {
-      const previewing = clipPreview.previewing("local-player");
-      return previewing ? `${previewing} (preview)` : registry.sourceClock("local-player")?.clip ?? "-";
-    }, hint: "The clip the local actor's source clock is playing.", variables: () => actorVariables("local-player", "fighter") });
-    const aliasTable = attachNativeAnimationAliasTable(aliasGroup.element, { coverage: aliasCoverage, profileName: playerProfile.name,
-      packageLabel: `${playerProfile.catalogId} · ${playerProfile.assetId}`, archiveSha256, family: aliasEvidence?.family ?? null,
-      play: clip => clipPreview.play("local-player", clip), previewing: () => clipPreview.previewing("local-player"),
-      describe: (element, info, options) => sheet.describe(element, info, options), onStatus: message => ui.showStatus(message), signal: events.signal });
-    boundaryReleases.push(() => aliasTable.dispose());
-
-    const cameraVariables = (): VariableInfo[] => [
-      { name: "camera.follow", value: () => String(followFighter), values: "true | false", source: "Follow fighter / Frame world", status: "presentation" },
-      { name: "terrain.material", value: () => section?.inspection().terrainMaterial ?? "not loaded", values: "candidate-source-textures | neutral-inspection", source: "staged terrain layers", status: "unverified" },
-    ];
-    if (section) {
-      button(groups.camera, "Frame world", frameWorld, { hint: "Frames the whole staged 20_20 section.", variables: cameraVariables });
-      button(groups.camera, "Follow fighter", follow, { hint: "Returns the orbit camera to the fighter.", variables: cameraVariables });
-      button(groups.camera, "Source textures", () => section?.setTerrainPreview(true), { hint: "Original terrain layer textures and alpha masks (blend is a browser shader; native look unverified).", variables: cameraVariables });
-      button(groups.camera, "Neutral terrain", () => section?.setTerrainPreview(false), { hint: "Plain inspection material to read terrain shape and support.", variables: cameraVariables });
-    } else groups.camera.note(worldFailure ? `${worldFailure} Actor inspection area retained.` : "No native world section staged. Actor inspection area retained.", { tone: "warning" });
-    groups.sky.note(skyFailure ? `Sky preview unavailable: ${skyFailure}` : sky ? "Original sky geometry · stored colors." : "Original sky has not been staged.",
-      { testId: "native-sky-status", tone: skyFailure ? "warning" : "info",
-        hint: "Original sky geometry with stored colors by default. The optional source-row comparison is temporary; native time-of-day, cloud motion and visual matching remain unverified.",
-        variables: () => [{ name: "sky.status", value: () => sky ? "staged" : skyFailure ? "failed" : "not staged", values: "staged | failed | not staged", source: "createNativeSkyPresentation", status: "unverified" }] });
-    if (sky) {
-      const comparisonControls = attachNativeSkyEnvironmentControls(groups.sky.element, sky);
-      boundaryReleases.push(() => comparisonControls.dispose());
-      const root = groups.sky.element.querySelector<HTMLElement>('[data-testid="sky-environment-comparison"]');
-      const note = describe.fold(root?.querySelectorAll<HTMLElement>("p")[1]);
-      describe.element(root, { title: "Sky color comparison", description: note || "Temporary source-row preview; stored sky materials stay unchanged." });
-    }
-    if (flamePlacements.length) {
-      let next = 0;
-      button(groups.flames, "Inspect flame", () => { frameFlame(flamePlacements[next % flamePlacements.length]!.id); next++; },
-        { hint: "Frames the next Default_Flame01 placement in turn. Flame replay timing and lighting remain unverified.",
-          variables: () => [{ name: "flames.placements", value: () => String(flamePlacements.length), values: "FX_E_S.Flameset.Default_Flame01 placements", source: "section manifest", status: "native" },
-            { name: "flames.status", value: () => flames.presentation?.inspect().status ?? (flames.failure ? "failed" : "not present"), values: "status", source: "nativeFlamePresentation", status: "unverified" }] });
-    }
-    if (!flamePlacements.length && !flames.failure) groups.flames.note("No flame placements in this section.");
-
-    const effectControls = attachNativeEffectComponentControls(groups.components.element, effectComponents, effectComponentFailure, () => effectCamera?.focus());
-    boundaryReleases.push(() => effectControls.dispose());
-    describe.testId(groups.components.element, "native-effect-controls", { title: "Power Strike components",
-      description: "Individual original skill effect components (skill 3 level 1 bundle), shown one at a time on the right hand. Particle policy is a modern presentation; native emitter behaviour is unverified.",
-      variables: () => [{ name: "effects.component", value: () => effectComponents?.snapshot().selection.component ?? "none", values: "component object", source: "catalog.effectComponents", status: "unverified" },
-        { name: "effects.status", value: () => effectComponents?.snapshot().status ?? effectComponentFailure ?? "not staged", values: "status", source: "nativeEffectComponentPreview", status: "presentation" }] });
-    const initControls = attachNativeEffectInitControls(groups.init.element, initEffect, async () => { await effectComponents?.select(null); }, () => effectCamera?.focus());
-    boundaryReleases.push(() => initControls.dispose());
-    describe.testId(groups.init.element, "native-init-effect-controls", { title: "Init effects",
-      description: "Timed original init (charge) effects on the special-attack clip. Onset follows the source clip; lifetime/fade policy is a presentation choice.",
-      variables: () => [{ name: "effects.init", value: () => initEffect?.snapshot().status ?? "unavailable", values: "status", source: "nativeEffectInitPreview", status: "presentation" }] });
+    const nativeSliceSheet = attachNativeSliceSheet({ scene, camera, canvas, ui, adapter, registry, settings, playerProfile, playerChoices,
+      playerClips: playerClipsWithSavedFighterEdits(), profileStagesLeatherShirt, archiveHashes: catalog.archiveHashes, clipPreview,
+      locomotionClips, specialAttackPreview, world, audio: nativeAudio, footsteps, footstepGround, combatAudio, combatFailure, effects,
+      cameraControls: { follow, frameWorld, frameFlame, flamePlacementIds, isFollowingFighter: () => followFighter },
+      focusEffectCamera: () => effectCamera?.focus(), isDisposed: () => disposed, addRelease });
+    const failFlames = (error: unknown) => nativeSliceSheet.failFlames(error);
     const observer = scene.onBeforeRenderObservable.add(() => {
       if (isSceneSuspended(scene)) { audio.setPaused(true); return; }
       const uncappedFrameSeconds = scene.getEngine().getDeltaTime() / 1000;
@@ -591,8 +280,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
         catch (error) { failFlames(error); }
       }
       ui.update(cappedFrameSeconds, scene.getEngine().getFps());
-      audioControls.update();
-      combatControls.update();
+      nativeSliceSheet.update();
     });
     boundaryReleases.push(() => { scene.onBeforeRenderObservable.remove(observer); });
     boundaryReleases.push(attachNativeSliceDiagnostics({ scene, camera, registry, adapter, ui, playerProfile, musveren, handAnchor,

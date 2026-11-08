@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   formerlyEditorAuthoredStatusLabel, nativeSandboxPresentation, referenceWorldPresentation, talkingIslandCameraOverrides,
-  type PresentationConfiguration,
+  type PresentationConfiguration, type PresentationSourceFiles,
 } from "../../src/scene/presentationConfiguration";
 import { nativeSandboxConfiguration } from "../../src/runtime/nativeSandboxConfiguration";
 
@@ -12,12 +12,10 @@ function readSavedEditorJson(path: string): SavedJson {
   return JSON.parse(readFileSync(new URL(`../../${path}`, import.meta.url), "utf8")) as SavedJson;
 }
 
-interface SavedSceneFiles { camera: string; skyLight: string; sunlight: string; config: string }
-
 const savedCameraFields = ["alpha", "beta", "radius", "target", "minZ", "maxZ", "fov", "fovMode", "lowerRadiusLimit", "upperRadiusLimit",
   "lowerBetaLimit", "upperBetaLimit", "inertia", "panningInertia", "speed", "pinchToPanMaxDistance", "allowUpsideDown", "name"] as const;
 
-function expectPresentationEqualsSavedScene(configuration: PresentationConfiguration, files: SavedSceneFiles): void {
+function expectPresentationEqualsSavedScene(configuration: PresentationConfiguration, files: PresentationSourceFiles): void {
   const camera = readSavedEditorJson(files.camera);
   expect(camera.type).toBe("ArcRotateCamera");
   for (const field of savedCameraFields) expect(configuration.camera[field], `camera.${field}`).toEqual(camera[field]);
@@ -37,7 +35,7 @@ function expectPresentationEqualsSavedScene(configuration: PresentationConfigura
   const fog = config.fog as SavedJson;
   expect(configuration.fog).toEqual({ enabled: fog.fogEnabled, mode: fog.fogMode, start: fog.fogStart, end: fog.fogEnd,
     density: fog.fogDensity, color: fog.fogColor });
-  expect(configuration.source).toEqual([files.camera, files.skyLight, files.sunlight, files.config]);
+  expect(configuration.source).toEqual(files);
   expect(configuration.statusLabel).toBe(formerlyEditorAuthoredStatusLabel);
 }
 

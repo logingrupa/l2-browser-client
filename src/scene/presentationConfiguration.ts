@@ -52,6 +52,13 @@ export interface FogConfiguration {
   color: ColorRgbTuple;
 }
 
+export interface PresentationSourceFiles {
+  camera: string;
+  skyLight: string;
+  sunlight: string;
+  config: string;
+}
+
 export interface PresentationConfiguration {
   camera: PresentationCameraConfiguration;
   lights: { sky: HemisphericLightConfiguration; sun: DirectionalLightConfiguration };
@@ -59,7 +66,7 @@ export interface PresentationConfiguration {
   ambientColor: ColorRgbTuple;
   fog: FogConfiguration;
   statusLabel: typeof formerlyEditorAuthoredStatusLabel;
-  source: readonly string[];
+  source: PresentationSourceFiles;
 }
 
 export interface TalkingIslandCameraOverrides {
@@ -123,12 +130,12 @@ export const nativeSandboxPresentation: PresentationConfiguration = {
   ambientColor: [0, 0, 0],
   fog: { ...fogDistancesSavedInBothEditorScenes, mode: 0 },
   statusLabel: formerlyEditorAuthoredStatusLabel,
-  source: [
-    "assets/native-parity.scene/cameras/World camera.json",
-    "assets/native-parity.scene/lights/Sky light.json",
-    "assets/native-parity.scene/lights/Sunlight.json",
-    "assets/native-parity.scene/config.json",
-  ],
+  source: {
+    camera: "assets/native-parity.scene/cameras/World camera.json",
+    skyLight: "assets/native-parity.scene/lights/Sky light.json",
+    sunlight: "assets/native-parity.scene/lights/Sunlight.json",
+    config: "assets/native-parity.scene/config.json",
+  },
 };
 
 export const referenceWorldPresentation: PresentationConfiguration = {
@@ -157,12 +164,12 @@ export const referenceWorldPresentation: PresentationConfiguration = {
   ambientColor: [0, 0, 0],
   fog: { ...fogDistancesSavedInBothEditorScenes, mode: 3 },
   statusLabel: formerlyEditorAuthoredStatusLabel,
-  source: [
-    "assets/example.scene/cameras/world-camera.json",
-    "assets/example.scene/lights/sky-light.json",
-    "assets/example.scene/lights/sunlight.json",
-    "assets/example.scene/config.json",
-  ],
+  source: {
+    camera: "assets/example.scene/cameras/world-camera.json",
+    skyLight: "assets/example.scene/lights/sky-light.json",
+    sunlight: "assets/example.scene/lights/sunlight.json",
+    config: "assets/example.scene/config.json",
+  },
 };
 
 export const talkingIslandCameraOverrides: TalkingIslandCameraOverrides = {

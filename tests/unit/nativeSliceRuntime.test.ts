@@ -16,6 +16,8 @@ import type { AssetImportOptions } from "../../src/ui/AssetImportPanel";
 import { WorldAudioMixer } from "../../src/audio/WorldAudioMixer";
 import { isSceneSuspended, setSceneSuspended } from "../../src/engine/renderSuspension";
 import { defaultNativePlayerProfile } from "../../src/assets/native/loadNativePlayerProfiles";
+import type { VariableInfo } from "../../src/ui/devSheet/types";
+import { formerlyEditorAuthoredStatusLabel } from "../../src/scene/presentationConfiguration";
 
 vi.mock("../../src/scene/world/loadNativeMovers", () => ({ loadNativeMovers: vi.fn(async () => null) }));
 
@@ -24,6 +26,7 @@ const boundaries = vi.hoisted(() => ({
   assetImport: vi.fn(), detachAssetImport: vi.fn(), audioControls: vi.fn(), factory: vi.fn(), effectBundle: vi.fn(),
   uis: [] as { adapter: NativeSliceAdapter; dispose: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn>; showStatus: ReturnType<typeof vi.fn> }[],
   registries: [] as { dispose: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> }[],
+  sheetGroups: new Map<string, { variables?: () => VariableInfo[] }>(),
 }));
 vi.mock("../../src/assets/native/loadNativeCatalog", () => ({ loadNativeActorCatalog: boundaries.load }));
 vi.mock("../../src/effects/nativeEffectComponents", () => ({ loadNativeEffectComponents: boundaries.effectBundle }));
@@ -51,9 +54,12 @@ vi.mock("../../src/ui/WorldInterface", () => ({ WorldInterface: class {
   readonly sheet = (() => {
     const plainDomNode = () => Object.assign(new EventTarget(), { dataset: {}, disabled: false, hidden: false, textContent: "",
       append() {}, remove() {}, after() {}, setAttribute() {}, querySelector: () => null, querySelectorAll: () => [] });
-    const group = () => ({ element: plainDomNode(), button: plainDomNode, note: plainDomNode,
-      readout: () => ({ element: plainDomNode(), output: plainDomNode(), refresh() {} }),
-      choice: () => ({ element: plainDomNode(), value: "", set() {}, setOptions() {}, setDisabled() {} }) });
+    const group = (id: string, _title: string, options: { variables?: () => VariableInfo[] } = {}) => {
+      boundaries.sheetGroups.set(id, options);
+      return { element: plainDomNode(), button: plainDomNode, note: plainDomNode,
+        readout: () => ({ element: plainDomNode(), output: plainDomNode(), refresh() {} }),
+        choice: () => ({ element: plainDomNode(), value: "", set() {}, setOptions() {}, setDisabled() {} }) };
+    };
     const inertHoverCardDescribe = () => () => {};
     return { section: () => ({ group }), describe: inertHoverCardDescribe, inspect: () => ({ open: false }) };
   })();
@@ -73,7 +79,7 @@ describe("native slice runtime lifetime", () => {
   const settings: NativeSliceSettings = { origin: new Vector3(2, 3, 4), leatherShirt: true,
     fighterIdle: "Wait", fighterRun: "Run", fighterAttack: "Attack", fighterDeath: "Death" };
   beforeEach(() => {
-    boundaries.uis.length = 0; boundaries.registries.length = 0;
+    boundaries.uis.length = 0; boundaries.registries.length = 0; boundaries.sheetGroups.clear();
     boundaries.load.mockReset(); boundaries.section.mockReset(); boundaries.flames.mockReset(); boundaries.camera.mockReset(); boundaries.targeting.mockReset();
     boundaries.assembly.mockReset().mockResolvedValue(undefined);
     boundaries.effectBundle.mockReset().mockResolvedValue(null);
@@ -102,6 +108,15 @@ describe("native slice runtime lifetime", () => {
     expect(window.__nativeSlice!.snapshot()).toMatchObject({ effectComponents: null,
       effectComponentFailure: "Effect manifest hash differs", worldFailure: null, nativeTerrain: "source-section-loaded" });
     expect(boundaries.registries[0]!.dispose).not.toHaveBeenCalled();
+  });
+
+  it("lists the received sandbox settings and the scene presentation on the sheet with their provenance label", async () => {
+    stops.push(await startRuntime({ ...settings, fighterIdle: "Received idle" }, new AbortController().signal));
+    const sandboxVariables = boundaries.sheetGroups.get("sandbox-settings")!.variables!();
+    expect(sandboxVariables.find(variable => variable.name === "sandbox.fighterIdle")!.value()).toBe("Received idle");
+    const presentationVariables = boundaries.sheetGroups.get("scene-presentation")!.variables!();
+    expect(presentationVariables.some(variable => variable.name === "presentation.fog.mode")).toBe(true);
+    for (const variable of [...sandboxVariables, ...presentationVariables]) expect(variable.source?.endsWith(formerlyEditorAuthoredStatusLabel)).toBe(true);
   });
 
   it("disposes the optional component owner before releasing character anchors", async () => {

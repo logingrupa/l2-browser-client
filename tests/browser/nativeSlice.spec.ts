@@ -41,8 +41,6 @@ async function authoredState() {
   const attached = objects(object(config.metadata).scripts).filter(script => script._id === "native-parity-runtime" && script.key === "scripts/nativeParity.ts");
   expect(attached).toHaveLength(1); expect(attached[0]!.enabled).toBe(true);
   const values = object(attached[0]!.values);
-  // Missing overrides retain the actual script defaults; explicit typed Editor
-  // values must survive packing and runtime initialization unchanged.
   const settings = {
     leatherShirt: setting(values, "leatherShirt", false),
     fighterIdle: setting(values, "fighterIdle", "Wait_Hand_MFighter"),
@@ -100,8 +98,6 @@ async function authoredState() {
     return { modelSha256, skeletonBones, skinMeshes, clips };
   };
   const [fighter, armor, musveren] = await Promise.all([rig("human-male-fighter:0"), rig("fighter-equipment:0"), rig("musveren:0")]);
-  // Keep the original independently inspected source rig contract as well as
-  // comparing the live replacement to its actual staged, hash-verified GLB.
   expect(fighter.skeletonBones).toEqual([70, 70, 70, 70, 1, 1, 1]); expect(fighter.skinMeshes).toBe(7);
   expect(armor.skeletonBones).toEqual([70]); expect(armor.skinMeshes).toBe(1);
   expect(musveren.skeletonBones).toEqual([49]); expect(musveren.skinMeshes).toBe(2);
@@ -159,7 +155,6 @@ async function ready(page: Page, authored: AuthoredState) {
   await expect(page.locator("#canvas")).toBeVisible();
   await expect(page.getByTestId("entity-count")).toHaveText("2", { timeout: 120_000 });
   await expect.poll(async () => (await read(page)).entities.filter(item => !item.isFallback).length, { timeout: 90_000 }).toBe(2);
-  // Check the saved initial armor at the completed reveal boundary as well.
   await waitForEquipment(page, authored.settings.leatherShirt);
   await expect.poll(async () => (await entity(page)).playback?.activeClip).toBe(authored.settings.fighterIdle);
   const state = await read(page);
@@ -190,20 +185,18 @@ test("native packages retain rigs, change equipment, hold death, move and clean 
   expect(initial.worldFailure).toBeNull();
   expect(initial.world?.terrainMaterial).toBe("candidate-source-textures");
   expect(initial.world?.materialFailure).toBeNull();
-  expect(initial.fog?.mode).toBe(0); // The authored native scene disables fog; the CLI used to drop that choice.
+  expect(initial.fog?.mode).toBe(0);
   await expect(page.getByTestId("fps")).toBeVisible();
   assertRigs(initial, authored, authored.settings.leatherShirt);
   for (const actor of initial.entities) {
     expect(actor.groundClearance).toBeGreaterThan(0);
     expect(actor.position.y - actor.authoritativePosition.y).toBeCloseTo(actor.groundClearance, 4);
     if (actor.id === "native-musveren") {
-      // Native reference uses CollH=36 uu; a hovering creature's idle minimum
-      // must not be forced onto the surface. This is not a native collision test.
-      expect(actor.groundClearance).toBeCloseTo(.36, 8);
-      // Independent retained idle bounds at unit actor scale. The new outer
-      // scale must include the original native origin/rig transform as well.
-      expect(actor.bounds.minimum[1]).toBeCloseTo(-.11751600205898288 * 1.2, 5);
-      expect(actor.bounds.maximum[1]).toBeCloseTo(.2797630667686462 * 1.2, 5);
+      const musverenCollisionHeightMetres = .36, musverenDrawScale = 1.2;
+      const musverenIdleBoundsAtUnitActorScale = { minimumY: -.11751600205898288, maximumY: .2797630667686462 };
+      expect(actor.groundClearance).toBeCloseTo(musverenCollisionHeightMetres, 8);
+      expect(actor.bounds.minimum[1]).toBeCloseTo(musverenIdleBoundsAtUnitActorScale.minimumY * musverenDrawScale, 5);
+      expect(actor.bounds.maximum[1]).toBeCloseTo(musverenIdleBoundsAtUnitActorScale.maximumY * musverenDrawScale, 5);
       expect(actor.position.y + actor.bounds.minimum[1]! - actor.authoritativePosition.y).toBeGreaterThan(.2);
     } else {
       expect(actor.position.y + actor.bounds.minimum[1]! - actor.authoritativePosition.y).toBeCloseTo(0, 4);
@@ -270,6 +263,11 @@ test("native packages retain rigs, change equipment, hold death, move and clean 
   await writeFile(resolve(evidence, "native-desktop.json"), JSON.stringify({ authored, initial, equipped, dead, final: await read(page), errors,
     scope: "WebGPU functional check; not native visual parity or a performance benchmark." }, null, 2));
   await page.getByTestId("dev-sheet-toggle").click();
+  await page.getByTestId("dev-tab-world").click();
+  await expect(page.getByTestId("native-scene-presentation")).toContainText("presentation, not L2");
+  await page.getByTestId("dev-tab-character").click();
+  await expect(page.getByTestId("native-sandbox-settings")).toContainText("presentation, not L2");
+  await page.getByTestId("dev-tab-general").click();
   await page.getByRole("button", { name: "Resume", exact: true }).click();
   const start = (await entity(page)).position;
   await page.evaluate(position => window.__nativeSlice!.dispatch({ type: "move-local", position }), { x: start.x + .35, y: start.y, z: start.z + .15 });
