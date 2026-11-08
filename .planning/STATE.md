@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 1
 current_phase_name: Foundations
 status: executing
-stopped_at: Completed 01-06-PLAN.md
-last_updated: "2026-11-08T07:16:47.833Z"
+stopped_at: Completed 01-09-PLAN.md
+last_updated: "2026-11-08T07:25:09.849Z"
 last_activity: 2026-11-08
 last_activity_desc: Phase 1 execution started
-state_head: a3f6635d42a300caa292aac25723fcbd7bfc1af9
+state_head: caf98797303d66bbf6419ce9aac12b51f1729a02
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 17
-  completed_plans: 11
+  completed_plans: 12
   percent: 0
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 1 (Foundations) — EXECUTING
-Plan: 12 of 17
+Plan: 13 of 17
 Status: Ready to execute
 Last activity: 2026-11-08 — Phase 1 execution started
 
@@ -63,6 +63,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P10 | 12min | 2 tasks | 14 files |
 | Phase 01 P12 | 17min | 3 tasks | 26 files |
 | Phase 1 P06 | 10 min | 2 tasks | 22 files |
+| Phase 01 P09 | 8min | 2 tasks | 28 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,8 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..8 and DEC-PORT-1..3.
 - [Phase 01]: Plan 01-12: Converter.run refuses before UModel starts unless the target package's transitive import closure is lock-equal (OVERNIGHT-DECISIONS row 32)
 - [Phase 1]: 01-06: the default route builds its scene in code and starts createWorldRuntime from loadEnvironment; an unstaged reference world shows a not-staged status; the courtyard Editor scene and WorldScript are deleted
 - [Phase 1]: 01-06: one shared attachScenePresentationGroup lists presentation values on both the default and native route sheets
+- [Phase 01]: 01-09: dev and build run only stage-webgpu-compilers before Vite; Editor steps live in optional generate:editor and Editor-path tests in test:editor (tests/editor, 18 files)
+- [Phase 01]: 01-09: tests/unit Editor scan covers Editor packages and src/scripts; splitting the authored cases of nativeSliceRuntime.test.ts is deferred (OVERNIGHT-DECISIONS row 34)
 
 ### Pending Todos
 
@@ -133,6 +136,6 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..8 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-08T07:16:47.716Z
-Stopped at: Completed 01-06-PLAN.md
+Last session: 2026-11-08T07:25:09.770Z
+Stopped at: Completed 01-09-PLAN.md
 Resume file: None
