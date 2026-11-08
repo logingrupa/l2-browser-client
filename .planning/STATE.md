@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 1
 current_phase_name: Foundations
 status: executing
-stopped_at: Completed 01-02-PLAN.md
-last_updated: "2026-11-08T04:43:50.212Z"
+stopped_at: Completed 01-07-PLAN.md
+last_updated: "2026-11-08T04:55:50.576Z"
 last_activity: 2026-11-08
 last_activity_desc: Phase 1 execution started
-state_head: a661e6e91ef573860d40978ca1a0d795edcef17a
+state_head: 7fcf5381d01e1aa05b8e3d51fda9a8f35690f0fc
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 17
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 1 (Foundations) — EXECUTING
-Plan: 2 of 17
+Plan: 3 of 17
 Status: Ready to execute
 Last activity: 2026-11-08 — Phase 1 execution started
 
@@ -53,6 +53,7 @@ Progress: [░░░░░░░░░░] 0%
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 1 P02 | 15 min | 2 tasks | 11 files |
+| Phase 01 P07 | 11 min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -67,6 +68,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..8 and DEC-PORT-1..3.
 - [DEC-OWN-8]: Babylon.js Editor leaves the build and runtime path. NOED-01..05 are Phase 1 integration work, merged before any Phase 2 lane starts. Per-tile Editor scenes are dropped; optional viewer work is VIEW-01 (v2). `stage-webgpu-compilers` stays in dev and build (runtime needs glslang/twgsl).
 - [Phase 1]: 01-02: FOUND-03 stays pending until plan 01-13 records recipes/reference-client-tree.lock.json; the guard and tooling exist and are tested on synthetic trees
 - [Phase 1]: 01-02: lock hashingScriptSha256 covers the walker with CRLF normalised to LF
+- [Phase 01]: 01-07: MapSources.get carries the per-file require_equal_file check for every map package reader; world entry points call require_reference_client right after parse_args
 
 ### Pending Todos
 
@@ -99,6 +101,6 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..8 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-08T04:43:50.159Z
-Stopped at: Completed 01-02-PLAN.md
+Last session: 2026-11-08T04:55:50.527Z
+Stopped at: Completed 01-07-PLAN.md
 Resume file: None
