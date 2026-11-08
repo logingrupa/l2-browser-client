@@ -11,8 +11,8 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 
 - [x] **FOUND-01**: Shared process files exist and are used: `STATUS.md` (one line per part, rewritten in place), append-only `DECISIONS.md` seeded with DEC-OWN/DEC-PORT, `.planning/lanes.json` folder ownership (converter agents `scripts/**` and `recipes/**`, UI agents `src/ui/**`, adapter agents `src/world/protocol/**`), and `docs/parts/<part>/EVIDENCE.md` (under about 30 KB). Rules: one part per branch `<part>/<slug>`, at most 3 lanes, native-store scripts only in the main checkout, merge one branch at a time with contract changes first.
 - [ ] **FOUND-02**: Output contract written and testable: `.l2asset` + runtime catalog stay the contract; each `asset.json` records source path and SHA-256, client build, converter version, and units and handedness for its route; `recipes/native-inputs.lock.json` stays input-only; the client loads assets only through the catalog. Small hash-pinned golden fixtures let portable tests run without the private client.
-- [ ] **FOUND-03**: IMPORTA-PC `C:/Lineage2-client` is recorded as the reference for all L2.exe comparisons. A one-time full-tree hash lock (file count, bytes, per-file SHA-256; beyond the 143-file closure) proves `E:/Lineage2-client` equal before any stage A conversion reads from E:.
-- [ ] **FOUND-04**: Combined decoded-table inventory for all 40 `.dat` tables (table, route = local descriptor / Elbera / none, record count, status), written before more tables are decoded.
+- [x] **FOUND-03**: IMPORTA-PC `C:/Lineage2-client` is recorded as the reference for all L2.exe comparisons. A one-time full-tree hash lock (file count, bytes, per-file SHA-256; beyond the 143-file closure) proves `E:/Lineage2-client` equal before any stage A conversion reads from E:.
+- [x] **FOUND-04**: Combined decoded-table inventory for all 40 `.dat` tables (table, route = local descriptor / Elbera / none, record count, status), written before more tables are decoded.
 
 ### Architecture invariants (Phase 1)
 
@@ -162,8 +162,8 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 |-------------|-------|--------|
 | FOUND-01 | Phase 1 | Complete |
 | FOUND-02 | Phase 1 | Pending |
-| FOUND-03 | Phase 1 | Pending |
-| FOUND-04 | Phase 1 | Pending |
+| FOUND-03 | Phase 1 | Complete |
+| FOUND-04 | Phase 1 | Complete |
 | ARCH-01 | Phase 1 | Pending |
 | ARCH-02 | Phase 1 | Pending |
 | ARCH-03 | Phase 1 | Pending |

@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 1
 current_phase_name: Foundations
 status: executing
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-11-08T05:24:10.860Z"
+stopped_at: Completed 01-13-PLAN.md
+last_updated: "2026-11-08T05:34:30.480Z"
 last_activity: 2026-11-08
 last_activity_desc: Phase 1 execution started
-state_head: b9c0ca6fc99dd6e641cfd7277e6ccbab151bce39
+state_head: c1df1dd61565118c67884d9d0d4e4484b723a460
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 17
-  completed_plans: 4
+  completed_plans: 5
   percent: 0
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 1 (Foundations) — EXECUTING
-Plan: 5 of 17
+Plan: 6 of 17
 Status: Ready to execute
 Last activity: 2026-11-08 — Phase 1 execution started
 
@@ -56,6 +56,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P07 | 11 min | 3 tasks | 13 files |
 | Phase 01 P08 | 13 min | 3 tasks | 20 files |
 | Phase 01 P01 | 8 min | 2 tasks | 26 files |
+| Phase 01 P13 | 9 min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,8 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..8 and DEC-PORT-1..3.
 - [Phase 01]: Plan 01-08: the UModel -path gap is recorded in deferred-items.md (OVERNIGHT-DECISIONS row 21) and must close before plan 01-13's lock enables E: conversion
 - [Phase 1]: 01-01: lane ownership is by lane (world, actors, data-ui, integration) in .planning/lanes.json; Stage B parts 12-19 sit in integration until Phase 4
 - [Phase 1]: 01-01: every native-store writer script stays integration-owned; scripts/check-lane-ownership.mjs exits 1 on foreign paths and 2 on a part/slug branch whose part names no lane (OVERNIGHT-DECISIONS row 22)
+- [Phase 01]: 01-13: reference client lock committed; lock keys keep the on-disk spelling (system/engine.dll) and lookups casefold
+- [Phase 01]: 01-13: dat inventory counts are decode list lengths or quoted Elbera evidence, else unknown; no UModel conversion on E: until plan 01-12
 
 ### Pending Todos
 
@@ -106,6 +109,6 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..8 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-08T05:24:10.803Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-11-08T05:34:30.427Z
+Stopped at: Completed 01-13-PLAN.md
 Resume file: None

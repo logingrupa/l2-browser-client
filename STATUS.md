@@ -2,7 +2,7 @@
 
 One line per part, in PORT_SCOPE section 5 order, rewritten in place by the integration thread. Format: part | lane | state | evidence doc. States are from PORT_SCOPE section 5 (2026-11-07). Lane ownership: `.planning/lanes.json`.
 
-- data | data-ui | 11 of 40 tables decoded to JSON by Elbera tools | docs/parts/data/EVIDENCE.md
+- data | data-ui | E: locked against IMPORTA-PC; 40-table inventory: 8 decoded locally, 29 layout only, 3 on the Elbera route | docs/parts/data/EVIDENCE.md
 - sandbox | data-ui | MockWorldAdapter and NativeSliceAdapter exist, no by-ID spawning yet | docs/parts/sandbox/EVIDENCE.md
 - world | world | 20_20 and Talking Island bundles | docs/parts/world/EVIDENCE.md
 - player-characters | actors | human fighters native, human mystic export in progress | docs/parts/player-characters/EVIDENCE.md
