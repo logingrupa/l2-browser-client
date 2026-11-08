@@ -59,6 +59,18 @@ In v1, the same `unit`, `sourceUnitsPerMetre` and `sourceToGltf` sit inside
 normalised `manifest.coordinates` for both versions, and the Python helper
 `asset_coordinates(manifest)` does the same for scripts.
 
+## Source preservation
+
+Conversion keeps the source bytes and values (CONV-02). There is no 1.8 m
+height normalisation, no ground fitting, no root-drift removal and no weight
+normalisation. A repair runs only for a demonstrated defect, and the original
+values stay next to the repaired ones. `tests/pipeline/test_source_preservation_contract.py`
+fails when a rule below drifts from the code.
+
+| Rule | Value | Where | Enforced by |
+| --- | --- | --- | --- |
+| UModel pin | build1590, SHA-256 `13502e5a4d8f6b5f32252afebd6360f7302ccfaccf6b8dda65beff0be2d364a0` | `scripts/native_assets.py` `UMODEL_SHA256`; the tool is read from `.assets/native-tools/umodel/` (`UMODEL`, the `--umodel` default) | `Converter.__init__` refuses any other tool bytes; `UmodelPinContractTests` |
+
 ## How the catalog lists assets
 
 `/l2/catalog.json` is schemaVersion 1. Its slices are `models`, `textures`,
