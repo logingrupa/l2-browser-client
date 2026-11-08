@@ -1,9 +1,18 @@
+import type { GameWorldAdapter } from "../world/GameWorldAdapter";
 import type { LocomotionMode } from "../world/worldTypes";
-import type { NativeSliceAdapter } from "../world/NativeSliceAdapter";
 
-/** Walk/Run as a chip radiogroup showing the armed gait (the HUD marks its own
- * Run/Walk actions). Speeds come from the adapter's speed profile. */
-export function attachNativeLocomotionControls(host: HTMLElement, adapter: NativeSliceAdapter, walkAvailable: boolean, reason: string | null) {
+export interface NativeLocomotionSpeeds {
+  readonly walkMetresPerSecond: number;
+  readonly runMetresPerSecond: number;
+  readonly runStartSeconds: number;
+}
+
+export interface NativeLocomotionControlTarget extends Pick<GameWorldAdapter, "dispatch" | "subscribe"> {
+  readonly locomotionMode: LocomotionMode;
+  readonly speedProfile: NativeLocomotionSpeeds;
+}
+
+export function attachNativeLocomotionControls(host: HTMLElement, controlTarget: NativeLocomotionControlTarget, walkAvailable: boolean, reason: string | null) {
   const root = document.createElement("div"), lifetime = new AbortController();
   root.dataset.testid = "native-locomotion-controls";
   const label = document.createElement("span"), group = document.createElement("div");
@@ -15,19 +24,19 @@ export function attachNativeLocomotionControls(host: HTMLElement, adapter: Nativ
     button.type = "button"; button.className = "dev-chip"; button.setAttribute("role", "radio"); button.dataset.value = value;
     button.dataset.testid = `native-locomotion-${value}`; button.textContent = title;
     button.disabled = value === "walk" && !walkAvailable;
-    button.addEventListener("click", () => { adapter.dispatch({ type: "set-locomotion", mode: value }); update(); }, { signal: lifetime.signal });
+    button.addEventListener("click", () => { controlTarget.dispatch({ type: "set-locomotion", mode: value }); update(); }, { signal: lifetime.signal });
     group.append(button); buttons.set(value, button);
   }
   const speed = document.createElement("output");
   speed.className = "dev-readout"; speed.dataset.testid = "native-locomotion-speed";
   const update = () => {
-    const mode = adapter.locomotionMode, profile = adapter.speedProfile;
+    const mode = controlTarget.locomotionMode, profile = controlTarget.speedProfile;
     for (const [value, button] of buttons) button.setAttribute("aria-checked", String(value === mode));
     speed.textContent = mode === "walk" ? `${profile.walkMetresPerSecond.toFixed(2)} m/s` :
       `${profile.runMetresPerSecond.toFixed(2)} m/s (walk speed for the first ${profile.runStartSeconds} s)`;
   };
   update();
-  const unsubscribe = adapter.subscribe(update);
+  const unsubscribe = controlTarget.subscribe(update);
   root.append(label, group, speed);
   if (reason) { const note = document.createElement("p"); note.className = "dev-note"; note.textContent = reason; root.append(note); }
   host.append(root);

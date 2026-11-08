@@ -6,7 +6,7 @@ import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
 import { SubMesh } from "@babylonjs/core/Meshes/subMesh";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { MultiMaterial } from "@babylonjs/core/Materials/multiMaterial";
-import { createWorldNavigation } from "../../src/world/meshNavigation";
+import { createWorldNavigation } from "../../src/scene/navigation/meshNavigation";
 import { NativeSliceAdapter } from "../../src/world/NativeSliceAdapter";
 import type { WorldGroundContact, WorldNavigation, WorldSupportSample } from "../../src/world/WorldNavigation";
 import type { WorldPosition } from "../../src/world/worldTypes";

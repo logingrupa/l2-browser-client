@@ -3,7 +3,7 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import type { NativeSection } from "../scene/world/loadNativeSection";
 import { loadNativeMovers, type NativeMovers } from "../scene/world/loadNativeMovers";
-import { createWorldNavigation } from "../world/meshNavigation";
+import { createWorldNavigation } from "../scene/navigation/meshNavigation";
 import type { WorldNavigation } from "../world/WorldNavigation";
 import { createNativeFlamePresentation, type NativeFlamePresentation } from "../scene/world/nativeFlamePresentation";
 import { nativeFlameBrowserToNative } from "../scene/world/nativeFlameBillboards";

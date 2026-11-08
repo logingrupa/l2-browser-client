@@ -3,7 +3,7 @@ import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
 import { Scene } from "@babylonjs/core/scene";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
-import { createWorldNavigation } from "../../src/world/meshNavigation";
+import { createWorldNavigation } from "../../src/scene/navigation/meshNavigation";
 import { MockWorldAdapter } from "../../src/world/MockWorldAdapter";
 import type { WorldNavigation } from "../../src/world/WorldNavigation";
 import type { WorldPosition } from "../../src/world/worldTypes";

@@ -11,7 +11,7 @@ import { AnimationGroup } from "@babylonjs/core/Animations/animationGroup";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { attachNativeBspSupport } from "../../src/scene/world/nativeBspSupport";
 import type { NativeSectionManifest } from "../../src/scene/world/loadNativeSection";
-import { createWorldNavigation } from "../../src/world/meshNavigation";
+import { createWorldNavigation } from "../../src/scene/navigation/meshNavigation";
 
 const scenes: Scene[] = [];
 afterEach(() => { for (const scene of scenes.splice(0)) { const engine = scene.getEngine(); scene.dispose(); engine.dispose(); } });

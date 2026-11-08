@@ -10,7 +10,7 @@ import { WorldInterface } from "../ui/WorldInterface";
 import type { WorldPosition } from "../world/worldTypes";
 import { projectPosition } from "../scene/projectPosition";
 import { getImportedEnvironment } from "../scene/environmentContext";
-import { createWorldNavigation } from "../world/meshNavigation";
+import { createWorldNavigation } from "../scene/navigation/meshNavigation";
 import type { ImportedWorldInspection } from "../scene/world/loadImportedWorld";
 import { attachAssetImport } from "../ui/AssetImportPanel";
 import { isSceneSuspended, setSceneSuspended } from "../engine/renderSuspension";
