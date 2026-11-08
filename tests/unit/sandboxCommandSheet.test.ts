@@ -3,6 +3,7 @@ import { DevSheet, type DevSection } from "../../src/ui/devSheet/DevSheet";
 import type { NativeCatalogIndex, NativeCatalogLookup } from "../../src/assets/native/nativeCatalogIndex";
 import { powerStrikeEffectBundleId } from "../../src/effects/nativeEffectComponents";
 import { attachSandboxCommandSheet } from "../../src/runtime/attachSandboxCommandSheet";
+import { NativeSliceAdapter } from "../../src/world/NativeSliceAdapter";
 import type { WorldCommand, WorldEntity, WorldEvent } from "../../src/world/worldTypes";
 import { fakeMedia, fire, installMiniDom, type FakeElement, type MiniDom } from "./support/miniDom";
 
@@ -93,6 +94,23 @@ describe("sandbox equip item by ID", () => {
     expect(note("sandbox-equip-item")).toHaveLength(1);
     expect(note("sandbox-equip-item")[0]!.textContent).toBe("item:22 converted");
     expect(note("sandbox-equip-item")[0]!.dataset.tone).toBe("info");
+  });
+
+  it("reports the item the local player already wears as converted, not as rejected", () => {
+    const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, undefined, 22);
+    const section = sandboxSection();
+    const release = attachSandboxCommandSheet({ section, adapter, index: fakeCatalogIndex, indexFailure: null, appearanceOfModel: () => "native-musveren",
+      selectedEntityId: () => null, powerStrike: null });
+    const panel = section.element as unknown as FakeElement;
+    const form = panel.querySelector('[data-testid="sandbox-equip-item"]')!;
+    form.querySelector('[data-testid="sandbox-equip-item-itemId"]')!.value = "22";
+    fire(form, "submit");
+    const equipNotes = panel.querySelectorAll('[data-testid="sandbox-equip-item-note"]');
+    expect(equipNotes).toHaveLength(1);
+    expect(equipNotes[0]!.textContent).toBe("item:22 converted");
+    expect(equipNotes[0]!.dataset.tone).toBe("info");
+    release();
+    adapter.dispose();
   });
 
   it("still dispatches item 999999 and warns that it is not in the catalog", () => {

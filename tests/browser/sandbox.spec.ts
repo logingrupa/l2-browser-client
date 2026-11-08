@@ -55,6 +55,9 @@ test("sandbox sheet spawns, equips and opens by ID and marks missing assets with
   expect(converted?.skeletons.length).toBeGreaterThan(0);
   await expect(page.locator('.entity-label[data-entity-id="npc-21622-2"] .entity-diagnostic')).toBeHidden();
 
+  await submitIdEntry(page, "sandbox-equip-item", { itemId: "22" });
+  await expect(page.getByTestId("sandbox-equip-item-note")).toHaveText("item:22 converted");
+  await expect(page.getByTestId("sandbox-equip-item-note")).toHaveAttribute("data-tone", "info");
   await submitIdEntry(page, "sandbox-equip-item", { itemId: "999999" });
   await expect(page.getByTestId("sandbox-equip-item-note")).toHaveText("item:999999 not in catalog");
   await submitIdEntry(page, "sandbox-open-window", { name: "StatusWnd" });

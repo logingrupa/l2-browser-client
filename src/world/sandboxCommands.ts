@@ -32,7 +32,8 @@ export function entityWithEquippedItem(entities: ReadonlyMap<string, WorldEntity
   if (!equipmentSlots.includes(command.slot)) return null;
   if (command.itemId !== null && !isLineageIdentifier(command.itemId)) return null;
   const entity = entities.get(command.entityId ?? "local-player");
-  if (!entity || entity.equipment?.[command.slot] === (command.itemId ?? undefined)) return null;
+  if (!entity) return null;
+  if (entity.equipment?.[command.slot] === (command.itemId ?? undefined)) return entity;
   const otherSlots = Object.fromEntries(Object.entries(entity.equipment ?? {}).filter(([slot]) => slot !== command.slot));
   const equipment = Object.freeze(command.itemId === null ? otherSlots : { ...otherSlots, [command.slot]: command.itemId });
   return { ...entity, equipment };

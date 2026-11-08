@@ -58,20 +58,23 @@ describe.each(adapterFactories)("sandbox by-ID commands on %s", (_name, createAd
     adapter.dispose();
   });
 
-  it("equips an item by ID into the upper slot once and clears it with null", () => {
+  it("equips an item by ID into the upper slot, clears it with null, and confirms a request the slot already holds", () => {
     const adapter = createAdapter();
     const receivedEvents = recordEvents(adapter);
+    const upperItemOfEvent = (event: WorldEvent | undefined) => event?.type === "update" ? event.entity.equipment?.upper : "not an update";
     adapter.dispatch({ type: "equip-item", slot: "upper", itemId: 22 });
     expect(receivedEvents).toHaveLength(1);
     expect(receivedEvents[0]).toMatchObject({ type: "update", entity: { id: "local-player", equipment: { upper: 22 } } });
     adapter.dispatch({ type: "equip-item", slot: "upper", itemId: 22 });
-    expect(receivedEvents).toHaveLength(1);
-    adapter.dispatch({ type: "equip-item", slot: "upper", itemId: null });
     expect(receivedEvents).toHaveLength(2);
-    const cleared = receivedEvents[1];
-    expect(cleared?.type === "update" ? cleared.entity.equipment?.upper : "not an update").toBeUndefined();
+    expect(receivedEvents[1]).toMatchObject({ type: "update", entity: { id: "local-player", equipment: { upper: 22 } } });
     adapter.dispatch({ type: "equip-item", slot: "upper", itemId: null });
-    expect(receivedEvents).toHaveLength(2);
+    expect(receivedEvents).toHaveLength(3);
+    expect(upperItemOfEvent(receivedEvents[2])).toBeUndefined();
+    adapter.dispatch({ type: "equip-item", slot: "upper", itemId: null });
+    expect(receivedEvents).toHaveLength(4);
+    expect(upperItemOfEvent(receivedEvents[3])).toBeUndefined();
+    expect(adapter.getInitialState().find(entity => entity.id === "local-player")?.equipment?.upper).toBeUndefined();
     adapter.dispose();
   });
 
