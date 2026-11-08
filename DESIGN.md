@@ -127,7 +127,7 @@ The user pinned this direction: a classic Lineage II HUD reference, mobile first
 
 - Mode: operate. The primary task is inspecting and interacting with a 3D world.
 - Health sits at the upper left; touch-sized actions sit at the bottom.
-- Landscape 844 x 390 is the primary phone layout. Portrait 390 x 844 must still fit without horizontal scroll.
+- The primary phone layout is the iPhone 15 Pro Max in landscape, 932 x 430. Portrait 430 x 932 must still fit without horizontal scroll.
 - The reference's small desktop controls become touch targets of at least 44px.
 - Selection joins a ground ring to the name and the target strip.
 - Bronze hairlines, deep green-charcoal panels, warm ivory text, Cormorant Garamond headings, and ordinary sans-serif controls. Dense information, restrained chrome.

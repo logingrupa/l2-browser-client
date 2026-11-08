@@ -26,3 +26,4 @@ Append-only, one dated line per decision. The full text of each decision lives i
 - 2026-11-08 DEC-SRC-1: Carried, not locked: no copied linegen source. Full text: .planning/PROJECT.md
 - 2026-11-08 DEC-SRC-2: Carried, not locked: IMPORTA-PC is the reference client, completed by DEC-OWN-2. Full text: .planning/PROJECT.md
 - 2026-11-08 Owner: phone screenshots and the primary phone layout are landscape 844 x 390; portrait 390 x 844 stays a horizontal-scroll check. Full text: AGENTS.md, DESIGN.md
+- 2026-11-08 Owner: the default phone is the iPhone 15 Pro Max, 932 x 430 landscape, with a 430 x 932 portrait horizontal-scroll check. Replaces the 844 x 390 line above. Full text: AGENTS.md, DESIGN.md

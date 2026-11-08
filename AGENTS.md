@@ -38,9 +38,9 @@ Browser client for Lineage II Interlude on Babylon.js WebGPU. These rules are sp
 - Run heavy commands at BelowNormal priority.
 
 ### Screenshots and viewports
-- Phone screenshots are landscape, 844 x 390 with touch, because the game is played with the phone held sideways. In this repo this replaces the global 390 px portrait default.
+- The default phone is the iPhone 15 Pro Max held sideways: 932 x 430 CSS px, landscape, with touch. Phone screenshots use it. In this repo this replaces the global 390 px portrait default.
 - Desktop screenshots stay 1440 x 900.
-- Portrait 390 x 844 is still checked for horizontal scroll, but it is not the evidence screenshot.
+- Portrait 430 x 932 is still checked for horizontal scroll, but it is not the evidence screenshot.
 - Headless e2e runs WebGPU on SwiftShader, a CPU adapter (`playwright.config.ts`), so its FPS readout is not a measurement. FPS and performance claims come only from runs with `WORLD_HARDWARE_TEST=1` on the GTX 1060, outside the relay windows.
 
 ### Docs
