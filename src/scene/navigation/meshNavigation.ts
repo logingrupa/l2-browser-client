@@ -316,7 +316,7 @@ export function createWorldNavigation(options: MeshNavigationOptions): WorldNavi
     return result;
   }
   return {
-    origin: { ...options.origin },
+    origin: { x: options.origin.x, y: options.origin.y, z: options.origin.z },
     ground: point => groundContact(point)?.position ?? null,
     groundContact,
     destination: point => grounded(point, .8)?.position ?? null,

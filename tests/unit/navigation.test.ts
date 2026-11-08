@@ -3,10 +3,12 @@ import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
 import { Scene } from "@babylonjs/core/scene";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { createWorldNavigation } from "../../src/scene/navigation/meshNavigation";
 import { MockWorldAdapter } from "../../src/world/MockWorldAdapter";
+import { NativeSliceAdapter } from "../../src/world/NativeSliceAdapter";
 import type { WorldNavigation } from "../../src/world/WorldNavigation";
-import type { WorldPosition } from "../../src/world/worldTypes";
+import type { WorldEvent, WorldPosition } from "../../src/world/worldTypes";
 
 const scenes: Scene[] = [];
 function fixture() {
@@ -42,6 +44,20 @@ describe("imported world navigation", () => {
     const second = navigation.spawn({ x: .1, y: 0, z: .1 }, [first])!;
     expect(second).not.toBeNull(); expect(second.y).toBe(0);
     expect(Math.hypot(second.x - first.x, second.z - first.z)).toBeGreaterThanOrEqual(1.4);
+  });
+  it("reports a Babylon vector origin as plain coordinates so the sandbox adapter can place spawned NPCs", () => {
+    const { floor } = fixture();
+    const terrain = floor("terrain", -10, 10, -10, 10, 0);
+    const navigation = createWorldNavigation({ terrainMeshes: [terrain], obstacleMeshes: () => [], origin: new Vector3(1, 0, 2) });
+    expect(navigation.origin).toEqual({ x: 1, y: 0, z: 2 });
+    const adapter = new NativeSliceAdapter(navigation.origin, navigation);
+    const spawned: WorldEvent[] = [];
+    adapter.subscribe(event => spawned.push(event));
+    adapter.dispatch({ type: "spawn-npc", npcId: 12345 });
+    const spawn = spawned.find(event => event.type === "spawn");
+    expect(spawn?.type === "spawn" && spawn.entity.npcId).toBe(12345);
+    expect(spawn?.type === "spawn" && [spawn.entity.position.x, spawn.entity.position.y, spawn.entity.position.z].every(Number.isFinite)).toBe(true);
+    adapter.dispose();
   });
   it("grounds source coordinates and detects terrain edges without a courtyard clamp", () => {
     const { floor } = fixture();
