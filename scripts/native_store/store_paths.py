@@ -105,10 +105,14 @@ def lane_work_root(project_root, lane_name):
     return require_converter_output(project_root, lane_folder(project_root, lane_name) / 'work')
 
 
+def lane_gap_rows_folder(project_root, lane_name):
+    return require_converter_output(project_root, lane_folder(project_root, lane_name) / 'gap-rows')
+
+
 def lane_gap_rows_path(project_root, lane_name, step):
     if not (isinstance(step, str) and STEP_NAME_PATTERN.fullmatch(step)):
         raise StorePathError(f'step name must match {STEP_NAME_PATTERN.pattern}: {step!r}')
-    return require_converter_output(project_root, lane_folder(project_root, lane_name) / 'gap-rows') / f'{step}.json'
+    return lane_gap_rows_folder(project_root, lane_name) / f'{step}.json'
 
 
 def lane_load_check_path(project_root, lane_name, catalog_sha256):

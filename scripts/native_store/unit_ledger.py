@@ -11,6 +11,8 @@ import socket
 import subprocess
 import sys
 
+from native_store.canonical_json import canonical_json_bytes
+from native_store.gap_rows import load_gap_reason_patterns, sorted_gap_rows, validate_gap_row
 from native_store.store_paths import (REPOSITORY_ROOT, SHA256_PATTERN, STEP_NAME_PATTERN, StorePathError, confined_child_path,
                                       lane_store_root, lane_work_root, refuse_reparse_points, require_known_lane_name,
                                       require_portable_relative_path)
@@ -37,10 +39,6 @@ class UnitLedgerError(ValueError):
 
 class BatchPreflightRefusedError(UnitLedgerError):
     pass
-
-
-def canonical_json_bytes(value):
-    return (json.dumps(value, indent=2, sort_keys=True, ensure_ascii=True, allow_nan=False) + '\n').encode()
 
 
 def sha256_of_bytes(payload):
@@ -288,13 +286,16 @@ class UnitLedger:
         outputs = self.verified_outputs(require_record_list(receipt['outputs'], {'path', 'sha256', 'bytes'}, 'outputs'))
         if not isinstance(receipt['gapRows'], list):
             raise UnitLedgerError('receipt gapRows must be a list')
+        reason_patterns = load_gap_reason_patterns()
+        for row in receipt['gapRows']:
+            validate_gap_row(row, reason_patterns)
         step_directory = self.unit_step_directory(unit_key)
         if not (step_directory / RUNNING_MARKER_NAME).is_file():
             raise UnitLedgerError(f'unit {unit_key} has no running marker in {step_directory}')
         full_receipt = {
             'unitKey': unit_key, 'step': self.step, 'fingerprint': fingerprint, 'algorithmVersion': self.algorithm_version,
             'config': receipt['config'], 'inputs': inputs, 'outputs': outputs,
-            'gapRows': sorted(receipt['gapRows'], key=lambda row: (row['key'], row['step'])),
+            'gapRows': sorted_gap_rows(receipt['gapRows']),
             'freeBytesBefore': begun_unit['freeBytesBefore'], 'freeBytesAfter': self.free_bytes(step_directory),
             'host': self.host, 'finishedAtRiga': self.riga_clock()}
         receipt_bytes = canonical_json_bytes(full_receipt)
