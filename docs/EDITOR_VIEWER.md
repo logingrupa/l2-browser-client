@@ -15,7 +15,7 @@ The evidence index is [VERIFICATION.md](VERIFICATION.md).
 
 ## How to open
 
-1. Open `project.bjseditor` in Babylon.js Editor 5.5.3. It sets `isWebGPU: true` and loads the `l2-editor-webgpu-compat` plugin.
+1. Install Babylon.js Editor 5.5.3 and run `pnpm install`. In the Dashboard choose **Import project** and select `project.bjseditor`. It selects pnpm, sets `isWebGPU: true` and loads the `l2-editor-webgpu-compat` plugin.
 2. Open a scene:
    - `assets/native-world.scene`: the 20_20 map section as saved terrain and scenery. Actors stay runtime objects.
    - `assets/native-parity.scene`: the inspection scene (119 meshes).
@@ -28,6 +28,15 @@ Commands that exist today in `package.json`:
 - `pnpm generate` runs the Editor repair scripts and `babylonjs-editor-cli pack`. Today `pnpm dev` and `pnpm build` call it. NOED-02 moves it to an optional `pnpm generate:editor`, which does not exist yet.
 
 The authored browser route is `/?world=interlude&authored=1`. NOED-01 keeps it reachable only by a dynamic import.
+
+WebGPU flag and pins:
+
+- The Editor reads `isWebGPU` when it creates the project window; its viewport and Play share that engine. A changed flag applies only after a full project close and Dashboard reopen. Reloading the scene does not switch the engine.
+- An Editor save drops the flag (installed `project/save/save.js` rebuilds the JSON without it). Run `pnpm renderer:ensure` before reopening. The flag alone does not prove the backend: the Editor can fall back to WebGL on an unsupported device.
+- `babylonjs-editor-tools` and `babylonjs-editor-cli` are pinned to 5.5.3, the stable release; the registry `latest` tag points at an alpha (`5.5.4-alpha.0` at inspection). The Editor can rewrite them on project open, so review `package.json` and `pnpm-lock.yaml` afterwards.
+- The project uses meters. The Editor's glTF import may apply a factor of 100 (centimeters); the runtime loader never applies it again.
+- The 5.5.3 project runner waits for a capitalized `Ready` line after a localhost URL; the Vite config prints it. The dev server uses `http://127.0.0.1:5173` with a fixed port.
+- Evidence: `artifacts/webgpu-migration/README.md`.
 
 Rules for `pnpm assets:editor`:
 
@@ -59,9 +68,18 @@ Version gate. Review on every Babylon or Editor upgrade:
 - **Proxy-material ID collision.** The clustered-light `ProxyMaterial` and imported Tree bark share unique ID 8. The Editor disposes Tree bark and serializes the proxy. `scripts/validate-editor-materials.mjs` rejects the `ShaderMaterial` / `lightProxy` signature; restore affected records from a verified copy.
 - **Frozen world scene.** `assets/native-world.scene` holds the 20_20 selection at 157 placements / 62 models. Tile-general reconversion makes it stale, and `pnpm assets:editor` refuses a changed manifest.
 
+## MCP
+
+The runtime client never imports, starts or depends on MCP. No official Babylon MCP tool has been invoked on this project.
+
+- Use the AI assistant panel of the matching desktop Editor. It starts the bundled MCP server on a loopback port with a random token and passes `BABYLONJS_EDITOR_MCP_URL` and `BABYLONJS_EDITOR_MCP_TOKEN`. Agent sign-in belongs to that agent; no credentials go in this repo.
+- `babylonjs-editor-mcp-server` returned HTTP 404 from the registry. Do not install it by name.
+- The standalone source defaults to `localhost:3712`, but Editor 5.5.3 comments out that fixed-port start. A probe of `127.0.0.1:3712` timed out.
+- Tool names and arguments: the official contract `mcp/mcp-tools-contract.md` at Editor v5.5.3.
+
 ## Client code that exists for the Editor
 
-NOED-01 and NOED-02 decide what of this stays.
+NOED-01 and NOED-02 decide what of this stays. The authored-route runtime (incremental loading, Z reflection, ShaderMaterial recovery, material overrides) is in [ARCHITECTURE.md](ARCHITECTURE.md#editor-authored-route-optional).
 
 - `registerGLTFExtension` uses the `GLTF2` namespace, which works under the Editor UMD and the browser ESM.
 - `/l2/...` fetches are adapted under the open project's `public` directory during Play.
@@ -77,7 +95,8 @@ NOED-01 and NOED-02 decide what of this stays.
 - `native-world.scene` has no regenerate-from-catalog path.
 - The serialization side effects are recorded, not corrected.
 - An example-scene save lost Meadow/Sunlight and replaced a pine material; the cause is unproven (moot if NOED-03 retires the courtyard).
-- A separate dev cold-load delay is open.
+- Dev cold load: the dev suite passes 17/18. The first courtyard navigation exceeds the 45 s limit; the built app passes the same case in 5.4 s. A module waterfall shows a 21-23 s gap with no attribution, and both traces expire before scene loading. Re-measure dev startup after NOED-02 removes the Editor pack; removing a suspected cause does not prove the gap is gone. Evidence: `artifacts/native-parity/research/editor-dev-startup/README.md`.
+- **Play project as-is** has no acceptance run (`artifacts/native-parity/editor/dashboard-run-misclick.json`).
 
 ## Evidence
 
