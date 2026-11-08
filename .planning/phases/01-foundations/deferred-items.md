@@ -14,3 +14,7 @@ Out-of-scope issues found while executing plans. Not fixed by the plan that foun
 ## From plan 01-01
 
 - `pnpm test:unit` in this worktree on 2026-11-08 07:21 Riga: 3 failures in 2 suites that read machine state, none importing a file plan 01-01 adds. `tests/unit/editorGeometryCompat.test.ts` fails at collection with `Installed Editor writer fixture changed.` (it hashes the installed Babylon.js Editor, an Editor-path test that plan 01-09 moves out of `test:unit` under NOED-05). `tests/unit/nativeNpcProfiles.test.ts` fails 2 cases with `Native player body source identity mismatch.` (it reads the staged player body through the `public/l2` junction to the main checkout's native store, whose staged bytes no longer match the expected identity). Owner: plan 01-09 for the Editor test; the integration thread for the store identity, since lanes never restage `public/l2`.
+
+## From plan 01-13
+
+- The reference client lock is committed (`recipes/reference-client-tree.lock.json`, 2026-11-08 07:26 Riga), so the guard now lets conversion read lock-equal E: files. The plan 01-08 UModel gap above is therefore open with E: enabled: `Converter.run` checks UModel's package reads only after UModel has read them. Owner: plan 01-12 (closes it in `scripts/native_assets.py`). Until then, run no UModel conversion against `E:/Lineage2-client`. Plan 01-13 itself read E: tables only through `decode_table` and the guarded `table_source_path`, never through UModel.

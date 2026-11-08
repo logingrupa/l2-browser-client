@@ -1,0 +1,407 @@
+{
+ "descriptorSha256": "5df8b7af1b510daa26008fa4fe91e100253f40161f1f1f9560e3569d539cdef6",
+ "referenceTreeLockSha256": "1957c96800aa45cb10c984f3f2e6f8d1f5f0b1713f086f20560db01f4d1d2b52",
+ "rows": [
+  {
+   "countSource": "docs/PORT_SCOPE.md section 2 (Elbera extract_gamedata.py)",
+   "descriptorLayout": true,
+   "file": "actionname-e.dat",
+   "layout": "actionname",
+   "recordCount": 102,
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "actionname-e"
+  },
+  {
+   "countSource": "scripts/native_catalog/tables.py decode_table on lock-equal E:/Lineage2-client/system/armorgrp.dat",
+   "descriptorLayout": true,
+   "file": "armorgrp.dat",
+   "layout": "armorgrp",
+   "recordCount": 1014,
+   "route": "local-decoded",
+   "status": "decoded, matches Elbera evidence",
+   "table": "armorgrp"
+  },
+  {
+   "countSource": null,
+   "descriptorLayout": true,
+   "file": "castlename-e.dat",
+   "layout": "castlename",
+   "recordCount": "unknown",
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "castlename-e"
+  },
+  {
+   "countSource": "scripts/native_catalog/tables.py decode_table on lock-equal E:/Lineage2-client/system/chargrp.dat",
+   "descriptorLayout": true,
+   "file": "chargrp.dat",
+   "layout": "chargrp",
+   "recordCount": 15,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "chargrp"
+  },
+  {
+   "countSource": null,
+   "descriptorLayout": true,
+   "file": "classinfo-e.dat",
+   "layout": "classinfo",
+   "recordCount": "unknown",
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "classinfo-e"
+  },
+  {
+   "countSource": null,
+   "descriptorLayout": true,
+   "file": "clientdata.dat",
+   "layout": "clientdata",
+   "recordCount": "unknown",
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "clientdata"
+  },
+  {
+   "countSource": null,
+   "descriptorLayout": true,
+   "file": "commandname-e.dat",
+   "layout": "commandname",
+   "recordCount": "unknown",
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "commandname-e"
+  },
+  {
+   "countSource": null,
+   "descriptorLayout": true,
+   "file": "creditgrp-e.dat",
+   "layout": "credit",
+   "recordCount": "unknown",
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "creditgrp-e"
+  },
+  {
+   "countSource": null,
+   "descriptorLayout": true,
+   "file": "entereventgrp.dat",
+   "layout": "entereventgrp",
+   "recordCount": "unknown",
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "entereventgrp"
+  },
+  {
+   "countSource": "docs/PORT_SCOPE.md section 2 (Elbera extract_gamedata.py)",
+   "descriptorLayout": true,
+   "file": "etcitemgrp.dat",
+   "layout": "etcitemgrp",
+   "recordCount": 6911,
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "etcitemgrp"
+  },
+  {
+   "countSource": null,
+   "descriptorLayout": true,
+   "file": "eula-e.dat",
+   "layout": "eula",
+   "recordCount": "unknown",
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "eula-e"
+  },
+  {
+   "countSource": null,
+   "descriptorLayout": true,
+   "file": "gametip-e.dat",
+   "layout": "gametip",
+   "recordCount": "unknown",
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "gametip-e"
+  },
+  {
+   "countSource": null,
+   "descriptorLayout": false,
+   "file": "hairaccessarygrp.dat",
+   "layout": null,
+   "recordCount": "unknown",
+   "route": "elbera",
+   "status": "Elbera parser present, unverified",
+   "table": "hairaccessarygrp"
+  },
+  {
+   "countSource": null,
+   "descriptorLayout": true,
+   "file": "hairaccessorylocgrp.dat",
+   "layout": "hairaccessorylocgrp",
+   "recordCount": "unknown",
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "hairaccessorylocgrp"
+  },
+  {
+   "countSource": null,
+   "descriptorLayout": false,
+   "file": "hairgrp.dat",
+   "layout": null,
+   "recordCount": "unknown",
+   "route": "elbera",
+   "status": "Elbera parser present, unverified",
+   "table": "hairgrp"
+  },
+  {
+   "countSource": null,
+   "descriptorLayout": false,
+   "file": "helmetgrp.dat",
+   "layout": null,
+   "recordCount": "unknown",
+   "route": "elbera",
+   "status": "Elbera parser present, unverified",
+   "table": "helmetgrp"
+  },
+  {
+   "countSource": null,
+   "descriptorLayout": true,
+   "file": "hennagrp-e.dat",
+   "layout": "hennagrp",
+   "recordCount": "unknown",
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "hennagrp-e"
+  },
+  {
+   "countSource": null,
+   "descriptorLayout": true,
+   "file": "huntingzone-e.dat",
+   "layout": "huntingzone",
+   "recordCount": "unknown",
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "huntingzone-e"
+  },
+  {
+   "countSource": "docs/PORT_SCOPE.md section 2 (Elbera extract_gamedata.py)",
+   "descriptorLayout": true,
+   "file": "itemname-e.dat",
+   "layout": "itemname",
+   "recordCount": 9238,
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "itemname-e"
+  },
+  {
+   "countSource": null,
+   "descriptorLayout": true,
+   "file": "logongrp.dat",
+   "layout": "logongrp",
+   "recordCount": "unknown",
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "logongrp"
+  },
+  {
+   "countSource": "scripts/native_catalog/tables.py decode_table on lock-equal E:/Lineage2-client/system/mobskillanimgrp.dat",
+   "descriptorLayout": true,
+   "file": "mobskillanimgrp.dat",
+   "layout": "mobskillanimgrp",
+   "recordCount": 5463,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "mobskillanimgrp"
+  },
+  {
+   "countSource": null,
+   "descriptorLayout": true,
+   "file": "musicinfo.dat",
+   "layout": "musicinfo",
+   "recordCount": "unknown",
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "musicinfo"
+  },
+  {
+   "countSource": "scripts/native_catalog/tables.py decode_table on lock-equal E:/Lineage2-client/system/npcgrp.dat",
+   "descriptorLayout": true,
+   "file": "npcgrp.dat",
+   "layout": "npcgrp",
+   "recordCount": 6519,
+   "route": "local-decoded",
+   "status": "decoded, matches Elbera evidence",
+   "table": "npcgrp"
+  },
+  {
+   "countSource": "scripts/native_catalog/tables.py decode_table on lock-equal E:/Lineage2-client/system/npcname-e.dat",
+   "descriptorLayout": true,
+   "file": "npcname-e.dat",
+   "layout": "npcname",
+   "recordCount": 6519,
+   "route": "local-decoded",
+   "status": "decoded, matches Elbera evidence",
+   "table": "npcname-e"
+  },
+  {
+   "countSource": null,
+   "descriptorLayout": true,
+   "file": "obscene-e.dat",
+   "layout": "obscene",
+   "recordCount": "unknown",
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "obscene-e"
+  },
+  {
+   "countSource": null,
+   "descriptorLayout": true,
+   "file": "optiondata_client-e.dat",
+   "layout": "optiondata_client",
+   "recordCount": "unknown",
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "optiondata_client-e"
+  },
+  {
+   "countSource": null,
+   "descriptorLayout": true,
+   "file": "questname-e.dat",
+   "layout": "questname",
+   "recordCount": "unknown",
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "questname-e"
+  },
+  {
+   "countSource": null,
+   "descriptorLayout": true,
+   "file": "raiddata-e.dat",
+   "layout": "raiddata",
+   "recordCount": "unknown",
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "raiddata-e"
+  },
+  {
+   "countSource": null,
+   "descriptorLayout": true,
+   "file": "recipe-c.dat",
+   "layout": "recipe-c",
+   "recordCount": "unknown",
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "recipe-c"
+  },
+  {
+   "countSource": null,
+   "descriptorLayout": true,
+   "file": "servername-e.dat",
+   "layout": "servername",
+   "recordCount": "unknown",
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "servername-e"
+  },
+  {
+   "countSource": "scripts/native_catalog/tables.py decode_table on lock-equal E:/Lineage2-client/system/skillgrp.dat",
+   "descriptorLayout": true,
+   "file": "skillgrp.dat",
+   "layout": "skillgrp",
+   "recordCount": 29812,
+   "route": "local-decoded",
+   "status": "decoded, matches Elbera evidence",
+   "table": "skillgrp"
+  },
+  {
+   "countSource": "docs/PORT_SCOPE.md section 2 (Elbera extract_gamedata.py)",
+   "descriptorLayout": true,
+   "file": "skillname-e.dat",
+   "layout": "skillname",
+   "recordCount": 29812,
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "skillname-e"
+  },
+  {
+   "countSource": "scripts/native_catalog/tables.py decode_table on lock-equal E:/Lineage2-client/system/skillsoundgrp.dat",
+   "descriptorLayout": true,
+   "file": "skillsoundgrp.dat",
+   "layout": "skillsoundgrp",
+   "recordCount": 1398,
+   "route": "local-decoded",
+   "status": "decoded",
+   "table": "skillsoundgrp"
+  },
+  {
+   "countSource": null,
+   "descriptorLayout": true,
+   "file": "staticobject-e.dat",
+   "layout": "staticobject",
+   "recordCount": "unknown",
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "staticobject-e"
+  },
+  {
+   "countSource": null,
+   "descriptorLayout": true,
+   "file": "symbolname-e.dat",
+   "layout": "symbolname",
+   "recordCount": "unknown",
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "symbolname-e"
+  },
+  {
+   "countSource": "docs/PORT_SCOPE.md section 2 (Elbera extract_gamedata.py)",
+   "descriptorLayout": true,
+   "file": "sysstring-e.dat",
+   "layout": "sysstring",
+   "recordCount": 2083,
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "sysstring-e"
+  },
+  {
+   "countSource": "docs/PORT_SCOPE.md section 2 (Elbera extract_gamedata.py)",
+   "descriptorLayout": true,
+   "file": "systemmsg-e.dat",
+   "layout": "systemmsg",
+   "recordCount": 2083,
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "systemmsg-e"
+  },
+  {
+   "countSource": null,
+   "descriptorLayout": true,
+   "file": "variationeffectgrp-e.dat",
+   "layout": "variationeffectgrp",
+   "recordCount": "unknown",
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "variationeffectgrp-e"
+  },
+  {
+   "countSource": "scripts/native_catalog/tables.py decode_table on lock-equal E:/Lineage2-client/system/weapongrp.dat",
+   "descriptorLayout": true,
+   "file": "weapongrp.dat",
+   "layout": "weapongrp",
+   "recordCount": 1313,
+   "route": "local-decoded",
+   "status": "decoded, matches Elbera evidence",
+   "table": "weapongrp"
+  },
+  {
+   "countSource": null,
+   "descriptorLayout": true,
+   "file": "zonename-e.dat",
+   "layout": "zonename",
+   "recordCount": "unknown",
+   "route": "local-layout-only",
+   "status": "layout pinned, not decoded",
+   "table": "zonename-e"
+  }
+ ],
+ "schemaVersion": 1
+}
