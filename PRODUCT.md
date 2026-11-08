@@ -31,7 +31,7 @@ Performance results are labelled by machine. IMPORTA-PC has a 144 Hz display wit
 ## Interface commitment
 A game-like scene with compact controls. The developer and sandbox controls live in the pinnable Dev sheet with hover-cards that show each control's live variables, values, source and native-or-presentation status; never a cramped toggle scroll list. The offline sandbox spawns converted NPCs, items, skills and windows by ID; an ID without a converted asset shows an explicit missing-asset diagnostic (SAND-01).
 
-Mobile first. The user supplied a classic fantasy HUD reference: dark translucent panels, bronze borders, top-left health and bottom action controls. Keep the touch-friendly interface and do not copy reference screenshot pixels. Show actual screenshots at visible implementation milestones. Visual rules are in [DESIGN.md](DESIGN.md).
+The game interface is the original Interlude interface only (DEC-OWN-10): window layout from `interface.xdat`, and skin, fonts and icons from the client's converted UI textures. The procedural HUD is a stand-in until native windows replace it. Show actual screenshots at visible implementation milestones.
 
 ## Server boundary
 

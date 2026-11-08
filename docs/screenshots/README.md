@@ -7,7 +7,7 @@ This folder tracks two images of the procedural foundation HUD. [README.md](../.
 
 Both are Playwright screenshots taken on 2026-11-04. The six-entity world is paused and Elyra is selected. Both capture sessions recorded zero browser console errors and zero uncaught exceptions. They are software-rendered Chromium captures. They do not verify a physical device, real model loading, or native parity.
 
-All geometry and icons in these images are original project assets. Cormorant Garamond is covered by the font notice in [../licenses/Cormorant-Garamond.txt](../licenses/Cormorant-Garamond.txt). No pixels from the user's reference screenshot are included. The HUD rules these images show are in [DESIGN.md](../../DESIGN.md).
+All geometry and icons in these images are original project assets. Cormorant Garamond is covered by the font notice in [../licenses/Cormorant-Garamond.txt](../licenses/Cormorant-Garamond.txt). No pixels from the user's reference screenshot are included. This HUD is a stand-in; the target is the original Interlude interface (DEC-OWN-10).
 
 ## Converted-asset captures
 

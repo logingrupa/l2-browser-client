@@ -5,9 +5,18 @@ Browser client for Lineage II Interlude on Babylon.js WebGPU. These rules are sp
 ## Project rules
 
 ### Decisions and planning
-- Current decisions live in [.planning/PROJECT.md](.planning/PROJECT.md) (DEC-OWN-1 to DEC-OWN-8) and [docs/PORT_SCOPE.md](docs/PORT_SCOPE.md). They win over every other doc.
+- Current decisions live in [.planning/PROJECT.md](.planning/PROJECT.md) (DEC-OWN-1 to DEC-OWN-10) and [docs/PORT_SCOPE.md](docs/PORT_SCOPE.md). They win over every other doc.
 - Requirements, phases and state: [.planning/REQUIREMENTS.md](.planning/REQUIREMENTS.md), [.planning/ROADMAP.md](.planning/ROADMAP.md), [.planning/STATE.md](.planning/STATE.md).
-- Plan and execute through GSD: `/gsd-quick` for small tasks, `/gsd-plan-phase` and `/gsd-execute-phase` for phase work.
+
+### GSD workflow
+Use the smallest command that fits the work.
+- `/gsd-fast`: 3 files or fewer and a known cause. Runs inline, with no plan and no subagents. Start here for small fixes.
+- `/gsd-quick`: multi-file work or an unknown cause. Add `--full` when the change touches `package.json`, `pnpm-lock.yaml`, build or test config, or `recipes/`.
+- `/gsd-debug`: a bug with an unknown cause. It keeps its state across context resets.
+- Phase work: `/gsd-autonomous` runs discuss, plan, execute and verify without stopping. To go one step at a time, use `/gsd-discuss-phase`, `/gsd-plan-phase`, `/gsd-execute-phase` and `/gsd-verify-work`.
+- Review: `/gsd-code-review` (`--fix` applies the findings), plus one Codex cross-model review through T3 `delegate_task` for risky changes. No replicated reviewer votes.
+- Status and resume: `/gsd-progress` or `/gsd-next` show where things stand. `/gsd-resume-work` picks up interrupted work.
+- Skip discuss and research when the plan is already clear.
 
 ### Source fidelity
 - Never invent Lineage II values (sizes, timings, colors, offsets, sounds, stats, names).
@@ -15,11 +24,17 @@ Browser client for Lineage II Interlude on Babylon.js WebGPU. These rules are sp
 - `E:/Lineage2-client` is a conversion source only after the full-tree hash lock (FOUND-03).
 - An unresolved value stays visibly unresolved. No procedural stand-ins on the native route.
 
+### Interface
+- The only game interface is the original Interlude interface (DEC-OWN-10). Window layout comes from `interface.xdat`. Skin, fonts and icons come from the client's converted UI textures.
+- No custom HUD styling, design tokens or design-skill output (`impeccable`, `frontend-design`) for game UI. The procedural HUD is a stand-in until native windows replace it. Do not polish it.
+- The developer sheet is a developer tool, not game UI.
+
 ### Server boundary
 - The client only displays what a server sends. Gameplay state enters through `GameWorldAdapter` and nowhere else.
 - The client never computes damage, stats, quest or progression outcomes.
 
 ### Lanes
+- Parallel work uses the `lane` skill. Load it when two or more agents work on this repo at once, or when your checkout is an `l2b-*` lane. A lane is a separate checkout in `C:\laragon\www\l2b-<slug>` with its own `node_modules` and dev server port. The skill creates, watches and removes lanes.
 - At most 3 lanes on DATABASE-PC, plus the integration thread in the main checkout. One part per branch, named `<part>/<slug>`.
 - Lanes never run scripts that write the main native store: `assets:*`, `world:stage`, `assets:stage`, `stage_*`, `derive-*`, `migrate-*`, or preview scripts. Only the integration thread runs them, in the main checkout.
 - Lanes start from committed code only. Merge one branch at a time; a contract change merges first.
@@ -27,6 +42,21 @@ Browser client for Lineage II Interlude on Babylon.js WebGPU. These rules are sp
 ### Build
 - The Babylon.js Editor is not in the build path (DEC-OWN-8, NOED-01 to NOED-05). Do not add Editor steps to `pnpm dev` or `pnpm build`.
 - `stage-webgpu-compilers` stays in dev and build, because the runtime loads those compilers.
+
+### Test process cleanup
+- After every plan, verification and phase, stop what your runs started: dev servers, Vite preview, Playwright and other headless browsers, e2e runners and Vitest workers.
+- Stop them by the PID your command started, or by a command line that holds your own worktree path or dev port. Never by image name (`node.exe`, `chrome.exe`, `msedge.exe`, `chrome-headless-shell.exe`): other lanes and the owner run the same executables.
+- Before a done claim, check that nothing you started still runs: no listener on your dev port, and no browser or node process with your worktree path in its command line.
+
+### Machine schedule
+- DATABASE-PC relays the church livestream Sun 10:00-14:00 and Thu 19:00-21:30 Riga time. In those windows run no builds, dev servers, tests, installs, hashing or conversions.
+- Run heavy commands at BelowNormal priority.
+
+### Screenshots and viewports
+- The default phone is the iPhone 15 Pro Max held sideways (DEC-OWN-9): 932 x 430 CSS px, landscape, with touch. Phone screenshots use it. In this repo this replaces the global 390 px portrait default.
+- Desktop screenshots stay 1440 x 900.
+- Portrait 430 x 932 is still checked for horizontal scroll, but it is not the evidence screenshot.
+- Headless e2e runs WebGPU on SwiftShader, a CPU adapter (`playwright.config.ts`), so its FPS readout is not a measurement. FPS and performance claims come only from runs with `WORLD_HARDWARE_TEST=1` on the GTX 1060, outside the relay windows.
 
 ### Docs
 - One evidence doc per part, `docs/parts/<part>/EVIDENCE.md`, under about 30 KB. It states what passes now, what is open, and where the evidence is.

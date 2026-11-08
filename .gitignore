@@ -30,7 +30,6 @@ public/vendor/babylon/
 test-results/
 playwright-report/
 .impeccable/*
-!.impeccable/design.json
 artifacts/
 assets/.export-cache.json
 .env

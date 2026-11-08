@@ -44,7 +44,7 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 
 - [ ] **UI-01**: `interface.xdat` (plain; 248 top-level records, 2,638 controls, about 140 real windows) is decoded to a layout tree with a source-hash pin.
 - [ ] **UI-02**: Windows are built from the decoded layout and filled with sandbox data; no hardcoded control names (this client uses `StatusLeftTex`, `CPBarTex`, `HPBarTex`, `MPBarTex`); each window opens by ID in the sandbox.
-- [ ] **UI-03**: The HUD stays mobile first: dark translucent panels, bronze borders, health top left, actions at the bottom, 44 px touch targets, DESIGN.md tokens, no copied reference pixels.
+- [ ] **UI-03**: Only the original Interlude interface: window layout from `interface.xdat`, and skin, fonts and icons from the client's converted UI textures. No custom HUD styling (DEC-OWN-10).
 
 ### World lane L1 (Phase 2)
 

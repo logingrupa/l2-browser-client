@@ -66,7 +66,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..8 and DEC-PORT-1..3.
 - `hairgrp` and `helmetgrp` have no layout in the local descriptor; Elbera route may also lack them (blocks source-backed hair for ACT-01).
 - Streaming/LOD (WORLD-04) is a dependency of walking 153 tiles; the current native loader loads eagerly.
 - Native reference capture fails the fixed 30 FPS cadence gate (4.1 FPS) and DATABASE-PC has no 120 Hz display; both gate Phases 5 and 6, not stage A (screenshots and listen checks).
-- Native UI layouts from `interface.xdat` versus DESIGN.md mobile-first tokens: skin approach to settle when planning Phase 2 UI.
+- UI skin is settled by DEC-OWN-10: native `interface.xdat` layout and converted client UI textures only.
 - Mobius transport (dumb relay) is a recommendation, not decided; decide at the start of Phase 4. Elbera `gateway/` and `editor/` are unaudited.
 - Whether client-side collision survives next to a server-authoritative adapter is open (Phase 4 design).
 - Lane tool support for this repo is not available on DATABASE-PC yet; use plain `git worktree` until it lands.
