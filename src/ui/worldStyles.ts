@@ -1,4 +1,3 @@
-/** Shared browser/Editor HUD styles. Kept in TypeScript for the Editor script compiler. */
 export const worldStyles = String.raw`
 .world-interface, .entity-labels {
   font-family: "Segoe UI", system-ui, sans-serif; color: #f5ecd8;
@@ -24,11 +23,7 @@ export const worldStyles = String.raw`
 .player-health b { position: absolute; inset: 0 4px; display: flex; justify-content: space-between; font-size: 10px; font-weight: 500; line-height: 12px; }
 .world-location { min-width: 0; text-align: right; padding-top: 3px; max-width: 170px; text-shadow: 0 2px 4px #101715; }
 .world-location h1 { font: 600 23px/.95 "Cormorant Garamond Variable", Georgia, serif; color: #fff1cf; margin: 0 0 5px; text-wrap: balance; }
-/* One line: the subtitle never wraps into an orphaned word; its full text is
-   in the location hover-card. */
 .world-location > span { display: block; font-size: 10px; color: #fff0d3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-/* Described HUD text (location, diagnostics) can be hovered or long-pressed;
-   HUD action buttons open their cards only via focus or long-press. */
 .world-interface :is(.world-location, .diagnostics)[data-dev-described] { pointer-events: auto; cursor: help; -webkit-touch-callout: none; }
 .target-panel { align-self: center; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; justify-content: center; margin-top: 14px; background: var(--panel); border: 1px solid var(--line); padding: 8px 12px; max-width: 100%; }
 .target-panel > span { color: var(--gold); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
@@ -38,8 +33,6 @@ export const worldStyles = String.raw`
 .world-message { margin: 0 auto 8px; padding: 6px 12px; width: fit-content; max-width: 100%; background: rgb(24 28 26 / 88%); font-size: 12px; text-align: center; color: #f3e2be;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
 .world-message:empty { display: none; }
-/* Until the first gesture unlocks audio. Any tap anywhere works; the chip is
-   only the cue (and a tap target of its own). */
 .hud-sound-cue { pointer-events: auto; display: flex; align-items: center; gap: 7px; margin: 0 auto 8px; width: fit-content; max-width: 100%;
   min-height: 36px; padding: 5px 13px 5px 10px; border: 1px solid var(--gold); background: rgb(61 53 36 / 94%); color: #ffe9b8;
   font-size: 12.5px; letter-spacing: .02em; box-shadow: 0 6px 18px rgb(0 0 0 / 35%); }
@@ -51,14 +44,11 @@ export const worldStyles = String.raw`
 .diagnostics { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 14px; margin-bottom: 8px; font: 11px/1.5 ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; color: #fff2d7; text-shadow: 0 1px 3px #101715; }
 .hud-command-row { display: flex; align-items: stretch; gap: 6px; }
 .hud-command-row > .action-bar { flex: 1; min-width: 0; }
-/* Equal columns for however many actions a runtime keeps (native removes three). */
 .action-bar { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 5px; padding: 6px; background: var(--panel); border: 1px solid var(--line); pointer-events: auto; }
 .action-bar button { position: relative; min-width: 0; min-height: 59px; display: flex; flex-direction: column; gap: 3px; align-items: center; justify-content: center; border: 1px solid #7d735b; background: #303b35; padding: 5px; font-size: 11px; transition: background-color 120ms ease-out, border-color 120ms ease-out; }
 .action-bar .attack-action { background: #654430; border-color: #b79760; }
 .action-bar button:hover { background: #4b574a; border-color: var(--gold); }
 .action-bar button:active { background: #79704a; }
-/* Gait toggle: the armed Run or Walk (aria-pressed) reads as selected; the
-   next ground tap travels with that gait. */
 .action-bar button[aria-pressed="true"] { border-color: var(--gold); background: #4a3e25; color: #ffe9b8; box-shadow: inset 0 -3px 0 var(--gold); }
 .action-bar button[aria-pressed="true"]::after { content: ""; position: absolute; top: 5px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
 .action-bar button[aria-pressed="false"] { color: #e6dcc4; }
@@ -68,13 +58,8 @@ export const worldStyles = String.raw`
 .dev-sheet-toggle:hover { background: #2f3934; border-color: var(--gold); }
 .dev-sheet-toggle:active { background: #79704a; }
 .dev-sheet-toggle[aria-expanded="true"] { background: #3d3524; border-color: var(--gold); color: #ffe9b8; box-shadow: inset 0 -2px 0 var(--gold); }
-/* An open undocked bottom sheet keeps its height and the bottom HUD sits
-   above it; an undocked side sheet pushes the HUD left. A docked (sticky)
-   sheet resized the canvas, so the HUD already ends where the sheet starts. */
 .world-interface[data-dev-lift] { padding-bottom: calc(var(--dev-sheet-lift, 0px) + 8px); }
 .world-interface[data-dev-docked][data-dev-sheet-mode="bottom"] { padding-bottom: 10px; }
-/* Phone sheet open: a compact bottom HUD (FPS and position live in Debug),
-   so the fighter stays visible between the top HUD and the action bar. */
 .world-interface[data-dev-sheet-mode="bottom"][data-dev-sheet-open] .diagnostics { display: none; }
 .world-interface[data-dev-sheet-mode="bottom"][data-dev-sheet-open] .world-message { display: block; margin-bottom: 6px; padding: 4px 10px; white-space: nowrap; text-overflow: ellipsis; }
 .world-interface[data-dev-sheet-mode="bottom"][data-dev-sheet-open] .world-message:empty,
@@ -94,6 +79,8 @@ export const worldStyles = String.raw`
 .entity-health { height: 4px; display: block; max-width: 72px; margin: 4px auto 0; border: 1px solid rgb(18 25 22 / 90%); background: #492f27; }
 .entity-health-fill { height: 100%; display: block; transform-origin: left; background: #87bea4; }
 .entity-label[data-kind="monster"] .entity-health-fill { background: #d59472; }
+.entity-diagnostic { display: block; margin-top: 3px; background: rgb(24 28 26 / 80%); padding: 1px 4px; }
+.entity-diagnostic[hidden] { display: none; }
 @media (min-width: 760px) {
   .world-interface { padding: 22px 26px; }
   .player-panel { width: 225px; padding: 8px; gap: 10px; }

@@ -9,6 +9,7 @@ export class EntityLabel {
   private readonly name = document.createElement("span");
   private readonly health = document.createElement("span");
   private readonly fill = document.createElement("span");
+  private readonly diagnostic = document.createElement("span");
 
   constructor(container: HTMLElement, entity: WorldEntity, onSelect: () => void) {
     this.element.type = "button";
@@ -18,7 +19,9 @@ export class EntityLabel {
     this.health.className = "entity-health";
     this.fill.className = "entity-health-fill";
     this.health.append(this.fill);
-    this.element.append(this.name, this.health);
+    this.diagnostic.className = "entity-diagnostic";
+    this.diagnostic.hidden = true;
+    this.element.append(this.name, this.health, this.diagnostic);
     this.element.addEventListener("click", onSelect);
     container.append(this.element);
     this.setState(entity);
@@ -50,6 +53,11 @@ export class EntityLabel {
     this.element.style.top = `${projected.y}px`;
     this.element.dataset.visualX = position.x.toFixed(4);
     this.element.dataset.visualZ = position.z.toFixed(4);
+  }
+
+  setDiagnostic(text: string | null): void {
+    this.diagnostic.textContent = text ?? "";
+    this.diagnostic.hidden = text === null;
   }
 
   select(isSelected: boolean): void { this.element.setAttribute("aria-pressed", String(isSelected)); }

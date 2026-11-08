@@ -126,6 +126,11 @@ export const devSheetStyles = String.raw`
 .dev-row-control > * { min-width: 0; }
 .dev-note-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start; }
 .dev-note[data-tone="warning"] { color: #ffcfb7 !important; }
+.dev-id-entry { display: grid; gap: 6px; margin: 0 0 6px; }
+.dev-id-entry-actions { display: flex; align-items: center; gap: 6px; }
+.dev-id-entry-actions > .dev-button { flex: 1; }
+.dev-id-entry-message { margin: 0; color: #ffcfb7; }
+.dev-id-entry-message[hidden] { display: none; }
 .dev-readout { font: 500 11.5px/1.35 var(--dev-mono); font-variant-numeric: tabular-nums; color: var(--dev-bright); overflow-wrap: anywhere; }
 .dev-button-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 136px), 1fr)); gap: 6px; }
 .dev-button-cell { display: flex; align-items: center; gap: 6px; min-width: 0; }

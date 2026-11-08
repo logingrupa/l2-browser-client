@@ -17,6 +17,7 @@ export interface CharacterVisual {
   readonly ready?: Promise<void>;
   readonly groundClearance?: number;
   readonly forwardDirection?: Vector3 | null;
+  readonly missingAssetDiagnostic?: string;
   attachmentSnapshot?(): readonly (NativeBoneAnchorInspection & { id: string })[];
   attachmentAnchor?(id: string): NativeBoneAnchorView | null;
   sourceClock?(): NativeActorClock | null;

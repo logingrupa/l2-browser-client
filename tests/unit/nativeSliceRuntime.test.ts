@@ -44,6 +44,11 @@ vi.mock("../../src/ui/AssetImportPanel", () => ({ attachAssetImport: boundaries.
 vi.mock("../../src/scene/world/loadNativeSection", async importOriginal => ({
   ...await importOriginal<typeof import("../../src/scene/world/loadNativeSection")>(), loadNativeSection: boundaries.section,
 }));
+vi.mock("../../src/assets/native/readNativeCatalog", async importOriginal => ({
+  ...await importOriginal<typeof import("../../src/assets/native/readNativeCatalog")>(),
+  readNativeCatalog: async () => ({ schemaVersion: 1, models: [], textures: [], sections: [], movers: [], npcProfiles: [], playerProfiles: [],
+    animationAudio: [], combatAudio: [], worldAudio: [], effectComponents: [] }),
+}));
 vi.mock("../../src/camera/WorldCamera", () => ({ attachWorldCamera: boundaries.camera }));
 vi.mock("../../src/entities/attachTargeting", () => ({ attachTargeting: boundaries.targeting }));
 vi.mock("../../src/assets/native/NativeCharacterVisual", () => ({ nativeCharacterFactory: boundaries.factory }));
@@ -56,7 +61,7 @@ vi.mock("../../src/ui/WorldInterface", () => ({ WorldInterface: class {
       append() {}, remove() {}, after() {}, setAttribute() {}, querySelector: () => null, querySelectorAll: () => [] });
     const group = (id: string, _title: string, options: { variables?: () => VariableInfo[] } = {}) => {
       boundaries.sheetGroups.set(id, options);
-      return { element: plainDomNode(), button: plainDomNode, note: plainDomNode,
+      return { element: plainDomNode(), button: plainDomNode, note: plainDomNode, idEntry: () => ({ element: plainDomNode(), setMessage() {} }),
         readout: () => ({ element: plainDomNode(), output: plainDomNode(), refresh() {} }),
         choice: () => ({ element: plainDomNode(), value: "", set() {}, setOptions() {}, setDisabled() {} }) };
     };

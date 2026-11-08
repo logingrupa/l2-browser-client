@@ -24,6 +24,7 @@ const tilePattern = /^\d{2}_\d{2}$/;
 const skillEffectComponentPattern = /^interlude:skill:(\d+):level:(\d+):/;
 const sectionTilePattern = /^map-(\d{2})-(\d{2})-section$/;
 const windowsNotConvertedReason = "interface windows are not converted yet (UI-01)";
+export const notInCatalogReason = "not in catalog";
 
 function requireCatalogInteger(value: number, minimum: number, label: string): number {
   if (!Number.isSafeInteger(value) || value < minimum) throw new RangeError(`${label} must be a safe integer of at least ${minimum}.`);
@@ -50,6 +51,11 @@ export function windowCatalogKey(name: string): string {
 export function tileCatalogKey(tile: string): string {
   if (!tilePattern.test(tile)) throw new RangeError("Tile must be written as XX_YY.");
   return `tile:${tile}`;
+}
+
+export function describeNativeCatalogLookup(lookup: NativeCatalogLookup): string {
+  if (lookup.status === "converted") return `${lookup.key} converted`;
+  return lookup.reason === notInCatalogReason ? `${lookup.key} not in catalog` : `${lookup.key} not in catalog: ${lookup.reason}`;
 }
 
 function duplicateEntries(key: string): Error {
@@ -134,7 +140,7 @@ export async function buildNativeCatalogIndex(catalog: NativeCatalog, signal: Ab
     lookup(key) {
       const entry = entries.get(key);
       if (entry) return entry;
-      return { status: "not-in-catalog", key, reason: key.startsWith("window:") ? windowsNotConvertedReason : "not in catalog" };
+      return { status: "not-in-catalog", key, reason: key.startsWith("window:") ? windowsNotConvertedReason : notInCatalogReason };
     },
     keys(prefix) {
       return [...entries.keys()].filter(key => key.startsWith(prefix)).sort();

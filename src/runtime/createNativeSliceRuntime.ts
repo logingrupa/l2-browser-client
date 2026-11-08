@@ -2,6 +2,8 @@ import type { Scene } from "@babylonjs/core/scene";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { loadNativeActorCatalog } from "../assets/native/loadNativeCatalog";
+import { readNativeCatalog } from "../assets/native/readNativeCatalog";
+import { buildNativeCatalogIndex } from "../assets/native/nativeCatalogIndex";
 import { defaultNativePlayerProfile } from "../assets/native/loadNativePlayerProfiles";
 import type { AssetPackage } from "../assets/package/readAssetPackage";
 import { nativeCharacterFactory, type NativeCharacterProfile } from "../assets/native/NativeCharacterVisual";
@@ -28,6 +30,11 @@ import { resolveNativeSpecialAttackPreview } from "../assets/native/nativeSpecia
 import { resolveNativeHumanHandAnchor } from "../assets/native/nativeHumanHandAnchor";
 import { createEffectInspectionCamera } from "../effects/nativeEffectInspectionCamera";
 import { isSceneSuspended } from "../engine/renderSuspension";
+import { sandboxNpcVisualFactory } from "./sandboxNpcVisual";
+import { attachSandboxCommandSheet } from "./attachSandboxCommandSheet";
+
+const sandboxNpcAppearanceByModel: ReadonlyMap<string, string> = new Map([["musveren:0", "native-musveren"]]);
+const sandboxNpcAppearanceOfModel = (modelCatalogId: string) => sandboxNpcAppearanceByModel.get(modelCatalogId) ?? null;
 
 export interface NativeSliceSettings {
   playerProfileId?: string;
@@ -68,6 +75,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
   options.onProgress?.({ stage: "assets", detail: "Loading native character and equipment packages…" });
   const selectedId = new URLSearchParams(window.location?.search ?? "").get("character") ?? settings.playerProfileId ?? defaultNativePlayerProfile.id;
   const catalog = await loadNativeActorCatalog(signal, selectedId);
+  const catalogIndex = await buildNativeCatalogIndex(await readNativeCatalog(signal), signal);
   const playerProfile = catalog.playerProfile ?? defaultNativePlayerProfile;
   const playerChoices = catalog.playerProfiles ?? new Map([[playerProfile.id, playerProfile]]);
   const usesDefaultPlayerProfile = playerProfile.id === defaultNativePlayerProfile.id;
@@ -155,7 +163,8 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     const ui = new WorldInterface(adapter, () => registry, canvas, { location: section ? "20_20 · native world section" : "Native asset slice", coordinateUnit: "m" });
     boundaryReleases.push(() => ui.dispose());
     registry = new EntityRegistry(scene, adapter, ui.labels, message => ui.showStatus(message), {
-      createVisual: nativeCharacterFactory(profiles, actionCues, footsteps, clipPreview), ...(navigation ? { ground: navigation.ground } : {}),
+      createVisual: sandboxNpcVisualFactory(catalogIndex, nativeCharacterFactory(profiles, actionCues, footsteps, clipPreview), sandboxNpcAppearanceOfModel),
+      ...(navigation ? { ground: navigation.ground } : {}),
     });
     boundaryReleases.push(() => registry.dispose());
     const localPawnListenerLocation = (): [number, number, number] | null => {
@@ -252,6 +261,8 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       locomotionClips, specialAttackPreview, world, audio: nativeAudio, footsteps, footstepGround, combatAudio, combatFailure, effects,
       cameraControls: { follow, frameWorld, frameFlame, flamePlacementIds, isFollowingFighter: () => followFighter },
       focusEffectCamera: () => effectCamera?.focus(), isDisposed: () => disposed, addRelease });
+    attachSandboxCommandSheet({ section: ui.sheet.section("sandbox", { title: "Sandbox", order: 5 }), adapter, index: catalogIndex,
+      appearanceOfModel: sandboxNpcAppearanceOfModel });
     const failFlames = (error: unknown) => nativeSliceSheet.failFlames(error);
     const observer = scene.onBeforeRenderObservable.add(() => {
       if (isSceneSuspended(scene)) { audio.setPaused(true); return; }

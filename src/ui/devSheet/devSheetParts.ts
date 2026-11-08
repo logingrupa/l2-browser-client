@@ -1,12 +1,12 @@
 import type { DescribeOptions } from "./hoverCards";
 import { createInfoButton } from "./hoverCards";
+import { createDevIdEntry } from "./devSheetIdEntry";
 import { iconMarkup, isDevIconName } from "./icons";
 import type {
-  DevButtonOptions, DevChoice, DevChoiceOption, DevChoiceOptions, DevControlInfo, DevGroupOptions, DevIconName, DevInfo,
+  DevButtonOptions, DevChoice, DevChoiceOption, DevChoiceOptions, DevControlInfo, DevGroupOptions, DevIconName, DevIdEntry, DevIdEntryOptions, DevInfo,
   DevNoteOptions, DevReadout, DevReadoutOptions, DevSectionOptions, DevSlider, DevSliderOptions, DevToggle, DevToggleOptions,
 } from "./types";
 
-/** What sections and groups need from their sheet. */
 export interface DevSheetParent {
   describe(element: Element, info: DevInfo, options?: DescribeOptions): () => void;
   isCollapsed(key: string, fallback: boolean): boolean;
@@ -46,7 +46,6 @@ export class DevSection {
     this.update(options);
   }
 
-  /** Updates title/icon/order of an already registered section. */
   update(options: Partial<DevSectionOptions>): void {
     if (options.title) this.title = options.title;
     if (options.order !== undefined) this.order = options.order;
@@ -57,7 +56,6 @@ export class DevSection {
     this.tab.append(this.tabLabel, this.tabCount);
   }
 
-  /** Returns the existing group with this id, or creates it. */
   group(id: string, title: string, options: DevGroupOptions = {}): DevGroup {
     const existing = this.groupMap.get(id);
     if (existing) return existing;
@@ -74,9 +72,7 @@ export class DevSection {
 
 export class DevGroup {
   readonly root = document.createElement("section");
-  /** Plain host: append any DOM here (existing control modules work as-is). */
   readonly element = document.createElement("div");
-  /** Collapse/expand button in the group heading. */
   readonly header = document.createElement("button");
   readonly count = document.createElement("span");
   private readonly key: string;
@@ -281,6 +277,16 @@ export class DevGroup {
     return readout;
   }
 
+  idEntry(options: DevIdEntryOptions): DevIdEntry {
+    const info = this.infoFor(options);
+    const infoButton = info ? createInfoButton(options.label) : null;
+    const entry = createDevIdEntry(options, infoButton);
+    this.element.append(entry.element);
+    if (info && infoButton) this.parent.describe(entry.element, info, { infoButton });
+    this.parent.contentChanged();
+    return entry;
+  }
+
   note(text: string, options: DevNoteOptions = {}): HTMLParagraphElement {
     const note = document.createElement("p"); note.className = "dev-note"; note.textContent = text;
     note.dataset.tone = options.tone ?? "info";
@@ -296,8 +302,6 @@ export class DevGroup {
     return note;
   }
 
-  /** Attaches a hover-card to any element (typically DOM appended here by an
-   * existing control module). Returns a disposer. */
   describe(element: Element, info: DevInfo, options?: DescribeOptions): () => void {
     return this.parent.describe(element, info, options);
   }
@@ -307,7 +311,6 @@ export class DevGroup {
     return { title: options.label, ...(options.hint ? { description: options.hint } : {}), ...(options.variables ? { variables: options.variables } : {}) };
   }
 
-  /** label | control | (i) row. `labelFor` gets a real <label for>. */
   private row(options: DevControlInfo, control: HTMLElement, layout: "inline" | "stacked", labelFor: HTMLElement = control): HTMLElement {
     const row = document.createElement("div"); row.className = "dev-row"; row.dataset.layout = layout;
     if (options.testId) row.dataset.testid = options.testId;
