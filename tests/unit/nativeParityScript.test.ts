@@ -1,10 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
 import { Scene } from "@babylonjs/core/scene";
+import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { applyScriptOnObject } from "babylonjs-editor-tools";
 import type { createNativeSliceRuntime } from "../../src/runtime/createNativeSliceRuntime";
 import NativeParityScript from "../../src/scripts/nativeParity";
 import { nativeSandboxConfiguration } from "../../src/runtime/nativeSandboxConfiguration";
+import { authoredNativeWorldSource } from "../../src/editor/authoredNativeWorldSource";
 
 const runtime = vi.hoisted(() => ({ start: vi.fn<typeof createNativeSliceRuntime>(), showError: vi.fn(),
   required: vi.fn(), register: vi.fn(), report: vi.fn() }));
@@ -30,6 +33,7 @@ describe("native Editor script lifetime", () => {
     runtime.showError.mockReset(); runtime.required.mockReset().mockReturnValue(false);
     runtime.register.mockReset(); runtime.report.mockReset();
     engine = new NullEngine(); scene = new Scene(engine); script = new NativeParityScript(scene);
+    new ArcRotateCamera("World camera", 0, 1, 5, Vector3.Zero(), scene);
     vi.spyOn(console, "error").mockImplementation(() => undefined);
   });
   afterEach(() => {
@@ -52,7 +56,10 @@ describe("native Editor script lifetime", () => {
     await settle();
     expect(runtime.start).toHaveBeenCalledTimes(1);
     expect(scene.useRightHandedSystem).toBe(true);
-    const signal = runtime.start.mock.calls[0]![2];
+    const [, camera, , , options] = runtime.start.mock.calls[0]!;
+    expect(camera).toBe(scene.getCameraByName("World camera"));
+    expect(options?.worldSource).toBe(authoredNativeWorldSource);
+    const signal = runtime.start.mock.calls[0]![3];
     expect(signal.aborted).toBe(false);
     scene.dispose();
     expect(signal.aborted).toBe(true); expect(stop).toHaveBeenCalledTimes(1);
@@ -62,30 +69,36 @@ describe("native Editor script lifetime", () => {
     const firstStop = vi.fn(), secondStop = vi.fn();
     runtime.start.mockResolvedValueOnce(firstStop).mockResolvedValueOnce(secondStop);
     script.onStop(); script.onStart(); await settle();
-    const firstSignal = runtime.start.mock.calls[0]![2];
+    const firstSignal = runtime.start.mock.calls[0]![3];
     script.onStop(); script.onStop();
     expect(firstSignal.aborted).toBe(true); expect(firstStop).toHaveBeenCalledTimes(1);
     script.leatherShirt = true; script.fighterIdle = "Wait_1HS_MFighter";
     script.onStart(); await settle();
-    const [, settings, secondSignal] = runtime.start.mock.calls[1]!;
+    const [, , settings, secondSignal] = runtime.start.mock.calls[1]!;
     expect(secondSignal).not.toBe(firstSignal); expect(secondSignal.aborted).toBe(false);
     expect(settings.leatherShirt).toBe(true); expect(settings.fighterIdle).toBe("Wait_1HS_MFighter");
     script.onStop(); expect(secondStop).toHaveBeenCalledTimes(1);
   });
 
+  it("refuses to start an authored scene without its World camera", () => {
+    scene.getCameraByName("World camera")!.dispose();
+    expect(() => script.onStart()).toThrow("The authored native scene has no World camera.");
+    expect(runtime.start).not.toHaveBeenCalled();
+  });
+
   it("passes explicit default flame replay settings through the Editor script boundary", async () => {
     runtime.start.mockResolvedValue(vi.fn()); script.onStart(); await settle();
-    expect(runtime.start.mock.calls[0]![1]).toMatchObject({ flamePreviewEnabled: true,
+    expect(runtime.start.mock.calls[0]![2]).toMatchObject({ flamePreviewEnabled: true,
       flameTextureSeconds: 0, flameFadeSeconds: 0, flameTextureRate: 1, flameFadeRate: 1 });
   });
 
   it.each([true, false])("forwards authored flame enable=%s and independent replay settings across restart", async enabled => {
     const firstStop = vi.fn(), secondStop = vi.fn(); runtime.start.mockResolvedValueOnce(firstStop).mockResolvedValueOnce(secondStop);
-    script.onStart(); await settle(); const firstSignal = runtime.start.mock.calls[0]![2]; script.onStop();
+    script.onStart(); await settle(); const firstSignal = runtime.start.mock.calls[0]![3]; script.onStop();
     script.flamePreviewEnabled = enabled; script.flameTextureSeconds = 12.25; script.flameFadeSeconds = 0.6;
     script.flameTextureRate = 2; script.flameFadeRate = 0;
     script.onStart(); await settle();
-    const [, settings, nextSignal] = runtime.start.mock.calls[1]!;
+    const [, , settings, nextSignal] = runtime.start.mock.calls[1]!;
     expect(settings).toMatchObject({ flamePreviewEnabled: enabled, flameTextureSeconds: 12.25, flameFadeSeconds: 0.6, flameTextureRate: 2, flameFadeRate: 0 });
     expect(firstSignal.aborted).toBe(true); expect(nextSignal.aborted).toBe(false); expect(nextSignal).not.toBe(firstSignal);
     expect(firstStop).toHaveBeenCalledTimes(1); script.onStop(); expect(secondStop).toHaveBeenCalledTimes(1);
@@ -101,8 +114,8 @@ describe("native Editor script lifetime", () => {
   it("cancels a replaced start without allowing its late completion to replace the active cleanup", async () => {
     const first = pendingRuntime(), second = pendingRuntime(), firstStop = vi.fn(), secondStop = vi.fn();
     runtime.start.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
-    script.onStart(); const firstSignal = runtime.start.mock.calls[0]![2];
-    script.onStart(); const secondSignal = runtime.start.mock.calls[1]![2];
+    script.onStart(); const firstSignal = runtime.start.mock.calls[0]![3];
+    script.onStart(); const secondSignal = runtime.start.mock.calls[1]![3];
     expect(firstSignal.aborted).toBe(true); expect(secondSignal.aborted).toBe(false);
     second.resolve(secondStop); await settle();
     first.resolve(firstStop); await settle();
@@ -128,7 +141,7 @@ describe("native Editor script lifetime", () => {
     script.onStart();
     expect(runtime.register).toHaveBeenCalledExactlyOnceWith(scene, "native-world", expect.any(Promise));
     const ready = runtime.register.mock.calls[0]![2] as Promise<void>, completed = vi.fn(); void ready.then(completed);
-    const options = runtime.start.mock.calls[0]![3]!;
+    const options = runtime.start.mock.calls[0]![4]!;
     expect(options.requireWorld).toBe(false);
     const progress = { stage: "assets", detail: "Assembling native equipment" } as const;
     options.onProgress!(progress); expect(runtime.report).toHaveBeenCalledExactlyOnceWith(scene, progress);
@@ -141,7 +154,7 @@ describe("native Editor script lifetime", () => {
     runtime.required.mockReturnValue(true);
     const pending = pendingRuntime(); runtime.start.mockReturnValue(pending.promise); script.onStart();
     expect(runtime.required).toHaveBeenCalledWith(scene, "native-world");
-    expect(runtime.start.mock.calls[0]![3]!.requireWorld).toBe(true);
+    expect(runtime.start.mock.calls[0]![4]!.requireWorld).toBe(true);
     const ready = runtime.register.mock.calls[0]![2] as Promise<void>, failure = new Error("Terrain could not load");
     pending.reject(failure); await expect(ready).rejects.toBe(failure); await settle();
     expect(runtime.showError).not.toHaveBeenCalled(); expect(console.error).not.toHaveBeenCalled();

@@ -1,6 +1,6 @@
 import type { Scene } from "@babylonjs/core/scene";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
+import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { loadNativeActorCatalog } from "../assets/native/loadNativeCatalog";
 import { defaultNativePlayerProfile, type NativePlayerProfile } from "../assets/native/loadNativePlayerProfiles";
 import type { NativeNpcProfile } from "../assets/native/loadNativeNpcProfiles";
@@ -14,22 +14,17 @@ import { EntityRegistry } from "../entities/EntityRegistry";
 import { WorldInterface } from "../ui/WorldInterface";
 import { attachTargeting } from "../entities/attachTargeting";
 import { attachWorldCamera } from "../camera/WorldCamera";
-import { loadNativeSection, type NativeSection } from "../scene/world/loadNativeSection";
-import { attachAuthoredNativeSection } from "../scene/world/loadAuthoredNativeSection";
+import type { NativeSection } from "../scene/world/loadNativeSection";
 import { inspectNativeGroundContact } from "../scene/world/nativeGroundContact";
-import { loadNativeMovers, type NativeMovers } from "../scene/world/loadNativeMovers";
 import { createNativeDoorInteractions } from "../scene/world/nativeDoorInteractions";
-import { createWorldNavigation } from "../world/meshNavigation";
-import type { WorldNavigation } from "../world/WorldNavigation";
 import { getWorldCanvas } from "../scene/getWorldCanvas";
 import { createNativeMaterialOverrides } from "../assets/native/nativeMaterialOverrides";
-import { restoreEditorAuthoredMaterials } from "../editor/restoreEditorAuthoredMaterials";
-import { createNativeFlamePresentation, type NativeFlamePresentation } from "../scene/world/nativeFlamePresentation";
-import { nativeFlameBrowserToNative } from "../scene/world/nativeFlameBillboards";
-import { createNativeFlameReplayClock } from "../scene/world/nativeFlameReplayClock";
+import type { NativeFlamePresentation } from "../scene/world/nativeFlamePresentation";
 import type { NativeFlameReplayTime } from "../scene/world/nativeFlameMaterials";
 import type { SceneStartupProgress } from "../scene/guardSceneStartup";
-import { createNativeSkyPresentation, type NativeSkyPresentation } from "../scene/world/nativeSkyPresentation";
+import type { NativeSkyPresentation } from "../scene/world/nativeSkyPresentation";
+import { catalogNativeSliceWorldSource, type NativeSliceWorldSource } from "./nativeSliceWorldSource";
+import { loadNativeSliceWorld, type NativeFlameReplayClock } from "./loadNativeSliceWorld";
 import { WorldAudioMixer } from "../audio/WorldAudioMixer";
 import { createNativeActionCuePreview } from "../audio/nativeActionCuePreview";
 import { attachWorldAudioControls } from "../audio/worldAudioControls";
@@ -88,12 +83,18 @@ export interface NativeSliceSettings {
   flameFadeRate?: number;
 }
 
-export async function createNativeSliceRuntime(scene: Scene, settings: NativeSliceSettings, signal: AbortSignal,
-  options: { requireWorld?: boolean; onProgress?: (progress: SceneStartupProgress) => void } = {}): Promise<() => void> {
+export interface NativeSliceRuntimeOptions {
+  requireWorld?: boolean;
+  onProgress?: (progress: SceneStartupProgress) => void;
+  worldSource?: NativeSliceWorldSource;
+}
+
+export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCamera, settings: NativeSliceSettings, signal: AbortSignal,
+  options: NativeSliceRuntimeOptions = {}): Promise<() => void> {
   const validateLifetime = () => {
     signal.throwIfAborted();
     if (scene.isDisposed) throw new Error("The native scene was disposed during startup.");
-    if (!(scene.getCameraByName("World camera") instanceof ArcRotateCamera)) throw new Error("Authored orbit camera is missing.");
+    if (camera.isDisposed()) throw new Error("The native slice camera was disposed.");
   };
   validateLifetime();
   const canvas = getWorldCanvas(scene.getEngine());
@@ -140,114 +141,14 @@ export async function createNativeSliceRuntime(scene: Scene, settings: NativeSli
   const settledCombatAudioLoad = settle(loadNativeCombatAudio(signal));
   const settledWorldAudioLoad = settle(readNativeWorldAudioRecords(signal).then(records => loadNativeWorldAudio(records, signal)));
   try {
-    const authoredMeshes = scene.meshes.map(mesh => ({ mesh, enabled: mesh.isEnabled(false) }));
-    let section: NativeSection | null = null, navigation: WorldNavigation | undefined, worldFailure: string | undefined;
-    let movers: NativeMovers | null = null;
-    let flames: NativeFlamePresentation | undefined, flameFailure: string | undefined;
-    let flameClock: ReturnType<typeof createNativeFlameReplayClock> | undefined;
-    const disposeFlames = () => { flames?.dispose(); flames = undefined; };
-    const worldLifetime = new AbortController(), flameLifetime = new AbortController();
-    const abortFlamesBeforeWorld = () => { flameLifetime.abort(); disposeFlames(); worldLifetime.abort(); };
-    signal.addEventListener("abort", abortFlamesBeforeWorld, { once: true });
-    const worldDisposeObserver = scene.onDisposeObservable.addOnce(abortFlamesBeforeWorld);
-    boundaryReleases.push(() => {
-      signal.removeEventListener("abort", abortFlamesBeforeWorld); scene.onDisposeObservable.remove(worldDisposeObserver); abortFlamesBeforeWorld();
-    });
-    const cameraPositionAsFlameBillboardTarget = () => {
-      const camera = scene.getCameraByName("World camera") as ArcRotateCamera;
-      camera.getViewMatrix(true);
-      return nativeFlameBrowserToNative([camera.globalPosition.x, camera.globalPosition.y, camera.globalPosition.z]);
-    };
-    const updateFlames = (time: NativeFlameReplayTime) => {
-      if (!flames) return;
-      flames.update(time, cameraPositionAsFlameBillboardTarget());
-      const state = flames.inspect();
-      if (state.status === "failed" || state.status === "aborted") throw new Error(state.failure ?? "Native flame preview ended unexpectedly.");
-    };
     const playerCapsuleFromSourceCollision = () => ({ radius: playerProfile.collisionRadius / playerProfile.sourceUnitsPerMetre,
       height: 2 * playerProfile.collisionHeight / playerProfile.sourceUnitsPerMetre });
-    let restoreAuthoredCamera: (() => void) | undefined;
-    let restoreEditorMaterials: (() => void) | undefined;
-    let origin = settings.origin, followFighter = true;
-    try {
-      options.onProgress?.({ stage: "assets", detail: "Preparing native terrain and scenery…" });
-      restoreEditorMaterials = restoreEditorAuthoredMaterials(scene, signal);
-      boundaryReleases.push(() => restoreEditorMaterials?.());
-      const authoredSection = attachAuthoredNativeSection(scene, worldLifetime.signal);
-      section = authoredSection ?? await loadNativeSection(scene, worldLifetime.signal);
-      if (!section && options.requireWorld) throw new Error("The native world section is unavailable. Reload to try again.");
-      if (section) {
-        boundaryReleases.push(() => section?.dispose());
-        validateLifetime();
-        movers = await loadNativeMovers(scene, section.manifest.terrain.sha256, worldLifetime.signal);
-        if (movers) boundaryReleases.push(() => movers?.dispose());
-        validateLifetime();
-        if (options.requireWorld && section.inspection().materialFailure) throw new Error(`Native terrain materials failed: ${section.inspection().materialFailure}`);
-        if (authoredSection?.removedZReflection) {
-          const camera = scene.getCameraByName("World camera") as ArcRotateCamera;
-          const authoredLeftHandedAlpha = camera.alpha, authoredLeftHandedTarget = camera.target.clone();
-          camera.alpha = -authoredLeftHandedAlpha;
-          camera.setTarget(new Vector3(authoredLeftHandedTarget.x, authoredLeftHandedTarget.y, -authoredLeftHandedTarget.z), false, false, true);
-          restoreAuthoredCamera = () => {
-            restoreAuthoredCamera = undefined;
-            camera.alpha = authoredLeftHandedAlpha; camera.setTarget(authoredLeftHandedTarget, false, false, true);
-          };
-          boundaryReleases.push(() => restoreAuthoredCamera?.());
-        }
-        if (!section.spawnCandidate) throw new Error("The staged native section has no source-derived surface candidate.");
-        const surfaceCandidateWithAuthoredOffset = section.spawnCandidate.add(settings.origin);
-        navigation = createWorldNavigation({ terrainMeshes: section.terrainMeshes, obstacleMeshes: () => section?.supportMeshes ?? [],
-          origin: surfaceCandidateWithAuthoredOffset, dynamicObstacleMeshes: () => movers?.collisionMeshes ?? [],
-          capsule: playerCapsuleFromSourceCollision() });
-        const previewTriangleSupportedSpawn = navigation.spawn({ x: 0, y: 0, z: 0 });
-        if (!previewTriangleSupportedSpawn) throw new Error("The staged native surface does not support the requested actor origin.");
-        origin = new Vector3(previewTriangleSupportedSpawn.x, previewTriangleSupportedSpawn.y, previewTriangleSupportedSpawn.z);
-        if (!authoredSection) {
-          for (const { mesh } of authoredMeshes) mesh.setEnabled(false);
-          boundaryReleases.push(() => { for (const { mesh, enabled } of authoredMeshes) if (!mesh.isDisposed()) mesh.setEnabled(enabled); });
-        }
-        if (settings.flamePreviewEnabled !== false) {
-          try {
-            flameClock = createNativeFlameReplayClock({ textureSeconds: settings.flameTextureSeconds ?? 0,
-              fadeSeconds: settings.flameFadeSeconds ?? 0, textureRate: settings.flameTextureRate ?? 1, fadeRate: settings.flameFadeRate ?? 1 });
-            flames = await createNativeFlamePresentation(scene, section, flameLifetime.signal);
-            boundaryReleases.push(disposeFlames);
-            validateLifetime();
-            const prepared = flames.inspect();
-            if (prepared.status === "failed" || prepared.status === "aborted") throw new Error(prepared.failure ?? "Native flame preview failed to prepare.");
-            if (prepared.status === "not-present") { disposeFlames(); flameClock = undefined; }
-            else updateFlames(flameClock.advance(0, false));
-          } catch (error) {
-            disposeFlames();
-            validateLifetime();
-            if (options.requireWorld) throw error;
-            flameFailure = error instanceof Error ? error.message : "Native flame preview could not be verified.";
-          }
-        }
-      }
-    } catch (error) {
-      flameLifetime.abort();
-      disposeFlames();
-      movers?.dispose(); movers = null;
-      section?.dispose(); section = null; navigation = undefined; origin = settings.origin;
-      restoreEditorMaterials?.(); restoreEditorMaterials = undefined;
-      restoreAuthoredCamera?.();
-      validateLifetime();
-      if (options.requireWorld) throw error;
-      worldFailure = error instanceof Error ? error.message : "Native world could not be verified.";
-    }
-    validateLifetime();
-    let sky: NativeSkyPresentation | null = null, skyFailure: string | null = null;
-    if (section) {
-      try {
-        options.onProgress?.({ stage: "assets", detail: "Preparing original sky geometry and textures…" });
-        sky = await createNativeSkyPresentation(scene, worldLifetime.signal);
-        if (sky) boundaryReleases.push(() => sky?.dispose());
-      } catch (error) {
-        validateLifetime();
-        skyFailure = error instanceof Error ? error.message : "Original sky preview failed.";
-      }
-    }
+    const world = await loadNativeSliceWorld(scene, camera, settings, options.worldSource ?? catalogNativeSliceWorldSource, signal, {
+      requireWorld: options.requireWorld ?? false, ...(options.onProgress ? { onProgress: options.onProgress } : {}),
+      validateLifetime, playerCapsule: playerCapsuleFromSourceCollision });
+    boundaryReleases.push(world.release);
+    const { section, movers, navigation, origin, worldFailure, flames, sky, skyFailure } = world;
+    let followFighter = true;
     const audio = new WorldAudioMixer();
     boundaryReleases.push(() => audio.dispose());
     boundaryReleases.push(audio.attachGestureUnlock(window));
@@ -439,12 +340,11 @@ export async function createNativeSliceRuntime(scene: Scene, settings: NativeSli
     boundaryReleases.push(() => materialOverrides.dispose());
     if (worldFailure) ui.showStatus(`${worldFailure} Actor inspection area retained.`);
     else if (!section) ui.showStatus("No native world section staged. Actor inspection area retained.");
-    else if (flameFailure) ui.showStatus(`${flameFailure} World and saved materials retained.`);
+    else if (flames.failure) ui.showStatus(`${flames.failure} World and saved materials retained.`);
     else ui.clearStatus();
     boundaryReleases.push(ui.watchSound(() => audio.locked, () => audio.unlock()));
     boundaryReleases.push(attachWorldCamera(scene, canvas));
     boundaryReleases.push(attachTargeting(scene, registry, adapter, navigation, doors?.targeting));
-    const camera = scene.getCameraByName("World camera") as ArcRotateCamera;
     const authoredCamera = { target: camera.target.clone(), radius: camera.radius, minZ: camera.minZ, maxZ: camera.maxZ,
       upperRadiusLimit: camera.upperRadiusLimit };
     let effectCamera: ReturnType<typeof createEffectInspectionCamera> | undefined;
@@ -492,7 +392,7 @@ export async function createNativeSliceRuntime(scene: Scene, settings: NativeSli
     for (const name of ["spawn", "teleport", "missing-model"]) ui.root.querySelector(`[data-action="${name}"]`)?.remove();
     const label = ui.root.querySelector(".world-location > span");
     const pendingEffects = section?.manifest.unsupportedRuntimeMaterials?.reduce((total, gap) => total + gap.placementIds.length, 0) ?? 0;
-    if (label) label.textContent = section ? `Debug match unverified${pendingEffects ? flames ? " · flame preview" : ` · ${pendingEffects} effects pending` : ""}` : "Native rigs · synthetic behavior";
+    if (label) label.textContent = section ? `Debug match unverified${pendingEffects ? flames.presentation ? " · flame preview" : ` · ${pendingEffects} effects pending` : ""}` : "Native rigs · synthetic behavior";
     const sheet = ui.sheet, describe = new SheetDescriber(sheet, boundaryReleases);
     const sections = {
       audio: sheet.section("audio", { title: "Audio", icon: "audio", order: 10 }),
@@ -554,15 +454,14 @@ export async function createNativeSliceRuntime(scene: Scene, settings: NativeSli
     const flameFailureNote = document.createElement("p");
     flameFailureNote.id = "native-flame-status"; flameFailureNote.role = "status";
     const updateFlameFailureNote = () => {
-      flameFailureNote.hidden = !flameFailure;
-      flameFailureNote.textContent = flameFailure ? `${flameFailure} World and saved materials retained.` : "";
+      flameFailureNote.hidden = !flames.failure;
+      flameFailureNote.textContent = flames.failure ? `${flames.failure} World and saved materials retained.` : "";
     };
     updateFlameFailureNote();
     groups.flames.element.append(flameFailureNote);
     const failFlames = (error: unknown) => {
-      disposeFlames();
-      flameFailure = error instanceof Error ? error.message : "Native flame preview update failed.";
-      ui.showStatus(`${flameFailure} World and saved materials retained.`);
+      flames.fail(error);
+      ui.showStatus(`${flames.failure} World and saved materials retained.`);
       updateFlameFailureNote();
       if (label) label.textContent = `Debug match unverified · ${pendingEffects} effects pending`;
     };
@@ -776,9 +675,9 @@ export async function createNativeSliceRuntime(scene: Scene, settings: NativeSli
       button(groups.flames, "Inspect flame", () => { frameFlame(flamePlacements[next % flamePlacements.length]!.id); next++; },
         { hint: "Frames the next Default_Flame01 placement in turn. Flame replay timing and lighting remain unverified.",
           variables: () => [{ name: "flames.placements", value: () => String(flamePlacements.length), values: "FX_E_S.Flameset.Default_Flame01 placements", source: "section manifest", status: "native" },
-            { name: "flames.status", value: () => flames?.inspect().status ?? (flameFailure ? "failed" : "not present"), values: "status", source: "nativeFlamePresentation", status: "unverified" }] });
+            { name: "flames.status", value: () => flames.presentation?.inspect().status ?? (flames.failure ? "failed" : "not present"), values: "status", source: "nativeFlamePresentation", status: "unverified" }] });
     }
-    if (!flamePlacements.length && !flameFailure) groups.flames.note("No flame placements in this section.");
+    if (!flamePlacements.length && !flames.failure) groups.flames.note("No flame placements in this section.");
 
     const effectControls = attachNativeEffectComponentControls(groups.components.element, effectComponents, effectComponentFailure, () => effectCamera?.focus());
     boundaryReleases.push(() => effectControls.dispose());
@@ -813,8 +712,8 @@ export async function createNativeSliceRuntime(scene: Scene, settings: NativeSli
       }
       materialOverrides.update();
       if (section && followFighter && registry.localPlayerPosition) camera.setTarget(registry.localPlayerPosition.add(new Vector3(.6, .35, 0)), false, false, true);
-      if (flames && flameClock) {
-        try { updateFlames(flameClock.advance(uncappedFrameSeconds, adapter.isPaused)); }
+      if (flames.presentation && flames.clock) {
+        try { flames.update(flames.clock.advance(uncappedFrameSeconds, adapter.isPaused)); }
         catch (error) { failFlames(error); }
       }
       ui.update(cappedFrameSeconds, scene.getEngine().getFps());
@@ -836,7 +735,7 @@ export async function createNativeSliceRuntime(scene: Scene, settings: NativeSli
       skinMeshes: scene.meshes.filter(mesh => mesh.metadata?.l2NativeSkinWeights).map(mesh => ({ name: mesh.name, ...mesh.metadata.l2NativeSkinWeights })),
       nativeAttackReference: "unverified", nativeNpcProfile: musveren ?? null,
       materialOverride: materialOverrides.snapshot(),
-      nativeFlames: flames?.inspect() ?? null, flameFailure: flameFailure ?? null,
+      nativeFlames: flames.presentation?.inspect() ?? null, flameFailure: flames.failure ?? null,
       nativeSky: sky?.inspection() ?? null, skyFailure,
       nativeAudio: { ...audio.inspection(), cues: actionCues.inspection(), footsteps: footsteps.inspection(),
         footstepBundle: { manifests: footstepBundle.manifests, retainedConditionalEvents: footstepBundle.retainedConditionalEvents },
@@ -847,7 +746,7 @@ export async function createNativeSliceRuntime(scene: Scene, settings: NativeSli
         combat: combatAudio?.inspection() ?? null, combatFailure },
       powerStrike: { reason: powerStrikeReason, action: powerStrike?.snapshot() ?? null, shot: shotEffect?.snapshot() ?? null },
       devSheet: ui.sheet.inspect(),
-      flameReplay: flameClock ? { ...flameClock.inspect(), billboardTarget: "browser camera position proxy; native viewport actor equality unverified" } : null,
+      flameReplay: flames.clock ? { ...flames.clock.inspect(), billboardTarget: "browser camera position proxy; native viewport actor equality unverified" } : null,
       nativeTerrain: section ? "source-section-loaded" : "not-loaded-in-actor-scene", phase2Networking: false,
       worldFailure: worldFailure ?? null,
       fog: { enabled: scene.fogEnabled, mode: scene.fogMode, start: scene.fogStart, end: scene.fogEnd },
@@ -873,10 +772,10 @@ export async function createNativeSliceRuntime(scene: Scene, settings: NativeSli
         doors.activate(id);
       },
       setFlameReplay(time: NativeFlameReplayTime) {
-        if (!flames || !flameClock) throw new Error("Native flame preview is unavailable.");
-        flames.validateReplayTime(time);
-        flameClock.seek(time);
-        try { updateFlames(time); }
+        if (!flames.presentation || !flames.clock) throw new Error("Native flame preview is unavailable.");
+        flames.presentation.validateReplayTime(time);
+        flames.clock.seek(time);
+        try { flames.update(time); }
         catch (error) { failFlames(error); throw error; }
       } };
     window.__nativeSlice = diagnostics;
@@ -908,7 +807,7 @@ declare global { interface Window { __nativeSlice?: { snapshot(): { entities: Re
     combat?: NativeCombatInspection | null; combatFailure?: string | null };
   powerStrike?: { reason: string | null; action: ReturnType<NativePowerStrikePreview["snapshot"]> | null; shot: ReturnType<NativeEffectShotPreview["snapshot"]> | null };
   devSheet?: ReturnType<WorldInterface["sheet"]["inspect"]>;
-  flameReplay?: (ReturnType<ReturnType<typeof createNativeFlameReplayClock>["inspect"]> & { billboardTarget: string }) | null;
+  flameReplay?: (ReturnType<NativeFlameReplayClock["inspect"]> & { billboardTarget: string }) | null;
   fog?: { enabled: boolean; mode: number; start: number; end: number };
   world?: (ReturnType<NativeSection["inspection"]> & { manifestSha256: string; sourceSpawn: number[]; nativeLocationMatch: string; navigation: string }) | null;
   fps?: number; camera?: { target: number[]; alpha: number; beta: number; radius: number } }; dispatch: NativeSliceAdapter["dispatch"]; performance(): Promise<ReturnType<typeof createWorldPerformanceProbe>>; captureAudio?(): MediaStream | null; setWorldAudioEnabled?(enabled: boolean): void; setFlameReplay?(time: NativeFlameReplayTime): void; frameFlame?(placementId: string): void; interactDoor?(id: string): void } } }

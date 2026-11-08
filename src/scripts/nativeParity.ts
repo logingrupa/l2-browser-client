@@ -1,8 +1,10 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Scene } from "@babylonjs/core/scene";
+import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { visibleAsBoolean, visibleAsNumber, visibleAsString, visibleAsVector3, type IScript } from "babylonjs-editor-tools";
 import { createNativeSliceRuntime } from "../runtime/createNativeSliceRuntime";
 import { nativeSandboxConfiguration } from "../runtime/nativeSandboxConfiguration";
+import { authoredNativeWorldSource } from "../editor/authoredNativeWorldSource";
 import { isSceneStartupRequired, registerSceneStartup, reportSceneStartup } from "../scene/prepareSceneForReveal";
 import { showLoadingError } from "../ui/LoadingScreen";
 
@@ -34,11 +36,14 @@ export default class NativeParityScript implements IScript {
   onStart(): void {
     this.onStop();
     this.scene.useRightHandedSystem = true;
+    const camera = this.scene.getCameraByName("World camera");
+    if (!(camera instanceof ArcRotateCamera)) throw new Error("The authored native scene has no World camera.");
     const lifetime = new AbortController();
     this.lifetime = lifetime;
     const isWorldRequiredByApp = isSceneStartupRequired(this.scene, "native-world");
-    const ready = createNativeSliceRuntime(this.scene, this, lifetime.signal, {
+    const ready = createNativeSliceRuntime(this.scene, camera, this, lifetime.signal, {
       requireWorld: isWorldRequiredByApp,
+      worldSource: authoredNativeWorldSource,
       onProgress: progress => reportSceneStartup(this.scene, progress),
     }).then(stop => {
       if (lifetime.signal.aborted || this.lifetime !== lifetime) {

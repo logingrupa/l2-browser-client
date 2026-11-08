@@ -19,10 +19,10 @@ import { nativeSandboxConfiguration } from "../runtime/nativeSandboxConfiguratio
 type EnvironmentStatusListener = SceneStartupOptions["onStatus"];
 
 function loadNativeSandboxWorld(engine: AbstractEngine): Scene {
-  const { scene } = buildPresentationScene(engine, nativeSandboxPresentation);
+  const { scene, camera } = buildPresentationScene(engine, nativeSandboxPresentation);
   try {
     document.title = nativeSliceDocumentTitle;
-    startNativeSandboxRuntime(scene, nativeSandboxConfiguration);
+    startNativeSandboxRuntime(scene, camera, nativeSandboxConfiguration);
     return scene;
   } catch (error: unknown) {
     scene.dispose();

@@ -7,6 +7,7 @@ import type { createNativeSliceRuntime } from "../../src/runtime/createNativeSli
 import { loadEnvironment } from "../../src/scene/loadEnvironment";
 import { isSceneStartupRequired } from "../../src/scene/prepareSceneForReveal";
 import { nativeSandboxPresentation } from "../../src/scene/presentationConfiguration";
+import { catalogNativeSliceWorldSource } from "../../src/runtime/nativeSliceWorldSource";
 
 const boundary = vi.hoisted(() => ({
   startRuntime: vi.fn<typeof createNativeSliceRuntime>(),
@@ -49,8 +50,10 @@ describe("environment routing", () => {
     expect(document.title).toBe("Native asset slice · L2 Browser Client");
     expect(isSceneStartupRequired(scene, "native-world")).toBe(true);
     expect(boundary.startRuntime).toHaveBeenCalledTimes(1);
-    const [runtimeScene, settings, signal, options] = boundary.startRuntime.mock.calls[0]!;
+    const [runtimeScene, runtimeCamera, settings, signal, options] = boundary.startRuntime.mock.calls[0]!;
     expect(runtimeScene).toBe(scene);
+    expect(runtimeCamera).toBe(camera);
+    expect(options?.worldSource).toBe(catalogNativeSliceWorldSource);
     expect(settings.fighterIdle).toBe("Wait_1HS_MFighter");
     expect(settings.leatherShirt).toBe(true);
     expect(settings.materialTint?.asArray()).toEqual([0.45, 1, 0.6]);

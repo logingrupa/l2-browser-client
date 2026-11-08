@@ -1,7 +1,9 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Scene } from "@babylonjs/core/scene";
+import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { createNativeSliceRuntime, type NativeSliceSettings } from "./createNativeSliceRuntime";
 import type { NativeSandboxConfiguration } from "./nativeSandboxConfiguration";
+import { catalogNativeSliceWorldSource } from "./nativeSliceWorldSource";
 import { registerSceneStartup, reportSceneStartup, requireSceneStartup } from "../scene/prepareSceneForReveal";
 
 function nativeSliceSettingsFromConfiguration(configuration: NativeSandboxConfiguration): NativeSliceSettings {
@@ -26,7 +28,7 @@ function nativeSliceSettingsFromConfiguration(configuration: NativeSandboxConfig
   };
 }
 
-export function startNativeSandboxRuntime(scene: Scene, configuration: NativeSandboxConfiguration): void {
+export function startNativeSandboxRuntime(scene: Scene, camera: ArcRotateCamera, configuration: NativeSandboxConfiguration): void {
   requireSceneStartup(scene, "native-world");
   const lifetime = new AbortController();
   let stopRuntime: (() => void) | undefined;
@@ -35,8 +37,9 @@ export function startNativeSandboxRuntime(scene: Scene, configuration: NativeSan
     stopRuntime?.();
     stopRuntime = undefined;
   });
-  const ready = createNativeSliceRuntime(scene, nativeSliceSettingsFromConfiguration(configuration), lifetime.signal, {
+  const ready = createNativeSliceRuntime(scene, camera, nativeSliceSettingsFromConfiguration(configuration), lifetime.signal, {
     requireWorld: true,
+    worldSource: catalogNativeSliceWorldSource,
     onProgress: progress => reportSceneStartup(scene, progress),
   }).then(stop => {
     if (lifetime.signal.aborted) {
