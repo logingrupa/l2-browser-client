@@ -1,5 +1,6 @@
 import { sha256 } from "../assets/package/readAssetPackage";
 import { nativeResourceUrl } from "../assets/native/nativeResourceUrl";
+import { readNativeCatalog } from "../assets/native/readNativeCatalog";
 
 export interface EffectResource {
   assetId: string; object: string; file: string; sha256: string; bytes: number;
@@ -33,8 +34,6 @@ function requireValue(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(`Effect components: ${message}.`);
 }
 
-/** Fail closed on resource/primitive ambiguity. Original property records are
- * kept verbatim; a supported presentation adapter decides which it consumes. */
 export function parseEffectManifest(input: unknown): EffectManifest {
   requireValue(effectObject(input) && input.schemaVersion === 1 && input.kind === "native-effect-components", "unsupported manifest");
   requireValue(effectObject(input.resources) && Object.keys(input.resources).length <= 256, "invalid resources");
@@ -103,18 +102,11 @@ async function verified(path: string, expected: { sha256: string; bytes?: number
   signal.throwIfAborted(); return bytes;
 }
 
-/** Metadata only; mesh/texture allocation is deferred until the user selects a
- * component. A missing optional bundle never hides an already loaded world. */
 export async function loadNativeEffectComponents(signal: AbortSignal): Promise<EffectBundle | null> {
   signal.throwIfAborted();
-  const response = await fetch(nativeResourceUrl("/l2/catalog.json"), { signal });
-  if (!response.ok) throw new Error(`Effect catalog returned HTTP ${response.status}.`);
-  const catalog: unknown = await response.json();
-  signal.throwIfAborted();
-  requireValue(effectObject(catalog) && catalog.schemaVersion === 1, "invalid catalog");
-  if (catalog.effectComponents === undefined) return null;
-  requireValue(Array.isArray(catalog.effectComponents) && catalog.effectComponents.length <= 64, "invalid effect catalog entries");
-  const entries = catalog.effectComponents.filter(row => effectObject(row) && row.id === "interlude:skill:3:level:1:raw-source-dispatch");
+  const { effectComponents } = await readNativeCatalog(signal);
+  requireValue(effectComponents.length <= 64, "invalid effect catalog entries");
+  const entries = effectComponents.filter(row => effectObject(row) && row.id === "interlude:skill:3:level:1:raw-source-dispatch");
   if (!entries.length) return null;
   requireValue(entries.length === 1 && effectObject(entries[0]) && digest(entries[0].manifestSha256), "ambiguous selected effect");
   const entry = entries[0], manifestSha256 = entry.manifestSha256 as string;
@@ -133,8 +125,6 @@ export async function loadNativeEffectComponents(signal: AbortSignal): Promise<E
 }
 
 export interface EffectFrame { label: string; texture: EffectResource; uvScale: [number, number]; uvOffset: [number, number]; sourceTile: number | null }
-/** Manual original-frame inspection: the AnimNext chain supplies order, never
- * inferred looping/rate, and atlas tiles use explicit row-major preview policy. */
 export function effectFrames(manifest: EffectManifest, component: EffectComponent, texture: EffectResource): EffectFrame[] {
   const frames: EffectFrame[] = [], seen = new Set<string>();
   let current: EffectResource | undefined = texture;

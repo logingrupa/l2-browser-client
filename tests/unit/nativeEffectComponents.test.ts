@@ -4,10 +4,8 @@ import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { effectFrames, loadNativeEffectComponents, parseEffectManifest, type EffectManifest, type EffectResource } from "../../src/effects/nativeEffectComponents";
 
-// Exercise the retained source-derived stage, not a second hand-maintained
-// implementation of its resource/primitive and frame relationships.
-const directory = resolve("artifacts/native-parity/research/native-power-strike-components-20261107/staging/output/82e36ae7305abade2520dba335839c7422d878e6c07caa95323b47f7626f0afd");
-const retainedBytes = new Uint8Array(await readFile(resolve(directory, "manifest.json")));
+const retainedSourceDerivedStageDirectory = resolve("artifacts/native-parity/research/native-power-strike-components-20261107/staging/output/82e36ae7305abade2520dba335839c7422d878e6c07caa95323b47f7626f0afd");
+const retainedBytes = new Uint8Array(await readFile(resolve(retainedSourceDerivedStageDirectory, "manifest.json")));
 const retained = JSON.parse(new TextDecoder().decode(retainedBytes));
 const targetId = "interlude:skill:3:level:1:raw-source-dispatch";
 const digest = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
@@ -32,7 +30,7 @@ async function load(options: { protocol?: string; bytes?: Uint8Array; catalog?: 
   vi.stubGlobal("location", { protocol: options.protocol ?? "https:" });
   const bytes = options.bytes ?? retainedBytes, entry = record(bytes), prefix = options.protocol === "file:" ? "" : "/";
   const files = new Map<string, Uint8Array>([
-    [`${prefix}l2/catalog.json`, encode(options.catalog ?? { schemaVersion: 1, effectComponents: [entry] })],
+    [`${prefix}l2/catalog.json`, encode(options.catalog ?? { schemaVersion: 1, models: [], effectComponents: [entry] })],
     [`${prefix}${entry.manifest.slice(1)}`, bytes],
   ]);
   const fetcher = serve(files), bundle = await loadNativeEffectComponents(signal());
@@ -84,16 +82,16 @@ describe("effect manifest source identity and primitive routing", () => {
 
 describe("optional effect metadata and lazy resource loading", () => {
   it.each([undefined, [], [{ id: "another-effect", manifest: "/l2/unused/manifest.json" }]])("keeps an absent selected optional bundle absent without requesting payloads", async entries => {
-    const { bundle, fetcher } = await load({ catalog: { schemaVersion: 1, effectComponents: entries } });
+    const { bundle, fetcher } = await load({ catalog: { schemaVersion: 1, models: [], effectComponents: entries } });
     expect(bundle).toBeNull(); expect(fetcher).toHaveBeenCalledOnce();
   });
   it("rejects duplicate selected catalog IDs before fetching either manifest", async () => {
-    const entry = record(), fetcher = serve(new Map([["/l2/catalog.json", encode({ schemaVersion: 1, effectComponents: [entry, entry] })]]));
+    const entry = record(), fetcher = serve(new Map([["/l2/catalog.json", encode({ schemaVersion: 1, models: [], effectComponents: [entry, entry] })]]));
     await expect(loadNativeEffectComponents(signal())).rejects.toThrow(/ambiguous selected effect/);
     expect(fetcher).toHaveBeenCalledOnce();
   });
   it.each(["/l2/effects/wrong/manifest.json", "https://example.invalid/manifest.json", "/l2/effects/../manifest.json"])("rejects selected manifest path %s before a payload request", async path => {
-    const entry = { ...record(), manifest: path }, fetcher = serve(new Map([["/l2/catalog.json", encode({ schemaVersion: 1, effectComponents: [entry] })]]));
+    const entry = { ...record(), manifest: path }, fetcher = serve(new Map([["/l2/catalog.json", encode({ schemaVersion: 1, models: [], effectComponents: [entry] })]]));
     await expect(loadNativeEffectComponents(signal())).rejects.toThrow(/invalid manifest path/);
     expect(fetcher).toHaveBeenCalledOnce();
   });
@@ -101,14 +99,14 @@ describe("optional effect metadata and lazy resource loading", () => {
     const { bundle, fetcher, files, entry, prefix } = await load({ protocol }); expect(bundle).not.toBeNull();
     expect(fetcher.mock.calls.map(([url]) => url)).toEqual([`${prefix}l2/catalog.json`, `${prefix}${entry.manifest.slice(1)}`]);
     const resource = Object.values(bundle!.manifest.resources).find(row => row.file.endsWith(".png"))!;
-    const bytes = new Uint8Array(await readFile(resolve(directory, resource.file)));
+    const bytes = new Uint8Array(await readFile(resolve(retainedSourceDerivedStageDirectory, resource.file)));
     const request = `${prefix}l2/effects/${bundle!.manifestSha256}/${resource.file}`; files.set(request, bytes);
     expect(await bundle!.readResource(resource, signal())).toEqual(bytes);
     expect(fetcher.mock.calls.at(-1)?.[0]).toBe(request);
   });
   it("rejects changed manifest bytes and an independently hashed wrong bundle ID", async () => {
     const entry = record(), corrupt = retainedBytes.slice(); corrupt[corrupt.length - 2] = corrupt[corrupt.length - 2]! ^ 1;
-    serve(new Map([["/l2/catalog.json", encode({ schemaVersion: 1, effectComponents: [entry] })], [entry.manifest, corrupt]]));
+    serve(new Map([["/l2/catalog.json", encode({ schemaVersion: 1, models: [], effectComponents: [entry] })], [entry.manifest, corrupt]]));
     await expect(loadNativeEffectComponents(signal())).rejects.toThrow(/content differs/);
     const wrong = copy(); wrong.id = "different-source-effect";
     await expect(load({ bytes: encode(wrong) })).rejects.toThrow(/bundle identity differs/);
@@ -120,7 +118,7 @@ describe("optional effect metadata and lazy resource loading", () => {
   });
   it("rejects a forged source-object descriptor before fetching bytes, even if the payload hash/path are owned", async () => {
     const { bundle, files, fetcher } = await load(), canonical = Object.values(bundle!.manifest.resources).find(row => row.file.endsWith(".png"))!;
-    files.set(`/l2/effects/${bundle!.manifestSha256}/${canonical.file}`, new Uint8Array(await readFile(resolve(directory, canonical.file))));
+    files.set(`/l2/effects/${bundle!.manifestSha256}/${canonical.file}`, new Uint8Array(await readFile(resolve(retainedSourceDerivedStageDirectory, canonical.file))));
     const forged: EffectResource = { ...canonical, object: "Invented.SubstitutedSource" };
     const before = fetcher.mock.calls.length;
     await expect(Promise.resolve().then(() => bundle!.readResource(forged, signal())).then(() => "unexpected accepted source identity"))
@@ -133,12 +131,12 @@ describe("optional effect metadata and lazy resource loading", () => {
   });
   it("rejects a stale aborted catalog body even when the optional bundle is absent", async () => {
     const controller = new AbortController(), reason = Error("replaced scene");
-    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => { controller.abort(reason); return { schemaVersion: 1 }; } })));
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, status: 200, text: async () => { controller.abort(reason); return JSON.stringify({ schemaVersion: 1, models: [] }); } })));
     await expect(loadNativeEffectComponents(controller.signal)).rejects.toBe(reason);
   });
   it("rejects a resource body that completes after cancellation without publishing stale bytes", async () => {
     const { bundle } = await load(), resource = Object.values(bundle!.manifest.resources).find(row => row.file.endsWith(".png"))!;
-    const bytes = new Uint8Array(await readFile(resolve(directory, resource.file))), controller = new AbortController(), reason = Error("component disposed");
+    const bytes = new Uint8Array(await readFile(resolve(retainedSourceDerivedStageDirectory, resource.file))), controller = new AbortController(), reason = Error("component disposed");
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, arrayBuffer: async () => { controller.abort(reason); return bytes.buffer; } })));
     await expect(bundle!.readResource(resource, controller.signal)).rejects.toBe(reason);
   });

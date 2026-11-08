@@ -3,6 +3,7 @@ import { Scene } from "@babylonjs/core/scene";
 import { FreeCamera } from "@babylonjs/core/Cameras/freeCamera";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import { RawTexture } from "@babylonjs/core/Materials/Textures/rawTexture";
@@ -10,6 +11,7 @@ import "@babylonjs/core/Materials/standardMaterial";
 import { SceneSerializer } from "@babylonjs/core/Misc/sceneSerializer";
 import { loadNativeSection } from "../scene/world/loadNativeSection";
 import { sha256 } from "../assets/package/readAssetPackage";
+import { readNativeCatalog } from "../assets/native/readNativeCatalog";
 
 type JsonObject = Record<string, unknown>;
 interface EncodedTexture { path: string; base64: string; sha256: string; bytes: number; }
@@ -35,8 +37,14 @@ function base64(bytes: Uint8Array): string {
   return btoa(chunks.join(""));
 }
 
-/** Build an authoring derivative using the same pinned loader as the runtime.
- * The source GLBs, materials, matrices and raw texture inputs are never edited. */
+function reflectWrapperForLeftHandedEditorAuthoring(wrapper: TransformNode, meshes: readonly AbstractMesh[]): void {
+  wrapper.scaling.z = -1;
+  for (const mesh of meshes) if (mesh instanceof Mesh) {
+    mesh.metadata = { ...mesh.metadata, nativeEditorSource: { ...mesh.metadata?.nativeEditorSource, sideOrientation: mesh.sideOrientation } };
+    mesh.sideOrientation = mesh.sideOrientation === 0 ? 1 : 0;
+  }
+}
+
 export async function captureNativeWorld(canvas: HTMLCanvasElement, encodeTexture: NativeEditorTextureEncoder) {
   const engine = await createWebGPUEngine(canvas);
   const scene = new Scene(engine); scene.useRightHandedSystem = true;
@@ -49,7 +57,6 @@ export async function captureNativeWorld(canvas: HTMLCanvasElement, encodeTextur
     if (before.materialFailure || !before.texturesReady || !before.finiteBounds) throw new Error("Native world is not ready for authoring export.");
     const wrapper = new TransformNode("Native world · source coordinate wrapper", scene);
     wrapper.metadata = { nativeWorldRoot: { schemaVersion: 1, manifestSha256: section.manifestSha256, manifest: section.manifest } };
-    // Keep source local pretransforms; normal TRS remains available for edits.
     const nodes = [...scene.transformNodes, ...scene.meshes];
     for (const node of nodes) if (node !== wrapper && !node.parent) node.parent = wrapper;
     for (const node of nodes) node.unfreezeWorldMatrix();
@@ -78,10 +85,7 @@ export async function captureNativeWorld(canvas: HTMLCanvasElement, encodeTextur
     const textures = [...new Set(materials.flatMap(material => material.getActiveTextures()))];
     const exportedTextures = new Map<string, EncodedTexture>();
     const texturePaths = new Set<string>();
-    const catalogResponse = await fetch("/l2/catalog.json", { signal: controller.signal });
-    if (!catalogResponse.ok) throw new Error("Native authoring texture catalog is missing.");
-    const catalog: unknown = await catalogResponse.json();
-    const catalogTextures = object(catalog) && Array.isArray(catalog.textures) ? catalog.textures.filter(object) : [];
+    const catalogTextures = (await readNativeCatalog(controller.signal)).textures.filter(object);
     for (const texture of textures) {
       if (!(texture instanceof Texture) || texture.isCube || texture.isRenderTarget) throw new Error(`Unsupported authored texture: ${texture.name}`);
       const name = texture.name, size = texture.getSize();
@@ -96,10 +100,9 @@ export async function captureNativeWorld(canvas: HTMLCanvasElement, encodeTextur
           if (bytes.length !== source.imageBytes || await sha256(bytes) !== source.imageSha256) throw new Error("Native authoring texture hash mismatch.");
           kind = "png"; encoded = base64(bytes);
         } else {
-          // Raw mask data retained by the loader, not a canvas/GPU readback.
-          const pixels = texture.getInternalTexture()?._bufferView;
-          if (!(pixels instanceof Uint8Array) || pixels.length !== size.width * size.height * 4) throw new Error(`Unpreserved raw texture: ${name}`);
-          kind = "rgba"; encoded = base64(pixels);
+          const loaderRetainedMaskPixels = texture.getInternalTexture()?._bufferView;
+          if (!(loaderRetainedMaskPixels instanceof Uint8Array) || loaderRetainedMaskPixels.length !== size.width * size.height * 4) throw new Error(`Unpreserved raw texture: ${name}`);
+          kind = "rgba"; encoded = base64(loaderRetainedMaskPixels);
         }
       } else {
         const serialized = record(texture.serialize() as unknown);
@@ -129,15 +132,7 @@ export async function captureNativeWorld(canvas: HTMLCanvasElement, encodeTextur
       }
       Object.values(value).forEach(normalizeTextureReferences);
     }
-    // The Editor uses LH authoring. Only this dedicated wrapper is reflected;
-    // the native runtime restores it to identity before creating actors. The
-    // glTF loader also selects the mesh winding override for scene handedness;
-    // retain that same distinction instead of disabling back-face culling.
-    wrapper.scaling.z = -1;
-    for (const mesh of scene.meshes) if (mesh instanceof Mesh) {
-      mesh.metadata = { ...mesh.metadata, nativeEditorSource: { ...mesh.metadata?.nativeEditorSource, sideOrientation: mesh.sideOrientation } };
-      mesh.sideOrientation = mesh.sideOrientation === 0 ? 1 : 0;
-    }
+    reflectWrapperForLeftHandedEditorAuthoring(wrapper, scene.meshes);
     const center = section.minimum.add(section.maximum).scale(.5); center.z *= -1;
     const radius = section.maximum.subtract(section.minimum).length() * .8;
     const free = new FreeCamera("Export camera calculation", center.add(new Vector3(radius * .55, radius * .55, radius * .55)), scene);

@@ -1,24 +1,16 @@
 import { sha256 } from "../assets/package/readAssetPackage";
 import { nativeResourceUrl } from "../assets/native/nativeResourceUrl";
+import { readNativeCatalog } from "../assets/native/readNativeCatalog";
 
-/** Loads the staged combat sound dependency bundle (catalog.combatAudio),
- * produced by scripts/bundle-native-combat-audio.py (recipes/native-combat-audio.json)
- * from the verified export-native-sounds.py corpus and staged by
- * stage_native_combat_audio.py. Only slots the bundle admitted (exact identity
- * or unique package+leaf candidate with a verified export) become playable.
- * Roles follow the statically proved Q4 routes (REPORT.md Q4); the kind
- * "config" row carries ALAudio.int [CharSound]/[ItemSound]/[EtcSound] values
- * and the [EtcSound] critical/soulshot sounds. Name resolution stays a
- * package+leaf candidate (conditional). */
 export type NativeCombatRole = "attackItem" | "attackVoice" | "defense" | "damage" | "cast" | "shot" | "critical" | "soulshot";
+type OriginalTableString = string;
+type AdmittedCorpusExport = string;
 export type NativeCombatSelectionKind = "actor" | "armor" | "weapon" | "skill" | "config";
 
 export interface NativeCombatSlot {
   readonly index: number;
-  /** Original table string, unchanged (for example "ItemSound.fist_1"). */
-  readonly reference: string;
-  /** Admitted corpus export (for example "itemsound.Weapon_Fist.fist_1"). */
-  readonly object: string;
+  readonly reference: OriginalTableString;
+  readonly object: AdmittedCorpusExport;
   readonly status: "exact-identity" | "unique-package-leaf-candidate";
   readonly sourcePointer: string;
   readonly key: string;
@@ -28,7 +20,6 @@ export interface NativeCombatSoundSet {
   readonly table: string;
   readonly field: string;
   readonly slots: readonly NativeCombatSlot[];
-  /** Original slots that stay silent: empty strings, missing or ambiguous identities. */
   readonly unadmitted: readonly { index: number; reference: string | null; status: string }[];
 }
 export interface NativeCombatSelection {
@@ -80,9 +71,7 @@ async function resource(path: string, expectedHash: string, size: number, signal
   signal.throwIfAborted(); return bytes;
 }
 
-/** A group-less table string (Package.Leaf) must agree with its admitted
- * Package.Group.Leaf export by package and leaf, casefolded. */
-function referenceAgrees(reference: string, exported: string): boolean {
+function groupLessReferenceAgreesWithAdmittedExport(reference: string, exported: string): boolean {
   const left = reference.toLowerCase().split("."), right = exported.toLowerCase().split(".");
   if (left.length === right.length) return left.join(".") === right.join(".");
   return left.length === 2 && right.length >= 3 && left[0] === right[0] && left[1] === right.at(-1);
@@ -117,7 +106,7 @@ export function parseNativeCombatManifest(raw: unknown, manifestSha256: string, 
           unadmitted.push({ index: position, reference: slot.reference as string | null, status }); return;
         }
         const sound = sounds.get(text(slot.dependencyId)), reference = text(slot.reference);
-        requireMatch(sound && admitted.has(status) && referenceAgrees(reference, sound.object), "Combat slot reference differs from its admitted dependency");
+        requireMatch(sound && admitted.has(status) && groupLessReferenceAgreesWithAdmittedExport(reference, sound.object), "Combat slot reference differs from its admitted dependency");
         needed.add(slot.dependencyId as string);
         slots.push({ index: position, reference, object: sound.object, status: status as NativeCombatSlot["status"],
           sourcePointer: text(slot.sourcePointer, 256), key: sound.key });
@@ -137,14 +126,11 @@ export function parseNativeCombatManifest(raw: unknown, manifestSha256: string, 
   return { id, manifestSha256, selections, needed: [...needed].map(dependency => sounds.get(dependency)!) };
 }
 
-/** Returns null when no combat bundle is staged; throws on any integrity error. */
 export async function loadNativeCombatAudio(signal: AbortSignal,
   options: { id?: string; fetch?: typeof fetch } = {}): Promise<NativeCombatAudioBundle | null> {
   const fetcher = options.fetch ?? fetch, id = options.id ?? "native-combat-audio";
-  const response = await fetcher(nativeResourceUrl("/l2/catalog.json"), { signal });
-  requireMatch(response.ok, "The native asset catalog is unavailable.");
-  const catalog = object(await response.json());
-  const records = catalog.combatAudio === undefined ? [] : list(catalog.combatAudio, 8);
+  const { combatAudio } = await readNativeCatalog(signal, fetcher);
+  const records = list(combatAudio, 8);
   const matches = records.map(object).filter(entry => entry.id === id);
   requireMatch(matches.length <= 1, "Combat-audio catalog identity is duplicated");
   if (!matches.length) return null;

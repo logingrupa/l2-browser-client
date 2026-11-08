@@ -52,7 +52,7 @@ describe("native public resources in browser and Editor Play", () => {
     vi.stubGlobal("location", { protocol });
     const prefix = protocol === "file:" ? "l2/" : "/l2/", hash = "a".repeat(64);
     const manifest = `/l2/maps/${hash}/map-section-runtime/manifest.json`;
-    const catalog = { schemaVersion: 1, sections: [{ id: "map-20-20-section", manifest, manifestSha256: hash }] };
+    const catalog = { schemaVersion: 1, models: [], sections: [{ id: "map-20-20-section", manifest, manifestSha256: hash }] };
     const fetcher = vi.fn(async (url: string) => url === `${prefix}catalog.json`
       ? Response.json(catalog) : url === `${prefix}maps/${hash}/map-section-runtime/manifest.json`
         ? new Response("corrupt manifest") : new Response("missing", { status: 404 }));
