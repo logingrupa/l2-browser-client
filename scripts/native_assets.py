@@ -17,7 +17,7 @@ from native_audio import decode_native_audio
 from native_catalog.ue2 import Package
 from native_assets_lib.gltf import Document, json_bytes, safe_name
 from native_assets_lib.asset_manifest import asset_coordinates_record, build_asset_manifest, reference_client_build, require_supported_asset_manifest, source_path_record
-from native_assets_lib.umodel_import_closure import require_lock_equal_import_closure
+from native_assets_lib.umodel_import_closure import index_package_files_by_casefolded_stem, require_lock_equal_import_closure, resolve_package_path
 from native_assets_lib.animation import add_animations
 from native_assets_lib.rigid import is_root_rigid, attach_rigid_part
 from native_assets_lib.weights import restore_native_weights
@@ -147,10 +147,7 @@ class Converter:
         if hash_file(self.umodel) != UMODEL_SHA256:
             raise ValueError('UModel hash differs from the reviewed build1590; refuse unpinned conversion')
         self.output.mkdir(parents=True, exist_ok=True)
-        self.package_files = {}
-        for path in self.client.rglob('*'):
-            if path.is_file() and path.suffix.lower() in ('.ukx', '.utx', '.usx', '.uax', '.u', '.unr'):
-                self.package_files.setdefault(path.stem.casefold(), []).append(path)
+        self.package_files_by_casefolded_stem = index_package_files_by_casefolded_stem(self.client)
         self.dependencies = {}
         self.lock_equal_import_closures = set()
         self.logs = []
@@ -176,14 +173,7 @@ class Converter:
                 raise ValueError(f'Source changed during conversion: {name}')
 
     def package(self, name):
-        exact = (self.client / name).resolve()
-        if exact.is_file():
-            path = self.source(exact)
-        else:
-            matches = self.package_files.get(Path(name).stem.casefold(), [])
-            if len(matches) != 1:
-                raise ValueError(f'Package name missing or ambiguous: {name}')
-            path = self.source(matches[0])
+        path = self.source(resolve_package_path(self.client, self.package_files_by_casefolded_stem, name))
         key = path.relative_to(self.client).as_posix()
         cached = self.package_cache.get(key)
         if cached is None or cached.source_hash != self.dependencies[key]:

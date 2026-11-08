@@ -11,6 +11,7 @@ import sys
 
 from .ue2 import FormatError, Package, summary
 from .tables import CRYPTO_SOURCE, SCHEMA_ROOT, TABLES, decode_table
+from native_assets_lib.umodel_import_closure import index_package_files_by_casefolded_stem, require_lock_equal_import_closure, resolve_package_path
 from reference_client_guard import require_reference_client
 
 NATIVE = {'.ukx', '.uax', '.usx', '.utx', '.unr', '.u', '.uix', '.usk'}
@@ -125,10 +126,23 @@ def parse_umodel_listing(text):
     return rows
 
 
-def catalog_package(client, relative, destination, umodel):
-    source = within(client, relative)
+def require_lock_equal_umodel_closure(client_access, relative):
+    package_files_by_casefolded_stem = index_package_files_by_casefolded_stem(client_access.root)
+
+    def load_lock_equal_package(name):
+        package_path = resolve_package_path(client_access.root, package_files_by_casefolded_stem, name)
+        path = client_access.require_equal_file(package_path.relative_to(client_access.root).as_posix())
+        return path, Package(path.read_bytes(), path.name)
+
+    require_lock_equal_import_closure(relative, load_lock_equal_package)
+
+
+def catalog_package(client_access, relative, destination, umodel):
+    client = client_access.root
+    source = client_access.require_equal_file(relative)
     if source.suffix.lower() not in NATIVE:
         raise FormatError('--package requires an original native package')
+    require_lock_equal_umodel_closure(client_access, relative)
     source_sha = file_hash(source)
     label = re.sub(r'[^A-Za-z0-9_.-]', '_', relative) + '-' + source_sha[:12]
     work = safe_output(client, destination.parent / (destination.stem + '-packages') / label / 'umodel-list.txt').parent
@@ -216,7 +230,7 @@ def main(argv=None):
     parser.add_argument('--verify', action='store_true', help='Recheck source and output hashes without running tools or rewriting reports.')
     args = parser.parse_args(argv)
     try:
-        require_reference_client(args.client)
+        client_access = require_reference_client(args.client)
         table_sources = {}
         for selection in args.table_source:
             table, separator, filename = selection.partition('=')
@@ -244,7 +258,7 @@ def main(argv=None):
                 'Package version123/30 is the typed notify profile; older packages in the same client retain their own versions.']}
         artifacts = []
         for relative in dict.fromkeys(args.package):
-            record, produced = catalog_package(client, relative, output, args.umodel.resolve())
+            record, produced = catalog_package(client_access, relative, output, args.umodel.resolve())
             catalog['packages'].append(record)
             artifacts += produced
         for table in dict.fromkeys(args.table):

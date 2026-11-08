@@ -1,3 +1,26 @@
+from pathlib import Path
+
+UMODEL_PACKAGE_SUFFIXES = ('.ukx', '.utx', '.usx', '.uax', '.u', '.unr')
+
+
+def index_package_files_by_casefolded_stem(client):
+    package_files_by_casefolded_stem = {}
+    for path in client.rglob('*'):
+        if path.is_file() and path.suffix.lower() in UMODEL_PACKAGE_SUFFIXES:
+            package_files_by_casefolded_stem.setdefault(path.stem.casefold(), []).append(path)
+    return package_files_by_casefolded_stem
+
+
+def resolve_package_path(client, package_files_by_casefolded_stem, name):
+    exact = (client / name).resolve()
+    if exact.is_file():
+        return exact
+    matches = package_files_by_casefolded_stem.get(Path(name).stem.casefold(), [])
+    if len(matches) != 1:
+        raise ValueError(f'Package name missing or ambiguous: {name}')
+    return matches[0]
+
+
 def top_level_import_package_names(package):
     names_by_casefold = {}
     for item in package.imports:
