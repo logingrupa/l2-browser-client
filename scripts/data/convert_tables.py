@@ -10,16 +10,15 @@ import json
 import re
 
 from hash_reference_client_tree import canonical_json_bytes
+from lane_unit_outcomes import seal_unit_decode_failure, seal_unit_manifest, write_pinned_manifest_to_store
 from native_catalog.table_layout_pins import CRYPTO_HASH, SCHEMA_HASHES
 from native_catalog.table_source_resolver import descriptor_layout_for_file_name
 from native_catalog.tables import DESCRIPTOR_FILE, decode_table, decoded_table_record_count, interlude_descriptor_links
 from native_catalog.ue2 import FormatError
-from native_store.catalog_writer import (add_store_file, merge_catalog_slice, read_store_catalog, sha256_hex, validate_catalog_record,
-                                         write_store)
-from native_store.gap_rows import read_gap_rows, write_gap_rows
+from native_store.catalog_writer import sha256_hex, validate_catalog_record
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root, require_converter_output
-from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, RECEIPT_RECORD_NAME, UnitLedger, locked_input_records,
-                                      require_batch_preflight, run_at_below_normal_priority)
+from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, UnitLedger, locked_input_records, require_batch_preflight,
+                                      run_at_below_normal_priority)
 import reference_client_guard
 from reference_client_guard import require_reference_client
 
@@ -32,8 +31,6 @@ NATIVE_TABLE_MANIFEST_KIND = 'native-table'
 NATIVE_TABLE_MANIFEST_SCHEMA_VERSION = 1
 TABLES_CATALOG_SLICE = 'tables'
 TABLES_CATALOG_CAPACITY = 40
-DECODE_ERROR_RECORD_NAME = 'decode-error.json'
-DECODE_FAILED_REASON_PREFIX = 'decode-failed:'
 SYSTEM_DAT_PATH_PATTERN = re.compile(r'system/([^/]+)\.dat', re.IGNORECASE)
 
 
@@ -69,48 +66,15 @@ def native_table_manifest_bytes(manifest):
         raise FormatError(f'native table {manifest["table"]} holds a value JSON cannot carry: {error}') from error
 
 
-def lane_relative_path(ledger, path):
-    try:
-        return Path(path).relative_to(ledger.lane_folder).as_posix()
-    except ValueError as error:
-        raise ConvertTablesError(f'{path} is outside the {ledger.lane_name} lane folder {ledger.lane_folder}') from error
-
-
-def replace_table_gap_row(project_root, unit_key, gap_row):
-    decode_rows = [row for row in read_gap_rows(project_root, LANE_NAME) if row['step'] == DECODE_STEP]
-    kept_rows = [row for row in decode_rows if row['key'] != unit_key]
-    if gap_row is None and len(kept_rows) == len(decode_rows):
-        return
-    write_gap_rows(project_root, LANE_NAME, DECODE_STEP, kept_rows + ([gap_row] if gap_row else []))
-
-
 def write_table_to_store(output_root, table, manifest_bytes, manifest):
     manifest_sha256 = sha256_hex(manifest_bytes)
     manifest_relative = f'{TABLES_CATALOG_SLICE}/{manifest_sha256}/{table}.json'
     record = validate_catalog_record(TABLES_CATALOG_SLICE, {
         'id': table, 'manifest': f'/l2/{manifest_relative}', 'manifestSha256': manifest_sha256,
         'manifestBytes': len(manifest_bytes), 'recordCount': manifest['recordCount'], 'sourceSha256': manifest['sourceSha256']})
-    catalog, before = read_store_catalog(output_root)
-    merged = merge_catalog_slice(catalog, TABLES_CATALOG_SLICE, record, TABLES_CATALOG_CAPACITY)
-    merged[TABLES_CATALOG_SLICE] = sorted(merged[TABLES_CATALOG_SLICE], key=lambda existing: existing['id'])
-    files = {}
-    add_store_file(files, manifest_relative, manifest_bytes)
-    write_store(output_root, files, before, canonical_json_bytes(merged))
-    return record, Path(output_root) / manifest_relative
-
-
-def seal_decode_failure(project_root, ledger, unit_key, fingerprint, step_directory, inputs, config, error):
-    error_bytes = canonical_json_bytes({'errorClass': type(error).__name__, 'message': str(error)})
-    error_path = step_directory / DECODE_ERROR_RECORD_NAME
-    error_path.write_bytes(error_bytes)
-    gap_row = {'key': unit_key, 'part': PART_NAME, 'step': DECODE_STEP, 'status': 'gap',
-               'reason': DECODE_FAILED_REASON_PREFIX + type(error).__name__,
-               'sourceIdentity': {'path': inputs[0]['path'], 'sha256': inputs[0]['sha256']},
-               'evidence': lane_relative_path(ledger, step_directory / RECEIPT_RECORD_NAME)}
-    replace_table_gap_row(project_root, unit_key, gap_row)
-    ledger.seal(unit_key, fingerprint, {'config': config, 'inputs': inputs, 'gapRows': [gap_row], 'outputs': [
-        {'path': lane_relative_path(ledger, error_path), 'sha256': sha256_hex(error_bytes), 'bytes': len(error_bytes)}]})
-    return {'unit': unit_key, 'status': 'gap', 'reason': gap_row['reason']}
+    manifest_path = write_pinned_manifest_to_store(output_root, TABLES_CATALOG_SLICE, record, manifest_relative, manifest_bytes,
+                                                   TABLES_CATALOG_CAPACITY)
+    return record, manifest_path
 
 
 def convert_table_unit(project_root, client_access, table, output_root, ledger, links):
@@ -124,11 +88,9 @@ def convert_table_unit(project_root, client_access, table, output_root, ledger, 
         manifest = native_table_manifest(table, decode_table(client_access.root, layout, source_filename=file_name), LOCAL_DESCRIPTOR_ROUTE)
         manifest_bytes = native_table_manifest_bytes(manifest)
     except (FormatError, UnicodeDecodeError) as error:
-        return seal_decode_failure(project_root, ledger, unit_key, fingerprint, step_directory, inputs, config, error)
+        return seal_unit_decode_failure(project_root, ledger, unit_key, fingerprint, step_directory, PART_NAME, inputs, config, error)
     record, manifest_path = write_table_to_store(output_root, table, manifest_bytes, manifest)
-    replace_table_gap_row(project_root, unit_key, None)
-    ledger.seal(unit_key, fingerprint, {'config': config, 'inputs': inputs, 'gapRows': [], 'outputs': [
-        {'path': lane_relative_path(ledger, manifest_path), 'sha256': record['manifestSha256'], 'bytes': record['manifestBytes']}]})
+    seal_unit_manifest(project_root, ledger, unit_key, fingerprint, inputs, config, manifest_path, record)
     return {'unit': unit_key, 'status': 'decoded', 'recordCount': record['recordCount'], 'manifest': record['manifest']}
 
 
