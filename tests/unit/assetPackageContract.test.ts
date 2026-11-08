@@ -53,7 +53,10 @@ describe("golden fixtures for the asset output contract", () => {
     const paths = (await goldenFixturePins()).map(row => row.path);
     expect(paths).toEqual([...paths].sort());
     expect(new Set(paths).size).toBe(paths.length);
-    expect(paths).toEqual(["audio-v2.l2asset", "l2/catalog.json", "model-v1.l2asset", "model-v2.l2asset", "reference-client-tree.lock.json"]);
+    expect(paths).toEqual(["audio-v2.l2asset", "l2/catalog.json",
+      "l2/maps/9b72bc07057c7db92dfb479c4a74135dfac8a5be276a0b52e359c141674f3c5d/native-tile-chunk-runtime/manifest.json",
+      "l2/tiles/bda58735e24af8da075d8acc808efdb632711c9f5ea6fa60067a7ccbc5bde5ef/tile.json",
+      "model-v1.l2asset", "model-v2.l2asset", "reference-client-tree.lock.json"]);
   });
 
   it("reads a v2 model with right-handed Y-up metre coordinates and derived build fields", async () => {

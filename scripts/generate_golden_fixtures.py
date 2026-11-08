@@ -24,6 +24,11 @@ SYNTHETIC_SOURCE_UNITS_PER_METRE = 100
 SYNTHETIC_CONVERTER_VERSION = hashlib.sha256(b'synthetic converter version for golden fixtures').hexdigest()
 SYNTHETIC_SKILL_EFFECT_COMPONENT_ID = 'interlude:skill:0:level:1:synthetic-fixture'
 SYNTHETIC_SECTION_ID = 'map-00-00-section'
+SYNTHETIC_TILE_ID = '00_00'
+SYNTHETIC_TILE_CHUNK_ID = 'chunk-0-0'
+SYNTHETIC_TILE_SOURCE_SHA256 = hashlib.sha256(b'synthetic tile source for golden fixtures').hexdigest()
+SYNTHETIC_TILE_PENDING_STEPS = ('bsp', 'collision', 'meshes', 'terrain')
+CONTRACT_EVIDENCE_PATH = 'docs/OUTPUT_CONTRACT.md'
 REFERENCE_CLIENT_LOCK_NAME = 'reference-client-tree.lock.json'
 FIXTURES_LOCK_NAME = 'fixtures.lock.json'
 
@@ -98,6 +103,31 @@ def catalog_model_record(archive, object_name):
         'source': {'object': f'{SYNTHETIC_PACKAGE}.{object_name}'}}
 
 
+def pinned_json_manifest(relative_path_template, document):
+    payload = json_bytes(document)
+    relative_path = relative_path_template.format(sha256=sha(payload))
+    return relative_path, payload, {'manifest': '/' + relative_path, 'manifestSha256': sha(payload), 'manifestBytes': len(payload)}
+
+
+def synthetic_tile_pending_gap_row(step):
+    return {'key': f'tile:{SYNTHETIC_TILE_ID}', 'part': 'world', 'step': step, 'status': 'pending', 'reason': f'step-pending:{step}',
+        'sourceIdentity': {'path': f'maps/{SYNTHETIC_TILE_ID}.unr', 'sha256': SYNTHETIC_TILE_SOURCE_SHA256}, 'evidence': CONTRACT_EVIDENCE_PATH}
+
+
+def synthetic_tile_files():
+    chunk = {'kind': 'native-tile-chunk-runtime', 'schemaVersion': 1, 'tileId': SYNTHETIC_TILE_ID, 'chunkId': SYNTHETIC_TILE_CHUNK_ID,
+        'sectorRange': {'firstColumn': 0, 'lastColumn': 3, 'firstRow': 0, 'lastRow': 3}, 'terrain': None, 'models': [], 'bsp': None,
+        'collision': None, 'gaps': [synthetic_tile_pending_gap_row(step) for step in SYNTHETIC_TILE_PENDING_STEPS]}
+    chunk_path, chunk_bytes, chunk_pin = pinned_json_manifest('l2/maps/{sha256}/native-tile-chunk-runtime/manifest.json', chunk)
+    tile = {'kind': 'native-tile-runtime', 'schemaVersion': 1, 'tileId': SYNTHETIC_TILE_ID, 'sourceMap': f'maps/{SYNTHETIC_TILE_ID}.unr',
+        'sourceSha256': SYNTHETIC_TILE_SOURCE_SHA256,
+        'frame': {'terrainInfo': f'{SYNTHETIC_TILE_ID}.TerrainInfo0', 'location': [0, 0, 0], 'terrainScale': [1, 1, 1]},
+        'anchor': {'playerStart': f'{SYNTHETIC_TILE_ID}.PlayerStart0', 'location': [0, 0, 0]},
+        'chunks': [{'chunkId': SYNTHETIC_TILE_CHUNK_ID, **chunk_pin}], 'resources': [], 'gaps': []}
+    tile_path, tile_bytes, tile_pin = pinned_json_manifest('l2/tiles/{sha256}/tile.json', tile)
+    return {chunk_path: chunk_bytes, tile_path: tile_bytes}, {'id': SYNTHETIC_TILE_ID, **tile_pin}
+
+
 def golden_fixture_files(lock_directory):
     reference_lock = synthetic_reference_client_lock()
     reference_lock_bytes = json_bytes(reference_lock)
@@ -108,12 +138,13 @@ def golden_fixture_files(lock_directory):
     model_v1 = version_one_model_package('SyntheticModelVersionOne', glb)
     model_v2 = version_two_package('model', 'SyntheticModelVersionTwo', 'model.glb', glb, 'model/gltf-binary', client_build)
     audio_v2 = version_two_package('audio', 'SyntheticSound', 'audio.wav', synthetic_wav(), 'audio/wav', client_build)
+    tile_files, tile_record = synthetic_tile_files()
     catalog = {'schemaVersion': 1,
         'models': [catalog_model_record(model_v1, 'SyntheticModelVersionOne'), catalog_model_record(model_v2, 'SyntheticModelVersionTwo')],
-        'sections': [{'id': SYNTHETIC_SECTION_ID}], 'effectComponents': [{'id': SYNTHETIC_SKILL_EFFECT_COMPONENT_ID}]}
+        'sections': [{'id': SYNTHETIC_SECTION_ID}], 'effectComponents': [{'id': SYNTHETIC_SKILL_EFFECT_COMPONENT_ID}], 'tiles': [tile_record]}
     return {
         REFERENCE_CLIENT_LOCK_NAME: reference_lock_bytes, 'model-v1.l2asset': model_v1, 'model-v2.l2asset': model_v2,
-        'audio-v2.l2asset': audio_v2, 'l2/catalog.json': json_bytes(catalog),
+        'audio-v2.l2asset': audio_v2, 'l2/catalog.json': json_bytes(catalog), **tile_files,
     }
 
 

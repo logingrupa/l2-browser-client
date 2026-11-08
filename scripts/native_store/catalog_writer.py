@@ -6,18 +6,37 @@ import json
 from pathlib import Path
 import re
 import tempfile
+from typing import NamedTuple
 
-from native_store.store_paths import confined_child_path, refuse_reparse_points, require_portable_relative_path
+from native_store.store_paths import SHA256_PATTERN, confined_child_path, refuse_reparse_points, require_portable_relative_path
 
 KNOWN_CATALOG_SLICES = ('models', 'textures', 'sections', 'movers', 'npcProfiles', 'playerProfiles',
-                        'animationAudio', 'combatAudio', 'worldAudio', 'effectComponents')
+                        'animationAudio', 'combatAudio', 'worldAudio', 'effectComponents', 'tiles')
 NATIVE_RESOURCE_PATH_PATTERN = re.compile(r'^\/l2\/(?:[A-Za-z0-9_-][A-Za-z0-9._-]*\/)*[A-Za-z0-9_-][A-Za-z0-9._-]*$')
 MAXIMUM_CATALOG_BYTES = 32 * 1024 * 1024
+MAXIMUM_SAFE_INTEGER = 2 ** 53 - 1
 STORE_CATALOG_NAME = 'catalog.json'
+TILE_ID_PATTERN = re.compile(r'^\d{2}_\d{2}$')
+TILE_MANIFEST_PATH_PATTERN = re.compile(r'^/l2/tiles/(?P<sha256>[a-f0-9]{64})/tile\.json$')
+TILE_MANIFEST_MAXIMUM_BYTES = 8_000_000
+PINNED_MANIFEST_RECORD_FIELDS = ('id', 'manifest', 'manifestSha256', 'manifestBytes')
 
 
 class CatalogWriteError(ValueError):
     pass
+
+
+class PinnedManifestRecordShape(NamedTuple):
+    fields: tuple
+    id_pattern: re.Pattern
+    manifest_path_pattern: re.Pattern
+    maximum_manifest_bytes: int
+
+
+PINNED_MANIFEST_RECORD_SHAPES = {
+    'tiles': PinnedManifestRecordShape(PINNED_MANIFEST_RECORD_FIELDS, TILE_ID_PATTERN, TILE_MANIFEST_PATH_PATTERN,
+                                       TILE_MANIFEST_MAXIMUM_BYTES),
+}
 
 
 def sha256_hex(payload):
@@ -100,11 +119,52 @@ def read_store_catalog(store_root):
     return decode_store_catalog(payload), payload
 
 
-def merge_catalog_slice(catalog, slice_name, record, capacity):
+def is_safe_integer(value, minimum):
+    return type(value) is int and minimum <= value <= MAXIMUM_SAFE_INTEGER
+
+
+def require_pinned_path(path, sha256, path_pattern, error_type, label):
+    if not (isinstance(sha256, str) and SHA256_PATTERN.fullmatch(sha256)):
+        raise error_type(f'{label} SHA-256 must be 64 lowercase hex characters: {sha256!r}')
+    match = path_pattern.fullmatch(path) if isinstance(path, str) else None
+    if match is None or not NATIVE_RESOURCE_PATH_PATTERN.fullmatch(path):
+        raise error_type(f'{label} path must match {path_pattern.pattern}: {path!r}')
+    if match['sha256'] != sha256:
+        raise error_type(f'{label} path SHA-256 differs from its pin {sha256}: {path}')
+    return match
+
+
+def require_byte_length(byte_length, maximum_bytes, error_type, label):
+    if not (type(byte_length) is int and 0 < byte_length <= maximum_bytes):
+        raise error_type(f'{label} byte length must be an integer from 1 to {maximum_bytes}: {byte_length!r}')
+    return byte_length
+
+
+def validate_pinned_manifest_record(slice_name, record, shape):
+    label = f'catalog {slice_name} record {record["id"]}'
+    if set(record) != set(shape.fields):
+        raise CatalogWriteError(f'{label} must hold exactly {", ".join(shape.fields)}: {", ".join(sorted(record))}')
+    if not shape.id_pattern.fullmatch(record['id']):
+        raise CatalogWriteError(f'{label} id must match {shape.id_pattern.pattern}')
+    manifest_path_match = require_pinned_path(record['manifest'], record['manifestSha256'], shape.manifest_path_pattern,
+                                              CatalogWriteError, f'{label} manifest')
+    if 'id' in shape.manifest_path_pattern.groupindex and manifest_path_match['id'] != record['id']:
+        raise CatalogWriteError(f'{label} manifest file name must be the record id: {record["manifest"]}')
+    require_byte_length(record['manifestBytes'], shape.maximum_manifest_bytes, CatalogWriteError, f'{label} manifest')
+
+
+def validate_catalog_record(slice_name, record):
     if slice_name not in KNOWN_CATALOG_SLICES:
         raise CatalogWriteError(f'unknown catalog slice {slice_name}; slices: {", ".join(KNOWN_CATALOG_SLICES)}')
     if not (isinstance(record, dict) and isinstance(record.get('id'), str) and record['id']):
         raise CatalogWriteError(f'catalog {slice_name} record needs a string id')
+    if slice_name in PINNED_MANIFEST_RECORD_SHAPES:
+        validate_pinned_manifest_record(slice_name, record, PINNED_MANIFEST_RECORD_SHAPES[slice_name])
+    return record
+
+
+def merge_catalog_slice(catalog, slice_name, record, capacity):
+    validate_catalog_record(slice_name, record)
     if type(capacity) is not int or capacity < 1:
         raise CatalogWriteError(f'catalog {slice_name} capacity must be a positive integer: {capacity!r}')
     merged = copy.deepcopy(catalog)

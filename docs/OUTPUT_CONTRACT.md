@@ -107,10 +107,22 @@ neither.
 
 `/l2/catalog.json` is schemaVersion 1. Its slices are `models`, `textures`,
 `sections`, `movers`, `npcProfiles`, `playerProfiles`, `animationAudio`,
-`combatAudio`, `worldAudio` and `effectComponents`. A model record carries
-`id`, `archive` (`/l2/<archiveSha256>/asset.l2asset`), `archiveSha256` and
-`source.object`; manifest records carry `id`, `manifest`, `manifestSha256` and
-`manifestBytes`.
+`combatAudio`, `worldAudio`, `effectComponents` and `tiles`. A model record
+carries `id`, `archive` (`/l2/<archiveSha256>/asset.l2asset`), `archiveSha256`
+and `source.object`; manifest records carry `id`, `manifest`, `manifestSha256`
+and `manifestBytes`.
+
+`merge_catalog_slice` in `scripts/native_store/catalog_writer.py` calls
+`validate_catalog_record(slice_name, record)` before it merges, so a lane
+cannot add a malformed record. Every slice needs a non-empty string `id`. The
+new slices hold exactly these fields:
+
+| Slice | Record | Bounds |
+| --- | --- | --- |
+| `tiles` | `{id, manifest, manifestSha256, manifestBytes}` | `id` is `XX_YY`; `manifest` is `/l2/tiles/<manifestSha256>/tile.json`; `manifestBytes` 1 to 8,000,000 (`TILE_MANIFEST_MAXIMUM_BYTES`) |
+
+Every manifest path also matches the `nativeResourceUrl.ts` path rule, and
+the SHA-256 in the path equals the pinned `manifestSha256`.
 
 `buildNativeCatalogIndex` turns the catalog into L2-ID keys:
 
@@ -125,6 +137,86 @@ neither.
 Any other key answers `not-in-catalog` with a reason. The client loads assets
 only through `readNativeCatalog`. `recipes/native-inputs.lock.json` pins
 converter inputs only; it is not an output catalog (DEC-OWN-5).
+
+## Manifest kinds
+
+`scripts/native_store/tile_manifest_validation.py` validates the two tile
+kinds (`validate_tile_manifest`, `validate_tile_chunk_manifest`) and raises
+`TileManifestError`. Vectors are lists of three finite numbers; object names
+are qualified (`Package.Object`). Gap rows inside a manifest are valid gap
+rows keyed `tile:<tileId>`, one per step, sorted by step.
+
+`native-tile-runtime` v1, at `/l2/tiles/<sha>/tile.json`, one per tile:
+
+| Field | Value |
+| --- | --- |
+| `kind`, `schemaVersion` | `native-tile-runtime`, `1` |
+| `tileId` | `XX_YY` |
+| `sourceMap`, `sourceSha256` | `maps/<tileId>.unr` and its SHA-256 |
+| `frame` | `{terrainInfo, location, terrainScale}`: the TerrainInfo object and its `Location` and `TerrainScale` vectors |
+| `anchor` | `{playerStart, location}`: the first enabled PlayerStart in source order |
+| `chunks` | 1 to 256 `{chunkId, manifest, manifestSha256, manifestBytes}`, manifest `/l2/maps/<manifestSha256>/native-tile-chunk-runtime/manifest.json`, at most 8,000,000 bytes, sorted by (column, row) as integers, no chunk twice. A tile with no chunk is a gap row, not a manifest |
+| `resources` | `{kind, manifest, manifestSha256, manifestBytes}` with `kind` in the vocabulary below, a hash-addressed manifest path (`/l2/[<prefix>/]<manifestSha256>/<file>`), at most 128 MiB (the `.l2asset` archive limit), sorted by `(kind, manifest)`. One kind may appear several times; the same `(kind, manifest)` pair twice is refused |
+| `gaps` | Gap rows for the tile |
+
+`native-tile-chunk-runtime` v1, at
+`/l2/maps/<sha>/native-tile-chunk-runtime/manifest.json`, one per chunk of
+4x4 sectors (`CHUNK_SECTOR_SPAN`):
+
+| Field | Value |
+| --- | --- |
+| `kind`, `schemaVersion`, `tileId` | `native-tile-chunk-runtime`, `1`, `XX_YY` |
+| `chunkId` | `chunk-<column>-<row>`, 0-based on the 4x4-sector grid |
+| `sectorRange` | `{firstColumn, lastColumn, firstRow, lastRow}`; `firstColumn` and `firstRow` are multiples of 4, 1 to 4 sectors per axis, and the chunk id is `chunk-<firstColumn / 4>-<firstRow / 4>`, so neighbouring chunks share an edge and never overlap |
+| `terrain` | `null` or `{resource, sha256, maskUvRule}`; `maskUvRule` is in the vocabulary (`extrapolated` outside the 20_20 capture) |
+| `bsp`, `collision` | `null` or `{resource, sha256}`; collision is its own resource and is never fed by LOD |
+| `models` | Zero or more `{id, archive, archiveSha256, placements}`, archive `/l2/<archiveSha256>/asset.l2asset`, `placements` a list, no id twice |
+| `gaps` | Gap rows for the tile; a `null` terrain, bsp or collision needs a gap row for that step whose status is not `pass` |
+
+Component resource paths are hash-addressed like tile resources, with the
+SHA-256 in the path equal to `sha256`. The old `map-section-runtime` kind stays
+until the 20_20 chain retires.
+
+### Tile manifest vocabulary
+
+The integration base sets are `TILE_RESOURCE_KINDS_BASE = ()` and
+`MASK_UV_RULES_BASE = ('extrapolated',)`. Every other kind and mask rule comes
+from the world-owned `recipes/world/tile-manifest-vocabulary.json`, which
+`load_tile_manifest_vocabulary` unions with the base sets:
+
+```
+{"schemaVersion": 1, "listVersion": <integer of at least 1>,
+ "resourceKinds": [<non-empty string>], "maskUvRules": [<non-empty string>]}
+```
+
+- The validator requires the file. A missing file raises `TileManifestError`
+  naming its path; there is no fallback. Importing the module reads no file.
+- Exactly these four keys. Either list may be empty. A string repeated inside
+  a list, or equal to a base entry (so `extrapolated` never appears in the
+  file), is refused.
+- Creator: plan 02-16 creates it as `{schemaVersion: 1, listVersion: 1,
+  resourceKinds: [], maskUvRules: []}` before its first validation. No plan
+  creates it conditionally, and 02-04 never writes it.
+- Extenders: 02-30 `native-tile-collision`, 02-31 `movers`, 02-45 `sky` and
+  `world-audio`, 02-50 `minimap`, 02-61 `map-emitters` and `bsp-visibility`,
+  02-62 `lighting`. A world plan appends its kind or mask rule and bumps
+  `listVersion` by one per added entry, in the commit that adds the step
+  writing it and before that step's first validation. A kind or rule that is
+  not listed is refused, so a missing entry fails loudly.
+
+The DEC-OWN-12 tile resource kinds (provisional, owner review):
+
+- `native-tile-collision`: the BSPT group per map as a tile resource, and the
+  chunk `collision` resource with the VOLS, SMSH, PLAC, TERR and MOVR groups
+  (WORLD-08, MOVE-01).
+- `bsp-visibility`: one per tile (VIS-01).
+- `lighting`: one per tile (MAT-02).
+- `map-emitters`: the per-tile Emitter actor export (FX-01), a JSON manifest
+  like `movers`.
+
+The first three are `.l2asset` packages whose `asset.json` records units
+`source` and axes UE2 Z up (`.planning/PROJECT.md`), written by
+`scripts/world/typed_payload.py` and read by `src/shared/typedPayload.ts`.
 
 ## Lane stores
 
@@ -144,19 +236,12 @@ A lane store reuses the shared store prefixes exactly:
 | `npc-profiles/<sha>/`, `player-profiles/<sha>/` | NPC and player profiles |
 | `world-audio/<sha>/`, `animation-audio/<sha>/`, `combat-audio/<sha>/`, `step-sounds/<sha>/` | Audio bundles |
 | `effects/<sha>/`, `movers/<sha>/` | Effect components and movers |
+| `tiles/<sha>/tile.json`, `maps/<sha>/native-tile-chunk-runtime/manifest.json` | Tile and chunk manifests (see "Manifest kinds") |
 | `skies/`, `environments/` | Outside the catalog |
 
-The prefix `/l2/models/<sha>/` is never used. New kinds get new prefixes in
-plan 02-04. That one contract change registers three tile resource kinds
-together (DEC-OWN-12, provisional, owner review): `bsp-visibility` (one per
-tile, VIS-01), `native-tile-collision` (BSPT per map; VOLS, SMSH, PLAC, TERR
-and MOVR per chunk; WORLD-08, MOVE-01) and `lighting` (one per tile, MAT-02).
-Each is an `.l2asset` whose `asset.json` records units (source) and axes
-(UE2, Z up), written by `scripts/world/typed_payload.py` and read by
-`src/shared/typedPayload.ts`. The per-tile Emitter actor export (FX-01) is
-registered in the same change, as its own kind or as a field of an existing
-kind. Every resource name satisfies the `nativeResourceUrl.ts` path
-rule. Beside `l2/`, a lane folder holds `work/` (the unit ledger, plan 02-02),
+The prefix `/l2/models/<sha>/` is never used. The tile resource kinds,
+including the DEC-OWN-12 kinds, are listed under "Manifest kinds". Every
+resource name satisfies the `nativeResourceUrl.ts` path rule. Beside `l2/`, a lane folder holds `work/` (the unit ledger, plan 02-02),
 `gap-rows/` (plan 02-02) and `load-checks/` (plan 02-06).
 
 Output guard: `require_converter_output` accepts only a dedicated folder under
