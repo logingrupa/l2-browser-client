@@ -50,5 +50,7 @@ test(`dev cold start of the ${nativeSandboxRoute.name} route requests no Editor 
   const measurementPath = testInfo.outputPath(`dev-startup-${nativeSandboxRoute.name}.json`);
   await writeFile(measurementPath, JSON.stringify(measurement, null, 2));
   await testInfo.attach(`dev-startup-${nativeSandboxRoute.name}`, { path: measurementPath, contentType: "application/json" });
+  expect(measurement.millisecondsToReady, "the world reached data-world-state=ready within the budget").not.toBeNull();
+  expect(measurement.failedRequests).toEqual([]);
   expect(measurement.editorToolsRequestCount).toBe(0);
 });
