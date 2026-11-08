@@ -25,7 +25,7 @@ function serve(files: Map<string, Uint8Array>) {
   const fetcher = vi.fn(async (url: string) => {
     const bytes = files.get(url);
     if (!bytes) throw new Error(`Unexpected request ${url}`);
-    return { ok: true, arrayBuffer: async () => bytes.slice().buffer, json: async () => JSON.parse(new TextDecoder().decode(bytes)) };
+    return new Response(bytes.slice());
   });
   vi.stubGlobal("fetch", fetcher);
   return fetcher;
