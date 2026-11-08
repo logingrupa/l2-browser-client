@@ -44,7 +44,8 @@ function acceptedEvent(command: WorldCommand): WorldEvent | null {
   return null;
 }
 
-function attachWithFakes(selectedEntityId: string | null = "native-musveren", indexFailure: string | null = null, adapterAcceptsCommands = true) {
+function attachWithFakes(selectedEntityId: string | null = "native-musveren", indexFailure: string | null = null, adapterAcceptsCommands = true,
+  activePlayerProfileId = "human-male-fighter") {
   const dispatched: WorldCommand[] = [];
   const listeners = new Set<(event: WorldEvent) => void>();
   const adapter = {
@@ -58,7 +59,7 @@ function attachWithFakes(selectedEntityId: string | null = "native-musveren", in
   const powerStrike = { start: vi.fn(async () => {}) };
   const section = sandboxSection();
   const release = attachSandboxCommandSheet({ section, adapter, index: fakeCatalogIndex, indexFailure, appearanceOfModel: () => "native-musveren",
-    selectedEntityId: () => selectedEntityId, powerStrike });
+    selectedEntityId: () => selectedEntityId, activePlayerProfileId, powerStrike });
   const panel = section.element as unknown as FakeElement;
   const submit = (testId: string, values: Record<string, string>) => {
     const form = panel.querySelector(`[data-testid="${testId}"]`)!;
@@ -100,7 +101,7 @@ describe("sandbox equip item by ID", () => {
     const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, undefined, 22);
     const section = sandboxSection();
     const release = attachSandboxCommandSheet({ section, adapter, index: fakeCatalogIndex, indexFailure: null, appearanceOfModel: () => "native-musveren",
-      selectedEntityId: () => null, powerStrike: null });
+      selectedEntityId: () => null, activePlayerProfileId: "human-male-fighter", powerStrike: null });
     const panel = section.element as unknown as FakeElement;
     const form = panel.querySelector('[data-testid="sandbox-equip-item"]')!;
     form.querySelector('[data-testid="sandbox-equip-item-itemId"]')!.value = "22";
@@ -111,6 +112,15 @@ describe("sandbox equip item by ID", () => {
     expect(equipNotes[0]!.dataset.tone).toBe("info");
     release();
     adapter.dispose();
+  });
+
+  it("warns that item 22 is converted only for the staged profiles when another character is loaded", () => {
+    const { dispatched, submit, note } = attachWithFakes("native-musveren", null, true, "human-male-mystic");
+    submit("sandbox-equip-item", { itemId: "22" });
+    expect(dispatched).toEqual([{ type: "equip-item", slot: "upper", itemId: 22 }]);
+    expect(note("sandbox-equip-item")).toHaveLength(1);
+    expect(note("sandbox-equip-item")[0]!.textContent).toBe("item:22 converted for human-male-fighter, not for human-male-mystic");
+    expect(note("sandbox-equip-item")[0]!.dataset.tone).toBe("warning");
   });
 
   it("still dispatches item 999999 and warns that it is not in the catalog", () => {

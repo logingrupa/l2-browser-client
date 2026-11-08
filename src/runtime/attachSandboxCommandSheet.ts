@@ -17,6 +17,7 @@ export interface SandboxCommandSheetContext {
   readonly indexFailure: string | null;
   readonly appearanceOfModel: SandboxAppearanceOfModel;
   readonly selectedEntityId: () => string | null;
+  readonly activePlayerProfileId: string;
   readonly powerStrike: Pick<NativePowerStrikePreview, "start"> | null;
 }
 
@@ -57,6 +58,15 @@ function lookupTone(lookup: NativeCatalogLookup): ResultTone {
   return lookup.status === "converted" ? "info" : "warning";
 }
 
+function showEquipLookupForActiveProfile(showResult: (text: string, tone: ResultTone) => void, lookup: NativeCatalogLookup,
+  activePlayerProfileId: string): void {
+  if (lookup.status !== "converted" || !("playerProfileIds" in lookup.record) || lookup.record.playerProfileIds.includes(activePlayerProfileId)) {
+    showResult(describeNativeCatalogLookup(lookup), lookupTone(lookup));
+    return;
+  }
+  showResult(`${lookup.key} converted for ${lookup.record.playerProfileIds.join(", ")}, not for ${activePlayerProfileId}`, "warning");
+}
+
 function describeSpawnPresentation(presentation: SandboxNpcPresentation): string {
   return "missingAssetDiagnostic" in presentation ? presentation.missingAssetDiagnostic
     : `${presentation.key} converted, model ${presentation.modelCatalogId}`;
@@ -93,7 +103,7 @@ function attachEquipItemGroup(context: SandboxCommandSheetContext): void {
   group.idEntry({
     label: "Equip item", testId: "sandbox-equip-item", submitText: "Equip",
     fields: [{ name: "itemId", label: "Item ID", kind: "integer", minimum: 0 }],
-    hint: "Dispatches equip-item for the local player through the adapter and reports whether the item is converted.",
+    hint: "Dispatches equip-item for the local player through the adapter and reports whether the item is converted for the loaded character.",
     variables: () => [
       { name: "sandbox.equip.slot", value: () => sandboxEquipmentSlot, values: sandboxEquipmentSlot,
         source: `${catalogIndexSource}: staged items are upper body only; other slots need decoded item data (DATA-01)`, status: "presentation" },
@@ -106,7 +116,7 @@ function attachEquipItemGroup(context: SandboxCommandSheetContext): void {
         event => event.type === "update" && event.entity.id === "local-player" && event.entity.equipment?.[sandboxEquipmentSlot] === itemId);
       lastLookup = context.index.lookup(itemCatalogKey(itemId));
       if (!accepted) showResult(`${lastLookup.key}: equip rejected by the adapter`, "warning");
-      else showResult(describeNativeCatalogLookup(lastLookup), lookupTone(lastLookup));
+      else showEquipLookupForActiveProfile(showResult, lastLookup, context.activePlayerProfileId);
     },
   });
 }
