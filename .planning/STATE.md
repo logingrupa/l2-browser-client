@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-09-PLAN.md
-last_updated: "2026-11-08T17:11:20.839Z"
+stopped_at: Completed 02-56-PLAN.md
+last_updated: "2026-11-08T17:30:52.737Z"
 last_activity: 2026-11-08
-last_activity_desc: Phase 02 plan 02-09 complete (Converter source digests from the guard, evidence export manifest)
-state_head: 071288ed570e8d048505a0178748c88e09f209ec
+last_activity_desc: Phase 02 plan 02-56 complete (shared Babylon-free modules, typed payload reader and source frame)
+state_head: 34b5fea9749ea7dd5c589ffc6270ea159709a629
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 86
-  completed_plans: 25
+  completed_plans: 26
   percent: 0
 ---
 
@@ -77,6 +77,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 2 P06 | 20min | 3 tasks | 13 files |
 | Phase 2 P08 | 20min | 3 tasks | 7 files |
 | Phase 02 P09 | 12min | 3 tasks | 10 files |
+| Phase 02 P56 | 17 min | 3 tasks | 28 files |
 
 ## Accumulated Context
 
@@ -148,6 +149,10 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-09: the owner's SHA-256 proof (a763a0c) wins over the plan's size and time shortcut; Converter digests come from the guard's identity-cached proof, no second memo (OVERNIGHT row 141)
 - [Phase 02]: 02-09: new converter outputs keep logs, non-glTF work files and evidence/export-manifest.json; intermediate .gltf and .bin are hash-listed only (row 144)
 - [Phase 02]: 02-09: export-native-sounds.py verifies the export manifest exactly; converterVersion change makes earlier cache records miss once (rows 145, 146)
+- [Phase 02]: Plan 02-56: typed payload layout is list order at 4-byte boundaries with zero padding and no trailing bytes, names <GROUP>.<field> (row 150)
+- [Phase 02]: Plan 02-56: sourceFrame heading 0 along source +X, 16384 along source +Y, as Babylon rotation.y = -heading * pi / 32768 (row 151)
+- [Phase 02]: Plan 02-56: placement uses the sine table like native_map_geometry.py; the half-turn entry is its own unconfirmed row (row 152)
+- [Phase 02]: Plan 02-56: MOVE-01, VIS-01, MAT-01 and FX-01 stay Pending; shared foundations only (row 156)
 
 ### Pending Todos
 
@@ -198,6 +203,6 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-08T17:11:11.725Z
-Stopped at: Completed 02-09-PLAN.md
+Last session: 2026-11-08T17:30:52.400Z
+Stopped at: Completed 02-56-PLAN.md
 Resume file: None
