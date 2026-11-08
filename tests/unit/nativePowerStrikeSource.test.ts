@@ -30,12 +30,17 @@ function fixture(index = 0): AssetPackage {
 function event(asset: AssetPackage, index = variants[0].index): Record<string, unknown> {
   return asset.manifest.animationEvents![index] as Record<string, unknown>;
 }
-function alterSidecar(asset: AssetPackage, edit: (value: any) => void) {
-  const source = asset.files.get("animation-source.json")!, value = JSON.parse(new TextDecoder().decode(source)); edit(value);
-  const encoded = new TextEncoder().encode(JSON.stringify(value));
+interface AnimationSourceClip { name: string; sourceDurationSeconds: number; sourceMotionSha256: string }
+interface AnimationSourceSidecar { parts: { animationSet: string; clips: AnimationSourceClip[] }[] }
+function alterSidecar(asset: AssetPackage, edit: (sidecar: AnimationSourceSidecar) => void) {
+  const source = asset.files.get("animation-source.json")!, sidecar = JSON.parse(new TextDecoder().decode(source)) as AnimationSourceSidecar; edit(sidecar);
+  const encoded = new TextEncoder().encode(JSON.stringify(sidecar));
   expect(encoded.length).toBeLessThanOrEqual(source.length);
   const bytes = new Uint8Array(source.length).fill(32); bytes.set(encoded);
   (asset.files as Map<string, Uint8Array>).set("animation-source.json", bytes);
+}
+function maleSpecialAttackClip(sidecar: AnimationSourceSidecar): AnimationSourceClip {
+  return sidecar.parts[6]!.clips.find(clip => clip.name === variants[0].clip)!;
 }
 function alterClipList(asset: AssetPackage, animations: unknown[]) {
   const original = asset.files.get("model.glb")!, bytes = original.slice(), view = new DataView(bytes.buffer);
@@ -61,21 +66,21 @@ describe("retained Power Strike source-event qualification", () => {
   });
 
   it.each([
-    ["asset identity", (a: AssetPackage) => { a.manifest.id = "interlude:assembly:Other"; }],
-    ["source package", (a: AssetPackage) => { a.manifest.source.package = "Other"; }],
-    ["source object", (a: AssetPackage) => { a.manifest.source.object = "Fighter.FFighter_m001_u"; }],
-    ["source hash", (a: AssetPackage) => { a.manifest.source.sha256 = "0".repeat(64); }],
-    ["source edition", (a: AssetPackage) => { Object.assign(a.manifest.source, { edition: "high-five" }); }],
-    ["source version", (a: AssetPackage) => { a.manifest.source.packageVersion = 122; }],
-    ["assembly missing", (a: AssetPackage) => { a.manifest.source.assembly = []; }],
-    ["assembly duplicate", (a: AssetPackage) => { const rows = a.manifest.source.assembly as string[]; rows[1] = rows[0]!; }],
-    ["model pin", (a: AssetPackage) => { a.manifest.files.find(f => f.path === "model.glb")!.sha256 = "0".repeat(64); }],
-    ["animation-source pin", (a: AssetPackage) => { a.manifest.files.find(f => f.path === "animation-source.json")!.sha256 = "0".repeat(64); }],
-    ["duplicate model inventory", (a: AssetPackage) => { a.manifest.files.push({ ...a.manifest.files.find(f => f.path === "model.glb")! }); }],
-    ["source unit", (a: AssetPackage) => { a.manifest.coordinates!.sourceUnitsPerMetre = 1; }],
-    ["coordinate basis", (a: AssetPackage) => { a.manifest.coordinates!.sourceToGltf[0] = 1; }],
-    ["missing coordinates", (a: AssetPackage) => { delete a.manifest.coordinates; }],
-    ["schemaVersion 3", (a: AssetPackage) => { Object.assign(a.manifest, { schemaVersion: 3 }); }],
+    ["asset identity", (asset: AssetPackage) => { asset.manifest.id = "interlude:assembly:Other"; }],
+    ["source package", (asset: AssetPackage) => { asset.manifest.source.package = "Other"; }],
+    ["source object", (asset: AssetPackage) => { asset.manifest.source.object = "Fighter.FFighter_m001_u"; }],
+    ["source hash", (asset: AssetPackage) => { asset.manifest.source.sha256 = "0".repeat(64); }],
+    ["source edition", (asset: AssetPackage) => { Object.assign(asset.manifest.source, { edition: "high-five" }); }],
+    ["source version", (asset: AssetPackage) => { asset.manifest.source.packageVersion = 122; }],
+    ["assembly missing", (asset: AssetPackage) => { asset.manifest.source.assembly = []; }],
+    ["assembly duplicate", (asset: AssetPackage) => { const rows = asset.manifest.source.assembly as string[]; rows[1] = rows[0]!; }],
+    ["model pin", (asset: AssetPackage) => { asset.manifest.files.find(file => file.path === "model.glb")!.sha256 = "0".repeat(64); }],
+    ["animation-source pin", (asset: AssetPackage) => { asset.manifest.files.find(file => file.path === "animation-source.json")!.sha256 = "0".repeat(64); }],
+    ["duplicate model inventory", (asset: AssetPackage) => { asset.manifest.files.push({ ...asset.manifest.files.find(file => file.path === "model.glb")! }); }],
+    ["source unit", (asset: AssetPackage) => { asset.manifest.coordinates!.sourceUnitsPerMetre = 1; }],
+    ["coordinate basis", (asset: AssetPackage) => { asset.manifest.coordinates!.sourceToGltf[0] = 1; }],
+    ["missing coordinates", (asset: AssetPackage) => { delete asset.manifest.coordinates; }],
+    ["schemaVersion 3", (asset: AssetPackage) => { Object.assign(asset.manifest, { schemaVersion: 3 }); }],
   ] as const)("rejects changed %s", (_label, mutate) => {
     const asset = fixture(); mutate(asset); const result = resolveNativePowerStrikeShotSource(asset, variants[0].clip);
     expect(result.source).toBeNull(); expect(result.reason).toEqual(expect.any(String));
@@ -97,12 +102,12 @@ describe("retained Power Strike source-event qualification", () => {
 
   it("rejects missing, duplicated, aliased and relocated events", () => {
     for (const modify of [
-      (a: AssetPackage) => { a.manifest.animationEvents = []; },
-      (a: AssetPackage) => { a.manifest.animationEvents!.push(structuredClone(event(a))); },
-      (a: AssetPackage) => { a.manifest.animationEvents!.push({ ...event(a), object: "Fighter.OtherShot" }); },
-      (a: AssetPackage) => { a.manifest.animationEvents!.push({ ...event(a), clip: "other" }); },
-      (a: AssetPackage) => { const rows = a.manifest.animationEvents!; [rows[89], rows[90]] = [rows[90], rows[89]]; },
-      (a: AssetPackage) => { a.manifest.animationEvents![0] = null; },
+      (asset: AssetPackage) => { asset.manifest.animationEvents = []; },
+      (asset: AssetPackage) => { asset.manifest.animationEvents!.push(structuredClone(event(asset))); },
+      (asset: AssetPackage) => { asset.manifest.animationEvents!.push({ ...event(asset), object: "Fighter.OtherShot" }); },
+      (asset: AssetPackage) => { asset.manifest.animationEvents!.push({ ...event(asset), clip: "other" }); },
+      (asset: AssetPackage) => { const rows = asset.manifest.animationEvents!; [rows[89], rows[90]] = [rows[90], rows[89]]; },
+      (asset: AssetPackage) => { asset.manifest.animationEvents![0] = null; },
     ]) { const asset = fixture(); modify(asset); expect(resolveNativePowerStrikeShotSource(asset, variants[0].clip).source).toBeNull(); }
   });
 
@@ -125,12 +130,12 @@ describe("retained Power Strike source-event qualification", () => {
 
   it("requires all seven matching source part clips and never repairs sidecars", () => {
     for (const modify of [
-      (v: any) => { v.parts.pop(); },
-      (v: any) => { v.parts[6].animationSet = "Fighter.Other_anim"; },
-      (v: any) => { v.parts[6].clips.find((c: any) => c.name === variants[0].clip).sourceDurationSeconds = 1.5; },
-      (v: any) => { v.parts[6].clips.find((c: any) => c.name === variants[0].clip).sourceMotionSha256 = "0".repeat(64); },
-      (v: any) => { v.parts[6].clips = v.parts[6].clips.filter((c: any) => c.name !== variants[0].clip); },
-      (v: any) => { const c = v.parts[6].clips.find((c: any) => c.name === variants[0].clip); v.parts[6].clips = [c, c]; },
+      (sidecar: AnimationSourceSidecar) => { sidecar.parts.pop(); },
+      (sidecar: AnimationSourceSidecar) => { sidecar.parts[6]!.animationSet = "Fighter.Other_anim"; },
+      (sidecar: AnimationSourceSidecar) => { maleSpecialAttackClip(sidecar).sourceDurationSeconds = 1.5; },
+      (sidecar: AnimationSourceSidecar) => { maleSpecialAttackClip(sidecar).sourceMotionSha256 = "0".repeat(64); },
+      (sidecar: AnimationSourceSidecar) => { sidecar.parts[6]!.clips = sidecar.parts[6]!.clips.filter(clip => clip.name !== variants[0].clip); },
+      (sidecar: AnimationSourceSidecar) => { const clip = maleSpecialAttackClip(sidecar); sidecar.parts[6]!.clips = [clip, clip]; },
     ]) {
       const asset = fixture(); alterSidecar(asset, modify); const before = asset.files.get("animation-source.json")!.slice();
       expect(resolveNativePowerStrikeShotSource(asset, variants[0].clip).source).toBeNull();
