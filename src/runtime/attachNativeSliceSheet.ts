@@ -39,7 +39,6 @@ export interface NativeSliceSheetContext {
   settings: NativeSliceSettings;
   playerProfile: NativePlayerProfile;
   playerChoices: ReadonlyMap<string, NativePlayerProfile>;
-  playerClips: NativePlayerProfile["clips"];
   profileStagesLeatherShirt: boolean;
   archiveHashes: ReadonlyMap<string, string> | undefined;
   clipPreview: NativeClipPreviewHub;

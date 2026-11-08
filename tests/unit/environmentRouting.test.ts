@@ -53,7 +53,7 @@ describe("environment routing", () => {
     expect(runtimeScene).toBe(scene);
     expect(runtimeCamera).toBe(camera);
     expect(options?.worldSource).toBe(catalogNativeSliceWorldSource);
-    expect(settings.fighterIdle).toBe("Wait_1HS_MFighter");
+    expect(settings).not.toHaveProperty("fighterIdle");
     expect(settings.leatherShirt).toBe(true);
     expect(settings.materialTint?.asArray()).toEqual([0.45, 1, 0.6]);
     expect(options?.requireWorld).toBe(true);

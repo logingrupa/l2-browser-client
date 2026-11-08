@@ -12,11 +12,7 @@ export interface NativePlayerProfile {
   readonly assetId: string;
   readonly sourceObject: string;
   readonly sourceSha256: string;
-  /** Native-family alias map: idle/run/attack/death required, every other
-   * key optional (src/assets/native/nativeAnimationAliases.ts). Missing
-   * optional aliases are reported through aliasEvidence, never invented. */
   readonly clips: NativePlayerClips;
-  /** Per-alias native key/status/reason from scripts/prepare-native-player-aliases.py. */
   readonly aliasEvidence?: NativeAliasEvidence;
   readonly forwardAxis: readonly [number, number, number];
   readonly actorScale: readonly [number, number, number];
@@ -28,8 +24,6 @@ export interface NativePlayerProfile {
   readonly limitations: readonly string[];
 }
 
-/** Preserve the existing male slice and authored clip overrides when no added
- * profile is selected. New variants are data in immutable staged manifests. */
 export const defaultNativePlayerProfile: NativePlayerProfile = {
   id: "human-male-fighter", name: "Human male fighter", catalogId: "human-male-fighter:0",
   assetId: "interlude:assembly:MFighter-native-body-face0-hair0", sourceObject: "Fighter.MFighter_m001_u",
@@ -84,7 +78,6 @@ function parseAliasEvidence(value: unknown, clips: NativePlayerClips): NativeAli
       Object.keys(entry).some(key => !evidenceRowFields.includes(key))) throw new Error("Native player alias evidence row is invalid or duplicated.");
     seen.add(alias);
     const clip = clips[alias];
-    // A bound native status needs its clip; an unbound one needs a reason and no clip.
     if (bound.has(status) ? clip === undefined : clip !== undefined || entry.reason === undefined) {
       throw new Error(`Native player alias ${alias} evidence disagrees with its clip.`);
     }
@@ -128,10 +121,7 @@ function parseProfile(value: unknown): NativePlayerProfile {
     sourceEvidence, limitations: row.limitations.map((v: unknown) => string(v)) };
 }
 
-/** A staged row may carry the built-in male fighter's alias map only when its
- * package, source, scale, collision, facing, equipment and core clips are the
- * built-in values exactly; the default player stays that male fighter. */
-function supersedesBuiltIn(profile: NativePlayerProfile): boolean {
+function matchesBuiltInMaleFighterIdentity(profile: NativePlayerProfile): boolean {
   const builtIn = defaultNativePlayerProfile;
   return profile.catalogId === builtIn.catalogId && profile.assetId === builtIn.assetId && profile.sourceObject === builtIn.sourceObject &&
     profile.sourceSha256 === builtIn.sourceSha256 && profile.collisionRadius === builtIn.collisionRadius &&
@@ -160,7 +150,7 @@ export async function loadNativePlayerProfiles(records: unknown, signal: AbortSi
     for (const row of manifest.profiles) {
       const profile = parseProfile(row);
       const builtIn = profile.id === defaultNativePlayerProfile.id && !replacedBuiltIn;
-      if (builtIn && !supersedesBuiltIn(profile)) throw new Error("Native player profile differs from the built-in male fighter identity.");
+      if (builtIn && !matchesBuiltInMaleFighterIdentity(profile)) throw new Error("Native player profile differs from the built-in male fighter identity.");
       if (profiles.has(profile.id) && !builtIn) throw new Error("Native player profile identity is duplicated.");
       if (builtIn) replacedBuiltIn = true;
       profiles.set(profile.id, profile);

@@ -16,8 +16,7 @@ vi.mock("../../src/assets/native/readNativeCatalog", async importOriginal => ({
     animationAudio: [], combatAudio: [], worldAudio: [], effectComponents: [] }),
 }));
 
-const settings: NativeSliceSettings = { origin: new Vector3(0, 0, 0), leatherShirt: false,
-  fighterIdle: "Wait", fighterRun: "Run", fighterAttack: "Attack", fighterDeath: "Death" };
+const settings: NativeSliceSettings = { origin: new Vector3(0, 0, 0), leatherShirt: false };
 
 describe("native slice world source", () => {
   let engine: NullEngine, scene: Scene, camera: ArcRotateCamera;

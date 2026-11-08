@@ -157,12 +157,7 @@ describe("native animation alias maps", () => {
     expect(profiles.get("human-male-mystic")).toMatchObject({ collisionRadius: 7.5, collisionHeight: 22.8 });
     expect(profiles.get("human-female-mystic")).toMatchObject({ collisionRadius: 6.5, collisionHeight: 22.5 });
   });
-  it("reports authored overrides and profiles without evidence without inventing clips", async () => {
-    const male = (await load(recipe.profiles)).get("human-male-fighter")!;
-    const edited = nativeAliasCoverage(male.clips, male.aliasEvidence, { idle: "Wait_1HS_MFighter", run: "Run_1HS_MFighter", attack: "Atk01_1HS_MFighter", death: "Death_MFighter" });
-    expect(edited.bound).toBe(45);
-    expect(edited.rows.find(row => row.alias === "idle")).toMatchObject({ status: "authored-override", nativeClip: "Wait_Hand_MFighter", clip: "Wait_1HS_MFighter" });
-    expect(edited.rows.find(row => row.alias === "death")).toMatchObject({ status: "exact", clip: "Death_MFighter" });
+  it("reports profiles without evidence without inventing clips", () => {
     const bare = nativeAliasCoverage(defaultNativePlayerProfile.clips, undefined);
     expect(nativeAliasCoverageText(bare)).toBe("4 of 46 aliases");
     expect(bare.rows.find(row => row.alias === "damage")).toMatchObject({ status: "no-evidence", summary: "no staged alias evidence" });

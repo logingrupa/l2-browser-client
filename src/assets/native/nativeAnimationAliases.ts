@@ -71,7 +71,7 @@ export interface NativeAliasEvidence {
   readonly rows: readonly NativeAliasEvidenceRow[];
 }
 
-export type NativeAliasCoverageStatus = NativeAliasStatus | "authored-override" | "no-evidence";
+export type NativeAliasCoverageStatus = NativeAliasStatus | "no-evidence";
 
 export interface NativeAliasCoverageRow {
   readonly alias: NativeAnimationAlias;
@@ -79,7 +79,6 @@ export interface NativeAliasCoverageRow {
   readonly field: string;
   readonly key: string;
   readonly nativeClip: string | null;
-  readonly clip: string | null;
   readonly status: NativeAliasCoverageStatus;
   readonly reason: string | null;
   readonly summary: string | null;
@@ -111,18 +110,17 @@ function summarizeMissingHitReactionClip(rows: NativeAliasCoverageRow[]): void {
   }
 }
 
-export function nativeAliasCoverage(clips: NativePlayerClips, evidence: NativeAliasEvidence | undefined,
-  clipsPlayedBySemanticState: Readonly<Partial<Record<string, string>>> = clips): NativeAliasCoverage {
+export function nativeAliasCoverage(clips: NativePlayerClips, evidence: NativeAliasEvidence | undefined): NativeAliasCoverage {
   const rows: NativeAliasCoverageRow[] = [];
   const evidenceRows = new Map((evidence?.rows ?? []).map(row => [row.alias, row]));
   for (const definition of nativeAnimationAliases) {
     const row = evidenceRows.get(definition.alias);
-    const native = clips[definition.alias] ?? null, played = clipsPlayedBySemanticState[definition.alias] ?? native;
+    const native = clips[definition.alias] ?? null;
     const key = row?.key ?? (definition.field === "PcSocialAnimName" ? `PcSocialAnimName[${definition.alias.slice(6)}]` : `${definition.field}[0]`);
-    const status: NativeAliasCoverageStatus = !row ? "no-evidence" : played !== null && native !== null && played !== native ? "authored-override" : row.status;
-    const unbound = native === null && played === null;
+    const status: NativeAliasCoverageStatus = row ? row.status : "no-evidence";
+    const unbound = native === null;
     const reason = row?.reason ?? (unbound ? "This profile carries no staged alias evidence (scripts/prepare-native-player-aliases.py → stage_native_players.py)." : null);
-    rows.push({ alias: definition.alias, group: definition.group, field: definition.field, key, nativeClip: native, clip: played,
+    rows.push({ alias: definition.alias, group: definition.group, field: definition.field, key, nativeClip: native,
       status, reason, summary: unbound ? unboundSummaries[row?.status ?? "no-evidence"] ?? "no native clip" : null,
       reference: row?.reference ?? null, line: row?.line ?? null, selectionPath: row?.selectionPath ?? null });
   }

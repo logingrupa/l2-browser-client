@@ -40,10 +40,6 @@ export interface NativeSliceSettings {
   playerProfileId?: string;
   origin: Vector3;
   leatherShirt: boolean;
-  fighterIdle: string;
-  fighterRun: string;
-  fighterAttack: string;
-  fighterDeath: string;
   materialOverrideEnabled?: boolean;
   materialEntityId?: string;
   materialSource?: string;
@@ -80,9 +76,6 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
   const playerChoices = catalog.playerProfiles ?? new Map([[playerProfile.id, playerProfile]]);
   const usesDefaultPlayerProfile = playerProfile.id === defaultNativePlayerProfile.id;
   const appearanceId = usesDefaultPlayerProfile ? "native-human-fighter" : `native-player:${playerProfile.id}`;
-  const playerClipsWithSavedFighterEdits = () => usesDefaultPlayerProfile
-    ? { idle: settings.fighterIdle, run: settings.fighterRun, attack: settings.fighterAttack, death: settings.fighterDeath }
-    : playerProfile.clips;
   const assets: ReadonlyMap<string, AssetPackage> = catalog.models, musveren = catalog.npcProfiles.get("npc:21622");
   validateLifetime();
   if (![playerProfile.catalogId, "musveren:0", ...playerProfile.upperItems.map(item => item.catalogId)].every(id => assets.has(id))) {
@@ -95,7 +88,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
   const fighter = assets.get(playerProfile.catalogId)!, monster = assets.get("musveren:0")!;
   const profiles = new Map<string, NativeCharacterProfile>([
     [appearanceId, { asset: fighter,
-      clips: playerClipsWithSavedFighterEdits(),
+      clips: playerProfile.clips,
       upperItems: new Map(playerProfile.upperItems.map(item => [item.itemId, assets.get(item.catalogId)!])),
       forwardAxis: Vector3.FromArray(playerProfile.forwardAxis), actorScale: Vector3.FromArray(playerProfile.actorScale) }],
     ["native-musveren", { asset: monster, collisionHalfHeight: musveren!.collisionHeight / musveren!.sourceUnitsPerMetre,
@@ -257,7 +250,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       boundaryReleases.push(() => effectCamera?.dispose());
     }
     const nativeSliceSheet = attachNativeSliceSheet({ scene, camera, canvas, ui, adapter, registry, settings, playerProfile, playerChoices,
-      playerClips: playerClipsWithSavedFighterEdits(), profileStagesLeatherShirt, archiveHashes: catalog.archiveHashes, clipPreview,
+      profileStagesLeatherShirt, archiveHashes: catalog.archiveHashes, clipPreview,
       locomotionClips, specialAttackPreview, world, audio: nativeAudio, footsteps, footstepGround, combatAudio, combatFailure, effects,
       cameraControls: { follow, frameWorld, frameFlame, flamePlacementIds, isFollowingFighter: () => followFighter },
       focusEffectCamera: () => effectCamera?.focus(), isDisposed: () => disposed, addRelease });

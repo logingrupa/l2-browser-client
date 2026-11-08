@@ -12,10 +12,6 @@ export default class NativeParityScript implements IScript {
   @visibleAsString("Player profile") playerProfileId = nativeSandboxConfiguration.playerProfileId;
   @visibleAsBoolean("Start with Leather Shirt (item 22)") leatherShirt = nativeSandboxConfiguration.leatherShirt;
   @visibleAsVector3("Synthetic actor origin") origin = Vector3.FromArray(nativeSandboxConfiguration.origin);
-  @visibleAsString("Fighter idle clip") fighterIdle = nativeSandboxConfiguration.fighterIdle;
-  @visibleAsString("Fighter run clip") fighterRun = nativeSandboxConfiguration.fighterRun;
-  @visibleAsString("Fighter attack clip") fighterAttack = nativeSandboxConfiguration.fighterAttack;
-  @visibleAsString("Fighter death clip") fighterDeath = nativeSandboxConfiguration.fighterDeath;
   @visibleAsBoolean("Enable material override", { group: "Native material" }) materialOverrideEnabled = nativeSandboxConfiguration.materialOverrideEnabled;
   @visibleAsString("Actor ID", { group: "Native material" }) materialEntityId = nativeSandboxConfiguration.materialEntityId;
   @visibleAsString("Source material", { group: "Native material" }) materialSource = nativeSandboxConfiguration.materialSource;

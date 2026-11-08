@@ -63,7 +63,7 @@ export function attachNativeAnimationAliasTable(host: HTMLElement, options: Nati
     const name = document.createElement("span"); name.className = "native-alias-name"; name.setAttribute("role", "rowheader");
     name.textContent = row.alias; name.dataset.devSearch = `${row.alias} ${row.key} ${row.group}`;
     const cell = document.createElement("span"); cell.className = "native-alias-cell"; cell.setAttribute("role", "cell");
-    const clip = row.nativeClip ?? row.clip;
+    const clip = row.nativeClip;
     if (clip) {
       const play = document.createElement("button"); play.type = "button"; play.className = "native-alias-play";
       play.dataset.clip = clip; play.setAttribute("aria-pressed", "false");
@@ -108,16 +108,15 @@ export function attachNativeAnimationAliasTable(host: HTMLElement, options: Nati
 }
 
 function tagFor(row: NativeAliasCoverageRow): string | null {
-  if (row.status === "authored-override") return "Editor";
   if (row.status === "no-evidence") return "no evidence";
   return null;
 }
 
 function rowInfo(row: NativeAliasCoverageRow, options: NativeAliasTableOptions): DevInfo {
-  const clip = row.nativeClip ?? row.clip;
+  const clip = row.nativeClip;
   const where = row.reference ? `${row.reference}${row.line ? ` (LineageWarrior.int line ${row.line})` : ""}` : "no localized value";
   const description = clip
-    ? `${row.key}${options.family ? ` (${options.family} family)` : ""} → ${clip}. Tap the clip to play it once on your character; the requested state resumes after it.${row.status === "authored-override" ? ` The fighter's ${row.alias} state plays the Editor-saved ${row.clip} instead.` : ""}`
+    ? `${row.key}${options.family ? ` (${options.family} family)` : ""} → ${clip}. Tap the clip to play it once on your character; the requested state resumes after it.`
     : row.reason ?? "No native clip is bound to this alias.";
   const variables = (): VariableInfo[] => [
     { name: "alias.key", value: () => row.key, values: `${row.field}[index]`, source: where, status: "native" },
@@ -126,8 +125,6 @@ function rowInfo(row: NativeAliasCoverageRow, options: NativeAliasTableOptions):
       values: "exact | case-only | no-family-value | missing-clip | conflict-unresolved · base-class-direct-getter | unverified",
       source: "scripts/report-native-animation-aliases.py → prepare-native-player-aliases.py (staged aliasEvidence)",
       status: row.status === "no-evidence" || row.selectionPath === "unverified" ? "unverified" : "native" },
-    ...(row.status === "authored-override" ? [{ name: "alias.editorClip", value: () => row.clip ?? "-", values: "Editor-saved fighter clip",
-      source: "native scene settings (fighterIdle/Run/Attack/Death)", status: "presentation" as const }] : []),
     ...(clip ? [{ name: "alias.preview", value: () => options.previewing() === clip ? "playing" : "stopped", values: "playing | stopped",
       source: "browser clip preview: one pass on the local actor, never a world-state change (presentation choice - native dispatch unverified)", status: "presentation" as const }] : []),
   ];

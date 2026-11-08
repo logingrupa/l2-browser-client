@@ -83,8 +83,7 @@ describe("native slice runtime lifetime", () => {
   let worldSource: NativeSliceWorldSource;
   const startRuntime = (runtimeSettings: NativeSliceSettings, signal: AbortSignal, options: NativeSliceRuntimeOptions = {}) =>
     createNativeSliceRuntime(scene, camera, runtimeSettings, signal, { worldSource, ...options });
-  const settings: NativeSliceSettings = { origin: new Vector3(2, 3, 4), leatherShirt: true,
-    fighterIdle: "Wait", fighterRun: "Run", fighterAttack: "Attack", fighterDeath: "Death" };
+  const settings: NativeSliceSettings = { origin: new Vector3(2, 3, 4), leatherShirt: true };
   beforeEach(() => {
     boundaries.uis.length = 0; boundaries.registries.length = 0; boundaries.sheetGroups.clear();
     boundaries.load.mockReset(); boundaries.section.mockReset(); boundaries.flames.mockReset(); boundaries.camera.mockReset(); boundaries.targeting.mockReset();
@@ -118,9 +117,10 @@ describe("native slice runtime lifetime", () => {
   });
 
   it("lists the received sandbox settings and the scene presentation on the sheet with their provenance label", async () => {
-    stops.push(await startRuntime({ ...settings, fighterIdle: "Received idle" }, new AbortController().signal));
+    stops.push(await startRuntime({ ...settings, materialEntityId: "Received actor" }, new AbortController().signal));
     const sandboxVariables = boundaries.sheetGroups.get("sandbox-settings")!.variables!();
-    expect(sandboxVariables.find(variable => variable.name === "sandbox.fighterIdle")!.value()).toBe("Received idle");
+    expect(sandboxVariables.find(variable => variable.name === "sandbox.materialEntityId")!.value()).toBe("Received actor");
+    expect(sandboxVariables.some(variable => variable.name.startsWith("sandbox.fighter"))).toBe(false);
     const presentationVariables = boundaries.sheetGroups.get("scene-presentation")!.variables!();
     expect(presentationVariables.some(variable => variable.name === "presentation.fog.mode")).toBe(true);
     for (const variable of [...sandboxVariables, ...presentationVariables]) expect(variable.source?.endsWith(formerlyEditorAuthoredStatusLabel)).toBe(true);
@@ -610,11 +610,12 @@ describe("native slice runtime lifetime", () => {
     expect(boundaries.uis).toEqual([]); expect(boundaries.registries).toEqual([]); expect(boundaries.section).not.toHaveBeenCalled();
   });
 
-  it("preserves saved male clip overrides and default player identity", async () => {
+  it("keeps the default player identity and plays its sourced profile clips, never an Editor-saved override", async () => {
     stops.push(await startRuntime(settings, new AbortController().signal));
     expect(boundaries.load.mock.calls[0]![1]).toBe("human-male-fighter");
     const profiles = boundaries.factory.mock.calls[0]![0];
-    expect(profiles.get("native-human-fighter").clips).toEqual({ idle: "Wait", run: "Run", attack: "Attack", death: "Death" });
+    expect(profiles.get("native-human-fighter").clips).toEqual(defaultNativePlayerProfile.clips);
+    expect(profiles.get("native-human-fighter").clips.idle).toBe("Wait_Hand_MFighter");
     expect(boundaries.uis[0]!.adapter.getInitialState().find(entity => entity.id === "local-player"))
       .toMatchObject({ appearanceId: "native-human-fighter", displayName: "Human male fighter" });
   });

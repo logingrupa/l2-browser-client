@@ -32,8 +32,7 @@ export function presentationConfigurationVariables(configuration: PresentationCo
   ];
 }
 
-const savedScriptSettingFields = ["leatherShirt", "origin", "fighterIdle", "fighterRun", "fighterAttack", "fighterDeath",
-  "materialOverrideEnabled", "materialEntityId", "materialSource", "materialTint", "materialRoughness"] as const;
+const savedScriptSettingFields = ["leatherShirt", "origin", "materialOverrideEnabled", "materialEntityId", "materialSource", "materialTint", "materialRoughness"] as const;
 const unsavedCodeDefaultSettingFields = ["playerProfileId", "flamePreviewEnabled", "flameTextureSeconds", "flameFadeSeconds",
   "flameTextureRate", "flameFadeRate"] as const;
 

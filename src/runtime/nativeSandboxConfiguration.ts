@@ -4,10 +4,6 @@ export interface NativeSandboxConfiguration {
   playerProfileId: string;
   leatherShirt: boolean;
   origin: Vector3Tuple;
-  fighterIdle: string;
-  fighterRun: string;
-  fighterAttack: string;
-  fighterDeath: string;
   materialOverrideEnabled: boolean;
   materialEntityId: string;
   materialSource: string;
@@ -26,10 +22,6 @@ export const nativeSandboxConfiguration: NativeSandboxConfiguration = {
   playerProfileId: "human-male-fighter",
   leatherShirt: true,
   origin: [0, 0, 0],
-  fighterIdle: "Wait_1HS_MFighter",
-  fighterRun: "Run_Hand_MFighter",
-  fighterAttack: "Atk01_Hand_MFighter",
-  fighterDeath: "Death_MFighter",
   materialOverrideEnabled: false,
   materialEntityId: "local-player",
   materialSource: "MFighter.UpBody.MFighter_m001_t04_u",

@@ -32,27 +32,27 @@ describe("presentation configuration sheet variables", () => {
     expect(byName.get("presentation.fog.mode")!.source).toBe(`assets/native-parity.scene/config.json - ${formerlyEditorAuthoredStatusLabel}`);
   });
 
-  it("lists the sandbox player, clip, shirt and material settings with the same label", () => {
+  it("lists the sandbox player, shirt and material settings with the same label and no clip override", () => {
     const variables = nativeSandboxSettingVariables(nativeSandboxConfiguration);
     const byName = new Map(variables.map(variable => [variable.name, variable]));
-    for (const field of ["playerProfileId", "fighterIdle", "fighterRun", "fighterAttack", "fighterDeath", "leatherShirt",
+    for (const field of ["playerProfileId", "leatherShirt",
       "materialOverrideEnabled", "materialEntityId", "materialSource", "materialTint", "materialRoughness"]) {
       const variable = byName.get(`sandbox.${field}`);
       expect(variable, field).toBeDefined();
       expect(variable!.status).toBe("presentation");
       expect(variable!.source?.endsWith(formerlyEditorAuthoredStatusLabel)).toBe(true);
     }
-    expect(byName.get("sandbox.fighterIdle")!.value()).toBe("Wait_1HS_MFighter");
+    expect([...byName.keys()].some(name => name.startsWith("sandbox.fighter"))).toBe(false);
     expect(byName.get("sandbox.materialTint")!.value()).toBe("0.45, 1, 0.6");
-    expect(byName.get("sandbox.fighterIdle")!.source).toBe(`${nativeSandboxConfiguration.source.savedScriptValues} - ${formerlyEditorAuthoredStatusLabel}`);
+    expect(byName.get("sandbox.leatherShirt")!.source).toBe(`${nativeSandboxConfiguration.source.savedScriptValues} - ${formerlyEditorAuthoredStatusLabel}`);
     expect(byName.get("sandbox.playerProfileId")!.source).toBe(`${nativeSandboxConfiguration.source.unsavedCodeDefaults} - ${formerlyEditorAuthoredStatusLabel}`);
   });
 
   it("reads the settings the runtime received, including vector values", () => {
-    const variables = nativeSandboxSettingVariables({ ...nativeSandboxConfiguration, fighterIdle: "Edited idle",
+    const variables = nativeSandboxSettingVariables({ ...nativeSandboxConfiguration, materialEntityId: "Edited actor",
       origin: new Vector3(1, 2, 3), materialTint: new Vector3(0.1, 0.2, 0.3) });
     const byName = new Map(variables.map(variable => [variable.name, variable]));
-    expect(byName.get("sandbox.fighterIdle")!.value()).toBe("Edited idle");
+    expect(byName.get("sandbox.materialEntityId")!.value()).toBe("Edited actor");
     expect(byName.get("sandbox.origin")!.value()).toBe("1, 2, 3");
     expect(byName.get("sandbox.materialTint")!.value()).toBe("0.1, 0.2, 0.3");
   });

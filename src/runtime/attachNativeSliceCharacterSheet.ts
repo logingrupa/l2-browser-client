@@ -32,7 +32,7 @@ function attachEquipmentGroup(section: DevSection, context: NativeSliceSheetCont
 function attachAnimationAliasGroup(section: DevSection, context: NativeSliceSheetContext, tools: NativeSliceSheetTools): void {
   const { registry, playerProfile, clipPreview, ui } = context;
   const aliasEvidence = playerProfile.aliasEvidence;
-  const aliasCoverage = nativeAliasCoverage(playerProfile.clips, aliasEvidence, context.playerClips);
+  const aliasCoverage = nativeAliasCoverage(playerProfile.clips, aliasEvidence);
   const archiveSha256 = context.archiveHashes?.get(playerProfile.catalogId) ?? null;
   const aliasGroup = section.group("aliases", "Animation aliases", {
     hint: "Every native animation alias of this model: the Engine.Pawn localized key (WT_HAND family, index 0; socials PcSocialAnimName[N]) and the exact package clip it names. Tap a clip to play it once on your character. 'damage' stays empty: no class section assigns DamageAnimName and Interlude has no hit-reaction clip; Damagefly_<Class> (DamageFlyAnimName) is a knock-back.",

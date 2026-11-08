@@ -5,6 +5,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { nativeSandboxConfiguration } from "../../src/runtime/nativeSandboxConfiguration";
 import { nativeSandboxPresentation } from "../../src/scene/presentationConfiguration";
+import { defaultNativePlayerProfile } from "../../src/assets/native/loadNativePlayerProfiles";
 
 const staged = existsSync(resolve("public/l2/catalog.json"));
 const evidence = resolve(process.env.NATIVE_SLICE_EVIDENCE ?? "artifacts/native-parity/browser");
@@ -26,10 +27,10 @@ function objects(value: unknown): Record<string, unknown>[] {
 }
 interface SourceRig { modelSha256: string; skeletonBones: number[]; skinMeshes: number; clips: string[] }
 async function sandboxState() {
-  const { leatherShirt, fighterIdle, fighterRun, fighterAttack, materialOverrideEnabled, materialEntityId, materialSource,
-    materialTint, materialRoughness } = nativeSandboxConfiguration;
-  const settings = { leatherShirt, fighterIdle, fighterRun, fighterAttack, materialOverrideEnabled, materialEntityId, materialSource,
-    materialTint: [...materialTint], materialRoughness };
+  const { leatherShirt, materialOverrideEnabled, materialEntityId, materialSource, materialTint, materialRoughness } = nativeSandboxConfiguration;
+  const settings = { leatherShirt, materialOverrideEnabled, materialEntityId, materialSource, materialTint: [...materialTint], materialRoughness };
+  const { idle, run, attack } = defaultNativePlayerProfile.clips;
+  const clips = { idle, run, attack };
   const { alpha, beta, radius } = nativeSandboxPresentation.camera;
   const camera = { alpha, beta, radius };
   const catalog = object(JSON.parse(await readFile(resolve("public/l2/catalog.json"), "utf8")));
@@ -61,8 +62,8 @@ async function sandboxState() {
   expect(fighter.skeletonBones).toEqual([70, 70, 70, 70, 1, 1, 1]); expect(fighter.skinMeshes).toBe(7);
   expect(armor.skeletonBones).toEqual([70]); expect(armor.skinMeshes).toBe(1);
   expect(musveren.skeletonBones).toEqual([49]); expect(musveren.skinMeshes).toBe(2);
-  for (const clip of [settings.fighterIdle, settings.fighterRun, settings.fighterAttack]) expect(fighter.clips).toContain(clip);
-  return { settings, camera, fighter, armor, musveren };
+  for (const clip of [clips.idle, clips.run, clips.attack]) expect(fighter.clips).toContain(clip);
+  return { settings, clips, camera, fighter, armor, musveren };
 }
 type SandboxState = Awaited<ReturnType<typeof sandboxState>>;
 function assertRigs(snapshot: Awaited<ReturnType<typeof read>>, sandbox: SandboxState, equipped: boolean, hasMusveren = true) {
@@ -116,7 +117,7 @@ async function ready(page: Page, sandbox: SandboxState) {
   await expect(page.getByTestId("entity-count")).toHaveText("2", { timeout: 120_000 });
   await expect.poll(async () => (await read(page)).entities.filter(item => !item.isFallback).length, { timeout: 90_000 }).toBe(2);
   await waitForEquipment(page, sandbox.settings.leatherShirt);
-  await expect.poll(async () => (await entity(page)).playback?.activeClip).toBe(sandbox.settings.fighterIdle);
+  await expect.poll(async () => (await entity(page)).playback?.activeClip).toBe(sandbox.clips.idle);
   const state = await read(page);
   expect(state.camera?.radius).toBeCloseTo(sandbox.camera.radius, 10);
   expect(state.camera?.alpha).toBeCloseTo(sandbox.camera.alpha, 10);
@@ -163,7 +164,7 @@ test("native packages retain rigs, change equipment, hold death, move and clean 
     }
   }
   await page.getByRole("button", { name: "Run", exact: true }).click();
-  await expect.poll(async () => (await entity(page)).playback?.activeClip).toBe(sandbox.settings.fighterRun);
+  await expect.poll(async () => (await entity(page)).playback?.activeClip).toBe(sandbox.clips.run);
   const pose = (await entity(page)).pose.flat();
   await expect.poll(async () => (await entity(page)).pose.flat().reduce((sum, value, index) => sum + Math.abs(value - (pose[index] ?? value)), 0)).toBeGreaterThan(.1);
   await page.getByTestId("dev-sheet-toggle").click();
@@ -184,7 +185,7 @@ test("native packages retain rigs, change equipment, hold death, move and clean 
   await waitForEquipment(page, true);
   const equipped = await entity(page);
   assertRigs(await read(page), sandbox, true);
-  expect(equipped.playback?.activeClip).toBe(sandbox.settings.fighterRun);
+  expect(equipped.playback?.activeClip).toBe(sandbox.clips.run);
   await page.getByRole("button", { name: "Starter shirt", exact: true }).click();
   await waitForEquipment(page, false);
   await assertMaterialOverride(page, sandbox);
@@ -206,13 +207,13 @@ test("native packages retain rigs, change equipment, hold death, move and clean 
   await page.screenshot({ path: resolve(evidence, "native-death.png") });
   await page.getByTestId("dev-sheet-toggle").click();
   await page.getByRole("button", { name: "Attack", exact: true }).click();
-  await expect.poll(async () => (await entity(page)).playback?.activeClip).toBe(sandbox.settings.fighterAttack);
-  await expect.poll(async () => (await entity(page)).playback?.activeClip, { timeout: 35_000 }).toBe(sandbox.settings.fighterIdle);
+  await expect.poll(async () => (await entity(page)).playback?.activeClip).toBe(sandbox.clips.attack);
+  await expect.poll(async () => (await entity(page)).playback?.activeClip, { timeout: 35_000 }).toBe(sandbox.clips.idle);
   expect((await entity(page, "native-musveren")).pose).toEqual(dead.pose);
   await page.getByTestId("dev-tab-general").click();
   await page.getByRole("button", { name: "Pause", exact: true }).click();
   await page.getByRole("button", { name: "Attack", exact: true }).click();
-  expect((await entity(page)).playback).toMatchObject({ activeClip: sandbox.settings.fighterAttack, frame: 0, looping: false });
+  expect((await entity(page)).playback).toMatchObject({ activeClip: sandbox.clips.attack, frame: 0, looping: false });
   await page.getByRole("button", { name: "Idle", exact: true }).click();
   await page.getByTestId("dev-tab-combat").click();
   await page.getByRole("button", { name: "Revive Musveren", exact: true }).click();
@@ -252,7 +253,7 @@ test("native actors and equipment remain usable on a landscape phone", async ({ 
     await ready(page, sandbox);
     const initial = await read(page);
     await page.getByRole("button", { name: "Run", exact: true }).tap();
-    await expect.poll(async () => (await entity(page)).playback?.activeClip).toBe(sandbox.settings.fighterRun);
+    await expect.poll(async () => (await entity(page)).playback?.activeClip).toBe(sandbox.clips.run);
     await page.getByTestId("dev-sheet-toggle").tap();
     await page.getByTestId("dev-tab-character").tap();
     await page.getByRole("button", { name: "Leather shirt", exact: true }).tap();

@@ -72,11 +72,11 @@ describe("native Editor script lifetime", () => {
     const firstSignal = runtime.start.mock.calls[0]![3];
     script.onStop(); script.onStop();
     expect(firstSignal.aborted).toBe(true); expect(firstStop).toHaveBeenCalledTimes(1);
-    script.leatherShirt = true; script.fighterIdle = "Wait_1HS_MFighter";
+    script.leatherShirt = true; script.materialEntityId = "native-musveren";
     script.onStart(); await settle();
     const [, , settings, secondSignal] = runtime.start.mock.calls[1]!;
     expect(secondSignal).not.toBe(firstSignal); expect(secondSignal.aborted).toBe(false);
-    expect(settings.leatherShirt).toBe(true); expect(settings.fighterIdle).toBe("Wait_1HS_MFighter");
+    expect(settings.leatherShirt).toBe(true); expect(settings.materialEntityId).toBe("native-musveren");
     script.onStop(); expect(secondStop).toHaveBeenCalledTimes(1);
   });
 
