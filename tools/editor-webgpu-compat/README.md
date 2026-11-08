@@ -1,5 +1,7 @@
 # Editor WebGPU compiler and UV2 compatibility
 
+Scope: this plugin serves the optional Babylon.js Editor viewer only (DEC-OWN-8, NOED-05). `pnpm dev` and `pnpm build` do not need it (NOED-02); see [docs/EDITOR_VIEWER.md](../../docs/EDITOR_VIEWER.md).
+
 This local CommonJS plugin targets Babylon.js Editor 5.5.3's bundled Babylon
 9.27.1. The Editor supplies a resolved GLSL compiler object, but Babylon's
 `prepareGlslangAndTintAsync()` calls `.then()` on that option. The plugin wraps
