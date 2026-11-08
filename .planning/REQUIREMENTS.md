@@ -19,7 +19,7 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 - [x] **ARCH-01**: The client never computes gameplay outcomes; it displays what a server sends. Tooltips read server-side stats, not the `.dat` display copies in `weapongrp`, `armorgrp`, `skillgrp`.
 - [x] **ARCH-02**: `GameWorldAdapter` is the only way gameplay state enters the client; its five methods stay frozen (a contract test fails on change); adapters emit typed records with no Babylon types.
 - [x] **ARCH-03**: The native route reports missing or failed resources visibly and never presents procedural stand-ins; the startup readiness barrier is kept. Inherited by every later phase.
-- [ ] **ARCH-04**: Client-owned behaviour stays in presentation: animation, camera, UI, choosing which footstep or hit sound plays, effect timing, smoothing movement between server updates. Asset resolution and audio playback stay outside the adapter.
+- [x] **ARCH-04**: Client-owned behaviour stays in presentation: animation, camera, UI, choosing which footstep or hit sound plays, effect timing, smoothing movement between server updates. Asset resolution and audio playback stay outside the adapter.
 
 ### Editor off the build and runtime path (Phase 1, integration thread, before Phase 2 lanes start; DEC-OWN-8)
 
@@ -27,7 +27,7 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 - [ ] **NOED-02**: `pnpm dev` and `pnpm build` no longer run `babylonjs-editor-cli pack`, `ensure-webgpu-project`, `validate-editor-materials`, `preserve-native-editor-uv2`, `preserve-native-editor-fog` or `share-native-terrain-export-materials`, and do not need the l2-editor-webgpu-compat plugin. These move to an optional `pnpm generate:editor`. `stage-webgpu-compilers` stays in dev and build, because `src/engine/createWebGPUEngine.ts` loads glslang and twgsl from `/vendor/babylon/9.27.1/` at runtime. A test fails if the default entry statically imports `babylonjs-editor-tools` or the generated `src/scripts.ts`.
 - [x] **NOED-03**: The legacy courtyard demo (`assets/example.scene`, loaded through `loadScene` in `src/scene/loadEnvironment.ts`) is retired, or kept only behind `pnpm generate:editor`. A clean checkout's default view no longer loads an Editor scene.
 - [x] **NOED-04**: Babylon Inspector opens in the sandbox with `?inspect=1`, lazy-loaded by dynamic import and absent from the default bundle; `@babylonjs/inspector` is pinned to the same exact version as `@babylonjs/core`.
-- [ ] **NOED-05**: The Editor stays an optional viewer: `project.bjseditor` and `pnpm assets:editor` remain, and no test, build step, lane or phase gate depends on them. Revisit only if the SpacetimeDB route starts authoring new, non-L2 content.
+- [x] **NOED-05**: The Editor stays an optional viewer: `project.bjseditor` and `pnpm assets:editor` remain, and no test, build step, lane or phase gate depends on them. Revisit only if the SpacetimeDB route starts authoring new, non-L2 content.
 
 ### Sandbox
 
@@ -167,13 +167,13 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 | ARCH-01 | Phase 1 | Complete |
 | ARCH-02 | Phase 1 | Complete |
 | ARCH-03 | Phase 1 | Complete |
-| ARCH-04 | Phase 1 | Pending |
+| ARCH-04 | Phase 1 | Complete |
 | SAND-01 | Phase 1 | Complete |
 | NOED-01 | Phase 1 | Complete |
 | NOED-02 | Phase 1 | Pending |
 | NOED-03 | Phase 1 | Complete |
 | NOED-04 | Phase 1 | Complete |
-| NOED-05 | Phase 1 | Pending |
+| NOED-05 | Phase 1 | Complete |
 | SAND-02 | Phase 2 | Pending |
 | DATA-01 | Phase 2 | Pending |
 | DATA-02 | Phase 2 | Pending |
@@ -226,4 +226,4 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 
 ---
 *Requirements defined: 2026-11-08*
-*Last updated: 2026-11-08 after DEC-OWN-8 (Editor off the build and runtime path)*
+*Last updated: 2026-11-08 after the phase 1 verification ticked ARCH-04 and NOED-05*
