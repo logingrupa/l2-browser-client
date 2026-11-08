@@ -98,7 +98,7 @@ connected in the browser.
 Separately, both existing male/female `SpAtk01_1HS` clips contain four direct
 Sound notifications each, verified against seven original WAVs. The later
 [world integration](../artifacts/native-parity/research/native-human-special-attack-20261107/REPORT.md)
-plays those clips/cues through **Demo controls → Special attack preview**,
+plays those clips/cues through **Dev → Combat › Actions → Special attack preview**,
 reusing the existing actor packages and source clocks. It preserves the normal
 Hand attack and adds no weapon or equipment selection. These cues do not
 establish live family/rate selection or synchronized skill/table/particle
@@ -162,8 +162,8 @@ rebuilds do not certify native-to-browser visual parity.
 ## Browser component viewer — 2026-11-07
 
 The later [component checkpoint](../artifacts/native-parity/research/native-power-strike-components-20261107/REPORT.md)
-implements the missing bounded presentation adapter. **Demo controls → Power
-Strike component** offers Off and all six retained components, with manual
+implements the missing bounded presentation adapter. **Dev → Effects ›
+Power Strike components** offers Off and all six retained components, with manual
 texture frames and enabled color keys. **Inspect component** frames the selected
 resource at its actual preview scale; reselecting a frame can end inspection,
 so use Inspect again for a close view. Special attack preview independently

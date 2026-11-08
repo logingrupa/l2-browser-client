@@ -223,7 +223,7 @@ verification procedure; its complete acceptance is not implied by native Play.
 2. In the Editor dashboard choose **Import project**, select `project.bjseditor`, and open the project. Verify that the package manager is pnpm and `assets/example.scene` is the active scene.
 3. Inspect the ground, lighting, and camera in the scene graph. Change a visible property, such as the sun's intensity or the ground material color. Record the old and new values.
 4. Save the scene, close the project, reopen it, and confirm the value and visible appearance persisted. The Editor may rewrite native JSON and geometry resources; those are the authored source files to review and commit.
-5. Use **Play current scene** in the preview toolbar. Confirm six dynamic entities, procedural animations, labels, targeting, demo controls, and diagnostics. Stop play and confirm runtime characters are removed from the editing scene.
+5. Use **Play current scene** in the preview toolbar. Confirm six dynamic entities, procedural animations, labels, targeting, the Dev sheet (Dev button), and diagnostics. Stop play and confirm runtime characters are removed from the editing scene.
 6. Use **Play project as-is** to run the project's `pnpm dev` command. Alternatively run `pnpm dev` in a terminal. Confirm the saved environment edit is also visible there; both paths export and load the same authored scene.
 7. Restore the original value if the edit was only a verification exercise, save again, and rerun the checks.
 

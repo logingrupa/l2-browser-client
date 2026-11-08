@@ -44,7 +44,9 @@ is complete for explicit surface/sample selection using twenty original WAVs.
 The [locomotion checkpoint](../artifacts/native-parity/research/native-human-locomotion-20261107/REPORT.md)
 now connects both fighters' original Walk/Run clips and events to move-to travel,
 with four passing hardware WebGPU route/profile cases. Gait changes preserve
-the destination; both retain the existing synthetic 0.7 m/s. The new
+the destination. Both gaits used a synthetic 0.7 m/s at that checkpoint; they
+now use aCis server data `humanFighter.xml` (walk 80 / run 115 units/s =
+0.80 / 1.15 m/s, run starting at walk speed for 0.4 s). The new
 [ground-contact checkpoint](../artifacts/native-parity/research/native-ground-contact-20261107/REPORT.md)
 now retains accepted mesh/triangle support beside footstep events. Source male
 desktop and authored female mobile traverse all eight indoor waypoints with
@@ -320,7 +322,7 @@ The user identified the local source workspace as `C:\laragon\www\lineagen`. Ins
 - Earlier validation evidence: `.assets\evidence\`; this evidence belongs to the source workflow, not this destination's verification.
 - Existing Blender executable: `.assets\tools\blender\blender-5.0.1-windows-x64\blender.exe`.
 
-`pnpm assets:stage` copies the four source-original GLBs unchanged into ignored `public/assets/characters/`. The current local integration instead stages the verified corrected copies with `pnpm assets:stage artifacts/asset-integration/repair/converted`; rerunning the plain command restores the original grounding defects. Elyra uses FFighter, Orin uses MFighter and Seren uses MMagic; the three monsters remain procedural. The fourth profile, FMagic, is included in `/tests/browser/assetInspection.html` alongside the other candidates. A clean clone without local binaries retains animated fallbacks. Neither staged artwork nor asset screenshots are published by this task.
+**Superseded (2026-11-08):** this lineagen GLB phase is retired. `pnpm assets:stage` now runs `scripts/stage_native_players.py`, which stages the four native Interlude Human exports (MFighter, FFighter, MMagic, FMagic) into ignored `public/l2/` at native scale (exporter 0.01 + actor DrawScale + class collision; no height fitting or grounding repair). Each binds 45 of 46 animation aliases (`damage` has no native clip). `scripts/stage-character-assets.mjs`, `/tests/browser/assetInspection.html` and `legacyWorldScale.ts` are deleted, and `pnpm build` excludes `public/assets/characters/` and `public/assets/world/`. Historically, the command copied the four source-original GLBs into ignored `public/assets/characters/` (or the corrected copies from `artifacts/asset-integration/repair/converted`). Elyra uses FFighter, Orin uses MFighter and Seren uses MMagic, now as native packages; the three monsters remain procedural. A clean clone without staged packages retains animated fallbacks. Neither staged artwork nor asset screenshots are published by this task.
 
 The reused offline validator freshly passed both the original and repaired four-file sets and all 467 clips with zero errors. Current strict typecheck, build, **44 unit tests** and **14 browser tests** passed; one opt-in repair-measurement test is intentionally skipped in ordinary runs. Dense post-repair skinning, native one-shots/retrigger, independent instances, cleanup, all nine baseline behaviors and desktop/mobile captures are verified. Eleven unused equipment-family clips retain measured floor defects, documented with the smallest repair in the audit. The destination remains pinned to Babylon 9.27.1; earlier source browser evidence used 9.33.0. Physical-device performance and desktop Editor/MCP checks remain unverified.
 

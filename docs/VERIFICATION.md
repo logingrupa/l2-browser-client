@@ -153,9 +153,12 @@ unique passing cases after its runtime UI test double was updated (167 combined,
 not the sum of overlapping attempts). Production build/typecheck pass. Existing
 source/asset pins, authored geometry, corrected primary UV and UV2 remain intact.
 This reuses the earlier footstep mute/volume evidence without rerunning the
-sound corpus. Both gaits use the unchanged synthetic 0.7 m/s; native speeds,
-surface/random/spatial selection, physical-speaker and native-reference parity
-remain unverified. No new interactive Editor save or performance pass is claimed.
+sound corpus. At this checkpoint both gaits used the unchanged synthetic
+0.7 m/s; they now use aCis server data (walk 0.80, run 1.15 m/s, 0.4 s run
+start), and footsteps follow the native support order with all 16 surfaces
+(see [NATIVE_AUDIO.md](NATIVE_AUDIO.md)). The deco-grass approximation, random
+seed and spatial listener are labelled presentation choices; physical-speaker
+and native-reference parity remain unverified. No new interactive Editor save or performance pass is claimed.
 
 ## Editor channels and environment source tables — 2026-11-07
 
@@ -864,7 +867,8 @@ Evidence: `artifacts/native-parity/research/flame-runtime/`.
   **5 passing cases** in `browser-precision-fixed.log`. Its corrupt-archive case
   then failed because actor-ready messages replaced the transient error notice.
   Recovery itself retained the world and actors. The narrow fix keeps the
-  effect explanation independently in Demo controls.
+  effect explanation independently in the controls (now **Dev → World ›
+  Flames**).
 - Corrected corrupt-archive case and ordinary actor desktop/mobile/fallback:
   **4/4 passed**, 1.9 minutes (`browser-final.log`). Equipment replacement,
   skinning, one-shot death, movement, cleanup and animated missing-asset fallback

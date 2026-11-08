@@ -19,7 +19,9 @@ the still-unresolved sky boundary. This update is local, without deployment.
 Sky/audio update, 2026-11-06: both routes now include the
 [original sky room](NATIVE_SKY.md) as a frozen source preview, plus six
 [original death cues](NATIVE_AUDIO.md) with gesture unlock, mute and volume in
-Demo controls. The sky's hard color boundary and native animation/composition
+the developer sheet (**Dev → Audio**). Music, ambience, footsteps and fighter
+combat sounds are now connected as well (see the current section of
+[NATIVE_AUDIO.md](NATIVE_AUDIO.md)). The sky's hard color boundary and native animation/composition
 remain unresolved. Other audio categories and native playback matching are
 still incomplete. This does not claim overall 1:1 or complete the active goal.
 

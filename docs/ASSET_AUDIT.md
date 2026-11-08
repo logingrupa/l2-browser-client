@@ -695,13 +695,9 @@ The existing `apply_grounding.py` was copied into **destination** `artifacts/ass
 
 `repair/evidence/repair-integrity.json` proves the original binary payload prefix, all nodes/skins/meshes/materials, embedded PNG bytes, **460 unaffected animations**, and every rotation/scale channel are unchanged. Only seven `bip01` translation samplers reference appended data. Horizontal differences are at most `1.21e-7` m from float quantization. `repair/evidence/blend-glb-consistency.json` passes with maximum checked bounds difference **1.334 mm** between the repaired Blender and GLB poses. The reused offline validator passes all four repaired GLBs and 467 clips with zero errors; the seven existing hierarchy warnings per file remain. Unused original accessor information is retained intentionally rather than compacting the original graph.
 
-The active local runtime files are staged from the repaired directory:
+Historically (2026-11-04), the active local runtime files were staged from the repaired directory with `pnpm assets:stage artifacts/asset-integration/repair/converted`, which copied the repaired GLBs into ignored `public/assets/characters/` and recorded their hashes in `public/assets/characters/local-inventory.json`.
 
-```sh
-pnpm assets:stage artifacts/asset-integration/repair/converted
-```
-
-This copies the repaired GLBs into ignored `public/assets/characters/`; it does not modify source inputs. Running plain `pnpm assets:stage` instead restores the original source outputs, including their measured floor defects. `public/assets/characters/local-inventory.json` records the actual staged hashes.
+**Superseded (2026-11-08):** that staging script (`scripts/stage-character-assets.mjs`) is deleted. `pnpm assets:stage` now runs `scripts/stage_native_players.py` with the native Interlude Human exports at native scale, the client no longer loads these GLBs, and `pnpm build` excludes `public/assets/characters/`. The table below records the historical files only.
 
 | Active local file | Bytes | SHA-256 |
 | --- | ---: | --- |

@@ -40,8 +40,8 @@ Corrupt or unsupported effect data retains the valid world and original material
 
 ## Inspection and authoring
 
-Open `/?world=interlude` or `/?world=interlude&authored=1`. **Demo controls →
-Inspect flame** cycles through the twelve placements; **Follow fighter** returns
+Open `/?world=interlude` or `/?world=interlude&authored=1`. **Dev → World ›
+Flames → Inspect flame** cycles through the twelve placements; **Follow fighter** returns
 to the actor camera. FPS remains visible.
 
 The attached `NativeParityScript` declares a **Flame replay** group: enable,

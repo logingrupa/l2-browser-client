@@ -132,7 +132,7 @@ pnpm install
 pnpm dev
 ```
 
-Open **http://127.0.0.1:5173**. The dev command first exports the authored scene with the official Editor CLI. Port 5173 is fixed; the template's port 3000 was unavailable on the implementation machine because Windows rejected the bind with `EACCES`.
+Open **http://127.0.0.1:5173**. The dev command first exports the authored scene with the official Editor CLI. Port 5173 is the default; the template's port 3000 was unavailable on the implementation machine because Windows rejected the bind with `EACCES`. A second checkout sets `DEV_PORT=<n>` in its gitignored `.env`, and both `pnpm dev` and Playwright use that port.
 
 The Editor project also enables WebGPU. Editor 5.5.3 drops this setting when saving: run `pnpm renderer:ensure` and fully close and reopen the project to apply it again. `pnpm dev` and `pnpm build` restore it automatically. See [the Editor renderer notes](docs/EDITOR_MCP.md#webgpu-selection--2026-11-06).
 
@@ -145,27 +145,21 @@ pnpm world:verify
 
 The default page then enters Talking Island. The staging tool verifies and copies the pinned outputs without reconversion. Source coordinates, terrain masks, mirrored placements, foliage cutouts and interior floors are preserved. Without staged world files, the page opens the courtyard; `/?world=courtyard` explicitly selects it. A corrupt staged bundle produces an actionable error. See [the world integration record](docs/WORLD_ASSETS.md) for movement policy and remaining source gaps.
 
-To use the converted characters already present on this machine, stage them before starting the demo:
+Talking Island is a **legacy, lineagen-derived (Unity-reference) local reference only**. `pnpm build` never copies `public/assets/world/` or `public/assets/characters/` into `dist/` (the `public-without-lineagen-media` plugin in `vite.config.ts`), so a build's `/` route opens the courtyard and nothing from lineagen ships. The native 20_20 slice is `/?world=interlude`.
+
+The four Human player models are **native Interlude exports** (MFighter, FFighter, MMagic, FMagic), staged into `public/l2/player-profiles/` by the recipe-driven player stager:
 
 ```sh
 pnpm assets:stage
 ```
 
-This copies the four existing GLBs unchanged from `C:\laragon\www\lineagen\.assets\converted` into ignored `public/assets/characters/` and writes a local hash inventory. An alternate source directory can be passed as the command's first argument. The staging script does not run a converter or modify the source workspace. A clean clone without these local files remains usable with animated procedural fallbacks. Keep staged binaries and builds containing them local; do not push or publish them.
+`pnpm assets:stage` runs `scripts/stage_native_players.py` (recipes `recipes/native-player-mystics-stage.json` and `recipes/native-player-aliases-stage.json`). It adds hash-pinned player packages and profiles to `public/l2/catalog.json` without replacing the world catalog, refuses to overwrite, and repeats with zero writes. Models keep native scale: the exporter's 0.01 m per source unit, the actor's DrawScale and the collision radius/height from class data. There is no height fitting, recentering or grounding repair, and no Unity-derived lineagen GLB. Every model binds 45 of the browser's 46 animation aliases. `damage` has no source clip: no class section assigns `DamageAnimName` and Interlude has no hit-reaction clip. `Damagefly_<Class>` (`DamageFlyAnimName`) is a knock-back and is never substituted. Open **Dev → Character › Animation aliases** on `/?world=interlude&character=<id>` to list and play them.
 
-The currently integrated local files include a verified, destination-only grounding repair to seven native root-translation channels. If this task's local repair directory exists, stage those corrected files instead:
-
-```sh
-pnpm assets:stage artifacts/asset-integration/repair/converted
-```
-
-Running the plain command again restores the source-original baselines, including their measured grounding defects. The corrected GLBs and matching editable Blender files remain in local scratch space; the source files, rigs, materials and other animation channels are unchanged. [docs/ASSET_AUDIT.md](docs/ASSET_AUDIT.md) records the defect evidence, exact repair scope and before/after hashes.
-
-With `pnpm dev` running, **http://127.0.0.1:5173/tests/browser/assetInspection.html** opens the development inspection page for all four profiles, including FMagic. It provides native clip playback, skinning sampling and independent-instance checks. This inspection page is a test harness, not a character-selection or networking screen.
+The earlier lineagen GLB route (`scripts/stage-character-assets.mjs`, `tests/browser/assetInspection.html`, `src/assets/legacyWorldScale.ts`) has been removed. Its grounding-repair record stays in [docs/ASSET_AUDIT.md](docs/ASSET_AUDIT.md) as history only.
 
 ## Convert new assets from the native client
 
-**IMPORTA-PC's `C:/Lineage2-client` is the authoritative native reference.** The repeatable migration command uses its hash-pinned snapshot on DATABASE-PC. `E:/Lineage2-client` is a reusable local copy only after fresh source-hash equality. The existing Talking Island and fitted character GLBs are legacy Classic/Unity references; their earlier grounding and animation repairs are not applied to new native exports.
+**IMPORTA-PC's `C:/Lineage2-client` is the authoritative native reference.** The repeatable migration command uses its hash-pinned snapshot on DATABASE-PC. `E:/Lineage2-client` is a reusable local copy only after fresh source-hash equality. The local Talking Island world is a legacy Classic/Unity reference that never ships in a build; the fitted lineagen character GLBs are retired in favour of the native player exports, and none of their earlier grounding or animation repairs apply to native exports.
 
 ```powershell
 pnpm assets:migrate --prove-rebuild
@@ -173,7 +167,7 @@ pnpm assets:migrate --prove-rebuild
 
 This command verifies the **raw migration milestone**: source inventory, character/equipment/monster exports, raw `20_20.unr` and exact Power Strike source-dispatch data, validation, cache replay and clean rebuild comparison. [The migration guide](docs/NATIVE_MIGRATION.md) covers fleet staging, recipes, outputs and remaining gaps. Local playable integration and partial Editor authoring have separate evidence below; raw extraction does not certify visual parity or performance.
 
-For the local native world, run `pnpm assets:migrate --stage-runtime`, then open **http://127.0.0.1:5173/?world=interlude**. It loads the staged native terrain/scenery with Human male fighter and Greater Musveren at source scale, preserving original part rigs, exact source weight attributes and clip timing. Live FPS remains visible. Demo controls change upper-body item 22, play/hold/revive Musveren's death, frame the world, follow the fighter and switch between source-texture preview and neutral terrain. Required native assets now fail startup visibly instead of substituting procedural actors; the legacy six-character demo retains its separate fallbacks. [NATIVE_WORLD.md](docs/NATIVE_WORLD.md) explains source startup-location evidence, local terrain support and remaining material/camera/collision gaps. Sword attachment and Power Strike are not yet certified. `assets/native-parity.scene` and `src/scripts/nativeParity.ts` expose authored camera/clip/equipment values without making them migration outputs. Actual Editor edit/save/reopen, scene Play and rebuilt-browser checks verify this equipment/animation/camera subset. [EDITOR_ROUNDTRIP.md](docs/EDITOR_ROUNDTRIP.md) records the evidence and remaining authoring steps.
+For the local native world, run `pnpm assets:migrate --stage-runtime`, then open **http://127.0.0.1:5173/?world=interlude**. It loads the staged native terrain/scenery with Human male fighter and Greater Musveren at source scale, preserving original part rigs, exact source weight attributes and clip timing. Live FPS remains visible. The **Dev** button opens the developer sheet: sticky (docked beside or below the canvas) or overlay, tabbed, with a filter and hover-cards that list each control's live variables, values, source and native-or-presentation status. Its tabs change upper-body item 22, play/hold/revive Musveren's death, frame the world, follow the fighter, switch between source-texture preview and neutral terrain, and set audio levels. One trusted tap starts the 20_20 MusicVolume music, the map ambience, gait-driven footsteps and the attack/hit sounds; [NATIVE_AUDIO.md](docs/NATIVE_AUDIO.md) records the native rules and the labelled presentation choices. Required native assets now fail startup visibly instead of substituting procedural actors; the legacy six-character demo retains its separate fallbacks. [NATIVE_WORLD.md](docs/NATIVE_WORLD.md) explains source startup-location evidence, local terrain support and remaining material/camera/collision gaps. Sword attachment and Power Strike are not yet certified. `assets/native-parity.scene` and `src/scripts/nativeParity.ts` expose authored camera/clip/equipment values without making them migration outputs. Actual Editor edit/save/reopen, scene Play and rebuilt-browser checks verify this equipment/animation/camera subset. [EDITOR_ROUNDTRIP.md](docs/EDITOR_ROUNDTRIP.md) records the evidence and remaining authoring steps.
 
 The same staging command preserves the current native section's terrain
 GLB/editable glTF, 61 source models, 151 placements, PNG sources and provenance.
@@ -214,7 +208,7 @@ pnpm assets:batch recipes/native-mfighter.json --client artifacts/native-parity/
 pnpm assets:catalog --client artifacts/native-parity/inputs/IMPORTA-PC --output artifacts/native-client-audit/catalog.json
 ```
 
-Each conversion prints the path to a verified, self-contained **`asset.l2asset`**. Open **Demo controls → Assets**, or drop the file onto the client, to inspect it at its recorded scale, play its original clips, or listen to audio. Camera framing does not resize the model. Native mesh origin, rotation, scale and animation keys are preserved; unresolved native materials are visibly identified. The inspector uses a separate scene because the legacy island's units and edition do not establish a valid placement transform for new Interlude assets.
+Each conversion prints the path to a verified, self-contained **`asset.l2asset`**. Open **Dev → General › Session → Assets** (courtyard/Talking Island) or **Dev → Debug › Asset inspector** (native routes), or drop the file onto the client, to inspect it at its recorded scale, play its original clips, or listen to audio. Camera framing does not resize the model. Native mesh origin, rotation, scale and animation keys are preserved; unresolved native materials are visibly identified. The inspector uses a separate scene because the legacy island's units and edition do not establish a valid placement transform for new Interlude assets.
 
 [The asset pipeline guide](docs/ASSET_PIPELINE.md) covers repeatable batch recipes, complete character assemblies, explicit texture bindings, dependency hashes and supported formats. [The native client audit](docs/NATIVE_CLIENT_AUDIT.md) records source identity, animation events and skill tables. Original particle/shader behavior and skill execution need separate runtime adapters; importing their metadata does not reproduce those systems.
 
@@ -224,13 +218,13 @@ pnpm build
 pnpm serve
 ```
 
-`pnpm build` exports the scene, runs strict TypeScript checking, and creates `dist/`. `pnpm serve` previews that build locally. No production deployment is configured.
+`pnpm build` exports the scene, runs strict TypeScript checking, and creates `dist/`. It copies `public/` except the lineagen-derived `public/assets/characters/` and `public/assets/world/`. `pnpm serve` previews that build locally. No production deployment is configured.
 
 The pinned stack is Babylon.js **9.27.1**, Editor runtime tools/CLI **5.5.3**, TypeScript **7.0.2**, Vite **7.3.7**, Vitest **5.1.0**, and Playwright **1.64.1**. The exact dependency graph is in `pnpm-lock.yaml`.
 
 ## Explore the demo
 
-The first scene contains exactly one local player (**Elyra**, FFighter), two simulated remote players (**Orin**, MFighter; **Seren**, MMagic), and three procedural monsters (**Moss Golem**, **Amber Wisp**, and **Watcher**). Staged models replace the three players' fallbacks after loading. Remote players receive synthetic movement updates; monsters alternate idle and cosmetic attack states. Floating names and health bars follow every character.
+The first scene contains exactly one local player (**Elyra**, FFighter), two simulated remote players (**Orin**, MFighter; **Seren**, MMagic), and three procedural monsters (**Moss Golem**, **Amber Wisp**, and **Watcher**). With the native player profiles staged (`pnpm assets:stage`), the three players load their native Interlude packages at native scale; otherwise, or if a package fails, they keep the animated procedural fallback. Remote players receive synthetic movement updates; monsters alternate idle and cosmetic attack states. Floating names and health bars follow every character.
 
 | Control | Behavior |
 | --- | --- |
@@ -241,10 +235,10 @@ The first scene contains exactly one local player (**Elyra**, FFighter), two sim
 | **Attack**, **Run**, **Idle** | Set Elyra's animation. A loaded model plays attack once and returns visually to idle; pressing Attack again retriggers it. Run demonstrates the pose in place; ground input supplies movement. |
 | **Teleport** | Snap Elyra between supported positions near town; the courtyard uses its original fixed positions. |
 | **Spawn** | Add a synthetic sentinel through the adapter. |
-| **Demo controls → Despawn target** | Remove a selected remote player or monster, its label, and its selection. |
-| **Demo controls → Pause / Resume** | Pause/resume synthetic simulation. Camera controls, presentation animation, and manual demo commands remain usable. |
-| **Demo controls → Missing model** | Spawn a sentinel with an intentionally unavailable model; retain its animated procedural fallback. |
-| **Demo controls → Assets** | Inspect a local `.l2asset` model, texture or sound; close to return to the world. |
+| **Dev → General › Session → Despawn target** | Remove a selected remote player or monster, its label, and its selection. |
+| **Dev → General › Session → Pause / Resume** | Pause/resume synthetic simulation. Camera controls, presentation animation, and manual demo commands remain usable. |
+| **Dev → General › Session → Missing model** | Spawn a sentinel with an intentionally unavailable model; retain its animated procedural fallback. |
+| **Dev → General › Session → Assets** | Inspect a local `.l2asset` model, texture or sound; close to return to the world. |
 
 FPS, entity count, and interpolated local coordinates are displayed above the action bar. Health values are synthetic presentation data; attacks do not calculate damage. Reloading restores the initial six entities.
 
@@ -270,9 +264,9 @@ Then run:
 pnpm test
 ```
 
-This runs both Vitest and Playwright. Individual commands are `pnpm test:unit` and `pnpm test:e2e`. Playwright starts and stops its own `pnpm dev` server on port 5173; stop a manually running dev server before the browser suite. Chromium enables WebGPU with SwiftShader for functional checks; set `WORLD_HARDWARE_TEST=1` to use the machine's normal GPU configuration. The legacy WebGL reference fixtures remain separate from the WebGPU application. Failure traces are retained under `test-results/`.
+This runs both Vitest and Playwright. Individual commands are `pnpm test:unit` and `pnpm test:e2e`. Playwright starts and stops its own `pnpm dev` server on port 5173, or on `DEV_PORT` from `.env`; stop a manually running dev server on that port before the browser suite. Chromium enables WebGPU with SwiftShader for functional checks; set `WORLD_HARDWARE_TEST=1` to use the machine's normal GPU configuration. The legacy WebGL reference fixtures remain separate from the WebGPU application. Failure traces are retained under `test-results/`.
 
-Run `pnpm assets:stage` before the asset-specific browser suite. Those checks explicitly skip when the untracked GLBs are absent; a procedural fallback is not counted as a successful import. Asset reports and screenshots are written under ignored `artifacts/asset-integration/`. Run build/generation and browser tests sequentially.
+Run `pnpm assets:stage` (native player profiles) and `pnpm assets:migrate --stage-runtime` (native world) before the native browser suites. Checks that need staged packages skip explicitly when they are absent; a procedural fallback is not counted as a successful import. Asset reports and screenshots are written under ignored `artifacts/asset-integration/`. Run build/generation and browser tests sequentially.
 
 The suites exercise adapter state and lifecycle, time boundaries and teleport snapping, procedural and model animation drivers, asset validation/fallback, visible entity removal, camera input/limits, mouse targeting, compact touch controls, diagnostics, and browser errors. The deliberately missing-model test allows only its specific expected HTTP 404 console message; uncaught exceptions and other error messages fail the suite. Browser coverage is Chromium; other browsers and physical mobile devices require separate verification.
 
@@ -336,9 +330,9 @@ No Babylon MCP server was connected during implementation, so no successful auth
 
 The original source review found no redistribution license for `linegen` or its character assets, so the published foundation implements its behaviors independently and includes no copied source assets. This is a provenance decision about the published baseline, not a finding that locally converted models are technically unusable. The upstream Editor template is Apache-2.0; its license is retained in `docs/licenses/BabylonJS-Editor.txt`. Cormorant Garamond is distributed through its pinned Fontsource package under the SIL Open Font License. Babylon.js dependencies retain their own licenses.
 
-Character profiles resolve semantic appearance identifiers to local GLBs and exact native `wait_Hand`, `run_Hand` and `Atk01_Hand` clips. Their separate parts, skeletons, materials and helper bones remain intact, including in the targeted grounding repair. The client preserves exported meter units and origins instead of fitting models to a common height. The earlier conversion already normalized each whole character to 1.8 m; the audit records that source policy and its limits on original cross-variant stature claims.
+Semantic appearance identifiers (`MFighter`, `FFighter`, `MMagic`, `FMagic`) resolve to the staged native player profiles (`src/assets/characterProfiles.ts` → `catalog.playerProfiles`). Each profile carries its native package, the exact clip for every alias and the class collision data. Separate parts, skeletons, materials and helper bones remain intact. The client keeps native scale and origins instead of fitting models to a common height; no Unity-derived GLB or 1.8 m normalization is involved.
 
-The current inputs contain their animations and textures inside each GLB, so no speculative equipment or separate-animation system is added. Folder-relative resource resolution is supported. Absent, malformed, or unsuitable models retain an animated placeholder; arbitrary third-party rigs remain unverified. See [the asset architecture](docs/ARCHITECTURE.md#asset-structure-guides-the-client) and [asset audit](docs/ASSET_AUDIT.md).
+Only an explicit `modelUrl` (failure fixtures, the Missing model demo) still loads an ad-hoc glTF. Absent, malformed, or unsuitable models retain an animated placeholder; arbitrary third-party rigs remain unverified. See [the asset architecture](docs/ARCHITECTURE.md#asset-structure-guides-the-client) and [asset audit](docs/ASSET_AUDIT.md).
 
 The historical foundation build emitted a Babylon/Editor runtime chunk of approximately 3.6 MB before gzip (0.88 MB gzip), triggering Vite's large-chunk warning. Current build and mobile-cost evidence belongs in [docs/VERIFICATION.md](docs/VERIFICATION.md) and the asset audit. Physical-device performance testing remains separate from Chromium mobile emulation.
 

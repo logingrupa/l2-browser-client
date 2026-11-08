@@ -58,7 +58,7 @@ pnpm assets:pipeline --recipe recipes/native-pipeline-ffighter.json --output art
 pnpm assets:pipeline --recipe recipes/native-pipeline-ffighter.json --output artifacts/native-assets/ffighter --verify-only
 ```
 
-Open **Demo controls → Assets** on either native world route to inspect the
+Open **Dev → Debug › Asset inspector → Assets** on either native world route to inspect the
 resulting `.l2asset`, animations and linked sounds. The existing world is
 suspended while the isolated viewer is open and resumes on close. This does not
 replace a player or import/save an Editor scene. The separately staged
@@ -85,6 +85,24 @@ Use the same command without `--verify-only` for a fresh named output or exact
 verified reuse, or `--plan` for a write-free plan. The separate
 `scripts/stage_native_animation_audio.py` requires the produced manifest hash
 and the current catalog hash before adding its immutable dependency record.
+
+The native mystics (MMagic, FMagic) have no retained research inventory, so a
+small inventory step copies their `Walk_Hand_*`/`Run_Hand_*` notify records
+unchanged from the staged archives and joins them to the same 20 qualified
+StepSound rows. The bundle and stager are the same as for the fighters; the
+mystic record has its own catalog id:
+
+```powershell
+cd scripts
+python -B inventory-native-footstep-events.py --recipe ../recipes/native-human-mystic-footstep-events.json --output ../artifacts/native-parity/research/dev-sheet-audio-20261107/footstep-mystics/inventory --verify-only
+python -B bundle-native-animation-audio.py --recipe ../recipes/native-human-mystic-footstep-audio.json --output ../artifacts/native-parity/research/dev-sheet-audio-20261107/footstep-mystics/bundle --verify-only
+python -B stage_native_animation_audio.py --bundle ../artifacts/native-parity/research/dev-sheet-audio-20261107/footstep-mystics/bundle --manifest-sha256 e83b3ffe980ae67ca8369ea2e2331a5b3c9202806e59c8f30bf5f41a4d26a243 --expected-catalog-sha256 <current catalog sha> --id human-mystic-footsteps --verify-only
+```
+
+Combat sounds for all four humans come from `recipes/native-combat-audio.json`
+(`scripts/bundle-native-combat-audio.py`, then `scripts/stage_native_combat_audio.py`;
+pass `--replace-manifest-sha256 <old>` to swap the staged record, which removes
+only the superseded bundle's verified files).
 Original model archives and Editor scenes remain separate. Runtime preview
 and verification limits are recorded in [NATIVE_AUDIO.md](NATIVE_AUDIO.md).
 The [completed footstep preview checkpoint](../artifacts/native-parity/research/native-footstep-audio-20261107/REPORT.md)
@@ -136,8 +154,8 @@ For new copied inputs, the existing `scripts/native_catalog.py --table skillgrp
 source identities in the new recipe before bundling.
 
 The subsequent [special-attack integration](../artifacts/native-parity/research/native-human-special-attack-20261107/REPORT.md)
-reuses the existing actor archives directly. **Demo controls → Special attack
-preview** plays each fighter's original `SpAtk01_1HS` clip and four directly
+reuses the existing actor archives directly. **Dev → Combat › Actions →
+Special attack preview** plays each fighter's original `SpAtk01_1HS` clip and four directly
 bound cues after audio unlock. No new extraction, catalog migration or actor
 conversion is needed. Normal Hand attacks stay separate; each special clip
 still has two uncovered specialized events. This source-animation preview does

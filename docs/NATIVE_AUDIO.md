@@ -5,6 +5,67 @@ part of the existing world/actor/rendering goal, not an optional enhancement.
 The browser implementation owner owns end-to-end integration and coordinates
 source research. Terrain work and its existing protections remain in force.
 
+## Current world audio in the 20_20 slice — 2026-11-08
+
+This section supersedes the older checkpoint statements below wherever they
+say music, ambience, footsteps or combat sounds are disconnected, that both
+gaits use a synthetic 0.7 m/s, or that controls live under "Demo controls".
+Native facts come from
+[native-sound-answers REPORT.md](../artifacts/native-parity/research/native-sound-answers-20261107/REPORT.md);
+browser choices follow its
+[BROWSER_RECOMMENDATIONS.md](../artifacts/native-parity/research/native-sound-answers-20261107/BROWSER_RECOMMENDATIONS.md)
+and are labelled "presentation choice" in each hover-card. Nothing here is a
+native-parity claim.
+
+- **Start.** One `WorldAudioMixer` (master, music, ambience, effects buses and
+  a −3 dB headroom limiter) unlocks on the first trusted tap, click or key
+  press; a "Tap anywhere for sound" chip shows while locked. Levels are in
+  **Dev → Audio**.
+- **Music** (`scripts/export-native-music.py`, `recipes/native-music-20_20.json`).
+  PlayerStart10 is inside `MusicVolume1` (ID 202002, bForcePlayMusic). Six
+  tracks (F09_F, F09_S01, F10_F, F10_S01, F04_F, F04_S01), uniform random, no
+  loop or fade-in, 30 s silence after each track, then a new pick; a volume
+  change fades the old track out linearly over 2.5 s. Gain is l2.ini
+  MusicVolume 0.1. Tracks are about 30 s long, so music plays about half the
+  time; the Audio tab shows the gap countdown and the pre-rolled next track.
+- **Ambience** (`scripts/bundle-native-ambience.py`). The 20_20
+  AmbientSoundObject emitters use the native range (SoundRadius × 50), class
+  defaults, Day/Night gate, loop/one-shot rules, gain and pitch formula and 16
+  slots. The listener point (local pawn) is a presentation choice.
+- **Footsteps** (93-clip stepsound package, all 16 surfaces). Gait comes from
+  the movement state. Auto follows the native support order: boots (additive),
+  the support StaticMeshActor's own StepSound, water/step volumes (none in
+  20_20), ACTOR = Stone_Hard walk set on other support, then GRASS/LAND on
+  terrain. The deco-grass count is an approximation because the browser does
+  not render the DecoLayers. Manual mode offers every surface and its actual
+  clip variations.
+- **Speed.** aCis server data `humanFighter.xml`: walk 80, run 115 source
+  units/s (0.80 / 1.15 m/s at 100 units per metre); a run starts at walk speed
+  for 0.4 s. The same fighter values are applied to the mystic profiles
+  (presentation choice; mystic server speeds are not staged).
+- **Mystic footsteps** (`recipes/native-human-mystic-footstep-events.json` →
+  `scripts/inventory-native-footstep-events.py` →
+  `recipes/native-human-mystic-footstep-audio.json` →
+  `scripts/bundle-native-animation-audio.py` →
+  `scripts/stage_native_animation_audio.py --id human-mystic-footsteps`).
+  MMagic and FMagic walk and run with their own `Walk_Hand_*`/`Run_Hand_*`
+  notify times from their native archives, and the same 20 StepSound
+  dependencies (240 ordered slots) as the fighters. The Random 5 breath notify
+  on each run clip stays a direct cue.
+- **Combat** (`recipes/native-combat-audio.json`). All four humans have their
+  own chargrp row (MFighter row 0, FFighter row 1, MMagic row 8, FMagic row 9,
+  selected by body mesh). Attacks play AttackItem (fist or 1HS lists, 250/30 or
+  250/40), AttackVoice (`voice_snd_hand`, e.g. MHMagician_1H_Atk_1..5,
+  p = 16728/32768) and, at each AttackShot on Greater Musveren, the defense
+  sound then `field_stalker_dmg_*` with p = 23285/32768 at volume 250, radius
+  50. When Musveren hits the player, the player's own `damage_sound`
+  (e.g. FHMagician_Dmg_1..3) plays. The mystic routes are covered by unit tests
+  against the staged bundle; they still need the next hardware browser run.
+
+Round-1 hardware evidence (headless Chromium, analyser/RMS only, nothing
+judged by ear) is under
+`artifacts/native-parity/research/dev-sheet-audio-20261107/round1/`.
+
 ## Current sequencing and system bundles — 2026-11-07
 
 Finish human male/female, their class skills and usable 20_20 traversal before
@@ -40,9 +101,9 @@ events. All ten selected events retain their arrays (240 ordered slots); two
 also carry conditional breath sounds, leaving eight surface-only notifications.
 The original actor archives are unchanged. Separate additive staging and a
 loop-aware world consumer now pass four hardware WebGPU source/authored
-male/female cases at desktop/mobile viewport sizes. Open Demo controls, enable
-audio and choose Footstep surface preview plus Sound variation. The default is
-Off. The [final report and recordings](../artifacts/native-parity/research/native-footstep-audio-20261107/REPORT.md)
+male/female cases at desktop/mobile viewport sizes. At that checkpoint the
+surface preview defaulted to Off; it now lives in **Dev → Movement ›
+Footsteps** (Surface and Variation chips) and defaults to Auto. The [final report and recordings](../artifacts/native-parity/research/native-footstep-audio-20261107/REPORT.md)
 verify actual post-gain output, mute/volume, repeated original event times,
 movement, interruption and cleanup. Raw silent WebM segments are not treated
 as playback evidence; actual PCM frames establish silence. Automatic surface
@@ -51,13 +112,15 @@ Mobile is desktop-hardware viewport/touch emulation, not a physical-phone or
 native-audio parity result.
 
 The later [locomotion checkpoint](../artifacts/native-parity/research/native-human-locomotion-20261107/REPORT.md)
-connects both original Walk and Run clips to actual move-to travel. Choose
-**Movement animation** in Demo controls, then tap the ground. Changing gait
+connects both original Walk and Run clips to actual move-to travel. Arm Walk
+or Run (HUD gait button, or **Dev → Movement › Walk / run**), then tap the
+ground. Changing gait
 preserves the destination; each clip drives its own original footstep events.
 Four hardware WebGPU source/authored male/female cases pass with recorded
-post-gain output, arrival, pause, equipment, death and cleanup checks. Both
-gaits retain the existing synthetic 0.7 m/s; native effective speed and
-stride-to-distance matching are unverified. This reuses the same twenty WAVs
+post-gain output, arrival, pause, equipment, death and cleanup checks. At that
+checkpoint both gaits used a synthetic 0.7 m/s; they now use the aCis server
+speeds (walk 0.80, run 1.15 m/s, 0.4 s run start; see the current section
+above). Stride-to-distance matching remains unverified. This reuses the same twenty WAVs
 without a new corpus export or actor conversion. Footstep surface/sample
 selection remains explicit and defaults Off.
 
@@ -84,8 +147,8 @@ and terrain decoration-based selection still need applicable evidence.
 
 The [runtime checkpoint](../artifacts/native-parity/research/native-human-special-attack-20261107/REPORT.md)
 connects four direct original cues to each fighter's existing `SpAtk01_1HS`
-animation. Open **Demo controls**, enable audio, then choose **Special attack
-preview**. The clip runs once and returns visually to idle. Original Hand
+animation. Tap once to unlock audio, then choose **Dev → Combat › Actions →
+Special attack preview**. The clip runs once and returns visually to idle. Original Hand
 attack mappings and equipment remain unchanged. Source-clock timing, mute,
 volume, retrigger, interruption and cleanup use the existing preview consumer.
 
@@ -169,8 +232,8 @@ summed or mistaken for complete audio coverage.
 ## World action preview — 2026-11-07
 
 The world now connects **nine original preview cues**: the existing six death
-cues plus three direct Musveren `atk01` sound events. Open Demo controls, enable
-audio and select **Musveren attack**. Source identities, original WAV bytes and
+cues plus three direct Musveren `atk01` sound events. Tap once to unlock audio
+and select **Dev → Combat › Actions → Musveren attack**. Source identities, original WAV bytes and
 animation-clock event times are pinned. The separate `AttackShot310` event stays
 explicitly unresolved; no substitute sound or silence is inferred. See the
 [action-audio report](../artifacts/native-parity/research/native-action-audio-20261107/REPORT.md)
@@ -356,8 +419,9 @@ package, notify/time, provenance and WAV hashes are checked before registration.
 The surprising silenos-named fighter cue is preserved because it is authored in
 the source. Equipment does not duplicate base-body notifications.
 
-Open Demo controls → Enable audio / retry, then use Musveren death or Fighter
-death. Mute, volume, revive and pause are usable in the world. One world-owned
+Tap once to unlock audio (**Dev → Audio → Enable audio** retries), then use
+**Dev → Combat › Actions → Musveren death** or **Combat › Life → Fighter
+death**. Mute, volume, revive and pause are usable in the world. One world-owned
 Web Audio mixer stops interrupted/despawned actors, permits natural death tails,
 and closes on disposal. Locked or muted events are consumed without late replay.
 The animation clock dispatches crossings with recorded catch-up offsets; its
@@ -373,9 +437,11 @@ See the [integration report](../artifacts/native-parity/research/native-sky-audi
 and its linked audio receipts, recordings and coverage inventory.
 
 This is explicitly an opt-in **source-cue preview**. Native gain/radius/listener,
-looping and dispatch backend remain unresolved. Music, ambience, footsteps,
-combat/Power Strike, other voices/actions and UI audio remain disconnected from
-world behavior. Original audio remains mandatory for overall 1:1; these six
+looping and dispatch backend remain unresolved. At this checkpoint music,
+ambience, footsteps, combat/Power Strike, other voices/actions and UI audio were
+disconnected from world behavior; music, ambience, footsteps and fighter combat
+are now connected (current section above), while other voices/actions and UI
+audio remain open. Original audio remains mandatory for overall 1:1; these six
 cues do not complete acceptance.
 
 ## Historical extraction/inspector boundary

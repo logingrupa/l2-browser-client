@@ -13,7 +13,7 @@ implementation and remaining research tasks.
 
 ## Explicit environment-row comparison — 2026-11-07
 
-The game now has a reversible comparison under **Demo controls → Load sky color
+The game now has a reversible comparison under **Dev → World › Sky → Load sky color
 tables**. Choose a file and physical color row, then **Compare selected sky row**.
 Loading or selecting data leaves the stored colors active. **Restore stored
 sky** reinstates the original material references.
