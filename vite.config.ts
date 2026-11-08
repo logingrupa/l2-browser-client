@@ -1,4 +1,5 @@
 import { defineConfig, loadEnv, type Plugin } from "vite";
+import { nativeStoreRootPlugin } from "./vite/nativeStoreRootPlugin";
 
 const editorProjectRunnerReadyMarker = "Ready";
 const unwatchedNativeEvidenceScratchTree = "**/artifacts/**";
@@ -16,7 +17,7 @@ function announceReadyToEditorProjectRunner(): Plugin {
 }
 
 export default defineConfig(({ mode }) => ({
-	plugins: [announceReadyToEditorProjectRunner()],
+	plugins: [announceReadyToEditorProjectRunner(), nativeStoreRootPlugin()],
 	server: {
 		port: Number(loadEnv(mode, process.cwd(), "").DEV_PORT || 5173),
 		strictPort: true,

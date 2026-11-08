@@ -1,2 +1,3 @@
 recipes/*.lock.json text eol=lf
 tests/fixtures/golden/** -text
+tests/fixtures/lane-store/** -text
