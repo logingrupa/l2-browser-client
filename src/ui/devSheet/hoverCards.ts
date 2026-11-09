@@ -1,37 +1,17 @@
 import { placeCard, placeCardInZone, type CardPlacement, type Rect } from "./sheetGeometry";
 import type { DevInfo, DevVariableStatus, VariableInfo } from "./types";
 
-/** One shared, viewport-clamped info card (role=tooltip) for any element.
- *
- * - Hover / keyboard focus opens a compact, read-only card (pointer-events:
- *   none, so it can never catch a click meant for its anchor). It shows the
- *   title, a clamped description and name · value · badge per variable.
- * - The (i) button or a touch long-press opens the interactive card: full
- *   description, a close button, and "details" (allowed values, sources).
- * - `hoverFor` can refuse hover for an anchor (HUD action buttons while
- *   playing); focus, long-press and (i) still work.
- * - The card never covers its anchor: it takes a side with room and is capped
- *   to that room (it scrolls), "above" cards grow upward from their bottom
- *   edge, and a ResizeObserver re-places the card when live values grow it.
- * Variable values are getters, re-read on open and refreshed while open. */
-
 export interface DescribeOptions {
-  /** auto: add an (i) button when `autoButton(element)` allows; none: no
-   * button; or wire an existing button. */
   infoButton?: "auto" | "none" | HTMLButtonElement;
 }
 
 export interface HoverCardOptions {
   placementFor?: (anchor: Element) => Exclude<CardPlacement, "zone">[];
-  /** Area the card should sit in for this anchor (phone: the world above the
-   * bottom sheet), or null for placement beside the anchor. */
   zoneFor?: (anchor: Element) => Rect | null;
   autoButton?: (element: Element) => boolean;
-  /** false: hovering this anchor never opens its card. */
   hoverFor?: (anchor: Element) => boolean;
   openDelayMs?: number;
   refreshMs?: number;
-  /** Card height cap as a share of the viewport height. */
   maxHeightFraction?: number;
 }
 
@@ -41,11 +21,10 @@ export const statusLabels: Record<DevVariableStatus, string> = {
   native: "native data", presentation: "presentation choice", unverified: "unverified",
 };
 
-const textElements = new Set(["INPUT", "SELECT", "TEXTAREA", "BUTTON", "OUTPUT", "P", "SPAN", "STRONG", "SMALL", "B", "EM",
+const textContentOwnedTags = new Set(["INPUT", "SELECT", "TEXTAREA", "BUTTON", "OUTPUT", "P", "SPAN", "STRONG", "SMALL", "B", "EM",
   "H1", "H2", "H3", "H4", "H5", "H6", "IMG", "CANVAS", "A", "METER", "PROGRESS"]);
 
-/** A zone shorter than this falls back to placement beside the anchor. */
-const minimumZoneHeight = 140;
+const minimumCardZoneHeight = 140;
 
 let cardSequence = 0;
 
@@ -72,8 +51,7 @@ function rectOf(element: Element): Rect {
   return { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
 }
 
-/** Dotted names break only after a dot (never mid-word). */
-function nameCode(name: string): HTMLElement {
+function codeBreakingOnlyAfterDots(name: string): HTMLElement {
   const code = document.createElement("code");
   const parts = name.split(".");
   parts.forEach((part, index) => {
@@ -85,8 +63,7 @@ function nameCode(name: string): HTMLElement {
 
 interface Registration {
   info: DevInfo; button: HTMLButtonElement | null; ownsButton: boolean; lifetime: AbortController;
-  /** Native title tooltips moved aside while the card describes the element. */
-  titles: { element: Element; title: string }[];
+  movedNativeTitles: { element: Element; title: string }[];
 }
 
 export class DevHoverCards {
@@ -129,8 +106,6 @@ export class DevHoverCards {
       if (!this.anchor || !(event.target instanceof Element)) return;
       const target = event.target, registration = this.registrations.get(this.anchor);
       if (this.element.contains(target) || registration?.button?.contains(target)) return;
-      // Pressing the anchor of a read-only (hover/focus) card is a request to
-      // use the control, not to read about it: hide and let the press through.
       if (this.anchor.contains(target) && this.trigger !== "hover" && this.trigger !== "focus") return;
       this.hide();
     }, { signal, capture: true });
@@ -141,7 +116,6 @@ export class DevHoverCards {
   get currentTrigger(): Trigger | null { return this.trigger; }
   info(element: Element): DevInfo | undefined { return this.registrations.get(element)?.info; }
 
-  /** Attaches (or replaces) info for `element`. Returns a disposer. */
   describe(element: Element, info: DevInfo, options: DescribeOptions = {}): () => void {
     const previous = this.registrations.get(element);
     previous?.lifetime.abort();
@@ -151,8 +125,7 @@ export class DevHoverCards {
     if (typeof mode === "object") button = mode;
     else if (mode === "auto" && (this.options.autoButton?.(element) ?? false)) {
       button = createInfoButton(info.title); ownsButton = true;
-      if (textElements.has(element.tagName)) {
-        // Owners often rewrite textContent of these; never insert inside them.
+      if (textContentOwnedTags.has(element.tagName)) {
         button.classList.add("dev-info-after");
         if (element.parentElement) element.after(button); else { button = null; ownsButton = false; }
       } else {
@@ -169,16 +142,14 @@ export class DevHoverCards {
         else this.show(element, "button");
       }, { signal });
     }
-    // The card replaces native title tooltips on the element and its label
-    // (they would stack on top of it); the text stays searchable.
-    const titles = previous?.titles ?? [];
+    const titles = previous?.movedNativeTitles ?? [];
     for (const titled of [element, element.parentElement?.closest("label") ?? null]) {
       const title = titled?.getAttribute("title");
       if (!titled || !title) continue;
       titles.push({ element: titled, title });
       titled.setAttribute("data-dev-title", title); titled.removeAttribute("title");
     }
-    const registration: Registration = { info, button, ownsButton, lifetime, titles };
+    const registration: Registration = { info, button, ownsButton, lifetime, movedNativeTitles: titles };
     this.registrations.set(element, registration);
     element.setAttribute("data-dev-search", [info.title, ...readVariables(info).map(variable => variable.name)].join(" "));
     element.setAttribute("data-dev-described", "");
@@ -189,7 +160,6 @@ export class DevHoverCards {
     for (const target of targets) {
       target.addEventListener("pointerenter", event => {
         if ((event as PointerEvent).pointerType === "touch") return;
-        // The (i) itself is an explicit request; the anchor obeys hoverFor.
         if (target === element && !hoverAllowed()) return;
         this.cancelHide();
         if (this.anchor === element) return;
@@ -202,7 +172,6 @@ export class DevHoverCards {
       }, { signal });
       target.addEventListener("focusin", event => {
         if (this.anchor === element && this.trigger !== "focus") return;
-        // Keyboard focus only; a mouse click that focuses a chip is not a request for help.
         let keyboard = true;
         try { keyboard = !(event.target instanceof Element) || event.target.matches(":focus-visible"); } catch { keyboard = true; }
         if (!keyboard) return;
@@ -275,7 +244,6 @@ export class DevHoverCards {
     this.refreshTimer = undefined;
   }
 
-  /** Re-reads every visible variable getter; re-places the card if it grew. */
   refresh(): void {
     if (!this.anchor) return;
     if (!this.anchor.isConnected) { this.hide(); return; }
@@ -287,7 +255,6 @@ export class DevHoverCards {
     if (changed && !this.resizeObserver) this.position();
   }
 
-  /** Re-places an open card (after layout changes). */
   position(): void {
     if (!this.anchor || this.element.hidden || this.positioning) return;
     this.positioning = true;
@@ -295,15 +262,13 @@ export class DevHoverCards {
       const style = this.element.style;
       const viewport = { width: window.innerWidth || 1024, height: window.innerHeight || 768 };
       const cap = Math.max(120, Math.round(viewport.height * this.heightFraction));
-      // Measure the natural size at the cap, then cap to the chosen side's room.
       Object.assign(style, { left: "0px", top: "0px", bottom: "auto", maxHeight: `${cap}px`, maxWidth: "", visibility: "hidden" });
       const card = this.element.getBoundingClientRect();
       const size = { width: card.width || 320, height: card.height || 160 };
       const anchor = rectOf(this.anchor);
       const zone = this.options.zoneFor?.(this.anchor) ?? null;
-      const placed = zone && zone.height >= minimumZoneHeight && zone.width >= 200 ? placeCardInZone(anchor, size, zone, viewport, cap) :
+      const placed = zone && zone.height >= minimumCardZoneHeight && zone.width >= 200 ? placeCardInZone(anchor, size, zone, viewport, cap) :
         placeCard(anchor, size, viewport, this.options.placementFor?.(this.anchor) ?? ["below", "above", "right", "left"]);
-      // Never wider than measured: a wider card would no longer match its placement.
       const maxHeight = Math.min(cap, placed.maxHeight), maxWidth = Math.min(placed.maxWidth, Math.ceil(size.width));
       Object.assign(style, { left: `${placed.left}px`, maxHeight: `${maxHeight}px`, maxWidth: `${maxWidth}px`, visibility: "" });
       if (placed.bottom !== null) Object.assign(style, { top: "auto", bottom: `${placed.bottom}px` });
@@ -331,7 +296,6 @@ export class DevHoverCards {
     this.anchor = null; this.trigger = null;
   }
 
-  /** interactive: opened by (i) or long-press; adds details and a close button. */
   private render(info: DevInfo, interactive: boolean, hasInfoButton: boolean): void {
     const head = document.createElement("div"); head.className = "dev-hovercard-head";
     const title = document.createElement("strong"); title.className = "dev-hovercard-title"; title.textContent = info.title;
@@ -355,7 +319,7 @@ export class DevHoverCards {
       const list = document.createElement("dl"); list.className = "dev-variables"; list.setAttribute("aria-label", "Variables");
       for (const variable of variables) {
         const item = document.createElement("div"); item.className = "dev-variable"; item.dataset.variable = variable.name;
-        const term = document.createElement("dt"); term.className = "dev-variable-name"; term.append(nameCode(variable.name));
+        const term = document.createElement("dt"); term.className = "dev-variable-name"; term.append(codeBreakingOnlyAfterDots(variable.name));
         const data = document.createElement("dd"); data.className = "dev-variable-data";
         const output = document.createElement("output"); output.className = "dev-variable-value"; output.textContent = readValue(variable);
         const badge = document.createElement("span"); badge.className = "dev-badge"; badge.dataset.status = variable.status;
