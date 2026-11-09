@@ -24,6 +24,7 @@ TILE_KEY = 'tile:20_21'
 MAP_PATH = 'maps/20_21.unr'
 GAP_TILE_ID = '17_23'
 GAP_TILE_REASON = 'map-licensee-unsupported:123/25'
+UNREVIEWED_MAP_LICENSEE = 27
 MESH_PACKAGE_PATH = 'staticmeshes/SyntheticMeshes.usx'
 UNIT_STEP_FOLDER = Path('artifacts/lane-store/world/work/tile__20_21/raw')
 SYNTHETIC_CENSUS_LOCK_SHA256 = '0' * 64
@@ -211,9 +212,9 @@ class RawMapStepTests(SyntheticTileTestCase):
         self.assertFalse((self.project_root / 'artifacts/lane-store/world/work').exists())
 
     def test_a_map_at_an_unsupported_licensee_fails_with_its_decode_message_and_no_seal(self):
-        self.write_client(two_actors_sharing_one_mesh(), licensee=25)
+        self.write_client(two_actors_sharing_one_mesh(), licensee=UNREVIEWED_MAP_LICENSEE)
         row = self.run_step()
-        self.assertEqual((row['status'], row['reason']), ('failed', 'decode-failed:Raw map adapter supports only verified UE123/licensee28'))
+        self.assertEqual((row['status'], row['reason']), ('failed', f'decode-failed:map-licensee-unsupported:123/{UNREVIEWED_MAP_LICENSEE}'))
         self.assertFalse((self.step_folder / 'complete.json').exists())
 
     def test_per_object_decode_errors_stay_in_the_receipt_and_the_step_file_holds_one_row_per_tile(self):
@@ -264,7 +265,7 @@ class ConvertTileCommandTests(SyntheticTileTestCase):
         return exit_code, json.loads(output.getvalue())
 
     def test_the_command_records_the_step_row_and_exits_one_on_a_failed_tile(self):
-        self.write_client(two_actors_sharing_one_mesh(), licensee=25)
+        self.write_client(two_actors_sharing_one_mesh(), licensee=UNREVIEWED_MAP_LICENSEE)
         exit_code, printed_rows = self.run_command(['--client', str(self.client), '--map', TILE_ID, '--step', 'raw'])
         self.assertEqual((exit_code, [row['status'] for row in printed_rows]), (1, ['failed']))
         self.assertEqual(read_gap_rows(self.project_root, 'world'), printed_rows)
