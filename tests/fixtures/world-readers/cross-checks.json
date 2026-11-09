@@ -126,6 +126,24 @@
   "equal": true
  },
  {
+  "reader": "map-actor",
+  "version": 123,
+  "licensee": 31,
+  "tile": "19_23",
+  "package": "maps/19_23.unr",
+  "lockSha256": "e0beddd0c6140e7316100a10a53c4ba202eb62c06560e67019a5b24de84bb801",
+  "ourDecodeSha256": "21e6c1c9534f1779eafc3f159e95e82cbda2c63f2f3b56fead8f39a4d8716394",
+  "crossCheckDecodeSha256": "21e6c1c9534f1779eafc3f159e95e82cbda2c63f2f3b56fead8f39a4d8716394",
+  "tool": {
+   "name": "Elbera l2lib",
+   "commit": "12c9656",
+   "pins": {
+    "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
+   }
+  },
+  "equal": true
+ },
+ {
   "reader": "raw-map",
   "version": 123,
   "licensee": 18,
@@ -198,6 +216,24 @@
   "equal": true
  },
  {
+  "reader": "raw-map",
+  "version": 123,
+  "licensee": 31,
+  "tile": "19_23",
+  "package": "maps/19_23.unr",
+  "lockSha256": "e0beddd0c6140e7316100a10a53c4ba202eb62c06560e67019a5b24de84bb801",
+  "ourDecodeSha256": "21e6c1c9534f1779eafc3f159e95e82cbda2c63f2f3b56fead8f39a4d8716394",
+  "crossCheckDecodeSha256": "21e6c1c9534f1779eafc3f159e95e82cbda2c63f2f3b56fead8f39a4d8716394",
+  "tool": {
+   "name": "Elbera l2lib",
+   "commit": "12c9656",
+   "pins": {
+    "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
+   }
+  },
+  "equal": true
+ },
+ {
   "reader": "terrain-info",
   "version": 123,
   "licensee": 18,
@@ -260,6 +296,24 @@
   "lockSha256": "84e621382ac36c9d5a8b1ec0b631ff40f18e042e135b4a1b9437fd97f1dad4d6",
   "ourDecodeSha256": "a6ee8b38dab06c8284e99cdc62cbed51599ec299cc0e616f2871500950974a83",
   "crossCheckDecodeSha256": "a6ee8b38dab06c8284e99cdc62cbed51599ec299cc0e616f2871500950974a83",
+  "tool": {
+   "name": "Elbera l2lib",
+   "commit": "12c9656",
+   "pins": {
+    "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
+   }
+  },
+  "equal": true
+ },
+ {
+  "reader": "terrain-info",
+  "version": 123,
+  "licensee": 31,
+  "tile": "19_23",
+  "package": "maps/19_23.unr",
+  "lockSha256": "e0beddd0c6140e7316100a10a53c4ba202eb62c06560e67019a5b24de84bb801",
+  "ourDecodeSha256": "f66351ecc70a7d278e933e9d05787d46ff253ad94408bd8b06257bd149f93737",
+  "crossCheckDecodeSha256": "f66351ecc70a7d278e933e9d05787d46ff253ad94408bd8b06257bd149f93737",
   "tool": {
    "name": "Elbera l2lib",
    "commit": "12c9656",
