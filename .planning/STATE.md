@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-43-PLAN.md
-last_updated: "2026-11-09T09:05:27.919Z"
+stopped_at: Completed 02-52-PLAN.md
+last_updated: "2026-11-09T10:00:22.667Z"
 last_activity: 2026-11-09
-last_activity_desc: Phase 02 plan 02-58 complete (D6 adapter record types and AccountSession contract commit)
-state_head: d24fdc8c182350d312a8ce61b8dd64a3177fd999
+last_activity_desc: Phase 02 plan 02-52 complete (world reader licensee growth with exact Elbera cross-checks)
+state_head: aad83e1ce2aa53c40a929da7d9397ff80e82e3ed
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 87
-  completed_plans: 55
+  completed_plans: 56
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 02 (Stage A breadth) - EXECUTING
-Plan: 02-58 complete, 36 of 70 plans summarized
+Plan: 02-52 complete, 39 of 70 plans summarized
 Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-09 - Plan 02-58 complete: the DEC-OWN-12 D6 contract commit 2f0ed2e adds events command-rejected, environment, move, stop, correct and teleport, commands report-position and cannot-move (source units, D1), an optional metre origin on move-local, EntityKind npc and the types-only pre-world AccountSession; NativeSliceAdapter stores a reported position and answers cannot-move with stop; the five GameWorldAdapter methods are unchanged; `pnpm test:unit` 146 files pass. MOVE-01, MAT-02 and FX-01 stay Pending.
+Last activity: 2026-11-09 - Plan 02-52 complete: read_g16, actor_properties, native_terrain and build_map pass one licensee gate (scripts/world/reader_licensee_layouts.py) with cited layouts; map licensees 16, 18, 19, 20, 23, 25, 30, 31 (TerrainInfo of 16 refused) and terrain licensees 12, 15, 16, 18, 19, 20, 22, 23, 25 joined 123/28, each with a synthetic fixture and an equal row against the SHA-pinned Elbera l2lib (36 rows in tests/fixtures/world-readers/cross-checks.json); 20_21 raw outputs unchanged; `pnpm test:pipeline` 1594 OK. WORLD-01 stays Pending; the census follows in 02-54.
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -107,6 +107,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 2 P58 | 6min | 2 tasks | 12 files |
 | Phase 02 P16 | 50min | 3 tasks | 25 files |
 | Phase 02 P43 | 50min | 3 tasks | 29 files |
+| Phase 02 P52 | 51min | 3 tasks tasks | 36 files files |
 
 ## Accumulated Context
 
@@ -255,6 +256,8 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-43: one sealed skill-effect-root unit per visual root; per-key records interlude:skill:<id>:level:<level>:native-description-action with bundleId interlude:skill-root:<description>; ?skill=<id>:<level> read only by selectedCastSkill, Power Strike default (OVERNIGHT-DECISIONS rows 397, 400)
 - [Phase 02]: 02-43: actors gap reasons skill-visual-reference-unqualified, effect-bundle-class-limit:<count>, emitter-class-unported:<class>; the coverage recipe lists the simulated emitter classes; small tested changes outside the lane in effect_readiness, gap_census and the sandbox sheet (rows 398, 402)
 - [Phase 02]: 02-43: DefaultReader not rerouted, no VertMesh adapter, lane store unpinned because write_lane_catalog refuses staged effect manifests; ACT-06 and FX-01 stay Pending (rows 403, 404, 407, 408)
+- [Phase 02]: 02-52: one reader licensee gate require_reviewed_reader_layout in scripts/world/reader_licensee_layouts.py serves read_g16, actor_properties, native_terrain and build_map; each reviewed pair has cited evidence, a synthetic fixture and an equal SHA-pinned Elbera l2lib cross-check row (OVERNIGHT-DECISIONS rows 409 to 412)
+- [Phase 02]: 02-52: reviewed map licensees 16, 18, 19, 20, 23, 25, 28, 30, 31 (TerrainInfo of 16 refused) and terrain licensees 12, 15, 16, 18, 19, 20, 22, 23, 25, 28; terrain 118/11 stays a version gap; WORLD-01 stays Pending until 02-54 (rows 413 to 417)
 
 ### Pending Todos
 
@@ -326,6 +329,6 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 
 ## Session Continuity
 
-Last session: 2026-11-09T09:05:27.389Z
-Stopped at: Completed 02-43-PLAN.md
+Last session: 2026-11-09T10:00:22.099Z
+Stopped at: Completed 02-52-PLAN.md
 Resume file: None
