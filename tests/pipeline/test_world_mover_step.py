@@ -1,0 +1,180 @@
+import hashlib
+import json
+from pathlib import Path
+import sys
+import tempfile
+import unittest
+from unittest import mock
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / 'scripts'))
+sys.path.insert(0, str(Path(__file__).parent))
+from native_store.tile_manifest_validation import TileManifestError, load_tile_manifest_vocabulary, validate_tile_manifest
+from support.converted_model_fixture import converted_model_glb
+from world.collision_payload_groups import movr_arrays
+from world.collision_step import mover_slot_records
+from world.mover_records import MoverUnsupportedError
+from world.mover_step import MOVER_STEP_NAME, mover_models, read_tile_movers
+from world.static_mesh_step import ConvertedStaticMesh
+from world.static_placement_plan import ChunkRectangle
+from world.tile_manifest_step import PENDING_TILE_STEPS, pending_steps_after_sealed, tile_resources
+
+TILE_ID = '00_00'
+LANE_FOLDER = ROOT / 'artifacts' / 'lane-store' / 'world'
+ORACLE_PATH = ROOT / 'recipes' / 'world' / 'oracle' / '20_20' / 'expected.json'
+SERVED_STORE = ROOT / 'public' / 'l2'
+REFERENCE_CLIENT = Path('E:/Lineage2-client')
+SLOT_ROWS = [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [10.0, 20.0, 30.0, 1.0]]
+OPEN_ROWS = [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [10.0, 20.0, 166.0, 1.0]]
+
+
+def product_mover(index, decision, slots, origin=(100.0, 100.0, 0.0), model_file='models/fixture/model.glb'):
+    return {'id': f'interlude:{TILE_ID}.Mover{index}', 'object': f'{TILE_ID}.Mover{index}', 'exportIndex': index,
+            'modelId': 'interlude:fixture_s.Door', 'model': {'file': model_file}, 'origin': list(origin),
+            'closedSourceRows': SLOT_ROWS, 'openSourceRows': OPEN_ROWS,
+            'collision': {'decision': decision, 'slots': list(slots), 'evidence': [] if decision == 'slots' else ['rule-disagreement:bStatic']}}
+
+
+class MoverCollisionGroupTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.store_root = Path(self.temporary.name)
+        (self.store_root / 'models' / 'fixture').mkdir(parents=True)
+        (self.store_root / 'models' / 'fixture' / 'model.glb').write_bytes(converted_model_glb([True, False, True]))
+        self.rectangles = [ChunkRectangle('chunk-0-0', (0.0, 0.0), (1000.0, 1000.0))]
+
+    def tearDown(self):
+        self.temporary.cleanup()
+
+    def test_a_slots_decision_adds_one_movr_record_per_listed_slot_with_both_matrices_in_source_units(self):
+        movers = {'movers': [product_mover(5, 'slots', [0, 2]), product_mover(9, 'gap', [])]}
+        movers_by_chunk, decisions = mover_slot_records({'storeRoot': self.store_root}, movers, self.rectangles, {})
+        records = movers_by_chunk['chunk-0-0']
+        self.assertEqual([(record['moverId'], record['slot'], record['collisionSource']) for record in records],
+                         [(f'interlude:{TILE_ID}.Mover5', 0, 'static-slot-enable-collision'), (f'interlude:{TILE_ID}.Mover5', 2, 'static-slot-enable-collision')])
+        self.assertEqual([record['closedMatrix'] for record in records], [SLOT_ROWS, SLOT_ROWS])
+        self.assertEqual([record['openMatrix'] for record in records], [OPEN_ROWS, OPEN_ROWS])
+        self.assertEqual([decision['decision'] for decision in decisions], ['slots', 'gap'])
+        arrays = {array.name: array.values for array in movr_arrays(records)}
+        self.assertEqual((arrays['MOVR.exportIndex'], arrays['MOVR.slot'], arrays['MOVR.collisionSource']), ((5, 5), (0, 2), (0, 0)))
+        self.assertEqual(len(arrays['MOVR.closedMatrix']), 32)
+        self.assertEqual(arrays['MOVR.openMatrix'][14], 166.0)
+
+    def test_a_gap_decision_adds_no_movr_record_and_keeps_the_gap_for_one_collision_unreadable_row(self):
+        movers_by_chunk, decisions = mover_slot_records({'storeRoot': self.store_root}, {'movers': [product_mover(9, 'gap', [])]}, self.rectangles, {})
+        self.assertEqual(movers_by_chunk, {})
+        self.assertEqual([(decision['decision'], decision['object']) for decision in decisions], [('gap', f'{TILE_ID}.Mover9')])
+
+    def test_a_slots_mover_outside_the_chunk_grid_becomes_a_gap(self):
+        movers_by_chunk, decisions = mover_slot_records({'storeRoot': self.store_root},
+                                                        {'movers': [product_mover(5, 'slots', [0], origin=(5000.0, 5000.0, 0.0))]}, self.rectangles, {})
+        self.assertEqual(movers_by_chunk, {})
+        self.assertEqual((decisions[0]['decision'], decisions[0]['evidence']), ('gap', ['chunk:outside-grid']))
+
+    def test_mover_meshes_are_never_merged_with_a_static_placement_of_the_same_model(self):
+        meshes_by_chunk = {'chunk-0-0': {('interlude:fixture_s.Door', (0,)): {'index': 0}}}
+        movers_by_chunk, _ = mover_slot_records({'storeRoot': self.store_root}, {'movers': [product_mover(5, 'slots', [0])]}, self.rectangles,
+                                                meshes_by_chunk)
+        self.assertEqual(movers_by_chunk['chunk-0-0'][0]['mesh'], 1)
+        self.assertEqual(len(meshes_by_chunk['chunk-0-0']), 2)
+
+
+def converted(model_id, source_object):
+    return ConvertedStaticMesh({'id': model_id, 'sourceObject': source_object, 'model': {'file': 'x/model.glb'}}, {})
+
+
+class FakeMapPackage:
+    def __init__(self, exports):
+        self.exports = exports
+
+
+class MoverReadingTests(unittest.TestCase):
+    def test_movers_are_read_in_export_order_and_every_unqualified_mover_is_a_named_gap(self):
+        exports = [{'classObject': 'Engine.Mover', 'exportIndex': index, 'object': f'{TILE_ID}.Mover{index}', 'name': f'Mover{index}'} for index in (30, 4, 12)]
+        exports.append({'classObject': 'Engine.StaticMeshActor', 'exportIndex': 2, 'object': f'{TILE_ID}.StaticMeshActor2', 'name': 'StaticMeshActor2'})
+
+        def read(package, item, *_):
+            if item['exportIndex'] == 12:
+                raise MoverUnsupportedError('key-count:3')
+            return {'id': 'interlude:' + item['object']}, {'object': 'fixture_s.Door', 'package': 'staticmeshes/fixture_s.usx'}, {}
+
+        gaps = []
+        with mock.patch('world.mover_step.read_mover_actor', side_effect=read):
+            items, read_movers = read_tile_movers(FakeMapPackage(exports), None, None, TILE_ID, lambda item, status, reason: gaps.append((item['exportIndex'], reason)))
+        self.assertEqual([item['exportIndex'] for item in items], [4, 12, 30])
+        self.assertEqual([mover.item['exportIndex'] for mover in read_movers], [4, 30])
+        self.assertEqual(gaps, [(12, 'mover-unsupported:key-count:3')])
+
+    def test_two_movers_sharing_one_mesh_share_one_model_record_and_models_sort_by_source_object(self):
+        door, gate = converted('interlude:fixture_s.Door', 'fixture_s.Door'), converted('interlude:fixture_s.Gate', 'fixture_s.Gate')
+        models = mover_models([(None, gate), (None, door), (None, door)])
+        self.assertEqual([model['id'] for model in models], ['interlude:fixture_s.Door', 'interlude:fixture_s.Gate'])
+
+
+def tile_manifest_with(resources):
+    chunk_sha256 = '1' * 64
+    return {'kind': 'native-tile-runtime', 'schemaVersion': 1, 'tileId': TILE_ID, 'sourceMap': f'maps/{TILE_ID}.unr', 'sourceSha256': 'c' * 64,
+            'frame': {'terrainInfo': f'{TILE_ID}.TerrainInfo0', 'location': [0, 0, 0], 'terrainScale': [1, 1, 1]},
+            'anchor': {'playerStart': f'{TILE_ID}.PlayerStart0', 'location': [0, 0, 0]},
+            'chunks': [{'chunkId': 'chunk-0-0', 'manifest': f'/l2/maps/{chunk_sha256}/native-tile-chunk-runtime/manifest.json',
+                        'manifestSha256': chunk_sha256, 'manifestBytes': 100}],
+            'resources': resources, 'gaps': []}
+
+
+class MoverManifestResourceTests(unittest.TestCase):
+    def test_a_sealed_movers_product_adds_one_movers_resource_that_the_vocabulary_admits(self):
+        sha256 = 'f' * 64
+        movers = {'manifest': {'resource': f'/l2/movers/{sha256}/tile-movers.json', 'sha256': sha256, 'bytes': 900}, 'gapRows': []}
+        resources = tile_resources(None, movers)
+        self.assertEqual(resources, [{'kind': 'movers', 'manifest': f'/l2/movers/{sha256}/tile-movers.json', 'manifestSha256': sha256, 'manifestBytes': 900}])
+        validate_tile_manifest(tile_manifest_with(resources))
+        self.assertIn('movers', load_tile_manifest_vocabulary().resource_kinds)
+        with tempfile.TemporaryDirectory() as repository_without_vocabulary:
+            with self.assertRaisesRegex(TileManifestError, 'vocabulary file missing'):
+                validate_tile_manifest(tile_manifest_with(resources), load_tile_manifest_vocabulary(repository_without_vocabulary))
+
+    def test_a_tile_without_movers_seals_the_step_and_writes_no_movers_resource(self):
+        movers = {'manifest': None, 'gapRows': []}
+        self.assertEqual(tile_resources(None, movers), [])
+        self.assertNotIn(MOVER_STEP_NAME, pending_steps_after_sealed(PENDING_TILE_STEPS, None, None, None, movers))
+        self.assertIn(MOVER_STEP_NAME, pending_steps_after_sealed(PENDING_TILE_STEPS, None, None, None, None))
+
+
+def served_oracle_movers():
+    oracle = json.loads(ORACLE_PATH.read_text(encoding='utf-8'))['movers']
+    payload = (SERVED_STORE / 'movers' / oracle['manifestSha256'] / 'movers.json').read_bytes()
+    if hashlib.sha256(payload).hexdigest() != oracle['manifestSha256']:
+        raise AssertionError('served 20_20 mover manifest differs from the frozen oracle SHA-256')
+    return oracle, json.loads(payload)
+
+
+def sealed_tile_movers(tile_id):
+    product = json.loads((LANE_FOLDER / 'work' / f'tile__{tile_id}' / MOVER_STEP_NAME / 'products' / 'movers.json').read_text(encoding='utf-8'))
+    return product, json.loads((LANE_FOLDER / 'l2' / product['manifest']['resource'].removeprefix('/l2/')).read_text(encoding='utf-8'))
+
+
+@unittest.skipUnless(REFERENCE_CLIENT.is_dir() and (LANE_FOLDER / 'work/tile__20_20/raw/complete.json').is_file()
+                     and (LANE_FOLDER / 'work/tile__20_20/movers/complete.json').is_file(),
+                     'needs the E: reference client and sealed 20_20 raw and movers units (convert_tile.py --map 20_20 --step movers)')
+class OracleMoverSubsetTests(unittest.TestCase):
+    def test_the_generic_step_yields_the_eight_oracle_movers_with_their_matrices_move_time_and_server_ids(self):
+        oracle, served = served_oracle_movers()
+        product, manifest = sealed_tile_movers('20_20')
+        self.assertEqual(sorted(mover['id'] for mover in manifest['movers']), sorted(oracle['moverIds']))
+        self.assertEqual([model['id'] for model in manifest['models']], oracle['modelIds'])
+        self.assertEqual(product['exportCount'], 8)
+        self.assertEqual(product['gapRows'], [])
+        served_by_id = {mover['id']: mover for mover in served['movers']}
+        for mover in manifest['movers']:
+            reference = served_by_id[mover['id']]
+            for field in ('closedMatrix', 'openMatrix', 'moveTimeSeconds', 'serverObject', 'actorName', 'modelId', 'initialKey', 'initiallyClosed'):
+                self.assertEqual(mover[field], reference[field], f'{mover["id"]} {field}')
+            self.assertEqual([(key['position']['value'], key['rotation']['value'], key['matrix']) for key in mover['keys']],
+                             [(key['position']['value'], key['rotation']['value'], key['matrix']) for key in reference['keys']])
+        self.assertEqual([mover['exportIndex'] for mover in manifest['movers']], sorted(mover['exportIndex'] for mover in manifest['movers']))
+        served_models = {model['id']: model['model']['sha256'] for model in served['models']}
+        self.assertEqual({model['id']: model['model']['sha256'] for model in manifest['models']}, served_models)
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -149,7 +149,7 @@ class TileManifestTests(unittest.TestCase):
             tile_store_files(REAL_TILE_ID, REAL_SOURCE_IDENTITY, plan, list(reversed(records)), glbs, EVIDENCE)
 
     def test_the_step_constants(self):
-        self.assertEqual((TILE_MANIFEST_STEP_ALGORITHM_VERSION, TILE_CATALOG_CAPACITY), (4, 163))
+        self.assertEqual((TILE_MANIFEST_STEP_ALGORITHM_VERSION, TILE_CATALOG_CAPACITY), (5, 163))
         self.assertEqual(PENDING_TILE_STEPS, ('meshes', 'bsp', 'collision', 'movers', 'sky', 'audio', 'minimap', 'terrain-material'))
 
 
@@ -182,7 +182,7 @@ class RunTileManifestStepTests(unittest.TestCase):
         unit = TerrainUnit(terrain_step_ledger(self.project_root), f'tile:{REAL_TILE_ID}', 'a' * 64, {}, [], 'b' * 64, plan, None, None)
         return patch.multiple(tile_manifest_step, sealed_terrain_chunks=MagicMock(return_value=(unit, records, products_directory)),
                               sealed_static_meshes=MagicMock(return_value=(None, None)), sealed_bsp_chunks=MagicMock(return_value=(None, None)),
-                              sealed_collision=MagicMock(return_value=(None, None)))
+                              sealed_collision=MagicMock(return_value=(None, None)), sealed_movers=MagicMock(return_value=(None, None)))
 
     def store_snapshot(self):
         return {path.relative_to(self.project_root).as_posix(): (path.read_bytes(), path.stat().st_mtime_ns)

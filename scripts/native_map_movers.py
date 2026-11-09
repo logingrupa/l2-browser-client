@@ -1,31 +1,23 @@
-import copy
 import hashlib
 import json
-import math
 from pathlib import Path
-import re
 import zipfile
 
 from native_assets import Converter, UMODEL, UMODEL_SHA256, verify_archive
 from native_assets_lib.gltf import json_bytes
-from native_catalog.effects import SourcePackages, UELIB_SHA256, parse_uc
 from native_catalog.ue2 import FormatError
-from native_effect_bundle import DefaultReader
-from world.map_actor_properties import TRANSFORMS, actor_properties, decode_property, source_range
 from world.map_sources import MapSources, file_hash, safe_path
-from world.static_placement import gltf_placement, static_matrix
+from world.mover_class_defaults import load_mover_class_defaults
+from world.mover_records import MoverUnsupportedError, read_mover_actor
 
 ROOT = Path(__file__).resolve().parents[1]
 MAP_PATH = 'maps/20_20.unr'
 MAP_SHA = '1beddad24c10a35a1b2e9151727a85158e3e01992299a6671de876645eb1f1e4'
 MESH_PATH = 'staticmeshes/l2fortress_02_s.usx'
 MESH_SHA = '1049a1075c90cdd3ecb9d739eb1828ffead45b3ad52661079552e60fe3b608b6'
-ENGINE_SHA = '9b04ff5cb4258e84dfa8efbdd85d9121f3bdcb5822a9a21ca69d200d05a69761'
 ACTORS = ('Mover1', 'Mover61', 'Mover60', 'Mover195', 'Mover194', 'Mover193', 'Mover192', 'Mover24')
 MESHES = ('l2fortress_02_s.Fort02_indoor', 'l2fortress_02_s.fort02_wall_door')
 RAW_MAP = 'source/map.unwrapped.bin'
-ARRAYS = {'KeyPos': ('Vector', 8), 'KeyRot': ('Rotator', 8),
-          'MeshGrade': ('StaticMesh', 7), 'RangeDelta': ('Vector', 4)}
 
 
 def require(value, message):
@@ -47,126 +39,6 @@ def immutable_write(output, name, value):
     return name
 
 
-def source_record(relative, package, item):
-    raw = package.data[item['offset']:item['offset'] + item['size']]
-    return {'package': relative, 'packageSha256': package.source_hash,
-            'object': item['object'], 'classObject': item['classObject'],
-            'exportIndex': item['exportIndex'], 'exportOffset': item['offset'],
-            'exportBytes': len(raw), 'exportSha256': sha(raw)}
-
-
-def qualified_classes(definitions, read):
-    require(set(definitions) == {'core.object', 'engine.actor', 'engine.mover'},
-            'Unsupported Engine.Mover inheritance census')
-    scripts = {}
-    for key, definition in definitions.items():
-        script = read(definition['sourceScript'])
-        require(sha(script) == definition['sourceScriptSha256'] and
-                definition['uelibSha256'] == UELIB_SHA256 and
-                definition['helperSha256'] == file_hash(ROOT/'scripts/native_catalog/extract_ue_defaults.ps1'),
-                'Class evidence parser/script changed: ' + key)
-        parsed = parse_uc(script.decode('utf-8-sig'), definition['object'])
-        require(not parsed['unparsed'] and parsed['properties'] == definition['properties'] and
-                parsed['superClass'] == definition['superClass'],
-                'Class defaults disagree with retained script: ' + key)
-        scripts[key] = script.decode('utf-8-sig')
-    require(definitions['engine.mover']['nativeSuperClass'] == 'Engine.Actor' and
-            definitions['engine.actor']['nativeSuperClass'] == 'Core.Object' and
-            definitions['core.object']['nativeSuperClass'] is None,
-            'Exact Engine.Mover native superclass chain changed')
-    require(definitions['engine.mover']['source']['packageSha256'] == ENGINE_SHA,
-            'Engine.Mover package pin changed')
-    checks = {
-        'core.object': (r'native\(215\).*Vector\s+\+\(Vector A, Vector B\)',
-                        r'native\(216\).*Vector\s+-\(Vector A, Vector B\)',
-                        r'native\(316\).*Rotator\s+\+\(Rotator A, Rotator B\)',
-                        r'native\(147\).*int\s+-\(int A, int B\)',
-                        r'native\(250\).*int Max\(int A, int B\)'),
-        'engine.actor': (r'native\(266\).*bool Move\(Vector Delta\)',
-                         r'native\(299\).*bool SetRotation\(Rotator NewRotation\)'),
-        'engine.mover': (r'__NFUN_266__\(__NFUN_216__\(__NFUN_215__\(BasePos, KeyPos\[int\(KeyNum\)\]\), Location\)\)',
-                         r'__NFUN_299__\(__NFUN_316__\(BaseRot, KeyRot\[int\(KeyNum\)\]\)\)',
-                         r'InterpolateTo\(1, MoveTime\)',
-                         r'InterpolateTo\(byte\(__NFUN_250__\(0, __NFUN_147__\(int\(KeyNum\), 1\)\)\), MoveTime\)')}
-    for key, patterns in checks.items():
-        for pattern in patterns:
-            require(re.search(pattern, scripts[key]), 'Unqualified native mover endpoint semantics: ' + pattern)
-    return scripts
-
-
-class MoverDefaults:
-    def __init__(self, definitions, scripts):
-        self.definitions, self.scripts = definitions, scripts
-
-    def declaration(self, name, kind, count=None):
-        suffix = r'\['+str(count)+r'\]' if count is not None else ''
-        column_zero_class_field_declaration = r'^var[^;\n]*\b'+re.escape(kind)+r'\s+'+name+suffix+r'\s*;'
-        matches = [key for key, script in self.scripts.items() if re.search(column_zero_class_field_declaration, script, re.MULTILINE)]
-        require(len(matches) == 1, 'Native mover field declaration unresolved: ' + name)
-        return matches[0]
-
-    def resolve(self, properties, name, kind, index=None, count=None):
-        key = (name, index)
-        self.declaration(name, kind, count)
-        if key in properties:
-            prop = properties[key]
-            require('value' in prop, 'Undecoded mover field: ' + name)
-            return {'value': copy.deepcopy(prop['value']), 'source': 'serialized-actor-property',
-                    'payload': prop['payload']}
-        for class_key in ('engine.mover', 'engine.actor', 'core.object'):
-            definition = self.definitions[class_key]
-            value = definition['properties'].get(name)
-            if name not in definition['properties']:
-                continue
-            if index is not None:
-                require(isinstance(value, list), 'Native fixed array default is malformed: ' + name)
-                if index >= len(value) or value[index] is None:
-                    continue
-                value = value[index]
-            return {'value': copy.deepcopy(value), 'source': definition['object'],
-                    'sourceScript': definition['sourceScript']}
-        zero = {'Vector': dict.fromkeys('XYZ', 0), 'Rotator': dict.fromkeys(('Pitch', 'Yaw', 'Roll'), 0),
-                'byte': 0, 'int': 0, 'bool': False}.get(kind)
-        require(zero is not None, 'No qualified zero initialization: ' + name)
-        return {'value': zero, 'source': 'native-declared-field-zero-init',
-                'declaration': self.declaration(name, kind, count),
-                'evidence': 'Exact native declared field without actor or inherited authored override; UObject field zero initialization.'}
-
-
-def indexed_properties(tags):
-    result = {}
-    for prop in tags:
-        index = prop['arrayIndex']
-        if index is None and prop['name'] in ARRAYS:
-            index = 0
-        key = prop['name'], index
-        require(key not in result, 'Duplicate native mover property path: ' + str(key))
-        if prop['name'] in ARRAYS:
-            require(type(index) is int and 0 <= index < ARRAYS[prop['name']][1],
-                    'Native mover fixed array index outside declaration')
-        result[key] = prop
-    return result
-
-
-def numeric_struct(value, kind):
-    axes = ('Pitch', 'Yaw', 'Roll') if kind == 'Rotator' else tuple('XYZ')
-    require(isinstance(value, dict) and set(value) == set(axes) and
-            all(type(value[axis]) in (int, float) and math.isfinite(value[axis]) for axis in axes),
-            'Invalid native mover numeric struct: ' + kind)
-    if kind == 'Rotator':
-        require(all(type(value[axis]) is int for axis in axes), 'Noninteger native mover rotator')
-    return value
-
-
-def endpoint_matrix(base_pos, base_rot, key_pos, key_rot, transforms):
-    values = copy.deepcopy(transforms)
-    values['Location']['value'] = {axis: numeric_struct(base_pos, 'Vector')[axis] +
-        numeric_struct(key_pos, 'Vector')[axis] for axis in 'XYZ'}
-    values['Rotation']['value'] = {axis: numeric_struct(base_rot, 'Rotator')[axis] +
-        numeric_struct(key_rot, 'Rotator')[axis] for axis in ('Pitch', 'Yaw', 'Roll')}
-    return gltf_placement(static_matrix(values))
-
-
 def collect_movers(sources, defaults):
     package = sources.get(MAP_PATH)
     require(package.source_hash == MAP_SHA, 'Mover extraction requires the pinned original 20_20 map')
@@ -174,68 +46,16 @@ def collect_movers(sources, defaults):
     require(tuple(item['name'] for item in items) == ACTORS, 'Exact native mover census changed')
     movers, meshes = [], {}
     for item in items:
-        tags, tail, state, prefix_end = actor_properties(package, item)
-        require(tail.position == tail.end, 'Native mover has an unqualified native tail')
-        raw = [decode_property(package, prop, RAW_MAP) for prop in tags]
-        props = indexed_properties(raw)
-        resolved = {}
-        for name in TRANSFORMS:
-            kind = 'Rotator' if name == 'Rotation' else 'float' if name == 'DrawScale' else 'Vector'
-            resolved[name] = defaults.resolve(props, name, kind)
-        for name, kind in (('BasePos', 'Vector'), ('BaseRot', 'Rotator'), ('KeyNum', 'byte'),
-                           ('NumKeys', 'byte'), ('MoveTime', 'float'), ('StayOpenTime', 'float'),
-                           ('bClosed', 'bool'), ('L2ServerObjectRealID', 'int'),
-                           ('L2ServerObjectID', 'int'), ('L2ServerObjectType', 'Actor.EL2ObjectType')):
-            resolved[name] = defaults.resolve(props, name, kind)
-        num_keys, initial = resolved['NumKeys']['value'], resolved['KeyNum']['value']
-        require(num_keys == 2 and initial == 0 and resolved['bClosed']['value'] is True,
-                'Only source-qualified initially closed two-key movers are supported')
-        duration = resolved['MoveTime']['value']
-        require(type(duration) in (int, float) and math.isfinite(duration) and duration > 0,
-                'Invalid native mover MoveTime')
-        keys = []
-        for index in range(8):
-            pos = defaults.resolve(props, 'KeyPos', 'Vector', index, 8)
-            rot = defaults.resolve(props, 'KeyRot', 'Rotator', index, 8)
-            keys.append({'index': index, 'active': index < num_keys, 'position': pos, 'rotation': rot,
-                'matrix': endpoint_matrix(resolved['BasePos']['value'], resolved['BaseRot']['value'],
-                    pos['value'], rot['value'], resolved)})
-        require(all(abs(a-b) < 1e-8 for a, b in zip(keys[initial]['matrix'], gltf_placement(static_matrix(resolved)))),
-                'Saved actor placement differs from qualified initial mover key')
-        reference = props.get(('StaticMesh', None), {}).get('value', {}).get('object')
-        require(isinstance(reference, str), 'Mover has no serialized source StaticMesh')
-        relative, mesh_package, mesh = sources.resolve(reference, 'StaticMesh')
-        require(relative == MESH_PATH and mesh_package.source_hash == MESH_SHA and mesh['object'] in MESHES,
+        try:
+            mover, mesh_source, _ = read_mover_actor(package, item, sources, defaults, MAP_PATH, RAW_MAP)
+        except MoverUnsupportedError as error:
+            raise FormatError('Only source-qualified initially closed two-key movers are supported: ' + error.reason) from error
+        require(mesh_source['package'] == MESH_PATH and mesh_source['packageSha256'] == MESH_SHA and mesh_source['object'] in MESHES,
                 'Unqualified native mover mesh')
-        model_id = 'interlude:' + mesh['object']
-        meshes[model_id] = source_record(relative, mesh_package, mesh)
-        movers.append({'id': 'interlude:' + item['object'], 'actorName': item['name'], 'modelId': model_id,
-            'serverObject': {'realId': resolved['L2ServerObjectRealID']['value'],
-                             'id': resolved['L2ServerObjectID']['value'], 'type': resolved['L2ServerObjectType']['value']},
-            'closedMatrix': keys[0]['matrix'], 'openMatrix': keys[1]['matrix'],
-            'moveTimeSeconds': duration, 'initialKey': initial, 'initiallyClosed': True,
-            'keys': keys, 'resolvedProperties': resolved,
-            'meshGrades': [{'index': index, **copy.deepcopy(prop)} for (name, index), prop in props.items() if name == 'MeshGrade'],
-            'sounds': [copy.deepcopy(prop) for prop in raw if prop['name'].endswith('Sound') or prop['name'].endswith('Sounds')],
-            'rawProperties': raw, 'source': {**source_record(MAP_PATH, package, item),
-                'nativePayload': source_range(package.data, RAW_MAP, item['offset'], item['offset']+item['size']),
-                'stateFrame': state, 'stateFrameBytes': prefix_end-item['offset'], 'nativeTailBytes': 0}})
+        meshes[mover['modelId']] = mesh_source
+        movers.append(mover)
     require(set(meshes) == {'interlude:' + name for name in MESHES}, 'Expected exactly two native mover meshes')
     return movers, meshes
-
-
-def load_defaults(client, output, save):
-    reader = DefaultReader(client, SourcePackages(client), output/'.work', save)
-    reader.get('Engine.Mover')
-    definitions = reader.definitions
-    scripts = qualified_classes(definitions, lambda name: safe_path(output, name).read_bytes())
-    for definition in definitions.values():
-        source = definition['source']
-        require(file_hash(safe_path(client, source['package'])) == source['packageSha256'],
-                'Source class package changed')
-        raw = safe_path(output, definition['rawExport']).read_bytes()
-        require(len(raw) == source['sourceBytes'], 'Class raw export length differs')
-    return definitions, MoverDefaults(definitions, scripts)
 
 
 def export(client, output, umodel=UMODEL):
@@ -252,7 +72,7 @@ def export(client, output, umodel=UMODEL):
         files[name] = {'sha256': sha(value), 'bytes': len(value)}
         return name
 
-    definitions, defaults = load_defaults(client, output, save)
+    definitions, defaults = load_mover_class_defaults(client, output, save)
     save('class-evidence.json', json_bytes(definitions))
     sources = MapSources(client)
     movers, mesh_sources = collect_movers(sources, defaults)

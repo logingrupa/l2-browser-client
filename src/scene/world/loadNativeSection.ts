@@ -15,6 +15,7 @@ import { parseNativeTerrainPatches, validateSourceTerrainPatch, type NativeTerra
 import { selectedNativeTileIdentity } from "./selectedNativeTile";
 import type { NativeTileSectionView } from "./loadNativeTileChunks";
 import { disposeNativeModelInstances, instantiateNativeModelPlacements, type NativeModelInstance } from "./nativeModelPlacements";
+import type { NativeMover } from "./nativeMovers";
 
 interface Resource { file: string; sha256: string; bytes: number; }
 interface Model { id: string; sourceObject: string; model: Resource; archive: Resource; }
@@ -50,6 +51,7 @@ export interface NativeSection {
   readonly minimum: Vector3;
   readonly maximum: Vector3;
   readonly spawnCandidate: Vector3 | null;
+  readonly moverTargets?: readonly NativeMover[];
   inspection(): NativeWorldSceneInspection;
   setTerrainPreview(enabled: boolean): void;
   dispose(): void;
@@ -234,6 +236,9 @@ export type NativeWorldSceneInspection = ReturnType<typeof inspectNativeWorldSce
   readonly terrainChunks?: NativeTileSectionView["terrainChunks"];
   readonly tileAnchor?: NativeTileSectionView["anchor"];
   readonly meshGapCount?: number;
+  readonly moverCount?: number;
+  readonly moverCollisionMeshCount?: number;
+  readonly movers?: readonly ReturnType<NativeMover["inspection"]>[];
   readonly bspSections?: number;
   readonly bspResources?: readonly string[];
 };

@@ -11,8 +11,9 @@ sys.path.insert(0, str(ROOT/'scripts'))
 from native_assets import verify_archive
 from native_catalog.ue2 import FormatError
 from world.map_sources import MapSources
-from native_map_movers import (ACTORS, MAP_SHA, MoverDefaults, collect_movers,
-    endpoint_matrix, indexed_properties, qualified_classes)
+from native_map_movers import ACTORS, MAP_SHA, collect_movers
+from world.mover_class_defaults import MoverDefaults, qualified_classes
+from world.mover_records import endpoint_matrix, indexed_properties
 
 CLIENT = ROOT/'artifacts/native-parity/inputs/IMPORTA-PC'
 OUTPUT = ROOT/'artifacts/native-parity/research/native-door-movers-20261107/converted'
@@ -72,6 +73,28 @@ class MoverResolutionTests(unittest.TestCase):
             self.assertAlmostEqual(actual, expected)
         for actual, expected in zip(transformed(matrix, [2, 0, 0]), [10, 30, 21]):
             self.assertAlmostEqual(actual, expected)
+
+
+class FakeMapPackage:
+    def __init__(self, source_hash, exports):
+        self.source_hash, self.exports = source_hash, exports
+
+
+class FakeMapSources:
+    def __init__(self, package):
+        self.package = package
+
+    def get(self, relative):
+        return self.package
+
+
+class MoverCensusTests(unittest.TestCase):
+    def test_collect_movers_refuses_another_map_and_a_changed_mover_census(self):
+        with self.assertRaisesRegex(FormatError, 'pinned original 20_20 map'):
+            collect_movers(FakeMapSources(FakeMapPackage('0' * 64, [])), None)
+        changed = [{'classObject': 'Engine.Mover', 'name': name} for name in ACTORS[:-1]]
+        with self.assertRaisesRegex(FormatError, 'census changed'):
+            collect_movers(FakeMapSources(FakeMapPackage(MAP_SHA, changed)), None)
 
 
 @unittest.skipUnless((CLIENT/'maps/20_20.unr').is_file() and (OUTPUT/'movers.json').is_file(),

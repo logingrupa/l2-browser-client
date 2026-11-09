@@ -1,7 +1,6 @@
 import hashlib
 import json
 from pathlib import Path
-import struct
 import sys
 from types import SimpleNamespace
 import unittest
@@ -11,6 +10,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
 from native_store.gap_rows import validate_gap_row
 from native_store.tile_manifest_validation import load_tile_manifest_vocabulary, validate_tile_chunk_manifest
+from support.converted_model_fixture import converted_model_glb
 from support.actor_class_defaults import ACTOR_DEFAULTS, SYNTHETIC_ACTOR_CLASS_DEFAULTS, SyntheticActorClassDefaults
 from support.level_model_fixture import build_synthetic_level_model, square_points, synthetic_polygon
 from synthetic_terrain_fixture import synthetic_native_terrain
@@ -86,22 +86,6 @@ class PlacementDecisionTests(unittest.TestCase):
                               'sourceIdentity': SOURCE_IDENTITY, 'evidence': EVIDENCE})
 
 
-def converted_model_glb(slot_flags):
-    positions = struct.pack('<9f', 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 0.02, 0.0)
-    indices = struct.pack('<3H', 0, 1, 2) + b'\0\0'
-    document = {'asset': {'version': '2.0'}, 'buffers': [{'byteLength': len(positions) + len(indices)}],
-                'bufferViews': [{'buffer': 0, 'byteOffset': 0, 'byteLength': len(positions)}, {'buffer': 0, 'byteOffset': len(positions), 'byteLength': 6}],
-                'accessors': [{'bufferView': 0, 'componentType': 5126, 'count': 3, 'type': 'VEC3'}, {'bufferView': 1, 'componentType': 5123, 'count': 3, 'type': 'SCALAR'}],
-                'materials': [{'extras': {'nativeSectionIndex': slot, 'nativeSlotProperties': {'EnableCollision': flag}}} for slot, flag in enumerate(slot_flags)],
-                'meshes': [{'primitives': [{'attributes': {'POSITION': 0}, 'indices': 1, 'material': slot} for slot in range(len(slot_flags))]}],
-                'nodes': [{'mesh': 0, 'name': 'Fixture'}], 'scenes': [{'nodes': [0]}]}
-    text = json.dumps(document).encode('ascii')
-    text += b' ' * (-len(text) % 4)
-    binary = positions + indices
-    return struct.pack('<III', 0x46546c67, 2, 28 + len(text) + len(binary)) + struct.pack('<I4s', len(text), b'JSON') + text + \
-        struct.pack('<I4s', len(binary), b'BIN\0') + binary
-
-
 class StaticMeshTriangleTests(unittest.TestCase):
     def test_triangles_of_collision_slots_return_to_mesh_local_source_units(self):
         positions, indices = static_mesh_collision_triangles(converted_model_glb([True, False]), {0})
@@ -171,9 +155,9 @@ class CollisionManifestTests(unittest.TestCase):
         manifest = build_tile_chunk_manifest(TILE_ID, terrain_record, chunk_plan_entry, SOURCE_IDENTITY, EVIDENCE, collision=collision)
         self.assertEqual(set(manifest['collision']), {'resource', 'sha256'})
         validate_tile_chunk_manifest(manifest)
-        self.assertEqual(tile_resources(collision)[0]['kind'], 'native-tile-collision')
+        self.assertEqual(tile_resources(collision, None)[0]['kind'], 'native-tile-collision')
         self.assertIn('native-tile-collision', load_tile_manifest_vocabulary().resource_kinds)
-        self.assertEqual(COLLISION_STEP_ALGORITHM_VERSION, 1)
+        self.assertEqual(COLLISION_STEP_ALGORITHM_VERSION, 2)
 
     def test_every_rule_row_has_provenance_and_a_shared_status(self):
         document = json.loads((ROOT / 'recipes/world/collision-declaration-rules.json').read_text(encoding='utf-8'))

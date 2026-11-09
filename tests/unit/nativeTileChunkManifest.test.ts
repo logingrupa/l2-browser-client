@@ -156,9 +156,9 @@ describe("native tile manifest parser", () => {
       /1 to 256 chunks/],
     ["a null anchor", tile => { tile.anchor = null; }, /needs an anchor/],
     ["a frame with a fourth field", tile => { (tile.frame as Document).sectorGrid = [1, 1]; }, /frame must hold exactly/],
-    ["a resource kind this client cannot read", tile => { tile.resources = [{ kind: "sky" }]; }, /resources hold only native-tile-collision/],
+    ["a resource kind this client cannot read", tile => { tile.resources = [{ kind: "sky" }]; }, /resources hold at most one native-tile-collision record/],
     ["a collision resource outside its hash folder", tile => { tile.resources = [{ ...collisionTileResource(), manifestSha256: "d".repeat(64) }]; },
-      /resources hold only native-tile-collision/],
+      /resources hold at most one native-tile-collision record/],
     ["a source map of another tile", tile => { tile.sourceMap = "maps/20_21.unr"; }, /source identity is invalid/],
   ])("refuses %s", (_, change, message) => {
     expect(() => parseNativeTileManifest(withTile(change))).toThrow(message);

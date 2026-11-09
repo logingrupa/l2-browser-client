@@ -3,6 +3,8 @@ from world.typed_payload import TypedPayloadArray
 DECISION_CODE = {'declared-none': 0, 'slots': 1, 'blocking': 1, 'gap': 2}
 VOLUME_KIND_CODE = {'Engine.BlockingVolume': 0, 'Engine.PhysicsVolume': 1}
 PROVENANCE_CODE = {'authored': 0, 'class-default': 1, 'ue-zero': 2}
+STATIC_SLOT_ENABLE_COLLISION_SOURCE = 'static-slot-enable-collision'
+COLLISION_SOURCE_CODE = {STATIC_SLOT_ENABLE_COLLISION_SOURCE: 0}
 TRANSFORM_FIELDS = ('Location', 'Rotation', 'DrawScale', 'DrawScale3D', 'PrePivot')
 VECTOR_AXES = ('X', 'Y', 'Z')
 ROTATOR_AXES = ('Pitch', 'Yaw', 'Roll')
@@ -80,6 +82,15 @@ def plac_arrays(placements):
             array('PLAC.decision', 'uint8', [DECISION_CODE[placement['decision']] for placement in placements]),
             array('PLAC.mesh', 'int32', [placement['mesh'] for placement in placements]),
             array('PLAC.matrix', 'float32', [value for placement in placements for row in placement['matrix'] for value in row])]
+
+
+def movr_arrays(mover_slots):
+    return [array('MOVR.exportIndex', 'uint32', [record['exportIndex'] for record in mover_slots]),
+            array('MOVR.slot', 'uint32', [record['slot'] for record in mover_slots]),
+            array('MOVR.collisionSource', 'uint8', [COLLISION_SOURCE_CODE[record['collisionSource']] for record in mover_slots]),
+            array('MOVR.mesh', 'int32', [record['mesh'] for record in mover_slots]),
+            *(array(f'MOVR.{name}', 'float32', [value for record in mover_slots for row in record[name] for value in row])
+              for name in ('closedMatrix', 'openMatrix'))]
 
 
 def terr_arrays(terrain):

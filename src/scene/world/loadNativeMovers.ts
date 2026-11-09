@@ -1,9 +1,8 @@
 import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
 import { GLTFLoaderAnimationStartMode } from "@babylonjs/loaders/glTF/glTFFileLoader";
-import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
-import type { AssetContainer, InstantiatedEntries } from "@babylonjs/core/assetContainer";
+import type { AssetContainer } from "@babylonjs/core/assetContainer";
 import type { Scene } from "@babylonjs/core/scene";
 import "@babylonjs/loaders/glTF";
 import { sha256 } from "../../assets/package/readAssetPackage";
@@ -11,7 +10,8 @@ import { nativeResourceUrl } from "../../assets/native/nativeResourceUrl";
 import { readNativeCatalogUnlessNotStaged } from "../../assets/native/readNativeCatalog";
 import { validateSectionGlb } from "./loadNativeSection";
 import { moverObject, nativeMoverMapSha256, parseNativeMoverManifest, type MoverResource } from "./nativeMoverManifest";
-import { NativeMover } from "./nativeMovers";
+import { createNativeMoverTargets, type NativeMoverTargets } from "./nativeMoverTargets";
+import type { NativeMover } from "./nativeMovers";
 
 export interface NativeMovers {
   readonly targets: readonly NativeMover[];
@@ -19,15 +19,17 @@ export interface NativeMovers {
   readonly manifestSha256: string;
   dispose(): void;
 }
+function markCatalogMoverCollisionMeshes(meshes: readonly Mesh[]): void {
+  for (const mesh of meshes) mesh.metadata = { ...mesh.metadata, worldCollision: true, worldSupportsWalking: false };
+}
 export async function loadNativeMovers(scene: Scene, terrainSha256: string, signal: AbortSignal): Promise<NativeMovers | null> {
-  const lifetime = new AbortController(), templates: AssetContainer[] = [], copies: InstantiatedEntries[] = [];
-  const roots: TransformNode[] = [];
+  const lifetime = new AbortController(), templates: AssetContainer[] = [];
+  let moverTargets: NativeMoverTargets | null = null;
   let disposed = false;
   const dispose = () => {
     if (disposed) return; disposed = true; lifetime.abort(); signal.removeEventListener("abort", dispose);
     scene.onDisposeObservable.remove(observer);
-    for (const copy of copies.reverse()) copy.dispose();
-    for (const root of roots) root.dispose();
+    moverTargets?.dispose();
     for (const template of templates.reverse()) template.dispose();
   };
   const observer = scene.onDisposeObservable.addOnce(dispose);
@@ -70,27 +72,8 @@ export async function loadNativeMovers(scene: Scene, terrainSha256: string, sign
       if (container.skeletons.length || container.animationGroups.length) throw new Error("Native mover model must be rigid source geometry.");
       models.set(model.id, container);
     }
-    const targets: NativeMover[] = [];
-    for (const source of manifest.movers) {
-      const root = new TransformNode(source.id, scene); roots.push(root); root.doNotSerialize = true;
-      root.metadata = { nativeMover: { id: source.id, serverObject: source.serverObject }, runtimeOnly: true };
-      const before = new Set([...scene.meshes, ...scene.transformNodes]);
-      let copy: InstantiatedEntries;
-      try { copy = models.get(source.modelId)!.instantiateModelsToScene(name => `${source.id}:${name}`, false, { doNotInstantiate: true }); }
-      catch (error) {
-        for (const node of [...scene.meshes, ...scene.transformNodes]) if (!before.has(node)) node.dispose();
-        throw error;
-      }
-      copies.push(copy);
-      for (const node of copy.rootNodes) node.parent = root;
-      const meshes = root.getChildMeshes().filter((mesh): mesh is Mesh => mesh instanceof Mesh && mesh.getTotalVertices() > 0);
-      if (!meshes.length) throw new Error("Native mover model has no geometry.");
-      for (const mesh of meshes) {
-        mesh.doNotSerialize = true; mesh.isPickable = true;
-        mesh.metadata = { ...mesh.metadata, nativeMoverId: source.id, worldCollision: true, worldSupportsWalking: false };
-      }
-      targets.push(new NativeMover(source, root, meshes));
-    }
+    moverTargets = createNativeMoverTargets(scene, models, manifest.movers, markCatalogMoverCollisionMeshes);
+    const targets = moverTargets.targets;
     lifetime.signal.throwIfAborted();
     return { targets, collisionMeshes: targets.flatMap(target => [...target.meshes]), manifestSha256: record.manifestSha256, dispose };
   } catch (error) { dispose(); throw error; }

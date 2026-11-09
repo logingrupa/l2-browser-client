@@ -10,6 +10,9 @@ import { Matrix } from "@babylonjs/core/Maths/math.vector";
 import { sha256 } from "../../src/assets/package/readAssetPackage";
 import { nativeMoverMapSha256 } from "../../src/scene/world/nativeMoverManifest";
 import { loadNativeMovers, type NativeMovers } from "../../src/scene/world/loadNativeMovers";
+import { loadNativeTileMovers } from "../../src/scene/world/loadNativeTileMovers";
+import { createNativeMoverTargets } from "../../src/scene/world/nativeMoverTargets";
+import type { NativeMoverRecord } from "../../src/scene/world/nativeMoverManifest";
 
 vi.mock("@babylonjs/core/Loading/sceneLoader", () => ({ LoadAssetContainerAsync: vi.fn() }));
 const encode = (v: unknown): Uint8Array<ArrayBuffer> => new TextEncoder().encode(JSON.stringify(v));
@@ -86,5 +89,39 @@ describe("additive native mover loading", () => {
     const loading = load(control.signal); const rejection = expect(loading).rejects.toMatchObject({ name: "AbortError" });
     await vi.waitFor(() => expect(LoadAssetContainerAsync).toHaveBeenCalledOnce()); control.abort(); resolve(container()); await rejection;
     expect(scene.meshes).toEqual([retained]); expect(scene.materials).toHaveLength(0);
+  });
+  it("disposes every node it created when instancing a later mover throws", async () => {
+    const retained = MeshBuilder.CreateBox("retained authored object", {}, scene), template = container();
+    const mover = (id: number, modelId: string): NativeMoverRecord => ({ id: `interlude:20_20.Mover${id}`, modelId, serverObject: { realId: id, id, type: 1 },
+      closedMatrix: Array.from(Matrix.Identity().asArray()), openMatrix: Array.from(Matrix.Translation(0, 1, 0).asArray()), moveTimeSeconds: 1,
+      initialKey: 0, initiallyClosed: true });
+    const broken = { instantiateModelsToScene: () => { MeshBuilder.CreateBox("half instanced", {}, scene); throw new Error("instancing failed"); } } as unknown as AssetContainer;
+    const templates = new Map([["interlude:good", template], ["interlude:broken", broken]]);
+    expect(() => createNativeMoverTargets(scene, templates, [mover(1, "interlude:good"), mover(2, "interlude:broken")], () => {})).toThrow(/instancing failed/);
+    expect(scene.meshes).toEqual([retained]); expect(scene.transformNodes).toHaveLength(0);
+    template.dispose();
+  });
+  it("loads tile movers closed from a pinned tile manifest without marking any mesh for collision", async () => {
+    const bytes = glb(), archive = "a".repeat(64), modelId = "interlude:l2fortress_02_s.Fort02_indoor";
+    const manifest = { kind: "native-tile-movers", schemaVersion: 1, tileId: "20_20", sourceMap: { path: "maps/20_20.unr", sha256: "c".repeat(64) },
+      classEvidence: {}, gaps: [],
+      models: [{ id: modelId, sourceObject: "l2fortress_02_s.Fort02_indoor", archive: { resource: `/l2/${archive}/asset.l2asset`, sha256: archive, bytes: 500 },
+        model: { resource: `/l2/${archive}/model.glb`, sha256: await sha256(bytes), bytes: bytes.length } }],
+      movers: [1, 24].map((id, i) => ({ id: `interlude:20_20.Mover${id}`, actorName: `Mover${id}`, exportIndex: id, modelId,
+        serverObject: { realId: 20200000 + id, id, type: 1 }, closedMatrix: Array.from(Matrix.Translation(i * 4, 0, 0).asArray()),
+        openMatrix: Array.from(Matrix.Translation(i * 4, 1.36, 0).asArray()), moveTimeSeconds: 1, initialKey: 0, initiallyClosed: true,
+        keys: [], sounds: [], collision: { decision: "slots", slots: [0], evidence: [] } })) };
+    const manifestBytes = encode(manifest), identity = await sha256(manifestBytes), path = `/l2/movers/${identity}/tile-movers.json`;
+    const responses = new Map<string, Uint8Array<ArrayBuffer>>([[path, manifestBytes], [manifest.models[0]!.model.resource, bytes]]);
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => new Response(responses.get(url)?.slice().buffer ?? "missing", { status: responses.has(url) ? 200 : 404 })));
+    vi.mocked(LoadAssetContainerAsync).mockImplementation(async () => container());
+    const movers = await loadNativeTileMovers(scene, { kind: "movers", manifest: path, manifestSha256: identity, manifestBytes: manifestBytes.length },
+      new AbortController().signal);
+    expect(movers.targets.map(target => target.source.id)).toEqual(["interlude:20_20.Mover1", "interlude:20_20.Mover24"]);
+    expect(movers.targets.map(target => target.inspection().matrix)).toEqual(manifest.movers.map(mover => mover.closedMatrix));
+    const meshes = movers.targets.flatMap(target => [...target.meshes]);
+    expect(meshes.length).toBeGreaterThan(0);
+    expect(meshes.every(mesh => mesh.metadata.worldCollision === undefined && mesh.metadata.nativeMoverId)).toBe(true);
+    movers.dispose(); expect(scene.meshes).toHaveLength(0); expect(scene.transformNodes).toHaveLength(0);
   });
 });

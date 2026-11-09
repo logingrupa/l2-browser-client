@@ -11,6 +11,7 @@ import {
   type NativeSection, type NativeSectionManifest,
 } from "./loadNativeSection";
 import { parseNativeBspSectionExtras, type NativeBspNodeRange, type NativeBspSection, type NativeTileBspResource } from "./nativeBspResources";
+import { loadNativeTileMovers, type NativeTileMovers } from "./loadNativeTileMovers";
 import { disposeNativeModelInstances, instantiateNativeModelPlacements, type NativeModelInstance } from "./nativeModelPlacements";
 import {
   describeNativeTileGapRow, parseNativeTileChunkManifest, type NativeTileChunkManifest, type NativeTileChunkModel, type NativeTileChunkPlacement,
@@ -154,11 +155,13 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
   if (scene.isDisposed || !scene.useRightHandedSystem) throw new Error("Native tile requires a live right-handed scene.");
   const lifetime = new AbortController(), containers: AssetContainer[] = [], templates = new Map<string, AssetContainer>();
   const instances: NativeModelInstance<NativeTileChunkPlacement>[] = [];
+  let tileMovers: NativeTileMovers | null = null;
   let disposed = false;
   const dispose = () => {
     if (disposed) return;
     disposed = true; lifetime.abort(); signal.removeEventListener("abort", dispose);
     scene.onDisposeObservable.remove(observer);
+    tileMovers?.dispose();
     disposeNativeModelInstances(instances);
     for (const container of [...containers, ...templates.values()]) container.dispose();
   };
@@ -212,6 +215,13 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
       containers.push(container);
       bspChunks.push(bspChunk);
     }
+    const moverResource = manifest.resources.find(resource => resource.kind === "movers");
+    if (moverResource) {
+      tileMovers = await loadNativeTileMovers(scene, moverResource, lifetime.signal);
+      if (disposed || scene.isDisposed) throw new Error("Native tile was disposed during loading.");
+      if (tileMovers.manifest.tileId !== tileId) throw new Error(`Native tile mover manifest names tile ${tileMovers.manifest.tileId}, not ${tileId}.`);
+    }
+    const moverTargets = tileMovers?.targets ?? [];
     const bspMeshes = bspChunks.flatMap(chunk => chunk.meshes);
     for (const container of containers) container.addAllToScene();
     const terrainMeshes = loaded.flatMap(entry => entry.meshes);
@@ -223,11 +233,13 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
     const meshGapCount = chunkMeshGapCount(chunks);
     const extent = nativeMeshBounds(terrainMeshes);
     lifetime.signal.throwIfAborted();
-    return { manifest: view, manifestSha256: record.manifestSha256, terrainMeshes, supportMeshes: [], ...extent, spawnCandidate,
+    return { manifest: view, manifestSha256: record.manifestSha256, terrainMeshes, supportMeshes: [], ...extent, spawnCandidate, moverTargets,
       inspection: () => ({ ...inspectNativeWorldScene({ terrainMeshes, instances, modelCount: templates.size, disposed, preview: null, previewEnabled: false,
         materialFailure: null, unsupportedRuntimeMaterials: [], bspMeshes, sectionWindow: terrainInfoChunkPlanWindow }),
         terrainChunks, tileAnchor: anchor, meshGapCount, bspSections: bspChunks.reduce((sum, chunk) => sum + chunk.sections.length, 0),
-        bspResources: bspChunks.map(chunk => chunk.resource) }),
+        bspResources: bspChunks.map(chunk => chunk.resource), moverCount: moverTargets.length,
+        moverCollisionMeshCount: moverTargets.flatMap(target => target.meshes).filter(mesh => mesh.metadata?.worldCollision === true).length,
+        movers: moverTargets.map(target => target.inspection()) }),
       setTerrainPreview() {}, dispose };
   } catch (error) { dispose(); throw error; }
 }

@@ -100,6 +100,16 @@ def selector_evidence(static_mesh_selectors, rules):
     return routed, [UNRESOLVED_INTRINSIC_SELECTORS_EVIDENCE + ':' + ','.join(unresolved)] if unresolved else []
 
 
+def static_mesh_selectors(map_sources, request, rules):
+    if request is None:
+        return {}
+    package = map_sources.get(request['package'])
+    item = next(item for item in package.exports if item['object'].casefold() == request['object'].casefold())
+    tags, _ = package.properties(item)
+    return {tag['name']: None if isinstance(tag.get('value'), dict) and tag['value'].get('index') == 0 else tag.get('value')
+            for tag in tags if tag['name'] in rules.selector_fields}
+
+
 def decide_placement_collision(placement, class_evidence, model_slot_properties, static_mesh_selectors, rules=None):
     rules = rules or load_collision_rules()
     values, provenance = resolve_actor_flags(placement, class_evidence, (*rules.blocking_fields, *rules.cross_check_fields))
