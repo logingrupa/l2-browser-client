@@ -199,12 +199,25 @@ class SyntheticDefaultReader:
         return self.definitions[reference.casefold()]
 
 
-class SyntheticSourcePackages:
-    def __init__(self, client):
-        pass
+def synthetic_source_packages(export_objects):
+    exports_by_package = {}
+    for export_object in export_objects:
+        exports_by_package.setdefault(export_object.split('.')[0].casefold(), []).append({'object': export_object})
 
-    def resolve(self, reference, expected_class):
-        return {'object': reference, 'resolution': 'exact-qualified-object', 'package': SYNTHETIC_MESH_PACKAGE_PATH, 'packageSha256': 'd' * 64}, None, None
+    class SyntheticSourcePackages:
+        def __init__(self, client):
+            pass
+
+        def get(self, package_name):
+            return None, SimpleNamespace(exports=exports_by_package.get(package_name.casefold(), []))
+
+        def resolve(self, reference, expected_class):
+            _, package = self.get(reference.split('.')[0])
+            export = next(item for item in package.exports if item['object'].casefold() == reference.casefold())
+            return {'reference': reference, 'object': export['object'], 'resolution': 'exact-qualified-object',
+                    'package': SYNTHETIC_MESH_PACKAGE_PATH, 'packageSha256': 'd' * 64}, package, export
+
+    return SyntheticSourcePackages
 
 
 class SyntheticSourceFile:
@@ -215,31 +228,69 @@ class SyntheticSourceFile:
         return SimpleNamespace(st_size=1)
 
 
-class ExtractBundleExclusionTests(unittest.TestCase):
-    def test_a_profile_with_an_unresolved_actor_default_is_left_out_and_listed_in_excluded_profiles(self):
+RESOLVED_PROFILE = {'npcId': 41, 'expectedName': 'Resolved', 'expectedMesh': 'LineageMonsters.resolved_m00',
+                    'expectedActorClass': 'LineageMonster.resolved', 'modelCatalogId': 'npc-model:' + 'a' * 64}
+NO_HEIGHT_PROFILE = {'npcId': 42, 'expectedName': 'No height', 'expectedMesh': 'LineageMonsters.no_height_m00',
+                     'expectedActorClass': 'LineageMonster.no_height', 'modelCatalogId': 'npc-model:' + 'b' * 64}
+SYNTHETIC_EXPORT_OBJECTS = ('LineageMonster.resolved', 'LineageMonster.no_height', 'LineageMonsters.resolved_m00', 'LineageMonsters.no_height_m00')
+
+
+class ExtractBundleTests(unittest.TestCase):
+    def extract_bundle(self, recipe_profiles, export_objects=SYNTHETIC_EXPORT_OBJECTS):
         source_sha256s = {'system/npcgrp.dat': 'a' * 64, 'system/npcname-e.dat': 'b' * 64, SYNTHETIC_MESH_PACKAGE_PATH: 'd' * 64,
                           'system/LineageMonster.u': 'e' * 64}
         tables = {'npcgrp': {'source': 'system/npcgrp.dat', 'sourceSha256': 'a' * 64, 'data': {'npc': []}},
                   'npcname': {'source': 'system/npcname-e.dat', 'sourceSha256': 'b' * 64, 'data': {'npc': []}}}
         guard = SimpleNamespace(require_equal_file=lambda relative_path: SyntheticSourceFile(relative_path, source_sha256s[relative_path]))
         recipe = {'schemaVersion': 1, 'id': 'interlude:npc-profiles:pack-0123456789abcdef', 'nameTable': 'npcname-e.dat',
-                  'sourceUnitsPerMetre': 100, 'profiles': [
-                      {'npcId': 41, 'expectedName': 'Resolved', 'expectedMesh': 'LineageMonsters.resolved_m00',
-                       'expectedActorClass': 'LineageMonster.resolved', 'modelCatalogId': 'npc-model:' + 'a' * 64},
-                      {'npcId': 42, 'expectedName': 'No height', 'expectedMesh': 'LineageMonsters.no_height_m00',
-                       'expectedActorClass': 'LineageMonster.no_height', 'modelCatalogId': 'npc-model:' + 'b' * 64}]}
+                  'sourceUnitsPerMetre': 100, 'profiles': list(recipe_profiles)}
+        saved = {}
+
+        def save(name, data):
+            saved[name] = data
+            return name
+
         with patch.object(profiles, 'decode_table', side_effect=lambda client, name, **options: tables[name]), \
-                patch.object(profiles, 'SourcePackages', SyntheticSourcePackages), \
+                patch.object(profiles, 'SourcePackages', synthetic_source_packages(export_objects)), \
                 patch.object(profiles, 'DefaultReader', SyntheticDefaultReader), \
                 patch.object(profiles, 'select_exact_npc_rows_without_mesh_substitution', return_value=[(0, {}), (0, {})]), \
                 patch.object(profiles, 'audit_selected_row_offsets_and_typed_values', return_value={}), \
                 patch.object(profiles, 'require_reference_client', return_value=guard), \
                 patch.object(profiles, 'file_hash', side_effect=lambda source_file: source_file.sha256):
-            bundle = profiles._extract_bundle(Path('client'), recipe, Path('output'), lambda name, data: name)
+            bundle = profiles._extract_bundle(Path('client'), recipe, Path('output'), save)
+        return bundle, json.loads(saved['source/npc-selections.json'])['selections']
+
+    def test_a_profile_with_an_unresolved_actor_default_is_left_out_and_listed_in_excluded_profiles(self):
+        bundle, _ = self.extract_bundle([RESOLVED_PROFILE, NO_HEIGHT_PROFILE])
         self.assertEqual([profile['npcId'] for profile in bundle['profiles']], [41])
         self.assertEqual(bundle['excludedProfiles'], [{'npcId': 42, 'field': 'CollisionHeight'}])
         self.assertEqual(bundle['unsupported'], [])
         self.assertEqual((bundle['coverage']['requestedProfiles'], bundle['coverage']['resolvedProfiles']), (2, 1))
+
+    def test_a_class_matching_one_export_ignoring_case_records_the_requested_and_the_export_spelling(self):
+        requested = dict(RESOLVED_PROFILE, expectedActorClass='LineageMonster.Resolved')
+        bundle, selections = self.extract_bundle([requested])
+        self.assertEqual(bundle['profiles'][0]['actorClass'], 'LineageMonster.Resolved')
+        self.assertEqual(selections[0]['classChain'], ['LineageMonster.resolved', 'Engine.Actor', 'Core.Object'])
+        self.assertEqual(selections[0]['qualifiedNameMatches'], {
+            'actorClass': {'requested': 'LineageMonster.Resolved', 'export': 'LineageMonster.resolved', 'spelling': 'case-insensitive-spelling'},
+            'mesh': {'requested': 'LineageMonsters.resolved_m00', 'export': 'LineageMonsters.resolved_m00', 'spelling': 'exact-spelling'}})
+
+    def test_a_mesh_matching_one_export_ignoring_case_records_both_spellings_in_the_mesh_source(self):
+        requested = dict(RESOLVED_PROFILE, expectedMesh='LineageMonsters.Resolved_M00')
+        _, selections = self.extract_bundle([requested])
+        self.assertEqual((selections[0]['meshSource']['reference'], selections[0]['meshSource']['object']),
+                         ('LineageMonsters.Resolved_M00', 'LineageMonsters.resolved_m00'))
+        self.assertEqual(selections[0]['qualifiedNameMatches']['mesh']['spelling'], 'case-insensitive-spelling')
+
+    def test_a_class_matching_two_exports_ignoring_case_refuses_the_bundle(self):
+        with self.assertRaisesRegex(FormatError, 'Qualified name matches two or more exports ignoring case: LineageMonster.resolved matches '
+                                                 'LineageMonster.RESOLVED and LineageMonster.resolved'):
+            self.extract_bundle([RESOLVED_PROFILE], (*SYNTHETIC_EXPORT_OBJECTS, 'LineageMonster.RESOLVED'))
+
+    def test_a_mesh_matching_no_export_refuses_the_bundle(self):
+        with self.assertRaisesRegex(FormatError, profiles.UNMATCHED_NPC_MESH_MESSAGE):
+            self.extract_bundle([RESOLVED_PROFILE], ('LineageMonster.resolved',))
 
 
 if __name__ == '__main__':

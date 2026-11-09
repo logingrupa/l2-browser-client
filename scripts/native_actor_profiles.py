@@ -7,6 +7,7 @@ import math
 from pathlib import Path
 import re
 import sys
+from typing import NamedTuple
 import xml.etree.ElementTree as ET
 
 from native_assets_lib.gltf import safe_name
@@ -28,13 +29,37 @@ MAXIMUM_NPC_PROFILE_BUNDLES = 64
 PROFILE_SELECTION_FIELDS = frozenset({'npcId', 'expectedName', 'expectedMesh', 'expectedActorClass'})
 MODEL_CATALOG_ID_FIELD = 'modelCatalogId'
 MODEL_CATALOG_ID_PATTERN = re.compile(r'^npc-model:[a-f0-9]{64}$')
-INEXACT_ACTOR_CLASS_MESSAGE = 'Actor class requires an exact qualified export identity'
-INEXACT_NPC_MESH_MESSAGE = 'NPC mesh requires an exact qualified skeletal mesh export'
+UNMATCHED_ACTOR_CLASS_MESSAGE = 'Actor class matches no qualified class export, even ignoring case'
+UNMATCHED_NPC_MESH_MESSAGE = 'NPC mesh matches no qualified skeletal mesh export, even ignoring case'
+AMBIGUOUS_QUALIFIED_NAME_MESSAGE = 'Qualified name matches two or more exports ignoring case'
+EXACT_SPELLING_MATCH = 'exact-spelling'
+CASE_INSENSITIVE_SPELLING_MATCH = 'case-insensitive-spelling'
 NATIVE_SKELETAL_MESH_EXPORT_KIND = 'SkeletalMesh'
-EXACT_QUALIFIED_OBJECT_RESOLUTION = 'exact-qualified-object'
 ACTOR_BASE_CLASS = 'Engine.Actor'
 ROOT_OBJECT_CLASS = 'Core.Object'
 ACTOR_CLASS_INHERITANCE_MESSAGE = 'NPC actor class inheritance must resolve through Engine.Actor to Core.Object'
+
+
+class QualifiedNameMatch(NamedTuple):
+    requested: str
+    export: str
+    spelling: str
+
+
+def unique_qualified_export_match(packages, requested, unmatched_message):
+    _, package = packages.get(requested.split('.')[0])
+    matching_exports = sorted(item['object'] for item in package.exports if item['object'].casefold() == requested.casefold())
+    if len(matching_exports) > 1:
+        raise FormatError(f'{AMBIGUOUS_QUALIFIED_NAME_MESSAGE}: {requested} matches {" and ".join(matching_exports)}')
+    if not matching_exports:
+        raise FormatError(unmatched_message)
+    export = matching_exports[0]
+    return QualifiedNameMatch(requested, export, EXACT_SPELLING_MATCH if export == requested else CASE_INSENSITIVE_SPELLING_MATCH)
+
+
+def is_actor_class_chain(class_names):
+    casefolded_class_names = {class_name.casefold() for class_name in class_names}
+    return ACTOR_BASE_CLASS.casefold() in casefolded_class_names and ROOT_OBJECT_CLASS.casefold() in casefolded_class_names
 
 
 class UnresolvedActorDefaultError(FormatError):
@@ -200,19 +225,17 @@ def _extract_bundle(client, recipe, output, save):
     profiles, selections, mesh_sources, excluded_profiles = [], [], [], []
     for selection in recipe['profiles']:
         rows = select_exact_npc_rows_without_mesh_substitution(tables['npcname'], tables['npcgrp'], selection)
+        class_match = unique_qualified_export_match(packages, selection['expectedActorClass'], UNMATCHED_ACTOR_CLASS_MESSAGE)
         definition = defaults.get(selection['expectedActorClass'])
-        if definition['object'] != selection['expectedActorClass']:
-            raise FormatError(INEXACT_ACTOR_CLASS_MESSAGE)
         chain, current = [], definition
         while current:
             chain.append(current['object'])
             parent = current['nativeSuperClass']
             current = defaults.definitions[parent.casefold()] if parent else None
-        if ACTOR_BASE_CLASS not in chain or chain[-1] != ROOT_OBJECT_CLASS:
+        if not is_actor_class_chain(chain):
             raise FormatError(ACTOR_CLASS_INHERITANCE_MESSAGE)
+        mesh_match = unique_qualified_export_match(packages, selection['expectedMesh'], UNMATCHED_NPC_MESH_MESSAGE)
         mesh, _, _ = packages.resolve(selection['expectedMesh'], NATIVE_SKELETAL_MESH_EXPORT_KIND)
-        if mesh['object'] != selection['expectedMesh'] or mesh['resolution'] != EXACT_QUALIFIED_OBJECT_RESOLUTION:
-            raise FormatError(INEXACT_NPC_MESH_MESSAGE)
         try:
             profile = resolved_profile(selection, definition, recipe['sourceUnitsPerMetre'])
         except UnresolvedActorDefaultError as error:
@@ -221,6 +244,7 @@ def _extract_bundle(client, recipe, output, save):
         mesh_sources.append(mesh)
         profiles.append(profile)
         selections.append({'id': profiles[-1]['id'], 'classChain': chain, 'meshSource': mesh,
+            'qualifiedNameMatches': {'actorClass': class_match._asdict(), 'mesh': mesh_match._asdict()},
             'nameRow': audit_selected_row_offsets_and_typed_values(client, tables['npcname'], rows[0][0]),
             'groupRow': audit_selected_row_offsets_and_typed_values(client, tables['npcgrp'], rows[1][0])})
     source_files = {}

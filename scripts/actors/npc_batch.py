@@ -11,10 +11,9 @@ from actors.npc_requests import (ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX, CONVERT
                                  TRANSIENT_FAILURES, npc_profile_selection, npc_profiles_recipe)
 from actors.npc_store_records import (PROFILE_MANIFEST_FILE_NAME, bundle_output_records, catalog_with_record_replaced,
                                       converted_model_store_files_and_record, profile_bundle_store_files_and_record)
-from native_actor_profiles import (ACTOR_BASE_CLASS, ACTOR_CLASS_INHERITANCE_MESSAGE, EXACT_QUALIFIED_OBJECT_RESOLUTION,
-                                   INEXACT_ACTOR_CLASS_MESSAGE, INEXACT_NPC_MESH_MESSAGE, MAXIMUM_NPC_PROFILE_BUNDLES,
-                                   MAXIMUM_PROFILES_PER_BUNDLE, NATIVE_SKELETAL_MESH_EXPORT_KIND, ROOT_OBJECT_CLASS, migrate_npc_profiles,
-                                   npc_profile_tool_pins)
+from native_actor_profiles import (ACTOR_CLASS_INHERITANCE_MESSAGE, MAXIMUM_NPC_PROFILE_BUNDLES, MAXIMUM_PROFILES_PER_BUNDLE,
+                                   NATIVE_SKELETAL_MESH_EXPORT_KIND, UNMATCHED_ACTOR_CLASS_MESSAGE, UNMATCHED_NPC_MESH_MESSAGE,
+                                   is_actor_class_chain, migrate_npc_profiles, npc_profile_tool_pins, unique_qualified_export_match)
 from native_assets_lib.gltf import json_bytes
 from native_effect_bundle import MAX_CLASSES
 from native_store.canonical_json import canonical_json_bytes
@@ -155,18 +154,16 @@ class NpcSourceIdentities:
 
     def row_identity_refusal(self, npcgrp_row):
         try:
+            unique_qualified_export_match(self.packages, npcgrp_row['class_name'], UNMATCHED_ACTOR_CLASS_MESSAGE)
             closure = self.class_closure(npcgrp_row['class_name'])
-            mesh, _, _ = self.packages.resolve(npcgrp_row['mesh_name'], NATIVE_SKELETAL_MESH_EXPORT_KIND)
+            unique_qualified_export_match(self.packages, npcgrp_row['mesh_name'], UNMATCHED_NPC_MESH_MESSAGE)
+            self.packages.resolve(npcgrp_row['mesh_name'], NATIVE_SKELETAL_MESH_EXPORT_KIND)
         except ReferenceClientLockError:
             raise
         except ValueError as error:
             return ' '.join(str(error).split())
-        if npcgrp_row['class_name'] not in closure:
-            return INEXACT_ACTOR_CLASS_MESSAGE
-        if ACTOR_BASE_CLASS not in closure or ROOT_OBJECT_CLASS not in closure:
+        if not is_actor_class_chain(closure):
             return ACTOR_CLASS_INHERITANCE_MESSAGE
-        if mesh['object'] != npcgrp_row['mesh_name'] or mesh['resolution'] != EXACT_QUALIFIED_OBJECT_RESOLUTION:
-            return INEXACT_NPC_MESH_MESSAGE
         return None
 
 

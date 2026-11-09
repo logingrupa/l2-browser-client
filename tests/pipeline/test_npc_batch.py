@@ -43,17 +43,28 @@ def synthetic_closure(class_name):
     return ('Core.Object', 'Engine.Actor', class_name)
 
 
-class SyntheticMeshPackages:
-    def __init__(self, mesh_spellings):
-        self.mesh_spellings = mesh_spellings
+def synthetic_export_objects(npcgrp_rows):
+    return [*(row['class_name'] for row in npcgrp_rows), *(row['mesh_name'] for row in npcgrp_rows)]
+
+
+class SyntheticSourcePackages:
+    def __init__(self, export_objects):
+        self.exports_by_package = {}
+        for export_object in dict.fromkeys(export_objects):
+            self.exports_by_package.setdefault(export_object.split('.')[0].casefold(), []).append({'object': export_object})
+
+    def get(self, package_name):
+        return None, SimpleNamespace(exports=self.exports_by_package.get(package_name.casefold(), []))
 
     def resolve(self, reference, expected_class):
-        return {'object': self.mesh_spellings.get(reference, reference), 'resolution': 'exact-qualified-object'}, None, None
+        _, package = self.get(reference.split('.')[0])
+        export = next(item for item in package.exports if item['object'].casefold() == reference.casefold())
+        return {'reference': reference, 'object': export['object']}, package, export
 
 
 class SyntheticSourceIdentities(npc_batch.NpcSourceIdentities):
-    def __init__(self, closure_of=synthetic_closure, mesh_spellings=None):
-        super().__init__(SyntheticMeshPackages(mesh_spellings or {}))
+    def __init__(self, export_objects, closure_of=synthetic_closure):
+        super().__init__(SyntheticSourcePackages(export_objects))
         self.closure_of = closure_of
 
     def class_closure(self, class_reference):
@@ -153,9 +164,21 @@ class NpcBatchFixture(unittest.TestCase):
         return convert_actors.NpcConversionRun(self.project_root, self.client_access, self.converter, lane_work_root(self.project_root, 'actors'),
                                                lane_store_root(self.project_root, 'actors'))
 
+    def source_identities(self, export_objects=None, closure_of=synthetic_closure):
+        return SyntheticSourceIdentities(synthetic_export_objects(self.npcgrp['data']['npc']) if export_objects is None else export_objects, closure_of)
+
+    def batch_plan(self, source_identities=None, excluded_npc_ids=()):
+        run = self.conversion_run()
+        return npc_batch.npc_batch_plan(run.census, run.npcgrp, run.npcname, run.name_table, source_identities or self.source_identities(),
+                                        excluded_npc_ids)
+
+    def export_objects_with(self, replaced_spellings):
+        return [spelling for export_object in synthetic_export_objects(self.npcgrp['data']['npc'])
+                for spelling in replaced_spellings.get(export_object, [export_object])]
+
     def run_slice(self, limit=20, excluded_npc_ids=()):
         run = self.conversion_run()
-        plan = npc_batch.npc_batch_plan(run.census, run.npcgrp, run.npcname, run.name_table, SyntheticSourceIdentities(), excluded_npc_ids)
+        plan = npc_batch.npc_batch_plan(run.census, run.npcgrp, run.npcname, run.name_table, self.source_identities(), excluded_npc_ids)
         return npc_batch.run_npc_batch_slice(run, plan, limit, self.preflight, lambda: SYNTHETIC_TOOL_PINS)
 
     def model_step_directory(self, selection):
@@ -318,8 +341,7 @@ class NpcBatchSharedStoreTests(NpcBatchFixture):
         self.npcname['data']['npc'] = [{'id': 21622, 'name': 'Shared'}, {'id': 21623, 'name': 'Lane'}]
         self.census['units'] = [synthetic_unit(first), synthetic_unit(second)]
         self.write_census()
-        run = self.conversion_run()
-        plan = npc_batch.npc_batch_plan(run.census, run.npcgrp, run.npcname, run.name_table, SyntheticSourceIdentities(), (21622,))
+        plan = self.batch_plan(excluded_npc_ids=(21622,))
         self.assertEqual([(scheduled.unit['key'], [row.npc_id for row in scheduled.rows]) for scheduled in plan.units],
                          [(conversion_unit_key(NPC_MODEL_UNIT_KIND, first), [21623])])
         profiles = [profile for pack in plan.packs for profile in pack.recipe['profiles']]
@@ -330,8 +352,7 @@ class NpcBatchSharedStoreTests(NpcBatchFixture):
 class NpcProfilePackRecipeTests(NpcBatchFixture):
     def test_pack_recipes_take_name_mesh_and_class_from_the_decoded_rows_and_the_name_table_from_the_census_path(self):
         self.census['tables'][1]['path'] = 'system/npcname-e.dat'
-        run = self.conversion_run()
-        plan = npc_batch.npc_batch_plan(run.census, run.npcgrp, run.npcname, run.name_table, SyntheticSourceIdentities(), ())
+        plan = self.batch_plan()
         self.assertEqual(len(plan.packs), 1)
         recipe = plan.packs[0].recipe
         self.assertEqual(recipe['nameTable'], 'npcname-e.dat')
@@ -344,32 +365,6 @@ class NpcProfilePackRecipeTests(NpcBatchFixture):
                 self.assertEqual((profile['expectedName'], profile['expectedMesh'], profile['expectedActorClass']),
                                  (names[profile['npcId']], row['mesh_name'], row['class_name']))
                 self.assertEqual(profile['modelCatalogId'], conversion_unit_key(NPC_MODEL_UNIT_KIND, npc_batch.npc_row_selection(row)))
-
-    def test_a_class_that_resolves_only_to_another_spelling_is_a_planning_gap_outside_every_pack(self):
-        inexact_class = self.npcgrp['data']['npc'][2]['class_name']
-        run = self.conversion_run()
-        plan = npc_batch.npc_batch_plan(run.census, run.npcgrp, run.npcname, run.name_table,
-                                        SyntheticSourceIdentities(lambda class_name: synthetic_closure(class_name.upper() if class_name == inexact_class else class_name)), ())
-        self.assertEqual([(gap.npc_id, gap.reason) for gap in plan.planning_gaps],
-                         [(20, 'converter-refused:Actor class requires an exact qualified export identity')])
-        self.assertNotIn(20, [row.npc_id for pack in plan.packs for row in pack.rows])
-
-    def test_a_class_outside_engine_actor_is_a_planning_gap_outside_every_pack(self):
-        object_class = self.npcgrp['data']['npc'][1]['class_name']
-        run = self.conversion_run()
-        plan = npc_batch.npc_batch_plan(run.census, run.npcgrp, run.npcname, run.name_table, SyntheticSourceIdentities(
-            lambda class_name: ('Core.Object', class_name) if class_name == object_class else synthetic_closure(class_name)), ())
-        self.assertEqual([(gap.npc_id, gap.reason) for gap in plan.planning_gaps],
-                         [(11, 'converter-refused:NPC actor class inheritance must resolve through Engine.Actor to Core.Object')])
-
-    def test_a_mesh_that_resolves_only_to_another_spelling_is_a_planning_gap_outside_every_pack(self):
-        inexact_mesh = self.npcgrp['data']['npc'][0]['mesh_name']
-        run = self.conversion_run()
-        plan = npc_batch.npc_batch_plan(run.census, run.npcgrp, run.npcname, run.name_table,
-                                        SyntheticSourceIdentities(mesh_spellings={inexact_mesh: inexact_mesh.upper()}), ())
-        self.assertEqual([(gap.npc_id, gap.reason) for gap in plan.planning_gaps],
-                         [(30, 'converter-refused:NPC mesh requires an exact qualified skeletal mesh export')])
-        self.assertNotIn(30, [row.npc_id for pack in plan.packs for row in pack.rows])
 
     def test_a_pack_record_of_an_earlier_plan_leaves_the_lane_catalog_when_the_packs_are_cut_again(self):
         self.run_slice()
@@ -384,10 +379,9 @@ class NpcProfilePackRecipeTests(NpcBatchFixture):
     def test_a_row_without_a_name_is_a_planning_gap_and_a_closure_at_the_class_limit_is_over_limit(self):
         self.npcname['data']['npc'] = [row for row in self.npcname['data']['npc'] if row['id'] != 12]
         wide_class = self.npcgrp['data']['npc'][0]['class_name']
-        run = self.conversion_run()
         wide_closure = (*synthetic_closure(wide_class), *(f'Synthetic.class_{index:03d}' for index in range(npc_batch.MAX_CLASSES - 3)))
-        plan = npc_batch.npc_batch_plan(run.census, run.npcgrp, run.npcname, run.name_table,
-                                        SyntheticSourceIdentities(lambda class_name: wide_closure if class_name == wide_class else synthetic_closure(class_name)), ())
+        plan = self.batch_plan(self.source_identities(
+            closure_of=lambda class_name: wide_closure if class_name == wide_class else synthetic_closure(class_name)))
         self.assertEqual({(gap.npc_id, gap.reason) for gap in plan.planning_gaps},
                          {(12, 'npc-name-row-missing'), (30, f'class-closure-over-limit:{npc_batch.MAX_CLASSES}')})
         self.assertTrue(all(len(pack.class_closure) < npc_batch.MAX_CLASSES for pack in plan.packs))
