@@ -90,7 +90,7 @@ class SyntheticStaticMeshPackageCensusTests(unittest.TestCase):
     def test_unreviewed_versions_are_ordered_by_static_mesh_export_count(self):
         ordered = census_module.unreviewed_versions_by_static_mesh_count(self.census())
         self.assertEqual(ordered[0], {'version': '123/13', 'packages': 1, 'staticMeshExports': 3})
-        self.assertEqual(ordered[-1], {'version': '118/11', 'packages': 1, 'staticMeshExports': 0})
+        self.assertEqual(ordered[-1], {'version': '118/11', 'packages': 1, 'staticMeshExports': None})
 
     def test_an_output_outside_the_adapter_dispatch_evidence_folder_is_refused(self):
         with self.assertRaisesRegex(census_module.StaticMeshPackageCensusError, 'docs/parts/adapter-dispatch'):

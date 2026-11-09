@@ -3533,6 +3533,40 @@
         "9ec17c1e56bc59d945b1ca197eb5b46a4fdcf8af17d81a9de7a66853a6d556d5"
       ],
       "materialsPayloadSha256": "8832cac5795b6656c1257eea7c6f6701d7ba45955e536c0a91727705c492dd6a"
+    },
+    {
+      "package": "staticmeshes/dion_partisan_door_s.usx",
+      "packageSha256": "a241261935b8f427c7f332041cad79cdbd1213095f9ce588df2ff106ea2895b2",
+      "object": "dion_partisan_door_s.Dn_Par_hideaway_Door_L",
+      "licenseeVersion": 15,
+      "materialIndices": [
+        -5,
+        -4,
+        -3
+      ],
+      "slotByteSha256s": [
+        "3331729af123c68d46aee25ba0dae2502436e8da905ba3307897ee6dcb4f54db",
+        "81ca2b2ef9f0bdbcf55b3a9a55016822363081d67a11a5f2586207e44cc83694",
+        "1b21dd6c8660f6892c1d0750cff461844a75e97205ce7031098282c5a7930c8e"
+      ],
+      "materialsPayloadSha256": "35f2296fb8fbaa00c0209608d2bda11108829fbd6751ed64f2d6bb6d01d7f2e1"
+    },
+    {
+      "package": "staticmeshes/dion_partisan_door_s.usx",
+      "packageSha256": "a241261935b8f427c7f332041cad79cdbd1213095f9ce588df2ff106ea2895b2",
+      "object": "dion_partisan_door_s.Dn_Par_hideaway_Door_R",
+      "licenseeVersion": 15,
+      "materialIndices": [
+        -5,
+        -4,
+        -3
+      ],
+      "slotByteSha256s": [
+        "3331729af123c68d46aee25ba0dae2502436e8da905ba3307897ee6dcb4f54db",
+        "81ca2b2ef9f0bdbcf55b3a9a55016822363081d67a11a5f2586207e44cc83694",
+        "1b21dd6c8660f6892c1d0750cff461844a75e97205ce7031098282c5a7930c8e"
+      ],
+      "materialsPayloadSha256": "35f2296fb8fbaa00c0209608d2bda11108829fbd6751ed64f2d6bb6d01d7f2e1"
     }
   ]
 }

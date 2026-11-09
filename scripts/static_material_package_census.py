@@ -120,15 +120,23 @@ def validate_static_mesh_package_census(census):
 
 
 def unreviewed_versions_by_static_mesh_count(census):
-    package_counts, static_mesh_counts = Counter(), Counter()
+    package_counts, static_mesh_counts, versions_without_table_count = Counter(), Counter(), set()
     for row in census['packages']:
         if row['reviewed']:
             continue
         version = (row['packageVersion'], row['licensee'])
         package_counts[version] += 1
-        static_mesh_counts[version] += row['staticMeshExportCount'] or 0
-    return [{'version': f'{version[0]}/{version[1]}', 'packages': package_counts[version], 'staticMeshExports': static_mesh_counts[version]}
-            for version in sorted(package_counts, key=lambda version: (-static_mesh_counts[version], version))]
+        if row['staticMeshExportCount'] is None:
+            versions_without_table_count.add(version)
+        else:
+            static_mesh_counts[version] += row['staticMeshExportCount']
+
+    def static_mesh_count(version):
+        return None if version in versions_without_table_count else static_mesh_counts[version]
+
+    return [{'version': f'{version[0]}/{version[1]}', 'packages': package_counts[version], 'staticMeshExports': static_mesh_count(version)}
+            for version in sorted(package_counts, key=lambda version: (version in versions_without_table_count,
+                                                                       -static_mesh_counts[version], version))]
 
 
 def require_census_output_path(output_path):

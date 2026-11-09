@@ -274,8 +274,8 @@
       "licensee": 15,
       "packageVersion": 123,
       "path": "staticmeshes/dion_partisan_door_s.usx",
-      "reason": "static-material-layout-unreviewed:123/15",
-      "reviewed": false,
+      "reason": null,
+      "reviewed": true,
       "sha256": "a241261935b8f427c7f332041cad79cdbd1213095f9ce588df2ff106ea2895b2",
       "staticMeshExportCount": 2
     },
@@ -1922,6 +1922,10 @@
     [
       123,
       14
+    ],
+    [
+      123,
+      15
     ],
     [
       123,

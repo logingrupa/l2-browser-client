@@ -63,6 +63,26 @@
     {
       "version": [
         123,
+        15
+      ],
+      "package": "staticmeshes/dion_partisan_door_s.usx",
+      "lockSha256": "a241261935b8f427c7f332041cad79cdbd1213095f9ce588df2ff106ea2895b2",
+      "comparedExports": 2,
+      "ourReferencesSha256": "cf11092fbce09469b2428ab3e342521c301bc70be08136f5a3dab0e7e083c9f0",
+      "crossCheckReferencesSha256": "cf11092fbce09469b2428ab3e342521c301bc70be08136f5a3dab0e7e083c9f0",
+      "tool": {
+        "name": "Elbera l2lib",
+        "commit": "12c9656",
+        "pins": {
+          "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
+        }
+      },
+      "equal": true,
+      "firstDifferingExport": null
+    },
+    {
+      "version": [
+        123,
         18
       ],
       "package": "staticmeshes/dion_punish_s.usx",
