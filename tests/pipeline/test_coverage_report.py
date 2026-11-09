@@ -12,10 +12,11 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
-from catalog_store_fixture import model_record, write_profile_manifest, write_store_catalog
+from catalog_store_fixture import write_store_catalog
 from native_store.build_coverage_report import (CoverageReportError, build_coverage_report, coverage_markdown, coverage_output_path,
                                                 coverage_report_bytes, main, validate_coverage_report)
 from native_store.coverage_denominators import COVERAGE_PART_ORDER, coverage_denominators
+from native_store.gap_census import GapCensusIncompleteError
 from native_store.gap_rows import stage_a_part_names, write_gap_rows
 from native_store.load_check_records import LoadCheckRecordError, read_load_check_records
 from native_store.store_paths import lane_load_check_path
@@ -25,12 +26,13 @@ CHECKED_AT_RIGA = '2026-11-08T21:00:00+02:00'
 TABLE_MANIFEST_SHA256 = 'a' * 64
 SOURCE_SHA256 = 'b' * 64
 DECODE_FAILED_REASON = 'decode-failed:cp1252 codec error'
-ALL_LANE_NAMES = ('actors', 'data-ui', 'integration', 'world')
+DECODE_PENDING_REASON = 'step-pending:decode'
 NON_TILE_MAP_NAMES = ('Auto0', 'Auto1', 'Auto2', 'Auto3', 'Auto4', 'Auto5', 'Lobby', 'entry', 'ship_position', 'skylevel')
 ACTOR_DENOMINATORS = (('npcs', 'npcgrp', 6519), ('items', 'itemname-e', 9238), ('skills-effects', 'skillgrp', 29812),
                       ('player-characters', 'chargrp', 15))
 COVERAGE_MODULE_PATHS = (ROOT / 'scripts' / 'native_store' / 'build_coverage_report.py',
-                         ROOT / 'scripts' / 'native_store' / 'coverage_denominators.py')
+                         ROOT / 'scripts' / 'native_store' / 'coverage_denominators.py',
+                         ROOT / 'scripts' / 'native_store' / 'gap_census.py')
 
 
 def table_record(table_name):
@@ -40,7 +42,8 @@ def table_record(table_name):
 
 def table_gap_row(key, step, status, reason):
     return {'key': key, 'part': 'data', 'step': step, 'status': status, 'reason': reason,
-            'sourceIdentity': {'path': 'system/npcgrp.dat', 'sha256': SOURCE_SHA256}, 'evidence': 'docs/parts/data/EVIDENCE.md'}
+            'sourceIdentity': {'path': f'system/{key.split(":", 1)[1]}.dat', 'sha256': SOURCE_SHA256},
+            'evidence': 'docs/parts/data/EVIDENCE.md'}
 
 
 def world_gap_row(key, step, status, reason):
@@ -61,6 +64,13 @@ def write_load_check_file(project_root, lane_name, catalog_sha256, records, docu
     return path
 
 
+def write_table_decode_rows(project_root, failed_table_keys=('table:npcgrp',), unlisted_table_keys=('table:itemname-e',)):
+    rows = [table_gap_row(key, 'decode', 'gap', DECODE_FAILED_REASON) if key in failed_table_keys
+            else table_gap_row(key, 'decode', 'pending', DECODE_PENDING_REASON)
+            for key in coverage_denominators()['data']['keys'] if key not in unlisted_table_keys]
+    write_gap_rows(project_root, 'data-ui', 'decode', rows)
+
+
 def rows_by_key(report):
     return {row['key']: row for row in report['rows']}
 
@@ -73,20 +83,21 @@ class CoverageProjectTestCase(unittest.TestCase):
         self.store_root = self.project_root / 'artifacts' / 'lane-store' / 'data-ui' / 'l2'
         self.catalog_sha256 = write_store_catalog(self.store_root, {'schemaVersion': 1, 'models': [], 'tables': [table_record('itemname-e')]})
 
-    def build_report(self, lane_names=ALL_LANE_NAMES):
+    def build_report(self, lane_names=('data-ui',)):
         return build_coverage_report(self.project_root, self.store_root, lane_names, GENERATED_AT_RIGA)
 
 
 class CoverageReportTablesTests(CoverageProjectTestCase):
     def setUp(self):
         super().setUp()
-        write_gap_rows(self.project_root, 'data-ui', 'decode', [table_gap_row('table:npcgrp', 'decode', 'gap', DECODE_FAILED_REASON)])
+        write_table_decode_rows(self.project_root)
         write_load_check_file(self.project_root, 'data-ui', self.catalog_sha256, [load_check_record('table:itemname-e')])
 
-    def test_the_data_part_counts_inventory_catalog_gap_rows_and_load_checks(self):
+    def test_the_data_part_counts_census_rows_and_load_checks(self):
         report = self.build_report()
         self.assertEqual(report['parts']['data'], {'denominator': 40, 'converted': 1, 'loads': {'pass': 1, 'failed': 0, 'unverified': 0},
-                                                   'gap': 39, 'pending': 0})
+                                                   'gap': 1, 'pending': 38})
+        self.assertEqual(tuple(report['parts']), ('data', 'sandbox', 'ui'))
         self.assertEqual(report['denominators']['data']['count'], 40)
         self.assertIn('docs/parts/data/dat-table-inventory.json', report['denominators']['data']['source'])
         self.assertEqual(report['catalogSha256'], self.catalog_sha256)
@@ -94,14 +105,19 @@ class CoverageReportTablesTests(CoverageProjectTestCase):
         self.assertEqual(len([row for row in report['rows'] if row['part'] == 'data']), 40)
         self.assertEqual(validate_coverage_report(report), report)
 
-    def test_table_rows_carry_their_status_reason_loads_and_steps(self):
+    def test_table_rows_carry_their_census_status_reason_loads_and_steps(self):
         report_rows = rows_by_key(self.build_report())
         self.assertEqual(report_rows['table:itemname-e'], {'key': 'table:itemname-e', 'part': 'data', 'status': 'pass', 'reason': None,
                                                            'converted': True, 'loads': 'pass', 'steps': []})
         self.assertEqual(report_rows['table:npcgrp'], {
             'key': 'table:npcgrp', 'part': 'data', 'status': 'gap', 'reason': DECODE_FAILED_REASON, 'converted': False,
             'loads': 'unverified', 'steps': [{'step': 'decode', 'status': 'gap', 'reason': DECODE_FAILED_REASON}]})
-        self.assertEqual((report_rows['table:chargrp']['status'], report_rows['table:chargrp']['reason']), ('gap', 'census-pending'))
+        self.assertEqual((report_rows['table:chargrp']['status'], report_rows['table:chargrp']['reason']), ('pending', DECODE_PENDING_REASON))
+
+    def test_a_table_with_no_row_and_no_catalog_entry_fails_the_census(self):
+        write_table_decode_rows(self.project_root, unlisted_table_keys=('table:itemname-e', 'table:chargrp'))
+        with self.assertRaisesRegex(GapCensusIncompleteError, r'part data: .*table:chargrp'):
+            self.build_report()
 
     def test_loads_come_only_from_records_pinned_to_the_measured_catalog(self):
         lane_load_check_path(self.project_root, 'data-ui', self.catalog_sha256).unlink()
@@ -111,12 +127,12 @@ class CoverageReportTablesTests(CoverageProjectTestCase):
         self.assertEqual(report['parts']['data']['loads'], {'pass': 0, 'failed': 0, 'unverified': 1})
 
     def test_a_failed_record_in_any_lane_wins_over_a_pass_in_another(self):
-        write_load_check_file(self.project_root, 'world', self.catalog_sha256,
+        write_load_check_file(self.project_root, 'integration', self.catalog_sha256,
                               [load_check_record('table:itemname-e', 'failed', 'manifest fetch answered 404')])
-        report = self.build_report()
+        report = self.build_report(('data-ui', 'integration'))
         self.assertEqual(rows_by_key(report)['table:itemname-e']['loads'], 'failed')
         self.assertEqual(report['parts']['data']['loads'], {'pass': 0, 'failed': 1, 'unverified': 0})
-        self.assertEqual(rows_by_key(self.build_report(['data-ui']))['table:itemname-e']['loads'], 'pass')
+        self.assertEqual(rows_by_key(self.build_report())['table:itemname-e']['loads'], 'pass')
 
     def test_two_runs_with_the_same_clock_write_identical_bytes(self):
         first_report, second_report = self.build_report(), self.build_report()
@@ -124,7 +140,7 @@ class CoverageReportTablesTests(CoverageProjectTestCase):
         self.assertEqual(coverage_markdown(first_report), coverage_markdown(second_report))
         markdown = coverage_markdown(first_report)
         self.assertTrue(markdown.startswith('# Coverage\n'))
-        self.assertIn('| data | 40 | 1 | 1 | 0 | 0 | 39 | 0 |', markdown)
+        self.assertIn('| data | 40 | 1 | 1 | 0 | 0 | 1 | 38 |', markdown)
         self.assertIn('Loads counts only recorded load checks; everything else is unverified.', markdown)
 
     def test_a_report_with_counts_that_differ_from_its_rows_is_refused(self):
@@ -178,12 +194,19 @@ class CoverageOutputTests(CoverageProjectTestCase):
         return lambda command, **options: subprocess.CompletedProcess(command, exit_code, json.dumps(schedule), 'relay window')
 
     def test_main_writes_the_report_and_the_markdown_outside_a_machine_window(self):
-        exit_code = main(['--store-root', str(self.store_root), '--markdown', 'docs/coverage.md'], project_root=self.project_root,
-                         run_command=self.schedule_runner(0, None))
+        write_table_decode_rows(self.project_root)
+        exit_code = main(['--store-root', str(self.store_root), '--lane', 'data-ui', '--markdown', 'docs/coverage.md'],
+                         project_root=self.project_root, run_command=self.schedule_runner(0, None))
         self.assertEqual(exit_code, 0)
         report = json.loads((self.store_root / 'coverage.json').read_text(encoding='utf-8'))
         self.assertEqual(report['parts']['data']['converted'], 1)
         self.assertTrue((self.project_root / 'docs' / 'coverage.md').read_text(encoding='utf-8').startswith('# Coverage\n'))
+
+    def test_main_refuses_an_incomplete_census(self):
+        exit_code = main(['--store-root', str(self.store_root), '--lane', 'data-ui'], project_root=self.project_root,
+                         run_command=self.schedule_runner(0, None))
+        self.assertEqual(exit_code, 1)
+        self.assertFalse((self.store_root / 'coverage.json').exists())
 
     def test_main_refuses_inside_a_machine_window(self):
         exit_code = main(['--store-root', str(self.store_root)], project_root=self.project_root,
@@ -199,8 +222,15 @@ class CoverageOutputTests(CoverageProjectTestCase):
         self.assertFalse((self.project_root / 'public' / 'l2' / 'coverage.md').exists())
 
 
-class CoverageReportAllPartsTests(CoverageProjectTestCase):
-    def test_denominators_come_from_the_reference_lock_and_the_inventory(self):
+class CoverageReportWorldTests(CoverageProjectTestCase):
+    def setUp(self):
+        super().setUp()
+        world_keys = coverage_denominators()['world']['keys']
+        write_gap_rows(self.project_root, 'world', 'census', [
+            world_gap_row(key, 'census', 'pending', 'step-pending:raw') if key == 'tile:20_21'
+            else world_gap_row(key, 'census', 'gap', 'census-pending') for key in world_keys])
+
+    def test_denominators_come_from_the_reference_lock_the_tile_census_and_the_inventory(self):
         denominators = coverage_denominators()
         self.assertEqual(tuple(denominators), COVERAGE_PART_ORDER)
         self.assertEqual(set(COVERAGE_PART_ORDER), stage_a_part_names())
@@ -209,54 +239,48 @@ class CoverageReportAllPartsTests(CoverageProjectTestCase):
         self.assertEqual(len([key for key in world_keys if key.startswith('tile:')]), 153)
         self.assertEqual(sorted(key for key in world_keys if key.startswith('map:')), sorted(f'map:{name}' for name in NON_TILE_MAP_NAMES))
         self.assertIn('recipes/reference-client-tree.lock.json', denominators['world']['source'])
+        self.assertIn('docs/parts/world/tile-census.json', denominators['world']['source'])
         for part, table_name, count in ACTOR_DENOMINATORS:
             with self.subTest(part):
                 self.assertEqual((denominators[part]['count'], denominators[part]['keys']), (count, None))
                 self.assertIn(f'docs/parts/data/dat-table-inventory.json {table_name} recordCount', denominators[part]['source'])
-        self.assertEqual(denominators['ui'], {'count': 'unknown', 'keys': None, 'source': 'no committed window census yet (UI-01, plan 02-19)'})
         for part in ('sandbox', 'audio', 'minimap', 'movement-geodata'):
             with self.subTest(part):
                 self.assertEqual((denominators[part]['count'], denominators[part]['keys']), ('unknown', None))
 
-    def test_world_rows_list_every_step_and_default_to_census_pending(self):
+    def test_a_world_lane_report_gives_every_world_key_one_status_with_its_steps(self):
         write_gap_rows(self.project_root, 'world', 'raw', [world_gap_row('tile:20_21', 'raw', 'pass', None)])
         write_gap_rows(self.project_root, 'world', 'terrain', [world_gap_row('tile:20_21', 'terrain', 'pending', 'step-pending:terrain')])
-        report = self.build_report()
+        write_store_catalog(self.store_root, {'schemaVersion': 1, 'models': [], 'sections': [{'id': 'map-20-20-section'}]})
+        report = self.build_report(('world',))
         report_rows = rows_by_key(report)
-        self.assertEqual(len([row for row in report['rows'] if row['part'] == 'world']), 163)
-        self.assertEqual(report_rows['tile:20_21']['steps'], [{'step': 'raw', 'status': 'pass', 'reason': None},
+        self.assertEqual(tuple(report['parts']), ('world', 'minimap', 'movement-geodata'))
+        self.assertEqual(len(report['rows']), 163)
+        self.assertEqual(report_rows['tile:20_21']['steps'], [{'step': 'census', 'status': 'pending', 'reason': 'step-pending:raw'},
+                                                              {'step': 'raw', 'status': 'pass', 'reason': None},
                                                               {'step': 'terrain', 'status': 'pending', 'reason': 'step-pending:terrain'}])
         self.assertEqual((report_rows['tile:20_21']['status'], report_rows['tile:20_21']['reason']), ('pending', 'step-pending:terrain'))
-        for key in ('tile:20_20', 'map:Lobby'):
-            with self.subTest(key):
-                self.assertEqual((report_rows[key]['status'], report_rows[key]['reason'], report_rows[key]['steps']),
-                                 ('gap', 'census-pending', []))
-        self.assertEqual(report['parts']['world'], {'denominator': 163, 'converted': 0, 'loads': {'pass': 0, 'failed': 0, 'unverified': 0},
-                                                    'gap': 162, 'pending': 1})
+        self.assertEqual((report_rows['tile:20_20']['status'], report_rows['tile:20_20']['converted']), ('pass', True))
+        self.assertEqual((report_rows['map:Lobby']['status'], report_rows['map:Lobby']['reason']), ('gap', 'census-pending'))
+        self.assertEqual(report['parts']['world'], {'denominator': 163, 'converted': 1, 'loads': {'pass': 0, 'failed': 0, 'unverified': 1},
+                                                    'gap': 161, 'pending': 1})
+        self.assertEqual(report['parts']['minimap']['pending'], 'unknown')
+        self.assertIn('Lobby (`map:Lobby`) has the census status gap `census-pending`.', coverage_markdown(report))
 
-    def test_a_counted_denominator_reports_unlisted_keys_as_pending(self):
-        npc_profiles = write_profile_manifest(self.store_root, 'native-npc-profiles',
-                                              [{'npcId': 21622, 'mesh': 'LineageMonsters.field_stalker_m00'}])
-        write_store_catalog(self.store_root, {'schemaVersion': 1, 'models': [model_record('musveren:0', 'LineageMonsters.field_stalker_m00')],
-                                              'npcProfiles': [npc_profiles], 'sections': [{'id': 'map-20-20-section'}]})
-        report = self.build_report()
-        self.assertEqual(report['parts']['npcs'], {'denominator': 6519, 'converted': 1, 'loads': {'pass': 0, 'failed': 0, 'unverified': 1},
-                                                   'gap': 0, 'pending': 6518})
-        self.assertEqual(rows_by_key(report)['npc:21622']['status'], 'pass')
-        self.assertEqual(rows_by_key(report)['tile:20_20']['converted'], True)
-        self.assertEqual(report['parts']['ui']['pending'], 'unknown')
+    def test_a_converted_key_outside_an_enumerated_denominator_is_refused(self):
+        write_store_catalog(self.store_root, {'schemaVersion': 1, 'models': [], 'sections': [{'id': 'map-99-99-section'}]})
+        with self.assertRaisesRegex(GapCensusIncompleteError, 'tile:99_99'):
+            self.build_report(('world',))
 
+
+class CoverageReportTableNameIndexTests(CoverageProjectTestCase):
     def test_table_name_index_records_are_derived_and_outside_the_data_denominator(self):
+        write_table_decode_rows(self.project_root)
         write_store_catalog(self.store_root, {'schemaVersion': 1, 'models': [], 'tables': [table_record('itemname-e'),
                                                                                              table_record('itemname_e_names')]})
         report = self.build_report()
         self.assertEqual((report['parts']['data']['denominator'], report['parts']['data']['converted']), (40, 1))
         self.assertNotIn('table:itemname_e_names', rows_by_key(report))
-
-    def test_a_converted_key_outside_an_enumerated_denominator_is_refused(self):
-        write_store_catalog(self.store_root, {'schemaVersion': 1, 'models': [], 'sections': [{'id': 'map-99-99-section'}]})
-        with self.assertRaisesRegex(CoverageReportError, 'tile:99_99'):
-            self.build_report()
 
 
 class CoverageDenominatorSourceTests(unittest.TestCase):
