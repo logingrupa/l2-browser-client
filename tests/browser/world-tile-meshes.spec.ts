@@ -8,7 +8,10 @@ import { servedLaneCatalogSha256, writeLoadCheckRecord } from "./support/loadChe
 interface PinnedManifestRecord { readonly manifest: string; readonly manifestSha256: string }
 interface TileCatalogRecord extends PinnedManifestRecord { readonly id: string }
 interface ChunkModelPlacement { readonly id: string }
-interface ChunkManifest { readonly models: readonly { readonly placements: readonly ChunkModelPlacement[] }[] }
+interface ChunkManifest {
+  readonly models: readonly { readonly placements: readonly ChunkModelPlacement[] }[];
+  readonly bsp: { readonly resource: string } | null;
+}
 interface StaticMeshGapRow { readonly sourceIdentity: { readonly object?: string } }
 
 const laneName = "world";
@@ -24,10 +27,25 @@ const staticMeshReceiptPath = resolve(laneFolder, `work/tile__${tileId}/meshes/r
 const tileLoadTimeout = 300_000;
 const terminalColourCodes = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g");
 
-function servedPlacementIds(): ReadonlySet<string> {
+function servedChunkManifests(): readonly ChunkManifest[] {
   const tile = readJson<{ chunks: readonly PinnedManifestRecord[] }>(laneStoreFile(tileRecord!.manifest));
-  return new Set(tile.chunks.flatMap(chunk => readJson<ChunkManifest>(laneStoreFile(chunk.manifest)).models
-    .flatMap(model => model.placements.map(placement => placement.id))));
+  return tile.chunks.map(chunk => readJson<ChunkManifest>(laneStoreFile(chunk.manifest)));
+}
+
+function servedPlacementIds(): ReadonlySet<string> {
+  return new Set(servedChunkManifests().flatMap(chunk => chunk.models.flatMap(model => model.placements.map(placement => placement.id))));
+}
+
+function servedBspResources(): readonly string[] {
+  return servedChunkManifests().flatMap(chunk => chunk.bsp ? [chunk.bsp.resource] : []);
+}
+
+function servedBspSectionCount(resources: readonly string[]): number {
+  return resources.reduce((sum, resource) => {
+    const glb = readFileSync(laneStoreFile(resource));
+    const document = JSON.parse(glb.subarray(20, 20 + glb.readUInt32LE(12)).toString("utf8")) as { extras: { nativeBspSections: unknown[] } };
+    return sum + document.extras.nativeBspSections.length;
+  }, 0);
 }
 
 function gappedPlacementIds(): ReadonlySet<string> {
@@ -85,7 +103,11 @@ async function openTileWithStaticMeshes(page: Page, screenshotName: string) {
   expect(world.modelCount).toBeGreaterThan(0);
   expect(world.textureCount).toBeGreaterThan(0);
   expect(world.finiteBounds).toBe(true);
-  expect(world).toMatchObject({ bspMeshes: 0, collisionVerified: false, visualParity: "unverified" });
+  expect(world).toMatchObject({ collisionVerified: false, visualParity: "unverified" });
+  const bspResources = servedBspResources();
+  if (bspResources.length) expect(world.bspMeshes).toBeGreaterThan(0);
+  expect([...(world.bspResources ?? [])].sort()).toEqual([...bspResources].sort());
+  expect(world.bspSections).toBe(servedBspSectionCount(bspResources));
   await page.screenshot({ path: `test-results/${screenshotName}` });
   expect(pageErrors).toEqual([]);
 }

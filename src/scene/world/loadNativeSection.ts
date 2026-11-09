@@ -234,6 +234,8 @@ export type NativeWorldSceneInspection = ReturnType<typeof inspectNativeWorldSce
   readonly terrainChunks?: NativeTileSectionView["terrainChunks"];
   readonly tileAnchor?: NativeTileSectionView["anchor"];
   readonly meshGapCount?: number;
+  readonly bspSections?: number;
+  readonly bspResources?: readonly string[];
 };
 
 export async function loadNativeGlbContainer(scene: Scene, url: string, bytes: Uint8Array<ArrayBuffer>): Promise<AssetContainer> {

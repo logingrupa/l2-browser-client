@@ -3,3 +3,4 @@ recipes/data/table-layouts/*.xml text eol=lf
 tests/fixtures/golden/** -text
 tests/fixtures/lane-store/** -text
 tests/fixtures/typed-payload/** -text
+scripts/vendor/** -text

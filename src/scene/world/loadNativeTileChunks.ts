@@ -7,9 +7,10 @@ import { readTileCatalogRecord } from "../../assets/native/nativeCatalogRecords"
 import { assetPackageLimits, readAssetPackage } from "../../assets/package/readAssetPackage";
 import { readNativeCatalogUnlessNotStaged } from "../../assets/native/readNativeCatalog";
 import {
-  fetchVerifiedNativeResource, inspectNativeWorldScene, loadNativeGlbContainer, nativeMeshBounds, terrainInfoChunkPlanWindow,
+  fetchVerifiedNativeResource, inspectNativeWorldScene, loadNativeGlbContainer, nativeMeshBounds, terrainInfoChunkPlanWindow, validateSectionGlb,
   type NativeSection, type NativeSectionManifest,
 } from "./loadNativeSection";
+import { parseNativeBspSectionExtras, type NativeBspNodeRange, type NativeBspSection, type NativeTileBspResource } from "./nativeBspResources";
 import { disposeNativeModelInstances, instantiateNativeModelPlacements, type NativeModelInstance } from "./nativeModelPlacements";
 import {
   describeNativeTileGapRow, parseNativeTileChunkManifest, type NativeTileChunkManifest, type NativeTileChunkModel, type NativeTileChunkPlacement,
@@ -31,10 +32,19 @@ export interface NativeTileSpawnAnchor {
   readonly rule: typeof tileSpawnAnchorRule;
 }
 
+export interface NativeTileBspChunk {
+  readonly chunkId: string;
+  readonly resource: string;
+  readonly sections: readonly NativeBspSection[];
+  readonly nodeRanges: readonly NativeBspNodeRange[];
+  readonly meshes: readonly AbstractMesh[];
+}
+
 export interface NativeTileSectionView extends Pick<NativeSectionManifest, "models" | "placements" | "bsp" | "terrainPatches" | "unsupportedRuntimeMaterials"> {
   readonly kind: "native-tile-runtime";
   readonly tileId: string;
   readonly terrainChunks: readonly NativeTileTerrainChunk[];
+  readonly bspChunks: readonly NativeTileBspChunk[];
   readonly anchor: NativeTileSpawnAnchor;
   readonly terrain: NativeSectionManifest["terrain"];
   readonly gaps: readonly string[];
@@ -53,6 +63,7 @@ interface AnchorOnChunkTerrain {
 }
 
 const maximumChunkTerrainBytes = 128 * 1024 * 1024;
+const maximumChunkBspBytes = 128 * 1024 * 1024;
 const sourceUnitsToGltfMetres = 0.01;
 const tileSpawnAnchorRule = "authored PlayerStart XY on the chunk terrain surface; authored Z kept as a diagnostic";
 const surfaceRayClearanceMetres = 1;
@@ -109,6 +120,21 @@ async function loadTileModelTemplate(scene: Scene, model: NativeTileChunkModel, 
   const glb = modelFile === undefined ? undefined : asset.files.get(modelFile);
   if (asset.manifest.id !== model.id || glb === undefined) throw new Error(`Native tile model archive ${model.archive} is not the model ${model.id}.`);
   return loadNativeGlbContainer(scene, model.archive, new Uint8Array(glb));
+}
+
+async function loadChunkBsp(scene: Scene, tileId: string, chunkId: string, bsp: NativeTileBspResource, signal: AbortSignal) {
+  const bytes = await fetchVerifiedNativeResource(bsp.resource, bsp.sha256, signal);
+  if (bytes.byteLength > maximumChunkBspBytes) throw new Error(`Native tile chunk BSP exceeds ${maximumChunkBspBytes} bytes: ${chunkId}`);
+  const { sections, nodeRanges } = parseNativeBspSectionExtras(validateSectionGlb(bytes).extras);
+  const container = await loadNativeGlbContainer(scene, bsp.resource, bytes);
+  const meshes = container.meshes.filter(mesh => mesh.getTotalVertices() > 0);
+  if (meshes.length !== sections.length) {
+    container.dispose();
+    throw new Error(`Native tile chunk BSP ${chunkId} holds ${meshes.length} meshes for ${sections.length} sections.`);
+  }
+  for (const mesh of meshes) mesh.metadata = { ...mesh.metadata, nativeTileBsp: { tileId, chunkId, resource: bsp.resource } };
+  const chunk: NativeTileBspChunk = { chunkId, resource: bsp.resource, sections, nodeRanges, meshes };
+  return { container, chunk };
 }
 
 function chunkMeshGapCount(chunks: readonly NativeTileChunkManifest[]): number {
@@ -178,11 +204,20 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
       templates.set(model.id, template);
     }
     instances.push(...instantiateNativeModelPlacements(scene, templates, chunks.flatMap(chunk => chunk.models.flatMap(model => model.placements))));
+    const bspChunks: NativeTileBspChunk[] = [];
+    for (const chunk of chunks) {
+      if (!chunk.bsp) continue;
+      const { container, chunk: bspChunk } = await loadChunkBsp(scene, tileId, chunk.chunkId, chunk.bsp, lifetime.signal);
+      if (disposed || scene.isDisposed) { container.dispose(); throw new Error("Native tile was disposed during loading."); }
+      containers.push(container);
+      bspChunks.push(bspChunk);
+    }
+    const bspMeshes = bspChunks.flatMap(chunk => chunk.meshes);
     for (const container of containers) container.addAllToScene();
     const terrainMeshes = loaded.flatMap(entry => entry.meshes);
     const terrainChunks = chunks.map(chunk => ({ chunkId: chunk.chunkId, terrain: chunk.terrain,
       gaps: chunk.gaps.filter(row => row.status !== "pass").map(describeNativeTileGapRow) }));
-    const view: NativeTileSectionView = { kind: "native-tile-runtime", tileId, terrainChunks, anchor, models: [], placements: [],
+    const view: NativeTileSectionView = { kind: "native-tile-runtime", tileId, terrainChunks, bspChunks, anchor, models: [], placements: [],
       terrain: { file: "terrain.glb", sha256: anchorChunk.terrain.sha256, bytes: anchorChunk.bytes, materialStatus: "neutral-inspection" },
       gaps: manifest.gaps.filter(row => row.status !== "pass").map(describeNativeTileGapRow) };
     const meshGapCount = chunkMeshGapCount(chunks);
@@ -190,8 +225,9 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
     lifetime.signal.throwIfAborted();
     return { manifest: view, manifestSha256: record.manifestSha256, terrainMeshes, supportMeshes: [], ...extent, spawnCandidate,
       inspection: () => ({ ...inspectNativeWorldScene({ terrainMeshes, instances, modelCount: templates.size, disposed, preview: null, previewEnabled: false,
-        materialFailure: null, unsupportedRuntimeMaterials: [], bspMeshes: [], sectionWindow: terrainInfoChunkPlanWindow }),
-        terrainChunks, tileAnchor: anchor, meshGapCount }),
+        materialFailure: null, unsupportedRuntimeMaterials: [], bspMeshes, sectionWindow: terrainInfoChunkPlanWindow }),
+        terrainChunks, tileAnchor: anchor, meshGapCount, bspSections: bspChunks.reduce((sum, chunk) => sum + chunk.sections.length, 0),
+        bspResources: bspChunks.map(chunk => chunk.resource) }),
       setTerrainPreview() {}, dispose };
   } catch (error) { dispose(); throw error; }
 }

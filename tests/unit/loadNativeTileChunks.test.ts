@@ -27,6 +27,14 @@ interface TileStoreOptions {
   readonly anchorLocation?: readonly number[];
   readonly secondChunkModels?: readonly Document[];
   readonly archives?: ReadonlyMap<string, Uint8Array<ArrayBuffer>>;
+  readonly secondChunkBsp?: { readonly glb: Uint8Array<ArrayBuffer>; readonly served?: Uint8Array<ArrayBuffer> };
+}
+
+function chunkBspGlb(sectionCount: number): Uint8Array<ArrayBuffer> {
+  const sections = Array.from({ length: sectionCount }, (_, primitive) => ({ primitive, material: "Fixture_T.Floor", unlit: false, lightmap: -1,
+    outdoor: true, translucent: false }));
+  const nodeRanges = sections.map((_, primitive) => ({ node: primitive, primitive, firstIndex: 0, indexCount: 6 }));
+  return glb({ asset: { version: "2.0" }, extras: { nativeBspChunk: "chunk-0-1", nativeBspSections: sections, nativeBspNodeRanges: nodeRanges } });
 }
 
 function tileStore(options: TileStoreOptions = {}) {
@@ -50,6 +58,13 @@ function tileStore(options: TileStoreOptions = {}) {
     secondChunk.models = options.secondChunkModels;
     secondChunk.gaps = (secondChunk.gaps as Document[]).filter(row => row.step !== "meshes");
   }
+  const bspResponses: [string, Uint8Array<ArrayBuffer>][] = [];
+  if (options.secondChunkBsp) {
+    const bspSha256 = sha256Hex(options.secondChunkBsp.glb), resource = `/l2/maps/${bspSha256}/native-tile-chunk-bsp/bsp.glb`;
+    secondChunk.bsp = { resource, sha256: bspSha256 };
+    secondChunk.gaps = (secondChunk.gaps as Document[]).filter(row => row.step !== "bsp");
+    bspResponses.push([resource, options.secondChunkBsp.served ?? options.secondChunkBsp.glb]);
+  }
   const secondChunkBytes = jsonBytes(secondChunk), secondChunkSha256 = sha256Hex(secondChunkBytes);
   const tile = decodeJsonDocument(fixture.tile.bytes);
   if (options.anchorLocation) tile.anchor = { ...(tile.anchor as Document), location: options.anchorLocation };
@@ -61,7 +76,7 @@ function tileStore(options: TileStoreOptions = {}) {
   const responses = new Map<string, Uint8Array<ArrayBuffer>>([
     ["/l2/catalog.json", jsonBytes(catalog)], [tilePath, tileBytes], [fixture.chunk.path, fixture.chunk.bytes], [fixture.terrain.path, fixture.terrain.bytes],
     [`/l2/maps/${secondChunkSha256}/native-tile-chunk-runtime/manifest.json`, secondChunkBytes],
-    [`/l2/maps/${secondTerrainSha256}/native-tile-chunk-terrain/terrain.glb`, secondTerrainBytes], ...(options.archives ?? []),
+    [`/l2/maps/${secondTerrainSha256}/native-tile-chunk-terrain/terrain.glb`, secondTerrainBytes], ...(options.archives ?? []), ...bspResponses,
   ]);
   const terrainCentres = new Map([[fixture.terrain.sha256, { x: 1.28, z: 1.28 }], [secondTerrainSha256, { x: 1.28, z: 5 }]]);
   return { fixture, tilePath, tileSha256, responses, terrainCentres, secondTerrainSha256 };
@@ -154,6 +169,27 @@ describe("native tile chunk loading", () => {
         placements: [{ id: `interlude:${fixtureTileId}.StaticMeshActor3`, modelId, sourceActor: `${fixtureTileId}.StaticMeshActor3`, exportIndex: 3,
           sourceMesh: "Fixture_S.FixtureMesh", matrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], materialOverrides: [], collision: {} }] }] }));
     await expect(load()).rejects.toThrow(/hash\/length mismatch/);
+    expect(scene.meshes).toEqual([]);
+  });
+
+  it("loads each chunk BSP GLB pinned by SHA-256 and keeps its sections and node ranges", async () => {
+    const bsp = chunkBspGlb(1);
+    serve(tileStore({ secondChunkBsp: { glb: bsp } }));
+    const section = (await load())!;
+    const view = section.manifest as NativeTileSectionView;
+    const resource = `/l2/maps/${sha256Hex(bsp)}/native-tile-chunk-bsp/bsp.glb`;
+    expect(view.bspChunks.map(chunk => [chunk.chunkId, chunk.resource, chunk.sections.length, chunk.nodeRanges.length])).toEqual([
+      ["chunk-0-1", resource, 1, 1]]);
+    expect(section.inspection()).toMatchObject({ bspMeshes: 1, bspSections: 1, bspResources: [resource] });
+    expect(view.bspChunks[0]!.meshes[0]!.metadata.nativeTileBsp).toEqual({ tileId: fixtureTileId, chunkId: "chunk-0-1", resource });
+  });
+
+  it("refuses a chunk BSP GLB whose bytes differ from its pin or whose sections differ from its meshes", async () => {
+    const bsp = chunkBspGlb(1), tampered = bsp.slice(); tampered[tampered.length - 1]! ^= 1;
+    serve(tileStore({ secondChunkBsp: { glb: bsp, served: tampered } }));
+    await expect(load()).rejects.toThrow(/hash\/length mismatch/);
+    serve(tileStore({ secondChunkBsp: { glb: chunkBspGlb(2) } }));
+    await expect(load()).rejects.toThrow(/holds 1 meshes for 2 sections/);
     expect(scene.meshes).toEqual([]);
   });
 

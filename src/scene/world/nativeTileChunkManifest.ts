@@ -1,4 +1,5 @@
 import { tileIdPattern } from "../../assets/native/nativeCatalogRecords";
+import { parseNativeTileBspResource, type NativeTileBspResource } from "./nativeBspResources";
 
 export type NativeTileVector = readonly [number, number, number];
 export type NativeTileGapStatus = "pass" | "gap" | "pending" | "failed";
@@ -50,7 +51,7 @@ export interface NativeTileChunkManifest {
   readonly sectorRange: NativeTileSectorRange;
   readonly terrain: NativeTileChunkTerrain | null;
   readonly models: readonly NativeTileChunkModel[];
-  readonly bsp: null;
+  readonly bsp: NativeTileBspResource | null;
   readonly collision: null;
   readonly gaps: readonly NativeTileGapRow[];
 }
@@ -202,11 +203,11 @@ export function parseNativeTileChunkManifest(input: unknown): NativeTileChunkMan
   const chunkId = input.chunkId as string, label = `Native tile chunk manifest ${input.tileId} ${chunkId}`;
   const sectorRange = parseSectorRange(input.sectorRange, position[0], position[1], label);
   const gaps = parseNativeTileGapRows(input.gaps, input.tileId, label);
-  if (input.bsp !== null || input.collision !== null) throw new Error(`${label} bsp and collision resources are not supported.`);
-  requireGapRowForMissingComponent(gaps, "bsp", label);
+  if (input.collision !== null) throw new Error(`${label} collision resources are not supported.`);
+  if (input.bsp === null) requireGapRowForMissingComponent(gaps, "bsp", label);
   requireGapRowForMissingComponent(gaps, "collision", label);
   if (input.terrain === null) requireGapRowForMissingComponent(gaps, "terrain", label);
   return { kind: "native-tile-chunk-runtime", schemaVersion: 1, tileId: input.tileId, chunkId, sectorRange,
     terrain: input.terrain === null ? null : parseChunkTerrain(input.terrain, label), models: parseChunkModels(input.models, label),
-    bsp: null, collision: null, gaps };
+    bsp: input.bsp === null ? null : parseNativeTileBspResource(input.bsp), collision: null, gaps };
 }

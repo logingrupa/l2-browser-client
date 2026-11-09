@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "repository": "https://github.com/elberacasa/Lineage2Elbera",
+    "commit": "12c9656e2f053b233ec3fd87056491a6a6da8b0c",
+    "path": "tools/l2lib/ue2package.py",
+    "sourceSha256": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
+  },
+  "visualSkipSource": {
+    "repository": "https://github.com/elberacasa/Lineage2Elbera",
+    "commit": "12c9656e2f053b233ec3fd87056491a6a6da8b0c",
+    "path": "tools/world/bsp.py",
+    "sourceSha256": "c70d7b08cb23fdc8f3227adb33b1fc5948a258195cc321c0836cff29718b0e2d",
+    "lines": [38, 39, 40, 41, 110]
+  },
+  "flags": [
+    {"name": "PF_INVISIBLE", "value": 1, "sourcePath": "tools/l2lib/ue2package.py", "sourceLine": 898, "visual": "skip", "diagnostic": true},
+    {"name": "PF_MASKED", "value": 2, "sourcePath": "tools/l2lib/ue2package.py", "sourceLine": 899, "visual": "draw", "diagnostic": true},
+    {"name": "PF_FAKEBACKDROP", "value": 128, "sourcePath": "tools/l2lib/ue2package.py", "sourceLine": 900, "visual": "skip", "diagnostic": true},
+    {"name": "PF_TWOSIDED", "value": 256, "sourcePath": "tools/l2lib/ue2package.py", "sourceLine": 901, "visual": "draw", "diagnostic": true},
+    {"name": "PF_UNLIT", "value": 4194304, "sourcePath": "tools/world/bsp.py", "sourceLine": 96, "visual": "draw", "diagnostic": true},
+    {"name": "PF_PORTAL", "value": 67108864, "sourcePath": "tools/l2lib/ue2package.py", "sourceLine": 902, "visual": "skip", "diagnostic": true},
+    {"name": "PF_ANTIPORTAL", "value": 134217728, "sourcePath": "tools/l2lib/ue2package.py", "sourceLine": 903, "visual": "draw", "diagnostic": true}
+  ],
+  "rules": [
+    {
+      "id": "bsp.section-key",
+      "value": ["material", "PF_UNLIT", "lightmapTexture", "frontZoneOutdoorClass"],
+      "provenance": "DEC-OWN-12 D5 (.planning/PROJECT.md); reference section key lineage2js src/assets/unreal/model/un-model.ts:462-497 as summarised in .planning/reference/lineage2js/02-bsp-visibility.md (section-key row)",
+      "status": "unconfirmed",
+      "interludeEvidence": null,
+      "runtimeDefault": ["material", "PF_UNLIT", "lightmapTexture", "frontZoneOutdoorClass"]
+    },
+    {
+      "id": "bsp.outdoor-class",
+      "value": "the front zone iZone[1] is zone 0 or its zone actor resolves bSunAffect true",
+      "provenance": "reference outdoor rule lineage2js src/objects/zone-object.ts:726-762 and un-model.ts:462,495 as summarised in .planning/reference/lineage2js/01-materials-fog.md:182 and 02-bsp-visibility.md:160 (section flag without the zone-1 fallback)",
+      "status": "unconfirmed",
+      "interludeEvidence": null,
+      "runtimeDefault": "the front zone iZone[1] is zone 0 or its zone actor resolves bSunAffect true"
+    },
+    {
+      "id": "bsp.lightmap-texture",
+      "value": "FLightmapIndex.iLightmapTexture of the node lightmap record iLightMap; -1 when iLightMap is -1",
+      "provenance": "node iLightMap decoded by scripts/vendor/lineage2elbera_bsp _read_model; the FLightmapIndex records sit in the undecoded Model tail that the world lighting step decodes (02-62, .planning/reference/lineage2js/02-bsp-visibility.md:189)",
+      "status": "unknown",
+      "interludeEvidence": null,
+      "runtimeDefault": "null for a node with a lightmap record until 02-62 decodes the record pages; -1 for none"
+    },
+    {
+      "id": "bsp.translucent-program-blend",
+      "value": "a section is translucent when the root node of its material program holds OutputBlending (Engine.Shader) or FrameBufferBlending (Engine.FinalBlend) decoded to an ordinal other than 0",
+      "provenance": "enum members decoded from the Interlude Engine.Shader and Engine.FinalBlend class scripts through the 02-59 material program; ordinal 0 is the declared first member and the zero class default",
+      "status": "unconfirmed",
+      "interludeEvidence": null,
+      "runtimeDefault": "translucent for any non-zero blending ordinal of the root program node"
+    }
+  ]
+}
