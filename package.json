@@ -36,6 +36,10 @@
 		"assets:batch": "python scripts/native_assets.py batch",
 		"assets:verify": "python scripts/native_assets.py verify",
 		"test:pipeline": "python scripts/test_pipeline.py",
+		"convert:tables": "python -B scripts/data/convert_tables.py",
+		"convert:world": "python -B scripts/world/convert_tile.py",
+		"convert:actors": "python -B scripts/actors/convert_actors.py",
+		"convert:ui": "python -B scripts/data/convert_ui.py",
 		"report:coverage": "python -B scripts/native_store/build_coverage_report.py"
 	},
 	"dependencies": {

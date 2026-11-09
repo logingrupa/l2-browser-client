@@ -253,6 +253,19 @@ class PackageScriptNamingTests(unittest.TestCase):
         self.assertLessEqual(set(converter_names), set(CONVERTER_PACKAGE_SCRIPT_NAMES))
         self.assertEqual(converter_package_script_problems(scripts), [])
 
+    def test_package_declares_exactly_the_four_lane_converter_scripts(self):
+        scripts = package_scripts()
+        converter_scripts = {name: command for name, command in scripts.items() if name.casefold().startswith('convert:')}
+        self.assertEqual(converter_scripts, {
+            'convert:tables': 'python -B scripts/data/convert_tables.py',
+            'convert:world': 'python -B scripts/world/convert_tile.py',
+            'convert:actors': 'python -B scripts/actors/convert_actors.py',
+            'convert:ui': 'python -B scripts/data/convert_ui.py',
+        })
+        for name, command in converter_scripts.items():
+            with self.subTest(name=name):
+                self.assertTrue((ROOT / invoked_script_paths(command)[0]).is_file())
+
     def test_invoked_script_name_reads_the_file_name_after_slash_normalisation(self):
         self.assertEqual(invoked_script_name('python -B scripts\\data\\convert_tables.py --table npcgrp'), 'convert_tables.py')
         self.assertEqual(invoked_script_name('vite --host 127.0.0.1'), None)

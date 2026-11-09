@@ -12,6 +12,7 @@ Node.js 22.12.0 or later, pnpm 10.32.1, a WebGPU browser. Conversion also needs 
 - `pnpm typecheck`, `pnpm test:unit` (Vitest), `pnpm test:e2e` (Playwright, starts its own `pnpm dev`), `pnpm test` (both), `pnpm test:pipeline` (Python pipeline tests). `pnpm test:setup` installs Chromium once.
 - `pnpm build` writes `dist/`, `pnpm serve` previews it.
 - Optional Editor viewer: `pnpm generate:editor`, `pnpm test:editor`.
+- Lane converters: `pnpm convert:tables`, `convert:world`, `convert:actors`, `convert:ui`, each with `--client <reference client>` and its single-unit selector (for example `pnpm convert:world --client E:/Lineage2-client --map 20_21 --step raw`). pnpm 10 forwards a `--` to the script, so leave it out. They write only to `artifacts/lane-store/<lane>/l2`; restaging the shared store is a Needs Human merge.
 - Native store writers (`assets:*`) run only in the main checkout.
 
 Headless e2e uses SwiftShader, so its FPS is not a measurement. Phone screenshots: iPhone 15 Pro Max landscape, 932 x 430 (DEC-OWN-9).
