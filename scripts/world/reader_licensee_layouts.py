@@ -56,9 +56,9 @@ READER_EVIDENCE = {G16_HEIGHTMAP_READER: MATERIAL_FIELD_EVIDENCE, MAP_ACTOR_READ
 READER_FIXTURE_STEMS = {G16_HEIGHTMAP_READER: 'g16-heightmap', **{reader: 'map' for reader in MAP_READERS}}
 REVIEWED_LICENSEE_CROSS_CHECK_TILES = {
     G16_HEIGHTMAP_READER: {28: '20_21', 25: '16_11', 23: '18_24'},
-    MAP_ACTOR_READER: {28: '20_21'},
-    TERRAIN_INFO_READER: {28: '20_21'},
-    RAW_MAP_READER: {28: '20_21'},
+    MAP_ACTOR_READER: {28: '20_21', 30: '17_22'},
+    TERRAIN_INFO_READER: {28: '20_21', 30: '17_22'},
+    RAW_MAP_READER: {28: '20_21', 30: '17_22'},
 }
 
 
@@ -80,14 +80,21 @@ def reader_fixture_path(reader, licensee_version):
     return f'{WORLD_READER_FIXTURE_FOLDER}/{READER_FIXTURE_STEMS[reader]}-{REVIEWED_PACKAGE_VERSION}-{licensee_version}.json'
 
 
+def map_material_export_differences(licensee_version):
+    return [f'{difference} in material-derived map exports; the map readers keep those exports raw and never decode them'
+            for difference in material_prefix_differences(licensee_version)]
+
+
 def reviewed_reader_layout(reader, licensee_version, cross_check_tile):
-    record = {'evidence': [dict(entry) for entry in READER_EVIDENCE[reader]],
-              'fixture': reader_fixture_path(reader, licensee_version), 'crossCheck': {'tile': cross_check_tile}}
+    record = {'fixture': reader_fixture_path(reader, licensee_version), 'crossCheck': {'tile': cross_check_tile}}
     if reader == G16_HEIGHTMAP_READER:
         record['differencesFrom123_28'] = material_prefix_differences(licensee_version)
         record['materialPrefix'] = lineage_material_prefix(REVIEWED_PACKAGE_VERSION, licensee_version)
+        evidence = READER_EVIDENCE[reader]
     else:
-        record['differencesFrom123_28'] = []
+        record['differencesFrom123_28'] = map_material_export_differences(licensee_version)
+        evidence = (*READER_EVIDENCE[reader], *(MATERIAL_FIELD_EVIDENCE if record['differencesFrom123_28'] else ()))
+    record['evidence'] = [dict(entry) for entry in evidence]
     return record
 
 
