@@ -42,7 +42,7 @@ Roots sealed so far: 22 of 245 (tracer `skill.wh.1011`, one 20-root slice, one 1
 
 Gap rows `artifacts/lane-store/actors/gap-rows/skills.json`, one per key (29,812): 2,542 pass, 17,575 `native-skill-dispatch-required`, 634 `converter-refused`, 522 `emitter-class-unported:Engine.BeamEmitter`, 8,539 `conversion-pending`.
 
-Lane catalog `6965638a9505ce0ce6b13f189e3e74e3dc97fc5aa5195994b8718d10e50f31e6`: 3,064 skill records over 17 staged manifests. Lane coverage (`build_coverage_report.py --lane actors`): skills-effects 3,064 converted, 18,210 gap, 8,538 pending.
+Lane catalog `d942b12174a2dd48df6a44d1febba0c7dddddc7e32459873a2e0d74b99011b60` (pinned, 2026-11-09): 3,064 skill records over 17 staged manifests. Lane coverage (`build_coverage_report.py --lane actors`): skills-effects 3,064 converted, 18,210 gap, 8,538 pending.
 
 ### Browser
 
