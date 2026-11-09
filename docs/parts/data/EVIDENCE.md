@@ -8,9 +8,26 @@ Nothing has passed the stage A check yet (DEC-OWN-3). Working on 2026-11-07, per
 
 Working on 2026-11-08 (plan 02-17, DATA-01 tracer): `scripts/data/convert_tables.py` decodes a descriptor-linked table through one case-insensitive source resolver and writes a hash-pinned `native-table` manifest plus a `tables` catalog record into the data-ui lane store, one sealed ledger unit per table. All 37 linked layouts are pinned in `scripts/native_catalog/table_layout_pins.py`. 13 tables are sealed decodes: armorgrp, chargrp, classinfo-e, etcitemgrp, itemname-e, mobskillanimgrp, npcgrp, npcname-e, skillgrp, skillname-e, skillsoundgrp, systemmsg-e, weapongrp. sysstring-e is a sealed `decode-failed:FormatError` gap row.
 
+Working on 2026-11-09 (plan 02-27, DATA-01 breadth): `convert_tables.py --batch tables --limit 40` sealed every one of the 37 descriptor-linked tables on lock-equal `E:/Lineage2-client`. 33 are decodes with a `tables` record; a second batch run skipped all 37 units and left `catalog.json` byte-identical. The four decode failures are sealed gap rows with the error in `work/table__<table>/decode/decode-error.json`:
+
+| Table | Reason | Decode error |
+|---|---|---|
+| eula-e | decode-failed:FormatError | `Unexpected safe-package trailer: eula: ` (the pinned layout reads past the payload, nothing is left for the trailer) |
+| questname-e | decode-failed:FormatError | `native table questname-e holds a value JSON cannot carry: Out of range float values are not JSON compliant: nan` (a FLOAT field decodes to NaN) |
+| servername-e | decode-failed:FormatError | `Unexpected safe-package trailer: servername: 7f00...` (730 unread bytes sit before the 13-byte SafePackage trailer after the header count of rows is read) |
+| sysstring-e | decode-failed:FormatError | `Unterminated Unreal string` (02-17) |
+
+Name indexes for the sandbox pickers (`scripts/data/table_name_indexes.py`, checked by `tests/pipeline/test_table_name_indexes.py`): one `native-table-name-index` v1 manifest per table, built only from the sealed source manifest after its bytes match the catalog `manifestSha256`. Entries keep the identifier and name fields as decoded, sorted by identifier with ties in source order. The `tables` record ids are `<table with - as _>_names`, because the 02-04 id rule refuses `npcname-e-names`; coverage keeps these derived ids outside the data denominator.
+
+| Record | Source | Identifier fields | Entries | Duplicate identifiers | Manifest bytes |
+|---|---|---|---|---|---|
+| itemname_e_names | itemname-e | id | 9,238 | 0 | 407,150 |
+| npcname_e_names | npcname-e | id | 6,519 | 0 | 239,341 |
+| skillname_e_names | skillname-e | skill_id, skill_level | 29,812 | 0 | 1,755,442 |
+
 ## Open
 
-40 `.dat` tables, 25 `.u`, 435 `.utx`, 212 `.usx`, 20 `.ukx` and 163 `.unr` packages. The combined table inventory (FOUND-04) is below. Open for DATA-01: the 23 linked tables not yet decoded (plan 02-27) and the sysstring-e decode failure. Open for DATA-02: the three hair tables. DATA-03 stays open: the strict decode of sysstring-e fails, so its count is unresolved (see below). The lane store is not restaged into the shared store yet.
+40 `.dat` tables, 25 `.u`, 435 `.utx`, 212 `.usx`, 20 `.ukx` and 163 `.unr` packages. The combined table inventory (FOUND-04) is below. Open for DATA-01: the decode failures of eula-e, questname-e, servername-e and sysstring-e, and the three hair tables (plan 02-28). Open for DATA-02: the three hair tables. DATA-03 stays open: the strict decode of sysstring-e fails, so its count is unresolved (see below). The lane store is not restaged into the shared store yet.
 
 ## Reference client lock
 
@@ -36,50 +53,50 @@ Recorded 2026-11-08 (FOUND-03) in `recipes/reference-client-tree.lock.json`, che
 
 Generated 2026-11-08 (FOUND-04) by `scripts/build_dat_table_inventory.py --client E:/Lineage2-client` into `docs/parts/data/dat-table-inventory.json`, checked by `tests/pipeline/test_dat_table_inventory.py`. Table names come from the lock's `system/*.dat` entries. Layouts come from the pinned descriptor `06_interlude.xml` (SHA-256 `5df8b7af...cdef6`). Local counts come only from sealed `scripts/data/convert_tables.py` records in `artifacts/lane-store/data-ui/l2/catalog.json` whose `sourceSha256` equals the lock eSha256 of a checked lock-equal E: file. A decode-failed gap row puts its reason in the status. Counts marked Elbera are copied from PORT_SCOPE section 2. Every other count is unknown.
 
-Tally: 13 local-decoded, 24 local-layout-only, 3 elbera, 0 none. The nine local decodes that Elbera also counted (armorgrp, etcitemgrp, itemname-e, npcgrp, npcname-e, skillgrp, skillname-e, systemmsg-e, weapongrp) match Elbera's counts.
+Tally: 33 local-decoded, 4 local-layout-only (each a decode-failed gap), 3 elbera, 0 none. The ten local decodes that Elbera also counted (actionname-e, armorgrp, etcitemgrp, itemname-e, npcgrp, npcname-e, skillgrp, skillname-e, systemmsg-e, weapongrp) match Elbera's counts. The test derives the tally from the rows and `TABLES`: no row keeps `layout pinned, not decoded`, and every layout-only row names its decode failure.
 
 | Table | Route | Layout | Records | Status |
 |---|---|---|---|---|
-| actionname-e | local-layout-only | actionname | 102 (Elbera) | layout pinned, not decoded |
+| actionname-e | local-decoded | actionname | 102 | decoded, matches Elbera evidence |
 | armorgrp | local-decoded | armorgrp | 1,014 | decoded, matches Elbera evidence |
-| castlename-e | local-layout-only | castlename | unknown | layout pinned, not decoded |
+| castlename-e | local-decoded | castlename | 53 | decoded |
 | chargrp | local-decoded | chargrp | 15 | decoded |
 | classinfo-e | local-decoded | classinfo | 10 | decoded |
-| clientdata | local-layout-only | clientdata | unknown | layout pinned, not decoded |
-| commandname-e | local-layout-only | commandname | unknown | layout pinned, not decoded |
-| creditgrp-e | local-layout-only | credit | unknown | layout pinned, not decoded |
-| entereventgrp | local-layout-only | entereventgrp | unknown | layout pinned, not decoded |
+| clientdata | local-decoded | clientdata | 15 | decoded |
+| commandname-e | local-decoded | commandname | 114 | decoded |
+| creditgrp-e | local-decoded | credit | 62 | decoded |
+| entereventgrp | local-decoded | entereventgrp | 1,152 | decoded |
 | etcitemgrp | local-decoded | etcitemgrp | 6,911 | decoded, matches Elbera evidence |
-| eula-e | local-layout-only | eula | unknown | layout pinned, not decoded |
-| gametip-e | local-layout-only | gametip | unknown | layout pinned, not decoded |
+| eula-e | local-layout-only | eula | unknown | decode-failed:FormatError |
+| gametip-e | local-decoded | gametip | 182 | decoded |
 | hairaccessarygrp | elbera | - | unknown | Elbera parser present, unverified |
-| hairaccessorylocgrp | local-layout-only | hairaccessorylocgrp | unknown | layout pinned, not decoded |
+| hairaccessorylocgrp | local-decoded | hairaccessorylocgrp | 112 | decoded |
 | hairgrp | elbera | - | unknown | Elbera parser present, unverified |
 | helmetgrp | elbera | - | unknown | Elbera parser present, unverified |
-| hennagrp-e | local-layout-only | hennagrp | unknown | layout pinned, not decoded |
-| huntingzone-e | local-layout-only | huntingzone | unknown | layout pinned, not decoded |
+| hennagrp-e | local-decoded | hennagrp | 180 | decoded |
+| huntingzone-e | local-decoded | huntingzone | 220 | decoded |
 | itemname-e | local-decoded | itemname | 9,238 | decoded, matches Elbera evidence |
-| logongrp | local-layout-only | logongrp | unknown | layout pinned, not decoded |
+| logongrp | local-decoded | logongrp | 26 | decoded |
 | mobskillanimgrp | local-decoded | mobskillanimgrp | 5,463 | decoded |
-| musicinfo | local-layout-only | musicinfo | unknown | layout pinned, not decoded |
+| musicinfo | local-decoded | musicinfo | 358 | decoded |
 | npcgrp | local-decoded | npcgrp | 6,519 | decoded, matches Elbera evidence |
 | npcname-e | local-decoded | npcname | 6,519 | decoded, matches Elbera evidence |
-| obscene-e | local-layout-only | obscene | unknown | layout pinned, not decoded |
-| optiondata_client-e | local-layout-only | optiondata_client | unknown | layout pinned, not decoded |
-| questname-e | local-layout-only | questname | unknown | layout pinned, not decoded |
-| raiddata-e | local-layout-only | raiddata | unknown | layout pinned, not decoded |
-| recipe-c | local-layout-only | recipe-c | unknown | layout pinned, not decoded |
-| servername-e | local-layout-only | servername | unknown | layout pinned, not decoded |
+| obscene-e | local-decoded | obscene | 13 | decoded |
+| optiondata_client-e | local-decoded | optiondata_client | 16,380 | decoded |
+| questname-e | local-layout-only | questname | unknown | decode-failed:FormatError |
+| raiddata-e | local-decoded | raiddata | 220 | decoded |
+| recipe-c | local-decoded | recipe-c | 871 | decoded |
+| servername-e | local-layout-only | servername | unknown | decode-failed:FormatError |
 | skillgrp | local-decoded | skillgrp | 29,812 | decoded, matches Elbera evidence |
 | skillname-e | local-decoded | skillname | 29,812 | decoded, matches Elbera evidence |
 | skillsoundgrp | local-decoded | skillsoundgrp | 1,398 | decoded |
-| staticobject-e | local-layout-only | staticobject | unknown | layout pinned, not decoded |
-| symbolname-e | local-layout-only | symbolname | unknown | layout pinned, not decoded |
+| staticobject-e | local-decoded | staticobject | 577 | decoded |
+| symbolname-e | local-decoded | symbolname | 11 | decoded |
 | sysstring-e | local-layout-only | sysstring | 2,083 (Elbera) | decode-failed:FormatError |
 | systemmsg-e | local-decoded | systemmsg | 2,083 | decoded, matches Elbera evidence |
-| variationeffectgrp-e | local-layout-only | variationeffectgrp | unknown | layout pinned, not decoded |
+| variationeffectgrp-e | local-decoded | variationeffectgrp | 288 | decoded |
 | weapongrp | local-decoded | weapongrp | 1,313 | decoded, matches Elbera evidence |
-| zonename-e | local-layout-only | zonename | unknown | layout pinned, not decoded |
+| zonename-e | local-decoded | zonename | 369 | decoded |
 
 ## Sysstring and systemmsg count (DATA-03)
 
@@ -92,4 +109,4 @@ Written 2026-11-08 by `scripts/data/sysstring_systemmsg_counts.py --client E:/Li
 
 ## Evidence
 
-Decoder code: `scripts/native_catalog/`. Input pin: `recipes/native-inputs.lock.json`. Reference tree lock: `recipes/reference-client-tree.lock.json`. Inventory: `docs/parts/data/dat-table-inventory.json`. DATA-03 report: `docs/parts/data/sysstring-systemmsg-counts.json`. Lane store (ignored): `artifacts/lane-store/data-ui/l2/` with `tables/<manifestSha256>/<table>.json`, receipts under `artifacts/lane-store/data-ui/work/table__<table>/decode/` and gap rows in `artifacts/lane-store/data-ui/gap-rows/decode.json`.
+Decoder code: `scripts/native_catalog/`. Input pin: `recipes/native-inputs.lock.json`. Reference tree lock: `recipes/reference-client-tree.lock.json`. Inventory: `docs/parts/data/dat-table-inventory.json`. DATA-03 report: `docs/parts/data/sysstring-systemmsg-counts.json`. Lane store (ignored): `artifacts/lane-store/data-ui/l2/` with `tables/<manifestSha256>/<table>.json` and `tables/<manifestSha256>/<table>_names.json`, receipts under `artifacts/lane-store/data-ui/work/table__<table>/decode/` and `.../name-index/` and gap rows in `artifacts/lane-store/data-ui/gap-rows/decode.json`.

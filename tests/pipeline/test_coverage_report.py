@@ -246,6 +246,13 @@ class CoverageReportAllPartsTests(CoverageProjectTestCase):
         self.assertEqual(rows_by_key(report)['tile:20_20']['converted'], True)
         self.assertEqual(report['parts']['ui']['pending'], 'unknown')
 
+    def test_table_name_index_records_are_derived_and_outside_the_data_denominator(self):
+        write_store_catalog(self.store_root, {'schemaVersion': 1, 'models': [], 'tables': [table_record('itemname-e'),
+                                                                                             table_record('itemname_e_names')]})
+        report = self.build_report()
+        self.assertEqual((report['parts']['data']['denominator'], report['parts']['data']['converted']), (40, 1))
+        self.assertNotIn('table:itemname_e_names', rows_by_key(report))
+
     def test_a_converted_key_outside_an_enumerated_denominator_is_refused(self):
         write_store_catalog(self.store_root, {'schemaVersion': 1, 'models': [], 'sections': [{'id': 'map-99-99-section'}]})
         with self.assertRaisesRegex(CoverageReportError, 'tile:99_99'):

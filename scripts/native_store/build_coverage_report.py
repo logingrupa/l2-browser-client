@@ -12,8 +12,8 @@ sys.path.insert(0, str(SCRIPTS_ROOT))
 
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_index_keys import catalog_index_keys
-from native_store.catalog_writer import (MAXIMUM_CATALOG_BYTES, STORE_CATALOG_NAME, CatalogWriteError, decode_store_catalog, replace_file,
-                                         sha256_hex)
+from native_store.catalog_writer import (MAXIMUM_CATALOG_BYTES, STORE_CATALOG_NAME, CatalogWriteError, decode_store_catalog,
+                                         is_table_name_index_id, replace_file, sha256_hex)
 from native_store.coverage_denominators import COVERAGE_PART_ORDER, UNKNOWN_DENOMINATOR, CoverageReportError, coverage_denominators
 from native_store.gap_rows import GAP_ROW_STATUSES, is_listed_reason, load_gap_reason_patterns, read_gap_rows
 from native_store.load_check_records import is_catalog_key, is_riga_timestamp, read_load_check_records
@@ -28,6 +28,7 @@ COVERAGE_STEP_FIELDS = frozenset({'step', 'status', 'reason'})
 COVERAGE_OUTPUT_NAME = 'coverage.json'
 STEP_STATUS_SEVERITY_ORDER = ('failed', 'gap', 'pending', 'pass')
 LOAD_STATUSES = ('pass', 'failed', 'unverified')
+TABLE_CATALOG_KEY_PREFIX = 'table:'
 UNVERIFIED_LOAD_STATUS = 'unverified'
 CENSUS_PENDING_REASON = 'census-pending'
 CATALOG_KEY_KIND_PARTS = {'table': 'data', 'tile': 'world', 'map': 'world', 'character': 'player-characters', 'window': 'ui',
@@ -116,10 +117,15 @@ def count_part_rows(rows, denominator_count):
     }
 
 
+def denominator_catalog_keys(catalog_keys):
+    return {key for key in catalog_keys if not (key.startswith(TABLE_CATALOG_KEY_PREFIX)
+                                                and is_table_name_index_id(key.removeprefix(TABLE_CATALOG_KEY_PREFIX)))}
+
+
 def build_coverage_report(project_root, store_root, lane_names, generated_at_riga):
     catalog, catalog_sha256 = read_measured_catalog(store_root)
     denominators = coverage_denominators()
-    converted_keys = set(catalog_index_keys(store_root, catalog, Path(project_root) / 'public' / 'l2'))
+    converted_keys = denominator_catalog_keys(catalog_index_keys(store_root, catalog, Path(project_root) / 'public' / 'l2'))
     steps_by_part_and_key = gap_steps_by_part_and_key(project_root, lane_names)
     load_status_by_key = merged_load_statuses(project_root, lane_names, catalog_sha256)
     rows, parts = [], {}

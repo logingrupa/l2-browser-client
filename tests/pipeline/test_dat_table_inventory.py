@@ -13,6 +13,7 @@ from build_dat_table_inventory import (DECODED_TABLE_COUNT_SOURCE, ELBERA_EVIDEN
     validate_dat_table_inventory)
 from native_catalog.table_source_resolver import TableSourceResolutionError, descriptor_layout_links
 from native_catalog.tables import TABLES
+from native_store.catalog_writer import is_table_name_index_id
 from reference_client_guard import require_reference_client
 from reference_client_lock_fixture import use_reference_client_lock
 from test_reference_client_guard import SyntheticReferenceClientTrees
@@ -110,6 +111,9 @@ class CommittedDatTableInventoryTests(unittest.TestCase):
         self.assertEqual(routes.count('local-decoded') + routes.count('local-layout-only'), len(TABLES))
         self.assertEqual(sorted(row['table'] for row in self.rows if row['route'] in ('elbera', 'none')), list(ELBERA_CANDIDATE_TABLES))
         self.assertEqual(sorted(row['layout'] for row in self.rows if row['descriptorLayout']), sorted(TABLES))
+
+    def test_no_inventory_table_takes_a_name_index_id(self):
+        self.assertEqual([row['table'] for row in self.rows if is_table_name_index_id(row['table'])], [])
 
     def test_no_row_keeps_the_layout_pinned_not_decoded_status(self):
         self.assertEqual([row['table'] for row in self.rows if row['status'] == LAYOUT_NOT_DECODED_STATUS], [])

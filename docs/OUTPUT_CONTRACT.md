@@ -123,7 +123,7 @@ new slices hold exactly these fields:
 | Slice | Record | Bounds |
 | --- | --- | --- |
 | `tiles` | `{id, manifest, manifestSha256, manifestBytes}` | `id` is `XX_YY`; `manifest` is `/l2/tiles/<manifestSha256>/tile.json`; `manifestBytes` 1 to 8,000,000 (`TILE_MANIFEST_MAXIMUM_BYTES`) |
-| `tables` | `{id, manifest, manifestSha256, manifestBytes, recordCount, sourceSha256}` | `id` is the inventory table name, lower case only (`^[a-z][a-z0-9_]*(?:-[a-z])?$`, for example `npcgrp`, `skillname-e`); `manifest` is `/l2/tables/<manifestSha256>/<id>.json`; `manifestBytes` 1 to 32 MiB (`TABLE_MANIFEST_MAXIMUM_BYTES`); `recordCount` a safe integer of at least 0; `sourceSha256` 64 hex. The records stay in the manifest, fetched on demand, never inlined |
+| `tables` | `{id, manifest, manifestSha256, manifestBytes, recordCount, sourceSha256}` | `id` is the inventory table name, lower case only (`^[a-z][a-z0-9_]*(?:-[a-z])?$`, for example `npcgrp`, `skillname-e`), or a derived `native-table-name-index` id ending in `_names` (for example `npcname_e_names`), which coverage keeps outside the data denominator; `manifest` is `/l2/tables/<manifestSha256>/<id>.json`; `manifestBytes` 1 to 32 MiB (`TABLE_MANIFEST_MAXIMUM_BYTES`); `recordCount` a safe integer of at least 0; `sourceSha256` 64 hex. The records stay in the manifest, fetched on demand, never inlined |
 | `windows` | `{id, manifest, manifestSha256, manifestBytes}` | `id` is `<name>` or `<name>#<ordinal>` (`^[A-Za-z][A-Za-z0-9_]{0,63}(?:#[1-9]\d{0,3})?$`); `manifest` is `/l2/windows/<manifestSha256>/window.json`; `manifestBytes` 1 to 8,000,000 (`WINDOW_MANIFEST_MAXIMUM_BYTES`) |
 
 Every manifest path also matches the `nativeResourceUrl.ts` path rule, and

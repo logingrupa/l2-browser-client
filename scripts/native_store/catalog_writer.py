@@ -22,6 +22,7 @@ TILE_MANIFEST_MAXIMUM_BYTES = 8_000_000
 TABLE_ID_PATTERN = re.compile(r'^[a-z][a-z0-9_]*(?:-[a-z])?$')
 TABLE_MANIFEST_PATH_PATTERN = re.compile(r'^/l2/tables/(?P<sha256>[a-f0-9]{64})/(?P<id>[a-z][a-z0-9_]*(?:-[a-z])?)\.json$')
 TABLE_MANIFEST_MAXIMUM_BYTES = 32 * 1024 * 1024
+TABLE_NAME_INDEX_ID_SUFFIX = '_names'
 WINDOW_ID_PATTERN = re.compile(r'^[A-Za-z][A-Za-z0-9_]{0,63}(?:#[1-9]\d{0,3})?$')
 WINDOW_MANIFEST_PATH_PATTERN = re.compile(r'^/l2/windows/(?P<sha256>[a-f0-9]{64})/window\.json$')
 WINDOW_MANIFEST_MAXIMUM_BYTES = 8_000_000
@@ -166,6 +167,10 @@ def validate_pinned_manifest_record(slice_name, record, shape):
     if 'id' in shape.manifest_path_pattern.groupindex and manifest_path_match['id'] != record['id']:
         raise CatalogWriteError(f'{label} manifest file name must be the record id: {record["manifest"]}')
     require_byte_length(record['manifestBytes'], shape.maximum_manifest_bytes, CatalogWriteError, f'{label} manifest')
+
+
+def is_table_name_index_id(record_id):
+    return TABLE_ID_PATTERN.fullmatch(record_id) is not None and record_id.endswith(TABLE_NAME_INDEX_ID_SUFFIX)
 
 
 def validate_table_record_source(record):
