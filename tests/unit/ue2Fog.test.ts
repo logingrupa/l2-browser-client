@@ -61,16 +61,30 @@ describe("fog families", () => {
 });
 
 describe("display gamma ramp", () => {
-  it("builds the 256-entry ramp at G = 1.2, C = 0.5, B = 0.5", () => {
+  const sixteenBitSteps = 65535;
+
+  it("builds the 256-entry ramp at G = 1.2, C = 0.5, B = 0.5 in the 16-bit steps UpdateGamma writes", () => {
     const table = buildDisplayGammaTable({ gamma: 1.2, contrast: 0.5, brightness: 0.5 });
     expect(table).toHaveLength(DISPLAY_GAMMA_ENTRY_COUNT);
-    for (const entry of [0, 1, 64, 128, 200, 255]) expect(table[entry]).toBeCloseTo(Math.fround((entry / 255) ** (1 / 1.2)), 6);
+    for (const entry of [0, 1, 64, 128, 200, 255]) {
+      const step = Math.round(table[entry]! * sixteenBitSteps);
+      expect(table[entry]).toBe(Math.fround(step / sixteenBitSteps));
+      expect(Math.abs(step - (entry / 255) ** (1 / Math.fround(1.2)) * sixteenBitSteps)).toBeLessThanOrEqual(0.5);
+    }
+    expect(table[128]).not.toBe(Math.fround((128 / 255) ** (1 / 1.2)));
   });
 
-  it("is the identity at G = 0 and clamps to [0, 1]", () => {
-    expect(Array.from(buildDisplayGammaTable({ gamma: 0, contrast: 0.7, brightness: 0.8 }))).toEqual(Array.from({ length: 256 }, (_, entry) => Math.fround(entry / 255)));
+  it("follows UpdateGamma at G = 0: a flat ramp from the brightness and contrast terms, and pow(1, +inf) = 1 at the top", () => {
+    const table = buildDisplayGammaTable({ gamma: 0, contrast: 0.7, brightness: 0.8 });
+    expect(Array.from(table.subarray(0, 255))).toEqual(Array.from({ length: 255 }, () => Math.fround(3277 / sixteenBitSteps)));
+    expect(table[255]).toBe(1);
+  });
+
+  it("clamps each entry to 0 to 65535 and keeps the Option.ini defaults", () => {
     const bright = buildDisplayGammaTable({ gamma: 1, contrast: 1, brightness: 2 });
     expect(bright[255]).toBe(1);
+    expect(buildDisplayGammaTable({ gamma: 1, contrast: 0, brightness: -2 })[0]).toBe(0);
+    expect(() => buildDisplayGammaTable({ gamma: -1, contrast: 0, brightness: 0 })).toThrow(RangeError);
     expect(defaultDisplayGammaSettings()).toEqual({ gamma: 1.2, brightness: 0.8, contrast: 0.7 });
   });
 });

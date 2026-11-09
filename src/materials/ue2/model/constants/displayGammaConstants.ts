@@ -4,11 +4,11 @@ import { materialNotes } from "./materialNotes";
 export const DISPLAY_GAMMA_CONSTANTS = {
   ramp: {
     id: "gamma.ramp",
-    value: "out = clamp((C + 0.5) * x^(1 / G) + (B - C) * 32768 / 65535, 0, 1) over a 256-entry table; G = 0 turns the ramp off",
-    provenance: `${materialNotes} gamma.ramp; lineage2js/src/rendering/display-gamma.ts:7,53-57`,
-    status: "unconfirmed",
-    interludeEvidence: null,
-    runtimeDefault: "out = clamp((C + 0.5) * x^(1 / G) + (B - C) * 32768 / 65535, 0, 1) over a 256-entry table; G = 0 turns the ramp off",
+    value: "out = clamp(appRound(f32((C + 0.5) * pow(x, 1 / G) * 65535 + (B - 0.5) * 32768 - C * 32768 + 16384)), 0, 65535) / 65535 over a 256-entry table with G, B and C as float32; at G = 0 pow(x < 1, +inf) = 0 and pow(1, +inf) = 1",
+    provenance: "D3DDrv.dll 05622dde UD3DRenderDevice::UpdateGamma 0x100182C0 (POL-04 re-derivation): 256 red, green and blue WORD entries, then SetDeviceGammaRamp; Brightness, Contrast and Gamma are the UClient config floats at +0x7C, +0x80 and +0x84 (Engine.dll 4dd2f63c property registration near 0x10542AC0, read by UClient::Init 0x10542590 with no clamp); Core.dll 9462f87a appRound 0x1012D890 = trunc(floor(F + 0.5)), appPow 0x1012D7A0 into the CRT pow whose special values at 0x101884A4 give pow(1, +inf) = 1",
+    status: "corrected-interlude",
+    interludeEvidence: "D3DDrv.dll 05622dde UD3DRenderDevice::UpdateGamma 0x100182C0",
+    runtimeDefault: "out = clamp(appRound(f32((C + 0.5) * pow(x, 1 / G) * 65535 + (B - 0.5) * 32768 - C * 32768 + 16384)), 0, 65535) / 65535 over a 256-entry table with G, B and C as float32; at G = 0 pow(x < 1, +inf) = 0 and pow(1, +inf) = 1",
   },
   gamma: {
     id: "gamma.setting",
