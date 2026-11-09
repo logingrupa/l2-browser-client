@@ -56,11 +56,33 @@ Lane catalog `7ab1cdcf97c76c81c169ec3f2d41174e4c14ccbbf8440c60b5ec6fe6865d35e7` 
 - Screenshots: `artifacts/skill-evidence/skill-1011-1-1440x900.png`, `skill-1011-1-932x430.png`, `skill-3-2-gap-1440x900.png`.
 - Skills sweep slice (`LOAD_CHECK_KIND=skills LOAD_CHECK_LIMIT=20`), records in `artifacts/lane-store/actors/load-checks/6965638a....json`, 21 records, all `failed`: 18 `skill.wh.1011` keys on `multiple independent primitive texture/frame routes are not supported in one preview`, 3 `skill.wh.1012` keys on `only constant finite nonnegative ColorMultiplierRange is supported`.
 
+## FX-01 emitter simulation core (plan 02-68, 2026-11-09)
+
+Our own deterministic port of the UE2 emitter classes in plain TypeScript under `src/effects/particles/sim`, with Lineage2JS read only as a behaviour reference (DEC-OWN-12). No Babylon type, package, DOM or `src/runtime` import (`tests/unit/importBoundaries.particles.test.ts`); no Interlude binary was read (D4).
+
+- Records: `parseEmitterRecord` and `parseEmitterActorRecord` read the bundle `effectiveProperties` (Interlude class defaults merged by the converter) and keep per-field provenance (`authored`, `class-default`, `ue-zero`). They refuse a wrong field type, a missing class default, an unsimulated class and MaxParticles outside 0 to 16384 with named `EmitterRecordError`s.
+- Simulation: `SpriteEmitter` and `MeshEmitter` spawn, age, respawn, move, revolve, scale, colour, fade and lose velocity on float32 columns, one `src/shared/random.ts` emitter stream per emitter. Sprites report roll and column-major atlas cells; meshes report spin rotators and the material route (`UseMeshBlendMode=false` takes the DrawStyle particle material and `RenderTwoSided` from the record).
+- Emitter actor: GlobalOffset, initial delay, warmup, AutoReset, AutoDestroy (with the bNoDelete and bStatic refusal), SpeedRate, bRotEmitter and LifeSpan over the emitters in array order. AutoReplay, VisibleLimit, non-unit DrawScale3D and CoordinateSystem=Absolute are listed as unresolved. Actor DrawScale is not applied to particles.
+- Scheduler: `createEffectScheduler` steps every live effect through `createFixedStepAccumulator` at 1/60 s, at most 8 steps per frame with the backlog dropped, on the presentation clock frame delta.
+- Gaps: collision, collision planes, actor forces, MeshSpawning, UseSkeletalLocationAs, SpawnFromOtherEmitter, UseRotationFrom=Normal, CoordinateSystem=RelativeRotation and WeatherEffect report `emitter-feature-unported:<property>` (actors gap reasons listVersion 6) and the rest of the emitter simulates.
+- Rules: every rule is a row in [PARTICLE_SEMANTICS.md](PARTICLE_SEMANTICS.md), mirrored by `PARTICLE_CONSTANTS`; all reference rules run as unconfirmed defaults until POL-04.
+
+| Check | Result |
+| --- | --- |
+| `tests/unit/spriteEmitter.test.ts` | synthetic sprite golden trace at seed 1, step 1/60, 0 ulp (168 rows); seed 2 differs; refusals |
+| `tests/unit/meshEmitter.test.ts` | synthetic mesh golden trace with rotators; material route; unported features |
+| `tests/unit/emitterActor.test.ts` | each actor rule; scheduler step count, cap and pause; another effect spawned between steps leaves a trace unchanged |
+| Power Strike hash traces | `POWER_STRIKE_EFFECT_SOURCE=<effect-source.json>` matches `tests/fixtures/particles/power-strike.hashes.json` (source SHA-256 `ce79c8ac...`, seed 1, two actor trace hashes, no feature gaps); skips with a reason without it. p_u004_a is destroyed after 19 steps, s_u002_a after 101. |
+| `tests/unit/importBoundaries.particles.test.ts` | 16 passed |
+| `node tools/reference-overlap/referenceOverlap.mjs --area particles` | 110 blocking runs and 2,508 unreviewed reviewer runs, all structural (typed field tables, vector literals); report `artifacts/reference-overlap/02-68-particles.json`. Independent reviewer sign-off pending. |
+
+Open for FX-01: RibbonEmitter, the L2 emitter natives (AdjustparticleLife, SetSizeScale, SetDelayed, Kill, Trigger), rendering through the material library and the Power Strike preview switch follow in 02-69. The closed-form preview modules stay until then.
+
 ## Open
 
 - 223 roots wait for the resume command; 8,539 keys are pending.
 - Loads: no skill key loads every simulated component yet; the preview loader refuses multi-texture mesh emitters and random color multipliers (FX-01).
-- Beam, Ribbon and VertMesh run only after the FX-01 simulator (02-68, 02-69); VertMesh meshes need a Converter adapter.
+- Beam, Ribbon and VertMesh wait for the FX-01 simulator kinds (Ribbon in 02-69, Beam and VertMesh in Phase 5); VertMesh meshes need a Converter adapter.
 - Five roots are refused by the converter; their reasons are in the gap rows.
 - Runtime presentation of a converted effect on a `skill-cast` event for skills other than Power Strike is integration wiring (`createNativeSliceEffects.ts`).
 - The cast check still runs on the harness page; the dev store switch now serves the actors lane as its restage union, so the native route can start on it.
@@ -68,4 +90,4 @@ Lane catalog `7ab1cdcf97c76c81c169ec3f2d41174e4c14ccbbf8440c60b5ec6fe6865d35e7` 
 
 ## Evidence
 
-Recipe: `recipes/native-power-strike.json`. Notes: `docs/NATIVE_POWER_STRIKE.md`. Plan summary: `.planning/phases/02-stage-a-breadth/02-43-SUMMARY.md`. Decisions: OVERNIGHT-DECISIONS rows 397 to 408.
+Recipe: `recipes/native-power-strike.json`. Notes: `docs/NATIVE_POWER_STRIKE.md`. Particle rules: `docs/parts/skills-effects/PARTICLE_SEMANTICS.md`. Plan summaries: `.planning/phases/02-stage-a-breadth/02-43-SUMMARY.md`, `02-68-SUMMARY.md`. Decisions: OVERNIGHT-DECISIONS rows 397 to 408 and 486 to 497.
