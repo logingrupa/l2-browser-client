@@ -31,6 +31,10 @@ import { createEffectInspectionCamera } from "../effects/nativeEffectInspectionC
 import { isSceneSuspended } from "../engine/renderSuspension";
 import { sandboxNpcVisualFactory } from "./sandboxNpcVisual";
 import { attachSandboxCommandSheet } from "./attachSandboxCommandSheet";
+import { createSandboxRuntimeActions } from "./sandboxRuntimeActions";
+import { createNativeWindowLayer } from "../ui/nativeWindows/nativeWindowLayer";
+import { readNativeTableNameIndex } from "../ui/nativeTables/readNativeTableNameIndex";
+import { selectedNativeTileIdentity } from "../scene/world/selectedNativeTile";
 import { buildNativeCatalogIndexOrUnavailable } from "./buildNativeCatalogIndexOrUnavailable";
 import { nativeWorldLocationTitles } from "./nativeWorldLocationTitles";
 import { hasUnappliedActorPivot, nativeNpcCharacterProfile, sandboxNpcAppearances } from "./sandboxNpcAppearances";
@@ -255,9 +259,21 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       locomotionClips, specialAttackPreview, world, audio: nativeAudio, footsteps, footstepGround, combatAudio, combatFailure, effects,
       cameraControls: { follow, frameWorld, frameFlame, flamePlacementIds, isFollowingFighter: () => followFighter },
       focusEffectCamera: () => effectCamera?.focus(), isDisposed: () => disposed, addRelease });
+    const sandboxLifetime = new AbortController();
+    boundaryReleases.push(() => sandboxLifetime.abort());
+    const windowLayerHost = document.createElement("div");
+    windowLayerHost.style.position = "absolute";
+    windowLayerHost.style.inset = "0";
+    ui.root.prepend(windowLayerHost);
+    const windowLayer = createNativeWindowLayer(windowLayerHost, () => registry.localPlayer);
+    boundaryReleases.push(() => { windowLayer.dispose(); windowLayerHost.remove(); });
+    boundaryReleases.push(adapter.subscribe(event => { if (event.type === "update" && event.entity.kind === "local-player") windowLayer.refresh(); }));
     boundaryReleases.push(attachSandboxCommandSheet({ section: ui.sheet.section("sandbox", { title: "Sandbox", order: 5 }), adapter,
-      index: catalogIndex, indexFailure: catalogIndexFailure, appearanceOfNpc: sandboxAppearanceOfNpc, selectedEntityId: () => registry.selectedEntityId,
-      activePlayerProfileId: playerProfile.id, powerStrike }));
+      indexFailure: catalogIndexFailure, powerStrike, pickerContext: {
+        host: createSandboxRuntimeActions({ adapter, windowLayer, location: window.location, signal: sandboxLifetime.signal }),
+        catalogIndex, readNameIndex: readNativeTableNameIndex, selectedEntityId: () => registry.selectedEntityId,
+        currentTileId: () => selectedNativeTileIdentity(window.location), signal: sandboxLifetime.signal,
+      } }));
     const failFlames = (error: unknown) => nativeSliceSheet.failFlames(error);
     const observer = scene.onBeforeRenderObservable.add(() => {
       if (isSceneSuspended(scene)) { audio.setPaused(true); return; }

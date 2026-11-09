@@ -2,7 +2,9 @@ import { vi } from "vitest";
 import { DevSheet, type DevSection } from "../../../src/ui/devSheet/DevSheet";
 import type { NativeCatalogIndex, NativeCatalogLookup } from "../../../src/assets/native/nativeCatalogIndex";
 import { attachSandboxCommandSheet } from "../../../src/runtime/attachSandboxCommandSheet";
-import type { WorldCommand, WorldEntity, WorldEvent } from "../../../src/world/worldTypes";
+import { createSandboxRuntimeActions, type SandboxTileLocation } from "../../../src/runtime/sandboxRuntimeActions";
+import type { NativeWindowLayer, NativeWindowOpenResult } from "../../../src/ui/nativeWindows/nativeWindowLayer";
+import type { WorldCommand, WorldEvent } from "../../../src/world/worldTypes";
 import { fakeMedia, fire, type FakeElement, type MiniDom } from "./miniDom";
 
 export function fakeCatalogIndexOver(lookups: ReadonlyMap<string, NativeCatalogLookup>): NativeCatalogIndex {
@@ -24,48 +26,54 @@ export function createSandboxSection(dom: MiniDom): { readonly sheet: DevSheet; 
   return { sheet, section: sheet.section("sandbox", { title: "Sandbox" }) };
 }
 
-const localPlayer: WorldEntity = { id: "local-player", kind: "local-player", displayName: "Human male fighter", position: { x: 0, y: 0, z: 0 },
-  orientationRadians: 0, health: 100, maximumHealth: 100, animation: "idle" };
-
-function acceptedEvent(command: WorldCommand): WorldEvent | null {
-  if (command.type === "cast-skill") return { type: "skill-cast", casterId: "local-player", skillId: command.skillId, level: command.level,
-    ...(command.targetId === undefined ? {} : { targetId: command.targetId }) };
-  if (command.type === "spawn-npc") return { type: "spawn", entity: { ...localPlayer, id: `npc-${command.npcId}-1`, kind: "monster", npcId: command.npcId } };
-  if (command.type === "equip-item" && command.itemId !== null) return { type: "update", entity: { ...localPlayer, equipment: { [command.slot]: command.itemId } } };
-  return null;
+function fakeWindowLayerOver(index: NativeCatalogIndex, openedWindowIds: string[]): Pick<NativeWindowLayer, "open"> {
+  return {
+    open: async windowId => {
+      const lookup = index.lookup(`window:${windowId}`);
+      if (lookup.status !== "converted") return { status: "not-in-catalog", windowId, key: lookup.key, reason: lookup.reason };
+      openedWindowIds.push(windowId);
+      const result: NativeWindowOpenResult = { status: "opened", windowId, key: lookup.key,
+        window: { element: {} as HTMLElement, gaps: [], refresh() {}, dispose() {} } };
+      return result;
+    },
+  };
 }
 
 export interface SandboxSheetFakeOptions {
   readonly index: NativeCatalogIndex;
   readonly selectedEntityId?: string | null;
   readonly indexFailure?: string | null;
-  readonly adapterAcceptsCommands?: boolean;
-  readonly activePlayerProfileId?: string;
+  readonly search?: string;
 }
 
 export function attachSandboxSheetWithFakes(dom: MiniDom, options: SandboxSheetFakeOptions) {
-  const { index, selectedEntityId = "native-musveren", indexFailure = null, adapterAcceptsCommands = true,
-    activePlayerProfileId = "human-male-fighter" } = options;
+  const { index, selectedEntityId = "native-musveren", indexFailure = null, search = "" } = options;
   const dispatched: WorldCommand[] = [];
   const listeners = new Set<(event: WorldEvent) => void>();
   const adapter = {
-    dispatch: vi.fn((command: WorldCommand) => {
-      dispatched.push(command);
-      const event = adapterAcceptsCommands ? acceptedEvent(command) : null;
-      if (event) for (const listener of [...listeners]) listener(event);
-    }),
+    dispatch: vi.fn((command: WorldCommand) => { dispatched.push(command); }),
     subscribe: vi.fn((listener: (event: WorldEvent) => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; }),
   };
+  const emit = (event: WorldEvent) => { for (const listener of [...listeners]) listener(event); };
+  const assignedLocations: string[] = [];
+  const location: SandboxTileLocation = { href: `http://127.0.0.1:5173/${search}`, search, assign: url => { assignedLocations.push(String(url)); } };
+  const openedWindowIds: string[] = [];
+  const lifetime = new AbortController();
   const powerStrike = { start: vi.fn(async () => {}) };
   const { sheet, section } = createSandboxSection(dom);
-  const release = attachSandboxCommandSheet({ section, adapter, index, indexFailure, appearanceOfNpc: () => ({ appearanceId: "native-musveren" }),
-    selectedEntityId: () => selectedEntityId, activePlayerProfileId, powerStrike });
+  const host = createSandboxRuntimeActions({ adapter, windowLayer: fakeWindowLayerOver(index, openedWindowIds), location, signal: lifetime.signal });
+  const release = attachSandboxCommandSheet({ section, adapter, indexFailure, powerStrike, pickerContext: {
+    host, catalogIndex: index,
+    readNameIndex: async tableId => ({ status: "not-in-catalog", key: `table:${tableId.replace(/-/g, "_")}_names`, reason: "no tables record in the served catalog" }),
+    selectedEntityId: () => selectedEntityId, currentTileId: () => null, signal: lifetime.signal,
+  } });
   const panel = section.element as unknown as FakeElement;
-  const submit = (testId: string, values: Record<string, string>) => {
+  const submit = async (testId: string, values: Record<string, string>) => {
     const form = panel.querySelector(`[data-testid="${testId}"]`)!;
     for (const [name, value] of Object.entries(values)) form.querySelector(`[data-testid="${testId}-${name}"]`)!.value = value;
     fire(form, "submit");
+    for (let turn = 0; turn < 5; turn += 1) await Promise.resolve();
   };
-  const note = (testId: string) => panel.querySelectorAll(`[data-testid="${testId}-note"]`);
-  return { sheet, dispatched, listeners, powerStrike, release, submit, note, panel };
+  const note = (testId: string) => panel.querySelectorAll(`[data-testid="${testId}"]`);
+  return { sheet, section, adapter, dispatched, listeners, emit, assignedLocations, openedWindowIds, powerStrike, release, submit, note, panel };
 }
