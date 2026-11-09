@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-26-PLAN.md
-last_updated: "2026-11-09T04:41:40.800Z"
+stopped_at: Completed 02-34-PLAN.md
+last_updated: "2026-11-09T06:50:45.786Z"
 last_activity: 2026-11-09
 last_activity_desc: Phase 02 plan 02-15 complete (TerrainInfo-derived 4x4-sector chunk plan and per-chunk terrain for 20_21 and 20_20, WORLD-01 pending)
-state_head: 5352a07d60013235e36934dbb683249259349d60
+state_head: a0ad137f5a63f46752a1b3068d93235de7a9e9ec
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 87
-  completed_plans: 51
+  completed_plans: 52
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 02 (Stage A breadth) - EXECUTING
-Plan: 02-41 complete, 32 of 70 plans summarized
+Plan: 02-34 complete, 35 of 70 plans summarized
 Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-09 - Plan 02-41 complete: `EquipmentSlot` is `upper` or `body-part:<value>` named by the source `body_part` value; `isEquipmentSlot` accepts only the canonical form, `equipmentSlotForBodyPart` owns the key form, equipment keys sort `upper` first then by value; all 19 distinct decoded weapongrp and armorgrp `body_part` values map to accepted slots, meaning undecoded; `pnpm test:unit` 1,927 passed, 0 failed. ACT-03 stays Pending until 02-21 and 02-42.
+Last activity: 2026-11-09 - Plan 02-34 complete: the NPC batch (`convert_actors.py --batch npcs --limit 20`, `--print-batch-plan`) sealed 142 of 429 `npc-model` units (132 pass, 10 converter-refused) and 6 of 13 class-limited profile packs (1,496 profiles) in the unpinned actors lane store, catalog 9a979250; the npcs sweep slice recorded 20 passes; 1,943 rows wait on the owner's identity decision; `pnpm test:pipeline` 1,518 OK. ACT-02 stays Pending.
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -103,6 +103,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P41 | 6min | 3 tasks | 6 files |
 | Phase 2 P15 | 40min | 3 tasks | 25 files |
 | Phase 02 P26 | 27min | 3 tasks | 14 files |
+| Phase 02 P34 | 2h 6m | 3 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -240,6 +241,9 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-26: seed reason item-group-row-absent (listVersion 3); etcitem and ungrouped item rows are integration lane census rows (rows 347, 348)
 - [Phase 02]: 02-26: --census-lanes reads gap rows, converted keys and lane-pinned load checks; a report measures only its lanes' parts; output artifacts/lane-store/integration/coverage-census.json (rows 349, 350)
 - [Phase 02]: 02-26: denominators from committed files only, chargrp 15 with no padding row subtracted; unchanged reruns keep generatedAtRiga; INT-01 stays Pending (rows 351 to 353)
+- [Phase 02]: 02-34: NPC batch order LineageMonsters.ukx first, then package path, then unit key; shared-store npc ids (21622) stay out of lane packs; packs strictly below the imported MAX_CLASSES, at most 256 profiles, cut in row order, id interlude:npc-profiles:pack-<16 hex> (OVERNIGHT-DECISIONS rows 354 to 360)
+- [Phase 02]: 02-34: per-row class, inheritance and mesh identity refusals become gap rows before packs are cut, exact identity kept (1,943 rows wait on the owner); batch profile gap rows use step npc-profile (rows 366 to 368)
+- [Phase 02]: 02-34: ACT-02 stays Pending: 142 of 429 NPC model units sealed, 6 of 13 packs (1,496 profiles) in the unpinned actors lane store, 20 loads pass; resume with convert_actors.py --batch npcs --limit 20
 
 ### Pending Todos
 
@@ -312,7 +316,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-09T04:41:40.334Z
-Stopped at: Completed 02-26-PLAN.md
+Last session: 2026-11-09T06:50:45.276Z
+Stopped at: Completed 02-34-PLAN.md
 Resume file: None
 - Needs Human (OVERNIGHT-DECISIONS row 301): the actors lane confirms the import repoints in `scripts/prepare-native-player-aliases.py` and `scripts/test_effect_readiness.py`; the world lane points `scripts/world/copy_world07_fixtures.py` at `scripts/native_assets_lib/sha256_identity.py` and removes its pin from the owner scan in `tests/pipeline/test_converter_output_guard.py`.
