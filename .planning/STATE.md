@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-16-PLAN.md
-last_updated: "2026-11-09T08:16:39.083Z"
+stopped_at: Completed 02-43-PLAN.md
+last_updated: "2026-11-09T09:05:27.919Z"
 last_activity: 2026-11-09
 last_activity_desc: Phase 02 plan 02-58 complete (D6 adapter record types and AccountSession contract commit)
-state_head: c899e01589d37b1809cdce752f806ef21acbfbf4
+state_head: d24fdc8c182350d312a8ce61b8dd64a3177fd999
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 87
-  completed_plans: 54
+  completed_plans: 55
   percent: 0
 ---
 
@@ -106,6 +106,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P34 | 2h 6m | 3 tasks | 17 files |
 | Phase 2 P58 | 6min | 2 tasks | 12 files |
 | Phase 02 P16 | 50min | 3 tasks | 25 files |
+| Phase 02 P43 | 50min | 3 tasks | 29 files |
 
 ## Accumulated Context
 
@@ -251,6 +252,9 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 2]: Plan 02-58: EntityRegistry returns for every event but update, in the contract commit (row 372)
 - [Phase 02]: 02-16: ?map=XX_YY tile route through loadNativeSection (dynamic import) returning a NativeSection tile view; sectionWindow inspection field reports the hand-chosen legacy window as unresolved; tiles spawn at the PlayerStart XY on the chunk terrain surface (OVERNIGHT-DECISIONS rows 380 to 391)
 - [Phase 02]: 02-16: tile:20_21 walk recorded failed on the world lane store (lane catalog has no player body); open follow-up for a served catalog with base and lane records; WORLD-05 and WORLD-01 stay Pending (rows 392, 396)
+- [Phase 02]: 02-43: one sealed skill-effect-root unit per visual root; per-key records interlude:skill:<id>:level:<level>:native-description-action with bundleId interlude:skill-root:<description>; ?skill=<id>:<level> read only by selectedCastSkill, Power Strike default (OVERNIGHT-DECISIONS rows 397, 400)
+- [Phase 02]: 02-43: actors gap reasons skill-visual-reference-unqualified, effect-bundle-class-limit:<count>, emitter-class-unported:<class>; the coverage recipe lists the simulated emitter classes; small tested changes outside the lane in effect_readiness, gap_census and the sandbox sheet (rows 398, 402)
+- [Phase 02]: 02-43: DefaultReader not rerouted, no VertMesh adapter, lane store unpinned because write_lane_catalog refuses staged effect manifests; ACT-06 and FX-01 stay Pending (rows 403, 404, 407, 408)
 
 ### Pending Todos
 
@@ -322,6 +326,6 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 
 ## Session Continuity
 
-Last session: 2026-11-09T08:16:38.554Z
-Stopped at: Completed 02-16-PLAN.md
+Last session: 2026-11-09T09:05:27.389Z
+Stopped at: Completed 02-43-PLAN.md
 Resume file: None
