@@ -14,3 +14,7 @@ Out-of-scope problems found while executing a plan. Each is left for its owning 
 ## Found during 02-20
 
 - `pnpm test:unit`, 2026-11-09 01:34 Riga, at commit 92e27d2: 15 failed of 1,878. Rerun of the 7 failing files alone: only the known `laneOwnership.test.ts` adapter-dispatch evidence size case fails (33,680 bytes, recorded under 02-12); the others are parallel-load timeouts as in the 02-01 baseline, plus the 2 known `nativeNpcProfiles` cases. Plan 02-20 touched none of those files.
+
+## Found during 02-27
+
+- `scripts/data/convert_tables.py` merges `tables` records with `TABLES_CATALOG_CAPACITY = 40`, and the capacity counts every record of the slice, including the three derived name index records. The data-ui lane holds 36 records now and 02-28 adds at most 3, so nothing is refused today; the plan that fixes the eula-e, questname-e, servername-e or sysstring-e decode makes the 41st record and must raise the capacity to the inventory rows plus the name indexes (OVERNIGHT-DECISIONS row 295).
