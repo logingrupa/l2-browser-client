@@ -41,6 +41,7 @@ Use the smallest command that fits the work.
 - At most 3 lanes on DATABASE-PC, plus the integration thread in the main checkout. One part per branch, named `<part>/<slug>`.
 - Lanes never run scripts that write the main native store: `assets:*`, `assets:stage`, `stage_*`, `derive-*`, `migrate-*`, `scripts/native_store/merge_lane_store.py`, or preview scripts. Only the integration thread runs them, in the main checkout.
 - Lanes start from committed code only. Merge one branch at a time; a contract change merges first.
+- Only one full `pnpm test:unit` runs on a machine at a time; concurrent lanes run targeted test files instead. The Vitest worker budget (`maxWorkers: "50%"` in `vitest.config.ts`) is sized for one suite per machine.
 
 ### Build
 - The Babylon.js Editor is not in the build path (DEC-OWN-8, NOED-01 to NOED-05). Do not add Editor steps to `pnpm dev` or `pnpm build`.
