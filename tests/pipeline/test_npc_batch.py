@@ -274,7 +274,7 @@ class NpcBatchExcludedProfileTests(NpcBatchFixture):
         with patch.object(npc_batch, 'migrate_npc_profiles', side_effect=migrate_excluding({12})):
             result = self.run_slice()
         self.assertEqual([outcome['status'] for outcome in result['packOutcomes']], ['pass'])
-        self.assertEqual(self.lane_gap_reasons('npc-profile-pack'), {'npc:12': 'actor-default-unresolved:CollisionHeight'})
+        self.assertEqual(self.lane_gap_reasons('npc-profile'), {'npc:12': 'actor-default-unresolved:CollisionHeight'})
         catalog = json.loads((lane_store_root(self.project_root, 'actors') / 'catalog.json').read_bytes())
         self.assertEqual(len(catalog['npcProfiles']), 1)
 
@@ -284,9 +284,23 @@ class NpcBatchExcludedProfileTests(NpcBatchFixture):
             rerun = self.run_slice()
         self.assertEqual([outcome['status'] for outcome in result['packOutcomes']], ['gap'])
         self.assertEqual([(outcome['status'], outcome['cacheHit']) for outcome in rerun['packOutcomes']], [('gap', True)])
-        self.assertEqual(set(self.lane_gap_reasons('npc-profile-pack')), {'npc:11', 'npc:12', 'npc:20', 'npc:30'})
+        self.assertEqual(set(self.lane_gap_reasons('npc-profile')), {'npc:11', 'npc:12', 'npc:20', 'npc:30'})
         catalog = json.loads((lane_store_root(self.project_root, 'actors') / 'catalog.json').read_bytes())
         self.assertNotIn('npcProfiles', catalog)
+
+
+class NpcBatchGapCensusStepTests(NpcBatchFixture):
+    def test_every_gap_row_the_batch_writes_names_a_step_of_the_gap_census_order(self):
+        from native_store.gap_census import GAP_CENSUS_STEP_ORDER
+        self.npcname['data']['npc'] = [row for row in self.npcname['data']['npc'] if row['id'] != 12]
+        self.converter.failure = ValueError('Synthetic refusal')
+        self.run_slice(limit=1)
+        self.converter.failure = None
+        with patch.object(npc_batch, 'migrate_npc_profiles', side_effect=migrate_excluding({20})):
+            self.run_slice()
+        steps = {row['step'] for row in read_gap_rows(self.project_root, 'actors')}
+        self.assertEqual(steps, {'npc-model', 'npc-profile'})
+        self.assertLessEqual(steps, set(GAP_CENSUS_STEP_ORDER))
 
 
 class NpcBatchSharedStoreTests(NpcBatchFixture):
@@ -365,7 +379,7 @@ class NpcProfilePackRecipeTests(NpcBatchFixture):
         catalog = json.loads((lane_store_root(self.project_root, 'actors') / 'catalog.json').read_bytes())
         self.assertEqual([record['id'] for record in catalog['npcProfiles']], [npc_batch.npc_profile_pack_id([11, 20, 30])])
         self.assertNotEqual(first_pack_id, catalog['npcProfiles'][0]['id'])
-        self.assertEqual(self.lane_gap_reasons('npc-profile-pack'), {'npc:12': 'npc-name-row-missing'})
+        self.assertEqual(self.lane_gap_reasons('npc-profile'), {'npc:12': 'npc-name-row-missing'})
 
     def test_a_row_without_a_name_is_a_planning_gap_and_a_closure_at_the_class_limit_is_over_limit(self):
         self.npcname['data']['npc'] = [row for row in self.npcname['data']['npc'] if row['id'] != 12]

@@ -7,7 +7,7 @@ from actors.actor_unit_inventory import (ACTOR_UNIT_CENSUS_RELATIVE_PATH, CONVER
                                          conversion_unit_key, decoded_table_identity)
 from actors.effect_bundle_packing import native_class_closure, pack_items_by_class_closure
 from actors.npc_requests import (ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX, CONVERTER_REFUSED_REASON_PREFIX, FAILED_STATUS, GAP_STATUS,
-                                 NPC_NAME_EMPTY_REASON, NPC_NAME_ROW_MISSING_REASON, NPC_PROFILE_RECIPE_ID_PREFIX, PASS_STATUS,
+                                 NPC_NAME_EMPTY_REASON, NPC_NAME_ROW_MISSING_REASON, NPC_PROFILE_RECIPE_ID_PREFIX, NPC_PROFILE_STEP, PASS_STATUS,
                                  TRANSIENT_FAILURES, npc_profile_selection, npc_profiles_recipe)
 from actors.npc_store_records import (PROFILE_MANIFEST_FILE_NAME, bundle_output_records, catalog_with_record_replaced,
                                       converted_model_store_files_and_record, profile_bundle_store_files_and_record)
@@ -28,7 +28,7 @@ FIRST_BATCH_MESH_PACKAGE_PATH = 'animations/LineageMonsters.ukx'
 NPC_PROFILE_PACK_ID_PREFIX = 'interlude:npc-profiles:pack-'
 NPC_PROFILE_PACK_ID_HEX_LENGTH = 16
 NPC_PROFILE_PACK_STEP = 'npc-profile-pack'
-NPC_PROFILE_PACK_ALGORITHM_VERSION = 1
+NPC_PROFILE_PACK_ALGORITHM_VERSION = 2
 PROFILE_BUNDLE_FOLDER = 'bundle'
 CLASS_CLOSURE_OVER_LIMIT_REASON_PREFIX = 'class-closure-over-limit:'
 PROFILE_BUNDLE_CAPACITY_EXCEEDED_REASON = 'profile-bundle-capacity-exceeded'
@@ -209,7 +209,7 @@ def planning_gap_row(gap, npcgrp, npcname):
     identity = decoded_table_identity(npcgrp if gap.class_name else npcname)
     if gap.class_name:
         identity['object'] = gap.class_name
-    return {'key': f'npc:{gap.npc_id}', 'part': NPC_PART_NAME, 'step': NPC_PROFILE_PACK_STEP, 'status': 'gap', 'reason': gap.reason,
+    return {'key': f'npc:{gap.npc_id}', 'part': NPC_PART_NAME, 'step': NPC_PROFILE_STEP, 'status': 'gap', 'reason': gap.reason,
             'sourceIdentity': identity, 'evidence': ACTOR_UNIT_CENSUS_RELATIVE_PATH}
 
 
@@ -268,7 +268,7 @@ class NpcBatchSlice:
 
     def pack_gap_row(self, pack_id, row, reason):
         evidence = self.pack_ledger.unit_step_directory(pack_unit_key(pack_id)) / RECEIPT_RECORD_NAME
-        return {'key': f'npc:{row.npc_id}', 'part': NPC_PART_NAME, 'step': NPC_PROFILE_PACK_STEP, 'status': 'gap', 'reason': reason,
+        return {'key': f'npc:{row.npc_id}', 'part': NPC_PART_NAME, 'step': NPC_PROFILE_STEP, 'status': 'gap', 'reason': reason,
                 'sourceIdentity': {**decoded_table_identity(self.run.npcgrp), 'object': row.npcgrp_row['class_name']},
                 'evidence': evidence.relative_to(self.pack_ledger.lane_folder).as_posix()}
 
@@ -334,8 +334,8 @@ class NpcBatchSlice:
     def synchronize_pack_gap_rows(self, sealed_packs):
         planning_rows = [planning_gap_row(gap, self.run.npcgrp, self.run.npcname) for gap in self.plan.planning_gaps]
         pack_rows = [row for _, receipt in sealed_packs for row in receipt['gapRows']]
-        every_step_key = {row['key'] for row in read_gap_rows(self.run.project_root, LANE_NAME) if row['step'] == NPC_PROFILE_PACK_STEP}
-        replace_step_gap_rows_when_changed(self.run.project_root, NPC_PROFILE_PACK_STEP, every_step_key, planning_rows + pack_rows)
+        scheduled_keys = {f'npc:{row.npc_id}' for scheduled in self.plan.units for row in scheduled.rows}
+        replace_step_gap_rows_when_changed(self.run.project_root, NPC_PROFILE_STEP, scheduled_keys, planning_rows + pack_rows)
 
     def write_store_records(self, sealed_packs):
         catalog, before = read_store_catalog(self.run.store_root)

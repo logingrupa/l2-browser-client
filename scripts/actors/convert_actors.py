@@ -14,7 +14,7 @@ from actors.actor_census import SOUND_PACKAGE_SUFFIXES, TEXTURE_PACKAGE_SUFFIXES
 from actors.actor_unit_inventory import (ACTOR_UNIT_CENSUS_RELATIVE_PATH, CONVERTIBLE_UNIT_STATUS, NO_MESH_IN_ROW_REASON, NPC_MODEL_UNIT_KIND,
                                          NPC_PART_NAME, conversion_unit_key, decoded_table_identity)
 from actors.npc_requests import (ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX, CONVERTER_REFUSED_REASON_PREFIX, FAILED_STATUS, GAP_STATUS,
-                                 NPC_NAME_EMPTY_REASON, NPC_NAME_ROW_MISSING_REASON, PASS_STATUS, TRANSIENT_FAILURES,
+                                 NPC_NAME_EMPTY_REASON, NPC_NAME_ROW_MISSING_REASON, NPC_PROFILE_STEP, PASS_STATUS, TRANSIENT_FAILURES,
                                  SOUND_PACKAGE_NOT_IN_CLIENT_STATUS, SOUND_PACKAGE_REFUSED_STATUS, animation_reference_gap_reason,
                                  label_npc_sound_identities, npc_effect_binding_record, npc_model_request, npc_profile_recipe,
                                  npc_sound_references, package_stem, serialized_animation_reference)
@@ -39,7 +39,6 @@ from reference_client_guard import ReferenceClientLockError, require_reference_c
 
 LANE_NAME = 'actors'
 NPC_MODEL_STEP = 'npc-model'
-NPC_PROFILE_STEP = 'npc-profile'
 NPC_SOUND_IDENTITY_STEP = 'npc-sound-identities'
 NPC_MODEL_ALGORITHM_VERSION = 1
 NPC_PROFILE_ALGORITHM_VERSION = 1
