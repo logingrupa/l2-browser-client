@@ -56,6 +56,24 @@
  {
   "reader": "g16-heightmap",
   "version": 123,
+  "licensee": 18,
+  "tile": "18_13",
+  "package": "textures/t_18_13.utx",
+  "lockSha256": "cb84ee09f72f9f3285eff0a086185977c133dbd09ac6eb65b16f2ea584cb87ce",
+  "ourDecodeSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+  "crossCheckDecodeSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+  "tool": {
+   "name": "Elbera l2lib",
+   "commit": "12c9656",
+   "pins": {
+    "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
+   }
+  },
+  "equal": true
+ },
+ {
+  "reader": "g16-heightmap",
+  "version": 123,
   "licensee": 19,
   "tile": "24_11",
   "package": "textures/t_24_11.utx",
