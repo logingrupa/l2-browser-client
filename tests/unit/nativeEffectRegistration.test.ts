@@ -7,24 +7,38 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const { planNativeEffectRegistration, applyNativeEffectRegistration, registerNativeEffectCatalog } = await import(pathToFileURL(resolve(
   "scripts/native_effect_registration.mjs")).href);
-const real = resolve("artifacts/native-parity/research/native-power-strike-components-20261107/staging/output/82e36ae7305abade2520dba335839c7422d878e6c07caa95323b47f7626f0afd");
-const realManifest = JSON.parse(await fs.readFile(join(real, "manifest.json"), "utf8"));
 const hash = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex"), roots: string[] = [];
 const targetId = "interlude:skill:3:level:1:raw-source-dispatch";
 type Json = Record<string, any>;
+const scannerNumberSamples = { negativeInteger: -1, fraction: 0.02, negativeFraction: -0.5, exponent: 1e-7 };
+const scannerBooleanSamples = { trueValue: true, falseValue: false };
+const syntheticStagedResources = [
+  { assetId: "interlude:Synthetic.BoundSpriteTexture", kind: "texture", extension: "png", payload: Buffer.from("synthetic texture bound by the sprite component") },
+  { assetId: "interlude:Synthetic.BoundMeshModel", kind: "model", extension: "glb", payload: Buffer.from("synthetic model bound by the mesh component") },
+  { assetId: "interlude:Synthetic.UnboundTexture", kind: "texture", extension: "png", payload: Buffer.from("synthetic texture that no component binds") },
+].map(resource => ({ ...resource, file: `resources/${hash(resource.payload)}.${resource.extension}` }));
+const syntheticStagedResourceEntries = Object.fromEntries(syntheticStagedResources.map(resource => [resource.assetId,
+  { assetId: resource.assetId, kind: resource.kind, file: resource.file, bytes: resource.payload.length, sha256: hash(resource.payload) }]));
+const syntheticStagedManifest = { schemaVersion: 1, kind: "native-effect-components", id: targetId,
+  actors: [{ object: "synthetic.actor", scannerNumberSamples, scannerBooleanSamples }],
+  components: [
+    { object: "synthetic.actor.SpriteEmitter", bindings: { texture: syntheticStagedResourceEntries["interlude:Synthetic.BoundSpriteTexture"], mesh: null } },
+    { object: "synthetic.actor.MeshEmitter", bindings: { texture: null, mesh: syntheticStagedResourceEntries["interlude:Synthetic.BoundMeshModel"] } },
+  ],
+  resources: syntheticStagedResourceEntries };
 async function fixture(entries?: Json[]) {
   const root = await fs.mkdtemp(join(tmpdir(), "effect-registration-test-")); roots.push(root);
-  const l2 = join(root, "l2"), catalogPath = join(l2, "catalog.json"), manifest = structuredClone(realManifest);
+  const l2 = join(root, "l2"), catalogPath = join(l2, "catalog.json"), manifest = structuredClone(syntheticStagedManifest);
   const catalog: Json = { schemaVersion: 1, movers: [{ id: "door-owner", position: [1, 2, 3] }], actors: [{ id: "female" }],
     sections: [{ id: "20_20", primaryUV: "d549" }], audio: { cues: ["retained-walking", "retained-skill"] },
-    retainedUnknown: { unicode: "Latvija – Rīga", flags: [false, null, 0] } };
+    retainedUnknown: { unicode: "Latvija – Rīga", flags: [false, null, 0], scannerNumberSamples, scannerBooleanSamples } };
   if (entries !== undefined) catalog.effectComponents = entries;
   const raw = Buffer.from(JSON.stringify(catalog, null, "\t").replace('"schemaVersion": 1', '"schemaVersion" : 1').replace(/\n/g, "\r\n") + "\r\n");
   await fs.mkdir(l2); await fs.writeFile(catalogPath, raw);
-  async function install(value = manifest) {
-    const bytes = Buffer.from(JSON.stringify(value) + "\n"), sha256 = hash(bytes), directory = join(l2, "effects", sha256);
+  async function install(value: Json = manifest, effectsDirectory = join(l2, "effects")) {
+    const bytes = Buffer.from(JSON.stringify(value) + "\n"), sha256 = hash(bytes), directory = join(effectsDirectory, sha256);
     await fs.mkdir(join(directory, "resources"), { recursive: true });
-    for (const resource of Object.values<Json>(realManifest.resources)) await fs.copyFile(join(real, resource.file), join(directory, resource.file));
+    for (const resource of syntheticStagedResources) await fs.writeFile(join(directory, resource.file), resource.payload);
     const manifestPath = join(directory, "manifest.json"); await fs.writeFile(manifestPath, bytes);
     return { manifestPath, directory, sha256 };
   }
@@ -48,7 +62,7 @@ describe("optional exact effect catalog registration", () => {
   it("plans without writes and appends only effectComponents while preserving every preceding raw catalog byte", async () => {
     const f = await fixture(), before = await fs.stat(f.catalogPath), plan = await planNativeEffectRegistration(f.options);
     expect(await fs.readFile(f.catalogPath)).toEqual(f.raw); expect((await fs.stat(f.catalogPath)).mtimeMs).toBe(before.mtimeMs);
-    expect(await leftovers(f.l2)).toEqual([]); expect(plan.entry.id).toBe(targetId); expect(plan.stagedResourcesVerified).toBe(13);
+    expect(await leftovers(f.l2)).toEqual([]); expect(plan.entry.id).toBe(targetId); expect(plan.stagedResourcesVerified).toBe(syntheticStagedResources.length);
     const result = await applyNativeEffectRegistration(plan), after = await fs.readFile(f.catalogPath);
     const unchangedPrefix = Buffer.from(f.raw.toString().slice(0, plan.editedCharacterSpan.start));
     expect(result.status).toBe("registered"); expect(after.subarray(0, unchangedPrefix.length)).toEqual(unchangedPrefix);
@@ -118,8 +132,8 @@ describe("optional exact effect catalog registration", () => {
     expect(await fs.readFile(f.catalogPath)).toEqual(f.raw);
   });
   it("rejects a manifest outside this catalog's exact effects/hash location", async () => {
-    const f = await fixture();
-    await expect(planNativeEffectRegistration({ ...f.options, manifestPath: join(real, "manifest.json") })).rejects.toThrow(/catalog's \/l2\/effects path/);
+    const f = await fixture(), outside = await f.install(f.manifest, join(f.root, "outside-effects"));
+    await expect(planNativeEffectRegistration({ ...f.options, manifestPath: outside.manifestPath })).rejects.toThrow(/catalog's \/l2\/effects path/);
     expect(await fs.readFile(f.catalogPath)).toEqual(f.raw);
   });
   it("verifies every staged resource, including a resource not selected for the initial component", async () => {

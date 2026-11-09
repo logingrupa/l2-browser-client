@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { readAssetPackage, type AssetPackage } from "../../src/assets/package/readAssetPackage";
+import { copyAssetPackage } from "./support/copyAssetPackage";
 import { loadNativeNpcProfiles, type NativeNpcProfile } from "../../src/assets/native/loadNativeNpcProfiles";
 import { resolveNativePowerStrikeShotSource, resolveNativePowerStrikeShotTarget } from "../../src/effects/nativePowerStrikeSource";
 
@@ -32,7 +33,7 @@ beforeAll(async () => {
 beforeEach(context => { context.skip(missingStagedInputPaths.length > 0, stagedStoreAbsentReason); });
 afterEach(() => vi.unstubAllGlobals());
 function fixture(index = 0): AssetPackage {
-  return { manifest: structuredClone(packages[index]!.manifest), files: new Map(packages[index]!.files) };
+  return copyAssetPackage(packages[index]!);
 }
 function event(asset: AssetPackage, index = variants[0].index): Record<string, unknown> {
   return asset.manifest.animationEvents![index] as Record<string, unknown>;
@@ -136,6 +137,9 @@ describe("retained Power Strike source-event qualification", () => {
   });
 
   it("requires all seven matching source part clips and never repairs sidecars", () => {
+    const qualifiedClipOnlyModelPackage = fixture();
+    alterClipList(qualifiedClipOnlyModelPackage, [{ name: variants[0].clip, extras: { nativeDurationSeconds: 47 / 30 } }]);
+    expect(resolveNativePowerStrikeShotSource(qualifiedClipOnlyModelPackage, variants[0].clip).reason).toBeNull();
     for (const modify of [
       (sidecar: AnimationSourceSidecar) => { sidecar.parts.pop(); },
       (sidecar: AnimationSourceSidecar) => { sidecar.parts[6]!.animationSet = "Fighter.Other_anim"; },
@@ -144,8 +148,8 @@ describe("retained Power Strike source-event qualification", () => {
       (sidecar: AnimationSourceSidecar) => { sidecar.parts[6]!.clips = sidecar.parts[6]!.clips.filter(clip => clip.name !== variants[0].clip); },
       (sidecar: AnimationSourceSidecar) => { const clip = maleSpecialAttackClip(sidecar); sidecar.parts[6]!.clips = [clip, clip]; },
     ]) {
-      const asset = fixture(); alterSidecar(asset, modify); const before = asset.files.get("animation-source.json")!.slice();
-      expect(resolveNativePowerStrikeShotSource(asset, variants[0].clip).source).toBeNull();
+      const asset = copyAssetPackage(qualifiedClipOnlyModelPackage); alterSidecar(asset, modify); const before = asset.files.get("animation-source.json")!.slice();
+      expect(resolveNativePowerStrikeShotSource(asset, variants[0].clip)).toEqual({ source: null, reason: "The retained per-part source clip/duration/motion join differs." });
       expect(asset.files.get("animation-source.json")).toEqual(before);
     }
   });

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { deflateSync } from "node:zlib";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -101,21 +101,24 @@ describe("native terrain PNG and byte packing", () => {
 });
 
 describe("optional native terrain material ownership", () => {
-  async function fixture() {
-    const engine = new NullEngine(), scene = new Scene(engine); scene.useRightHandedSystem = true;
-    const mesh = MeshBuilder.CreateGround("native terrain", { width: 10, height: 10 }, scene), neutral = new StandardMaterial("neutral", scene);
-    mesh.material = neutral;
-    const layers = Array.from({ length: 9 }, (_, index) => ({ index, texture: `Texture.Diffuse${index}`, alphaMap: `Texture.Mask${index}`,
-      worldToTextureRowMajor: [[1 / 128, 0, 0, 0], [0, 1 / 128, 0, 0], [0, 0, 1, 0], [0, -.03125, 0, 1]] }));
-    mesh.metadata = { gltf: { extras: { nativeLayers: layers } } };
-    const responses = new Map<string, Uint8Array<ArrayBuffer>>(), textures = [];
+  const layers = Array.from({ length: 9 }, (_, index) => ({ index, texture: `Texture.Diffuse${index}`, alphaMap: `Texture.Mask${index}`,
+    worldToTextureRowMajor: [[1 / 128, 0, 0, 0], [0, 1 / 128, 0, 0], [0, 0, 1, 0], [0, -.03125, 0, 1]] }));
+  const encodedLayerImages: { bytes: Uint8Array<ArrayBuffer>; texture: { assetId: string; image: string; imageBytes: number; imageSha256: string; archiveSha256: string } }[] = [];
+  beforeAll(async () => {
     for (const layer of layers) for (const kind of ["texture", "alphaMap"] as const) {
       const size = kind === "texture" || layer.index === 0 ? 256 : layer.index === 6 ? 512 : 1024;
       const pixels = new Uint8Array(size * size * 4).fill(kind === "texture" ? 141 : layer.index === 0 ? 255 : layer.index * 13);
       const bytes = png(size, size, 4, pixels), hash = await sha256(bytes), archive = `${kind === "texture" ? "a" : "b"}${layer.index}`.padEnd(64, "0");
-      const image = `/l2/${archive}/image.png`; responses.set(image, bytes);
-      textures.push({ assetId: `interlude:${layer[kind]}`, image, imageBytes: bytes.length, imageSha256: hash, archiveSha256: archive });
+      encodedLayerImages.push({ bytes, texture: { assetId: `interlude:${layer[kind]}`, image: `/l2/${archive}/image.png`, imageBytes: bytes.length, imageSha256: hash, archiveSha256: archive } });
     }
+  });
+  async function fixture() {
+    const engine = new NullEngine(), scene = new Scene(engine); scene.useRightHandedSystem = true;
+    const mesh = MeshBuilder.CreateGround("native terrain", { width: 10, height: 10 }, scene), neutral = new StandardMaterial("neutral", scene);
+    mesh.material = neutral;
+    mesh.metadata = { gltf: { extras: { nativeLayers: structuredClone(layers) } } };
+    const responses = new Map(encodedLayerImages.map(({ bytes, texture }) => [texture.image, bytes]));
+    const textures = encodedLayerImages.map(({ texture }) => ({ ...texture }));
     vi.stubGlobal("fetch", vi.fn(async (url: string) => { const bytes = responses.get(url); return new Response(bytes?.slice().buffer, { status: bytes ? 200 : 404 }); }));
     vi.spyOn(ShaderMaterial.prototype, "forceCompilationAsync").mockResolvedValue(undefined);
     return { engine, scene, mesh, neutral, responses, catalog: { schemaVersion: 1, textures }, dispose: () => { scene.dispose(); engine.dispose(); } };

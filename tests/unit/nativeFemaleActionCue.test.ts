@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { readAssetPackage, sha256, type AssetPackage } from "../../src/assets/package/readAssetPackage";
+import { copyAssetPackage } from "./support/copyAssetPackage";
 import { createNativeActionCuePreview, type NativeActionCuePreview } from "../../src/audio/nativeActionCuePreview";
 import type { NativeActorClock } from "../../src/assets/native/NativeActor";
 import type { WorldAudioPlaybackReceipt } from "../../src/audio/WorldAudioMixer";
@@ -34,14 +35,9 @@ function clock(elapsedSeconds: number, attack = false, extra: Partial<NativeActo
   return { clip: attack ? "Atk01_Hand_FFighter" : "Death_FFighter", mode: "once", elapsedSeconds, durationSeconds,
     playing: elapsedSeconds < durationSeconds, completed: elapsedSeconds >= durationSeconds, ...extra };
 }
-function changed(asset: AssetPackage): AssetPackage {
-  return { manifest: structuredClone(asset.manifest), files: new Map(asset.files) };
-}
 const previews: NativeActionCuePreview[] = [];
 afterEach(() => { for (const preview of previews) preview.dispose(); previews.length = 0; });
 
-// Original packages stay local. These cases must run without skips in the
-// implementation workspace; source-only checkout skips are not playback proof.
 describe.skipIf(!existsSync(femalePath))("female source action cue selection and timing", () => {
   let female: AssetPackage;
   beforeAll(async () => {
@@ -111,14 +107,14 @@ describe.skipIf(!existsSync(femalePath))("female source action cue selection and
   });
 
   it.each(["object", "sha256"] as const)("rejects changed female source %s", async field => {
-    const asset = changed(female); asset.manifest.source[field] = "changed";
+    const asset = copyAssetPackage(female); asset.manifest.source[field] = "changed";
     const { preview, output } = await setup(asset);
     expect(preview.inspection().available).toBe(0); expect(output.register).not.toHaveBeenCalled();
     expect(preview.inspection().diagnostics.map(entry => entry.reason)).toEqual(["Source asset identity mismatch", "Source asset identity mismatch"]);
   });
 
   it.each(["timeSeconds", "sound", "sourceFrames", "Volume", "Radius", "Random"])("rejects changed female %s while retaining other cues", async field => {
-    const asset = changed(female), event = asset.manifest.animationEvents!.find(value =>
+    const asset = copyAssetPackage(female), event = asset.manifest.animationEvents!.find(value =>
       (value as Record<string, unknown>).object === "Fighter.AnimNotify_Sound235") as Record<string, unknown>;
     if (["Volume", "Radius", "Random"].includes(field)) (event.properties as Record<string, unknown>)[field] = 1;
     else event[field] = field === "sound" ? "invented" : 1;
@@ -129,7 +125,7 @@ describe.skipIf(!existsSync(femalePath))("female source action cue selection and
   });
 
   it("rejects changed audio bytes even when the rest of the selected female asset remains valid", async () => {
-    const asset = changed(female), file = "audio/chrsound.FHFighter_Basic_Action.FHFighter_Death.wav";
+    const asset = copyAssetPackage(female), file = "audio/chrsound.FHFighter_Basic_Action.FHFighter_Death.wav";
     const bytes = asset.files.get(file)!.slice(); bytes[bytes.length - 1]! ^= 1;
     (asset.files as Map<string, Uint8Array>).set(file, bytes);
     const { preview } = await setup(asset);
@@ -137,7 +133,7 @@ describe.skipIf(!existsSync(femalePath))("female source action cue selection and
   });
 
   it("rejects rewritten UAX provenance even when its internal file hash is updated", async () => {
-    const asset = changed(female), file = "provenance.json";
+    const asset = copyAssetPackage(female), file = "provenance.json";
     const provenance = JSON.parse(new TextDecoder().decode(asset.files.get(file)));
     provenance.metadata.eventAudio[deathSounds[1]!].sourceSha256 = "0".repeat(64);
     const bytes = new TextEncoder().encode(JSON.stringify(provenance)); (asset.files as Map<string, Uint8Array>).set(file, bytes);

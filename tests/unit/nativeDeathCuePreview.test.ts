@@ -4,6 +4,7 @@ import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
 import { Scene } from "@babylonjs/core/scene";
 import { GetEnvironmentBRDFTexture } from "@babylonjs/core/Misc/brdfTextureTools";
 import { readAssetPackage, sha256, type AssetPackage } from "../../src/assets/package/readAssetPackage";
+import { copyAssetPackage } from "./support/copyAssetPackage";
 import { createNativeActionCuePreview, type NativeActionCuePreview } from "../../src/audio/nativeActionCuePreview";
 import type { WorldAudioPlaybackReceipt } from "../../src/audio/WorldAudioMixer";
 import type { NativeActorClock } from "../../src/assets/native/NativeActor";
@@ -33,15 +34,12 @@ function clock(elapsedSeconds: number, fighter = false, extra: Partial<NativeAct
   return { clip: fighter ? "Death_MFighter" : "death", mode: "once", elapsedSeconds, durationSeconds,
     playing: elapsedSeconds < durationSeconds, completed: elapsedSeconds >= durationSeconds, ...extra };
 }
-function changed(asset: AssetPackage): AssetPackage {
-  return { manifest: structuredClone(asset.manifest), files: new Map(asset.files) };
-}
 function attackClock(elapsedSeconds: number, extra: Partial<NativeActorClock> = {}): NativeActorClock {
   return clock(elapsedSeconds, false, { clip: "atk01", durationSeconds: 55 / 30,
     playing: elapsedSeconds < 55 / 30, completed: elapsedSeconds >= 55 / 30, ...extra });
 }
 async function renameClip(asset: AssetPackage, name: string): Promise<AssetPackage> {
-  const copy = changed(asset), file = copy.manifest.model!.file, original = copy.files.get(file)!;
+  const copy = copyAssetPackage(asset), file = copy.manifest.model!.file, original = copy.files.get(file)!;
   const old = new DataView(original.buffer, original.byteOffset, original.byteLength), jsonLength = old.getUint32(12, true);
   const gltf = JSON.parse(new TextDecoder().decode(original.subarray(20, 20 + jsonLength)));
   const animation = gltf.animations.find((entry: { name: string }) => entry.name === name);
@@ -157,7 +155,7 @@ describe.skipIf(!existsSync(fighterPath) || !existsSync(monsterPath))("pinned na
   });
 
   it.each(["sound", "Random"])("rejects an altered attack %s while keeping the other attack cues and both death cues", async field => {
-    const corrupt = changed(monster), event = corrupt.manifest.animationEvents!.find(value =>
+    const corrupt = copyAssetPackage(monster), event = corrupt.manifest.animationEvents!.find(value =>
       (value as Record<string, unknown>).object === "LineageMonsters.AnimNotify_Sound2851") as Record<string, unknown>;
     if (field === "sound") event.sound = "invented";
     else {
@@ -246,7 +244,7 @@ describe.skipIf(!existsSync(fighterPath) || !existsSync(monsterPath))("pinned na
   });
 
   it.each(["object", "sha256"] as const)("rejects source %s mismatches instead of guessing by appearance", async field => {
-    const corrupt = changed(fighter); corrupt.manifest.source[field] = "changed";
+    const corrupt = copyAssetPackage(fighter); corrupt.manifest.source[field] = "changed";
     const { preview, output } = await setup(corrupt);
     expect(preview.inspection()).toMatchObject({ available: 5, diagnostics: ["Death_MFighter", "Atk01_Hand_MFighter"].map(clip =>
       expect.objectContaining({ clip, reason: "Source asset identity mismatch" })) });
@@ -254,7 +252,7 @@ describe.skipIf(!existsSync(fighterPath) || !existsSync(monsterPath))("pinned na
   });
 
   it.each(["timeSeconds", "sound", "animationSet", "type"])("rejects a changed %s tuple without suppressing other verified cues", async field => {
-    const corrupt = changed(fighter), event = corrupt.manifest.animationEvents!.find(value =>
+    const corrupt = copyAssetPackage(fighter), event = corrupt.manifest.animationEvents!.find(value =>
       (value as Record<string, unknown>).object === "Fighter.AnimNotify_Sound757") as Record<string, unknown>;
     event[field] = field === "timeSeconds" ? .7 : "changed";
     const { preview } = await setup(corrupt);
@@ -262,7 +260,7 @@ describe.skipIf(!existsSync(fighterPath) || !existsSync(monsterPath))("pinned na
   });
 
   it("rejects missing, duplicate and altered payloads with explicit diagnostics", async () => {
-    const corrupt = changed(fighter), events = corrupt.manifest.animationEvents!;
+    const corrupt = copyAssetPackage(fighter), events = corrupt.manifest.animationEvents!;
     const first = events.findIndex(value => (value as Record<string, unknown>).object === "Fighter.AnimNotify_Sound756");
     events.splice(first, 1);
     events.push(events.find(value => (value as Record<string, unknown>).object === "Fighter.AnimNotify_Sound757"));
@@ -276,7 +274,7 @@ describe.skipIf(!existsSync(fighterPath) || !existsSync(monsterPath))("pinned na
   });
 
   it("rejects changed UAX provenance even when its file hash is internally consistent", async () => {
-    const corrupt = changed(monster), path = "provenance.json";
+    const corrupt = copyAssetPackage(monster), path = "provenance.json";
     const doc = JSON.parse(new TextDecoder().decode(corrupt.files.get(path)));
     doc.metadata.eventAudio["MonSound.field_stalker.field_stalker_death"].sourceSha256 = "0".repeat(64);
     const bytes = new TextEncoder().encode(JSON.stringify(doc)); (corrupt.files as Map<string, Uint8Array>).set(path, bytes);
@@ -286,7 +284,7 @@ describe.skipIf(!existsSync(fighterPath) || !existsSync(monsterPath))("pinned na
   });
 
   it("does not bind a different asset instance by copied ID, and reports absent catalog entries", async () => {
-    const { preview, output } = await setup(), player = preview.bindActor("unsupported", changed(monster));
+    const { preview, output } = await setup(), player = preview.bindActor("unsupported", copyAssetPackage(monster));
     player.start(clock(0)); player.advance(clock(0), clock(.1)); expect(output.play).not.toHaveBeenCalled();
     expect(preview.inspection().diagnostics.at(-1)?.reason).toMatch(/No verified .*cue source/);
     const empty = await createNativeActionCuePreview(new Map(), output); previews.push(empty);

@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { NativeActorClock } from "../../src/assets/native/NativeActor";
 import { readAssetPackage, sha256, type AssetPackage } from "../../src/assets/package/readAssetPackage";
+import { copyAssetPackage } from "./support/copyAssetPackage";
 import type { WorldAudioPlaybackReceipt, WorldAudioVoice, WorldAudioVoiceOptions } from "../../src/audio/WorldAudioMixer";
 import type { WorldEntity } from "../../src/world/worldTypes";
 import { createNativeCombatAudio, nativeAttackEvents, nativeAttackShotRoute, nativeCombatGain, nativePercentChance, summarizeNativeCombatDispatch,
@@ -482,7 +483,12 @@ describe.skipIf(!stagedCatalog?.combatAudio)("staged combat bundle with the real
     const path = `public${url}`;
     return existsSync(path) ? new Response(readFileSync(path)) : new Response(null, { status: 404 });
   }) as unknown as typeof fetch;
-  const archive = async (id: string) => readAssetPackage(new Uint8Array(readFileSync(`public${stagedCatalog!.models.find(row => row.id === id)!.archive}`)));
+  const verifiedArchivesByCatalogId = new Map<string, Promise<AssetPackage>>();
+  const archive = async (id: string): Promise<AssetPackage> => {
+    if (!verifiedArchivesByCatalogId.has(id)) verifiedArchivesByCatalogId.set(id,
+      readAssetPackage(new Uint8Array(readFileSync(`public${stagedCatalog!.models.find(row => row.id === id)!.archive}`))));
+    return copyAssetPackage(await verifiedArchivesByCatalogId.get(id)!);
+  };
 
   it("loads the native-meaning numbers and ALAudio.int config, and plays both Hand AttackShots on Musveren", async () => {
     const staged = (await loadNativeCombatAudio(new AbortController().signal, { fetch: disk }))!;

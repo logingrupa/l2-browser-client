@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { readAssetPackage, sha256, type AssetPackage } from "../../src/assets/package/readAssetPackage";
+import { copyAssetPackage } from "./support/copyAssetPackage";
 import { createNativeActionCuePreview, type NativeActionCuePreview, type NativeActionCuePreviewOptions } from "../../src/audio/nativeActionCuePreview";
 import type { NativeActorClock } from "../../src/assets/native/NativeActor";
 import type { WorldAudioPlaybackReceipt } from "../../src/audio/WorldAudioMixer";
@@ -35,9 +36,6 @@ function mixer() {
       { id: ++nextId, key, owner, offsetSeconds, contextTime: 10, durationSeconds: 2 } : null),
     accept(value: boolean) { accepting = value; }, limitOffset(value: number) { maxOffset = value; } };
 }
-function changed(asset: AssetPackage): AssetPackage {
-  return { manifest: structuredClone(asset.manifest), files: new Map(asset.files) };
-}
 async function replaceFile(asset: AssetPackage, path: string, bytes: Uint8Array) {
   (asset.files as Map<string, Uint8Array>).set(path, bytes);
   Object.assign(asset.manifest.files.find(row => row.path === path)!, { bytes: bytes.length, sha256: await sha256(bytes) });
@@ -45,8 +43,6 @@ async function replaceFile(asset: AssetPackage, path: string, bytes: Uint8Array)
 const previews: NativeActionCuePreview[] = [];
 afterEach(() => { for (const preview of previews) preview.dispose(); previews.length = 0; });
 
-// Actual retained licensed packages are required in this workspace. Source-only
-// skips explicitly do not establish cue or runtime playback evidence.
 describe.skipIf(!existsSync(proofPath) || !Object.values(paths).every(existsSync))("opt-in human special-action source cues", () => {
   let assets: Map<string, AssetPackage>, proof: ProofCue[];
   const actor = (sex: Sex) => assets.get(ids[sex])!;
@@ -191,7 +187,7 @@ describe.skipIf(!existsSync(proofPath) || !Object.values(paths).every(existsSync
 
   it.each(["animationSet", "type", "function", "timeSeconds", "normalizedTime", "sourceFrames", "sourceRate", "sound", "resolvedFile", "Sound", "Volume", "Radius", "Random"])(
     "rejects changed special tuple %s without changing other admitted cues", async field => {
-      const copy = changed(actor("male")), original = cues("male")[0]!;
+      const copy = copyAssetPackage(actor("male")), original = cues("male")[0]!;
       const event = copy.manifest.animationEvents!.find(row => (row as Record<string, unknown>).object === original.event.object) as Record<string, unknown>;
       if (["Sound", "Volume", "Radius", "Random"].includes(field)) (event.properties as Record<string, unknown>)[field] = field === "Sound" ? "ChrSound.MHFighter_Preatk_1" : 1;
       else event[field] = typeof event[field] === "number" ? 1 : "changed";
@@ -202,7 +198,7 @@ describe.skipIf(!existsSync(proofPath) || !Object.values(paths).every(existsSync
     });
 
   it("rejects missing and duplicate direct notifications instead of applying aliases", async () => {
-    const copy = changed(actor("female")), names = cues("female").map(row => row.event.object);
+    const copy = copyAssetPackage(actor("female")), names = cues("female").map(row => row.event.object);
     const events = copy.manifest.animationEvents!;
     events.splice(events.findIndex(value => (value as Record<string, unknown>).object === names[0]), 1);
     events.push(events.find(value => (value as Record<string, unknown>).object === names[1]));
@@ -213,7 +209,7 @@ describe.skipIf(!existsSync(proofPath) || !Object.values(paths).every(existsSync
   });
 
   it("rejects a rewritten payload even with updated internal file metadata", async () => {
-    const copy = changed(actor("female")), original = cues("female")[0]!, path = original.event.resolvedFile;
+    const copy = copyAssetPackage(actor("female")), original = cues("female")[0]!, path = original.event.resolvedFile;
     const bytes = copy.files.get(path)!.slice(); bytes[bytes.length - 1]! ^= 1; await replaceFile(copy, path, bytes);
     const selected = new Map(assets); selected.set(ids.female, copy);
     const { preview } = await setup(undefined, selected);
@@ -221,7 +217,7 @@ describe.skipIf(!existsSync(proofPath) || !Object.values(paths).every(existsSync
   });
 
   it("rejects internally consistent but rewritten UAX provenance", async () => {
-    const copy = changed(actor("female")), original = cues("female")[1]!, path = "provenance.json";
+    const copy = copyAssetPackage(actor("female")), original = cues("female")[1]!, path = "provenance.json";
     const value = JSON.parse(new TextDecoder().decode(copy.files.get(path)));
     value.metadata.eventAudio[original.event.sound].sourceObject = "itemsound.Weapon_Fist.fist_1";
     await replaceFile(copy, path, new TextEncoder().encode(JSON.stringify(value)));
@@ -232,7 +228,7 @@ describe.skipIf(!existsSync(proofPath) || !Object.values(paths).every(existsSync
 
   it("does not admit an unsupported clip or copied asset instance", async () => {
     const { preview, output } = await setup();
-    const wrong = preview.bindActor("copy", changed(actor("male"))); wrong.start(clock("male", 0)); wrong.advance(clock("male", 0), clock("male", 1));
+    const wrong = preview.bindActor("copy", copyAssetPackage(actor("male"))); wrong.start(clock("male", 0)); wrong.advance(clock("male", 0), clock("male", 1));
     const player = preview.bindActor("actual", actor("male"));
     player.start(clock("male", 0, { clip: "SpAtk02_1HS_MFighter" }));
     player.advance(clock("male", 0, { clip: "SpAtk02_1HS_MFighter" }), clock("male", 1, { clip: "SpAtk02_1HS_MFighter" }));
