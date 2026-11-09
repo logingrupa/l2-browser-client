@@ -73,6 +73,32 @@ describe("developer sheet ID entry", () => {
     expect(message.textContent).toBe("Name or ID must be at most 64 characters.");
   });
 
+  it.each(["2021", "20-21", "2_21", "20_210", "aa_bb"])("rejects tile %j before submitting", rejected => {
+    const { onSubmit, message, submit } = mountIdEntry({ fields: [{ name: "tile", label: "Tile", kind: "tile" }] });
+    submit({ tile: rejected });
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(message.textContent).toBe("Tile must be two two-digit numbers joined by an underscore (XX_YY).");
+  });
+
+  it("submits a tile written as XX_YY", () => {
+    const { onSubmit, submit } = mountIdEntry({ fields: [{ name: "tile", label: "Tile", kind: "tile" }] });
+    submit({ tile: " 20_21 " });
+    expect(onSubmit).toHaveBeenCalledWith({ tile: "20_21" });
+  });
+
+  it.each(["StatusWnd", "ShortcutWnd#2"])("submits window id %j", accepted => {
+    const { onSubmit, submit } = mountIdEntry({ fields: [{ name: "window", label: "Window", kind: "window" }] });
+    submit({ window: accepted });
+    expect(onSubmit).toHaveBeenCalledWith({ window: accepted });
+  });
+
+  it.each(["#2", "StatusWnd#0", "StatusWnd#", "Status Wnd", "<b>x</b>"])("rejects window id %j", rejected => {
+    const { onSubmit, message, submit } = mountIdEntry({ fields: [{ name: "window", label: "Window", kind: "window" }] });
+    submit({ window: rejected });
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(message.textContent).toMatch(/^Window must start with a letter/);
+  });
+
   it("is reachable from a sheet group with a hover-card info button", () => {
     const host = dom.document.createElement("section"); host.className = "world-interface";
     const canvas = dom.document.createElement("canvas");

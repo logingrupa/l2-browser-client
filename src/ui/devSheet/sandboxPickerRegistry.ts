@@ -1,6 +1,10 @@
+import { castPicker } from "./castPicker";
 import type { DevGroup } from "./devSheetParts";
+import { equipPicker } from "./equipPicker";
 import type { SandboxPickerContext } from "./sandboxPickerHost";
 import { spawnPicker } from "./spawnPicker";
+import { tilePicker } from "./tilePicker";
+import { windowPicker } from "./windowPicker";
 
 export interface SandboxPickerFactory {
   readonly id: string;
@@ -8,4 +12,4 @@ export interface SandboxPickerFactory {
   attach(group: DevGroup, context: SandboxPickerContext): () => void;
 }
 
-export const sandboxPickerSections: readonly SandboxPickerFactory[] = [spawnPicker];
+export const sandboxPickerSections: readonly SandboxPickerFactory[] = [tilePicker, spawnPicker, equipPicker, castPicker, windowPicker];

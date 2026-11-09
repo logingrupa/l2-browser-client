@@ -1,3 +1,4 @@
+import { tileIdPattern, windowIdPattern } from "../../assets/native/nativeCatalogRecords";
 import type { DevIdEntry, DevIdEntryField, DevIdEntryOptions } from "./types";
 
 const integerInputPattern = /^\d{1,9}$/;
@@ -14,6 +15,13 @@ function readIdEntryField(field: DevIdEntryField, rawText: string): FieldReading
     return text.length <= maximumSearchTextLength ? { value: text } : { rejection: `${field.label} must be at most ${maximumSearchTextLength} characters.` };
   }
   if (!text) return { rejection: `${field.label} is required.` };
+  if (field.kind === "tile") {
+    return tileIdPattern.test(text) ? { value: text } : { rejection: `${field.label} must be two two-digit numbers joined by an underscore (XX_YY).` };
+  }
+  if (field.kind === "window") {
+    return windowIdPattern.test(text) ? { value: text }
+      : { rejection: `${field.label} must start with a letter and use only letters, digits and underscores, at most 64 characters, optionally followed by #<ordinal>.` };
+  }
   if (field.kind === "name") {
     return nameInputPattern.test(text) ? { value: text }
       : { rejection: `${field.label} must start with a letter and use only letters, digits and underscores, at most 64 characters.` };

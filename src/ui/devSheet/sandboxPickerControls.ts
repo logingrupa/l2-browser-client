@@ -66,6 +66,39 @@ export function lastLookupVariable(variablePrefix: string, result: SandboxResult
   return { name: `${variablePrefix}.lookup`, value: () => result.current(), values, source: sandboxCatalogIndexSource, status: "native" };
 }
 
+export interface SandboxCatalogKeyChoiceOptions {
+  readonly group: DevGroup;
+  readonly context: SandboxPickerContext;
+  readonly lifetime: SandboxPickerLifetime;
+  readonly keyPrefix: string;
+  readonly label: string;
+  readonly testId: string;
+  readonly pickText: string;
+  readonly onPick: (identifier: string) => void;
+}
+
+export interface SandboxCatalogKeyChoice {
+  selectedKey(): string;
+}
+
+export function attachSandboxCatalogKeyChoice(options: SandboxCatalogKeyChoiceOptions): SandboxCatalogKeyChoice {
+  const { group, context, lifetime, keyPrefix } = options;
+  const keys = context.catalogIndex.keys(keyPrefix);
+  if (keys.length === 0) {
+    group.note(`The catalog index lists no ${keyPrefix} keys.`, { tone: "warning", testId: `${options.testId}-empty` });
+    return { selectedKey: () => "none" };
+  }
+  const keyChoice = group.choice({
+    label: options.label, testId: options.testId, display: "select",
+    options: keys.map(key => ({ value: key, label: describeNativeCatalogLookup(context.catalogIndex.lookup(key)) })),
+  });
+  group.button({
+    label: options.pickText, testId: `${options.testId}-pick`,
+    onClick: () => { if (lifetime.active() && keyChoice.value.startsWith(keyPrefix)) options.onPick(keyChoice.value.slice(keyPrefix.length)); },
+  });
+  return { selectedKey: () => keyChoice.value || "none" };
+}
+
 export interface SandboxNameSearchOptions {
   readonly group: DevGroup;
   readonly context: SandboxPickerContext;
@@ -86,7 +119,7 @@ export interface SandboxNameSearch {
   variables(): VariableInfo[];
 }
 
-function errorText(error: unknown): string {
+export function failureText(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
@@ -162,8 +195,8 @@ export function attachSandboxNameSearch(options: SandboxNameSearchOptions): Sand
     } catch (error) {
       if (!isCurrent()) return;
       showMatches([]);
-      indexStatus = context.signal.aborted ? "read stopped" : `failed: ${errorText(error)}`;
-      search.setMessage(context.signal.aborted ? `${tableId} name index read stopped.` : `${tableId} name index failed: ${errorText(error)}`);
+      indexStatus = context.signal.aborted ? "read stopped" : `failed: ${failureText(error)}`;
+      search.setMessage(context.signal.aborted ? `${tableId} name index read stopped.` : `${tableId} name index failed: ${failureText(error)}`);
     }
   };
   showMatches([]);
