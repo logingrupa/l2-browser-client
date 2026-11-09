@@ -1,6 +1,6 @@
 import { describeNativeCatalogLookup, tileCatalogKey } from "../../assets/native/nativeCatalogIndex";
 import {
-  attachSandboxCatalogKeyChoice, createSandboxResultNote, sandboxCatalogIndexSource, startPickerLifetime, submittedText,
+  attachSandboxCatalogKeyChoice, catalogKeyChoiceEntries, createSandboxResultNote, sandboxCatalogIndexSource, startPickerLifetime, submittedText,
 } from "./sandboxPickerControls";
 import type { SandboxPickerFactory } from "./sandboxPickerRegistry";
 import type { VariableInfo } from "./types";
@@ -29,7 +29,8 @@ export const tilePicker: SandboxPickerFactory = {
         source: "walking is the existing tap-to-move on the loaded tile; this picker adds no walk control", status: "presentation" },
     ];
     const keyChoice = attachSandboxCatalogKeyChoice({
-      group, context, lifetime, keyPrefix: tileKeyPrefix, label: "Catalog tiles", testId: "sandbox-tile-keys", pickText: "Reload selected tile",
+      group, lifetime, keyPrefix: tileKeyPrefix, entries: catalogKeyChoiceEntries(context.catalogIndex, tileKeyPrefix),
+      emptyText: `The catalog index lists no ${tileKeyPrefix} keys.`, label: "Catalog tiles", testId: "sandbox-tile-keys", pickText: "Reload selected tile",
       onPick: reloadTile,
     });
     group.idEntry({

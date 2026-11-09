@@ -143,6 +143,23 @@ describe("window picker", () => {
     expect(picker.note("sandbox-window-note")).toBe("ShortcutWnd#2 has an unresolved texture");
   });
 
+  it("lists windows through the registry: base name, then ordinal as a number, with each status", () => {
+    const picker = mountPicker("window", { catalog: {
+      "window:Back2#10": converted("window:Back2#10"),
+      "window:Back2#2": converted("window:Back2#2"),
+      "window:Back2": converted("window:Back2"),
+      "window:ChatWnd": { status: "gap", key: "window:ChatWnd", reason: "decode-failed:FormatError", coverageStatus: "gap" },
+    } });
+    expect(picker.optionTexts("sandbox-window-keys")).toEqual([
+      "window:Back2 converted", "window:Back2#2 converted", "window:Back2#10 converted", "window:ChatWnd gap: decode-failed:FormatError"]);
+  });
+
+  it("notes no windows converted for an empty registry instead of an empty select", () => {
+    const picker = mountPicker("window");
+    expect(picker.byTestId("sandbox-window-keys")).toBeNull();
+    expect(picker.note("sandbox-window-keys-empty")).toBe("no windows converted");
+  });
+
   it("opens a typed window id and reports a rejected open as a warning", async () => {
     const picker = mountPicker("window", { catalog: windowCatalog, windowOutcome: Promise.reject(new Error("manifest hash mismatch")) });
     await picker.submit("sandbox-window", { window: "StatusWnd" });

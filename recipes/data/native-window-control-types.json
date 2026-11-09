@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "renderedTypes": [
+    "Window",
+    "Texture",
+    "Button",
+    "TextBox"
+  ],
+  "source": "src/ui/nativeWindows/nativeWindowRenderer.ts rendered types (presentation)"
+}

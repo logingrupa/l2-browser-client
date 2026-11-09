@@ -1,4 +1,4 @@
-import { describeNativeCatalogLookup, tableCatalogKey, type NativeCatalogLookup } from "../../assets/native/nativeCatalogIndex";
+import { describeNativeCatalogLookup, tableCatalogKey, type NativeCatalogIndex, type NativeCatalogLookup } from "../../assets/native/nativeCatalogIndex";
 import { nameIndexRecordId, type NativeTableNameEntry } from "../nativeTables/readNativeTableNameIndex";
 import type { DevGroup } from "./devSheetParts";
 import type { SandboxActionOutcome, SandboxPickerContext } from "./sandboxPickerHost";
@@ -66,11 +66,17 @@ export function lastLookupVariable(variablePrefix: string, result: SandboxResult
   return { name: `${variablePrefix}.lookup`, value: () => result.current(), values, source: sandboxCatalogIndexSource, status: "native" };
 }
 
+export interface SandboxCatalogKeyChoiceEntry {
+  readonly key: string;
+  readonly description: string;
+}
+
 export interface SandboxCatalogKeyChoiceOptions {
   readonly group: DevGroup;
-  readonly context: SandboxPickerContext;
   readonly lifetime: SandboxPickerLifetime;
   readonly keyPrefix: string;
+  readonly entries: readonly SandboxCatalogKeyChoiceEntry[];
+  readonly emptyText: string;
   readonly label: string;
   readonly testId: string;
   readonly pickText: string;
@@ -81,16 +87,19 @@ export interface SandboxCatalogKeyChoice {
   selectedKey(): string;
 }
 
+export function catalogKeyChoiceEntries(catalogIndex: NativeCatalogIndex, keyPrefix: string): readonly SandboxCatalogKeyChoiceEntry[] {
+  return catalogIndex.keys(keyPrefix).map(key => ({ key, description: describeNativeCatalogLookup(catalogIndex.lookup(key)) }));
+}
+
 export function attachSandboxCatalogKeyChoice(options: SandboxCatalogKeyChoiceOptions): SandboxCatalogKeyChoice {
-  const { group, context, lifetime, keyPrefix } = options;
-  const keys = context.catalogIndex.keys(keyPrefix);
-  if (keys.length === 0) {
-    group.note(`The catalog index lists no ${keyPrefix} keys.`, { tone: "warning", testId: `${options.testId}-empty` });
+  const { group, lifetime, keyPrefix } = options;
+  if (options.entries.length === 0) {
+    group.note(options.emptyText, { tone: "warning", testId: `${options.testId}-empty` });
     return { selectedKey: () => "none" };
   }
   const keyChoice = group.choice({
     label: options.label, testId: options.testId, display: "select",
-    options: keys.map(key => ({ value: key, label: describeNativeCatalogLookup(context.catalogIndex.lookup(key)) })),
+    options: options.entries.map(entry => ({ value: entry.key, label: entry.description })),
   });
   group.button({
     label: options.pickText, testId: `${options.testId}-pick`,

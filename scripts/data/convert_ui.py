@@ -25,6 +25,7 @@ import reference_client_guard
 from reference_client_guard import require_reference_client
 from ui_texture_step import (TEXTURES_STEP, UI_TEXTURE_ALGORITHM_VERSION, convert_window_textures, ui_texture_recipe_bytes,
                              ui_texture_requests)
+from window_control_gaps import CONTROLS_ALGORITHM_VERSION, CONTROLS_STEP, convert_window_controls, read_rendered_control_types
 
 LAYOUT_ALGORITHM_VERSION = 1
 LANE_NAME = 'data-ui'
@@ -121,20 +122,27 @@ def write_interface_window_census(layout, elbera_root):
     replace_file(INTERFACE_WINDOW_CENSUS_PATH, interface_layout_json_bytes(census))
 
 
-def decoded_window_manifests(output_root):
+def decoded_window_manifests_with_records(output_root):
     catalog, _ = read_store_catalog(output_root)
     manifests = []
     for record in catalog.get(WINDOWS_CATALOG_SLICE, []):
         manifest_bytes = confined_child_path(output_root, record['manifest'].removeprefix(NATIVE_RESOURCE_PREFIX)).read_bytes()
         if (sha256_hex(manifest_bytes), len(manifest_bytes)) != (record['manifestSha256'], record['manifestBytes']):
             raise ConvertUiError(f'window manifest {record["manifest"]} differs from its catalog SHA-256 or byte length')
-        manifests.append(json.loads(manifest_bytes))
+        manifest = json.loads(manifest_bytes)
+        if manifest.get('windowId') != record['id']:
+            raise ConvertUiError(f'window manifest {record["manifest"]} names {manifest.get("windowId")!r}, not its catalog id {record["id"]}')
+        manifests.append((manifest, record))
     if not manifests:
         raise ConvertUiError(f'{output_root} has no decoded windows; run --step layout first')
     return manifests
 
 
-def selected_texture_window_ids(manifests, requested_window_ids, limit):
+def decoded_window_manifests(output_root):
+    return [manifest for manifest, _ in decoded_window_manifests_with_records(output_root)]
+
+
+def selected_decoded_window_ids(manifests, requested_window_ids, limit):
     window_ids = [manifest['windowId'] for manifest in manifests]
     if requested_window_ids is None:
         return window_ids[:limit]
@@ -156,7 +164,16 @@ def convert_textures_step(client, client_access, output_root, requested_window_i
     ledger = UnitLedger(work_root, TEXTURES_STEP, UI_TEXTURE_ALGORITHM_VERSION)
     return [convert_window_textures(REPOSITORY_ROOT, window_id, requests, converter, ledger, output_root,
                                     converter_identity=converter_identity, field_bindings_document=field_bindings_document)
-            for window_id in selected_texture_window_ids(manifests, requested_window_ids, limit)]
+            for window_id in selected_decoded_window_ids(manifests, requested_window_ids, limit)]
+
+
+def convert_controls_step(output_root, requested_window_ids, limit):
+    manifests_with_records = decoded_window_manifests_with_records(output_root)
+    manifest_and_record_by_window_id = {manifest['windowId']: (manifest, record) for manifest, record in manifests_with_records}
+    rendered_types = read_rendered_control_types()
+    ledger = UnitLedger(lane_work_root(REPOSITORY_ROOT, LANE_NAME), CONTROLS_STEP, CONTROLS_ALGORITHM_VERSION)
+    window_ids = selected_decoded_window_ids([manifest for manifest, _ in manifests_with_records], requested_window_ids, limit)
+    return [convert_window_controls(REPOSITORY_ROOT, *manifest_and_record_by_window_id[window_id], rendered_types, ledger) for window_id in window_ids]
 
 
 def convert_layout_step_from_client(client_access, output_root, elbera_root, requested_window_ids, limit):
@@ -174,7 +191,7 @@ def convert_layout_step_from_client(client_access, output_root, elbera_root, req
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description='Convert the Interlude interface into the data-ui lane store, one sealed unit per root window.')
-    parser.add_argument('--step', choices=(LAYOUT_STEP, TEXTURES_STEP), required=True)
+    parser.add_argument('--step', choices=(LAYOUT_STEP, CONTROLS_STEP, TEXTURES_STEP), required=True)
     parser.add_argument('--client', type=Path, required=True)
     parser.add_argument('--output', type=Path)
     parser.add_argument('--elbera-root', type=Path, default=ELBERA_ROOT)
@@ -195,6 +212,8 @@ def main(argv=None):
         with lane_coverage_refreshed_at_exit(REPOSITORY_ROOT, LANE_NAME):
             if arguments.step == TEXTURES_STEP:
                 results = convert_textures_step(arguments.client, client_access, output_root, requested_window_ids, limit)
+            elif arguments.step == CONTROLS_STEP:
+                results = convert_controls_step(output_root, requested_window_ids, limit)
             else:
                 results = convert_layout_step_from_client(client_access, output_root, arguments.elbera_root, requested_window_ids, limit)
         for result in results:

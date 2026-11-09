@@ -1,4 +1,5 @@
 import { describeNativeCatalogLookup, windowCatalogKey } from "../../assets/native/nativeCatalogIndex";
+import { buildNativeWindowRegistry } from "../nativeWindows/nativeWindowRegistry";
 import {
   attachSandboxCatalogKeyChoice, createSandboxResultNote, failureText, sandboxCatalogIndexSource, startPickerLifetime, submittedText,
 } from "./sandboxPickerControls";
@@ -6,6 +7,7 @@ import type { SandboxPickerFactory } from "./sandboxPickerRegistry";
 import type { VariableInfo } from "./types";
 
 const windowKeyPrefix = "window:";
+const noWindowsConvertedText = "no windows converted";
 
 export const windowPicker: SandboxPickerFactory = {
   id: "window",
@@ -27,7 +29,8 @@ export const windowPicker: SandboxPickerFactory = {
       { name: "sandbox.window.outcome", value: () => result.current(), values: "the open outcome text | none", source: "SandboxPickerHost.openWindow", status: "native" },
     ];
     const keyChoice = attachSandboxCatalogKeyChoice({
-      group, context, lifetime, keyPrefix: windowKeyPrefix, label: "Catalog windows", testId: "sandbox-window-keys", pickText: "Open selected window",
+      group, lifetime, keyPrefix: windowKeyPrefix, entries: buildNativeWindowRegistry(context.catalogIndex), emptyText: noWindowsConvertedText,
+      label: "Catalog windows", testId: "sandbox-window-keys", pickText: "Open selected window",
       onPick: windowId => { void openWindow(windowId); },
     });
     group.idEntry({
