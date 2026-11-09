@@ -264,7 +264,9 @@ class NpcBatchExcludedProfileTests(NpcBatchFixture):
     def test_a_pack_whose_every_profile_is_excluded_writes_no_bundle(self):
         with patch.object(npc_batch, 'migrate_npc_profiles', side_effect=migrate_excluding({11, 12, 20, 30})):
             result = self.run_slice()
+            rerun = self.run_slice()
         self.assertEqual([outcome['status'] for outcome in result['packOutcomes']], ['gap'])
+        self.assertEqual([(outcome['status'], outcome['cacheHit']) for outcome in rerun['packOutcomes']], [('gap', True)])
         self.assertEqual(set(self.lane_gap_reasons('npc-profile-pack')), {'npc:11', 'npc:12', 'npc:20', 'npc:30'})
         catalog = json.loads((lane_store_root(self.project_root, 'actors') / 'catalog.json').read_bytes())
         self.assertNotIn('npcProfiles', catalog)
@@ -312,77 +314,35 @@ class NpcProfilePackRecipeTests(NpcBatchFixture):
                                  (names[profile['npcId']], row['mesh_name'], row['class_name']))
                 self.assertEqual(profile['modelCatalogId'], conversion_unit_key(NPC_MODEL_UNIT_KIND, npc_batch.npc_row_selection(row)))
 
+    def test_a_class_that_resolves_only_to_another_spelling_is_a_planning_gap_outside_every_pack(self):
+        inexact_class = self.npcgrp['data']['npc'][2]['class_name']
+        run = self.conversion_run()
+        plan = npc_batch.npc_batch_plan(run.census, run.npcgrp, run.npcname, run.name_table,
+                                        lambda class_name: synthetic_closure(class_name.upper() if class_name == inexact_class else class_name), ())
+        self.assertEqual([(gap.npc_id, gap.reason) for gap in plan.planning_gaps],
+                         [(20, 'converter-refused:Actor class requires an exact qualified export identity')])
+        self.assertNotIn(20, [row.npc_id for pack in plan.packs for row in pack.rows])
+
+    def test_a_pack_record_of_an_earlier_plan_leaves_the_lane_catalog_when_the_packs_are_cut_again(self):
+        self.run_slice()
+        first_pack_id = npc_batch.npc_profile_pack_id([11, 12, 20, 30])
+        self.npcname['data']['npc'] = [row for row in self.npcname['data']['npc'] if row['id'] != 12]
+        self.run_slice()
+        catalog = json.loads((lane_store_root(self.project_root, 'actors') / 'catalog.json').read_bytes())
+        self.assertEqual([record['id'] for record in catalog['npcProfiles']], [npc_batch.npc_profile_pack_id([11, 20, 30])])
+        self.assertNotEqual(first_pack_id, catalog['npcProfiles'][0]['id'])
+        self.assertEqual(self.lane_gap_reasons('npc-profile-pack'), {'npc:12': 'npc-name-row-missing'})
+
     def test_a_row_without_a_name_is_a_planning_gap_and_a_closure_at_the_class_limit_is_over_limit(self):
         self.npcname['data']['npc'] = [row for row in self.npcname['data']['npc'] if row['id'] != 12]
         wide_class = self.npcgrp['data']['npc'][0]['class_name']
         run = self.conversion_run()
-        wide_closure = tuple(f'Synthetic.class_{index:03d}' for index in range(npc_batch.MAX_CLASSES))
+        wide_closure = (wide_class, *(f'Synthetic.class_{index:03d}' for index in range(npc_batch.MAX_CLASSES - 1)))
         plan = npc_batch.npc_batch_plan(run.census, run.npcgrp, run.npcname, run.name_table,
                                         lambda class_name: wide_closure if class_name == wide_class else synthetic_closure(class_name), ())
         self.assertEqual({(gap.npc_id, gap.reason) for gap in plan.planning_gaps},
                          {(12, 'npc-name-row-missing'), (30, f'class-closure-over-limit:{npc_batch.MAX_CLASSES}')})
         self.assertTrue(all(len(pack.class_closure) < npc_batch.MAX_CLASSES for pack in plan.packs))
-
-
-RESOLVED_ACTOR_PROPERTIES = {'DrawScale': 1.0, 'DrawScale3D': {'X': 1.0, 'Y': 1.0, 'Z': 1.0}, 'CollisionRadius': 10.0, 'CollisionHeight': 15.0}
-
-
-class SyntheticDefaultReader:
-    def __init__(self, client, packages, work, save):
-        self.definitions = {}
-        for qualified_name, parent, properties in (
-                ('Core.Object', None, {}), ('Engine.Actor', 'Core.Object', {}),
-                ('LineageMonster.resolved', 'Engine.Actor', RESOLVED_ACTOR_PROPERTIES),
-                ('LineageMonster.no_height', 'Engine.Actor', {key: value for key, value in RESOLVED_ACTOR_PROPERTIES.items() if key != 'CollisionHeight'})):
-            self.definitions[qualified_name.casefold()] = {'object': qualified_name, 'nativeSuperClass': parent, 'effectiveProperties': properties,
-                                                           'source': {'package': 'system/LineageMonster.u', 'packageSha256': 'e' * 64}}
-
-    def get(self, reference):
-        return self.definitions[reference.casefold()]
-
-
-class SyntheticSourcePackages:
-    def __init__(self, client):
-        pass
-
-    def resolve(self, reference, expected_class):
-        return {'object': reference, 'resolution': 'exact-qualified-object', 'package': MESH_PACKAGE_PATH, 'packageSha256': 'd' * 64}, None, None
-
-
-class SyntheticSourceFile:
-    def __init__(self, relative_path, sha256):
-        self.relative_path, self.sha256 = relative_path, sha256
-
-    def stat(self):
-        return SimpleNamespace(st_size=1)
-
-
-class ExtractBundleExclusionTests(unittest.TestCase):
-    def test_a_profile_with_an_unresolved_actor_default_is_left_out_and_listed_in_excluded_profiles(self):
-        import native_actor_profiles
-        source_sha256s = {'system/npcgrp.dat': 'a' * 64, 'system/npcname-e.dat': 'b' * 64, MESH_PACKAGE_PATH: 'd' * 64,
-                          'system/LineageMonster.u': 'e' * 64}
-        tables = {'npcgrp': {'source': 'system/npcgrp.dat', 'sourceSha256': 'a' * 64, 'data': {'npc': []}},
-                  'npcname': {'source': 'system/npcname-e.dat', 'sourceSha256': 'b' * 64, 'data': {'npc': []}}}
-        guard = SimpleNamespace(require_equal_file=lambda relative_path: SyntheticSourceFile(relative_path, source_sha256s[relative_path]))
-        recipe = {'schemaVersion': 1, 'id': 'interlude:npc-profiles:pack-0123456789abcdef', 'nameTable': 'npcname-e.dat',
-                  'sourceUnitsPerMetre': 100, 'profiles': [
-                      {'npcId': 41, 'expectedName': 'Resolved', 'expectedMesh': 'LineageMonsters.resolved_m00',
-                       'expectedActorClass': 'LineageMonster.resolved', 'modelCatalogId': 'npc-model:' + 'a' * 64},
-                      {'npcId': 42, 'expectedName': 'No height', 'expectedMesh': 'LineageMonsters.no_height_m00',
-                       'expectedActorClass': 'LineageMonster.no_height', 'modelCatalogId': 'npc-model:' + 'b' * 64}]}
-        with patch.object(native_actor_profiles, 'decode_table', side_effect=lambda client, name, **options: tables[name]), \
-                patch.object(native_actor_profiles, 'SourcePackages', SyntheticSourcePackages), \
-                patch.object(native_actor_profiles, 'DefaultReader', SyntheticDefaultReader), \
-                patch.object(native_actor_profiles, 'select_exact_npc_rows_without_mesh_substitution', return_value=[(0, {}), (0, {})]), \
-                patch.object(native_actor_profiles, 'audit_selected_row_offsets_and_typed_values', return_value={}), \
-                patch.object(native_actor_profiles, 'require_reference_client', return_value=guard), \
-                patch.object(native_actor_profiles, 'file_hash', side_effect=lambda source_file: source_file.sha256):
-            bundle = native_actor_profiles._extract_bundle(Path('client'), recipe, Path('output'), lambda name, data: name)
-        self.assertEqual([profile['npcId'] for profile in bundle['profiles']], [41])
-        self.assertEqual(bundle['excludedProfiles'], [{'npcId': 42, 'field': 'CollisionHeight'}])
-        self.assertEqual(bundle['unsupported'], [])
-        self.assertEqual((bundle['coverage']['requestedProfiles'], bundle['coverage']['resolvedProfiles']), (2, 1))
 
 
 if __name__ == '__main__':

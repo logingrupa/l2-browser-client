@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -178,6 +179,67 @@ class ReceiptTests(unittest.TestCase):
         (self.output / 'manifest.json').write_text('{}')
         with self.assertRaises(FormatError):
             profiles.verify_npc_profiles(self.client, self.output)
+
+
+SYNTHETIC_MESH_PACKAGE_PATH = 'animations/LineageMonsters.ukx'
+RESOLVED_ACTOR_PROPERTIES = {'DrawScale': 1.0, 'DrawScale3D': {'X': 1.0, 'Y': 1.0, 'Z': 1.0}, 'CollisionRadius': 10.0, 'CollisionHeight': 15.0}
+
+
+class SyntheticDefaultReader:
+    def __init__(self, client, packages, work, save):
+        self.definitions = {}
+        for qualified_name, parent, properties in (
+                ('Core.Object', None, {}), ('Engine.Actor', 'Core.Object', {}),
+                ('LineageMonster.resolved', 'Engine.Actor', RESOLVED_ACTOR_PROPERTIES),
+                ('LineageMonster.no_height', 'Engine.Actor', {key: value for key, value in RESOLVED_ACTOR_PROPERTIES.items() if key != 'CollisionHeight'})):
+            self.definitions[qualified_name.casefold()] = {'object': qualified_name, 'nativeSuperClass': parent, 'effectiveProperties': properties,
+                                                           'source': {'package': 'system/LineageMonster.u', 'packageSha256': 'e' * 64}}
+
+    def get(self, reference):
+        return self.definitions[reference.casefold()]
+
+
+class SyntheticSourcePackages:
+    def __init__(self, client):
+        pass
+
+    def resolve(self, reference, expected_class):
+        return {'object': reference, 'resolution': 'exact-qualified-object', 'package': SYNTHETIC_MESH_PACKAGE_PATH, 'packageSha256': 'd' * 64}, None, None
+
+
+class SyntheticSourceFile:
+    def __init__(self, relative_path, sha256):
+        self.relative_path, self.sha256 = relative_path, sha256
+
+    def stat(self):
+        return SimpleNamespace(st_size=1)
+
+
+class ExtractBundleExclusionTests(unittest.TestCase):
+    def test_a_profile_with_an_unresolved_actor_default_is_left_out_and_listed_in_excluded_profiles(self):
+        source_sha256s = {'system/npcgrp.dat': 'a' * 64, 'system/npcname-e.dat': 'b' * 64, SYNTHETIC_MESH_PACKAGE_PATH: 'd' * 64,
+                          'system/LineageMonster.u': 'e' * 64}
+        tables = {'npcgrp': {'source': 'system/npcgrp.dat', 'sourceSha256': 'a' * 64, 'data': {'npc': []}},
+                  'npcname': {'source': 'system/npcname-e.dat', 'sourceSha256': 'b' * 64, 'data': {'npc': []}}}
+        guard = SimpleNamespace(require_equal_file=lambda relative_path: SyntheticSourceFile(relative_path, source_sha256s[relative_path]))
+        recipe = {'schemaVersion': 1, 'id': 'interlude:npc-profiles:pack-0123456789abcdef', 'nameTable': 'npcname-e.dat',
+                  'sourceUnitsPerMetre': 100, 'profiles': [
+                      {'npcId': 41, 'expectedName': 'Resolved', 'expectedMesh': 'LineageMonsters.resolved_m00',
+                       'expectedActorClass': 'LineageMonster.resolved', 'modelCatalogId': 'npc-model:' + 'a' * 64},
+                      {'npcId': 42, 'expectedName': 'No height', 'expectedMesh': 'LineageMonsters.no_height_m00',
+                       'expectedActorClass': 'LineageMonster.no_height', 'modelCatalogId': 'npc-model:' + 'b' * 64}]}
+        with patch.object(profiles, 'decode_table', side_effect=lambda client, name, **options: tables[name]), \
+                patch.object(profiles, 'SourcePackages', SyntheticSourcePackages), \
+                patch.object(profiles, 'DefaultReader', SyntheticDefaultReader), \
+                patch.object(profiles, 'select_exact_npc_rows_without_mesh_substitution', return_value=[(0, {}), (0, {})]), \
+                patch.object(profiles, 'audit_selected_row_offsets_and_typed_values', return_value={}), \
+                patch.object(profiles, 'require_reference_client', return_value=guard), \
+                patch.object(profiles, 'file_hash', side_effect=lambda source_file: source_file.sha256):
+            bundle = profiles._extract_bundle(Path('client'), recipe, Path('output'), lambda name, data: name)
+        self.assertEqual([profile['npcId'] for profile in bundle['profiles']], [41])
+        self.assertEqual(bundle['excludedProfiles'], [{'npcId': 42, 'field': 'CollisionHeight'}])
+        self.assertEqual(bundle['unsupported'], [])
+        self.assertEqual((bundle['coverage']['requestedProfiles'], bundle['coverage']['resolvedProfiles']), (2, 1))
 
 
 if __name__ == '__main__':

@@ -28,6 +28,7 @@ MAXIMUM_NPC_PROFILE_BUNDLES = 64
 PROFILE_SELECTION_FIELDS = frozenset({'npcId', 'expectedName', 'expectedMesh', 'expectedActorClass'})
 MODEL_CATALOG_ID_FIELD = 'modelCatalogId'
 MODEL_CATALOG_ID_PATTERN = re.compile(r'^npc-model:[a-f0-9]{64}$')
+INEXACT_ACTOR_CLASS_MESSAGE = 'Actor class requires an exact qualified export identity'
 
 
 class UnresolvedActorDefaultError(FormatError):
@@ -195,7 +196,7 @@ def _extract_bundle(client, recipe, output, save):
         rows = select_exact_npc_rows_without_mesh_substitution(tables['npcname'], tables['npcgrp'], selection)
         definition = defaults.get(selection['expectedActorClass'])
         if definition['object'] != selection['expectedActorClass']:
-            raise FormatError('Actor class requires an exact qualified export identity')
+            raise FormatError(INEXACT_ACTOR_CLASS_MESSAGE)
         chain, current = [], definition
         while current:
             chain.append(current['object'])

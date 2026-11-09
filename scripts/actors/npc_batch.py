@@ -11,7 +11,8 @@ from actors.npc_requests import (ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX, CONVERT
                                  TRANSIENT_FAILURES, npc_profile_selection, npc_profiles_recipe)
 from actors.npc_store_records import (PROFILE_MANIFEST_FILE_NAME, bundle_output_records, catalog_with_record_replaced,
                                       converted_model_store_files_and_record, profile_bundle_store_files_and_record)
-from native_actor_profiles import MAXIMUM_NPC_PROFILE_BUNDLES, MAXIMUM_PROFILES_PER_BUNDLE, migrate_npc_profiles, npc_profile_tool_pins
+from native_actor_profiles import (INEXACT_ACTOR_CLASS_MESSAGE, MAXIMUM_NPC_PROFILE_BUNDLES, MAXIMUM_PROFILES_PER_BUNDLE, migrate_npc_profiles,
+                                   npc_profile_tool_pins)
 from native_assets_lib.gltf import json_bytes
 from native_effect_bundle import MAX_CLASSES
 from native_store.canonical_json import canonical_json_bytes
@@ -169,13 +170,18 @@ def npc_batch_plan(census, npcgrp, npcname, name_table, class_closure, excluded_
                 planning_gaps.append(NpcPlanningGap(scheduled_row.npc_id, reason, None))
                 continue
             try:
-                closures_by_npc_id[scheduled_row.npc_id] = class_closure(npcgrp_row['class_name'])
+                closure = class_closure(npcgrp_row['class_name'])
             except ReferenceClientLockError:
                 raise
             except ValueError as error:
                 planning_gaps.append(NpcPlanningGap(scheduled_row.npc_id, CONVERTER_REFUSED_REASON_PREFIX + ' '.join(str(error).split()),
                                                     npcgrp_row['class_name']))
                 continue
+            if npcgrp_row['class_name'] not in closure:
+                planning_gaps.append(NpcPlanningGap(scheduled_row.npc_id, CONVERTER_REFUSED_REASON_PREFIX + INEXACT_ACTOR_CLASS_MESSAGE,
+                                                    npcgrp_row['class_name']))
+                continue
+            closures_by_npc_id[scheduled_row.npc_id] = closure
             pack_rows.append(NpcPackRow(scheduled_row.npc_id, scheduled.unit['key'], npcgrp_row, name_rows[0]))
     packs, packing_gaps = npc_profile_packs(pack_rows, lambda row: closures_by_npc_id[row.npc_id], name_table)
     return NpcBatchPlan(units, packs, tuple(planning_gaps) + packing_gaps)
@@ -277,7 +283,9 @@ class NpcBatchSlice:
             return {'key': pack_key, 'step': NPC_PROFILE_PACK_STEP, 'status': 'pending', 'reason': None, 'cacheHit': False}
         resolvable_rows, recipe, inputs, config, fingerprint = work
         if self.pack_ledger.is_sealed(pack_key, fingerprint):
-            return {'key': pack_key, 'step': NPC_PROFILE_PACK_STEP, 'status': PASS_STATUS, 'reason': None, 'cacheHit': True}
+            receipt = sealed_receipt(self.pack_ledger, pack_key)
+            return {'key': pack_key, 'step': NPC_PROFILE_PACK_STEP, 'status': PASS_STATUS if receipt['outputs'] else GAP_STATUS,
+                    'reason': None, 'cacheHit': True}
         if self.refused_by_preflight():
             return None
         step_directory = self.pack_ledger.begin(pack_key, fingerprint)
@@ -315,12 +323,16 @@ class NpcBatchSlice:
 
     def synchronize_pack_gap_rows(self, sealed_packs):
         planning_rows = [planning_gap_row(gap, self.run.npcgrp, self.run.npcname) for gap in self.plan.planning_gaps]
-        replaced_keys = {row['key'] for row in planning_rows} | {f'npc:{row.npc_id}' for pack, _ in sealed_packs for row in pack.rows}
         pack_rows = [row for _, receipt in sealed_packs for row in receipt['gapRows']]
-        replace_step_gap_rows_when_changed(self.run.project_root, NPC_PROFILE_PACK_STEP, replaced_keys, planning_rows + pack_rows)
+        every_step_key = {row['key'] for row in read_gap_rows(self.run.project_root, LANE_NAME) if row['step'] == NPC_PROFILE_PACK_STEP}
+        replace_step_gap_rows_when_changed(self.run.project_root, NPC_PROFILE_PACK_STEP, every_step_key, planning_rows + pack_rows)
 
     def write_store_records(self, sealed_packs):
         catalog, before = read_store_catalog(self.run.store_root)
+        current_pack_ids = {pack.pack_id for pack, receipt in sealed_packs if receipt['outputs']}
+        if 'npcProfiles' in catalog:
+            catalog['npcProfiles'] = [record for record in catalog['npcProfiles']
+                                      if not record['id'].startswith(NPC_PROFILE_PACK_ID_PREFIX) or record['id'] in current_pack_ids]
         files = {}
         for pack, receipt in sealed_packs:
             if not receipt['outputs']:
