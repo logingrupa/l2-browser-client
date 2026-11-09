@@ -29,6 +29,8 @@ function vector(value: unknown): [number, number, number] {
 }
 export const npcModelCatalogIdPattern = /^npc-model:[a-f0-9]{64}$/;
 export const sharedStoreNpcProfileRecordId = "native-npc-profiles";
+export const maximumNpcProfileBundles = 64;
+export const maximumProfilesPerBundle = 256;
 function optionalModelCatalogId(value: unknown, profileId: string, recordId: string): { readonly modelCatalogId?: string } {
   if (value === undefined) {
     if (recordId !== sharedStoreNpcProfileRecordId) throw new Error(`Native NPC profile ${profileId} in bundle ${recordId} has no model catalog id.`);
@@ -43,7 +45,7 @@ function positive(value: unknown): number {
 }
 
 export async function loadNativeNpcProfiles(records: unknown, signal: AbortSignal): Promise<ReadonlyMap<string, NativeNpcProfile>> {
-  if (!Array.isArray(records) || records.length > 16) throw new Error("Native NPC profile catalog is invalid.");
+  if (!Array.isArray(records) || records.length > maximumNpcProfileBundles) throw new Error("Native NPC profile catalog is invalid.");
   const result = new Map<string, NativeNpcProfile>(), bundles = new Set<string>();
   for (const item of records as unknown[]) {
     const record = object(item);
@@ -61,7 +63,7 @@ export async function loadNativeNpcProfiles(records: unknown, signal: AbortSigna
     const manifest = object(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)) as unknown);
     if (manifest.schemaVersion !== 1 || manifest.kind !== "native-npc-profiles" || manifest.support !== "source-profile-fields-ready" ||
       !Array.isArray(manifest.unsupported) || manifest.unsupported.length ||
-      !Array.isArray(manifest.profiles) || !manifest.profiles.length || manifest.profiles.length > 128) throw new Error("Native NPC profile manifest is incomplete.");
+      !Array.isArray(manifest.profiles) || !manifest.profiles.length || manifest.profiles.length > maximumProfilesPerBundle) throw new Error("Native NPC profile manifest is incomplete.");
     for (const candidate of manifest.profiles as unknown[]) {
       const row = object(candidate);
       if (!Number.isSafeInteger(row.npcId) || (row.npcId as number) <= 0 || row.id !== `npc:${row.npcId}` ||

@@ -1,7 +1,9 @@
 import { readAssetPackage, sha256, type AssetPackage } from "../package/readAssetPackage";
 import { nativeResourceUrl } from "./nativeResourceUrl";
-import { loadNativeNpcProfiles } from "./loadNativeNpcProfiles";
+import { loadNativeNpcProfiles, type NativeNpcProfile } from "./loadNativeNpcProfiles";
 import { defaultNativePlayerProfile, loadNativePlayerProfiles, validateNativePlayerAssets } from "./loadNativePlayerProfiles";
+import { npcCatalogKey, readModelSourceObjects } from "./nativeCatalogIndex";
+import { joinNpcProfileToModel } from "./nativeNpcModelJoin";
 import { readNativeCatalog, type NativeCatalog } from "./readNativeCatalog";
 
 export async function loadNativeModelPackages(catalog: NativeCatalog, signal: AbortSignal, wanted: readonly string[]): Promise<ReadonlyMap<string, AssetPackage>> {
@@ -23,13 +25,27 @@ export async function loadNativeModelPackages(catalog: NativeCatalog, signal: Ab
   return result;
 }
 
+export const nativeSliceNpcIds: readonly number[] = [21622];
+
+function joinedSliceNpcModelIds(npcProfiles: ReadonlyMap<string, NativeNpcProfile>, catalog: NativeCatalog): string[] {
+  const sourceObjectsByModelId = readModelSourceObjects(catalog.models), modelIds: string[] = [];
+  for (const npcId of nativeSliceNpcIds) {
+    const profile = npcProfiles.get(npcCatalogKey(npcId));
+    if (!profile) continue;
+    const modelJoin = joinNpcProfileToModel(profile, sourceObjectsByModelId);
+    if (modelJoin.status === "joined") modelIds.push(modelJoin.modelCatalogId);
+  }
+  return modelIds;
+}
+
 export async function loadNativeActorCatalog(signal: AbortSignal, profileId = defaultNativePlayerProfile.id) {
   const catalog = await readNativeCatalog(signal);
+  const npcProfiles = await loadNativeNpcProfiles(catalog.npcProfiles, signal);
   const playerProfiles = await loadNativePlayerProfiles(catalog.playerProfiles, signal), playerProfile = playerProfiles.get(profileId);
   if (!playerProfile) throw new Error(`Native player profile ${profileId} is not staged.`);
-  const models = await loadNativeModelPackages(catalog, signal, [playerProfile.catalogId, ...playerProfile.upperItems.map(item => item.catalogId), "musveren:0"]);
+  const models = await loadNativeModelPackages(catalog, signal,
+    [playerProfile.catalogId, ...playerProfile.upperItems.map(item => item.catalogId), ...joinedSliceNpcModelIds(npcProfiles, catalog)]);
   validateNativePlayerAssets(playerProfile, models);
-  const npcProfiles = await loadNativeNpcProfiles(catalog.npcProfiles, signal);
   const archiveHashes = new Map((catalog.models as readonly { id: string; archiveSha256: string }[])
     .filter(record => models.has(record.id)).map(record => [record.id, record.archiveSha256]));
   return { models, npcProfiles, playerProfiles, playerProfile, archiveHashes, animationAudio: catalog.animationAudio };

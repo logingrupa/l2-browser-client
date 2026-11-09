@@ -23,8 +23,8 @@ KIND = 'native-npc-profiles'
 SUPPORT = 'source-profile-fields-ready'
 NPC_PROFILES_DESCRIPTION = ('Build source-backed NPC presentation profiles that join one exact localized name id to npcgrp, resolve the '
                             'actor class inheritance and keep unresolved actor defaults as explicit gaps; no native process or source writes.')
-MAXIMUM_PROFILES_PER_BUNDLE = 128
-MAXIMUM_NPC_PROFILE_BUNDLES = 16
+MAXIMUM_PROFILES_PER_BUNDLE = 256
+MAXIMUM_NPC_PROFILE_BUNDLES = 64
 PROFILE_SELECTION_FIELDS = frozenset({'npcId', 'expectedName', 'expectedMesh', 'expectedActorClass'})
 MODEL_CATALOG_ID_FIELD = 'modelCatalogId'
 MODEL_CATALOG_ID_PATTERN = re.compile(r'^npc-model:[a-f0-9]{64}$')

@@ -6,16 +6,10 @@ import { loadNativeActorCatalog } from "../../src/assets/native/loadNativeCatalo
 import { nativeAliasCoverage, nativeAliasCoverageText, nativeAnimationAliases } from "../../src/assets/native/nativeAnimationAliases";
 import { readAssetPackage, sha256 } from "../../src/assets/package/readAssetPackage";
 import { assetFixture } from "../fixtures/assetPackageFixture";
+import { fixturePlayerProfile } from "../support/nativeActorCatalogFixtures";
 
 const encoder = new TextEncoder();
-const profile: NativePlayerProfile = {
-  ...defaultNativePlayerProfile, id: "human-female-fighter", name: "Human female fighter", catalogId: "human-female-fighter:0",
-  assetId: "fixture-model", sourceObject: "Fixture.Female", sourceSha256: "a".repeat(64),
-  clips: { idle: "Wait_Native", run: "Wait_Native", attack: "Wait_Native", death: "Wait_Native" },
-  collisionRadius: 8, collisionHeight: 23.5,
-  upperItems: [{ itemId: 22, catalogId: "female-equipment:0", sourceObject: "Fixture.Female", sourceSha256: "a".repeat(64) }],
-  sourceEvidence: { fixture: true }, limitations: ["Synthetic fixture, not native acceptance."],
-};
+const profile = fixturePlayerProfile;
 async function manifest(profiles: unknown[] = [profile]) {
   const bytes = encoder.encode(JSON.stringify({ schemaVersion: 1, kind: "native-player-profiles", profiles }));
   const manifestSha256 = await sha256(bytes);
@@ -101,16 +95,17 @@ describe("native player profile loading and source boundaries", () => {
     expect(() => validateNativePlayerAssets({ ...profile, clips: { ...profile.clips, run: "Run_Other" } }, assets)).toThrow("missing or ambiguous");
     expect(() => validateNativePlayerAssets({ ...profile, upperItems: [{ ...profile.upperItems[0]!, sourceObject: "Fixture.Other" }] }, assets)).toThrow("equipment source");
   });
-  it("fetches only the selected body/equipment and NPC, preserving other catalog families", async () => {
+  it("fetches only the selected body and equipment and no NPC model without a joined profile, preserving other catalog families", async () => {
     const input = await manifest();
     const fixture = await assetFixture("model", { source: { edition: "interlude", package: "Fixture", object: profile.sourceObject,
       sha256: profile.sourceSha256, assembly: [profile.sourceObject] } });
     const archiveSha256 = await sha256(fixture.bytes), archive = `/l2/${archiveSha256}/asset.l2asset`;
-    const selected = [profile.catalogId, profile.upperItems[0]!.catalogId, "musveren:0"];
-    const otherHash = "b".repeat(64);
+    const selected = [profile.catalogId, profile.upperItems[0]!.catalogId];
+    const otherHash = "b".repeat(64), otherArchive = `/l2/${otherHash}/asset.l2asset`;
     const catalog = { schemaVersion: 1, playerProfiles: [input.record], npcProfiles: [],
       models: [...selected.map(id => ({ id, archive, archiveSha256 })),
-        { id: "human-male-fighter:0", archive: `/l2/${otherHash}/asset.l2asset`, archiveSha256: otherHash }],
+        { id: "musveren:0", archive: otherArchive, archiveSha256: otherHash, source: { object: "LineageMonsters.field_stalker_m00" } },
+        { id: "human-male-fighter:0", archive: otherArchive, archiveSha256: otherHash }],
       sections: [{ id: "retained-world" }] };
     const fetcher = serve(new Map([["/l2/catalog.json", encoder.encode(JSON.stringify(catalog))], [input.record.manifest, input.bytes], [archive, fixture.bytes]]));
     const loaded = await loadNativeActorCatalog(new AbortController().signal, profile.id);
