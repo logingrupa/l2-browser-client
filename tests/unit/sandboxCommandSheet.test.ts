@@ -1,76 +1,29 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { DevSheet, type DevSection } from "../../src/ui/devSheet/DevSheet";
-import type { NativeCatalogIndex, NativeCatalogLookup } from "../../src/assets/native/nativeCatalogIndex";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import type { DevSheet } from "../../src/ui/devSheet/DevSheet";
+import type { NativeCatalogLookup } from "../../src/assets/native/nativeCatalogIndex";
 import { attachSandboxCommandSheet } from "../../src/runtime/attachSandboxCommandSheet";
 import { NativeSliceAdapter } from "../../src/world/NativeSliceAdapter";
-import type { WorldCommand, WorldEntity, WorldEvent } from "../../src/world/worldTypes";
-import { fakeMedia, fire, installMiniDom, type FakeElement, type MiniDom } from "./support/miniDom";
+import { fire, installMiniDom, type FakeElement, type MiniDom } from "./support/miniDom";
+import { attachSandboxSheetWithFakes, createSandboxSection, fakeCatalogIndexOver } from "./support/sandboxCommandSheetFakes";
 
-const convertedLookups: ReadonlyMap<string, NativeCatalogLookup> = new Map<string, NativeCatalogLookup>([
+const fakeCatalogIndex = fakeCatalogIndexOver(new Map<string, NativeCatalogLookup>([
   ["item:22", { status: "converted", key: "item:22", record: { itemId: 22, slot: "upper", catalogIds: ["fighter-equipment:0"], playerProfileIds: ["human-male-fighter"] } }],
   ["skill:3:1", { status: "converted", key: "skill:3:1", record: { skillId: 3, level: 1, effectComponentId: "interlude:skill:3:level:1:raw-source-dispatch" } }],
   ["npc:21622", { status: "converted", key: "npc:21622", record: { npcId: 21622, profileId: "native-npc-profiles", modelCatalogId: "musveren:0", join: "legacy-single-mesh-match" } }],
-]);
-
-const fakeCatalogIndex: NativeCatalogIndex = {
-  lookup: key => convertedLookups.get(key) ?? { status: "not-in-catalog", key,
-    reason: key.startsWith("window:") ? "interface windows are not converted yet (UI-01)" : "not in catalog" },
-  keys: prefix => [...convertedLookups.keys()].filter(key => key.startsWith(prefix)),
-};
+]));
 
 let dom: MiniDom;
-let sheet: DevSheet;
-
-function sandboxSection(): DevSection {
-  const host = dom.document.createElement("section"); host.className = "world-interface";
-  const canvas = dom.document.createElement("canvas");
-  const toggle = dom.document.createElement("button");
-  host.append(toggle); dom.document.body.append(canvas, host);
-  host.rect = { left: 0, top: 0, width: 1280, height: 800 };
-  sheet = new DevSheet({ host: host as unknown as HTMLElement, canvas: canvas as unknown as HTMLCanvasElement,
-    toggle: toggle as unknown as HTMLButtonElement, worldTargets: [canvas] as unknown as EventTarget[], storage: null, matchMedia: fakeMedia().matchMedia });
-  return sheet.section("sandbox", { title: "Sandbox" });
-}
-
-const localPlayer: WorldEntity = { id: "local-player", kind: "local-player", displayName: "Human male fighter", position: { x: 0, y: 0, z: 0 },
-  orientationRadians: 0, health: 100, maximumHealth: 100, animation: "idle" };
-
-function acceptedEvent(command: WorldCommand): WorldEvent | null {
-  if (command.type === "cast-skill") return { type: "skill-cast", casterId: "local-player", skillId: command.skillId, level: command.level,
-    ...(command.targetId === undefined ? {} : { targetId: command.targetId }) };
-  if (command.type === "spawn-npc") return { type: "spawn", entity: { ...localPlayer, id: `npc-${command.npcId}-1`, kind: "monster", npcId: command.npcId } };
-  if (command.type === "equip-item" && command.itemId !== null) return { type: "update", entity: { ...localPlayer, equipment: { [command.slot]: command.itemId } } };
-  return null;
-}
+const openSheets: DevSheet[] = [];
 
 function attachWithFakes(selectedEntityId: string | null = "native-musveren", indexFailure: string | null = null, adapterAcceptsCommands = true,
   activePlayerProfileId = "human-male-fighter") {
-  const dispatched: WorldCommand[] = [];
-  const listeners = new Set<(event: WorldEvent) => void>();
-  const adapter = {
-    dispatch: vi.fn((command: WorldCommand) => {
-      dispatched.push(command);
-      const event = adapterAcceptsCommands ? acceptedEvent(command) : null;
-      if (event) for (const listener of [...listeners]) listener(event);
-    }),
-    subscribe: vi.fn((listener: (event: WorldEvent) => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; }),
-  };
-  const powerStrike = { start: vi.fn(async () => {}) };
-  const section = sandboxSection();
-  const release = attachSandboxCommandSheet({ section, adapter, index: fakeCatalogIndex, indexFailure, appearanceOfNpc: () => ({ appearanceId: "native-musveren" }),
-    selectedEntityId: () => selectedEntityId, activePlayerProfileId, powerStrike });
-  const panel = section.element as unknown as FakeElement;
-  const submit = (testId: string, values: Record<string, string>) => {
-    const form = panel.querySelector(`[data-testid="${testId}"]`)!;
-    for (const [name, value] of Object.entries(values)) form.querySelector(`[data-testid="${testId}-${name}"]`)!.value = value;
-    fire(form, "submit");
-  };
-  const note = (testId: string) => panel.querySelectorAll(`[data-testid="${testId}-note"]`);
-  return { dispatched, listeners, powerStrike, release, submit, note, panel };
+  const attached = attachSandboxSheetWithFakes(dom, { index: fakeCatalogIndex, selectedEntityId, indexFailure, adapterAcceptsCommands, activePlayerProfileId });
+  openSheets.push(attached.sheet);
+  return attached;
 }
 
 beforeEach(() => { dom = installMiniDom(); });
-afterEach(() => { sheet.dispose(); dom.restore(); });
+afterEach(() => { for (const sheet of openSheets.splice(0)) sheet.dispose(); dom.restore(); });
 
 describe("sandbox catalog index failure", () => {
   it("shows a warning note on the Sandbox tab when the catalog index could not be built", () => {
@@ -98,7 +51,8 @@ describe("sandbox equip item by ID", () => {
 
   it("reports the item the local player already wears as converted, not as rejected", () => {
     const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, undefined, 22);
-    const section = sandboxSection();
+    const { sheet, section } = createSandboxSection(dom);
+    openSheets.push(sheet);
     const release = attachSandboxCommandSheet({ section, adapter, index: fakeCatalogIndex, indexFailure: null, appearanceOfNpc: () => ({ appearanceId: "native-musveren" }),
       selectedEntityId: () => null, activePlayerProfileId: "human-male-fighter", powerStrike: null });
     const panel = section.element as unknown as FakeElement;
@@ -208,7 +162,7 @@ describe("sandbox spawn NPC by ID", () => {
   it("dispatches spawn-npc and notes converted and missing IDs", () => {
     const { dispatched, submit, note } = attachWithFakes();
     submit("sandbox-spawn-npc", { npcId: "21622" });
-    expect(note("sandbox-spawn-npc")[0]!.textContent).toBe("npc:21622 converted, model musveren:0");
+    expect(note("sandbox-spawn-npc")[0]!.textContent).toBe("npc:21622 converted");
     submit("sandbox-spawn-npc", { npcId: "12345" });
     expect(dispatched).toEqual([{ type: "spawn-npc", npcId: 21622 }, { type: "spawn-npc", npcId: 12345 }]);
     expect(note("sandbox-spawn-npc")).toHaveLength(1);

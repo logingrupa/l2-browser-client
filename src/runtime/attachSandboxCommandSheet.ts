@@ -1,11 +1,12 @@
 import {
-  describeNativeCatalogLookup, itemCatalogKey, skillCatalogKey, windowCatalogKey, type NativeCatalogIndex, type NativeCatalogLookup,
+  describeNativeCatalogLookup, itemCatalogKey, npcCatalogKey, skillCatalogKey, windowCatalogKey, type NativeCatalogIndex, type NativeCatalogLookup,
 } from "../assets/native/nativeCatalogIndex";
 import { reviewedPowerStrikeSkill } from "../effects/castSkillIndex";
 import type { NativePowerStrikePreview } from "../effects/nativePowerStrikePreview";
 import type { DevGroup, DevSection } from "../ui/devSheet/DevSheet";
 import type { GameWorldAdapter } from "../world/GameWorldAdapter";
 import type { EquipmentSlot, WorldCommand, WorldEvent } from "../world/worldTypes";
+import { describeSandboxCatalogLookup } from "./sandboxCatalogLookupNote";
 import { resolveSandboxNpcPresentation, type SandboxAppearanceOfNpc, type SandboxNpcPresentation } from "./sandboxNpcVisual";
 
 type SandboxCommandAdapter = Pick<GameWorldAdapter, "dispatch" | "subscribe">;
@@ -89,9 +90,12 @@ function attachSpawnNpcGroup(context: SandboxCommandSheetContext): void {
       const npcId = submittedInteger(values, "npcId");
       const accepted = dispatchAndObserveAcceptance(context.adapter, { type: "spawn-npc", npcId },
         event => event.type === "spawn" && event.entity.npcId === npcId);
+      const lookup = context.index.lookup(npcCatalogKey(npcId));
       lastSpawn = resolveSandboxNpcPresentation(context.index, npcId, context.appearanceOfNpc);
-      if (!accepted) showResult(`${lastSpawn.key}: spawn rejected by the adapter`, "warning");
-      else showResult(describeSpawnPresentation(lastSpawn), "missingAssetDiagnostic" in lastSpawn ? "warning" : "info");
+      const note = describeSandboxCatalogLookup(lookup);
+      if (!accepted) showResult(`${lookup.key}: spawn rejected by the adapter`, "warning");
+      else if ("missingAssetDiagnostic" in lastSpawn && lookup.status === "converted") showResult(lastSpawn.missingAssetDiagnostic, "warning");
+      else showResult(note.text, note.tone);
     },
   });
 }

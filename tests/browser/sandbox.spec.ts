@@ -48,7 +48,7 @@ test("sandbox sheet spawns, equips and opens by ID and marks missing assets with
   await page.screenshot({ path: resolve("test-results/sandbox-missing-asset.png") });
 
   await submitIdEntry(page, "sandbox-spawn-npc", { npcId: "21622" });
-  await expect(page.getByTestId("sandbox-spawn-npc-note")).toHaveText("npc:21622 converted, model musveren:0");
+  await expect(page.getByTestId("sandbox-spawn-npc-note")).toHaveText("npc:21622 converted");
   await expect.poll(async () => (await entities(page)).find(entity => entity.id === "npc-21622-2")?.modelId ?? null, { timeout: 60_000 }).not.toBeNull();
   const converted = (await entities(page)).find(entity => entity.id === "npc-21622-2");
   expect(converted?.missingAssetDiagnostic).toBeNull();
