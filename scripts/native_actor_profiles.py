@@ -29,6 +29,12 @@ PROFILE_SELECTION_FIELDS = frozenset({'npcId', 'expectedName', 'expectedMesh', '
 MODEL_CATALOG_ID_FIELD = 'modelCatalogId'
 MODEL_CATALOG_ID_PATTERN = re.compile(r'^npc-model:[a-f0-9]{64}$')
 INEXACT_ACTOR_CLASS_MESSAGE = 'Actor class requires an exact qualified export identity'
+INEXACT_NPC_MESH_MESSAGE = 'NPC mesh requires an exact qualified skeletal mesh export'
+NATIVE_SKELETAL_MESH_EXPORT_KIND = 'SkeletalMesh'
+EXACT_QUALIFIED_OBJECT_RESOLUTION = 'exact-qualified-object'
+ACTOR_BASE_CLASS = 'Engine.Actor'
+ROOT_OBJECT_CLASS = 'Core.Object'
+ACTOR_CLASS_INHERITANCE_MESSAGE = 'NPC actor class inheritance must resolve through Engine.Actor to Core.Object'
 
 
 class UnresolvedActorDefaultError(FormatError):
@@ -202,11 +208,11 @@ def _extract_bundle(client, recipe, output, save):
             chain.append(current['object'])
             parent = current['nativeSuperClass']
             current = defaults.definitions[parent.casefold()] if parent else None
-        if 'Engine.Actor' not in chain or chain[-1] != 'Core.Object':
-            raise FormatError('NPC actor class inheritance must resolve through Engine.Actor to Core.Object')
-        mesh, _, _ = packages.resolve(selection['expectedMesh'], 'SkeletalMesh')
-        if mesh['object'] != selection['expectedMesh'] or mesh['resolution'] != 'exact-qualified-object':
-            raise FormatError('NPC mesh requires an exact qualified skeletal mesh export')
+        if ACTOR_BASE_CLASS not in chain or chain[-1] != ROOT_OBJECT_CLASS:
+            raise FormatError(ACTOR_CLASS_INHERITANCE_MESSAGE)
+        mesh, _, _ = packages.resolve(selection['expectedMesh'], NATIVE_SKELETAL_MESH_EXPORT_KIND)
+        if mesh['object'] != selection['expectedMesh'] or mesh['resolution'] != EXACT_QUALIFIED_OBJECT_RESOLUTION:
+            raise FormatError(INEXACT_NPC_MESH_MESSAGE)
         try:
             profile = resolved_profile(selection, definition, recipe['sourceUnitsPerMetre'])
         except UnresolvedActorDefaultError as error:

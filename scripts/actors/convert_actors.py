@@ -18,7 +18,7 @@ from actors.npc_requests import (ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX, CONVERT
                                  SOUND_PACKAGE_NOT_IN_CLIENT_STATUS, SOUND_PACKAGE_REFUSED_STATUS, animation_reference_gap_reason,
                                  label_npc_sound_identities, npc_effect_binding_record, npc_model_request, npc_profile_recipe,
                                  npc_sound_references, package_stem, serialized_animation_reference)
-from actors.npc_batch import (CachedClassClosures, npc_batch_plan, printed_batch_plan, read_census_and_npc_tables, run_npc_batch_slice,
+from actors.npc_batch import (NpcSourceIdentities, npc_batch_plan, printed_batch_plan, read_census_and_npc_tables, run_npc_batch_slice,
                               shared_store_npc_ids)
 from actors.npc_store_records import (MODEL_ARCHIVE_FILE_NAME, bundle_output_records, converted_model_store_files_and_record,
                                       PROFILE_MANIFEST_FILE_NAME, file_output_record, profile_bundle_store_files_and_record,
@@ -309,8 +309,8 @@ def slice_limit_argument(text):
 
 def batch_plan(census_and_tables, client_root):
     census, npcgrp, npcname, name_table = census_and_tables
-    class_closures = CachedClassClosures(SourcePackages(client_root))
-    return npc_batch_plan(census, npcgrp, npcname, name_table, class_closures.closure, shared_store_npc_ids(REPOSITORY_ROOT))
+    source_identities = NpcSourceIdentities(SourcePackages(client_root))
+    return npc_batch_plan(census, npcgrp, npcname, name_table, source_identities, shared_store_npc_ids(REPOSITORY_ROOT))
 
 
 def print_batch_plan(client_access):

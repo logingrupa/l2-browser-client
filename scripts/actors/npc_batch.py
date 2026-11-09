@@ -11,7 +11,9 @@ from actors.npc_requests import (ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX, CONVERT
                                  TRANSIENT_FAILURES, npc_profile_selection, npc_profiles_recipe)
 from actors.npc_store_records import (PROFILE_MANIFEST_FILE_NAME, bundle_output_records, catalog_with_record_replaced,
                                       converted_model_store_files_and_record, profile_bundle_store_files_and_record)
-from native_actor_profiles import (INEXACT_ACTOR_CLASS_MESSAGE, MAXIMUM_NPC_PROFILE_BUNDLES, MAXIMUM_PROFILES_PER_BUNDLE, migrate_npc_profiles,
+from native_actor_profiles import (ACTOR_BASE_CLASS, ACTOR_CLASS_INHERITANCE_MESSAGE, EXACT_QUALIFIED_OBJECT_RESOLUTION,
+                                   INEXACT_ACTOR_CLASS_MESSAGE, INEXACT_NPC_MESH_MESSAGE, MAXIMUM_NPC_PROFILE_BUNDLES,
+                                   MAXIMUM_PROFILES_PER_BUNDLE, NATIVE_SKELETAL_MESH_EXPORT_KIND, ROOT_OBJECT_CLASS, migrate_npc_profiles,
                                    npc_profile_tool_pins)
 from native_assets_lib.gltf import json_bytes
 from native_effect_bundle import MAX_CLASSES
@@ -142,17 +144,33 @@ def npc_profile_packs(ordered_rows, closure_of, name_table):
     return tuple(packs), tuple(gaps)
 
 
-class CachedClassClosures:
+class NpcSourceIdentities:
     def __init__(self, packages):
         self.packages, self.closures_by_reference = packages, {}
 
-    def closure(self, class_reference):
+    def class_closure(self, class_reference):
         if class_reference not in self.closures_by_reference:
             self.closures_by_reference[class_reference] = native_class_closure(self.packages, class_reference)
         return self.closures_by_reference[class_reference]
 
+    def row_identity_refusal(self, npcgrp_row):
+        try:
+            closure = self.class_closure(npcgrp_row['class_name'])
+            mesh, _, _ = self.packages.resolve(npcgrp_row['mesh_name'], NATIVE_SKELETAL_MESH_EXPORT_KIND)
+        except ReferenceClientLockError:
+            raise
+        except ValueError as error:
+            return ' '.join(str(error).split())
+        if npcgrp_row['class_name'] not in closure:
+            return INEXACT_ACTOR_CLASS_MESSAGE
+        if ACTOR_BASE_CLASS not in closure or ROOT_OBJECT_CLASS not in closure:
+            return ACTOR_CLASS_INHERITANCE_MESSAGE
+        if mesh['object'] != npcgrp_row['mesh_name'] or mesh['resolution'] != EXACT_QUALIFIED_OBJECT_RESOLUTION:
+            return INEXACT_NPC_MESH_MESSAGE
+        return None
 
-def npc_batch_plan(census, npcgrp, npcname, name_table, class_closure, excluded_npc_ids):
+
+def npc_batch_plan(census, npcgrp, npcname, name_table, source_identities, excluded_npc_ids):
     npcgrp_rows = npcgrp['data']['npc']
     names_by_id = {}
     for name_row in npcname['data']['npc']:
@@ -169,19 +187,11 @@ def npc_batch_plan(census, npcgrp, npcname, name_table, class_closure, excluded_
                 reason = NPC_NAME_EMPTY_REASON if name_rows else NPC_NAME_ROW_MISSING_REASON
                 planning_gaps.append(NpcPlanningGap(scheduled_row.npc_id, reason, None))
                 continue
-            try:
-                closure = class_closure(npcgrp_row['class_name'])
-            except ReferenceClientLockError:
-                raise
-            except ValueError as error:
-                planning_gaps.append(NpcPlanningGap(scheduled_row.npc_id, CONVERTER_REFUSED_REASON_PREFIX + ' '.join(str(error).split()),
-                                                    npcgrp_row['class_name']))
+            refusal = source_identities.row_identity_refusal(npcgrp_row)
+            if refusal is not None:
+                planning_gaps.append(NpcPlanningGap(scheduled_row.npc_id, CONVERTER_REFUSED_REASON_PREFIX + refusal, npcgrp_row['class_name']))
                 continue
-            if npcgrp_row['class_name'] not in closure:
-                planning_gaps.append(NpcPlanningGap(scheduled_row.npc_id, CONVERTER_REFUSED_REASON_PREFIX + INEXACT_ACTOR_CLASS_MESSAGE,
-                                                    npcgrp_row['class_name']))
-                continue
-            closures_by_npc_id[scheduled_row.npc_id] = closure
+            closures_by_npc_id[scheduled_row.npc_id] = source_identities.class_closure(npcgrp_row['class_name'])
             pack_rows.append(NpcPackRow(scheduled_row.npc_id, scheduled.unit['key'], npcgrp_row, name_rows[0]))
     packs, packing_gaps = npc_profile_packs(pack_rows, lambda row: closures_by_npc_id[row.npc_id], name_table)
     return NpcBatchPlan(units, packs, tuple(planning_gaps) + packing_gaps)
