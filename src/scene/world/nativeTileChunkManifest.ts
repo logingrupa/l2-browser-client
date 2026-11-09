@@ -43,6 +43,11 @@ export interface NativeTileChunkModel {
   readonly placements: readonly NativeTileChunkPlacement[];
 }
 
+export interface NativeTileChunkCollision {
+  readonly resource: string;
+  readonly sha256: string;
+}
+
 export interface NativeTileChunkManifest {
   readonly kind: "native-tile-chunk-runtime";
   readonly schemaVersion: 1;
@@ -52,7 +57,7 @@ export interface NativeTileChunkManifest {
   readonly terrain: NativeTileChunkTerrain | null;
   readonly models: readonly NativeTileChunkModel[];
   readonly bsp: NativeTileBspResource | null;
-  readonly collision: null;
+  readonly collision: NativeTileChunkCollision | null;
   readonly gaps: readonly NativeTileGapRow[];
 }
 
@@ -62,6 +67,8 @@ const stepNamePattern = /^[a-z][a-z0-9-]{0,63}$/;
 const qualifiedObjectPattern = /^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+$/;
 const chunkTerrainResourcePattern = /^\/l2\/maps\/([a-f0-9]{64})\/native-tile-chunk-terrain\/terrain\.glb$/;
 const modelArchivePattern = /^\/l2\/([a-f0-9]{64})\/asset\.l2asset$/;
+const chunkCollisionResourcePattern = /^\/l2\/maps\/([a-f0-9]{64})\/native-tile-chunk-collision\/asset\.json$/;
+const componentResourceFields = ["resource", "sha256"];
 const gapStatuses: readonly NativeTileGapStatus[] = ["pass", "gap", "pending", "failed"];
 const gapRowFields = ["key", "part", "step", "status", "reason", "sourceIdentity", "evidence"];
 const chunkManifestFields = ["kind", "schemaVersion", "tileId", "chunkId", "sectorRange", "terrain", "models", "bsp", "collision", "gaps"];
@@ -145,6 +152,14 @@ function parseChunkTerrain(value: unknown, label: string): NativeTileChunkTerrai
   return { resource: value.resource, sha256: value.sha256, maskUvRule: "extrapolated" };
 }
 
+function parseChunkCollision(value: unknown, label: string): NativeTileChunkCollision {
+  if (!hasExactKeys(value, componentResourceFields) || typeof value.sha256 !== "string" || !nativeTileSha256Pattern.test(value.sha256) ||
+    typeof value.resource !== "string" || chunkCollisionResourcePattern.exec(value.resource)?.[1] !== value.sha256) {
+    throw new Error(`${label} collision must be /l2/maps/<its sha256>/native-tile-chunk-collision/asset.json with its SHA-256.`);
+  }
+  return { resource: value.resource, sha256: value.sha256 };
+}
+
 function upperLeftDeterminant(matrix: readonly number[]): number {
   const [a, b, c, , d, e, f, , g, h, i] = matrix as [number, number, number, number, number, number, number, number, number, number, number];
   return a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
@@ -203,11 +218,10 @@ export function parseNativeTileChunkManifest(input: unknown): NativeTileChunkMan
   const chunkId = input.chunkId as string, label = `Native tile chunk manifest ${input.tileId} ${chunkId}`;
   const sectorRange = parseSectorRange(input.sectorRange, position[0], position[1], label);
   const gaps = parseNativeTileGapRows(input.gaps, input.tileId, label);
-  if (input.collision !== null) throw new Error(`${label} collision resources are not supported.`);
   if (input.bsp === null) requireGapRowForMissingComponent(gaps, "bsp", label);
-  requireGapRowForMissingComponent(gaps, "collision", label);
+  if (input.collision === null) requireGapRowForMissingComponent(gaps, "collision", label);
   if (input.terrain === null) requireGapRowForMissingComponent(gaps, "terrain", label);
   return { kind: "native-tile-chunk-runtime", schemaVersion: 1, tileId: input.tileId, chunkId, sectorRange,
     terrain: input.terrain === null ? null : parseChunkTerrain(input.terrain, label), models: parseChunkModels(input.models, label),
-    bsp: input.bsp === null ? null : parseNativeTileBspResource(input.bsp), collision: null, gaps };
+    bsp: input.bsp === null ? null : parseNativeTileBspResource(input.bsp), collision: input.collision === null ? null : parseChunkCollision(input.collision, label), gaps };
 }

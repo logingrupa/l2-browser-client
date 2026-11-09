@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 1,
-  "resourceKinds": [],
+  "listVersion": 2,
+  "resourceKinds": ["native-tile-collision"],
   "maskUvRules": []
 }

@@ -26,7 +26,6 @@ TERRAIN_CHUNK_INDEX_PRODUCT_NAME = 'terrain-chunks.json'
 TERRAIN_CHUNK_RESOURCE_NAME = 'terrain.glb'
 CACHED_SECTOR_BOUNDS_POLICY = 'require-xy-preserve-z-discrepancies'
 EXTRAPOLATED_MASK_UV_STATUS = 'extrapolated'
-TERRAIN_CLASS_EVIDENCE_FOLDER = 'class-defaults/terrain-class-evidence'
 TERRAIN_CHUNK_GLTF_GENERATOR = Path(__file__).name
 
 
@@ -178,8 +177,7 @@ def run_terrain_chunk_step(project_root, client, tile_id):
         words = read_topology_words(raw_products, terrain, native)
         layers = layer_records(terrain, native, package, tile_map_path(tile_id))
         layer_summaries = tile_layer_summaries(terrain['layers'], layers)
-        class_evidence_folder = lane_work_root(project_root, WORLD_LANE_NAME) / TERRAIN_CLASS_EVIDENCE_FOLDER
-        require_terrain_not_inverted(terrain_actor, read_class_evidence(client, class_evidence_folder, class_evidence_folder))
+        require_terrain_not_inverted(terrain_actor, read_class_evidence(client, lane_work_root(project_root, WORLD_LANE_NAME)))
         results = build_tile_terrain_chunks(tile_id, native, points, words, layers, layer_summaries, chunk_plan['chunks'],
                                             source_identity, receipt_evidence)
     except FormatError as error:

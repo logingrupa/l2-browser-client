@@ -11,6 +11,13 @@ export interface NativeTileChunkRecord {
   readonly manifestBytes: number;
 }
 
+export interface NativeTileResource {
+  readonly kind: "native-tile-collision";
+  readonly manifest: string;
+  readonly manifestSha256: string;
+  readonly manifestBytes: number;
+}
+
 export interface NativeTileManifest {
   readonly kind: "native-tile-runtime";
   readonly schemaVersion: 1;
@@ -20,7 +27,7 @@ export interface NativeTileManifest {
   readonly frame: { readonly terrainInfo: string; readonly location: NativeTileVector; readonly terrainScale: NativeTileVector };
   readonly anchor: { readonly playerStart: string; readonly location: NativeTileVector };
   readonly chunks: readonly NativeTileChunkRecord[];
-  readonly resources: readonly [];
+  readonly resources: readonly NativeTileResource[];
   readonly gaps: readonly NativeTileGapRow[];
 }
 
@@ -29,6 +36,9 @@ const frameFields = ["terrainInfo", "location", "terrainScale"];
 const anchorFields = ["playerStart", "location"];
 const chunkRecordFields = ["chunkId", "manifest", "manifestSha256", "manifestBytes"];
 const chunkManifestPathPattern = /^\/l2\/maps\/([a-f0-9]{64})\/native-tile-chunk-runtime\/manifest\.json$/;
+const tileResourceFields = ["kind", "manifest", "manifestSha256", "manifestBytes"];
+const tileCollisionPathPattern = /^\/l2\/maps\/([a-f0-9]{64})\/native-tile-collision\/asset\.json$/;
+const maximumTileResourceBytes = 128 * 1024 * 1024;
 const maximumTileChunks = 256;
 const maximumChunkManifestBytes = 8_000_000;
 
@@ -56,6 +66,19 @@ function parseChunkRecords(value: unknown, label: string): readonly NativeTileCh
   });
 }
 
+function parseTileResources(value: unknown, label: string): readonly NativeTileResource[] {
+  if (!Array.isArray(value)) throw new Error(`${label} resources must be a list.`);
+  return value.map(resource => {
+    if (!hasExactKeys(resource, tileResourceFields) || resource.kind !== "native-tile-collision" || typeof resource.manifestSha256 !== "string" ||
+      !nativeTileSha256Pattern.test(resource.manifestSha256) || typeof resource.manifest !== "string" ||
+      tileCollisionPathPattern.exec(resource.manifest)?.[1] !== resource.manifestSha256 || !Number.isSafeInteger(resource.manifestBytes) ||
+      (resource.manifestBytes as number) < 1 || (resource.manifestBytes as number) > maximumTileResourceBytes) {
+      throw new Error(`${label} resources hold only native-tile-collision records at /l2/maps/<sha256>/native-tile-collision/asset.json.`);
+    }
+    return { kind: "native-tile-collision", manifest: resource.manifest, manifestSha256: resource.manifestSha256, manifestBytes: resource.manifestBytes as number };
+  });
+}
+
 export function parseNativeTileManifest(input: unknown): NativeTileManifest {
   if (!hasExactKeys(input, tileManifestFields) || input.kind !== "native-tile-runtime" || input.schemaVersion !== 1 ||
     typeof input.tileId !== "string" || !tileIdPattern.test(input.tileId)) {
@@ -73,9 +96,9 @@ export function parseNativeTileManifest(input: unknown): NativeTileManifest {
   if (!hasExactKeys(anchor, anchorFields) || !isQualifiedObjectName(anchor.playerStart) || !isFiniteVector(anchor.location)) {
     throw new Error(`${label} needs an anchor with a PlayerStart name and a finite location.`);
   }
-  if (!Array.isArray(input.resources) || input.resources.length) throw new Error(`${label} resources are not supported.`);
   return { kind: "native-tile-runtime", schemaVersion: 1, tileId, sourceMap: input.sourceMap, sourceSha256: input.sourceSha256,
     frame: { terrainInfo: frame.terrainInfo, location: frame.location, terrainScale: frame.terrainScale },
     anchor: { playerStart: anchor.playerStart, location: anchor.location },
-    chunks: parseChunkRecords(input.chunks, label), resources: [], gaps: parseNativeTileGapRows(input.gaps, tileId, label) };
+    chunks: parseChunkRecords(input.chunks, label), resources: parseTileResources(input.resources, label),
+    gaps: parseNativeTileGapRows(input.gaps, tileId, label) };
 }

@@ -24,9 +24,9 @@ from world.native_terrain_sectors import native_terrain
 from world.raw_map_step import read_tile_map_lock_record
 from world.static_placement import gltf_placement, read_class_evidence, resolved_static_values, static_matrix
 from world.static_placement_plan import chunk_for_origin, chunk_rectangles, plan_static_placements
-from world.terrain_chunk_step import TERRAIN_CLASS_EVIDENCE_FOLDER
 from world.tile_chunk_plan import ChunkPlanStepError, native_sector_axes, read_locked_map_package, tile_chunk_records
 from world.tile_manifest_step import build_tile_chunk_manifest, tile_store_files
+from support.actor_class_defaults import SyntheticActorClassDefaults
 from synthetic_terrain_fixture import synthetic_native_terrain
 
 TILE_ID = '00_00'
@@ -39,8 +39,7 @@ REFERENCE_CLIENT = Path('E:/Lineage2-client')
 ORACLE_TILE_ID = '20_20'
 ORACLE_PATH = ROOT / 'recipes/world/oracle/20_20/expected.json'
 UNRESOLVED_COLLISION = {'bBlockActors': {'status': 'omitted-class-default-unresolved'}}
-CLASS_EVIDENCE = {'Engine.Actor': {'defaults': {'DrawScale': 1.0, 'DrawScale3D': {'X': 1.0, 'Y': 1.0, 'Z': 1.0}}, 'superClass': 'Object'},
-                  'Engine.StaticMeshActor': {'defaults': {}, 'superClass': 'Actor'}}
+CLASS_EVIDENCE = SyntheticActorClassDefaults()
 
 
 def synthetic_native():
@@ -423,8 +422,7 @@ class OracleSectionSubsetTests(unittest.TestCase):
             self.skipTest(f'the {ORACLE_TILE_ID} raw and chunk plan units are not sealed: {error}')
         actors = json.loads((unit.raw_products / 'actors.json').read_text(encoding='utf-8'))
         rectangles = chunk_rectangles(unit.chunk_plan, native_terrain(read_locked_map_package(REFERENCE_CLIENT, ORACLE_TILE_ID, lock_record)))
-        evidence_folder = lane_work_root(ROOT, 'world') / TERRAIN_CLASS_EVIDENCE_FOLDER
-        return unit, plan_static_placements(actors, rectangles, read_class_evidence(REFERENCE_CLIENT, evidence_folder, evidence_folder))
+        return unit, plan_static_placements(actors, rectangles, read_class_evidence(REFERENCE_CLIENT, lane_work_root(ROOT, 'world')))
 
     def test_the_generic_20_20_plan_holds_every_oracle_placement_with_its_mesh_and_rotation_scale(self):
         oracle_section = json.loads(ORACLE_PATH.read_text(encoding='utf-8'))['section']

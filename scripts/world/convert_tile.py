@@ -14,6 +14,7 @@ from native_store.store_paths import REPOSITORY_ROOT, require_converter_output
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, require_batch_preflight, run_at_below_normal_priority
 from reference_client_guard import require_reference_client
 from world.bsp_step import BSP_STEP_NAME, run_bsp_step
+from world.collision_step import COLLISION_STEP_NAME, run_collision_step
 from world.raw_map_step import RAW_STEP_NAME, TILE_ID_PATTERN, run_raw_map_step
 from world.static_mesh_step import STATIC_MESH_STEP_NAME, run_static_mesh_step
 from world.terrain_chunk_step import TERRAIN_STEP_NAME, run_terrain_chunk_step
@@ -22,7 +23,8 @@ from world.tile_chunk_plan import CHUNK_PLAN_STEP_NAME, run_chunk_plan_step
 from world.tile_manifest_step import TILE_MANIFEST_STEP_NAME, run_tile_manifest_step
 
 SOURCE_TILE_STEPS = {RAW_STEP_NAME: run_raw_map_step, CHUNK_PLAN_STEP_NAME: run_chunk_plan_step, TERRAIN_STEP_NAME: run_terrain_chunk_step,
-                     STATIC_MESH_STEP_NAME: run_static_mesh_step, BSP_STEP_NAME: run_bsp_step}
+                     STATIC_MESH_STEP_NAME: run_static_mesh_step, BSP_STEP_NAME: run_bsp_step,
+                     COLLISION_STEP_NAME: run_collision_step}
 TILE_STEP_NAMES = (*SOURCE_TILE_STEPS, TILE_MANIFEST_STEP_NAME)
 DEFAULT_TILE_STORE_OUTPUT = Path('artifacts') / 'lane-store' / WORLD_LANE_NAME / 'l2'
 FAILED_ROW_STATUS = 'failed'

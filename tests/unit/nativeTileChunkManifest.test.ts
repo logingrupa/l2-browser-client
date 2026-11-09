@@ -105,6 +105,36 @@ describe("native tile chunk manifest models", () => {
   });
 });
 
+const collisionSha256 = "e".repeat(64);
+
+function collisionTileResource(): Document {
+  return { kind: "native-tile-collision", manifest: `/l2/maps/${collisionSha256}/native-tile-collision/asset.json`, manifestSha256: collisionSha256,
+    manifestBytes: 2197 };
+}
+
+describe("native tile collision resources", () => {
+  it("accepts a chunk collision resource in place of the collision gap row", () => {
+    const resource = `/l2/maps/${collisionSha256}/native-tile-chunk-collision/asset.json`;
+    const chunk = parseNativeTileChunkManifest(withChunk(document => {
+      document.collision = { resource, sha256: collisionSha256 };
+      document.gaps = (document.gaps as Document[]).filter(row => row.step !== "collision");
+    }));
+    expect(chunk.collision).toEqual({ resource, sha256: collisionSha256 });
+  });
+
+  it.each<[string, Document]>([
+    ["a path outside its hash folder", { resource: `/l2/maps/${"d".repeat(64)}/native-tile-chunk-collision/asset.json`, sha256: collisionSha256 }],
+    ["an extra key", { resource: `/l2/maps/${collisionSha256}/native-tile-chunk-collision/asset.json`, sha256: collisionSha256, bytes: 1 }],
+    ["a path outside /l2/", { resource: `/assets/maps/${collisionSha256}/native-tile-chunk-collision/asset.json`, sha256: collisionSha256 }],
+  ])("refuses a chunk collision resource with %s", (_, collision) => {
+    expect(() => parseNativeTileChunkManifest(withChunk(document => { document.collision = collision; }))).toThrow(/collision must be/);
+  });
+
+  it("accepts the native-tile-collision tile resource", () => {
+    expect(parseNativeTileManifest(withTile(tile => { tile.resources = [collisionTileResource()]; })).resources).toEqual([collisionTileResource()]);
+  });
+});
+
 describe("native tile manifest parser", () => {
   it("accepts the fixture tile manifest with its frame, anchor and pinned chunk", () => {
     const tile = parseNativeTileManifest(tileDocument());
@@ -126,7 +156,9 @@ describe("native tile manifest parser", () => {
       /1 to 256 chunks/],
     ["a null anchor", tile => { tile.anchor = null; }, /needs an anchor/],
     ["a frame with a fourth field", tile => { (tile.frame as Document).sectorGrid = [1, 1]; }, /frame must hold exactly/],
-    ["a resource list this client cannot read", tile => { tile.resources = [{ kind: "sky" }]; }, /resources are not supported/],
+    ["a resource kind this client cannot read", tile => { tile.resources = [{ kind: "sky" }]; }, /resources hold only native-tile-collision/],
+    ["a collision resource outside its hash folder", tile => { tile.resources = [{ ...collisionTileResource(), manifestSha256: "d".repeat(64) }]; },
+      /resources hold only native-tile-collision/],
     ["a source map of another tile", tile => { tile.sourceMap = "maps/20_21.unr"; }, /source identity is invalid/],
   ])("refuses %s", (_, change, message) => {
     expect(() => parseNativeTileManifest(withTile(change))).toThrow(message);

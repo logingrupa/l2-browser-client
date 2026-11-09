@@ -17,7 +17,6 @@ from world.native_terrain_sectors import native_terrain
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
 from world.static_placement import read_class_evidence
 from world.static_placement_plan import FAILED_STATUS, chunk_rectangles, plan_static_placements, static_mesh_actors
-from world.terrain_chunk_step import TERRAIN_CLASS_EVIDENCE_FOLDER
 from world.tile_census import WORLD_LANE_NAME, read_package_header
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
@@ -253,8 +252,7 @@ def run_static_mesh_step(project_root, client_root, tile_id):
     actors = json.loads((unit.raw_products / 'actors.json').read_text(encoding='utf-8'))
     try:
         rectangles = chunk_rectangles(unit.chunk_plan, native_terrain(read_locked_map_package(client, tile_id, lock_record)))
-        class_evidence_folder = lane_work_root(project_root, WORLD_LANE_NAME) / TERRAIN_CLASS_EVIDENCE_FOLDER
-        plan = plan_static_placements(actors, rectangles, read_class_evidence(client, class_evidence_folder, class_evidence_folder))
+        plan = plan_static_placements(actors, rectangles, read_class_evidence(client, lane_work_root(project_root, WORLD_LANE_NAME)))
     except FormatError as error:
         return tile_step_row(tile_id, STATIC_MESH_STEP_NAME, FAILED_STATUS, f'decode-failed:{error}', source_identity,
                              step_directory.relative_to(unit.ledger.lane_folder).as_posix())

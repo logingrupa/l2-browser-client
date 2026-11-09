@@ -1,77 +1,76 @@
-import json
 import math
-from pathlib import Path
-import re
 
+from native_assets_lib.class_defaults import ClassDefaultError, ReferenceClientClassScripts, read_class_defaults_with_provenance
 from native_catalog.ue2 import FormatError
 from world.map_actor_properties import property_value
-from world.map_sources import file_hash, require_lock_equal_client_path, safe_path, sha
 from world.terrain_coordinates import f32, xyz
 
-CLASS_EVIDENCE_REFERENCES = ('Engine.Actor', 'Engine.StaticMeshActor', 'Engine.TerrainInfo')
-CLASS_DEFAULT_HELPER_PATH = Path(__file__).resolve().parents[1] / 'native_catalog' / 'extract_ue_defaults.ps1'
+STATIC_MESH_ACTOR_CLASS = 'Engine.StaticMeshActor'
+TERRAIN_INFO_CLASS = 'Engine.TerrainInfo'
+STATIC_TRANSFORM_FIELDS = ('Location', 'Rotation', 'PrePivot', 'DrawScale', 'DrawScale3D')
+SERIALIZED_STATUS = 'serialized'
+UE_ZERO_PROVENANCE = 'ue-zero'
+VECTOR_ZERO = {'X': 0, 'Y': 0, 'Z': 0}
+UE_ZERO_VALUE_OF_FIELD = {'Location': VECTOR_ZERO, 'Rotation': {'Pitch': 0, 'Yaw': 0, 'Roll': 0}, 'PrePivot': VECTOR_ZERO,
+                          'DrawScale': 0.0, 'DrawScale3D': VECTOR_ZERO}
 
 
-def read_class_evidence(client, work, reusable=None):
-    from native_catalog.effects import read_class_defaults, parse_uc, UELIB, UELIB_SHA256
-    if file_hash(UELIB) != UELIB_SHA256:
-        raise FormatError('Class parser differs from pinned UELib')
-    evidence = {}
-    for reference in CLASS_EVIDENCE_REFERENCES:
-        base = Path(reusable)/reference if reusable else None
-        if base and (base/'defaults.json').is_file():
-            result = json.loads((base/'defaults.json').read_text(encoding='utf-8'))
-            script = safe_path(base, result['sourceScript']).read_bytes()
-            if sha(script) != result['sourceScriptSha256'] or file_hash(require_lock_equal_client_path(client, result['source']['package'])) != result['source']['packageSha256']:
-                raise FormatError('Reused native class evidence no longer matches sources')
-        else:
-            base = work/reference
-            result = read_class_defaults(client, reference, base)
-            script = safe_path(base, result['sourceScript']).read_bytes()
-        parsed = parse_uc(script.decode('utf-8-sig'), reference)
-        if result['source']['object'] != reference or result['uelibSha256'] != UELIB_SHA256 or result['helperSha256'] != file_hash(CLASS_DEFAULT_HELPER_PATH):
-            raise FormatError('Native class evidence reader/source identity differs')
-        if parsed['unparsed'] or parsed['properties'] != result['properties'] or parsed['superClass'] != result['superClass']:
-            raise FormatError('Native class evidence differs from its retained script')
-        evidence[reference] = {'defaults': result['properties'], 'superClass': result['superClass'], 'source': result['source'],
-                               'sourceScriptSha256': result['sourceScriptSha256'], 'sourceScript': script.decode('utf-8-sig'),
-                               'uelibSha256': result['uelibSha256'], 'helperSha256': result['helperSha256']}
-    actor_script = evidence['Engine.Actor']['sourceScript']
-    for name, kind in (('Location', 'Vector'), ('Rotation', 'Rotator'), ('PrePivot', 'Vector')):
-        if not re.search(r'\bvar[^;\n]*\b'+kind+r'\s+'+name+r'\s*;', actor_script):
-            raise FormatError('Zero-initialized actor field declaration not established: '+name)
-    if not re.search(r'\bvar[^;\n]*\bbool\s+Inverted\s*;', evidence['Engine.TerrainInfo']['sourceScript']):
-        raise FormatError('Terrain Inverted declaration is not established')
-    return evidence
+class TransformFieldError(FormatError):
+    def __init__(self, field, message):
+        super().__init__(message)
+        self.field = field
 
 
-def require_terrain_not_inverted(terrain_actor, evidence):
+class ClassDefaults:
+    def __init__(self, work_root, class_scripts):
+        self.work_root, self.class_scripts = work_root, class_scripts
+
+    def values(self, class_name, fields):
+        return {value.field: value for value in read_class_defaults_with_provenance(class_name, list(fields), self.work_root, self.class_scripts)}
+
+
+def read_class_evidence(client, work_root):
+    return ClassDefaults(work_root, ReferenceClientClassScripts(client))
+
+
+def placement_provenance(class_default):
+    return UE_ZERO_PROVENANCE if class_default.provenance == UE_ZERO_PROVENANCE else 'class-default'
+
+
+def class_default_of_field(class_defaults, class_name, name):
+    try:
+        return class_defaults.values(class_name, [name])[name]
+    except ClassDefaultError as error:
+        raise TransformFieldError(name, f'Native default is unresolved: {name}: {error}') from error
+
+
+def resolved_transform_values(actor, class_defaults, class_name):
+    result = {}
+    for name in STATIC_TRANSFORM_FIELDS:
+        field = actor['sourceTransform'][name]
+        if field['status'] == SERIALIZED_STATUS:
+            result[name] = {'value': field['value'], 'provenance': 'authored', 'source': 'serialized-actor-property'}
+            continue
+        default = class_default_of_field(class_defaults, class_name, name)
+        value = UE_ZERO_VALUE_OF_FIELD[name] if default.provenance == UE_ZERO_PROVENANCE else default.value
+        if value is None:
+            raise TransformFieldError(name, 'Native default is unresolved: ' + name)
+        result[name] = {'value': value, 'provenance': placement_provenance(default), 'source': default.declaring_class}
+    return result
+
+
+def resolved_static_values(actor, class_defaults):
+    if actor['classObject'] != STATIC_MESH_ACTOR_CLASS:
+        raise FormatError('Only exact native Engine.StaticMeshActor placements are supported')
+    return resolved_transform_values(actor, class_defaults, STATIC_MESH_ACTOR_CLASS)
+
+
+def require_terrain_not_inverted(terrain_actor, class_defaults):
     inverted = property_value(terrain_actor['properties'], 'Inverted')
     if inverted is None:
-        inverted = evidence['Engine.TerrainInfo']['defaults'].get('Inverted', False)
+        inverted = class_defaults.values(TERRAIN_INFO_CLASS, ['Inverted'])['Inverted'].value
     if inverted:
         raise FormatError('Inverted terrain requires separately verified rendering/normals')
-
-
-def resolved_static_values(actor, evidence):
-    if actor['classObject'] != 'Engine.StaticMeshActor' or evidence['Engine.StaticMeshActor']['superClass'] != 'Actor':
-        raise FormatError('Only exact native Engine.StaticMeshActor inheritance is supported')
-    base, child = evidence['Engine.Actor']['defaults'], evidence['Engine.StaticMeshActor']['defaults']
-    result = {}
-    for name in ('Location', 'Rotation', 'PrePivot', 'DrawScale', 'DrawScale3D'):
-        field = actor['sourceTransform'][name]
-        if field['status'] == 'serialized':
-            result[name] = {'value': field['value'], 'source': 'serialized-actor-property'}
-        elif name in child or name in base:
-            value = child[name] if name in child else base[name]
-            result[name] = {'value': value, 'source': 'Engine.StaticMeshActor' if name in child else 'Engine.Actor'}
-        elif name in ('Location', 'Rotation', 'PrePivot'):
-            labels = ('Pitch', 'Yaw', 'Roll') if name == 'Rotation' else tuple('XYZ')
-            result[name] = {'value': dict.fromkeys(labels, 0), 'source': 'native-declared-field-zero-init',
-                            'evidence': 'Exact Engine.Actor declaration + no base/child override; UObject::InitProperties zero-fills newly declared fields'}
-        else:
-            raise FormatError('Native default is unresolved: '+name)
-    return result
 
 
 def rotation_rows(rotation):

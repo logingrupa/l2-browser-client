@@ -4,7 +4,9 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/'scripts'))
+sys.path.insert(0, str(Path(__file__).parent))
 from native_catalog.ue2 import FormatError
+from support.actor_class_defaults import SyntheticActorClassDefaults
 from world.static_placement import gltf_placement, resolved_static_values, rotation_rows, static_matrix
 from world.terrain_coordinates import native_to_gltf
 
@@ -44,13 +46,12 @@ class StaticPlacementTests(unittest.TestCase):
                             rotation_rows({'Pitch': 0, 'Yaw': 16388, 'Roll': 0}))
 
     def test_exact_class_defaults_and_zero_initialization_are_attributed(self):
-        evidence = {'Engine.Actor': {'defaults': {'DrawScale': 1, 'DrawScale3D': {'X': 1, 'Y': 1, 'Z': 1}}},
-                    'Engine.StaticMeshActor': {'superClass': 'Actor', 'defaults': {}}}
+        evidence = SyntheticActorClassDefaults()
         actor = {'classObject': 'Engine.StaticMeshActor', 'sourceTransform': {name: {'status': 'omitted-class-default-unresolved'}
                  for name in ('Location', 'Rotation', 'PrePivot', 'DrawScale', 'DrawScale3D')}}
         result = resolved_static_values(actor, evidence)
-        self.assertEqual(result['DrawScale']['source'], 'Engine.Actor')
-        self.assertEqual(result['PrePivot']['source'], 'native-declared-field-zero-init')
+        self.assertEqual((result['DrawScale']['source'], result['DrawScale']['provenance']), ('Engine.Actor', 'class-default'))
+        self.assertEqual((result['PrePivot']['value'], result['PrePivot']['provenance']), ({'X': 0, 'Y': 0, 'Z': 0}, 'ue-zero'))
         actor['classObject'] = 'Custom.StaticMeshActor'
         with self.assertRaises(FormatError):
             resolved_static_values(actor, evidence)

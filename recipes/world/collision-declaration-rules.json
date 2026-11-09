@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "volumeClasses": ["Engine.BlockingVolume", "Engine.PhysicsVolume"],
+  "placementClass": "Engine.StaticMeshActor",
+  "blockingFlagFields": ["bCollideActors", "bBlockPlayers"],
+  "crossCheckFlagFields": ["bStatic", "bCollideActors", "bBlockActors", "bBlockPlayers", "bBlockNonZeroExtentTraces"],
+  "transformFields": ["Location", "Rotation", "DrawScale", "DrawScale3D", "PrePivot"],
+  "staticMeshSelectorFields": ["UseSimpleLineCollision", "UseSimpleBoxCollision", "UseSimpleKarmaCollision", "CollisionModel"],
+  "rules": [
+    {
+      "id": "collision.blocking-flags",
+      "value": "a placement or volume blocks the player when bCollideActors and bBlockPlayers both resolve true; either resolving false is declared-none",
+      "provenance": "field declarations of Engine.Actor decompiled from system/Engine.u through the pinned UELib (scripts/native_assets_lib/class_defaults.py read_class_field_declarations); behaviour cross-check Elbera https://github.com/elberacasa/Lineage2Elbera tools/world/export_static_collision.py:1333-1337 at 12c9656e2f053b233ec3fd87056491a6a6da8b0c (sha256 64850b8ff35bd540e1984eae305ad1f1faedf55ab19afbd357917f840997061a)",
+      "status": "unconfirmed",
+      "interludeEvidence": null,
+      "runtimeDefault": "bCollideActors and bBlockPlayers"
+    },
+    {
+      "id": "collision.flag-cross-check",
+      "value": "the Elbera cross-check also requires bStatic, bBlockActors and bBlockNonZeroExtentTraces true; when it disagrees with collision.blocking-flags the object is collision-unreadable with evidence rule-disagreement:<field> until owner review",
+      "provenance": "Elbera tools/world/export_static_collision.py:1333-1337 at 12c9656e2f053b233ec3fd87056491a6a6da8b0c, read by repository and commit, never run",
+      "status": "unconfirmed",
+      "interludeEvidence": null,
+      "runtimeDefault": "disagreement is a collision-unreadable gap"
+    },
+    {
+      "id": "collision.static-mesh-selectors",
+      "value": "UseSimpleLineCollision, UseSimpleBoxCollision, UseSimpleKarmaCollision and CollisionModel select the static mesh collision route; an authored true selector or an authored CollisionModel is collision-unreadable until that route is decoded",
+      "provenance": "Engine.StaticMesh has no class export in the Interlude system/Engine.u (class_defaults resolve fails: intrinsic class), and no 20_21 StaticMesh export serializes these fields; route names from .planning/reference/lineage2js/03-movement.md:121",
+      "status": "unknown",
+      "interludeEvidence": null,
+      "runtimeDefault": "omitted selectors are recorded as unresolved-intrinsic in the placement evidence and do not change the slot route"
+    },
+    {
+      "id": "collision.static-mesh-triangles",
+      "value": "SMSH triangles are the LOD0 triangles of the slots whose decoded EnableCollision is true, read from the converted model and mapped back to mesh-local source units by the inverse of SOURCE_TO_GLTF, with each triangle's vertex order reversed to undo that axis reflection",
+      "provenance": "slot EnableCollision decoded by scripts/native_assets_lib/static_materials.py into the glTF material extras nativeSlotProperties; the serialized UStaticMesh collision triangle layout (reference collision.staticMeshLayout, .planning/reference/lineage2js/03-movement.md) is not decoded yet",
+      "status": "unconfirmed",
+      "interludeEvidence": null,
+      "runtimeDefault": "LOD0 triangles of EnableCollision slots"
+    },
+    {
+      "id": "collision.brush-transform-order",
+      "value": "world = Location + (local - PrePivot) scaled by DrawScale3D and DrawScale, then rotated by Rotation, in the row order of scripts/world/static_placement.py static_matrix",
+      "provenance": "localToWorld from Location, Rotation, DrawScale, DrawScale3D and PrePivot in .planning/reference/lineage2js/03-movement.md:121; the same order as the static placement matrix",
+      "status": "unconfirmed",
+      "interludeEvidence": null,
+      "runtimeDefault": "static_matrix order; used here only to assign a volume to a chunk"
+    },
+    {
+      "id": "collision.iscsg-outside-bit",
+      "value": "a walk carries an outside bit that starts at bRootOutside; the front child sets it to outside or csg, the back child to outside and not csg; a missing child reached with the bit false is solid; csg is NumVertices > 0 and NodeFlags without 0x01 or 0x20",
+      "provenance": ".planning/reference/lineage2js/03-movement.md:96 and its collision.isCsg row (lineage2js src/assets/unreal/bsp/un-bsp-node.ts:25-34,126)",
+      "status": "unconfirmed",
+      "interludeEvidence": null,
+      "runtimeDefault": "outside-bit walk from bRootOutside"
+    },
+    {
+      "id": "collision.poly-flags-diagnostic",
+      "value": "PolyFlags are recorded per BSP node for diagnostics and never change a solidity record",
+      "provenance": ".planning/reference/lineage2js/03-movement.md:96 (PolyFlags stay diagnostic)",
+      "status": "unconfirmed",
+      "interludeEvidence": null,
+      "runtimeDefault": "diagnostic only"
+    }
+  ]
+}

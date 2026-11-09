@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 4,
+  "listVersion": 5,
   "reasons": [
     "terrain-height-version-unsupported:<version>",
     "terrain-quads-all-hidden",
@@ -9,6 +9,7 @@
     "placement-material-override-unsupported",
     "static-mesh-reference-unresolved",
     "bsp-node-outside-chunk-grid",
-    "bsp-chunk-without-nodes"
+    "bsp-chunk-without-nodes",
+    "collision-transform-field-unreadable:<field>"
   ]
 }
