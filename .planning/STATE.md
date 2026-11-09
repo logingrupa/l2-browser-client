@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-52-PLAN.md
-last_updated: "2026-11-09T10:00:22.667Z"
+stopped_at: Completed 02-25-PLAN.md
+last_updated: "2026-11-09T13:26:20.882Z"
 last_activity: 2026-11-09
-last_activity_desc: Phase 02 plan 02-52 complete (world reader licensee growth with exact Elbera cross-checks)
-state_head: aad83e1ce2aa53c40a929da7d9397ff80e82e3ed
+last_activity_desc: Phase 02 plan 02-25 complete (sandbox coverage notes for every by-ID action and the four convert:* package scripts)
+state_head: b92d7bd7452e1f2378f9111fb79907d083bd3a77
 progress:
   total_phases: 6
   completed_phases: 0
-  total_plans: 87
-  completed_plans: 56
+  total_plans: 88
+  completed_plans: 57
   percent: 0
 ---
 
@@ -108,6 +108,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P16 | 50min | 3 tasks | 25 files |
 | Phase 02 P43 | 50min | 3 tasks | 29 files |
 | Phase 02 P52 | 51min | 3 tasks tasks | 36 files files |
+| Phase 02 P25 | 22min | 3 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -258,6 +259,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-43: DefaultReader not rerouted, no VertMesh adapter, lane store unpinned because write_lane_catalog refuses staged effect manifests; ACT-06 and FX-01 stay Pending (rows 403, 404, 407, 408)
 - [Phase 02]: 02-52: one reader licensee gate require_reviewed_reader_layout in scripts/world/reader_licensee_layouts.py serves read_g16, actor_properties, native_terrain and build_map; each reviewed pair has cited evidence, a synthetic fixture and an equal SHA-pinned Elbera l2lib cross-check row (OVERNIGHT-DECISIONS rows 409 to 412)
 - [Phase 02]: 02-52: reviewed map licensees 16, 18, 19, 20, 23, 25, 28, 30, 31 (TerrainInfo of 16 refused) and terrain licensees 12, 15, 16, 18, 19, 20, 22, 23, 25, 28; terrain 118/11 stays a version gap; WORLD-01 stays Pending until 02-54 (rows 413 to 417)
+- [Phase 02]: 02-25: sandbox notes for all four by-ID actions come from describeSandboxCatalogLookup (index wording, converted info, gap and not in catalog warning); shared sandbox.lastKey and sandbox.lastLookup; convert:tables, convert:world, convert:actors, convert:ui package scripts (OVERNIGHT-DECISIONS rows 446 to 451)
 
 ### Pending Todos
 
@@ -330,6 +332,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-09T10:00:22.099Z
-Stopped at: Completed 02-52-PLAN.md
+Last session: 2026-11-09T13:26:20.219Z
+Stopped at: Completed 02-25-PLAN.md
 Resume file: None
