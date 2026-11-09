@@ -42,7 +42,7 @@ Roots sealed so far: 22 of 245 (tracer `skill.wh.1011`, one 20-root slice, one 1
 
 Gap rows `artifacts/lane-store/actors/gap-rows/skills.json`, one per key (29,812): 2,542 pass, 17,575 `native-skill-dispatch-required`, 634 `converter-refused`, 522 `emitter-class-unported:Engine.BeamEmitter`, 8,539 `conversion-pending`.
 
-Lane catalog `d942b12174a2dd48df6a44d1febba0c7dddddc7e32459873a2e0d74b99011b60` (2026-11-09, not mergeable: 14 of its NPC profiles name a model of another mesh, see docs/parts/npcs/EVIDENCE.md): 3,064 skill records over 17 staged manifests. Lane coverage before the NPC mesh join check (`build_coverage_report.py --lane actors`): skills-effects 3,064 converted, 18,210 gap, 8,538 pending; the coverage key join now refuses this catalog until the NPC pack rebuild.
+Lane catalog `7ab1cdcf97c76c81c169ec3f2d41174e4c14ccbbf8440c60b5ec6fe6865d35e7` (2026-11-09: 113 models, 4 NPC profile packs, 3,064 effect components; passes the NPC mesh join check, see docs/parts/npcs/EVIDENCE.md): 3,064 skill records over 17 staged manifests. Lane coverage pinned to it (`build_coverage_report.py --lane actors`): skills-effects 3,064 converted, 18,210 gap, 8,538 pending, loads 3,064 unverified.
 
 ### Browser
 
@@ -64,7 +64,7 @@ Lane catalog `d942b12174a2dd48df6a44d1febba0c7dddddc7e32459873a2e0d74b99011b60` 
 - Five roots are refused by the converter; their reasons are in the gap rows.
 - Runtime presentation of a converted effect on a `skill-cast` event for skills other than Power Strike is integration wiring (`createNativeSliceEffects.ts`).
 - The cast check still runs on the harness page; the dev store switch now serves the actors lane as its restage union, so the native route can start on it.
-- Restage: blocked. Do not restage actors lane catalog `d942b121`: `write_lane_catalog.py --lane actors --plan` exits 1 and `merge_lane_store.py` refuses it, because pack `c9562b95326d87f9` holds 14 NPC profiles that name a model of another mesh. It waits for the NPC batch slice that rebuilds that pack (docs/parts/npcs/EVIDENCE.md).
+- Restage: actors lane catalog `7ab1cdcf97c76c81c169ec3f2d41174e4c14ccbbf8440c60b5ec6fe6865d35e7` (113 models, 4 NPC profile packs, 3,064 effect components) passes the mesh join check, and `write_lane_catalog.py --lane actors --plan` prints its merge command. The restage runs from the main checkout (docs/parts/npcs/EVIDENCE.md).
 
 ## Evidence
 
