@@ -1,11 +1,11 @@
 import type { ReferenceConstantRow, ReferenceConstantStatus } from "../../../shared/referenceConstant";
 
-export const PARTICLE_SIMULATOR_VERSION = 1;
+export const PARTICLE_SIMULATOR_VERSION = 2;
 
 const referenceNotes = ".planning/reference/lineage2js/04-particles.md";
 
-function constantRow<Value>(id: string, status: ReferenceConstantStatus, value: Value, provenance: string): ReferenceConstantRow<Value> {
-  return { id, value, provenance, status, interludeEvidence: null, runtimeDefault: value };
+function constantRow<Value>(id: string, status: ReferenceConstantStatus, value: Value, provenance: string, interludeEvidence: string | null = null): ReferenceConstantRow<Value> {
+  return { id, value, provenance, status, interludeEvidence, runtimeDefault: value };
 }
 
 export const PARTICLE_CONSTANTS = {
@@ -17,12 +17,12 @@ export const PARTICLE_CONSTANTS = {
     `${referenceNotes} fx.range-vector-order: one FRange draw per axis, our streams fix X, Y, Z; Core.dll FRangeVector::GetRand 0x10103E86 -> 0x1010EDE0`),
   spinUnitsPerTurn: constantRow("fx.spin-units", "unconfirmed", 65535,
     `${referenceNotes} fx.spin-units: StartSpin, SpinsPerSecond and revolution angles scale by 65535 per turn; lineage2js base-emitter.ts:946-947, 1245`),
-  warmupTicks: constantRow("fx.warmup", "unconfirmed", "floor(WarmupTicksPerSecond * LC * RelativeWarmupTime) updates of 1 / WarmupTicksPerSecond",
-    `${referenceNotes} fx.warmup: skipped when either input is 0 or less, reruns after each Reset; base-emitter.ts:663-677, 331, 1608-1614`),
-  automaticInitialRate: constantRow("fx.auto-initial-rate", "unconfirmed", "MaxParticles / LC while Active < MaxParticles",
-    `${referenceNotes} fx.auto-initial-rate; base-emitter.ts:1127-1135`),
-  birthAges: constantRow("fx.birth-ages", "unconfirmed", "age_i = dt - (1 - Frac_old) / rate - i / rate, count clamped to MaxParticles",
-    `${referenceNotes} fx.birth-ages; base-emitter.ts:1008-1027; Engine.dll UParticleEmitter::SpawnParticles 0x10302775 -> 0x10605B40`),
+  warmupTicks: constantRow("fx.warmup", "corrected-interlude", "trunc(f32(WarmupTicksPerSecond) * f32(GetCenter(LifetimeRange) * RelativeWarmupTime)) updates of f32(1 / WarmupTicksPerSecond) when WarmupTicksPerSecond != 0 and RelativeWarmupTime != 0; reruns after each Reset",
+    `Engine.dll 4dd2f63c AEmitter::Tick 0x10310F96 -> 0x1060BD00 warm-up block 0x1060C01D-0x1060C093: both gates test != 0, WarmupTime and the step are float32 stores, the count is _ftol2 truncation; Core.dll 9462f87a FRange::GetCenter 0x1010E670; x87 runs at the CRT default 53-bit precision because D3DDrv.dll 05622dde creates the device with D3DCREATE_FPU_PRESERVE (or 2 at 0x1001DC26), so JavaScript doubles match the x87 intermediates and Math.fround marks each float32 store`, "Engine.dll 4dd2f63c AEmitter::Tick 0x1060C01D-0x1060C093"),
+  automaticInitialRate: constantRow("fx.auto-initial-rate", "corrected-interlude", "f32(MaxParticles / GetCenter(LifetimeRange)) while Active < MaxParticles, every Rate stored as float32; 0 when the centre is not positive (our guard)",
+    `Engine.dll 4dd2f63c UParticleEmitter::UpdateParticles 0x10605DC0, Rate at 0x106060DE-0x106061A0 stored with fstp dword; Core.dll 9462f87a FRange::GetCenter 0x1010E670 = f32((Max + Min) * 0.5); x87 runs at the CRT default 53-bit precision because D3DDrv.dll 05622dde creates the device with D3DCREATE_FPU_PRESERVE (or 2 at 0x1001DC26), so JavaScript doubles match the x87 intermediates and Math.fround marks each float32 store`, "Engine.dll 4dd2f63c UParticleEmitter::UpdateParticles 0x106060DE-0x106061A0"),
+  birthAges: constantRow("fx.birth-ages", "corrected-interlude", "Leftover = f32(Rate * f32(dt) + Old), Count = clamp(floor(Leftover), 0, MaxParticles), NewLeftover = f32(Leftover - floor(Leftover)), InvRate = f32(1 / Rate), Start = f32(InvRate * Old + f32(dt) - InvRate), age_i = f32(Start - i * InvRate)",
+    `Engine.dll 4dd2f63c UParticleEmitter::SpawnParticles 0x10302775 -> 0x10605B40: appFloor count, float32 stores of Leftover, InvRate, Start and each SpawnTime, SpawnParticle into ParticleIndex then ParticleIndex advances; x87 runs at the CRT default 53-bit precision because D3DDrv.dll 05622dde creates the device with D3DCREATE_FPU_PRESERVE (or 2 at 0x1001DC26), so JavaScript doubles match the x87 intermediates and Math.fround marks each float32 store`, "Engine.dll 4dd2f63c UParticleEmitter::SpawnParticles 0x10605B40"),
   independentPathThreshold: constantRow("fx.independent-path-threshold", "unconfirmed", 1,
     `${referenceNotes} fx.independent-spawn-path: the path shift runs only when the owner moved more than 1 uu; base-emitter.ts:1023`),
   ownerVelocityStepClamp: constantRow("fx.owner-velocity-step-clamp", "unconfirmed", { minimum: 0.001, maximum: 1 },
@@ -47,20 +47,24 @@ export const PARTICLE_CONSTANTS = {
     `${referenceNotes} fx.fades: Modulated sets (0.5, 0.5, 0.5, 1 - f * F.W); base-emitter.ts:1434-1465`),
   opacityChannel: constantRow("fx.opacity-channel", "unconfirmed", "alpha for AlphaBlend, Modulated and AlphaModulate, RGB otherwise; zero-rate quirk rgb *= Opacity before ColorMultiplier",
     `${referenceNotes} fx.opacity-channel; base-emitter.ts:1422-1432, 1468-1480`),
-  polarStart: constantRow("fx.polar-start", "unconfirmed", "(t, q, r) = RV(StartLocationPolarRange) in degrees; offset r * (sin q cos t, sin q sin t, cos q) about source +Z",
-    `${referenceNotes} fx.polar-start; base-emitter.ts:721-732`),
+  polarStart: constantRow("fx.polar-start", "corrected-interlude", "(t, q, r) = f32 RV(StartLocationPolarRange), angles f32(degrees * pi / 180); offset (f32(SinFloat(q) * (CosFloat(t) * r)), f32(SinFloat(q) * (SinFloat(t) * r)), f32(CosFloat(q) * r)) about source +Z; SinFloat and CosFloat read the fx.sine-table at trunc(a * 65536 / 2pi)",
+    `Engine.dll 4dd2f63c UParticleEmitter::SpawnParticle 0x10604190, polar block 0x106042D9-0x106043E6 through GMath; Core.dll 9462f87a FGlobalMath::SinFloat 0x1010F480 (SinTab[(trunc(F * 65536 / 2pi) >> 2) & 0x3FFF]) and CosFloat 0x1010F4C0 (SinTab[((0x4000 - trunc(F * 65536 / -2pi)) >> 2) & 0x3FFF]); x87 runs at the CRT default 53-bit precision because D3DDrv.dll 05622dde creates the device with D3DCREATE_FPU_PRESERVE (or 2 at 0x1001DC26), so JavaScript doubles match the x87 intermediates and Math.fround marks each float32 store`, "Engine.dll 4dd2f63c UParticleEmitter::SpawnParticle 0x106042D9-0x106043E6; Core.dll 9462f87a FGlobalMath::SinFloat 0x1010F480, CosFloat 0x1010F4C0"),
   velocityDirection: constantRow("fx.velocity-direction", "unconfirmed", "d = normalize(Location), negated unless Relative or Spray; StartPositionAndOwner -V*d, OwnerAndStartPosition V*d, AddRadial d*R(StartVelocityRadialRange)",
     `${referenceNotes} Spawning one particle step 11; base-emitter.ts:639-661`),
   siblingCursor: constantRow("fx.sibling-cursor", "unconfirmed", "Other += 1 per spawn; sibling slot Other mod sibling Active; sibling index clamps to the last emitter",
     `${referenceNotes} Spawning one particle steps 5 and 12`),
   revolutionAngle: constantRow("fx.revolution-angle", "unconfirmed", "a = trunc(rate * multiplier * dt * 65535), k = floor(a / 4) mod 16384, angle k * 2 pi / 16384 about X, then Y, then Z",
     `${referenceNotes} fx.revolution-angle; src/shared/math/rotator.ts ROTATOR_RULE_BY_USE particle-revolution; Core.dll FVector::RotateAngleAxis 0x10103CBA -> 0x1010F8B0`),
-  rotatorAxes: constantRow("fx.rotator-axes", "unconfirmed", "sine-table",
-    `${referenceNotes} Rotator math: rotator to axes through the 16384-entry float32 sine table, as src/shared/math/rotator.ts placement; lineage2js/src/assets/unreal/utils/rotator.ts:6-77; Core.dll FCoords::OrthoRotation 0x1010182A -> 0x1014DD90`),
-  delayOvershoot: constantRow("fx.delay-overshoot", "unconfirmed", "dropped",
-    `${referenceNotes} Emitter step 3: a delay that crosses zero inside a step runs the full step; base-emitter.ts:1566-1637`),
+  rotatorAxes: constantRow("fx.rotator-axes", "confirmed-interlude", "sine-table",
+    `Core.dll 9462f87a FCoords::operator/=(FRotator) 0x10104714 -> 0x10110240, used by execGetAxes 0x10140C00: roll, pitch and yaw elemental coords composed through FCoords::operator*= 0x1010222A -> 0x1010FCE0 and FVector::TransformVectorBy 0x1010F5B0, table index (angle >> 2) & 0x3FFF and cosine at angle + 0x4000; the closed-form rows equal that composition`, "Core.dll 9462f87a FCoords::operator/=(FRotator) 0x10110240"),
+  delayOvershoot: constantRow("fx.delay-overshoot", "corrected-interlude", "dropped; the countdown runs while InitialDelay != 0 and a delay that crosses zero inside a step runs the full step",
+    `Engine.dll 4dd2f63c AEmitter::Tick 0x1060BD00, InitialDelay block 0x1060BFB9-0x1060BFF3: test against != 0, subtract the step, continue while above 0, else store 0 and run the step`, "Engine.dll 4dd2f63c AEmitter::Tick 0x1060BFB9-0x1060BFF3"),
   emitterDeadHandling: constantRow("fx.emitter-dead-handling", "unconfirmed", "emitter AutoReset counts R(AutoResetTimeRange) when the actor does not reset; emitter AutoDestroy disables when the actor does not destroy",
     `${referenceNotes} Emitter step 6; base-emitter.ts:1566-1637`),
+  firstStepDraws: constantRow("fx.first-step-draws", "corrected-interlude", "the first step runs Initialize, whose Reset draws InitialDelayRange and then AutoResetTimeRange",
+    `Engine.dll 4dd2f63c UParticleEmitter::Initialize 0x10311DDD -> 0x10603F50 calls Reset through vtable +0x70; UParticleEmitter::Reset 0x10302A3B -> 0x10603B80 draws InitialDelayRange then AutoResetTimeRange; AEmitter::Tick 0x1060BF67 initializes an emitter whose Initialized bit is clear`, "Engine.dll 4dd2f63c UParticleEmitter::Initialize 0x10603F50, UParticleEmitter::Reset 0x10603B80"),
+  inactiveGate: constantRow("fx.inactive-gate", "corrected-interlude", "InactiveTime = Inactive ? InactiveTime + dt : 0; UpdateParticles runs unless SecondsBeforeInactive != 0 and InactiveTime > SecondsBeforeInactive; each running step sets Inactive and a render clears it",
+    `Engine.dll 4dd2f63c AEmitter::Tick 0x1060BD00: InactiveTime and the gate at 0x1060C0A9-0x1060C0FC, Inactive set at 0x1060C574; UParticleEmitter::RenderParticles 0x10603DD0 clears Inactive`, "Engine.dll 4dd2f63c AEmitter::Tick 0x1060C0A9-0x1060C0FC and 0x1060C574; UParticleEmitter::RenderParticles 0x10603DD0"),
   deadRule: constantRow("fx.dead-rule", "unconfirmed", "(dead >= MaxParticles or Active - dead <= 0) and (KillPending or (rate 0 and not RespawnDeadParticles))",
     `${referenceNotes} Velocity limits, bounds and death step 4; base-emitter.ts:1487-1531`),
   globalOffset: constantRow("fx.global-offset", "unconfirmed", "RV(GlobalOffsetRange) on the first tick and on every actor reset, added at spawn",
@@ -85,8 +89,8 @@ export const PARTICLE_CONSTANTS = {
     `${referenceNotes} fx.sprite-spin-component; base-emitter.ts:1687-1694, 1747, 1768; Engine.dll USpriteEmitter::FillVertexBuffer 0x1030A880 -> 0x106EFD60`),
   meshRotatorMapping: constantRow("fx.mesh-rotator-mapping", "unconfirmed", "spin X to Yaw, Y to Pitch, Z to Roll, each truncated to an integer",
     `${referenceNotes} fx.mesh-rotator-mapping; base-emitter.ts:1695-1697, 1761`),
-  atlasCells: constantRow("fx.atlas-cells", "unconfirmed", "column-major cells, End set: count max(1, End - Start), cell floor(r * count) + Start, clamp U * V - 1, blend trunc(255 * frac(r * count)) / 255 toward the next cell, holding at SubdivisionEnd when set, else at U * V - 1",
-    `${referenceNotes} fx.atlas-cells; base-emitter.ts:1832-1880; Engine.dll USpriteEmitter::FillVertexBuffer 0x1030A880 -> 0x106EFD60`),
+  atlasCells: constantRow("fx.atlas-cells", "corrected-interlude", "column-major cells; r = f32(clamp(Time / MaxLifetime, 0, 1)); count = End set ? max(1, End - Start) : U * V; Pos = f32(r * count); cell = clamp(floor(Pos) + (End set ? Start : 0), 0, U * V - 1); next = cell + 1, or cell when cell + 1 == count; blend byte trunc(f32(Pos - floor(Pos)) * 255) / 255 whenever BlendBetweenSubdivisions",
+    `Engine.dll 4dd2f63c USpriteEmitter::FillVertexBuffer 0x1030A880 -> 0x106EFD60: relative time 0x106F0145-0x106F018E, cell and next cell 0x106F0B54-0x106F0CC4 (the next cell is compared with the count, not clamped), blend byte 0x106F0D47-0x106F0DA2 with a truncating fistp`, "Engine.dll 4dd2f63c USpriteEmitter::FillVertexBuffer 0x106EFD60"),
   meshMaterialRoute: constantRow("fx.mesh-material-route", "unconfirmed", "UseMeshBlendMode keeps the mesh materials and ignores particle colour; otherwise the DrawStyle particle material with RenderTwoSided from the record",
     `${referenceNotes} Sprite and mesh presentation; lineage2js mesh-emitter.ts:22-56, mesh-emitter-material.ts:55-68`),
   respawnLoopGuard: constantRow("fx.respawn-loop-guard", "unconfirmed", 64,

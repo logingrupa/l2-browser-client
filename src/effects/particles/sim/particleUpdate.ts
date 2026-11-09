@@ -2,7 +2,7 @@ import { addVectors, scaleVector, subtractVectors, vectorLength, type Vector3 } 
 import { COORDINATE_SYSTEM, DRAW_STYLE, PARTICLE_CONSTANTS } from "./emitterConstants";
 import { curvePhase, relativeParticleAge, sampleCurve } from "./particleCurves";
 import { revolveAboutAxes } from "./particleRotation";
-import { drawRange, drawRangeVector, spawnParticle } from "./particleSpawn";
+import { drawRange, drawRangeVector, rangeCenter, spawnParticle } from "./particleSpawn";
 import {
   PARTICLE_FLAG, hasParticleFlag, readSlotVector, setParticleFlag, writeSlotColor, writeSlotVector,
   type EmitterRuntime, type EmitterStepContext,
@@ -18,10 +18,10 @@ const clampUnit = (value: number) => Math.min(1, Math.max(0, value));
 
 function spawnRate(runtime: EmitterRuntime): number {
   const { record, counters } = runtime;
-  if (counters.activeSlots >= record.MaxParticles) return record.ParticlesPerSecond;
-  if (!record.AutomaticInitialSpawning) return record.InitialParticlesPerSecond;
-  const lifetimeCenter = (record.LifetimeRange.min + record.LifetimeRange.max) / 2;
-  return lifetimeCenter > 0 ? record.MaxParticles / lifetimeCenter : 0;
+  if (counters.activeSlots >= record.MaxParticles) return Math.fround(record.ParticlesPerSecond);
+  if (!record.AutomaticInitialSpawning) return Math.fround(record.InitialParticlesPerSecond);
+  const lifetimeCenter = rangeCenter(record.LifetimeRange);
+  return lifetimeCenter > 0 ? Math.fround(record.MaxParticles / lifetimeCenter) : 0;
 }
 
 function spawnIntoNextSlot(runtime: EmitterRuntime, ageSeconds: number, context: EmitterStepContext, ownerVelocity: Vector3): number {
@@ -35,14 +35,15 @@ function spawnIntoNextSlot(runtime: EmitterRuntime, ageSeconds: number, context:
 
 function spawnDueParticles(runtime: EmitterRuntime, stepSeconds: number, rate: number, context: EmitterStepContext, ownerDisplacement: Vector3, ownerVelocity: Vector3): void {
   const { record, columns, counters } = runtime;
-  const leftoverBeforeStep = counters.spawnFraction, owedParticles = leftoverBeforeStep + stepSeconds * rate;
-  const wholeParticlesOwed = Math.trunc(owedParticles);
-  counters.spawnFraction = owedParticles - wholeParticlesOwed;
-  const birthCount = Math.min(record.MaxParticles, Math.max(0, wholeParticlesOwed)), secondsBetweenBirths = 1 / rate;
-  const firstBirthAgeSeconds = stepSeconds - (1 - leftoverBeforeStep) * secondsBetweenBirths;
+  const leftoverBeforeStep = counters.spawnFraction, birthStepSeconds = Math.fround(stepSeconds);
+  const owedParticles = Math.fround(rate * birthStepSeconds + leftoverBeforeStep);
+  const wholeParticlesOwed = Math.floor(owedParticles);
+  counters.spawnFraction = Math.fround(owedParticles - wholeParticlesOwed);
+  const birthCount = Math.min(record.MaxParticles, Math.max(0, wholeParticlesOwed)), secondsBetweenBirths = Math.fround(1 / rate);
+  const firstBirthAgeSeconds = Math.fround(secondsBetweenBirths * leftoverBeforeStep + birthStepSeconds - secondsBetweenBirths);
   const birthSlots: number[] = [];
   while (birthSlots.length < birthCount) {
-    birthSlots.push(spawnIntoNextSlot(runtime, firstBirthAgeSeconds - birthSlots.length * secondsBetweenBirths, context, ownerVelocity));
+    birthSlots.push(spawnIntoNextSlot(runtime, Math.fround(firstBirthAgeSeconds - birthSlots.length * secondsBetweenBirths), context, ownerVelocity));
   }
   if (record.CoordinateSystem !== COORDINATE_SYSTEM.independent || vectorLength(ownerDisplacement) <= independentPathThreshold) return;
   birthSlots.forEach((slot, birthOrdinal) => {

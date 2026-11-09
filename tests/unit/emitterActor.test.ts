@@ -78,8 +78,8 @@ describe("Emitter actor rules", () => {
   it("scales every emitter step by SpeedRate", () => {
     const doubled = spriteActor({ SpeedRate: 2 });
     doubled.step(stepSeconds, STATIONARY_OWNER);
-    const emitter = doubled.emitters[0]!;
-    expect(emitter.columns.time[0]).toBe(Math.fround(2 * stepSeconds - 1 / 360));
+    const emitter = doubled.emitters[0]!, secondsBetweenBirths = Math.fround(1 / 360);
+    expect(emitter.columns.time[0]).toBe(Math.fround(secondsBetweenBirths * 0 + Math.fround(2 * stepSeconds) - secondsBetweenBirths));
   });
 
   it("adds the drawn GlobalOffset to every spawn", () => {
