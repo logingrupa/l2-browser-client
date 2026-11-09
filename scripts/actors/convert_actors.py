@@ -18,6 +18,7 @@ from actors.npc_requests import (ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX, CONVERT
                                  SOUND_PACKAGE_NOT_IN_CLIENT_STATUS, SOUND_PACKAGE_REFUSED_STATUS, animation_reference_gap_reason,
                                  label_npc_sound_identities, npc_effect_binding_record, npc_model_request, npc_profile_recipe,
                                  npc_sound_references, package_stem, serialized_animation_reference)
+from actors.actor_sound_batch import actor_sound_key_argument, run_actor_sound_conversion
 from actors.npc_batch import (NpcSourceIdentities, npc_batch_plan, printed_batch_plan, read_census_and_npc_tables, run_npc_batch_slice,
                               shared_store_npc_ids)
 from actors.skill_effect_conversion import (SkillEffectConversionRun, convert_skill, convert_skill_batch_slice, printed_skill_outcome,
@@ -52,9 +53,10 @@ MAXIMUM_SAFE_INTEGER = 2 ** 53 - 1
 SLICE_LIMIT_PATTERN = re.compile(r'^[1-9][0-9]{0,5}$')
 NPC_BATCH_NAME = 'npcs'
 SKILL_BATCH_NAME = 'skills'
-CONVERT_ACTORS_DESCRIPTION = ('Convert one NPC id or one skill id and level, or the next slice of the NPC or skill batch, into the actors '
-                              'lane store: NPC model units and profile bundles, or skill visual roots as effect bundles, each a sealed ledger '
-                              'unit. --print-batch-plan prints the NPC batch order and pack layout and writes nothing.')
+ACTOR_SOUNDS_BATCH_NAME = 'actor-sounds'
+CONVERT_ACTORS_DESCRIPTION = ('Convert one NPC id, one skill id and level or one actor sound bundle, or the next slice of the NPC, skill or '
+                              'actor-sounds batch, into the actors lane store as sealed ledger units: NPC models and profile bundles, skill '
+                              'visual roots, or per-bundle combat sounds. --print-batch-plan prints the NPC batch plan and writes nothing.')
 
 
 class ConvertActorsError(ValueError):
@@ -361,7 +363,8 @@ def main(argv=None):
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--npc', type=table_id_argument('--npc'))
     mode.add_argument('--skill', type=table_id_argument('--skill'))
-    mode.add_argument('--batch', choices=[NPC_BATCH_NAME, SKILL_BATCH_NAME])
+    mode.add_argument('--actor-sounds', type=actor_sound_key_argument)
+    mode.add_argument('--batch', choices=[NPC_BATCH_NAME, SKILL_BATCH_NAME, ACTOR_SOUNDS_BATCH_NAME])
     mode.add_argument('--print-batch-plan', action='store_true')
     parser.add_argument('--level', type=skill_level_argument)
     parser.add_argument('--limit', type=slice_limit_argument)
@@ -381,7 +384,11 @@ def main(argv=None):
         if arguments.skill is not None or arguments.batch == SKILL_BATCH_NAME:
             return 1 if run_skill_conversion(client_access, output_root, arguments) else 0
         converter = Converter(client_access.root, output_root.parent / CONVERTER_WORK_FOLDER, arguments.umodel)
-        if arguments.batch:
+        if arguments.actor_sounds is not None or arguments.batch == ACTOR_SOUNDS_BATCH_NAME:
+            outcomes = run_actor_sound_conversion(REPOSITORY_ROOT, client_access, converter, output_root, lane_work_root(REPOSITORY_ROOT, LANE_NAME),
+                                                  decode_table, arguments.actor_sounds, arguments.limit,
+                                                  lambda: require_batch_preflight(REPOSITORY_ROOT, LANE_NAME, BATCH_MINIMUM_FREE_BYTES))
+        elif arguments.batch:
             outcomes = run_batch_slice(client_access, output_root, converter, arguments.limit)
         else:
             outcomes = convert_npc(REPOSITORY_ROOT, client_access, converter, arguments.npc, lane_work_root(REPOSITORY_ROOT, LANE_NAME), output_root)

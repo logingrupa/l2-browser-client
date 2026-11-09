@@ -130,8 +130,7 @@ export async function loadNativeCombatAudio(signal: AbortSignal,
   options: { id?: string; fetch?: typeof fetch } = {}): Promise<NativeCombatAudioBundle | null> {
   const fetcher = options.fetch ?? fetch, id = options.id ?? "native-combat-audio";
   const { combatAudio } = await readNativeCatalog(signal, fetcher);
-  const records = list(combatAudio, 8);
-  const matches = records.map(object).filter(entry => entry.id === id);
+  const matches = combatAudio.map(object).filter(entry => entry.id === id);
   requireMatch(matches.length <= 1, "Combat-audio catalog identity is duplicated");
   if (!matches.length) return null;
   const entry = matches[0]!, manifestHash = text(entry.manifestSha256), prefix = `/l2/combat-audio/${manifestHash}/`;

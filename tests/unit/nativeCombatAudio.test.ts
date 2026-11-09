@@ -418,6 +418,25 @@ describe("combat bundle loader", () => {
     files.set(`/l2/combat-audio/${manifestSha}/audio/${wavSha}.wav`, new Uint8Array([0, 0, 0, 0]));
     await expect(loadNativeCombatAudio(new AbortController().signal, { fetch: fetcher })).rejects.toThrow("hash/length mismatch");
   });
+
+  it("selects one bundle by id from a catalog holding more than eight combat-audio records and refuses a duplicated id", async () => {
+    const wav = new Uint8Array([82, 73, 70, 70]), wavSha = await sha256(wav);
+    const manifestBytes = new TextEncoder().encode(JSON.stringify(manifest(wavSha))), manifestSha = await sha256(manifestBytes);
+    const record = (id: string) => ({ id, manifest: `/l2/combat-audio/${manifestSha}/manifest.json`, manifestBytes: manifestBytes.length, manifestSha256: manifestSha });
+    const records = Array.from({ length: 12 }, (_, index) => record(`actor-sounds:npc:${20001 + index}`));
+    const files = new Map<string, Uint8Array | object>([["/l2/catalog.json", { schemaVersion: 1, models: [], combatAudio: records }],
+      [`/l2/combat-audio/${manifestSha}/manifest.json`, manifestBytes], [`/l2/combat-audio/${manifestSha}/audio/${wavSha}.wav`, wav]]);
+    const fetcher = vi.fn(async (url: string) => {
+      const value = files.get(url);
+      if (!value) return new Response(null, { status: 404 });
+      return value instanceof Uint8Array ? new Response(value.slice().buffer) : new Response(JSON.stringify(value));
+    }) as unknown as typeof fetch;
+    const loaded = await loadNativeCombatAudio(new AbortController().signal, { id: "actor-sounds:npc:20011", fetch: fetcher });
+    expect(loaded?.id).toBe("actor-sounds:npc:20011");
+    expect(loaded?.sounds).toEqual([{ key: `native-combat:${wavSha}`, bytes: wav }]);
+    files.set("/l2/catalog.json", { schemaVersion: 1, models: [], combatAudio: [...records, record("actor-sounds:npc:20011")] });
+    await expect(loadNativeCombatAudio(new AbortController().signal, { id: "actor-sounds:npc:20011", fetch: fetcher })).rejects.toThrow("duplicated");
+  });
 });
 
 class FakeElement extends EventTarget {
