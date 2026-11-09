@@ -33,9 +33,9 @@ import { sandboxNpcVisualFactory } from "./sandboxNpcVisual";
 import { attachSandboxCommandSheet } from "./attachSandboxCommandSheet";
 import { buildNativeCatalogIndexOrUnavailable } from "./buildNativeCatalogIndexOrUnavailable";
 import { nativeWorldLocationTitles } from "./nativeWorldLocationTitles";
+import { hasUnappliedActorPivot, nativeNpcCharacterProfile, sandboxNpcAppearances } from "./sandboxNpcAppearances";
 
-const sandboxNpcAppearanceByModel: ReadonlyMap<string, string> = new Map([["musveren:0", "native-musveren"]]);
-const sandboxNpcAppearanceOfModel = (modelCatalogId: string) => sandboxNpcAppearanceByModel.get(modelCatalogId) ?? null;
+const loadedSandboxNpcAppearanceByModel: ReadonlyMap<string, string> = new Map([["musveren:0", "native-musveren"]]);
 
 export interface NativeSliceSettings {
   playerProfileId?: string;
@@ -72,7 +72,8 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
   options.onProgress?.({ stage: "assets", detail: "Loading native character and equipment packages…" });
   const selectedId = new URLSearchParams(window.location?.search ?? "").get("character") ?? settings.playerProfileId ?? defaultNativePlayerProfile.id;
   const catalog = await loadNativeActorCatalog(signal, selectedId);
-  const { catalogIndex, catalogIndexFailure } = await buildNativeCatalogIndexOrUnavailable(await readNativeCatalog(signal), signal);
+  const servedCatalog = await readNativeCatalog(signal);
+  const { catalogIndex, catalogIndexFailure } = await buildNativeCatalogIndexOrUnavailable(servedCatalog, signal);
   const playerProfile = catalog.playerProfile ?? defaultNativePlayerProfile;
   const playerChoices = catalog.playerProfiles ?? new Map([[playerProfile.id, playerProfile]]);
   const usesDefaultPlayerProfile = playerProfile.id === defaultNativePlayerProfile.id;
@@ -82,8 +83,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
   if (![playerProfile.catalogId, "musveren:0", ...playerProfile.upperItems.map(item => item.catalogId)].every(id => assets.has(id))) {
     throw new Error("The selected native character, Musveren or equipment package is unavailable. Stage its verified player assets.");
   }
-  if (!musveren || musveren.mesh !== assets.get("musveren:0")!.manifest.source.object ||
-    musveren.prePivot?.some(value => value !== 0)) {
+  if (!musveren || musveren.mesh !== assets.get("musveren:0")!.manifest.source.object || hasUnappliedActorPivot(musveren)) {
     throw new Error("The native slice needs its verified NPC 21622 profile and a supported actor pivot.");
   }
   const fighter = assets.get(playerProfile.catalogId)!, monster = assets.get("musveren:0")!;
@@ -92,10 +92,10 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       clips: playerProfile.clips,
       upperItems: new Map(playerProfile.upperItems.map(item => [item.itemId, assets.get(item.catalogId)!])),
       forwardAxis: Vector3.FromArray(playerProfile.forwardAxis), actorScale: Vector3.FromArray(playerProfile.actorScale) }],
-    ["native-musveren", { asset: monster, collisionHalfHeight: musveren!.collisionHeight / musveren!.sourceUnitsPerMetre,
-      actorScale: new Vector3(musveren!.drawScale3D[0], musveren!.drawScale3D[2], musveren!.drawScale3D[1]).scale(musveren!.drawScale),
-      clips: { idle: "Wait", run: "run", attack: "atk01", death: "death" } }],
+    ["native-musveren", nativeNpcCharacterProfile(musveren, monster)],
   ]);
+  const sandboxAppearanceOfNpc = sandboxNpcAppearances({ catalog: servedCatalog, npcProfiles: catalog.npcProfiles,
+    loadedAppearanceByModel: loadedSandboxNpcAppearanceByModel, characterProfiles: profiles });
   const boundaryReleases: (() => void)[] = [];
   let disposed = false;
   const stop = () => {
@@ -157,7 +157,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     const ui = new WorldInterface(adapter, () => registry, canvas, { location: nativeWorldLocationTitles(section).heading, coordinateUnit: "m" });
     boundaryReleases.push(() => ui.dispose());
     registry = new EntityRegistry(scene, adapter, ui.labels, message => ui.showStatus(message), {
-      createVisual: sandboxNpcVisualFactory(catalogIndex, nativeCharacterFactory(profiles, actionCues, footsteps, clipPreview), sandboxNpcAppearanceOfModel),
+      createVisual: sandboxNpcVisualFactory(catalogIndex, nativeCharacterFactory(profiles, actionCues, footsteps, clipPreview), sandboxAppearanceOfNpc),
       ...(navigation ? { ground: navigation.ground } : {}),
     });
     boundaryReleases.push(() => registry.dispose());
@@ -256,7 +256,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       cameraControls: { follow, frameWorld, frameFlame, flamePlacementIds, isFollowingFighter: () => followFighter },
       focusEffectCamera: () => effectCamera?.focus(), isDisposed: () => disposed, addRelease });
     boundaryReleases.push(attachSandboxCommandSheet({ section: ui.sheet.section("sandbox", { title: "Sandbox", order: 5 }), adapter,
-      index: catalogIndex, indexFailure: catalogIndexFailure, appearanceOfModel: sandboxNpcAppearanceOfModel, selectedEntityId: () => registry.selectedEntityId,
+      index: catalogIndex, indexFailure: catalogIndexFailure, appearanceOfNpc: sandboxAppearanceOfNpc, selectedEntityId: () => registry.selectedEntityId,
       activePlayerProfileId: playerProfile.id, powerStrike }));
     const failFlames = (error: unknown) => nativeSliceSheet.failFlames(error);
     const observer = scene.onBeforeRenderObservable.add(() => {

@@ -3,10 +3,12 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Scene } from "@babylonjs/core/scene";
 import { CharacterAnimator, type CharacterAnimationDriver } from "../animation/CharacterAnimator";
 import type { CharacterBounds, CharacterVisual, CharacterVisualFactory } from "../assets/CharacterVisual";
-import { describeNativeCatalogLookup, npcCatalogKey, type NativeCatalogIndex } from "../assets/native/nativeCatalogIndex";
+import { describeNativeCatalogLookup, npcCatalogKey, type NativeCatalogIndex, type NativeNpcCatalogRecord } from "../assets/native/nativeCatalogIndex";
 import type { WorldEntity } from "../world/worldTypes";
 
-export type SandboxAppearanceOfModel = (modelCatalogId: string) => string | null;
+export type SandboxNpcAppearance = { readonly appearanceId: string } | { readonly unavailableReason: string };
+
+export type SandboxAppearanceOfNpc = (record: NativeNpcCatalogRecord) => SandboxNpcAppearance;
 
 export type SandboxNpcPresentation =
   | { readonly key: string; readonly appearanceId: string; readonly modelCatalogId: string }
@@ -19,16 +21,13 @@ const missingAssetMarkerPresentationBounds: CharacterBounds = Object.freeze({
 
 const motionlessAnimationDriver: CharacterAnimationDriver = { setState() {}, update() {}, dispose() {} };
 
-export function resolveSandboxNpcPresentation(index: NativeCatalogIndex, npcId: number, appearanceOfModel: SandboxAppearanceOfModel): SandboxNpcPresentation {
+export function resolveSandboxNpcPresentation(index: NativeCatalogIndex, npcId: number, appearanceOfNpc: SandboxAppearanceOfNpc): SandboxNpcPresentation {
   const lookup = index.lookup(npcCatalogKey(npcId));
   if (lookup.status !== "converted") return { key: lookup.key, missingAssetDiagnostic: describeNativeCatalogLookup(lookup) };
   if (!("modelCatalogId" in lookup.record)) throw new Error(`${lookup.key} does not hold an NPC catalog record.`);
-  const { modelCatalogId } = lookup.record;
-  const appearanceId = appearanceOfModel(modelCatalogId);
-  if (appearanceId === null) {
-    return { key: lookup.key, missingAssetDiagnostic: `${lookup.key} converted but model ${modelCatalogId} is not loaded in this sandbox` };
-  }
-  return { key: lookup.key, appearanceId, modelCatalogId };
+  const appearance = appearanceOfNpc(lookup.record);
+  if ("unavailableReason" in appearance) return { key: lookup.key, missingAssetDiagnostic: `${lookup.key} converted but ${appearance.unavailableReason}` };
+  return { key: lookup.key, appearanceId: appearance.appearanceId, modelCatalogId: lookup.record.modelCatalogId };
 }
 
 export function createMissingAssetMarkerVisual(scene: Scene, entity: WorldEntity, missingAssetDiagnostic: string): CharacterVisual {
@@ -44,10 +43,10 @@ export function createMissingAssetMarkerVisual(scene: Scene, entity: WorldEntity
 }
 
 export function sandboxNpcVisualFactory(index: NativeCatalogIndex, nativeFactory: CharacterVisualFactory,
-  appearanceOfModel: SandboxAppearanceOfModel): CharacterVisualFactory {
+  appearanceOfNpc: SandboxAppearanceOfNpc): CharacterVisualFactory {
   return (scene, entity, onAssetStatus) => {
     if (entity.npcId === undefined) return nativeFactory(scene, entity, onAssetStatus);
-    const presentation = resolveSandboxNpcPresentation(index, entity.npcId, appearanceOfModel);
+    const presentation = resolveSandboxNpcPresentation(index, entity.npcId, appearanceOfNpc);
     if ("missingAssetDiagnostic" in presentation) return createMissingAssetMarkerVisual(scene, entity, presentation.missingAssetDiagnostic);
     return nativeFactory(scene, { ...entity, appearanceId: presentation.appearanceId }, onAssetStatus);
   };

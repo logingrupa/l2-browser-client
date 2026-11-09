@@ -11,14 +11,23 @@ import type { NativeClipPreviewHub } from "./nativeClipPreview";
 import { parseActorClipEvents } from "./actorClipEvents";
 import { listActorClips } from "../../animation/actorClipPlayback";
 
+export type NativeCharacterAssetLoader = (signal: AbortSignal) => Promise<AssetPackage>;
+
 export interface NativeCharacterProfile {
-  readonly asset: AssetPackage;
+  readonly asset: AssetPackage | NativeCharacterAssetLoader;
   readonly clips: Readonly<Record<AnimationState | "death", string> & { walk?: string; specialAttack?: string }>;
   readonly upperItems?: ReadonlyMap<number, AssetPackage>;
   readonly collisionHalfHeight?: number;
   readonly actorScale?: Vector3;
   readonly forwardAxis?: Vector3;
   readonly boneAnchors?: readonly { id: string; sourceObject: string; boneName: string }[];
+}
+
+async function loadNativeCharacterAsset(asset: NativeCharacterProfile["asset"], signal: AbortSignal): Promise<AssetPackage> {
+  if (typeof asset !== "function") return asset;
+  const loaded = await asset(signal);
+  signal.throwIfAborted();
+  return loaded;
 }
 
 function stateToResumeWithoutReplayingAttack(state: AnimationState): AnimationState {
@@ -99,6 +108,7 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
     animation.setState(initial.animation);
     const lifetime = new AbortController();
     let current = initial, actor: NativeActor | undefined, driver: NativeActorDriver | undefined, disposed = false;
+    let characterAsset: AssetPackage | undefined;
     let unpublishedDriverOwningCleanup: NativeActorDriver | undefined;
     const anchors: { id: string; handle: NativeBoneAnchor }[] = [];
     let placement: TransformNode | undefined, initialized = false, readySettled = false;
@@ -167,7 +177,9 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
     };
     const initialize = async (): Promise<void> => {
       if (!profile) throw new Error(`${initial.displayName}: native profile unavailable.`);
-      const loaded = await NativeActor.create(scene, profile.asset, lifetime.signal);
+      const asset = await loadNativeCharacterAsset(profile.asset, lifetime.signal);
+      characterAsset = asset;
+      const loaded = await NativeActor.create(scene, asset, lifetime.signal);
       if (disposed) { loaded.dispose(); lifetime.signal.throwIfAborted(); }
       actor = loaded;
       loaded.root.setEnabled(false);
@@ -193,7 +205,7 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
       placement.rotation.y = yawAligningAssetForwardWithAdapterHeadingZero;
       loaded.root.parent = placement;
       for (const name of Object.values(profile.clips)) if (!loaded.clips.some(clip => clip.name === name)) throw new Error(`Native profile clip ${name} is missing.`);
-      const cuePlayers = [actionCuePreview?.bindActor(initial.id, profile.asset), footstepPreview?.bindActor(initial.id, profile.asset)]
+      const cuePlayers = [actionCuePreview?.bindActor(initial.id, asset), footstepPreview?.bindActor(initial.id, asset)]
         .filter((player): player is NativeActionCuePlayer => player !== undefined);
       const candidateDriver = new NativeActorDriver(loaded, profile.clips, cuePlayers);
       unpublishedDriverOwningCleanup = candidateDriver;
@@ -211,7 +223,7 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
       driver = candidateDriver; animation.replaceDriver(driver); unpublishedDriverOwningCleanup = undefined;
       if (clipPreview) {
         const previewDriver = candidateDriver;
-        const listing = listActorClips(loaded.clips, parseActorClipEvents(profile.asset.manifest.animationEvents));
+        const listing = listActorClips(loaded.clips, parseActorClipEvents(asset.manifest.animationEvents));
         unregisterPreview = clipPreview.register(initial.id, {
           play: clip => { if (disposed || driver !== previewDriver) throw new Error("The native model was replaced."); previewDriver.playClipOnceKeepingRequestedState(clip); },
           get previewing() { return driver === previewDriver ? previewDriver.previewing : null; },
@@ -229,7 +241,7 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
       dispose();
     });
     return { root, animation, ready, get hasNativeModel() { return initialized; }, get bounds() { return bounds; },
-      get modelId() { return initialized ? profile!.asset.manifest.id : null; },
+      get modelId() { return initialized && characterAsset ? characterAsset.manifest.id : null; },
       attachmentSnapshot: () => anchors.map(({ id, handle }) => ({ id, ...handle.inspection() })),
       attachmentAnchor: id => {
         const handle = anchors.find(row => row.id === id)?.handle;

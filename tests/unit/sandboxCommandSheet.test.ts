@@ -57,7 +57,7 @@ function attachWithFakes(selectedEntityId: string | null = "native-musveren", in
   };
   const powerStrike = { start: vi.fn(async () => {}) };
   const section = sandboxSection();
-  const release = attachSandboxCommandSheet({ section, adapter, index: fakeCatalogIndex, indexFailure, appearanceOfModel: () => "native-musveren",
+  const release = attachSandboxCommandSheet({ section, adapter, index: fakeCatalogIndex, indexFailure, appearanceOfNpc: () => ({ appearanceId: "native-musveren" }),
     selectedEntityId: () => selectedEntityId, activePlayerProfileId, powerStrike });
   const panel = section.element as unknown as FakeElement;
   const submit = (testId: string, values: Record<string, string>) => {
@@ -99,7 +99,7 @@ describe("sandbox equip item by ID", () => {
   it("reports the item the local player already wears as converted, not as rejected", () => {
     const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, undefined, 22);
     const section = sandboxSection();
-    const release = attachSandboxCommandSheet({ section, adapter, index: fakeCatalogIndex, indexFailure: null, appearanceOfModel: () => "native-musveren",
+    const release = attachSandboxCommandSheet({ section, adapter, index: fakeCatalogIndex, indexFailure: null, appearanceOfNpc: () => ({ appearanceId: "native-musveren" }),
       selectedEntityId: () => null, activePlayerProfileId: "human-male-fighter", powerStrike: null });
     const panel = section.element as unknown as FakeElement;
     const form = panel.querySelector('[data-testid="sandbox-equip-item"]')!;

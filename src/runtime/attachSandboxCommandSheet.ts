@@ -6,7 +6,7 @@ import type { NativePowerStrikePreview } from "../effects/nativePowerStrikePrevi
 import type { DevGroup, DevSection } from "../ui/devSheet/DevSheet";
 import type { GameWorldAdapter } from "../world/GameWorldAdapter";
 import type { EquipmentSlot, WorldCommand, WorldEvent } from "../world/worldTypes";
-import { resolveSandboxNpcPresentation, type SandboxAppearanceOfModel, type SandboxNpcPresentation } from "./sandboxNpcVisual";
+import { resolveSandboxNpcPresentation, type SandboxAppearanceOfNpc, type SandboxNpcPresentation } from "./sandboxNpcVisual";
 
 type SandboxCommandAdapter = Pick<GameWorldAdapter, "dispatch" | "subscribe">;
 
@@ -15,7 +15,7 @@ export interface SandboxCommandSheetContext {
   readonly adapter: SandboxCommandAdapter;
   readonly index: NativeCatalogIndex;
   readonly indexFailure: string | null;
-  readonly appearanceOfModel: SandboxAppearanceOfModel;
+  readonly appearanceOfNpc: SandboxAppearanceOfNpc;
   readonly selectedEntityId: () => string | null;
   readonly activePlayerProfileId: string;
   readonly powerStrike: Pick<NativePowerStrikePreview, "start"> | null;
@@ -89,7 +89,7 @@ function attachSpawnNpcGroup(context: SandboxCommandSheetContext): void {
       const npcId = submittedInteger(values, "npcId");
       const accepted = dispatchAndObserveAcceptance(context.adapter, { type: "spawn-npc", npcId },
         event => event.type === "spawn" && event.entity.npcId === npcId);
-      lastSpawn = resolveSandboxNpcPresentation(context.index, npcId, context.appearanceOfModel);
+      lastSpawn = resolveSandboxNpcPresentation(context.index, npcId, context.appearanceOfNpc);
       if (!accepted) showResult(`${lastSpawn.key}: spawn rejected by the adapter`, "warning");
       else showResult(describeSpawnPresentation(lastSpawn), "missingAssetDiagnostic" in lastSpawn ? "warning" : "info");
     },

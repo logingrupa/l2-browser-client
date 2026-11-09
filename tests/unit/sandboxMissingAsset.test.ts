@@ -8,7 +8,7 @@ import { CharacterAnimator } from "../../src/animation/CharacterAnimator";
 import type { CharacterVisual, CharacterVisualFactory } from "../../src/assets/CharacterVisual";
 import type { NativeCatalogIndex, NativeCatalogLookup } from "../../src/assets/native/nativeCatalogIndex";
 import { EntityRegistry } from "../../src/entities/EntityRegistry";
-import { createMissingAssetMarkerVisual, sandboxNpcVisualFactory } from "../../src/runtime/sandboxNpcVisual";
+import { createMissingAssetMarkerVisual, sandboxNpcVisualFactory, type SandboxAppearanceOfNpc } from "../../src/runtime/sandboxNpcVisual";
 import { createSpawnedNpcEntity } from "../../src/world/sandboxCommands";
 import type { GameWorldAdapter } from "../../src/world/GameWorldAdapter";
 import type { WorldEntity, WorldEvent } from "../../src/world/worldTypes";
@@ -25,7 +25,8 @@ const fakeCatalogIndex: NativeCatalogIndex = {
   keys: prefix => [...convertedNpcLookups.keys()].filter(key => key.startsWith(prefix)),
 };
 
-const appearanceOfModel = (modelCatalogId: string) => modelCatalogId === "musveren:0" ? "native-musveren" : null;
+const appearanceOfNpc: SandboxAppearanceOfNpc = record => record.modelCatalogId === "musveren:0" ? { appearanceId: "native-musveren" }
+  : { unavailableReason: `model ${record.modelCatalogId} is not loaded in this sandbox` };
 
 const player: WorldEntity = { id: "local-player", kind: "local-player", displayName: "Fighter", appearanceId: "native-human-fighter",
   health: 100, maximumHealth: 100, position: { x: 0, y: 0, z: 0 }, orientationRadians: 0, animation: "idle" };
@@ -56,7 +57,7 @@ describe("sandbox NPC presentation through the catalog index", () => {
     const labels = dom.document.createElement("div");
     dom.document.body.append(labels);
     const registry = new EntityRegistry(scene, adapter, labels as unknown as HTMLElement, () => {}, {
-      createVisual: sandboxNpcVisualFactory(fakeCatalogIndex, nativeFactory, appearanceOfModel) });
+      createVisual: sandboxNpcVisualFactory(fakeCatalogIndex, nativeFactory, appearanceOfNpc) });
     const spawnNpc = (npcId: number, sequence: number) => emit({ type: "spawn", entity: createSpawnedNpcEntity(npcId, sequence, { x: sequence, y: 0, z: 0 }) });
     const labelOf = (entityId: string) => labels.querySelector(`[data-entity-id="${entityId}"]`) as FakeElement;
     return { registry, spawnNpc, labelOf };
@@ -64,7 +65,7 @@ describe("sandbox NPC presentation through the catalog index", () => {
 
   it("gives an ID absent from the index a marker with no meshes and a diagnostic", () => {
     const nativeFactory = nativeFactoryDouble();
-    const visual = sandboxNpcVisualFactory(fakeCatalogIndex, nativeFactory, appearanceOfModel)(scene, createSpawnedNpcEntity(12345, 1, { x: 0, y: 0, z: 0 }));
+    const visual = sandboxNpcVisualFactory(fakeCatalogIndex, nativeFactory, appearanceOfNpc)(scene, createSpawnedNpcEntity(12345, 1, { x: 0, y: 0, z: 0 }));
     expect(nativeFactory).not.toHaveBeenCalled();
     expect(visual.root.getChildMeshes()).toHaveLength(0);
     expect(visual.missingAssetDiagnostic).toBe("npc:12345 not in catalog");
@@ -76,7 +77,7 @@ describe("sandbox NPC presentation through the catalog index", () => {
 
   it("gives an ID the coverage report marks as a gap a marker with the gap reason", () => {
     const nativeFactory = nativeFactoryDouble();
-    const visual = sandboxNpcVisualFactory(fakeCatalogIndex, nativeFactory, appearanceOfModel)(scene, createSpawnedNpcEntity(20001, 1, { x: 0, y: 0, z: 0 }));
+    const visual = sandboxNpcVisualFactory(fakeCatalogIndex, nativeFactory, appearanceOfNpc)(scene, createSpawnedNpcEntity(20001, 1, { x: 0, y: 0, z: 0 }));
     expect(nativeFactory).not.toHaveBeenCalled();
     expect(visual.root.getChildMeshes()).toHaveLength(0);
     expect(visual.missingAssetDiagnostic).toBe("npc:20001 gap: skeletal-licensee-unsupported:123/30");
@@ -124,7 +125,7 @@ describe("sandbox NPC presentation through the catalog index", () => {
   });
 
   it("marks a converted NPC whose model is not loaded in this sandbox instead of substituting a body", () => {
-    const visual = sandboxNpcVisualFactory(fakeCatalogIndex, nativeFactoryDouble(), appearanceOfModel)(scene, createSpawnedNpcEntity(30001, 1, { x: 0, y: 0, z: 0 }));
+    const visual = sandboxNpcVisualFactory(fakeCatalogIndex, nativeFactoryDouble(), appearanceOfNpc)(scene, createSpawnedNpcEntity(30001, 1, { x: 0, y: 0, z: 0 }));
     expect(visual.missingAssetDiagnostic).toBe("npc:30001 converted but model unstaged:0 is not loaded in this sandbox");
     expect(visual.root.getChildMeshes()).toHaveLength(0);
     visual.dispose();

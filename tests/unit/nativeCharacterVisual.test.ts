@@ -52,6 +52,16 @@ describe("native character presentation boundary", () => {
     visual.setEntity(entity); visual.animation.setState(entity.animation);
   }
 
+  it("loads a deferred profile asset with the visual lifetime before assembling the actor", async () => {
+    const fixture = await nativeVisualFixture(), signals: AbortSignal[] = [];
+    const { visual } = await create({ asset: async signal => { signals.push(signal); return fixture; } });
+    expect(visual.modelId).toBeNull();
+    await visual.ready;
+    expect([visual.hasNativeModel, visual.modelId, signals.length, signals[0]!.aborted]).toEqual([true, fixture.manifest.id, 1, false]);
+    visual.dispose();
+    expect(signals[0]!.aborted).toBe(true);
+  });
+
   it("uses the latest state after loading, preserves source dimensions/world transform and tags picking meshes", async () => {
     const gate = gateCreate(), { visual } = await create();
     visual.root.position.set(13, 3, -8); visual.root.rotation.y = .6;
