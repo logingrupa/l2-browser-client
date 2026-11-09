@@ -163,10 +163,10 @@ def audit_selected_row_offsets_and_typed_values(client, table, index):
         'rawHex': decoded[start:end].hex(), 'fields': fields, 'row': row}
 
 
-def resolved_profile(selection, definition, units):
+def resolved_profile(selection, definition, units, mesh_export):
     properties = definition['effectiveProperties']
     profile = {'id': 'npc:' + str(selection['npcId']), 'npcId': selection['npcId'],
-        'name': selection['expectedName'], 'mesh': selection['expectedMesh'],
+        'name': selection['expectedName'], 'mesh': mesh_export,
         'actorClass': selection['expectedActorClass'], 'sourceUnitsPerMetre': units}
     if MODEL_CATALOG_ID_FIELD in selection:
         profile[MODEL_CATALOG_ID_FIELD] = selection[MODEL_CATALOG_ID_FIELD]
@@ -212,7 +212,7 @@ def _extract_bundle(client, recipe, output, save):
                                                    UNMATCHED_NPC_MESH_MESSAGE)
         mesh, _, _ = packages.resolve(selection['expectedMesh'], NATIVE_SKELETAL_MESH_EXPORT_KIND)
         try:
-            profile = resolved_profile(selection, definition, recipe['sourceUnitsPerMetre'])
+            profile = resolved_profile(selection, definition, recipe['sourceUnitsPerMetre'], mesh_match.export)
         except UnresolvedActorDefaultError as error:
             excluded_profiles.append({'npcId': selection['npcId'], 'field': error.field})
             continue

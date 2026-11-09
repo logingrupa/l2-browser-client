@@ -106,7 +106,7 @@ class NpcProfileRecipeTests(unittest.TestCase):
 
     def test_resolved_profile_copies_the_model_catalog_id(self):
         profile = native_actor_profiles.resolved_profile(self.recipe['profiles'][0], {'effectiveProperties': {
-            'DrawScale': 1, 'DrawScale3D': {'X': 1, 'Y': 1, 'Z': 1}, 'CollisionRadius': 10, 'CollisionHeight': 15}}, 100)
+            'DrawScale': 1, 'DrawScale3D': {'X': 1, 'Y': 1, 'Z': 1}, 'CollisionRadius': 10, 'CollisionHeight': 15}}, 100, SYNTHETIC_MESH)
         self.assertEqual(profile['modelCatalogId'], self.model_catalog_id)
 
     def test_recipe_refuses_rows_of_another_npc(self):
@@ -155,7 +155,7 @@ class UnresolvedActorDefaultTests(unittest.TestCase):
             {'mesh': SYNTHETIC_MESH, 'textures': [SYNTHETIC_TEXTURE]}), 'npcname-e.dat')['profiles'][0]
         with self.assertRaises(native_actor_profiles.UnresolvedActorDefaultError) as raised:
             native_actor_profiles.resolved_profile(selection, {'effectiveProperties': {
-                'DrawScale3D': {'X': 1, 'Y': 1, 'Z': 1}, 'CollisionRadius': 10, 'CollisionHeight': 15}}, 100)
+                'DrawScale3D': {'X': 1, 'Y': 1, 'Z': 1}, 'CollisionRadius': 10, 'CollisionHeight': 15}}, 100, SYNTHETIC_MESH)
         self.assertEqual(raised.exception.field, 'DrawScale')
         self.assertIsInstance(raised.exception, FormatError)
 

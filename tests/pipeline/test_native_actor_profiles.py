@@ -80,7 +80,7 @@ class NativeFieldTests(unittest.TestCase):
             'CollisionRadius': 18, 'CollisionHeight': 36}
 
     def resolve(self, value):
-        return profiles.resolved_profile(recipe()['profiles'][0], {'effectiveProperties': value}, 100)
+        return profiles.resolved_profile(recipe()['profiles'][0], {'effectiveProperties': value}, 100, recipe()['profiles'][0]['expectedMesh'])
 
     def test_actor_scale_does_not_rescale_collision_or_invent_missing_pivot(self):
         result = self.resolve(self.native)
@@ -282,6 +282,11 @@ class ExtractBundleTests(unittest.TestCase):
         self.assertEqual((selections[0]['meshSource']['reference'], selections[0]['meshSource']['object']),
                          ('LineageMonsters.Resolved_M00', 'LineageMonsters.resolved_m00'))
         self.assertEqual(selections[0]['qualifiedNameMatches']['mesh']['spelling'], 'case-insensitive-spelling')
+
+    def test_a_mesh_matching_one_export_ignoring_case_gives_the_profile_the_export_spelling_its_model_carries(self):
+        bundle, selections = self.extract_bundle([dict(RESOLVED_PROFILE, expectedMesh='LineageMonsters.Resolved_M00')])
+        self.assertEqual(bundle['profiles'][0]['mesh'], 'LineageMonsters.resolved_m00')
+        self.assertEqual(bundle['profiles'][0]['mesh'], selections[0]['meshSource']['object'])
 
     def test_a_class_matching_two_exports_ignoring_case_refuses_the_bundle(self):
         with self.assertRaisesRegex(FormatError, 'Qualified name matches two or more exports ignoring case: LineageMonster.resolved matches '
