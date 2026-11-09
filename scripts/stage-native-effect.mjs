@@ -1,4 +1,3 @@
-/** Stage verified retained effect products. No conversion, catalog or playback policy. */
 import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
 import { promises as fs } from "node:fs";
@@ -47,12 +46,10 @@ async function readPinned(root, spec) {
   return bytes;
 }
 const describe = (file, bytes) => ({ file, bytes: bytes.length, sha256: sha(bytes) });
+const sourceBundleFile = bytes => `source-bundle/${sha(bytes)}.json`;
 function deepFreeze(value) { if (object(value) || Array.isArray(value)) { Object.values(value).forEach(deepFreeze); Object.freeze(value); } return value; }
 
-/** Reuse the dedicated inspector: it hashes all declared retained payloads,
- * validates graph/asset identities and joins GLB primitive images. No originals
- * are opened; no converter or native tool is invoked. */
-async function inspect(bundleDir, python) {
+async function inspectRetainedBundle(bundleDir, python) {
   const code = "import sys; sys.path.insert(0,sys.argv[1]); from native_assets_lib.effect_readiness import inspect; from native_assets_lib.gltf import json_bytes; report,bundle=inspect(sys.argv[2]); bundle.unchanged(); sys.stdout.buffer.write(json_bytes(report)+b'\\n')";
   try {
     const { stdout } = await execute(python, ["-B", "-c", code, scriptsDir, bundleDir], { encoding: "buffer", maxBuffer: 16 * 1024 * 1024, windowsHide: true });
@@ -60,7 +57,6 @@ async function inspect(bundleDir, python) {
   } catch (error) { throw Error(`Native effect stage: retained bundle inspection failed: ${String(error.stderr || error.message).slice(-4000)}`); }
 }
 
-/** Plan is read-only. Output is an immutable content-addressed directory. */
 export async function planNativeEffectStage(options = {}) {
   const bundleDir = (await checkedPath(options.bundleDir, true)).absolute;
   const outputDir = (await checkedPath(options.outputDir)).absolute;
@@ -71,7 +67,7 @@ export async function planNativeEffectStage(options = {}) {
   if (options.expectedManifestSha256 !== undefined) require(hash(options.expectedManifestSha256) && options.expectedManifestSha256 === sourcePin.sha256,
     "source manifest differs from expected identity");
   const source = JSON.parse(sourceBytes.toString("utf8"));
-  const { report, bytes: reportBytes } = await inspect(bundleDir, options.python || "python");
+  const { report, bytes: reportBytes } = await inspectRetainedBundle(bundleDir, options.python || "python");
   require(report.kind === "native-effect-resource-readiness" && report.schemaVersion === 1 && report.bundleId === source.id &&
     report.inputs.manifest.sha256 === sourcePin.sha256 && report.inputs.declaredFilesVerified === source.files.length, "inspection/source identity mismatch");
   const inputPins = [sourcePin, ...source.files], byFile = new Map(source.files.map(row => [row.file, row]));
@@ -96,12 +92,10 @@ export async function planNativeEffectStage(options = {}) {
     });
     return { mesh, texture, primitiveMaterials };
   });
-  // Follow only explicit AnimNext links. Never infer a loop or turn retained
-  // DefaultMaterial/Engine.S_Emitter into a sampled mesh material.
-  const visited = new Set();
+  const texturesWithFollowedAnimNext = new Set();
   for (const id of selected) {
-    const asset = assets.get(id); if (asset.kind !== "texture" || visited.has(id)) continue;
-    visited.add(id);
+    const asset = assets.get(id); if (asset.kind !== "texture" || texturesWithFollowedAnimNext.has(id)) continue;
+    texturesWithFollowedAnimNext.add(id);
     const next = textures.get(asset.object.toLowerCase())?.animationProperties?.AnimNext?.object;
     if (next) select(byObject.get(next.toLowerCase()), "texture", `${asset.object}: AnimNext ${next}`);
   }
@@ -118,6 +112,11 @@ export async function planNativeEffectStage(options = {}) {
       sourceManifest: asset.manifest, ...describe(file, bytes), limitations: asset.limitations }]);
   }
   const resources = Object.fromEntries(resourceEntries);
+  const graphSpec = byFile.get(report.inputs.sourceGraph.file);
+  require(graphSpec && graphSpec.sha256 === report.inputs.sourceGraph.sha256, "source graph identity mismatch");
+  const graphBytes = await readPinned(bundleDir, graphSpec);
+  const sourceManifestPin = describe(sourceBundleFile(sourceBytes), sourceBytes), sourceGraphPin = describe(sourceBundleFile(graphBytes), graphBytes);
+  payloads.set(sourceManifestPin.file, sourceBytes); payloads.set(sourceGraphPin.file, graphBytes);
   const stageBindings = actor => (report.sourceDispatch?.bindings || []).flatMap((binding, index) => binding.effectObject.toLowerCase() === actor.object.toLowerCase() ?
     [{ ...binding, sourcePointer: `/sourceDispatch/bindings/${index}`, identityJoin: { actorObject: actor.object, bindingEffectObject: binding.effectObject,
       comparison: actor.object === binding.effectObject ? "exact-full-object" : "case-insensitive-full-object" } }] : []);
@@ -131,7 +130,7 @@ export async function planNativeEffectStage(options = {}) {
     resourceKey: texture.convertedAssetId,
     nextResourceKey: byObject.get(texture.animationProperties?.AnimNext?.object?.toLowerCase())?.id ?? null }));
   const runtime = { schemaVersion: 1, kind: "native-effect-components", id: source.id, skillId: source.skillId, level: source.level,
-    sourceBundle: { manifest: sourcePin, graph: report.inputs.sourceGraph, readinessSha256: sha(reportBytes), declaredFilesVerified: source.files.length },
+    sourceBundle: { manifest: sourceManifestPin, graph: sourceGraphPin, readinessSha256: sha(reportBytes), declaredFilesVerified: source.files.length },
     sourceFiles: report.sourceFiles, actors, components, resources, textureGraph, classEnums: report.classEnums,
     associations: report.associations, sourceDispatch: report.sourceDispatch, stages: report.stages,
     stageOrderPolicy: "Source actor/emitter order retained; dispatch labels are evidence, not a playback sequence.",
@@ -150,11 +149,16 @@ export async function planNativeEffectStage(options = {}) {
   const plan = deepFreeze({ kind: "native-effect-stage-plan", sourceManifestSha256: sourcePin.sha256, manifestSha256,
     outputDirectory: destination, manifestFile: join(destination, "manifest.json"), summary, manifest: JSON.parse(runtimeBytes.toString("utf8")) });
   plans.set(plan, { bundleDir, outputDir, destination, inputPins, payloads });
-  // Rehash all retained inputs after projection; no native/original paths used.
-  for (const spec of inputPins) await readPinned(bundleDir, spec);
+  await rehashRetainedInputs(bundleDir, inputPins);
   return plan;
 }
 
+async function rehashRetainedInputs(bundleDir, inputPins) {
+  for (const spec of inputPins) await readPinned(bundleDir, spec);
+}
+async function reserveNewImmutableDirectory(path) {
+  await fs.mkdir(path); await checkedPath(path, true);
+}
 async function outputFiles(root) {
   const files = [];
   async function visit(path, prefix) {
@@ -174,7 +178,7 @@ async function verifyOutput(destination, payloads) {
 }
 export async function applyNativeEffectStage(plan, options = {}) {
   const state = plans.get(plan); require(state, "plan must come from this module's read-only planner");
-  for (const spec of state.inputPins) await readPinned(state.bundleDir, spec);
+  await rehashRetainedInputs(state.bundleDir, state.inputPins);
   const output = await checkedPath(state.destination);
   if (output.stat) {
     require(output.stat.isDirectory(), "existing output is not a directory");
@@ -184,9 +188,9 @@ export async function applyNativeEffectStage(plan, options = {}) {
   }
   require(!options.verifyOnly, "verify requires existing output");
   await checkedPath(state.outputDir); await fs.mkdir(state.outputDir, { recursive: true }); await checkedPath(state.outputDir, true);
-  // Reserve a new immutable directory; never replace or repair an existing one.
-  await fs.mkdir(state.destination); await checkedPath(state.destination, true);
-  await fs.mkdir(join(state.destination, "resources"));
+  await reserveNewImmutableDirectory(state.destination);
+  const payloadFolders = new Set([...state.payloads.keys()].map(file => dirname(file)).filter(folder => folder !== "."));
+  for (const folder of [...payloadFolders].sort()) await reserveNewImmutableDirectory(join(state.destination, folder));
   for (const [file, bytes] of state.payloads) await fs.writeFile(join(state.destination, file), bytes, { flag: "wx" });
   await verifyOutput(state.destination, state.payloads);
   return { status: "produced", manifestSha256: plan.manifestSha256, manifestFile: plan.manifestFile,

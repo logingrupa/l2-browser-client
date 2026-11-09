@@ -100,6 +100,17 @@ def stage_effect_bundle(project_root, bundle_root, effects_root):
     return json.loads(run.stdout)['manifestSha256']
 
 
+def add_staged_effect_store_files(files, staged_root, manifest_sha256):
+    for path in sorted(staged_root.rglob('*')):
+        if path.is_file():
+            add_store_file(files, f'{EFFECT_STORE_FOLDER}/{manifest_sha256}/{path.relative_to(staged_root).as_posix()}', path.read_bytes())
+
+
+def skill_effect_component_record(skill_id, level, visual_root, manifest_sha256):
+    return {'id': skill_effect_component_id(skill_id, level), 'bundleId': skill_root_bundle_id(visual_root),
+            'manifest': f'/l2/{EFFECT_STORE_FOLDER}/{manifest_sha256}/{STAGED_MANIFEST_NAME}', 'manifestSha256': manifest_sha256}
+
+
 def staged_emitter_classes(manifest):
     return sorted({component['class'] for component in manifest['components']})
 
@@ -216,14 +227,9 @@ class SkillEffectConversionRun:
             if not outcome['converted']:
                 continue
             staged_root = self.ledger.unit_step_directory(skill_root_key(visual_root)) / STAGED_EFFECTS_FOLDER / outcome['manifestSha256']
-            for path in sorted(staged_root.rglob('*')):
-                if path.is_file():
-                    relative = f'{EFFECT_STORE_FOLDER}/{outcome["manifestSha256"]}/{path.relative_to(staged_root).as_posix()}'
-                    add_store_file(files, relative, path.read_bytes())
+            add_staged_effect_store_files(files, staged_root, outcome['manifestSha256'])
             for binding in self.bindings_by_root[visual_root]:
-                record = {'id': skill_effect_component_id(binding['skillId'], binding['level']), 'bundleId': skill_root_bundle_id(visual_root),
-                          'manifest': f'/l2/{EFFECT_STORE_FOLDER}/{outcome["manifestSha256"]}/{STAGED_MANIFEST_NAME}',
-                          'manifestSha256': outcome['manifestSha256']}
+                record = skill_effect_component_record(binding['skillId'], binding['level'], visual_root, outcome['manifestSha256'])
                 catalog = merge_catalog_slice(catalog, 'effectComponents', record, len(self.tables.binding_rows))
         catalog['effectComponents'] = sorted(catalog.get('effectComponents', []), key=lambda record: record['id'])
         after = canonical_json_bytes(catalog)

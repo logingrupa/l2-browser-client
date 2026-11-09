@@ -91,14 +91,35 @@ describe("dedicated retained native effect staging", () => {
     expect(m.textureGraph[0]).toMatchObject({ resourceKey: "interlude:Fixture.TextureA", nextResourceKey: "interlude:Fixture.TextureB", loopInferred: false });
     expect(Object.keys(m.resources)).toHaveLength(3); expect(m.unresolved.excludedAudioAssets).toHaveLength(1);
   });
-  it("stages only exact GLB/PNG plus manifest; repeated and verify runs preserve output/source bytes and mtimes", async () => {
+  it("stages only exact GLB/PNG, the source bundle manifest and graph, plus manifest; repeated and verify runs preserve output/source bytes and mtimes", async () => {
     const f = await fixture(), input = await tree(f.bundleDir), plan = await planNativeEffectStage(f.options);
     const made = await applyNativeEffectStage(plan), staged = await tree(made.outputDirectory);
-    expect(made.status).toBe("produced"); expect(Object.keys(staged)).toHaveLength(3);
-    expect(Object.keys(staged).every(name => name === "manifest.json" || /^resources\/[a-f0-9]{64}\.(glb|png)$/.test(name))).toBe(true);
+    expect(made.status).toBe("produced"); expect(Object.keys(staged)).toHaveLength(5);
+    expect(Object.keys(staged).every(name => name === "manifest.json" || /^resources\/[a-f0-9]{64}\.(glb|png)$/.test(name) ||
+      /^source-bundle\/[a-f0-9]{64}\.json$/.test(name))).toBe(true);
     expect((await stageNativeEffect(f.options)).status).toBe("preserved");
     expect((await stageNativeEffect({ ...f.options, verifyOnly: true })).status).toBe("verified");
     expect(await tree(made.outputDirectory)).toEqual(staged); expect(await tree(f.bundleDir)).toEqual(input);
+  });
+  it("writes every file its manifest pins inside the staged folder, the source bundle manifest and graph included", async () => {
+    const f = await fixture(), staged = await stageNativeEffect(f.options), manifest: Json = JSON.parse(await fs.readFile(staged.manifestFile, "utf8"));
+    const pins: Json[] = [];
+    const collectPins = (value: unknown): void => {
+      if (Array.isArray(value)) { value.forEach(collectPins); return; }
+      if (value === null || typeof value !== "object") return;
+      const record = value as Json;
+      if (typeof record.file === "string" && typeof record.sha256 === "string") pins.push(record);
+      Object.values(record).forEach(collectPins);
+    };
+    collectPins(manifest);
+    expect(manifest.sourceBundle.manifest).toEqual({ file: `source-bundle/${hash(await fs.readFile(join(f.bundleDir, "manifest.json")))}.json`,
+      bytes: (await fs.readFile(join(f.bundleDir, "manifest.json"))).length, sha256: hash(await fs.readFile(join(f.bundleDir, "manifest.json"))) });
+    expect(manifest.sourceBundle.graph.sha256).toBe(hash(await fs.readFile(join(f.bundleDir, "effect-source.json"))));
+    expect(pins.map(pin => pin.file)).toEqual(expect.arrayContaining([manifest.sourceBundle.manifest.file, manifest.sourceBundle.graph.file]));
+    for (const pin of pins) {
+      const bytes = await fs.readFile(join(staged.outputDirectory, pin.file));
+      expect({ file: pin.file, sha256: hash(bytes), bytes: bytes.length }).toEqual({ file: pin.file, sha256: pin.sha256, bytes: pin.bytes ?? bytes.length });
+    }
   });
   it("produces identical content identities in independent output directories", async () => {
     const f = await fixture(), a = await stageNativeEffect(f.options), b = await stageNativeEffect({ ...f.options, outputDir: join(f.root, "other") });
