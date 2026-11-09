@@ -25,9 +25,24 @@ Name indexes for the sandbox pickers (`scripts/data/table_name_indexes.py`, chec
 | npcname_e_names | npcname-e | id | 6,519 | 0 | 239,341 |
 | skillname_e_names | skillname-e | skill_id, skill_level | 29,812 | 0 | 1,755,442 |
 
+Working on 2026-11-09 (plan 02-28, DATA-02): the three tables the local descriptor has no layout for decode through `scripts/data/hair_table_adapter.py`. It reads each lock-equal `system/<table>.dat` through the guard, decrypts it with the crypto-pinned `decode413`, and hands only those decoded bytes to Elbera's `hair_pairs` or `keyed_hair_pairs` in `tools/ui/check_hair_selection_native.py`, loaded by `load_pinned_elbera_module` at SHA-256 `d21095f2...a701590` (Elbera commit 12c9656). No other Elbera function runs: an AST scan in `tests/pipeline/test_hair_table_adapter.py` checks that the module is used only through those two names and that `verify`, `verify_material_native`, `audit_assets`, `main` and `--check` never appear. `convert_tables.py` writes each one as a `native-table` manifest on route `elbera-adapter`, with `descriptorSha256` holding the Elbera script SHA-256 and the label in the unit receipt (`fieldProof`). A parser refusal would seal a `hair-layout-undecoded` (hairgrp, hairaccessarygrp) or `helmet-layout-undecoded` (helmetgrp) gap row.
+
+| Table | Source bytes | Elbera parser | Records | Manifest |
+|---|---|---|---|---|
+| hairgrp | 304 | hair_pairs | 15 rows of 15 pairs | `/l2/tables/f4c71595.../hairgrp.json` |
+| helmetgrp | 432 | keyed_hair_pairs | 3 (keys 1, 2, 3) | `/l2/tables/83283aaa.../helmetgrp.json` |
+| hairaccessarygrp | 432 | keyed_hair_pairs | 4 (keys 0, 1, 2, 3) | `/l2/tables/f58d5c4a.../hairaccessarygrp.json` |
+
+Field meanings are Elbera's: "Elbera 07b24 proof, unverified on 4dd2". Records keep file order and duplicate keys; no overwrite rule is applied.
+
+Cross-checks for hairgrp (`python -B scripts/data/hair_table_adapter.py --client E:/Lineage2-client`, 2026-11-09):
+
+- UCHAR versus int32: the local `dats/hairgrp.xml` (SHA-256 `83662b49...893bf6`, pinned in the adapter) declares one element reader, `UCHAR`, in an unsized `for`. Of the 450 int32 words Elbera reads, 192 equal the UCHAR reading of the same word's first byte and 258 do not. Every disagreement is a word Elbera reads as -1 (0xFFFFFFFF), which UCHAR reads as 255. The first disagreement offsets are 24, 40, 44, 48. Elbera's values run from -1 to 9.
+- ddf: the flat lock-equal `L2FileEdit-master/data/l2asm-disasm/DAT_defs/Interlude/hairgrp.ddf` (1,729 bytes, SHA-256 `eac9426c...d7da3f`) read through the guard parses with certainty: `RECCNT = 15` and 120 `CHAR` fields per record (`m0_a0` to `m5_b9`). The record count agrees with Elbera's 15 rows. The field count does not agree with Elbera's 30 int32 words per row, and the ddf does not state the width of `CHAR`. The nested `L2FileEdit-master/L2FileEdit-master/...` copy is e-only and the guard refuses it. helmetgrp and hairaccessarygrp have no Interlude `.ddf`, so they have no ddf cross-check.
+
 ## Open
 
-40 `.dat` tables, 25 `.u`, 435 `.utx`, 212 `.usx`, 20 `.ukx` and 163 `.unr` packages. The combined table inventory (FOUND-04) is below. Open for DATA-01: the decode failures of eula-e, questname-e, servername-e and sysstring-e, and the three hair tables (plan 02-28). Open for DATA-02: the three hair tables. DATA-03 stays open: the strict decode of sysstring-e fails, so its count is unresolved (see below). The lane store is not restaged into the shared store yet.
+40 `.dat` tables, 25 `.u`, 435 `.utx`, 212 `.usx`, 20 `.ukx` and 163 `.unr` packages. The combined table inventory (FOUND-04) is below. Open for DATA-01: the decode failures of eula-e, questname-e, servername-e and sysstring-e. Open for DATA-02: the hair field meanings are Elbera's and stay unverified on this client (Engine.dll 4dd2) until the Phase 3 check; the 120 CHAR ddf fields and the UCHAR layout do not explain the -1 words Elbera reads. DATA-03 stays open: the strict decode of sysstring-e fails, so its count is unresolved (see below). The lane store is not restaged into the shared store yet.
 
 ## Reference client lock
 
@@ -53,7 +68,7 @@ Recorded 2026-11-08 (FOUND-03) in `recipes/reference-client-tree.lock.json`, che
 
 Generated 2026-11-08 (FOUND-04) by `scripts/build_dat_table_inventory.py --client E:/Lineage2-client` into `docs/parts/data/dat-table-inventory.json`, checked by `tests/pipeline/test_dat_table_inventory.py`. Table names come from the lock's `system/*.dat` entries. Layouts come from the pinned descriptor `06_interlude.xml` (SHA-256 `5df8b7af...cdef6`). Local counts come only from sealed `scripts/data/convert_tables.py` records in `artifacts/lane-store/data-ui/l2/catalog.json` whose `sourceSha256` equals the lock eSha256 of a checked lock-equal E: file. A decode-failed gap row puts its reason in the status. Counts marked Elbera are copied from PORT_SCOPE section 2. Every other count is unknown.
 
-Tally: 33 local-decoded, 4 local-layout-only (each a decode-failed gap), 3 elbera, 0 none. The ten local decodes that Elbera also counted (actionname-e, armorgrp, etcitemgrp, itemname-e, npcgrp, npcname-e, skillgrp, skillname-e, systemmsg-e, weapongrp) match Elbera's counts. The test derives the tally from the rows and `TABLES`: no row keeps `layout pinned, not decoded`, and every layout-only row names its decode failure.
+Tally: 33 local-decoded, 4 local-layout-only (each a decode-failed gap), 3 elbera, 0 none. The three elbera rows take their counts from sealed `elbera-adapter` records and carry the status `decoded by Elbera adapter, Elbera 07b24 proof, unverified on 4dd2`. The ten local decodes that Elbera also counted (actionname-e, armorgrp, etcitemgrp, itemname-e, npcgrp, npcname-e, skillgrp, skillname-e, systemmsg-e, weapongrp) match Elbera's counts. The test derives the tally from the rows and `TABLES`: no row keeps `layout pinned, not decoded`, and every layout-only row names its decode failure.
 
 | Table | Route | Layout | Records | Status |
 |---|---|---|---|---|
@@ -69,10 +84,10 @@ Tally: 33 local-decoded, 4 local-layout-only (each a decode-failed gap), 3 elber
 | etcitemgrp | local-decoded | etcitemgrp | 6,911 | decoded, matches Elbera evidence |
 | eula-e | local-layout-only | eula | unknown | decode-failed:FormatError |
 | gametip-e | local-decoded | gametip | 182 | decoded |
-| hairaccessarygrp | elbera | - | unknown | Elbera parser present, unverified |
+| hairaccessarygrp | elbera | - | 4 | decoded by Elbera adapter, Elbera 07b24 proof, unverified on 4dd2 |
 | hairaccessorylocgrp | local-decoded | hairaccessorylocgrp | 112 | decoded |
-| hairgrp | elbera | - | unknown | Elbera parser present, unverified |
-| helmetgrp | elbera | - | unknown | Elbera parser present, unverified |
+| hairgrp | elbera | - | 15 | decoded by Elbera adapter, Elbera 07b24 proof, unverified on 4dd2 |
+| helmetgrp | elbera | - | 3 | decoded by Elbera adapter, Elbera 07b24 proof, unverified on 4dd2 |
 | hennagrp-e | local-decoded | hennagrp | 180 | decoded |
 | huntingzone-e | local-decoded | huntingzone | 220 | decoded |
 | itemname-e | local-decoded | itemname | 9,238 | decoded, matches Elbera evidence |
@@ -109,4 +124,4 @@ Written 2026-11-08 by `scripts/data/sysstring_systemmsg_counts.py --client E:/Li
 
 ## Evidence
 
-Decoder code: `scripts/native_catalog/`. Input pin: `recipes/native-inputs.lock.json`. Reference tree lock: `recipes/reference-client-tree.lock.json`. Inventory: `docs/parts/data/dat-table-inventory.json`. DATA-03 report: `docs/parts/data/sysstring-systemmsg-counts.json`. Lane store (ignored): `artifacts/lane-store/data-ui/l2/` with `tables/<manifestSha256>/<table>.json` and `tables/<manifestSha256>/<table>_names.json`, receipts under `artifacts/lane-store/data-ui/work/table__<table>/decode/` and `.../name-index/` and gap rows in `artifacts/lane-store/data-ui/gap-rows/decode.json`.
+Decoder code: `scripts/native_catalog/` and the Elbera hair adapter `scripts/data/hair_table_adapter.py`. Input pin: `recipes/native-inputs.lock.json`. Reference tree lock: `recipes/reference-client-tree.lock.json`. Inventory: `docs/parts/data/dat-table-inventory.json`. DATA-03 report: `docs/parts/data/sysstring-systemmsg-counts.json`. Lane store (ignored): `artifacts/lane-store/data-ui/l2/` with `tables/<manifestSha256>/<table>.json` and `tables/<manifestSha256>/<table>_names.json`, receipts under `artifacts/lane-store/data-ui/work/table__<table>/decode/` and `.../name-index/` and gap rows in `artifacts/lane-store/data-ui/gap-rows/decode.json`.

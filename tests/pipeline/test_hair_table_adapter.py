@@ -1,4 +1,5 @@
 import ast
+import hashlib
 import json
 from pathlib import Path
 import struct
@@ -14,16 +15,20 @@ import convert_tables
 from build_dat_table_inventory import (ELBERA_ADAPTER_COUNT_SOURCE, ELBERA_ADAPTER_DECODED_STATUS, ELBERA_PARSER_PRESENT_STATUS,
                                        count_elbera_route_table)
 from convert_tables import DECODE_TABLE_ALGORITHM_VERSION, ELBERA_ADAPTER_ROUTE, convert_table_unit
-from data.hair_table_adapter import (ELBERA_HAIR_FIELD_PROOF, ELBERA_HAIR_SELECTION_SCRIPT_PATH, ELBERA_HAIR_SELECTION_SCRIPT_SHA256,
-                                     HAIR_LAYOUT_UNDECODED_REASON, HAIR_TABLE_PARSERS, HELMET_LAYOUT_UNDECODED_REASON, HairTableAdapterError, HairTableUndecodedError,
-                                     decode_hair_table)
+from data.hair_table_adapter import (DDF_CROSS_CHECK_COMPARED_STATUS, DDF_CROSS_CHECK_UNRESOLVED_STATUS, ELBERA_HAIR_FIELD_PROOF,
+                                     ELBERA_HAIR_SELECTION_SCRIPT_PATH, ELBERA_HAIR_SELECTION_SCRIPT_SHA256, FIRST_DISAGREEMENT_OFFSET_LIMIT,
+                                     HAIR_LAYOUT_UNDECODED_REASON, HAIR_TABLE_PARSERS, HELMET_LAYOUT_UNDECODED_REASON, INTERLUDE_DDF_PATHS,
+                                     NO_INTERLUDE_DDF_STATUS, HairTableAdapterError, HairTableUndecodedError, declared_layout_reader,
+                                     decode_hair_table, hair_table_ddf_cross_check, hair_table_int32_versus_layout_cross_check,
+                                     hairgrp_cross_checks, hairgrp_layout_xml_bytes)
 from data.pinned_elbera_module import ELBERA_ROOT, load_pinned_elbera_module
-from native_catalog.tables import SAFE_PACKAGE_TRAILER
+from native_catalog.tables import SAFE_PACKAGE_TRAILER, SCHEMA_ROOT
 from native_store.gap_rows import read_gap_rows
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import UnitLedger
-from reference_client_guard import require_reference_client
-from reference_client_lock_fixture import lock_client_as_checked_conversion_root
+from reference_client_guard import ENGINE_LIBRARY_RELATIVE_PATH, ReferenceClientLockError, require_reference_client
+from reference_client_lock_fixture import (equal_lock_record, lock_client_as_checked_conversion_root, use_synthetic_reference_client_lock,
+                                           write_synthetic_engine_library)
 
 ADAPTER_SOURCE_PATH = ROOT / 'scripts' / 'data' / 'hair_table_adapter.py'
 ELBERA_SCRIPT_AVAILABLE = (ELBERA_ROOT / ELBERA_HAIR_SELECTION_SCRIPT_PATH).is_file()
@@ -34,6 +39,9 @@ REFUSED_ELBERA_NAMES = ('verify', 'verify_material_native', 'audit_assets', 'mai
 HAIRGRP_FILE = 'system/hairgrp.dat'
 HELMETGRP_FILE = 'system/helmetgrp.dat'
 HAIRACCESSARYGRP_FILE = 'system/hairaccessarygrp.dat'
+NESTED_HAIRGRP_DDF_PATH = 'L2FileEdit-master/L2FileEdit-master/data/l2asm-disasm/DAT_defs/Interlude/hairgrp.ddf'
+SYNTHETIC_DDF_TEXT = 'FS = "\\t";\r\nRECCNT = 2;\r\n\r\n{\r\n\t// synthetic field note\r\n\tCHAR m0_a0;\r\n\tCHAR m0_b0;\r\n}'
+REAL_CLIENT_ROOT = Path(json.loads((ROOT / 'recipes' / 'reference-client-tree.lock.json').read_bytes())['conversionRoot'])
 PAIR_TABLE_WORD_COUNT = 450
 PAIR_TABLE_ROW_COUNT = 15
 PAIR_TABLE_STYLE_COUNT = 15
@@ -217,6 +225,111 @@ class ElberaCallScanTests(unittest.TestCase):
         for refused_name in REFUSED_ELBERA_NAMES:
             self.assertNotIn(refused_name, names)
             self.assertNotIn(refused_name, constants)
+
+
+def synthetic_layout_xml(*readers):
+    nodes = ''.join(f'<node name="hairgrp_data{index}" reader="{reader}" />' for index, reader in enumerate(readers))
+    return (f'<list><file pattern="Interlude" isSafePackage="true"><for name="hairgrp"><wrapper name="hairgrp">{nodes}'
+            '</wrapper></for></file></list>').encode('utf-8')
+
+
+class Int32VersusLayoutCrossCheckTests(unittest.TestCase):
+    def test_one_agreeing_and_one_disagreeing_word_are_counted_with_the_disagreement_offset(self):
+        payload = struct.pack('<II', 0x00000005, 0x00000105) + SAFE_PACKAGE_TRAILER
+        layout_xml = synthetic_layout_xml('UCHAR', 'UCHAR')
+        result = hair_table_int32_versus_layout_cross_check(payload, layout_xml)
+        self.assertEqual(result, {'declaredReader': 'UCHAR', 'layoutSchema': 'dats/hairgrp.xml',
+                                  'layoutSha256': hashlib.sha256(layout_xml).hexdigest(), 'wordCount': 2,
+                                  'agreementCount': 1, 'disagreementCount': 1, 'firstDisagreementOffsets': [4]})
+
+    def test_a_negative_word_disagrees_with_its_unsigned_byte(self):
+        result = hair_table_int32_versus_layout_cross_check(struct.pack('<ii', -1, 0) + SAFE_PACKAGE_TRAILER, synthetic_layout_xml('UCHAR'))
+        self.assertEqual((result['agreementCount'], result['firstDisagreementOffsets']), (1, [0]))
+
+    def test_disagreement_offsets_stop_at_the_listing_limit(self):
+        words = [0x100] * (FIRST_DISAGREEMENT_OFFSET_LIMIT + 3)
+        result = hair_table_int32_versus_layout_cross_check(struct.pack(f'<{len(words)}I', *words) + SAFE_PACKAGE_TRAILER,
+                                                            synthetic_layout_xml('UCHAR'))
+        self.assertEqual(result['disagreementCount'], len(words))
+        self.assertEqual(result['firstDisagreementOffsets'], [index * 4 for index in range(FIRST_DISAGREEMENT_OFFSET_LIMIT)])
+
+    def test_a_layout_with_mixed_readers_or_bytes_without_whole_words_are_refused(self):
+        with self.assertRaisesRegex(HairTableAdapterError, 'expected exactly one'):
+            hair_table_int32_versus_layout_cross_check(struct.pack('<I', 5) + SAFE_PACKAGE_TRAILER, synthetic_layout_xml('UCHAR', 'INT'))
+        with self.assertRaisesRegex(HairTableAdapterError, 'not whole int32 words'):
+            hair_table_int32_versus_layout_cross_check(b'\x05\x00\x00' + SAFE_PACKAGE_TRAILER, synthetic_layout_xml('UCHAR'))
+        with self.assertRaisesRegex(HairTableAdapterError, 'not whole int32 words'):
+            hair_table_int32_versus_layout_cross_check(struct.pack('<I', 5), synthetic_layout_xml('UCHAR'))
+
+    @unittest.skipUnless((SCHEMA_ROOT / 'dats' / 'hairgrp.xml').is_file(), 'pinned dat schema unavailable in .assets/native-tools')
+    def test_the_pinned_local_layout_declares_one_uchar_reader(self):
+        self.assertEqual(declared_layout_reader(hairgrp_layout_xml_bytes()), 'UCHAR')
+
+
+class DdfCrossCheckTests(unittest.TestCase):
+    def setUp(self):
+        temporary_directory = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary_directory.cleanup)
+        base = Path(temporary_directory.name).resolve()
+        self.client_root = base / 'conversion'
+        self.flat_ddf_path = self.client_root / INTERLUDE_DDF_PATHS['hairgrp']
+        self.nested_ddf_path = self.client_root / NESTED_HAIRGRP_DDF_PATH
+        for path in (self.flat_ddf_path, self.nested_ddf_path):
+            path.parent.mkdir(parents=True)
+            path.write_bytes(SYNTHETIC_DDF_TEXT.encode('ascii'))
+        engine_library = write_synthetic_engine_library(self.client_root)
+        nested_record = equal_lock_record(self.nested_ddf_path)
+        use_synthetic_reference_client_lock(self, base / 'importa', {
+            ENGINE_LIBRARY_RELATIVE_PATH: equal_lock_record(engine_library),
+            INTERLUDE_DDF_PATHS['hairgrp']: equal_lock_record(self.flat_ddf_path),
+            NESTED_HAIRGRP_DDF_PATH: ['e-only', None, None, *nested_record[3:]]})
+        self.client_access = require_reference_client(self.client_root)
+
+    def test_a_readable_flat_ddf_is_compared_with_the_elbera_pair_structure(self):
+        result = hair_table_ddf_cross_check(self.client_access, 'hairgrp', [[[0, 1]], [[2, 3]]])
+        self.assertEqual(result['status'], DDF_CROSS_CHECK_COMPARED_STATUS)
+        self.assertEqual((result['ddfPath'], result['ddfRecordCount'], result['ddfFieldCount'], result['ddfFieldTypes']),
+                         (INTERLUDE_DDF_PATHS['hairgrp'], 2, 2, ['CHAR']))
+        self.assertEqual((result['elberaRowCount'], result['elberaInt32WordsPerRow'], result['recordCountAgrees'], result['fieldCountAgrees']),
+                         (2, 2, True, True))
+        self.assertEqual(result['ddfHeader'], {'FS': '"\\t"', 'RECCNT': '2'})
+        self.assertEqual(result['ddfSha256'], hashlib.sha256(SYNTHETIC_DDF_TEXT.encode('ascii')).hexdigest())
+
+    def test_an_unparseable_ddf_is_unresolved_with_no_layout(self):
+        for ddf_text in ('RECCNT = 15;\n{\n\tCHAR m0_a0;\n\tif (x) CHAR m0_b0;\n}\n', 'RECCNT = many;\n{\n\tCHAR m0_a0;\n}\n',
+                         'RECCNT = 15;\n{\n}\n', 'RECCNT = 15;\nCHAR m0_a0;\n', 'RECCNT = 15;\n{\n\tCHAR a;\n\tCHAR a;\n}\n'):
+            with self.subTest(ddf_text=ddf_text):
+                self.flat_ddf_path.write_bytes(ddf_text.encode('ascii'))
+                use_synthetic_reference_client_lock(self, self.client_root.parent / 'importa', {
+                    ENGINE_LIBRARY_RELATIVE_PATH: equal_lock_record(self.client_root / ENGINE_LIBRARY_RELATIVE_PATH),
+                    INTERLUDE_DDF_PATHS['hairgrp']: equal_lock_record(self.flat_ddf_path)})
+                result = hair_table_ddf_cross_check(require_reference_client(self.client_root), 'hairgrp', [[[0, 1]]])
+                self.assertEqual(result['status'], DDF_CROSS_CHECK_UNRESOLVED_STATUS)
+                self.assertEqual(sorted(result), ['ddfPath', 'ddfSha256', 'reason', 'status', 'table'])
+
+    def test_the_nested_e_only_copy_is_refused_by_the_guard(self):
+        self.assertFalse(INTERLUDE_DDF_PATHS['hairgrp'].startswith('L2FileEdit-master/L2FileEdit-master/'))
+        with self.assertRaisesRegex(ReferenceClientLockError, 'lock class of .* is e-only, not equal'):
+            self.client_access.require_equal_file(NESTED_HAIRGRP_DDF_PATH)
+
+    def test_the_keyed_tables_have_no_interlude_ddf_and_say_so(self):
+        for table in ('helmetgrp', 'hairaccessarygrp'):
+            result = hair_table_ddf_cross_check(self.client_access, table, None)
+            self.assertEqual((result['table'], result['status']), (table, NO_INTERLUDE_DDF_STATUS))
+
+
+@unittest.skipUnless(ELBERA_SCRIPT_AVAILABLE and REAL_CLIENT_ROOT.is_dir() and (SCHEMA_ROOT / 'dats' / 'hairgrp.xml').is_file(),
+                     'lock-equal conversion client, Elbera checkout or pinned dat schema unavailable')
+class RealHairgrpCrossCheckTests(unittest.TestCase):
+    def test_real_hairgrp_cross_checks_cover_every_word_and_the_flat_ddf(self):
+        result = hairgrp_cross_checks(require_reference_client(REAL_CLIENT_ROOT))
+        ddf = result['ddf']['hairgrp']
+        self.assertEqual((result['fieldProof'], ddf['status'], ddf['ddfPath']),
+                         (ELBERA_HAIR_FIELD_PROOF, DDF_CROSS_CHECK_COMPARED_STATUS, INTERLUDE_DDF_PATHS['hairgrp']))
+        layout_check = result['int32VersusLayout']
+        self.assertEqual(layout_check['wordCount'], ddf['elberaRowCount'] * ddf['elberaInt32WordsPerRow'])
+        self.assertEqual(layout_check['agreementCount'] + layout_check['disagreementCount'], layout_check['wordCount'])
+        self.assertEqual({result['ddf'][table]['status'] for table in ('helmetgrp', 'hairaccessarygrp')}, {NO_INTERLUDE_DDF_STATUS})
 
 
 class InventoryElberaRouteCountTests(unittest.TestCase):
