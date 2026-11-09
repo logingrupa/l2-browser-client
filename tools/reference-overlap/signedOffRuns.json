@@ -297,112 +297,6 @@
     {
       "area": "materials",
       "sourceFile": "src/materials/ue2/babylon/fragmentChain.ts",
-      "tokenCount": 20,
-      "sourceTokensSha256": "420ee89387341f769d8955d9bd50c43696bb591823e4cb12a7af547eaace5794",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/unreal/skeletal-mesh/un-skeletal-mesh.ts",
-        ".assets/reference/lineage2js/src/objects/skeletal-animation-mixer.ts",
-        ".assets/reference/lineage2js/src/rendering/camera/volume-camera.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-09",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "materials",
-      "sourceFile": "src/materials/ue2/babylon/fragmentChain.ts",
-      "tokenCount": 22,
-      "sourceTokensSha256": "0ceddca34b3b0c3e996d0f17832f60dfcf112d3267da153ccdebf16af19d272b",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/unreal/script-dump-loader.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-09",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "materials",
-      "sourceFile": "src/materials/ue2/babylon/fragmentChain.ts",
-      "tokenCount": 21,
-      "sourceTokensSha256": "c0334e2a9410a7bff47cfdb5a0880286a9129bf4e6f1d74397b2a3a94530a148",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/unreal/emitters/un-ribbon-emitter.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-09",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "materials",
-      "sourceFile": "src/materials/ue2/babylon/fragmentChain.ts",
-      "tokenCount": 25,
-      "sourceTokensSha256": "b50cca5467a2b1ff41baffe8fb9fcde5d16292277fdec390713c8d5bb7c708ef",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/asset-manager.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-09",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "materials",
-      "sourceFile": "src/materials/ue2/babylon/fragmentChain.ts",
-      "tokenCount": 21,
-      "sourceTokensSha256": "a1ed4bb83db67bfab4d65d6d7efd33116f1b86fd259ade77ccc681c781c684e5",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/decoders/material-decoder.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-09",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "materials",
-      "sourceFile": "src/materials/ue2/babylon/fragmentChain.ts",
-      "tokenCount": 21,
-      "sourceTokensSha256": "dd2116d193d8b072d3472825987cbc210db8dad7658e26110399d9c8746d9a2d",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/unreal/emitters/un-ribbon-emitter.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-09",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "materials",
-      "sourceFile": "src/materials/ue2/babylon/fragmentChain.ts",
-      "tokenCount": 22,
-      "sourceTokensSha256": "b95f590d35b0dcf7d258507edaff8aa28822fcec498f66098717c9654e5447a7",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/asset-manager.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-09",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "materials",
-      "sourceFile": "src/materials/ue2/babylon/fragmentChain.ts",
-      "tokenCount": 21,
-      "sourceTokensSha256": "5116e891b7c4c9392e65379ac5d93bb1c675e67f413735dd3ee6ebb466fb28aa",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/decoders/material-decoder.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-09",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "materials",
-      "sourceFile": "src/materials/ue2/babylon/fragmentChain.ts",
       "tokenCount": 21,
       "sourceTokensSha256": "ab9317787c18db1daf848f8b4527c6cfb298d58a44ecccc2bd82abd37d208569",
       "referenceFiles": [
@@ -474,19 +368,6 @@
       "sourceTokensSha256": "b5c6183aa0514249337b028e5f604e7f64e60e4989c2d58e20d8ffefb485b7ca",
       "referenceFiles": [
         ".assets/reference/lineage2js/src/objects/skeletal-animation-mixer.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-09",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "materials",
-      "sourceFile": "src/materials/ue2/babylon/fragmentChain.ts",
-      "tokenCount": 22,
-      "sourceTokensSha256": "70f9ee1a6ea6335df8335fa54bc4d409724be0a6e1db81dcfe8bd00fa3a01fc8",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/decoders/object-batching.ts"
       ],
       "verdict": "generic",
       "reviewedOn": "2026-11-09",
@@ -1662,19 +1543,6 @@
     },
     {
       "area": "materials",
-      "sourceFile": "src/materials/ue2/model/displayGamma.ts",
-      "tokenCount": 20,
-      "sourceTokensSha256": "cba2786a1191cc8c1f99e0945ef4461c8b13dc83ffc7478fbd8ec01d771a5338",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/decoders/icon-decoder.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-09",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "materials",
       "sourceFile": "src/materials/ue2/model/fog.ts",
       "tokenCount": 21,
       "sourceTokensSha256": "f49014569c50c302a4cc64f3deb64fd5a66c3a4ce8b2a9b638d71d4e87673a4a",
@@ -1719,99 +1587,6 @@
       "sourceTokensSha256": "396e8f9ccdf9585682595331b65cf1d8ba700f5075a9fe16ab5f6e8c42512a5c",
       "referenceFiles": [
         ".assets/reference/lineage2js/src/rendering/static-lighting.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-09",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "materials",
-      "sourceFile": "src/materials/ue2/model/materialFieldValues.ts",
-      "tokenCount": 20,
-      "sourceTokensSha256": "28e4c6072d733faba7d51ff1976cbc5a327310b50b0c1ef23f100f01ba2a04d3",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/decode-worker/collect-transferables.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-09",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "materials",
-      "sourceFile": "src/materials/ue2/model/materialFieldValues.ts",
-      "tokenCount": 20,
-      "sourceTokensSha256": "090ce7bad15448776b6b39f9bd53544f319ece0ae4f6880e7fd3afd3e21ab546",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/decoders/texture-decoder.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-09",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "materials",
-      "sourceFile": "src/materials/ue2/model/materialFieldValues.ts",
-      "tokenCount": 20,
-      "sourceTokensSha256": "e22f1aba50fd2305a118062e650a135e7c3555fbd736af2034de456ad82b9615",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/decoders/texture-decoder.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-09",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "materials",
-      "sourceFile": "src/materials/ue2/model/materialFieldValues.ts",
-      "tokenCount": 20,
-      "sourceTokensSha256": "26db988e264f14e356df572fd7831a6ec8f06dcdd885496b7a453525b58c8b51",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/asset-manager.ts",
-        ".assets/reference/lineage2js/src/assets/unreal/skills/skill-effect-placement.ts",
-        ".assets/reference/lineage2js/src/objects/skeletal-animation-mixer.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-09",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "materials",
-      "sourceFile": "src/materials/ue2/model/materialFieldValues.ts",
-      "tokenCount": 21,
-      "sourceTokensSha256": "d5e2f379d579844024127919b73572cb933f91f4dbecf347fec4b6378a698415",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/rendering/camera/volume-camera.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-09",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "materials",
-      "sourceFile": "src/materials/ue2/model/materialFieldValues.ts",
-      "tokenCount": 20,
-      "sourceTokensSha256": "8f49e88acefc7eca82fcd19b778578d821cb64b52cf601906fed7acf22f2920e",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/objects/dynamic-hair-simulation.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-09",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "materials",
-      "sourceFile": "src/materials/ue2/model/materialFieldValues.ts",
-      "tokenCount": 22,
-      "sourceTokensSha256": "b43060976ac8272aa139f88f0b07decc98575b7c273638fdc21f0d4bdd1fcd81",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/objects/emitters/instanced-mesh-particles.ts"
       ],
       "verdict": "generic",
       "reviewedOn": "2026-11-09",
@@ -4075,6 +3850,583 @@
       "sourceTokensSha256": "5cad48ec677a63dac5bed65c2655f202ff4d86f45b5d07b02fd0259c11bfbca7",
       "referenceFiles": [
         ".assets/reference/lineage2js/src/assets/decoders/object3d-decoder.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-09",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/babylon/fragmentChain.ts",
+      "tokenCount": 22,
+      "sourceTokensSha256": "ec22e50559b4720e16fcf0c4b5500c74ec923ae6efdcb69316deb659cf6649ca",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/unreal/emitters/un-ribbon-emitter.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-09",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/babylon/fragmentChain.ts",
+      "tokenCount": 21,
+      "sourceTokensSha256": "1a00d5597a223e4eb45447e1967a4de8f9854aa7f79af0a6cd01f3ea56ee7948",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decoders/texture-decoder.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-09",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/babylon/fragmentChain.ts",
+      "tokenCount": 20,
+      "sourceTokensSha256": "280d407d55d2c9b6e2ef941a29ed792c1909100be1fcee703f2a2de41c546da0",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/unreal/skills/skill-program.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-09",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/babylon/fragmentChain.ts",
+      "tokenCount": 20,
+      "sourceTokensSha256": "c66d0daf9b88cd22eaf582582807d776e3e3c163cb435ea1c7a95467e35433fc",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/unreal/script-dump-loader.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-09",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/babylon/fragmentChain.ts",
+      "tokenCount": 21,
+      "sourceTokensSha256": "d9976cece2a7dd67c71bd94efe34573ad6ee02d3eabdc6abec9494ccfc73bf77",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/unreal/emitters/un-ribbon-emitter.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-09",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/babylon/fragmentChain.ts",
+      "tokenCount": 22,
+      "sourceTokensSha256": "3a1b79aa3beb2e834e3ed4af265d145e51594abf5d433f82d4d869f2d13f2657",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/asset-manager.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-09",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/babylon/fragmentChain.ts",
+      "tokenCount": 21,
+      "sourceTokensSha256": "e201b32422f4f906f99e91d25b539ddac02d3862581d39cdbf441c410a3daff8",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decoders/material-decoder.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-09",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/babylon/fragmentChain.ts",
+      "tokenCount": 20,
+      "sourceTokensSha256": "b22a4709c8d53fb2328908fcdfb275ebcc3497b9da5887d7c222cb789778d045",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decoders/object3d-decoder.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-09",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/model/constants/displayGammaConstants.ts",
+      "tokenCount": 25,
+      "sourceTokensSha256": "74929b2b3b95f17c55862121a2697a990761a977f10d5d93400334127dbd62af",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/unreal/conf-files/un-conf-warrior.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/datafile/schema/armorgrp.schema.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u000.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u003.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u004.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u006.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u008.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u009.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u013-c.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u016.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u017.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u018-b.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u019-b.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u023.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u024.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u034.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/p-u004-a.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-antaras-breath.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-antaras-debuff.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-dietrich-suspension.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-evil-shackle-boss-a.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-gustav-wind.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-heal-queen-ant.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-acumen-empower-berserker.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-baium-heal.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-chill-flame.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-wind-of-hand.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-power-strike.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-range-80-hp-drain.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-recall.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-siege-hammer.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-stun-shot-boss-a.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-teleport-pc.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-thunderbolt.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u001.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u003.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u006.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u007.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u010-b.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u010-lightning.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u011.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u016.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u017.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u020.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u509.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u513.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-wild-cannon.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-wind-walk.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-zaken-dual-attack.ts",
+        ".assets/reference/lineage2js/src/rendering/visualizer.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-09",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/model/constants/displayGammaConstants.ts",
+      "tokenCount": 20,
+      "sourceTokensSha256": "045a4b4c8d0807d643dd95f19ae665080187efe80ec19af26b43703e10d7e26a",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native-effects.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/e-u033.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/e-u082.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u000.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-evil-shackle-boss-a.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-strike-range.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-recharge.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-teleport-pc.ts",
+        ".assets/reference/lineage2js/src/rendering/render-manager.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-09",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/model/constants/displayGammaConstants.ts",
+      "tokenCount": 23,
+      "sourceTokensSha256": "fc44a5017fdbc03dd471f7511d251d47ee712058f9fa7011e75051ca2641de45",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/e-u033.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/e-u524.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u003.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u004.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u006.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u007-a.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u008.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u009.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u013-a.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u016.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u017.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u018-a.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u019-a.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u021.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u023.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u024.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u026.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u028.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u030.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u034.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u044.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-antaras-breath.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-antaras-mouth.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-boom-attack.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-dietrich-suspension.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-double-dagger-attack.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-energy-wave.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-greater-heal.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-gustav-wind.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-heal-queen-ant.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-heal.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-acumen-empower-berserker.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-beam-straight.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-chill-flame.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-hydro-blast.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-spear-attack.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-spit-attack.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-strike-range.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-weakness.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-wind-of-hand.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-range-80-hp-drain.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-recharge.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-regeneration.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-self-range-haste-boss-a.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-sonic-blaster.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u005.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u006.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u009.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u010-a.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u010-lightning.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u012.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u016.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u017.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u020.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-wild-cannon.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-wind-walk.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-zaken-self-tel.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-zaken-tel-pc.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-09",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/model/constants/displayGammaConstants.ts",
+      "tokenCount": 24,
+      "sourceTokensSha256": "369ed3d413cc2f24dd47b9a56e22a198639da31a827b70032ef96666a16d87a5",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-baium-normal-attack.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-earth-quake.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-greater-heal.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-group-hold.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-hydro-blast.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-self-range-haste-boss-a.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-thunderbolt.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-zaken-tel-pc.ts",
+        ".assets/reference/lineage2js/src/rendering/visualizer.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-09",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/model/constants/displayGammaConstants.ts",
+      "tokenCount": 23,
+      "sourceTokensSha256": "8bfcc1512aa73cbeaba6a1293214ade74cbeb22af3e9d0437b73aae593440931",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/unreal/conf-files/un-conf-warrior.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/datafile/schema/armorgrp.schema.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u003.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u004.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u013-c.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u016.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u024.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-baium-heal.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-recall.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-teleport-pc.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-thunderbolt.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u010-lightning.ts",
+        ".assets/reference/lineage2js/src/rendering/visualizer.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-09",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/model/constants/displayGammaConstants.ts",
+      "tokenCount": 24,
+      "sourceTokensSha256": "4ce8e5bbce26fc4f2cc9285b5ef385a324efa5ebe997e19f7c3fa309555f132b",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/unreal/datafile/schema/armorgrp.schema.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u008.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u009.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u017.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u034.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-baium-heal.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-power-strike.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-siege-hammer.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-stun-shot-boss-a.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u001.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u003.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u006.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u007.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u010-b.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u020.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u509.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u513.ts",
+        ".assets/reference/lineage2js/src/rendering/visualizer.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-09",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/model/constants/displayGammaConstants.ts",
+      "tokenCount": 22,
+      "sourceTokensSha256": "05068aa41b4adf9a90ad73e4ce12183a34d6d5a7de47fd73e9f4a042479d660e",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u000.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u006.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u008.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u009.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u017.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u018-b.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u019-b.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u023.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u034.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/p-u004-a.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-antaras-breath.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-antaras-debuff.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-dietrich-suspension.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-evil-shackle-boss-a.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-gustav-wind.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-heal-queen-ant.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-acumen-empower-berserker.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-baium-heal.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-chill-flame.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-wind-of-hand.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-power-strike.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-range-80-hp-drain.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-siege-hammer.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-stun-shot-boss-a.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u001.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u003.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u006.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u007.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u010-b.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u011.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u015-b.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u016.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u017.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u020.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u509.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u513.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-wild-cannon.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-wind-walk.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-zaken-dual-attack.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-09",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/model/constants/displayGammaConstants.ts",
+      "tokenCount": 21,
+      "sourceTokensSha256": "88013e3d632bc2c47eebebf1a699bcc8717bf7382747706acd6d8bab6681b191",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u015-b.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-09",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/model/constants/displayGammaConstants.ts",
+      "tokenCount": 20,
+      "sourceTokensSha256": "2dda8c2ff93f40c847155daca780c2c7ced66fd4f57729e6009efd452b546aa2",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/unreal/conf-files/un-conf-warrior.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/datafile/schema/armorgrp.schema.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/e-u033.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/e-u524.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u000.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u003.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u004.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u006.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u007-a.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u008.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u009.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u013-a.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u013-c.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u016.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u017.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u018-a.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u018-b.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u019-a.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u019-b.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u021.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u023.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u024.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u026.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u028.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u030.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u034.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/m-u044.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/p-u004-a.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-antaras-breath.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-antaras-debuff.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-antaras-mouth.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-baium-normal-attack.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-boom-attack.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-dietrich-suspension.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-double-dagger-attack.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-earth-quake.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-energy-wave.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-evil-shackle-boss-a.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-greater-heal.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-group-hold.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-gustav-wind.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-heal-queen-ant.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-heal.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-acumen-empower-berserker.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-baium-heal.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-beam-straight.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-chill-flame.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-hydro-blast.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-spear-attack.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-spit-attack.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-strike-range.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-weakness.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-npc-wind-of-hand.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-power-strike.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-range-80-hp-drain.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-recall.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-recharge.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-regeneration.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-self-range-haste-boss-a.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-siege-hammer.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-sonic-blaster.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-stun-shot-boss-a.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-teleport-pc.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-thunderbolt.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u001.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u003.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u005.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u006.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u007.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u009.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u010-a.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u010-b.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u010-lightning.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u011.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u012.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u016.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u017.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u020.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u509.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-u513.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-wild-cannon.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-wind-walk.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-zaken-dual-attack.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-zaken-self-tel.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native/s-zaken-tel-pc.ts",
+        ".assets/reference/lineage2js/src/rendering/visualizer.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-09",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/model/displayGamma.ts",
+      "tokenCount": 34,
+      "sourceTokensSha256": "bb8411bcf4cb0a02ddc8e239f7f9c092e33da13f1a774b8f575cdc63086c0dbb",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/objects/zone-object.ts",
+        ".assets/reference/lineage2js/src/rendering/translucent-draw-list.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-09",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/model/displayGamma.ts",
+      "tokenCount": 21,
+      "sourceTokensSha256": "ae28f073ad3ea0031c447e26318995dca78238351e8142725eeb24dae0577740",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/objects/zone-object.ts",
+        ".assets/reference/lineage2js/src/rendering/translucent-draw-list.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-09",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/model/displayGamma.ts",
+      "tokenCount": 21,
+      "sourceTokensSha256": "a34cba5d8d3a3565843f710ce0b5c0081d2a137ea5beb382d30f271902ac8131",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/objects/zone-object.ts",
+        ".assets/reference/lineage2js/src/rendering/translucent-draw-list.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-09",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/model/displayGamma.ts",
+      "tokenCount": 22,
+      "sourceTokensSha256": "b5ff195dff0a846a2c4e74897ec39aefa2aca7c2cfba3aa13c4957e45f7bd106",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decoders/icon-decoder.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-09",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/model/materialFieldValues.ts",
+      "tokenCount": 20,
+      "sourceTokensSha256": "e0a9e585b0233f323b073ca3740020590dc1996a162744e16d4ce5fe40d3e33b",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/asset-manager.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/skill-effect-placement.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-09",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/model/materialFieldValues.ts",
+      "tokenCount": 20,
+      "sourceTokensSha256": "2e82cdb7326515f85dad1b58f265d217e74971b4d17d3623ace5d0a5a7aeea67",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decode-worker/decode-engine.ts"
       ],
       "verdict": "generic",
       "reviewedOn": "2026-11-09",
