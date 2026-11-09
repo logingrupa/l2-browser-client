@@ -2,7 +2,7 @@ import { cosineOfRadiansFromTable, sineOfRadiansFromTable } from "../../../share
 import { addVectors, scaleVector, vectorLength, type Vector3 } from "../../../shared/math/vector3";
 import { randomRange, randomUnitVector, type RandomStream } from "../../../shared/random";
 import { COORDINATE_SYSTEM, PARTICLE_CONSTANTS, ROTATION_SOURCE, START_LOCATION_SHAPE, VELOCITY_DIRECTION } from "./emitterConstants";
-import type { FloatRange, RangeVector } from "./emitterRecords";
+import type { FloatRange, ParticleEmitterRecord, RangeVector } from "./emitterRecords";
 import { rotateByAxes, rotateByRotators, rotatorAxes } from "./particleRotation";
 import { PARTICLE_FLAG, readSlotVector, writeSlotColor, writeSlotVector, type EmitterRuntime, type EmitterStepContext } from "./particleState";
 
@@ -146,9 +146,13 @@ function spawnParticleOnce(runtime: EmitterRuntime, slot: number, ageSeconds: nu
   columns.flags[slot] = PARTICLE_FLAG.active | PARTICLE_FLAG.justSpawned;
 }
 
-export function spawnParticle(runtime: EmitterRuntime, slot: number, ageSeconds: number, context: EmitterStepContext, ownerVelocity: Vector3): void {
+function spawnRefused(record: ParticleEmitterRecord): boolean {
+  return record.MaxParticles === 0 || Math.fround(record.LifetimeRange.max) <= 0;
+}
+
+export function spawnParticle(runtime: EmitterRuntime, slot: number, ageSeconds: number, context: EmitterStepContext, ownerVelocity: Vector3): boolean {
   const { record, columns, counters } = runtime;
-  if (record.MaxParticles === 0 || record.LifetimeRange.max <= 0) return;
+  if (spawnRefused(record)) return false;
   let spawnAgeSeconds = ageSeconds;
   for (let pass = 0; ; pass += 1) {
     if (pass >= respawnPassLimit) throw new Error(`Emitter ${record.object}: a spawn stayed past MaxLifetime after ${respawnPassLimit} respawn passes.`);
@@ -158,4 +162,5 @@ export function spawnParticle(runtime: EmitterRuntime, slot: number, ageSeconds:
     spawnAgeSeconds = time % maxLifetime;
   }
   counters.dead = false;
+  return true;
 }

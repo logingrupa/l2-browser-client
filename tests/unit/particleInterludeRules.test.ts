@@ -76,6 +76,16 @@ describe("Interlude emitter tick rules", () => {
 });
 
 describe("Interlude spawn rules", () => {
+  it("refuses a spawn when LifetimeRange.Max is not above 0 and leaves the slot counters and the stream alone", () => {
+    const simulation = spriteWith({ LifetimeRange: { Min: 0, Max: 0 } });
+    const outcomes = Array.from({ length: 3 }, () => simulation.step(stepSeconds, standaloneStepContext(simulation)));
+    expect(outcomes).toEqual(["running", "running", "running"]);
+    expect({ activeSlots: simulation.counters.activeSlots, nextSlot: simulation.counters.nextSlot }).toEqual({ activeSlots: 0, nextSlot: 0 });
+    const freshStream = createEmitterRandomStream(1, 0, 0);
+    freshStream.nextUnit(); freshStream.nextUnit();
+    expect(simulation.runtime.stream.nextUnit()).toBe(freshStream.nextUnit());
+  });
+
   it("keeps the spawn leftover and the birth ages as float32 values in the SpawnParticles order", () => {
     const simulation = spriteWith({ InitialParticlesPerSecond: 100, MaxParticles: 6 });
     stepTimes(simulation, 1);
