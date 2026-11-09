@@ -11,5 +11,19 @@
     "referenceActor": "20_20.PlayerStart0",
     "referenceLocation": [19172.8046875, 79583.46875, -4295.0615234375],
     "note": "Source-unit XY origin selection only; geometry overlap, terrain elevations and client placement are not inferred. The full map's raw data and actor tags are retained."
-  }
+  },
+  "unresolved": [
+    {
+      "pointer": "/section/min",
+      "reason": "hand-chosen-presentation-window",
+      "statement": "Hand-chosen XY presentation window around 20_20.PlayerStart0; not a source value.",
+      "replacement": "TerrainInfo-derived 4x4-sector chunks from scripts/world/tile_chunk_plan.py (plan 02-15)"
+    },
+    {
+      "pointer": "/section/max",
+      "reason": "hand-chosen-presentation-window",
+      "statement": "Hand-chosen XY presentation window around 20_20.PlayerStart0; not a source value.",
+      "replacement": "TerrainInfo-derived 4x4-sector chunks from scripts/world/tile_chunk_plan.py (plan 02-15)"
+    }
+  ]
 }

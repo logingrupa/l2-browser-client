@@ -275,5 +275,24 @@ class ConvertTileCommandTests(SyntheticTileTestCase):
             convert_tile.main(['--client', str(self.client), '--map', '../20_21', '--step', 'raw'])
 
 
+@unittest.skipUnless((REAL_CLIENT_ROOT / MAP_PATH).is_file(), 'the conversion client E:/Lineage2-client is absent on this host')
+@unittest.skipUnless((ROOT / UNIT_STEP_FOLDER / 'complete.json').is_file(), 'the real 20_21 raw unit has not been sealed in this checkout')
+class RealTileRawUnitTests(unittest.TestCase):
+    def test_the_sealed_20_21_unit_returns_pass_with_its_lock_identity_and_whole_terrain(self):
+        with patch('world.raw_map_step.build_map', side_effect=AssertionError('sealed 20_21 unit rebuilt')):
+            row = run_raw_map_step(ROOT, REAL_CLIENT_ROOT, TILE_ID)
+        self.assertEqual(row['status'], 'pass')
+        step_folder = ROOT / UNIT_STEP_FOLDER
+        receipt_bytes = (step_folder / 'receipt.json').read_bytes()
+        receipt = json.loads(receipt_bytes)
+        seal = json.loads((step_folder / 'complete.json').read_text(encoding='utf-8'))
+        self.assertEqual(seal['receiptSha256'], hashlib.sha256(receipt_bytes).hexdigest())
+        self.assertEqual(seal['fingerprint'], receipt['fingerprint'])
+        self.assertEqual(receipt['inputs'], [{'path': MAP_PATH, 'sha256': REAL_TILE_MAP_SHA256}])
+        coverage = json.loads((step_folder / 'products/manifest.json').read_text(encoding='utf-8'))['coverage']
+        self.assertEqual((coverage['terrainInfosDecoded'], coverage['terrainHeightsDecoded']), (1, 1))
+        self.assertEqual(coverage['exportsPreservedRaw'], coverage['exports'])
+
+
 if __name__ == '__main__':
     unittest.main()
