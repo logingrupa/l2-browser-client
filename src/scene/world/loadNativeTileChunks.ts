@@ -5,7 +5,7 @@ import type { Scene } from "@babylonjs/core/scene";
 import { readTileCatalogRecord } from "../../assets/native/nativeCatalogRecords";
 import { readNativeCatalogUnlessNotStaged } from "../../assets/native/readNativeCatalog";
 import {
-  fetchVerifiedNativeResource, inspectNativeWorldScene, loadNativeGlbContainer, nativeMeshBounds,
+  fetchVerifiedNativeResource, inspectNativeWorldScene, loadNativeGlbContainer, nativeMeshBounds, terrainInfoChunkPlanWindow,
   type NativeSection, type NativeSectionManifest,
 } from "./loadNativeSection";
 import { describeNativeTileGapRow, parseNativeTileChunkManifest, type NativeTileChunkManifest, type NativeTileChunkTerrain } from "./nativeTileChunkManifest";
@@ -117,7 +117,7 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
     lifetime.signal.throwIfAborted();
     return { manifest: view, manifestSha256: record.manifestSha256, terrainMeshes, supportMeshes: [], ...extent, spawnCandidate,
       inspection: () => ({ ...inspectNativeWorldScene({ terrainMeshes, instances: [], modelCount: 0, disposed, preview: null, previewEnabled: false,
-        materialFailure: null, unsupportedRuntimeMaterials: [], bspMeshes: [] }), terrainChunks }),
+        materialFailure: null, unsupportedRuntimeMaterials: [], bspMeshes: [], sectionWindow: terrainInfoChunkPlanWindow }), terrainChunks }),
       setTerrainPreview() {}, dispose };
   } catch (error) { dispose(); throw error; }
 }

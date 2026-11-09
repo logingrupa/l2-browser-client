@@ -99,6 +99,50 @@ describe("native tile chunk loading", () => {
     expect(view.gaps).toContain("meshes: step-pending:meshes");
   });
 
+  it("reports the TerrainInfo chunk plan as its source-derived section window", async () => {
+    serve(tileStore());
+    expect((await load())!.inspection().sectionWindow).toEqual({ basis: "terrain-info-chunk-plan", status: "source-derived" });
+  });
+
+  it("returns null for a tile that is not in the catalog", async () => {
+    serve(tileStore());
+    expect(await load("20_21")).toBeNull();
+    expect(LoadAssetContainerAsync).not.toHaveBeenCalled();
+  });
+
+  it("loads no mesh for a chunk whose terrain is null and still lists it with its terrain gap reason", async () => {
+    serve(tileStore({ secondChunkTerrain: "hidden" }));
+    const section = (await load())!;
+    expect(section.terrainMeshes.map(mesh => mesh.metadata.nativeTileChunk.chunkId)).toEqual(["chunk-0-0"]);
+    const hiddenChunk = section.inspection().terrainChunks!.find(chunk => chunk.chunkId === "chunk-0-1")!;
+    expect(hiddenChunk.terrain).toBeNull();
+    expect(hiddenChunk.gaps).toContain("terrain: terrain-quads-all-hidden");
+  });
+
+  it("refuses a tile manifest whose bytes differ from the catalog hash and leaves no mesh", async () => {
+    const store = tileStore(); serve(store);
+    const tileBytes = store.responses.get(store.tilePath)!;
+    store.responses.set(store.tilePath, tileBytes.map((value, index) => index === 2 ? value ^ 1 : value));
+    await expect(load()).rejects.toThrow("hash/length mismatch");
+    expect(scene.meshes).toHaveLength(0);
+  });
+
+  it("disposes the chunk terrains already loaded when the signal aborts during a later chunk load", async () => {
+    const store = tileStore(); serve(store);
+    const controller = new AbortController(), disposals: ReturnType<typeof vi.spyOn>[] = [];
+    const servedLoader = vi.mocked(LoadAssetContainerAsync).getMockImplementation()!;
+    vi.mocked(LoadAssetContainerAsync).mockImplementation(async (...parameters) => {
+      const container: AssetContainer = await servedLoader(...parameters);
+      disposals.push(vi.spyOn(container, "dispose"));
+      if (disposals.length === 2) controller.abort();
+      return container;
+    });
+    await expect(loadNativeTileChunks(scene, controller.signal, fixtureTileId)).rejects.toThrow("disposed during loading");
+    expect(disposals).toHaveLength(2);
+    for (const disposal of disposals) expect(disposal).toHaveBeenCalled();
+    expect(scene.meshes).toHaveLength(0);
+  });
+
   it("routes loadNativeSection to the tile selected by ?map and keeps the default section without it", async () => {
     const store = tileStore(); serve(store);
     vi.stubGlobal("location", { search: `?map=${fixtureTileId}`, protocol: "http:" });

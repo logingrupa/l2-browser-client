@@ -5,7 +5,7 @@ import { Color3 } from "@babylonjs/core/Maths/math.color";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Scene } from "@babylonjs/core/scene";
-import { parseNativeSection, type NativeSection, type NativeSectionManifest } from "./loadNativeSection";
+import { handChosenPresentationWindow, parseNativeSection, type NativeSection, type NativeSectionManifest } from "./loadNativeSection";
 import { attachNativeBspSupport } from "./nativeBspSupport";
 import { validateAuthoredTerrainPatches } from "./nativeTerrainPatch";
 
@@ -41,15 +41,10 @@ function exactPlacement(input: unknown, source: Placement): boolean {
 }
 
 export interface AuthoredNativeSection extends NativeSection {
-  /** Whether attachment removed the saved world root's LH authoring reflection. */
   readonly removedZReflection: boolean;
   inspection(): ReturnType<NativeSection["inspection"]> & { authored: true; placementTransformEdits: string[] };
 }
 
-/** Attaches the already parsed Editor world without importing a second copy.
- * The dedicated root's Z reflection and mesh face orientation are coordinate
- * adapters only; source placement metadata and authored child edits stay intact.
- * The scene continues to own every saved node, texture and material. */
 export function attachAuthoredNativeSection(scene: Scene, signal: AbortSignal): AuthoredNativeSection | null {
   signal.throwIfAborted();
   const roots = scene.getNodes().filter(node => marked(node.metadata, "nativeWorldRoot"));
@@ -96,19 +91,16 @@ export function attachAuthoredNativeSection(scene: Scene, signal: AbortSignal): 
     throw new Error("Authored native section transforms must not be frozen before the authoring reflection is adapted.");
   }
   const originalZ = root.scaling.z, savedTerrain = terrainMeshes.map(mesh => ({ mesh, material: mesh.material }));
-  const orientations = originalZ === -1 ? meshes.filter((mesh): mesh is Mesh => mesh instanceof Mesh)
+  const editorImportedFaceOrientations = originalZ === -1 ? meshes.filter((mesh): mesh is Mesh => mesh instanceof Mesh)
     .map(mesh => ({ mesh, orientation: mesh.sideOrientation })) : [];
-  if (orientations.some(entry => entry.orientation !== 0 && entry.orientation !== 1)) {
+  if (editorImportedFaceOrientations.some(entry => entry.orientation !== 0 && entry.orientation !== 1)) {
     throw new Error("Authored native section has an unsupported mesh face orientation.");
   }
-  const restoreOrientations = () => { for (const entry of orientations) if (!entry.mesh.isDisposed()) entry.mesh.sideOrientation = entry.orientation; };
+  const restoreOrientations = () => { for (const entry of editorImportedFaceOrientations) if (!entry.mesh.isDisposed()) entry.mesh.sideOrientation = entry.orientation; };
   let neutral: StandardMaterial | undefined, disposed = false, previewEnabled = true;
   const updateMatrices = () => { root.computeWorldMatrix(true); for (const mesh of meshes) if (!mesh.isDisposed()) mesh.computeWorldMatrix(true); };
   root.scaling.z = 1;
-  // The Editor LH import inverted the mesh's native RH face orientation. Invert
-  // the current authored choice, including any deliberate user culling edit;
-  // retained source metadata is provenance, never an instruction to reset it.
-  for (const entry of orientations) entry.mesh.sideOrientation = 1 - entry.orientation;
+  for (const entry of editorImportedFaceOrientations) entry.mesh.sideOrientation = 1 - entry.orientation;
   let extent: ReturnType<typeof bounds>;
   let support: ReturnType<typeof attachNativeBspSupport>;
   try {
@@ -162,6 +154,7 @@ export function attachAuthoredNativeSection(scene: Scene, signal: AbortSignal): 
         materialFailure: null, materialPreviewDetails: ["Saved Editor terrain materials retained; source-native shader parity remains unverified."],
         unsupportedRuntimeMaterials: manifest.unsupportedRuntimeMaterials ?? [],
         bspMeshes: bspMeshes.length, bspTriangles: bspMeshes.reduce((sum, mesh) => sum + mesh.getTotalIndices() / 3, 0),
+        sectionWindow: handChosenPresentationWindow,
       };
     },
   };

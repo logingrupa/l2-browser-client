@@ -89,6 +89,7 @@ describe("bounded native map section loading", () => {
     expect(LoadAssetContainerAsync).toHaveBeenCalledTimes(2);
     const details = section.inspection();
     expect(details).toMatchObject({ modelCount: 1, placementCount: 2, finiteBounds: true, terrainMaterial: "neutral-inspection", collisionVerified: false });
+    expect(details.sectionWindow).toEqual({ basis: "hand-chosen-presentation-window", status: "unresolved" });
     for (const placement of details.placements) expect(placement.worldMatrix).toEqual(placement.sourceMatrix);
     const props = scene.meshes.filter(mesh => mesh.name === "static-native");
     expect(props).toHaveLength(2); expect(props[0]!.material).toBe(props[1]!.material);

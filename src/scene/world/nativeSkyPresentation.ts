@@ -9,6 +9,7 @@ import { nativeResourceUrl } from "../../assets/native/nativeResourceUrl";
 import { validateSectionGlb } from "./loadNativeSection";
 import { selectNativeSkyLiteral, type NativeEnvironmentTables } from "./nativeEnvironmentTables";
 import { createNativeSkyLiteralComparison } from "./nativeSkyLiteralComparison";
+import { selectedNativeTileIdentity } from "./selectedNativeTile";
 
 export const nativeSkySource = {
   manifestSha256: "f7a0b5ef1463d0b5fe47b210585e00d6011be3c3e3bddfec76df0eb08042f80b",
@@ -17,12 +18,12 @@ export const nativeSkySource = {
   modelSha256: "b8c5a64fb1682fa9865c202459c7516cf2690112a34ebb33a972cc2278c7f983",
   modelBytes: 451180,
 } as const;
+const nativeSkySourceTileId = "20_20";
 
-/** Background presentation of the stored sky room. Camera following and draw
- * separation are explicit browser policies, not reconstructed native behavior.
- * Source geometry, source colors and authored descendants remain unchanged. */
 export async function createNativeSkyPresentation(scene: Scene, signal: AbortSignal) {
   signal.throwIfAborted();
+  const selectedTileId = selectedNativeTileIdentity(globalThis.location);
+  if (selectedTileId !== null && selectedTileId !== nativeSkySourceTileId) return null;
   const candidates = scene.transformNodes.filter(node => node.metadata?.nativeSkyRoot);
   if (candidates.length > 1) throw new Error("Multiple authored native sky roots.");
   let root: TransformNode | undefined = candidates[0], container: AssetContainer | undefined;
@@ -73,7 +74,7 @@ export async function createNativeSkyPresentation(scene: Scene, signal: AbortSig
   const autoClear = { ...scene.getAutoClearDepthStencilSetup(1) };
   let disposed = false;
   let comparison: ReturnType<typeof createNativeSkyLiteralComparison> | undefined;
-  const moveWorld = (mesh: AbstractMesh) => {
+  const drawWorldMeshAfterSkyRoom = (mesh: AbstractMesh) => {
     if (skySet.has(mesh) || mesh.renderingGroupId !== 0 || worldGroups.has(mesh)) return;
     worldGroups.set(mesh, 0); mesh.renderingGroupId = 1;
   };
@@ -83,20 +84,18 @@ export async function createNativeSkyPresentation(scene: Scene, signal: AbortSig
     mesh.renderingGroupId = 0; mesh.isPickable = false; mesh.alwaysSelectAsActiveMesh = true;
   }
   for (const entry of materials) { entry.material.fogEnabled = false; entry.material.disableDepthWrite = true; }
-  for (const mesh of scene.meshes) moveWorld(mesh);
+  for (const mesh of scene.meshes) drawWorldMeshAfterSkyRoom(mesh);
   scene.setRenderingAutoClearDepthStencil(1, true, true, true);
-  // Babylon defers new-mesh notifications. Check a changed collection before
-  // drawing as well, so its first frame cannot precede that notification.
-  const pendingMeshes = new Set<AbstractMesh>();
-  let knownMeshCount = scene.meshes.length;
-  const added = scene.onNewMeshAddedObservable.add(mesh => pendingMeshes.add(mesh));
-  const follow = scene.onBeforeCameraRenderObservable.add(camera => {
-    if (knownMeshCount !== scene.meshes.length) {
-      for (const mesh of scene.meshes) moveWorld(mesh);
-      knownMeshCount = scene.meshes.length;
+  const meshesNotifiedSinceLastDraw = new Set<AbstractMesh>();
+  let meshCountCheckedBeforeDraw = scene.meshes.length;
+  const added = scene.onNewMeshAddedObservable.add(mesh => meshesNotifiedSinceLastDraw.add(mesh));
+  const followCameraAndSeparateMeshesAddedBeforeDraw = scene.onBeforeCameraRenderObservable.add(camera => {
+    if (meshCountCheckedBeforeDraw !== scene.meshes.length) {
+      for (const mesh of scene.meshes) drawWorldMeshAfterSkyRoom(mesh);
+      meshCountCheckedBeforeDraw = scene.meshes.length;
     }
-    for (const mesh of pendingMeshes) if (!mesh.isDisposed()) moveWorld(mesh);
-    pendingMeshes.clear();
+    for (const mesh of meshesNotifiedSinceLastDraw) if (!mesh.isDisposed()) drawWorldMeshAfterSkyRoom(mesh);
+    meshesNotifiedSinceLastDraw.clear();
     skyRoot.position.copyFrom(savedRoot.position).addInPlace(camera.globalPosition);
     skyRoot.computeWorldMatrix(true);
   });
@@ -104,8 +103,8 @@ export async function createNativeSkyPresentation(scene: Scene, signal: AbortSig
     if (disposed) return; disposed = true;
     comparison?.dispose();
     signal.removeEventListener("abort", dispose);
-    scene.onDisposeObservable.remove(onDispose); scene.onBeforeCameraRenderObservable.remove(follow); scene.onNewMeshAddedObservable.remove(added);
-    pendingMeshes.clear();
+    scene.onDisposeObservable.remove(onDispose); scene.onBeforeCameraRenderObservable.remove(followCameraAndSeparateMeshesAddedBeforeDraw); scene.onNewMeshAddedObservable.remove(added);
+    meshesNotifiedSinceLastDraw.clear();
     for (const [mesh, group] of worldGroups) if (!mesh.isDisposed() && mesh.renderingGroupId === 1) mesh.renderingGroupId = group;
     scene.setRenderingAutoClearDepthStencil(1, autoClear.autoClear, autoClear.depth, autoClear.stencil);
     for (const entry of materials) { entry.material.fogEnabled = entry.fog; entry.material.disableDepthWrite = entry.depthWrite; }

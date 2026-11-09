@@ -192,6 +192,12 @@ export function nativeMeshBounds(meshes: readonly AbstractMesh[]) {
   if (![...minimum.asArray(), ...maximum.asArray()].every(Number.isFinite)) throw new Error("Native section has no finite geometry bounds.");
   return { minimum, maximum };
 }
+export type NativeSectionWindow =
+  | { readonly basis: "hand-chosen-presentation-window"; readonly status: "unresolved" }
+  | { readonly basis: "terrain-info-chunk-plan"; readonly status: "source-derived" };
+export const handChosenPresentationWindow: NativeSectionWindow = Object.freeze({ basis: "hand-chosen-presentation-window", status: "unresolved" });
+export const terrainInfoChunkPlanWindow: NativeSectionWindow = Object.freeze({ basis: "terrain-info-chunk-plan", status: "source-derived" });
+
 export interface NativeWorldSceneInspectionInput {
   readonly terrainMeshes: readonly AbstractMesh[];
   readonly instances: readonly Instance[];
@@ -202,6 +208,7 @@ export interface NativeWorldSceneInspectionInput {
   readonly materialFailure: string | null;
   readonly unsupportedRuntimeMaterials: readonly UnsupportedRuntimeMaterial[];
   readonly bspMeshes: readonly AbstractMesh[];
+  readonly sectionWindow: NativeSectionWindow;
 }
 
 export function inspectNativeWorldScene(input: NativeWorldSceneInspectionInput) {
@@ -220,6 +227,7 @@ export function inspectNativeWorldScene(input: NativeWorldSceneInspectionInput) 
     materialFailure, materialPreviewDetails: preview?.details ?? [],
     unsupportedRuntimeMaterials: input.unsupportedRuntimeMaterials,
     bspMeshes: bsp.length, bspTriangles: bsp.reduce((sum, mesh) => sum + mesh.getTotalIndices() / 3, 0),
+    sectionWindow: input.sectionWindow,
   };
 }
 
@@ -346,7 +354,7 @@ export async function loadNativeSection(scene: Scene, signal: AbortSignal, ident
     return { manifest, manifestSha256: record.manifestSha256, terrainMeshes, supportMeshes: support.meshes, ...extent,
       spawnCandidate: manifest.surfaceSpawnCandidate ? Vector3.FromArray(manifest.surfaceSpawnCandidate.gltfGroundPosition) : null,
       inspection: () => inspectNativeWorldScene({ terrainMeshes, instances, modelCount: templates.size, disposed, preview, previewEnabled, materialFailure,
-        unsupportedRuntimeMaterials: manifest.unsupportedRuntimeMaterials ?? [], bspMeshes }),
+        unsupportedRuntimeMaterials: manifest.unsupportedRuntimeMaterials ?? [], bspMeshes, sectionWindow: handChosenPresentationWindow }),
       setTerrainPreview(enabled) { previewEnabled = enabled; preview?.setEnabled(enabled); }, dispose };
   } catch (error) { dispose(); throw error; }
 }
