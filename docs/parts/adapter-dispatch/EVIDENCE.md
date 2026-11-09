@@ -67,6 +67,16 @@ Method (2026-11-09, plan 02-60 sources): three fresh-context Claude reviewers wh
 
 Totals: 171 blocking runs signed off in `signedOffRuns.json`; 4,560 reviewer runs, 14 escalated, 4,549 signed off as 4,438 rows in `reviewedRuns/materials.json`, 11 open (listed under Open). Runs sharing token text and reference files stay open together when their verdicts differ, because a sign-off never covers a sibling run the review left open.
 
+## Legacy 20_20 cut (02-71)
+
+Cut: `native_map.py`, `native_map_geometry.py`, the four 20_20 section recipes, the `map-20-20` and `map-20-20-section` migrate jobs, the terrain runtime, patch and UV scripts, the Editor append and capture path, the ambient audit and the deco-grass step-sound chain, with their tests. `build_map` lives in `scripts/world/raw_map_extraction.py` (raw step version 2, every world unit resealed).
+
+Kept: the oracle now also pins the served world-audio and step-sound manifests (106, 18, 1 and 93 pinned files); `map-20-20-textures`; the flame graph request as job `flame-native-material-graph`; `--stage-runtime`, which now keeps every catalog record the migration does not produce. The BSP reader binding (`scripts/world/bsp_reader_binding.py`) and the sound export guards (`scripts/native_assets_lib/sound_export_guards.py`) are shared modules.
+
+One-time rebuilds: the sound exporter and migration fingerprints changed, so existing receipts report a rebuild and `--reuse-from` of an older sound output refuses.
+
+Checks: pipeline 1640 tests, 79 skipped; unit 2,239 passed; served catalog still `55c12147`. Evidence: `artifacts/plan-checks/02-71/` (ignored) and `.planning/phases/02-stage-a-breadth/02-71-SUMMARY.md`.
+
 ## Open
 
 Adapter records (plan 02-58): the movement port (MOVE-01), the environment clock (MAT-02) and the emitter rules (FX-01) consume the new records in Phase 2; the Phase 4 Mobius adapter emits them and forwards `report-position` and `cannot-move` to the server, which decides (ARCH-01). The sandbox answers are sandbox behaviour, not Lineage II values. `AccountSession` has no implementation until Phase 4 (NET-02, NET-04).
