@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-37-PLAN.md
-last_updated: "2026-11-09T20:40:53.761Z"
+stopped_at: Completed 02-53-PLAN.md
+last_updated: "2026-11-09T21:06:06.329Z"
 last_activity: 2026-11-09
-last_activity_desc: Phase 02 plan 02-37 complete (sandbox runtime host, pickers, characters and clips)
-state_head: 0f584224b1ad7f3d0c15afc1d7214daef3abd263
+last_activity_desc: Phase 02 plan 02-53 complete (static-material reader widening)
+state_head: 38dfb1845a0c5f8d4fd36440f88da290affc843f
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 65
+  completed_plans: 66
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 02 (Stage A breadth) - EXECUTING
-Plan: 02-37 complete, 48 of 71 plans summarized
+Plan: 02-53 complete, 49 of 71 plans summarized
 Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-09 - Plan 02-37 complete: the Sandbox section on `/` is the picker set behind `createSandboxRuntimeActions` (tile reload by `?map=`, windows in the native window layer, never through the adapter); spawn-character shows the loaded body or a label-only marker; play-clip plays a listed clip by exact name or labels the clip list diagnostic. SAND-02 complete; ACT-01 and ACT-04 Pending.
+Last activity: 2026-11-09 - Plan 02-53 complete: the static material slot reader accepts UE123 licensees 0, 12, 14, 15 and 18 after equal Elbera l2lib cross-checks; 210 of 212 `.usx` reviewed (the two UE118 packages refused); the `.usx` census is committed under `docs/parts/adapter-dispatch/`; 599 20_21 meshes gap rows become convertible on the 02-54 re-run. WORLD-01 Pending.
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -117,6 +117,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P71 | 80min | 6 tasks | 113 files |
 | Phase 02 P30 | 66min | 4 tasks | 55 files |
 | Phase 02 P37 | 40min | 3 tasks | 27 files |
+| Phase 02 P53 | 24min | 3 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -280,6 +281,8 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-30: bsp and collision steps; lightmap page null until 02-62, typed payload as a hash-addressed folder with a payload pin, StaticMesh selectors unknown, class defaults through 02-59 (OVERNIGHT-DECISIONS rows 515 to 528)
 - [Phase 02]: 02-37: the Sandbox section is the 02-35 picker set behind createSandboxRuntimeActions; tile reload sets only ?map= and windows open in a native window layer, never through the adapter; the 01-14 by-ID groups are deleted (rows 529 to 533)
 - [Phase 02]: 02-37: spawn-character shows the loaded player body or a label-only marker; play-clip plays through playActorClip only for an exactly listed name, else labels clip <name> not in <entity id> clip list; SAND-02 complete, ACT-01 and ACT-04 Pending (rows 534 to 539)
+- [Phase 02]: 02-53: static material licensees 123/0, 12, 14, 15 and 18 reviewed after equal Elbera l2lib cross-checks on the first census package each; the UE118 .usx stay refused (rows 540, 541)
+- [Phase 02]: 02-53: the meshes re-run for the newly reviewed licensees stays with 02-54 (599 20_21 rows); WORLD-01 stays Pending (rows 542, 545)
 
 ### Pending Todos
 
@@ -357,6 +360,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-09T20:40:53.147Z
-Stopped at: Completed 02-37-PLAN.md
+Last session: 2026-11-09T21:06:05.696Z
+Stopped at: Completed 02-53-PLAN.md
 Resume file: None
