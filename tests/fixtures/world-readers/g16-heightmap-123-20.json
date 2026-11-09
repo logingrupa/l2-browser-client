@@ -1,0 +1,36 @@
+{
+ "schemaVersion": 1,
+ "reader": "g16-heightmap",
+ "packageVersion": 123,
+ "licenseeVersion": 20,
+ "package": "T_FixtureTerrain.utx",
+ "texture": {
+  "name": "HeightFixture",
+  "format": 10,
+  "uSize": 4,
+  "vSize": 4,
+  "materialPrefix": "reserved-int32",
+  "reservedInt32": 0,
+  "uBits": 2,
+  "vBits": 2,
+  "samples": [
+   19540,
+   39080,
+   58620,
+   12624,
+   32164,
+   51704,
+   5708,
+   25248,
+   44788,
+   64328,
+   18332,
+   37872,
+   57412,
+   11416,
+   30956,
+   50496
+  ]
+ },
+ "synthetic": "Hand-written test values, no Lineage II bytes"
+}
