@@ -9,7 +9,7 @@ import argparse
 import json
 
 from native_store.gap_rows import read_gap_rows, write_gap_rows
-from native_store.store_paths import REPOSITORY_ROOT
+from native_store.store_paths import REPOSITORY_ROOT, require_converter_output
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, require_batch_preflight, run_at_below_normal_priority
 from reference_client_guard import require_reference_client
 from world.raw_map_step import RAW_STEP_NAME, TILE_ID_PATTERN, run_raw_map_step
@@ -38,7 +38,7 @@ def record_tile_step_gap_row(project_root, row):
 
 def run_tile_step(step, client, tile_id, output):
     if step == TILE_MANIFEST_STEP_NAME:
-        return run_tile_manifest_step(REPOSITORY_ROOT, tile_id, REPOSITORY_ROOT / output)
+        return run_tile_manifest_step(REPOSITORY_ROOT, tile_id, require_converter_output(REPOSITORY_ROOT, REPOSITORY_ROOT / output))
     return [SOURCE_TILE_STEPS[step](REPOSITORY_ROOT, client, tile_id)]
 
 
