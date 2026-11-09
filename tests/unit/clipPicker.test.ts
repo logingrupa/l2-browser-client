@@ -103,7 +103,7 @@ describe("clip picker", () => {
   it("describes each clip with its native name, duration and events and the previewing clip as presentation", () => {
     const clipEvent = (clip: string, normalizedTime: number, type: string, sound: string | null, ordinal: number): ActorClipEvent => ({
       ordinal, animationSet: "set", clip, normalizedTime, timeSeconds: normalizedTime, type, notifyObject: "object", notifyFunction: "function",
-      sound, properties: {}, sourceFrames: 1, sourceRate: 1,
+      sound, properties: {}, sourceFrames: 1, sourceRate: 1, timingBasis: "synthetic fixture timing basis",
     });
     const clipHub = createNativeClipPreviewHub();
     clipHub.register("npc-20001-1", fakeClipPlayer(

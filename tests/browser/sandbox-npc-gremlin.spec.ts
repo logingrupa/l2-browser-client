@@ -13,6 +13,8 @@ const gremlinKey = "npc:20001";
 const rabbitKey = "npc:20002";
 const modelCatalogIdPattern = /^npc-model:[a-f0-9]{64}$/;
 const harnessLoadTimeout = 90_000;
+const sandboxGremlinEntityId = "npc-20001-1";
+const worldReadyTimeout = 240_000;
 const portraitPhone = { viewport: { width: 430, height: 932 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 };
 
 test.skip(process.env.NATIVE_STORE_ROOT !== laneName, "run with NATIVE_STORE_ROOT=actors");
@@ -92,5 +94,79 @@ test("has no horizontal scroll at 430 x 932 portrait", async ({ browser }) => {
   test.setTimeout(harnessLoadTimeout * 2);
   await openGremlinAndRabbit(browser, portraitPhone, async page => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  });
+});
+
+const sandboxEntities = (page: Page) => page.evaluate(() => {
+  if (!window.__nativeSlice) throw new Error("Native slice is not ready.");
+  return window.__nativeSlice.snapshot().entities;
+});
+
+async function playFirstGremlinClipFromPicker(page: Page): Promise<string> {
+  await page.goto("/");
+  await expect(page.locator('body[data-world-state="ready"]')).toHaveCount(1, { timeout: worldReadyTimeout });
+  await page.getByTestId("dev-sheet-toggle").click();
+  await page.getByTestId("dev-tab-sandbox").click();
+  await page.getByTestId("sandbox-spawn-npc-npcId").fill("20001");
+  await page.getByTestId("sandbox-spawn-npc-submit").click();
+  await expect(page.getByTestId("sandbox-spawn-note")).toHaveText(`${gremlinKey} converted`);
+  await expect.poll(async () => (await sandboxEntities(page)).find(entity => entity.id === sandboxGremlinEntityId)?.modelId ?? null,
+    { timeout: harnessLoadTimeout }).not.toBeNull();
+  await page.evaluate(() => window.__nativeSlice!.dispatch({ type: "set-paused", isPaused: true }));
+  await page.getByTestId("sandbox-clips-reread").click();
+  await page.getByTestId("sandbox-clips-actor").locator("select").selectOption(sandboxGremlinEntityId);
+  const firstClip = page.getByTestId("sandbox-clips-clip-0");
+  const clipName = await firstClip.textContent();
+  if (!clipName) throw new Error(`The clip picker lists no clip for ${sandboxGremlinEntityId}.`);
+  await firstClip.click();
+  await expect.poll(async () => {
+    const gremlin = (await sandboxEntities(page)).find(entity => entity.id === sandboxGremlinEntityId);
+    return { activeClip: gremlin?.playback?.activeClip ?? null, clipDiagnostic: gremlin?.clipDiagnostic ?? null };
+  }).toEqual({ activeClip: clipName, clipDiagnostic: null });
+  return clipName;
+}
+
+function collectPageErrors(page: Page): string[] {
+  const pageErrors: string[] = [];
+  page.on("pageerror", error => pageErrors.push(error.message));
+  return pageErrors;
+}
+
+test.describe("clip picker on the native route at 1440 x 900", () => {
+  test.use({ viewport: desktopViewport });
+
+  test("plays the first listed npc:20001 clip from the Clips picker and reads it back as previewing", async ({ page }) => {
+    test.setTimeout(worldReadyTimeout + harnessLoadTimeout * 2);
+    const pageErrors = collectPageErrors(page);
+    const clipName = await playFirstGremlinClipFromPicker(page);
+    await page.mouse.move(0, 0);
+    await page.getByTestId("sandbox-clips-clip-0").hover();
+    await expect(page.getByTestId("dev-hovercard").locator('[data-variable="clips.previewing"] .dev-variable-value')).toHaveText(clipName);
+    mkdirSync(evidenceDirectory, { recursive: true });
+    await page.screenshot({ path: resolve(evidenceDirectory, "sandbox-clip-picker-npc-20001-1440x900.png") });
+    expect(pageErrors).toEqual([]);
+  });
+});
+
+test.describe("clip picker on the native route at 932 x 430 on a landscape touch phone", () => {
+  test.use(landscapePhone);
+
+  test("plays the first listed npc:20001 clip from the Clips picker", async ({ page }) => {
+    test.setTimeout(worldReadyTimeout + harnessLoadTimeout * 2);
+    const pageErrors = collectPageErrors(page);
+    await playFirstGremlinClipFromPicker(page);
+    mkdirSync(evidenceDirectory, { recursive: true });
+    await page.screenshot({ path: resolve(evidenceDirectory, "sandbox-clip-picker-npc-20001-932x430.png") });
+    expect(pageErrors).toEqual([]);
+  });
+});
+
+test.describe("clip picker on the native route at 430 x 932 portrait", () => {
+  test.use(portraitPhone);
+
+  test("has no horizontal scroll with the Clips section open", async ({ page }) => {
+    test.setTimeout(worldReadyTimeout + harnessLoadTimeout * 2);
+    await playFirstGremlinClipFromPicker(page);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
 });
