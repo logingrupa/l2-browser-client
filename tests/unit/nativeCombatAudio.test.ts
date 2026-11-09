@@ -10,6 +10,7 @@ import { createNativeCombatAudio, nativeAttackEvents, nativeAttackShotRoute, nat
 import { loadNativeCombatAudio, parseNativeCombatManifest, type NativeCombatAudioBundle, type NativeCombatRole,
   type NativeCombatSelection, type NativeCombatSoundSet } from "../../src/audio/loadNativeCombatAudio";
 import { attachNativeCombatAudioControls } from "../../src/audio/nativeCombatAudioControls";
+import { combatAudioRoleRoutingDiagnostics } from "../../src/audio/combatAudioRoleRouting";
 import { nativePawnSoundLedger } from "../../src/audio/nativePawnSounds";
 import { createNativeActionCuePreview } from "../../src/audio/nativeActionCuePreview";
 
@@ -303,6 +304,23 @@ describe("browser combat hit sounds (native Q4 routes)", () => {
     expect(keys(fake).slice(-4)).toEqual(["key:ItemSound.fist_1", "key:SkillSound.power_strike_shot", "key:MonSound.Hit_Bone_6", "key:MonSound.field_stalker_dmg_1"]);
   });
 
+  it("labels the hand-typed native-combat-audio routing unresolved in the diagnostics and still plays its admitted sounds", () => {
+    const fake = fixture();
+    const diagnostics = fake.combat.inspection().diagnostics;
+    expect(diagnostics).toEqual(combatAudioRoleRoutingDiagnostics(bundle));
+    expect(diagnostics).toContain("Combat role routing unresolved: musveren/defense uses hand-typed column defense_sound1 (combat-role-route-unresolved:npcgrp/defense)");
+    expect(diagnostics).toHaveLength(bundle.selections.reduce((count, row) => count + Object.keys(row.roles).length, 0));
+    expect(fake.combat.test("player-hit")).toMatchObject({ outcome: "played" });
+    expect(keys(fake)).toEqual(["key:ItemSound.fist_1", "key:MonSound.Hit_Bone_6", "key:MonSound.field_stalker_dmg_1"]);
+  });
+
+  it("reports no routing diagnostic for a generated actor-sounds bundle", () => {
+    const { mixer } = fakeMixer();
+    const generated = createNativeCombatAudio({ ...bundle, id: "actor-sounds:npc:21622" }, mixer,
+      { entity: () => null, sourceClock: () => null, selectedEntityId: () => null, paused: () => false }, []);
+    expect(generated.inspection().diagnostics.filter(line => line.startsWith("Combat role routing unresolved"))).toEqual([]);
+  });
+
   it("positions voices at the pawn Location and applies the distance gain chip", () => {
     const fake = fixture({}, [], [0, .235, 0]);
     fake.combat.test("player-hit");
@@ -507,7 +525,7 @@ describe.skipIf(!stagedCatalog?.combatAudio)("staged combat bundle with the real
       selectedEntityId: () => "native-musveren", paused: () => false }, [
       { entityId: "local-player", catalogId: "human-male-fighter:0", asset: fighter, collisionRadiusMetres: .09 },
       { entityId: "native-musveren", catalogId: "musveren:0", asset: monster, collisionRadiusMetres: .18 }], { random: () => 0 });
-    expect(combat.inspection().diagnostics).toEqual([]);
+    expect(combat.inspection().diagnostics).toEqual(combatAudioRoleRoutingDiagnostics(staged));
     expect(fake.mixer.register).toHaveBeenCalledTimes(59);
     const step = (id: string, value: NativeActorClock) => { clocks.set(id, value); combat.update(); };
     step("local-player", clock("Atk01_Hand_MFighter", .01, { durationSeconds: 43 / 30 })); fake.endAll();
@@ -543,7 +561,7 @@ describe.skipIf(!stagedCatalog?.combatAudio)("staged combat bundle with the real
       selectedEntityId: () => "native-musveren", paused: () => false }, [
       { entityId: "local-player", catalogId, asset: player, collisionRadiusMetres: .09 },
       { entityId: "native-musveren", catalogId: "musveren:0", asset: monster, collisionRadiusMetres: .18 }], { random: appRandZeroAlwaysPlayingAttackVoice });
-    expect(combat.inspection().diagnostics).toEqual([]);
+    expect(combat.inspection().diagnostics).toEqual(combatAudioRoleRoutingDiagnostics(staged));
     const step = (id: string, value: NativeActorClock) => { clocks.set(id, value); combat.update(); };
     step("local-player", clock(attack, .01, { durationSeconds })); fake.endAll();
     step("local-player", clock(attack, durationSeconds - .01, { durationSeconds }));

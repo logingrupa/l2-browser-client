@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "native-combat-audio-bundle",
-  "description": "Combat hit-sound dependencies for the 20_20 slice, following the statically proved Q4 routes (native-sound-answers-20261107 REPORT.md Q4). Human players: chargrp rows for MFighter, FFighter, MMagic and FMagic (selected by body mesh). Route A AttackItem: chargrp attack_sound (fist_1..3, [CharSound] Vol/Radius) or the right-hand weapongrp item_sound (Short Sword item 1, [ItemSound] Vol/Radius). Route B AttackVoice: chargrp voice_snd_hand. Route C AttackShot: target defense (npcgrp defense_sound1 / armorgrp item_sound / chargrp defense_sound) then damage (npcgrp damage_sound gated by npc random / chargrp damage_sound gated by [CharSound] Random). Greater Musveren numeric fields use native meaning (radius 50, volume 250, random 70; the decoded labels sound_vol/sound_radius are swapped). [EtcSound] critical and soulshot sounds are staged for later server flags. Power Strike (skill 3 level 1) cast/shot remain name-match presentation candidates. Sound identities stay unique package+leaf candidates.",
+  "description": "Combat hit-sound dependencies for the 20_20 slice. The hand-typed role-to-column routing is unresolved until it is bound from decoded npcgrp/skillsoundgrp columns with exact source identities (ACT-05): every selection has roles null and records each former column under unresolved.roles as previousValue for audit only, so scripts/bundle-native-combat-audio.py refuses this recipe. Human players: chargrp rows for MFighter, FFighter, MMagic and FMagic (selected by body mesh). Greater Musveren numeric fields use native meaning (radius 50, volume 250, random 70; the decoded labels sound_vol/sound_radius are swapped). Sound identities stay unique package+leaf candidates.",
   "referencePolicy": {
     "exactIdentity": "full-object-casefold",
     "groupLessCandidates": "unique-package-leaf-candidate-admitted-as-presentation",
@@ -93,9 +93,24 @@
         "sha256": "25f4e583409d798cd10cdca79eb8620395ca383a50cdecedd2ab3d501eba803c"
       },
       "sections": {
-        "CharSound": ["Random", "Vol", "Radius"],
-        "ItemSound": ["Random", "Vol", "Radius"],
-        "EtcSound": ["CriticalSound", "CriticalSound_Vol", "CriticalSound_Radius", "SoulShotSound", "SoulShotSound_Vol", "SoulShotSound_Radius"]
+        "CharSound": [
+          "Random",
+          "Vol",
+          "Radius"
+        ],
+        "ItemSound": [
+          "Random",
+          "Vol",
+          "Radius"
+        ],
+        "EtcSound": [
+          "CriticalSound",
+          "CriticalSound_Vol",
+          "CriticalSound_Radius",
+          "SoulShotSound",
+          "SoulShotSound_Vol",
+          "SoulShotSound_Radius"
+        ]
       }
     }
   },
@@ -113,11 +128,26 @@
           "value": "Fighter.MFighter_m001_u"
         }
       ],
-      "roles": {
-        "attackItem": "attack_sound",
-        "attackVoice": "voice_snd_hand",
-        "defense": "defense_sound",
-        "damage": "damage_sound"
+      "roles": null,
+      "unresolved": {
+        "roles": {
+          "attackItem": {
+            "reason": "combat-role-route-unresolved:chargrp/attackItem",
+            "previousValue": "attack_sound"
+          },
+          "attackVoice": {
+            "reason": "combat-role-route-unresolved:chargrp/attackVoice",
+            "previousValue": "voice_snd_hand"
+          },
+          "defense": {
+            "reason": "combat-role-route-unresolved:chargrp/defense",
+            "previousValue": "defense_sound"
+          },
+          "damage": {
+            "reason": "combat-role-route-unresolved:chargrp/damage",
+            "previousValue": "damage_sound"
+          }
+        }
       }
     },
     {
@@ -133,11 +163,26 @@
           "value": "Fighter.FFighter_m001_u"
         }
       ],
-      "roles": {
-        "attackItem": "attack_sound",
-        "attackVoice": "voice_snd_hand",
-        "defense": "defense_sound",
-        "damage": "damage_sound"
+      "roles": null,
+      "unresolved": {
+        "roles": {
+          "attackItem": {
+            "reason": "combat-role-route-unresolved:chargrp/attackItem",
+            "previousValue": "attack_sound"
+          },
+          "attackVoice": {
+            "reason": "combat-role-route-unresolved:chargrp/attackVoice",
+            "previousValue": "voice_snd_hand"
+          },
+          "defense": {
+            "reason": "combat-role-route-unresolved:chargrp/defense",
+            "previousValue": "defense_sound"
+          },
+          "damage": {
+            "reason": "combat-role-route-unresolved:chargrp/damage",
+            "previousValue": "damage_sound"
+          }
+        }
       }
     },
     {
@@ -153,11 +198,26 @@
           "value": "Magic.MMagic_m005_u"
         }
       ],
-      "roles": {
-        "attackItem": "attack_sound",
-        "attackVoice": "voice_snd_hand",
-        "defense": "defense_sound",
-        "damage": "damage_sound"
+      "roles": null,
+      "unresolved": {
+        "roles": {
+          "attackItem": {
+            "reason": "combat-role-route-unresolved:chargrp/attackItem",
+            "previousValue": "attack_sound"
+          },
+          "attackVoice": {
+            "reason": "combat-role-route-unresolved:chargrp/attackVoice",
+            "previousValue": "voice_snd_hand"
+          },
+          "defense": {
+            "reason": "combat-role-route-unresolved:chargrp/defense",
+            "previousValue": "defense_sound"
+          },
+          "damage": {
+            "reason": "combat-role-route-unresolved:chargrp/damage",
+            "previousValue": "damage_sound"
+          }
+        }
       }
     },
     {
@@ -173,11 +233,26 @@
           "value": "Magic.FMagic_m003_u"
         }
       ],
-      "roles": {
-        "attackItem": "attack_sound",
-        "attackVoice": "voice_snd_hand",
-        "defense": "defense_sound",
-        "damage": "damage_sound"
+      "roles": null,
+      "unresolved": {
+        "roles": {
+          "attackItem": {
+            "reason": "combat-role-route-unresolved:chargrp/attackItem",
+            "previousValue": "attack_sound"
+          },
+          "attackVoice": {
+            "reason": "combat-role-route-unresolved:chargrp/attackVoice",
+            "previousValue": "voice_snd_hand"
+          },
+          "defense": {
+            "reason": "combat-role-route-unresolved:chargrp/defense",
+            "previousValue": "defense_sound"
+          },
+          "damage": {
+            "reason": "combat-role-route-unresolved:chargrp/damage",
+            "previousValue": "damage_sound"
+          }
+        }
       }
     },
     {
@@ -199,10 +274,22 @@
           "value": "LineageMonsters.field_stalker_m00"
         }
       ],
-      "roles": {
-        "attackItem": "attack_sound1",
-        "defense": "defense_sound1",
-        "damage": "damage_sound"
+      "roles": null,
+      "unresolved": {
+        "roles": {
+          "attackItem": {
+            "reason": "combat-role-route-unresolved:npcgrp/attackItem",
+            "previousValue": "attack_sound1"
+          },
+          "defense": {
+            "reason": "combat-role-route-unresolved:npcgrp/defense",
+            "previousValue": "defense_sound1"
+          },
+          "damage": {
+            "reason": "combat-role-route-unresolved:npcgrp/damage",
+            "previousValue": "damage_sound"
+          }
+        }
       },
       "nativeNumeric": {
         "soundRadius": "sound_vol",
@@ -222,8 +309,14 @@
           "value": 22
         }
       ],
-      "roles": {
-        "defense": "item_sound"
+      "roles": null,
+      "unresolved": {
+        "roles": {
+          "defense": {
+            "reason": "combat-role-route-unresolved:armorgrp/defense",
+            "previousValue": "item_sound"
+          }
+        }
       },
       "numericFields": [
         "body_part",
@@ -242,8 +335,14 @@
           "value": 1
         }
       ],
-      "roles": {
-        "attackItem": "item_sound"
+      "roles": null,
+      "unresolved": {
+        "roles": {
+          "attackItem": {
+            "reason": "combat-role-route-unresolved:weapongrp/attackItem",
+            "previousValue": "item_sound"
+          }
+        }
       },
       "numericFields": [
         "handness",
@@ -267,9 +366,18 @@
           "value": 1
         }
       ],
-      "roles": {
-        "cast": "spelleffect_sound_1",
-        "shot": "spelleffect_sound_2"
+      "roles": null,
+      "unresolved": {
+        "roles": {
+          "cast": {
+            "reason": "combat-role-route-unresolved:skillsoundgrp/cast",
+            "previousValue": "spelleffect_sound_1"
+          },
+          "shot": {
+            "reason": "combat-role-route-unresolved:skillsoundgrp/shot",
+            "previousValue": "spelleffect_sound_2"
+          }
+        }
       },
       "numericFields": [
         "spelleffect_sound_vol_1",
@@ -289,9 +397,18 @@
           "value": "ALAudio.int"
         }
       ],
-      "roles": {
-        "critical": "EtcSound.CriticalSound",
-        "soulshot": "EtcSound.SoulShotSound"
+      "roles": null,
+      "unresolved": {
+        "roles": {
+          "critical": {
+            "reason": "combat-role-route-unresolved:alaudio/critical",
+            "previousValue": "EtcSound.CriticalSound"
+          },
+          "soulshot": {
+            "reason": "combat-role-route-unresolved:alaudio/soulshot",
+            "previousValue": "EtcSound.SoulShotSound"
+          }
+        }
       },
       "numericFields": [
         "CharSound.Random",

@@ -3,53 +3,20 @@ import type { NativeActorClock } from "../assets/native/NativeActor";
 import type { WorldEntity } from "../world/worldTypes";
 import type { WorldAudioMixer, WorldAudioPlaybackReceipt, WorldAudioVector } from "./WorldAudioMixer";
 import type { NativeCombatAudioBundle, NativeCombatRole, NativeCombatSelection, NativeCombatSlot, NativeCombatSoundSet } from "./loadNativeCombatAudio";
+import { combatAudioRoleRoutingDiagnostics } from "./combatAudioRoleRouting";
 import { nativePawnSoundLedger } from "./nativePawnSounds";
 import { nativeAmbientRules } from "./worldAmbience";
 
-/** Browser combat hit sounds following the statically proved native routes.
- * Evidence: artifacts/native-parity/research/native-sound-answers-20261107/
- * REPORT.md Q4 and evidence/q4-hit-sounds-verify/verify_anchors.json.
- *
- * Native (P):
- *  - Route A, AnimNotify_AttackItem (0x106bce40 → APawn::GetAttackItemSound
- *    0x1061ec50), at the attacker on hit and miss: right-hand weapongrp
- *    item_sound with ALAudio.int [ItemSound] Vol/Radius, else NPC npcgrp
- *    attack_sound1 with the npc volume/radius, else chargrp attack_sound with
- *    [CharSound] Vol/Radius; pick appRand()%n; skipped while the same sound
- *    is still playing on that pawn (ALAudio IsPlaying, vtable +0x90).
- *  - Route B, AnimNotify_AttackVoice (0x106bd860 → GetAttackVoiceSound),
- *    at the attacker, never for NPCs: plays when appRand()%100 <= notify
- *    Random (50 → 16728/32768), chargrp voice_snd_hand, pick %n, notify
- *    Volume/Radius, same IsPlaying skip.
- *  - Route C, AnimNotify_AttackShot (→ APawn::Action_Attack 0x10626bb0), at
- *    the target: flags 0x80 miss → nothing; 0x40 shield; 0x20 critical
- *    ([EtcSound] CriticalSound); 0x10 soulshot ([EtcSound] SoulShotSound);
- *    else GetDefenseItemSound (NPC defense_sound1; player chest armorgrp
- *    item_sound, else chargrp defense_sound); then on any non-miss
- *    GetDamageSound gated by appRand()%100 <= random (NPC +0xd4 = 70 →
- *    23285/32768; player [CharSound] Random 50 → 16728/32768). Hand clips
- *    carry two AttackShot notifies, so route C runs twice; 1HS clips once.
- *    Gain argument volume/255, pitch 1.0.
- * Offline: no server attack record exists, so a shot at a target is treated
- * as flags 0 (normal hit) — labelled; nativeAttackShotRoute() keeps the flags
- * branches for later server results.
- * Presentation choices (labelled): target rule and reach (except for an
- * explicitly targeted skill preview), the listener, distance attenuation
- * (reuses the proved ambient curve), the fighter as Musveren's target
- * (conditional), Power Strike cast/shot candidates, Math.random as appRand,
- * test auditions. */
 export const FALLBACK_SHOT_FRACTION = .5;
 export const DEFAULT_REACH_METRES = 1.5;
 export const PRESENTATION_STATUS = "presentation choice — native rule unverified";
 export const OFFLINE_ATTACK_FLAGS = 0;
 export const OFFLINE_OUTCOME = "offline: no server result, treated as flags 0";
 export const CONDITIONAL_FIGHTER_TARGET = "conditional: native route C with the fighter's own GetDefenseItemSound/GetDamageSound; no server attack record proves this hit";
-/** appRand() is the 15-bit CRT rand(). */
 export const APP_RAND_RANGE = 32768;
 const UNITS_PER_METRE = 100;
 const EVIDENCE = "native-sound-answers-20261107 REPORT.md Q4";
 
-/** Exact probability of the native `appRand() % 100 <= threshold` test. */
 export function nativePercentChance(threshold: number): number {
   if (!Number.isFinite(threshold) || threshold < 0) return 0;
   const top = Math.min(99, Math.floor(threshold)) + 1, cycles = Math.floor(APP_RAND_RANGE / 100), rest = APP_RAND_RANGE % 100;
@@ -57,7 +24,6 @@ export function nativePercentChance(threshold: number): number {
 }
 
 export type NativeAttackShotRoute = "miss" | "shield" | "critical" | "soulshot" | "defense";
-/** APawn::Action_Attack branch order for a server attack-record flags byte (parser 0x10424e80). */
 export function nativeAttackShotRoute(flags: number, attackerSoulshot = false): NativeAttackShotRoute {
   if (!Number.isInteger(flags) || flags < 0 || flags > 0xff) throw new RangeError("Attack flags must be one byte.");
   if (flags & 0x80) return "miss";
@@ -68,8 +34,6 @@ export function nativeAttackShotRoute(flags: number, attackerSoulshot = false): 
 }
 
 export type NativeCombatDistanceGain = "ambient-curve" | "flat";
-/** Gain for a combat cue: native volume/255 × SoundVolume; with "ambient-curve" also the proved ambient
- * falloff (50R linear × OpenAL inverse-clamped, rolloff 0.5) — reusing it for actor sounds is a presentation choice. */
 export function nativeCombatGain(volume: number, radiusUnits: number, distanceUnits: number | null, mode: NativeCombatDistanceGain): number {
   const base = Math.min(1, Math.max(0, volume / 255 * nativeAmbientRules.soundVolume));
   if (mode === "flat" || distanceUnits === null || !(radiusUnits > 0)) return base;
@@ -90,9 +54,7 @@ export interface NativeCombatActor {
   readonly entityId: string;
   readonly catalogId: string;
   readonly asset: AssetPackage;
-  /** Native collision radius in metres; reach is measured edge to edge. */
   readonly collisionRadiusMetres: number;
-  /** Native collision half-height in metres: the pawn Location sits this far above the ground point. */
   readonly collisionHeightMetres?: number;
 }
 export interface NativeCombatWorld {
@@ -100,7 +62,6 @@ export interface NativeCombatWorld {
   sourceClock(entityId: string): NativeActorClock | null;
   selectedEntityId(): string | null;
   paused(): boolean;
-  /** Audio listener in browser metres (presentation choice); null plays without distance gain. */
   listener?(): WorldAudioVector | null;
 }
 export interface NativeCombatAudioOptions {
@@ -110,7 +71,6 @@ export interface NativeCombatAudioOptions {
   targetRule?: NativeCombatTargetRule;
   weapon?: NativeCombatWeaponChoice;
   distanceGain?: NativeCombatDistanceGain;
-  /** A clip first observed later than this is joined mid-way: earlier notifies are skipped, never replayed. */
   startWindowSeconds?: number;
 }
 export type NativeCombatRoute = "A" | "B" | "C" | "skill" | "test";
@@ -126,17 +86,12 @@ export interface NativeCombatDispatch {
   route: NativeCombatRoute; sourceTimeSeconds: number; observedTimeSeconds: number; offsetSeconds: number;
   outcome: "played" | "skipped" | "disabled" | "paused" | "attacker-dead" | "no-target" | "out-of-reach" | "target-dead" | "no-sound" | "miss";
   distanceMetres: number | null; special: boolean; reachGated: boolean;
-  /** Server flags byte used for route C (offline: 0); null for routes A/B. */
   flags: number | null; shotRoute: NativeAttackShotRoute | null;
-  /** 1-based AttackShot ordinal within the clip, and the clip's AttackShot count. */
   shot: { index: number; count: number } | null;
   sounds: NativeCombatSoundReceipt[];
-  /** Roles a native rule (or an empty/unstaged slot) deliberately left silent. */
   skipped: NativeCombatSkip[];
 }
-/** Structurally a developer-sheet VariableInfo, plus a short label and detail note. Getters are live. */
 export interface NativeCombatDescription {
-  /** Dotted, searchable name such as `combat.reachMetres`. */
   readonly name: string;
   readonly label: string;
   value(): string;
@@ -157,17 +112,13 @@ export interface NativeCombatInspection {
   diagnostics: string[]; disposed: boolean;
 }
 export interface NativeCombatAudio {
-  /** Call once per rendered frame after the entity registry advanced clocks. */
   update(): void;
   setEnabled(value: boolean): void;
   setReach(metres: number): void;
   setTargetRule(rule: NativeCombatTargetRule): void;
   setWeapon(choice: NativeCombatWeaponChoice): void;
   setDistanceGain(mode: NativeCombatDistanceGain): void;
-  /** Explicit audition of one complete impact (route A at the attacker, route C at the target with `flags`);
-   * ignores reach, selection, probabilities, IsPlaying and the enabled toggle. */
   test(scenario: NativeCombatTestScenario, flags?: number): NativeCombatDispatch | null;
-  /** Allocation-free per-frame readout for UI; dispatches are shared, do not mutate. */
   readout(): { readonly reachMetres: number; readonly lastHit: Readonly<NativeCombatDispatch> | null; readonly lastAttack: Readonly<NativeCombatDispatch> | null };
   inspection(): NativeCombatInspection;
   describe(): readonly NativeCombatDescription[];
@@ -176,7 +127,6 @@ export interface NativeCombatAudio {
 
 interface AttackEvent {
   readonly type: EventType; readonly notify: string; readonly time: number;
-  /** AttackVoice notify Random/Volume/Radius (serialized properties); null when absent. */
   readonly random: number | null; readonly volume: number | null; readonly radius: number | null;
   readonly shot: { index: number; count: number } | null;
 }
@@ -187,15 +137,13 @@ const attackTypes = new Set(["AnimNotify_AttackVoice", "AnimNotify_AttackItem", 
 const owner = (entityId: string) => `native-combat:${entityId}`;
 const playerKind = (entity: WorldEntity) => entity.kind !== "monster";
 const finite = (value: unknown): number | null => typeof value === "number" && Number.isFinite(value) ? value : null;
-/** Report values, used only when the staged bundle lacks its ALAudio.int config row (diagnosed). */
-const REPORT_CONFIG: Readonly<Record<string, number>> = { "CharSound.Random": 50, "CharSound.Vol": 250, "CharSound.Radius": 30,
+const MISSING_CONFIG_ROW_REPORT_VALUES: Readonly<Record<string, number>> = { "CharSound.Random": 50, "CharSound.Vol": 250, "CharSound.Radius": 30,
   "ItemSound.Vol": 250, "ItemSound.Radius": 40, "EtcSound.CriticalSound_Vol": 250, "EtcSound.CriticalSound_Radius": 50,
   "EtcSound.SoulShotSound_Vol": 250, "EtcSound.SoulShotSound_Radius": 50 };
 
 function record(value: unknown): Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
-/** Exact source notify times per clip, ordered by time then original ordinal, with AttackShot ordinals. */
 export function nativeAttackEvents(asset: AssetPackage): ReadonlyMap<string, readonly AttackEvent[]> {
   const clips = new Map<string, Omit<AttackEvent, "shot">[]>();
   for (const raw of asset.manifest.animationEvents ?? []) {
@@ -240,7 +188,7 @@ export function createNativeCombatAudio(bundle: NativeCombatAudioBundle | null, 
   const skill = selections.find(row => row.kind === "skill" && row.skillId === 3 && row.level === 1) ?? null;
   const config = selections.find(row => row.kind === "config") ?? null;
   if (bundle && !config) diagnostics.push(`Combat bundle has no ALAudio.int config row; using ${EVIDENCE} values.`);
-  const configValue = (name: string) => config?.numeric[name] ?? REPORT_CONFIG[name] ?? 0;
+  const configValue = (name: string) => config?.numeric[name] ?? MISSING_CONFIG_ROW_REPORT_VALUES[name] ?? 0;
   const npcNumbers = (selection: NativeCombatSelection | null) => {
     const numeric = selection?.numeric ?? {};
     return { volume: numeric.soundVolume ?? null, radius: numeric.soundRadius ?? null, random: numeric.soundRandom ?? null };
@@ -256,12 +204,12 @@ export function createNativeCombatAudio(bundle: NativeCombatAudioBundle | null, 
   let disposed = false, sequence = 0, played = 0, dropped = 0;
   let lastHit: NativeCombatDispatch | null = null, lastAttack: NativeCombatDispatch | null = null;
   if (!bundle) diagnostics.push("Combat sound bundle is not staged (catalog.combatAudio).");
+  diagnostics.push(...combatAudioRoleRoutingDiagnostics(bundle));
   if (!Number.isFinite(reach) || reach < 0 || reach > 50) throw new RangeError("Combat reach must be within 0–50 m.");
 
   const appRand = () => Math.min(APP_RAND_RANGE - 1, Math.max(0, Math.floor(random() * APP_RAND_RANGE)));
   const roll = (threshold: number) => appRand() % 100 <= threshold;
   const boundOf = (entityId: string) => bound.find(row => row.actor.entityId === entityId) ?? null;
-  /** Native `list[appRand() % n]` over the original array, empty slots included (they stay silent). */
   const pick = (set: NativeCombatSoundSet, audition: boolean): { slot: NativeCombatSlot | null; index: number; count: number } => {
     const count = set.slots.length + set.unadmitted.length;
     if (!count) return { slot: null, index: -1, count };
@@ -287,7 +235,6 @@ export function createNativeCombatAudio(bundle: NativeCombatAudioBundle | null, 
     }
     const position = location(boundOf(entity.id), entity), distance = distanceUnits(position);
     const gain = nativeCombatGain(cue.volume, cue.radius, distance, distanceGain);
-    // Pan only when a listener exists; otherwise the default Web Audio listener would mis-pan.
     const voice = gain > 0 ? mixer.startVoice(slot.key, { bus: "effects", owner: owner(entity.id), gain, offsetSeconds: dispatch.offsetSeconds,
       ...(distance === null ? {} : { position }) }) : null;
     const playback: WorldAudioPlaybackReceipt | null = voice ? { id: voice.id, key: voice.key, owner: voice.owner, contextTime: voice.startedAt,
@@ -323,8 +270,6 @@ export function createNativeCombatAudio(bundle: NativeCombatAudioBundle | null, 
     const others = bound.filter(row => row !== attacker).flatMap(row => {
       const other = world.entity(row.actor.entityId); return other ? [{ row, other }] : [];
     });
-    // An explicitly targeted skill preview (Power Strike at target) has no approach step and
-    // shows its impact at any distance; its sounds follow it without a reach gate.
     const explicit = tracker?.special ? tracker.explicitTarget : null;
     const preferred = explicit ?? (playerKind(entity) ? world.selectedEntityId() : null);
     if (preferred && preferred !== entity.id) {
@@ -335,7 +280,6 @@ export function createNativeCombatAudio(bundle: NativeCombatAudioBundle | null, 
       if (explicit) return { target: match.row, entity: match.other, distance, gated: false };
       return distance <= reach ? { target: match.row, entity: match.other, distance, gated: true } : { reason: "out-of-reach", distance };
     }
-    // NPCs have no selection: their implicit target is the nearest player.
     if (playerKind(entity) && targetRule === "selected") return { reason: "no-target", distance: null };
     const hostile = others.filter(item => playerKind(item.other) !== playerKind(entity) && item.other.health > 0)
       .map(item => ({ ...item, distance: gap(attacker, entity, item.row, item.other) })).sort((a, b) => a.distance - b.distance);
@@ -344,7 +288,6 @@ export function createNativeCombatAudio(bundle: NativeCombatAudioBundle | null, 
     return nearest.distance <= reach ? { target: nearest.row, entity: nearest.other, distance: nearest.distance, gated: true } :
       { reason: "out-of-reach", distance: nearest.distance };
   };
-  /** Route A sound set and cue numbers (GetAttackItemSound). */
   const attackItem = (attacker: Bound, entity: WorldEntity): { set: NativeCombatSoundSet | undefined; cue: Cue } => {
     if (playerKind(entity) && weapon !== "fist") {
       const itemId = Number(weapon.slice("weapon:".length));
@@ -357,7 +300,6 @@ export function createNativeCombatAudio(bundle: NativeCombatAudioBundle | null, 
     }
     return { set: attacker.selection?.roles.attackItem, cue: { volume: configValue("CharSound.Vol"), radius: configValue("CharSound.Radius"), source: "ALAudio.int [CharSound]" } };
   };
-  /** Route C: defense (or the flags-branch sound) at the target, then the damage roll on any non-miss. */
   const impact = (dispatch: NativeCombatDispatch, target: Bound, targetEntity: WorldEntity, flags: number, audition: boolean) => {
     const route = nativeAttackShotRoute(flags);
     dispatch.flags = flags; dispatch.shotRoute = route;
@@ -372,10 +314,8 @@ export function createNativeCombatAudio(bundle: NativeCombatAudioBundle | null, 
       play(dispatch, route, config?.roles[route], targetEntity,
         { volume: configValue(`EtcSound.${key}_Vol`), radius: configValue(`EtcSound.${key}_Radius`), source: `ALAudio.int [EtcSound] ${key}` }, { audition });
     } else if (npcTarget) {
-      // GetDefenseItemSound / GetShieldItemSound NPC branch: defense_sound1 (shield falls back to it when lhand is 0).
       play(dispatch, "defense", target.selection?.roles.defense, targetEntity, npcCue, { audition });
     } else {
-      // Player chest armor (GetItemClassID(2), type 1) item_sound first, else chargrp defense_sound.
       const upper = targetEntity.equipment?.upper;
       const armor = upper === undefined ? undefined : selections.find(row => row.kind === "armor" && row.itemId === upper)?.roles.defense;
       if (armor?.slots.length) play(dispatch, "defense", armor, targetEntity,
@@ -404,7 +344,6 @@ export function createNativeCombatAudio(bundle: NativeCombatAudioBundle | null, 
       settle(dispatch); return remember(dispatch);
     }
     if (route === "A") {
-      // Hit or miss, at the attacker; no target is needed (native offline notify path).
       const item = attackItem(attacker, entity);
       play(dispatch, "attackItem", item.set, entity, item.cue, { isPlayingSkip: true });
       settle(dispatch); return remember(dispatch);
@@ -449,7 +388,6 @@ export function createNativeCombatAudio(bundle: NativeCombatAudioBundle | null, 
         if (!entity || !clock) { reset(row.actor.entityId); continue; }
         let tracker = trackers.get(row.actor.entityId);
         if (!clock.clip || clock.mode !== "once" || !Number.isFinite(clock.elapsedSeconds)) {
-          // Loops (idle/run/walk) carry no attack notifies; reuse the record.
           if (tracker && tracker.clip === clock.clip && !tracker.events.length) tracker.cursor = clock.elapsedSeconds;
           else trackers.set(row.actor.entityId, { clip: clock.clip, duration: clock.durationSeconds, cursor: clock.elapsedSeconds,
             events: [], special: false, explicitTarget: null });
@@ -459,7 +397,6 @@ export function createNativeCombatAudio(bundle: NativeCombatAudioBundle | null, 
           tracker = generation(row, entity, clock); trackers.set(row.actor.entityId, tracker);
         }
         const end = Math.min(clock.elapsedSeconds, clock.durationSeconds);
-        // Consume even while disabled/paused/locked: no queue and no late replay.
         for (const event of tracker.events) if (event.time > tracker.cursor && event.time <= end) fire(row, entity, tracker, event, end);
         tracker.cursor = Math.max(tracker.cursor, end);
       }
@@ -527,7 +464,6 @@ export function createNativeCombatAudio(bundle: NativeCombatAudioBundle | null, 
 }
 
 const leaf = (reference: string) => reference.split(".").at(-1) ?? reference;
-/** Compact one-line summary (sounds by leaf name). */
 export function summarizeNativeCombatDispatch(dispatch: Readonly<NativeCombatDispatch> | null): string {
   if (!dispatch) return "none yet";
   const sounds = dispatch.sounds.map(sound => `${leaf(sound.reference)}${sound.accepted ? "" : " (muted)"}`);
@@ -545,7 +481,6 @@ function setSummary(set: NativeCombatSoundSet | undefined): string {
 }
 const percent = (value: number | null) => value === null ? "not staged" : `${(value * 100).toFixed(1)}%`;
 
-/** Rows for hover-cards in the developer sheet. value() and the getters read live state. */
 export function describeNativeCombatAudio(audio: Pick<NativeCombatAudio, "inspection" | "readout">, bundle: NativeCombatAudioBundle | null): readonly NativeCombatDescription[] {
   const selections = bundle?.selections ?? [];
   const actor = (table: string) => selections.filter(row => row.kind === "actor" && row.table === table);
