@@ -11,13 +11,16 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 
 from native_assets_lib.asset_manifest import reference_client_build
-from native_assets_lib.static_materials import REVIEWED_VERSIONS
+from native_assets_lib.static_materials import (REVIEWED_VERSIONS, STATIC_MATERIAL_CROSS_CHECKS_PATH,
+                                                STATIC_MATERIAL_REAL_CLIENT_CASES_PATH)
 from native_store.canonical_json import canonical_json_bytes
 from reference_client_guard import ENGINE_LIBRARY_RELATIVE_PATH, REFERENCE_CLIENT_LOCK_PATH, read_reference_client_lock, require_reference_client
 from reference_client_lock_fixture import equal_lock_record, use_synthetic_reference_client_lock, write_synthetic_engine_library
 from ue2_package_fixture import package_bytes
+import record_static_material_cross_check as cross_check_recorder
 import static_material_package_census as census_module
 
+CONVERSION_CLIENT_ROOT = Path('E:/Lineage2-client')
 PACKAGE_VERSION_HEADER_OFFSET = 4
 STATIC_MESH_IMPORTS = [('Core', 'Package', 0, 'Engine'), ('Core', 'Class', -1, 'StaticMesh'), ('Core', 'Class', -1, 'Texture')]
 STATIC_MESH_CLASS_IMPORT = -2
@@ -109,6 +112,30 @@ class SyntheticStaticMeshPackageCensusTests(unittest.TestCase):
         for case, document in {'stale flag': stale_flag, 'unsorted rows': unsorted_rows, 'missing UE123 count': missing_count}.items():
             with self.subTest(case=case), self.assertRaises(census_module.StaticMeshPackageCensusError):
                 census_module.validate_static_mesh_package_census(document)
+
+
+class CrossCheckPackageSelectionTests(unittest.TestCase):
+    def test_the_first_census_package_of_a_version_is_chosen_and_a_missing_version_is_refused(self):
+        census = {'packages': [{'path': 'staticmeshes/a_s.usx', 'packageVersion': 123, 'licensee': 28},
+                               {'path': 'staticmeshes/b_s.usx', 'packageVersion': 123, 'licensee': 12},
+                               {'path': 'staticmeshes/c_s.usx', 'packageVersion': 123, 'licensee': 12}]}
+        self.assertEqual(cross_check_recorder.first_census_package_of_version(census, (123, 12))['path'], 'staticmeshes/b_s.usx')
+        with self.assertRaisesRegex(cross_check_recorder.StaticMaterialCrossCheckRecordError, '123/13'):
+            cross_check_recorder.first_census_package_of_version(census, (123, 13))
+
+
+@unittest.skipUnless(CONVERSION_CLIENT_ROOT.is_dir() and REFERENCE_CLIENT_LOCK_PATH.is_file(),
+                     'needs --client E:/Lineage2-client and the committed reference client lock')
+class RecordedRealClientCaseTests(unittest.TestCase):
+    def test_the_committed_cases_of_each_cross_checked_package_are_what_the_recorder_writes(self):
+        reference_access = require_reference_client(CONVERSION_CLIENT_ROOT)
+        rows = json.loads((ROOT / STATIC_MATERIAL_CROSS_CHECKS_PATH).read_bytes())['rows']
+        cases = json.loads((ROOT / STATIC_MATERIAL_REAL_CLIENT_CASES_PATH).read_bytes())['cases']
+        self.assertTrue(rows)
+        for row in rows:
+            with self.subTest(package=row['package']):
+                self.assertEqual(cross_check_recorder.real_client_cases(reference_access, row['package']),
+                                 [case for case in cases if case['package'] == row['package']])
 
 
 class CommittedStaticMeshPackageCensusTests(unittest.TestCase):
