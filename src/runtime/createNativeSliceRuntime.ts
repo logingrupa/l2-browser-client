@@ -269,7 +269,8 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     boundaryReleases.push(sandboxWindows.release);
     boundaryReleases.push(attachSandboxCommandSheet({ section: ui.sheet.section("sandbox", { title: "Sandbox", order: 5 }), adapter,
       indexFailure: catalogIndexFailure, powerStrike, pickerContext: {
-        host: createSandboxRuntimeActions({ adapter, windowLayer: sandboxWindows.layer, location: window.location, signal: sandboxLifetime.signal }),
+        host: createSandboxRuntimeActions({ adapter, windowLayer: sandboxWindows.layer, location: window.location, signal: sandboxLifetime.signal,
+          clipListings: clipPreview }),
         catalogIndex, readNameIndex: readNativeTableNameIndex, selectedEntityId: () => registry.selectedEntityId,
         currentTileId: () => selectedNativeTileIdentity(window.location), signal: sandboxLifetime.signal,
       } }));

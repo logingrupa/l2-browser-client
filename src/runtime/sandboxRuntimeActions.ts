@@ -1,3 +1,4 @@
+import type { ActorClipListingSource } from "../animation/actorClipPlayback";
 import { describeNativeCatalogLookup } from "../assets/native/nativeCatalogIndex";
 import { tileIdPattern } from "../assets/native/nativeCatalogRecords";
 import { selectedNativeTileIdentity } from "../scene/world/selectedNativeTile";
@@ -12,6 +13,7 @@ export interface SandboxRuntimeActionsOptions {
   readonly windowLayer: Pick<NativeWindowLayer, "open">;
   readonly location: SandboxTileLocation;
   readonly signal: AbortSignal;
+  readonly clipListings: ActorClipListingSource;
 }
 
 function outcomeOfWindowOpen(result: NativeWindowOpenResult): SandboxActionOutcome {
@@ -31,8 +33,8 @@ function locationWithSelectedTile(location: SandboxTileLocation, tileId: string)
   return url.href;
 }
 
-export function createSandboxRuntimeActions(options: SandboxRuntimeActionsOptions): SandboxPickerHost {
-  const { adapter, windowLayer, location, signal } = options;
+export function createSandboxRuntimeActions(options: SandboxRuntimeActionsOptions): SandboxPickerHost & ActorClipListingSource {
+  const { adapter, windowLayer, location, signal, clipListings } = options;
   return {
     dispatch: command => { adapter.dispatch(command); },
     reloadTile: tileId => {
@@ -47,5 +49,8 @@ export function createSandboxRuntimeActions(options: SandboxRuntimeActionsOption
       signal.throwIfAborted();
       return outcomeOfWindowOpen(result);
     },
+    actorClipEntityIds: () => clipListings.actorClipEntityIds(),
+    actorClipListing: entityId => clipListings.actorClipListing(entityId),
+    previewing: entityId => clipListings.previewing(entityId),
   };
 }

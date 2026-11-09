@@ -1,6 +1,7 @@
 import { vi } from "vitest";
 import { DevSheet, type DevSection } from "../../../src/ui/devSheet/DevSheet";
 import type { NativeCatalogIndex, NativeCatalogLookup } from "../../../src/assets/native/nativeCatalogIndex";
+import { createNativeClipPreviewHub } from "../../../src/assets/native/nativeClipPreview";
 import { attachSandboxCommandSheet } from "../../../src/runtime/attachSandboxCommandSheet";
 import { createSandboxRuntimeActions, type SandboxTileLocation } from "../../../src/runtime/sandboxRuntimeActions";
 import type { NativeWindowLayer, NativeWindowOpenResult } from "../../../src/ui/nativeWindows/nativeWindowLayer";
@@ -61,7 +62,8 @@ export function attachSandboxSheetWithFakes(dom: MiniDom, options: SandboxSheetF
   const lifetime = new AbortController();
   const powerStrike = { start: vi.fn(async () => {}) };
   const { sheet, section } = createSandboxSection(dom);
-  const host = createSandboxRuntimeActions({ adapter, windowLayer: fakeWindowLayerOver(index, openedWindowIds), location, signal: lifetime.signal });
+  const host = createSandboxRuntimeActions({ adapter, windowLayer: fakeWindowLayerOver(index, openedWindowIds), location, signal: lifetime.signal,
+    clipListings: createNativeClipPreviewHub() });
   const release = attachSandboxCommandSheet({ section, adapter, indexFailure, powerStrike, pickerContext: {
     host, catalogIndex: index,
     readNameIndex: async tableId => ({ status: "not-in-catalog", key: `table:${tableId.replace(/-/g, "_")}_names`, reason: "no tables record in the served catalog" }),

@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
+import type { ActorClipPlayer } from "../../src/animation/actorClipPlayback";
+import { createNativeClipPreviewHub } from "../../src/assets/native/nativeClipPreview";
 import { createSandboxRuntimeActions, type SandboxTileLocation } from "../../src/runtime/sandboxRuntimeActions";
 import type { NativeWindowLayer, NativeWindowOpenResult } from "../../src/ui/nativeWindows/nativeWindowLayer";
 import type { WorldCommand } from "../../src/world/worldTypes";
@@ -15,12 +17,13 @@ function openedResult(windowId: string, gapCount: number): NativeWindowOpenResul
   return { status: "opened", windowId, key: `window:${windowId}`, window: { element: {} as HTMLElement, gaps, refresh() {}, dispose() {} } };
 }
 
-function createActions(href = "http://127.0.0.1:5173/", open: NativeWindowLayer["open"] = async windowId => openedResult(windowId, 0)) {
+function createActions(href = "http://127.0.0.1:5173/", open: NativeWindowLayer["open"] = async windowId => openedResult(windowId, 0),
+  clipListings = createNativeClipPreviewHub()) {
   const adapter = { dispatch: vi.fn((_command: WorldCommand) => {}) };
   const windowLayer = { open: vi.fn(open) };
   const lifetime = new AbortController();
   const { location, assigned } = fakeLocation(href);
-  const actions = createSandboxRuntimeActions({ adapter, windowLayer, location, signal: lifetime.signal });
+  const actions = createSandboxRuntimeActions({ adapter, windowLayer, location, signal: lifetime.signal, clipListings });
   return { actions, adapter, windowLayer, assigned, lifetime };
 }
 
@@ -99,5 +102,31 @@ describe("createSandboxRuntimeActions openWindow", () => {
     lifetime.abort();
     settle(openedResult("StatusWnd", 0));
     await expect(opening).rejects.toThrow();
+  });
+});
+
+function fakeClipPlayer(clipNames: readonly string[]): ActorClipPlayer {
+  let previewing: string | null = null;
+  return {
+    play: clipName => { previewing = clipName; },
+    get previewing() { return previewing; },
+    listing: { clips: clipNames.map(name => ({ name, durationSeconds: 1, events: [] })), eventsWithoutClip: [] },
+  };
+}
+
+describe("createSandboxRuntimeActions clip listings", () => {
+  it("answers listings, entity order and previewing from the clip hub it is given", () => {
+    const hub = createNativeClipPreviewHub();
+    hub.register("npc:20001", fakeClipPlayer(["ClipOne", "ClipTwo"]));
+    hub.register("local-player", fakeClipPlayer(["ClipOne"]));
+    const { actions } = createActions(undefined, undefined, hub);
+    expect(actions.actorClipEntityIds()).toEqual(hub.actorClipEntityIds());
+    expect(actions.actorClipEntityIds()).toEqual(["npc:20001", "local-player"]);
+    expect(actions.actorClipListing("npc:20001")).toBe(hub.actorClipListing("npc:20001"));
+    expect(actions.actorClipListing("npc:unknown")).toBeNull();
+    expect(actions.previewing("npc:20001")).toBeNull();
+    hub.play("npc:20001", "ClipTwo");
+    expect(actions.previewing("npc:20001")).toBe("ClipTwo");
+    expect(actions.previewing("local-player")).toBeNull();
   });
 });
