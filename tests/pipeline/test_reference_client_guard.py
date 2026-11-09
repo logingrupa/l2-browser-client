@@ -1,5 +1,4 @@
 import hashlib
-import importlib.util
 import os
 from pathlib import Path
 import shutil
@@ -14,6 +13,7 @@ import build_reference_client_lock
 import reference_client_guard
 from build_reference_client_lock import classify_reference_client_trees, write_reference_client_lock
 from hash_reference_client_tree import hash_tree
+from native_assets_lib.sound_export_guards import Sources
 from reference_client_guard import (ReferenceClientLock, ReferenceClientLockError, current_host_name, is_locked_reference_root,
     read_reference_client_lock, require_reference_client)
 from reference_client_lock_fixture import use_reference_client_lock
@@ -274,13 +274,6 @@ class CentralReadHelperBindingTests(GuardedConversionRootTestCase):
             table_source_path(self.trees.conversion_root, r'l2\.ini', 'l2.ini')
 
 
-def load_script_module(module_name, file_name):
-    specification = importlib.util.spec_from_file_location(module_name, ROOT / 'scripts' / file_name)
-    module = importlib.util.module_from_spec(specification)
-    specification.loader.exec_module(module)
-    return module
-
-
 class PerFileReaderBindingTests(GuardedConversionRootTestCase):
     def setUp(self):
         super().setUp()
@@ -301,10 +294,9 @@ class PerFileReaderBindingTests(GuardedConversionRootTestCase):
                 packages.get('Mage')
 
     def test_map_audio_sources_read_only_lock_equal_files(self):
-        map_audio = load_script_module('map_audio_sources_under_test', 'export-native-map-audio.py')
         lock = {'schemaVersion': 1, 'sourceHost': 'TEST-HOST', 'sourceRoot': 'C:/test-client',
             'files': [self.locked_input_row('animations/Fighter.ukx'), self.locked_input_row('animations/Mage.ukx')]}
-        sources = map_audio.Sources(self.trees.conversion_root, lock)
+        sources = Sources(self.trees.conversion_root, lock)
         self.assertEqual(sources.read('animations/Fighter.ukx'), b'equal package')
         with self.assertRaisesRegex(ReferenceClientLockError, 'animations/Mage.ukx is differing, not equal'):
             sources.read('animations/Mage.ukx')

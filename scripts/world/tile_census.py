@@ -13,7 +13,7 @@ import re
 
 from hash_reference_client_tree import canonical_json_bytes as lock_canonical_json_bytes
 from native_catalog.ue2 import FormatError, Package, summary
-from native_map import actor_properties, decode_property, property_value
+from world.map_actor_properties import actor_properties, decode_property, property_value
 from native_store.canonical_json import canonical_json_bytes
 from native_store.gap_rows import load_gap_reason_patterns, validate_gap_row, write_gap_rows
 from native_store.unit_ledger import run_at_below_normal_priority

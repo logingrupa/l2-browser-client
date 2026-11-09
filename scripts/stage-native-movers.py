@@ -5,7 +5,7 @@ from pathlib import Path
 
 from native_assets import verify_archive
 from native_assets_lib.gltf import json_bytes
-from native_map import safe_path, sha
+from world.map_sources import safe_path, sha
 from native_map_movers import MAP_SHA
 from native_store.catalog_writer import immutable_write, replace_file
 

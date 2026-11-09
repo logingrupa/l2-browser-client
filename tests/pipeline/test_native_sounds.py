@@ -84,14 +84,18 @@ class NativeSoundBatchTests(unittest.TestCase):
         path.write_bytes(batch.canonical(value))
 
     def rehash(self, args):
-        self.rewrite(args.output/'SHA256-MANIFEST.json', {'schemaVersion': 1, 'files': batch.map_audio_exporter_guards.files_receipt(args.output)})
+        self.rewrite(args.output/'SHA256-MANIFEST.json', {'schemaVersion': 1, 'files': batch.files_receipt(args.output)})
 
     def output_from_previous_name_policy_wrapper(self, args):
         previous_wrapper_implementation = batch.implementation()
         previous_wrapper_implementation['files']['export-native-sounds.py'] = 'a07ac02e417616f0000754ee746cc19cd59ce5eee085cb2fb4fc20d1500c022f'
-        with patch.object(batch, 'FULL_OBJECT', batch.map_audio_exporter_guards.REFERENCE), \
+        with patch.object(batch, 'FULL_OBJECT', batch.REFERENCE), \
                 patch.object(batch, 'implementation', return_value=previous_wrapper_implementation):
             return batch.run(args)
+
+    def test_implementation_pins_the_sound_exporter_its_guards_and_footstep_config(self):
+        self.assertEqual(set(batch.implementation()['files']),
+                         {'export-native-sounds.py', 'native_assets_lib/sound_export_guards.py', 'native_assets_lib/footstep_config.py'})
 
     def test_real_converter_clean_repeat_and_cache_preserve_bytes_and_times(self):
         args = self.fixture()
@@ -142,7 +146,7 @@ class NativeSoundBatchTests(unittest.TestCase):
         row = self.read(args, 'inventory.json')['sounds'][0]
         self.assertEqual(row['export']['object'], 'AmbSound.Default.wind-loop')
         self.assertEqual(row['id'], 'interlude:AmbSound.Default.wind-loop')
-        self.assertIsNone(batch.map_audio_exporter_guards.REFERENCE.fullmatch(row['export']['object']))
+        self.assertIsNone(batch.REFERENCE.fullmatch(row['export']['object']))
         media = self.read(args, 'coverage.json')['sounds'][0]['products']['audio']
         self.assertEqual((args.output/media['path']).read_bytes(), wav_bytes())
 
@@ -191,7 +195,7 @@ class NativeSoundBatchTests(unittest.TestCase):
         previous = args.output
         original = self.read(args, 'run.json')
         mutations = [
-            lambda owner: owner['implementation']['files'].__setitem__('native_map.py', '0'*64),
+            lambda owner: owner['implementation']['files'].__setitem__('native_assets_lib/sound_export_guards.py', '0'*64),
             lambda owner: owner['implementation'].__setitem__('converterSha256', '0'*64),
             lambda owner: owner['implementation']['tool'].__setitem__('sha256', '0'*64),
             lambda owner: owner.__setitem__('recipeSha256', '0'*64),

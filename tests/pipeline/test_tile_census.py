@@ -9,7 +9,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from material_graph_fixture import PROPERTY_SIZE_CODES, SyntheticPackageTables, compact
-from native_map import HAS_STACK
+from world.map_actor_properties import HAS_STACK
 from native_store.gap_rows import load_gap_reason_patterns, validate_gap_row
 from reference_client_guard import require_reference_client
 from reference_client_lock_fixture import lock_client_as_checked_conversion_root

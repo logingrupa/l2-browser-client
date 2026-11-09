@@ -1,9 +1,3 @@
-"""Thin offline adapters for the existing Interlude converters.
-
-This module never runs a subprocess, writes products, stages public assets, or
-touches a native runtime. The batch owner controls execution and source locks.
-Collectors verify produced files and preserve each converter's coverage scope.
-"""
 from __future__ import annotations
 
 from collections import Counter
@@ -95,7 +89,6 @@ def validate_job(job):
 
 
 def recipe_paths(job, project_root=ROOT):
-    """Pins needed by the outer owner, including migration child recipes."""
     validate_job(job)
     if 'recipe' not in job:
         return []
@@ -142,7 +135,7 @@ def adapter_pins(name):
     elif name == 'environment':
         files.update('scripts/' + item for item in ('native_environment.py', 'export-native-environment.py', 'native_catalog/ue2.py'))
     elif name == 'sky':
-        files.update('scripts/' + item for item in ('native_sky.py', 'native_bsp_floor.py', 'native_map.py',
+        files.update('scripts/' + item for item in ('native_sky.py', 'native_bsp_floor.py', 'world/bsp_reader_binding.py', 'world/map_actor_properties.py',
             'native_catalog/ue2.py', 'native_assets_lib/gltf.py', 'native_assets_lib/texture_dds.py'))
         files.update(path.relative_to(ROOT).as_posix() for path in (ROOT / 'scripts/vendor/lineage2elbera_bsp').rglob('*.py'))
         from PIL import DdsImagePlugin, Image
@@ -153,7 +146,6 @@ def adapter_pins(name):
 
 
 def command(job, source_root, source_lock, output, project_root=ROOT):
-    """Return an argv array. No shell, arbitrary executable or staging flag."""
     validate_job(job)
     name = job['adapter']
     recipe_paths(job, project_root)
@@ -349,7 +341,7 @@ def _migration(job, output, pins, source_lock, project_root):
                 and check.get('sha256') == digest(path.read_bytes()) and check.get('bytes') == path.stat().st_size,
                 'Migration archive validation identity differs')
         if manifest['kind'] == 'model':
-            _migration_gltf_summary(check.get('gltf'))
+            require_passed_migration_gltf_summary(check.get('gltf'))
         files += extra; kinds[manifest['kind'] + 'Assets'] += 1
     for bundle in bundles:
         receipt = read_json(bundle / 'receipt.json')
@@ -358,7 +350,7 @@ def _migration(job, output, pins, source_lock, project_root):
         check = bundle_checks[bundle.relative_to(Path(output)).as_posix()]
         require(check.get('verified') is True and check.get('kind') == manifest.get('kind'), 'Migration bundle validation identity differs')
         if manifest.get('kind') == 'native-terrain-section':
-            _migration_gltf_summary(check.get('gltf'))
+            require_passed_migration_gltf_summary(check.get('gltf'))
     unsupported = [row for row in jobs if row.get('support') == 'failed' or row.get('unsupported')]
     unsupported += coverage.get('unsupportedPackages', [])
     return _result('partial' if unsupported else 'converted', {'requestedJobs': len(jobs), 'bundleCount': len(bundles), **kinds},
@@ -366,9 +358,7 @@ def _migration(job, output, pins, source_lock, project_root):
         [*coverage.get('deferred', []), 'Migration validation summaries are bound to active products; validators are not rerun by collection.'])
 
 
-def _migration_gltf_summary(summary):
-    # Full validator reports contain run timestamps. Keep the existing stable
-    # migration summary contract, allowing read-only reuse/clean comparisons.
+def require_passed_migration_gltf_summary(summary):
     require(isinstance(summary, dict) and summary.get('version') == '2.0.0-dev.3.10' and summary.get('errors') == 0
             and type(summary.get('warnings')) is int and summary['warnings'] >= 0, 'Migration glTF validation summary is missing or failed')
 
@@ -459,14 +449,11 @@ def _result(status, counts, products, dependencies, unsupported, limits):
 
 
 def collect(job, output, source_lock, project_root=ROOT):
-    """Inspect only the supplied owned output. Never reruns a converter."""
     validate_job(job)
     output = Path(output).absolute()
     reject_links(output)
     require(output.is_dir(), 'Adapter output directory is missing')
     try:
-        # Legacy readers have their own containment rules; reject link aliases
-        # before allowing them to inspect any nested product/receipt.
         for path in output.rglob('*'):
             reject_links(path)
         pins = _lock(source_lock)

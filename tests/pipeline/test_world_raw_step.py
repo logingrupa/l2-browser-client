@@ -11,10 +11,11 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from native_map import HAS_STACK, build_map, validate_recipe
+from native_map import build_map, validate_recipe
 from native_store.gap_rows import read_gap_rows, write_gap_rows
 from world import convert_tile
 from world.convert_tile import record_tile_step_gap_row
+from world.map_actor_properties import HAS_STACK
 from world.raw_map_step import RAW_MAP_STEP_ALGORITHM_VERSION, raw_map_recipe, run_raw_map_step
 from reference_client_lock_fixture import lock_client_as_checked_conversion_root
 from ue2_package_fixture import compact, package_bytes, tag

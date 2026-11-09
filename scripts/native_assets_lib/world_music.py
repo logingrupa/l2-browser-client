@@ -125,22 +125,22 @@ def lock_pins(document, label):
 
 def music_volumes(map_data, map_label):
     from native_catalog.ue2 import Package
-    import native_map
-    import native_bsp_floor
+    from world.bsp_reader_binding import PackageAdapter, reviewed_reader
+    from world.map_actor_properties import actor_properties, decode_property, explicit_properties, property_value, source_range
     package = Package(map_data, Path(map_label).name)
-    adapter, reader = native_bsp_floor.PackageAdapter(package), native_bsp_floor.reviewed_reader()
+    adapter, reader = PackageAdapter(package), reviewed_reader()
     volumes = []
     for item in package.exports:
         if item['classObject'] != 'Engine.MusicVolume':
             continue
-        props, tail, state, _ = native_map.actor_properties(package, item)
+        props, tail, state, _ = actor_properties(package, item)
         require_condition(tail.position == tail.end, 'MusicVolume has unconsumed tagged bytes: ' + item['object'])
-        decoded = [native_map.decode_property(package, prop, map_label + '#unwrapped') for prop in props]
-        value = lambda name: native_map.property_value(decoded, name)
+        decoded = [decode_property(package, prop, map_label + '#unwrapped') for prop in props]
+        value = lambda name: property_value(decoded, name)
         music_id, brush = value('nMusicID'), value('Brush')
         require_condition(type(music_id) is int and music_id > 0 and isinstance(brush, dict) and brush.get('index', 0) > 0,
                 'MusicVolume lacks nMusicID or Brush: ' + item['object'])
-        transform = native_map.explicit_properties(decoded, TRANSFORMS)
+        transform = explicit_properties(decoded, TRANSFORMS)
         for name in ('Rotation', 'DrawScale', 'DrawScale3D'):
             require_condition(transform[name]['status'] == 'omitted-class-default-unresolved', 'Unsupported serialized brush transform: ' + name)
         location = transform['Location'].get('value') or {'X': 0.0, 'Y': 0.0, 'Z': 0.0}
@@ -162,12 +162,12 @@ def music_volumes(map_data, map_label):
             'musicId': music_id,
             'forcePlayMusic': value('bForcePlayMusic') if any(p['name'] == 'bForcePlayMusic' for p in decoded) else None,
             'group': value('Group'), 'tag': value('Tag'), 'stateFrame': state,
-            'nativePayload': native_map.source_range(package.data, map_label + '#unwrapped', item['offset'], item['offset'] + item['size']),
+            'nativePayload': source_range(package.data, map_label + '#unwrapped', item['offset'], item['offset'] + item['size']),
             'transform': transform,
             'transformPolicy': 'world = local - PrePivot + Location; omitted Rotation/DrawScale/DrawScale3D assumed identity (class defaults unresolved)',
             'brush': {'object': brush['object'], 'exportIndex': brush['index'], 'bytes': len(raw), 'sha256': sha256_hex_digest(raw),
                       'nodes': len(model.nodes), 'points': len(model.points), 'serializedBounds': [list(model.bounds[0]), list(model.bounds[1]), model.bounds[2]],
-                      'reader': 'scripts/vendor/lineage2elbera_bsp (pinned by native_bsp_floor.READER_SHA)'},
+                      'reader': 'scripts/vendor/lineage2elbera_bsp (pinned by world/bsp_reader_binding.py READER_SHA)'},
             'worldPlanes': planes,
             'worldBounds': {'min': [min(p[i] for p in points) for i in range(3)], 'max': [max(p[i] for p in points) for i in range(3)]},
             'insideRule': 'native point P is inside when nx*X + ny*Y + nz*Z - W <= 0 for every world plane (convex brush BSP chain)'})

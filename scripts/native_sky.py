@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-"""Scoped original 20_20 sky-room source snapshot; no generic reader widening.
-
-This is a frozen source-asset preview, not a native-time or pixel-parity claim.
-Original material graphs, source UVs, mip blocks and unresolved dynamics remain
-explicit. No native process or live asset staging is performed.
-"""
 import argparse
 import copy
 import io
@@ -15,13 +9,18 @@ import struct
 
 import PIL
 from PIL import Image, DdsImagePlugin
-from native_catalog.ue2 import FormatError, Package, Reader, summary, unwrap
-from native_map import actor_properties, decode_property
-from native_bsp_floor import (ROOT, MAP_SHA, ENGINE_SHA, PackageAdapter, reviewed_reader,
-    require, sha, pinned_bytes, f32, cross, difference, dot, write_unchanged_or_new)
+from native_catalog.ue2 import Package, Reader, summary, unwrap
+from native_bsp_floor import ROOT, MAP_SHA, ENGINE_SHA, require, sha, f32, cross, difference, dot, write_unchanged_or_new
+from world.bsp_reader_binding import PackageAdapter, pinned_bytes, reviewed_reader
+from world.map_actor_properties import actor_properties, decode_property
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib.texture_dds import build_texture_dds
 from reference_client_guard import require_reference_client
+
+SKY_ROOM_SNAPSHOT_DESCRIPTION = ('Scoped original 20_20 sky-room source snapshot; no generic reader widening. This is a frozen '
+    'source-asset preview, not a native-time or pixel-parity claim. Original material graphs, source UVs, '
+    'mip blocks and unresolved dynamics remain explicit. No native process or live asset staging is '
+    'performed.')
 
 SKY_SHA = '9c45f311e9668f745ef983ef2dbdf1b4ea250c30c30e453a66910f6a261e860f'
 SKY_ORIGIN = [292.2027587890625, 264403.15625, 24503.01953125]
@@ -266,7 +265,7 @@ def build(client):
 
 
 def main():
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--client',type=Path,required=True);parser.add_argument('--output',type=Path,required=True)
+    parser=argparse.ArgumentParser(description=SKY_ROOM_SNAPSHOT_DESCRIPTION);parser.add_argument('--client',type=Path,required=True);parser.add_argument('--output',type=Path,required=True)
     args=parser.parse_args();require_reference_client(args.client);target=args.output.resolve()
     require(target.is_relative_to((ROOT/'artifacts').resolve()) and target != (ROOT/'artifacts').resolve(), 'Use a dedicated artifacts scratch output')
     require(not target.is_relative_to(args.client.resolve()), 'Output must not modify native inputs')

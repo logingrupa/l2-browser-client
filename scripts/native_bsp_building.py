@@ -1,9 +1,4 @@
 #!/usr/bin/env python3
-"""Recover the original command hall's missing room shell from saved Level.Model.
-
-Qualified 20_20 Brush610 only. Reuse pinned, already converted original textures;
-never invoke a native client or overwrite the static meshes/terrain/Editor scene.
-"""
 import argparse
 import copy
 from fractions import Fraction
@@ -12,11 +7,15 @@ from pathlib import Path
 import struct
 
 from native_assets_lib.gltf import json_bytes
-from native_bsp_floor import (ROOT, MAP_SHA, MODEL_SHA, GLB_SHA, GLB_RELATIVE,
-    TEXTURE_PACKAGE_SHA, PackageAdapter, cross, difference, dot, f32,
-    pinned_bytes, require, reviewed_reader, sha, source_nodes, write_unchanged_or_new)
-from native_map import MapSources
+from native_bsp_floor import (ROOT, MAP_SHA, GLB_SHA, GLB_RELATIVE, TEXTURE_PACKAGE_SHA, cross, difference, dot, f32,
+    require, sha, source_nodes, write_unchanged_or_new)
+from world.bsp_reader_binding import PackageAdapter, pinned_bytes, reviewed_reader
+from world.map_sources import MapSources
 from reference_client_guard import require_reference_client
+
+COMMAND_HALL_SHELL_RECOVERY_DESCRIPTION = ("Recover the original command hall's missing room shell from saved Level.Model. Qualified 20_20 "
+    'Brush610 only. Reuse pinned, already converted original textures; never invoke a native client or '
+    'overwrite the static meshes/terrain/Editor scene.')
 
 BRUSH = '20_20.Brush610'
 SUPPORT = 'interlude:20_20.StaticMeshActor1913'
@@ -192,7 +191,7 @@ def build(client, bundle):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=COMMAND_HALL_SHELL_RECOVERY_DESCRIPTION)
     parser.add_argument('--client', type=Path, required=True)
     parser.add_argument('--source-bundle', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)

@@ -1,4 +1,3 @@
-"""Mover regression checks: indexed data, hinges, native defaults and resources."""
 import copy
 import hashlib
 import json
@@ -11,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/'scripts'))
 from native_assets import verify_archive
 from native_catalog.ue2 import FormatError
-from native_map import MapSources
+from world.map_sources import MapSources
 from native_map_movers import (ACTORS, MAP_SHA, MoverDefaults, collect_movers,
     endpoint_matrix, indexed_properties, qualified_classes)
 
@@ -39,7 +38,7 @@ class MoverResolutionTests(unittest.TestCase):
                 {'name': 'KeyRot', 'arrayIndex': 1, 'value': {'Yaw': -16384}}]
         props = indexed_properties(tags)
         self.assertEqual(props['KeyRot', 1]['value']['Yaw'], -16384)
-        self.assertEqual(tags[0]['arrayIndex'], None)  # raw evidence remains exact
+        self.assertEqual(tags[0]['arrayIndex'], None)
         with self.assertRaisesRegex(FormatError, 'Duplicate'):
             indexed_properties(tags + [{'name': 'KeyRot', 'arrayIndex': 0}])
         with self.assertRaisesRegex(FormatError, 'outside declaration'):
@@ -61,8 +60,6 @@ class MoverResolutionTests(unittest.TestCase):
             defaults.resolve({}, 'BaseRot', 'Rotator')
 
     def test_endpoint_preserves_authored_pivot_and_single_unit_conversion(self):
-        # Local glTF coordinates are already metres/XZY. Native PrePivot 100cm
-        # along X stays fixed at the hinge as the leaf rotates a quarter turn.
         transforms = {name: {'value': value} for name, value in {
             'Location': {'X': 0, 'Y': 0, 'Z': 0},
             'Rotation': {'Pitch': 0, 'Yaw': 0, 'Roll': 0},

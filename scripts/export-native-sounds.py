@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
-import importlib.util
 from pathlib import Path
 import re
 import struct
@@ -15,6 +14,8 @@ import native_assets
 from native_assets import Converter, verify_archive
 from native_assets_lib.conversion_evidence import EXPORT_MANIFEST_NAME, EXPORT_MANIFEST_SCHEMA_VERSION
 from native_assets_lib.footstep_config import sound_payload
+from native_assets_lib.sound_export_guards import (HASH, REFERENCE, Sources, canonical, child, clean_adapter_work, digest, files_receipt,
+                                                   load_json, reject_links, relative_name, require, write_exact)
 from native_audio import decode_native_audio
 from native_catalog.ue2 import FormatError
 from reference_client_guard import require_reference_client
@@ -31,13 +32,6 @@ SOUND_EXPORT_DESCRIPTION = (
 )
 
 ROOT = Path(__file__).resolve().parent.parent
-map_audio_exporter_spec = importlib.util.spec_from_file_location('_native_sound_batch_helpers',
-    Path(__file__).resolve().with_name('export-native-map-audio.py'))
-map_audio_exporter_guards = importlib.util.module_from_spec(map_audio_exporter_spec)
-map_audio_exporter_spec.loader.exec_module(map_audio_exporter_guards)
-require, digest, canonical, load_json = map_audio_exporter_guards.require, map_audio_exporter_guards.digest, map_audio_exporter_guards.canonical, map_audio_exporter_guards.load_json
-reject_links, relative_name, child, write_exact = map_audio_exporter_guards.reject_links, map_audio_exporter_guards.relative_name, map_audio_exporter_guards.child, map_audio_exporter_guards.write_exact
-Sources = map_audio_exporter_guards.Sources
 SELECTION = 'all-Sound-exports-in-all-locked-uax-packages'
 FULL_OBJECT = re.compile(r'[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)+')
 RUNTIME = {'worldPlaybackConnected': False, 'nativePlaybackVerified': False,
@@ -48,8 +42,7 @@ CODEC_ERRORS = (ValueError, EOFError, wave.Error, struct.error)
 def implementation():
     scripts = Path(__file__).resolve().parent
     return {'files': {name: digest((scripts/name).read_bytes()) for name in
-            ('export-native-sounds.py', 'export-native-map-audio.py', 'native_map.py',
-             'native_assets_lib/footstep_config.py')},
+            ('export-native-sounds.py', 'native_assets_lib/sound_export_guards.py', 'native_assets_lib/footstep_config.py')},
             'converterSha256': native_assets.implementation_hash(),
             'tool': {'name': 'UEViewer UModel build1590 (pinned; Sound adapter does not execute it)',
                      'sha256': native_assets.UMODEL_SHA256}}
@@ -176,7 +169,7 @@ def cache_key(row, impl):
 
 def verify_product(output, row, result, impl, decoded):
     content = result['contentSha256']
-    require(isinstance(content, str) and map_audio_exporter_guards.HASH.fullmatch(content), 'Unsafe cache content directory')
+    require(isinstance(content, str) and HASH.fullmatch(content), 'Unsafe cache content directory')
     folder_name = 'cache/' + content
     folder = child(output, folder_name)
     archive_path = child(folder, 'asset.l2asset')
@@ -271,7 +264,7 @@ def verify_output(output, owner, document, sources, allow_lock=False):
               if path.is_file() and path.relative_to(output).as_posix() != '.run.lock'}
     require(actual == allowed, 'Unexpected or missing output file paths')
     manifest = load_json((output/'SHA256-MANIFEST.json').read_bytes())
-    require(manifest == {'schemaVersion': 1, 'files': map_audio_exporter_guards.files_receipt(output)}, 'Output manifest/file/hash closure differs')
+    require(manifest == {'schemaVersion': 1, 'files': files_receipt(output)}, 'Output manifest/file/hash closure differs')
     return coverage
 
 
@@ -294,7 +287,7 @@ def validate_previous_output_for_name_policy_reuse(previous, output, protected, 
     before = readonly_snapshot(previous)
     old_owner = load_json((previous/'run.json').read_bytes())
     old_wrapper = old_owner['implementation']['files']['export-native-sounds.py']
-    require(isinstance(old_wrapper, str) and map_audio_exporter_guards.HASH.fullmatch(old_wrapper), 'Invalid previous wrapper hash')
+    require(isinstance(old_wrapper, str) and HASH.fullmatch(old_wrapper), 'Invalid previous wrapper hash')
     compatible = load_json(canonical(old_owner))
     compatible['implementation']['files']['export-native-sounds.py'] = owner['implementation']['files']['export-native-sounds.py']
     require(compatible == owner, 'Reuse inputs/settings/tool or non-wrapper implementation differs')
@@ -307,7 +300,7 @@ def validate_previous_output_for_name_policy_reuse(previous, output, protected, 
             continue
         require(old.get('status') == 'unsupported-source-record' and current.get('status') == 'source-ready' and
                 old.get('error') == 'Unsupported full object identifier' and
-                map_audio_exporter_guards.REFERENCE.fullmatch(current['export']['object']) is None and
+                REFERENCE.fullmatch(current['export']['object']) is None and
                 FULL_OBJECT.fullmatch(current['export']['object']) is not None,
                 'Reuse inventory change is not a qualified name-policy promotion')
         previous_row = {key: value for key, value in current.items() if key not in ('nativeSound', 'nativePayload')}
@@ -396,11 +389,11 @@ def run(args):
                 result.update(status='exported-and-verified', contentSha256=converted['sha256'])
                 products, _ = verify_product(output, row, result, owner['implementation'], decoded)
                 result['products'] = products
-                map_audio_exporter_guards.clean_adapter_work(output/'cache')
+                clean_adapter_work(output/'cache')
             coverage = coverage_document(document, results)
             sources.verify_unchanged()
             write_exact(output, 'coverage.json', canonical(coverage))
-            write_exact(output, 'SHA256-MANIFEST.json', canonical({'schemaVersion': 1, 'files': map_audio_exporter_guards.files_receipt(output)}))
+            write_exact(output, 'SHA256-MANIFEST.json', canonical({'schemaVersion': 1, 'files': files_receipt(output)}))
             verify_output(output, owner, document, sources, allow_lock=True)
         finally:
             (output/'.run.lock').unlink()

@@ -1,4 +1,3 @@
-"""Actual bundle staging, idempotence and concurrent catalog preservation."""
 import importlib.util
 import json
 from pathlib import Path
@@ -12,7 +11,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 spec = importlib.util.spec_from_file_location('mover_stage', ROOT / 'scripts/stage-native-movers.py')
 stager = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(stager)
-from native_map import sha
+from world.map_sources import sha
 
 BUNDLE = ROOT / 'artifacts/native-parity/research/native-door-movers-20261107/converted'
 

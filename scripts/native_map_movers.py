@@ -1,10 +1,3 @@
-"""Source-qualified Engine.Mover extraction for the retained Interlude 20_20 map.
-
-This adapter is deliberately separate from StaticMeshActor conversion. It keeps
-all indexed keys and source tags, and derives rigid endpoints from the exact
-Mover inheritance and decompiled native operator identities. It does not assign
-server permissions, interaction distance, automatic closing, or sound dispatch.
-"""
 import copy
 import hashlib
 import json
@@ -18,9 +11,9 @@ from native_assets_lib.gltf import json_bytes
 from native_catalog.effects import SourcePackages, UELIB_SHA256, parse_uc
 from native_catalog.ue2 import FormatError
 from native_effect_bundle import DefaultReader
-from native_map import (MapSources, TRANSFORMS, actor_properties, decode_property,
-                        file_hash, safe_path, source_range)
-from native_map_geometry import gltf_placement, static_matrix
+from world.map_actor_properties import TRANSFORMS, actor_properties, decode_property, source_range
+from world.map_sources import MapSources, file_hash, safe_path
+from world.static_placement import gltf_placement, static_matrix
 
 ROOT = Path(__file__).resolve().parents[1]
 MAP_PATH = 'maps/20_20.unr'
@@ -63,7 +56,6 @@ def source_record(relative, package, item):
 
 
 def qualified_classes(definitions, read):
-    """Verify exact inherited classes, script/default parity, and key semantics."""
     require(set(definitions) == {'core.object', 'engine.actor', 'engine.mover'},
             'Unsupported Engine.Mover inheritance census')
     scripts = {}
@@ -108,10 +100,8 @@ class MoverDefaults:
 
     def declaration(self, name, kind, count=None):
         suffix = r'\['+str(count)+r'\]' if count is not None else ''
-        # UELib emits class fields at column zero and struct members indented.
-        # Core.Object also has a nested struct Location; it is not Actor.Location.
-        pattern = r'^var[^;\n]*\b'+re.escape(kind)+r'\s+'+name+suffix+r'\s*;'
-        matches = [key for key, script in self.scripts.items() if re.search(pattern, script, re.MULTILINE)]
+        column_zero_class_field_declaration = r'^var[^;\n]*\b'+re.escape(kind)+r'\s+'+name+suffix+r'\s*;'
+        matches = [key for key, script in self.scripts.items() if re.search(column_zero_class_field_declaration, script, re.MULTILINE)]
         require(len(matches) == 1, 'Native mover field declaration unresolved: ' + name)
         return matches[0]
 
@@ -169,7 +159,6 @@ def numeric_struct(value, kind):
 
 
 def endpoint_matrix(base_pos, base_rot, key_pos, key_rot, transforms):
-    """Mover.BeginPlay: BasePos + KeyPos; BaseRot + KeyRot (native operators)."""
     values = copy.deepcopy(transforms)
     values['Location']['value'] = {axis: numeric_struct(base_pos, 'Vector')[axis] +
         numeric_struct(key_pos, 'Vector')[axis] for axis in 'XYZ'}

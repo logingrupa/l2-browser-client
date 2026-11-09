@@ -1,25 +1,24 @@
 #!/usr/bin/env python3
-"""Extract the proven 20_20 Brush397 floor from the actual saved Level.Model.
-
-Only this exact package/slab is supported. No native client, converter, external
-executable, source edits or live asset staging are performed. Output is stable
-and confined to a caller-selected directory under project artifacts/.
-"""
 import argparse
 import copy
 from fractions import Fraction
 import hashlib
-import importlib
 import json
 import math
 from pathlib import Path
 import struct
-from types import SimpleNamespace
 
 from native_catalog.ue2 import FormatError, Package
 from native_assets_lib.gltf import json_bytes
 from reference_client_guard import require_reference_client
-from native_map import COLLISION, MapSources, actor_properties, property_value
+from world.bsp_reader_binding import READER_SHA, PackageAdapter, pinned_bytes, reviewed_reader
+from world.map_actor_properties import COLLISION, actor_properties, property_value
+from world.map_sources import MapSources
+
+BRUSH397_FLOOR_EXTRACTION_DESCRIPTION = ('Extract the proven 20_20 Brush397 floor from the actual saved Level.Model. Only this exact '
+    'package/slab is supported. No native client, converter, external executable, source edits or live '
+    'asset staging are performed. Output is stable and confined to a caller-selected directory under '
+    'project artifacts/.')
 
 ROOT = Path(__file__).resolve().parent.parent
 MAP_SHA = '1beddad24c10a35a1b2e9151727a85158e3e01992299a6671de876645eb1f1e4'
@@ -29,7 +28,6 @@ TEXTURE_SHA = '6744287c6d61d253881def76ce3038e428bab58d65f38a4a36a07f08d165ed4d'
 TEXTURE_PACKAGE_SHA = '31bb796ea93c510bbfe155b912a9352811a098e6fa72f0b5e1c264a3f483c234'
 TEXTURE_EXPORT_SHA = '675d496f702fc8cb4f2bd6469dc65d6dfa1e0415251cb65c8771f24c1ec92c8b'
 ENGINE_SHA = '9b04ff5cb4258e84dfa8efbdd85d9121f3bdcb5822a9a21ca69d200d05a69761'
-READER_SHA = '572bd29fd5dbe54e369005d502fc05355512535bf99d42a060c81e6d9df3c1cd'
 CLASS_SCRIPT_SHA = {
     'Engine.Actor': 'fb3ffb2bc23c3a6887cd3b075ef36ec5a74a7f2e1978370b561eb0a43f40d158',
     'Engine.StaticMeshActor': '36a978b05af6332b193e037a741112f95771c8446527c614cb6e9080141cb989',
@@ -49,12 +47,6 @@ def require(value, message):
         raise FormatError(message)
 
 
-def pinned_bytes(path, expected):
-    data = Path(path).read_bytes()
-    require(sha(data) == expected, 'Pinned input changed: ' + str(path))
-    return data
-
-
 def f32(value):
     return struct.unpack('<f', struct.pack('<f', value))[0]
 
@@ -69,39 +61,6 @@ def difference(a, b):
 
 def dot(a, b):
     return sum(x*y for x, y in zip(a, b))
-
-
-class PackageAdapter:
-    def __init__(self, source):
-        self.source, self.data, self.path = source, source.data, source.filename
-        self.file_version = source.summary['version']
-        self.licensee_version = source.summary['licenseeVersion']
-        self.exports = [SimpleNamespace(index=e['exportIndex']-1, class_index=e['classIndex'],
-            package_index=e['outerIndex'], object_flags=e['flags'], serial_offset=e['offset'],
-            serial_size=e['size']) for e in source.exports]
-
-    def name(self, index):
-        return self.source.name(index)
-
-    def export_name(self, export):
-        return self.source.exports[export.index]['name']
-
-    def require_resolvable_reference(self, reference):
-        self.source.object_name(reference)
-
-    def resolve_ref(self, reference):
-        self.require_resolvable_reference(reference)
-        if reference > 0:
-            return self.exports[reference-1]
-        if reference < 0:
-            return self.source.imports[-reference-1]
-        return None
-
-
-def reviewed_reader():
-    directory = ROOT/'scripts/vendor/lineage2elbera_bsp'
-    pinned_bytes(directory/'__init__.py', READER_SHA)
-    return importlib.import_module('vendor.lineage2elbera_bsp')
 
 
 def source_nodes(map_data):
@@ -342,7 +301,7 @@ def write_unchanged_or_new(output, files):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=BRUSH397_FLOOR_EXTRACTION_DESCRIPTION)
     parser.add_argument('--client', type=Path, required=True)
     parser.add_argument('--source-bundle', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)

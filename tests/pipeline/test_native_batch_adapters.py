@@ -1,4 +1,3 @@
-"""Adapter contracts with synthetic products; no native conversion/corpus runs."""
 import hashlib
 import json
 from pathlib import Path
@@ -60,8 +59,6 @@ class AdapterTests(unittest.TestCase):
         provenance = {'schemaVersion': 1, 'request': request, 'source': source,
             'dependencies': {'sound/Test.uax': sha(b'src')}, 'converterSha256': native_assets.implementation_hash(),
             'tool': {'sha256': native_assets.UMODEL_SHA256}, 'metadata': {}}
-        # A minimal RIFF fixture. Tests verify ownership/archive relationships,
-        # not native decoding or audible playback.
         wav = b'RIFF' + struct.pack('<I', 38) + b'WAVEfmt ' + struct.pack('<IHHIIHH', 16, 1, 1, 22050, 44100, 2, 16) + b'data' + struct.pack('<Ih', 2, 0)
         files = {'audio.wav': wav, 'provenance.json': json_bytes(provenance)}
         manifest = {'schemaVersion': 1, 'id': 'interlude:Test.tone', 'kind': request['kind'], 'source': source,
@@ -89,7 +86,6 @@ class AdapterTests(unittest.TestCase):
         return self.job('environment', files=['test.int'])
 
     def audio(self, name='sounds', unsupported=False):
-        """Tiny retained source/export fixture, without package inventory."""
         from native_audio import decode_native_audio
         module = adapters._audio_module(name)
         request = {'kind': 'audio', 'package': 'sound/Test.uax', 'object': 'Test.tone'}
@@ -338,6 +334,13 @@ class AdapterTests(unittest.TestCase):
         tool = write(self.root, 'tool.exe', b'wrong-tool')
         with patch.object(native_assets, 'UMODEL', tool), self.assertRaisesRegex(ValueError, 'UModel differs'):
             adapters.adapter_pins('assets')
+
+    def test_every_adapter_pins_only_files_that_exist(self):
+        for adapter in sorted(adapters.ADAPTERS):
+            with self.subTest(adapter=adapter):
+                pinned_files = [name for name in adapters.adapter_pins(adapter) if name.startswith('scripts/')]
+                self.assertTrue(pinned_files)
+                self.assertEqual([name for name in pinned_files if not (ROOT / name).is_file()], [])
 
     def test_environment_pins_are_current_concrete_files(self):
         pins = adapters.adapter_pins('environment')

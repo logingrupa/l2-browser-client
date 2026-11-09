@@ -12,7 +12,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/'scripts'))
 import native_assets
-from native_catalog.ue2 import Package
+from native_catalog.ue2 import FormatError, Package
 from reference_client_lock_fixture import lock_client_as_reference_root
 from sound_package_fixture import sound_package, wav_bytes
 from ue2_package_fixture import compact, package_bytes, tag
@@ -82,6 +82,11 @@ class NativeMapAudioTests(unittest.TestCase):
     def all_bytes(self, root):
         return {path.relative_to(root).as_posix(): path.read_bytes() for path in root.rglob('*') if path.is_file()}
 
+    def test_implementation_pins_the_exporter_its_guards_the_actor_reader_and_footstep_config(self):
+        self.assertEqual(set(audio.implementation()['files']),
+                         {'export-native-map-audio.py', 'native_assets_lib/sound_export_guards.py', 'world/map_actor_properties.py',
+                          'native_assets_lib/footstep_config.py'})
+
     def test_real_package_converter_clean_build_and_cache_repeat_are_byte_identical(self):
         args = self.fixture()
         original = self.all_bytes(args.client_snapshot)
@@ -148,7 +153,7 @@ class NativeMapAudioTests(unittest.TestCase):
         args = self.fixture()
         sound = args.client_snapshot/'sounds/AmbSound.uax'
         sound.write_bytes(sound.read_bytes()[:-1] + b'X')
-        with self.assertRaisesRegex(audio.FormatError, 'hash/length mismatch'):
+        with self.assertRaisesRegex(FormatError, 'hash/length mismatch'):
             audio.run(args)
         self.assertFalse(args.output.exists())
 
@@ -157,11 +162,11 @@ class NativeMapAudioTests(unittest.TestCase):
         recipe = self.read_recipe(args)
         recipe['map']['sha256'] = '0'*64
         args.recipe.write_bytes(audio.canonical(recipe))
-        with self.assertRaisesRegex(audio.FormatError, 'map identity differs'):
+        with self.assertRaisesRegex(FormatError, 'map identity differs'):
             audio.run(args)
         self.assertFalse(args.output.exists())
         self.tool.write_bytes(b'not the pinned tool')
-        with self.assertRaisesRegex(audio.FormatError, 'tool hash mismatch'):
+        with self.assertRaisesRegex(FormatError, 'tool hash mismatch'):
             audio.run(args)
 
     def read_recipe(self, args):
@@ -253,7 +258,7 @@ class NativeMapAudioTests(unittest.TestCase):
                 audio.run(args)
         original['files'].append({**original['files'][1], 'relativePath': original['files'][1]['relativePath'].upper()})
         args.input_lock.write_bytes(audio.canonical(original))
-        with self.assertRaisesRegex(audio.FormatError, 'duplicate'):
+        with self.assertRaisesRegex(FormatError, 'duplicate'):
             audio.run(args)
         self.assertFalse(args.output.exists())
 
@@ -262,7 +267,7 @@ class NativeMapAudioTests(unittest.TestCase):
         for output in (args.client_snapshot/'derived', self.root/'public/new', self.root/'assets/new',
                        self.root/'artifacts', self.root/'artifacts/inputs', self.root/'elsewhere'):
             args.output = output
-            with self.subTest(output=output), self.assertRaises(audio.FormatError):
+            with self.subTest(output=output), self.assertRaises(FormatError):
                 audio.run(args)
 
     def test_unowned_existing_destination_and_busy_run_are_not_overwritten(self):
@@ -270,13 +275,13 @@ class NativeMapAudioTests(unittest.TestCase):
         args.output.mkdir()
         important = args.output/'keep.txt'
         important.write_bytes(b'authored work')
-        with self.assertRaisesRegex(audio.FormatError, 'not owned'):
+        with self.assertRaisesRegex(FormatError, 'not owned'):
             audio.run(args)
         self.assertEqual(important.read_bytes(), b'authored work')
         args.output = self.root/'artifacts/new-output'
         audio.run(args)
         (args.output/'.run.lock').write_bytes(b'other process')
-        with self.assertRaisesRegex(audio.FormatError, 'Another export'):
+        with self.assertRaisesRegex(FormatError, 'Another export'):
             audio.run(args)
         self.assertEqual((args.output/'.run.lock').read_bytes(), b'other process')
 
@@ -287,13 +292,13 @@ class NativeMapAudioTests(unittest.TestCase):
         media = args.output/coverage['sounds'][0]['products']['audio']['path']
         media.write_bytes(b'corruption')
         args.verify_only = True
-        with self.assertRaisesRegex(audio.FormatError, 'manifest/file/hash'):
+        with self.assertRaisesRegex(FormatError, 'manifest/file/hash'):
             audio.run(args)
         self.assertEqual(media.read_bytes(), b'corruption')
         recipe = self.read_recipe(args)
         recipe['expectedInventory']['declarations'] = 4
         args.recipe.write_bytes(audio.canonical(recipe))
-        with self.assertRaisesRegex(audio.FormatError, 'different inputs'):
+        with self.assertRaisesRegex(FormatError, 'different inputs'):
             audio.run(args)
 
     def test_rehashed_coverage_counter_forgery_is_rejected(self):
@@ -304,7 +309,7 @@ class NativeMapAudioTests(unittest.TestCase):
         (args.output/'coverage.json').write_bytes(audio.canonical(coverage))
         (args.output/'SHA256-MANIFEST.json').write_bytes(audio.canonical({'schemaVersion': 1, 'files': audio.files_receipt(args.output)}))
         args.verify_only = True
-        with self.assertRaisesRegex(audio.FormatError, 'counters/status'):
+        with self.assertRaisesRegex(FormatError, 'counters/status'):
             audio.run(args)
 
     def test_rehashed_cache_traversal_is_rejected_before_reuse(self):
@@ -316,7 +321,7 @@ class NativeMapAudioTests(unittest.TestCase):
         index.write_bytes(audio.canonical(record))
         (args.output/'SHA256-MANIFEST.json').write_bytes(audio.canonical({'schemaVersion': 1, 'files': audio.files_receipt(args.output)}))
         with patch.object(audio, 'Converter', side_effect=AssertionError('unsafe cache must not reach Converter')):
-            with self.assertRaisesRegex(audio.FormatError, 'Unsafe cache content directory'):
+            with self.assertRaisesRegex(FormatError, 'Unsafe cache content directory'):
                 audio.run(args)
 
     def test_linked_output_ancestor_is_rejected(self):
@@ -329,21 +334,21 @@ class NativeMapAudioTests(unittest.TestCase):
         except OSError:
             self.skipTest('Host does not allow test symlink creation')
         args.output = link/'new'
-        with self.assertRaisesRegex(audio.FormatError, 'Linked/reparse'):
+        with self.assertRaisesRegex(FormatError, 'Linked/reparse'):
             audio.run(args)
         self.assertFalse((target/'new').exists())
 
     def test_duplicate_json_source_keys_are_rejected(self):
         args = self.fixture()
         args.recipe.write_bytes(b'{"schemaVersion":1,"schemaVersion":1}')
-        with self.assertRaisesRegex(audio.FormatError, 'Duplicate JSON key'):
+        with self.assertRaisesRegex(FormatError, 'Duplicate JSON key'):
             audio.run(args)
         self.assertFalse(args.output.exists())
 
     def test_verify_only_missing_output_creates_nothing(self):
         args = self.fixture()
         args.verify_only = True
-        with self.assertRaisesRegex(audio.FormatError, 'completed existing'):
+        with self.assertRaisesRegex(FormatError, 'completed existing'):
             audio.run(args)
         self.assertFalse(args.output.exists())
 
