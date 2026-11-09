@@ -2,9 +2,13 @@ import type { GameWorldAdapter } from "./GameWorldAdapter";
 import type { LocomotionMode, WorldCommand, WorldEntity, WorldEvent, WorldPosition } from "./worldTypes";
 import type { WorldGroundContact, WorldNavigation } from "./WorldNavigation";
 import { moveTowards } from "./syntheticMovement";
-import { createSpawnedCharacterEntity, createSpawnedNpcEntity, entityWithClampedHealth, entityWithEquippedItem, entityWithRequestedClip, isLineageIdentifier, skillCastEvent, unknownWorldCommandError } from "./sandboxCommands";
+import { commandRejectedEvent, createSpawnedCharacterEntity, createSpawnedNpcEntity, entityWithClampedHealth, entityWithEquippedItem, entityWithRequestedClip,
+  isLineageIdentifier, reportedPositionRejectionReason, skillCastEvent, unknownWorldCommandError } from "./sandboxCommands";
+import { sourceHeadingToWorldYaw, sourcePositionToWorld } from "./sourceFrame";
 
 type PreviewActionCommand = Extract<WorldCommand, { readonly type: "preview-action" }>;
+type ReportPositionCommand = Extract<WorldCommand, { readonly type: "report-position" }>;
+type CannotMoveCommand = Extract<WorldCommand, { readonly type: "cannot-move" }>;
 
 const sandboxActorSpacingMetres = 1.4;
 const velocityWithoutAccelerationRampRoutine = "APawn::calcVelocity 0x10639950";
@@ -138,6 +142,12 @@ export class NativeSliceAdapter implements GameWorldAdapter {
       case "move-local":
         if (player) this.moveLocalPlayer(player, command.position);
         break;
+      case "report-position":
+        if (player) this.acceptReportedPosition(player, command);
+        break;
+      case "cannot-move":
+        if (player) this.stopAtReportedPosition(player, command);
+        break;
       default: {
         const unhandledCommand: never = command;
         throw unknownWorldCommandError(unhandledCommand);
@@ -166,6 +176,23 @@ export class NativeSliceAdapter implements GameWorldAdapter {
     this.destination = target;
     const { actionPreview: _preview, actionTargetId: _target, ...ordinary } = player;
     this.update({ ...ordinary, animation: "run" });
+  }
+  private acceptReportedPosition(player: WorldEntity, command: ReportPositionCommand): void {
+    const rejectionReason = reportedPositionRejectionReason(command);
+    if (rejectionReason) { this.emit(commandRejectedEvent(command.type, rejectionReason)); return; }
+    this.placeLocalPlayer({ ...player, position: sourcePositionToWorld(command.position) });
+  }
+  private stopAtReportedPosition(player: WorldEntity, command: CannotMoveCommand): void {
+    const rejectionReason = reportedPositionRejectionReason(command);
+    if (rejectionReason) { this.emit(commandRejectedEvent(command.type, rejectionReason)); return; }
+    this.destination = undefined;
+    this.secondsMovingSinceRest = 0;
+    this.placeLocalPlayer({ ...player, position: sourcePositionToWorld(command.position), orientationRadians: sourceHeadingToWorldYaw(command.heading) });
+    this.emit({ type: "stop", entityId: player.id, position: { x: command.position.x, y: command.position.y, z: command.position.z }, heading: command.heading });
+  }
+  private placeLocalPlayer(player: WorldEntity): void {
+    this.entities.set(player.id, player);
+    this.acceptedContact = this.navigation?.groundContact?.(player.position) ?? null;
   }
   private nextSandboxSpawnPosition(player: WorldEntity): WorldPosition | null {
     const placementOrdinal = this.sandboxSpawnPlacementOrdinal + 1;

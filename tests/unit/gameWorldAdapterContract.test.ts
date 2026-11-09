@@ -19,11 +19,19 @@ describe("GameWorldAdapter contract", () => {
     expectTypeOf<WorldCommand["type"]>().toEqualTypeOf<
       | "set-animation" | "preview-action" | "set-locomotion" | "move-local" | "spawn-npc"
       | "despawn" | "set-paused" | "equip-item" | "cast-skill" | "set-health" | "spawn-character" | "play-clip"
+      | "report-position" | "cannot-move"
     >();
     expectTypeOf<Extract<WorldCommand, { readonly type: "spawn-character" }>>()
       .toEqualTypeOf<{ readonly type: "spawn-character"; readonly characterTemplateIndex: number }>();
     expectTypeOf<Extract<WorldCommand, { readonly type: "play-clip" }>>()
       .toEqualTypeOf<{ readonly type: "play-clip"; readonly entityId: string; readonly clipName: string }>();
+  });
+
+  it("enumerates the full event set", () => {
+    expectTypeOf<WorldEvent["type"]>().toEqualTypeOf<
+      | "spawn" | "update" | "despawn" | "skill-cast"
+      | "command-rejected" | "environment" | "move" | "stop" | "correct" | "teleport"
+    >();
   });
 
   it("NativeSliceAdapter refuses a command type it does not know with a RangeError naming the type", () => {

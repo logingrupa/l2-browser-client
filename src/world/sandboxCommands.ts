@@ -3,6 +3,10 @@ import type { BodyPartEquipmentSlot, EquipmentSlot, WorldCommand, WorldEntity, W
 type EquipItemCommand = Extract<WorldCommand, { readonly type: "equip-item" }>;
 type CastSkillCommand = Extract<WorldCommand, { readonly type: "cast-skill" }>;
 type PlayClipCommand = Extract<WorldCommand, { readonly type: "play-clip" }>;
+type ReportedPositionCommand = Extract<WorldCommand, { readonly type: "report-position" | "cannot-move" }>;
+
+export const reportedPositionNotFiniteReason = "reported-position-not-finite";
+export const reportedHeadingNotIntegerReason = "reported-heading-not-integer";
 
 const upperEquipmentSlot = "upper";
 const bodyPartEquipmentSlotPrefix = "body-part:";
@@ -56,6 +60,16 @@ export function createSpawnedCharacterEntity(characterTemplateIndex: number, spa
 export function unknownWorldCommandError(unhandledCommand: never): RangeError {
   const commandType: unknown = (unhandledCommand as { readonly type?: unknown }).type;
   return new RangeError(`Unknown world command type: ${String(commandType)}.`);
+}
+
+export function reportedPositionRejectionReason(command: ReportedPositionCommand): string | null {
+  if (![command.position.x, command.position.y, command.position.z].every(Number.isFinite)) return reportedPositionNotFiniteReason;
+  if (!Number.isSafeInteger(command.heading)) return reportedHeadingNotIntegerReason;
+  return null;
+}
+
+export function commandRejectedEvent(commandType: WorldCommand["type"], reason: string): WorldEvent {
+  return { type: "command-rejected", commandType, reason };
 }
 
 export function entityWithClampedHealth(entity: WorldEntity, health: number): WorldEntity | null {

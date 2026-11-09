@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { NativeSliceAdapter } from "../../src/world/NativeSliceAdapter";
+import { reportedHeadingNotIntegerReason, reportedPositionNotFiniteReason } from "../../src/world/sandboxCommands";
 import type { WorldNavigation } from "../../src/world/WorldNavigation";
 import type { WorldEvent } from "../../src/world/worldTypes";
 
@@ -84,6 +85,40 @@ describe("native slice adapter boundary", () => {
     adapter.dispatch({ type: "move-local", position: { x: 5, y: 3, z: 4 } }); adapter.advance(1);
     expect(player(adapter)).toMatchObject({ position: { x: 2.1, y: 3, z: 4 }, animation: "idle" });
     adapter.advance(1); expect(navigation.move).toHaveBeenCalledTimes(1);
+    adapter.dispose();
+  });
+
+  it("stores a reported source position as the local player's metre position without emitting", () => {
+    const adapter = new NativeSliceAdapter(origin), events: WorldEvent[] = [];
+    adapter.subscribe(event => events.push(event));
+    adapter.dispatch({ type: "report-position", position: { x: 500, y: 600, z: 300 }, heading: 16384 });
+    expect(events).toEqual([]);
+    expect(player(adapter)).toMatchObject({ position: { x: 5, y: 3, z: 6 }, orientationRadians: 0 });
+    adapter.dispose();
+  });
+
+  it("answers cannot-move with one stop at the reported source position and heading and ends the sandbox move", () => {
+    const adapter = new NativeSliceAdapter(origin), events: WorldEvent[] = [];
+    adapter.dispatch({ type: "move-local", position: { x: 9, y: 3, z: 4 } });
+    adapter.subscribe(event => events.push(event));
+    adapter.dispatch({ type: "cannot-move", position: { x: 500, y: 600, z: 300 }, heading: 16384 });
+    expect(events).toEqual([{ type: "stop", entityId: "local-player", position: { x: 500, y: 600, z: 300 }, heading: 16384 }]);
+    adapter.advance(1);
+    expect(events).toHaveLength(1);
+    expect(player(adapter)).toMatchObject({ position: { x: 5, y: 3, z: 6 }, orientationRadians: -Math.PI / 2 });
+    adapter.dispose();
+  });
+
+  it("rejects a reported position it cannot apply with a named reason instead of throwing", () => {
+    const adapter = new NativeSliceAdapter(origin), events: WorldEvent[] = [];
+    adapter.subscribe(event => events.push(event));
+    expect(() => adapter.dispatch({ type: "report-position", position: { x: Number.NaN, y: 0, z: 0 }, heading: 0 })).not.toThrow();
+    adapter.dispatch({ type: "cannot-move", position: { x: 0, y: 0, z: 0 }, heading: .5 });
+    expect(events).toEqual([
+      { type: "command-rejected", commandType: "report-position", reason: reportedPositionNotFiniteReason },
+      { type: "command-rejected", commandType: "cannot-move", reason: reportedHeadingNotIntegerReason },
+    ]);
+    expect(player(adapter).position).toEqual(origin);
     adapter.dispose();
   });
 

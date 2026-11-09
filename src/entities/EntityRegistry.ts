@@ -115,7 +115,7 @@ export class EntityRegistry {
   private apply(event: WorldEvent): void {
     if (event.type === "despawn") { this.remove(event.entityId); return; }
     if (event.type === "spawn") { this.spawn(event.entity); return; }
-    if (event.type === "skill-cast") return;
+    if (event.type !== "update") return;
     const presentation = this.entities.get(event.entity.id);
     if (!presentation) return;
     if (presentation.entity.appearanceId !== event.entity.appearanceId || presentation.entity.kind !== event.entity.kind) {
