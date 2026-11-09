@@ -28,6 +28,7 @@ import type { NativeSliceWorld } from "./loadNativeSliceWorld";
 import type { NativeSliceAudio } from "./loadNativeSliceAudio";
 import type { NativeSliceEffects } from "./createNativeSliceEffects";
 import type { NativeSliceSettings } from "./createNativeSliceRuntime";
+import { nativeWorldLocationTitles } from "./nativeWorldLocationTitles";
 
 export interface NativeSliceSheetContext {
   scene: Scene;
@@ -82,8 +83,8 @@ function attachHeadsUpDisplayCards(context: NativeSliceSheetContext, tools: Nati
   }
   describe.element(hudRunButton, { title: "Run", description: "Switches the fighter to the original run clip and its run footsteps. Tap the ground to run there.", variables: gaitVariables }, "none");
   context.addRelease(ui.bindGait(() => adapter.locomotionMode));
-  describe.element(ui.root.querySelector(".world-location"), { title: section ? "20_20 native world section" : "Native asset slice",
-    description: section ? "Source-derived location; native debug location and terrain materials remain unverified." : "Native rigs with synthetic behavior; no native world section is staged." }, "none");
+  const locationTitles = nativeWorldLocationTitles(section);
+  describe.element(ui.root.querySelector(".world-location"), { title: locationTitles.sheetTitle, description: locationTitles.description }, "none");
   describe.element(ui.root.querySelector('[data-action="attack"]'), { title: "Attack", description: "Plays the fighter's original attack clip. Fist and voice sounds play at its AttackItem/AttackVoice notifies (hit or miss); each AttackShot plays the target's defense and damage sounds on the selected or nearest target in reach.",
     variables: () => [...tools.actorVariables("local-player", "fighter"), ...(combatAudio ? pickRows(combatAudio.describe(), ["combat.hitSounds", "combat.lastHit"]) : [])] }, "none");
   describe.element(ui.root.querySelector(".diagnostics"), { title: "World diagnostics", description: "Frame rate, entity count and fighter position in browser metres. Debug tab shows camera and native coordinates.",

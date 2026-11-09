@@ -32,6 +32,7 @@ import { isSceneSuspended } from "../engine/renderSuspension";
 import { sandboxNpcVisualFactory } from "./sandboxNpcVisual";
 import { attachSandboxCommandSheet } from "./attachSandboxCommandSheet";
 import { buildNativeCatalogIndexOrUnavailable } from "./buildNativeCatalogIndexOrUnavailable";
+import { nativeWorldLocationTitles } from "./nativeWorldLocationTitles";
 
 const sandboxNpcAppearanceByModel: ReadonlyMap<string, string> = new Map([["musveren:0", "native-musveren"]]);
 const sandboxNpcAppearanceOfModel = (modelCatalogId: string) => sandboxNpcAppearanceByModel.get(modelCatalogId) ?? null;
@@ -153,7 +154,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     boundaryReleases.push(() => footsteps.dispose());
     const clipPreview = createNativeClipPreviewHub();
     let registry: EntityRegistry;
-    const ui = new WorldInterface(adapter, () => registry, canvas, { location: section ? "20_20 · native world section" : "Native asset slice", coordinateUnit: "m" });
+    const ui = new WorldInterface(adapter, () => registry, canvas, { location: nativeWorldLocationTitles(section).heading, coordinateUnit: "m" });
     boundaryReleases.push(() => ui.dispose());
     registry = new EntityRegistry(scene, adapter, ui.labels, message => ui.showStatus(message), {
       createVisual: sandboxNpcVisualFactory(catalogIndex, nativeCharacterFactory(profiles, actionCues, footsteps, clipPreview), sandboxNpcAppearanceOfModel),
