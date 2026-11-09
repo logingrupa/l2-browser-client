@@ -8,7 +8,7 @@ from native_store.gap_rows import GapRowError, load_gap_reason_patterns, validat
 GAP_CENSUS_STATUS_PRECEDENCE = ('converted', 'failed', 'gap', 'pending')
 GAP_CENSUS_STEP_ORDER = ('census', 'raw', 'chunks', 'terrain', 'manifest', 'meshes', 'bsp', 'collision', 'movers', 'sky', 'audio',
                          'minimap', 'terrain-material', 'decode', 'name-index', 'layout', 'textures', 'field-cp', 'field-mp',
-                         'npc-model', 'npc-profile', 'npc-sound-identities')
+                         'npc-model', 'npc-profile', 'npc-sound-identities', 'skills')
 GAP_CENSUS_LOAD_STATUSES = ('pass', 'failed', 'unverified')
 UNVERIFIED_LOAD_STATUS = 'unverified'
 CATALOG_KEY_KIND_PARTS = {'table': 'data', 'tile': 'world', 'map': 'world', 'character': 'player-characters', 'window': 'ui',

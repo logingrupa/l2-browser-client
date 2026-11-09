@@ -45,6 +45,17 @@ describe("native catalog L2-ID index", () => {
     expect(index.keys("npc:")).toEqual(["npc:20001", "npc:21622"]);
   });
 
+  it("resolves lane skill records that share one root bundle through the cast skill identity owner", async () => {
+    serveFiles(new Map());
+    const record = (level: number) => ({ id: `interlude:skill:1011:level:${level}:native-description-action`, bundleId: "interlude:skill-root:skill.wh.1011",
+      manifest: `/l2/effects/${"a".repeat(64)}/manifest.json`, manifestSha256: "a".repeat(64) });
+    const index = await buildNativeCatalogIndex(catalogWith({ effectComponents: [record(1), record(2), { id: "interlude:skill:1011:level:0:x" }] }),
+      new AbortController().signal);
+    expect(index.lookup(skillCatalogKey(1011, 2))).toEqual({ status: "converted", key: "skill:1011:2",
+      record: { skillId: 1011, level: 2, effectComponentId: "interlude:skill:1011:level:2:native-description-action" } });
+    expect(index.keys("skill:")).toEqual(["skill:1011:1", "skill:1011:2"]);
+  });
+
   it("reports every lookup as not in catalog for a catalog with only an empty model list", async () => {
     serveFiles(new Map());
     const index = await buildNativeCatalogIndex(catalogWith({}), new AbortController().signal);

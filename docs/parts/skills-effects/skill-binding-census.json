@@ -1,0 +1,22 @@
+{
+  "anomalies": [],
+  "distinctSkillIds": 2694,
+  "keys": {
+    "gap": {
+      "native-skill-dispatch-required": 17575
+    },
+    "reviewedSourceDispatch": 1,
+    "visualRoot": 12236
+  },
+  "rowCount": 29812,
+  "schemaVersion": 1,
+  "sound": {
+    "exactRow": 1371,
+    "noExactRow": 28441
+  },
+  "sources": {
+    "skillgrp": "ab9b9849ff1012adb7bfdd95ae8b6e26115641e4b5aafb6e8af19bc9d7a54ded",
+    "skillsoundgrp": "14c9df542ccb0b342f1fd091b7177438cdf3705fb43581d0fc69b6c9ceeb14f5"
+  },
+  "visualRoots": 245
+}
