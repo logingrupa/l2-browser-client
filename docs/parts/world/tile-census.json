@@ -140,7 +140,13 @@
       "reason": "map-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 25,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_15_20.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -153,7 +159,13 @@
       "reason": "map-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 25,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_15_21.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -166,7 +178,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 12,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_15_22.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -179,7 +197,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 12,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_15_23.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -192,7 +216,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 12,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_15_24.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -205,7 +235,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 12,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_15_25.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -218,7 +254,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 12,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_15_26.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -231,7 +273,13 @@
       "reason": "map-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_16_10.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -244,7 +292,13 @@
       "reason": "terrain-height-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_16_11.Height.16_11",
+        "packageVersion": 123,
+        "path": "textures/t_16_11.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -257,7 +311,13 @@
       "reason": "terrain-height-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_16_12.Height.16_12",
+        "packageVersion": 123,
+        "path": "textures/t_16_12.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -270,7 +330,13 @@
       "reason": "map-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 25,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_16_19.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -283,7 +349,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 12,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_16_20.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -296,7 +368,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 20,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_16_21.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -309,7 +387,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 12,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_16_22.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -322,7 +406,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 20,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_16_23.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -335,7 +425,13 @@
       "reason": "terrain-height-licensee-unsupported:123/12",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 12,
+        "object": "T_16_24.Height.16_24",
+        "packageVersion": 123,
+        "path": "textures/t_16_24.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -348,7 +444,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_16_25.Height.16_25",
+        "packageVersion": 123,
+        "path": "textures/T_16_25.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -361,7 +463,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 12,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_16_26.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -374,7 +482,13 @@
       "reason": "terrain-height-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_17_10.Height.17_10",
+        "packageVersion": 123,
+        "path": "textures/t_17_10.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -387,7 +501,13 @@
       "reason": "terrain-height-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_17_11.Height.17_11",
+        "packageVersion": 123,
+        "path": "textures/t_17_11.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -400,7 +520,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_17_12.Height.17_12",
+        "packageVersion": 123,
+        "path": "textures/t_17_12.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -413,7 +539,13 @@
       "reason": "map-licensee-unsupported:123/18",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 12,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_17_18.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -426,7 +558,13 @@
       "reason": "map-licensee-unsupported:123/18",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 12,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_17_19.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -439,7 +577,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_17_20.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -452,7 +596,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_17_21.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -465,7 +615,13 @@
       "reason": "map-licensee-unsupported:123/30",
       "status": "gap",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 28,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_17_22.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -478,7 +634,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 11,
+        "object": null,
+        "packageVersion": 118,
+        "path": "textures/t_17_23.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -491,7 +653,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 12,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_17_24.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -504,7 +672,13 @@
       "reason": "map-licensee-unsupported:123/30",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 16,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_17_25.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -517,7 +691,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 12,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_17_26.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -530,7 +710,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_18_10.Height.18_10",
+        "packageVersion": 123,
+        "path": "textures/t_18_10.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -543,7 +729,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_18_11.Height.18_11",
+        "packageVersion": 123,
+        "path": "textures/t_18_11.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -556,7 +748,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_18_12.Height.18_12",
+        "packageVersion": 123,
+        "path": "textures/t_18_12.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -569,7 +767,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 18,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_18_13.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -582,7 +786,13 @@
       "reason": "map-licensee-unsupported:123/30",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_18_14.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -595,7 +805,13 @@
       "reason": "map-licensee-unsupported:123/18",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 18,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_18_15.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -608,7 +824,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_18_17.Height.18_17",
+        "packageVersion": 123,
+        "path": "textures/t_18_17.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -621,7 +843,13 @@
       "reason": "map-licensee-unsupported:123/18",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 12,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_18_18.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -634,7 +862,13 @@
       "reason": "map-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_18_19.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -647,7 +881,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_18_20.Height.18_20",
+        "packageVersion": 123,
+        "path": "textures/T_18_20.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -660,7 +900,13 @@
       "reason": "map-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_18_21.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -673,7 +919,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_18_22.Height.18_22",
+        "packageVersion": 123,
+        "path": "textures/T_18_22.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -686,7 +938,13 @@
       "reason": "terrain-height-licensee-unsupported:123/20",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 20,
+        "object": "T_18_23.Height.18_23",
+        "packageVersion": 123,
+        "path": "textures/t_18_23.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -699,7 +957,13 @@
       "reason": "terrain-height-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_18_24.Height.18_24",
+        "packageVersion": 123,
+        "path": "textures/t_18_24.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -712,7 +976,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 12,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_18_25.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -725,7 +995,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 12,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_18_26.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -738,7 +1014,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_19_10.Height.19_10",
+        "packageVersion": 123,
+        "path": "textures/t_19_10.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -751,7 +1033,13 @@
       "reason": "terrain-height-package-missing",
       "status": "gap",
       "terrainHeightGate": "missing",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": null,
+        "object": "T_19_11.Height.19_11",
+        "packageVersion": null,
+        "path": null
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -764,7 +1052,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_19_13.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -777,7 +1071,13 @@
       "reason": "terrain-height-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_19_14.Height.19_14",
+        "packageVersion": 123,
+        "path": "textures/t_19_14.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -790,7 +1090,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 20,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_19_15.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -803,7 +1109,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_19_16.Height.19_16",
+        "packageVersion": 123,
+        "path": "textures/t_19_16.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -816,7 +1128,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_19_17.Height.19_17",
+        "packageVersion": 123,
+        "path": "textures/T_19_17.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -829,7 +1147,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_19_18.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -842,7 +1166,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_19_19.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -855,7 +1185,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_19_20.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -868,7 +1204,13 @@
       "reason": "map-licensee-unsupported:123/30",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 22,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_19_21.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -881,7 +1223,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_19_22.Height.19_22",
+        "packageVersion": 123,
+        "path": "textures/T_19_22.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -894,7 +1242,13 @@
       "reason": "map-licensee-unsupported:123/31",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_19_23.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -907,7 +1261,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_19_24.Height.19_24",
+        "packageVersion": 123,
+        "path": "textures/T_19_24.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -920,7 +1280,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 12,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_19_25.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -933,7 +1299,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_20_10.Height.20_10",
+        "packageVersion": 123,
+        "path": "textures/t_20_10.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -946,7 +1318,13 @@
       "reason": "terrain-height-package-missing",
       "status": "gap",
       "terrainHeightGate": "missing",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": null,
+        "object": "T_20_11.Height.20_11",
+        "packageVersion": null,
+        "path": null
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -959,7 +1337,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_20_13.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -972,7 +1356,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_20_14.Height.20_14",
+        "packageVersion": 123,
+        "path": "textures/t_20_14.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -985,7 +1375,13 @@
       "reason": "map-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 25,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_20_15.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -998,7 +1394,13 @@
       "reason": "map-licensee-unsupported:123/31",
       "status": "gap",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 28,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_20_16.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1011,7 +1413,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_20_17.Height.20_17",
+        "packageVersion": 123,
+        "path": "textures/t_20_17.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1024,7 +1432,13 @@
       "reason": "map-licensee-unsupported:123/30",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_20_18.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1037,7 +1451,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_20_19.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1050,7 +1470,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_20_20.Height.20_20",
+        "packageVersion": 123,
+        "path": "textures/T_20_20.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1063,7 +1489,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_20_21.Height.20_21",
+        "packageVersion": 123,
+        "path": "textures/T_20_21.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1076,7 +1508,13 @@
       "reason": "map-licensee-unsupported:123/30",
       "status": "gap",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 28,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/T_20_22.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1089,7 +1527,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_20_23.Height.20_23",
+        "packageVersion": 123,
+        "path": "textures/T_20_23.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1102,7 +1546,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 12,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_20_24.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1115,7 +1565,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 12,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_20_25.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1128,7 +1584,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_21_13.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1141,7 +1603,13 @@
       "reason": "terrain-height-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_21_14.Height.21_14",
+        "packageVersion": 123,
+        "path": "textures/t_21_14.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1154,7 +1622,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_21_15.Height.21_15",
+        "packageVersion": 123,
+        "path": "textures/T_21_15.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1167,7 +1641,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_21_16.21_16",
+        "packageVersion": 123,
+        "path": "textures/T_21_16.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1180,7 +1660,13 @@
       "reason": "terrain-height-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_21_17.Height.21_17",
+        "packageVersion": 123,
+        "path": "textures/t_21_17.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1193,7 +1679,13 @@
       "reason": "map-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_21_18.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1206,7 +1698,13 @@
       "reason": "map-licensee-unsupported:123/30",
       "status": "gap",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 28,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/T_21_19.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1219,7 +1717,13 @@
       "reason": "map-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 25,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_21_20.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1232,7 +1736,13 @@
       "reason": "map-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_21_21.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1245,7 +1755,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_21_22.Height.21_22",
+        "packageVersion": 123,
+        "path": "textures/T_21_22.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1258,7 +1774,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_21_23.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1271,7 +1793,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_21_24.Height.21_24",
+        "packageVersion": 123,
+        "path": "textures/t_21_24.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1284,7 +1812,13 @@
       "reason": "terrain-height-licensee-unsupported:123/12",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 12,
+        "object": "T_21_25.Height.21_17",
+        "packageVersion": 123,
+        "path": "textures/t_21_25.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1297,7 +1831,13 @@
       "reason": "map-licensee-unsupported:123/30",
       "status": "gap",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 28,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/T_22_13.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1310,7 +1850,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_22_14.Height.22_14",
+        "packageVersion": 123,
+        "path": "textures/T_22_14.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1323,7 +1869,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_22_15.Height.22_15",
+        "packageVersion": 123,
+        "path": "textures/T_22_15.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1336,7 +1888,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_22_16.Height.22_16",
+        "packageVersion": 123,
+        "path": "textures/T_22_16.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1349,7 +1907,13 @@
       "reason": "map-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 25,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_22_17.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1362,7 +1926,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_22_18.Height.22_18",
+        "packageVersion": 123,
+        "path": "textures/T_22_18.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1375,7 +1945,13 @@
       "reason": "map-licensee-unsupported:123/30",
       "status": "gap",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 28,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/T_22_19.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1388,7 +1964,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_22_20.Height.22_20",
+        "packageVersion": 123,
+        "path": "textures/T_22_20.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1401,7 +1983,13 @@
       "reason": "terrain-height-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_22_21.Height.22_21",
+        "packageVersion": 123,
+        "path": "textures/t_22_21.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1414,7 +2002,13 @@
       "reason": "map-licensee-unsupported:123/30",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_22_22.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1427,7 +2021,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_22_23.Height.22_23",
+        "packageVersion": 123,
+        "path": "textures/T_22_23.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1440,7 +2040,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_22_24.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1453,7 +2059,13 @@
       "reason": "map-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 22,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_22_25.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1466,7 +2078,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_22_26.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1479,7 +2097,13 @@
       "reason": "map-licensee-unsupported:123/18",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 15,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_23_10.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1492,7 +2116,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 20,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_23_11.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1505,7 +2135,13 @@
       "reason": "map-licensee-unsupported:123/30",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 25,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_23_12.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1518,7 +2154,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_23_13.Height.23_13",
+        "packageVersion": 123,
+        "path": "textures/T_23_13.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1531,7 +2173,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_23_14.Height.23_14",
+        "packageVersion": 123,
+        "path": "textures/t_23_14.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1544,7 +2192,13 @@
       "reason": "terrain-height-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_23_15.Height.23_15",
+        "packageVersion": 123,
+        "path": "textures/t_23_15.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1557,7 +2211,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_23_16.Height.23_16",
+        "packageVersion": 123,
+        "path": "textures/T_23_16.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1570,7 +2230,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_23_17.Height.23_17",
+        "packageVersion": 123,
+        "path": "textures/T_23_17.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1583,7 +2249,13 @@
       "reason": "terrain-height-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_23_18.Height.23_18",
+        "packageVersion": 123,
+        "path": "textures/t_23_18.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1596,7 +2268,13 @@
       "reason": "terrain-height-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_23_19.Height.23_19",
+        "packageVersion": 123,
+        "path": "textures/t_23_19.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1609,7 +2287,13 @@
       "reason": "map-licensee-unsupported:123/30",
       "status": "gap",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 28,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/T_23_20.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1622,7 +2306,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_23_21.Height.23_21",
+        "packageVersion": 123,
+        "path": "textures/T_23_21.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1635,7 +2325,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_23_22.Height.23_22",
+        "packageVersion": 123,
+        "path": "textures/t_23_22.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1648,7 +2344,13 @@
       "reason": "terrain-height-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_23_23.Height.23_23",
+        "packageVersion": 123,
+        "path": "textures/t_23_23.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1661,7 +2363,13 @@
       "reason": "map-licensee-unsupported:123/30",
       "status": "gap",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 28,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/T_23_24.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1674,7 +2382,13 @@
       "reason": "map-licensee-unsupported:123/31",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_23_25.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1687,7 +2401,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_23_26.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1700,7 +2420,13 @@
       "reason": "map-licensee-unsupported:123/16",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 15,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_24_10.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1713,7 +2439,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 19,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_24_11.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1726,7 +2458,13 @@
       "reason": "map-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 25,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_24_12.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1739,7 +2477,13 @@
       "reason": "map-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 25,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_24_13.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1752,7 +2496,13 @@
       "reason": "map-licensee-unsupported:123/31",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 25,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_24_14.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1765,7 +2515,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_24_15.Height.24_15",
+        "packageVersion": 123,
+        "path": "textures/T_24_15.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1778,7 +2534,13 @@
       "reason": "map-licensee-unsupported:123/30",
       "status": "gap",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 28,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/T_24_16.utx"
+      },
       "wrapper": "UnrealPackage"
     },
     {
@@ -1791,7 +2553,13 @@
       "reason": "map-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 25,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_24_17.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1804,7 +2572,13 @@
       "reason": "map-licensee-unsupported:123/30",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_24_18.utx"
+      },
       "wrapper": "UnrealPackage"
     },
     {
@@ -1817,7 +2591,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_24_19.Height.24_19",
+        "packageVersion": 123,
+        "path": "textures/T_24_19.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1830,7 +2610,13 @@
       "reason": "map-licensee-unsupported:123/31",
       "status": "gap",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 28,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/T_24_20.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1843,7 +2629,13 @@
       "reason": "terrain-height-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_24_21.Height.24_21",
+        "packageVersion": 123,
+        "path": "textures/t_24_21.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1856,7 +2648,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_24_22.Height.24_22",
+        "packageVersion": 123,
+        "path": "textures/t_24_22.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1869,7 +2667,13 @@
       "reason": "terrain-height-licensee-unsupported:123/22",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 22,
+        "object": "T_24_23.Height.24_23",
+        "packageVersion": 123,
+        "path": "textures/t_24_23.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1882,7 +2686,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 20,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_24_24.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1895,7 +2705,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 22,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_24_25.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1908,7 +2724,13 @@
       "reason": "map-licensee-unsupported:123/20",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_24_26.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1921,7 +2743,13 @@
       "reason": "map-licensee-unsupported:123/16",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 15,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_25_10.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1934,7 +2762,13 @@
       "reason": "map-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 16,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_25_11.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1947,7 +2781,13 @@
       "reason": "terrain-height-licensee-unsupported:123/23",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 23,
+        "object": "T_25_12.Height.25_12",
+        "packageVersion": 123,
+        "path": "textures/t_25_12.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1960,7 +2800,13 @@
       "reason": "map-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 25,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_25_14.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1973,7 +2819,13 @@
       "reason": "terrain-height-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_25_15.Height.25_15",
+        "packageVersion": 123,
+        "path": "textures/t_25_15.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1986,7 +2838,13 @@
       "reason": "terrain-height-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_25_16.Height.25_16",
+        "packageVersion": 123,
+        "path": "textures/t_25_16.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -1999,7 +2857,13 @@
       "reason": "terrain-height-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_25_17.Height.25_17",
+        "packageVersion": 123,
+        "path": "textures/t_25_17.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -2012,7 +2876,13 @@
       "reason": "map-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_25_18.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -2025,7 +2895,13 @@
       "reason": null,
       "status": "eligible",
       "terrainHeightGate": "pass",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 28,
+        "object": "T_25_19.Height.25_19",
+        "packageVersion": 123,
+        "path": "textures/T_25_19.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -2038,7 +2914,13 @@
       "reason": "map-licensee-unsupported:123/31",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 23,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_25_20.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -2051,7 +2933,13 @@
       "reason": "terrain-height-licensee-unsupported:123/19",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 19,
+        "object": "T_25_21.Height.25_21",
+        "packageVersion": 123,
+        "path": "textures/t_25_21.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -2064,7 +2952,13 @@
       "reason": "map-licensee-unsupported:123/19",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 19,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_26_11.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -2077,7 +2971,13 @@
       "reason": "map-licensee-unsupported:123/18",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "package-name",
+        "licensee": 16,
+        "object": null,
+        "packageVersion": 123,
+        "path": "textures/t_26_12.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -2090,7 +2990,13 @@
       "reason": "terrain-height-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_26_14.Height.26_14",
+        "packageVersion": 123,
+        "path": "textures/t_26_14.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -2103,7 +3009,13 @@
       "reason": "terrain-height-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_26_15.Height.26_15",
+        "packageVersion": 123,
+        "path": "textures/t_26_15.utx"
+      },
       "wrapper": "Lineage2Ver111"
     },
     {
@@ -2116,7 +3028,13 @@
       "reason": "terrain-height-licensee-unsupported:123/25",
       "status": "gap",
       "terrainHeightGate": "fail",
-      "terrainMapPackage": null,
+      "terrainMapPackage": {
+        "basis": "TerrainInfo.TerrainMap",
+        "licensee": 25,
+        "object": "T_26_16.Height.26_16",
+        "packageVersion": 123,
+        "path": "textures/t_26_16.utx"
+      },
       "wrapper": "Lineage2Ver111"
     }
   ],
