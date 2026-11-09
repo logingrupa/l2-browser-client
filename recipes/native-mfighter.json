@@ -13,7 +13,7 @@
       "class": "Engine.Pawn",
       "classPackageSha256": "9b04ff5cb4258e84dfa8efbdd85d9121f3bdcb5822a9a21ca69d200d05a69761"
     },
-    "limitations": ["Body and face choice0 follow native chargrp row0. Hair meshes follow native MFighter actor defaults; matching native hair texture color0 is an explicit recipe appearance choice, not a recovered hairgrp default.", "Rigid face/hair parts follow the source actor HeadBone through a dedicated skin palette. Native C++ face aim/rotation and submesh attachment formulas remain unimplemented."],
+    "limitations": ["Body and face choice0 follow native chargrp row0. Hair meshes follow native MFighter actor defaults; the hair texture and colour are unresolved (hair-layout-undecoded) until hairgrp/helmetgrp (DATA-02) and the generated chargrp assemblies (ACT-01) provide them; each hair slot binds the mesh's native section reference or shows the magenta unbound-slot diagnostic.", "Rigid face/hair parts follow the source actor HeadBone through a dedicated skin palette. Native C++ face aim/rotation and submesh attachment formulas remain unimplemented."],
     "parts": [
       {
         "package": "Fighter", "object": "MFighter_m001_u",
@@ -43,12 +43,12 @@
       },
       {
         "package": "Fighter", "object": "MFighter_m000_m00_ah",
-        "materials": ["0=MFighter.Hair.MFighter_m000_t00_m00_ah"],
+        "materials": [], "unresolved": {"materials": {"reason": "hair-layout-undecoded", "previousValue": ["0=MFighter.Hair.MFighter_m000_t00_m00_ah"]}},
         "rigidAttachment": {"bone":"Bip01_head","source":{"class":"LineageWarrior.MFighter","packageSha256":"747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558","bonePath":["HeadBone"],"meshPath":["SubMeshes",4]}}
       },
       {
         "package": "Fighter", "object": "MFighter_m000_m00_bh",
-        "materials": ["0=MFighter.Hair.MFighter_m000_t00_m00_bh"],
+        "materials": [], "unresolved": {"materials": {"reason": "hair-layout-undecoded", "previousValue": ["0=MFighter.Hair.MFighter_m000_t00_m00_bh"]}},
         "rigidAttachment": {"bone":"Bip01_head","source":{"class":"LineageWarrior.MFighter","packageSha256":"747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558","bonePath":["HeadBone"],"meshPath":["SubMeshes",5]}}
       }
     ]

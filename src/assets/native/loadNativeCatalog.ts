@@ -41,7 +41,12 @@ function joinedSliceNpcModelIds(npcProfiles: ReadonlyMap<string, NativeNpcProfil
 export async function loadNativeActorCatalog(signal: AbortSignal, profileId = defaultNativePlayerProfile.id) {
   const catalog = await readNativeCatalog(signal);
   const npcProfiles = await loadNativeNpcProfiles(catalog.npcProfiles, signal);
-  const playerProfiles = await loadNativePlayerProfiles(catalog.playerProfiles, signal), playerProfile = playerProfiles.get(profileId);
+  const { profiles: playerProfiles, unresolved } = await loadNativePlayerProfiles(catalog.playerProfiles, signal);
+  const unresolvedFields = unresolved.get(profileId);
+  if (unresolvedFields) {
+    throw new Error(unresolvedFields.map(entry => `Native player profile ${profileId} has unresolved ${entry.field}: ${entry.reason}`).join("; "));
+  }
+  const playerProfile = playerProfiles.get(profileId);
   if (!playerProfile) throw new Error(`Native player profile ${profileId} is not staged.`);
   const models = await loadNativeModelPackages(catalog, signal,
     [playerProfile.catalogId, ...playerProfile.upperItems.map(item => item.catalogId), ...joinedSliceNpcModelIds(npcProfiles, catalog)]);

@@ -14,7 +14,7 @@
       "classPackageSha256": "9b04ff5cb4258e84dfa8efbdd85d9121f3bdcb5822a9a21ca69d200d05a69761"
     },
     "limitations": [
-      "Body and face choice0 follow native chargrp row1. Hair meshes follow exact native FFighter actor defaults; matching native hair texture color0 is an explicit recipe appearance choice, not a recovered hairgrp default.",
+      "Body and face choice0 follow native chargrp row1. Hair meshes follow exact native FFighter actor defaults; the hair texture and colour are unresolved (hair-layout-undecoded) until hairgrp/helmetgrp (DATA-02) and the generated chargrp assemblies (ACT-01) provide them; each hair slot binds the mesh's native section reference or shows the magenta unbound-slot diagnostic.",
       "The chargrp row1 DarkElf hair placeholder is not used. The two identical FFighter SpAtk05AnimName[0] source rows must be preserved by the animation-family reader; no native precedence policy is inferred.",
       "Original event audio is requested for export. This recipe does not establish world dispatch, footstep surfaces, skill timing or full audible behavior.",
       "Face and hair preserve the existing exporter-selected native FVertInfluence skin to Bip01_head. Alternative serialized rigid streams are retained in source evidence; native selection, facial aim/rotation and C++ submesh attachment behavior remain unverified."
@@ -140,16 +140,12 @@
       {
         "package": "Fighter",
         "object": "FFighter_m000_m00_ah",
-        "materials": [
-          "0=FFighter.Hair.FFighter_m000_t00_m00_ah"
-        ]
+        "materials": [], "unresolved": {"materials": {"reason": "hair-layout-undecoded", "previousValue": ["0=FFighter.Hair.FFighter_m000_t00_m00_ah"]}}
       },
       {
         "package": "Fighter",
         "object": "FFighter_m000_m00_bh",
-        "materials": [
-          "0=FFighter.Hair.FFighter_m000_t00_m00_bh"
-        ]
+        "materials": [], "unresolved": {"materials": {"reason": "hair-layout-undecoded", "previousValue": ["0=FFighter.Hair.FFighter_m000_t00_m00_bh"]}}
       }
     ]
   }

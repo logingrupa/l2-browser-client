@@ -29,8 +29,12 @@
       },
       "forwardAxis": [1, 0, 0],
       "actorScale": [1, 1, 1],
-      "collisionRadius": 8,
-      "collisionHeight": 23.5,
+      "collisionRadius": null,
+      "collisionHeight": null,
+      "unresolved": {
+        "collisionRadius": {"reason": "actor-default-unresolved:CollisionRadius", "previousValue": 8},
+        "collisionHeight": {"reason": "actor-default-unresolved:CollisionHeight", "previousValue": 23.5}
+      },
       "sourceUnitsPerMetre": 100,
       "upperItems": [
         {
@@ -44,7 +48,7 @@
         "report": "artifacts/native-parity/research/native-ffighter-world-20261107/source/REPORT.md",
         "sourceManifestSha256": "85f3218bcca14306e22d43b1f82ca49f648f240d3ba6c438a8eb9d8daa014b34",
         "facing": "Independent transformed native ankle-to-toe vectors establish +X.",
-        "class": "LineageWarrior.FFighter inherited Engine.Actor scale and exact collision dimensions.",
+        "class": "LineageWarrior.FFighter inherited Engine.Actor scale. CollisionRadius and CollisionHeight were never read from the LineageWarrior.FFighter class defaults and stay actor-default-unresolved until the chargrp generator reads them from a source-joined class.",
         "equipment": "armorgrp item 22 f_HumnFigh binds Fighter.FFighter_m001_u to FFighter.FFighter_m001_t04_u.",
         "audio": "Direct original AnimNotify_Sound dependencies travel in the character archive; specialized attack dispatch stays uncovered."
       },

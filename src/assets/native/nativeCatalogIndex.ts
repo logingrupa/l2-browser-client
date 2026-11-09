@@ -173,7 +173,7 @@ export async function buildNativeCatalogIndex(catalog: NativeCatalog, signal: Ab
   const sourceObjectsByModelId = readModelSourceObjects(catalog.models);
 
   for (const profile of (await loadNativeNpcProfiles(catalog.npcProfiles, signal)).values()) addEntry(npcCatalogLookup(profile, sourceObjectsByModelId));
-  const playerProfiles = [...(await loadNativePlayerProfiles(catalog.playerProfiles, signal)).values()];
+  const playerProfiles = [...(await loadNativePlayerProfiles(catalog.playerProfiles, signal)).profiles.values()];
   for (const lookup of upperItemLookups(playerProfiles, sourceObjectsByModelId)) addEntry(lookup);
   for (const profile of playerProfiles) {
     if (profile.chargrpIndex !== undefined) addEntry(characterLookup(profile, profile.chargrpIndex, sourceObjectsByModelId));

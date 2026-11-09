@@ -29,12 +29,13 @@ afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 describe("native player profile loading and source boundaries", () => {
   it("keeps the original male default without fetching a character manifest", async () => {
     const fetcher = serve(new Map());
-    expect(await loadNativePlayerProfiles([], new AbortController().signal)).toEqual(new Map([[defaultNativePlayerProfile.id, defaultNativePlayerProfile]]));
+    expect(await loadNativePlayerProfiles([], new AbortController().signal)).toEqual({
+      profiles: new Map([[defaultNativePlayerProfile.id, defaultNativePlayerProfile]]), unresolved: new Map() });
     expect(fetcher).not.toHaveBeenCalled();
   });
   it("loads an immutable additional profile with its own dimensions and equipment", async () => {
     const input = await manifest(); serve(new Map([[input.record.manifest, input.bytes]]));
-    const profiles = await loadNativePlayerProfiles([input.record], new AbortController().signal);
+    const { profiles } = await loadNativePlayerProfiles([input.record], new AbortController().signal);
     expect(profiles.size).toBe(2); expect(profiles.get(profile.id)).toEqual(profile);
     expect(profiles.get(defaultNativePlayerProfile.id)).toEqual(defaultNativePlayerProfile);
   });
@@ -57,7 +58,7 @@ describe("native player profile loading and source boundaries", () => {
   });
   it("keeps a chargrpIndex of a staged profile and gives the built-in default none", async () => {
     const input = await manifest([{ ...profile, chargrpIndex: 3 }]); serve(new Map([[input.record.manifest, input.bytes]]));
-    const profiles = await loadNativePlayerProfiles([input.record], new AbortController().signal);
+    const { profiles } = await loadNativePlayerProfiles([input.record], new AbortController().signal);
     expect(profiles.get(profile.id)!.chargrpIndex).toBe(3);
     expect(profiles.get(defaultNativePlayerProfile.id)).not.toHaveProperty("chargrpIndex");
   });
@@ -79,7 +80,7 @@ describe("native player profile loading and source boundaries", () => {
   it("keeps the built-in male fighter first and default when a staged row adds only its aliases", async () => {
     const aliased = { ...defaultNativePlayerProfile, clips: { ...defaultNativePlayerProfile.clips, walk: "Walk_Hand_MFighter" } };
     const input = await manifest([profile, aliased]); serve(new Map([[input.record.manifest, input.bytes]]));
-    const profiles = await loadNativePlayerProfiles([input.record], new AbortController().signal);
+    const { profiles } = await loadNativePlayerProfiles([input.record], new AbortController().signal);
     expect([...profiles.keys()]).toEqual([defaultNativePlayerProfile.id, profile.id]);
     expect(profiles.get(defaultNativePlayerProfile.id)!.clips).toEqual(aliased.clips);
     const twice = await manifest([aliased, aliased]); serve(new Map([[twice.record.manifest, twice.bytes]]));
@@ -115,12 +116,58 @@ describe("native player profile loading and source boundaries", () => {
   });
 });
 
+describe("unresolved player profile collision fields (decision H)", () => {
+  const stageRecipe = JSON.parse(readFileSync(resolve("recipes/native-player-ffighter-stage.json"), "utf8")) as { profiles: Record<string, unknown>[] };
+  const femaleFighter = stageRecipe.profiles.find(row => row.id === "human-female-fighter")!;
+  const femaleFighterUnresolvedFields = [
+    { field: "collisionRadius", reason: "actor-default-unresolved:CollisionRadius" },
+    { field: "collisionHeight", reason: "actor-default-unresolved:CollisionHeight" },
+  ];
+
+  it("reports the female fighter stage profile with its recorded reasons instead of loading it", async () => {
+    const otherProfile = { ...profile, id: "human-female-fighter-fixture" };
+    const input = await manifest([otherProfile, femaleFighter]); serve(new Map([[input.record.manifest, input.bytes]]));
+    const loaded = await loadNativePlayerProfiles([input.record], new AbortController().signal);
+    expect([...loaded.profiles.keys()]).toEqual([defaultNativePlayerProfile.id, otherProfile.id]);
+    expect(loaded.unresolved).toEqual(new Map([["human-female-fighter", femaleFighterUnresolvedFields]]));
+  });
+  it("keeps the built-in male fighter profile unchanged with nothing unresolved", async () => {
+    serve(new Map());
+    const loaded = await loadNativePlayerProfiles([], new AbortController().signal);
+    expect(loaded.profiles.get(defaultNativePlayerProfile.id)).toBe(defaultNativePlayerProfile);
+    expect(loaded.unresolved.size).toBe(0);
+  });
+  it.each([
+    ["a null dimension without an unresolved entry", { ...profile, collisionRadius: null }, "collision dimension is invalid"],
+    ["a listed field that holds a number", { ...femaleFighter, collisionRadius: 8 }, "must be null"],
+    ["an unresolved field outside the collision dimensions", { ...femaleFighter, unresolved: { ...femaleFighter.unresolved as object, actorScale: { reason: "actor-default-unresolved:DrawScale3D", previousValue: [1, 1, 1] } } }, "unresolved field"],
+    ["a reason that names another source field", { ...femaleFighter, unresolved: { collisionRadius: { reason: "actor-default-unresolved:CollisionHeight", previousValue: 8 }, collisionHeight: { reason: "actor-default-unresolved:CollisionHeight", previousValue: 23.5 } } }, "unresolved reason"],
+    ["an entry with extra keys", { ...femaleFighter, unresolved: { collisionRadius: { reason: "actor-default-unresolved:CollisionRadius", previousValue: 8, guess: 9 }, collisionHeight: { reason: "actor-default-unresolved:CollisionHeight", previousValue: 23.5 } } }, "unresolved entry"],
+    ["an empty unresolved object", { ...profile, unresolved: {} }, "unresolved field"],
+  ])("refuses %s", async (_label, row, message) => {
+    const input = await manifest([row]); serve(new Map([[input.record.manifest, input.bytes]]));
+    await expect(loadNativePlayerProfiles([input.record], new AbortController().signal)).rejects.toThrow(message);
+  });
+  it("refuses an unresolved profile and a resolved profile with the same id", async () => {
+    const input = await manifest([{ ...femaleFighter, id: profile.id }, profile]); serve(new Map([[input.record.manifest, input.bytes]]));
+    await expect(loadNativePlayerProfiles([input.record], new AbortController().signal)).rejects.toThrow("duplicated");
+  });
+  it("throws every unresolved field and reason when the actor catalog is asked for the unresolved profile", async () => {
+    const input = await manifest([femaleFighter]);
+    const catalog = { schemaVersion: 1, playerProfiles: [input.record], npcProfiles: [], models: [] };
+    serve(new Map([["/l2/catalog.json", encoder.encode(JSON.stringify(catalog))], [input.record.manifest, input.bytes]]));
+    await expect(loadNativeActorCatalog(new AbortController().signal, "human-female-fighter")).rejects.toThrow(
+      "Native player profile human-female-fighter has unresolved collisionRadius: actor-default-unresolved:CollisionRadius; " +
+      "Native player profile human-female-fighter has unresolved collisionHeight: actor-default-unresolved:CollisionHeight");
+  });
+});
+
 describe("native animation alias maps", () => {
   const recipe = JSON.parse(readFileSync(resolve("recipes/native-player-aliases-stage.json"), "utf8")) as { profiles: NativePlayerProfile[] };
   const base = JSON.parse(readFileSync(resolve("recipes/native-player-mfighter-base.json"), "utf8")) as { profile: NativePlayerProfile };
   async function load(rows: unknown[]) {
     const input = await manifest(rows); serve(new Map([[input.record.manifest, input.bytes]]));
-    return loadNativePlayerProfiles([input.record], new AbortController().signal);
+    return (await loadNativePlayerProfiles([input.record], new AbortController().signal)).profiles;
   }
 
   it("keeps the TypeScript built-in male fighter equal to the base recipe the alias stager starts from", () => {

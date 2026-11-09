@@ -54,7 +54,49 @@ function dimension(value: unknown): number {
 }
 const profileFields = new Set(["id", "name", "catalogId", "assetId", "sourceObject", "sourceSha256", "clips", "forwardAxis", "actorScale",
   "collisionRadius", "collisionHeight", "sourceUnitsPerMetre", "upperItems", "sourceEvidence", "limitations", "aliasEvidence",
-  "chargrpIndex"]);
+  "chargrpIndex", "unresolved"]);
+
+export type NativeUnresolvableProfileField = "collisionRadius" | "collisionHeight";
+export interface NativeUnresolvedProfileField {
+  readonly field: NativeUnresolvableProfileField;
+  readonly reason: string;
+}
+export interface NativePlayerProfileCatalog {
+  readonly profiles: ReadonlyMap<string, NativePlayerProfile>;
+  readonly unresolved: ReadonlyMap<string, readonly NativeUnresolvedProfileField[]>;
+}
+const sourceFieldByUnresolvableProfileField: Readonly<Record<NativeUnresolvableProfileField, string>> = {
+  collisionRadius: "CollisionRadius", collisionHeight: "CollisionHeight",
+};
+const unresolvedEntryFields = ["reason", "previousValue"];
+function isUnresolvableProfileField(field: string): field is NativeUnresolvableProfileField {
+  return Object.hasOwn(sourceFieldByUnresolvableProfileField, field);
+}
+function parseUnresolvedFields(value: unknown): readonly NativeUnresolvedProfileField[] {
+  if (value === undefined) return [];
+  const entries = Object.entries(object(value));
+  if (!entries.length || entries.some(([field]) => !isUnresolvableProfileField(field))) throw new Error("Native player profile unresolved field is not a collision dimension.");
+  return entries.map(([field, entryValue]) => {
+    const entry = object(entryValue), profileField = field as NativeUnresolvableProfileField;
+    if (Object.keys(entry).length !== unresolvedEntryFields.length || Object.keys(entry).some(key => !unresolvedEntryFields.includes(key))) {
+      throw new Error(`Native player profile unresolved entry ${field} must hold exactly ${unresolvedEntryFields.join(" and ")}.`);
+    }
+    const reason = `actor-default-unresolved:${sourceFieldByUnresolvableProfileField[profileField]}`;
+    if (entry.reason !== reason) throw new Error(`Native player profile unresolved reason for ${field} must be ${reason}.`);
+    return { field: profileField, reason };
+  });
+}
+type ParsedNativePlayerProfile =
+  | { readonly kind: "resolved"; readonly profile: NativePlayerProfile }
+  | { readonly kind: "unresolved"; readonly id: string; readonly fields: readonly NativeUnresolvedProfileField[] };
+function collisionDimensions(row: Record<string, unknown>, unresolvedFields: readonly NativeUnresolvedProfileField[]) {
+  const listed = new Set(unresolvedFields.map(entry => entry.field));
+  for (const field of listed) if (row[field] !== null) throw new Error(`Native player profile ${field} is unresolved and must be null.`);
+  return {
+    collisionRadius: listed.has("collisionRadius") ? null : dimension(row.collisionRadius),
+    collisionHeight: listed.has("collisionHeight") ? null : dimension(row.collisionHeight),
+  };
+}
 function optionalChargrpIndex(value: unknown): { readonly chargrpIndex?: number } {
   if (value === undefined) return {};
   if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) throw new Error("Native player profile chargrpIndex is invalid.");
@@ -99,9 +141,11 @@ function parseAliasEvidence(value: unknown, clips: NativePlayerClips): NativeAli
   return { generator: string(row.generator), report: string(row.report), reportSha256: string(row.reportSha256, hash),
     family: string(row.family), familySource: string(row.familySource), familySourceSha256: string(row.familySourceSha256, hash), rows };
 }
-function parseProfile(value: unknown): NativePlayerProfile {
+function parseProfile(value: unknown): ParsedNativePlayerProfile {
   const row = object(value);
   if (Object.keys(row).some(key => !profileFields.has(key))) throw new Error("Native player profile has unknown fields.");
+  const unresolvedFields = parseUnresolvedFields(row.unresolved);
+  const { collisionRadius, collisionHeight } = collisionDimensions(row, unresolvedFields);
   const clips = parseClips(row.clips);
   const axis = row.forwardAxis;
   if (!Array.isArray(axis) || axis.length !== 3 || !axis.every(v => typeof v === "number" && Number.isFinite(v)) ||
@@ -120,12 +164,13 @@ function parseProfile(value: unknown): NativePlayerProfile {
   });
   const sourceEvidence = object(row.sourceEvidence);
   if (!Object.keys(sourceEvidence).length) throw new Error("Native player profile source evidence is missing.");
-  return { id: string(row.id, identity), name: string(row.name), catalogId: string(row.catalogId, identity),
+  const profileIdentity = { id: string(row.id, identity), name: string(row.name), catalogId: string(row.catalogId, identity),
     assetId: string(row.assetId), sourceObject: string(row.sourceObject, qualified), sourceSha256: string(row.sourceSha256, hash),
     clips, ...(row.aliasEvidence !== undefined ? { aliasEvidence: parseAliasEvidence(row.aliasEvidence, clips) } : {}),
-    forwardAxis: [axis[0], axis[1], axis[2]], actorScale: [scale[0], scale[1], scale[2]], collisionRadius: dimension(row.collisionRadius),
-    collisionHeight: dimension(row.collisionHeight), sourceUnitsPerMetre: 100, upperItems,
-    sourceEvidence, limitations: row.limitations.map((v: unknown) => string(v)), ...optionalChargrpIndex(row.chargrpIndex) };
+    forwardAxis: [axis[0], axis[1], axis[2]] as const, actorScale: [scale[0], scale[1], scale[2]] as const, sourceUnitsPerMetre: 100 as const,
+    upperItems, sourceEvidence, limitations: row.limitations.map((v: unknown) => string(v)), ...optionalChargrpIndex(row.chargrpIndex) };
+  if (collisionRadius === null || collisionHeight === null) return { kind: "unresolved", id: profileIdentity.id, fields: unresolvedFields };
+  return { kind: "resolved", profile: { ...profileIdentity, collisionRadius, collisionHeight } };
 }
 
 function matchesBuiltInMaleFighterIdentity(profile: NativePlayerProfile): boolean {
@@ -138,9 +183,10 @@ function matchesBuiltInMaleFighterIdentity(profile: NativePlayerProfile): boolea
     JSON.stringify(profile.upperItems) === JSON.stringify(builtIn.upperItems);
 }
 
-export async function loadNativePlayerProfiles(records: unknown, signal: AbortSignal): Promise<ReadonlyMap<string, NativePlayerProfile>> {
+export async function loadNativePlayerProfiles(records: unknown, signal: AbortSignal): Promise<NativePlayerProfileCatalog> {
   if (!Array.isArray(records) || records.length > 16) throw new Error("Native player profile catalog is invalid.");
   const profiles = new Map([[defaultNativePlayerProfile.id, defaultNativePlayerProfile]]), bundles = new Set<string>();
+  const unresolved = new Map<string, readonly NativeUnresolvedProfileField[]>();
   let replacedBuiltIn = false;
   for (const value of records) {
     const entry = object(value), id = string(entry.id, identity), expectedHash = string(entry.manifestSha256, hash);
@@ -155,16 +201,20 @@ export async function loadNativePlayerProfiles(records: unknown, signal: AbortSi
     if (manifest.schemaVersion !== 1 || manifest.kind !== "native-player-profiles" || !Array.isArray(manifest.profiles) ||
       !manifest.profiles.length || manifest.profiles.length > 128) throw new Error("Native player manifest is invalid.");
     for (const row of manifest.profiles) {
-      const profile = parseProfile(row);
-      const builtIn = profile.id === defaultNativePlayerProfile.id && !replacedBuiltIn;
-      if (builtIn && !matchesBuiltInMaleFighterIdentity(profile)) throw new Error("Native player profile differs from the built-in male fighter identity.");
-      if (profiles.has(profile.id) && !builtIn) throw new Error("Native player profile identity is duplicated.");
+      const parsed = parseProfile(row);
+      const id = parsed.kind === "resolved" ? parsed.profile.id : parsed.id;
+      const builtIn = id === defaultNativePlayerProfile.id && !replacedBuiltIn;
+      if (builtIn && (parsed.kind === "unresolved" || !matchesBuiltInMaleFighterIdentity(parsed.profile))) {
+        throw new Error("Native player profile differs from the built-in male fighter identity.");
+      }
+      if ((profiles.has(id) && !builtIn) || unresolved.has(id)) throw new Error("Native player profile identity is duplicated.");
       if (builtIn) replacedBuiltIn = true;
-      profiles.set(profile.id, profile);
+      if (parsed.kind === "resolved") profiles.set(id, parsed.profile);
+      else unresolved.set(id, parsed.fields);
     }
   }
   signal.throwIfAborted();
-  return profiles;
+  return { profiles, unresolved };
 }
 
 export function validateNativePlayerAssets(profile: NativePlayerProfile, assets: ReadonlyMap<string, AssetPackage>): void {

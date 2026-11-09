@@ -6,7 +6,7 @@
     "withEventAudio": true,
     "limitations": [
       "No animationFamilyBinding is requested: the original LineageWarrior.int [FMagic] section assigns SpAtk13AnimName[3] twice with different values (decoded lines 1449 atkWait_Dual_FMagic and 1450 Atk02_Dual_FMagic). The shared family reader correctly refuses nonidentical duplicates and no native precedence is inferred. The conflict-preserving FMagic family document is produced separately by scripts/report-native-animation-aliases.py.",
-      "Body and face choice0 follow native chargrp row9 (Human female mystic): body_mesh1..4 Magic.FMagic_m003_u/m002_l/m003_g/m002_b with their row9 body_texture1..4. Hair meshes follow exact native LineageWarrior.FMagic SubMeshes[4]/[5]; matching native hair texture color0 is an explicit recipe appearance choice, not a recovered hairgrp default.",
+      "Body and face choice0 follow native chargrp row9 (Human female mystic): body_mesh1..4 Magic.FMagic_m003_u/m002_l/m003_g/m002_b with their row9 body_texture1..4. Hair meshes follow exact native LineageWarrior.FMagic SubMeshes[4]/[5]; the hair texture and colour are unresolved (hair-layout-undecoded) until hairgrp/helmetgrp (DATA-02) and the generated chargrp assemblies (ACT-01) provide them; each hair slot binds the mesh's native section reference or shows the magenta unbound-slot diagnostic.",
       "The chargrp row9 DarkElf hair placeholder is not used. Native scale only: converter 0.01 metre/source unit plus the dedicated native MeshOrigin/RotOrigin/MeshScale parent; no height fitting, recentering or grounding is applied.",
       "The separate Magic.Skirt_FMagic animation set and FMagic *_m skirt meshes are not part of the chargrp row9 base appearance and are not exported here.",
       "Original event audio is requested for export. This recipe does not establish world dispatch, footstep surfaces, skill timing or full audible behavior.",
@@ -41,12 +41,12 @@
       {
         "package": "Magic", "object": "magic.FMagic_m000_m00_ah",
         "rigidAttachment": {"bone": "Bip01_head", "source": {"class": "LineageWarrior.FMagic", "packageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558", "bonePath": ["HeadBone"], "meshPath": ["SubMeshes", 4]}},
-        "materials": ["0=FMagic.Hair.FMagic_m000_t00_m00_ah"]
+        "materials": [], "unresolved": {"materials": {"reason": "hair-layout-undecoded", "previousValue": ["0=FMagic.Hair.FMagic_m000_t00_m00_ah"]}}
       },
       {
         "package": "Magic", "object": "magic.FMagic_M000_M00_bh",
         "rigidAttachment": {"bone": "Bip01_head", "source": {"class": "LineageWarrior.FMagic", "packageSha256": "747b1e7c3045c748c08b03b54893dc2d29cf7103379f19804ccbeb7764224558", "bonePath": ["HeadBone"], "meshPath": ["SubMeshes", 5]}},
-        "materials": ["0=FMagic.Hair.FMagic_m000_t00_m00_bh"]
+        "materials": [], "unresolved": {"materials": {"reason": "hair-layout-undecoded", "previousValue": ["0=FMagic.Hair.FMagic_m000_t00_m00_bh"]}}
       }
     ]
   }
