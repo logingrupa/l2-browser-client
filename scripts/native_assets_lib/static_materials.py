@@ -52,6 +52,8 @@ REVIEWED_VERSION_EVIDENCE = {
         'staticmeshes/cruma_s.usx', 31, '9fdcdc8b31385eec4b0b0d14e9f7da1113fd009a6133e94a6ca3217e09dfedef'),
     (STATIC_MATERIAL_PACKAGE_VERSION, 18): cross_checked_version_evidence(
         'staticmeshes/dion_punish_s.usx', 77, 'ac4eeeb77ecf8ff74ea42e618f8600c7b18a5c1f81dd716f1ece511348b66791'),
+    (STATIC_MATERIAL_PACKAGE_VERSION, 0): cross_checked_version_evidence(
+        'staticmeshes/L2_Lobby_Classic.usx', 28, '2aba1ab0562bf5d76c53368292a96cd14257555a50d2f3ef8b6f7ee50f10b33e'),
 }
 REVIEWED_VERSIONS = frozenset(REVIEWED_VERSION_EVIDENCE)
 

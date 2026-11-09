@@ -11,7 +11,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from native_assets_lib.static_materials import (ELBERA_CROSS_CHECK_TOOL, LAYOUT_EVIDENCE_SOURCE, LAYOUT_REVIEWED_LICENSEES,
                                                 MAX_MATERIALS, REVIEWED_VERSION_EVIDENCE, REVIEWED_VERSIONS,
                                                 STATIC_MATERIAL_CROSS_CHECKS_PATH, STATIC_MATERIAL_REAL_CLIENT_CASES_PATH,
-                                                native_static_materials)
+                                                STATIC_MESH_CLASS_OBJECT, native_static_materials)
 from native_assets_lib.static_material_cross_check import static_material_cross_check_row
 from native_catalog.ue2 import FormatError, Package
 from native_assets import Converter, static_section_bindings
@@ -437,7 +437,10 @@ class ExpandedSectionMaterialTests(unittest.TestCase):
                                                        Path(row['package']).name)
                 package = packages[row['package']]
                 original_hash = hashlib.sha256(package.data).hexdigest()
-                item = next(item for item in package.exports if item['object'] == row['object'])
+                matches = [item for item in package.exports
+                           if item['object'] == row['object'] and item['classObject'] == STATIC_MESH_CLASS_OBJECT]
+                self.assertEqual(len(matches), 1)
+                item = matches[0]
                 result = native_static_materials(package, item)
                 self.assertEqual(result['layout']['licenseeVersion'], row['licenseeVersion'])
                 slots = result['slots']

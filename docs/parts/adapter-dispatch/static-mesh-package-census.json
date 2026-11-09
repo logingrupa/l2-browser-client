@@ -931,8 +931,8 @@
       "licensee": 0,
       "packageVersion": 123,
       "path": "staticmeshes/L2_Lobby_Classic.usx",
-      "reason": "static-material-layout-unreviewed:123/0",
-      "reviewed": false,
+      "reason": null,
+      "reviewed": true,
       "sha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
       "staticMeshExportCount": 28
     },
@@ -985,8 +985,8 @@
       "licensee": 0,
       "packageVersion": 123,
       "path": "staticmeshes/LineageEffectsStaticmeshes3.usx",
-      "reason": "static-material-layout-unreviewed:123/0",
-      "reviewed": false,
+      "reason": null,
+      "reviewed": true,
       "sha256": "3e24b773c9dda07e1991a9d7ef8bd1be4c900f62333a1b7d0e9a15df5eac6a8f",
       "staticMeshExportCount": 3
     },
@@ -1138,8 +1138,8 @@
       "licensee": 0,
       "packageVersion": 123,
       "path": "staticmeshes/Oren_HEV_S1.usx",
-      "reason": "static-material-layout-unreviewed:123/0",
-      "reviewed": false,
+      "reason": null,
+      "reviewed": true,
       "sha256": "e4425370c4a0ce5c3b918376d69bdb9f960619d286322c02956f85a901e83c91",
       "staticMeshExportCount": 7
     },
@@ -1911,6 +1911,10 @@
   ],
   "referenceTreeLockSha256": "1957c96800aa45cb10c984f3f2e6f8d1f5f0b1713f086f20560db01f4d1d2b52",
   "reviewedVersions": [
+    [
+      123,
+      0
+    ],
     [
       123,
       12

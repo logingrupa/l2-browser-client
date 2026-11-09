@@ -2690,6 +2690,718 @@
         "36254cb3ade04b66e746fce1d451e152def09799d772302ae0250175badf1aa2"
       ],
       "materialsPayloadSha256": "e11eacb09a665cd38cc31efde2893e231ecbcda649b3ee716653955448f09e87"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.line_glow2",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        54
+      ],
+      "slotByteSha256s": [
+        "0c15c4756baca68337ce266c7c20573606bb1d0cc6283f837ad6cb0c57c15949"
+      ],
+      "materialsPayloadSha256": "e1839e84853ac5cab2792d7e774e91af097bab6d1efa9e3cff33a96046e27942"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.water_splash1",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        52
+      ],
+      "slotByteSha256s": [
+        "35700130a70350ef838abf8789adc1c7a09cf073697815fa9a96864862740e12"
+      ],
+      "materialsPayloadSha256": "32f490f7836d629761f06e31cfbad4ef13729e535842e30987008825bfe2da89"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.line_cloud",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        51
+      ],
+      "slotByteSha256s": [
+        "8689969b886d251d58d83234e5e60c4cedbb07a4977b8851c922aa672d5da9b3"
+      ],
+      "materialsPayloadSha256": "dd7870d4c924329f45ad5181f3d26af2e8a350bc54fd96237a0c71b190981424"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.wispray01",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        49
+      ],
+      "slotByteSha256s": [
+        "6148b3335dad08f528b1784ed921d4ea6fa681398df44b5c7188667a09c0c150"
+      ],
+      "materialsPayloadSha256": "bdff6b744f56bb5f53123cbd978a8701014f534eb0325b3707f042a5f314d572"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.Gludio_ReFarm_010",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        6
+      ],
+      "slotByteSha256s": [
+        "3a572ba68240ef48756b958b5b3bab58723530764fdd61057e3b4ca7e6ae0dbc"
+      ],
+      "materialsPayloadSha256": "46f3ad2403d77530d34199fed48a215c254020d4e603ca8debc8874c869c25ce"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.Gludio_ReFarm_006",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        21,
+        37
+      ],
+      "slotByteSha256s": [
+        "bc9e7ebfd45e30485766d1554ff8af508016f4bfc75d04282bc5570970426d48",
+        "8b3a329db63b74ec94867c3c5d20d84052ecd41ba116310339e1c5b80e1d8789"
+      ],
+      "materialsPayloadSha256": "71087cd81179361b9507c6e37ba2a5408bb7b569290402624702e1740386b8ca"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.Gludio_ReFarm_003",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        12,
+        14,
+        24,
+        42,
+        45,
+        48
+      ],
+      "slotByteSha256s": [
+        "0fc6e1961c4794c0fb9f9acbd486d435493fc27b7453da35c79fb60355162ba0",
+        "c5f8a1ab9f60b44dfe0eee85f0ec49853ba5b51a1b7b7d5b8e1c110438b9d549",
+        "15805fde0cb4ce32fce10c130a659ada9d06368705a815968286355be124cfe7",
+        "2d5e374a83dd23fca3d88fdfdea121cf21fdd2ffbac973b57a576c0b13723eff",
+        "5569591b7831ec63905cf58c0cbb76e05cc9205b5bdc3b74a33457df5c0b35df",
+        "258c07945f046d62e492acad1c3c5fd5df06dec136d0368c14a403404d760b1d"
+      ],
+      "materialsPayloadSha256": "8545b96304cb7240a7cb86e603d4daa5266fc5ad5fcbe49f776a49b8e3bf4815"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.Gludio_ReFarm_005",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        12,
+        14,
+        24,
+        21,
+        35,
+        6,
+        43
+      ],
+      "slotByteSha256s": [
+        "0fc6e1961c4794c0fb9f9acbd486d435493fc27b7453da35c79fb60355162ba0",
+        "c5f8a1ab9f60b44dfe0eee85f0ec49853ba5b51a1b7b7d5b8e1c110438b9d549",
+        "15805fde0cb4ce32fce10c130a659ada9d06368705a815968286355be124cfe7",
+        "bc9e7ebfd45e30485766d1554ff8af508016f4bfc75d04282bc5570970426d48",
+        "ac6f2915a7ea0c2253c373e3b373e4771afd70bf98652138938be09f240bd019",
+        "3a572ba68240ef48756b958b5b3bab58723530764fdd61057e3b4ca7e6ae0dbc",
+        "8a29326fcecc35bc9f6765e2530ae07d546b144de40ee9992f7600bc535c854d"
+      ],
+      "materialsPayloadSha256": "dcd85762b67b470be0893d04e28e7f460bb0adb5f7811d78df5bee682ab5cf65"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.Gludio_ReFarm_009",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        6
+      ],
+      "slotByteSha256s": [
+        "3a572ba68240ef48756b958b5b3bab58723530764fdd61057e3b4ca7e6ae0dbc"
+      ],
+      "materialsPayloadSha256": "46f3ad2403d77530d34199fed48a215c254020d4e603ca8debc8874c869c25ce"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.Gludio_ReFarm_008",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        6,
+        44
+      ],
+      "slotByteSha256s": [
+        "3a572ba68240ef48756b958b5b3bab58723530764fdd61057e3b4ca7e6ae0dbc",
+        "425f42f4458334fb70d0eb22392fa3bc9030a8a4928b92e0234453688de2cbb2"
+      ],
+      "materialsPayloadSha256": "9c2c54200961f43cfc5eaaae9917b5a4c1dc9e7c1ef2e7b8a66df840be041dee"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.Rewindmill_Stone_01a",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        39
+      ],
+      "slotByteSha256s": [
+        "764d6fdb240158ea027c711206f120c1dc6441561be34248272836b75d0c60f9"
+      ],
+      "materialsPayloadSha256": "534496dd61e701ea595897b0b1c332e033e01c4d5f56bb8bd507d6c3c95db08a"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.Rewindmill_01b",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        7,
+        4,
+        38,
+        3,
+        46,
+        36
+      ],
+      "slotByteSha256s": [
+        "ea016074c2cc5a74d89bd613ad8d75a6ad07868053d47abc76619b898b0de276",
+        "56b1d3b992d99634d8e9d265d95d5ff75a559ee523014c2dded71cc74cee8a1f",
+        "b670c2bc031ddefb206ab8c6cf327555291ab12b7f015750f75f27c0404dacb9",
+        "bd15c9f58ea7b691762296e6bce19bd0246306978a82cdf22b2c0d9811f4929d",
+        "a4b48dc2398a467b73425b04b3e0d45f28d1d897d050ba7e3d54035d4c8ee866",
+        "07ff30aa94dd9d325e6c953f00370c12b9bb7fa00fce55cf88b38a2daa6d64df"
+      ],
+      "materialsPayloadSha256": "f6f07f39bf136ff3b86d409e7bc96cd2393eee75e4133c7ecb49b1d2afc91c80"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.Rewindmill_02a",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        7,
+        10,
+        9,
+        8,
+        29,
+        22,
+        1,
+        15,
+        4,
+        5,
+        23,
+        20,
+        18,
+        11,
+        2,
+        3,
+        13,
+        16,
+        17,
+        8,
+        1,
+        5,
+        2,
+        47
+      ],
+      "slotByteSha256s": [
+        "ea016074c2cc5a74d89bd613ad8d75a6ad07868053d47abc76619b898b0de276",
+        "25e4a2040b803d8b69ff4f7eb2d6eca9e709783c961d563f5632c535885b76fd",
+        "e4d86c4d14510d4b6442df177cf41f79345d16b59c5aac5eeb907ead8e3ea4bd",
+        "ba66c7fa168ae213b3d3317153804679e7605852707002e78603363b774952bc",
+        "57d7ac37d2abf354cdce7aaf69f197ace4e2468d1c9d2a1372bd47fc4b9ef1c5",
+        "0251886dd30d1d020bfb46c4df50158b16e9c3d650dc4634c58ef0a96d5a6a4b",
+        "ba0661274c2a478d8f883db3131377e5b78a8b67c93d15450688232e91e91eed",
+        "49be48334b8a426286b09d24391fc0cb194df91e9231a40eff9ad1bd48cf3eeb",
+        "56b1d3b992d99634d8e9d265d95d5ff75a559ee523014c2dded71cc74cee8a1f",
+        "405d7618df10abe274f9c48e555375577e3a0a569bd5c5d1108a2de5f970ce94",
+        "79fdb77990580ca9311e401d6d0e73ed5b35650febef5b6e25ee8d9d648d84c4",
+        "59b5d946cf9382f4ef63f96db701a2fc438d3bedb8ba27aa55a5cfc5800b4f50",
+        "9122d2fd639c50caaaf827cca065faf4d95e8a893cf4041f49db5a3881872864",
+        "fbe929a5592a7f02ef29c6cbb3ab088ce2228187453ed3a7b9cc36943ac98374",
+        "e73fed5567cea3a1ef74a850c8fea37f56e4e42fcf6eb70a3d31fda22e87e191",
+        "bd15c9f58ea7b691762296e6bce19bd0246306978a82cdf22b2c0d9811f4929d",
+        "1c2b4aedddfef90320522233f61e056e3dbdeeee8723e01715e4c4a6ffcb675c",
+        "47923e99beb3b25c924e95edc1c9bfb16680afd48bf5f871d9e7d5a5cadb63c2",
+        "e7000a1b16330b25b9d54842efccbbc6b78c5709ef76599f96471231ead77815",
+        "ba66c7fa168ae213b3d3317153804679e7605852707002e78603363b774952bc",
+        "ba0661274c2a478d8f883db3131377e5b78a8b67c93d15450688232e91e91eed",
+        "405d7618df10abe274f9c48e555375577e3a0a569bd5c5d1108a2de5f970ce94",
+        "e73fed5567cea3a1ef74a850c8fea37f56e4e42fcf6eb70a3d31fda22e87e191",
+        "90a8328fcf02d30f4e3c273bd97b6feca56b77e5baa6b808045af78e292c3e6b"
+      ],
+      "materialsPayloadSha256": "8c311aec9b91451a392a73c07327405e7f8e2ca7a5780758618432b432803463"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.Rewindmill_02b",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        7,
+        36,
+        10,
+        9,
+        8,
+        19,
+        22,
+        1,
+        15,
+        4,
+        5,
+        23,
+        20,
+        18,
+        11,
+        2,
+        38,
+        3,
+        96,
+        13,
+        50,
+        16,
+        17
+      ],
+      "slotByteSha256s": [
+        "ea016074c2cc5a74d89bd613ad8d75a6ad07868053d47abc76619b898b0de276",
+        "07ff30aa94dd9d325e6c953f00370c12b9bb7fa00fce55cf88b38a2daa6d64df",
+        "25e4a2040b803d8b69ff4f7eb2d6eca9e709783c961d563f5632c535885b76fd",
+        "e4d86c4d14510d4b6442df177cf41f79345d16b59c5aac5eeb907ead8e3ea4bd",
+        "ba66c7fa168ae213b3d3317153804679e7605852707002e78603363b774952bc",
+        "3a02b49b1a8587b4c7b7a10845bd2de747852e4601ad6e863c169f7df20c5288",
+        "0251886dd30d1d020bfb46c4df50158b16e9c3d650dc4634c58ef0a96d5a6a4b",
+        "ba0661274c2a478d8f883db3131377e5b78a8b67c93d15450688232e91e91eed",
+        "49be48334b8a426286b09d24391fc0cb194df91e9231a40eff9ad1bd48cf3eeb",
+        "56b1d3b992d99634d8e9d265d95d5ff75a559ee523014c2dded71cc74cee8a1f",
+        "405d7618df10abe274f9c48e555375577e3a0a569bd5c5d1108a2de5f970ce94",
+        "79fdb77990580ca9311e401d6d0e73ed5b35650febef5b6e25ee8d9d648d84c4",
+        "59b5d946cf9382f4ef63f96db701a2fc438d3bedb8ba27aa55a5cfc5800b4f50",
+        "9122d2fd639c50caaaf827cca065faf4d95e8a893cf4041f49db5a3881872864",
+        "fbe929a5592a7f02ef29c6cbb3ab088ce2228187453ed3a7b9cc36943ac98374",
+        "e73fed5567cea3a1ef74a850c8fea37f56e4e42fcf6eb70a3d31fda22e87e191",
+        "b670c2bc031ddefb206ab8c6cf327555291ab12b7f015750f75f27c0404dacb9",
+        "bd15c9f58ea7b691762296e6bce19bd0246306978a82cdf22b2c0d9811f4929d",
+        "dfe68a5e4f9e6f492bb596c97763c1883058b6d3fe1908577597391785e11d2d",
+        "1c2b4aedddfef90320522233f61e056e3dbdeeee8723e01715e4c4a6ffcb675c",
+        "aa631e683a67aef9065d08cf31e51fa3c217610cdec8abc599a62c33bc369987",
+        "47923e99beb3b25c924e95edc1c9bfb16680afd48bf5f871d9e7d5a5cadb63c2",
+        "e7000a1b16330b25b9d54842efccbbc6b78c5709ef76599f96471231ead77815"
+      ],
+      "materialsPayloadSha256": "0a99af02a98f5807d590356833611a190e383f1b7b84d247bef8c42ab08e0675"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.Rewindmill_01a",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        7,
+        10,
+        9,
+        8,
+        29,
+        22,
+        13,
+        66,
+        1,
+        15,
+        16,
+        17,
+        4,
+        5,
+        23,
+        20,
+        18,
+        11,
+        2,
+        3,
+        1,
+        2,
+        1,
+        4,
+        2,
+        3
+      ],
+      "slotByteSha256s": [
+        "ea016074c2cc5a74d89bd613ad8d75a6ad07868053d47abc76619b898b0de276",
+        "25e4a2040b803d8b69ff4f7eb2d6eca9e709783c961d563f5632c535885b76fd",
+        "e4d86c4d14510d4b6442df177cf41f79345d16b59c5aac5eeb907ead8e3ea4bd",
+        "ba66c7fa168ae213b3d3317153804679e7605852707002e78603363b774952bc",
+        "57d7ac37d2abf354cdce7aaf69f197ace4e2468d1c9d2a1372bd47fc4b9ef1c5",
+        "0251886dd30d1d020bfb46c4df50158b16e9c3d650dc4634c58ef0a96d5a6a4b",
+        "1c2b4aedddfef90320522233f61e056e3dbdeeee8723e01715e4c4a6ffcb675c",
+        "f6292053e131eea8c1d4f63378229178bb720e66725293192ec6c96cb5019882",
+        "ba0661274c2a478d8f883db3131377e5b78a8b67c93d15450688232e91e91eed",
+        "49be48334b8a426286b09d24391fc0cb194df91e9231a40eff9ad1bd48cf3eeb",
+        "47923e99beb3b25c924e95edc1c9bfb16680afd48bf5f871d9e7d5a5cadb63c2",
+        "e7000a1b16330b25b9d54842efccbbc6b78c5709ef76599f96471231ead77815",
+        "56b1d3b992d99634d8e9d265d95d5ff75a559ee523014c2dded71cc74cee8a1f",
+        "405d7618df10abe274f9c48e555375577e3a0a569bd5c5d1108a2de5f970ce94",
+        "79fdb77990580ca9311e401d6d0e73ed5b35650febef5b6e25ee8d9d648d84c4",
+        "59b5d946cf9382f4ef63f96db701a2fc438d3bedb8ba27aa55a5cfc5800b4f50",
+        "9122d2fd639c50caaaf827cca065faf4d95e8a893cf4041f49db5a3881872864",
+        "fbe929a5592a7f02ef29c6cbb3ab088ce2228187453ed3a7b9cc36943ac98374",
+        "e73fed5567cea3a1ef74a850c8fea37f56e4e42fcf6eb70a3d31fda22e87e191",
+        "bd15c9f58ea7b691762296e6bce19bd0246306978a82cdf22b2c0d9811f4929d",
+        "ba0661274c2a478d8f883db3131377e5b78a8b67c93d15450688232e91e91eed",
+        "e73fed5567cea3a1ef74a850c8fea37f56e4e42fcf6eb70a3d31fda22e87e191",
+        "ba0661274c2a478d8f883db3131377e5b78a8b67c93d15450688232e91e91eed",
+        "56b1d3b992d99634d8e9d265d95d5ff75a559ee523014c2dded71cc74cee8a1f",
+        "e73fed5567cea3a1ef74a850c8fea37f56e4e42fcf6eb70a3d31fda22e87e191",
+        "bd15c9f58ea7b691762296e6bce19bd0246306978a82cdf22b2c0d9811f4929d"
+      ],
+      "materialsPayloadSha256": "cfc32187007500dbc5733570963eb60940c998cdb20cab2cc68c1258a41705d6"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.boat",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        -38,
+        -37,
+        -39,
+        -42,
+        -43,
+        -14,
+        -44,
+        -45,
+        -46,
+        -14
+      ],
+      "slotByteSha256s": [
+        "4755d60ae38f0c5b2e51788145193b27bfc20b4fef7a18f778ec1376e7ae771b",
+        "a85fcd2b9c9fc388e74c59ce83cb83511102bb7fa13e5854d63c45f5264d824c",
+        "da8cf7fa444f6fc2bcc820afcd7e4f53a3634dd49bcfb572818f176780e85973",
+        "31564c5c762f341e846f7a75ce0d15a426bd5ed5d1687dbc3b29dda6c2132dde",
+        "5f1d02a5b148a3f85a664bc8105b9f86d5377c9e6b94c721501e3890928d5823",
+        "e04d05359a38a53a1548fc74e660e399772eadff59ec1b84feb625f78b716147",
+        "194dc73854f9f0c202567b2a5aa6026756e408222b8de14774875028e7dbcdeb",
+        "6d2451c3c137c1043c3bbe4b72273eeae57d1c4e6bde623c23990b16e49844c0",
+        "b296618533722934ecd8d13ce577c6fd3bb9d11a469faf921cfbb04e40f1032c",
+        "e04d05359a38a53a1548fc74e660e399772eadff59ec1b84feb625f78b716147"
+      ],
+      "materialsPayloadSha256": "f9b0bd4ca78c095864d075f0de22f161621a2984d4080d574d13f334dbd61811"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.Ship",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        -18,
+        -19,
+        -20,
+        -21,
+        -22,
+        -23,
+        -24,
+        -29,
+        -26,
+        0,
+        -27,
+        -28,
+        -11,
+        0,
+        0,
+        0,
+        0,
+        -30,
+        -31,
+        -32,
+        -33,
+        0,
+        -34,
+        -35,
+        -36,
+        -17,
+        -16,
+        -15,
+        -13,
+        -12,
+        -18,
+        -19,
+        -20,
+        -21,
+        -22,
+        -23,
+        -24,
+        -29,
+        -26,
+        0,
+        -27,
+        -28,
+        -11,
+        0,
+        0,
+        0,
+        0,
+        -30,
+        -31,
+        -32,
+        -33,
+        0,
+        -34,
+        -35,
+        -36,
+        -17,
+        -16,
+        -15,
+        -13,
+        -12
+      ],
+      "slotByteSha256s": [
+        "93a9c39948e3406880e9131c7f3c5f680002df034881fc8f0bd86346da46e6f2",
+        "010fd32b0deab2459c92003b25c72a190a2d84188ce54b78349fe739bb8da0fd",
+        "94ea265c9bf92ec359f3b205d2de6485acd9ed5c72d86927ed233e4cf57db659",
+        "efec0a9d148ff0bc10399a4f3fd4a3a9b5ff36c598af49deec9162f19012ce3f",
+        "f472b5540a18f40176138836b283ffd50a1b6a0ef31129dc3290cccc6a948108",
+        "b19d51e8b7de68991bcb3e0865515dab58162bee07269bdd7cb253a57d60618e",
+        "ea16264f38c22fa6a24ea80cfebd2ee4e0f858908d9317d1dd356721e23da777",
+        "57f3e0c89a38a6274326379f002fa4d9374e18c9b98b253f1882faac4110fb58",
+        "4d54cc0f6f3bc31aaf1be2da1617a4153caca2abbdc309fb895f499037a88568",
+        "f815100fe75d8f50a9ae2788729a54be842340557b850a5c2bc24693fc606398",
+        "3a83e572532aa9aafa052ffa6c1b7f297daa6183933f05e71307430e5a3ed13d",
+        "3c631cc77830443f4713c9e3343ae17cbf7e6249b6f64818a2839704b3907843",
+        "43d0a1ca6a819b35e6436d4cb6712ab3cbf352565bf0afc73b72c88b0ccdf693",
+        "f815100fe75d8f50a9ae2788729a54be842340557b850a5c2bc24693fc606398",
+        "f815100fe75d8f50a9ae2788729a54be842340557b850a5c2bc24693fc606398",
+        "f815100fe75d8f50a9ae2788729a54be842340557b850a5c2bc24693fc606398",
+        "f815100fe75d8f50a9ae2788729a54be842340557b850a5c2bc24693fc606398",
+        "1f1eb7c438fdd5d75b7b2980d5bc547052586e820962b1c93ca2284cb2587381",
+        "abd73556bab356009f4e3633b51230df61fcb632b977f815fb60abe2c8da5242",
+        "a11a61023e951bd177aa44cacc666847c93448d6e68f7a97386733d34d521c2f",
+        "c0d74cba49fd3d477559009dec12e6da45ffb43535667a999e98c86535594491",
+        "f815100fe75d8f50a9ae2788729a54be842340557b850a5c2bc24693fc606398",
+        "7ef4e1929499768445345dc909cb9abc60363489570262208fa73ef53d25e902",
+        "1e940ffbf423c1f5813feeb5036cc37ec59b874a93ca1a780a2dcb7258addff3",
+        "04d5a79606ea92a88b7122c4c20b139b2cfc7f90bab849d52fa7744c96c94596",
+        "2e8dade71e9e2da60abbed416af12f9b9493adbdbfa8d54dfad9b658ac6c3035",
+        "81433fce2ee04a0f37c56e737d400b6b644469dc336cedac93be70a9d42dffb1",
+        "2d2ad25f93b91494cf5e5106dff06dd3d69fbfff550ba7934a05568ac4347f77",
+        "529cf67a64fce722e066ea2a6df24572867e1e27507069fd8ad8f12db221b30a",
+        "d0d510506a20a1fb289c5929f9de7090c6e262ba7f9754940161c61570ba3028",
+        "f13927f4a9290f4c726d1c22fce2c1f7de8786b638ce540780bd22d787c15d38",
+        "f4be5b18286266114842afe48ca6269c2dd767558e6bb6678a95d2d2dffa8aa2",
+        "5b8d44f5cc6f33c39ccf569115d7555c007a48b4169659c9c57504e1744ef0bd",
+        "efec0a9d148ff0bc10399a4f3fd4a3a9b5ff36c598af49deec9162f19012ce3f",
+        "9c9617a39d30e3ca17e26226f92b587ab3d3c3d7846970655c496e56d624ccf1",
+        "02ae70e58d3579dd721b5ea513857ceda3037f62823a96e9e87d6ae85ef5da53",
+        "b4113426499dabb02f858a9b0ff114f44becdef1f75bd47888bee503bee0d8b3",
+        "c2f8a201d30281ef1c9adec597d2ba3eb390e851ba5eb61b295b47483c3903b6",
+        "3c4e84600d1d12776836e9ab7dfdd17f76bedfe4a697baf6ec1f90964998ddd8",
+        "422a70d6cd275ff3a9ca5cc3d87f5d2f79d9d984a5c964635c9a027db0a07787",
+        "a3dd26d19c54702f1330640f45e806598df2d0bb0daa6de2088b7e408e4f794e",
+        "284557130ef6d02beb3b52c719e8f1bd4375ab05d75dccec88e907cdb1fb1516",
+        "b6d978fb9302013d3e063ae68cdb711653d10f1cddce747e5a0ab887786ecf5c",
+        "422a70d6cd275ff3a9ca5cc3d87f5d2f79d9d984a5c964635c9a027db0a07787",
+        "422a70d6cd275ff3a9ca5cc3d87f5d2f79d9d984a5c964635c9a027db0a07787",
+        "422a70d6cd275ff3a9ca5cc3d87f5d2f79d9d984a5c964635c9a027db0a07787",
+        "422a70d6cd275ff3a9ca5cc3d87f5d2f79d9d984a5c964635c9a027db0a07787",
+        "8ef23b75cdead9717ce218a87ccd4c3548f716d1623ecd63fb983be404c9b958",
+        "2954a8a31fbb6d81cd11fff03c818ec6465e5a88b4f19b61f6e75df9fd4121c9",
+        "a6e63a09d19378a7687696ebc3c69180ef3c5255d119bfeb43792f96f610c52b",
+        "8d70f27a60d834bf1722abce4c996e6b3194ddbf3ad75328b2d4abf46fa098cd",
+        "422a70d6cd275ff3a9ca5cc3d87f5d2f79d9d984a5c964635c9a027db0a07787",
+        "640c01e97eac69e0f320814c0728af48c94923dfc3ee168682de22e53052ecb8",
+        "6b522dbf9fcf7a3459ee8f5d69e99ebcb5c25fa516876293eb5548f9c708731b",
+        "eac1cfdbbc2715999cb9d0a00044d6e362202f89203c7793c59c9330fcfbcac2",
+        "f9039b46836e993c4f6a3db9b2dc4366f486b7e83112d83308ae041f346b563b",
+        "6e3eb657d70ea3ec28ab8ab2da1cdabea0ebaa1774188d596a78d0d738d445b0",
+        "977325c65c875bdf8d73b9ab13255a6bfdaf9164b3ec6222e2104bbeb7041aa4",
+        "4abf70e1d1db6a79411516bf8fa8f93b62efee3b74a311a3803e23bca0196ddc",
+        "a6916726caf3a9409b10f6370b2a6d5ac60bb0839ede7fa38653e4dcbde9aeee"
+      ],
+      "materialsPayloadSha256": "8ddcaa9b7a8cfdc6dd356fd749cb37055b3cae47b40cf657976f1c91e7fc85a9"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.L2sky_Cylinder",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        -40
+      ],
+      "slotByteSha256s": [
+        "a7a26656ebe123e85feeb496549762b8778f52c975746afe649bfe1436217325"
+      ],
+      "materialsPayloadSha256": "88ae97e1829711ab91f8c7079c9483527ab52938afd5e0b55c4654d19fdb77e6"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.L2sky_sp03",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        53
+      ],
+      "slotByteSha256s": [
+        "ba69d5230237b7f815ae6837a50b1fe0fd741c926bba26af743edde65104d83b"
+      ],
+      "materialsPayloadSha256": "94bd7d2871d88c830e22f785696153a68079e346b7da7fca6fb0e9a7493dec43"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.lobby_sky01",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        75
+      ],
+      "slotByteSha256s": [
+        "12c1a4f41c32262f37fe5256d81934025250de70ee1e35e8fd6483f070a0da56"
+      ],
+      "materialsPayloadSha256": "afe6efb1e4acc57715e615c7c3ea2bd2adace76a39a0629c37220c067b3ddfec"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.Warlord",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        89,
+        77,
+        76
+      ],
+      "slotByteSha256s": [
+        "772e7587a1bfa1a08935792d4c67a50cbbde964316c219d66115fae5aad24c45",
+        "44db4b159b5832e31f7a9a17ecaa7e9734aa06d374bf81522a174ddac8b4464b",
+        "96d83ff03866a29f5d5c4335415c6653fb12387bd36cf6defff8b0c0df79543c"
+      ],
+      "materialsPayloadSha256": "0d29fa3a5a79aa3d3e263842820eb83135452c1ee060e5b20e007c523d335fcc"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.gludio_relowtree_02a",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        99,
+        100
+      ],
+      "slotByteSha256s": [
+        "1b08a0a7ead441aed4cd5307ed7aa070ef3e7faa947e170b0ddcbe3a89bf86ae",
+        "3de8398a82a21e8ee97eff6789d583f97cb9f7c4bee6b035f985550af20ac4ce"
+      ],
+      "materialsPayloadSha256": "9654191d472855db6a721582f3db0410f3dcaebf99583508f74a0826bc987350"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.Oracle_Stone_001",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        97,
+        98
+      ],
+      "slotByteSha256s": [
+        "75dea820d92e0e60d9010e612f816e05c1c350dd0f724b885f31ffe63d597880",
+        "7038a0e6d72b1d7617f5fdbed8a5c39ab20a3813ede2b60bbc7c2c8e1955367b"
+      ],
+      "materialsPayloadSha256": "11e7072af7d440e93749312062c79b76fd837fcaca2e08a99713601fef10d20f"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.Rewindmill_Stone_02a",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        39
+      ],
+      "slotByteSha256s": [
+        "764d6fdb240158ea027c711206f120c1dc6441561be34248272836b75d0c60f9"
+      ],
+      "materialsPayloadSha256": "534496dd61e701ea595897b0b1c332e033e01c4d5f56bb8bd507d6c3c95db08a"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.Gludio_ReFarm_004",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        12,
+        14,
+        24,
+        21,
+        88,
+        90,
+        35,
+        92,
+        93,
+        94,
+        37
+      ],
+      "slotByteSha256s": [
+        "0fc6e1961c4794c0fb9f9acbd486d435493fc27b7453da35c79fb60355162ba0",
+        "c5f8a1ab9f60b44dfe0eee85f0ec49853ba5b51a1b7b7d5b8e1c110438b9d549",
+        "15805fde0cb4ce32fce10c130a659ada9d06368705a815968286355be124cfe7",
+        "bc9e7ebfd45e30485766d1554ff8af508016f4bfc75d04282bc5570970426d48",
+        "7253398b939a3d38e4623fb7350887d099114b960379e013ed31caff0c433d80",
+        "c209b4f9081b895db09a872ca9952bd4d53e4b515abcedc55964809c8ac9b4db",
+        "ac6f2915a7ea0c2253c373e3b373e4771afd70bf98652138938be09f240bd019",
+        "93343fdbe14d3cc6440877f2fa56db66b3faca0cf88db01668da35637f1a5915",
+        "41e7056e7fc7897e7335a7614dc088376d07fccbe1b0932a3053f1c27eb0370c",
+        "94dc06211295822035475d248df82eecf904b121c06d55c029539cde876cdf7a",
+        "8b3a329db63b74ec94867c3c5d20d84052ecd41ba116310339e1c5b80e1d8789"
+      ],
+      "materialsPayloadSha256": "13caf3fac0c98dd73631a438563976dba56284570f15af01d0ded03db42563c3"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.Rewindmill_Fence_01a",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        83,
+        84,
+        85
+      ],
+      "slotByteSha256s": [
+        "c1c7f19a9ac506161dd339906acc46365d835ab43d459ee7283c649ec3418351",
+        "cb2706aaeb1bfc0d367cb60121ff5235c5eb217f06d0ae0f2b60936f518f0671",
+        "891ecf33a606aaee82b54306019c3149bd61c22c188bf0117e0cc9d04a18167a"
+      ],
+      "materialsPayloadSha256": "cc2d32a79847d1db1e95518531db6821cecc3fcdb459a083ab28869ed12b71c6"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.Gludio_Retree_03A",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        79,
+        80,
+        81
+      ],
+      "slotByteSha256s": [
+        "3ad2ca0001f9128566f0876e6fd22584ae53f7ebf98913b56a1974c99d0cf21e",
+        "80a32aa1e6aba6ee32854fe8a796412b4b4ca45d4fac0d0df17082ae57f6dbea",
+        "fd2805bbb1405a299deb84fdab7d018398567eaa8732f8b56603adaf0aec2cf1"
+      ],
+      "materialsPayloadSha256": "f3de102e5b41664f7ba9bc7847857d2da699f31924ad173d530a6a0702930c03"
+    },
+    {
+      "package": "staticmeshes/L2_Lobby_Classic.usx",
+      "packageSha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "object": "L2_Lobby_Classic.Rewindmill_Grass_04a",
+      "licenseeVersion": 0,
+      "materialIndices": [
+        78
+      ],
+      "slotByteSha256s": [
+        "45206390317ee4334a93b3caaa766f7b890155d6deac82176a7e3e88c1f22b79"
+      ],
+      "materialsPayloadSha256": "134c77dfd32749a42672d0cd1417c073b0840124883dae21f39daa5bbaf2d634"
     }
   ]
 }
