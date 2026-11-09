@@ -3,13 +3,13 @@
  "referenceTreeLockSha256": "1957c96800aa45cb10c984f3f2e6f8d1f5f0b1713f086f20560db01f4d1d2b52",
  "rows": [
   {
-   "countSource": "docs/PORT_SCOPE.md section 2 (Elbera extract_gamedata.py)",
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/actionname-e.dat",
    "descriptorLayout": true,
    "file": "actionname-e.dat",
    "layout": "actionname",
    "recordCount": 102,
-   "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "route": "local-decoded",
+   "status": "decoded, matches Elbera evidence",
    "table": "actionname-e"
   },
   {
@@ -23,13 +23,13 @@
    "table": "armorgrp"
   },
   {
-   "countSource": null,
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/castlename-e.dat",
    "descriptorLayout": true,
    "file": "castlename-e.dat",
    "layout": "castlename",
-   "recordCount": "unknown",
-   "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "recordCount": 53,
+   "route": "local-decoded",
+   "status": "decoded",
    "table": "castlename-e"
   },
   {
@@ -53,43 +53,43 @@
    "table": "classinfo-e"
   },
   {
-   "countSource": null,
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/clientdata.dat",
    "descriptorLayout": true,
    "file": "clientdata.dat",
    "layout": "clientdata",
-   "recordCount": "unknown",
-   "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "recordCount": 15,
+   "route": "local-decoded",
+   "status": "decoded",
    "table": "clientdata"
   },
   {
-   "countSource": null,
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/commandname-e.dat",
    "descriptorLayout": true,
    "file": "commandname-e.dat",
    "layout": "commandname",
-   "recordCount": "unknown",
-   "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "recordCount": 114,
+   "route": "local-decoded",
+   "status": "decoded",
    "table": "commandname-e"
   },
   {
-   "countSource": null,
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/creditgrp-e.dat",
    "descriptorLayout": true,
    "file": "creditgrp-e.dat",
    "layout": "credit",
-   "recordCount": "unknown",
-   "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "recordCount": 62,
+   "route": "local-decoded",
+   "status": "decoded",
    "table": "creditgrp-e"
   },
   {
-   "countSource": null,
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/entereventgrp.dat",
    "descriptorLayout": true,
    "file": "entereventgrp.dat",
    "layout": "entereventgrp",
-   "recordCount": "unknown",
-   "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "recordCount": 1152,
+   "route": "local-decoded",
+   "status": "decoded",
    "table": "entereventgrp"
   },
   {
@@ -109,17 +109,17 @@
    "layout": "eula",
    "recordCount": "unknown",
    "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "status": "decode-failed:FormatError",
    "table": "eula-e"
   },
   {
-   "countSource": null,
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/gametip-e.dat",
    "descriptorLayout": true,
    "file": "gametip-e.dat",
    "layout": "gametip",
-   "recordCount": "unknown",
-   "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "recordCount": 182,
+   "route": "local-decoded",
+   "status": "decoded",
    "table": "gametip-e"
   },
   {
@@ -163,23 +163,23 @@
    "table": "helmetgrp"
   },
   {
-   "countSource": null,
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/hennagrp-e.dat",
    "descriptorLayout": true,
    "file": "hennagrp-e.dat",
    "layout": "hennagrp",
-   "recordCount": "unknown",
-   "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "recordCount": 180,
+   "route": "local-decoded",
+   "status": "decoded",
    "table": "hennagrp-e"
   },
   {
-   "countSource": null,
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/huntingzone-e.dat",
    "descriptorLayout": true,
    "file": "huntingzone-e.dat",
    "layout": "huntingzone",
-   "recordCount": "unknown",
-   "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "recordCount": 220,
+   "route": "local-decoded",
+   "status": "decoded",
    "table": "huntingzone-e"
   },
   {
@@ -193,13 +193,13 @@
    "table": "itemname-e"
   },
   {
-   "countSource": null,
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/logongrp.dat",
    "descriptorLayout": true,
    "file": "logongrp.dat",
    "layout": "logongrp",
-   "recordCount": "unknown",
-   "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "recordCount": 26,
+   "route": "local-decoded",
+   "status": "decoded",
    "table": "logongrp"
   },
   {
@@ -213,13 +213,13 @@
    "table": "mobskillanimgrp"
   },
   {
-   "countSource": null,
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/musicinfo.dat",
    "descriptorLayout": true,
    "file": "musicinfo.dat",
    "layout": "musicinfo",
-   "recordCount": "unknown",
-   "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "recordCount": 358,
+   "route": "local-decoded",
+   "status": "decoded",
    "table": "musicinfo"
   },
   {
@@ -243,23 +243,23 @@
    "table": "npcname-e"
   },
   {
-   "countSource": null,
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/obscene-e.dat",
    "descriptorLayout": true,
    "file": "obscene-e.dat",
    "layout": "obscene",
-   "recordCount": "unknown",
-   "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "recordCount": 13,
+   "route": "local-decoded",
+   "status": "decoded",
    "table": "obscene-e"
   },
   {
-   "countSource": null,
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/optiondata_client-e.dat",
    "descriptorLayout": true,
    "file": "optiondata_client-e.dat",
    "layout": "optiondata_client",
-   "recordCount": "unknown",
-   "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "recordCount": 16380,
+   "route": "local-decoded",
+   "status": "decoded",
    "table": "optiondata_client-e"
   },
   {
@@ -269,27 +269,27 @@
    "layout": "questname",
    "recordCount": "unknown",
    "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "status": "decode-failed:FormatError",
    "table": "questname-e"
   },
   {
-   "countSource": null,
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/raiddata-e.dat",
    "descriptorLayout": true,
    "file": "raiddata-e.dat",
    "layout": "raiddata",
-   "recordCount": "unknown",
-   "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "recordCount": 220,
+   "route": "local-decoded",
+   "status": "decoded",
    "table": "raiddata-e"
   },
   {
-   "countSource": null,
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/recipe-c.dat",
    "descriptorLayout": true,
    "file": "recipe-c.dat",
    "layout": "recipe-c",
-   "recordCount": "unknown",
-   "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "recordCount": 871,
+   "route": "local-decoded",
+   "status": "decoded",
    "table": "recipe-c"
   },
   {
@@ -299,7 +299,7 @@
    "layout": "servername",
    "recordCount": "unknown",
    "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "status": "decode-failed:FormatError",
    "table": "servername-e"
   },
   {
@@ -333,23 +333,23 @@
    "table": "skillsoundgrp"
   },
   {
-   "countSource": null,
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/staticobject-e.dat",
    "descriptorLayout": true,
    "file": "staticobject-e.dat",
    "layout": "staticobject",
-   "recordCount": "unknown",
-   "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "recordCount": 577,
+   "route": "local-decoded",
+   "status": "decoded",
    "table": "staticobject-e"
   },
   {
-   "countSource": null,
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/symbolname-e.dat",
    "descriptorLayout": true,
    "file": "symbolname-e.dat",
    "layout": "symbolname",
-   "recordCount": "unknown",
-   "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "recordCount": 11,
+   "route": "local-decoded",
+   "status": "decoded",
    "table": "symbolname-e"
   },
   {
@@ -373,13 +373,13 @@
    "table": "systemmsg-e"
   },
   {
-   "countSource": null,
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/variationeffectgrp-e.dat",
    "descriptorLayout": true,
    "file": "variationeffectgrp-e.dat",
    "layout": "variationeffectgrp",
-   "recordCount": "unknown",
-   "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "recordCount": 288,
+   "route": "local-decoded",
+   "status": "decoded",
    "table": "variationeffectgrp-e"
   },
   {

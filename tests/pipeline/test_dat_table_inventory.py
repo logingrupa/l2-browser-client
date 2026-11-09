@@ -34,7 +34,6 @@ OVERLAPPING_DESCRIPTOR = b'''<list name="CT0 Interlude">
 </list>
 '''
 NO_ELBERA_PARSERS = {}
-DESCRIPTOR_LINKED_TABLE_COUNT = 37
 SYNTHETIC_MANIFEST_SHA256 = 'c' * 64
 
 
@@ -107,11 +106,18 @@ class CommittedDatTableInventoryTests(unittest.TestCase):
 
     def test_route_tally(self):
         routes = [row['route'] for row in self.rows]
-        self.assertEqual(len(self.rows), 40)
-        self.assertEqual(len(TABLES), DESCRIPTOR_LINKED_TABLE_COUNT)
-        self.assertEqual(routes.count('local-decoded') + routes.count('local-layout-only'), DESCRIPTOR_LINKED_TABLE_COUNT)
+        self.assertEqual(len(self.rows), len(TABLES) + len(ELBERA_CANDIDATE_TABLES))
+        self.assertEqual(routes.count('local-decoded') + routes.count('local-layout-only'), len(TABLES))
         self.assertEqual(sorted(row['table'] for row in self.rows if row['route'] in ('elbera', 'none')), list(ELBERA_CANDIDATE_TABLES))
         self.assertEqual(sorted(row['layout'] for row in self.rows if row['descriptorLayout']), sorted(TABLES))
+
+    def test_no_row_keeps_the_layout_pinned_not_decoded_status(self):
+        self.assertEqual([row['table'] for row in self.rows if row['status'] == LAYOUT_NOT_DECODED_STATUS], [])
+
+    def test_every_layout_only_row_names_its_decode_failure(self):
+        for row in self.rows:
+            if row['route'] == 'local-layout-only':
+                self.assertTrue(row['status'].startswith('decode-failed:'), row)
 
     def test_local_decoded_counts_are_integers_from_sealed_decodes_of_the_locked_conversion_root(self):
         conversion_root = json.loads(COMMITTED_REFERENCE_CLIENT_LOCK_PATH.read_bytes())['conversionRoot']
