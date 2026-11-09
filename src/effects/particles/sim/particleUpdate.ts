@@ -24,23 +24,29 @@ function spawnRate(runtime: EmitterRuntime): number {
   return lifetimeCenter > 0 ? record.MaxParticles / lifetimeCenter : 0;
 }
 
+function spawnIntoNextSlot(runtime: EmitterRuntime, ageSeconds: number, context: EmitterStepContext, ownerVelocity: Vector3): number {
+  const { record, counters } = runtime;
+  const slot = counters.nextSlot;
+  spawnParticle(runtime, slot, ageSeconds, context, ownerVelocity);
+  counters.activeSlots = Math.max(counters.activeSlots, slot + 1);
+  counters.nextSlot = (slot + 1) % record.MaxParticles;
+  return slot;
+}
+
 function spawnDueParticles(runtime: EmitterRuntime, stepSeconds: number, rate: number, context: EmitterStepContext, ownerDisplacement: Vector3, ownerVelocity: Vector3): void {
   const { record, columns, counters } = runtime;
-  const previousFraction = counters.spawnFraction, accumulated = previousFraction + stepSeconds * rate;
-  const dueCount = Math.trunc(accumulated);
-  counters.spawnFraction = accumulated - dueCount;
-  const spawnCount = Math.min(record.MaxParticles, Math.max(0, dueCount)), spacingSeconds = 1 / rate;
-  const spawnedSlots: number[] = [];
-  for (let spawnIndex = 0; spawnIndex < spawnCount; spawnIndex += 1) {
-    const slot = counters.nextSlot;
-    spawnParticle(runtime, slot, stepSeconds - (1 - previousFraction) * spacingSeconds - spawnIndex * spacingSeconds, context, ownerVelocity);
-    counters.activeSlots = Math.max(counters.activeSlots, slot + 1);
-    counters.nextSlot = (slot + 1) % record.MaxParticles;
-    spawnedSlots.push(slot);
+  const leftoverBeforeStep = counters.spawnFraction, owedParticles = leftoverBeforeStep + stepSeconds * rate;
+  const wholeParticlesOwed = Math.trunc(owedParticles);
+  counters.spawnFraction = owedParticles - wholeParticlesOwed;
+  const birthCount = Math.min(record.MaxParticles, Math.max(0, wholeParticlesOwed)), secondsBetweenBirths = 1 / rate;
+  const firstBirthAgeSeconds = stepSeconds - (1 - leftoverBeforeStep) * secondsBetweenBirths;
+  const birthSlots: number[] = [];
+  while (birthSlots.length < birthCount) {
+    birthSlots.push(spawnIntoNextSlot(runtime, firstBirthAgeSeconds - birthSlots.length * secondsBetweenBirths, context, ownerVelocity));
   }
   if (record.CoordinateSystem !== COORDINATE_SYSTEM.independent || vectorLength(ownerDisplacement) <= independentPathThreshold) return;
-  spawnedSlots.forEach((slot, spawnIndex) => {
-    const pathShift = scaleVector(ownerDisplacement, -(1 - (spawnIndex + 1) / spawnCount));
+  birthSlots.forEach((slot, birthOrdinal) => {
+    const pathShift = scaleVector(ownerDisplacement, -(1 - (birthOrdinal + 1) / birthCount));
     writeSlotVector(columns.location, slot, addVectors(readSlotVector(columns.location, slot), pathShift));
   });
 }
@@ -126,29 +132,38 @@ function limitVelocity(runtime: EmitterRuntime, slot: number, stepSeconds: numbe
   });
 }
 
+function advanceParticleInSlot(runtime: EmitterRuntime, slot: number, stepSeconds: number, context: EmitterStepContext, ownerVelocity: Vector3): boolean {
+  const { record, stream, columns } = runtime;
+  if (!hasParticleFlag(columns, slot, PARTICLE_FLAG.active)) return false;
+  if (!hasParticleFlag(columns, slot, PARTICLE_FLAG.justSpawned)) columns.time[slot] = Math.fround(columns.time[slot]! + stepSeconds);
+  const time = columns.time[slot]!, maxLifetime = columns.maxLifetime[slot]!;
+  if (time > maxLifetime) {
+    if (!record.RespawnDeadParticles) {
+      setParticleFlag(columns, slot, PARTICLE_FLAG.active, false);
+      return false;
+    }
+    const respawnAge = maxLifetime > 0 ? (time - maxLifetime + drawRange(stream, record.InitialTimeRange)) % maxLifetime : 0;
+    spawnParticle(runtime, slot, respawnAge, context, ownerVelocity);
+  }
+  if (hasParticleFlag(columns, slot, PARTICLE_FLAG.justSpawned)) setParticleFlag(columns, slot, PARTICLE_FLAG.justSpawned, false);
+  else moveParticle(runtime, slot, stepSeconds);
+  applyCurves(runtime, slot);
+  writeSlotColor(columns, slot, particleColor(runtime, slot));
+  limitVelocity(runtime, slot, stepSeconds);
+  return true;
+}
+
 export function updateParticles(runtime: EmitterRuntime, stepSeconds: number, context: EmitterStepContext): void {
-  const { record, stream, columns, counters } = runtime;
+  const { record, counters } = runtime;
   const ownerDisplacement = subtractVectors(context.owner.location, counters.lastOwnerLocation);
   const ownerStepSeconds = Math.min(ownerVelocityStepClamp.maximum, Math.max(ownerVelocityStepClamp.minimum, counters.lastStepSeconds));
   const ownerVelocity = scaleVector(ownerDisplacement, 1 / ownerStepSeconds);
   const rate = spawnRate(runtime);
   if (rate > 0) spawnDueParticles(runtime, stepSeconds, rate, context, ownerDisplacement, ownerVelocity);
+  const visitedSlotCount = Math.min(counters.activeSlots, record.MaxParticles);
   let deadCount = 0;
-  const slotLimit = Math.min(record.MaxParticles, counters.activeSlots);
-  for (let slot = 0; slot < slotLimit; slot += 1) {
-    if (!hasParticleFlag(columns, slot, PARTICLE_FLAG.active)) { deadCount += 1; continue; }
-    if (!hasParticleFlag(columns, slot, PARTICLE_FLAG.justSpawned)) columns.time[slot] = Math.fround(columns.time[slot]! + stepSeconds);
-    const time = columns.time[slot]!, maxLifetime = columns.maxLifetime[slot]!;
-    if (time > maxLifetime) {
-      if (!record.RespawnDeadParticles) { setParticleFlag(columns, slot, PARTICLE_FLAG.active, false); deadCount += 1; continue; }
-      const respawnAge = maxLifetime > 0 ? (time - maxLifetime + drawRange(stream, record.InitialTimeRange)) % maxLifetime : 0;
-      spawnParticle(runtime, slot, respawnAge, context, ownerVelocity);
-    }
-    if (hasParticleFlag(columns, slot, PARTICLE_FLAG.justSpawned)) setParticleFlag(columns, slot, PARTICLE_FLAG.justSpawned, false);
-    else moveParticle(runtime, slot, stepSeconds);
-    applyCurves(runtime, slot);
-    writeSlotColor(columns, slot, particleColor(runtime, slot));
-    limitVelocity(runtime, slot, stepSeconds);
+  for (let slot = 0; slot < visitedSlotCount; slot += 1) {
+    if (!advanceParticleInSlot(runtime, slot, stepSeconds, context, ownerVelocity)) deadCount += 1;
   }
   const everySlotDead = deadCount >= record.MaxParticles || counters.activeSlots - deadCount <= 0;
   counters.dead = everySlotDead && rate === 0 && !record.RespawnDeadParticles;
