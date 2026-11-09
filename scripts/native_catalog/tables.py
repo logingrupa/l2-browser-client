@@ -105,6 +105,20 @@ def decode413(raw, crypto_source=CRYPTO_SOURCE):
     raise FormatError('No known Ver413 key produced a complete bounded stream')
 
 
+def read_core_fstring_text(reader):
+    length = reader.compact()
+    wide = length < 0
+    unit_bytes = 2 if wide else 1
+    raw = reader.take(abs(length) * unit_bytes)
+    if abs(length) == 1:
+        return ''
+    code_units = struct.unpack(f'<{-length}H', raw) if wide else raw
+    if code_units and 0 not in code_units:
+        raise FormatError('Unterminated Unreal string')
+    visible_unit_count = code_units.index(0) if code_units else 0
+    return raw[:visible_unit_count * unit_bytes].decode('utf-16le' if wide else 'latin-1')
+
+
 def read_value(reader, kind):
     numbers = {'UINT': 'I', 'INT': 'i', 'FLOAT': 'f', 'UCHAR': 'B', 'USHORT': 'H', 'SHORT': 'h', 'UBYTE': 'B'}
     if kind in numbers:
@@ -115,7 +129,7 @@ def read_value(reader, kind):
             raise FormatError('Invalid bounded Unicode field length')
         return reader.take(size).decode('utf-16le').rstrip('\0')
     if kind == 'ASCF':
-        return reader.string()
+        return read_core_fstring_text(reader)
     if kind == 'CNTR':
         return reader.compact()
     if kind == 'RGBA':

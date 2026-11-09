@@ -23,7 +23,7 @@ from reference_client_lock_fixture import lock_client_as_checked_conversion_root
 
 NPCNAME_FILE = 'system/npcname-e.dat'
 ZONENAME_FILE = 'system/zonename-e.dat'
-CP1252_UNDEFINED_BYTE = b'\x81'
+UNPAIRED_SURROGATE_WIDE_ASCF = bytes([0x82]) + struct.pack('<2H', 0xd800, 0)
 
 
 def ascf(raw_text):
@@ -31,9 +31,14 @@ def ascf(raw_text):
     return bytes([len(raw)]) + raw
 
 
+def encoded_npcname_payload(identifiers_and_encoded_names):
+    encoded_rows = b''.join(struct.pack('<I', identifier) + encoded_name + ascf(b'') + bytes.fromhex('9ce8a9ff')
+                            for identifier, encoded_name in identifiers_and_encoded_names)
+    return struct.pack('<I', len(identifiers_and_encoded_names)) + encoded_rows + SAFE_PACKAGE_TRAILER
+
+
 def synthetic_npcname_payload(rows):
-    encoded_rows = b''.join(struct.pack('<I', identifier) + ascf(name) + ascf(b'') + bytes.fromhex('9ce8a9ff') for identifier, name in rows)
-    return struct.pack('<I', len(rows)) + encoded_rows + SAFE_PACKAGE_TRAILER
+    return encoded_npcname_payload([(identifier, ascf(name)) for identifier, name in rows])
 
 
 @unittest.skipUnless(SCHEMA_ROOT.is_dir() and CRYPTO_SOURCE.is_file(), 'pinned dat schema and open-l2encdec source unavailable in .assets/native-tools')
@@ -99,8 +104,8 @@ class ConvertTableUnitTests(unittest.TestCase):
             self.assertEqual(self.convert_with_payload(payload)['status'], 'skipped-sealed')
         self.assertEqual(self.catalog_path.read_bytes(), catalog_bytes)
 
-    def test_undefined_cp1252_byte_becomes_a_decode_failed_gap_row_without_a_manifest(self):
-        result = self.convert_with_payload(synthetic_npcname_payload([(17, b'Bad' + CP1252_UNDEFINED_BYTE)]))
+    def test_an_unpaired_utf16_surrogate_becomes_a_decode_failed_gap_row_without_a_manifest(self):
+        result = self.convert_with_payload(encoded_npcname_payload([(17, UNPAIRED_SURROGATE_WIDE_ASCF)]))
         self.assertEqual(result, {'unit': 'table:npcname-e', 'status': 'gap', 'reason': 'decode-failed:UnicodeDecodeError'})
         [gap_row] = read_gap_rows(self.project_root, 'data-ui')
         self.assertEqual((gap_row['key'], gap_row['part'], gap_row['step'], gap_row['status'], gap_row['reason']),

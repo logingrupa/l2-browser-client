@@ -106,5 +106,22 @@ class NativeSourceEvidenceTests(unittest.TestCase):
                     self.assertEqual(len(rows[0]['face_texture']), 3)
 
 
+@unittest.skipUnless(CLIENT.is_dir() and SCHEMA_ROOT.is_dir() and CRYPTO_SOURCE.is_file() and REFERENCE_CLIENT_LOCK_PATH.is_file(),
+                     'Reference client, its lock or the pinned formats are absent')
+class ClientReadingTableTests(unittest.TestCase):
+    def decode_exactly(self, layout, file_name):
+        table = decode_table(CLIENT, layout, source_filename=file_name)
+        self.assertEqual(table['decodedBytes'] - table['consumedBytes'], 13)
+        self.assertEqual(bytes.fromhex(table['trailerHex']), b'\x0cSafePackage\0')
+        return table
+
+    def test_sysstring_reads_every_counted_unit_and_keeps_the_text_before_the_first_nul(self):
+        table = self.decode_exactly('sysstring', 'sysstring-e.dat')
+        strings = table['data']['string']
+        self.assertEqual((table['data']['data'], len(strings), len({row['stringID'] for row in strings})), (2083, 2083, 2083))
+        text_by_identifier = {row['stringID']: row['string'] for row in strings}
+        self.assertEqual((text_by_identifier[1551], text_by_identifier[1574]), ('', 'Player settings'))
+
+
 if __name__ == '__main__':
     unittest.main()

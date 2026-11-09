@@ -24,7 +24,7 @@ from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, UnitLedger, lock
 import reference_client_guard
 from reference_client_guard import require_reference_client
 
-DECODE_TABLE_ALGORITHM_VERSION = 1
+DECODE_TABLE_ALGORITHM_VERSION = 2
 LANE_NAME = 'data-ui'
 PART_NAME = 'data'
 DECODE_STEP = 'decode'
