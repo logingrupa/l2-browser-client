@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-29-PLAN.md
-last_updated: "2026-11-09T14:07:12.949Z"
+stopped_at: Completed 02-35-PLAN.md
+last_updated: "2026-11-09T14:40:38.952Z"
 last_activity: 2026-11-09
-last_activity_desc: "Phase 02 plan 02-29 complete (static meshes per chunk for any tile, 20_21 rendered on ?map, 20_20 model append chain deleted)"
-state_head: beeecfb88825b97d0d86c9613d3ce4b4e710f448
+last_activity_desc: "Phase 02 plan 02-35 complete (SAND-02 sheet side: tile, spawn, equip, cast and window pickers behind SandboxPickerHost; DevSheet.ts split under 400 lines)"
+state_head: 65b4bb6863262bcc5ba66df1e0792ea7c522ee9a
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 58
+  completed_plans: 59
   percent: 0
 ---
 
@@ -110,6 +110,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P52 | 51min | 3 tasks tasks | 36 files files |
 | Phase 02 P25 | 22min | 3 tasks | 16 files |
 | Phase 02 P29 | 35min | 4 tasks | 41 files |
+| Phase 02 P35 | 30min | 3 tasks | 30 files |
 
 ## Accumulated Context
 
@@ -262,6 +263,8 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-52: reviewed map licensees 16, 18, 19, 20, 23, 25, 28, 30, 31 (TerrainInfo of 16 refused) and terrain licensees 12, 15, 16, 18, 19, 20, 22, 23, 25, 28; terrain 118/11 stays a version gap; WORLD-01 stays Pending until 02-54 (rows 413 to 417)
 - [Phase 02]: 02-25: sandbox notes for all four by-ID actions come from describeSandboxCatalogLookup (index wording, converted info, gap and not in catalog warning); shared sandbox.lastKey and sandbox.lastLookup; convert:tables, convert:world, convert:actors, convert:ui package scripts (OVERNIGHT-DECISIONS rows 446 to 451)
 - [Phase 02]: 02-29: convert_tile.py --step meshes assigns each StaticMeshActor to the half-open native rectangle of its 4x4-sector chunk, converts each reviewed mesh once and keeps per-object gap rows in the meshes receipt; the manifest step fills chunk models and replaces its own earlier tile record; the 20_20 model append chain is deleted after the generic plan held all 157 oracle placements; WORLD-01 stays Pending (OVERNIGHT-DECISIONS rows 452 to 462)
+- [Phase 02]: 02-35: SandboxPickerHost is dispatch, reloadTile and openWindow with outcomes; pickers get a SandboxPickerContext; no audio picker, the Audio section is the SAND-02 audio control (rows 463 to 465)
+- [Phase 02]: 02-35: 02-37 retires attachSandboxCommandSheet's id-entry groups, sandboxCatalogLookupNote and the id-entry name kind when it mounts sandboxPickerSections; SAND-02 stays Pending until then (rows 470, 471)
 
 ### Pending Todos
 
@@ -335,6 +338,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-09T14:07:12.251Z
-Stopped at: Completed 02-29-PLAN.md
+Last session: 2026-11-09T14:40:38.391Z
+Stopped at: Completed 02-35-PLAN.md
 Resume file: None
