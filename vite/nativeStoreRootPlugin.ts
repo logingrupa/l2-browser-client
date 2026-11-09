@@ -23,7 +23,7 @@ const laneStoreFolder = "artifacts/lane-store";
 const fixtureStoreFolder = "tests/fixtures/lane-store/l2";
 const sharedStoreFolder = "public/l2";
 const storeCatalogFileName = "catalog.json";
-const storeRootOnlyFileNames = new Set([storeCatalogFileName, "coverage.json"]);
+const laneOnlyCoverageFileName = "coverage.json";
 const sha256Pattern = /^[0-9a-f]{64}$/;
 const nativeStoreContentTypes: Readonly<Record<string, string>> = {
 	".json": "application/json",
@@ -149,7 +149,7 @@ function confinedNativeStoreFile(source: NativeStoreSource, root: string, relati
 
 function locateNativeStoreFile(nativeStoreRoot: NativeStoreRoot, relativePath: string): NativeStoreFile | undefined {
 	const laneFile = confinedNativeStoreFile("lane", nativeStoreRoot.storeRoot, relativePath);
-	if (laneFile !== undefined || storeRootOnlyFileNames.has(relativePath)) return laneFile;
+	if (laneFile !== undefined || relativePath === laneOnlyCoverageFileName) return laneFile;
 	return confinedNativeStoreFile("shared", nativeStoreRoot.sharedStoreRoot, relativePath);
 }
 
