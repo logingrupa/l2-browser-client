@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-34-PLAN.md
-last_updated: "2026-11-09T06:50:45.786Z"
+stopped_at: Completed 02-58-PLAN.md
+last_updated: "2026-11-09T07:00:32.503Z"
 last_activity: 2026-11-09
-last_activity_desc: Phase 02 plan 02-15 complete (TerrainInfo-derived 4x4-sector chunk plan and per-chunk terrain for 20_21 and 20_20, WORLD-01 pending)
-state_head: a0ad137f5a63f46752a1b3068d93235de7a9e9ec
+last_activity_desc: Phase 02 plan 02-58 complete (D6 adapter record types and AccountSession contract commit)
+state_head: 833abfa94b9e1655162ba1a2ca093f6134ecde26
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 87
-  completed_plans: 52
+  completed_plans: 53
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 02 (Stage A breadth) - EXECUTING
-Plan: 02-34 complete, 35 of 70 plans summarized
+Plan: 02-58 complete, 36 of 70 plans summarized
 Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-09 - Plan 02-34 complete: the NPC batch (`convert_actors.py --batch npcs --limit 20`, `--print-batch-plan`) sealed 142 of 429 `npc-model` units (132 pass, 10 converter-refused) and 6 of 13 class-limited profile packs (1,496 profiles) in the unpinned actors lane store, catalog 9a979250; the npcs sweep slice recorded 20 passes; 1,943 rows wait on the owner's identity decision; `pnpm test:pipeline` 1,518 OK. ACT-02 stays Pending.
+Last activity: 2026-11-09 - Plan 02-58 complete: the DEC-OWN-12 D6 contract commit 2f0ed2e adds events command-rejected, environment, move, stop, correct and teleport, commands report-position and cannot-move (source units, D1), an optional metre origin on move-local, EntityKind npc and the types-only pre-world AccountSession; NativeSliceAdapter stores a reported position and answers cannot-move with stop; the five GameWorldAdapter methods are unchanged; `pnpm test:unit` 146 files pass. MOVE-01, MAT-02 and FX-01 stay Pending.
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -104,6 +104,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 2 P15 | 40min | 3 tasks | 25 files |
 | Phase 02 P26 | 27min | 3 tasks | 14 files |
 | Phase 02 P34 | 2h 6m | 3 tasks | 17 files |
+| Phase 2 P58 | 6min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -244,6 +245,9 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-34: NPC batch order LineageMonsters.ukx first, then package path, then unit key; shared-store npc ids (21622) stay out of lane packs; packs strictly below the imported MAX_CLASSES, at most 256 profiles, cut in row order, id interlude:npc-profiles:pack-<16 hex> (OVERNIGHT-DECISIONS rows 354 to 360)
 - [Phase 02]: 02-34: per-row class, inheritance and mesh identity refusals become gap rows before packs are cut, exact identity kept (1,943 rows wait on the owner); batch profile gap rows use step npc-profile (rows 366 to 368)
 - [Phase 02]: 02-34: ACT-02 stays Pending: 142 of 429 NPC model units sealed, 6 of 13 packs (1,496 profiles) in the unpinned actors lane store, 20 loads pass; resume with convert_actors.py --batch npcs --limit 20
+- [Phase 2]: Plan 02-58: the sandbox adapter stores a reported position without an event, answers cannot-move with one stop and rejects a non-finite position or non-integer heading with command-rejected (OVERNIGHT-DECISIONS row 369, owner review under ARCH-02)
+- [Phase 2]: Plan 02-58: move-local origin is optional and ignored by the sandbox; move speeds is a plain number record and the pre-world states carry only their stage until the Mobius classes name the fields in Phase 4 (rows 370 and 371)
+- [Phase 2]: Plan 02-58: EntityRegistry returns for every event but update, in the contract commit (row 372)
 
 ### Pending Todos
 
@@ -316,7 +320,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-09T06:50:45.276Z
-Stopped at: Completed 02-34-PLAN.md
+Last session: 2026-11-09T07:00:32.017Z
+Stopped at: Completed 02-58-PLAN.md
 Resume file: None
 - Needs Human (OVERNIGHT-DECISIONS row 301): the actors lane confirms the import repoints in `scripts/prepare-native-player-aliases.py` and `scripts/test_effect_readiness.py`; the world lane points `scripts/world/copy_world07_fixtures.py` at `scripts/native_assets_lib/sha256_identity.py` and removes its pin from the owner scan in `tests/pipeline/test_converter_output_guard.py`.
