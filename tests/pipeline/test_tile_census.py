@@ -348,6 +348,22 @@ class CommittedTileCensusTests(unittest.TestCase):
         self.assertTrue(all(row['terrainHeightGate'] == 'not-applicable' and row['terrainMapPackage'] is None for row in rows if row['kind'] == 'non-tile'))
         self.assertEqual({row['terrainHeightGate'] for row in rows if row['kind'] == 'tile'} - {'pass', 'fail', 'missing'}, set())
 
+    def test_every_map_gate_pass_tile_takes_its_terrain_gate_from_the_declared_terrain_map(self):
+        map_gate_pass_tiles = [row for row in self.census['maps'] if row['kind'] == 'tile' and row['mapReaderGate'] == 'pass']
+        self.assertTrue(map_gate_pass_tiles)
+        self.assertEqual([row['key'] for row in map_gate_pass_tiles if row['terrainMapPackage']['basis'] != 'TerrainInfo.TerrainMap'], [])
+        self.assertEqual([row['key'] for row in self.census['maps'] if row['kind'] == 'tile' and row['mapReaderGate'] == 'fail'
+                          and row['terrainMapPackage']['basis'] != 'package-name'], [])
+
+    def test_every_eligible_row_has_a_version_123_licensee_28_height_package(self):
+        eligible_rows = [row for row in self.census['maps'] if row['status'] == 'eligible']
+        self.assertTrue(eligible_rows)
+        for row in eligible_rows:
+            with self.subTest(key=row['key']):
+                package = row['terrainMapPackage']
+                self.assertEqual((package['basis'], package['packageVersion'], package['licensee']), ('TerrainInfo.TerrainMap', 123, 28))
+                self.assertIsNotNone(package['path'])
+
     def test_every_committed_reason_is_listed(self):
         reason_patterns = load_gap_reason_patterns()
         for row in self.census['maps']:

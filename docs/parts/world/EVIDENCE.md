@@ -73,16 +73,22 @@ Provisional, owner review. The verdicts below are copied from the reviewer's ans
 
 ## Tile census
 
-Committed in `docs/parts/world/tile-census.json` (plan 02-12, WORLD-03). Header reads only, through `require_equal_file`; the file holds names, header integers and gate results, no Lineage II bytes.
+Committed in `docs/parts/world/tile-census.json` (plans 02-12 and 02-13, WORLD-03). Every file is read through `require_equal_file`; the file holds names, header integers, declared object names and gate results, no Lineage II bytes.
 
-- Command: `node scripts/check-machine-schedule.mjs && python -B scripts/world/tile_census.py --client E:/Lineage2-client`. It also writes the world census gap rows to `artifacts/lane-store/world/gap-rows/census.json`, which the coverage report reads.
+- Command: `node scripts/check-machine-schedule.mjs && python -B scripts/world/tile_census.py --client E:/Lineage2-client` (about 17 s at BelowNormal; it reads the 67 licensee-28 maps whole and every other package header only). It also writes the world census gap rows to `artifacts/lane-store/world/gap-rows/census.json`, which the coverage report reads.
 - `referenceTreeLockSha256` `1957c96800aa45cb10c984f3f2e6f8d1f5f0b1713f086f20560db01f4d1d2b52`.
 - 163 maps: 153 tiles, 10 non-tile. Status: 39 eligible, 124 gap. Tile gaps: 86 map licensee, 26 terrain-height licensee (123/25: 13, 123/23: 8, 123/12: 2, 123/19, 123/20 and 123/22: 1 each), 2 terrain-height package missing (`19_11`, `20_11`).
+- A11 verdict (plan 02-13): settled. Each of the 67 map-gate-pass tiles holds exactly one `Engine.TerrainInfo` export, and its `TerrainMap` names a texture in the tile's own `T_XX_YY` package. 0 tiles declare a package other than `textures/T_XX_YY.utx`. 65 resolve to a lock path by casefolded package stem; `19_11` and `20_11` declare `T_19_11.Height.19_11` and `T_20_11.Height.20_11`, whose packages are not in the lock, so they are `terrain-height-package-missing`. Two object names differ from the usual `T_XX_YY.Height.XX_YY`: `21_16` declares `T_21_16.21_16` (no group) and `21_25` declares `T_21_25.Height.21_17` (package `t_21_25.utx`, 123/12).
+- Eligible before (by name, 02-12): 39. After (declared, 02-13): 39, the same set. No tile changed status, gate or reason.
+- Failing licensee-28 tiles by declared height-package licensee: 25: 13, 23: 8, 12: 2, 20, 22 and 19: 1 each, package missing: 2. Research 11.6 lists the same figures.
+- Gate basis: every tile row records `terrainMapPackage` `{basis, object, path, packageVersion, licensee}`. Map-gate-pass tiles have basis `TerrainInfo.TerrainMap`. The 86 map-gate-fail tiles keep the by-name gate with basis `package-name` and `object` null. Non-tile rows have `terrainMapPackage` null. A map with more than one TerrainInfo stops the census with the map name; a map-gate-pass map whose tables do not decode is `decode-failed:<error>` (none in the client).
 - Map gate: pass only for UE 123 licensee 28. Tile map licensees: 28: 67, 23: 38, 25: 17, 30: 15, 18: 6, 31: 6, 16: 2, 19: 1, 20: 1.
 - Eligible: 16_25, 17_12, 18_10, 18_11, 18_12, 18_17, 18_20, 18_22, 19_10, 19_16, 19_17, 19_22, 19_24, 20_10, 20_14, 20_17, 20_20, 20_21, 20_23, 21_15, 21_16, 21_22, 21_24, 22_14, 22_15, 22_16, 22_18, 22_20, 22_23, 23_13, 23_14, 23_16, 23_17, 23_21, 23_22, 24_15, 24_19, 24_22, 25_19.
 - Non-tile: `Auto0` to `Auto5` and `skylevel` 118/0 and `ship_position` (Lineage2Ver111) 118/6 are `map-version-unsupported:118`; `entry` (Lineage2Ver111) 123/0 is `map-licensee-unsupported:123/0`; `Lobby` 123/30 is `map-licensee-unsupported:123/30`. Lobby's status is known: a gap until the map reader grows licensee 30.
-- Terrain-height gate: by package name only. It reads `textures/T_XX_YY.utx` (casefolded lock lookup) and `terrainMapPackage` is null on every row until plan 02-13 reads `TerrainInfo.TerrainMap` (research assumption A11, not proven). A T package of another UE version is `terrain-height-version-unsupported:<version>` (`recipes/world/gap-reasons.json`); `t_17_23.utx` is 118/11, behind a failing map gate.
+- A height package of another UE version is `terrain-height-version-unsupported:<version>` (`recipes/world/gap-reasons.json`); `t_17_23.utx` is 118/11, behind a failing map gate.
+- Coverage: `python -B scripts/native_store/build_coverage_report.py --store-root artifacts/lane-store/world/l2 --lane world` gives world 163 rows, 124 gap, 39 pending; every tile row's reason equals its census reason, including the 28 declared terrain reasons.
 - Research cross-check (printed beside, never written as data): the licensee histogram and the non-tile headers match; the 39 eligible tiles match research section 5.1 with no extra and no missing tile.
+- Open: the 86 map-gate-fail tiles keep by-name terrain gates until the map reader grows past licensee 28 (plan 02-52).
 - Tests: `python -B -m unittest discover -s tests/pipeline -p test_tile_census.py`.
 
 ## Evidence
