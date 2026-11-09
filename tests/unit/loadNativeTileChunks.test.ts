@@ -148,7 +148,7 @@ describe("native tile chunk loading", () => {
     const modelId = "interlude:Fixture_S.FixtureMesh";
     const archive = await assetFixture("model", { id: modelId });
     const archiveBytes = new Uint8Array(archive.bytes), archiveSha256 = sha256Hex(archiveBytes);
-    const tampered = archiveBytes.slice(); tampered[tampered.length - 1] ^= 1;
+    const tampered = archiveBytes.slice(); tampered[tampered.length - 1]! ^= 1;
     serve(tileStore({ archives: new Map([[`/l2/${archiveSha256}/asset.l2asset`, tampered]]),
       secondChunkModels: [{ id: modelId, archive: `/l2/${archiveSha256}/asset.l2asset`, archiveSha256,
         placements: [{ id: `interlude:${fixtureTileId}.StaticMeshActor3`, modelId, sourceActor: `${fixtureTileId}.StaticMeshActor3`, exportIndex: 3,

@@ -2,6 +2,7 @@ import type { DevIdEntry, DevIdEntryField, DevIdEntryOptions } from "./types";
 
 const integerInputPattern = /^\d{1,9}$/;
 const nameInputPattern = /^[A-Za-z][A-Za-z0-9_]{0,63}$/;
+const maximumSearchTextLength = 64;
 
 let idEntrySequence = 0;
 
@@ -9,6 +10,9 @@ type FieldReading = { readonly value: number | string } | { readonly rejection: 
 
 function readIdEntryField(field: DevIdEntryField, rawText: string): FieldReading {
   const text = rawText.trim();
+  if (field.kind === "search") {
+    return text.length <= maximumSearchTextLength ? { value: text } : { rejection: `${field.label} must be at most ${maximumSearchTextLength} characters.` };
+  }
   if (!text) return { rejection: `${field.label} is required.` };
   if (field.kind === "name") {
     return nameInputPattern.test(text) ? { value: text }

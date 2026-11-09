@@ -62,6 +62,17 @@ describe("developer sheet ID entry", () => {
     expect(message.hidden).toBe(true);
   });
 
+  it("submits trimmed search text, accepts an empty search and bounds its length", () => {
+    const { onSubmit, message, submit } = mountIdEntry({ fields: [{ name: "query", label: "Name or ID", kind: "search" }] });
+    submit({ query: "  Greater Musveren  " });
+    expect(onSubmit).toHaveBeenLastCalledWith({ query: "Greater Musveren" });
+    submit({ query: "   " });
+    expect(onSubmit).toHaveBeenLastCalledWith({ query: "" });
+    submit({ query: "x".repeat(65) });
+    expect(onSubmit).toHaveBeenCalledTimes(2);
+    expect(message.textContent).toBe("Name or ID must be at most 64 characters.");
+  });
+
   it("is reachable from a sheet group with a hover-card info button", () => {
     const host = dom.document.createElement("section"); host.className = "world-interface";
     const canvas = dom.document.createElement("canvas");

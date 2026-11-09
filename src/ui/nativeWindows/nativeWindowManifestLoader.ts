@@ -1,8 +1,7 @@
 import { readWindowCatalogRecord } from "../../assets/native/nativeCatalogRecords";
 import { windowCatalogKey } from "../../assets/native/nativeCatalogIndex";
-import { nativeResourceUrl } from "../../assets/native/nativeResourceUrl";
 import { readNativeCatalog, type NativeCatalog } from "../../assets/native/readNativeCatalog";
-import { sha256 } from "../../assets/package/readAssetPackage";
+import { fetchCatalogPinnedBytes } from "../fetchCatalogPinnedBytes";
 import { parseNativeWindowManifest, type NativeWindowManifest } from "./nativeWindowLayoutTree";
 
 export type NativeWindowManifestLoad =
@@ -20,15 +19,6 @@ const textureNotInCatalogReason = "texture-not-in-catalog";
 const maximumImageBytes = 32 * 1024 * 1024;
 const sha256Pattern = /^[a-f0-9]{64}$/;
 
-async function fetchPinnedBytes(path: string, byteLength: number, expectedSha256: string, signal: AbortSignal, label: string): Promise<Uint8Array<ArrayBuffer>> {
-  const response = await fetch(nativeResourceUrl(path), { signal });
-  if (!response.ok) throw new Error(`${label} ${path} returned HTTP ${response.status}.`);
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  signal.throwIfAborted();
-  if (bytes.length !== byteLength || await sha256(bytes) !== expectedSha256) throw new Error(`${label} ${path} differs from its catalog length or SHA-256.`);
-  return bytes;
-}
-
 function decodeManifestText(bytes: Uint8Array): unknown {
   try { return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)); }
   catch { throw new Error("Native window manifest is not UTF-8 JSON."); }
@@ -39,7 +29,7 @@ export async function loadNativeWindowManifest(windowId: string, signal: AbortSi
   const catalog = await readNativeCatalog(signal);
   const record = catalog.windows.map(readWindowCatalogRecord).find(windowRecord => windowRecord.window === windowId);
   if (record === undefined) return { status: "not-in-catalog", key, reason: `${key} has no windows record in the served catalog` };
-  const bytes = await fetchPinnedBytes(record.manifest, record.manifestBytes, record.manifestSha256, signal, "Native window manifest");
+  const bytes = await fetchCatalogPinnedBytes(record.manifest, record.manifestBytes, record.manifestSha256, signal, "Native window manifest");
   const manifest = parseNativeWindowManifest(decodeManifestText(bytes));
   if (manifest.windowId !== windowId) throw new Error(`Native window manifest ${record.manifest} holds ${manifest.windowId}, not ${windowId}.`);
   return { status: "loaded", key, manifest, catalog };
@@ -80,7 +70,7 @@ export async function resolveNativeWindowTextures(catalog: NativeCatalog, refere
         continue;
       }
       const record = readUiTextureRecord(value, reference);
-      const bytes = await fetchPinnedBytes(record.image, record.imageBytes, record.imageSha256, signal, "Native UI texture");
+      const bytes = await fetchCatalogPinnedBytes(record.image, record.imageBytes, record.imageSha256, signal, "Native UI texture");
       resolutions.set(reference, { status: "resolved", url: URL.createObjectURL(new Blob([bytes], { type: "image/png" })) });
     }
   } catch (error) {
