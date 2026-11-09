@@ -56,7 +56,7 @@ vi.mock("../../src/ui/WorldInterface", () => ({ WorldInterface: class {
       append() {}, remove() {}, after() {}, setAttribute() {}, querySelector: () => null, querySelectorAll: () => [] });
     const group = (id: string, _title: string, options: { variables?: () => VariableInfo[] } = {}) => {
       runtimeBoundaryMocks.sheetGroups.set(id, options);
-      return { element: plainDomNode(), button: plainDomNode, note: plainDomNode, idEntry: () => ({ element: plainDomNode(), setMessage() {} }),
+      return { element: plainDomNode(), header: plainDomNode(), collapsed: false, button: plainDomNode, note: plainDomNode, idEntry: () => ({ element: plainDomNode(), setMessage() {} }),
         readout: () => ({ element: plainDomNode(), output: plainDomNode(), refresh() {} }),
         choice: () => ({ element: plainDomNode(), value: "", set() {}, setOptions() {}, setDisabled() {} }) };
     };

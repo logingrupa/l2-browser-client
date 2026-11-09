@@ -1,3 +1,4 @@
+import type { ActorClipListingSource } from "../../animation/actorClipPlayback";
 import type { NativeCatalogIndex } from "../../assets/native/nativeCatalogIndex";
 import type { WorldCommand } from "../../world/worldTypes";
 import type { NativeTableNameIndexRead } from "../nativeTables/readNativeTableNameIndex";
@@ -7,7 +8,7 @@ export interface SandboxActionOutcome {
   readonly text: string;
 }
 
-export interface SandboxPickerHost {
+export interface SandboxPickerHost extends ActorClipListingSource {
   dispatch(command: WorldCommand): void;
   reloadTile(tileId: string): SandboxActionOutcome;
   openWindow(windowId: string): Promise<SandboxActionOutcome>;

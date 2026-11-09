@@ -1,4 +1,5 @@
 import { afterEach, beforeEach } from "vitest";
+import { createNativeClipPreviewHub, type NativeClipPreviewHub } from "../../../src/assets/native/nativeClipPreview";
 import type { NativeCatalogIndex, NativeCatalogLookup } from "../../../src/assets/native/nativeCatalogIndex";
 import { DevSheet } from "../../../src/ui/devSheet/DevSheet";
 import type { DevGroup } from "../../../src/ui/devSheet/devSheetParts";
@@ -44,14 +45,22 @@ export interface MountOptions {
   readonly reloadOutcome?: SandboxActionOutcome;
   readonly windowOutcome?: Promise<SandboxActionOutcome>;
   readonly signal?: AbortSignal;
+  readonly clipHub?: NativeClipPreviewHub;
 }
 
 function fakePickerContext(options: MountOptions, fakeHost: FakeHost, nameIndexReads: string[]): SandboxPickerContext {
+  const clipHub = options.clipHub ?? createNativeClipPreviewHub();
   return {
     host: {
-      dispatch: command => { fakeHost.dispatched.push(command); },
+      dispatch: command => {
+        fakeHost.dispatched.push(command);
+        if (command.type === "play-clip") clipHub.play(command.entityId, command.clipName);
+      },
       reloadTile: tileId => { fakeHost.reloadedTiles.push(tileId); return options.reloadOutcome ?? { tone: "info", text: `tile:${tileId} reloaded` }; },
       openWindow: windowId => { fakeHost.openedWindows.push(windowId); return options.windowOutcome ?? Promise.resolve({ tone: "info", text: `${windowId} opened` }); },
+      actorClipEntityIds: () => clipHub.actorClipEntityIds(),
+      actorClipListing: entityId => clipHub.actorClipListing(entityId),
+      previewing: entityId => clipHub.previewing(entityId),
     },
     catalogIndex: fakeCatalogIndex(options.catalog ?? {}),
     readNameIndex: async tableId => {

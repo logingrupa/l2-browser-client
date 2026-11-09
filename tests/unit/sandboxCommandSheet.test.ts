@@ -25,16 +25,17 @@ beforeEach(() => { dom = installMiniDom(); });
 afterEach(() => { for (const sheet of openSheets.splice(0)) sheet.dispose(); dom.restore(); });
 
 describe("sandbox section picker groups", () => {
-  it("holds the five picker groups and none of the superseded by-ID groups", () => {
+  it("holds the six picker groups and none of the superseded by-ID groups", () => {
     const { panel } = attachWithFakes();
     const groupIds = panel.querySelectorAll(".dev-group").map(group => group.dataset.group);
-    expect(groupIds).toEqual(["tile", "spawn", "equip", "cast", "window"]);
+    expect(groupIds).toEqual(["tile", "spawn", "equip", "cast", "window", "clips"]);
     for (const supersededGroupId of ["spawn-npc", "equip-item", "cast-skill", "open-window"]) expect(groupIds).not.toContain(supersededGroupId);
   });
 
   it("refuses a second attach to the same section while the first is attached", () => {
     const { section, adapter, release } = attachWithFakes();
-    const pickerContext = { host: { dispatch() {}, reloadTile: () => ({ tone: "info" as const, text: "" }), openWindow: async () => ({ tone: "info" as const, text: "" }) },
+    const pickerContext = { host: { dispatch() {}, reloadTile: () => ({ tone: "info" as const, text: "" }), openWindow: async () => ({ tone: "info" as const, text: "" }),
+      actorClipEntityIds: () => [], actorClipListing: () => null, previewing: () => null },
       catalogIndex: fakeCatalogIndex, readNameIndex: async () => ({ status: "not-in-catalog" as const, key: "table:none", reason: "none" }),
       selectedEntityId: () => null, currentTileId: () => null, signal: new AbortController().signal };
     expect(() => attachSandboxCommandSheet({ section, adapter, pickerContext, indexFailure: null, powerStrike: null }))

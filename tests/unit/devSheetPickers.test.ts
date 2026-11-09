@@ -131,8 +131,8 @@ describe("spawn picker", () => {
 });
 
 describe("sandbox picker registry", () => {
-  it("lists the tile, spawn, equip, cast and window pickers in that order", () => {
-    expect(sandboxPickerSections.map(picker => picker.id)).toEqual(["tile", "spawn", "equip", "cast", "window"]);
+  it("lists the tile, spawn, equip, cast, window and clips pickers in that order", () => {
+    expect(sandboxPickerSections.map(picker => picker.id)).toEqual(["tile", "spawn", "equip", "cast", "window", "clips"]);
   });
 
   it.each(sandboxPickerSections.map(picker => picker.id))("%s picker releases every node it added and ignores a second release", pickerId => {
