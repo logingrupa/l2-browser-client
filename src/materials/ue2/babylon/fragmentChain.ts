@@ -32,30 +32,55 @@ function maskValue(mask: string, invertMask: boolean): string {
   return invertMask ? `(1.0 - ${mask}.${channel})` : `${mask}.${channel}`;
 }
 
-function combinerColour(operation: number, first: string, second: string, mask: string | null, multiplier: number, invertMask: boolean): string {
-  const m = mask === null ? null : maskValue(mask, invertMask);
-  switch (operation) {
-    case 0: return `${first}.rgb`;
-    case 1: return `${second}.rgb`;
-    case 2: return `${first}.rgb * ${second}.rgb * ${glslFloat(multiplier)}`;
-    case 3: return `${first}.rgb + ${second}.rgb`;
-    case 4: return `${first}.rgb - ${second}.rgb`;
-    case 5: return `${first}.rgb * ${m} + ${second}.rgb * (1.0 - ${m})`;
-    case 6: return `${first}.rgb + ${second}.rgb * ${m}`;
+interface EmittedCombiner {
+  readonly combineOperation: number;
+  readonly alphaOperation: number;
+  readonly material1: string;
+  readonly material2: string;
+  readonly mask: string | null;
+  readonly invertMask: boolean;
+  readonly modulateMultiplier: number;
+}
+
+function combinerColour(combiner: EmittedCombiner): string {
+  const { material1, material2, mask } = combiner;
+  const maskWeight = mask === null ? null : maskValue(mask, combiner.invertMask);
+  switch (combiner.combineOperation) {
+    case 0: return `${material1}.rgb`;
+    case 1: return `${material2}.rgb`;
+    case 2: return `${material1}.rgb * ${material2}.rgb * ${glslFloat(combiner.modulateMultiplier)}`;
+    case 3: return `${material1}.rgb + ${material2}.rgb`;
+    case 4: return `${material1}.rgb - ${material2}.rgb`;
+    case 5: return `${material1}.rgb * ${maskWeight} + ${material2}.rgb * (1.0 - ${maskWeight})`;
+    case 6: return `${material1}.rgb + ${material2}.rgb * ${maskWeight}`;
     case 7: return `${mask}.rgb`;
-    default: throw new RangeError(`Combiner colour operation ${operation} has no fragment rule.`);
+    default: throw new RangeError(`Combiner colour operation ${combiner.combineOperation} has no fragment rule.`);
   }
 }
 
-function combinerAlpha(operation: number, first: string, second: string, mask: string | null, invertMask: boolean): string {
-  switch (operation) {
-    case 0: return mask === null ? glslFloat(COMBINER_CONSTANTS.missingMaskAlpha.runtimeDefault) : maskValue(mask, invertMask);
-    case 1: return `${first}.a * ${second}.a`;
-    case 2: return `${first}.a + ${second}.a`;
-    case 3: return `${first}.a`;
-    case 4: return `${second}.a`;
-    default: throw new RangeError(`Combiner alpha operation ${operation} has no fragment rule.`);
+function combinerAlpha(combiner: EmittedCombiner): string {
+  const { material1, material2, mask } = combiner;
+  switch (combiner.alphaOperation) {
+    case 0: return mask === null ? glslFloat(COMBINER_CONSTANTS.missingMaskAlpha.runtimeDefault) : maskValue(mask, combiner.invertMask);
+    case 1: return `${material1}.a * ${material2}.a`;
+    case 2: return `${material1}.a + ${material2}.a`;
+    case 3: return `${material1}.a`;
+    case 4: return `${material2}.a`;
+    default: throw new RangeError(`Combiner alpha operation ${combiner.alphaOperation} has no fragment rule.`);
   }
+}
+
+function emitCombiner(builder: ChainBuilder, expression: Extract<ColourExpression, { kind: "combiner" }>): string {
+  const combiner: EmittedCombiner = {
+    combineOperation: expression.colourOperation,
+    alphaOperation: expression.alphaOperation,
+    material1: emitExpression(builder, expression.material1, true),
+    material2: emitExpression(builder, expression.material2, true),
+    mask: expression.mask ? emitExpression(builder, expression.mask, true) : null,
+    invertMask: expression.invertMask,
+    modulateMultiplier: expression.colourMultiplier,
+  };
+  return declare(builder, `clamp(vec4(${combinerColour(combiner)}, ${combinerAlpha(combiner)}), 0.0, 1.0)`);
 }
 
 function emitShader(builder: ChainBuilder, expression: Extract<ColourExpression, { kind: "shader" }>, usesDiffuseAlpha: boolean): string {
@@ -91,14 +116,7 @@ function emitExpression(builder: ChainBuilder, expression: ColourExpression, use
       const colour = colourSourceUniformName(expression.colourSourceIndex);
       return declare(builder, `vec4(${input}.rgb * ${colour}.rgb, ${expression.alphaBlend ? `${input}.a * ${colour}.a` : `${input}.a`})`);
     }
-    case "combiner": {
-      const first = emitExpression(builder, expression.material1, true);
-      const second = emitExpression(builder, expression.material2, true);
-      const mask = expression.mask ? emitExpression(builder, expression.mask, true) : null;
-      const colour = combinerColour(expression.colourOperation, first, second, mask, expression.colourMultiplier, expression.invertMask);
-      const alpha = combinerAlpha(expression.alphaOperation, first, second, mask, expression.invertMask);
-      return declare(builder, `clamp(vec4(${colour}, ${alpha}), 0.0, 1.0)`);
-    }
+    case "combiner": return emitCombiner(builder, expression);
     case "shader": return emitShader(builder, expression, usesDiffuseAlpha);
   }
 }
