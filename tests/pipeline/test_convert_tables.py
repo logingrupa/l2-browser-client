@@ -15,7 +15,7 @@ import convert_tables
 from convert_tables import (DECODE_TABLE_ALGORITHM_VERSION, LOCAL_DESCRIPTOR_ROUTE, TABLES_CATALOG_CAPACITY, convert_table_unit,
                             native_table_manifest, write_table_to_store)
 from hash_reference_client_tree import canonical_json_bytes
-from native_catalog.tables import CRYPTO_SOURCE, SAFE_PACKAGE_TRAILER, SCHEMA_ROOT, interlude_descriptor_links
+from native_catalog.tables import CRYPTO_SOURCE, NON_FINITE_FLOAT32_KEY, SAFE_PACKAGE_TRAILER, SCHEMA_ROOT, interlude_descriptor_links
 from native_store.catalog_writer import TABLE_MANIFEST_PATH_PATTERN, CatalogWriteError, validate_catalog_record
 from native_store.gap_rows import read_gap_rows
 from native_store.store_paths import lane_store_root, lane_work_root
@@ -43,6 +43,12 @@ def encoded_npcname_payload(identifiers_and_encoded_names):
 
 def synthetic_npcname_payload(rows):
     return encoded_npcname_payload([(identifier, ascf(name)) for identifier, name in rows])
+
+
+def synthetic_zonename_payload(top_float32_bytes):
+    zone = (struct.pack('<4I', 1, 2, 3, 4) + top_float32_bytes + struct.pack('<f', -100.0) + ascf(b'Zone')
+            + struct.pack('<6I', *range(6)) + struct.pack('<f', 0.5) + ascf(b'map'))
+    return struct.pack('<I', 1) + zone + SAFE_PACKAGE_TRAILER
 
 
 @unittest.skipUnless(SCHEMA_ROOT.is_dir() and CRYPTO_SOURCE.is_file(), 'pinned dat schema and open-l2encdec source unavailable in .assets/native-tools')
@@ -121,6 +127,15 @@ class ConvertTableUnitTests(unittest.TestCase):
         receipt = json.loads((self.project_root / 'artifacts/lane-store/data-ui' / gap_row['evidence']).read_bytes())
         self.assertEqual(receipt['gapRows'], [gap_row])
         self.assertEqual(self.convert_with_payload(b'')['status'], 'skipped-sealed')
+
+    def test_a_non_finite_float_seals_a_decoded_unit_with_its_source_bytes_under_one_key(self):
+        with patch('native_catalog.tables.decode413', return_value=('fixture', synthetic_zonename_payload(bytes.fromhex('ffffffff')))):
+            result = convert_table_unit(self.project_root, self.client_access, 'zonename-e', self.output_root, self.new_ledger(), self.links)
+        self.assertEqual((result['status'], result['recordCount']), ('decoded', 1))
+        [record] = self.tables_records()
+        [zone] = json.loads((self.output_root / record['manifest'].removeprefix('/l2/')).read_bytes())['records']['ZoneName']
+        self.assertEqual((zone['Top'], zone['Bottom'], zone['unk1']), ({NON_FINITE_FLOAT32_KEY: 'FFFFFFFF'}, -100.0, 0.5))
+        self.assertEqual(read_gap_rows(self.project_root, 'data-ui'), [])
 
     def test_format_error_becomes_a_decode_failed_gap_row(self):
         result = self.convert_with_payload(synthetic_npcname_payload([(17, b'Name')])[:-1])

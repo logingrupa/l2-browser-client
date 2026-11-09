@@ -1,4 +1,5 @@
 import hashlib
+import math
 import os
 from pathlib import Path
 import re
@@ -18,6 +19,7 @@ CRYPTO_SOURCE = Path(os.environ.get('L2_CRYPTO_SOURCE', 'C:/laragon/www/l2-brows
 DESCRIPTOR_FILE = '06_interlude.xml'
 SAFE_PACKAGE_TRAILER = b'\x0cSafePackage\0'
 SYSTEM_FOLDER_NAME = 'system'
+NON_FINITE_FLOAT32_KEY = 'nonFiniteFloat32SourceBytes'
 TABLE_LIMITATIONS = ['Native client presentation bindings only, not authoritative gameplay.',
     'Native field names and values retained; no cross-edition joins or fallback substitutions.',
     'Skill action-code to skeletal animation dispatch and effect runtime equivalence require separate verification.']
@@ -136,10 +138,18 @@ def read_core_fstring_text(reader):
     return raw[:visible_unit_count * unit_bytes].decode('utf-16le' if wide else 'latin-1')
 
 
+def read_float32(reader):
+    source_bytes = reader.take(4)
+    value = struct.unpack('<f', source_bytes)[0]
+    return value if math.isfinite(value) else {NON_FINITE_FLOAT32_KEY: source_bytes.hex().upper()}
+
+
 def read_value(reader, kind):
-    numbers = {'UINT': 'I', 'INT': 'i', 'FLOAT': 'f', 'UCHAR': 'B', 'USHORT': 'H', 'SHORT': 'h', 'UBYTE': 'B'}
+    numbers = {'UINT': 'I', 'INT': 'i', 'UCHAR': 'B', 'USHORT': 'H', 'SHORT': 'h', 'UBYTE': 'B'}
     if kind in numbers:
         return reader.number(numbers[kind])
+    if kind == 'FLOAT':
+        return read_float32(reader)
     if kind == 'UNICODE':
         size = reader.number('I')
         if size % 2 or size > 1_000_000:
