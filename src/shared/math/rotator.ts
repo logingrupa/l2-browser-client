@@ -81,6 +81,18 @@ export function rotatorSineFromTable(rotatorUnits: number): number {
   return sineTable[Math.floor(rotatorUnits / rotatorUnitsPerSineTableEntry) & (sineTableLength - 1)]!;
 }
 
+const rotatorUnitsPerTurn = ROTATOR_CONSTANTS.unitsPerTurn.runtimeDefault;
+const rotatorUnitsPerQuarterTurn = rotatorUnitsPerTurn / 4;
+const radiansPerTurn = 2 * Math.PI;
+
+export function sineOfRadiansFromTable(radians: number): number {
+  return rotatorSineFromTable(Math.trunc(radians * rotatorUnitsPerTurn / radiansPerTurn));
+}
+
+export function cosineOfRadiansFromTable(radians: number): number {
+  return rotatorSineFromTable(rotatorUnitsPerQuarterTurn - Math.trunc(radians * rotatorUnitsPerTurn / -radiansPerTurn));
+}
+
 export function rotatorSineExact(rotatorUnits: number): number {
   return Math.sin(rotatorUnitsToRadians(rotatorUnits));
 }
