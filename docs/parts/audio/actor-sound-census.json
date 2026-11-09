@@ -9,16 +9,16 @@
   },
   "perTable": {
     "npcgrp": {
-      "empty": 1,
+      "empty": 3,
       "exactIdentity": 0,
-      "uniquePackageLeafCandidate": 6,
+      "uniquePackageLeafCandidate": 219,
       "unresolved": 0
     }
   },
   "references": {
-    "empty": 1,
+    "empty": 3,
     "exactIdentity": 0,
-    "uniquePackageLeafCandidate": 6,
+    "uniquePackageLeafCandidate": 219,
     "unresolved": 0
   },
   "routeProof": {
@@ -150,6 +150,26 @@
   },
   "schemaVersion": 1,
   "sealedBundles": [
+    "npc:12077",
+    "npc:12564",
+    "npc:14001",
+    "npc:14002",
+    "npc:14003",
+    "npc:14004",
+    "npc:14005",
+    "npc:14006",
+    "npc:14007",
+    "npc:14008",
+    "npc:14009",
+    "npc:14010",
+    "npc:14011",
+    "npc:14012",
+    "npc:14013",
+    "npc:14014",
+    "npc:14015",
+    "npc:14016",
+    "npc:14017",
+    "npc:14018",
     "npc:20001"
   ]
 }

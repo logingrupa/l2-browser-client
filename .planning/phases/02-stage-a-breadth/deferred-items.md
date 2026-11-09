@@ -19,3 +19,7 @@ Out-of-scope problems found while executing a plan. Each is left for its owning 
 
 - `scripts/data/convert_tables.py` merges `tables` records with `TABLES_CATALOG_CAPACITY = 40`, and the capacity counts every record of the slice, including the three derived name index records. The data-ui lane holds 36 records now and 02-28 adds at most 3, so nothing is refused today; the plan that fixes the eula-e, questname-e, servername-e or sysstring-e decode makes the 41st record and must raise the capacity to the inventory rows plus the name indexes (OVERNIGHT-DECISIONS row 295).
 - PERF-02 (OVERNIGHT-DECISIONS row 302): native route startup parses and walks the fighter's 24.8 MB glTF JSON in four owners (catalog, cue preview, `NativeActor`, Power Strike) plus once per bone anchor in `sourceBoneBinding`, all on the main thread. Give model inspection one owner (computed once per model byte array) when Phase 6 measures startup.
+
+## Found during 02-44
+
+- `tests/unit/nativeWindowLayoutTree.test.ts` "parses every window manifest the layout step wrote to the data-ui lane store" timed out at the 5,000 ms default inside the full `pnpm test:unit` run (164 workers at lowered priority) and passes alone in 431 ms. It reads every real data-ui window manifest; the data-ui part owns it (a per-test timeout or a cheaper read).
