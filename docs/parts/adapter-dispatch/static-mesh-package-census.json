@@ -238,8 +238,8 @@
       "licensee": 14,
       "packageVersion": 123,
       "path": "staticmeshes/dion_curumadungeon_boss_s.usx",
-      "reason": "static-material-layout-unreviewed:123/14",
-      "reviewed": false,
+      "reason": null,
+      "reviewed": true,
       "sha256": "778eb957d3b1951c9024fe0e3ec6182c7980ba5478afcdf97a54e97c46a0f247",
       "staticMeshExportCount": 7
     },
@@ -436,8 +436,8 @@
       "licensee": 14,
       "packageVersion": 123,
       "path": "staticmeshes/field_deco_landmark_s.usx",
-      "reason": "static-material-layout-unreviewed:123/14",
-      "reviewed": false,
+      "reason": null,
+      "reviewed": true,
       "sha256": "ca93eb28ada0b17fdfae29090bffb8b0fd3d5032c694b438518ce3d752ae37d9",
       "staticMeshExportCount": 11
     },
@@ -1918,6 +1918,10 @@
     [
       123,
       12
+    ],
+    [
+      123,
+      14
     ],
     [
       123,

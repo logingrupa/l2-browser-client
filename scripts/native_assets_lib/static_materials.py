@@ -54,6 +54,8 @@ REVIEWED_VERSION_EVIDENCE = {
         'staticmeshes/dion_punish_s.usx', 77, 'ac4eeeb77ecf8ff74ea42e618f8600c7b18a5c1f81dd716f1ece511348b66791'),
     (STATIC_MATERIAL_PACKAGE_VERSION, 0): cross_checked_version_evidence(
         'staticmeshes/L2_Lobby_Classic.usx', 28, '2aba1ab0562bf5d76c53368292a96cd14257555a50d2f3ef8b6f7ee50f10b33e'),
+    (STATIC_MATERIAL_PACKAGE_VERSION, 14): cross_checked_version_evidence(
+        'staticmeshes/dion_curumadungeon_boss_s.usx', 7, '6582779888b8ed53f7c948d9666de07b139ac614036abc12f6f182fc56ad6579'),
 }
 REVIEWED_VERSIONS = frozenset(REVIEWED_VERSION_EVIDENCE)
 

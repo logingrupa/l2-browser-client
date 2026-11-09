@@ -3402,6 +3402,137 @@
         "45206390317ee4334a93b3caaa766f7b890155d6deac82176a7e3e88c1f22b79"
       ],
       "materialsPayloadSha256": "134c77dfd32749a42672d0cd1417c073b0840124883dae21f39daa5bbaf2d634"
+    },
+    {
+      "package": "staticmeshes/dion_curumadungeon_boss_s.usx",
+      "packageSha256": "778eb957d3b1951c9024fe0e3ec6182c7980ba5478afcdf97a54e97c46a0f247",
+      "object": "dion_curumadungeon_boss_s.oren_curumadungeon_npc2",
+      "licenseeVersion": 14,
+      "materialIndices": [
+        -6,
+        -4,
+        -7
+      ],
+      "slotByteSha256s": [
+        "9ec17c1e56bc59d945b1ca197eb5b46a4fdcf8af17d81a9de7a66853a6d556d5",
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989",
+        "aff8dbdb07ca906e8c3f7d04506a065585ab52c4880a390c4bb4ae5cdd0782d3"
+      ],
+      "materialsPayloadSha256": "ab3660b61369bde5dab80cd02c66bd7ed946b4d0420f352a88e182fdb3bd7af4"
+    },
+    {
+      "package": "staticmeshes/dion_curumadungeon_boss_s.usx",
+      "packageSha256": "778eb957d3b1951c9024fe0e3ec6182c7980ba5478afcdf97a54e97c46a0f247",
+      "object": "dion_curumadungeon_boss_s.oren_curumadungeon_npc3",
+      "licenseeVersion": 14,
+      "materialIndices": [
+        -5,
+        -4,
+        -15
+      ],
+      "slotByteSha256s": [
+        "13f57d01fa04ac6bc884a1b53b0697960362f49f2483aee780ef2b9f06ff07ea",
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989",
+        "ad943ce109eb2eb45905f81c8f418f4fff438b4b01513f95e6aab11fac7f4f11"
+      ],
+      "materialsPayloadSha256": "d04fcf9bced7a2a2a2dde2deaa1fa4ac3df875dd0bd41cdf8c2e1935e166a785"
+    },
+    {
+      "package": "staticmeshes/dion_curumadungeon_boss_s.usx",
+      "packageSha256": "778eb957d3b1951c9024fe0e3ec6182c7980ba5478afcdf97a54e97c46a0f247",
+      "object": "dion_curumadungeon_boss_s.oren_curumadungeon_npc5",
+      "licenseeVersion": 14,
+      "materialIndices": [
+        -10
+      ],
+      "slotByteSha256s": [
+        "8c45095c5a69abae0700a5b0da768ac0d17f696c4f49d67d709409c53175c028"
+      ],
+      "materialsPayloadSha256": "7ca649f6c155ba4e5912e15c88c65b1ef360d35d1d411b7a435b953532a9e781"
+    },
+    {
+      "package": "staticmeshes/dion_curumadungeon_boss_s.usx",
+      "packageSha256": "778eb957d3b1951c9024fe0e3ec6182c7980ba5478afcdf97a54e97c46a0f247",
+      "object": "dion_curumadungeon_boss_s.oren_curumadungeon_npc6",
+      "licenseeVersion": 14,
+      "materialIndices": [
+        -5,
+        -14,
+        -8,
+        -17,
+        -11,
+        -9,
+        -7,
+        -4,
+        -6,
+        -12
+      ],
+      "slotByteSha256s": [
+        "13f57d01fa04ac6bc884a1b53b0697960362f49f2483aee780ef2b9f06ff07ea",
+        "779c06c51648e165509cf0260401e8b077f1b1ae9502c87cc47f163e150acb63",
+        "d4584b8c94270b8b7820d541886e04cc26a423eda6759222c72a47ae7cd79c93",
+        "a8b799278f82fece9f5d6cd7f6dfa21416aaf40f25e659b16a6fcfb0633b8a8f",
+        "db82ed271f62b0ac8a72c1e2d638086454cb3e2a14f55ccef9c992a61209da00",
+        "77adfe1c1af892cf381b0971e0ecc995f77b295ae47e6115976cc3e38b0f8722",
+        "aff8dbdb07ca906e8c3f7d04506a065585ab52c4880a390c4bb4ae5cdd0782d3",
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989",
+        "9ec17c1e56bc59d945b1ca197eb5b46a4fdcf8af17d81a9de7a66853a6d556d5",
+        "44436e259c9f0d6e37bf33c6c0a8659183dfc180894d64cd7329b9131d0dd051"
+      ],
+      "materialsPayloadSha256": "252c0387babf7f835bbfee29b0d8b1b21cb1d9704ba4474a95bfdc0609720786"
+    },
+    {
+      "package": "staticmeshes/dion_curumadungeon_boss_s.usx",
+      "packageSha256": "778eb957d3b1951c9024fe0e3ec6182c7980ba5478afcdf97a54e97c46a0f247",
+      "object": "dion_curumadungeon_boss_s.oren_curumadungeon_npc8",
+      "licenseeVersion": 14,
+      "materialIndices": [
+        -5,
+        -9,
+        -16,
+        -7,
+        -10
+      ],
+      "slotByteSha256s": [
+        "13f57d01fa04ac6bc884a1b53b0697960362f49f2483aee780ef2b9f06ff07ea",
+        "77adfe1c1af892cf381b0971e0ecc995f77b295ae47e6115976cc3e38b0f8722",
+        "1a15d65719a89a8fea0837c49a9d4b8fbf04f151d3ffa1b4f28ea0ddea7fe42e",
+        "aff8dbdb07ca906e8c3f7d04506a065585ab52c4880a390c4bb4ae5cdd0782d3",
+        "8c45095c5a69abae0700a5b0da768ac0d17f696c4f49d67d709409c53175c028"
+      ],
+      "materialsPayloadSha256": "2f9979dd603dd4b8100e2fa05b464245c544318568a40f491235cb82b9421e98"
+    },
+    {
+      "package": "staticmeshes/dion_curumadungeon_boss_s.usx",
+      "packageSha256": "778eb957d3b1951c9024fe0e3ec6182c7980ba5478afcdf97a54e97c46a0f247",
+      "object": "dion_curumadungeon_boss_s.oren_curumadungeon_npc7",
+      "licenseeVersion": 14,
+      "materialIndices": [
+        -18
+      ],
+      "slotByteSha256s": [
+        "bc03b8319773739f6f6e580573bebd2d26e206558430dc30051db70d2f6d361a"
+      ],
+      "materialsPayloadSha256": "7b2c52940d648bb48bcda64736b386798b13aa4b6583c77b8630d56f82de090a"
+    },
+    {
+      "package": "staticmeshes/dion_curumadungeon_boss_s.usx",
+      "packageSha256": "778eb957d3b1951c9024fe0e3ec6182c7980ba5478afcdf97a54e97c46a0f247",
+      "object": "dion_curumadungeon_boss_s.oren_curumadungeon_npc1",
+      "licenseeVersion": 14,
+      "materialIndices": [
+        -13,
+        -4,
+        -8,
+        -6
+      ],
+      "slotByteSha256s": [
+        "b73c7fca8d975ccf97fb9f80655e3f64a6e7cbbeb7a3d7de6625b525934b567e",
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989",
+        "d4584b8c94270b8b7820d541886e04cc26a423eda6759222c72a47ae7cd79c93",
+        "9ec17c1e56bc59d945b1ca197eb5b46a4fdcf8af17d81a9de7a66853a6d556d5"
+      ],
+      "materialsPayloadSha256": "8832cac5795b6656c1257eea7c6f6701d7ba45955e536c0a91727705c492dd6a"
     }
   ]
 }
