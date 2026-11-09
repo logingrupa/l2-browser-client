@@ -10,9 +10,10 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from native_catalog.ue2 import Package
-from native_map import actor_properties, bitmap_words, read_g16
+from native_map import actor_properties, read_g16
 from native_map_geometry import native_terrain, coords_point, native_to_gltf
 from reference_client_lock_fixture import lock_client_as_reference_root
+from world.map_actor_properties import bitmap_words
 
 SPEC = importlib.util.spec_from_file_location('native_terrain_patch', ROOT / 'scripts/extract-native-terrain-patch.py')
 PATCH = importlib.util.module_from_spec(SPEC)

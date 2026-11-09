@@ -6,9 +6,10 @@ import re
 import reference_client_guard
 from native_assets_lib.gltf import json_bytes
 from native_catalog.ue2 import FormatError
-from native_map import build_map, safe_path
+from native_map import build_map
 from native_store.store_paths import lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger
+from world.map_sources import safe_path
 from world.tile_census import ELIGIBLE_STATUS, GAP_STATUS, TILE_CENSUS_RELATIVE_PATH, WORLD_LANE_NAME, WORLD_PART_NAME
 
 RAW_MAP_STEP_ALGORITHM_VERSION = 1

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import argparse
 from collections import Counter
-import hashlib
 import json
 import math
 from pathlib import Path
@@ -13,8 +12,12 @@ import tempfile
 import zlib
 
 from native_assets_lib.gltf import json_bytes, safe_name
-from native_catalog.ue2 import FormatError, Package, Reader
+from native_catalog.ue2 import FormatError
 from reference_client_guard import require_reference_client
+from world.map_actor_properties import (BITMAPS, COLLISION, HAS_STACK, TRANSFORMS, actor_properties, ambient_sound_object,
+                                        decode_property, explicit_properties, property_value, selected_by_origin, source_range)
+from world.map_sources import MapSources, file_hash, require_lock_equal_client_path, safe_path, sha, static_mesh_request
+from world.terrain_height_texture import png16, read_g16
 
 MAP_MIGRATION_DESCRIPTION = ('Lossless, bounded UE123/28 map migration; deliberately no guessed world mesh. '
     'Usage: python scripts/native_map.py --client <staged-root> --recipe recipes/native-map-20_20.json '
@@ -22,7 +25,6 @@ MAP_MIGRATION_DESCRIPTION = ('Lossless, bounded UE123/28 map migration; delibera
     'and bitmap words. The source package payload remains available for unsupported native data. '
     'Generated static-mesh requests feed the existing native_assets.py converter.')
 SCHEMA = 1
-HAS_STACK = 0x02000000
 FORMAT_REFERENCES = {
     'UEViewer': 'a0bfb468d42be831b126632fd8a0ae6b3614f981',
     'UEViewerSources': ['Unreal/UnrealMaterial/UnMaterial2.h:UMaterial::Serialize/FMipmap',
@@ -41,200 +43,15 @@ GAPS = [
     'Section selection uses serialized actor origins, not geometry intersections; overlapping meshes with origins outside the bounds can be excluded.',
     'Static-mesh conversion requests preserve identities; material animation, blending and browser placement still require validation.',
 ]
-TRANSFORMS = ('Location', 'Rotation', 'DrawScale', 'DrawScale3D', 'PrePivot')
-COLLISION = ('bCollideActors', 'bBlockActors', 'bBlockPlayers', 'bBlockKarma',
-             'bBlockZeroExtentTraces', 'bBlockNonZeroExtentTraces', 'bUseCylinderCollision',
-             'CollisionRadius', 'CollisionHeight')
-BITMAPS = ('QuadVisibilityBitmap', 'EdgeTurnBitmap', 'QuadVisibilityBitmapOrig', 'EdgeTurnBitmapOrig')
-
-
-def sha(data):
-    return hashlib.sha256(data).hexdigest()
-
-
-def file_hash(path):
-    with path.open('rb') as stream:
-        return hashlib.file_digest(stream, 'sha256').hexdigest()
-
-
-def safe_path(root, relative):
-    safe_name(relative)
-    if any(part.rstrip(' .') != part for part in relative.split('/')):
-        raise ValueError('Non-canonical map artifact path')
-    target = root.joinpath(*relative.split('/'))
-    if not target.resolve().is_relative_to(root.resolve()):
-        raise ValueError('Map path escapes its root')
-    current = root.resolve()
-    for part in relative.split('/'):
-        current = current / part
-        if current.exists() and (current.is_symlink() or getattr(current.lstat(), 'st_file_attributes', 0) & 0x400):
-            raise ValueError('Map paths must not contain reparse points')
-    return target
 
 
 def implementation():
     scripts = Path(__file__).parent
-    files = ('native_map.py', 'native_catalog/ue2.py', 'native_assets_lib/gltf.py')
+    files = ('native_map.py', 'world/map_actor_properties.py', 'world/map_sources.py', 'world/terrain_height_texture.py',
+             'native_catalog/ue2.py', 'native_assets_lib/gltf.py')
     return {'sha256': sha(json_bytes({name: file_hash(scripts / name) for name in files})),
             'python': platform.python_version(), 'zlib': zlib.ZLIB_RUNTIME_VERSION,
             'formatReferences': FORMAT_REFERENCES}
-
-
-def source_range(data, path, start, end):
-    if not 0 <= start <= end <= len(data):
-        raise FormatError('Raw map range exceeds source')
-    return {'path': path, 'offset': start, 'bytes': end - start, 'sha256': sha(data[start:end])}
-
-
-def actor_properties(package, item):
-    if package.summary['version'] != 123 or package.summary['licenseeVersion'] != 28:
-        raise FormatError('Map actor layout supports only verified UE123/licensee28')
-    reader = Reader(package.data, item['offset'], item['offset'] + item['size'])
-    state = None
-    if item['flags'] & HAS_STACK:
-        state = {'nodeIndex': reader.compact(), 'stateNodeIndex': reader.compact(),
-                 'probeMaskHex': f'{reader.number("Q"):016x}', 'latentAction': reader.number('I')}
-        state['offset'] = reader.compact() if state['nodeIndex'] else None
-        package.object_name(state['nodeIndex'])
-        package.object_name(state['stateNodeIndex'])
-    prefix_end = reader.position
-    props, tail = package.properties({**item, 'offset': reader.position, 'size': reader.end - reader.position})
-    return props, tail, state, prefix_end
-
-
-def bitmap_words(raw):
-    reader = Reader(raw)
-    count = reader.count(1_048_576)
-    offset = reader.position
-    words = [reader.number('I') for _ in range(count)]
-    if reader.position != reader.end:
-        raise FormatError('Bitmap contains bytes beyond its declared uint32 count')
-    return {'wordCount': count, 'bitCapacity': count * 32, 'setBitCount': sum(word.bit_count() for word in words),
-            'dataOffset': offset, 'words': words}
-
-
-def decode_property(package, prop, raw_path, depth=0):
-    if depth > 8:
-        raise FormatError('Map property nesting exceeds eight levels')
-    raw = bytes.fromhex(prop['payloadHex'])
-    result = {key: prop[key] for key in ('name', 'type', 'arrayIndex', 'structName', 'offset', 'status')}
-    result['payload'] = source_range(package.data, raw_path, prop['payloadOffset'], prop['payloadOffset'] + len(raw))
-    if 'value' in prop:
-        result['value'] = prop['value']
-    elif prop['type'] == 10 and prop['structName'] in ('Vector', 'Rotator'):
-        kind = prop['structName']
-        labels = {'Vector': ('X', 'Y', 'Z'), 'Rotator': ('Pitch', 'Yaw', 'Roll')}
-        count = 3
-        reader = Reader(raw)
-        values = [reader.number('i' if kind == 'Rotator' else 'f') for _ in range(count)]
-        if reader.position != reader.end or not all(math.isfinite(value) for value in values):
-            raise FormatError('Invalid map numeric struct: ' + kind)
-        result['value'] = dict(zip(labels[kind], values))
-        result['status'] = 'decoded'
-    elif prop['type'] == 10 and prop['structName'] in ('TerrainLayer', 'Matrix', 'Plane', 'Range', 'RangeVector', 'PointRegion'):
-        nested, tail = package.properties({'offset': prop['payloadOffset'], 'size': len(raw)})
-        if tail.position != tail.end:
-            raise FormatError(prop['structName'] + ' has unconsumed tagged bytes')
-        result.update(status='decoded-tags', value=[decode_property(package, field, raw_path, depth + 1) for field in nested])
-    elif prop['type'] == 9 and prop['name'] == 'DecoLayers':
-        reader = Reader(package.data, prop['payloadOffset'], prop['payloadOffset'] + len(raw))
-        values = []
-        for _ in range(reader.count(4096)):
-            nested, tail = package.properties({'offset': reader.position, 'size': reader.end - reader.position})
-            reader.position = tail.position
-            values.append([decode_property(package, field, raw_path, depth + 1) for field in nested])
-        if reader.position != reader.end:
-            raise FormatError('DecoLayers has trailing bytes')
-        result.update(status='decoded-tags', value=values)
-    elif prop['type'] == 9 and prop['name'] in BITMAPS:
-        result.update(status='decoded-uint32-array', value=bitmap_words(raw))
-    elif prop['type'] == 9 and prop['name'] == 'Skins':
-        reader = Reader(raw)
-        references = [reader.compact() for _ in range(reader.count(4096))]
-        if reader.position != reader.end:
-            raise FormatError('Skins has trailing bytes')
-        result.update(status='decoded', value=[{'index': ref, 'object': package.object_name(ref)} for ref in references])
-    return result
-
-
-def property_value(properties, name):
-    matches = [prop for prop in properties if prop['name'] == name and prop['arrayIndex'] in (None, 0)]
-    if len(matches) > 1:
-        raise FormatError('Ambiguous scalar map property: ' + name)
-    return matches[0].get('value') if matches else None
-
-
-def explicit_properties(properties, names):
-    return {name: {'status': 'serialized', 'value': property_value(properties, name)}
-            if any(prop['name'] == name for prop in properties) else {'status': 'omitted-class-default-unresolved'}
-            for name in names}
-
-
-def ambient_sound_object(package, item, raw_path):
-    if item['classObject'] != 'Engine.AmbientSoundObject' or item['flags'] & HAS_STACK:
-        raise FormatError('Unsupported ambient LevelObject class/state-frame layout')
-    props, tail, state, prefix_end = actor_properties(package, item)
-    if state is not None or prefix_end != item['offset']:
-        raise FormatError('Ambient LevelObject unexpectedly has an Actor prefix')
-    return {'id': 'interlude:' + item['object'], 'object': item['object'],
-            'class': item['className'], 'classObject': item['classObject'],
-            'exportIndex': item['exportIndex'], 'objectFlags': item['flags'],
-            'authoredPropertiesOnly': True,
-            'properties': [decode_property(package, prop, raw_path) for prop in props],
-            'nativePayload': source_range(package.data, raw_path, item['offset'], item['offset'] + item['size']),
-            'nativeTail': source_range(package.data, raw_path, tail.position, tail.end),
-            'classDefaults': 'not-resolved-by-raw-map-export', 'nativePlayback': 'unverified'}
-
-
-def selected_by_origin(properties, section):
-    position = property_value(properties, 'Location')
-    if position is None:
-        return None
-    return all(section['min'][index] <= position[axis] <= section['max'][index]
-               for index, axis in enumerate('XY'))
-
-
-def read_g16(package, item):
-    if package.summary['version'] != 123 or package.summary['licenseeVersion'] != 28:
-        raise FormatError('G16 texture layout supports only verified UE123/licensee28')
-    properties, reader = package.properties(item)
-    if property_value(properties, 'Format') != 10:
-        raise FormatError('Terrain height texture must be native TEXF_G16 (10)')
-    reserved = reader.number('i')
-    mips = []
-    for level in range(reader.count(32)):
-        skip = reader.number('i')
-        length = reader.count(128 * 1024 * 1024)
-        start = reader.position
-        raw = reader.take(length)
-        if skip != reader.position:
-            raise FormatError('G16 lazy array end differs from its declared skip position')
-        width, height = reader.number('i'), reader.number('i')
-        ubits, vbits = reader.number('B'), reader.number('B')
-        if not 1 <= width <= 16384 or not 1 <= height <= 16384 or length != width * height * 2:
-            raise FormatError('G16 sample dimensions/bytes disagree')
-        if ubits > 14 or vbits > 14 or width != 1 << ubits or height != 1 << vbits:
-            raise FormatError('G16 mip dimensions/bits disagree')
-        mips.append({'level': level, 'width': width, 'height': height, 'uBits': ubits, 'vBits': vbits,
-                     'sourceOffset': start, 'sourceBytes': length, 'sha256': sha(raw), 'raw': raw})
-    if reader.position != reader.end or not mips:
-        raise FormatError('Missing G16 mips or unconsumed texture bytes')
-    if (mips[0]['width'], mips[0]['height']) != (property_value(properties, 'USize'), property_value(properties, 'VSize')):
-        raise FormatError('G16 mip0 dimensions differ from texture tags')
-    return {'format': 'TEXF_G16', 'reservedNativeInt': reserved, 'mips': mips}
-
-
-def png16(raw, width, height):
-    if len(raw) != width * height * 2:
-        raise ValueError('PNG dimensions disagree with G16 bytes')
-    big = bytearray(len(raw))
-    big[0::2], big[1::2] = raw[1::2], raw[0::2]
-    scanlines = b''.join(b'\0' + big[row * width * 2:(row + 1) * width * 2] for row in range(height))
-
-    def chunk(kind, payload):
-        return struct.pack('>I', len(payload)) + kind + payload + struct.pack('>I', zlib.crc32(kind + payload))
-
-    return b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 16, 0, 0, 0, 0)) + chunk(b'IDAT', zlib.compress(scanlines, 9)) + chunk(b'IEND', b'')
 
 
 def validate_recipe(recipe):
@@ -251,46 +68,6 @@ def validate_recipe(recipe):
             raise ValueError('Map section must have finite XY bounds')
     if any(section['min'][i] >= section['max'][i] for i in range(2)):
         raise ValueError('Map section has empty/reversed bounds')
-
-
-def require_lock_equal_client_path(client, relative):
-    path = safe_path(client, relative)
-    require_reference_client(client).require_equal_file(relative)
-    return path
-
-
-class MapSources:
-    def __init__(self, client):
-        require_reference_client(client)
-        self.client, self.dependencies, self.loaded, self.paths = client, {}, {}, {}
-        for folder in ('maps', 'staticmeshes', 'textures', 'systextures', 'system', 'animations', 'sounds'):
-            if not (client / folder).is_dir():
-                continue
-            for path in sorted((client / folder).iterdir()):
-                if path.is_file() and path.suffix.lower() in ('.unr', '.usx', '.utx', '.u', '.ukx', '.uax', '.usk'):
-                    self.paths.setdefault(path.stem.casefold(), []).append(path.relative_to(client).as_posix())
-
-    def get(self, relative):
-        if relative not in self.loaded:
-            path = require_lock_equal_client_path(self.client, relative)
-            data = path.read_bytes()
-            self.dependencies[relative] = {'sha256': sha(data), 'bytes': len(data)}
-            self.loaded[relative] = Package(data, path.name)
-        return self.loaded[relative]
-
-    def resolve(self, reference, expected):
-        candidates = self.paths.get(reference.split('.')[0].casefold(), [])
-        if len(candidates) != 1:
-            raise FormatError('Package missing/ambiguous: ' + reference)
-        package = self.get(candidates[0])
-        matches = [item for item in package.exports if item['object'].casefold() == reference.casefold()]
-        if len(matches) != 1 or matches[0]['className'] != expected:
-            raise FormatError('Exact qualified object/class unresolved: ' + reference)
-        return candidates[0], package, matches[0]
-
-
-def static_mesh_request(relative, item):
-    return {'kind': 'model', 'package': relative, 'object': item['object']}
 
 
 def build_map(client, recipe, write):

@@ -12,11 +12,12 @@ import zlib
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from native_catalog.ue2 import FormatError, Package, Reader
-from native_map import (HAS_STACK, actor_properties, ambient_sound_object, bitmap_words, build_map, explicit_properties,
+from native_map import (HAS_STACK, actor_properties, ambient_sound_object, build_map, explicit_properties,
                         decode_property, migrate_map, png16, read_g16, safe_path, selected_by_origin,
                         static_mesh_request, validate_recipe, verify_map)
 from native_assets import Converter
 from reference_client_lock_fixture import lock_client_as_reference_root
+from world.map_actor_properties import bitmap_words
 
 
 def compact(value):

@@ -11,12 +11,13 @@ from pathlib import Path
 import struct
 
 from native_catalog.ue2 import Package
-from native_map import actor_properties, bitmap_words, read_g16
+from native_map import actor_properties, read_g16
 from native_map_geometry import (GltfBuilder, native_terrain, terrain_points, sector_oracle,
                                  vertex_normal, native_to_gltf, bit, quad_triangles,
                                  layer_records, texture_uv, qualified_mask_uv_rule, terrain_mask_uv)
 from native_assets_lib.gltf import json_bytes
 from reference_client_guard import require_reference_client
+from world.map_actor_properties import bitmap_words
 
 MAP_SHA = '1beddad24c10a35a1b2e9151727a85158e3e01992299a6671de876645eb1f1e4'
 HEIGHT_SHA = 'e113df8ca85cac06d6816345ec66a7aaa3740d2cae8b33868c9c3cf47e4150f3'
@@ -232,6 +233,7 @@ def extract(client, raw, reference, output):
         seam.append(row)
     script_root = Path(__file__).resolve().parent
     for name in ('extract-native-terrain-patch.py', 'native_map_geometry.py', 'native_map.py',
+                 'world/map_actor_properties.py', 'world/map_sources.py', 'world/terrain_height_texture.py',
                  'native_catalog/ue2.py', 'native_assets_lib/gltf.py'):
         read(script_root / name, 'implementation/' + name)
     report = {'schemaVersion': 1, 'kind': 'offline-native-terrain-patch-comparison', 'sourceSector': sector,

@@ -8,13 +8,13 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from native_catalog import effects
-import native_map
 from native_map import SCHEMA, file_hash, implementation, json_bytes, sha, verify_map
 import native_map_geometry
 import native_map_overlap
 from reference_client_guard import ReferenceClientLockError
 from reference_client_lock_fixture import use_reference_client_lock
 from test_reference_client_guard import SyntheticReferenceClientTrees, write_tree_file
+from world import map_sources
 
 DIFFERING_TABLE = 'system/chargrp.dat'
 EQUAL_TABLE = 'system/npcgrp.dat'
@@ -139,8 +139,8 @@ class MapReadPathLockTests(unittest.TestCase):
         self.assertEqual(set(client_reads) - {'verify_lock_equal_client_file', 'MapSources', 'read_class_evidence'}, set())
 
     def test_map_sources_read_only_lock_equal_packages(self):
-        with patch.object(native_map, 'Package', lambda data, name: data):
-            sources = native_map.MapSources(self.client)
+        with patch.object(map_sources, 'Package', lambda data, name: data):
+            sources = map_sources.MapSources(self.client)
             self.assertEqual(sources.get(EQUAL_TABLE), b'equal table')
             with self.assertRaisesRegex(ReferenceClientLockError, 'system/chargrp.dat is differing, not equal'):
                 sources.get(DIFFERING_TABLE)
