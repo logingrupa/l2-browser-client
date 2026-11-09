@@ -8,6 +8,8 @@ import type { AssetPackage } from "../package/readAssetPackage";
 import { NativeActor, type NativeBoneAnchor } from "./NativeActor";
 import type { NativeActionCuePlayer, NativeActionCuePreview } from "../../audio/nativeActionCuePreview";
 import type { NativeClipPreviewHub } from "./nativeClipPreview";
+import { parseActorClipEvents } from "./actorClipEvents";
+import { listActorClips } from "../../animation/actorClipPlayback";
 
 export interface NativeCharacterProfile {
   readonly asset: AssetPackage;
@@ -208,11 +210,12 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
       candidateDriver.setState(current.animation); candidateDriver.setDead(current.health <= 0);
       driver = candidateDriver; animation.replaceDriver(driver); unpublishedDriverOwningCleanup = undefined;
       if (clipPreview) {
-        const previewDriver = candidateDriver, names = loaded.clips.map(clip => clip.name);
+        const previewDriver = candidateDriver;
+        const listing = listActorClips(loaded.clips, parseActorClipEvents(profile.asset.manifest.animationEvents));
         unregisterPreview = clipPreview.register(initial.id, {
           play: clip => { if (disposed || driver !== previewDriver) throw new Error("The native model was replaced."); previewDriver.playClipOnceKeepingRequestedState(clip); },
           get previewing() { return driver === previewDriver ? previewDriver.previewing : null; },
-          clips: names,
+          listing,
         });
       }
       placement.parent = root; tagMeshes(actor);

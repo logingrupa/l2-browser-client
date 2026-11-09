@@ -74,7 +74,7 @@ describe("native character presentation boundary", () => {
     visuals.push(visual);
     expect(hub.play(initial.id, nativeVisualClips.death)).toBe("The native model has not loaded yet.");
     await visual.ready;
-    expect(hub.available(initial.id)).toEqual(expect.arrayContaining(Object.values(nativeVisualClips)));
+    expect(hub.actorClipListing(initial.id)?.clips.map(clip => clip.name)).toEqual(expect.arrayContaining(Object.values(nativeVisualClips)));
     expect(hub.play(initial.id, "Native_Missing")).toContain("not a clip of this package");
     expect(hub.play(initial.id, nativeVisualClips.death)).toBeNull();
     expect(visual.animation.playback?.activeClip).toBe(nativeVisualClips.death);
