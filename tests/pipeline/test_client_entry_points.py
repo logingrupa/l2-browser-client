@@ -13,9 +13,7 @@ ARGUMENT_PARSING_METHOD_NAME = 'parse_args'
 KNOWN_CLIENT_ENTRY_POINTS = {
     'scripts/audit-native-footstep-config.py',
     'scripts/audit_musveren_weights.py',
-    'scripts/derive-native-map-model.py',
     'scripts/derive-native-map-movers.py',
-    'scripts/derive-native-map-overlap.py',
     'scripts/export-native-map-audio.py',
     'scripts/export-native-sounds.py',
     'scripts/extract-native-terrain-patch.py',
@@ -28,12 +26,10 @@ KNOWN_CLIENT_ENTRY_POINTS = {
     'scripts/native_effects.py',
     'scripts/native_map.py',
     'scripts/native_map_geometry.py',
-    'scripts/native_map_overlap.py',
     'scripts/native_migration.py',
     'scripts/native_sky.py',
     'scripts/prepare-native-player-aliases.py',
     'scripts/report-native-animation-aliases.py',
-    'scripts/restore-native-static-normals.py',
 }
 
 

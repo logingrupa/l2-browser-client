@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/'scripts'))
 from native_bsp_building import PARTS, build, building_nodes, convex_triangles_keeping_collinear_boundary_vertices
 from native_catalog.ue2 import FormatError
-from native_map_overlap import parse_glb
+from glb_document_fixture import parse_glb
 
 MAP_SHA = '1beddad24c10a35a1b2e9151727a85158e3e01992299a6671de876645eb1f1e4'
 MODEL_SHA = 'be427963ce1dfe4a7bf75f5eae7b09911805023827f175aa0bf9ccb1e7d43653'

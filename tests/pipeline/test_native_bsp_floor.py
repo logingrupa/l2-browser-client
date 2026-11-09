@@ -12,7 +12,7 @@ from native_catalog.ue2 import FormatError
 from native_bsp_floor import (GLB_RELATIVE, MAP_SHA, MATERIAL, SELECTED_NODES, TEXTURE_SHA,
     build, cross, difference, dot, f32, geometry_from_nodes, polygon_geometry,
     sha, source_nodes, write_unchanged_or_new)
-from native_map_overlap import parse_glb
+from glb_document_fixture import parse_glb
 
 
 def square():
@@ -44,8 +44,7 @@ class BspPolygonTests(unittest.TestCase):
             with self.subTest(points=points), self.assertRaises(FormatError):
                 polygon_geometry(node, 256, 256)
 
-    def test_rounded_native_plane_does_not_invent_nonplanarity(self):
-        # Exact diagonal rectangle, with a normal rounded to source float32.
+    def test_an_exact_diagonal_rectangle_with_a_float32_rounded_source_normal_stays_planar(self):
         node = square()
         node['nativePositions'] = [[0, 0, 0], [0, 0, 33], [-328.041015625, 328.0390625, 33],
                                    [-328.041015625, 328.0390625, 0]]

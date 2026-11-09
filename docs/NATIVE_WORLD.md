@@ -4,11 +4,11 @@ Terrain, static meshes, section loader. One hand-built `20_20` section loads tod
 
 ## Now
 
-- `/` loads catalog section `map-20-20-section` via `src/scene/world/loadNativeSection.ts`: hash and identity checks, visible failure, no stand-in. Limits: 128 models, 4,096 placements. No `?map=`, streaming or LOD.
+- `/` loads catalog section `map-20-20-section` via `src/scene/world/loadNativeSection.ts`: hash and identity checks, visible failure, no stand-in. Limits: 128 models, 4,096 placements. `?map=XX_YY` loads a converted tile from its chunk manifests instead. No streaming or LOD.
 - Two checkpoints, never mixed in a baseline: `recipes/native-map-debug-location.json` (nine sectors around `PlayerStart10`, 61 models, 151 placements) and the live section (62 models, 157 placements, BSP, sky).
 - The live section ends a seven-link `migrate-*` / `derive-*` chain (each pins its predecessor's hash) on terrain from research map `audio-world-20261106/map-correction-first`; no commit rebuilds it. Only 9 of 115 steps are scripted and tile-general (audit).
 - `scripts/native_map.py` and `native_map_geometry.py` accept only UE123 / licensee 28: 67 of 153 tiles.
-- `scripts/native_map_overlap.py` selects a static actor by a positive-area indexed triangle inside the section, not by origin; meshes are never clipped or moved.
+- `scripts/world/static_placement_plan.py` puts every StaticMeshActor of a tile in the 4x4-sector chunk whose half-open native rectangle holds its serialized origin, with no Z window; `scripts/world/static_mesh_step.py` (`convert_tile.py --step meshes`) converts each placeable mesh once and keeps every other placement as a gap row. Meshes are never clipped or moved.
 - Mask UV: `(grid + 0.5)/H` if `(GIsL2Seamless == 0 || GIsEditor != 0) && gbStretchTerrainMask == 0`, else minus `max(grid - 240, 0)/4096`. 20_20 uses the latter, baked behind its map hash.
 - Units and handedness: [OUTPUT_CONTRACT.md](OUTPUT_CONTRACT.md). Babylon scene fog stays off. L2 fog comes from water volumes, L2FogInfo actors, ZoneInfo distance fog (bDistanceFog, DistanceFogColor, DistanceFogStart, DistanceFogEnd) and the Env.int preset through our per-material fog math (MAT-01, MAT-02). Mode 0 in `src/scene/presentationConfiguration.ts` is the interim state.
 - **Source textures** (World sheet) is a labelled candidate material (`nativeTerrainPreview.ts`), not native blending; its 9-layer and mask-size pins fail on 20_21.
