@@ -37,7 +37,7 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 ### Data lane L3 (Phase 2)
 
 - [ ] **DATA-01**: All 40 `.dat` tables decoded to JSON once per client build; where the local hash-pinned descriptor (`06_interlude.xml`) covers a table it is authoritative; the inventory is updated per table.
-- [ ] **DATA-02**: Tables the local route lacks (`hairgrp`, `helmetgrp`, others) are decoded by Elbera code behind an adapter; Elbera verifiers pinned to Engine.dll `07b24af4...` are not used.
+- [x] **DATA-02**: Tables the local route lacks (`hairgrp`, `helmetgrp`, others) are decoded by Elbera code behind an adapter; Elbera verifiers pinned to Engine.dll `07b24af4...` are not used.
 - [ ] **DATA-03**: The identical sysstring-e / systemmsg-e count (2,083) is investigated and fixed or explained.
 
 ### UI lane L3 (Phase 2)
@@ -185,7 +185,7 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 | NOED-05 | Phase 1 | Complete |
 | SAND-02 | Phase 2 | Pending |
 | DATA-01 | Phase 2 | Pending |
-| DATA-02 | Phase 2 | Pending |
+| DATA-02 | Phase 2 | Complete |
 | DATA-03 | Phase 2 | Pending |
 | UI-01 | Phase 2 | Complete |
 | UI-02 | Phase 2 | Pending |
