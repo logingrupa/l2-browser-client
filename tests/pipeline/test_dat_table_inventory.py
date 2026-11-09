@@ -1,4 +1,5 @@
 import copy
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -9,12 +10,13 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from build_dat_table_inventory import (DECODED_TABLE_COUNT_SOURCE, ELBERA_ADAPTER_COUNT_SOURCE, ELBERA_ADAPTER_DECODED_STATUS,
     ELBERA_EVIDENCE_COUNT_SOURCE, ELBERA_EVIDENCE_RECORD_COUNTS, ELBERA_PARSER_PRESENT_STATUS, ELBERA_PARSER_SOURCES, LAYOUT_NOT_DECODED_STATUS, NOT_LOCK_EQUAL_STATUS, DatTableInventoryError,
-    classify_dat_table, count_descriptor_linked_table, elbera_parser_presence, lock_equal_source_sha256,
+    classify_dat_table, count_descriptor_linked_table, elbera_parser_presence, in_use_slot_status, lock_equal_source_sha256,
     validate_dat_table_inventory)
 from data.hair_table_adapter import HAIR_TABLE_FIELD_PROOF, HAIR_TABLE_UNDECODED_REASONS
+from native_catalog.table_layout_pins import CLIENT_DERIVED_LAYOUTS
 from native_catalog.table_source_resolver import TableSourceResolutionError, descriptor_layout_links
 from native_catalog.tables import TABLES
-from native_store.catalog_writer import is_table_name_index_id
+from native_store.catalog_writer import CatalogWriteError, is_table_name_index_id
 from reference_client_guard import require_reference_client
 from reference_client_lock_fixture import use_reference_client_lock
 from test_reference_client_guard import SyntheticReferenceClientTrees
@@ -160,6 +162,36 @@ class CommittedDatTableInventoryTests(unittest.TestCase):
 
     def test_elbera_evidence_counts_equal_port_scope(self):
         self.assertEqual(ELBERA_EVIDENCE_RECORD_COUNTS, port_scope_elbera_record_counts())
+
+    def test_a_decoded_slot_table_states_its_slot_and_in_use_counts(self):
+        for row in self.rows:
+            if row['route'] == 'local-decoded' and 'inUseSlots' in CLIENT_DERIVED_LAYOUTS.get(row['layout'], {}):
+                with self.subTest(table=row['table']):
+                    self.assertRegex(row['status'], rf'^decoded, {row["recordCount"]} slots, \d+ in use$')
+
+
+class InUseSlotStatusTests(unittest.TestCase):
+    def setUp(self):
+        temporary_directory = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary_directory.cleanup)
+        self.store_root = Path(temporary_directory.name).resolve()
+        self.manifest_bytes = json.dumps({'records': {'data': 2, 'server_name': [{'id': 0, 'tag_?': 1}, {'id': 1, 'tag_?': 1},
+                                                                                {'id': 2, 'tag_?': 0}]}}).encode()
+        manifest_sha256 = hashlib.sha256(self.manifest_bytes).hexdigest()
+        self.manifest_path = self.store_root / 'tables' / manifest_sha256 / 'servername-e.json'
+        self.manifest_path.parent.mkdir(parents=True)
+        self.manifest_path.write_bytes(self.manifest_bytes)
+        self.record = {'id': 'servername-e', 'manifest': f'/l2/tables/{manifest_sha256}/servername-e.json', 'manifestSha256': manifest_sha256,
+                       'manifestBytes': len(self.manifest_bytes), 'recordCount': 3, 'sourceSha256': 'a' * 64}
+
+    def test_the_status_counts_the_slots_and_in_use_slots_of_the_pinned_manifest(self):
+        self.assertEqual(in_use_slot_status(self.store_root, self.record, CLIENT_DERIVED_LAYOUTS['servername']['inUseSlots']),
+                         'decoded, 3 slots, 2 in use')
+
+    def test_a_manifest_that_differs_from_its_catalog_pin_is_refused(self):
+        self.manifest_path.write_bytes(self.manifest_bytes.replace(b'"tag_?": 0', b'"tag_?": 1'))
+        with self.assertRaisesRegex(CatalogWriteError, 'SHA-256 differs from its pin'):
+            in_use_slot_status(self.store_root, self.record, CLIENT_DERIVED_LAYOUTS['servername']['inUseSlots'])
 
 
 class SealedDecodeCountTests(unittest.TestCase):

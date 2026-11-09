@@ -9,6 +9,7 @@ import argparse
 import json
 import re
 
+from build_dat_table_inventory import EXPECTED_DAT_TABLE_COUNT
 from data.hair_table_adapter import (ELBERA_HAIR_SELECTION_SCRIPT_SHA256, HAIR_TABLE_FIELD_PROOF, HAIR_TABLE_PARSERS,
                                      HairTableUndecodedError, decode_hair_table)
 from hash_reference_client_tree import canonical_json_bytes
@@ -24,6 +25,7 @@ from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, UnitLedger, lock
                                       run_at_below_normal_priority)
 import reference_client_guard
 from reference_client_guard import require_reference_client
+from table_name_index_sources import NAME_INDEX_SOURCES
 
 DECODE_TABLE_ALGORITHM_VERSION = 2
 LANE_NAME = 'data-ui'
@@ -34,7 +36,7 @@ ELBERA_ADAPTER_ROUTE = 'elbera-adapter'
 NATIVE_TABLE_MANIFEST_KIND = 'native-table'
 NATIVE_TABLE_MANIFEST_SCHEMA_VERSION = 1
 TABLES_CATALOG_SLICE = 'tables'
-TABLES_CATALOG_CAPACITY = 40
+TABLES_CATALOG_CAPACITY = EXPECTED_DAT_TABLE_COUNT + len(NAME_INDEX_SOURCES)
 SYSTEM_DAT_PATH_PATTERN = re.compile(r'system/([^/]+)\.dat', re.IGNORECASE)
 
 

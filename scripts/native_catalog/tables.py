@@ -219,6 +219,19 @@ def require_unique_record_identifiers(name, rows):
         raise FormatError('Native item/NPC identifiers are not unique or do not match the declared count')
 
 
+def require_in_use_slot_prefix(name, rows):
+    in_use_slots = CLIENT_DERIVED_LAYOUTS.get(name, {}).get('inUseSlots')
+    if in_use_slots is None:
+        return
+    slots, in_use_count = rows[in_use_slots['records']], rows[in_use_slots['countField']]
+    if [slot[in_use_slots['slotField']] for slot in slots] != list(range(len(slots))):
+        raise FormatError(f'{name} slot ids are not the slot positions 0 to {len(slots) - 1}')
+    in_use_flags = [slot[in_use_slots['inUseField']] != 0 for slot in slots]
+    if in_use_count > len(slots) or in_use_flags != [True] * in_use_count + [False] * (len(slots) - in_use_count):
+        raise FormatError(f'{name} header counts {in_use_count} in-use slots, but the in-use slots are not exactly the first '
+                          f'{in_use_count} of {len(slots)}')
+
+
 def decoded_table_record_count(decoded_table):
     record_lists = [value for value in decoded_table['data'].values() if isinstance(value, list)]
     if len(record_lists) != 1:
@@ -240,6 +253,7 @@ def decode_table(client, name, schema_root=SCHEMA_ROOT, crypto_source=CRYPTO_SOU
     if trailer != SAFE_PACKAGE_TRAILER:
         raise FormatError(f'Unexpected safe-package trailer: {name}: {trailer.hex()}')
     require_unique_record_identifiers(name, rows)
+    require_in_use_slot_prefix(name, rows)
     schema = {'descriptor': DESCRIPTOR_FILE, 'layout': link.version, 'descriptorSha256': SCHEMA_HASHES[DESCRIPTOR_FILE],
         'file': layout_schema.name, 'sha256': layout_schema.sha256, 'sourcePattern': link.pattern}
     if name in CLIENT_DERIVED_LAYOUTS:

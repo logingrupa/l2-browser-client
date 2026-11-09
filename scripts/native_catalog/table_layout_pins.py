@@ -25,7 +25,6 @@ SCHEMA_HASHES = {
     'dats/questname.xml': 'e1a67e57449fe18bb2945ab04074607ae4438ce5ec549668e2bde4b268f5912e',
     'dats/raiddata.xml': 'a6daec8aa957cc933c9446ddc55e17796217861f498395f40693ec70c9fa054e',
     'dats/recipe-c.xml': 'fd2c617eb180f7a8b54154feec46d532372ac96f0c1871e8cf5e3884e2b07288',
-    'dats/servername.xml': '95d1fe1c5a1022a80bbfc405535c80e305f4d6610d066ed8fe41ba7f4b7f64a8',
     'dats/skillgrp.xml': 'ad5be4b6daa6c942f1f238de3d77b92b828c97d2d45a4360e4159db199992da1',
     'dats/skillname.xml': 'a2872808447d144b8497cce9665bc2c7013d142d3a6ee5e4307e4473e64d4751',
     'dats/skillsoundgrp.xml': '373c724ff79e06b9e0b4146618a37c5bb73c86d092cf32ffacada20cb0868284',
@@ -52,6 +51,19 @@ CLIENT_DERIVED_LAYOUTS = {
             'loader': 'FL2GameData::EulaLoad at 0x1044fe20 runs CheckSafePackage (0x10448d10), then FL2Eula::Serialize once on this+0x7cb94; it reads no count',
             'fieldNames': 'the EulaLoad text branch maps eula, eulatestserver and eulachinaspecialmessage to this+0x7cb94, +0x7cba0 and +0x7cbac',
             'writer': 'FL2GameData::EulaSave at 0x10450360 calls FL2Eula::Serialize, then MakeSafePackage (0x10448c90) writes the FString SafePackage',
+        },
+    },
+    'servername': {
+        'file': 'recipes/data/table-layouts/servername.xml',
+        'sha256': '1ecd0a743eec236aaf853f0af40f993b2b2d612a5b23c429504784df5c29fe84',
+        'inUseSlots': {'countField': 'data', 'records': 'server_name', 'slotField': 'id', 'inUseField': 'tag_?'},
+        'evidence': {
+            **ENGINE_LIBRARY_EVIDENCE,
+            'slotCount': 200,
+            'saver': 'FL2GameData::ServerNameSave at 0x10454a10 writes the count of slots 0..0xc7 whose FL2ServerName in-use INT at this+0x67708 (stride 28) is set, then a UINT slot id and an FL2ServerName for every slot 0..0xc7 whose SystemMsg in-use INT at this+0x240e8 (stride 0x5c) is set; systemmsg-e sets it for ids 0..199, so all 200 slots are written',
+            'loader': 'FL2GameData::ServerNameLoad at 0x10454410 reads the UINT count, then that many UINT slot ids each followed by an FL2ServerName into slot[id]; the client loads only the first count records',
+            'recordSerializer': 'FL2ServerName::Serialize at 0x10446b60 reads the in-use INT and two Core.dll FStrings into a 28-byte slot',
+            'slotTable': 'FL2GameData::ServerNameClear at 0x10447b50 walks 0xc8 slots of stride 0x1c; FL2SystemMsg::Serialize at 0x10446a20 reads the SystemMsg in-use INT first',
         },
     },
 }

@@ -7,7 +7,6 @@ if str(SCRIPTS_ROOT) not in sys.path:
 
 import argparse
 import json
-from typing import NamedTuple
 
 from hash_reference_client_tree import canonical_json_bytes
 from lane_unit_outcomes import seal_unit_manifest, write_pinned_manifest_to_store
@@ -17,25 +16,12 @@ from native_store.catalog_writer import (TABLE_NAME_INDEX_ID_SUFFIX, is_table_na
 from native_store.gap_rows import read_gap_rows
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root, require_converter_output
 from native_store.unit_ledger import UnitLedger
+from table_name_index_sources import NAME_INDEX_SOURCES
 
 NAME_INDEX_ALGORITHM_VERSION = 1
 NAME_INDEX_STEP = 'name-index'
 NAME_INDEX_MANIFEST_KIND = 'native-table-name-index'
 NAME_INDEX_MANIFEST_SCHEMA_VERSION = 1
-
-
-class NameIndexSource(NamedTuple):
-    rows_field: str
-    identifier_fields: tuple
-    name_field: str
-
-
-NAME_INDEX_SOURCES = {
-    'itemname-e': NameIndexSource('item_name', ('id',), 'name'),
-    'npcname-e': NameIndexSource('npc', ('id',), 'name'),
-    'skillname-e': NameIndexSource('skill', ('skill_id', 'skill_level'), 'name'),
-}
-NAME_INDEX_CATALOG_CAPACITY = TABLES_CATALOG_CAPACITY + len(NAME_INDEX_SOURCES)
 
 
 class TableNameIndexError(ValueError):
@@ -127,7 +113,7 @@ def write_table_name_index(project_root, table, output_root, ledger):
         'id': record_id, 'manifest': f'/l2/{manifest_relative}', 'manifestSha256': index_sha256, 'manifestBytes': len(index_bytes),
         'recordCount': name_index['entryCount'], 'sourceSha256': name_index['sourceSha256']})
     manifest_path = write_pinned_manifest_to_store(output_root, TABLES_CATALOG_SLICE, record, manifest_relative, index_bytes,
-                                                   NAME_INDEX_CATALOG_CAPACITY)
+                                                   TABLES_CATALOG_CAPACITY)
     seal_unit_manifest(project_root, ledger, unit_key, fingerprint, inputs, config, manifest_path, record)
     return {'unit': unit_key, 'status': 'indexed', 'id': record_id, 'entryCount': record['recordCount'],
             'duplicateIdentifierCount': name_index['duplicateIdentifierCount'], 'manifest': record['manifest'],

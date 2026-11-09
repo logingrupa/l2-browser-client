@@ -8,9 +8,10 @@ import sys
 from data.hair_table_adapter import ELBERA_HAIR_SELECTION_SCRIPT_PATH, HAIR_TABLE_FIELD_PROOF, HAIR_TABLE_PARSERS
 from data.pinned_elbera_module import ELBERA_COMMIT, ELBERA_ROOT
 from hash_reference_client_tree import canonical_json_bytes
+from native_catalog.table_layout_pins import CLIENT_DERIVED_LAYOUTS
 from native_catalog.table_source_resolver import descriptor_layout_for_file_name
 from native_catalog.tables import DESCRIPTOR_FILE, SCHEMA_HASHES, SCHEMA_ROOT, interlude_descriptor_links
-from native_store.catalog_writer import validate_catalog_record
+from native_store.catalog_writer import read_pinned_file, require_file_pin, validate_catalog_record
 from native_store.gap_rows import read_gap_rows
 from reference_client_guard import require_reference_client
 
@@ -130,6 +131,13 @@ def count_descriptor_linked_table(row, source_sha256, decoded_records_by_table, 
     return {'route': 'local-layout-only', **undecoded_count(row['table'], LAYOUT_NOT_DECODED_STATUS)}
 
 
+def in_use_slot_status(decoded_tables_store_root, decoded_record, in_use_slots):
+    manifest_reference = require_file_pin(decoded_record, 'manifest', 'manifestSha256', 'manifestBytes', f'tables record {decoded_record["id"]}')
+    slots = json.loads(read_pinned_file(decoded_tables_store_root, manifest_reference))['records'][in_use_slots['records']]
+    in_use_count = sum(1 for slot in slots if slot[in_use_slots['inUseField']] != 0)
+    return f'decoded, {len(slots)} slots, {in_use_count} in use'
+
+
 def count_elbera_route_table(row, elbera_parser_statuses, source_sha256, decoded_records_by_table, decode_gap_rows_by_key):
     decoded_record = decoded_records_by_table.get(row['table'])
     if source_sha256 is not None and decoded_record is not None and decoded_record['sourceSha256'] == source_sha256:
@@ -162,10 +170,10 @@ def validate_dat_table_inventory(inventory):
     return inventory
 
 
-def build_dat_table_inventory(client_access, elbera_root, decoded_table_records, gap_rows, schema_root=SCHEMA_ROOT):
+def build_dat_table_inventory(client_access, elbera_root, decoded_tables_catalog_path, gap_rows, schema_root=SCHEMA_ROOT):
     links = interlude_descriptor_links(schema_root)
     elbera_parser_statuses = elbera_parser_presence(elbera_root)
-    decoded_records_by_table = {record['id']: record for record in decoded_table_records}
+    decoded_records_by_table = {record['id']: record for record in read_decoded_table_records(decoded_tables_catalog_path)}
     decode_gap_rows_by_key = {row['key']: row for row in gap_rows if row['step'] == DECODE_STEP}
     rows = []
     for file_name in reference_side_dat_file_names(client_access.lock):
@@ -173,6 +181,10 @@ def build_dat_table_inventory(client_access, elbera_root, decoded_table_records,
         if row['layout'] is not None:
             source_sha256 = lock_equal_source_sha256(client_access, file_name)
             row.update(count_descriptor_linked_table(row, source_sha256, decoded_records_by_table, decode_gap_rows_by_key))
+            in_use_slots = CLIENT_DERIVED_LAYOUTS.get(row['layout'], {}).get('inUseSlots')
+            if row['route'] == 'local-decoded' and in_use_slots is not None:
+                row['status'] = in_use_slot_status(Path(decoded_tables_catalog_path).parent, decoded_records_by_table[row['table']],
+                                                   in_use_slots)
         elif row['route'] == 'elbera':
             source_sha256 = lock_equal_source_sha256(client_access, file_name)
             row.update(count_elbera_route_table(row, elbera_parser_statuses, source_sha256, decoded_records_by_table, decode_gap_rows_by_key))
@@ -200,7 +212,7 @@ def main(argv=None):
     arguments = parser.parse_args(argv)
     try:
         client_access = require_reference_client(arguments.client)
-        inventory = build_dat_table_inventory(client_access, arguments.elbera_root, read_decoded_table_records(arguments.decoded_tables_catalog),
+        inventory = build_dat_table_inventory(client_access, arguments.elbera_root, arguments.decoded_tables_catalog,
                                               read_gap_rows(REPOSITORY_ROOT, DECODED_TABLES_LANE_NAME))
         arguments.output.parent.mkdir(parents=True, exist_ok=True)
         arguments.output.write_bytes(dat_table_inventory_bytes(inventory))

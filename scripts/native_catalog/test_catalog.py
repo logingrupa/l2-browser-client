@@ -130,6 +130,15 @@ class ClientReadingTableTests(unittest.TestCase):
         self.assertTrue(eula['eula'].startswith('\r\nLineage II User Agreement'))
         self.assertEqual(table['schema']['file'], 'recipes/data/table-layouts/eula.xml')
 
+    def test_servername_reads_all_200_slots_with_the_127_in_use_slots_first(self):
+        table = self.decode_exactly('servername', 'servername-e.dat')
+        slots = table['data']['server_name']
+        self.assertEqual((table['data']['data'], len(slots), table['consumedBytes']), (127, 200, 3408))
+        self.assertEqual([slot['id'] for slot in slots], list(range(200)))
+        self.assertEqual([slot['tag_?'] for slot in slots], [1] * 127 + [0] * 73)
+        self.assertEqual((slots[0]['name'], slots[126]['name']), ('Bartz', '방송용'))
+        self.assertTrue(all((slot['name'], slot['desc']) == ('', '') for slot in slots[127:]))
+
 
 if __name__ == '__main__':
     unittest.main()

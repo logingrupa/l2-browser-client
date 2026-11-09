@@ -12,15 +12,19 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(ROOT / 'scripts' / 'data'))
 import convert_tables
-from convert_tables import DECODE_TABLE_ALGORITHM_VERSION, LOCAL_DESCRIPTOR_ROUTE, convert_table_unit, native_table_manifest
+from convert_tables import (DECODE_TABLE_ALGORITHM_VERSION, LOCAL_DESCRIPTOR_ROUTE, TABLES_CATALOG_CAPACITY, convert_table_unit,
+                            native_table_manifest, write_table_to_store)
+from hash_reference_client_tree import canonical_json_bytes
 from native_catalog.tables import CRYPTO_SOURCE, SAFE_PACKAGE_TRAILER, SCHEMA_ROOT, interlude_descriptor_links
-from native_store.catalog_writer import TABLE_MANIFEST_PATH_PATTERN, validate_catalog_record
+from native_store.catalog_writer import TABLE_MANIFEST_PATH_PATTERN, CatalogWriteError, validate_catalog_record
 from native_store.gap_rows import read_gap_rows
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import UnitLedger
 from reference_client_guard import require_reference_client
 from reference_client_lock_fixture import lock_client_as_checked_conversion_root
+from table_name_index_sources import NAME_INDEX_SOURCES
 
+COMMITTED_INVENTORY_PATH = ROOT / 'docs' / 'parts' / 'data' / 'dat-table-inventory.json'
 NPCNAME_FILE = 'system/npcname-e.dat'
 ZONENAME_FILE = 'system/zonename-e.dat'
 UNPAIRED_SURROGATE_WIDE_ASCF = bytes([0x82]) + struct.pack('<2H', 0xd800, 0)
@@ -156,6 +160,27 @@ class ConvertTableUnitTests(unittest.TestCase):
         manifest = native_table_manifest('npcname-e', decoded_table, LOCAL_DESCRIPTOR_ROUTE)
         self.assertIs(manifest['records'], decoded_table['data'])
         self.assertEqual(manifest['recordCount'], 2)
+
+
+class TablesCatalogCapacityTests(unittest.TestCase):
+    def store_table_record(self, output_root, table):
+        manifest = {'kind': 'native-table', 'table': table, 'recordCount': 0, 'sourceSha256': 'a' * 64, 'records': {}}
+        return write_table_to_store(output_root, table, canonical_json_bytes(manifest), manifest)
+
+    def test_the_capacity_is_one_record_per_inventory_table_plus_one_per_name_index(self):
+        inventory_rows = json.loads(COMMITTED_INVENTORY_PATH.read_bytes())['rows']
+        self.assertEqual(TABLES_CATALOG_CAPACITY, len(inventory_rows) + len(NAME_INDEX_SOURCES))
+
+    def test_the_tables_slice_takes_every_capacity_record_and_refuses_one_more(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            project_root = Path(temporary_directory).resolve()
+            (project_root / 'artifacts').mkdir()
+            output_root = lane_store_root(project_root, 'data-ui')
+            for index in range(TABLES_CATALOG_CAPACITY):
+                self.store_table_record(output_root, f'table{index:02d}')
+            self.assertEqual(len(json.loads((output_root / 'catalog.json').read_bytes())['tables']), TABLES_CATALOG_CAPACITY)
+            with self.assertRaisesRegex(CatalogWriteError, f'catalog tables capacity {TABLES_CATALOG_CAPACITY} exceeded'):
+                self.store_table_record(output_root, 'table99')
 
 
 class ConvertTablesOutputGuardTests(unittest.TestCase):

@@ -1,9 +1,11 @@
 import json
 from pathlib import Path
+import struct
 import sys
 import tempfile
 import unittest
 from unittest.mock import patch
+import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
@@ -22,6 +24,10 @@ from reference_client_lock_fixture import lock_client_as_checked_conversion_root
 COMMITTED_REFERENCE_CLIENT_LOCK_PATH = ROOT / 'recipes' / 'reference-client-tree.lock.json'
 EULA_FILE = 'system/eula-e.dat'
 EULA_LAYOUT_FILE = 'recipes/data/table-layouts/eula.xml'
+SERVERNAME_FILE = 'system/servername-e.dat'
+SERVERNAME_LAYOUT_FILE = 'recipes/data/table-layouts/servername.xml'
+SERVER_NAME_SLOT_COUNT = CLIENT_DERIVED_LAYOUTS['servername']['evidence']['slotCount']
+IN_USE_SLOT_COUNT = 127
 
 
 def ansi_unreal_string(text):
@@ -36,6 +42,16 @@ def wide_unreal_string(text):
 
 def synthetic_eula_payload(*unreal_strings):
     return b''.join(unreal_strings) + SAFE_PACKAGE_TRAILER
+
+
+def leading_in_use_slots(slot_count, in_use_count):
+    return [(slot_id, int(slot_id < in_use_count), f'Server {slot_id}' if slot_id < in_use_count else '') for slot_id in range(slot_count)]
+
+
+def synthetic_servername_payload(header_count, slots):
+    encoded_slots = b''.join(struct.pack('<II', slot_id, in_use_flag) + (ansi_unreal_string(name) if name else b'\0') + b'\0'
+                             for slot_id, in_use_flag, name in slots)
+    return struct.pack('<I', header_count) + encoded_slots + SAFE_PACKAGE_TRAILER
 
 
 class ClientDerivedLayoutPinTests(unittest.TestCase):
@@ -53,6 +69,63 @@ class ClientDerivedLayoutPinTests(unittest.TestCase):
             with self.subTest(layout=name):
                 self.assertEqual(client_derived_layout['evidence']['binary'].casefold(), ENGINE_LIBRARY_RELATIVE_PATH.casefold())
                 self.assertEqual((engine_record['class'], client_derived_layout['evidence']['binarySha256']), ('equal', engine_record['eSha256']))
+
+    def test_the_servername_layout_reads_the_slot_count_of_the_engine_library(self):
+        slot_lists = [node for node in ET.fromstring((ROOT / SERVERNAME_LAYOUT_FILE).read_bytes()).iter('for')]
+        self.assertEqual([node.get('size') for node in slot_lists], [str(SERVER_NAME_SLOT_COUNT)])
+        self.assertEqual(SERVER_NAME_SLOT_COUNT, 0xc8)
+
+
+@unittest.skipUnless(SCHEMA_ROOT.is_dir() and CRYPTO_SOURCE.is_file(), 'pinned dat schema and open-l2encdec source unavailable in .assets/native-tools')
+class ClientDerivedServerNameLayoutTests(unittest.TestCase):
+    def setUp(self):
+        temporary_directory = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary_directory.cleanup)
+        base = Path(temporary_directory.name).resolve()
+        self.client_root = base / 'conversion'
+        (self.client_root / 'system').mkdir(parents=True)
+        (self.client_root / SERVERNAME_FILE).write_bytes(b'synthetic encrypted servername table')
+        lock_client_as_checked_conversion_root(self, self.client_root, base / 'importa', [SERVERNAME_FILE])
+
+    def decode_with_payload(self, payload):
+        with patch('native_catalog.tables.decode413', return_value=('fixture', payload)):
+            return decode_table(self.client_root, 'servername')
+
+    def test_every_slot_is_read_and_the_header_counts_the_leading_in_use_slots(self):
+        slots = leading_in_use_slots(SERVER_NAME_SLOT_COUNT, IN_USE_SLOT_COUNT)
+        decoded_table = self.decode_with_payload(synthetic_servername_payload(IN_USE_SLOT_COUNT, slots))
+        decoded_slots = decoded_table['data']['server_name']
+        self.assertEqual((decoded_table['data']['data'], len(decoded_slots)), (IN_USE_SLOT_COUNT, SERVER_NAME_SLOT_COUNT))
+        self.assertEqual([(slot['id'], slot['tag_?'], slot['name'], slot['desc']) for slot in decoded_slots],
+                         [(slot_id, in_use_flag, name, '') for slot_id, in_use_flag, name in slots])
+        self.assertEqual((decoded_table['schema']['file'], decoded_table['schema']['clientLayoutEvidence']),
+                         (SERVERNAME_LAYOUT_FILE, CLIENT_DERIVED_LAYOUTS['servername']['evidence']))
+
+    def test_a_header_that_differs_from_the_in_use_slot_count_is_refused(self):
+        slots = leading_in_use_slots(SERVER_NAME_SLOT_COUNT, IN_USE_SLOT_COUNT)
+        for header_count in (IN_USE_SLOT_COUNT - 1, IN_USE_SLOT_COUNT + 1, SERVER_NAME_SLOT_COUNT + 1, 0xffffffff):
+            with self.subTest(header_count=header_count), self.assertRaisesRegex(FormatError, f'header counts {header_count} in-use slots'):
+                self.decode_with_payload(synthetic_servername_payload(header_count, slots))
+
+    def test_in_use_slots_that_are_not_the_leading_slots_are_refused_even_at_the_right_count(self):
+        slots = leading_in_use_slots(SERVER_NAME_SLOT_COUNT, IN_USE_SLOT_COUNT)
+        slots[5], slots[150] = (5, 0, ''), (150, 1, 'Server 150')
+        with self.assertRaisesRegex(FormatError, 'the in-use slots are not exactly the first 127 of 200'):
+            self.decode_with_payload(synthetic_servername_payload(IN_USE_SLOT_COUNT, slots))
+
+    def test_a_repeated_out_of_order_or_out_of_range_slot_id_is_refused(self):
+        for slot_index, slot_id in ((150, 3), (0, 1), (199, 5000)):
+            slots = leading_in_use_slots(SERVER_NAME_SLOT_COUNT, IN_USE_SLOT_COUNT)
+            slots[slot_index] = (slot_id, *slots[slot_index][1:])
+            with self.subTest(slot_index=slot_index, slot_id=slot_id), \
+                    self.assertRaisesRegex(FormatError, 'slot ids are not the slot positions 0 to 199'):
+                self.decode_with_payload(synthetic_servername_payload(IN_USE_SLOT_COUNT, slots))
+
+    def test_a_file_with_one_slot_less_or_more_is_refused(self):
+        for slot_count in (SERVER_NAME_SLOT_COUNT - 1, SERVER_NAME_SLOT_COUNT + 1):
+            payload = synthetic_servername_payload(IN_USE_SLOT_COUNT, leading_in_use_slots(slot_count, IN_USE_SLOT_COUNT))
+            with self.subTest(slot_count=slot_count), self.assertRaises(FormatError):
+                self.decode_with_payload(payload)
 
 
 @unittest.skipUnless(SCHEMA_ROOT.is_dir() and CRYPTO_SOURCE.is_file(), 'pinned dat schema and open-l2encdec source unavailable in .assets/native-tools')
