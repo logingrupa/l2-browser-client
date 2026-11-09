@@ -16,6 +16,7 @@ vi.mock("../../src/scene/world/loadNativeMovers", () => ({ loadNativeMovers: vi.
 const runtimeBoundaryMocks = vi.hoisted(() => ({
   load: vi.fn(), assembly: vi.fn<() => Promise<void>>(), section: vi.fn(), flames: vi.fn(), camera: vi.fn(), targeting: vi.fn(), detachCamera: vi.fn(), detachTargeting: vi.fn(),
   assetImport: vi.fn(), detachAssetImport: vi.fn(), audioControls: vi.fn(), factory: vi.fn(), effectBundle: vi.fn(), readCatalog: vi.fn(),
+  sandboxWindowLayer: vi.fn(), releaseSandboxWindowLayer: vi.fn(),
   uis: [] as { adapter: NativeSliceAdapter; dispose: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn>; showStatus: ReturnType<typeof vi.fn> }[],
   registries: [] as { dispose: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> }[],
   sheetGroups: new Map<string, { variables?: () => VariableInfo[] }>(),
@@ -28,6 +29,7 @@ vi.mock("../../src/ui/nativeEffectComponentControls", () => ({ attachNativeEffec
 vi.mock("../../src/ui/nativeEffectInitControls", () => ({ attachNativeEffectInitControls: () => ({ dispose() {} }) }));
 vi.mock("../../src/scene/world/nativeFlamePresentation", () => ({ createNativeFlamePresentation: runtimeBoundaryMocks.flames }));
 vi.mock("../../src/scene/world/nativeSkyPresentation", () => ({ createNativeSkyPresentation: async () => null }));
+vi.mock("../../src/runtime/mountSandboxWindowLayer", () => ({ mountSandboxWindowLayer: runtimeBoundaryMocks.sandboxWindowLayer }));
 vi.mock("../../src/audio/worldAudioControls", () => ({ attachWorldAudioControls: runtimeBoundaryMocks.audioControls }));
 vi.mock("../../src/audio/nativeFootstepControls", () => ({ attachNativeFootstepControls: () => ({ dispose() {}, refresh() {}, describe: () => [] }) }));
 vi.mock("../../src/audio/nativeCombatAudioControls", () => ({ attachNativeCombatAudioControls: () => ({ update() {}, dispose() {}, describe: () => [], cards: () => [] }) }));
@@ -50,7 +52,7 @@ vi.mock("../../src/ui/WorldInterface", () => ({ WorldInterface: class {
   readonly clearStatus = vi.fn(); readonly watchSound = vi.fn(() => () => {}); readonly bindGait = vi.fn(() => () => {});
   readonly root = { querySelector: () => ({ append() {}, remove() {}, after() {}, setAttribute() {}, addEventListener() {}, textContent: "" }) };
   readonly sheet = (() => {
-    const plainDomNode = () => Object.assign(new EventTarget(), { dataset: {}, disabled: false, hidden: false, textContent: "",
+    const plainDomNode = () => Object.assign(new EventTarget(), { dataset: {}, children: [], disabled: false, hidden: false, textContent: "",
       append() {}, remove() {}, after() {}, setAttribute() {}, querySelector: () => null, querySelectorAll: () => [] });
     const group = (id: string, _title: string, options: { variables?: () => VariableInfo[] } = {}) => {
       runtimeBoundaryMocks.sheetGroups.set(id, options);
@@ -115,6 +117,9 @@ function resetRuntimeBoundaryMocks() {
   mocks.detachAssetImport.mockReset(); mocks.assetImport.mockReset().mockReturnValue(mocks.detachAssetImport);
   mocks.audioControls.mockReset().mockReturnValue({ update() {}, dispose() {}, describe: () => [], cards: () => [], setWorldAudio() {} });
   mocks.factory.mockReset().mockReturnValue(() => undefined);
+  mocks.releaseSandboxWindowLayer.mockReset();
+  mocks.sandboxWindowLayer.mockReset().mockReturnValue({ layer: { open: vi.fn(), refresh() {}, close() {}, openWindowIds: () => [], dispose() {} },
+    release: mocks.releaseSandboxWindowLayer });
   mocks.load.mockResolvedValue({ models: new Map([["human-male-fighter:0", {}], ["musveren:0", { manifest: { source: { object: "Native.Musveren" } } }], ["fighter-equipment:0", {}]]),
     npcProfiles: new Map([["npc:21622", { id: "npc:21622", npcId: 21622, mesh: "Native.Musveren", collisionHeight: 36, sourceUnitsPerMetre: 100, drawScale: 1.2, drawScale3D: [1, 1, 1] }]]) });
   mocks.section.mockResolvedValue(null);

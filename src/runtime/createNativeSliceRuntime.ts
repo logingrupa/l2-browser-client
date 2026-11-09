@@ -30,9 +30,10 @@ import { resolveNativeHumanHandAnchor } from "../assets/native/nativeHumanHandAn
 import { createEffectInspectionCamera } from "../effects/nativeEffectInspectionCamera";
 import { isSceneSuspended } from "../engine/renderSuspension";
 import { sandboxNpcVisualFactory } from "./sandboxNpcVisual";
+import { sandboxCharacterVisualFactory, sandboxLoadedPlayerProfileAppearance } from "./sandboxCharacterVisual";
 import { attachSandboxCommandSheet } from "./attachSandboxCommandSheet";
 import { createSandboxRuntimeActions } from "./sandboxRuntimeActions";
-import { createNativeWindowLayer } from "../ui/nativeWindows/nativeWindowLayer";
+import { mountSandboxWindowLayer } from "./mountSandboxWindowLayer";
 import { readNativeTableNameIndex } from "../ui/nativeTables/readNativeTableNameIndex";
 import { selectedNativeTileIdentity } from "../scene/world/selectedNativeTile";
 import { buildNativeCatalogIndexOrUnavailable } from "./buildNativeCatalogIndexOrUnavailable";
@@ -161,7 +162,10 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     const ui = new WorldInterface(adapter, () => registry, canvas, { location: nativeWorldLocationTitles(section).heading, coordinateUnit: "m" });
     boundaryReleases.push(() => ui.dispose());
     registry = new EntityRegistry(scene, adapter, ui.labels, message => ui.showStatus(message), {
-      createVisual: sandboxNpcVisualFactory(catalogIndex, nativeCharacterFactory(profiles, actionCues, footsteps, clipPreview), sandboxAppearanceOfNpc),
+      createVisual: sandboxCharacterVisualFactory(catalogIndex,
+        sandboxNpcVisualFactory(catalogIndex, nativeCharacterFactory(profiles, actionCues, footsteps, clipPreview), sandboxAppearanceOfNpc),
+        sandboxLoadedPlayerProfileAppearance(playerProfile.id, appearanceId)),
+      actorClipPlayer: entityId => clipPreview.actorClipPlayer(entityId),
       ...(navigation ? { ground: navigation.ground } : {}),
     });
     boundaryReleases.push(() => registry.dispose());
@@ -261,16 +265,11 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       focusEffectCamera: () => effectCamera?.focus(), isDisposed: () => disposed, addRelease });
     const sandboxLifetime = new AbortController();
     boundaryReleases.push(() => sandboxLifetime.abort());
-    const windowLayerHost = document.createElement("div");
-    windowLayerHost.style.position = "absolute";
-    windowLayerHost.style.inset = "0";
-    ui.root.prepend(windowLayerHost);
-    const windowLayer = createNativeWindowLayer(windowLayerHost, () => registry.localPlayer);
-    boundaryReleases.push(() => { windowLayer.dispose(); windowLayerHost.remove(); });
-    boundaryReleases.push(adapter.subscribe(event => { if (event.type === "update" && event.entity.kind === "local-player") windowLayer.refresh(); }));
+    const sandboxWindows = mountSandboxWindowLayer(ui.root, adapter, () => registry.localPlayer);
+    boundaryReleases.push(sandboxWindows.release);
     boundaryReleases.push(attachSandboxCommandSheet({ section: ui.sheet.section("sandbox", { title: "Sandbox", order: 5 }), adapter,
       indexFailure: catalogIndexFailure, powerStrike, pickerContext: {
-        host: createSandboxRuntimeActions({ adapter, windowLayer, location: window.location, signal: sandboxLifetime.signal }),
+        host: createSandboxRuntimeActions({ adapter, windowLayer: sandboxWindows.layer, location: window.location, signal: sandboxLifetime.signal }),
         catalogIndex, readNameIndex: readNativeTableNameIndex, selectedEntityId: () => registry.selectedEntityId,
         currentTileId: () => selectedNativeTileIdentity(window.location), signal: sandboxLifetime.signal,
       } }));

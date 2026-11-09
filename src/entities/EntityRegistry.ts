@@ -10,17 +10,25 @@ import type { WorldEntity, WorldEvent, WorldPosition } from "../world/worldTypes
 import { PositionInterpolator } from "../interpolation/PositionInterpolator";
 import type { CharacterVisual, CharacterVisualFactory } from "../assets/CharacterVisual";
 import { EntityLabel } from "../ui/EntityLabel";
+import { playActorClip, type ActorClipPlayer } from "../animation/actorClipPlayback";
 
 interface EntityPresentation {
   entity: WorldEntity;
   readonly visual: CharacterVisual;
   readonly label: EntityLabel;
   readonly interpolation: PositionInterpolator;
+  clipDiagnostic: string | null;
 }
 
 interface EntityPresentationOptions {
   readonly ground?: (position: WorldPosition) => WorldPosition | null;
   readonly createVisual: CharacterVisualFactory;
+  readonly actorClipPlayer?: (entityId: string) => ActorClipPlayer | undefined;
+}
+
+function labelDiagnosticOf(presentation: EntityPresentation): string | null {
+  const diagnostics = [presentation.visual.missingAssetDiagnostic, presentation.clipDiagnostic].filter(diagnostic => diagnostic !== null);
+  return diagnostics.length === 0 ? null : diagnostics.join("; ");
 }
 
 export interface EntityPivotView {
@@ -108,11 +116,11 @@ export class EntityRegistry {
     visual.root.position.set(entity.position.x, entity.position.y, entity.position.z);
     visual.root.rotation.y = entity.orientationRadians;
     const label = new EntityLabel(this.labels, entity, () => this.select(entity.id));
-    label.setDiagnostic(visual.missingAssetDiagnostic);
-    const presentation: EntityPresentation = { entity, visual, label, interpolation: new PositionInterpolator(entity.position) };
+    const presentation: EntityPresentation = { entity, visual, label, interpolation: new PositionInterpolator(entity.position), clipDiagnostic: null };
+    label.setDiagnostic(labelDiagnosticOf(presentation));
     this.entities.set(entity.id, presentation);
     void visual.ready.catch(() => {
-      if (this.entities.get(entity.id) === presentation) label.setDiagnostic(visual.missingAssetDiagnostic);
+      if (this.entities.get(entity.id) === presentation) label.setDiagnostic(labelDiagnosticOf(presentation));
     });
   }
 
@@ -129,6 +137,8 @@ export class EntityRegistry {
       return;
     }
     const shouldRetrigger = (presentation.entity.animationSequence ?? 0) !== (event.entity.animationSequence ?? 0);
+    const requestedClip = event.entity.requestedClip;
+    const isNewClipRequest = requestedClip !== undefined && requestedClip.requestSequence !== presentation.entity.requestedClip?.requestSequence;
     presentation.entity = event.entity;
     presentation.visual.setEntity(event.entity);
     presentation.interpolation.setTarget(event.entity.position, event.shouldSnap ?? false);
@@ -136,6 +146,15 @@ export class EntityRegistry {
     presentation.visual.root.position.set(position.x, position.y, position.z);
     presentation.visual.animation.setState(event.entity.animation, shouldRetrigger);
     presentation.label.setState(event.entity);
+    if (isNewClipRequest) this.presentRequestedClip(presentation, requestedClip.clipName);
+  }
+
+  private presentRequestedClip(presentation: EntityPresentation, clipName: string): void {
+    const entityId = presentation.entity.id;
+    const player = this.options.actorClipPlayer?.(entityId);
+    const isListed = player?.listing.clips.some(clip => clip.name === clipName) ?? false;
+    presentation.clipDiagnostic = isListed ? playActorClip(player, clipName) : `clip ${clipName} not in ${entityId} clip list`;
+    presentation.label.setDiagnostic(labelDiagnosticOf(presentation));
   }
 
   private remove(entityId: string): void {
@@ -173,7 +192,7 @@ export class EntityRegistry {
   }
 
   snapshot() {
-    return [...this.entities.values()].map(({ entity, visual }) => ({
+    return [...this.entities.values()].map(({ entity, visual, clipDiagnostic }) => ({
       id: entity.id, position: { x: visual.root.position.x, y: visual.root.position.y, z: visual.root.position.z },
       groundClearance: this.presentedGroundClearance(visual),
       authoritativePosition: { ...entity.position }, animation: visual.animation.state,
@@ -182,7 +201,8 @@ export class EntityRegistry {
       actionTargetId: entity.actionTargetId ?? null,
       orientationRadians: visual.root.rotation.y, authoritativeOrientationRadians: entity.orientationRadians,
       forwardDirection: visual.forwardDirection?.asArray() ?? null,
-      hasNativeModel: visual.hasNativeModel, missingAssetDiagnostic: visual.missingAssetDiagnostic,
+      hasNativeModel: visual.hasNativeModel, missingAssetDiagnostic: visual.missingAssetDiagnostic, clipDiagnostic,
+      clipNames: this.options.actorClipPlayer?.(entity.id)?.listing.clips.map(clip => clip.name) ?? [],
       modelId: visual.modelId, playback: visual.animation.playback, animationSequence: entity.animationSequence ?? 0,
       attachments: visual.attachmentSnapshot(),
       bounds: { minimum: visual.bounds.minimum.asArray(), maximum: visual.bounds.maximum.asArray(), labelHeight: visual.bounds.labelHeight, selectionRadius: visual.bounds.selectionRadius },

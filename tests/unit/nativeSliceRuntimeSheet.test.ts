@@ -23,6 +23,16 @@ describe("native slice runtime developer sheet", () => {
     expect(runtimeBoundaryMocks.sheetGroups.has("catalog-index")).toBe(true);
   });
 
+  it("mounts the sandbox pickers and one native window layer, and releases the layer once with the runtime", async () => {
+    const stop = await startRuntime(baseRuntimeSettings, new AbortController().signal);
+    for (const pickerGroupId of ["tile", "spawn", "equip", "cast", "window"]) expect(runtimeBoundaryMocks.sheetGroups.has(pickerGroupId)).toBe(true);
+    expect(runtimeBoundaryMocks.sandboxWindowLayer).toHaveBeenCalledOnce();
+    expect(runtimeBoundaryMocks.releaseSandboxWindowLayer).not.toHaveBeenCalled();
+    stop();
+    stop();
+    expect(runtimeBoundaryMocks.releaseSandboxWindowLayer).toHaveBeenCalledOnce();
+  });
+
   it("adds no catalog index note when the index builds", async () => {
     stops.push(await startRuntime(baseRuntimeSettings, new AbortController().signal));
     expect(runtimeBoundaryMocks.sheetGroups.has("catalog-index")).toBe(false);

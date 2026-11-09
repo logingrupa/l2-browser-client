@@ -132,12 +132,14 @@ describe("actor clip playback from asset.json events through the clip hub", () =
     expect(attack.events.map(event => [event.ordinal, event.notifyObject, event.normalizedTime, event.timeSeconds])).toEqual([
       [0, "Fixture.FirstNotify", .25, .5], [1, "Fixture.SecondNotify", .75, 1.5]]);
     expect(listing.eventsWithoutClip).toEqual([]);
+    expect(hub.actorClipPlayer(initial.id)?.listing).toBe(listing);
     expect(hub.play(initial.id, nativeVisualClips.attack)).toBeNull();
     expect(visual.animation.playback?.activeClip).toBe(nativeVisualClips.attack);
     expect(visual.animation.playback?.looping).toBe(false);
     expect(hub.previewing(initial.id)).toBe(nativeVisualClips.attack);
     visual.dispose();
     expect(hub.actorClipEntityIds()).toEqual([]);
+    expect(hub.actorClipPlayer(initial.id)).toBeUndefined();
     expect(hub.actorClipListing(initial.id)).toBeNull();
   });
 });
