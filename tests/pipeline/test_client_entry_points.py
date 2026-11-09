@@ -16,7 +16,6 @@ KNOWN_CLIENT_ENTRY_POINTS = {
     'scripts/derive-native-map-movers.py',
     'scripts/export-native-map-audio.py',
     'scripts/export-native-sounds.py',
-    'scripts/extract-native-terrain-patch.py',
     'scripts/native_actor_profiles.py',
     'scripts/native_assets.py',
     'scripts/native_bsp_building.py',

@@ -1,22 +1,12 @@
 import { sha256 } from "../package/readAssetPackage";
 import { nativeResourceUrl } from "./nativeResourceUrl";
 
-/** Expected terrain-decoration instance counts for the GRASS footstep gate,
- * produced by scripts/bundle-native-stepsound-deco-grass.py.
- *
- * Native (REPORT.md Q1): terrain footsteps of the local pawn are GRASS when
- * GetDecoLayerAlpha counts more than one generated DecoInfo record of all
- * DecoLayers within XY distance 64 in the nearest sector, else LAND. The
- * browser renders no decorations, so this field integrates an expected
- * per-quad instance density instead: an approximation, never a native count. */
 export const NATIVE_STEPSOUND_DECO_GRASS_KIND = "native-stepsound-deco-grass";
-export const DECO_GRASS_APPROXIMATION_LABEL = "approximation of native deco instance count — browser does not render decorations";
-/** Sample points per axis across the 2r × 2r square around the query point. */
-const SAMPLES = 16;
+export const DECO_GRASS_APPROXIMATION_LABEL = "approximation of native deco instance count - browser does not render decorations";
+const SAMPLE_POINTS_PER_AXIS = 16;
 
 export interface FootstepDecoGrassReading {
   readonly status: "sampled" | "outside-terrain";
-  /** Expected instances within `radius` in the nearest sector (approximation). */
   readonly expected: number;
   readonly threshold: number;
   readonly grass: boolean;
@@ -31,7 +21,6 @@ export interface FootstepDecoGrassField {
   readonly radius: number;
   readonly threshold: number;
   readonly quads: readonly [number, number];
-  /** Native XY in source units. */
   read(nativeX: number, nativeY: number): FootstepDecoGrassReading;
 }
 export interface NativeStepDecoGrassBundle { field: FootstepDecoGrassField | null; manifest: string | null }
@@ -41,9 +30,7 @@ export interface FootstepDecoGrassGeometry {
   readonly quads: readonly [number, number];
   readonly quadSize: readonly [number, number];
   readonly origin: readonly [number, number];
-  /** [offsetX, offsetY, quadsX, quadsY] per native TerrainSector. */
   readonly sectors: readonly (readonly [number, number, number, number])[];
-  /** Expected instances per quad, row-major [quadY][quadX]. */
   readonly perQuad: ArrayLike<number>;
   readonly radius: number;
   readonly threshold: number;
@@ -58,8 +45,6 @@ const record = (value: unknown, label: string): Record<string, unknown> => {
 const finite = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
 const integer = (value: unknown): value is number => Number.isSafeInteger(value);
 
-/** Pure integration over the native 64-unit XY circle, restricted to the
- * nearest sector like GetDecoLayerAlpha; instances are uniform within a quad. */
 export function createFootstepDecoGrassField(geometry: FootstepDecoGrassGeometry, identity: { manifestSha256: string; ruleId: string }): FootstepDecoGrassField {
   const [quadsX, quadsY] = geometry.quads, [sizeX, sizeY] = geometry.quadSize, [originX, originY] = geometry.origin;
   requireMatch(integer(quadsX) && integer(quadsY) && quadsX > 0 && quadsY > 0 && geometry.perQuad.length === quadsX * quadsY &&
@@ -70,7 +55,7 @@ export function createFootstepDecoGrassField(geometry: FootstepDecoGrassGeometry
     requireMatch([ox, oy, qx, qy].every(integer) && ox >= 0 && oy >= 0 && qx > 0 && qy > 0 && ox + qx <= quadsX && oy + qy <= quadsY, "sector outside the grid");
     return { ox, oy, qx, qy, x0: originX + ox * sizeX, y0: originY + oy * sizeY, x1: originX + (ox + qx) * sizeX, y1: originY + (oy + qy) * sizeY };
   });
-  const cell = 2 * geometry.radius / SAMPLES, weight = cell * cell / (sizeX * sizeY);
+  const cell = 2 * geometry.radius / SAMPLE_POINTS_PER_AXIS, weight = cell * cell / (sizeX * sizeY);
   return {
     manifestSha256: identity.manifestSha256, ruleId: identity.ruleId, label: DECO_GRASS_APPROXIMATION_LABEL, terrain: geometry.terrain,
     radius: geometry.radius, threshold: geometry.threshold, quads: [quadsX, quadsY],
@@ -86,9 +71,9 @@ export function createFootstepDecoGrassField(geometry: FootstepDecoGrassGeometry
       }
       const rect = rects[sector]!, r = geometry.radius;
       let expected = 0;
-      for (let row = 0; row < SAMPLES; row++) {
+      for (let row = 0; row < SAMPLE_POINTS_PER_AXIS; row++) {
         const offsetY = -r + (row + .5) * cell;
-        for (let column = 0; column < SAMPLES; column++) {
+        for (let column = 0; column < SAMPLE_POINTS_PER_AXIS; column++) {
           const offsetX = -r + (column + .5) * cell;
           if (offsetX * offsetX + offsetY * offsetY > r * r) continue;
           const sx = Math.floor((x + offsetX - originX) / sizeX), sy = Math.floor((y + offsetY - originY) / sizeY);
@@ -115,8 +100,6 @@ async function pinned(fetchBytes: NonNullable<NativeStepDecoGrassLoadOptions["fe
   signal.throwIfAborted(); return bytes;
 }
 
-/** Loads the one `catalog.animationAudio` entry of kind native-stepsound-deco-grass.
- * A missing entry yields `field: null` (the GRASS gate then stays LAND). */
 export async function loadNativeStepDecoGrass(records: unknown, signal: AbortSignal,
   options: NativeStepDecoGrassLoadOptions = {}): Promise<NativeStepDecoGrassBundle> {
   const fetchBytes = options.fetchBytes ?? defaultFetch;

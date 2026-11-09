@@ -272,7 +272,7 @@ class PackageScriptNamingTests(unittest.TestCase):
 
     def test_store_writers_are_banned_casefolded_and_by_file_name(self):
         for name in ('stage_native_runtime.py', 'STAGE_native_runtime.py', 'stage-world-assets.mjs', 'derive-synthetic-store-writer.py',
-                     'migrate-native-terrain-runtime.py', 'private-preview.mjs', 'native_batch.py', 'assets_stage.py', 'Merge_Lane_Store.py'):
+                     'migrate-synthetic-store-writer.py', 'private-preview.mjs', 'native_batch.py', 'assets_stage.py', 'Merge_Lane_Store.py'):
             with self.subTest(name=name):
                 self.assertTrue(banned_store_writer(name))
         self.assertFalse(banned_store_writer('convert_tables.py'))
