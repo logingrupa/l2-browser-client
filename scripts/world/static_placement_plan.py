@@ -3,7 +3,7 @@ from typing import NamedTuple
 from native_catalog.ue2 import FormatError
 from world.static_placement import gltf_placement, resolved_static_values, static_matrix
 from world.terrain_coordinates import coords_point
-from world.tile_census import GAP_STATUS
+from world.tile_census_validation import GAP_STATUS
 
 STATIC_MESH_ACTOR_CLASS = 'Engine.StaticMeshActor'
 PLACEMENT_OUTSIDE_CHUNK_GRID_REASON = 'placement-outside-chunk-grid'

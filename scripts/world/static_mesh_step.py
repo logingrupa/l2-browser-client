@@ -18,7 +18,8 @@ from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, 
 from world.static_placement import read_class_evidence
 from world.static_placement_plan import FAILED_STATUS, chunk_rectangles, plan_static_placements, static_mesh_actors
 from world.terrain_chunk_step import TERRAIN_CLASS_EVIDENCE_FOLDER
-from world.tile_census import GAP_STATUS, WORLD_LANE_NAME, read_package_header
+from world.tile_census import WORLD_LANE_NAME, read_package_header
+from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 
 STATIC_MESH_STEP_ALGORITHM_VERSION = 2
