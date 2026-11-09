@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-30-PLAN.md
-last_updated: "2026-11-09T19:57:19.932Z"
+stopped_at: Completed 02-37-PLAN.md
+last_updated: "2026-11-09T20:40:53.761Z"
 last_activity: 2026-11-09
-last_activity_desc: Phase 02 plan 02-70 complete (tiles load sweep through ?map= on the native route)
-state_head: 8414254f9168cccac7f27ecd9866a9d63d37d945
+last_activity_desc: Phase 02 plan 02-37 complete (sandbox runtime host, pickers, characters and clips)
+state_head: 0f584224b1ad7f3d0c15afc1d7214daef3abd263
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 64
+  completed_plans: 65
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 02 (Stage A breadth) - EXECUTING
-Plan: 02-70 complete, 45 of 71 plans summarized
+Plan: 02-37 complete, 48 of 71 plans summarized
 Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-09 - Plan 02-70 complete: `tests/browser/load-sweep-tiles.spec.ts` sweeps converted `tile:` keys on the native route by `?map=`; a world-lane slice recorded `tile:20_21` pass and `tile:20_20` failed (legacy section only, no tiles record) under lane catalog 34b83e83; all five sweep specs skip without sweep variables. INT-01 stays Pending.
+Last activity: 2026-11-09 - Plan 02-37 complete: the Sandbox section on `/` is the picker set behind `createSandboxRuntimeActions` (tile reload by `?map=`, windows in the native window layer, never through the adapter); spawn-character shows the loaded body or a label-only marker; play-clip plays a listed clip by exact name or labels the clip list diagnostic. SAND-02 complete; ACT-01 and ACT-04 Pending.
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -116,6 +116,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P70 | 12min | 1 tasks | 2 files |
 | Phase 02 P71 | 80min | 6 tasks | 113 files |
 | Phase 02 P30 | 66min | 4 tasks | 55 files |
+| Phase 02 P37 | 40min | 3 tasks | 27 files |
 
 ## Accumulated Context
 
@@ -277,6 +278,8 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-70: tile:20_20 is converted only through the legacy section record and records failed for the ?map= route until a tiles record exists (row 503)
 - [Phase 02]: Plan 02-71: legacy 20_20 chain cut; oracle pins served world-audio and step-sound manifests; build_map in scripts/world/raw_map_extraction.py with raw version 2 and every world unit resealed (lane catalog 108c17b9); shared BSP reader binding and sound export guards; --stage-runtime keeps every unstaged catalog record; flame request is assets job flame-native-material-graph (OVERNIGHT-DECISIONS rows 505 to 511)
 - [Phase 02]: 02-30: bsp and collision steps; lightmap page null until 02-62, typed payload as a hash-addressed folder with a payload pin, StaticMesh selectors unknown, class defaults through 02-59 (OVERNIGHT-DECISIONS rows 515 to 528)
+- [Phase 02]: 02-37: the Sandbox section is the 02-35 picker set behind createSandboxRuntimeActions; tile reload sets only ?map= and windows open in a native window layer, never through the adapter; the 01-14 by-ID groups are deleted (rows 529 to 533)
+- [Phase 02]: 02-37: spawn-character shows the loaded player body or a label-only marker; play-clip plays through playActorClip only for an exactly listed name, else labels clip <name> not in <entity id> clip list; SAND-02 complete, ACT-01 and ACT-04 Pending (rows 534 to 539)
 
 ### Pending Todos
 
@@ -353,6 +356,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-09T19:57:19.284Z
-Stopped at: Completed 02-30-PLAN.md
+Last session: 2026-11-09T20:40:53.147Z
+Stopped at: Completed 02-37-PLAN.md
 Resume file: None

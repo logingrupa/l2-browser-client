@@ -32,7 +32,7 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 ### Sandbox
 
 - [x] **SAND-01** (Phase 1): Offline sandbox shell with no server: spawn NPC by ID, equip item by ID, cast skill by ID, open window by ID, on `NativeSliceAdapter`. An ID without a converted asset shows an explicit missing-asset diagnostic.
-- [ ] **SAND-02** (Phase 2): Sandbox controls are a pinnable developer sheet with hover-cards showing variables (tile picker and walk, spawn, equip, cast, open window, audio mute/volume), not a cramped toggle list.
+- [x] **SAND-02** (Phase 2): Sandbox controls are a pinnable developer sheet with hover-cards showing variables (tile picker and walk, spawn, equip, cast, open window, audio mute/volume), not a cramped toggle list.
 
 ### Data lane L3 (Phase 2)
 
@@ -183,7 +183,7 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 | NOED-03 | Phase 1 | Complete |
 | NOED-04 | Phase 1 | Complete |
 | NOED-05 | Phase 1 | Complete |
-| SAND-02 | Phase 2 | Pending |
+| SAND-02 | Phase 2 | Complete |
 | DATA-01 | Phase 2 | Pending |
 | DATA-02 | Phase 2 | Complete |
 | DATA-03 | Phase 2 | Pending |
