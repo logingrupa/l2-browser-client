@@ -3,6 +3,7 @@ import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
 import { Scene } from "@babylonjs/core/scene";
 import { AssetContainer } from "@babylonjs/core/assetContainer";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
+import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
 import { loadNativeSection, type NativeSection } from "../../src/scene/world/loadNativeSection";
 import { loadNativeTileChunks, type NativeTileSectionView } from "../../src/scene/world/loadNativeTileChunks";
@@ -20,7 +21,9 @@ function glb(document: object): Uint8Array<ArrayBuffer> {
   bytes.fill(32, 20); bytes.set(text, 20); return bytes;
 }
 
-function tileStore(options: { secondChunkTerrain: "loaded" | "hidden" } = { secondChunkTerrain: "loaded" }) {
+interface TileStoreOptions { readonly secondChunkTerrain?: "loaded" | "hidden"; readonly anchorLocation?: readonly number[] }
+
+function tileStore(options: TileStoreOptions = {}) {
   const fixture = readFixtureTileFiles();
   const secondTerrainBytes = glb({ asset: { version: "2.0" }, extras: { fixture: "second chunk terrain" } });
   const secondTerrainSha256 = sha256Hex(secondTerrainBytes);
@@ -39,6 +42,7 @@ function tileStore(options: { secondChunkTerrain: "loaded" | "hidden" } = { seco
   }
   const secondChunkBytes = jsonBytes(secondChunk), secondChunkSha256 = sha256Hex(secondChunkBytes);
   const tile = decodeJsonDocument(fixture.tile.bytes);
+  if (options.anchorLocation) tile.anchor = { ...(tile.anchor as Document), location: options.anchorLocation };
   tile.chunks = [...(tile.chunks as Document[]), { chunkId: "chunk-0-1", manifestSha256: secondChunkSha256, manifestBytes: secondChunkBytes.byteLength,
     manifest: `/l2/maps/${secondChunkSha256}/native-tile-chunk-runtime/manifest.json` }];
   const tileBytes = jsonBytes(tile), tileSha256 = sha256Hex(tileBytes);
@@ -71,7 +75,8 @@ describe("native tile chunk loading", () => {
       const centre = store.terrainCentres.get(sha256Hex(bytes as Uint8Array))!;
       const container = new AssetContainer(scene), mesh = MeshBuilder.CreateBox(`terrain ${centre.z}`, { width: 2.56, height: 0.1, depth: 2.56 }, scene);
       mesh.position.set(centre.x, 0, centre.z); mesh.metadata = { gltf: { extras: { nativeObject: "Fixture.TerrainInfo0" } } };
-      container.meshes.push(mesh); container.removeAllFromScene(); return container;
+      mesh.material = new StandardMaterial(`terrain material ${centre.z}`, scene);
+      container.meshes.push(mesh); container.materials.push(mesh.material); container.removeAllFromScene(); return container;
     });
     return fetcher;
   }
@@ -82,7 +87,7 @@ describe("native tile chunk loading", () => {
     return section;
   }
 
-  it("loads every chunk terrain in manifest order and spawns at the anchor in glTF axes", async () => {
+  it("loads every chunk terrain in manifest order and spawns on the terrain surface at the anchor XY in glTF axes", async () => {
     const store = tileStore(); serve(store);
     const section = (await load())!;
     const view = section.manifest as NativeTileSectionView;
@@ -93,7 +98,11 @@ describe("native tile chunk loading", () => {
     expect(section.terrainMeshes.map(mesh => mesh.metadata.nativeTileChunk)).toEqual([
       { tileId: fixtureTileId, chunkId: "chunk-0-0" }, { tileId: fixtureTileId, chunkId: "chunk-0-1" }]);
     expect(section.terrainMeshes.every(mesh => mesh.metadata.worldTerrain && mesh.metadata.worldSupportsWalking && mesh.isPickable)).toBe(true);
-    expect(section.spawnCandidate!.asArray().map(value => Number(value.toFixed(6)))).toEqual([1.28, 2, 1.28]);
+    expect(section.spawnCandidate!.asArray().map(value => Number(value.toFixed(6)))).toEqual([1.28, 0.05, 1.28]);
+    expect(view.anchor).toMatchObject({ playerStart: "Fixture.PlayerStart0", authoredSourceLocation: [128, 128, 200],
+      rule: "authored PlayerStart XY on the chunk terrain surface; authored Z kept as a diagnostic" });
+    expect(view.anchor.authoredHeightAboveTerrainMetres).toBeCloseTo(1.95, 6);
+    expect(section.inspection().tileAnchor).toEqual(view.anchor);
     expect(section.supportMeshes).toEqual([]);
     expect(section.inspection()).toMatchObject({ modelCount: 0, placementCount: 0, bspMeshes: 0, collisionVerified: false, terrainMaterial: "neutral-inspection" });
     expect(view.gaps).toContain("meshes: step-pending:meshes");
@@ -117,6 +126,12 @@ describe("native tile chunk loading", () => {
     const hiddenChunk = section.inspection().terrainChunks!.find(chunk => chunk.chunkId === "chunk-0-1")!;
     expect(hiddenChunk.terrain).toBeNull();
     expect(hiddenChunk.gaps).toContain("terrain: terrain-quads-all-hidden");
+  });
+
+  it("refuses an anchor whose XY lies on no chunk terrain and leaves no mesh", async () => {
+    serve(tileStore({ anchorLocation: [128, 50_000, 200] }));
+    await expect(load()).rejects.toThrow("The tile anchor lies outside every chunk terrain.");
+    expect(scene.meshes).toHaveLength(0);
   });
 
   it("refuses a tile manifest whose bytes differ from the catalog hash and leaves no mesh", async () => {
