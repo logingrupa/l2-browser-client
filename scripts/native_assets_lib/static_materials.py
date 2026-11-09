@@ -48,6 +48,8 @@ def cross_checked_version_evidence(package, compared_exports, references_sha256)
 
 REVIEWED_VERSION_EVIDENCE = {
     **{(STATIC_MATERIAL_PACKAGE_VERSION, licensee): layout_reviewed_version_evidence() for licensee in LAYOUT_REVIEWED_LICENSEES},
+    (STATIC_MATERIAL_PACKAGE_VERSION, 12): cross_checked_version_evidence(
+        'staticmeshes/cruma_s.usx', 31, '9fdcdc8b31385eec4b0b0d14e9f7da1113fd009a6133e94a6ca3217e09dfedef'),
 }
 REVIEWED_VERSIONS = frozenset(REVIEWED_VERSION_EVIDENCE)
 

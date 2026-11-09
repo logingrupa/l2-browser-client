@@ -782,6 +782,629 @@
         "0b0ab309e62e6b86bcb5c2a245cf6e4da6219f8deca3f3f1babae18e16120fbe"
       ],
       "materialsPayloadSha256": "62984d3f38961138f0b9044067417096d5cd0b500611f917b1c24c088ab9814b"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.g_04",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -17,
+        -12,
+        -5,
+        -6
+      ],
+      "slotByteSha256s": [
+        "a8b799278f82fece9f5d6cd7f6dfa21416aaf40f25e659b16a6fcfb0633b8a8f",
+        "44436e259c9f0d6e37bf33c6c0a8659183dfc180894d64cd7329b9131d0dd051",
+        "13f57d01fa04ac6bc884a1b53b0697960362f49f2483aee780ef2b9f06ff07ea",
+        "9ec17c1e56bc59d945b1ca197eb5b46a4fdcf8af17d81a9de7a66853a6d556d5"
+      ],
+      "materialsPayloadSha256": "6f92b8c0d31151b866fbbd1f085b55cc781e118b7fe80dc7b760682110d69a06"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.G_10",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -5,
+        -11
+      ],
+      "slotByteSha256s": [
+        "13f57d01fa04ac6bc884a1b53b0697960362f49f2483aee780ef2b9f06ff07ea",
+        "db82ed271f62b0ac8a72c1e2d638086454cb3e2a14f55ccef9c992a61209da00"
+      ],
+      "materialsPayloadSha256": "150d9f9dfcd3b5ee08a2867b4690e571c05ff2cece20cec621881fb9a35e1186"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.G_06",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -11,
+        -15,
+        0,
+        -5
+      ],
+      "slotByteSha256s": [
+        "db82ed271f62b0ac8a72c1e2d638086454cb3e2a14f55ccef9c992a61209da00",
+        "ad943ce109eb2eb45905f81c8f418f4fff438b4b01513f95e6aab11fac7f4f11",
+        "36254cb3ade04b66e746fce1d451e152def09799d772302ae0250175badf1aa2",
+        "13f57d01fa04ac6bc884a1b53b0697960362f49f2483aee780ef2b9f06ff07ea"
+      ],
+      "materialsPayloadSha256": "f5758cf7b49a6971b12a6da9757ab347cbf53f960b26922d161f0ce8f146a7d9"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.G_08",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -13,
+        -5,
+        -9,
+        -6,
+        0,
+        -4
+      ],
+      "slotByteSha256s": [
+        "b73c7fca8d975ccf97fb9f80655e3f64a6e7cbbeb7a3d7de6625b525934b567e",
+        "13f57d01fa04ac6bc884a1b53b0697960362f49f2483aee780ef2b9f06ff07ea",
+        "77adfe1c1af892cf381b0971e0ecc995f77b295ae47e6115976cc3e38b0f8722",
+        "9ec17c1e56bc59d945b1ca197eb5b46a4fdcf8af17d81a9de7a66853a6d556d5",
+        "36254cb3ade04b66e746fce1d451e152def09799d772302ae0250175badf1aa2",
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989"
+      ],
+      "materialsPayloadSha256": "4512257ae09148302cb2137c61c9a26a984719a656260e07da5bda9f1ec6c29a"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.i_02",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -9,
+        0,
+        0,
+        -6,
+        -4,
+        -15
+      ],
+      "slotByteSha256s": [
+        "77adfe1c1af892cf381b0971e0ecc995f77b295ae47e6115976cc3e38b0f8722",
+        "36254cb3ade04b66e746fce1d451e152def09799d772302ae0250175badf1aa2",
+        "36254cb3ade04b66e746fce1d451e152def09799d772302ae0250175badf1aa2",
+        "9ec17c1e56bc59d945b1ca197eb5b46a4fdcf8af17d81a9de7a66853a6d556d5",
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989",
+        "ad943ce109eb2eb45905f81c8f418f4fff438b4b01513f95e6aab11fac7f4f11"
+      ],
+      "materialsPayloadSha256": "c9f157084c2ca8bbe4ad728f45c6a746eb99840e4aa3cc3a9b68013f281c6557"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.g_13",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -6,
+        -4,
+        -7,
+        -8
+      ],
+      "slotByteSha256s": [
+        "9ec17c1e56bc59d945b1ca197eb5b46a4fdcf8af17d81a9de7a66853a6d556d5",
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989",
+        "aff8dbdb07ca906e8c3f7d04506a065585ab52c4880a390c4bb4ae5cdd0782d3",
+        "d4584b8c94270b8b7820d541886e04cc26a423eda6759222c72a47ae7cd79c93"
+      ],
+      "materialsPayloadSha256": "ffa0e87966b1daf6eb21c2346c3fa56bec597b815ceef7878d960083a2db7d78"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.G_07",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        0,
+        0,
+        -4,
+        -6,
+        -5
+      ],
+      "slotByteSha256s": [
+        "36254cb3ade04b66e746fce1d451e152def09799d772302ae0250175badf1aa2",
+        "36254cb3ade04b66e746fce1d451e152def09799d772302ae0250175badf1aa2",
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989",
+        "9ec17c1e56bc59d945b1ca197eb5b46a4fdcf8af17d81a9de7a66853a6d556d5",
+        "13f57d01fa04ac6bc884a1b53b0697960362f49f2483aee780ef2b9f06ff07ea"
+      ],
+      "materialsPayloadSha256": "51733d379784ab11109fb4057f161eadfca61521a29d94589ce7883447e87bdc"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.G_09",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -5,
+        -11,
+        -10
+      ],
+      "slotByteSha256s": [
+        "13f57d01fa04ac6bc884a1b53b0697960362f49f2483aee780ef2b9f06ff07ea",
+        "db82ed271f62b0ac8a72c1e2d638086454cb3e2a14f55ccef9c992a61209da00",
+        "8c45095c5a69abae0700a5b0da768ac0d17f696c4f49d67d709409c53175c028"
+      ],
+      "materialsPayloadSha256": "b1efba9bcc851d74140f44274e816b11eec27148989b7afde8ecec80fec5b33b"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.e_05",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -6,
+        -4,
+        -5
+      ],
+      "slotByteSha256s": [
+        "9ec17c1e56bc59d945b1ca197eb5b46a4fdcf8af17d81a9de7a66853a6d556d5",
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989",
+        "13f57d01fa04ac6bc884a1b53b0697960362f49f2483aee780ef2b9f06ff07ea"
+      ],
+      "materialsPayloadSha256": "f07664654a8ba4b3cedab9ff04ad10e0d0c77f62846da216e51b533acb442351"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.h_01",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -4,
+        -6,
+        -5
+      ],
+      "slotByteSha256s": [
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989",
+        "9ec17c1e56bc59d945b1ca197eb5b46a4fdcf8af17d81a9de7a66853a6d556d5",
+        "13f57d01fa04ac6bc884a1b53b0697960362f49f2483aee780ef2b9f06ff07ea"
+      ],
+      "materialsPayloadSha256": "39a9a50c1b2cca9d9e2f0fb56bf1dc515398e22af7aab597357d9c1caeb21419"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.G_12",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -18,
+        -5,
+        -6
+      ],
+      "slotByteSha256s": [
+        "bc03b8319773739f6f6e580573bebd2d26e206558430dc30051db70d2f6d361a",
+        "13f57d01fa04ac6bc884a1b53b0697960362f49f2483aee780ef2b9f06ff07ea",
+        "9ec17c1e56bc59d945b1ca197eb5b46a4fdcf8af17d81a9de7a66853a6d556d5"
+      ],
+      "materialsPayloadSha256": "8b513823b06b07c40911f87fab862e4b443b6ab10803d589adfdbc5c5ee5ddce"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.f_06",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -4,
+        -5,
+        -6,
+        -8,
+        -4,
+        0,
+        -20
+      ],
+      "slotByteSha256s": [
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989",
+        "13f57d01fa04ac6bc884a1b53b0697960362f49f2483aee780ef2b9f06ff07ea",
+        "9ec17c1e56bc59d945b1ca197eb5b46a4fdcf8af17d81a9de7a66853a6d556d5",
+        "d4584b8c94270b8b7820d541886e04cc26a423eda6759222c72a47ae7cd79c93",
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989",
+        "36254cb3ade04b66e746fce1d451e152def09799d772302ae0250175badf1aa2",
+        "43a80c588c5cda8a8458fe4022e5a54c9febc85f083e9355e47abd8d24b96e09"
+      ],
+      "materialsPayloadSha256": "ec7d8ec0ae5ca280eb570ee00e0a1ee6a27c89d042b6f2cbba46f458b97638a1"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.i_01",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -4,
+        -9,
+        -5,
+        -7
+      ],
+      "slotByteSha256s": [
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989",
+        "77adfe1c1af892cf381b0971e0ecc995f77b295ae47e6115976cc3e38b0f8722",
+        "13f57d01fa04ac6bc884a1b53b0697960362f49f2483aee780ef2b9f06ff07ea",
+        "aff8dbdb07ca906e8c3f7d04506a065585ab52c4880a390c4bb4ae5cdd0782d3"
+      ],
+      "materialsPayloadSha256": "3deef20afeab9bea4c233e10c7071e88ec69e8fee1fd8a212cd597065ec5f9ad"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.f_08",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -4,
+        -7,
+        -6,
+        -6,
+        -4,
+        -7,
+        -8
+      ],
+      "slotByteSha256s": [
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989",
+        "aff8dbdb07ca906e8c3f7d04506a065585ab52c4880a390c4bb4ae5cdd0782d3",
+        "9ec17c1e56bc59d945b1ca197eb5b46a4fdcf8af17d81a9de7a66853a6d556d5",
+        "9ec17c1e56bc59d945b1ca197eb5b46a4fdcf8af17d81a9de7a66853a6d556d5",
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989",
+        "aff8dbdb07ca906e8c3f7d04506a065585ab52c4880a390c4bb4ae5cdd0782d3",
+        "d4584b8c94270b8b7820d541886e04cc26a423eda6759222c72a47ae7cd79c93"
+      ],
+      "materialsPayloadSha256": "0a626df5de5116814856952c48a9f2eb28bca0169edea27fcd4ecb84f6c7d686"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.f_01",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -4,
+        -5,
+        -4
+      ],
+      "slotByteSha256s": [
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989",
+        "13f57d01fa04ac6bc884a1b53b0697960362f49f2483aee780ef2b9f06ff07ea",
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989"
+      ],
+      "materialsPayloadSha256": "69a4a20170cf7bca1ce047d641c0d48d904eec6908d42a00871653435b855a77"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.f_04",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -4,
+        -6
+      ],
+      "slotByteSha256s": [
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989",
+        "9ec17c1e56bc59d945b1ca197eb5b46a4fdcf8af17d81a9de7a66853a6d556d5"
+      ],
+      "materialsPayloadSha256": "5f8d7b04a8f3a19b3aaaf81b0e16e8eaa8ee68e45b1cb743faf02785932d8ad7"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.f_05",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -4,
+        -6,
+        -10
+      ],
+      "slotByteSha256s": [
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989",
+        "9ec17c1e56bc59d945b1ca197eb5b46a4fdcf8af17d81a9de7a66853a6d556d5",
+        "8c45095c5a69abae0700a5b0da768ac0d17f696c4f49d67d709409c53175c028"
+      ],
+      "materialsPayloadSha256": "2d95386255b1b84452d111a9d2c01cc156408a006afa9d91d2078b71a01d69bf"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.turtle_bone",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -16,
+        -33,
+        -16,
+        -14
+      ],
+      "slotByteSha256s": [
+        "1a15d65719a89a8fea0837c49a9d4b8fbf04f151d3ffa1b4f28ea0ddea7fe42e",
+        "81e861578a6603674b93134729b6cac6d8b1726c9db9ed0f555aa00e07d38abf",
+        "1a15d65719a89a8fea0837c49a9d4b8fbf04f151d3ffa1b4f28ea0ddea7fe42e",
+        "779c06c51648e165509cf0260401e8b077f1b1ae9502c87cc47f163e150acb63"
+      ],
+      "materialsPayloadSha256": "b4fe43ccf6944707433d4ffe4b283d34bf6f0d2f89a6f17dc0f835bf1779f7ae"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.C_02",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -7
+      ],
+      "slotByteSha256s": [
+        "aff8dbdb07ca906e8c3f7d04506a065585ab52c4880a390c4bb4ae5cdd0782d3"
+      ],
+      "materialsPayloadSha256": "16df9f999817f6e85ac7aea3a8d04448afb207d2bce094e23aaca973d07f1a9e"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.g_03",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -5,
+        -8,
+        -12,
+        -26,
+        -5,
+        -9,
+        -12,
+        -22,
+        -8,
+        -17,
+        -12
+      ],
+      "slotByteSha256s": [
+        "13f57d01fa04ac6bc884a1b53b0697960362f49f2483aee780ef2b9f06ff07ea",
+        "d4584b8c94270b8b7820d541886e04cc26a423eda6759222c72a47ae7cd79c93",
+        "44436e259c9f0d6e37bf33c6c0a8659183dfc180894d64cd7329b9131d0dd051",
+        "7b9cb57bae2547a3ba42c2d33962c1e09b89a39437e84fac8999567be6c5845c",
+        "13f57d01fa04ac6bc884a1b53b0697960362f49f2483aee780ef2b9f06ff07ea",
+        "77adfe1c1af892cf381b0971e0ecc995f77b295ae47e6115976cc3e38b0f8722",
+        "44436e259c9f0d6e37bf33c6c0a8659183dfc180894d64cd7329b9131d0dd051",
+        "0a1ebc23bc97c097cb161015792e35c20e5ce777c7147190a52271b1734c1c2a",
+        "d4584b8c94270b8b7820d541886e04cc26a423eda6759222c72a47ae7cd79c93",
+        "a8b799278f82fece9f5d6cd7f6dfa21416aaf40f25e659b16a6fcfb0633b8a8f",
+        "44436e259c9f0d6e37bf33c6c0a8659183dfc180894d64cd7329b9131d0dd051"
+      ],
+      "materialsPayloadSha256": "3f92b220dab87c435224d0da27a41f86187051c2ea45e4c087b00d4b284a813f"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.f_03",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -5,
+        -9
+      ],
+      "slotByteSha256s": [
+        "13f57d01fa04ac6bc884a1b53b0697960362f49f2483aee780ef2b9f06ff07ea",
+        "77adfe1c1af892cf381b0971e0ecc995f77b295ae47e6115976cc3e38b0f8722"
+      ],
+      "materialsPayloadSha256": "803d1ac65d41a70005f3e93e6717673057359ee7a496c47b1c2bf3645678af45"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.f_07",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -4,
+        -6
+      ],
+      "slotByteSha256s": [
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989",
+        "9ec17c1e56bc59d945b1ca197eb5b46a4fdcf8af17d81a9de7a66853a6d556d5"
+      ],
+      "materialsPayloadSha256": "5f8d7b04a8f3a19b3aaaf81b0e16e8eaa8ee68e45b1cb743faf02785932d8ad7"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.e_04",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        0,
+        0,
+        -4,
+        -6,
+        -5,
+        0,
+        0,
+        0
+      ],
+      "slotByteSha256s": [
+        "36254cb3ade04b66e746fce1d451e152def09799d772302ae0250175badf1aa2",
+        "36254cb3ade04b66e746fce1d451e152def09799d772302ae0250175badf1aa2",
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989",
+        "9ec17c1e56bc59d945b1ca197eb5b46a4fdcf8af17d81a9de7a66853a6d556d5",
+        "13f57d01fa04ac6bc884a1b53b0697960362f49f2483aee780ef2b9f06ff07ea",
+        "36254cb3ade04b66e746fce1d451e152def09799d772302ae0250175badf1aa2",
+        "36254cb3ade04b66e746fce1d451e152def09799d772302ae0250175badf1aa2",
+        "36254cb3ade04b66e746fce1d451e152def09799d772302ae0250175badf1aa2"
+      ],
+      "materialsPayloadSha256": "fb3a89e8dc10e34629be9f4e9185c72e9f2e498842819ebb633155a98b6a1d6f"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.h_02",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -4,
+        -5
+      ],
+      "slotByteSha256s": [
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989",
+        "13f57d01fa04ac6bc884a1b53b0697960362f49f2483aee780ef2b9f06ff07ea"
+      ],
+      "materialsPayloadSha256": "7b3b3744d81eca798ad607d66c1befa07203e3bd0383018874c8e49fd2c83742"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.i_05",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -9,
+        -7
+      ],
+      "slotByteSha256s": [
+        "77adfe1c1af892cf381b0971e0ecc995f77b295ae47e6115976cc3e38b0f8722",
+        "aff8dbdb07ca906e8c3f7d04506a065585ab52c4880a390c4bb4ae5cdd0782d3"
+      ],
+      "materialsPayloadSha256": "ae9daa07c6cf22a6efaee3f68b86574b4992da032e16b0b8f8ba37a6f5478af0"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.g_11",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -4,
+        -6,
+        -7,
+        -8
+      ],
+      "slotByteSha256s": [
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989",
+        "9ec17c1e56bc59d945b1ca197eb5b46a4fdcf8af17d81a9de7a66853a6d556d5",
+        "aff8dbdb07ca906e8c3f7d04506a065585ab52c4880a390c4bb4ae5cdd0782d3",
+        "d4584b8c94270b8b7820d541886e04cc26a423eda6759222c72a47ae7cd79c93"
+      ],
+      "materialsPayloadSha256": "b208a61774a2bc98ae20171287d1c7d55979d7de250d93de4f47807260124c9f"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.e_01",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -6,
+        -4
+      ],
+      "slotByteSha256s": [
+        "9ec17c1e56bc59d945b1ca197eb5b46a4fdcf8af17d81a9de7a66853a6d556d5",
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989"
+      ],
+      "materialsPayloadSha256": "4647bd30097fee57fab550818cd10127727a3a998acf5100cc181a2b31744967"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.f_10",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -7,
+        -36
+      ],
+      "slotByteSha256s": [
+        "aff8dbdb07ca906e8c3f7d04506a065585ab52c4880a390c4bb4ae5cdd0782d3",
+        "e4f30864640c417e7d752932fcda7e09c334d15bf0153ae5b68b31597d916746"
+      ],
+      "materialsPayloadSha256": "9c3b05f811fa1bf57f6179e08acaf3e7ec1b7fe28a1ce64b40dce4123a443ec3"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.g_05",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -34
+      ],
+      "slotByteSha256s": [
+        "c4223598f5ea75353ae5abf24e212966172b3e9e56b235b0874d922f11a3ec1a"
+      ],
+      "materialsPayloadSha256": "befa2a8e1f9d1546809d45d86db58dfa0e0708acadafbb2c806fac07decd5b5d"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.e_02",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -10,
+        -11,
+        -4,
+        -37,
+        -13,
+        -4,
+        -6,
+        -5,
+        -19,
+        -14,
+        -13
+      ],
+      "slotByteSha256s": [
+        "8c45095c5a69abae0700a5b0da768ac0d17f696c4f49d67d709409c53175c028",
+        "db82ed271f62b0ac8a72c1e2d638086454cb3e2a14f55ccef9c992a61209da00",
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989",
+        "5d80e10963b3276abe7024a26545d67da78395e50fa352164f79ff45974a55a8",
+        "b73c7fca8d975ccf97fb9f80655e3f64a6e7cbbeb7a3d7de6625b525934b567e",
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989",
+        "9ec17c1e56bc59d945b1ca197eb5b46a4fdcf8af17d81a9de7a66853a6d556d5",
+        "13f57d01fa04ac6bc884a1b53b0697960362f49f2483aee780ef2b9f06ff07ea",
+        "f517ad7838f24dc7b259cf9fd4abc4e37788a06012eb058c94ec1f902dc2d480",
+        "779c06c51648e165509cf0260401e8b077f1b1ae9502c87cc47f163e150acb63",
+        "b73c7fca8d975ccf97fb9f80655e3f64a6e7cbbeb7a3d7de6625b525934b567e"
+      ],
+      "materialsPayloadSha256": "529fd004f163d20179d310c254cf663e86713817abb63c9c185a19ff354ba752"
+    },
+    {
+      "package": "staticmeshes/cruma_s.usx",
+      "packageSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "object": "cruma_s.turtle",
+      "licenseeVersion": 12,
+      "materialIndices": [
+        -4,
+        -19,
+        -5,
+        -18,
+        -21,
+        -10,
+        -35,
+        -23,
+        -32,
+        -8,
+        -4,
+        -24,
+        -7,
+        -25,
+        -38,
+        -27,
+        -28,
+        -29,
+        -30,
+        -31
+      ],
+      "slotByteSha256s": [
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989",
+        "f517ad7838f24dc7b259cf9fd4abc4e37788a06012eb058c94ec1f902dc2d480",
+        "13f57d01fa04ac6bc884a1b53b0697960362f49f2483aee780ef2b9f06ff07ea",
+        "bc03b8319773739f6f6e580573bebd2d26e206558430dc30051db70d2f6d361a",
+        "1332663b643c9fb93d0ccf4e09e83895371fd419208e17e2b1fd4dc4244ebb42",
+        "8c45095c5a69abae0700a5b0da768ac0d17f696c4f49d67d709409c53175c028",
+        "e1e5c982b72336af1060e44b1af9986f99523c372c9368442ad515a52a7df4c4",
+        "a7098efbc6682b0f8fb99b1390372766ab5aa18ff1f4e85a9e0ccc6ecbdacb96",
+        "90d707294a4eaaa94cfe39d78ffcd296c07c61b7d600e3352c4a2194d2671aab",
+        "d4584b8c94270b8b7820d541886e04cc26a423eda6759222c72a47ae7cd79c93",
+        "69c353bb4c1f6ea1cc09cf89199fb9c611567d59a5a25f7b8a9dc09adb36d989",
+        "f613ae377e879c14809c971bc3e258b620f48716b05aa3069fd6c0f8cdde2431",
+        "aff8dbdb07ca906e8c3f7d04506a065585ab52c4880a390c4bb4ae5cdd0782d3",
+        "518d4e4f9bb8a6f9d5261d81b29ecf044893f912308b91ce1b047f58261e4db6",
+        "7d8993188389bb571ec881b98e9005b3351e856417671291d2d382345f71a8f7",
+        "c467d3898f073d9b50755c164a67bdfb35f50dbc67254a12c1c0f9dbf12d3858",
+        "e2da6ab8f3408c6c09c14d6a57e93c2075242dcf71a88ba4a6d35c684419fd6e",
+        "d0265604b1caea1f6e5481739a946ef36e787bab078da88e07c88a7d20f5a371",
+        "a7468818fbe66e53fa6787c81cd7310c7df8b91be8f5e3fa9a4d4f661f2db388",
+        "294aedb58f7c15e3e2e32d020a7aa7c0c6a05591655acc9f6b5f0ac80d0d12f5"
+      ],
+      "materialsPayloadSha256": "5cee14ec9b6d66a57a15dcf7129de7d50141bda3dc1b517a4e73365146b5dc52"
     }
   ]
 }

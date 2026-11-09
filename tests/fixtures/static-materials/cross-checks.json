@@ -1,4 +1,25 @@
 {
-  "rows": [],
+  "rows": [
+    {
+      "version": [
+        123,
+        12
+      ],
+      "package": "staticmeshes/cruma_s.usx",
+      "lockSha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "comparedExports": 31,
+      "ourReferencesSha256": "9fdcdc8b31385eec4b0b0d14e9f7da1113fd009a6133e94a6ca3217e09dfedef",
+      "crossCheckReferencesSha256": "9fdcdc8b31385eec4b0b0d14e9f7da1113fd009a6133e94a6ca3217e09dfedef",
+      "tool": {
+        "name": "Elbera l2lib",
+        "commit": "12c9656",
+        "pins": {
+          "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
+        }
+      },
+      "equal": true,
+      "firstDifferingExport": null
+    }
+  ],
   "schemaVersion": 1
 }

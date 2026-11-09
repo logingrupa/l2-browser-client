@@ -171,9 +171,9 @@ class StaticMeshOutcomeTests(unittest.TestCase):
 
     def test_an_unreviewed_static_material_layout_is_a_gap_and_never_reaches_the_converter(self):
         requests = [mesh_request('Old_S', 'Rock'), mesh_request('Old_S', 'Tree')]
-        outcomes = self.outcomes({'staticmeshes/Old_S.usx': {'packageVersion': 123, 'licensee': 12}}, requests)
-        self.assertEqual(outcomes, {'Old_S.Rock': ('gap', 'static-material-layout-unreviewed:123/12'),
-                                    'Old_S.Tree': ('gap', 'static-material-layout-unreviewed:123/12')})
+        outcomes = self.outcomes({'staticmeshes/Old_S.usx': {'packageVersion': 123, 'licensee': 13}}, requests)
+        self.assertEqual(outcomes, {'Old_S.Rock': ('gap', 'static-material-layout-unreviewed:123/13'),
+                                    'Old_S.Tree': ('gap', 'static-material-layout-unreviewed:123/13')})
         self.assertEqual(RecordingConverter.instances, [])
 
     def test_a_reviewed_layout_converts_once_per_mesh_with_the_model_request_and_a_failure_is_a_failed_outcome(self):
@@ -211,7 +211,7 @@ def synthetic_requests_by_reference():
 
 def synthetic_outcomes():
     return {'Rock_S.Rock': converted_mesh('Rock_S', 'Rock'), 'Tree_S.Tree': converted_mesh('Tree_S', 'Tree'),
-            'Old_S.Rock': ('gap', 'static-material-layout-unreviewed:123/12'),
+            'Old_S.Rock': ('gap', 'static-material-layout-unreviewed:123/13'),
             'Rock_S.Broken': ('failed', 'decode-failed:ValueError:UModel cannot safely select this duplicate leaf name')}
 
 
@@ -248,7 +248,7 @@ class StaticMeshAssignmentTests(unittest.TestCase):
         self.assertEqual([(row['sourceIdentity']['object'], row['status'], row['reason']) for row in rows], [
             (f'{TILE_ID}.StaticMeshActor13', 'gap', 'placement-material-override-unsupported'),
             (f'{TILE_ID}.StaticMeshActor14', 'gap', 'static-mesh-reference-unresolved'),
-            (f'{TILE_ID}.StaticMeshActor15', 'gap', 'static-material-layout-unreviewed:123/12'),
+            (f'{TILE_ID}.StaticMeshActor15', 'gap', 'static-material-layout-unreviewed:123/13'),
             (f'{TILE_ID}.StaticMeshActor16', 'failed', 'decode-failed:ValueError:UModel cannot safely select this duplicate leaf name'),
             (f'{TILE_ID}.StaticMeshActor17', 'gap', 'placement-outside-chunk-grid')])
 
