@@ -50,6 +50,13 @@ A second conversion run skips both sealed units and rewrites no lane-store byte 
 - Bounds: 64 bundles of 256 profiles (`maximumNpcProfileBundles`, `maximumProfilesPerBundle`), equal to `MAXIMUM_NPC_PROFILE_BUNDLES` and `MAXIMUM_PROFILES_PER_BUNDLE` in `scripts/native_actor_profiles.py`. Their product, 16,384, covers the 6,519 npcgrp rows of `actor-unit-census.json`. These are input-size guards, not Lineage II values. `scripts/stage_native_runtime.py` keeps its 128-profile check.
 - The red baseline is closed: both `nativeNpcProfiles` snapshot cases pass. `pnpm test:unit` on 2026-11-09 04:50 Riga: 142 files passed, 5 skipped; 1,861 tests passed, 82 skipped, 0 failed.
 
+### ACT-04 typed clips, events and one play API (plan 02-36)
+
+- `parseActorClipEvents` (`src/assets/native/actorClipEvents.ts`) types the `animationEvents` list that the converter already writes into asset.json. No new decoder. Every source field is copied as is, plus the manifest ordinal: `object` becomes `notifyObject` and `function` becomes `notifyFunction`. The function stays data and is never run. A malformed value throws `ActorClipEventsError` with the ordinal and the field. An `unresolved-native-notify` type stays as it is. All 1,740 events in the 6 evented top-level packages of the served store parse.
+- `listActorClips` (`src/animation/actorClipPlayback.ts`) joins the loaded glTF clips (names and native durations) to the events by exact sequence name. There is no case folding, trimming or Unicode normalisation. Clips keep package order. Events sort by normalized time, and events at the same time stay in ordinal order. Events at 0 and exactly 1 keep their source seconds. An event on a clip that is not loaded stays in `eventsWithoutClip`. A duplicate loaded clip name is refused.
+- `playActorClip` owns the refusals. These are not loaded, not a clip of this package, and the player's own error. `NativeClipPreviewHub.play` delegates to it with unchanged texts. `actorClipEntityIds()` and `actorClipListing(entityId)` replace `available`, and every actor loaded through `nativeCharacterFactory` registers its listing.
+- Tests: `tests/unit/actorClipEvents.test.ts`, `tests/unit/actorClipPlayback.test.ts` (end to end from asset.json events through the hub to NativeActor playback), `tests/unit/nativeCharacterVisual.test.ts`. `pnpm test:unit` on 2026-11-09 05:01 Riga: 144 files passed, 5 skipped; 1,909 tests passed, 82 skipped, 0 failed.
+
 ### Actor unit census (plan 02-21)
 
 Plan 02-21 adds a census only. It converts nothing and loads nothing. A "load" counts only from a load-check record, and the census proves nothing about rendering. What it does prove: every lock `animations/` package has a recorded header gate, and every decoded actor row (`npc:`, `character:`, `item:` for weapongrp and armorgrp, `skill:`) has exactly one census status, either `pending` with `conversion-pending` or `gap` with a listed reason.
@@ -58,6 +65,7 @@ Plan 02-21 adds a census only. It converts nothing and loads nothing. A "load" c
 
 - npc:20001 sandbox spawn: open. Two needs: the runtime wiring of `loadConvertedNpcModel` into `sandboxNpcAppearanceByModel` in `src/runtime/createNativeSliceRuntime.ts` (integration-owned, index rule 14), and a served catalog that holds the base records the sandbox needs (the player profile and `musveren:0`) together with the actors lane records. The harness page proves spawn by id through the same catalog index, not the sandbox step.
 - The actors lane catalog is not pinned: `write_lane_catalog.py --lane actors` and `--plan` refuse the npc profile manifest, which pins its bundle files by relative file name (`source/classes/Core.Object.bin`), and `merge_lane_store.py` refuses the same pins. Restaging profiles waits on an integration change to the pinned-file rule (Needs Human in STATE.md).
+- ACT-04 presentation: the sandbox `play-clip` command that plays a listed clip through this API (02-37) and the developer sheet clip picker that reads `actorClipListing` (02-39) are open. Nothing yet shows events in a browser.
 - 6,519 `npcgrp` rows, spawnable by NPC ID (ACT-02): 1,148 rows are pending conversion, 5,371 are census gaps (table below). npc:20001 is the only converted row.
 - `multi-slot-binding-unsupported` (341 NPC units, 3,936 rows) waits on 02-32; skeletal licensees 31 and 0 and texture licensees 23, 25, 27 and 0 wait on reader work.
 - chargrp hair and helmet layouts stay explicit gaps (`hair-layout-undecoded`, `helmet-layout-undecoded`) until 02-28 and 02-40 decode them.
@@ -222,4 +230,5 @@ The npcname path is the single language file the decoder resolves; 02-22 and 02-
 
 - Census: `scripts/actors/actor_census.py`, `scripts/actors/actor_unit_inventory.py`, `scripts/actors/item_unit_inventory.py`, `scripts/actors/skill_unit_inventory.py`; lane reasons `recipes/actors/gap-reasons.json`.
 - Tests: `tests/pipeline/test_actor_census.py`, `tests/pipeline/test_actor_unit_inventory.py` (`python -B -m unittest discover -s tests/pipeline -p "test_actor_*.py"`).
+- Clips and events (ACT-04): `src/assets/native/actorClipEvents.ts`, `src/animation/actorClipPlayback.ts`, `src/assets/native/nativeClipPreview.ts`; tests `tests/unit/actorClipEvents.test.ts`, `tests/unit/actorClipPlayback.test.ts` (`pnpm vitest run tests/unit/actorClipEvents.test.ts tests/unit/actorClipPlayback.test.ts`).
 - Recipes: `recipes/native-musveren.json`, `recipes/native-npc-profiles.json`. Notes: `docs/NATIVE_NPC_PROFILES.md`.
