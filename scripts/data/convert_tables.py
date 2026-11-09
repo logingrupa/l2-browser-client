@@ -27,7 +27,7 @@ import reference_client_guard
 from reference_client_guard import require_reference_client
 from table_name_index_sources import NAME_INDEX_SOURCES
 
-DECODE_TABLE_ALGORITHM_VERSION = 2
+DECODE_TABLE_ALGORITHM_VERSION = 3
 LANE_NAME = 'data-ui'
 PART_NAME = 'data'
 DECODE_STEP = 'decode'
@@ -85,13 +85,6 @@ def decode_table_manifest(client_access, table, config):
                                  LOCAL_DESCRIPTOR_ROUTE)
 
 
-def native_table_manifest_bytes(manifest):
-    try:
-        return canonical_json_bytes(manifest)
-    except ValueError as error:
-        raise FormatError(f'native table {manifest["table"]} holds a value JSON cannot carry: {error}') from error
-
-
 def write_table_to_store(output_root, table, manifest_bytes, manifest):
     manifest_sha256 = sha256_hex(manifest_bytes)
     manifest_relative = f'{TABLES_CATALOG_SLICE}/{manifest_sha256}/{table}.json'
@@ -112,13 +105,12 @@ def convert_table_unit(project_root, client_access, table, output_root, ledger, 
     step_directory = ledger.begin(unit_key, fingerprint)
     try:
         manifest = decode_table_manifest(client_access, table, config)
-        manifest_bytes = native_table_manifest_bytes(manifest)
     except HairTableUndecodedError as error:
         return seal_unit_decode_gap(project_root, ledger, unit_key, fingerprint, step_directory, PART_NAME, inputs, config, error,
                                     error.reason)
     except (FormatError, UnicodeDecodeError) as error:
         return seal_unit_decode_failure(project_root, ledger, unit_key, fingerprint, step_directory, PART_NAME, inputs, config, error)
-    record, manifest_path = write_table_to_store(output_root, table, manifest_bytes, manifest)
+    record, manifest_path = write_table_to_store(output_root, table, canonical_json_bytes(manifest), manifest)
     seal_unit_manifest(project_root, ledger, unit_key, fingerprint, inputs, config, manifest_path, record)
     return {'unit': unit_key, 'status': 'decoded', 'recordCount': record['recordCount'], 'manifest': record['manifest']}
 

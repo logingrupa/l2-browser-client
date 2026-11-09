@@ -13,8 +13,9 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from native_assets import Converter
 from native_assets_lib.animation import add_animations, decode_tracks
 from native_assets_lib.gltf import Document
+from hash_reference_client_tree import canonical_json_bytes
 from native_catalog.tables import (
-    CRYPTO_SOURCE, MTX_DEFINITION_EVIDENCE, RGBA_DEFINITION_EVIDENCE, SCHEMA_ROOT, decode_table,
+    CRYPTO_SOURCE, MTX_DEFINITION_EVIDENCE, NON_FINITE_FLOAT32_KEY, RGBA_DEFINITION_EVIDENCE, SCHEMA_ROOT, decode_table,
     read_nodes, read_value, table_definition_pins, table_source_path,
 )
 from native_catalog.ue2 import FormatError, Package, Reader, animation_layout
@@ -79,6 +80,15 @@ class PresentationFormatTests(unittest.TestCase):
         for size in range(4):
             with self.subTest(size=size), self.assertRaisesRegex(FormatError, 'Truncated'):
                 read_value(Reader(b'\xff' * size), 'RGBA')
+
+    def test_float_keeps_finite_values_and_writes_non_finite_source_bytes_under_one_key(self):
+        reader = Reader(bytes.fromhex('0030acc5ffffffff0000807f7e'))
+        values = [read_value(reader, 'FLOAT') for _ in range(3)]
+        self.assertEqual(values, [-5510.0, {NON_FINITE_FLOAT32_KEY: 'FFFFFFFF'}, {NON_FINITE_FLOAT32_KEY: '0000807F'}])
+        self.assertEqual(reader.number('B'), 0x7e)
+        self.assertEqual(json.loads(canonical_json_bytes(values)), values)
+        with self.assertRaisesRegex(FormatError, 'Truncated'):
+            read_value(Reader(b'\xff' * 3), 'FLOAT')
 
     def test_npcname_source_requires_the_pattern_and_an_unambiguous_language(self):
         pattern = r'npcname-[\w]+\.dat'

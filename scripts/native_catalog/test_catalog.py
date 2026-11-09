@@ -8,7 +8,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from native_catalog.cli import digest, json_bytes, parse_umodel_listing, safe_output, within
-from native_catalog.tables import decode_table, SCHEMA_ROOT, CRYPTO_SOURCE
+from native_catalog.tables import decode_table, NON_FINITE_FLOAT32_KEY, SCHEMA_ROOT, CRYPTO_SOURCE
 from native_catalog.ue2 import FormatError, Package, Reader, summary
 from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH
 
@@ -138,6 +138,17 @@ class ClientReadingTableTests(unittest.TestCase):
         self.assertEqual([slot['tag_?'] for slot in slots], [1] * 127 + [0] * 73)
         self.assertEqual((slots[0]['name'], slots[126]['name']), ('Bartz', '방송용'))
         self.assertTrue(all((slot['name'], slot['desc']) == ('', '') for slot in slots[127:]))
+
+    def test_questname_keeps_the_three_nan_words_as_their_source_bytes(self):
+        table = self.decode_exactly('questname', 'questname-e.dat')
+        quests = table['data']['quest']
+        self.assertEqual((table['data']['data'], len(quests), table['consumedBytes']), (2050, 2050, 1028383))
+        tagged_words = [(index, location, axis, value) for index, quest in enumerate(quests)
+                        for location in ('target_loc', 'start_npc_loc') for axis, value in quest[location].items() if isinstance(value, dict)]
+        self.assertEqual(tagged_words, [(730, 'start_npc_loc', 'start_npc_loc_z', {NON_FINITE_FLOAT32_KEY: 'FFFFFFFF'}),
+                                        (735, 'start_npc_loc', 'start_npc_loc_y', {NON_FINITE_FLOAT32_KEY: 'FFFFFFFF'}),
+                                        (736, 'start_npc_loc', 'start_npc_loc_y', {NON_FINITE_FLOAT32_KEY: 'FFFFFFFF'})])
+        self.assertEqual({quests[index]['id'] for index, *_ in tagged_words}, {422})
 
 
 if __name__ == '__main__':

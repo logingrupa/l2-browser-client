@@ -196,7 +196,12 @@ until the 20_20 chain retires.
 `{kind: "native-table", schemaVersion: 1, table, sourcePath, sourceSha256,
 descriptorSha256, route, recordCount, records}`. `route` is
 `local-descriptor` or `elbera-adapter`; `recordCount` equals the length of
-`records` and the catalog record's `recordCount`.
+`records` and the catalog record's `recordCount`. A `FLOAT` field whose
+float32 is NaN or infinite is written as
+`{"nonFiniteFloat32SourceBytes": "<8 uppercase hex, source byte order>"}`
+(`NON_FINITE_FLOAT32_KEY` in `scripts/native_catalog/tables.py`), so the
+canonical JSON keeps the client's exact bits; every finite float stays a JSON
+number.
 
 `native-window-layout` v1, at `/l2/windows/<sha>/window.json`, one per root
 window of `interface.xdat` (the original Interlude interface, DEC-OWN-10):

@@ -12,7 +12,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(ROOT / 'scripts' / 'data'))
 import table_name_indexes
-from convert_tables import LOCAL_DESCRIPTOR_ROUTE, native_table_manifest_bytes, write_table_to_store
+from convert_tables import LOCAL_DESCRIPTOR_ROUTE, write_table_to_store
+from hash_reference_client_tree import canonical_json_bytes
 from native_store.catalog_writer import validate_catalog_record
 from native_store.gap_rows import write_gap_rows
 from native_store.store_paths import lane_store_root, lane_work_root
@@ -110,7 +111,7 @@ class WriteTableNameIndexTests(unittest.TestCase):
         return UnitLedger(lane_work_root(self.project_root, 'data-ui'), 'name-index', NAME_INDEX_ALGORITHM_VERSION)
 
     def store_source_table(self, manifest):
-        record, manifest_path = write_table_to_store(self.output_root, manifest['table'], native_table_manifest_bytes(manifest), manifest)
+        record, manifest_path = write_table_to_store(self.output_root, manifest['table'], canonical_json_bytes(manifest), manifest)
         return record, manifest_path
 
     def tables_records_by_id(self):
