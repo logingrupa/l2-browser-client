@@ -1,6 +1,7 @@
 import { sha256 } from "../assets/package/readAssetPackage";
 import { nativeResourceUrl } from "../assets/native/nativeResourceUrl";
 import { readNativeCatalog } from "../assets/native/readNativeCatalog";
+import { buildCastSkillIndex, lookupCastSkill, reviewedPowerStrikeSkill, selectedCastSkill, type SkillEffectComponentIdentity } from "./castSkillIndex";
 
 export interface EffectResource {
   assetId: string; object: string; file: string; sha256: string; bytes: number;
@@ -27,6 +28,7 @@ export interface EffectBundle {
 }
 export const effectObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
+export const simulatedEffectEmitterClasses: ReadonlySet<string> = new Set(["Engine.MeshEmitter", "Engine.SpriteEmitter"]);
 const digest = (value: unknown): value is string => typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
 const named = (value: unknown): value is string => typeof value === "string" && value.length > 0 && value.length < 512;
 const integer = (value: unknown): value is number => Number.isSafeInteger(value) && Number(value) >= 0;
@@ -78,9 +80,10 @@ export function parseEffectManifest(input: unknown): EffectManifest {
       const key = `${primitive.meshIndex}:${primitive.primitiveIndex}`;
       requireValue(!primitives.has(key), "duplicate primitive binding"); primitives.add(key);
     }
+    requireValue(named(component.class), "component has no emitter class");
     if (component.class === "Engine.MeshEmitter") requireValue(component.bindings.mesh && primitives.size > 0, "mesh component has no original primitive");
     else if (component.class === "Engine.SpriteEmitter") requireValue(component.bindings.texture && !component.bindings.mesh, "sprite component has no original texture");
-    else throw new Error("Effect component type is not supported.");
+    else requireValue(!component.bindings.mesh && !component.bindings.texture, "unsimulated component binds a mesh or texture");
   }
   requireValue(Array.isArray(input.textureGraph) && input.textureGraph.length <= 256, "invalid texture graph");
   const textures = new Set<string>();
@@ -102,21 +105,19 @@ async function verified(path: string, expected: { sha256: string; bytes?: number
   signal.throwIfAborted(); return bytes;
 }
 
-export const powerStrikeEffectBundleId = "interlude:skill:3:level:1:raw-source-dispatch";
-
-export async function loadNativeEffectComponents(signal: AbortSignal): Promise<EffectBundle | null> {
+export async function loadNativeSkillEffectComponents(signal: AbortSignal, skill: SkillEffectComponentIdentity): Promise<EffectBundle | null> {
   signal.throwIfAborted();
   const { effectComponents } = await readNativeCatalog(signal);
-  requireValue(effectComponents.length <= 64, "invalid effect catalog entries");
-  const entries = effectComponents.filter(row => effectObject(row) && row.id === powerStrikeEffectBundleId);
-  if (!entries.length) return null;
-  requireValue(entries.length === 1 && effectObject(entries[0]) && digest(entries[0].manifestSha256), "ambiguous selected effect");
-  const entry = entries[0], manifestSha256 = entry.manifestSha256 as string;
-  const base = `/l2/effects/${manifestSha256}/`;
+  const selected = lookupCastSkill(buildCastSkillIndex(effectComponents), skill.skillId, skill.level);
+  if (!selected) return null;
+  const entry = selected.entry;
+  requireValue(digest(entry.manifestSha256), "selected effect has no manifest SHA-256");
+  requireValue(entry.bundleId === undefined || named(entry.bundleId), "selected effect bundle id is invalid");
+  const manifestSha256 = entry.manifestSha256, base = `/l2/effects/${manifestSha256}/`;
   requireValue(entry.manifest === base + "manifest.json", "invalid manifest path");
-  const manifest = parseEffectManifest(JSON.parse(new TextDecoder().decode(await verified(entry.manifest as string,
+  const manifest = parseEffectManifest(JSON.parse(new TextDecoder().decode(await verified(entry.manifest,
     { sha256: manifestSha256 }, signal, 2 * 1024 * 1024))));
-  requireValue((manifest.bundleId ?? manifest.id) === entry.id, "bundle identity differs");
+  requireValue((manifest.bundleId ?? manifest.id) === (entry.bundleId ?? entry.id), "bundle identity differs");
   return { manifest, manifestSha256, readResource: (resource, resourceSignal) => {
     const canonical = manifest.resources[resource.assetId];
     requireValue(canonical && canonical.sha256 === resource.sha256 && canonical.file === resource.file &&
@@ -124,6 +125,10 @@ export async function loadNativeEffectComponents(signal: AbortSignal): Promise<E
       JSON.stringify(canonical.source) === JSON.stringify(resource.source), "resource is not owned by this bundle");
     return verified(base + canonical.file, canonical, resourceSignal, 128 * 1024 * 1024);
   } };
+}
+
+export function loadNativeEffectComponents(signal: AbortSignal): Promise<EffectBundle | null> {
+  return loadNativeSkillEffectComponents(signal, selectedCastSkill(globalThis.location) ?? reviewedPowerStrikeSkill);
 }
 
 export interface EffectFrame { label: string; texture: EffectResource; uvScale: [number, number]; uvOffset: [number, number]; sourceTile: number | null }

@@ -292,7 +292,7 @@ class ReceiptTests(unittest.TestCase):
         patch.object(bundle, '_tool_pins', side_effect=lambda: copy.deepcopy(self.pins)).start()
         patch.object(bundle, '_extract_bundle', side_effect=self.extract).start()
 
-    def extract(self, client, request, output, save):
+    def extract(self, client, request, output, save, converter_output):
         self.calls += 1
         save('source/raw.bin', self.source.read_bytes())
         save('effect-source.json', bundle.json_bytes({'nativeRecipe': request, 'unsupportedRuntime': True}))

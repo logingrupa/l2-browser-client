@@ -1,7 +1,7 @@
 import {
   describeNativeCatalogLookup, itemCatalogKey, skillCatalogKey, windowCatalogKey, type NativeCatalogIndex, type NativeCatalogLookup,
 } from "../assets/native/nativeCatalogIndex";
-import { powerStrikeEffectBundleId } from "../effects/nativeEffectComponents";
+import { reviewedPowerStrikeSkill } from "../effects/castSkillIndex";
 import type { NativePowerStrikePreview } from "../effects/nativePowerStrikePreview";
 import type { DevGroup, DevSection } from "../ui/devSheet/DevSheet";
 import type { GameWorldAdapter } from "../world/GameWorldAdapter";
@@ -167,8 +167,8 @@ function attachOpenWindowGroup(context: SandboxCommandSheetContext): void {
 }
 
 function startsStagedPowerStrike(index: NativeCatalogIndex, event: Extract<WorldEvent, { type: "skill-cast" }>): boolean {
-  const lookup = index.lookup(skillCatalogKey(event.skillId, event.level));
-  return lookup.status === "converted" && "effectComponentId" in lookup.record && lookup.record.effectComponentId === powerStrikeEffectBundleId;
+  if (event.skillId !== reviewedPowerStrikeSkill.skillId || event.level !== reviewedPowerStrikeSkill.level) return false;
+  return index.lookup(skillCatalogKey(event.skillId, event.level)).status === "converted";
 }
 
 export function attachSandboxCommandSheet(context: SandboxCommandSheetContext): () => void {

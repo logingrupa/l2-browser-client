@@ -20,6 +20,8 @@ from actors.npc_requests import (ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX, CONVERT
                                  npc_sound_references, package_stem, serialized_animation_reference)
 from actors.npc_batch import (NpcSourceIdentities, npc_batch_plan, printed_batch_plan, read_census_and_npc_tables, run_npc_batch_slice,
                               shared_store_npc_ids)
+from actors.skill_effect_conversion import (SkillEffectConversionRun, convert_skill, convert_skill_batch_slice, printed_skill_outcome,
+                                            skill_outcomes_failed)
 from actors.npc_store_records import (MODEL_ARCHIVE_FILE_NAME, bundle_output_records, converted_model_store_files_and_record,
                                       PROFILE_MANIFEST_FILE_NAME, file_output_record, profile_bundle_store_files_and_record,
                                       profile_record_npc_ids)
@@ -49,18 +51,27 @@ NPC_ID_PATTERN = re.compile(r'^[0-9]{1,10}$')
 MAXIMUM_SAFE_INTEGER = 2 ** 53 - 1
 SLICE_LIMIT_PATTERN = re.compile(r'^[1-9][0-9]{0,5}$')
 NPC_BATCH_NAME = 'npcs'
-CONVERT_ACTORS_DESCRIPTION = ('Convert one NPC id, or the next slice of the NPC batch, from the decoded npcgrp and npcname rows into the '
-                              'actors lane store: model units through the pinned Converter and generated profile bundles, each a sealed '
-                              'ledger unit. --print-batch-plan prints the batch order and pack layout and writes nothing.')
+SKILL_BATCH_NAME = 'skills'
+CONVERT_ACTORS_DESCRIPTION = ('Convert one NPC id or one skill id and level, or the next slice of the NPC or skill batch, into the actors '
+                              'lane store: NPC model units and profile bundles, or skill visual roots as effect bundles, each a sealed ledger '
+                              'unit. --print-batch-plan prints the NPC batch order and pack layout and writes nothing.')
 
 
 class ConvertActorsError(ValueError):
     pass
 
 
-def npc_id_argument(text):
-    if not NPC_ID_PATTERN.fullmatch(text) or int(text) > MAXIMUM_SAFE_INTEGER:
-        raise argparse.ArgumentTypeError(f'--npc must match {NPC_ID_PATTERN.pattern} within the safe integer range: {text!r}')
+def table_id_argument(flag):
+    def parsed_table_id(text):
+        if not NPC_ID_PATTERN.fullmatch(text) or int(text) > MAXIMUM_SAFE_INTEGER:
+            raise argparse.ArgumentTypeError(f'{flag} must match {NPC_ID_PATTERN.pattern} within the safe integer range: {text!r}')
+        return int(text)
+    return parsed_table_id
+
+
+def skill_level_argument(text):
+    if not SLICE_LIMIT_PATTERN.fullmatch(text):
+        raise argparse.ArgumentTypeError(f'--level must be an unpadded integer of at least 1: {text!r}')
     return int(text)
 
 
@@ -329,19 +340,36 @@ def run_batch_slice(client_access, output_root, converter, limit):
     return outcomes
 
 
+def run_skill_conversion(client_access, output_root, arguments):
+    run = SkillEffectConversionRun(REPOSITORY_ROOT, client_access, output_root, lane_work_root(REPOSITORY_ROOT, LANE_NAME))
+    if arguments.batch == SKILL_BATCH_NAME:
+        outcomes, summary = convert_skill_batch_slice(
+            run, arguments.limit, lambda: require_batch_preflight(REPOSITORY_ROOT, LANE_NAME, BATCH_MINIMUM_FREE_BYTES))
+    else:
+        outcomes, summary = convert_skill(run, arguments.skill, arguments.level)
+    for outcome in outcomes:
+        print(json.dumps(printed_skill_outcome(outcome), sort_keys=True), flush=True)
+    print(json.dumps(summary, sort_keys=True), flush=True)
+    return skill_outcomes_failed(outcomes)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=CONVERT_ACTORS_DESCRIPTION)
     parser.add_argument('--client', type=Path, required=True)
     parser.add_argument('--output', type=Path, default=REPOSITORY_ROOT / 'artifacts' / 'lane-store' / LANE_NAME / 'l2')
     parser.add_argument('--umodel', type=Path, default=UMODEL)
     mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument('--npc', type=npc_id_argument)
-    mode.add_argument('--batch', choices=[NPC_BATCH_NAME])
+    mode.add_argument('--npc', type=table_id_argument('--npc'))
+    mode.add_argument('--skill', type=table_id_argument('--skill'))
+    mode.add_argument('--batch', choices=[NPC_BATCH_NAME, SKILL_BATCH_NAME])
     mode.add_argument('--print-batch-plan', action='store_true')
+    parser.add_argument('--level', type=skill_level_argument)
     parser.add_argument('--limit', type=slice_limit_argument)
     arguments = parser.parse_args(argv)
     if (arguments.batch is None) != (arguments.limit is None):
         parser.error('--limit is required with --batch and only valid with --batch')
+    if (arguments.skill is None) != (arguments.level is None):
+        parser.error('--level is required with --skill and only valid with --skill')
     try:
         client_access = require_reference_client(arguments.client)
         if arguments.print_batch_plan:
@@ -350,6 +378,8 @@ def main(argv=None):
         output_root = require_converter_output(REPOSITORY_ROOT, arguments.output)
         require_batch_preflight(REPOSITORY_ROOT, LANE_NAME, BATCH_MINIMUM_FREE_BYTES)
         run_at_below_normal_priority()
+        if arguments.skill is not None or arguments.batch == SKILL_BATCH_NAME:
+            return 1 if run_skill_conversion(client_access, output_root, arguments) else 0
         converter = Converter(client_access.root, output_root.parent / CONVERTER_WORK_FOLDER, arguments.umodel)
         if arguments.batch:
             outcomes = run_batch_slice(client_access, output_root, converter, arguments.limit)

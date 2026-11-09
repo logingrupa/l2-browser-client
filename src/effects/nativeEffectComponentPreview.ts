@@ -8,8 +8,6 @@ export interface EffectAnchorView { readonly root: TransformNode; isValid(): boo
 export interface EffectSelection { component: string | null; frame: number; colorKey: number | null }
 type Loaded = Awaited<ReturnType<typeof loadEffectComponent>>;
 
-/** Explicit source-component inspection. The gameplay adapter and original
- * animation/audio clocks remain independent; this never dispatches a skill. */
 export function createNativeEffectComponentPreview(scene: Scene, bundle: EffectBundle,
   anchor: () => EffectAnchorView | null, alive: () => boolean, signal: AbortSignal,
   load: typeof loadEffectComponent = loadEffectComponent) {
@@ -79,8 +77,6 @@ export function createNativeEffectComponentPreview(scene: Scene, bundle: EffectB
     },
     update() {
       if (!current || disposed) return;
-      // Read the small owned-handle contract rather than allocating the full
-      // diagnostic entity/pose snapshot on every animation frame.
       const latest = anchor();
       if (!attached?.isValid() || !latest?.isValid() || latest.root !== attached.root || current.root.isDisposed()) {
         clear(); state = "failed"; error = "The effect's source attachment is no longer owned by this character."; publish(); return;
@@ -104,7 +100,8 @@ export function createNativeEffectComponentPreview(scene: Scene, bundle: EffectB
       const selected = component();
       if (attached?.isValid()) attached.root.computeWorldMatrix(true);
       return { policy: "manual-source-component" as const, status: state, error, selection: { ...selection },
-        manifestSha256: bundle.manifestSha256, sourceActor: selected?.actor ?? null,
+        manifestSha256: bundle.manifestSha256, manifestId: bundle.manifest.id ?? null,
+        components: bundle.manifest.components.map(row => ({ object: row.object, class: row.class, actor: row.actor })), sourceActor: selected?.actor ?? null,
         sourceComponent: selected?.object ?? null, sourcePointer: selected?.sourcePointer ?? null,
         stages: bundle.manifest.actors.find(row => row.object === selected?.actor)?.dispatchStages ?? [],
         anchorId: attached?.root.id ?? null, anchorUniqueId: attached?.root.uniqueId ?? null,

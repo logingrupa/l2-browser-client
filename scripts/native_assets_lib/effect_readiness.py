@@ -4,6 +4,7 @@ from collections import Counter
 from pathlib import Path, PurePosixPath
 import struct
 
+from native_assets_lib.asset_manifest import SUPPORTED_ASSET_MANIFEST_VERSIONS
 from native_assets_lib.gltf import json_bytes
 from native_store.store_paths import confined_child_path, refuse_reparse_points, require_portable_relative_path
 from native_assets_lib.guard_clauses import require_condition
@@ -88,7 +89,7 @@ def asset_records(bundle):
             claimed.add(name.casefold()); bundle.read(name)
         require_condition(sha256_hex_digest(bundle.read(item['archive'])) == item['archiveSha256'], 'Asset archive hash differs')
         asset = bundle.json(item['manifest'])
-        require_condition(asset.get('schemaVersion') == 1 and asset['id'] == item['id'] and asset['kind'] == item['kind'] and
+        require_condition(asset.get('schemaVersion') in SUPPORTED_ASSET_MANIFEST_VERSIONS and asset['id'] == item['id'] and asset['kind'] == item['kind'] and
                 asset['source']['object'].casefold() == key, 'Converted asset identity differs: ' + item['object'])
         prefix = PurePosixPath(item['manifest']).parent
         internal = set()

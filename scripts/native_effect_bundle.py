@@ -1,9 +1,4 @@
 #!/usr/bin/env python3
-"""Repeatable raw native effects with table or reviewed binary dispatch evidence.
-
-Pinned switch and class-literal checks establish bounded source associations;
-they do not execute native dispatch or certify timing, attachment or playback.
-"""
 import argparse
 import copy
 import hashlib
@@ -33,6 +28,11 @@ MATERIAL_CLASSES = {'Texture', 'Shader', 'FinalBlend', 'TexPanner', 'TexRotator'
     'TexOscillator', 'TexScaler', 'TexEnvMap', 'Combiner', 'ColorModifier',
     'ConstantColor', 'FadeColor', 'MaterialSwitch', 'MaterialSequence', 'TexCoordSource'}
 ASSET_KINDS = {'StaticMesh': 'model', 'SkeletalMesh': 'model', 'Texture': 'texture', 'Sound': 'audio'}
+CONVERTED_EMITTER_CLASSES = frozenset({'Engine.SpriteEmitter', 'Engine.MeshEmitter', 'Engine.BeamEmitter', 'Engine.RibbonEmitter',
+    'Engine.VertMeshEmitter'})
+UNCONVERTED_EMITTER_REASON = 'Emitter record retained; its class has no converter route, so its references are not converted.'
+NATIVE_EFFECT_BUNDLE_DESCRIPTION = ('Repeatable raw native effects with table or reviewed binary dispatch evidence. Pinned switch and '
+    'class-literal checks establish bounded source associations; they do not execute native dispatch or certify timing, attachment or playback.')
 
 
 def digest(value):
@@ -328,7 +328,7 @@ def _normal_reason(error, client, output):
     return re.sub(r'([/\\]\.work[/\\])[^/\\\s]+', r'\1<job>', value)
 
 
-def _extract_bundle(client, recipe, output, save):
+def _extract_bundle(client, recipe, output, save, converter_output):
     dispatch = validate_source_dispatch(client, recipe)
     skill_table, sound_table = decode_table(client, 'skillgrp'), decode_table(client, 'skillsoundgrp')
     skill, sounds = select_exact_skill_and_sound_rows(skill_table, sound_table, recipe['skillId'], recipe['level'])
@@ -354,6 +354,10 @@ def _extract_bundle(client, recipe, output, save):
         definition = copy.deepcopy(defaults.get(record['object']))
         for child in definition['children']:
             child['effectiveProperties'] = merge_typed_defaults_replacing_raw_values_whole(defaults.get(child['class'])['effectiveProperties'], child['properties'])
+            if child['class'] not in CONVERTED_EMITTER_CLASSES:
+                gaps.append({'feature': 'emitter-class-unconverted', 'object': child['object'], 'class': child['class'],
+                    'reason': UNCONVERTED_EMITTER_REASON})
+                continue
             pending.extend((child['object'], field, expected, ref)
                 for field, expected, ref in references(child['effectiveProperties']))
         pending.extend((definition['object'], field, expected, ref)
@@ -369,7 +373,7 @@ def _extract_bundle(client, recipe, output, save):
             pending.append(('skillsoundgrp', field, 'Sound', reference))
     if root:
         pending.append(('skillgrp', 'description', 'SkillVisualEffect', root['object']))
-    converter = Converter(client, output / '.work' / 'converted', _tool_paths()[0])
+    converter = Converter(client, converter_output, _tool_paths()[0])
     seen_edges = set()
     while pending:
         from_object, field, expected, reference = pending.pop(0)
@@ -541,7 +545,7 @@ def verify_effect_bundle(client: Path, output: Path):
     return _summary(_verify(client, output, _tool_pins()), output, True)
 
 
-def migrate_effect_bundle(client: Path, recipe: dict, output: Path):
+def migrate_effect_bundle(client: Path, recipe: dict, output: Path, converter_output: Path | None = None):
     client, output = Path(client).resolve(strict=True), Path(output).resolve()
     if not client.is_dir() or output.is_relative_to(client) or client.is_relative_to(output):
         raise FormatError('Effect output must be outside an existing read-only client directory')
@@ -590,7 +594,7 @@ def migrate_effect_bundle(client: Path, recipe: dict, output: Path):
         artifacts[name] = {**result, 'file': name}
         return name
 
-    data = _extract_bundle(client, recipe, output, save)
+    data = _extract_bundle(client, recipe, output, save, converter_output or output / '.work' / 'converted')
     _check_sources(client, data['sourceFiles'])
     if _tool_pins() != pins:
         raise FormatError('Effect migration implementation/tool changed while the job ran; rerun the job')
@@ -605,7 +609,7 @@ def migrate_effect_bundle(client: Path, recipe: dict, output: Path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=NATIVE_EFFECT_BUNDLE_DESCRIPTION)
     parser.add_argument('--client', type=Path, required=True)
     parser.add_argument('--recipe', type=Path)
     parser.add_argument('--output', type=Path, required=True)

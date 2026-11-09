@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 3,
+  "listVersion": 4,
   "reasons": [
     "conversion-pending",
     "mesh-package-not-in-client:<package>",
@@ -12,6 +12,9 @@
     "animation-outside-mesh-package:<package>",
     "converter-refused:<message>",
     "class-closure-over-limit:<count>",
-    "profile-bundle-capacity-exceeded"
+    "profile-bundle-capacity-exceeded",
+    "skill-visual-reference-unqualified",
+    "effect-bundle-class-limit:<count>",
+    "emitter-class-unported:<class>"
   ]
 }

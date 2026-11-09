@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "listVersion": 1,
+  "simulated": ["Engine.MeshEmitter", "Engine.SpriteEmitter"],
+  "source": "src/effects/nativeEffectComponents.ts simulatedEffectEmitterClasses, run by src/effects/loadEffectComponent.ts"
+}

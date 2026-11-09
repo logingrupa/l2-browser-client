@@ -10,7 +10,7 @@ import { readNativeCatalog, type NativeCatalog } from "../../../src/assets/nativ
 import { createPackagePreview, type PackagePreview } from "../../../src/assets/package/PackagePreview";
 import type { AssetPackage } from "../../../src/assets/package/readAssetPackage";
 import { loadEffectComponent, type LoadedEffectComponent } from "../../../src/effects/loadEffectComponent";
-import { loadNativeEffectComponents } from "../../../src/effects/nativeEffectComponents";
+import { loadNativeSkillEffectComponents, simulatedEffectEmitterClasses } from "../../../src/effects/nativeEffectComponents";
 import { createWebGPUEngine } from "../../../src/engine/createWebGPUEngine";
 
 export interface LoadCheckHarnessKeyResult {
@@ -98,15 +98,14 @@ export async function checkItemLoadKey(page: LoadCheckPage, key: string, record:
 }
 
 export async function checkSkillLoadKey(page: LoadCheckPage, key: string, record: NativeSkillCatalogRecord): Promise<LoadCheckHarnessKeyResult> {
-  const bundle = await loadNativeEffectComponents(page.signal);
-  if (bundle === null || (bundle.manifest.bundleId ?? bundle.manifest.id) !== record.effectComponentId) {
-    throw new Error(`effect component ${record.effectComponentId} is not in the served bundle`);
-  }
-  if (bundle.manifest.components.length === 0) throw new Error(`${key} effect component ${record.effectComponentId} has no emitter components`);
+  const bundle = await loadNativeSkillEffectComponents(page.signal, record);
+  if (bundle === null) throw new Error(`effect component ${record.effectComponentId} is not in the served catalog`);
+  const simulatedComponents = bundle.manifest.components.filter(component => simulatedEffectEmitterClasses.has(component.class));
+  if (simulatedComponents.length === 0) throw new Error(`${key} effect component ${record.effectComponentId} has no simulated emitter components`);
   const scene = await page.scene();
   const loadedComponents: LoadedEffectComponent[] = [];
   try {
-    for (const component of bundle.manifest.components) {
+    for (const component of simulatedComponents) {
       loadedComponents.push(await loadEffectComponent(scene, bundle, component, { frameIndex: 0 }, page.signal));
     }
   } finally {

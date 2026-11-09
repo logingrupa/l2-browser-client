@@ -8,7 +8,7 @@ import type { Scene } from "@babylonjs/core/scene";
 import { GLTFLoaderAnimationStartMode } from "@babylonjs/loaders/glTF/glTFFileLoader";
 import "@babylonjs/loaders/glTF";
 import { sha256, validatePackageModel } from "../assets/package/readAssetPackage";
-import { effectFrames, effectObject, type EffectBundle, type EffectComponent, type EffectFrame, type EffectPrimitive, type EffectResource } from "./nativeEffectComponents";
+import { effectFrames, effectObject, simulatedEffectEmitterClasses, type EffectBundle, type EffectComponent, type EffectFrame, type EffectPrimitive, type EffectResource } from "./nativeEffectComponents";
 import { createNativeEffectMaterial, type NativeEffectMaterial } from "./nativeEffectMaterial";
 
 export interface EffectComponentSizePolicy {
@@ -68,8 +68,6 @@ function sizePolicy(component: EffectComponent): EffectComponentSizePolicy {
     actorDrawScaleApplied: false, nativeSizeSemanticsVerified: false };
 }
 
-/** Match complete static primitives and their base embedded PNG identity before
- * the loader can request resources. Native source names do not select a frame. */
 async function modelSource(bytes: Uint8Array<ArrayBuffer>, component: EffectComponent, bundle: EffectBundle): Promise<ModelSource> {
   const info = validatePackageModel(bytes);
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), jsonSize = view.getUint32(12, true);
@@ -137,8 +135,6 @@ async function modelSource(bytes: Uint8Array<ArrayBuffer>, component: EffectComp
   return { primitives, nodes: doc.nodes };
 }
 
-/** Disabled, unit-local presentation. The manager alone parents/enables it.
- * Source GLB coordinates/UVs and authored transforms are never rewritten. */
 export async function loadEffectComponent(scene: Scene, bundle: EffectBundle, input: EffectComponent,
   options: { frameIndex: number; colorKey?: number | null }, signal: AbortSignal): Promise<LoadedEffectComponent> {
   signal.throwIfAborted(); requireValue(!scene.isDisposed, "scene is disposed.");
@@ -146,7 +142,7 @@ export async function loadEffectComponent(scene: Scene, bundle: EffectBundle, in
   const matches = bundle.manifest.components.filter(row => row.object === component.object);
   requireValue(matches.length === 1 && JSON.stringify(matches[0]) === JSON.stringify(component), "component differs from its bundle record.");
   const sprite = component.class === "Engine.SpriteEmitter";
-  requireValue(sprite || component.class === "Engine.MeshEmitter", "unsupported component class.");
+  requireValue(simulatedEffectEmitterClasses.has(component.class), "unsupported component class.");
   const policy = sizePolicy(component);
   const primitiveTextures = new Set(component.bindings.primitiveMaterials.map(row => row.textureResourceKey));
   requireValue(sprite || primitiveTextures.size === 1, "multiple independent primitive texture/frame routes are not supported in one preview.");
@@ -171,8 +167,6 @@ export async function loadEffectComponent(scene: Scene, bundle: EffectBundle, in
   const dispose = () => {
     if (disposed) return;
     disposed = true; combined.removeEventListener("abort", dispose); scene.onDisposeObservable.remove(sceneObserver); lifetime.abort();
-    // Detach foreign descendants before any owned container recursion. Never
-    // dispose a caller's source anchor, later material or later attached node.
     for (const node of owned) if (!node.isDisposed()) for (const child of node.getChildren(undefined, true)) {
       if (child instanceof TransformNode && !owned.has(child)) child.setParent(null);
     }
@@ -184,8 +178,6 @@ export async function loadEffectComponent(scene: Scene, bundle: EffectBundle, in
     if (sprite) {
       const dimensions = policy.spriteDimensionsMetres!;
       const plane = MeshBuilder.CreatePlane(`${root.id}:sprite`, dimensions, scene);
-      // Keep our unbound geometry out of scene material-dirty traversal. It
-      // would otherwise allocate Babylon's fallback material during setup.
       scene.removeMesh(plane);
       plane.parent = basis; plane.billboardMode = Mesh.BILLBOARDMODE_ALL; owned.add(plane); meshes.push(plane);
       records.push({ mesh: plane, primitive: null, renderCallbacks: 0 });
@@ -234,8 +226,6 @@ export async function loadEffectComponent(scene: Scene, bundle: EffectBundle, in
     }
     if (container && synthetic) {
       const enabled = synthetic.isEnabled(); synthetic.setEnabled(false);
-      // addAllToScene requires a container-contained parent hierarchy. Add it
-      // disabled first, then attach only its synthetic root to our basis node.
       container.addAllToScene(); synthetic.parent = basis; synthetic.setEnabled(enabled);
     } else for (const mesh of meshes) scene.addMesh(mesh);
     const handle: LoadedEffectComponent = {

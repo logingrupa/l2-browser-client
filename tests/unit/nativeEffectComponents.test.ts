@@ -96,7 +96,7 @@ describe("optional effect metadata and lazy resource loading", () => {
   });
   it("rejects duplicate selected catalog IDs before fetching either manifest", async () => {
     const entry = retainedCatalogEntry(), fetcher = serveFetchedFiles(new Map([["/l2/catalog.json", encodeJson({ schemaVersion: 1, models: [], effectComponents: [entry, entry] })]]));
-    await expect(loadNativeEffectComponents(liveSignal())).rejects.toThrow(/ambiguous selected effect/);
+    await expect(loadNativeEffectComponents(liveSignal())).rejects.toThrow(/has two effect component records/);
     expect(fetcher).toHaveBeenCalledOnce();
   });
   it.each(["/l2/effects/wrong/manifest.json", "https://example.invalid/manifest.json", "/l2/effects/../manifest.json"])("rejects selected manifest path %s before a payload request", async path => {

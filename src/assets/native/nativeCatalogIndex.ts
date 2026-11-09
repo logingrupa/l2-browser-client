@@ -6,6 +6,7 @@ import {
   type NativeTableCatalogRecord, type NativeTileManifestCatalogRecord, type NativeWindowCatalogRecord,
 } from "./nativeCatalogRecords";
 import type { NativeCatalog } from "./readNativeCatalog";
+import { parseSkillEffectComponentId } from "../../effects/castSkillIndex";
 import { readNativeCoverageUnlessAbsent, type NativeCoverageStatus } from "./readNativeCoverage";
 
 export interface NativeNpcCatalogRecord {
@@ -31,7 +32,6 @@ export interface NativeCatalogIndex {
   keys(prefix: string): readonly string[];
 }
 
-const skillEffectComponentPattern = /^interlude:skill:(\d+):level:(\d+):/;
 const sectionTilePattern = /^map-(\d{2})-(\d{2})-section$/;
 const windowsNotConvertedReason = "interface windows are not converted yet (UI-01)";
 export const notInCatalogReason = "not in catalog";
@@ -136,9 +136,9 @@ function skillLookups(effectComponents: readonly unknown[]): NativeCatalogLookup
   const lookups: NativeCatalogLookup[] = [];
   for (const value of effectComponents) {
     const component = catalogRecordIdentity(value, "effect component");
-    const match = skillEffectComponentPattern.exec(component.id);
-    if (!match) continue;
-    const skillId = Number(match[1]), level = Number(match[2]);
+    const identity = parseSkillEffectComponentId(component.id);
+    if (!identity) continue;
+    const { skillId, level } = identity;
     lookups.push({ status: "converted", key: skillCatalogKey(skillId, level), record: { skillId, level, effectComponentId: component.id } });
   }
   return lookups;
