@@ -143,13 +143,13 @@
    "table": "hairaccessorylocgrp"
   },
   {
-   "countSource": null,
+   "countSource": "scripts/data/hair_table_adapter.py (Elbera check_hair_selection_native.py at 12c9656) on lock-equal E:/Lineage2-client/system/hairgrp.dat",
    "descriptorLayout": false,
    "file": "hairgrp.dat",
    "layout": null,
-   "recordCount": "unknown",
+   "recordCount": 15,
    "route": "elbera",
-   "status": "Elbera parser present, unverified",
+   "status": "decoded by Elbera adapter, Elbera 07b24 proof, unverified on 4dd2",
    "table": "hairgrp"
   },
   {

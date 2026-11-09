@@ -7,10 +7,11 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from build_dat_table_inventory import (DECODED_TABLE_COUNT_SOURCE, ELBERA_EVIDENCE_COUNT_SOURCE, ELBERA_EVIDENCE_RECORD_COUNTS,
-    ELBERA_PARSER_PRESENT_STATUS, ELBERA_PARSER_SOURCES, LAYOUT_NOT_DECODED_STATUS, NOT_LOCK_EQUAL_STATUS, DatTableInventoryError,
+from build_dat_table_inventory import (DECODED_TABLE_COUNT_SOURCE, ELBERA_ADAPTER_COUNT_SOURCE, ELBERA_ADAPTER_DECODED_STATUS,
+    ELBERA_EVIDENCE_COUNT_SOURCE, ELBERA_EVIDENCE_RECORD_COUNTS, ELBERA_PARSER_PRESENT_STATUS, ELBERA_PARSER_SOURCES, LAYOUT_NOT_DECODED_STATUS, NOT_LOCK_EQUAL_STATUS, DatTableInventoryError,
     classify_dat_table, count_descriptor_linked_table, elbera_parser_presence, lock_equal_source_sha256,
     validate_dat_table_inventory)
+from data.hair_table_adapter import ELBERA_HAIR_FIELD_PROOF, HAIR_TABLE_UNDECODED_REASONS
 from native_catalog.table_source_resolver import TableSourceResolutionError, descriptor_layout_links
 from native_catalog.tables import TABLES
 from native_store.catalog_writer import is_table_name_index_id
@@ -131,9 +132,25 @@ class CommittedDatTableInventoryTests(unittest.TestCase):
                 self.assertIsInstance(row['recordCount'], int, row['table'])
                 self.assertEqual(row['countSource'], f'{DECODED_TABLE_COUNT_SOURCE}system/{row["file"]}')
 
+    def test_elbera_adapter_counts_come_from_sealed_decodes_with_the_proof_label(self):
+        conversion_root = json.loads(COMMITTED_REFERENCE_CLIENT_LOCK_PATH.read_bytes())['conversionRoot']
+        self.assertTrue(ELBERA_ADAPTER_COUNT_SOURCE.endswith(f'lock-equal {conversion_root}/'))
+        for row in self.rows:
+            if row['status'] == ELBERA_ADAPTER_DECODED_STATUS:
+                self.assertEqual(row['route'], 'elbera', row['table'])
+                self.assertIsInstance(row['recordCount'], int, row['table'])
+                self.assertEqual(row['countSource'], f'{ELBERA_ADAPTER_COUNT_SOURCE}system/{row["file"]}')
+                self.assertIn(ELBERA_HAIR_FIELD_PROOF, row['status'])
+
+    def test_every_elbera_row_is_decoded_by_the_adapter_or_names_its_undecoded_reason(self):
+        for row in self.rows:
+            if row['route'] == 'elbera':
+                self.assertIn(row['status'], (ELBERA_ADAPTER_DECODED_STATUS, *HAIR_TABLE_UNDECODED_REASONS.values(),
+                                              ELBERA_PARSER_PRESENT_STATUS), row['table'])
+
     def test_counts_without_a_decode_are_elbera_evidence_or_unknown(self):
         for row in self.rows:
-            if row['route'] == 'local-decoded':
+            if row['route'] == 'local-decoded' or row['status'] == ELBERA_ADAPTER_DECODED_STATUS:
                 continue
             if row['table'] in ELBERA_EVIDENCE_RECORD_COUNTS:
                 self.assertEqual((row['recordCount'], row['countSource']),

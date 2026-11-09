@@ -51,11 +51,16 @@ def seal_unit_manifest(project_root, ledger, unit_key, fingerprint, inputs, conf
 
 
 def seal_unit_decode_failure(project_root, ledger, unit_key, fingerprint, step_directory, part_name, inputs, config, error):
+    return seal_unit_decode_gap(project_root, ledger, unit_key, fingerprint, step_directory, part_name, inputs, config, error,
+                                DECODE_FAILED_REASON_PREFIX + type(error).__name__)
+
+
+def seal_unit_decode_gap(project_root, ledger, unit_key, fingerprint, step_directory, part_name, inputs, config, error, reason):
     error_bytes = canonical_json_bytes({'errorClass': type(error).__name__, 'message': str(error)})
     error_path = step_directory / DECODE_ERROR_RECORD_NAME
     error_path.write_bytes(error_bytes)
     gap_row = {'key': unit_key, 'part': part_name, 'step': ledger.step, 'status': 'gap',
-               'reason': DECODE_FAILED_REASON_PREFIX + type(error).__name__,
+               'reason': reason,
                'sourceIdentity': {'path': inputs[0]['path'], 'sha256': inputs[0]['sha256']},
                'evidence': lane_relative_path(ledger, step_directory / RECEIPT_RECORD_NAME)}
     replace_unit_gap_row(project_root, ledger, unit_key, gap_row)

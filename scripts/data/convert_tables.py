@@ -9,8 +9,10 @@ import argparse
 import json
 import re
 
+from data.hair_table_adapter import (ELBERA_HAIR_FIELD_PROOF, ELBERA_HAIR_SELECTION_SCRIPT_SHA256, HAIR_TABLE_PARSERS,
+                                     HairTableUndecodedError, decode_hair_table)
 from hash_reference_client_tree import canonical_json_bytes
-from lane_unit_outcomes import seal_unit_decode_failure, seal_unit_manifest, write_pinned_manifest_to_store
+from lane_unit_outcomes import seal_unit_decode_failure, seal_unit_decode_gap, seal_unit_manifest, write_pinned_manifest_to_store
 from native_catalog.table_layout_pins import CRYPTO_HASH, SCHEMA_HASHES
 from native_catalog.table_source_resolver import descriptor_layout_for_file_name
 from native_catalog.tables import DESCRIPTOR_FILE, decode_table, decoded_table_record_count, interlude_descriptor_links
@@ -27,6 +29,7 @@ LANE_NAME = 'data-ui'
 PART_NAME = 'data'
 DECODE_STEP = 'decode'
 LOCAL_DESCRIPTOR_ROUTE = 'local-descriptor'
+ELBERA_ADAPTER_ROUTE = 'elbera-adapter'
 NATIVE_TABLE_MANIFEST_KIND = 'native-table'
 NATIVE_TABLE_MANIFEST_SCHEMA_VERSION = 1
 TABLES_CATALOG_SLICE = 'tables'
@@ -38,18 +41,25 @@ class ConvertTablesError(ValueError):
     pass
 
 
+def locked_table_inputs(file_name):
+    return locked_input_records([f'system/{file_name}'], reference_client_guard.REFERENCE_CLIENT_LOCK_PATH)
+
+
 def table_unit_plan(table, links):
     file_name = f'{table}.dat'
     layout = descriptor_layout_for_file_name(file_name, links)
+    if layout is None and table in HAIR_TABLE_PARSERS:
+        config = {'table': table, 'route': ELBERA_ADAPTER_ROUTE, 'elberaScriptSha256': ELBERA_HAIR_SELECTION_SCRIPT_SHA256,
+                  'fieldProof': ELBERA_HAIR_FIELD_PROOF, 'cryptoSha256': CRYPTO_HASH}
+        return locked_table_inputs(file_name), config
     if layout is None:
-        raise ConvertTablesError(f'{file_name} has no Interlude descriptor layout')
+        raise ConvertTablesError(f'{file_name} has no Interlude descriptor layout and no Elbera hair table parser')
     layout_schema = f'dats/{layout}.xml'
     if layout_schema not in SCHEMA_HASHES:
         raise ConvertTablesError(f'layout {layout_schema} of {file_name} has no SHA-256 pin')
-    inputs = locked_input_records([f'system/{file_name}'], reference_client_guard.REFERENCE_CLIENT_LOCK_PATH)
     config = {'table': table, 'layout': layout, 'descriptorSha256': SCHEMA_HASHES[DESCRIPTOR_FILE],
               'layoutSha256': SCHEMA_HASHES[layout_schema], 'cryptoSha256': CRYPTO_HASH}
-    return file_name, layout, inputs, config
+    return locked_table_inputs(file_name), config
 
 
 def native_table_manifest(table, decoded_table, route):
@@ -57,6 +67,20 @@ def native_table_manifest(table, decoded_table, route):
             'sourcePath': decoded_table['source'], 'sourceSha256': decoded_table['sourceSha256'],
             'descriptorSha256': decoded_table['schema']['descriptorSha256'], 'route': route,
             'recordCount': decoded_table_record_count(decoded_table), 'records': decoded_table['data']}
+
+
+def elbera_hair_table_manifest(table, decoded_hair_table):
+    return {'kind': NATIVE_TABLE_MANIFEST_KIND, 'schemaVersion': NATIVE_TABLE_MANIFEST_SCHEMA_VERSION, 'table': table,
+            'sourcePath': decoded_hair_table['sourcePath'], 'sourceSha256': decoded_hair_table['sourceSha256'],
+            'descriptorSha256': ELBERA_HAIR_SELECTION_SCRIPT_SHA256, 'route': ELBERA_ADAPTER_ROUTE,
+            'recordCount': decoded_hair_table['recordCount'], 'records': decoded_hair_table['records']}
+
+
+def decode_table_manifest(client_access, table, config):
+    if config.get('route') == ELBERA_ADAPTER_ROUTE:
+        return elbera_hair_table_manifest(table, decode_hair_table(client_access, table))
+    return native_table_manifest(table, decode_table(client_access.root, config['layout'], source_filename=f'{table}.dat'),
+                                 LOCAL_DESCRIPTOR_ROUTE)
 
 
 def native_table_manifest_bytes(manifest):
@@ -79,14 +103,17 @@ def write_table_to_store(output_root, table, manifest_bytes, manifest):
 
 def convert_table_unit(project_root, client_access, table, output_root, ledger, links):
     unit_key = f'table:{table}'
-    file_name, layout, inputs, config = table_unit_plan(table, links)
+    inputs, config = table_unit_plan(table, links)
     fingerprint = ledger.unit_fingerprint([record['sha256'] for record in inputs], config)
     if ledger.is_sealed(unit_key, fingerprint):
         return {'unit': unit_key, 'status': 'skipped-sealed'}
     step_directory = ledger.begin(unit_key, fingerprint)
     try:
-        manifest = native_table_manifest(table, decode_table(client_access.root, layout, source_filename=file_name), LOCAL_DESCRIPTOR_ROUTE)
+        manifest = decode_table_manifest(client_access, table, config)
         manifest_bytes = native_table_manifest_bytes(manifest)
+    except HairTableUndecodedError as error:
+        return seal_unit_decode_gap(project_root, ledger, unit_key, fingerprint, step_directory, PART_NAME, inputs, config, error,
+                                    error.reason)
     except (FormatError, UnicodeDecodeError) as error:
         return seal_unit_decode_failure(project_root, ledger, unit_key, fingerprint, step_directory, PART_NAME, inputs, config, error)
     record, manifest_path = write_table_to_store(output_root, table, manifest_bytes, manifest)
@@ -114,7 +141,7 @@ def convert_table_batch(project_root, client_access, output_root, ledger, limit,
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description='Decode descriptor-linked Interlude .dat tables into the data-ui lane store, one sealed unit per table.')
+    parser = argparse.ArgumentParser(description='Decode descriptor-linked Interlude .dat tables and the Elbera-parsed hair tables into the data-ui lane store, one sealed unit per table.')
     parser.add_argument('--client', type=Path, required=True)
     parser.add_argument('--output', type=Path)
     selection = parser.add_mutually_exclusive_group(required=True)

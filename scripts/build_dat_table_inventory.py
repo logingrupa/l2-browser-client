@@ -5,6 +5,8 @@ from pathlib import Path
 import re
 import sys
 
+from data.hair_table_adapter import ELBERA_HAIR_FIELD_PROOF, ELBERA_HAIR_SELECTION_SCRIPT_PATH, HAIR_TABLE_PARSERS
+from data.pinned_elbera_module import ELBERA_COMMIT, ELBERA_ROOT
 from hash_reference_client_tree import canonical_json_bytes
 from native_catalog.table_source_resolver import descriptor_layout_for_file_name
 from native_catalog.tables import DESCRIPTOR_FILE, SCHEMA_HASHES, SCHEMA_ROOT, interlude_descriptor_links
@@ -15,7 +17,6 @@ from reference_client_guard import require_reference_client
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_INVENTORY_OUTPUT_PATH = REPOSITORY_ROOT / 'docs' / 'parts' / 'data' / 'dat-table-inventory.json'
 DEFAULT_DECODED_TABLES_CATALOG_PATH = REPOSITORY_ROOT / 'artifacts' / 'lane-store' / 'data-ui' / 'l2' / 'catalog.json'
-DEFAULT_ELBERA_ROOT = Path('E:/Lineage2Elbera')
 DECODED_TABLES_LANE_NAME = 'data-ui'
 DECODE_STEP = 'decode'
 INVENTORY_SCHEMA_VERSION = 1
@@ -36,17 +37,16 @@ ELBERA_EVIDENCE_RECORD_COUNTS = {
     'systemmsg-e': 2083,
     'actionname-e': 102,
 }
-ELBERA_PARSER_SOURCES = {
-    'hairgrp': ('tools/dat/extract_charcreate.py', 'parse_hairgrp'),
-    'helmetgrp': ('tools/ui/check_hair_selection_native.py', 'keyed_hair_pairs'),
-    'hairaccessarygrp': ('tools/ui/check_hair_selection_native.py', 'keyed_hair_pairs'),
-}
+ELBERA_PARSER_SOURCES = {table: (ELBERA_HAIR_SELECTION_SCRIPT_PATH, function_name) for table, function_name in HAIR_TABLE_PARSERS.items()}
 ELBERA_PARSER_PRESENT_STATUS = 'Elbera parser present, unverified'
 LAYOUT_NOT_DECODED_STATUS = 'layout pinned, not decoded'
 ROUTES = ('local-decoded', 'local-layout-only', 'elbera', 'none')
 ROW_FIELDS = ('table', 'file', 'descriptorLayout', 'layout', 'route', 'recordCount', 'countSource', 'status')
 NOT_LOCK_EQUAL_STATUS = 'E: copy not equal to IMPORTA-PC'
 DECODED_TABLE_COUNT_SOURCE = 'scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/'
+ELBERA_ADAPTER_COUNT_SOURCE = (f'scripts/data/hair_table_adapter.py (Elbera {Path(ELBERA_HAIR_SELECTION_SCRIPT_PATH).name} at {ELBERA_COMMIT})'
+                               ' on lock-equal E:/Lineage2-client/')
+ELBERA_ADAPTER_DECODED_STATUS = f'decoded by Elbera adapter, {ELBERA_HAIR_FIELD_PROOF}'
 
 
 class DatTableInventoryError(ValueError):
@@ -130,10 +130,15 @@ def count_descriptor_linked_table(row, source_sha256, decoded_records_by_table, 
     return {'route': 'local-layout-only', **undecoded_count(row['table'], LAYOUT_NOT_DECODED_STATUS)}
 
 
-def count_table_without_layout(row, elbera_parser_statuses):
-    if row['route'] == 'elbera':
-        return undecoded_count(row['table'], elbera_parser_statuses[row['table']])
-    return undecoded_count(row['table'], 'no descriptor layout and no Elbera parser')
+def count_elbera_route_table(row, elbera_parser_statuses, source_sha256, decoded_records_by_table, decode_gap_rows_by_key):
+    decoded_record = decoded_records_by_table.get(row['table'])
+    if source_sha256 is not None and decoded_record is not None and decoded_record['sourceSha256'] == source_sha256:
+        return {'recordCount': decoded_record['recordCount'], 'countSource': f'{ELBERA_ADAPTER_COUNT_SOURCE}system/{row["file"]}',
+                'status': ELBERA_ADAPTER_DECODED_STATUS}
+    gap_row = decode_gap_rows_by_key.get(f'table:{row["table"]}')
+    if source_sha256 is not None and gap_row is not None and gap_row['sourceIdentity']['sha256'] == source_sha256:
+        return undecoded_count(row['table'], gap_row['reason'])
+    return undecoded_count(row['table'], elbera_parser_statuses[row['table']])
 
 
 def validate_dat_table_inventory(inventory):
@@ -168,8 +173,11 @@ def build_dat_table_inventory(client_access, elbera_root, decoded_table_records,
         if row['layout'] is not None:
             source_sha256 = lock_equal_source_sha256(client_access, file_name)
             row.update(count_descriptor_linked_table(row, source_sha256, decoded_records_by_table, decode_gap_rows_by_key))
+        elif row['route'] == 'elbera':
+            source_sha256 = lock_equal_source_sha256(client_access, file_name)
+            row.update(count_elbera_route_table(row, elbera_parser_statuses, source_sha256, decoded_records_by_table, decode_gap_rows_by_key))
         else:
-            row.update(count_table_without_layout(row, elbera_parser_statuses))
+            row.update(undecoded_count(row['table'], 'no descriptor layout and no Elbera parser'))
         rows.append(row)
     return validate_dat_table_inventory({
         'schemaVersion': INVENTORY_SCHEMA_VERSION,
@@ -187,7 +195,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description='Write the 40-table .dat inventory from the locked reference client tree and sealed table decodes.')
     parser.add_argument('--client', type=Path, required=True)
     parser.add_argument('--output', type=Path, default=DEFAULT_INVENTORY_OUTPUT_PATH)
-    parser.add_argument('--elbera-root', type=Path, default=DEFAULT_ELBERA_ROOT)
+    parser.add_argument('--elbera-root', type=Path, default=ELBERA_ROOT)
     parser.add_argument('--decoded-tables-catalog', type=Path, default=DEFAULT_DECODED_TABLES_CATALOG_PATH)
     arguments = parser.parse_args(argv)
     try:
