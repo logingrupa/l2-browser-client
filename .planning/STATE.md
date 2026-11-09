@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-41-PLAN.md
-last_updated: "2026-11-09T03:16:51.677Z"
+stopped_at: Completed 02-15-PLAN.md
+last_updated: "2026-11-09T04:03:25.877Z"
 last_activity: 2026-11-09
-last_activity_desc: Phase 02 plan 02-41 complete (body-part equipment slots from decoded body_part values, ACT-03 pending)
-state_head: "0b7274300c563f7e446609d4f63d8809f5d9009b"
+last_activity_desc: Phase 02 plan 02-15 complete (TerrainInfo-derived 4x4-sector chunk plan and per-chunk terrain for 20_21 and 20_20, WORLD-01 pending)
+state_head: 3cd27dfe5c8b2e40be3fc36a99351aa44819c5d4
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 87
-  completed_plans: 49
+  completed_plans: 50
   percent: 0
 ---
 
@@ -101,6 +101,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P33 | 12min | 3 tasks | 19 files |
 | Phase 2 P36 | 8min | 3 tasks | 10 files |
 | Phase 02 P41 | 6min | 3 tasks | 6 files |
+| Phase 2 P15 | 40min | 3 tasks | 25 files |
 
 ## Accumulated Context
 
@@ -231,6 +232,9 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: Plan 02-36: a malformed asset.json event fails the actor load with ActorClipEventsError; all 1,740 served-store events parse; ACT-04 stays Pending until 02-37 and 02-39 (rows 66 and 331)
 - [Phase 02]: Plan 02-41: equipment slots are upper or body-part:<value>, the source body_part value in canonical decimal; equipmentSlotForBodyPart owns the key form and upper stays as its own key sorted first (OVERNIGHT-DECISIONS rows 332, 333)
 - [Phase 02]: Plan 02-41: a repeat equip and an unequip of an empty slot keep the row 46 confirmation update with the unchanged entity, against the must-have wording, so the sandbox sheet acceptance check holds; ACT-03 stays Pending until 02-21 and 02-42 (row 334)
+- [Phase 2]: 02-15: tiles plan as TerrainInfo-derived 4x4-sector chunks chunk-<column>-<row>; every chunk terrain labelled extrapolated (OVERNIGHT-DECISIONS 335-337)
+- [Phase 2]: 02-15: anchor = first PlayerStart whose bEnabled resolves true from its tag or the Engine.PlayerStart class chain; unresolved gives a null anchor (row 338)
+- [Phase 2]: 02-15: per-chunk gap rows name the first failing qualified sector, not the chunk id; empty layer slots stay listed; the chunk planner replaces the hand-chosen 20_20 XY windows (rows 339-341)
 
 ### Pending Todos
 
@@ -300,7 +304,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-09T03:16:51.224Z
-Stopped at: Completed 02-41-PLAN.md
+Last session: 2026-11-09T04:03:25.299Z
+Stopped at: Completed 02-15-PLAN.md
 Resume file: None
 - Needs Human (OVERNIGHT-DECISIONS row 301): the actors lane confirms the import repoints in `scripts/prepare-native-player-aliases.py` and `scripts/test_effect_readiness.py`; the world lane points `scripts/world/copy_world07_fixtures.py` at `scripts/native_assets_lib/sha256_identity.py` and removes its pin from the owner scan in `tests/pipeline/test_converter_output_guard.py`.
