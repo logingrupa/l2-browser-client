@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-27-PLAN.md
-last_updated: "2026-11-09T00:53:38.363Z"
+stopped_at: Completed 02-23-PLAN.md
+last_updated: "2026-11-09T01:31:59.133Z"
 last_activity: 2026-11-09
-last_activity_desc: Phase 02 plan 02-27 complete (all linked dat tables sealed, picker name indexes)
-state_head: b37520e38473a26e6809875c809ac636089408aa
+last_activity_desc: Phase 02 plan 02-23 complete (resumable windows, npc, item and skill load-check sweeps)
+state_head: 3433734cf5a577e20c46a2e5ceb157508a7394f0
 progress:
   total_phases: 6
   completed_phases: 0
-  total_plans: 86
-  completed_plans: 42
+  total_plans: 87
+  completed_plans: 43
   percent: 0
 ---
 
@@ -94,6 +94,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P20 | 30min | 3 tasks | 26 files |
 | Phase 02 P22 | 31min | 3 tasks | 16 files |
 | Phase 2 P27 | 19min | 3 tasks | 14 files |
+| Phase 02 P23 | 8min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -209,6 +210,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: Plan 02-22: npc:20001 spawn by id proven on the harness page; sandbox spawn open (row 279); ACT-02 stays Pending (row 290)
 - [Phase 2]: 02-27: name index tables records are npcname_e_names, itemname_e_names, skillname_e_names because the 02-04 id rule refuses npcname-e-names; catalog_writer.is_table_name_index_id keeps them outside the coverage data denominator (OVERNIGHT-DECISIONS rows 292 and 293)
 - [Phase 2]: 02-27: eula-e, servername-e and questname-e stay decode-failed gaps with no tolerance and no NaN encoding; DATA-01 stays Pending (OVERNIGHT-DECISIONS rows 294 and 297)
+- [Phase 02]: 02-23: fetchVerifiedAssetPackage reuses the exported loadNativeModelPackages archive loader; windows and skills load-check records carry assetManifestSchemaVersion null; the tiles sweep is plan 02-70 (OVERNIGHT-DECISIONS row 303)
 
 ### Pending Todos
 
@@ -229,7 +231,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - If main is ever merged with this branch, bce4a04/06bdbda edit docs/ROADMAP.md, PRODUCT.md and NOTICE, which this branch deleted: keep the deletions.
 - Lane tool support for this repo is not available on DATABASE-PC yet; use plain `git worktree` until it lands.
 - Count differences to check in the decoder inventory: 435 vs 433 `.utx`, `chargrp` has 15 rows.
-- The 02-23 Task 3 tiles sweep is now plan 02-70, which runs after 02-16 (wave 9); 02-23 resumes at its SUMMARY step, the new Task 3 (SUMMARY for Tasks 1 and 2, ownership check from base d3a12f0, process cleanup; OVERNIGHT-DECISIONS row 303).
+- The 02-23 tiles sweep is plan 02-70, which runs after 02-16 (wave 9; OVERNIGHT-DECISIONS row 303). 02-23 is complete with Tasks 1 and 2 (02-23-SUMMARY.md).
 
 ## Needs Human
 
@@ -273,7 +275,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-09T00:53:37.826Z
-Stopped at: Completed 02-27-PLAN.md
+Last session: 2026-11-09T01:31:58.349Z
+Stopped at: Completed 02-23-PLAN.md
 Resume file: None
 - Needs Human (OVERNIGHT-DECISIONS row 301): the actors lane confirms the import repoints in `scripts/prepare-native-player-aliases.py` and `scripts/test_effect_readiness.py`; the world lane points `scripts/world/copy_world07_fixtures.py` at `scripts/native_assets_lib/sha256_identity.py` and removes its pin from the owner scan in `tests/pipeline/test_converter_output_guard.py`.
