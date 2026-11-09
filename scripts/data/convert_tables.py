@@ -13,9 +13,10 @@ from data.hair_table_adapter import (ELBERA_HAIR_SELECTION_SCRIPT_SHA256, HAIR_T
                                      HairTableUndecodedError, decode_hair_table)
 from hash_reference_client_tree import canonical_json_bytes
 from lane_unit_outcomes import seal_unit_decode_failure, seal_unit_decode_gap, seal_unit_manifest, write_pinned_manifest_to_store
-from native_catalog.table_layout_pins import CRYPTO_HASH, SCHEMA_HASHES
+from native_catalog.table_layout_pins import CRYPTO_HASH, SCHEMA_HASHES, TABLES
 from native_catalog.table_source_resolver import descriptor_layout_for_file_name
-from native_catalog.tables import DESCRIPTOR_FILE, decode_table, decoded_table_record_count, interlude_descriptor_links
+from native_catalog.tables import (DESCRIPTOR_FILE, decode_table, decoded_table_record_count, interlude_descriptor_links,
+                                   table_layout_schema)
 from native_catalog.ue2 import FormatError
 from native_store.catalog_writer import sha256_hex, validate_catalog_record
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root, require_converter_output
@@ -54,11 +55,10 @@ def table_unit_plan(table, links):
         return locked_table_inputs(file_name), config
     if layout is None:
         raise ConvertTablesError(f'{file_name} has no Interlude descriptor layout and no Elbera hair table parser')
-    layout_schema = f'dats/{layout}.xml'
-    if layout_schema not in SCHEMA_HASHES:
-        raise ConvertTablesError(f'layout {layout_schema} of {file_name} has no SHA-256 pin')
+    if layout not in TABLES:
+        raise ConvertTablesError(f'layout {layout} of {file_name} has no SHA-256 pin')
     config = {'table': table, 'layout': layout, 'descriptorSha256': SCHEMA_HASHES[DESCRIPTOR_FILE],
-              'layoutSha256': SCHEMA_HASHES[layout_schema], 'cryptoSha256': CRYPTO_HASH}
+              'layoutSha256': table_layout_schema(layout).sha256, 'cryptoSha256': CRYPTO_HASH}
     return locked_table_inputs(file_name), config
 
 

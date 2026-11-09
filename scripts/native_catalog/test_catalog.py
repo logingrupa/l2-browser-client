@@ -122,6 +122,14 @@ class ClientReadingTableTests(unittest.TestCase):
         text_by_identifier = {row['stringID']: row['string'] for row in strings}
         self.assertEqual((text_by_identifier[1551], text_by_identifier[1574]), ('', 'Player settings'))
 
+    def test_eula_reads_the_three_fl2eula_strings_of_the_client_derived_layout(self):
+        table = self.decode_exactly('eula', 'eula-e.dat')
+        [eula] = table['data']['eula']
+        self.assertEqual((table['decodedBytes'], table['consumedBytes']), (59968, 59955))
+        self.assertEqual((len(eula['eula']), eula['eulatestserver'], eula['eulachinaspecialmessage']), (29971, '\r\n', '\r\n'))
+        self.assertTrue(eula['eula'].startswith('\r\nLineage II User Agreement'))
+        self.assertEqual(table['schema']['file'], 'recipes/data/table-layouts/eula.xml')
+
 
 if __name__ == '__main__':
     unittest.main()

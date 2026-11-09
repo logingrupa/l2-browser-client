@@ -10,7 +10,6 @@ SCHEMA_HASHES = {
     'dats/credit.xml': '82f47b85a2ab567a511d24c5ef86f48f4ff72d0623ca6b43405d23ea300bb484',
     'dats/entereventgrp.xml': '04c8402e9d3f87a4aaec7e1e18dfae948da890380d4f19dbeaec79528cd9f7f2',
     'dats/etcitemgrp.xml': 'e935606fb78dae46063b83f2305c3e13e64be362c1bc239c18ea784db7071ab5',
-    'dats/eula.xml': 'd8793ded89f82af3a21e2c5ccc81a51f2289bcaef1f4e07fe1a0b52c7ca39aac',
     'dats/gametip.xml': '605559804dd73262e0ce4d8d5bc9c0c693a61a17be50e03837cf6690fc73a0bf',
     'dats/hairaccessorylocgrp.xml': '0c3ef2c7b4b89beb7f96e0f00fef954b33efb05624d972b34695ee059fc9fa0d',
     'dats/hennagrp.xml': 'c18b6fc6fdc77be8730470e616e913f878df214d9cfeeae946a125b157f8bd1f',
@@ -39,7 +38,25 @@ SCHEMA_HASHES = {
     'dats/zonename.xml': '3f83016241ff3fdf7424e3e8f3618abe819b8dac0e60141bda94fb3a809924cd',
 }
 CRYPTO_HASH = '600cc9d556c50fb3640075f65a4783bd66e0bd8f7a790b72391b4a2a59004c5b'
-TABLES = tuple(sorted(schema.removeprefix('dats/').removesuffix('.xml') for schema in SCHEMA_HASHES if schema.startswith('dats/')))
+ENGINE_LIBRARY_EVIDENCE = {
+    'binary': 'system/Engine.dll',
+    'binarySha256': '4dd2f63c606df5671702911fa1f8ddcc4099bf2b98b81e8aa88eed47f5405b08',
+}
+CLIENT_DERIVED_LAYOUTS = {
+    'eula': {
+        'file': 'recipes/data/table-layouts/eula.xml',
+        'sha256': '2cc418aec47184d137c93a4acf8fba2c61fa6b84231462e67e07e461cfc97e22',
+        'evidence': {
+            **ENGINE_LIBRARY_EVIDENCE,
+            'reader': 'FL2Eula::Serialize at 0x10445ff0 makes three Core.dll operator<<(FArchive&, FString&) calls, on this+0x0, +0xC and +0x18',
+            'loader': 'FL2GameData::EulaLoad at 0x1044fe20 runs CheckSafePackage (0x10448d10), then FL2Eula::Serialize once on this+0x7cb94; it reads no count',
+            'fieldNames': 'the EulaLoad text branch maps eula, eulatestserver and eulachinaspecialmessage to this+0x7cb94, +0x7cba0 and +0x7cbac',
+            'writer': 'FL2GameData::EulaSave at 0x10450360 calls FL2Eula::Serialize, then MakeSafePackage (0x10448c90) writes the FString SafePackage',
+        },
+    },
+}
+TABLES = tuple(sorted([*(schema.removeprefix('dats/').removesuffix('.xml') for schema in SCHEMA_HASHES if schema.startswith('dats/')),
+                       *CLIENT_DERIVED_LAYOUTS]))
 MTX_DEFINITION_EVIDENCE = {
     'revision': 'f2a2cc16120dd8ffabd60255aaad59fa4d6b6f53',
     'file': 'dat_engine/data/definitions.xml',

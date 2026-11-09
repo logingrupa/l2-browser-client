@@ -3,14 +3,15 @@ import os
 from pathlib import Path
 import re
 import struct
+from typing import NamedTuple
 import xml.etree.ElementTree as ET
 import zlib
 
-from .table_layout_pins import (CRYPTO_HASH, MTX_DEFINITION_EVIDENCE, RECORD_IDENTIFIER_FIELDS, RGBA_DEFINITION_EVIDENCE, SCHEMA_HASHES,
-                                TABLES)
+from .table_layout_pins import (CLIENT_DERIVED_LAYOUTS, CRYPTO_HASH, MTX_DEFINITION_EVIDENCE, RECORD_IDENTIFIER_FIELDS,
+                                RGBA_DEFINITION_EVIDENCE, SCHEMA_HASHES, TABLES)
 from .table_source_resolver import descriptor_layout_links, resolve_table_source_file_name
 from .ue2 import FormatError, Reader
-from reference_client_guard import require_reference_client
+from reference_client_guard import REPOSITORY_ROOT, require_reference_client
 
 SCHEMA_ROOT = Path(os.environ.get('L2_SCHEMA_ROOT', 'C:/laragon/www/l2-browser-client/.assets/native-tools/dat-schema/dat_engine/data/structure'))
 CRYPTO_SOURCE = Path(os.environ.get('L2_CRYPTO_SOURCE', 'C:/laragon/www/l2-browser-client/.assets/native-tools/open-l2encdec/src/l2encdec.cpp'))
@@ -20,6 +21,12 @@ SYSTEM_FOLDER_NAME = 'system'
 TABLE_LIMITATIONS = ['Native client presentation bindings only, not authoritative gameplay.',
     'Native field names and values retained; no cross-edition joins or fallback substitutions.',
     'Skill action-code to skeletal animation dispatch and effect runtime equivalence require separate verification.']
+
+
+class TableLayoutSchema(NamedTuple):
+    name: str
+    path: Path
+    sha256: str
 
 
 def checked_bytes(path, expected):
@@ -33,28 +40,38 @@ def interlude_descriptor_links(schema_root=SCHEMA_ROOT):
     return descriptor_layout_links(checked_bytes(Path(schema_root) / DESCRIPTOR_FILE, SCHEMA_HASHES[DESCRIPTOR_FILE]))
 
 
+def table_layout_schema(name, schema_root=SCHEMA_ROOT):
+    if name in CLIENT_DERIVED_LAYOUTS:
+        client_derived_layout = CLIENT_DERIVED_LAYOUTS[name]
+        return TableLayoutSchema(client_derived_layout['file'], REPOSITORY_ROOT / client_derived_layout['file'],
+                                 client_derived_layout['sha256'])
+    schema_name = f'dats/{name}.xml'
+    return TableLayoutSchema(schema_name, Path(schema_root) / schema_name, SCHEMA_HASHES[schema_name])
+
+
 def interlude_table_layout(name, schema_root=SCHEMA_ROOT):
     if name not in TABLES:
         raise FormatError('This adapter only supports the pinned Interlude descriptor layouts: ' + str(name))
     links = [link for link in interlude_descriptor_links(schema_root) if link.layout == name]
     if len(links) != 1:
         raise FormatError('Missing unambiguous Interlude table descriptor: ' + name)
-    schema_name = 'dats/' + name + '.xml'
-    schema_bytes = checked_bytes(schema_root / schema_name, SCHEMA_HASHES[schema_name])
+    layout_schema = table_layout_schema(name, schema_root)
+    schema_bytes = checked_bytes(layout_schema.path, layout_schema.sha256)
     layouts = [entry for entry in ET.fromstring(schema_bytes) if entry.get('pattern') == links[0].version]
     if len(layouts) != 1 or layouts[0].get('isSafePackage') != 'true':
         raise FormatError('Missing audited safe-package table layout: ' + name)
-    return links[0], layouts[0], schema_name
+    return links[0], layouts[0], layout_schema.name
 
 
 def layout_reader_names(layout):
     return {node.get('reader') for node in layout.iter() if node.get('reader')}
 
 
-def layout_definition_pins(schema_name, layout, schema_root, crypto_source):
-    pins = {'crypto-definition': hashlib.sha256(checked_bytes(crypto_source, CRYPTO_HASH)).hexdigest()}
-    for relative in (DESCRIPTOR_FILE, schema_name):
-        pins[relative] = hashlib.sha256(checked_bytes(schema_root / relative, SCHEMA_HASHES[relative])).hexdigest()
+def layout_definition_pins(name, layout, schema_root, crypto_source):
+    layout_schema = table_layout_schema(name, schema_root)
+    pins = {'crypto-definition': hashlib.sha256(checked_bytes(crypto_source, CRYPTO_HASH)).hexdigest(),
+            DESCRIPTOR_FILE: hashlib.sha256(checked_bytes(Path(schema_root) / DESCRIPTOR_FILE, SCHEMA_HASHES[DESCRIPTOR_FILE])).hexdigest(),
+            layout_schema.name: hashlib.sha256(checked_bytes(layout_schema.path, layout_schema.sha256)).hexdigest()}
     reader_names = layout_reader_names(layout)
     if 'MTX' in reader_names:
         pins['definitions.xml#MTX'] = hashlib.sha256(checked_bytes(schema_root.parent / 'definitions.xml', MTX_DEFINITION_EVIDENCE['sha256'])).hexdigest()
@@ -65,8 +82,8 @@ def layout_definition_pins(schema_name, layout, schema_root, crypto_source):
 
 
 def table_definition_pins(name, schema_root=SCHEMA_ROOT, crypto_source=CRYPTO_SOURCE):
-    _, layout, schema_name = interlude_table_layout(name, schema_root)
-    return layout_definition_pins(schema_name, layout, schema_root, crypto_source)
+    _, layout, _ = interlude_table_layout(name, schema_root)
+    return layout_definition_pins(name, layout, schema_root, crypto_source)
 
 
 def decode413(raw, crypto_source=CRYPTO_SOURCE):
@@ -211,8 +228,9 @@ def decoded_table_record_count(decoded_table):
 
 def decode_table(client, name, schema_root=SCHEMA_ROOT, crypto_source=CRYPTO_SOURCE, *, source_filename=None):
     client = client.resolve(strict=True)
-    link, layout, schema_name = interlude_table_layout(name, schema_root)
-    definition_pins = layout_definition_pins(schema_name, layout, schema_root, crypto_source)
+    link, layout, _ = interlude_table_layout(name, schema_root)
+    layout_schema = table_layout_schema(name, schema_root)
+    definition_pins = layout_definition_pins(name, layout, schema_root, crypto_source)
     path = table_source_path(client, link.pattern, source_filename)
     raw = path.read_bytes()
     key_family, decoded = decode413(raw, crypto_source)
@@ -223,7 +241,9 @@ def decode_table(client, name, schema_root=SCHEMA_ROOT, crypto_source=CRYPTO_SOU
         raise FormatError(f'Unexpected safe-package trailer: {name}: {trailer.hex()}')
     require_unique_record_identifiers(name, rows)
     schema = {'descriptor': DESCRIPTOR_FILE, 'layout': link.version, 'descriptorSha256': SCHEMA_HASHES[DESCRIPTOR_FILE],
-        'file': schema_name, 'sha256': SCHEMA_HASHES[schema_name], 'sourcePattern': link.pattern}
+        'file': layout_schema.name, 'sha256': layout_schema.sha256, 'sourcePattern': link.pattern}
+    if name in CLIENT_DERIVED_LAYOUTS:
+        schema['clientLayoutEvidence'] = dict(CLIENT_DERIVED_LAYOUTS[name]['evidence'])
     reader_names = layout_reader_names(layout)
     if 'MTX' in reader_names:
         schema['compoundDefinitionEvidence'] = dict(MTX_DEFINITION_EVIDENCE)

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<list>
+	<file pattern="Interlude" isSafePackage="true">
+		<for name="eula" size="1" hidden="false">
+			<node name="eula" reader="ASCF" />
+			<node name="eulatestserver" reader="ASCF" />
+			<node name="eulachinaspecialmessage" reader="ASCF" />
+		</for>
+	</file>
+</list>
