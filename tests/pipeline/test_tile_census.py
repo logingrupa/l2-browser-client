@@ -13,9 +13,10 @@ from world.map_actor_properties import HAS_STACK
 from native_store.gap_rows import load_gap_reason_patterns, validate_gap_row
 from reference_client_guard import require_reference_client
 from reference_client_lock_fixture import lock_client_as_checked_conversion_root
-from world.tile_census import (TILE_CENSUS_RELATIVE_PATH, TileCensusError, build_tile_census, census_gap_row, declared_terrain_map_package,
-                               map_census_keys, map_reader_gate, read_package_header, terrain_height_gate_by_package_name,
-                               terrain_height_gate_from_declared_package, tile_census_bytes, validate_tile_census)
+from world.tile_census import (build_tile_census, census_gap_row, declared_terrain_map_package, map_census_keys, map_reader_gate,
+                               read_package_header, terrain_height_gate_by_package_name, terrain_height_gate_from_declared_package,
+                               tile_census_bytes)
+from world.tile_census_validation import TILE_CENSUS_RELATIVE_PATH, TileCensusError, validate_tile_census
 
 UNREAL_PACKAGE_SIGNATURE = 0x9E2A83C1
 LINEAGE_VERSION_111_WRAPPER = 'Lineage2Ver111'.encode('utf-16le')

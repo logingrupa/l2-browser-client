@@ -412,6 +412,36 @@ Plan 02-07 writes it and 02-26 completes it.
   Without that header, as in production, only the served catalog matches.
 - "Loads" counts only from load-check records; everything else is
   `unverified`.
+- First step for a lane: `pnpm report:coverage --store-root
+  artifacts/lane-store/<lane>/l2 --lane <lane>` writes its first
+  `coverage.json`. A lane store without one gets none from a lane run or a
+  catalog write.
+- From then on a lane coverage report follows its lane catalog and gap rows.
+  A lane run refreshes it once, when the run ends, after its units have
+  written their catalog records and gap rows: every lane driver's `main`
+  (`convert_tables.py`, `convert_ui.py`, `table_name_indexes.py`,
+  `convert_actors.py`, `actor_census.py`, `convert_tile.py`, `tile_census.py`)
+  runs its lane work inside `lane_coverage_refreshed_at_exit` in
+  `scripts/native_store/lane_coverage_refresh.py`. That covers a normal end,
+  a batch that stops at its limit, a machine window or the disk floor, and a
+  run that stops on an error (the error is raised after the refresh).
+  `write_lane_catalog.py` (with or without `--union`) refreshes its target lane
+  after it writes the catalog; `--plan` writes nothing. Not once per unit: on a
+  copy of the actors lane store (45,584 coverage rows) one refresh takes about
+  8 s, on data-ui and world about 0.2 s.
+- A refresh is the same report as `build_coverage_report.py --store-root <lane
+  store> --lane <lane>` (`refresh_lane_coverage_report`): it runs the
+  machine-schedule check and keeps `generatedAtRiga` when nothing else
+  changed. If it fails, the catalog and gap rows stay written and the command
+  fails with `lane <lane> coverage report <path> was not refreshed for its
+  catalog <sha>: <reason>; once the reason is fixed, run pnpm report:coverage
+  --store-root <lane store> --lane <lane>`. Inside a machine window the
+  refresh is refused, so a run stopped by a window fails with that message.
+  The `public/l2` coverage is never rebuilt by a lane run.
+- The world census document rules (`validate_tile_census` and its row
+  vocabulary) live in `scripts/world/tile_census_validation.py`, which both
+  `tile_census.py` and `coverage_denominators.py` import, so the census driver
+  can import the coverage refresh without an import cycle.
 
 ## Golden fixtures
 

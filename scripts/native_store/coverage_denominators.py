@@ -8,7 +8,7 @@ from build_dat_table_inventory import validate_dat_table_inventory
 from native_store.gap_rows import CATALOG_KEY_PATTERNS
 from native_store.store_paths import REPOSITORY_ROOT
 from reference_client_guard import ReferenceClientLockError, read_reference_client_lock
-from world.tile_census import NON_TILE_KIND, TILE_CENSUS_RELATIVE_PATH, TILE_KIND, TileCensusError, validate_tile_census
+from world.tile_census_validation import NON_TILE_KIND, TILE_CENSUS_RELATIVE_PATH, TILE_KIND, TileCensusError, validate_tile_census
 
 COVERAGE_PART_ORDER = ('data', 'sandbox', 'world', 'player-characters', 'ui', 'npcs', 'items', 'skills-effects', 'audio', 'minimap',
                        'movement-geodata')

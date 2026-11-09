@@ -16,7 +16,8 @@ from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, 
 from world.static_placement import read_class_evidence, require_terrain_not_inverted
 from world.terrain_layers import QUALIFIED_MASK_UV_FORMULA, QUALIFIED_MASK_UV_RULE_ID, layer_records
 from world.terrain_rectangle_mesh import build_terrain_rectangle_gltf
-from world.tile_census import GAP_STATUS, WORLD_LANE_NAME, WORLD_PART_NAME
+from world.tile_census import WORLD_LANE_NAME, WORLD_PART_NAME
+from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, read_raw_terrain_record, sealed_chunk_plan
 
 TERRAIN_CHUNK_STEP_ALGORITHM_VERSION = 1

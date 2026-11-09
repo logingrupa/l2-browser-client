@@ -12,6 +12,7 @@ from native_assets_lib.gltf import json_bytes
 from native_store.catalog_index_keys import require_npc_profiles_join_models_of_their_mesh
 from native_store.catalog_writer import (KNOWN_CATALOG_SLICES, add_store_file, merge_catalog_slice_records, pinned_store_files, read_store_catalog,
                                          sha256_hex, sha256_of_file, verify_store_destinations, write_store)
+from native_store.lane_coverage_refresh import refresh_lane_coverage
 from native_store.merge_lane_store import main_checkout_root
 from native_store.store_paths import REPOSITORY_ROOT, confined_child_path, lane_store_root, read_lane_parts_by_name
 
@@ -107,7 +108,9 @@ def write_lane_catalog(project_root, lane_name, union_lane_names=(), plan_only=F
             raise LaneCatalogError(f'lane {lane_name} is not written yet; run write_lane_catalog.py without --plan first')
         return {**summary, 'filesWritten': 0,
                 'restageCommand': restage_command(project_root, lane_name, base_sha256)}
-    return {**summary, 'filesWritten': write_store(store_root, files, before, after)['filesWritten']}
+    files_written = write_store(store_root, files, before, after)['filesWritten']
+    refresh_lane_coverage(project_root, lane_name)
+    return {**summary, 'filesWritten': files_written}
 
 
 def main(argv=None):

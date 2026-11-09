@@ -14,6 +14,7 @@ from convert_tables import DECODE_STEP, LANE_NAME, NATIVE_TABLE_MANIFEST_KIND, T
 from native_store.catalog_writer import (TABLE_NAME_INDEX_ID_SUFFIX, is_table_name_index_id, read_store_catalog, sha256_hex,
                                          validate_catalog_record)
 from native_store.gap_rows import read_gap_rows
+from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root, require_converter_output
 from native_store.unit_ledger import UnitLedger
 from table_name_index_sources import NAME_INDEX_SOURCES
@@ -128,8 +129,9 @@ def main(argv=None):
     try:
         output_root = require_converter_output(REPOSITORY_ROOT, arguments.output or lane_store_root(REPOSITORY_ROOT, LANE_NAME))
         ledger = UnitLedger(lane_work_root(REPOSITORY_ROOT, LANE_NAME), NAME_INDEX_STEP, NAME_INDEX_ALGORITHM_VERSION)
-        for table in dict.fromkeys(arguments.table or sorted(NAME_INDEX_SOURCES)):
-            print(json.dumps(write_table_name_index(REPOSITORY_ROOT, table, output_root, ledger), sort_keys=True), flush=True)
+        with lane_coverage_refreshed_at_exit(REPOSITORY_ROOT, LANE_NAME):
+            for table in dict.fromkeys(arguments.table or sorted(NAME_INDEX_SOURCES)):
+                print(json.dumps(write_table_name_index(REPOSITORY_ROOT, table, output_root, ledger), sort_keys=True), flush=True)
     except (OSError, ValueError) as error:
         print(f'Table name index failed: {error}', file=sys.stderr)
         return 1

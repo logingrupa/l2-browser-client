@@ -133,6 +133,12 @@ class LanePathTests(StorePathTestCase):
         self.assertEqual(sorted(parts_by_lane_name), ['actors', 'data-ui', 'integration', 'world'])
         self.assertEqual(parts_by_lane_name, {name: tuple(lane['parts']) for name, lane in ownership['lanes'].items()})
 
+    def test_lane_parts_are_read_once_and_cannot_be_changed_by_a_caller(self):
+        parts_by_lane_name = read_lane_parts_by_name()
+        self.assertIs(read_lane_parts_by_name(), parts_by_lane_name)
+        with self.assertRaises(TypeError):
+            parts_by_lane_name['world'] = ('world',)
+
     def test_lane_locations_are_built_under_the_project_artifacts(self):
         lane_store = self.project / 'artifacts' / 'lane-store'
         self.assertEqual(lane_store_root(self.project, 'world'), lane_store / 'world' / 'l2')

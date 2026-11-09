@@ -20,6 +20,7 @@ from native_catalog.tables import (DESCRIPTOR_FILE, decode_table, decoded_table_
                                    table_layout_schema)
 from native_catalog.ue2 import FormatError
 from native_store.catalog_writer import sha256_hex, validate_catalog_record
+from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root, require_converter_output
 from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, UnitLedger, locked_input_records, require_batch_preflight,
                                       run_at_below_normal_priority)
@@ -152,11 +153,12 @@ def main(argv=None):
         run_at_below_normal_priority()
         ledger = UnitLedger(lane_work_root(REPOSITORY_ROOT, LANE_NAME), DECODE_STEP, DECODE_TABLE_ALGORITHM_VERSION)
         links = interlude_descriptor_links()
-        if arguments.batch:
-            convert_table_batch(REPOSITORY_ROOT, client_access, output_root, ledger, arguments.limit, links)
-        for table in dict.fromkeys(arguments.table or ()):
-            print(json.dumps(convert_table_unit(REPOSITORY_ROOT, client_access, table, output_root, ledger, links), sort_keys=True),
-                  flush=True)
+        with lane_coverage_refreshed_at_exit(REPOSITORY_ROOT, LANE_NAME):
+            if arguments.batch:
+                convert_table_batch(REPOSITORY_ROOT, client_access, output_root, ledger, arguments.limit, links)
+            for table in dict.fromkeys(arguments.table or ()):
+                print(json.dumps(convert_table_unit(REPOSITORY_ROOT, client_access, table, output_root, ledger, links), sort_keys=True),
+                      flush=True)
     except (OSError, ValueError) as error:
         print(f'Table conversion failed: {error}', file=sys.stderr)
         return 1

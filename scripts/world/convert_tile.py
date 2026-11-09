@@ -9,6 +9,7 @@ import argparse
 import json
 
 from native_store.gap_rows import read_gap_rows, write_gap_rows
+from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
 from native_store.store_paths import REPOSITORY_ROOT, require_converter_output
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, require_batch_preflight, run_at_below_normal_priority
 from reference_client_guard import require_reference_client
@@ -56,9 +57,10 @@ def main(argv=None):
         require_reference_client(arguments.client)
         require_batch_preflight(REPOSITORY_ROOT, WORLD_LANE_NAME, BATCH_MINIMUM_FREE_BYTES)
         run_at_below_normal_priority()
-        rows = run_tile_step(arguments.step, arguments.client, arguments.map, arguments.output)
-        for row in rows:
-            record_tile_step_gap_row(REPOSITORY_ROOT, row)
+        with lane_coverage_refreshed_at_exit(REPOSITORY_ROOT, WORLD_LANE_NAME):
+            rows = run_tile_step(arguments.step, arguments.client, arguments.map, arguments.output)
+            for row in rows:
+                record_tile_step_gap_row(REPOSITORY_ROOT, row)
     except (OSError, ValueError) as error:
         print(f'Tile conversion failed: {error}', file=sys.stderr)
         return 1

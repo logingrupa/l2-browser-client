@@ -11,7 +11,8 @@ from world.raw_map_step import read_tile_map_lock_record, require_tile_id, tile_
 from world.static_mesh_step import STATIC_MESH_STEP_NAME, sealed_static_meshes, tile_static_mesh_row
 from world.terrain_chunk_step import TERRAIN_CHUNK_RESOURCE_NAME, TERRAIN_STEP_NAME, sealed_terrain_chunks
 from world.tile_chunk_plan import chunk_plan_ledger
-from world.tile_census import GAP_STATUS, WORLD_LANE_NAME
+from world.tile_census import WORLD_LANE_NAME
+from world.tile_census_validation import GAP_STATUS
 
 TILE_MANIFEST_STEP_ALGORITHM_VERSION = 2
 TILE_MANIFEST_STEP_NAME = 'manifest'

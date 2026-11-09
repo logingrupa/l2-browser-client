@@ -102,7 +102,6 @@ class LaneCatalogWriterTests(unittest.TestCase):
         self.stage_model_version_two(self.world_store)
         self.stage_model(self.actors_store, MODEL_VERSION_ONE_RECORD, MODEL_VERSION_ONE_ARCHIVE, MODEL_VERSION_ONE_BYTES,
                          extra_files=(('notes/actors-only.bin', b'actors lane file'),))
-        (self.actors_store / 'coverage.json').write_bytes(b'{"lane":"actors"}')
         write_lane_catalog(self.project, 'world')
         write_lane_catalog(self.project, 'actors')
         self.integration_store = lane_store_root(self.project, 'integration')
@@ -295,6 +294,7 @@ class LaneCatalogWriterTests(unittest.TestCase):
 
     def test_union_copies_lane_files_and_merges_records_in_order_byte_identically(self):
         self.build_world_and_actors_lanes()
+        (self.actors_store / 'coverage.json').write_bytes(b'{"lane":"actors"}')
         first = write_lane_catalog(self.project, 'integration', ('world', 'actors'))
         catalog_bytes = (self.integration_store / 'catalog.json').read_bytes()
         catalog = json.loads(catalog_bytes)

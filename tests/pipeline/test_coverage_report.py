@@ -13,6 +13,8 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
 from catalog_store_fixture import write_store_catalog
+from coverage_census_fixture import (DECODE_FAILED_REASON, DECODE_PENDING_REASON, SOURCE_SHA256, write_table_decode_rows,
+                                     write_window_layout_rows)
 from native_store.build_coverage_report import (CoverageReportError, build_coverage_report, coverage_markdown, coverage_output_path,
                                                 coverage_report_bytes, main, validate_coverage_report)
 from native_store.coverage_denominators import COVERAGE_PART_ORDER
@@ -25,9 +27,6 @@ from native_store.store_paths import lane_load_check_path, read_lane_parts_by_na
 GENERATED_AT_RIGA = '2026-11-08T22:30:00+02:00'
 CHECKED_AT_RIGA = '2026-11-08T21:00:00+02:00'
 TABLE_MANIFEST_SHA256 = 'a' * 64
-SOURCE_SHA256 = 'b' * 64
-DECODE_FAILED_REASON = 'decode-failed:cp1252 codec error'
-DECODE_PENDING_REASON = 'step-pending:decode'
 NON_TILE_MAP_NAMES = ('Auto0', 'Auto1', 'Auto2', 'Auto3', 'Auto4', 'Auto5', 'Lobby', 'entry', 'ship_position', 'skylevel')
 ACTOR_DENOMINATORS = (('npcs', 'docs/parts/npcs/actor-unit-census.json npcgrp rowCount', 6519),
                       ('items', 'docs/parts/data/dat-table-inventory.json itemname-e recordCount', 9238),
@@ -37,18 +36,11 @@ COVERAGE_MODULE_PATHS = (ROOT / 'scripts' / 'native_store' / 'build_coverage_rep
                          ROOT / 'scripts' / 'native_store' / 'coverage_denominators.py',
                          ROOT / 'scripts' / 'native_store' / 'gap_census.py',
                          ROOT / 'scripts' / 'native_store' / 'gap_census_denominators.py')
-INTERFACE_SOURCE_SHA256 = 'e' * 64
 
 
 def table_record(table_name):
     return {'id': table_name, 'manifest': f'/l2/tables/{TABLE_MANIFEST_SHA256}/{table_name}.json',
             'manifestSha256': TABLE_MANIFEST_SHA256, 'manifestBytes': 10, 'recordCount': 1, 'sourceSha256': SOURCE_SHA256}
-
-
-def table_gap_row(key, step, status, reason):
-    return {'key': key, 'part': 'data', 'step': step, 'status': status, 'reason': reason,
-            'sourceIdentity': {'path': f'system/{key.split(":", 1)[1]}.dat', 'sha256': SOURCE_SHA256},
-            'evidence': 'docs/parts/data/EVIDENCE.md'}
 
 
 def world_gap_row(key, step, status, reason):
@@ -67,20 +59,6 @@ def write_load_check_file(project_root, lane_name, catalog_sha256, records, docu
     document = {'schemaVersion': 1, 'lane': lane_name, 'catalogSha256': catalog_sha256, 'records': records, **(document_changes or {})}
     path.write_text(json.dumps(document), encoding='utf-8')
     return path
-
-
-def write_table_decode_rows(project_root, failed_table_keys=('table:npcgrp',), unlisted_table_keys=('table:itemname-e',)):
-    rows = [table_gap_row(key, 'decode', 'gap', DECODE_FAILED_REASON) if key in failed_table_keys
-            else table_gap_row(key, 'decode', 'pending', DECODE_PENDING_REASON)
-            for key in load_census_denominators(['data-ui'])['data']['keys'] if key not in unlisted_table_keys]
-    write_gap_rows(project_root, 'data-ui', 'decode', rows)
-
-
-def write_window_layout_rows(project_root):
-    write_gap_rows(project_root, 'data-ui', 'layout', [
-        {'key': key, 'part': 'ui', 'step': 'layout', 'status': 'pending', 'reason': 'step-pending:layout',
-         'sourceIdentity': {'path': 'system/interface.xdat', 'sha256': INTERFACE_SOURCE_SHA256}, 'evidence': 'docs/parts/ui/EVIDENCE.md'}
-        for key in load_census_denominators(['data-ui'])['ui']['keys']])
 
 
 def rows_by_key(report):

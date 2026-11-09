@@ -16,6 +16,7 @@ from interface_layout_adapter import (ELBERA_INTERFACE_JSON_PATH, ELBERA_PARSE_X
 from lane_unit_outcomes import seal_unit_decode_failure, seal_unit_manifest, write_pinned_manifest_to_store
 from native_assets import UMODEL, UMODEL_SHA256, Converter, implementation_hash
 from native_store.catalog_writer import read_store_catalog, replace_file, sha256_hex, validate_catalog_record
+from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
 from native_store.store_paths import REPOSITORY_ROOT, confined_child_path, lane_store_root, lane_work_root, require_converter_output
 from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, UnitLedger, locked_input_records, require_batch_preflight,
                                       run_at_below_normal_priority)
@@ -191,10 +192,11 @@ def main(argv=None):
         run_at_below_normal_priority()
         requested_window_ids = list(dict.fromkeys(arguments.window)) if arguments.window else None
         limit = arguments.limit or sys.maxsize
-        if arguments.step == TEXTURES_STEP:
-            results = convert_textures_step(arguments.client, client_access, output_root, requested_window_ids, limit)
-        else:
-            results = convert_layout_step_from_client(client_access, output_root, arguments.elbera_root, requested_window_ids, limit)
+        with lane_coverage_refreshed_at_exit(REPOSITORY_ROOT, LANE_NAME):
+            if arguments.step == TEXTURES_STEP:
+                results = convert_textures_step(arguments.client, client_access, output_root, requested_window_ids, limit)
+            else:
+                results = convert_layout_step_from_client(client_access, output_root, arguments.elbera_root, requested_window_ids, limit)
         for result in results:
             print(json.dumps(result, sort_keys=True), flush=True)
     except (OSError, ValueError) as error:

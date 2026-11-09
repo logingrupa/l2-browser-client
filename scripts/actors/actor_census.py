@@ -22,6 +22,7 @@ from native_catalog.ue2 import FormatError
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import replace_file
 from native_store.gap_rows import write_gap_rows
+from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
 from native_store.store_paths import refuse_reparse_points
 from native_store.unit_ledger import run_at_below_normal_priority
 from reference_client_guard import require_reference_client
@@ -260,8 +261,9 @@ def main(argv=None):
                 print(f'Actor census differs from {ACTOR_UNIT_CENSUS_RELATIVE_PATH} at {differing_key}', file=sys.stderr)
                 return 1
         else:
-            write_actor_census(census, ACTOR_UNIT_CENSUS_PATH)
-            write_gap_rows(REPOSITORY_ROOT, ACTORS_LANE_NAME, CENSUS_GAP_ROW_STEP, rows)
+            with lane_coverage_refreshed_at_exit(REPOSITORY_ROOT, ACTORS_LANE_NAME):
+                write_actor_census(census, ACTOR_UNIT_CENSUS_PATH)
+                write_gap_rows(REPOSITORY_ROOT, ACTORS_LANE_NAME, CENSUS_GAP_ROW_STEP, rows)
     except (OSError, ValueError) as error:
         print(f'Actor census failed: {error}', file=sys.stderr)
         return 1

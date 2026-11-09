@@ -35,6 +35,7 @@ from native_catalog.tables import decode_table
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import merge_catalog_slice, read_store_catalog, write_store
 from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN
+from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root, require_converter_output
 from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, RECEIPT_RECORD_NAME, UnitLedger, locked_input_records,
                                       require_batch_preflight, run_at_below_normal_priority)
@@ -381,19 +382,20 @@ def main(argv=None):
         output_root = require_converter_output(REPOSITORY_ROOT, arguments.output)
         require_batch_preflight(REPOSITORY_ROOT, LANE_NAME, BATCH_MINIMUM_FREE_BYTES)
         run_at_below_normal_priority()
-        if arguments.skill is not None or arguments.batch == SKILL_BATCH_NAME:
-            return 1 if run_skill_conversion(client_access, output_root, arguments) else 0
-        converter = Converter(client_access.root, output_root.parent / CONVERTER_WORK_FOLDER, arguments.umodel)
-        if arguments.actor_sounds is not None or arguments.batch == ACTOR_SOUNDS_BATCH_NAME:
-            outcomes = run_actor_sound_conversion(REPOSITORY_ROOT, client_access, converter, output_root, lane_work_root(REPOSITORY_ROOT, LANE_NAME),
-                                                  decode_table, arguments.actor_sounds, arguments.limit,
-                                                  lambda: require_batch_preflight(REPOSITORY_ROOT, LANE_NAME, BATCH_MINIMUM_FREE_BYTES))
-        elif arguments.batch:
-            outcomes = run_batch_slice(client_access, output_root, converter, arguments.limit)
-        else:
-            outcomes = convert_npc(REPOSITORY_ROOT, client_access, converter, arguments.npc, lane_work_root(REPOSITORY_ROOT, LANE_NAME), output_root)
-            for outcome in outcomes:
-                print(json.dumps(printed_outcome(outcome), sort_keys=True), flush=True)
+        with lane_coverage_refreshed_at_exit(REPOSITORY_ROOT, LANE_NAME):
+            if arguments.skill is not None or arguments.batch == SKILL_BATCH_NAME:
+                return 1 if run_skill_conversion(client_access, output_root, arguments) else 0
+            converter = Converter(client_access.root, output_root.parent / CONVERTER_WORK_FOLDER, arguments.umodel)
+            if arguments.actor_sounds is not None or arguments.batch == ACTOR_SOUNDS_BATCH_NAME:
+                outcomes = run_actor_sound_conversion(REPOSITORY_ROOT, client_access, converter, output_root, lane_work_root(REPOSITORY_ROOT, LANE_NAME),
+                                                      decode_table, arguments.actor_sounds, arguments.limit,
+                                                      lambda: require_batch_preflight(REPOSITORY_ROOT, LANE_NAME, BATCH_MINIMUM_FREE_BYTES))
+            elif arguments.batch:
+                outcomes = run_batch_slice(client_access, output_root, converter, arguments.limit)
+            else:
+                outcomes = convert_npc(REPOSITORY_ROOT, client_access, converter, arguments.npc, lane_work_root(REPOSITORY_ROOT, LANE_NAME), output_root)
+                for outcome in outcomes:
+                    print(json.dumps(printed_outcome(outcome), sort_keys=True), flush=True)
     except (OSError, ValueError) as error:
         print(f'Actor conversion failed: {error}', file=sys.stderr)
         return 1

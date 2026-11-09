@@ -16,50 +16,29 @@ from native_catalog.ue2 import FormatError, Package, summary
 from world.map_actor_properties import actor_properties, decode_property, property_value
 from native_store.canonical_json import canonical_json_bytes
 from native_store.gap_rows import load_gap_reason_patterns, validate_gap_row, write_gap_rows
+from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
 from native_store.unit_ledger import run_at_below_normal_priority
 from reference_client_guard import require_reference_client
 from world.committed_world_data import REPOSITORY_ROOT, require_committed_destination, write_committed_world_bytes
+from world.tile_census_validation import (DECLARED_TERRAIN_MAP_BASIS, ELIGIBLE_STATUS, GAP_STATUS, GATE_FAIL, GATE_MISSING, GATE_NOT_APPLICABLE,
+                                          GATE_PASS, NON_TILE_KIND, PACKAGE_NAME_TERRAIN_MAP_BASIS, SUPPORTED_PACKAGE_LICENSEE,
+                                          SUPPORTED_PACKAGE_VERSION, TILE_CENSUS_RELATIVE_PATH, TILE_CENSUS_SCHEMA_VERSION, TILE_KIND,
+                                          TileCensusError, validate_tile_census)
 
-TILE_CENSUS_RELATIVE_PATH = 'docs/parts/world/tile-census.json'
-TILE_CENSUS_SCHEMA_VERSION = 1
 DEFAULT_CONVERSION_CLIENT_ROOT = Path('E:/Lineage2-client')
 WORLD_LANE_NAME = 'world'
 WORLD_PART_NAME = 'world'
 CENSUS_STEP = 'census'
 PACKAGE_HEADER_PREFIX_BYTES = 128
-SUPPORTED_PACKAGE_VERSION = 123
-SUPPORTED_PACKAGE_LICENSEE = 28
-EXPECTED_TILE_MAP_COUNT = 153
-EXPECTED_NON_TILE_MAP_COUNT = 10
 MAP_PATH_PATTERN = re.compile(r'maps/(?P<stem>[^/]+)\.unr', re.IGNORECASE)
 TILE_STEM_PATTERN = re.compile(r'\d{2}_\d{2}')
-TILE_KIND = 'tile'
-NON_TILE_KIND = 'non-tile'
-GATE_PASS = 'pass'
-GATE_FAIL = 'fail'
-GATE_MISSING = 'missing'
-GATE_NOT_APPLICABLE = 'not-applicable'
-TILE_TERRAIN_HEIGHT_GATES = (GATE_PASS, GATE_FAIL, GATE_MISSING)
 TERRAIN_HEIGHT_PACKAGE_PATH_FORMAT = 'textures/T_{tile_id}.utx'
 TERRAIN_HEIGHT_PACKAGE_SUFFIX = '.utx'
 TERRAIN_INFO_CLASS_OBJECT = 'Engine.TerrainInfo'
 TERRAIN_MAP_PROPERTY_NAME = 'TerrainMap'
-DECLARED_TERRAIN_MAP_BASIS = 'TerrainInfo.TerrainMap'
-PACKAGE_NAME_TERRAIN_MAP_BASIS = 'package-name'
-TERRAIN_MAP_PACKAGE_FIELDS = frozenset({'basis', 'object', 'path', 'packageVersion', 'licensee'})
 TERRAIN_HEIGHT_PACKAGE_MISSING_REASON = 'terrain-height-package-missing'
-ELIGIBLE_STATUS = 'eligible'
-GAP_STATUS = 'gap'
 ELIGIBLE_GAP_ROW_STATUS = 'pending'
 ELIGIBLE_GAP_ROW_REASON = 'step-pending:raw'
-CENSUS_ROW_FIELDS = ('map', 'kind', 'key', 'packageVersion', 'licensee', 'wrapper', 'mapReaderGate', 'terrainHeightGate',
-                     'terrainMapPackage', 'status', 'reason')
-CENSUS_FIELDS = frozenset({'schemaVersion', 'referenceTreeLockSha256', 'maps'})
-SHA256_TEXT_PATTERN = re.compile(r'[0-9a-f]{64}')
-
-
-class TileCensusError(ValueError):
-    pass
 
 
 def casefolded_unique_paths(lock_records):
@@ -219,60 +198,6 @@ def build_tile_census(client_access, lock, lock_records):
     return census
 
 
-def require_terrain_map_package_rules(row):
-    terrain_map_package = row['terrainMapPackage']
-    if row['kind'] == NON_TILE_KIND:
-        if terrain_map_package is not None:
-            raise TileCensusError(f'tile census row {row["key"]} is a non-tile map but names a terrainMapPackage')
-        return
-    if not (isinstance(terrain_map_package, dict) and set(terrain_map_package) == TERRAIN_MAP_PACKAGE_FIELDS):
-        raise TileCensusError(f'tile census row {row["key"]} terrainMapPackage must hold exactly {", ".join(sorted(TERRAIN_MAP_PACKAGE_FIELDS))}')
-    expected_basis = DECLARED_TERRAIN_MAP_BASIS if row['mapReaderGate'] == GATE_PASS else PACKAGE_NAME_TERRAIN_MAP_BASIS
-    if terrain_map_package['basis'] != expected_basis:
-        raise TileCensusError(f'tile census row {row["key"]} with map gate {row["mapReaderGate"]} must have terrain gate basis {expected_basis}, '
-                              f'not {terrain_map_package["basis"]!r}')
-    supported_package = (terrain_map_package['packageVersion'], terrain_map_package['licensee']) == (SUPPORTED_PACKAGE_VERSION, SUPPORTED_PACKAGE_LICENSEE)
-    if (row['terrainHeightGate'] == GATE_PASS) != (supported_package and terrain_map_package['path'] is not None):
-        raise TileCensusError(f'tile census row {row["key"]} terrain gate {row["terrainHeightGate"]} does not fit its height package '
-                              f'{terrain_map_package["path"]!r} {terrain_map_package["packageVersion"]}/{terrain_map_package["licensee"]}')
-
-
-def require_census_row_rules(row):
-    if not (isinstance(row, dict) and tuple(sorted(row)) == tuple(sorted(CENSUS_ROW_FIELDS))):
-        raise TileCensusError(f'tile census row must hold exactly {", ".join(CENSUS_ROW_FIELDS)}: {row!r}')
-    if row['kind'] not in (TILE_KIND, NON_TILE_KIND) or row['status'] not in (ELIGIBLE_STATUS, GAP_STATUS):
-        raise TileCensusError(f'tile census row {row["key"]} has an unknown kind or status: {row["kind"]!r} {row["status"]!r}')
-    allowed_terrain_gates = TILE_TERRAIN_HEIGHT_GATES if row['kind'] == TILE_KIND else (GATE_NOT_APPLICABLE,)
-    if row['mapReaderGate'] not in (GATE_PASS, GATE_FAIL) or row['terrainHeightGate'] not in allowed_terrain_gates:
-        raise TileCensusError(f'tile census row {row["key"]} has gates {row["mapReaderGate"]!r}/{row["terrainHeightGate"]!r} outside its kind')
-    require_terrain_map_package_rules(row)
-    both_gates_pass = row['mapReaderGate'] == GATE_PASS and row['terrainHeightGate'] == GATE_PASS
-    if (row['status'] == ELIGIBLE_STATUS) != both_gates_pass:
-        raise TileCensusError(f'tile census row {row["key"]} is {row["status"]} but its gates are {row["mapReaderGate"]}/{row["terrainHeightGate"]}')
-    if (row['reason'] is None) != (row['status'] == ELIGIBLE_STATUS):
-        raise TileCensusError(f'tile census row {row["key"]} status {row["status"]} does not fit its reason {row["reason"]!r}')
-
-
-def validate_tile_census(census):
-    if not (isinstance(census, dict) and set(census) == CENSUS_FIELDS and census['schemaVersion'] == TILE_CENSUS_SCHEMA_VERSION):
-        raise TileCensusError(f'tile census must be schemaVersion {TILE_CENSUS_SCHEMA_VERSION} with exactly {", ".join(sorted(CENSUS_FIELDS))}')
-    if not (isinstance(census['referenceTreeLockSha256'], str) and SHA256_TEXT_PATTERN.fullmatch(census['referenceTreeLockSha256'])):
-        raise TileCensusError(f'tile census referenceTreeLockSha256 must be 64 lowercase hex characters: {census["referenceTreeLockSha256"]!r}')
-    rows = census['maps']
-    if not isinstance(rows, list):
-        raise TileCensusError('tile census maps must be a list')
-    for row in rows:
-        require_census_row_rules(row)
-    kind_counts = Counter(row['kind'] for row in rows)
-    if (kind_counts[TILE_KIND], kind_counts[NON_TILE_KIND]) != (EXPECTED_TILE_MAP_COUNT, EXPECTED_NON_TILE_MAP_COUNT):
-        raise TileCensusError(f'tile census lists {kind_counts[TILE_KIND]} tiles and {kind_counts[NON_TILE_KIND]} non-tile maps, '
-                              f'expected {EXPECTED_TILE_MAP_COUNT} and {EXPECTED_NON_TILE_MAP_COUNT}')
-    keys = [row['key'] for row in rows]
-    if keys != sorted(set(keys)):
-        raise TileCensusError('tile census rows must be sorted by key with one row per key')
-    return census
-
-
 def tile_census_bytes(census):
     return canonical_json_bytes(census)
 
@@ -295,8 +220,9 @@ def main(argv=None):
         run_at_below_normal_priority()
         require_committed_destination(TILE_CENSUS_RELATIVE_PATH)
         census = validate_tile_census(build_tile_census(client_access, client_access.lock.document, client_access.lock.records_by_path))
-        write_committed_world_bytes(TILE_CENSUS_RELATIVE_PATH, tile_census_bytes(census))
-        write_gap_rows(REPOSITORY_ROOT, WORLD_LANE_NAME, CENSUS_STEP, tile_census_gap_rows(census, client_access.lock.records_by_path))
+        with lane_coverage_refreshed_at_exit(REPOSITORY_ROOT, WORLD_LANE_NAME):
+            write_committed_world_bytes(TILE_CENSUS_RELATIVE_PATH, tile_census_bytes(census))
+            write_gap_rows(REPOSITORY_ROOT, WORLD_LANE_NAME, CENSUS_STEP, tile_census_gap_rows(census, client_access.lock.records_by_path))
     except (OSError, ValueError) as error:
         print(f'Tile census failed: {error}', file=sys.stderr)
         return 1

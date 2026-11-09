@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from functools import cache
 import json
 import os
 from pathlib import Path
 import re
 import stat
+from types import MappingProxyType
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 LANE_OWNERSHIP_PATH = REPOSITORY_ROOT / '.planning' / 'lanes.json'
@@ -56,6 +58,7 @@ def confined_child_path(root, relative):
     return path
 
 
+@cache
 def read_lane_parts_by_name():
     ownership = json.loads(LANE_OWNERSHIP_PATH.read_text(encoding='utf-8'))
     lanes = ownership.get('lanes') if isinstance(ownership, dict) else None
@@ -67,7 +70,7 @@ def read_lane_parts_by_name():
         if not isinstance(parts, list) or not all(isinstance(part, str) and part for part in parts):
             raise StorePathError(f'lane {lane_name} has no part list in {LANE_OWNERSHIP_PATH}')
         parts_by_lane_name[lane_name] = tuple(parts)
-    return parts_by_lane_name
+    return MappingProxyType(parts_by_lane_name)
 
 
 def require_known_lane_name(lane_name):

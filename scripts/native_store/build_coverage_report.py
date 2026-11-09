@@ -254,6 +254,24 @@ def coverage_markdown_path(project_root, markdown):
     return markdown_path
 
 
+def write_coverage_report(project_root, store_root, lane_names, census_lane_names=(), output=None, run_command=subprocess.run):
+    exit_code, schedule, schedule_message = read_machine_schedule(run_command)
+    if exit_code == MACHINE_SCHEDULE_EXIT_INSIDE_WINDOW:
+        raise CoverageReportError(f'coverage report refused inside a machine window on {schedule["host"]}: {schedule_message}')
+    require_host_clock_on_riga_time(schedule['rigaTime'], datetime.now().astimezone())
+    output_path = coverage_output_path(project_root, store_root, output)
+    report = build_coverage_report(project_root, store_root, lane_names, schedule['rigaTime'], census_lane_names)
+    report = report_keeping_unchanged_generation_time(output_path, report)
+    replace_file(output_path, coverage_report_bytes(report))
+    return output_path, report
+
+
+def refresh_lane_coverage_report(project_root, lane_name):
+    store_root = lane_store_root(project_root, lane_name)
+    if coverage_output_path(project_root, store_root, None).is_file():
+        write_coverage_report(project_root, store_root, (lane_name,))
+
+
 def main(argv=None, project_root=REPOSITORY_ROOT, run_command=subprocess.run):
     lane_names = sorted(read_lane_parts_by_name())
     parser = argparse.ArgumentParser(description='Write coverage.json and the coverage table for one native catalog root.')
@@ -265,16 +283,10 @@ def main(argv=None, project_root=REPOSITORY_ROOT, run_command=subprocess.run):
     arguments = parser.parse_args(argv)
     report_lane_names = sorted({*([arguments.lane] if arguments.lane else []), *arguments.census_lanes}) or lane_names
     try:
-        exit_code, schedule, schedule_message = read_machine_schedule(run_command)
-        if exit_code == MACHINE_SCHEDULE_EXIT_INSIDE_WINDOW:
-            raise CoverageReportError(f'coverage report refused inside a machine window on {schedule["host"]}: {schedule_message}')
-        require_host_clock_on_riga_time(schedule['rigaTime'], datetime.now().astimezone())
-        output_path = coverage_output_path(project_root, arguments.store_root, arguments.output)
         markdown_path = coverage_markdown_path(project_root, arguments.markdown) if arguments.markdown is not None else None
         census_lane_names = sorted(set(arguments.census_lanes))
-        report = build_coverage_report(project_root, arguments.store_root, report_lane_names, schedule['rigaTime'], census_lane_names)
-        report = report_keeping_unchanged_generation_time(output_path, report)
-        replace_file(output_path, coverage_report_bytes(report))
+        output_path, report = write_coverage_report(project_root, arguments.store_root, report_lane_names, census_lane_names,
+                                                    arguments.output, run_command)
         if markdown_path is not None:
             replace_file(markdown_path, coverage_markdown(report, census_lane_names).encode('utf-8'))
     except (OSError, ValueError) as error:

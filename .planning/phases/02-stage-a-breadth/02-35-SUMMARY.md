@@ -177,7 +177,7 @@ exit=0
 ```
 
 - Reference overlap: no DEC-OWN-12 area covers `src/ui` (areas: materials, bsp-visibility, movement, particles, network), so no run applies.
-- `git grep -I -i -n -E "lineagen($|[^p])|linegen" -- . ":!recipes/native-inputs.lock.json"` is empty.
+- The self-contained repo name check (DEC-OWN-11) is empty.
 
 ## Known Stubs
 
