@@ -8,6 +8,7 @@ import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
 import { loadNativeSection, type NativeSection } from "../../src/scene/world/loadNativeSection";
 import { loadNativeTileChunks, type NativeTileSectionView } from "../../src/scene/world/loadNativeTileChunks";
 import { decodeJsonDocument, fixtureTileId, jsonBytes, readFixtureTileFiles, sha256Hex } from "../support/nativeTileFixtureStore";
+import { assetFixture } from "../fixtures/assetPackageFixture";
 
 vi.mock("@babylonjs/core/Loading/sceneLoader", () => ({ LoadAssetContainerAsync: vi.fn() }));
 
@@ -21,7 +22,12 @@ function glb(document: object): Uint8Array<ArrayBuffer> {
   bytes.fill(32, 20); bytes.set(text, 20); return bytes;
 }
 
-interface TileStoreOptions { readonly secondChunkTerrain?: "loaded" | "hidden"; readonly anchorLocation?: readonly number[] }
+interface TileStoreOptions {
+  readonly secondChunkTerrain?: "loaded" | "hidden";
+  readonly anchorLocation?: readonly number[];
+  readonly secondChunkModels?: readonly Document[];
+  readonly archives?: ReadonlyMap<string, Uint8Array<ArrayBuffer>>;
+}
 
 function tileStore(options: TileStoreOptions = {}) {
   const fixture = readFixtureTileFiles();
@@ -40,6 +46,10 @@ function tileStore(options: TileStoreOptions = {}) {
     secondChunk.terrain = { resource: `/l2/maps/${secondTerrainSha256}/native-tile-chunk-terrain/terrain.glb`, sha256: secondTerrainSha256,
       maskUvRule: "extrapolated" };
   }
+  if (options.secondChunkModels) {
+    secondChunk.models = options.secondChunkModels;
+    secondChunk.gaps = (secondChunk.gaps as Document[]).filter(row => row.step !== "meshes");
+  }
   const secondChunkBytes = jsonBytes(secondChunk), secondChunkSha256 = sha256Hex(secondChunkBytes);
   const tile = decodeJsonDocument(fixture.tile.bytes);
   if (options.anchorLocation) tile.anchor = { ...(tile.anchor as Document), location: options.anchorLocation };
@@ -51,7 +61,7 @@ function tileStore(options: TileStoreOptions = {}) {
   const responses = new Map<string, Uint8Array<ArrayBuffer>>([
     ["/l2/catalog.json", jsonBytes(catalog)], [tilePath, tileBytes], [fixture.chunk.path, fixture.chunk.bytes], [fixture.terrain.path, fixture.terrain.bytes],
     [`/l2/maps/${secondChunkSha256}/native-tile-chunk-runtime/manifest.json`, secondChunkBytes],
-    [`/l2/maps/${secondTerrainSha256}/native-tile-chunk-terrain/terrain.glb`, secondTerrainBytes],
+    [`/l2/maps/${secondTerrainSha256}/native-tile-chunk-terrain/terrain.glb`, secondTerrainBytes], ...(options.archives ?? []),
   ]);
   const terrainCentres = new Map([[fixture.terrain.sha256, { x: 1.28, z: 1.28 }], [secondTerrainSha256, { x: 1.28, z: 5 }]]);
   return { fixture, tilePath, tileSha256, responses, terrainCentres, secondTerrainSha256 };
@@ -72,7 +82,11 @@ describe("native tile chunk loading", () => {
     });
     vi.stubGlobal("fetch", fetcher);
     vi.mocked(LoadAssetContainerAsync).mockImplementation(async (bytes) => {
-      const centre = store.terrainCentres.get(sha256Hex(bytes as Uint8Array))!;
+      const centre = store.terrainCentres.get(sha256Hex(bytes as Uint8Array));
+      if (!centre) {
+        const container = new AssetContainer(scene), mesh = MeshBuilder.CreateBox("static mesh", { size: 1 }, scene);
+        container.meshes.push(mesh); container.removeAllFromScene(); return container;
+      }
       const container = new AssetContainer(scene), mesh = MeshBuilder.CreateBox(`terrain ${centre.z}`, { width: 2.56, height: 0.1, depth: 2.56 }, scene);
       mesh.position.set(centre.x, 0, centre.z); mesh.metadata = { gltf: { extras: { nativeObject: "Fixture.TerrainInfo0" } } };
       mesh.material = new StandardMaterial(`terrain material ${centre.z}`, scene);
@@ -106,6 +120,41 @@ describe("native tile chunk loading", () => {
     expect(section.supportMeshes).toEqual([]);
     expect(section.inspection()).toMatchObject({ modelCount: 0, placementCount: 0, bspMeshes: 0, collisionVerified: false, terrainMaterial: "neutral-inspection" });
     expect(view.gaps).toContain("meshes: step-pending:meshes");
+  });
+
+  it("loads each chunk model archive pinned by SHA-256 once and instantiates its placements at their source matrices", async () => {
+    const modelId = "interlude:Fixture_S.FixtureMesh";
+    const archive = await assetFixture("model", { id: modelId });
+    const archiveBytes = new Uint8Array(archive.bytes), archiveSha256 = sha256Hex(archiveBytes);
+    const placement = (index: number, matrix: number[]) => ({ id: `interlude:${fixtureTileId}.StaticMeshActor${index}`, modelId,
+      sourceActor: `${fixtureTileId}.StaticMeshActor${index}`, exportIndex: index, sourceMesh: "Fixture_S.FixtureMesh", matrix,
+      materialOverrides: [], collision: {} });
+    const matrices = [[1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 2, 1], [2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 1, 3, 1]];
+    const store = tileStore({ archives: new Map([[`/l2/${archiveSha256}/asset.l2asset`, archiveBytes]]),
+      secondChunkModels: [{ id: modelId, archive: `/l2/${archiveSha256}/asset.l2asset`, archiveSha256,
+        placements: [placement(3, matrices[0]!), placement(5, matrices[1]!)] }] });
+    const fetcher = serve(store);
+    const section = (await load())!;
+    expect(fetcher.mock.calls.filter(([url]) => url === `/l2/${archiveSha256}/asset.l2asset`)).toHaveLength(1);
+    const inspection = section.inspection();
+    expect(inspection).toMatchObject({ modelCount: 1, placementCount: 2, meshGapCount: 1 });
+    expect(inspection.placements.map(entry => [entry.id, entry.modelId, entry.worldMatrix])).toEqual([
+      [`interlude:${fixtureTileId}.StaticMeshActor3`, modelId, matrices[0]], [`interlude:${fixtureTileId}.StaticMeshActor5`, modelId, matrices[1]]]);
+    section.dispose();
+    expect(scene.meshes.filter(mesh => mesh.name === "static mesh")).toEqual([]);
+  });
+
+  it("refuses a model archive whose bytes differ from its pinned SHA-256", async () => {
+    const modelId = "interlude:Fixture_S.FixtureMesh";
+    const archive = await assetFixture("model", { id: modelId });
+    const archiveBytes = new Uint8Array(archive.bytes), archiveSha256 = sha256Hex(archiveBytes);
+    const tampered = archiveBytes.slice(); tampered[tampered.length - 1] ^= 1;
+    serve(tileStore({ archives: new Map([[`/l2/${archiveSha256}/asset.l2asset`, tampered]]),
+      secondChunkModels: [{ id: modelId, archive: `/l2/${archiveSha256}/asset.l2asset`, archiveSha256,
+        placements: [{ id: `interlude:${fixtureTileId}.StaticMeshActor3`, modelId, sourceActor: `${fixtureTileId}.StaticMeshActor3`, exportIndex: 3,
+          sourceMesh: "Fixture_S.FixtureMesh", matrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], materialOverrides: [], collision: {} }] }] }));
+    await expect(load()).rejects.toThrow(/hash\/length mismatch/);
+    expect(scene.meshes).toEqual([]);
   });
 
   it("reports the TerrainInfo chunk plan as its source-derived section window", async () => {

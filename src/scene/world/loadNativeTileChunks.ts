@@ -4,13 +4,16 @@ import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { AssetContainer } from "@babylonjs/core/assetContainer";
 import type { Scene } from "@babylonjs/core/scene";
 import { readTileCatalogRecord } from "../../assets/native/nativeCatalogRecords";
+import { assetPackageLimits, readAssetPackage } from "../../assets/package/readAssetPackage";
 import { readNativeCatalogUnlessNotStaged } from "../../assets/native/readNativeCatalog";
 import {
   fetchVerifiedNativeResource, inspectNativeWorldScene, loadNativeGlbContainer, nativeMeshBounds, terrainInfoChunkPlanWindow,
   type NativeSection, type NativeSectionManifest,
 } from "./loadNativeSection";
+import { disposeNativeModelInstances, instantiateNativeModelPlacements, type NativeModelInstance } from "./nativeModelPlacements";
 import {
-  describeNativeTileGapRow, parseNativeTileChunkManifest, type NativeTileChunkManifest, type NativeTileChunkTerrain, type NativeTileVector,
+  describeNativeTileGapRow, parseNativeTileChunkManifest, type NativeTileChunkManifest, type NativeTileChunkModel, type NativeTileChunkPlacement,
+  type NativeTileChunkTerrain, type NativeTileVector,
 } from "./nativeTileChunkManifest";
 import { parseNativeTileManifest, type NativeTileManifest } from "./nativeTileManifest";
 
@@ -53,6 +56,7 @@ const maximumChunkTerrainBytes = 128 * 1024 * 1024;
 const sourceUnitsToGltfMetres = 0.01;
 const tileSpawnAnchorRule = "authored PlayerStart XY on the chunk terrain surface; authored Z kept as a diagnostic";
 const surfaceRayClearanceMetres = 1;
+const staticMeshStep = "meshes";
 
 function decodeJsonResource(bytes: Uint8Array, label: string): unknown {
   try { return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)); }
@@ -82,6 +86,35 @@ function anchorOnChunkTerrain(loaded: readonly LoadedChunkTerrain[], authored: V
   throw new Error("The tile anchor lies outside every chunk terrain.");
 }
 
+function tileModelsById(chunks: readonly NativeTileChunkManifest[]): ReadonlyMap<string, NativeTileChunkModel> {
+  const models = new Map<string, NativeTileChunkModel>(), placementIds = new Set<string>();
+  for (const model of chunks.flatMap(chunk => chunk.models)) {
+    const listed = models.get(model.id);
+    if (listed && listed.archiveSha256 !== model.archiveSha256) throw new Error(`Native tile lists model ${model.id} with two archives.`);
+    models.set(model.id, listed ?? model);
+    for (const placement of model.placements) {
+      if (placementIds.has(placement.id)) throw new Error(`Native tile lists placement ${placement.id} twice.`);
+      placementIds.add(placement.id);
+    }
+  }
+  return models;
+}
+
+async function loadTileModelTemplate(scene: Scene, model: NativeTileChunkModel, signal: AbortSignal): Promise<AssetContainer> {
+  const archive = await fetchVerifiedNativeResource(model.archive, model.archiveSha256, signal);
+  if (archive.byteLength > assetPackageLimits.archiveBytes) throw new Error(`Native tile model archive exceeds ${assetPackageLimits.archiveBytes} bytes: ${model.id}`);
+  const asset = await readAssetPackage(archive);
+  signal.throwIfAborted();
+  const modelFile = asset.manifest.kind === "model" ? asset.manifest.model?.file : undefined;
+  const glb = modelFile === undefined ? undefined : asset.files.get(modelFile);
+  if (asset.manifest.id !== model.id || glb === undefined) throw new Error(`Native tile model archive ${model.archive} is not the model ${model.id}.`);
+  return loadNativeGlbContainer(scene, model.archive, new Uint8Array(glb));
+}
+
+function chunkMeshGapCount(chunks: readonly NativeTileChunkManifest[]): number {
+  return chunks.filter(chunk => chunk.gaps.some(row => row.step === staticMeshStep && row.status !== "pass")).length;
+}
+
 async function selectedTileRecord(signal: AbortSignal, tileId: string) {
   const catalog = await readNativeCatalogUnlessNotStaged(signal);
   if (!catalog) return null;
@@ -93,13 +126,15 @@ async function selectedTileRecord(signal: AbortSignal, tileId: string) {
 export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, tileId: string): Promise<NativeSection | null> {
   signal.throwIfAborted();
   if (scene.isDisposed || !scene.useRightHandedSystem) throw new Error("Native tile requires a live right-handed scene.");
-  const lifetime = new AbortController(), containers: AssetContainer[] = [];
+  const lifetime = new AbortController(), containers: AssetContainer[] = [], templates = new Map<string, AssetContainer>();
+  const instances: NativeModelInstance<NativeTileChunkPlacement>[] = [];
   let disposed = false;
   const dispose = () => {
     if (disposed) return;
     disposed = true; lifetime.abort(); signal.removeEventListener("abort", dispose);
     scene.onDisposeObservable.remove(observer);
-    for (const container of containers) container.dispose();
+    disposeNativeModelInstances(instances);
+    for (const container of [...containers, ...templates.values()]) container.dispose();
   };
   const observer = scene.onDisposeObservable.addOnce(dispose);
   signal.addEventListener("abort", dispose, { once: true });
@@ -136,6 +171,13 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
     const { chunk: anchorChunk, surface: spawnCandidate } = anchorOnChunkTerrain(loaded, authoredAnchor);
     const anchor: NativeTileSpawnAnchor = { playerStart: manifest.anchor.playerStart, authoredSourceLocation: manifest.anchor.location,
       terrainSurfacePosition: spawnCandidate.asArray(), authoredHeightAboveTerrainMetres: authoredAnchor.y - spawnCandidate.y, rule: tileSpawnAnchorRule };
+    const models = tileModelsById(chunks);
+    for (const model of models.values()) {
+      const template = await loadTileModelTemplate(scene, model, lifetime.signal);
+      if (disposed || scene.isDisposed) { template.dispose(); throw new Error("Native tile was disposed during loading."); }
+      templates.set(model.id, template);
+    }
+    instances.push(...instantiateNativeModelPlacements(scene, templates, chunks.flatMap(chunk => chunk.models.flatMap(model => model.placements))));
     for (const container of containers) container.addAllToScene();
     const terrainMeshes = loaded.flatMap(entry => entry.meshes);
     const terrainChunks = chunks.map(chunk => ({ chunkId: chunk.chunkId, terrain: chunk.terrain,
@@ -143,11 +185,13 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
     const view: NativeTileSectionView = { kind: "native-tile-runtime", tileId, terrainChunks, anchor, models: [], placements: [],
       terrain: { file: "terrain.glb", sha256: anchorChunk.terrain.sha256, bytes: anchorChunk.bytes, materialStatus: "neutral-inspection" },
       gaps: manifest.gaps.filter(row => row.status !== "pass").map(describeNativeTileGapRow) };
+    const meshGapCount = chunkMeshGapCount(chunks);
     const extent = nativeMeshBounds(terrainMeshes);
     lifetime.signal.throwIfAborted();
     return { manifest: view, manifestSha256: record.manifestSha256, terrainMeshes, supportMeshes: [], ...extent, spawnCandidate,
-      inspection: () => ({ ...inspectNativeWorldScene({ terrainMeshes, instances: [], modelCount: 0, disposed, preview: null, previewEnabled: false,
-        materialFailure: null, unsupportedRuntimeMaterials: [], bspMeshes: [], sectionWindow: terrainInfoChunkPlanWindow }), terrainChunks, tileAnchor: anchor }),
+      inspection: () => ({ ...inspectNativeWorldScene({ terrainMeshes, instances, modelCount: templates.size, disposed, preview: null, previewEnabled: false,
+        materialFailure: null, unsupportedRuntimeMaterials: [], bspMeshes: [], sectionWindow: terrainInfoChunkPlanWindow }),
+        terrainChunks, tileAnchor: anchor, meshGapCount }),
       setTerrainPreview() {}, dispose };
   } catch (error) { dispose(); throw error; }
 }

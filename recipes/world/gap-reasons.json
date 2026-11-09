@@ -1,9 +1,12 @@
 {
   "schemaVersion": 1,
-  "listVersion": 2,
+  "listVersion": 3,
   "reasons": [
     "terrain-height-version-unsupported:<version>",
     "terrain-quads-all-hidden",
-    "player-start-missing"
+    "player-start-missing",
+    "placement-outside-chunk-grid",
+    "placement-material-override-unsupported",
+    "static-mesh-reference-unresolved"
   ]
 }

@@ -1,9 +1,8 @@
 import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
 import { GLTFLoaderAnimationStartMode } from "@babylonjs/loaders/glTF/glTFFileLoader";
 import { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
-import type { AssetContainer, InstantiatedEntries } from "@babylonjs/core/assetContainer";
+import type { AssetContainer } from "@babylonjs/core/assetContainer";
 import type { Scene } from "@babylonjs/core/scene";
 import "@babylonjs/loaders/glTF";
 import { sha256 } from "../../assets/package/readAssetPackage";
@@ -15,6 +14,7 @@ import { nativeBspResources } from "./nativeBspResources";
 import { parseNativeTerrainPatches, validateSourceTerrainPatch, type NativeTerrainPatch } from "./nativeTerrainPatch";
 import { selectedNativeTileIdentity } from "./selectedNativeTile";
 import type { NativeTileSectionView } from "./loadNativeTileChunks";
+import { disposeNativeModelInstances, instantiateNativeModelPlacements, type NativeModelInstance } from "./nativeModelPlacements";
 
 interface Resource { file: string; sha256: string; bytes: number; }
 interface Model { id: string; sourceObject: string; model: Resource; archive: Resource; }
@@ -42,7 +42,6 @@ export interface NativeSectionManifest {
   terrainPatches?: NativeTerrainPatch[];
 }
 interface SectionRecord { id: string; manifest: string; manifestSha256: string; }
-interface Instance { source: Placement; root: TransformNode; copy: InstantiatedEntries; }
 export interface NativeSection {
   readonly manifest: NativeSectionManifest | NativeTileSectionView;
   readonly manifestSha256: string;
@@ -200,7 +199,7 @@ export const terrainInfoChunkPlanWindow: NativeSectionWindow = Object.freeze({ b
 
 export interface NativeWorldSceneInspectionInput {
   readonly terrainMeshes: readonly AbstractMesh[];
-  readonly instances: readonly Instance[];
+  readonly instances: readonly NativeModelInstance[];
   readonly modelCount: number;
   readonly disposed: boolean;
   readonly preview: NativeTerrainPreview | null;
@@ -234,6 +233,7 @@ export function inspectNativeWorldScene(input: NativeWorldSceneInspectionInput) 
 export type NativeWorldSceneInspection = ReturnType<typeof inspectNativeWorldScene> & {
   readonly terrainChunks?: NativeTileSectionView["terrainChunks"];
   readonly tileAnchor?: NativeTileSectionView["anchor"];
+  readonly meshGapCount?: number;
 };
 
 export async function loadNativeGlbContainer(scene: Scene, url: string, bytes: Uint8Array<ArrayBuffer>): Promise<AssetContainer> {
@@ -257,12 +257,6 @@ function bindMeshExtrasByGltfPrimitivePointer(container: AssetContainer, documen
   }
 }
 
-function disposeSceneNodesCreatedAfter(scene: Scene, existingNodes: ReadonlySet<unknown>): void {
-  for (const created of [...scene.meshes, ...scene.transformNodes, ...scene.skeletons, ...scene.animationGroups]) {
-    if (!existingNodes.has(created)) created.dispose();
-  }
-}
-
 export async function loadNativeSection(scene: Scene, signal: AbortSignal, identity = "map-20-20-section"): Promise<NativeSection | null> {
   signal.throwIfAborted();
   if (scene.isDisposed || !scene.useRightHandedSystem) throw new Error("Native section requires a live right-handed scene.");
@@ -271,7 +265,7 @@ export async function loadNativeSection(scene: Scene, signal: AbortSignal, ident
     const { loadNativeTileChunks } = await import("./loadNativeTileChunks");
     return loadNativeTileChunks(scene, signal, selectedTileId);
   }
-  const lifetime = new AbortController(), containers: AssetContainer[] = [], instances: Instance[] = [];
+  const lifetime = new AbortController(), containers: AssetContainer[] = [], instances: NativeModelInstance<Placement>[] = [];
   let preview: NativeTerrainPreview | null = null, previewEnabled = true, materialFailure: string | null = null;
   let disposed = false;
   let support: ReturnType<typeof attachNativeBspSupport> | undefined;
@@ -281,7 +275,7 @@ export async function loadNativeSection(scene: Scene, signal: AbortSignal, ident
     scene.onDisposeObservable.remove(observer);
     support?.dispose();
     preview?.dispose();
-    for (const instance of instances) { instance.copy.dispose(); instance.root.dispose(); }
+    disposeNativeModelInstances(instances);
     for (const container of containers) container.dispose();
   };
   const observer = scene.onDisposeObservable.addOnce(dispose);
@@ -321,22 +315,7 @@ export async function loadNativeSection(scene: Scene, signal: AbortSignal, ident
     }
     const templates = new Map<string, AssetContainer>();
     for (const model of manifest.models) templates.set(model.id, await load(`${base}map-section-models/${model.model.file}`, model.model));
-    for (const placement of manifest.placements) {
-      const template = templates.get(placement.modelId)!;
-      const root = new TransformNode(placement.id, scene);
-      const nodesBeforeClone = new Set<unknown>([...scene.meshes, ...scene.transformNodes, ...scene.skeletons, ...scene.animationGroups]);
-      let copy: InstantiatedEntries;
-      try { copy = template.instantiateModelsToScene(name => name, false, { doNotInstantiate: true }); }
-      catch (error) {
-        disposeSceneNodesCreatedAfter(scene, nodesBeforeClone);
-        root.dispose(); throw error;
-      }
-      instances.push({ source: placement, root, copy });
-      root.metadata = { nativePlacement: placement };
-      root.setPreTransformMatrix(Matrix.FromArray(placement.matrix));
-      for (const node of copy.rootNodes) node.parent = root;
-      root.computeWorldMatrix(true); root.freezeWorldMatrix();
-    }
+    instances.push(...instantiateNativeModelPlacements(scene, templates, manifest.placements));
     const bspMeshes: AbstractMesh[] = [];
     for (const record of manifest.bsp ?? []) {
       const container = await load(`${base}map-section-bsp/${record.model.file}`, record.model);

@@ -51,6 +51,60 @@ describe("native tile chunk manifest parser", () => {
   });
 });
 
+const archiveSha256 = "a".repeat(64);
+const modelId = "interlude:Fixture_S.FixtureMesh";
+const identityMatrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 2, 3, 4, 1];
+
+function chunkPlacement(overrides: Document = {}): Document {
+  return { id: "interlude:00_00.StaticMeshActor1", modelId, sourceActor: "00_00.StaticMeshActor1", exportIndex: 7,
+    sourceMesh: "Fixture_S.FixtureMesh", matrix: [...identityMatrix], materialOverrides: [],
+    collision: { bBlockActors: { status: "omitted-class-default-unresolved" } }, ...overrides };
+}
+
+function withModel(placements: Document[], model: Document = {}): Document {
+  return withChunk(chunk => {
+    chunk.models = [{ id: modelId, archive: `/l2/${archiveSha256}/asset.l2asset`, archiveSha256, placements, ...model }];
+  });
+}
+
+describe("native tile chunk manifest models", () => {
+  it("accepts zero models", () => {
+    expect(parseNativeTileChunkManifest(withChunk(chunk => { chunk.models = []; })).models).toEqual([]);
+  });
+
+  it("accepts a model record with a source placement and keeps its matrix and identity", () => {
+    const chunk = parseNativeTileChunkManifest(withModel([chunkPlacement()]));
+    expect(chunk.models).toEqual([{ id: modelId, archive: `/l2/${archiveSha256}/asset.l2asset`, archiveSha256,
+      placements: [{ ...chunkPlacement(), matrix: identityMatrix }] }]);
+  });
+
+  it.each<[string, () => Document, RegExp]>([
+    ["a placement whose modelId is not a listed model", () => withModel([chunkPlacement({ modelId: "interlude:Other_S.Mesh" })]), /invalid placement/],
+    ["a placement listed under another model", () => withChunk(chunk => {
+      chunk.models = [
+        { id: modelId, archive: `/l2/${archiveSha256}/asset.l2asset`, archiveSha256, placements: [chunkPlacement()] },
+        { id: "interlude:Other_S.Mesh", archive: `/l2/${"b".repeat(64)}/asset.l2asset`, archiveSha256: "b".repeat(64),
+          placements: [chunkPlacement({ id: "interlude:00_00.StaticMeshActor2" })] }];
+    }), /invalid placement/],
+    ["the same placement id twice", () => withModel([chunkPlacement(), chunkPlacement()]), /invalid placement/],
+    ["a matrix of 15 numbers", () => withModel([chunkPlacement({ matrix: identityMatrix.slice(1) })]), /invalid placement/],
+    ["a matrix with a non-finite number", () => withModel([chunkPlacement({ matrix: [Number.NaN, ...identityMatrix.slice(1)] })]), /invalid placement/],
+    ["a matrix whose last row is not affine", () => withModel([chunkPlacement({ matrix: identityMatrix.map((value, index) => index === 3 ? 1 : value) })]),
+      /invalid placement/],
+    ["a singular matrix", () => withModel([chunkPlacement({ matrix: identityMatrix.map((value, index) => index === 0 ? 0 : value) })]), /invalid placement/],
+    ["a placement with material overrides", () => withModel([chunkPlacement({ materialOverrides: [{ name: "Skins" }] })]), /invalid placement/],
+    ["a placement with an unknown field", () => withModel([chunkPlacement({ extra: true })]), /invalid placement/],
+    ["a source actor that is not a qualified object", () => withModel([chunkPlacement({ sourceActor: "StaticMeshActor1" })]), /invalid placement/],
+    ["a model with no placements", () => withModel([]), /invalid model/],
+    ["an archive path of another hash", () => withModel([chunkPlacement()], { archive: `/l2/${"b".repeat(64)}/asset.l2asset` }), /invalid model/],
+    ["a non-hex archive hash", () => withModel([chunkPlacement()], { archiveSha256: "Z".repeat(64), archive: `/l2/${"Z".repeat(64)}/asset.l2asset` }),
+      /invalid model/],
+    ["an archive path outside /l2/", () => withModel([chunkPlacement()], { archive: `/assets/${archiveSha256}/asset.l2asset` }), /invalid model/],
+  ])("refuses %s", (_, document, message) => {
+    expect(() => parseNativeTileChunkManifest(document())).toThrow(message);
+  });
+});
+
 describe("native tile manifest parser", () => {
   it("accepts the fixture tile manifest with its frame, anchor and pinned chunk", () => {
     const tile = parseNativeTileManifest(tileDocument());

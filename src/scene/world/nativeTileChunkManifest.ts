@@ -24,11 +24,22 @@ export interface NativeTileChunkTerrain {
   readonly maskUvRule: "extrapolated";
 }
 
+export interface NativeTileChunkPlacement {
+  readonly id: string;
+  readonly modelId: string;
+  readonly sourceActor: string;
+  readonly exportIndex: number;
+  readonly sourceMesh: string;
+  readonly matrix: readonly number[];
+  readonly materialOverrides: readonly [];
+  readonly collision: Readonly<Record<string, unknown>>;
+}
+
 export interface NativeTileChunkModel {
   readonly id: string;
   readonly archive: string;
   readonly archiveSha256: string;
-  readonly placements: readonly unknown[];
+  readonly placements: readonly NativeTileChunkPlacement[];
 }
 
 export interface NativeTileChunkManifest {
@@ -56,8 +67,13 @@ const chunkManifestFields = ["kind", "schemaVersion", "tileId", "chunkId", "sect
 const sectorRangeFields = ["firstColumn", "lastColumn", "firstRow", "lastRow"] as const;
 const terrainFields = ["resource", "sha256", "maskUvRule"];
 const modelFields = ["id", "archive", "archiveSha256", "placements"];
+const placementFields = ["id", "modelId", "sourceActor", "exportIndex", "sourceMesh", "matrix", "materialOverrides", "collision"];
 const chunkSectorSpan = 4;
-const maximumChunkModels = 128;
+const maximumChunkModels = 1024;
+const maximumChunkPlacements = 4096;
+const placementMatrixLength = 16;
+const affineBottomRowIndices = [3, 7, 11] as const;
+const minimumPlacementDeterminant = 1e-12;
 
 export function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -128,18 +144,47 @@ function parseChunkTerrain(value: unknown, label: string): NativeTileChunkTerrai
   return { resource: value.resource, sha256: value.sha256, maskUvRule: "extrapolated" };
 }
 
+function upperLeftDeterminant(matrix: readonly number[]): number {
+  const [a, b, c, , d, e, f, , g, h, i] = matrix as [number, number, number, number, number, number, number, number, number, number, number];
+  return a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+}
+
+export function isAffinePlacementMatrix(value: unknown): value is readonly number[] {
+  return Array.isArray(value) && value.length === placementMatrixLength &&
+    value.every(component => typeof component === "number" && Number.isFinite(component)) &&
+    affineBottomRowIndices.every(index => value[index] === 0) && value[15] === 1 &&
+    Math.abs(upperLeftDeterminant(value)) >= minimumPlacementDeterminant;
+}
+
+function parseChunkPlacement(value: unknown, modelIds: ReadonlySet<string>, parentModelId: string, placementIds: Set<string>, label: string): NativeTileChunkPlacement {
+  if (!hasExactKeys(value, placementFields) || typeof value.id !== "string" || !value.id || placementIds.has(value.id) ||
+    typeof value.modelId !== "string" || !modelIds.has(value.modelId) || value.modelId !== parentModelId || !isQualifiedObjectName(value.sourceActor) ||
+    !Number.isSafeInteger(value.exportIndex) || (value.exportIndex as number) < 1 || typeof value.sourceMesh !== "string" || !value.sourceMesh ||
+    !isAffinePlacementMatrix(value.matrix) || !Array.isArray(value.materialOverrides) || value.materialOverrides.length ||
+    !isPlainRecord(value.collision)) {
+    throw new Error(`${label} has an invalid placement.`);
+  }
+  placementIds.add(value.id);
+  return { id: value.id, modelId: value.modelId, sourceActor: value.sourceActor, exportIndex: value.exportIndex as number,
+    sourceMesh: value.sourceMesh, matrix: value.matrix, materialOverrides: [], collision: value.collision };
+}
+
 function parseChunkModels(value: unknown, label: string): readonly NativeTileChunkModel[] {
   if (!Array.isArray(value) || value.length > maximumChunkModels) throw new Error(`${label} models must be a list of at most ${maximumChunkModels}.`);
   const modelIds = new Set<string>();
-  return value.map(model => {
+  for (const model of value) {
     if (!hasExactKeys(model, modelFields) || typeof model.id !== "string" || !model.id || modelIds.has(model.id) ||
-      typeof model.archive !== "string" || typeof model.archiveSha256 !== "string" ||
-      modelArchivePattern.exec(model.archive)?.[1] !== model.archiveSha256 || !Array.isArray(model.placements)) {
+      typeof model.archive !== "string" || typeof model.archiveSha256 !== "string" || !nativeTileSha256Pattern.test(model.archiveSha256) ||
+      modelArchivePattern.exec(model.archive)?.[1] !== model.archiveSha256 || !Array.isArray(model.placements) || !model.placements.length) {
       throw new Error(`${label} has an invalid model.`);
     }
     modelIds.add(model.id);
-    return { id: model.id, archive: model.archive, archiveSha256: model.archiveSha256, placements: model.placements };
-  });
+  }
+  const placementIds = new Set<string>();
+  const models = value.map(model => ({ id: model.id as string, archive: model.archive as string, archiveSha256: model.archiveSha256 as string,
+    placements: (model.placements as unknown[]).map(placement => parseChunkPlacement(placement, modelIds, model.id as string, placementIds, label)) }));
+  if (placementIds.size > maximumChunkPlacements) throw new Error(`${label} lists more than ${maximumChunkPlacements} placements.`);
+  return models;
 }
 
 function requireGapRowForMissingComponent(gaps: readonly NativeTileGapRow[], step: string, label: string): void {

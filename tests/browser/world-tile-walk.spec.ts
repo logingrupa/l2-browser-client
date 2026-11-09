@@ -61,7 +61,7 @@ async function openTile(page: Page, pageErrors: string[]) {
   if (!world) throw new Error(`the native route loaded no world section for ${tileKey}`);
   expect(world.manifestSha256).toBe(tileRecord!.manifestSha256);
   expect(world.terrainTriangles).toBeGreaterThan(0);
-  expect(world).toMatchObject({ modelCount: 0, placementCount: 0, bspMeshes: 0, collisionVerified: false });
+  expect(world).toMatchObject({ bspMeshes: 0, collisionVerified: false });
   expect(world.sectionWindow).toEqual({ basis: "terrain-info-chunk-plan", status: "source-derived" });
   await expect(page.locator(".world-location h1")).toHaveText(`${tileId} · native world tile`);
   return world;
