@@ -21,9 +21,10 @@ from actors.npc_requests import (ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX, CONVERT
 from actors.npc_batch import (CachedClassClosures, npc_batch_plan, printed_batch_plan, read_census_and_npc_tables, run_npc_batch_slice,
                               shared_store_npc_ids)
 from actors.npc_store_records import (MODEL_ARCHIVE_FILE_NAME, bundle_output_records, converted_model_store_files_and_record,
-                                      file_output_record, profile_bundle_store_files_and_record, profile_record_npc_ids)
+                                      PROFILE_MANIFEST_FILE_NAME, file_output_record, profile_bundle_store_files_and_record,
+                                      profile_record_npc_ids)
 from data.lane_unit_outcomes import replace_step_gap_row
-from native_actor_profiles import MAXIMUM_NPC_PROFILE_BUNDLES, UnresolvedActorDefaultError, migrate_npc_profiles
+from native_actor_profiles import MAXIMUM_NPC_PROFILE_BUNDLES, migrate_npc_profiles
 from native_assets import UMODEL, UMODEL_SHA256, Converter, implementation_hash
 from native_assets_lib.gltf import json_bytes
 from native_catalog.effects import SourcePackages
@@ -218,12 +219,13 @@ class NpcConversionRun:
         class_identity = {**decoded_table_identity(self.npcgrp), 'object': row['class_name']}
         try:
             migrate_npc_profiles(self.client_access.root, recipe, bundle_root)
-        except UnresolvedActorDefaultError as error:
-            return ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX + error.field, class_identity
         except ReferenceClientLockError:
             raise
         except ValueError as error:
             return CONVERTER_REFUSED_REASON_PREFIX + self.path_free_reason(error), class_identity
+        excluded_profiles = json.loads((bundle_root / PROFILE_MANIFEST_FILE_NAME).read_bytes())['excludedProfiles']
+        if excluded_profiles:
+            return ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX + excluded_profiles[0]['field'], class_identity
         return None, None
 
     def convert_profile(self, npc_id, npc_key, row, model_unit_key, mesh_package_path):

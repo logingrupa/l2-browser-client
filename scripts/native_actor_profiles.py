@@ -190,7 +190,7 @@ def _extract_bundle(client, recipe, output, save):
         'npcgrp': decode_table(client, 'npcgrp')}
     packages = SourcePackages(client)
     defaults = DefaultReader(client, packages, output / '.work', save)
-    profiles, selections, mesh_sources = [], [], []
+    profiles, selections, mesh_sources, excluded_profiles = [], [], [], []
     for selection in recipe['profiles']:
         rows = select_exact_npc_rows_without_mesh_substitution(tables['npcname'], tables['npcgrp'], selection)
         definition = defaults.get(selection['expectedActorClass'])
@@ -206,8 +206,13 @@ def _extract_bundle(client, recipe, output, save):
         mesh, _, _ = packages.resolve(selection['expectedMesh'], 'SkeletalMesh')
         if mesh['object'] != selection['expectedMesh'] or mesh['resolution'] != 'exact-qualified-object':
             raise FormatError('NPC mesh requires an exact qualified skeletal mesh export')
+        try:
+            profile = resolved_profile(selection, definition, recipe['sourceUnitsPerMetre'])
+        except UnresolvedActorDefaultError as error:
+            excluded_profiles.append({'npcId': selection['npcId'], 'field': error.field})
+            continue
         mesh_sources.append(mesh)
-        profiles.append(resolved_profile(selection, definition, recipe['sourceUnitsPerMetre']))
+        profiles.append(profile)
         selections.append({'id': profiles[-1]['id'], 'classChain': chain, 'meshSource': mesh,
             'nameRow': audit_selected_row_offsets_and_typed_values(client, tables['npcname'], rows[0][0]),
             'groupRow': audit_selected_row_offsets_and_typed_values(client, tables['npcgrp'], rows[1][0])})
@@ -231,7 +236,8 @@ def _extract_bundle(client, recipe, output, save):
         for name, table in tables.items()}, 'selections': selections}))
     return {'profiles': profiles, 'sourceFiles': [source_files[key] for key in sorted(source_files)],
         'sourceSelections': 'source/npc-selections.json', 'classDefinitions': [row['object'] for row in classes],
-        'support': SUPPORT, 'coverage': {'requestedProfiles': len(profiles), 'resolvedProfiles': len(profiles),
+        'excludedProfiles': sorted(excluded_profiles, key=lambda excluded: excluded['npcId']),
+        'support': SUPPORT, 'coverage': {'requestedProfiles': len(recipe['profiles']), 'resolvedProfiles': len(profiles),
             'nativeNameRows': len(tables['npcname']['data']['npc']), 'nativePresentationRows': len(tables['npcgrp']['data']['npc'])},
         'gaps': ['Source profile fields only; complete native actor placement, collision sweeps and runtime resource overrides are not certified.',
             'No NPC gameplay/server statistics or full NPC coverage is claimed.',

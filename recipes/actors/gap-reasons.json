@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 2,
+  "listVersion": 3,
   "reasons": [
     "conversion-pending",
     "mesh-package-not-in-client:<package>",
@@ -10,6 +10,8 @@
     "npc-name-row-missing",
     "npc-name-empty",
     "animation-outside-mesh-package:<package>",
-    "converter-refused:<message>"
+    "converter-refused:<message>",
+    "class-closure-over-limit:<count>",
+    "profile-bundle-capacity-exceeded"
   ]
 }

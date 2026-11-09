@@ -165,7 +165,7 @@ class ConvertActorsGapReasonListTests(unittest.TestCase):
         reasons = [convert_actors.NPC_NAME_ROW_MISSING_REASON, convert_actors.NPC_NAME_EMPTY_REASON,
                    animation_reference_gap_reason(None, 'SyntheticMonsters'), animation_reference_gap_reason('Other.synthetic_anim', 'SyntheticMonsters'),
                    convert_actors.ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX + 'DrawScale', convert_actors.CONVERTER_REFUSED_REASON_PREFIX + 'Object missing: x',
-                   'sound-identity-unresolved', 'no-mesh-in-row']
+                   'sound-identity-unresolved', 'no-mesh-in-row', 'class-closure-over-limit:96', 'profile-bundle-capacity-exceeded']
         for reason in reasons:
             with self.subTest(reason=reason):
                 validate_gap_row({'key': 'npc:20001', 'part': 'npcs', 'step': 'npc-model', 'status': 'gap', 'reason': reason,
@@ -225,8 +225,12 @@ class ConvertNpcGapTests(unittest.TestCase):
         model_unit_key = model_catalog_id_of(self.convertible_selection)
         missing = run.convert_profile(2, 'npc:2', synthetic_npcgrp_row(2), model_unit_key, 'animations/LineageMonsters.ukx')
         empty = run.convert_profile(4, 'npc:4', synthetic_npcgrp_row(4), model_unit_key, 'animations/LineageMonsters.ukx')
-        unresolved_default = native_actor_profiles.UnresolvedActorDefaultError('DrawScale', 'Unsupported or unresolved positive native actor field: DrawScale')
-        with patch.object(convert_actors, 'migrate_npc_profiles', side_effect=unresolved_default):
+        def migrate_excluding_the_only_profile(client_root, recipe, bundle_root):
+            bundle_root.mkdir(parents=True, exist_ok=True)
+            (bundle_root / 'manifest.json').write_text(json.dumps({'profiles': [], 'excludedProfiles': [
+                {'npcId': recipe['profiles'][0]['npcId'], 'field': 'DrawScale'}]}), encoding='utf-8')
+
+        with patch.object(convert_actors, 'migrate_npc_profiles', side_effect=migrate_excluding_the_only_profile):
             unresolved = run.convert_profile(1, 'npc:1', synthetic_npcgrp_row(1, *self.convertible_selection.values()), model_unit_key,
                                              'animations/LineageMonsters.ukx')
         self.assertEqual([outcome['reason'] for outcome in (missing, empty, unresolved)],

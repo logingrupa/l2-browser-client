@@ -11,8 +11,7 @@ from actors.npc_requests import (ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX, CONVERT
                                  TRANSIENT_FAILURES, npc_profile_selection, npc_profiles_recipe)
 from actors.npc_store_records import (PROFILE_MANIFEST_FILE_NAME, bundle_output_records, catalog_with_record_replaced,
                                       converted_model_store_files_and_record, profile_bundle_store_files_and_record)
-from native_actor_profiles import (MAXIMUM_NPC_PROFILE_BUNDLES, MAXIMUM_PROFILES_PER_BUNDLE, UnresolvedActorDefaultError, migrate_npc_profiles,
-                                   npc_profile_tool_pins)
+from native_actor_profiles import MAXIMUM_NPC_PROFILE_BUNDLES, MAXIMUM_PROFILES_PER_BUNDLE, migrate_npc_profiles, npc_profile_tool_pins
 from native_assets_lib.gltf import json_bytes
 from native_effect_bundle import MAX_CLASSES
 from native_store.canonical_json import canonical_json_bytes
@@ -292,17 +291,19 @@ class NpcBatchSlice:
                         'cacheHit': False}
             except ReferenceClientLockError:
                 raise
-            except UnresolvedActorDefaultError as error:
-                reason = ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX + error.field
             except ValueError as error:
                 reason = CONVERTER_REFUSED_REASON_PREFIX + self.run.path_free_reason(error)
         if reason is not None:
             gap_rows = [self.pack_gap_row(pack.pack_id, row, reason) for row in resolvable_rows]
         elif resolvable_rows:
-            outputs = bundle_output_records(self.pack_ledger.lane_folder, bundle_root)
+            manifest = json.loads((bundle_root / PROFILE_MANIFEST_FILE_NAME).read_bytes())
+            rows_by_npc_id = {row.npc_id: row for row in resolvable_rows}
+            gap_rows = [self.pack_gap_row(pack.pack_id, rows_by_npc_id[excluded['npcId']], ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX + excluded['field'])
+                        for excluded in manifest['excludedProfiles']]
+            outputs = bundle_output_records(self.pack_ledger.lane_folder, bundle_root) if manifest['profiles'] else []
         self.pack_ledger.seal(pack_key, fingerprint, {'config': config, 'inputs': inputs, 'outputs': outputs, 'gapRows': gap_rows})
-        return {'key': pack_key, 'step': NPC_PROFILE_PACK_STEP, 'status': GAP_STATUS if reason else PASS_STATUS, 'reason': reason,
-                'cacheHit': False}
+        status = PASS_STATUS if outputs else GAP_STATUS
+        return {'key': pack_key, 'step': NPC_PROFILE_PACK_STEP, 'status': status, 'reason': reason, 'cacheHit': False}
 
     def sealed_pack_receipts(self):
         receipts = []
