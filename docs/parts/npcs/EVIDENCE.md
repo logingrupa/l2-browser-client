@@ -40,6 +40,16 @@ NATIVE_STORE_ROOT=actors DEV_PORT=5175 pnpm test:e2e tests/browser/sandbox-npc-g
 
 A second conversion run skips both sealed units and rewrites no lane-store byte (catalog SHA-256 unchanged).
 
+### NPC profile to model join and profile bounds (plan 02-33)
+
+- One join, `joinNpcProfileToModel` in `src/assets/native/nativeNpcModelJoin.ts`, serves the catalog index and `loadNativeActorCatalog`. Index records name the join kind (`join`).
+- A profile with `modelCatalogId` (`^npc-model:[a-f0-9]{64}$`, the same pattern in Python and TypeScript) resolves to exactly that model. A missing model answers `not-in-catalog` with `NPC profile names model <id>, which is not in the catalog`. A model of another mesh makes the index refuse the catalog. Two profiles of `LineageMonsters.field_stalker_m00` that name two model records resolve to their own models.
+- Legacy join, scope: a profile without `modelCatalogId` is accepted only in the shared-store record `native-npc-profiles` (npc:21622). Any other record refuses it with `Native NPC profile <id> in bundle <record id> has no model catalog id.` The legacy join matches the mesh against non-`npc-model:` records only and needs exactly one candidate (`join: "legacy-single-mesh-match"`). On a merged catalog with a lane pack of the same mesh, npc:21622 stays on `musveren:0`.
+- Legacy join, end: the restage that rewrites the shared-store bundle with `modelCatalogId` (Needs Human, plan 02-05) removes it. The same change switches the `musveren:0` reads in `src/runtime/createNativeSliceRuntime.ts` to the joined id of `nativeSliceNpcIds` (Needs Human, plan 02-33).
+- `loadNativeActorCatalog` names no model id. It loads the models joined to the profiles of `nativeSliceNpcIds` (`[21622]`, the npcIds of `recipes/native-npc-profiles.json`, pinned by `tests/unit/nativeNpcProfileBounds.test.ts`).
+- Bounds: 64 bundles of 256 profiles (`maximumNpcProfileBundles`, `maximumProfilesPerBundle`), equal to `MAXIMUM_NPC_PROFILE_BUNDLES` and `MAXIMUM_PROFILES_PER_BUNDLE` in `scripts/native_actor_profiles.py`. Their product, 16,384, covers the 6,519 npcgrp rows of `actor-unit-census.json`. These are input-size guards, not Lineage II values. `scripts/stage_native_runtime.py` keeps its 128-profile check.
+- The red baseline is closed: both `nativeNpcProfiles` snapshot cases pass. `pnpm test:unit` on 2026-11-09 04:50 Riga: 142 files passed, 5 skipped; 1,861 tests passed, 82 skipped, 0 failed.
+
 ### Actor unit census (plan 02-21)
 
 Plan 02-21 adds a census only. It converts nothing and loads nothing. A "load" counts only from a load-check record, and the census proves nothing about rendering. What it does prove: every lock `animations/` package has a recorded header gate, and every decoded actor row (`npc:`, `character:`, `item:` for weapongrp and armorgrp, `skill:`) has exactly one census status, either `pending` with `conversion-pending` or `gap` with a listed reason.
