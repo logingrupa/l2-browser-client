@@ -24,6 +24,7 @@ Every decoded skillgrp row has one binding, built by `scripts/actors/skill_bindi
 ### Conversion
 
 - One sealed ledger unit per visual root (`skill-root:<description>`, step `skill-effect-root`), converted through `native_effect_bundle` from the first key with an exact sound row, staged with `scripts/stage-native-effect.mjs` and written to the actors lane store under `l2/effects/<sha>/`.
+- The staged folder holds every file its manifest pins: the resources and, since 2026-11-09, the source bundle manifest and graph as `source-bundle/<sha256>.json`, so `write_lane_catalog.py --lane actors` pins the effect records (`tests/pipeline/test_skill_effect_store_pins.py`). The 22 sealed roots were reconverted with that stage: the same 17 converted and 5 gap roots, and the same gap-row counts.
 - Every key that names a converted root gets the record `interlude:skill:<id>:level:<level>:native-description-action` with `bundleId` `interlude:skill-root:<description>`.
 - Sprite, Mesh, Beam, Ribbon and VertMesh emitter records and their texture and static mesh references convert. Spark, Trail and other classes keep their records and convert nothing. VertMesh objects stay raw native data: the Converter has no VertMesh adapter.
 - `recipes/actors/emitter-class-coverage.json` lists the classes the browser runs (`Engine.MeshEmitter`, `Engine.SpriteEmitter`). A key passes only when every emitter class of its root is listed; otherwise it is `emitter-class-unported:<class>` (FX-01).
@@ -62,8 +63,8 @@ Lane catalog `6965638a9505ce0ce6b13f189e3e74e3dc97fc5aa5195994b8718d10e50f31e6`:
 - Beam, Ribbon and VertMesh run only after the FX-01 simulator (02-68, 02-69); VertMesh meshes need a Converter adapter.
 - Five roots are refused by the converter; their reasons are in the gap rows.
 - Runtime presentation of a converted effect on a `skill-cast` event for skills other than Power Strike is integration wiring (`createNativeSliceEffects.ts`).
-- The native route cannot start on the lane-only actors catalog, so the browser check runs on the harness page (OVERNIGHT-DECISIONS rows 392 and 397).
-- Restage: `write_lane_catalog.py --lane actors` refuses the staged effect manifests (row 407); see STATE.md Needs Human.
+- The cast check still runs on the harness page; the dev store switch now serves the actors lane as its restage union, so the native route can start on it.
+- Restage: the actors lane catalog pins and `write_lane_catalog.py --lane actors --plan` prints the merge command; the merge into `public/l2` is the integration thread's restage.
 
 ## Evidence
 
