@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-15-PLAN.md
-last_updated: "2026-11-09T04:03:25.877Z"
+stopped_at: Completed 02-26-PLAN.md
+last_updated: "2026-11-09T04:41:40.800Z"
 last_activity: 2026-11-09
 last_activity_desc: Phase 02 plan 02-15 complete (TerrainInfo-derived 4x4-sector chunk plan and per-chunk terrain for 20_21 and 20_20, WORLD-01 pending)
-state_head: 3cd27dfe5c8b2e40be3fc36a99351aa44819c5d4
+state_head: 5352a07d60013235e36934dbb683249259349d60
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 87
-  completed_plans: 50
+  completed_plans: 51
   percent: 0
 ---
 
@@ -102,6 +102,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 2 P36 | 8min | 3 tasks | 10 files |
 | Phase 02 P41 | 6min | 3 tasks | 6 files |
 | Phase 2 P15 | 40min | 3 tasks | 25 files |
+| Phase 02 P26 | 27min | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -235,6 +236,10 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 2]: 02-15: tiles plan as TerrainInfo-derived 4x4-sector chunks chunk-<column>-<row>; every chunk terrain labelled extrapolated (OVERNIGHT-DECISIONS 335-337)
 - [Phase 2]: 02-15: anchor = first PlayerStart whose bEnabled resolves true from its tag or the Engine.PlayerStart class chain; unresolved gives a null anchor (row 338)
 - [Phase 2]: 02-15: per-chunk gap rows name the first failing qualified sector, not the chunk id; empty layer slots stay listed; the chunk planner replaces the hand-chosen 20_20 XY windows (rows 339-341)
+- [Phase 02]: 02-26: census status precedence converted, failed, gap, pending; reason from the latest step in GAP_CENSUS_STEP_ORDER (OVERNIGHT row 346)
+- [Phase 02]: 02-26: seed reason item-group-row-absent (listVersion 3); etcitem and ungrouped item rows are integration lane census rows (rows 347, 348)
+- [Phase 02]: 02-26: --census-lanes reads gap rows, converted keys and lane-pinned load checks; a report measures only its lanes' parts; output artifacts/lane-store/integration/coverage-census.json (rows 349, 350)
+- [Phase 02]: 02-26: denominators from committed files only, chargrp 15 with no padding row subtracted; unchanged reruns keep generatedAtRiga; INT-01 stays Pending (rows 351 to 353)
 
 ### Pending Todos
 
@@ -304,7 +309,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-09T04:03:25.299Z
-Stopped at: Completed 02-15-PLAN.md
+Last session: 2026-11-09T04:41:40.334Z
+Stopped at: Completed 02-26-PLAN.md
 Resume file: None
 - Needs Human (OVERNIGHT-DECISIONS row 301): the actors lane confirms the import repoints in `scripts/prepare-native-player-aliases.py` and `scripts/test_effect_readiness.py`; the world lane points `scripts/world/copy_world07_fixtures.py` at `scripts/native_assets_lib/sha256_identity.py` and removes its pin from the owner scan in `tests/pipeline/test_converter_output_guard.py`.
