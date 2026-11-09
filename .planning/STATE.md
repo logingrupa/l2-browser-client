@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-36-PLAN.md
-last_updated: "2026-11-09T03:06:11.488Z"
+stopped_at: Completed 02-41-PLAN.md
+last_updated: "2026-11-09T03:16:51.677Z"
 last_activity: 2026-11-09
-last_activity_desc: Phase 02 plan 02-36 complete (typed actor clip events, clip listing and one play API, ACT-04 pending)
-state_head: 1d2ba2358113dadc8bcaf5c1a6db91e4ea8d6adf
+last_activity_desc: Phase 02 plan 02-41 complete (body-part equipment slots from decoded body_part values, ACT-03 pending)
+state_head: "0b7274300c563f7e446609d4f63d8809f5d9009b"
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 87
-  completed_plans: 48
+  completed_plans: 49
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 02 (Stage A breadth) - EXECUTING
-Plan: 02-36 complete, 31 of 70 plans summarized
+Plan: 02-41 complete, 32 of 70 plans summarized
 Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-09 - Plan 02-36 complete: `parseActorClipEvents` types asset.json `animationEvents` verbatim with the ordinal and guards each field (`ActorClipEventsError`); `listActorClips` joins loaded clips by exact name, orders events by normalized time then ordinal and keeps unmatched events in `eventsWithoutClip`; `playActorClip` owns the refusals; the clip hub answers `actorClipEntityIds` and `actorClipListing` (replacing `available`); `pnpm test:unit` 1,909 passed, 0 failed. ACT-04 stays Pending until 02-37 and 02-39.
+Last activity: 2026-11-09 - Plan 02-41 complete: `EquipmentSlot` is `upper` or `body-part:<value>` named by the source `body_part` value; `isEquipmentSlot` accepts only the canonical form, `equipmentSlotForBodyPart` owns the key form, equipment keys sort `upper` first then by value; all 19 distinct decoded weapongrp and armorgrp `body_part` values map to accepted slots, meaning undecoded; `pnpm test:unit` 1,927 passed, 0 failed. ACT-03 stays Pending until 02-21 and 02-42.
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -100,6 +100,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 2 P28 | 14min | 3 tasks | 11 files |
 | Phase 02 P33 | 12min | 3 tasks | 19 files |
 | Phase 2 P36 | 8min | 3 tasks | 10 files |
+| Phase 02 P41 | 6min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -228,6 +229,8 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: Plan 02-36: typed clip events in src/assets/native/actorClipEvents.ts, listing and play API in src/animation/actorClipPlayback.ts (OVERNIGHT-DECISIONS row 329)
 - [Phase 02]: Plan 02-36: the clip hub answers actorClipEntityIds and actorClipListing in place of available; play delegates to playActorClip with unchanged refusal texts (row 330)
 - [Phase 02]: Plan 02-36: a malformed asset.json event fails the actor load with ActorClipEventsError; all 1,740 served-store events parse; ACT-04 stays Pending until 02-37 and 02-39 (rows 66 and 331)
+- [Phase 02]: Plan 02-41: equipment slots are upper or body-part:<value>, the source body_part value in canonical decimal; equipmentSlotForBodyPart owns the key form and upper stays as its own key sorted first (OVERNIGHT-DECISIONS rows 332, 333)
+- [Phase 02]: Plan 02-41: a repeat equip and an unequip of an empty slot keep the row 46 confirmation update with the unchanged entity, against the must-have wording, so the sandbox sheet acceptance check holds; ACT-03 stays Pending until 02-21 and 02-42 (row 334)
 
 ### Pending Todos
 
@@ -297,7 +300,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-09T03:06:10.598Z
-Stopped at: Completed 02-36-PLAN.md
+Last session: 2026-11-09T03:16:51.224Z
+Stopped at: Completed 02-41-PLAN.md
 Resume file: None
 - Needs Human (OVERNIGHT-DECISIONS row 301): the actors lane confirms the import repoints in `scripts/prepare-native-player-aliases.py` and `scripts/test_effect_readiness.py`; the world lane points `scripts/world/copy_world07_fixtures.py` at `scripts/native_assets_lib/sha256_identity.py` and removes its pin from the owner scan in `tests/pipeline/test_converter_output_guard.py`.
