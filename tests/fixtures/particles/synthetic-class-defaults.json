@@ -1,0 +1,40 @@
+{
+  "description": "Synthetic class defaults authored for the particle simulator tests (D3). They stand in for the Interlude class defaults a bundle merges into effectiveProperties; no value is copied from a client record.",
+  "Engine.ParticleEmitter": {
+    "CoordinateSystem": 1,
+    "MaxParticles": 12,
+    "RespawnDeadParticles": true,
+    "AutomaticInitialSpawning": true,
+    "DrawStyle": 3,
+    "LifetimeRange": { "Min": 2.0, "Max": 3.0 },
+    "StartSizeRange": { "X": { "Min": 50.0, "Max": 60.0 }, "Y": { "Min": 50.0, "Max": 60.0 }, "Z": { "Min": 50.0, "Max": 60.0 } },
+    "UseRegularSizeScale": true,
+    "SpinCCWorCW": { "X": 0.25, "Y": 0.5, "Z": 0.75 },
+    "MaxAbsVelocity": { "X": 5000.0, "Y": 5000.0, "Z": 5000.0 },
+    "TriggerDisabled": true,
+    "StartMassRange": { "Min": 2.0, "Max": 2.0 },
+    "Opacity": 1.0,
+    "FadeInFactor": { "X": 1.0, "Y": 1.0, "Z": 1.0, "W": 1.0 },
+    "FadeOutFactor": { "X": 1.0, "Y": 1.0, "Z": 1.0, "W": 1.0 },
+    "AddLocationFromOtherEmitter": -1,
+    "AddVelocityFromOtherEmitter": -1,
+    "SpawnFromOtherEmitter": -1,
+    "AddVelocityMultiplierRange": { "X": { "Min": 1.0, "Max": 1.0 }, "Y": { "Min": 1.0, "Max": 1.0 }, "Z": { "Min": 1.0, "Max": 1.0 } },
+    "ColorMultiplierRange": { "X": { "Min": 1.0, "Max": 1.0 }, "Y": { "Min": 1.0, "Max": 1.0 }, "Z": { "Min": 1.0, "Max": 1.0 } }
+  },
+  "Engine.SpriteEmitter": {
+    "ProjectionNormal": { "X": 0.0, "Y": 0.0, "Z": 1.0 }
+  },
+  "Engine.MeshEmitter": {
+    "UseMeshBlendMode": true,
+    "StartSizeRange": { "X": { "Min": 1.0, "Max": 1.0 }, "Y": { "Min": 1.0, "Max": 1.0 }, "Z": { "Min": 1.0, "Max": 1.0 } }
+  },
+  "Engine.Emitter": {
+    "SpeedRate": 1.0,
+    "bNoDelete": true,
+    "DrawScale": 1.0,
+    "DrawScale3D": { "X": 1.0, "Y": 1.0, "Z": 1.0 },
+    "VisibilityInterpRange": 250.0,
+    "bSetSizeScale": true
+  }
+}
