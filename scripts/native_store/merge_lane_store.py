@@ -16,6 +16,7 @@ sys.path.insert(0, str(SCRIPTS_ROOT))
 from native_assets import verify_archive
 from native_assets_lib.asset_manifest import require_supported_asset_manifest
 from native_assets_lib.gltf import json_bytes
+from native_store.catalog_index_keys import require_npc_profiles_join_models_of_their_mesh
 from native_store.catalog_writer import (KNOWN_CATALOG_SLICES, decode_store_catalog, merge_catalog_slice_records, pinned_store_files,
                                          read_current_catalog_bytes, sha256_hex, validate_catalog_record, verify_store_destinations, write_store)
 from native_store.store_paths import SHA256_PATTERN, confined_child_path, refuse_reparse_points
@@ -155,6 +156,7 @@ def merge_verified_lane_store(lane_store_root, target_root, expected_base_catalo
     before = read_required_catalog_bytes(target, 'target store')
     records_by_slice, after = lane_union_catalog(read_required_catalog_bytes(lane_root, 'lane store'), before, expected_base_catalog_sha256)
     files = pinned_store_files(lane_root, records_by_slice)
+    require_npc_profiles_join_models_of_their_mesh(lane_root, records_by_slice, target)
     require_version_two_lane_archives(lane_root, files)
     copied_files = sorted(verify_store_destinations(target, files))
     unchanged_files = sorted(relative for relative, _ in files.values() if relative not in copied_files)

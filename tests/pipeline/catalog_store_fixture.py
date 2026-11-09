@@ -19,11 +19,16 @@ def model_record(model_id, source_object):
             'source': {'object': source_object}}
 
 
-def write_profile_manifest(store_root, kind, profiles):
+def profile_manifest_payload_and_record(kind, profiles):
     payload = json.dumps({'schemaVersion': 1, 'kind': kind, 'profiles': profiles}, sort_keys=True).encode()
     manifest_sha256 = hashlib.sha256(payload).hexdigest()
-    manifest_path = store_root / PROFILE_MANIFEST_FOLDERS[kind] / manifest_sha256 / 'manifest.json'
+    return payload, {'id': kind, 'manifest': f'/l2/{PROFILE_MANIFEST_FOLDERS[kind]}/{manifest_sha256}/manifest.json',
+                     'manifestSha256': manifest_sha256, 'manifestBytes': len(payload)}
+
+
+def write_profile_manifest(store_root, kind, profiles):
+    payload, record = profile_manifest_payload_and_record(kind, profiles)
+    manifest_path = store_root / record['manifest'][len('/l2/'):]
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.write_bytes(payload)
-    return {'id': kind, 'manifest': f'/l2/{PROFILE_MANIFEST_FOLDERS[kind]}/{manifest_sha256}/manifest.json',
-            'manifestSha256': manifest_sha256, 'manifestBytes': len(payload)}
+    return record

@@ -104,26 +104,42 @@ def staged_profiles(catalog, slice_name, store_roots):
             for profile in read_profile_manifest_profiles(slice_name, record, store_roots)]
 
 
-def model_ids_by_source_object(models):
-    model_ids_by_object = {}
+def model_source_objects_by_id(models):
+    source_objects_by_model_id = {}
     for model in models:
+        if model['id'] in source_objects_by_model_id:
+            raise CoverageReportError(f'catalog models list model {model["id"]} twice')
         source = model.get('source')
-        if isinstance(source, dict) and isinstance(source.get('object'), str):
-            model_ids_by_object.setdefault(source['object'], []).append(model['id'])
+        source_objects_by_model_id[model['id']] = (source['object'] if isinstance(source, dict) and isinstance(source.get('object'), str)
+                                                   else None)
+    return source_objects_by_model_id
+
+
+def model_ids_by_source_object(source_objects_by_model_id):
+    model_ids_by_object = {}
+    for model_id, source_object in source_objects_by_model_id.items():
+        if source_object is not None:
+            model_ids_by_object.setdefault(source_object, []).append(model_id)
     return model_ids_by_object
 
 
-def npc_profile_key(profile, model_ids, model_ids_by_object):
+def npc_profile_key(profile, source_objects_by_model_id, model_ids_by_object):
     npc_id = require_safe_integer(profile.get('npcId'), 'NPC profile npcId')
     key = require_key(f'npc:{npc_id}', 'npc', f'NPC profile {npc_id}')
+    mesh = profile.get('mesh')
+    if not isinstance(mesh, str):
+        raise CoverageReportError(f'NPC profile {npc_id} has no mesh name')
     if 'modelCatalogId' in profile:
         model_catalog_id = profile['modelCatalogId']
         if not (isinstance(model_catalog_id, str) and MODEL_CATALOG_ID_PATTERN.fullmatch(model_catalog_id)):
             raise CoverageReportError(f'NPC profile {npc_id} modelCatalogId must match {MODEL_CATALOG_ID_PATTERN.pattern}: {model_catalog_id!r}')
-        return key if model_catalog_id in model_ids else None
-    mesh = profile.get('mesh')
-    if not isinstance(mesh, str):
-        raise CoverageReportError(f'NPC profile {npc_id} has neither modelCatalogId nor a mesh name')
+        if model_catalog_id not in source_objects_by_model_id:
+            return None
+        model_source_object = source_objects_by_model_id[model_catalog_id]
+        if model_source_object != mesh:
+            raise CoverageReportError(f'NPC profile {npc_id} names model {model_catalog_id} of a different mesh: the model source object '
+                                      f'is {model_source_object!r}, the profile mesh is {mesh!r}')
+        return key
     matching_model_ids = sorted(model_ids_by_object.get(mesh, []))
     if len(matching_model_ids) > 1:
         raise CoverageReportError(f'NPC profile {npc_id} mesh {mesh} matches several models: {", ".join(matching_model_ids)}')
@@ -131,9 +147,17 @@ def npc_profile_key(profile, model_ids, model_ids_by_object):
 
 
 def npc_keys(catalog, models, store_roots):
-    model_ids, model_ids_by_object = {model['id'] for model in models}, model_ids_by_source_object(models)
-    keys = {npc_profile_key(profile, model_ids, model_ids_by_object) for profile in staged_profiles(catalog, 'npcProfiles', store_roots)}
+    source_objects_by_model_id = model_source_objects_by_id(models)
+    model_ids_by_object = model_ids_by_source_object(source_objects_by_model_id)
+    keys = {npc_profile_key(profile, source_objects_by_model_id, model_ids_by_object)
+            for profile in staged_profiles(catalog, 'npcProfiles', store_roots)}
     return keys - {None}
+
+
+def require_npc_profiles_join_models_of_their_mesh(lane_store_root, lane_catalog, shared_store_root):
+    shared_catalog, _ = read_measured_catalog(shared_store_root)
+    served_models_by_id = {model['id']: model for catalog in (shared_catalog, lane_catalog) for model in validated_slice_records(catalog, 'models')}
+    npc_keys(lane_catalog, list(served_models_by_id.values()), store_root_candidates(lane_store_root, shared_store_root))
 
 
 def player_profile_keys(profile, model_ids):

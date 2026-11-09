@@ -9,6 +9,7 @@ SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS_ROOT))
 
 from native_assets_lib.gltf import json_bytes
+from native_store.catalog_index_keys import require_npc_profiles_join_models_of_their_mesh
 from native_store.catalog_writer import (KNOWN_CATALOG_SLICES, add_store_file, merge_catalog_slice_records, pinned_store_files, read_store_catalog,
                                          sha256_hex, sha256_of_file, verify_store_destinations, write_store)
 from native_store.merge_lane_store import main_checkout_root
@@ -25,8 +26,12 @@ class LaneCatalogError(ValueError):
     pass
 
 
+def shared_store_root(project_root):
+    return Path(project_root) / 'public' / 'l2'
+
+
 def base_catalog_sha256(project_root):
-    base_catalog_path = Path(project_root) / 'public' / 'l2' / 'catalog.json'
+    base_catalog_path = shared_store_root(project_root) / 'catalog.json'
     if not base_catalog_path.is_file():
         raise LaneCatalogError(f'base catalog is missing: {base_catalog_path}')
     return sha256_of_file(base_catalog_path)
@@ -53,6 +58,7 @@ def merge_union_lane(project_root, union_lane_name, base_sha256, catalog, files)
         raise LaneCatalogError(f'union lane {union_lane_name} was built on base catalog sha256 {union_base_sha256}; '
                                f'the current base catalog sha256 is {base_sha256}')
     pinned_store_files(union_store_root, union_catalog)
+    require_npc_profiles_join_models_of_their_mesh(union_store_root, union_catalog, shared_store_root(project_root))
     for relative in union_lane_store_relative_paths(union_store_root):
         add_store_file(files, relative, confined_child_path(union_store_root, relative).read_bytes())
     for slice_name in KNOWN_CATALOG_SLICES:
@@ -88,6 +94,7 @@ def write_lane_catalog(project_root, lane_name, union_lane_names=(), plan_only=F
     if plan_only and before is None:
         raise LaneCatalogError(f'lane {lane_name} has no catalog: {store_root / "catalog.json"}')
     pinned_store_files(store_root, catalog)
+    require_npc_profiles_join_models_of_their_mesh(store_root, catalog, shared_store_root(project_root))
     files = {}
     for union_lane_name in union_lane_names:
         catalog = merge_union_lane(project_root, union_lane_name, base_sha256, catalog, files)

@@ -138,7 +138,7 @@ New records are appended after the existing ones.
 
 | Key | Converted when |
 | --- | --- |
-| `npc:<npcId>` | A staged NPC profile carries `modelCatalogId` naming a `models` record. A profile without that field (the currently staged store) keeps the exact single-mesh join on `source.object` until the restage |
+| `npc:<npcId>` | A staged NPC profile carries `modelCatalogId` naming a `models` record whose `source.object` is exactly the profile `mesh`; a profile naming a model of another mesh makes the whole index unavailable, so `write_lane_catalog.py` and `merge_lane_store.py` refuse that lane. A profile without that field (the currently staged store) keeps the exact single-mesh join on `source.object` until the restage |
 | `item:<itemId>` | A staged player profile lists the item with a staged model |
 | `skill:<skillId>:<level>` | An effect component id has the form `interlude:skill:<id>:level:<level>:` |
 | `table:<name>` | A `tables` record has that id |

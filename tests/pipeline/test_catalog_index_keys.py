@@ -18,6 +18,8 @@ GOLDEN_STORE_ROOT = ROOT / 'tests' / 'fixtures' / 'golden' / 'l2'
 CATALOG_INDEX_KEYS_FIXTURE_PATH = ROOT / 'tests' / 'fixtures' / 'catalog-index-keys.json'
 MUSVEREN_MESH = 'LineageMonsters.field_stalker_m00'
 FIGHTER_MESH = 'Fighter.MFighter_m001_u'
+SABER_TOOTHED_TIGER_EXPORT = 'LineageMonsters.Saber_toothed_tiger_m00'
+SABER_TOOTHED_TIGER_NPCGRP_SPELLING = 'LineageMonsters.saber_toothed_tiger_m00'
 
 
 def golden_catalog():
@@ -59,8 +61,24 @@ class CatalogIndexKeysJoinTests(unittest.TestCase):
         return catalog_index_keys(self.store_root, catalog, self.shared_store_root)
 
     def test_an_npc_profile_with_a_model_catalog_id_joins_only_a_staged_model(self):
-        self.assertEqual(self.npc_keys([{'npcId': 21622, 'mesh': 'Other.mesh', 'modelCatalogId': 'musveren:0'}]), ('npc:21622',))
+        self.assertEqual(self.npc_keys([{'npcId': 21622, 'mesh': MUSVEREN_MESH, 'modelCatalogId': 'musveren:0'}]), ('npc:21622',))
         self.assertEqual(self.npc_keys([{'npcId': 21622, 'mesh': MUSVEREN_MESH, 'modelCatalogId': 'musveren:9'}]), ())
+
+    def test_an_npc_profile_naming_a_model_of_another_mesh_is_refused_like_the_browser_catalog_index(self):
+        with self.assertRaisesRegex(CoverageReportError, "NPC profile 21622 names model musveren:0 of a different mesh: the model source object "
+                                                         "is 'LineageMonsters.field_stalker_m00', the profile mesh is 'Other.mesh'"):
+            self.npc_keys([{'npcId': 21622, 'mesh': 'Other.mesh', 'modelCatalogId': 'musveren:0'}])
+
+    def test_an_npc_profile_mesh_differing_from_its_model_only_in_case_is_refused(self):
+        models = [*self.models, model_record('npc-model:' + 'a' * 64, SABER_TOOTHED_TIGER_EXPORT)]
+        profile = {'npcId': 16015, 'mesh': SABER_TOOTHED_TIGER_NPCGRP_SPELLING, 'modelCatalogId': 'npc-model:' + 'a' * 64}
+        with self.assertRaisesRegex(CoverageReportError, 'NPC profile 16015 names model npc-model:a{64} of a different mesh'):
+            self.npc_keys([profile], models)
+        self.assertEqual(self.npc_keys([dict(profile, mesh=SABER_TOOTHED_TIGER_EXPORT)], models), ('npc:16015',))
+
+    def test_a_model_listed_twice_is_refused_like_the_browser_catalog_index(self):
+        with self.assertRaisesRegex(CoverageReportError, 'catalog models list model musveren:0 twice'):
+            self.npc_keys([{'npcId': 21622, 'mesh': MUSVEREN_MESH}], [*self.models, model_record('musveren:0', MUSVEREN_MESH)])
 
     def test_an_npc_profile_without_a_model_catalog_id_needs_exactly_one_model_with_its_mesh(self):
         self.assertEqual(self.npc_keys([{'npcId': 21622, 'mesh': MUSVEREN_MESH}]), ('npc:21622',))
