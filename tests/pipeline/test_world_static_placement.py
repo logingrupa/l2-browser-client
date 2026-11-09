@@ -1,4 +1,6 @@
+import math
 from pathlib import Path
+import struct
 import sys
 import unittest
 
@@ -11,8 +13,51 @@ from world.static_placement import gltf_placement, resolved_static_values, rotat
 from world.terrain_coordinates import native_to_gltf
 
 
+FRACTION_BITS = 192
+PI_DECIMAL_DIGITS = '31415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679'
+SCALED_PI = (int(PI_DECIMAL_DIGITS) << FRACTION_BITS) // 10**(len(PI_DECIMAL_DIGITS) - 1)
+
+
 def row_point(matrix, point):
     return [sum([*point, 1][i]*matrix[i][j] for i in range(4)) for j in range(3)]
+
+
+def exactly_scaled(value):
+    numerator, denominator = value.as_integer_ratio()
+    return (numerator << FRACTION_BITS) // denominator
+
+
+def scaled_sine(scaled_angle):
+    reduced, sign = scaled_angle, 1
+    if reduced > SCALED_PI:
+        reduced, sign = reduced - SCALED_PI, -1
+    if reduced > SCALED_PI >> 1:
+        reduced = SCALED_PI - reduced
+    squared = (reduced*reduced) >> FRACTION_BITS
+    term, total, order = reduced, reduced, 1
+    while term:
+        term = -((term*squared) >> FRACTION_BITS) // (2*order*(2*order + 1))
+        total += term
+        order += 1
+    return sign*total
+
+
+def float32_step(value, steps):
+    bits = struct.unpack('<i', struct.pack('<f', value))[0]
+    return struct.unpack('<f', struct.pack('<i', bits + steps))[0]
+
+
+def builder_table_entry(entry):
+    sine = scaled_sine(exactly_scaled(entry*2*math.pi/16384))
+    if sine == 0:
+        return 0.0
+    magnitude = abs(sine)
+    nearest = struct.unpack('<f', struct.pack('<f', magnitude / (1 << FRACTION_BITS)))[0]
+    lower, upper = (exactly_scaled((float32_step(nearest, -1) + nearest)/2), exactly_scaled((nearest + float32_step(nearest, 1))/2))
+    margin = magnitude >> 50
+    if not (magnitude - lower > margin and upper - magnitude > margin):
+        raise ValueError(f'sine table entry {entry} lies within 2^-50 of a float32 rounding midpoint')
+    return nearest if sine > 0 else -nearest
 
 
 class StaticPlacementTests(unittest.TestCase):
@@ -44,6 +89,11 @@ class StaticPlacementTests(unittest.TestCase):
                          rotation_rows({'Pitch': 0, 'Yaw': 16387, 'Roll': 0}))
         self.assertNotEqual(rotation_rows({'Pitch': 0, 'Yaw': 16384, 'Roll': 0}),
                             rotation_rows({'Pitch': 0, 'Yaw': 16388, 'Roll': 0}))
+
+    def test_rotation_table_equals_the_core_dll_global_math_builder_at_every_entry(self):
+        differing = [entry for entry in range(16384)
+                     if rotation_rows({'Pitch': entry*4, 'Yaw': 0, 'Roll': 0})[0][2] != builder_table_entry(entry)]
+        self.assertEqual(differing, [])
 
     def test_exact_class_defaults_and_zero_initialization_are_attributed(self):
         evidence = SyntheticActorClassDefaults()
