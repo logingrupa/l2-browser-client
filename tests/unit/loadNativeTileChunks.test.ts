@@ -28,6 +28,24 @@ interface TileStoreOptions {
   readonly secondChunkModels?: readonly Document[];
   readonly archives?: ReadonlyMap<string, Uint8Array<ArrayBuffer>>;
   readonly secondChunkBsp?: { readonly glb: Uint8Array<ArrayBuffer>; readonly served?: Uint8Array<ArrayBuffer> };
+  readonly tileMovers?: boolean;
+}
+
+function tileMoverResponses(): { readonly resource: Document; readonly responses: [string, Uint8Array<ArrayBuffer>][] } {
+  const model = glb({ asset: { version: "2.0" }, extras: { fixture: "tile mover model" } }), modelSha256 = sha256Hex(model), archiveSha256 = "a".repeat(64);
+  const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0];
+  const manifest = { kind: "native-tile-movers", schemaVersion: 1, tileId: fixtureTileId, sourceMap: { path: `maps/${fixtureTileId}.unr`, sha256: "c".repeat(64) },
+    classEvidence: {}, gaps: [],
+    models: [{ id: "interlude:fixture_s.Door", sourceObject: "fixture_s.Door",
+      archive: { resource: `/l2/${archiveSha256}/asset.l2asset`, sha256: archiveSha256, bytes: 10 },
+      model: { resource: `/l2/${archiveSha256}/model.glb`, sha256: modelSha256, bytes: model.byteLength } }],
+    movers: [3, 7].map(index => ({ id: `interlude:${fixtureTileId}.Mover${index}`, actorName: `Mover${index}`, exportIndex: index,
+      modelId: "interlude:fixture_s.Door", serverObject: { realId: 0, id: 0, type: 0 }, closedMatrix: [...identity, index, 0, 0, 1],
+      openMatrix: [...identity, index, 1, 0, 1], moveTimeSeconds: 1, initialKey: 0, initiallyClosed: true, keys: [], sounds: [],
+      collision: { decision: "gap", slots: [], evidence: ["rule-disagreement:bStatic"] } })) };
+  const bytes = jsonBytes(manifest), sha256 = sha256Hex(bytes), resource = `/l2/movers/${sha256}/tile-movers.json`;
+  return { resource: { kind: "movers", manifest: resource, manifestSha256: sha256, manifestBytes: bytes.byteLength },
+    responses: [[resource, bytes], [`/l2/${archiveSha256}/model.glb`, model]] };
 }
 
 function chunkBspGlb(sectionCount: number): Uint8Array<ArrayBuffer> {
@@ -68,6 +86,8 @@ function tileStore(options: TileStoreOptions = {}) {
   const secondChunkBytes = jsonBytes(secondChunk), secondChunkSha256 = sha256Hex(secondChunkBytes);
   const tile = decodeJsonDocument(fixture.tile.bytes);
   if (options.anchorLocation) tile.anchor = { ...(tile.anchor as Document), location: options.anchorLocation };
+  const movers = options.tileMovers ? tileMoverResponses() : null;
+  if (movers) tile.resources = [movers.resource];
   tile.chunks = [...(tile.chunks as Document[]), { chunkId: "chunk-0-1", manifestSha256: secondChunkSha256, manifestBytes: secondChunkBytes.byteLength,
     manifest: `/l2/maps/${secondChunkSha256}/native-tile-chunk-runtime/manifest.json` }];
   const tileBytes = jsonBytes(tile), tileSha256 = sha256Hex(tileBytes);
@@ -77,6 +97,7 @@ function tileStore(options: TileStoreOptions = {}) {
     ["/l2/catalog.json", jsonBytes(catalog)], [tilePath, tileBytes], [fixture.chunk.path, fixture.chunk.bytes], [fixture.terrain.path, fixture.terrain.bytes],
     [`/l2/maps/${secondChunkSha256}/native-tile-chunk-runtime/manifest.json`, secondChunkBytes],
     [`/l2/maps/${secondTerrainSha256}/native-tile-chunk-terrain/terrain.glb`, secondTerrainBytes], ...(options.archives ?? []), ...bspResponses,
+    ...(movers?.responses ?? []),
   ]);
   const terrainCentres = new Map([[fixture.terrain.sha256, { x: 1.28, z: 1.28 }], [secondTerrainSha256, { x: 1.28, z: 5 }]]);
   return { fixture, tilePath, tileSha256, responses, terrainCentres, secondTerrainSha256 };
@@ -135,6 +156,19 @@ describe("native tile chunk loading", () => {
     expect(section.supportMeshes).toEqual([]);
     expect(section.inspection()).toMatchObject({ modelCount: 0, placementCount: 0, bspMeshes: 0, collisionVerified: false, terrainMaterial: "neutral-inspection" });
     expect(view.gaps).toContain("meshes: step-pending:meshes");
+  });
+
+  it("loads the tile movers resource closed at each closed matrix and marks none of their meshes for collision", async () => {
+    serve(tileStore({ tileMovers: true }));
+    const section = (await load())!;
+    const inspection = section.inspection();
+    expect(inspection.moverCount).toBe(2);
+    expect(inspection.moverCollisionMeshCount).toBe(0);
+    expect(inspection.movers!.map(mover => [mover.id, mover.state, mover.matrix[12]])).toEqual([
+      [`interlude:${fixtureTileId}.Mover3`, "closed", 3], [`interlude:${fixtureTileId}.Mover7`, "closed", 7]]);
+    expect(section.moverTargets!.flatMap(target => target.meshes).every(mesh => mesh.metadata.worldCollision === undefined)).toBe(true);
+    section.dispose();
+    expect(scene.transformNodes.filter(node => node.name.includes(".Mover"))).toEqual([]);
   });
 
   it("loads each chunk model archive pinned by SHA-256 once and instantiates its placements at their source matrices", async () => {
