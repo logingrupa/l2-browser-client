@@ -241,7 +241,9 @@ def validate_recipe(recipe):
     if recipe.get('schemaVersion') != SCHEMA or recipe.get('kind') != 'native-map-raw':
         raise ValueError('Expected schemaVersion 1 native-map-raw recipe')
     safe_name(recipe['map'])
-    section = recipe['section']
+    section = recipe.get('section')
+    if section is None:
+        return
     if section.get('selection') != 'serialized-origin-xy-inclusive':
         raise ValueError('Unsupported map section selection')
     for key in ('min', 'max'):
@@ -298,6 +300,7 @@ def build_map(client, recipe, write):
         raise ValueError('Map source differs from recipe SHA256')
     if (package.summary['version'], package.summary['licenseeVersion']) != (123, 28):
         raise FormatError('Raw map adapter supports only verified UE123/licensee28')
+    section = recipe.get('section')
     raw_path = 'raw/map.unwrapped.bin'
     write(raw_path, package.data)
     exports, actors, terrains, errors, ambient_objects = [], [], [], [], []
@@ -321,14 +324,15 @@ def build_map(client, recipe, write):
                      'stateFrame': state, 'stateFrameBytes': source_range(package.data, raw_path, item['offset'], prefix_end),
                      'properties': props, 'sourceTransform': explicit_properties(props, TRANSFORMS),
                      'collision': explicit_properties(props, COLLISION),
-                     'nativeTail': source_range(package.data, raw_path, tail.position, tail.end),
-                     'sectionOriginSelected': selected_by_origin(props, recipe['section'])}
+                     'nativeTail': source_range(package.data, raw_path, tail.position, tail.end)}
+            if section is not None:
+                actor['sectionOriginSelected'] = selected_by_origin(props, section)
             actors.append(actor)
             if item['className'] == 'StaticMeshActor':
                 ref = property_value(props, 'StaticMesh')
                 actor['staticMesh'] = ref
                 actor['materialOverrides'] = [prop for prop in props if prop['name'] in ('Skins', 'Texture')]
-                if ref and ref['object'] and actor['sectionOriginSelected']:
+                if ref and ref['object'] and (section is None or actor['sectionOriginSelected']):
                     static_refs.setdefault(ref['object'], []).append(actor['id'])
             if item['className'] == 'TerrainInfo':
                 terrains.append(actor)
@@ -394,10 +398,14 @@ def build_map(client, recipe, write):
                 'ambientSoundObjectsDecoded': len(ambient_objects),
                 'ambientSoundObjectsWithTail': sum(obj['nativeTail']['bytes'] > 0 for obj in ambient_objects),
                 'terrainInfosDecoded': len(terrains), 'terrainHeightsDecoded': sum('height' in terrain for terrain in terrain_output),
-                'sectionActors': sum(actor['sectionOriginSelected'] is True for actor in actors),
-                'sectionStaticMeshActors': sum(len(placed) for placed in static_refs.values()),
-                'sectionUniqueStaticMeshes': len(static_refs), 'staticMeshRequests': len(requests),
-                'sectionActorsWithoutSerializedLocation': sum(actor['sectionOriginSelected'] is None for actor in actors)}
+                'staticMeshRequests': len(requests)}
+    if section is None:
+        coverage.update(staticMeshActorsWithMesh=sum(len(placed) for placed in static_refs.values()), uniqueStaticMeshes=len(static_refs))
+    else:
+        coverage.update(sectionActors=sum(actor['sectionOriginSelected'] is True for actor in actors),
+                        sectionStaticMeshActors=sum(len(placed) for placed in static_refs.values()),
+                        sectionUniqueStaticMeshes=len(static_refs),
+                        sectionActorsWithoutSerializedLocation=sum(actor['sectionOriginSelected'] is None for actor in actors))
     manifest = {'schemaVersion': SCHEMA, 'kind': 'native-map-raw', 'id': 'interlude-map:' + package.package_name,
                 'support': 'raw-data-extracted' if not errors else 'partial-raw-data-extracted',
                 'recipe': recipe, 'nativePackage': package.summary, 'sourcePackageSha256': package.source_hash,
