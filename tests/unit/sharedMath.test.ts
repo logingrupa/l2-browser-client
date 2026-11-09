@@ -10,6 +10,7 @@ import {
   type AffineMatrix,
 } from "../../src/shared/math/affineMatrix";
 import { planeDistance, planeFromNormalAndPoint, transformPlane } from "../../src/shared/math/plane";
+import { float32SineWithRoundingMargin } from "./support/highPrecisionSine";
 import {
   ROTATOR_CONSTANTS,
   ROTATOR_RULE_BY_USE,
@@ -110,7 +111,7 @@ describe("rotator rules", () => {
   it("reads a 16384-entry float32 table indexed by floor(units / 4) mod 16384", () => {
     expect(ROTATOR_CONSTANTS.sineTableLength.runtimeDefault).toBe(16384);
     expect(rotatorSineFromTable(16384)).toBe(1);
-    expect(rotatorSineFromTable(32768)).toBe(1.2246063538223773e-16);
+    expect(rotatorSineFromTable(32768)).toBe(Math.fround(Math.sin(Math.PI)));
     expect(rotatorSineFromTable(4097)).toBe(Math.fround(Math.sin(1024 * 2 * Math.PI / 16384)));
     expect(rotatorSineFromTable(3)).toBe(0);
     expect(rotatorSineFromTable(-1)).toBe(rotatorSineFromTable(65535));
@@ -118,13 +119,20 @@ describe("rotator rules", () => {
     for (let units = 0; units < 65536; units += 997) expect(Math.fround(rotatorSineFromTable(units))).toBe(rotatorSineFromTable(units));
   });
 
-  it("matches the placement converter's table everywhere except the half-turn entry", () => {
+  it("fills every entry the way FGlobalMath::FGlobalMath does: f32(sin(fl(2i * pi) / 16384)) through the SSE2 CRT sine", () => {
+    const differingEntries: number[] = [];
+    for (let entry = 0; entry < 16384; entry += 1) {
+      if (rotatorSineFromTable(entry * 4) !== float32SineWithRoundingMargin(entry * 2 * Math.PI / 16384)) differingEntries.push(entry);
+    }
+    expect(differingEntries).toEqual([]);
+    expect(rotatorSineFromTable(32768)).not.toBe(Math.fround(1.2246063538223773e-16));
+  });
+
+  it("matches the placement converter's table at every entry", () => {
     const placementConverterSine = (units: number) => Math.fround(Math.sin(((units >> 2) & 16383) * 2 * Math.PI / 16384));
     const differingUnits: number[] = [];
     for (let units = 0; units < 65536; units += 1) if (rotatorSineFromTable(units) !== placementConverterSine(units)) differingUnits.push(units);
-    expect(differingUnits).toEqual([32768, 32769, 32770, 32771]);
-    expect(ROTATOR_CONSTANTS.sineTableHalfTurnEntry.runtimeDefault).toBe(1.2246063538223773e-16);
-    expect(Math.abs(rotatorSineFromTable(32768) - placementConverterSine(32768))).toBeLessThan(4.1e-21);
+    expect(differingUnits).toEqual([]);
   });
 
   it("pins the largest table-to-exact difference over all 65536 inputs", () => {
@@ -137,14 +145,15 @@ describe("rotator rules", () => {
     expect(largestDifferenceUnits).toBe(3);
   });
 
-  it("names one rule per use, each an unconfirmed constants row with provenance", () => {
+  it("names one rule per use, each an unconfirmed constants row with provenance, and cites Core.dll for the corrected sine table", () => {
     expect(Object.fromEntries(Object.entries(ROTATOR_RULE_BY_USE).map(([use, row]) => [use, row.runtimeDefault]))).toEqual({
       "particle-revolution": "sine-table",
       "camera-direction": "sine-table",
       "texture-rotator": "exact",
       placement: "sine-table",
     });
-    for (const row of [...Object.values(ROTATOR_RULE_BY_USE), ...Object.values(ROTATOR_CONSTANTS)]) {
+    expect(ROTATOR_CONSTANTS.sineTableLength).toMatchObject({ status: "corrected-interlude", interludeEvidence: expect.stringContaining("FGlobalMath::FGlobalMath 0x1014D330") });
+    for (const row of [...Object.values(ROTATOR_RULE_BY_USE), ROTATOR_CONSTANTS.unitsPerTurn]) {
       expect(row.status).toBe("unconfirmed");
       expect(row.provenance.length).toBeGreaterThan(0);
       expect(row.interludeEvidence).toBeNull();

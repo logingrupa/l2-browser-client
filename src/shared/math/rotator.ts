@@ -15,18 +15,10 @@ export const ROTATOR_CONSTANTS = {
   sineTableLength: {
     id: "fx.sine-table",
     value: 16384,
-    provenance: ".planning/reference/lineage2js/04-particles.md fx.sine-table: 16384 float32 entries over one turn, index floor(a / 4) mod 16384, cosine is the sine of a + 16384; lineage2js/src/assets/unreal/utils/rotator.ts:72-77; re-derive at Core.dll 9462f87a FGlobalMath::SinTab 0x10103F49 -> 0x1010F430 (POL-04)",
-    status: "unconfirmed",
-    interludeEvidence: null,
+    provenance: "Core.dll 9462f87a FGlobalMath::FGlobalMath 0x10102333 -> 0x1014D330 fills SinTab at GMath +0x8C with 16384 entries f32(appSin(fl(2i * pi) / 16384)) (fild i, fadd st0, fmul pi, fmul 2^-14); appSin 0x1012D720 jumps to the CRT sin 0x1017C430, which takes its SSE2 path 0x10186480 because the CRT turns SSE2 math on at 0x1017FFEB from cpuid (an initialiser that runs before the GMath constructor) and every FPU exception is masked, so the half-turn entry is f32(sin(pi)) with no special case; only a CPU without SSE2 would take the x87 fsin path and store 1.2246063538223773e-16 there; SinTab and CosTab read (a >> 2) & 0x3FFF and ((a + 0x4000) >> 2) & 0x3FFF at 0x1010F430 and 0x1010F450",
+    status: "corrected-interlude",
+    interludeEvidence: "Core.dll 9462f87a FGlobalMath::FGlobalMath 0x1014D330, appSin 0x1012D720 -> CRT sin 0x1017C430",
     runtimeDefault: 16384,
-  },
-  sineTableHalfTurnEntry: {
-    id: "fx.sine-table-half-turn",
-    value: 1.2246063538223773e-16,
-    provenance: ".planning/reference/lineage2js/03-movement.md camera.direction and 04-particles.md fx.sine-table: the half-turn entry is 1.2246063538223773e-16, not the float32 of Math.sin(pi); lineage2js/src/assets/unreal/utils/rotator.ts:72-77 (C4 Core.dll SinTab); re-derive at Interlude Core.dll 9462f87a FGlobalMath::SinTab (POL-04)",
-    status: "unconfirmed",
-    interludeEvidence: null,
-    runtimeDefault: 1.2246063538223773e-16,
   },
 } as const satisfies Record<string, ReferenceConstantRow<number>>;
 
@@ -58,7 +50,7 @@ export const ROTATOR_RULE_BY_USE = {
   placement: {
     id: "placement.rotator-conversion",
     value: "sine-table",
-    provenance: "scripts/world/static_placement.py rotation_rows: static placement matrices use the 16384-entry float32 sine table, index (units >> 2) & 16383, without the fx.sine-table-half-turn entry (it differs by 4.05e-21 at units 32768-32771 until one table is shared); .planning/reference/lineage2js/03-movement.md: placement matrices state their rotator rule, pinned against src/shared/math/rotator.ts",
+    provenance: "scripts/world/static_placement.py rotation_rows: static placement matrices use the 16384-entry float32 sine table, index (units >> 2) & 16383, which equals fx.sine-table and the Core.dll FGlobalMath builder at every entry (tests/pipeline/test_world_static_placement.py); the placement rule itself is not re-derived yet",
     status: "unconfirmed",
     interludeEvidence: null,
     runtimeDefault: "sine-table",
@@ -68,10 +60,7 @@ export const ROTATOR_RULE_BY_USE = {
 const rotatorUnitsPerHalfTurn = ROTATOR_CONSTANTS.unitsPerTurn.runtimeDefault / 2;
 const sineTableLength = ROTATOR_CONSTANTS.sineTableLength.runtimeDefault;
 const rotatorUnitsPerSineTableEntry = ROTATOR_CONSTANTS.unitsPerTurn.runtimeDefault / sineTableLength;
-const sineTableHalfTurnIndex = sineTableLength / 2;
-const sineTable = Float32Array.from({ length: sineTableLength }, (_, entryIndex) => entryIndex === sineTableHalfTurnIndex
-  ? ROTATOR_CONSTANTS.sineTableHalfTurnEntry.runtimeDefault
-  : Math.sin(entryIndex * 2 * Math.PI / sineTableLength));
+const sineTable = Float32Array.from({ length: sineTableLength }, (_, entryIndex) => Math.sin(entryIndex * 2 * Math.PI / sineTableLength));
 
 export function rotatorUnitsToRadians(rotatorUnits: number): number {
   return rotatorUnits * Math.PI / rotatorUnitsPerHalfTurn;
