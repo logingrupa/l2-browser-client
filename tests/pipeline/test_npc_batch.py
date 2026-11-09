@@ -241,6 +241,35 @@ class NpcBatchRefusalTests(NpcBatchFixture):
         self.assertFalse({row.npc_id for row in first_unit.rows} & {profile['npcId'] for profile in manifest['profiles']})
 
 
+def migrate_excluding(excluded_npc_ids):
+    def migrate(client_root, recipe, bundle_root):
+        kept = {**recipe, 'profiles': [profile for profile in recipe['profiles'] if profile['npcId'] not in excluded_npc_ids]}
+        fake_migrate_npc_profiles(client_root, kept, bundle_root)
+        manifest_path = bundle_root / 'manifest.json'
+        manifest = json.loads(manifest_path.read_bytes())
+        manifest['excludedProfiles'] = [{'npcId': npc_id, 'field': 'CollisionHeight'} for npc_id in sorted(excluded_npc_ids)]
+        manifest_path.write_bytes(json.dumps(manifest, sort_keys=True).encode('utf-8'))
+    return migrate
+
+
+class NpcBatchExcludedProfileTests(NpcBatchFixture):
+    def test_each_excluded_profile_is_an_actor_default_gap_row_and_the_rest_of_the_pack_is_written(self):
+        with patch.object(npc_batch, 'migrate_npc_profiles', side_effect=migrate_excluding({12})):
+            result = self.run_slice()
+        self.assertEqual([outcome['status'] for outcome in result['packOutcomes']], ['pass'])
+        self.assertEqual(self.lane_gap_reasons('npc-profile-pack'), {'npc:12': 'actor-default-unresolved:CollisionHeight'})
+        catalog = json.loads((lane_store_root(self.project_root, 'actors') / 'catalog.json').read_bytes())
+        self.assertEqual(len(catalog['npcProfiles']), 1)
+
+    def test_a_pack_whose_every_profile_is_excluded_writes_no_bundle(self):
+        with patch.object(npc_batch, 'migrate_npc_profiles', side_effect=migrate_excluding({11, 12, 20, 30})):
+            result = self.run_slice()
+        self.assertEqual([outcome['status'] for outcome in result['packOutcomes']], ['gap'])
+        self.assertEqual(set(self.lane_gap_reasons('npc-profile-pack')), {'npc:11', 'npc:12', 'npc:20', 'npc:30'})
+        catalog = json.loads((lane_store_root(self.project_root, 'actors') / 'catalog.json').read_bytes())
+        self.assertNotIn('npcProfiles', catalog)
+
+
 class NpcBatchSharedStoreTests(NpcBatchFixture):
     def test_shared_store_npc_ids_are_the_npc_ids_of_the_committed_shared_store_recipe(self):
         recipe = json.loads((REPOSITORY_ROOT / 'recipes' / 'native-npc-profiles.json').read_bytes())
