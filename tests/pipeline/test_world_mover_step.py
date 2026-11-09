@@ -1,3 +1,4 @@
+import copy
 import hashlib
 import json
 from pathlib import Path
@@ -16,7 +17,9 @@ from native_store.tile_manifest_validation import TileManifestError, load_tile_m
 from support.converted_model_fixture import converted_model_glb
 from world.collision_payload_groups import movr_arrays
 from world.collision_step import mover_slot_records
-from world.mover_records import (MOVER_UNSUPPORTED_TOKENS, MoverUnsupportedError, is_rigid_rows, mover_mesh, qualified_motion, resolved_field)
+from world.mover_class_defaults import MoverDefaults, qualified_classes
+from world.mover_records import (MOVER_UNSUPPORTED_TOKENS, MoverUnsupportedError, endpoint_matrix, indexed_properties, is_rigid_rows, mover_mesh,
+                                 qualified_motion, resolved_field)
 from world.mover_step import (MOVER_STEP_NAME, MoverConversion, MoverStepError, ReadMover, converted_movers, mover_models, read_tile_movers,
                               require_every_mover_classified, run_mover_step)
 from world.static_mesh_step import ConvertedStaticMesh, package_gate_reason
@@ -28,6 +31,7 @@ LANE_FOLDER = ROOT / 'artifacts' / 'lane-store' / 'world'
 ORACLE_PATH = ROOT / 'recipes' / 'world' / 'oracle' / '20_20' / 'expected.json'
 SERVED_STORE = ROOT / 'public' / 'l2'
 REFERENCE_CLIENT = Path('E:/Lineage2-client')
+MOVER_CLASS_EVIDENCE = LANE_FOLDER / 'work' / 'class__Engine.Mover' / 'class-defaults' / 'products'
 SLOT_ROWS = [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [10.0, 20.0, 30.0, 1.0]]
 OPEN_ROWS = [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [10.0, 20.0, 166.0, 1.0]]
 
@@ -142,6 +146,77 @@ class MoverManifestResourceTests(unittest.TestCase):
         self.assertEqual(tile_resources(None, movers), [])
         self.assertNotIn(MOVER_STEP_NAME, pending_steps_after_sealed(PENDING_TILE_STEPS, None, None, None, movers))
         self.assertIn(MOVER_STEP_NAME, pending_steps_after_sealed(PENDING_TILE_STEPS, None, None, None, None))
+
+
+def transformed(matrix, point):
+    return [sum(matrix[column * 4 + row] * point[column] for column in range(3)) + matrix[12 + row] for row in range(3)]
+
+
+class MoverResolutionTests(unittest.TestCase):
+    def test_omitted_fixed_array_index_means_zero_and_duplicates_are_refused(self):
+        tags = [{'name': 'KeyRot', 'arrayIndex': None, 'value': {'Yaw': 0}}, {'name': 'KeyRot', 'arrayIndex': 1, 'value': {'Yaw': -16384}}]
+        properties = indexed_properties(tags)
+        self.assertEqual(properties['KeyRot', 1]['value']['Yaw'], -16384)
+        self.assertEqual(tags[0]['arrayIndex'], None)
+        with self.assertRaisesRegex(FormatError, 'Duplicate'):
+            indexed_properties(tags + [{'name': 'KeyRot', 'arrayIndex': 0}])
+        with self.assertRaisesRegex(FormatError, 'outside declaration'):
+            indexed_properties([{'name': 'KeyPos', 'arrayIndex': 8}])
+
+    def test_nested_struct_field_does_not_override_actor_declaration(self):
+        defaults = MoverDefaults({}, {'core.object': 'struct Test\n{\n\tvar Vector Location;\n};', 'engine.actor': 'var(Movement) const Vector Location;\n'})
+        self.assertEqual(defaults.declaration('Location', 'Vector'), 'engine.actor')
+
+    def test_omission_requires_a_real_native_field_declaration(self):
+        defaults = MoverDefaults({'engine.mover': {'properties': {}}, 'engine.actor': {'properties': {}}, 'core.object': {'properties': {}}},
+                                 {'engine.mover': 'var Rotator KeyRot[8];\n'})
+        value = defaults.resolve({}, 'KeyRot', 'Rotator', 0, 8)
+        self.assertEqual(value['value'], {'Pitch': 0, 'Yaw': 0, 'Roll': 0})
+        self.assertEqual(value['source'], 'native-declared-field-zero-init')
+        with self.assertRaisesRegex(FormatError, 'declaration unresolved'):
+            defaults.resolve({}, 'BaseRot', 'Rotator')
+
+    def test_endpoint_preserves_authored_pivot_and_single_unit_conversion(self):
+        transforms = {name: {'value': value} for name, value in {
+            'Location': {'X': 0, 'Y': 0, 'Z': 0}, 'Rotation': {'Pitch': 0, 'Yaw': 0, 'Roll': 0}, 'PrePivot': {'X': 100, 'Y': 0, 'Z': 0},
+            'DrawScale': 1, 'DrawScale3D': {'X': 1, 'Y': 1, 'Z': 1}}.items()}
+        matrix = endpoint_matrix({'X': 1000, 'Y': 2000, 'Z': 3000}, {'Pitch': 0, 'Yaw': 0, 'Roll': 0}, {'X': 0, 'Y': 0, 'Z': 0},
+                                 {'Pitch': 0, 'Yaw': 16384, 'Roll': 0}, transforms)
+        for actual, expected in zip(transformed(matrix, [1, 0, 0]), [10, 30, 20]):
+            self.assertAlmostEqual(actual, expected)
+        for actual, expected in zip(transformed(matrix, [2, 0, 0]), [10, 30, 21]):
+            self.assertAlmostEqual(actual, expected)
+
+
+@unittest.skipUnless((MOVER_CLASS_EVIDENCE / 'class-evidence.json').is_file(),
+                     'needs the sealed class:Engine.Mover class-defaults unit (convert_tile.py --step movers on any tile)')
+class SealedMoverClassEvidenceTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.definitions = json.loads((MOVER_CLASS_EVIDENCE / 'class-evidence.json').read_text(encoding='utf-8'))
+        cls.scripts = {name: (MOVER_CLASS_EVIDENCE / definition['sourceScript']).read_bytes() for name, definition in cls.definitions.items()}
+
+    def read_script(self, name):
+        return (MOVER_CLASS_EVIDENCE / name).read_bytes()
+
+    def test_the_sealed_evidence_qualifies_and_recovers_the_native_mover_defaults(self):
+        defaults = MoverDefaults(self.definitions, qualified_classes(self.definitions, self.read_script))
+        self.assertEqual(defaults.resolve({}, 'MoveTime', 'float')['value'], 1)
+        self.assertEqual(defaults.resolve({}, 'StayOpenTime', 'float')['value'], 4)
+        self.assertIs(defaults.resolve({}, 'bClosed', 'bool')['value'], True)
+
+    def test_changed_class_defaults_and_native_operators_are_rejected(self):
+        definitions = copy.deepcopy(self.definitions)
+        definitions['engine.mover']['properties']['MoveTime'] = 25
+        with self.assertRaisesRegex(FormatError, 'disagree'):
+            qualified_classes(definitions, self.read_script)
+        changed = self.scripts['core.object'].replace(b'native(316)', b'native(999)')
+        definitions = copy.deepcopy(self.definitions)
+        definitions['core.object']['sourceScriptSha256'] = hashlib.sha256(changed).hexdigest()
+        values = {definition['sourceScript']: self.scripts[name] for name, definition in definitions.items()}
+        values[definitions['core.object']['sourceScript']] = changed
+        with self.assertRaisesRegex(FormatError, 'endpoint semantics'):
+            qualified_classes(definitions, lambda name: values[name])
 
 
 def motion(num_keys=2, initial=0, closed=True, move_time=1.0):

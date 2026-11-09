@@ -13,7 +13,6 @@ ARGUMENT_PARSING_METHOD_NAME = 'parse_args'
 KNOWN_CLIENT_ENTRY_POINTS = {
     'scripts/audit-native-footstep-config.py',
     'scripts/audit_musveren_weights.py',
-    'scripts/derive-native-map-movers.py',
     'scripts/export-native-map-audio.py',
     'scripts/export-native-sounds.py',
     'scripts/native_actor_profiles.py',
