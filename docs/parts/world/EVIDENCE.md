@@ -53,11 +53,11 @@ Committed in `docs/parts/world/tile-census.json` (plans 02-12 and 02-13, WORLD-0
 - Gate basis: every tile row records `terrainMapPackage` `{basis, object, path, packageVersion, licensee}`. Map-gate-pass tiles have basis `TerrainInfo.TerrainMap`. The 86 map-gate-fail tiles keep the by-name gate with basis `package-name` and `object` null. Non-tile rows have `terrainMapPackage` null. A map with more than one TerrainInfo stops the census with the map name; a map-gate-pass map whose tables do not decode is `decode-failed:<error>` (none in the client).
 - Map gate: pass only for UE 123 licensee 28. Tile map licensees: 28: 67, 23: 38, 25: 17, 30: 15, 18: 6, 31: 6, 16: 2, 19: 1, 20: 1.
 - Eligible: 16_25, 17_12, 18_10, 18_11, 18_12, 18_17, 18_20, 18_22, 19_10, 19_16, 19_17, 19_22, 19_24, 20_10, 20_14, 20_17, 20_20, 20_21, 20_23, 21_15, 21_16, 21_22, 21_24, 22_14, 22_15, 22_16, 22_18, 22_20, 22_23, 23_13, 23_14, 23_16, 23_17, 23_21, 23_22, 24_15, 24_19, 24_22, 25_19.
-- Non-tile: `Auto0` to `Auto5` and `skylevel` 118/0 and `ship_position` (Lineage2Ver111) 118/6 are `map-version-unsupported:118`; `entry` (Lineage2Ver111) 123/0 is `map-licensee-unsupported:123/0`; `Lobby` 123/30 is `map-licensee-unsupported:123/30`. Lobby's status is known: a gap until the map reader grows licensee 30.
+- Non-tile: `Auto0` to `Auto5` and `skylevel` 118/0 and `ship_position` (Lineage2Ver111) 118/6 are `map-version-unsupported:118`; `entry` (Lineage2Ver111) 123/0 is `map-licensee-unsupported:123/0`; `Lobby` 123/30 is `map-licensee-unsupported:123/30`. Lobby's status is known: a gap in this census; the map readers review licensee 30 since 02-52, and the census update in 02-54 decides it.
 - A height package of another UE version is `terrain-height-version-unsupported:<version>` (`recipes/world/gap-reasons.json`); `t_17_23.utx` is 118/11, behind a failing map gate.
 - Coverage: `python -B scripts/native_store/build_coverage_report.py --store-root artifacts/lane-store/world/l2 --lane world` gives world 163 rows, 124 gap, 39 pending; every tile row's reason equals its census reason, including the 28 declared terrain reasons.
 - Research cross-check (printed beside, never written as data): the licensee histogram and the non-tile headers match; the 39 eligible tiles match research section 5.1 with no extra and no missing tile.
-- Open: the 86 map-gate-fail tiles keep by-name terrain gates until the map reader grows past licensee 28 (plan 02-52).
+- Open: the 86 map-gate-fail tiles keep by-name terrain gates in this census; the readers grew in 02-52 and the census follows in 02-54.
 - Tests: `python -B -m unittest discover -s tests/pipeline -p test_tile_census.py`.
 
 ## Tile chunks and terrain
@@ -83,6 +83,21 @@ Plan 02-16, WORLD-05 and WORLD-01. `python -B scripts/world/convert_tile.py --cl
 - Tests: `test_tile_manifest_step.py`, `nativeTileChunkManifest.test.ts`, `loadNativeTileChunks.test.ts`, `selectedNativeTile.test.ts`, `nativeSection.test.ts`; browser: `NATIVE_STORE_ROOT=world pnpm test:e2e tests/browser/world-tile-walk.spec.ts`.
 - Open: the world lane catalog holds only lane records, so the runtime finds no player body, Musveren or NPC profile and stops before the world loads. With the base catalog records overlaid for a diagnostic run (not recorded), both walks passed (`artifacts/world-evidence/diagnostic-base-overlay-*.png`).
 - tile:20_21 browser walk: failed (Native player body source identity mismatch; served catalog `ccaaf62b...e6c1`, load-check `failed`, coverage loads failed)
+
+## Reader licensee growth (WORLD-01, 02-52)
+
+One gate, `require_reviewed_reader_layout(reader, summary)` in `scripts/world/reader_licensee_layouts.py`, serves `read_g16` (`g16-heightmap`), `actor_properties` (`map-actor`), `native_terrain` (`terrain-info`) and `build_map` (`raw-map`). An unlisted (version, licensee) raises the census gap reason. Each reviewed pair has cited evidence, a synthetic fixture in `tests/fixtures/world-readers/` and a row in `cross-checks.json` with `equal: true`, compared against the SHA-pinned Elbera `tools/l2lib/ue2package.py` (commit 12c9656) on lock-equal files only.
+
+| Reader | Reviewed licensees (123/x) | Evidence | Cross-check, tile |
+|---|---|---|---|
+| g16-heightmap | 12, 15 (no reserved int32); 16, 18, 19, 20, 22, 23, 25, 28 (reserved int32) | Elbera `tools/l2lib/README.md` "Lineage2 UMaterial extra fields", UEViewer `UnMaterial2.h` secondary | mip0 SHA-256 equals Elbera `parse_texture` plus `mip_bytes`: 12 16_24, 15 23_10, 16 17_25, 18 18_13, 19 24_11, 20 16_21, 22 19_21, 23 18_24, 25 20_15, 28 20_21 |
+| map-actor, raw-map | 16, 18, 19, 20, 23, 25, 28, 30, 31 | Elbera README "Property tags", `ue2package.py` state frame and packed tags; 30 and 31 also the material fields (shader block kept raw) | property projection of every actor `build_map` reads equals Elbera `read_properties`: 16 24_10, 18 17_18, 19 26_11, 20 24_26, 23 17_20, 25 15_20, 28 20_21, 30 17_22, 31 19_23 |
+| terrain-info | 18, 19, 20, 23, 25, 28, 30, 31 | as map-actor, plus Elbera `docs/native-terrain-collision-inputs.md` (TerrainInfo serializer for licensee 17 or later) | TerrainInfo property end and the TerrainSector set equal Elbera's export table, same tiles |
+
+- Still refused: `terrain-info` 123/16 (the cited serializer covers licensee 17 or later, and the 123/28 payload reader does not consume 24_10; nothing fitted); terrain height 118/11 of `t_17_23.utx` (`terrain-height-version-unsupported:118`); `entry` 123/0 and the version 118 maps (outside this plan); `19_11` and `20_11` stay `terrain-height-package-missing`.
+- The T-15 and T-18 heightmaps hold one constant sample on every tile, so their rows rest on the exact byte range both readers consume.
+- The 20_21 raw products and the raw step fingerprint are unchanged, so sealed units are not redone. The census, Lobby's status and the sealed raw steps of the newly readable tiles follow in 02-54.
+- Record a row: `python -B scripts/world/reader_cross_check_rows.py --client E:/Lineage2-client --reader <reader> --licensee <x>`. Tests: `test_world_reader_licensees.py` (the real-client classes re-derive every row and run `build_map` for each heightmap row tile).
 
 ## Evidence
 
