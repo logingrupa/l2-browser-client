@@ -56,6 +56,23 @@ class SelectionTests(unittest.TestCase):
                 profiles._recipe(value)
 
 
+class ProfileBoundTests(unittest.TestCase):
+    def recipe_with_profiles(self, count):
+        value = recipe()
+        selection = value['profiles'][0]
+        value['profiles'] = [dict(selection, npcId=npc_id) for npc_id in range(1, count + 1)]
+        return value
+
+    def test_bounds_are_256_profiles_per_bundle_and_64_bundles(self):
+        self.assertEqual((profiles.MAXIMUM_PROFILES_PER_BUNDLE, profiles.MAXIMUM_NPC_PROFILE_BUNDLES), (256, 64))
+
+    def test_recipe_accepts_the_largest_bundle_and_refuses_one_more_or_none(self):
+        self.assertEqual(len(profiles._recipe(self.recipe_with_profiles(profiles.MAXIMUM_PROFILES_PER_BUNDLE))['profiles']), 256)
+        for count in (profiles.MAXIMUM_PROFILES_PER_BUNDLE + 1, 0):
+            with self.subTest(count=count), self.assertRaisesRegex(FormatError, 'requires 1 to 256 explicit profiles'):
+                profiles._recipe(self.recipe_with_profiles(count))
+
+
 class NativeFieldTests(unittest.TestCase):
     def setUp(self):
         self.native = {'DrawScale': 1.2, 'DrawScale3D': {'X': 1, 'Y': 1, 'Z': 1},
