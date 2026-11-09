@@ -1,0 +1,155 @@
+{
+  "bundles": {
+    "character": {
+      "count": 0,
+      "skippedReason": "character-census-absent"
+    },
+    "npc": 1000,
+    "skill": 3064
+  },
+  "perTable": {
+    "npcgrp": {
+      "empty": 1,
+      "exactIdentity": 0,
+      "uniquePackageLeafCandidate": 6,
+      "unresolved": 0
+    }
+  },
+  "references": {
+    "empty": 1,
+    "exactIdentity": 0,
+    "uniquePackageLeafCandidate": 6,
+    "unresolved": 0
+  },
+  "routeProof": {
+    "path": "artifacts/native-parity/research/native-sound-answers-20261107/evidence/q4-hit-sounds-verify/verify_anchors.json",
+    "sha256": "03c3a03627d8c71527ef93c23f79cc574b34d27450b76a3b7a7d44810a4ab785"
+  },
+  "routes": {
+    "alaudio": {
+      "critical": {
+        "anchors": [
+          "Action_Attack"
+        ],
+        "fieldName": "EtcSound.CriticalSound",
+        "fieldOrdinal": 36,
+        "reason": null,
+        "status": "bound"
+      },
+      "soulshot": {
+        "detail": "Action_Attack branch ss names no [Section] key",
+        "fieldName": null,
+        "fieldOrdinal": null,
+        "reason": "combat-role-route-unresolved:alaudio/soulshot",
+        "status": "unresolved"
+      }
+    },
+    "armorgrp": {
+      "defense": {
+        "detail": "route proof names no serialization anchor for armorgrp",
+        "fieldName": null,
+        "fieldOrdinal": null,
+        "reason": "combat-role-route-unresolved:armorgrp/defense",
+        "status": "unresolved"
+      }
+    },
+    "chargrp": {
+      "attackItem": {
+        "detail": "char loader names no sound member in DAT order",
+        "fieldName": null,
+        "fieldOrdinal": null,
+        "reason": "combat-role-route-unresolved:chargrp/attackItem",
+        "status": "unresolved"
+      },
+      "attackVoice": {
+        "detail": "char loader names no sound member in DAT order",
+        "fieldName": null,
+        "fieldOrdinal": null,
+        "reason": "combat-role-route-unresolved:chargrp/attackVoice",
+        "status": "unresolved"
+      },
+      "damage": {
+        "detail": "char loader names no sound member in DAT order",
+        "fieldName": null,
+        "fieldOrdinal": null,
+        "reason": "combat-role-route-unresolved:chargrp/damage",
+        "status": "unresolved"
+      },
+      "defense": {
+        "detail": "char loader names no sound member in DAT order",
+        "fieldName": null,
+        "fieldOrdinal": null,
+        "reason": "combat-role-route-unresolved:chargrp/defense",
+        "status": "unresolved"
+      }
+    },
+    "npcgrp": {
+      "attackItem": {
+        "anchors": [
+          "GetAttackItemSound 0x1061ec50",
+          "FL2NpcData::Serialize 0x104654f0"
+        ],
+        "fieldName": "attack_sound1",
+        "fieldOrdinal": 8,
+        "reason": null,
+        "status": "bound"
+      },
+      "attackVoice": {
+        "detail": "GetAttackVoiceSound 0x10615810 reads no sound member of FL2NpcData::Serialize 0x104654f0",
+        "fieldName": null,
+        "fieldOrdinal": null,
+        "reason": "combat-role-route-unresolved:npcgrp/attackVoice",
+        "status": "unresolved"
+      },
+      "damage": {
+        "anchors": [
+          "GetDamageSound 0x1061f9a0",
+          "FL2NpcData::Serialize 0x104654f0"
+        ],
+        "fieldName": "damage_sound",
+        "fieldOrdinal": 10,
+        "reason": null,
+        "status": "bound"
+      },
+      "defense": {
+        "anchors": [
+          "GetDefenseItemSound 0x1061f0a0",
+          "FL2NpcData::Serialize 0x104654f0"
+        ],
+        "fieldName": "defense_sound1",
+        "fieldOrdinal": 9,
+        "reason": null,
+        "status": "bound"
+      }
+    },
+    "skillsoundgrp": {
+      "cast": {
+        "detail": "route proof names no serialization anchor for skillsoundgrp",
+        "fieldName": null,
+        "fieldOrdinal": null,
+        "reason": "combat-role-route-unresolved:skillsoundgrp/cast",
+        "status": "unresolved"
+      },
+      "shot": {
+        "detail": "route proof names no serialization anchor for skillsoundgrp",
+        "fieldName": null,
+        "fieldOrdinal": null,
+        "reason": "combat-role-route-unresolved:skillsoundgrp/shot",
+        "status": "unresolved"
+      }
+    },
+    "weapongrp": {
+      "attackItem": {
+        "detail": "item base serialize 0x1044c5f0 names no sound member in DAT order",
+        "fieldName": null,
+        "fieldOrdinal": null,
+        "reason": "combat-role-route-unresolved:weapongrp/attackItem",
+        "status": "unresolved"
+      }
+    }
+  },
+  "schemaVersion": 1,
+  "sealedBundles": [
+    "npc:20001"
+  ]
+}

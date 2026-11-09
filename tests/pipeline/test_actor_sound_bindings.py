@@ -6,12 +6,16 @@ import re
 import sys
 import tempfile
 import unittest
+import unittest.mock
 import wave
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from actors.actor_sound_bindings import (ACTOR_SOUND_BUNDLE_ID_PREFIX, NPC_NATIVE_NUMERIC_FIELDS, actor_sound_bundle_id,
-                                         actor_sound_gap_rows, actor_sound_reference_counts, build_actor_sound_recipe)
+from actors.actor_sound_batch import (CHARACTER_CENSUS_RELATIVE_PATH, bundle_sort_key, character_census_reason, decoded_config_keys,
+                                      run_actor_sound_slice)
+from actors.actor_sound_bindings import (ACTOR_SOUND_BUNDLE_ID_PREFIX, NO_EXACT_SKILL_SOUND_ROW_REASON, NPC_NATIVE_NUMERIC_FIELDS,
+                                         actor_sound_bundle_id, actor_sound_gap_row, actor_sound_gap_rows, actor_sound_reference_counts,
+                                         build_actor_sound_recipe, skill_actor_row)
 from native_assets import archive_bytes
 from native_assets_lib import combat_audio_bundle
 from native_assets_lib.gltf import json_bytes
@@ -194,6 +198,69 @@ class ActorSoundSourceRuleTests(unittest.TestCase):
             with self.subTest(name):
                 self.assertIsNone(re.search(r'difflib|get_close_matches|startswith\(|casefold\(\)\.find|fuzzy', source, re.IGNORECASE))
                 self.assertNotIn('previousValue', source)
+
+
+SOUND_ROWS = [{'skill_id': 3, 'skill_level': 1, 'spelleffect_sound_1': 'SkillSound.power_strike'}, {'skill_id': 3, 'skill_level': 2}]
+
+
+class ActorSoundSkillAndCharacterTests(unittest.TestCase):
+    def test_a_skill_bundle_takes_only_the_exact_skillsound_row_of_its_binding(self):
+        binding = {'key': 'skill:3:2', 'skillId': 3, 'level': 2, 'soundRowOrdinal': 1}
+        self.assertEqual(skill_actor_row(binding, SOUND_ROWS), {
+            'table': 'skillsoundgrp', 'kind': 'skill', 'label': 'skill:3:2 (skillsoundgrp row 1)', 'skillId': 3, 'level': 2,
+            'match': [{'pointer': '/skill_id', 'value': 3}, {'pointer': '/skill_level', 'value': 2}]})
+        with self.assertRaisesRegex(ValueError, 'does not belong to skill:3:1'):
+            skill_actor_row({**binding, 'key': 'skill:3:1', 'level': 1}, SOUND_ROWS)
+
+    def test_a_skill_key_without_an_exact_row_gets_no_sound_and_keeps_the_no_exact_skillsound_row_gap(self):
+        self.assertIsNone(skill_actor_row({'key': 'skill:9:1', 'skillId': 9, 'level': 1, 'soundRowOrdinal': None}, SOUND_ROWS))
+        self.assertEqual(NO_EXACT_SKILL_SOUND_ROW_REASON, 'no-exact-skillsound-row')
+        validate_gap_row(actor_sound_gap_row('skill:9:1', NO_EXACT_SKILL_SOUND_ROW_REASON, NPCGRP_IDENTITY, EVIDENCE), load_gap_reason_patterns())
+
+    def test_skill_routes_stay_unbound_so_a_skill_bundle_builds_no_recipe(self):
+        routes = {'skillsoundgrp': {'table': 'skillsoundgrp', 'routes': {}, 'unresolved': {
+            role: {'reason': f'combat-role-route-unresolved:skillsoundgrp/{role}', 'detail': 'no anchor'} for role in ('cast', 'shot')}}}
+        actor_row = skill_actor_row({'key': 'skill:3:1', 'skillId': 3, 'level': 1, 'soundRowOrdinal': 0}, SOUND_ROWS)
+        self.assertIsNone(build_actor_sound_recipe('skill:3:1', [actor_row], routes, {'corpus': {}, 'tables': {}}))
+        rows = actor_sound_gap_rows('skill:3:1', [actor_row], routes, None, {'skillsoundgrp': NPCGRP_IDENTITY}, EVIDENCE, {})
+        self.assertEqual([row['reason'] for row in rows], ['combat-role-route-unresolved:skillsoundgrp/cast',
+                                                           'combat-role-route-unresolved:skillsoundgrp/shot'])
+
+    def test_characters_are_skipped_with_the_census_reason_until_the_character_census_lists_them(self):
+        with tempfile.TemporaryDirectory(prefix='character-census-') as temporary:
+            self.assertEqual(character_census_reason(temporary), 'character-census-absent')
+            census_path = Path(temporary) / CHARACTER_CENSUS_RELATIVE_PATH
+            census_path.parent.mkdir(parents=True)
+            census_path.write_text('{}', encoding='utf-8')
+            self.assertIsNone(character_census_reason(temporary))
+
+
+class FakeSoundBundles:
+    def __init__(self, keys):
+        self.keys, self.converted = keys, []
+
+    def convert(self, run, bundle_key):
+        self.converted.append(bundle_key)
+        return {'key': bundle_key}
+
+
+class ActorSoundBatchSliceTests(unittest.TestCase):
+    def test_bundle_keys_order_characters_then_npcs_then_skills_by_number(self):
+        keys = ['skill:3:2', 'npc:100', 'skill:3:10', 'npc:20001', 'npc:9', 'character:2']
+        self.assertEqual(sorted(keys, key=bundle_sort_key), ['character:2', 'npc:9', 'npc:100', 'npc:20001', 'skill:3:2', 'skill:3:10'])
+
+    def test_a_slice_skips_sealed_bundles_converts_up_to_the_limit_and_runs_the_preflight_before_each(self):
+        bundles, preflights = FakeSoundBundles(['npc:1', 'npc:2', 'npc:3', 'npc:4']), []
+        with unittest.mock.patch('actors.actor_sound_batch.is_bundle_sealed', lambda run, key: key in ('npc:1', 'npc:3')):
+            outcomes = run_actor_sound_slice(None, bundles, 1, lambda: preflights.append(len(bundles.converted)))
+            self.assertEqual([outcome['key'] for outcome in outcomes], ['npc:2'])
+            outcomes = run_actor_sound_slice(None, FakeSoundBundles(bundles.keys), 5, lambda: None)
+        self.assertEqual([outcome['key'] for outcome in outcomes], ['npc:2', 'npc:4'])
+        self.assertEqual(preflights, [0])
+
+    def test_the_alaudio_config_keys_are_read_per_section_in_file_order_without_comments(self):
+        decoded = b'[Public]\r\nObject=(Name=X)\r\n; Commented=1\r\n[EtcSound]\r\nCriticalSound=SkillSound.Critical_Hit_02\r\nCriticalSound_Vol=250.0\r\n'
+        self.assertEqual(decoded_config_keys(decoded), ['Public.Object', 'EtcSound.CriticalSound', 'EtcSound.CriticalSound_Vol'])
 
 
 if __name__ == '__main__':

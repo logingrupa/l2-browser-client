@@ -142,6 +142,41 @@ class CombatRoleRouteBindingTests(unittest.TestCase):
             self.assertNotIn(label, source)
 
 
+HAND_RECIPE_COMPARISON = {
+    'npcgrp': {'attackItem': 'agree', 'attackVoice': 'not-bound', 'defense': 'agree', 'damage': 'agree'},
+    'alaudio': {'critical': 'agree', 'soulshot': 'not-bound'},
+    'chargrp': {'attackItem': 'not-bound', 'attackVoice': 'not-bound', 'defense': 'not-bound', 'damage': 'not-bound'},
+    'armorgrp': {'defense': 'not-bound'}, 'weapongrp': {'attackItem': 'not-bound'}, 'skillsoundgrp': {'cast': 'not-bound', 'shot': 'not-bound'},
+}
+
+
+def hand_recipe_columns_by_table():
+    recipe = json.loads((ROOT / 'recipes' / 'native-combat-audio.json').read_bytes())
+    columns = {}
+    for selection in recipe['selections']:
+        for role, entry in selection['unresolved']['roles'].items():
+            columns.setdefault(selection['table'], {}).setdefault(role, set()).add(entry['previousValue'])
+    return columns
+
+
+def hand_recipe_comparison(route, hand_columns):
+    if route['status'] != 'bound':
+        return 'not-bound'
+    if hand_columns is None:
+        return 'not-in-hand-recipe'
+    return 'agree' if hand_columns == {route['fieldName']} else 'disagree'
+
+
+class HandRecipeCrossCheckTests(unittest.TestCase):
+    def test_every_committed_route_is_compared_with_the_hand_recipe_and_no_bound_route_disagrees(self):
+        census = json.loads((ROOT / 'docs' / 'parts' / 'audio' / 'actor-sound-census.json').read_bytes())
+        hand_columns = hand_recipe_columns_by_table()
+        comparison = {table: {role: hand_recipe_comparison(route, hand_columns.get(table, {}).get(role)) for role, route in routes.items()}
+                      for table, routes in census['routes'].items()}
+        self.assertEqual(comparison, HAND_RECIPE_COMPARISON)
+        self.assertNotIn('disagree', {value for routes in comparison.values() for value in routes.values()})
+
+
 class CombatRoleRouteProofTests(unittest.TestCase):
     def test_the_pin_names_the_route_proof_path_its_main_checkout_default_and_hash(self):
         self.assertEqual(COMBAT_ROLE_ROUTE_PROOF['path'],
