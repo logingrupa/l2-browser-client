@@ -12,11 +12,11 @@ import tempfile
 import zlib
 
 from native_assets_lib.gltf import json_bytes, safe_name
-from native_catalog.ue2 import FormatError
 from reference_client_guard import require_reference_client
 from world.map_actor_properties import (BITMAPS, COLLISION, HAS_STACK, TRANSFORMS, actor_properties, ambient_sound_object,
                                         decode_property, explicit_properties, property_value, selected_by_origin, source_range)
 from world.map_sources import MapSources, file_hash, require_lock_equal_client_path, safe_path, sha, static_mesh_request
+from world.reader_licensee_layouts import require_reviewed_reader_layout
 from world.terrain_height_texture import png16, read_g16
 
 MAP_MIGRATION_DESCRIPTION = ('Lossless, bounded UE123/28 map migration; deliberately no guessed world mesh. '
@@ -48,7 +48,7 @@ GAPS = [
 def implementation():
     scripts = Path(__file__).parent
     files = ('native_map.py', 'world/map_actor_properties.py', 'world/map_sources.py', 'world/terrain_height_texture.py',
-             'native_catalog/ue2.py', 'native_assets_lib/gltf.py')
+             'world/reader_licensee_layouts.py', 'world/elbera_reader_cross_check.py', 'native_catalog/ue2.py', 'native_assets_lib/gltf.py')
     return {'sha256': sha(json_bytes({name: file_hash(scripts / name) for name in files})),
             'python': platform.python_version(), 'zlib': zlib.ZLIB_RUNTIME_VERSION,
             'formatReferences': FORMAT_REFERENCES}
@@ -75,8 +75,7 @@ def build_map(client, recipe, write):
     package = sources.get(recipe['map'])
     if recipe.get('sourceSha256') and package.source_hash != recipe['sourceSha256']:
         raise ValueError('Map source differs from recipe SHA256')
-    if (package.summary['version'], package.summary['licenseeVersion']) != (123, 28):
-        raise FormatError('Raw map adapter supports only verified UE123/licensee28')
+    require_reviewed_reader_layout("raw-map", package.summary)
     section = recipe.get('section')
     raw_path = 'raw/map.unwrapped.bin'
     write(raw_path, package.data)

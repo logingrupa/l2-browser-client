@@ -2,6 +2,7 @@ import math
 
 from native_catalog.ue2 import FormatError, Reader
 from world.map_sources import sha
+from world.reader_licensee_layouts import require_reviewed_reader_layout
 
 HAS_STACK = 0x02000000
 TRANSFORMS = ('Location', 'Rotation', 'DrawScale', 'DrawScale3D', 'PrePivot')
@@ -21,8 +22,7 @@ def source_range(data, path, start, end):
 
 
 def actor_properties(package, item):
-    if package.summary['version'] != 123 or package.summary['licenseeVersion'] != 28:
-        raise FormatError('Map actor layout supports only verified UE123/licensee28')
+    require_reviewed_reader_layout("map-actor", package.summary)
     reader = Reader(package.data, item['offset'], item['offset'] + item['size'])
     state = None
     if item['flags'] & HAS_STACK:

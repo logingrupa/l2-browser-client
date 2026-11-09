@@ -235,7 +235,7 @@ def extract(client, raw, reference, output):
     for name in ('extract-native-terrain-patch.py', 'native_map.py',
                  'world/map_actor_properties.py', 'world/map_sources.py', 'world/terrain_height_texture.py',
                  'world/terrain_coordinates.py', 'world/native_terrain_sectors.py', 'world/terrain_layers.py',
-                 'world/gltf_builder.py',
+                 'world/gltf_builder.py', 'world/reader_licensee_layouts.py', 'world/elbera_reader_cross_check.py',
                  'native_catalog/ue2.py', 'native_assets_lib/gltf.py'):
         read(script_root / name, 'implementation/' + name)
     report = {'schemaVersion': 1, 'kind': 'offline-native-terrain-patch-comparison', 'sourceSector': sector,

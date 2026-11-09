@@ -4,6 +4,7 @@ import zlib
 from native_catalog.ue2 import FormatError
 from world.map_actor_properties import property_value
 from world.map_sources import sha
+from world.reader_licensee_layouts import RESERVED_INT32_MATERIAL_PREFIX, require_reviewed_reader_layout
 
 TEXF_G16_FORMAT = 10
 MAXIMUM_MIP_LEVELS = 32
@@ -14,12 +15,11 @@ PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
 
 
 def read_g16(package, item):
-    if package.summary['version'] != 123 or package.summary['licenseeVersion'] != 28:
-        raise FormatError('G16 texture layout supports only verified UE123/licensee28')
+    layout = require_reviewed_reader_layout("g16-heightmap", package.summary)
     properties, reader = package.properties(item)
     if property_value(properties, 'Format') != TEXF_G16_FORMAT:
         raise FormatError('Terrain height texture must be native TEXF_G16 (10)')
-    reserved = reader.number('i')
+    reserved = reader.number('i') if layout['materialPrefix'] == RESERVED_INT32_MATERIAL_PREFIX else None
     mips = []
     for level in range(reader.count(MAXIMUM_MIP_LEVELS)):
         skip = reader.number('i')

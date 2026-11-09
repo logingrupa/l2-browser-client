@@ -1,0 +1,92 @@
+[
+ {
+  "reader": "g16-heightmap",
+  "version": 123,
+  "licensee": 25,
+  "tile": "16_11",
+  "package": "textures/t_16_11.utx",
+  "lockSha256": "2daacba87db317c276275c61aef15fa509fa95bf540bcdd8b876dc06bc7f996c",
+  "ourDecodeSha256": "7be22648127941d7f936759ee9b11b087b59398ac38fa9af8595906690fd5082",
+  "crossCheckDecodeSha256": "7be22648127941d7f936759ee9b11b087b59398ac38fa9af8595906690fd5082",
+  "tool": {
+   "name": "Elbera l2lib",
+   "commit": "12c9656",
+   "pins": {
+    "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
+   }
+  },
+  "equal": true
+ },
+ {
+  "reader": "g16-heightmap",
+  "version": 123,
+  "licensee": 28,
+  "tile": "20_21",
+  "package": "textures/T_20_21.utx",
+  "lockSha256": "585a51c9e4e58ae276bb34a0b4b0aaef63520262340654d1aaac9353e9a250cc",
+  "ourDecodeSha256": "8350ef7b55a52e9f18458c8868c8a423ac2a87206bb6511534eb0290c28577d1",
+  "crossCheckDecodeSha256": "8350ef7b55a52e9f18458c8868c8a423ac2a87206bb6511534eb0290c28577d1",
+  "tool": {
+   "name": "Elbera l2lib",
+   "commit": "12c9656",
+   "pins": {
+    "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
+   }
+  },
+  "equal": true
+ },
+ {
+  "reader": "map-actor",
+  "version": 123,
+  "licensee": 28,
+  "tile": "20_21",
+  "package": "maps/20_21.unr",
+  "lockSha256": "e123be27672ce30235829fc09a3da0aa381e7be14add0fe30ce15f1dd4379f93",
+  "ourDecodeSha256": "e3eb93086d021a0a66317c6c236764a9b99144b6e452f81d1e8183a5239edb13",
+  "crossCheckDecodeSha256": "e3eb93086d021a0a66317c6c236764a9b99144b6e452f81d1e8183a5239edb13",
+  "tool": {
+   "name": "Elbera l2lib",
+   "commit": "12c9656",
+   "pins": {
+    "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
+   }
+  },
+  "equal": true
+ },
+ {
+  "reader": "raw-map",
+  "version": 123,
+  "licensee": 28,
+  "tile": "20_21",
+  "package": "maps/20_21.unr",
+  "lockSha256": "e123be27672ce30235829fc09a3da0aa381e7be14add0fe30ce15f1dd4379f93",
+  "ourDecodeSha256": "e3eb93086d021a0a66317c6c236764a9b99144b6e452f81d1e8183a5239edb13",
+  "crossCheckDecodeSha256": "e3eb93086d021a0a66317c6c236764a9b99144b6e452f81d1e8183a5239edb13",
+  "tool": {
+   "name": "Elbera l2lib",
+   "commit": "12c9656",
+   "pins": {
+    "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
+   }
+  },
+  "equal": true
+ },
+ {
+  "reader": "terrain-info",
+  "version": 123,
+  "licensee": 28,
+  "tile": "20_21",
+  "package": "maps/20_21.unr",
+  "lockSha256": "e123be27672ce30235829fc09a3da0aa381e7be14add0fe30ce15f1dd4379f93",
+  "ourDecodeSha256": "8336459320f382cc75e773e4680ac0f2b560949057a055bb6b953e461809a604",
+  "crossCheckDecodeSha256": "8336459320f382cc75e773e4680ac0f2b560949057a055bb6b953e461809a604",
+  "tool": {
+   "name": "Elbera l2lib",
+   "commit": "12c9656",
+   "pins": {
+    "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
+   }
+  },
+  "equal": true
+ }
+]

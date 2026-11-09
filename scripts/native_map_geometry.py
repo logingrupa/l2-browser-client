@@ -42,7 +42,7 @@ REFERENCE_FILES = {
 GEOMETRY_WORLD_MODULE_PATHS = ('world/map_actor_properties.py', 'world/map_sources.py', 'world/terrain_coordinates.py',
                                'world/native_terrain_sectors.py', 'world/terrain_layers.py', 'world/gltf_builder.py',
                                'world/static_placement.py', 'world/terrain_rectangle_mesh.py', 'world/surface_spawn_candidate.py',
-                               'world/section_static_models.py')
+                               'world/section_static_models.py', 'world/reader_licensee_layouts.py', 'world/elbera_reader_cross_check.py')
 
 
 def implementation_hash():

@@ -4,6 +4,7 @@ import struct
 from native_catalog.ue2 import FormatError
 from world.map_actor_properties import actor_properties
 from world.map_sources import safe_path, sha
+from world.reader_licensee_layouts import require_reviewed_reader_layout
 from world.terrain_coordinates import calculated_coords, coords_point, cross, read_coords, subtract, unit, xyz
 
 BOUND_TOLERANCE = 0.001
@@ -11,8 +12,7 @@ TOPOLOGY_BITMAP_NAMES = ('QuadVisibilityBitmap', 'EdgeTurnBitmap')
 
 
 def native_terrain(package):
-    if (package.summary['version'], package.summary['licenseeVersion']) != (123, 28):
-        raise FormatError('Terrain native payload supports only verified UE123/licensee28')
+    require_reviewed_reader_layout("terrain-info", package.summary)
     items = [item for item in package.exports if item['classObject'] == 'Engine.TerrainInfo']
     if len(items) != 1:
         raise FormatError('Expected exactly one Engine.TerrainInfo')
