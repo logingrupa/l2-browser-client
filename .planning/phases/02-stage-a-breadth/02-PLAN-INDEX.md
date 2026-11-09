@@ -6,11 +6,11 @@ Sources: `02-RESEARCH.md` sections 4, 6 and 11 (where 6 and 11 disagree, 11 wins
 
 ## How to read the ids
 
-- Plan ids are the plain integers 02-01 to 02-70. Plans 02-56 to 02-69 were added for DEC-OWN-12 (own implementations of five areas) and have no research id. 02-70 is the tiles sweep split out of 02-23 (OVERNIGHT-DECISIONS row 303). The single sequential executor runs plans in wave order (see Waves); inside a wave, in id order.
+- Plan ids are the plain integers 02-01 to 02-71. Plans 02-56 to 02-69 were added for DEC-OWN-12 (own implementations of five areas) and have no research id. 02-70 is the tiles sweep split out of 02-23 (OVERNIGHT-DECISIONS row 303). 02-71 retires the legacy 20_20 chain (owner instruction, OVERNIGHT-DECISIONS rows 373 and 380) and has no research id. The single sequential executor runs plans in wave order (see Waves); inside a wave, in id order.
 - Research ids (in `02-RESEARCH.md` and `02-VALIDATION.md`) are different from 02-10 on. Only 02-01 to 02-09 keep their numbers. Translate a research id with the "Research" column. Never cite a research id as a plan id.
 - Wave = 1 + the highest wave among a plan's Phase 2 dependencies. Phase 1 dependencies count as wave 0. With one executor, a wave groups plans; nothing runs in parallel.
 - Phase gate: no Phase 2 plan starts before Phase 1 is complete (summaries for 01-14, 01-16 and 01-17 exist). `depends_on` lists a Phase 1 plan only where a plan uses its artifacts directly.
-- Plan count: 70.
+- Plan count: 71.
 
 ## Rules every plan carries
 
@@ -128,8 +128,9 @@ Sources: `02-RESEARCH.md` sections 4, 6 and 11 (where 6 and 11 disagree, 11 wins
 | 02-68 | new | Emitter simulation core | actors, skills-effects | FX-01, ACT-06 | 02-43, 02-56, 02-57 | 9 |
 | 02-69 | new | Ribbon emitter, L2 emitter natives and particle rendering | actors, skills-effects | FX-01, ACT-06, MAT-01 | 02-58, 02-60, 02-61, 02-68 | 12 |
 | 02-70 | 02-46 | Tiles load sweep through ?map= | integration, adapter-dispatch | INT-01 | 02-23, 02-16 | 9 |
+| 02-71 | new | Retire the legacy 20_20 chain | integration, adapter-dispatch | WORLD-01, CONV-01 | 02-16, 02-52 | 9 |
 
-Research to new id (02-56 to 02-69 have none): 02-01..02-09 = same; 02-10 = 02-17; 02-11 = 02-19; 02-12 = 02-20; 02-13 = 02-12; 02-14 = 02-14; 02-15 = 02-15; 02-16 = 02-16; 02-17 = 02-21; 02-18 = 02-22; 02-19 = 02-25; 02-20 = 02-27; 02-21 = 02-28; 02-22 = 02-35; 02-22b = 02-37; 02-23 = 02-38; 02-24 = 02-11; 02-25 = 02-29; 02-26 = 02-30; 02-27a = 02-45; 02-27b = 02-46; 02-28 = 02-47; 02-29 = 02-48; 02-30 = 02-49; 02-31a = 02-50; 02-31b = 02-51; 02-32w = 02-52; 02-32i = 02-53; 02-33 = 02-54; 02-34 = 02-32; 02-35 = 02-33; 02-36 = 02-34; 02-37 = 02-40; 02-38 = 02-41; 02-39 = 02-42; 02-40 = 02-43; 02-41a = 02-36; 02-41b = 02-39; 02-42 = 02-44; 02-43 = 02-55; 02-44 = 02-10; 02-45 = 02-18; 02-46 = 02-23 and 02-70; 02-47 = 02-24; 02-48 = 02-26; 02-49 = 02-31; 02-50 = 02-13.
+Research to new id (02-56 to 02-69 and 02-71 have none): 02-01..02-09 = same; 02-10 = 02-17; 02-11 = 02-19; 02-12 = 02-20; 02-13 = 02-12; 02-14 = 02-14; 02-15 = 02-15; 02-16 = 02-16; 02-17 = 02-21; 02-18 = 02-22; 02-19 = 02-25; 02-20 = 02-27; 02-21 = 02-28; 02-22 = 02-35; 02-22b = 02-37; 02-23 = 02-38; 02-24 = 02-11; 02-25 = 02-29; 02-26 = 02-30; 02-27a = 02-45; 02-27b = 02-46; 02-28 = 02-47; 02-29 = 02-48; 02-30 = 02-49; 02-31a = 02-50; 02-31b = 02-51; 02-32w = 02-52; 02-32i = 02-53; 02-33 = 02-54; 02-34 = 02-32; 02-35 = 02-33; 02-36 = 02-34; 02-37 = 02-40; 02-38 = 02-41; 02-39 = 02-42; 02-40 = 02-43; 02-41a = 02-36; 02-41b = 02-39; 02-42 = 02-44; 02-43 = 02-55; 02-44 = 02-10; 02-45 = 02-18; 02-46 = 02-23 and 02-70; 02-47 = 02-24; 02-48 = 02-26; 02-49 = 02-31; 02-50 = 02-13.
 
 ## Waves
 
@@ -143,7 +144,7 @@ Research to new id (02-56 to 02-69 have none): 02-01..02-09 = same; 02-10 = 02-1
 | 6 | 02-13, 02-14, 02-28, 02-33, 02-36, 02-41 |
 | 7 | 02-15, 02-26, 02-34, 02-58 |
 | 8 | 02-16, 02-43, 02-52 |
-| 9 | 02-25, 02-29, 02-35, 02-44, 02-68, 02-70 |
+| 9 | 02-25, 02-29, 02-35, 02-44, 02-68, 02-70, 02-71 |
 | 10 | 02-30, 02-37, 02-53 |
 | 11 | 02-31, 02-38, 02-39, 02-40, 02-48, 02-61 |
 | 12 | 02-42, 02-45, 02-63, 02-65, 02-69 |
@@ -171,6 +172,7 @@ Dependencies added to the research tables (applied above; the master table and W
 - DEC-OWN-12 plans (2026-11-08 handoff): 02-30 adds 02-56 and 02-59 (typed payload format, class defaults, material graph); 02-45 adds 02-59; 02-47 adds 02-61 and 02-62 so the batch runs the new steps; 02-48 now depends on 02-30 and 02-56 and is world, movement-geodata; 02-49 adds 02-67 (runtime collision context); 02-55 adds 02-57, 02-67 and 02-69. Chosen in index.
 - New research plans: 02-10 depends on 01-14. 02-23 depends on 02-05, 02-06 and 02-07. 02-24 depends on 02-03 and 02-04. 02-26 depends on 02-07, 02-13, 02-17, 02-19 and 02-21. 02-55 depends on the last plan of every lane chain. All chosen in index.
 - 02-70, the tiles sweep split out of 02-23 (OVERNIGHT-DECISIONS row 303), depends on 02-23 for the slice runner and harness and on 02-16 for the `?map=` tile route, which 02-23's `depends_on` never listed.
+- 02-71 (OVERNIGHT-DECISIONS row 418) depends on 02-16 and 02-52, which edit `loadNativeSection.ts` and `native_map.py` before the cut moves `build_map`. It shares wave 9 with 02-29, which runs first (lower id) and deletes its own legacy files in its Task 3; 02-30, 02-31 and 02-45 delete theirs after 02-71, and 02-47 sweeps any survivor.
 
 ## Shared interfaces
 
@@ -289,7 +291,7 @@ Manifest kinds:
   - `models` holds zero or more model records.
   - `collision` is a separate resource, never fed by LOD: the chunk native-tile-collision `.l2asset` (02-30).
   - Chunk ids are `chunk-<column>-<row>`, with 0-based indices on the 4x4-sector grid (chosen in index).
-  - The old `map-section-runtime` kind stays until the 20_20 chain retires.
+  - The old `map-section-runtime` kind stays while the served store holds the 20_20 section; its converter chain retires in 02-71 and in the plans that replace it (02-29, 02-30, 02-31, 02-45), and the kind leaves with the restage.
 - Table manifest `native-table` v1 (chosen in index): `{kind, schemaVersion: 1, table, sourcePath, sourceSha256, descriptorSha256, route, recordCount, records}`. `route` is `"local-descriptor"` or `"elbera-adapter"`.
 - Window manifest `native-window-layout` v1 (chosen in index):
   - Fields: `{kind, schemaVersion: 1, windowId, name, sourceSha256, sourceOffset, root, textureRefs, anchorProof}`.
@@ -392,6 +394,7 @@ Manifest kinds:
 - `recipes/world/oracle/20_20/expected.json` (02-12): counts and hashes, all read from the junction read-only and pinned to the catalog SHA:
   - `map-20-20-section` manifest `2e73654e...`, 62 models, 157 placements, Brush397 and Brush610 subsets.
   - Sky `f7a0b5ef...`, environment `e10827c4...`, movers `0de5d083...` with 8 movers.
+  - 02-71 adds `worldAudio` (`map-20-20-ambience` `e2fe18be...`, `map-20-20-music` `d4fca6b8...`) and `stepSounds` (`stepsound-deco-grass-20-20` `ff4528e1...`, `stepsound-surfaces` `a1e6b3ed...`), each `{recordId, kind, manifestSha256, manifestBytes, pinnedFileCount, pinnedFileBytes}`.
 - `docs/parts/world/tile-census.json` (02-12, extended by 02-13 and 02-54):
   - Fields: `{schemaVersion: 1, referenceTreeLockSha256, maps: [{map, kind: "tile" | "non-tile", key, packageVersion, licensee, wrapper, mapReaderGate, terrainHeightGate, terrainMapPackage, status: "eligible" | "gap", reason}]}`. Fields chosen in index.
   - It covers 153 tiles plus 10 non-tile maps. Coverage reads it.
@@ -482,7 +485,7 @@ Manifest kinds:
 | Group | Plans | Focus |
 |---|---|---|
 | 1. Store and catalog contracts | 02-01, 02-02, 02-03, 02-04, 02-05, 02-06, 02-07 | Lane store and output guard, ledger, gap rows and schedule check, catalog writer, new keys and manifest kinds, dev plugin, coverage |
-| 2. Converter contracts and integration tail | 02-08, 02-09, 02-10, 02-23, 02-24, 02-25, 02-26, 02-55, 02-70 | CONV tests, converter cost, WorldCommand, load-check sweeps, merge tool, sandbox gap notes, gap census, union and restage handoff |
+| 2. Converter contracts and integration tail | 02-08, 02-09, 02-10, 02-23, 02-24, 02-25, 02-26, 02-55, 02-70, 02-71 | CONV tests, converter cost, WorldCommand, load-check sweeps, merge tool, sandbox gap notes, gap census, union and restage handoff, legacy 20_20 chain retirement |
 | 3. World tracer and steps | 02-11, 02-12, 02-13, 02-14, 02-15, 02-16 | WORLD-07 review, 20_20 oracle and tile census, terrain-height gate, raw, chunk and terrain steps, 20_21 walk |
 | 4. Data, UI and sandbox sheet | 02-17, 02-18, 02-19, 02-20, 02-27, 02-28, 02-35, 02-37, 02-38 | Table decode and DATA-03, texture census, xdat tree, StatusWnd, all tables and hair tables, DevSheet pickers, runtime wiring, window registry at 932 x 430 |
 | 5. Actors census, tracer and NPCs | 02-21, 02-22, 02-32, 02-33, 02-34 | `.ukx` census and unit inventory, Gremlin tracer, multi-slot binding, NPC contract widening, NPC batches |
@@ -515,6 +518,7 @@ Each entry gives the one-line objective and the key `files_modified`. Planners a
 - **02-24 Lane store merge tool.** `merge_lane_store.py` verifies before it copies and refuses differing immutable files, duplicate ids, a wrong base SHA and v1 lane archives. It is tested on temp dirs and never run here. `write_lane_catalog.py --plan` prints its exact command. Files: `scripts/native_store/merge_lane_store.py`, `scripts/native_store/write_lane_catalog.py`, `tests/pipeline/test_merge_lane_store.py`.
 - **02-25 Integration tracer: sandbox available or gap.** For every by-ID action, the sandbox sheet shows converted, gap or not-in-catalog, with the reason, from the index. `package.json` gains `convert:tables`, `convert:world`, `convert:actors` and `convert:ui`. A Playwright screenshot is taken at 1440 x 900 and 932 x 430. Files: `package.json`, `src/runtime/attachSandboxCommandSheet.ts`, `tests/unit/sandboxCoverageNotes.test.ts`, `tests/browser/sandbox-coverage-notes.spec.ts`.
 - **02-26 Gap census.** Every denominator row in every part (tables, tiles and non-tile maps, NPCs, items, skills, characters, windows) has exactly one status. A test fails on a missing row or an unlisted reason. Files: `scripts/native_store/gap_census.py`, `scripts/native_store/build_coverage_report.py`, `tests/pipeline/test_gap_census.py`, `docs/coverage.md`.
+- **02-71 Retire the legacy 20_20 chain.** Freeze the served 20_20 world-audio and step-sound manifests into the oracle first. Move the fixtures and tests of kept code out of legacy test files, move `build_map` into `scripts/world/raw_map_extraction.py` (no section branch, raw step version raised, sealed units resealed), the vendored reader binding into `scripts/world/bsp_reader_binding.py` and the sound export guards into `scripts/native_assets_lib/sound_export_guards.py`. Delete what has a replacement today: `native_map.py`, `native_map_geometry.py`, the four section recipes, the `map-20-20` and `map-20-20-section` jobs, the terrain runtime, patch and UV scripts, `derive-native-map-terrain.py`, the Editor append and capture scripts, the ambient audit and the deco-grass chain, with tests, lane rows and doc lines. Keep the textures job, the flame request (new assets job `flame-native-material-graph`), the placement-audio producer and `--stage-runtime`, which now keeps every record the migration does not produce. 02-29, 02-30, 02-31 and 02-45 delete their own legacy files; 02-47 sweeps survivors. Files: `scripts/world/freeze_world_oracle.py`, `recipes/world/oracle/20_20/expected.json`, `scripts/world/raw_map_extraction.py`, `scripts/world/bsp_reader_binding.py`, `scripts/native_assets_lib/sound_export_guards.py`, `recipes/native-flame-material-graph.json`, `recipes/native-migration.json`, `scripts/native_migration.py`, `scripts/stage_native_runtime.py`, `scripts/native_batch_adapters.py`, `tests/pipeline/ue2_package_fixture.py`, `tests/pipeline/sound_package_fixture.py`, `.planning/lanes.json`.
 - **02-55 Integration union and restage handoff.** Union the lane stores into `artifacts/lane-store/integration/l2/` and re-run coverage and the gap census. Append the Needs Human merge command. INT-01 stays "partial: staging Needs Human". Files: `docs/coverage.md`, `STATUS.md`, `.planning/STATE.md`.
 
 ### Group 3: world tracer and steps
@@ -605,4 +609,4 @@ Each entry gives the one-line objective and the key `files_modified`. Planners a
 
 ## Same-wave file overlap (checked 2026-11-08)
 
-Plans in the same wave share only append-only tracking files (`.planning/OVERNIGHT-DECISIONS.md`, `STATUS.md`, `.planning/STATE.md`) and three documents (`docs/OUTPUT_CONTRACT.md` in wave 2 by 02-06 and 02-08, `docs/parts/npcs/EVIDENCE.md` in wave 6 by 02-33 and 02-36, `docs/parts/world/EVIDENCE.md` in wave 8 by 02-16 and 02-52). With one sequential executor (`workflow.use_worktrees: false`) plans never run at the same time, so these are edits in sequence, not conflicts. If plans are ever run in parallel worktrees, those pairs must be serialized. The DEC-OWN-12 world plans (02-30, 02-31, 02-45, 02-61, 02-62) also share `scripts/world/convert_tile.py`, `scripts/world/tile_manifest_step.py`, `recipes/world/gap-reasons.json` and `recipes/world/tile-manifest-vocabulary.json`; they run in sequence under the one executor, each with its own `listVersion` bump.
+Plans in the same wave share only append-only tracking files (`.planning/OVERNIGHT-DECISIONS.md`, `STATUS.md`, `.planning/STATE.md`) and three documents (`docs/OUTPUT_CONTRACT.md` in wave 2 by 02-06 and 02-08, `docs/parts/npcs/EVIDENCE.md` in wave 6 by 02-33 and 02-36, `docs/parts/world/EVIDENCE.md` in wave 8 by 02-16 and 02-52). With one sequential executor (`workflow.use_worktrees: false`) plans never run at the same time, so these are edits in sequence, not conflicts. If plans are ever run in parallel worktrees, those pairs must be serialized. The DEC-OWN-12 world plans (02-30, 02-31, 02-45, 02-61, 02-62) also share `scripts/world/convert_tile.py`, `scripts/world/tile_manifest_step.py`, `recipes/world/gap-reasons.json` and `recipes/world/tile-manifest-vocabulary.json`; they run in sequence under the one executor, each with its own `listVersion` bump. 02-71 (wave 9) shares tracking files with the other wave-9 plans, `tests/pipeline/test_converter_independence.py` with 02-25 and 02-29, and `tests/pipeline/test_client_entry_points.py`, `test_native_map_lock.py`, `docs/OUTPUT_CONTRACT.md`, `docs/NATIVE_WORLD.md`, `docs/research/INDEX.md`, `docs/parts/world/EVIDENCE.md` and `.planning/lanes.json` with 02-29; in id order 02-25 and 02-29 run first. The same files return in the deletion tasks of 02-30, 02-31, 02-45 and 02-47, one plan at a time.

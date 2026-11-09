@@ -30,7 +30,7 @@ Execution constraints for this run (owner rules, binding on every plan):
 - Converter commands get names outside the banned prefixes (`convert:tables`, `convert:world`, `convert:actors`, `convert:ui`). Every converter refuses an output path that resolves through the `public\l2` junction. Each needed restage of the shared store goes under Needs Human in STATE.md with the exact main-checkout command.
 
 ### B. World lane (WORLD-01..06)
-- Build the genericity audit's staged pipeline under `scripts/world/`, driven by `--map`, starting from the generic bottom layer (raw extractor, class defaults, BSP node reader, `native_batch` adapters). The existing derive, append and migrate chain is retired only after an oracle diff; those scripts are integration-owned store writers, so deleting them is integration work.
+- Build the genericity audit's staged pipeline under `scripts/world/`, driven by `--map`, starting from the generic bottom layer (raw extractor, class defaults, BSP node reader, `native_batch` adapters). The existing derive, append and migrate chain is retired only after an oracle diff; those scripts are integration-owned store writers, so deleting them is integration work. Owner instruction 2026-11-09 (OVERNIGHT-DECISIONS rows 373 and 380): the retirement happens in this run. Plan 02-71 extends the oracle freeze and cuts every piece whose replacement exists today; 02-29, 02-30, 02-31 and 02-45 delete the rest in their own tasks once their replacement passes the oracle subset, and 02-47 sweeps any survivor.
 - 20_20 oracle: freeze hashes and counts (157 placements, Brush397 and Brush610 subsets, 8 movers, sky `f7a0b5ef`) into a committed `expected.json` holding no L2 bytes, read from the junction and pinned to a recorded catalog SHA.
 - Tracer on tile 20_21 (probe hashes already verified), then the 39 tiles that pass the map and terrain-height gates. Every other tile gets a census-based gap record at once.
 - Unsupported formats become per-object or per-tile gap records and never block a tile. Readers grow one licensee at a time, each with a fixture and an Elbera or UELib cross-check, in census order (map 23, 25, 30; usx 12). Never fit values.
@@ -128,7 +128,7 @@ The full analyzer output with file:line evidence was a scratch file outside the 
 <deferred>
 ## Deferred Ideas
 
-- Staging lane outputs into the shared store (`public\l2`) and retiring the 20_20 derive/append/migrate chain: integration thread in the main checkout (Needs Human).
+- Staging lane outputs into the shared store (`public\l2`): integration thread in the main checkout (Needs Human). Retiring the 20_20 derive, append and migrate chain is no longer deferred; it is planned in 02-71 and the deletion tasks of 02-29, 02-30, 02-31, 02-45 and 02-47 (row 418).
 - Licensing review for vendoring UModel, UELib, ffmpeg and the l2-editor schema XMLs: owner.
 - Native footstep surface rules, specialized attack sounds, stair routing, roof camera: Phase 5 polish (DEC-OWN-1).
 
