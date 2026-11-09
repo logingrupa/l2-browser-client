@@ -15,6 +15,10 @@ from native_assets import archive_bytes
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib import combat_audio_bundle as subject
 from native_assets_lib.sha256_identity import sha256_hex_digest
+from native_catalog.table_layout_pins import MTX_DEFINITION_EVIDENCE
+from native_store.catalog_writer import pinned_store_files, read_store_catalog, write_store
+from native_store.store_paths import lane_store_root
+from native_store.write_lane_catalog import write_lane_catalog
 import stage_native_combat_audio as stager
 
 
@@ -31,9 +35,13 @@ def ver111(text):
 ALAUDIO = ('[Public]\r\nObject=(Name=X)\r\n\r\n[ItemSound]\r\nRandom=100\r\nVol=250.0\r\nRadius=40.0\r\n\r\n'
            '[CharSound]\r\nRandom=50\r\nVol=250.0\r\nRadius=30.0\r\n\r\n[EtcSound]\r\nCriticalSound=SkillSound.Critical_Hit_02\r\n'
            'CriticalSound_Vol=250.0\r\nCriticalSound_Radius=50.0\r\n\r\n[MusicVolume]\r\nMaxTime=30.f\r\n')
+READER_SCHEMA = {'descriptor': '06_interlude.xml', 'layout': 'Interlude', 'descriptorSha256': 'a' * 64, 'file': 'dats/npcgrp.xml',
+                 'sha256': 'b' * 64, 'sourcePattern': 'npcgrp.dat', 'compoundDefinitionEvidence': dict(MTX_DEFINITION_EVIDENCE)}
 
 
 class CombatAudioFixture(unittest.TestCase):
+    decoded_table_schema = {'fixture': True}
+
     def setUp(self):
         temporary = tempfile.TemporaryDirectory(prefix='combat-audio-')
         self.addCleanup(temporary.cleanup); self.root = Path(temporary.name)
@@ -95,7 +103,8 @@ class CombatAudioFixture(unittest.TestCase):
         for name, collection, rows in [('chargrp', 'Char', self.char_rows), ('npcgrp', 'npc', self.npc_rows)]:
             original = self.write('inputs/system/' + name + '.dat', b'synthetic original ' + name.encode())
             table = {'schemaVersion': 1, 'edition': 'interlude', 'source': 'system/' + name + '.dat', 'sourceSha256': original['sha256'],
-                'decodedSha256': sha256_hex_digest(json_bytes(rows)), 'schema': {'fixture': True}, 'data': {collection: rows}}
+                'decodedSha256': sha256_hex_digest(json_bytes(rows)), 'schema': copy.deepcopy(self.decoded_table_schema),
+                'data': {collection: rows}}
             if name == 'npcgrp': table['data']['data'] = len(rows)
             self.recipe['tables'][name] = {'original': original, 'decoded': self.write('inputs/' + name + '.json', json_bytes(table))}
         inventory = self.write('inputs/corpus/inventory.json', json_bytes(self.inventory))
@@ -313,6 +322,41 @@ class CombatAudioStageTests(CombatAudioFixture):
         target.parent.mkdir(parents=True); target.write_bytes(b'corrupt'); before = snapshot(self.root)
         with self.assertRaisesRegex(ValueError, 'differs; preserved'): self.stage()
         self.assertEqual(snapshot(self.root), before)
+
+
+class LaneStoreCombatAudioPinTests(CombatAudioFixture):
+    decoded_table_schema = READER_SCHEMA
+
+    def setUp(self):
+        super().setUp()
+        self.store_root = lane_store_root(self.root, 'actors')
+        _, payloads, _ = subject.prepare(self.root, self.root / 'recipes/combat.json')
+        manifest_sha256 = sha256_hex_digest(payloads['manifest.json'])
+        self.bundle_folder = self.store_root / 'combat-audio' / manifest_sha256
+        subject.run(self.root, self.root / 'recipes/combat.json', self.bundle_folder)
+        record = {'id': 'actor-sounds:npc:21622', 'manifest': f'/l2/combat-audio/{manifest_sha256}/manifest.json',
+                  'manifestBytes': len(payloads['manifest.json']), 'manifestSha256': manifest_sha256}
+        _, before = read_store_catalog(self.store_root)
+        write_store(self.store_root, {}, before, json_bytes({'schemaVersion': 1, 'models': [], 'combatAudio': [record]}))
+
+    def test_the_reader_provenance_names_its_schema_files_by_path(self):
+        manifest = json.loads((self.bundle_folder / 'manifest.json').read_bytes())
+        expected_schema = {key: value for key, value in READER_SCHEMA.items() if key != 'file'}
+        expected_schema['path'] = READER_SCHEMA['file']
+        expected_schema['compoundDefinitionEvidence'] = {key: value for key, value in MTX_DEFINITION_EVIDENCE.items() if key != 'file'}
+        expected_schema['compoundDefinitionEvidence']['path'] = MTX_DEFINITION_EVIDENCE['file']
+        for table in ('chargrp', 'npcgrp'):
+            with self.subTest(table):
+                self.assertEqual(manifest['tables'][table]['reader']['schema'], expected_schema)
+
+    def test_the_bundle_pins_only_the_files_it_holds_and_the_lane_catalog_writer_pins_it(self):
+        catalog, _ = read_store_catalog(self.store_root)
+        pinned = {relative for relative, _ in pinned_store_files(self.store_root, catalog).values()}
+        held = {path.relative_to(self.store_root).as_posix() for path in self.bundle_folder.rglob('*') if path.is_file()}
+        self.assertEqual(pinned, held)
+        self.write('public/l2/catalog.json', json_bytes({'schemaVersion': 1, 'models': []}))
+        summary = write_lane_catalog(self.root, 'actors')
+        self.assertEqual(summary['recordsBySlice'], {'models': 0, 'combatAudio': 1})
 
 
 if __name__ == '__main__':

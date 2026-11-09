@@ -42,7 +42,7 @@ Hand-recipe cross-check (test only, `tests/pipeline/test_combat_role_routes.py`)
 
 - ACT-05 breadth: 979 NPC bundles and every skill bundle wait for later slices; skill bundles stay route gaps until a proof anchor names the skillsoundgrp members; player characters wait for plan 02-40.
 - 5,269 sounds, 250 music files and 45 voice files with a labelled listen check (CHECK-02). World ambient, placement and music audio per tile is WORLD-02 in the world part.
-- The lane catalog writer refuses the generated bundles: the builder copies the decoded table reader provenance, whose `{file: dats/npcgrp.xml, sha256}` reads as a bundle file pin (OVERNIGHT-DECISIONS row 478). The restage line is in `.planning/STATE.md` (plan 02-44).
+- The 21 sealed bundles in the actors lane store were built before the builder recorded the decoded table reader provenance by `path` (`out_of_bundle_reader_provenance` in `scripts/native_assets_lib/combat_audio_bundle.py`). Their manifests still name `{file: dats/npcgrp.xml, sha256}`, which the lane catalog writer reads as a bundle file pin and refuses (row 478). The builder change reseals them, each replacing its own `combatAudio` record. A rebuilt bundle pins only the manifest and the WAV files it holds (`tests/pipeline/test_native_combat_audio.py` `LaneStoreCombatAudioPinTests`).
 - The audio part has no committed coverage denominator, so the actor sound gap rows live in the lane work folder, not in `gap-rows/` (row 477).
 
 ## Evidence

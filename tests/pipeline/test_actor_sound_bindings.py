@@ -5,6 +5,7 @@ from pathlib import Path
 import re
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 import unittest.mock
 import wave
@@ -16,6 +17,7 @@ from actors.actor_sound_batch import (CHARACTER_CENSUS_RELATIVE_PATH, bundle_sor
 from actors.actor_sound_bindings import (ACTOR_SOUND_BUNDLE_ID_PREFIX, NO_EXACT_SKILL_SOUND_ROW_REASON, NPC_NATIVE_NUMERIC_FIELDS,
                                          actor_sound_bundle_id, actor_sound_gap_row, actor_sound_gap_rows, actor_sound_reference_counts,
                                          build_actor_sound_recipe, skill_actor_row)
+from actors.actor_sound_conversion import ActorSoundConversionRun
 from native_assets import archive_bytes
 from native_assets_lib import combat_audio_bundle
 from native_assets_lib.gltf import json_bytes
@@ -261,6 +263,18 @@ class ActorSoundBatchSliceTests(unittest.TestCase):
     def test_the_alaudio_config_keys_are_read_per_section_in_file_order_without_comments(self):
         decoded = b'[Public]\r\nObject=(Name=X)\r\n; Commented=1\r\n[EtcSound]\r\nCriticalSound=SkillSound.Critical_Hit_02\r\nCriticalSound_Vol=250.0\r\n'
         self.assertEqual(decoded_config_keys(decoded), ['Public.Object', 'EtcSound.CriticalSound', 'EtcSound.CriticalSound_Vol'])
+
+
+class ActorSoundCatalogRecordTests(unittest.TestCase):
+    def test_a_resealed_bundle_replaces_its_own_combat_audio_record(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            run = SimpleNamespace(store_root=Path(temporary_directory).resolve() / 'artifacts' / 'lane-store' / 'actors' / 'l2')
+            for manifest_sha256 in ('a' * 64, 'b' * 64):
+                manifest_output = {'path': f'l2/combat-audio/{manifest_sha256}/manifest.json', 'bytes': 10, 'sha256': manifest_sha256}
+                ActorSoundConversionRun.write_catalog_record(run, 'npc:20001', manifest_output, 4)
+            catalog = json.loads((run.store_root / 'catalog.json').read_bytes())
+        self.assertEqual(catalog['combatAudio'], [{'id': 'actor-sounds:npc:20001', 'manifest': f'/l2/combat-audio/{"b" * 64}/manifest.json',
+                                                   'manifestBytes': 10, 'manifestSha256': 'b' * 64}])
 
 
 if __name__ == '__main__':

@@ -30,6 +30,16 @@ CONFIG_IDENT = re.compile(r'[A-Za-z_][A-Za-z_0-9]*')
 CONFIG_NUMBER = re.compile(r'[+-]?[0-9]+(?:\.[0-9]+)?')
 
 
+def out_of_bundle_reader_provenance(value):
+    if isinstance(value, list):
+        return [out_of_bundle_reader_provenance(item) for item in value]
+    if not isinstance(value, dict):
+        return copy.deepcopy(value)
+    names_out_of_bundle_file = 'file' in value and 'sha256' in value
+    require_condition(not (names_out_of_bundle_file and 'path' in value), 'Reader provenance names a file twice')
+    return {('path' if names_out_of_bundle_file and key == 'file' else key): out_of_bundle_reader_provenance(item) for key, item in value.items()}
+
+
 def load_table(inputs, name, spec):
     require_condition(name in TABLES and isinstance(spec, dict) and set(spec) == {'original', 'decoded'}, 'Unsupported table pin: ' + str(name))
     original = inputs.read(spec['original'])
@@ -43,9 +53,9 @@ def load_table(inputs, name, spec):
     rows = data.get(TABLES[name]) if isinstance(data, dict) else None
     require_condition(isinstance(rows, list) and 0 < len(rows) <= 100000 and all(isinstance(row, dict) for row in rows), 'Invalid decoded table rows: ' + name)
     require_condition('data' not in data or data['data'] == len(rows), 'Decoded table row count differs: ' + name)
-    metadata = {key: copy.deepcopy(value) for key, value in table.items() if key != 'data'}
+    reader = out_of_bundle_reader_provenance({key: value for key, value in table.items() if key != 'data'})
     return rows, {'original': copy.deepcopy(spec['original']), 'decoded': copy.deepcopy(spec['decoded']),
-                  'reader': metadata, 'collection': TABLES[name], 'totalRows': len(rows)}
+                  'reader': reader, 'collection': TABLES[name], 'totalRows': len(rows)}
 
 
 def config_sections(decoded, wanted):

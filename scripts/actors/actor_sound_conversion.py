@@ -10,7 +10,7 @@ from actors.actor_unit_inventory import decoded_string_values
 from actors.combat_role_routes import (bind_combat_role_routes, combat_route_table_manifest, descriptor_record_field_names,
                                        read_combat_role_route_proof)
 from actors.npc_requests import CONVERTER_REFUSED_REASON_PREFIX
-from actors.npc_store_records import file_output_record
+from actors.npc_store_records import catalog_with_record_replaced, file_output_record
 from native_assets import UMODEL_SHA256, implementation_hash
 from native_assets_lib import combat_audio_bundle
 from native_assets_lib.footstep_config import sound_payload
@@ -19,7 +19,7 @@ from native_assets_lib.sha256_identity import sha256_hex_digest
 from native_assets_lib.skill_audio_bundle import REFERENCE, reference_candidates
 from native_catalog.tables import interlude_table_layout
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import merge_catalog_slice, read_store_catalog, replace_file, write_store
+from native_store.catalog_writer import read_store_catalog, replace_file, write_store
 from native_store.gap_rows import gap_reason_list_versions, load_gap_reason_patterns, sorted_gap_rows, validate_gap_row
 from native_store.store_paths import lane_store_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
@@ -299,7 +299,7 @@ class ActorSoundConversionRun:
         record = {'id': actor_sound_bundle_id(bundle_key), 'manifest': '/' + manifest_output['path'],
                   'manifestBytes': manifest_output['bytes'], 'manifestSha256': manifest_output['path'].split('/')[2]}
         catalog, before = read_store_catalog(self.store_root)
-        catalog = merge_catalog_slice(catalog, 'combatAudio', record, catalog_capacity)
+        catalog = catalog_with_record_replaced(catalog, 'combatAudio', record, catalog_capacity)
         catalog['combatAudio'] = sorted(catalog['combatAudio'], key=lambda entry: entry['id'])
         write_store(self.store_root, {}, before, json_bytes(catalog))
 
