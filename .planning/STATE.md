@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-31-PLAN.md
-last_updated: "2026-11-09T22:32:29.769Z"
-last_activity: 2026-11-09
-last_activity_desc: Phase 02 plan 02-53 complete (static-material reader widening)
-state_head: 5b70644296da29f3b61d167e0ad054bb114e84b5
+stopped_at: Completed 02-38-PLAN.md
+last_updated: "2026-11-09T23:13:46.814Z"
+last_activity: 2026-11-10
+last_activity_desc: Phase 02 plan 02-38 complete (window registry and UI-03)
+state_head: f46db1ca1b09e73e4deff8edd466718464188af0
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 67
+  completed_plans: 68
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 02 (Stage A breadth) - EXECUTING
-Plan: 02-53 complete, 49 of 71 plans summarized
+Plan: 02-38 complete, 51 of 71 plans summarized
 Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-09 - Plan 02-53 complete: the static material slot reader accepts UE123 licensees 0, 12, 14, 15 and 18 after equal Elbera l2lib cross-checks; 210 of 212 `.usx` reviewed (the two UE118 packages refused); the `.usx` census is committed under `docs/parts/adapter-dispatch/`; 599 20_21 meshes gap rows become convertible on the 02-54 re-run. WORLD-01 Pending.
+Last activity: 2026-11-10 - Plan 02-38 complete: the window registry lists all 248 windows and any opens by id from the Sandbox window picker; 111 windows hold 462 controls of 26 unsupported types as `controls` gap rows; textures sealed for all 248 windows (4 references converted); the DEC-OWN-10 style scan passes; StatusWnd and AbnormalStatusWnd pass at 1440 x 900, 932 x 430 and the 430 x 932 no-scroll check; a windows sweep slice recorded 20 passes. UI-02 and UI-03 complete.
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -119,6 +119,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P37 | 40min | 3 tasks | 27 files |
 | Phase 02 P53 | 24min | 3 tasks | 15 files |
 | Phase 02 P31 | 41min | 4 tasks | 38 files |
+| Phase 02 P38 | 40min | 3 tasks | 22 files |
 
 ## Accumulated Context
 
@@ -285,6 +286,8 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-53: static material licensees 123/0, 12, 14, 15 and 18 reviewed after equal Elbera l2lib cross-checks on the first census package each; the UE118 .usx stay refused (rows 540, 541)
 - [Phase 02]: 02-53: the meshes re-run for the newly reviewed licensees stays with 02-54 (599 20_21 rows); WORLD-01 stays Pending (rows 542, 545)
 - [Phase 02]: 02-31: tile movers are the native-tile-movers v1 manifest, tile resource kind movers, vocabulary listVersion 3; mover collision only from the 02-30 decision as MOVR per listed slot, all 11 real movers gap rule-disagreement:bStatic; Task 3 foreign paths accepted under rows 373 and 380; WORLD-01 and MOVE-01 stay Pending (rows 550 to 557)
+- [Phase 02]: 02-38: rendered control types declared in recipes/data/native-window-control-types.json with an agreement test; the controls ledger step writes one control-type-unsupported row per window naming its first unsupported control (rows 558, 560, 561)
+- [Phase 02]: 02-38: buildNativeWindowRegistry is the one window listing for the Sandbox picker, ordered by base name then ordinal; the window layer clips with overflow hidden as a presentation rule; UI-02 and UI-03 complete (rows 559, 562 to 566)
 
 ### Pending Todos
 
@@ -365,6 +368,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-09T22:32:13.747Z
-Stopped at: Completed 02-31-PLAN.md
+Last session: 2026-11-09T23:13:46.079Z
+Stopped at: Completed 02-38-PLAN.md
 Resume file: None
