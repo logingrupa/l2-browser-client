@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-25-PLAN.md
-last_updated: "2026-11-09T13:26:20.882Z"
+stopped_at: Completed 02-29-PLAN.md
+last_updated: "2026-11-09T14:07:12.949Z"
 last_activity: 2026-11-09
-last_activity_desc: Phase 02 plan 02-25 complete (sandbox coverage notes for every by-ID action and the four convert:* package scripts)
-state_head: b92d7bd7452e1f2378f9111fb79907d083bd3a77
+last_activity_desc: "Phase 02 plan 02-29 complete (static meshes per chunk for any tile, 20_21 rendered on ?map, 20_20 model append chain deleted)"
+state_head: beeecfb88825b97d0d86c9613d3ce4b4e710f448
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 57
+  completed_plans: 58
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 02 (Stage A breadth) - EXECUTING
-Plan: 02-52 complete, 39 of 70 plans summarized
+Plan: 02-29 complete, 41 of 71 plans summarized
 Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-09 - Plan 02-52 complete: read_g16, actor_properties, native_terrain and build_map pass one licensee gate (scripts/world/reader_licensee_layouts.py) with cited layouts; map licensees 16, 18, 19, 20, 23, 25, 30, 31 (TerrainInfo of 16 refused) and terrain licensees 12, 15, 16, 18, 19, 20, 22, 23, 25 joined 123/28, each with a synthetic fixture and an equal row against the SHA-pinned Elbera l2lib (36 rows in tests/fixtures/world-readers/cross-checks.json); 20_21 raw outputs unchanged; `pnpm test:pipeline` 1594 OK. WORLD-01 stays Pending; the census follows in 02-54.
+Last activity: 2026-11-09 - Plan 02-29 complete: `convert_tile.py --step meshes` assigns each StaticMeshActor to the half-open native rectangle of its 4x4-sector chunk and converts each reviewed mesh once; 20_21 has 160 models, 2,324 placements and 881 per-object gap rows in its chunk manifests, and `/?map=20_21` renders them (browser check pass, lane catalog 34b83e83); the generic 20_20 plan holds all 157 oracle placements, so the 20_20 model append chain is deleted; `pnpm test:pipeline` 1652 OK. WORLD-01 stays Pending.
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -109,6 +109,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P43 | 50min | 3 tasks | 29 files |
 | Phase 02 P52 | 51min | 3 tasks tasks | 36 files files |
 | Phase 02 P25 | 22min | 3 tasks | 16 files |
+| Phase 02 P29 | 35min | 4 tasks | 41 files |
 
 ## Accumulated Context
 
@@ -260,6 +261,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-52: one reader licensee gate require_reviewed_reader_layout in scripts/world/reader_licensee_layouts.py serves read_g16, actor_properties, native_terrain and build_map; each reviewed pair has cited evidence, a synthetic fixture and an equal SHA-pinned Elbera l2lib cross-check row (OVERNIGHT-DECISIONS rows 409 to 412)
 - [Phase 02]: 02-52: reviewed map licensees 16, 18, 19, 20, 23, 25, 28, 30, 31 (TerrainInfo of 16 refused) and terrain licensees 12, 15, 16, 18, 19, 20, 22, 23, 25, 28; terrain 118/11 stays a version gap; WORLD-01 stays Pending until 02-54 (rows 413 to 417)
 - [Phase 02]: 02-25: sandbox notes for all four by-ID actions come from describeSandboxCatalogLookup (index wording, converted info, gap and not in catalog warning); shared sandbox.lastKey and sandbox.lastLookup; convert:tables, convert:world, convert:actors, convert:ui package scripts (OVERNIGHT-DECISIONS rows 446 to 451)
+- [Phase 02]: 02-29: convert_tile.py --step meshes assigns each StaticMeshActor to the half-open native rectangle of its 4x4-sector chunk, converts each reviewed mesh once and keeps per-object gap rows in the meshes receipt; the manifest step fills chunk models and replaces its own earlier tile record; the 20_20 model append chain is deleted after the generic plan held all 157 oracle placements; WORLD-01 stays Pending (OVERNIGHT-DECISIONS rows 452 to 462)
 
 ### Pending Todos
 
@@ -333,6 +335,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-09T13:26:20.219Z
-Stopped at: Completed 02-25-PLAN.md
+Last session: 2026-11-09T14:07:12.251Z
+Stopped at: Completed 02-29-PLAN.md
 Resume file: None
