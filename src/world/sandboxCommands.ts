@@ -1,15 +1,28 @@
-import type { EquipmentSlot, WorldCommand, WorldEntity, WorldEvent, WorldPosition } from "./worldTypes";
+import type { BodyPartEquipmentSlot, EquipmentSlot, WorldCommand, WorldEntity, WorldEvent, WorldPosition } from "./worldTypes";
 
 type EquipItemCommand = Extract<WorldCommand, { readonly type: "equip-item" }>;
 type CastSkillCommand = Extract<WorldCommand, { readonly type: "cast-skill" }>;
 type PlayClipCommand = Extract<WorldCommand, { readonly type: "play-clip" }>;
 
-const equipmentSlots: readonly EquipmentSlot[] = ["upper"];
+const upperEquipmentSlot = "upper";
+const bodyPartEquipmentSlotPrefix = "body-part:";
+const canonicalBodyPartEquipmentSlotPattern = /^body-part:(0|[1-9][0-9]*)$/;
 
 export const maximumSandboxClipNameLength = 128;
 
 export function isLineageIdentifier(value: number): boolean {
   return Number.isSafeInteger(value) && value >= 0;
+}
+
+export function isEquipmentSlot(value: string): value is EquipmentSlot {
+  if (value === upperEquipmentSlot) return true;
+  const bodyPartMatch = canonicalBodyPartEquipmentSlotPattern.exec(value);
+  return bodyPartMatch !== null && isLineageIdentifier(Number(bodyPartMatch[1]));
+}
+
+export function equipmentSlotForBodyPart(bodyPart: number): BodyPartEquipmentSlot | null {
+  if (!isLineageIdentifier(bodyPart)) return null;
+  return `${bodyPartEquipmentSlotPrefix}${bodyPart}`;
 }
 
 export function createSpawnedNpcEntity(npcId: number, spawnSequence: number, position: WorldPosition): WorldEntity {
@@ -51,7 +64,7 @@ export function entityWithClampedHealth(entity: WorldEntity, health: number): Wo
 }
 
 export function entityWithEquippedItem(entities: ReadonlyMap<string, WorldEntity>, command: EquipItemCommand): WorldEntity | null {
-  if (!equipmentSlots.includes(command.slot)) return null;
+  if (!isEquipmentSlot(command.slot)) return null;
   if (command.itemId !== null && !isLineageIdentifier(command.itemId)) return null;
   const entity = entities.get(command.entityId ?? "local-player");
   if (!entity) return null;

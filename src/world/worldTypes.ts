@@ -8,7 +8,8 @@ export type AnimationState = "idle" | "run" | "attack";
 export type LocomotionMode = "walk" | "run";
 export type SourceActionPreview = "special-attack";
 type EntityKind = "local-player" | "remote-player" | "monster";
-export type EquipmentSlot = "upper";
+export type BodyPartEquipmentSlot = `body-part:${number}`;
+export type EquipmentSlot = "upper" | BodyPartEquipmentSlot;
 
 export interface WorldEntity {
   readonly id: string;
