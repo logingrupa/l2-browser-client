@@ -163,6 +163,14 @@ class CommittedDatTableInventoryTests(unittest.TestCase):
     def test_elbera_evidence_counts_equal_port_scope(self):
         self.assertEqual(ELBERA_EVIDENCE_RECORD_COUNTS, port_scope_elbera_record_counts())
 
+    def test_the_tables_decoded_by_the_client_reading_are_local_decoded_with_their_counts(self):
+        rows = {row['table']: row for row in self.rows}
+        self.assertEqual({table: (rows[table]['route'], rows[table]['recordCount'], rows[table]['status'])
+                          for table in ('eula-e', 'questname-e', 'servername-e', 'sysstring-e')},
+                         {'eula-e': ('local-decoded', 1, 'decoded'), 'questname-e': ('local-decoded', 2050, 'decoded'),
+                          'servername-e': ('local-decoded', 200, 'decoded, 200 slots, 127 in use'),
+                          'sysstring-e': ('local-decoded', 2083, 'decoded, matches Elbera evidence')})
+
     def test_a_decoded_slot_table_states_its_slot_and_in_use_counts(self):
         for row in self.rows:
             if row['route'] == 'local-decoded' and 'inUseSlots' in CLIENT_DERIVED_LAYOUTS.get(row['layout'], {}):
@@ -287,8 +295,7 @@ class InventoryValidationBoundaryTests(unittest.TestCase):
 
     def test_unknown_count_with_a_source_fails(self):
         broken = copy.deepcopy(self.inventory)
-        unknown_row = next(row for row in broken['rows'] if row['recordCount'] == 'unknown')
-        unknown_row['countSource'] = ELBERA_EVIDENCE_COUNT_SOURCE
+        broken['rows'][0].update(recordCount='unknown', countSource=ELBERA_EVIDENCE_COUNT_SOURCE)
         with self.assertRaisesRegex(DatTableInventoryError, 'names a source'):
             validate_dat_table_inventory(broken)
 

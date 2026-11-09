@@ -103,13 +103,13 @@
    "table": "etcitemgrp"
   },
   {
-   "countSource": null,
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/eula-e.dat",
    "descriptorLayout": true,
    "file": "eula-e.dat",
    "layout": "eula",
-   "recordCount": "unknown",
-   "route": "local-layout-only",
-   "status": "decode-failed:FormatError",
+   "recordCount": 1,
+   "route": "local-decoded",
+   "status": "decoded",
    "table": "eula-e"
   },
   {
@@ -263,13 +263,13 @@
    "table": "optiondata_client-e"
   },
   {
-   "countSource": null,
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/questname-e.dat",
    "descriptorLayout": true,
    "file": "questname-e.dat",
    "layout": "questname",
-   "recordCount": "unknown",
-   "route": "local-layout-only",
-   "status": "decode-failed:FormatError",
+   "recordCount": 2050,
+   "route": "local-decoded",
+   "status": "decoded",
    "table": "questname-e"
   },
   {
@@ -293,13 +293,13 @@
    "table": "recipe-c"
   },
   {
-   "countSource": null,
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/servername-e.dat",
    "descriptorLayout": true,
    "file": "servername-e.dat",
    "layout": "servername",
-   "recordCount": "unknown",
-   "route": "local-layout-only",
-   "status": "decode-failed:FormatError",
+   "recordCount": 200,
+   "route": "local-decoded",
+   "status": "decoded, 200 slots, 127 in use",
    "table": "servername-e"
   },
   {
@@ -353,13 +353,13 @@
    "table": "symbolname-e"
   },
   {
-   "countSource": "docs/PORT_SCOPE.md section 2 (Elbera extract_gamedata.py)",
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/sysstring-e.dat",
    "descriptorLayout": true,
    "file": "sysstring-e.dat",
    "layout": "sysstring",
    "recordCount": 2083,
-   "route": "local-layout-only",
-   "status": "decode-failed:FormatError",
+   "route": "local-decoded",
+   "status": "decoded, matches Elbera evidence",
    "table": "sysstring-e"
   },
   {
