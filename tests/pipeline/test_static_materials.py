@@ -21,7 +21,7 @@ from world.elbera_reader_cross_check import elbera_tool_record
 
 CONVERSION_CLIENT_ROOT = Path('E:/Lineage2-client')
 LAYOUT_REVIEWED_VERSIONS = frozenset((123, licensee) for licensee in LAYOUT_REVIEWED_LICENSEES)
-REFUSED_NEIGHBOUR_VERSIONS = [(122, 20), (123, 11), (123, 13), (123, 17), (123, 21), (123, 24), (123, 26), (123, 27),
+REFUSED_NEIGHBOUR_VERSIONS = [(122, 20), (123, 1), (123, 11), (123, 13), (123, 17), (123, 21), (123, 24), (123, 26), (123, 27),
                               (123, 29), (123, 32)]
 CROSS_CHECK_ROWS = json.loads((ROOT / STATIC_MATERIAL_CROSS_CHECKS_PATH).read_bytes())['rows']
 VERSION_CASES = json.loads((ROOT / STATIC_MATERIAL_REAL_CLIENT_CASES_PATH).read_bytes())['cases']
@@ -174,6 +174,14 @@ class StaticMaterialTests(unittest.TestCase):
         for version in sorted(REVIEWED_VERSIONS):
             package, item = fixture(version=version)
             self.assertEqual(native_static_materials(package, item)['layout']['licenseeVersion'], version[1])
+
+    def test_every_unreviewed_neighbour_of_a_reviewed_licensee_is_refused(self):
+        neighbours = {(package_version, licensee + step) for package_version, licensee in REVIEWED_VERSIONS for step in (-1, 1)
+                      if licensee + step >= 0} - REVIEWED_VERSIONS
+        self.assertTrue(neighbours)
+        for version in sorted(neighbours):
+            with self.subTest(version=version), self.assertRaisesRegex(FormatError, 'reviewed'):
+                native_static_materials(*fixture(version=version))
 
     def test_the_refusal_names_every_reviewed_version(self):
         package, item = fixture(version=(123, 13))

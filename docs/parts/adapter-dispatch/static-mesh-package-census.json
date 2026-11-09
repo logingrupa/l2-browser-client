@@ -292,8 +292,8 @@
       "licensee": 18,
       "packageVersion": 123,
       "path": "staticmeshes/dion_punish_s.usx",
-      "reason": "static-material-layout-unreviewed:123/18",
-      "reviewed": false,
+      "reason": null,
+      "reviewed": true,
       "sha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
       "staticMeshExportCount": 77
     },
@@ -535,8 +535,8 @@
       "licensee": 18,
       "packageVersion": 123,
       "path": "staticmeshes/giran_dragon_valley_s.usx",
-      "reason": "static-material-layout-unreviewed:123/18",
-      "reviewed": false,
+      "reason": null,
+      "reviewed": true,
       "sha256": "ef48cecc02730c88e28be7f472355eb02fb07120a45ac66b4d8f08a7907d9dbf",
       "staticMeshExportCount": 16
     },
@@ -778,8 +778,8 @@
       "licensee": 18,
       "packageVersion": 123,
       "path": "staticmeshes/hunter_v_s.usx",
-      "reason": "static-material-layout-unreviewed:123/18",
-      "reviewed": false,
+      "reason": null,
+      "reviewed": true,
       "sha256": "a04e8d8d8baf24d8fe5b74f71cc8e1c23294cf04de348c71211cec3d33922acc",
       "staticMeshExportCount": 5
     },
@@ -1147,8 +1147,8 @@
       "licensee": 18,
       "packageVersion": 123,
       "path": "staticmeshes/oren_hwt_s.usx",
-      "reason": "static-material-layout-unreviewed:123/18",
-      "reviewed": false,
+      "reason": null,
+      "reviewed": true,
       "sha256": "90db17411b202375d7288b8eb31a33fa22aa355e5e6d340d6cbc643d275f261b",
       "staticMeshExportCount": 1
     },
@@ -1246,8 +1246,8 @@
       "licensee": 18,
       "packageVersion": 123,
       "path": "staticmeshes/rhion_orc_dungeon_s.usx",
-      "reason": "static-material-layout-unreviewed:123/18",
-      "reviewed": false,
+      "reason": null,
+      "reviewed": true,
       "sha256": "b3297e6720680d243a9ee66456e9eeecd8f772dc287a6eeb01f7cbb412fee290",
       "staticMeshExportCount": 113
     },
@@ -1714,8 +1714,8 @@
       "licensee": 18,
       "packageVersion": 123,
       "path": "staticmeshes/speakingfighter_s.usx",
-      "reason": "static-material-layout-unreviewed:123/18",
-      "reviewed": false,
+      "reason": null,
+      "reviewed": true,
       "sha256": "b761f8a00f26a1174e2b89418f34492dc06b1ae56fea6ca2571f2578c9f2678b",
       "staticMeshExportCount": 8
     },
@@ -1918,6 +1918,10 @@
     [
       123,
       16
+    ],
+    [
+      123,
+      18
     ],
     [
       123,

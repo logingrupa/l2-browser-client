@@ -19,6 +19,26 @@
       },
       "equal": true,
       "firstDifferingExport": null
+    },
+    {
+      "version": [
+        123,
+        18
+      ],
+      "package": "staticmeshes/dion_punish_s.usx",
+      "lockSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "comparedExports": 77,
+      "ourReferencesSha256": "ac4eeeb77ecf8ff74ea42e618f8600c7b18a5c1f81dd716f1ece511348b66791",
+      "crossCheckReferencesSha256": "ac4eeeb77ecf8ff74ea42e618f8600c7b18a5c1f81dd716f1ece511348b66791",
+      "tool": {
+        "name": "Elbera l2lib",
+        "commit": "12c9656",
+        "pins": {
+          "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
+        }
+      },
+      "equal": true,
+      "firstDifferingExport": null
     }
   ],
   "schemaVersion": 1

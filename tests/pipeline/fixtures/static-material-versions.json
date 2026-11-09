@@ -1405,6 +1405,1291 @@
         "294aedb58f7c15e3e2e32d020a7aa7c0c6a05591655acc9f6b5f0ac80d0d12f5"
       ],
       "materialsPayloadSha256": "5cee14ec9b6d66a57a15dcf7129de7d50141bda3dc1b517a4e73365146b5dc52"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.stream_gray07",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -11
+      ],
+      "slotByteSha256s": [
+        "db82ed271f62b0ac8a72c1e2d638086454cb3e2a14f55ccef9c992a61209da00"
+      ],
+      "materialsPayloadSha256": "12cc7b60ed61b653c01f4aa09886dabebc200588a52349198c4323a87ec1057f"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.stream_gray06",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -11
+      ],
+      "slotByteSha256s": [
+        "db82ed271f62b0ac8a72c1e2d638086454cb3e2a14f55ccef9c992a61209da00"
+      ],
+      "materialsPayloadSha256": "12cc7b60ed61b653c01f4aa09886dabebc200588a52349198c4323a87ec1057f"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.stream_gray05",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -11
+      ],
+      "slotByteSha256s": [
+        "db82ed271f62b0ac8a72c1e2d638086454cb3e2a14f55ccef9c992a61209da00"
+      ],
+      "materialsPayloadSha256": "12cc7b60ed61b653c01f4aa09886dabebc200588a52349198c4323a87ec1057f"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.bridge_gray05",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -38,
+        -17,
+        -12,
+        -14
+      ],
+      "slotByteSha256s": [
+        "7d8993188389bb571ec881b98e9005b3351e856417671291d2d382345f71a8f7",
+        "a8b799278f82fece9f5d6cd7f6dfa21416aaf40f25e659b16a6fcfb0633b8a8f",
+        "44436e259c9f0d6e37bf33c6c0a8659183dfc180894d64cd7329b9131d0dd051",
+        "779c06c51648e165509cf0260401e8b077f1b1ae9502c87cc47f163e150acb63"
+      ],
+      "materialsPayloadSha256": "783dabf87a37306dbd0e500f9d8c0b954583f478ba0069a7c3b761d702f85927"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.stream_gray04",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -11
+      ],
+      "slotByteSha256s": [
+        "db82ed271f62b0ac8a72c1e2d638086454cb3e2a14f55ccef9c992a61209da00"
+      ],
+      "materialsPayloadSha256": "12cc7b60ed61b653c01f4aa09886dabebc200588a52349198c4323a87ec1057f"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.stream_gray03",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -11
+      ],
+      "slotByteSha256s": [
+        "db82ed271f62b0ac8a72c1e2d638086454cb3e2a14f55ccef9c992a61209da00"
+      ],
+      "materialsPayloadSha256": "12cc7b60ed61b653c01f4aa09886dabebc200588a52349198c4323a87ec1057f"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.bridge_gray07",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -14,
+        -12,
+        -17
+      ],
+      "slotByteSha256s": [
+        "779c06c51648e165509cf0260401e8b077f1b1ae9502c87cc47f163e150acb63",
+        "44436e259c9f0d6e37bf33c6c0a8659183dfc180894d64cd7329b9131d0dd051",
+        "a8b799278f82fece9f5d6cd7f6dfa21416aaf40f25e659b16a6fcfb0633b8a8f"
+      ],
+      "materialsPayloadSha256": "798c1c2f3940491785c86ed1cf2bf2f90c793cb519957505e5d9dcc82dafea51"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.form_gray01",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -39,
+        -21
+      ],
+      "slotByteSha256s": [
+        "a6a503314e39c81e00ed4e9798e3a9e16d3658d510a44ef722de6fde97c6fc92",
+        "1332663b643c9fb93d0ccf4e09e83895371fd419208e17e2b1fd4dc4244ebb42"
+      ],
+      "materialsPayloadSha256": "d1ab10c94f25a35c989d97cf61b06fb9a47f03525c399c4162866379cebe08f8"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.bridge_gray06",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -14,
+        -12,
+        -17
+      ],
+      "slotByteSha256s": [
+        "779c06c51648e165509cf0260401e8b077f1b1ae9502c87cc47f163e150acb63",
+        "44436e259c9f0d6e37bf33c6c0a8659183dfc180894d64cd7329b9131d0dd051",
+        "a8b799278f82fece9f5d6cd7f6dfa21416aaf40f25e659b16a6fcfb0633b8a8f"
+      ],
+      "materialsPayloadSha256": "798c1c2f3940491785c86ed1cf2bf2f90c793cb519957505e5d9dcc82dafea51"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.private01",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -29,
+        -52,
+        -51,
+        -47,
+        -26
+      ],
+      "slotByteSha256s": [
+        "d0265604b1caea1f6e5481739a946ef36e787bab078da88e07c88a7d20f5a371",
+        "1e7aa43fde73a896e94bb77485188db2401efac547d9576cef9c5580c0e0ec72",
+        "c2caa28b6cdf9fd22aeaf9c575c667f5fa9eb65ca48b644c796a9bf32010e36a",
+        "ca94178ba37fc5f8c6a8c11f64e323182c17323456a62d1fbb70004a79a67e56",
+        "7b9cb57bae2547a3ba42c2d33962c1e09b89a39437e84fac8999567be6c5845c"
+      ],
+      "materialsPayloadSha256": "05b4f50c6fd1c7844e9aa585c00a3bf27e0076d50b0a827f94a2b1d5632b64f0"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.stream_gray02",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -11
+      ],
+      "slotByteSha256s": [
+        "db82ed271f62b0ac8a72c1e2d638086454cb3e2a14f55ccef9c992a61209da00"
+      ],
+      "materialsPayloadSha256": "12cc7b60ed61b653c01f4aa09886dabebc200588a52349198c4323a87ec1057f"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.stream_gray11",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -27
+      ],
+      "slotByteSha256s": [
+        "c467d3898f073d9b50755c164a67bdfb35f50dbc67254a12c1c0f9dbf12d3858"
+      ],
+      "materialsPayloadSha256": "64d32a6edbdf4c6e88e9015e3ac937a2e5347bd17ff3b64e29c0c59094e18b6d"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.private02",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -53,
+        -54,
+        -29,
+        -26
+      ],
+      "slotByteSha256s": [
+        "eea00a87f91ed09b56258358ff6c226b9e5265425d65ef72224266e155d3dd51",
+        "cafcf9d43f568ba00c758e2f177b2ab1c980bd8d893af5b20699a9461699e40e",
+        "d0265604b1caea1f6e5481739a946ef36e787bab078da88e07c88a7d20f5a371",
+        "7b9cb57bae2547a3ba42c2d33962c1e09b89a39437e84fac8999567be6c5845c"
+      ],
+      "materialsPayloadSha256": "e010a82ce63932a5b9fe21671ec5865c79200e0daa9efc9497145fbb119e0bc8"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.private03",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -81,
+        -102,
+        -29
+      ],
+      "slotByteSha256s": [
+        "78890dff312f616b401eb7d92ad9c2ccf7d803bdd6e7cb2df80cf346b8049b57",
+        "ddda706112dc93cbb83ad5a08a73bf826d40019e16679b8cbcbc84ac5d1f0b74",
+        "d0265604b1caea1f6e5481739a946ef36e787bab078da88e07c88a7d20f5a371"
+      ],
+      "materialsPayloadSha256": "10188a474ba54417fda38a7034fbab134197d6510a734d2d5130d3e22cb28949"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.private04",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -84,
+        -83,
+        -82
+      ],
+      "slotByteSha256s": [
+        "23d2b0a7915316d4667754a340ede4fedcf84fed0ea57bf18e8ce77fa363290b",
+        "ba98259c44fa08d45f1a89fb2c70b8b477d6d4c2119a59ac4708186b07b9583b",
+        "6a4bc55d8251d1d26c9b76fdec81ad180f79d6a8031a7e7bd6ad3b1d4d9e49cc"
+      ],
+      "materialsPayloadSha256": "0fb4878236e5bb8f79cbedbf94f6695cc3f4d647b6ff64482ece35bea4464eeb"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.form_gray02",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -39,
+        -21
+      ],
+      "slotByteSha256s": [
+        "a6a503314e39c81e00ed4e9798e3a9e16d3658d510a44ef722de6fde97c6fc92",
+        "1332663b643c9fb93d0ccf4e09e83895371fd419208e17e2b1fd4dc4244ebb42"
+      ],
+      "materialsPayloadSha256": "d1ab10c94f25a35c989d97cf61b06fb9a47f03525c399c4162866379cebe08f8"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.form_gray05",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -48,
+        -23,
+        -23
+      ],
+      "slotByteSha256s": [
+        "1d86ea78ccd7ab1b6ebf5e1289fb6866b2dcbf4c54e010c2cc2f1ff248521ac3",
+        "a7098efbc6682b0f8fb99b1390372766ab5aa18ff1f4e85a9e0ccc6ecbdacb96",
+        "a7098efbc6682b0f8fb99b1390372766ab5aa18ff1f4e85a9e0ccc6ecbdacb96"
+      ],
+      "materialsPayloadSha256": "aa46a4097964d6256c3db9bdbb9fa43bed8703e18e6ce9f76fcc792ba8ca5741"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.notice_gray01",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -40,
+        -35,
+        -34,
+        -32,
+        -33
+      ],
+      "slotByteSha256s": [
+        "53f943d9e5f647cd6c1a333dbfbc2032c0cc78d491960a8cedf7c5b9b6f5b8ea",
+        "e1e5c982b72336af1060e44b1af9986f99523c372c9368442ad515a52a7df4c4",
+        "c4223598f5ea75353ae5abf24e212966172b3e9e56b235b0874d922f11a3ec1a",
+        "90d707294a4eaaa94cfe39d78ffcd296c07c61b7d600e3352c4a2194d2671aab",
+        "81e861578a6603674b93134729b6cac6d8b1726c9db9ed0f555aa00e07d38abf"
+      ],
+      "materialsPayloadSha256": "6f4df888ba86594beb665af23e3eff9dda3d0d3d6feda3bd2baf3f10bbeabb81"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.form_gray06",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -48,
+        -23,
+        -23
+      ],
+      "slotByteSha256s": [
+        "1d86ea78ccd7ab1b6ebf5e1289fb6866b2dcbf4c54e010c2cc2f1ff248521ac3",
+        "a7098efbc6682b0f8fb99b1390372766ab5aa18ff1f4e85a9e0ccc6ecbdacb96",
+        "a7098efbc6682b0f8fb99b1390372766ab5aa18ff1f4e85a9e0ccc6ecbdacb96"
+      ],
+      "materialsPayloadSha256": "aa46a4097964d6256c3db9bdbb9fa43bed8703e18e6ce9f76fcc792ba8ca5741"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.notice_gray02",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -72,
+        -65,
+        -40,
+        -35,
+        -34,
+        -32,
+        -33
+      ],
+      "slotByteSha256s": [
+        "46c79c00ac4b0b3ea4a82ea884fa6fdea43e38ab3300280b558129f2a30342aa",
+        "0414c03221cedbc472aad41dde302e9e0ad4cf347d46301c12e88198337193a4",
+        "53f943d9e5f647cd6c1a333dbfbc2032c0cc78d491960a8cedf7c5b9b6f5b8ea",
+        "e1e5c982b72336af1060e44b1af9986f99523c372c9368442ad515a52a7df4c4",
+        "c4223598f5ea75353ae5abf24e212966172b3e9e56b235b0874d922f11a3ec1a",
+        "90d707294a4eaaa94cfe39d78ffcd296c07c61b7d600e3352c4a2194d2671aab",
+        "81e861578a6603674b93134729b6cac6d8b1726c9db9ed0f555aa00e07d38abf"
+      ],
+      "materialsPayloadSha256": "b6819b42cf0844e1e2f4cce06c4e780261cf8138bc5938241721765b3c64278e"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.stream_gray10",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -57,
+        -56,
+        -55,
+        -22,
+        -18
+      ],
+      "slotByteSha256s": [
+        "6b18a4a4d89310ac55f749acf23912316b3be3d65603ed13b9f13fc5e8845b2c",
+        "71e6d36b6c9b79d88cf6f7f90f0cc5307253ceeb1f40f9095bb8215eedd4e1a3",
+        "3d280442fa7bc358e0627042cb7bcfce92ea578d1edb16a1236ce0342f65f994",
+        "0a1ebc23bc97c097cb161015792e35c20e5ce777c7147190a52271b1734c1c2a",
+        "bc03b8319773739f6f6e580573bebd2d26e206558430dc30051db70d2f6d361a"
+      ],
+      "materialsPayloadSha256": "5060bdc6d3e9ef4bd3ba5f77d1eba8bce4329c55fa0edd5e980eac240691650a"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_stair_A",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -28,
+        -15,
+        -25,
+        -30,
+        -15
+      ],
+      "slotByteSha256s": [
+        "e2da6ab8f3408c6c09c14d6a57e93c2075242dcf71a88ba4a6d35c684419fd6e",
+        "ad943ce109eb2eb45905f81c8f418f4fff438b4b01513f95e6aab11fac7f4f11",
+        "518d4e4f9bb8a6f9d5261d81b29ecf044893f912308b91ce1b047f58261e4db6",
+        "a7468818fbe66e53fa6787c81cd7310c7df8b91be8f5e3fa9a4d4f661f2db388",
+        "ad943ce109eb2eb45905f81c8f418f4fff438b4b01513f95e6aab11fac7f4f11"
+      ],
+      "materialsPayloadSha256": "bb4d3c878c3a4992facb9abc61dce672903eefc91ead12841e1a2e6f0082b5fd"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.tyrant05",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -46,
+        -13,
+        -24
+      ],
+      "slotByteSha256s": [
+        "e9c0d3215300452f63408ba88d7b1857d885771670d2b444014a07a528988184",
+        "b73c7fca8d975ccf97fb9f80655e3f64a6e7cbbeb7a3d7de6625b525934b567e",
+        "f613ae377e879c14809c971bc3e258b620f48716b05aa3069fd6c0f8cdde2431"
+      ],
+      "materialsPayloadSha256": "58c5481da289162f4ecfb6940de56e5fe2b694421183e9d1278f1718e11c5429"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.form_gray04",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -85,
+        -50
+      ],
+      "slotByteSha256s": [
+        "f13d72ece509951e0100c44c1dcaa0d324eb3429746449a971f0a0adfc9acb46",
+        "a650c5ad9cef8d249bbc4a4991cc420c97bd622c41092538df743a92792e7a1e"
+      ],
+      "materialsPayloadSha256": "5c728588cde8b7d696ab686ccdbb3aceaa9c6daa675a744b05d41a0a6e6473f1"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.form_gray19",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -19,
+        -13,
+        -20,
+        -24
+      ],
+      "slotByteSha256s": [
+        "f517ad7838f24dc7b259cf9fd4abc4e37788a06012eb058c94ec1f902dc2d480",
+        "b73c7fca8d975ccf97fb9f80655e3f64a6e7cbbeb7a3d7de6625b525934b567e",
+        "43a80c588c5cda8a8458fe4022e5a54c9febc85f083e9355e47abd8d24b96e09",
+        "f613ae377e879c14809c971bc3e258b620f48716b05aa3069fd6c0f8cdde2431"
+      ],
+      "materialsPayloadSha256": "2d69328e066de7e74a409b83821585b8d001cbbe6aee6acbc3fc2325c59dacba"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_a_3_in",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -8
+      ],
+      "slotByteSha256s": [
+        "d4584b8c94270b8b7820d541886e04cc26a423eda6759222c72a47ae7cd79c93"
+      ],
+      "materialsPayloadSha256": "b7664f8ea7079e5b3bb6d232d700790223e0a375d78d57be17b4c29aaa8a603f"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.tyrant02",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -47,
+        -12
+      ],
+      "slotByteSha256s": [
+        "ca94178ba37fc5f8c6a8c11f64e323182c17323456a62d1fbb70004a79a67e56",
+        "44436e259c9f0d6e37bf33c6c0a8659183dfc180894d64cd7329b9131d0dd051"
+      ],
+      "materialsPayloadSha256": "ac12268719a8b9d7e0c79f134e7b52f835b1924728f2a3c8b3647c380276168b"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_b_2",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -10,
+        -9,
+        -7
+      ],
+      "slotByteSha256s": [
+        "8c45095c5a69abae0700a5b0da768ac0d17f696c4f49d67d709409c53175c028",
+        "77adfe1c1af892cf381b0971e0ecc995f77b295ae47e6115976cc3e38b0f8722",
+        "aff8dbdb07ca906e8c3f7d04506a065585ab52c4880a390c4bb4ae5cdd0782d3"
+      ],
+      "materialsPayloadSha256": "abfd7a3ef862a6caa587fb3ff4f4760ccbf82bc43d53da89fd87fa52dc3f0818"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_b_3",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -10,
+        -9,
+        -7
+      ],
+      "slotByteSha256s": [
+        "8c45095c5a69abae0700a5b0da768ac0d17f696c4f49d67d709409c53175c028",
+        "77adfe1c1af892cf381b0971e0ecc995f77b295ae47e6115976cc3e38b0f8722",
+        "aff8dbdb07ca906e8c3f7d04506a065585ab52c4880a390c4bb4ae5cdd0782d3"
+      ],
+      "materialsPayloadSha256": "abfd7a3ef862a6caa587fb3ff4f4760ccbf82bc43d53da89fd87fa52dc3f0818"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_c_1",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -10,
+        -9,
+        -7
+      ],
+      "slotByteSha256s": [
+        "8c45095c5a69abae0700a5b0da768ac0d17f696c4f49d67d709409c53175c028",
+        "77adfe1c1af892cf381b0971e0ecc995f77b295ae47e6115976cc3e38b0f8722",
+        "aff8dbdb07ca906e8c3f7d04506a065585ab52c4880a390c4bb4ae5cdd0782d3"
+      ],
+      "materialsPayloadSha256": "abfd7a3ef862a6caa587fb3ff4f4760ccbf82bc43d53da89fd87fa52dc3f0818"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_c_3",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -10,
+        -9,
+        -7
+      ],
+      "slotByteSha256s": [
+        "8c45095c5a69abae0700a5b0da768ac0d17f696c4f49d67d709409c53175c028",
+        "77adfe1c1af892cf381b0971e0ecc995f77b295ae47e6115976cc3e38b0f8722",
+        "aff8dbdb07ca906e8c3f7d04506a065585ab52c4880a390c4bb4ae5cdd0782d3"
+      ],
+      "materialsPayloadSha256": "abfd7a3ef862a6caa587fb3ff4f4760ccbf82bc43d53da89fd87fa52dc3f0818"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.bridge_gray02",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -16
+      ],
+      "slotByteSha256s": [
+        "1a15d65719a89a8fea0837c49a9d4b8fbf04f151d3ffa1b4f28ea0ddea7fe42e"
+      ],
+      "materialsPayloadSha256": "d1145c0605b14521bb00124c4d6ca2b4c01d84a4d49cfa9110c2895f53fefe6e"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.bridge_gray08",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -14,
+        -12,
+        -17
+      ],
+      "slotByteSha256s": [
+        "779c06c51648e165509cf0260401e8b077f1b1ae9502c87cc47f163e150acb63",
+        "44436e259c9f0d6e37bf33c6c0a8659183dfc180894d64cd7329b9131d0dd051",
+        "a8b799278f82fece9f5d6cd7f6dfa21416aaf40f25e659b16a6fcfb0633b8a8f"
+      ],
+      "materialsPayloadSha256": "798c1c2f3940491785c86ed1cf2bf2f90c793cb519957505e5d9dcc82dafea51"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.tyrant06",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -58,
+        -16,
+        -46,
+        -13
+      ],
+      "slotByteSha256s": [
+        "951284369f1d043a227b6e86527d407e71f2435ce73f95752e758989a7d1d306",
+        "1a15d65719a89a8fea0837c49a9d4b8fbf04f151d3ffa1b4f28ea0ddea7fe42e",
+        "e9c0d3215300452f63408ba88d7b1857d885771670d2b444014a07a528988184",
+        "b73c7fca8d975ccf97fb9f80655e3f64a6e7cbbeb7a3d7de6625b525934b567e"
+      ],
+      "materialsPayloadSha256": "fe5f15c64cb2adbbf860504d4d3a68933882aaa1905de5fa6868eb693f169fca"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_b_2_in",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -8
+      ],
+      "slotByteSha256s": [
+        "d4584b8c94270b8b7820d541886e04cc26a423eda6759222c72a47ae7cd79c93"
+      ],
+      "materialsPayloadSha256": "b7664f8ea7079e5b3bb6d232d700790223e0a375d78d57be17b4c29aaa8a603f"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_b_1_in",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -8
+      ],
+      "slotByteSha256s": [
+        "d4584b8c94270b8b7820d541886e04cc26a423eda6759222c72a47ae7cd79c93"
+      ],
+      "materialsPayloadSha256": "b7664f8ea7079e5b3bb6d232d700790223e0a375d78d57be17b4c29aaa8a603f"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_wall_Deco",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -59,
+        -60,
+        -61
+      ],
+      "slotByteSha256s": [
+        "803f9956484bd9c4c60a4399f395a9f508a52437cd4d4ec12d7938cdd4679afc",
+        "da7d336ca63c8ea532c346bd891eea46de7f9bf10d99fa55e42151ddee182392",
+        "e514b08f98e61add183f69fcd3acd93cd5c6581be591b04a76e94fd271109548"
+      ],
+      "materialsPayloadSha256": "8ef33797b45280c00cdb38d47d97eeb110a0e8d4d9fd9891451b40663aa4c719"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_c_1_in",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -8
+      ],
+      "slotByteSha256s": [
+        "d4584b8c94270b8b7820d541886e04cc26a423eda6759222c72a47ae7cd79c93"
+      ],
+      "materialsPayloadSha256": "b7664f8ea7079e5b3bb6d232d700790223e0a375d78d57be17b4c29aaa8a603f"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_b_4_in",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -8
+      ],
+      "slotByteSha256s": [
+        "d4584b8c94270b8b7820d541886e04cc26a423eda6759222c72a47ae7cd79c93"
+      ],
+      "materialsPayloadSha256": "b7664f8ea7079e5b3bb6d232d700790223e0a375d78d57be17b4c29aaa8a603f"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_b_1",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -10,
+        -9,
+        -7
+      ],
+      "slotByteSha256s": [
+        "8c45095c5a69abae0700a5b0da768ac0d17f696c4f49d67d709409c53175c028",
+        "77adfe1c1af892cf381b0971e0ecc995f77b295ae47e6115976cc3e38b0f8722",
+        "aff8dbdb07ca906e8c3f7d04506a065585ab52c4880a390c4bb4ae5cdd0782d3"
+      ],
+      "materialsPayloadSha256": "abfd7a3ef862a6caa587fb3ff4f4760ccbf82bc43d53da89fd87fa52dc3f0818"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_c_2",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -10,
+        -9,
+        -7
+      ],
+      "slotByteSha256s": [
+        "8c45095c5a69abae0700a5b0da768ac0d17f696c4f49d67d709409c53175c028",
+        "77adfe1c1af892cf381b0971e0ecc995f77b295ae47e6115976cc3e38b0f8722",
+        "aff8dbdb07ca906e8c3f7d04506a065585ab52c4880a390c4bb4ae5cdd0782d3"
+      ],
+      "materialsPayloadSha256": "abfd7a3ef862a6caa587fb3ff4f4760ccbf82bc43d53da89fd87fa52dc3f0818"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.bridge_gray03",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -16
+      ],
+      "slotByteSha256s": [
+        "1a15d65719a89a8fea0837c49a9d4b8fbf04f151d3ffa1b4f28ea0ddea7fe42e"
+      ],
+      "materialsPayloadSha256": "d1145c0605b14521bb00124c4d6ca2b4c01d84a4d49cfa9110c2895f53fefe6e"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.private05",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -22,
+        -62
+      ],
+      "slotByteSha256s": [
+        "0a1ebc23bc97c097cb161015792e35c20e5ce777c7147190a52271b1734c1c2a",
+        "4cd7804ead3287a5cde8630dc689a43cb5248f45de1c9a4683195d44bb21bc41"
+      ],
+      "materialsPayloadSha256": "f7ba6a05b04a32a5de9e479394f3c230bae6a08a810dec7d05012a64a4b3bf62"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_a_2_in",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -8
+      ],
+      "slotByteSha256s": [
+        "d4584b8c94270b8b7820d541886e04cc26a423eda6759222c72a47ae7cd79c93"
+      ],
+      "materialsPayloadSha256": "b7664f8ea7079e5b3bb6d232d700790223e0a375d78d57be17b4c29aaa8a603f"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.bridge_gray01",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -16
+      ],
+      "slotByteSha256s": [
+        "1a15d65719a89a8fea0837c49a9d4b8fbf04f151d3ffa1b4f28ea0ddea7fe42e"
+      ],
+      "materialsPayloadSha256": "d1145c0605b14521bb00124c4d6ca2b4c01d84a4d49cfa9110c2895f53fefe6e"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_b_3_in",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -8
+      ],
+      "slotByteSha256s": [
+        "d4584b8c94270b8b7820d541886e04cc26a423eda6759222c72a47ae7cd79c93"
+      ],
+      "materialsPayloadSha256": "b7664f8ea7079e5b3bb6d232d700790223e0a375d78d57be17b4c29aaa8a603f"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_a_1_in",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -8
+      ],
+      "slotByteSha256s": [
+        "d4584b8c94270b8b7820d541886e04cc26a423eda6759222c72a47ae7cd79c93"
+      ],
+      "materialsPayloadSha256": "b7664f8ea7079e5b3bb6d232d700790223e0a375d78d57be17b4c29aaa8a603f"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_c_3_in",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -8
+      ],
+      "slotByteSha256s": [
+        "d4584b8c94270b8b7820d541886e04cc26a423eda6759222c72a47ae7cd79c93"
+      ],
+      "materialsPayloadSha256": "b7664f8ea7079e5b3bb6d232d700790223e0a375d78d57be17b4c29aaa8a603f"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_c_2_in",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -8
+      ],
+      "slotByteSha256s": [
+        "d4584b8c94270b8b7820d541886e04cc26a423eda6759222c72a47ae7cd79c93"
+      ],
+      "materialsPayloadSha256": "b7664f8ea7079e5b3bb6d232d700790223e0a375d78d57be17b4c29aaa8a603f"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.form_gray03",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -63,
+        -64
+      ],
+      "slotByteSha256s": [
+        "aec65e8eb760c5454911492893dff7ebb14aeb4b2e9d41541e5696dcc03ff3c2",
+        "171bb3bd294d63117781954241f85b86ca140a1236c2a1caff8b4da1386bd23b"
+      ],
+      "materialsPayloadSha256": "78d1e5bd236cd6b699553fb57be10f7eda84d6313f363df41a790d5a7852156c"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.bridge_gray09",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -17,
+        -12,
+        -14
+      ],
+      "slotByteSha256s": [
+        "a8b799278f82fece9f5d6cd7f6dfa21416aaf40f25e659b16a6fcfb0633b8a8f",
+        "44436e259c9f0d6e37bf33c6c0a8659183dfc180894d64cd7329b9131d0dd051",
+        "779c06c51648e165509cf0260401e8b077f1b1ae9502c87cc47f163e150acb63"
+      ],
+      "materialsPayloadSha256": "a31be6872c7892a2bfdbaa8d5b5a8b258fa98b35254249adf19a7489030bd0d5"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_a_1",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -10,
+        -9,
+        -7
+      ],
+      "slotByteSha256s": [
+        "8c45095c5a69abae0700a5b0da768ac0d17f696c4f49d67d709409c53175c028",
+        "77adfe1c1af892cf381b0971e0ecc995f77b295ae47e6115976cc3e38b0f8722",
+        "aff8dbdb07ca906e8c3f7d04506a065585ab52c4880a390c4bb4ae5cdd0782d3"
+      ],
+      "materialsPayloadSha256": "abfd7a3ef862a6caa587fb3ff4f4760ccbf82bc43d53da89fd87fa52dc3f0818"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_a_2",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -10,
+        -9,
+        -7
+      ],
+      "slotByteSha256s": [
+        "8c45095c5a69abae0700a5b0da768ac0d17f696c4f49d67d709409c53175c028",
+        "77adfe1c1af892cf381b0971e0ecc995f77b295ae47e6115976cc3e38b0f8722",
+        "aff8dbdb07ca906e8c3f7d04506a065585ab52c4880a390c4bb4ae5cdd0782d3"
+      ],
+      "materialsPayloadSha256": "abfd7a3ef862a6caa587fb3ff4f4760ccbf82bc43d53da89fd87fa52dc3f0818"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_stair01",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -28,
+        -25,
+        -30,
+        -15
+      ],
+      "slotByteSha256s": [
+        "e2da6ab8f3408c6c09c14d6a57e93c2075242dcf71a88ba4a6d35c684419fd6e",
+        "518d4e4f9bb8a6f9d5261d81b29ecf044893f912308b91ce1b047f58261e4db6",
+        "a7468818fbe66e53fa6787c81cd7310c7df8b91be8f5e3fa9a4d4f661f2db388",
+        "ad943ce109eb2eb45905f81c8f418f4fff438b4b01513f95e6aab11fac7f4f11"
+      ],
+      "materialsPayloadSha256": "37b0e9a9f90acf62833b80fc57a8d7697226b7df6a8e549044d2f3aa2783abb5"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_b_4",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -10,
+        -9,
+        -7
+      ],
+      "slotByteSha256s": [
+        "8c45095c5a69abae0700a5b0da768ac0d17f696c4f49d67d709409c53175c028",
+        "77adfe1c1af892cf381b0971e0ecc995f77b295ae47e6115976cc3e38b0f8722",
+        "aff8dbdb07ca906e8c3f7d04506a065585ab52c4880a390c4bb4ae5cdd0782d3"
+      ],
+      "materialsPayloadSha256": "abfd7a3ef862a6caa587fb3ff4f4760ccbf82bc43d53da89fd87fa52dc3f0818"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.form_gray20",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -19,
+        -13,
+        -20,
+        -24
+      ],
+      "slotByteSha256s": [
+        "f517ad7838f24dc7b259cf9fd4abc4e37788a06012eb058c94ec1f902dc2d480",
+        "b73c7fca8d975ccf97fb9f80655e3f64a6e7cbbeb7a3d7de6625b525934b567e",
+        "43a80c588c5cda8a8458fe4022e5a54c9febc85f083e9355e47abd8d24b96e09",
+        "f613ae377e879c14809c971bc3e258b620f48716b05aa3069fd6c0f8cdde2431"
+      ],
+      "materialsPayloadSha256": "2d69328e066de7e74a409b83821585b8d001cbbe6aee6acbc3fc2325c59dacba"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_a_3",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -10,
+        -9,
+        -7
+      ],
+      "slotByteSha256s": [
+        "8c45095c5a69abae0700a5b0da768ac0d17f696c4f49d67d709409c53175c028",
+        "77adfe1c1af892cf381b0971e0ecc995f77b295ae47e6115976cc3e38b0f8722",
+        "aff8dbdb07ca906e8c3f7d04506a065585ab52c4880a390c4bb4ae5cdd0782d3"
+      ],
+      "materialsPayloadSha256": "abfd7a3ef862a6caa587fb3ff4f4760ccbf82bc43d53da89fd87fa52dc3f0818"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.form_gray17",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -19,
+        -13,
+        -20
+      ],
+      "slotByteSha256s": [
+        "f517ad7838f24dc7b259cf9fd4abc4e37788a06012eb058c94ec1f902dc2d480",
+        "b73c7fca8d975ccf97fb9f80655e3f64a6e7cbbeb7a3d7de6625b525934b567e",
+        "43a80c588c5cda8a8458fe4022e5a54c9febc85f083e9355e47abd8d24b96e09"
+      ],
+      "materialsPayloadSha256": "de0569592ece93990fb6c462beb1254e93e53124c41d1f6f4715d15ea6e9b1da"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_stair",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -28,
+        -15,
+        -25,
+        -30,
+        -15
+      ],
+      "slotByteSha256s": [
+        "e2da6ab8f3408c6c09c14d6a57e93c2075242dcf71a88ba4a6d35c684419fd6e",
+        "ad943ce109eb2eb45905f81c8f418f4fff438b4b01513f95e6aab11fac7f4f11",
+        "518d4e4f9bb8a6f9d5261d81b29ecf044893f912308b91ce1b047f58261e4db6",
+        "a7468818fbe66e53fa6787c81cd7310c7df8b91be8f5e3fa9a4d4f661f2db388",
+        "ad943ce109eb2eb45905f81c8f418f4fff438b4b01513f95e6aab11fac7f4f11"
+      ],
+      "materialsPayloadSha256": "bb4d3c878c3a4992facb9abc61dce672903eefc91ead12841e1a2e6f0082b5fd"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.form_gray18",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -19,
+        -13,
+        -20
+      ],
+      "slotByteSha256s": [
+        "f517ad7838f24dc7b259cf9fd4abc4e37788a06012eb058c94ec1f902dc2d480",
+        "b73c7fca8d975ccf97fb9f80655e3f64a6e7cbbeb7a3d7de6625b525934b567e",
+        "43a80c588c5cda8a8458fe4022e5a54c9febc85f083e9355e47abd8d24b96e09"
+      ],
+      "materialsPayloadSha256": "de0569592ece93990fb6c462beb1254e93e53124c41d1f6f4715d15ea6e9b1da"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.form_gray11",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -45
+      ],
+      "slotByteSha256s": [
+        "1c96a8ff0e7eb53fd6b18250fdc745c1278f219ca66bcab6732ccec28bc9a773"
+      ],
+      "materialsPayloadSha256": "3ac25b257d82520855ab7ab986a11e77aad9bbd5e3e06453893ba46882dd352a"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.stream_gray09",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -66,
+        -67,
+        -68,
+        -69,
+        -70,
+        -71
+      ],
+      "slotByteSha256s": [
+        "4c5a70e708be7eb54efb6f13bf23000c765b042d9fb5e7b869654bcc1edf15da",
+        "9612c6c411797e988eb6fa7655f8db707d2a7b0068c7a3cf917230fd919e15bc",
+        "09177d33cfe0436e457209ee43263e4d91c7d3a709dff2ab0d3bc6f89c846b07",
+        "4738103cb366a3b35df66432518e687639913b30c2a97bd9b3e1bae8a0033e3c",
+        "06e13d7b6e9d1bebc5af98bd48d0f881a4a25b6f62907075eea8791aec38a3a8",
+        "7738628c7ab6c14bb6a98ecfb4b765e0afa7a3cf4c3adc704b256fd293cb4139"
+      ],
+      "materialsPayloadSha256": "a766a10a735a470a46aeb2aa488d9479afc428ed36f359d779592fb4c18e1f14"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.form_gray07",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -31,
+        -11
+      ],
+      "slotByteSha256s": [
+        "294aedb58f7c15e3e2e32d020a7aa7c0c6a05591655acc9f6b5f0ac80d0d12f5",
+        "db82ed271f62b0ac8a72c1e2d638086454cb3e2a14f55ccef9c992a61209da00"
+      ],
+      "materialsPayloadSha256": "b2d1178a14b1417685c08330e4edfdc18b0b2341659d832603f08829b9eabbb7"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.notice_gray06",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -22,
+        -27,
+        -21,
+        -11,
+        -73,
+        -74,
+        -16,
+        -75,
+        -76,
+        -77,
+        -78,
+        -79,
+        -80,
+        -41
+      ],
+      "slotByteSha256s": [
+        "0a1ebc23bc97c097cb161015792e35c20e5ce777c7147190a52271b1734c1c2a",
+        "c467d3898f073d9b50755c164a67bdfb35f50dbc67254a12c1c0f9dbf12d3858",
+        "1332663b643c9fb93d0ccf4e09e83895371fd419208e17e2b1fd4dc4244ebb42",
+        "db82ed271f62b0ac8a72c1e2d638086454cb3e2a14f55ccef9c992a61209da00",
+        "2fa5a1fac2fc56f21b07fe4822b9390a1df476cff1cd1bd261d18a2b9304020f",
+        "4c26ebbd89ab8d6fd09d5e906be1802ecf0128d3e1d1aff6544385e167094ab9",
+        "1a15d65719a89a8fea0837c49a9d4b8fbf04f151d3ffa1b4f28ea0ddea7fe42e",
+        "3fef83a909eb6f01d8b11400f1d6defe9d1f2458a5e7a97d60f4b9fd21d62a10",
+        "1e95f0e331d023ccb1cf9a88435d375fd3d253dc502e4fb46f076bcd9dd160df",
+        "584ed3336ba5cfd87299b27c224661e8edb80a09a5f09082b2b08c477727a068",
+        "2c8144ab9204a36e46481a98f5fb89dd09e1faa23f4ee14c7e3cabf3bef1f90e",
+        "bef2d2bceae8d8bbd35596b94a9e9b75a9acebacbbdc0686f0cf4fdab389ae38",
+        "02bf2f37ea30ca64170d59d0c51b16adf2d5b29f7cc31da5c533b31998bcff5d",
+        "8baa63fecc58792430fc39e7483a70dd211965e7458e396f9af406fb48e87981"
+      ],
+      "materialsPayloadSha256": "37637ad4cda543afe15b69f5f24bc13817510f38d7237a25443f8221774cafaa"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.notice_gray04",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -42,
+        -43,
+        -44,
+        -49,
+        -86,
+        -87
+      ],
+      "slotByteSha256s": [
+        "b3ed0504906e713d706d14d38cedc49cb81d5567f9843f7ddf525efd1115e953",
+        "b1703ff8e0573c4df546e3f0759fdf9a30128fa75c50d09d0e21220012de4832",
+        "6cb454415f50726a7386f27175fe938b5835e80c1b0c92b60aad4b3db6fed29f",
+        "44992621337a85be85e9fe836f7c35a76add31d467a3ce83dec55a45454c1fb7",
+        "49e06426ce4c1d6627bb92830cfb8015dd6bce2d0c9d3dc11840b0ade06f62b6",
+        "12c0c527852be0f83a1c24e5b71de432d3796e0f4288874e1a174713a6fff476"
+      ],
+      "materialsPayloadSha256": "ef0648ce0c2b8ed57c0fdad072e4e860528795d3cd6f2dcc6aaf2fa651b971eb"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.form_gray10",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -45
+      ],
+      "slotByteSha256s": [
+        "1c96a8ff0e7eb53fd6b18250fdc745c1278f219ca66bcab6732ccec28bc9a773"
+      ],
+      "materialsPayloadSha256": "3ac25b257d82520855ab7ab986a11e77aad9bbd5e3e06453893ba46882dd352a"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.notice_gray03",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -88,
+        -89,
+        -90,
+        -91,
+        -92,
+        -93,
+        -94,
+        -95,
+        -41,
+        -42,
+        -49,
+        -44,
+        -43,
+        -31,
+        -18,
+        -22,
+        -27
+      ],
+      "slotByteSha256s": [
+        "5393ec2e75614c5bb34187fedfceba879c6cf6090bbf4a483a070c2ad90a2371",
+        "7b40f59016e03173f6059123d8ec6363267072a517d962f05c868c00cf8cf9e0",
+        "ccee4633576f80c9c380ccb07a13449e188f493d8c984bd6c89285f3be04b57d",
+        "06d22981587e727df7ac9e40c27302899715562abc7d9cbc74a6540c262c20e3",
+        "18e5c5987fa0b28d6e128bc599bd1dcb10ba99326706459a5db725ace6341c70",
+        "f844bd9f6dedafc2d38aa66b276acad857a523dabb95e518048c9c0ac53e3fd4",
+        "4513fd5fcb5e2bc7bd8a333805185b18176d23d301ca95c40de549edf12c303f",
+        "fedb1e6970b302577a77a52122342e068c727902d00d2a5569f0ab62882cd5a0",
+        "8baa63fecc58792430fc39e7483a70dd211965e7458e396f9af406fb48e87981",
+        "b3ed0504906e713d706d14d38cedc49cb81d5567f9843f7ddf525efd1115e953",
+        "44992621337a85be85e9fe836f7c35a76add31d467a3ce83dec55a45454c1fb7",
+        "6cb454415f50726a7386f27175fe938b5835e80c1b0c92b60aad4b3db6fed29f",
+        "b1703ff8e0573c4df546e3f0759fdf9a30128fa75c50d09d0e21220012de4832",
+        "294aedb58f7c15e3e2e32d020a7aa7c0c6a05591655acc9f6b5f0ac80d0d12f5",
+        "bc03b8319773739f6f6e580573bebd2d26e206558430dc30051db70d2f6d361a",
+        "0a1ebc23bc97c097cb161015792e35c20e5ce777c7147190a52271b1734c1c2a",
+        "c467d3898f073d9b50755c164a67bdfb35f50dbc67254a12c1c0f9dbf12d3858"
+      ],
+      "materialsPayloadSha256": "0688864f1f14e9ae096530e913d9689cdb5a7b0842ccbbd50e67dc50fda25e8f"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.form_gray08",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -31,
+        -11
+      ],
+      "slotByteSha256s": [
+        "294aedb58f7c15e3e2e32d020a7aa7c0c6a05591655acc9f6b5f0ac80d0d12f5",
+        "db82ed271f62b0ac8a72c1e2d638086454cb3e2a14f55ccef9c992a61209da00"
+      ],
+      "materialsPayloadSha256": "b2d1178a14b1417685c08330e4edfdc18b0b2341659d832603f08829b9eabbb7"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.form_gray13",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -96
+      ],
+      "slotByteSha256s": [
+        "b44aa0de3e517e4143e066eadf6beca5c8c0ccfe25c4acddffccb54ca4d570cf"
+      ],
+      "materialsPayloadSha256": "650816f5056a474c336ddafa3213f36edee013fb33d321462489426096275b07"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.notice_gray05",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -97,
+        -98,
+        -99,
+        -100,
+        -21,
+        -38
+      ],
+      "slotByteSha256s": [
+        "7a6ac8e35fa2b924d3b43f9e6c78adb6a7132c0cebf7bb5aaef3900cd384c97c",
+        "b9d12e80232d77db941f7306c0a928c4be7638315003de3948576b4ed0f6477f",
+        "9202c1e1f9e426a94681746f99c560c398b23371cd5e116367ab47c09b2e9bd6",
+        "d66518015063f6a46ec8bf80f370a1fea9f5d2c4c275ed83e857fd0098503390",
+        "1332663b643c9fb93d0ccf4e09e83895371fd419208e17e2b1fd4dc4244ebb42",
+        "7d8993188389bb571ec881b98e9005b3351e856417671291d2d382345f71a8f7"
+      ],
+      "materialsPayloadSha256": "6d16221580242de937269dd99548ec45ca3175a39e55559e10f40917b0abaf82"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.tyrant03",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -18
+      ],
+      "slotByteSha256s": [
+        "bc03b8319773739f6f6e580573bebd2d26e206558430dc30051db70d2f6d361a"
+      ],
+      "materialsPayloadSha256": "7b2c52940d648bb48bcda64736b386798b13aa4b6583c77b8630d56f82de090a"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.tyrant04",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -18
+      ],
+      "slotByteSha256s": [
+        "bc03b8319773739f6f6e580573bebd2d26e206558430dc30051db70d2f6d361a"
+      ],
+      "materialsPayloadSha256": "7b2c52940d648bb48bcda64736b386798b13aa4b6583c77b8630d56f82de090a"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.execution_st.tyrant01",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        -26,
+        -18,
+        -101
+      ],
+      "slotByteSha256s": [
+        "7b9cb57bae2547a3ba42c2d33962c1e09b89a39437e84fac8999567be6c5845c",
+        "bc03b8319773739f6f6e580573bebd2d26e206558430dc30051db70d2f6d361a",
+        "e0c2e41a642e871ba773848caaf003fdd28fe0b82921f6f99bd75bf7b65f30b0"
+      ],
+      "materialsPayloadSha256": "27a987835828a0028fbb2a55c135aaf03e51c9d87d43698e231a609ce153b88d"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_guillotione",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        0
+      ],
+      "slotByteSha256s": [
+        "36254cb3ade04b66e746fce1d451e152def09799d772302ae0250175badf1aa2"
+      ],
+      "materialsPayloadSha256": "e11eacb09a665cd38cc31efde2893e231ecbcda649b3ee716653955448f09e87"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_guillotione_s",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        0
+      ],
+      "slotByteSha256s": [
+        "36254cb3ade04b66e746fce1d451e152def09799d772302ae0250175badf1aa2"
+      ],
+      "materialsPayloadSha256": "e11eacb09a665cd38cc31efde2893e231ecbcda649b3ee716653955448f09e87"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_guillotione_01",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        0
+      ],
+      "slotByteSha256s": [
+        "36254cb3ade04b66e746fce1d451e152def09799d772302ae0250175badf1aa2"
+      ],
+      "materialsPayloadSha256": "e11eacb09a665cd38cc31efde2893e231ecbcda649b3ee716653955448f09e87"
+    },
+    {
+      "package": "staticmeshes/dion_punish_s.usx",
+      "packageSha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "object": "dion_punish_s.punish_new.Dion_Punish_guillotione_02",
+      "licenseeVersion": 18,
+      "materialIndices": [
+        0
+      ],
+      "slotByteSha256s": [
+        "36254cb3ade04b66e746fce1d451e152def09799d772302ae0250175badf1aa2"
+      ],
+      "materialsPayloadSha256": "e11eacb09a665cd38cc31efde2893e231ecbcda649b3ee716653955448f09e87"
     }
   ]
 }
