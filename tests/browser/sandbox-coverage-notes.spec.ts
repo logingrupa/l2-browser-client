@@ -1,24 +1,39 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
-import { desktopViewport } from "./browserViewports";
+import { desktopViewport, expectNoHorizontalScrollOnPortraitPhone, landscapePhone } from "./browserViewports";
 
 const laneName = "actors";
 const laneStorePath = resolve("artifacts/lane-store", laneName, "l2");
+const screenshotDirectory = resolve("test-results/sandbox-coverage-notes");
 const worldReadyTimeout = 240_000;
 const missingNpcId = 999999;
+const windowsNotConvertedReason = "interface windows are not converted yet (UI-01)";
 
 test.skip(process.env.NATIVE_STORE_ROOT !== laneName, "run with NATIVE_STORE_ROOT=actors");
 test.skip(!existsSync(resolve(laneStorePath, "catalog.json")), "the actors lane store has no catalog; run scripts/actors/convert_actors.py --batch npcs first");
 test.skip(!existsSync(resolve(laneStorePath, "coverage.json")), "the actors lane store has no coverage report; run pnpm report:coverage --store-root artifacts/lane-store/actors/l2 --lane actors first");
 
 interface ServedCoverageRow { readonly key: string; readonly status: string; readonly reason: string | null }
+interface ExpectedNote { readonly text: string; readonly tone: "info" | "warning" }
+interface ServedStore { readonly coverageRows: ReadonlyMap<string, ServedCoverageRow>; readonly catalogHoldsWindows: boolean }
 
-async function servedCoverageRows(request: APIRequestContext): Promise<ReadonlyMap<string, ServedCoverageRow>> {
-  const response = await request.get("/l2/coverage.json");
-  expect(response.ok()).toBe(true);
-  const coverage = await response.json() as { readonly rows: readonly ServedCoverageRow[] };
-  return new Map(coverage.rows.map(row => [row.key, row]));
+async function readServedStore(request: APIRequestContext): Promise<ServedStore> {
+  const coverageResponse = await request.get("/l2/coverage.json");
+  expect(coverageResponse.ok()).toBe(true);
+  const coverage = await coverageResponse.json() as { readonly rows: readonly ServedCoverageRow[] };
+  const catalogResponse = await request.get("/l2/catalog.json");
+  expect(catalogResponse.ok()).toBe(true);
+  const catalog = await catalogResponse.json() as { readonly windows?: readonly unknown[] };
+  return { coverageRows: new Map(coverage.rows.map(row => [row.key, row])), catalogHoldsWindows: (catalog.windows?.length ?? 0) > 0 };
+}
+
+function expectedNoteFromServedStore(store: ServedStore, key: string): ExpectedNote {
+  const row = store.coverageRows.get(key);
+  if (row && row.status !== "pass") return { text: `${key} gap: ${row.reason}`, tone: "warning" };
+  if (row) return { text: `${key} converted`, tone: "info" };
+  if (key.startsWith("window:") && !store.catalogHoldsWindows) return { text: `${key} not in catalog: ${windowsNotConvertedReason}`, tone: "warning" };
+  return { text: `${key} not in catalog`, tone: "warning" };
 }
 
 async function openSandboxSheet(page: Page): Promise<void> {
@@ -33,33 +48,67 @@ async function submitIdEntry(page: Page, testId: string, values: Readonly<Record
   await page.getByTestId(`${testId}-submit`).click();
 }
 
-async function expectNote(page: Page, testId: string, text: string, tone: "info" | "warning"): Promise<void> {
-  await expect(page.getByTestId(`${testId}-note`)).toHaveText(text);
-  await expect(page.getByTestId(`${testId}-note`)).toHaveAttribute("data-tone", tone);
+async function expectNote(page: Page, testId: string, expected: ExpectedNote): Promise<void> {
+  await expect(page.getByTestId(`${testId}-note`)).toHaveText(expected.text);
+  await expect(page.getByTestId(`${testId}-note`)).toHaveAttribute("data-tone", expected.tone);
+}
+
+async function spawnLaneNpcs(page: Page, store: ServedStore): Promise<void> {
+  await submitIdEntry(page, "sandbox-spawn-npc", { npcId: "20001" });
+  await expectNote(page, "sandbox-spawn-npc", { text: "npc:20001 converted", tone: "info" });
+  await submitIdEntry(page, "sandbox-spawn-npc", { npcId: "20002" });
+  await expectNote(page, "sandbox-spawn-npc", { text: `npc:20002 gap: ${store.coverageRows.get("npc:20002")!.reason}`, tone: "warning" });
+  await submitIdEntry(page, "sandbox-spawn-npc", { npcId: String(missingNpcId) });
+  await expectNote(page, "sandbox-spawn-npc", { text: `npc:${missingNpcId} not in catalog`, tone: "warning" });
+}
+
+async function equipCastAndOpenWindow(page: Page, store: ServedStore): Promise<void> {
+  await submitIdEntry(page, "sandbox-equip-item", { itemId: "999999" });
+  await expectNote(page, "sandbox-equip-item", expectedNoteFromServedStore(store, "item:999999"));
+  await submitIdEntry(page, "sandbox-cast-skill", { skillId: "7", level: "1" });
+  await expectNote(page, "sandbox-cast-skill", expectedNoteFromServedStore(store, "skill:7:1"));
+  await submitIdEntry(page, "sandbox-open-window", { name: "StatusWnd" });
+  await expectNote(page, "sandbox-open-window", expectedNoteFromServedStore(store, "window:StatusWnd"));
 }
 
 test.use({ viewport: desktopViewport });
 
-test("spawning by id notes npc:20001 converted, npc:20002 gap with its coverage reason and npc:999999 not in catalog", async ({ page, request }) => {
+test("every by-ID action notes its key as converted, gap or not in catalog with the reason from the served catalog and coverage", async ({ page, request }) => {
   test.setTimeout(worldReadyTimeout + 120_000);
   const pageErrors: string[] = [];
   page.on("pageerror", error => pageErrors.push(error.message));
-  const coverageRows = await servedCoverageRows(request);
-  const rabbitRow = coverageRows.get("npc:20002");
+  const store = await readServedStore(request);
+  const rabbitRow = store.coverageRows.get("npc:20002");
   expect(rabbitRow?.status).toBe("gap");
   expect(rabbitRow?.reason).toBeTruthy();
-  expect(coverageRows.has(`npc:${missingNpcId}`)).toBe(false);
+  expect(store.coverageRows.has(`npc:${missingNpcId}`)).toBe(false);
   await openSandboxSheet(page);
 
-  await submitIdEntry(page, "sandbox-spawn-npc", { npcId: "20001" });
-  await expectNote(page, "sandbox-spawn-npc", "npc:20001 converted", "info");
-  await submitIdEntry(page, "sandbox-spawn-npc", { npcId: "20002" });
-  await expectNote(page, "sandbox-spawn-npc", `npc:20002 gap: ${rabbitRow!.reason}`, "warning");
+  await spawnLaneNpcs(page, store);
   await expect(page.locator('.entity-label[data-entity-id="npc-20002-2"] .entity-diagnostic')).toHaveText(`npc:20002 gap: ${rabbitRow!.reason}`);
-  await submitIdEntry(page, "sandbox-spawn-npc", { npcId: String(missingNpcId) });
-  await expectNote(page, "sandbox-spawn-npc", `npc:${missingNpcId} not in catalog`, "warning");
   const entities = await page.evaluate(() => window.__nativeSlice!.snapshot().entities);
   expect(entities.find(entity => entity.id === "npc-20002-2")).toMatchObject({ hasNativeModel: false, meshCount: 0, modelId: null });
   expect(entities.find(entity => entity.id === `npc-${missingNpcId}-3`)).toMatchObject({ hasNativeModel: false, meshCount: 0, modelId: null });
+
+  await equipCastAndOpenWindow(page, store);
+  mkdirSync(screenshotDirectory, { recursive: true });
+  await page.screenshot({ path: resolve(screenshotDirectory, "sandbox-coverage-notes-desktop.png") });
+  await expectNoHorizontalScrollOnPortraitPhone(page);
   expect(pageErrors).toEqual([]);
+});
+
+test("the spawn notes show on a 932 x 430 landscape touch phone", async ({ browser, request }) => {
+  test.setTimeout(worldReadyTimeout + 120_000);
+  const store = await readServedStore(request);
+  const context = await browser.newContext(landscapePhone);
+  try {
+    const page = await context.newPage();
+    await openSandboxSheet(page);
+    await spawnLaneNpcs(page, store);
+    await page.getByTestId("sandbox-spawn-npc-note").scrollIntoViewIfNeeded();
+    mkdirSync(screenshotDirectory, { recursive: true });
+    await page.screenshot({ path: resolve(screenshotDirectory, "sandbox-coverage-notes-phone.png") });
+  } finally {
+    await context.close();
+  }
 });

@@ -64,6 +64,6 @@ describe("sandbox NPC appearances", () => {
       keys: () => ["npc:20001"],
     };
     expect(resolveSandboxNpcPresentation(index, 20001, sandboxNpcAppearances(await laneSources())))
-      .toEqual({ key: "npc:20001", appearanceId: "native-npc:20001", modelCatalogId });
+      .toEqual({ appearanceId: "native-npc:20001" });
   });
 });

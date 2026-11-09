@@ -11,8 +11,8 @@ export type SandboxNpcAppearance = { readonly appearanceId: string } | { readonl
 export type SandboxAppearanceOfNpc = (record: NativeNpcCatalogRecord) => SandboxNpcAppearance;
 
 export type SandboxNpcPresentation =
-  | { readonly key: string; readonly appearanceId: string; readonly modelCatalogId: string }
-  | { readonly key: string; readonly missingAssetDiagnostic: string };
+  | { readonly appearanceId: string }
+  | { readonly missingAssetDiagnostic: string };
 
 const missingAssetMarkerPresentationBounds: CharacterBounds = Object.freeze({
   minimum: new Vector3(-.4, 0, -.4), maximum: new Vector3(.4, 1.8, .4),
@@ -23,11 +23,11 @@ const motionlessAnimationDriver: CharacterAnimationDriver = { setState() {}, upd
 
 export function resolveSandboxNpcPresentation(index: NativeCatalogIndex, npcId: number, appearanceOfNpc: SandboxAppearanceOfNpc): SandboxNpcPresentation {
   const lookup = index.lookup(npcCatalogKey(npcId));
-  if (lookup.status !== "converted") return { key: lookup.key, missingAssetDiagnostic: describeNativeCatalogLookup(lookup) };
+  if (lookup.status !== "converted") return { missingAssetDiagnostic: describeNativeCatalogLookup(lookup) };
   if (!("modelCatalogId" in lookup.record)) throw new Error(`${lookup.key} does not hold an NPC catalog record.`);
   const appearance = appearanceOfNpc(lookup.record);
-  if ("unavailableReason" in appearance) return { key: lookup.key, missingAssetDiagnostic: `${lookup.key} converted but ${appearance.unavailableReason}` };
-  return { key: lookup.key, appearanceId: appearance.appearanceId, modelCatalogId: lookup.record.modelCatalogId };
+  if ("unavailableReason" in appearance) return { missingAssetDiagnostic: `${lookup.key} converted but ${appearance.unavailableReason}` };
+  return { appearanceId: appearance.appearanceId };
 }
 
 export function createMissingAssetMarkerVisual(scene: Scene, entity: WorldEntity, missingAssetDiagnostic: string): CharacterVisual {

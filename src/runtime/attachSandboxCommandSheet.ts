@@ -1,13 +1,14 @@
 import {
-  describeNativeCatalogLookup, itemCatalogKey, npcCatalogKey, skillCatalogKey, windowCatalogKey, type NativeCatalogIndex, type NativeCatalogLookup,
+  itemCatalogKey, npcCatalogKey, skillCatalogKey, windowCatalogKey, type NativeCatalogIndex, type NativeCatalogLookup,
 } from "../assets/native/nativeCatalogIndex";
 import { reviewedPowerStrikeSkill } from "../effects/castSkillIndex";
 import type { NativePowerStrikePreview } from "../effects/nativePowerStrikePreview";
 import type { DevGroup, DevSection } from "../ui/devSheet/DevSheet";
+import type { VariableInfo } from "../ui/devSheet/types";
 import type { GameWorldAdapter } from "../world/GameWorldAdapter";
 import type { EquipmentSlot, WorldCommand, WorldEvent } from "../world/worldTypes";
 import { describeSandboxCatalogLookup } from "./sandboxCatalogLookupNote";
-import { resolveSandboxNpcPresentation, type SandboxAppearanceOfNpc, type SandboxNpcPresentation } from "./sandboxNpcVisual";
+import { resolveSandboxNpcPresentation, type SandboxAppearanceOfNpc } from "./sandboxNpcVisual";
 
 type SandboxCommandAdapter = Pick<GameWorldAdapter, "dispatch" | "subscribe">;
 
@@ -24,8 +25,11 @@ export interface SandboxCommandSheetContext {
 
 type SubmittedValues = Readonly<Record<string, number | string>>;
 type ResultTone = "info" | "warning";
+type ShowResult = (text: string, tone: ResultTone) => void;
 
-const catalogIndexSource = "native catalog index over /l2/catalog.json";
+interface SandboxLastLookup { current: NativeCatalogLookup | null }
+
+const catalogIndexSource = "nativeCatalogIndex over /l2/catalog.json and the gap rows of /l2/coverage.json";
 const sandboxEquipmentSlot: EquipmentSlot = "upper";
 
 function submittedInteger(values: SubmittedValues, name: string): number {
@@ -47,7 +51,7 @@ function dispatchAndObserveAcceptance(adapter: SandboxCommandAdapter, command: W
   return accepted;
 }
 
-function createResultNote(group: DevGroup, testId: string): (text: string, tone: ResultTone) => void {
+function createResultNote(group: DevGroup, testId: string): ShowResult {
   let current: HTMLParagraphElement | null = null;
   return (text, tone) => {
     current?.remove();
@@ -55,55 +59,54 @@ function createResultNote(group: DevGroup, testId: string): (text: string, tone:
   };
 }
 
-function lookupTone(lookup: NativeCatalogLookup): ResultTone {
-  return lookup.status === "converted" ? "info" : "warning";
+function describeLookupStatusAndReason(lookup: NativeCatalogLookup): string {
+  return lookup.status === "converted" ? "converted" : `${lookup.status}: ${lookup.reason}`;
 }
 
-function showEquipLookupForActiveProfile(showResult: (text: string, tone: ResultTone) => void, lookup: NativeCatalogLookup,
-  activePlayerProfileId: string): void {
-  if (lookup.status !== "converted" || !("playerProfileIds" in lookup.record) || lookup.record.playerProfileIds.includes(activePlayerProfileId)) {
-    showResult(describeNativeCatalogLookup(lookup), lookupTone(lookup));
+function lastLookupVariables(lastLookup: SandboxLastLookup): VariableInfo[] {
+  return [
+    { name: "sandbox.lastKey", value: () => lastLookup.current?.key ?? "none", values: "npc:<id> | item:<id> | skill:<id>:<level> | window:<name>",
+      source: "npcCatalogKey, itemCatalogKey, skillCatalogKey or windowCatalogKey over the last submitted ID", status: "native" },
+    { name: "sandbox.lastLookup", value: () => lastLookup.current ? describeLookupStatusAndReason(lastLookup.current) : "none",
+      values: "converted | gap: <coverage reason> | not-in-catalog: <reason>", source: catalogIndexSource, status: "native" },
+  ];
+}
+
+function showEquipLookupForActiveProfile(showResult: ShowResult, lookup: NativeCatalogLookup, activePlayerProfileId: string): void {
+  if (lookup.status === "converted" && "playerProfileIds" in lookup.record && !lookup.record.playerProfileIds.includes(activePlayerProfileId)) {
+    showResult(`${lookup.key} converted for ${lookup.record.playerProfileIds.join(", ")}, not for ${activePlayerProfileId}`, "warning");
     return;
   }
-  showResult(`${lookup.key} converted for ${lookup.record.playerProfileIds.join(", ")}, not for ${activePlayerProfileId}`, "warning");
+  const note = describeSandboxCatalogLookup(lookup);
+  showResult(note.text, note.tone);
 }
 
-function describeSpawnPresentation(presentation: SandboxNpcPresentation): string {
-  return "missingAssetDiagnostic" in presentation ? presentation.missingAssetDiagnostic
-    : `${presentation.key} converted, model ${presentation.modelCatalogId}`;
-}
-
-function attachSpawnNpcGroup(context: SandboxCommandSheetContext): void {
+function attachSpawnNpcGroup(context: SandboxCommandSheetContext, lastLookup: SandboxLastLookup): void {
   const group = context.section.group("spawn-npc", "Spawn NPC");
   const showResult = createResultNote(group, "sandbox-spawn-npc-note");
-  let lastSpawn: SandboxNpcPresentation | null = null;
   group.idEntry({
     label: "Spawn NPC", testId: "sandbox-spawn-npc", submitText: "Spawn",
     fields: [{ name: "npcId", label: "NPC ID", kind: "integer", minimum: 0 }],
     hint: "Dispatches spawn-npc through the adapter. The body comes from the catalog; an ID without a converted model shows a label-only marker.",
-    variables: () => [
-      { name: "sandbox.lastKey", value: () => lastSpawn?.key ?? "none", values: "npc:<id>", source: "npcCatalogKey over the submitted integer ID", status: "native" },
-      { name: "sandbox.lastLookup", value: () => lastSpawn ? describeSpawnPresentation(lastSpawn) : "none", values: "converted | not in catalog",
-        source: catalogIndexSource, status: "native" },
-    ],
+    variables: () => lastLookupVariables(lastLookup),
     onSubmit: values => {
       const npcId = submittedInteger(values, "npcId");
       const accepted = dispatchAndObserveAcceptance(context.adapter, { type: "spawn-npc", npcId },
         event => event.type === "spawn" && event.entity.npcId === npcId);
       const lookup = context.index.lookup(npcCatalogKey(npcId));
-      lastSpawn = resolveSandboxNpcPresentation(context.index, npcId, context.appearanceOfNpc);
+      lastLookup.current = lookup;
+      const presentation = resolveSandboxNpcPresentation(context.index, npcId, context.appearanceOfNpc);
       const note = describeSandboxCatalogLookup(lookup);
       if (!accepted) showResult(`${lookup.key}: spawn rejected by the adapter`, "warning");
-      else if ("missingAssetDiagnostic" in lastSpawn && lookup.status === "converted") showResult(lastSpawn.missingAssetDiagnostic, "warning");
+      else if (lookup.status === "converted" && "missingAssetDiagnostic" in presentation) showResult(presentation.missingAssetDiagnostic, "warning");
       else showResult(note.text, note.tone);
     },
   });
 }
 
-function attachEquipItemGroup(context: SandboxCommandSheetContext): void {
+function attachEquipItemGroup(context: SandboxCommandSheetContext, lastLookup: SandboxLastLookup): void {
   const group = context.section.group("equip-item", "Equip item");
   const showResult = createResultNote(group, "sandbox-equip-item-note");
-  let lastLookup: NativeCatalogLookup | null = null;
   group.idEntry({
     label: "Equip item", testId: "sandbox-equip-item", submitText: "Equip",
     fields: [{ name: "itemId", label: "Item ID", kind: "integer", minimum: 0 }],
@@ -111,24 +114,23 @@ function attachEquipItemGroup(context: SandboxCommandSheetContext): void {
     variables: () => [
       { name: "sandbox.equip.slot", value: () => sandboxEquipmentSlot, values: sandboxEquipmentSlot,
         source: `${catalogIndexSource}: staged items are upper body only; other slots need decoded item data (DATA-01)`, status: "presentation" },
-      { name: "sandbox.equip.lastKey", value: () => lastLookup ? describeNativeCatalogLookup(lastLookup) : "none", values: "item:<id>",
-        source: catalogIndexSource, status: "native" },
+      ...lastLookupVariables(lastLookup),
     ],
     onSubmit: values => {
       const itemId = submittedInteger(values, "itemId");
       const accepted = dispatchAndObserveAcceptance(context.adapter, { type: "equip-item", slot: sandboxEquipmentSlot, itemId },
         event => event.type === "update" && event.entity.id === "local-player" && event.entity.equipment?.[sandboxEquipmentSlot] === itemId);
-      lastLookup = context.index.lookup(itemCatalogKey(itemId));
-      if (!accepted) showResult(`${lastLookup.key}: equip rejected by the adapter`, "warning");
-      else showEquipLookupForActiveProfile(showResult, lastLookup, context.activePlayerProfileId);
+      const lookup = context.index.lookup(itemCatalogKey(itemId));
+      lastLookup.current = lookup;
+      if (!accepted) showResult(`${lookup.key}: equip rejected by the adapter`, "warning");
+      else showEquipLookupForActiveProfile(showResult, lookup, context.activePlayerProfileId);
     },
   });
 }
 
-function attachCastSkillGroup(context: SandboxCommandSheetContext): void {
+function attachCastSkillGroup(context: SandboxCommandSheetContext, lastLookup: SandboxLastLookup): void {
   const group = context.section.group("cast-skill", "Cast skill");
   const showResult = createResultNote(group, "sandbox-cast-skill-note");
-  let lastLookup: NativeCatalogLookup | null = null;
   group.idEntry({
     label: "Cast skill", testId: "sandbox-cast-skill", submitText: "Cast",
     fields: [{ name: "skillId", label: "Skill ID", kind: "integer", minimum: 0 }, { name: "level", label: "Level", kind: "integer", minimum: 1 }],
@@ -136,36 +138,35 @@ function attachCastSkillGroup(context: SandboxCommandSheetContext): void {
     variables: () => [
       { name: "sandbox.cast.target", value: () => context.selectedEntityId() ?? "none", values: "selected entity id | none",
         source: "entity registry selection", status: "presentation" },
-      { name: "sandbox.cast.lastKey", value: () => lastLookup ? describeNativeCatalogLookup(lastLookup) : "none", values: "skill:<id>:<level>",
-        source: catalogIndexSource, status: "native" },
+      ...lastLookupVariables(lastLookup),
     ],
     onSubmit: values => {
       const skillId = submittedInteger(values, "skillId"), level = submittedInteger(values, "level");
       const targetId = context.selectedEntityId();
       const accepted = dispatchAndObserveAcceptance(context.adapter, { type: "cast-skill", skillId, level, ...(targetId === null ? {} : { targetId }) },
         event => event.type === "skill-cast" && event.skillId === skillId && event.level === level);
-      lastLookup = context.index.lookup(skillCatalogKey(skillId, level));
-      if (!accepted) showResult(`${lastLookup.key}: cast rejected by the adapter`, "warning");
-      else showResult(describeNativeCatalogLookup(lastLookup), lookupTone(lastLookup));
+      const lookup = context.index.lookup(skillCatalogKey(skillId, level));
+      lastLookup.current = lookup;
+      const note = describeSandboxCatalogLookup(lookup);
+      if (!accepted) showResult(`${lookup.key}: cast rejected by the adapter`, "warning");
+      else showResult(note.text, note.tone);
     },
   });
 }
 
-function attachOpenWindowGroup(context: SandboxCommandSheetContext): void {
+function attachOpenWindowGroup(context: SandboxCommandSheetContext, lastLookup: SandboxLastLookup): void {
   const group = context.section.group("open-window", "Open window");
   const showResult = createResultNote(group, "sandbox-open-window-note");
-  let lastLookup: NativeCatalogLookup | null = null;
   group.idEntry({
     label: "Open window", testId: "sandbox-open-window", submitText: "Open",
     fields: [{ name: "name", label: "Window", kind: "name" }],
     hint: "Looks up an interface window by name. Windows are a client sheet action and never go through the adapter.",
-    variables: () => [
-      { name: "sandbox.window.lastKey", value: () => lastLookup ? describeNativeCatalogLookup(lastLookup) : "none", values: "window:<name>",
-        source: catalogIndexSource, status: "native" },
-    ],
+    variables: () => lastLookupVariables(lastLookup),
     onSubmit: values => {
-      lastLookup = context.index.lookup(windowCatalogKey(submittedName(values, "name")));
-      showResult(describeNativeCatalogLookup(lastLookup), lookupTone(lastLookup));
+      const lookup = context.index.lookup(windowCatalogKey(submittedName(values, "name")));
+      lastLookup.current = lookup;
+      const note = describeSandboxCatalogLookup(lookup);
+      showResult(note.text, note.tone);
     },
   });
 }
@@ -180,10 +181,11 @@ export function attachSandboxCommandSheet(context: SandboxCommandSheetContext): 
     context.section.group("catalog-index", "Catalog index").note(`Catalog index unavailable: ${context.indexFailure}`,
       { tone: "warning", testId: "sandbox-catalog-index-failure" });
   }
-  attachSpawnNpcGroup(context);
-  attachEquipItemGroup(context);
-  attachCastSkillGroup(context);
-  attachOpenWindowGroup(context);
+  const lastLookup: SandboxLastLookup = { current: null };
+  attachSpawnNpcGroup(context, lastLookup);
+  attachEquipItemGroup(context, lastLookup);
+  attachCastSkillGroup(context, lastLookup);
+  attachOpenWindowGroup(context, lastLookup);
   const { powerStrike } = context;
   return context.adapter.subscribe(event => {
     if (event.type === "skill-cast" && powerStrike && startsStagedPowerStrike(context.index, event)) void powerStrike.start();
