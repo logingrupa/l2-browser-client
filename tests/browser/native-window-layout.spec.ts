@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { desktopViewport } from "./browserViewports";
+import { desktopViewport, landscapePhone } from "./browserViewports";
 
 const windowLaneName = "data-ui";
 const laneStoreRoot = resolve("artifacts/lane-store", windowLaneName, "l2");
@@ -9,7 +9,10 @@ const laneCatalogPath = resolve(laneStoreRoot, "catalog.json");
 const renderedTypesRecipePath = resolve("recipes/data/native-window-control-types.json");
 const evidenceDirectory = resolve("artifacts/ui-evidence");
 const unsupportedControlWindowId = "AbnormalStatusWnd";
+const statusWindowId = "StatusWnd";
+const layoutWindowIds = [statusWindowId, unsupportedControlWindowId];
 const worldReadyTimeout = 240_000;
+const portraitPhoneViewport = { width: 430, height: 932 };
 const nativeResourcePrefix = "/l2/";
 
 interface DecodedWindowNode {
@@ -103,7 +106,7 @@ async function expectUnsupportedControlGaps(page: Page, windowId: string): Promi
 
 test.describe("native window layout from the sandbox window picker", () => {
   test.skip(process.env.NATIVE_STORE_ROOT !== windowLaneName, "run with NATIVE_STORE_ROOT=data-ui");
-  test.skip(laneWindowRecord(unsupportedControlWindowId) === null, `window:${unsupportedControlWindowId} is not in the data-ui lane catalog`);
+  test.skip(layoutWindowIds.some(windowId => laneWindowRecord(windowId) === null), `${layoutWindowIds.join(" or ")} is not in the data-ui lane catalog`);
 
   test.describe("desktop", () => {
     test.use({ viewport: desktopViewport });
@@ -112,12 +115,44 @@ test.describe("native window layout from the sandbox window picker", () => {
       test.setTimeout(worldReadyTimeout + 120_000);
       const pageErrors = collectPageErrors(page);
       await openSandboxSection(page);
-      await openWindowFromPicker(page, unsupportedControlWindowId);
-      await expectDecodedRootSize(page, unsupportedControlWindowId);
+      for (const windowId of layoutWindowIds) {
+        await openWindowFromPicker(page, windowId);
+        await expectDecodedRootSize(page, windowId);
+      }
       await expectUnsupportedControlGaps(page, unsupportedControlWindowId);
       mkdirSync(evidenceDirectory, { recursive: true });
       await page.screenshot({ path: resolve(evidenceDirectory, "native-windows-1440x900.png") });
       expect(pageErrors).toEqual([]);
+    });
+  });
+
+  test.describe("landscape phone", () => {
+    test.use(landscapePhone);
+
+    test("opens StatusWnd and the unsupported-control window at their decoded root sizes on a 932 x 430 touch phone", async ({ page }) => {
+      test.setTimeout(worldReadyTimeout + 120_000);
+      const pageErrors = collectPageErrors(page);
+      await openSandboxSection(page);
+      for (const windowId of layoutWindowIds) {
+        await openWindowFromPicker(page, windowId);
+        await expectDecodedRootSize(page, windowId);
+      }
+      await expectUnsupportedControlGaps(page, unsupportedControlWindowId);
+      mkdirSync(evidenceDirectory, { recursive: true });
+      await page.screenshot({ path: resolve(evidenceDirectory, "native-windows-932x430.png") });
+      expect(pageErrors).toEqual([]);
+    });
+  });
+
+  test.describe("portrait phone", () => {
+    test.use({ viewport: portraitPhoneViewport, isMobile: true, hasTouch: true });
+
+    test("keeps the page free of horizontal scroll at 430 x 932 with both windows and the sheet open", async ({ page }) => {
+      test.setTimeout(worldReadyTimeout + 120_000);
+      await openSandboxSection(page);
+      for (const windowId of layoutWindowIds) await openWindowFromPicker(page, windowId);
+      await expect(page.getByTestId("sandbox-window-keys")).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     });
   });
 });

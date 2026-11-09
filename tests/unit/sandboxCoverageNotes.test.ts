@@ -90,10 +90,10 @@ describe("equip, cast and window picker coverage notes", () => {
     expect(note(noteTestId)[0]!.dataset.tone).toBe(expectedTone);
   });
 
-  it("lists every catalog window with its status and gap reason in the window picker", () => {
+  it("lists every catalog window with its status and gap reason in the window picker, in registry order", () => {
     const { panel } = attachWithLaneLookups();
     const optionTexts = panel.querySelector('[data-testid="sandbox-window-keys"]')!.querySelectorAll("option").map(option => option.textContent);
-    expect(optionTexts).toEqual(["window:StatusWnd converted", "window:InventoryWnd gap: window-texture-missing"]);
+    expect(optionTexts).toEqual(["window:InventoryWnd gap: window-texture-missing", "window:StatusWnd converted"]);
   });
 
   it("still dispatches a gap item and a gap skill", async () => {
