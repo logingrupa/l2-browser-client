@@ -11,7 +11,7 @@ from build_dat_table_inventory import (DECODED_TABLE_COUNT_SOURCE, ELBERA_ADAPTE
     ELBERA_EVIDENCE_COUNT_SOURCE, ELBERA_EVIDENCE_RECORD_COUNTS, ELBERA_PARSER_PRESENT_STATUS, ELBERA_PARSER_SOURCES, LAYOUT_NOT_DECODED_STATUS, NOT_LOCK_EQUAL_STATUS, DatTableInventoryError,
     classify_dat_table, count_descriptor_linked_table, elbera_parser_presence, lock_equal_source_sha256,
     validate_dat_table_inventory)
-from data.hair_table_adapter import ELBERA_HAIR_FIELD_PROOF, HAIR_TABLE_UNDECODED_REASONS
+from data.hair_table_adapter import HAIR_TABLE_FIELD_PROOF, HAIR_TABLE_UNDECODED_REASONS
 from native_catalog.table_source_resolver import TableSourceResolutionError, descriptor_layout_links
 from native_catalog.tables import TABLES
 from native_store.catalog_writer import is_table_name_index_id
@@ -140,7 +140,7 @@ class CommittedDatTableInventoryTests(unittest.TestCase):
                 self.assertEqual(row['route'], 'elbera', row['table'])
                 self.assertIsInstance(row['recordCount'], int, row['table'])
                 self.assertEqual(row['countSource'], f'{ELBERA_ADAPTER_COUNT_SOURCE}system/{row["file"]}')
-                self.assertIn(ELBERA_HAIR_FIELD_PROOF, row['status'])
+                self.assertIn(HAIR_TABLE_FIELD_PROOF, row['status'])
 
     def test_every_elbera_row_is_decoded_by_the_adapter_or_names_its_undecoded_reason(self):
         for row in self.rows:

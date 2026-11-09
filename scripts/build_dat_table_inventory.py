@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 import sys
 
-from data.hair_table_adapter import ELBERA_HAIR_FIELD_PROOF, ELBERA_HAIR_SELECTION_SCRIPT_PATH, HAIR_TABLE_PARSERS
+from data.hair_table_adapter import ELBERA_HAIR_SELECTION_SCRIPT_PATH, HAIR_TABLE_FIELD_PROOF, HAIR_TABLE_PARSERS
 from data.pinned_elbera_module import ELBERA_COMMIT, ELBERA_ROOT
 from hash_reference_client_tree import canonical_json_bytes
 from native_catalog.table_source_resolver import descriptor_layout_for_file_name
@@ -46,7 +46,7 @@ NOT_LOCK_EQUAL_STATUS = 'E: copy not equal to IMPORTA-PC'
 DECODED_TABLE_COUNT_SOURCE = 'scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/'
 ELBERA_ADAPTER_COUNT_SOURCE = (f'scripts/data/hair_table_adapter.py (Elbera {Path(ELBERA_HAIR_SELECTION_SCRIPT_PATH).name} at {ELBERA_COMMIT})'
                                ' on lock-equal E:/Lineage2-client/')
-ELBERA_ADAPTER_DECODED_STATUS = f'decoded by Elbera adapter, {ELBERA_HAIR_FIELD_PROOF}'
+ELBERA_ADAPTER_DECODED_STATUS = f'decoded by Elbera adapter, {HAIR_TABLE_FIELD_PROOF}'
 
 
 class DatTableInventoryError(ValueError):

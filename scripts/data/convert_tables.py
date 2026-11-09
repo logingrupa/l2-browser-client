@@ -9,7 +9,7 @@ import argparse
 import json
 import re
 
-from data.hair_table_adapter import (ELBERA_HAIR_FIELD_PROOF, ELBERA_HAIR_SELECTION_SCRIPT_SHA256, HAIR_TABLE_PARSERS,
+from data.hair_table_adapter import (ELBERA_HAIR_SELECTION_SCRIPT_SHA256, HAIR_TABLE_FIELD_PROOF, HAIR_TABLE_PARSERS,
                                      HairTableUndecodedError, decode_hair_table)
 from hash_reference_client_tree import canonical_json_bytes
 from lane_unit_outcomes import seal_unit_decode_failure, seal_unit_decode_gap, seal_unit_manifest, write_pinned_manifest_to_store
@@ -50,7 +50,7 @@ def table_unit_plan(table, links):
     layout = descriptor_layout_for_file_name(file_name, links)
     if layout is None and table in HAIR_TABLE_PARSERS:
         config = {'table': table, 'route': ELBERA_ADAPTER_ROUTE, 'elberaScriptSha256': ELBERA_HAIR_SELECTION_SCRIPT_SHA256,
-                  'fieldProof': ELBERA_HAIR_FIELD_PROOF, 'cryptoSha256': CRYPTO_HASH}
+                  'fieldProof': HAIR_TABLE_FIELD_PROOF, 'cryptoSha256': CRYPTO_HASH}
         return locked_table_inputs(file_name), config
     if layout is None:
         raise ConvertTablesError(f'{file_name} has no Interlude descriptor layout and no Elbera hair table parser')

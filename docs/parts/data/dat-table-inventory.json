@@ -129,7 +129,7 @@
    "layout": null,
    "recordCount": 4,
    "route": "elbera",
-   "status": "decoded by Elbera adapter, Elbera 07b24 proof, unverified on 4dd2",
+   "status": "decoded by Elbera adapter, client int32 layout of system/Engine.dll 4dd2f63c606df5671702911fa1f8ddcc4099bf2b98b81e8aa88eed47f5405b08: FL2GameData::HairDataLoad 0x10451720, HelmHairDataLoad 0x10466140, AccessaryHairDataLoad 0x104675f0",
    "table": "hairaccessarygrp"
   },
   {
@@ -149,7 +149,7 @@
    "layout": null,
    "recordCount": 15,
    "route": "elbera",
-   "status": "decoded by Elbera adapter, Elbera 07b24 proof, unverified on 4dd2",
+   "status": "decoded by Elbera adapter, client int32 layout of system/Engine.dll 4dd2f63c606df5671702911fa1f8ddcc4099bf2b98b81e8aa88eed47f5405b08: FL2GameData::HairDataLoad 0x10451720, HelmHairDataLoad 0x10466140, AccessaryHairDataLoad 0x104675f0",
    "table": "hairgrp"
   },
   {
@@ -159,7 +159,7 @@
    "layout": null,
    "recordCount": 3,
    "route": "elbera",
-   "status": "decoded by Elbera adapter, Elbera 07b24 proof, unverified on 4dd2",
+   "status": "decoded by Elbera adapter, client int32 layout of system/Engine.dll 4dd2f63c606df5671702911fa1f8ddcc4099bf2b98b81e8aa88eed47f5405b08: FL2GameData::HairDataLoad 0x10451720, HelmHairDataLoad 0x10466140, AccessaryHairDataLoad 0x104675f0",
    "table": "helmetgrp"
   },
   {
