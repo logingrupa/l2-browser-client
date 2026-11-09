@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-71-PLAN.md
-last_updated: "2026-11-09T17:27:40.283Z"
+stopped_at: Completed 02-30-PLAN.md
+last_updated: "2026-11-09T19:57:19.932Z"
 last_activity: 2026-11-09
 last_activity_desc: Phase 02 plan 02-70 complete (tiles load sweep through ?map= on the native route)
-state_head: 234449283a10464d2be7327d0d4cb3ec49fd3083
+state_head: 8414254f9168cccac7f27ecd9866a9d63d37d945
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 63
+  completed_plans: 64
   percent: 0
 ---
 
@@ -115,6 +115,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P68 | 25min | 3 tasks | 29 files |
 | Phase 02 P70 | 12min | 1 tasks | 2 files |
 | Phase 02 P71 | 80min | 6 tasks | 113 files |
+| Phase 02 P30 | 66min | 4 tasks | 55 files |
 
 ## Accumulated Context
 
@@ -275,6 +276,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-70: the tiles load sweep checks converted tile: keys on the native route by ?map= and passes only when the snapshot manifestSha256 equals the served tiles record (rows 498 to 502)
 - [Phase 02]: 02-70: tile:20_20 is converted only through the legacy section record and records failed for the ?map= route until a tiles record exists (row 503)
 - [Phase 02]: Plan 02-71: legacy 20_20 chain cut; oracle pins served world-audio and step-sound manifests; build_map in scripts/world/raw_map_extraction.py with raw version 2 and every world unit resealed (lane catalog 108c17b9); shared BSP reader binding and sound export guards; --stage-runtime keeps every unstaged catalog record; flame request is assets job flame-native-material-graph (OVERNIGHT-DECISIONS rows 505 to 511)
+- [Phase 02]: 02-30: bsp and collision steps; lightmap page null until 02-62, typed payload as a hash-addressed folder with a payload pin, StaticMesh selectors unknown, class defaults through 02-59 (OVERNIGHT-DECISIONS rows 515 to 528)
 
 ### Pending Todos
 
@@ -351,6 +353,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-09T17:27:39.520Z
-Stopped at: Completed 02-71-PLAN.md
+Last session: 2026-11-09T19:57:19.284Z
+Stopped at: Completed 02-30-PLAN.md
 Resume file: None
