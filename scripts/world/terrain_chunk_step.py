@@ -1,6 +1,7 @@
 import copy
 import hashlib
 import json
+from pathlib import Path
 
 from native_catalog.ue2 import FormatError
 from native_store.canonical_json import canonical_json_bytes
@@ -24,6 +25,7 @@ TERRAIN_CHUNK_RESOURCE_NAME = 'terrain.glb'
 CACHED_SECTOR_BOUNDS_POLICY = 'require-xy-preserve-z-discrepancies'
 EXTRAPOLATED_MASK_UV_STATUS = 'extrapolated'
 TERRAIN_CLASS_EVIDENCE_FOLDER = 'class-defaults/terrain-class-evidence'
+TERRAIN_CHUNK_GLTF_GENERATOR = Path(__file__).name
 
 
 def extrapolated_mask_uv_rule():
@@ -93,7 +95,8 @@ def build_tile_terrain_chunks(tile_id, native, points, words, layers, layer_summ
             record['gapRows'] = [chunk_decode_gap_row(tile_id, source_identity, chunk, oracle_rows, error, evidence)]
             results.append((record, None))
             continue
-        files, statistics = build_terrain_rectangle_gltf(native, points, words, chunk_layers, region, mask_uv_rule, chunk['sectorRectangle'])
+        files, statistics = build_terrain_rectangle_gltf(native, points, words, chunk_layers, region, mask_uv_rule, chunk['sectorRectangle'],
+                                                         TERRAIN_CHUNK_GLTF_GENERATOR)
         record.update(hiddenQuads=statistics['hiddenQuads'], triangleCount=statistics['triangleCount'])
         glb = files['terrain.glb'] if statistics['triangleCount'] else None
         if glb is not None:

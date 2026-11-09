@@ -99,7 +99,7 @@ class ChunkAdjacencyTests(unittest.TestCase):
         whole_rectangle = {'minOffset': [0, 0], 'maxOffset': [14, 14]}
         region, _ = select_terrain_sectors(native, oracle, {'terrainSectorRectangle': whole_rectangle})
         whole_files, whole_statistics = build_terrain_rectangle_gltf(native, points, words, synthetic_layer_records((0, 1, 2)), region,
-                                                                     extrapolated_mask_uv_rule(), whole_rectangle)
+                                                                     extrapolated_mask_uv_rule(), whole_rectangle, 'terrain_chunk_step.py')
         chunk_triangles = [glb_triangle_positions(glb_mesh_arrays(glb)) for _, glb in by_chunk.values()]
         self.assertEqual(sum(len(triangles) for triangles in chunk_triangles), whole_statistics['triangleCount'])
         self.assertEqual(sum(record['triangleCount'] for record in records), whole_statistics['triangleCount'])

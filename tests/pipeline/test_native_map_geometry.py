@@ -12,8 +12,9 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/'scripts'))
 from native_catalog.ue2 import FormatError
 from native_map import migrate_map
-from native_map_geometry import (build_geometry, reference_surface_candidate, static_model_limit, surface_spawn_candidate,
-    validate_static_requests, verify_geometry)
+from native_map_geometry import build_geometry, verify_geometry
+from world.section_static_models import static_model_limit, validate_static_requests
+from world.surface_spawn_candidate import reference_surface_candidate, surface_spawn_candidate
 from world.gltf_builder import glb_structure
 from world.native_terrain_sectors import BOUND_TOLERANCE, bit, quad_triangles, select_terrain_sectors, vertex_normal
 from world.static_placement import gltf_placement, resolved_static_values, rotation_rows, static_matrix

@@ -17,7 +17,7 @@ def rectangle_source_points(native, points, region):
     return [points[y*native['width']+x] for x, y in rectangle_sample_grid(region)]
 
 
-def build_terrain_rectangle_gltf(native, points, words, layers, region, mask_uv_rule, sector_rectangle=None):
+def build_terrain_rectangle_gltf(native, points, words, layers, region, mask_uv_rule, sector_rectangle, generator):
     origin_x, origin_y = region['offset']
     quads_x, quads_y = region['quads']
     width, height = native['width'], native['height']
@@ -43,7 +43,7 @@ def build_terrain_rectangle_gltf(native, points, words, layers, region, mask_uv_
             for triangle in quad_triangles(first_vertex, first_vertex+1, first_vertex+quads_x+1, first_vertex+quads_x+2, turned,
                                            native_render_order=True):
                 indices.extend(triangle)
-    builder = GltfBuilder()
+    builder = GltfBuilder(generator)
     attributes = {'POSITION': builder.accessor(positions, len(positions), 'VEC3'),
                   'NORMAL': builder.accessor(normals, len(normals), 'VEC3'),
                   'TEXCOORD_0': builder.accessor(mask_uv, len(mask_uv), 'VEC2'),

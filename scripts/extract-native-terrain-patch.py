@@ -101,8 +101,7 @@ def make_variant(native, sector, points, words, layers, variant):
             a = y * (qx + 1) + x
             for triangle in quad_triangles(a, a + 1, a + qx + 1, a + qx + 2, turned, native_render_order=True):
                 indices.extend(triangle)
-    builder = GltfBuilder()
-    builder.data['asset']['generator'] = 'extract-native-terrain-patch.py; offline comparison, not native UV qualification'
+    builder = GltfBuilder('extract-native-terrain-patch.py; offline comparison, not native UV qualification')
     attributes = {'POSITION': builder.accessor(positions, len(positions), 'VEC3'),
                   'NORMAL': builder.accessor(normals, len(normals), 'VEC3'),
                   'TEXCOORD_0': builder.accessor(masks, len(masks), 'VEC2'),

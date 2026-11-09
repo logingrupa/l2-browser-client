@@ -5,13 +5,11 @@ from native_assets_lib.gltf import json_bytes
 from native_catalog.ue2 import FormatError
 from world.terrain_coordinates import f32
 
-TERRAIN_GLTF_GENERATOR = 'native_map_geometry.py'
-
 
 class GltfBuilder:
-    def __init__(self):
+    def __init__(self, generator):
         self.binary = bytearray()
-        self.data = {'asset': {'version': '2.0', 'generator': TERRAIN_GLTF_GENERATOR}, 'bufferViews': [], 'accessors': []}
+        self.data = {'asset': {'version': '2.0', 'generator': generator}, 'bufferViews': [], 'accessors': []}
 
     def accessor(self, rows, count, kind, component=5126):
         while len(self.binary) % 4:

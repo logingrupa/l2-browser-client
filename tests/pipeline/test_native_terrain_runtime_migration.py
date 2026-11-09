@@ -25,7 +25,7 @@ class TerrainRuntimeMigrationTests(unittest.TestCase):
         self.fixture.setUp()
         self.addCleanup(self.fixture.doCleanups)
         self.root = self.fixture.root
-        builder = GltfBuilder()
+        builder = GltfBuilder('native_map_geometry.py')
         points = [[float(x), 0., float(y)] for y in range(208, 256) for x in range(64, 113)]
         uv = [[(x+.5)/256, (y+.5)/256] for y in range(208, 256) for x in range(64, 113)]
         attributes = {
