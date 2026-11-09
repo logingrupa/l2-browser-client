@@ -5,32 +5,34 @@ import unittest
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPOSITORY_ROOT / 'scripts'))
 
-from native_actor_profiles import (CASE_INSENSITIVE_SPELLING_MATCH, EXACT_SPELLING_MATCH, QualifiedNameMatch, UNMATCHED_ACTOR_CLASS_MESSAGE,
-                                   is_actor_class_chain, unique_qualified_export_match)
+from native_actor_profiles import UNMATCHED_ACTOR_CLASS_MESSAGE
+from native_assets_lib.qualified_export_names import (CASE_INSENSITIVE_SPELLING_MATCH, EXACT_SPELLING_MATCH, QualifiedNameMatch,
+                                                      is_actor_class_chain, package_export_objects, unique_qualified_export_match)
 from native_catalog.ue2 import FormatError
 from test_npc_batch import NpcBatchFixture, SyntheticSourcePackages, synthetic_closure
 
 
 class UniqueQualifiedExportMatchTests(unittest.TestCase):
     def setUp(self):
-        self.packages = SyntheticSourcePackages(['LineageNPC.Exact', 'lineagenpc.lowercase_export', 'LineageNPC.Twice', 'LINEAGENPC.TWICE'])
+        self.export_objects = package_export_objects(
+            SyntheticSourcePackages(['LineageNPC.Exact', 'lineagenpc.lowercase_export', 'LineageNPC.Twice', 'LINEAGENPC.TWICE']), 'LineageNPC.Exact')
 
     def test_an_exact_spelling_matches_itself(self):
-        self.assertEqual(unique_qualified_export_match(self.packages, 'LineageNPC.Exact', UNMATCHED_ACTOR_CLASS_MESSAGE),
+        self.assertEqual(unique_qualified_export_match(self.export_objects, 'LineageNPC.Exact', UNMATCHED_ACTOR_CLASS_MESSAGE),
                          QualifiedNameMatch('LineageNPC.Exact', 'LineageNPC.Exact', EXACT_SPELLING_MATCH))
 
     def test_one_export_equal_ignoring_case_matches_and_keeps_both_spellings(self):
-        self.assertEqual(unique_qualified_export_match(self.packages, 'LineageNPC.Lowercase_Export', UNMATCHED_ACTOR_CLASS_MESSAGE),
+        self.assertEqual(unique_qualified_export_match(self.export_objects, 'LineageNPC.Lowercase_Export', UNMATCHED_ACTOR_CLASS_MESSAGE),
                          QualifiedNameMatch('LineageNPC.Lowercase_Export', 'lineagenpc.lowercase_export', CASE_INSENSITIVE_SPELLING_MATCH))
 
     def test_two_exports_equal_ignoring_case_are_refused_naming_both(self):
         with self.assertRaisesRegex(FormatError, '^Qualified name matches two or more exports ignoring case: LineageNPC.twice matches '
                                                  'LINEAGENPC.TWICE and LineageNPC.Twice$'):
-            unique_qualified_export_match(self.packages, 'LineageNPC.twice', UNMATCHED_ACTOR_CLASS_MESSAGE)
+            unique_qualified_export_match(self.export_objects, 'LineageNPC.twice', UNMATCHED_ACTOR_CLASS_MESSAGE)
 
     def test_no_export_equal_ignoring_case_is_refused_with_the_caller_message(self):
         with self.assertRaisesRegex(FormatError, f'^{UNMATCHED_ACTOR_CLASS_MESSAGE}$'):
-            unique_qualified_export_match(self.packages, 'LineageNPC.Absent', UNMATCHED_ACTOR_CLASS_MESSAGE)
+            unique_qualified_export_match(self.export_objects, 'LineageNPC.Absent', UNMATCHED_ACTOR_CLASS_MESSAGE)
 
     def test_an_actor_class_chain_names_engine_actor_and_core_object_in_any_case(self):
         self.assertTrue(is_actor_class_chain(['lineagenpc.guard', 'engine.actor', 'CORE.OBJECT']))

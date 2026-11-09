@@ -7,10 +7,10 @@ import math
 from pathlib import Path
 import re
 import sys
-from typing import NamedTuple
 import xml.etree.ElementTree as ET
 
 from native_assets_lib.gltf import safe_name
+from native_assets_lib.qualified_export_names import is_actor_class_chain, package_export_objects, unique_qualified_export_match
 from native_catalog.cli import file_hash, json_bytes, safe_output, within, write_output
 from native_catalog.effects import SourcePackages, UELIB_SHA256
 from native_catalog.tables import (SCHEMA_ROOT, SCHEMA_HASHES, checked_bytes,
@@ -31,35 +31,8 @@ MODEL_CATALOG_ID_FIELD = 'modelCatalogId'
 MODEL_CATALOG_ID_PATTERN = re.compile(r'^npc-model:[a-f0-9]{64}$')
 UNMATCHED_ACTOR_CLASS_MESSAGE = 'Actor class matches no qualified class export, even ignoring case'
 UNMATCHED_NPC_MESH_MESSAGE = 'NPC mesh matches no qualified skeletal mesh export, even ignoring case'
-AMBIGUOUS_QUALIFIED_NAME_MESSAGE = 'Qualified name matches two or more exports ignoring case'
-EXACT_SPELLING_MATCH = 'exact-spelling'
-CASE_INSENSITIVE_SPELLING_MATCH = 'case-insensitive-spelling'
 NATIVE_SKELETAL_MESH_EXPORT_KIND = 'SkeletalMesh'
-ACTOR_BASE_CLASS = 'Engine.Actor'
-ROOT_OBJECT_CLASS = 'Core.Object'
 ACTOR_CLASS_INHERITANCE_MESSAGE = 'NPC actor class inheritance must resolve through Engine.Actor to Core.Object'
-
-
-class QualifiedNameMatch(NamedTuple):
-    requested: str
-    export: str
-    spelling: str
-
-
-def unique_qualified_export_match(packages, requested, unmatched_message):
-    _, package = packages.get(requested.split('.')[0])
-    matching_exports = sorted(item['object'] for item in package.exports if item['object'].casefold() == requested.casefold())
-    if len(matching_exports) > 1:
-        raise FormatError(f'{AMBIGUOUS_QUALIFIED_NAME_MESSAGE}: {requested} matches {" and ".join(matching_exports)}')
-    if not matching_exports:
-        raise FormatError(unmatched_message)
-    export = matching_exports[0]
-    return QualifiedNameMatch(requested, export, EXACT_SPELLING_MATCH if export == requested else CASE_INSENSITIVE_SPELLING_MATCH)
-
-
-def is_actor_class_chain(class_names):
-    casefolded_class_names = {class_name.casefold() for class_name in class_names}
-    return ACTOR_BASE_CLASS.casefold() in casefolded_class_names and ROOT_OBJECT_CLASS.casefold() in casefolded_class_names
 
 
 class UnresolvedActorDefaultError(FormatError):
@@ -110,7 +83,7 @@ def npc_profile_tool_pins():
     implementation = {name: file_hash(here / name) for name in (
         'native_actor_profiles.py', 'native_effect_bundle.py', 'native_catalog/effects.py',
         'native_catalog/extract_ue_defaults.ps1', 'native_catalog/tables.py',
-        'native_catalog/ue2.py', 'native_catalog/cli.py', 'native_assets_lib/gltf.py')}
+        'native_catalog/ue2.py', 'native_catalog/cli.py', 'native_assets_lib/gltf.py', 'native_assets_lib/qualified_export_names.py')}
     return {'implementation': implementation, 'uelibSha256': UELIB_SHA256,
         'powershellSha256': file_hash(powershell), 'pythonVersion': '.'.join(map(str, sys.version_info[:3])),
         'formatDefinitions': {name: table_definition_pins(name) for name in ('npcname', 'npcgrp')}}
@@ -225,7 +198,8 @@ def _extract_bundle(client, recipe, output, save):
     profiles, selections, mesh_sources, excluded_profiles = [], [], [], []
     for selection in recipe['profiles']:
         rows = select_exact_npc_rows_without_mesh_substitution(tables['npcname'], tables['npcgrp'], selection)
-        class_match = unique_qualified_export_match(packages, selection['expectedActorClass'], UNMATCHED_ACTOR_CLASS_MESSAGE)
+        class_match = unique_qualified_export_match(package_export_objects(packages, selection['expectedActorClass']),
+                                                    selection['expectedActorClass'], UNMATCHED_ACTOR_CLASS_MESSAGE)
         definition = defaults.get(selection['expectedActorClass'])
         chain, current = [], definition
         while current:
@@ -234,7 +208,8 @@ def _extract_bundle(client, recipe, output, save):
             current = defaults.definitions[parent.casefold()] if parent else None
         if not is_actor_class_chain(chain):
             raise FormatError(ACTOR_CLASS_INHERITANCE_MESSAGE)
-        mesh_match = unique_qualified_export_match(packages, selection['expectedMesh'], UNMATCHED_NPC_MESH_MESSAGE)
+        mesh_match = unique_qualified_export_match(package_export_objects(packages, selection['expectedMesh']), selection['expectedMesh'],
+                                                   UNMATCHED_NPC_MESH_MESSAGE)
         mesh, _, _ = packages.resolve(selection['expectedMesh'], NATIVE_SKELETAL_MESH_EXPORT_KIND)
         try:
             profile = resolved_profile(selection, definition, recipe['sourceUnitsPerMetre'])

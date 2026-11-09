@@ -13,7 +13,8 @@ from actors.npc_store_records import (PROFILE_MANIFEST_FILE_NAME, bundle_output_
                                       converted_model_store_files_and_record, profile_bundle_store_files_and_record)
 from native_actor_profiles import (ACTOR_CLASS_INHERITANCE_MESSAGE, MAXIMUM_NPC_PROFILE_BUNDLES, MAXIMUM_PROFILES_PER_BUNDLE,
                                    NATIVE_SKELETAL_MESH_EXPORT_KIND, UNMATCHED_ACTOR_CLASS_MESSAGE, UNMATCHED_NPC_MESH_MESSAGE,
-                                   is_actor_class_chain, migrate_npc_profiles, npc_profile_tool_pins, unique_qualified_export_match)
+                                   migrate_npc_profiles, npc_profile_tool_pins)
+from native_assets_lib.qualified_export_names import is_actor_class_chain, package_export_objects, unique_qualified_export_match
 from native_assets_lib.gltf import json_bytes
 from native_effect_bundle import MAX_CLASSES
 from native_store.canonical_json import canonical_json_bytes
@@ -154,9 +155,11 @@ class NpcSourceIdentities:
 
     def row_identity_refusal(self, npcgrp_row):
         try:
-            unique_qualified_export_match(self.packages, npcgrp_row['class_name'], UNMATCHED_ACTOR_CLASS_MESSAGE)
+            unique_qualified_export_match(package_export_objects(self.packages, npcgrp_row['class_name']), npcgrp_row['class_name'],
+                                          UNMATCHED_ACTOR_CLASS_MESSAGE)
             closure = self.class_closure(npcgrp_row['class_name'])
-            unique_qualified_export_match(self.packages, npcgrp_row['mesh_name'], UNMATCHED_NPC_MESH_MESSAGE)
+            unique_qualified_export_match(package_export_objects(self.packages, npcgrp_row['mesh_name']), npcgrp_row['mesh_name'],
+                                          UNMATCHED_NPC_MESH_MESSAGE)
             self.packages.resolve(npcgrp_row['mesh_name'], NATIVE_SKELETAL_MESH_EXPORT_KIND)
         except ReferenceClientLockError:
             raise

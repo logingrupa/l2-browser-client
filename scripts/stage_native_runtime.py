@@ -8,6 +8,8 @@ import zipfile
 
 from native_assets import verify_archive
 from native_assets_lib.gltf import json_bytes, safe_name
+from native_actor_profiles import UNMATCHED_ACTOR_CLASS_MESSAGE, UNMATCHED_NPC_MESH_MESSAGE
+from native_assets_lib.qualified_export_names import ROOT_OBJECT_CLASS, is_actor_class_chain, unique_qualified_export_match
 from native_catalog.cli import json_bytes as profile_json_bytes
 from native_store.catalog_writer import add_store_file, read_current_catalog_bytes, sha256_hex, write_store
 
@@ -196,17 +198,19 @@ def npc_profile_files(migration, job, files):
         if (profile['name'] != expectation['expectedName'] or profile['mesh'] != expectation['expectedMesh'] or
             profile['actorClass'] != expectation['expectedActorClass'] or profile.get('sourceUnitsPerMetre') != 100 or
             group.get('npc_id') != npc_id or group.get('mesh_name') != profile['mesh'] or group.get('class_name') != profile['actorClass'] or
-            localized.get('id') != npc_id or localized.get('name') != profile['name'] or
-            mesh.get('object') != profile['mesh'] or mesh.get('reference') != profile['mesh'] or mesh.get('class') != 'SkeletalMesh' or
+            localized.get('id') != npc_id or localized.get('name') != profile['name'] or not isinstance(mesh.get('object'), str) or
+            mesh.get('reference') != profile['mesh'] or mesh.get('class') != 'SkeletalMesh' or
             mesh.get('resolution') != 'exact-qualified-object' or mesh['package'] not in sources or sources[mesh['package']] != mesh.get('packageSha256')):
             raise ValueError('NPC profile source/name/mesh identity differs')
+        unique_qualified_export_match([mesh['object']], profile['mesh'], UNMATCHED_NPC_MESH_MESSAGE)
+        actor_class_export = unique_qualified_export_match(classes, profile['actorClass'], UNMATCHED_ACTOR_CLASS_MESSAGE).export
         chain = selection['classChain']
-        if (not chain or chain[0] != profile['actorClass'] or chain[-1] != 'Core.Object' or
-            'Engine.Actor' not in chain or len(set(chain)) != len(chain) or any(name not in classes for name in chain)):
+        if (not chain or chain[0] != actor_class_export or chain[-1].casefold() != ROOT_OBJECT_CLASS.casefold() or not is_actor_class_chain(chain) or
+            len({name.casefold() for name in chain}) != len(chain) or any(name not in classes for name in chain)):
             raise ValueError('NPC profile actor inheritance is incomplete')
         if any(classes[name].get('nativeSuperClass') != (chain[index + 1] if index + 1 < len(chain) else None) for index, name in enumerate(chain)):
             raise ValueError('NPC profile actor inheritance differs from class definitions')
-        properties = classes[profile['actorClass']]['effectiveProperties']
+        properties = classes[actor_class_export]['effectiveProperties']
         for field, native in (('drawScale', 'DrawScale'), ('collisionRadius', 'CollisionRadius'), ('collisionHeight', 'CollisionHeight')):
             value = profile.get(field)
             if type(value) not in (int, float) or not math.isfinite(value) or value <= 0 or value != properties.get(native):
