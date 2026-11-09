@@ -15,10 +15,60 @@ CATALOG_KEY_KIND_PARTS = {'table': 'data', 'tile': 'world', 'map': 'world', 'cha
                           'npc': 'npcs', 'item': 'items', 'skill': 'skills-effects'}
 SKILL_ROW_AMBIGUOUS_REASON_PATTERN = re.compile(r'^skill-row-ambiguous:(?P<count>[1-9]\d{0,8})$')
 NAMED_MISSING_KEY_LIMIT = 5
+ITEMS_PART = 'items'
+ITEM_CENSUS_STEP = 'census'
+ITEM_CENSUS_EVIDENCE = 'docs/coverage.md'
+ITEMNAME_TABLE_NAME = 'itemname-e'
+ETCITEM_TABLE_NAME = 'etcitemgrp'
+ETCITEM_PRESENTATION_UNPLANNED_REASON = 'etcitem-presentation-unplanned'
+ITEM_GROUP_ROW_ABSENT_REASON = 'item-group-row-absent'
+ITEM_KEY_PATTERN = re.compile(r'^item:(?P<id>\d{1,9})$')
+MAXIMUM_ITEM_ID = 999_999_999
 
 
 class GapCensusIncompleteError(ValueError):
     pass
+
+
+def require_unique_item_ids(item_ids, table_name):
+    item_ids = list(item_ids)
+    if not all(type(item_id) is int and 0 <= item_id <= MAXIMUM_ITEM_ID for item_id in item_ids):
+        raise GapCensusIncompleteError(f'part {ITEMS_PART}: {table_name} item ids must be integers from 0 to {MAXIMUM_ITEM_ID}')
+    item_id_set = set(item_ids)
+    if len(item_id_set) != len(item_ids):
+        raise GapCensusIncompleteError(f'part {ITEMS_PART}: {table_name} repeats item ids')
+    return item_id_set
+
+
+def group_row_item_id(row):
+    match = ITEM_KEY_PATTERN.fullmatch(row['key']) if row.get('part') == ITEMS_PART else None
+    if match is None:
+        raise GapCensusIncompleteError(f'part {ITEMS_PART}: a weapon or armor row must be an items row with an item key: {row!r}')
+    return int(match['id'])
+
+
+def item_join_row(item_id, reason, source_identity):
+    return {'key': f'item:{item_id}', 'part': ITEMS_PART, 'step': ITEM_CENSUS_STEP, 'status': 'gap', 'reason': reason,
+            'sourceIdentity': {'path': source_identity['path'], 'sha256': source_identity['sha256']}, 'evidence': ITEM_CENSUS_EVIDENCE}
+
+
+def item_census_rows(itemname_ids, weapon_and_armor_rows, etcitem_ids, item_table_sources):
+    itemname_id_set = require_unique_item_ids(itemname_ids, ITEMNAME_TABLE_NAME)
+    etcitem_id_set = require_unique_item_ids(etcitem_ids, ETCITEM_TABLE_NAME)
+    group_item_ids = {group_row_item_id(row) for row in weapon_and_armor_rows}
+    unnamed_item_ids = (etcitem_id_set | group_item_ids) - itemname_id_set
+    if unnamed_item_ids:
+        raise GapCensusIncompleteError(f'part {ITEMS_PART}: group item ids are not in {ITEMNAME_TABLE_NAME}: '
+                                       f'{first_keys_text(f"item:{item_id}" for item_id in unnamed_item_ids)}')
+    twice_grouped_item_ids = etcitem_id_set & group_item_ids
+    if twice_grouped_item_ids:
+        raise GapCensusIncompleteError(f'part {ITEMS_PART}: item ids have both an {ETCITEM_TABLE_NAME} row and a weapon or armor row: '
+                                       f'{first_keys_text(f"item:{item_id}" for item_id in twice_grouped_item_ids)}')
+    etcitem_rows = [item_join_row(item_id, ETCITEM_PRESENTATION_UNPLANNED_REASON, item_table_sources[ETCITEM_TABLE_NAME])
+                    for item_id in sorted(etcitem_id_set)]
+    ungrouped_rows = [item_join_row(item_id, ITEM_GROUP_ROW_ABSENT_REASON, item_table_sources[ITEMNAME_TABLE_NAME])
+                      for item_id in sorted(itemname_id_set - etcitem_id_set - group_item_ids)]
+    return sorted(etcitem_rows + ungrouped_rows, key=lambda row: row['key'])
 
 
 def catalog_key_part(key):

@@ -11,15 +11,16 @@ SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS_ROOT))
 
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_index_keys import catalog_index_keys
-from native_store.catalog_writer import (MAXIMUM_CATALOG_BYTES, STORE_CATALOG_NAME, CatalogWriteError, decode_store_catalog,
-                                         is_table_name_index_id, replace_file, sha256_hex)
-from native_store.coverage_denominators import COVERAGE_PART_ORDER, UNKNOWN_DENOMINATOR, CoverageReportError, coverage_denominators
-from native_store.gap_census import GAP_CENSUS_LOAD_STATUSES, build_gap_census
-from native_store.gap_rows import GAP_ROW_STATUSES, is_listed_reason, load_gap_reason_patterns, read_gap_rows
+from native_store.catalog_index_keys import catalog_index_keys, read_measured_catalog
+from native_store.catalog_writer import is_table_name_index_id, replace_file
+from native_store.coverage_denominators import COVERAGE_PART_ORDER, UNKNOWN_DENOMINATOR, CoverageReportError
+from native_store.gap_census import GAP_CENSUS_LOAD_STATUSES, ITEM_CENSUS_STEP, ITEMS_PART, build_gap_census
+from native_store.gap_census_denominators import census_item_join_rows, load_census_denominators, measured_part_names
+from native_store.gap_rows import (GAP_ROW_STATUSES, INTEGRATION_LANE_NAME, is_listed_reason, load_gap_reason_patterns, read_gap_rows,
+                                   write_gap_rows)
 from native_store.load_check_records import is_catalog_key, is_riga_timestamp, read_load_check_records
-from native_store.store_paths import (REPOSITORY_ROOT, SHA256_PATTERN, StorePathError, confined_child_path, read_lane_parts_by_name,
-                                      require_converter_output)
+from native_store.store_paths import (REPOSITORY_ROOT, SHA256_PATTERN, StorePathError, confined_child_path, lane_store_root,
+                                      read_lane_parts_by_name, require_converter_output)
 from native_store.unit_ledger import MACHINE_SCHEDULE_EXIT_INSIDE_WINDOW, read_machine_schedule, require_host_clock_on_riga_time
 
 COVERAGE_REPORT_SCHEMA_VERSION = 1
@@ -29,6 +30,7 @@ COVERAGE_STEP_FIELDS = frozenset({'step', 'status', 'reason'})
 COVERAGE_OUTPUT_NAME = 'coverage.json'
 COVERAGE_STATUS_BY_CENSUS_STATUS = {'converted': 'pass', 'failed': 'failed', 'gap': 'gap', 'pending': 'pending'}
 TABLE_CATALOG_KEY_PREFIX = 'table:'
+ACTORS_LANE_NAME = 'actors'
 LOBBY_MAP_KEY = 'map:Lobby'
 LOADS_RULE_TEXT = 'Loads counts only recorded load checks; everything else is unverified.'
 CENSUS_RULE_TEXT = ('Every denominator key has exactly one census status: converted when a catalog lists it, else the failed, gap or '
@@ -42,37 +44,30 @@ def store_root_text(project_root, store_root):
     return store_root.relative_to(project_root).as_posix() if store_root.is_relative_to(project_root) else store_root.as_posix()
 
 
-def read_measured_catalog(store_root):
-    catalog_path = Path(store_root) / STORE_CATALOG_NAME
-    if not catalog_path.is_file():
-        raise CoverageReportError(f'measured store has no catalog: {catalog_path}')
-    with open(catalog_path, 'rb') as stream:
-        payload = stream.read(MAXIMUM_CATALOG_BYTES + 1)
-    if len(payload) > MAXIMUM_CATALOG_BYTES:
-        raise CoverageReportError(f'measured catalog exceeds {MAXIMUM_CATALOG_BYTES} bytes: {catalog_path}')
-    try:
-        return decode_store_catalog(payload), sha256_hex(payload)
-    except (CatalogWriteError, ValueError) as error:
-        raise CoverageReportError(f'measured catalog is not a native catalog: {catalog_path}: {error}') from error
-
-
-def measured_part_names(lane_names):
-    parts_by_lane_name = read_lane_parts_by_name()
-    lane_parts = {part for lane_name in lane_names for part in parts_by_lane_name[lane_name]}
-    return tuple(part for part in COVERAGE_PART_ORDER if part in lane_parts)
-
-
-def merged_load_statuses(project_root, lane_names, catalog_sha256):
+def merged_load_statuses(project_root, lane_names_by_catalog_sha256):
     load_status_by_key = {}
-    for lane_name in lane_names:
-        for key, record in read_load_check_records(project_root, lane_name, catalog_sha256).items():
-            if load_status_by_key.get(key) != 'failed':
-                load_status_by_key[key] = record['status']
+    for catalog_sha256, lane_names in sorted(lane_names_by_catalog_sha256.items()):
+        for lane_name in sorted(lane_names):
+            for key, record in read_load_check_records(project_root, lane_name, catalog_sha256).items():
+                if load_status_by_key.get(key) != 'failed':
+                    load_status_by_key[key] = record['status']
     return load_status_by_key
 
 
 def measured_gap_rows(project_root, lane_names, part_names):
     return [row for lane_name in lane_names for row in read_gap_rows(project_root, lane_name) if row['part'] in part_names]
+
+
+def store_converted_keys(project_root, store_root, catalog):
+    return denominator_catalog_keys(catalog_index_keys(store_root, catalog, Path(project_root) / 'public' / 'l2'))
+
+
+def write_item_join_rows(project_root, lane_names, part_names):
+    if ITEMS_PART not in part_names:
+        return lane_names
+    weapon_and_armor_rows = [row for row in read_gap_rows(project_root, ACTORS_LANE_NAME) if row['part'] == ITEMS_PART]
+    write_gap_rows(project_root, INTEGRATION_LANE_NAME, ITEM_CENSUS_STEP, census_item_join_rows(project_root, weapon_and_armor_rows))
+    return tuple(sorted({*lane_names, INTEGRATION_LANE_NAME}))
 
 
 def coverage_steps_by_key(gap_rows):
@@ -105,14 +100,19 @@ def denominator_catalog_keys(catalog_keys):
                                                 and is_table_name_index_id(key.removeprefix(TABLE_CATALOG_KEY_PREFIX)))}
 
 
-def build_coverage_report(project_root, store_root, lane_names, generated_at_riga):
+def build_coverage_report(project_root, store_root, lane_names, generated_at_riga, census_lane_names=()):
     catalog, catalog_sha256 = read_measured_catalog(store_root)
     part_names = measured_part_names(lane_names)
-    all_denominators = coverage_denominators()
-    denominators = {part: all_denominators[part] for part in part_names}
-    converted_keys = denominator_catalog_keys(catalog_index_keys(store_root, catalog, Path(project_root) / 'public' / 'l2'))
-    gap_rows = measured_gap_rows(project_root, lane_names, part_names)
-    census_rows = build_gap_census(denominators, gap_rows, converted_keys, merged_load_statuses(project_root, lane_names, catalog_sha256))
+    denominators = load_census_denominators(lane_names)
+    converted_keys = store_converted_keys(project_root, store_root, catalog)
+    lane_names_by_catalog_sha256 = {catalog_sha256: set(lane_names)}
+    for census_lane_name in census_lane_names:
+        census_store_root = lane_store_root(project_root, census_lane_name)
+        census_catalog, census_catalog_sha256 = read_measured_catalog(census_store_root)
+        converted_keys |= store_converted_keys(project_root, census_store_root, census_catalog)
+        lane_names_by_catalog_sha256.setdefault(census_catalog_sha256, set()).add(census_lane_name)
+    gap_rows = measured_gap_rows(project_root, write_item_join_rows(project_root, lane_names, part_names), part_names)
+    census_rows = build_gap_census(denominators, gap_rows, converted_keys, merged_load_statuses(project_root, lane_names_by_catalog_sha256))
     steps_by_key = coverage_steps_by_key(gap_rows)
     rows = [coverage_row(census_row, steps_by_key.get(census_row['key'], [])) for census_row in census_rows]
     return validate_coverage_report({
@@ -242,7 +242,9 @@ def main(argv=None, project_root=REPOSITORY_ROOT, run_command=subprocess.run):
     parser.add_argument('--lane', choices=lane_names)
     parser.add_argument('--output', type=Path)
     parser.add_argument('--markdown')
+    parser.add_argument('--census-lanes', nargs='+', choices=lane_names, default=[])
     arguments = parser.parse_args(argv)
+    report_lane_names = sorted({*([arguments.lane] if arguments.lane else []), *arguments.census_lanes}) or lane_names
     try:
         exit_code, schedule, schedule_message = read_machine_schedule(run_command)
         if exit_code == MACHINE_SCHEDULE_EXIT_INSIDE_WINDOW:
@@ -250,8 +252,8 @@ def main(argv=None, project_root=REPOSITORY_ROOT, run_command=subprocess.run):
         require_host_clock_on_riga_time(schedule['rigaTime'], datetime.now().astimezone())
         output_path = coverage_output_path(project_root, arguments.store_root, arguments.output)
         markdown_path = coverage_markdown_path(project_root, arguments.markdown) if arguments.markdown is not None else None
-        report = build_coverage_report(project_root, arguments.store_root, [arguments.lane] if arguments.lane else lane_names,
-                                       schedule['rigaTime'])
+        report = build_coverage_report(project_root, arguments.store_root, report_lane_names, schedule['rigaTime'],
+                                       sorted(set(arguments.census_lanes)))
         replace_file(output_path, coverage_report_bytes(report))
         if markdown_path is not None:
             replace_file(markdown_path, coverage_markdown(report).encode('utf-8'))

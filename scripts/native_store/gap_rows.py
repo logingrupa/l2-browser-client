@@ -36,6 +36,7 @@ LANE_GAP_REASON_FILES = {
 REASON_PLACEHOLDER_PATTERN = re.compile(r'<[A-Za-z][A-Za-z0-9]*>')
 REASON_PLACEHOLDER_VALUE_EXPRESSION = r'[^\n]+'
 REASON_LITERAL_PATTERN = re.compile(r'^[a-z0-9][a-z0-9:/_.-]*$')
+INTEGRATION_LANE_NAME = 'integration'
 
 
 class GapRowError(ValueError):
@@ -147,7 +148,7 @@ def sorted_gap_rows(rows):
 def write_gap_rows(project_root, lane_name, step, rows):
     gap_rows_path = lane_gap_rows_path(project_root, lane_name, step)
     reason_patterns = load_gap_reason_patterns()
-    lane_parts = read_lane_parts_by_name()[lane_name]
+    lane_parts = stage_a_part_names() if lane_name == INTEGRATION_LANE_NAME else read_lane_parts_by_name()[lane_name]
     seen_keys = set()
     for row in rows:
         validate_gap_row(row, reason_patterns)

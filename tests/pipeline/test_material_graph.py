@@ -306,7 +306,7 @@ class ReferenceClientMaterialGraphTests(unittest.TestCase):
 class MaterialGapReasonTests(unittest.TestCase):
     def test_the_seed_list_names_both_material_reasons_and_no_effect_class_reason(self):
         seed = json.loads(SEED_GAP_REASONS_PATH.read_text(encoding='utf-8'))
-        self.assertEqual(seed['listVersion'], 2)
+        self.assertGreaterEqual(seed['listVersion'], 2)
         self.assertIn('material-class-unported:<class>', seed['reasons'])
         self.assertIn('material-feature-unported:<property>', seed['reasons'])
         self.assertFalse([reason for reason in seed['reasons'] if reason.startswith('effect-class-unsupported')])

@@ -66,7 +66,7 @@ class GapRowValidationTests(unittest.TestCase):
 
     def test_every_seed_reason_accepts_a_sample_value(self):
         seed = json.loads(SEED_GAP_REASONS_PATH.read_text(encoding='utf-8'))
-        self.assertEqual((seed['schemaVersion'], seed['listVersion'], len(seed['reasons'])), (1, 2, 29))
+        self.assertEqual((seed['schemaVersion'], seed['listVersion'], len(seed['reasons'])), (1, 3, 30))
         for pattern in seed['reasons']:
             with self.subTest(pattern=pattern):
                 validate_gap_row(gap_row(reason=sample_reason_for_pattern(pattern)))
@@ -105,7 +105,7 @@ class GapReasonListTests(unittest.TestCase):
         validate_gap_row(gap_row(reason='player-start-missing'), patterns)
         with self.assertRaises(GapRowError):
             validate_gap_row(gap_row(reason='player-start-missing'))
-        self.assertEqual(gap_reason_list_versions(repository_root=self.repository), {'seed': 2, 'world': 2})
+        self.assertEqual(gap_reason_list_versions(repository_root=self.repository), {'seed': 3, 'world': 2})
 
     def test_a_pattern_listed_in_two_files_is_refused(self):
         self.write_lane_reasons('actors', {'schemaVersion': 1, 'listVersion': 1, 'reasons': ['census-pending']})
@@ -138,6 +138,14 @@ class GapRowFileTests(unittest.TestCase):
         write_gap_rows(self.project, 'world', 'raw', list(reversed(rows)))
         self.assertEqual(raw_path.read_bytes(), first_bytes)
         self.assertEqual(sorted(path.name for path in self.gap_rows_folder.iterdir()), ['raw.json'])
+
+    def test_the_integration_lane_writes_census_rows_of_any_stage_a_part(self):
+        item_row = gap_row(key='item:57', part='items', step='census', reason='etcitem-presentation-unplanned')
+        document = write_gap_rows(self.project, 'integration', 'census', [item_row])
+        self.assertEqual(document['rows'], [item_row])
+        self.assertEqual(read_gap_rows(self.project, 'integration'), [item_row])
+        with self.assertRaises(GapRowError):
+            write_gap_rows(self.project, 'integration', 'census', [gap_row(key='item:58', part='adapter-dispatch', step='census')])
 
     def test_rows_outside_the_lane_or_step_or_with_a_repeated_key_are_refused(self):
         refused_row_lists = {

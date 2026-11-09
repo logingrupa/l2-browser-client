@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 2,
+  "listVersion": 3,
   "reasons": [
     "map-licensee-unsupported:<v>/<lic>",
     "map-version-unsupported:<version>",
@@ -24,6 +24,7 @@
     "mover-unsupported:<reason>",
     "lod-derivative-unplanned",
     "etcitem-presentation-unplanned",
+    "item-group-row-absent",
     "texture-licensee-unsupported:<v>/<lic>",
     "static-material-layout-unreviewed:<v>/<lic>",
     "equipment-slot-meaning-undecoded:<bodyPart>",

@@ -4,18 +4,16 @@ import json
 from pathlib import Path
 import re
 
-from build_dat_table_inventory import DEFAULT_INVENTORY_OUTPUT_PATH, validate_dat_table_inventory
+from build_dat_table_inventory import validate_dat_table_inventory
 from native_store.gap_rows import CATALOG_KEY_PATTERNS
 from native_store.store_paths import REPOSITORY_ROOT
-from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, ReferenceClientLockError, read_reference_client_lock
+from reference_client_guard import ReferenceClientLockError, read_reference_client_lock
 from world.tile_census import NON_TILE_KIND, TILE_CENSUS_RELATIVE_PATH, TILE_KIND, TileCensusError, validate_tile_census
 
 COVERAGE_PART_ORDER = ('data', 'sandbox', 'world', 'player-characters', 'ui', 'npcs', 'items', 'skills-effects', 'audio', 'minimap',
                        'movement-geodata')
 UNKNOWN_DENOMINATOR = 'unknown'
 NO_COMMITTED_DENOMINATOR_SOURCE = 'no committed denominator yet'
-UNKNOWN_DENOMINATOR_SOURCES = {'ui': 'no committed window census yet (UI-01, plan 02-19)'}
-ACTOR_DENOMINATOR_TABLES = {'player-characters': 'chargrp', 'npcs': 'npcgrp', 'items': 'itemname-e', 'skills-effects': 'skillgrp'}
 WORLD_MAP_PATH_PATTERN = re.compile(r'^maps/(?P<name>[^/]+)\.unr$')
 TILE_MAP_NAME_PATTERN = re.compile(r'^\d{2}_\d{2}$')
 TILE_CENSUS_PATH = REPOSITORY_ROOT / TILE_CENSUS_RELATIVE_PATH
@@ -96,15 +94,3 @@ def inventory_table_count_denominator(inventory, inventory_path, table_name):
 
 def unknown_denominator(source):
     return {'count': UNKNOWN_DENOMINATOR, 'keys': None, 'source': source}
-
-
-def coverage_denominators(inventory_path=DEFAULT_INVENTORY_OUTPUT_PATH, lock_path=REFERENCE_CLIENT_LOCK_PATH,
-                          tile_census_path=TILE_CENSUS_PATH):
-    inventory = read_dat_table_inventory(inventory_path)
-    denominators = {part: unknown_denominator(UNKNOWN_DENOMINATOR_SOURCES.get(part, NO_COMMITTED_DENOMINATOR_SOURCE))
-                    for part in COVERAGE_PART_ORDER}
-    denominators['data'] = table_denominator(inventory, inventory_path)
-    denominators['world'] = world_denominator(lock_path, tile_census_path)
-    for part, table_name in ACTOR_DENOMINATOR_TABLES.items():
-        denominators[part] = inventory_table_count_denominator(inventory, inventory_path, table_name)
-    return denominators

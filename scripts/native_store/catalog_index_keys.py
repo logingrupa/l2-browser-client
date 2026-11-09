@@ -5,9 +5,9 @@ import os
 from pathlib import Path
 import re
 
-from native_store.catalog_writer import (MAXIMUM_CATALOG_BYTES, MAXIMUM_SAFE_INTEGER, CatalogWriteError, refuse_duplicate_json_keys,
-                                         refuse_non_finite_json_number, require_byte_length, require_pinned_path, sha256_hex,
-                                         validate_catalog_record)
+from native_store.catalog_writer import (MAXIMUM_CATALOG_BYTES, MAXIMUM_SAFE_INTEGER, STORE_CATALOG_NAME, CatalogWriteError,
+                                         decode_store_catalog, refuse_duplicate_json_keys, refuse_non_finite_json_number, require_byte_length,
+                                         require_pinned_path, sha256_hex, validate_catalog_record)
 from native_store.coverage_denominators import CoverageReportError
 from native_store.gap_rows import CATALOG_KEY_PATTERNS
 
@@ -21,6 +21,20 @@ PROFILE_MANIFEST_PATH_PATTERNS = {
 MODEL_CATALOG_ID_PATTERN = re.compile(r'^[a-z0-9][a-z0-9:-]{0,95}$')
 SKILL_EFFECT_COMPONENT_ID_PATTERN = re.compile(r'^interlude:skill:(?P<skill>\d{1,9}):level:(?P<level>[1-9]\d{0,3}):')
 LEGACY_SECTION_ID_PATTERN = re.compile(r'^map-(?P<column>\d{2})-(?P<row>\d{2})-section$')
+
+
+def read_measured_catalog(store_root):
+    catalog_path = Path(store_root) / STORE_CATALOG_NAME
+    if not catalog_path.is_file():
+        raise CoverageReportError(f'measured store has no catalog: {catalog_path}')
+    with open(catalog_path, 'rb') as stream:
+        payload = stream.read(MAXIMUM_CATALOG_BYTES + 1)
+    if len(payload) > MAXIMUM_CATALOG_BYTES:
+        raise CoverageReportError(f'measured catalog exceeds {MAXIMUM_CATALOG_BYTES} bytes: {catalog_path}')
+    try:
+        return decode_store_catalog(payload), sha256_hex(payload)
+    except (CatalogWriteError, ValueError) as error:
+        raise CoverageReportError(f'measured catalog is not a native catalog: {catalog_path}: {error}') from error
 
 
 def validated_slice_records(catalog, slice_name):
