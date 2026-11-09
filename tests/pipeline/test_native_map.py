@@ -186,8 +186,8 @@ class MapReaderTests(unittest.TestCase):
                 actor_properties(package, {**item, 'size': len(prefix) - 1})
         package = DummyPackage(b'\0')
         self.assertIsNone(actor_properties(package, {'offset': 0, 'size': 1, 'flags': 0})[2])
-        package.summary = {'version': 123, 'licenseeVersion': 30}
-        with self.assertRaises(FormatError):
+        package.summary = {'version': 123, 'licenseeVersion': 27}
+        with self.assertRaisesRegex(FormatError, '^map-licensee-unsupported:123/27$'):
             actor_properties(package, {'offset': 0, 'size': 1, 'flags': 0})
 
     def test_bitmap_count_exact_words_and_bounds(self):
