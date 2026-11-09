@@ -11,14 +11,14 @@
     "npcgrp": {
       "empty": 3,
       "exactIdentity": 0,
-      "uniquePackageLeafCandidate": 219,
+      "uniquePackageLeafCandidate": 274,
       "unresolved": 0
     }
   },
   "references": {
     "empty": 3,
     "exactIdentity": 0,
-    "uniquePackageLeafCandidate": 219,
+    "uniquePackageLeafCandidate": 274,
     "unresolved": 0
   },
   "routeProof": {
@@ -170,6 +170,11 @@
     "npc:14016",
     "npc:14017",
     "npc:14018",
+    "npc:14019",
+    "npc:14020",
+    "npc:14021",
+    "npc:14022",
+    "npc:14023",
     "npc:20001"
   ]
 }
