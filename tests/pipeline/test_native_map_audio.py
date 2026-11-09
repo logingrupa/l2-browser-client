@@ -1,7 +1,6 @@
 import argparse
 from contextlib import ExitStack
 import importlib.util
-import io
 import json
 from pathlib import Path
 import struct
@@ -9,85 +8,18 @@ import sys
 import tempfile
 import unittest
 from unittest.mock import patch
-import wave
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/'scripts'))
 import native_assets
 from native_catalog.ue2 import Package
 from reference_client_lock_fixture import lock_client_as_reference_root
+from sound_package_fixture import sound_package, wav_bytes
+from ue2_package_fixture import compact, package_bytes, tag
 
 spec = importlib.util.spec_from_file_location('export_native_map_audio', ROOT/'scripts/export-native-map-audio.py')
 audio = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(audio)
-
-
-def compact(value):
-    negative, value = value < 0, abs(value)
-    result = bytearray([(value & 63) | (128 if negative else 0)])
-    value >>= 6
-    if value:
-        result[0] |= 64
-    while value:
-        byte, value = value & 127, value >> 7
-        result.append(byte | (128 if value else 0))
-    return bytes(result)
-
-
-def package_bytes(names, imports, exports):
-    names = list(dict.fromkeys(['None', *names, *(name for row in imports for name in (row[0], row[1], row[3])), *(row['name'] for row in exports)]))
-    index = {name: i for i, name in enumerate(names)}
-    name_bytes = b''.join(compact(len(name)+1) + name.encode('ascii') + b'\0' + struct.pack('<I', 0) for name in names)
-    import_bytes = b''.join(compact(index[cp]) + compact(index[cn]) + struct.pack('<i', outer) + compact(index[name]) for cp, cn, outer, name in imports)
-    table, payloads = b'', b''
-    for row in exports:
-        offset = 4096 + len(payloads)
-        payload = row['body'](offset, index)
-        table += compact(row['class']) + compact(0) + struct.pack('<i', row.get('outer', 0)) + compact(index[row['name']])
-        table += struct.pack('<I', row.get('flags', 0)) + compact(len(payload)) + (compact(offset) if payload else b'')
-        payloads += payload
-    assert len(name_bytes) < 960 and len(import_bytes) < 1024 and len(table) < 2048
-    data = bytearray(4096)
-    struct.pack_into('<IHHIIIIIII', data, 0, 0x9e2a83c1, 123, 28, 0, len(names), 64, len(exports), 2048, len(imports), 1024)
-    data[64:64+len(name_bytes)] = name_bytes
-    data[1024:1024+len(import_bytes)] = import_bytes
-    data[2048:2048+len(table)] = table
-    return bytes(data) + payloads
-
-
-def tag(names, name, kind, raw, struct_name=None):
-    fixed = {1: 0, 2: 1, 4: 2, 12: 3, 16: 4}
-    size_code = fixed.get(len(raw), 5)
-    return compact(names[name]) + bytes([kind | (size_code << 4)]) + (compact(names[struct_name]) if struct_name else b'') + (bytes([len(raw)]) if size_code == 5 else b'') + raw
-
-
-def wav_bytes(with_smpl=True):
-    stream = io.BytesIO()
-    with wave.open(stream, 'wb') as wav:
-        wav.setnchannels(1)
-        wav.setsampwidth(2)
-        wav.setframerate(22050)
-        wav.writeframes(struct.pack('<4h', -32768, -100, 100, 32767))
-    data = stream.getvalue()
-    if with_smpl:
-        preserved_ancillary_smpl_chunk = b'smpl' + struct.pack('<I', 36) + bytes(range(36))
-        data += preserved_ancillary_smpl_chunk
-        data = data[:4] + struct.pack('<I', len(data)-8) + data[8:]
-    return data
-
-
-def sound_package(payload=None, duplicate=False, wrong_class=False, bad_boundary=False):
-    payload = wav_bytes() if payload is None else payload
-    def body(offset, names):
-        props = tag(names, 'UnknownSoundProperty', 11, b'\xaa\xbb\xcc') + compact(names['None'])
-        prefix = props + compact(names['WAV'])
-        size = len(prefix) + 4 + len(compact(len(payload))) + len(payload)
-        return prefix + struct.pack('<i', offset + size + int(bad_boundary)) + compact(len(payload)) + payload
-    imports = [('Core', 'Package', 0, 'Engine'), ('Core', 'Class', -1, 'Sound'),
-               ('Core', 'Package', 0, 'Core'), ('Core', 'Class', -3, 'Package'), ('Core', 'Class', -1, 'Texture')]
-    sound = {'name': 'wind_loop', 'class': -5 if wrong_class else -2, 'outer': 1, 'body': body}
-    return package_bytes(['WAV', 'UnknownSoundProperty'], imports,
-                         [{'name': 'Default', 'class': -4, 'body': lambda offset, names: b''}, sound, *([sound] if duplicate else [])])
 
 
 def map_package(grouped=True, invalid_property=False, null_reference=False):

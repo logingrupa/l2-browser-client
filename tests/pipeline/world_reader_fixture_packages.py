@@ -4,7 +4,7 @@ import struct
 
 from native_map import HAS_STACK
 from world.reader_licensee_layouts import NO_MATERIAL_PREFIX, RESERVED_INT32_MATERIAL_PREFIX, SHADER_BLOCK_MATERIAL_PREFIX
-from test_native_map_audio import compact, package_bytes, tag
+from ue2_package_fixture import compact, package_bytes, tag
 
 ROOT = Path(__file__).resolve().parents[2]
 WORLD_READER_FIXTURE_ROOT = ROOT / 'tests/fixtures/world-readers'

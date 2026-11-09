@@ -17,7 +17,7 @@ from world import convert_tile
 from world.convert_tile import record_tile_step_gap_row
 from world.raw_map_step import RAW_MAP_STEP_ALGORITHM_VERSION, raw_map_recipe, run_raw_map_step
 from reference_client_lock_fixture import lock_client_as_checked_conversion_root
-from test_native_map_audio import compact, package_bytes, tag
+from ue2_package_fixture import compact, package_bytes, tag
 
 TILE_ID = '20_21'
 TILE_KEY = 'tile:20_21'

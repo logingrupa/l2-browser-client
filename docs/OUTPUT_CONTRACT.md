@@ -94,7 +94,7 @@ neither.
 | `omit-zero-tangent-attribute` | record kind | `scripts/native_assets_lib/gltf.py` | unresolved: no test or evidence doc reproduces the zero-vector tangents build1590 is said to emit | The removed accessor index with `bytesPreserved` |
 | `preserve_material_graph` | function | `scripts/native_assets_lib/material_graph.py` | `scripts/native_assets.py:350` | The raw native material graph, texture sources and dependency hashes under `native-materials/`; glTF slots stay diagnostic |
 | `restore_native_weights` | function | `scripts/native_assets_lib/weights.py` | `tests/pipeline/test_native_weights.py:122` | The original exporter buffer (`originalBufferBytesPreserved`, `originalBufferSha256`) and `originalAttributes`; exact source slots travel in `_L2_NATIVE_WEIGHTS` and `_L2_NATIVE_JOINTS` |
-| `restore_l2_ogg` | function | `scripts/native_assets_lib/world_music.py` | `tests/pipeline/test_native_music.py:49` | The original L2SD payload path, size and SHA-256 and the reversible patch, checked by `unpatch` |
+| `restore_l2_ogg` | function | `scripts/native_assets_lib/world_music.py` | `tests/pipeline/test_world_music_helpers.py:43` | The original L2SD payload path, size and SHA-256 and the reversible patch, checked by `unpatch` |
 | `preserve-native-editor-uv2.mjs` | file | `scripts/preserve-native-editor-uv2.mjs` | `tests/editor/nativeEditorUv2.test.ts:78` | Authored Editor state and the original file; only lost UV2 is appended to a new addressed binary |
 | `preserve-native-editor-fog.mjs` | file | `scripts/preserve-native-editor-fog.mjs` | `tests/editor/editorFogExport.test.ts:7` | Saved Editor resources; only the packed scene's `fogMode` follows the saved `fogEnabled` |
 

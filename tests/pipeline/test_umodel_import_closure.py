@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from native_assets import Converter, sha
 from native_assets_lib.umodel_import_closure import UModelImportClosureError, require_lock_equal_import_closure
 from reference_client_guard import ReferenceClientAccess, ReferenceClientLock, ReferenceClientLockError
-from test_native_map_audio import package_bytes
+from ue2_package_fixture import package_bytes
 
 
 def empty_export(offset, names):

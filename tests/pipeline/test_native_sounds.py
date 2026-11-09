@@ -13,7 +13,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/'scripts'))
 import native_assets
 from reference_client_lock_fixture import lock_client_as_reference_root
-from test_native_map_audio import compact, package_bytes, sound_package, wav_bytes
+from sound_package_fixture import sound_package, wav_bytes
+from ue2_package_fixture import compact, package_bytes
 
 spec = importlib.util.spec_from_file_location('export_native_sounds', ROOT/'scripts/export-native-sounds.py')
 batch = importlib.util.module_from_spec(spec)
