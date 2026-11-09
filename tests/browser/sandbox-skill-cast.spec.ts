@@ -5,6 +5,7 @@ import { formatRigaTimestamp } from "../../scripts/check-machine-schedule.mjs";
 import { desktopViewport, landscapePhone } from "./browserViewports";
 import type { NativeSkillEffectHarnessState } from "./harness/nativeSkillEffectHarness";
 import { hashServedLaneCatalog, writeLoadCheckRecord } from "./support/loadCheckRecordFile";
+import { checkHarnessLoadKey } from "./support/loadCheckRecords";
 
 const laneName = "actors";
 const laneCatalogPath = resolve("artifacts/lane-store", laneName, "l2/catalog.json");
@@ -12,6 +13,8 @@ const evidenceDirectory = resolve("artifacts/skill-evidence");
 const tracerSkill = "1011:1";
 const tracerKey = "skill:1011:1";
 const tracerRootBundleId = "interlude:skill-root:skill.wh.1011";
+const dispatchRequiredSkill = "3:2";
+const dispatchRequiredKey = "skill:3:2";
 const harnessLoadTimeout = 120_000;
 const portraitPhone = { viewport: { width: 430, height: 932 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 };
 type DoneState = Extract<NativeSkillEffectHarnessState, { state: "done" }>;
@@ -52,9 +55,19 @@ test("loads the converted components of skill 1011 level 1 selected by ?skill= f
   expect(state.preview?.draws).toBeGreaterThan(0);
   await expect(page.locator("[data-effect-component]")).toHaveCount(state.preview!.components.length);
   if (baseURL === undefined) throw new Error("the Playwright project has no baseURL");
-  writeLoadCheckRecord(laneName, await hashServedLaneCatalog(baseURL), {
-    key: tracerKey, status: "pass", reason: null, atRiga: formatRigaTimestamp(new Date()), assetManifestSchemaVersion: null,
-  });
+  const outcome = await checkHarnessLoadKey(page, tracerKey);
+  writeLoadCheckRecord(laneName, await hashServedLaneCatalog(baseURL), { key: tracerKey, ...outcome, atRiga: formatRigaTimestamp(new Date()) });
+});
+
+test("shows the native-skill-dispatch-required gap of skill 3 level 2 from the lane coverage with no effect component loaded", async ({ page }) => {
+  test.setTimeout(harnessLoadTimeout * 2);
+  const state = await openSkill(page, dispatchRequiredSkill);
+  expect(state).toMatchObject({ key: dispatchRequiredKey, lookupStatus: "gap", note: `${dispatchRequiredKey} gap: native-skill-dispatch-required`, preview: null });
+  await expect(page.locator("#native-skill-effect-note")).toHaveText(`${dispatchRequiredKey} gap: native-skill-dispatch-required`);
+  await expect(page.locator("[data-effect-component]")).toHaveCount(0);
+  await page.setViewportSize(desktopViewport);
+  mkdirSync(evidenceDirectory, { recursive: true });
+  await page.screenshot({ path: resolve(evidenceDirectory, "skill-3-2-gap-1440x900.png") });
 });
 
 for (const [label, contextOptions, screenshotName] of [
