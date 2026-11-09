@@ -193,7 +193,7 @@ export async function buildNativeCatalogIndex(catalog: NativeCatalog, signal: Ab
   }
   for (const lookup of legacySectionTileLookups(catalog.sections)) if (!entries.has(lookup.key)) addEntry(lookup);
 
-  for (const row of (await readNativeCoverageUnlessAbsent(signal, catalog.servedCatalogSha256))?.rows ?? []) {
+  for (const row of (await readNativeCoverageUnlessAbsent(signal, catalog.servedCatalogSha256, catalog.laneCatalogSha256))?.rows ?? []) {
     if (row.status === "pass" || entries.has(row.key)) continue;
     addEntry({ status: "gap", key: row.key, reason: row.reason, coverageStatus: row.status });
   }

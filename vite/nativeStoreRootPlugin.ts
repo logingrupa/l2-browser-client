@@ -7,11 +7,11 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { loadEnv, type Connect, type Plugin } from "vite";
 import { readLaneOwnership } from "../scripts/check-lane-ownership.mjs";
+import { NATIVE_STORE_LANE_CATALOG_SHA256_HEADER } from "../src/assets/native/nativeStoreLaneCatalogHeader";
 
 export const NATIVE_STORE_PATH_PATTERN = /^\/l2\/(?:[A-Za-z0-9_-][A-Za-z0-9._-]*\/)*[A-Za-z0-9_-][A-Za-z0-9._-]*$/;
 export const NATIVE_STORE_FIXTURE_NAME = "fixture";
 export const NATIVE_STORE_SOURCE_HEADER = "X-Native-Store-Source";
-export const NATIVE_STORE_LANE_CATALOG_SHA256_HEADER = "X-Native-Store-Lane-Catalog-Sha256";
 
 const runExecutable = promisify(execFile);
 const nativeStorePathPrefix = "/l2/";

@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { NativeCoverageCatalogMismatchError, readNativeCoverageUnlessAbsent } from "../../src/assets/native/readNativeCoverage";
 
 const servedCatalogSha256 = "c".repeat(64);
+const laneCatalogSha256 = "e".repeat(64);
+const otherCatalogSha256 = "d".repeat(64);
 
 const gapRow = { key: "npc:20001", part: "npcs", status: "gap", reason: "skeletal-licensee-unsupported:123/30", converted: false, loads: "unverified",
   steps: [{ step: "convert", status: "gap", reason: "skeletal-licensee-unsupported:123/30" }] };
@@ -19,16 +21,26 @@ function coverageFetch(response: () => Response) {
   return vi.fn(async (_url: string | URL | Request) => response()) as unknown as typeof fetch & ReturnType<typeof vi.fn>;
 }
 
-function readCoverage(response: () => Response) {
-  return readNativeCoverageUnlessAbsent(new AbortController().signal, servedCatalogSha256, coverageFetch(response));
+function readCoverage(response: () => Response, attestedLaneCatalogSha256: string | null = null) {
+  return readNativeCoverageUnlessAbsent(new AbortController().signal, servedCatalogSha256, attestedLaneCatalogSha256, coverageFetch(response));
 }
 
 describe("native coverage report reader", () => {
   it("reads the rows of a coverage report pinned to the served catalog from /l2/coverage.json", async () => {
     const fetchResource = coverageFetch(() => Response.json(coverageBody()));
-    const coverage = await readNativeCoverageUnlessAbsent(new AbortController().signal, servedCatalogSha256, fetchResource);
+    const coverage = await readNativeCoverageUnlessAbsent(new AbortController().signal, servedCatalogSha256, null, fetchResource);
     expect(fetchResource.mock.calls[0]![0]).toBe("/l2/coverage.json");
     expect(coverage).toEqual({ schemaVersion: 1, catalogSha256: servedCatalogSha256, rows: [gapRow, passRow] });
+  });
+
+  it("reads a coverage report pinned to the served catalog when a lane catalog is attested", async () => {
+    await expect(readCoverage(() => Response.json(coverageBody()), laneCatalogSha256))
+      .resolves.toEqual({ schemaVersion: 1, catalogSha256: servedCatalogSha256, rows: [gapRow, passRow] });
+  });
+
+  it("reads a coverage report pinned to the attested lane catalog the served union came from", async () => {
+    await expect(readCoverage(() => Response.json(coverageBody({ catalogSha256: laneCatalogSha256 })), laneCatalogSha256))
+      .resolves.toEqual({ schemaVersion: 1, catalogSha256: laneCatalogSha256, rows: [gapRow, passRow] });
   });
 
   it.each([
@@ -69,16 +81,29 @@ describe("native coverage report reader", () => {
     await expect(readCoverage(() => new Response("{rows"))).rejects.toThrow("Native coverage report is invalid.");
   });
 
-  it("refuses a coverage report written for another catalog and names both SHA-256 values", async () => {
-    const read = readCoverage(() => Response.json(coverageBody({ catalogSha256: "d".repeat(64) })));
+  it("refuses a coverage report written for another catalog when no lane catalog is attested and names both SHA-256 values", async () => {
+    const read = readCoverage(() => Response.json(coverageBody({ catalogSha256: otherCatalogSha256 })));
     await expect(read).rejects.toBeInstanceOf(NativeCoverageCatalogMismatchError);
-    await expect(read).rejects.toThrow(`Native coverage report is pinned to catalog ${"d".repeat(64)}, but the served catalog is ${servedCatalogSha256}.`);
+    await expect(read).rejects.toThrow(`Native coverage report is pinned to catalog ${otherCatalogSha256}, but the served catalog is ${servedCatalogSha256}.`);
+  });
+
+  it("refuses a coverage report pinned to a lane catalog when the served catalog attests no lane catalog", async () => {
+    const read = readCoverage(() => Response.json(coverageBody({ catalogSha256: laneCatalogSha256 })));
+    await expect(read).rejects.toBeInstanceOf(NativeCoverageCatalogMismatchError);
+    await expect(read).rejects.toThrow(`Native coverage report is pinned to catalog ${laneCatalogSha256}, but the served catalog is ${servedCatalogSha256}.`);
+  });
+
+  it("refuses a coverage report pinned to neither the served nor the attested lane catalog and names all three SHA-256 values", async () => {
+    const read = readCoverage(() => Response.json(coverageBody({ catalogSha256: otherCatalogSha256 })), laneCatalogSha256);
+    await expect(read).rejects.toBeInstanceOf(NativeCoverageCatalogMismatchError);
+    await expect(read).rejects.toThrow(`Native coverage report is pinned to catalog ${otherCatalogSha256}, but the served catalog is ${servedCatalogSha256} `
+      + `and the attested lane catalog is ${laneCatalogSha256}.`);
   });
 
   it("does not fetch for an aborted signal", async () => {
     const controller = new AbortController(), fetchResource = coverageFetch(() => Response.json(coverageBody()));
     controller.abort();
-    await expect(readNativeCoverageUnlessAbsent(controller.signal, servedCatalogSha256, fetchResource)).rejects.toHaveProperty("name", "AbortError");
+    await expect(readNativeCoverageUnlessAbsent(controller.signal, servedCatalogSha256, null, fetchResource)).rejects.toHaveProperty("name", "AbortError");
     expect(fetchResource).not.toHaveBeenCalled();
   });
 });

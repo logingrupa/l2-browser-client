@@ -47,4 +47,17 @@ describe("native catalog index gap answers from the coverage report", () => {
     serveFiles(new Map(), coverageFor("d".repeat(64), []));
     await expect(buildNativeCatalogIndex(catalogWith({}), new AbortController().signal)).rejects.toBeInstanceOf(NativeCoverageCatalogMismatchError);
   });
+
+  it("answers gaps from coverage pinned to the lane catalog that the served catalog attests", async () => {
+    const laneCatalogSha256 = "e".repeat(64);
+    serveFiles(new Map(), coverageFor(laneCatalogSha256, [coverageRow("npc:20001", "gap", "skeletal-licensee-unsupported:123/30")]));
+    const index = await buildNativeCatalogIndex(catalogWith({ laneCatalogSha256 }), new AbortController().signal);
+    expect(index.lookup(npcCatalogKey(20001))).toEqual({ status: "gap", key: "npc:20001", reason: "skeletal-licensee-unsupported:123/30", coverageStatus: "gap" });
+  });
+
+  it("refuses to build an index next to coverage pinned to neither the served nor the attested lane catalog", async () => {
+    serveFiles(new Map(), coverageFor("d".repeat(64), []));
+    await expect(buildNativeCatalogIndex(catalogWith({ laneCatalogSha256: "e".repeat(64) }), new AbortController().signal))
+      .rejects.toBeInstanceOf(NativeCoverageCatalogMismatchError);
+  });
 });

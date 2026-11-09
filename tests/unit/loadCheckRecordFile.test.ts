@@ -12,7 +12,7 @@ import {
 	writeLoadCheckRecordFile,
 	type LoadCheckRecord,
 } from "../browser/support/loadCheckRecordFile";
-import { NATIVE_STORE_LANE_CATALOG_SHA256_HEADER } from "../../vite/nativeStoreRootPlugin";
+import { NATIVE_STORE_LANE_CATALOG_SHA256_HEADER } from "../../src/assets/native/nativeStoreLaneCatalogHeader";
 
 const catalogSha256 = "e".repeat(64);
 const temporaryFolders: string[] = [];

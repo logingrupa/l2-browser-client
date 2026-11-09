@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync 
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readLaneOwnership } from "../../../scripts/check-lane-ownership.mjs";
-import { NATIVE_STORE_LANE_CATALOG_SHA256_HEADER } from "../../../vite/nativeStoreRootPlugin";
+import { NATIVE_STORE_LANE_CATALOG_SHA256_HEADER } from "../../../src/assets/native/nativeStoreLaneCatalogHeader";
 
 export type LoadCheckStatus = "pass" | "failed";
 

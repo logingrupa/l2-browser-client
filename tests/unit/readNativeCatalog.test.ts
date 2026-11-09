@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it, vi } from "vitest";
+import { NATIVE_STORE_LANE_CATALOG_SHA256_HEADER } from "../../src/assets/native/nativeStoreLaneCatalogHeader";
 import { NativeStoreNotStagedError, readNativeCatalog } from "../../src/assets/native/readNativeCatalog";
 import { sha256 } from "../../src/assets/package/readAssetPackage";
 
@@ -7,6 +8,10 @@ const goldenCatalogPath = "tests/fixtures/golden/l2/catalog.json";
 
 function catalogFetch(response: () => Response) {
   return vi.fn(async (_url: string | URL | Request) => response()) as unknown as typeof fetch & ReturnType<typeof vi.fn>;
+}
+
+function catalogAttestingLaneCatalog(laneCatalogSha256: string) {
+  return () => Response.json({ schemaVersion: 1, models: [] }, { headers: { [NATIVE_STORE_LANE_CATALOG_SHA256_HEADER]: laneCatalogSha256 } });
 }
 
 describe("native catalog reader", () => {
@@ -61,6 +66,27 @@ describe("native catalog reader", () => {
     expect(catalog.windows).toEqual([expect.objectContaining({ id: "SyntheticFixtureWnd" })]);
     expect(catalog.servedCatalogSha256).toBe(await sha256(bytes));
     expect(catalog).not.toHaveProperty("sourceCatalogSha256");
+  });
+
+  it("answers a null lane catalog SHA-256 when the catalog answer has no lane catalog header", async () => {
+    const catalog = await readNativeCatalog(new AbortController().signal, catalogFetch(() => Response.json({ schemaVersion: 1, models: [] })));
+    expect(catalog.laneCatalogSha256).toBeNull();
+  });
+
+  it("keeps the lane catalog SHA-256 that the catalog answer attests in its header", async () => {
+    const catalog = await readNativeCatalog(new AbortController().signal, catalogFetch(catalogAttestingLaneCatalog("e".repeat(64))));
+    expect(catalog.laneCatalogSha256).toBe("e".repeat(64));
+    expect(catalog.servedCatalogSha256).not.toBe("e".repeat(64));
+  });
+
+  it.each([
+    ["not 64 hex digits", "abc"],
+    ["upper-case hex", "E".repeat(64)],
+    ["empty", ""],
+    ["two values", `${"e".repeat(64)}, ${"f".repeat(64)}`],
+  ])("rejects a catalog whose lane catalog header is %s and names the header and its value", async (_label, laneCatalogSha256) => {
+    await expect(readNativeCatalog(new AbortController().signal, catalogFetch(catalogAttestingLaneCatalog(laneCatalogSha256))))
+      .rejects.toThrow(`Native asset catalog is invalid: its X-Native-Store-Lane-Catalog-Sha256 header ${JSON.stringify(laneCatalogSha256)} is not 64 lowercase hex digits.`);
   });
 
   it("keeps a lane catalog's sourceCatalogSha256 and fills absent new slices with empty arrays", async () => {

@@ -1,5 +1,6 @@
 import { sha256 } from "../package/readAssetPackage";
 import { nativeResourceUrl } from "./nativeResourceUrl";
+import { NATIVE_STORE_LANE_CATALOG_SHA256_HEADER } from "./nativeStoreLaneCatalogHeader";
 
 const nativeCatalogPath = "/l2/catalog.json";
 
@@ -27,6 +28,7 @@ export interface NativeCatalog {
   readonly tiles: readonly unknown[];
   readonly sourceCatalogSha256?: string;
   readonly servedCatalogSha256: string;
+  readonly laneCatalogSha256: string | null;
 }
 
 const htmlFallbackPage = /^\s*(?:<!doctype html|<html)/i;
@@ -47,7 +49,7 @@ function decodeCatalogBytes(bytes: Uint8Array): string {
   catch { throw invalidCatalog(); }
 }
 
-type OptionalCatalogSliceName = Exclude<keyof NativeCatalog, "schemaVersion" | "models" | "sourceCatalogSha256" | "servedCatalogSha256">;
+type OptionalCatalogSliceName = Exclude<keyof NativeCatalog, "schemaVersion" | "models" | "sourceCatalogSha256" | "servedCatalogSha256" | "laneCatalogSha256">;
 
 function optionalCatalogSlice(catalog: Record<string, unknown>, name: OptionalCatalogSliceName): readonly unknown[] {
   const slice = catalog[name];
@@ -63,7 +65,16 @@ function optionalSourceCatalogSha256(catalog: Record<string, unknown>): { readon
   return { sourceCatalogSha256 };
 }
 
-function validateNativeCatalog(input: unknown, servedCatalogSha256: string): NativeCatalog {
+function attestedLaneCatalogSha256(headers: Headers): string | null {
+  const laneCatalogSha256 = headers.get(NATIVE_STORE_LANE_CATALOG_SHA256_HEADER);
+  if (laneCatalogSha256 === null) return null;
+  if (!sha256Pattern.test(laneCatalogSha256)) {
+    throw new Error(`Native asset catalog is invalid: its ${NATIVE_STORE_LANE_CATALOG_SHA256_HEADER} header ${JSON.stringify(laneCatalogSha256)} is not 64 lowercase hex digits.`);
+  }
+  return laneCatalogSha256;
+}
+
+function validateNativeCatalog(input: unknown, servedCatalogSha256: string, laneCatalogSha256: string | null): NativeCatalog {
   if (typeof input !== "object" || input === null || Array.isArray(input)) throw invalidCatalog();
   const catalog = input as Record<string, unknown>;
   if (catalog.schemaVersion !== 1 || !Array.isArray(catalog.models)) throw invalidCatalog();
@@ -74,7 +85,7 @@ function validateNativeCatalog(input: unknown, servedCatalogSha256: string): Nat
     combatAudio: optionalCatalogSlice(catalog, "combatAudio"), worldAudio: optionalCatalogSlice(catalog, "worldAudio"),
     effectComponents: optionalCatalogSlice(catalog, "effectComponents"), tables: optionalCatalogSlice(catalog, "tables"),
     windows: optionalCatalogSlice(catalog, "windows"), tiles: optionalCatalogSlice(catalog, "tiles"),
-    ...optionalSourceCatalogSha256(catalog), servedCatalogSha256 };
+    ...optionalSourceCatalogSha256(catalog), servedCatalogSha256, laneCatalogSha256 };
 }
 
 async function fetchNativeCatalog(signal: AbortSignal, fetchResource: typeof fetch): Promise<NativeCatalog> {
@@ -89,7 +100,7 @@ async function fetchNativeCatalog(signal: AbortSignal, fetchResource: typeof fet
   const catalog = parseCatalogBody(body);
   const servedCatalogSha256 = await sha256(bytes);
   signal.throwIfAborted();
-  return validateNativeCatalog(catalog, servedCatalogSha256);
+  return validateNativeCatalog(catalog, servedCatalogSha256, attestedLaneCatalogSha256(response.headers));
 }
 
 export function readNativeCatalog(signal: AbortSignal, fetchResource: typeof fetch = fetch): Promise<NativeCatalog> {

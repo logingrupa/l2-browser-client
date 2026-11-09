@@ -409,7 +409,11 @@ Plan 02-07 writes it and 02-26 completes it.
 - `rows` holds one row per denominator key. `steps` lists that key's gap
   rows, one per step, so each tile records pass or gap per step (WORLD-03).
 - A reader refuses a coverage file whose `catalogSha256` differs from the
-  served catalog.
+  served catalog. Under the dev store switch it also accepts the lane catalog
+  SHA-256 that the catalog answer attests in
+  `X-Native-Store-Lane-Catalog-Sha256` (`readNativeCatalog` keeps it as
+  `laneCatalogSha256`, and a malformed header makes the catalog invalid).
+  Without that header, as in production, only the served catalog matches.
 - "Loads" counts only from load-check records; everything else is
   `unverified`.
 

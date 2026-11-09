@@ -23,9 +23,14 @@ export interface NativeCoverage {
   readonly rows: readonly NativeCoverageRow[];
 }
 
+function coverageCatalogMismatchMessage(coverageCatalogSha256: string, servedCatalogSha256: string, laneCatalogSha256: string | null): string {
+  const attestedLaneCatalogText = laneCatalogSha256 === null ? "" : ` and the attested lane catalog is ${laneCatalogSha256}`;
+  return `Native coverage report is pinned to catalog ${coverageCatalogSha256}, but the served catalog is ${servedCatalogSha256}${attestedLaneCatalogText}.`;
+}
+
 export class NativeCoverageCatalogMismatchError extends Error {
-  constructor(coverageCatalogSha256: string, servedCatalogSha256: string) {
-    super(`Native coverage report is pinned to catalog ${coverageCatalogSha256}, but the served catalog is ${servedCatalogSha256}.`);
+  constructor(coverageCatalogSha256: string, servedCatalogSha256: string, laneCatalogSha256: string | null) {
+    super(coverageCatalogMismatchMessage(coverageCatalogSha256, servedCatalogSha256, laneCatalogSha256));
     this.name = "NativeCoverageCatalogMismatchError";
   }
 }
@@ -108,7 +113,7 @@ function parseCoverageBody(body: string): unknown {
   catch { throw invalidCoverage(); }
 }
 
-export async function readNativeCoverageUnlessAbsent(signal: AbortSignal, servedCatalogSha256: string,
+export async function readNativeCoverageUnlessAbsent(signal: AbortSignal, servedCatalogSha256: string, laneCatalogSha256: string | null,
   fetchResource: typeof fetch = fetch): Promise<NativeCoverage | null> {
   signal.throwIfAborted();
   const response = await fetchResource(nativeResourceUrl(nativeCoveragePath), { signal });
@@ -120,6 +125,8 @@ export async function readNativeCoverageUnlessAbsent(signal: AbortSignal, served
   const body = decodeCoverageBody(bytes);
   if (htmlFallbackPage.test(body)) return null;
   const coverage = validateNativeCoverage(parseCoverageBody(body));
-  if (coverage.catalogSha256 !== servedCatalogSha256) throw new NativeCoverageCatalogMismatchError(coverage.catalogSha256, servedCatalogSha256);
+  if (coverage.catalogSha256 !== servedCatalogSha256 && coverage.catalogSha256 !== laneCatalogSha256) {
+    throw new NativeCoverageCatalogMismatchError(coverage.catalogSha256, servedCatalogSha256, laneCatalogSha256);
+  }
   return coverage;
 }
