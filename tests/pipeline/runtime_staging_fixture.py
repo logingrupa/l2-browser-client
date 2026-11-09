@@ -92,14 +92,15 @@ class RuntimeStagingFixture(unittest.TestCase):
 
     def add_npc_profiles(self, actor_class_exports=None, mesh_export=None):
         self.npc_root = self.migration / 'npc-profiles/reference-npcs'
+        requested_mesh = 'LineageMonsters.field_stalker_m00'
         profile = {'id': 'npc:21622', 'npcId': 21622, 'name': 'Greater Musveren',
-            'mesh': 'LineageMonsters.field_stalker_m00', 'actorClass': 'LineageMonster.field_stalker_20_bi',
+            'mesh': mesh_export or requested_mesh, 'actorClass': 'LineageMonster.field_stalker_20_bi',
             'sourceUnitsPerMetre': 100, 'drawScale': 1.2, 'drawScale3D': [1, 1, 1],
             'collisionRadius': 18, 'collisionHeight': 36,
             'unsupportedFields': [{'field': 'prePivot', 'reason': 'Native constructor value remains unproven.'}]}
         recipe = {'schemaVersion': 1, 'id': 'interlude:npc-profiles:fixture', 'nameTable': 'npcname-e.dat',
             'sourceUnitsPerMetre': 100, 'profiles': [{'npcId': 21622, 'expectedName': profile['name'],
-                'expectedMesh': profile['mesh'], 'expectedActorClass': profile['actorClass']}]}
+                'expectedMesh': requested_mesh, 'expectedActorClass': profile['actorClass']}]}
         source_files = [{'path': name, 'bytes': 123, 'sha256': str(index) * 64} for index, name in enumerate([
             'system/npcname-e.dat', 'system/npcgrp.dat', 'animations/LineageMonsters.ukx', 'system/Engine.u'])]
         actor_class_exports = actor_class_exports or [profile['actorClass']]
@@ -117,10 +118,10 @@ class RuntimeStagingFixture(unittest.TestCase):
         selections = {'tables': {'npcname': {'source': 'system/npcname-e.dat', 'sourceSha256': '0' * 64},
             'npcgrp': {'source': 'system/npcgrp.dat', 'sourceSha256': '1' * 64}}, 'selections': [{
             'id': profile['id'], 'classChain': chain,
-            'meshSource': {'reference': profile['mesh'], 'object': mesh_export or profile['mesh'], 'class': 'SkeletalMesh',
+            'meshSource': {'reference': requested_mesh, 'object': profile['mesh'], 'class': 'SkeletalMesh',
                 'resolution': 'exact-qualified-object', 'package': 'animations/LineageMonsters.ukx', 'packageSha256': '2' * 64},
             'nameRow': {'row': {'id': 21622, 'name': profile['name']}},
-            'groupRow': {'row': {'npc_id': 21622, 'mesh_name': profile['mesh'], 'class_name': profile['actorClass']}}}]}
+            'groupRow': {'row': {'npc_id': 21622, 'mesh_name': requested_mesh, 'class_name': profile['actorClass']}}}]}
         self.npc_payloads['source/npc-selections.json'] = json_bytes(selections)
         self.npc_manifest = {'schemaVersion': 1, 'id': recipe['id'], 'kind': 'native-npc-profiles',
             'support': 'source-profile-fields-ready', 'unsupported': [], 'errors': [], 'recipe': recipe,

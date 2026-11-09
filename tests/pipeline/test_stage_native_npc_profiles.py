@@ -88,6 +88,16 @@ class NpcProfileStagingTests(RuntimeStagingFixture):
         self.assertEqual(result['npcProfiles'], 1)
         manifest_hash = sha((self.npc_root / 'manifest.json').read_bytes())
         self.assertTrue((self.destination / 'npc-profiles' / manifest_hash / 'source/classes/lineagemonster.Field_Stalker_20_BI.json').is_file())
+        staged_profile = json.loads((self.destination / 'npc-profiles' / manifest_hash / 'manifest.json').read_bytes())['profiles'][0]
+        self.assertEqual(staged_profile['mesh'], 'lineagemonsters.field_stalker_M00')
+
+    def test_npc_profile_keeping_the_requested_mesh_spelling_of_a_case_differing_export_is_refused(self):
+        self.add_npc_profiles(mesh_export='lineagemonsters.field_stalker_M00')
+        self.npc_manifest['profiles'][0]['mesh'] = self.npc_manifest['recipe']['profiles'][0]['expectedMesh']
+        self.refresh_npc_receipt()
+        with self.assertRaisesRegex(ValueError, 'NPC profile mesh differs from the mesh export its requested mesh resolves to'):
+            self.stage()
+        self.assertFalse((self.destination / 'catalog.json').exists())
 
     def test_npc_class_matching_two_definitions_ignoring_case_is_refused_before_publication(self):
         self.add_npc_profiles(actor_class_exports=['LineageMonster.field_stalker_20_bi', 'LINEAGEMONSTER.FIELD_STALKER_20_BI'])

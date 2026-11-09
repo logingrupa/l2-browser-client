@@ -195,14 +195,16 @@ def npc_profile_files(migration, job, files):
         selection = next(row for row in selected if row['id'] == profile['id'])
         expectation = next(row for row in expected if row['npcId'] == npc_id)
         group, localized, mesh = selection['groupRow']['row'], selection['nameRow']['row'], selection['meshSource']
-        if (profile['name'] != expectation['expectedName'] or profile['mesh'] != expectation['expectedMesh'] or
+        requested_mesh = expectation['expectedMesh']
+        if (profile['name'] != expectation['expectedName'] or
             profile['actorClass'] != expectation['expectedActorClass'] or profile.get('sourceUnitsPerMetre') != 100 or
-            group.get('npc_id') != npc_id or group.get('mesh_name') != profile['mesh'] or group.get('class_name') != profile['actorClass'] or
+            group.get('npc_id') != npc_id or group.get('mesh_name') != requested_mesh or group.get('class_name') != profile['actorClass'] or
             localized.get('id') != npc_id or localized.get('name') != profile['name'] or not isinstance(mesh.get('object'), str) or
-            mesh.get('reference') != profile['mesh'] or mesh.get('class') != 'SkeletalMesh' or
+            mesh.get('reference') != requested_mesh or mesh.get('class') != 'SkeletalMesh' or
             mesh.get('resolution') != 'exact-qualified-object' or mesh['package'] not in sources or sources[mesh['package']] != mesh.get('packageSha256')):
             raise ValueError('NPC profile source/name/mesh identity differs')
-        unique_qualified_export_match([mesh['object']], profile['mesh'], UNMATCHED_NPC_MESH_MESSAGE)
+        if profile['mesh'] != unique_qualified_export_match([mesh['object']], requested_mesh, UNMATCHED_NPC_MESH_MESSAGE).export:
+            raise ValueError('NPC profile mesh differs from the mesh export its requested mesh resolves to')
         actor_class_export = unique_qualified_export_match(classes, profile['actorClass'], UNMATCHED_ACTOR_CLASS_MESSAGE).export
         chain = selection['classChain']
         if (not chain or chain[0] != actor_class_export or chain[-1].casefold() != ROOT_OBJECT_CLASS.casefold() or not is_actor_class_chain(chain) or
