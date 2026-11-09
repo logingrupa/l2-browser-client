@@ -23,7 +23,7 @@ async function zoomCameraOut(page: Page) {
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
-test("sandbox sheet spawns, equips and opens by ID and marks missing assets without a stand-in", async ({ page }) => {
+test("sandbox pickers spawn, equip and open by ID and mark missing assets without a stand-in", async ({ page }) => {
   test.skip(!staged, "The native store must be staged at public/l2/catalog.json.");
   test.setTimeout(300_000);
   const errors: string[] = [];
@@ -35,8 +35,8 @@ test("sandbox sheet spawns, equips and opens by ID and marks missing assets with
   const startingCount = (await entities(page)).length;
 
   await submitIdEntry(page, "sandbox-spawn-npc", { npcId: "12345" });
-  await expect(page.getByTestId("sandbox-spawn-npc-note")).toHaveText("npc:12345 not in catalog");
-  await expect(page.getByTestId("sandbox-spawn-npc-note")).toHaveAttribute("data-tone", "warning");
+  await expect(page.getByTestId("sandbox-spawn-note")).toHaveText("npc:12345 not in catalog");
+  await expect(page.getByTestId("sandbox-spawn-note")).toHaveAttribute("data-tone", "warning");
   await zoomCameraOut(page);
   const marker = page.locator('.entity-label[data-entity-id="npc-12345-1"]');
   await expect(marker).toBeVisible();
@@ -48,7 +48,7 @@ test("sandbox sheet spawns, equips and opens by ID and marks missing assets with
   await page.screenshot({ path: resolve("test-results/sandbox-missing-asset.png") });
 
   await submitIdEntry(page, "sandbox-spawn-npc", { npcId: "21622" });
-  await expect(page.getByTestId("sandbox-spawn-npc-note")).toHaveText("npc:21622 converted");
+  await expect(page.getByTestId("sandbox-spawn-note")).toHaveText("npc:21622 converted");
   await expect.poll(async () => (await entities(page)).find(entity => entity.id === "npc-21622-2")?.modelId ?? null, { timeout: 60_000 }).not.toBeNull();
   const converted = (await entities(page)).find(entity => entity.id === "npc-21622-2");
   expect(converted?.missingAssetDiagnostic).toBeNull();
@@ -56,12 +56,13 @@ test("sandbox sheet spawns, equips and opens by ID and marks missing assets with
   await expect(page.locator('.entity-label[data-entity-id="npc-21622-2"] .entity-diagnostic')).toBeHidden();
 
   await submitIdEntry(page, "sandbox-equip-item", { itemId: "22" });
-  await expect(page.getByTestId("sandbox-equip-item-note")).toHaveText("item:22 converted");
-  await expect(page.getByTestId("sandbox-equip-item-note")).toHaveAttribute("data-tone", "info");
+  await expect(page.getByTestId("sandbox-equip-note")).toHaveText("item:22 converted");
+  await expect(page.getByTestId("sandbox-equip-note")).toHaveAttribute("data-tone", "info");
   await submitIdEntry(page, "sandbox-equip-item", { itemId: "999999" });
-  await expect(page.getByTestId("sandbox-equip-item-note")).toHaveText("item:999999 not in catalog");
-  await submitIdEntry(page, "sandbox-open-window", { name: "StatusWnd" });
-  await expect(page.getByTestId("sandbox-open-window-note")).toHaveText("window:StatusWnd not in catalog: interface windows are not converted yet (UI-01)");
+  await expect(page.getByTestId("sandbox-equip-note")).toHaveText("item:999999 not in catalog");
+  await submitIdEntry(page, "sandbox-window", { window: "StatusWnd" });
+  await expect(page.getByTestId("sandbox-window-note")).toHaveText("window:StatusWnd not in catalog: window:StatusWnd has no windows record in the served catalog");
+  await expect(page.locator('[data-native-window="StatusWnd"]')).toHaveCount(0);
 
   const countBeforeRejectedInput = (await entities(page)).length;
   await submitIdEntry(page, "sandbox-spawn-npc", { npcId: "abc" });

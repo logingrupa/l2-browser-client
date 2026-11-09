@@ -30,8 +30,8 @@ test("the sandbox spawns the converted lane NPC npc:20001 by id with its convert
   await page.getByTestId("dev-tab-sandbox").click();
   await page.getByTestId("sandbox-spawn-npc-npcId").fill(String(gremlinNpcId));
   await page.getByTestId("sandbox-spawn-npc-submit").click();
-  await expect(page.getByTestId("sandbox-spawn-npc-note")).toHaveText(`npc:${gremlinNpcId} converted`);
-  await expect(page.getByTestId("sandbox-spawn-npc-note")).toHaveAttribute("data-tone", "info");
+  await expect(page.getByTestId("sandbox-spawn-note")).toHaveText(`npc:${gremlinNpcId} converted`);
+  await expect(page.getByTestId("sandbox-spawn-note")).toHaveAttribute("data-tone", "info");
   await expect.poll(async () => (await entities(page)).find(entity => entity.id === gremlinEntityId)?.modelId ?? null, { timeout: modelLoadTimeout })
     .not.toBeNull();
   const gremlin = (await entities(page)).find(entity => entity.id === gremlinEntityId);

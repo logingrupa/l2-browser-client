@@ -8,7 +8,6 @@ const laneStorePath = resolve("artifacts/lane-store", laneName, "l2");
 const screenshotDirectory = resolve("test-results/sandbox-coverage-notes");
 const worldReadyTimeout = 240_000;
 const missingNpcId = 999999;
-const windowsNotConvertedReason = "interface windows are not converted yet (UI-01)";
 
 test.skip(process.env.NATIVE_STORE_ROOT !== laneName, "run with NATIVE_STORE_ROOT=actors");
 test.skip(!existsSync(resolve(laneStorePath, "catalog.json")), "the actors lane store has no catalog; run scripts/actors/convert_actors.py --batch npcs first");
@@ -32,8 +31,12 @@ function expectedNoteFromServedStore(store: ServedStore, key: string): ExpectedN
   const row = store.coverageRows.get(key);
   if (row && row.status !== "pass") return { text: `${key} gap: ${row.reason}`, tone: "warning" };
   if (row) return { text: `${key} converted`, tone: "info" };
-  if (key.startsWith("window:") && !store.catalogHoldsWindows) return { text: `${key} not in catalog: ${windowsNotConvertedReason}`, tone: "warning" };
   return { text: `${key} not in catalog`, tone: "warning" };
+}
+
+function expectedWindowOpenNoteWithoutWindowRecords(windowId: string): ExpectedNote {
+  const key = `window:${windowId}`;
+  return { text: `${key} not in catalog: ${key} has no windows record in the served catalog`, tone: "warning" };
 }
 
 async function openSandboxSheet(page: Page): Promise<void> {
@@ -48,27 +51,28 @@ async function submitIdEntry(page: Page, testId: string, values: Readonly<Record
   await page.getByTestId(`${testId}-submit`).click();
 }
 
-async function expectNote(page: Page, testId: string, expected: ExpectedNote): Promise<void> {
-  await expect(page.getByTestId(`${testId}-note`)).toHaveText(expected.text);
-  await expect(page.getByTestId(`${testId}-note`)).toHaveAttribute("data-tone", expected.tone);
+async function expectNote(page: Page, noteTestId: string, expected: ExpectedNote): Promise<void> {
+  await expect(page.getByTestId(noteTestId)).toHaveText(expected.text);
+  await expect(page.getByTestId(noteTestId)).toHaveAttribute("data-tone", expected.tone);
 }
 
 async function spawnLaneNpcs(page: Page, store: ServedStore): Promise<void> {
   await submitIdEntry(page, "sandbox-spawn-npc", { npcId: "20001" });
-  await expectNote(page, "sandbox-spawn-npc", { text: "npc:20001 converted", tone: "info" });
+  await expectNote(page, "sandbox-spawn-note", { text: "npc:20001 converted", tone: "info" });
   await submitIdEntry(page, "sandbox-spawn-npc", { npcId: "20002" });
-  await expectNote(page, "sandbox-spawn-npc", { text: `npc:20002 gap: ${store.coverageRows.get("npc:20002")!.reason}`, tone: "warning" });
+  await expectNote(page, "sandbox-spawn-note", { text: `npc:20002 gap: ${store.coverageRows.get("npc:20002")!.reason}`, tone: "warning" });
   await submitIdEntry(page, "sandbox-spawn-npc", { npcId: String(missingNpcId) });
-  await expectNote(page, "sandbox-spawn-npc", { text: `npc:${missingNpcId} not in catalog`, tone: "warning" });
+  await expectNote(page, "sandbox-spawn-note", { text: `npc:${missingNpcId} not in catalog`, tone: "warning" });
 }
 
 async function equipCastAndOpenWindow(page: Page, store: ServedStore): Promise<void> {
   await submitIdEntry(page, "sandbox-equip-item", { itemId: "999999" });
-  await expectNote(page, "sandbox-equip-item", expectedNoteFromServedStore(store, "item:999999"));
+  await expectNote(page, "sandbox-equip-note", expectedNoteFromServedStore(store, "item:999999"));
   await submitIdEntry(page, "sandbox-cast-skill", { skillId: "7", level: "1" });
-  await expectNote(page, "sandbox-cast-skill", expectedNoteFromServedStore(store, "skill:7:1"));
-  await submitIdEntry(page, "sandbox-open-window", { name: "StatusWnd" });
-  await expectNote(page, "sandbox-open-window", expectedNoteFromServedStore(store, "window:StatusWnd"));
+  await expectNote(page, "sandbox-cast-note", expectedNoteFromServedStore(store, "skill:7:1"));
+  expect(store.catalogHoldsWindows).toBe(false);
+  await submitIdEntry(page, "sandbox-window", { window: "StatusWnd" });
+  await expectNote(page, "sandbox-window-note", expectedWindowOpenNoteWithoutWindowRecords("StatusWnd"));
 }
 
 test.use({ viewport: desktopViewport });
@@ -105,7 +109,7 @@ test("the spawn notes show on a 932 x 430 landscape touch phone", async ({ brows
     const page = await context.newPage();
     await openSandboxSheet(page);
     await spawnLaneNpcs(page, store);
-    await page.getByTestId("sandbox-spawn-npc-note").scrollIntoViewIfNeeded();
+    await page.getByTestId("sandbox-spawn-note").scrollIntoViewIfNeeded();
     mkdirSync(screenshotDirectory, { recursive: true });
     await page.screenshot({ path: resolve(screenshotDirectory, "sandbox-coverage-notes-phone.png") });
   } finally {

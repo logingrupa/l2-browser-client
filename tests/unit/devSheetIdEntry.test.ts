@@ -52,16 +52,6 @@ describe("developer sheet ID entry", () => {
     expect(message.textContent).toBe("Level must be at least 1.");
   });
 
-  it("accepts bounded interface window names and rejects markup", () => {
-    const { onSubmit, message, submit } = mountIdEntry({ fields: [{ name: "name", label: "Window", kind: "name" }] });
-    submit({ name: "<img src=x>" });
-    expect(onSubmit).not.toHaveBeenCalled();
-    expect(message.textContent).toMatch(/^Window must start with a letter/);
-    submit({ name: "StatusWnd" });
-    expect(onSubmit).toHaveBeenCalledWith({ name: "StatusWnd" });
-    expect(message.hidden).toBe(true);
-  });
-
   it("submits trimmed search text, accepts an empty search and bounds its length", () => {
     const { onSubmit, message, submit } = mountIdEntry({ fields: [{ name: "query", label: "Name or ID", kind: "search" }] });
     submit({ query: "  Greater Musveren  " });

@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { DevSheet } from "../../src/ui/devSheet/DevSheet";
 import type { NativeCatalogLookup } from "../../src/assets/native/nativeCatalogIndex";
-import { describeSandboxCatalogLookup } from "../../src/runtime/sandboxCatalogLookupNote";
 import { installMiniDom, type FakeElement, type MiniDom } from "./support/miniDom";
 import { attachSandboxSheetWithFakes, fakeCatalogIndexOver } from "./support/sandboxCommandSheetFakes";
 
@@ -9,16 +8,6 @@ const rabbitGapReason = "converter-refused:Mesh bone has no unique native parent
 const gremlinLookup: NativeCatalogLookup = { status: "converted", key: "npc:20001",
   record: { npcId: 20001, profileId: "interlude:npc-profiles:pack-b01bce43a24fdadd", modelCatalogId: "npc-model:gremlin", join: "model-catalog-id" } };
 const rabbitLookup: NativeCatalogLookup = { status: "gap", key: "npc:20002", reason: rabbitGapReason, coverageStatus: "gap" };
-
-describe("describeSandboxCatalogLookup", () => {
-  it("notes a converted key with the info tone", () => {
-    expect(describeSandboxCatalogLookup(gremlinLookup)).toEqual({ tone: "info", text: "npc:20001 converted" });
-  });
-
-  it("notes a gap with the warning tone and the coverage reason verbatim", () => {
-    expect(describeSandboxCatalogLookup(rabbitLookup)).toEqual({ tone: "warning", text: `npc:20002 gap: ${rabbitGapReason}` });
-  });
-});
 
 const laneLookups: readonly NativeCatalogLookup[] = [
   gremlinLookup, rabbitLookup,

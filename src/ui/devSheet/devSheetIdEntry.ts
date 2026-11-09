@@ -2,7 +2,6 @@ import { tileIdPattern, windowIdPattern } from "../../assets/native/nativeCatalo
 import type { DevIdEntry, DevIdEntryField, DevIdEntryOptions } from "./types";
 
 const integerInputPattern = /^\d{1,9}$/;
-const nameInputPattern = /^[A-Za-z][A-Za-z0-9_]{0,63}$/;
 const maximumSearchTextLength = 64;
 
 let idEntrySequence = 0;
@@ -21,10 +20,6 @@ function readIdEntryField(field: DevIdEntryField, rawText: string): FieldReading
   if (field.kind === "window") {
     return windowIdPattern.test(text) ? { value: text }
       : { rejection: `${field.label} must start with a letter and use only letters, digits and underscores, at most 64 characters, optionally followed by #<ordinal>.` };
-  }
-  if (field.kind === "name") {
-    return nameInputPattern.test(text) ? { value: text }
-      : { rejection: `${field.label} must start with a letter and use only letters, digits and underscores, at most 64 characters.` };
   }
   if (!integerInputPattern.test(text)) return { rejection: `${field.label} must be a whole number of at most 9 digits.` };
   const value = Number(text);
