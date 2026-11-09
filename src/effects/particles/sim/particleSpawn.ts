@@ -34,19 +34,24 @@ export function siblingRuntime(context: EmitterStepContext, emitterIndex: number
   return context.siblings[Math.min(emitterIndex, context.siblings.length - 1)]!;
 }
 
+function polarStartOffset(stream: RandomStream, polarRange: RangeVector): Vector3 {
+  const { x: azimuthDegrees, y: inclinationDegrees, z: radius } = drawRangeVector(stream, polarRange);
+  const azimuth = azimuthDegrees * degreesToRadians, inclination = inclinationDegrees * degreesToRadians;
+  const ringRadius = Math.sin(inclination);
+  const direction = { x: ringRadius * Math.cos(azimuth), y: ringRadius * Math.sin(azimuth), z: Math.cos(inclination) };
+  return scaleVector(direction, radius);
+}
+
 function spawnLocationShape(runtime: EmitterRuntime): Vector3 {
   const { record, stream } = runtime, shape = record.StartLocationShape;
+  const everyShape = shape === START_LOCATION_SHAPE.all;
   let location = record.StartLocationOffset;
-  if (shape === START_LOCATION_SHAPE.box || shape === START_LOCATION_SHAPE.all) location = addVectors(location, drawRangeVector(stream, record.StartLocationRange));
-  if (shape === START_LOCATION_SHAPE.sphere || shape === START_LOCATION_SHAPE.all) {
+  if (everyShape || shape === START_LOCATION_SHAPE.box) location = addVectors(location, drawRangeVector(stream, record.StartLocationRange));
+  if (everyShape || shape === START_LOCATION_SHAPE.sphere) {
     const direction = randomUnitVector(stream);
     location = addVectors(location, scaleVector(direction, drawRange(stream, record.SphereRadiusRange)));
   }
-  if (shape === START_LOCATION_SHAPE.polar || shape === START_LOCATION_SHAPE.all) {
-    const polar = drawRangeVector(stream, record.StartLocationPolarRange);
-    const azimuth = polar.x * degreesToRadians, inclination = polar.y * degreesToRadians;
-    location = addVectors(location, scaleVector({ x: Math.sin(inclination) * Math.cos(azimuth), y: Math.sin(inclination) * Math.sin(azimuth), z: Math.cos(inclination) }, polar.z));
-  }
+  if (everyShape || shape === START_LOCATION_SHAPE.polar) location = addVectors(location, polarStartOffset(stream, record.StartLocationPolarRange));
   return location;
 }
 

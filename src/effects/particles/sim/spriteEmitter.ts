@@ -22,6 +22,10 @@ export interface SpriteEmitterSimulation extends ParticleEmitterSimulation {
 
 const colorByteScale = PARTICLE_CONSTANTS.colorCurveByteScale.runtimeDefault;
 
+function subdivisionBlendByte(atlasPosition: number): number {
+  return Math.trunc((atlasPosition - Math.floor(atlasPosition)) * colorByteScale);
+}
+
 export function createSpriteEmitterSimulation(record: SpriteEmitterRecord, stream: RandomStream): SpriteEmitterSimulation {
   const simulation = createParticleEmitterSimulation(record, stream, record.UniformSize || record.UseDirectionAs === DIRECTION_USAGE_NONE);
   const { columns } = simulation;
@@ -46,8 +50,8 @@ export function createSpriteEmitterSimulation(record: SpriteEmitterRecord, strea
       const position = relativeParticleAge(columns.time[slot]!, columns.maxLifetime[slot]!) * cellCount;
       const cell = Math.min(Math.floor(position) + firstCell, lastCell);
       const finalCell = rangeSet ? Math.min(record.SubdivisionEnd, lastCell) : lastCell;
-      const blendWeight = record.BlendBetweenSubdivisions && cell < finalCell ? Math.trunc(colorByteScale * (position - Math.floor(position))) / colorByteScale : 0;
-      return atlasCellAt(cell, Math.min(cell + 1, finalCell), blendWeight);
+      const blendsTowardNextCell = record.BlendBetweenSubdivisions && cell < finalCell;
+      return atlasCellAt(cell, Math.min(cell + 1, finalCell), blendsTowardNextCell ? subdivisionBlendByte(position) / colorByteScale : 0);
     },
   };
 }

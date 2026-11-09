@@ -21,10 +21,11 @@ export function rotatorAxes(rotator: Rotator): RotatorAxes {
   const sinePitch = sine(rotator.pitch), cosinePitch = cosine(rotator.pitch);
   const sineYaw = sine(rotator.yaw), cosineYaw = cosine(rotator.yaw);
   const sineRoll = sine(rotator.roll), cosineRoll = cosine(rotator.roll);
+  const rollSineTimesPitchSine = sineRoll * sinePitch, rollCosineTimesPitchSine = cosineRoll * sinePitch;
   return {
     forward: { x: cosinePitch * cosineYaw, y: cosinePitch * sineYaw, z: sinePitch },
-    right: { x: sineRoll * sinePitch * cosineYaw - cosineRoll * sineYaw, y: sineRoll * sinePitch * sineYaw + cosineRoll * cosineYaw, z: -sineRoll * cosinePitch },
-    up: { x: -(cosineRoll * sinePitch * cosineYaw + sineRoll * sineYaw), y: cosineYaw * sineRoll - cosineRoll * sinePitch * sineYaw, z: cosineRoll * cosinePitch },
+    right: { x: rollSineTimesPitchSine * cosineYaw - cosineRoll * sineYaw, y: rollSineTimesPitchSine * sineYaw + cosineRoll * cosineYaw, z: -sineRoll * cosinePitch },
+    up: { x: -(rollCosineTimesPitchSine * cosineYaw + sineRoll * sineYaw), y: sineRoll * cosineYaw - rollCosineTimesPitchSine * sineYaw, z: cosineRoll * cosinePitch },
   };
 }
 
