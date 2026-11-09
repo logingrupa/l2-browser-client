@@ -34,9 +34,10 @@ export interface EmitterCounters {
   spawnFraction: number;
   otherEmitterCursor: number;
   delaySeconds: number;
-  delayDrawn: boolean;
+  initialized: boolean;
   resetTimerSeconds: number;
-  secondsSinceDrawn: number;
+  inactive: boolean;
+  inactiveSeconds: number;
   lastStepSeconds: number;
   lastOwnerLocation: Vector3;
   disabled: boolean;
@@ -81,8 +82,8 @@ export function createParticleColumns(capacity: number): ParticleColumns {
 
 export function createEmitterCounters(disabled: boolean): EmitterCounters {
   return {
-    activeSlots: 0, nextSlot: 0, spawnFraction: 0, otherEmitterCursor: 0, delaySeconds: 0, delayDrawn: false, resetTimerSeconds: 0,
-    secondsSinceDrawn: 0, lastStepSeconds: 0, lastOwnerLocation: { x: 0, y: 0, z: 0 }, disabled, dead: false, warmedUp: false,
+    activeSlots: 0, nextSlot: 0, spawnFraction: 0, otherEmitterCursor: 0, delaySeconds: 0, initialized: false, resetTimerSeconds: 0,
+    inactive: false, inactiveSeconds: 0, lastStepSeconds: 0, lastOwnerLocation: { x: 0, y: 0, z: 0 }, disabled, dead: false, warmedUp: false,
   };
 }
 

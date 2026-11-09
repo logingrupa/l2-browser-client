@@ -1,3 +1,4 @@
+import { cosineOfRadiansFromTable, sineOfRadiansFromTable } from "../../../shared/math/rotator";
 import { addVectors, scaleVector, vectorLength, type Vector3 } from "../../../shared/math/vector3";
 import { randomRange, randomUnitVector, type RandomStream } from "../../../shared/random";
 import { COORDINATE_SYSTEM, PARTICLE_CONSTANTS, ROTATION_SOURCE, START_LOCATION_SHAPE, VELOCITY_DIRECTION } from "./emitterConstants";
@@ -9,10 +10,13 @@ const spinUnitsPerTurn = PARTICLE_CONSTANTS.spinUnitsPerTurn.runtimeDefault;
 const respawnPassLimit = PARTICLE_CONSTANTS.respawnLoopGuard.runtimeDefault;
 const zeroVector: Vector3 = { x: 0, y: 0, z: 0 };
 const unitVector: Vector3 = { x: 1, y: 1, z: 1 };
-const degreesToRadians = Math.PI / 180;
 
 export function drawRange(stream: RandomStream, range: FloatRange): number {
   return randomRange(range.min, range.max, stream.nextUnit());
+}
+
+export function rangeCenter(range: FloatRange): number {
+  return Math.fround((Math.fround(range.max) + Math.fround(range.min)) * 0.5);
 }
 
 export function drawRangeVector(stream: RandomStream, range: RangeVector): Vector3 {
@@ -34,12 +38,19 @@ export function siblingRuntime(context: EmitterStepContext, emitterIndex: number
   return context.siblings[Math.min(emitterIndex, context.siblings.length - 1)]!;
 }
 
+function degreesToFloat32Radians(degrees: number): number {
+  return Math.fround(Math.fround(degrees) * Math.PI / 180);
+}
+
 function polarStartOffset(stream: RandomStream, polarRange: RangeVector): Vector3 {
-  const { x: azimuthDegrees, y: inclinationDegrees, z: radius } = drawRangeVector(stream, polarRange);
-  const azimuth = azimuthDegrees * degreesToRadians, inclination = inclinationDegrees * degreesToRadians;
-  const ringRadius = Math.sin(inclination);
-  const direction = { x: ringRadius * Math.cos(azimuth), y: ringRadius * Math.sin(azimuth), z: Math.cos(inclination) };
-  return scaleVector(direction, radius);
+  const polar = drawRangeVector(stream, polarRange);
+  const azimuth = degreesToFloat32Radians(polar.x), inclination = degreesToFloat32Radians(polar.y), radius = Math.fround(polar.z);
+  const inclinationSine = sineOfRadiansFromTable(inclination);
+  return {
+    x: Math.fround(inclinationSine * (cosineOfRadiansFromTable(azimuth) * radius)),
+    y: Math.fround(inclinationSine * (sineOfRadiansFromTable(azimuth) * radius)),
+    z: Math.fround(cosineOfRadiansFromTable(inclination) * radius),
+  };
 }
 
 function spawnLocationShape(runtime: EmitterRuntime): Vector3 {

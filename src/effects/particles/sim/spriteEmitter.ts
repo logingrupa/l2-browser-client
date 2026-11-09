@@ -23,7 +23,7 @@ export interface SpriteEmitterSimulation extends ParticleEmitterSimulation {
 const colorByteScale = PARTICLE_CONSTANTS.colorCurveByteScale.runtimeDefault;
 
 function subdivisionBlendByte(atlasPosition: number): number {
-  return Math.trunc((atlasPosition - Math.floor(atlasPosition)) * colorByteScale);
+  return Math.trunc(Math.fround(atlasPosition - Math.floor(atlasPosition)) * colorByteScale);
 }
 
 export function createSpriteEmitterSimulation(record: SpriteEmitterRecord, stream: RandomStream): SpriteEmitterSimulation {
@@ -47,11 +47,10 @@ export function createSpriteEmitterSimulation(record: SpriteEmitterRecord, strea
       const rangeSet = record.SubdivisionEnd !== 0;
       const cellCount = rangeSet ? Math.max(1, record.SubdivisionEnd - record.SubdivisionStart) : lastCell + 1;
       const firstCell = rangeSet ? record.SubdivisionStart : 0;
-      const position = relativeParticleAge(columns.time[slot]!, columns.maxLifetime[slot]!) * cellCount;
-      const cell = Math.min(Math.floor(position) + firstCell, lastCell);
-      const finalCell = rangeSet ? Math.min(record.SubdivisionEnd, lastCell) : lastCell;
-      const blendsTowardNextCell = record.BlendBetweenSubdivisions && cell < finalCell;
-      return atlasCellAt(cell, Math.min(cell + 1, finalCell), blendsTowardNextCell ? subdivisionBlendByte(position) / colorByteScale : 0);
+      const position = Math.fround(Math.fround(relativeParticleAge(columns.time[slot]!, columns.maxLifetime[slot]!)) * cellCount);
+      const cell = Math.min(Math.max(Math.floor(position) + firstCell, 0), lastCell);
+      const nextCell = cell + 1 === cellCount ? cell : cell + 1;
+      return atlasCellAt(cell, nextCell, record.BlendBetweenSubdivisions ? subdivisionBlendByte(position) / colorByteScale : 0);
     },
   };
 }

@@ -1,7 +1,7 @@
 import { createRandomStream, deriveStreamSeed, type RandomStream } from "../../../shared/random";
 import { COORDINATE_SYSTEM, ROTATION_SOURCE } from "./emitterConstants";
 import type { ParticleEmitterRecord } from "./emitterRecords";
-import { drawRange } from "./particleSpawn";
+import { drawRange, rangeCenter } from "./particleSpawn";
 import {
   createEmitterCounters, createParticleColumns, listLiveSlots,
   type EmitterCounters, type EmitterRuntime, type EmitterStepContext, type ParticleColumns,
@@ -56,24 +56,23 @@ function particleStorageSpace(coordinateSystem: number): ParticleStorageSpace {
   return spawnAddsOwnerLocation ? "world" : "owner";
 }
 
-function drawInitialDelay(runtime: EmitterRuntime): void {
-  const { record, stream, counters } = runtime;
-  counters.delaySeconds = drawRange(stream, record.InitialDelayRange);
-  counters.delayDrawn = true;
-}
-
 function restartEmitter(runtime: EmitterRuntime, context: EmitterStepContext): void {
   const { record, stream, columns, counters } = runtime;
   counters.activeSlots = counters.nextSlot = counters.otherEmitterCursor = 0;
   counters.dead = counters.warmedUp = false;
-  drawInitialDelay(runtime);
+  counters.delaySeconds = drawRange(stream, record.InitialDelayRange);
   counters.resetTimerSeconds = drawRange(stream, record.AutoResetTimeRange);
   counters.lastOwnerLocation = context.owner.location;
   columns.flags.fill(0);
 }
 
+function initializeEmitter(runtime: EmitterRuntime, context: EmitterStepContext): void {
+  restartEmitter(runtime, context);
+  runtime.counters.initialized = true;
+}
+
 function initialDelayHoldsStep(counters: EmitterCounters, stepSeconds: number): boolean {
-  if (counters.delaySeconds > 0) {
+  if (counters.delaySeconds !== 0) {
     const remainingDelaySeconds = counters.delaySeconds - stepSeconds;
     counters.delaySeconds = remainingDelaySeconds > 0 ? remainingDelaySeconds : 0;
     return remainingDelaySeconds > 0;
@@ -84,13 +83,12 @@ function initialDelayHoldsStep(counters: EmitterCounters, stepSeconds: number): 
 function warmUp(runtime: EmitterRuntime, context: EmitterStepContext): void {
   const { record, counters } = runtime;
   counters.lastOwnerLocation = context.owner.location;
-  if (record.WarmupTicksPerSecond > 0 && record.RelativeWarmupTime > 0) {
-    const lifetimeCenterSeconds = (record.LifetimeRange.min + record.LifetimeRange.max) / 2;
-    const ticksAcrossOneLifetime = record.WarmupTicksPerSecond * lifetimeCenterSeconds;
-    const warmupStepSeconds = 1 / record.WarmupTicksPerSecond;
-    for (let remainingTicks = Math.floor(ticksAcrossOneLifetime * record.RelativeWarmupTime); remainingTicks > 0; remainingTicks -= 1) {
-      updateParticles(runtime, warmupStepSeconds, context);
-    }
+  if (record.WarmupTicksPerSecond !== 0 && record.RelativeWarmupTime !== 0) {
+    const warmupTicksPerSecond = Math.fround(record.WarmupTicksPerSecond);
+    const warmupSeconds = Math.fround(rangeCenter(record.LifetimeRange) * Math.fround(record.RelativeWarmupTime));
+    const warmupStepSeconds = Math.fround(1 / warmupTicksPerSecond);
+    const warmupTickCount = Math.trunc(warmupTicksPerSecond * warmupSeconds);
+    for (let warmupTick = 0; warmupTick < warmupTickCount; warmupTick += 1) updateParticles(runtime, warmupStepSeconds, context);
   }
   counters.warmedUp = true;
 }
@@ -110,22 +108,23 @@ function stepDeadEmitter(runtime: EmitterRuntime, stepSeconds: number, context: 
   }
 }
 
-function undrawnPastInactiveLimit({ record, counters }: EmitterRuntime): boolean {
-  return record.SecondsBeforeInactive > 0 && counters.secondsSinceDrawn > record.SecondsBeforeInactive;
+function inactivePastLimit({ record, counters }: EmitterRuntime): boolean {
+  return record.SecondsBeforeInactive !== 0 && counters.inactiveSeconds > record.SecondsBeforeInactive;
 }
 
 function stepEmitter(runtime: EmitterRuntime, stepSeconds: number, context: EmitterStepContext): EmitterStepOutcome {
   const { counters } = runtime;
   if (counters.disabled) return "disabled";
-  if (!counters.delayDrawn) drawInitialDelay(runtime);
+  if (!counters.initialized) initializeEmitter(runtime, context);
   if (initialDelayHoldsStep(counters, stepSeconds)) return "delayed";
   if (!counters.warmedUp) warmUp(runtime, context);
   if (counters.dead) {
     stepDeadEmitter(runtime, stepSeconds, context);
     return "dead";
   }
-  counters.secondsSinceDrawn += stepSeconds;
-  if (!undrawnPastInactiveLimit(runtime)) updateParticles(runtime, stepSeconds, context);
+  counters.inactiveSeconds = counters.inactive ? counters.inactiveSeconds + stepSeconds : 0;
+  if (!inactivePastLimit(runtime)) updateParticles(runtime, stepSeconds, context);
+  counters.inactive = true;
   return "running";
 }
 
@@ -136,7 +135,7 @@ export function createParticleEmitterSimulation(record: ParticleEmitterRecord, s
     record, runtime, columns, counters, storageSpace: particleStorageSpace(record.CoordinateSystem), unportedFeatures: listUnportedEmitterFeatures(record),
     step: (stepSeconds, context) => stepEmitter(runtime, stepSeconds, context),
     reset: context => restartEmitter(runtime, context),
-    markDrawn: () => { counters.secondsSinceDrawn = 0; },
+    markDrawn: () => { counters.inactive = false; },
     liveSlots: () => listLiveSlots(columns, counters),
   };
 }
