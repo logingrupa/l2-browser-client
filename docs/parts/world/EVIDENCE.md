@@ -91,6 +91,18 @@ Committed in `docs/parts/world/tile-census.json` (plans 02-12 and 02-13, WORLD-0
 - Open: the 86 map-gate-fail tiles keep by-name terrain gates until the map reader grows past licensee 28 (plan 02-52).
 - Tests: `python -B -m unittest discover -s tests/pipeline -p test_tile_census.py`.
 
+## Tile chunks and terrain
+
+Plan 02-15, WORLD-01. `python -B scripts/world/convert_tile.py --client E:/Lineage2-client --map <XX_YY> --step chunks`, then `--step terrain`, on a sealed raw unit. Units: `artifacts/lane-store/world/work/tile__<XX_YY>/{chunks,terrain}` (ignored).
+- 20_21: 16x16 sectors, 16 chunks `chunk-<column>-<row>` of 4x4 sectors. Frame `20_21.TerrainInfo0`, location [16384, 114688, 160.65], scale [128, 128, 76], 256x256 samples. Anchor `20_21.PlayerStart2` [18160, 112972, -6527], the first PlayerStart in export order (bEnabled from the `Engine.PlayerStart` UELib default, True). Cross-checks only: the probe's `(x-20)*32768` gives X 0, the tile's west edge (location X minus half of 256 x 128); the probe picked PlayerStart4.
+- 16 GLBs, 129,966 triangles, 42 hidden quads. 238 of 256 cached sector Z bounds differ, kept under `require-xy-preserve-z-discrepancies`. 9 layers in serialized index order.
+- Every chunk is `maskUvRule` `extrapolated`, source `interlude-20_20-submitted-mask-uv-20261106`. 20_20 chunks too: no chunk equals the capture rectangle.
+- 20_20 (census eligible): 16 chunks, all written, 221 Z mismatches, 11 layers (9 filled, slots 9 and 10 empty), anchor `20_20.PlayerStart0` [19172.80, 79583.47, -4295.06].
+- Removing both 20_21 seals and rerunning gave 18 byte-identical products. `build_geometry` on the three 20_20 section recipes gave the same 39 files before and after the shared mesh builder.
+- Hand-chosen windows replaced: `recipes/native-map-20_20.json` (`/section/min`, `/section/max`, source units, not converted) and `recipes/native-map-debug-location.json` (`/terrainSectorRectangle` [64, 208]..[96, 240]) name `scripts/world/tile_chunk_plan.py`, which reads only the TerrainInfo sector grid. Beside the old actors `20_20.PlayerStart0` and `20_20.PlayerStart10`, the plan anchors on PlayerStart0. The old rectangle falls in `chunk-1-3` (printed, never read back). Still open: `staticActorOriginZ` stays labelled until 02-29; `native-map-section.json` and `native-map-section-3x3-candidate.json` also hold hand-chosen windows and feed no migration or runtime (listed for the owner); the legacy chain reads the labelled recipes until the integration thread retires it.
+- Open: terrain materials not converted, visible parity unverified, meshes, BSP, sky and audio not run.
+- Tests: `test_tile_chunk_plan.py`, `test_terrain_chunk_step.py`, `test_unresolved_section_windows.py`.
+
 ## Evidence
 
 World docs: `docs/NATIVE_WORLD.md`. Recipes: `recipes/native-map-20_20.json`, `recipes/native-map-section.json`.

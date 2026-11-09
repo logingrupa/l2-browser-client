@@ -6,16 +6,23 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
-from world.terrain_chunk_step import TERRAIN_CHUNK_STEP_ALGORITHM_VERSION, build_tile_terrain_chunks, extrapolated_mask_uv_rule
+from native_catalog.ue2 import FormatError
+from native_store.gap_rows import validate_gap_row
+from world.native_terrain_sectors import sector_oracle, select_terrain_sectors
+from world.terrain_chunk_step import (TERRAIN_CHUNK_STEP_ALGORITHM_VERSION, build_tile_terrain_chunks, extrapolated_mask_uv_rule,
+                                      tile_layer_summaries, tile_terrain_row)
 from world.terrain_coordinates import f32, native_to_gltf
 from world.terrain_layers import QUALIFIED_MASK_UV_FORMULA
+from world.terrain_rectangle_mesh import build_terrain_rectangle_gltf
 from world.tile_chunk_plan import plan_tile_chunks
-from synthetic_terrain_fixture import glb_mesh_arrays, synthetic_layer_records, synthetic_terrain, synthetic_topology_words
+from synthetic_terrain_fixture import (glb_mesh_arrays, glb_triangle_positions, synthetic_layer_records, synthetic_serialized_layers,
+                                       synthetic_terrain, synthetic_topology_words)
 
 TILE_ID = '20_21'
 SOURCE_IDENTITY = {'path': 'maps/20_21.unr', 'sha256': 'a' * 64}
 EVIDENCE = 'work/tile__20_21/terrain/receipt.json'
 REAL_TERRAIN_INDEX_PATH = ROOT / 'artifacts/lane-store/world/work/tile__20_21/terrain/products/terrain-chunks.json'
+WORLD_07_DISCRIMINATING_CASES_PATH = ROOT / 'tests/fixtures/world-07/discriminating-cases.json'
 
 
 def synthetic_chunk_plan(native):
@@ -25,13 +32,15 @@ def synthetic_chunk_plan(native):
     return plan_tile_chunks(TILE_ID, native, terrain_record, [terrain_actor], (None, 'player-start-missing'))
 
 
-def build_synthetic_chunks(sector_columns, sector_rows, layer_indices=(0, 1, 2), words=None, mutate=None):
+def build_synthetic_chunks(sector_columns, sector_rows, layer_indices=(0, 1, 2), words=None, mutate=None, empty_layer_indices=()):
     native, points = synthetic_terrain(sector_columns, sector_rows)
     if mutate:
         mutate(native)
     plan = synthetic_chunk_plan(native)
+    records = synthetic_layer_records([index for index in layer_indices if index not in empty_layer_indices])
+    summaries = tile_layer_summaries(synthetic_serialized_layers(layer_indices, empty_layer_indices), records)
     results = build_tile_terrain_chunks(TILE_ID, native, points, words or synthetic_topology_words(native),
-                                        synthetic_layer_records(layer_indices), plan['chunks'], SOURCE_IDENTITY, EVIDENCE)
+                                        records, summaries, plan['chunks'], SOURCE_IDENTITY, EVIDENCE)
     return native, points, plan, {record['chunkId']: (record, glb) for record, glb in results}, [record for record, _ in results]
 
 
@@ -80,6 +89,100 @@ class ChunkGeometryTests(unittest.TestCase):
             left_edge = [left[attribute][row * row_length + row_length - 1] for row in range(row_length)]
             right_edge = [right[attribute][row * row_length] for row in range(row_length)]
             self.assertEqual(left_edge, right_edge, attribute)
+
+
+class ChunkAdjacencyTests(unittest.TestCase):
+    def test_chunk_triangles_together_equal_the_whole_rectangle_and_no_quad_is_emitted_twice(self):
+        native, points, _, by_chunk, records = build_synthetic_chunks(8, 8)
+        words = synthetic_topology_words(native)
+        oracle = sector_oracle(native, points)
+        whole_rectangle = {'minOffset': [0, 0], 'maxOffset': [14, 14]}
+        region, _ = select_terrain_sectors(native, oracle, {'terrainSectorRectangle': whole_rectangle})
+        whole_files, whole_statistics = build_terrain_rectangle_gltf(native, points, words, synthetic_layer_records((0, 1, 2)), region,
+                                                                     extrapolated_mask_uv_rule(), whole_rectangle)
+        chunk_triangles = [glb_triangle_positions(glb_mesh_arrays(glb)) for _, glb in by_chunk.values()]
+        self.assertEqual(sum(len(triangles) for triangles in chunk_triangles), whole_statistics['triangleCount'])
+        self.assertEqual(sum(record['triangleCount'] for record in records), whole_statistics['triangleCount'])
+        self.assertEqual(set().union(*chunk_triangles), glb_triangle_positions(glb_mesh_arrays(whole_files['terrain.glb'])))
+
+    def test_vertical_neighbours_share_an_identical_boundary_vertex_row(self):
+        _, _, _, by_chunk, _ = build_synthetic_chunks(8, 8)
+        lower, upper = (glb_mesh_arrays(by_chunk[name][1]) for name in ('chunk-0-0', 'chunk-0-1'))
+        row_length = 9
+        for attribute in ('POSITION', 'NORMAL'):
+            self.assertEqual(lower[attribute][-row_length:], upper[attribute][:row_length], attribute)
+
+
+class EmptyAndFailedChunkTests(unittest.TestCase):
+    def test_a_chunk_whose_quads_are_all_hidden_has_no_terrain_no_glb_and_no_gap_row(self):
+        native, points = synthetic_terrain(4, 4)
+        words = synthetic_topology_words(native, visibility_word=0)
+        plan = synthetic_chunk_plan(native)
+        records = synthetic_layer_records((0,))
+        summaries = tile_layer_summaries(synthetic_serialized_layers((0,)), records)
+        [(record, glb)] = build_tile_terrain_chunks(TILE_ID, native, points, words, records, summaries, plan['chunks'], SOURCE_IDENTITY, EVIDENCE)
+        self.assertIsNone(glb)
+        self.assertIsNone(record['terrain'])
+        self.assertEqual((record['hiddenQuads'], record['triangleCount'], record['gapRows']), (64, 0, []))
+        self.assertEqual(tile_terrain_row(TILE_ID, SOURCE_IDENTITY, [record], EVIDENCE)['status'], 'pass')
+
+    def test_a_chunk_whose_sector_xy_bounds_disagree_with_the_samples_gets_one_decode_gap_row(self):
+        def shift_one_sector_x_bound(native):
+            native['sectors'][36]['bounds'][0] += 1.0
+        _, _, _, by_chunk, records = build_synthetic_chunks(8, 8, mutate=shift_one_sector_x_bound)
+        record, glb = by_chunk['chunk-1-1']
+        self.assertIsNone(glb)
+        self.assertIsNone(record['terrain'])
+        [gap_row] = record['gapRows']
+        validate_gap_row(gap_row)
+        self.assertEqual(gap_row['reason'], 'decode-failed:Selected rectangle has not passed its declared native bounds oracle policy')
+        self.assertEqual(gap_row['sourceIdentity'], {**SOURCE_IDENTITY, 'object': 'Fixture.TerrainInfo0.TerrainSector36'})
+        self.assertEqual((gap_row['key'], gap_row['step'], gap_row['status']), ('tile:20_21', 'terrain', 'gap'))
+        self.assertIn('Fixture.TerrainInfo0.TerrainSector36', record['sectorObjects'])
+        self.assertTrue(all(by_chunk[name][1] is not None for name in ('chunk-0-0', 'chunk-0-1', 'chunk-1-0')))
+        tile_row = tile_terrain_row(TILE_ID, SOURCE_IDENTITY, records, EVIDENCE)
+        self.assertEqual((tile_row['status'], tile_row['reason']), ('gap', gap_row['reason']))
+
+    def test_two_builds_of_the_same_source_give_byte_identical_records_and_glbs(self):
+        first, second = build_synthetic_chunks(8, 8)[3], build_synthetic_chunks(8, 8)[3]
+        self.assertEqual(json.dumps({name: record for name, (record, _) in first.items()}, sort_keys=True),
+                         json.dumps({name: record for name, (record, _) in second.items()}, sort_keys=True))
+        self.assertEqual({name: glb for name, (_, glb) in first.items()}, {name: glb for name, (_, glb) in second.items()})
+
+
+class LayerOrderTests(unittest.TestCase):
+    def test_layers_keep_serialized_index_order_and_count_when_diffuse_names_sort_differently(self):
+        textures = {0: 'Fixture.Zeta', 1: 'Fixture.Alpha', 2: 'Fixture.Mu', 3: 'Fixture.Beta'}
+        summaries = tile_layer_summaries(synthetic_serialized_layers((0, 1, 2, 3)), synthetic_layer_records((0, 1, 2, 3), textures))
+        self.assertEqual([layer['index'] for layer in summaries], [0, 1, 2, 3])
+        self.assertEqual([layer['texture'] for layer in summaries], ['Fixture.Zeta', 'Fixture.Alpha', 'Fixture.Mu', 'Fixture.Beta'])
+        _, _, _, _, chunk_records = build_synthetic_chunks(4, 4, layer_indices=(0, 1, 2, 3))
+        self.assertEqual([layer['index'] for layer in chunk_records[0]['layers']], [0, 1, 2, 3])
+
+    def test_empty_layer_slots_stay_listed_so_the_count_equals_the_serialized_layers(self):
+        _, _, _, by_chunk, chunk_records = build_synthetic_chunks(4, 4, layer_indices=(0, 1, 2, 3), empty_layer_indices=(2, 3))
+        layers = chunk_records[0]['layers']
+        self.assertEqual([(layer['index'], layer['emptySlot']) for layer in layers], [(0, False), (1, False), (2, True), (3, True)])
+        self.assertEqual((layers[2]['texture'], layers[2]['alphaMap'], layers[2]['useAlpha']), (None, None, False))
+        self.assertEqual([layer['index'] for layer in glb_mesh_arrays(by_chunk['chunk-0-0'][1])['extras']['nativeLayers']], [0, 1])
+
+    def test_a_dropped_or_reordered_layer_fails_instead_of_shrinking_the_layer_list(self):
+        serialized = synthetic_serialized_layers((0, 1, 2, 3))
+        for indices in ((0, 1, 3), (0, 2, 1, 3)):
+            with self.subTest(indices=indices), self.assertRaises(FormatError):
+                tile_layer_summaries(serialized, synthetic_layer_records(indices))
+        half_filled = synthetic_serialized_layers((0, 1))
+        half_filled[1]['properties'][1]['value']['object'] = None
+        with self.assertRaisesRegex(FormatError, 'only one of Texture and AlphaMap'):
+            tile_layer_summaries(half_filled, synthetic_layer_records((0,)))
+
+    def test_the_world_07_seven_layer_order_survives_into_the_chunk_records_and_glb(self):
+        observed_layers = json.loads(WORLD_07_DISCRIMINATING_CASES_PATH.read_text(encoding='utf-8'))['sevenLayers']['layers']
+        self.assertEqual(observed_layers, [0, 2, 3, 4, 5, 6, 7])
+        _, _, _, by_chunk, chunk_records = build_synthetic_chunks(4, 4, layer_indices=observed_layers)
+        self.assertEqual([layer['index'] for layer in chunk_records[0]['layers']], observed_layers)
+        extras = glb_mesh_arrays(by_chunk['chunk-0-0'][1])['extras']
+        self.assertEqual([layer['index'] for layer in extras['nativeLayers']], observed_layers)
 
 
 @unittest.skipUnless(REAL_TERRAIN_INDEX_PATH.is_file(), 'the 20_21 terrain unit is not sealed in this checkout')

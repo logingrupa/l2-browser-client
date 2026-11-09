@@ -54,6 +54,21 @@ def synthetic_layer_records(indices, textures=None):
              'useAlpha': True, 'worldToTextureRowMajor': IDENTITY_TEXTURE_MATRIX} for index in indices]
 
 
+def synthetic_object_property(name, object_name):
+    return {'name': name, 'arrayIndex': None, 'value': {'index': 0, 'object': object_name}}
+
+
+def synthetic_serialized_layers(indices, empty_indices=()):
+    layers = []
+    for index in indices:
+        empty = index in empty_indices
+        layers.append({'index': index, 'properties': [
+            synthetic_object_property('Texture', None if empty else f'Fixture.Diffuse{index}'),
+            synthetic_object_property('AlphaMap', None if empty else f'Fixture.Mask{index}'),
+            {'name': 'bUseAlpha', 'arrayIndex': None, 'value': not empty}]})
+    return layers
+
+
 def synthetic_terrain(sector_columns, sector_rows):
     native = synthetic_native_terrain(sector_columns, sector_rows)
     points = synthetic_terrain_points(native)

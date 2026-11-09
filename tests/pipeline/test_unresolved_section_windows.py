@@ -55,5 +55,26 @@ class UnresolvedSectionWindowTests(unittest.TestCase):
         self.assertEqual(section_recipe['staticActorOriginZ'], [-4000, -2500])
 
 
+WORLD_STEP_MODULE_PATHS = ('scripts/world/tile_chunk_plan.py', 'scripts/world/terrain_chunk_step.py', 'scripts/world/terrain_rectangle_mesh.py')
+SECTION_RECIPE_NAME_PREFIX = 'native-map-'
+
+
+class HandChosenWindowReplacementTests(unittest.TestCase):
+    def test_no_world_chunk_or_terrain_step_module_names_a_section_recipe(self):
+        for relative_path in WORLD_STEP_MODULE_PATHS:
+            with self.subTest(module=relative_path):
+                self.assertNotIn(SECTION_RECIPE_NAME_PREFIX, (ROOT / relative_path).read_text(encoding='utf-8'))
+
+    def test_every_hand_chosen_xy_window_names_the_chunk_planner_that_now_replaces_it(self):
+        from world import tile_chunk_plan
+        self.assertTrue((ROOT / CHUNK_PLANNER_PATH).is_file())
+        self.assertTrue(callable(tile_chunk_plan.plan_tile_chunks))
+        xy_records = [record for relative_path in HAND_CHOSEN_WINDOW_POINTERS for record in read_recipe(relative_path)['unresolved']
+                      if record['pointer'] in XY_WINDOW_POINTERS]
+        self.assertEqual(sorted(record['pointer'] for record in xy_records), sorted(XY_WINDOW_POINTERS))
+        for record in xy_records:
+            self.assertIn(CHUNK_PLANNER_PATH, record['replacement'])
+
+
 if __name__ == '__main__':
     unittest.main()

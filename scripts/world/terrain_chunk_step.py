@@ -6,6 +6,7 @@ from native_catalog.ue2 import FormatError
 from native_store.canonical_json import canonical_json_bytes
 from native_store.store_paths import lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
+from world.map_actor_properties import property_value
 from world.map_sources import safe_path
 from world.native_terrain_sectors import (read_height_samples, read_topology_words, sector_oracle, select_terrain_sectors,
                                           source_backed_terrain_points, native_terrain)
@@ -29,14 +30,33 @@ def extrapolated_mask_uv_rule():
     return {'id': QUALIFIED_MASK_UV_RULE_ID, 'formula': QUALIFIED_MASK_UV_FORMULA, 'status': EXTRAPOLATED_MASK_UV_STATUS}
 
 
-def require_complete_layer_order(serialized_layers, records):
+def is_empty_layer_slot(layer):
+    texture, alpha_map = (property_value(layer['properties'], name) for name in ('Texture', 'AlphaMap'))
+    texture_present, alpha_map_present = bool(texture and texture['object']), bool(alpha_map and alpha_map['object'])
+    if texture_present != alpha_map_present:
+        raise FormatError(f'Terrain layer {layer["index"]} names only one of Texture and AlphaMap')
+    return not texture_present
+
+
+def tile_layer_summaries(serialized_layers, records):
     serialized_indices = [layer['index'] for layer in serialized_layers]
-    record_indices = [record['index'] for record in records]
-    if record_indices != serialized_indices:
-        raise FormatError(f'Terrain layer records {record_indices} differ from the serialized Layers order {serialized_indices}')
     if any(later <= earlier for earlier, later in zip(serialized_indices, serialized_indices[1:])):
         raise FormatError(f'Serialized terrain Layers indices are not ascending: {serialized_indices}')
-    return records
+    filled_indices = [layer['index'] for layer in serialized_layers if not is_empty_layer_slot(layer)]
+    record_indices = [record['index'] for record in records]
+    if record_indices != filled_indices:
+        raise FormatError(f'Terrain layer records {record_indices} differ from the filled serialized Layers {filled_indices}')
+    records_by_index = {record['index']: record for record in records}
+    summaries = []
+    for layer in serialized_layers:
+        record = records_by_index.get(layer['index'])
+        if record is None:
+            summaries.append({'index': layer['index'], 'texture': None, 'alphaMap': None,
+                              'useAlpha': property_value(layer['properties'], 'bUseAlpha'), 'emptySlot': True})
+        else:
+            summaries.append({'index': record['index'], 'texture': record['texture'], 'alphaMap': record['alphaMap'],
+                              'useAlpha': record['useAlpha'], 'emptySlot': False})
+    return summaries
 
 
 def extrapolated_chunk_layers(layers, mask_uv_rule):
@@ -47,10 +67,6 @@ def extrapolated_chunk_layers(layers, mask_uv_rule):
     return chunk_layers
 
 
-def chunk_layer_summaries(layers):
-    return [{'index': layer['index'], 'texture': layer['texture'], 'alphaMap': layer['alphaMap'], 'useAlpha': layer['useAlpha']} for layer in layers]
-
-
 def chunk_decode_gap_row(tile_id, source_identity, chunk, oracle_rows, error, evidence):
     failing_objects = [row['object'] for row in oracle_rows if not row['xyMatches']]
     sector_object = (failing_objects or chunk['sectorObjects'])[0]
@@ -58,7 +74,7 @@ def chunk_decode_gap_row(tile_id, source_identity, chunk, oracle_rows, error, ev
             'reason': f'decode-failed:{error}', 'sourceIdentity': {**source_identity, 'object': sector_object}, 'evidence': evidence}
 
 
-def build_tile_terrain_chunks(tile_id, native, points, words, layers, chunks, source_identity, evidence):
+def build_tile_terrain_chunks(tile_id, native, points, words, layers, layer_summaries, chunks, source_identity, evidence):
     oracle = sector_oracle(native, points)
     oracle_rows_by_object = {row['object']: row for row in oracle['sectors']}
     mask_uv_rule = extrapolated_mask_uv_rule()
@@ -67,7 +83,7 @@ def build_tile_terrain_chunks(tile_id, native, points, words, layers, chunks, so
         oracle_rows = [oracle_rows_by_object[name] for name in chunk['sectorObjects']]
         chunk_layers = extrapolated_chunk_layers(layers, mask_uv_rule)
         record = {'chunkId': chunk['chunkId'], 'terrain': None, 'maskUvRule': EXTRAPOLATED_MASK_UV_STATUS,
-                  'maskUvRuleSource': mask_uv_rule['id'], 'layers': chunk_layer_summaries(chunk_layers),
+                  'maskUvRuleSource': mask_uv_rule['id'], 'layers': layer_summaries,
                   'sectorObjects': chunk['sectorObjects'], 'cachedZBoundsMismatched': sum(not row['allBoundsMatch'] for row in oracle_rows),
                   'hiddenQuads': None, 'triangleCount': None, 'gapRows': []}
         try:
@@ -124,10 +140,12 @@ def run_terrain_chunk_step(project_root, client, tile_id):
         native = native_terrain(package)
         points = source_backed_terrain_points(native, terrain, terrain_actor, read_height_samples(raw_products, terrain))
         words = read_topology_words(raw_products, terrain, native)
-        layers = require_complete_layer_order(terrain['layers'], layer_records(terrain, native, package, tile_map_path(tile_id)))
+        layers = layer_records(terrain, native, package, tile_map_path(tile_id))
+        layer_summaries = tile_layer_summaries(terrain['layers'], layers)
         class_evidence_folder = lane_work_root(project_root, WORLD_LANE_NAME) / TERRAIN_CLASS_EVIDENCE_FOLDER
         require_terrain_not_inverted(terrain_actor, read_class_evidence(client, class_evidence_folder, class_evidence_folder))
-        results = build_tile_terrain_chunks(tile_id, native, points, words, layers, chunk_plan['chunks'], source_identity, receipt_evidence)
+        results = build_tile_terrain_chunks(tile_id, native, points, words, layers, layer_summaries, chunk_plan['chunks'],
+                                            source_identity, receipt_evidence)
     except FormatError as error:
         return tile_step_row(tile_id, TERRAIN_STEP_NAME, 'failed', f'decode-failed:{error}', source_identity,
                              step_directory.relative_to(ledger.lane_folder).as_posix())
