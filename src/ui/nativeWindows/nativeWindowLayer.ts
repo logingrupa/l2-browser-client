@@ -7,7 +7,18 @@ export type NativeWindowOpenResult =
   | { readonly status: "opened"; readonly windowId: string; readonly key: string; readonly window: RenderedNativeWindow }
   | { readonly status: "not-in-catalog"; readonly windowId: string; readonly key: string; readonly reason: string };
 
+export interface NativeWindowLayerPresentation {
+  readonly overflow: "hidden";
+  readonly status: "presentation";
+  readonly source: string;
+}
+
+const nativeWindowLayerPresentation: NativeWindowLayerPresentation = {
+  overflow: "hidden", status: "presentation", source: "windows anchored past the viewport are clipped instead of scrolling the page",
+};
+
 export interface NativeWindowLayer {
+  readonly presentation: NativeWindowLayerPresentation;
   open(windowId: string): Promise<NativeWindowOpenResult>;
   refresh(): void;
   close(windowId: string): void;
@@ -26,6 +37,7 @@ function windowTextureReferences(textureRefs: readonly string[], bindings: reado
 
 export function createNativeWindowLayer(container: HTMLElement, readLocalPlayer: () => WorldEntity | null): NativeWindowLayer {
   const lifetime = new AbortController();
+  container.style.overflow = nativeWindowLayerPresentation.overflow;
   const fieldBindings = readNativeWindowFieldBindings();
   const openWindows = new Map<string, OpenNativeWindow>();
   const pendingOpens = new Map<string, Promise<NativeWindowOpenResult>>();
@@ -71,6 +83,7 @@ export function createNativeWindowLayer(container: HTMLElement, readLocalPlayer:
   };
 
   return {
+    presentation: nativeWindowLayerPresentation,
     open,
     refresh: () => {
       const localPlayer = readLocalPlayer();

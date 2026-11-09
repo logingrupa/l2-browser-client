@@ -1,20 +1,14 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { NativeWindowFieldBinding } from "../../src/ui/nativeWindows/nativeWindowFieldBindings";
+import { createNativeWindowLayer } from "../../src/ui/nativeWindows/nativeWindowLayer";
 import { parseNativeWindowManifest, type NativeWindowManifest } from "../../src/ui/nativeWindows/nativeWindowLayoutTree";
 import type { NativeWindowTextureResolution } from "../../src/ui/nativeWindows/nativeWindowManifestLoader";
 import { nativeWindowRenderedControlTypes, renderNativeWindow } from "../../src/ui/nativeWindows/nativeWindowRenderer";
 import type { WorldEntity } from "../../src/world/worldTypes";
 import { listTypeScriptModules, readSourceModuleText } from "../support/sourceImportSpecifiers";
+import { moduleStringLiterals } from "../support/sourceStringLiterals";
 import { installMiniDom, type FakeElement, type MiniDom } from "./support/miniDom";
-
-const stringLiteralPattern = /"((?:[^"\\\n]|\\.)*)"|'((?:[^'\\\n]|\\.)*)'|`((?:[^`\\]|\\.)*)`/g;
-const templateSubstitutionPattern = /\$\{[^}]*\}/;
-
-function moduleStringLiterals(sourceText: string): string[] {
-  return [...sourceText.matchAll(stringLiteralPattern)].flatMap(match =>
-    match[3] !== undefined ? match[3].split(templateSubstitutionPattern) : [match[1] ?? match[2]!]);
-}
 
 function decodedWindowAndControlNames(): ReadonlySet<string> {
   const census = JSON.parse(readFileSync("docs/parts/ui/interface-window-census.json", "utf8")) as {
@@ -151,8 +145,25 @@ describe("renderNativeWindow", () => {
     expect(container.childNodes).toEqual([]);
   });
 
-  it("draws only the common control types", () => {
-    expect(nativeWindowRenderedControlTypes).toEqual(["Window", "Texture", "Button", "TextBox"]);
+  it("draws exactly the control types declared in recipes/data/native-window-control-types.json", () => {
+    const recipe = JSON.parse(readFileSync("recipes/data/native-window-control-types.json", "utf8")) as { schemaVersion: number; renderedTypes: string[] };
+    expect(recipe.schemaVersion).toBe(1);
+    expect(nativeWindowRenderedControlTypes).toEqual(recipe.renderedTypes);
+  });
+});
+
+describe("createNativeWindowLayer", () => {
+  let miniDom: MiniDom;
+  beforeEach(() => { miniDom = installMiniDom(); });
+  afterEach(() => miniDom.restore());
+
+  it("clips windows anchored past the viewport instead of scrolling the page and reports that as a presentation variable", () => {
+    const container = miniDom.document.createElement("div");
+    const layer = createNativeWindowLayer(container as unknown as HTMLElement, () => null);
+    expect(container.style.overflow).toBe("hidden");
+    expect(layer.presentation).toEqual({ overflow: "hidden", status: "presentation",
+      source: "windows anchored past the viewport are clipped instead of scrolling the page" });
+    layer.dispose();
   });
 });
 
