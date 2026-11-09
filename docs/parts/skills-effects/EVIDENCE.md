@@ -65,14 +65,15 @@ Our own deterministic port of the UE2 emitter classes in plain TypeScript under 
 - Emitter actor: GlobalOffset, initial delay, warmup, AutoReset, AutoDestroy (with the bNoDelete and bStatic refusal), SpeedRate, bRotEmitter and LifeSpan over the emitters in array order. AutoReplay, VisibleLimit, non-unit DrawScale3D and CoordinateSystem=Absolute are listed as unresolved. Actor DrawScale is not applied to particles.
 - Scheduler: `createEffectScheduler` steps every live effect through `createFixedStepAccumulator` at 1/60 s, at most 8 steps per frame with the backlog dropped, on the presentation clock frame delta.
 - Gaps: collision, collision planes, actor forces, MeshSpawning, UseSkeletalLocationAs, SpawnFromOtherEmitter, UseRotationFrom=Normal, CoordinateSystem=RelativeRotation and WeatherEffect report `emitter-feature-unported:<property>` (actors gap reasons listVersion 6) and the rest of the emitter simulates.
-- Rules: every rule is a row in [PARTICLE_SEMANTICS.md](PARTICLE_SEMANTICS.md), mirrored by `PARTICLE_CONSTANTS`; all reference rules run as unconfirmed defaults until POL-04.
+- Rules: every rule is a row in [PARTICLE_SEMANTICS.md](PARTICLE_SEMANTICS.md), mirrored by `PARTICLE_CONSTANTS`; reference rules run as unconfirmed defaults until POL-04 re-derives them. Nine rows carry Interlude evidence now (`confirmed-interlude` or `corrected-interlude`), and `PARTICLE_SIMULATOR_VERSION` is 2.
 
 | Check | Result |
 | --- | --- |
-| `tests/unit/spriteEmitter.test.ts` | synthetic sprite golden trace at seed 1, step 1/60, 0 ulp (168 rows); seed 2 differs; refusals |
-| `tests/unit/meshEmitter.test.ts` | synthetic mesh golden trace with rotators; material route; unported features |
+| `tests/unit/spriteEmitter.test.ts` | synthetic sprite golden trace at seed 1, step 1/60, 0 ulp (175 rows, regenerated for simulator version 2); seed 2 differs; refusals |
+| `tests/unit/meshEmitter.test.ts` | synthetic mesh golden trace with rotators (274 rows, regenerated for simulator version 2); material route; unported features |
 | `tests/unit/emitterActor.test.ts` | each actor rule; scheduler step count, cap and pause; another effect spawned between steps leaves a trace unchanged |
-| Power Strike hash traces | `POWER_STRIKE_EFFECT_SOURCE=<effect-source.json>` matches `tests/fixtures/particles/power-strike.hashes.json` (source SHA-256 `ce79c8ac...`, seed 1, two actor trace hashes, no feature gaps); skips with a reason without it. p_u004_a is destroyed after 19 steps, s_u002_a after 101. |
+| Power Strike hash traces | `POWER_STRIKE_EFFECT_SOURCE=<effect-source.json>` matches `tests/fixtures/particles/power-strike.hashes.json` (source SHA-256 `ce79c8ac...`, seed 1, simulator version 2, two actor trace hashes, no feature gaps); skips with a reason without it. p_u004_a is destroyed after 19 steps, s_u002_a after 101, as before version 2. |
+| `tests/unit/particleInterludeRules.test.ts` | the POL-04 corrections below; each case fails on simulator version 1 |
 | `tests/unit/importBoundaries.particles.test.ts` | 16 passed |
 | `node tools/reference-overlap/referenceOverlap.mjs --area particles` | 110 blocking runs and 2,508 unreviewed reviewer runs, all structural (typed field tables, vector literals); report `artifacts/reference-overlap/02-68-particles.json`. Independent reviewer sign-off pending. |
 
@@ -90,12 +91,13 @@ The spans the overlap review could not clear were rewritten from UE2 sources onl
 - `particleRotation.ts` axes follow Core.dll `FCoords::operator/=(FRotator)` 0x10110240 (used by execGetAxes 0x10140C00): roll, pitch and yaw elemental coords composed through `FCoords::operator*=` 0x1010FCE0 and `TransformVectorBy` 0x1010F5B0. The closed-form rows equal that composition (0 difference in double precision over 20,000 rotators).
 - `spriteEmitter.ts` blend weight follows `USpriteEmitter::FillVertexBuffer` 0x106EFD60 (0x106F0D47 to 0x106F0DA2): Frac = Pos - appFloor(Pos), byte = trunc(Frac * 255.0).
 
-Where the binary differs and a test pins our behaviour, it is kept and reported, not changed:
-- First tick: `Initialize` 0x10603F50 calls Reset (vtable +0x70), so Interlude draws AutoResetTimeRange right after InitialDelayRange; our first step draws only InitialDelayRange. The golden traces pin our draw sequence.
-- Polar start: the binary uses `GMath.SinFloat` and `CosFloat`, which are 16384-entry table lookups (Core.dll 0x1010F480 and 0x1010F4C0); we use exact sin and cos. The synthetic sprite golden trace (Polar start) pins ours.
-- Gates: the binary tests InitialDelay, WarmupTicksPerSecond, RelativeWarmupTime and SecondsBeforeInactive against != 0; we keep > 0, which differs only for negative authored values. The binary counts InactiveTime while its Inactive flag holds; we count seconds since `markDrawn`.
-- Atlas blend: the binary stops the blend target when cell + 1 equals the cell count (End - Start, or U * V) and still writes the byte at the last cell; we hold the next cell at min(End, U * V - 1) and zero the weight there. The sprite test (cells 2 to 3) agrees with both.
-- Float grouping: SpawnParticles computes the first birth age as (1 / Rate * OldLeftover + DeltaTime) - 1 / Rate in x87 precision, and the warm-up count as WarmupTicksPerSecond * (centre * RelativeWarmupTime); we keep DeltaTime - (1 - OldLeftover) * (1 / Rate) and (WarmupTicksPerSecond * centre) * RelativeWarmupTime in doubles.
+POL-04 corrections (2026-11-09, simulator version 2). The rewrite found five places where the client differed from our tested behaviour; the binaries win, so each now follows the client, its constants row is `corrected-interlude` with the address as evidence, and the synthetic sprite and mesh golden traces and the Power Strike hashes were regenerated with `PARTICLE_GOLDEN_WRITE=1`:
+- First step (`fx.first-step-draws`): `Initialize` 0x10603F50 calls Reset through vtable +0x70, so the first step draws InitialDelayRange and then AutoResetTimeRange, in that stream order.
+- Polar start (`fx.polar-start`): the offset uses `FGlobalMath::SinFloat` and `CosFloat` (Core.dll 0x1010F480 and 0x1010F4C0), which index the one `fx.sine-table` in `src/shared/math/rotator.ts` at trunc(a * 65536 / 2pi); `sineOfRadiansFromTable` and `cosineOfRadiansFromTable` sit beside that table. Angles, the drawn polar vector and the three offsets are float32 stores, grouped as SinFloat(q) * (CosFloat(t) * r).
+- Gates (`fx.delay-overshoot`, `fx.warmup`, `fx.inactive-gate`): InitialDelay, WarmupTicksPerSecond, RelativeWarmupTime and SecondsBeforeInactive are tested against != 0. InactiveTime counts only while the Inactive flag holds: each running step sets it and `markDrawn` clears it, as `UParticleEmitter::RenderParticles` 0x10603DD0 does.
+- Atlas end of blend (`fx.atlas-cells`): `FillVertexBuffer` compares cell + 1 with the count (End - Start, or U * V) and keeps the cell there, otherwise targets cell + 1 unclamped, and writes the blend byte at every cell; r and Pos are float32 stores. No renderer reads `nextCell` yet; a target past the atlas wraps in the client.
+- Float grouping (`fx.birth-ages`, `fx.warmup`, `fx.auto-initial-rate`): Leftover, InvRate, Start, each birth age, the Rate, the warm-up time and step and `FRange::GetCenter` (Core.dll 0x1010E670) are float32 stores in the client order. D3DDrv.dll creates its device with D3DCREATE_FPU_PRESERVE (0x1001DC26), so the x87 keeps the CRT default 53-bit precision: JavaScript doubles match its intermediates and `Math.fround` marks the float32 stores. The client sums the start location in float32 while we keep doubles until the column write.
+- Still open: `UParticleEmitter::SpawnParticle` returns 0 when MaxParticles is 0, KillPending is set or LifetimeRange.Max is not above 0, and SpawnParticles then leaves ParticleIndex and ActiveParticles alone; our spawn still advances them. The `fx.sine-table` values themselves are not re-derived (Core.dll builds SinTab at run time).
 
 ## Open
 
