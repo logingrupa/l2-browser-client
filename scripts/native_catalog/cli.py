@@ -102,13 +102,26 @@ def inspect_header(path):
     return {'status': 'catalog-only'}
 
 
-def inventory(client):
-    paths, ignored_links = walk_files(client)
+def files_in_and_outside_read_scope(client_access):
+    paths, ignored_links = walk_files(client_access.root)
+    names = [path.relative_to(client_access.root).as_posix() for path in paths]
+    readable_names = [name for name in names if client_access.is_in_read_scope(name)]
+    outside_names = [name for name in names if not client_access.is_in_read_scope(name)]
+    return readable_names, outside_names, ignored_links
+
+
+def read_scope_file_sha256(client_access, name):
+    path, locked_sha256 = client_access.require_equal_file_with_locked_sha256(name)
+    return path, locked_sha256 if locked_sha256 is not None else file_hash(path)
+
+
+def inventory(client_access):
+    readable_names, outside_names, ignored_links = files_in_and_outside_read_scope(client_access)
     records = []
     directories, extensions = defaultdict(lambda: {'files': 0, 'bytes': 0}), defaultdict(lambda: {'files': 0, 'bytes': 0})
-    for path in paths:
-        name = path.relative_to(client).as_posix()
-        record = {'path': name, 'bytes': path.stat().st_size, 'sha256': file_hash(path),
+    for name in readable_names:
+        path, sha256 = read_scope_file_sha256(client_access, name)
+        record = {'path': name, 'bytes': path.stat().st_size, 'sha256': sha256,
             'extension': path.suffix.lower(), 'observation': inspect_header(path)}
         records.append(record)
         for group in (directories[name.split('/')[0] if '/' in name else '(root)'], extensions[record['extension']]):
@@ -116,7 +129,7 @@ def inventory(client):
             group['bytes'] += record['bytes']
     return {'files': records, 'fileCount': len(records), 'totalBytes': sum(row['bytes'] for row in records),
         'inventorySha256': digest(json_bytes(records)), 'directories': dict(sorted(directories.items())),
-        'extensions': dict(sorted(extensions.items())), 'ignoredLinks': ignored_links}
+        'extensions': dict(sorted(extensions.items())), 'ignoredLinks': ignored_links, 'filesOutsideReadScope': outside_names}
 
 
 def parse_umodel_listing(text):
@@ -194,20 +207,21 @@ def catalog_package(client_access, relative, destination, umodel):
     return record, artifacts
 
 
-def verify(client, output):
+def verify(client_access, output):
     receipt_path = output.with_suffix('.receipt.json')
     receipt = json.loads(receipt_path.read_text(encoding='utf-8'))
     if file_hash(output) != receipt['catalogSha256']:
         raise FormatError('Catalog hash mismatch')
     catalog = json.loads(output.read_text(encoding='utf-8'))
-    if catalog['sourceRoot'] != str(client):
+    if catalog['sourceRoot'] != str(client_access.root):
         raise FormatError('Verification source does not match the recorded client')
-    current_paths, ignored = walk_files(client)
-    if [path.relative_to(client).as_posix() for path in current_paths] != [row['path'] for row in catalog['files']] or ignored != catalog['ignoredLinks']:
+    readable_names, outside_names, ignored = files_in_and_outside_read_scope(client_access)
+    if (readable_names != [row['path'] for row in catalog['files']] or outside_names != catalog['filesOutsideReadScope']
+            or ignored != catalog['ignoredLinks']):
         raise FormatError('Native client file inventory changed')
     for row in catalog['files']:
-        path = within(client, row['path'])
-        if path.stat().st_size != row['bytes'] or file_hash(path) != row['sha256']:
+        path, sha256 = read_scope_file_sha256(client_access, row['path'])
+        if path.stat().st_size != row['bytes'] or sha256 != row['sha256']:
             raise FormatError('Native source hash mismatch: ' + row['path'])
     if digest(json_bytes(catalog['files'])) != catalog['inventorySha256']:
         raise FormatError('Catalog inventory digest mismatch')
@@ -245,14 +259,14 @@ def main(argv=None):
         if output.is_relative_to(client):
             raise FormatError('Output must be outside the read-only native client')
         if args.verify:
-            catalog = verify(client, output)
+            catalog = verify(client_access, output)
             print(f'Verified {catalog["fileCount"]} native source hashes and all catalog artifacts.')
             return 0
         if args.package and file_hash(args.umodel.resolve(strict=True)) != UMODEL_SHA256:
             raise FormatError('Installed UModel hash differs from the pinned tool; refusing to execute it')
         catalog = {'schemaVersion': 1, 'edition': 'interlude', 'sourceRoot': str(client),
             'sourceSelection': 'User-selected native client; no Classic/H5 asset substitutions',
-            'createdAt': datetime.now(timezone.utc).isoformat(), **inventory(client), 'packages': [], 'tables': [],
+            'createdAt': datetime.now(timezone.utc).isoformat(), **inventory(client_access), 'packages': [], 'tables': [],
             'convertedAssets': 0, 'tool': {'umodelSha256': UMODEL_SHA256} if args.package else None,
             'limitations': ['Inventory/header/listing metadata are not browser-ready asset conversion.',
                 'Asset classes without typed adapters remain recorded and unconverted.',

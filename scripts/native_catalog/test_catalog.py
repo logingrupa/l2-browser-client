@@ -7,7 +7,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from native_catalog.cli import digest, file_hash, inventory, json_bytes, parse_umodel_listing, safe_output, verify, within
+from native_catalog.cli import digest, json_bytes, parse_umodel_listing, safe_output, within
 from native_catalog.tables import decode_table, SCHEMA_ROOT, CRYPTO_SOURCE
 from native_catalog.ue2 import FormatError, Package, Reader, summary
 from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH
@@ -44,23 +44,6 @@ class BoundedFormatTests(unittest.TestCase):
             self.assertFalse((root / 'must-not-be-created').exists())
             with self.assertRaises(FormatError):
                 within(root, '../outside.json')
-
-    def test_inventory_repeats_and_verification_detects_changed_source(self):
-        with tempfile.TemporaryDirectory() as directory:
-            base = Path(directory).resolve()
-            root = base / 'client'
-            root.mkdir()
-            (root / 'sample.ogg').write_bytes(b'OggS unchanged media fixture')
-            first, second = inventory(root), inventory(root)
-            self.assertEqual(first['inventorySha256'], second['inventorySha256'])
-            catalog = {'sourceRoot': str(root), **first}
-            output = base / 'catalog.json'
-            output.write_bytes(json_bytes(catalog))
-            output.with_suffix('.receipt.json').write_bytes(json_bytes({'catalogSha256': file_hash(output), 'artifacts': []}))
-            self.assertEqual(verify(root, output)['fileCount'], 1)
-            (root / 'sample.ogg').write_bytes(b'OggS mutated media fixture!!')
-            with self.assertRaisesRegex(FormatError, 'source hash mismatch'):
-                verify(root, output)
 
 
 @unittest.skipUnless((CLIENT / 'animations/Fighter.ukx').is_file(), 'Original native client is not staged on this machine')

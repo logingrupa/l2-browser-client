@@ -102,9 +102,15 @@ class ReferenceClientAccess:
             return path, None
         return path, self.require_lock_equal_record(relative_path, path)['eSha256']
 
+    def is_in_read_scope(self, relative_path):
+        if not self.requires_lock:
+            return True
+        record = self.lock.record(relative_path)
+        return record is not None and record['class'] == 'equal'
+
     def require_lock_equal_record(self, relative_path, path):
         record = self.lock.record(relative_path)
-        if record is None or record['class'] != 'equal':
+        if not self.is_in_read_scope(relative_path):
             lock_class = 'absent' if record is None else record['class']
             raise ReferenceClientLockError(f'reference client lock class of {relative_path} is {lock_class}, not equal; conversion may not read it')
         try:
