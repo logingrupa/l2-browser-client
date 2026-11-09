@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-44-PLAN.md
-last_updated: "2026-11-09T15:33:17.683Z"
+stopped_at: Completed 02-68-PLAN.md
+last_updated: "2026-11-09T16:01:01.372Z"
 last_activity: 2026-11-09
 last_activity_desc: "Phase 02 plan 02-35 complete (SAND-02 sheet side: tile, spawn, equip, cast and window pickers behind SandboxPickerHost; DevSheet.ts split under 400 lines)"
-state_head: 1217127dc8df3c26d068b6fd82ebf54ceee11557
+state_head: 7976672e92a958d4ec57ae1bfd76b1c937ea7cd8
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 60
+  completed_plans: 61
   percent: 0
 ---
 
@@ -112,6 +112,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P29 | 35min | 4 tasks | 41 files |
 | Phase 02 P35 | 30min | 3 tasks | 30 files |
 | Phase 02 P44 | 45min | 3 tasks | 25 files |
+| Phase 02 P68 | 25min | 3 tasks | 29 files |
 
 ## Accumulated Context
 
@@ -268,6 +269,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-35: 02-37 retires attachSandboxCommandSheet's id-entry groups, sandboxCatalogLookupNote and the id-entry name kind when it mounts sandboxPickerSections; SAND-02 stays Pending until then (rows 470, 471)
 - [Phase 02]: 02-44: actor-sounds:<key> combatAudio records of the native-combat-audio-dependencies kind; the hand-typed role map is roles null plus unresolved.roles and diagnosed at runtime by record id prefix (OVERNIGHT-DECISIONS rows 472 to 476)
 - [Phase 02]: 02-44: routes bind only through the pinned Q4 proof (npcgrp attackItem, defense, damage and ALAudio critical); actor sound gap rows live in the lane work folder until the audio denominator exists; the lane catalog writer refuses the builder reader provenance pin (rows 477 to 479); ACT-05 stays Pending (row 484)
+- [Phase 02]: 02-68: FX-01 emitter simulation core is our own UE2 port under src/effects/particles/sim (Sprite and Mesh on one shared core, Emitter actor rules, effectScheduler at 1/60 s with cap 8); Independent and Spray particles are stored in world space; Power Strike traces are hash-only through POWER_STRIKE_EFFECT_SOURCE; FX-01 and ACT-06 stay Pending (OVERNIGHT-DECISIONS rows 486 to 497)
 
 ### Pending Todos
 
@@ -342,6 +344,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-09T15:33:16.884Z
-Stopped at: Completed 02-44-PLAN.md
+Last session: 2026-11-09T16:01:00.614Z
+Stopped at: Completed 02-68-PLAN.md
 Resume file: None
