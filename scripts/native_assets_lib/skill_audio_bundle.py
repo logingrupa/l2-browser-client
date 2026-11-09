@@ -4,11 +4,13 @@ import copy
 import math
 import re
 
-from native_assets_lib.animation_audio_bundle import Inputs, dependency, HASH
+from native_assets_lib.guard_clauses import require_condition
+from native_assets_lib.sha256_identity import SHA256_HEX_PATTERN, sha256_hex_digest
+from native_assets_lib.strict_json import decode_strict_json
+from native_assets_lib.animation_audio_bundle import Inputs, dependency
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib.placement_audio import index
 from native_store.store_paths import confined_child_path, refuse_reparse_points, require_portable_relative_path
-from stage_native_players import decode, digest, require
 
 KIND = 'native-skill-audio-dependencies'
 GROUPS = ('spelleffect', 'shoteffect', 'expeffect')
@@ -27,23 +29,23 @@ POLICY = {'exactIdentity': 'full-object-casefold', 'groupLessCandidates': 'packa
 
 
 def identity(row):
-    require(isinstance(row, dict), 'Invalid raw table row')
+    require_condition(isinstance(row, dict), 'Invalid raw table row')
     values = row.get('skill_id'), row.get('skill_level')
-    require(all(type(v) is int and 0 <= v <= 0xffffffff for v in values), 'Invalid original skill/level identity')
+    require_condition(all(type(v) is int and 0 <= v <= 0xffffffff for v in values), 'Invalid original skill/level identity')
     return values
 
 
 def load_table(inputs, spec, name, collection):
     original = inputs.read(spec['original'])
-    table = decode(inputs.read(spec['decoded']), max_bytes=64 * 1024 * 1024)
-    require(table.get('schemaVersion') == 1 and table.get('edition') == 'interlude' and
-            table.get('source') == 'system/' + name + '.dat' and table.get('sourceSha256') == digest(original),
+    table = decode_strict_json(inputs.read(spec['decoded']), max_bytes=64 * 1024 * 1024)
+    require_condition(table.get('schemaVersion') == 1 and table.get('edition') == 'interlude' and
+            table.get('source') == 'system/' + name + '.dat' and table.get('sourceSha256') == sha256_hex_digest(original),
             'Decoded/original table identity differs: ' + name)
-    require(isinstance(table.get('decodedSha256'), str) and HASH.fullmatch(table['decodedSha256']) and
+    require_condition(isinstance(table.get('decodedSha256'), str) and SHA256_HEX_PATTERN.fullmatch(table['decodedSha256']) and
             isinstance(table.get('schema'), dict) and isinstance(table.get('formatDefinitionPins'), dict),
             'Missing decoded table/reader provenance: ' + name)
     rows = table.get('data', {}).get(collection)
-    require(isinstance(rows, list) and len(rows) <= 100000 and table['data'].get('data') == len(rows), 'Invalid complete table row count')
+    require_condition(isinstance(rows, list) and len(rows) <= 100000 and table['data'].get('data') == len(rows), 'Invalid complete table row count')
     for row in rows: identity(row)
     metadata = {key: copy.deepcopy(value) for key, value in table.items() if key != 'data'}
     return rows, {'original': copy.deepcopy(spec['original']), 'decoded': copy.deepcopy(spec['decoded']),
@@ -52,7 +54,7 @@ def load_table(inputs, spec, name, collection):
 
 def reference_candidates(value, source_rows):
     if value is None: return 'null', []
-    require(isinstance(value, str), 'Sound reference must be a string or explicit null')
+    require_condition(isinstance(value, str), 'Sound reference must be a string or explicit null')
     if value == '': return 'empty', []
     if not REFERENCE.fullmatch(value): return 'unsupported-reference', []
     exact = [row for row in source_rows if row['export']['object'].casefold() == value.casefold()]
@@ -67,7 +69,7 @@ def reference_candidates(value, source_rows):
 
 def corpus_dependency(inputs, corpus_root, item, covered):
     exported, package = item['export'], item['sourcePackage']
-    require(item.get('status') == 'source-ready' and covered.get('status') == 'exported-and-verified' and
+    require_condition(item.get('status') == 'source-ready' and covered.get('status') == 'exported-and-verified' and
             item['stableId'] == covered['stableId'] and exported['classObject'] == 'Engine.Sound', 'Unverified candidate source/export')
     archive, audio = covered['products']['archive'], covered['products']['audio']
     source_object = exported['object']
@@ -84,7 +86,7 @@ def corpus_dependency(inputs, corpus_root, item, covered):
         **{key: value for key, value in sound['provenance'].items() if key != 'authoredReference'}}
     source = item['nativePayload']
     original = inputs.read({**source, 'path': corpus_root + '/' + require_portable_relative_path(source['path'])})
-    require(original == wav and item['nativeSound']['embeddedPayloadSha256'] == digest(wav) and
+    require_condition(original == wav and item['nativeSound']['embeddedPayloadSha256'] == sha256_hex_digest(wav) and
             item['nativeSound']['exportIndex'] == exported['exportIndex'], 'Candidate native payload differs')
     sound['source'].update(package=copy.deepcopy(package), serializedExport=copy.deepcopy(item['serializedExport']), nativeSound=copy.deepcopy(item['nativeSound']))
     sound['role'] = 'candidate-dependency-only'
@@ -94,29 +96,29 @@ def corpus_dependency(inputs, corpus_root, item, covered):
 
 def prepare(root, recipe_path):
     inputs = Inputs(root); recipe_path = refuse_reparse_points(recipe_path)
-    require(recipe_path.is_relative_to(inputs.root), 'Recipe must stay within project root')
+    require_condition(recipe_path.is_relative_to(inputs.root), 'Recipe must stay within project root')
     raw = recipe_path.read_bytes()
-    recipe = decode(inputs.read({'path': recipe_path.relative_to(inputs.root).as_posix(), 'sha256': digest(raw)}))
-    require(recipe.get('schemaVersion') == 1 and recipe.get('kind') == 'native-skill-audio-bundle', 'Unsupported skill audio recipe')
-    require(recipe.get('referencePolicy') == POLICY, 'Explicit supported candidate-only policy required')
+    recipe = decode_strict_json(inputs.read({'path': recipe_path.relative_to(inputs.root).as_posix(), 'sha256': sha256_hex_digest(raw)}))
+    require_condition(recipe.get('schemaVersion') == 1 and recipe.get('kind') == 'native-skill-audio-bundle', 'Unsupported skill audio recipe')
+    require_condition(recipe.get('referencePolicy') == POLICY, 'Explicit supported candidate-only policy required')
     selections = recipe.get('selections')
-    require(isinstance(selections, list) and 0 < len(selections) <= 512, 'Invalid selected skill/level list')
+    require_condition(isinstance(selections, list) and 0 < len(selections) <= 512, 'Invalid selected skill/level list')
     selected = []
     for row in selections:
-        require(isinstance(row, dict) and set(row) == {'skillId', 'level'}, 'Only explicit skillId/level selections are supported')
+        require_condition(isinstance(row, dict) and set(row) == {'skillId', 'level'}, 'Only explicit skillId/level selections are supported')
         value = identity({'skill_id': row['skillId'], 'skill_level': row['level']})
-        require(value not in selected, 'Duplicate recipe selection'); selected.append(value)
+        require_condition(value not in selected, 'Duplicate recipe selection'); selected.append(value)
     skill_rows, skill_table = load_table(inputs, recipe['tables']['skillgrp'], 'skillgrp', 'skill')
     sound_rows, sound_table = load_table(inputs, recipe['tables']['skillsoundgrp'], 'skillsoundgrp', 'skillsound')
     corpus = recipe['corpus']; corpus_root = require_portable_relative_path(corpus['root'])
-    inventory_bytes = inputs.read(corpus['inventory']); inventory = decode(inventory_bytes, max_bytes=32 * 1024 * 1024)
-    coverage = decode(inputs.read(corpus['coverage']), max_bytes=32 * 1024 * 1024)
-    require(inventory.get('kind') == 'native-staged-sound-inventory' and coverage.get('kind') == 'native-staged-sound-coverage' and
-            coverage.get('inventorySha256') == digest(inventory_bytes), 'Corpus inventory/coverage join differs')
+    inventory_bytes = inputs.read(corpus['inventory']); inventory = decode_strict_json(inventory_bytes, max_bytes=32 * 1024 * 1024)
+    coverage = decode_strict_json(inputs.read(corpus['coverage']), max_bytes=32 * 1024 * 1024)
+    require_condition(inventory.get('kind') == 'native-staged-sound-inventory' and coverage.get('kind') == 'native-staged-sound-coverage' and
+            coverage.get('inventorySha256') == sha256_hex_digest(inventory_bytes), 'Corpus inventory/coverage join differs')
     source_index = index(inventory['sounds'], 'stableId', 'source sound', 100000)
     covered = index(coverage['sounds'], 'stableId', 'sound coverage', 100000)
     for item in source_index.values():
-        require(isinstance(item.get('export'), dict) and isinstance(item['export'].get('object'), str) and
+        require_condition(isinstance(item.get('export'), dict) and isinstance(item['export'].get('object'), str) and
                 REFERENCE.fullmatch(item['export']['object']) and item['export'].get('classObject') == 'Engine.Sound', 'Invalid corpus Sound identity')
     raw_skills, raw_sounds, sounds, payloads = [], [], {}, {}
     selected_set = set(selected)
@@ -128,7 +130,7 @@ def prepare(root, recipe_path):
         if identity(row) not in selected_set: continue
         for field in NUMERIC_FIELDS:
             value = row.get(field)
-            require(field not in row or value is None or type(value) in (int, float) and math.isfinite(value), 'Nonfinite/invalid authored numeric field')
+            require_condition(field not in row or value is None or type(value) in (int, float) and math.isfinite(value), 'Nonfinite/invalid authored numeric field')
         fields = []
         for field in REFERENCE_FIELDS:
             if field not in row: status, candidates = 'omitted', []
@@ -142,7 +144,7 @@ def prepare(root, recipe_path):
                     'not-verified-export' if product.get('status') != 'exported-and-verified' else 'verified-export'
                 if product_status == 'verified-export' and key not in sounds:
                     sound, wav = corpus_dependency(inputs, corpus_root, item, covered[key]); sounds[key] = sound
-                    require(sound['file'] not in payloads or payloads[sound['file']] == wav, 'Conflicting WAV content identity')
+                    require_condition(sound['file'] not in payloads or payloads[sound['file']] == wav, 'Conflicting WAV content identity')
                     payloads[sound['file']] = wav
                 entry['candidates'].append({'stableId': key, 'dependencyId': key if product_status == 'verified-export' else None,
                     'productStatus': product_status, 'object': item['export']['object'],
@@ -165,7 +167,7 @@ def prepare(root, recipe_path):
               'referenceFields': len(raw_sounds) * len(REFERENCE_FIELDS), 'fieldStatuses': statuses,
               'candidateOccurrences': total_candidates, 'candidateProductStatuses': product_statuses,
               'dependencies': len(sounds), 'wavFiles': len(payloads)}
-    if 'expectedCoverage' in recipe: require(counts == recipe['expectedCoverage'], 'Selected coverage differs from recipe')
+    if 'expectedCoverage' in recipe: require_condition(counts == recipe['expectedCoverage'], 'Selected coverage differs from recipe')
     manifest = {'schemaVersion': 1, 'kind': KIND, 'tables': {'skillgrp': skill_table, 'skillsoundgrp': sound_table},
         'inputs': [{k:v for k,v in record.items() if k != 'mtimeNs'} for record in inputs.records.values()],
         'referencePolicy': copy.deepcopy(POLICY), 'selections': selection_receipts, 'skillRows': raw_skills, 'soundRows': raw_sounds,
@@ -182,23 +184,23 @@ def prepare(root, recipe_path):
 
 
 def run(root, recipe_path, output, *, plan=False, verify_only=False):
-    require(not (plan and verify_only), 'Plan and verify-only are mutually exclusive')
+    require_condition(not (plan and verify_only), 'Plan and verify-only are mutually exclusive')
     manifest, payloads, inputs = prepare(root, recipe_path); output = refuse_reparse_points(output)
-    require(any(output != inputs.root / name and output.is_relative_to(inputs.root / name)
+    require_condition(any(output != inputs.root / name and output.is_relative_to(inputs.root / name)
                 for name in ('artifacts', 'scratch', '.scratch')), 'Output must be a named artifacts/scratch subdirectory')
     for name in inputs.records:
         source = confined_child_path(inputs.root, name)
-        require(not source.is_relative_to(output) and not output.is_relative_to(source.parent), 'Output overlaps an input or retained directory')
+        require_condition(not source.is_relative_to(output) and not output.is_relative_to(source.parent), 'Output overlaps an input or retained directory')
     exists = output.exists()
     if exists:
-        require(output.is_dir(), 'Output is not a directory'); actual = set()
+        require_condition(output.is_dir(), 'Output is not a directory'); actual = set()
         for path in output.rglob('*'):
             refuse_reparse_points(path)
             if path.is_file(): actual.add(path.relative_to(output).as_posix())
-        require(actual == set(payloads), 'Existing output file set differs; preserved')
+        require_condition(actual == set(payloads), 'Existing output file set differs; preserved')
         for name, data in payloads.items():
-            require(confined_child_path(output, name).read_bytes() == data, 'Existing immutable output differs; preserved: ' + name)
-    require(not verify_only or exists, 'Verify-only requires a complete existing output')
+            require_condition(confined_child_path(output, name).read_bytes() == data, 'Existing immutable output differs; preserved: ' + name)
+    require_condition(not verify_only or exists, 'Verify-only requires a complete existing output')
     status = 'planned' if plan else 'verified' if verify_only else 'preserved' if exists else 'produced'; written = 0
     if status == 'produced':
         output.mkdir(parents=True, exist_ok=False)
@@ -207,6 +209,6 @@ def run(root, recipe_path, output, *, plan=False, verify_only=False):
             with path.open('xb') as stream: stream.write(payloads[name])
             written += 1
     inputs.unchanged()
-    return {'status': status, 'manifestSha256': digest(payloads['manifest.json']), 'coverage': manifest['coverage'],
+    return {'status': status, 'manifestSha256': sha256_hex_digest(payloads['manifest.json']), 'coverage': manifest['coverage'],
             'filesWritten': written, 'sourceInputsUnchanged': True,
-            'files': [{'path': name, 'bytes': len(data), 'sha256': digest(data)} for name, data in sorted(payloads.items())]}
+            'files': [{'path': name, 'bytes': len(data), 'sha256': sha256_hex_digest(data)} for name, data in sorted(payloads.items())]}

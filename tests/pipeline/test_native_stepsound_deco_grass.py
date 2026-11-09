@@ -1,4 +1,3 @@
-"""Deco-grass footstep bundle/stager fixtures, without native execution or real output writes."""
 import json
 import random
 from pathlib import Path
@@ -11,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib import stepsound_deco_grass as subject
+from native_assets_lib.sha256_identity import sha256_hex_digest
 import stage_native_stepsound_deco_grass as stager
 
 REAL_BUNDLE = ROOT / 'artifacts/native-parity/research/dev-sheet-audio-20261107/footstep-deco-grass/bundle'
@@ -29,18 +29,17 @@ def block(c0, c1, indices):
 
 class DecoGrassMathTests(unittest.TestCase):
     def test_dxt1_green_decodes_both_block_modes_rows_top_first(self):
-        green = lambda g: g << 5  # RGB565 with only the 6-bit green channel set
-        four = block(green(63), green(0), [0, 1, 2, 3] * 4)       # c0 > c1: 4-colour mode
-        three = block(green(0), green(63), [0, 1, 2, 3] + [3] * 12)  # c0 <= c1: index 3 is transparent black
-        values = subject.dxt1_green(four + three, 8, 4)
+        rgb565_green_only = lambda g: g << 5
+        four_colour_mode_block = block(rgb565_green_only(63), rgb565_green_only(0), [0, 1, 2, 3] * 4)
+        transparent_black_mode_block = block(rgb565_green_only(0), rgb565_green_only(63), [0, 1, 2, 3] + [3] * 12)
+        values = subject.dxt1_green(four_colour_mode_block + transparent_black_mode_block, 8, 4)
         self.assertEqual(list(values[0:4]), [255, 0, 170, 85])
         self.assertEqual(list(values[4:8]), [0, 255, 127, 0])
         self.assertEqual(list(values[12:16]), [0, 0, 0, 0])
         with self.assertRaisesRegex(ValueError, 'DXT1 level size'):
-            subject.dxt1_green(four, 8, 4)
+            subject.dxt1_green(four_colour_mode_block, 8, 4)
 
     def test_quad_means_use_the_vertex_ratio_footprint(self):
-        # 8x8 texels over 4x4 vertices (3x3 quads, like 512 over 256): quad q covers texels [2q, 2q+2).
         big = bytearray(8 * 8); big[0] = big[1] = 255; big[5 * 8 + 5] = 255; big[7 * 8 + 7] = 255
         means = subject.quad_means(bytes(big), 8, 8, 4, 4)
         self.assertEqual(len(means), 9)
@@ -48,9 +47,9 @@ class DecoGrassMathTests(unittest.TestCase):
 
     def test_expected_capped_matches_a_sampled_min_of_uniform_multiplier(self):
         self.assertEqual(subject.expected_capped(0, 0, 50, 20), 0)
-        self.assertEqual(subject.expected_capped(.2, 0, 50, 20), 5)        # uncapped mean
-        self.assertEqual(subject.expected_capped(1, 30, 50, 20), 20)       # always capped
-        self.assertAlmostEqual(subject.expected_capped(1, 0, 50, 20), 16)  # (200 + 600) / 50
+        self.assertEqual(subject.expected_capped(.2, 0, 50, 20), 5)
+        self.assertEqual(subject.expected_capped(1, 30, 50, 20), 20)
+        self.assertAlmostEqual(subject.expected_capped(1, 0, 50, 20), 16)
         rng = random.Random(4)
         for alpha, low, high, cap in [(.7, 5, 30, 8), (1, 0, 50, 20), (.35, 5, 25, 8)]:
             sampled = sum(min(cap, alpha * rng.uniform(low, high)) for _ in range(40000)) / 40000
@@ -92,7 +91,7 @@ class DecoGrassRunTests(unittest.TestCase):
         self.manifest = {'schemaVersion': 1, 'kind': subject.KIND, 'coverage': {'quadsX': 2, 'quadsY': 2},
                          'terrain': {'object': '20_20.TerrainInfo0', 'quads': [2, 2], 'quadSize': [128.0, 128.0], 'origin': [0.0, 0.0],
                                      'sectors': [[0, 0, 2, 2]]},
-                         'grid': {'file': 'grid/' + subject.digest(self.grid) + '.bin', 'bytes': len(self.grid), 'sha256': subject.digest(self.grid),
+                         'grid': {'file': 'grid/' + sha256_hex_digest(self.grid) + '.bin', 'bytes': len(self.grid), 'sha256': sha256_hex_digest(self.grid),
                                   'scale': 256, 'maxPerQuad': 4.0, 'totalExpected': 5.5},
                          'rule': {'id': 'r', 'label': subject.RULE_LABEL, 'status': 'approximation', 'countRadius': 64.0, 'grassMinimumCount': 2},
                          'orientationCheck': {'correlations': {}}}
@@ -131,7 +130,7 @@ class DecoGrassRunTests(unittest.TestCase):
         public = self.root / 'public/l2'; public.mkdir(parents=True)
         catalog = {'schemaVersion': 1, 'models': [], 'animationAudio': [{'id': 'human-fighter-footsteps', 'manifestSha256': 'a' * 64}]}
         (public / 'catalog.json').write_bytes(json_bytes(catalog))
-        return subject.digest((self.output / 'manifest.json').read_bytes()), subject.digest((public / 'catalog.json').read_bytes()), catalog
+        return sha256_hex_digest((self.output / 'manifest.json').read_bytes()), sha256_hex_digest((public / 'catalog.json').read_bytes()), catalog
 
     def test_stager_plan_stage_repeat_and_verify(self):
         manifest_hash, catalog_hash, catalog = self.stage_setup()
@@ -161,7 +160,7 @@ class DecoGrassRunTests(unittest.TestCase):
         conflicting['animationAudio'].append({'id': 'older-deco', 'kind': stager.KIND, 'manifestSha256': 'c' * 64})
         (self.root / 'public/l2/catalog.json').write_bytes(json_bytes(conflicting))
         with self.assertRaisesRegex(ValueError, 'Another deco-grass bundle'):
-            stager.stage(self.output, manifest_hash, subject.digest(json_bytes(conflicting)), root=self.root)
+            stager.stage(self.output, manifest_hash, sha256_hex_digest(json_bytes(conflicting)), root=self.root)
         (self.root / 'public/l2/catalog.json').write_bytes(json_bytes(catalog))
         (self.output / self.manifest['grid']['file']).write_bytes(b'\1' * len(self.grid))
         with self.assertRaisesRegex(ValueError, 'grid payload differs'):
@@ -191,8 +190,8 @@ class RealDecoGrassRecipeTests(unittest.TestCase):
         entries = [row for row in catalog.get('animationAudio', []) if row.get('kind') == stager.KIND]
         if not entries:
             self.skipTest('Deco-grass bundle not staged in this checkout')
-        manifest_hash = subject.digest((REAL_BUNDLE / 'manifest.json').read_bytes())
-        result = stager.stage(REAL_BUNDLE, manifest_hash, subject.digest((ROOT / 'public/l2/catalog.json').read_bytes()), verify_only=True)
+        manifest_hash = sha256_hex_digest((REAL_BUNDLE / 'manifest.json').read_bytes())
+        result = stager.stage(REAL_BUNDLE, manifest_hash, sha256_hex_digest((ROOT / 'public/l2/catalog.json').read_bytes()), verify_only=True)
         self.assertEqual(result['filesWritten'], 0)
 
 

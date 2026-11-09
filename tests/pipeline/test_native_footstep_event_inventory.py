@@ -7,9 +7,10 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from native_assets import archive_bytes  # noqa: E402
-from native_assets_lib.gltf import json_bytes  # noqa: E402
-from native_assets_lib import animation_audio_bundle, footstep_event_inventory as subject  # noqa: E402
+from native_assets import archive_bytes
+from native_assets_lib.gltf import json_bytes
+from native_assets_lib import animation_audio_bundle, footstep_event_inventory as subject
+from native_assets_lib.sha256_identity import sha256_hex_digest
 
 INVENTORY_RECIPE = ROOT / 'recipes/native-human-mystic-footstep-events.json'
 BUNDLE_RECIPE = ROOT / 'recipes/native-human-mystic-footstep-audio.json'
@@ -24,7 +25,7 @@ class SyntheticArchiveInventoryTests(unittest.TestCase):
     def setUp(self):
         temp = tempfile.TemporaryDirectory(prefix='footstep-inventory-')
         self.addCleanup(temp.cleanup)
-        self.root, self.hash = Path(temp.name), subject.digest(b'source package')
+        self.root, self.hash = Path(temp.name), sha256_hex_digest(b'source package')
         self.output = self.root / 'artifacts/inventory'
         self.step = {'animationSet': 'Magic.MMagic_anim', 'clip': 'Run_Hand_MMagic', 'object': 'Magic.AnimNotify_Sound598',
                      'type': 'AnimNotify_Sound', 'function': 'None', 'normalizedTime': .19, 'timeSeconds': .19 * 10 / 12,
@@ -43,11 +44,11 @@ class SyntheticArchiveInventoryTests(unittest.TestCase):
 
     def write(self, name, data):
         path = self.root / name; path.parent.mkdir(parents=True, exist_ok=True); path.write_bytes(data)
-        return {'path': name, 'sha256': subject.digest(data), 'bytes': len(data)}
+        return {'path': name, 'sha256': sha256_hex_digest(data), 'bytes': len(data)}
 
     def save(self):
         payloads = {'model.glb': b'unrendered', 'audio/breath.wav': b'RIFF0000WAVE'}
-        self.actor['files'] = [{'path': n, 'sha256': subject.digest(b), 'bytes': len(b)} for n, b in payloads.items()]
+        self.actor['files'] = [{'path': n, 'sha256': sha256_hex_digest(b), 'bytes': len(b)} for n, b in payloads.items()]
         archive = self.write('inputs/actor.l2asset', archive_bytes(self.actor, payloads))
         dependencies = self.write('inputs/coverage.json', json_bytes(self.dependencies))
         self.recipe = {'schemaVersion': 1, 'kind': subject.RECIPE_KIND,
@@ -82,7 +83,7 @@ class SyntheticArchiveInventoryTests(unittest.TestCase):
     def test_rows_satisfy_the_animation_audio_bundle_provenance_check(self):
         self.run_inventory()
         inventory = json.loads((self.output / 'inventory.json').read_bytes())
-        manifest_hash = subject.digest(json_bytes(self.actor))
+        manifest_hash = sha256_hex_digest(json_bytes(self.actor))
         index = animation_audio_bundle.evidence_index(inventory['locomotion']['events'])
         for ordinal in (1, 2):
             raw = self.actor['animationEvents'][ordinal]

@@ -6,7 +6,10 @@ from pathlib import Path
 
 from native_assets_lib.gltf import json_bytes
 from native_store.store_paths import confined_child_path, refuse_reparse_points
-from stage_native_players import decode, digest, require, HASH, ID
+from native_assets_lib.guard_clauses import require_condition
+from native_assets_lib.sha256_identity import SHA256_HEX_PATTERN, sha256_hex_digest
+from native_assets_lib.strict_json import decode_strict_json
+from stage_native_players import ID
 from native_store.catalog_writer import immutable_write, replace_file
 
 ANIMATION_AUDIO_STAGE_DESCRIPTION = (
@@ -21,81 +24,81 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def stage(bundle, manifest_sha256, expected_catalog_sha256, *, bundle_id='human-fighter-footsteps',
           plan=False, verify_only=False, root=ROOT):
-    require(not (plan and verify_only), 'Plan and verify-only are mutually exclusive')
-    require(isinstance(bundle_id, str) and ID.fullmatch(bundle_id), 'Invalid audio bundle identity')
-    require(HASH.fullmatch(manifest_sha256) and HASH.fullmatch(expected_catalog_sha256), 'Invalid staging hash')
+    require_condition(not (plan and verify_only), 'Plan and verify-only are mutually exclusive')
+    require_condition(isinstance(bundle_id, str) and ID.fullmatch(bundle_id), 'Invalid audio bundle identity')
+    require_condition(SHA256_HEX_PATTERN.fullmatch(manifest_sha256) and SHA256_HEX_PATTERN.fullmatch(expected_catalog_sha256), 'Invalid staging hash')
     root, bundle = refuse_reparse_points(root), refuse_reparse_points(bundle)
-    require(bundle.is_relative_to(root) and bundle != root, 'Bundle must be a project child')
+    require_condition(bundle.is_relative_to(root) and bundle != root, 'Bundle must be a project child')
     public = refuse_reparse_points(root / 'public/l2')
     catalog_path = confined_child_path(public, 'catalog.json')
     before = catalog_path.read_bytes()
-    require(digest(before) == expected_catalog_sha256, 'Catalog changed; preserve it and inspect the new baseline')
-    catalog = decode(before)
-    require(catalog.get('schemaVersion') == 1 and isinstance(catalog.get('models'), list), 'Invalid native catalog')
+    require_condition(sha256_hex_digest(before) == expected_catalog_sha256, 'Catalog changed; preserve it and inspect the new baseline')
+    catalog = decode_strict_json(before)
+    require_condition(catalog.get('schemaVersion') == 1 and isinstance(catalog.get('models'), list), 'Invalid native catalog')
     manifest_bytes = confined_child_path(bundle, 'manifest.json').read_bytes()
-    require(digest(manifest_bytes) == manifest_sha256, 'Animation-audio manifest hash differs')
-    manifest = decode(manifest_bytes)
-    require(manifest.get('schemaVersion') == 1 and manifest.get('kind') == 'native-animation-audio-dependencies',
+    require_condition(sha256_hex_digest(manifest_bytes) == manifest_sha256, 'Animation-audio manifest hash differs')
+    manifest = decode_strict_json(manifest_bytes)
+    require_condition(manifest.get('schemaVersion') == 1 and manifest.get('kind') == 'native-animation-audio-dependencies',
             'Unsupported animation-audio bundle')
     actors, sounds = manifest.get('actors'), manifest.get('sounds')
-    require(isinstance(actors, list) and 0 < len(actors) <= 128 and
+    require_condition(isinstance(actors, list) and 0 < len(actors) <= 128 and
             isinstance(sounds, list) and 0 < len(sounds) <= 4096, 'Invalid animation-audio coverage')
     models = {row['id']: row for row in catalog['models']}
-    require(len(models) == len(catalog['models']), 'Duplicate catalog model identity')
+    require_condition(len(models) == len(catalog['models']), 'Duplicate catalog model identity')
     selected = set()
     for actor in actors:
         identity = actor.get('catalogId')
-        require(identity not in selected and identity in models, 'Missing/duplicate source actor')
+        require_condition(identity not in selected and identity in models, 'Missing/duplicate source actor')
         selected.add(identity)
         model = models[identity]
-        require(isinstance(actor.get('archiveSha256'), str) and HASH.fullmatch(actor['archiveSha256']) and
+        require_condition(isinstance(actor.get('archiveSha256'), str) and SHA256_HEX_PATTERN.fullmatch(actor['archiveSha256']) and
                 actor.get('assetId') == model.get('assetId') and actor.get('source') == model.get('source') and
                 actor.get('archiveSha256') == model.get('archiveSha256'), 'Actor archive/source differs from the catalog')
     prefix = 'animation-audio/' + manifest_sha256 + '/'
     files = {prefix + 'manifest.json': manifest_bytes}
     dependencies = set()
     for sound in sounds:
-        require(isinstance(sound, dict) and isinstance(sound.get('sha256'), str) and HASH.fullmatch(sound['sha256']) and
+        require_condition(isinstance(sound, dict) and isinstance(sound.get('sha256'), str) and SHA256_HEX_PATTERN.fullmatch(sound['sha256']) and
                 sound.get('mime') == 'audio/wav' and sound.get('file') == 'audio/' + sound['sha256'] + '.wav' and
                 type(sound.get('bytes')) is int and 0 < sound['bytes'] <= 8_000_000, 'Invalid audio payload descriptor')
         identity = sound.get('dependencyId')
-        require(isinstance(identity, str) and identity not in dependencies, 'Duplicate/missing source sound identity')
+        require_condition(isinstance(identity, str) and identity not in dependencies, 'Duplicate/missing source sound identity')
         dependencies.add(identity)
         payload = confined_child_path(bundle, sound['file']).read_bytes()
-        require(len(payload) == sound['bytes'] and digest(payload) == sound['sha256'], 'Original audio payload differs')
+        require_condition(len(payload) == sound['bytes'] and sha256_hex_digest(payload) == sound['sha256'], 'Original audio payload differs')
         files[prefix + sound['file']] = payload
     entry = {'id': bundle_id, 'manifest': '/l2/' + prefix + 'manifest.json',
              'manifestBytes': len(manifest_bytes), 'manifestSha256': manifest_sha256}
     updated = copy.deepcopy(catalog)
     records = updated.setdefault('animationAudio', [])
-    require(isinstance(records, list) and len(records) <= 16, 'Invalid animation-audio catalog')
+    require_condition(isinstance(records, list) and len(records) <= 16, 'Invalid animation-audio catalog')
     matching = [item for item in records if item.get('id') == bundle_id]
-    require(len(matching) <= 1 and (not matching or matching[0] == entry), 'Existing animation-audio identity differs; preserved')
+    require_condition(len(matching) <= 1 and (not matching or matching[0] == entry), 'Existing animation-audio identity differs; preserved')
     if not matching:
-        require(len(records) < 16, 'Invalid animation-audio catalog capacity')
+        require_condition(len(records) < 16, 'Invalid animation-audio catalog capacity')
         records.append(entry)
     after = before if matching else json_bytes(updated)
     new_files = []
     for name, payload in files.items():
         target = confined_child_path(public, name)
         if target.exists():
-            require(target.read_bytes() == payload, 'Existing immutable audio resource differs; preserved: ' + name)
+            require_condition(target.read_bytes() == payload, 'Existing immutable audio resource differs; preserved: ' + name)
         else:
             new_files.append(name)
     if verify_only:
-        require(not new_files and before == after, 'Bundle is not completely staged')
-    require(catalog_path.read_bytes() == before, 'Catalog changed during staging')
+        require_condition(not new_files and before == after, 'Bundle is not completely staged')
+    require_condition(catalog_path.read_bytes() == before, 'Catalog changed during staging')
     written = 0
     if not plan and not verify_only:
         for name, payload in files.items():
             immutable_write(confined_child_path(public, name), payload)
-        require(catalog_path.read_bytes() == before, 'Catalog changed during resource staging')
+        require_condition(catalog_path.read_bytes() == before, 'Catalog changed during resource staging')
         if before != after:
             replace_file(catalog_path, after)
         written = len(new_files) + int(before != after)
     return {'schemaVersion': 1, 'kind': 'native-animation-audio-stage', 'mode': 'plan' if plan else 'verify' if verify_only else 'stage',
             'bundle': str(bundle.relative_to(root)).replace('\\', '/'), 'entry': entry,
-            'sourceCatalogSha256': digest(before), 'resultingCatalogSha256': digest(after),
+            'sourceCatalogSha256': sha256_hex_digest(before), 'resultingCatalogSha256': sha256_hex_digest(after),
             'newResources': new_files, 'resourceCount': len(files), 'filesWritten': written,
             'actors': sorted(selected), 'soundDependencies': len(dependencies),
             'scope': 'Additive dependency staging only; model/Editor assets and playback policy unchanged'}

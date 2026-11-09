@@ -1,4 +1,3 @@
-"""Source declaration/payload preservation fixtures, without native execution."""
 import copy
 import io
 import json
@@ -13,6 +12,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from native_assets import archive_bytes
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib import placement_audio as subject
+from native_assets_lib.sha256_identity import sha256_hex_digest
 
 
 def snapshot(root):
@@ -26,7 +26,7 @@ class PlacementAudioTests(unittest.TestCase):
         self.addCleanup(temp.cleanup)
         self.root = Path(temp.name)
         self.output = self.root / 'artifacts/bundle'
-        self.source_hash = subject.digest(b'original package fixture')
+        self.source_hash = sha256_hex_digest(b'original package fixture')
         self.reference = 'StepSound.Wood.Walk_01'
         self.stable = 'FIXTURE:' + self.source_hash + ':7'
         stream = io.BytesIO()
@@ -39,28 +39,27 @@ class PlacementAudioTests(unittest.TestCase):
                       'audio': {'file': 'audio.wav'}, 'animationEvents': []}
         archive = self.archive('inputs/corpus/cache/asset.l2asset', self.asset,
             {'audio.wav': self.wav, 'provenance.json': json_bytes({'metadata': {
-                'nativeExportIndex': 7, 'encodedAudioUnchanged': True, 'nativePayloadSha256': subject.digest(self.wav)}})})
+                'nativeExportIndex': 7, 'encodedAudioUnchanged': True, 'nativePayloadSha256': sha256_hex_digest(self.wav)}})})
         self.write('inputs/corpus/cache/audio.wav', self.wav)
         self.write('inputs/corpus/source/native-payload.bin', self.wav)
         self.inventory = {'kind': 'native-staged-sound-inventory', 'sounds': [{
             'stableId': self.stable, 'id': self.asset['id'], 'status': 'source-ready',
             'export': {'exportIndex': 7, 'classObject': 'Engine.Sound', 'object': 'stepsound.Wood.Walk_01'},
             'sourcePackage': {'relativePath': 'sounds/stepsound.uax', 'sha256': self.source_hash, 'bytes': 8192},
-            'nativePayload': {'path': 'source/native-payload.bin', 'sha256': subject.digest(self.wav), 'bytes': len(self.wav)},
+            'nativePayload': {'path': 'source/native-payload.bin', 'sha256': sha256_hex_digest(self.wav), 'bytes': len(self.wav)},
             'serializedExport': {'path': 'source/serialized.bin', 'offsetUnwrapped': 100, 'bytes': len(self.wav)+9,
-                                 'sha256': subject.digest(b'serialized source')},
-            'nativeSound': {'exportIndex': 7, 'embeddedPayloadSha256': subject.digest(self.wav)}}]}
+                                 'sha256': sha256_hex_digest(b'serialized source')},
+            'nativeSound': {'exportIndex': 7, 'embeddedPayloadSha256': sha256_hex_digest(self.wav)}}]}
         self.coverage = {'kind': 'native-staged-sound-coverage', 'sounds': [{
             'stableId': self.stable, 'status': 'exported-and-verified',
             'products': {'archive': {**archive, 'path': 'cache/asset.l2asset'},
-                         'audio': {'path': 'cache/audio.wav', 'sha256': subject.digest(self.wav), 'bytes': len(self.wav)}}}]}
+                         'audio': {'path': 'cache/audio.wav', 'sha256': sha256_hex_digest(self.wav), 'bytes': len(self.wav)}}}]}
         self.raw = bytearray(b'\0' * 64)
         self.actors = [self.actor('House', 1, []), self.actor('Steps', 2, [])]
-        # Manifest order differs from source order; full property order is 3, unrelated, 1, 2.
         tags = [self.tag(name, 8 + i * 4) for i, name in enumerate(subject.PROPERTIES)]
         self.actors[1]['properties'] = [tags[2], {'name': 'Unrelated', 'value': 17}, tags[0], tags[1]]
         self.section = {'schemaVersion': 1, 'kind': 'native-map-section-runtime', 'errors': [],
-                        'models': [{'id': 'model', 'model': {'file': 'model.glb', 'bytes': 20, 'sha256': subject.digest(b'model')}}],
+                        'models': [{'id': 'model', 'model': {'file': 'model.glb', 'bytes': 20, 'sha256': sha256_hex_digest(b'model')}}],
                         'placements': [{'id': a['id'], 'sourceMesh': a['staticMesh']['object'], 'modelId': 'model',
                                         'matrix': [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]}
                                        for a in reversed(self.actors)]}
@@ -73,20 +72,20 @@ class PlacementAudioTests(unittest.TestCase):
     def actor(self, name, export, properties):
         return {'id': 'interlude:fixture.' + name, 'object': 'fixture.' + name, 'classObject': 'Engine.StaticMeshActor',
                 'exportIndex': export, 'staticMesh': {'object': 'Models.' + name}, 'properties': properties,
-                'stateFrameBytes': {'offset': 0, 'bytes': 8, 'path': 'raw/map.unwrapped.bin', 'sha256': subject.digest(b'\0'*8)}}
+                'stateFrameBytes': {'offset': 0, 'bytes': 8, 'path': 'raw/map.unwrapped.bin', 'sha256': sha256_hex_digest(b'\0'*8)}}
 
     def tag(self, name, offset):
-        self.raw[offset:offset+3] = b'\x11\x05\x81'  # compact object import -1
+        self.raw[offset:offset+3] = b'\x11\x05\x81'
         return {'name': name, 'offset': offset, 'arrayIndex': None, 'structName': None, 'type': 5, 'status': 'decoded',
                 'value': {'index': -1, 'object': self.reference}, 'payload': {'path': 'raw/map.unwrapped.bin',
-                    'offset': offset+2, 'bytes': 1, 'sha256': subject.digest(b'\x81')}}
+                    'offset': offset+2, 'bytes': 1, 'sha256': sha256_hex_digest(b'\x81')}}
 
     def write(self, name, data):
         path = self.root / name; path.parent.mkdir(parents=True, exist_ok=True); path.write_bytes(data)
-        return {'path': name, 'bytes': len(data), 'sha256': subject.digest(data)}
+        return {'path': name, 'bytes': len(data), 'sha256': sha256_hex_digest(data)}
 
     def archive(self, name, asset, payloads):
-        asset['files'] = [{'path': n, 'bytes': len(b), 'sha256': subject.digest(b)} for n, b in payloads.items()]
+        asset['files'] = [{'path': n, 'bytes': len(b), 'sha256': sha256_hex_digest(b)} for n, b in payloads.items()]
         return self.write(name, archive_bytes(asset, payloads))
 
     def save(self, requalify=True):
@@ -124,7 +123,7 @@ class PlacementAudioTests(unittest.TestCase):
                 for tag in tags:
                     raw = bytes(self.raw[tag['offset']:tag['payload']['offset']+tag['payload']['bytes']])
                     evidence['stepSounds'].append({'sourceTag': copy.deepcopy(tag), 'rawTagAndPayload': {
-                        'offset': tag['offset'], 'bytes': len(raw), 'hex': raw.hex(), 'sha256': subject.digest(raw)}})
+                        'offset': tag['offset'], 'bytes': len(raw), 'hex': raw.hex(), 'sha256': sha256_hex_digest(raw)}})
                 self.proof['placements'].append(evidence)
             self.proof['explicitMissingControls'] = [r for r in self.proof['omittedPlacements'] if r['placementId'] in self.recipe['absenceControls']]
             count = len(self.section['placements'])
@@ -172,7 +171,7 @@ class PlacementAudioTests(unittest.TestCase):
     def test_explicit_null_and_partially_omitted_slots_remain_distinct(self):
         tags = self.actors[1]['properties']; tag = tags[2]
         tag['value'] = {'index': 0, 'object': None}; self.raw[tag['payload']['offset']] = 0
-        tag['payload']['sha256'] = subject.digest(b'\0'); tags.pop(3); self.save()
+        tag['payload']['sha256'] = sha256_hex_digest(b'\0'); tags.pop(3); self.save()
         self.run_bundle(); slots = json.loads((self.output / 'manifest.json').read_bytes())['placements'][0]['slots']
         self.assertEqual([s['status'] for s in slots], ['explicit-null', 'omitted', 'source-declared'])
 
@@ -232,7 +231,7 @@ class PlacementAudioTests(unittest.TestCase):
         self.fails_read_only('Placement/source actor identity differs')
 
     def test_source_map_receipt_mismatch_is_rejected(self):
-        self.recipe['source']['map']['sha256'] = subject.digest(b'different')
+        self.recipe['source']['map']['sha256'] = sha256_hex_digest(b'different')
         self.write('recipes/bundle.json', json_bytes(self.recipe)); self.fails_read_only('Original map identity differs')
 
     def test_sound_export_provenance_mismatch_is_rejected(self):
@@ -259,7 +258,6 @@ class PlacementAudioTests(unittest.TestCase):
     def test_public_output_and_input_overlap_are_rejected(self):
         self.output = self.root / 'public/audio'; self.fails_read_only('artifacts/scratch')
         self.output = self.root / 'artifacts'; self.fails_read_only('named artifacts/scratch')
-        # Add an evidence input in artifacts to exercise retained-directory overlap.
         self.recipe['supportingEvidence'] = [self.write('artifacts/retained/pin.txt', b'source')]
         self.save(requalify=False); self.output = self.root / 'artifacts/retained/output'
         self.fails_read_only('overlaps an input')

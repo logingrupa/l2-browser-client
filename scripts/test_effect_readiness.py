@@ -1,4 +1,3 @@
-"""Small retained bundles exercise readiness inspection without native tools."""
 import base64
 import copy
 import json
@@ -11,7 +10,7 @@ from unittest.mock import patch
 
 from native_assets_lib.effect_readiness import inspect, run
 from native_assets_lib.gltf import json_bytes
-from stage_native_players import digest
+from native_assets_lib.sha256_identity import sha256_hex_digest
 
 PNG = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=')
 
@@ -68,18 +67,18 @@ class ReadinessTests(unittest.TestCase):
         prefix = 'assets/' + kind
         asset = {'schemaVersion': 1, 'id': 'interlude:' + obj, 'kind': kind, 'source': {'object': obj, 'sha256': '1' * 64},
                  {'model': 'model', 'texture': 'image', 'audio': 'audio'}[kind]: {'file': name},
-                 'files': [{'path': name, 'bytes': len(data), 'sha256': digest(data)}]}
+                 'files': [{'path': name, 'bytes': len(data), 'sha256': sha256_hex_digest(data)}]}
         archive = ('retained-archive-' + obj).encode()
         self.payloads[prefix + '/' + name] = data; self.payloads[prefix + '/asset.json'] = json_bytes(asset)
         self.payloads[prefix + '/asset.l2asset'] = archive
         self.assets.append({'object': obj, 'id': asset['id'], 'kind': kind, 'manifest': prefix + '/asset.json',
-                            'primary': prefix + '/' + name, 'archive': prefix + '/asset.l2asset', 'archiveSha256': digest(archive)})
+                            'primary': prefix + '/' + name, 'archive': prefix + '/asset.l2asset', 'archiveSha256': sha256_hex_digest(archive)})
 
     def save(self):
         self.payloads['effect-source.json'] = json_bytes(self.graph)
         for name, data in self.payloads.items():
             path = self.bundle / name; path.parent.mkdir(parents=True, exist_ok=True); path.write_bytes(data)
-        self.manifest['files'] = [{'file': n, 'bytes': len(d), 'sha256': digest(d)} for n, d in sorted(self.payloads.items())]
+        self.manifest['files'] = [{'file': n, 'bytes': len(d), 'sha256': sha256_hex_digest(d)} for n, d in sorted(self.payloads.items())]
         self.write_manifest()
 
     def write_manifest(self):
@@ -160,7 +159,7 @@ class ReadinessTests(unittest.TestCase):
     def test_model_image_mismatch_remains_explicit(self):
         glb = model_bytes(image=b'other-retained-image')
         self.payloads['assets/model/model.glb'] = glb
-        asset = json.loads(self.payloads['assets/model/asset.json']); asset['files'][0].update(bytes=len(glb), sha256=digest(glb))
+        asset = json.loads(self.payloads['assets/model/asset.json']); asset['files'][0].update(bytes=len(glb), sha256=sha256_hex_digest(glb))
         self.payloads['assets/model/asset.json'] = json_bytes(asset); self.save()
         report, _ = inspect(self.bundle)
         self.assertFalse(report['components'][1]['resourceReady'])
@@ -178,7 +177,7 @@ class ReadinessTests(unittest.TestCase):
     def replace_model(self, data):
         self.payloads['assets/model/model.glb'] = data
         asset = json.loads(self.payloads['assets/model/asset.json'])
-        asset['files'][0].update(bytes=len(data), sha256=digest(data))
+        asset['files'][0].update(bytes=len(data), sha256=sha256_hex_digest(data))
         self.payloads['assets/model/asset.json'] = json_bytes(asset); self.save()
 
     def test_hash_valid_but_malformed_glb_is_refused(self):
@@ -205,8 +204,6 @@ class ReadinessTests(unittest.TestCase):
         self.assertEqual(self.output.read_bytes(), before)
 
     def test_reparse_input_and_output_paths_are_refused_without_os_link_privilege(self):
-        # Windows may deny creating symlinks. Exercise the shared lstat guard
-        # directly, using real fixture directories marked as reparse entries.
         output_dir = self.root / 'linked-output'; output_dir.mkdir()
         original = Path.lstat
         def reparse(path):

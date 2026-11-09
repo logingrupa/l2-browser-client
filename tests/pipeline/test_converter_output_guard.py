@@ -4,6 +4,7 @@ import unittest
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_ROOT = REPOSITORY_ROOT / 'scripts'
+TESTS_ROOT = REPOSITORY_ROOT / 'tests'
 STORE_PATHS_RELATIVE_PATH = 'scripts/native_store/store_paths.py'
 OUTPUT_GUARD_NAME = 'require_converter_output'
 OUTPUT_OPTION = '--output'
@@ -13,6 +14,16 @@ STORE_PATH_HELPER_NAMES = {'refuse_reparse_points', 'confined_child_path', 'requ
 OUTPUT_GUARDED_MAIN_ENTRY_POINTS = ('scripts/data/convert_tables.py', 'scripts/native_catalog/cli.py')
 COMMITTED_REPORT_ENTRY_POINTS = ('scripts/data/sysstring_systemmsg_counts.py',)
 ARGUMENT_ERROR_METHOD_NAME = 'error'
+PLAYER_STAGE_MODULE = 'stage_native_players'
+STRICT_JSON_HELPER_OWNERS = {
+    'require_condition': 'scripts/native_assets_lib/guard_clauses.py',
+    'SHA256_HEX_PATTERN': 'scripts/native_assets_lib/sha256_identity.py',
+    'sha256_hex_digest': 'scripts/native_assets_lib/sha256_identity.py',
+    'decode_strict_json': 'scripts/native_assets_lib/strict_json.py',
+}
+FORMER_PLAYER_STAGE_HELPER_NAMES = {'decode', 'digest', 'require', 'HASH'}
+WORLD_LANE_DEFINERS_AWAITING_THE_OWNER = {'SHA256_HEX_PATTERN': ['scripts/world/copy_world07_fixtures.py']}
+PLAYER_STAGE_HELPER_NAMES = set(STRICT_JSON_HELPER_OWNERS) | FORMER_PLAYER_STAGE_HELPER_NAMES
 
 
 def called_function_name(call):
@@ -64,6 +75,39 @@ def top_level_function_names(relative_path):
     return {node.name for node in parse_script(relative_path).body if isinstance(node, ast.FunctionDef)}
 
 
+def python_sources_under_scripts_and_tests():
+    return sorted(path.relative_to(REPOSITORY_ROOT).as_posix() for root in (SCRIPTS_ROOT, TESTS_ROOT)
+                  for path in root.rglob('*.py') if '__pycache__' not in path.parts)
+
+
+def player_stage_helper_imports(trees_by_relative_path):
+    violations = []
+    for relative_path, module_tree in trees_by_relative_path.items():
+        player_stage_module_names = {alias.asname or alias.name for node in ast.walk(module_tree) if isinstance(node, ast.Import)
+                                     for alias in node.names if alias.name == PLAYER_STAGE_MODULE}
+        for node in ast.walk(module_tree):
+            if isinstance(node, ast.ImportFrom) and node.module == PLAYER_STAGE_MODULE:
+                violations.extend(f'{relative_path}:{node.lineno} {alias.name}' for alias in node.names if alias.name in PLAYER_STAGE_HELPER_NAMES)
+            elif (isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id in player_stage_module_names
+                  and node.attr in PLAYER_STAGE_HELPER_NAMES):
+                violations.append(f'{relative_path}:{node.lineno} {node.attr}')
+    return sorted(violations)
+
+
+def defines_top_level_name(module_tree, name):
+    for node in module_tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.ClassDef)) and node.name == name:
+            return True
+        targets = node.targets if isinstance(node, ast.Assign) else [node.target] if isinstance(node, ast.AnnAssign) else []
+        if any(isinstance(target, ast.Name) and target.id == name for target in targets):
+            return True
+    return False
+
+
+def top_level_definers(trees_by_relative_path, name):
+    return sorted(relative_path for relative_path, module_tree in trees_by_relative_path.items() if defines_top_level_name(module_tree, name))
+
+
 class ConverterOutputGuardScanTests(unittest.TestCase):
     def test_converter_init_guards_its_output_before_any_folder_is_created(self):
         converter = next(node for node in parse_script('scripts/native_assets.py').body
@@ -112,6 +156,29 @@ class ConverterOutputGuardScanTests(unittest.TestCase):
                         if '__pycache__' not in path.parts
                         and top_level_function_names(path.relative_to(REPOSITORY_ROOT).as_posix()) & STORE_PATH_HELPER_NAMES)
         self.assertEqual(owners, [STORE_PATHS_RELATIVE_PATH])
+
+    def test_strict_json_helpers_have_one_owner_each_and_no_player_stage_import(self):
+        trees_by_relative_path = {relative_path: parse_script(relative_path) for relative_path in python_sources_under_scripts_and_tests()}
+        self.assertEqual(player_stage_helper_imports(trees_by_relative_path), [])
+        for helper_name, owner in STRICT_JSON_HELPER_OWNERS.items():
+            with self.subTest(helper_name=helper_name):
+                expected_definers = sorted([owner, *WORLD_LANE_DEFINERS_AWAITING_THE_OWNER.get(helper_name, [])])
+                self.assertEqual(top_level_definers(trees_by_relative_path, helper_name), expected_definers)
+
+    def test_scan_flags_a_helper_reached_through_the_player_stage(self):
+        from_import = ast.parse('from stage_native_players import ID, decode_strict_json\n')
+        former_name_import = ast.parse('from stage_native_players import digest\n')
+        module_attribute = ast.parse('import stage_native_players as players\nplayers.sha256_hex_digest(b"")\n')
+        owner_import = ast.parse('from native_assets_lib.strict_json import decode_strict_json\nfrom stage_native_players import ID\n')
+        self.assertEqual(player_stage_helper_imports({'from-import.py': from_import, 'former-name-import.py': former_name_import,
+                                                      'module-attribute.py': module_attribute, 'owner-import.py': owner_import}),
+                         ['former-name-import.py:1 digest', 'from-import.py:1 decode_strict_json', 'module-attribute.py:2 sha256_hex_digest'])
+
+    def test_scan_counts_every_top_level_definition_of_a_helper(self):
+        trees_by_relative_path = {'owner.py': ast.parse("SHA256_HEX_PATTERN = re.compile(r'[a-f0-9]{64}')\n"),
+                                  'duplicate.py': ast.parse("SHA256_HEX_PATTERN: object = None\n"),
+                                  'nested.py': ast.parse('def outer():\n    SHA256_HEX_PATTERN = None\n')}
+        self.assertEqual(top_level_definers(trees_by_relative_path, 'SHA256_HEX_PATTERN'), ['duplicate.py', 'owner.py'])
 
 
 if __name__ == '__main__':

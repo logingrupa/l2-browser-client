@@ -1,6 +1,3 @@
-"""Selected skill dependencies: hostile/stale inputs and source preservation.
-Synthetic archives only; no real conversion, decoder, browser or native code.
-"""
 import copy
 import io
 import json
@@ -15,6 +12,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from native_assets import archive_bytes
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib import skill_audio_bundle as subject
+from native_assets_lib.sha256_identity import sha256_hex_digest
 
 
 def snapshot(root):
@@ -30,7 +28,7 @@ class SkillAudioTests(unittest.TestCase):
         stream = io.BytesIO()
         with wave.open(stream, 'wb') as writer:
             writer.setnchannels(2); writer.setsampwidth(2); writer.setframerate(22050); writer.writeframes(b'\x01\x00\x02\x00' * 4)
-        self.wav = stream.getvalue(); self.package_hash = subject.digest(b'synthetic-original-package')
+        self.wav = stream.getvalue(); self.package_hash = sha256_hex_digest(b'synthetic-original-package')
         self.inventory = {'kind': 'native-staged-sound-inventory', 'sounds': []}
         self.coverage = {'kind': 'native-staged-sound-coverage', 'sounds': []}
         self.add_sound('skillsound.Group.Test', 7)
@@ -46,15 +44,15 @@ class SkillAudioTests(unittest.TestCase):
 
     def write(self, name, data):
         path = self.root / name; path.parent.mkdir(parents=True, exist_ok=True); path.write_bytes(data)
-        return {'path': name, 'bytes': len(data), 'sha256': subject.digest(data)}
+        return {'path': name, 'bytes': len(data), 'sha256': sha256_hex_digest(data)}
 
     def add_sound(self, object_name, export_index):
         prefix = f'cache/{export_index}'; stable = f'FIXTURE:{self.package_hash}:{export_index}'
         asset = {'schemaVersion': 1, 'kind': 'audio', 'id': 'interlude:' + object_name,
             'source': {'edition': 'interlude', 'object': object_name, 'sha256': self.package_hash}, 'audio': {'file': 'audio.wav'}, 'animationEvents': []}
         payloads = {'audio.wav': self.wav, 'provenance.json': json_bytes({'metadata': {'nativeExportIndex': export_index,
-            'nativePayloadSha256': subject.digest(self.wav), 'encodedAudioUnchanged': True}})}
-        asset['files'] = [{'path': name, 'bytes': len(data), 'sha256': subject.digest(data)} for name, data in payloads.items()]
+            'nativePayloadSha256': sha256_hex_digest(self.wav), 'encodedAudioUnchanged': True}})}
+        asset['files'] = [{'path': name, 'bytes': len(data), 'sha256': sha256_hex_digest(data)} for name, data in payloads.items()]
         archive = self.write('inputs/corpus/' + prefix + '/asset.l2asset', archive_bytes(asset, payloads))
         audio = self.write('inputs/corpus/' + prefix + '/audio.wav', self.wav)
         native = self.write(f'inputs/corpus/source/{export_index}.bin', self.wav)
@@ -62,7 +60,7 @@ class SkillAudioTests(unittest.TestCase):
             'export': {'object': object_name, 'classObject': 'Engine.Sound', 'exportIndex': export_index},
             'sourcePackage': {'sha256': self.package_hash, 'relativePath': 'sounds/skillsound.uax'},
             'nativePayload': {**native, 'path': f'source/{export_index}.bin'},
-            'nativeSound': {'exportIndex': export_index, 'embeddedPayloadSha256': subject.digest(self.wav)},
+            'nativeSound': {'exportIndex': export_index, 'embeddedPayloadSha256': sha256_hex_digest(self.wav)},
             'serializedExport': {'offsetUnwrapped': export_index * 1000}})
         self.coverage['sounds'].append({'stableId': stable, 'status': 'exported-and-verified', 'products': {
             'archive': {**archive, 'path': prefix + '/asset.l2asset'}, 'audio': {**audio, 'path': prefix + '/audio.wav'}}})
@@ -71,7 +69,7 @@ class SkillAudioTests(unittest.TestCase):
         for name, collection, rows in [('skillgrp', 'skill', self.skill_rows), ('skillsoundgrp', 'skillsound', self.sound_rows)]:
             original = self.write('inputs/system/' + name + '.dat', b'synthetic original ' + name.encode())
             table = {'schemaVersion': 1, 'edition': 'interlude', 'source': 'system/' + name + '.dat', 'sourceSha256': original['sha256'],
-                'decodedSha256': subject.digest(json_bytes(rows)), 'schema': {'fixture': True}, 'formatDefinitionPins': {},
+                'decodedSha256': sha256_hex_digest(json_bytes(rows)), 'schema': {'fixture': True}, 'formatDefinitionPins': {},
                 'data': {'data': len(rows), collection: rows}}
             self.recipe['tables'][name] = {'original': original, 'decoded': self.write('inputs/' + name + '.json', json_bytes(table))}
         inventory = self.write('inputs/corpus/inventory.json', json_bytes(self.inventory))

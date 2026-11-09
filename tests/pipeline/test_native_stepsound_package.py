@@ -1,4 +1,3 @@
-"""Stepsound package bundle/stager fixtures, without native execution or real corpus writes."""
 import copy
 import io
 import json
@@ -13,10 +12,11 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from native_assets import archive_bytes
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib import stepsound_package_bundle as subject
+from native_assets_lib.sha256_identity import sha256_hex_digest
 import stage_native_stepsound_package as stager
 
 PACKAGE = 'sounds/stepsound.uax'
-NAMES = [  # (group, exact name) with deliberately mixed original casing
+GROUP_AND_MIXED_CASE_SOUND_NAMES = [
     ('Stone', 'stone_walk_01'), ('Stone', 'Stone_Walk_02'), ('Stone', 'stone_run_01'), ('Stone', 'stone_run_02'),
     ('Wood', 'wood_walk_01'), ('Wood', 'Wood_Run_01'),
     ('water', 'water_shalow_01'), ('water', 'Water_Shalow_02'), ('water', 'Water_In'), ('water', 'Water_Out'),
@@ -35,12 +35,12 @@ class StepsoundPackageTests(unittest.TestCase):
         self.root = Path(temp.name)
         self.output = self.root / 'artifacts/bundle'
         self.package_bytes = b'original stepsound package fixture'
-        self.package_sha = subject.digest(self.package_bytes)
+        self.package_sha = sha256_hex_digest(self.package_bytes)
         self.inventory = {'kind': 'native-staged-sound-inventory', 'packages': [{
             'source': {'relativePath': PACKAGE, 'sha256': self.package_sha, 'bytes': len(self.package_bytes)},
-            'status': 'enumerated', 'soundCount': len(NAMES), 'expectedSounds': len(NAMES)}], 'sounds': []}
+            'status': 'enumerated', 'soundCount': len(GROUP_AND_MIXED_CASE_SOUND_NAMES), 'expectedSounds': len(GROUP_AND_MIXED_CASE_SOUND_NAMES)}], 'sounds': []}
         self.coverage = {'kind': 'native-staged-sound-coverage', 'sounds': []}
-        for ordinal, (group, name) in enumerate(NAMES):
+        for ordinal, (group, name) in enumerate(GROUP_AND_MIXED_CASE_SOUND_NAMES):
             self.add_sound(ordinal + 2, group, name, frames=bytes([ordinal + 1, 0]) * (ordinal + 2))
         self.recipe = {'schemaVersion': 1, 'kind': subject.RECIPE_KIND,
                        'package': {'objectPrefix': 'stepsound', 'relativePath': PACKAGE, 'sha256': self.package_sha, 'bytes': len(self.package_bytes)},
@@ -65,25 +65,25 @@ class StepsoundPackageTests(unittest.TestCase):
         asset = {'schemaVersion': 1, 'kind': 'audio', 'id': 'interlude:' + obj,
                  'source': {'edition': 'interlude', 'object': obj, 'sha256': self.package_sha}, 'audio': {'file': 'audio.wav'}, 'animationEvents': []}
         payloads = {'audio.wav': wav, 'provenance.json': json_bytes({'metadata': {
-            'nativeExportIndex': export, 'encodedAudioUnchanged': True, 'nativePayloadSha256': subject.digest(wav)}})}
-        asset['files'] = [{'path': n, 'bytes': len(b), 'sha256': subject.digest(b)} for n, b in payloads.items()]
+            'nativeExportIndex': export, 'encodedAudioUnchanged': True, 'nativePayloadSha256': sha256_hex_digest(wav)}})}
+        asset['files'] = [{'path': n, 'bytes': len(b), 'sha256': sha256_hex_digest(b)} for n, b in payloads.items()]
         archive = self.write(f'inputs/corpus/cache/{export}/asset.l2asset', archive_bytes(asset, payloads))
         self.write(f'inputs/corpus/cache/{export}/audio.wav', wav)
         self.write(f'inputs/corpus/source/{export}/native-payload.bin', wav)
         self.inventory['sounds'].append({'stableId': stable, 'id': asset['id'], 'status': 'source-ready',
             'export': {'exportIndex': export, 'classObject': 'Engine.Sound', 'object': obj},
             'sourcePackage': {'relativePath': PACKAGE, 'sha256': self.package_sha, 'bytes': len(self.package_bytes)},
-            'nativePayload': {'path': f'source/{export}/native-payload.bin', 'sha256': subject.digest(wav), 'bytes': len(wav)},
-            'serializedExport': {'path': f'source/{export}/serialized.bin', 'bytes': len(wav) + 9, 'sha256': subject.digest(b'x' + wav)},
-            'nativeSound': {'exportIndex': export, 'embeddedPayloadSha256': subject.digest(wav)}})
+            'nativePayload': {'path': f'source/{export}/native-payload.bin', 'sha256': sha256_hex_digest(wav), 'bytes': len(wav)},
+            'serializedExport': {'path': f'source/{export}/serialized.bin', 'bytes': len(wav) + 9, 'sha256': sha256_hex_digest(b'x' + wav)},
+            'nativeSound': {'exportIndex': export, 'embeddedPayloadSha256': sha256_hex_digest(wav)}})
         self.coverage['sounds'].append({'stableId': stable, 'status': 'exported-and-verified', 'products': {
             'archive': {**archive, 'path': f'cache/{export}/asset.l2asset'},
-            'audio': {'path': f'cache/{export}/audio.wav', 'sha256': subject.digest(wav), 'bytes': len(wav),
+            'audio': {'path': f'cache/{export}/audio.wav', 'sha256': sha256_hex_digest(wav), 'bytes': len(wav),
                       'metadata': {'durationSeconds': len(frames) / 2 / 22050}}}})
 
     def write(self, name, data):
         path = self.root / name; path.parent.mkdir(parents=True, exist_ok=True); path.write_bytes(data)
-        return {'path': name, 'bytes': len(data), 'sha256': subject.digest(data)}
+        return {'path': name, 'bytes': len(data), 'sha256': sha256_hex_digest(data)}
 
     def stable(self, name):
         return next(r['stableId'] for r in self.inventory['sounds'] if r['export']['object'].endswith('.' + name))
@@ -153,7 +153,7 @@ class StepsoundPackageTests(unittest.TestCase):
         self.refused('Variation numbers are not contiguous from 01: Wood walk')
 
     def test_case_insensitive_classification_is_not_a_leaf_alias(self):
-        self.inventory['sounds'][4]['export']['object'] = 'stepsound.Stone.wood_walk_01'  # Wood name in the Stone group
+        self.inventory['sounds'][4]['export']['object'] = 'stepsound.Stone.wood_walk_01'
         self.save()
         self.refused('Unclassified stepsound Sound: stepsound.Stone.wood_walk_01')
 
@@ -207,7 +207,7 @@ class StepsoundPackageTests(unittest.TestCase):
         public = self.root / 'public/l2'; public.mkdir(parents=True)
         catalog = {'schemaVersion': 1, 'models': [], 'animationAudio': [{'id': 'human-fighter-footsteps', 'manifestSha256': 'a' * 64}]}
         (public / 'catalog.json').write_bytes(json_bytes(catalog))
-        return result['manifestSha256'], subject.digest((public / 'catalog.json').read_bytes()), catalog
+        return result['manifestSha256'], sha256_hex_digest((public / 'catalog.json').read_bytes()), catalog
 
     def test_stager_plan_stage_repeat_and_verify(self):
         manifest_hash, catalog_hash, catalog = self.stage_setup()
@@ -237,7 +237,7 @@ class StepsoundPackageTests(unittest.TestCase):
         conflicting['animationAudio'].append({'id': 'stepsound-surfaces', 'kind': 'native-stepsound-package', 'manifestSha256': 'c' * 64})
         (self.root / 'public/l2/catalog.json').write_bytes(json_bytes(conflicting))
         with self.assertRaisesRegex(ValueError, 'Existing stepsound identity differs'):
-            stager.stage(self.output, manifest_hash, subject.digest(json_bytes(conflicting)), root=self.root)
+            stager.stage(self.output, manifest_hash, sha256_hex_digest(json_bytes(conflicting)), root=self.root)
         (self.root / 'public/l2/catalog.json').write_bytes(json_bytes(catalog))
         next((self.output / 'audio').iterdir()).write_bytes(b'RIFFxxxxWAVE')
         with self.assertRaisesRegex(ValueError, 'Original audio payload differs'):

@@ -6,7 +6,10 @@ from pathlib import Path
 from native_assets_lib.gltf import json_bytes
 from native_store.catalog_writer import add_store_file, merge_catalog_slice, verify_store_destinations, write_store
 from native_store.store_paths import confined_child_path, refuse_reparse_points
-from stage_native_players import decode, digest, require, HASH, ID
+from native_assets_lib.guard_clauses import require_condition
+from native_assets_lib.sha256_identity import SHA256_HEX_PATTERN, sha256_hex_digest
+from native_assets_lib.strict_json import decode_strict_json
+from stage_native_players import ID
 
 WORLD_AUDIO_STAGE_DESCRIPTION = (
     'Stage a verified world-audio bundle (map music or ambience) into public/l2.\n'
@@ -24,54 +27,54 @@ MAX_FILE, MAX_TOTAL, MAX_RECORDS = 8_000_000, 96_000_000, 8
 
 
 def stage(bundle, manifest_sha256, expected_catalog_sha256, *, bundle_id, plan=False, verify_only=False, root=ROOT):
-    require(not (plan and verify_only), 'Plan and verify-only are mutually exclusive')
-    require(isinstance(bundle_id, str) and ID.fullmatch(bundle_id), 'Invalid world-audio bundle identity')
-    require(HASH.fullmatch(manifest_sha256) and HASH.fullmatch(expected_catalog_sha256), 'Invalid staging hash')
+    require_condition(not (plan and verify_only), 'Plan and verify-only are mutually exclusive')
+    require_condition(isinstance(bundle_id, str) and ID.fullmatch(bundle_id), 'Invalid world-audio bundle identity')
+    require_condition(SHA256_HEX_PATTERN.fullmatch(manifest_sha256) and SHA256_HEX_PATTERN.fullmatch(expected_catalog_sha256), 'Invalid staging hash')
     root, bundle = refuse_reparse_points(root), refuse_reparse_points(bundle)
-    require(bundle.is_relative_to(root) and bundle != root, 'Bundle must be a project child')
+    require_condition(bundle.is_relative_to(root) and bundle != root, 'Bundle must be a project child')
     public = refuse_reparse_points(root / 'public/l2')
     catalog_path = confined_child_path(public, 'catalog.json')
     before = catalog_path.read_bytes()
-    require(digest(before) == expected_catalog_sha256, 'Catalog changed; preserve it and inspect the new baseline')
-    catalog = decode(before)
-    require(catalog.get('schemaVersion') == 1 and isinstance(catalog.get('models'), list), 'Invalid native catalog')
+    require_condition(sha256_hex_digest(before) == expected_catalog_sha256, 'Catalog changed; preserve it and inspect the new baseline')
+    catalog = decode_strict_json(before)
+    require_condition(catalog.get('schemaVersion') == 1 and isinstance(catalog.get('models'), list), 'Invalid native catalog')
     manifest_bytes = confined_child_path(bundle, 'manifest.json').read_bytes()
-    require(digest(manifest_bytes) == manifest_sha256, 'World-audio manifest hash differs')
-    manifest = decode(manifest_bytes)
+    require_condition(sha256_hex_digest(manifest_bytes) == manifest_sha256, 'World-audio manifest hash differs')
+    manifest = decode_strict_json(manifest_bytes)
     kind = manifest.get('kind')
-    require(manifest.get('schemaVersion') == 1 and kind in KINDS, 'Unsupported world-audio bundle')
+    require_condition(manifest.get('schemaVersion') == 1 and kind in KINDS, 'Unsupported world-audio bundle')
     listed = manifest.get('files')
-    require(isinstance(listed, list) and 0 < len(listed) <= 4096, 'Invalid world-audio file list')
+    require_condition(isinstance(listed, list) and 0 < len(listed) <= 4096, 'Invalid world-audio file list')
     prefix = 'world-audio/' + manifest_sha256 + '/'
     files, total = {}, len(manifest_bytes)
     add_store_file(files, prefix + 'manifest.json', manifest_bytes)
     for row in listed:
         name, sha = row.get('path'), row.get('sha256')
-        require(isinstance(sha, str) and HASH.fullmatch(sha) and row.get('mime') in KINDS[kind] and
+        require_condition(isinstance(sha, str) and SHA256_HEX_PATTERN.fullmatch(sha) and row.get('mime') in KINDS[kind] and
                 type(row.get('bytes')) is int and 0 < row['bytes'] <= MAX_FILE and isinstance(name, str) and
                 name.rsplit('/', 1)[-1].split('.')[0] == sha and (prefix + name).casefold() not in files, 'Invalid world-audio payload descriptor')
         payload = confined_child_path(bundle, name).read_bytes()
-        require(len(payload) == row['bytes'] and digest(payload) == sha, 'World-audio payload differs: ' + name)
+        require_condition(len(payload) == row['bytes'] and sha256_hex_digest(payload) == sha, 'World-audio payload differs: ' + name)
         add_store_file(files, prefix + name, payload)
         total += len(payload)
-    require(total <= MAX_TOTAL, 'World-audio bundle exceeds the staging budget')
+    require_condition(total <= MAX_TOTAL, 'World-audio bundle exceeds the staging budget')
     entry = {'id': bundle_id, 'kind': kind, 'manifest': '/l2/' + prefix + 'manifest.json',
              'manifestBytes': len(manifest_bytes), 'manifestSha256': manifest_sha256}
     records = catalog.get('worldAudio', [])
-    require(isinstance(records, list) and len(records) <= MAX_RECORDS, 'Invalid world-audio catalog')
-    require(not any(item.get('kind') == kind and item.get('id') != bundle_id for item in records), 'Another bundle of this kind is staged; preserved')
+    require_condition(isinstance(records, list) and len(records) <= MAX_RECORDS, 'Invalid world-audio catalog')
+    require_condition(not any(item.get('kind') == kind and item.get('id') != bundle_id for item in records), 'Another bundle of this kind is staged; preserved')
     updated = merge_catalog_slice(catalog, 'worldAudio', entry, MAX_RECORDS)
     after = before if updated == catalog else json_bytes(updated)
     new_files = verify_store_destinations(public, files)
     if verify_only:
-        require(not new_files and before == after, 'Bundle is not completely staged')
-    require(catalog_path.read_bytes() == before, 'Catalog changed during staging')
+        require_condition(not new_files and before == after, 'Bundle is not completely staged')
+    require_condition(catalog_path.read_bytes() == before, 'Catalog changed during staging')
     written = 0
     if not plan and not verify_only:
         written = write_store(public, files, before, after)['filesWritten']
     return {'schemaVersion': 1, 'kind': 'native-world-audio-stage', 'mode': 'plan' if plan else 'verify' if verify_only else 'stage',
             'bundle': str(bundle.relative_to(root)).replace('\\', '/'), 'entry': entry,
-            'sourceCatalogSha256': digest(before), 'resultingCatalogSha256': digest(after),
+            'sourceCatalogSha256': sha256_hex_digest(before), 'resultingCatalogSha256': sha256_hex_digest(after),
             'newResources': len(new_files), 'resourceCount': len(files), 'resourceBytes': total, 'filesWritten': written,
             'scope': 'Additive world-audio staging only; models, sections, Editor assets and playback policy unchanged'}
 

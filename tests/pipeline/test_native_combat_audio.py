@@ -1,6 +1,3 @@
-"""Combat sound table dependencies and additive staging.
-Synthetic archives only; no real conversion, decoder, browser or native code.
-"""
 import copy
 import io
 import json
@@ -17,6 +14,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from native_assets import archive_bytes
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib import combat_audio_bundle as subject
+from native_assets_lib.sha256_identity import sha256_hex_digest
 import stage_native_combat_audio as stager
 
 
@@ -26,7 +24,6 @@ def snapshot(root):
 
 
 def ver111(text):
-    """Synthetic reviewed Lineage2Ver111 envelope (XOR 0xAC text, footer 0,8,71,CRC32,0)."""
     body = 'Lineage2Ver111'.encode('utf-16le') + bytes(value ^ 0xac for value in text.encode('ascii'))
     return body + struct.pack('<5I', 0, 8, 71, zlib.crc32(body), 0)
 
@@ -41,7 +38,7 @@ class CombatAudioFixture(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory(prefix='combat-audio-')
         self.addCleanup(temporary.cleanup); self.root = Path(temporary.name)
         self.output = self.root / 'artifacts/bundle'
-        self.package_hash = subject.digest(b'synthetic-original-package')
+        self.package_hash = sha256_hex_digest(b'synthetic-original-package')
         self.inventory = {'kind': 'native-staged-sound-inventory', 'sounds': []}
         self.coverage = {'kind': 'native-staged-sound-coverage', 'sounds': []}
         self.wavs = {}
@@ -69,7 +66,7 @@ class CombatAudioFixture(unittest.TestCase):
 
     def write(self, name, data):
         path = self.root / name; path.parent.mkdir(parents=True, exist_ok=True); path.write_bytes(data)
-        return {'path': name, 'bytes': len(data), 'sha256': subject.digest(data)}
+        return {'path': name, 'bytes': len(data), 'sha256': sha256_hex_digest(data)}
 
     def add_sound(self, object_name, export_index):
         stream = io.BytesIO()
@@ -80,8 +77,8 @@ class CombatAudioFixture(unittest.TestCase):
         asset = {'schemaVersion': 1, 'kind': 'audio', 'id': 'interlude:' + object_name,
             'source': {'edition': 'interlude', 'object': object_name, 'sha256': self.package_hash}, 'audio': {'file': 'audio.wav'}, 'animationEvents': []}
         payloads = {'audio.wav': wav, 'provenance.json': json_bytes({'metadata': {'nativeExportIndex': export_index,
-            'nativePayloadSha256': subject.digest(wav), 'encodedAudioUnchanged': True}})}
-        asset['files'] = [{'path': name, 'bytes': len(data), 'sha256': subject.digest(data)} for name, data in payloads.items()]
+            'nativePayloadSha256': sha256_hex_digest(wav), 'encodedAudioUnchanged': True}})}
+        asset['files'] = [{'path': name, 'bytes': len(data), 'sha256': sha256_hex_digest(data)} for name, data in payloads.items()]
         archive = self.write('inputs/corpus/' + prefix + '/asset.l2asset', archive_bytes(asset, payloads))
         audio = self.write('inputs/corpus/' + prefix + '/audio.wav', wav)
         native = self.write(f'inputs/corpus/source/{export_index}.bin', wav)
@@ -89,7 +86,7 @@ class CombatAudioFixture(unittest.TestCase):
             'export': {'object': object_name, 'classObject': 'Engine.Sound', 'exportIndex': export_index},
             'sourcePackage': {'sha256': self.package_hash, 'relativePath': 'sounds/fixture.uax'},
             'nativePayload': {**native, 'path': f'source/{export_index}.bin'},
-            'nativeSound': {'exportIndex': export_index, 'embeddedPayloadSha256': subject.digest(wav)},
+            'nativeSound': {'exportIndex': export_index, 'embeddedPayloadSha256': sha256_hex_digest(wav)},
             'serializedExport': {'offsetUnwrapped': export_index * 1000}})
         self.coverage['sounds'].append({'stableId': stable, 'status': 'exported-and-verified', 'products': {
             'archive': {**archive, 'path': prefix + '/asset.l2asset'}, 'audio': {**audio, 'path': prefix + '/audio.wav'}}})
@@ -98,7 +95,7 @@ class CombatAudioFixture(unittest.TestCase):
         for name, collection, rows in [('chargrp', 'Char', self.char_rows), ('npcgrp', 'npc', self.npc_rows)]:
             original = self.write('inputs/system/' + name + '.dat', b'synthetic original ' + name.encode())
             table = {'schemaVersion': 1, 'edition': 'interlude', 'source': 'system/' + name + '.dat', 'sourceSha256': original['sha256'],
-                'decodedSha256': subject.digest(json_bytes(rows)), 'schema': {'fixture': True}, 'data': {collection: rows}}
+                'decodedSha256': sha256_hex_digest(json_bytes(rows)), 'schema': {'fixture': True}, 'data': {collection: rows}}
             if name == 'npcgrp': table['data']['data'] = len(rows)
             self.recipe['tables'][name] = {'original': original, 'decoded': self.write('inputs/' + name + '.json', json_bytes(table))}
         inventory = self.write('inputs/corpus/inventory.json', json_bytes(self.inventory))

@@ -6,7 +6,9 @@ import struct
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib.world_music import Inputs, write_bundle
 from native_store.store_paths import refuse_reparse_points
-from stage_native_players import decode, digest, require
+from native_assets_lib.guard_clauses import require_condition
+from native_assets_lib.sha256_identity import sha256_hex_digest
+from native_assets_lib.strict_json import decode_strict_json
 
 KIND = 'native-map-ambience'
 FIELDS = ['id', 'exportIndex', 'x', 'y', 'z', 'soundRadius', 'soundVolume', 'soundPitch', 'ambientSoundType',
@@ -15,9 +17,9 @@ MAX_WAV = 8_000_000
 
 
 def pe_export_f32(data, symbol):
-    require(data[:2] == b'MZ', 'Not a PE image')
+    require_condition(data[:2] == b'MZ', 'Not a PE image')
     pe = struct.unpack_from('<I', data, 0x3C)[0]
-    require(data[pe:pe + 4] == b'PE\0\0' and struct.unpack_from('<H', data, pe + 24)[0] == 0x10B, 'Not a PE32 image')
+    require_condition(data[pe:pe + 4] == b'PE\0\0' and struct.unpack_from('<H', data, pe + 24)[0] == 0x10B, 'Not a PE32 image')
     sections, optional = struct.unpack_from('<H', data, pe + 6)[0], struct.unpack_from('<H', data, pe + 20)[0]
     base, table = pe + 24, []
     image_base = struct.unpack_from('<I', data, base + 28)[0]
@@ -51,42 +53,42 @@ def pe_export_f32(data, symbol):
 
 
 def wav_facts(data):
-    require(len(data) > 44 and data[:4] == b'RIFF' and data[8:12] == b'WAVE', 'Ambient payload is not RIFF/WAVE')
+    require_condition(len(data) > 44 and data[:4] == b'RIFF' and data[8:12] == b'WAVE', 'Ambient payload is not RIFF/WAVE')
     position, fmt, frames = 12, None, None
     while position + 8 <= len(data):
         tag, size = data[position:position + 4], struct.unpack_from('<I', data, position + 4)[0]
         body = data[position + 8:position + 8 + size]
-        require(len(body) == size, 'Truncated WAV chunk')
+        require_condition(len(body) == size, 'Truncated WAV chunk')
         if tag == b'fmt ':
             fmt = struct.unpack_from('<HHIIHH', body)
         elif tag == b'data':
             frames = size
         position += 8 + size + (size & 1)
-    require(fmt and frames is not None, 'WAV lacks fmt/data')
+    require_condition(fmt and frames is not None, 'WAV lacks fmt/data')
     codec, channels, rate, _, align, bits = fmt
-    require(codec == 1 and channels in (1, 2) and 8000 <= rate <= 96000 and bits in (8, 16) and align > 0, 'Unsupported WAV PCM format')
+    require_condition(codec == 1 and channels in (1, 2) and 8000 <= rate <= 96000 and bits in (8, 16) and align > 0, 'Unsupported WAV PCM format')
     return {'channels': channels, 'sampleRate': rate, 'bitsPerSample': bits, 'durationSeconds': frames / align / rate}
 
 
 def properties(declaration):
     values = {}
     for prop in declaration['properties']:
-        require(prop['name'] not in values and prop['arrayIndex'] is None, 'Duplicate/array emitter property: ' + prop['name'])
+        require_condition(prop['name'] not in values and prop['arrayIndex'] is None, 'Duplicate/array emitter property: ' + prop['name'])
         values[prop['name']] = prop.get('value')
     return values
 
 
 def emitter_row(item, sound_keys):
     declaration = item['declaration']
-    require(declaration['class'] == 'AmbientSoundObject' and declaration['id'] == item['id'], 'Unexpected ambient declaration')
+    require_condition(declaration['class'] == 'AmbientSoundObject' and declaration['id'] == item['id'], 'Unexpected ambient declaration')
     values = properties(declaration)
     location = values.get('Location')
-    require(isinstance(location, dict) and all(isinstance(location.get(k), (int, float)) for k in 'XYZ'), 'Emitter lacks Location')
+    require_condition(isinstance(location, dict) and all(isinstance(location.get(k), (int, float)) for k in 'XYZ'), 'Emitter lacks Location')
     reference = item.get('soundReference')
     sound = None
     if reference is not None:
         sound = reference.casefold()
-        require(sound in sound_keys, 'Emitter references an unexported sound: ' + reference)
+        require_condition(sound in sound_keys, 'Emitter references an unexported sound: ' + reference)
     region = {field['name']: field.get('value') for field in values.get('Region') or []} if isinstance(values.get('Region'), list) else {}
     zone = region.get('Zone')
     row = {'id': item['object'], 'exportIndex': item['exportIndex'], 'x': location['X'], 'y': location['Y'], 'z': location['Z'],
@@ -95,61 +97,61 @@ def emitter_row(item, sound_keys):
            'ambientSoundStartTime': values.get('AmbientSoundStartTime'), 'sound': sound,
            'zone': zone.get('object') if isinstance(zone, dict) else None, 'zoneNumber': region.get('ZoneNumber'),
            'group': values.get('Group')}
-    require(isinstance(row['soundRadius'], (int, float)) and row['soundRadius'] > 0 and type(row['soundVolume']) is int, 'Emitter radius/volume missing')
+    require_condition(isinstance(row['soundRadius'], (int, float)) and row['soundRadius'] > 0 and type(row['soundVolume']) is int, 'Emitter radius/volume missing')
     return [row[name] for name in FIELDS]
 
 
 def prepare(root, recipe_path):
     inputs = Inputs(root)
     recipe_path = refuse_reparse_points(recipe_path)
-    require(recipe_path.is_relative_to(inputs.root), 'Recipe must stay within the project root')
-    recipe = decode(inputs.pin(recipe_path.relative_to(inputs.root).as_posix()))
-    require(recipe.get('schemaVersion') == 1 and recipe.get('kind') == 'native-map-ambience-bundle', 'Unsupported ambience recipe')
+    require_condition(recipe_path.is_relative_to(inputs.root), 'Recipe must stay within the project root')
+    recipe = decode_strict_json(inputs.pin(recipe_path.relative_to(inputs.root).as_posix()))
+    require_condition(recipe.get('schemaVersion') == 1 and recipe.get('kind') == 'native-map-ambience-bundle', 'Unsupported ambience recipe')
     export = recipe['export']
     base = export['path'].rstrip('/')
     receipts = {name: inputs.read(base + '/' + name, export[key]) for name, key in
                 (('run.json', 'runSha256'), ('SHA256-MANIFEST.json', 'manifestSha256'))}
-    run = decode(receipts['run.json'])
-    require(run.get('kind') == 'native-map-ambient-audio-products' and run.get('settings', {}).get('runtimeStaging') is False, 'Unexpected ambient export owner')
-    listed = {row['path']: row for row in decode(receipts['SHA256-MANIFEST.json'])['files']}
+    run = decode_strict_json(receipts['run.json'])
+    require_condition(run.get('kind') == 'native-map-ambient-audio-products' and run.get('settings', {}).get('runtimeStaging') is False, 'Unexpected ambient export owner')
+    listed = {row['path']: row for row in decode_strict_json(receipts['SHA256-MANIFEST.json'])['files']}
 
     def product(name, max_bytes=None):
         row = listed.get(name)
-        require(row is not None, 'Export manifest does not list ' + name)
+        require_condition(row is not None, 'Export manifest does not list ' + name)
         return inputs.read(base + '/' + name, row['sha256'], row['bytes'])
 
     inventory_bytes, coverage_bytes = product('inventory.json'), product('coverage.json')
-    require(digest(inventory_bytes) == export['inventorySha256'] and digest(coverage_bytes) == export['coverageSha256'], 'Export inventory/coverage pin differs')
-    inventory, coverage = decode(inventory_bytes, 64_000_000), decode(coverage_bytes, 64_000_000)
-    require(inventory.get('kind') == 'native-map-ambient-source-inventory' and inventory.get('expectedInventoryMatch') is True and
+    require_condition(sha256_hex_digest(inventory_bytes) == export['inventorySha256'] and sha256_hex_digest(coverage_bytes) == export['coverageSha256'], 'Export inventory/coverage pin differs')
+    inventory, coverage = decode_strict_json(inventory_bytes, 64_000_000), decode_strict_json(coverage_bytes, 64_000_000)
+    require_condition(inventory.get('kind') == 'native-map-ambient-source-inventory' and inventory.get('expectedInventoryMatch') is True and
             coverage.get('status') == 'referenced-dependencies-exported-omissions-unresolved' and
-            coverage.get('inventorySha256') == digest(inventory_bytes), 'Ambient export is not a verified complete closure')
+            coverage.get('inventorySha256') == sha256_hex_digest(inventory_bytes), 'Ambient export is not a verified complete closure')
     results = {row['referenceKey']: row for row in coverage['sounds']}
     sounds, payloads = [], {}
     for row in inventory['sounds']:
         result = results.get(row['referenceKey'])
-        require(result and result['status'] == 'exported-and-verified', 'Sound not exported: ' + row['referenceKey'])
+        require_condition(result and result['status'] == 'exported-and-verified', 'Sound not exported: ' + row['referenceKey'])
         audio = result['products']['audio']
-        require(audio['mime'] == 'audio/wav' and audio['metadata'].get('encodedAudioUnchanged') is True, 'Ambient sound is not an unchanged WAV')
+        require_condition(audio['mime'] == 'audio/wav' and audio['metadata'].get('encodedAudioUnchanged') is True, 'Ambient sound is not an unchanged WAV')
         wav = product(audio['path'])
-        require(digest(wav) == audio['sha256'] and len(wav) == audio['bytes'] <= MAX_WAV, 'Ambient WAV differs from coverage')
+        require_condition(sha256_hex_digest(wav) == audio['sha256'] and len(wav) == audio['bytes'] <= MAX_WAV, 'Ambient WAV differs from coverage')
         facts = wav_facts(wav)
-        name = 'audio/' + digest(wav) + '.wav'
-        require(payloads.get(name, wav) == wav, 'Conflicting ambient payload')
+        name = 'audio/' + sha256_hex_digest(wav) + '.wav'
+        require_condition(payloads.get(name, wav) == wav, 'Conflicting ambient payload')
         payloads[name] = wav
         sounds.append({'key': row['referenceKey'], 'object': row['export']['object'], 'id': row['id'], 'file': name,
-                       'bytes': len(wav), 'sha256': digest(wav), 'mime': 'audio/wav', **facts,
+                       'bytes': len(wav), 'sha256': sha256_hex_digest(wav), 'mime': 'audio/wav', **facts,
                        'exportIndex': row['export']['exportIndex'], 'occurrences': row['occurrences'],
                        'sourcePackage': {k: row['sourcePackage'][k] for k in ('relativePath', 'sha256', 'sourceHost', 'sourcePath')}})
     keys = {sound['key'] for sound in sounds}
     emitters = [emitter_row(item, keys) for item in inventory['objects']]
-    require(len(emitters) == inventory['counts']['declarations'] == len({row[0] for row in emitters}), 'Emitter census differs')
+    require_condition(len(emitters) == inventory['counts']['declarations'] == len({row[0] for row in emitters}), 'Emitter census differs')
     spec = recipe['radiusMultiplier']
     image = inputs.read(spec['path'], spec['sha256'], spec['bytes'])
     multiplier = pe_export_f32(image, spec['export'])
     default_radius = pe_export_f32(image, spec['defaultRadiusExport'])
     inputs.unchanged()
-    files = [{'path': name, 'bytes': len(data), 'sha256': digest(data), 'mime': 'audio/wav'} for name, data in sorted(payloads.items())]
+    files = [{'path': name, 'bytes': len(data), 'sha256': sha256_hex_digest(data), 'mime': 'audio/wav'} for name, data in sorted(payloads.items())]
     types = {}
     for row in emitters:
         key = 'omitted' if row[8] is None else str(row[8])
@@ -176,9 +178,9 @@ def prepare(root, recipe_path):
 
 
 def run(root, recipe_path, output, *, plan=False, verify_only=False):
-    require(not (plan and verify_only), 'Plan and verify-only are mutually exclusive')
+    require_condition(not (plan and verify_only), 'Plan and verify-only are mutually exclusive')
     manifest, payloads, inputs = prepare(root, recipe_path)
     status, written = write_bundle(root, output, payloads, inputs, plan=plan, verify_only=verify_only)
-    return {'status': status, 'manifestSha256': digest(payloads['manifest.json']), 'coverage': manifest['coverage'],
+    return {'status': status, 'manifestSha256': sha256_hex_digest(payloads['manifest.json']), 'coverage': manifest['coverage'],
             'radiusMultiplier': manifest['radius']['maxRadiusMultiplier']['value'], 'filesWritten': written,
             'sourceInputsUnchanged': True, 'fileCount': len(payloads)}

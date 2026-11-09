@@ -1,4 +1,3 @@
-"""Synthetic archive/dependency fixtures; no converter or real source exports."""
 import copy
 import io
 import json
@@ -13,6 +12,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from native_assets import archive_bytes
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib import animation_audio_bundle as subject
+from native_assets_lib.sha256_identity import sha256_hex_digest
 
 
 def snapshot(root):
@@ -26,7 +26,7 @@ class BundleTests(unittest.TestCase):
         self.addCleanup(temp.cleanup)
         self.root = Path(temp.name)
         self.output = self.root / 'artifacts/bundle'
-        self.hash = subject.digest(b'original source')
+        self.hash = sha256_hex_digest(b'original source')
         self.wav = io.BytesIO()
         with wave.open(self.wav, 'wb') as writer:
             writer.setnchannels(1); writer.setsampwidth(2); writer.setframerate(22050)
@@ -48,15 +48,15 @@ class BundleTests(unittest.TestCase):
                       'audio': {'file': 'audio.wav'}, 'animationEvents': []}
         sound_archive = self.archive('inputs/sound.l2asset', self.sound, {'audio.wav': self.wav,
             'provenance.json': json_bytes({'metadata': {'nativeExportIndex': 7, 'encodedAudioUnchanged': True,
-                                                       'nativePayloadSha256': subject.digest(self.wav)}})})
+                                                       'nativePayloadSha256': sha256_hex_digest(self.wav)}})})
         self.write('inputs/audio.wav', self.wav)
         self.inventory['dependencies'] = [{'authoredReference': self.reference, 'sourceObject': 'stepsound.Grass.Run_01',
             'sourcePackageSha256': self.hash, 'exportIndex': 7,
-            'payload': {'sha256': subject.digest(self.wav), 'bytes': len(self.wav), 'offset': 1234},
+            'payload': {'sha256': sha256_hex_digest(self.wav), 'bytes': len(self.wav), 'offset': 1234},
             'existingExport': {'archivePath': sound_archive['path'], 'archiveSha256': sound_archive['sha256'],
                 'id': self.sound['id'], 'sourceObject': self.sound['source']['object'], 'sourcePackageSha256': self.hash,
                 'nativeExportIndex': 7, 'stableId': 'HOST:' + self.hash + ':7', 'wavPath': 'inputs/audio.wav',
-                'wavSha256': subject.digest(self.wav), 'wavBytes': len(self.wav)}}]
+                'wavSha256': sha256_hex_digest(self.wav), 'wavBytes': len(self.wav)}}]
         self.recipe = {'schemaVersion': 1, 'kind': 'native-animation-audio-bundle', 'arrayProperties': ['GrassRunSound'],
                        'actors': [{'catalogId': 'female:0', 'assetId': 'interlude:female', 'archive': {},
                                    'clips': [{'name': 'Run_FFighter', 'gait': 'run'}]}]}
@@ -64,16 +64,16 @@ class BundleTests(unittest.TestCase):
 
     def write(self, name, data):
         path = self.root / name; path.parent.mkdir(parents=True, exist_ok=True); path.write_bytes(data)
-        return {'path': name, 'sha256': subject.digest(data), 'bytes': len(data)}
+        return {'path': name, 'sha256': sha256_hex_digest(data), 'bytes': len(data)}
 
     def archive(self, name, asset, payloads):
-        asset['files'] = [{'path': n, 'sha256': subject.digest(b), 'bytes': len(b)} for n, b in payloads.items()]
+        asset['files'] = [{'path': n, 'sha256': sha256_hex_digest(b), 'bytes': len(b)} for n, b in payloads.items()]
         return self.write(name, archive_bytes(asset, payloads))
 
     def refresh_actor(self):
         self.recipe['actors'][0]['archive'] = self.archive('inputs/actor.l2asset', self.actor,
             {'model.glb': b'synthetic unrendered model payload', 'audio/breath.wav': self.wav})
-        manifest_hash = subject.digest(json_bytes(self.actor))
+        manifest_hash = sha256_hex_digest(json_bytes(self.actor))
         self.inventory['events'] = []
         for ordinal in [1, 2]:
             raw = self.actor['animationEvents'][ordinal]

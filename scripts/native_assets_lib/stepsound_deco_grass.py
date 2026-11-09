@@ -3,14 +3,16 @@ from __future__ import annotations
 import math
 import struct
 
-from native_assets_lib.animation_audio_bundle import Inputs, HASH
+from native_assets_lib.guard_clauses import require_condition
+from native_assets_lib.sha256_identity import sha256_hex_digest
+from native_assets_lib.strict_json import decode_strict_json
+from native_assets_lib.animation_audio_bundle import Inputs
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib.texture_mips import build_texture_source
 from native_catalog.ue2 import Package
 from native_map import actor_properties, decode_property, property_value
 from native_map_geometry import bit, native_terrain
 from native_store.store_paths import confined_child_path, refuse_reparse_points, require_portable_relative_path
-from stage_native_players import decode, digest, require
 
 KIND = 'native-stepsound-deco-grass'
 RECIPE_KIND = 'native-stepsound-deco-grass-bundle'
@@ -19,7 +21,7 @@ GRID_SCALE = 256
 
 
 def dxt1_green(data, width, height):
-    require(width > 0 and height > 0 and width % 4 == 0 and height % 4 == 0 and len(data) == width * height // 2,
+    require_condition(width > 0 and height > 0 and width % 4 == 0 and height % 4 == 0 and len(data) == width * height // 2,
             'DXT1 level size differs from its dimensions')
     out = bytearray(width * height)
     blocks_x = width // 4
@@ -36,7 +38,7 @@ def dxt1_green(data, width, height):
 
 def quad_means(channel, texture_width, texture_height, heightmap_width, heightmap_height):
     quads_x, quads_y = heightmap_width - 1, heightmap_height - 1
-    require(len(channel) == texture_width * texture_height and quads_x > 0 and quads_y > 0, 'Invalid density channel')
+    require_condition(len(channel) == texture_width * texture_height and quads_x > 0 and quads_y > 0, 'Invalid density channel')
     columns = []
     for qx in range(quads_x):
         x0 = qx * texture_width // heightmap_width
@@ -55,7 +57,7 @@ def quad_means(channel, texture_width, texture_height, heightmap_width, heightma
 
 
 def expected_capped(alpha, low, high, cap):
-    require(all(isinstance(v, (int, float)) and math.isfinite(v) for v in (alpha, low, high, cap)) and
+    require_condition(all(isinstance(v, (int, float)) and math.isfinite(v) for v in (alpha, low, high, cap)) and
             0 <= low <= high and cap >= 0 and 0 <= alpha <= 1, 'Invalid density expectation input')
     if alpha == 0 or cap == 0 or high == 0:
         return 0.0
@@ -69,7 +71,7 @@ def expected_capped(alpha, low, high, cap):
 
 def correlation(left, right):
     count = len(left)
-    require(count == len(right) and count > 1, 'Correlation inputs differ')
+    require_condition(count == len(right) and count > 1, 'Correlation inputs differ')
     mean_left, mean_right = sum(left) / count, sum(right) / count
     cov = sum((a - mean_left) * (b - mean_right) for a, b in zip(left, right))
     var_left = sum((a - mean_left) ** 2 for a in left)
@@ -96,21 +98,21 @@ def build_grid(layers, quads_x, quads_y, visible):
 
 def encode_grid(grid):
     values = [round(value * GRID_SCALE) for value in grid]
-    require(all(0 <= value <= 0xFFFF for value in values), 'Expected instance grid exceeds its encoding')
+    require_condition(all(0 <= value <= 0xFFFF for value in values), 'Expected instance grid exceeds its encoding')
     return struct.pack('<' + str(len(values)) + 'H', *values)
 
 
 def flatten(value):
     if isinstance(value, list) and value and isinstance(value[0], dict) and 'name' in value[0]:
         names = [field['name'] for field in value]
-        require(len(set(names)) == len(names), 'Duplicate DecoLayer field')
+        require_condition(len(set(names)) == len(names), 'Duplicate DecoLayer field')
         return {field['name']: flatten(field.get('value')) for field in value}
     return value
 
 
 def export_named(package, reference, class_name):
     matches = [item for item in package.exports if item['object'].casefold() == reference.casefold()]
-    require(len(matches) == 1 and matches[0]['className'] == class_name, 'Exact qualified object/class unresolved: ' + reference)
+    require_condition(len(matches) == 1 and matches[0]['className'] == class_name, 'Exact qualified object/class unresolved: ' + reference)
     return matches[0]
 
 
@@ -124,43 +126,43 @@ def decoded_level(package, reference, expected_size):
     item = export_named(package, reference, 'Texture')
     metadata, files = build_texture_source(package, item)
     level = metadata['mips'][0]
-    require(metadata['format']['name'] == 'DXT1' and [level['width'], level['height']] == expected_size and
+    require_condition(metadata['format']['name'] == 'DXT1' and [level['width'], level['height']] == expected_size and
             metadata.get('sourceExportFullyConsumed') is True, 'Texture format/size differs from the recipe: ' + reference)
     mip = files[level['file']]
-    require(digest(mip) == level['sha256'], 'Texture level hash differs: ' + reference)
+    require_condition(sha256_hex_digest(mip) == level['sha256'], 'Texture level hash differs: ' + reference)
     return item, metadata, mip
 
 
 def prepare(root, recipe_path):
     inputs = Inputs(root)
     recipe_path = refuse_reparse_points(recipe_path)
-    require(recipe_path.is_relative_to(inputs.root), 'Recipe must stay within project root')
+    require_condition(recipe_path.is_relative_to(inputs.root), 'Recipe must stay within project root')
     raw_recipe = recipe_path.read_bytes()
-    recipe = decode(inputs.read({'path': recipe_path.relative_to(inputs.root).as_posix(), 'sha256': digest(raw_recipe)}))
-    require(recipe.get('schemaVersion') == 1 and recipe.get('kind') == RECIPE_KIND, 'Unsupported deco-grass recipe')
+    recipe = decode_strict_json(inputs.read({'path': recipe_path.relative_to(inputs.root).as_posix(), 'sha256': sha256_hex_digest(raw_recipe)}))
+    require_condition(recipe.get('schemaVersion') == 1 and recipe.get('kind') == RECIPE_KIND, 'Unsupported deco-grass recipe')
     client = require_portable_relative_path(recipe['client'])
     rule = recipe['rule']
-    require(rule.get('countRadius') == 64.0 and rule.get('grassMinimumCount') == 2 and rule.get('densityChannel') == 'green',
+    require_condition(rule.get('countRadius') == 64.0 and rule.get('grassMinimumCount') == 2 and rule.get('densityChannel') == 'green',
             'Recipe rule differs from the native GetDecoLayerAlpha gate (64 UU, count > 1)')
     package = pinned_package(inputs, client, recipe['map'])
-    require((package.summary['version'], package.summary['licenseeVersion']) == (123, 28), 'Map package version differs')
+    require_condition((package.summary['version'], package.summary['licenseeVersion']) == (123, 28), 'Map package version differs')
     native = native_terrain(package)
-    require(native['object'].casefold() == recipe['terrain'].casefold(), 'Terrain object differs from the recipe')
+    require_condition(native['object'].casefold() == recipe['terrain'].casefold(), 'Terrain object differs from the recipe')
     width, height = native['width'], native['height']
     quads_x, quads_y = width - 1, height - 1
     axes, origin = native['toHeightmap']['axes'], native['toHeightmap']['origin']
-    require(axes[0][1] == axes[0][2] == axes[1][0] == axes[1][2] == 0 and axes[0][0] > 0 and axes[1][1] > 0,
+    require_condition(axes[0][1] == axes[0][2] == axes[1][0] == axes[1][2] == 0 and axes[0][0] > 0 and axes[1][1] > 0,
             'Terrain heightmap transform is not axis-aligned')
     quad_size = [1 / axes[0][0], 1 / axes[1][1]]
     terrain_item = export_named(package, recipe['terrain'], 'TerrainInfo')
     tags, _, _, _ = actor_properties(package, terrain_item)
     properties = [decode_property(package, tag, recipe['map']['path']) for tag in tags]
     visibility = property_value(properties, 'QuadVisibilityBitmap')
-    require(isinstance(visibility, dict) and isinstance(visibility.get('words'), list) and len(visibility['words']) * 32 == width * height,
+    require_condition(isinstance(visibility, dict) and isinstance(visibility.get('words'), list) and len(visibility['words']) * 32 == width * height,
             'QuadVisibilityBitmap differs from the terrain dimensions')
     visible = [bit(visibility['words'], width, qx, qy) for qy in range(quads_y) for qx in range(quads_x)]
     declarations = property_value(properties, 'DecoLayers')
-    require(isinstance(declarations, list) and len(declarations) == recipe['expectedCoverage']['decoLayers'], 'DecoLayer count differs')
+    require_condition(isinstance(declarations, list) and len(declarations) == recipe['expectedCoverage']['decoLayers'], 'DecoLayer count differs')
     density_package = pinned_package(inputs, client, recipe['densityPackage'])
     layers, published = [], []
     for index, raw in enumerate(declarations):
@@ -176,7 +178,7 @@ def prepare(root, recipe_path):
         expected = [expected_capped(value, multiplier['min'], multiplier['max'], layer['maxPerQuad']) for value in alpha]
         published.append({'index': index, 'staticMesh': fields['StaticMesh']['object'],
                           'densityMap': {'object': item['object'], 'package': recipe['densityPackage']['path'],
-                                         'exportSha256': digest(density_package.data[item['offset']:item['offset'] + item['size']]),
+                                         'exportSha256': sha256_hex_digest(density_package.data[item['offset']:item['offset'] + item['size']]),
                                          'format': 'DXT1', 'width': level['width'], 'height': level['height'], 'mip0Sha256': level['sha256']},
                           'densityMultiplier': multiplier, 'maxPerQuad': layer['maxPerQuad'],
                           'scaleMultiplier': fields.get('ScaleMultiplier'), 'fadeoutRadius': fields.get('FadeoutRadius'),
@@ -186,7 +188,7 @@ def prepare(root, recipe_path):
                           'expectedInstancesVisibleQuads': round(sum(e for e, v in zip(expected, visible) if v), 3)})
     grid = build_grid(layers, quads_x, quads_y, visible)
     payload = encode_grid(grid)
-    grid_sha = digest(payload)
+    grid_sha = sha256_hex_digest(payload)
     check = recipe['orientationCheck']
     alpha_package = pinned_package(inputs, client, check['package'])
     orientation = {}
@@ -198,10 +200,10 @@ def prepare(root, recipe_path):
                                   'flippedRows': round(correlation(flip_rows(layers[0]['alpha'], quads_x), mask), 4)}
     sectors = [[*sector['offset'], *sector['quads']] for sector in native['sectors']]
     for ox, oy, qx, qy in sectors:
-        require(0 <= ox and 0 <= oy and qx > 0 and qy > 0 and ox + qx <= quads_x and oy + qy <= quads_y, 'Sector outside the quad grid')
+        require_condition(0 <= ox and 0 <= oy and qx > 0 and qy > 0 and ox + qx <= quads_x and oy + qy <= quads_y, 'Sector outside the quad grid')
     coverage = {'decoLayers': len(layers), 'quadsX': quads_x, 'quadsY': quads_y, 'sectors': len(sectors),
                 'visibleQuads': sum(visible), 'quadsWithExpectedInstances': sum(value > 0 for value in grid)}
-    require(coverage == recipe['expectedCoverage'], 'Deco-grass coverage differs from recipe: ' + json_bytes(coverage).decode())
+    require_condition(coverage == recipe['expectedCoverage'], 'Deco-grass coverage differs from recipe: ' + json_bytes(coverage).decode())
     inputs.unchanged()
     grid_file = 'grid/' + grid_sha + '.bin'
     manifest = {
@@ -241,22 +243,22 @@ def prepare(root, recipe_path):
 
 
 def run(root, recipe_path, output, *, plan=False, verify_only=False, prepare_bundle=prepare):
-    require(not (plan and verify_only), 'Plan and verify-only are mutually exclusive')
+    require_condition(not (plan and verify_only), 'Plan and verify-only are mutually exclusive')
     manifest, payloads, inputs = prepare_bundle(root, recipe_path)
     output = refuse_reparse_points(output)
-    require(any(output != inputs.root / name and output.is_relative_to(inputs.root / name)
+    require_condition(any(output != inputs.root / name and output.is_relative_to(inputs.root / name)
                 for name in ('artifacts', 'scratch', '.scratch')), 'Output must be a named artifacts/scratch subdirectory')
     for name in inputs.records:
         path = confined_child_path(inputs.root, name)
-        require(not path.is_relative_to(output) and not output.is_relative_to(path.parent), 'Output overlaps an input or retained directory')
+        require_condition(not path.is_relative_to(output) and not output.is_relative_to(path.parent), 'Output overlaps an input or retained directory')
     exists = output.exists()
     if exists:
-        require(output.is_dir(), 'Output is not a directory')
+        require_condition(output.is_dir(), 'Output is not a directory')
         actual = {path.relative_to(output).as_posix() for path in output.rglob('*') if refuse_reparse_points(path).is_file()}
-        require(actual == set(payloads), 'Existing output file set differs; preserved')
+        require_condition(actual == set(payloads), 'Existing output file set differs; preserved')
         for name, data in payloads.items():
-            require(confined_child_path(output, name).read_bytes() == data, 'Existing immutable output differs; preserved: ' + name)
-    require(not verify_only or exists, 'Verify-only requires a complete existing output')
+            require_condition(confined_child_path(output, name).read_bytes() == data, 'Existing immutable output differs; preserved: ' + name)
+    require_condition(not verify_only or exists, 'Verify-only requires a complete existing output')
     status = 'planned' if plan else 'verified' if verify_only else 'preserved' if exists else 'produced'
     written = 0
     if status == 'produced':
@@ -269,12 +271,12 @@ def run(root, recipe_path, output, *, plan=False, verify_only=False, prepare_bun
                 stream.write(payloads[name])
             written += 1
     inputs.unchanged()
-    return {'status': status, 'manifestSha256': digest(payloads['manifest.json']), 'coverage': manifest['coverage'],
+    return {'status': status, 'manifestSha256': sha256_hex_digest(payloads['manifest.json']), 'coverage': manifest['coverage'],
             'grid': {k: manifest['grid'][k] for k in ('sha256', 'maxPerQuad', 'totalExpected')},
             'orientationCheck': manifest['orientationCheck']['correlations'],
             'filesWritten': written, 'sourceInputsUnchanged': True,
-            'files': [{'path': name, 'bytes': len(data), 'sha256': digest(data)} for name, data in sorted(payloads.items())]}
+            'files': [{'path': name, 'bytes': len(data), 'sha256': sha256_hex_digest(data)} for name, data in sorted(payloads.items())]}
 
 
-__all__ = ['HASH', 'KIND', 'RECIPE_KIND', 'RULE_LABEL', 'GRID_SCALE', 'build_grid', 'correlation', 'dxt1_green', 'encode_grid',
+__all__ = ['KIND', 'RECIPE_KIND', 'RULE_LABEL', 'GRID_SCALE', 'build_grid', 'correlation', 'dxt1_green', 'encode_grid',
            'expected_capped', 'flip_rows', 'prepare', 'quad_means', 'run']
