@@ -60,7 +60,7 @@ def synthetic_profile_bundle_members():
 
 
 def synthetic_profile_manifest(member_pins):
-    return {'schemaVersion': 1, 'id': 'synthetic-fixture-npc-profiles', 'kind': 'native-npc-profiles', 'profiles': [{'npcId': 20001}],
+    return {'schemaVersion': 1, 'id': 'synthetic-fixture-npc-profiles', 'kind': 'native-npc-profiles', 'profiles': [{'npcId': 20001, 'mesh': 'SyntheticFixture.Mesh'}],
             'sourceFiles': [{'path': 'system/SyntheticFixture.u', 'bytes': 10, 'sha256': '5' * 64}],
             'sourceSelections': SOURCE_SELECTIONS, 'classDefinitions': ['SyntheticFixture.Actor'], 'files': member_pins}
 
