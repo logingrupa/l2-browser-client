@@ -1,0 +1,276 @@
+import hashlib
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
+import unittest
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / 'scripts'))
+
+from native_assets_lib.gltf import json_bytes
+from native_store.catalog_writer import CatalogWriteError, pinned_store_files
+from native_store.merge_lane_store import LaneStoreMergeRefusedError, merge_lane_store
+from native_store.store_paths import StorePathError, lane_store_root
+from native_store.write_lane_catalog import write_lane_catalog
+
+GOLDEN_ROOT = ROOT / 'tests' / 'fixtures' / 'golden'
+GOLDEN_CATALOG_BYTES = (GOLDEN_ROOT / 'l2' / 'catalog.json').read_bytes()
+NATIVE_RESOURCE_PREFIX = '/l2/'
+PROFILE_RECORD_ID = 'interlude:npc-profiles:synthetic-fixture'
+RAW_CLASS_EXPORT = 'source/classes/SyntheticFixture.Actor.bin'
+CLASS_DEFINITION = 'source/classes/SyntheticFixture.Actor.json'
+SOURCE_SELECTIONS = 'source/npc-selections.json'
+
+try:
+    import _winapi
+    JUNCTION_FACTORY = _winapi.CreateJunction
+    JUNCTION_UNAVAILABLE_REASON = None
+except (ImportError, AttributeError) as error:
+    JUNCTION_FACTORY = None
+    JUNCTION_UNAVAILABLE_REASON = f'NTFS junctions unavailable: {error}'
+
+
+def sha256_hex(payload):
+    return hashlib.sha256(payload).hexdigest()
+
+
+def write_file(path, payload):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(payload)
+
+
+def snapshot_tree(root):
+    return {path.relative_to(root).as_posix(): (path.read_bytes(), path.stat().st_mtime_ns)
+            for path in sorted(root.rglob('*')) if path.is_file()}
+
+
+def bundle_member_pin(member, payload):
+    return {'file': member, 'bytes': len(payload), 'sha256': sha256_hex(payload)}
+
+
+def synthetic_profile_bundle_members():
+    selections = json_bytes({'tables': {'npcgrp': {'schema': {'file': 'npcgrp.xml', 'sha256': '4' * 64, 'layout': 'synthetic'}}},
+                             'selections': [{'id': 20001}]})
+    definition = json_bytes({'object': 'SyntheticFixture.Actor', 'rawExport': RAW_CLASS_EXPORT})
+    return {RAW_CLASS_EXPORT: b'synthetic raw class export bytes', CLASS_DEFINITION: definition, SOURCE_SELECTIONS: selections}
+
+
+def synthetic_profile_manifest(member_pins):
+    return {'schemaVersion': 1, 'id': 'synthetic-fixture-npc-profiles', 'kind': 'native-npc-profiles', 'profiles': [{'npcId': 20001}],
+            'sourceFiles': [{'path': 'system/SyntheticFixture.u', 'bytes': 10, 'sha256': '5' * 64}],
+            'sourceSelections': SOURCE_SELECTIONS, 'classDefinitions': ['SyntheticFixture.Actor'], 'files': member_pins}
+
+
+class ProfileBundle:
+    def __init__(self, members, member_pins=None, manifest_folder='npc-profiles'):
+        self.members = members
+        self.manifest_bytes = json_bytes(synthetic_profile_manifest(member_pins or [bundle_member_pin(name, payload)
+                                                                                     for name, payload in sorted(members.items())]))
+        self.manifest_sha256 = sha256_hex(self.manifest_bytes)
+        self.folder = f'{manifest_folder}/{self.manifest_sha256}' if manifest_folder else ''
+        self.manifest_relative = f'{self.folder}/manifest.json' if self.folder else 'manifest.json'
+        self.record = {'id': PROFILE_RECORD_ID, 'manifest': NATIVE_RESOURCE_PREFIX + self.manifest_relative,
+                       'manifestSha256': self.manifest_sha256, 'manifestBytes': len(self.manifest_bytes)}
+
+    def member_relative(self, member):
+        return f'{self.folder}/{member}' if self.folder else member
+
+    def write(self, store_root, source_catalog_sha256=None):
+        catalog = {'schemaVersion': 1, 'models': [], 'npcProfiles': [self.record]}
+        if source_catalog_sha256 is not None:
+            catalog['sourceCatalogSha256'] = source_catalog_sha256
+        write_file(store_root / 'catalog.json', json_bytes(catalog))
+        write_file(store_root / self.manifest_relative, self.manifest_bytes)
+        write_file(store_root / self.member_relative('receipt.json'), b'{"schemaVersion":1}')
+        for member, payload in self.members.items():
+            write_file(store_root / self.member_relative(member), payload)
+        return catalog
+
+    def pinned_relative_paths(self):
+        return sorted([self.manifest_relative, *(self.member_relative(member) for member in self.members)])
+
+
+class TemporaryStoreTestCase(unittest.TestCase):
+    def setUp(self):
+        temporary_directory = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary_directory.cleanup)
+        self.temporary_root = Path(temporary_directory.name).resolve()
+
+    def make_junction(self, link, target):
+        if JUNCTION_FACTORY is None:
+            self.skipTest(JUNCTION_UNAVAILABLE_REASON)
+        link.parent.mkdir(parents=True, exist_ok=True)
+        JUNCTION_FACTORY(str(target), str(link))
+        self.addCleanup(os.rmdir, link)
+
+
+class ProfileBundleLaneTests(TemporaryStoreTestCase):
+    def setUp(self):
+        super().setUp()
+        self.project = self.temporary_root / 'project'
+        (self.project / 'artifacts').mkdir(parents=True)
+        write_file(self.project / 'public' / 'l2' / 'catalog.json', GOLDEN_CATALOG_BYTES)
+        self.actors_store = lane_store_root(self.project, 'actors')
+        self.bundle = ProfileBundle(synthetic_profile_bundle_members())
+        self.bundle.write(self.actors_store)
+
+    def test_a_profile_bundle_manifest_pins_its_files_by_relative_path_and_members_are_never_parsed_for_pins(self):
+        catalog = json.loads((self.actors_store / 'catalog.json').read_bytes())
+        files = pinned_store_files(self.actors_store, catalog)
+        self.assertEqual(sorted(relative for relative, _ in files.values()), self.bundle.pinned_relative_paths())
+        for member, payload in self.bundle.members.items():
+            self.assertEqual(files[self.bundle.member_relative(member).casefold()], (self.bundle.member_relative(member), payload))
+
+    def test_the_lane_catalog_pins_the_bundle_and_plan_prints_the_restage_command(self):
+        subprocess.run(['git', 'init', '--quiet', str(self.project)], check=True, capture_output=True)
+        summary = write_lane_catalog(self.project, 'actors')
+        self.assertEqual(summary['recordsBySlice'], {'models': 0, 'npcProfiles': 1})
+        catalog = json.loads((self.actors_store / 'catalog.json').read_bytes())
+        self.assertEqual(catalog['sourceCatalogSha256'], sha256_hex(GOLDEN_CATALOG_BYTES))
+        snapshot = snapshot_tree(self.project)
+        plan = write_lane_catalog(self.project, 'actors', plan_only=True)
+        self.assertEqual(plan['filesWritten'], 0)
+        self.assertIn(f'--lane-store {self.actors_store.as_posix()} --target public/l2 '
+                      f'--expected-base-catalog-sha256 {sha256_hex(GOLDEN_CATALOG_BYTES)}', plan['restageCommand'])
+        self.assertEqual(snapshot_tree(self.project), snapshot)
+
+    def test_a_union_lane_takes_the_bundle_files_and_the_profile_record(self):
+        write_lane_catalog(self.project, 'actors')
+        write_lane_catalog(self.project, 'integration', ('actors',))
+        integration_store = lane_store_root(self.project, 'integration')
+        self.assertEqual(json.loads((integration_store / 'catalog.json').read_bytes())['npcProfiles'], [self.bundle.record])
+        for relative in self.bundle.pinned_relative_paths():
+            self.assertEqual((integration_store / relative).read_bytes(), (self.actors_store / relative).read_bytes())
+
+    def test_the_merge_copies_the_pinned_bundle_files_to_their_content_addresses_and_leaves_the_unpinned_receipt(self):
+        write_lane_catalog(self.project, 'actors')
+        target_root = self.temporary_root / 'target' / 'l2'
+        shutil.copytree(GOLDEN_ROOT / 'l2', target_root)
+        result = merge_lane_store(self.actors_store, target_root, sha256_hex(GOLDEN_CATALOG_BYTES))
+        self.assertEqual(result['copiedFiles'], self.bundle.pinned_relative_paths())
+        self.assertEqual(result['addedRecordsBySlice'], {'npcProfiles': 1})
+        merged_manifest = (target_root / self.bundle.manifest_relative).read_bytes()
+        self.assertEqual(sha256_hex(merged_manifest), Path(self.bundle.folder).name)
+        for pin in json.loads(merged_manifest)['files']:
+            self.assertEqual(sha256_hex((target_root / self.bundle.member_relative(pin['file'])).read_bytes()), pin['sha256'])
+        self.assertFalse((target_root / self.bundle.member_relative('receipt.json')).exists())
+        self.assertEqual(json.loads((target_root / 'catalog.json').read_bytes())['npcProfiles'], [self.bundle.record])
+
+    def test_the_merge_refuses_a_tampered_bundle_file_without_touching_the_target(self):
+        write_lane_catalog(self.project, 'actors')
+        write_file(self.actors_store / self.bundle.member_relative(RAW_CLASS_EXPORT), b'tampered class export')
+        target_root = self.temporary_root / 'target' / 'l2'
+        shutil.copytree(GOLDEN_ROOT / 'l2', target_root)
+        snapshot = snapshot_tree(target_root)
+        with self.assertRaisesRegex(LaneStoreMergeRefusedError, 'pinned store file SHA-256 differs from its pin'):
+            merge_lane_store(self.actors_store, target_root, sha256_hex(GOLDEN_CATALOG_BYTES))
+        self.assertEqual(snapshot_tree(target_root), snapshot)
+
+    def test_the_lane_catalog_refuses_a_bundle_file_that_steps_out_of_its_folder(self):
+        payload = b'outside bytes'
+        bundle = ProfileBundle({}, member_pins=[bundle_member_pin('../outside.bin', payload)])
+        shutil.rmtree(self.actors_store)
+        bundle.write(self.actors_store)
+        with self.assertRaisesRegex(CatalogWriteError, r"steps out of its bundle folder with \.\.: '\.\./outside\.bin'"):
+            write_lane_catalog(self.project, 'actors')
+
+
+class BundleMemberGuardTests(TemporaryStoreTestCase):
+    def setUp(self):
+        super().setUp()
+        self.store_root = self.temporary_root / 'store' / 'l2'
+
+    def pin_store(self, member, payload, member_pin=None, write_member=True):
+        bundle = ProfileBundle({}, member_pins=[member_pin or bundle_member_pin(member, payload)])
+        catalog = bundle.write(self.store_root)
+        if write_member:
+            write_file(self.store_root / bundle.member_relative(member), payload)
+        return bundle, catalog
+
+    def assert_pin_refused(self, error_type, message_pattern, member, payload=b'member bytes', member_pin=None, write_member=False):
+        bundle, catalog = self.pin_store(member, payload, member_pin, write_member)
+        with self.assertRaisesRegex(error_type, message_pattern):
+            pinned_store_files(self.store_root, catalog)
+        return bundle
+
+    def test_path_guards_refuse_absolute_drive_parent_backslash_and_separator_tricks(self):
+        cases = (('/source/x.bin', 'bundle file path is absolute'), ('C:/source/x.bin', 'bundle file path names a drive'),
+                 ('source/../../x.bin', 'steps out of its bundle folder with ..'), ('source\\x.bin', 'bundle file path holds a backslash'),
+                 ('source//x.bin', 'not a portable relative path'), ('./source/x.bin', 'not a portable relative path'),
+                 ('source/x.bin:stream', 'not a portable relative path'), ('source/x.bin/', 'not a portable relative path'),
+                 ('', 'bundle file path must be a non-empty string'))
+        for member, message in cases:
+            with self.subTest(member=member):
+                shutil.rmtree(self.store_root, ignore_errors=True)
+                self.assert_pin_refused(CatalogWriteError, message.replace('.', r'\.'),
+                                        member, member_pin={'file': member, 'bytes': 1, 'sha256': '6' * 64})
+
+    def test_a_missing_bundle_file_is_refused(self):
+        self.assert_pin_refused(CatalogWriteError, 'pinned store file is missing from .*: npc-profiles/[0-9a-f]{64}/source/absent.bin',
+                                'source/absent.bin')
+
+    def test_a_bundle_file_whose_bytes_or_length_differ_from_its_pin_is_refused(self):
+        payload = b'member bytes'
+        self.assert_pin_refused(CatalogWriteError, 'pinned store file SHA-256 differs from its pin', 'source/x.bin', payload,
+                                member_pin={'file': 'source/x.bin', 'bytes': len(payload), 'sha256': sha256_hex(b'other bytes')}, write_member=True)
+        shutil.rmtree(self.store_root)
+        self.assert_pin_refused(CatalogWriteError, 'pinned store file byte length differs from its pin 99', 'source/x.bin', payload,
+                                member_pin={'file': 'source/x.bin', 'bytes': 99, 'sha256': sha256_hex(payload)}, write_member=True)
+
+    def test_a_malformed_sha256_or_byte_length_is_refused(self):
+        self.assert_pin_refused(CatalogWriteError, 'SHA-256 must be 64 lowercase hex characters', 'source/x.bin',
+                                member_pin={'file': 'source/x.bin', 'bytes': 1, 'sha256': 'A' * 64})
+        shutil.rmtree(self.store_root)
+        self.assert_pin_refused(CatalogWriteError, 'byte length must be a safe integer of at least 0', 'source/x.bin',
+                                member_pin={'file': 'source/x.bin', 'bytes': -1, 'sha256': '6' * 64})
+
+    def test_a_bundle_file_that_resolves_outside_its_bundle_folder_through_a_junction_is_refused(self):
+        outside = self.temporary_root / 'outside'
+        write_file(outside / 'x.bin', b'outside bytes')
+        bundle, catalog = self.pin_store('linked/x.bin', b'outside bytes', write_member=False)
+        self.make_junction(self.store_root / bundle.member_relative('linked'), outside)
+        with self.assertRaisesRegex(CatalogWriteError, 'bundle file resolves outside its bundle folder npc-profiles/[0-9a-f]{64}'):
+            pinned_store_files(self.store_root, catalog)
+
+    def test_a_junction_inside_the_bundle_folder_is_refused(self):
+        payload = b'member bytes behind a junction'
+        bundle, catalog = self.pin_store('linked/x.bin', payload, write_member=False)
+        write_file(self.store_root / bundle.member_relative('real/x.bin'), payload)
+        self.make_junction(self.store_root / bundle.member_relative('linked'), self.store_root / bundle.member_relative('real'))
+        with self.assertRaisesRegex(StorePathError, 'Symlink/junction/reparse boundary refused'):
+            pinned_store_files(self.store_root, catalog)
+
+    def test_a_catalog_record_cannot_pin_a_file_by_relative_path(self):
+        catalog = {'schemaVersion': 1, 'models': [], 'npcProfiles': [{'id': PROFILE_RECORD_ID, 'file': 'x.bin', 'sha256': '6' * 64}]}
+        with self.assertRaisesRegex(CatalogWriteError, "pins 'x.bin' by a relative path; only a pinned store manifest names files"):
+            pinned_store_files(self.store_root, catalog)
+
+    def test_a_manifest_at_the_store_root_pins_files_beside_it(self):
+        payload = b'member beside a root manifest'
+        bundle = ProfileBundle({'flat-member.bin': payload}, manifest_folder='')
+        catalog = bundle.write(self.store_root)
+        files = pinned_store_files(self.store_root, catalog)
+        self.assertEqual(sorted(relative for relative, _ in files.values()), ['flat-member.bin', 'manifest.json'])
+
+    def test_an_effect_bundle_from_another_lane_follows_the_same_rule_and_pins_a_repeated_resource_once(self):
+        texture = b'synthetic sprite texture bytes'
+        texture_pin = {'assetId': 'interlude:Synthetic.Sprite', 'kind': 'texture', **bundle_member_pin(f'resources/{sha256_hex(texture)}.png', texture)}
+        manifest_bytes = json_bytes({'schemaVersion': 1, 'kind': 'native-effect-components', 'id': 'interlude:skill:3:level:1:synthetic',
+                                     'resources': {texture_pin['assetId']: texture_pin},
+                                     'components': [{'object': 'synthetic.Sprite', 'bindings': {'texture': texture_pin, 'mesh': None}}]})
+        manifest_sha256 = sha256_hex(manifest_bytes)
+        folder = f'effects/{manifest_sha256}'
+        write_file(self.store_root / folder / 'manifest.json', manifest_bytes)
+        write_file(self.store_root / folder / texture_pin['file'], texture)
+        catalog = {'schemaVersion': 1, 'models': [], 'effectComponents': [
+            {'id': 'interlude:skill:3:level:1:synthetic', 'manifest': f'/l2/{folder}/manifest.json', 'manifestSha256': manifest_sha256}]}
+        files = pinned_store_files(self.store_root, catalog)
+        self.assertEqual(sorted(relative for relative, _ in files.values()), [f'{folder}/manifest.json', f'{folder}/{texture_pin["file"]}'])
+
+
+if __name__ == '__main__':
+    unittest.main()

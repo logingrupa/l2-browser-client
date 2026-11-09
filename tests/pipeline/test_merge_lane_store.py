@@ -199,7 +199,7 @@ class LaneStoreMergeRefusalTests(unittest.TestCase):
                 self.replace_lane_model_record(dict(MODEL_VERSION_TWO_RECORD, archive=unsafe_archive), {})
                 self.assert_refused_without_touching_the_target('Unsafe relative path')
 
-    def test_a_pinned_manifest_with_a_relative_file_pin_is_refused(self):
+    def test_a_pinned_manifest_whose_bundle_file_is_missing_from_its_folder_is_refused(self):
         manifest_bytes = json_bytes({'kind': 'native-window-layout', 'texture': {'file': 'skin.png', 'sha256': '2' * 64}})
         manifest_sha256 = sha256_hex(manifest_bytes)
         window_record = {'id': 'LaneFixtureWnd', 'manifest': f'/l2/windows/{manifest_sha256}/window.json', 'manifestSha256': manifest_sha256,
@@ -207,7 +207,7 @@ class LaneStoreMergeRefusalTests(unittest.TestCase):
         self.fixture.lane_records['windows'] = [window_record]
         self.fixture.lane_files[window_record['manifest']] = manifest_bytes
         self.fixture.write_lane_store()
-        self.assert_refused_without_touching_the_target("pins 'skin.png' by a relative file name")
+        self.assert_refused_without_touching_the_target(f'pinned store file is missing from .*: windows/{manifest_sha256}/skin.png')
 
     def test_a_lane_catalog_with_no_records_is_refused(self):
         self.fixture.lane_records['models'] = []

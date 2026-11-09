@@ -3,12 +3,14 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
-from pathlib import Path
+import os
+from pathlib import Path, PurePosixPath
 import re
 import tempfile
 from typing import NamedTuple
 
-from native_store.store_paths import SHA256_PATTERN, confined_child_path, refuse_reparse_points, require_portable_relative_path
+from native_store.store_paths import (SHA256_PATTERN, StorePathError, confined_child_path, refuse_reparse_points,
+                                      require_portable_relative_path)
 
 KNOWN_CATALOG_SLICES = ('models', 'textures', 'sections', 'movers', 'npcProfiles', 'playerProfiles',
                         'animationAudio', 'combatAudio', 'worldAudio', 'effectComponents', 'tiles', 'tables', 'windows')
@@ -31,7 +33,11 @@ TABLE_RECORD_FIELDS = (*PINNED_MANIFEST_RECORD_FIELDS, 'recordCount', 'sourceSha
 NATIVE_RESOURCE_PREFIX = '/l2/'
 PINNED_FILE_REFERENCE_FIELDS = (('manifest', 'manifestSha256', 'manifestBytes'), ('archive', 'archiveSha256', None),
                                 ('model', 'modelSha256', None), ('image', 'imageSha256', 'imageBytes'), ('resource', 'sha256', None))
-RELATIVE_FILE_PIN_FIELDS = ('file', 'sha256')
+BUNDLE_MEMBER_PATH_FIELD = 'file'
+BUNDLE_MEMBER_SHA256_FIELD = 'sha256'
+BUNDLE_MEMBER_BYTES_FIELD = 'bytes'
+DRIVE_LETTER_PATTERN = re.compile(r'^[A-Za-z]:')
+STORE_ROOT_BUNDLE_FOLDER = ''
 PINNED_MANIFEST_SUFFIX = '.json'
 
 
@@ -216,6 +222,7 @@ class PinnedFileReference(NamedTuple):
     relative: str
     sha256: str
     byte_length: int | None
+    bundle_folder: str | None
 
 
 def is_file_pin(value, path_field, sha256_field):
@@ -228,27 +235,77 @@ def require_file_pin(value, path_field, sha256_field, bytes_field, label):
     path, sha256 = value[path_field], value.get(sha256_field)
     if not (isinstance(path, str) and path.startswith(NATIVE_RESOURCE_PREFIX) and isinstance(sha256, str) and SHA256_PATTERN.fullmatch(sha256)):
         raise CatalogWriteError(f'{label} has no /l2 {path_field} with {sha256_field}')
-    return PinnedFileReference(path[len(NATIVE_RESOURCE_PREFIX):], sha256, value.get(bytes_field) if bytes_field else None)
+    return PinnedFileReference(path[len(NATIVE_RESOURCE_PREFIX):], sha256, value.get(bytes_field) if bytes_field else None, None)
 
 
-def pinned_file_references(value, label):
+def is_bundle_member_pin(value):
+    return BUNDLE_MEMBER_PATH_FIELD in value and BUNDLE_MEMBER_SHA256_FIELD in value
+
+
+def require_bundle_member_path(member, label):
+    if not (isinstance(member, str) and member):
+        raise CatalogWriteError(f'{label} bundle file path must be a non-empty string: {member!r}')
+    if member.startswith('/'):
+        raise CatalogWriteError(f'{label} bundle file path is absolute: {member!r}')
+    if DRIVE_LETTER_PATTERN.match(member):
+        raise CatalogWriteError(f'{label} bundle file path names a drive: {member!r}')
+    if '\\' in member:
+        raise CatalogWriteError(f'{label} bundle file path holds a backslash: {member!r}')
+    if '..' in member.split('/'):
+        raise CatalogWriteError(f'{label} bundle file path steps out of its bundle folder with ..: {member!r}')
+    try:
+        return require_portable_relative_path(member)
+    except StorePathError as error:
+        raise CatalogWriteError(f'{label} bundle file path is not a portable relative path: {member!r}') from error
+
+
+def require_bundle_member_pin(value, label, bundle_folder):
+    member = value[BUNDLE_MEMBER_PATH_FIELD]
+    if bundle_folder is None:
+        raise CatalogWriteError(f'{label} pins {member!r} by a relative path; only a pinned store manifest names files inside its bundle folder')
+    require_bundle_member_path(member, label)
+    sha256 = value[BUNDLE_MEMBER_SHA256_FIELD]
+    if not (isinstance(sha256, str) and SHA256_PATTERN.fullmatch(sha256)):
+        raise CatalogWriteError(f'{label} bundle file {member} SHA-256 must be 64 lowercase hex characters: {sha256!r}')
+    byte_length = value.get(BUNDLE_MEMBER_BYTES_FIELD)
+    if BUNDLE_MEMBER_BYTES_FIELD in value and not is_safe_integer(byte_length, 0):
+        raise CatalogWriteError(f'{label} bundle file {member} byte length must be a safe integer of at least 0: {byte_length!r}')
+    relative = f'{bundle_folder}/{member}' if bundle_folder != STORE_ROOT_BUNDLE_FOLDER else member
+    return PinnedFileReference(relative, sha256, byte_length, bundle_folder)
+
+
+def pinned_file_references(value, label, bundle_folder):
     if isinstance(value, list):
-        return [reference for item in value for reference in pinned_file_references(item, label)]
+        return [reference for item in value for reference in pinned_file_references(item, label, bundle_folder)]
     if not isinstance(value, dict):
         return []
-    if all(field in value for field in RELATIVE_FILE_PIN_FIELDS):
-        raise CatalogWriteError(f'{label} pins {value["file"]!r} by a relative file name; only /l2 resource pins can be followed')
     references = [require_file_pin(value, path_field, sha256_field, bytes_field, label)
                   for path_field, sha256_field, bytes_field in PINNED_FILE_REFERENCE_FIELDS if is_file_pin(value, path_field, sha256_field)]
-    return references + [reference for item in value.values() for reference in pinned_file_references(item, label)]
+    if is_bundle_member_pin(value):
+        references.append(require_bundle_member_pin(value, label, bundle_folder))
+    return references + [reference for item in value.values() for reference in pinned_file_references(item, label, bundle_folder)]
 
 
 def catalog_pinned_file_references(catalog):
     return [reference for slice_name in KNOWN_CATALOG_SLICES for record in catalog.get(slice_name, [])
-            for reference in pinned_file_references(record, f'catalog {slice_name} record {record.get("id")}')]
+            for reference in pinned_file_references(record, f'catalog {slice_name} record {record.get("id")}', None)]
+
+
+def bundle_folder_of(relative):
+    parent = PurePosixPath(relative).parent.as_posix()
+    return STORE_ROOT_BUNDLE_FOLDER if parent == '.' else parent
+
+
+def require_inside_bundle_folder(store_root, reference):
+    bundle_folder = Path(os.path.realpath(Path(store_root) / reference.bundle_folder))
+    resolved = Path(os.path.realpath(Path(store_root) / reference.relative))
+    if not (resolved.is_relative_to(bundle_folder) and resolved != bundle_folder):
+        raise CatalogWriteError(f'bundle file resolves outside its bundle folder {reference.bundle_folder or "."}: {reference.relative}')
 
 
 def read_pinned_file(store_root, reference):
+    if reference.bundle_folder is not None:
+        require_inside_bundle_folder(store_root, reference)
     path = confined_child_path(store_root, reference.relative)
     if not path.is_file():
         raise CatalogWriteError(f'pinned store file is missing from {store_root}: {reference.relative}')
@@ -271,9 +328,9 @@ def pinned_store_files(store_root, catalog):
             continue
         payload = read_pinned_file(store_root, reference)
         add_store_file(files, reference.relative, payload)
-        if reference.relative.endswith(PINNED_MANIFEST_SUFFIX):
+        if reference.bundle_folder is None and reference.relative.endswith(PINNED_MANIFEST_SUFFIX):
             manifest = json.loads(payload, object_pairs_hook=refuse_duplicate_json_keys, parse_constant=refuse_non_finite_json_number)
-            pending.extend(pinned_file_references(manifest, f'store file {reference.relative}'))
+            pending.extend(pinned_file_references(manifest, f'store file {reference.relative}', bundle_folder_of(reference.relative)))
     return files
 
 
