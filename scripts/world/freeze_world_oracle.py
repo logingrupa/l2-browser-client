@@ -13,6 +13,7 @@ import re
 
 from hash_reference_client_tree import canonical_json_bytes as compact_canonical_json_bytes
 from native_store.canonical_json import canonical_json_bytes
+from native_store.catalog_writer import CatalogWriteError, bundle_folder_of, pinned_file_references
 from world.committed_world_data import REPOSITORY_ROOT, require_committed_destination, write_committed_world_bytes
 
 WORLD_ORACLE_RELATIVE_PATH = 'recipes/world/oracle/20_20/expected.json'
@@ -22,6 +23,10 @@ SKY_PIN_SOURCE_PATH = REPOSITORY_ROOT / 'src' / 'scene' / 'world' / 'nativeSkyPr
 ENVIRONMENT_PIN_SOURCE_PATH = REPOSITORY_ROOT / 'src' / 'scene' / 'world' / 'nativeEnvironmentTables.ts'
 SECTION_RECORD_ID = 'map-20-20-section'
 MOVERS_RECORD_ID = 'map-20-20-movers'
+WORLD_AUDIO_RECORD_IDS = ('map-20-20-ambience', 'map-20-20-music')
+STEP_SOUND_RECORD_IDS = ('stepsound-deco-grass-20-20', 'stepsound-surfaces')
+WORLD_AUDIO_SLICE_NAME = 'worldAudio'
+STEP_SOUND_SLICE_NAME = 'animationAudio'
 STORE_URL_PREFIX = '/l2/'
 CATALOG_FILE_NAME = 'catalog.json'
 MANIFEST_FILE_NAME = 'manifest.json'
@@ -29,10 +34,11 @@ BSP_SOURCE_FOLDER = '../map-section-bsp'
 MAXIMUM_JUNCTION_JSON_BYTES = 32 * 1024 * 1024
 SHA256_TEXT_PATTERN = re.compile(r'[0-9a-f]{64}')
 LONG_ENCODED_RUN_PATTERN = re.compile(r'[A-Za-z0-9+/=]{65,}')
-ORACLE_FIELDS = frozenset({'schemaVersion', 'catalogSha256', 'section', 'sky', 'environment', 'movers'})
+ORACLE_FIELDS = frozenset({'schemaVersion', 'catalogSha256', 'section', 'sky', 'environment', 'movers', 'worldAudio', 'stepSounds'})
 SECTION_FIELDS = frozenset({'id', 'manifestSha256', 'modelCount', 'placementCount', 'models', 'placements', 'terrain', 'terrainPatches', 'bsp',
                             'unsupportedRuntimeMaterialIds'})
 MOVERS_FIELDS = frozenset({'recordId', 'manifestSha256', 'sourceMapSha256', 'terrainSha256', 'moverIds', 'modelIds'})
+PINNED_MANIFEST_FIELDS = frozenset({'recordId', 'kind', 'manifestSha256', 'manifestBytes', 'pinnedFileCount', 'pinnedFileBytes'})
 
 
 class WorldOracleError(ValueError):
@@ -168,13 +174,50 @@ def movers_oracle(store_root, catalog):
             'modelIds': sorted(model['id'] for model in manifest['models'])}
 
 
+def unique_pinned_files(manifest, record_id, manifest_relative_path):
+    bundle_folder = bundle_folder_of(manifest_relative_path)
+    try:
+        references = pinned_file_references(manifest, f'{record_id} manifest', bundle_folder)
+    except CatalogWriteError as error:
+        raise WorldOracleError(f'{record_id} manifest pins are invalid: {error}') from error
+    pinned_files = {}
+    for reference in references:
+        if reference.bundle_folder != bundle_folder:
+            raise WorldOracleError(f'{record_id} manifest pins {reference.relative} outside its bundle folder {bundle_folder}')
+        if reference.byte_length is None:
+            raise WorldOracleError(f'{record_id} manifest pins {reference.relative} without a byte length')
+        known = pinned_files.setdefault(reference.relative, reference)
+        if (known.sha256, known.byte_length) != (reference.sha256, reference.byte_length):
+            raise WorldOracleError(f'{record_id} manifest pins {reference.relative} twice with different SHA-256 values or byte lengths')
+    return pinned_files
+
+
+def pinned_manifest_oracle(store_root, catalog, slice_name, record_id):
+    record = catalog_record(catalog, slice_name, record_id)
+    manifest_relative_path = store_relative_path(record['manifest'])
+    payload = read_bounded_store_bytes(store_root, manifest_relative_path)
+    if sha256_hex(payload) != record['manifestSha256']:
+        raise WorldOracleError(f'{manifest_relative_path} hashes to {sha256_hex(payload)}, not the pinned {record["manifestSha256"]}')
+    if len(payload) != record['manifestBytes']:
+        raise WorldOracleError(f'{manifest_relative_path} holds {len(payload)} bytes, not the pinned {record["manifestBytes"]}')
+    pinned_files = unique_pinned_files(decode_json_object(payload, manifest_relative_path), record_id, manifest_relative_path)
+    return {'recordId': record['id'], 'kind': record['kind'], 'manifestSha256': record['manifestSha256'], 'manifestBytes': record['manifestBytes'],
+            'pinnedFileCount': len(pinned_files), 'pinnedFileBytes': sum(reference.byte_length for reference in pinned_files.values())}
+
+
+def pinned_manifest_oracles(store_root, catalog, slice_name, record_ids):
+    return [pinned_manifest_oracle(store_root, catalog, slice_name, record_id) for record_id in sorted(record_ids)]
+
+
 def freeze_world_oracle(store_root):
     catalog_payload = read_bounded_store_bytes(store_root, CATALOG_FILE_NAME)
     catalog = decode_json_object(catalog_payload, CATALOG_FILE_NAME)
     try:
         oracle = {'schemaVersion': WORLD_ORACLE_SCHEMA_VERSION, 'catalogSha256': sha256_hex(catalog_payload),
                   'section': section_oracle(store_root, catalog), 'sky': sky_oracle(store_root), 'environment': environment_oracle(store_root),
-                  'movers': movers_oracle(store_root, catalog)}
+                  'movers': movers_oracle(store_root, catalog),
+                  'worldAudio': pinned_manifest_oracles(store_root, catalog, WORLD_AUDIO_SLICE_NAME, WORLD_AUDIO_RECORD_IDS),
+                  'stepSounds': pinned_manifest_oracles(store_root, catalog, STEP_SOUND_SLICE_NAME, STEP_SOUND_RECORD_IDS)}
     except (KeyError, TypeError) as error:
         raise WorldOracleError(f'junction manifest is missing a field the oracle needs: {error!r}') from error
     return validate_world_oracle(oracle)
@@ -212,6 +255,11 @@ def validate_world_oracle(oracle):
         raise WorldOracleError('world oracle section or movers fields differ from the oracle schema')
     if (section['modelCount'], section['placementCount']) != (len(section['models']), len(section['placements'])):
         raise WorldOracleError('world oracle section counts differ from its model and placement lists')
+    for field_name in ('worldAudio', 'stepSounds'):
+        records = oracle[field_name]
+        if not (isinstance(records, list) and all(isinstance(record, dict) and set(record) == PINNED_MANIFEST_FIELDS for record in records)):
+            raise WorldOracleError(f'world oracle {field_name} records must hold exactly {", ".join(sorted(PINNED_MANIFEST_FIELDS))}')
+        require_sorted_unique([record['recordId'] for record in records], f'{field_name} record ids')
     for description, items in (('models', [model['id'] for model in section['models']]),
                                ('placements', [placement['id'] for placement in section['placements']]),
                                ('terrain patches', [patch['id'] for patch in section['terrainPatches']]),
@@ -236,7 +284,9 @@ def world_oracle_summary(oracle):
             'terrainPatches': len(section['terrainPatches']), 'unsupportedRuntimeMaterials': len(section['unsupportedRuntimeMaterialIds']),
             'skyManifestSha256': oracle['sky']['manifestSha256'], 'skyFiles': len(oracle['sky']['files']),
             'environmentManifestSha256': oracle['environment']['manifestSha256'], 'moversManifestSha256': oracle['movers']['manifestSha256'],
-            'movers': len(oracle['movers']['moverIds']), 'moverModels': len(oracle['movers']['modelIds'])}
+            'movers': len(oracle['movers']['moverIds']), 'moverModels': len(oracle['movers']['modelIds']),
+            'worldAudioRecords': len(oracle['worldAudio']), 'worldAudioPinnedFiles': sum(record['pinnedFileCount'] for record in oracle['worldAudio']),
+            'stepSoundRecords': len(oracle['stepSounds']), 'stepSoundPinnedFiles': sum(record['pinnedFileCount'] for record in oracle['stepSounds'])}
 
 
 def main(argv=None):

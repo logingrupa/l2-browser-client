@@ -1473,5 +1473,41 @@
     ],
     "manifestSha256": "f7a0b5ef1463d0b5fe47b210585e00d6011be3c3e3bddfec76df0eb08042f80b",
     "sourceId": "interlude:20_20.Model798.SkyZoneInfo0"
-  }
+  },
+  "stepSounds": [
+    {
+      "kind": "native-stepsound-deco-grass",
+      "manifestBytes": 9877,
+      "manifestSha256": "ff4528e1afd90d1e45bf78639735d2b8e85545dbc4daad4f7cefe8fc2e07561f",
+      "pinnedFileBytes": 130050,
+      "pinnedFileCount": 1,
+      "recordId": "stepsound-deco-grass-20-20"
+    },
+    {
+      "kind": "native-stepsound-package",
+      "manifestBytes": 323386,
+      "manifestSha256": "a1e6b3ed130898a17860439f8ce58306838a44057c08b72ea3f46c98c846fade",
+      "pinnedFileBytes": 1936384,
+      "pinnedFileCount": 93,
+      "recordId": "stepsound-surfaces"
+    }
+  ],
+  "worldAudio": [
+    {
+      "kind": "native-map-ambience",
+      "manifestBytes": 584627,
+      "manifestSha256": "e2fe18be38caf3a8476e194b0ad1641b62f04dbd9dd1925f4c09ddd5d8e74a01",
+      "pinnedFileBytes": 21664812,
+      "pinnedFileCount": 106,
+      "recordId": "map-20-20-ambience"
+    },
+    {
+      "kind": "native-map-music",
+      "manifestBytes": 25749,
+      "manifestSha256": "d4fca6b81792de7b87addaf0c23385539944fecdf55f03339ded57ec45adc339",
+      "pinnedFileBytes": 19414492,
+      "pinnedFileCount": 18,
+      "recordId": "map-20-20-music"
+    }
+  ]
 }
