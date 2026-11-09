@@ -69,9 +69,17 @@ export function entityWithEquippedItem(entities: ReadonlyMap<string, WorldEntity
   const entity = entities.get(command.entityId ?? "local-player");
   if (!entity) return null;
   if (entity.equipment?.[command.slot] === (command.itemId ?? undefined)) return entity;
-  const otherSlots = Object.fromEntries(Object.entries(entity.equipment ?? {}).filter(([slot]) => slot !== command.slot));
-  const equipment = Object.freeze(command.itemId === null ? otherSlots : { ...otherSlots, [command.slot]: command.itemId });
-  return { ...entity, equipment };
+  const otherSlots = Object.entries(entity.equipment ?? {}).filter(([slot]) => slot !== command.slot);
+  const changedSlots = command.itemId === null ? otherSlots : [...otherSlots, [command.slot, command.itemId] as const];
+  return { ...entity, equipment: Object.freeze(Object.fromEntries(orderEquipmentSlotsCanonically(changedSlots))) };
+}
+
+function equipmentSlotSortValue(slot: string): number {
+  return slot === upperEquipmentSlot ? -1 : Number(slot.slice(bodyPartEquipmentSlotPrefix.length));
+}
+
+function orderEquipmentSlotsCanonically<Entry extends readonly [string, number | undefined]>(entries: readonly Entry[]): Entry[] {
+  return [...entries].sort(([leftSlot], [rightSlot]) => equipmentSlotSortValue(leftSlot) - equipmentSlotSortValue(rightSlot));
 }
 
 export function isSandboxClipName(value: unknown): value is string {
