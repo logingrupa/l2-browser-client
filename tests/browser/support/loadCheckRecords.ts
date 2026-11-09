@@ -143,7 +143,20 @@ async function settledHarnessState(page: Page, url: string, timeoutMilliseconds:
 async function listHarnessConvertedKeys(page: Page, prefix: string): Promise<readonly string[]> {
   const state = await settledHarnessState(page, `${loadCheckHarnessPath}?list=${encodeURIComponent(prefix)}`, loadCheckKeyTimeoutMilliseconds);
   if (state.state === "failed") throw new Error(`load-check harness list ${prefix} failed: ${state.reason}`);
+  if (!("convertedKeys" in state)) throw new Error(`load-check harness list ${prefix} returned no key list`);
   return state.convertedKeys;
+}
+
+export async function checkHarnessLoadKey(page: Page, key: string): Promise<LoadCheckOutcome> {
+  const keyPage = await page.context().newPage();
+  try {
+    const state = await settledHarnessState(keyPage, `${loadCheckHarnessPath}?key=${encodeURIComponent(key)}`, loadCheckKeyTimeoutMilliseconds);
+    if (state.state === "failed") return { status: "failed", reason: firstMessageLine(state.reason), assetManifestSchemaVersion: null };
+    if (!("result" in state)) throw new Error(`load-check harness returned no result for ${key}`);
+    return { status: "pass", reason: null, assetManifestSchemaVersion: lowestAssetManifestSchemaVersion(state.result.assetManifestSchemaVersions) };
+  } finally {
+    await keyPage.close();
+  }
 }
 
 export function playwrightLoadCheckActions(page: Page, baseUrl: string, settings: LoadCheckSliceSettings,
