@@ -78,6 +78,25 @@ Our own deterministic port of the UE2 emitter classes in plain TypeScript under 
 
 Open for FX-01: RibbonEmitter, the L2 emitter natives (AdjustparticleLife, SetSizeScale, SetDelayed, Kill, Trigger), rendering through the material library and the Power Strike preview switch follow in 02-69. The closed-form preview modules stay until then.
 
+### Clean-room rewrite of the overlap spans (2026-11-09)
+
+The spans the overlap review could not clear were rewritten from UE2 sources only: the lock-equal Engine.dll `4dd2f63c...` and Core.dll `9462f87a...` (read through `scripts/reference_client_guard.py`, disassembled with capstone) and UELib decompiles of `Engine.ParticleEmitter`, `Engine.SpriteEmitter` and `Engine.Emitter` from Engine.u `9b04ff5c...`. Field offsets follow the decompiled declaration order (UObject is 0x34 bytes in this build; InitialDelay +0x474, TimeTillReset +0x484 and MaxActiveParticles +0x48C match the code). Behaviour is unchanged: the tests and golden traces pass as before, and a temporary old-against-new harness (not committed) matched every column, counter, outcome and atlas cell bit for bit over 600 random two-emitter actors of 220 steps.
+
+- `particleEmitter.ts` step order and outcomes follow the per-emitter loop of `AEmitter::Tick` 0x1060BD00: Disabled skips, Initialize on the first tick, the InitialDelay countdown (a delayed emitter sets the actor's some-delayed flag), warm-up while not WarmedUp, then UpdateParticles when not AllParticlesDead (this clears the actor's all-dead flag), else the dead branch. The outcomes `disabled`, `delayed`, `running` and `dead` are those four states, in that branch order. Storage space follows the CoordinateSystem switch of `UParticleEmitter::SpawnParticle` 0x10604190 (jump table 0x10605608): Independent and Spray add the owner location at spawn.
+- Reset follows `UParticleEmitter::Reset` 0x10603B80: clear ActiveParticles, ParticleIndex, OtherIndex, AllParticlesDead and WarmedUp, then draw InitialDelayRange, then AutoResetTimeRange. The dead branch follows the same Tick: emitter AutoReset without actor AutoReset counts TimeTillReset down and at 0 or less redraws it and calls Reset; otherwise emitter AutoDestroy without actor AutoDestroy sets Disabled.
+- Warm-up follows the Tick block: one step of 1 / WarmupTicksPerSecond per warm-up tick across LifetimeRange centre times RelativeWarmupTime, then WarmedUp.
+- `particleUpdate.ts` spawn loop follows `UParticleEmitter::SpawnParticles` 0x10605B40: spawn into ParticleIndex, then ActiveParticles = max(ActiveParticles, index + 1) and ParticleIndex advances modulo the slot count, each birth 1 / Rate older. The slot loop bound is Min(ActiveParticles, MaxActiveParticles) from `UpdateParticles` 0x10605DC0 (vtable +0x84); an inactive slot counts as dead.
+- `particleSpawn.ts` polar start follows SpawnParticle 0x106042D9 to 0x106043E6: (X, Y, Z) = StartLocationPolarRange.GetRand, offset Z * (sin Y cos X, sin Y sin X, cos Y) with degrees * pi / 180; the shape tests (All, or box, sphere, polar) follow the same function.
+- `particleRotation.ts` axes follow Core.dll `FCoords::operator/=(FRotator)` 0x10110240 (used by execGetAxes 0x10140C00): roll, pitch and yaw elemental coords composed through `FCoords::operator*=` 0x1010FCE0 and `TransformVectorBy` 0x1010F5B0. The closed-form rows equal that composition (0 difference in double precision over 20,000 rotators).
+- `spriteEmitter.ts` blend weight follows `USpriteEmitter::FillVertexBuffer` 0x106EFD60 (0x106F0D47 to 0x106F0DA2): Frac = Pos - appFloor(Pos), byte = trunc(Frac * 255.0).
+
+Where the binary differs and a test pins our behaviour, it is kept and reported, not changed:
+- First tick: `Initialize` 0x10603F50 calls Reset (vtable +0x70), so Interlude draws AutoResetTimeRange right after InitialDelayRange; our first step draws only InitialDelayRange. The golden traces pin our draw sequence.
+- Polar start: the binary uses `GMath.SinFloat` and `CosFloat`, which are 16384-entry table lookups (Core.dll 0x1010F480 and 0x1010F4C0); we use exact sin and cos. The synthetic sprite golden trace (Polar start) pins ours.
+- Gates: the binary tests InitialDelay, WarmupTicksPerSecond, RelativeWarmupTime and SecondsBeforeInactive against != 0; we keep > 0, which differs only for negative authored values. The binary counts InactiveTime while its Inactive flag holds; we count seconds since `markDrawn`.
+- Atlas blend: the binary stops the blend target when cell + 1 equals the cell count (End - Start, or U * V) and still writes the byte at the last cell; we hold the next cell at min(End, U * V - 1) and zero the weight there. The sprite test (cells 2 to 3) agrees with both.
+- Float grouping: SpawnParticles computes the first birth age as (1 / Rate * OldLeftover + DeltaTime) - 1 / Rate in x87 precision, and the warm-up count as WarmupTicksPerSecond * (centre * RelativeWarmupTime); we keep DeltaTime - (1 - OldLeftover) * (1 / Rate) and (WarmupTicksPerSecond * centre) * RelativeWarmupTime in doubles.
+
 ## Open
 
 - 223 roots wait for the resume command; 8,539 keys are pending.
