@@ -18,8 +18,6 @@ KNOWN_CLIENT_ENTRY_POINTS = {
     'scripts/export-native-sounds.py',
     'scripts/native_actor_profiles.py',
     'scripts/native_assets.py',
-    'scripts/native_bsp_building.py',
-    'scripts/native_bsp_floor.py',
     'scripts/native_catalog/cli.py',
     'scripts/native_effect_bundle.py',
     'scripts/native_effects.py',
