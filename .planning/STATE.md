@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-35-PLAN.md
-last_updated: "2026-11-09T14:40:38.952Z"
+stopped_at: Completed 02-44-PLAN.md
+last_updated: "2026-11-09T15:33:17.683Z"
 last_activity: 2026-11-09
 last_activity_desc: "Phase 02 plan 02-35 complete (SAND-02 sheet side: tile, spawn, equip, cast and window pickers behind SandboxPickerHost; DevSheet.ts split under 400 lines)"
-state_head: 65b4bb6863262bcc5ba66df1e0792ea7c522ee9a
+state_head: 1217127dc8df3c26d068b6fd82ebf54ceee11557
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 59
+  completed_plans: 60
   percent: 0
 ---
 
@@ -111,6 +111,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P25 | 22min | 3 tasks | 16 files |
 | Phase 02 P29 | 35min | 4 tasks | 41 files |
 | Phase 02 P35 | 30min | 3 tasks | 30 files |
+| Phase 02 P44 | 45min | 3 tasks | 25 files |
 
 ## Accumulated Context
 
@@ -265,6 +266,8 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-29: convert_tile.py --step meshes assigns each StaticMeshActor to the half-open native rectangle of its 4x4-sector chunk, converts each reviewed mesh once and keeps per-object gap rows in the meshes receipt; the manifest step fills chunk models and replaces its own earlier tile record; the 20_20 model append chain is deleted after the generic plan held all 157 oracle placements; WORLD-01 stays Pending (OVERNIGHT-DECISIONS rows 452 to 462)
 - [Phase 02]: 02-35: SandboxPickerHost is dispatch, reloadTile and openWindow with outcomes; pickers get a SandboxPickerContext; no audio picker, the Audio section is the SAND-02 audio control (rows 463 to 465)
 - [Phase 02]: 02-35: 02-37 retires attachSandboxCommandSheet's id-entry groups, sandboxCatalogLookupNote and the id-entry name kind when it mounts sandboxPickerSections; SAND-02 stays Pending until then (rows 470, 471)
+- [Phase 02]: 02-44: actor-sounds:<key> combatAudio records of the native-combat-audio-dependencies kind; the hand-typed role map is roles null plus unresolved.roles and diagnosed at runtime by record id prefix (OVERNIGHT-DECISIONS rows 472 to 476)
+- [Phase 02]: 02-44: routes bind only through the pinned Q4 proof (npcgrp attackItem, defense, damage and ALAudio critical); actor sound gap rows live in the lane work folder until the audio denominator exists; the lane catalog writer refuses the builder reader provenance pin (rows 477 to 479); ACT-05 stays Pending (row 484)
 
 ### Pending Todos
 
@@ -339,6 +342,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-09T14:40:38.391Z
-Stopped at: Completed 02-35-PLAN.md
+Last session: 2026-11-09T15:33:16.884Z
+Stopped at: Completed 02-44-PLAN.md
 Resume file: None
