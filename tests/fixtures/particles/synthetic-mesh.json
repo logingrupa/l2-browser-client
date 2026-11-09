@@ -1,0 +1,46 @@
+{
+  "description": "Synthetic MeshEmitter authored for the simulator (D3): automatic initial spawning with respawn, a box start, revolution about Z, the regular size factor with no SizeScale keys, XYZ spin, a repeating ColorScale, fade-in and fade-out, Brighten with Opacity below 1, and UseMeshBlendMode false with RenderTwoSided.",
+  "actor": {
+    "object": "synthetic.mesh_ring",
+    "properties": {
+      "Emitters": [{ "symbol": "MeshEmitter1" }],
+      "AutoDestroy": true,
+      "bNoDelete": false
+    }
+  },
+  "components": [
+    {
+      "object": "synthetic.mesh_ring.MeshEmitter1",
+      "class": "Engine.MeshEmitter",
+      "properties": {
+        "StaticMesh": { "class": "StaticMesh", "object": "SyntheticMeshes.Ring" },
+        "UseMeshBlendMode": false,
+        "RenderTwoSided": true,
+        "MaxParticles": 4,
+        "LifetimeRange": { "Min": 0.5, "Max": 0.7 },
+        "InitialTimeRange": { "Min": 0.0, "Max": 0.1 },
+        "StartLocationShape": 0,
+        "StartLocationRange": { "X": { "Min": -5.0, "Max": 5.0 }, "Y": { "Min": -5.0, "Max": 5.0 }, "Z": { "Min": 0.0, "Max": 2.0 } },
+        "StartVelocityRange": { "X": { "Min": 0.0, "Max": 0.0 }, "Y": { "Min": 0.0, "Max": 0.0 }, "Z": { "Min": 20.0, "Max": 30.0 } },
+        "UseRevolution": true,
+        "RevolutionsPerSecondRange": { "X": { "Min": 0.0, "Max": 0.0 }, "Y": { "Min": 0.0, "Max": 0.0 }, "Z": { "Min": 0.5, "Max": 1.0 } },
+        "UseSizeScale": true,
+        "SpinParticles": true,
+        "StartSpinRange": { "X": { "Min": 0.0, "Max": 1.0 }, "Y": { "Min": 0.0, "Max": 0.5 }, "Z": { "Min": 0.0, "Max": 0.25 } },
+        "SpinsPerSecondRange": { "X": { "Min": 0.2, "Max": 0.4 }, "Y": { "Min": 0.1, "Max": 0.2 }, "Z": { "Min": 0.0, "Max": 0.1 } },
+        "UseColorScale": true,
+        "ColorScaleRepeats": 3.0,
+        "ColorScale": [
+          { "RelativeTime": 0.0, "Color": { "R": 40, "G": 80, "B": 255, "A": 255 } },
+          { "RelativeTime": 1.0, "Color": { "R": 255, "G": 120, "B": 60, "A": 255 } }
+        ],
+        "FadeIn": true,
+        "FadeInEndTime": 0.1,
+        "FadeOut": true,
+        "FadeOutStartTime": 0.4,
+        "DrawStyle": 6,
+        "Opacity": 0.6
+      }
+    }
+  ]
+}

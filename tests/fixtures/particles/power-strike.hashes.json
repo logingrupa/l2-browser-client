@@ -1,0 +1,11 @@
+{
+  "effectSourceSha256": "ce79c8ac271a383203be20f7a1f8430d845155ef61379d515720356dd74e11e8",
+  "seed": 1,
+  "stepSeconds": 0.016666666666666666,
+  "stepLimit": 600,
+  "simulatorVersion": 1,
+  "traceSha256ByActor": {
+    "lineageeffect.p_u004_a": "c936de196133da94e3f1f7783b3d91fc5f33bb9a665e58124a8ed8282d0e1bf0",
+    "lineageeffect.s_u002_a": "0bb3ea2841151711b03543e842cc9d05b093fb443d5e038ff541115006a1188b"
+  }
+}

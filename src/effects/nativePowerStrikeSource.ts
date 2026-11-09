@@ -1,5 +1,6 @@
 import { validatePackageModel, type AssetPackage } from "../assets/package/readAssetPackage";
 import type { NativeNpcProfile } from "../assets/native/loadNativeNpcProfiles";
+import { sourcePositionToWorld } from "../world/sourceFrame";
 
 export interface NativePowerStrikeShotSource {
   readonly clip: string;
@@ -41,7 +42,8 @@ export type NativePowerStrikeShotTargetResult =
 const PACKAGE_HASH = "8a22d41ceaa78d52a10b856b923462eb8eb08d61b203d0d7904e464857ae988c";
 const DURATION = 47 / 30;
 const TIMING_BASIS = "source normalized notification time * (NumFrames / Rate)";
-const SOURCE_TO_GLTF = [.01, 0, 0, 0, 0, 0, .01, 0, 0, .01, 0, 0, 0, 0, 0, 1];
+const sourceToGltfColumnMajorMatrix = [{ x: 1, y: 0, z: 0 }, { x: 0, y: 1, z: 0 }, { x: 0, y: 0, z: 1 }]
+  .flatMap(sourceAxis => { const world = sourcePositionToWorld(sourceAxis); return [world.x, world.y, world.z, 0]; }).concat([0, 0, 0, 1]);
 const RETAINED_POWER_STRIKE_SHOT_SOURCES_BY_ASSET_ID = {
   "interlude:assembly:MFighter-native-body-face0-hair0": {
     actor: "MFighter", clip: "SpAtk01_1HS_MFighter", eventIndex: 90, eventObject: "Fighter.AnimNotify_AttackShot167",
@@ -78,7 +80,7 @@ export function resolveNativePowerStrikeShotSource(asset: AssetPackage, specialC
   if (specialClip !== expected.clip) return unavailable("The qualified original special-attack clip is unavailable or differs.");
   const model = manifest.model, coordinates = manifest.coordinates;
   if (!model || model.file !== "model.glb" || !coordinates || coordinates.unit !== "metre" || coordinates.sourceUnitsPerMetre !== 100 ||
-    !ordered(coordinates.sourceToGltf, SOURCE_TO_GLTF) || !Array.isArray(manifest.files)) {
+    !ordered(coordinates.sourceToGltf, sourceToGltfColumnMajorMatrix) || !Array.isArray(manifest.files)) {
     return unavailable("The source model coordinate contract differs.");
   }
   const modelFiles = manifest.files.filter(file => file.path === model.file), animationFiles = manifest.files.filter(file => file.path === "animation-source.json");

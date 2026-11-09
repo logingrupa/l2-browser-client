@@ -46,19 +46,22 @@ export function standaloneStepContext(simulation: ParticleEmitterSimulation, own
   };
 }
 
-export function particleTraceRows(stepIndex: number, simulation: ParticleEmitterSimulation): number[][] {
+export type ExtraTraceColumns = (slot: number) => readonly number[];
+
+export function particleTraceRows(stepIndex: number, simulation: ParticleEmitterSimulation, extraColumns: ExtraTraceColumns = () => []): number[][] {
   const { columns } = simulation;
   return simulation.liveSlots().map(slot => {
     const location = readSlotVector(columns.location, slot), size = readSlotVector(columns.size, slot);
-    return [stepIndex, slot, location.x, location.y, location.z, size.x, size.y, size.z, ...readSlotColor(columns, slot), columns.time[slot]!, columns.maxLifetime[slot]!];
+    return [stepIndex, slot, location.x, location.y, location.z, size.x, size.y, size.z, ...readSlotColor(columns, slot),
+      columns.time[slot]!, columns.maxLifetime[slot]!, ...extraColumns(slot)];
   });
 }
 
-export function runStandaloneEmitterTrace(simulation: ParticleEmitterSimulation, stepSeconds: number, stepLimit: number): number[][] {
+export function runStandaloneEmitterTrace(simulation: ParticleEmitterSimulation, stepSeconds: number, stepLimit: number, extraColumns?: ExtraTraceColumns): number[][] {
   const context = standaloneStepContext(simulation), rows: number[][] = [];
   for (let stepIndex = 0; stepIndex < stepLimit; stepIndex += 1) {
     if (simulation.step(stepSeconds, context) === "dead") break;
-    rows.push(...particleTraceRows(stepIndex, simulation));
+    rows.push(...particleTraceRows(stepIndex, simulation, extraColumns));
   }
   return rows;
 }
