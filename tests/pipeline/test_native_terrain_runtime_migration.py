@@ -1,4 +1,3 @@
-"""UV-only runtime derivation keeps old assets and refuses stale publication."""
 import copy
 import importlib.util
 import json
@@ -13,7 +12,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
 import test_stage_native_runtime as staging_fixture
 from native_assets_lib.gltf import json_bytes
-from native_map_geometry import GltfBuilder
+from world.gltf_builder import GltfBuilder
 
 spec = importlib.util.spec_from_file_location('terrain_runtime_migration', ROOT / 'scripts/migrate-native-terrain-runtime.py')
 migration = importlib.util.module_from_spec(spec)

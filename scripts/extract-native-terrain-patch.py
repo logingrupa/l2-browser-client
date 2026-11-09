@@ -12,9 +12,10 @@ import struct
 
 from native_catalog.ue2 import Package
 from native_map import actor_properties, read_g16
-from native_map_geometry import (GltfBuilder, native_terrain, terrain_points, sector_oracle,
-                                 vertex_normal, native_to_gltf, bit, quad_triangles,
-                                 layer_records, texture_uv, qualified_mask_uv_rule, terrain_mask_uv)
+from world.gltf_builder import GltfBuilder
+from world.native_terrain_sectors import bit, native_terrain, quad_triangles, sector_oracle, terrain_points, vertex_normal
+from world.terrain_coordinates import native_to_gltf
+from world.terrain_layers import layer_records, qualified_mask_uv_rule, terrain_mask_uv, texture_uv
 from native_assets_lib.gltf import json_bytes
 from reference_client_guard import require_reference_client
 from world.map_actor_properties import bitmap_words
@@ -232,8 +233,10 @@ def extract(client, raw, reference, output):
             row[variant] = {'maskUV': mask, 'vDifferenceFromReference': mask[1] - old_mask[1]}
         seam.append(row)
     script_root = Path(__file__).resolve().parent
-    for name in ('extract-native-terrain-patch.py', 'native_map_geometry.py', 'native_map.py',
+    for name in ('extract-native-terrain-patch.py', 'native_map.py',
                  'world/map_actor_properties.py', 'world/map_sources.py', 'world/terrain_height_texture.py',
+                 'world/terrain_coordinates.py', 'world/native_terrain_sectors.py', 'world/terrain_layers.py',
+                 'world/gltf_builder.py',
                  'native_catalog/ue2.py', 'native_assets_lib/gltf.py'):
         read(script_root / name, 'implementation/' + name)
     report = {'schemaVersion': 1, 'kind': 'offline-native-terrain-patch-comparison', 'sourceSector': sector,

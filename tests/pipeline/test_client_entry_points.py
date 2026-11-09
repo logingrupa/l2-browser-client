@@ -129,6 +129,9 @@ class PerFileGuardReachability:
         imported_definitions, module_aliases = self.import_bindings(module_name, module_tree)
         definitions = [node for node in module_tree.body if isinstance(node, (ast.FunctionDef, ast.ClassDef))]
         local_definitions = {node.name for node in definitions}
+        for local_name, imported_definition in imported_definitions.items():
+            if local_name not in local_definitions:
+                self.references_by_definition[(module_name, local_name)] = {imported_definition}
         for node in definitions:
             references, calls_per_file_guard = self.referenced_definitions(module_name, node, imported_definitions, module_aliases, local_definitions)
             self.references_by_definition[(module_name, node.name)] = references
@@ -234,7 +237,10 @@ class ClientEntryPointScanTests(unittest.TestCase):
             imported_per_file_guard='from guarded_reader import read_lock_equal_table\n' + CLIENT_OPTION_SOURCE
                 + 'require_reference_client(args.client_snapshot)\nread_lock_equal_table(args.client_snapshot)\n',
             loaded_per_file_guard='import importlib.util\n' + CLIENT_OPTION_SOURCE
-                + "require_reference_client(args.client_snapshot)\nimportlib.util.spec_from_file_location('reader', 'scripts/guarded_reader.py')\n")
+                + "require_reference_client(args.client_snapshot)\nimportlib.util.spec_from_file_location('reader', 'scripts/guarded_reader.py')\n",
+            reexporting_reader='from guarded_reader import read_lock_equal_table\n',
+            reexported_per_file_guard='from reexporting_reader import read_lock_equal_table\n' + CLIENT_OPTION_SOURCE
+                + 'require_reference_client(args.client_snapshot)\nread_lock_equal_table(args.client_snapshot)\n')
         self.assertEqual(entry_point_guard_failures(trees_by_module_name), {'root_guard_only': 'reads client files without the per-file lock check'})
 
     def test_scan_ignores_a_client_option_named_only_in_help_text(self):

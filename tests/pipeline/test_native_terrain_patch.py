@@ -11,7 +11,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from native_catalog.ue2 import Package
 from native_map import actor_properties, read_g16
-from native_map_geometry import native_terrain, coords_point, native_to_gltf
+from world.native_terrain_sectors import native_terrain
+from world.terrain_coordinates import coords_point, native_to_gltf
 from reference_client_lock_fixture import lock_client_as_reference_root
 from world.map_actor_properties import bitmap_words
 

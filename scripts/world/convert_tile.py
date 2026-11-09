@@ -13,9 +13,11 @@ from native_store.store_paths import REPOSITORY_ROOT
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, require_batch_preflight, run_at_below_normal_priority
 from reference_client_guard import require_reference_client
 from world.raw_map_step import RAW_STEP_NAME, TILE_ID_PATTERN, run_raw_map_step
+from world.terrain_chunk_step import TERRAIN_STEP_NAME, run_terrain_chunk_step
 from world.tile_census import WORLD_LANE_NAME
+from world.tile_chunk_plan import CHUNK_PLAN_STEP_NAME, run_chunk_plan_step
 
-TILE_STEPS = {RAW_STEP_NAME: run_raw_map_step}
+TILE_STEPS = {RAW_STEP_NAME: run_raw_map_step, CHUNK_PLAN_STEP_NAME: run_chunk_plan_step, TERRAIN_STEP_NAME: run_terrain_chunk_step}
 FAILED_ROW_STATUS = 'failed'
 
 

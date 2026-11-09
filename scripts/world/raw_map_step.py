@@ -68,13 +68,13 @@ def raw_map_recipe(tile_id, lock_record):
             'sourceSha256': lock_record['eSha256']}
 
 
-def raw_step_row(tile_id, status, reason, source_identity, evidence):
-    return {'key': tile_unit_key(tile_id), 'part': WORLD_PART_NAME, 'step': RAW_STEP_NAME, 'status': status, 'reason': reason,
+def tile_step_row(tile_id, step, status, reason, source_identity, evidence):
+    return {'key': tile_unit_key(tile_id), 'part': WORLD_PART_NAME, 'step': step, 'status': status, 'reason': reason,
             'sourceIdentity': source_identity, 'evidence': evidence}
 
 
 def unsupported_object_gap_rows(tile_id, source_identity, unsupported_objects, evidence):
-    return [raw_step_row(tile_id, GAP_STATUS, f'decode-failed:{entry["error"]}', {**source_identity, 'object': entry['object']}, evidence)
+    return [tile_step_row(tile_id, RAW_STEP_NAME, GAP_STATUS, f'decode-failed:{entry["error"]}', {**source_identity, 'object': entry['object']}, evidence)
             for entry in unsupported_objects]
 
 
@@ -88,7 +88,7 @@ def run_raw_map_step(project_root, client, tile_id):
     lock_record = read_tile_map_lock_record(tile_id)
     source_identity = {'path': tile_map_path(tile_id), 'sha256': lock_record['eSha256']}
     if census_row['status'] == GAP_STATUS:
-        return raw_step_row(tile_id, GAP_STATUS, census_row['reason'], source_identity, TILE_CENSUS_RELATIVE_PATH)
+        return tile_step_row(tile_id, RAW_STEP_NAME, GAP_STATUS, census_row['reason'], source_identity, TILE_CENSUS_RELATIVE_PATH)
     if lock_record['class'] != LOCK_EQUAL_CLASS:
         raise RawMapStepError(f'{tile_map_path(tile_id)} has lock class {lock_record["class"]}, not {LOCK_EQUAL_CLASS}')
     recipe = raw_map_recipe(tile_id, lock_record)
@@ -98,7 +98,7 @@ def run_raw_map_step(project_root, client, tile_id):
     step_directory = ledger.unit_step_directory(unit_key)
     receipt_evidence = (step_directory / RECEIPT_RECORD_NAME).relative_to(ledger.lane_folder).as_posix()
     if ledger.is_sealed(unit_key, fingerprint):
-        return raw_step_row(tile_id, 'pass', None, source_identity, receipt_evidence)
+        return tile_step_row(tile_id, RAW_STEP_NAME, 'pass', None, source_identity, receipt_evidence)
     products_directory = ledger.begin(unit_key, fingerprint) / PRODUCTS_FOLDER_NAME
     products_directory.mkdir()
     outputs = []
@@ -113,7 +113,7 @@ def run_raw_map_step(project_root, client, tile_id):
     try:
         manifest, dependencies = build_map(Path(client).resolve(), recipe, write_product)
     except FormatError as error:
-        return raw_step_row(tile_id, 'failed', f'decode-failed:{error}', source_identity,
+        return tile_step_row(tile_id, RAW_STEP_NAME, 'failed', f'decode-failed:{error}', source_identity,
                             step_directory.relative_to(ledger.lane_folder).as_posix())
     if dependencies[tile_map_path(tile_id)]['sha256'] != lock_record['eSha256']:
         raise RawMapStepError(f'{tile_map_path(tile_id)} read bytes differ from its lock eSha256')
@@ -121,4 +121,4 @@ def run_raw_map_step(project_root, client, tile_id):
     ledger.seal(unit_key, fingerprint, {
         'config': recipe, 'inputs': [source_identity], 'outputs': outputs,
         'gapRows': unsupported_object_gap_rows(tile_id, source_identity, manifest['unsupported'], receipt_evidence)})
-    return raw_step_row(tile_id, 'pass', None, source_identity, receipt_evidence)
+    return tile_step_row(tile_id, RAW_STEP_NAME, 'pass', None, source_identity, receipt_evidence)

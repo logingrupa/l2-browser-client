@@ -12,10 +12,13 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/'scripts'))
 from native_catalog.ue2 import FormatError
 from native_map import migrate_map
-from native_map_geometry import (BOUND_TOLERANCE, GltfBuilder, bit, build_geometry, calculated_coords,
-    coords_point, cross, glb_structure, gltf_placement, layer_sampling_source, native_to_gltf, quad_triangles, qualified_mask_uv_rule, resolved_static_values,
-    reference_surface_candidate, rotation_rows, select_terrain_sectors, static_matrix, static_model_limit, subtract, surface_spawn_candidate,
-    terrain_mask_uv, texture_uv, validate_static_requests, verify_geometry, vertex_normal)
+from native_map_geometry import (build_geometry, reference_surface_candidate, static_model_limit, surface_spawn_candidate,
+    validate_static_requests, verify_geometry)
+from world.gltf_builder import glb_structure
+from world.native_terrain_sectors import BOUND_TOLERANCE, bit, quad_triangles, select_terrain_sectors, vertex_normal
+from world.static_placement import gltf_placement, resolved_static_values, rotation_rows, static_matrix
+from world.terrain_coordinates import calculated_coords, coords_point, cross, native_to_gltf, subtract
+from world.terrain_layers import layer_sampling_source, qualified_mask_uv_rule, terrain_mask_uv, texture_uv
 
 
 def row_point(matrix, point):
@@ -252,7 +255,6 @@ class StaticPlacementTests(unittest.TestCase):
         matrix = static_matrix(self.values())
         for actual, expected in zip(row_point(matrix, [3, 4, 5]), [1000, -2000, 50]):
             self.assertAlmostEqual(actual, expected)
-        # +local X is scaled2 and rotates to +worldY; not a world-space pivot subtraction.
         for actual, expected in zip(row_point(matrix, [4, 4, 5]), [1000, -1998, 50]):
             self.assertAlmostEqual(actual, expected)
 
@@ -287,8 +289,6 @@ class StaticPlacementTests(unittest.TestCase):
 
 class LayerSamplingSourceTests(unittest.TestCase):
     def source(self):
-        # Distinct serialized array records, including negative zero; decoding
-        # alone cannot retain that representation or the original tag bytes.
         data = b'prefix' + b'\x91\x03' + struct.pack('<3f', -0., 32., 76.) + b'\x91\x83\x01' + struct.pack('<3f', .03125, 0., 0.) + b'\x92\x03' + b'end'
         properties = []
         for name, index, tag, payload, size in [('ToMaskmap', None, 6, 8, 12), ('ToMaskmap', 1, 20, 23, 12), ('bUseAlpha', None, 35, 37, 0)]:
