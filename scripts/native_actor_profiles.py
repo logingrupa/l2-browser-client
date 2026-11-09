@@ -70,7 +70,7 @@ def _recipe(value):
     return json.loads(json_bytes(value))
 
 
-def _tool_pins():
+def npc_profile_tool_pins():
     _, library, powershell = _tool_paths()
     if file_hash(library) != UELIB_SHA256:
         raise FormatError('NPC defaults require the pinned UELib build')
@@ -289,14 +289,14 @@ def verify_npc_profiles(client, output):
     client, output = Path(client).resolve(strict=True), Path(output).resolve(strict=True)
     if output.is_relative_to(client) or client.is_relative_to(output):
         raise FormatError('NPC profile output must be outside the read-only client')
-    return _summary(_verify(client, output, _tool_pins()), output, True)
+    return _summary(_verify(client, output, npc_profile_tool_pins()), output, True)
 
 
 def migrate_npc_profiles(client, recipe, output):
     client, output = Path(client).resolve(strict=True), Path(output).resolve()
     if not client.is_dir() or output.is_relative_to(client) or client.is_relative_to(output):
         raise FormatError('NPC profile output must be outside an existing read-only client directory')
-    recipe, pins = _recipe(recipe), _tool_pins()
+    recipe, pins = _recipe(recipe), npc_profile_tool_pins()
     owner_path = output / OWNER_FILE
     if owner_path.exists():
         owner = json.loads(owner_path.read_text(encoding='utf-8'))
@@ -343,7 +343,7 @@ def migrate_npc_profiles(client, recipe, output):
 
     data = _extract_bundle(client, recipe, output, save)
     _check_sources(client, data['sourceFiles'])
-    if _tool_pins() != pins:
+    if npc_profile_tool_pins() != pins:
         raise FormatError('NPC profile implementation/tool changed during extraction; rerun')
     files = [artifacts[name] for name in sorted(artifacts)]
     manifest = {'schemaVersion': 1, 'id': recipe['id'], 'kind': KIND, 'recipe': recipe,

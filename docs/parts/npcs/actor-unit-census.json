@@ -100664,7 +100664,7 @@
     {
       "key": "npc-model:0019be327c04c7be1bc8effb4934b9ea8ee6d8c1c986b64ce3c7cba78ebe5fb3",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_teleporter_Fhuman_m00",
         "textures": [
@@ -100678,7 +100678,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -100703,7 +100703,7 @@
     {
       "key": "npc-model:007e5c162a30125b5aedd05d82fff2f2dc2239474d1228f05638501efeae10c7",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.ol_mahum_archer_m00",
         "textures": [
@@ -100716,13 +100716,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:0098b8fef96e1aa5cd4d0795b54ef78c2db3400c18615071c07a7252e9eeb4d8",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCsEV.ice_sculpture_c_m00",
         "textures": [
@@ -100736,13 +100736,13 @@
         "path": "animations/lineagenpcsev.ukx",
         "sha256": "b8abe3df2f5a2b7019868e1102cfa20d4f574c289cfa4725b2ddb3ea3e4c9fb6"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:0168599de336403d37b0eb665b20cc39ce6a13e0d293c9014f10286fd3e8994d",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.cave_maiden_m00",
         "textures": [
@@ -100755,7 +100755,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -100799,7 +100799,7 @@
     {
       "key": "npc-model:03b94c92ed40bc8f812a16b52fbe01f6d851b7ec52ac290af343458e16faf464",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCsEV.pavel_weather_controller_m00",
         "textures": [
@@ -100814,13 +100814,13 @@
         "path": "animations/lineagenpcsev.ukx",
         "sha256": "b8abe3df2f5a2b7019868e1102cfa20d4f574c289cfa4725b2ddb3ea3e4c9fb6"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:03e2d6aee3e4c48a85ea5013e659fe24ca2bfa6d249934ffaf2bd75716cbadd9",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCsEV.grail_brazier_b_m00",
         "textures": [
@@ -100834,7 +100834,7 @@
         "path": "animations/lineagenpcsev.ukx",
         "sha256": "b8abe3df2f5a2b7019868e1102cfa20d4f574c289cfa4725b2ddb3ea3e4c9fb6"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -100878,7 +100878,7 @@
     {
       "key": "npc-model:05a98e9484f76776ad9b03a715ecdf5504aa60b6bd19ef7a74ca5e7b6a999d93",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.virud_lizardman_shaman_a_m00",
         "textures": [
@@ -100891,7 +100891,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -100915,7 +100915,7 @@
     {
       "key": "npc-model:0626de1ad44c040ab63bab495a62f9534d1d0fc79e265c8fa4eda1b74de523ab",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_sanctuary_teacher_FHuman_m00",
         "textures": [
@@ -100930,13 +100930,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:07210d69a05254a4a268b444cd96eb7a2ff106d9048bf7031eec9bfb7a32dbb5",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_fighterguild_teacher_MElf_m00",
         "textures": [
@@ -100951,13 +100951,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:0748c04221779177cc95cec2299af702ce2dceb7be86608d4699e87f7e223fd0",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_maidA_FHuman_m00",
         "textures": [
@@ -100972,7 +100972,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -100998,7 +100998,7 @@
     {
       "key": "npc-model:083327af8dd10850d54a11044c6c89e8fd44bc30d76310e6c15e3e16790b034f",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs2.a_child_people_Fhuman_m00",
         "textures": [
@@ -101013,7 +101013,7 @@
         "path": "animations/LineageNPCs2.ukx",
         "sha256": "c323467d4e790b292f3c6726257ba15da7a55606c40a60b0c98899d47f1acd5b"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -101074,7 +101074,7 @@
     {
       "key": "npc-model:09f7c5f36fd7344795ccb6374f80a5e596c45ab99989753edb8bef2f9807c94d",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.mana_vampire_m00",
         "textures": [
@@ -101087,13 +101087,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:0a0e2f0b2eb8d4c7ed7c7be3f3bf3f013acfc1df23afe7c75b7db610b4f350c1",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.silhouette_m00",
         "textures": [
@@ -101106,13 +101106,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:0a2adba42da3fa9cfd2baeb52df3a1312181b92f131025859869ddedd38b62d9",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.lesser_giant_mage_m00",
         "textures": [
@@ -101125,7 +101125,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -101150,7 +101150,7 @@
     {
       "key": "npc-model:0ac4f2c83a236fdb2220273babdcdbf55656a20decccf75d6ca7615ab5e23beb",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_common_people_FDarkElf_m00",
         "textures": [
@@ -101165,13 +101165,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:0b6087ba6714b7a30e1419748f932676c9d65f1f6506820c7cde5c3a3ee6c4f8",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_fighterguild_teacher_FElf_m00",
         "textures": [
@@ -101186,13 +101186,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:0c075eadb98b6c04d973c9cd500376c53229d2f16d58e8f6148c6a3b118a22bf",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_mageguild_teacher_FHuman_m00",
         "textures": [
@@ -101207,13 +101207,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:0c3dfdb987565545258a728934e674f53cea233102e860c16cfdde881684160d",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.sylph_m00",
         "textures": [
@@ -101226,7 +101226,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -101292,7 +101292,7 @@
     {
       "key": "npc-model:0dc20253272dd3ceb56f62d79cb7efecca8a234f363554de07fbf6efd0139892",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.medusa_m00",
         "textures": [
@@ -101305,13 +101305,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:0e48c7739875ead6f3a73dd57b0af46c44fa3a20ae299ed952f03b05226aabab",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.black_market_trader_MDwarf_m00",
         "textures": [
@@ -101325,7 +101325,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -101350,7 +101350,7 @@
     {
       "key": "npc-model:0f7b6679101723bdbb2e639d5b01905747fb0949eb2c3dadea689a142800a438",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.old_tablet_m00",
         "textures": [
@@ -101363,7 +101363,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -101387,7 +101387,7 @@
     {
       "key": "npc-model:0fa40193719e1991c3047f116b0307fdd6033441dda3a29f04f9a610117c8a70",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_mageguild_teacher_MHuman_m00",
         "textures": [
@@ -101402,13 +101402,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:0fdcf5395eacdfd7cd44f0a502152a33f5af26a9b059746848802dc8fe447b16",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_hardin_MHuman_m00",
         "textures": [
@@ -101421,7 +101421,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -101446,7 +101446,7 @@
     {
       "key": "npc-model:111180de6fd92f1c7b6d1853fc8e6a92b35ff941ae215be360a67ae741fdaefc",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.skeleton_pikeman_m00",
         "textures": [
@@ -101459,7 +101459,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -101501,7 +101501,7 @@
     {
       "key": "npc-model:11d63187993d89876172e71f088fc579927b60b509929ab298b7fb70c0a8c5ca",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs2.a_old_people_Fhuman_m00",
         "textures": [
@@ -101516,7 +101516,7 @@
         "path": "animations/LineageNPCs2.ukx",
         "sha256": "c323467d4e790b292f3c6726257ba15da7a55606c40a60b0c98899d47f1acd5b"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -101558,7 +101558,7 @@
     {
       "key": "npc-model:12b4a9b038efcc980b06d547d1d7cdb82016475b0a2b94cbb587421e26f15585",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.griffin_m00",
         "textures": [
@@ -101571,13 +101571,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:12bbac635bc056e3257df5330c0a006664afe1a60a45dbdeb27a170063ed2561",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCsEV.strange_mechanical_instrument_m00",
         "textures": [
@@ -101592,13 +101592,13 @@
         "path": "animations/lineagenpcsev.ukx",
         "sha256": "b8abe3df2f5a2b7019868e1102cfa20d4f574c289cfa4725b2ddb3ea3e4c9fb6"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:135e6301bc15a6ecbbaddb07dc646008c6a3d7f85173cf2d9e2039ffd1f0af3c",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.godad_holything_m00",
         "textures": [
@@ -101612,7 +101612,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -101637,7 +101637,7 @@
     {
       "key": "npc-model:171f639153d4ef0c6322b4cadd5221f93a64c85fdcf7446aba560b82e93c32f0",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.mirror_m00",
         "textures": [
@@ -101650,7 +101650,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -101675,7 +101675,7 @@
     {
       "key": "npc-model:17a8934d0ef1a61a5182c98e2361c79b53d82e994aa018a048297f69f23fa71b",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_collector_teacher_FDwarf_m00",
         "textures": [
@@ -101690,7 +101690,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -101732,7 +101732,7 @@
     {
       "key": "npc-model:1a414a43dbb0e8a4658f866cfbb1214ef4eefc6106be5b7b22fe84c9fa1828b6",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.zombie_m00",
         "textures": [
@@ -101745,13 +101745,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:1a546ea349358afc0b04037202dfeb5d863abf5a44caf292f60bf9d7eb9ded58",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.zenta_lizardman_scout_m00",
         "textures": [
@@ -101764,7 +101764,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -101846,7 +101846,7 @@
     {
       "key": "npc-model:1cf52182776d7d474514e718be61eb15d8d54b739137bbf71d21d53cdb4ec69d",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.lesser_giant_m00",
         "textures": [
@@ -101859,13 +101859,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:1dd9f49eaebedfba8df3d30156d425608cd84b5c00d4a8d103d4039bca72b8b8",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.king_bugbear_m00",
         "textures": [
@@ -101878,7 +101878,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -101940,7 +101940,7 @@
     {
       "key": "npc-model:20ef1a5af2d5e3603095c5427efd82f933645a29b4bf5869a165f1af1752151c",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.stone_golem_m00",
         "textures": [
@@ -101953,13 +101953,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:2173a3e4f41f43222c5700086dfbbc94e2f32493479d1957a54caf6853be5e75",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCsEV.heretical_sanctuary_gatekeeper_b_m00",
         "textures": [
@@ -101973,13 +101973,13 @@
         "path": "animations/lineagenpcsev.ukx",
         "sha256": "b8abe3df2f5a2b7019868e1102cfa20d4f574c289cfa4725b2ddb3ea3e4c9fb6"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:21e3e35719fd62d43bff7ca6a9c9e428514d9a74a76721d391b8784d58bb7bbd",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_chamberlain_MHuman_m00",
         "textures": [
@@ -101994,13 +101994,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:21edb711875021fd5033a3c721a0e48b9f73de5cfb29203f170079c81c8de3fd",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.kel_mahum_witch_doctor_m00",
         "textures": [
@@ -102013,7 +102013,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -102076,7 +102076,7 @@
     {
       "key": "npc-model:2243d157ea96053c78521b399f3a62bb571827bb9b88639ee88ed74e11d0f0fb",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.ketra_orc_shaman_m00",
         "textures": [
@@ -102089,13 +102089,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:231812d58caee3eb8409837360e0d6623dec3c482ea3707c5ebda18bc472e79b",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.oel_mahum_champion_m00",
         "textures": [
@@ -102108,13 +102108,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:234e6faeed517b06ddf7b0e39a7a4d4ec0dc883c44b4f98e252b63b3020114ef",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_casino_FDarkElf_m00",
         "textures": [
@@ -102129,13 +102129,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:23590bca927cd2b90afaefa3e2adce0c8d5dcba387680483b76940c9cb7b0b35",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.magical_weaver_m00",
         "textures": [
@@ -102148,7 +102148,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -102248,7 +102248,7 @@
     {
       "key": "npc-model:27434100ef514b9742a56c65d36ef09fe4828d28c52b169f96113bf6dd360191",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.ti_mi_tran_m00",
         "textures": [
@@ -102262,7 +102262,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -102345,7 +102345,7 @@
     {
       "key": "npc-model:2b4ab63edb22212b893d822d2597aa0b72f3b415b336c9cef2e06960530e6bd3",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_common_people_FElf_m00",
         "textures": [
@@ -102360,13 +102360,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:2b7f6fcd83cf3f762f23abad08bcf7e2b2e23816c1724884dd44beb2ae7d1d89",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.doll_master_m00",
         "textures": [
@@ -102379,13 +102379,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:2ba40bb2d1d929e5043e490b227cb4ab198642dd69831275d818ca6d4a8bf875",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_traderA_FHuman_m00",
         "textures": [
@@ -102400,7 +102400,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -102484,7 +102484,7 @@
     {
       "key": "npc-model:2f3e94468d1abdb90517c32d0b7e083eda26469689d6131ed96373d757376b63",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_fisherA_Mhuman_m00",
         "textures": [
@@ -102499,7 +102499,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -102523,7 +102523,7 @@
     {
       "key": "npc-model:2fcbad058086257453262bdec09e6ff37a6755e44fbcd90c433f18bc018f61e3",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.gamlin_m00",
         "textures": [
@@ -102537,7 +102537,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -102561,7 +102561,7 @@
     {
       "key": "npc-model:300d97b856a029d1a5394d1ed32cc3974d5dfae5aad0bf325a0c1ae248704657",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.umul_m00",
         "textures": [
@@ -102576,7 +102576,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -102623,7 +102623,7 @@
     {
       "key": "npc-model:310c889b556b8240d842d1cedaf79787248dc76323549b07526d5d8b2181cf4c",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_mine_teacher_MDwarf_m00",
         "textures": [
@@ -102638,7 +102638,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -102663,7 +102663,7 @@
     {
       "key": "npc-model:32030cf3f0be80a79d6e061da277b8ee74a3a131a4c0ea4e676e2c61dfd5432c",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.nos_m00",
         "textures": [
@@ -102676,13 +102676,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:3218b8a45d3ed71dba3c01edad7942ed40aaf23362375baa5d820239a9bb2da1",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.dwarf_ghost_m00",
         "textures": [
@@ -102695,7 +102695,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -102722,7 +102722,7 @@
     {
       "key": "npc-model:32c1c877dd338e48d86843b26ad6da020e96bc00fe4aae431f1df1e464ec8dad",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.hungry_spirit_m00",
         "textures": [
@@ -102735,13 +102735,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:32c292df495fab9799f58ffb4b0edb1a188bfe2ac8ad628c5726cf2613068939",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.twin_headed_giant_m00",
         "textures": [
@@ -102754,13 +102754,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:32e8df62ea87afb9a166624b4614635e7559804b8e4101f8b83451cc34c0fa7e",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.wererat_m00",
         "textures": [
@@ -102773,7 +102773,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -102797,7 +102797,7 @@
     {
       "key": "npc-model:333372c23c86b33ed4ac2b21e3714a3391ee95e243127cbaaf190e23250fea60",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_collector_master_MDwarf_m00",
         "textures": [
@@ -102811,13 +102811,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:337d7048ce327eb435b5f3aac9054ed173ca740b6c0ae70d8b4ac71d18542135",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.orcish_totem_m00",
         "textures": [
@@ -102830,13 +102830,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:3448d02533a401546975fbe91a2b29e6932969be4da02884391e63174c2c4d97",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_mageguild_teacher_MHuman_m00_mon",
         "textures": [
@@ -102851,13 +102851,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:353b6696c035b7beaaf07cdd7389e8e1c35137b10f57a37d4ddc6ac640e8d900",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.theeder_m00",
         "textures": [
@@ -102870,13 +102870,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:35a5bbdaefe35c1d442cfc328abbbfb2a21e67de672b4774fa9abd7c100dfd04",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.imp_m00",
         "textures": [
@@ -102889,13 +102889,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:367a7c75fb26c8f9b172eaad4fd0652c874589dd992872a4b088bdf7d2e9b531",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.hobgoblin_m00",
         "textures": [
@@ -102908,7 +102908,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -102933,7 +102933,7 @@
     {
       "key": "npc-model:3777dabfe67015aeb95970358e636b9cbd6ea080717ce64e7650d402cc9fd820",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_traderC_Mhuman_m00",
         "textures": [
@@ -102948,13 +102948,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:37be8713e48ea61978291a369780a02c2928288e7b1c7622daaba0f44253669b",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.pirates_zombie_m00",
         "textures": [
@@ -102967,13 +102967,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:383f64ec68747d977bd6187a5c3b17db4c69fef5e8485e487555991c94ea4032",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.grave_m00",
         "textures": [
@@ -102986,7 +102986,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -103069,7 +103069,7 @@
     {
       "key": "npc-model:3b141b07dd98b61e10165b327b714ec78cdb10f98234fdc86c544f77ed4d3aff",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.marsh_stakato_queen_m00",
         "textures": [
@@ -103082,13 +103082,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:3bd3bb9d47d3cc0f48009ffd8665e5576af5ef11c5bc788d96ed9c165329a130",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.spartoi_m00",
         "textures": [
@@ -103101,7 +103101,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -103125,7 +103125,7 @@
     {
       "key": "npc-model:3c0a1d8638fa35136a35943f34cbc1e78824399efacc5858f71353aac7f7cef3",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.dre_vanul_m00",
         "textures": [
@@ -103138,7 +103138,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -103162,7 +103162,7 @@
     {
       "key": "npc-model:3c5550e46e6fc1083148cbd231270934138103c79bee88c0c2487cee2c0929ac",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.baium_m00",
         "textures": [
@@ -103175,13 +103175,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:3c695fd284152ed562f4c39e5d6ae523d16a2e06719b74a17429dd0e9470467e",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.spike_stakato_worker_m00",
         "textures": [
@@ -103194,13 +103194,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:3ca6b59139f80d19938bb477d9ab3df680c3cbbe36b1db331b94986fad59c102",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.zombie_m00",
         "textures": [
@@ -103213,13 +103213,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:3d0c0909acbdbcf09bca52891d7f016965426e315e416a74633586926d0b9897",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.mandragora_b_m00",
         "textures": [
@@ -103232,7 +103232,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -103257,7 +103257,7 @@
     {
       "key": "npc-model:3e2e18cb8516e4445e21582960673029070f29dd7da887a801e369a8b81b2435",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_collector_teacher_MDwarf_m00_mon",
         "textures": [
@@ -103271,13 +103271,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:3e6919c992e9117f1c93c7e18f3965be5e6d3127e3b27888136ca1a5775b85a2",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_common_peopleA_FHuman_m00",
         "textures": [
@@ -103292,7 +103292,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -103316,7 +103316,7 @@
     {
       "key": "npc-model:3ed786c6f4fe4499517433246fd33cac4056f0ad9f22e1ef13ef668696fecffc",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_traderB_MDwarf_m00",
         "textures": [
@@ -103331,13 +103331,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:3efc4ac17e225f6589f247965d7988c4742ad77740afab3eebd48f6900f9312e",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_mine_teacher_FDwarf_m00",
         "textures": [
@@ -103352,7 +103352,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -103378,7 +103378,7 @@
     {
       "key": "npc-model:3fa83e5711616d9ddf4f2bb60143d1fbabcd282cb16b6a00565858752fd67fb6",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.human_tree_m00",
         "textures": [
@@ -103393,13 +103393,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:3fc646b1a6be0f6e97325c39bfcd1edc2bff4877bd0355a57f2c351e4400c849",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.karik_m00",
         "textures": [
@@ -103412,13 +103412,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:40508b9ddbe2890b72895d2b6baf1f5145f16b9c463dd2e18fb5a2244f364f76",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.lesser_basilisk_m00",
         "textures": [
@@ -103431,13 +103431,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:408b18b57f64f3bce4a9777524a3293c8b0799f53b167e7a592f95c4a49cd493",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.blade_stakato_queen_m00",
         "textures": [
@@ -103450,7 +103450,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -103475,7 +103475,7 @@
     {
       "key": "npc-model:4167933df3f2d9fc78a8fcb9b8e2e2dce968891ce526071f5e6853dea40d69ab",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_tombkeeperA_m00",
         "textures": [
@@ -103490,7 +103490,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -103514,7 +103514,7 @@
     {
       "key": "npc-model:41df6c2c9cb11946ac30c868785d0379eb064ed3e5adf8808b49a48bda1215eb",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.skeleton_m00",
         "textures": [
@@ -103527,13 +103527,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:41e7cbb90a69191d25f2370416ec56393e6d18bd4d25deacdbe915e37196720e",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.heroes_obelisk_darkelf_m00",
         "textures": [
@@ -103548,13 +103548,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:41eafb1e73d350ff20b21bf2bed13c33571c1a780211ec64c99795cdcde5f7a4",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.death_knight_m00",
         "textures": [
@@ -103567,7 +103567,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -103592,7 +103592,7 @@
     {
       "key": "npc-model:434fa4de14aeb1186734ae6c1cc59a53ca2a62c4bef8269252b8a542738859a2",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.codex_stone_m00",
         "textures": [
@@ -103605,7 +103605,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -103707,7 +103707,7 @@
     {
       "key": "npc-model:45319fbb7b29ceae34e3051aa023d4155ae4ac0a6e984016bed101faeed2d3ed",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.dark_fencer_m00",
         "textures": [
@@ -103720,7 +103720,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -103745,7 +103745,7 @@
     {
       "key": "npc-model:46bdb524ec888ad454098c524297ad30c0921342f4ba69de76ee3e6a881e7ba8",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_common_peopleC_Mhuman_m00",
         "textures": [
@@ -103760,7 +103760,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -103803,7 +103803,7 @@
     {
       "key": "npc-model:471f7d0ee570d32f66e92a530aaf86500e34346ce7739f5d32e0fb487f46b79f",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.kel_mahum_archer_m00",
         "textures": [
@@ -103816,13 +103816,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:48bb38f71b203a64858392b0a1dbab64370eff8d8d6b12c3382bd513773d007a",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.devastator_m00",
         "textures": [
@@ -103835,13 +103835,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:48d8e0b4a4ba092ea7f933394cc60251dd8917daf392d008cb909f5b966582e8",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.black_market_trader_MDwarf_set_m00",
         "textures": [
@@ -103856,7 +103856,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -103899,7 +103899,7 @@
     {
       "key": "npc-model:49bae9ccd923c41ea685fb26f5808f6529450defe2aef5ca90a8ce943425f7d6",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.banshee_m00",
         "textures": [
@@ -103912,7 +103912,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -103937,7 +103937,7 @@
     {
       "key": "npc-model:4bba124243091acc3e044c0e5ed7293804d6e612b9b3905e34c7f8c50efd0757",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.heroes_obelisk_human_m00",
         "textures": [
@@ -103950,13 +103950,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:4bd59a080b5dc8f8f6e439537a7af57f83639b40c6ed5bbef2af9d2ff6133406",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_teleporter_FOrc_m00",
         "textures": [
@@ -103971,13 +103971,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:4be474736ce2d802c2aef2f33fdfb640f24213eecb3bfec8a9a4d52f394dfd58",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.orc_m00",
         "textures": [
@@ -103990,13 +103990,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:4c78d6197354b878cb07301548dd1fdc10d7ef769da827303f750a30d9d93a2a",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.lesser_giant_shooter_m00",
         "textures": [
@@ -104009,13 +104009,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:4ce10128d8ffc8ab7e809b397eba65f101090a305ac568f4e53eea4d1bad4498",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.wyrm_m00",
         "textures": [
@@ -104028,13 +104028,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:4d0f84b24219b3b4ae1b7b7fc848487231f23bb84e32f1b42172454290a469a5",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.orc_archer_m00",
         "textures": [
@@ -104047,7 +104047,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -104072,7 +104072,7 @@
     {
       "key": "npc-model:4df21d3493659b202835fc9247c446999a8a28a480655e731a00c500ec8ffa30",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.priest_of_dusk_m00",
         "textures": [
@@ -104087,13 +104087,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:4e503c15fc40374d69c4cd160af8eefa7664523f3ffa7583da7bbed243156ea8",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.oel_mahum_warrior_m00",
         "textures": [
@@ -104107,7 +104107,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -104134,7 +104134,7 @@
     {
       "key": "npc-model:4f374327073802fe2ef2eca5d1bb5f6a5a58af5755ae17c9991dc639495dac4d",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCsEV.ice_sculpture_b_m00",
         "textures": [
@@ -104148,13 +104148,13 @@
         "path": "animations/lineagenpcsev.ukx",
         "sha256": "b8abe3df2f5a2b7019868e1102cfa20d4f574c289cfa4725b2ddb3ea3e4c9fb6"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:4f4e5e91933cd3e8f7b1c70a9cdff80e86d21d2d3959c4e0686c4420607cc10b",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.ol_mahum_m00",
         "textures": [
@@ -104167,13 +104167,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:4f848202eae1057d2dcf734aa2db1c37ce202368d96a75d38d90a3d2cbe33584",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_clergyman_FDarkElf_m00",
         "textures": [
@@ -104188,7 +104188,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -104212,7 +104212,7 @@
     {
       "key": "npc-model:4ff03465209c805ca8f91217fccb5c149996f66d930ffc1893959c30f04d2a28",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.ol_mahum_champion_m00",
         "textures": [
@@ -104225,7 +104225,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -104268,7 +104268,7 @@
     {
       "key": "npc-model:50b54b6f16b8c0a5002e4351733154c2bd6f0519b648eb0a54d8a67f86bd9cb0",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.orc_m00",
         "textures": [
@@ -104281,13 +104281,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:50ddebf4ece7a36e67199e783c9c94066b430ee51d9b8aebeb525082c1d6111f",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.iron_golem_m00",
         "textures": [
@@ -104300,13 +104300,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:50eb1917a88ad42a4ad896e2dab748999842a60fd650abacf7a1ff085dda330f",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.holy_altar_m00",
         "textures": [
@@ -104321,7 +104321,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -104364,7 +104364,7 @@
     {
       "key": "npc-model:547ffc1bb4c38531cc4fb135978b700deb6a2e63b47af72a58fea8b7b633fda2",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_mageguild_teacher_MDarkElf_m00",
         "textures": [
@@ -104379,7 +104379,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -104423,7 +104423,7 @@
     {
       "key": "npc-model:558198ae6663dd7cff6becd4925e4ec8b18b1f2361dfb3ff71cfd065b1d8a67f",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.orc_fighter_m00",
         "textures": [
@@ -104436,7 +104436,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -104460,7 +104460,7 @@
     {
       "key": "npc-model:5689fde5396681a4defc8de039f331d14d883c7964a34055445aa5920eeb8df4",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.zenta_lizardman_shaman_m00",
         "textures": [
@@ -104473,7 +104473,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -104515,7 +104515,7 @@
     {
       "key": "npc-model:5717bff1a22bd72a02c0266e4d5b042b2170d3fd036e60a28cad9f91665c66f0",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.werewolf_m00",
         "textures": [
@@ -104528,13 +104528,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:57b6fc23a36e7b51029dadbe995341afa52bc41e9d3af89e96c40aceb2c98ed4",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.kel_mahum_m00",
         "textures": [
@@ -104547,13 +104547,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:581a5d3f58b59fbedef2b5fc3d987a4fda64e138d559414baf989da8d4565673",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.virud_lizardman_warrior_m00",
         "textures": [
@@ -104566,7 +104566,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -104590,7 +104590,7 @@
     {
       "key": "npc-model:58f42f5ec4d08ed03010a951c0bc4eb20fad6d71ed640296ce4c18af5ed7ed1f",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_temple_master_Mhuman_m00",
         "textures": [
@@ -104603,13 +104603,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:598fc4d895b41a55b3319bf2fb91fa4f6a27fde7947d7d78ebaed30715e9a23a",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.ketra_orc_warrior_a_m00",
         "textures": [
@@ -104622,13 +104622,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:59a3d3af622ae255942634f74cb692528bdf8a06500fc08aae6fbb2ec3fd723d",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_trader_MElf_m00",
         "textures": [
@@ -104643,7 +104643,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -104668,7 +104668,7 @@
     {
       "key": "npc-model:5a0745f9e778cbd65351d434d2a12e2b1a0daae97f26c05c1307daca53af81fc",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.leogul_m00",
         "textures": [
@@ -104682,13 +104682,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:5a53502afc07232dccb76079aab422a6b5f52f074fe0d2035e3fe7ac999ad218",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.marsh_stakato_drone_m00",
         "textures": [
@@ -104701,13 +104701,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:5b270858ba02de8dd123374d8eadc5f8f4a14417738187daf8731aa948b065a2",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.goblin_m00",
         "textures": [
@@ -104720,7 +104720,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -104763,7 +104763,7 @@
     {
       "key": "npc-model:5c755ea669384a68c47a0c603f776d08637d6d6ad60396623f0498cd1710ac72",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.skeleton_royal_guard_m00",
         "textures": [
@@ -104776,13 +104776,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:5cad0861afa9d476ed2f232432bc178ff73f572f15e0bc3b43e480bf149ef5f2",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs2.a_child_people_Mhuman_m00",
         "textures": [
@@ -104797,13 +104797,13 @@
         "path": "animations/LineageNPCs2.ukx",
         "sha256": "c323467d4e790b292f3c6726257ba15da7a55606c40a60b0c98899d47f1acd5b"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:5d341c215b38b75a8da77aa6a45f09859335eb0f4f657be70f358b2fd7b676ec",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.priest_of_dawn_m00",
         "textures": [
@@ -104816,7 +104816,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -104841,7 +104841,7 @@
     {
       "key": "npc-model:5eb374926316d226b7cc208c14d4914df980bd42c5788d68fb93144888e6b52e",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCsEV.azit_contest_pile_d_m00",
         "textures": [
@@ -104855,13 +104855,13 @@
         "path": "animations/lineagenpcsev.ukx",
         "sha256": "b8abe3df2f5a2b7019868e1102cfa20d4f574c289cfa4725b2ddb3ea3e4c9fb6"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:5ed4c827d27800c923a8a0d9e87ab8d5d1775d2ad4b303fd788c966053de8ac5",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.water_giant_m00",
         "textures": [
@@ -104874,13 +104874,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:5f1a6d02478ac658d072139760b60ed5cbab19209755632fa31b1408716b39dc",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_traderA_MHuman_m00",
         "textures": [
@@ -104895,13 +104895,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:5f38d768f86a2313530c9997ef0e3390d95224ceaa07a28c23712c94360fc0e6",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCsEV.dinosaur_nest_m00",
         "textures": [
@@ -104914,13 +104914,13 @@
         "path": "animations/lineagenpcsev.ukx",
         "sha256": "b8abe3df2f5a2b7019868e1102cfa20d4f574c289cfa4725b2ddb3ea3e4c9fb6"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:5f821c87c6ae731fcd44c82fcff26f084b6372954d0aeea2b81c56f7e334f95c",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_warehouse_keeper_MDwarf_m00",
         "textures": [
@@ -104935,7 +104935,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -104960,7 +104960,7 @@
     {
       "key": "npc-model:600e03a1afdc3195e99b116b70ee79cfe0dc1a0419c604bdf3a2075c777fedd0",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.blade_stakato_m00",
         "textures": [
@@ -104973,7 +104973,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -104998,7 +104998,7 @@
     {
       "key": "npc-model:6124ee005978c76934744f67d77c65697bfbfd49d351d1a111434b34fad1c214",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_common_people_MElf_m00",
         "textures": [
@@ -105013,13 +105013,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:615f998d6297a04a6373d686b8949ce0f88a36c26e87c84e340edde7dfc7dc87",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_fighterguild_master_FHuman_m00",
         "textures": [
@@ -105034,7 +105034,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -105079,7 +105079,7 @@
     {
       "key": "npc-model:62249af1d70e26dff8202f2afed6534688882509ab6303c3130eec87f86a8956",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.ol_mahum_archer_m00",
         "textures": [
@@ -105092,13 +105092,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:62dc24d02ae1d0d081805de5706efdc34458a12c51975ed26c9e370e766416dc",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCsEV.azit_contest_pile_b_m00",
         "textures": [
@@ -105112,7 +105112,7 @@
         "path": "animations/lineagenpcsev.ukx",
         "sha256": "b8abe3df2f5a2b7019868e1102cfa20d4f574c289cfa4725b2ddb3ea3e4c9fb6"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -105155,7 +105155,7 @@
     {
       "key": "npc-model:65220d33d3503591b603bb5b4bcadede51c164ba95ac1350603e89d7e6a77e5f",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.unicorn_m00",
         "textures": [
@@ -105168,13 +105168,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:661ee5c796145a4ffacd51df2cb739a63dd63c59e3139e8a129177eb27b679e9",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.grave_keeper_m00",
         "textures": [
@@ -105187,7 +105187,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -105214,7 +105214,7 @@
     {
       "key": "npc-model:66c21726416cd0ae4eb9431d7dec0a48d782f4b30dbafed3828db433dfb4bf57",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_teleporter_FDwarf_m00",
         "textures": [
@@ -105227,7 +105227,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -105252,7 +105252,7 @@
     {
       "key": "npc-model:68b3029486433d055cb6c48e71bb51d45fa123825d1b4f2d395d7788b258d576",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_mageguild_teacher_MOrc_m00",
         "textures": [
@@ -105265,13 +105265,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:6917cbbdadd99c1906a1ef1570dbb5266f82b17d1977c0bba2d2c79dbc5ff147",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.harpy_m00",
         "textures": [
@@ -105284,13 +105284,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:69cd1e0018bbbd38cd0e258d96de12b83c5f15f9830d98627257fde1c36db157",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCsEV.azit_contest_pile_e_m00",
         "textures": [
@@ -105304,7 +105304,7 @@
         "path": "animations/lineagenpcsev.ukx",
         "sha256": "b8abe3df2f5a2b7019868e1102cfa20d4f574c289cfa4725b2ddb3ea3e4c9fb6"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -105404,7 +105404,7 @@
     {
       "key": "npc-model:6b3d77357933526367eee055dfe560b4d8750e596f205cafdd7ac14b9878cdef",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.farhite_m00",
         "textures": [
@@ -105417,13 +105417,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:6baea800780226c82deca5c56e18e1519a05daf573cce6618329b52c528fd2c8",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_guard_MHuman_m00",
         "textures": [
@@ -105437,7 +105437,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -105481,7 +105481,7 @@
     {
       "key": "npc-model:6d750a39b7d439baf8044df2e03374b5d7d22935cda9e389b5be69c176d215b8",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.virud_lizardman_shaman_b_m00",
         "textures": [
@@ -105494,13 +105494,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:6da9c4b561ec69b7c0d34549797d73a8b66241c2cf55e88d5c8824cf0545d81a",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.fiend_archer_m00",
         "textures": [
@@ -105513,7 +105513,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -105539,7 +105539,7 @@
     {
       "key": "npc-model:6e2a77d6531cd988590b0cc78686827730e94c9b2efd5743abdee409397ef563",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_common_peopleC_Fhuman_m00",
         "textures": [
@@ -105554,13 +105554,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:6e94bf2f42eeb55b1d5f98b0465fc752b80dbb2f053a4aebf8f5b7c64932d0c3",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.marsh_stakato_m00",
         "textures": [
@@ -105573,7 +105573,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -105598,7 +105598,7 @@
     {
       "key": "npc-model:6fb97b598b0b80940052dfccbb07a7f595efc055b07897aabadbb6396480ef2f",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.elpy_m00",
         "textures": [
@@ -105611,13 +105611,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:6ff9a44bea2915fd99ebb423b2052b559500856e7c109dded6f31594825d9a37",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_traderA_MHuman_m00",
         "textures": [
@@ -105632,7 +105632,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -105678,7 +105678,7 @@
     {
       "key": "npc-model:70b8394dc198b953e425213c53ce029948f2d8c09664386df2fc1b90ea6e472f",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.zenta_lizardman_m00",
         "textures": [
@@ -105691,13 +105691,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:7106696d7dedd2cc9809045eeea2f938b47d4940f47d26485ddfea7234109fcf",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.saints_coffin_m00",
         "textures": [
@@ -105711,13 +105711,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:7150d726c9f9615594d586067e0cfc3dd79d11b885a81682c9f5b5f3ffa8edab",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_warehouse_master_MDwarf_m00",
         "textures": [
@@ -105732,13 +105732,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:716d5300f4f3ae273bcd5667762d3a60c34d4a2d37589246bb691522abe64001",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.troll_m00",
         "textures": [
@@ -105751,7 +105751,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -105796,7 +105796,7 @@
     {
       "key": "npc-model:72010461a2fa7255047f350636c0ff492c9a4c72688a59e80b57c262600f1682",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.heltor_silenos_chieftain_m00",
         "textures": [
@@ -105809,7 +105809,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -105834,7 +105834,7 @@
     {
       "key": "npc-model:7307d57906a2fd4239f4cb302c053268df5476ab7cffb0b110b0fc3f93853e2d",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.blade_stakato_soldier_m00",
         "textures": [
@@ -105847,13 +105847,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:734d274ff643d4647df66a4a0bc405e659b4ff174dcc88f43aefe66d80b6f252",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.spike_stakato_drone_m00",
         "textures": [
@@ -105866,7 +105866,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -105967,7 +105967,7 @@
     {
       "key": "npc-model:75d9b387ce4baceab25b90d94132f511305ab6a216f2b26ab959d80c08296f3a",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_common_people_MOrc_m00",
         "textures": [
@@ -105982,13 +105982,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:768c5ebecd32b5ce34b3388eb6a41b5c6ff5079d3366440be6fc326fb2048fdb",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_fighterguild_master_Mhuman_m00",
         "textures": [
@@ -106003,13 +106003,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:77025d9b2a098f9e6065bb03382789a21eee5b020bbaa95ffb0b455b1ff79ce2",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCsEV.rune_holything_m00",
         "textures": [
@@ -106024,13 +106024,13 @@
         "path": "animations/lineagenpcsev.ukx",
         "sha256": "b8abe3df2f5a2b7019868e1102cfa20d4f574c289cfa4725b2ddb3ea3e4c9fb6"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:7784439fc694b495840b99dedc5b0823fdd020a2a736f8bc7e42cc0a1cd39190",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.skeleton_knight_m00",
         "textures": [
@@ -106043,7 +106043,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -106067,7 +106067,7 @@
     {
       "key": "npc-model:791ac825d4750a28e9702bf6c88fa04f9a32ea613f11f2e16412ecc294eb2190",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.death_blader_m00",
         "textures": [
@@ -106080,7 +106080,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -106104,7 +106104,7 @@
     {
       "key": "npc-model:79ab336bb02a678e164c1df6dfaf4b2ee0c362da6e19c697b86e77e14218e53b",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.giant_spider_m00",
         "textures": [
@@ -106117,13 +106117,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:7a47ab4ab8d141109a74a9458ac39ee3b46e05564d0f34d7474b4f965120d7c5",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.skeleton_royal_guard_m00",
         "textures": [
@@ -106136,13 +106136,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:7b8312057132711963e6c9de3574cca30ee21eae77a2a70b8d037d29796e3170",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_guard_MDwarf_m00",
         "textures": [
@@ -106155,7 +106155,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -106200,7 +106200,7 @@
     {
       "key": "npc-model:7c79e409142620f7917bcb63ad58a79b9fe6e8562a7caf655ffbe5071a865890",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.wyvern_m00",
         "textures": [
@@ -106213,13 +106213,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:7cba6c16b17a6b80255e21a50c44eb4e365f255ded2f8afe0f960e1404a8145a",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs2.doctor_chaos_m00",
         "textures": [
@@ -106232,13 +106232,13 @@
         "path": "animations/LineageNPCs2.ukx",
         "sha256": "c323467d4e790b292f3c6726257ba15da7a55606c40a60b0c98899d47f1acd5b"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:7d76fd41d55b6268a0bbfb1eb128814cbd1c5c8d9b130865ef8527375b703d45",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_mageguild_teacher_FOrc_m00",
         "textures": [
@@ -106253,13 +106253,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:7dee5dff6bfe6b34b3e6a0c8e5526e1b41e68b075fa25a70659c9fa095eb506f",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.mechanic_golem_m00",
         "textures": [
@@ -106272,7 +106272,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -106317,7 +106317,7 @@
     {
       "key": "npc-model:7f0ec248a5064f8ac0443c748ce16bb1f0b30afdbaa310e2917e69e9d572810b",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.stone_golem_m00",
         "textures": [
@@ -106330,7 +106330,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -106357,7 +106357,7 @@
     {
       "key": "npc-model:7fbb9e578ba01120c98bde6dc16bf7c2e9e1cd2440c446537d4efb2950c815c8",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_clergyman_MDarkElf_m00",
         "textures": [
@@ -106372,7 +106372,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -106416,7 +106416,7 @@
     {
       "key": "npc-model:80d0336a91129d34acff8ac4d540e7ca426ae204f6dc3a3a6e125f486727e633",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_traderC_Fhuman_m00",
         "textures": [
@@ -106431,7 +106431,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -106456,7 +106456,7 @@
     {
       "key": "npc-model:8128574f6f9f09a8bb57a7b4d9bf4ff51ea6add6c9300a1b238d6748fc4377ab",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.silenos_totem_m00",
         "textures": [
@@ -106470,13 +106470,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:81427dbd725c2f48662c26dadaebdcefe433b3309a3ce839d3cfb28815aae36d",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.orc_fighter_m00",
         "textures": [
@@ -106489,7 +106489,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -106552,7 +106552,7 @@
     {
       "key": "npc-model:834c4f190680237cebff3b8a1fdff3b5d2ef742b63510adcc0b3e4c6bbc61d98",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.kobold_m00",
         "textures": [
@@ -106565,13 +106565,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:83670e2bb071625cd2d66b351b275bb12ef6663e6e18ed77d197c1199294cfe3",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.blade_stakato_drone_m00",
         "textures": [
@@ -106584,7 +106584,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -106609,7 +106609,7 @@
     {
       "key": "npc-model:83b2da54409ad3c14d29517508f21df5335e8c1a8e29e2eb8e22f73b5c4b6a06",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.zenta_lizardman_matriarch_m00",
         "textures": [
@@ -106622,13 +106622,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:8481eda7739debd325211d6ecfbbc2ff2049898c2762f6c45ee6206f903cdaac",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.zenta_lizardman_warrior_m00",
         "textures": [
@@ -106641,13 +106641,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:84a0e073c2eee4f4436b3dd3ea0bed6cc51fa8207ff40508998fe7ab970beaac",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.bloody_queen_m00",
         "textures": [
@@ -106660,7 +106660,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -106705,7 +106705,7 @@
     {
       "key": "npc-model:860407ee4a6d1ed5d12cf0f8b3a5dcd4ad34e748b1850cd0fe2c7edf94285993",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.neer_crawler_m00",
         "textures": [
@@ -106718,7 +106718,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -106797,7 +106797,7 @@
     {
       "key": "npc-model:86fc84934be747d495994a014d7f514799e18a95f8e0abcc644b11a28dedc932",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.dark_fencer_m00",
         "textures": [
@@ -106810,13 +106810,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:87256c6557728117cf72cd834ef06bdfa8808deb9932d0be088a937ae788f693",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_common_peopleB_FHuman_m00",
         "textures": [
@@ -106831,7 +106831,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -106855,7 +106855,7 @@
     {
       "key": "npc-model:88761941a51c0a6a409efbdb2f8f4e9b13140ee1139aa63f4e936dcff321e105",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_smith_master_MDwarf_m00",
         "textures": [
@@ -106870,7 +106870,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -106936,7 +106936,7 @@
     {
       "key": "npc-model:894c30f6fa36fa6680aacb43ceb09c3ada6df87b195336d42ebcc7410fd7348f",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_king_MHuman_m00",
         "textures": [
@@ -106951,7 +106951,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -106976,7 +106976,7 @@
     {
       "key": "npc-model:89d484fe3ce6822679d6ecf357cea47c40c437cdcad8baba9d94d6f97ab6e91d",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.salamander_m00",
         "textures": [
@@ -106989,13 +106989,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:8a36f5fc9f0850c0b7cf89e3abefe1f7c3267cd81ac4cfa1f487cca72635fc40",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.aracne_m00",
         "textures": [
@@ -107008,7 +107008,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -107032,7 +107032,7 @@
     {
       "key": "npc-model:8ba45f14a262c4d8332af9a9d31f92689798d973831ac9b13b45864beaf0fdbd",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.argos_eye_m00",
         "textures": [
@@ -107047,13 +107047,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:8be8c26e22aceb03ac88112c58bbe4307e6f6de1a55e3d93ec4a13709cf61e6d",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_smith_MDwarf_m00",
         "textures": [
@@ -107068,13 +107068,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:8cf9c56d4d4a03333db9b4366a0c335546537eeb693214b204ffd99c15995db3",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.crokian_m00",
         "textures": [
@@ -107087,7 +107087,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -107131,7 +107131,7 @@
     {
       "key": "npc-model:8ea83177bb521c3ea306740f6159ec03c14cf8f7c0d67e8632d42c1150355537",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_patriarch_MOrc_m00",
         "textures": [
@@ -107146,13 +107146,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:8eb9a03637fe4a9414e37939d4549a5fb9bebd03376892cc2f23125dc86bbe40",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.marsh_stakato_soldier_m00",
         "textures": [
@@ -107165,7 +107165,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -107211,7 +107211,7 @@
     {
       "key": "npc-model:8fe7756fc042e280b9ee4da0e8c409a85b8f4b6d85c5766c3deee6b39c6797f9",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_elmore_guard_Mhuman_m00",
         "textures": [
@@ -107224,13 +107224,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:903d7fe50f655aab9ab67bb091397ffee4135db838a113085c452694c765352a",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_traderB_FDwarf_m00_mon",
         "textures": [
@@ -107245,7 +107245,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -107289,7 +107289,7 @@
     {
       "key": "npc-model:9169539dcc418e1ea741c7de82c191da44dbce47a906f6ee399ce8668b53ef92",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.crimson_doll_m00",
         "textures": [
@@ -107302,7 +107302,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -107389,7 +107389,7 @@
     {
       "key": "npc-model:921e8f549406b9c8dcb47ee9db39ae4fd7cebc03e349215b520d9a3c991d7984",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.gargoyle_m00",
         "textures": [
@@ -107402,13 +107402,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:932530f3253ac5ebda66fa35bfa539343976488c45f2b93eb19d8273956e3bdb",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_trader_FDarkelf_m00",
         "textures": [
@@ -107423,13 +107423,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:93a6a2b216f91ffd61126d2cb022305aa4fc53cf5b5db9326a7a3f7686bace01",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.heroes_obelisk_orc_m00",
         "textures": [
@@ -107443,13 +107443,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:93c56ff7bbc2d8f6d3771abb001efc5231f98eeea0b4557feee50f9ae876f442",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.heltor_silenos_warrior_m00",
         "textures": [
@@ -107462,13 +107462,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:942085dcaf66045e1dac587fb3e5fb4cdad22bc78dabdbf48ad3e4a9e2318677",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.ketra_orc_overload_m00",
         "textures": [
@@ -107481,13 +107481,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:9479def1155b093bba42303d6388bbb66c032265803110277a002910f7fc0f8a",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.angel_m00",
         "textures": [
@@ -107500,13 +107500,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:94db280330bc79881f6d4fee75e4c804f80ec20b7c5070a0ec6c3f8bf591a54f",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_traderB_FDwarf_m00",
         "textures": [
@@ -107521,13 +107521,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:95e75bf87eed24d123ecd7dd6ba290a2e90e1efeba6ba0b7821f6d6adeb7332d",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.heroes_obelisk_dwarf_m00",
         "textures": [
@@ -107541,7 +107541,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -107602,7 +107602,7 @@
     {
       "key": "npc-model:9805c1045a706e9e7ee72ea4c2ea1924fd9c28fc906618bc33afcad1a5643b70",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.heroes_obelisk_elf_m00",
         "textures": [
@@ -107617,7 +107617,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -107641,7 +107641,7 @@
     {
       "key": "npc-model:99d72aa37a3d97240960b45b4f0335ab8e69f13dadbc0e1ae868afe72009c6bf",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.vampire_bat_m00",
         "textures": [
@@ -107654,7 +107654,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -107678,7 +107678,7 @@
     {
       "key": "npc-model:9a4d9403b6d31f13fd9e99d36ff5ed95ac0dfd82407c4c4d8653f6bcc8d6fb78",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.stone_golem_m00",
         "textures": [
@@ -107691,13 +107691,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:9a83310a737447a14f58b334d2fe83753b5a8f83e67eb030c095257f99f80e63",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_smith_Fdwarf_m00",
         "textures": [
@@ -107712,7 +107712,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -107738,7 +107738,7 @@
     {
       "key": "npc-model:9b1dc58d87441289a67cf01a31395caea468ea7223fc5fce509a215d0c70cefb",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.kel_mahum_champion_m00",
         "textures": [
@@ -107751,7 +107751,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -107775,7 +107775,7 @@
     {
       "key": "npc-model:9ba917d44c1615acca1274911d1d30a1e45b723db7c3b8ba22449da90578f883",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_teleporter_FDarkElf_m00",
         "textures": [
@@ -107790,13 +107790,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:9bc7b2274a8cb06d21af6e6a781ae35d0682fc70f582168528dd8a2b46b20507",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.archangel_m00",
         "textures": [
@@ -107809,13 +107809,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:9ccb71b6b58bbe6c3817bfb7102bc49a67048430cf7effdecb72922b3090af17",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCsEV.farm_hedge_m00",
         "textures": [
@@ -107828,13 +107828,13 @@
         "path": "animations/lineagenpcsev.ukx",
         "sha256": "b8abe3df2f5a2b7019868e1102cfa20d4f574c289cfa4725b2ddb3ea3e4c9fb6"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:9cd55b4bac671961518dc739ec2a16d24c71c51651312dcab847f97a11d77284",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.drake_m00",
         "textures": [
@@ -107847,13 +107847,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:9cf09e2a8ffac74c4d73de77103d44f2e84d6d5cf73bab9ef0113a0fb3386d94",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.poison_spider_m00",
         "textures": [
@@ -107866,13 +107866,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:9d578116ee450f59c1edd67139476a1c575401f38d00d9d6a9cf692aa4e51b25",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_guild_master_MDarkElf_m00",
         "textures": [
@@ -107887,7 +107887,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -107931,7 +107931,7 @@
     {
       "key": "npc-model:9d9d597963aa264f5a9e7287952b72d7c94cd16652b39aa73e19aa5d98e65fd9",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs2.a_old_people_Mhuman_m00",
         "textures": [
@@ -107946,7 +107946,7 @@
         "path": "animations/LineageNPCs2.ukx",
         "sha256": "c323467d4e790b292f3c6726257ba15da7a55606c40a60b0c98899d47f1acd5b"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -107991,7 +107991,7 @@
     {
       "key": "npc-model:9f01fd4bbdd935bb9bf72ce6a48511d60b4f91a166440ead5af89ca80c75d6f6",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.giant_spider_m00",
         "textures": [
@@ -108004,13 +108004,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:9f6416dff48d074e325e59572f4d5a8c4b3a354e6bd76b6b340a2589358420d6",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.giant_leech_m00",
         "textures": [
@@ -108023,7 +108023,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -108066,7 +108066,7 @@
     {
       "key": "npc-model:a007ad8391789f68891a5d07c71554f7db558ee4b403e92c8c6d4b87db22a788",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_guard_FDarkelf_m00",
         "textures": [
@@ -108080,7 +108080,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -108104,7 +108104,7 @@
     {
       "key": "npc-model:a019ea4fc9ea8d669cf3edaa26c7e7660fc4d21aaab4977834ef6be4a2c7bc2e",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCsEV.primeval_raid_teleporter_m00",
         "textures": [
@@ -108117,7 +108117,7 @@
         "path": "animations/lineagenpcsev.ukx",
         "sha256": "b8abe3df2f5a2b7019868e1102cfa20d4f574c289cfa4725b2ddb3ea3e4c9fb6"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -108198,7 +108198,7 @@
     {
       "key": "npc-model:a14b241b6c1195eb992af88aee46b4bcf9f22541d1f3aa497f3478dd25e30395",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.blade_stakato_worker_m00",
         "textures": [
@@ -108211,13 +108211,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:a17ade2de25ce14cdf06207926e8699d497f3373fff1e732ab6106b6335c2c90",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_fighterguild_teacher_MDarkElf_m00",
         "textures": [
@@ -108232,13 +108232,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:a196753de483f92127d71358a500ae8859948daade3c5119f8730ea7f2eefae7",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.antaras_m00",
         "textures": [
@@ -108251,13 +108251,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:a19f0d60bc3664bcfeb663beb8666f2806a9589b51c8e73bff5e1af6e787dd48",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.ol_mahum_champion_m00",
         "textures": [
@@ -108270,13 +108270,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:a24635aa38b22ca61a714f554910b87201eaf91cad7bb26768874f5ee3d02444",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.bugbear_m00",
         "textures": [
@@ -108289,13 +108289,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:a24c4d835edfc1c71e25cec6c9a7bfa61bdb993ade0eb714535cbeb6a5f5d723",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.succubus_m00",
         "textures": [
@@ -108308,7 +108308,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -108352,7 +108352,7 @@
     {
       "key": "npc-model:a2aaae2982e9fd832221563220f38b56c7924ef95514ceeb9ee802a5d29d7e7a",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.blade_stakato_worker_m00",
         "textures": [
@@ -108365,7 +108365,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -108390,7 +108390,7 @@
     {
       "key": "npc-model:a3fe54c6e72da9efc6bd0cf0249f18f386f8ae1d08dbafc28d267f0c8954a070",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_trader_MDarkElf_m00",
         "textures": [
@@ -108405,7 +108405,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -108430,7 +108430,7 @@
     {
       "key": "npc-model:a409c42b2d28c45376b2984f9bde0b7270963b87bbac03f873398104e761959d",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCsEV.azit_contest_pile_a_m00",
         "textures": [
@@ -108444,13 +108444,13 @@
         "path": "animations/lineagenpcsev.ukx",
         "sha256": "b8abe3df2f5a2b7019868e1102cfa20d4f574c289cfa4725b2ddb3ea3e4c9fb6"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:a4c24f4ae5898d43fdec079c03ebfe53ea6c9f3f3df1cfb43a297dc1141e73c2",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.kaim_vanul_m00",
         "textures": [
@@ -108463,7 +108463,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -108507,7 +108507,7 @@
     {
       "key": "npc-model:a60fc49582a35d4e294755c8111d473e85d368d056e438bae12ee264d5e8b3b2",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_guard_MElf_m00",
         "textures": [
@@ -108521,7 +108521,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -108564,7 +108564,7 @@
     {
       "key": "npc-model:a7672afaa7505dd8cb607fdbfd5bf12f8860978972672b51c7b86fec0f49d21d",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs2.rhamphorhynchus_npc_m00",
         "textures": [
@@ -108577,13 +108577,13 @@
         "path": "animations/LineageNPCs2.ukx",
         "sha256": "c323467d4e790b292f3c6726257ba15da7a55606c40a60b0c98899d47f1acd5b"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:a76fafeee54578db95291213c5059b4b197cdc46884e28270084337e54868ffd",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCsEV.azit_contest_pile_c_m00",
         "textures": [
@@ -108597,13 +108597,13 @@
         "path": "animations/lineagenpcsev.ukx",
         "sha256": "b8abe3df2f5a2b7019868e1102cfa20d4f574c289cfa4725b2ddb3ea3e4c9fb6"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:a7b0c09d9a20baa767ee700df3ba64fae32def34292d5d2f7c38db12207e5807",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.death_lord_m00",
         "textures": [
@@ -108616,7 +108616,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -108660,7 +108660,7 @@
     {
       "key": "npc-model:a99d57dfa84d3c193c5d4e1fbb80d7cbad166e3a0c7561ad43f97736a71d57d1",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCsEV.heretical_sanctuary_openner_a_m00",
         "textures": [
@@ -108674,13 +108674,13 @@
         "path": "animations/lineagenpcsev.ukx",
         "sha256": "b8abe3df2f5a2b7019868e1102cfa20d4f574c289cfa4725b2ddb3ea3e4c9fb6"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:a9b7961694de7ed37f85249a1fbfe793f3a8e3eb621dbf9e57aa3a24eb7615a4",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_celebrant_MDwarf_m00",
         "textures": [
@@ -108695,7 +108695,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -108738,7 +108738,7 @@
     {
       "key": "npc-model:abf1dbbecd13166bb47ca6fcc441793e848fac7e94658be02abc772479547686",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_hardins_pupil_MHuman_m00",
         "textures": [
@@ -108753,7 +108753,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -108796,7 +108796,7 @@
     {
       "key": "npc-model:ada36af54208b6fb4895712dff1260a045fffe82f5b4fd9b0276a5f140c853ab",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.unpleasant_humming_m00",
         "textures": [
@@ -108809,7 +108809,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -108852,7 +108852,7 @@
     {
       "key": "npc-model:aea1101e35a12be92c79ac45c167a1009720606b4ee5ec73ec51b64e1bb922d2",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.magical_weaver_m00",
         "textures": [
@@ -108865,13 +108865,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:aeafc4aeb4310abafa2af916b38cedbe66f8a965bb8db1b45998637556f4b6db",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_common_people_FDwarf_m00",
         "textures": [
@@ -108886,13 +108886,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:aece810522d9f7d1bea19c68bf127f06cd4ca6b83cabef075f887923fc695266",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.virud_lizardman_matriarch_m00",
         "textures": [
@@ -108905,13 +108905,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:aef3f1d1759527456b5d44490d84f3cdcbffabdfefd0d1b5ec2eeb2a2ab462a8",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_fighterguild_teacher_MOrc_m00",
         "textures": [
@@ -108926,7 +108926,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -109007,7 +109007,7 @@
     {
       "key": "npc-model:afd060936ed021f1f8c889c3a6358810de087dc420df1b670a1cf744ccafd8a3",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.pan_m00",
         "textures": [
@@ -109020,13 +109020,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:afd33959c8530d47330e14a6005ad18b642108c8cf63609e0138290f5113ae75",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_common_people_MDwarf_m00",
         "textures": [
@@ -109041,13 +109041,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:b04ed293e6111870edac35f8d48259148f87192066a5ef73396889245b22bfb6",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.succubus_m00",
         "textures": [
@@ -109060,13 +109060,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:b06bb592104f0267b3e496b8659c8ac2e04ca77f3f1ec0f4d17a2a07f4c38966",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.field_stalker_m00",
         "textures": [
@@ -109079,7 +109079,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -109123,7 +109123,7 @@
     {
       "key": "npc-model:b1b6a0ce2a1ea47c0db6fe8b9110cf0e0ca7ef812704c8df1c8668a7d93627b3",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.salamander_m00",
         "textures": [
@@ -109136,7 +109136,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -109253,7 +109253,7 @@
     {
       "key": "npc-model:b62a2ee6cdad17015e4901aae7e752691d206f7adbdc99e38cccefbc5b47cb45",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.silenos_m00",
         "textures": [
@@ -109266,13 +109266,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:b639e336d6e11851c64d19f15564d7b61c1098d2822dd1477be0fe77336f76b1",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.oel_mahum_witch_doctor_m00",
         "textures": [
@@ -109285,13 +109285,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:b6b85fa62c6071387e652919203b91da4110dc77c5cea125c0c973abd03e4faf",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.box_m00",
         "textures": [
@@ -109304,7 +109304,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -109328,7 +109328,7 @@
     {
       "key": "npc-model:b6c883a5632781d9254f3f82ca8e91d93303ae27316d4b2e3fa350e6e6a2511d",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.dailaon_m00",
         "textures": [
@@ -109341,7 +109341,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -109366,7 +109366,7 @@
     {
       "key": "npc-model:b7683a50024302db87b6e4e82cb1aa035d7d06c6e3c67ba32fb8a41c3902e5b0",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.strider_m00",
         "textures": [
@@ -109379,13 +109379,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:b773ac98645be5100adf588986af5e48a659980f0617b8110f4dde15484bb574",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_mine_master_MDwarf_m00",
         "textures": [
@@ -109400,13 +109400,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:b77dd911e6eeadf6794d56dcb5a22919cb97d7014e0740b80327564742f97790",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.shadow_m00",
         "textures": [
@@ -109419,7 +109419,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -109443,7 +109443,7 @@
     {
       "key": "npc-model:b7dca7f2bdb7f5f4073639afb22543995c957eac22e3aecead7c2158abef6fc2",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.heltor_silenos_m00",
         "textures": [
@@ -109456,7 +109456,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -109574,7 +109574,7 @@
     {
       "key": "npc-model:bad911ef0b48cfcbb760f1bff64195eb32cadb8823557624dea1051f4017d25a",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.evil_altar_m00",
         "textures": [
@@ -109588,13 +109588,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:bb8ab2e299c03175f10b2efd4bd48ce304c148f4c9b0b2ee22026cae7674a181",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.giant_spider_m00",
         "textures": [
@@ -109607,7 +109607,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -109633,7 +109633,7 @@
     {
       "key": "npc-model:bbef35c2cd550def30c342830a226e2af1116552f7816e3097acc167d8beda17",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_casino_MHuman_m00",
         "textures": [
@@ -109648,13 +109648,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:bcdaa93d41dabee90c0974e853e6f763fafc17d8c3e5f531a9a897a79b42b39c",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.dryad_m00",
         "textures": [
@@ -109667,13 +109667,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:bdf934778e7ad1a99a98c856a0afc62bbb46207df34c9e69211b28e508469822",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.riba_m00",
         "textures": [
@@ -109687,13 +109687,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:be3a2690197ff81f8de0965e371f1e1568a9b93d8e7405ba3fcdc6cf621c384d",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_common_peopleA_MHuman_m00",
         "textures": [
@@ -109706,7 +109706,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -109731,7 +109731,7 @@
     {
       "key": "npc-model:bf3e086e111d9373b67e4f4e85309757abb49e4082124c98d68da16127837e39",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.gianteye_altar_m00",
         "textures": [
@@ -109745,7 +109745,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -109787,7 +109787,7 @@
     {
       "key": "npc-model:c16ebffb32e502b7003985282a0274c3dddfba4840e540e5ccea533977aed783",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_tombkeeperA_m00",
         "textures": [
@@ -109802,13 +109802,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:c1820522d6f012be677b1c082526702d152867755c91650b83dc0bcc03425d92",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.giant_spider_m00",
         "textures": [
@@ -109821,13 +109821,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:c1c6f857ddebd04c1977caafb1459bc62ed1c9a94f4568d22bd5d5f4bf71b4c6",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_lord_MHuman_m00",
         "textures": [
@@ -109842,7 +109842,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -109867,7 +109867,7 @@
     {
       "key": "npc-model:c2896095e096726b2e2cee3f00e836f1168ceb099dfe15d20b21ef19cb54eacf",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_warehouse_keeper_FDwarf_m00",
         "textures": [
@@ -109882,7 +109882,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -109927,7 +109927,7 @@
     {
       "key": "npc-model:c4eb10fe3a924f281539731b82b6ca490ef876553712b878d52277ef3d5164c1",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.ti_mi_riran_m00",
         "textures": [
@@ -109941,13 +109941,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:c519e105b1b4c0c25d791d0f542c48b94cf2c73e18436fc7edf38c0f6ae1581e",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_clergyman_MOrc_m00",
         "textures": [
@@ -109962,7 +109962,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -109986,7 +109986,7 @@
     {
       "key": "npc-model:c53f36939184357297335e0ca1c3b5b47c539b9b91444b8340481ccad9c32330",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.gargoyle_m00",
         "textures": [
@@ -109999,13 +109999,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:c5515ecf501a7c040c3d4291454f1ab8f04ce5c16cfb8264017b9632dcdc42f9",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.ol_mahum_champion_m00",
         "textures": [
@@ -110018,7 +110018,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -110045,7 +110045,7 @@
     {
       "key": "npc-model:c57b9822b1516aa50ca5ea47464600f8bf124f82e70c50d08b767f2d90cff3d6",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.headless_knight_m00",
         "textures": [
@@ -110058,13 +110058,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:c5b4cafa42088e21e78607613eb5911693bbf62fef5f62029ca3724581c98f4f",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.ol_mahum_m00",
         "textures": [
@@ -110077,7 +110077,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -110102,7 +110102,7 @@
     {
       "key": "npc-model:c6187c0d68ce6ebf05fef1e6e46f84d6e0c1f0ae8568661f70ce90363c4c6e99",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.spike_stakato_m00",
         "textures": [
@@ -110115,7 +110115,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -110158,7 +110158,7 @@
     {
       "key": "npc-model:c62adc3c2e9fc33bff43beab30db50701c47ad48912bc83ef6969868c738f88a",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_teleporter_FElf_m00",
         "textures": [
@@ -110173,7 +110173,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -110198,7 +110198,7 @@
     {
       "key": "npc-model:c70c74c341ecf66778c0c95d0df879feefad97472e8127ecf95eeba869d50417",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_trader_MOrc_m00",
         "textures": [
@@ -110213,7 +110213,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -110238,7 +110238,7 @@
     {
       "key": "npc-model:c7de2a64b1c2e5efa631f400bc99d5b8159fd470a668b9ce135f8fffe2c4f98e",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.virud_lizardman_scout_m00",
         "textures": [
@@ -110251,13 +110251,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:c7e9ffe8d847dba554047a94b9fbf426c18b30015e66fa6d24d61fabb7b16055",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCsEV.ice_shelf_m00",
         "textures": [
@@ -110272,7 +110272,7 @@
         "path": "animations/lineagenpcsev.ukx",
         "sha256": "b8abe3df2f5a2b7019868e1102cfa20d4f574c289cfa4725b2ddb3ea3e4c9fb6"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -110353,7 +110353,7 @@
     {
       "key": "npc-model:cd256d6d2ee84d4966b782e5bae371d64550cfe12135e1c920a07b49149275b2",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_temple_teacher_Mhuman_m00",
         "textures": [
@@ -110368,7 +110368,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -110393,7 +110393,7 @@
     {
       "key": "npc-model:cdb49a0964ebadc8c4df773e0ce73e9c44836e9ea5e8a520f7e4480cc989f2e0",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.zaken_m00",
         "textures": [
@@ -110406,13 +110406,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:cdb79fba71d623f31897a9a268cea1fad90e5a422a1bcecfa0e55212d6924aac",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.serpent_slave_m00",
         "textures": [
@@ -110425,7 +110425,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -110449,7 +110449,7 @@
     {
       "key": "npc-model:ce0f62b539cf4036b10bda784c4b7ae4202913effc5ac1248ab646bd9ed85556",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.shadeless_m00",
         "textures": [
@@ -110462,13 +110462,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:ce46b688db505db24678158021679bdaae63d7ccb397b2f59b258afb32009a26",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.marsh_stakato_worker_m00",
         "textures": [
@@ -110481,13 +110481,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:ce7fd2973c460ced565fa8563d243e545e89e6c3a969758c3f2fef7cbf389d9d",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.orc_head_m00",
         "textures": [
@@ -110501,13 +110501,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:ced86f06058f1123228820e91e7302269767bc611b2c41c5bbab5cfd1c6d8892",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.crocodile_m00",
         "textures": [
@@ -110520,13 +110520,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:cf08e87787fbdafbb4ac4def22212ae2589a2a99338ff6facfdd33c5d619d3db",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.undine_m00",
         "textures": [
@@ -110539,13 +110539,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:cf23545afb1c3e0f3460b5775203b880ca8263bc917b32416b08f171c9736c74",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.baium_npc_m00",
         "textures": [
@@ -110558,13 +110558,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:cf287e5e6bfcdbb3928cda5842a5dfe1ea5019012d6b50e768eb2daab7fad874",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_traderA_master_MDwarf_m00",
         "textures": [
@@ -110579,7 +110579,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -110641,7 +110641,7 @@
     {
       "key": "npc-model:d076ae90ad0733cb520822ab2a73ec6964fae932595ffa9d92dcd577633c9e2e",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.ketra_orc_warrior_a_m00",
         "textures": [
@@ -110654,13 +110654,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:d0a7bdac198425aa2221137e12df6a9567e431f84ead2bcdb827c445e8a5164d",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.hanged_man_ripper_m00",
         "textures": [
@@ -110673,7 +110673,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -110791,7 +110791,7 @@
     {
       "key": "npc-model:d2bb0b6a66597f2cef8dc0ce639ac07981b3439df7538b1e4456d0e26a111680",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCsEV.azit_contest_pile_winner_m00",
         "textures": [
@@ -110805,13 +110805,13 @@
         "path": "animations/lineagenpcsev.ukx",
         "sha256": "b8abe3df2f5a2b7019868e1102cfa20d4f574c289cfa4725b2ddb3ea3e4c9fb6"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:d4240e4d96d79c665937bcac40863ae210b77f735a2f425710cbd0c718be46fc",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_mageguild_teacher_MElf_m00",
         "textures": [
@@ -110826,13 +110826,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:d433010609dc6cc90b4a36bb6f1d296e14b95f1f26e54f9268b59c6f4869e714",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.virud_lizardman_m00",
         "textures": [
@@ -110845,13 +110845,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:d44b3f54e7a9519984df09f44c3874d9980c7c8a2108e5807f0d4c75b0bc2569",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_collector_teacher_MDwarf_m00",
         "textures": [
@@ -110865,7 +110865,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -110889,7 +110889,7 @@
     {
       "key": "npc-model:d470dcb035c20c55e99dcbecf2db978b7f1339914fbeb2e8ed0130375af2beb7",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.blade_stakato_soldier_m00",
         "textures": [
@@ -110902,13 +110902,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:d4ea76a7ca688342a732aed95f121ce539cdd8de62dbb304fd75b4f657dd8a02",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.skeleton_knight_m00",
         "textures": [
@@ -110921,13 +110921,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:d4ee7177fbce3d49ad39bf2fcdfc734815996ffa92d50f7a63fc3b219fdb1a37",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.old_tomb_stone_m00",
         "textures": [
@@ -110941,7 +110941,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -110967,7 +110967,7 @@
     {
       "key": "npc-model:d517339b801fbcbb4775f46314bb8534b4a2d04c67f477a5479bef38614255c0",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCsEV.trioll_altar_a_m00",
         "textures": [
@@ -110981,13 +110981,13 @@
         "path": "animations/lineagenpcsev.ukx",
         "sha256": "b8abe3df2f5a2b7019868e1102cfa20d4f574c289cfa4725b2ddb3ea3e4c9fb6"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:d51768e71d40a5cb5a39221a315a9c3616dea1c2285db4e7c2fef334eba624f1",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_common_peopleB_MHuman_m00",
         "textures": [
@@ -111002,7 +111002,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -111026,7 +111026,7 @@
     {
       "key": "npc-model:d5500fb6799d9a678fea96cb4e6de5da67ea3096af1257c133b89b021b40d108",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.rift_keeper_m00",
         "textures": [
@@ -111041,7 +111041,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -111065,7 +111065,7 @@
     {
       "key": "npc-model:d5ef03516126d2dc54d76faa6b3acad67e2e79f29e4f1129b6d786c8a2deab5b",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_traderB_master_MDwarf_m00",
         "textures": [
@@ -111080,7 +111080,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -111104,7 +111104,7 @@
     {
       "key": "npc-model:d6835b04935368b0fde95219d87f5d2dccca313c6384400394fb4b55647677c9",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.kel_mahum_warrior_m00",
         "textures": [
@@ -111117,7 +111117,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -111142,7 +111142,7 @@
     {
       "key": "npc-model:d6f14b3d417c6015503b52d08ebbdfb25e76ccd52cf56c372596db09590f9e96",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.oel_mahum_m00",
         "textures": [
@@ -111155,13 +111155,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:d73934284901040b5674143113be3fa53309b76ab3bf992dacd92a2a27204f81",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.lesser_basilisk_m00",
         "textures": [
@@ -111174,13 +111174,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:d76b1c3c2b729154c1c01e8782e2071330352cce3489fa5d31bebb2cbb9d2fbf",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_clergyman_FOrc_m00",
         "textures": [
@@ -111195,7 +111195,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -111238,7 +111238,7 @@
     {
       "key": "npc-model:d812290cd28fcd32da49f636d5d133a3996a4881ae88b9e59c418c9d050c3c4f",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.ketra_orc_archer_a_m00",
         "textures": [
@@ -111251,13 +111251,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:d8bca610c1e917f4db3d20004325feea5cc72b43ba8318e68d8b6e3f6548b77d",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.heltor_silenos_shaman_m00",
         "textures": [
@@ -111270,7 +111270,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -111294,7 +111294,7 @@
     {
       "key": "npc-model:da0a5eef1efeff46279969d4057f1997898649cf1ea061790a9ebcb355b4ec5f",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.blade_stakato_drone_m00",
         "textures": [
@@ -111307,7 +111307,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -111369,7 +111369,7 @@
     {
       "key": "npc-model:db2d26e4fc51c68b1c8b009956c20a671a3d152bbd52a6775bdb11bec5c93bfb",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.kel_mahum_m00",
         "textures": [
@@ -111382,7 +111382,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -111407,7 +111407,7 @@
     {
       "key": "npc-model:dcdab847c2fb0af5abeed77a4cb1e6c539f464843915a1d4961593ac45cbbf69",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_royal_guardB_MHuman_m00",
         "textures": [
@@ -111420,13 +111420,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:dd38d65a0ae64a0cbc8227236cd78d694d1a4aee68fdb54fa3924cd578baee8a",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.raikel_m00",
         "textures": [
@@ -111440,7 +111440,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -111540,7 +111540,7 @@
     {
       "key": "npc-model:df6312cf54cbd89dbcb093294ad8b874d0e6e63a1c5af03563be98ac71a8177f",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCsEV.heretical_sanctuary_gatekeeper_a_m00",
         "textures": [
@@ -111555,13 +111555,13 @@
         "path": "animations/lineagenpcsev.ukx",
         "sha256": "b8abe3df2f5a2b7019868e1102cfa20d4f574c289cfa4725b2ddb3ea3e4c9fb6"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:dfebf7e6944ae627324c78e859d4487e4e7a35091741386431c652f8009fe1a4",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.spike_stakato_soldier_m00",
         "textures": [
@@ -111574,7 +111574,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -111617,7 +111617,7 @@
     {
       "key": "npc-model:e0ecfc5ed55e5546905750d06db4cc778fbe818d73e036a6d759f821bb274125",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.elf_ghost_m00",
         "textures": [
@@ -111630,7 +111630,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -111673,7 +111673,7 @@
     {
       "key": "npc-model:e25fd28ae4ce02d164260bed7edbd30ea6eb77b7b5029dea064a02ea657733ae",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.ol_mahum_m00",
         "textures": [
@@ -111686,7 +111686,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -111731,7 +111731,7 @@
     {
       "key": "npc-model:e2e93de7cf67a4abb0f8b18a1637575be6c2c5a21377e2b2924dd076d29fbf87",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.ketra_orc_m00",
         "textures": [
@@ -111744,7 +111744,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -111787,7 +111787,7 @@
     {
       "key": "npc-model:e6a572d26a57bbb4afaed819ddcd7464c4f7b212011e20657bb5847a91238552",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.orc_shaman_m00",
         "textures": [
@@ -111800,7 +111800,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -111825,7 +111825,7 @@
     {
       "key": "npc-model:e79907c36a7323fa8fb4546abed3863fc6f046516cdf7dd1aa8349f186853b6a",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.queen_ant_m00",
         "textures": [
@@ -111838,7 +111838,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -111863,7 +111863,7 @@
     {
       "key": "npc-model:e886f768d7e285d9f0d4f74eb74c4fd80c0e5c8a084dfc9d0203b1d7b366453a",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_maidB_FHuman_m00",
         "textures": [
@@ -111878,13 +111878,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:e8cfcc2ad049bb3482088da896eeaf2ddb377e95703efdbd8dee5ad11903ae64",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_guard_MHuman_old_m00",
         "textures": [
@@ -111897,7 +111897,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -111922,7 +111922,7 @@
     {
       "key": "npc-model:e90cc369befd83ad4ed4e52ac1e4b7cc23ef4216eb095894f9d7b9c7e093317f",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.noble_ant_m00",
         "textures": [
@@ -111935,7 +111935,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -111960,7 +111960,7 @@
     {
       "key": "npc-model:ea00ea374479c44df916bf28038578f64e5e854f6267419d4dd12f5353e023fd",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.pixy_m00",
         "textures": [
@@ -111973,7 +111973,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -111997,7 +111997,7 @@
     {
       "key": "npc-model:ea60f86bdc185ab709ec4bb9a239ec950952f8d0df2e3b5bc6a8e1145d8a7924",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.rakul_m00",
         "textures": [
@@ -112010,13 +112010,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:ea6b46a55d497280d1192663200cff3b9938bd49aa16d8430dda0f79b2f27d3f",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_bath_Mdwarf_m00",
         "textures": [
@@ -112029,13 +112029,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:ea8d721e45358bc7d654a784e0d82a6ba61fb28cfe5b7b3ef7680175fff997bf",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_patriarch_MDarkElf_m00",
         "textures": [
@@ -112050,13 +112050,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:eb44396c28b18f273e89c1b60357c92d3d5d607c0e8f8f4853f68c303e3b4063",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.skeleton_archer_m00",
         "textures": [
@@ -112070,13 +112070,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:ec0c208d1c9949c8c3cdbfe1b92e0c0fed2da0c0006630c134b12c987c6b9258",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.vale_master_m00",
         "textures": [
@@ -112089,7 +112089,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -112132,7 +112132,7 @@
     {
       "key": "npc-model:ece2bf1574a4e1ee1e3540cd4c6e8a117bf381a6f7eefadf91a30c19fec6163c",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_guard_MOrc_m00",
         "textures": [
@@ -112147,13 +112147,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:ee82f5b61f325c9bbc522bfb57635ef1420d81e230f132602d6716bbe14e6948",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_clergyman_MDwarf_m00",
         "textures": [
@@ -112168,13 +112168,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:ee885871f616913b7c367e78e8c65aa3950cb626006f8f0ceff9077ba99788dc",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_traderD_Fhuman_m00",
         "textures": [
@@ -112189,13 +112189,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:eebe336f55a50160d454c2a4062ead06f2f3dfbe9c868bb1831038f1da333959",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_trader_FOrc_m00",
         "textures": [
@@ -112210,13 +112210,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:ef7de8d8ed208651aba3d582b406fab07031cd89f1e42f54fb06914c1c047d9f",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.mandragora_a_m00",
         "textures": [
@@ -112229,13 +112229,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:efadfa08597e594c904b264d2e900149a353b21fb1a10ce1d429da1e6de8761b",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.orc_champion_m00",
         "textures": [
@@ -112248,13 +112248,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:efdd0706503143b0e36b98f602c773b9bc8663de033fc65c3a3c7b0bdc3285a0",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.pirates_zombie_captain_m00",
         "textures": [
@@ -112267,7 +112267,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -112291,7 +112291,7 @@
     {
       "key": "npc-model:f0e1d7e82b2893e2bf091fe0fa28cc56249de4e6d3893403a6342e4fc712b531",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_royal_guardA_MHuman_m00",
         "textures": [
@@ -112306,7 +112306,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -112369,7 +112369,7 @@
     {
       "key": "npc-model:f4b7d843ae900cdb581832fe62a41a72823c9a244dc4679cf89691a9b1dc7335",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.yetis_dinner_table_m00",
         "textures": [
@@ -112382,7 +112382,7 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -112425,7 +112425,7 @@
     {
       "key": "npc-model:f586755ec288882ffd26dc33e2800560248adeb4f0558bfcff0c2b7e2663509c",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.big_boom_m00",
         "textures": [
@@ -112438,7 +112438,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -112480,7 +112480,7 @@
     {
       "key": "npc-model:f6f9498359dcc16cdbeca48e01f354212b237ee40911531b203cc170ce4f9d40",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.ant_soldier_m00",
         "textures": [
@@ -112493,13 +112493,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:f788eb5498316ae4be432531f61af3843dd33177169e66dae10426438c579d56",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.yeti_m00",
         "textures": [
@@ -112512,13 +112512,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:f7977a99b30c87055b6cb9a2167abf4e114de8ff7f11b1c5ee6dca7c412870e0",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.ogre_m00",
         "textures": [
@@ -112531,13 +112531,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:f7a9e49916f8307814d57e0241ad3bcc55e55052cadc67fcb2a915f28beb87d6",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_collector_teacher_FDwarf_m00_mon",
         "textures": [
@@ -112552,13 +112552,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:f7cffd289b3d906b51b34c745ff8cc21daff92f3b8aac7dbfb30b635febd0456",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_traderA_MDwarf_m00",
         "textures": [
@@ -112573,13 +112573,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:f8a180530e834f789a1e2ffd4760e45f295983afe0a69cf59e5ad6a3a0a89100",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.doll_blader_m00",
         "textures": [
@@ -112592,7 +112592,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -112617,7 +112617,7 @@
     {
       "key": "npc-model:f8f26837402f5cf6afbb3768020b57c4ef9e24ee4cbc101eff70b2b5155349a4",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_mageguild_master_FHuman_m00",
         "textures": [
@@ -112632,13 +112632,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:f926ccf27a9b8a32657c3c72f5fb6160c5909f2fd81a306a718342f1df9ff27e",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.a_hardins_pupil_FHuman_m00",
         "textures": [
@@ -112653,13 +112653,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:f9e10252b927b06cc1759473ce4d8a397c7e2cb26f8f4b8a7f58991a771f30f5",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageNPCs.e_traderA_FDwarf_m00",
         "textures": [
@@ -112674,13 +112674,13 @@
         "path": "animations/LineageNpcs.ukx",
         "sha256": "15d7457ad77a8ac88b60827632b820ef73ee0e8bd945f3028658131c17bf5ab2"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:fa0e50c427bdd6a9f2147533d32e7fde50858eb8090e0f236c3ad638a2f1b80d",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.binding_m00",
         "textures": [
@@ -112693,7 +112693,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -112718,7 +112718,7 @@
     {
       "key": "npc-model:fb3f11250633e7c2f6f00d52a9b38e7a740bcef7c449c8a291ad4eaf65b54f21",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.skeleton_royal_guard_m00",
         "textures": [
@@ -112731,7 +112731,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
@@ -112756,7 +112756,7 @@
     {
       "key": "npc-model:fbc53947c23a39960e5efc1c61ae0c63d2862a5f73f8ad9880d8fddb134ebefb",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.ketra_orc_shaman_m00",
         "textures": [
@@ -112769,13 +112769,13 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {
       "key": "npc-model:fc1339c6c0e728a00848a3a8a76ecd90391f9087c15815f84c52b760a07f5d89",
       "part": "npcs",
-      "reason": "multi-slot-binding-unsupported",
+      "reason": null,
       "selection": {
         "mesh": "LineageMonsters.vale_master_m00",
         "textures": [
@@ -112788,7 +112788,7 @@
         "path": "animations/LineageMonsters.ukx",
         "sha256": "157715304bfb1f289ce6bf202e5651f3809f57d5b061239db0c6a2a817c9a9c9"
       },
-      "status": "gap",
+      "status": "convertible",
       "unitKind": "npc-model"
     },
     {

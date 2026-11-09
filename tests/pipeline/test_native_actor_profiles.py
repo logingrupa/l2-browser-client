@@ -118,7 +118,7 @@ class ReceiptTests(unittest.TestCase):
         self.pins = {'implementation': 'test-fixture'}
         self.calls = 0
         self.addCleanup(patch.stopall)
-        patch.object(profiles, '_tool_pins', side_effect=lambda: copy.deepcopy(self.pins)).start()
+        patch.object(profiles, 'npc_profile_tool_pins', side_effect=lambda: copy.deepcopy(self.pins)).start()
         patch.object(profiles, '_extract_bundle', side_effect=self.extract).start()
 
     def extract(self, client, request, output, save):

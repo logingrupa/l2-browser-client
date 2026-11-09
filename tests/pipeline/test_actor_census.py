@@ -90,7 +90,9 @@ class NpcUnitInventoryTests(unittest.TestCase):
         self.assertEqual((rows['npc:101']['status'], rows['npc:101']['reason']), ('pending', 'conversion-pending'))
         self.assertEqual(rows['npc:102'], rows['npc:101'] | {'key': 'npc:102'})
         self.assertEqual((rows['npc:104']['status'], rows['npc:104']['reason']), ('gap', 'no-mesh-in-row'))
-        self.assertEqual((rows['npc:105']['status'], rows['npc:105']['reason']), ('gap', 'multi-slot-binding-unsupported'))
+        self.assertEqual((rows['npc:105']['status'], rows['npc:105']['reason']), ('pending', 'conversion-pending'))
+        multi_texture_key = conversion_unit_key('npc-model', {'mesh': SYNTHETIC_MESH, 'textures': [SYNTHETIC_FIRST_TEXTURE, SYNTHETIC_SECOND_TEXTURE]})
+        self.assertEqual(next(unit for unit in units if unit['key'] == multi_texture_key)['status'], 'convertible')
         self.assertEqual(units[0]['sourceIdentity'], {
             'path': 'animations/SyntheticMonsters.ukx', 'object': SYNTHETIC_MESH,
             'sha256': self.client.access.lock.record('animations/SyntheticMonsters.ukx')['eSha256']})

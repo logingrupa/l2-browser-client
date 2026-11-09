@@ -5,7 +5,8 @@ import zipfile
 
 from native_actor_profiles import verify_npc_profiles
 from native_assets import verify_archive
-from native_store.catalog_writer import add_store_file, sha256_hex
+from native_store.catalog_writer import add_store_file, merge_catalog_slice, sha256_hex
+from native_store.store_paths import confined_child_path
 
 NATIVE_RESOURCE_PREFIX = '/l2/'
 MODEL_ARCHIVE_FILE_NAME = 'asset.l2asset'
@@ -45,6 +46,17 @@ def profile_bundle_store_files_and_record(client_root, bundle_root):
     record = {'id': json.loads(manifest_bytes)['id'], 'manifest': f'{NATIVE_RESOURCE_PREFIX}{prefix}{PROFILE_MANIFEST_FILE_NAME}',
               'manifestSha256': manifest_sha256, 'manifestBytes': len(manifest_bytes)}
     return files, record
+
+
+def catalog_with_record_replaced(catalog, slice_name, record, capacity):
+    kept_records = [existing for existing in catalog.get(slice_name, []) if existing.get('id') != record['id']]
+    return merge_catalog_slice({**catalog, slice_name: kept_records}, slice_name, record, capacity)
+
+
+def profile_record_npc_ids(store_root, record):
+    manifest_relative = record['manifest'][len(NATIVE_RESOURCE_PREFIX):]
+    manifest = json.loads(confined_child_path(Path(store_root), manifest_relative).read_bytes())
+    return [profile['npcId'] for profile in manifest['profiles']]
 
 
 def bundle_output_records(lane_folder, bundle_root):

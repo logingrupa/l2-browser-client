@@ -14,6 +14,7 @@ from actors.actor_unit_inventory import ACTOR_UNIT_CENSUS_RELATIVE_PATH, NPC_MOD
 from actors.npc_requests import (animation_reference_gap_reason, label_npc_sound_identities, npc_effect_binding_record, npc_model_request,
                                  npc_profile_recipe)
 import native_actor_profiles
+from native_assets_lib.source_table_binding import verify_source_table_binding
 from native_catalog.ue2 import FormatError
 from native_store.gap_rows import read_gap_rows, validate_gap_row
 from native_store.store_paths import lane_store_root, lane_work_root
@@ -63,6 +64,19 @@ class NpcModelRequestTests(unittest.TestCase):
         request_without_reference = npc_model_request(self.unit, self.table, 1, None)
         self.assertIsNone(request_without_reference['animation'])
         self.assertNotIn('_anim', json.dumps(request_without_reference))
+
+    def test_a_multi_texture_request_binds_every_texture_index_to_its_slot_and_overrides_only_non_empty_slots(self):
+        textures = ['SyntheticMonstersTex.synthetic_t00', '', 'SyntheticMonstersTex.synthetic_t02']
+        unit = synthetic_npc_model_unit({'mesh': SYNTHETIC_MESH, 'textures': textures})
+        table = synthetic_npcgrp_table(synthetic_npcgrp_row(1, mesh='Other.other_m00'), synthetic_npcgrp_row(7, textures=textures))
+        request = npc_model_request(unit, table, 1, SYNTHETIC_ANIMATION)
+        self.assertEqual(request['sourceBinding']['slotBindings'],
+                         [{'slot': index, 'texturePath': ['npc', 1, 'texture_name', index, 'param_texture_name']} for index in range(3)])
+        self.assertNotIn('texturePath', request['sourceBinding'])
+        self.assertEqual(request['materials'], [f'0={textures[0]}', f'2={textures[2]}'])
+        evidence = verify_source_table_binding(request, {**table, 'schema': {'layout': 'synthetic'}, 'decodedSha256': 'd' * 64})
+        self.assertEqual([(slot['slot'], slot['textureReference']) for slot in evidence['slotBindings']], list(enumerate(textures)))
+        self.assertTrue(any('unverified presentation' in limitation for limitation in request['limitations']))
 
     def test_request_refuses_a_row_that_names_another_mesh_or_texture(self):
         with self.assertRaisesRegex(ValueError, 'exact mesh and textures'):
@@ -178,7 +192,7 @@ class ConvertNpcGapTests(unittest.TestCase):
                   'units': [{'key': model_catalog_id_of(self.convertible_selection), 'unitKind': NPC_MODEL_UNIT_KIND, 'status': 'convertible',
                              'reason': None, 'sourceIdentity': {**mesh_identity, 'object': 'LineageMonsters.synthetic_m00'}, 'selection': self.convertible_selection},
                             {'key': model_catalog_id_of(self.gap_selection), 'unitKind': NPC_MODEL_UNIT_KIND, 'status': 'gap',
-                             'reason': 'multi-slot-binding-unsupported', 'sourceIdentity': mesh_identity, 'selection': self.gap_selection}]}
+                             'reason': 'skeletal-licensee-unsupported:123/31', 'sourceIdentity': mesh_identity, 'selection': self.gap_selection}]}
         census_path = self.project_root / ACTOR_UNIT_CENSUS_RELATIVE_PATH
         census_path.parent.mkdir(parents=True)
         census_path.write_text(json.dumps(census), encoding='utf-8')
@@ -200,11 +214,11 @@ class ConvertNpcGapTests(unittest.TestCase):
 
     def test_a_census_gap_row_is_copied_and_sealed_without_any_converter_call_and_skipped_on_rerun(self):
         self.assertEqual([(outcome['status'], outcome['reason'], outcome['cacheHit']) for outcome in self.run_npc(2)],
-                         [('gap', 'multi-slot-binding-unsupported', False)])
+                         [('gap', 'skeletal-licensee-unsupported:123/31', False)])
         self.assertEqual([(outcome['status'], outcome['cacheHit']) for outcome in self.run_npc(2)], [('gap', True)])
         self.assertEqual(self.run_npc(3)[0]['reason'], 'no-mesh-in-row')
         self.assertEqual(self.converter.mock_calls, [])
-        self.assertEqual(self.lane_reasons(), {('npc:2', 'npc-model'): 'multi-slot-binding-unsupported', ('npc:3', 'npc-model'): 'no-mesh-in-row'})
+        self.assertEqual(self.lane_reasons(), {('npc:2', 'npc-model'): 'skeletal-licensee-unsupported:123/31', ('npc:3', 'npc-model'): 'no-mesh-in-row'})
 
     def test_a_missing_and_an_empty_npcname_row_and_an_unresolved_actor_default_are_listed_profile_gaps(self):
         run = self.conversion_run()

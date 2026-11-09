@@ -7,23 +7,26 @@ if str(SCRIPTS_ROOT) not in sys.path:
 
 import argparse
 import json
-from pathlib import PurePosixPath
 import re
 import shutil
-import subprocess
 
 from actors.actor_census import SOUND_PACKAGE_SUFFIXES, TEXTURE_PACKAGE_SUFFIXES, ActorPackageCensus
 from actors.actor_unit_inventory import (ACTOR_UNIT_CENSUS_RELATIVE_PATH, CONVERTIBLE_UNIT_STATUS, NO_MESH_IN_ROW_REASON, NPC_MODEL_UNIT_KIND,
                                          NPC_PART_NAME, conversion_unit_key, decoded_table_identity)
-from actors.npc_requests import (SOUND_PACKAGE_NOT_IN_CLIENT_STATUS, SOUND_PACKAGE_REFUSED_STATUS, animation_reference_gap_reason,
+from actors.npc_requests import (ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX, CONVERTER_REFUSED_REASON_PREFIX, FAILED_STATUS, GAP_STATUS,
+                                 NPC_NAME_EMPTY_REASON, NPC_NAME_ROW_MISSING_REASON, PASS_STATUS, TRANSIENT_FAILURES,
+                                 SOUND_PACKAGE_NOT_IN_CLIENT_STATUS, SOUND_PACKAGE_REFUSED_STATUS, animation_reference_gap_reason,
                                  label_npc_sound_identities, npc_effect_binding_record, npc_model_request, npc_profile_recipe,
                                  npc_sound_references, package_stem, serialized_animation_reference)
+from actors.npc_batch import (CachedClassClosures, npc_batch_plan, printed_batch_plan, read_census_and_npc_tables, run_npc_batch_slice,
+                              shared_store_npc_ids)
 from actors.npc_store_records import (MODEL_ARCHIVE_FILE_NAME, bundle_output_records, converted_model_store_files_and_record,
-                                      file_output_record, profile_bundle_store_files_and_record)
+                                      file_output_record, profile_bundle_store_files_and_record, profile_record_npc_ids)
 from data.lane_unit_outcomes import replace_step_gap_row
 from native_actor_profiles import MAXIMUM_NPC_PROFILE_BUNDLES, UnresolvedActorDefaultError, migrate_npc_profiles
 from native_assets import UMODEL, UMODEL_SHA256, Converter, implementation_hash
 from native_assets_lib.gltf import json_bytes
+from native_catalog.effects import SourcePackages
 from native_catalog.tables import decode_table
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import merge_catalog_slice, read_store_catalog, write_store
@@ -44,14 +47,11 @@ PROFILE_BUNDLE_FOLDER = 'bundle'
 IDENTITY_RECORD_NAME = 'sound-and-effect-identities.json'
 NPC_ID_PATTERN = re.compile(r'^[0-9]{1,10}$')
 MAXIMUM_SAFE_INTEGER = 2 ** 53 - 1
-NPC_NAME_ROW_MISSING_REASON = 'npc-name-row-missing'
-NPC_NAME_EMPTY_REASON = 'npc-name-empty'
-ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX = 'actor-default-unresolved:'
-CONVERTER_REFUSED_REASON_PREFIX = 'converter-refused:'
-PASS_STATUS, GAP_STATUS, FAILED_STATUS = 'pass', 'gap', 'failed'
-TRANSIENT_FAILURES = (OSError, subprocess.SubprocessError)
-CONVERT_ACTORS_DESCRIPTION = ('Convert one NPC id from its decoded npcgrp and npcname rows into the actors lane store: '
-                              'the model unit through the pinned Converter and the generated profile bundle, each a sealed ledger unit.')
+SLICE_LIMIT_PATTERN = re.compile(r'^[1-9][0-9]{0,5}$')
+NPC_BATCH_NAME = 'npcs'
+CONVERT_ACTORS_DESCRIPTION = ('Convert one NPC id, or the next slice of the NPC batch, from the decoded npcgrp and npcname rows into the '
+                              'actors lane store: model units through the pinned Converter and generated profile bundles, each a sealed '
+                              'ledger unit. --print-batch-plan prints the batch order and pack layout and writes nothing.')
 
 
 class ConvertActorsError(ValueError):
@@ -74,20 +74,14 @@ def path_free_reason(message, source_root, output_root):
 class NpcConversionRun:
     def __init__(self, project_root, client_access, converter, ledger_root, store_root):
         self.project_root, self.client_access, self.converter, self.store_root = Path(project_root), client_access, converter, store_root
-        self.census = json.loads((self.project_root / ACTOR_UNIT_CENSUS_RELATIVE_PATH).read_bytes())
+        self.census, self.npcgrp, self.npcname, self.name_table = read_census_and_npc_tables(self.project_root, client_access.root, decode_table)
         self.units_by_key = {unit['key']: unit for unit in self.census['units']}
-        self.table_paths = {table['table']: table['path'] for table in self.census['tables']}
-        self.name_table = PurePosixPath(self.table_paths['npcname']).name
-        self.npcgrp = decode_table(client_access.root, 'npcgrp')
-        self.npcname = decode_table(client_access.root, 'npcname', source_filename=self.name_table)
-        census_sha256s = {table['table']: table['sha256'] for table in self.census['tables']}
-        for name, table in (('npcgrp', self.npcgrp), ('npcname', self.npcname)):
-            if table['source'] != self.table_paths[name] or table['sourceSha256'] != census_sha256s[name]:
-                raise ConvertActorsError(f'{ACTOR_UNIT_CENSUS_RELATIVE_PATH} was built from another {name}; rerun actor_census.py')
         self.model_ledger = UnitLedger(ledger_root, NPC_MODEL_STEP, NPC_MODEL_ALGORITHM_VERSION)
         self.profile_ledger = UnitLedger(ledger_root, NPC_PROFILE_STEP, NPC_PROFILE_ALGORITHM_VERSION)
         self.package_census = ActorPackageCensus(client_access, [])
         self.converter_output = converter.output
+        self.converter_implementation_sha256 = implementation_hash()
+        self.model_unit_work_by_key = {}
 
     def path_free_reason(self, error):
         return path_free_reason(str(error), self.client_access.root, self.converter_output)
@@ -128,6 +122,21 @@ class NpcConversionRun:
                   self.gap_row(npc_key, self.model_ledger, unit_key, reason, source_identity))
         return self.unit_outcome(self.model_ledger, unit_key, GAP_STATUS, reason, False)
 
+    def convertible_model_unit_work(self, unit):
+        if unit['key'] not in self.model_unit_work_by_key:
+            selection = unit['selection']
+            texture_paths = [path for texture in selection['textures'] if texture
+                             for path in self.package_census.resolve_package_paths(texture, TEXTURE_PACKAGE_SUFFIXES)]
+            inputs = locked_input_records(sorted({self.npcgrp['source'], unit['sourceIdentity']['path'], *texture_paths}))
+            request = npc_model_request(unit, self.npcgrp, self.first_row_index_of_selection(selection), None)
+            config = {'request': request, 'converterSha256': self.converter_implementation_sha256, 'umodelSha256': UMODEL_SHA256}
+            self.model_unit_work_by_key[unit['key']] = (inputs, request, config,
+                                                        self.model_ledger.unit_fingerprint([record['sha256'] for record in inputs], config))
+        return self.model_unit_work_by_key[unit['key']]
+
+    def is_convertible_model_unit_sealed(self, unit):
+        return self.model_ledger.is_sealed(unit['key'], self.convertible_model_unit_work(unit)[3])
+
     def convert_model(self, npc_key, row):
         selection = {'mesh': row['mesh_name'], 'textures': [slot['param_texture_name'] for slot in row['texture_name']]}
         if not selection['mesh']:
@@ -138,12 +147,7 @@ class NpcConversionRun:
             raise ConvertActorsError(f'{npc_key} names unit {unit_key}, which {ACTOR_UNIT_CENSUS_RELATIVE_PATH} does not hold; rerun actor_census.py')
         if unit['status'] != CONVERTIBLE_UNIT_STATUS:
             return self.census_gap_model_outcome(npc_key, unit_key, selection, unit['reason'], unit['sourceIdentity'])
-        texture_paths = [path for texture in selection['textures']
-                         for path in self.package_census.resolve_package_paths(texture, TEXTURE_PACKAGE_SUFFIXES)]
-        inputs = locked_input_records(sorted({self.npcgrp['source'], unit['sourceIdentity']['path'], *texture_paths}))
-        request = npc_model_request(unit, self.npcgrp, self.first_row_index_of_selection(selection), None)
-        config = {'request': request, 'converterSha256': implementation_hash(), 'umodelSha256': UMODEL_SHA256}
-        fingerprint = self.model_ledger.unit_fingerprint([record['sha256'] for record in inputs], config)
+        inputs, request, config, fingerprint = self.convertible_model_unit_work(unit)
         if self.model_ledger.is_sealed(unit_key, fingerprint):
             return self.sealed_outcome(npc_key, self.model_ledger, unit_key)
         step_directory = self.model_ledger.begin(unit_key, fingerprint)
@@ -259,6 +263,10 @@ class NpcConversionRun:
         profile_files, profile_record = profile_bundle_store_files_and_record(
             self.client_access.root, self.profile_ledger.unit_step_directory(npc_key) / PROFILE_BUNDLE_FOLDER)
         catalog, before = read_store_catalog(self.store_root)
+        npc_id = int(npc_key.split(':', 1)[1])
+        for record in catalog.get('npcProfiles', []):
+            if record['id'] != profile_record['id'] and npc_id in profile_record_npc_ids(self.store_root, record):
+                raise ConvertActorsError(f'{npc_key} already has a profile in lane record {record["id"]}; the NPC batch owns it')
         catalog = merge_catalog_slice(catalog, 'models', model_record, self.convertible_npc_model_unit_count())
         catalog = merge_catalog_slice(catalog, 'npcProfiles', profile_record, MAXIMUM_NPC_PROFILE_BUNDLES)
         for slice_name in ('models', 'npcProfiles'):
@@ -291,22 +299,63 @@ def printed_outcome(outcome):
     return {key: outcome[key] for key in ('key', 'step', 'status', 'reason', 'cacheHit')}
 
 
+def slice_limit_argument(text):
+    if not SLICE_LIMIT_PATTERN.fullmatch(text):
+        raise argparse.ArgumentTypeError(f'--limit must be an integer of at least 1: {text!r}')
+    return int(text)
+
+
+def batch_plan(census_and_tables, client_root):
+    census, npcgrp, npcname, name_table = census_and_tables
+    class_closures = CachedClassClosures(SourcePackages(client_root))
+    return npc_batch_plan(census, npcgrp, npcname, name_table, class_closures.closure, shared_store_npc_ids(REPOSITORY_ROOT))
+
+
+def print_batch_plan(client_access):
+    census_and_tables = read_census_and_npc_tables(REPOSITORY_ROOT, client_access.root, decode_table)
+    print(json.dumps(printed_batch_plan(batch_plan(census_and_tables, client_access.root)), indent=2, sort_keys=True), flush=True)
+
+
+def run_batch_slice(client_access, output_root, converter, limit):
+    run = NpcConversionRun(REPOSITORY_ROOT, client_access, converter, lane_work_root(REPOSITORY_ROOT, LANE_NAME), output_root)
+    plan = batch_plan((run.census, run.npcgrp, run.npcname, run.name_table), client_access.root)
+    report = run_npc_batch_slice(run, plan, limit, lambda: require_batch_preflight(REPOSITORY_ROOT, LANE_NAME, BATCH_MINIMUM_FREE_BYTES))
+    outcomes = report['unitOutcomes'] + report['packOutcomes']
+    for outcome in outcomes:
+        print(json.dumps(printed_outcome(outcome), sort_keys=True), flush=True)
+    print(json.dumps({'convertedUnits': report['convertedUnits'], 'stopReason': report['stopReason'], 'store': report['store']},
+                     sort_keys=True), flush=True)
+    return outcomes
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=CONVERT_ACTORS_DESCRIPTION)
     parser.add_argument('--client', type=Path, required=True)
     parser.add_argument('--output', type=Path, default=REPOSITORY_ROOT / 'artifacts' / 'lane-store' / LANE_NAME / 'l2')
     parser.add_argument('--umodel', type=Path, default=UMODEL)
-    parser.add_argument('--npc', type=npc_id_argument, required=True)
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument('--npc', type=npc_id_argument)
+    mode.add_argument('--batch', choices=[NPC_BATCH_NAME])
+    mode.add_argument('--print-batch-plan', action='store_true')
+    parser.add_argument('--limit', type=slice_limit_argument)
     arguments = parser.parse_args(argv)
+    if (arguments.batch is None) != (arguments.limit is None):
+        parser.error('--limit is required with --batch and only valid with --batch')
     try:
         client_access = require_reference_client(arguments.client)
+        if arguments.print_batch_plan:
+            print_batch_plan(client_access)
+            return 0
         output_root = require_converter_output(REPOSITORY_ROOT, arguments.output)
         require_batch_preflight(REPOSITORY_ROOT, LANE_NAME, BATCH_MINIMUM_FREE_BYTES)
         run_at_below_normal_priority()
         converter = Converter(client_access.root, output_root.parent / CONVERTER_WORK_FOLDER, arguments.umodel)
-        outcomes = convert_npc(REPOSITORY_ROOT, client_access, converter, arguments.npc, lane_work_root(REPOSITORY_ROOT, LANE_NAME), output_root)
-        for outcome in outcomes:
-            print(json.dumps(printed_outcome(outcome), sort_keys=True), flush=True)
+        if arguments.batch:
+            outcomes = run_batch_slice(client_access, output_root, converter, arguments.limit)
+        else:
+            outcomes = convert_npc(REPOSITORY_ROOT, client_access, converter, arguments.npc, lane_work_root(REPOSITORY_ROOT, LANE_NAME), output_root)
+            for outcome in outcomes:
+                print(json.dumps(printed_outcome(outcome), sort_keys=True), flush=True)
     except (OSError, ValueError) as error:
         print(f'Actor conversion failed: {error}', file=sys.stderr)
         return 1

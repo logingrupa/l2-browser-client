@@ -7,7 +7,6 @@ CONVERTIBLE_UNIT_STATUS = 'convertible'
 GAP_UNIT_STATUS = 'gap'
 CONVERSION_PENDING_REASON = 'conversion-pending'
 NO_MESH_IN_ROW_REASON = 'no-mesh-in-row'
-MULTI_SLOT_BINDING_UNSUPPORTED_REASON = 'multi-slot-binding-unsupported'
 NPC_PART_NAME = 'npcs'
 NPC_MODEL_UNIT_KIND = 'npc-model'
 CHARACTER_PART_NAME = 'player-characters'
@@ -80,8 +79,7 @@ def mesh_and_texture_gap_reason(meshes, textures, package_census):
 
 
 def npc_model_gap_reason(selection, package_census):
-    return first_gap_reason((mesh_and_texture_gap_reason([selection['mesh']], selection['textures'], package_census),
-                             MULTI_SLOT_BINDING_UNSUPPORTED_REASON if len(non_empty_values(selection['textures'])) > 1 else None))
+    return mesh_and_texture_gap_reason([selection['mesh']], selection['textures'], package_census)
 
 
 def npc_model_unit(selection, package_census, table_identity):

@@ -1,4 +1,5 @@
 import re
+import subprocess
 
 from actors.actor_unit_inventory import decoded_string_values
 from native_assets_lib.skill_audio_bundle import reference_candidates
@@ -12,6 +13,12 @@ NPC_PROFILE_RECIPE_ID_PREFIX = 'interlude:npc-profiles:'
 ANIMATION_REFERENCE_MISSING_REASON = 'animation-reference-missing'
 ANIMATION_OUTSIDE_MESH_PACKAGE_REASON_PREFIX = 'animation-outside-mesh-package:'
 SOUND_IDENTITY_UNRESOLVED_REASON = 'sound-identity-unresolved'
+NPC_NAME_ROW_MISSING_REASON = 'npc-name-row-missing'
+NPC_NAME_EMPTY_REASON = 'npc-name-empty'
+ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX = 'actor-default-unresolved:'
+CONVERTER_REFUSED_REASON_PREFIX = 'converter-refused:'
+PASS_STATUS, GAP_STATUS, FAILED_STATUS = 'pass', 'gap', 'failed'
+TRANSIENT_FAILURES = (OSError, subprocess.SubprocessError)
 ADMITTED_SOUND_IDENTITY_STATUSES = ('exact-identity', 'unique-package-leaf-candidate')
 SOUND_PACKAGE_NOT_IN_CLIENT_STATUS = 'sound-package-not-in-client'
 SOUND_PACKAGE_REFUSED_STATUS = 'sound-package-refused'
@@ -52,32 +59,56 @@ def npcgrp_row(npcgrp_table, row_index):
     return rows[row_index]
 
 
+def npc_texture_field_path(row_index, texture_index):
+    return [NPCGRP_ROW_COLLECTION, row_index, 'texture_name', texture_index, 'param_texture_name']
+
+
+def npc_texture_source_binding(row_index, textures):
+    if len(textures) == 1:
+        return {'texturePath': npc_texture_field_path(row_index, 0)}
+    return {'slotBindings': [{'slot': texture_index, 'texturePath': npc_texture_field_path(row_index, texture_index)}
+                             for texture_index in range(len(textures))]}
+
+
+def npc_material_overrides(textures):
+    if len(textures) == 1:
+        return [f'0={textures[0]}']
+    return [f'{texture_index}={texture}' for texture_index, texture in enumerate(textures) if texture]
+
+
 def npc_model_request(unit, npcgrp_table, row_index, animation_reference):
     mesh, textures = unit['selection']['mesh'], unit['selection']['textures']
     row = npcgrp_row(npcgrp_table, row_index)
     row_textures = [slot['param_texture_name'] for slot in row['texture_name']]
     if row['mesh_name'] != mesh or row_textures != textures:
         raise NpcRequestError(f'npcgrp row {row_index} does not name the exact mesh and textures of unit {unit["key"]}')
-    if len(textures) != 1:
-        raise NpcRequestError(f'unit {unit["key"]} has {len(textures)} texture slots; only single-texture units have a request')
+    if not textures:
+        raise NpcRequestError(f'unit {unit["key"]} has no texture slot; a model request needs at least one')
     if '.' not in mesh:
         raise NpcRequestError(f'npcgrp mesh {mesh!r} is not a qualified native object name')
     package_name, object_name = mesh.split('.', 1)
     return {'kind': 'model', 'name': unit['key'].replace(':', '-'), 'package': package_name, 'object': object_name,
-            'animation': animation_reference, 'withEventAudio': True, 'materials': [f'0={textures[0]}'],
+            'animation': animation_reference, 'withEventAudio': True, 'materials': npc_material_overrides(textures),
             'sourceBinding': {'table': NPCGRP_TABLE_NAME, 'sourceSha256': npcgrp_table['sourceSha256'],
-                              'meshPath': [NPCGRP_ROW_COLLECTION, row_index, 'mesh_name'],
-                              'texturePath': [NPCGRP_ROW_COLLECTION, row_index, 'texture_name', 0, 'param_texture_name']},
+                              'meshPath': [NPCGRP_ROW_COLLECTION, row_index, 'mesh_name'], **npc_texture_source_binding(row_index, textures)},
             'limitations': [TEXTURE_LIST_INDEX_SLOT_LIMITATION, MESH_IDENTITY_LIMITATION]}
 
 
-def npc_profile_recipe(npc_id, npcname_row, npcgrp_row_value, model_catalog_id, name_table):
+def npc_profile_selection(npc_id, npcname_row, npcgrp_row_value, model_catalog_id):
     if npcname_row['id'] != npc_id or npcgrp_row_value['npc_id'] != npc_id:
         raise NpcRequestError(f'npcname and npcgrp rows do not both belong to npc {npc_id}')
-    return {'schemaVersion': NPC_PROFILE_RECIPE_SCHEMA_VERSION, 'id': f'{NPC_PROFILE_RECIPE_ID_PREFIX}{npc_id}', 'nameTable': name_table,
-            'sourceUnitsPerMetre': CONVERTER_SOURCE_UNITS_PER_METRE,
-            'profiles': [{'npcId': npc_id, 'expectedName': npcname_row['name'], 'expectedMesh': npcgrp_row_value['mesh_name'],
-                          'expectedActorClass': npcgrp_row_value['class_name'], 'modelCatalogId': model_catalog_id}]}
+    return {'npcId': npc_id, 'expectedName': npcname_row['name'], 'expectedMesh': npcgrp_row_value['mesh_name'],
+            'expectedActorClass': npcgrp_row_value['class_name'], 'modelCatalogId': model_catalog_id}
+
+
+def npc_profiles_recipe(recipe_id, profile_selections, name_table):
+    return {'schemaVersion': NPC_PROFILE_RECIPE_SCHEMA_VERSION, 'id': recipe_id, 'nameTable': name_table,
+            'sourceUnitsPerMetre': CONVERTER_SOURCE_UNITS_PER_METRE, 'profiles': list(profile_selections)}
+
+
+def npc_profile_recipe(npc_id, npcname_row, npcgrp_row_value, model_catalog_id, name_table):
+    return npc_profiles_recipe(f'{NPC_PROFILE_RECIPE_ID_PREFIX}{npc_id}',
+                               [npc_profile_selection(npc_id, npcname_row, npcgrp_row_value, model_catalog_id)], name_table)
 
 
 def npc_reference_fields(npcgrp_row_value, field_pattern):
