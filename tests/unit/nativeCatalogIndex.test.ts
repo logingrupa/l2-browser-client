@@ -8,7 +8,8 @@ import {
 } from "../../src/assets/native/nativeCatalogIndex";
 import { readNativeCatalog, type NativeCatalog } from "../../src/assets/native/readNativeCatalog";
 import {
-  catalogWith, goldenCatalogIndex, goldenCatalogSha256, model, musverenProfile, npcProfileManifest, playerProfileManifest, serveFiles, unconvertedProfile,
+  catalogWith, goldenCatalogIndex, goldenCatalogSha256, model, musverenProfile, nativeCoveragePath, npcProfileManifest, playerProfileManifest, serveFiles,
+  unconvertedProfile,
 } from "../support/nativeCatalogIndexFixtures";
 
 async function inlineCatalog(profiles: unknown[] = [musverenProfile, unconvertedProfile]) {
@@ -28,7 +29,7 @@ describe("native catalog L2-ID index", () => {
   it("reports converted IDs only when a catalog record backs them", async () => {
     const index = await buildNativeCatalogIndex(await inlineCatalog(), new AbortController().signal);
     expect(index.lookup(npcCatalogKey(21622))).toEqual({ status: "converted", key: "npc:21622",
-      record: { npcId: 21622, profileId: "npc:21622", modelCatalogId: "musveren:0" } });
+      record: { npcId: 21622, profileId: "npc:21622", modelCatalogId: "musveren:0", join: "legacy-single-mesh-match" } });
     expect(index.lookup(npcCatalogKey(1))).toEqual({ status: "not-in-catalog", key: "npc:1", reason: "not in catalog" });
     expect(index.lookup(npcCatalogKey(20001))).toEqual({ status: "not-in-catalog", key: "npc:20001",
       reason: "NPC profile staged but mesh LineageMonsters.unconverted_m00 has no converted model" });
@@ -176,28 +177,77 @@ async function profileCatalog(npcProfiles: unknown[], playerProfiles: unknown[],
 }
 
 describe("native catalog NPC model and character joins", () => {
-  const sharedMesh = "LineageMonsters.unconverted_m00";
-  const pinnedProfile = { ...unconvertedProfile, modelCatalogId: "npc-model:20001" };
+  const sharedMesh = "LineageMonsters.field_stalker_m00";
+  const firstUnitModelId = `npc-model:${"1".repeat(64)}`, secondUnitModelId = `npc-model:${"2".repeat(64)}`;
+  const firstLaneProfile = { ...musverenProfile, id: "npc:20842", npcId: 20842, name: "Musveren", modelCatalogId: firstUnitModelId };
+  const secondLaneProfile = { ...musverenProfile, id: "npc:20843", npcId: 20843, name: "Musveren", modelCatalogId: secondUnitModelId };
+  const lanePackRecordId = "interlude:npc-profiles:pack-0123456789abcdef";
 
-  it("selects the model a profile names by modelCatalogId even when two models share its mesh", async () => {
-    const catalog = await profileCatalog([pinnedProfile, musverenProfile], [femaleFighterProfile],
-      [model("npc-model:20001", sharedMesh), model("npc-model:20001-other", sharedMesh), model("musveren:0", musverenProfile.mesh)]);
+  it("resolves two profiles of one shared mesh to the two models they name by modelCatalogId", async () => {
+    const catalog = await profileCatalog([firstLaneProfile, secondLaneProfile], [femaleFighterProfile],
+      [model(firstUnitModelId, sharedMesh), model(secondUnitModelId, sharedMesh)]);
     const index = await buildNativeCatalogIndex(catalog, new AbortController().signal);
-    expect(index.lookup(npcCatalogKey(20001))).toEqual({ status: "converted", key: "npc:20001",
-      record: { npcId: 20001, profileId: "npc:20001", modelCatalogId: "npc-model:20001" } });
-    expect(index.lookup(npcCatalogKey(21622))).toMatchObject({ status: "converted", record: { modelCatalogId: "musveren:0" } });
+    expect(index.lookup(npcCatalogKey(20842))).toEqual({ status: "converted", key: "npc:20842",
+      record: { npcId: 20842, profileId: "npc:20842", modelCatalogId: firstUnitModelId, join: "model-catalog-id" } });
+    expect(index.lookup(npcCatalogKey(20843))).toEqual({ status: "converted", key: "npc:20843",
+      record: { npcId: 20843, profileId: "npc:20843", modelCatalogId: secondUnitModelId, join: "model-catalog-id" } });
   });
 
   it("answers not in catalog with the model id when the named model is missing", async () => {
-    const catalog = await profileCatalog([pinnedProfile], [femaleFighterProfile], [model("npc-model:20002", sharedMesh)]);
+    const catalog = await profileCatalog([firstLaneProfile], [femaleFighterProfile], [model(secondUnitModelId, sharedMesh)]);
     const index = await buildNativeCatalogIndex(catalog, new AbortController().signal);
-    expect(index.lookup(npcCatalogKey(20001))).toEqual({ status: "not-in-catalog", key: "npc:20001",
-      reason: "NPC profile model npc-model:20001 is not in the catalog" });
+    expect(index.lookup(npcCatalogKey(20842))).toEqual({ status: "not-in-catalog", key: "npc:20842",
+      reason: `NPC profile names model ${firstUnitModelId}, which is not in the catalog` });
   });
 
-  it("refuses a malformed modelCatalogId in an NPC profile", async () => {
-    const catalog = await profileCatalog([{ ...unconvertedProfile, modelCatalogId: "NPC Model" }], [femaleFighterProfile], []);
-    await expect(buildNativeCatalogIndex(catalog, new AbortController().signal)).rejects.toThrow("Native NPC profile modelCatalogId is invalid.");
+  it("refuses the catalog when a profile names a model of a different mesh", async () => {
+    const catalog = await profileCatalog([firstLaneProfile], [femaleFighterProfile], [model(firstUnitModelId, "LineageMonsters.gremlin_m00")]);
+    await expect(buildNativeCatalogIndex(catalog, new AbortController().signal))
+      .rejects.toThrow("Native catalog NPC profile npc:20842 names a model of a different mesh.");
+  });
+
+  it.each(["NPC Model", "npc-model:20001", `npc-model:${"A".repeat(64)}`, `npc-model:${"1".repeat(63)}`, `npc-model:${"1".repeat(64)} `, 7])(
+    "refuses the malformed modelCatalogId %j in an NPC profile", async modelCatalogId => {
+      const catalog = await profileCatalog([{ ...unconvertedProfile, modelCatalogId }], [femaleFighterProfile], []);
+      await expect(buildNativeCatalogIndex(catalog, new AbortController().signal)).rejects.toThrow("Native NPC profile model catalog id is invalid.");
+    });
+
+  it("joins a shared-store profile without modelCatalogId by its single legacy mesh match", async () => {
+    const catalog = await profileCatalog([musverenProfile], [femaleFighterProfile], [model("musveren:0", sharedMesh)]);
+    const index = await buildNativeCatalogIndex(catalog, new AbortController().signal);
+    expect(index.lookup(npcCatalogKey(21622))).toEqual({ status: "converted", key: "npc:21622",
+      record: { npcId: 21622, profileId: "npc:21622", modelCatalogId: "musveren:0", join: "legacy-single-mesh-match" } });
+  });
+
+  it("refuses a profile without modelCatalogId in a bundle other than the shared-store bundle", async () => {
+    const npcManifest = await npcProfileManifest([musverenProfile]);
+    serveFiles(new Map([[npcManifest.record.manifest, npcManifest.bytes]]));
+    const catalog = catalogWith({ models: [model("musveren:0", sharedMesh)], npcProfiles: [{ ...npcManifest.record, id: lanePackRecordId }] });
+    await expect(buildNativeCatalogIndex(catalog, new AbortController().signal))
+      .rejects.toThrow(`Native NPC profile npc:21622 in bundle ${lanePackRecordId} has no model catalog id.`);
+  });
+
+  it("keeps the shared-store npc:21622 on musveren:0 in a catalog merged with a lane pack of the same mesh", async () => {
+    const sharedStoreManifest = await npcProfileManifest([musverenProfile]);
+    const lanePackManifest = await npcProfileManifest([firstLaneProfile, secondLaneProfile]);
+    serveFiles(new Map([[sharedStoreManifest.record.manifest, sharedStoreManifest.bytes], [lanePackManifest.record.manifest, lanePackManifest.bytes]]));
+    const catalog = catalogWith({
+      models: [model("musveren:0", sharedMesh), model(firstUnitModelId, sharedMesh), model(secondUnitModelId, sharedMesh)],
+      npcProfiles: [sharedStoreManifest.record, { ...lanePackManifest.record, id: lanePackRecordId }],
+    });
+    const index = await buildNativeCatalogIndex(catalog, new AbortController().signal);
+    expect(index.lookup(npcCatalogKey(21622))).toMatchObject({ status: "converted",
+      record: { modelCatalogId: "musveren:0", join: "legacy-single-mesh-match" } });
+    expect(index.lookup(npcCatalogKey(20842))).toMatchObject({ status: "converted", record: { modelCatalogId: firstUnitModelId, join: "model-catalog-id" } });
+    expect(index.lookup(npcCatalogKey(20843))).toMatchObject({ status: "converted", record: { modelCatalogId: secondUnitModelId, join: "model-catalog-id" } });
+  });
+
+  it("gives no npc keys for a catalog without an npcProfiles slice and refuses a manifest with zero profiles", async () => {
+    expect((await indexOf({ models: [model("musveren:0", sharedMesh)] })).keys("npc:")).toEqual([]);
+    const emptyManifest = await npcProfileManifest([]);
+    serveFiles(new Map([[emptyManifest.record.manifest, emptyManifest.bytes]]));
+    await expect(buildNativeCatalogIndex(catalogWith({ npcProfiles: [emptyManifest.record] }), new AbortController().signal))
+      .rejects.toThrow("Native NPC profile manifest is incomplete.");
   });
 
   it("answers a character key from a player profile chargrpIndex whose model is staged", async () => {
@@ -307,8 +357,24 @@ describe.skipIf(!existsSync(stagedCatalogPath))("native catalog L2-ID index on t
     for (const key of [npcCatalogKey(21622), itemCatalogKey(22), skillCatalogKey(3, 1), tileCatalogKey("20_20")]) {
       expect(index.lookup(key), key).toMatchObject({ status: "converted", key });
     }
-    expect(index.lookup(npcCatalogKey(21622))).toMatchObject({ record: { modelCatalogId: "musveren:0" } });
+    expect(index.lookup(npcCatalogKey(21622))).toMatchObject({ record: { modelCatalogId: "musveren:0", join: "legacy-single-mesh-match" } });
     expect(index.lookup(windowCatalogKey("StatusWnd")).status).toBe("not-in-catalog");
     expect(readStagedFile.mock.calls.filter(([url]) => url === "/l2/catalog.json")).toHaveLength(1);
+  });
+});
+
+const laneStoreRoot = "artifacts/lane-store/actors/l2";
+describe.skipIf(!existsSync(`${laneStoreRoot}/catalog.json`))("native catalog L2-ID index on the actors lane store, skipped while that store is absent", () => {
+  it("resolves npc:20001 through its modelCatalogId", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === nativeCoveragePath) return new Response("missing", { status: 404 });
+      const path = `${laneStoreRoot}${url.replace(/^\/l2/, "")}`;
+      if (!url.startsWith("/l2/") || !existsSync(path)) return new Response("missing", { status: 404 });
+      return new Response(await readFile(path));
+    }));
+    const signal = new AbortController().signal;
+    const index = await buildNativeCatalogIndex(await readNativeCatalog(signal), signal);
+    expect(index.lookup(npcCatalogKey(20001))).toMatchObject({ status: "converted", key: "npc:20001",
+      record: { npcId: 20001, modelCatalogId: expect.stringMatching(/^npc-model:[a-f0-9]{64}$/), join: "model-catalog-id" } });
   });
 });

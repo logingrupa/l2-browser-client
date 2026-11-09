@@ -10,7 +10,7 @@ import { fakeMedia, fire, installMiniDom, type FakeElement, type MiniDom } from 
 const convertedLookups: ReadonlyMap<string, NativeCatalogLookup> = new Map<string, NativeCatalogLookup>([
   ["item:22", { status: "converted", key: "item:22", record: { itemId: 22, slot: "upper", catalogIds: ["fighter-equipment:0"], playerProfileIds: ["human-male-fighter"] } }],
   ["skill:3:1", { status: "converted", key: "skill:3:1", record: { skillId: 3, level: 1, effectComponentId: powerStrikeEffectBundleId } }],
-  ["npc:21622", { status: "converted", key: "npc:21622", record: { npcId: 21622, profileId: "native-npc-profiles", modelCatalogId: "musveren:0" } }],
+  ["npc:21622", { status: "converted", key: "npc:21622", record: { npcId: 21622, profileId: "native-npc-profiles", modelCatalogId: "musveren:0", join: "legacy-single-mesh-match" } }],
 ]);
 
 const fakeCatalogIndex: NativeCatalogIndex = {

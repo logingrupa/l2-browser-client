@@ -1,4 +1,5 @@
 import { loadNativeNpcProfiles, type NativeNpcProfile } from "./loadNativeNpcProfiles";
+import { joinNpcProfileToModel, type NativeNpcModelJoinKind } from "./nativeNpcModelJoin";
 import { loadNativePlayerProfiles, type NativePlayerProfile } from "./loadNativePlayerProfiles";
 import {
   readTableCatalogRecord, readTileCatalogRecord, readWindowCatalogRecord, tableIdPattern, tileIdPattern, windowIdPattern,
@@ -7,7 +8,9 @@ import {
 import type { NativeCatalog } from "./readNativeCatalog";
 import { readNativeCoverageUnlessAbsent, type NativeCoverageStatus } from "./readNativeCoverage";
 
-export interface NativeNpcCatalogRecord { readonly npcId: number; readonly profileId: string; readonly modelCatalogId: string }
+export interface NativeNpcCatalogRecord {
+  readonly npcId: number; readonly profileId: string; readonly modelCatalogId: string; readonly join: NativeNpcModelJoinKind;
+}
 export interface NativeItemCatalogRecord {
   readonly itemId: number; readonly slot: "upper"; readonly catalogIds: readonly string[]; readonly playerProfileIds: readonly string[];
 }
@@ -86,7 +89,7 @@ function catalogRecordIdentity(value: unknown, sliceName: string): Record<string
   return value as Record<string, unknown> & { id: string };
 }
 
-function readModelSourceObjects(models: readonly unknown[]): ReadonlyMap<string, string | null> {
+export function readModelSourceObjects(models: readonly unknown[]): ReadonlyMap<string, string | null> {
   const sourceObjectsByModelId = new Map<string, string | null>();
   for (const value of models) {
     const model = catalogRecordIdentity(value, "model");
@@ -100,21 +103,10 @@ function readModelSourceObjects(models: readonly unknown[]): ReadonlyMap<string,
 }
 
 function npcCatalogLookup(profile: NativeNpcProfile, sourceObjectsByModelId: ReadonlyMap<string, string | null>): NativeCatalogLookup {
-  const key = npcCatalogKey(profile.npcId);
-  const converted = (modelCatalogId: string): NativeCatalogLookup =>
-    ({ status: "converted", key, record: { npcId: profile.npcId, profileId: profile.id, modelCatalogId } });
-  if (profile.modelCatalogId !== undefined) {
-    if (!sourceObjectsByModelId.has(profile.modelCatalogId)) {
-      return { status: "not-in-catalog", key, reason: `NPC profile model ${profile.modelCatalogId} is not in the catalog` };
-    }
-    return converted(profile.modelCatalogId);
-  }
-  const modelIds = [...sourceObjectsByModelId].filter(([, sourceObject]) => sourceObject === profile.mesh).map(([modelId]) => modelId);
-  if (modelIds.length > 1) {
-    return { status: "not-in-catalog", key, reason: `mesh ${profile.mesh} matches ${modelIds.length} converted packages (${modelIds.sort().join(", ")})` };
-  }
-  if (!modelIds.length) return { status: "not-in-catalog", key, reason: `NPC profile staged but mesh ${profile.mesh} has no converted model` };
-  return converted(modelIds[0]!);
+  const key = npcCatalogKey(profile.npcId), modelJoin = joinNpcProfileToModel(profile, sourceObjectsByModelId);
+  if (modelJoin.status === "missing") return { status: "not-in-catalog", key, reason: modelJoin.reason };
+  return { status: "converted", key,
+    record: { npcId: profile.npcId, profileId: profile.id, modelCatalogId: modelJoin.modelCatalogId, join: modelJoin.join } };
 }
 
 function upperItemLookups(playerProfiles: Iterable<NativePlayerProfile>, sourceObjectsByModelId: ReadonlyMap<string, string | null>): NativeCatalogLookup[] {

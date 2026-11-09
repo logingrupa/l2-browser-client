@@ -8,7 +8,7 @@ import { catalogWith, musverenProfile, serveFiles } from "../support/nativeCatal
 const modelCatalogId = `npc-model:${"b".repeat(64)}`;
 const gremlinMesh = "LineageMonsters.gremlin_m00";
 const gremlinProfile = { ...musverenProfile, id: "npc:20001", npcId: 20001, name: "Gremlin", mesh: gremlinMesh, modelCatalogId } as unknown as NativeNpcProfile;
-const record = { npcId: 20001, profileId: "npc:20001", modelCatalogId };
+const record = { npcId: 20001, profileId: "npc:20001", modelCatalogId, join: "model-catalog-id" } as const;
 
 async function servedModelCatalog(sourceObject: string) {
   const fixture = await assetFixture("model", { source: { edition: "interlude", package: "LineageMonsters", object: sourceObject, sha256: "a".repeat(64) } });

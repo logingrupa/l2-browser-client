@@ -15,8 +15,8 @@ import type { WorldEntity, WorldEvent } from "../../src/world/worldTypes";
 import { installMiniDom, type FakeElement, type MiniDom } from "./support/miniDom";
 
 const convertedNpcLookups: ReadonlyMap<string, NativeCatalogLookup> = new Map([
-  ["npc:21622", { status: "converted", key: "npc:21622", record: { npcId: 21622, profileId: "native-npc-profiles", modelCatalogId: "musveren:0" } }],
-  ["npc:30001", { status: "converted", key: "npc:30001", record: { npcId: 30001, profileId: "native-npc-profiles", modelCatalogId: "unstaged:0" } }],
+  ["npc:21622", { status: "converted", key: "npc:21622", record: { npcId: 21622, profileId: "native-npc-profiles", modelCatalogId: "musveren:0", join: "legacy-single-mesh-match" } }],
+  ["npc:30001", { status: "converted", key: "npc:30001", record: { npcId: 30001, profileId: "native-npc-profiles", modelCatalogId: "unstaged:0", join: "legacy-single-mesh-match" } }],
   ["npc:20001", { status: "gap", key: "npc:20001", reason: "skeletal-licensee-unsupported:123/30", coverageStatus: "gap" }],
 ]);
 

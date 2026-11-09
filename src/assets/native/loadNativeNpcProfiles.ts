@@ -27,10 +27,14 @@ function vector(value: unknown): [number, number, number] {
   }
   return [value[0] as number, value[1] as number, value[2] as number];
 }
-const modelCatalogIdPattern = /^[a-z0-9][a-z0-9:-]{0,95}$/;
-function optionalModelCatalogId(value: unknown): { readonly modelCatalogId?: string } {
-  if (value === undefined) return {};
-  if (typeof value !== "string" || !modelCatalogIdPattern.test(value)) throw new Error("Native NPC profile modelCatalogId is invalid.");
+export const npcModelCatalogIdPattern = /^npc-model:[a-f0-9]{64}$/;
+export const sharedStoreNpcProfileRecordId = "native-npc-profiles";
+function optionalModelCatalogId(value: unknown, profileId: string, recordId: string): { readonly modelCatalogId?: string } {
+  if (value === undefined) {
+    if (recordId !== sharedStoreNpcProfileRecordId) throw new Error(`Native NPC profile ${profileId} in bundle ${recordId} has no model catalog id.`);
+    return {};
+  }
+  if (typeof value !== "string" || !npcModelCatalogIdPattern.test(value)) throw new Error("Native NPC profile model catalog id is invalid.");
   return { modelCatalogId: value };
 }
 function positive(value: unknown): number {
@@ -77,7 +81,7 @@ export async function loadNativeNpcProfiles(records: unknown, signal: AbortSigna
       result.set(row.id as string, { id: row.id as string, npcId: row.npcId as number, name: row.name,
         mesh: row.mesh, actorClass: row.actorClass, drawScale: positive(row.drawScale), drawScale3D,
         collisionRadius: positive(row.collisionRadius), collisionHeight: positive(row.collisionHeight),
-        sourceUnitsPerMetre: 100, unsupportedFields, ...(prePivot ? { prePivot } : {}), ...optionalModelCatalogId(row.modelCatalogId) });
+        sourceUnitsPerMetre: 100, unsupportedFields, ...(prePivot ? { prePivot } : {}), ...optionalModelCatalogId(row.modelCatalogId, row.id as string, record.id) });
     }
   }
   signal.throwIfAborted();
