@@ -227,11 +227,11 @@ class UnitLedger:
             raise UnitLedgerError(f'output path must sit under {" or ".join(LEDGER_OUTPUT_ROOT_FOLDERS)} of the lane folder: {relative_path}')
         return confined_child_path(self.lane_folder, relative_path)
 
-    def is_sealed(self, unit_key, fingerprint):
+    def sealed_receipt(self, unit_key):
         step_directory = self.unit_step_directory(unit_key)
         seal_path = step_directory / SEAL_RECORD_NAME
         if not seal_path.is_file():
-            return False
+            return None
         seal = read_ledger_record(seal_path)
         receipt_path = step_directory / RECEIPT_RECORD_NAME
         receipt_bytes = receipt_path.read_bytes() if receipt_path.is_file() else b''
@@ -244,7 +244,20 @@ class UnitLedger:
             output_path = self.lane_output_path(output['path'])
             if not (output_path.is_file() and output_path.stat().st_size == output['bytes']):
                 raise UnitLedgerError(f'sealed output {output["path"]} of {unit_key} is missing or changed; remove {step_directory} to redo it')
-        return seal['fingerprint'] == fingerprint
+        return receipt
+
+    def is_sealed(self, unit_key, fingerprint):
+        receipt = self.sealed_receipt(unit_key)
+        return receipt is not None and receipt['fingerprint'] == fingerprint
+
+    def sealed_receipts(self):
+        receipts = []
+        for seal_path in sorted(self.work_root.glob(f'*/{self.step}/{SEAL_RECORD_NAME}')):
+            unit_key = read_ledger_record(seal_path).get('unitKey')
+            if not (isinstance(unit_key, str) and self.unit_step_directory(unit_key) == seal_path.parent):
+                raise UnitLedgerError(f'seal {seal_path} does not name the unit of its folder')
+            receipts.append(self.sealed_receipt(unit_key))
+        return receipts
 
     def begin(self, unit_key, fingerprint):
         require_sha256(fingerprint, 'unit fingerprint')

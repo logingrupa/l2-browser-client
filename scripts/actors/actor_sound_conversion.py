@@ -1,5 +1,6 @@
 import json
 import shutil
+from typing import NamedTuple
 import zipfile
 from pathlib import Path, PurePosixPath
 
@@ -42,6 +43,25 @@ SOUND_UNIT_KEY_PREFIX = 'sound:'
 
 class ActorSoundConversionError(ValueError):
     pass
+
+
+class SoundUnitWork(NamedTuple):
+    unit_key: str
+    fingerprint: str
+    request: dict
+    inputs: list
+    config: dict
+
+
+class BundleWork(NamedTuple):
+    tables: list
+    routes_by_table: dict
+    inventory: dict
+    coverage_rows: list
+    converter_reasons: dict
+    inputs: list
+    config: dict
+    fingerprint: str
 
 
 def combat_audio_manifest_outputs(receipt):
@@ -153,21 +173,30 @@ class ActorSoundConversionRun:
             raise ActorSoundConversionError(f'{actor_row["table"]} holds {len(found)} rows for {actor_row["match"]}')
         return found[0]
 
-    def sound_unit(self, package_record, export, inventory_row):
+    def sound_unit_work(self, package_record, export, inventory_row):
         request = {'kind': 'audio', 'package': package_record['path'], 'object': export['object']}
         inputs = locked_input_records([package_record['path']])
         config = {'request': request, 'stableId': inventory_row['stableId'], 'converterSha256': implementation_hash(), 'umodelSha256': UMODEL_SHA256}
         unit_key = f'{SOUND_UNIT_KEY_PREFIX}{package_record["package"].source_hash}:{export["exportIndex"]}'
-        fingerprint = self.sound_ledger.unit_fingerprint([record['sha256'] for record in inputs], config)
-        step_directory = self.sound_ledger.unit_step_directory(unit_key)
-        if not self.sound_ledger.is_sealed(unit_key, fingerprint):
-            step_directory = self.sound_ledger.begin(unit_key, fingerprint)
-            outcome = self.converted_sound_outcome(package_record, export, request, step_directory)
+        return SoundUnitWork(unit_key, self.sound_ledger.unit_fingerprint([record['sha256'] for record in inputs], config), request, inputs, config)
+
+    def sound_outcome(self, unit_key):
+        return json.loads((self.sound_ledger.unit_step_directory(unit_key) / SOUND_OUTCOME_FILE_NAME).read_bytes())
+
+    def sealed_sound_outcome(self, package_record, export, inventory_row):
+        work = self.sound_unit_work(package_record, export, inventory_row)
+        return self.sound_outcome(work.unit_key) if self.sound_ledger.is_sealed(work.unit_key, work.fingerprint) else None
+
+    def sound_unit(self, package_record, export, inventory_row):
+        work = self.sound_unit_work(package_record, export, inventory_row)
+        if not self.sound_ledger.is_sealed(work.unit_key, work.fingerprint):
+            step_directory = self.sound_ledger.begin(work.unit_key, work.fingerprint)
+            outcome = self.converted_sound_outcome(package_record, export, work.request, step_directory)
             (step_directory / SOUND_OUTCOME_FILE_NAME).write_bytes(canonical_json_bytes(outcome))
             outputs = [file_output_record(self.lane_folder, path) for path in sorted(step_directory.iterdir())
                        if path.name in (NATIVE_PAYLOAD_FILE_NAME, CONVERTED_ARCHIVE_FILE_NAME, CONVERTED_AUDIO_FILE_NAME, SOUND_OUTCOME_FILE_NAME)]
-            self.sound_ledger.seal(unit_key, fingerprint, {'config': config, 'inputs': inputs, 'outputs': outputs, 'gapRows': []})
-        return json.loads((step_directory / SOUND_OUTCOME_FILE_NAME).read_bytes())
+            self.sound_ledger.seal(work.unit_key, work.fingerprint, {'config': work.config, 'inputs': work.inputs, 'outputs': outputs, 'gapRows': []})
+        return self.sound_outcome(work.unit_key)
 
     def converted_sound_outcome(self, package_record, export, request, step_directory):
         try:
@@ -189,7 +218,7 @@ class ActorSoundConversionRun:
         return {'status': 'converted', 'nativeSound': native, 'archiveSha256': sha256_hex_digest((step_directory / CONVERTED_ARCHIVE_FILE_NAME).read_bytes()),
                 'audioMetadata': metadata, 'stepDirectory': lane_relative(self.lane_folder, step_directory)}
 
-    def corpus_documents(self, references):
+    def corpus_documents(self, references, sound_outcome):
         inventory_rows, coverage_rows, converter_reasons, package_paths = {}, [], {}, set()
         for reference in references:
             package_record = self.sound_package(reference)
@@ -206,7 +235,9 @@ class ActorSoundConversionRun:
             if candidate['status'] != UNCONVERTED_SOURCE_STATUS:
                 continue
             export = next(item for item in package_record['exports'] if item['exportIndex'] == candidate['export']['exportIndex'])
-            outcome = self.sound_unit(package_record, export, candidate)
+            outcome = sound_outcome(package_record, export, candidate)
+            if outcome is None:
+                return None
             if outcome['status'] != 'converted':
                 converter_reasons[candidate['stableId']] = outcome['reason']
                 continue
@@ -227,27 +258,37 @@ class ActorSoundConversionRun:
             'audio': {'path': f'{folder}/{CONVERTED_AUDIO_FILE_NAME}', 'bytes': len(payload), 'sha256': sha256_hex_digest(payload),
                       'mime': 'audio/wav', 'metadata': outcome['audioMetadata']}}}
 
-    def convert_bundle(self, bundle_key, actor_rows, catalog_capacity):
+    def bundle_work(self, bundle_key, actor_rows, sound_outcome):
         tables = sorted({actor_row['table'] for actor_row in actor_rows})
         routes_by_table = {table: self.routes(table) for table in tables}
-        references = self.bound_references(actor_rows)
-        inventory, coverage_rows, converter_reasons, package_paths = self.corpus_documents(references)
+        corpus = self.corpus_documents(self.bound_references(actor_rows), sound_outcome)
+        if corpus is None:
+            return None
+        inventory, coverage_rows, converter_reasons, package_paths = corpus
         inputs = locked_input_records(sorted({self.table(table)['identity']['path'] for table in tables} | set(package_paths)))
         config = {'bundleKey': bundle_key, 'actorRows': actor_rows, 'routes': routes_by_table, 'inventorySha256': sha256_hex_digest(json_bytes(inventory)),
                   'coverage': coverage_rows, 'converterReasons': converter_reasons, 'builderSha256': self.builder_sha256()}
         fingerprint = self.bundle_ledger.unit_fingerprint([record['sha256'] for record in inputs], config)
-        if self.bundle_ledger.is_sealed(bundle_key, fingerprint):
+        return BundleWork(tables, routes_by_table, inventory, coverage_rows, converter_reasons, inputs, config, fingerprint)
+
+    def is_bundle_sealed(self, bundle_key, actor_rows):
+        work = self.bundle_work(bundle_key, actor_rows, self.sealed_sound_outcome)
+        return work is not None and self.bundle_ledger.is_sealed(bundle_key, work.fingerprint)
+
+    def convert_bundle(self, bundle_key, actor_rows, catalog_capacity):
+        work = self.bundle_work(bundle_key, actor_rows, self.sound_unit)
+        if self.bundle_ledger.is_sealed(bundle_key, work.fingerprint):
             return self.sealed_bundle_outcome(bundle_key, catalog_capacity, True)
-        step_directory = self.bundle_ledger.begin(bundle_key, fingerprint)
+        step_directory = self.bundle_ledger.begin(bundle_key, work.fingerprint)
         evidence = lane_relative(self.lane_folder, step_directory / RECEIPT_RECORD_NAME)
-        manifest, outputs, refusal = self.built_bundle(bundle_key, actor_rows, routes_by_table, inventory, coverage_rows, step_directory)
-        identities = {table: self.table(table)['identity'] for table in tables}
-        gap_rows = actor_sound_gap_rows(bundle_key, actor_rows, routes_by_table, manifest, identities, evidence, converter_reasons)
+        manifest, outputs, refusal = self.built_bundle(bundle_key, actor_rows, work.routes_by_table, work.inventory, work.coverage_rows, step_directory)
+        identities = {table: self.table(table)['identity'] for table in work.tables}
+        gap_rows = actor_sound_gap_rows(bundle_key, actor_rows, work.routes_by_table, manifest, identities, evidence, work.converter_reasons)
         if refusal is not None:
-            gap_rows.append(actor_sound_gap_row(bundle_key, refusal, dict(identities[tables[0]]), evidence))
-        (step_directory / 'unresolved-references.json').write_bytes(canonical_json_bytes(unresolved_reference_entries(manifest, converter_reasons)))
+            gap_rows.append(actor_sound_gap_row(bundle_key, refusal, dict(identities[work.tables[0]]), evidence))
+        (step_directory / 'unresolved-references.json').write_bytes(canonical_json_bytes(unresolved_reference_entries(manifest, work.converter_reasons)))
         outputs.append(file_output_record(self.lane_folder, step_directory / 'unresolved-references.json'))
-        self.bundle_ledger.seal(bundle_key, fingerprint, {'config': config, 'inputs': inputs, 'outputs': outputs, 'gapRows': gap_rows})
+        self.bundle_ledger.seal(bundle_key, work.fingerprint, {'config': work.config, 'inputs': work.inputs, 'outputs': outputs, 'gapRows': gap_rows})
         return self.sealed_bundle_outcome(bundle_key, catalog_capacity, False)
 
     def builder_sha256(self):

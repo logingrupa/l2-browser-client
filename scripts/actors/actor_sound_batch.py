@@ -3,8 +3,7 @@ import json
 import re
 from pathlib import Path
 
-from actors.actor_sound_bindings import (ACTOR_SOUND_STEP, NO_EXACT_SKILL_SOUND_ROW_REASON, actor_sound_reference_counts,
-                                         skill_actor_row)
+from actors.actor_sound_bindings import NO_EXACT_SKILL_SOUND_ROW_REASON, actor_sound_reference_counts, skill_actor_row
 from actors.actor_sound_conversion import ActorSoundConversionRun, combat_audio_manifest_outputs, no_sound_row_bundle_outcome
 from actors.combat_role_routes import (COMBAT_ROLE_ROUTE_PROOF, bind_combat_role_routes, combat_route_config_manifest)
 from actors.skill_binding_table import DecodedSkillTables
@@ -12,7 +11,6 @@ from native_assets_lib.footstep_config import decode_config
 from native_assets_lib.sha256_identity import sha256_hex_digest
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import read_store_catalog, replace_file
-from native_store.unit_ledger import RECEIPT_RECORD_NAME, SEAL_RECORD_NAME
 from reference_client_guard import ReferenceClientLockError
 
 ACTOR_SOUND_CENSUS_RELATIVE_PATH = 'docs/parts/audio/actor-sound-census.json'
@@ -73,23 +71,27 @@ class ActorSoundBundles:
     def capacity(self):
         return max(1, len(self.keys))
 
-    def convert(self, run, bundle_key):
+    def actor_rows(self, run, bundle_key):
         if bundle_key in self.npc_profiles:
-            return run.convert_bundle(bundle_key, [npc_actor_row(self.npc_profiles[bundle_key])], self.capacity())
+            return [npc_actor_row(self.npc_profiles[bundle_key])]
         if bundle_key not in self.skill_keys:
             raise ValueError(f'{bundle_key} is not an actor bundle of the actors lane catalog')
         if self.skill_tables is None:
             self.skill_tables = DecodedSkillTables(run.project_root, run.client_access.root, run.decode_table)
         binding = next(row for row in self.skill_tables.binding_rows if row['key'] == bundle_key)
         actor_row = skill_actor_row(binding, self.skill_tables.sound_rows)
-        if actor_row is None:
+        return None if actor_row is None else [actor_row]
+
+    def is_sealed(self, run, bundle_key):
+        actor_rows = self.actor_rows(run, bundle_key)
+        return actor_rows is not None and run.is_bundle_sealed(bundle_key, actor_rows)
+
+    def convert(self, run, bundle_key):
+        actor_rows = self.actor_rows(run, bundle_key)
+        if actor_rows is None:
             identity = {'path': self.skill_tables.sound_table['source'], 'sha256': self.skill_tables.sound_table['sourceSha256']}
             return no_sound_row_bundle_outcome(run, bundle_key, NO_EXACT_SKILL_SOUND_ROW_REASON, identity)
-        return run.convert_bundle(bundle_key, [actor_row], self.capacity())
-
-
-def is_bundle_sealed(run, bundle_key):
-    return (run.bundle_ledger.unit_step_directory(bundle_key) / SEAL_RECORD_NAME).is_file()
+        return run.convert_bundle(bundle_key, actor_rows, self.capacity())
 
 
 def run_actor_sound_slice(run, bundles, limit, preflight):
@@ -97,7 +99,7 @@ def run_actor_sound_slice(run, bundles, limit, preflight):
     for bundle_key in bundles.keys:
         if len(outcomes) == limit:
             break
-        if is_bundle_sealed(run, bundle_key):
+        if bundles.is_sealed(run, bundle_key):
             continue
         preflight()
         outcomes.append(bundles.convert(run, bundle_key))
@@ -136,13 +138,6 @@ def route_census_entries(binding):
     return entries
 
 
-def sealed_bundle_receipts(run):
-    receipts = []
-    for seal in sorted(run.bundle_ledger.work_root.glob(f'*/{ACTOR_SOUND_STEP}/{SEAL_RECORD_NAME}')):
-        receipts.append(json.loads((seal.parent / RECEIPT_RECORD_NAME).read_bytes()))
-    return receipts
-
-
 def summed_counts(counts):
     total = {'exactIdentity': 0, 'uniquePackageLeafCandidate': 0, 'unresolved': 0, 'empty': 0}
     for count in counts:
@@ -155,7 +150,7 @@ def actor_sound_census(run, bundles):
     routes = {table: route_census_entries(run.routes(table)) for table in ROUTE_CENSUS_TABLES}
     routes['alaudio'] = route_census_entries(config_routes(run))
     per_table, sealed = {}, []
-    for receipt in sealed_bundle_receipts(run):
+    for receipt in run.bundle_ledger.sealed_receipts():
         sealed.append(receipt['unitKey'])
         manifests = combat_audio_manifest_outputs(receipt)
         manifest = json.loads(run.bundle_ledger.lane_output_path(manifests[0]['path']).read_bytes()) if manifests else None

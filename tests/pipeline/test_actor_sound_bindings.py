@@ -7,7 +7,6 @@ import sys
 import tempfile
 from types import SimpleNamespace
 import unittest
-import unittest.mock
 import wave
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -238,8 +237,11 @@ class ActorSoundSkillAndCharacterTests(unittest.TestCase):
 
 
 class FakeSoundBundles:
-    def __init__(self, keys):
-        self.keys, self.converted = keys, []
+    def __init__(self, keys, sealed_keys):
+        self.keys, self.sealed_keys, self.converted = keys, sealed_keys, []
+
+    def is_sealed(self, run, bundle_key):
+        return bundle_key in self.sealed_keys
 
     def convert(self, run, bundle_key):
         self.converted.append(bundle_key)
@@ -252,11 +254,11 @@ class ActorSoundBatchSliceTests(unittest.TestCase):
         self.assertEqual(sorted(keys, key=bundle_sort_key), ['character:2', 'npc:9', 'npc:100', 'npc:20001', 'skill:3:2', 'skill:3:10'])
 
     def test_a_slice_skips_sealed_bundles_converts_up_to_the_limit_and_runs_the_preflight_before_each(self):
-        bundles, preflights = FakeSoundBundles(['npc:1', 'npc:2', 'npc:3', 'npc:4']), []
-        with unittest.mock.patch('actors.actor_sound_batch.is_bundle_sealed', lambda run, key: key in ('npc:1', 'npc:3')):
-            outcomes = run_actor_sound_slice(None, bundles, 1, lambda: preflights.append(len(bundles.converted)))
-            self.assertEqual([outcome['key'] for outcome in outcomes], ['npc:2'])
-            outcomes = run_actor_sound_slice(None, FakeSoundBundles(bundles.keys), 5, lambda: None)
+        sealed_keys = ('npc:1', 'npc:3')
+        bundles, preflights = FakeSoundBundles(['npc:1', 'npc:2', 'npc:3', 'npc:4'], sealed_keys), []
+        outcomes = run_actor_sound_slice(None, bundles, 1, lambda: preflights.append(len(bundles.converted)))
+        self.assertEqual([outcome['key'] for outcome in outcomes], ['npc:2'])
+        outcomes = run_actor_sound_slice(None, FakeSoundBundles(bundles.keys, sealed_keys), 5, lambda: None)
         self.assertEqual([outcome['key'] for outcome in outcomes], ['npc:2', 'npc:4'])
         self.assertEqual(preflights, [0])
 
