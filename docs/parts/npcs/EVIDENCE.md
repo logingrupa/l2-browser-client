@@ -50,6 +50,36 @@ A second conversion run skips both sealed units and rewrites no lane-store byte 
 - Bounds: 64 bundles of 256 profiles (`maximumNpcProfileBundles`, `maximumProfilesPerBundle`), equal to `MAXIMUM_NPC_PROFILE_BUNDLES` and `MAXIMUM_PROFILES_PER_BUNDLE` in `scripts/native_actor_profiles.py`. Their product, 16,384, covers the 6,519 npcgrp rows of `actor-unit-census.json`. These are input-size guards, not Lineage II values. `scripts/stage_native_runtime.py` keeps its 128-profile check.
 - The red baseline is closed: both `nativeNpcProfiles` snapshot cases pass. `pnpm test:unit` on 2026-11-09 04:50 Riga: 142 files passed, 5 skipped; 1,861 tests passed, 82 skipped, 0 failed.
 
+### NPC batch on the unit ledger (plan 02-34)
+
+Resume command, outside a machine window (later runs continue with the same command):
+
+```
+node scripts/check-machine-schedule.mjs && python -B scripts/actors/convert_actors.py --client E:/Lineage2-client --batch npcs --limit 20
+```
+
+`--print-batch-plan` prints the unit order and pack layout and writes nothing. `--limit 0` is refused; an exhausted batch converts zero units and exits 0.
+
+- Order: convertible `npc-model` units of `animations/LineageMonsters.ukx` first, then the other skeletal-gate-accepted packages by path, then unit key (code-point order); rows of a unit in npc id order. The npcIds of `recipes/native-npc-profiles.json` (21622) are left out, and a unit holding only such rows is not scheduled.
+- Requests: a multi-texture unit binds `texture_name[i]` to material slot i with `sourceBinding.slotBindings` (02-32) from the lowest npcgrp row index of the unit, and overrides only non-empty slots. The index-to-slot rule is unverified presentation (request limitations).
+- Packs: rows are packed in batch row order, at most 256 profiles, and the union class closure (class plus superclass chain read from export tables) stays strictly below `native_effect_bundle.MAX_CLASSES` (96). Pack id `interlude:npc-profiles:pack-<16 hex of sha256 over the sorted npc ids>`. A pack's profile step runs once every model unit in it is sealed, and its bundle holds only rows whose model passed. A profile with an unresolved actor default is left out (`excludedProfiles`) and keeps an `actor-default-unresolved:<field>` gap row.
+- Rows the profile builder would refuse are gap rows before packs are cut, so one row never refuses a pack (OVERNIGHT-DECISIONS rows 366, 367): the batch plan on 2026-11-09 07:51 Riga lists 1,907 rows `converter-refused:Actor class requires an exact qualified export identity` (195 classes; `LineageNPC.*` and `LineageNpcEV.*` rows resolve to the lowercase package files `lineagenpc.u` and `lineagenpcev.u`, and two `LineageMonster` classes differ in case), 36 rows `converter-refused:NPC mesh requires an exact qualified skeletal mesh export` and 48 rows `npc-name-empty`. 5,083 scheduled rows, 429 units, 13 packs, largest closure 53 classes.
+
+Slices (DATABASE-PC, BelowNormal, free bytes on C: from `df`):
+
+| Slice | Riga start to end | Units converted | New model gaps | Packs sealed with a bundle | Free bytes before, after |
+|---|---|---|---|---|---|
+| first pack, `--limit 22` | 06:56 to 07:04 | 22 | 2 | 1 (pack of a later cut) | 14,163,632,128, 13,832,679,424 |
+| 1 | 07:08 to 07:15 | 20 | 2 | 1 rebuilt (tool pins changed) | 13,822,578,688, 13,571,313,664 |
+| 2 | 07:15 to 07:24 | 20 | 0 | 1, 1 whole-pack refusal | 13,571,309,568, 13,136,871,424 |
+| 3 | 07:24 to 07:29 | 20 | 3 | 0, 1 whole-pack refusal | 13,136,871,424, 12,942,168,064 |
+| 4 (after the row 366 fix) | 07:32 to 07:48 | 20 | 0 | 3, 2 whole-pack refusals | 12,941,553,664, 12,516,556,800 |
+| 5 (after the row 367 fix) | 07:52 to 08:12 | 20 | 3 | 5 | 12,488,515,584, 12,023,832,576 |
+
+The three-slice run size (row 358) was exceeded by slices 4 and 5 to apply the two fixes; packs of earlier cuts left the lane catalog. No slice converted a unit an earlier slice had sealed (122 distinct units over 122 conversions). No preflight refused.
+
+State after slice 5 (lane catalog `0d9a015a343a03a13610d22a2f0acd629031d137873d25bac1063de079506f82`, not pinned): 93 `models` records and 5 `npcProfiles` packs with 1,250 profiles: `pack-dd3dcd75b2d67a8c` 255 profiles, 34 classes; `pack-44dee04491697db4` 238, 39; `pack-5c5676fe7d7eacb0` 256, 27; `pack-ba4b801b02ae7115` 255, 32; `pack-cedf47d7edde7448` 246, 43. Model units sealed: 112 pass, 10 `converter-refused` (unique-bone mapping 5, `Native wedge has no point or influences` 2, `No diffuse material adapter for GlowModifier` 2, ambiguous influence slots 1). The 02-22 record `interlude:npc-profiles:20001` is replaced by its pack, and its model record by the reconverted archive. Every gap row in the lane gap-row files passes `validate_gap_row`; no lane profile manifest lists a shared-store npc id, and every profile carries `modelCatalogId`.
+
 ### ACT-04 typed clips, events and one play API (plan 02-36)
 
 - `parseActorClipEvents` (`src/assets/native/actorClipEvents.ts`) types the `animationEvents` list that the converter already writes into asset.json. No new decoder. Every source field is copied as is, plus the manifest ordinal: `object` becomes `notifyObject` and `function` becomes `notifyFunction`. The function stays data and is never run. A malformed value throws `ActorClipEventsError` with the ordinal and the field. An `unresolved-native-notify` type stays as it is. All 1,740 events in the 6 evented top-level packages of the served store parse.
@@ -66,8 +96,7 @@ Plan 02-21 adds a census only. It converts nothing and loads nothing. A "load" c
 - npc:20001 sandbox spawn: open. Two needs: the runtime wiring of `loadConvertedNpcModel` into `sandboxNpcAppearanceByModel` in `src/runtime/createNativeSliceRuntime.ts` (integration-owned, index rule 14), and a served catalog that holds the base records the sandbox needs (the player profile and `musveren:0`) together with the actors lane records. The harness page proves spawn by id through the same catalog index, not the sandbox step.
 - The actors lane catalog is not pinned: `write_lane_catalog.py --lane actors` and `--plan` refuse the npc profile manifest, which pins its bundle files by relative file name (`source/classes/Core.Object.bin`), and `merge_lane_store.py` refuses the same pins. Restaging profiles waits on an integration change to the pinned-file rule (Needs Human in STATE.md).
 - ACT-04 presentation: the sandbox `play-clip` command that plays a listed clip through this API (02-37) and the developer sheet clip picker that reads `actorClipListing` (02-39) are open. Nothing yet shows events in a browser.
-- 6,519 `npcgrp` rows, spawnable by NPC ID (ACT-02): 1,148 rows are pending conversion, 5,371 are census gaps (table below). npc:20001 is the only converted row.
-- `multi-slot-binding-unsupported` (341 NPC units, 3,936 rows) waits on 02-32; skeletal licensees 31 and 0 and texture licensees 23, 25, 27 and 0 wait on reader work.
+- 6,519 `npcgrp` rows, spawnable by NPC ID (ACT-02): 5,084 census rows are pending conversion, 1,435 are census gaps (table below). The NPC batch (plan 02-34) has sealed 122 of 429 model units so far; skeletal licensees 31 and 0 and texture licensees 23, 25, 27 and 0 wait on reader work.
 - chargrp hair and helmet layouts stay explicit gaps (`hair-layout-undecoded`, `helmet-layout-undecoded`) until 02-28 and 02-40 decode them.
 - 17,576 skillgrp rows have an empty description and need native skill dispatch (ACT-06).
 - Etcitem rows are not in this census; 02-26 adds their gap rows from the data lane decode.
@@ -91,7 +120,7 @@ Rules the census follows:
 - NPC units are one per exact (`mesh_name`, ordered `texture_name` list) pair, empty slots kept in place. Weapon units are one per weapongrp (`wp_mesh`, `texture`) selection. Armor units are one per (armorgrp MTX column, mesh and texture lists); the MTX columns come from the decoded schema layout.
 - Unit keys are `<kind>:<sha256>` over canonical ASCII JSON of the exact selection (`conversion_unit_key`). chargrp rows are `character:<index>`, with `character:<index>:hair` and `character:<index>:helmet` gap units. Skill roots are `skill-root:<description>`; skill sound rows are `skill-sound-row:<rowIndex>`.
 - Package names resolve by case-insensitive stem against lock-equal files: meshes against `.ukx`, textures against `.utx` and `.ukx`, skill roots against every native package suffix, sounds against `.uax`. More than one match is `package-name-ambiguous:<package>`.
-- Gap reason order for a unit: mesh package missing or ambiguous, skeletal licensee, texture package missing or ambiguous, texture licensee, then (NPC only) more than one non-empty texture.
+- Gap reason order for a unit: mesh package missing or ambiguous, skeletal licensee, texture package missing or ambiguous, texture licensee. Multi-texture NPC units are convertible since 02-32 and 02-34.
 - The skeletal gate is the `SkeletalReader` version check run on a header-only package view; the texture gate is `texture_mips.REVIEWED_VERSIONS`.
 - chargrp groups found by name: `body_mesh`, `face_mesh`, `body_texture`, `face_texture` gate the chargrp-row unit. `hair_mesh` and `hair_texture` belong to the hair gap unit and do not gate the row.
 - Duplicate skillgrp (id, level) pairs are `skill-row-ambiguous:<count>`, never merged; levels stay the decoded integers. Each skillsoundgrp row is its own unit with no level-1 or bare-name fallback.
@@ -173,7 +202,7 @@ The npcname path is the single language file the decoder resolves; 02-22 and 02-
 | chargrp-hair | 0 | 15 |
 | chargrp-helmet | 0 | 15 |
 | chargrp-row | 11 | 4 |
-| npc-model | 88 | 545 |
+| npc-model | 429 | 204 |
 | skill-root | 245 | 0 |
 | skill-sound-row | 1398 | 0 |
 | weapon-mesh | 523 | 0 |
@@ -188,7 +217,6 @@ The npcname path is the single language file the decoder resolves; 02-22 and 02-
 | chargrp-helmet | `helmet-layout-undecoded` | 15 |
 | chargrp-row | `no-mesh-in-row` | 1 |
 | chargrp-row | `texture-licensee-unsupported:123/27` | 3 |
-| npc-model | `multi-slot-binding-unsupported` | 341 |
 | npc-model | `skeletal-licensee-unsupported:123/0` | 16 |
 | npc-model | `skeletal-licensee-unsupported:123/31` | 78 |
 | npc-model | `texture-licensee-unsupported:123/0` | 3 |
@@ -201,7 +229,7 @@ The npcname path is the single language file the decoder resolves; 02-22 and 02-
 | Part | Pending | Gap |
 |---|---|---|
 | items | 1331 | 996 |
-| npcs | 1148 | 5371 |
+| npcs | 5084 | 1435 |
 | player-characters | 11 | 4 |
 | skills-effects | 12236 | 17576 |
 
@@ -214,8 +242,7 @@ The npcname path is the single language file the decoder resolves; 02-22 and 02-
 | item | `no-mesh-in-row` | 307 |
 | item | `skeletal-licensee-unsupported:123/31` | 121 |
 | item | `texture-licensee-unsupported:123/27` | 568 |
-| npc | `conversion-pending` | 1148 |
-| npc | `multi-slot-binding-unsupported` | 3936 |
+| npc | `conversion-pending` | 5084 |
 | npc | `no-mesh-in-row` | 94 |
 | npc | `skeletal-licensee-unsupported:123/0` | 246 |
 | npc | `skeletal-licensee-unsupported:123/31` | 239 |
