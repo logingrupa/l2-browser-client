@@ -265,9 +265,9 @@ class ConvertTileCommandTests(SyntheticTileTestCase):
 
     def test_the_command_records_the_step_row_and_exits_one_on_a_failed_tile(self):
         self.write_client(two_actors_sharing_one_mesh(), licensee=25)
-        exit_code, printed_row = self.run_command(['--client', str(self.client), '--map', TILE_ID, '--step', 'raw'])
-        self.assertEqual((exit_code, printed_row['status']), (1, 'failed'))
-        self.assertEqual(read_gap_rows(self.project_root, 'world'), [printed_row])
+        exit_code, printed_rows = self.run_command(['--client', str(self.client), '--map', TILE_ID, '--step', 'raw'])
+        self.assertEqual((exit_code, [row['status'] for row in printed_rows]), (1, ['failed']))
+        self.assertEqual(read_gap_rows(self.project_root, 'world'), printed_rows)
 
     def test_the_command_refuses_a_map_argument_that_is_not_a_tile_id(self):
         self.write_client(two_actors_sharing_one_mesh())

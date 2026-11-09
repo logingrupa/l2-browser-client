@@ -100,11 +100,11 @@ class GapReasonListTests(unittest.TestCase):
         path.write_text(json.dumps(document), encoding='utf-8')
 
     def test_a_lane_file_extends_the_seed_list(self):
-        self.write_lane_reasons('world', {'schemaVersion': 1, 'listVersion': 2, 'reasons': ['player-start-missing']})
+        self.write_lane_reasons('world', {'schemaVersion': 1, 'listVersion': 2, 'reasons': ['synthetic-lane-only-reason']})
         patterns = load_gap_reason_patterns(repository_root=self.repository)
-        validate_gap_row(gap_row(reason='player-start-missing'), patterns)
+        validate_gap_row(gap_row(reason='synthetic-lane-only-reason'), patterns)
         with self.assertRaises(GapRowError):
-            validate_gap_row(gap_row(reason='player-start-missing'))
+            validate_gap_row(gap_row(reason='synthetic-lane-only-reason'))
         self.assertEqual(gap_reason_list_versions(repository_root=self.repository), {'seed': 3, 'world': 2})
 
     def test_a_pattern_listed_in_two_files_is_refused(self):

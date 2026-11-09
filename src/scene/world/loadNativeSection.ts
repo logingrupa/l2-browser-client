@@ -13,6 +13,8 @@ import { applyNativeTerrainPreview, type NativeTerrainPreview } from "./nativeTe
 import { attachNativeBspSupport } from "./nativeBspSupport";
 import { nativeBspResources } from "./nativeBspResources";
 import { parseNativeTerrainPatches, validateSourceTerrainPatch, type NativeTerrainPatch } from "./nativeTerrainPatch";
+import { selectedNativeTileIdentity } from "./selectedNativeTile";
+import type { NativeTileSectionView } from "./loadNativeTileChunks";
 
 interface Resource { file: string; sha256: string; bytes: number; }
 interface Model { id: string; sourceObject: string; model: Resource; archive: Resource; }
@@ -42,14 +44,14 @@ export interface NativeSectionManifest {
 interface SectionRecord { id: string; manifest: string; manifestSha256: string; }
 interface Instance { source: Placement; root: TransformNode; copy: InstantiatedEntries; }
 export interface NativeSection {
-  readonly manifest: NativeSectionManifest;
+  readonly manifest: NativeSectionManifest | NativeTileSectionView;
   readonly manifestSha256: string;
   readonly terrainMeshes: readonly AbstractMesh[];
   readonly supportMeshes?: readonly AbstractMesh[];
   readonly minimum: Vector3;
   readonly maximum: Vector3;
   readonly spawnCandidate: Vector3 | null;
-  inspection(): ReturnType<typeof inspect>;
+  inspection(): NativeWorldSceneInspection;
   setTerrainPreview(enabled: boolean): void;
   dispose(): void;
 }
@@ -155,7 +157,7 @@ async function stagedSection(signal: AbortSignal, identity: string): Promise<{ r
   return found ? { record: found, catalog } : null;
 }
 
-async function verifiedBytes(url: string, hash: string, signal: AbortSignal, length?: number): Promise<Uint8Array<ArrayBuffer>> {
+export async function fetchVerifiedNativeResource(url: string, hash: string, signal: AbortSignal, length?: number): Promise<Uint8Array<ArrayBuffer>> {
   const response = await fetch(nativeResourceUrl(url), { signal });
   if (!response.ok) throw new Error(`Native section resource returned HTTP ${response.status}: ${url}`);
   const buffer = await response.arrayBuffer();
@@ -180,7 +182,7 @@ export function validateSectionGlb(bytes: Uint8Array<ArrayBuffer>): Record<strin
   return document;
 }
 
-function bounds(meshes: readonly AbstractMesh[]) {
+export function nativeMeshBounds(meshes: readonly AbstractMesh[]) {
   const minimum = new Vector3(Infinity, Infinity, Infinity), maximum = new Vector3(-Infinity, -Infinity, -Infinity);
   for (const mesh of meshes) {
     mesh.computeWorldMatrix(true);
@@ -190,23 +192,47 @@ function bounds(meshes: readonly AbstractMesh[]) {
   if (![...minimum.asArray(), ...maximum.asArray()].every(Number.isFinite)) throw new Error("Native section has no finite geometry bounds.");
   return { minimum, maximum };
 }
-function inspect(terrain: readonly AbstractMesh[], instances: readonly Instance[], modelCount: number, disposed: boolean,
-  preview: NativeTerrainPreview | null, previewEnabled: boolean, materialFailure: string | null, unsupported: readonly UnsupportedRuntimeMaterial[], bsp: readonly AbstractMesh[] = []) {
+export interface NativeWorldSceneInspectionInput {
+  readonly terrainMeshes: readonly AbstractMesh[];
+  readonly instances: readonly Instance[];
+  readonly modelCount: number;
+  readonly disposed: boolean;
+  readonly preview: NativeTerrainPreview | null;
+  readonly previewEnabled: boolean;
+  readonly materialFailure: string | null;
+  readonly unsupportedRuntimeMaterials: readonly UnsupportedRuntimeMaterial[];
+  readonly bspMeshes: readonly AbstractMesh[];
+}
+
+export function inspectNativeWorldScene(input: NativeWorldSceneInspectionInput) {
+  const { terrainMeshes: terrain, instances, modelCount, disposed, preview, previewEnabled, materialFailure, bspMeshes: bsp } = input;
   const meshes = [...terrain, ...bsp, ...instances.flatMap(instance => instance.root.getChildMeshes().filter(mesh => mesh.getTotalVertices() > 0))];
   const textures = new Set(meshes.flatMap(mesh => mesh.material?.getActiveTextures() ?? []));
   return {
     disposed, modelCount, placementCount: instances.length, terrainTriangles: terrain.reduce((sum, mesh) => sum + mesh.getTotalIndices()/3, 0),
-    terrainBounds: disposed ? null : (() => { const value = bounds(terrain); return { minimum: value.minimum.asArray(), maximum: value.maximum.asArray() }; })(),
+    terrainBounds: disposed ? null : (() => { const value = nativeMeshBounds(terrain); return { minimum: value.minimum.asArray(), maximum: value.maximum.asArray() }; })(),
     placements: instances.map(instance => ({ id: instance.source.id, sourceMesh: instance.source.sourceMesh, modelId: instance.source.modelId,
       sourceMatrix: [...instance.source.matrix], worldMatrix: [...instance.root.getWorldMatrix().asArray()],
       meshes: instance.root.getChildMeshes().filter(mesh => mesh.getTotalVertices() > 0).map(mesh => ({ name: mesh.name, material: mesh.material?.name ?? null })) })),
-    finiteBounds: disposed ? false : meshes.every(mesh => { const value = bounds([mesh]); return [...value.minimum.asArray(), ...value.maximum.asArray()].every(Number.isFinite); }),
+    finiteBounds: disposed ? false : meshes.every(mesh => { const value = nativeMeshBounds([mesh]); return [...value.minimum.asArray(), ...value.maximum.asArray()].every(Number.isFinite); }),
     textureCount: textures.size, texturesReady: [...textures].every(texture => texture.isReady()),
     collisionVerified: false, terrainMaterial: preview && previewEnabled ? preview.status : "neutral-inspection", visualParity: "unverified",
     materialFailure, materialPreviewDetails: preview?.details ?? [],
-    unsupportedRuntimeMaterials: unsupported,
+    unsupportedRuntimeMaterials: input.unsupportedRuntimeMaterials,
     bspMeshes: bsp.length, bspTriangles: bsp.reduce((sum, mesh) => sum + mesh.getTotalIndices() / 3, 0),
   };
+}
+
+export type NativeWorldSceneInspection = ReturnType<typeof inspectNativeWorldScene> & {
+  readonly terrainChunks?: NativeTileSectionView["terrainChunks"];
+};
+
+export async function loadNativeGlbContainer(scene: Scene, url: string, bytes: Uint8Array<ArrayBuffer>): Promise<AssetContainer> {
+  const document = validateSectionGlb(bytes);
+  const container = await LoadAssetContainerAsync(bytes, scene, { pluginExtension: ".glb", rootUrl: url.slice(0, url.lastIndexOf("/")+1),
+    name: url.split("/").at(-1) ?? "section.glb", pluginOptions: { gltf: { animationStartMode: GLTFLoaderAnimationStartMode.NONE } } });
+  bindMeshExtrasByGltfPrimitivePointer(container, document);
+  return container;
 }
 
 function bindMeshExtrasByGltfPrimitivePointer(container: AssetContainer, document: Record<string, unknown>): void {
@@ -231,6 +257,11 @@ function disposeSceneNodesCreatedAfter(scene: Scene, existingNodes: ReadonlySet<
 export async function loadNativeSection(scene: Scene, signal: AbortSignal, identity = "map-20-20-section"): Promise<NativeSection | null> {
   signal.throwIfAborted();
   if (scene.isDisposed || !scene.useRightHandedSystem) throw new Error("Native section requires a live right-handed scene.");
+  const selectedTileId = selectedNativeTileIdentity(globalThis.location);
+  if (selectedTileId !== null) {
+    const { loadNativeTileChunks } = await import("./loadNativeTileChunks");
+    return loadNativeTileChunks(scene, signal, selectedTileId);
+  }
   const lifetime = new AbortController(), containers: AssetContainer[] = [], instances: Instance[] = [];
   let preview: NativeTerrainPreview | null = null, previewEnabled = true, materialFailure: string | null = null;
   let disposed = false;
@@ -247,19 +278,15 @@ export async function loadNativeSection(scene: Scene, signal: AbortSignal, ident
   const observer = scene.onDisposeObservable.addOnce(dispose);
   signal.addEventListener("abort", dispose, { once: true });
   async function load(url: string, descriptor: Resource) {
-    const bytes = await verifiedBytes(url, descriptor.sha256, lifetime.signal, descriptor.bytes);
-    const document = validateSectionGlb(bytes);
-    const container = await LoadAssetContainerAsync(bytes, scene, { pluginExtension: ".glb", rootUrl: url.slice(0, url.lastIndexOf("/")+1),
-      name: url.split("/").at(-1) ?? "section.glb", pluginOptions: { gltf: { animationStartMode: GLTFLoaderAnimationStartMode.NONE } } });
+    const container = await loadNativeGlbContainer(scene, url, await fetchVerifiedNativeResource(url, descriptor.sha256, lifetime.signal, descriptor.bytes));
     if (disposed || scene.isDisposed) { container.dispose(); throw new Error("Native section was disposed during loading."); }
-    bindMeshExtrasByGltfPrimitivePointer(container, document);
     containers.push(container); return container;
   }
   try {
     const staged = await stagedSection(lifetime.signal, identity);
     if (!staged) { dispose(); return null; }
     const { record, catalog } = staged;
-    const manifest = parseNativeSection(JSON.parse(new TextDecoder().decode(await verifiedBytes(record.manifest, record.manifestSha256, lifetime.signal))));
+    const manifest = parseNativeSection(JSON.parse(new TextDecoder().decode(await fetchVerifiedNativeResource(record.manifest, record.manifestSha256, lifetime.signal))));
     const base = `/l2/maps/${record.manifestSha256}/`;
     const terrain = await load(`${base}map-section/${manifest.terrain.file}`, manifest.terrain);
     const terrainContainers = [terrain];
@@ -314,11 +341,12 @@ export async function loadNativeSection(scene: Scene, signal: AbortSignal, ident
     for (const container of terrainContainers) container.addAllToScene();
     support = attachNativeBspSupport(manifest, new Map(instances.map(instance => [instance.source.id, instance.root])), bspMeshes);
     const all = [...terrainMeshes, ...bspMeshes, ...instances.flatMap(instance => instance.root.getChildMeshes().filter(mesh => mesh.getTotalVertices() > 0))];
-    const extent = bounds(all);
+    const extent = nativeMeshBounds(all);
     lifetime.signal.throwIfAborted();
     return { manifest, manifestSha256: record.manifestSha256, terrainMeshes, supportMeshes: support.meshes, ...extent,
       spawnCandidate: manifest.surfaceSpawnCandidate ? Vector3.FromArray(manifest.surfaceSpawnCandidate.gltfGroundPosition) : null,
-      inspection: () => inspect(terrainMeshes, instances, templates.size, disposed, preview, previewEnabled, materialFailure, manifest.unsupportedRuntimeMaterials ?? [], bspMeshes),
+      inspection: () => inspectNativeWorldScene({ terrainMeshes, instances, modelCount: templates.size, disposed, preview, previewEnabled, materialFailure,
+        unsupportedRuntimeMaterials: manifest.unsupportedRuntimeMaterials ?? [], bspMeshes }),
       setTerrainPreview(enabled) { previewEnabled = enabled; preview?.setEnabled(enabled); }, dispose };
   } catch (error) { dispose(); throw error; }
 }

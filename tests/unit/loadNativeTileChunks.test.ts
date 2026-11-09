@@ -1,0 +1,111 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
+import { Scene } from "@babylonjs/core/scene";
+import { AssetContainer } from "@babylonjs/core/assetContainer";
+import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
+import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
+import { loadNativeSection, type NativeSection } from "../../src/scene/world/loadNativeSection";
+import { loadNativeTileChunks, type NativeTileSectionView } from "../../src/scene/world/loadNativeTileChunks";
+import { decodeJsonDocument, fixtureTileId, jsonBytes, readFixtureTileFiles, sha256Hex } from "../support/nativeTileFixtureStore";
+
+vi.mock("@babylonjs/core/Loading/sceneLoader", () => ({ LoadAssetContainerAsync: vi.fn() }));
+
+type Document = Record<string, unknown>;
+
+function glb(document: object): Uint8Array<ArrayBuffer> {
+  const text = new TextEncoder().encode(JSON.stringify(document));
+  const size = (text.byteLength + 3) & ~3, bytes = new Uint8Array(20 + size), view = new DataView(bytes.buffer);
+  view.setUint32(0, 0x46546c67, true); view.setUint32(4, 2, true); view.setUint32(8, bytes.length, true);
+  view.setUint32(12, size, true); view.setUint32(16, 0x4e4f534a, true);
+  bytes.fill(32, 20); bytes.set(text, 20); return bytes;
+}
+
+function tileStore(options: { secondChunkTerrain: "loaded" | "hidden" } = { secondChunkTerrain: "loaded" }) {
+  const fixture = readFixtureTileFiles();
+  const secondTerrainBytes = glb({ asset: { version: "2.0" }, extras: { fixture: "second chunk terrain" } });
+  const secondTerrainSha256 = sha256Hex(secondTerrainBytes);
+  const secondChunk = decodeJsonDocument(fixture.chunk.bytes);
+  secondChunk.chunkId = "chunk-0-1";
+  secondChunk.sectorRange = { firstColumn: 0, lastColumn: 0, firstRow: 4, lastRow: 4 };
+  if (options.secondChunkTerrain === "hidden") {
+    secondChunk.terrain = null;
+    const pending = (secondChunk.gaps as Document[])[0]!;
+    secondChunk.gaps = [...(secondChunk.gaps as Document[]), { ...pending, step: "terrain", status: "gap", reason: "terrain-quads-all-hidden",
+      sourceIdentity: { ...(pending.sourceIdentity as Document), object: "Fixture.TerrainInfo0.TerrainSector0" } }]
+      .sort((left, right) => String(left.step).localeCompare(String(right.step)));
+  } else {
+    secondChunk.terrain = { resource: `/l2/maps/${secondTerrainSha256}/native-tile-chunk-terrain/terrain.glb`, sha256: secondTerrainSha256,
+      maskUvRule: "extrapolated" };
+  }
+  const secondChunkBytes = jsonBytes(secondChunk), secondChunkSha256 = sha256Hex(secondChunkBytes);
+  const tile = decodeJsonDocument(fixture.tile.bytes);
+  tile.chunks = [...(tile.chunks as Document[]), { chunkId: "chunk-0-1", manifestSha256: secondChunkSha256, manifestBytes: secondChunkBytes.byteLength,
+    manifest: `/l2/maps/${secondChunkSha256}/native-tile-chunk-runtime/manifest.json` }];
+  const tileBytes = jsonBytes(tile), tileSha256 = sha256Hex(tileBytes);
+  const tilePath = `/l2/tiles/${tileSha256}/tile.json`;
+  const catalog = { schemaVersion: 1, models: [], tiles: [{ id: fixtureTileId, manifest: tilePath, manifestSha256: tileSha256, manifestBytes: tileBytes.byteLength }] };
+  const responses = new Map<string, Uint8Array<ArrayBuffer>>([
+    ["/l2/catalog.json", jsonBytes(catalog)], [tilePath, tileBytes], [fixture.chunk.path, fixture.chunk.bytes], [fixture.terrain.path, fixture.terrain.bytes],
+    [`/l2/maps/${secondChunkSha256}/native-tile-chunk-runtime/manifest.json`, secondChunkBytes],
+    [`/l2/maps/${secondTerrainSha256}/native-tile-chunk-terrain/terrain.glb`, secondTerrainBytes],
+  ]);
+  const terrainCentres = new Map([[fixture.terrain.sha256, { x: 1.28, z: 1.28 }], [secondTerrainSha256, { x: 1.28, z: 5 }]]);
+  return { fixture, tilePath, tileSha256, responses, terrainCentres, secondTerrainSha256 };
+}
+
+describe("native tile chunk loading", () => {
+  let engine: NullEngine, scene: Scene, loaded: NativeSection[];
+  beforeEach(() => {
+    engine = new NullEngine(); scene = new Scene(engine); scene.useRightHandedSystem = true; loaded = [];
+    vi.mocked(LoadAssetContainerAsync).mockReset();
+  });
+  afterEach(() => { for (const section of loaded) section.dispose(); scene.dispose(); engine.dispose(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+
+  function serve(store: ReturnType<typeof tileStore>) {
+    const fetcher = vi.fn(async (url: string) => {
+      const value = store.responses.get(url);
+      return new Response(value?.slice().buffer ?? "missing", { status: value ? 200 : 404 });
+    });
+    vi.stubGlobal("fetch", fetcher);
+    vi.mocked(LoadAssetContainerAsync).mockImplementation(async (bytes) => {
+      const centre = store.terrainCentres.get(sha256Hex(bytes as Uint8Array))!;
+      const container = new AssetContainer(scene), mesh = MeshBuilder.CreateBox(`terrain ${centre.z}`, { width: 2.56, height: 0.1, depth: 2.56 }, scene);
+      mesh.position.set(centre.x, 0, centre.z); mesh.metadata = { gltf: { extras: { nativeObject: "Fixture.TerrainInfo0" } } };
+      container.meshes.push(mesh); container.removeAllFromScene(); return container;
+    });
+    return fetcher;
+  }
+
+  async function load(tileId = fixtureTileId) {
+    const section = await loadNativeTileChunks(scene, new AbortController().signal, tileId);
+    if (section) loaded.push(section);
+    return section;
+  }
+
+  it("loads every chunk terrain in manifest order and spawns at the anchor in glTF axes", async () => {
+    const store = tileStore(); serve(store);
+    const section = (await load())!;
+    const view = section.manifest as NativeTileSectionView;
+    expect(view).toMatchObject({ kind: "native-tile-runtime", tileId: fixtureTileId, models: [], placements: [],
+      terrain: { file: "terrain.glb", sha256: store.fixture.terrain.sha256, bytes: store.fixture.terrain.bytes.byteLength, materialStatus: "neutral-inspection" } });
+    expect(view.terrainChunks.map(chunk => chunk.chunkId)).toEqual(["chunk-0-0", "chunk-0-1"]);
+    expect(section.manifestSha256).toBe(store.tileSha256);
+    expect(section.terrainMeshes.map(mesh => mesh.metadata.nativeTileChunk)).toEqual([
+      { tileId: fixtureTileId, chunkId: "chunk-0-0" }, { tileId: fixtureTileId, chunkId: "chunk-0-1" }]);
+    expect(section.terrainMeshes.every(mesh => mesh.metadata.worldTerrain && mesh.metadata.worldSupportsWalking && mesh.isPickable)).toBe(true);
+    expect(section.spawnCandidate!.asArray().map(value => Number(value.toFixed(6)))).toEqual([1.28, 2, 1.28]);
+    expect(section.supportMeshes).toEqual([]);
+    expect(section.inspection()).toMatchObject({ modelCount: 0, placementCount: 0, bspMeshes: 0, collisionVerified: false, terrainMaterial: "neutral-inspection" });
+    expect(view.gaps).toContain("meshes: step-pending:meshes");
+  });
+
+  it("routes loadNativeSection to the tile selected by ?map and keeps the default section without it", async () => {
+    const store = tileStore(); serve(store);
+    vi.stubGlobal("location", { search: `?map=${fixtureTileId}`, protocol: "http:" });
+    const routed = await loadNativeSection(scene, new AbortController().signal);
+    if (routed) loaded.push(routed);
+    expect(routed?.manifest.kind).toBe("native-tile-runtime");
+    vi.stubGlobal("location", { search: "", protocol: "http:" });
+    expect(await loadNativeSection(scene, new AbortController().signal)).toBeNull();
+  });
+});

@@ -1,7 +1,9 @@
 {
   "schemaVersion": 1,
-  "listVersion": 1,
+  "listVersion": 2,
   "reasons": [
-    "terrain-height-version-unsupported:<version>"
+    "terrain-height-version-unsupported:<version>",
+    "terrain-quads-all-hidden",
+    "player-start-missing"
   ]
 }

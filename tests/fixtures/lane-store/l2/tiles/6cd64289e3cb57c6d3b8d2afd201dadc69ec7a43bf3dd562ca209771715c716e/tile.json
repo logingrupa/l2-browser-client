@@ -1,0 +1,135 @@
+{
+  "anchor": {
+    "location": [
+      128.0,
+      128.0,
+      200.0
+    ],
+    "playerStart": "Fixture.PlayerStart0"
+  },
+  "chunks": [
+    {
+      "chunkId": "chunk-0-0",
+      "manifest": "/l2/maps/5fe0af46259ebac9c28952c86190bba1e8c0bf36c6f5be62a4f2163ef83eaf38/native-tile-chunk-runtime/manifest.json",
+      "manifestBytes": 2032,
+      "manifestSha256": "5fe0af46259ebac9c28952c86190bba1e8c0bf36c6f5be62a4f2163ef83eaf38"
+    }
+  ],
+  "frame": {
+    "location": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "terrainInfo": "Fixture.TerrainInfo0",
+    "terrainScale": [
+      128.0,
+      128.0,
+      76.0
+    ]
+  },
+  "gaps": [
+    {
+      "evidence": "work/tile__00_00/manifest/receipt.json",
+      "key": "tile:00_00",
+      "part": "world",
+      "reason": "step-pending:audio",
+      "sourceIdentity": {
+        "path": "maps/00_00.unr",
+        "sha256": "d561741a8a415ede80cb9ee9650b54a6468bb656aedd88456717cbcf819f76db"
+      },
+      "status": "pending",
+      "step": "audio"
+    },
+    {
+      "evidence": "work/tile__00_00/manifest/receipt.json",
+      "key": "tile:00_00",
+      "part": "world",
+      "reason": "step-pending:bsp",
+      "sourceIdentity": {
+        "path": "maps/00_00.unr",
+        "sha256": "d561741a8a415ede80cb9ee9650b54a6468bb656aedd88456717cbcf819f76db"
+      },
+      "status": "pending",
+      "step": "bsp"
+    },
+    {
+      "evidence": "work/tile__00_00/manifest/receipt.json",
+      "key": "tile:00_00",
+      "part": "world",
+      "reason": "step-pending:collision",
+      "sourceIdentity": {
+        "path": "maps/00_00.unr",
+        "sha256": "d561741a8a415ede80cb9ee9650b54a6468bb656aedd88456717cbcf819f76db"
+      },
+      "status": "pending",
+      "step": "collision"
+    },
+    {
+      "evidence": "work/tile__00_00/manifest/receipt.json",
+      "key": "tile:00_00",
+      "part": "world",
+      "reason": "step-pending:meshes",
+      "sourceIdentity": {
+        "path": "maps/00_00.unr",
+        "sha256": "d561741a8a415ede80cb9ee9650b54a6468bb656aedd88456717cbcf819f76db"
+      },
+      "status": "pending",
+      "step": "meshes"
+    },
+    {
+      "evidence": "work/tile__00_00/manifest/receipt.json",
+      "key": "tile:00_00",
+      "part": "world",
+      "reason": "step-pending:minimap",
+      "sourceIdentity": {
+        "path": "maps/00_00.unr",
+        "sha256": "d561741a8a415ede80cb9ee9650b54a6468bb656aedd88456717cbcf819f76db"
+      },
+      "status": "pending",
+      "step": "minimap"
+    },
+    {
+      "evidence": "work/tile__00_00/manifest/receipt.json",
+      "key": "tile:00_00",
+      "part": "world",
+      "reason": "step-pending:movers",
+      "sourceIdentity": {
+        "path": "maps/00_00.unr",
+        "sha256": "d561741a8a415ede80cb9ee9650b54a6468bb656aedd88456717cbcf819f76db"
+      },
+      "status": "pending",
+      "step": "movers"
+    },
+    {
+      "evidence": "work/tile__00_00/manifest/receipt.json",
+      "key": "tile:00_00",
+      "part": "world",
+      "reason": "step-pending:sky",
+      "sourceIdentity": {
+        "path": "maps/00_00.unr",
+        "sha256": "d561741a8a415ede80cb9ee9650b54a6468bb656aedd88456717cbcf819f76db"
+      },
+      "status": "pending",
+      "step": "sky"
+    },
+    {
+      "evidence": "work/tile__00_00/manifest/receipt.json",
+      "key": "tile:00_00",
+      "part": "world",
+      "reason": "step-pending:terrain-material",
+      "sourceIdentity": {
+        "path": "maps/00_00.unr",
+        "sha256": "d561741a8a415ede80cb9ee9650b54a6468bb656aedd88456717cbcf819f76db"
+      },
+      "status": "pending",
+      "step": "terrain-material"
+    }
+  ],
+  "kind": "native-tile-runtime",
+  "resources": [],
+  "schemaVersion": 1,
+  "sourceMap": "maps/00_00.unr",
+  "sourceSha256": "d561741a8a415ede80cb9ee9650b54a6468bb656aedd88456717cbcf819f76db",
+  "tileId": "00_00"
+}

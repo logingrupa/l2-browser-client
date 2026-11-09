@@ -2,6 +2,7 @@ import copy
 import hashlib
 import json
 from pathlib import Path
+from typing import NamedTuple
 
 from native_catalog.ue2 import FormatError
 from native_store.canonical_json import canonical_json_bytes
@@ -26,6 +27,22 @@ CACHED_SECTOR_BOUNDS_POLICY = 'require-xy-preserve-z-discrepancies'
 EXTRAPOLATED_MASK_UV_STATUS = 'extrapolated'
 TERRAIN_CLASS_EVIDENCE_FOLDER = 'class-defaults/terrain-class-evidence'
 TERRAIN_CHUNK_GLTF_GENERATOR = Path(__file__).name
+
+
+class TerrainChunkStepError(ValueError):
+    pass
+
+
+class TerrainUnit(NamedTuple):
+    ledger: object
+    unit_key: str
+    fingerprint: str
+    config: dict
+    inputs: list
+    chunks_fingerprint: str
+    chunk_plan: dict
+    raw_products: Path
+    terrain: dict
 
 
 def extrapolated_mask_uv_rule():
@@ -120,17 +137,32 @@ def tile_terrain_row(tile_id, source_identity, records, evidence):
     return tile_step_row(tile_id, TERRAIN_STEP_NAME, 'pass', None, source_identity, evidence)
 
 
-def run_terrain_chunk_step(project_root, client, tile_id):
-    require_tile_id(tile_id)
-    lock_record = read_tile_map_lock_record(tile_id)
-    source_identity = {'path': tile_map_path(tile_id), 'sha256': lock_record['eSha256']}
+def terrain_unit(project_root, tile_id, lock_record):
     chunks_fingerprint, raw_products, chunk_plan = sealed_chunk_plan(project_root, tile_id, lock_record)
     terrain = read_raw_terrain_record(raw_products)
     inputs = locked_input_records(sorted({tile_map_path(tile_id), terrain['height']['source']['package']}))
     ledger = terrain_step_ledger(project_root)
-    unit_key = tile_unit_key(tile_id)
     config = terrain_unit_config(chunks_fingerprint)
     fingerprint = ledger.unit_fingerprint([record['sha256'] for record in inputs], config)
+    return TerrainUnit(ledger, tile_unit_key(tile_id), fingerprint, config, inputs, chunks_fingerprint, chunk_plan, raw_products, terrain)
+
+
+def sealed_terrain_chunks(project_root, tile_id, lock_record):
+    unit = terrain_unit(project_root, tile_id, lock_record)
+    if not unit.ledger.is_sealed(unit.unit_key, unit.fingerprint):
+        raise TerrainChunkStepError(f'terrain chunks of {unit.unit_key} are not sealed; run --step terrain first')
+    products_directory = unit.ledger.unit_step_directory(unit.unit_key) / PRODUCTS_FOLDER_NAME
+    terrain_index = json.loads((products_directory / TERRAIN_CHUNK_INDEX_PRODUCT_NAME).read_text(encoding='utf-8'))
+    return unit, terrain_index['chunks'], products_directory
+
+
+def run_terrain_chunk_step(project_root, client, tile_id):
+    require_tile_id(tile_id)
+    lock_record = read_tile_map_lock_record(tile_id)
+    source_identity = {'path': tile_map_path(tile_id), 'sha256': lock_record['eSha256']}
+    unit = terrain_unit(project_root, tile_id, lock_record)
+    ledger, unit_key, fingerprint, config, inputs = unit.ledger, unit.unit_key, unit.fingerprint, unit.config, unit.inputs
+    chunk_plan, raw_products, terrain = unit.chunk_plan, unit.raw_products, unit.terrain
     step_directory = ledger.unit_step_directory(unit_key)
     receipt_evidence = (step_directory / RECEIPT_RECORD_NAME).relative_to(ledger.lane_folder).as_posix()
     index_path = step_directory / PRODUCTS_FOLDER_NAME / TERRAIN_CHUNK_INDEX_PRODUCT_NAME
