@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-58-PLAN.md
-last_updated: "2026-11-09T07:00:32.503Z"
+stopped_at: Completed 02-16-PLAN.md
+last_updated: "2026-11-09T08:16:39.083Z"
 last_activity: 2026-11-09
 last_activity_desc: Phase 02 plan 02-58 complete (D6 adapter record types and AccountSession contract commit)
-state_head: 833abfa94b9e1655162ba1a2ca093f6134ecde26
+state_head: c899e01589d37b1809cdce752f806ef21acbfbf4
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 87
-  completed_plans: 53
+  completed_plans: 54
   percent: 0
 ---
 
@@ -105,6 +105,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P26 | 27min | 3 tasks | 14 files |
 | Phase 02 P34 | 2h 6m | 3 tasks | 17 files |
 | Phase 2 P58 | 6min | 2 tasks | 12 files |
+| Phase 02 P16 | 50min | 3 tasks | 25 files |
 
 ## Accumulated Context
 
@@ -248,6 +249,8 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 2]: Plan 02-58: the sandbox adapter stores a reported position without an event, answers cannot-move with one stop and rejects a non-finite position or non-integer heading with command-rejected (OVERNIGHT-DECISIONS row 369, owner review under ARCH-02)
 - [Phase 2]: Plan 02-58: move-local origin is optional and ignored by the sandbox; move speeds is a plain number record and the pre-world states carry only their stage until the Mobius classes name the fields in Phase 4 (rows 370 and 371)
 - [Phase 2]: Plan 02-58: EntityRegistry returns for every event but update, in the contract commit (row 372)
+- [Phase 02]: 02-16: ?map=XX_YY tile route through loadNativeSection (dynamic import) returning a NativeSection tile view; sectionWindow inspection field reports the hand-chosen legacy window as unresolved; tiles spawn at the PlayerStart XY on the chunk terrain surface (OVERNIGHT-DECISIONS rows 380 to 391)
+- [Phase 02]: 02-16: tile:20_21 walk recorded failed on the world lane store (lane catalog has no player body); open follow-up for a served catalog with base and lane records; WORLD-05 and WORLD-01 stay Pending (rows 392, 396)
 
 ### Pending Todos
 
@@ -280,6 +283,7 @@ Owner decisions:
 
 Integration thread (rule 4: only the integration thread writes the main checkout's `public/l2`):
 - Needs Human (plans 01-12, 02-17 to 02-34, OVERNIGHT-DECISIONS rows 376 and 377): restage `public/l2` from the main checkout to asset.json v2, then merge each lane store with the command `python -B scripts/native_store/write_lane_catalog.py --lane <lane> --plan` prints in this worktree (data-ui, actors and world; base catalog `55c12147...`). After that restage, in one change: delete v1 acceptance in `src/assets/package/readAssetPackage.ts`, `src/effects/nativePowerStrikeSource.ts` and `scripts/native_assets_lib/asset_manifest.py` and regenerate the golden fixtures without `model-v1.l2asset` (01-12); delete the `legacy-single-mesh-match` NPC join in `src/assets/native/nativeCatalogIndex.ts` (02-05, row 326); switch the `musveren:0` reads in `src/runtime/createNativeSliceRuntime.ts` to the joined id of `nativeSliceNpcIds` (02-33).
+- Needs Human (plan 02-16): cd C:/laragon/www/l2-browser-client && python -B C:/Users/rolan/.t3/worktrees/l2-browser-client/autonomous-roadmap/scripts/native_store/merge_lane_store.py --lane-store C:/Users/rolan/.t3/worktrees/l2-browser-client/autonomous-roadmap/artifacts/lane-store/world/l2 --target public/l2 --expected-base-catalog-sha256 55c12147db306264deb2be33f6b9cd661d1376d12dc2aa6473be3700322972fe
 
 - Resolved (plan 02-57, OVERNIGHT-DECISIONS rows 193, 258 and 299): the 17 blocking runs and 956 reviewer runs in the 02-56 shared modules are signed off by independent fresh-context Claude reviewers (`tools/reference-overlap/signedOffRuns.json`, `tools/reference-overlap/reviewedRuns/`); bsp-visibility, movement and particles exit 0 with `--require-reviewed`. The owner may revoke any entry.
 - Resolved (OVERNIGHT-DECISIONS row 376): the lane-confirmation items of rows 211, 228, 292 and 293, and 301 are accepted by this integration branch.
@@ -295,6 +299,8 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 - UE2 name case (row 379): admit a unique case-insensitive class and mesh match in `scripts/native_actor_profiles.py` and `NpcSourceIdentities.row_identity_refusal`, with the Core.dll evidence, and rerun the NPC batch for the 1,943 affected rows.
 - `inventory()` E: scope (01-VERIFICATION.md): hash only lock-equal E: files in `scripts/native_catalog/cli.py`, the same scope as the reference client guard.
 - npc:20001 sandbox spawn (02-22): wire `loadConvertedNpcModel` into `sandboxNpcAppearanceByModel` in `src/runtime/createNativeSliceRuntime.ts` and prove it with a browser check on a served catalog that holds the base records and the actors lane records.
+- Lane store runtime boot (02-16, row 392): under `NATIVE_STORE_ROOT=<lane>` the served catalog holds only lane records, so the full runtime stops at "Native player body source identity mismatch". Serve the base records together with the lane records while keeping the load-check file name and the coverage join on one catalog SHA-256 (`vite/nativeStoreRootPlugin.ts`, `scripts/native_store/write_lane_catalog.py`, `build_coverage_report.py`), then rerun `NATIVE_STORE_ROOT=world pnpm test:e2e tests/browser/world-tile-walk.spec.ts` (tile:20_21 now `failed`) and the npc:20001 spawn check.
+- Tile location title (02-16): `src/runtime/createNativeSliceRuntime.ts:156` and `src/runtime/attachNativeSliceSheet.ts:85` title any section "20_20 native world section"; title a tile section by its tile id.
 
 ## Deferred Verification
 
@@ -315,6 +321,6 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 
 ## Session Continuity
 
-Last session: 2026-11-09T07:00:32.017Z
-Stopped at: Completed 02-58-PLAN.md
+Last session: 2026-11-09T08:16:38.554Z
+Stopped at: Completed 02-16-PLAN.md
 Resume file: None
