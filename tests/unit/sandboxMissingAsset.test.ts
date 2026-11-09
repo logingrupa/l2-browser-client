@@ -7,7 +7,9 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { CharacterAnimator } from "../../src/animation/CharacterAnimator";
 import type { CharacterVisual, CharacterVisualFactory } from "../../src/assets/CharacterVisual";
 import type { NativeCatalogIndex, NativeCatalogLookup } from "../../src/assets/native/nativeCatalogIndex";
+import { nativeCharacterFactory } from "../../src/assets/native/NativeCharacterVisual";
 import { EntityRegistry } from "../../src/entities/EntityRegistry";
+import { nativeNpcStateClips } from "../../src/runtime/sandboxNpcAppearances";
 import { createMissingAssetMarkerVisual, sandboxNpcVisualFactory, type SandboxAppearanceOfNpc } from "../../src/runtime/sandboxNpcVisual";
 import { createSpawnedNpcEntity } from "../../src/world/sandboxCommands";
 import type { GameWorldAdapter } from "../../src/world/GameWorldAdapter";
@@ -43,7 +45,7 @@ describe("sandbox NPC presentation through the catalog index", () => {
       const animation = new CharacterAnimator({ setState() {}, update() {}, dispose() {} });
       const visual: CharacterVisual = { root, animation, hasNativeModel: true, modelId: entity.appearanceId ?? null,
         bounds: { minimum: Vector3.Zero(), maximum: Vector3.One(), labelHeight: 1, selectionRadius: .5 },
-        ready: Promise.resolve(), groundClearance: 0, forwardDirection: null,
+        ready: Promise.resolve(), groundClearance: 0, forwardDirection: null, missingAssetDiagnostic: null,
         attachmentSnapshot: () => [], attachmentAnchor: () => null, sourceClock: () => null, setEntity() {},
         dispose() { animation.dispose(); root.dispose(); } };
       return visual;
@@ -115,6 +117,21 @@ describe("sandbox NPC presentation through the catalog index", () => {
     const row = registry.snapshot().find(entity => entity.id === "npc-21622-1");
     expect(row?.missingAssetDiagnostic).toBeNull();
     expect(row?.meshCount).toBe(1);
+    registry.dispose();
+  });
+
+  it("shows the reason on the label and in the snapshot when a converted NPC model fails to load on spawn", async () => {
+    const loadFailure = "Converted NPC model source differs from its profile mesh.";
+    const nativeFactory = nativeCharacterFactory(new Map([["native-musveren", {
+      asset: () => Promise.reject(new Error(loadFailure)), clips: nativeNpcStateClips }]]));
+    const { registry, spawnNpc, labelOf } = registryWithSandboxFactory((visualScene, entity, onAssetStatus) =>
+      entity.npcId === undefined ? nativeFactoryDouble()(visualScene, entity, onAssetStatus) : nativeFactory(visualScene, entity, onAssetStatus));
+    spawnNpc(21622, 1);
+    expect(labelOf("npc-21622-1").querySelector(".entity-diagnostic")!.hidden).toBe(true);
+    await expect(registry.whenReady()).rejects.toThrow(loadFailure);
+    expect(registry.snapshot().find(entity => entity.id === "npc-21622-1")).toMatchObject({ missingAssetDiagnostic: loadFailure, hasNativeModel: false, modelId: null });
+    const diagnostic = labelOf("npc-21622-1").querySelector(".entity-diagnostic")!;
+    expect([diagnostic.hidden, diagnostic.textContent]).toEqual([false, loadFailure]);
     registry.dispose();
   });
 

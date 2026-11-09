@@ -108,8 +108,12 @@ export class EntityRegistry {
     visual.root.position.set(entity.position.x, entity.position.y, entity.position.z);
     visual.root.rotation.y = entity.orientationRadians;
     const label = new EntityLabel(this.labels, entity, () => this.select(entity.id));
-    label.setDiagnostic(visual.missingAssetDiagnostic ?? null);
-    this.entities.set(entity.id, { entity, visual, label, interpolation: new PositionInterpolator(entity.position) });
+    label.setDiagnostic(visual.missingAssetDiagnostic);
+    const presentation: EntityPresentation = { entity, visual, label, interpolation: new PositionInterpolator(entity.position) };
+    this.entities.set(entity.id, presentation);
+    void visual.ready.catch(() => {
+      if (this.entities.get(entity.id) === presentation) label.setDiagnostic(visual.missingAssetDiagnostic);
+    });
   }
 
   private apply(event: WorldEvent): void {
@@ -178,7 +182,7 @@ export class EntityRegistry {
       actionTargetId: entity.actionTargetId ?? null,
       orientationRadians: visual.root.rotation.y, authoritativeOrientationRadians: entity.orientationRadians,
       forwardDirection: visual.forwardDirection?.asArray() ?? null,
-      hasNativeModel: visual.hasNativeModel, missingAssetDiagnostic: visual.missingAssetDiagnostic ?? null,
+      hasNativeModel: visual.hasNativeModel, missingAssetDiagnostic: visual.missingAssetDiagnostic,
       modelId: visual.modelId, playback: visual.animation.playback, animationSequence: entity.animationSequence ?? 0,
       attachments: visual.attachmentSnapshot(),
       bounds: { minimum: visual.bounds.minimum.asArray(), maximum: visual.bounds.maximum.asArray(), labelHeight: visual.bounds.labelHeight, selectionRadius: visual.bounds.selectionRadius },

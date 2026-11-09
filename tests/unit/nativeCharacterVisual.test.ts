@@ -58,6 +58,7 @@ describe("native character presentation boundary", () => {
     expect(visual.modelId).toBeNull();
     await visual.ready;
     expect([visual.hasNativeModel, visual.modelId, signals.length, signals[0]!.aborted]).toEqual([true, fixture.manifest.id, 1, false]);
+    expect(visual.missingAssetDiagnostic).toBeNull();
     visual.dispose();
     expect(signals[0]!.aborted).toBe(true);
   });
@@ -107,6 +108,7 @@ describe("native character presentation boundary", () => {
     await expect(visual.ready).rejects.toThrow("Native_Death is missing");
     expect(status).toHaveBeenCalledWith(expect.stringContaining("Native_Death is missing"));
     expect(visual.hasNativeModel).toBe(false); expect(visual.modelId).toBeNull();
+    expect(visual.missingAssetDiagnostic).toContain("Native_Death is missing");
     expect(scene.animationGroups).toHaveLength(0); expect(scene.meshes).toHaveLength(0);
     expect(scene.transformNodes).toHaveLength(0);
   });

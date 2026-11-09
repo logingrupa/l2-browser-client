@@ -35,7 +35,7 @@ describe("entity startup readiness", () => {
         const animation = new CharacterAnimator({ setState() {}, update() {}, dispose() {} });
         const visual: CharacterVisual = { root, animation, ready, hasNativeModel: true, modelId: entity.appearanceId ?? null,
           bounds: { minimum: Vector3.Zero(), maximum: Vector3.One(), labelHeight: 1, selectionRadius: .5 },
-          groundClearance: 0, forwardDirection: null,
+          groundClearance: 0, forwardDirection: null, missingAssetDiagnostic: null,
           attachmentSnapshot: () => [], attachmentAnchor: () => null, sourceClock: () => null, setEntity() {},
           dispose() { reject(new DOMException("Removed", "AbortError")); animation.dispose(); root.dispose(); } };
         loads.push({ resolve, reject, visual }); return visual;

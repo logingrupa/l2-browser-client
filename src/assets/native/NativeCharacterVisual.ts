@@ -111,7 +111,7 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
     let characterAsset: AssetPackage | undefined;
     let unpublishedDriverOwningCleanup: NativeActorDriver | undefined;
     const anchors: { id: string; handle: NativeBoneAnchor }[] = [];
-    let placement: TransformNode | undefined, initialized = false, readySettled = false;
+    let placement: TransformNode | undefined, initialized = false, readySettled = false, loadFailureDiagnostic: string | null = null;
     let resolveReady!: () => void, rejectReady!: (error: unknown) => void;
     const ready = new Promise<void>((resolve, reject) => { resolveReady = resolve; rejectReady = reject; });
     void ready.catch(() => undefined);
@@ -236,11 +236,13 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
     };
     void initialize().catch((error: unknown) => {
       if (disposed) return;
+      loadFailureDiagnostic = error instanceof Error ? error.message : "Native model could not be loaded.";
       readySettled = true; rejectReady(error);
-      status?.(error instanceof Error ? error.message : "Native model could not be loaded.");
+      status?.(loadFailureDiagnostic);
       dispose();
     });
     return { root, animation, ready, get hasNativeModel() { return initialized; }, get bounds() { return bounds; },
+      get missingAssetDiagnostic() { return loadFailureDiagnostic; },
       get modelId() { return initialized && characterAsset ? characterAsset.manifest.id : null; },
       attachmentSnapshot: () => anchors.map(({ id, handle }) => ({ id, ...handle.inspection() })),
       attachmentAnchor: id => {
