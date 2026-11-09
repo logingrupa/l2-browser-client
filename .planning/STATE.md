@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-33-PLAN.md
-last_updated: "2026-11-09T02:54:00.703Z"
+stopped_at: Completed 02-36-PLAN.md
+last_updated: "2026-11-09T03:06:11.488Z"
 last_activity: 2026-11-09
-last_activity_desc: Phase 02 plan 02-33 complete (NPC profiles join models by modelCatalogId, bounds 64 x 256, ACT-02 pending)
-state_head: 163fbd96d5816f6a91c494f4daa424479cad52b5
+last_activity_desc: Phase 02 plan 02-36 complete (typed actor clip events, clip listing and one play API, ACT-04 pending)
+state_head: 1d2ba2358113dadc8bcaf5c1a6db91e4ea8d6adf
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 87
-  completed_plans: 47
+  completed_plans: 48
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 02 (Stage A breadth) - EXECUTING
-Plan: 02-33 complete, 30 of 70 plans summarized
+Plan: 02-36 complete, 31 of 70 plans summarized
 Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-09 - Plan 02-33 complete: `joinNpcProfileToModel` resolves NPC keys by `modelCatalogId`; the legacy mesh match stays only for the shared-store record `native-npc-profiles` (npc:21622 on `musveren:0`), never with `npc-model:` candidates; bounds 64 bundles x 256 profiles in Python and TypeScript; `loadNativeActorCatalog` names no model id (`nativeSliceNpcIds` [21622]); the two red `nativeNpcProfiles` cases pass; `pnpm test:unit` 1,861 passed, 0 failed; restage handoff `Needs Human (plan 02-33)`. ACT-02 stays Pending.
+Last activity: 2026-11-09 - Plan 02-36 complete: `parseActorClipEvents` types asset.json `animationEvents` verbatim with the ordinal and guards each field (`ActorClipEventsError`); `listActorClips` joins loaded clips by exact name, orders events by normalized time then ordinal and keeps unmatched events in `eventsWithoutClip`; `playActorClip` owns the refusals; the clip hub answers `actorClipEntityIds` and `actorClipListing` (replacing `available`); `pnpm test:unit` 1,909 passed, 0 failed. ACT-04 stays Pending until 02-37 and 02-39.
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -99,6 +99,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P14 | 19min | 3 tasks | 14 files |
 | Phase 2 P28 | 14min | 3 tasks | 11 files |
 | Phase 02 P33 | 12min | 3 tasks | 19 files |
+| Phase 2 P36 | 8min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -224,6 +225,9 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 2]: 02-28: hairgrp cross-checks recorded, not resolved: 258 of 450 words are -1 against the pinned UCHAR layout, the flat ddf declares 120 CHAR fields per record; DATA-02 Complete with field meanings unverified on 4dd2 (rows 320, 321 and 323)
 - [Phase 02]: 02-33: NPC profiles join models only through joinNpcProfileToModel by modelCatalogId; legacy-single-mesh-match kept only for the shared-store record native-npc-profiles, npc-model: records never candidates, ending with the Needs Human (plan 02-05) restage (OVERNIGHT-DECISIONS rows 326, 327)
 - [Phase 02]: 02-33: NPC profile bounds 64 bundles x 256 profiles in Python and TypeScript, pinned by tests/unit/nativeNpcProfileBounds.test.ts; nativeSliceNpcIds [21622] (rows 324, 325)
+- [Phase 02]: Plan 02-36: typed clip events in src/assets/native/actorClipEvents.ts, listing and play API in src/animation/actorClipPlayback.ts (OVERNIGHT-DECISIONS row 329)
+- [Phase 02]: Plan 02-36: the clip hub answers actorClipEntityIds and actorClipListing in place of available; play delegates to playActorClip with unchanged refusal texts (row 330)
+- [Phase 02]: Plan 02-36: a malformed asset.json event fails the actor load with ActorClipEventsError; all 1,740 served-store events parse; ACT-04 stays Pending until 02-37 and 02-39 (rows 66 and 331)
 
 ### Pending Todos
 
@@ -293,7 +297,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 
 ## Session Continuity
 
-Last session: 2026-11-09T02:53:59.987Z
-Stopped at: Completed 02-33-PLAN.md
+Last session: 2026-11-09T03:06:10.598Z
+Stopped at: Completed 02-36-PLAN.md
 Resume file: None
 - Needs Human (OVERNIGHT-DECISIONS row 301): the actors lane confirms the import repoints in `scripts/prepare-native-player-aliases.py` and `scripts/test_effect_readiness.py`; the world lane points `scripts/world/copy_world07_fixtures.py` at `scripts/native_assets_lib/sha256_identity.py` and removes its pin from the owner scan in `tests/pipeline/test_converter_output_guard.py`.
