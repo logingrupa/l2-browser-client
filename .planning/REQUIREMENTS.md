@@ -65,7 +65,7 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 - [ ] **ACT-01**: All player characters from `chargrp`, every race, gender and class (row count derived from the decoded table, 15 rows on this client). Missing hair/helmet layouts are explicit gaps; no guessed hair selection.
 - [ ] **ACT-02**: NPCs and monsters from `npcgrp` (6,519 rows, about 554 meshes), spawnable by NPC ID; a mesh name alone never selects a profile (`field_stalker_m00` occurs in 22 rows).
 - [ ] **ACT-03**: Items and equipment (about 390 weapon and 1,355 armor meshes; 9,238 items) equip by item ID on any character with sockets and attachments preserved.
-- [ ] **ACT-04**: Animation clips with original names, timing and notification events travel with each actor bundle; the sandbox plays any clip.
+- [x] **ACT-04**: Animation clips with original names, timing and notification events travel with each actor bundle; the sandbox plays any clip.
 - [ ] **ACT-05**: Sounds bound per actor, animation, skill and enemy bundle (voices, combat, skill, music) with exact source identities; unresolved events stay "unresolved", never invented. Native surface/footstep rules are POL-02.
 - [ ] **ACT-06**: Skill visuals and effects (about 2,700 skills, 864 effect classes, 3,709 emitters) bound through `skillgrp`, `skillsoundgrp`, `npcgrp`; cast by skill ID and level. Emitter simulation is our own port of the UE2 emitter classes (FX-01), deterministic under a declared seed (`docs/NATIVE_PARITY.md:11`). An effect is a gap only while its emitter class, an emitter feature or an L2-specific effect handler is unported, with reason `emitter-class-unported:<class>` or `emitter-feature-unported:<property>`.
 - [ ] **FX-01** (provisional, owner review): Emitter simulation is our own deterministic, seedable port of the UE2 emitter classes in plain TypeScript, with no Babylon types and no third-party runtime dependency. It runs Interlude SpriteEmitter, MeshEmitter and RibbonEmitter records with the Interlude class defaults, the Emitter actor rules (GlobalOffset, initial delay, warmup, AutoReset, AutoDestroy, SpeedRate, bRotEmitter) and the L2 emitter natives that skills call (AdjustparticleLife, SetSizeScale, SetDelayed, Kill, Trigger). Golden traces at a declared seed and step pin synthetic emitter fixtures, and hash-only traces pin the Power Strike emitters when the client is given. BeamEmitter, VertMeshEmitter, SparkEmitter, TrailEmitter and unported features (collision, actor forces, mesh and skeletal spawning, weather, PTRS_Normal, PTCS_RelativeRotation) are explicit gaps with reason `emitter-class-unported:<class>` or `emitter-feature-unported:<property>` until ported. Every rule has a constants row. Phase 2 runs reference rules as unconfirmed defaults, and POL-04 re-derives them statically against Interlude Engine.dll, Core.dll or D3DDrv.dll.
@@ -204,7 +204,7 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 | ACT-01 | Phase 2 | Pending |
 | ACT-02 | Phase 2 | Pending |
 | ACT-03 | Phase 2 | Pending |
-| ACT-04 | Phase 2 | Pending |
+| ACT-04 | Phase 2 | Complete |
 | ACT-05 | Phase 2 | Pending |
 | ACT-06 | Phase 2 | Pending |
 | FX-01 | Phase 2 | Pending (provisional, owner review) |

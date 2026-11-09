@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-38-PLAN.md
-last_updated: "2026-11-09T23:13:46.814Z"
+stopped_at: Completed 02-39-PLAN.md
+last_updated: "2026-11-09T23:37:09.835Z"
 last_activity: 2026-11-10
 last_activity_desc: Phase 02 plan 02-38 complete (window registry and UI-03)
-state_head: f46db1ca1b09e73e4deff8edd466718464188af0
+state_head: f5379e23ea64845780e078a3b25421a97b9dc726
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 68
+  completed_plans: 69
   percent: 0
 ---
 
@@ -120,6 +120,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P53 | 24min | 3 tasks | 15 files |
 | Phase 02 P31 | 41min | 4 tasks | 38 files |
 | Phase 02 P38 | 40min | 3 tasks | 22 files |
+| Phase 02 P39 | 21 min | 3 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -288,6 +289,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-31: tile movers are the native-tile-movers v1 manifest, tile resource kind movers, vocabulary listVersion 3; mover collision only from the 02-30 decision as MOVR per listed slot, all 11 real movers gap rule-disagreement:bStatic; Task 3 foreign paths accepted under rows 373 and 380; WORLD-01 and MOVE-01 stay Pending (rows 550 to 557)
 - [Phase 02]: 02-38: rendered control types declared in recipes/data/native-window-control-types.json with an agreement test; the controls ledger step writes one control-type-unsupported row per window naming its first unsupported control (rows 558, 560, 561)
 - [Phase 02]: 02-38: buildNativeWindowRegistry is the one window listing for the Sandbox picker, ordered by base name then ordinal; the window layer clips with overflow hidden as a presentation rule; UI-02 and UI-03 complete (rows 559, 562 to 566)
+- [Phase 02]: 02-39: contract commit A ff64387 adds clipListings to createSandboxRuntimeActions from the runtime clip hub; SandboxPickerHost extends ActorClipListingSource; the Clips picker rereads on open and from a Reread clip listings button (rows 567 to 570)
 
 ### Pending Todos
 
@@ -348,6 +350,7 @@ Landed on 2026-11-09 (rows 425 to 443): the effect staging writes every file its
 
 Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cdcf...`; npc:20001 spawns in the sandbox under the actors union (browser check passed); the coverage reader accepts the lane catalog the dev switch attests.
 - Particles overlap review (DEC-OWN-12): after the clean-room rewrite, 39 blocking and 816 reviewer runs in the rewritten particle sources are under independent review; particles exits 1 until that review is applied.
+- Headless WebGPU refusal (02-39): in one full run of `tests/browser/sandbox-npc-gremlin.spec.ts` the SwiftShader adapter answered "WebGPU is required" on the seventh case's world load; the case passed in the first run and alone. Find why the adapter refuses after several world loads in one worker.
 
 ## Deferred Verification
 
@@ -368,6 +371,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-09T23:13:46.079Z
-Stopped at: Completed 02-38-PLAN.md
+Last session: 2026-11-09T23:37:09.138Z
+Stopped at: Completed 02-39-PLAN.md
 Resume file: None
