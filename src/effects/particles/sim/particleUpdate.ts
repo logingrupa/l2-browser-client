@@ -24,10 +24,10 @@ function spawnRate(runtime: EmitterRuntime): number {
   return lifetimeCenter > 0 ? Math.fround(record.MaxParticles / lifetimeCenter) : 0;
 }
 
-function spawnIntoNextSlot(runtime: EmitterRuntime, ageSeconds: number, context: EmitterStepContext, ownerVelocity: Vector3): number {
+function spawnIntoNextSlot(runtime: EmitterRuntime, ageSeconds: number, context: EmitterStepContext, ownerVelocity: Vector3): number | null {
   const { record, counters } = runtime;
   const slot = counters.nextSlot;
-  spawnParticle(runtime, slot, ageSeconds, context, ownerVelocity);
+  if (!spawnParticle(runtime, slot, ageSeconds, context, ownerVelocity)) return null;
   counters.activeSlots = Math.max(counters.activeSlots, slot + 1);
   counters.nextSlot = (slot + 1) % record.MaxParticles;
   return slot;
@@ -42,8 +42,9 @@ function spawnDueParticles(runtime: EmitterRuntime, stepSeconds: number, rate: n
   const birthCount = Math.min(record.MaxParticles, Math.max(0, wholeParticlesOwed)), secondsBetweenBirths = Math.fround(1 / rate);
   const firstBirthAgeSeconds = Math.fround(secondsBetweenBirths * leftoverBeforeStep + birthStepSeconds - secondsBetweenBirths);
   const birthSlots: number[] = [];
-  while (birthSlots.length < birthCount) {
-    birthSlots.push(spawnIntoNextSlot(runtime, Math.fround(firstBirthAgeSeconds - birthSlots.length * secondsBetweenBirths), context, ownerVelocity));
+  for (let birthOrdinal = 0; birthOrdinal < birthCount; birthOrdinal += 1) {
+    const slot = spawnIntoNextSlot(runtime, Math.fround(firstBirthAgeSeconds - birthOrdinal * secondsBetweenBirths), context, ownerVelocity);
+    if (slot !== null) birthSlots.push(slot);
   }
   if (record.CoordinateSystem !== COORDINATE_SYSTEM.independent || vectorLength(ownerDisplacement) <= independentPathThreshold) return;
   birthSlots.forEach((slot, birthOrdinal) => {
