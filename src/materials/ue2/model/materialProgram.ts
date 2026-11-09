@@ -70,6 +70,8 @@ const maximumTextureImageBytes = 32 * 1024 * 1024;
 
 type JsonRecord = Readonly<Record<string, unknown>>;
 
+const unrealNameIdentity = (name: string) => name.toLowerCase();
+
 function requireProgram(condition: unknown, message: string): asserts condition {
   if (!condition) throw new MaterialProgramError(`Material program: ${message}`);
 }
@@ -153,7 +155,7 @@ function readProgramNode(value: unknown, index: number): MaterialProgramNode {
   }
   const image = readTextureImage(record.image, `${id}.image`);
   requireProgram(image === null || nodeClass === "Engine.Texture", `${id} of ${nodeClass} carries a texture image.`);
-  requireProgram(new Set(fields.map(field => field.field.toLowerCase())).size === fields.length, `${id} repeats a field.`);
+  requireProgram(new Set(fields.map(field => unrealNameIdentity(field.field))).size === fields.length, `${id} repeats a field.`);
   return { id, class: nodeClass, status, gapReasons, fields, image };
 }
 
@@ -194,6 +196,5 @@ export function programNode(program: MaterialProgram, nodeId: string): MaterialP
 }
 
 export function programField(node: MaterialProgramNode, fieldName: string): MaterialProgramField | null {
-  const wanted = fieldName.toLowerCase();
-  return node.fields.find(field => field.field.toLowerCase() === wanted) ?? null;
+  return node.fields.find(field => unrealNameIdentity(field.field) === unrealNameIdentity(fieldName)) ?? null;
 }
