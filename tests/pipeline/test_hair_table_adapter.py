@@ -15,7 +15,7 @@ from build_dat_table_inventory import (ELBERA_ADAPTER_COUNT_SOURCE, ELBERA_ADAPT
                                        count_elbera_route_table)
 from convert_tables import DECODE_TABLE_ALGORITHM_VERSION, ELBERA_ADAPTER_ROUTE, convert_table_unit
 from data.hair_table_adapter import (ELBERA_HAIR_FIELD_PROOF, ELBERA_HAIR_SELECTION_SCRIPT_PATH, ELBERA_HAIR_SELECTION_SCRIPT_SHA256,
-                                     HAIR_LAYOUT_UNDECODED_REASON, HAIR_TABLE_PARSERS, HairTableAdapterError, HairTableUndecodedError,
+                                     HAIR_LAYOUT_UNDECODED_REASON, HAIR_TABLE_PARSERS, HELMET_LAYOUT_UNDECODED_REASON, HairTableAdapterError, HairTableUndecodedError,
                                      decode_hair_table)
 from data.pinned_elbera_module import ELBERA_ROOT, load_pinned_elbera_module
 from native_catalog.tables import SAFE_PACKAGE_TRAILER
@@ -32,6 +32,8 @@ ELBERA_MODULE_PARAMETER_NAME = 'elbera_module'
 ALLOWED_ELBERA_ATTRIBUTES = {'hair_pairs', 'keyed_hair_pairs'}
 REFUSED_ELBERA_NAMES = ('verify', 'verify_material_native', 'audit_assets', 'main', '--check')
 HAIRGRP_FILE = 'system/hairgrp.dat'
+HELMETGRP_FILE = 'system/helmetgrp.dat'
+HAIRACCESSARYGRP_FILE = 'system/hairaccessarygrp.dat'
 PAIR_TABLE_WORD_COUNT = 450
 PAIR_TABLE_ROW_COUNT = 15
 PAIR_TABLE_STYLE_COUNT = 15
@@ -124,6 +126,56 @@ class HairPairTableTests(SyntheticHairClientTestCase):
                          ('table:hairgrp', HAIR_LAYOUT_UNDECODED_REASON, HAIRGRP_FILE))
         self.assertFalse((self.output_root / 'tables').exists())
         self.assertEqual(self.receipt('hairgrp')['config']['fieldProof'], ELBERA_HAIR_FIELD_PROOF)
+
+
+def synthetic_keyed_table_payload(keys, declared_count=None):
+    count = len(keys) if declared_count is None else declared_count
+    records = b''.join(struct.pack('<i', key) + struct.pack(f'<{PAIR_TABLE_WORD_COUNT}i', *([key] * PAIR_TABLE_WORD_COUNT)) for key in keys)
+    return struct.pack('<I', count) + records + SAFE_PACKAGE_TRAILER
+
+
+@unittest.skipUnless(ELBERA_SCRIPT_AVAILABLE, ELBERA_UNAVAILABLE_REASON)
+class KeyedHairTableTests(SyntheticHairClientTestCase):
+    hair_files = (HELMETGRP_FILE, HAIRACCESSARYGRP_FILE)
+
+    def test_duplicate_keys_stay_two_records_in_file_order(self):
+        decoded = self.decode_with_payload('helmetgrp', synthetic_keyed_table_payload([7, 7]))
+        self.assertEqual([record['key'] for record in decoded['records']], [7, 7])
+        self.assertEqual(decoded['recordCount'], 2)
+        self.assertEqual([len(record['pairs']) for record in decoded['records']], [PAIR_TABLE_ROW_COUNT, PAIR_TABLE_ROW_COUNT])
+        self.assertEqual(decoded['records'][1]['pairs'][14][14], [7, 7])
+
+    def test_file_order_is_kept_for_distinct_keys(self):
+        decoded = self.decode_with_payload('hairaccessarygrp', synthetic_keyed_table_payload([9, -1, 3]))
+        self.assertEqual([record['key'] for record in decoded['records']], [9, -1, 3])
+        self.assertEqual(decoded['records'][1]['pairs'][0][0], [-1, -1])
+
+    def test_record_count_equals_the_count_header(self):
+        for keys in ([], [5], [1, 2, 3, 4]):
+            with self.subTest(keys=keys):
+                payload = synthetic_keyed_table_payload(keys)
+                self.assertEqual(struct.unpack_from('<I', payload)[0], len(keys))
+                self.assertEqual(self.decode_with_payload('helmetgrp', payload)['recordCount'], len(keys))
+
+    def test_a_size_that_disagrees_with_the_count_names_the_table_gap_reason(self):
+        expectations = {'helmetgrp': HELMET_LAYOUT_UNDECODED_REASON, 'hairaccessarygrp': HAIR_LAYOUT_UNDECODED_REASON}
+        for table, reason in expectations.items():
+            for payload in (synthetic_keyed_table_payload([7, 7], declared_count=3), synthetic_keyed_table_payload([7], declared_count=0)):
+                with self.subTest(table=table), self.assertRaises(HairTableUndecodedError) as raised:
+                    self.decode_with_payload(table, payload)
+                self.assertEqual((raised.exception.table, raised.exception.reason), (table, reason))
+
+    def test_a_converted_keyed_table_with_a_bad_count_is_a_gap_row_with_its_reason(self):
+        result = self.convert_with_payload('helmetgrp', synthetic_keyed_table_payload([7], declared_count=2))
+        self.assertEqual(result, {'unit': 'table:helmetgrp', 'status': 'gap', 'reason': HELMET_LAYOUT_UNDECODED_REASON})
+        [gap_row] = read_gap_rows(self.project_root, 'data-ui')
+        self.assertEqual((gap_row['key'], gap_row['sourceIdentity']['path']), ('table:helmetgrp', HELMETGRP_FILE))
+
+    def test_a_converted_keyed_table_keeps_duplicates_in_its_manifest(self):
+        self.assertEqual(self.convert_with_payload('hairaccessarygrp', synthetic_keyed_table_payload([7, 7]))['recordCount'], 2)
+        [record] = self.tables_records()
+        manifest = json.loads((self.output_root / record['manifest'].removeprefix('/l2/')).read_bytes())
+        self.assertEqual(([entry['key'] for entry in manifest['records']], manifest['route']), ([7, 7], ELBERA_ADAPTER_ROUTE))
 
 
 class HairTableNameTests(SyntheticHairClientTestCase):

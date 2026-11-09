@@ -123,13 +123,13 @@
    "table": "gametip-e"
   },
   {
-   "countSource": null,
+   "countSource": "scripts/data/hair_table_adapter.py (Elbera check_hair_selection_native.py at 12c9656) on lock-equal E:/Lineage2-client/system/hairaccessarygrp.dat",
    "descriptorLayout": false,
    "file": "hairaccessarygrp.dat",
    "layout": null,
-   "recordCount": "unknown",
+   "recordCount": 4,
    "route": "elbera",
-   "status": "Elbera parser present, unverified",
+   "status": "decoded by Elbera adapter, Elbera 07b24 proof, unverified on 4dd2",
    "table": "hairaccessarygrp"
   },
   {
@@ -153,13 +153,13 @@
    "table": "hairgrp"
   },
   {
-   "countSource": null,
+   "countSource": "scripts/data/hair_table_adapter.py (Elbera check_hair_selection_native.py at 12c9656) on lock-equal E:/Lineage2-client/system/helmetgrp.dat",
    "descriptorLayout": false,
    "file": "helmetgrp.dat",
    "layout": null,
-   "recordCount": "unknown",
+   "recordCount": 3,
    "route": "elbera",
-   "status": "Elbera parser present, unverified",
+   "status": "decoded by Elbera adapter, Elbera 07b24 proof, unverified on 4dd2",
    "table": "helmetgrp"
   },
   {
