@@ -14,27 +14,81 @@ export interface ActorClipEvent {
   readonly timingBasis: string;
 }
 
+export class ActorClipEventsError extends Error {
+  readonly ordinal: number | null;
+  readonly field: string;
+
+  constructor(ordinal: number | null, field: string) {
+    super(ordinal === null ? `asset.json ${field} must be a list.` : `asset.json animationEvents[${ordinal}].${field} is missing or invalid.`);
+    this.name = "ActorClipEventsError";
+    this.ordinal = ordinal;
+    this.field = field;
+  }
+}
+
 type SourceEventRecord = Record<string, unknown>;
 
-function copySourceEvent(source: SourceEventRecord, ordinal: number): ActorClipEvent {
+function isPlainRecord(value: unknown): value is SourceEventRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function requireText(source: SourceEventRecord, ordinal: number, field: string): string {
+  const value = source[field];
+  if (typeof value !== "string") throw new ActorClipEventsError(ordinal, field);
+  return value;
+}
+
+function requireTextOrNull(source: SourceEventRecord, ordinal: number, field: string): string | null {
+  const value = source[field];
+  if (value !== null && typeof value !== "string") throw new ActorClipEventsError(ordinal, field);
+  return value;
+}
+
+function requireNumberWithin(source: SourceEventRecord, ordinal: number, field: string, accepts: (value: number) => boolean): number {
+  const value = source[field];
+  if (typeof value !== "number" || !Number.isFinite(value) || !accepts(value)) throw new ActorClipEventsError(ordinal, field);
+  return value;
+}
+
+function requireNormalizedTime(source: SourceEventRecord, ordinal: number): number {
+  return requireNumberWithin(source, ordinal, "normalizedTime", value => value >= 0 && value <= 1);
+}
+
+function requireNonNegativeFiniteNumber(source: SourceEventRecord, ordinal: number, field: string): number {
+  return requireNumberWithin(source, ordinal, field, value => value >= 0);
+}
+
+function requirePositiveFiniteNumber(source: SourceEventRecord, ordinal: number, field: string): number {
+  return requireNumberWithin(source, ordinal, field, value => value > 0);
+}
+
+function requireProperties(source: SourceEventRecord, ordinal: number): Readonly<Record<string, unknown>> {
+  const value = source.properties;
+  if (!isPlainRecord(value)) throw new ActorClipEventsError(ordinal, "properties");
+  return structuredClone(value);
+}
+
+function parseActorClipEvent(source: unknown, ordinal: number): ActorClipEvent {
+  if (!isPlainRecord(source)) throw new ActorClipEventsError(ordinal, "event");
   return {
     ordinal,
-    animationSet: source.animationSet as string,
-    clip: source.clip as string,
-    normalizedTime: source.normalizedTime as number,
-    timeSeconds: source.timeSeconds as number,
-    type: source.type as string,
-    notifyObject: source.object as string,
-    notifyFunction: source.function as string,
-    sound: source.sound as string | null,
-    properties: structuredClone(source.properties) as Readonly<Record<string, unknown>>,
-    sourceFrames: source.sourceFrames as number,
-    sourceRate: source.sourceRate as number,
-    timingBasis: source.timingBasis as string,
+    animationSet: requireText(source, ordinal, "animationSet"),
+    clip: requireText(source, ordinal, "clip"),
+    normalizedTime: requireNormalizedTime(source, ordinal),
+    timeSeconds: requireNonNegativeFiniteNumber(source, ordinal, "timeSeconds"),
+    type: requireText(source, ordinal, "type"),
+    notifyObject: requireText(source, ordinal, "object"),
+    notifyFunction: requireText(source, ordinal, "function"),
+    sound: requireTextOrNull(source, ordinal, "sound"),
+    properties: requireProperties(source, ordinal),
+    sourceFrames: requirePositiveFiniteNumber(source, ordinal, "sourceFrames"),
+    sourceRate: requirePositiveFiniteNumber(source, ordinal, "sourceRate"),
+    timingBasis: requireText(source, ordinal, "timingBasis"),
   };
 }
 
 export function parseActorClipEvents(animationEvents: readonly unknown[] | undefined): readonly ActorClipEvent[] {
   if (animationEvents === undefined) return [];
-  return animationEvents.map((source, ordinal) => copySourceEvent(source as SourceEventRecord, ordinal));
+  if (!Array.isArray(animationEvents)) throw new ActorClipEventsError(null, "animationEvents");
+  return animationEvents.map(parseActorClipEvent);
 }

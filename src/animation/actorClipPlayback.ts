@@ -30,13 +30,26 @@ interface LoadedActorClip {
 
 type PlayRefusalReasonOrNullWhenPlaying = string | null;
 
+function compareEventsBySourceTime(first: ActorClipEvent, second: ActorClipEvent): number {
+  return first.normalizedTime - second.normalizedTime || first.ordinal - second.ordinal;
+}
+
+function compareEventsByOrdinal(first: ActorClipEvent, second: ActorClipEvent): number {
+  return first.ordinal - second.ordinal;
+}
+
 export function listActorClips(loadedClips: readonly LoadedActorClip[], events: readonly ActorClipEvent[]): ActorClipListing {
-  const eventsByClipName = new Map<string, ActorClipEvent[]>(loadedClips.map(clip => [clip.name, []]));
+  const eventsByClipName = new Map<string, ActorClipEvent[]>();
+  for (const clip of loadedClips) {
+    if (eventsByClipName.has(clip.name)) throw new Error(`Actor clip ${clip.name} appears twice in the loaded clip list.`);
+    eventsByClipName.set(clip.name, []);
+  }
   const eventsWithoutClip: ActorClipEvent[] = [];
   for (const event of events) (eventsByClipName.get(event.clip) ?? eventsWithoutClip).push(event);
   return {
-    clips: loadedClips.map(clip => ({ name: clip.name, durationSeconds: clip.durationSeconds, events: eventsByClipName.get(clip.name) ?? [] })),
-    eventsWithoutClip,
+    clips: loadedClips.map(clip => ({ name: clip.name, durationSeconds: clip.durationSeconds,
+      events: (eventsByClipName.get(clip.name) ?? []).sort(compareEventsBySourceTime) })),
+    eventsWithoutClip: eventsWithoutClip.sort(compareEventsByOrdinal),
   };
 }
 
