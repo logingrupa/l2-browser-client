@@ -1,8 +1,9 @@
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readLaneOwnership } from "../../../scripts/check-lane-ownership.mjs";
+import { NATIVE_STORE_LANE_CATALOG_SHA256_HEADER } from "../../../vite/nativeStoreRootPlugin";
 
 export type LoadCheckStatus = "pass" | "failed";
 
@@ -131,9 +132,13 @@ export function writeLoadCheckRecord(laneName: string, catalogSha256: string, re
   return writeLoadCheckRecordFile(loadCheckRecordFilePath(process.cwd(), laneName, catalogSha256), laneName, catalogSha256, record);
 }
 
-export async function hashServedLaneCatalog(baseUrl: string): Promise<string> {
+export async function servedLaneCatalogSha256(baseUrl: string): Promise<string> {
   const catalogUrl = new URL("/l2/catalog.json", baseUrl);
-  const answer = await fetch(catalogUrl, { cache: "no-store" });
+  const answer = await fetch(catalogUrl, { cache: "no-store", method: "HEAD" });
   if (!answer.ok) throw new Error(`served lane catalog ${catalogUrl.href} answered ${answer.status}`);
-  return createHash("sha256").update(new Uint8Array(await answer.arrayBuffer())).digest("hex");
+  const laneCatalogSha256 = answer.headers.get(NATIVE_STORE_LANE_CATALOG_SHA256_HEADER) ?? "";
+  if (!catalogSha256Pattern.test(laneCatalogSha256)) {
+    throw new Error(`served catalog ${catalogUrl.href} names no lane catalog SHA-256 in ${NATIVE_STORE_LANE_CATALOG_SHA256_HEADER}; serve it through NATIVE_STORE_ROOT`);
+  }
+  return laneCatalogSha256;
 }

@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { formatRigaTimestamp } from "../../scripts/check-machine-schedule.mjs";
 import { desktopViewport, landscapePhone } from "./browserViewports";
-import { hashServedLaneCatalog, writeLoadCheckRecord } from "./support/loadCheckRecordFile";
+import { servedLaneCatalogSha256, writeLoadCheckRecord } from "./support/loadCheckRecordFile";
 
 interface TileCatalogRecord { readonly id: string; readonly manifest: string; readonly manifestSha256: string; readonly manifestBytes: number }
 
@@ -23,21 +23,21 @@ const terminalColourCodes = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, 
 test.skip(process.env.NATIVE_STORE_ROOT !== laneName, "run with NATIVE_STORE_ROOT=world");
 test.skip(tileRecord === null, "the world lane catalog has no tiles record 20_21; run convert_tile.py --map 20_21 --step manifest first");
 
-let servedCatalogSha256: string | null = null;
+let laneCatalogSha256: string | null = null;
 let firstFailureReason: string | null = null;
 
 test.beforeEach(async ({ baseURL }) => {
   if (baseURL === undefined) throw new Error("the Playwright project has no baseURL");
-  servedCatalogSha256 = await hashServedLaneCatalog(baseURL);
+  laneCatalogSha256 = await servedLaneCatalogSha256(baseURL);
 });
 
 test.afterEach(async ({}, testInfo: TestInfo) => {
-  if (testInfo.status === "skipped" || servedCatalogSha256 === null) return;
+  if (testInfo.status === "skipped" || laneCatalogSha256 === null) return;
   if (testInfo.status !== "passed") {
     const message = (testInfo.errors[0]?.message ?? "").replace(terminalColourCodes, "").split("\n")[0]!.trim();
     firstFailureReason ??= message || `walk ${testInfo.status}`;
   }
-  writeLoadCheckRecord(laneName, servedCatalogSha256, {
+  writeLoadCheckRecord(laneName, laneCatalogSha256, {
     key: tileKey, status: firstFailureReason === null ? "pass" : "failed", reason: firstFailureReason,
     atRiga: formatRigaTimestamp(new Date()), assetManifestSchemaVersion: null,
   });

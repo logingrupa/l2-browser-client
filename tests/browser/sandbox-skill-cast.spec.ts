@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { formatRigaTimestamp } from "../../scripts/check-machine-schedule.mjs";
 import { desktopViewport, landscapePhone } from "./browserViewports";
 import type { NativeSkillEffectHarnessState } from "./harness/nativeSkillEffectHarness";
-import { hashServedLaneCatalog, writeLoadCheckRecord } from "./support/loadCheckRecordFile";
+import { servedLaneCatalogSha256, writeLoadCheckRecord } from "./support/loadCheckRecordFile";
 import { checkHarnessLoadKey } from "./support/loadCheckRecords";
 
 const laneName = "actors";
@@ -56,7 +56,7 @@ test("loads the converted components of skill 1011 level 1 selected by ?skill= f
   await expect(page.locator("[data-effect-component]")).toHaveCount(state.preview!.components.length);
   if (baseURL === undefined) throw new Error("the Playwright project has no baseURL");
   const outcome = await checkHarnessLoadKey(page, tracerKey);
-  writeLoadCheckRecord(laneName, await hashServedLaneCatalog(baseURL), { key: tracerKey, ...outcome, atRiga: formatRigaTimestamp(new Date()) });
+  writeLoadCheckRecord(laneName, await servedLaneCatalogSha256(baseURL), { key: tracerKey, ...outcome, atRiga: formatRigaTimestamp(new Date()) });
 });
 
 test("shows the native-skill-dispatch-required gap of skill 3 level 2 from the lane coverage with no effect component loaded", async ({ page }) => {

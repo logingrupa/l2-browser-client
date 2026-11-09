@@ -14,7 +14,7 @@ sys.path.insert(0, str(SCRIPTS_ROOT))
 
 from native_assets_lib.gltf import json_bytes
 from native_store.catalog_writer import (NATIVE_RESOURCE_PATH_PATTERN, TABLE_ID_PATTERN, TABLE_MANIFEST_MAXIMUM_BYTES, CatalogWriteError,
-                                         merge_catalog_slice, validate_catalog_record)
+                                         merge_catalog_slice, merge_catalog_slice_records, validate_catalog_record)
 from native_store import tile_manifest_validation
 from native_store.tile_manifest_validation import (MASK_UV_RULES_BASE, TILE_RESOURCE_KINDS_BASE, VOCABULARY_FILE, TileManifestError,
                                                    load_tile_manifest_vocabulary, validate_tile_chunk_manifest, validate_tile_manifest)
@@ -158,6 +158,18 @@ class CatalogRecordShapeTests(unittest.TestCase):
         self.assertEqual(json_bytes(merge_catalog_slice(catalog, 'tables', copy.deepcopy(GOLDEN_TABLE_RECORD), 40)), catalog_bytes)
         with self.assertRaisesRegex(CatalogWriteError, 'record syntheticfixture differs; preserved'):
             merge_catalog_slice(catalog, 'tables', changed(GOLDEN_TABLE_RECORD, recordCount=2), 40)
+
+    def test_a_batch_merge_writes_the_bytes_of_one_record_merges_and_keeps_their_refusals(self):
+        records = [{'id': f'interlude:model:{index}'} for index in range(3)]
+        sequential = {'schemaVersion': 1, 'models': [{'id': 'interlude:model:0'}]}
+        for record in records:
+            sequential = merge_catalog_slice(sequential, 'models', record, 3)
+        batch = merge_catalog_slice_records({'schemaVersion': 1, 'models': [{'id': 'interlude:model:0'}]}, 'models', [*records, records[2]], 3)
+        self.assertEqual(json_bytes(batch), json_bytes(sequential))
+        with self.assertRaisesRegex(CatalogWriteError, 'record interlude:model:1 differs; preserved'):
+            merge_catalog_slice_records(batch, 'models', [{'id': 'interlude:model:1', 'archive': 'changed'}], 3)
+        with self.assertRaisesRegex(CatalogWriteError, 'capacity 2 exceeded'):
+            merge_catalog_slice_records({'schemaVersion': 1, 'models': []}, 'models', records, 2)
 
     def test_catalog_index_keys_match_the_golden_catalog(self):
         key_contract = json.loads(CATALOG_INDEX_KEYS_PATH.read_bytes())

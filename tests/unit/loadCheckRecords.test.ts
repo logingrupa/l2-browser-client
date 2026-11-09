@@ -38,7 +38,7 @@ function fakeSliceActions(store: FakeRecordStore, options: {
 }): LoadCheckSliceActions {
 	const catalogSha256 = options.catalogSha256 ?? firstCatalogSha256;
 	return {
-		hashServedLaneCatalog: async () => catalogSha256,
+		servedLaneCatalogSha256: async () => catalogSha256,
 		readRecordedKeys: async (sha256) => new Set((store.recordsByCatalog.get(sha256) ?? []).map((record) => record.key)),
 		listConvertedKeys: async (prefix) => options.convertedKeys.filter((key) => key.startsWith(prefix)),
 		checkKey: async (key) => {

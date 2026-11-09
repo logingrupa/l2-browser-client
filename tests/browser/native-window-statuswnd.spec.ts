@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { formatRigaTimestamp } from "../../scripts/check-machine-schedule.mjs";
 import { desktopViewport, landscapePhone } from "./browserViewports";
-import { hashServedLaneCatalog, writeLoadCheckRecord } from "./support/loadCheckRecordFile";
+import { servedLaneCatalogSha256, writeLoadCheckRecord } from "./support/loadCheckRecordFile";
 
 const laneName = "data-ui";
 const laneStoreRoot = resolve("artifacts/lane-store", laneName);
@@ -93,7 +93,7 @@ test.describe.serial("window:StatusWnd on the harness page", () => {
   test.afterAll(async ({}, testInfo) => {
     const baseUrl = testInfo.project.use.baseURL;
     if (baseUrl === undefined) throw new Error("the Playwright project has no baseURL");
-    writeLoadCheckRecord(laneName, await hashServedLaneCatalog(baseUrl), {
+    writeLoadCheckRecord(laneName, await servedLaneCatalogSha256(baseUrl), {
       key: `window:${statusWindowId}`, status: failures.length === 0 ? "pass" : "failed", reason: failures.length === 0 ? null : failures.join("; "),
       atRiga: formatRigaTimestamp(new Date()), assetManifestSchemaVersion: 2,
     });

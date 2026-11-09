@@ -16,7 +16,7 @@ sys.path.insert(0, str(SCRIPTS_ROOT))
 from native_assets import verify_archive
 from native_assets_lib.asset_manifest import require_supported_asset_manifest
 from native_assets_lib.gltf import json_bytes
-from native_store.catalog_writer import (KNOWN_CATALOG_SLICES, decode_store_catalog, merge_catalog_slice, pinned_store_files,
+from native_store.catalog_writer import (KNOWN_CATALOG_SLICES, decode_store_catalog, merge_catalog_slice_records, pinned_store_files,
                                          read_current_catalog_bytes, sha256_hex, validate_catalog_record, verify_store_destinations, write_store)
 from native_store.store_paths import SHA256_PATTERN, confined_child_path, refuse_reparse_points
 
@@ -120,9 +120,7 @@ def merged_target_catalog(target_catalog, records_by_slice):
         for record in records:
             if record['id'] in target_ids:
                 raise LaneStoreMergeRefusedError(f'lane record id {record["id"]} is already in the target {slice_name} slice')
-        capacity = len(target_records) + len(records)
-        for record in records:
-            merged = merge_catalog_slice(merged, slice_name, record, capacity)
+        merged = merge_catalog_slice_records(merged, slice_name, records, len(target_records) + len(records))
     return merged
 
 
@@ -143,15 +141,19 @@ def added_record_counts(records_by_slice):
     return {slice_name: len(records) for slice_name, records in records_by_slice.items()}
 
 
+def lane_union_catalog(lane_catalog_bytes, target_catalog_bytes, expected_base_catalog_sha256):
+    lane_catalog = decode_store_catalog(lane_catalog_bytes)
+    target_catalog = decode_store_catalog(target_catalog_bytes)
+    require_one_base_catalog(sha256_hex(target_catalog_bytes), lane_catalog, expected_base_catalog_sha256)
+    records_by_slice = lane_records_by_slice(lane_catalog)
+    return records_by_slice, json_bytes(merged_target_catalog(target_catalog, records_by_slice))
+
+
 def merge_verified_lane_store(lane_store_root, target_root, expected_base_catalog_sha256):
     require_sha256(expected_base_catalog_sha256, 'expected base catalog sha256')
     lane_root, target = refuse_reparse_points(lane_store_root), refuse_reparse_points(target_root)
     before = read_required_catalog_bytes(target, 'target store')
-    lane_catalog = decode_store_catalog(read_required_catalog_bytes(lane_root, 'lane store'))
-    target_catalog = decode_store_catalog(before)
-    require_one_base_catalog(sha256_hex(before), lane_catalog, expected_base_catalog_sha256)
-    records_by_slice = lane_records_by_slice(lane_catalog)
-    after = json_bytes(merged_target_catalog(target_catalog, records_by_slice))
+    records_by_slice, after = lane_union_catalog(read_required_catalog_bytes(lane_root, 'lane store'), before, expected_base_catalog_sha256)
     files = pinned_store_files(lane_root, records_by_slice)
     require_version_two_lane_archives(lane_root, files)
     copied_files = sorted(verify_store_destinations(target, files))

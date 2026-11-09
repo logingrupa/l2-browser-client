@@ -299,14 +299,24 @@ Unset, the plugin does nothing. An unknown value, a missing folder, a root
 whose realpath differs from its path (a junction or symlink on the way) or a
 root at or under the realpath of `public/l2` stops Vite with the reason.
 
-- `/l2/catalog.json` and `/l2/coverage.json` come only from the selected root.
-  When the root lacks them the answer is 404, never the shared store's copy.
+- For a lane, `/l2/catalog.json` is the catalog the restage would write: the
+  `public/l2` catalog with the lane records merged by the `merge_lane_store.py`
+  rule (`lane_union_catalog`). The plugin reads it from
+  `scripts/native_store/print_lane_union_catalog.py`, so the merge rule has one
+  owner in Python. A lane catalog whose `sourceCatalogSha256` differs from the
+  served `public/l2` catalog stops Vite at startup and answers 409 with the
+  reason on request. `fixture` serves its own catalog alone.
+- The catalog answer names the lane catalog it came from in
+  `X-Native-Store-Lane-Catalog-Sha256`. A lane catalog pins its shared base,
+  so this one SHA-256 identifies the served union.
+- `/l2/coverage.json` comes only from the selected root. When the root lacks a
+  catalog or coverage the answer is 404, never the shared store's copy.
 - Every other `/l2/` path comes from the selected root first, then from
   `public/l2`, read only. Each file must be a regular file whose path and
   realpath stay under its root.
-- The header `X-Native-Store-Source: lane` or `shared` names which store
-  answered. A missing file answers 404 instead of the SPA page; only GET and
-  HEAD are served.
+- The header `X-Native-Store-Source: lane`, `shared` or `union` names which
+  store answered. A missing file answers 404 instead of the SPA page; only GET
+  and HEAD are served.
 - Request paths are checked against a copy of the `nativeResourceUrl.ts`
   regex after one decode. `tests/unit/nativeStoreRootPlugin.test.ts` feeds the
   same cases to both and checks that the copy's source text appears in
@@ -348,8 +358,10 @@ gets no records.
   mixes the v1 shared store with v2 lane archives until the restage.
 - One record per key, sorted by key. Each write replaces that key's record and
   rewrites the file through a temp file in the same folder and a rename.
-- The file is pinned to the served catalog: `hashServedLaneCatalog(baseUrl)`
-  gives the SHA-256, and a new catalog SHA-256 starts a new file. A reader
+- The file is pinned to the lane catalog the served catalog came from:
+  `servedLaneCatalogSha256(baseUrl)` reads it from
+  `X-Native-Store-Lane-Catalog-Sha256`, the same SHA-256 the coverage join reads
+  from the lane store, and a new catalog SHA-256 starts a new file. A reader
   refuses a file whose `lane` or `catalogSha256` differs from its path.
 - Coverage counts "loads" only from these records.
 

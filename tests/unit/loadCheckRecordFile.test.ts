@@ -6,12 +6,13 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import {
-	hashServedLaneCatalog,
+	servedLaneCatalogSha256,
 	loadCheckRecordFilePath,
 	readLoadCheckRecordFile,
 	writeLoadCheckRecordFile,
 	type LoadCheckRecord,
 } from "../browser/support/loadCheckRecordFile";
+import { NATIVE_STORE_LANE_CATALOG_SHA256_HEADER } from "../../vite/nativeStoreRootPlugin";
 
 const catalogSha256 = "e".repeat(64);
 const temporaryFolders: string[] = [];
@@ -108,23 +109,32 @@ describe("load-check record file reads", () => {
 	});
 });
 
-describe("served lane catalog hash", () => {
-	let server: Server | undefined;
+describe("served lane catalog SHA-256", () => {
+	const servers: Server[] = [];
 
 	afterAll(async () => {
-		const runningServer = server;
-		if (runningServer !== undefined) await new Promise<void>((resolveClosed) => runningServer.close(() => resolveClosed()));
+		for (const runningServer of servers) await new Promise<void>((resolveClosed) => runningServer.close(() => resolveClosed()));
 	});
 
-	it("hashes the bytes the dev server answers for /l2/catalog.json", async () => {
-		const catalogBytes = Buffer.from("{\"models\":[],\"schemaVersion\":1}");
+	async function catalogServer(statusCode: number, laneCatalogSha256: string | undefined): Promise<string> {
 		const runningServer = createServer((request, response) => {
-			response.statusCode = request.url === "/l2/catalog.json" ? 200 : 404;
-			response.end(request.url === "/l2/catalog.json" ? catalogBytes : undefined);
+			response.statusCode = request.url === "/l2/catalog.json" ? statusCode : 404;
+			if (laneCatalogSha256 !== undefined) response.setHeader(NATIVE_STORE_LANE_CATALOG_SHA256_HEADER, laneCatalogSha256);
+			response.end();
 		});
-		server = runningServer;
+		servers.push(runningServer);
 		await new Promise<void>((resolveListening) => runningServer.listen(0, "127.0.0.1", resolveListening));
-		const { port } = runningServer.address() as AddressInfo;
-		expect(await hashServedLaneCatalog(`http://127.0.0.1:${port}`)).toBe(createHash("sha256").update(catalogBytes).digest("hex"));
+		return `http://127.0.0.1:${(runningServer.address() as AddressInfo).port}`;
+	}
+
+	it("reads the lane catalog SHA-256 the dev switch names for /l2/catalog.json", async () => {
+		const laneCatalogSha256 = createHash("sha256").update("{\"models\":[],\"schemaVersion\":1}").digest("hex");
+		expect(await servedLaneCatalogSha256(await catalogServer(200, laneCatalogSha256))).toBe(laneCatalogSha256);
+	});
+
+	it("refuses a catalog answer without the lane catalog SHA-256 or with a refusal status", async () => {
+		await expect(servedLaneCatalogSha256(await catalogServer(200, undefined))).rejects.toThrow("names no lane catalog SHA-256");
+		await expect(servedLaneCatalogSha256(await catalogServer(200, "e"))).rejects.toThrow("names no lane catalog SHA-256");
+		await expect(servedLaneCatalogSha256(await catalogServer(409, catalogSha256))).rejects.toThrow("answered 409");
 	});
 });

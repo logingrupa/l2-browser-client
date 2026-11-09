@@ -9,7 +9,7 @@ SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS_ROOT))
 
 from native_assets_lib.gltf import json_bytes
-from native_store.catalog_writer import (KNOWN_CATALOG_SLICES, add_store_file, merge_catalog_slice, pinned_store_files, read_store_catalog,
+from native_store.catalog_writer import (KNOWN_CATALOG_SLICES, add_store_file, merge_catalog_slice_records, pinned_store_files, read_store_catalog,
                                          sha256_hex, sha256_of_file, verify_store_destinations, write_store)
 from native_store.merge_lane_store import main_checkout_root
 from native_store.store_paths import REPOSITORY_ROOT, confined_child_path, lane_store_root, read_lane_parts_by_name
@@ -57,9 +57,8 @@ def merge_union_lane(project_root, union_lane_name, base_sha256, catalog, files)
         add_store_file(files, relative, confined_child_path(union_store_root, relative).read_bytes())
     for slice_name in KNOWN_CATALOG_SLICES:
         incoming_records = union_catalog.get(slice_name, [])
-        capacity = len(catalog.get(slice_name, [])) + len(incoming_records)
-        for record in incoming_records:
-            catalog = merge_catalog_slice(catalog, slice_name, record, capacity)
+        if incoming_records:
+            catalog = merge_catalog_slice_records(catalog, slice_name, incoming_records, len(catalog.get(slice_name, [])) + len(incoming_records))
     return catalog
 
 

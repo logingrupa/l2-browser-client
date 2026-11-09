@@ -1,20 +1,30 @@
-import { createReadStream, existsSync, lstatSync, realpathSync, type Stats } from "node:fs";
+import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
+import { createReadStream, existsSync, lstatSync, readFileSync, realpathSync, type Stats } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { dirname, extname, relative, resolve, isAbsolute } from "node:path";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 import { loadEnv, type Connect, type Plugin } from "vite";
 import { readLaneOwnership } from "../scripts/check-lane-ownership.mjs";
 
 export const NATIVE_STORE_PATH_PATTERN = /^\/l2\/(?:[A-Za-z0-9_-][A-Za-z0-9._-]*\/)*[A-Za-z0-9_-][A-Za-z0-9._-]*$/;
 export const NATIVE_STORE_FIXTURE_NAME = "fixture";
 export const NATIVE_STORE_SOURCE_HEADER = "X-Native-Store-Source";
+export const NATIVE_STORE_LANE_CATALOG_SHA256_HEADER = "X-Native-Store-Lane-Catalog-Sha256";
 
+const runExecutable = promisify(execFile);
 const nativeStorePathPrefix = "/l2/";
 const laneOwnershipFilePath = resolve(dirname(fileURLToPath(import.meta.url)), "../.planning/lanes.json");
+const laneUnionCatalogScriptPath = resolve(dirname(fileURLToPath(import.meta.url)), "../scripts/native_store/print_lane_union_catalog.py");
+const laneUnionCatalogDocumentFields = "laneCatalogSha256,unionCatalogText";
+const maximumLaneUnionCatalogDocumentBytes = 3 * 32 * 1024 * 1024;
 const laneStoreFolder = "artifacts/lane-store";
 const fixtureStoreFolder = "tests/fixtures/lane-store/l2";
 const sharedStoreFolder = "public/l2";
-const storeRootOnlyFileNames = new Set(["catalog.json", "coverage.json"]);
+const storeCatalogFileName = "catalog.json";
+const storeRootOnlyFileNames = new Set([storeCatalogFileName, "coverage.json"]);
+const sha256Pattern = /^[0-9a-f]{64}$/;
 const nativeStoreContentTypes: Readonly<Record<string, string>> = {
 	".json": "application/json",
 	".glb": "model/gltf-binary",
@@ -26,7 +36,7 @@ const nativeStoreContentTypes: Readonly<Record<string, string>> = {
 const unknownNativeStoreContentType = "application/octet-stream";
 const singleByteRangePattern = /^bytes=(\d*)-(\d*)$/;
 
-export type NativeStoreSource = "lane" | "shared";
+export type NativeStoreSource = "lane" | "shared" | "union";
 
 export interface NativeStoreRoot {
 	readonly rootName: string;
@@ -37,6 +47,12 @@ export interface NativeStoreRoot {
 export interface SingleByteRange {
 	readonly start: number;
 	readonly end: number;
+}
+
+export interface ServedNativeCatalog {
+	readonly source: NativeStoreSource;
+	readonly laneCatalogSha256: string;
+	readonly bytes: Buffer;
 }
 
 interface NativeStoreFile {
@@ -131,42 +147,117 @@ function confinedNativeStoreFile(source: NativeStoreSource, root: string, relati
 	return { source, filePath, size: stats.size };
 }
 
-function locateNativeStoreFile(nativeStoreRoot: NativeStoreRoot, requestPath: string): NativeStoreFile | undefined {
-	const relativePath = requestPath.slice(nativeStorePathPrefix.length);
+function locateNativeStoreFile(nativeStoreRoot: NativeStoreRoot, relativePath: string): NativeStoreFile | undefined {
 	const laneFile = confinedNativeStoreFile("lane", nativeStoreRoot.storeRoot, relativePath);
 	if (laneFile !== undefined || storeRootOnlyFileNames.has(relativePath)) return laneFile;
 	return confinedNativeStoreFile("shared", nativeStoreRoot.sharedStoreRoot, relativePath);
 }
 
-function answerWithStatus(response: ServerResponse, statusCode: number): void {
+function sha256Hex(bytes: Uint8Array): string {
+	return createHash("sha256").update(bytes).digest("hex");
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function parseLaneUnionCatalogDocument(text: string, rootName: string): ServedNativeCatalog {
+	const refuse = (problem: string) => new Error(`NATIVE_STORE_ROOT ${rootName}: lane union catalog document refused: ${problem}`);
+	let document: unknown;
+	try {
+		document = JSON.parse(text);
+	} catch (error) {
+		throw refuse(error instanceof Error ? error.message : String(error));
+	}
+	if (!isPlainObject(document) || Object.keys(document).sort().join(",") !== laneUnionCatalogDocumentFields) {
+		throw refuse(`fields must be exactly ${laneUnionCatalogDocumentFields}`);
+	}
+	const { laneCatalogSha256, unionCatalogText } = document;
+	if (typeof laneCatalogSha256 !== "string" || !sha256Pattern.test(laneCatalogSha256)) throw refuse("laneCatalogSha256 is not 64 lowercase hex digits");
+	if (typeof unionCatalogText !== "string" || unionCatalogText === "") throw refuse("unionCatalogText is not a non-empty string");
+	return { source: "union", laneCatalogSha256, bytes: Buffer.from(unionCatalogText, "utf8") };
+}
+
+function commandFailureText(error: unknown): string {
+	const standardError = isPlainObject(error) && typeof error.stderr === "string" ? error.stderr.trim() : "";
+	return standardError || (error instanceof Error ? error.message : String(error));
+}
+
+async function readLaneUnionCatalog(nativeStoreRoot: NativeStoreRoot): Promise<ServedNativeCatalog> {
+	const commandArguments = ["-B", laneUnionCatalogScriptPath, "--lane-store", nativeStoreRoot.storeRoot, "--shared-store", nativeStoreRoot.sharedStoreRoot];
+	let standardOutput: string;
+	try {
+		({ stdout: standardOutput } = await runExecutable("python", commandArguments,
+			{ encoding: "utf8", maxBuffer: maximumLaneUnionCatalogDocumentBytes, windowsHide: true }));
+	} catch (error) {
+		throw new Error(`NATIVE_STORE_ROOT ${nativeStoreRoot.rootName}: ${commandFailureText(error)}`);
+	}
+	return parseLaneUnionCatalogDocument(standardOutput, nativeStoreRoot.rootName);
+}
+
+export async function readServedNativeCatalog(nativeStoreRoot: NativeStoreRoot): Promise<ServedNativeCatalog | undefined> {
+	const laneCatalogFile = confinedNativeStoreFile("lane", nativeStoreRoot.storeRoot, storeCatalogFileName);
+	if (laneCatalogFile === undefined) return undefined;
+	if (nativeStoreRoot.rootName !== NATIVE_STORE_FIXTURE_NAME) return readLaneUnionCatalog(nativeStoreRoot);
+	const bytes = readFileSync(laneCatalogFile.filePath);
+	return { source: "lane", laneCatalogSha256: sha256Hex(bytes), bytes };
+}
+
+function answerWithStatus(response: ServerResponse, statusCode: number, reason = ""): void {
 	response.statusCode = statusCode;
 	response.setHeader("Cache-Control", "no-store");
-	response.end();
+	if (reason !== "") response.setHeader("Content-Type", "text/plain; charset=utf-8");
+	response.end(reason);
+}
+
+function sendNativeStoreBody(request: IncomingMessage, response: ServerResponse, source: NativeStoreSource, fileName: string, size: number,
+	writeBody: (servedRange: SingleByteRange) => void): void {
+	response.setHeader("Content-Type", nativeStoreContentType(fileName));
+	response.setHeader("Accept-Ranges", "bytes");
+	response.setHeader("Cache-Control", "no-store");
+	response.setHeader(NATIVE_STORE_SOURCE_HEADER, source);
+	const byteRange = parseSingleByteRange(request.headers.range, size);
+	if (byteRange === "unsatisfiable") {
+		response.statusCode = 416;
+		response.setHeader("Content-Range", `bytes */${size}`);
+		response.end();
+		return;
+	}
+	const servedRange = byteRange ?? { start: 0, end: size - 1 };
+	response.statusCode = byteRange === null ? 200 : 206;
+	if (byteRange !== null) response.setHeader("Content-Range", `bytes ${byteRange.start}-${byteRange.end}/${size}`);
+	response.setHeader("Content-Length", String(Math.max(0, servedRange.end - servedRange.start + 1)));
+	if (request.method === "HEAD" || size === 0) {
+		response.end();
+		return;
+	}
+	writeBody(servedRange);
 }
 
 function sendNativeStoreFile(request: IncomingMessage, response: ServerResponse, nativeStoreFile: NativeStoreFile): void {
-	response.setHeader("Content-Type", nativeStoreContentType(nativeStoreFile.filePath));
-	response.setHeader("Accept-Ranges", "bytes");
-	response.setHeader("Cache-Control", "no-store");
-	response.setHeader(NATIVE_STORE_SOURCE_HEADER, nativeStoreFile.source);
-	const byteRange = parseSingleByteRange(request.headers.range, nativeStoreFile.size);
-	if (byteRange === "unsatisfiable") {
-		response.statusCode = 416;
-		response.setHeader("Content-Range", `bytes */${nativeStoreFile.size}`);
-		response.end();
+	sendNativeStoreBody(request, response, nativeStoreFile.source, nativeStoreFile.filePath, nativeStoreFile.size, (servedRange) => {
+		createReadStream(nativeStoreFile.filePath, servedRange)
+			.on("error", (error) => response.destroy(error))
+			.pipe(response);
+	});
+}
+
+async function sendServedNativeCatalog(request: IncomingMessage, response: ServerResponse, nativeStoreRoot: NativeStoreRoot): Promise<void> {
+	let servedCatalog: ServedNativeCatalog | undefined;
+	try {
+		servedCatalog = await readServedNativeCatalog(nativeStoreRoot);
+	} catch (error) {
+		answerWithStatus(response, 409, error instanceof Error ? error.message : String(error));
 		return;
 	}
-	const servedRange = byteRange ?? { start: 0, end: nativeStoreFile.size - 1 };
-	response.statusCode = byteRange === null ? 200 : 206;
-	if (byteRange !== null) response.setHeader("Content-Range", `bytes ${byteRange.start}-${byteRange.end}/${nativeStoreFile.size}`);
-	response.setHeader("Content-Length", String(Math.max(0, servedRange.end - servedRange.start + 1)));
-	if (request.method === "HEAD" || nativeStoreFile.size === 0) {
-		response.end();
+	if (servedCatalog === undefined) {
+		answerWithStatus(response, 404);
 		return;
 	}
-	createReadStream(nativeStoreFile.filePath, servedRange)
-		.on("error", (error) => response.destroy(error))
-		.pipe(response);
+	const { bytes } = servedCatalog;
+	response.setHeader(NATIVE_STORE_LANE_CATALOG_SHA256_HEADER, servedCatalog.laneCatalogSha256);
+	sendNativeStoreBody(request, response, servedCatalog.source, storeCatalogFileName, bytes.length,
+		(servedRange) => response.end(bytes.subarray(servedRange.start, servedRange.end + 1)));
 }
 
 export function createNativeStoreRequestHandler(nativeStoreRoot: NativeStoreRoot): Connect.NextHandleFunction {
@@ -185,7 +276,12 @@ export function createNativeStoreRequestHandler(nativeStoreRoot: NativeStoreRoot
 			answerWithStatus(response, 405);
 			return;
 		}
-		const nativeStoreFile = locateNativeStoreFile(nativeStoreRoot, requestPath);
+		const relativePath = requestPath.slice(nativeStorePathPrefix.length);
+		if (relativePath === storeCatalogFileName) {
+			void sendServedNativeCatalog(request, response, nativeStoreRoot);
+			return;
+		}
+		const nativeStoreFile = locateNativeStoreFile(nativeStoreRoot, relativePath);
 		if (nativeStoreFile === undefined) {
 			answerWithStatus(response, 404);
 			return;
@@ -202,9 +298,11 @@ export function nativeStoreRootPlugin(): Plugin {
 		configResolved(config) {
 			nativeStoreRoot = nativeStoreRootFromEnvironment(config.mode, config.root);
 		},
-		configureServer(server) {
+		async configureServer(server) {
 			if (nativeStoreRoot === undefined) return;
-			server.config.logger.info(`native store root ${nativeStoreRoot.rootName}: ${nativeStoreRoot.storeRoot}`);
+			const servedCatalog = await readServedNativeCatalog(nativeStoreRoot);
+			const catalogText = servedCatalog === undefined ? "no catalog" : `${servedCatalog.source} catalog of lane catalog ${servedCatalog.laneCatalogSha256}`;
+			server.config.logger.info(`native store root ${nativeStoreRoot.rootName}: ${nativeStoreRoot.storeRoot} (${catalogText})`);
 			server.middlewares.use(createNativeStoreRequestHandler(nativeStoreRoot));
 		},
 	};

@@ -4,7 +4,7 @@ import type { Page } from "@playwright/test";
 import { readLaneOwnership } from "../../../scripts/check-lane-ownership.mjs";
 import { formatRigaTimestamp } from "../../../scripts/check-machine-schedule.mjs";
 import type { LoadCheckHarnessState } from "../harness/loadCheckHarness";
-import { hashServedLaneCatalog, readLoadCheckRecords, writeLoadCheckRecord, type LoadCheckRecord } from "./loadCheckRecordFile";
+import { servedLaneCatalogSha256, readLoadCheckRecords, writeLoadCheckRecord, type LoadCheckRecord } from "./loadCheckRecordFile";
 
 export const LOAD_CHECK_KINDS = ["tiles", "npcs", "items", "skills", "windows"] as const;
 export type LoadCheckKind = (typeof LOAD_CHECK_KINDS)[number];
@@ -29,7 +29,7 @@ export interface LoadCheckSliceSettings {
 }
 
 export interface LoadCheckSliceActions {
-  hashServedLaneCatalog(): Promise<string>;
+  servedLaneCatalogSha256(): Promise<string>;
   readRecordedKeys(catalogSha256: string): Promise<ReadonlySet<string>>;
   listConvertedKeys(prefix: string): Promise<readonly string[]>;
   checkKey(key: string): Promise<LoadCheckOutcome>;
@@ -112,7 +112,7 @@ async function checkedOutcome(actions: LoadCheckSliceActions, key: string): Prom
 
 export async function runLoadCheckSlice(settings: LoadCheckSliceSettings, actions: LoadCheckSliceActions): Promise<LoadCheckSliceSummary> {
   const prefix = loadCheckKindKeyPrefix(settings.kind);
-  const catalogSha256 = await actions.hashServedLaneCatalog();
+  const catalogSha256 = await actions.servedLaneCatalogSha256();
   const recordedKeys = await actions.readRecordedKeys(catalogSha256);
   const convertedKeys = await actions.listConvertedKeys(prefix);
   const foreignKey = convertedKeys.find(key => !key.startsWith(prefix));
@@ -162,7 +162,7 @@ export async function checkHarnessLoadKey(page: Page, key: string): Promise<Load
 export function playwrightLoadCheckActions(page: Page, baseUrl: string, settings: LoadCheckSliceSettings,
   checkKey: (key: string) => Promise<LoadCheckOutcome>): LoadCheckSliceActions {
   return {
-    hashServedLaneCatalog: () => hashServedLaneCatalog(baseUrl),
+    servedLaneCatalogSha256: () => servedLaneCatalogSha256(baseUrl),
     readRecordedKeys: async catalogSha256 => new Set(readLoadCheckRecords(settings.laneName, catalogSha256).map(record => record.key)),
     listConvertedKeys: prefix => listHarnessConvertedKeys(page, prefix),
     checkKey,

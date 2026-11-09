@@ -199,23 +199,35 @@ def validate_catalog_record(slice_name, record):
     return record
 
 
-def merge_catalog_slice(catalog, slice_name, record, capacity):
-    validate_catalog_record(slice_name, record)
+def merge_catalog_slice_records(catalog, slice_name, incoming_records, capacity):
+    for record in incoming_records:
+        validate_catalog_record(slice_name, record)
     if type(capacity) is not int or capacity < 1:
         raise CatalogWriteError(f'catalog {slice_name} capacity must be a positive integer: {capacity!r}')
     merged = copy.deepcopy(catalog)
     records = merged.setdefault(slice_name, [])
     if not isinstance(records, list):
         raise CatalogWriteError(f'catalog {slice_name} is not a list')
-    matching = [existing for existing in records if isinstance(existing, dict) and existing.get('id') == record['id']]
-    if matching:
-        if any(existing != record for existing in matching):
-            raise CatalogWriteError(f'catalog {slice_name} record {record["id"]} differs; preserved')
-        return merged
-    if len(records) >= capacity:
-        raise CatalogWriteError(f'catalog {slice_name} capacity {capacity} exceeded')
-    records.append(copy.deepcopy(record))
+    records_by_id = {}
+    for existing in records:
+        if isinstance(existing, dict):
+            records_by_id.setdefault(existing.get('id'), []).append(existing)
+    for record in incoming_records:
+        matching = records_by_id.get(record['id'], [])
+        if matching:
+            if any(existing != record for existing in matching):
+                raise CatalogWriteError(f'catalog {slice_name} record {record["id"]} differs; preserved')
+            continue
+        if len(records) >= capacity:
+            raise CatalogWriteError(f'catalog {slice_name} capacity {capacity} exceeded')
+        appended = copy.deepcopy(record)
+        records.append(appended)
+        records_by_id[record['id']] = [appended]
     return merged
+
+
+def merge_catalog_slice(catalog, slice_name, record, capacity):
+    return merge_catalog_slice_records(catalog, slice_name, [record], capacity)
 
 
 class PinnedFileReference(NamedTuple):

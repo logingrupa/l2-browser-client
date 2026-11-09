@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { createServer, request as sendHttpRequest, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
@@ -13,7 +14,9 @@ import {
 	nativeStoreRequestPath,
 	nativeStoreRootFromEnvironment,
 	nativeStoreRootNames,
+	parseLaneUnionCatalogDocument,
 	parseSingleByteRange,
+	readServedNativeCatalog,
 	resolveNativeStoreRoot,
 } from "../../vite/nativeStoreRootPlugin";
 
@@ -21,6 +24,8 @@ const archiveSha256 = "a".repeat(64);
 const sharedOnlySha256 = "b".repeat(64);
 const musicTrackPath = `/l2/world-audio/${"d".repeat(64)}/track.ogg`;
 const musicTrackBytes = Uint8Array.from({ length: 100 }, (_, index) => index);
+const sharedCatalogText = "{\"models\":[{\"id\":\"shared:model\"}],\"schemaVersion\":1}\n";
+const unionCatalogText = "{\"models\":[{\"id\":\"shared:model\"},{\"id\":\"lane:model\"}],\"schemaVersion\":1}";
 const temporaryFolders: string[] = [];
 
 function temporaryFolder(): string {
@@ -35,13 +40,21 @@ function writeProjectFile(projectRoot: string, relativePath: string, content: st
 	writeFileSync(filePath, content);
 }
 
-function laneStoreProject(): string {
+function sha256Hex(content: string): string {
+	return createHash("sha256").update(content).digest("hex");
+}
+
+function laneCatalogText(sourceCatalogSha256: string): string {
+	return `{"models":[{"id":"lane:model"}],"schemaVersion":1,"sourceCatalogSha256":"${sourceCatalogSha256}"}`;
+}
+
+function laneStoreProject(laneSourceCatalogSha256 = sha256Hex(sharedCatalogText)): string {
 	const projectRoot = temporaryFolder();
 	writeProjectFile(projectRoot, "package.json", "{\"name\":\"outside-the-store\"}");
-	writeProjectFile(projectRoot, "artifacts/lane-store/world/l2/catalog.json", "{\"schemaVersion\":1,\"lane\":true}");
+	writeProjectFile(projectRoot, "artifacts/lane-store/world/l2/catalog.json", laneCatalogText(laneSourceCatalogSha256));
 	writeProjectFile(projectRoot, `artifacts/lane-store/world/l2/${archiveSha256}/asset.l2asset`, new Uint8Array([1, 2, 3, 4]));
 	writeProjectFile(projectRoot, `artifacts/lane-store/world${musicTrackPath}`, musicTrackBytes);
-	writeProjectFile(projectRoot, "public/l2/catalog.json", "{\"schemaVersion\":1,\"shared\":true}");
+	writeProjectFile(projectRoot, "public/l2/catalog.json", sharedCatalogText);
 	writeProjectFile(projectRoot, "public/l2/coverage.json", "{\"shared\":true}");
 	writeProjectFile(projectRoot, `public/l2/${sharedOnlySha256}/asset.l2asset`, new Uint8Array([9, 8, 7]));
 	return projectRoot;
@@ -212,14 +225,22 @@ describe("native store request handler", () => {
 		await new Promise<void>((resolveClosed) => server.close(() => resolveClosed()));
 	});
 
-	it("serves the catalog from the lane root", async () => {
+	it("serves the shared catalog with the lane records merged by the restage rule and names the lane catalog SHA-256", async () => {
 		const answer = await rawRequest(server, "GET", "/l2/catalog.json");
 		expect(answer.status).toBe(200);
-		expect(answer.body.toString("utf8")).toBe("{\"schemaVersion\":1,\"lane\":true}");
-		expect(answer.headers["x-native-store-source"]).toBe("lane");
+		expect(answer.body.toString("utf8")).toBe(unionCatalogText);
+		expect(answer.headers["x-native-store-source"]).toBe("union");
+		expect(answer.headers["x-native-store-lane-catalog-sha256"]).toBe(sha256Hex(laneCatalogText(sha256Hex(sharedCatalogText))));
 		expect(answer.headers["content-type"]).toBe("application/json");
 		expect(answer.headers["cache-control"]).toBe("no-store");
 		expect(answer.headers["accept-ranges"]).toBe("bytes");
+	});
+
+	it("answers HEAD and a byte range of the served catalog from the union bytes", async () => {
+		const headAnswer = await rawRequest(server, "HEAD", "/l2/catalog.json");
+		expect([headAnswer.status, headAnswer.headers["content-length"], headAnswer.body.length]).toEqual([200, String(unionCatalogText.length), 0]);
+		const rangeAnswer = await rawRequest(server, "GET", "/l2/catalog.json", { Range: "bytes=0-9" });
+		expect([rangeAnswer.status, rangeAnswer.body.toString("utf8")]).toEqual([206, unionCatalogText.slice(0, 10)]);
 	});
 
 	it("never takes coverage from the shared store", async () => {
@@ -275,5 +296,39 @@ describe("native store request handler", () => {
 	it("passes paths outside /l2/ to the next middleware", async () => {
 		const answer = await rawRequest(server, "GET", "/assets/x");
 		expect([answer.status, answer.body.toString("utf8")]).toEqual([299, "next"]);
+	});
+});
+
+describe("served native catalog", () => {
+	it("refuses a lane catalog built on another shared catalog, at startup and on request", async () => {
+		const nativeStoreRoot = resolveNativeStoreRoot(laneStoreProject("0".repeat(64)), "world");
+		await expect(readServedNativeCatalog(nativeStoreRoot)).rejects.toThrow(`lane catalog sourceCatalogSha256 ${"0".repeat(64)} differs`);
+		const handler = createNativeStoreRequestHandler(nativeStoreRoot);
+		const refusingServer = createServer((request, response) => handler(request, response, () => response.end()));
+		await new Promise<void>((resolveListening) => refusingServer.listen(0, "127.0.0.1", resolveListening));
+		try {
+			const answer = await rawRequest(refusingServer, "GET", "/l2/catalog.json");
+			expect([answer.status, answer.body.toString("utf8")]).toEqual([409, expect.stringContaining("Lane union catalog refused")]);
+		} finally {
+			await new Promise<void>((resolveClosed) => refusingServer.close(() => resolveClosed()));
+		}
+	});
+
+	it("has no catalog when the lane store holds none", async () => {
+		const projectRoot = laneStoreProject();
+		rmSync(resolve(projectRoot, "artifacts/lane-store/world/l2/catalog.json"));
+		expect(await readServedNativeCatalog(resolveNativeStoreRoot(projectRoot, "world"))).toBeUndefined();
+	});
+
+	it("serves the committed fixture catalog alone, named by its own SHA-256", async () => {
+		const servedCatalog = await readServedNativeCatalog(resolveNativeStoreRoot(process.cwd(), NATIVE_STORE_FIXTURE_NAME));
+		const fixtureCatalogBytes = readFileSync("tests/fixtures/lane-store/l2/catalog.json");
+		expect(servedCatalog).toEqual({ source: "lane", laneCatalogSha256: createHash("sha256").update(fixtureCatalogBytes).digest("hex"), bytes: fixtureCatalogBytes });
+	});
+
+	it("refuses a union document with other fields or a malformed SHA-256", () => {
+		expect(() => parseLaneUnionCatalogDocument("{\"laneCatalogSha256\":\"x\",\"unionCatalogText\":\"{}\"}", "world")).toThrow("64 lowercase hex");
+		expect(() => parseLaneUnionCatalogDocument(`{"laneCatalogSha256":"${"a".repeat(64)}","unionCatalogText":"{}","extra":1}`, "world")).toThrow("fields must be exactly");
+		expect(() => parseLaneUnionCatalogDocument("not json", "world")).toThrow("lane union catalog document refused");
 	});
 });

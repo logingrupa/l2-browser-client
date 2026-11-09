@@ -3,7 +3,7 @@ import { existsSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { formatRigaTimestamp } from "../../scripts/check-machine-schedule.mjs";
 import { desktopViewport, landscapePhone } from "./browserViewports";
-import { hashServedLaneCatalog, writeLoadCheckRecord } from "./support/loadCheckRecordFile";
+import { servedLaneCatalogSha256, writeLoadCheckRecord } from "./support/loadCheckRecordFile";
 import type { NativeNpcHarnessEntry } from "./harness/nativeNpcHarness";
 
 const laneName = "actors";
@@ -51,7 +51,7 @@ test("spawns npc:20001 by id from the actors lane store with meshes, a skeleton 
   await expect.poll(() => page.evaluate(key => window.__nativeNpcHarness!.snapshot().find(entry => entry.key === key)?.preview?.nativePlayback?.durationSeconds ?? null, gremlinKey))
     .toBe(gremlin.clips[0]!.durationSeconds);
   if (baseURL === undefined) throw new Error("the Playwright project has no baseURL");
-  writeLoadCheckRecord(laneName, await hashServedLaneCatalog(baseURL), {
+  writeLoadCheckRecord(laneName, await servedLaneCatalogSha256(baseURL), {
     key: gremlinKey, status: "pass", reason: null, atRiga: formatRigaTimestamp(new Date()), assetManifestSchemaVersion: 2,
   });
 });
