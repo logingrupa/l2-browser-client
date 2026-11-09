@@ -1,11 +1,15 @@
 {
   "schemaVersion": 1,
-  "listVersion": 1,
+  "listVersion": 2,
   "reasons": [
     "conversion-pending",
     "mesh-package-not-in-client:<package>",
     "texture-package-not-in-client:<package>",
     "package-name-ambiguous:<package>",
-    "skill-row-ambiguous:<count>"
+    "skill-row-ambiguous:<count>",
+    "npc-name-row-missing",
+    "npc-name-empty",
+    "animation-outside-mesh-package:<package>",
+    "converter-refused:<message>"
   ]
 }

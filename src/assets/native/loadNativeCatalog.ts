@@ -4,7 +4,7 @@ import { loadNativeNpcProfiles } from "./loadNativeNpcProfiles";
 import { defaultNativePlayerProfile, loadNativePlayerProfiles, validateNativePlayerAssets } from "./loadNativePlayerProfiles";
 import { readNativeCatalog, type NativeCatalog } from "./readNativeCatalog";
 
-async function loadModels(catalog: NativeCatalog, signal: AbortSignal, wanted: readonly string[]): Promise<ReadonlyMap<string, AssetPackage>> {
+export async function loadNativeModelPackages(catalog: NativeCatalog, signal: AbortSignal, wanted: readonly string[]): Promise<ReadonlyMap<string, AssetPackage>> {
   const result = new Map<string, AssetPackage>(), ids = new Set<string>();
   for (const record of catalog.models) {
     if (typeof record !== "object" || !record || !("id" in record) || typeof record.id !== "string" ||
@@ -27,7 +27,7 @@ export async function loadNativeActorCatalog(signal: AbortSignal, profileId = de
   const catalog = await readNativeCatalog(signal);
   const playerProfiles = await loadNativePlayerProfiles(catalog.playerProfiles, signal), playerProfile = playerProfiles.get(profileId);
   if (!playerProfile) throw new Error(`Native player profile ${profileId} is not staged.`);
-  const models = await loadModels(catalog, signal, [playerProfile.catalogId, ...playerProfile.upperItems.map(item => item.catalogId), "musveren:0"]);
+  const models = await loadNativeModelPackages(catalog, signal, [playerProfile.catalogId, ...playerProfile.upperItems.map(item => item.catalogId), "musveren:0"]);
   validateNativePlayerAssets(playerProfile, models);
   const npcProfiles = await loadNativeNpcProfiles(catalog.npcProfiles, signal);
   const archiveHashes = new Map((catalog.models as readonly { id: string; archiveSha256: string }[])

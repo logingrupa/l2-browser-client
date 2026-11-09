@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-"""Source-backed NPC presentation profiles; no native process or source writes.
-
-The profile joins one exact localized name ID to npcgrp, resolves that actor's
-qualified inheritance, and keeps actor defaults separate from mesh conversion.
-Missing defaults are explicit gaps, never assumed zero or a model-size fit.
-"""
 import argparse
 import copy
 import hashlib
@@ -27,6 +21,19 @@ from reference_client_guard import require_reference_client
 OWNER_FILE = '.native-npc-profiles-owner.json'
 KIND = 'native-npc-profiles'
 SUPPORT = 'source-profile-fields-ready'
+NPC_PROFILES_DESCRIPTION = ('Build source-backed NPC presentation profiles that join one exact localized name id to npcgrp, resolve the '
+                            'actor class inheritance and keep unresolved actor defaults as explicit gaps; no native process or source writes.')
+MAXIMUM_PROFILES_PER_BUNDLE = 128
+MAXIMUM_NPC_PROFILE_BUNDLES = 16
+PROFILE_SELECTION_FIELDS = frozenset({'npcId', 'expectedName', 'expectedMesh', 'expectedActorClass'})
+MODEL_CATALOG_ID_FIELD = 'modelCatalogId'
+MODEL_CATALOG_ID_PATTERN = re.compile(r'^npc-model:[a-f0-9]{64}$')
+
+
+class UnresolvedActorDefaultError(FormatError):
+    def __init__(self, field, message):
+        super().__init__(message)
+        self.field = field
 
 
 def digest(value):
@@ -43,12 +50,15 @@ def _recipe(value):
         raise FormatError('NPC profile recipe requires an explicit native npcname locale filename')
     if type(value['sourceUnitsPerMetre']) is not int or value['sourceUnitsPerMetre'] != 100:
         raise FormatError('Only the existing 100 native units per metre conversion policy is supported')
-    if not isinstance(value['profiles'], list) or not 1 <= len(value['profiles']) <= 128:
-        raise FormatError('NPC profile recipe requires 1 to 128 explicit profiles')
+    if not isinstance(value['profiles'], list) or not 1 <= len(value['profiles']) <= MAXIMUM_PROFILES_PER_BUNDLE:
+        raise FormatError(f'NPC profile recipe requires 1 to {MAXIMUM_PROFILES_PER_BUNDLE} explicit profiles')
     seen = set()
     for row in value['profiles']:
-        if not isinstance(row, dict) or set(row) != {'npcId', 'expectedName', 'expectedMesh', 'expectedActorClass'}:
-            raise FormatError('NPC selection requires id and exact expected name, mesh and actor class')
+        if not isinstance(row, dict) or set(row) not in (PROFILE_SELECTION_FIELDS, PROFILE_SELECTION_FIELDS | {MODEL_CATALOG_ID_FIELD}):
+            raise FormatError('NPC selection requires id and exact expected name, mesh and actor class, and optionally modelCatalogId')
+        if MODEL_CATALOG_ID_FIELD in row and not (isinstance(row[MODEL_CATALOG_ID_FIELD], str)
+                                                  and MODEL_CATALOG_ID_PATTERN.fullmatch(row[MODEL_CATALOG_ID_FIELD])):
+            raise FormatError('NPC profile modelCatalogId must match ' + MODEL_CATALOG_ID_PATTERN.pattern)
         if type(row['npcId']) is not int or row['npcId'] < 1 or row['npcId'] in seen:
             raise FormatError('NPC profile id is invalid or duplicated')
         seen.add(row['npcId'])
@@ -153,10 +163,12 @@ def resolved_profile(selection, definition, units):
     profile = {'id': 'npc:' + str(selection['npcId']), 'npcId': selection['npcId'],
         'name': selection['expectedName'], 'mesh': selection['expectedMesh'],
         'actorClass': selection['expectedActorClass'], 'sourceUnitsPerMetre': units}
+    if MODEL_CATALOG_ID_FIELD in selection:
+        profile[MODEL_CATALOG_ID_FIELD] = selection[MODEL_CATALOG_ID_FIELD]
     for native, field in (('DrawScale', 'drawScale'), ('CollisionRadius', 'collisionRadius'), ('CollisionHeight', 'collisionHeight')):
         value = properties.get(native)
         if type(value) not in (int, float) or not math.isfinite(value) or value <= 0:
-            raise FormatError('Unsupported or unresolved positive native actor field: ' + native)
+            raise UnresolvedActorDefaultError(native, 'Unsupported or unresolved positive native actor field: ' + native)
         profile[field] = value
     for native, field in (('DrawScale3D', 'drawScale3D'), ('PrePivot', 'prePivot')):
         if native not in properties and native == 'PrePivot':
@@ -166,9 +178,9 @@ def resolved_profile(selection, definition, units):
         vector = properties.get(native)
         if (not isinstance(vector, dict) or set(vector) != set('XYZ')
                 or any(type(vector[key]) not in (int, float) or not math.isfinite(vector[key]) for key in 'XYZ')):
-            raise FormatError('Unsupported or unresolved complete native vector: ' + native)
+            raise UnresolvedActorDefaultError(native, 'Unsupported or unresolved complete native vector: ' + native)
         if native == 'DrawScale3D' and any(vector[key] <= 0 for key in 'XYZ'):
-            raise FormatError('Nonpositive actor scale components are unsupported')
+            raise UnresolvedActorDefaultError(native, 'Nonpositive actor scale components are unsupported')
         profile[field] = [vector[key] for key in 'XYZ']
     return profile
 
@@ -344,7 +356,7 @@ def migrate_npc_profiles(client, recipe, output):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=NPC_PROFILES_DESCRIPTION)
     parser.add_argument('--client', type=Path, required=True)
     parser.add_argument('--recipe', type=Path)
     parser.add_argument('--output', type=Path, required=True)
