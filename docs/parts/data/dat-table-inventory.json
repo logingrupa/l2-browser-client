@@ -133,13 +133,13 @@
    "table": "hairaccessarygrp"
   },
   {
-   "countSource": null,
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/hairaccessorylocgrp.dat",
    "descriptorLayout": true,
    "file": "hairaccessorylocgrp.dat",
    "layout": "hairaccessorylocgrp",
-   "recordCount": "unknown",
-   "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "recordCount": 112,
+   "route": "local-decoded",
+   "status": "decoded",
    "table": "hairaccessorylocgrp"
   },
   {
@@ -393,13 +393,13 @@
    "table": "weapongrp"
   },
   {
-   "countSource": null,
+   "countSource": "scripts/data/convert_tables.py decode_table on lock-equal E:/Lineage2-client/system/zonename-e.dat",
    "descriptorLayout": true,
    "file": "zonename-e.dat",
    "layout": "zonename",
-   "recordCount": "unknown",
-   "route": "local-layout-only",
-   "status": "layout pinned, not decoded",
+   "recordCount": 369,
+   "route": "local-decoded",
+   "status": "decoded",
    "table": "zonename-e"
   }
  ],

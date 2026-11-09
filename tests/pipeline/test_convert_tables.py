@@ -22,6 +22,7 @@ from reference_client_guard import require_reference_client
 from reference_client_lock_fixture import lock_client_as_checked_conversion_root
 
 NPCNAME_FILE = 'system/npcname-e.dat'
+ZONENAME_FILE = 'system/zonename-e.dat'
 CP1252_UNDEFINED_BYTE = b'\x81'
 
 
@@ -46,7 +47,9 @@ class ConvertTableUnitTests(unittest.TestCase):
         client_root = base / 'conversion'
         (client_root / 'system').mkdir(parents=True)
         (client_root / NPCNAME_FILE).write_bytes(b'synthetic encrypted npcname table')
-        lock_client_as_checked_conversion_root(self, client_root, base / 'importa', [NPCNAME_FILE])
+        (client_root / ZONENAME_FILE).write_bytes(b'synthetic encrypted zonename table')
+        lock_client_as_checked_conversion_root(self, client_root, base / 'importa', [NPCNAME_FILE, ZONENAME_FILE])
+        self.client_root = client_root
         self.client_access = require_reference_client(client_root)
         self.output_root = lane_store_root(self.project_root, 'data-ui')
         self.catalog_path = self.output_root / 'catalog.json'
@@ -58,6 +61,16 @@ class ConvertTableUnitTests(unittest.TestCase):
     def convert_with_payload(self, payload):
         with patch('native_catalog.tables.decode413', return_value=('fixture', payload)):
             return convert_table_unit(self.project_root, self.client_access, 'npcname-e', self.output_root, self.new_ledger(), self.links)
+
+    def lane_file_bytes(self):
+        lane_root = self.project_root / 'artifacts/lane-store/data-ui'
+        return {path.relative_to(lane_root).as_posix(): path.read_bytes() for path in sorted(lane_root.rglob('*')) if path.is_file()}
+
+    def run_main(self, arguments):
+        error_output = io.StringIO()
+        with patch.object(convert_tables, 'REPOSITORY_ROOT', self.project_root),                 patch.object(convert_tables, 'require_batch_preflight'),                 patch.object(convert_tables, 'run_at_below_normal_priority'),                 contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(error_output):
+            exit_code = convert_tables.main(['--client', str(self.client_root), *arguments])
+        return exit_code, error_output.getvalue()
 
     def tables_records(self):
         return json.loads(self.catalog_path.read_bytes())['tables']
@@ -107,6 +120,30 @@ class ConvertTableUnitTests(unittest.TestCase):
     def test_zero_record_table_keeps_record_count_zero(self):
         self.convert_with_payload(synthetic_npcname_payload([]))
         self.assertEqual([record['recordCount'] for record in self.tables_records()], [0])
+
+    def test_table_name_without_a_descriptor_layout_exits_one_naming_it(self):
+        exit_code, error_text = self.run_main(['--table', 'nosuchtable'])
+        self.assertEqual(exit_code, 1)
+        self.assertIn('nosuchtable.dat', error_text)
+        self.assertEqual(self.lane_file_bytes(), {})
+
+    def test_linked_table_missing_from_the_lock_exits_one_naming_it(self):
+        exit_code, error_text = self.run_main(['--table', 'castlename-e'])
+        self.assertEqual(exit_code, 1)
+        self.assertIn('system/castlename-e.dat', error_text)
+        self.assertEqual(self.lane_file_bytes(), {})
+
+    def test_sealed_and_decode_failed_tables_both_survive_a_rerun_unchanged(self):
+        payloads = {b'synthetic encrypted npcname table': synthetic_npcname_payload([(17, b'Same NAME')]),
+                    b'synthetic encrypted zonename table': struct.pack('<I', 1) + SAFE_PACKAGE_TRAILER}
+        with patch('native_catalog.tables.decode413', side_effect=lambda raw, *_: ('fixture', payloads[raw])):
+            self.assertEqual(self.run_main(['--table', 'npcname-e', '--table', 'zonename-e'])[0], 0)
+        self.assertEqual([record['id'] for record in self.tables_records()], ['npcname-e'])
+        self.assertEqual([row['key'] for row in read_gap_rows(self.project_root, 'data-ui')], ['table:zonename-e'])
+        lane_bytes = self.lane_file_bytes()
+        with patch.object(convert_tables, 'decode_table', side_effect=AssertionError('a sealed unit must not be decoded again')):
+            self.assertEqual(self.run_main(['--table', 'npcname-e', '--table', 'zonename-e'])[0], 0)
+        self.assertEqual(self.lane_file_bytes(), lane_bytes)
 
     def test_manifest_records_are_the_decoded_data_unchanged_in_source_order(self):
         decoded_table = {'source': NPCNAME_FILE, 'sourceSha256': 'a' * 64, 'schema': {'descriptorSha256': 'b' * 64},
