@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-70-PLAN.md
-last_updated: "2026-11-09T16:10:35.731Z"
+stopped_at: Completed 02-71-PLAN.md
+last_updated: "2026-11-09T17:27:40.283Z"
 last_activity: 2026-11-09
-last_activity_desc: "Phase 02 plan 02-70 complete (tiles load sweep through ?map= on the native route)"
-state_head: 2463494a53a063264807280fd50e0c266cc87de2
+last_activity_desc: Phase 02 plan 02-70 complete (tiles load sweep through ?map= on the native route)
+state_head: 234449283a10464d2be7327d0d4cb3ec49fd3083
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 62
+  completed_plans: 63
   percent: 0
 ---
 
@@ -114,6 +114,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P44 | 45min | 3 tasks | 25 files |
 | Phase 02 P68 | 25min | 3 tasks | 29 files |
 | Phase 02 P70 | 12min | 1 tasks | 2 files |
+| Phase 02 P71 | 80min | 6 tasks | 113 files |
 
 ## Accumulated Context
 
@@ -273,6 +274,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-68: FX-01 emitter simulation core is our own UE2 port under src/effects/particles/sim (Sprite and Mesh on one shared core, Emitter actor rules, effectScheduler at 1/60 s with cap 8); Independent and Spray particles are stored in world space; Power Strike traces are hash-only through POWER_STRIKE_EFFECT_SOURCE; FX-01 and ACT-06 stay Pending (OVERNIGHT-DECISIONS rows 486 to 497)
 - [Phase 02]: 02-70: the tiles load sweep checks converted tile: keys on the native route by ?map= and passes only when the snapshot manifestSha256 equals the served tiles record (rows 498 to 502)
 - [Phase 02]: 02-70: tile:20_20 is converted only through the legacy section record and records failed for the ?map= route until a tiles record exists (row 503)
+- [Phase 02]: Plan 02-71: legacy 20_20 chain cut; oracle pins served world-audio and step-sound manifests; build_map in scripts/world/raw_map_extraction.py with raw version 2 and every world unit resealed (lane catalog 108c17b9); shared BSP reader binding and sound export guards; --stage-runtime keeps every unstaged catalog record; flame request is assets job flame-native-material-graph (OVERNIGHT-DECISIONS rows 505 to 511)
 
 ### Pending Todos
 
@@ -347,6 +349,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-09T16:10:34.887Z
-Stopped at: Completed 02-70-PLAN.md
+Last session: 2026-11-09T17:27:39.520Z
+Stopped at: Completed 02-71-PLAN.md
 Resume file: None
