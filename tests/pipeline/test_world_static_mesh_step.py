@@ -139,6 +139,10 @@ class RecordingConverter:
         self.requests.append(request)
         if request['object'].endswith('Broken'):
             raise ValueError('UModel cannot safely select this duplicate leaf name\nsecond line')
+        if request['object'].endswith('Payload'):
+            raise ValueError(f'Expected exactly one exported payload for {request["object"]}: [{self.output}/export/a.gltf]')
+        if request['object'].endswith('Hung'):
+            raise ValueError(f'UModel failed or reported an error; inspect {self.output}/000-export.log')
         return {'file': str(self.output / 'asset.l2asset')}
 
 
@@ -185,6 +189,12 @@ class StaticMeshOutcomeTests(unittest.TestCase):
         self.assertIsInstance(outcomes['Rock_S.Rock'], ConvertedStaticMesh)
         self.assertEqual(outcomes['Rock_S.Broken'], ('failed', 'decode-failed:ValueError:UModel cannot safely select this duplicate leaf name'))
         self.assertEqual(outcomes['Bad_S.Rock'], ('failed', 'decode-failed:header too short'))
+
+    def test_a_failure_reason_keeps_the_sentence_and_drops_machine_paths(self):
+        requests = [mesh_request('Rock_S', 'Payload'), mesh_request('Rock_S', 'Hung')]
+        outcomes = self.outcomes({'staticmeshes/Rock_S.usx': {'packageVersion': 123, 'licensee': 28}}, requests)
+        self.assertEqual(outcomes, {'Rock_S.Payload': ('failed', 'decode-failed:ValueError:Expected exactly one exported payload for Rock_S.Payload'),
+                                    'Rock_S.Hung': ('failed', 'decode-failed:ValueError:UModel failed or reported an error')})
 
 
 def synthetic_tile_actors():

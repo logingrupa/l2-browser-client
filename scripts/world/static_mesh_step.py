@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import re
 import subprocess
 from typing import NamedTuple
 
@@ -20,7 +21,7 @@ from world.terrain_chunk_step import TERRAIN_CLASS_EVIDENCE_FOLDER
 from world.tile_census import GAP_STATUS, WORLD_LANE_NAME, read_package_header
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 
-STATIC_MESH_STEP_ALGORITHM_VERSION = 1
+STATIC_MESH_STEP_ALGORITHM_VERSION = 2
 STATIC_MESH_STEP_NAME = 'meshes'
 STATIC_MESHES_PRODUCT_NAME = 'static-meshes.json'
 STATIC_MESH_CONVERTER_FOLDER = 'static-mesh-converter'
@@ -99,9 +100,13 @@ def package_gate_reason(header):
     return None
 
 
+CONVERSION_FAILURE_DETAIL_SEPARATOR = re.compile(r'[:;]')
+
+
 def conversion_failure_reason(error):
-    first_line = str(error).strip().splitlines()[0] if str(error).strip() else 'no message'
-    return f'decode-failed:{type(error).__name__}:{first_line}'
+    message = str(error).strip()
+    sentence = CONVERSION_FAILURE_DETAIL_SEPARATOR.split(message.splitlines()[0], maxsplit=1)[0].strip() if message else ''
+    return f'decode-failed:{type(error).__name__}:{sentence or "no message"}'
 
 
 def model_sort_key(model_record):
