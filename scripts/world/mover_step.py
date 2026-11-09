@@ -179,7 +179,7 @@ def write_tile_movers_manifest(store_root, manifest):
 
 
 def class_evidence_record(evidence):
-    return {'unit': MOVER_CLASS_UNIT_KEY, 'receiptSha256': evidence.receipt_sha256,
+    return {'unit': MOVER_CLASS_UNIT_KEY, 'evidenceSha256': evidence.evidence_sha256,
             'classes': [{'object': definition['object'], 'package': definition['source']['package'], 'packageSha256': definition['source']['packageSha256']}
                         for definition in sorted(evidence.definitions.values(), key=lambda definition: definition['object'])]}
 
@@ -208,6 +208,13 @@ def converted_movers(read_movers, outcomes, conversion):
     return converted
 
 
+def require_every_mover_classified(tile_id, items, converted, gapped):
+    classified = sorted([mover.item['exportIndex'] for mover, _ in converted] + [export_index for export_index, _ in gapped])
+    if classified != sorted(item['exportIndex'] for item in items):
+        raise MoverStepError(f'{len(converted)} converted and {len(gapped)} gapped movers do not classify the {len(items)} Engine.Mover exports of {tile_id} '
+                             'once each')
+
+
 def mover_models(converted):
     return sorted({outcome.model_record['id']: outcome.model_record for _, outcome in converted}.values(), key=model_sort_key)
 
@@ -230,8 +237,7 @@ def run_mover_step(project_root, client_root, tile_id):
     items, read_movers = read_tile_movers(package, sources, evidence.defaults, tile_id, conversion.gap)
     outcomes = static_mesh_outcomes(project_root, client, mesh_requests(read_movers))
     converted = converted_movers(read_movers, outcomes, conversion)
-    if len(converted) + len(conversion.gapped) != len(items):
-        raise MoverStepError(f'{len(converted)} converted and {len(conversion.gapped)} gapped movers of {len(items)} Engine.Mover exports in {tile_id}')
+    require_every_mover_classified(tile_id, items, converted, conversion.gapped)
     actors_by_export = {actor['exportIndex']: actor for actor in mover_actors(unit.raw_products)}
     if any(mover.item['exportIndex'] not in actors_by_export for mover, _ in converted):
         raise MoverStepError(f'raw actors of {tile_id} miss an Engine.Mover export; rerun --step raw')

@@ -9,13 +9,17 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
+from native_catalog.ue2 import FormatError
+from native_assets_lib.static_materials import REVIEWED_VERSIONS
+from native_store.gap_rows import load_gap_reason_patterns, validate_gap_row
 from native_store.tile_manifest_validation import TileManifestError, load_tile_manifest_vocabulary, validate_tile_manifest
 from support.converted_model_fixture import converted_model_glb
 from world.collision_payload_groups import movr_arrays
 from world.collision_step import mover_slot_records
-from world.mover_records import MoverUnsupportedError
-from world.mover_step import MOVER_STEP_NAME, mover_models, read_tile_movers
-from world.static_mesh_step import ConvertedStaticMesh
+from world.mover_records import (MOVER_UNSUPPORTED_TOKENS, MoverUnsupportedError, is_rigid_rows, mover_mesh, qualified_motion, resolved_field)
+from world.mover_step import (MOVER_STEP_NAME, MoverConversion, MoverStepError, ReadMover, converted_movers, mover_models, read_tile_movers,
+                              require_every_mover_classified, run_mover_step)
+from world.static_mesh_step import ConvertedStaticMesh, package_gate_reason
 from world.static_placement_plan import ChunkRectangle
 from world.tile_manifest_step import PENDING_TILE_STEPS, pending_steps_after_sealed, tile_resources
 
@@ -140,6 +144,86 @@ class MoverManifestResourceTests(unittest.TestCase):
         self.assertIn(MOVER_STEP_NAME, pending_steps_after_sealed(PENDING_TILE_STEPS, None, None, None, None))
 
 
+def motion(num_keys=2, initial=0, closed=True, move_time=1.0):
+    return {'NumKeys': {'value': num_keys}, 'KeyNum': {'value': initial}, 'bClosed': {'value': closed}, 'MoveTime': {'value': move_time}}
+
+
+class RefusingDefaults:
+    def resolve(self, properties, name, kind, index=None, count=None):
+        raise FormatError('Native mover field declaration unresolved: ' + name)
+
+
+class FakeMeshSources:
+    def resolve(self, reference, expected):
+        raise FormatError('Package missing/ambiguous: ' + reference)
+
+
+class MoverUnsupportedTokenTests(unittest.TestCase):
+    def test_the_token_list_is_the_closed_set_of_qualification_failures(self):
+        self.assertEqual(MOVER_UNSUPPORTED_TOKENS, ('unconsumed-native-tail', 'key-count:<n>', 'initial-key:<n>', 'not-initially-closed',
+                                                    'field-unresolved:<fieldName>', 'invalid-move-time', 'saved-placement-differs-from-initial-key',
+                                                    'no-static-mesh', 'mesh-unresolved', 'non-rigid-key-transform'))
+        with self.assertRaisesRegex(ValueError, 'not listed'):
+            MoverUnsupportedError('door-is-blue')
+        with self.assertRaisesRegex(ValueError, 'not listed'):
+            MoverUnsupportedError('key-count')
+
+    def test_each_qualification_failure_maps_to_exactly_one_token_and_a_listed_gap_reason(self):
+        cases = {'key-count:3': motion(num_keys=3), 'initial-key:1': motion(initial=1), 'not-initially-closed': motion(closed=False),
+                 'invalid-move-time': motion(move_time=0)}
+        patterns = load_gap_reason_patterns()
+        for token, resolved in cases.items():
+            with self.assertRaises(MoverUnsupportedError) as raised:
+                qualified_motion(resolved)
+            self.assertEqual(raised.exception.token, token)
+            self.assertTrue(any(pattern.fullmatch(raised.exception.reason) for pattern in patterns.values()), raised.exception.reason)
+        self.assertEqual(qualified_motion(motion()), (2, 0, 1.0))
+        with self.assertRaises(MoverUnsupportedError) as raised:
+            resolved_field(RefusingDefaults(), {}, 'BasePos', 'Vector')
+        self.assertEqual(raised.exception.reason, 'mover-unsupported:field-unresolved:BasePos')
+        with self.assertRaises(MoverUnsupportedError) as raised:
+            mover_mesh(FakeMeshSources(), {})
+        self.assertEqual(raised.exception.token, 'no-static-mesh')
+        with self.assertRaises(MoverUnsupportedError) as raised:
+            mover_mesh(FakeMeshSources(), {('StaticMesh', None): {'value': {'object': 'missing_s.Door'}}})
+        self.assertEqual(raised.exception.token, 'mesh-unresolved')
+
+    def test_a_scaled_or_mirrored_key_transform_is_not_rigid(self):
+        identity = [[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0], [5.0, 6.0, 7.0, 1.0]]
+        self.assertTrue(is_rigid_rows(identity))
+        self.assertFalse(is_rigid_rows([[2.0, 0.0, 0.0, 0.0], *identity[1:]]))
+        self.assertFalse(is_rigid_rows([[-1.0, 0.0, 0.0, 0.0], *identity[1:]]))
+
+
+def read_mover(export_index, mesh_object):
+    return ReadMover({'exportIndex': export_index, 'object': f'{TILE_ID}.Mover{export_index}'}, {}, {'object': mesh_object}, {})
+
+
+class MoverAccountingTests(unittest.TestCase):
+    def test_a_mesh_package_outside_the_reviewed_layouts_gaps_its_movers_without_conversion(self):
+        self.assertNotIn((1, 1), REVIEWED_VERSIONS)
+        self.assertEqual(package_gate_reason({'packageVersion': 1, 'licensee': 1}), ('gap', 'static-material-layout-unreviewed:1/1'))
+        conversion = MoverConversion(TILE_ID, {'path': f'maps/{TILE_ID}.unr', 'sha256': 'c' * 64}, 'work/tile__00_00/movers/receipt.json')
+        door = converted('interlude:fixture_s.Door', 'fixture_s.Door')
+        outcomes = {'fixture_s.Door': door, 'cruma_s.Gate': package_gate_reason({'packageVersion': 1, 'licensee': 1})}
+        result = converted_movers([read_mover(3, 'fixture_s.Door'), read_mover(8, 'cruma_s.Gate')], outcomes, conversion)
+        self.assertEqual([mover.item['exportIndex'] for mover, _ in result], [3])
+        rows = conversion.gap_rows()
+        self.assertEqual([(row['sourceIdentity']['object'], row['status'], row['reason']) for row in rows],
+                         [(f'{TILE_ID}.Mover8', 'gap', 'static-material-layout-unreviewed:1/1')])
+        for row in rows:
+            validate_gap_row(row)
+
+    def test_converted_plus_gapped_movers_must_equal_the_engine_mover_exports(self):
+        items = [{'exportIndex': index} for index in (3, 8, 9)]
+        door = converted('interlude:fixture_s.Door', 'fixture_s.Door')
+        require_every_mover_classified(TILE_ID, items, [(read_mover(3, 'fixture_s.Door'), door)], [(8, {}), (9, {})])
+        with self.assertRaisesRegex(MoverStepError, 'once each'):
+            require_every_mover_classified(TILE_ID, items, [(read_mover(3, 'fixture_s.Door'), door)], [(8, {})])
+        with self.assertRaisesRegex(MoverStepError, 'once each'):
+            require_every_mover_classified(TILE_ID, items, [(read_mover(3, 'fixture_s.Door'), door)], [(3, {}), (8, {}), (9, {})])
+
+
 def served_oracle_movers():
     oracle = json.loads(ORACLE_PATH.read_text(encoding='utf-8'))['movers']
     payload = (SERVED_STORE / 'movers' / oracle['manifestSha256'] / 'movers.json').read_bytes()
@@ -174,6 +258,17 @@ class OracleMoverSubsetTests(unittest.TestCase):
         self.assertEqual([mover['exportIndex'] for mover in manifest['movers']], sorted(mover['exportIndex'] for mover in manifest['movers']))
         served_models = {model['id']: model['model']['sha256'] for model in served['models']}
         self.assertEqual({model['id']: model['model']['sha256'] for model in manifest['models']}, served_models)
+        self.assertEqual(set(manifest['classEvidence']), {'unit', 'evidenceSha256', 'classes'})
+
+    def test_a_second_run_is_a_ledger_skip_that_keeps_the_sealed_manifest(self):
+        first_row = run_mover_step(ROOT, REFERENCE_CLIENT, '20_20')
+        product, _ = sealed_tile_movers('20_20')
+        receipt = (LANE_FOLDER / 'work/tile__20_20/movers/receipt.json').read_bytes()
+        second_row = run_mover_step(ROOT, REFERENCE_CLIENT, '20_20')
+        self.assertEqual((second_row['step'], second_row['status']), (MOVER_STEP_NAME, 'pass'))
+        self.assertEqual(second_row, first_row)
+        self.assertEqual((LANE_FOLDER / 'work/tile__20_20/movers/receipt.json').read_bytes(), receipt)
+        self.assertEqual(sealed_tile_movers('20_20')[0]['manifest'], product['manifest'])
 
 
 if __name__ == '__main__':

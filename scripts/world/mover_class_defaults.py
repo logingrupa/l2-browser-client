@@ -143,16 +143,18 @@ def sealed_mover_class_receipt_sha256(project_root):
 
 class MoverClassEvidence(NamedTuple):
     receipt_sha256: str
+    evidence_sha256: str
     definitions: dict
     defaults: MoverDefaults
 
 
 def sealed_class_evidence(ledger):
     products = class_evidence_products(ledger)
-    definitions = json.loads((products / CLASS_EVIDENCE_PRODUCT_NAME).read_text(encoding='utf-8'))
+    evidence_payload = (products / CLASS_EVIDENCE_PRODUCT_NAME).read_bytes()
+    definitions = json.loads(evidence_payload)
     scripts = qualified_classes(definitions, lambda name: safe_path(products, name).read_bytes())
     receipt_sha256 = sha256_of_file(ledger.unit_step_directory(MOVER_CLASS_UNIT_KEY) / RECEIPT_RECORD_NAME)
-    return MoverClassEvidence(receipt_sha256, definitions, MoverDefaults(definitions, scripts))
+    return MoverClassEvidence(receipt_sha256, sha256_hex(evidence_payload), definitions, MoverDefaults(definitions, scripts))
 
 
 def mover_class_evidence(project_root, client):
