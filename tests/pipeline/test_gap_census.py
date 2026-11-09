@@ -12,6 +12,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
 from catalog_store_fixture import write_store_catalog
+from native_store.build_coverage_report import build_coverage_report, validate_coverage_report
 from native_store.canonical_json import canonical_json_bytes
 from native_store.gap_census import (GAP_CENSUS_STATUS_PRECEDENCE, GAP_CENSUS_STEP_ORDER, GapCensusIncompleteError, build_gap_census,
                                      item_census_rows)
@@ -253,6 +254,36 @@ class GapCensusRefusalTests(unittest.TestCase):
     def test_a_load_check_other_than_pass_or_failed_is_refused(self):
         with self.assertRaisesRegex(GapCensusIncompleteError, 'npc:1'):
             build_gap_census(self.denominators, self.gap_rows, set(), {'npc:1': 'unverified'})
+
+
+CENSUS_LANE_NAMES = ('actors', 'data-ui', 'world')
+SHARED_STORE_CATALOG_PATH = ROOT / 'public' / 'l2' / 'catalog.json'
+CENSUS_GENERATED_AT_RIGA = '2026-11-09T06:30:00+02:00'
+
+
+class GapCensusCompletenessTests(unittest.TestCase):
+    def setUp(self):
+        missing_inputs = [f'artifacts/lane-store/{lane_name}/gap-rows' for lane_name in CENSUS_LANE_NAMES
+                          if not (ROOT / 'artifacts' / 'lane-store' / lane_name / 'gap-rows').is_dir()]
+        missing_inputs += [path.relative_to(ROOT).as_posix() for path in
+                           [SHARED_STORE_CATALOG_PATH, *(ROOT / 'artifacts' / 'lane-store' / lane_name / 'l2' / 'catalog.json'
+                                                         for lane_name in CENSUS_LANE_NAMES)] if not path.is_file()]
+        if missing_inputs:
+            self.skipTest(f'real-data census needs the lane gap rows and catalogs: missing {", ".join(missing_inputs)}')
+
+    def test_the_shared_store_and_lane_stores_give_every_denominator_key_one_status(self):
+        report = build_coverage_report(ROOT, ROOT / 'public' / 'l2', CENSUS_LANE_NAMES, CENSUS_GENERATED_AT_RIGA, CENSUS_LANE_NAMES)
+        self.assertEqual(validate_coverage_report(report), report)
+        for part, denominator in report['denominators'].items():
+            part_rows = [row for row in report['rows'] if row['part'] == part]
+            with self.subTest(part):
+                if denominator['count'] == 'unknown':
+                    self.assertEqual(part_rows, [])
+                else:
+                    self.assertLessEqual(len(part_rows), denominator['count'])
+                    self.assertEqual(len({row['key'] for row in part_rows}), len(part_rows))
+        lobby_row = next(row for row in report['rows'] if row['key'] == 'map:Lobby')
+        self.assertIn(lobby_row['status'], ('pass', 'failed', 'gap', 'pending'))
 
 
 if __name__ == '__main__':

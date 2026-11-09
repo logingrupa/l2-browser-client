@@ -192,6 +192,18 @@ def coverage_report_bytes(report):
     return canonical_json_bytes(validate_coverage_report(report))
 
 
+def report_keeping_unchanged_generation_time(previous_output_path, report):
+    try:
+        previous_report = json.loads(Path(previous_output_path).read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        return report
+    if not (isinstance(previous_report, dict) and is_riga_timestamp(previous_report.get('generatedAtRiga'))):
+        return report
+    previous_generation_time = previous_report['generatedAtRiga']
+    unchanged = {**report, 'generatedAtRiga': previous_generation_time} == previous_report
+    return {**report, 'generatedAtRiga': previous_generation_time} if unchanged else report
+
+
 def coverage_markdown_row(part, denominator, counts):
     cells = (part, denominator['count'], counts['converted'], counts['loads']['pass'], counts['loads']['failed'],
              counts['loads']['unverified'], counts['gap'], counts['pending'], denominator['source'])
@@ -206,12 +218,19 @@ def lobby_status_text(report):
     return f'Lobby (`{LOBBY_MAP_KEY}`) has the census status {status_text}.\n'
 
 
-def coverage_markdown(report):
+def census_lanes_text(census_lane_names):
+    if not census_lane_names:
+        return ''
+    lane_list = ', '.join(f'`artifacts/lane-store/{lane_name}/l2`' for lane_name in census_lane_names)
+    return f' Converted keys and load checks also come from the census lane stores {lane_list}.'
+
+
+def coverage_markdown(report, census_lane_names=()):
     validate_coverage_report(report)
     table_rows = ''.join(coverage_markdown_row(part, report['denominators'][part], report['parts'][part]) for part in report['parts'])
     return (f'# Coverage\n\n'
             f'Store root `{report["storeRoot"]}`, catalog SHA-256 `{report["catalogSha256"]}`, generated at {report["generatedAtRiga"]} '
-            f'(Riga) by `pnpm report:coverage`.\n\n'
+            f'(Riga) by `pnpm report:coverage`.{census_lanes_text(census_lane_names)}\n\n'
             f'{MARKDOWN_TABLE_HEADER}{table_rows}\n'
             f'{CENSUS_RULE_TEXT} {LOADS_RULE_TEXT}\n\n'
             f'{lobby_status_text(report)}')
@@ -252,11 +271,12 @@ def main(argv=None, project_root=REPOSITORY_ROOT, run_command=subprocess.run):
         require_host_clock_on_riga_time(schedule['rigaTime'], datetime.now().astimezone())
         output_path = coverage_output_path(project_root, arguments.store_root, arguments.output)
         markdown_path = coverage_markdown_path(project_root, arguments.markdown) if arguments.markdown is not None else None
-        report = build_coverage_report(project_root, arguments.store_root, report_lane_names, schedule['rigaTime'],
-                                       sorted(set(arguments.census_lanes)))
+        census_lane_names = sorted(set(arguments.census_lanes))
+        report = build_coverage_report(project_root, arguments.store_root, report_lane_names, schedule['rigaTime'], census_lane_names)
+        report = report_keeping_unchanged_generation_time(output_path, report)
         replace_file(output_path, coverage_report_bytes(report))
         if markdown_path is not None:
-            replace_file(markdown_path, coverage_markdown(report).encode('utf-8'))
+            replace_file(markdown_path, coverage_markdown(report, census_lane_names).encode('utf-8'))
     except (OSError, ValueError) as error:
         print(f'Coverage report failed: {error}', file=sys.stderr)
         return 1

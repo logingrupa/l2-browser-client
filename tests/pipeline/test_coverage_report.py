@@ -216,6 +216,21 @@ class CoverageOutputTests(CoverageProjectTestCase):
         self.assertEqual(report['parts']['data']['converted'], 1)
         self.assertTrue((self.project_root / 'docs' / 'coverage.md').read_text(encoding='utf-8').startswith('# Coverage\n'))
 
+    def test_a_rerun_over_unchanged_inputs_keeps_the_report_and_markdown_bytes(self):
+        write_table_decode_rows(self.project_root)
+        write_window_layout_rows(self.project_root)
+        arguments = ['--store-root', str(self.store_root), '--lane', 'data-ui', '--markdown', 'docs/coverage.md']
+        output_path, markdown_path = self.store_root / 'coverage.json', self.project_root / 'docs' / 'coverage.md'
+        self.assertEqual(main(arguments, project_root=self.project_root, run_command=self.schedule_runner(0, None)), 0)
+        first_report = json.loads(output_path.read_text(encoding='utf-8'))
+        output_path.write_bytes(coverage_report_bytes({**first_report, 'generatedAtRiga': GENERATED_AT_RIGA}))
+        self.assertEqual(main(arguments, project_root=self.project_root, run_command=self.schedule_runner(0, None)), 0)
+        self.assertEqual(json.loads(output_path.read_text(encoding='utf-8'))['generatedAtRiga'], GENERATED_AT_RIGA)
+        self.assertIn(f'generated at {GENERATED_AT_RIGA}', markdown_path.read_text(encoding='utf-8'))
+        write_table_decode_rows(self.project_root, failed_table_keys=('table:npcgrp', 'table:chargrp'))
+        self.assertEqual(main(arguments, project_root=self.project_root, run_command=self.schedule_runner(0, None)), 0)
+        self.assertNotEqual(json.loads(output_path.read_text(encoding='utf-8'))['generatedAtRiga'], GENERATED_AT_RIGA)
+
     def test_main_refuses_an_incomplete_census(self):
         exit_code = main(['--store-root', str(self.store_root), '--lane', 'data-ui'], project_root=self.project_root,
                          run_command=self.schedule_runner(0, None))
@@ -316,6 +331,8 @@ class CoverageReportCensusLaneTests(CoverageProjectTestCase):
         self.assertEqual(exit_code, 0)
         report = json.loads((self.project_root / 'artifacts' / 'out' / 'c.json').read_text(encoding='utf-8'))
         self.assertEqual((tuple(report['parts']), report['parts']['data']['converted']), (('data', 'sandbox', 'ui'), 1))
+        self.assertIn('also come from the census lane stores `artifacts/lane-store/data-ui/l2`.', coverage_markdown(report, ['data-ui']))
+        self.assertNotIn('census lane stores', coverage_markdown(report))
 
 
 class CoverageReportTableNameIndexTests(CoverageProjectTestCase):
