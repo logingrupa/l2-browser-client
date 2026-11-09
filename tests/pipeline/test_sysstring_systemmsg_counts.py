@@ -76,7 +76,7 @@ class StrictTableCountReportTests(unittest.TestCase):
 
 
     def test_a_failed_strict_decode_is_reported_with_its_header_count_and_no_decoded_facts(self):
-        unterminated_payload = struct.pack('<II', 3, 7) + bytes([1]) + b' ' + SAFE_PACKAGE_TRAILER
+        unterminated_payload = struct.pack('<II', 3, 7) + bytes([2]) + b'ab' + SAFE_PACKAGE_TRAILER
         with patch('native_catalog.tables.decode413', return_value=('fixture', unterminated_payload)), \
                 patch('sysstring_systemmsg_counts.decode413', return_value=('fixture', unterminated_payload)):
             report, identifiers = table_count_report_and_identifiers(self.client_access, 'sysstring-e')
