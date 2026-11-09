@@ -6,11 +6,11 @@ Sources: `02-RESEARCH.md` sections 4, 6 and 11 (where 6 and 11 disagree, 11 wins
 
 ## How to read the ids
 
-- Plan ids are the plain integers 02-01 to 02-69. Plans 02-56 to 02-69 were added for DEC-OWN-12 (own implementations of five areas) and have no research id. The single sequential executor runs plans in wave order (see Waves); inside a wave, in id order.
+- Plan ids are the plain integers 02-01 to 02-70. Plans 02-56 to 02-69 were added for DEC-OWN-12 (own implementations of five areas) and have no research id. 02-70 is the tiles sweep split out of 02-23 (OVERNIGHT-DECISIONS row 303). The single sequential executor runs plans in wave order (see Waves); inside a wave, in id order.
 - Research ids (in `02-RESEARCH.md` and `02-VALIDATION.md`) are different from 02-10 on. Only 02-01 to 02-09 keep their numbers. Translate a research id with the "Research" column. Never cite a research id as a plan id.
 - Wave = 1 + the highest wave among a plan's Phase 2 dependencies. Phase 1 dependencies count as wave 0. With one executor, a wave groups plans; nothing runs in parallel.
 - Phase gate: no Phase 2 plan starts before Phase 1 is complete (summaries for 01-14, 01-16 and 01-17 exist). `depends_on` lists a Phase 1 plan only where a plan uses its artifacts directly.
-- Plan count: 69.
+- Plan count: 70.
 
 ## Rules every plan carries
 
@@ -104,7 +104,7 @@ Sources: `02-RESEARCH.md` sections 4, 6 and 11 (where 6 and 11 disagree, 11 wins
 | 02-44 | 02-42 | Actor audio bindings | actors, audio | ACT-05 | 02-27, 02-34, 02-43 | 9 |
 | 02-45 | 02-27a | Tile sky and audio converters | world, world | WORLD-02, MAT-01 | 02-11, 02-14, 02-16, 02-27, 02-29, 02-30, 02-31, 02-59 | 12 |
 | 02-46 | 02-27b | Tile audio runtime | actors, audio | WORLD-02 | 02-16, 02-45 | 13 |
-| 02-47 | 02-28 | Eligible-39 batch | world, world | WORLD-01, WORLD-02, WORLD-03 | 02-13, 02-23, 02-29, 02-30, 02-31, 02-45, 02-61, 02-62 | 14 |
+| 02-47 | 02-28 | Eligible-39 batch | world, world | WORLD-01, WORLD-02, WORLD-03 | 02-13, 02-70, 02-29, 02-30, 02-31, 02-45, 02-61, 02-62 | 14 |
 | 02-48 | 02-29 | Cell-aware collision world | world, movement-geodata | WORLD-04, MOVE-01 | 02-30, 02-56 | 11 |
 | 02-49 | 02-30 | Streaming baseline and residency | world, world | WORLD-04, MOVE-01 | 02-47, 02-48, 02-67 | 16 |
 | 02-50 | 02-31a | Minimap and town map join | world, minimap | WORLD-06 | 02-18, 02-19, 02-27, 02-47 | 15 |
@@ -127,8 +127,9 @@ Sources: `02-RESEARCH.md` sections 4, 6 and 11 (where 6 and 11 disagree, 11 wins
 | 02-67 | new | Runtime wiring for movement, environment and translucent order | integration, adapter-dispatch | MOVE-01, MAT-02, VIS-01, WORLD-05 | 02-37, 02-63, 02-64, 02-66 | 15 |
 | 02-68 | new | Emitter simulation core | actors, skills-effects | FX-01, ACT-06 | 02-43, 02-56, 02-57 | 9 |
 | 02-69 | new | Ribbon emitter, L2 emitter natives and particle rendering | actors, skills-effects | FX-01, ACT-06, MAT-01 | 02-58, 02-60, 02-61, 02-68 | 12 |
+| 02-70 | 02-46 | Tiles load sweep through ?map= | integration, adapter-dispatch | INT-01 | 02-23, 02-16 | 9 |
 
-Research to new id (02-56 to 02-69 have none): 02-01..02-09 = same; 02-10 = 02-17; 02-11 = 02-19; 02-12 = 02-20; 02-13 = 02-12; 02-14 = 02-14; 02-15 = 02-15; 02-16 = 02-16; 02-17 = 02-21; 02-18 = 02-22; 02-19 = 02-25; 02-20 = 02-27; 02-21 = 02-28; 02-22 = 02-35; 02-22b = 02-37; 02-23 = 02-38; 02-24 = 02-11; 02-25 = 02-29; 02-26 = 02-30; 02-27a = 02-45; 02-27b = 02-46; 02-28 = 02-47; 02-29 = 02-48; 02-30 = 02-49; 02-31a = 02-50; 02-31b = 02-51; 02-32w = 02-52; 02-32i = 02-53; 02-33 = 02-54; 02-34 = 02-32; 02-35 = 02-33; 02-36 = 02-34; 02-37 = 02-40; 02-38 = 02-41; 02-39 = 02-42; 02-40 = 02-43; 02-41a = 02-36; 02-41b = 02-39; 02-42 = 02-44; 02-43 = 02-55; 02-44 = 02-10; 02-45 = 02-18; 02-46 = 02-23; 02-47 = 02-24; 02-48 = 02-26; 02-49 = 02-31; 02-50 = 02-13.
+Research to new id (02-56 to 02-69 have none): 02-01..02-09 = same; 02-10 = 02-17; 02-11 = 02-19; 02-12 = 02-20; 02-13 = 02-12; 02-14 = 02-14; 02-15 = 02-15; 02-16 = 02-16; 02-17 = 02-21; 02-18 = 02-22; 02-19 = 02-25; 02-20 = 02-27; 02-21 = 02-28; 02-22 = 02-35; 02-22b = 02-37; 02-23 = 02-38; 02-24 = 02-11; 02-25 = 02-29; 02-26 = 02-30; 02-27a = 02-45; 02-27b = 02-46; 02-28 = 02-47; 02-29 = 02-48; 02-30 = 02-49; 02-31a = 02-50; 02-31b = 02-51; 02-32w = 02-52; 02-32i = 02-53; 02-33 = 02-54; 02-34 = 02-32; 02-35 = 02-33; 02-36 = 02-34; 02-37 = 02-40; 02-38 = 02-41; 02-39 = 02-42; 02-40 = 02-43; 02-41a = 02-36; 02-41b = 02-39; 02-42 = 02-44; 02-43 = 02-55; 02-44 = 02-10; 02-45 = 02-18; 02-46 = 02-23 and 02-70; 02-47 = 02-24; 02-48 = 02-26; 02-49 = 02-31; 02-50 = 02-13.
 
 ## Waves
 
@@ -142,7 +143,7 @@ Research to new id (02-56 to 02-69 have none): 02-01..02-09 = same; 02-10 = 02-1
 | 6 | 02-13, 02-14, 02-28, 02-33, 02-36, 02-41 |
 | 7 | 02-15, 02-26, 02-34, 02-58 |
 | 8 | 02-16, 02-43, 02-52 |
-| 9 | 02-25, 02-29, 02-35, 02-44, 02-68 |
+| 9 | 02-25, 02-29, 02-35, 02-44, 02-68, 02-70 |
 | 10 | 02-30, 02-37, 02-53 |
 | 11 | 02-31, 02-38, 02-39, 02-40, 02-48, 02-61 |
 | 12 | 02-42, 02-45, 02-63, 02-65, 02-69 |
@@ -161,7 +162,7 @@ Dependencies added to the research tables (applied above; the master table and W
 - 02-07 adds 02-06: 02-06 owns the load-check record file format (chosen in index). The research left the record writer in research 02-46, which would run after the tracers that write records.
 - 02-15 adds 02-11: research row 02-24 says "before 02-15".
 - 02-20 adds 02-18 (research 11.7). 02-35, 02-37 and 02-40 add 02-10 (research 11.3).
-- 02-34, 02-38, 02-42, 02-43 and 02-47 add 02-23, because each ends with one sweep slice (research 11.1).
+- 02-34, 02-38, 02-42 and 02-43 add 02-23, because each ends with one sweep slice (research 11.1). 02-47 ends with a tiles sweep slice and adds 02-70, which holds the tiles sweep.
 - 02-52 adds 02-13 (research 11.6). 02-50 adds 02-18 (research 11.7).
 - 02-47 adds 02-31 (the batch runs the mover step too) and 02-13 (eligibility comes from the committed census). Both chosen in index.
 - Research pair 02-41 splits into 02-36 (depends on 02-22 and 02-10) and 02-39 (depends on 02-36 and 02-37). 02-37 adds 02-36, because it wires play-clip presentation onto the clip API. 02-38 and 02-40 add 02-37, because their browser checks need sandbox window opening and spawn-character presentation. All chosen in index.
@@ -169,6 +170,7 @@ Dependencies added to the research tables (applied above; the master table and W
 - 02-53 depends on 02-29 instead of the pair's 02-14 and 02-50: the static-material growth is checked against the per-object gaps of 02-29 (chosen in index).
 - DEC-OWN-12 plans (2026-11-08 handoff): 02-30 adds 02-56 and 02-59 (typed payload format, class defaults, material graph); 02-45 adds 02-59; 02-47 adds 02-61 and 02-62 so the batch runs the new steps; 02-48 now depends on 02-30 and 02-56 and is world, movement-geodata; 02-49 adds 02-67 (runtime collision context); 02-55 adds 02-57, 02-67 and 02-69. Chosen in index.
 - New research plans: 02-10 depends on 01-14. 02-23 depends on 02-05, 02-06 and 02-07. 02-24 depends on 02-03 and 02-04. 02-26 depends on 02-07, 02-13, 02-17, 02-19 and 02-21. 02-55 depends on the last plan of every lane chain. All chosen in index.
+- 02-70, the tiles sweep split out of 02-23 (OVERNIGHT-DECISIONS row 303), depends on 02-23 for the slice runner and harness and on 02-16 for the `?map=` tile route, which 02-23's `depends_on` never listed.
 
 ## Shared interfaces
 
@@ -323,14 +325,14 @@ Manifest kinds:
 - Build absence: `tests/unit/nativeStoreRootBuildAbsence.test.ts` plus a grep of `dist/`. The grep runs only outside machine windows.
 - Fixture lane store `tests/fixtures/lane-store/`: catalog plus one model from the golden fixtures (02-06). 02-16 adds one chunk manifest.
 
-### Load-check records (02-06 format and writer, 02-07 Python reader, 02-23 sweeps)
+### Load-check records (02-06 format and writer, 02-07 Python reader, 02-23 and 02-70 sweeps)
 
 - File (path above): `{schemaVersion: 1, lane, catalogSha256, records: [{key, status: "pass" | "failed", reason, atRiga, assetManifestSchemaVersion}]}`. A new catalog SHA starts a new file. The file is rewritten atomically after each key. `assetManifestSchemaVersion` notes v1 or v2 (research 11.4).
 - `tests/browser/support/loadCheckRecordFile.ts` (02-06, chosen in index): `hashServedLaneCatalog(baseUrl)`, `readLoadCheckRecords(laneName, catalogSha256)` and `writeLoadCheckRecord(laneName, catalogSha256, record)`. Tracers 02-16, 02-20 and 02-22 use it.
 - `tests/browser/support/loadCheckRecords.ts` (02-23, research name):
   - Exports `pendingLoadCheckKeys(...)` and `runLoadCheckSlice(...)`. It skips keys already recorded.
   - Environment: `LOAD_CHECK_KIND` (`tiles`, `npcs`, `items`, `skills` or `windows`) and `LOAD_CHECK_LIMIT`.
-  - Specs: `tests/browser/load-sweep-{tiles,npcs,items,skills,windows}.spec.ts`.
+  - Specs: `tests/browser/load-sweep-{npcs,items,skills,windows}.spec.ts` (02-23) and `tests/browser/load-sweep-tiles.spec.ts` (02-70).
 
 ### CLIs and package scripts
 
@@ -480,7 +482,7 @@ Manifest kinds:
 | Group | Plans | Focus |
 |---|---|---|
 | 1. Store and catalog contracts | 02-01, 02-02, 02-03, 02-04, 02-05, 02-06, 02-07 | Lane store and output guard, ledger, gap rows and schedule check, catalog writer, new keys and manifest kinds, dev plugin, coverage |
-| 2. Converter contracts and integration tail | 02-08, 02-09, 02-10, 02-23, 02-24, 02-25, 02-26, 02-55 | CONV tests, converter cost, WorldCommand, load-check sweeps, merge tool, sandbox gap notes, gap census, union and restage handoff |
+| 2. Converter contracts and integration tail | 02-08, 02-09, 02-10, 02-23, 02-24, 02-25, 02-26, 02-55, 02-70 | CONV tests, converter cost, WorldCommand, load-check sweeps, merge tool, sandbox gap notes, gap census, union and restage handoff |
 | 3. World tracer and steps | 02-11, 02-12, 02-13, 02-14, 02-15, 02-16 | WORLD-07 review, 20_20 oracle and tile census, terrain-height gate, raw, chunk and terrain steps, 20_21 walk |
 | 4. Data, UI and sandbox sheet | 02-17, 02-18, 02-19, 02-20, 02-27, 02-28, 02-35, 02-37, 02-38 | Table decode and DATA-03, texture census, xdat tree, StatusWnd, all tables and hair tables, DevSheet pickers, runtime wiring, window registry at 932 x 430 |
 | 5. Actors census, tracer and NPCs | 02-21, 02-22, 02-32, 02-33, 02-34 | `.ukx` census and unit inventory, Gremlin tracer, multi-slot binding, NPC contract widening, NPC batches |
@@ -508,7 +510,8 @@ Each entry gives the one-line objective and the key `files_modified`. Planners a
 - **02-08 CONV-01 and CONV-02 contract tests.** Contract tests pin the UModel SHA-256, the `.l2asset` limits and the magenta `[1, 0, 1, 1]` slots. A scan bans normalisation, ground fitting, root-drift removal and weight renormalisation, with an allow-list for `restore_native_weights` and `audit_musveren_weights.py`. Further tests prove that one target, one skill and one tile convert alone and that no `convert:*` entry uses a banned prefix or `native_batch`. OUTPUT_CONTRACT gains "Source preservation", which lists every repair, restore and preserve step with its defect evidence. Files: `tests/pipeline/test_source_preservation_contract.py`, `tests/pipeline/test_converter_independence.py`, `docs/OUTPUT_CONTRACT.md`.
 - **02-09 Converter cost fix.** `Converter.source` and cache hits trust the lock `eSha256` when size and mtime match, with a per-batch memo. The `evidence/` copy keeps the log and the export manifest and drops the intermediate glTF (research A10). Files: `scripts/native_assets.py`, `tests/pipeline/test_native_assets_source_cache.py`.
 - **02-10 WorldCommand sandbox contract.** Add `spawn-character` and `play-clip`. Both adapters handle them with an exhaustive `never`, and a contract test enumerates the command set. Files: `src/world/worldTypes.ts`, `src/world/sandboxCommands.ts`, `src/world/MockWorldAdapter.ts` (removed afterwards by DEC-OWN-11), `src/world/NativeSliceAdapter.ts`, `tests/unit/gameWorldAdapterContract.test.ts`, `tests/unit/sandboxCommands.test.ts`.
-- **02-23 Load-check sweeps.** A resumable sweep helper and five sweep specs record pass or failed per catalog key, pinned to the served catalog SHA. Plans 02-34, 02-38, 02-42, 02-43 and 02-47 each end with one slice. Files: `tests/browser/support/loadCheckRecords.ts`, `tests/browser/load-sweep-tiles.spec.ts`, `tests/browser/load-sweep-npcs.spec.ts`, `tests/browser/load-sweep-items.spec.ts`, `tests/browser/load-sweep-skills.spec.ts`, `tests/browser/load-sweep-windows.spec.ts`, `tests/unit/loadCheckRecords.test.ts`.
+- **02-23 Load-check sweeps.** A resumable sweep helper and four sweep specs (windows, npcs, items, skills) record pass or failed per catalog key, pinned to the served catalog SHA. Plans 02-34, 02-38, 02-42 and 02-43 each end with one slice. The tiles sweep moved to 02-70. Files: `tests/browser/support/loadCheckRecords.ts`, `tests/browser/load-sweep-npcs.spec.ts`, `tests/browser/load-sweep-items.spec.ts`, `tests/browser/load-sweep-skills.spec.ts`, `tests/browser/load-sweep-windows.spec.ts`, `tests/unit/loadCheckRecords.test.ts`.
+- **02-70 Tiles load sweep through ?map=.** The tiles sweep spec, split out of 02-23 because it needs the 02-16 `?map=` tile route (OVERNIGHT-DECISIONS row 303). Each converted `tile:` key loads on the native route by `?map=XX_YY` and passes only when the snapshot `manifestSha256` equals the served tiles record, through the 02-23 slice runner. Plan 02-47 ends with one tiles slice. Files: `tests/browser/load-sweep-tiles.spec.ts`.
 - **02-24 Lane store merge tool.** `merge_lane_store.py` verifies before it copies and refuses differing immutable files, duplicate ids, a wrong base SHA and v1 lane archives. It is tested on temp dirs and never run here. `write_lane_catalog.py --plan` prints its exact command. Files: `scripts/native_store/merge_lane_store.py`, `scripts/native_store/write_lane_catalog.py`, `tests/pipeline/test_merge_lane_store.py`.
 - **02-25 Integration tracer: sandbox available or gap.** For every by-ID action, the sandbox sheet shows converted, gap or not-in-catalog, with the reason, from the index. `package.json` gains `convert:tables`, `convert:world`, `convert:actors` and `convert:ui`. A Playwright screenshot is taken at 1440 x 900 and 932 x 430. Files: `package.json`, `src/runtime/attachSandboxCommandSheet.ts`, `tests/unit/sandboxCoverageNotes.test.ts`, `tests/browser/sandbox-coverage-notes.spec.ts`.
 - **02-26 Gap census.** Every denominator row in every part (tables, tiles and non-tile maps, NPCs, items, skills, characters, windows) has exactly one status. A test fails on a missing row or an unlisted reason. Files: `scripts/native_store/gap_census.py`, `scripts/native_store/build_coverage_report.py`, `tests/pipeline/test_gap_census.py`, `docs/coverage.md`.

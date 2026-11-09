@@ -229,7 +229,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - If main is ever merged with this branch, bce4a04/06bdbda edit docs/ROADMAP.md, PRODUCT.md and NOTICE, which this branch deleted: keep the deletions.
 - Lane tool support for this repo is not available on DATABASE-PC yet; use plain `git worktree` until it lands.
 - Count differences to check in the decoder inventory: 435 vs 433 `.utx`, `chargrp` has 15 rows.
-- Plan 02-23 paused before Task 3 (commits 97e0f7b and 7e2d1ca hold Tasks 1 and 2): its precondition needs the 02-16 SUMMARY, `tests/browser/world-tile-walk.spec.ts` and the `?map=` reader `src/scene/world/selectedNativeTile.ts`, none of which exist yet (02-16 runs in wave 8). Resume 02-23 at Task 3 (tiles sweep, decision rows, ownership check from base d3a12f0, SUMMARY) after 02-16.
+- The 02-23 Task 3 tiles sweep is now plan 02-70, which runs after 02-16 (wave 9); 02-23 resumes at its SUMMARY step, the new Task 3 (SUMMARY for Tasks 1 and 2, ownership check from base d3a12f0, process cleanup; OVERNIGHT-DECISIONS row 303).
 
 ## Needs Human
 
