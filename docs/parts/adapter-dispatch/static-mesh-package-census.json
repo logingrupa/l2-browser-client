@@ -1,0 +1,1952 @@
+{
+  "packages": [
+    {
+      "licensee": 22,
+      "packageVersion": 123,
+      "path": "staticmeshes/aden_blazingswamp_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "70ce42efaee964c8bd30cff244e33123b5f417147153e8627381fed3872a67a5",
+      "staticMeshExportCount": 18
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/aden_broken_castle_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "ac4cff0e386fbdf57cfd63c3af302bafca1e9037a734ac59b8c2f13c497de802",
+      "staticMeshExportCount": 55
+    },
+    {
+      "licensee": 20,
+      "packageVersion": 123,
+      "path": "staticmeshes/aden_castle_door_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "41486b9a9abdc2365e5be506dc78a40cb8d12792bcf4648f3d1f8cc32e4cdeb6",
+      "staticMeshExportCount": 5
+    },
+    {
+      "licensee": 20,
+      "packageVersion": 123,
+      "path": "staticmeshes/aden_castle_etc_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "ea542d17b2ae2840066b10adeee278832dbe8353f508f68e592e11f9c630cc17",
+      "staticMeshExportCount": 5
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/Aden_Castle_S.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "c9a52f9ff5b2c161ab6483aa2e9b31f88120f02abd18134a35082104374c53c6",
+      "staticMeshExportCount": 54
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/Aden_Colosseum.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "8f74049bee14f3a18cda5b70724d2f636ee8721b815690294eb944bda0493664",
+      "staticMeshExportCount": 8
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/aden_fairy_valley_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "afdc4c28acdef3d8e919da54d60e0724e15cb2350d65c8c0946d1a1accc4209a",
+      "staticMeshExportCount": 23
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/aden_giantcave_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "fb309e135e99a911fd2b4437aaaeb7c1f420d0d96c0edf6d036ca6ef04f3f146",
+      "staticMeshExportCount": 84
+    },
+    {
+      "licensee": 19,
+      "packageVersion": 123,
+      "path": "staticmeshes/aden_hunter_tunnel_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "5d91d6444f983d98935703729c410a9aede8eb2898a8210352d0c265834f3fb2",
+      "staticMeshExportCount": 8
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/aden_memorial_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "7b466d9dbea30bb200a530e9ddc8cf22460322f90ee478eb2b99faca20950863",
+      "staticMeshExportCount": 57
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/aden_tower_of_hubris_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "d5fdcd00fdc38f688bc9206123ce4ce6b611389f2117092f02e3cf01212f6e3b",
+      "staticMeshExportCount": 131
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/Aden_tree_S.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "ac358e046d174f39ae6915ab7e9bb51f417fb071e05bb765702e10d51ff25eae",
+      "staticMeshExportCount": 163
+    },
+    {
+      "licensee": 30,
+      "packageVersion": 123,
+      "path": "staticmeshes/aden_village_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "4dc93268482d574f23a11bb29afb1d0857b868754210bc2a84e927fa7a6adf21",
+      "staticMeshExportCount": 35
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/AdenNew_S2.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "260b549c245e54a9c57eee5b093ac08935fa8f4a5aa32d716bd08592c5f0b1e8",
+      "staticMeshExportCount": 323
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/agit_b_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "29d572167830c6462d92314d48f46c99ad961b1e41b757b9579997c7721a66b3",
+      "staticMeshExportCount": 36
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/azit_a_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "79f2b51a1074f482d0461d6f66c4c8f18619151a33c615cf8ab59bda41c6b227",
+      "staticMeshExportCount": 36
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/beast_arena_azit_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "c0342478bdfbf095fb372f8a90a02f49b8f3817cb13559e65aaa4a5668571865",
+      "staticMeshExportCount": 26
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/broken_coloseum_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "7dd0e668520bc537cf7a6d6e874e4bbac716dda2cbbb801703a03d35a3a2a3b8",
+      "staticMeshExportCount": 1
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/castle_kent_door_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "ad3830d470b1f3a7ccdfe521762c392ab6a16d3a4b096c6dd651ab774d612fe2",
+      "staticMeshExportCount": 11
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/castle_kent_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "89af133db9988f6311e5fba936328cc3c9cf44983412c82ccd1add811dd22fdb",
+      "staticMeshExportCount": 23
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/cruma_s.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "c8291c123e800a2df082a836fd127fe94daaa77437b27e76d5410453fe7b92ab",
+      "staticMeshExportCount": 31
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/d_redmt_s.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "4a5d779bd884768f9277ee28b11c5b68c3b8f0f4a5025629ac9ab0b9f0c17e88",
+      "staticMeshExportCount": 16
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/d_wash_st.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "238dfcb608c6e58ee6f92a802b8dc32673f81088fa82e9fabc897fd7c59ddacd",
+      "staticMeshExportCount": 1
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/darkelf_tent.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "b84622d5465644d7be4a02c6c72af9b34a5ce8d615fbe6da89f9b420681b6c14",
+      "staticMeshExportCount": 3
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/deco01.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "58ba61ce7248548f58773b9c0096b0e0cbbe1afe2f7c444f4c1d0a0adbb1f0e7",
+      "staticMeshExportCount": 16
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/dion_cruma_tower_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "08ba23f722b0113c982af16136b6030396e65ec5810705e2367537474cf5a5a1",
+      "staticMeshExportCount": 17
+    },
+    {
+      "licensee": 14,
+      "packageVersion": 123,
+      "path": "staticmeshes/dion_curumadungeon_boss_s.usx",
+      "reason": "static-material-layout-unreviewed:123/14",
+      "reviewed": false,
+      "sha256": "778eb957d3b1951c9024fe0e3ec6182c7980ba5478afcdf97a54e97c46a0f247",
+      "staticMeshExportCount": 7
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/dion_curumadungeon_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "44b1e329f75230131f6a117d7c554aed4ebcc0fc1bd036f8549d4aee47a8335d",
+      "staticMeshExportCount": 124
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/dion_monster_sports_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "8429009520dacb921bcb61d1353b697f6088be38f31b686ba43b59edc355afb0",
+      "staticMeshExportCount": 23
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/dion_northvillage_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "9e983df205a80d681f6c57f41c62be1e5dceb07243e2dbdb3a047f64b38743c7",
+      "staticMeshExportCount": 33
+    },
+    {
+      "licensee": 15,
+      "packageVersion": 123,
+      "path": "staticmeshes/dion_partisan_door_s.usx",
+      "reason": "static-material-layout-unreviewed:123/15",
+      "reviewed": false,
+      "sha256": "a241261935b8f427c7f332041cad79cdbd1213095f9ce588df2ff106ea2895b2",
+      "staticMeshExportCount": 2
+    },
+    {
+      "licensee": 20,
+      "packageVersion": 123,
+      "path": "staticmeshes/dion_partisan_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "45ae2d0fae9962eb8db25f50ffc23a99a1ddd553b365cb3234c5fd429dec1503",
+      "staticMeshExportCount": 47
+    },
+    {
+      "licensee": 18,
+      "packageVersion": 123,
+      "path": "staticmeshes/dion_punish_s.usx",
+      "reason": "static-material-layout-unreviewed:123/18",
+      "reviewed": false,
+      "sha256": "5cc03c5938637c33b4bc945d7b802d7df010ad4c71755707b2be1ee5d0667852",
+      "staticMeshExportCount": 77
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/dion_sv_s.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "51a9a1f28840ad46ddf523d69c74841b725418e18850172476e919865093bb7f",
+      "staticMeshExportCount": 28
+    },
+    {
+      "licensee": 22,
+      "packageVersion": 123,
+      "path": "staticmeshes/dion_tree_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "4326a6ea88488a1cdf4e704f95ff98ae6b5ff053e9b5f4e56940bef85d427554",
+      "staticMeshExportCount": 88
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/dion_v_sx.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "e6773cd1ab8c236e2deb73fe822be1323768cd27ead95e6094c4af95d2094eb1",
+      "staticMeshExportCount": 334
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/door_set_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "49ab95b24922edf82631ccba44b050aaa4f592e22fd4cfcb487e6add87bf7ee8",
+      "staticMeshExportCount": 20
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/dungeon_deco_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "68104219ba2d061be75f885d2548412ca02745a94e06e0659f0f478fb080073d",
+      "staticMeshExportCount": 17
+    },
+    {
+      "licensee": 16,
+      "packageVersion": 123,
+      "path": "staticmeshes/dwarf_bridge_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "9e74315194a5dcb924b8a404410c8e6dab367007c8a551a4474a32a68e340728",
+      "staticMeshExportCount": 11
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/e_waterfall.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "61df98303b93f24d2d2a7d022d3083a3d922a2d31a303e808fd21714f78c253f",
+      "staticMeshExportCount": 18
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/elmo_fielddeco_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "d4d42fec59e1332e8b442aadda5e9b302d12d441d915447b2336127ac9a870da",
+      "staticMeshExportCount": 158
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/entrance__lod_s.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "4853ee1d46529b4b04233a439f2c5098a32c2b9e3f7d8c8b02af6015f56bc0b7",
+      "staticMeshExportCount": 1
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/entrance_s.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "29fbfb4a29e87f2697b7917f144dbba8f6105508b18e88b1b63446bea325bf9b",
+      "staticMeshExportCount": 1
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/fairy_vally.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "59e34b6c28fca529e43f5b6d44390f05f3acbb5a5dc7ea719a41d9174e95c3aa",
+      "staticMeshExportCount": 4
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/field_deco_artifact2_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "33b70fffaa25911d1517f45fac1cfdd2ef953aa78fd382908a6327fb76b73a34",
+      "staticMeshExportCount": 83
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/field_deco_artifact_elmo_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "8a58ade874185593007423f7dcd14d37aee3bd7ab129e3fa778d8ca88fe6c214",
+      "staticMeshExportCount": 31
+    },
+    {
+      "licensee": 20,
+      "packageVersion": 123,
+      "path": "staticmeshes/field_deco_artifact_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "7d44217266e47b85efe2958587f925a084c93c5210c60981b8b2daae9cfe247d",
+      "staticMeshExportCount": 154
+    },
+    {
+      "licensee": 16,
+      "packageVersion": 123,
+      "path": "staticmeshes/field_deco_dwarf_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "e59b4ce1a31d80b81cdafde3b7916138a935ee18caa3d6b59a3401f61e17269f",
+      "staticMeshExportCount": 8
+    },
+    {
+      "licensee": 14,
+      "packageVersion": 123,
+      "path": "staticmeshes/field_deco_landmark_s.usx",
+      "reason": "static-material-layout-unreviewed:123/14",
+      "reviewed": false,
+      "sha256": "ca93eb28ada0b17fdfae29090bffb8b0fd3d5032c694b438518ce3d752ae37d9",
+      "staticMeshExportCount": 11
+    },
+    {
+      "licensee": 16,
+      "packageVersion": 123,
+      "path": "staticmeshes/field_deco_orc_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "37de37cf74b4310477d8a7306e33002f5dad85566cba88ea601a5a9ee0f18f18",
+      "staticMeshExportCount": 26
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/field_deco_S.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "205b3ec267f792944d500afeacdacf6e3a7465a529d1b348ca154851c18d0838",
+      "staticMeshExportCount": 441
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/frozen_barrier_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "b8889354c8224e9f21e1e617300b209685745d8e5e5020910abd4134a3da3b2f",
+      "staticMeshExportCount": 3
+    },
+    {
+      "licensee": 31,
+      "packageVersion": 123,
+      "path": "staticmeshes/FX_E_S.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "259ed78d45a1ac4780cd3f8eb34c2907cac0e702518dc39c78d81825d6e00a98",
+      "staticMeshExportCount": 84
+    },
+    {
+      "licensee": 16,
+      "packageVersion": 123,
+      "path": "staticmeshes/fx_m_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "cb81033fe5242d75c08ad7fde9b6c3d6ce2abcffb886be42ab0ca28fa594b444",
+      "staticMeshExportCount": 3
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/g_dv_st.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "43627d7091c9ec47d3a1766ff94ead895ee99797d332ca22f91b5cde7aff9408",
+      "staticMeshExportCount": 37
+    },
+    {
+      "licensee": 19,
+      "packageVersion": 123,
+      "path": "staticmeshes/giran_antaras_boss_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "c039c8174255eeabdc6e80c3c1d8a5b82c10d5c08f177b9ac323059ab0c04a8c",
+      "staticMeshExportCount": 14
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/giran_antaras_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "dd53a0163277050817b1c2d7b1608a3937c48986ad6ae32461d19e34bc9961f0",
+      "staticMeshExportCount": 90
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/giran_devil_island_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "e216ff4ebf2ec1251d9b7a0f0ae713468183221872ea186eb54c6a0825e54123",
+      "staticMeshExportCount": 88
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/giran_devilisland_bridge_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "8b5efbe4a72856099bd1d85305b08347cb1ab522c0b89794a3e596643c787997",
+      "staticMeshExportCount": 21
+    },
+    {
+      "licensee": 18,
+      "packageVersion": 123,
+      "path": "staticmeshes/giran_dragon_valley_s.usx",
+      "reason": "static-material-layout-unreviewed:123/18",
+      "reviewed": false,
+      "sha256": "ef48cecc02730c88e28be7f472355eb02fb07120a45ac66b4d8f08a7907d9dbf",
+      "staticMeshExportCount": 16
+    },
+    {
+      "licensee": 19,
+      "packageVersion": 123,
+      "path": "staticmeshes/giran_hardin_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "0735f2575378eecc487b0245cc8df796b38ab861d6b6cf52761377b46f083ba7",
+      "staticMeshExportCount": 28
+    },
+    {
+      "licensee": 22,
+      "packageVersion": 123,
+      "path": "staticmeshes/giran_port_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "697499c4af0d384e3d7e6c87ae03539bb6a24c70992142d89012e7f7282841b4",
+      "staticMeshExportCount": 17
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/giran_v_sx.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "49af359adbfc71e698178bdbcdb21188d4e18b61b175afacdc82ae3358b9c209",
+      "staticMeshExportCount": 108
+    },
+    {
+      "licensee": 30,
+      "packageVersion": 123,
+      "path": "staticmeshes/giran_village_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "8c7e4f5e62cd2e429be5ce158d9f64007df59d78ed225c30680d75c81c45f322",
+      "staticMeshExportCount": 97
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/gl_brdg_s.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "b935e01e19ccdaa4b8671cab5ed39f249c82dd3298265c3211ee1b5069945713",
+      "staticMeshExportCount": 1
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/gl_cv_lod_s.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "2f3c1551f904b2138a543800e3aac629a3090f51b5d4c0393bff7486184b3059",
+      "staticMeshExportCount": 26
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/gl_cv_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "1ef8b00bf96131b2c67b635b88819eee288f4092765f16e198f6c6fa765adbfc",
+      "staticMeshExportCount": 48
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/gl_sl_st.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "342f4003592cba13d22eeb3a907eb3e283a3e177806eaa64c08bdc66336d4d90",
+      "staticMeshExportCount": 4
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/gl_v_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "0f104e42b295850ef9cdc7aec8950fb3205c2c1b130b28d3d210f94cb3674bc2",
+      "staticMeshExportCount": 47
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/gludio_ant_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "bec82f9f532eae5708bd965f040dfacb8b487525080011ce1dbfbbb52f60b3b6",
+      "staticMeshExportCount": 117
+    },
+    {
+      "licensee": 19,
+      "packageVersion": 123,
+      "path": "staticmeshes/gludio_dungeon_enterance_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "593171507d434ac1c028b92a081d0e3d1e6debafa3d8a8be35a6a635093113dc",
+      "staticMeshExportCount": 6
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/gludio_port_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "e6b5c838aa30b771737d833795bae3f2b47f675ec7db2aff5302db8225477dad",
+      "staticMeshExportCount": 35
+    },
+    {
+      "licensee": 19,
+      "packageVersion": 123,
+      "path": "staticmeshes/gludio_tree_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "49b957c5e9a334088f1c53c3d8d5bf6aee75dcf86ea8ead17e0830ccb2e686d2",
+      "staticMeshExportCount": 84
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/godad_agit_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "e851ae231b95115f1bb04c535a4f4e3580ce24c531632c2d6a6839b217b1ac85",
+      "staticMeshExportCount": 42
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/godad_castle_door_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "7c6a611b87d46640c7559551a997eb2372ab06f11135f2177f4a674753b9f9b9",
+      "staticMeshExportCount": 18
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/godad_castle_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "42c39f6f2aabed8b5f157a39eaf10a1deed3ffc4ae3e5b65ad006ab3cc4c532e",
+      "staticMeshExportCount": 35
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/godad_catacomb_obj_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "7d71c65d6846eac318852261816e6f9efab6c9dd00d98f0f11db78cbbb9b7197",
+      "staticMeshExportCount": 7
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/godad_catacomb_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "6ba6f0474abc1810dfd439701fcf62d1173f4692f2aa57982237c0967d21a06f",
+      "staticMeshExportCount": 88
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/godad_dragoncave_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "cad2940f41ad3f39bf19b85a7376845093b8e786ecdc0f331f5baf5ea107f717",
+      "staticMeshExportCount": 78
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/godad_fireentrance_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "ccd7388db7e59a19a894abcfe057aed5580dfabf15ceba87a89e891bac049458",
+      "staticMeshExportCount": 5
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/Godad_posting_S.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "b58078672f277daa0c5b3e3d5b81a6bbc9eb7d9890baafa717af3a1a02c7a969",
+      "staticMeshExportCount": 98
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/godad_tree_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "48aa5be021cd4873eb1e3cf2f37609b235d279849aedce80b6755cc2459872d3",
+      "staticMeshExportCount": 38
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/godard_spa_azit_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "9e9a3c5547edb80888bd31fe90d8f745003ed217449fef073c177b0c4f46e57a",
+      "staticMeshExportCount": 52
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/godard_valakas_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "ded3b8c6409f733cfb90e04845466d1426791f399da9d6453aa24b1a93267036",
+      "staticMeshExportCount": 26
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/godard_village_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "a147714d8abfaa1ee3831cf093699743d714bf6eb295e82f697ae34079353a3d",
+      "staticMeshExportCount": 50
+    },
+    {
+      "licensee": 20,
+      "packageVersion": 123,
+      "path": "staticmeshes/human_guard.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "1202bdefeec55a03e13de10e481002345ea63c5de656e1eb7163423973100fc7",
+      "staticMeshExportCount": 14
+    },
+    {
+      "licensee": 18,
+      "packageVersion": 123,
+      "path": "staticmeshes/hunter_v_s.usx",
+      "reason": "static-material-layout-unreviewed:123/18",
+      "reviewed": false,
+      "sha256": "a04e8d8d8baf24d8fe5b74f71cc8e1c23294cf04de348c71211cec3d33922acc",
+      "staticMeshExportCount": 5
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/hunter_village_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "6078cdf85276b37a3c0b0abf0d1cc5d9a7c82795f1da48890135e20cdd6c5803",
+      "staticMeshExportCount": 48
+    },
+    {
+      "licensee": 16,
+      "packageVersion": 123,
+      "path": "staticmeshes/icewaterfall_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "6f97ca4278368e793e54138f74e96a741a9eeb666226beaca7e6b8ef5525e412",
+      "staticMeshExportCount": 32
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/innadecobuild.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "2f63665b698e1c58c9c9f09dc9d63371b9f25981d5de9c5fb5d31283cd18b665",
+      "staticMeshExportCount": 7
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/innadrile_eva_watergarden_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "5f451f99e5c3de9f630d42d5a7ff5013d9808243777d2967f2d04ae4035b6c35",
+      "staticMeshExportCount": 70
+    },
+    {
+      "licensee": 20,
+      "packageVersion": 123,
+      "path": "staticmeshes/innadrile_island_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "d59f0be589bc546b1a46f88785da55f92917c5d0c8d3121772797c1418a3fcd6",
+      "staticMeshExportCount": 12
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/innadrill_tree_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "39bcf9eb9ad459e920a521aa4c4ad7fcbacfd5a4724bc90c430ed4259c5aa00e",
+      "staticMeshExportCount": 38
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/innadrill_v_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "a5e65f160834f81d3bd9ccacb41ba4b1ec2b79f7328d7e9f175130ef62dee95d",
+      "staticMeshExportCount": 65
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/interior_a_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "392fc7625f490afe867dfc1d464022609d989da51ec83e800ea9d462a5ae1a92",
+      "staticMeshExportCount": 121
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/interior_aa_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "146e2cca8b453024b973a9d02f6be0aa07d5b6a2e5796246227643e0b22a9316",
+      "staticMeshExportCount": 30
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/interior_b_ch_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "68ea7676c33cbc91a316068ed4e2f716c4c9d50617301de6f13d7061654da5a0",
+      "staticMeshExportCount": 14
+    },
+    {
+      "licensee": 16,
+      "packageVersion": 123,
+      "path": "staticmeshes/interior_b_delf_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "f15368a19b1daca670150f22d83bb929541eb03a9b84183f9c2b7665a3ec6fde",
+      "staticMeshExportCount": 33
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/interior_b_elf_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "8ecdd9010391fd8fb756a4c0f8e66517e8d3a636f18dca81ff303074f941c036",
+      "staticMeshExportCount": 33
+    },
+    {
+      "licensee": 19,
+      "packageVersion": 123,
+      "path": "staticmeshes/interior_b_orc_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "673a6d03e8085c3c04aa070c89c6e4800edc31d99bb28624a4fc785508daa73b",
+      "staticMeshExportCount": 37
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/interior_b_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "543fd3e3aecde174ce96fd6eed0c3fc1e3810e676506847a9b817f5ecb078810",
+      "staticMeshExportCount": 126
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/interior_s_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "e527a07a7973acf3ed616cfd8186fd0f46c8256a7ba59eccb733edf67e749f4a",
+      "staticMeshExportCount": 31
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/l2_lobby.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "d26f99cc2e049f335a9c874b305cde51d527aff03a6bf03930b0abed00eae5af",
+      "staticMeshExportCount": 3
+    },
+    {
+      "licensee": 0,
+      "packageVersion": 123,
+      "path": "staticmeshes/L2_Lobby_Classic.usx",
+      "reason": "static-material-layout-unreviewed:123/0",
+      "reviewed": false,
+      "sha256": "8705c4a3feb5121da5e925cba6ce6cc0fe2446ef482fa649c9d5b8eab7e37e7d",
+      "staticMeshExportCount": 28
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/l2_ship_l01_s.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "89ab6b3a0c4dc69b574d34abe08c5f51967e7dd5d15fe2e838e87c26564e5ee2",
+      "staticMeshExportCount": 4
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/l2fortress_01_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "77292ab59a910121235debd4a84ada6babc4a5607942b4130d66a35dad6649b3",
+      "staticMeshExportCount": 42
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/l2fortress_02_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "1049a1075c90cdd3ecb9d739eb1828ffead45b3ad52661079552e60fe3b608b6",
+      "staticMeshExportCount": 40
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/l2fortress_snow_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "609cd9ad92cb09358f14e8dd5fbeb0caa93445c049b7b10466190bb75de4b789",
+      "staticMeshExportCount": 28
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/LineageEffectsStaticmeshes.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "c3e790b26f2d77a25d2486a47f1af88787fa9898c1668f08e0c572ef01a3a578",
+      "staticMeshExportCount": 222
+    },
+    {
+      "licensee": 0,
+      "packageVersion": 123,
+      "path": "staticmeshes/LineageEffectsStaticmeshes3.usx",
+      "reason": "static-material-layout-unreviewed:123/0",
+      "reviewed": false,
+      "sha256": "3e24b773c9dda07e1991a9d7ef8bd1be4c900f62333a1b7d0e9a15df5eac6a8f",
+      "staticMeshExportCount": 3
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/manor_system_object_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "80cc54b3283bd588e8b552e242c8c4dd06a07a470cee9db95cc97735e5fa630a",
+      "staticMeshExportCount": 12
+    },
+    {
+      "licensee": 30,
+      "packageVersion": 123,
+      "path": "staticmeshes/New_Giran_T.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "c6cc9e0cda3424d63e7e19ef641ba101d4cc25b8d61a21380efa36a4c93e8f9f",
+      "staticMeshExportCount": 242
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/o_def_terrain.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "ff3502c4558a77913802a1e1fdeb1eda013ab0c829b9843ef9598b7a5cc87775",
+      "staticMeshExportCount": 8
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/old_war_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "ebb594fd2218e84fe964d57790563f529d4b46d4781dd1ee6016962480f591a1",
+      "staticMeshExportCount": 26
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/orcguild_obj_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "3ba557b7cb23037947bd320e89654e2af05ef9dcaed28856db3907715a5e19e8",
+      "staticMeshExportCount": 19
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/oren_cv_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "4ce60ed964ce68ddd2ba8b2b0580e0715126bbb56df02cad24e62328baa41ff6",
+      "staticMeshExportCount": 26
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/oren_ded_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "7a34cb1a33023ea3c552266f48c198b7553f1be103b713517fe15bc289ad601d",
+      "staticMeshExportCount": 41
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/oren_delf_altar.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "78abbf88921943fffbee5eb7ef96cd111f65a8fa8cca78c3f5fbfe90da1ab8d4",
+      "staticMeshExportCount": 3
+    },
+    {
+      "licensee": 19,
+      "packageVersion": 123,
+      "path": "staticmeshes/oren_dev_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "c06235fa45f61787224a0afac5714a44803cf02cb29d00d0bff180f0f81efb44",
+      "staticMeshExportCount": 46
+    },
+    {
+      "licensee": 0,
+      "packageVersion": 118,
+      "path": "staticmeshes/oren_hdt_part2_s.usx",
+      "reason": "static-material-layout-unreviewed:118/0",
+      "reviewed": false,
+      "sha256": "4245f3199b25f467c579cf5d3684f24ceca522850a1761a273484f6b3df76ce0",
+      "staticMeshExportCount": null
+    },
+    {
+      "licensee": 19,
+      "packageVersion": 123,
+      "path": "staticmeshes/oren_hdt_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "4e3c64c13cc6a4e017bcc732033a838a475cbd844b6f319728394b55489d76f5",
+      "staticMeshExportCount": 15
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/oren_hed_enterance.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "02e3074827be12d58aca2fc89d7fb7d1dab52b4be7a9c4f2267b1d0bb6296925",
+      "staticMeshExportCount": 16
+    },
+    {
+      "licensee": 11,
+      "packageVersion": 118,
+      "path": "staticmeshes/oren_hed_enterance_lod_s.usx",
+      "reason": "static-material-layout-unreviewed:118/11",
+      "reviewed": false,
+      "sha256": "1f71fc76c645a3463db27a9b76a03f10b0320682538f03c3c4424fd53e973866",
+      "staticMeshExportCount": null
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/oren_hed_s.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "c06a85088a92b4e28461cf895e9720036fa706c086e4eea6a438856a99ba363f",
+      "staticMeshExportCount": 116
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/oren_hev_lod_s.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "d61e5ef8d33cd1ad1192245e519ef97a06bbf70253840324ee84ae040bbdbfd6",
+      "staticMeshExportCount": 11
+    },
+    {
+      "licensee": 22,
+      "packageVersion": 123,
+      "path": "staticmeshes/oren_hev_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "eadcc324927f8756259b8891325371b99ad4f98b8b2beaa56f3d3d804e6432a6",
+      "staticMeshExportCount": 70
+    },
+    {
+      "licensee": 0,
+      "packageVersion": 123,
+      "path": "staticmeshes/Oren_HEV_S1.usx",
+      "reason": "static-material-layout-unreviewed:123/0",
+      "reviewed": false,
+      "sha256": "e4425370c4a0ce5c3b918376d69bdb9f960619d286322c02956f85a901e83c91",
+      "staticMeshExportCount": 7
+    },
+    {
+      "licensee": 18,
+      "packageVersion": 123,
+      "path": "staticmeshes/oren_hwt_s.usx",
+      "reason": "static-material-layout-unreviewed:123/18",
+      "reviewed": false,
+      "sha256": "90db17411b202375d7288b8eb31a33fa22aa355e5e6d340d6cbc643d275f261b",
+      "staticMeshExportCount": 1
+    },
+    {
+      "licensee": 19,
+      "packageVersion": 123,
+      "path": "staticmeshes/oren_ivorytower_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "f2655c8c70d79c703bdcf6fc4390dfdee74cb88e53d2729f8eeae2d62af8e6e9",
+      "staticMeshExportCount": 77
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/oren_ivtower_s.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "a8799c171f9e7fdd51b863bea5f8e153cef1974915065d94a88a8b4555858835",
+      "staticMeshExportCount": 58
+    },
+    {
+      "licensee": 20,
+      "packageVersion": 123,
+      "path": "staticmeshes/oren_mountain_hangout_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "400a3e4783848531a3ffec09eadc20d1fb2a215d317746bd8d5fd38d2a6ddc18",
+      "staticMeshExportCount": 30
+    },
+    {
+      "licensee": 19,
+      "packageVersion": 123,
+      "path": "staticmeshes/oren_sporesea_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "9ff252bd4f9aaacdd2019c55eabc31c7b71b89dde0f98a9e68ee8fc2a087b62d",
+      "staticMeshExportCount": 51
+    },
+    {
+      "licensee": 19,
+      "packageVersion": 123,
+      "path": "staticmeshes/oren_tree_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "74072d7fce630aa045870be3ccd541bbe62ca34fc382987be6851037afd8dafb",
+      "staticMeshExportCount": 83
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/oren_v_s.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "c2ab1f5f7380650d616872e5e2afc3f8fb4fee0c817459f606398e530ac7d487",
+      "staticMeshExportCount": 41
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/phabel_caroncave_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "cf17914e5e7fce171e23ec7d97782da129e000364dc6799a70c1d6928361cd31",
+      "staticMeshExportCount": 18
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/Primitive_FieldOBJ_S.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "907872138ea7ac25048082c99818f86d1b7b0d077ed352d691979c5c476fa0a1",
+      "staticMeshExportCount": 81
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/pvpzone_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "8f760d5136189aab12d43b184d8620d61d2101f54c95a6412df2ce1aa1bb7750",
+      "staticMeshExportCount": 6
+    },
+    {
+      "licensee": 22,
+      "packageVersion": 123,
+      "path": "staticmeshes/quest_worldcamp_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "bdec4bb854e3a7b36ab1ec77a176659abbfd239a4f82bf00b5186ec16a6812d7",
+      "staticMeshExportCount": 33
+    },
+    {
+      "licensee": 18,
+      "packageVersion": 123,
+      "path": "staticmeshes/rhion_orc_dungeon_s.usx",
+      "reason": "static-material-layout-unreviewed:123/18",
+      "reviewed": false,
+      "sha256": "b3297e6720680d243a9ee66456e9eeecd8f772dc287a6eeb01f7cbb412fee290",
+      "staticMeshExportCount": 113
+    },
+    {
+      "licensee": 16,
+      "packageVersion": 123,
+      "path": "staticmeshes/rion_orc_village_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "491007191fb390bd768e46904b47cb03323780c8ce4cfc70afd23edda89394b3",
+      "staticMeshExportCount": 46
+    },
+    {
+      "licensee": 16,
+      "packageVersion": 123,
+      "path": "staticmeshes/rion_pagrio_temple_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "52565173d86e0bfd498edfbf3e289ff633dd70637b2b436812e64686457be409",
+      "staticMeshExportCount": 8
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/rionsctgart_tree_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "3dd69f971019b4835a3d45712d42927eaf647e3f3eb4a2f996c19f18f8535200",
+      "staticMeshExportCount": 45
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/ruins_renewal_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "b6659c5909fb9ee538fe27b4f7e3618a5e90f570b4dc2e72e0881681280c570d",
+      "staticMeshExportCount": 41
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/rune_agit_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "228d56687fdafc38659536eb650df7cfd9533f55f3604ddd46b6fd171710325d",
+      "staticMeshExportCount": 61
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/Rune_bodeful_fortress_S.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "5a96aae2ed27e2e37ed3ea91836a78ec02a49de9b8c4027c899ad2d2aee92a4f",
+      "staticMeshExportCount": 30
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/rune_bridge_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "ab9394e2843aac55bccb40ed14479745d5587bc1b1c70e96af126d2dd11398bf",
+      "staticMeshExportCount": 4
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/rune_castle_door_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "a5f2de0b5b770335b853c2419d68adf975df0cad959d17a2f043641cf19795b1",
+      "staticMeshExportCount": 24
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/rune_castle_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "a9e52085bba89428c84dcb8041b0e2755e268fa81f048b20ca875f3ef0f62ab8",
+      "staticMeshExportCount": 42
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/rune_cliff_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "504958960bb3c5ef3736b51b1593dc91176cadd007d527a29763e7a478c56ac2",
+      "staticMeshExportCount": 74
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/rune_departed_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "a5b15039a3f0edc5ea5e6c02f04dbc26845171c6d7313f403fac64cd5c6887b2",
+      "staticMeshExportCount": 35
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/rune_fielddeco_s_1.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "88d090cf907d9501dea5f5259c40d0fb8bba83ba8e23e5191ca60c33e6c458db",
+      "staticMeshExportCount": 61
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/rune_ghostgate_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "9d10b884f595bc41b1bf1759a0dc887fdbfe1f97578886cb1d9fa4812ee25f1f",
+      "staticMeshExportCount": 10
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/rune_port_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "d1850e8f552122436476956fda1b82615d39ca4b14787f7a142829a3a3c503e0",
+      "staticMeshExportCount": 14
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/rune_stakatonest_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "4999a8827fd3caa91078d4ab15efcce6a416be850e7c2a90ce90dbc23e630241",
+      "staticMeshExportCount": 62
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/rune_swamp_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "25c59351249a1b1f5057d150137d8ebe607dbf35e733168ea99f6c12da1f8764",
+      "staticMeshExportCount": 29
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/rune_temple_of_heresy_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "46121d3fcc6e58224d03a2ad1a39c13aa984e1cbb01ec282a2b59cca8f93eba6",
+      "staticMeshExportCount": 64
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/rune_tree_s_1.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "c84b31645f5851c3285323cdd767f7a4a4a1f2808c762f923e086fce6bbe2210",
+      "staticMeshExportCount": 37
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/rune_village_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "1119bbdaff3a1b5c1b24f238bbcb3f6b5a2a39bc5a6607ade34a939083794844",
+      "staticMeshExportCount": 101
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/sc_meshparticles.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "d0f362dc55d81ad8d2e61c24e6a7c8fb0e0291c279287dd1c5c1b38c75e7469f",
+      "staticMeshExportCount": 8
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/schtgart_23_13_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "f91b241afc3a24d49298b3e52da31589102134df2f715f0c2746ac936643d3e6",
+      "staticMeshExportCount": 72
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/schtgart_castle_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "f86c700b27a5b68510e90638d373b5bb615a09b9e4e25e6d772a77979cb278c5",
+      "staticMeshExportCount": 36
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/schtgart_dwarf_mithrilmines_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "950fd1f87386a352af829bdebdeadd4e2d00c85e30e021da4cbc1958a697b21f",
+      "staticMeshExportCount": 139
+    },
+    {
+      "licensee": 16,
+      "packageVersion": 123,
+      "path": "staticmeshes/schtgart_dwarf_startpoint_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "70991e8ae5141f252065edcc6ee50d8e5f5b2e1f367a6f1021e285ba095fec5b",
+      "staticMeshExportCount": 16
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/schtgart_dwarf_tunnel_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "7204624610c9528b1ee0c08be1c89d0c5643dfc5bed8e4096fdd7d458bd8eb4f",
+      "staticMeshExportCount": 29
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/schtgart_dwarf_village_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "4e237a28aa34c2dc3cda6aaf748b0a915ecb48265d595df563e43bd0cc9ec336",
+      "staticMeshExportCount": 32
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/Schtgart_Evilnest_S.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "451d9783231abfd56a2964127a95d80e1e009084a0487bb785c58660933cd8a2",
+      "staticMeshExportCount": 22
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/schtgart_fielddeco1_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "3b8d670893d0f765ef65be4fbdfc9e61872f6ca605a66a0b668c44faf4918295",
+      "staticMeshExportCount": 80
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/schtgart_fielddeco_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "c3a264224f5c16de1441478a6b07091d7a486a2e4fb2b1550b638d1b0f33243c",
+      "staticMeshExportCount": 49
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/schtgart_phabel_labor.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "cdd9a8493bef04872fc5dc55ddb31444225807c073dfe7aeb454cc202fe2b56e",
+      "staticMeshExportCount": 45
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/schtgart_phabelruins_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "185c2445928596a9d0c1a98e2bfbdc9593f0b1fbc80d984e2e6aceb171d1ecff",
+      "staticMeshExportCount": 54
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/schtgart_phabeltent_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "c161a88d4d13cd20f0c9b702841e17b383435980094254a929ee1a5b0ff6be33",
+      "staticMeshExportCount": 6
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/schtgart_shameground_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "09964d20695260ce810edc93c64903946778fdb3e5d56812f4f003da08e10f2b",
+      "staticMeshExportCount": 72
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/schtgart_silentmona_ent_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "6e7756fc59c1bfde5ea77b6e82e34a5c557e45259dc27d1069841be17522ea1f",
+      "staticMeshExportCount": 16
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/schtgart_silentmona_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "a4a0cd3bdcafca811259d7ce958de0b9d834a0511e04f4ad9e9d3f486fa311e7",
+      "staticMeshExportCount": 73
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/schtgart_village_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "b3f196357e4d453109f7ee140feeffc5cd99495d574d1765e09c9dc4206abc5a",
+      "staticMeshExportCount": 45
+    },
+    {
+      "licensee": 19,
+      "packageVersion": 123,
+      "path": "staticmeshes/sealcave_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "52a95a4943c4689ecfd82976b08429e3adb470deadb4ee8f71a5148399e19432",
+      "staticMeshExportCount": 12
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/ship_test_s.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "8bfdbc73a9196c13195e284e5f565bdcfe28e7b44724be3f9a19168095db79dc",
+      "staticMeshExportCount": 1
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/si_sh_inner_s.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "baef76851493eaed9c0c6c117afdf8d2e497e2057e0949bb3ca360845ae126d7",
+      "staticMeshExportCount": 17
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/si_v_lod_s.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "8e67fe88da521c3b53386bd9a26db6e74fb35c52331680a29c315df6c1920a8a",
+      "staticMeshExportCount": 11
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/si_v_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "f249d4f2e9ca7600aa90aad41262b3a3a53d0650b457a56942575a8c33756cae",
+      "staticMeshExportCount": 23
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/sp_lighthouse.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "c11a1a11a8ab4902ebd5338e05e9989a9a8737f68a0522fecaf3c1a883170ede",
+      "staticMeshExportCount": 2
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/sp_tower_lod_us.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "1666f2370cc76e70d214d68d2cf8cd02270f5b468de549514218fe5aa7496276",
+      "staticMeshExportCount": 1
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/sp_tower_us.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "3d6422a3cec3061d058696e45d9a59cf18124734901c31352035ec72bfa726b5",
+      "staticMeshExportCount": 3
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/speaking1f_s.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "20044ce6a971da20e1d1ae499dbefd50a155dfc633b1a7cd2f08cb8043b38476",
+      "staticMeshExportCount": 61
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/speaking2f_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "f2a557c39c0b95c05ce1ee12f25165858bacc66cb69985eaca04c4ae718db249",
+      "staticMeshExportCount": 122
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/speaking_magic_lod_s.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "3ef6c0f36b9b7e36fd74e7f53547be502445ed88a898a1c92f2521576ac07fbf",
+      "staticMeshExportCount": 1
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/speaking_magic_s.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "8ce2b9b50b87136fcf607274ddad028ae9dc20d330de1f37624946a31bbc341a",
+      "staticMeshExportCount": 10
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/speaking_port_s.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "bd088e9481a4aec31d40be59425400501a439b3681ec002e0184f341d49d2c04",
+      "staticMeshExportCount": 21
+    },
+    {
+      "licensee": 19,
+      "packageVersion": 123,
+      "path": "staticmeshes/speaking_tree_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "e036f4fbde96e7e76792ebc537d5711ea94768e8ee45b0b66746b8468ba4536c",
+      "staticMeshExportCount": 16
+    },
+    {
+      "licensee": 16,
+      "packageVersion": 123,
+      "path": "staticmeshes/speakingfighter_lod_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "fe11b68f2342d7818b52591a0ab2976e55c3a4275c83b399f08446baad535f21",
+      "staticMeshExportCount": 1
+    },
+    {
+      "licensee": 18,
+      "packageVersion": 123,
+      "path": "staticmeshes/speakingfighter_s.usx",
+      "reason": "static-material-layout-unreviewed:123/18",
+      "reviewed": false,
+      "sha256": "b761f8a00f26a1174e2b89418f34492dc06b1ae56fea6ca2571f2578c9f2678b",
+      "staticMeshExportCount": 8
+    },
+    {
+      "licensee": 16,
+      "packageVersion": 123,
+      "path": "staticmeshes/speakingfighterbridge_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "01ff8c379c41fd65025c2bdf474a96cea2caec08967f2d6337061bab7d3e11e1",
+      "staticMeshExportCount": 4
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/ssq_dungeon_boss_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "6384ba80bab9d3007a48460e2fe2f59beac66bdc365fa5969386a6466ef64958",
+      "staticMeshExportCount": 17
+    },
+    {
+      "licensee": 28,
+      "packageVersion": 123,
+      "path": "staticmeshes/SSQ_dungeon_S.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "f75b2d42a0438293f70f2bc1715e5d3c72f997a9ef15f275d2bd29827c2c2c4d",
+      "staticMeshExportCount": 118
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/ssq_obj_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "3784a145640ab4cacfa563d848a3e23b53423bf2c8e89ff8918ca22eee975091",
+      "staticMeshExportCount": 43
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/statues_s.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "4435e82f7bae8d9b701377da11d8f6bfa2d19afefe5d9d7561706fa15c7fea00",
+      "staticMeshExportCount": 5
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/sylen_sealing_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "062326bdb40de711f9033e14aad7847060d2a2cbd020a831af62e1f32700c1b0",
+      "staticMeshExportCount": 7
+    },
+    {
+      "licensee": 16,
+      "packageVersion": 123,
+      "path": "staticmeshes/sylen_temple_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "bed9eb4db8ba268b0e9d90b88a77b1c33d321907b2a239e79a87fbe63b2646b4",
+      "staticMeshExportCount": 27
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/underconstruction_s.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "60929810a489392e7e3a5785e1f2999960f31ec494583c21a95a39f2d5230a7b",
+      "staticMeshExportCount": 1
+    },
+    {
+      "licensee": 16,
+      "packageVersion": 123,
+      "path": "staticmeshes/v_obj_orc_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "d8b69bbf8007d1ee1c120408e013b80e104f500c4da7935b5a99cb4ffeebf9f0",
+      "staticMeshExportCount": 18
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/v_obj_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "6391f5c4e22f97430eee8e36c0191c2b2bd4324ed1ed790958df4304dd21839d",
+      "staticMeshExportCount": 91
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/water.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "67a19b82647b249c14ce68832643e5074103c4692d0ed20892eee799c18384e1",
+      "staticMeshExportCount": 1
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/waterfall.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "39abc26a471261cb5125d41868e81efd1e82d40aa8e4b8b5e16cf8acedc0f453",
+      "staticMeshExportCount": 18
+    },
+    {
+      "licensee": 19,
+      "packageVersion": 123,
+      "path": "staticmeshes/waterfall_anghel_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "c117724e33753fa95795ce7da4b4e74c4f651d041c60d16009eae252235a5d25",
+      "staticMeshExportCount": 20
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/waterfall_elf_s.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "ca948ead74606623859a3b6a6af068eaf88f2af99e435b324638fad3b2163879",
+      "staticMeshExportCount": 19
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/waterfall_s.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "ce993326195d7315c15eed110ddc3e0f0efe922a7b3166ecacba47a5db5f182d",
+      "staticMeshExportCount": 15
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/wilderness_s.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "8f2a25c174fbf1288211f5adac7560921daec379f4d2f6e7f9d3d540197ca8bc",
+      "staticMeshExportCount": 51
+    },
+    {
+      "licensee": 22,
+      "packageVersion": 123,
+      "path": "staticmeshes/world_bridge_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "6a45f53c879478fdb8cb94996d7e045aa01df22bf5c046c057c79b3b3bedda37",
+      "staticMeshExportCount": 18
+    },
+    {
+      "licensee": 23,
+      "packageVersion": 123,
+      "path": "staticmeshes/world_bulletinboard_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "20b38433bae0f7549326901b1e26c45d55288d982aea19f55485572918818205",
+      "staticMeshExportCount": 10
+    },
+    {
+      "licensee": 25,
+      "packageVersion": 123,
+      "path": "staticmeshes/world_frontierguard_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "43c7bc33b5317b214102409ebb2c0855bd7b4e9101c55732c1fdd7fc86c1c9bd",
+      "staticMeshExportCount": 4
+    },
+    {
+      "licensee": 16,
+      "packageVersion": 123,
+      "path": "staticmeshes/world_sign_s.usx",
+      "reason": null,
+      "reviewed": true,
+      "sha256": "8aaabfd8fff0c60adbf104082072905cae9133c96a2a6fc3d8f506f93ca2abaf",
+      "staticMeshExportCount": 5
+    },
+    {
+      "licensee": 12,
+      "packageVersion": 123,
+      "path": "staticmeshes/world_statue_s.usx",
+      "reason": "static-material-layout-unreviewed:123/12",
+      "reviewed": false,
+      "sha256": "0e34e9ffb324de7bb59c0fe63cd18566bb166ed5d53dd84fbd5f0d3856df45b0",
+      "staticMeshExportCount": 10
+    }
+  ],
+  "referenceTreeLockSha256": "1957c96800aa45cb10c984f3f2e6f8d1f5f0b1713f086f20560db01f4d1d2b52",
+  "reviewedVersions": [
+    [
+      123,
+      16
+    ],
+    [
+      123,
+      19
+    ],
+    [
+      123,
+      20
+    ],
+    [
+      123,
+      22
+    ],
+    [
+      123,
+      23
+    ],
+    [
+      123,
+      25
+    ],
+    [
+      123,
+      28
+    ],
+    [
+      123,
+      30
+    ],
+    [
+      123,
+      31
+    ]
+  ],
+  "schemaVersion": 1
+}
