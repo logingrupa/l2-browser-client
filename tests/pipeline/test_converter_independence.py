@@ -19,7 +19,7 @@ import native_assets
 from native_assets import Converter, sha
 from reference_client_lock_fixture import lock_client_as_reference_root
 
-PER_SYSTEM_ENTRY_POINTS = ('native_assets.py', 'native_map.py', 'native_effect_bundle.py', 'native_actor_profiles.py',
+PER_SYSTEM_ENTRY_POINTS = ('native_assets.py', 'native_effect_bundle.py', 'native_actor_profiles.py',
                            'export-native-sounds.py', 'export-native-map-audio.py')
 LANE_ENTRY_POINT_FOLDERS = ('world', 'actors', 'data')
 BATCH_MODULE_PATHS = ('scripts/native_batch.py', 'scripts/native_batch_adapters.py')

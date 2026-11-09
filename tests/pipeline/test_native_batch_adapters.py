@@ -152,15 +152,15 @@ class AdapterTests(unittest.TestCase):
     def migration(self, bundle=False):
         import native_migration
         if bundle:
-            child_recipe = {'fixture': 'raw-map'}
-            manifest = {'kind': 'native-map-raw', 'fixture': True}
-            write(self.output, 'maps/map/manifest.json', manifest)
-            write(self.output, 'maps/map/receipt.json', {'outputs': ['manifest.json'],
+            child_recipe = {'fixture': 'effect-bundle'}
+            manifest = {'kind': 'native-effect-bundle', 'fixture': True}
+            write(self.output, 'effects/effect/manifest.json', manifest)
+            write(self.output, 'effects/effect/receipt.json', {'outputs': ['manifest.json'],
                 'dependencies': {'sound/Test.uax': sha(b'src')}})
-            rows = [{'id': 'map', 'support': 'raw-data-extracted', 'path': 'maps/map/manifest.json'}]
-            validation = {'archives': [], 'bundles': [{'path': 'maps/map', 'kind': 'native-map-raw', 'verified': True}],
+            rows = [{'id': 'effect', 'support': 'raw-data-extracted', 'path': 'effects/effect/manifest.json'}]
+            validation = {'archives': [], 'bundles': [{'path': 'effects/effect', 'kind': 'native-effect-bundle', 'verified': True}],
                           'passed': True, 'errors': []}
-            job = {'id': 'map', 'adapter': 'map', 'recipe': 'recipes/child.json'}
+            job = {'id': 'effect', 'adapter': 'effect', 'recipe': 'recipes/child.json'}
         else:
             target, _, asset = self.asset()
             child_recipe = json.loads((self.root / 'recipes/request.json').read_bytes())

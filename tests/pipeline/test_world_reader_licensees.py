@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from data.pinned_elbera_module import ELBERA_ROOT, PinnedElberaModuleError, resolve_elbera_path
 from native_catalog.ue2 import FormatError, Package
-from native_map import build_map
+from world.raw_map_extraction import build_map
 from reference_client_guard import ReferenceClientLockError, require_reference_client
 from world import elbera_reader_cross_check
 from world.elbera_reader_cross_check import (ElberaCrossCheckError, elbera_actor_properties, elbera_terrain_sector_properties,
@@ -44,7 +44,7 @@ ELBERA_SOURCE_NAME = 'Elbera'
 SYNTHETIC_TERRAIN_PACKAGE = 'textures/T_FixtureTerrain.utx'
 SYNTHETIC_TERRAIN_OBJECT = 'T_FixtureTerrain.HeightFixture'
 BOUNDARY_LICENSEE_RANGE = range(0, 32)
-GATE_FILES = ('scripts/native_map.py', 'scripts/world/terrain_height_texture.py', 'scripts/world/map_actor_properties.py',
+GATE_FILES = ('scripts/world/raw_map_extraction.py', 'scripts/world/terrain_height_texture.py', 'scripts/world/map_actor_properties.py',
               'scripts/world/native_terrain_sectors.py')
 SCATTERED_LICENSEE_CHECK = re.compile(r"\(123, ?28\)|licenseeVersion'\]\)? *(==|!=)")
 REAL_CLIENT_ROOT = Path('E:/Lineage2-client')

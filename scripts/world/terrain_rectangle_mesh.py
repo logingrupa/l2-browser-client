@@ -13,10 +13,6 @@ def rectangle_sample_grid(region):
     return [(x, y) for y in range(origin_y, origin_y+quads_y+1) for x in range(origin_x, origin_x+quads_x+1)]
 
 
-def rectangle_source_points(native, points, region):
-    return [points[y*native['width']+x] for x, y in rectangle_sample_grid(region)]
-
-
 def build_terrain_rectangle_gltf(native, points, words, layers, region, mask_uv_rule, sector_rectangle, generator):
     origin_x, origin_y = region['offset']
     quads_x, quads_y = region['quads']

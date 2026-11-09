@@ -6,10 +6,10 @@ The optional `pnpm assets:migrate` (`scripts/native_migration.py`) converts the 
 
 - `recipes/native-inputs.lock.json` pins 143 files / 2,511,063,181 bytes from IMPORTA-PC `C:/Lineage2-client`: 133 packages, eight DAT tables, `LineageWarrior.int`, `system/Engine.dll`. Inputs only. Default `--client`: staged copy `artifacts/native-parity/inputs/IMPORTA-PC`.
 - `Engine.dll` is hashed evidence, never loaded; `system/l2.ini` is hashed only, never copied.
-- `recipes/native-migration.json` has eight jobs: fighter, equipment, Musveren, NPC profiles, 20_20 map, its textures, its section, Power Strike dispatch.
+- `recipes/native-migration.json` has seven jobs: fighter, equipment, Musveren, NPC profiles, the 20_20 terrain textures, the `FX_E_S.Flameset.Default_Flame01` native material graph, Power Strike dispatch.
 - Output `artifacts/native-parity/migration/`: `inventory.json`, `coverage.json`, `validation.json`, `products.json`, `run.json`, and `reproducibility.json` with `--prove-rebuild`.
 - `--prove-rebuild` replays the cache, rebuilds into an empty directory and compares every product. Also `--verify-only`, `--inventory-only` and `--fleet-stage` (refills inputs from IMPORTA-PC, refuses a differing file).
-- `--stage-runtime` (`scripts/stage_native_runtime.py`) replaces `public/l2/catalog.json` with migration products only, dropping other records. Do not run it on the current store.
+- `--stage-runtime` (`scripts/stage_native_runtime.py`) stages the migration models, textures and NPC profiles into `public/l2`, replaces a same-id record in place and keeps every other catalog record.
 - Last recorded `--prove-rebuild --stage-runtime` run: 381/381 byte-identical products, 100 archives. Receipts: `artifacts/native-parity/migration/{reproducibility,validation}.json`.
 
 ## Open
@@ -21,6 +21,6 @@ The optional `pnpm assets:migrate` (`scripts/native_migration.py`) converts the 
 
 ## Pointers
 
-- Single adapters `scripts/native_map.py`, `scripts/native_effect_bundle.py`, `scripts/native_actor_profiles.py`.
+- Single adapters `scripts/native_effect_bundle.py`, `scripts/native_actor_profiles.py`.
 - `pnpm test:pipeline --migration-output <dir>`; `tests/pipeline/test_native_migration.py`.
 - [ASSET_PIPELINE.md](ASSET_PIPELINE.md), [NATIVE_TEXTURES.md](NATIVE_TEXTURES.md), [NATIVE_NPC_PROFILES.md](NATIVE_NPC_PROFILES.md), [NATIVE_POWER_STRIKE.md](NATIVE_POWER_STRIKE.md).

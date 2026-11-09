@@ -11,10 +11,10 @@ from native_assets_lib.gltf import json_bytes, safe_name
 from native_actor_profiles import UNMATCHED_ACTOR_CLASS_MESSAGE, UNMATCHED_NPC_MESH_MESSAGE
 from native_assets_lib.qualified_export_names import ROOT_OBJECT_CLASS, is_actor_class_chain, unique_qualified_export_match
 from native_catalog.cli import json_bytes as profile_json_bytes
-from native_store.catalog_writer import add_store_file, read_current_catalog_bytes, sha256_hex, write_store
+from native_store.catalog_writer import add_store_file, decode_store_catalog, read_current_catalog_bytes, sha256_hex, write_store
 
 ROOT = Path(__file__).resolve().parent.parent
-RUNTIME_STAGE_DESCRIPTION = 'Stage verified migration models/map sections for this local browser and Editor.'
+RUNTIME_STAGE_DESCRIPTION = 'Stage verified migration models and textures for this local browser, keeping every other catalog record.'
 
 
 def contained(root, relative):
@@ -41,76 +41,6 @@ def verified_archive(path, expected_hash):
     with zipfile.ZipFile(io.BytesIO(payload)) as archive:
         files = {name: archive.read(name) for name in archive.namelist()}
     return result, payload, json.loads(files['asset.json']), files
-
-
-def section_files(migration, job, files):
-    identity = job['id']
-    if not isinstance(identity, str) or not re.fullmatch('[a-z0-9][a-z0-9-]{0,79}', identity):
-        raise ValueError('Invalid map section identity')
-    base = 'sections/' + identity
-    if job.get('path') != base + '/map-section-runtime/manifest.json' or job.get('geometryPath') != base + '/map-section/manifest.json':
-        raise ValueError('Map section paths differ from the declared adapter')
-    section = contained(migration, base)
-    runtime, terrain, models = (contained(section, name) for name in ('map-section-runtime', 'map-section', 'map-section-models'))
-    receipt_bytes = contained(runtime, 'receipt.json').read_bytes()
-    receipt = json.loads(receipt_bytes)
-    if receipt.get('schemaVersion') != 1 or receipt.get('kind') != 'native-map-section-runtime':
-        raise ValueError('Invalid map section runtime receipt')
-    manifest_bytes = checked_payload(runtime, 'manifest.json', receipt['manifestSha256'])
-    manifest = json.loads(manifest_bytes)
-    if (manifest.get('schemaVersion') != 1 or manifest.get('kind') != 'native-map-section-runtime' or manifest.get('errors') or
-        manifest.get('support') != 'section-products-ready-for-runtime-validation' or
-        manifest.get('resourceRoots') != {'terrain': '../map-section', 'models': '../map-section-models'}):
-        raise ValueError('Map section is incomplete or its resource roots are unsupported')
-    prefix = 'maps/' + sha256_hex(manifest_bytes) + '/'
-    add_store_file(files, prefix + 'map-section-runtime/manifest.json', manifest_bytes)
-    add_store_file(files, prefix + 'map-section-runtime/receipt.json', receipt_bytes)
-    terrain_receipt_bytes = checked_payload(terrain, 'receipt.json', receipt['sectionReceiptSha256'])
-    terrain_receipt = json.loads(terrain_receipt_bytes)
-    if terrain_receipt.get('kind') != 'native-terrain-section' or not isinstance(terrain_receipt.get('outputs'), dict):
-        raise ValueError('Invalid terrain section receipt')
-    add_store_file(files, prefix + 'map-section/receipt.json', terrain_receipt_bytes)
-    for name, expected_hash in terrain_receipt['outputs'].items():
-        add_store_file(files, prefix + 'map-section/' + name, checked_payload(terrain, name, expected_hash))
-    record = manifest['terrain']
-    if record['file'] != 'terrain.glb' or terrain_receipt['outputs'].get(record['file']) != record['sha256']:
-        raise ValueError('Terrain resource differs from its receipt')
-    checked_payload(terrain, record['file'], record['sha256'], record['bytes'])
-    model_ids, archive_pins = set(), {}
-    for model in manifest['models']:
-        if model['id'] in model_ids:
-            raise ValueError('Duplicate map model identity')
-        model_ids.add(model['id'])
-        archive_record, model_record = model['archive'], model['model']
-        archive_hash = archive_record['sha256']
-        if not isinstance(archive_hash, str) or not re.fullmatch('[a-f0-9]{64}', archive_hash):
-            raise ValueError('Invalid map model archive hash')
-        if archive_record['file'] != archive_hash + '/asset.l2asset' or model_record['file'] != archive_hash + '/model.glb':
-            raise ValueError('Map model paths do not match their immutable archive identity')
-        archive_path = contained(models, archive_record['file'])
-        checked_payload(models, archive_record['file'], archive_hash, archive_record['bytes'])
-        result, archive_bytes, asset, payloads = verified_archive(archive_path, archive_hash)
-        model_bytes = checked_payload(models, model_record['file'], model_record['sha256'], model_record['bytes'])
-        if result['kind'] != 'model' or result['id'] != model['id'] or payloads.get(asset['model']['file']) != model_bytes:
-            raise ValueError('Map model identity or standalone geometry differs from its archive')
-        archive_pins[archive_record['file']] = archive_hash
-        model_prefix = prefix + 'map-section-models/' + archive_hash + '/'
-        add_store_file(files, model_prefix + 'asset.l2asset', archive_bytes)
-        for name, payload in payloads.items():
-            standalone = checked_payload(models, archive_hash + '/' + name, sha256_hex(payload), len(payload))
-            add_store_file(files, model_prefix + name, standalone)
-        provenance = json.loads(payloads.get('provenance.json', b'{}'))
-        for slot in provenance.get('metadata', {}).get('materialSlots', []):
-            if 'texture' not in slot:
-                continue
-            name = 'evidence/export/' + '/'.join(slot['texture'].split('.')) + '.png'
-            payload = checked_payload(models, archive_hash + '/' + name, slot['textureSha256'])
-            add_store_file(files, model_prefix + name, payload)
-    if archive_pins != receipt.get('modelArchives') or not model_ids:
-        raise ValueError('Map model archive set differs from its receipt')
-    if any(placement['modelId'] not in model_ids for placement in manifest['placements']):
-        raise ValueError('Map placement refers to a missing model')
-    return {'id': identity, 'manifest': '/l2/' + prefix + 'map-section-runtime/manifest.json', 'manifestSha256': sha256_hex(manifest_bytes)}
 
 
 def npc_profile_files(migration, job, files):
@@ -241,7 +171,7 @@ def build_runtime_store_files(migration):
     validation = json.loads((migration / 'validation.json').read_text(encoding='utf-8'))
     if validation.get('passed') is not True or validation.get('errors') or any(job['support'] == 'failed' or job.get('unsupported') for job in coverage['jobs']):
         raise ValueError('Migration validation must pass before local staging')
-    models, sections, textures, npc_profiles, files = [], [], [], [], {}
+    models, textures, npc_profiles, files = [], [], [], {}
     if len({job['id'] for job in coverage['jobs']}) != len(coverage['jobs']):
         raise ValueError('Duplicate migration coverage identity')
     for job in coverage['jobs']:
@@ -251,11 +181,6 @@ def build_runtime_store_files(migration):
                 npc_profiles.append(npc_profile_files(migration, job, files))
             except (KeyError, TypeError, AttributeError) as error:
                 raise ValueError('Malformed NPC profile bundle metadata') from error
-            continue
-        if job.get('adapter') == 'map-section':
-            if job['support'] != 'section-products-ready-for-runtime-validation':
-                raise ValueError('Map section coverage is incomplete')
-            sections.append(section_files(migration, job, files))
             continue
         if job['support'] != 'converted':
             continue
@@ -280,25 +205,42 @@ def build_runtime_store_files(migration):
                        'archive': '/l2/' + result['sha256'] + '/asset.l2asset', 'archiveSha256': result['sha256'],
                        'model': '/l2/' + result['sha256'] + '/model.glb', 'modelSha256': sha256_hex(model),
                        'nativeSkinAdapter': manifest['model'].get('nativeSkinAdapter'), 'limitations': manifest['limitations']})
-    catalog = {'schemaVersion': 1, 'sourceHost': coverage['sourceHost'], 'models': models, 'sections': sections, 'textures': textures,
+    catalog = {'schemaVersion': 1, 'sourceHost': coverage['sourceHost'], 'models': models, 'textures': textures,
                'sourceManifestSha256': coverage['sourceManifestSha256'], 'acceptanceSha256': coverage['acceptanceSha256'],
-               'scope': 'Local native model/map-section staging. This catalog does not assert playable/world/visual/performance acceptance.'}
+               'scope': 'Local native model and texture staging. This catalog does not assert playable/world/visual/performance acceptance.'}
     if npc_profiles:
         catalog['npcProfiles'] = npc_profiles
     return files, catalog
+
+
+def slice_keeping_unstaged_records(current_records, staged_records):
+    staged_by_id = {record['id']: record for record in staged_records}
+    current_ids = {record['id'] for record in current_records}
+    kept = [staged_by_id.get(record['id'], record) for record in current_records]
+    return kept + [record for record in staged_records if record['id'] not in current_ids]
+
+
+def catalog_keeping_unstaged_records(current_catalog, staged_catalog):
+    catalog = {**current_catalog, **staged_catalog}
+    for slice_name, staged_records in staged_catalog.items():
+        current_records = current_catalog.get(slice_name)
+        if isinstance(staged_records, list) and isinstance(current_records, list):
+            catalog[slice_name] = slice_keeping_unstaged_records(current_records, staged_records)
+    return catalog
 
 
 def stage_runtime(migration, destination=ROOT / 'public/l2'):
     migration = Path(migration).resolve(strict=True)
     if Path(destination).absolute() != (ROOT / 'public/l2').absolute():
         raise ValueError('Local runtime staging writes only to this project public/l2 directory')
-    files, catalog = build_runtime_store_files(migration)
+    files, staged_catalog = build_runtime_store_files(migration)
     before = read_current_catalog_bytes(destination)
-    write_store(destination, files, before, json_bytes(catalog))
-    result = {'models': len(catalog['models']), 'sections': len(catalog['sections']), 'textures': len(catalog['textures']),
+    current_catalog = decode_store_catalog(before) if before is not None else {}
+    write_store(destination, files, before, json_bytes(catalog_keeping_unstaged_records(current_catalog, staged_catalog)))
+    result = {'models': len(staged_catalog['models']), 'textures': len(staged_catalog['textures']),
               'catalog': str(Path(destination).resolve() / 'catalog.json')}
-    if 'npcProfiles' in catalog:
-        result['npcProfiles'] = len(catalog['npcProfiles'])
+    if 'npcProfiles' in staged_catalog:
+        result['npcProfiles'] = len(staged_catalog['npcProfiles'])
     return result
 
 

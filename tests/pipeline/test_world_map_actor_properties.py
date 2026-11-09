@@ -12,7 +12,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from native_assets import Converter
 from native_catalog.ue2 import FormatError, Package, Reader
 from ue2_package_fixture import compact
-from world.map_actor_properties import HAS_STACK, actor_properties, bitmap_words, decode_property
+from world.map_actor_properties import HAS_STACK, actor_properties, bitmap_words, decode_property, explicit_properties
 from world.map_sources import static_mesh_request
 from world.terrain_height_texture import png16, read_g16
 
@@ -139,6 +139,9 @@ class MapActorPropertyReaderTests(unittest.TestCase):
         package.summary = {'version': 123, 'licenseeVersion': 27}
         with self.assertRaisesRegex(FormatError, '^map-licensee-unsupported:123/27$'):
             actor_properties(package, {'offset': 0, 'size': 1, 'flags': 0})
+
+    def test_an_omitted_property_stays_an_unresolved_class_default(self):
+        self.assertEqual(explicit_properties([], ['DrawScale'])['DrawScale'], {'status': 'omitted-class-default-unresolved'})
 
     def test_bitmap_count_exact_words_and_bounds(self):
         decoded = bitmap_words(compact(2) + struct.pack('<II', 0x80000001, 0xffffffff))

@@ -7,7 +7,7 @@ The profile adapter reads an NPC's name, mesh, class, DrawScale and collision fr
 - NPC 21622 -> Greater Musveren -> `LineageMonster.field_stalker_20_bi` -> `LineageMonsters.field_stalker_m00`: DrawScale 1.2, CollisionRadius 18, CollisionHeight 36 source units.
 - `LineageMonster.field_stalker` is not an ancestor; its radius 16 does not apply. 22 rows share the mesh, so a mesh never selects a profile.
 - [native-npc-profiles.json](../recipes/native-npc-profiles.json) requires exact ID, name, mesh and class; duplicates and unresolved defaults fail.
-- Build: job `native-npc-profiles` of `pnpm assets:migrate --prove-rebuild`, integration thread only; `--stage-runtime` rewrites the whole catalog ([NATIVE_MIGRATION.md](NATIVE_MIGRATION.md)). Alone: `python scripts/native_actor_profiles.py --client artifacts/native-parity/inputs/IMPORTA-PC --recipe recipes/native-npc-profiles.json --output <dir>`, `--verify` checks.
+- Build: job `native-npc-profiles` of `pnpm assets:migrate --prove-rebuild`, integration thread only; `--stage-runtime` stages the profiles and keeps every other catalog record ([NATIVE_MIGRATION.md](NATIVE_MIGRATION.md)). Alone: `python scripts/native_actor_profiles.py --client artifacts/native-parity/inputs/IMPORTA-PC --recipe recipes/native-npc-profiles.json --output <dir>`, `--verify` checks.
 - Runtime reads `npcProfiles` from `/l2/catalog.json` and checks path, bytes and SHA-256. The native slice will not start unless `npc:21622` names the loaded Musveren mesh, and rejects a nonzero pivot.
 - DrawScale3D `(X,Y,Z)` maps to Babylon `(X,Z,Y)` times DrawScale on a parent of the whole model. Collision half-height stays 0.36 m, unscaled. CollisionRadius is data only.
 - `prePivot` is absent and unverified; no zero pivot is synthesized.

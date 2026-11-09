@@ -28,48 +28,18 @@ class RuntimeStagingFixture(unittest.TestCase):
         self.patch = patch.object(staging, 'ROOT', self.root)
         self.patch.start()
         self.addCleanup(self.patch.stop)
-        self.section = self.migration / 'sections/map-20-20-section'
-        self.runtime = self.section / 'map-section-runtime'
-        self.geometry = self.section / 'map-section'
-        image = b'original editable PNG bytes'
-        provenance = json_bytes({'metadata': {'materialSlots': [{'texture': 'Textures.Body.diffuse', 'textureSha256': sha(image)}]}})
-        payloads = {'model.glb': b'opaque validated model GLB fixture', 'provenance.json': provenance}
+        payloads = {'model.glb': b'opaque validated model GLB fixture', 'provenance.json': json_bytes({'metadata': {}})}
         self.asset = {'schemaVersion': 1, 'id': 'interlude:Fixture.mesh', 'name': 'Fixture', 'kind': 'model',
             'source': {'object': 'Fixture.mesh', 'package': 'Fixture', 'sha256': 'a' * 64},
             'model': {'file': 'model.glb'}, 'limitations': ['Synthetic staging fixture.'],
             'files': [{'path': name, 'bytes': len(data), 'sha256': sha(data)} for name, data in payloads.items()]}
         self.archive = archive_bytes(self.asset, payloads)
         self.archive_hash = sha(self.archive)
-        self.model_folder = self.section / 'map-section-models' / self.archive_hash
-        for name, data in {'asset.l2asset': self.archive, 'asset.json': json_bytes(self.asset), **payloads}.items():
-            self.write(self.model_folder / name, data)
-        self.image = self.model_folder / 'evidence/export/Textures/Body/diffuse.png'
-        self.write(self.image, image)
-        self.write(self.model_folder / 'evidence/export/unpinned.log', b'not an approved runtime resource')
-        outputs = {'terrain.glb': b'opaque validated terrain GLB fixture', 'terrain.bin': b'original terrain buffer',
-            'terrain.gltf': json_bytes({'buffers': [{'uri': 'terrain.bin'}]}), 'manifest.json': json_bytes({'kind': 'native-terrain-section'}),
-            'native-defaults/Engine.Actor.uc': b'preserved native defaults'}
-        for name, data in outputs.items():
-            self.write(self.geometry / name, data)
-        self.geometry_receipt = {'kind': 'native-terrain-section', 'outputs': {name: sha(data) for name, data in outputs.items()}}
-        self.write_json(self.geometry / 'receipt.json', self.geometry_receipt)
-        self.manifest = {'schemaVersion': 1, 'kind': 'native-map-section-runtime', 'errors': [],
-            'support': 'section-products-ready-for-runtime-validation', 'resourceRoots': {'terrain': '../map-section', 'models': '../map-section-models'},
-            'terrain': {'file': 'terrain.glb', 'sha256': sha(outputs['terrain.glb']), 'bytes': len(outputs['terrain.glb'])},
-            'models': [{'id': self.asset['id'], 'archive': {'file': self.archive_hash + '/asset.l2asset', 'sha256': self.archive_hash, 'bytes': len(self.archive)},
-                'model': {'file': self.archive_hash + '/model.glb', 'sha256': sha(payloads['model.glb']), 'bytes': len(payloads['model.glb'])}}],
-            'placements': [{'id': 'native-placement', 'modelId': self.asset['id'], 'matrix': [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 213.4, -31.0, 791.9, 1]}],
-        }
-        self.runtime_receipt = {'schemaVersion': 1, 'kind': 'native-map-section-runtime',
-            'modelArchives': {self.archive_hash + '/asset.l2asset': self.archive_hash}}
-        self.refresh_receipts()
-        character_path = 'models/' + self.archive_hash + '/asset.l2asset'
-        self.write(self.migration / character_path, self.archive)
+        self.model_glb = payloads['model.glb']
+        self.character_path = 'models/' + self.archive_hash + '/asset.l2asset'
+        self.write(self.migration / self.character_path, self.archive)
         self.coverage = {'sourceHost': 'IMPORTA-PC', 'sourceManifestSha256': 'b' * 64, 'acceptanceSha256': 'c' * 64, 'jobs': [
-            {'id': 'human-male-fighter:0', 'support': 'converted', 'path': character_path, 'sha256': self.archive_hash},
-            {'id': 'map-20-20-section', 'adapter': 'map-section', 'support': self.manifest['support'],
-             'path': 'sections/map-20-20-section/map-section-runtime/manifest.json',
-             'geometryPath': 'sections/map-20-20-section/map-section/manifest.json'},
+            {'id': 'human-male-fighter:0', 'support': 'converted', 'path': self.character_path, 'sha256': self.archive_hash},
         ]}
         self.write_json(self.migration / 'coverage.json', self.coverage)
         self.write_json(self.migration / 'validation.json', {'passed': True, 'errors': []})
@@ -80,12 +50,6 @@ class RuntimeStagingFixture(unittest.TestCase):
 
     def write_json(self, path, value):
         self.write(path, json_bytes(value))
-
-    def refresh_receipts(self):
-        self.write_json(self.runtime / 'manifest.json', self.manifest)
-        self.runtime_receipt['manifestSha256'] = sha((self.runtime / 'manifest.json').read_bytes())
-        self.runtime_receipt['sectionReceiptSha256'] = sha((self.geometry / 'receipt.json').read_bytes())
-        self.write_json(self.runtime / 'receipt.json', self.runtime_receipt)
 
     def stage(self):
         return staging.stage_runtime(self.migration, self.destination)

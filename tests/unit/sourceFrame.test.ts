@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   sourceHeadingToWorldYaw,
@@ -8,15 +7,6 @@ import {
   worldYawToSourceHeading,
   type RotationMatrix,
 } from "../../src/world/sourceFrame";
-
-interface DebugLocationRecipe { referenceActor: string; staticActorOriginZ: [number, number]; description: string }
-
-const debugLocationRecipe = JSON.parse(readFileSync(new URL("../../recipes/native-map-debug-location.json", import.meta.url), "utf8")) as DebugLocationRecipe;
-const playerStart10SectionMatch = /Native XY\[(-?\d+),(-?\d+)\]\.\.\[(-?\d+),(-?\d+)\]/.exec(debugLocationRecipe.description)!;
-const playerStart10Corners = [
-  { x: Number(playerStart10SectionMatch[1]), y: Number(playerStart10SectionMatch[2]) },
-  { x: Number(playerStart10SectionMatch[3]), y: Number(playerStart10SectionMatch[4]) },
-];
 
 function rotateVector(matrix: RotationMatrix, vector: { x: number; y: number; z: number }) {
   return {
@@ -46,16 +36,6 @@ describe("source frame positions", () => {
     for (const value of sourceValues) {
       const roundTrip = worldPositionToSource(sourcePositionToWorld({ x: value, y: -value, z: value }));
       expect([Math.fround(roundTrip.x), Math.fround(roundTrip.y), Math.fround(roundTrip.z)]).toEqual([value, -value, value]);
-    }
-  });
-
-  it("round-trips the PlayerStart10 section corners and Z window pinned in recipes/native-map-debug-location.json", () => {
-    expect(debugLocationRecipe.referenceActor).toBe("20_20.PlayerStart10");
-    expect(playerStart10Corners).toEqual([{ x: 8192, y: 92160 }, { x: 14336, y: 98176 }]);
-    for (const [corner, z] of playerStart10Corners.flatMap(corner => debugLocationRecipe.staticActorOriginZ.map(z => [corner, z] as const))) {
-      const sourcePosition = { x: corner.x, y: corner.y, z };
-      const roundTrip = worldPositionToSource(sourcePositionToWorld(sourcePosition));
-      expect({ x: Math.fround(roundTrip.x), y: Math.fround(roundTrip.y), z: Math.fround(roundTrip.z) }).toEqual(sourcePosition);
     }
   });
 });

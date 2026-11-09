@@ -6,20 +6,8 @@ from world.map_sources import sha
 from world.terrain_coordinates import dot, f32
 
 UV_TOLERANCE = 0.00001
-QUALIFIED_MASK_UV_SOURCE_SHA256 = '1beddad24c10a35a1b2e9151727a85158e3e01992299a6671de876645eb1f1e4'
 QUALIFIED_MASK_UV_RULE_ID = 'interlude-20_20-submitted-mask-uv-20261106'
 QUALIFIED_MASK_UV_FORMULA = '(gridXY + 0.5) / heightmapDimensions - max(gridXY - 240, 0) / 4096'
-MASK_UV_LAYER_PAIRS = (
-    ('T_texture.Texture.Base', 'T_texture.Texture.layer0'),
-    ('t_oren.Obase_1', 'T_20_20.Height.20_20_BASE_C'),
-    ('T_texture.Texture.g_01', 'T_20_20.Height.20_20_S_C'),
-    ('t_oren.OG_53', 'T_20_20.Height.20_20_G1'),
-    ('t_oren.OG_44', 'T_20_20.Height.20_20_G2'),
-    ('t_oren.OG_43_t', 'T_20_20.Height.20_20_G3'),
-    ('t_oren.OST_10', 'T_20_20.Height.20_20_C'),
-    ('t_oren.OS_01', 'T_20_20.Height.20_20_R'),
-    ('t_oren.OG_49_t', 'T_20_20.Height.20_20_G4'),
-)
 
 
 def serialized_matrix(properties):
@@ -43,42 +31,11 @@ def texture_uv(matrix, native_point):
     return [sum(p[row]*matrix[row][column] for row in range(4)) for column in (0, 1)]
 
 
-def qualified_mask_uv_rule(native, selected, package, source_path, layers):
-    if (source_path.replace('\\', '/').casefold() != 'maps/20_20.unr' or
-            package.source_hash != QUALIFIED_MASK_UV_SOURCE_SHA256 or
-            native['object'].casefold() != '20_20.terraininfo0' or
-            (native['width'], native['height']) != (256, 256) or
-            selected['offset'] != [64, 208] or selected['quads'] != [48, 47]):
-        return None
-    pairs = [(layer['index'], layer['texture'].casefold(), layer['alphaMap'].casefold()) for layer in layers]
-    expected = [(index, diffuse.casefold(), mask.casefold()) for index, (diffuse, mask) in enumerate(MASK_UV_LAYER_PAIRS)]
-    if pairs != expected:
-        return None
-    return {
-        'id': QUALIFIED_MASK_UV_RULE_ID,
-        'formula': QUALIFIED_MASK_UV_FORMULA,
-        'status': 'native-submitted-coordinate-match; offscreen capture, visible parity unverified',
-        'source': {'package': source_path, 'packageSha256': package.source_hash, 'object': native['object'],
-                   'heightmapDimensions': [256, 256], 'gridMinimum': [64, 208], 'gridMaximum': [112, 255]},
-        'evidence': {
-            'handoff': 'artifacts/native-parity/research/terrain-mask-native-rea-followup/continuation-20261106-ongoing/native-result-20261106/BROWSER_HANDOFF.md',
-            'handoffSha256': 'fe2e05c2468858931332c207f5b45c6b3ec7cdf9f61121d897ad137aa9b66556',
-            'manifestSha256': '8321cd6758bdbffdcaf436be54e5ed3e7dbb295dd68285b93dfccd1f8a0306a0',
-            'traceSha256': 'd391b2a28db6a752cf24ee0bdcdb54ec74ace3446b55c917f88e1a170d1daada',
-            'declarationCall': 462, 'vertexUploadCall': 142108, 'indexUploadCall': 142123, 'witnessDrawCall': 142131,
-            'matchedPositionUvRecords': 1749, 'affectedSelectedPositions': 735,
-            'coordinateRoute': 'fixed-function supplied TEXCOORD0, texture transforms disabled',
-            'limitations': ['offscreen submissions; no visible-native-pixel or screen-improvement proof',
-                            'pilot stopped on unresolved descendant path; graphics-writer count unestablished',
-                            'engine material/cache identity, CPU pruning, bUseAlpha and final composition unresolved']},
-    }
-
-
-def terrain_mask_uv(x, y, width, height, qualified_rule=None):
-    ordinary = [(x+.5)/width, (y+.5)/height]
-    if qualified_rule is None:
-        return ordinary
-    return [ordinary[0] - max(x-240, 0)/4096, ordinary[1] - max(y-240, 0)/4096]
+def terrain_mask_uv(x, y, width, height, mask_uv_rule):
+    if mask_uv_rule['formula'] != QUALIFIED_MASK_UV_FORMULA:
+        raise FormatError(f'Unsupported terrain mask UV formula: {mask_uv_rule["formula"]!r}')
+    half_texel = [(x+.5)/width, (y+.5)/height]
+    return [half_texel[0] - max(x-240, 0)/4096, half_texel[1] - max(y-240, 0)/4096]
 
 
 def layer_sampling_source(layer, package, terrain_export, source_path):

@@ -11,7 +11,7 @@ import json
 import tempfile
 
 from native_catalog.ue2 import FormatError
-from native_map import build_map
+from world.raw_map_extraction import build_map
 from native_store.store_paths import REPOSITORY_ROOT
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, require_batch_preflight, run_at_below_normal_priority
 from reference_client_guard import require_reference_client

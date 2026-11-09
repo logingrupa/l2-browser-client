@@ -1,8 +1,0 @@
-{
-  "schemaVersion": 1,
-  "kind": "native-terrain-section",
-  "terrainSector": "20_20.TerrainInfo0.TerrainSector106",
-  "referenceActor": "20_20.PlayerStart0",
-  "staticActorOriginZ": [-3350, -2400],
-  "description": "20.48 m surface section east of PlayerStart0: native XY [20480,77824]..[22528,79872]. Select nearby surface prop origins using the explicit source Z window. Keep subterranean actors in the full raw extraction. The source PlayerStart0 lies below terrain and is not certified as a walkable surface spawn."
-}

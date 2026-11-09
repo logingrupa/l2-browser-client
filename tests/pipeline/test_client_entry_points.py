@@ -23,8 +23,6 @@ KNOWN_CLIENT_ENTRY_POINTS = {
     'scripts/native_catalog/cli.py',
     'scripts/native_effect_bundle.py',
     'scripts/native_effects.py',
-    'scripts/native_map.py',
-    'scripts/native_map_geometry.py',
     'scripts/native_migration.py',
     'scripts/native_sky.py',
     'scripts/prepare-native-player-aliases.py',

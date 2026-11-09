@@ -68,9 +68,9 @@ Plan 02-15, WORLD-01. `python -B scripts/world/convert_tile.py --client E:/Linea
 - Every chunk is `maskUvRule` `extrapolated`, source `interlude-20_20-submitted-mask-uv-20261106`. 20_20 chunks too: no chunk equals the capture rectangle.
 - 20_20 (census eligible): 16 chunks, all written, 221 Z mismatches, 11 layers (9 filled, slots 9 and 10 empty), anchor `20_20.PlayerStart0` [19172.80, 79583.47, -4295.06].
 - Removing both 20_21 seals and rerunning gave 18 byte-identical products. `build_geometry` on the three 20_20 section recipes gave the same 39 files before and after the shared mesh builder.
-- Hand-chosen windows replaced: `recipes/native-map-20_20.json` (`/section/min`, `/section/max`, source units, not converted) and `recipes/native-map-debug-location.json` (`/terrainSectorRectangle` [64, 208]..[96, 240]) name `scripts/world/tile_chunk_plan.py`, which reads only the TerrainInfo sector grid. Beside the old actors `20_20.PlayerStart0` and `20_20.PlayerStart10`, the plan anchors on PlayerStart0. The old rectangle falls in `chunk-1-3` (printed, never read back). Still open: `staticActorOriginZ` stays labelled until 02-29; `native-map-section.json` and `native-map-section-3x3-candidate.json` also hold hand-chosen windows and feed no migration or runtime (listed for the owner); the legacy chain reads the labelled recipes until the integration thread retires it.
+- Hand-chosen windows replaced: `scripts/world/tile_chunk_plan.py` reads only the TerrainInfo sector grid and anchors on PlayerStart0; the old 20_20 section window falls in `chunk-1-3`. Plan 02-71 deleted the four 20_20 section recipes that held hand-chosen windows, with the chain that read them.
 - Open: terrain materials not converted, visible parity unverified, meshes, BSP, sky and audio not run.
-- Tests: `test_tile_chunk_plan.py`, `test_terrain_chunk_step.py`, `test_unresolved_section_windows.py`.
+- Tests: `test_tile_chunk_plan.py`, `test_terrain_chunk_step.py`.
 
 ## Tile 20_21 tracer
 
@@ -107,9 +107,9 @@ One gate, `require_reviewed_reader_layout(reader, summary)` in `scripts/world/re
 
 - Still refused: `terrain-info` 123/16 (the cited serializer covers licensee 17 or later, and the 123/28 payload reader does not consume 24_10; nothing fitted); terrain height 118/11 of `t_17_23.utx` (`terrain-height-version-unsupported:118`); `entry` 123/0 and the version 118 maps (outside this plan); `19_11` and `20_11` stay `terrain-height-package-missing`.
 - The T-15 and T-18 heightmaps hold one constant sample on every tile, so their rows rest on the exact byte range both readers consume.
-- The 20_21 raw products and the raw step fingerprint are unchanged, so sealed units are not redone. The census, Lobby's status and the sealed raw steps of the newly readable tiles follow in 02-54.
+- Plan 02-71 moved `build_map` to `scripts/world/raw_map_extraction.py` without the section branch and raised `RAW_MAP_STEP_ALGORITHM_VERSION` to 2 (the raw manifest loses the section-selection gap line), and resealed every world unit. The census, Lobby's status and the sealed raw steps of the newly readable tiles follow in 02-54.
 - Record a row: `python -B scripts/world/reader_cross_check_rows.py --client E:/Lineage2-client --reader <reader> --licensee <x>`. Tests: `test_world_reader_licensees.py` (the real-client classes re-derive every row and run `build_map` for each heightmap row tile).
 
 ## Evidence
 
-World docs: `docs/NATIVE_WORLD.md`. Recipes: `recipes/native-map-20_20.json`, `recipes/native-map-section.json`.
+World docs: `docs/NATIVE_WORLD.md`. Raw extraction: `scripts/world/raw_map_extraction.py`; oracle: `recipes/world/oracle/20_20/expected.json`.

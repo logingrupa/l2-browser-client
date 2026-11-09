@@ -1,4 +1,3 @@
-"""Raw material policy preserves source data and makes runtime gaps explicit."""
 import hashlib
 import json
 import os
@@ -14,7 +13,6 @@ sys.path.insert(0,str(ROOT/'scripts'))
 from native_assets import Converter,implementation_hash,verify_archive
 from native_assets_lib.material_graph import preserve_material_graph
 from native_catalog.ue2 import FormatError,Package
-from native_map_geometry import static_model_policies,validate_static_requests
 
 
 class MaterialGraphPolicyTests(unittest.TestCase):
@@ -25,18 +23,6 @@ class MaterialGraphPolicyTests(unittest.TestCase):
                         {'kind':'model','materialPolicy':'preserve-native-graph','materials':['0=Other.Texture']}):
             with self.subTest(request=request),self.assertRaisesRegex(ValueError,'material policy|material-policy'):
                 Converter.convert(SimpleNamespace(),request)
-
-    def test_exact_static_policy_declarations_must_be_consumed_without_aliasing(self):
-        recipe={'staticModelPolicies':{'Native.Mesh':'preserve-native-graph'}}
-        self.assertEqual(static_model_policies(recipe),recipe['staticModelPolicies'])
-        request={'object':'Native.Mesh','materialPolicy':'preserve-native-graph'}
-        self.assertEqual(validate_static_requests([request],[{'resolvedMeshObject':'Native.Mesh'}],recipe),16)
-        for requests,selection in (([{'object':'Native.Mesh'}],recipe),([request],{}),
-            ([{'object':'Native.Other'}],recipe)):
-            with self.assertRaises(ValueError): validate_static_requests(requests,[{'resolvedMeshObject':requests[0]['object']}],selection)
-        for policies in ({'Mesh':'preserve-native-graph'},{'Native.Mesh':'flatten'},
-                         {'Native.Mesh':'preserve-native-graph','native.mesh':'preserve-native-graph'}):
-            with self.assertRaises(ValueError): static_model_policies({'staticModelPolicies':policies})
 
     def test_missing_slots_and_unreviewed_node_classes_still_fail(self):
         converter=SimpleNamespace(client=Path('fixture'))
@@ -64,8 +50,6 @@ CLIENT=ROOT/'artifacts/native-parity/inputs/IMPORTA-PC'
 class NativeFlameGraphTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # Select the active product by stable ID: older hash directories are
-        # intentionally retained and must not silently become the test fixture.
         validation=json.loads(VALIDATION.read_bytes())
         if not validation['passed'] or validation['errors']:
             raise AssertionError('Native migration validation did not pass')

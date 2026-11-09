@@ -99,7 +99,7 @@ def recipe_paths(job, project_root=ROOT):
         require(value.get('schemaVersion') == 1 and isinstance(value.get('jobs'), list) and value['jobs'], 'Invalid legacy migration recipe')
         paths += [child(project_root, value[key]) for key in ('sourceManifest', 'acceptance')]
         for row in value['jobs']:
-            require(isinstance(row, dict) and row.get('adapter') in ('assets', 'map', 'effect', 'map-section', 'npc-profiles'),
+            require(isinstance(row, dict) and row.get('adapter') in ('assets', 'effect', 'npc-profiles'),
                     'Unknown legacy migration adapter')
             paths.append(child(project_root, row['recipe']))
     return sorted(set(paths))
@@ -128,8 +128,8 @@ def adapter_pins(name):
         result['tool:UEViewer-UModel-build1590'] = actual
         files.add('scripts/native_assets.py')
     if name == 'migration':
-        files.update('scripts/' + item for item in ('native_migration.py', 'native_source_stage.py', 'native_map.py',
-            'native_map_geometry.py', 'native_actor_profiles.py', 'native_texture_validation.py', 'validate-native-gltf.mjs'))
+        files.update('scripts/' + item for item in ('native_migration.py', 'native_source_stage.py', 'native_actor_profiles.py',
+            'native_texture_validation.py', 'validate-native-gltf.mjs'))
     elif name in ('sounds', 'ambient'):
         files.update('scripts/' + item for item in _audio_module(name).implementation()['files'])
     elif name == 'environment':
@@ -349,8 +349,6 @@ def _migration(job, output, pins, source_lock, project_root):
         manifest = read_json(bundle / 'manifest.json')
         check = bundle_checks[bundle.relative_to(Path(output)).as_posix()]
         require(check.get('verified') is True and check.get('kind') == manifest.get('kind'), 'Migration bundle validation identity differs')
-        if manifest.get('kind') == 'native-terrain-section':
-            require_passed_migration_gltf_summary(check.get('gltf'))
     unsupported = [row for row in jobs if row.get('support') == 'failed' or row.get('unsupported')]
     unsupported += coverage.get('unsupportedPackages', [])
     return _result('partial' if unsupported else 'converted', {'requestedJobs': len(jobs), 'bundleCount': len(bundles), **kinds},

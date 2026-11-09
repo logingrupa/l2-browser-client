@@ -185,7 +185,8 @@ rows keyed `tile:<tileId>`, one per step, sorted by step.
 
 Component resource paths are hash-addressed like tile resources, with the
 SHA-256 in the path equal to `sha256`. The old `map-section-runtime` kind stays
-until the 20_20 chain retires.
+while the served store holds the 20_20 section record; its converter chain was
+retired by plan 02-71, and the kind leaves with the restage.
 
 `native-table` v1, at `/l2/tables/<sha>/<table>.json`, one per decoded table:
 `{kind: "native-table", schemaVersion: 1, table, sourcePath, sourceSha256,

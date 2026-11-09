@@ -1,4 +1,3 @@
-"""Run the source-pinned raw migration milestone; no native client is executed."""
 import argparse
 import json
 import os
@@ -17,7 +16,8 @@ from native_texture_validation import verify_texture_products
 from reference_client_guard import require_reference_client
 
 ROOT = Path(__file__).resolve().parent.parent
-RECEIPT_KINDS_WITH_SOURCES_VERIFIED_THROUGH_PINNED_PRODUCTS = {'native-map-section-runtime'}
+MIGRATION_DESCRIPTION = 'Run the source-pinned raw migration milestone; no native client is executed.'
+MIGRATION_ADAPTERS = ('assets', 'effect', 'npc-profiles')
 DEFERRED = [
     'Native visual acceptance of equipment and attack/death playback, world gameplay/collision and native terrain layer rendering.',
     'Live Power Strike timing and attachment, complete character attack reference and Babylon effect simulation; reviewed source dispatch is preserved.',
@@ -51,17 +51,14 @@ def load_recipe(path):
     recipe = read_json(path)
     if recipe.get('schemaVersion') != 1 or not isinstance(recipe.get('jobs'), list) or not recipe['jobs']:
         raise ValueError('Expected schemaVersion1 migration recipe with jobs')
-    ids, earlier_adapters = set(), {}
+    ids = set()
     for job in recipe['jobs']:
         identity = job.get('id', '')
         if not re.fullmatch(r'[a-z0-9][a-z0-9-]{0,79}', identity) or identity in ids:
             raise ValueError('Migration job ID is invalid or duplicated')
         ids.add(identity)
-        if job.get('adapter') not in ('assets', 'map', 'effect', 'map-section', 'npc-profiles'):
+        if job.get('adapter') not in MIGRATION_ADAPTERS:
             raise ValueError('Unknown migration adapter: ' + str(job.get('adapter')))
-        if job['adapter'] == 'map-section' and earlier_adapters.get(job.get('mapJob')) != 'map':
-            raise ValueError('Map section requires an explicitly named earlier raw-map job')
-        earlier_adapters[identity] = job['adapter']
         project_file(job['recipe'])
     project_file(recipe['sourceManifest'])
     project_file(recipe['acceptance'])
@@ -105,32 +102,12 @@ def active_products(output):
         else:
             bundle = read_json(path)
             bundles.append(path.parent)
-            if bundle.get('kind') == 'native-map-section-runtime':
-                context = section_context(output, job)
-                bundles.append(context['geometry'])
-                for model in bundle['models']:
-                    archives.add(output_file(context['models'], model['archive']['file']))
-            else:
-                for asset in bundle.get('assets', []):
-                    archives.add(output_file(path.parent, asset['archive']))
+            for asset in bundle.get('assets', []):
+                archives.add(output_file(path.parent, asset['archive']))
     return sorted(archives), sorted(set(bundles))
 
 
-def section_context(output, job):
-    identity = job['id']
-    base = 'sections/' + identity
-    if job.get('adapter') != 'map-section' or job.get('path') != base+'/map-section-runtime/manifest.json' or job.get('geometryPath') != base+'/map-section/manifest.json':
-        raise ValueError('Map section product paths differ from the declared adapter')
-    map_job = job.get('sourceMapJob', '')
-    if not re.fullmatch(r'[a-z0-9][a-z0-9-]{0,79}', map_job) or job.get('sourceMapPath') != 'maps/'+map_job+'/manifest.json':
-        raise ValueError('Map section source-map dependency is missing or invalid')
-    return {'raw': output_file(output, 'maps/'+map_job), 'geometry': output_file(output, base+'/map-section'),
-            'models': output_file(output, base+'/map-section-models'), 'runtime': output_file(output, base+'/map-section-runtime')}
-
-
 def receipt_files(receipt):
-    if receipt.get('kind') == 'native-map-section-runtime':
-        return ['manifest.json']
     if 'outputs' in receipt:
         return receipt['outputs']
     return ['manifest.json', *(entry['file'] for entry in receipt['files'])]
@@ -141,8 +118,6 @@ def receipt_dependencies(receipt):
         return receipt['dependencies']
     if 'sourceDependencies' in receipt:
         return receipt['sourceDependencies']
-    if receipt.get('kind') in RECEIPT_KINDS_WITH_SOURCES_VERIFIED_THROUGH_PINNED_PRODUCTS:
-        return {}
     return {entry['path']: entry['sha256'] for entry in receipt['sourceFiles']}
 
 
@@ -166,15 +141,6 @@ def check_coverage(recipe, output):
         raise ValueError('Migration coverage does not contain every requested job exactly once')
     if any(job['support'] == 'failed' or job.get('unsupported') for job in jobs):
         raise ValueError('Migration coverage contains failed or unsupported requested jobs')
-    recorded = {job['id']: job for job in jobs}
-    for job in recipe['jobs']:
-        if job['adapter'] == 'map-section':
-            row = recorded[job['id']]
-            section_context(output, row)
-            if row['sourceMapJob'] != job['mapJob'] or recorded.get(job['mapJob'], {}).get('path') != 'maps/'+job['mapJob']+'/manifest.json':
-                raise ValueError('Map section dependency differs from its requested raw-map job')
-            if row['support'] != 'section-products-ready-for-runtime-validation':
-                raise ValueError('Map section coverage is incomplete')
 
 
 def product_files(output):
@@ -228,15 +194,8 @@ def validate_products(output, client, manifest):
             results.append(row)
         except (ValueError, OSError, KeyError, zipfile.BadZipFile, subprocess.SubprocessError) as error:
             errors.append({'path': relative, 'error': str(error)})
-    from native_map import verify_map
-    from native_map_geometry import verify_geometry, verify_section_runtime
     from native_effect_bundle import verify_effect_bundle
     from native_actor_profiles import verify_npc_profiles
-    contexts = {}
-    for job in read_json(output/'coverage.json')['jobs']:
-        if job.get('adapter') == 'map-section' and job['support'] != 'failed':
-            context = section_context(output, job)
-            contexts[context['geometry']] = contexts[context['runtime']] = context
     bundle_results = []
     for bundle in bundles:
         receipt = bundle / 'receipt.json'
@@ -244,28 +203,10 @@ def validate_products(output, client, manifest):
             dependency_pins(receipt_dependencies(read_json(receipt)), manifest)
             kind = read_json(bundle/'manifest.json').get('kind')
             row = {'path': bundle.relative_to(output).as_posix(), 'kind': kind, 'verified': True}
-            if kind == 'native-map-raw':
-                verify_map(client, bundle)
-            elif kind == 'native-effect-bundle':
+            if kind == 'native-effect-bundle':
                 verify_effect_bundle(client, bundle)
             elif kind == 'native-npc-profiles':
                 verify_npc_profiles(client, bundle)
-            elif kind == 'native-terrain-section':
-                context = contexts[bundle]
-                verify_geometry(client, context['raw'], bundle)
-                glb = bundle/'terrain.glb'
-                report = output/'validation'/(hash_file(glb)+'.gltf.json')
-                report.parent.mkdir(parents=True, exist_ok=True)
-                completed = subprocess.run(['node', str(ROOT/'scripts/validate-native-gltf.mjs'), str(glb), str(report)], capture_output=True, text=True, timeout=180)
-                if completed.returncode:
-                    raise ValueError('Terrain Khronos glTF validation failed: '+(completed.stderr.strip() or completed.stdout.strip()))
-                validation = read_json(report)
-                row['gltf'] = {'version': validation['version'], 'errors': validation['issues']['numErrors'], 'warnings': validation['issues']['numWarnings']}
-            elif kind == 'native-map-section-runtime':
-                context = contexts[bundle]
-                result = verify_section_runtime(client, context['raw'], context['geometry'], context['models'], bundle)
-                if result['errors'] or result['support'] != 'section-products-ready-for-runtime-validation':
-                    raise ValueError('Section runtime products are incomplete: '+json.dumps(result['errors']))
             else:
                 raise ValueError('Unknown active migration bundle kind: '+str(kind))
             bundle_results.append(row)
@@ -280,10 +221,8 @@ def run_migration(recipe, client, output, manifest, source_inventory=None):
     source_inventory = source_inventory or inventory(manifest, client)
     write_json(output / 'inventory.json', source_inventory)
     converter = Converter(client, output / 'assets', os.environ.get('L2_UMODEL', str(UMODEL)))
-    from native_map import migrate_map
     from native_effect_bundle import migrate_effect_bundle
     from native_actor_profiles import migrate_npc_profiles
-    from native_map_geometry import build_geometry, build_section_runtime
     jobs, run_rows = [], []
     for job in recipe['jobs']:
         print(json.dumps({'job': job['id'], 'state': 'started'}), flush=True)
@@ -312,27 +251,8 @@ def run_migration(recipe, client, output, manifest, source_inventory=None):
                         run_rows.append({'id': identity, 'cacheHit': result['cacheHit']})
                     except (ValueError, OSError, KeyError, subprocess.SubprocessError) as error:
                         jobs.append({'id': identity, 'recipe': job['recipe'], 'support': 'failed', 'error': str(error)})
-            elif job['adapter'] == 'map-section':
-                raw = output/'maps'/job['mapJob']
-                base = output/'sections'/job['id']
-                dependency = next((row for row in jobs if row['id'] == job['mapJob']), None)
-                if not dependency or dependency['support'] == 'failed' or dependency.get('unsupported'):
-                    raise ValueError('Required raw-map migration did not succeed: '+job['mapJob'])
-                geometry = build_geometry(client, raw, request, base/'map-section')
-                runtime = build_section_runtime(client, raw, base/'map-section', base/'map-section-models', base/'map-section-runtime', os.environ.get('L2_UMODEL', str(UMODEL)))
-                runtime_manifest = read_json(base/'map-section-runtime/manifest.json')
-                jobs.append({'id': job['id'], 'adapter': 'map-section', 'recipe': job['recipe'], 'support': runtime['support'],
-                             'path': (base/'map-section-runtime/manifest.json').relative_to(output).as_posix(),
-                             'geometryPath': (base/'map-section/manifest.json').relative_to(output).as_posix(),
-                             'sourceMapJob': job['mapJob'], 'sourceMapPath': 'maps/'+job['mapJob']+'/manifest.json',
-                             'coverage': {**geometry['coverage'], **runtime_manifest.get('coverage', {})},
-                             'unsupportedRuntimeMaterials': runtime_manifest.get('unsupportedRuntimeMaterials', []),
-                             'gaps': list(dict.fromkeys(geometry['gaps']+runtime_manifest['gaps'])),
-                             'unsupported': runtime['errors']})
-                run_rows.append({'id': job['id'], 'cacheHit': geometry['cacheHit'] and runtime['cacheHits'] == runtime['models'] and not runtime['errors'],
-                                 'geometryCacheHit': geometry['cacheHit'], 'staticModelCacheHits': runtime['cacheHits'], 'staticModels': runtime['models']})
             else:
-                folder, migrate = {'map': ('maps', migrate_map), 'effect': ('effects', migrate_effect_bundle),
+                folder, migrate = {'effect': ('effects', migrate_effect_bundle),
                     'npc-profiles': ('npc-profiles', migrate_npc_profiles)}[job['adapter']]
                 result = migrate(client, request, output / folder / job['id'])
                 bundle = read_json(output / folder / job['id'] / 'manifest.json')
@@ -361,7 +281,7 @@ def run_migration(recipe, client, output, manifest, source_inventory=None):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=MIGRATION_DESCRIPTION)
     parser.add_argument('--recipe', type=Path, default=ROOT / 'recipes/native-migration.json')
     parser.add_argument('--client', type=Path, default=ROOT / 'artifacts/native-parity/inputs/IMPORTA-PC')
     parser.add_argument('--output', type=Path, default=ROOT / 'artifacts/native-parity/migration')
@@ -371,7 +291,7 @@ def main():
     parser.add_argument('--inventory-only', action='store_true')
     parser.add_argument('--verify-only', action='store_true')
     parser.add_argument('--prove-rebuild', action='store_true', help='After migration, test cache replay and rebuild into a genuinely empty retained directory')
-    parser.add_argument('--stage-runtime', action='store_true', help='Stage current verified models into ignored public/l2 for local browser/Editor use')
+    parser.add_argument('--stage-runtime', action='store_true', help='Stage verified migration models and textures into ignored public/l2, keeping every other catalog record')
     args = parser.parse_args()
     require_reference_client(args.client)
     recipe = load_recipe(args.recipe)

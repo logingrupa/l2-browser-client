@@ -33,20 +33,14 @@
       "recipe": "recipes/native-npc-profiles.json"
     },
     {
-      "id": "map-20-20",
-      "adapter": "map",
-      "recipe": "recipes/native-map-20_20.json"
-    },
-    {
       "id": "map-20-20-textures",
       "adapter": "assets",
       "recipe": "recipes/native-terrain-textures.json"
     },
     {
-      "id": "map-20-20-section",
-      "adapter": "map-section",
-      "mapJob": "map-20-20",
-      "recipe": "recipes/native-map-debug-location.json"
+      "id": "flame-native-material-graph",
+      "adapter": "assets",
+      "recipe": "recipes/native-flame-material-graph.json"
     },
     {
       "id": "power-strike-source-dispatch",

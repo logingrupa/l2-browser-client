@@ -117,11 +117,3 @@ def ambient_sound_object(package, item, raw_path):
             'nativePayload': source_range(package.data, raw_path, item['offset'], item['offset'] + item['size']),
             'nativeTail': source_range(package.data, raw_path, tail.position, tail.end),
             'classDefaults': 'not-resolved-by-raw-map-export', 'nativePlayback': 'unverified'}
-
-
-def selected_by_origin(properties, section):
-    position = property_value(properties, 'Location')
-    if position is None:
-        return None
-    return all(section['min'][index] <= position[axis] <= section['max'][index]
-               for index, axis in enumerate('XY'))

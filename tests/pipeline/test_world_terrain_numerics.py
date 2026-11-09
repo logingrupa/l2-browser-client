@@ -60,6 +60,12 @@ class TerrainNumericsTests(unittest.TestCase):
 
 
 class ExtrapolatedMaskUvTests(unittest.TestCase):
+    def test_the_mask_uv_rule_is_required_and_only_the_qualified_formula_is_accepted(self):
+        with self.assertRaises(TypeError):
+            terrain_mask_uv(80, 255, 256, 256)
+        with self.assertRaisesRegex(FormatError, 'Unsupported terrain mask UV formula'):
+            terrain_mask_uv(80, 255, 256, 256, {**extrapolated_mask_uv_rule(), 'formula': '(gridXY + 0.5) / heightmapDimensions'})
+
     def test_submitted_float_bytes_and_complete_independent_uv_hash(self):
         rule = extrapolated_mask_uv_rule()
         expected = {240: '0080703f', 241: '0070713f', 248: '0000783f', 255: '00907e3f'}

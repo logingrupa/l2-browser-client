@@ -58,7 +58,7 @@ export const ROTATOR_RULE_BY_USE = {
   placement: {
     id: "placement.rotator-conversion",
     value: "sine-table",
-    provenance: "scripts/native_map_geometry.py rotation_rows: static placement matrices use the 16384-entry float32 sine table, index (units >> 2) & 16383, without the fx.sine-table-half-turn entry (it differs by 4.05e-21 at units 32768-32771 until one table is shared); .planning/reference/lineage2js/03-movement.md: placement matrices state their rotator rule, pinned against src/shared/math/rotator.ts",
+    provenance: "scripts/world/static_placement.py rotation_rows: static placement matrices use the 16384-entry float32 sine table, index (units >> 2) & 16383, without the fx.sine-table-half-turn entry (it differs by 4.05e-21 at units 32768-32771 until one table is shared); .planning/reference/lineage2js/03-movement.md: placement matrices state their rotator rule, pinned against src/shared/math/rotator.ts",
     status: "unconfirmed",
     interludeEvidence: null,
     runtimeDefault: "sine-table",

@@ -8,14 +8,11 @@ import type { FootstepContactKind, FootstepGroundContext } from "./footstepSurfa
 interface Source { kind: FootstepContactKind; sourceId: string | null; detail: string | null }
 
 export interface FootstepGroundSamplerOptions {
-  /** Expected deco-instance field for the terrain GRASS gate (approximation). */
   readonly decoGrass?: FootstepDecoGrassField | null;
-  /** Section conversion: native X = x · k, native Y = z · k (scripts/native_map_geometry.py native_to_gltf). */
   readonly sourceUnitsPerMetre?: number;
 }
 export interface FootstepGroundSampler {
   describe(contact: WorldGroundContact | null): FootstepGroundContext;
-  /** Optionally classify support meshes before the first footstep. */
   preload(meshes: readonly AbstractMesh[]): void;
   inspection(): { decoGrass: { manifest: string; ruleId: string; label: string } | null; sourceUnitsPerMetre: number; disposed: boolean };
   dispose(): void;
@@ -36,9 +33,6 @@ function materialName(mesh: AbstractMesh, indexOffset: number): string | null {
   } catch { return mesh.material?.name ?? null; }
 }
 
-/** Reads the accepted support's mesh/source markers and, on terrain, the
- * expected deco-instance count at its native XY. Never performs a navigation
- * query, fetch or scene change. */
 export function createFootstepGroundSampler(scene: Scene, options: FootstepGroundSamplerOptions = {}): FootstepGroundSampler {
   const units = options.sourceUnitsPerMetre ?? 100, decoGrass = options.decoGrass ?? null;
   if (!Number.isFinite(units) || units <= 0) throw new TypeError("Footstep ground sampler needs a positive source unit scale.");
@@ -71,8 +65,7 @@ export function createFootstepGroundSampler(scene: Scene, options: FootstepGroun
   };
   const empty = (kind: FootstepContactKind, detail: string | null, meshName: string | null = null): FootstepGroundContext =>
     ({ kind, meshName, sourceId: null, material: null, nativeXY: null, decoGrass: null, footVolume: null, detail });
-  // One terrain per map: a field applies to its TerrainInfo and its sectors/patches.
-  const decoApplies = (sourceId: string | null) => !!decoGrass && (sourceId === null || sourceId.toLowerCase().includes(decoGrass.terrain.toLowerCase()));
+  const decoGrassFieldCoversMapTerrainSource = (sourceId: string | null) => !!decoGrass && (sourceId === null || sourceId.toLowerCase().includes(decoGrass.terrain.toLowerCase()));
   return {
     describe(contact) {
       if (disposed || !contact?.samples.length) return empty("none", contact ? "contact has no samples" : null);
@@ -82,7 +75,7 @@ export function createFootstepGroundSampler(scene: Scene, options: FootstepGroun
       const source = classify(mesh), nativeXY: [number, number] = [contact.position.x * units, contact.position.z * units];
       const terrain = source.kind === "terrain" || source.kind === "terrain-patch";
       return { kind: source.kind, meshName: mesh.name, sourceId: source.sourceId, material: materialName(mesh, sample.indexOffset), nativeXY,
-        decoGrass: terrain && decoApplies(source.sourceId) ? decoGrass!.read(nativeXY[0], nativeXY[1]) : null, footVolume: null, detail: source.detail };
+        decoGrass: terrain && decoGrassFieldCoversMapTerrainSource(source.sourceId) ? decoGrass!.read(nativeXY[0], nativeXY[1]) : null, footVolume: null, detail: source.detail };
     },
     preload(meshes) { if (!disposed) for (const mesh of meshes) if (!mesh.isDisposed()) classify(mesh); },
     inspection: () => ({ decoGrass: decoGrass ? { manifest: decoGrass.manifestSha256, ruleId: decoGrass.ruleId, label: decoGrass.label } : null,

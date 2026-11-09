@@ -32,7 +32,7 @@ class NpcProfileStagingTests(RuntimeStagingFixture):
         before = {p.relative_to(folder): (p.read_bytes(), p.stat().st_mtime_ns) for p in folder.rglob('*') if p.is_file()}
         self.assertEqual(self.stage(), result)
         self.assertEqual(before, {p.relative_to(folder): (p.read_bytes(), p.stat().st_mtime_ns) for p in folder.rglob('*') if p.is_file()})
-        self.assertEqual((result['models'], result['sections']), (1, 1))
+        self.assertEqual(result['models'], 1)
 
     def test_npc_corrupt_manifest_sidecar_and_missing_bundle_preserve_previous_catalog(self):
         self.stage()

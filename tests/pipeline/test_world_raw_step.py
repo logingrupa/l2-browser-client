@@ -11,11 +11,11 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from native_map import build_map, validate_recipe
 from native_store.gap_rows import read_gap_rows, write_gap_rows
 from world import convert_tile
 from world.convert_tile import record_tile_step_gap_row
 from world.map_actor_properties import HAS_STACK
+from world.raw_map_extraction import build_map
 from world.raw_map_step import RAW_MAP_STEP_ALGORITHM_VERSION, raw_map_recipe, run_raw_map_step
 from reference_client_lock_fixture import lock_client_as_checked_conversion_root
 from ue2_package_fixture import compact, package_bytes, tag
@@ -129,14 +129,9 @@ class SyntheticTileTestCase(unittest.TestCase):
 
 
 class RawRecipeWithoutSectionTests(SyntheticTileTestCase):
-    def test_a_raw_recipe_without_a_section_validates_and_a_declared_section_is_still_checked(self):
-        recipe = raw_map_recipe(TILE_ID, {'eSha256': REAL_TILE_MAP_SHA256})
-        self.assertEqual(recipe, {'schemaVersion': 1, 'kind': 'native-map-raw', 'map': MAP_PATH, 'sourceSha256': REAL_TILE_MAP_SHA256})
-        validate_recipe(recipe)
-        with self.assertRaisesRegex(ValueError, 'empty/reversed'):
-            validate_recipe({**recipe, 'section': {'selection': 'serialized-origin-xy-inclusive', 'min': [5, 5], 'max': [5, 6]}})
-        with self.assertRaisesRegex(ValueError, 'selection'):
-            validate_recipe({**recipe, 'section': {'selection': 'geometry', 'min': [0, 0], 'max': [1, 1]}})
+    def test_the_raw_recipe_names_the_tile_map_and_its_lock_hash_without_a_section(self):
+        self.assertEqual(raw_map_recipe(TILE_ID, {'eSha256': REAL_TILE_MAP_SHA256}),
+                         {'schemaVersion': 1, 'kind': 'native-map-raw', 'map': MAP_PATH, 'sourceSha256': REAL_TILE_MAP_SHA256})
 
     def test_whole_tile_build_requests_every_mesh_reference_and_reports_whole_tile_coverage(self):
         self.write_client(two_actors_sharing_one_mesh())
