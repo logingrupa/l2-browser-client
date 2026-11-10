@@ -4,9 +4,10 @@ import { decodeNativeJsonResource, fetchVerifiedNativeResource } from "../scene/
 import { parseNativeTileChunkManifest, type NativeTileChunkCollision, type NativeTileChunkManifest } from "../scene/world/nativeTileChunkManifest";
 import { readNativeTileManifest } from "../scene/world/nativeTileManifest";
 import type { CollisionCell } from "../scene/world/movement/core/collisionCell";
-import type { CollisionCellFootprint, CollisionWorld } from "../scene/world/movement/core/collisionWorld";
+import type { CollisionWorld } from "../scene/world/movement/core/collisionWorld";
 import { decodeNativeTileCollisionCell } from "../scene/world/movement/core/decodeNativeTileCollision";
 import { loadTileBspTree, nativeTileCollisionCellId } from "../scene/world/movement/loadCollisionCells";
+import { collisionCellTerrainFootprint } from "../scene/world/nativeTileChunkFootprints";
 
 export interface TileCollisionChunkGap {
   readonly chunkId: string;
@@ -29,18 +30,6 @@ export class TileCollisionLoadError extends Error {
     super(`Tile ${tileId} collision: ${message}`);
     this.name = "TileCollisionLoadError";
   }
-}
-
-export function collisionCellTerrainFootprint(cell: CollisionCell): CollisionCellFootprint | null {
-  const terrain = cell.terrain;
-  if (terrain === null) return null;
-  const [locationX, locationY] = terrain.location, [scaleX, scaleY] = terrain.terrainScale;
-  const sourceX = (column: number) => locationX + (column - Math.floor(terrain.heightmapWidth / 2)) * scaleX;
-  const sourceY = (row: number) => locationY + (row - Math.floor(terrain.heightmapHeight / 2)) * scaleY;
-  return {
-    minimumX: sourceX(terrain.firstColumn), minimumY: sourceY(terrain.firstRow),
-    maximumX: sourceX(terrain.firstColumn + terrain.columns - 1), maximumY: sourceY(terrain.firstRow + terrain.rows - 1),
-  };
 }
 
 async function readChunkManifest(tileId: string, chunkId: string, manifest: string, sha256: string, bytes: number, signal: AbortSignal): Promise<NativeTileChunkManifest> {

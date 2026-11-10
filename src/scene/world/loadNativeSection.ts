@@ -14,6 +14,8 @@ import { nativeBspResources } from "./nativeBspResources";
 import { parseNativeTerrainPatches, validateSourceTerrainPatch, type NativeTerrainPatch } from "./nativeTerrainPatch";
 import { selectedNativeTileIdentity } from "./selectedNativeTile";
 import type { NativeTileSectionView } from "./loadNativeTileChunks";
+import type { NativeTileChunkResidencyInspection } from "./nativeTileChunkResidency";
+import type { StreamedTileInspection } from "./streamNativeTileChunks";
 import { disposeNativeModelInstances, instantiateNativeModelPlacements, type NativeModelInstance } from "./nativeModelPlacements";
 import type { NativeMover } from "./nativeMovers";
 import type { TileVisibilityBinding, TileVisibilityInspection } from "./bspVisibility/bindTileVisibility";
@@ -250,6 +252,8 @@ export type NativeWorldSceneInspection = ReturnType<typeof inspectNativeWorldSce
   readonly meshCount?: number;
   readonly vertexCount?: number;
   readonly collisionMeshCount?: number;
+  readonly residency?: NativeTileChunkResidencyInspection;
+  readonly streamedTiles?: readonly StreamedTileInspection[];
   readonly terrainChunks?: NativeTileSectionView["terrainChunks"];
   readonly tileAnchor?: NativeTileSectionView["anchor"];
   readonly meshGapCount?: number;

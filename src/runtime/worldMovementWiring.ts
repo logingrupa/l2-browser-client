@@ -1,12 +1,10 @@
 import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
-import type { Scene } from "@babylonjs/core/scene";
 import type { GameWorldAdapter } from "../world/GameWorldAdapter";
 import type { WorldEvent, WorldPosition } from "../world/worldTypes";
 import {
   sourceDistanceToWorld, sourceHeadingToWorldYaw, sourcePositionToWorld, worldDistanceToSource, worldPositionToSource,
 } from "../world/sourceFrame";
-import { provideCollisionCellContext } from "../scene/world/movement/collisionCellContext";
-import { createCollisionWorld, type CollisionWorld, type CollisionWorldInspection } from "../scene/world/movement/core/collisionWorld";
+import type { CollisionWorld, CollisionWorldInspection } from "../scene/world/movement/core/collisionWorld";
 import type { MovementNativeRules } from "../scene/world/movement/core/movementRules";
 import { traceClickDestination } from "../scene/world/movement/core/clickTrace";
 import { calculateBehindView, type BehindView } from "../scene/world/movement/core/behindViewCamera";
@@ -22,12 +20,11 @@ export interface WorldBounds {
 }
 
 export interface WorldMovementOptions {
-  readonly scene: Scene;
   readonly adapter: Pick<GameWorldAdapter, "subscribe" | "dispatch">;
   readonly camera: ArcRotateCamera;
   readonly rules: MovementNativeRules;
-  readonly focusPosition: () => WorldPosition | null;
-  readonly loadCollisionCells: (world: CollisionWorld, signal: AbortSignal) => Promise<TileCollisionLoad>;
+  readonly collisionWorld: CollisionWorld;
+  readonly loadCollisionCells: (world: CollisionWorld, signal: AbortSignal) => Promise<TileCollisionLoad | null>;
   readonly loadedBounds: WorldBounds | null;
   readonly localPlayerId: string;
   readonly localWalkAnimationFramesInMove: number | null;
@@ -89,9 +86,7 @@ function boundsDiagonalSourceLength(bounds: WorldBounds): number {
 }
 
 export function wireWorldMovement(options: WorldMovementOptions): WorldMovement {
-  const { scene, adapter, camera, rules, localPlayerId } = options;
-  const collisionWorld = createCollisionWorld();
-  const withdrawContext = provideCollisionCellContext(scene, { world: collisionWorld, focusPosition: options.focusPosition });
+  const { adapter, camera, rules, localPlayerId, collisionWorld } = options;
   const pendingIntents: MovementIntent[] = [];
   const presenter = createMovementPresenter({
     collisionWorld, rules, reportIntent: intent => { pendingIntents.push(intent); },
@@ -128,9 +123,8 @@ export function wireWorldMovement(options: WorldMovementOptions): WorldMovement 
     const bounds = options.loadedBounds;
     if (bounds === null) return null;
     if (!Number.isFinite(x) || !Number.isFinite(z)) throw new RangeError("collisionSurfaceHeightsAt needs finite x and z metres.");
-    return {
-      start: worldPositionToSource({ x, y: bounds.maximum.y, z }), end: worldPositionToSource({ x, y: bounds.minimum.y, z }),
-    };
+    const top = worldPositionToSource({ x, y: bounds.maximum.y, z }), bottom = worldPositionToSource({ x, y: bounds.minimum.y, z });
+    return { start: { ...top, z: top.z + rules.pawn.maxStepHeight }, end: { ...bottom, z: bottom.z - rules.pawn.maxStepHeight } };
   };
   return {
     collisionWorld,
@@ -212,7 +206,6 @@ export function wireWorldMovement(options: WorldMovementOptions): WorldMovement 
       if (released) return;
       released = true;
       unsubscribe();
-      withdrawContext();
       pendingIntents.length = 0;
     },
   };

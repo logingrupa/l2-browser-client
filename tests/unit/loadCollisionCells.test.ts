@@ -5,7 +5,7 @@ import { createCollisionWorld, type CollisionWorld } from "../../src/scene/world
 import {
   collisionCellContextFor, collisionFocusSourcePosition, provideCollisionCellContext,
 } from "../../src/scene/world/movement/collisionCellContext";
-import { loadCollisionCell, loadTileBspTree, nativeTileCollisionCellId } from "../../src/scene/world/movement/loadCollisionCells";
+import { loadChunkCollisionCell, loadTileBspTree, nativeTileCollisionCellId } from "../../src/scene/world/movement/loadCollisionCells";
 import type { NativeTileChunkManifest } from "../../src/scene/world/nativeTileChunkManifest";
 import type { NativeTileResource } from "../../src/scene/world/nativeTileManifest";
 import { collisionBspTreeFixtureArrays, collisionChunkFixtureArrays, writeCollisionFixture } from "../support/nativeTileCollisionFixture";
@@ -68,39 +68,25 @@ function flipStoredByte(responses: Map<string, Uint8Array<ArrayBuffer>>, path: s
 
 afterEach(() => { vi.unstubAllGlobals(); });
 
-describe("loadCollisionCell", () => {
-  it("adds a pinned chunk cell to the world with its tile BSP tree", async () => {
+describe("collision cell loading", () => {
+  it("decodes a pinned chunk cell and a tile BSP tree and leaves adding them to the caller", async () => {
     const { store } = createFixtureStore();
     const chunk = chunkManifest("chunk-0-0", store("native-tile-chunk-collision", collisionChunkFixtureArrays()));
     const tileCollision = tileCollisionResource(store("native-tile-collision", collisionBspTreeFixtureArrays()));
     const world = requiredWorld("chunk-0-0");
-    expect(world.isReady({ x: 100, y: 100 })).toBe(false);
-    const cell = await loadCollisionCell(world, { chunk, tileCollision }, signal());
+    const cell = await loadChunkCollisionCell(chunk, signal());
     expect(cell.cellId).toBe("20_21/chunk-0-0");
     expect(cell.volumes[0]!.exportIndex).toBe(417);
-    expect(world.residentCells()).toEqual([cell]);
-    expect(world.isReady({ x: 100, y: 100 })).toBe(true);
-    expect(world.tileBspTree(tileId)!.nodeCount).toBe(3);
-  });
-
-  it("loads the tile BSP tree once for two chunks of the same tile, loaded together or one after the other", async () => {
-    const { store, fetcher } = createFixtureStore();
-    const tileStored = store("native-tile-collision", collisionBspTreeFixtureArrays()), tileCollision = tileCollisionResource(tileStored);
-    const chunkStored = store("native-tile-chunk-collision", collisionChunkFixtureArrays());
-    const world = requiredWorld("chunk-0-0", "chunk-1-0", "chunk-2-0");
-    await Promise.all(["chunk-0-0", "chunk-1-0"].map(chunkId => loadCollisionCell(world, { chunk: chunkManifest(chunkId, chunkStored), tileCollision }, signal())));
-    await loadCollisionCell(world, { chunk: chunkManifest("chunk-2-0", chunkStored), tileCollision }, signal());
-    expect(fetcher.mock.calls.filter(([path]) => path === tileStored.resource)).toHaveLength(1);
-    expect(world.inspection()).toMatchObject({ residentCellCount: 3, missingCellIds: [] });
+    expect((await loadTileBspTree(tileId, tileCollision, signal())).nodeCount).toBe(3);
+    expect(world.residentCells()).toEqual([]);
+    expect(world.isReady({ x: 100, y: 100 })).toBe(false);
   });
 
   it("refuses a chunk collision resource whose bytes differ from its SHA-256 pin", async () => {
     const { store, responses } = createFixtureStore();
     const chunkStored = store("native-tile-chunk-collision", collisionChunkFixtureArrays());
     flipStoredByte(responses, chunkStored.resource);
-    const tileCollision = tileCollisionResource(store("native-tile-collision", collisionBspTreeFixtureArrays()));
-    await expect(loadCollisionCell(requiredWorld("chunk-0-0"), { chunk: chunkManifest("chunk-0-0", chunkStored), tileCollision }, signal()))
-      .rejects.toThrow(/hash\/length mismatch/);
+    await expect(loadChunkCollisionCell(chunkManifest("chunk-0-0", chunkStored), signal())).rejects.toThrow(/hash\/length mismatch/);
   });
 
   it("refuses a tile collision resource whose length differs from its record", async () => {
@@ -133,7 +119,7 @@ describe("loadCollisionCell", () => {
     createFixtureStore();
     const outsidePath = { resource: "/etc/native-tile-chunk-collision/asset.json", sha256: "a".repeat(64), bytes: 1 };
     const tileCollision: NativeTileResource = { kind: "native-tile-collision", manifest: "/etc/asset.json", manifestSha256: "b".repeat(64), manifestBytes: 1 };
-    await expect(loadCollisionCell(requiredWorld("chunk-0-0"), { chunk: chunkManifest("chunk-0-0", outsidePath), tileCollision }, signal()))
+    await expect(loadChunkCollisionCell(chunkManifest("chunk-0-0", outsidePath), signal()))
       .rejects.toThrow(/bounded \/l2 path/);
     await expect(loadTileBspTree(tileId, tileCollision, signal())).rejects.toThrow(/bounded \/l2 path/);
   });
@@ -142,20 +128,17 @@ describe("loadCollisionCell", () => {
     const { store } = createFixtureStore();
     const tileStored = store("native-tile-collision", collisionBspTreeFixtureArrays());
     await expect(loadTileBspTree(tileId, { ...tileCollisionResource(tileStored), kind: "movers" }, signal())).rejects.toThrow(/is not a native-tile-collision resource/);
-    await expect(loadCollisionCell(requiredWorld("chunk-0-0"), { chunk: chunkManifest("chunk-0-0", null), tileCollision: tileCollisionResource(tileStored) }, signal()))
+    await expect(loadChunkCollisionCell(chunkManifest("chunk-0-0", null), signal()))
       .rejects.toThrow(/20_21\/chunk-0-0 has no collision resource/);
   });
 
-  it("adds nothing when the load is aborted", async () => {
+  it("rejects when the load is aborted", async () => {
     const { store } = createFixtureStore();
     const chunk = chunkManifest("chunk-0-0", store("native-tile-chunk-collision", collisionChunkFixtureArrays()));
-    const tileCollision = tileCollisionResource(store("native-tile-collision", collisionBspTreeFixtureArrays()));
-    const world = requiredWorld("chunk-0-0"), lifetime = new AbortController();
-    const load = loadCollisionCell(world, { chunk, tileCollision }, lifetime.signal);
+    const lifetime = new AbortController();
+    const load = loadChunkCollisionCell(chunk, lifetime.signal);
     lifetime.abort();
     await expect(load).rejects.toThrow();
-    expect(world.inspection()).toMatchObject({ residentCellCount: 0, missingCellIds: ["20_21/chunk-0-0"] });
-    expect(world.tileBspTree(tileId)).toBeNull();
   });
 });
 

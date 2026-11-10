@@ -17,8 +17,10 @@ export interface ResidencyChunk {
   readonly footprint: WorldResidencyFootprint;
 }
 
+export type ResidencyChunkContainer = Pick<AssetContainer, "addAllToScene" | "removeAllFromScene" | "dispose">;
+
 export interface LoadedResidencyChunk {
-  readonly container: AssetContainer;
+  readonly container: ResidencyChunkContainer;
   readonly terrainMeshes: readonly AbstractMesh[];
   readonly visualMeshes: readonly Mesh[];
   readonly collisionCell: CollisionCell;
@@ -45,6 +47,8 @@ export interface NativeTileChunkResidencyInspection {
   readonly loadedChunkCount: number;
   readonly loadingChunkCount: number;
   readonly disposedChunkCount: number;
+  readonly focusCellIds: readonly string[];
+  readonly retainedCellIds: readonly string[];
   readonly loadedCellIds: readonly string[];
   readonly failedChunks: readonly FailedResidencyChunk[];
 }
@@ -229,7 +233,7 @@ export function createNativeTileChunkResidency<Loaded extends LoadedResidencyChu
         visibleChunkCount: states.filter(([, state]) => state.kind === "loaded" && state.visible).length,
         requiredChunkCount: plan.requiredCellIds.length, retainedChunkCount: plan.retainedCellIds.length,
         loadedChunkCount: loadedCellIds.length, loadingChunkCount: states.filter(([, state]) => state.kind === "loading").length,
-        disposedChunkCount, loadedCellIds,
+        disposedChunkCount, focusCellIds: chunksHoldingFocus(focusPoint()).map(chunk => chunk.cellId), retainedCellIds: plan.retainedCellIds, loadedCellIds,
         failedChunks: states.flatMap(([cellId, state]) => state.kind === "failed" ? [{ cellId, reason: state.reason }] : [])
           .sort((left, right) => compareCellIds(left.cellId, right.cellId)),
       };

@@ -5,8 +5,7 @@ import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { NativeSliceAdapter } from "../../src/world/NativeSliceAdapter";
 import type { WorldCommand, WorldEvent, WorldPosition } from "../../src/world/worldTypes";
-import { collisionCellContextFor } from "../../src/scene/world/movement/collisionCellContext";
-import type { CollisionWorld } from "../../src/scene/world/movement/core/collisionWorld";
+import { createCollisionWorld, type CollisionWorld } from "../../src/scene/world/movement/core/collisionWorld";
 import { decodeNativeTileCollisionCell } from "../../src/scene/world/movement/core/decodeNativeTileCollision";
 import { wireWorldMovement, type WorldMovement } from "../../src/runtime/worldMovementWiring";
 import type { TileCollisionLoad } from "../../src/runtime/tileCollisionCells";
@@ -43,30 +42,18 @@ async function wiredWorld(boxes: readonly BoxVolumeDeclaration[] = [floorSlab(0)
   const commands: WorldCommand[] = [];
   adapter.subscribeCommands(command => commands.push(command));
   const loader = boxCellLoader(boxes);
-  let focus: WorldPosition | null = origin;
-  const movement = wireWorldMovement({ scene, adapter, camera, rules: pawnRules, focusPosition: () => focus, loadCollisionCells: loader.load,
+  const movement = wireWorldMovement({ adapter, camera, rules: pawnRules, collisionWorld: createCollisionWorld(), loadCollisionCells: loader.load,
     loadedBounds, localPlayerId, localWalkAnimationFramesInMove: null, signal: new AbortController().signal });
   releases.push(() => { movement.release(); adapter.dispose(); scene.dispose(); engine.dispose(); });
   const advanceFrames = (count: number) => { for (let frame = 0; frame < count; frame += 1) movement.advance(frameSeconds); };
   const settle = async () => { loader.resolveLoad(); await new Promise(resolve => setTimeout(resolve, 0)); };
-  return { scene, camera, adapter, commands, movement, advanceFrames, settle, setFocus: (next: WorldPosition | null) => { focus = next; } };
+  return { scene, camera, adapter, commands, movement, advanceFrames, settle };
 }
 
 const playerOf = (adapter: NativeSliceAdapter) => adapter.getInitialState().find(entity => entity.id === localPlayerId)!;
 const reportsIn = (commands: readonly WorldCommand[]) => commands.filter(command => command.type === "report-position" || command.type === "cannot-move");
 
 describe("world movement wiring", () => {
-  it("provides the collision world and the player focus to the world loader through the scene context", async () => {
-    const { scene, movement, setFocus } = await wiredWorld();
-    const context = collisionCellContextFor(scene)!;
-    expect(context.world).toBe(movement.collisionWorld);
-    expect(context.focusPosition()).toEqual({ x: 0, y: 0, z: 0 });
-    setFocus({ x: 1, y: 2, z: 3 });
-    expect(context.focusPosition()).toEqual({ x: 1, y: 2, z: 3 });
-    movement.release();
-    expect(collisionCellContextFor(scene)).toBeNull();
-  });
-
   it("holds every pawn until the tile cells are resident and reports the cell counts in the snapshot field", async () => {
     const { adapter, movement, advanceFrames, settle } = await wiredWorld();
     expect(movement.inspection().collisionCells).toMatchObject({ status: "loading", requiredCellCount: 0, residentCellCount: 0, missingCellIds: [] });
@@ -114,7 +101,7 @@ describe("world movement wiring", () => {
     const engine = new NullEngine(), scene = new Scene(engine);
     const camera = new ArcRotateCamera("follow", 0, 1, 4, Vector3.Zero(), scene);
     const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, null, undefined, { walkSupported: true, collision: { radius: 9, height: 23 } });
-    const movement: WorldMovement = wireWorldMovement({ scene, adapter, camera, rules: pawnRules, focusPosition: () => null,
+    const movement: WorldMovement = wireWorldMovement({ adapter, camera, rules: pawnRules, collisionWorld: createCollisionWorld(),
       loadCollisionCells: () => Promise.reject(new Error("tile 90_90 collision is not staged")), loadedBounds, localPlayerId,
       localWalkAnimationFramesInMove: null, signal: new AbortController().signal });
     releases.push(() => { movement.release(); adapter.dispose(); scene.dispose(); engine.dispose(); });
@@ -123,6 +110,17 @@ describe("world movement wiring", () => {
     adapter.dispatch({ type: "move-local", position: { x: 2, y: 0, z: 0 } });
     movement.advance(1);
     expect(movement.pose(localPlayerId)!.feetPosition.x).toBe(0);
+  });
+
+  it("treats a loader that leaves the cells to a streaming section as resident with no whole-tile load", async () => {
+    const engine = new NullEngine(), scene = new Scene(engine);
+    const camera = new ArcRotateCamera("follow", 0, 1, 4, Vector3.Zero(), scene);
+    const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, null, undefined, { walkSupported: true, collision: { radius: 9, height: 23 } });
+    const movement = wireWorldMovement({ adapter, camera, rules: pawnRules, collisionWorld: createCollisionWorld(), loadCollisionCells: () => Promise.resolve(null),
+      loadedBounds, localPlayerId, localWalkAnimationFramesInMove: null, signal: new AbortController().signal });
+    releases.push(() => { movement.release(); adapter.dispose(); scene.dispose(); engine.dispose(); });
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(movement.inspection().collisionCells).toMatchObject({ status: "resident", failure: null, load: null });
   });
 
   it("answers a click ray and the vertical probe with zero-extent traces through the collision world", async () => {
@@ -139,11 +137,26 @@ describe("world movement wiring", () => {
     expect(() => movement.collisionSurfaceHeightsAt(Number.NaN, 0)).toThrow(RangeError);
   });
 
+  it("finds the floor under a vertical probe when the loaded bounds are flat at the floor height", async () => {
+    const engine = new NullEngine(), scene = new Scene(engine);
+    const camera = new ArcRotateCamera("follow", 0, 1, 4, Vector3.Zero(), scene);
+    const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, null, undefined, { walkSupported: true, collision: { radius: 9, height: 23 } });
+    const loader = boxCellLoader([floorSlab(0)]);
+    const flatBounds = { minimum: { x: -20, y: 0, z: -20 }, maximum: { x: 20, y: 0, z: 20 } };
+    const movement = wireWorldMovement({ adapter, camera, rules: pawnRules, collisionWorld: createCollisionWorld(), loadCollisionCells: loader.load,
+      loadedBounds: flatBounds, localPlayerId, localWalkAnimationFramesInMove: null, signal: new AbortController().signal });
+    releases.push(() => { movement.release(); adapter.dispose(); scene.dispose(); engine.dispose(); });
+    loader.resolveLoad();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    const [height] = movement.collisionSurfaceHeightsAt(1, .5);
+    expect(height).toBeCloseTo(0, 1);
+  });
+
   it("counts a malformed or unknown-entity movement record instead of throwing out of the adapter", () => {
     const engine = new NullEngine(), scene = new Scene(engine);
     const camera = new ArcRotateCamera("follow", 0, 1, 4, Vector3.Zero(), scene);
     let emit!: (event: WorldEvent) => void;
-    const movement = wireWorldMovement({ scene, camera, rules: pawnRules, focusPosition: () => null,
+    const movement = wireWorldMovement({ camera, rules: pawnRules, collisionWorld: createCollisionWorld(),
       adapter: { subscribe(listener) { emit = listener; return () => {}; }, dispatch() {} },
       loadCollisionCells: boxCellLoader([floorSlab(0)]).load, loadedBounds, localPlayerId, localWalkAnimationFramesInMove: null, signal: new AbortController().signal });
     releases.push(() => { movement.release(); scene.dispose(); engine.dispose(); });

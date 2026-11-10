@@ -192,6 +192,8 @@ describe("native tile chunk residency collision inputs", () => {
       settings: { ...settings, status: "presentation", source: "derived from the converted chunk edge" },
       levelOfDetail: { policy: "null-level-culling", derivatives: "lod-derivative-unplanned" },
       knownChunkCount: 3, visibleChunkCount: 2, requiredChunkCount: 3, retainedChunkCount: 3, loadedChunkCount: 3, loadingChunkCount: 0, failedChunks: [],
+      focusCellIds: ["90_90/chunk-0-0"], retainedCellIds: ["90_90/chunk-0-0", "90_90/chunk-1-0", "90_90/chunk-2-0"],
+      loadedCellIds: ["90_90/chunk-0-0", "90_90/chunk-1-0", "90_90/chunk-2-0"],
     });
   });
 

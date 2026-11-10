@@ -21,6 +21,23 @@
         "residentCellCount": 16,
         "missingCellIds": []
       }
+    },
+    "withResidency": {
+      "measuredAtRiga": "2026-11-11T01:43:24+02:00",
+      "loadReadyMilliseconds": 66458,
+      "l2RequestCount": 635,
+      "l2ResponseBytes": 473121010,
+      "chunkCount": 16,
+      "loadedChunkCount": 19,
+      "meshCount": 13590,
+      "vertexCount": 931916,
+      "collisionCellCount": 19,
+      "collisionCells": {
+        "status": "resident",
+        "requiredCellCount": 19,
+        "residentCellCount": 19,
+        "missingCellIds": []
+      }
     }
   }
 }

@@ -40,6 +40,8 @@ import { buildNativeCatalogIndexOrUnavailable } from "./buildNativeCatalogIndexO
 import { nativeWorldLocationTitles } from "./nativeWorldLocationTitles";
 import { wireWorldMovement } from "./worldMovementWiring";
 import { loadTileCollisionCells } from "./tileCollisionCells";
+import { provideCollisionCellContext } from "../scene/world/movement/collisionCellContext";
+import { createCollisionWorld } from "../scene/world/movement/core/collisionWorld";
 import { committedMovementRules } from "./committedMovementRules";
 import { cameraFogOnZoneChange, wireWorldEnvironment } from "./worldEnvironmentWiring";
 import { installTransparentRenderingOrder } from "./transparentRenderingOrder";
@@ -123,6 +125,9 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
   const addRelease = (release: () => void) => { boundaryReleases.push(release); };
   try {
     boundaryReleases.push(installTransparentRenderingOrder(scene));
+    const collisionWorld = createCollisionWorld();
+    let localPlayerFocus: (() => WorldPosition | null) | null = null;
+    boundaryReleases.push(provideCollisionCellContext(scene, { world: collisionWorld, focusPosition: () => localPlayerFocus?.() ?? null }));
     const playerCapsuleFromSourceCollision = () => ({ radius: playerProfile.collisionRadius / playerProfile.sourceUnitsPerMetre,
       height: 2 * playerProfile.collisionHeight / playerProfile.sourceUnitsPerMetre });
     const world = await loadNativeSliceWorld(scene, camera, settings, options.worldSource ?? catalogNativeSliceWorldSource, signal, {
@@ -154,12 +159,11 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     boundaryReleases.push(() => adapter.dispose());
     const movementLifetime = new AbortController();
     boundaryReleases.push(() => movementLifetime.abort());
-    const collisionTileId = selectedNativeTileIdentity(window.location) ?? defaultRouteCollisionTileId;
-    const movement = wireWorldMovement({ scene, adapter, camera, rules: committedMovementRules, localPlayerId,
-      focusPosition: () => registry?.localPlayerPosition ?? null,
-      loadCollisionCells: section ? (world, lifetime) => loadTileCollisionCells(world, collisionTileId, lifetime)
-        : () => Promise.reject(new Error("No native world section is loaded, so no tile collision is resident.")),
-      loadedBounds: section ? { minimum: section.minimum, maximum: section.maximum } : null,
+    const sectionStreamsTileCollision = selectedNativeTileIdentity(window.location) !== null;
+    const movement = wireWorldMovement({ adapter, camera, rules: committedMovementRules, localPlayerId, collisionWorld,
+      loadCollisionCells: !section ? () => Promise.reject(new Error("No native world section is loaded, so no tile collision is resident."))
+        : sectionStreamsTileCollision ? () => Promise.resolve(null) : (world, lifetime) => loadTileCollisionCells(world, defaultRouteCollisionTileId, lifetime),
+      loadedBounds: section ? { get minimum() { return section.minimum; }, get maximum() { return section.maximum; } } : null,
       localWalkAnimationFramesInMove: adapter.speedProfile.isSourced
         ? Math.round(adapter.speedProfile.runStartSeconds * committedMovementRules.pawn.runStartFramesPerSecond) : null,
       signal: movementLifetime.signal });
@@ -196,6 +200,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       movementPose: entityId => movement.pose(entityId),
     });
     boundaryReleases.push(() => registry.dispose());
+    localPlayerFocus = () => registry.localPlayerPosition;
     const localPawnListenerLocation = (): [number, number, number] | null => {
       const pawn = listenerFollowsLocalPawn() ? registry.localPlayerPosition : null;
       return pawn ? [pawn.x, pawn.y + playerProfile.collisionHeight / playerProfile.sourceUnitsPerMetre, pawn.z] : null;
