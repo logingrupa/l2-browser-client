@@ -1,4 +1,4 @@
-import type { Vector3 } from "../../../../shared/math/vector3";
+import { float32Vector, type Vector3 } from "../../../../shared/math/vector3";
 import { indexNone, zoneClassSkyBit, zoneClassVisibilityOutdoorBit, type BspVisibilityModel } from "./decodeBspVisibility";
 import { locateZone, type ZoneLocation } from "./locateZone";
 import { gateMembers, type MemberRangeLimits } from "./memberVisibility";
@@ -37,10 +37,6 @@ interface CullingResult {
   readonly openedPortalCount: number;
   readonly sectionVisible: Uint8Array;
   readonly memberVisible: Uint8Array;
-}
-
-function float32Vector(vector: Vector3): Vector3 {
-  return { x: Math.fround(vector.x), y: Math.fround(vector.y), z: Math.fround(vector.z) };
 }
 
 function float32PoseKey(pose: ViewPose, culling: boolean): readonly number[] {
