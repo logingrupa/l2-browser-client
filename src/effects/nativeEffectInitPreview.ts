@@ -2,7 +2,8 @@ import type { Scene } from "@babylonjs/core/scene";
 import type { NativeActorClock } from "../assets/native/NativeActor";
 import { dispatchStageActor, type EffectBundle } from "./nativeEffectComponents";
 import type { EffectAnchorView } from "./nativeEffectComponentPreview";
-import { drawEffectSessionSeed, loadEmitterActorPlayback, type EmitterActorPlayback } from "./particles/render/emitterActorPlayback";
+import { drawNativeSessionSeed } from "../assets/native/nativeSessionSeed";
+import { loadEmitterActorPlayback, type EmitterActorPlayback } from "./particles/render/emitterActorPlayback";
 
 export interface NativeInitEffectFrame {
   anchor: EffectAnchorView | null;
@@ -53,7 +54,7 @@ export function createNativeEffectInitPreview(scene: Scene, bundle: EffectBundle
         const origin = frame().anchor;
         if (!origin?.isValid()) throw new Error("The fighter's source hand is unavailable.");
         actorObject = dispatchStageActor(bundle, "init");
-        candidate = await prepare(scene, bundle, { actorObject, emitterObjects: null, sessionSeed: drawEffectSessionSeed() }, controller.signal);
+        candidate = await prepare(scene, bundle, { actorObject, emitterObjects: null, sessionSeed: drawNativeSessionSeed() }, controller.signal);
         if (disposed || request !== token || controller.signal.aborted) { candidate.dispose(); return; }
         const latest = frame();
         if (!origin.isValid() || !latest.anchor?.isValid() || latest.anchor.root !== origin.root) {

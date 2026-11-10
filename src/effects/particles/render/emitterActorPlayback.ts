@@ -54,10 +54,6 @@ export interface EmitterActorPlayback {
 const stationaryOwner: OwnerPose = { location: { x: 0, y: 0, z: 0 }, rotation: IDENTITY_ROTATOR };
 const unpinned: EmitterActorPlaybackPins = { pinnedFrame: null, colourOverride: null };
 
-export function drawEffectSessionSeed(): number {
-  return crypto.getRandomValues(new Uint32Array(1))[0]!;
-}
-
 function requirePlayback(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(`Emitter actor playback: ${message}`);
 }

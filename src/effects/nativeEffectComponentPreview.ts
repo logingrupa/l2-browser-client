@@ -1,7 +1,8 @@
 import type { Scene } from "@babylonjs/core/scene";
 import type { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { effectFrames, effectObject, type EffectBundle, type EffectComponent, type EffectFrame } from "./nativeEffectComponents";
-import { drawEffectSessionSeed, loadEmitterActorPlayback, type EmitterActorPlayback } from "./particles/render/emitterActorPlayback";
+import { drawNativeSessionSeed } from "../assets/native/nativeSessionSeed";
+import { loadEmitterActorPlayback, type EmitterActorPlayback } from "./particles/render/emitterActorPlayback";
 
 export interface EffectAnchorView { readonly root: TransformNode; isValid(): boolean }
 export interface EffectSelection { component: string | null; frame: number | null; colorKey: number | null }
@@ -65,7 +66,7 @@ export function createNativeEffectComponentPreview(scene: Scene, bundle: EffectB
         if (selection.frame !== null && framesFor(selected)[selection.frame] === undefined) throw new Error(`The component has no texture frame ${selection.frame}.`);
         const origin = anchor();
         if (!origin?.isValid() || !alive()) throw new Error("The fighter's source hand attachment is unavailable.");
-        candidate = await prepare(scene, bundle, { actorObject: selected.actor, emitterObjects: [selected.object], sessionSeed: drawEffectSessionSeed() }, controller.signal);
+        candidate = await prepare(scene, bundle, { actorObject: selected.actor, emitterObjects: [selected.object], sessionSeed: drawNativeSessionSeed() }, controller.signal);
         if (disposed || request !== generation || controller.signal.aborted) { candidate.dispose(); return; }
         const latest = anchor();
         if (!latest?.isValid() || latest.root !== origin.root || !alive()) throw new Error("The source attachment changed while loading the component.");

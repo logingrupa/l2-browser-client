@@ -5,7 +5,8 @@ import type { EntityPivotView } from "../entities/EntityRegistry";
 import { dispatchStageActor, type EffectBundle } from "./nativeEffectComponents";
 import type { NativePowerStrikeShotSource } from "./nativePowerStrikeSource";
 import { nativeEffectShotPlacement } from "./nativeEffectShotPlacement";
-import { drawEffectSessionSeed, loadEmitterActorPlayback, type EmitterActorPlayback } from "./particles/render/emitterActorPlayback";
+import { drawNativeSessionSeed } from "../assets/native/nativeSessionSeed";
+import { loadEmitterActorPlayback, type EmitterActorPlayback } from "./particles/render/emitterActorPlayback";
 
 export interface NativeShotTargetView {
   readonly pivot: EntityPivotView;
@@ -70,7 +71,7 @@ export function createNativeEffectShotPreview(scene: Scene, bundle: EffectBundle
           throw new Error("The qualified source clip does not contain its AttackShot event.");
         }
         actorObject = dispatchStageActor(bundle, "shot");
-        candidate = await prepare(scene, bundle, { actorObject, emitterObjects: null, sessionSeed: drawEffectSessionSeed() }, controller.signal);
+        candidate = await prepare(scene, bundle, { actorObject, emitterObjects: null, sessionSeed: drawNativeSessionSeed() }, controller.signal);
         if (disposed || request !== token || controller.signal.aborted) { candidate.dispose(); return; }
         const latest = frame();
         if (!origin.isValid() || !latest.caster?.isValid() || latest.caster.root !== origin.root) {

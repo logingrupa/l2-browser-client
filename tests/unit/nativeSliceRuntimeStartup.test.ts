@@ -19,9 +19,9 @@ describe("native slice runtime startup", () => {
     runtimeBoundaryMocks.effectBundle.mockResolvedValueOnce({ manifestSha256: "a".repeat(64), manifest: { components: [], actors: [] } });
     const stop = await startRuntime(baseRuntimeSettings, new AbortController().signal); stops.push(stop);
     const diagnostics = window.__nativeSlice!;
-    expect(diagnostics.snapshot().effectComponents).toMatchObject({ status: "off", loaded: null });
+    expect(diagnostics.snapshot().effectComponents).toMatchObject({ status: "off", playback: null });
     runtimeBoundaryMocks.registries[0]!.dispose.mockImplementationOnce(() => {
-      expect(diagnostics.snapshot().effectComponents).toMatchObject({ status: "disposed", loaded: null });
+      expect(diagnostics.snapshot().effectComponents).toMatchObject({ status: "disposed", playback: null });
     });
     stop(); expect(runtimeBoundaryMocks.registries[0]!.dispose).toHaveBeenCalledOnce();
   });

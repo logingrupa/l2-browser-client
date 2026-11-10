@@ -8,13 +8,17 @@ import "@babylonjs/loaders/glTF";
 import "../package/nativeSkinWeights";
 import { validatePackageModel, type AssetPackage } from "../package/readAssetPackage";
 import { createNativeClipPlayback, validateNativeClipDuration, type NativeClipPlayback } from "../package/nativeClipPlayback";
+import { loadNativeMaterial } from "../../materials/ue2/babylon/loadNativeMaterial";
 import { readRetainedGlbBoneIdentity } from "./nativeGlbBoneIdentity";
+import { drawNativeSessionSeed } from "./nativeSessionSeed";
+import { bindSkeletalSlotMaterials, type SkeletalSlotMaterialBinding } from "./nativeSkeletalMaterials";
 
 interface NativeModel {
   readonly container: AssetContainer;
   readonly root: TransformNode;
   readonly clips: ReadonlyMap<string, { index: number; duration: number }>;
   readonly parts: ReadonlyMap<string, readonly AbstractMesh[]>;
+  readonly slotMaterials: SkeletalSlotMaterialBinding;
   playback?: NativeClipPlayback;
   dispose(): void;
 }
@@ -75,7 +79,7 @@ async function loadModel(scene: Scene, asset: AssetPackage, parent: TransformNod
   const info = validatePackageModel(bytes);
   const container = await LoadAssetContainerAsync(bytes.slice(), scene, { pluginExtension: ".glb",
     pluginOptions: { gltf: { animationStartMode: GLTFLoaderAnimationStartMode.NONE } } });
-  let root: TransformNode | undefined;
+  let root: TransformNode | undefined, slotMaterials: SkeletalSlotMaterialBinding | undefined;
   try {
     signal.throwIfAborted();
     if (scene.isDisposed) throw new Error("Native actor scene was disposed during loading.");
@@ -87,6 +91,7 @@ async function loadModel(scene: Scene, asset: AssetPackage, parent: TransformNod
       clips.set(group.name, { index, duration: source.nativeDurationSeconds });
       group.stop();
     });
+    slotMaterials = await bindSkeletalSlotMaterials(scene, container, { sessionSeed: drawNativeSessionSeed(), loadProgram: loadNativeMaterial }, signal);
     root = new TransformNode(asset.manifest.id, scene);
     root.parent = parent;
     root.setEnabled(false);
@@ -103,9 +108,9 @@ async function loadModel(scene: Scene, asset: AssetPackage, parent: TransformNod
       if (primitives.length !== mesh.primitives) throw new Error("Native mesh primitive identity differs from the glTF loader.");
       parts.set(mesh.name, primitives);
     }
-    const ownedRoot = root;
-    return { container, root, clips, parts, dispose() { container.dispose(); ownedRoot.dispose(); } };
-  } catch (error) { container.dispose(); root?.dispose(); throw error; }
+    const ownedRoot = root, ownedSlotMaterials = slotMaterials;
+    return { container, root, clips, parts, slotMaterials, dispose() { ownedSlotMaterials.dispose(); container.dispose(); ownedRoot.dispose(); } };
+  } catch (error) { slotMaterials?.dispose(); container.dispose(); root?.dispose(); throw error; }
 }
 
 export class NativeActor {
@@ -282,6 +287,7 @@ export class NativeActor {
         name: mesh.name, enabled: mesh.isEnabled(), material: mesh.material?.name ?? null,
         bones: mesh.skeleton?.bones.length ?? 0, nativeSkin: mesh.metadata?.l2NativeSkinWeights ?? null,
       }))),
+      slotMaterials: this.models().flatMap(model => model.slotMaterials.slots),
     };
   }
 
