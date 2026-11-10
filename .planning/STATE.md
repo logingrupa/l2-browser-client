@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-50-PLAN.md
-last_updated: "2026-11-10T20:39:55.192Z"
-last_activity: 2026-11-10
+stopped_at: Completed 02-67-PLAN.md
+last_updated: "2026-11-10T22:36:50.636Z"
+last_activity: 2026-11-11
 last_activity_desc: Phase 02 plan 02-66 complete (pawn physics, follow camera and movement presenter)
-state_head: 27d56224d68f4ccd983f0b8bdb1da121ea8489b8
+state_head: 7bd833808e0aa56360c8479a24cf9981695cd113
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 83
+  completed_plans: 84
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 02 (Stage A breadth) - EXECUTING
-Plan: 02-50 complete, 66 plans summarized
+Plan: 02-67 complete, 67 plans summarized
 Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-10 - Plan 02-50 complete: `convert_tile.py --step minimap` joins radar, town map and zone name textures with decoded zonename and huntingzone rows by exact names into a `native-tile-minimap` resource on all 11 converted tiles (world lane catalog 7c9dae88); the committed census lists 153 tiles, all gap (radar-texture 153, zone-grid 153); WORLD-06 stays Pending
+Last activity: 2026-11-11 - Plan 02-67 complete: one movement path through the MOVE-01 port (adapter move records, presenter, tile collision cells via provideCollisionCellContext, click trace, CalcBehindView follow camera), adapter environment events drive the tile clock, camera maxZ follows fogEnd, one transparent comparator; synthetic movement and mesh navigation deleted, WorldNavigation type left to its lane importers; VIS-01 complete, MOVE-01, MAT-02 and WORLD-05 stay Pending
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -135,6 +135,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P47 | 100min | 4 tasks | 13 files |
 | Phase 2 P64 | 40min | 3 tasks | 34 files |
 | Phase 2 P50 | 40min | 3 tasks | 18 files |
+| Phase 02 P67 | 105min | 3 tasks | 55 files |
 
 ## Accumulated Context
 
@@ -329,6 +330,8 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 2]: 02-50: zone joins gated on every zonename MapX and MapY inside the locked grid; 21 rows lie outside, so zone joins are gaps (row 712)
 - [Phase 2]: 02-50: tile-frame-extent projection labelled unverified; native-tile-minimap v1 under maps/<sha>/native-tile-minimap/ (rows 714, 715)
 - [Phase 2]: 02-50: registry, gap-row file, census CLI and ownership follow repository rules the plan text predates (row 717)
+- [Phase 02]: 02-67: one movement path through the MOVE-01 port: move-local becomes a move record, the presenter moves pawns over the whole selected tile's collision cells until 02-49 adds the ring, intents leave after the frame; the BSP tree decoder checks only referenced vertex entries (OVERNIGHT-DECISIONS rows 718 to 722)
+- [Phase 02]: 02-67: follow camera is CalcBehindView with the orbit radius as unobstructed distance; maxZ follows fogEnd while fog is on (owner review); one transparent comparator by distance then emitter ordinal; synthetic movement and mesh navigation deleted, WorldNavigation kept for its lane importers; VIS-01 closes, MAT-02, MOVE-01 and WORLD-05 stay Pending (rows 723 to 730)
 
 ### Pending Todos
 
@@ -389,6 +392,7 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 - Camera environment accessor (02-67, row 725): the runtime re-reads the tile lighting inspection when the camera zone changes; the world lane exposes the camera environment from `NativeSection` once fog info or water volumes become inputs.
 - Behind-view trace cost (02-67, row 723): `calculateBehindView` walks every resident primitive for its box trace; the movement core adds spatial culling before PERF-02 measures movement on the GTX 1060.
 - Arrival on slopes (02-67, row 728): one 20_21 walk ended 0.02 units from its goal, past the 0.01 arrival slack, and closed with a stuck cannot-move; the movement core checks the floor-band step against the arrival rule.
+- WORLD-05 tile sweep (02-67, row 730): the port walk passes on 20_21 (`world-movement-port.spec.ts`, `world-tile-walk.spec.ts`) and on `/` over tile 20_20 (`nativeSlice.spec.ts`); run the same walk on the other 9 converted tiles of the world lane catalog, then WORLD-05 closes.
 - `tests/browser/nativeBsp.spec.ts` still pins mesh-contact heights from the absent Actor940 oracle (it skips); rewrite it against the collision world once the oracle is restaged (02-67).
 
 - Minimap radar source (02-50, rows 710 to 717): no export of `L2_RadarMap.utx` (118/0, 18 town-named textures) equals a tile id, `<tile id>_map` or a zone `map` value, so all 153 census tiles are `minimap-join-unresolved:radar-texture` gaps; 21 zonename rows hold MapX or MapY outside the locked grid, so zone joins are `zone-grid` gaps. Find the client data that names the per-tile radar image or a sourced georeference for the `int_worldmap` pieces, and settle the out-of-grid rows on IMPORTA, before 02-51 draws the minimap.
@@ -443,6 +447,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-10T20:39:54.437Z
-Stopped at: Completed 02-50-PLAN.md
+Last session: 2026-11-10T22:36:50.181Z
+Stopped at: Completed 02-67-PLAN.md
 Resume file: None
