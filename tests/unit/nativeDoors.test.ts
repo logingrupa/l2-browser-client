@@ -42,7 +42,7 @@ function fixture(origin: WorldPosition = { x: .75, y: 0, z: -1.5 }) {
   let blocked = false;
   const navigation: WorldNavigation = { origin, ground: p => ({ ...p, y: 0 }), destination: p => ({ ...p, y: 0 }), spawn: () => origin,
     move: (from, to) => ({ position: blocked ? from : to, blocked }) };
-  const adapter = new NativeSliceAdapter(origin, navigation, null, undefined, { walkSupported: false, collision: { radius: 9, height: 75 } });
+  const adapter = new NativeSliceAdapter(origin, null, undefined, { walkSupported: false, collision: { radius: 9, height: 75 } });
   const presenter = createMovementPresenter({ collisionWorld: boxVolumeWorld([floorSlab(0)]), rules: pawnRules,
     reportIntent: intent => adapter.dispatch(intent), pawnTraits: () => ({ isLocalPlayer: true, walkAnimationFramesInMove: null, flies: false }) });
   adapter.subscribe(event => { if (event.type === "move" || event.type === "stop") presenter.applyEvent(event); });

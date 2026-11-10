@@ -3,15 +3,12 @@ import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
 import { Scene } from "@babylonjs/core/scene";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
-import { Mesh } from "@babylonjs/core/Meshes/mesh";
-import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
-import { Matrix, Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Matrix } from "@babylonjs/core/Maths/math.vector";
 import { Animation } from "@babylonjs/core/Animations/animation";
 import { AnimationGroup } from "@babylonjs/core/Animations/animationGroup";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { attachNativeBspSupport } from "../../src/scene/world/nativeBspSupport";
 import type { NativeSectionManifest } from "../../src/scene/world/loadNativeSection";
-import { createWorldNavigation } from "../../src/scene/navigation/meshNavigation";
 
 const scenes: Scene[] = [];
 afterEach(() => { for (const scene of scenes.splice(0)) { const engine = scene.getEngine(); scene.dispose(); engine.dispose(); } });
@@ -119,25 +116,5 @@ describe("native static placement and qualified BSP support", () => {
     animation.setKeys([{ frame: 0, value: 0 }, { frame: 30, value: 1 }]); group.addTargetedAnimation(animation, animated);
     const owner = attachNativeBspSupport(manifest, new Map([["source-building", root], ["animated", animated]]), []);
     expect(owner.meshes).not.toContain(mesh); expect(mesh.metadata).toBeNull(); owner.dispose();
-  });
-
-  it.each([1, -1])("supports an independent ramp with actual edited transforms and mirrored scale %s", scale => {
-    const { scene, root, material, manifest } = fixture();
-    const interior = new TransformNode("editable independent stairs", scene); placement(manifest, "indoor-stairs");
-    interior.position.set(3, 2, 7); interior.scaling.x = scale;
-    const ramp = new Mesh("ramp", scene), vertices = new VertexData();
-    vertices.positions = [-2, 0, -1, -2, 0, 1, 2, 1, 1, 2, 1, -1]; vertices.indices = [0, 1, 2, 0, 2, 3]; vertices.applyToMesh(ramp);
-    ramp.parent = interior; ramp.material = material;
-    const matrix = interior.computeWorldMatrix(true), low = Vector3.TransformCoordinates(new Vector3(-1, .25, 0), matrix), high = Vector3.TransformCoordinates(new Vector3(1, .75, 0), matrix);
-    const options = { terrainMeshes: [], origin: low, capsule: { radius: .09, height: .46 } };
-    expect(createWorldNavigation({ ...options, obstacleMeshes: () => [] }).ground(low)).toBeNull();
-    const owner = attachNativeBspSupport(manifest, new Map([["source-building", root], ["indoor-stairs", interior]]), []);
-    const navigation = createWorldNavigation({ ...options, obstacleMeshes: () => owner.meshes });
-    const from = navigation.ground(low);
-    expect(from).not.toBeNull();
-    const result = navigation.move(from!, high);
-    expect(result.blocked).toBe(false); expect(result.position.y - from!.y).toBeCloseTo(.5, 6);
-    expect(interior.position.asArray()).toEqual([3, 2, 7]); expect(interior.scaling.x).toBe(scale);
-    owner.dispose(); expect(ramp.metadata).toBeNull();
   });
 });

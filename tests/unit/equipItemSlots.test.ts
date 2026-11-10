@@ -9,7 +9,7 @@ const origin = { x: 0, y: 0, z: 0 };
 
 const adapterBuilds: readonly (readonly [string, () => NativeSliceAdapter])[] = [
   ["the default locomotion profile", () => new NativeSliceAdapter(origin)],
-  ["a walk-capable locomotion profile", () => new NativeSliceAdapter(origin, undefined, null, undefined, { walkSupported: true })],
+  ["a walk-capable locomotion profile", () => new NativeSliceAdapter(origin, null, undefined, { walkSupported: true })],
 ];
 
 const nonCanonicalSlotSpellings: readonly string[] = [

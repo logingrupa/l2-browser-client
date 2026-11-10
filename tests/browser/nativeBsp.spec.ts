@@ -46,7 +46,7 @@ test("qualified BSP floor supports stairs and blocks building walls on the sourc
   }, 0);
   expect(world).toMatchObject({ bspMeshes: manifest.bsp.length, bspTriangles, collisionVerified: false });
   expect(errors).toEqual([]);
-  await testInfo.attach("floor-traversal.json", { body: JSON.stringify({ initial: initial.authoritativePosition, entered, blocked, contact, exited, world: { manifest: world!.manifestSha256, navigation: world!.navigation }, errors }, null, 2), contentType: "application/json" });
+  await testInfo.attach("floor-traversal.json", { body: JSON.stringify({ initial: initial.authoritativePosition, entered, blocked, contact, exited, world: { manifest: world!.manifestSha256, collision: world!.collision }, errors }, null, 2), contentType: "application/json" });
 });
 test("missing BSP geometry prevents revealing an incomplete source world", async ({ page }) => {
   test.skip(!staged, "Scoped BSP source bundle must be staged."); test.setTimeout(180_000);

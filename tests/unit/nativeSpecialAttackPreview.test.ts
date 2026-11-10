@@ -13,7 +13,7 @@ import { nativeVisualClips, nativeVisualFixture } from "../fixtures/nativeVisual
 const releases: (() => void)[] = [];
 afterEach(() => { for (const release of releases.splice(0).reverse()) release(); });
 function createAdapter(supported = true) {
-  const adapter = new NativeSliceAdapter({ x: 2, y: 3, z: 4 }, undefined, null, undefined,
+  const adapter = new NativeSliceAdapter({ x: 2, y: 3, z: 4 }, null, undefined,
     { walkSupported: true, specialAttackPreviewSupported: supported, collision: { radius: 9, height: 23 } });
   releases.push(() => adapter.dispose()); return adapter;
 }

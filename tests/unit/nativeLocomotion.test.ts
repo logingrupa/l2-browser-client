@@ -17,7 +17,7 @@ const origin = { x: 2, y: 3, z: 4 };
 const adapters: NativeSliceAdapter[] = [];
 const disposals: (() => void)[] = [];
 function adapter(walkSupported = true) {
-  const value = new NativeSliceAdapter(origin, undefined, null, undefined, { walkSupported, collision: { radius: 9, height: 23 } });
+  const value = new NativeSliceAdapter(origin, null, undefined, { walkSupported, collision: { radius: 9, height: 23 } });
   adapters.push(value); return value;
 }
 function player(value: NativeSliceAdapter) { return value.getInitialState().find(entity => entity.id === "local-player")!; }
@@ -31,7 +31,7 @@ afterEach(() => {
 
 describe("native slice locomotion intent", () => {
   it("defaults to run and ignores unsupported or invalid walking requests", () => {
-    const absent = new NativeSliceAdapter(origin, undefined, null, undefined, { walkSupported: false, collision: { radius: 9, height: 23 } });
+    const absent = new NativeSliceAdapter(origin, null, undefined, { walkSupported: false, collision: { radius: 9, height: 23 } });
     const unsupported = adapter(false), supported = adapter();
     adapters.push(absent);
     for (const value of [absent, unsupported]) {

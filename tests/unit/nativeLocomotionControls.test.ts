@@ -20,7 +20,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe("walk/run dev controls", () => {
   it("shows the armed gait as a chip radiogroup with the aCis speeds and dispatches set-locomotion", () => {
-    const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, undefined, null, undefined, { walkSupported: true, speed: nativeSliceSpeedProfile("human-male-fighter", 100) });
+    const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, null, undefined, { walkSupported: true, speed: nativeSliceSpeedProfile("human-male-fighter", 100) });
     const controls = attachNativeLocomotionControls(host as unknown as HTMLElement, adapter, true, null);
     const group = host.all().find(element => element.className === "dev-chips")!;
     expect([group.getAttribute("role"), group.getAttribute("aria-label")]).toEqual(["radiogroup", "Movement gait"]);
@@ -38,7 +38,7 @@ describe("walk/run dev controls", () => {
   });
 
   it("marks the readout unresolved for a profile without a sourced server speed", () => {
-    const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, undefined, null, undefined, { walkSupported: true, speed: nativeSliceSpeedProfile("human-male-mystic", 100) });
+    const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, null, undefined, { walkSupported: true, speed: nativeSliceSpeedProfile("human-male-mystic", 100) });
     attachNativeLocomotionControls(host as unknown as HTMLElement, adapter, true, null);
     expect(host.find("native-locomotion-speed").textContent).toBe("0.70 m/s (walk speed for the first 0 s), speed unresolved");
     adapter.dispose();

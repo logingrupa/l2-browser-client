@@ -1,24 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { GameWorldAdapter } from "../../src/world/GameWorldAdapter";
 import { NativeSliceAdapter } from "../../src/world/NativeSliceAdapter";
-import type { WorldNavigation } from "../../src/world/WorldNavigation";
 import type { WorldEntity, WorldEvent, WorldPosition } from "../../src/world/worldTypes";
 
-const createAdapter = (navigation?: WorldNavigation): GameWorldAdapter => new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, navigation);
+const createAdapter = (): GameWorldAdapter => new NativeSliceAdapter({ x: 0, y: 0, z: 0 });
 
 const planStartNpcPositions: readonly WorldPosition[] = [{ x: 1.4, y: 0, z: 0 }, { x: 2.8, y: 0, z: 0 }, { x: 1.4 * 3, y: 0, z: 0 }];
-
-function createSwitchableSpawnNavigation() {
-  const spawnAvailability = { hasFreeSpawnPoint: true };
-  const navigation: WorldNavigation = {
-    origin: { x: 0, y: 0, z: 0 },
-    ground: position => position,
-    destination: position => position,
-    spawn: offset => spawnAvailability.hasFreeSpawnPoint ? { x: offset.x, y: offset.y, z: offset.z } : null,
-    move: (_from, to) => ({ position: to, blocked: false }),
-  };
-  return { navigation, spawnAvailability };
-}
 
 function recordEvents(adapter: GameWorldAdapter): WorldEvent[] {
   const receivedEvents: WorldEvent[] = [];
@@ -211,19 +198,6 @@ describe("spawn-character on NativeSliceAdapter", () => {
     adapter.dispatch({ type: "spawn-npc", npcId: 0 });
     adapter.dispatch({ type: "spawn-character", characterTemplateIndex: 3 });
     expect(spawnedEntities(receivedEvents).map(entity => entity.id)).toEqual(["npc-7-1", "character-3-1", "npc-0-2", "character-3-2"]);
-    adapter.dispose();
-  });
-
-  it("emits nothing and keeps the id sequence when navigation has no free spawn point", () => {
-    const { navigation, spawnAvailability } = createSwitchableSpawnNavigation();
-    const adapter = createAdapter(navigation);
-    const receivedEvents = recordEvents(adapter);
-    spawnAvailability.hasFreeSpawnPoint = false;
-    adapter.dispatch({ type: "spawn-character", characterTemplateIndex: 7 });
-    expect(receivedEvents).toEqual([]);
-    spawnAvailability.hasFreeSpawnPoint = true;
-    adapter.dispatch({ type: "spawn-character", characterTemplateIndex: 7 });
-    expect(spawnedEntities(receivedEvents).map(entity => entity.id)).toEqual(["character-7-1"]);
     adapter.dispose();
   });
 

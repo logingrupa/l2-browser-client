@@ -44,7 +44,9 @@ import { committedMovementRules } from "./committedMovementRules";
 import { cameraFogOnZoneChange, wireWorldEnvironment } from "./worldEnvironmentWiring";
 import { installTransparentRenderingOrder } from "./transparentRenderingOrder";
 import { hasUnappliedActorPivot, nativeNpcCharacterProfile, sandboxNpcAppearances } from "./sandboxNpcAppearances";
-import type { WorldEntity } from "../world/worldTypes";
+import type { WorldEntity, WorldPosition } from "../world/worldTypes";
+import { createCollisionWorldNavigation } from "./collisionWorldNavigation";
+import { sampleFootstepSurfaceContact } from "./footstepSurfaceContact";
 
 const loadedSandboxNpcAppearanceByModel: ReadonlyMap<string, string> = new Map([["musveren:0", "native-musveren"]]);
 const defaultRouteCollisionTileId = "20_20";
@@ -125,9 +127,9 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       height: 2 * playerProfile.collisionHeight / playerProfile.sourceUnitsPerMetre });
     const world = await loadNativeSliceWorld(scene, camera, settings, options.worldSource ?? catalogNativeSliceWorldSource, signal, {
       requireWorld: options.requireWorld ?? false, ...(options.onProgress ? { onProgress: options.onProgress } : {}),
-      validateLifetime, playerCapsule: playerCapsuleFromSourceCollision });
+      validateLifetime });
     boundaryReleases.push(world.release);
-    const { section, movers, navigation, origin, worldFailure, flames, sky, skyFailure } = world;
+    const { section, movers, origin, worldFailure, flames, sky, skyFailure } = world;
     let followFighter = true;
     const nativeAudio = await loadNativeSliceAudio(audioLoads, { assets, animationAudio: catalog.animationAudio,
       archiveHashes: catalog.archiveHashes ?? new Map(), activeCatalogIds: [playerProfile.catalogId, "musveren:0"],
@@ -144,7 +146,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     validateLifetime();
     const profileStagesLeatherShirt = playerProfile.upperItems.some(item => item.itemId === 22);
     const startingUpperItemId = settings.leatherShirt && profileStagesLeatherShirt ? 22 : null;
-    const adapter = new NativeSliceAdapter(origin, navigation, startingUpperItemId,
+    const adapter = new NativeSliceAdapter(origin, startingUpperItemId,
       { displayName: playerProfile.name, appearanceId }, { walkSupported: locomotionClips.walkClip !== null,
         specialAttackPreviewSupported: specialAttackPreview.clip !== null,
         speed: nativeSliceSpeedProfile(playerProfile.id, playerProfile.sourceUnitsPerMetre),
@@ -162,6 +164,8 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
         ? Math.round(adapter.speedProfile.runStartSeconds * committedMovementRules.pawn.runStartFramesPerSecond) : null,
       signal: movementLifetime.signal });
     boundaryReleases.push(() => movement.release());
+    const localFeetPosition = () => movement.pose(localPlayerId)?.feetPosition ?? registry?.localPlayer?.position ?? null;
+    const localSurfaceContact = () => sampleFootstepSurfaceContact(scene, localFeetPosition(), playerProfile.collisionHeight / playerProfile.sourceUnitsPerMetre);
     const footstepGround = createFootstepGroundSampler(scene, { decoGrass: decoGrass.field, sourceUnitsPerMetre: playerProfile.sourceUnitsPerMetre });
     boundaryReleases.push(() => footstepGround.dispose());
     if (section) footstepGround.preload(section.terrainMeshes);
@@ -170,7 +174,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       return position ? [position.x, position.y, position.z] : null;
     };
     const footsteps = createNativeFootstepPreview(footstepBundle.definitions, audio, {
-      groundContact: owner => owner === "local-player" ? adapter.groundContact : null,
+      groundContact: owner => owner === localPlayerId ? localSurfaceContact() : null,
       stepSounds: stepSounds.library,
       surfaceContext: (owner, contact) => owner === "local-player" ? footstepGround.describe(contact) : null,
       gait: owner => owner === "local-player" ? adapter.locomotionMode : null,
@@ -188,7 +192,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
         sandboxNpcVisualFactory(catalogIndex, nativeCharacterFactory(profiles, actionCues, footsteps, clipPreview), sandboxAppearanceOfNpc),
         sandboxLoadedPlayerProfileAppearance(playerProfile.id, appearanceId)),
       actorClipPlayer: entityId => clipPreview.actorClipPlayer(entityId),
-      ...(navigation ? { ground: navigation.ground } : {}),
+      ...(section ? { ground: (position: WorldPosition) => movement.groundBelow(position) } : {}),
       movementPose: entityId => movement.pose(entityId),
     });
     boundaryReleases.push(() => registry.dispose());
@@ -212,10 +216,11 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       const entity = registry.localPlayer, pose = entity ? movement.pose(entity.id) : null;
       return entity && pose ? { ...entity, position: pose.feetPosition, animation: pose.isMoving ? "run" : entity.animation } : entity;
     };
-    const doors = movers && navigation ? createNativeDoorInteractions(scene, movers.targets, {
+    const doors = movers ? createNativeDoorInteractions(scene, movers.targets, {
       player: presentedLocalPlayer, dispatch: command => adapter.dispatch(command),
       onCommand: listener => adapter.subscribeCommands(listener), paused: () => adapter.isPaused || isSceneSuspended(scene),
-    }, navigation, playerCapsuleFromSourceCollision(), message => ui.showStatus(message)) : undefined;
+    }, createCollisionWorldNavigation(movement, origin, { radius: playerProfile.collisionRadius, height: playerProfile.collisionHeight }),
+    playerCapsuleFromSourceCollision(), message => ui.showStatus(message)) : undefined;
     if (doors) boundaryReleases.push(() => doors.dispose());
     const releaseOnSceneDisposeObserver = scene.onDisposeObservable.add(stop);
     boundaryReleases.push(() => { scene.onDisposeObservable.remove(releaseOnSceneDisposeObserver); });
@@ -290,7 +295,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     }
     const nativeSliceSheet = attachNativeSliceSheet({ scene, camera, canvas, ui, adapter, registry, settings, playerProfile, playerChoices,
       profileStagesLeatherShirt, archiveHashes: catalog.archiveHashes, clipPreview,
-      locomotionClips, specialAttackPreview, world, audio: nativeAudio, footsteps, footstepGround, combatAudio, combatFailure, effects,
+      locomotionClips, specialAttackPreview, world, audio: nativeAudio, footsteps, footstepGround, localSurfaceContact, combatAudio, combatFailure, effects,
       cameraControls: { follow, frameWorld, frameFlame, flamePlacementIds, isFollowingFighter: () => followFighter },
       focusEffectCamera: () => effectCamera?.focus(), isDisposed: () => disposed, addRelease });
     const sandboxLifetime = new AbortController();
@@ -340,7 +345,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     });
     boundaryReleases.push(() => { scene.onBeforeRenderObservable.remove(observer); });
     boundaryReleases.push(attachNativeSliceDiagnostics({ scene, camera, registry, adapter, ui, playerProfile, musveren, handAnchor,
-      specialAttackPreview, locomotionClips, world, audio: nativeAudio, footsteps, footstepGround, combatAudio, combatFailure, effects,
+      specialAttackPreview, locomotionClips, world, audio: nativeAudio, footsteps, footstepGround, localSurfaceContact, combatAudio, combatFailure, effects,
       doors, movement, environment, materialOverrides, frameFlame, failFlames, isDisposed: () => disposed, addRelease }));
     return stop;
   } catch (error) { stop(); throw error; }

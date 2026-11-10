@@ -1,6 +1,5 @@
 import type { GameWorldAdapter } from "./GameWorldAdapter";
 import type { LocomotionMode, WorldCommand, WorldEntity, WorldEvent, WorldPosition } from "./worldTypes";
-import type { WorldGroundContact, WorldNavigation } from "./WorldNavigation";
 import { commandRejectedEvent, createSpawnedCharacterEntity, createSpawnedNpcEntity, entityWithClampedHealth, entityWithEquippedItem, entityWithRequestedClip,
   isLineageIdentifier, reportedPositionRejectionReason, skillCastEvent, unknownWorldCommandError } from "./sandboxCommands";
 import { sourceHeadingToWorldYaw, sourcePositionToWorld, worldPositionToSource, worldYawToSourceHeading } from "./sourceFrame";
@@ -58,7 +57,6 @@ export class NativeSliceAdapter implements GameWorldAdapter {
   private localMoveIssued = false;
   private paused = false;
   private disposed = false;
-  private acceptedContact: WorldGroundContact | null = null;
   private spawnedNpcCount = 0;
   private spawnedCharacterCount = 0;
   private sandboxSpawnPlacementOrdinal = 0;
@@ -66,7 +64,7 @@ export class NativeSliceAdapter implements GameWorldAdapter {
   private readonly walkSupported: boolean;
   private readonly specialAttackPreviewSupported: boolean;
   private readonly localCollision: NativeSliceCollisionCylinder | null;
-  constructor(origin: WorldPosition, private readonly navigation?: WorldNavigation, upperItem: number | null = null,
+  constructor(origin: WorldPosition, upperItem: number | null = null,
     presentation: { displayName: string; appearanceId: string } = { displayName: "Human male fighter", appearanceId: "native-human-fighter" },
     locomotion: { walkSupported: boolean; specialAttackPreviewSupported?: boolean; speed?: NativeSliceSpeedProfile; collision?: NativeSliceCollisionCylinder } = { walkSupported: false }) {
     this.walkSupported = locomotion.walkSupported === true;
@@ -85,15 +83,13 @@ export class NativeSliceAdapter implements GameWorldAdapter {
       position: { x: origin.x, y: origin.y, z: origin.z }, ...(upperItem === null ? {} : { equipment: { upper: upperItem } }) };
     const monster: WorldEntity = { id: "native-musveren", kind: "monster", displayName: "Greater Musveren",
       appearanceId: "native-musveren", health: 100, maximumHealth: 100, animation: "idle", orientationRadians: 0,
-      position: navigation?.ground({ x: origin.x + sandboxActorSpacingMetres, y: origin.y, z: origin.z }) ?? { x: origin.x + sandboxActorSpacingMetres, y: origin.y, z: origin.z } };
+      position: { x: origin.x + sandboxActorSpacingMetres, y: origin.y, z: origin.z } };
     this.entities.set(player.id, player); this.entities.set(monster.id, monster);
-    this.acceptedContact = navigation?.groundContact?.(player.position) ?? null;
   }
   getInitialState(): readonly WorldEntity[] { return [...this.entities.values()].map(entity => structuredClone(entity)); }
   get isPaused(): boolean { return this.paused; }
   get locomotionMode(): LocomotionMode { return this.entities.get("local-player")?.locomotion ?? "run"; }
   get speedProfile(): NativeSliceSpeedProfile { return this.speed; }
-  get groundContact(): WorldGroundContact | null { return this.acceptedContact ? structuredClone(this.acceptedContact) : null; }
   subscribe(listener: (event: WorldEvent) => void): () => void { this.listeners.add(listener); return () => this.listeners.delete(listener); }
   subscribeCommands(listener: (command: WorldCommand) => void): () => void { this.commandListeners.add(listener); return () => this.commandListeners.delete(listener); }
   private emit(event: WorldEvent): void { for (const listener of this.listeners) listener(event); }
@@ -201,39 +197,28 @@ export class NativeSliceAdapter implements GameWorldAdapter {
   private acceptReportedPosition(player: WorldEntity, command: ReportPositionCommand): void {
     const rejectionReason = reportedPositionRejectionReason(command);
     if (rejectionReason) { this.emit(commandRejectedEvent(command.type, rejectionReason)); return; }
-    this.placeLocalPlayer({ ...player, position: sourcePositionToWorld(command.position) });
+    this.update({ ...player, position: sourcePositionToWorld(command.position) });
   }
   private stopAtReportedPosition(player: WorldEntity, command: CannotMoveCommand): void {
     const rejectionReason = reportedPositionRejectionReason(command);
     if (rejectionReason) { this.emit(commandRejectedEvent(command.type, rejectionReason)); return; }
     this.localMoveIssued = false;
-    this.placeLocalPlayer({ ...player, position: sourcePositionToWorld(command.position), orientationRadians: sourceHeadingToWorldYaw(command.heading) });
+    this.update({ ...player, position: sourcePositionToWorld(command.position), orientationRadians: sourceHeadingToWorldYaw(command.heading) });
     this.emit({ type: "stop", entityId: player.id, position: { x: command.position.x, y: command.position.y, z: command.position.z }, heading: command.heading });
   }
-  private placeLocalPlayer(player: WorldEntity): void {
-    this.acceptedContact = this.navigation?.groundContact?.(player.position) ?? null;
-    this.update(player);
-  }
-  private nextSandboxSpawnPosition(player: WorldEntity): WorldPosition | null {
-    const placementOrdinal = this.sandboxSpawnPlacementOrdinal + 1;
-    const occupied = [...this.entities.values()].map(entity => entity.position);
-    const position = this.navigation
-      ? this.navigation.spawn({ x: player.position.x - this.navigation.origin.x + sandboxActorSpacingMetres, y: player.position.y - this.navigation.origin.y, z: player.position.z - this.navigation.origin.z }, occupied)
-      : { x: player.position.x + sandboxActorSpacingMetres * placementOrdinal, y: player.position.y, z: player.position.z };
-    if (position) this.sandboxSpawnPlacementOrdinal = placementOrdinal;
-    return position;
+  private nextSandboxSpawnPosition(player: WorldEntity): WorldPosition {
+    this.sandboxSpawnPlacementOrdinal += 1;
+    return { x: player.position.x + sandboxActorSpacingMetres * this.sandboxSpawnPlacementOrdinal, y: player.position.y, z: player.position.z };
   }
   private spawnNpc(player: WorldEntity, npcId: number): void {
     if (!isLineageIdentifier(npcId)) return;
     const position = this.nextSandboxSpawnPosition(player);
-    if (!position) return;
     this.spawnedNpcCount += 1;
     this.addSpawnedEntity(createSpawnedNpcEntity(npcId, this.spawnedNpcCount, position));
   }
   private spawnCharacter(player: WorldEntity, characterTemplateIndex: number): void {
     if (!isLineageIdentifier(characterTemplateIndex)) return;
     const position = this.nextSandboxSpawnPosition(player);
-    if (!position) return;
     this.spawnedCharacterCount += 1;
     this.addSpawnedEntity(createSpawnedCharacterEntity(characterTemplateIndex, this.spawnedCharacterCount, position));
   }
@@ -241,5 +226,5 @@ export class NativeSliceAdapter implements GameWorldAdapter {
     this.entities.set(entity.id, entity);
     this.emit({ type: "spawn", entity });
   }
-  dispose(): void { this.disposed = true; this.listeners.clear(); this.commandListeners.clear(); this.entities.clear(); this.localMoveIssued = false; this.acceptedContact = null; }
+  dispose(): void { this.disposed = true; this.listeners.clear(); this.commandListeners.clear(); this.entities.clear(); this.localMoveIssued = false; }
 }

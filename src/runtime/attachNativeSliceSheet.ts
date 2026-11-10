@@ -4,6 +4,7 @@ import type { NativePlayerProfile } from "../assets/native/loadNativePlayerProfi
 import type { NativeClipPreviewHub } from "../assets/native/nativeClipPreview";
 import type { resolveNativeLocomotionClips } from "../assets/native/nativeLocomotion";
 import type { NativeSliceAdapter } from "../world/NativeSliceAdapter";
+import type { WorldGroundContact } from "../world/WorldNavigation";
 import type { EntityRegistry } from "../entities/EntityRegistry";
 import type { WorldInterface } from "../ui/WorldInterface";
 import type { DevSection } from "../ui/devSheet/DevSheet";
@@ -49,6 +50,7 @@ export interface NativeSliceSheetContext {
   audio: NativeSliceAudio;
   footsteps: ReturnType<typeof createNativeFootstepPreview>;
   footstepGround: ReturnType<typeof createFootstepGroundSampler>;
+  localSurfaceContact: () => WorldGroundContact | null;
   combatAudio: NativeCombatAudio | null;
   combatFailure: string | null;
   effects: NativeSliceEffects;
@@ -118,7 +120,7 @@ function attachMovementSection(section: DevSection, context: NativeSliceSheetCon
   const speed = adapter.speedProfile;
   const speedOrigin = speed.isSourced ? "Speeds are aCis server data" : `Speed unresolved for ${context.playerProfile.name}, synthetic stand-in`;
   describe.element(locomotionRoot, { title: "Walk / run", description: `${locomotionNote} ${speedOrigin} (walk ${speed.walkMetresPerSecond.toFixed(2)}, run ${speed.runMetresPerSecond.toFixed(2)} m/s); a run starts at walk speed for ${speed.runStartSeconds} s. Footsteps follow the armed gait.`.trim(), variables: gaitVariables });
-  const groundContext = () => footstepGround.describe(adapter.groundContact);
+  const groundContext = () => footstepGround.describe(context.localSurfaceContact());
   const resolvedSurface = () => footsteps.autoSurface().resolve(groundContext());
   groundGroup.readout({ label: "Ground", testId: "native-ground-readout", value: () => resolvedSurface().summary,
     hint: "Live support under the fighter (seeded at spawn, then from accepted moves) and what Auto footsteps resolve for it in the native order.",

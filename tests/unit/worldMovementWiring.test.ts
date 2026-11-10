@@ -10,6 +10,7 @@ import type { CollisionWorld } from "../../src/scene/world/movement/core/collisi
 import { decodeNativeTileCollisionCell } from "../../src/scene/world/movement/core/decodeNativeTileCollision";
 import { wireWorldMovement, type WorldMovement } from "../../src/runtime/worldMovementWiring";
 import type { TileCollisionLoad } from "../../src/runtime/tileCollisionCells";
+import { createCollisionWorldNavigation } from "../../src/runtime/collisionWorldNavigation";
 import { readCollisionFixturePayload } from "../support/nativeTileCollisionFixture";
 import { emptyChunkArrays, fixtureCellId, fixtureTileId, volumeArrays, type BoxVolumeDeclaration } from "../fixtures/movement/movementCollisionFixtures";
 import { blockingBox, floorSlab, pawnRules } from "../fixtures/movement/pawnWorldFixtures";
@@ -38,7 +39,7 @@ async function wiredWorld(boxes: readonly BoxVolumeDeclaration[] = [floorSlab(0)
   const engine = new NullEngine(), scene = new Scene(engine);
   scene.useRightHandedSystem = true;
   const camera = new ArcRotateCamera("follow", Math.PI / 2, Math.PI / 3, 4, new Vector3(0, 1, 0), scene);
-  const adapter = new NativeSliceAdapter(origin, undefined, null, undefined, { walkSupported: true, collision: { radius: 9, height: 23 } });
+  const adapter = new NativeSliceAdapter(origin, null, undefined, { walkSupported: true, collision: { radius: 9, height: 23 } });
   const commands: WorldCommand[] = [];
   adapter.subscribeCommands(command => commands.push(command));
   const loader = boxCellLoader(boxes);
@@ -112,7 +113,7 @@ describe("world movement wiring", () => {
   it("does not advance any pawn when the cell load fails, and names the failure", async () => {
     const engine = new NullEngine(), scene = new Scene(engine);
     const camera = new ArcRotateCamera("follow", 0, 1, 4, Vector3.Zero(), scene);
-    const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, undefined, null, undefined, { walkSupported: true, collision: { radius: 9, height: 23 } });
+    const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, null, undefined, { walkSupported: true, collision: { radius: 9, height: 23 } });
     const movement: WorldMovement = wireWorldMovement({ scene, adapter, camera, rules: pawnRules, focusPosition: () => null,
       loadCollisionCells: () => Promise.reject(new Error("tile 90_90 collision is not staged")), loadedBounds, localPlayerId,
       localWalkAnimationFramesInMove: null, signal: new AbortController().signal });
@@ -166,9 +167,27 @@ describe("world movement wiring", () => {
     camera.alpha = -Math.PI / 2;
     movement.constrainFollowCamera();
     expect(movement.inspection().followCamera).toMatchObject({ desiredRadius: 4, hitDistance: null });
-    expect(camera.radius).toBeCloseTo(4 - pawnRules.camera.wallMargin / 100, 5);
+    expect(camera.radius).toBeCloseTo(4, 5);
     camera.radius = 6;
     movement.constrainFollowCamera();
     expect(movement.inspection().followCamera.desiredRadius).toBe(6);
+  });
+
+  it("grounds a presented position on the collision surface below its step height and answers straight walks for the door approach", async () => {
+    const { movement, settle } = await wiredWorld([floorSlab(0), blockingBox([100, 0, 64], [16, 512, 64])]);
+    expect(movement.groundBelow({ x: 0, y: .5, z: 0 })).toBeNull();
+    expect(movement.isStraightWalkBlocked({ x: 0, y: 0, z: 0 }, { x: .5, y: 0, z: 0 }, { radius: 9, height: 23 })).toBe(true);
+    await settle();
+    const grounded = movement.groundBelow({ x: .4, y: pawnRules.pawn.maxStepHeight / 200, z: .2 })!;
+    expect(grounded.x).toBeCloseTo(.4, 4); expect(grounded.z).toBeCloseTo(.2, 4); expect(grounded.y).toBeCloseTo(0, 1);
+    expect(movement.groundBelow({ x: 30, y: .1, z: 30 })).toBeNull();
+    expect(movement.groundBelow({ x: Number.NaN, y: 0, z: 0 })).toBeNull();
+    expect(movement.isStraightWalkBlocked({ x: 0, y: 0, z: 0 }, { x: .5, y: 0, z: 0 }, { radius: 9, height: 23 })).toBe(false);
+    expect(movement.isStraightWalkBlocked({ x: 0, y: 0, z: 0 }, { x: 2, y: 0, z: 0 }, { radius: 9, height: 23 })).toBe(true);
+    const navigation = createCollisionWorldNavigation(movement, { x: 0, y: 0, z: 0 }, { radius: 9, height: 23 });
+    expect(navigation.move({ x: 0, y: 0, z: 0 }, { x: 2, y: 0, z: 0 })).toEqual({ position: { x: 0, y: 0, z: 0 }, blocked: true });
+    expect(navigation.move({ x: 0, y: 0, z: 0 }, { x: .5, y: 0, z: 0 })).toEqual({ position: { x: .5, y: 0, z: 0 }, blocked: false });
+    expect(navigation.destination({ x: .3, y: .05, z: 0 })!.y).toBeCloseTo(0, 1);
+    expect(navigation.spawn({ x: .3, y: .05, z: 0 })!.x).toBeCloseTo(.3, 4);
   });
 });

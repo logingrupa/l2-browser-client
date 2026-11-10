@@ -149,18 +149,21 @@ test("native packages retain rigs, change equipment, hold death, move and clean 
   expect(initial.fog?.mode).toBe(0);
   await expect(page.getByTestId("fps")).toBeVisible();
   assertRigs(initial, sandbox, sandbox.settings.leatherShirt);
-  for (const actor of initial.entities) {
+  await expect.poll(() => page.evaluate(() => window.__nativeSlice!.snapshot().collisionCells!.status), { timeout: 120_000 }).toBe("resident");
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  for (const actor of (await read(page)).entities) {
+    const [collisionSurfaceY] = await page.evaluate(({ x, z }) => window.__nativeSlice!.collisionSurfaceHeightsAt!(x, z), actor.position);
     expect(actor.groundClearance).toBeGreaterThan(0);
-    expect(actor.position.y - actor.authoritativePosition.y).toBeCloseTo(actor.groundClearance, 4);
+    expect(actor.position.y - actor.groundClearance).toBeCloseTo(collisionSurfaceY!, 4);
     if (actor.id === "native-musveren") {
       const musverenCollisionHeightMetres = .36, musverenDrawScale = 1.2;
       const musverenIdleBoundsAtUnitActorScale = { minimumY: -.11751600205898288, maximumY: .2797630667686462 };
       expect(actor.groundClearance).toBeCloseTo(musverenCollisionHeightMetres, 8);
       expect(actor.bounds.minimum[1]).toBeCloseTo(musverenIdleBoundsAtUnitActorScale.minimumY * musverenDrawScale, 5);
       expect(actor.bounds.maximum[1]).toBeCloseTo(musverenIdleBoundsAtUnitActorScale.maximumY * musverenDrawScale, 5);
-      expect(actor.position.y + actor.bounds.minimum[1]! - actor.authoritativePosition.y).toBeGreaterThan(.2);
+      expect(actor.position.y + actor.bounds.minimum[1]! - collisionSurfaceY!).toBeGreaterThan(.2);
     } else {
-      expect(actor.position.y + actor.bounds.minimum[1]! - actor.authoritativePosition.y).toBeCloseTo(0, 4);
+      expect(actor.position.y + actor.bounds.minimum[1]! - collisionSurfaceY!).toBeCloseTo(0, 4);
     }
   }
   await page.getByRole("button", { name: "Run", exact: true }).click();

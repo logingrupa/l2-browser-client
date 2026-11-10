@@ -7,12 +7,12 @@ import type { WorldEvent } from "../../src/world/worldTypes";
 const origin = { x: 2, y: 3, z: 4 };
 const collision = { radius: 9, height: 23 };
 function player(adapter: NativeSliceAdapter) { return adapter.getInitialState().find(entity => entity.id === "local-player")!; }
-function movingAdapter() { return new NativeSliceAdapter(origin, undefined, null, undefined, { walkSupported: true, collision }); }
+function movingAdapter() { return new NativeSliceAdapter(origin, null, undefined, { walkSupported: true, collision }); }
 function recorded(adapter: NativeSliceAdapter) { const events: WorldEvent[] = []; adapter.subscribe(event => events.push(event)); return events; }
 
 describe("native slice adapter boundary", () => {
   it("answers move-local with one move record in source units and moves no entity itself", () => {
-    const vector = new Vector3(2, 3, 4), adapter = new NativeSliceAdapter(vector, undefined, 22, undefined, { walkSupported: false, collision });
+    const vector = new Vector3(2, 3, 4), adapter = new NativeSliceAdapter(vector, 22, undefined, { walkSupported: false, collision });
     expect(player(adapter)).toMatchObject({ position: origin, appearanceId: "native-human-fighter", equipment: { upper: 22 } });
     vector.x = 999;
     const snapshot = player(adapter); Reflect.set(snapshot.position, "x", 123);
@@ -78,7 +78,7 @@ describe("native slice adapter boundary", () => {
     const adapter = new NativeSliceAdapter(origin), events = recorded(adapter);
     adapter.dispatch({ type: "move-local", position: { x: 5, y: 3, z: 4 } });
     expect(events).toEqual([{ type: "command-rejected", commandType: "move-local", reason: "local-collision-cylinder-absent" }]);
-    expect(() => new NativeSliceAdapter(origin, undefined, null, undefined, { walkSupported: false, collision: { radius: 0, height: 23 } })).toThrow("collision cylinder");
+    expect(() => new NativeSliceAdapter(origin, null, undefined, { walkSupported: false, collision: { radius: 0, height: 23 } })).toThrow("collision cylinder");
     adapter.dispose();
   });
 

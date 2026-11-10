@@ -3,8 +3,6 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import type { NativeSection } from "../scene/world/loadNativeSection";
 import { loadNativeMovers, type NativeMovers } from "../scene/world/loadNativeMovers";
-import { createWorldNavigation } from "../scene/navigation/meshNavigation";
-import type { WorldNavigation } from "../world/WorldNavigation";
 import { createNativeFlamePresentation, type NativeFlamePresentation } from "../scene/world/nativeFlamePresentation";
 import { nativeFlameBrowserToNative } from "../scene/world/nativeFlameBillboards";
 import { createNativeFlameReplayClock } from "../scene/world/nativeFlameReplayClock";
@@ -51,7 +49,6 @@ export class NativeSliceFlames {
 export interface NativeSliceWorld {
   section: NativeSection | null;
   movers: NativeMovers | null;
-  navigation: WorldNavigation | undefined;
   origin: Vector3;
   worldFailure: string | undefined;
   flames: NativeSliceFlames;
@@ -64,7 +61,6 @@ export interface NativeSliceWorldOptions {
   requireWorld: boolean;
   onProgress?: (progress: SceneStartupProgress) => void;
   validateLifetime: () => void;
-  playerCapsule: () => { radius: number; height: number };
 }
 
 
@@ -99,7 +95,7 @@ export async function loadNativeSliceWorld(scene: Scene, camera: ArcRotateCamera
   releases.push(() => {
     signal.removeEventListener("abort", abortFlamesBeforeWorld); scene.onDisposeObservable.remove(worldDisposeObserver); abortFlamesBeforeWorld();
   });
-  let section: NativeSection | null = null, movers: NativeMovers | null = null, navigation: WorldNavigation | undefined;
+  let section: NativeSection | null = null, movers: NativeMovers | null = null;
   let origin = settings.origin, worldFailure: string | undefined;
   let releaseWorldSource: (() => void) | undefined;
   try {
@@ -118,13 +114,7 @@ export async function loadNativeSliceWorld(scene: Scene, camera: ArcRotateCamera
         options.validateLifetime();
         if (options.requireWorld && section.inspection().materialFailure) throw new Error(`Native terrain materials failed: ${section.inspection().materialFailure}`);
         if (!section.spawnCandidate) throw new Error("The staged native section has no source-derived surface candidate.");
-        const surfaceCandidateWithAuthoredOffset = section.spawnCandidate.add(settings.origin);
-        navigation = createWorldNavigation({ terrainMeshes: section.terrainMeshes, obstacleMeshes: () => section?.supportMeshes ?? [],
-          origin: surfaceCandidateWithAuthoredOffset, dynamicObstacleMeshes: () => movers?.collisionMeshes ?? [],
-          capsule: options.playerCapsule() });
-        const previewTriangleSupportedSpawn = navigation.spawn({ x: 0, y: 0, z: 0 });
-        if (!previewTriangleSupportedSpawn) throw new Error("The staged native surface does not support the requested actor origin.");
-        origin = new Vector3(previewTriangleSupportedSpawn.x, previewTriangleSupportedSpawn.y, previewTriangleSupportedSpawn.z);
+        origin = section.spawnCandidate.add(settings.origin);
         if (settings.flamePreviewEnabled !== false) {
           releases.push(() => flames.dispose());
           await prepareFlames(scene, section, settings, flames, flameLifetime.signal, options);
@@ -134,7 +124,7 @@ export async function loadNativeSliceWorld(scene: Scene, camera: ArcRotateCamera
       flameLifetime.abort();
       flames.dispose();
       movers?.dispose(); movers = null;
-      section?.dispose(); section = null; navigation = undefined; origin = settings.origin;
+      section?.dispose(); section = null; origin = settings.origin;
       releaseWorldSource?.(); releaseWorldSource = undefined;
       options.validateLifetime();
       if (options.requireWorld) throw error;
@@ -152,7 +142,7 @@ export async function loadNativeSliceWorld(scene: Scene, camera: ArcRotateCamera
         skyFailure = failureText(error, "Original sky preview failed.");
       }
     }
-    return { section, movers, navigation, origin, worldFailure, flames, sky, skyFailure, release };
+    return { section, movers, origin, worldFailure, flames, sky, skyFailure, release };
   } catch (error) {
     release();
     throw error;

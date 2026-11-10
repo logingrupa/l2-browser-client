@@ -120,7 +120,7 @@ describe("native slice runtime startup", () => {
     expect(runtimeBoundaryMocks.uis).toEqual([]); expect(runtimeBoundaryMocks.registries).toEqual([]); expect(window.__nativeSlice).toBeUndefined();
   });
 
-  it("loads source terrain into the main runtime, grounds actors and restores the camera on cleanup", async () => {
+  it("loads source terrain into the main runtime, places actors at the surface candidate and restores the camera on cleanup", async () => {
     const codeBuiltMesh = MeshBuilder.CreateBox("Code-built presentation mesh", {}, harness.scene);
     const originalTarget = harness.camera.target.clone(), originalRadius = harness.camera.radius;
     let ground: ReturnType<typeof MeshBuilder.CreateGround>;
@@ -135,17 +135,17 @@ describe("native slice runtime startup", () => {
     });
     const stop = await startRuntime(baseRuntimeSettings, new AbortController().signal); stops.push(stop);
     expect(codeBuiltMesh.isEnabled()).toBe(true);
-    expect(runtimeBoundaryMocks.uis[0]!.adapter.getInitialState()[0]!.position).toEqual({ x: 212, y: -30, z: 794 });
-    expect(runtimeBoundaryMocks.uis[0]!.adapter.getInitialState()[1]!.position).toEqual({ x: 213.4, y: -30, z: 794 });
+    expect(runtimeBoundaryMocks.uis[0]!.adapter.getInitialState()[0]!.position).toEqual({ x: 212, y: -27, z: 794 });
+    expect(runtimeBoundaryMocks.uis[0]!.adapter.getInitialState()[1]!.position).toEqual({ x: 213.4, y: -27, z: 794 });
     expect(window.__nativeSlice?.snapshot()).toMatchObject({ nativeTerrain: "source-section-loaded", world: {
-      sourceSpawn: [21200, 79400, -3000], nativeLocationMatch: "unverified", collisionVerified: false,
+      sourceSpawn: [21200, 79400, -2700], nativeLocationMatch: "unverified", collisionVerified: false,
     } });
     expect(runtimeBoundaryMocks.targeting.mock.calls[0]?.[3]).toBeDefined();
     expect(harness.camera.target.x).toBeCloseTo(212.6); expect(harness.camera.radius).toBe(originalRadius);
     expect(harness.camera.alpha).toBe(0); expect(harness.camera.beta).toBe(1);
     const adapter = runtimeBoundaryMocks.uis[0]!.adapter;
     adapter.dispatch({ type: "move-local", position: { x: 1000, y: -30, z: 1000 } });
-    expect(adapter.getInitialState()[0]!.position).toEqual({ x: 212, y: -30, z: 794 });
+    expect(adapter.getInitialState()[0]!.position).toEqual({ x: 212, y: -27, z: 794 });
     stop(); expect(dispose).toHaveBeenCalledTimes(1);
     expect(codeBuiltMesh.isEnabled()).toBe(true);
     expect(harness.camera.target).toEqual(originalTarget); expect(harness.camera.radius).toBe(originalRadius);
