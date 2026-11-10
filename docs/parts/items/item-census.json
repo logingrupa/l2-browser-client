@@ -1,0 +1,1439 @@
+{
+ "denominator": 9238,
+ "items": {
+  "converted": 96,
+  "gap": {
+   "etcitem-presentation-unplanned": 6911,
+   "mesh-texture-pairing-undecoded:2/2": 257,
+   "no-mesh-in-row": 307,
+   "skeletal-licensee-unsupported:123/31": 121
+  },
+  "pending": 1546
+ },
+ "schemaVersion": 1,
+ "sealedUnits": [
+  {
+   "itemIds": [
+    1
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:1:body-part:7:weapon"
+   ],
+   "status": "pass",
+   "unitKey": "weapon-mesh:4885faa45b6b590bbeb5322386c29dac6213890b27cae81e20180168f685a88e",
+   "unitKind": "weapon"
+  },
+  {
+   "itemIds": [
+    2,
+    738,
+    1295,
+    2915,
+    7821,
+    8581
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:1295:body-part:7:weapon",
+    "interlude:item:2915:body-part:7:weapon",
+    "interlude:item:2:body-part:7:weapon",
+    "interlude:item:738:body-part:7:weapon",
+    "interlude:item:7821:body-part:7:weapon",
+    "interlude:item:8581:body-part:7:weapon"
+   ],
+   "status": "pass",
+   "unitKey": "weapon-mesh:1ccec43ab8d8be8b6002f3a9b92df9cea565c2d9383d20dc8b44dbd95a974ad8",
+   "unitKind": "weapon"
+  },
+  {
+   "itemIds": [
+    3,
+    743,
+    975,
+    1142
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:1142:body-part:7:weapon",
+    "interlude:item:3:body-part:7:weapon",
+    "interlude:item:743:body-part:7:weapon",
+    "interlude:item:975:body-part:7:weapon"
+   ],
+   "status": "pass",
+   "unitKey": "weapon-mesh:ffa22a02726e47b149fd62d9e576c8e3ad2adff3ab6622532d3b6a8b4e0efd5b",
+   "unitKind": "weapon"
+  },
+  {
+   "itemIds": [
+    4,
+    748,
+    2370,
+    2501,
+    7817,
+    8577
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:2370:body-part:7:weapon",
+    "interlude:item:2501:body-part:7:weapon",
+    "interlude:item:4:body-part:7:weapon",
+    "interlude:item:748:body-part:7:weapon",
+    "interlude:item:7817:body-part:7:weapon",
+    "interlude:item:8577:body-part:7:weapon"
+   ],
+   "status": "pass",
+   "unitKey": "weapon-mesh:e3d5a0604db89d64dcfd0eefa5cb13d2dd0a1e1660a00568a7fe1c8d0473f49a",
+   "unitKind": "weapon"
+  },
+  {
+   "itemIds": [
+    5
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:5:body-part:7:weapon"
+   ],
+   "status": "pass",
+   "unitKey": "weapon-mesh:cadafc7f7f88c1f0c17e7fabd82f2f473b5a79b2b0f999e048d8c783e17015a3",
+   "unitKind": "weapon"
+  },
+  {
+   "itemIds": [
+    6,
+    747
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:6:body-part:7:weapon",
+    "interlude:item:747:body-part:7:weapon"
+   ],
+   "status": "pass",
+   "unitKey": "weapon-mesh:902b163a8f0000f980a332f466c8bb228756c9f89e0af64e75b46647669d7e0a",
+   "unitKind": "weapon"
+  },
+  {
+   "itemIds": [
+    7,
+    1300
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:1300:body-part:7:weapon",
+    "interlude:item:7:body-part:7:weapon"
+   ],
+   "status": "pass",
+   "unitKey": "weapon-mesh:94236a2a6490729f4481d5c96464c41c5a154696948663a4aafcf427aa2e1676",
+   "unitKind": "weapon"
+  },
+  {
+   "itemIds": [
+    8
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:8:body-part:14:weapon"
+   ],
+   "status": "pass",
+   "unitKey": "weapon-mesh:df9b96f5dff7b3faff8837935d367ac87b6472c899c1f94a27035dccc4705073",
+   "unitKind": "weapon"
+  },
+  {
+   "itemIds": [
+    9,
+    744,
+    754
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:744:body-part:14:weapon",
+    "interlude:item:754:body-part:14:weapon",
+    "interlude:item:9:body-part:14:weapon"
+   ],
+   "status": "pass",
+   "unitKey": "weapon-mesh:a87f41c9c43a7221a1c5e8af102299daf0e9f3b1e0c3c5976731115159b21585",
+   "unitKind": "weapon"
+  },
+  {
+   "itemIds": [
+    10
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:10:body-part:7:weapon"
+   ],
+   "status": "pass",
+   "unitKey": "weapon-mesh:b6ad7c66205d32dd7bf9707d757d946cbb9a2d9e3e03c5b708f2be17226d17cd",
+   "unitKind": "weapon"
+  },
+  {
+   "itemIds": [
+    11
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:11:body-part:7:weapon"
+   ],
+   "status": "pass",
+   "unitKey": "weapon-mesh:5c7adf6b913f20ab3267c7f5af140a355bd802a64f3e28f2d5469bbc281b0b48",
+   "unitKind": "weapon"
+  },
+  {
+   "itemIds": [
+    12,
+    989,
+    1182,
+    1305,
+    1306,
+    4665
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:1182:body-part:7:weapon",
+    "interlude:item:12:body-part:7:weapon",
+    "interlude:item:1305:body-part:7:weapon",
+    "interlude:item:1306:body-part:7:weapon",
+    "interlude:item:4665:body-part:7:weapon",
+    "interlude:item:989:body-part:7:weapon"
+   ],
+   "status": "pass",
+   "unitKey": "weapon-mesh:e50d393ecc86bd591ffebd8a1a795a70e4c87efd40637aafef20dca474425440",
+   "unitKind": "weapon"
+  },
+  {
+   "itemIds": [
+    13,
+    3028
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:13:body-part:14:weapon",
+    "interlude:item:3028:body-part:14:weapon"
+   ],
+   "status": "pass",
+   "unitKey": "weapon-mesh:1ca00dd4a7710fd91f94617af2efe2a4b64fde800c9a09bab71c45275ea57fda",
+   "unitKind": "weapon"
+  },
+  {
+   "itemIds": [
+    14,
+    1181,
+    1213,
+    1307
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:1181:body-part:14:weapon",
+    "interlude:item:1213:body-part:14:weapon",
+    "interlude:item:1307:body-part:14:weapon",
+    "interlude:item:14:body-part:14:weapon"
+   ],
+   "status": "pass",
+   "unitKey": "weapon-mesh:244a46a64a239e8be8d2cab3824e0b488ff95414c9216677a6a930ce5284f3b6",
+   "unitKind": "weapon"
+  },
+  {
+   "itemIds": [
+    15,
+    3026
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:15:body-part:14:weapon",
+    "interlude:item:3026:body-part:14:weapon"
+   ],
+   "status": "pass",
+   "unitKey": "weapon-mesh:3e33aab7e3c57342a9d2b2f94f83237f46ae04c38b493ae3d645575c799f5220",
+   "unitKind": "weapon"
+  },
+  {
+   "itemIds": [
+    16,
+    8972
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:16:body-part:14:weapon",
+    "interlude:item:8972:body-part:14:weapon"
+   ],
+   "status": "pass",
+   "unitKey": "weapon-mesh:12fa5b9bec205e103bc4ad69391f6174cfb5c13f1060a5b1453e3f5edabf1b93",
+   "unitKind": "weapon"
+  },
+  {
+   "itemIds": [
+    18,
+    663
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:18:body-part:8:weapon",
+    "interlude:item:663:body-part:8:weapon"
+   ],
+   "status": "pass",
+   "unitKey": "weapon-mesh:63575f77663345a5031c24f1ee1d02c33973bb24a32d247a29cadc966777b7ff",
+   "unitKind": "weapon"
+  },
+  {
+   "itemIds": [
+    19,
+    104,
+    635,
+    637,
+    1329
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:104:body-part:8:weapon",
+    "interlude:item:1329:body-part:8:weapon",
+    "interlude:item:19:body-part:8:weapon",
+    "interlude:item:635:body-part:8:weapon",
+    "interlude:item:637:body-part:8:weapon"
+   ],
+   "status": "pass",
+   "unitKey": "weapon-mesh:64a884e5aafc44a4f771e337db9ad8fdae45d67f2754356b33c5dd183469fad9",
+   "unitKind": "weapon"
+  },
+  {
+   "itemIds": [
+    20,
+    1330
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:1330:body-part:8:weapon",
+    "interlude:item:20:body-part:8:weapon"
+   ],
+   "status": "pass",
+   "unitKey": "weapon-mesh:78f03a2cfb6a5d94523cec87c725d66918a9678b7305d12f25b5e9ed3376841f",
+   "unitKind": "weapon"
+  },
+  {
+   "itemIds": [
+    21
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:21:body-part:10:armor:0"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:44d6c9f4a90e09050404d3ef1cc6f7f1ad38e7ab98789a0468e9e54fbeb324ad",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    21
+   ],
+   "reason": "animation-reference-missing",
+   "recordIds": [
+    "interlude:item:21:body-part:10:armor:2"
+   ],
+   "status": "gap",
+   "unitKey": "armor-mesh:1deee13f813b85283bff6c8177630945a6fc963c3e34b98af8254f62e9c108ac",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    21
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:21:body-part:10:armor:8"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:3d7220109474c31761eabf46472fa198be450b802b3a0e8a2da28c97ca0d21cb",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    21
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:21:body-part:10:armor:12"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:3f10ea817ada1c8ed1061cc41cb90797967f5695e5800fce38bba2953f3ea27d",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    21
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:21:body-part:10:armor:14"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:d56bcd2d4d4aae0812f53af5691b37a87163cf40aadb437857e835122befa7ab",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    21
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:21:body-part:10:armor:16"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:a352493986b69eda2a1d3e7acb1194153152f4cb338ae9352b74e890977f850d",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    21
+   ],
+   "reason": "animation-reference-missing",
+   "recordIds": [
+    "interlude:item:21:body-part:10:armor:18"
+   ],
+   "status": "gap",
+   "unitKey": "armor-mesh:f8ff6947c3a8a4ac39c678ec0d6516a72a122d27512a5492ae5242e3127cdf11",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    21
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:21:body-part:10:armor:20"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:9abea2e99bc51e4502e2e4d87fd05352770e0d7daeffec4aa61045c363058032",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    21
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:21:body-part:10:armor:22"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:a85f4a7e1673c2d9c08a3762024a9a61b9de243a35b116071ba522830daec9c3",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    21
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:21:body-part:10:armor:24"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:ee232bfc777a1156c62ddae8454ec71eff775df8a57258bd318f602d213b8699",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    21
+   ],
+   "reason": "animation-reference-missing",
+   "recordIds": [
+    "interlude:item:21:body-part:10:armor:26"
+   ],
+   "status": "gap",
+   "unitKey": "armor-mesh:9210d8c96d9ae4f4fdf688dc0e770782261fc672154f0a727d63e8c2b5688de6",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    22
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:22:body-part:10:armor:0"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:41bd0510ddecc97be962ac1405847d785f71058efd82211e42c8a098605de400",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    22
+   ],
+   "reason": "animation-reference-missing",
+   "recordIds": [
+    "interlude:item:22:body-part:10:armor:2"
+   ],
+   "status": "gap",
+   "unitKey": "armor-mesh:ab8d0db16d3adc57fb40b200d766bf965de2f4fce4dcbe45da4f17511a2ee276",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    22,
+    360,
+    361,
+    364,
+    404,
+    405,
+    408,
+    409,
+    410,
+    421,
+    422,
+    423,
+    424,
+    427,
+    430,
+    431,
+    443,
+    444,
+    445,
+    446,
+    447,
+    448,
+    449,
+    450,
+    451,
+    452,
+    453,
+    454,
+    455,
+    456,
+    457,
+    458,
+    459,
+    2410
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:22:body-part:10:armor:8",
+    "interlude:item:2410:body-part:10:armor:8",
+    "interlude:item:360:body-part:10:armor:8",
+    "interlude:item:361:body-part:10:armor:8",
+    "interlude:item:364:body-part:10:armor:8",
+    "interlude:item:404:body-part:10:armor:8",
+    "interlude:item:405:body-part:10:armor:8",
+    "interlude:item:408:body-part:10:armor:8",
+    "interlude:item:409:body-part:10:armor:8",
+    "interlude:item:410:body-part:15:armor:8",
+    "interlude:item:421:body-part:11:armor:8",
+    "interlude:item:422:body-part:11:armor:8",
+    "interlude:item:423:body-part:11:armor:8",
+    "interlude:item:424:body-part:11:armor:8",
+    "interlude:item:427:body-part:15:armor:8",
+    "interlude:item:430:body-part:15:armor:8",
+    "interlude:item:431:body-part:15:armor:8",
+    "interlude:item:443:body-part:10:armor:8",
+    "interlude:item:444:body-part:15:armor:8",
+    "interlude:item:445:body-part:10:armor:8",
+    "interlude:item:446:body-part:10:armor:8",
+    "interlude:item:447:body-part:10:armor:8",
+    "interlude:item:448:body-part:15:armor:8",
+    "interlude:item:449:body-part:10:armor:8",
+    "interlude:item:450:body-part:15:armor:8",
+    "interlude:item:451:body-part:10:armor:8",
+    "interlude:item:452:body-part:10:armor:8",
+    "interlude:item:453:body-part:10:armor:8",
+    "interlude:item:454:body-part:15:armor:8",
+    "interlude:item:455:body-part:10:armor:8",
+    "interlude:item:456:body-part:10:armor:8",
+    "interlude:item:457:body-part:10:armor:8",
+    "interlude:item:458:body-part:15:armor:8",
+    "interlude:item:459:body-part:15:armor:8"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:415e56ae35916d76ea1f87e7dabd34b7e5ba0081cae0b7fbf6262eae86baf7ec",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    22
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:22:body-part:10:armor:12"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:2da09ea578b7ebffa4fb8175d6bd93198ebdf8f2a368453a6ca1c054b437ba8f",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    22
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:22:body-part:10:armor:14"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:4702cf1945e7dd0315d099ed134547ea250fa1c63226675197635badfc699cf5",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    22
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:22:body-part:10:armor:16"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:498e733e702fb14f6b3d21f4f48d49a578bf3f1fe5eb4cc847b898dc53172acd",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    22
+   ],
+   "reason": "animation-reference-missing",
+   "recordIds": [
+    "interlude:item:22:body-part:10:armor:18"
+   ],
+   "status": "gap",
+   "unitKey": "armor-mesh:72a597f3a8c82430589e2e7e4b6e53ac86f5a325ee445e71f1e2cbae441f3446",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    22
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:22:body-part:10:armor:20"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:c09a04564f84ad5f5dcb6c77d5a4aa99a4e7c7b7fa75852e8b0fecbd7dceb2f9",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    22
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:22:body-part:10:armor:22"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:d5194f04046c26d1f365518769d9240840bbebbc7ca120029aeddcbb78a8e1af",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    22
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:22:body-part:10:armor:24"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:319e97b5adb8df8c98f52a0ea29a025c73369d3b0203394b925b4469fdac2d8d",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    22
+   ],
+   "reason": "animation-reference-missing",
+   "recordIds": [
+    "interlude:item:22:body-part:10:armor:26"
+   ],
+   "status": "gap",
+   "unitKey": "armor-mesh:d761cb2ee36821db6d8524d292da6ef75d0cadf1bcb441f8aa9e9fd1d7ee7560",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    23
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:23:body-part:10:armor:0"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:8e13a08f4761c3e0dcfc21ce388440d0ffd334bd5c1198d2afd90049892875a9",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    23
+   ],
+   "reason": "animation-reference-missing",
+   "recordIds": [
+    "interlude:item:23:body-part:10:armor:2"
+   ],
+   "status": "gap",
+   "unitKey": "armor-mesh:23ff3df43ae749eb4c63354fcedd433040af48eb6d1876310e77cad664cf71ab",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    23
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:23:body-part:10:armor:8"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:17fb00b7e596e52ab709280aafcec836a6501b19aaaaec8a029b6bc90e768378",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    23
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:23:body-part:10:armor:12"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:8db87290f810473c8e9beb7e57030d72bb5c7ce715285650389c9a8d412f5dc8",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    23
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:23:body-part:10:armor:14"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:ca19ac7bc530eef9549dccb6681a2a67d2a0b4c75a2101e66e0ad86e096e5c33",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    23
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:23:body-part:10:armor:16"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:52512029b86481b687b2b44ee21f41e63b5140b77da08ba9072381871f53766f",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    23
+   ],
+   "reason": "animation-reference-missing",
+   "recordIds": [
+    "interlude:item:23:body-part:10:armor:18"
+   ],
+   "status": "gap",
+   "unitKey": "armor-mesh:0294dc2dede3fbd250a6009489b818f2cce666f099122ac93334e0b16757f9c6",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    23
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:23:body-part:10:armor:20"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:6fce801b7c4ecb1b9b698805baeb67314021a3623e7dfe35cc6e9a98d3d133b8",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    23
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:23:body-part:10:armor:22"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:68a85113a207fa707b9cfd8b58c2bc7abad38c426eab87fc19cbe8fb4564e5d7",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    23
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:23:body-part:10:armor:24"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:2e9a892efd8506b468a1374f388ca8639195c7981abbb4440aa44d3eeffff43c",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    23
+   ],
+   "reason": "animation-reference-missing",
+   "recordIds": [
+    "interlude:item:23:body-part:10:armor:26"
+   ],
+   "status": "gap",
+   "unitKey": "armor-mesh:fc066dfac5308e9d792c3ee42456a18b7d170c66fb0dbb011fa5722ff9c0f542",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    24
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:24:body-part:10:armor:0"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:559abdd2b6810aafd12b0d5ee50c5127b0b7fc3b4a21c3ebe55fac8845593ee2",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    24
+   ],
+   "reason": "animation-reference-missing",
+   "recordIds": [
+    "interlude:item:24:body-part:10:armor:2"
+   ],
+   "status": "gap",
+   "unitKey": "armor-mesh:91f24512b854d1f76ad9971ad0cc1f0a65662f18f4f540792a6f1bbb79899cd2",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    24
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:24:body-part:10:armor:8"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:d053649e5c53540717171c9476425763182f7811462dfaf8f500f60084e23420",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    24
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:24:body-part:10:armor:12"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:95e9bd22a35946f3cff4ae62a2df62cffb5005b08018eae30de92c6a1be1c820",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    24
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:24:body-part:10:armor:14"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:7e37b05fc217e3fe5e75e5f83df127a0da11ab7fe5deb683a202172a1b09d83d",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    24
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:24:body-part:10:armor:16"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:fd34fcca5250429567e7b625a63d140275d592f646f397618b76442096d2532b",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    24
+   ],
+   "reason": "animation-reference-missing",
+   "recordIds": [
+    "interlude:item:24:body-part:10:armor:18"
+   ],
+   "status": "gap",
+   "unitKey": "armor-mesh:5d1c532f48e0e67e357fc84f8039abd3b37c65c432526febf043879db91eb69a",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    24
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:24:body-part:10:armor:20"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:09cdad9c82ea48734b56154d1dc713d67eff3f6284dd353fb5cda5010d2a448a",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    24
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:24:body-part:10:armor:22"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:5ee5ed93b75e816cfa9907ea812f0e55f50fae6700f0281e4f630e79b73dbd58",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    24
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:24:body-part:10:armor:24"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:f3bd2fdfaff88126c0c3a39ba6c321b29060045c7af4e34e087bfc2a13eaddf0",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    24
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:24:body-part:10:armor:26"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:272dbf2fa35f81adad4cefc42c63b1b9588ad6abdc1c4cdac007a9119424ee64",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    25
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:25:body-part:10:armor:0"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:9f3b448353a8aa064f7ab9034c75d30061e759be348ee8e1294ed03a30232513",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    25
+   ],
+   "reason": "animation-reference-missing",
+   "recordIds": [
+    "interlude:item:25:body-part:10:armor:2"
+   ],
+   "status": "gap",
+   "unitKey": "armor-mesh:00e6659a9d56c704ddb757f2e84a1bc11f3c0449a3ca2c6281a4e6340b1d2efd",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    25
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:25:body-part:10:armor:8"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:3eb4a402237024778a139c4e14f59d8dcbfd7a52b88b4fac7358d8d2f17b7652",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    25
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:25:body-part:10:armor:12"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:cadfb9cc1aba12cdd551123845f5d123d7cdc4c11dc7f0aeee3bab63a4004fce",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    25
+   ],
+   "reason": "animation-reference-missing",
+   "recordIds": [
+    "interlude:item:25:body-part:10:armor:14"
+   ],
+   "status": "gap",
+   "unitKey": "armor-mesh:297aed652585b935d304f2f0a3d2f6800013394d0be7d75af7f7453fc4d511d0",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    25
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:25:body-part:10:armor:16"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:78bf1095a88aff25bfbc7880ffc643dfae01b37dc23f89cd7504b8f2c2911722",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    25
+   ],
+   "reason": "animation-reference-missing",
+   "recordIds": [
+    "interlude:item:25:body-part:10:armor:18"
+   ],
+   "status": "gap",
+   "unitKey": "armor-mesh:9f8c6b6e29f706ea7b33382bdc3b5e292d48460110778d0dec5c6830ed97f489",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    25
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:25:body-part:10:armor:20"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:dd6cb7f821d8a6521ec749119ed337141249e26a4127c919942b9cfe568c1670",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    25
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:25:body-part:10:armor:22"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:d2a110b631249623d289496d1b6b9cb3e9f1a0880386a712b2b4aa05835a5d15",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    25
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:25:body-part:10:armor:24"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:d1a95eda1fc38d38110daa9ca6d1e435720ea2b4fddeaef93cb9806f6783e1be",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    25
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:25:body-part:10:armor:26"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:4237fc0989a9f18bc16870f9599b702e40e335b2a0ac1c7ebafdbb1ae48692f9",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    26,
+    9030
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:26:body-part:10:armor:0",
+    "interlude:item:9030:body-part:10:armor:0"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:a41c0bf63c1b013e63ad40566cf0016bfb0ad41c89bdce08bea4561300d52d8c",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    26,
+    9030
+   ],
+   "reason": "animation-reference-missing",
+   "recordIds": [
+    "interlude:item:26:body-part:10:armor:2",
+    "interlude:item:9030:body-part:10:armor:2"
+   ],
+   "status": "gap",
+   "unitKey": "armor-mesh:8672f76e83f1ffa85a82ce5cd3d82da65788e22219136053ba825a82480702a2",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    26,
+    9030
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:26:body-part:10:armor:8",
+    "interlude:item:9030:body-part:10:armor:8"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:985cf078589e8c6bb4137139645b91a15d628bb18f85117d4e4ba371da1c71f1",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    26,
+    9030
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:26:body-part:10:armor:12",
+    "interlude:item:9030:body-part:10:armor:12"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:674a8798c42d94f5efbdd3441969aeb59ff36fbfd306db82732d187ee0616c05",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    26,
+    9030
+   ],
+   "reason": "animation-reference-missing",
+   "recordIds": [
+    "interlude:item:26:body-part:10:armor:14",
+    "interlude:item:9030:body-part:10:armor:14"
+   ],
+   "status": "gap",
+   "unitKey": "armor-mesh:f96e6dedb60f0861b4a2552455403916c6f46041ffa0aa02e66717f581955d09",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    26,
+    9030
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:26:body-part:10:armor:16",
+    "interlude:item:9030:body-part:10:armor:16"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:6c6c3e1f76ab4c35d92f4255c5dd51cb73f20087ea9b46cbb3986b384ed82c39",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    26,
+    9030
+   ],
+   "reason": "animation-reference-missing",
+   "recordIds": [
+    "interlude:item:26:body-part:10:armor:18",
+    "interlude:item:9030:body-part:10:armor:18"
+   ],
+   "status": "gap",
+   "unitKey": "armor-mesh:bcb2dd8ba5891bbd96e8a0b67e972f04df854c4a95b31054f3d802a98290c719",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    26,
+    9030
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:26:body-part:10:armor:20",
+    "interlude:item:9030:body-part:10:armor:20"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:a1b725fd5173cde31d2e4cc93ba38f473ea5c603f14c751c70027da36ec6f544",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    26,
+    9030
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:26:body-part:10:armor:22",
+    "interlude:item:9030:body-part:10:armor:22"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:077075e165cce314bd0c7e290f2da450a06d49d66c540aef121b719959ba51e6",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    26,
+    9030
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:26:body-part:10:armor:24",
+    "interlude:item:9030:body-part:10:armor:24"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:7cdf3ed7e4244e44084010eeba623264fb0ada8b27463d2b659dd7d9a67604aa",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    26,
+    9030
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:26:body-part:10:armor:26",
+    "interlude:item:9030:body-part:10:armor:26"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:429b23c282dc0bbe7ea6039cf3e708a6c4cdaaa7dc02a01c028fd442aa621c13",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    27,
+    9032
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:27:body-part:10:armor:0",
+    "interlude:item:9032:body-part:10:armor:0"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:b9678a0394831820f7bca70059154ea3fd0fa637b1fd0f9d7334cd962b1e7051",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    27,
+    9032
+   ],
+   "reason": "animation-reference-missing",
+   "recordIds": [
+    "interlude:item:27:body-part:10:armor:2",
+    "interlude:item:9032:body-part:10:armor:2"
+   ],
+   "status": "gap",
+   "unitKey": "armor-mesh:6f32cdbd556862113c8406c359a41638dfb6c669cefe773293d6c5bcd49f0252",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    27,
+    9032
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:27:body-part:10:armor:8",
+    "interlude:item:9032:body-part:10:armor:8"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:9d795851dc6d8d403a136bf95f18ad5b051cb05b36f93ed73f1b128de447c07d",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    27,
+    9032
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:27:body-part:10:armor:12",
+    "interlude:item:9032:body-part:10:armor:12"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:ff0342d6fbc1b36c78f897c22ba82f1e4549890b5eca9f315ca1821c11d08698",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    27,
+    9032
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:27:body-part:10:armor:14",
+    "interlude:item:9032:body-part:10:armor:14"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:1101904a959b97d8f96a6ed9bb4539488e8dce1d1207a650ef9d8c38ace13592",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    27,
+    9032
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:27:body-part:10:armor:16",
+    "interlude:item:9032:body-part:10:armor:16"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:57a66332229c83f19e5a5832370b15be91c22a08dae8a8f613ee793d09f50997",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    27,
+    9032
+   ],
+   "reason": "animation-reference-missing",
+   "recordIds": [
+    "interlude:item:27:body-part:10:armor:18",
+    "interlude:item:9032:body-part:10:armor:18"
+   ],
+   "status": "gap",
+   "unitKey": "armor-mesh:bd5abf05286e2c8d7d4a6321b2b3c24f944b9d5922f36eb5d02fb5eee838b4bf",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    27,
+    9032
+   ],
+   "reason": "animation-reference-missing",
+   "recordIds": [
+    "interlude:item:27:body-part:10:armor:20",
+    "interlude:item:9032:body-part:10:armor:20"
+   ],
+   "status": "gap",
+   "unitKey": "armor-mesh:e5661ba5b7d50446b0df106d8deaa3f67dc17f16752db8a2fa45bab6fd49f5cb",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    27,
+    9032
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:27:body-part:10:armor:22",
+    "interlude:item:9032:body-part:10:armor:22"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:3c19bc6eaf986fcada1f8d655e99501fdec3914c7e877ca707c48fbd010bfc39",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    27,
+    9032
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:27:body-part:10:armor:24",
+    "interlude:item:9032:body-part:10:armor:24"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:a9c2606d1d54921237350560f636a7bfc7f8f87395c7b2cebbdcc869006e4da1",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    27,
+    9032
+   ],
+   "reason": "animation-reference-missing",
+   "recordIds": [
+    "interlude:item:27:body-part:10:armor:26",
+    "interlude:item:9032:body-part:10:armor:26"
+   ],
+   "status": "gap",
+   "unitKey": "armor-mesh:3fe1fab206556d87a4d7a84b1cf7efc5e4db054a4d761550cac5ca34b64f539d",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    28
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:28:body-part:11:armor:0"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:1f7a3245849e1ea84733c02001837fc7ef5b57e2ec0da6ca34649f2c4f0e33de",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    28
+   ],
+   "reason": "animation-reference-missing",
+   "recordIds": [
+    "interlude:item:28:body-part:11:armor:2"
+   ],
+   "status": "gap",
+   "unitKey": "armor-mesh:7973c9ae0731b09d0f74c2b9cff23f5c0f518dfab2f12117b0e001f901660d3d",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    28
+   ],
+   "reason": "animation-reference-missing",
+   "recordIds": [
+    "interlude:item:28:body-part:11:armor:8"
+   ],
+   "status": "gap",
+   "unitKey": "armor-mesh:e111bee97059efc9c5d99644250eafe478db937a8ee99364b6529defd1a4b7d8",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    28
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:28:body-part:11:armor:12"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:007d17b98f20ea29a0f2ff29d3638bbce11bd2667be0c6059c59e6eb6e1657db",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    28
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:28:body-part:11:armor:14"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:fcc89294bac82901d5f0dc9543120f4df08bd2a5b836a2d64b8a7a44868db7ce",
+   "unitKind": "armor"
+  },
+  {
+   "itemIds": [
+    28
+   ],
+   "reason": null,
+   "recordIds": [
+    "interlude:item:28:body-part:11:armor:16"
+   ],
+   "status": "pass",
+   "unitKey": "armor-mesh:c7f2af31ca1329ab4e98bbaad405ee75c148647d4be1e59101e67915e5d520b2",
+   "unitKind": "armor"
+  }
+ ],
+ "sliceLimit": 50,
+ "sources": {
+  "armorgrp": "1bfcd3b1a4796f235ab1f507114fbde6979a662a650481eee34954c9d9afd6d3",
+  "etcitemgrp": "0f752a6d27aecda02c99b6f0fa4a710b33731fa36786ca3d3de54f1aec4c8747",
+  "itemname-e": "c9458c7bf3c8fda0fe391d9e7d0c93d33b8274888601c86b6c1f11a3d5c33945",
+  "weapongrp": "eea267ac21afa5f2e148349d5aaab9670dbc67cde3878f1a8db5aba2364550b9"
+ },
+ "units": {
+  "armor": {
+   "converted": 60,
+   "convertible": 2594,
+   "gap": 23,
+   "pending": 2511
+  },
+  "weapon": {
+   "converted": 19,
+   "convertible": 375,
+   "gap": 0,
+   "pending": 356
+  }
+ }
+}
