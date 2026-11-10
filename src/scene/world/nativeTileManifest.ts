@@ -11,14 +11,16 @@ export interface NativeTileChunkRecord {
   readonly manifestBytes: number;
 }
 
-const tileResourcePathPatterns = {
-  "native-tile-collision": /^\/l2\/maps\/([a-f0-9]{64})\/native-tile-collision\/asset\.json$/,
-  movers: /^\/l2\/movers\/([a-f0-9]{64})\/tile-movers\.json$/,
-  "bsp-visibility": /^\/l2\/maps\/([a-f0-9]{64})\/native-tile-bsp-visibility\/asset\.json$/,
-  "map-emitters": /^\/l2\/map-emitters\/([a-f0-9]{64})\/tile-emitters\.json$/,
+const tileResourcePathTemplates = {
+  "native-tile-collision": "/l2/maps/<sha256>/native-tile-collision/asset.json",
+  movers: "/l2/movers/<sha256>/tile-movers.json",
+  "bsp-visibility": "/l2/maps/<sha256>/native-tile-bsp-visibility/asset.json",
+  "map-emitters": "/l2/map-emitters/<sha256>/tile-emitters.json",
 } as const;
 
-export type NativeTileResourceKind = keyof typeof tileResourcePathPatterns;
+export type NativeTileResourceKind = keyof typeof tileResourcePathTemplates;
+
+export const nativeTileResourceKinds = Object.keys(tileResourcePathTemplates) as readonly NativeTileResourceKind[];
 
 export interface NativeTileResource {
   readonly kind: NativeTileResourceKind;
@@ -46,7 +48,7 @@ const anchorFields = ["playerStart", "location"];
 const chunkRecordFields = ["chunkId", "manifest", "manifestSha256", "manifestBytes"];
 const chunkManifestPathPattern = /^\/l2\/maps\/([a-f0-9]{64})\/native-tile-chunk-runtime\/manifest\.json$/;
 const tileResourceFields = ["kind", "manifest", "manifestSha256", "manifestBytes"];
-const isTileResourceKind = (value: unknown): value is NativeTileResourceKind => typeof value === "string" && Object.hasOwn(tileResourcePathPatterns, value);
+const isTileResourceKind = (value: unknown): value is NativeTileResourceKind => typeof value === "string" && Object.hasOwn(tileResourcePathTemplates, value);
 const maximumTileResourceBytes = 128 * 1024 * 1024;
 const maximumTileChunks = 256;
 const maximumChunkManifestBytes = 8_000_000;
@@ -75,21 +77,32 @@ function parseChunkRecords(value: unknown, label: string): readonly NativeTileCh
   });
 }
 
+function parseTileResource(resource: unknown, listedKinds: Set<NativeTileResourceKind>, label: string): NativeTileResource {
+  if (!hasExactKeys(resource, tileResourceFields)) {
+    throw new Error(`${label} resource must hold exactly ${tileResourceFields.join(", ")}.`);
+  }
+  const kind = resource.kind;
+  if (!isTileResourceKind(kind)) {
+    throw new Error(`${label} resource kind ${JSON.stringify(kind)} is not in the tile manifest vocabulary (${nativeTileResourceKinds.join(", ")}).`);
+  }
+  if (listedKinds.has(kind)) throw new Error(`${label} lists more than one ${kind} resource.`);
+  const pathTemplate = tileResourcePathTemplates[kind], manifest = resource.manifest, manifestSha256 = resource.manifestSha256;
+  if (typeof manifestSha256 !== "string" || !nativeTileSha256Pattern.test(manifestSha256) || typeof manifest !== "string" ||
+    manifest !== pathTemplate.replace("<sha256>", manifestSha256)) {
+    throw new Error(`${label} ${kind} resource must be ${pathTemplate} with its SHA-256.`);
+  }
+  const manifestBytes = resource.manifestBytes;
+  if (typeof manifestBytes !== "number" || !Number.isSafeInteger(manifestBytes) || manifestBytes < 1 || manifestBytes > maximumTileResourceBytes) {
+    throw new Error(`${label} ${kind} resource manifestBytes must be a whole number from 1 to ${maximumTileResourceBytes}.`);
+  }
+  listedKinds.add(kind);
+  return { kind, manifest, manifestSha256, manifestBytes };
+}
+
 function parseTileResources(value: unknown, label: string): readonly NativeTileResource[] {
   if (!Array.isArray(value)) throw new Error(`${label} resources must be a list.`);
-  const kinds = new Set<NativeTileResourceKind>();
-  return value.map(resource => {
-    if (!hasExactKeys(resource, tileResourceFields) || !isTileResourceKind(resource.kind) || kinds.has(resource.kind) ||
-      typeof resource.manifestSha256 !== "string" || !nativeTileSha256Pattern.test(resource.manifestSha256) || typeof resource.manifest !== "string" ||
-      tileResourcePathPatterns[resource.kind].exec(resource.manifest)?.[1] !== resource.manifestSha256 || !Number.isSafeInteger(resource.manifestBytes) ||
-      (resource.manifestBytes as number) < 1 || (resource.manifestBytes as number) > maximumTileResourceBytes) {
-      throw new Error(`${label} resources hold at most one record of each kind at its own path: native-tile-collision and bsp-visibility at ` +
-        "/l2/maps/<sha256>/native-tile-collision/asset.json and /l2/maps/<sha256>/native-tile-bsp-visibility/asset.json, movers at " +
-        "/l2/movers/<sha256>/tile-movers.json, map-emitters at /l2/map-emitters/<sha256>/tile-emitters.json.");
-    }
-    kinds.add(resource.kind);
-    return { kind: resource.kind, manifest: resource.manifest, manifestSha256: resource.manifestSha256, manifestBytes: resource.manifestBytes as number };
-  });
+  const listedKinds = new Set<NativeTileResourceKind>();
+  return value.map(resource => parseTileResource(resource, listedKinds, label));
 }
 
 export function parseNativeTileManifest(input: unknown): NativeTileManifest {

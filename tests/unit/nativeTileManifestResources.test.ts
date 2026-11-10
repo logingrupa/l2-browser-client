@@ -1,9 +1,12 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { parseNativeTileManifest } from "../../src/scene/world/nativeTileManifest";
+import { nativeTileResourceKinds, parseNativeTileManifest } from "../../src/scene/world/nativeTileManifest";
 
 const mapSha256 = "c".repeat(64);
 const visibilitySha256 = "7".repeat(64);
 const collisionSha256 = "9".repeat(64);
+const tileManifestVocabularyPath = join(process.cwd(), "recipes", "world", "tile-manifest-vocabulary.json");
 
 function tileManifest(resources: readonly unknown[]) {
   return {
@@ -26,11 +29,16 @@ const mapEmitters = { kind: "map-emitters", manifest: `/l2/map-emitters/${emitte
   manifestBytes: 900 };
 
 describe("native tile manifest resources", () => {
+  it("reads exactly the resource kinds of the tile manifest vocabulary the Python validator reads", () => {
+    const vocabulary = JSON.parse(readFileSync(tileManifestVocabularyPath, "utf8")) as { readonly resourceKinds: readonly string[] };
+    expect([...nativeTileResourceKinds].sort()).toEqual([...vocabulary.resourceKinds].sort());
+  });
+
   it("accepts one pinned map-emitters manifest and refuses it at another path", () => {
     expect(parseNativeTileManifest(tileManifest([bspVisibility, collision, mapEmitters])).resources.map(resource => resource.kind))
       .toEqual(["bsp-visibility", "native-tile-collision", "map-emitters"]);
     expect(() => parseNativeTileManifest(tileManifest([{ ...mapEmitters, manifest: `/l2/maps/${emittersSha256}/tile-emitters.json` }])))
-      .toThrow(/at most one record of each kind/);
+      .toThrow(/map-emitters resource must be \/l2\/map-emitters\/<sha256>\/tile-emitters\.json with its SHA-256/);
   });
 
   it("accepts one pinned bsp-visibility typed payload beside the collision resource", () => {
@@ -39,8 +47,17 @@ describe("native tile manifest resources", () => {
   });
 
   it("refuses a second bsp-visibility record, a collision path under the visibility kind and an unknown kind", () => {
-    expect(() => parseNativeTileManifest(tileManifest([bspVisibility, bspVisibility]))).toThrow(/at most one record of each kind/);
-    expect(() => parseNativeTileManifest(tileManifest([{ ...collision, kind: "bsp-visibility" }]))).toThrow(/at most one record of each kind/);
-    expect(() => parseNativeTileManifest(tileManifest([{ ...bspVisibility, kind: "toString" }]))).toThrow(/at most one record of each kind/);
+    expect(() => parseNativeTileManifest(tileManifest([bspVisibility, bspVisibility]))).toThrow(/lists more than one bsp-visibility resource/);
+    expect(() => parseNativeTileManifest(tileManifest([{ ...collision, kind: "bsp-visibility" }])))
+      .toThrow(/bsp-visibility resource must be \/l2\/maps\/<sha256>\/native-tile-bsp-visibility\/asset\.json with its SHA-256/);
+    expect(() => parseNativeTileManifest(tileManifest([{ ...bspVisibility, kind: "toString" }])))
+      .toThrow(/resource kind "toString" is not in the tile manifest vocabulary/);
+  });
+
+  it("refuses a resource whose byte length is not a whole number from 1 to 128 MiB", () => {
+    for (const manifestBytes of [0, 128 * 1024 * 1024 + 1, 1.5]) {
+      expect(() => parseNativeTileManifest(tileManifest([{ ...mapEmitters, manifestBytes }])))
+        .toThrow(/map-emitters resource manifestBytes must be a whole number from 1 to 134217728/);
+    }
   });
 });

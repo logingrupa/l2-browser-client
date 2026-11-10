@@ -143,7 +143,8 @@ describe("native tile manifest parser", () => {
       anchor: { playerStart: "Fixture.PlayerStart0", location: [128, 128, 200] }, resources: [] });
     expect(tile.chunks).toEqual([{ chunkId: "chunk-0-0", manifest: fixture.chunk.path, manifestSha256: fixture.chunk.sha256,
       manifestBytes: fixture.chunk.bytes.byteLength }]);
-    expect(tile.gaps.map(row => row.step)).toEqual(["audio", "bsp", "collision", "meshes", "minimap", "movers", "sky", "terrain-material"]);
+    expect(tile.gaps).toEqual((tileDocument().gaps as Document[]).map(({ key, part, step, status, reason }) => ({ key, part, step, status, reason })));
+    expect(tile.gaps.map(row => [row.status, row.reason])).toEqual(tile.gaps.map(row => ["pending", `step-pending:${row.step}`]));
     expect(parseNativeTileManifest(tileDocument())).toEqual(tile);
   });
 
@@ -156,9 +157,12 @@ describe("native tile manifest parser", () => {
       /1 to 256 chunks/],
     ["a null anchor", tile => { tile.anchor = null; }, /needs an anchor/],
     ["a frame with a fourth field", tile => { (tile.frame as Document).sectorGrid = [1, 1]; }, /frame must hold exactly/],
-    ["a resource kind this client cannot read", tile => { tile.resources = [{ kind: "sky" }]; }, /resources hold at most one native-tile-collision record/],
+    ["a resource record without its manifest fields", tile => { tile.resources = [{ kind: "native-tile-collision" }]; },
+      /resource must hold exactly kind, manifest, manifestSha256, manifestBytes/],
+    ["a resource kind this client cannot read", tile => { tile.resources = [{ ...collisionTileResource(), kind: "sky" }]; },
+      /resource kind "sky" is not in the tile manifest vocabulary/],
     ["a collision resource outside its hash folder", tile => { tile.resources = [{ ...collisionTileResource(), manifestSha256: "d".repeat(64) }]; },
-      /resources hold at most one native-tile-collision record/],
+      /native-tile-collision resource must be \/l2\/maps\/<sha256>\/native-tile-collision\/asset\.json with its SHA-256/],
     ["a source map of another tile", tile => { tile.sourceMap = "maps/20_21.unr"; }, /source identity is invalid/],
   ])("refuses %s", (_, change, message) => {
     expect(() => parseNativeTileManifest(withTile(change))).toThrow(message);

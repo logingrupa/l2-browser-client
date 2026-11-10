@@ -97,7 +97,8 @@ describe("native tile mover manifest", () => {
         manifestBytes: 100 }],
       resources: [movers, collision], gaps: [] };
     expect(parseNativeTileManifest(tile).resources.map(resource => resource.kind)).toEqual(["movers", "native-tile-collision"]);
-    expect(() => parseNativeTileManifest({ ...tile, resources: [movers, movers] })).toThrow(/at most one/);
-    expect(() => parseNativeTileManifest({ ...tile, resources: [{ ...movers, manifest: `/l2/maps/${moversSha256}/tile-movers.json` }] })).toThrow(/at most one/);
+    expect(() => parseNativeTileManifest({ ...tile, resources: [movers, movers] })).toThrow(/lists more than one movers resource/);
+    expect(() => parseNativeTileManifest({ ...tile, resources: [{ ...movers, manifest: `/l2/maps/${moversSha256}/tile-movers.json` }] }))
+      .toThrow(/movers resource must be \/l2\/movers\/<sha256>\/tile-movers\.json with its SHA-256/);
   });
 });
