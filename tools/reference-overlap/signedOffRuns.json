@@ -20098,6 +20098,20 @@
       "reviewedOn": "2026-11-10",
       "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
       "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "particles",
+      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
+      "tokenCount": 22,
+      "sourceTokensSha256": "95b54f25814fd5987cfb7a5880664cbe7a04b99705ed07d7b86cf9c3add8bb78",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/objects/dynamic-light.ts",
+        ".assets/reference/lineage2js/src/objects/emitters/ribbon-emitter.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-10",
+      "review": "Three independent fresh-context Claude reviewers judged this run generic in a batch and an escalation, one provenance verdict at medium confidence because the parameter order was only documented as binary-forced. A second escalation of four fresh reviewers (idiom, side-by-side provenance, skeptic, and a binary lens that disassembled the lock-equal Engine.dll 4dd2f63c routine at 0x10633970 and its call sites in URibbonEmitter::UpdateParticles) judged it generic with high confidence, unanimously: the binary takes (point0, point1, tangent0, tangent1, double alpha) in the order of this signature.",
+      "evidence": "docs/parts/skills-effects/EVIDENCE.md"
     }
   ]
 }
