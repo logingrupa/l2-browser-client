@@ -245,9 +245,9 @@ def main(argv=None):
     try:
         arguments = batch_argument_parser().parse_args(argv)
         require_reference_client(arguments.client)
-        require_converter_output(REPOSITORY_ROOT, REPOSITORY_ROOT / arguments.output)
+        store_root = require_converter_output(REPOSITORY_ROOT, REPOSITORY_ROOT / arguments.output)
         outcome = run_tile_batch(REPOSITORY_ROOT, arguments.limit,
-                                 lambda step, tile_id: run_tile_step(REPOSITORY_ROOT, step, arguments.client, tile_id, arguments.output),
+                                 lambda step, tile_id: run_tile_step(REPOSITORY_ROOT, step, arguments.client, tile_id, store_root),
                                  world_batch_preflight(REPOSITORY_ROOT), tile_source_identity=locked_tile_source_identity)
         lane_outputs = refresh_world_lane_outputs(REPOSITORY_ROOT) if outcome.exit_code == BATCH_EXIT_DONE else None
     except (OSError, ValueError) as error:
