@@ -1,5 +1,5 @@
 import { readTypedPayload } from "../../../shared/typedPayload";
-import { decodeNativeJsonResource, fetchVerifiedNativeResource } from "../loadNativeSection";
+import { fetchNativeTypedPayloadFiles } from "../fetchNativeTypedPayload";
 import type { NativeTileChunkManifest } from "../nativeTileChunkManifest";
 import type { NativeTileResource } from "../nativeTileManifest";
 import type { CollisionBspTree, CollisionCell } from "./core/collisionCell";
@@ -11,38 +11,15 @@ export interface CollisionCellLoadRequest {
   readonly tileCollision: NativeTileResource;
 }
 
-interface CollisionPayloadPin {
-  readonly sha256: string;
-  readonly bytes: number;
-}
-
-const typedPayloadAssetName = "asset.json";
-const typedPayloadFileName = "payload.bin";
-const sha256Pattern = /^[a-f0-9]{64}$/;
-const maximumCollisionPayloadBytes = 128 * 1024 * 1024;
+const collisionResourceLabel = "Collision resource";
 const pendingTileBspTreeLoadsByWorld = new WeakMap<CollisionWorld, Map<string, Promise<CollisionBspTree>>>();
 
 export function nativeTileCollisionCellId(tileId: string, chunkId: string): string {
   return `${tileId}/${chunkId}`;
 }
 
-function readCollisionPayloadPin(assetJson: unknown, resource: string): CollisionPayloadPin {
-  const pin = typeof assetJson === "object" && assetJson !== null ? (assetJson as Record<string, unknown>).payload : undefined;
-  if (typeof pin !== "object" || pin === null) throw new Error(`Collision resource ${resource} has no payload pin.`);
-  const { file, sha256, bytes } = pin as Record<string, unknown>;
-  if (file !== typedPayloadFileName || typeof sha256 !== "string" || !sha256Pattern.test(sha256) || typeof bytes !== "number" ||
-    !Number.isSafeInteger(bytes) || bytes < 0 || bytes > maximumCollisionPayloadBytes) {
-    throw new Error(`Collision resource ${resource} payload pin must name ${typedPayloadFileName} with its SHA-256 and a byte count.`);
-  }
-  return { sha256, bytes };
-}
-
 async function fetchCollisionPayload(resource: string, sha256: string, signal: AbortSignal, bytes?: number) {
-  if (!resource.endsWith(`/${typedPayloadAssetName}`)) throw new Error(`Collision resource ${resource} is not a typed payload ${typedPayloadAssetName}.`);
-  const assetJson = decodeNativeJsonResource(await fetchVerifiedNativeResource(resource, sha256, signal, bytes), `Collision resource ${resource}`);
-  const pin = readCollisionPayloadPin(assetJson, resource);
-  const payloadPath = `${resource.slice(0, -typedPayloadAssetName.length)}${typedPayloadFileName}`;
-  const payloadBytes = await fetchVerifiedNativeResource(payloadPath, pin.sha256, signal, pin.bytes);
+  const { assetJson, payloadBytes } = await fetchNativeTypedPayloadFiles(resource, sha256, signal, collisionResourceLabel, bytes);
   return readTypedPayload(assetJson, payloadBytes);
 }
 

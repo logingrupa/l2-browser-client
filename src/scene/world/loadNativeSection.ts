@@ -16,6 +16,7 @@ import { selectedNativeTileIdentity } from "./selectedNativeTile";
 import type { NativeTileSectionView } from "./loadNativeTileChunks";
 import { disposeNativeModelInstances, instantiateNativeModelPlacements, type NativeModelInstance } from "./nativeModelPlacements";
 import type { NativeMover } from "./nativeMovers";
+import type { TileVisibilityInspection } from "./bspVisibility/bindTileVisibility";
 
 interface Resource { file: string; sha256: string; bytes: number; }
 interface Model { id: string; sourceObject: string; model: Resource; archive: Resource; }
@@ -246,6 +247,7 @@ export type NativeWorldSceneInspection = ReturnType<typeof inspectNativeWorldSce
   readonly movers?: readonly ReturnType<NativeMover["inspection"]>[];
   readonly bspSections?: number;
   readonly bspResources?: readonly string[];
+  readonly bspVisibility?: TileVisibilityInspection;
 };
 
 export async function loadNativeGlbContainer(scene: Scene, url: string, bytes: Uint8Array<ArrayBuffer>): Promise<AssetContainer> {

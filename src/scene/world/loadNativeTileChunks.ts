@@ -8,6 +8,7 @@ import {
   decodeNativeJsonResource, fetchVerifiedNativeResource, inspectNativeWorldScene, loadNativeGlbContainer, nativeMeshBounds, terrainInfoChunkPlanWindow, validateSectionGlb,
   type NativeSection, type NativeSectionManifest,
 } from "./loadNativeSection";
+import { attachTileVisibility, type AttachedTileVisibility } from "./bspVisibility/attachTileVisibility";
 import { parseNativeBspSectionExtras, type NativeBspNodeRange, type NativeBspSection, type NativeTileBspResource } from "./nativeBspResources";
 import { loadNativeTileMovers, type NativeTileMovers } from "./loadNativeTileMovers";
 import { disposeNativeModelInstances, instantiateNativeModelPlacements, type NativeModelInstance } from "./nativeModelPlacements";
@@ -140,13 +141,14 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
   if (scene.isDisposed || !scene.useRightHandedSystem) throw new Error("Native tile requires a live right-handed scene.");
   const lifetime = new AbortController(), containers: AssetContainer[] = [], templates = new Map<string, AssetContainer>();
   const instances: NativeModelInstance<NativeTileChunkPlacement>[] = [];
-  let tileMovers: NativeTileMovers | null = null;
+  let tileMovers: NativeTileMovers | null = null, tileVisibility: AttachedTileVisibility | null = null;
   let disposed = false;
   const dispose = () => {
     if (disposed) return;
     disposed = true; lifetime.abort(); signal.removeEventListener("abort", dispose);
     scene.onDisposeObservable.remove(observer);
     tileMovers?.dispose();
+    tileVisibility?.dispose();
     disposeNativeModelInstances(instances);
     for (const container of [...containers, ...templates.values()]) container.dispose();
   };
@@ -198,6 +200,8 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
       containers.push(container);
       bspChunks.push(bspChunk);
     }
+    tileVisibility = await attachTileVisibility(scene, manifest, bspChunks, lifetime.signal);
+    if (disposed || scene.isDisposed) throw new Error("Native tile was disposed during loading.");
     const moverResource = manifest.resources.find(resource => resource.kind === "movers");
     if (moverResource) {
       tileMovers = await loadNativeTileMovers(scene, moverResource, lifetime.signal);
@@ -222,7 +226,7 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
         terrainChunks, tileAnchor: anchor, meshGapCount, bspSections: bspChunks.reduce((sum, chunk) => sum + chunk.sections.length, 0),
         bspResources: bspChunks.map(chunk => chunk.resource), moverCount: moverTargets.length,
         moverCollisionMeshCount: moverTargets.flatMap(target => target.meshes).filter(mesh => mesh.metadata?.worldCollision === true).length,
-        movers: moverTargets.map(target => target.inspection()) }),
+        movers: moverTargets.map(target => target.inspection()), bspVisibility: tileVisibility!.inspection() }),
       setTerrainPreview() {}, dispose };
   } catch (error) { dispose(); throw error; }
 }
