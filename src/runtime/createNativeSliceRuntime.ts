@@ -41,6 +41,8 @@ import { nativeWorldLocationTitles } from "./nativeWorldLocationTitles";
 import { wireWorldMovement } from "./worldMovementWiring";
 import { loadTileCollisionCells } from "./tileCollisionCells";
 import { committedMovementRules } from "./committedMovementRules";
+import { cameraFogOnZoneChange, wireWorldEnvironment } from "./worldEnvironmentWiring";
+import { installTransparentRenderingOrder } from "./transparentRenderingOrder";
 import { hasUnappliedActorPivot, nativeNpcCharacterProfile, sandboxNpcAppearances } from "./sandboxNpcAppearances";
 import type { WorldEntity } from "../world/worldTypes";
 
@@ -118,6 +120,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
   const audioLoads = beginNativeSliceAudioLoads(catalog.animationAudio, signal);
   const addRelease = (release: () => void) => { boundaryReleases.push(release); };
   try {
+    boundaryReleases.push(installTransparentRenderingOrder(scene));
     const playerCapsuleFromSourceCollision = () => ({ radius: playerProfile.collisionRadius / playerProfile.sourceUnitsPerMetre,
       height: 2 * playerProfile.collisionHeight / playerProfile.sourceUnitsPerMetre });
     const world = await loadNativeSliceWorld(scene, camera, settings, options.worldSource ?? catalogNativeSliceWorldSource, signal, {
@@ -274,6 +277,9 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
         camera.minZ = authoredCamera.minZ; camera.maxZ = authoredCamera.maxZ; camera.upperRadiusLimit = authoredCamera.upperRadiusLimit;
       });
     }
+    const environment = wireWorldEnvironment({ adapter, camera, environmentClock: section?.environmentClock ?? null,
+      cameraFog: section ? cameraFogOnZoneChange(section) : () => null, presentationFarPlane: camera.maxZ });
+    boundaryReleases.push(() => environment.release());
     if (effectComponents) {
       let priorFollow = followFighter;
       effectCamera = createEffectInspectionCamera(camera, { bounds: () => shotEffect?.bounds() ?? initEffect?.bounds() ?? effectComponents?.bounds() ?? null }, active => {
@@ -324,6 +330,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
         camera.setTarget(registry.localPlayerPosition.add(new Vector3(.6, .35, 0)), false, false, true);
         movement.constrainFollowCamera();
       }
+      environment.update();
       if (flames.presentation && flames.clock) {
         try { flames.update(flames.clock.advance(uncappedFrameSeconds, adapter.isPaused)); }
         catch (error) { failFlames(error); }
@@ -334,7 +341,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     boundaryReleases.push(() => { scene.onBeforeRenderObservable.remove(observer); });
     boundaryReleases.push(attachNativeSliceDiagnostics({ scene, camera, registry, adapter, ui, playerProfile, musveren, handAnchor,
       specialAttackPreview, locomotionClips, world, audio: nativeAudio, footsteps, footstepGround, combatAudio, combatFailure, effects,
-      doors, movement, materialOverrides, frameFlame, failFlames, isDisposed: () => disposed, addRelease }));
+      doors, movement, environment, materialOverrides, frameFlame, failFlames, isDisposed: () => disposed, addRelease }));
     return stop;
   } catch (error) { stop(); throw error; }
 }

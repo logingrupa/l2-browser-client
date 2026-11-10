@@ -33,6 +33,11 @@ function attachCameraGroup(section: DevSection, context: NativeSliceSheetContext
   tools.button(cameraGroup, "Follow fighter", cameraControls.follow, { hint: "Returns the orbit camera to the fighter.", variables: cameraVariables });
   tools.button(cameraGroup, "Source textures", () => nativeSection.setTerrainPreview(true), { hint: "Original terrain layer textures and alpha masks (blend is a browser shader; native look unverified).", variables: cameraVariables });
   tools.button(cameraGroup, "Neutral terrain", () => nativeSection.setTerrainPreview(false), { hint: "Plain inspection material to read terrain shape and support.", variables: cameraVariables });
+  const tileVisibility = nativeSection.tileVisibility;
+  if (!tileVisibility) return;
+  const visibilityVariables = () => tileVisibility.describe();
+  tools.button(cameraGroup, "Culling on", () => tileVisibility.setCulling(true), { hint: "Hides BSP sections, static meshes and map emitters the zone and portal walk does not reach.", variables: visibilityVariables });
+  tools.button(cameraGroup, "Culling off", () => tileVisibility.setCulling(false), { hint: "Draws every loaded section again; the default until PERF-02 measures culling.", variables: visibilityVariables });
 }
 
 function attachSkyGroup(section: DevSection, context: NativeSliceSheetContext, tools: NativeSliceSheetTools): void {

@@ -31,6 +31,7 @@ import type { NativeFlameReplayClock, NativeSliceWorld } from "./loadNativeSlice
 import type { NativeSliceAudio } from "./loadNativeSliceAudio";
 import type { NativeSliceEffects } from "./createNativeSliceEffects";
 import type { WorldMovement, WorldMovementCollisionCells, WorldMovementInspection } from "./worldMovementWiring";
+import type { WorldEnvironment, WorldEnvironmentInspection } from "./worldEnvironmentWiring";
 
 export interface NativeSliceDiagnosticInputs {
   scene: Scene;
@@ -52,6 +53,7 @@ export interface NativeSliceDiagnosticInputs {
   effects: NativeSliceEffects;
   doors: ReturnType<typeof createNativeDoorInteractions> | undefined;
   movement: WorldMovement;
+  environment: WorldEnvironment;
   materialOverrides: ReturnType<typeof createNativeMaterialOverrides>;
   frameFlame: (placementId: string) => void;
   failFlames: (error: unknown) => void;
@@ -71,7 +73,7 @@ function nativeSliceSnapshot(inputs: NativeSliceDiagnosticInputs) {
     effectComponents: effects.effectComponents?.snapshot() ?? null, effectComponentFailure: effects.effectComponentFailure,
     nativeInitEffect: effects.initEffect?.snapshot() ?? null,
     locomotion: { mode: adapter.locomotionMode, ...inputs.locomotionClips, speed: adapter.speedProfile, clipRate: 1, nativeSpeedVerified: false as const },
-    collisionCells: inputs.movement.inspection().collisionCells, movement: inputs.movement.inspection(),
+    collisionCells: inputs.movement.inspection().collisionCells, movement: inputs.movement.inspection(), environment: inputs.environment.inspection(),
     groundContact: inspectNativeGroundContact(scene, adapter.groundContact, section),
     doors: doors ? { manifestSha256: world.movers!.manifestSha256, ...doors.inspection() } : null,
     skinMeshes: scene.meshes.filter(mesh => mesh.metadata?.l2NativeSkinWeights).map(mesh => ({ name: mesh.name, ...mesh.metadata.l2NativeSkinWeights })),
@@ -144,7 +146,7 @@ declare global { interface Window { __nativeSlice?: { snapshot(): { entities: Re
   nativeInitEffect?: ReturnType<NativeEffectInitPreview["snapshot"]> | null;
   locomotion?: { mode: "walk" | "run"; walkClip: string | null; runClip: string; reason: string | null; speed: NativeSliceSpeedProfile;
     clipRate: number; nativeSpeedVerified: false };
-  collisionCells?: WorldMovementCollisionCells; movement?: WorldMovementInspection;
+  collisionCells?: WorldMovementCollisionCells; movement?: WorldMovementInspection; environment?: WorldEnvironmentInspection;
   groundContact?: ReturnType<typeof inspectNativeGroundContact>;
   doors?: (ReturnType<ReturnType<typeof createNativeDoorInteractions>["inspection"]> & { manifestSha256: string }) | null;
   nativeAttackReference: string; nativeNpcProfile: NativeNpcProfile | null; nativeTerrain: string; phase2Networking: boolean; worldFailure: string | null;
