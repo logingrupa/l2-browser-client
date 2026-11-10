@@ -3,10 +3,10 @@ import { writeTypedPayloadFixture, type TypedPayloadFixture, type TypedPayloadFi
 
 export const collisionFixtureMetadata = { sourceSha256: "ab".repeat(32), converterVersion: "collision-fixture-1" } as const;
 
-const boxHalfExtent = 64;
-const boxPlanes = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]] as const;
+export const boxHalfExtent = 64;
+export const boxPlanes = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]] as const;
 
-function boxFacePolygon(normal: readonly [number, number, number]): number[] {
+export function boxFacePolygon(normal: readonly [number, number, number]): number[] {
   const axis = normal.findIndex(component => component !== 0), sign = normal[axis]!;
   const tangentAxes = [0, 1, 2].filter(otherAxis => otherAxis !== axis) as [number, number];
   const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]];

@@ -1,6 +1,6 @@
 import { planeDistance, type Plane } from "../../../../shared/math/plane";
-import { crossProduct, dotProduct, normalizeVector, scaleVector, addVectors, type Vector3 } from "../../../../shared/math/vector3";
-import { boxSupportAlongNormal, negateVector, type CollisionSweep, type PrimitiveSweepHit } from "./collisionTrace";
+import { addVectors, crossProduct, dotProduct, normalizeVector, scaleVector, type Vector3 } from "../../../../shared/math/vector3";
+import { boxSupportAlongNormal, negateVector, UNIT_AXES, type CollisionSweep, type PrimitiveSweepHit } from "./collisionTrace";
 import type { MovementNativeRules } from "./movementRules";
 
 export interface ConvexHull {
@@ -16,7 +16,6 @@ export interface AxisAlignedBoxOffsets {
 
 export type HullEntryRule = "after-minus-one" | "from-zero";
 
-const unitAxes: readonly Vector3[] = [{ x: 1, y: 0, z: 0 }, { x: 0, y: 1, z: 0 }, { x: 0, y: 0, z: 1 }];
 const axisComponent = (vector: Vector3, axisIndex: number) => axisIndex === 0 ? vector.x : axisIndex === 1 ? vector.y : vector.z;
 
 export function axisAlignedBoxPlanes(minimum: Vector3, maximum: Vector3, offsets: AxisAlignedBoxOffsets): Plane[] {
@@ -48,7 +47,7 @@ export function hullBevelPlanes(planes: readonly Plane[], rules: MovementNativeR
     for (const second of planes.slice(firstIndex + 1)) {
       const lineDirection = crossProduct(first.normal, second.normal);
       if (dotProduct(lineDirection, lineDirection) < rules.bevelCrossSquaredMinimum) continue;
-      unitAxes.forEach((axis, axisIndex) => {
+      UNIT_AXES.forEach((axis, axisIndex) => {
         if (axisComponent(first.normal, axisIndex) * axisComponent(second.normal, axisIndex) >= 0) return;
         if (dotProduct(crossProduct(axis, first.normal), crossProduct(axis, second.normal)) <= rules.bevelAxisDotMinimum) return;
         const bevelNormal = normalizeVector(crossProduct(axis, lineDirection));

@@ -37,7 +37,27 @@ export interface CollisionSurroundings {
   readonly moverStates?: ReadonlyMap<number, MoverCollisionState>;
 }
 
+export interface PointBounds {
+  readonly minimum: Vector3;
+  readonly maximum: Vector3;
+}
+
 export const ZERO_VECTOR: Vector3 = { x: 0, y: 0, z: 0 };
+
+export const UNIT_AXES: readonly Vector3[] = [{ x: 1, y: 0, z: 0 }, { x: 0, y: 1, z: 0 }, { x: 0, y: 0, z: 1 }];
+
+export function boundsOfPoints(points: readonly Vector3[]): PointBounds {
+  const minimum = { x: Infinity, y: Infinity, z: Infinity }, maximum = { x: -Infinity, y: -Infinity, z: -Infinity };
+  for (const point of points) {
+    minimum.x = Math.min(minimum.x, point.x);
+    minimum.y = Math.min(minimum.y, point.y);
+    minimum.z = Math.min(minimum.z, point.z);
+    maximum.x = Math.max(maximum.x, point.x);
+    maximum.y = Math.max(maximum.y, point.y);
+    maximum.z = Math.max(maximum.z, point.z);
+  }
+  return { minimum, maximum };
+}
 
 export const isZeroExtent = (extent: Vector3) => extent.x === 0 && extent.y === 0 && extent.z === 0;
 
@@ -48,7 +68,7 @@ export const sweepDelta = (sweep: CollisionSweep) => subtractVectors(sweep.end, 
 
 export const pointAlongSweep = (sweep: CollisionSweep, time: number) => addVectors(sweep.start, scaleVector(sweepDelta(sweep), time));
 
-export const negateVector = (vector: Vector3): Vector3 => ({ x: -vector.x, y: -vector.y, z: -vector.z });
+export const negateVector = (vector: Vector3): Vector3 => ({ x: 0 - vector.x, y: 0 - vector.y, z: 0 - vector.z });
 
 export const float32Vector = (vector: Vector3): Vector3 => ({ x: Math.fround(vector.x), y: Math.fround(vector.y), z: Math.fround(vector.z) });
 

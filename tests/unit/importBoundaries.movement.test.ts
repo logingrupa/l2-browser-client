@@ -28,6 +28,12 @@ describe("src/scene/world/movement/core import boundary", () => {
       "src/scene/world/movement/core/cylinderTrace.ts",
       "src/scene/world/movement/core/lineCheck.ts",
       "src/scene/world/movement/core/moveActor.ts",
+      "src/scene/world/movement/core/residentPrimitives.ts",
+      "src/scene/world/movement/core/volumeTrace.ts",
+      "src/scene/world/movement/core/staticMeshTrace.ts",
+      "src/scene/world/movement/core/terrainTrace.ts",
+      "src/scene/world/movement/core/pointCheck.ts",
+      "src/scene/world/movement/core/volumeContainment.ts",
     ]));
   });
 
