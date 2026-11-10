@@ -20,8 +20,74 @@ export interface MovementNativeRuleRow {
   readonly runtimeDefault: number | boolean;
 }
 
+export interface FloorBandRules {
+  readonly minimum: number;
+  readonly maximum: number;
+  readonly target: number;
+}
+
+export interface VerticalSpeedChangeRules {
+  readonly speed: number;
+  readonly horizontalFactor: number;
+  readonly threshold: number;
+}
+
+export interface PawnSubstepRules {
+  readonly frameCap: number;
+  readonly maximumIterations: number;
+  readonly maximumTick: number;
+  readonly minimumTick: number;
+  readonly maximumNested: number;
+}
+
+export interface PawnMovementRules {
+  readonly maxStepHeight: number;
+  readonly floorProbe: number;
+  readonly floorBand: FloorBandRules;
+  readonly minFloorZ: number;
+  readonly maxStepSideZ: number;
+  readonly stepUpRecursion: number;
+  readonly stepUpWallZ: number;
+  readonly steepSlide: number;
+  readonly volumeGravity: number;
+  readonly terminalVelocity: number;
+  readonly waterlineProbe: number;
+  readonly physicsVolumeIsWater: boolean;
+  readonly waterEntry: VerticalSpeedChangeRules;
+  readonly waterExit: VerticalSpeedChangeRules;
+  readonly flyingStepWallZ: number;
+  readonly flyingLevelDotMinimum: number;
+  readonly flyingLevelDotMaximum: number;
+  readonly substeps: PawnSubstepRules;
+  readonly arrivalSlack: number;
+  readonly runStartFramesPerSecond: number;
+  readonly runMoveType: number;
+  readonly localPlayerYawRate: number;
+  readonly otherPawnYawRate: number;
+  readonly snapDistance: number;
+  readonly teleportRaise: number;
+  readonly serverPositionIsFeet: boolean;
+}
+
+export interface PositionReportRules {
+  readonly cadenceSeconds: number;
+  readonly stuckSeconds: number;
+  readonly stuckDistance: number;
+}
+
+export interface BehindViewCameraRules {
+  readonly zoomOffset: number;
+  readonly traceExtent: number;
+  readonly wallMargin: number;
+  readonly traceDrop: number;
+}
+
 export interface MovementNativeRules {
   readonly rows: readonly MovementNativeRuleRow[];
+  readonly pawn: PawnMovementRules;
+  readonly reports: PositionReportRules;
+  readonly camera: BehindViewCameraRules;
+  readonly clickPickLength: number;
   readonly moveActorExtension: number;
   readonly nearZeroDelta: number;
   readonly backoff: CollisionBackoffRules;
@@ -100,8 +166,61 @@ export function parseMovementNativeRules(document: unknown): MovementNativeRules
     if (backoff.minimumDistance > backoff.maximumDistance) throw new MovementRulesError(`${prefix} minimum exceeds its maximum.`);
     return backoff;
   };
+  const verticalSpeedChange = (prefix: string): VerticalSpeedChangeRules => ({
+    speed: numberRule(`${prefix}.speed`), horizontalFactor: numberRule(`${prefix}.horizontalFactor`), threshold: numberRule(`${prefix}.threshold`),
+  });
+  const floorBand: FloorBandRules = {
+    minimum: numberRule("movement.floorBand.minimum"), maximum: numberRule("movement.floorBand.maximum"), target: numberRule("movement.floorBand.target"),
+  };
+  if (!(floorBand.minimum <= floorBand.target && floorBand.target <= floorBand.maximum)) throw new MovementRulesError("movement.floorBand target lies outside its band.");
   return {
     rows,
+    pawn: {
+      maxStepHeight: numberRule("movement.maxStepHeight"),
+      floorProbe: numberRule("movement.floorProbe"),
+      floorBand,
+      minFloorZ: numberRule("movement.minFloorZ"),
+      maxStepSideZ: numberRule("movement.maxStepSideZ"),
+      stepUpRecursion: numberRule("movement.stepUpRecursion"),
+      stepUpWallZ: numberRule("movement.stepUpWallZ"),
+      steepSlide: numberRule("movement.steepSlide"),
+      volumeGravity: numberRule("movement.volumeGravity"),
+      terminalVelocity: numberRule("movement.terminalVelocity"),
+      waterlineProbe: numberRule("movement.waterlineProbe"),
+      physicsVolumeIsWater: booleanRule("movement.physicsVolumeIsWater"),
+      waterEntry: verticalSpeedChange("movement.waterEntry"),
+      waterExit: verticalSpeedChange("movement.waterExit"),
+      flyingStepWallZ: numberRule("movement.flying.stepWallZ"),
+      flyingLevelDotMinimum: numberRule("movement.flying.levelDotMinimum"),
+      flyingLevelDotMaximum: numberRule("movement.flying.levelDotMaximum"),
+      substeps: {
+        frameCap: numberRule("movement.substeps.frameCap"),
+        maximumIterations: numberRule("movement.substeps.maximumIterations"),
+        maximumTick: numberRule("movement.substeps.maximumTick"),
+        minimumTick: numberRule("movement.substeps.minimumTick"),
+        maximumNested: numberRule("movement.substeps.maximumNested"),
+      },
+      arrivalSlack: numberRule("movement.arrivalSlack"),
+      runStartFramesPerSecond: numberRule("movement.runStart"),
+      runMoveType: numberRule("movement.runMoveType"),
+      localPlayerYawRate: numberRule("movement.yawRate.localPlayer"),
+      otherPawnYawRate: numberRule("movement.yawRate.otherPawn"),
+      snapDistance: numberRule("movement.snapThresholds"),
+      teleportRaise: numberRule("movement.teleportRaise"),
+      serverPositionIsFeet: booleanRule("movement.serverPositionIsFeet"),
+    },
+    reports: {
+      cadenceSeconds: numberRule("report.validatePositionCadence"),
+      stuckSeconds: numberRule("report.stuckRule.seconds"),
+      stuckDistance: numberRule("report.stuckRule.distance"),
+    },
+    camera: {
+      zoomOffset: numberRule("camera.distance.zoomOffset"),
+      traceExtent: numberRule("camera.distance.traceExtent"),
+      wallMargin: numberRule("camera.distance.wallMargin"),
+      traceDrop: numberRule("camera.distance.traceDrop"),
+    },
+    clickPickLength: numberRule("click.pickLength"),
     moveActorExtension: numberRule("collision.moveActorExtension"),
     nearZeroDelta: numberRule("collision.nearZeroDelta"),
     backoff: {

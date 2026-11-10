@@ -55,7 +55,7 @@ export function emptyChunkArrays(): TypedPayloadFixtureArray[] {
   return collisionChunkFixtureArrays().map(array => ({ ...array, values: [] }));
 }
 
-interface BoxVolumeDeclaration {
+export interface BoxVolumeDeclaration {
   readonly kindCode: number;
   readonly decisionCode: number;
   readonly location: readonly [number, number, number];
@@ -76,7 +76,7 @@ export const turnedQuadIndex = 5;
 const terrainHeightOrigin = 32767;
 const translatedRows = ([x, y, z]: readonly [number, number, number]) => [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1];
 
-function volumeArrays(volumes: readonly BoxVolumeDeclaration[]): TypedPayloadFixtureArray[] {
+export function volumeArrays(volumes: readonly BoxVolumeDeclaration[]): TypedPayloadFixtureArray[] {
   const nodeCount = boxPlanes.length;
   return [
     { name: "VOLS.exportIndex", type: "uint32", values: volumes.map((_, volumeIndex) => 900 + volumeIndex) },
