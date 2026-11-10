@@ -12,6 +12,9 @@ import { createNativeDoorInteractions } from "../../src/scene/world/nativeDoorIn
 import { NativeSliceAdapter } from "../../src/world/NativeSliceAdapter";
 import type { WorldNavigation } from "../../src/world/WorldNavigation";
 import type { WorldCommand, WorldPosition } from "../../src/world/worldTypes";
+import { createMovementPresenter } from "../../src/scene/world/movement/movementPresenter";
+import { sourcePositionToWorld } from "../../src/world/sourceFrame";
+import { boxVolumeWorld, floorSlab, pawnRules } from "../fixtures/movement/pawnWorldFixtures";
 
 const releases: (() => void)[] = [];
 afterEach(() => { for (const release of releases.splice(0).reverse()) release(); });
@@ -39,16 +42,23 @@ function fixture(origin: WorldPosition = { x: .75, y: 0, z: -1.5 }) {
   let blocked = false;
   const navigation: WorldNavigation = { origin, ground: p => ({ ...p, y: 0 }), destination: p => ({ ...p, y: 0 }), spawn: () => origin,
     move: (from, to) => ({ position: blocked ? from : to, blocked }) };
-  const adapter = new NativeSliceAdapter(origin, navigation);
+  const adapter = new NativeSliceAdapter(origin, navigation, null, undefined, { walkSupported: false, collision: { radius: 9, height: 75 } });
+  const presenter = createMovementPresenter({ collisionWorld: boxVolumeWorld([floorSlab(0)]), rules: pawnRules,
+    reportIntent: intent => adapter.dispatch(intent), pawnTraits: () => ({ isLocalPlayer: true, walkAnimationFramesInMove: null, flies: false }) });
+  adapter.subscribe(event => { if (event.type === "move" || event.type === "stop") presenter.applyEvent(event); });
   const dispatch = (command: WorldCommand) => adapter.dispatch(command);
   const status: string[] = [];
   const doors = createNativeDoorInteractions(scene, targets, {
-    player: () => adapter.getInitialState().find(entity => entity.id === "local-player") ?? null, dispatch,
+    player: () => {
+      const entity = adapter.getInitialState().find(candidate => candidate.id === "local-player") ?? null;
+      const pawn = presenter.inspection().pawns.find(candidate => candidate.entityId === "local-player");
+      return entity && pawn ? { ...entity, position: sourcePositionToWorld(pawn.feetPosition), animation: pawn.isMoving ? "run" : entity.animation } : entity;
+    }, dispatch,
     onCommand: listener => adapter.subscribeCommands(listener), paused: () => adapter.isPaused,
   }, navigation, { radius: .09, height: 1.5 }, text => status.push(text));
   releases.push(() => { doors.dispose(); adapter.dispose(); });
   return { scene, material, targets, adapter, dispatch, doors, status, block: () => { blocked = true; },
-    frame(seconds = .1) { adapter.advance(seconds); doors.update(seconds); } };
+    frame(seconds = .1) { if (!adapter.isPaused) presenter.advance(seconds); doors.update(seconds); } };
 }
 
 describe("native mover source contract", () => {
@@ -106,8 +116,9 @@ describe("independent doors and proximity interaction", () => {
     for (let i = 0; i < 100; i++) f.frame();
     expect(f.doors.inspection().pendingId).toBeNull(); expect(f.targets[0]!.inspection().state).toBe("closed");
   });
-  it("rejects a blocked direct route, and cancels if an accepted approach later blocks", () => {
-    const f = fixture({ x: .75, y: 0, z: -5 }); f.doors.activate(f.targets[0]!.source.id); f.block(); f.frame();
+  it("rejects a blocked direct route, and cancels if an accepted approach later reports cannot-move", () => {
+    const f = fixture({ x: .75, y: 0, z: -5 }); f.doors.activate(f.targets[0]!.source.id); f.block();
+    f.dispatch({ type: "cannot-move", position: { x: 75, y: -500, z: 0 }, heading: 0 }); f.frame();
     expect(f.doors.inspection().pendingId).toBeNull(); expect(f.targets[0]!.inspection().state).toBe("closed");
     f.doors.activate(f.targets[0]!.source.id); expect(f.status.at(-1)).toMatch(/cannot be reached/); expect(f.doors.inspection().pendingId).toBeNull();
   });

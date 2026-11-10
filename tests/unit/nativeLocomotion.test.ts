@@ -17,10 +17,12 @@ const origin = { x: 2, y: 3, z: 4 };
 const adapters: NativeSliceAdapter[] = [];
 const disposals: (() => void)[] = [];
 function adapter(walkSupported = true) {
-  const value = new NativeSliceAdapter(origin, undefined, null, undefined, { walkSupported });
+  const value = new NativeSliceAdapter(origin, undefined, null, undefined, { walkSupported, collision: { radius: 9, height: 23 } });
   adapters.push(value); return value;
 }
 function player(value: NativeSliceAdapter) { return value.getInitialState().find(entity => entity.id === "local-player")!; }
+function recorded(value: NativeSliceAdapter) { const events: WorldEvent[] = []; value.subscribe(event => events.push(event)); return events; }
+const moveTypes = (events: readonly WorldEvent[]) => events.flatMap(event => event.type === "move" ? [event.moveType] : []);
 afterEach(() => {
   for (const dispose of disposals.splice(0).reverse()) dispose();
   for (const value of adapters.splice(0)) value.dispose();
@@ -29,15 +31,16 @@ afterEach(() => {
 
 describe("native slice locomotion intent", () => {
   it("defaults to run and ignores unsupported or invalid walking requests", () => {
-    const absent = new NativeSliceAdapter(origin), unsupported = adapter(false), supported = adapter();
+    const absent = new NativeSliceAdapter(origin, undefined, null, undefined, { walkSupported: false, collision: { radius: 9, height: 23 } });
+    const unsupported = adapter(false), supported = adapter();
     adapters.push(absent);
     for (const value of [absent, unsupported]) {
       const before = value.getInitialState(), events: WorldEvent[] = []; value.subscribe(event => events.push(event));
       expect(player(value).locomotion ?? "run").toBe("run");
       value.dispatch({ type: "set-locomotion", mode: "walk" });
       expect(value.getInitialState()).toEqual(before); expect(events).toEqual([]);
-      value.dispatch({ type: "move-local", position: { x: 2, y: 3, z: 5.4 } }); value.advance(1);
-      expect(player(value).position.z).toBeCloseTo(4.7);
+      value.dispatch({ type: "move-local", position: { x: 2, y: 3, z: 5.4 } });
+      expect(moveTypes(events)).toEqual([1]);
       expect(player(value).locomotion ?? "run").toBe("run");
     }
     const before = supported.getInitialState(), events: WorldEvent[] = []; supported.subscribe(event => events.push(event));
@@ -45,58 +48,61 @@ describe("native slice locomotion intent", () => {
     expect(supported.getInitialState()).toEqual(before); expect(events).toEqual([]);
   });
 
-  it("switches gait during real movement without changing destination, speed, action sequence or other actors", () => {
-    const value = adapter(), monster = value.getInitialState().find(entity => entity.kind === "monster");
-    value.dispatch({ type: "move-local", position: { x: 2, y: 3, z: 6.8 } }); value.advance(.5);
+  it("switches gait between move records without changing position, action sequence or other actors", () => {
+    const value = adapter(), monster = value.getInitialState().find(entity => entity.kind === "monster"), events = recorded(value);
+    value.dispatch({ type: "move-local", position: { x: 2, y: 3, z: 6.8 } });
     const moving = player(value);
     value.dispatch({ type: "set-locomotion", mode: "walk" });
-    expect(player(value)).toMatchObject({ position: moving.position, animation: "run", locomotion: "walk" });
+    expect(player(value)).toMatchObject({ position: moving.position, animation: "idle", locomotion: "walk" });
     expect(player(value).animationSequence).toBe(moving.animationSequence);
-    value.advance(.5); expect(player(value).position.z).toBeCloseTo(4.7);
-    value.dispatch({ type: "set-locomotion", mode: "run" }); value.advance(3.01);
-    expect(player(value)).toMatchObject({ position: { x: 2, y: 3, z: 6.8 }, animation: "idle", locomotion: "run" });
+    value.dispatch({ type: "move-local", position: { x: 2, y: 3, z: 6.8 } });
+    value.dispatch({ type: "set-locomotion", mode: "run" });
+    value.dispatch({ type: "move-local", position: { x: 2, y: 3, z: 6.8 } });
+    expect(moveTypes(events)).toEqual([1, 0, 1]);
     expect(value.getInitialState().find(entity => entity.kind === "monster")).toEqual(monster);
-    value.advance(10); expect(player(value).position.z).toBe(6.8);
   });
 
   it("does not restart an idle state or publish a redundant gait selection", () => {
-    const value = adapter(), events: WorldEvent[] = []; value.subscribe(event => events.push(event));
+    const value = adapter(), events = recorded(value);
     value.dispatch({ type: "set-locomotion", mode: "walk" });
     expect(events).toHaveLength(1); const selected = player(value);
-    value.dispatch({ type: "set-locomotion", mode: "walk" }); value.advance(2);
+    value.dispatch({ type: "set-locomotion", mode: "walk" });
     expect(player(value)).toEqual(selected); expect(events).toHaveLength(1);
     expect(selected).toMatchObject({ position: origin, animation: "idle", locomotion: "walk" });
   });
 
-  it("preserves pause and destination while changing gait and equipment", () => {
+  it("keeps pause while changing gait and equipment", () => {
     const value = adapter(); value.dispatch({ type: "move-local", position: { x: 2, y: 3, z: 6.1 } });
     value.dispatch({ type: "set-paused", isPaused: true });
-    value.dispatch({ type: "set-locomotion", mode: "walk" }); value.dispatch({ type: "equip-item", slot: "upper", itemId: 22 }); value.advance(10);
+    value.dispatch({ type: "set-locomotion", mode: "walk" }); value.dispatch({ type: "equip-item", slot: "upper", itemId: 22 });
     expect(value.isPaused).toBe(true);
-    expect(player(value)).toMatchObject({ position: origin, animation: "run", locomotion: "walk", equipment: { upper: 22 } });
-    value.dispatch({ type: "set-paused", isPaused: false }); value.advance(1);
-    expect(player(value).position.z).toBeCloseTo(4.7);
-    value.dispatch({ type: "equip-item", slot: "upper", itemId: null }); value.advance(2);
-    expect(player(value)).toMatchObject({ position: { x: 2, y: 3, z: 6.1 }, animation: "idle", locomotion: "walk", equipment: {} });
+    expect(player(value)).toMatchObject({ position: origin, locomotion: "walk", equipment: { upper: 22 } });
+    value.dispatch({ type: "set-paused", isPaused: false }); value.dispatch({ type: "equip-item", slot: "upper", itemId: null });
+    expect(player(value)).toMatchObject({ position: origin, locomotion: "walk", equipment: {} });
   });
 
-  it("keeps a dead actor stationary and resumes the preserved destination and gait after revival", () => {
-    const value = adapter(); value.dispatch({ type: "move-local", position: { x: 2, y: 3, z: 6.8 } }); value.advance(.5);
-    value.dispatch({ type: "set-health", entityId: "local-player", health: 0 }); const deadPosition = player(value).position;
-    value.dispatch({ type: "set-locomotion", mode: "walk" }); value.dispatch({ type: "equip-item", slot: "upper", itemId: 22 }); value.advance(5);
-    expect(player(value)).toMatchObject({ position: deadPosition, health: 0, locomotion: "walk", equipment: { upper: 22 } });
-    value.dispatch({ type: "set-health", entityId: "local-player", health: 100 }); value.advance(1);
-    expect(player(value).position.z).toBeCloseTo(5.05); expect(player(value).locomotion).toBe("walk");
+  it("sends no move for a dead actor and keeps the gait for the first move after revival", () => {
+    const value = adapter(), events = recorded(value);
+    value.dispatch({ type: "set-health", entityId: "local-player", health: 0 });
+    value.dispatch({ type: "set-locomotion", mode: "walk" }); value.dispatch({ type: "equip-item", slot: "upper", itemId: 22 });
+    value.dispatch({ type: "move-local", position: { x: 2, y: 3, z: 6.8 } });
+    expect(player(value)).toMatchObject({ position: origin, health: 0, locomotion: "walk", equipment: { upper: 22 } });
+    expect(moveTypes(events)).toEqual([]);
+    value.dispatch({ type: "set-health", entityId: "local-player", health: 100 });
+    value.dispatch({ type: "move-local", position: { x: 2, y: 3, z: 6.8 } });
+    expect(moveTypes(events)).toEqual([0]);
   });
 
-  it("does not turn an attack into movement or restore a destination already cancelled by an action", () => {
-    const value = adapter(); value.dispatch({ type: "move-local", position: { x: 2, y: 3, z: 6.8 } });
+  it("stops the local move on an attack and does not turn a gait change into movement", () => {
+    const value = adapter(), events = recorded(value);
+    value.dispatch({ type: "move-local", position: { x: 2, y: 3, z: 6.8 } });
     value.dispatch({ type: "set-animation", animation: "attack" }); const action = player(value);
-    value.dispatch({ type: "set-locomotion", mode: "walk" }); value.advance(10);
+    value.dispatch({ type: "set-locomotion", mode: "walk" });
     expect(player(value)).toMatchObject({ position: origin, animation: "attack", locomotion: "walk", animationSequence: action.animationSequence });
     value.dispatch({ type: "set-animation", animation: "idle" }); const idle = player(value);
-    value.dispatch({ type: "set-locomotion", mode: "run" }); value.advance(10);
+    value.dispatch({ type: "set-locomotion", mode: "run" });
     expect(player(value)).toMatchObject({ position: origin, animation: "idle", locomotion: "run", animationSequence: idle.animationSequence });
+    expect(events.map(event => event.type).filter(type => type === "move" || type === "stop")).toEqual(["move", "stop"]);
   });
 });
 

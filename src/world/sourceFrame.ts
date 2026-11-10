@@ -26,6 +26,14 @@ export function worldPositionToSource(world: WorldPosition): SourcePosition {
   return { x: world.x * sourceUnitsPerMetre, y: world.z * sourceUnitsPerMetre, z: world.y * sourceUnitsPerMetre };
 }
 
+export function sourceDistanceToWorld(sourceDistance: number): number {
+  return sourceDistance * metresPerSourceUnit;
+}
+
+export function worldDistanceToSource(worldDistance: number): number {
+  return worldDistance * sourceUnitsPerMetre;
+}
+
 export function sourceRotationToWorld(sourceRotation: RotationMatrix): RotationMatrix {
   const element = (row: number, column: number) => sourceRotation[swappedAxisByAxis[row]! * 3 + swappedAxisByAxis[column]!]!;
   return [

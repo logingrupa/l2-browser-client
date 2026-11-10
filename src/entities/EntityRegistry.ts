@@ -6,7 +6,7 @@ import { Color3 } from "@babylonjs/core/Maths/math.color";
 import type { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { Scene } from "@babylonjs/core/scene";
 import type { GameWorldAdapter } from "../world/GameWorldAdapter";
-import type { WorldEntity, WorldEvent, WorldPosition } from "../world/worldTypes";
+import type { AnimationState, WorldEntity, WorldEvent, WorldPosition } from "../world/worldTypes";
 import { PositionInterpolator } from "../interpolation/PositionInterpolator";
 import type { CharacterVisual, CharacterVisualFactory } from "../assets/CharacterVisual";
 import { EntityLabel } from "../ui/EntityLabel";
@@ -20,10 +20,21 @@ interface EntityPresentation {
   clipDiagnostic: string | null;
 }
 
+export interface EntityMovementPose {
+  readonly feetPosition: WorldPosition;
+  readonly orientationRadians: number;
+  readonly isMoving: boolean;
+}
+
 interface EntityPresentationOptions {
   readonly ground?: (position: WorldPosition) => WorldPosition | null;
+  readonly movementPose?: (entityId: string) => EntityMovementPose | null;
   readonly createVisual: CharacterVisualFactory;
   readonly actorClipPlayer?: (entityId: string) => ActorClipPlayer | undefined;
+}
+
+function animationWithMovement(animation: AnimationState, pose: EntityMovementPose | null): AnimationState {
+  return pose !== null && pose.isMoving && animation !== "attack" ? "run" : animation;
 }
 
 function labelDiagnosticOf(presentation: EntityPresentation): string | null {
@@ -144,7 +155,7 @@ export class EntityRegistry {
     presentation.interpolation.setTarget(event.entity.position, event.shouldSnap ?? false);
     const position = presentation.interpolation.position;
     presentation.visual.root.position.set(position.x, position.y, position.z);
-    presentation.visual.animation.setState(event.entity.animation, shouldRetrigger);
+    presentation.visual.animation.setState(animationWithMovement(event.entity.animation, this.options.movementPose?.(event.entity.id) ?? null), shouldRetrigger);
     presentation.label.setState(event.entity);
     if (isNewClipRequest) this.presentRequestedClip(presentation, requestedClip.clipName);
   }
@@ -173,11 +184,18 @@ export class EntityRegistry {
   update(deltaTimeSeconds: number): void {
     this.entities.forEach((presentation) => {
       const interpolatedPosition = presentation.interpolation.update(deltaTimeSeconds);
-      const supportedPosition = this.options.ground?.(interpolatedPosition) ?? interpolatedPosition;
-      const pivotClearanceAboveSupport = this.presentedGroundClearance(presentation.visual);
-      presentation.visual.root.position.set(supportedPosition.x, supportedPosition.y + pivotClearanceAboveSupport, supportedPosition.z);
-      const difference = Math.atan2(Math.sin(presentation.entity.orientationRadians - presentation.visual.root.rotation.y), Math.cos(presentation.entity.orientationRadians - presentation.visual.root.rotation.y));
-      presentation.visual.root.rotation.y += difference * (1 - Math.exp(-12 * deltaTimeSeconds));
+      const pose = this.options.movementPose?.(presentation.entity.id) ?? null;
+      if (pose) {
+        presentation.visual.root.position.set(pose.feetPosition.x, pose.feetPosition.y + presentation.visual.groundClearance, pose.feetPosition.z);
+        presentation.visual.root.rotation.y = pose.orientationRadians;
+        presentation.visual.animation.setState(animationWithMovement(presentation.entity.animation, pose));
+      } else {
+        const supportedPosition = this.options.ground?.(interpolatedPosition) ?? interpolatedPosition;
+        const pivotClearanceAboveSupport = this.presentedGroundClearance(presentation.visual);
+        presentation.visual.root.position.set(supportedPosition.x, supportedPosition.y + pivotClearanceAboveSupport, supportedPosition.z);
+        const difference = Math.atan2(Math.sin(presentation.entity.orientationRadians - presentation.visual.root.rotation.y), Math.cos(presentation.entity.orientationRadians - presentation.visual.root.rotation.y));
+        presentation.visual.root.rotation.y += difference * (1 - Math.exp(-12 * deltaTimeSeconds));
+      }
       presentation.visual.animation.update(deltaTimeSeconds);
       presentation.label.update(this.scene, presentation.visual.root.position, presentation.visual.bounds.labelHeight);
     });

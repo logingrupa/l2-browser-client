@@ -24,7 +24,7 @@ describe("entity startup readiness", () => {
   function setup(initial: WorldEntity[] = [player]) {
     let emit!: (event: WorldEvent) => void;
     const adapter: GameWorldAdapter = { getInitialState: () => initial,
-      subscribe(listener) { emit = listener; return () => {}; }, dispatch() {}, advance() {}, dispose() {} };
+      subscribe(listener) { emit = listener; return () => {}; }, dispatch() {}, dispose() {} };
     const loads: { resolve(): void; reject(error: unknown): void; visual: CharacterVisual }[] = [];
     registry = new EntityRegistry(scene, adapter, {} as HTMLElement, () => {}, {
       createVisual(scene, entity) {

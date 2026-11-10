@@ -55,7 +55,7 @@ describe("sandbox NPC presentation through the catalog index", () => {
   function registryWithSandboxFactory(nativeFactory: CharacterVisualFactory) {
     let emit!: (event: WorldEvent) => void;
     const adapter: GameWorldAdapter = { getInitialState: () => [player],
-      subscribe(listener) { emit = listener; return () => {}; }, dispatch() {}, advance() {}, dispose() {} };
+      subscribe(listener) { emit = listener; return () => {}; }, dispatch() {}, dispose() {} };
     const labels = dom.document.createElement("div");
     dom.document.body.append(labels);
     const registry = new EntityRegistry(scene, adapter, labels as unknown as HTMLElement, () => {}, {

@@ -304,15 +304,12 @@ describe("play-clip on NativeSliceAdapter", () => {
     expect(receivedEvents).toEqual([]);
   });
 
-  it("keeps a moving local player moving toward its destination", () => {
+  it("keeps a moving local player moving: play-clip sends no stop", () => {
     const adapter = createAdapter();
     adapter.dispatch({ type: "move-local", position: { x: 0, y: 0, z: 20 } });
-    adapter.advance(.5);
-    const positionBeforeClip = localPlayer(adapter).position;
+    const receivedEvents = recordEvents(adapter);
     adapter.dispatch({ type: "play-clip", entityId: "local-player", clipName: "Wait" });
-    expect(localPlayer(adapter).animation).toBe("run");
-    adapter.advance(.5);
-    expect(localPlayer(adapter).position.z).toBeGreaterThan(positionBeforeClip.z);
+    expect(receivedEvents.map(event => event.type)).toEqual(["update"]);
     adapter.dispose();
   });
 

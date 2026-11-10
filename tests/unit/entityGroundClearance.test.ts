@@ -22,7 +22,7 @@ describe("native entity support placement", () => {
       health: 100, maximumHealth: 100, position: { x: 3, y: 9, z: -2 }, orientationRadians: 0, animation: "idle" };
     let emit!: (event: WorldEvent) => void;
     const adapter: GameWorldAdapter = { getInitialState: () => [initial], subscribe(listener) { emit = listener; return () => {}; },
-      dispatch() {}, advance() {}, dispose() {} };
+      dispatch() {}, dispose() {} };
     const asset = await nativeVisualFixture({ minimumY: -.75, skinned: true,
       verticalMotion: { idle: [.25, .25], attack: [0, 1], death: [0, -1] } });
     const ground = vi.fn((position: WorldPosition) => ({ ...position, y: 4 }));

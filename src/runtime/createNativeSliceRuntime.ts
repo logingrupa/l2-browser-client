@@ -38,9 +38,15 @@ import { readNativeTableNameIndex } from "../ui/nativeTables/readNativeTableName
 import { selectedNativeTileIdentity } from "../scene/world/selectedNativeTile";
 import { buildNativeCatalogIndexOrUnavailable } from "./buildNativeCatalogIndexOrUnavailable";
 import { nativeWorldLocationTitles } from "./nativeWorldLocationTitles";
+import { wireWorldMovement } from "./worldMovementWiring";
+import { loadTileCollisionCells } from "./tileCollisionCells";
+import { committedMovementRules } from "./committedMovementRules";
 import { hasUnappliedActorPivot, nativeNpcCharacterProfile, sandboxNpcAppearances } from "./sandboxNpcAppearances";
+import type { WorldEntity } from "../world/worldTypes";
 
 const loadedSandboxNpcAppearanceByModel: ReadonlyMap<string, string> = new Map([["musveren:0", "native-musveren"]]);
+const defaultRouteCollisionTileId = "20_20";
+const localPlayerId = "local-player";
 
 export interface NativeSliceSettings {
   playerProfileId?: string;
@@ -138,8 +144,21 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     const adapter = new NativeSliceAdapter(origin, navigation, startingUpperItemId,
       { displayName: playerProfile.name, appearanceId }, { walkSupported: locomotionClips.walkClip !== null,
         specialAttackPreviewSupported: specialAttackPreview.clip !== null,
-        speed: nativeSliceSpeedProfile(playerProfile.id, playerProfile.sourceUnitsPerMetre) });
+        speed: nativeSliceSpeedProfile(playerProfile.id, playerProfile.sourceUnitsPerMetre),
+        collision: { radius: playerProfile.collisionRadius, height: playerProfile.collisionHeight } });
     boundaryReleases.push(() => adapter.dispose());
+    const movementLifetime = new AbortController();
+    boundaryReleases.push(() => movementLifetime.abort());
+    const collisionTileId = selectedNativeTileIdentity(window.location) ?? defaultRouteCollisionTileId;
+    const movement = wireWorldMovement({ scene, adapter, camera, rules: committedMovementRules, localPlayerId,
+      focusPosition: () => registry?.localPlayerPosition ?? null,
+      loadCollisionCells: section ? (world, lifetime) => loadTileCollisionCells(world, collisionTileId, lifetime)
+        : () => Promise.reject(new Error("No native world section is loaded, so no tile collision is resident.")),
+      loadedBounds: section ? { minimum: section.minimum, maximum: section.maximum } : null,
+      localWalkAnimationFramesInMove: adapter.speedProfile.isSourced
+        ? Math.round(adapter.speedProfile.runStartSeconds * committedMovementRules.pawn.runStartFramesPerSecond) : null,
+      signal: movementLifetime.signal });
+    boundaryReleases.push(() => movement.release());
     const footstepGround = createFootstepGroundSampler(scene, { decoGrass: decoGrass.field, sourceUnitsPerMetre: playerProfile.sourceUnitsPerMetre });
     boundaryReleases.push(() => footstepGround.dispose());
     if (section) footstepGround.preload(section.terrainMeshes);
@@ -167,6 +186,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
         sandboxLoadedPlayerProfileAppearance(playerProfile.id, appearanceId)),
       actorClipPlayer: entityId => clipPreview.actorClipPlayer(entityId),
       ...(navigation ? { ground: navigation.ground } : {}),
+      movementPose: entityId => movement.pose(entityId),
     });
     boundaryReleases.push(() => registry.dispose());
     const localPawnListenerLocation = (): [number, number, number] | null => {
@@ -185,8 +205,12 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
         collisionRadiusMetres: musveren.collisionRadius / musveren.sourceUnitsPerMetre,
         collisionHeightMetres: musveren.collisionHeight / musveren.sourceUnitsPerMetre },
     ], addRelease);
+    const presentedLocalPlayer = (): WorldEntity | null => {
+      const entity = registry.localPlayer, pose = entity ? movement.pose(entity.id) : null;
+      return entity && pose ? { ...entity, position: pose.feetPosition, animation: pose.isMoving ? "run" : entity.animation } : entity;
+    };
     const doors = movers && navigation ? createNativeDoorInteractions(scene, movers.targets, {
-      player: () => registry.localPlayer, dispatch: command => adapter.dispatch(command),
+      player: presentedLocalPlayer, dispatch: command => adapter.dispatch(command),
       onCommand: listener => adapter.subscribeCommands(listener), paused: () => adapter.isPaused || isSceneSuspended(scene),
     }, navigation, playerCapsuleFromSourceCollision(), message => ui.showStatus(message)) : undefined;
     if (doors) boundaryReleases.push(() => doors.dispose());
@@ -213,7 +237,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     else ui.clearStatus();
     boundaryReleases.push(ui.watchSound(() => audio.locked, () => audio.unlock()));
     boundaryReleases.push(attachWorldCamera(scene, canvas));
-    boundaryReleases.push(attachTargeting(scene, registry, adapter, navigation, doors?.targeting));
+    boundaryReleases.push(attachTargeting(scene, registry, adapter, (origin, direction) => movement.destinationAlongRay(origin, direction), doors?.targeting));
     const authoredCamera = { target: camera.target.clone(), radius: camera.radius, minZ: camera.minZ, maxZ: camera.maxZ,
       upperRadiusLimit: camera.upperRadiusLimit };
     let effectCamera: ReturnType<typeof createEffectInspectionCamera> | undefined;
@@ -280,7 +304,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       const uncappedFrameSeconds = scene.getEngine().getDeltaTime() / 1000;
       const cappedFrameSeconds = Math.min(uncappedFrameSeconds, .1);
       audio.setPaused(adapter.isPaused);
-      if (!adapter.isPaused) adapter.advance(cappedFrameSeconds);
+      if (!adapter.isPaused) movement.advance(uncappedFrameSeconds);
       doors?.update(cappedFrameSeconds);
       const animationClockSeconds = adapter.isPaused ? 0 : cappedFrameSeconds;
       registry.update(animationClockSeconds);
@@ -296,7 +320,10 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
         nativeAudio.worldAudio.ambience?.update(ear); nativeAudio.worldAudio.music?.update(ear);
       }
       materialOverrides.update();
-      if (section && followFighter && registry.localPlayerPosition) camera.setTarget(registry.localPlayerPosition.add(new Vector3(.6, .35, 0)), false, false, true);
+      if (section && followFighter && registry.localPlayerPosition) {
+        camera.setTarget(registry.localPlayerPosition.add(new Vector3(.6, .35, 0)), false, false, true);
+        movement.constrainFollowCamera();
+      }
       if (flames.presentation && flames.clock) {
         try { flames.update(flames.clock.advance(uncappedFrameSeconds, adapter.isPaused)); }
         catch (error) { failFlames(error); }
@@ -307,7 +334,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     boundaryReleases.push(() => { scene.onBeforeRenderObservable.remove(observer); });
     boundaryReleases.push(attachNativeSliceDiagnostics({ scene, camera, registry, adapter, ui, playerProfile, musveren, handAnchor,
       specialAttackPreview, locomotionClips, world, audio: nativeAudio, footsteps, footstepGround, combatAudio, combatFailure, effects,
-      doors, materialOverrides, frameFlame, failFlames, isDisposed: () => disposed, addRelease }));
+      doors, movement, materialOverrides, frameFlame, failFlames, isDisposed: () => disposed, addRelease }));
     return stop;
   } catch (error) { stop(); throw error; }
 }

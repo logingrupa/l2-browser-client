@@ -2,16 +2,18 @@ import { PointerEventTypes } from "@babylonjs/core/Events/pointerEvents";
 import "@babylonjs/core/Culling/ray";
 import type { Scene } from "@babylonjs/core/scene";
 import type { GameWorldAdapter } from "../world/GameWorldAdapter";
+import type { WorldPosition } from "../world/worldTypes";
 import type { EntityRegistry } from "./EntityRegistry";
-import type { WorldNavigation } from "../world/WorldNavigation";
 import type { DoorTargeting } from "../scene/world/nativeDoorInteractions";
+
+export type PointerDestination = (origin: WorldPosition, direction: WorldPosition) => WorldPosition | null;
 
 function readEntityIdentifier(metadata: unknown): string | null {
   if (typeof metadata !== "object" || metadata === null) return null;
   return "clientEntityId" in metadata && typeof metadata.clientEntityId === "string" ? metadata.clientEntityId : null;
 }
 
-export function attachTargeting(scene: Scene, registry: EntityRegistry, adapter: GameWorldAdapter, navigation?: WorldNavigation, interactions?: DoorTargeting): () => void {
+export function attachTargeting(scene: Scene, registry: EntityRegistry, adapter: GameWorldAdapter, destinationAlongRay?: PointerDestination, interactions?: DoorTargeting): () => void {
   const observer = scene.onPointerObservable.add((information) => {
     if (information.type === PointerEventTypes.POINTERMOVE && interactions) {
       interactions.hover(scene.pick(scene.pointerX, scene.pointerY)?.pickedMesh ?? null); return;
@@ -23,13 +25,11 @@ export function attachTargeting(scene: Scene, registry: EntityRegistry, adapter:
     const identifier = readEntityIdentifier(picked?.pickedMesh?.metadata);
     if (identifier) { registry.select(identifier); return; }
     registry.select(null);
-    if (navigation && picked?.pickedPoint && picked.pickedMesh?.metadata?.worldSupportsWalking === true) {
-      const normal = picked.getNormal(true);
-      if (normal && Math.abs(normal.y) >= Math.cos(Math.PI / 4)) {
-        const destination = navigation.destination(picked.pickedPoint);
-        if (destination) adapter.dispatch({ type: "move-local", position: destination });
-      }
-    }
+    const camera = scene.activeCamera;
+    if (!destinationAlongRay || !camera) return;
+    const ray = scene.createPickingRay(scene.pointerX, scene.pointerY, null, camera);
+    const destination = destinationAlongRay({ x: ray.origin.x, y: ray.origin.y, z: ray.origin.z }, { x: ray.direction.x, y: ray.direction.y, z: ray.direction.z });
+    if (destination) adapter.dispatch({ type: "move-local", position: destination });
   });
   return () => { scene.onPointerObservable.remove(observer); };
 }

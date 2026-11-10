@@ -48,9 +48,9 @@ export function registerFlamePresentationWorldCases(harness: NativeSliceRuntimeH
     expect((runtimeBoundaryMocks.flames.mock.calls[0]![2] as AbortSignal).aborted).toBe(false);
     expect(runtimeBoundaryMocks.section).toHaveBeenCalledTimes(world.sectionLoadCount);
     expect(owner.update.mock.calls[0]![0]).toEqual({ textureSeconds: 2.25, fadeSeconds: 8.5 });
-    const ui = runtimeBoundaryMocks.uis[0]!, registry = runtimeBoundaryMocks.registries[0]!, adapterAdvance = vi.spyOn(ui.adapter, "advance");
+    const ui = runtimeBoundaryMocks.uis[0]!, registry = runtimeBoundaryMocks.registries[0]!;
     vi.mocked(harness.engine.getDeltaTime).mockReturnValue(2500); harness.scene.onBeforeRenderObservable.notifyObservers(harness.scene);
-    expect(adapterAdvance).toHaveBeenLastCalledWith(0.1); expect(registry.update).toHaveBeenLastCalledWith(0.1);
+    expect(registry.update).toHaveBeenLastCalledWith(0.1);
     expect(owner.update.mock.lastCall![0]).toEqual({ textureSeconds: 9.75, fadeSeconds: 9.125 });
     expect(window.__nativeSlice!.snapshot()).toMatchObject({ nativeFlames: inspection, flameFailure: null, flameReplay: {
       textureSeconds: 9.75, fadeSeconds: 9.125, textureRate: 3, fadeRate: 0.25, nativeSynchronization: "unverified",
@@ -58,7 +58,7 @@ export function registerFlamePresentationWorldCases(harness: NativeSliceRuntimeH
     const oldTarget = owner.update.mock.lastCall![1], camera = harness.scene.getCameraByName("World camera") as ArcRotateCamera;
     ui.adapter.dispatch({ type: "set-paused", isPaused: true }); camera.alpha += 0.3;
     harness.scene.onBeforeRenderObservable.notifyObservers(harness.scene);
-    expect(adapterAdvance).toHaveBeenCalledTimes(1); expect(registry.update).toHaveBeenLastCalledWith(0);
+    expect(registry.update).toHaveBeenLastCalledWith(0);
     expect(owner.update.mock.lastCall![0]).toEqual({ textureSeconds: 9.75, fadeSeconds: 9.125 });
     expect(owner.update.mock.lastCall![1]).not.toEqual(oldTarget);
     expect(owner.update.mock.lastCall![1]).toEqual([camera.globalPosition.x * 100, camera.globalPosition.z * 100, camera.globalPosition.y * 100]);
@@ -68,7 +68,7 @@ export function registerFlamePresentationWorldCases(harness: NativeSliceRuntimeH
     ui.adapter.dispatch({ type: "set-paused", isPaused: false }); vi.mocked(harness.engine.getDeltaTime).mockReturnValue(200);
     harness.scene.onBeforeRenderObservable.notifyObservers(harness.scene);
     expect(owner.update.mock.lastCall![0]).toEqual({ textureSeconds: 11.6, fadeSeconds: 0.65 });
-    expect(adapterAdvance).toHaveBeenLastCalledWith(0.1); expect(registry.update).toHaveBeenLastCalledWith(0.1);
+    expect(registry.update).toHaveBeenLastCalledWith(0.1);
   });
 
   it(`passes disabled preview intent through without creating a presentation in the ${world.name} world`, async () => {
@@ -185,7 +185,7 @@ export function registerPackageInspectionWorldCase(harness: NativeSliceRuntimeHa
       host: expect.anything(), onOpenChange: expect.any(Function),
     }));
     const options = runtimeBoundaryMocks.assetImport.mock.calls[0]![2] as AssetImportOptions;
-    const ui = runtimeBoundaryMocks.uis[0]!, registry = runtimeBoundaryMocks.registries[0]!, adapterAdvance = vi.spyOn(ui.adapter, "advance");
+    const ui = runtimeBoundaryMocks.uis[0]!, registry = runtimeBoundaryMocks.registries[0]!;
     const audio = runtimeBoundaryMocks.audioControls.mock.calls[0]![1] as WorldAudioMixer;
     const meshes = [...scene.meshes], materials = [...scene.materials], nodes = [...scene.transformNodes];
     ui.adapter.dispatch({ type: "move-local", position: { x: 213, y: -30, z: 794 } });
@@ -196,14 +196,14 @@ export function registerPackageInspectionWorldCase(harness: NativeSliceRuntimeHa
     expect(audio.inspection().paused).toBe(true); expect(stopVoices).toHaveBeenCalled();
     const requestSceneFrameWhileSuspendedLikeEditorPlay = () => scene.onBeforeRenderObservable.notifyObservers(scene);
     requestSceneFrameWhileSuspendedLikeEditorPlay();
-    expect(adapterAdvance).not.toHaveBeenCalled(); expect(registry.update).toHaveBeenCalledTimes(registryCalls);
+    expect(registry.update).toHaveBeenCalledTimes(registryCalls);
     expect(owner.update).toHaveBeenCalledTimes(flameCalls); expect(ui.update).toHaveBeenCalledTimes(uiCalls);
     expect(ui.adapter.getInitialState()).toEqual(entities);
     expect(scene.meshes).toEqual(meshes); expect(scene.materials).toEqual(materials); expect(scene.transformNodes).toEqual(nodes);
     options.onOpenChange!(false);
     expect(isSceneSuspended(scene)).toBe(false); expect(audio.inspection().paused).toBe(false);
     scene.onBeforeRenderObservable.notifyObservers(scene);
-    expect(adapterAdvance).toHaveBeenCalledExactlyOnceWith(.1); expect(registry.update).toHaveBeenLastCalledWith(.1);
+    expect(registry.update).toHaveBeenLastCalledWith(.1);
     expect(owner.update).toHaveBeenCalledTimes(flameCalls + 1); expect(ui.update).toHaveBeenCalledTimes(uiCalls + 1);
   });
 }

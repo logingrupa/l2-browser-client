@@ -14,7 +14,7 @@ const releases: (() => void)[] = [];
 afterEach(() => { for (const release of releases.splice(0).reverse()) release(); });
 function createAdapter(supported = true) {
   const adapter = new NativeSliceAdapter({ x: 2, y: 3, z: 4 }, undefined, null, undefined,
-    { walkSupported: true, specialAttackPreviewSupported: supported });
+    { walkSupported: true, specialAttackPreviewSupported: supported, collision: { radius: 9, height: 23 } });
   releases.push(() => adapter.dispose()); return adapter;
 }
 const player = (adapter: NativeSliceAdapter) => adapter.getInitialState().find(entity => entity.id === "local-player")!;
@@ -36,9 +36,11 @@ describe("explicit special attack preview intent", () => {
   it("cancels travel and retriggers only the selected preview without changing gear, heading or another actor", () => {
     const adapter = createAdapter();
     adapter.dispatch({ type: "equip-item", slot: "upper", itemId: 22 });
-    adapter.dispatch({ type: "move-local", position: { x: 3, y: 3, z: 6 } }); adapter.advance(.5);
-    const before = player(adapter), monster = adapter.getInitialState()[1];
-    adapter.dispatch(preview); adapter.advance(10);
+    adapter.dispatch({ type: "move-local", position: { x: 3, y: 3, z: 6 } });
+    const before = player(adapter), monster = adapter.getInitialState()[1], events: WorldEvent[] = [];
+    adapter.subscribe(event => events.push(event));
+    adapter.dispatch(preview);
+    expect(events.filter(event => event.type === "stop")).toHaveLength(1);
     expect(player(adapter)).toMatchObject({ position: before.position, orientationRadians: before.orientationRadians,
       equipment: { upper: 22 }, animation: "attack", actionPreview: "special-attack", animationSequence: 1 });
     adapter.dispatch(preview); expect(player(adapter).animationSequence).toBe(2);
@@ -56,17 +58,18 @@ describe("explicit special attack preview intent", () => {
       expect(player(adapter).actionPreview).toBeUndefined();
     }
     adapter.dispatch(preview); adapter.dispatch({ type: "move-local", position: { x: 2, y: 3, z: 5.4 } });
-    expect(player(adapter).actionPreview).toBeUndefined(); adapter.advance(1);
-    expect(player(adapter).position.z).toBeCloseTo(4.7);
+    expect(player(adapter)).toMatchObject({ animation: "idle", position: { x: 2, y: 3, z: 4 } });
+    expect(player(adapter).actionPreview).toBeUndefined();
   });
 
   it("preserves pause and does not recreate travel after a preview", () => {
-    const adapter = createAdapter();
+    const adapter = createAdapter(), events: WorldEvent[] = [];
     adapter.dispatch({ type: "move-local", position: { x: 2, y: 3, z: 6 } });
     adapter.dispatch({ type: "set-paused", isPaused: true }); adapter.dispatch(preview);
-    const selected = player(adapter); adapter.advance(10); expect(player(adapter)).toEqual(selected);
-    adapter.dispatch({ type: "set-paused", isPaused: false }); adapter.advance(10);
-    expect(player(adapter)).toEqual(selected);
+    const selected = player(adapter);
+    adapter.subscribe(event => events.push(event));
+    adapter.dispatch({ type: "set-paused", isPaused: false });
+    expect(player(adapter)).toEqual(selected); expect(events).toEqual([]);
     adapter.dispose(); adapter.dispatch(preview); expect(adapter.getInitialState()).toEqual([]);
   });
 });

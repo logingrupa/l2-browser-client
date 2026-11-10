@@ -6,12 +6,11 @@ import type { WorldCommand, WorldEntity, WorldEvent } from "../../src/world/worl
 const createNativeSliceAdapter = (): GameWorldAdapter => new NativeSliceAdapter({ x: 0, y: 0, z: 0 });
 
 describe("GameWorldAdapter contract", () => {
-  it("keeps exactly the five frozen methods with their signatures", () => {
-    expectTypeOf<keyof GameWorldAdapter>().toEqualTypeOf<"getInitialState" | "subscribe" | "dispatch" | "advance" | "dispose">();
+  it("keeps exactly the four frozen methods with their signatures", () => {
+    expectTypeOf<keyof GameWorldAdapter>().toEqualTypeOf<"getInitialState" | "subscribe" | "dispatch" | "dispose">();
     expectTypeOf<GameWorldAdapter["getInitialState"]>().toEqualTypeOf<() => readonly WorldEntity[]>();
     expectTypeOf<GameWorldAdapter["subscribe"]>().toEqualTypeOf<(listener: (event: WorldEvent) => void) => () => void>();
     expectTypeOf<GameWorldAdapter["dispatch"]>().toEqualTypeOf<(command: WorldCommand) => void>();
-    expectTypeOf<GameWorldAdapter["advance"]>().toEqualTypeOf<(deltaTimeSeconds: number) => void>();
     expectTypeOf<GameWorldAdapter["dispose"]>().toEqualTypeOf<() => void>();
   });
 
@@ -42,7 +41,7 @@ describe("GameWorldAdapter contract", () => {
     adapter.dispose();
   });
 
-  it("NativeSliceAdapter answers all five methods at runtime", () => {
+  it("NativeSliceAdapter answers all four methods at runtime", () => {
     const adapter = createNativeSliceAdapter();
     const initialState = adapter.getInitialState();
     expect(initialState.some(entity => entity.id === "local-player")).toBe(true);
@@ -54,7 +53,6 @@ describe("GameWorldAdapter contract", () => {
     unsubscribe();
     adapter.dispatch({ type: "spawn-npc", npcId: 2 });
     expect(receivedEvents).toHaveLength(1);
-    expect(() => adapter.advance(0)).not.toThrow();
     const eventsAfterDispose: WorldEvent[] = [];
     adapter.subscribe(event => eventsAfterDispose.push(event));
     adapter.dispose();

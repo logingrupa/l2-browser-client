@@ -224,12 +224,16 @@ export function decodeNativeTileBspTree(payload: TypedPayload, tileId: string): 
   requireIndexRange(owner, "BSPT.back", back, noIndex, nodeCount);
   requireIndexRange(owner, "BSPT.coplanar", coplanar, noIndex, nodeCount);
   requireIndexRange(owner, "BSPT.collisionBound", collisionBound, noIndex, leafHulls.length);
-  requireIndexRange(owner, "BSPT.vertexPoints", vertexPoints, 0, points.length / 3);
+  const pointCount = points.length / 3;
   numVertices.forEach((nodeVertexCount, node) => {
     if (nodeVertexCount === 0) return;
     const firstVertex = vertexPool[node]!;
     requireCollision(firstVertex >= 0 && firstVertex + nodeVertexCount <= vertexPoints.length, owner, `BSPT.vertexPool[${node}]`,
       `= ${firstVertex} with ${nodeVertexCount} vertices leaves the ${vertexPoints.length} vertex points.`);
+    for (let vertex = firstVertex; vertex < firstVertex + nodeVertexCount; vertex += 1) {
+      const point = vertexPoints[vertex]!;
+      requireCollision(point >= 0 && point < pointCount, owner, `BSPT.vertexPoints[${vertex}]`, `= ${point} is outside 0 to ${pointCount - 1}.`);
+    }
   });
   return {
     nodeCount, planes, front, back, coplanar, nodeFlags, numVertices, collisionBound, vertexPool, vertexPoints, points, leafHulls,

@@ -33,10 +33,6 @@ function source(sample: WorldSupportSample, mesh: Mesh, indexOffset?: number) {
 function position(actual: WorldPosition, expected: WorldPosition) {
   for (const axis of ["x", "y", "z"] as const) expect(actual[axis]).toBeCloseTo(expected[axis], 9);
 }
-function nativeAdapter(origin: WorldPosition, navigation?: WorldNavigation) {
-  const adapter = new NativeSliceAdapter(origin, navigation, null, undefined, { walkSupported: true }); adapters.push(adapter); return adapter;
-}
-function player(adapter: NativeSliceAdapter) { return adapter.getInitialState().find(entity => entity.id === "local-player")!; }
 afterEach(() => {
   for (const adapter of adapters.splice(0)) adapter.dispose();
   for (const scene of scenes.splice(0)) { const engine = scene.getEngine(); scene.dispose(); engine.dispose(); }
@@ -166,62 +162,5 @@ describe("accepted navigation substeps", () => {
     expect(navigation.spawn(zero)).toEqual({ x: 0, y: .25, z: 0 });
     const second = navigation.spawn({ x: .1, y: 0, z: .1 }, [{ x: 0, y: .25, z: 0 }])!;
     expect(second.y).toBe(.25); expect(Math.hypot(second.x, second.z)).toBeGreaterThanOrEqual(1.4);
-  });
-});
-
-describe("adapter accepted-contact lifetime", () => {
-  it("seeds support at spawn, accepts real move support, and preserves it through query, destination, pause, death and gait changes", () => {
-    const { floor } = fixture(), terrain = floor("terrain", -10, 10, -10, 10, 0);
-    const base = createWorldNavigation({ terrainMeshes: [terrain], obstacleMeshes: () => [], origin: zero });
-    const queried = vi.fn(base.groundContact!), navigation: WorldNavigation = { ...base, groundContact: queried };
-    const adapter = nativeAdapter(zero, navigation); expect(queried).toHaveBeenCalledExactlyOnceWith(zero);
-    const spawned = adapter.groundContact!; position(spawned.position, zero);
-    for (const sample of spawned.samples) source(sample, terrain);
-    base.ground({ x: 1, y: 0, z: 1 }); base.destination({ x: 2, y: 0, z: 2 }); base.spawn(zero);
-    adapter.dispatch({ type: "move-local", position: { x: 2, y: 0, z: 0 } }); expect(adapter.groundContact).toEqual(spawned);
-    adapter.advance(.5); position(player(adapter).position, { x: .35, y: 0, z: 0 });
-    const accepted = adapter.groundContact!; position(accepted.position, { x: .35, y: 0, z: 0 });
-    for (const sample of accepted.samples) source(sample, terrain);
-    adapter.dispatch({ type: "move-local", position: { x: 3, y: 0, z: 0 } });
-    adapter.dispatch({ type: "set-locomotion", mode: "walk" }); adapter.dispatch({ type: "equip-item", slot: "upper", itemId: 22 });
-    adapter.dispatch({ type: "set-paused", isPaused: true }); adapter.advance(4);
-    expect(adapter.groundContact).toEqual(accepted); expect(player(adapter).position.x).toBeCloseTo(.35);
-    adapter.dispatch({ type: "set-paused", isPaused: false }); adapter.dispatch({ type: "set-health", entityId: "local-player", health: 0 }); adapter.advance(4);
-    expect(adapter.groundContact).toEqual(accepted);
-    adapter.dispatch({ type: "set-health", entityId: "local-player", health: 100 }); adapter.advance(.5);
-    position(player(adapter).position, { x: .7, y: 0, z: 0 }); position(adapter.groundContact!.position, { x: .7, y: 0, z: 0 });
-    expect(queried).toHaveBeenCalledTimes(1); expect(player(adapter).locomotion).toBe("walk");
-  });
-
-  it("keeps prior contact on a fully blocked move but clears it if a legacy navigation result changes position without support evidence", () => {
-    const { floor } = fixture(), terrain = floor("terrain", -10, 10, -10, 10, 0);
-    const base = createWorldNavigation({ terrainMeshes: [terrain], obstacleMeshes: () => [], origin: zero });
-    let mode: "normal" | "blocked" | "omit" = "normal";
-    const navigation: WorldNavigation = { ...base, move(from, to) {
-      if (mode === "blocked") return { position: from, blocked: true };
-      const moved = base.move(from, to); return mode === "omit" ? { position: moved.position, blocked: moved.blocked } : moved;
-    } };
-    const adapter = nativeAdapter(zero, navigation); adapter.dispatch({ type: "move-local", position: { x: 2, y: 0, z: 0 } }); adapter.advance(.5);
-    const accepted = adapter.groundContact; mode = "blocked"; adapter.advance(.5);
-    expect(adapter.groundContact).toEqual(accepted); position(player(adapter).position, { x: .35, y: 0, z: 0 });
-    mode = "omit"; adapter.dispatch({ type: "move-local", position: { x: 2, y: 0, z: 0 } }); adapter.advance(.5);
-    position(player(adapter).position, { x: .7, y: 0, z: 0 }); expect(adapter.groundContact).toBeNull();
-  });
-
-  it("stores partial-blocked support, returns isolated copies and clears the receipt on disposal", () => {
-    const { floor, mesh } = fixture(), terrain = floor("terrain", -3, 3, -3, 3, 0);
-    const wall = mesh("wall", [0, 0, -2, 0, 2, -2, 0, 2, 2, 0, 0, 2]), origin = { x: -1, y: 0, z: 0 };
-    const navigation = createWorldNavigation({ terrainMeshes: [terrain], obstacleMeshes: () => [wall], origin });
-    const adapter = nativeAdapter(origin, navigation); adapter.dispatch({ type: "move-local", position: { x: 1, y: 0, z: 0 } }); adapter.advance(4);
-    expect(player(adapter).animation).toBe("idle"); position(adapter.groundContact!.position, { x: -.125, y: 0, z: 0 });
-    const exposed = adapter.groundContact!; Reflect.set(exposed.position, "x", 999); Reflect.set(exposed.samples[0]!, "meshId", "changed");
-    position(adapter.groundContact!.position, { x: -.125, y: 0, z: 0 }); source(adapter.groundContact!.samples[0]!, terrain);
-    adapter.advance(10); position(player(adapter).position, { x: -.125, y: 0, z: 0 });
-    adapter.dispose(); expect(adapter.groundContact).toBeNull();
-  });
-
-  it("never invents support for the existing movement path without navigation", () => {
-    const adapter = nativeAdapter(zero); adapter.dispatch({ type: "move-local", position: { x: 1, y: 0, z: 0 } }); adapter.advance(.5);
-    position(player(adapter).position, { x: .35, y: 0, z: 0 }); expect(adapter.groundContact).toBeNull();
   });
 });

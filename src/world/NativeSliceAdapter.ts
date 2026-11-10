@@ -1,28 +1,38 @@
 import type { GameWorldAdapter } from "./GameWorldAdapter";
 import type { LocomotionMode, WorldCommand, WorldEntity, WorldEvent, WorldPosition } from "./worldTypes";
 import type { WorldGroundContact, WorldNavigation } from "./WorldNavigation";
-import { moveTowards } from "./syntheticMovement";
 import { commandRejectedEvent, createSpawnedCharacterEntity, createSpawnedNpcEntity, entityWithClampedHealth, entityWithEquippedItem, entityWithRequestedClip,
   isLineageIdentifier, reportedPositionRejectionReason, skillCastEvent, unknownWorldCommandError } from "./sandboxCommands";
-import { sourceHeadingToWorldYaw, sourcePositionToWorld } from "./sourceFrame";
+import { sourceHeadingToWorldYaw, sourcePositionToWorld, worldPositionToSource, worldYawToSourceHeading } from "./sourceFrame";
 
 type PreviewActionCommand = Extract<WorldCommand, { readonly type: "preview-action" }>;
 type ReportPositionCommand = Extract<WorldCommand, { readonly type: "report-position" }>;
 type CannotMoveCommand = Extract<WorldCommand, { readonly type: "cannot-move" }>;
+type MoveLocalCommand = Extract<WorldCommand, { readonly type: "move-local" }>;
+
+export interface NativeSliceCollisionCylinder {
+  readonly radius: number;
+  readonly height: number;
+}
 
 const sandboxActorSpacingMetres = 1.4;
+const walkMoveType = 0;
+const runMoveType = 1;
+const localCollisionAbsentReason = "local-collision-cylinder-absent";
 const velocityWithoutAccelerationRampRoutine = "APawn::calcVelocity 0x10639950";
 const runStartAtWalkSpeedRoutine = "APawn::GetCurSpeed 0x1061eaf0 (MoveTimer <= WalkAnimFrameInMove / 30)";
 
 export interface NativeSliceSpeedProfile {
   readonly walkMetresPerSecond: number;
   readonly runMetresPerSecond: number;
+  readonly walkSourceUnitsPerSecond: number;
+  readonly runSourceUnitsPerSecond: number;
   readonly runStartSeconds: number;
   readonly source: string;
   readonly isSourced: boolean;
 }
 export const SYNTHETIC_SLICE_SPEED: NativeSliceSpeedProfile = Object.freeze({
-  walkMetresPerSecond: .7, runMetresPerSecond: .7, runStartSeconds: 0, source: "synthetic slice speed (presentation choice)", isSourced: false });
+  walkMetresPerSecond: .7, runMetresPerSecond: .7, walkSourceUnitsPerSecond: 70, runSourceUnitsPerSecond: 70, runStartSeconds: 0, source: "synthetic slice speed (presentation choice)", isSourced: false });
 export const ACIS_HUMAN_FIGHTER_SPEED = Object.freeze({ walkUnitsPerSecond: 80, runUnitsPerSecond: 115, runStartSeconds: 12 / 30,
   source: "aCis server data, not client data (humanFighter.xml line 6, sha256 6f7ef9f6b5cb8e5e…, class 0, both sexes: walkSpd 80, runSpd 115 UU/s, move multiplier 1.0; " +
     `chargrp walkanimframe 12/30 s run start, rows 0..13, ${runStartAtWalkSpeedRoutine}; no acceleration ramp, ${velocityWithoutAccelerationRampRoutine})` });
@@ -37,6 +47,7 @@ export function nativeSliceSpeedProfile(playerProfileId: string, sourceUnitsPerM
   }
   return Object.freeze({ walkMetresPerSecond: sourcedServerSpeed.walkUnitsPerSecond / sourceUnitsPerMetre,
     runMetresPerSecond: sourcedServerSpeed.runUnitsPerSecond / sourceUnitsPerMetre,
+    walkSourceUnitsPerSecond: sourcedServerSpeed.walkUnitsPerSecond, runSourceUnitsPerSecond: sourcedServerSpeed.runUnitsPerSecond,
     runStartSeconds: sourcedServerSpeed.runStartSeconds, source: sourcedServerSpeed.source, isSourced: true });
 }
 
@@ -44,23 +55,28 @@ export class NativeSliceAdapter implements GameWorldAdapter {
   private readonly entities = new Map<string, WorldEntity>();
   private readonly listeners = new Set<(event: WorldEvent) => void>();
   private readonly commandListeners = new Set<(command: WorldCommand) => void>();
-  private destination: WorldPosition | undefined;
+  private localMoveIssued = false;
   private paused = false;
   private disposed = false;
   private acceptedContact: WorldGroundContact | null = null;
-  private secondsMovingSinceRest = 0;
   private spawnedNpcCount = 0;
   private spawnedCharacterCount = 0;
   private sandboxSpawnPlacementOrdinal = 0;
   private readonly speed: NativeSliceSpeedProfile;
   private readonly walkSupported: boolean;
   private readonly specialAttackPreviewSupported: boolean;
+  private readonly localCollision: NativeSliceCollisionCylinder | null;
   constructor(origin: WorldPosition, private readonly navigation?: WorldNavigation, upperItem: number | null = null,
     presentation: { displayName: string; appearanceId: string } = { displayName: "Human male fighter", appearanceId: "native-human-fighter" },
-    locomotion: { walkSupported: boolean; specialAttackPreviewSupported?: boolean; speed?: NativeSliceSpeedProfile } = { walkSupported: false }) {
+    locomotion: { walkSupported: boolean; specialAttackPreviewSupported?: boolean; speed?: NativeSliceSpeedProfile; collision?: NativeSliceCollisionCylinder } = { walkSupported: false }) {
     this.walkSupported = locomotion.walkSupported === true;
+    const collision = locomotion.collision ?? null;
+    if (collision !== null && !([collision.radius, collision.height].every(value => Number.isFinite(value) && value > 0))) {
+      throw new Error("Invalid native slice collision cylinder.");
+    }
+    this.localCollision = collision;
     const speed = locomotion.speed ?? SYNTHETIC_SLICE_SPEED;
-    if (![speed.walkMetresPerSecond, speed.runMetresPerSecond].every(value => Number.isFinite(value) && value > 0) ||
+    if (![speed.walkMetresPerSecond, speed.runMetresPerSecond, speed.walkSourceUnitsPerSecond, speed.runSourceUnitsPerSecond].every(value => Number.isFinite(value) && value > 0) ||
       !Number.isFinite(speed.runStartSeconds) || speed.runStartSeconds < 0) throw new Error("Invalid native slice speed profile.");
     this.speed = speed;
     this.specialAttackPreviewSupported = locomotion.specialAttackPreviewSupported === true;
@@ -77,10 +93,6 @@ export class NativeSliceAdapter implements GameWorldAdapter {
   get isPaused(): boolean { return this.paused; }
   get locomotionMode(): LocomotionMode { return this.entities.get("local-player")?.locomotion ?? "run"; }
   get speedProfile(): NativeSliceSpeedProfile { return this.speed; }
-  get currentSpeed(): number {
-    if (!this.destination) return 0;
-    return this.locomotionMode === "walk" || this.secondsMovingSinceRest < this.speed.runStartSeconds ? this.speed.walkMetresPerSecond : this.speed.runMetresPerSecond;
-  }
   get groundContact(): WorldGroundContact | null { return this.acceptedContact ? structuredClone(this.acceptedContact) : null; }
   subscribe(listener: (event: WorldEvent) => void): () => void { this.listeners.add(listener); return () => this.listeners.delete(listener); }
   subscribeCommands(listener: (command: WorldCommand) => void): () => void { this.commandListeners.add(listener); return () => this.commandListeners.delete(listener); }
@@ -133,14 +145,14 @@ export class NativeSliceAdapter implements GameWorldAdapter {
       case "set-animation": {
         const entity = this.entities.get(command.entityId ?? "local-player");
         if (entity) {
-          if (entity.id === "local-player") this.destination = undefined;
+          if (entity.id === "local-player") this.stopLocalMove(entity);
           const { actionPreview: _preview, actionTargetId: _target, ...ordinary } = entity;
           this.update({ ...ordinary, animation: command.animation, animationSequence: (entity.animationSequence ?? 0) + 1 });
         }
         break;
       }
       case "move-local":
-        if (player) this.moveLocalPlayer(player, command.position);
+        if (player) this.moveLocalPlayer(player, command);
         break;
       case "report-position":
         if (player) this.acceptReportedPosition(player, command);
@@ -163,19 +175,28 @@ export class NativeSliceAdapter implements GameWorldAdapter {
     const target = command.targetId === undefined ? null : this.entities.get(command.targetId);
     if (command.targetId !== undefined && (!target || target.id === player.id || target.health <= 0 ||
       ![target.position.x, target.position.y, target.position.z].every(Number.isFinite))) return;
-    this.destination = undefined;
+    this.stopLocalMove(player);
     const { actionTargetId: _previousTarget, ...unbound } = player;
     this.update({ ...unbound, animation: "attack", actionPreview: command.action,
       ...(target ? { actionTargetId: target.id, orientationRadians: Math.atan2(target.position.x - player.position.x, target.position.z - player.position.z) } : {}),
       animationSequence: (player.animationSequence ?? 0) + 1 });
   }
-  private moveLocalPlayer(player: WorldEntity, requestedPosition: WorldPosition): void {
-    if (player.health <= 0 || ![requestedPosition.x, requestedPosition.y, requestedPosition.z].every(Number.isFinite)) return;
-    const target = this.navigation?.destination(requestedPosition) ?? (!this.navigation ? { x: requestedPosition.x, y: player.position.y, z: requestedPosition.z } : null);
-    if (!target) return;
-    this.destination = target;
-    const { actionPreview: _preview, actionTargetId: _target, ...ordinary } = player;
-    this.update({ ...ordinary, animation: "run" });
+  private moveLocalPlayer(player: WorldEntity, command: MoveLocalCommand): void {
+    const origin = command.origin ?? player.position, destination = command.position;
+    if (player.health <= 0 || ![origin.x, origin.y, origin.z, destination.x, destination.y, destination.z].every(Number.isFinite)) return;
+    if (this.localCollision === null) { this.emit(commandRejectedEvent(command.type, localCollisionAbsentReason)); return; }
+    this.localMoveIssued = true;
+    const { actionPreview, actionTargetId, ...ordinary } = player;
+    if (actionPreview !== undefined || actionTargetId !== undefined || player.animation !== "idle") this.update({ ...ordinary, animation: "idle" });
+    this.emit({ type: "move", entityId: player.id, origin: worldPositionToSource(origin), destination: worldPositionToSource(destination),
+      moveType: this.locomotionMode === "walk" ? walkMoveType : runMoveType,
+      speeds: { walk: this.speed.walkSourceUnitsPerSecond, run: this.speed.runSourceUnitsPerSecond },
+      collision: { radius: this.localCollision.radius, height: this.localCollision.height } });
+  }
+  private stopLocalMove(player: WorldEntity): void {
+    if (!this.localMoveIssued) return;
+    this.localMoveIssued = false;
+    this.emit({ type: "stop", entityId: player.id, position: worldPositionToSource(player.position), heading: worldYawToSourceHeading(player.orientationRadians) });
   }
   private acceptReportedPosition(player: WorldEntity, command: ReportPositionCommand): void {
     const rejectionReason = reportedPositionRejectionReason(command);
@@ -185,14 +206,13 @@ export class NativeSliceAdapter implements GameWorldAdapter {
   private stopAtReportedPosition(player: WorldEntity, command: CannotMoveCommand): void {
     const rejectionReason = reportedPositionRejectionReason(command);
     if (rejectionReason) { this.emit(commandRejectedEvent(command.type, rejectionReason)); return; }
-    this.destination = undefined;
-    this.secondsMovingSinceRest = 0;
+    this.localMoveIssued = false;
     this.placeLocalPlayer({ ...player, position: sourcePositionToWorld(command.position), orientationRadians: sourceHeadingToWorldYaw(command.heading) });
     this.emit({ type: "stop", entityId: player.id, position: { x: command.position.x, y: command.position.y, z: command.position.z }, heading: command.heading });
   }
   private placeLocalPlayer(player: WorldEntity): void {
-    this.entities.set(player.id, player);
     this.acceptedContact = this.navigation?.groundContact?.(player.position) ?? null;
+    this.update(player);
   }
   private nextSandboxSpawnPosition(player: WorldEntity): WorldPosition | null {
     const placementOrdinal = this.sandboxSpawnPlacementOrdinal + 1;
@@ -221,23 +241,5 @@ export class NativeSliceAdapter implements GameWorldAdapter {
     this.entities.set(entity.id, entity);
     this.emit({ type: "spawn", entity });
   }
-  advance(seconds: number): void {
-    if (!Number.isFinite(seconds) || seconds < 0) throw new Error("Invalid native slice elapsed time.");
-    const player = this.entities.get("local-player");
-    if (!this.destination) this.secondsMovingSinceRest = 0;
-    if (this.disposed || this.paused || !player || player.health <= 0 || !this.destination) return;
-    const { walkMetresPerSecond: walk, runMetresPerSecond: run, runStartSeconds } = this.speed;
-    const secondsAtWalkSpeed = this.locomotionMode === "walk" ? seconds : Math.min(seconds, Math.max(0, runStartSeconds - this.secondsMovingSinceRest));
-    this.secondsMovingSinceRest += seconds;
-    const next = moveTowards(player, this.destination, secondsAtWalkSpeed * walk + (seconds - secondsAtWalkSpeed) * run);
-    const moved = this.navigation?.move(player.position, next.position);
-    if (moved?.contact) this.acceptedContact = moved.contact;
-    else {
-      const position = moved?.position ?? next.position;
-      if (position.x !== player.position.x || position.y !== player.position.y || position.z !== player.position.z) this.acceptedContact = null;
-    }
-    this.update({ ...next, ...(moved ? { position: moved.position, animation: moved.blocked ? "idle" : next.animation } : {}) });
-    if (next.animation === "idle" || moved?.blocked) { this.destination = undefined; this.secondsMovingSinceRest = 0; }
-  }
-  dispose(): void { this.disposed = true; this.listeners.clear(); this.commandListeners.clear(); this.entities.clear(); this.destination = undefined; this.acceptedContact = null; }
+  dispose(): void { this.disposed = true; this.listeners.clear(); this.commandListeners.clear(); this.entities.clear(); this.localMoveIssued = false; this.acceptedContact = null; }
 }

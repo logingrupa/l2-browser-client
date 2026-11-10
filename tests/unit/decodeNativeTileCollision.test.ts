@@ -127,4 +127,9 @@ describe("decodeNativeTileBspTree", () => {
     expect(decode).toThrow(CollisionWorldError);
     expect(decode).toThrow(message);
   });
+
+  it("keeps a vertex entry no node pool references even when it names no point, as converted tiles hold such entries", () => {
+    const tree = decodeTree(replaceFixtureArray(collisionBspTreeFixtureArrays(), "BSPT.vertexPoints", [0, 1, 2, 0, 1, 2, 3, 9]));
+    expect([...tree.vertexPoints]).toEqual([0, 1, 2, 0, 1, 2, 3, 9]);
+  });
 });

@@ -3,12 +3,13 @@ import {
   ACIS_HUMAN_FIGHTER_SPEED, NativeSliceAdapter, SYNTHETIC_SLICE_SPEED, nativeSliceSpeedProfile,
 } from "../../src/world/NativeSliceAdapter";
 import type { WorldGroundContact, WorldNavigation } from "../../src/world/WorldNavigation";
+import type { WorldEvent } from "../../src/world/worldTypes";
 
 const origin = { x: 0, y: 0, z: 0 };
 const player = (adapter: NativeSliceAdapter) => adapter.getInitialState().find(entity => entity.id === "local-player")!;
 const native = nativeSliceSpeedProfile("human-male-fighter", 100);
 function adapter(walkSupported = true) {
-  return new NativeSliceAdapter(origin, undefined, null, undefined, { walkSupported, speed: native });
+  return new NativeSliceAdapter(origin, undefined, null, undefined, { walkSupported, speed: native, collision: { radius: 9, height: 23 } });
 }
 
 describe("native slice walk/run speed (aCis server data)", () => {
@@ -35,35 +36,15 @@ describe("native slice walk/run speed (aCis server data)", () => {
     expect(native.isSourced).toBe(true);
   });
 
-  it("walks at 0.80 m/s with no acceleration ramp and reports zero speed at rest", () => {
-    const value = adapter(); value.dispatch({ type: "set-locomotion", mode: "walk" });
-    expect(value.currentSpeed).toBe(0);
+  it("sends walk 80 and run 115 source units per second in every move record, with moveType 0 walking and 1 running", () => {
+    const value = adapter(), events: WorldEvent[] = [];
+    value.subscribe(event => events.push(event));
     value.dispatch({ type: "move-local", position: { x: 0, y: 0, z: 10 } });
-    expect(value.currentSpeed).toBe(.8);
-    value.advance(.1); expect(player(value).position.z).toBeCloseTo(.08, 12);
-    value.advance(1); expect(player(value).position.z).toBeCloseTo(.88, 12);
-  });
-
-  it("starts a run at walk speed for 0.4 s, integrates the split frame exactly, then runs at 1.15 m/s", () => {
-    const value = adapter();
+    value.dispatch({ type: "set-locomotion", mode: "walk" });
     value.dispatch({ type: "move-local", position: { x: 0, y: 0, z: 10 } });
-    value.advance(.3); expect(player(value).position.z).toBeCloseTo(.24, 12); expect(value.currentSpeed).toBe(.8);
-    value.advance(.3);
-    expect(player(value).position.z).toBeCloseTo(.24 + .08 + .23, 12); expect(value.currentSpeed).toBe(1.15);
-    value.advance(1); expect(player(value).position.z).toBeCloseTo(.55 + 1.15, 12);
-  });
-
-  it("resets the run start when the actor stops, but not when a new destination is issued while moving", () => {
-    const value = adapter();
-    value.dispatch({ type: "move-local", position: { x: 0, y: 0, z: .5 } });
-    value.advance(1); expect(player(value)).toMatchObject({ position: { z: .5 }, animation: "idle" });
-    value.dispatch({ type: "move-local", position: { x: 0, y: 0, z: 10 } });
-    value.advance(.4); expect(player(value).position.z).toBeCloseTo(.5 + .32, 12);
-    value.dispatch({ type: "move-local", position: { x: 0, y: 0, z: 20 } });
-    value.advance(1); expect(player(value).position.z).toBeCloseTo(.82 + 1.15, 12);
-    value.dispatch({ type: "set-animation", animation: "attack" }); value.advance(.1);
-    value.dispatch({ type: "move-local", position: { x: 0, y: 0, z: 30 } });
-    value.advance(.2); expect(value.currentSpeed).toBe(.8);
+    const moves = events.flatMap(event => event.type === "move" ? [[event.moveType, event.speeds]] : []);
+    expect(moves).toEqual([[1, { walk: 80, run: 115 }], [0, { walk: 80, run: 115 }]]);
+    expect(player(value).position).toEqual(origin);
   });
 });
 

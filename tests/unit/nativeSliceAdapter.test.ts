@@ -2,41 +2,44 @@ import { describe, expect, it, vi } from "vitest";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { NativeSliceAdapter } from "../../src/world/NativeSliceAdapter";
 import { reportedHeadingNotIntegerReason, reportedPositionNotFiniteReason } from "../../src/world/sandboxCommands";
-import type { WorldNavigation } from "../../src/world/WorldNavigation";
 import type { WorldEvent } from "../../src/world/worldTypes";
 
 const origin = { x: 2, y: 3, z: 4 };
+const collision = { radius: 9, height: 23 };
 function player(adapter: NativeSliceAdapter) { return adapter.getInitialState().find(entity => entity.id === "local-player")!; }
+function movingAdapter() { return new NativeSliceAdapter(origin, undefined, null, undefined, { walkSupported: true, collision }); }
+function recorded(adapter: NativeSliceAdapter) { const events: WorldEvent[] = []; adapter.subscribe(event => events.push(event)); return events; }
 
 describe("native slice adapter boundary", () => {
-  it("accepts Babylon Vector3 coordinates and isolates external position/snapshot mutation", () => {
-    const vector = new Vector3(2, 3, 4), adapter = new NativeSliceAdapter(vector, undefined, 22);
+  it("answers move-local with one move record in source units and moves no entity itself", () => {
+    const vector = new Vector3(2, 3, 4), adapter = new NativeSliceAdapter(vector, undefined, 22, undefined, { walkSupported: false, collision });
     expect(player(adapter)).toMatchObject({ position: origin, appearanceId: "native-human-fighter", equipment: { upper: 22 } });
     vector.x = 999;
     const snapshot = player(adapter); Reflect.set(snapshot.position, "x", 123);
     expect(player(adapter).position).toEqual(origin);
+    const events = recorded(adapter);
     adapter.dispatch({ type: "move-local", position: new Vector3(2.7, 900, 4) });
-    adapter.advance(1.01);
-    expect(player(adapter)).toMatchObject({ position: { x: 2.7, y: 3, z: 4 }, animation: "idle", orientationRadians: Math.PI / 2 });
+    expect(events).toEqual([{ type: "move", entityId: "local-player", origin: { x: 200, y: 400, z: 300 }, destination: { x: 270, y: 400, z: 90000 },
+      moveType: 1, speeds: { walk: 70, run: 70 }, collision }]);
+    expect(player(adapter)).toMatchObject({ position: origin, animation: "idle" });
     adapter.dispose();
   });
 
-  it("increments action sequences for repeated explicit attacks and cancels previous movement", () => {
-    const adapter = new NativeSliceAdapter(origin);
+  it("increments action sequences for repeated explicit attacks and stops the local move once", () => {
+    const adapter = movingAdapter(), events = recorded(adapter);
     adapter.dispatch({ type: "move-local", position: { x: 5, y: 0, z: 4 } });
     adapter.dispatch({ type: "set-animation", animation: "attack" });
     adapter.dispatch({ type: "set-animation", animation: "attack" });
-    adapter.advance(10);
+    expect(events.filter(event => event.type === "stop")).toEqual([{ type: "stop", entityId: "local-player", position: { x: 200, y: 400, z: 300 }, heading: 0 }]);
     expect(player(adapter)).toMatchObject({ position: origin, animation: "attack", animationSequence: 2 });
     adapter.dispose();
   });
 
   it("targets repeated monster attacks without interrupting local movement and ignores unknown targets", () => {
-    const adapter = new NativeSliceAdapter(origin);
+    const adapter = movingAdapter();
     const monster = adapter.getInitialState().find(entity => entity.id === "native-musveren")!;
     adapter.dispatch({ type: "move-local", position: { x: 5, y: 3, z: 4 } });
-    const movingPlayer = player(adapter), events: WorldEvent[] = [];
-    adapter.subscribe(event => events.push(event));
+    const movingPlayer = player(adapter), events = recorded(adapter);
     adapter.dispatch({ type: "set-animation", entityId: monster.id, animation: "attack" });
     adapter.dispatch({ type: "set-animation", entityId: monster.id, animation: "attack" });
     expect(events).toEqual([
@@ -48,70 +51,60 @@ describe("native slice adapter boundary", () => {
     adapter.dispatch({ type: "set-animation", entityId: "unknown", animation: "idle" });
     expect(adapter.getInitialState()).toEqual(beforeUnknown);
     expect(events).toHaveLength(2);
-    adapter.advance(.5);
-    expect(player(adapter).position.x).toBeCloseTo(2.35);
-    expect(player(adapter).animation).toBe("run");
     adapter.dispose();
   });
 
-  it("clamps health, freezes dead/paused movement, and permits explicit equipment actions while paused", () => {
-    const adapter = new NativeSliceAdapter(origin);
+  it("clamps health, sends no move for a dead player, and permits explicit equipment actions while paused", () => {
+    const adapter = movingAdapter(), events = recorded(adapter);
+    adapter.dispatch({ type: "set-health", entityId: "local-player", health: -5 });
     adapter.dispatch({ type: "move-local", position: { x: 5, y: 3, z: 4 } });
-    adapter.dispatch({ type: "set-health", entityId: "local-player", health: -5 }); adapter.advance(1);
     expect(player(adapter)).toMatchObject({ health: 0, position: origin });
+    expect(events.some(event => event.type === "move")).toBe(false);
     adapter.dispatch({ type: "set-health", entityId: "local-player", health: Number.NaN });
     expect(player(adapter).health).toBe(0);
     adapter.dispatch({ type: "set-health", entityId: "local-player", health: 999 });
-    adapter.dispatch({ type: "set-paused", isPaused: true }); adapter.advance(10);
+    adapter.dispatch({ type: "set-paused", isPaused: true });
+    expect(adapter.isPaused).toBe(true);
     adapter.dispatch({ type: "equip-item", slot: "upper", itemId: 22 });
     expect(player(adapter)).toMatchObject({ health: 100, position: origin, equipment: { upper: 22 } });
     for (const itemId of [-1, .5, Number.NaN]) adapter.dispatch({ type: "equip-item", slot: "upper", itemId });
     expect(player(adapter).equipment).toEqual({ upper: 22 });
     adapter.dispatch({ type: "equip-item", slot: "upper", itemId: null });
     expect(player(adapter).equipment?.upper).toBeUndefined();
-    adapter.dispatch({ type: "set-paused", isPaused: false }); adapter.advance(.5);
-    expect(player(adapter).position.x).toBeCloseTo(2.35);
-    expect(() => adapter.advance(-1)).toThrow(); expect(() => adapter.advance(Number.NaN)).toThrow();
     adapter.dispose();
   });
 
-  it("honors navigation rejection and obstruction without falling back through blocked geometry", () => {
-    const destination = vi.fn<WorldNavigation["destination"]>().mockReturnValueOnce(null).mockReturnValue({ x: 5, y: 3, z: 4 });
-    const navigation: WorldNavigation = { origin, ground: point => point, destination, spawn: () => null,
-      move: vi.fn().mockReturnValue({ position: { x: 2.1, y: 3, z: 4 }, blocked: true }) };
-    const adapter = new NativeSliceAdapter(origin, navigation);
-    adapter.dispatch({ type: "move-local", position: { x: 5, y: 3, z: 4 } }); adapter.advance(1);
-    expect(player(adapter).position).toEqual(origin); expect(navigation.move).not.toHaveBeenCalled();
-    adapter.dispatch({ type: "move-local", position: { x: 5, y: 3, z: 4 } }); adapter.advance(1);
-    expect(player(adapter)).toMatchObject({ position: { x: 2.1, y: 3, z: 4 }, animation: "idle" });
-    adapter.advance(1); expect(navigation.move).toHaveBeenCalledTimes(1);
+  it("refuses move-local with a named reason when the local player has no collision cylinder, and refuses a bad cylinder", () => {
+    const adapter = new NativeSliceAdapter(origin), events = recorded(adapter);
+    adapter.dispatch({ type: "move-local", position: { x: 5, y: 3, z: 4 } });
+    expect(events).toEqual([{ type: "command-rejected", commandType: "move-local", reason: "local-collision-cylinder-absent" }]);
+    expect(() => new NativeSliceAdapter(origin, undefined, null, undefined, { walkSupported: false, collision: { radius: 0, height: 23 } })).toThrow("collision cylinder");
     adapter.dispose();
   });
 
-  it("stores a reported source position as the local player's metre position without emitting", () => {
-    const adapter = new NativeSliceAdapter(origin), events: WorldEvent[] = [];
-    adapter.subscribe(event => events.push(event));
+  it("mirrors an accepted reported source position into the local player's metre position", () => {
+    const adapter = new NativeSliceAdapter(origin), events = recorded(adapter);
     adapter.dispatch({ type: "report-position", position: { x: 500, y: 600, z: 300 }, heading: 16384 });
-    expect(events).toEqual([]);
     expect(player(adapter)).toMatchObject({ position: { x: 5, y: 3, z: 6 }, orientationRadians: 0 });
+    expect(events).toEqual([{ type: "update", entity: player(adapter) }]);
     adapter.dispose();
   });
 
   it("answers cannot-move with one stop at the reported source position and heading and ends the sandbox move", () => {
-    const adapter = new NativeSliceAdapter(origin), events: WorldEvent[] = [];
+    const adapter = movingAdapter();
     adapter.dispatch({ type: "move-local", position: { x: 9, y: 3, z: 4 } });
-    adapter.subscribe(event => events.push(event));
+    const events = recorded(adapter);
     adapter.dispatch({ type: "cannot-move", position: { x: 500, y: 600, z: 300 }, heading: 16384 });
-    expect(events).toEqual([{ type: "stop", entityId: "local-player", position: { x: 500, y: 600, z: 300 }, heading: 16384 }]);
-    adapter.advance(1);
-    expect(events).toHaveLength(1);
-    expect(player(adapter)).toMatchObject({ position: { x: 5, y: 3, z: 6 }, orientationRadians: -Math.PI / 2 });
+    expect(events).toEqual([{ type: "update", entity: player(adapter) },
+      { type: "stop", entityId: "local-player", position: { x: 500, y: 600, z: 300 }, heading: 16384 }]);
+    adapter.dispatch({ type: "set-animation", animation: "attack" });
+    expect(events.filter(event => event.type === "stop")).toHaveLength(1);
+    expect(player(adapter)).toMatchObject({ position: { x: 5, y: 3, z: 6 } });
     adapter.dispose();
   });
 
   it("rejects a reported position it cannot apply with a named reason instead of throwing", () => {
-    const adapter = new NativeSliceAdapter(origin), events: WorldEvent[] = [];
-    adapter.subscribe(event => events.push(event));
+    const adapter = new NativeSliceAdapter(origin), events = recorded(adapter);
     expect(() => adapter.dispatch({ type: "report-position", position: { x: Number.NaN, y: 0, z: 0 }, heading: 0 })).not.toThrow();
     adapter.dispatch({ type: "cannot-move", position: { x: 0, y: 0, z: 0 }, heading: .5 });
     expect(events).toEqual([
@@ -131,7 +124,7 @@ describe("native slice adapter boundary", () => {
     expect(events).toEqual([{ type: "despawn", entityId: "native-musveren" }]);
     expect(adapter.getInitialState().map(entity => entity.id)).toEqual(["local-player"]);
     unsubscribe(); adapter.dispatch({ type: "set-animation", animation: "run" });
-    adapter.dispose(); adapter.dispose(); adapter.dispatch({ type: "set-animation", animation: "attack" }); adapter.advance(1);
+    adapter.dispose(); adapter.dispose(); adapter.dispatch({ type: "set-animation", animation: "attack" });
     expect(listener).toHaveBeenCalledTimes(1); expect(adapter.getInitialState()).toEqual([]);
   });
 });

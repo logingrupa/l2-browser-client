@@ -269,7 +269,7 @@ export function attachNativeSliceSheet(context: NativeSliceSheetContext): Native
     { name: "movement.walkClip", value: () => locomotionClips.walkClip ?? "unavailable", values: "original clip name",
       source: locomotionClips.walkSource === "profile-alias" ? "profile WalkAnimName[0] alias (no staged footstep pair: walking is silent)" : "actor animation archive + staged footstep notify pair (catalog.animationAudio)", status: "native" },
     { name: "movement.runClip", value: () => locomotionClips.runClip, values: "original clip name", source: "player profile run clip (RunAnimName[0])", status: "native" },
-    { name: "movement.speed", value: () => `${adapter.currentSpeed.toFixed(2)} m/s now`,
+    { name: "movement.speed", value: () => `${(adapter.locomotionMode === "walk" ? adapter.speedProfile.walkMetresPerSecond : adapter.speedProfile.runMetresPerSecond).toFixed(2)} m/s in the next move record`,
       values: `walk ${adapter.speedProfile.walkMetresPerSecond.toFixed(2)} | run ${adapter.speedProfile.runMetresPerSecond.toFixed(2)} m/s (walk speed for the first ${adapter.speedProfile.runStartSeconds} s of a run)`,
       source: adapter.speedProfile.isSourced
         ? `${adapter.speedProfile.source} ÷ sourceUnitsPerMetre ${playerProfile.sourceUnitsPerMetre}. Speeds are server data (no client file holds them); no acceleration ramp (APawn::calcVelocity).`

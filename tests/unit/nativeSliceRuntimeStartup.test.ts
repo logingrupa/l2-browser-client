@@ -26,19 +26,18 @@ describe("native slice runtime startup", () => {
     stop(); expect(runtimeBoundaryMocks.registries[0]!.dispose).toHaveBeenCalledOnce();
   });
 
-  it("advances the adapter and visual clock together, pauses both, and releases each boundary exactly once", async () => {
+  it("advances the visual clock, pauses it, leaves positions to move records and releases each boundary exactly once", async () => {
     const before = harness.scene.onBeforeRenderObservable.observers.length;
     const stop = await startRuntime(baseRuntimeSettings, new AbortController().signal); stops.push(stop);
     const ui = runtimeBoundaryMocks.uis[0]!, registry = runtimeBoundaryMocks.registries[0]!;
     expect(ui.adapter.getInitialState()[0]).toMatchObject({ position: { x: 2, y: 3, z: 4 }, equipment: { upper: 22 } });
     ui.adapter.dispatch({ type: "move-local", position: { x: 5, y: 3, z: 4 } });
     harness.scene.onBeforeRenderObservable.notifyObservers(harness.scene);
-    const positionXAfterOneTenthSecondAtRunStartWalkSpeed = 2.08;
-    expect(ui.adapter.getInitialState()[0]!.position.x).toBeCloseTo(positionXAfterOneTenthSecondAtRunStartWalkSpeed);
+    expect(ui.adapter.getInitialState()[0]!.position.x).toBe(2);
     expect(registry.update).toHaveBeenLastCalledWith(.1);
     ui.adapter.dispatch({ type: "set-paused", isPaused: true }); harness.scene.onBeforeRenderObservable.notifyObservers(harness.scene);
     expect(registry.update).toHaveBeenCalledTimes(3); expect(registry.update).toHaveBeenLastCalledWith(0);
-    expect(ui.adapter.getInitialState()[0]!.position.x).toBeCloseTo(positionXAfterOneTenthSecondAtRunStartWalkSpeed); expect(ui.update).toHaveBeenCalledTimes(2);
+    expect(ui.adapter.getInitialState()[0]!.position.x).toBe(2); expect(ui.update).toHaveBeenCalledTimes(2);
     expect(window.__nativeSlice?.snapshot()).toMatchObject({ nativeAttackReference: "unverified", phase2Networking: false });
     stop(); stop();
     expect(runtimeBoundaryMocks.detachCamera).toHaveBeenCalledTimes(1); expect(runtimeBoundaryMocks.detachTargeting).toHaveBeenCalledTimes(1);
@@ -145,7 +144,7 @@ describe("native slice runtime startup", () => {
     expect(harness.camera.target.x).toBeCloseTo(212.6); expect(harness.camera.radius).toBe(originalRadius);
     expect(harness.camera.alpha).toBe(0); expect(harness.camera.beta).toBe(1);
     const adapter = runtimeBoundaryMocks.uis[0]!.adapter;
-    adapter.dispatch({ type: "move-local", position: { x: 1000, y: -30, z: 1000 } }); adapter.advance(1);
+    adapter.dispatch({ type: "move-local", position: { x: 1000, y: -30, z: 1000 } });
     expect(adapter.getInitialState()[0]!.position).toEqual({ x: 212, y: -30, z: 794 });
     stop(); expect(dispose).toHaveBeenCalledTimes(1);
     expect(codeBuiltMesh.isEnabled()).toBe(true);
