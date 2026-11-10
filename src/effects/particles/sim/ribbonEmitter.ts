@@ -1,20 +1,17 @@
-import { scaleVector, subtractVectors, vectorLength, type Vector3 } from "../../../shared/math/vector3";
+import { float32Difference, float32Scaled, float32Sum, float32Vector, type Vector3 } from "../../../shared/math/vector3";
 import type { RandomStream } from "../../../shared/random";
 import { PARTICLE_CONSTANTS } from "./emitterConstants";
 import type { RibbonEmitterRecord } from "./emitterRecords";
 import { createParticleEmitterSimulation, type ParticleEmitterSimulation } from "./particleEmitter";
-import { PARTICLE_FLAG, hasParticleFlag, type EmitterStepContext } from "./particleState";
+import { PARTICLE_FLAG, hasParticleFlag, type EmitterClassOverrides, type EmitterRuntime } from "./particleState";
 
-export interface RibbonPointSample {
-  readonly start: Vector3;
-  readonly end: Vector3;
-}
-
-export interface RibbonPoint extends RibbonPointSample {
+export interface RibbonPoint {
+  readonly location: Vector3;
+  readonly locationUnder: Vector3;
   readonly width: number;
 }
 
-export type RibbonPointSource = () => RibbonPointSample | null;
+export type RibbonPointSource = (ribbonWidth: number) => RibbonPoint;
 
 export interface RibbonEmitterSimulation extends ParticleEmitterSimulation {
   readonly kind: "ribbon";
@@ -35,141 +32,172 @@ export interface WeaponTrail {
   readonly actorLifeSpanSeconds: number;
 }
 
+export class RibbonEmitterError extends Error {
+  constructor(emitterObject: string, message: string) {
+    super(`RibbonEmitter ${emitterObject}: ${message}`);
+    this.name = "RibbonEmitterError";
+  }
+}
+
 export const RIBBON_POINT_DROP = { none: 0, byPoint: 1, byTime: 2, byTimeDual: 3 } as const;
 
+interface StoredRibbonPoint extends RibbonPoint {
+  readonly movingDirection: Vector3;
+  readonly movingDirectionUnder: Vector3;
+}
+
 const weaponTrailRule = PARTICLE_CONSTANTS.weaponTrail.runtimeDefault;
+const weaponTrailCasterGate = PARTICLE_CONSTANTS.weaponTrailCasterGate.runtimeDefault;
 const interpolationRule = PARTICLE_CONSTANTS.ribbonInterpolation.runtimeDefault;
 const zeroVector: Vector3 = { x: 0, y: 0, z: 0 };
+const curveInsertIndex = 3;
 
-interface SampledRibbonPoint extends RibbonPoint {
-  readonly startTangent: Vector3;
-  readonly endTangent: Vector3;
+const isZeroVector = (vector: Vector3) => vector.x === 0 && vector.y === 0 && vector.z === 0;
+const storedPoint = (location: Vector3, locationUnder: Vector3, width: number): StoredRibbonPoint =>
+  ({ location, locationUnder, width, movingDirection: zeroVector, movingDirectionUnder: zeroVector });
+
+function dividedByFloatReciprocal(vector: Vector3, divisor: number): Vector3 {
+  return float32Scaled(vector, Math.fround(1 / divisor));
 }
 
-function float32Distance(left: Vector3, right: Vector3): number {
-  return Math.fround(vectorLength(subtractVectors(left, right)));
-}
-
-function hermite(from: number, to: number, fromTangent: number, toTangent: number, parameter: number): number {
-  const square = parameter * parameter, cube = square * parameter;
-  return (2 * cube - 3 * square + 1) * from + (3 * square - 2 * cube) * to + (cube - 2 * square + parameter) * fromTangent + (cube - square) * toTangent;
-}
-
-function hermiteVector(from: Vector3, to: Vector3, fromTangent: Vector3, toTangent: Vector3, parameter: number): Vector3 {
-  return {
-    x: hermite(from.x, to.x, fromTangent.x, toTangent.x, parameter),
-    y: hermite(from.y, to.y, fromTangent.y, toTangent.y, parameter),
-    z: hermite(from.z, to.z, fromTangent.z, toTangent.z, parameter),
+function float32PointDistance(from: Vector3, to: Vector3): number {
+  const squaredStep = (fromComponent: number, toComponent: number) => {
+    const step = Math.fround(toComponent - fromComponent);
+    return Math.fround(step * step);
   };
+  return Math.fround(Math.sqrt(squaredStep(from.x, to.x) + squaredStep(from.y, to.y) + squaredStep(from.z, to.z)));
+}
+
+function ribbonCurvePoint(farPoint: Vector3, nearPoint: Vector3, farDirection: Vector3, nearDirection: Vector3, alpha: number): Vector3 {
+  const alphaCubed = Math.pow(alpha, 3), alphaSquared = Math.pow(alpha, 2);
+  const farPointWeight = Math.fround(alphaCubed * 2 - alphaSquared * 3 + 1);
+  const nearPointWeight = Math.fround(alphaSquared * 3 - (alphaCubed + alphaCubed));
+  const farDirectionWeight = Math.fround(alphaCubed - alphaSquared * 2 + alpha);
+  const nearDirectionWeight = Math.fround(alphaCubed - alphaSquared);
+  const pointsBlend = float32Sum(float32Scaled(farPoint, farPointWeight), float32Scaled(nearPoint, nearPointWeight));
+  return float32Sum(float32Sum(pointsBlend, float32Scaled(farDirection, farDirectionWeight)), float32Scaled(nearDirection, nearDirectionWeight));
 }
 
 export function attachWeaponTrail(record: RibbonEmitterRecord, attachment: WeaponTrailAttachment): WeaponTrail | null {
-  if (attachment.casterEntityKind === weaponTrailRule.skippedCasterEntityKind) return null;
+  if (attachment.casterEntityKind === weaponTrailCasterGate.skippedCasterEntityKind) return null;
   const { weaponLength, shotTimeSeconds } = attachment;
-  if (!(weaponLength > 0) || !(shotTimeSeconds > 0)) throw new RangeError(`Weapon trail needs a positive weapon length and shot time, not ${weaponLength} and ${shotTimeSeconds}.`);
-  const endOffset = Math.fround(weaponLength * Math.fround(weaponTrailRule.endOffsetPerWeaponLength));
+  if (!Number.isFinite(weaponLength) || !Number.isFinite(shotTimeSeconds)) {
+    throw new RangeError(`Weapon trail needs a finite weapon length and shot time, not ${weaponLength} and ${shotTimeSeconds}.`);
+  }
+  if (!(Math.fround(weaponLength) > 0)) return null;
+  const shotTime = Math.fround(shotTimeSeconds);
+  const endOffset = Math.fround(Math.fround(weaponLength) * weaponTrailRule.endOffsetPerWeaponLength);
   const emitter = Object.freeze({
     ...record,
-    StartBoneOffset: { x: Math.fround(weaponLength * Math.fround(weaponTrailRule.startOffsetPerWeaponLength)), y: 0, z: 0 },
+    StartBoneOffset: { x: Math.fround(endOffset * weaponTrailRule.startOffsetPerEndOffset), y: 0, z: 0 },
     EndBoneOffset: { x: endOffset, y: 0, z: 0 },
     RibbonWidth: endOffset,
-    ThresholdTime: Math.fround(shotTimeSeconds * weaponTrailRule.thresholdTimePerShotTime),
-    ThresholdTime2: shotTimeSeconds,
-    FadeOutStartTime: shotTimeSeconds,
-    FadeInEndTime: Math.fround(shotTimeSeconds * Math.fround(weaponTrailRule.fadeInEndTimePerShotTime)),
+    ThresholdTime: Math.fround(weaponTrailRule.thresholdTimePerShotTime * shotTime),
+    ThresholdTime2: shotTime,
+    FadeOutStartTime: shotTime,
+    FadeInEndTime: Math.fround(shotTime / weaponTrailRule.fadeInEndTimeShotTimeDivisor),
   });
-  return { emitter, actorLifeSpanSeconds: shotTimeSeconds + weaponTrailRule.actorLifeSpanAfterShotSeconds };
+  return { emitter, actorLifeSpanSeconds: Math.fround(shotTime + weaponTrailRule.actorLifeSpanAfterShotSeconds) };
 }
 
 export function createRibbonEmitterSimulation(record: RibbonEmitterRecord, stream: RandomStream): RibbonEmitterSimulation {
-  const simulation = createParticleEmitterSimulation(record, stream, record.UniformSize);
-  let points: SampledRibbonPoint[] = [], pointLimit = record.NumPoints, sampleTimer = Math.fround(record.SampleRate);
-  let realSampleRate = Math.fround(record.SampleRate), lastSampled: RibbonPointSample = { start: zeroVector, end: zeroVector };
-  let killed = false, pointSource: RibbonPointSource | null = null;
-  const currentRecord = () => simulation.record as RibbonEmitterRecord;
-  const restartRibbon = () => {
-    const { NumPoints, SampleRate } = currentRecord();
-    points = []; pointLimit = NumPoints; sampleTimer = realSampleRate = Math.fround(SampleRate);
-    killed = false; lastSampled = { start: zeroVector, end: zeroVector };
+  let points: StoredRibbonPoint[] = [], pointLimit = record.NumPoints, sampleTimer = 0, realSampleRate = 0, killed = false;
+  let lastSampledPoint: RibbonPoint = storedPoint(zeroVector, zeroVector, 0), pointSource: RibbonPointSource | null = null;
+  const ribbonRecord = (runtime: EmitterRuntime) => runtime.record as RibbonEmitterRecord;
+
+  const setNewestSpanDirections = (current: RibbonEmitterRecord, location: Vector3, locationUnder: Vector3) => {
+    const olderPoint = points[curveInsertIndex]!, scaleRatio = Math.fround(current.ScaleRatio);
+    points[2] = {
+      ...points[2]!,
+      movingDirection: dividedByFloatReciprocal(float32Difference(location, olderPoint.location), Math.fround(scaleRatio * interpolationRule.startTangentDivisor)),
+      movingDirectionUnder: dividedByFloatReciprocal(float32Difference(locationUnder, olderPoint.locationUnder), Math.fround(scaleRatio * interpolationRule.endTangentDivisor)),
+    };
   };
-  const sampleWidth = (sample: RibbonPointSample) => currentRecord().bUseBoneDistance ? vectorLength(subtractVectors(sample.end, sample.start)) : currentRecord().RibbonWidth;
-  const interpolateNewestSpan = (width: number) => {
-    const { ScaleRatio, CntrPoints } = currentRecord();
-    if (points.length >= interpolationRule.tangentFromPointCount && ScaleRatio !== 0) {
-      const tangentPoint = points[2]!, newest = points[0]!, older = points[3]!;
-      points[2] = {
-        ...tangentPoint,
-        startTangent: scaleVector(subtractVectors(newest.start, older.start), 1 / (ScaleRatio * interpolationRule.startTangentDivisor)),
-        endTangent: scaleVector(subtractVectors(newest.end, older.end), 1 / (ScaleRatio * interpolationRule.endTangentDivisor)),
-      };
+  const insertCurvePoints = (current: RibbonEmitterRecord, width: number) => {
+    const nearPoint = points[2]!, farPoint = points[curveInsertIndex]!, insertedCount = current.CntrPoints - 1;
+    if (insertedCount < 0) {
+      points.splice(curveInsertIndex + insertedCount, -insertedCount);
+      return;
     }
-    if (points.length < interpolationRule.insertFromPointCount || CntrPoints < 2) return;
-    const near = points[2]!, far = points[3]!;
-    const inserted = Array.from({ length: CntrPoints - 1 }, (_, index) => {
-      const parameter = 1 - (index + 1) / CntrPoints;
-      return { start: hermiteVector(far.start, near.start, far.startTangent, near.startTangent, parameter),
-        end: hermiteVector(far.end, near.end, far.endTangent, near.endTangent, parameter), width, startTangent: zeroVector, endTangent: zeroVector };
+    const curvePoints = Array.from({ length: insertedCount }, (_, index) => {
+      const alpha = 1 - Math.fround(index + 1) / current.CntrPoints;
+      return storedPoint(
+        ribbonCurvePoint(farPoint.location, nearPoint.location, farPoint.movingDirection, nearPoint.movingDirection, alpha),
+        ribbonCurvePoint(farPoint.locationUnder, nearPoint.locationUnder, farPoint.movingDirectionUnder, nearPoint.movingDirectionUnder, alpha),
+        width);
     });
-    points.splice(3, 0, ...inserted);
+    points.splice(curveInsertIndex, 0, ...curvePoints);
   };
-  const dropPoints = (particleTime: number) => {
-    const { AccDrop, PointsDropRate, MinPoints, ThresholdTime, ThresholdTime2 } = currentRecord();
-    const byTime = AccDrop === RIBBON_POINT_DROP.byTime || AccDrop === RIBBON_POINT_DROP.byTimeDual;
-    const dropDue = AccDrop === RIBBON_POINT_DROP.byPoint && points.length >= pointLimit || byTime && particleTime >= ThresholdTime;
-    if (points.length >= PointsDropRate + MinPoints && dropDue) pointLimit -= PointsDropRate;
-    else if (AccDrop === RIBBON_POINT_DROP.byTimeDual && particleTime >= ThresholdTime2) pointLimit = Math.max(0, pointLimit - 1);
-    if (points.length > Math.max(0, pointLimit)) points.length = Math.max(0, pointLimit);
+  const dropPoints = (current: RibbonEmitterRecord, particleTime: number) => {
+    const { AccDrop, PointsDropRate, MinPoints } = current, pointCount = points.length;
+    const droppedByTime = (AccDrop === RIBBON_POINT_DROP.byTime || AccDrop === RIBBON_POINT_DROP.byTimeDual) && Math.fround(current.ThresholdTime) <= particleTime;
+    if (pointCount >= PointsDropRate + MinPoints && (AccDrop === RIBBON_POINT_DROP.byPoint && pointCount >= pointLimit || droppedByTime)) pointLimit -= PointsDropRate;
+    else if (AccDrop === RIBBON_POINT_DROP.byTimeDual && Math.fround(current.ThresholdTime2) <= particleTime) pointLimit = Math.max(0, pointLimit - 1);
+    if (pointLimit < 0) throw new RibbonEmitterError(current.object, `NumPoints fell to ${pointLimit}; Interlude asserts on the negative remove index.`);
+    if (points.length > pointLimit) points.length = pointLimit;
   };
-  const samplePoint = (stepSeconds: number, sample: RibbonPointSample) => {
-    const { MinSampleDist, bDecayPoints } = currentRecord();
-    const width = sampleWidth(sample), first = points.length === 0;
-    const head: SampledRibbonPoint = { ...sample, width, startTangent: zeroVector, endTangent: zeroVector };
-    if (first) points.unshift(head); else points[0] = head;
-    const timer = sampleTimer + stepSeconds;
-    sampleTimer = Math.fround(timer);
+  const samplePoints = (current: RibbonEmitterRecord, deltaSeconds: number, particleTime: number) => {
+    if (pointSource === null) return;
+    const sample = pointSource(Math.fround(current.RibbonWidth)), location = float32Vector(sample.location);
+    if (isZeroVector(location)) return;
+    const locationUnder = float32Vector(sample.locationUnder), width = Math.fround(sample.width), firstPoint = points.length === 0;
+    points[0] = firstPoint ? storedPoint(location, locationUnder, width) : { ...points[0]!, location, locationUnder };
+    sampleTimer = Math.fround(sampleTimer + deltaSeconds);
     let stopped = false;
-    if (timer >= realSampleRate) {
-      const moved = float32Distance(sample.start, lastSampled.start) + float32Distance(sample.end, lastSampled.end);
-      if (first || moved < MinSampleDist) { sampleTimer = realSampleRate; stopped = true; }
-      else {
+    if (sampleTimer >= realSampleRate) {
+      const movedDistance = float32PointDistance(lastSampledPoint.locationUnder, locationUnder) + float32PointDistance(lastSampledPoint.location, location);
+      if (firstPoint || !(Math.fround(current.MinSampleDist) <= movedDistance)) {
+        sampleTimer = realSampleRate;
+        stopped = true;
+      } else {
         sampleTimer = 0;
-        points.splice(1, 0, head);
-        lastSampled = sample;
-        interpolateNewestSpan(width);
+        const sampledPoint = storedPoint(location, locationUnder, width);
+        points.splice(1, 0, sampledPoint);
+        lastSampledPoint = sampledPoint;
+        if (current.bUseInterpolation && points.length >= interpolationRule.tangentFromPointCount) setNewestSpanDirections(current, location, locationUnder);
+        if (current.bUseInterpolation && points.length >= interpolationRule.insertFromPointCount) insertCurvePoints(current, width);
       }
     }
-    if (bDecayPoints && stopped) { if (points.length > 1) points.pop(); sampleTimer = 0; }
+    if (current.bDecayPoints && stopped) {
+      if (points.length > 1) points.pop();
+      sampleTimer = 0;
+    }
+    dropPoints(current, particleTime);
   };
-  const decayStoppedRibbon = (stepSeconds: number) => {
-    const { bSyncDecayWhenKilled, bDecayPointsWhenStopped } = currentRecord(), { columns, counters } = simulation;
+  const decayStoppedRibbon = (current: RibbonEmitterRecord, runtime: EmitterRuntime, deltaSeconds: number) => {
+    const { columns, counters } = runtime;
     if (counters.killPending && !killed) {
       killed = true;
-      if (bSyncDecayWhenKilled && points.length > 1) realSampleRate = Math.fround((columns.maxLifetime[0]! - columns.time[0]!) / (points.length - 1));
+      if (current.bSyncDecayWhenKilled) realSampleRate = Math.fround((columns.maxLifetime[0]! - columns.time[0]!) / (points.length - 1));
     }
-    if (!bDecayPointsWhenStopped || points.length === 0) return;
-    const timer = sampleTimer + stepSeconds;
-    sampleTimer = Math.fround(timer);
-    if (timer >= realSampleRate) { sampleTimer = 0; points.pop(); }
+    if (!current.bDecayPointsWhenStopped || points.length === 0) return;
+    sampleTimer = Math.fround(sampleTimer + deltaSeconds);
+    if (sampleTimer >= realSampleRate) {
+      sampleTimer = 0;
+      points.pop();
+    }
   };
-  const updateRibbon = (stepSeconds: number) => {
-    const { columns, counters } = simulation;
-    if (columns.capacity === 0 || !hasParticleFlag(columns, 0, PARTICLE_FLAG.active)) return;
-    if (!currentRecord().bSamplePoints || counters.killPending) { decayStoppedRibbon(stepSeconds); return; }
-    const sample = pointSource?.() ?? null;
-    if (sample === null || vectorLength(sample.start) === 0) return;
-    samplePoint(stepSeconds, sample);
-    dropPoints(columns.time[0]!);
+  const ribbonOverrides: EmitterClassOverrides = {
+    afterInitialize(runtime) {
+      sampleTimer = realSampleRate = Math.fround(ribbonRecord(runtime).SampleRate);
+      killed = false;
+    },
+    afterSpawnParticle(runtime) {
+      const current = ribbonRecord(runtime);
+      if (current.bSamplePoints) points = [];
+      realSampleRate = Math.fround(current.SampleRate);
+    },
+    afterUpdateParticles(runtime, stepSeconds) {
+      const { columns, counters } = runtime, current = ribbonRecord(runtime), deltaSeconds = Math.fround(stepSeconds);
+      if (columns.capacity === 0 || !hasParticleFlag(columns, 0, PARTICLE_FLAG.active)) return;
+      if (current.bSamplePoints && !counters.killPending) samplePoints(current, deltaSeconds, columns.time[0]!);
+      else decayStoppedRibbon(current, runtime, deltaSeconds);
+    },
   };
-  const baseStep = simulation.step, baseReset = simulation.reset;
+  const simulation = createParticleEmitterSimulation(record, stream, record.UniformSize, ribbonOverrides);
   const ribbon = Object.assign(simulation as ParticleEmitterSimulation & { readonly record: RibbonEmitterRecord }, {
     kind: "ribbon" as const,
-    step(stepSeconds: number, context: EmitterStepContext) {
-      const outcome = baseStep(stepSeconds, context);
-      if (outcome === "running") updateRibbon(stepSeconds);
-      return outcome;
-    },
-    reset(context: EmitterStepContext) { baseReset(context); restartRibbon(); },
-    ribbonPoints: (): readonly RibbonPoint[] => points.map(({ start, end, width }) => ({ start: { ...start }, end: { ...end }, width })),
+    ribbonPoints: (): readonly RibbonPoint[] => points.map(({ location, locationUnder, width }) => ({ location: { ...location }, locationUnder: { ...locationUnder }, width })),
     attachPointSource(source: RibbonPointSource | null) { pointSource = source; },
   });
   return Object.defineProperty(ribbon, "pointLimit", { get: () => pointLimit, enumerable: true }) as RibbonEmitterSimulation;

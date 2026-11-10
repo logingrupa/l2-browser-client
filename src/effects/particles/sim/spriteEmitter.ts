@@ -27,7 +27,7 @@ function subdivisionBlendByte(atlasPosition: number): number {
 }
 
 export function createSpriteEmitterSimulation(record: SpriteEmitterRecord, stream: RandomStream): SpriteEmitterSimulation {
-  const simulation = createParticleEmitterSimulation(record, stream, record.UniformSize || record.UseDirectionAs === DIRECTION_USAGE_NONE);
+  const simulation = createParticleEmitterSimulation(record, stream, record.UniformSize || record.UseDirectionAs === DIRECTION_USAGE_NONE, null);
   const columnCount = Math.max(1, record.TextureUSubdivisions), rowCount = Math.max(1, record.TextureVSubdivisions);
   const lastCell = columnCount * rowCount - 1;
   const atlasCellAt = (cell: number, nextCell: number, blendWeight: number): SpriteAtlasCell =>
