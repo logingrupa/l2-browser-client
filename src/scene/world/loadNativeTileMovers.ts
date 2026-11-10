@@ -1,7 +1,7 @@
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { AssetContainer } from "@babylonjs/core/assetContainer";
 import type { Scene } from "@babylonjs/core/scene";
-import { fetchVerifiedNativeResource, loadNativeGlbContainer } from "./loadNativeSection";
+import { decodeNativeJsonResource, fetchVerifiedNativeResource, loadNativeGlbContainer } from "./loadNativeSection";
 import { parseNativeTileMoverManifest, type NativeTileMoverManifest } from "./nativeMoverManifest";
 import { createNativeMoverTargets, type NativeMoverTargets } from "./nativeMoverTargets";
 import type { NativeMover } from "./nativeMovers";
@@ -17,11 +17,6 @@ function leaveTileMoverMeshesOutOfCollision(meshes: readonly Mesh[]): void {
   for (const mesh of meshes) mesh.metadata = { ...mesh.metadata, worldSupportsWalking: false };
 }
 
-function decodeTileMoverManifest(bytes: Uint8Array): unknown {
-  try { return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)); }
-  catch { throw new Error("Native tile mover manifest is not UTF-8 JSON."); }
-}
-
 export async function loadNativeTileMovers(scene: Scene, moverResource: NativeTileResource, signal: AbortSignal): Promise<NativeTileMovers> {
   if (moverResource.kind !== "movers") throw new Error(`Native tile resource ${moverResource.manifest} is not a movers resource.`);
   const templates = new Map<string, AssetContainer>();
@@ -32,8 +27,8 @@ export async function loadNativeTileMovers(scene: Scene, moverResource: NativeTi
     templates.clear();
   };
   try {
-    const manifest = parseNativeTileMoverManifest(decodeTileMoverManifest(
-      await fetchVerifiedNativeResource(moverResource.manifest, moverResource.manifestSha256, signal, moverResource.manifestBytes)));
+    const manifest = parseNativeTileMoverManifest(decodeNativeJsonResource(
+      await fetchVerifiedNativeResource(moverResource.manifest, moverResource.manifestSha256, signal, moverResource.manifestBytes), "Native tile mover manifest"));
     for (const model of manifest.models) {
       const glb = await fetchVerifiedNativeResource(model.model.resource, model.model.sha256, signal, model.model.bytes);
       const container = await loadNativeGlbContainer(scene, model.model.resource, glb);

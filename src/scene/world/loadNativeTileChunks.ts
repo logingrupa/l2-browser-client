@@ -7,7 +7,7 @@ import { readTileCatalogRecord } from "../../assets/native/nativeCatalogRecords"
 import { assetPackageLimits, readAssetPackage } from "../../assets/package/readAssetPackage";
 import { readNativeCatalogUnlessNotStaged } from "../../assets/native/readNativeCatalog";
 import {
-  fetchVerifiedNativeResource, inspectNativeWorldScene, loadNativeGlbContainer, nativeMeshBounds, terrainInfoChunkPlanWindow, validateSectionGlb,
+  decodeNativeJsonResource, fetchVerifiedNativeResource, inspectNativeWorldScene, loadNativeGlbContainer, nativeMeshBounds, terrainInfoChunkPlanWindow, validateSectionGlb,
   type NativeSection, type NativeSectionManifest,
 } from "./loadNativeSection";
 import { parseNativeBspSectionExtras, type NativeBspNodeRange, type NativeBspSection, type NativeTileBspResource } from "./nativeBspResources";
@@ -69,11 +69,6 @@ const sourceUnitsToGltfMetres = 0.01;
 const tileSpawnAnchorRule = "authored PlayerStart XY on the chunk terrain surface; authored Z kept as a diagnostic";
 const surfaceRayClearanceMetres = 1;
 const staticMeshStep = "meshes";
-
-function decodeJsonResource(bytes: Uint8Array, label: string): unknown {
-  try { return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)); }
-  catch { throw new Error(`${label} is not UTF-8 JSON.`); }
-}
 
 function authoredAnchorPosition(manifest: NativeTileManifest): Vector3 {
   const [x, y, z] = manifest.anchor.location;
@@ -170,12 +165,12 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
   try {
     const record = await selectedTileRecord(lifetime.signal, tileId);
     if (!record) { dispose(); return null; }
-    const manifest = parseNativeTileManifest(decodeJsonResource(
+    const manifest = parseNativeTileManifest(decodeNativeJsonResource(
       await fetchVerifiedNativeResource(record.manifest, record.manifestSha256, lifetime.signal, record.manifestBytes), "Native tile manifest"));
     if (manifest.tileId !== tileId) throw new Error(`Native tile manifest names tile ${manifest.tileId}, not ${tileId}.`);
     const chunks: NativeTileChunkManifest[] = [];
     for (const chunkRecord of manifest.chunks) {
-      const chunk = parseNativeTileChunkManifest(decodeJsonResource(
+      const chunk = parseNativeTileChunkManifest(decodeNativeJsonResource(
         await fetchVerifiedNativeResource(chunkRecord.manifest, chunkRecord.manifestSha256, lifetime.signal, chunkRecord.manifestBytes), "Native tile chunk manifest"));
       if (chunk.tileId !== tileId || chunk.chunkId !== chunkRecord.chunkId) throw new Error(`Native tile chunk manifest differs from its record ${chunkRecord.chunkId}.`);
       chunks.push(chunk);

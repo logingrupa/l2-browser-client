@@ -158,6 +158,11 @@ async function stagedSection(signal: AbortSignal, identity: string): Promise<{ r
   return found ? { record: found, catalog } : null;
 }
 
+export function decodeNativeJsonResource(bytes: Uint8Array, label: string): unknown {
+  try { return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)); }
+  catch { throw new Error(`${label} is not UTF-8 JSON.`); }
+}
+
 export async function fetchVerifiedNativeResource(url: string, hash: string, signal: AbortSignal, length?: number): Promise<Uint8Array<ArrayBuffer>> {
   const response = await fetch(nativeResourceUrl(url), { signal });
   if (!response.ok) throw new Error(`Native section resource returned HTTP ${response.status}: ${url}`);
