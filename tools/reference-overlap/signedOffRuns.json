@@ -18205,195 +18205,6 @@
       "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
     },
     {
-      "area": "particles",
-      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
-      "tokenCount": 22,
-      "sourceTokensSha256": "4061c07ab9e1bf88a948eab6e61bf3ad51ce91d94d6d0ab1210fc9bddebf81fe",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/physics/components/pawn-movement-component.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "particles",
-      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
-      "tokenCount": 20,
-      "sourceTokensSha256": "69805ee8d10eaa96f8903988677a9c0c6bb3d563c870372a3219a66ee58c1474",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/physics/collision-world.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "particles",
-      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
-      "tokenCount": 24,
-      "sourceTokensSha256": "e3b7fb08984c77e0c1d729db0fbcd9e7af37e534b9242b2e66c2eff558619837",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/physics/collision-primitive.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "particles",
-      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
-      "tokenCount": 21,
-      "sourceTokensSha256": "fe29349b3829c0f2efedfec5cc5bb3f0dfcc980ac8bd0099df5269cc0918bf59",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/physics/collision-primitive.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "particles",
-      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
-      "tokenCount": 23,
-      "sourceTokensSha256": "c5bd9f6e6bccd772cc675ba8c6c1dd0f27e44cd60525027e4fd3598012ca88ae",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/unreal/un-sample-light.ts",
-        ".assets/reference/lineage2js/src/physics/collision-primitive.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "particles",
-      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
-      "tokenCount": 24,
-      "sourceTokensSha256": "75966bbff533f37e7213f9e064ac3eebd401f86a521f51b06adc0533fdc6af37",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/physics/collision-primitive.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "particles",
-      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
-      "tokenCount": 20,
-      "sourceTokensSha256": "02eb84952dbd658a561fa4a0ed8224facec8882ab0cbe83a4b8032395ee7d8d6",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/physics/collision-primitive.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "particles",
-      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
-      "tokenCount": 25,
-      "sourceTokensSha256": "397e5983d8f1cad2603234beb69180126af6b6a713ebc15f9a4edd04d06ac6fb",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/physics/components/pawn-movement-component.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "particles",
-      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
-      "tokenCount": 22,
-      "sourceTokensSha256": "a0df2637546f229e878a5165ed9bc42cedbc9d8fcd711aaa0490e686aed264fa",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/objects/dynamic-light.ts",
-        ".assets/reference/lineage2js/src/objects/emitters/ribbon-emitter.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "particles",
-      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
-      "tokenCount": 21,
-      "sourceTokensSha256": "65d57d5ac49cd29f2c87990c23113e6a5bd4eac4ead6c6c56297b92cecbe547a",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/decode-worker/decode-engine.ts",
-        ".assets/reference/lineage2js/src/assets/unreal/skills/skill-effect-host.ts",
-        ".assets/reference/lineage2js/src/assets/unreal/un-terrain-sector.ts",
-        ".assets/reference/lineage2js/src/objects/components/skill-effect-host.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "particles",
-      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
-      "tokenCount": 23,
-      "sourceTokensSha256": "597687ded0ce5fbd1d9f30a5b379d6426b0ba47ccc89a4c8854bf9da8c6aceb9",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/unreal/un-terrain-sector.ts",
-        ".assets/reference/lineage2js/src/physics/components/pawn-movement-component.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "particles",
-      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
-      "tokenCount": 20,
-      "sourceTokensSha256": "8aaa70ec36ac99f0b0ae1cbd98bdbaef34c1ba7c0bec1ca9791497f79011c587",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/objects/emitters/instanced-sprite-mesh.ts",
-        ".assets/reference/lineage2js/src/physics/collision-primitive.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "particles",
-      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
-      "tokenCount": 21,
-      "sourceTokensSha256": "ecf4f8993d8559bd88c1758c5ce28ea4a521f7742590a2854c2ce8dee53006c2",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/physics/collision-primitive.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "particles",
-      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
-      "tokenCount": 23,
-      "sourceTokensSha256": "e9737199f04644320abcf90924a48b6012eb22abc15f3e0881d0d05af779b109",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/decoders/icon-decoder.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
       "area": "movement",
       "sourceFile": "src/scene/world/movement/core/behindViewCamera.ts",
       "tokenCount": 22,
@@ -20038,10 +19849,250 @@
     {
       "area": "particles",
       "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
+      "tokenCount": 24,
+      "sourceTokensSha256": "b6594acbc63b3df6e7696aa205048bcf2c0d6cde0c8bc7c4ebf0826fbfcfe226",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decoders/batch-data.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-10",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "particles",
+      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
+      "tokenCount": 22,
+      "sourceTokensSha256": "ba5851a01b83a1d20c2b41f6210515ead8bb925ecef179328a61bb378dde87a6",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/physics/components/pawn-movement-component.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-10",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "particles",
+      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
+      "tokenCount": 20,
+      "sourceTokensSha256": "99118c031f389731409903752262bb2ad4fb0f3846c21b3eb462b157d8280394",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/physics/collision-world.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-10",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "particles",
+      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
+      "tokenCount": 27,
+      "sourceTokensSha256": "f63ca02dec11d154d52ff41c460ac21578a6de109b2b082f3e5ee837466843c2",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/physics/collision-primitive.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-10",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "particles",
+      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
+      "tokenCount": 24,
+      "sourceTokensSha256": "6cb2be6a74cf4b5ea82a8db17873625d4c1e977ee8b9d69de12b9aa59e39a50c",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/physics/collision-primitive.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-10",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "particles",
+      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
+      "tokenCount": 25,
+      "sourceTokensSha256": "a5e91053654b9472992a824ae3bc4f40ffafe2c9e08eafab601e0b8ed99974cd",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/physics/collision-primitive.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-10",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "particles",
+      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
+      "tokenCount": 23,
+      "sourceTokensSha256": "fd9a14ced992582528e20ffc672f7abbd6c739ca276ff2ec4d577458cf1529fb",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/physics/collision-primitive.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-10",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "particles",
+      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
+      "tokenCount": 24,
+      "sourceTokensSha256": "23962c0e6e32342a176a549359d3081722bd71fdd48c392077dc2bd9a7dc3c98",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/physics/collision-primitive.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-10",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "particles",
+      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
+      "tokenCount": 23,
+      "sourceTokensSha256": "840acfa8341ab567d00b4f20f0f0a7178ec4ce2b7efa5743e9955be1b9fb7b7e",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/unreal/un-sample-light.ts",
+        ".assets/reference/lineage2js/src/physics/collision-primitive.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-10",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "particles",
+      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
+      "tokenCount": 24,
+      "sourceTokensSha256": "35ff36ebe4f7fa78198c1b152f86d89ef97668168fa20a802e4fd8fe3a6a9e40",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/physics/collision-primitive.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-10",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "particles",
+      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
+      "tokenCount": 20,
+      "sourceTokensSha256": "bef4c1e242151078f27bfffbdb59094daf01ba0892dd5817d8d2413d16f2e641",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/physics/collision-primitive.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-10",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "particles",
+      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
+      "tokenCount": 25,
+      "sourceTokensSha256": "de157815782f6388f04a3c40bc2ba66f1b8bb578cd646e28b16bc9ff53a9d1bf",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/physics/components/pawn-movement-component.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-10",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "particles",
+      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
       "tokenCount": 21,
-      "sourceTokensSha256": "1b5681de64ede2f3e1051a13146890ae97add542490623224135947a653082ec",
+      "sourceTokensSha256": "0b0d19f7016502e5649d4e67d87dc83d66de5e132d6b67de2bb7e2dd1c6473ef",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decode-worker/decode-engine.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/skills/skill-effect-host.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/un-terrain-sector.ts",
+        ".assets/reference/lineage2js/src/objects/components/skill-effect-host.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-10",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "particles",
+      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
+      "tokenCount": 23,
+      "sourceTokensSha256": "e6204c7281404e646c2f09a4a42692fddfe4495eeb6e09a900133acbce6ae180",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/unreal/un-terrain-sector.ts",
+        ".assets/reference/lineage2js/src/physics/components/pawn-movement-component.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-10",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "particles",
+      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
+      "tokenCount": 20,
+      "sourceTokensSha256": "ae96f2364afadc3a46da48b70447b5a92786e319afbfb5e5b63a33df53a49142",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/objects/emitters/instanced-sprite-mesh.ts",
+        ".assets/reference/lineage2js/src/physics/collision-primitive.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-10",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "particles",
+      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
+      "tokenCount": 21,
+      "sourceTokensSha256": "aab02ecd2618a8b5d2fc5fa0eb22eca12609e6453009ef7a60fdecf557a55788",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/physics/collision-primitive.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-10",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "particles",
+      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
+      "tokenCount": 21,
+      "sourceTokensSha256": "f8d09fcbaf2a917357336a5224d78b968ca5ea5953c96c393596f676f2b6d92e",
       "referenceFiles": [
         ".assets/reference/lineage2js/src/assets/decoders/texture-decoder.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-10",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "particles",
+      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
+      "tokenCount": 24,
+      "sourceTokensSha256": "91b72b1238e62aa1f44e25e28d930ef323de998a45ee1f82b6b2ab5eeeef0c51",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decoders/batch-data.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-10",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "particles",
+      "sourceFile": "src/effects/particles/sim/ribbonEmitter.ts",
+      "tokenCount": 23,
+      "sourceTokensSha256": "c5092ce497a2445617c34d0ea391c115532d911b1989837af04a38bc106d256b",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decoders/icon-decoder.ts"
       ],
       "verdict": "generic",
       "reviewedOn": "2026-11-10",
