@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-67-PLAN.md
-last_updated: "2026-11-10T22:36:50.636Z"
+stopped_at: Completed 02-49-PLAN.md
+last_updated: "2026-11-10T23:58:51.499Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 02 plan 02-66 complete (pawn physics, follow camera and movement presenter)
-state_head: 7bd833808e0aa56360c8479a24cf9981695cd113
+state_head: ac5a8c3f4f15d7c07bb3e7929416f3d903daddb0
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 84
+  completed_plans: 85
   percent: 0
 ---
 
@@ -136,6 +136,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 2 P64 | 40min | 3 tasks | 34 files |
 | Phase 2 P50 | 40min | 3 tasks | 18 files |
 | Phase 02 P67 | 105min | 3 tasks | 55 files |
+| Phase 02 P49 | 72 min | 3 tasks | 28 files |
 
 ## Accumulated Context
 
@@ -332,6 +333,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 2]: 02-50: registry, gap-row file, census CLI and ownership follow repository rules the plan text predates (row 717)
 - [Phase 02]: 02-67: one movement path through the MOVE-01 port: move-local becomes a move record, the presenter moves pawns over the whole selected tile's collision cells until 02-49 adds the ring, intents leave after the frame; the BSP tree decoder checks only referenced vertex entries (OVERNIGHT-DECISIONS rows 718 to 722)
 - [Phase 02]: 02-67: follow camera is CalcBehindView with the orbit radius as unobstructed distance; maxZ follows fogEnd while fog is on (owner review); one transparent comparator by distance then emitter ordinal; synthetic movement and mesh navigation deleted, WorldNavigation kept for its lane importers; VIS-01 closes, MAT-02, MOVE-01 and WORLD-05 stay Pending (rows 723 to 730)
+- [Phase 02]: 02-49: the tile route streams the selected tile and its converted neighbours in player-centred rings (1, 2, 3 chunk edges, presentation), cells required before load and removed before disposal, null-level culling on visual meshes; the runtime provides the collision context before the world loads; the 128-unit tile seam drops the player at a border (OVERNIGHT-DECISIONS rows 734 to 744)
 
 ### Pending Todos
 
@@ -450,6 +452,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-10T22:36:50.181Z
-Stopped at: Completed 02-67-PLAN.md
+Last session: 2026-11-10T23:58:51.084Z
+Stopped at: Completed 02-49-PLAN.md
 Resume file: None
