@@ -28,7 +28,18 @@ const emittersSha256 = "5".repeat(64);
 const mapEmitters = { kind: "map-emitters", manifest: `/l2/map-emitters/${emittersSha256}/tile-emitters.json`, manifestSha256: emittersSha256,
   manifestBytes: 900 };
 
+const worldAudio = ["a", "b"].map(character => ({ kind: "world-audio", manifest: `/l2/world-audio/${character.repeat(64)}/manifest.json`,
+  manifestSha256: character.repeat(64), manifestBytes: 700 }));
+const skySha256 = "d".repeat(64);
+const sky = { kind: "sky", manifest: `/l2/skies/${skySha256}/manifest.json`, manifestSha256: skySha256, manifestBytes: 3716 };
+
 describe("native tile manifest resources", () => {
+  it("accepts one sky bundle and one world-audio resource per written audio manifest, never the same manifest twice", () => {
+    expect(parseNativeTileManifest(tileManifest([sky, ...worldAudio])).resources.map(resource => resource.kind)).toEqual(["sky", "world-audio", "world-audio"]);
+    expect(() => parseNativeTileManifest(tileManifest([sky, sky]))).toThrow(/lists more than one sky resource/);
+    expect(() => parseNativeTileManifest(tileManifest([worldAudio[0], worldAudio[0]]))).toThrow(/lists the resource \/l2\/world-audio\/a{64}\/manifest\.json twice/);
+  });
+
   it("reads exactly the resource kinds of the tile manifest vocabulary the Python validator reads", () => {
     const vocabulary = JSON.parse(readFileSync(tileManifestVocabularyPath, "utf8")) as { readonly resourceKinds: readonly string[] };
     expect([...nativeTileResourceKinds].sort()).toEqual([...vocabulary.resourceKinds].sort());

@@ -18,7 +18,10 @@ from reference_client_guard import ReferenceClientLockError
 import world.exact_sound_sources as exact_sound_sources
 from world.ambient_sound_inventory import AmbientEmitterUnreadable, ambient_emitter_row, inventory_ambient_sounds
 from world.exact_sound_sources import ConvertedSound, ResolvedSound, SoundSourceGap, convert_exact_sound, resolve_exact_sound
+from world.music_volume_join import join_music_volumes
 from world.placement_audio_inventory import inventory_placement_audio, placement_audio_properties
+import world.tile_music as tile_music
+from world.tile_manifest_step import tile_resources
 from world.tile_step_gap_rows import TileStepGapRows
 from world.world_audio_step import (CORE_LIBRARY_PATH, PLACEMENT_AUDIO_KIND, WORLD_AUDIO_STEP_ALGORITHM_VERSION, WORLD_AUDIO_STEP_NAME,
                                     core_library_radius, placement_audio_bundle)
@@ -175,6 +178,60 @@ class WorldAudioRecordTests(unittest.TestCase):
             self.assertTrue(is_listed_reason(reason, patterns), reason)
 
 
+def music_volume(music_id, object_name):
+    return {'object': object_name, 'exportIndex': music_id % 100, 'musicId': music_id}
+
+
+class MusicJoinTests(unittest.TestCase):
+    rows = [{'id': 7, 'title': [{'name': 'B_TRACK'}, {'name': 'a_track'}]}, {'id': 8, 'title': [{'name': 'B_TRACK'}]}, {'id': 9, 'title': [{'name': 'twin'}]}]
+    lock_rows = ['music/a_track.ogg', 'music/b_track.ogg', 'music/twin.ogg', 'Music/TWIN.ogg', 'sounds/a_track.ogg']
+
+    def test_each_volume_keeps_its_musicinfo_order_and_one_casefold_file_per_string(self):
+        joins, gaps = join_music_volumes([music_volume(7, '00_00.MusicVolume0'), music_volume(8, '00_00.MusicVolume1')], self.rows, self.lock_rows)
+        self.assertEqual(gaps, [])
+        self.assertEqual([(join.ordered_strings, join.music_files) for join in joins],
+                         [(['B_TRACK', 'a_track'], ['music/b_track.ogg', 'music/a_track.ogg']), (['B_TRACK'], ['music/b_track.ogg'])])
+
+    def test_a_missing_row_or_an_ambiguous_file_is_an_unresolved_join(self):
+        joins, gaps = join_music_volumes([music_volume(6, '00_00.MusicVolume0'), music_volume(9, '00_00.MusicVolume1')], self.rows, self.lock_rows)
+        self.assertEqual(joins, [])
+        self.assertEqual([gap.reason for gap in gaps], ['music-join-unresolved:6', 'music-join-unresolved:9'])
+
+    def test_a_refused_music_volume_census_is_one_tile_gap_with_its_refusal_text(self):
+        gaps = TileStepGapRows(TILE_ID, WORLD_AUDIO_STEP_NAME, SOURCE_IDENTITY, EVIDENCE)
+        with patch.object(tile_music, 'music_volumes', side_effect=ValueError('Unsupported serialized brush transform: Rotation')):
+            volumes, refusal = tile_music.tile_music_volumes(b'', 'maps/00_00.unr', gaps)
+        self.assertEqual((volumes, refusal), ([], 'Unsupported serialized brush transform: Rotation'))
+        self.assertEqual([row['reason'] for row in gaps.rows()], ['music-volume-unreadable'])
+
+    def test_a_missing_encoder_is_an_unpinned_derivative_gap(self):
+        gaps = TileStepGapRows(TILE_ID, WORLD_AUDIO_STEP_NAME, SOURCE_IDENTITY, EVIDENCE)
+        with patch.object(tile_music.shutil, 'which', return_value=None):
+            self.assertEqual(tile_music.pinned_encoder(tile_music.music_derivative_spec(), gaps), (None, None))
+        self.assertEqual([row['reason'] for row in gaps.rows()], ['music-derivative-encoder-unpinned'])
+
+    def test_a_source_that_is_not_44_1_khz_stereo_is_refused_before_encoding(self):
+        client_access = SimpleNamespace(require_equal_file=lambda relative: SimpleNamespace(read_bytes=lambda: b'original'))
+        facts = {'channels': 1, 'sampleRate': 22050, 'patch': {}}
+        with patch.object(tile_music, 'restore_l2_ogg', return_value=(b'original', facts)), patch.object(tile_music, 'unpatch', return_value=b'original'), \
+                patch.object(tile_music, 'encode') as encode:
+            with self.assertRaises(tile_music.MusicTrackRefused) as caught:
+                tile_music.music_track(client_access, 'music/a.ogg', 'A', tile_music.music_derivative_spec(), 'ffmpeg', {})
+        self.assertEqual(caught.exception.reason, 'music-format-unsupported:1/22050')
+        encode.assert_not_called()
+
+    def test_the_encoder_pin_lives_in_the_world_recipe(self):
+        self.assertEqual(tile_music.music_derivative_spec()['encoder']['sha256'], 'e8de88d0fc5993b76af6337a68f886abc8a052bbbe437b1d2c1b0fde0534582a')
+
+    def test_every_written_audio_manifest_is_a_world_audio_resource(self):
+        manifests = [{'kind': kind, 'resource': f'/l2/world-audio/{character * 64}/manifest.json', 'sha256': character * 64, 'bytes': 10}
+                     for kind, character in (('native-map-music', 'b'), ('native-map-ambience', 'a'))]
+        resources = tile_resources(None, None, None, None, None, {'manifests': manifests, 'gapRows': []})
+        self.assertEqual([(resource['kind'], resource['manifestSha256']) for resource in resources], [('world-audio', 'a' * 64), ('world-audio', 'b' * 64)])
+        for reason in ('music-join-unresolved:6', 'music-volume-unreadable', 'music-format-unsupported:1/22050', 'music-derivative-encoder-unpinned'):
+            self.assertTrue(is_listed_reason(reason, load_gap_reason_patterns(ROOT)), reason)
+
+
 @unittest.skipUnless(REFERENCE_CLIENT.is_dir() and STAGED_AMBIENCE_MANIFEST.is_file(),
                      'the conversion client E:/Lineage2-client or the staged 20_20 ambience in public/l2 is absent')
 class RealClientAudioTests(unittest.TestCase):
@@ -195,6 +252,27 @@ class RealClientAudioTests(unittest.TestCase):
         ambience = json.loads(dict(bundles)[AMBIENCE_KIND]['manifest.json'])
         self.assertEqual(ambience['emitters'], staged['emitters'])
         self.assertEqual([sound['sha256'] for sound in ambience['sounds']], [sound['sha256'] for sound in staged['sounds']])
+
+    def test_the_20_20_music_join_equals_the_world_07_fixture(self):
+        from native_catalog.tables import decode_table
+        from native_assets_lib.world_music import music_volumes
+        from reference_client_guard import require_reference_client
+        from world.music_volume_join import musicinfo_rows
+        fixture = json.loads((ROOT / 'tests/fixtures/world-07/music-id-join.json').read_text(encoding='utf-8'))
+        client_access = require_reference_client(REFERENCE_CLIENT)
+        volumes = music_volumes(client_access.require_equal_file('maps/20_20.unr').read_bytes(), 'maps/20_20.unr')
+        joins, gaps = join_music_volumes(volumes, musicinfo_rows(decode_table(REFERENCE_CLIENT.resolve(), 'musicinfo')),
+                                         tile_music.lock_equal_paths(client_access))
+        self.assertEqual(gaps, [])
+        observed = [{'object': join.volume['object'], 'exportIndex': join.volume['exportIndex'], 'nMusicID': join.music_id,
+                     'orderedStrings': join.ordered_strings,
+                     'files': [(Path(path).name.casefold(), client_access.lock.record(path)['eSha256']) for path in join.music_files]} for join in joins]
+        expected = [{'object': row['volumeEvidence']['object'], 'exportIndex': row['volumeEvidence']['exportIndex'],
+                     'nMusicID': row['volumeEvidence']['nMusicID'], 'orderedStrings': row['musicinfo']['orderedStrings'],
+                     'files': [(match['filenameMatches'][0]['pathBasename'].casefold(), match['filenameMatches'][0]['sha256'])
+                               for match in row['filenameJoins']]}
+                    for row in fixture['joins']]
+        self.assertEqual(observed, expected)
 
 
 if __name__ == '__main__':

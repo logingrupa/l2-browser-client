@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-music-derivative-encoder",
+  "copiedFrom": {
+    "recipe": "recipes/native-music-20_20.json",
+    "block": "derivative"
+  },
+  "derivative": {
+    "kind": "aac-m4a",
+    "label": "derived AAC for browsers that cannot decode Ogg Vorbis (iOS Safari); not an original payload",
+    "mime": "audio/mp4",
+    "encoder": {
+      "name": "ffmpeg",
+      "version": "7.0-full_build-www.gyan.dev",
+      "sha256": "e8de88d0fc5993b76af6337a68f886abc8a052bbbe437b1d2c1b0fde0534582a"
+    },
+    "args": [
+      "-v",
+      "error",
+      "-nostdin",
+      "-y",
+      "-threads",
+      "1",
+      "-i",
+      "{input}",
+      "-map",
+      "0:a:0",
+      "-map_metadata",
+      "-1",
+      "-c:a",
+      "aac",
+      "-b:a",
+      "128k",
+      "-ar",
+      "44100",
+      "-ac",
+      "2",
+      "-fflags",
+      "+bitexact",
+      "-flags:a",
+      "+bitexact",
+      "-movflags",
+      "+faststart",
+      "-f",
+      "mp4",
+      "{output}"
+    ]
+  }
+}

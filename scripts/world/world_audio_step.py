@@ -20,6 +20,7 @@ from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import raw_unit_fingerprint, read_locked_map_package
 from world.tile_json_resource import BUNDLE_MANIFEST_NAME, write_tile_resource_bundle
+from world.tile_music import MUSIC_KIND, convert_tile_music, music_derivative_spec
 from world.tile_step_gap_rows import TileStepGapRows, tile_step_summary_row
 
 WORLD_AUDIO_STEP_ALGORITHM_VERSION = 1
@@ -54,7 +55,8 @@ def world_audio_ledger(project_root):
 def world_audio_unit_config(project_root, tile_id, lock_record):
     return {'rawFingerprint': raw_unit_fingerprint(project_root, tile_id, lock_record)[0],
             'placementPropertiesSha256': sha256_hex(canonical_json_bytes(list(placement_audio_properties()))),
-            'radiusSymbolsSha256': sha256_hex(canonical_json_bytes(radius_symbols()))}
+            'radiusSymbolsSha256': sha256_hex(canonical_json_bytes(radius_symbols())),
+            'musicDerivativeSha256': sha256_hex(canonical_json_bytes(music_derivative_spec()))}
 
 
 def world_audio_product_path(ledger, unit_key):
@@ -200,7 +202,12 @@ def convert_tile_audio(project_root, client, tile_id, lock_record, raw_products,
     if placements:
         files, coverage['placementAudio'] = placement_audio_bundle(tile_id, lock_record, placements, properties, sounds, gaps)
         bundles.append((PLACEMENT_AUDIO_KIND, files))
-    return bundles, coverage, [*sounds.package_paths(), *extra_inputs]
+    map_data = sounds.client_access.require_equal_file(tile_map_path(tile_id)).read_bytes()
+    music = convert_tile_music(client, sounds.client_access, tile_id, lock_record, map_data, gaps)
+    coverage['music'] = music.coverage
+    if music.files is not None:
+        bundles.append((MUSIC_KIND, music.files))
+    return bundles, coverage, [*sounds.package_paths(), *extra_inputs, *music.input_paths]
 
 
 def run_world_audio_step(project_root, client_root, tile_id):

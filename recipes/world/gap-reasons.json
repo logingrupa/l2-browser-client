@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 9,
+  "listVersion": 10,
   "reasons": [
     "terrain-height-version-unsupported:<version>",
     "terrain-quads-all-hidden",
@@ -19,6 +19,10 @@
     "sky-material-texture-count:<count>",
     "ambient-emitter-unreadable",
     "reference-file-not-lock-equal:<path>",
-    "sound-payload-unverified:<check>"
+    "sound-payload-unverified:<check>",
+    "music-join-unresolved:<musicId>",
+    "music-volume-unreadable",
+    "music-format-unsupported:<channels>/<rate>",
+    "music-derivative-encoder-unpinned"
   ]
 }

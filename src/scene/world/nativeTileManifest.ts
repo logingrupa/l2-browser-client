@@ -19,6 +19,7 @@ const tileResourcePathTemplates = {
   "bsp-visibility": "/l2/maps/<sha256>/native-tile-bsp-visibility/asset.json",
   "map-emitters": "/l2/map-emitters/<sha256>/tile-emitters.json",
   sky: "/l2/skies/<sha256>/manifest.json",
+  "world-audio": "/l2/world-audio/<sha256>/manifest.json",
 } as const;
 
 export type NativeTileResourceKind = keyof typeof tileResourcePathTemplates;
@@ -51,6 +52,7 @@ const anchorFields = ["playerStart", "location"];
 const chunkRecordFields = ["chunkId", "manifest", "manifestSha256", "manifestBytes"];
 const chunkManifestPathPattern = /^\/l2\/maps\/([a-f0-9]{64})\/native-tile-chunk-runtime\/manifest\.json$/;
 const tileResourceFields = ["kind", "manifest", "manifestSha256", "manifestBytes"];
+const repeatableTileResourceKinds: ReadonlySet<NativeTileResourceKind> = new Set(["world-audio"]);
 const isTileResourceKind = (value: unknown): value is NativeTileResourceKind => typeof value === "string" && Object.hasOwn(tileResourcePathTemplates, value);
 const maximumTileResourceBytes = 128 * 1024 * 1024;
 const maximumTileChunks = 256;
@@ -88,7 +90,7 @@ function parseTileResource(resource: unknown, listedKinds: Set<NativeTileResourc
   if (!isTileResourceKind(kind)) {
     throw new Error(`${label} resource kind ${JSON.stringify(kind)} is not in the tile manifest vocabulary (${nativeTileResourceKinds.join(", ")}).`);
   }
-  if (listedKinds.has(kind)) throw new Error(`${label} lists more than one ${kind} resource.`);
+  if (listedKinds.has(kind) && !repeatableTileResourceKinds.has(kind)) throw new Error(`${label} lists more than one ${kind} resource.`);
   const pathTemplate = tileResourcePathTemplates[kind], manifest = resource.manifest, manifestSha256 = resource.manifestSha256;
   if (typeof manifestSha256 !== "string" || !nativeTileSha256Pattern.test(manifestSha256) || typeof manifest !== "string" ||
     manifest !== pathTemplate.replace("<sha256>", manifestSha256)) {
@@ -104,8 +106,13 @@ function parseTileResource(resource: unknown, listedKinds: Set<NativeTileResourc
 
 function parseTileResources(value: unknown, label: string): readonly NativeTileResource[] {
   if (!Array.isArray(value)) throw new Error(`${label} resources must be a list.`);
-  const listedKinds = new Set<NativeTileResourceKind>();
-  return value.map(resource => parseTileResource(resource, listedKinds, label));
+  const listedKinds = new Set<NativeTileResourceKind>(), listedManifests = new Set<string>();
+  return value.map(resource => {
+    const parsed = parseTileResource(resource, listedKinds, label);
+    if (listedManifests.has(parsed.manifest)) throw new Error(`${label} lists the resource ${parsed.manifest} twice.`);
+    listedManifests.add(parsed.manifest);
+    return parsed;
+  });
 }
 
 export function parseNativeTileManifest(input: unknown): NativeTileManifest {
