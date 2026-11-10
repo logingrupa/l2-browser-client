@@ -1,4 +1,8 @@
+import contextlib
+import io
+import json
 from pathlib import Path
+import re
 import sys
 import unittest
 
@@ -6,6 +10,12 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from native_store.canonical_json import canonical_json_bytes
 from world.minimap_join import MINIMAP_JOIN_ALGORITHM_VERSION, join_minimap_sources, locked_tile_grid
+from world.minimap_join_census import MINIMAP_JOIN_CENSUS_RELATIVE_PATH, minimap_join_census, minimap_join_census_bytes, world_map_pieces
+from world.minimap_join_census import main as minimap_join_census_main
+from world.minimap_sources import MinimapSources
+
+LONG_BINARY_RUN_PATTERN = re.compile(r'[A-Za-z0-9+/=]{129,}')
+COMMITTED_CENSUS_PATH = ROOT / MINIMAP_JOIN_CENSUS_RELATIVE_PATH
 
 PACKAGE_SHA256 = '1' * 64
 TABLE_SHA256 = '2' * 64
@@ -136,6 +146,58 @@ class OrderingTests(unittest.TestCase):
         self.assertEqual(result['ruleMatchCounts']['tile-id'], 2)
         self.assertEqual(result['ruleMatchCounts']['zonename-grid'], 1)
         self.assertEqual(result['ruleMatchCounts']['zonename-map'], 0)
+
+
+def synthetic_census_tile_ids():
+    return [f'{column}_{row}' for column in range(15, 27) for row in range(10, 27)][:153]
+
+
+def synthetic_census():
+    sources = MinimapSources({'radar': texture_package('Radar', ['town']), 'town-map': texture_package('town_map', []),
+                              'zone-name': texture_package('l2zonename', ['20_21', '15_10'])},
+                             {'zonename': table('zonename', [zone_row(1, 20, 21, 'Here')]), 'huntingzone': table('huntingzone', [hunting_row(4, 10.0, 100000.0)])})
+    world_map_package = texture_package('L2Font-e', ['int_worldmap2', 'int_worldmap1', 'other'])
+    return minimap_join_census('8' * 64, sources, list(reversed(synthetic_census_tile_ids())), {'20_21': FRAME}, world_map_pieces(world_map_package),
+                               [{'windowId': 'MinimapWnd', 'controlNames': ['Minimap']}])
+
+
+class MinimapJoinCensusTests(unittest.TestCase):
+    def test_the_census_holds_one_row_per_tile_sorted_by_tile_id_with_a_reason_on_every_gap(self):
+        census = synthetic_census()
+        tile_ids = [tile['tileId'] for tile in census['tiles']]
+        self.assertEqual(len(tile_ids), 153)
+        self.assertEqual(tile_ids, sorted(tile_ids))
+        self.assertTrue(all(tile['reason'] for tile in census['tiles'] if tile['status'] == 'gap'))
+        here = next(tile for tile in census['tiles'] if tile['tileId'] == '20_21')
+        self.assertEqual((here['zoneIds'], here['huntingZoneIds'], here['zoneNameTextures']), ([1], [4], ['l2zonename.Group.20_21']))
+
+    def test_package_rows_rule_counts_and_row_counts_are_integers_and_world_map_pieces_are_evidence_only(self):
+        census = synthetic_census()
+        self.assertEqual([(row['path'], row['packageVersion'], row['licensee'], row['reviewed'], row['textureExportCount']) for row in census['packages']],
+                         [('systextures/L2_RadarMap.utx', 123, 28, True, 1), ('systextures/town_map.utx', 123, 28, True, 0),
+                          ('systextures/l2zonename.utx', 123, 28, True, 2)])
+        self.assertTrue(all(type(count) is int for count in census['ruleMatchCounts'].values()))
+        self.assertEqual([row['rowCount'] for row in census['tables']], [1, 1])
+        self.assertEqual((census['worldMapPieces']['pieces'], census['worldMapPieces']['usedByJoin']),
+                         (['L2Font-e.Group.int_worldmap1', 'L2Font-e.Group.int_worldmap2'], False))
+
+    def test_the_census_holds_no_long_binary_run_and_reruns_byte_identically(self):
+        payload = minimap_join_census_bytes(synthetic_census())
+        self.assertIsNone(LONG_BINARY_RUN_PATTERN.search(payload.decode('utf-8')))
+        self.assertEqual(minimap_join_census_bytes(synthetic_census()), payload)
+
+    def test_the_census_writes_only_its_fixed_tracked_doc_and_takes_no_output_option(self):
+        self.assertEqual(MINIMAP_JOIN_CENSUS_RELATIVE_PATH, 'docs/parts/minimap/minimap-join-census.json')
+        with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
+            minimap_join_census_main(['--client', str(ROOT), '--output', 'docs/minimap.json'])
+
+    @unittest.skipUnless(COMMITTED_CENSUS_PATH.is_file(), 'the committed minimap join census is not written yet')
+    def test_the_committed_census_lists_the_153_locked_tiles_without_texture_bytes(self):
+        text = COMMITTED_CENSUS_PATH.read_text(encoding='utf-8')
+        census = json.loads(text)
+        self.assertEqual(len(census['tiles']), 153)
+        self.assertTrue(all(tile['reason'] for tile in census['tiles'] if tile['status'] == 'gap'))
+        self.assertIsNone(LONG_BINARY_RUN_PATTERN.search(text))
 
 
 if __name__ == '__main__':

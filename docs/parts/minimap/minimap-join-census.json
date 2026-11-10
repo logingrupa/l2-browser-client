@@ -1,0 +1,2867 @@
+{
+ "algorithmVersion": 1,
+ "gapReasonCounts": {
+  "minimap-join-unresolved:projection": 141,
+  "minimap-join-unresolved:radar-texture": 153,
+  "minimap-join-unresolved:zone-grid": 153
+ },
+ "lockedGrid": {
+  "maximumX": 26,
+  "maximumY": 26,
+  "minimumX": 15,
+  "minimumY": 10
+ },
+ "minimapControls": [
+  {
+   "controlNames": [
+    "Minimap"
+   ],
+   "windowId": "MinimapWnd"
+  },
+  {
+   "controlNames": [
+    "specialHiddenMap"
+   ],
+   "windowId": "NewRadarWnd"
+  }
+ ],
+ "packages": [
+  {
+   "licensee": 0,
+   "lockEqual": true,
+   "packageVersion": 118,
+   "path": "systextures/L2_RadarMap.utx",
+   "reviewed": false,
+   "role": "radar",
+   "sha256": "f0050b0663b5286092598c440cbdfcb63d2424e1a9010c9450b616db86924abd",
+   "textureExportCount": 18
+  },
+  {
+   "licensee": 23,
+   "lockEqual": true,
+   "packageVersion": 123,
+   "path": "systextures/town_map.utx",
+   "reviewed": false,
+   "role": "town-map",
+   "sha256": "c239eafd3132e65d0d7ac32d9d5d3068e61ab8dcec42192a740655eb220df58c",
+   "textureExportCount": 6
+  },
+  {
+   "licensee": 28,
+   "lockEqual": true,
+   "packageVersion": 123,
+   "path": "systextures/l2zonename.utx",
+   "reviewed": true,
+   "role": "zone-name",
+   "sha256": "ab0eae4e8adaefe1e6dde408247d136848a9665a035a4522e1eb0f224c5a66d7",
+   "textureExportCount": 204
+  }
+ ],
+ "referenceTreeLockSha256": "1957c96800aa45cb10c984f3f2e6f8d1f5f0b1713f086f20560db01f4d1d2b52",
+ "ruleMatchCounts": {
+  "huntingzone-name": 0,
+  "huntingzone-start-in-frame": 11,
+  "tile-id": 153,
+  "tile-id-map": 0,
+  "zonename-grid": 0,
+  "zonename-map": 0,
+  "zonename-name": 0
+ },
+ "schemaVersion": 1,
+ "statusCounts": {
+  "gap": 153
+ },
+ "tables": [
+  {
+   "lockEqual": true,
+   "path": "system/zonename-e.dat",
+   "rowCount": 369,
+   "sha256": "fa879035dfb15483f0dc073c460089e03a3d8a864caccc3c72afa14569586659",
+   "table": "zonename"
+  },
+  {
+   "lockEqual": true,
+   "path": "system/huntingzone-e.dat",
+   "rowCount": 220,
+   "sha256": "658c794efe37538f7c4d6187672cb6012f02392582ddb759447e40c37ea64d2f",
+   "table": "huntingzone"
+  }
+ ],
+ "tiles": [
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "15_20",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.15_20"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "15_21",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.15_21"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "15_22",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.15_22"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "15_23",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.15_23"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "15_24",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.15_24"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "15_25",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.15_25"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "15_26",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.15_26"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "16_10",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.16_10"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "16_11",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.16_11"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "16_12",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.16_12"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "16_19",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.16_19"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "16_20",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.16_20"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "16_21",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.16_21"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "16_22",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.16_22"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "16_23",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.16_23"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "16_24",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.16_24"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture"
+   ],
+   "huntingZoneIds": [
+    52,
+    53,
+    65
+   ],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "16_25",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.16_25"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "16_26",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.16_26"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "17_10",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.17_10"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "17_11",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.17_11"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "17_12",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.17_12"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "17_18",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.17_18"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "17_19",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.17_19"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "17_20",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.17_20"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "17_21",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.17_21"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "17_22",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.17_22"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "17_23",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.17_23"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "17_24",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.17_24"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "17_25",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.17_25"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "17_26",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.17_26"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "18_10",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.18_10"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "18_11",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.18_11"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "18_12",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.18_12"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "18_13",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.18_13"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "18_14",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.18_14"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "18_15",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.18_15"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "18_17",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.18_17"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "18_18",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.18_18"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "18_19",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.18_19"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture"
+   ],
+   "huntingZoneIds": [
+    78,
+    88,
+    162
+   ],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "18_20",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.18_20"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "18_21",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.18_21"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture"
+   ],
+   "huntingZoneIds": [
+    38,
+    61
+   ],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "18_22",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.18_22"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "18_23",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.18_23"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "18_24",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.18_24"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "18_25",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.18_25"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "18_26",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.18_26"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "19_10",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.19_10"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "19_11",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.19_11"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "19_13",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.19_13"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "19_14",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.19_14"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "19_15",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.19_15"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "19_16",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.19_16"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "19_17",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.19_17"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "19_18",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.19_18"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "19_19",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.19_19"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "19_20",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.19_20"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "19_21",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.19_21"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "19_22",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.19_22"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "19_23",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.19_23"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "19_24",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.19_24"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "19_25",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.19_25"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "20_10",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.20_10"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "20_11",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.20_11"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "20_13",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.20_13"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "20_14",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.20_14"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "20_15",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.20_15"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "20_16",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.20_16"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "20_17",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.20_17"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "20_18",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.20_18"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "20_19",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.20_19"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture"
+   ],
+   "huntingZoneIds": [
+    71
+   ],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "20_20",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.20_20"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture"
+   ],
+   "huntingZoneIds": [
+    4,
+    5
+   ],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "20_21",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.20_21"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "20_22",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.20_22"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "20_23",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.20_23"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "20_24",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.20_24"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "20_25",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.20_25"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "21_13",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.21_13"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "21_14",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.21_14"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "21_15",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.21_15"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "21_16",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.21_16"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "21_17",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.21_17"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "21_18",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.21_18"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "21_19",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.21_19"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "21_20",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.21_20"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "21_21",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.21_21"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "21_22",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.21_22"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "21_23",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.21_23"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "21_24",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.21_24"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "21_25",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.21_25"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "22_13",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.22_13"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "22_14",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.22_14"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "22_15",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.22_15"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "22_16",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.22_16"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "22_17",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.22_17"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "22_18",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.22_18"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "22_19",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.22_19"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "22_20",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.22_20"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "22_21",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.22_21"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "22_22",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.22_22"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "22_23",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.22_23"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "22_24",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.22_24"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "22_25",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.22_25"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "22_26",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.22_26"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "23_10",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.23_10"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "23_11",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.23_11"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "23_12",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.23_12"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "23_13",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.23_13"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "23_14",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.23_14"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "23_15",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.23_15"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "23_16",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.23_16"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "23_17",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.23_17"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "23_18",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.23_18"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "23_19",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.23_19"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "23_20",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.23_20"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "23_21",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.23_21"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "23_22",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.23_22"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "23_23",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.23_23"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "23_24",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.23_24"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "23_25",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.23_25"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "23_26",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.23_26"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "24_10",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.24_10"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "24_11",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.24_11"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "24_12",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.24_12"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "24_13",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.24_13"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "24_14",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.24_14"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "24_15",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.24_15"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "24_16",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.24_16"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "24_17",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.24_17"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "24_18",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.24_18"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "24_19",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.24_19"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "24_20",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.24_20"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "24_21",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.24_21"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "24_22",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.24_22"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "24_23",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.24_23"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "24_24",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.24_24"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "24_25",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.24_25"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "24_26",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.24_26"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "25_10",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.25_10"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "25_11",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.25_11"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "25_12",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.25_12"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "25_14",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.25_14"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "25_15",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.25_15"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "25_16",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.25_16"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "25_17",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.25_17"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "25_18",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.25_18"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "25_19",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.25_19"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "25_20",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.25_20"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "25_21",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.25_21"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "26_11",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.26_11"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "26_12",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.26_12"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "26_14",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.26_14"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "26_15",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.26_15"
+   ]
+  },
+  {
+   "gapReasons": [
+    "minimap-join-unresolved:zone-grid",
+    "minimap-join-unresolved:radar-texture",
+    "minimap-join-unresolved:projection"
+   ],
+   "huntingZoneIds": [],
+   "projection": null,
+   "radarTexture": null,
+   "reason": "minimap-join-unresolved:zone-grid",
+   "status": "gap",
+   "tileId": "26_16",
+   "townMapTextures": [],
+   "zoneIds": [],
+   "zoneNameTextures": [
+    "l2zonename.26_16"
+   ]
+  }
+ ],
+ "tilesWithFrame": 12,
+ "worldMapPieces": {
+  "citation": "Elbera tools/maps/build_minimap.py at 12c9656",
+  "lockEqual": true,
+  "path": "systextures/L2Font-e.utx",
+  "pieces": [
+   "L2Font-e.Minimap.int_worldmap1",
+   "L2Font-e.Minimap.int_worldmap2",
+   "L2Font-e.Minimap.int_worldmap3",
+   "L2Font-e.Minimap.int_worldmap4",
+   "L2Font-e.Minimap.int_worldmap5",
+   "L2Font-e.Minimap.int_worldmap6"
+  ],
+  "sha256": "09233daa245cc84f4661c0cc401087b89b598d4ed045cbe7fe0aef6271a364e3",
+  "usedByJoin": false
+ },
+ "zoneRowsOutsideGrid": 21
+}
