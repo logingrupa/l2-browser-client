@@ -385,6 +385,12 @@ Integration thread (rule 4: only the integration thread writes the main checkout
 
 Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in this run and leaves this list when it lands.
 
+- WorldNavigation lane handoff (02-67, row 726): `src/world/WorldNavigation.ts` stays only as a type. The actors lane moves `src/audio/footstepSurfaceGround.ts` and `src/audio/nativeFootstepPreview.ts` off `WorldGroundContact`, and the world lane moves `src/scene/world/nativeDoorInteractions.ts` and `src/scene/world/nativeGroundContact.ts` to collision world queries; then the file and its `importBoundaries.test.ts` listing go.
+- Camera environment accessor (02-67, row 725): the runtime re-reads the tile lighting inspection when the camera zone changes; the world lane exposes the camera environment from `NativeSection` once fog info or water volumes become inputs.
+- Behind-view trace cost (02-67, row 723): `calculateBehindView` walks every resident primitive for its box trace; the movement core adds spatial culling before PERF-02 measures movement on the GTX 1060.
+- Arrival on slopes (02-67, row 728): one 20_21 walk ended 0.02 units from its goal, past the 0.01 arrival slack, and closed with a stuck cannot-move; the movement core checks the floor-band step against the arrival rule.
+- `tests/browser/nativeBsp.spec.ts` still pins mesh-contact heights from the absent Actor940 oracle (it skips); rewrite it against the collision world once the oracle is restaged (02-67).
+
 - Minimap radar source (02-50, rows 710 to 717): no export of `L2_RadarMap.utx` (118/0, 18 town-named textures) equals a tile id, `<tile id>_map` or a zone `map` value, so all 153 census tiles are `minimap-join-unresolved:radar-texture` gaps; 21 zonename rows hold MapX or MapY outside the locked grid, so zone joins are `zone-grid` gaps. Find the client data that names the per-tile radar image or a sourced georeference for the `int_worldmap` pieces, and settle the out-of-grid rows on IMPORTA, before 02-51 draws the minimap.
 
 - Map emitter playback (02-61, 02-69, 02-64, rows 651 and 696): the tile inspection lists each placement with its `memberVisible` gate, but none reaches `playTileMapEmitters`: the emitter records keep unparsed struct fields (row 668), no class defaults are merged and their meshes and textures are unconverted. Merge the class defaults in the emitters step, decode the structs, convert the referenced resources, then start the playable placements with a placement view.
