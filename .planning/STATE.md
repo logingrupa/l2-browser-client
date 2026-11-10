@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-62-PLAN.md
-last_updated: "2026-11-10T08:51:42.317Z"
+stopped_at: Completed 02-66-PLAN.md
+last_updated: "2026-11-10T09:33:42.807Z"
 last_activity: 2026-11-10
-last_activity_desc: Phase 02 plan 02-62 complete (BSP lightmaps and tile lighting export)
-state_head: 6f00e9d26a99b307c211f23d8dd2483d790a5bd0
+last_activity_desc: Phase 02 plan 02-66 complete (pawn physics, follow camera and movement presenter)
+state_head: 59d6f10b73192f183dbdb7edf35d055fa35b074c
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 79
+  completed_plans: 80
   percent: 0
 ---
 
@@ -131,6 +131,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 2 P69 | 45min | 3 tasks | 56 files |
 | Phase 02 P46 | 36min | 3 tasks | 19 files |
 | Phase 02 P62 | 60min | 3 tasks | 27 files |
+| Phase 02 P66 | 20min | 3 tasks | 30 files |
 
 ## Accumulated Context
 
@@ -316,6 +317,9 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-46: the audible report under artifacts/lane-store/actors/reports/ is the only record the actors-lane tile audio check writes (row 657)
 - [Phase 02]: 02-46: placementAudio and silentReason reach the world audio sheet after the integration pass-through; music pick, looping, volume selection and ambient gain labelled unverified (rows 659, 660)
 - [Phase 02]: 02-62: BSP lightmaps convert now (D2) through our own reader of the Level.Model tail; the bsp step keys sections by render section lightmap texture (algorithm 2); structured lighting records ride as one RECS.canonicalJson array; WaterVolumes are not in VOLS and stay a named gap; MAT-02 stays Pending (OVERNIGHT-DECISIONS rows 661 to 670)
+- [Phase 02]: 02-66: the movement presenter reads speeds walk and run (required) plus optional swim, fly and nonAttackSpeedRate keys, moveType 1 is run, record positions are feet with the half-height cylinder (OVERNIGHT-DECISIONS rows 671 to 673)
+- [Phase 02]: 02-66: stop snaps remote pawns beyond 200 units, correct snaps, teleport raises the feet by H + 10 and falls; every containing PhysicsVolume is water until VOLS carries WaterVolumes; pawnTraits supplies local player, run start frames and flying (rows 674 to 676)
+- [Phase 02]: 02-66: movement overlap 121 blocking and 2,546 unreviewed runs recorded for the orchestrator review; MOVE-01 and WORLD-05 stay Pending until 02-67 wires the port (rows 679 and 680)
 
 ### Pending Todos
 
@@ -374,7 +378,7 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 - Legacy 20_20 chain (rows 373, 418 and 505 to 511): 02-29 Task 3 and plan 02-71 are done (oracle extended with the served world-audio and step-sound manifests; raw map, section, terrain patch, Editor append and deco-grass chain cut). 02-30 Task 3 (BSP floor and building) is done. 02-31 Task 3 (movers) and 02-45 Task 4 (sky and the 20_20 audio chain) are done. Still open: 02-47 Task 3 sweeps any survivor and closes this item.
 - NPC batch breadth (rows 379, 420, 425 to 443 and 444): 80 of 429 model units are sealed under the current converter and 4 of 20 packs are written; continue `convert_actors.py --batch npcs --limit 20` slices in later runs, then rewrite the actors lane catalog.
 - BSP surface material files (02-30, row 518): the bsp step writes `native-materials/<sha>/graph.json` and `program.json` for each surface root, but no store manifest pins them, so the lane merge does not carry them; 02-62 (lighting) wrote no material resources, so the pin moves to 02-64, which binds BSP sections to native materials.
-- Water volumes in VOLS (02-62, row 666): `recipes/world/collision-declaration-rules.json` admits only Engine.BlockingVolume and Engine.PhysicsVolume, so the lighting resource links no WaterVolume to VOLS (`lighting-water-volume-unlinked:Gameplay.WaterVolume`, 20_21: 5, 20_20: 4); admit PhysicsVolume subclasses in the collision step together with the MOVE-01 volume kind codes, then rerun collision and lighting.
+- Water volumes in VOLS (02-62, row 666): `recipes/world/collision-declaration-rules.json` admits only Engine.BlockingVolume and Engine.PhysicsVolume, so the lighting resource links no WaterVolume to VOLS (`lighting-water-volume-unlinked:Gameplay.WaterVolume`, 20_21: 5, 20_20: 4); admit PhysicsVolume subclasses in the collision step together with the MOVE-01 volume kind codes, then rerun collision and lighting. 02-66 swimming and the falling water entry read water from VOLS through `volumesContaining`, so they need the same export with bL2WaterVolume, Priority, Gravity and TerminalVelocity (row 675).
 - Struct fields in actor records (02-62, row 668): authored struct values (L2FogInfo AffectRange, FogRange1..5, Colors) come back from `world/actor_field_values.py` as tag bytes; decode the nested tags in that one reader so the lighting records carry Min, Max and the hour colours.
 - Static material reviewed set in the meshes step (02-53, rows 542 and 543): `scripts/world/static_mesh_step.py` builds the `static-material-layout-unreviewed:<v>/<lic>` text itself and its fingerprint ignores `REVIEWED_VERSIONS`; 02-54 makes the fingerprint see the reviewed set, calls `static_material_layout_unreviewed_reason` from `scripts/native_assets_lib/static_materials.py`, and re-runs the meshes step (599 20_21 gap rows become convertible).
 - Lane coverage with the catalog (row 445): `scripts/native_store/write_lane_catalog.py --lane <lane>` regenerates the lane's `coverage.json` from the catalog it just wrote, with a test that a catalog change cannot leave a coverage report pinned to the old catalog.
@@ -418,6 +422,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-10T08:51:41.434Z
-Stopped at: Completed 02-62-PLAN.md
+Last session: 2026-11-10T09:33:41.819Z
+Stopped at: Completed 02-66-PLAN.md
 Resume file: None
