@@ -43,11 +43,8 @@ Rules the generator holds:
 
 Browser (`NATIVE_STORE_ROOT=actors DEV_PORT=5175 pnpm test:e2e tests/browser/sandbox-characters.spec.ts`, 2026-11-10 02:1x Riga, ports 5173 and 5175 free, headless SwiftShader, no FPS claim):
 - Sweep: every census key is spawned with `spawn-character` on `/`. Each shows the marker `character:<index> gap: <reason>` equal to its census reason.
-- The 14 load-check records are `failed` with that marker text, in `artifacts/lane-store/actors/load-checks/64d8fcb444e4b84f8042fc314d9eac6e0073acd3ef0b9ff6944d72e3be588e9f.json`. No key has a pass record.
-- Screenshots:
-  - `artifacts/character-evidence/character-first-1440x900.png`
-  - `artifacts/character-evidence/character-first-932x430.png` (landscape, `isMobile`, `hasTouch`)
-  - `artifacts/character-evidence/characters-sweep-1440x900.png`
+- The 14 load-check records are `failed` with that marker text. No key has a pass record.
+- Screenshots at 1440 x 900 and 932 x 430 landscape (`isMobile`, `hasTouch`); paths under Evidence.
 - The label-only marker can sit outside the camera frame. The DOM and snapshot assertions carry the check.
 - Portrait 430 x 932 has no horizontal scroll with a character spawned.
 
@@ -80,3 +77,16 @@ Item 2, female fighter collision:
 - Animation reference (rows 1, 9, 13): the body mesh names no animation.
 - The shared store still serves the old hair colour 0 and the female fighter 8 / 23.5 until the restage in STATE.md.
 - `recipes/native-player-aliases-stage.json` mirrors the shared store and still lists 8 / 23.5. It changes when that store is restaged.
+
+## Evidence
+
+- Census: `docs/parts/player-characters/character-census.json` (`--batch characters --limit 15`, 2026-11-10; a rerun rewrote it byte-identically with `cacheHit: true`).
+- Generator: `scripts/actors/character_requests.py`, `scripts/actors/character_conversion.py`, `scripts/actors/character_census.py`, run through `scripts/actors/convert_actors.py --character <index>` and `--batch characters --limit <n>`.
+- Recipes with decision H markers: `recipes/native-mfighter.json`, `recipes/native-ffighter.json`, `recipes/native-mmagic.json`, `recipes/native-fmagic.json`, `recipes/native-player-ffighter-stage.json`.
+- Loader: `src/assets/native/loadNativePlayerProfiles.ts` (`{ profiles, unresolved }`) and `src/assets/native/loadNativeCatalog.ts` (the `has unresolved` throw).
+- Pipeline tests: `tests/pipeline/test_character_recipe_unresolved_values.py` (7 OK) and `tests/pipeline/test_character_requests.py` (23 OK, with the row 0 cross-check against `recipes/native-mfighter.json`).
+- Unit tests: `tests/unit/nativePlayerProfiles.test.ts` and `tests/unit/nativeCatalogIndex.test.ts`.
+- Browser: `tests/browser/sandbox-characters.spec.ts`. Load checks: `artifacts/lane-store/actors/load-checks/64d8fcb444e4b84f8042fc314d9eac6e0073acd3ef0b9ff6944d72e3be588e9f.json`.
+- Screenshots: `artifacts/character-evidence/character-first-1440x900.png`, `artifacts/character-evidence/character-first-932x430.png`, `artifacts/character-evidence/characters-sweep-1440x900.png`.
+- Run logs: `artifacts/scratch/02-40/unit-final.log`, `artifacts/scratch/02-40/pipeline-final.log`, `artifacts/scratch/02-40/batch-1.log`, `artifacts/scratch/02-40/batch-2.log`.
+- Plan record: `.planning/phases/02-stage-a-breadth/02-40-SUMMARY.md`; decision rows 571 to 586 in `.planning/OVERNIGHT-DECISIONS.md`.
