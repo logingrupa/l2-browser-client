@@ -95,35 +95,35 @@ export function parseMovementNativeRules(document: unknown): MovementNativeRules
   };
   const constantBackoff = (id: string): CollisionBackoffRule => ({ fraction: 0, minimum: numberRule(id), maximum: numberRule(id) });
   const scaledBackoff = (prefix: string): CollisionBackoffRule => {
-    const backoff = { fraction: numberRule(`${prefix}-fraction`), minimum: numberRule(`${prefix}-minimum`), maximum: numberRule(`${prefix}-maximum`) };
+    const backoff = { fraction: numberRule(`${prefix}Fraction`), minimum: numberRule(`${prefix}Minimum`), maximum: numberRule(`${prefix}Maximum`) };
     if (backoff.minimum > backoff.maximum) throw new MovementRulesError(`${prefix} minimum exceeds its maximum.`);
     return backoff;
   };
   return {
     rows,
-    moveActorExtension: numberRule("collision.move-actor-extension"),
-    nearZeroDelta: numberRule("collision.near-zero-delta"),
+    moveActorExtension: numberRule("collision.moveActorExtension"),
+    nearZeroDelta: numberRule("collision.nearZeroDelta"),
     backoff: {
-      bspRay: constantBackoff("collision.backoff-bsp-ray"),
-      bspBox: scaledBackoff("collision.backoff-bsp-box"),
-      staticMesh: scaledBackoff("collision.backoff-static-mesh"),
-      terrain: constantBackoff("collision.backoff-terrain"),
-      pawnCylinder: constantBackoff("collision.backoff-pawn-cylinder"),
+      bspRay: constantBackoff("collision.backoff.bspRay"),
+      bspBox: scaledBackoff("collision.backoff.bspBox"),
+      staticMesh: scaledBackoff("collision.backoff.staticMesh"),
+      terrain: constantBackoff("collision.backoff.terrain"),
+      pawnCylinder: constantBackoff("collision.backoff.pawnCylinder"),
     },
-    bspPushOutScale: numberRule("collision.bsp-push-out-scale"),
-    bspSideEpsilon: numberRule("collision.bsp-side-epsilon"),
-    parallelEpsilon: numberRule("collision.parallel-epsilon"),
-    bevelAxisDotMinimum: numberRule("collision.bevel-axis-dot-minimum"),
-    bevelCrossSquaredMinimum: numberRule("collision.bevel-cross-squared-minimum"),
-    hullBoxOffset: numberRule("collision.hull-box-offset"),
-    hullPlaneLimit: numberRule("collision.hull-plane-limit"),
-    leafHullFlipBit: numberRule("collision.leaf-hull-flip-bit"),
-    notCsgNodeFlags: numberRule("collision.not-csg-node-flags"),
-    terrainMotionEpsilon: numberRule("collision.terrain-motion-epsilon"),
-    terrainHolesDropCollision: booleanRule("collision.terrain-holes"),
-    cylinderTimeOffset: numberRule("collision.cylinder-time-offset"),
-    cylinderInsideMargin: numberRule("collision.cylinder-inside-margin"),
-    cylinderInwardDot: numberRule("collision.cylinder-inward-dot"),
+    bspPushOutScale: numberRule("collision.bspPushOut"),
+    bspSideEpsilon: numberRule("collision.bspTolerances.side"),
+    parallelEpsilon: numberRule("collision.bspTolerances.parallel"),
+    bevelAxisDotMinimum: numberRule("collision.bspTolerances.bevelAxisDot"),
+    bevelCrossSquaredMinimum: numberRule("collision.bspTolerances.bevelCrossSquared"),
+    hullBoxOffset: numberRule("collision.hullBoxOffsets"),
+    hullPlaneLimit: numberRule("collision.hullPlaneLimit"),
+    leafHullFlipBit: numberRule("collision.leafHullsEncoding"),
+    notCsgNodeFlags: numberRule("collision.isCsg"),
+    terrainMotionEpsilon: numberRule("collision.terrainTriangle"),
+    terrainHolesDropCollision: booleanRule("collision.terrainHoles"),
+    cylinderTimeOffset: numberRule("collision.cylinder.timeOffset"),
+    cylinderInsideMargin: numberRule("collision.cylinder.insideMargin"),
+    cylinderInwardDot: numberRule("collision.cylinder.inwardDot"),
   };
 }
 

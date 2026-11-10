@@ -115,7 +115,7 @@ describe("movement native rules recipe", () => {
       expect(["ue2-data", "unconfirmed", "unknown"]).toContain(row.status);
       expect(row.interludeEvidence).toBeNull();
     }
-    expect(rules.rows.map(row => row.id)).toEqual(expect.arrayContaining(["movement.max-step-height", "movement.min-floor-z"]));
+    expect(rules.rows.map(row => row.id)).toEqual(expect.arrayContaining(["movement.maxStepHeight", "movement.minFloorZ"]));
   });
 
   it("refuses a status outside the shared vocabulary, a missing provenance and a confirmed row without Interlude evidence", () => {
