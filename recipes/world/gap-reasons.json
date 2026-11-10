@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 10,
+  "listVersion": 11,
   "reasons": [
     "terrain-height-version-unsupported:<version>",
     "terrain-quads-all-hidden",
@@ -23,6 +23,9 @@
     "music-join-unresolved:<musicId>",
     "music-volume-unreadable",
     "music-format-unsupported:<channels>/<rate>",
-    "music-derivative-encoder-unpinned"
+    "music-derivative-encoder-unpinned",
+    "lighting-lightmap-index-invalid:<index>",
+    "lighting-payload-too-large",
+    "environment-program-unresolved:<file>"
   ]
 }

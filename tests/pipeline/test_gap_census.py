@@ -98,7 +98,7 @@ class GapCensusWorldTests(unittest.TestCase):
 
     def test_the_step_order_runs_census_first_and_holds_every_lane_step(self):
         self.assertEqual(GAP_CENSUS_STEP_ORDER[0], 'census')
-        for step in ('raw', 'chunks', 'terrain', 'emitters', 'bsp-visibility', 'terrain-material', 'decode', 'layout', 'controls', 'textures', 'npc-model',
+        for step in ('raw', 'chunks', 'terrain', 'emitters', 'bsp-visibility', 'lighting', 'terrain-material', 'decode', 'layout', 'controls', 'textures', 'npc-model',
                      'items'):
             with self.subTest(step):
                 self.assertIn(step, GAP_CENSUS_STEP_ORDER)

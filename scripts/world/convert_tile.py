@@ -16,6 +16,7 @@ from reference_client_guard import require_reference_client
 from world.bsp_step import BSP_STEP_NAME, run_bsp_step
 from world.bsp_visibility_step import BSP_VISIBILITY_STEP_NAME, run_bsp_visibility_step
 from world.collision_step import COLLISION_STEP_NAME, run_collision_step
+from world.lighting_step import LIGHTING_STEP_NAME, run_lighting_step
 from world.map_emitter_step import MAP_EMITTER_STEP_NAME, run_map_emitter_step
 from world.mover_step import MOVER_STEP_NAME, run_mover_step
 from world.raw_map_step import RAW_STEP_NAME, TILE_ID_PATTERN, run_raw_map_step
@@ -31,7 +32,7 @@ SOURCE_TILE_STEPS = {RAW_STEP_NAME: run_raw_map_step, CHUNK_PLAN_STEP_NAME: run_
                      STATIC_MESH_STEP_NAME: run_static_mesh_step, BSP_STEP_NAME: run_bsp_step, MOVER_STEP_NAME: run_mover_step,
                      COLLISION_STEP_NAME: run_collision_step, MAP_EMITTER_STEP_NAME: run_map_emitter_step,
                      BSP_VISIBILITY_STEP_NAME: run_bsp_visibility_step, SKY_STEP_NAME: run_sky_step,
-                     WORLD_AUDIO_STEP_NAME: run_world_audio_step}
+                     WORLD_AUDIO_STEP_NAME: run_world_audio_step, LIGHTING_STEP_NAME: run_lighting_step}
 TILE_STEP_NAMES = (*SOURCE_TILE_STEPS, TILE_MANIFEST_STEP_NAME)
 DEFAULT_TILE_STORE_OUTPUT = Path('artifacts') / 'lane-store' / WORLD_LANE_NAME / 'l2'
 FAILED_ROW_STATUS = 'failed'

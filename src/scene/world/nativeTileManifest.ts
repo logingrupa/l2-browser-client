@@ -20,6 +20,7 @@ const tileResourcePathTemplates = {
   "map-emitters": "/l2/map-emitters/<sha256>/tile-emitters.json",
   sky: "/l2/skies/<sha256>/manifest.json",
   "world-audio": "/l2/world-audio/<sha256>/manifest.json",
+  lighting: "/l2/maps/<sha256>/native-tile-lighting/asset.json",
 } as const;
 
 export type NativeTileResourceKind = keyof typeof tileResourcePathTemplates;

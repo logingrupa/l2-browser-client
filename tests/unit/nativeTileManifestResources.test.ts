@@ -65,6 +65,17 @@ describe("native tile manifest resources", () => {
       .toThrow(/resource kind "toString" is not in the tile manifest vocabulary/);
   });
 
+  it("accepts one pinned lighting typed payload and refuses a second one or a visibility path under the lighting kind", () => {
+    const lightingSha256 = "e".repeat(64);
+    const lighting = { kind: "lighting", manifest: `/l2/maps/${lightingSha256}/native-tile-lighting/asset.json`, manifestSha256: lightingSha256,
+      manifestBytes: 4000 };
+    expect(parseNativeTileManifest(tileManifest([bspVisibility, lighting])).resources.map(resource => resource.kind))
+      .toEqual(["bsp-visibility", "lighting"]);
+    expect(() => parseNativeTileManifest(tileManifest([lighting, lighting]))).toThrow(/lists more than one lighting resource/);
+    expect(() => parseNativeTileManifest(tileManifest([{ ...bspVisibility, kind: "lighting" }])))
+      .toThrow(/lighting resource must be \/l2\/maps\/<sha256>\/native-tile-lighting\/asset\.json with its SHA-256/);
+  });
+
   it("refuses a resource whose byte length is not a whole number from 1 to 128 MiB", () => {
     for (const manifestBytes of [0, 128 * 1024 * 1024 + 1, 1.5]) {
       expect(() => parseNativeTileManifest(tileManifest([{ ...mapEmitters, manifestBytes }])))

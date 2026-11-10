@@ -11,6 +11,7 @@ from native_store.store_paths import confined_child_path, lane_store_root, lane_
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from world.bsp_chunk_geometry import (BSP_POLY_FLAGS_PATH, BspPolygonError, assign_nodes_to_chunks, build_chunk_sections, chunk_bsp_glb, chunk_bsp_record,
                                       drawn_node_indices, fan_triangle_indices, load_bsp_poly_flags, node_source_polygon)
+from world.bsp_lightmaps import lightmap_texture_of_record, read_bsp_lightmaps
 from world.bsp_surface_materials import convert_surface_material, surface_material_identities
 from world.level_model import LevelModelLayoutError, read_level_model
 from world.level_zones import outdoor_zone_indices, read_level_zones, sky_zone_indices
@@ -24,13 +25,12 @@ from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 
-BSP_STEP_ALGORITHM_VERSION = 1
+BSP_STEP_ALGORITHM_VERSION = 2
 BSP_STEP_NAME = 'bsp'
 BSP_CHUNKS_PRODUCT_NAME = 'bsp-chunks.json'
 CHUNK_BSP_FOLDER = 'native-tile-chunk-bsp'
 CHUNK_BSP_RESOURCE_NAME = 'bsp.glb'
 BSP_NODE_OUTSIDE_CHUNK_GRID_REASON = 'bsp-node-outside-chunk-grid'
-UNDECODED_LIGHTMAP_TEXTURE_OF_RECORD = {}
 
 
 def bsp_ledger(project_root):
@@ -140,7 +140,7 @@ def material_store_outputs(project_root, outcomes):
     return [{**record, 'path': (store_root / path).relative_to(store_root.parent).as_posix()} for path, record in sorted(records.items())]
 
 
-def chunk_records(level, chunk_plan, kept_nodes, identities, outcomes, flags, outdoor_zones, gaps):
+def chunk_records(level, chunk_plan, kept_nodes, identities, outcomes, flags, outdoor_zones, lightmap_textures, gaps):
     records, glbs = {}, {}
     materials = {identity: outcome.material for identity, outcome in outcomes.items()}
     for chunk in chunk_plan['chunks']:
@@ -151,7 +151,7 @@ def chunk_records(level, chunk_plan, kept_nodes, identities, outcomes, flags, ou
         if not node_indices:
             records[chunk_id] = chunk_bsp_record(chunk_id, None, None, None, 0, [], [], 0, [])
             continue
-        sections = build_chunk_sections(level.model, node_indices, identities, flags, UNDECODED_LIGHTMAP_TEXTURE_OF_RECORD, outdoor_zones)
+        sections = build_chunk_sections(level.model, node_indices, identities, flags, lightmap_textures, outdoor_zones)
         glb, section_records, node_ranges, triangle_count = chunk_bsp_glb(level.model, chunk_id, sections, materials)
         glbs[chunk_id] = glb
         records[chunk_id] = chunk_bsp_record(chunk_id, '/l2/' + chunk_bsp_store_path(sha256_hex(glb)), sha256_hex(glb), glb, len(node_indices),
@@ -177,6 +177,7 @@ def run_bsp_step(project_root, client_root, tile_id):
         level = read_level_model(package)
         rectangles = chunk_rectangles(chunk_plan, native_terrain(package))
         zones = read_level_zones(package, level.model, ClassDefaults(lane_work_root(project_root, WORLD_LANE_NAME), ReferenceClientClassScripts(client)))
+        lightmap_textures = lightmap_texture_of_record(read_bsp_lightmaps(package, level.model), level.model)
     except LevelModelLayoutError as error:
         return tile_step_row(tile_id, BSP_STEP_NAME, GAP_STATUS, error.reason, source_identity, step_evidence)
     except ValueError as error:
@@ -193,7 +194,7 @@ def run_bsp_step(project_root, client_root, tile_id):
     outcomes, map_sources = surface_materials(used_identities, client, project_root)
     inputs = locked_input_records(sorted({tile_map_path(tile_id), *material_package_paths(map_sources, used_identities)}))
     fingerprint = ledger.unit_fingerprint([record['sha256'] for record in inputs], config)
-    records, glbs = chunk_records(level, chunk_plan, kept_nodes, identities, outcomes, flags, outdoor_zones, gaps)
+    records, glbs = chunk_records(level, chunk_plan, kept_nodes, identities, outcomes, flags, outdoor_zones, lightmap_textures, gaps)
     gap_rows = gaps.rows()
     product = {'tileId': tile_id, 'levelModel': level.binding['model'], 'nodeCount': len(level.model.nodes), 'drawnNodeCount': len(drawn),
                'outdoorZones': sorted(outdoor_zones), 'skyZones': sorted(sky_zones), 'chunks': records,

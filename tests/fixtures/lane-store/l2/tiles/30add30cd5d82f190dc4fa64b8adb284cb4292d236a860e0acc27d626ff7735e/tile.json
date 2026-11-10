@@ -93,6 +93,18 @@
       "evidence": "work/tile__00_00/manifest/receipt.json",
       "key": "tile:00_00",
       "part": "world",
+      "reason": "step-pending:lighting",
+      "sourceIdentity": {
+        "path": "maps/00_00.unr",
+        "sha256": "d561741a8a415ede80cb9ee9650b54a6468bb656aedd88456717cbcf819f76db"
+      },
+      "status": "pending",
+      "step": "lighting"
+    },
+    {
+      "evidence": "work/tile__00_00/manifest/receipt.json",
+      "key": "tile:00_00",
+      "part": "world",
       "reason": "step-pending:meshes",
       "sourceIdentity": {
         "path": "maps/00_00.unr",

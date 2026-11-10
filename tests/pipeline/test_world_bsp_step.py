@@ -183,7 +183,7 @@ class BspManifestTests(unittest.TestCase):
         self.assertEqual((manifest['bsp'], row['status'], row['reason']), (None, 'gap', 'bsp-chunk-without-nodes'))
 
     def test_the_step_version_is_pinned(self):
-        self.assertEqual(BSP_STEP_ALGORITHM_VERSION, 1)
+        self.assertEqual(BSP_STEP_ALGORITHM_VERSION, 2)
 
 
 @unittest.skipUnless(REFERENCE_CLIENT.is_dir(), 'the conversion client E:/Lineage2-client is absent')
