@@ -10,6 +10,9 @@ import type { NativeActionCuePlayer, NativeActionCuePreview } from "../../audio/
 import type { NativeClipPreviewHub } from "./nativeClipPreview";
 import { parseActorClipEvents } from "./actorClipEvents";
 import { listActorClips } from "../../animation/actorClipPlayback";
+import { presentEquippedItem } from "./nativeEquippedItemPresentation";
+import { NativeEquippedBodyPartItems, type EquippedItemPresenter } from "./nativeEquippedBodyPartItems";
+import { servedCatalogEquippedItemSource, type NativeEquippedItemSource } from "./nativeEquippedItemSource";
 
 export type NativeCharacterAssetLoader = (signal: AbortSignal) => Promise<AssetPackage>;
 
@@ -98,7 +101,8 @@ class NativeActorDriver implements CharacterAnimationDriver {
 }
 
 export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeCharacterProfile>, actionCuePreview?: NativeActionCuePreview,
-  footstepPreview?: Pick<NativeActionCuePreview, "bindActor">, clipPreview?: Pick<NativeClipPreviewHub, "register">): CharacterVisualFactory {
+  footstepPreview?: Pick<NativeActionCuePreview, "bindActor">, clipPreview?: Pick<NativeClipPreviewHub, "register">,
+  equippedItemSource: NativeEquippedItemSource = servedCatalogEquippedItemSource()): CharacterVisualFactory {
   return (scene: Scene, initial: WorldEntity, status?: (message: string) => void): CharacterVisual => {
     let unregisterPreview: (() => void) | undefined;
     const root = new TransformNode(`entity:${initial.id}`, scene);
@@ -121,6 +125,9 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
     let bounds: CharacterBounds = { minimum: new Vector3(-.2, 0, -.2), maximum: new Vector3(.2, .45, .2),
       labelHeight: .6, selectionRadius: .25 };
     const profile = profiles.get(initial.appearanceId ?? "");
+    const bodyPartItems = new NativeEquippedBodyPartItems(scene, equippedItemSource, lifetime.signal, message => status?.(message));
+    const presentBodyPartItem: EquippedItemPresenter = (slot, lookup) => presentEquippedItem(slot, lookup, { asset: characterAsset! });
+    const updateBodyPartItems = () => { if (actor && initialized && !disposed) bodyPartItems.update(actor, current.equipment, presentBodyPartItem); };
     const tagMeshes = (owner: NativeActor) => {
       for (const mesh of owner.ownedMeshes()) { mesh.isPickable = mesh.getTotalVertices() > 0; mesh.metadata = { ...mesh.metadata, clientEntityId: initial.id }; }
     };
@@ -161,6 +168,7 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
       if (!readySettled) { readySettled = true; rejectReady(new DOMException("Native character loading was cancelled.", "AbortError")); }
       unregisterPreview?.(); unregisterPreview = undefined;
       animation.dispose(); unpublishedDriverOwningCleanup?.dispose();
+      bodyPartItems.dispose();
       for (const anchor of anchors) anchor.handle.dispose();
       actor?.dispose(); placement?.dispose(); root.dispose();
       actor = undefined; driver = undefined; unpublishedDriverOwningCleanup = undefined; initialized = false;
@@ -233,6 +241,7 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
       placement.parent = root; tagMeshes(actor);
       initialized = true; loaded.root.setEnabled(true); root.setEnabled(true);
       readySettled = true; resolveReady(); status?.(`${initial.displayName}: native model loaded.`);
+      updateBodyPartItems();
     };
     void initialize().catch((error: unknown) => {
       if (disposed) return;
@@ -242,9 +251,9 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
       dispose();
     });
     return { root, animation, ready, get hasNativeModel() { return initialized; }, get bounds() { return bounds; },
-      get missingAssetDiagnostic() { return loadFailureDiagnostic; },
+      get missingAssetDiagnostic() { return loadFailureDiagnostic ?? bodyPartItems.diagnostic; },
       get modelId() { return initialized && characterAsset ? characterAsset.manifest.id : null; },
-      attachmentSnapshot: () => anchors.map(({ id, handle }) => ({ id, ...handle.inspection() })),
+      attachmentSnapshot: () => [...anchors.map(({ id, handle }) => ({ id, ...handle.inspection() })), ...bodyPartItems.anchorSnapshots()],
       attachmentAnchor: id => {
         const handle = anchors.find(row => row.id === id)?.handle;
         return handle?.isValid() ? handle : null;
@@ -264,6 +273,7 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
         driver?.setDead(entity.health <= 0);
         driver?.setLocomotion(entity.locomotion ?? "run");
         updateEquipment();
+        updateBodyPartItems();
       }, dispose };
   };
 }

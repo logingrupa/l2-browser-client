@@ -12,8 +12,9 @@ import shutil
 from actors.actor_arguments import chargrp_index_argument, skill_level_argument, slice_limit_argument, table_id_argument
 from actors.actor_census import SOUND_PACKAGE_SUFFIXES, TEXTURE_PACKAGE_SUFFIXES, ActorPackageCensus
 from actors.actor_unit_inventory import (ACTOR_UNIT_CENSUS_RELATIVE_PATH, CONVERTIBLE_UNIT_STATUS, NO_MESH_IN_ROW_REASON, NPC_MODEL_UNIT_KIND,
-                                         NPC_PART_NAME, conversion_unit_key, convertible_model_unit_count, decoded_table_identity)
+                                         NPC_PART_NAME, conversion_unit_key, model_record_capacity, decoded_table_identity)
 from actors.character_census import CHARACTER_BATCH_NAME, run_character_conversion
+from actors.item_census import ITEM_BATCH_NAME, run_item_conversion
 from actors.npc_requests import (ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX, CONVERTER_REFUSED_REASON_PREFIX, FAILED_STATUS, GAP_STATUS,
                                  NPC_NAME_EMPTY_REASON, NPC_NAME_ROW_MISSING_REASON, NPC_PROFILE_STEP, PASS_STATUS, TRANSIENT_FAILURES,
                                  SOUND_PACKAGE_NOT_IN_CLIENT_STATUS, SOUND_PACKAGE_REFUSED_STATUS, animation_reference_gap_reason,
@@ -54,9 +55,10 @@ IDENTITY_RECORD_NAME = 'sound-and-effect-identities.json'
 NPC_BATCH_NAME = 'npcs'
 SKILL_BATCH_NAME = 'skills'
 ACTOR_SOUNDS_BATCH_NAME = 'actor-sounds'
-CONVERT_ACTORS_DESCRIPTION = ('Convert one NPC id, one skill id and level, one actor sound bundle or one chargrp row, or the next slice of the '
-                              'NPC, skill, actor-sounds or characters batch, into the actors lane store as sealed ledger units: NPC models and '
-                              'profile bundles, skill visual roots, per-bundle combat sounds, or generated character assemblies with their '
+CONVERT_ACTORS_DESCRIPTION = ('Convert one NPC id, one skill id and level, one actor sound bundle, one chargrp row or one item id, or the next '
+                              'slice of the NPC, skill, actor-sounds, characters or items batch, into the actors lane store as sealed ledger '
+                              'units: NPC models and profile bundles, skill visual roots, per-bundle combat sounds, item weapon and armor '
+                              'models, or generated character assemblies with their '
                               'census. --print-batch-plan prints the NPC batch plan and writes nothing.')
 
 
@@ -258,7 +260,7 @@ class NpcConversionRun:
         for record in catalog.get('npcProfiles', []):
             if record['id'] != profile_record['id'] and npc_id in profile_record_npc_ids(self.store_root, record):
                 raise ConvertActorsError(f'{npc_key} already has a profile in lane record {record["id"]}; the NPC batch owns it')
-        catalog = merge_catalog_slice(catalog, 'models', model_record, convertible_model_unit_count(self.census))
+        catalog = merge_catalog_slice(catalog, 'models', model_record, model_record_capacity(self.census))
         catalog = merge_catalog_slice(catalog, 'npcProfiles', profile_record, MAXIMUM_NPC_PROFILE_BUNDLES)
         for slice_name in ('models', 'npcProfiles'):
             catalog[slice_name] = sorted(catalog[slice_name], key=lambda record: record['id'])
@@ -286,6 +288,10 @@ def convert_npc(project_root, client_access, converter, npc_id, ledger_root, sto
     return [model_outcome, profile_outcome]
 
 
+def lane_batch_preflight():
+    require_batch_preflight(REPOSITORY_ROOT, LANE_NAME, BATCH_MINIMUM_FREE_BYTES)
+
+
 def printed_outcome(outcome):
     return {key: outcome[key] for key in ('key', 'step', 'status', 'reason', 'cacheHit')}
 
@@ -304,7 +310,7 @@ def print_batch_plan(client_access):
 def run_batch_slice(client_access, output_root, converter, limit):
     run = NpcConversionRun(REPOSITORY_ROOT, client_access, converter, lane_work_root(REPOSITORY_ROOT, LANE_NAME), output_root)
     plan = batch_plan((run.census, run.npcgrp, run.npcname, run.name_table), client_access.root)
-    report = run_npc_batch_slice(run, plan, limit, lambda: require_batch_preflight(REPOSITORY_ROOT, LANE_NAME, BATCH_MINIMUM_FREE_BYTES))
+    report = run_npc_batch_slice(run, plan, limit, lane_batch_preflight)
     outcomes = report['unitOutcomes'] + report['packOutcomes']
     for outcome in outcomes:
         print(json.dumps(printed_outcome(outcome), sort_keys=True), flush=True)
@@ -316,8 +322,7 @@ def run_batch_slice(client_access, output_root, converter, limit):
 def run_skill_conversion(client_access, output_root, arguments):
     run = SkillEffectConversionRun(REPOSITORY_ROOT, client_access, output_root, lane_work_root(REPOSITORY_ROOT, LANE_NAME))
     if arguments.batch == SKILL_BATCH_NAME:
-        outcomes, summary = convert_skill_batch_slice(
-            run, arguments.limit, lambda: require_batch_preflight(REPOSITORY_ROOT, LANE_NAME, BATCH_MINIMUM_FREE_BYTES))
+        outcomes, summary = convert_skill_batch_slice(run, arguments.limit, lane_batch_preflight)
     else:
         outcomes, summary = convert_skill(run, arguments.skill, arguments.level)
     for outcome in outcomes:
@@ -336,7 +341,8 @@ def main(argv=None):
     mode.add_argument('--skill', type=table_id_argument('--skill'))
     mode.add_argument('--actor-sounds', type=actor_sound_key_argument)
     mode.add_argument('--character', type=chargrp_index_argument)
-    mode.add_argument('--batch', choices=[NPC_BATCH_NAME, SKILL_BATCH_NAME, ACTOR_SOUNDS_BATCH_NAME, CHARACTER_BATCH_NAME])
+    mode.add_argument('--item', type=table_id_argument('--item'))
+    mode.add_argument('--batch', choices=[NPC_BATCH_NAME, SKILL_BATCH_NAME, ACTOR_SOUNDS_BATCH_NAME, CHARACTER_BATCH_NAME, ITEM_BATCH_NAME])
     mode.add_argument('--print-batch-plan', action='store_true')
     parser.add_argument('--level', type=skill_level_argument)
     parser.add_argument('--limit', type=slice_limit_argument)
@@ -359,17 +365,15 @@ def main(argv=None):
             converter = Converter(client_access.root, output_root.parent / CONVERTER_WORK_FOLDER, arguments.umodel)
             if arguments.actor_sounds is not None or arguments.batch == ACTOR_SOUNDS_BATCH_NAME:
                 outcomes = run_actor_sound_conversion(REPOSITORY_ROOT, client_access, converter, output_root, lane_work_root(REPOSITORY_ROOT, LANE_NAME),
-                                                      decode_table, arguments.actor_sounds, arguments.limit,
-                                                      lambda: require_batch_preflight(REPOSITORY_ROOT, LANE_NAME, BATCH_MINIMUM_FREE_BYTES))
-            elif arguments.character is not None or arguments.batch == CHARACTER_BATCH_NAME:
-                outcomes = run_character_conversion(REPOSITORY_ROOT, client_access, converter, output_root, decode_table, arguments,
-                                                    lambda: require_batch_preflight(REPOSITORY_ROOT, LANE_NAME, BATCH_MINIMUM_FREE_BYTES))
-                for outcome in outcomes:
-                    print(json.dumps(printed_outcome(outcome), sort_keys=True), flush=True)
-            elif arguments.batch:
+                                                      decode_table, arguments.actor_sounds, arguments.limit, lane_batch_preflight)
+            elif arguments.batch == NPC_BATCH_NAME:
                 outcomes = run_batch_slice(client_access, output_root, converter, arguments.limit)
             else:
-                outcomes = convert_npc(REPOSITORY_ROOT, client_access, converter, arguments.npc, lane_work_root(REPOSITORY_ROOT, LANE_NAME), output_root)
+                row_conversion = (run_character_conversion if arguments.character is not None or arguments.batch == CHARACTER_BATCH_NAME else
+                                  run_item_conversion if arguments.item is not None or arguments.batch == ITEM_BATCH_NAME else None)
+                outcomes = (row_conversion(REPOSITORY_ROOT, client_access, converter, output_root, decode_table, arguments, lane_batch_preflight)
+                            if row_conversion else
+                            convert_npc(REPOSITORY_ROOT, client_access, converter, arguments.npc, lane_work_root(REPOSITORY_ROOT, LANE_NAME), output_root))
                 for outcome in outcomes:
                     print(json.dumps(printed_outcome(outcome), sort_keys=True), flush=True)
     except (OSError, ValueError) as error:

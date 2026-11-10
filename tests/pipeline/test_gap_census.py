@@ -98,10 +98,12 @@ class GapCensusWorldTests(unittest.TestCase):
 
     def test_the_step_order_runs_census_first_and_holds_every_lane_step(self):
         self.assertEqual(GAP_CENSUS_STEP_ORDER[0], 'census')
-        for step in ('raw', 'chunks', 'terrain', 'emitters', 'bsp-visibility', 'terrain-material', 'decode', 'layout', 'controls', 'textures', 'npc-model'):
+        for step in ('raw', 'chunks', 'terrain', 'emitters', 'bsp-visibility', 'terrain-material', 'decode', 'layout', 'controls', 'textures', 'npc-model',
+                     'items'):
             with self.subTest(step):
                 self.assertIn(step, GAP_CENSUS_STEP_ORDER)
         self.assertLess(GAP_CENSUS_STEP_ORDER.index('raw'), GAP_CENSUS_STEP_ORDER.index('manifest'))
+        self.assertLess(GAP_CENSUS_STEP_ORDER.index('census'), GAP_CENSUS_STEP_ORDER.index('items'))
 
 
 def counted_denominator(count, source='synthetic committed count'):

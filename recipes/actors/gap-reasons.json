@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 7,
+  "listVersion": 8,
   "reasons": [
     "conversion-pending",
     "mesh-package-not-in-client:<package>",
@@ -18,6 +18,7 @@
     "emitter-class-unported:<class>",
     "emitter-feature-unported:<property>",
     "combat-role-route-unresolved:<table>/<role>",
-    "assembly-part-limit-exceeded:<count>"
+    "assembly-part-limit-exceeded:<count>",
+    "mesh-texture-pairing-undecoded:<meshes>/<textures>"
   ]
 }

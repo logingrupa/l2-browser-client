@@ -19,7 +19,8 @@ PROFILE_MANIFEST_PATH_PATTERNS = {
     'playerProfiles': re.compile(r'^/l2/player-profiles/(?P<sha256>[a-f0-9]{64})/manifest\.json$'),
 }
 MODEL_CATALOG_ID_PATTERN = re.compile(r'^[a-z0-9][a-z0-9:-]{0,95}$')
-SKILL_EFFECT_COMPONENT_ID_PATTERN = re.compile(r'^interlude:skill:(?P<skill>\d{1,9}):level:(?P<level>[1-9]\d{0,3}):')
+ITEM_MODEL_RECORD_ID_PATTERN = re.compile(r'^interlude:item:(?P<item>0|[1-9]\d{0,8}):body-part:(?:0|[1-9]\d{0,8}):(?:weapon|armor:(?:0|[1-9]\d{0,8}))$')
+SKILL_EFFECT_COMPONENT_ID_PATTERN =re.compile(r'^interlude:skill:(?P<skill>\d{1,9}):level:(?P<level>[1-9]\d{0,3}):')
 LEGACY_SECTION_ID_PATTERN = re.compile(r'^map-(?P<column>\d{2})-(?P<row>\d{2})-section$')
 
 
@@ -181,6 +182,11 @@ def player_keys(catalog, models, store_roots):
     return {key for profile in staged_profiles(catalog, 'playerProfiles', store_roots) for key in player_profile_keys(profile, model_ids)}
 
 
+def item_model_keys(models):
+    matches = (ITEM_MODEL_RECORD_ID_PATTERN.fullmatch(model['id']) for model in models)
+    return {require_key(f'item:{match["item"]}', 'item', 'item model record id') for match in matches if match}
+
+
 def skill_keys(catalog):
     matches = (SKILL_EFFECT_COMPONENT_ID_PATTERN.match(record['id']) for record in validated_slice_records(catalog, 'effectComponents'))
     return {require_key(f'skill:{match["skill"]}:{match["level"]}', 'skill', 'effect component id') for match in matches if match}
@@ -198,5 +204,5 @@ def catalog_index_keys(store_root, catalog, shared_store_root=None):
     keys = tile_keys(catalog) | {f'table:{record["id"]}' for record in tables} | {f'window:{record["id"]}' for record in windows}
     models = validated_slice_records(catalog, 'models')
     store_roots = store_root_candidates(store_root, shared_store_root)
-    keys |= npc_keys(catalog, models, store_roots) | player_keys(catalog, models, store_roots) | skill_keys(catalog)
+    keys |= npc_keys(catalog, models, store_roots) | player_keys(catalog, models, store_roots) | item_model_keys(models) | skill_keys(catalog)
     return tuple(sorted(keys))

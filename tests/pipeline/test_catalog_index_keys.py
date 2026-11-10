@@ -97,6 +97,14 @@ class CatalogIndexKeysJoinTests(unittest.TestCase):
         catalog = {'schemaVersion': 1, 'models': self.models, 'playerProfiles': [record]}
         self.assertEqual(catalog_index_keys(self.store_root, catalog, self.shared_store_root), ('character:0', 'item:22'))
 
+    def test_item_model_records_give_item_keys_like_the_browser_catalog_index(self):
+        models = [model_record('interlude:item:1:body-part:7:weapon', 'LineageWeapons.small_sword_m00_wp'),
+                  model_record('interlude:item:26:body-part:6:armor:2', 'Fighter.FFighter_m002_l'),
+                  model_record('interlude:item:01:body-part:7:weapon', 'LineageWeapons.other_m00_wp'),
+                  model_record('interlude:item:5:body-part:7:weapon:0', 'LineageWeapons.other_m00_wp')]
+        catalog = {'schemaVersion': 1, 'models': models}
+        self.assertEqual(catalog_index_keys(self.store_root, catalog, self.shared_store_root), ('item:1', 'item:26'))
+
     def test_skill_keys_come_from_effect_component_ids_and_tile_keys_from_tiles_and_legacy_sections(self):
         catalog = {'schemaVersion': 1, 'models': [],
                    'effectComponents': [{'id': 'interlude:skill:3:level:1:raw-source-dispatch'}, {'id': 'interlude:footsteps'}],

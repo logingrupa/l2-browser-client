@@ -8,12 +8,18 @@ import {
 import type { NativeCatalog } from "./readNativeCatalog";
 import { parseSkillEffectComponentId } from "../../effects/castSkillIndex";
 import { readNativeCoverageUnlessAbsent, type NativeCoverageStatus } from "./readNativeCoverage";
+import { equipmentSlotForBodyPart } from "../../world/sandboxCommands";
+import type { EquipmentSlot } from "../../world/worldTypes";
 
 export interface NativeNpcCatalogRecord {
   readonly npcId: number; readonly profileId: string; readonly modelCatalogId: string; readonly join: NativeNpcModelJoinKind;
 }
 export interface NativeItemCatalogRecord {
-  readonly itemId: number; readonly slot: "upper"; readonly catalogIds: readonly string[]; readonly playerProfileIds: readonly string[];
+  readonly itemId: number; readonly slot: EquipmentSlot; readonly catalogIds: readonly string[]; readonly playerProfileIds: readonly string[];
+}
+export type NativeItemModelUnitKind = "weapon" | "armor";
+export interface NativeItemModelRecordIdentity {
+  readonly itemId: number; readonly bodyPart: number; readonly unitKind: NativeItemModelUnitKind; readonly raceColumnOrdinal: number | null;
 }
 export interface NativeSkillCatalogRecord { readonly skillId: number; readonly level: number; readonly effectComponentId: string }
 export interface NativeTileCatalogRecord { readonly tile: string; readonly sectionId: string }
@@ -33,6 +39,7 @@ export interface NativeCatalogIndex {
 }
 
 const sectionTilePattern = /^map-(\d{2})-(\d{2})-section$/;
+const itemModelRecordIdPattern = /^interlude:item:(0|[1-9]\d{0,8}):body-part:(0|[1-9]\d{0,8}):(weapon|armor)(?::(0|[1-9]\d{0,8}))?$/;
 const windowsNotConvertedReason = "interface windows are not converted yet (UI-01)";
 export const notInCatalogReason = "not in catalog";
 
@@ -124,6 +131,31 @@ function upperItemLookups(playerProfiles: Iterable<NativePlayerProfile>, sourceO
     catalogIds: [...staged.catalogIds].sort(), playerProfileIds: [...staged.playerProfileIds].sort() } }));
 }
 
+export function parseItemModelRecordId(id: string): NativeItemModelRecordIdentity | null {
+  const match = itemModelRecordIdPattern.exec(id);
+  if (!match) return null;
+  const unitKind = match[3] as NativeItemModelUnitKind;
+  const raceColumnOrdinal = match[4] === undefined ? null : Number(match[4]);
+  if ((unitKind === "weapon") !== (raceColumnOrdinal === null)) return null;
+  return { itemId: Number(match[1]), bodyPart: Number(match[2]), unitKind, raceColumnOrdinal };
+}
+
+function itemModelLookups(models: readonly unknown[]): NativeCatalogLookup[] {
+  const modelsByItem = new Map<number, { identity: NativeItemModelRecordIdentity; catalogIds: string[] }>();
+  for (const value of models) {
+    const model = catalogRecordIdentity(value, "model"), identity = parseItemModelRecordId(model.id);
+    if (!identity) continue;
+    const staged = modelsByItem.get(identity.itemId);
+    if (!staged) { modelsByItem.set(identity.itemId, { identity, catalogIds: [model.id] }); continue; }
+    if (staged.identity.bodyPart !== identity.bodyPart || staged.identity.unitKind !== identity.unitKind) {
+      throw new Error(`Native catalog item ${identity.itemId} model records disagree on body part or unit kind.`);
+    }
+    staged.catalogIds.push(model.id);
+  }
+  return [...modelsByItem].map(([itemId, staged]) => ({ status: "converted", key: itemCatalogKey(itemId), record: { itemId,
+    slot: equipmentSlotForBodyPart(staged.identity.bodyPart)!, catalogIds: staged.catalogIds.sort(), playerProfileIds: [] } }));
+}
+
 function characterLookup(profile: NativePlayerProfile, chargrpIndex: number, sourceObjectsByModelId: ReadonlyMap<string, string | null>): NativeCatalogLookup {
   const key = characterCatalogKey(chargrpIndex);
   if (!sourceObjectsByModelId.has(profile.catalogId)) {
@@ -175,6 +207,7 @@ export async function buildNativeCatalogIndex(catalog: NativeCatalog, signal: Ab
   for (const profile of (await loadNativeNpcProfiles(catalog.npcProfiles, signal)).values()) addEntry(npcCatalogLookup(profile, sourceObjectsByModelId));
   const playerProfiles = [...(await loadNativePlayerProfiles(catalog.playerProfiles, signal)).profiles.values()];
   for (const lookup of upperItemLookups(playerProfiles, sourceObjectsByModelId)) addEntry(lookup);
+  for (const lookup of itemModelLookups(catalog.models)) if (!entries.has(lookup.key)) addEntry(lookup);
   for (const profile of playerProfiles) {
     if (profile.chargrpIndex !== undefined) addEntry(characterLookup(profile, profile.chargrpIndex, sourceObjectsByModelId));
   }

@@ -4,7 +4,7 @@ from collections import namedtuple
 from pathlib import Path
 
 from actors.actor_census import MESH_PACKAGE_SUFFIXES, TEXTURE_PACKAGE_SUFFIXES, ActorPackageCensus
-from actors.actor_unit_inventory import ACTOR_UNIT_CENSUS_RELATIVE_PATH, convertible_model_unit_count, decoded_table_identity
+from actors.actor_unit_inventory import ACTOR_UNIT_CENSUS_RELATIVE_PATH, model_record_capacity, decoded_table_identity
 from actors.character_requests import (CHARACTER_STEP, CLASSINFO_TABLE_NAME, GAP_STATUS, HAIRGRP_TABLE_NAME, HELMETGRP_TABLE_NAME,
                                        build_character_request, character_gap_rows, character_key, chargrp_row_at, is_padding_row,
                                        resolve_character_actor_class)
@@ -183,7 +183,7 @@ class CharacterConversionRun:
         files, record = converted_model_store_files_and_record(CHARACTER_MODEL_ID_PREFIX + str(row_index),
                                                                self.ledger.lane_output_path(outcome['outputs'][0]['path']))
         catalog, before = read_store_catalog(self.store_root)
-        catalog = catalog_with_record_replaced(catalog, 'models', record, convertible_model_unit_count(self.census))
+        catalog = catalog_with_record_replaced(catalog, 'models', record, model_record_capacity(self.census))
         catalog['models'] = sorted(catalog['models'], key=lambda existing: existing['id'])
         write_store(self.store_root, files, before, json_bytes(catalog))
         return outcome

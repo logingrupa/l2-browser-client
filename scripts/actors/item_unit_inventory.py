@@ -1,13 +1,11 @@
 import xml.etree.ElementTree as ElementTree
 
-from actors.actor_unit_inventory import (NO_MESH_IN_ROW_REASON, ActorUnitInventoryError, census_row, conversion_unit, conversion_unit_key,
-                                         decoded_table_identity, decoded_table_rows, first_gap_reason, mesh_and_texture_gap_reason,
-                                         non_empty_values)
+from actors.actor_unit_inventory import (ARMOR_MESH_UNIT_KIND, NO_MESH_IN_ROW_REASON, WEAPON_MESH_UNIT_KIND, ActorUnitInventoryError, census_row,
+                                         conversion_unit, conversion_unit_key, decoded_table_identity, decoded_table_rows, first_gap_reason,
+                                         mesh_and_texture_gap_reason, non_empty_values)
 from native_catalog.tables import SCHEMA_ROOT, checked_bytes
 
 ITEM_PART_NAME = 'items'
-WEAPON_MESH_UNIT_KIND = 'weapon-mesh'
-ARMOR_MESH_UNIT_KIND = 'armor-mesh'
 MESH_TEXTURE_COMPOUND_READER = 'MTX'
 
 

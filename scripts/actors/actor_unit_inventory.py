@@ -11,6 +11,10 @@ NPC_PART_NAME = 'npcs'
 NPC_MODEL_UNIT_KIND = 'npc-model'
 CHARACTER_PART_NAME = 'player-characters'
 CHARGRP_ROW_UNIT_KIND = 'chargrp-row'
+WEAPON_MESH_UNIT_KIND = 'weapon-mesh'
+ARMOR_MESH_UNIT_KIND = 'armor-mesh'
+WEAPONGRP_TABLE_NAME = 'weapongrp'
+ARMORGRP_TABLE_NAME = 'armorgrp'
 UNDECODED_CHARACTER_LAYOUT_UNITS = (('hair', 'chargrp-hair', 'hair-layout-undecoded'),
                                     ('helmet', 'chargrp-helmet', 'helmet-layout-undecoded'))
 MESH_GROUP_NAME_SUFFIX = '_mesh'
@@ -38,9 +42,25 @@ def decoded_table_identity(decoded_table):
     return {'path': decoded_table['source'], 'sha256': decoded_table['sourceSha256']}
 
 
-def convertible_model_unit_count(census):
-    return sum(1 for unit in census['units']
-               if unit['unitKind'] in (NPC_MODEL_UNIT_KIND, CHARGRP_ROW_UNIT_KIND) and unit['status'] == CONVERTIBLE_UNIT_STATUS)
+def census_table_row_count(census, table_name):
+    rows = [table for table in census['tables'] if table['table'] == table_name]
+    if len(rows) != 1:
+        raise ActorUnitInventoryError(f'the actor unit census needs one {table_name} table row')
+    return rows[0]['rowCount']
+
+
+def item_model_record_capacity(census):
+    item_unit_kinds = {unit['unitKind'] for unit in census['units']} & {WEAPON_MESH_UNIT_KIND, ARMOR_MESH_UNIT_KIND}
+    if not item_unit_kinds:
+        return 0
+    armor_columns = {unit['selection']['column'] for unit in census['units'] if unit['unitKind'] == ARMOR_MESH_UNIT_KIND}
+    return census_table_row_count(census, WEAPONGRP_TABLE_NAME) + census_table_row_count(census, ARMORGRP_TABLE_NAME) * len(armor_columns)
+
+
+def model_record_capacity(census):
+    convertible_actor_units = sum(1 for unit in census['units']
+                                  if unit['unitKind'] in (NPC_MODEL_UNIT_KIND, CHARGRP_ROW_UNIT_KIND) and unit['status'] == CONVERTIBLE_UNIT_STATUS)
+    return convertible_actor_units + item_model_record_capacity(census)
 
 
 def first_gap_reason(reasons):

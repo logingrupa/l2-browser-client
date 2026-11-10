@@ -47,12 +47,12 @@ export interface NativeBoneAnchorInspection {
   readonly anchorWorldMatrix: readonly number[] | null;
   readonly linkedJointWorldMatrix: readonly number[] | null;
   readonly baseModelRootWorldMatrix: readonly number[] | null;
+  readonly attachedMeshNames: readonly string[];
   readonly clock: NativeActorClock & { readonly timeSeconds: number };
 }
 
 export interface NativeBoneAnchorView {
   readonly root: TransformNode;
-  /** Lightweight ownership guard; does not allocate diagnostic matrices. */
   isValid(): boolean;
 }
 
@@ -61,8 +61,7 @@ export interface NativeBoneAnchor extends NativeBoneAnchorView {
   dispose(): void;
 }
 
-/** This is a retained GLB identity join, not a native socket composition rule. */
-function sourceBoneBinding(asset: AssetPackage, sourceObject: string, boneName: string) {
+function retainedGlbBoneIdentityJoin(asset: AssetPackage, sourceObject: string, boneName: string) {
   const bytes = asset.files.get(asset.manifest.model!.file)!;
   const jsonSize = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(12, true);
   const document = JSON.parse(new TextDecoder().decode(bytes.subarray(20, 20 + jsonSize))) as {
@@ -131,9 +130,6 @@ async function loadModel(scene: Scene, asset: AssetPackage, parent: TransformNod
   } catch (error) { container.dispose(); root?.dispose(); throw error; }
 }
 
-/** Presentation-owned native parts with a shared source clock. Equipment is
- * attached by verified native mesh identity, retaining every part's own skin.
- * No class/NPC scale, action alias or weapon attachment transform is inferred. */
 export class NativeActor {
   readonly root: TransformNode;
   private readonly lifetime = new AbortController();
@@ -151,7 +147,6 @@ export class NativeActor {
 
   static async create(scene: Scene, asset: AssetPackage, signal: AbortSignal): Promise<NativeActor> {
     const root = new TransformNode("Native actor", scene);
-    // Editor's runtime hierarchy keys rows by string id while actors load.
     root.id = `native-actor:${root.uniqueId}`;
     try {
       const base = await loadModel(scene, asset, root, signal);
@@ -165,8 +160,6 @@ export class NativeActor {
 
   private models(): NativeModel[] { return [this.base, ...this.replacements.values()]; }
 
-  /** Exact loaded body/equipment ownership. A child of a borrowed bone anchor
-   * can belong to another presenter and must not inherit actor picking tags. */
   ownedMeshes(): readonly AbstractMesh[] {
     return this.disposed ? [] : this.models().flatMap(model => model.container.meshes);
   }
@@ -193,7 +186,6 @@ export class NativeActor {
   seek(timeSeconds: number): void { for (const model of this.models()) model.playback?.seek(timeSeconds); }
   update(deltaSeconds: number): void { if (!this.disposed) for (const model of this.models()) model.playback?.advance(deltaSeconds); }
 
-  /** Base clock only: equipment shares it and must not duplicate source cues. */
   clock(): NativeActorClock {
     const playback = this.base.playback;
     return { clip: this.currentClip ?? null, mode: this.currentMode, elapsedSeconds: playback?.elapsedSeconds ?? 0,
@@ -219,8 +211,6 @@ export class NativeActor {
     return meshes;
   }
 
-  /** Identity child of one exact base-rig joint. No guessed socket offset,
-   * global bone lookup, equipment rig substitution or source reparenting. */
   createBoneAnchor(sourceObject: string, boneName: string): NativeBoneAnchor {
     if (this.disposed || this.root.isDisposed() || this.scene.isDisposed) throw new Error("Cannot attach to a disposed native actor.");
     if (!boneName) throw new Error("A native bone anchor requires an exact bone name.");
@@ -231,7 +221,7 @@ export class NativeActor {
     }
     const matches = skeleton.bones.filter(bone => bone.name === boneName);
     if (matches.length !== 1) throw new Error("Native bone name is missing or ambiguous in the loaded skeleton.");
-    const bone = matches[0]!, linked = bone.getTransformNode(), binding = sourceBoneBinding(this.asset, sourceObject, boneName);
+    const bone = matches[0]!, linked = bone.getTransformNode(), binding = retainedGlbBoneIdentityJoin(this.asset, sourceObject, boneName);
     const ownedNodes = [...this.base.container.transformNodes, ...this.base.container.meshes];
     const linkedOwned = () => !!linked && !linked.isDisposed() && linked.getScene() === this.scene && ownedNodes.includes(linked)
       && linked.isDescendantOf(this.base.root) && this.base.root.parent === this.root && bone.getTransformNode() === linked;
@@ -261,14 +251,14 @@ export class NativeActor {
           anchorWorldMatrix: ownershipIntact ? Array.from(root.getWorldMatrix().asArray()) : null,
           linkedJointWorldMatrix: ownershipIntact ? Array.from(linked.getWorldMatrix().asArray()) : null,
           baseModelRootWorldMatrix: ownershipIntact ? Array.from(this.base.root.getWorldMatrix().asArray()) : null,
+          attachedMeshNames: ownershipIntact ? root.getChildMeshes(false).filter(mesh => mesh.getTotalVertices() > 0).map(mesh => mesh.name) : [],
           clock: { ...this.clock(), timeSeconds: this.base.playback?.timeSeconds ?? 0 } };
       },
       dispose: () => {
         if (disposed) return;
         disposed = true; this.boneAnchors.delete(handle);
-        // An externally reparented anchor is no longer ours to mutate. Normal
-        // disposal removes only our node, never the rig or consumer children.
-        if (ownsRoot()) root.dispose(true);
+        const disposeOnlyTheAnchorNodeKeepingRigAndConsumerChildren = true;
+        if (ownsRoot()) root.dispose(disposeOnlyTheAnchorNodeKeepingRigAndConsumerChildren);
       },
     };
     this.boneAnchors.add(handle);
@@ -289,8 +279,6 @@ export class NativeActor {
     let candidate: NativeModel | undefined;
     try {
       candidate = await loadModel(this.scene, replacement, this.root, signal);
-      // Check every clip before committing, so a later action cannot expose an
-      // incompatible piece. Preserve the previous appearance on any failure.
       if (candidate.clips.size !== this.base.clips.size || [...this.base.clips].some(([name, clip]) => candidate!.clips.get(name)?.duration !== clip.duration)) {
         throw new Error("Equipment does not share the original native animation relationships.");
       }

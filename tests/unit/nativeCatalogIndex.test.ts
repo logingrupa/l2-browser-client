@@ -3,8 +3,8 @@ import { readFile } from "node:fs/promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { defaultNativePlayerProfile } from "../../src/assets/native/loadNativePlayerProfiles";
 import {
-  buildNativeCatalogIndex, characterCatalogKey, describeNativeCatalogLookup, itemCatalogKey, unavailableNativeCatalogIndex, npcCatalogKey, skillCatalogKey,
-  tableCatalogKey, tileCatalogKey, windowCatalogKey,
+  buildNativeCatalogIndex, characterCatalogKey, describeNativeCatalogLookup, itemCatalogKey, unavailableNativeCatalogIndex, npcCatalogKey,
+  parseItemModelRecordId, skillCatalogKey, tableCatalogKey, tileCatalogKey, windowCatalogKey,
 } from "../../src/assets/native/nativeCatalogIndex";
 import { readNativeCatalog, type NativeCatalog } from "../../src/assets/native/readNativeCatalog";
 import {
@@ -43,6 +43,37 @@ describe("native catalog L2-ID index", () => {
     expect(index.lookup(windowCatalogKey("StatusWnd"))).toEqual({ status: "not-in-catalog", key: "window:StatusWnd",
       reason: "interface windows are not converted yet (UI-01)" });
     expect(index.keys("npc:")).toEqual(["npc:20001", "npc:21622"]);
+  });
+
+  it("answers item keys from item model records with the body-part slot built from the record id", async () => {
+    const catalog = await inlineCatalog();
+    const index = await buildNativeCatalogIndex({ ...catalog, models: [...catalog.models,
+      model("interlude:item:1:body-part:7:weapon", "LineageWeapons.small_sword_m00_wp"),
+      model("interlude:item:26:body-part:6:armor:2", "Fighter.FFighter_m002_l"), model("interlude:item:26:body-part:6:armor:0", "Fighter.MFighter_m002_l"),
+      model("interlude:item:22:body-part:10:armor:0", "Fighter.MFighter_m001_u")] }, new AbortController().signal);
+    expect(index.lookup(itemCatalogKey(1))).toEqual({ status: "converted", key: "item:1",
+      record: { itemId: 1, slot: "body-part:7", catalogIds: ["interlude:item:1:body-part:7:weapon"], playerProfileIds: [] } });
+    expect(index.lookup(itemCatalogKey(26))).toEqual({ status: "converted", key: "item:26", record: { itemId: 26, slot: "body-part:6",
+      catalogIds: ["interlude:item:26:body-part:6:armor:0", "interlude:item:26:body-part:6:armor:2"], playerProfileIds: [] } });
+    expect(index.lookup(itemCatalogKey(22))).toEqual({ status: "converted", key: "item:22",
+      record: { itemId: 22, slot: "upper", catalogIds: ["fighter-equipment:0"], playerProfileIds: ["human-male-fighter"] } });
+    expect(index.keys("item:")).toEqual(["item:1", "item:22", "item:26"]);
+  });
+
+  it.each([
+    ["interlude:item:1:body-part:7:weapon", { itemId: 1, bodyPart: 7, unitKind: "weapon", raceColumnOrdinal: null }],
+    ["interlude:item:22:body-part:10:armor:0", { itemId: 22, bodyPart: 10, unitKind: "armor", raceColumnOrdinal: 0 }],
+    ["interlude:item:1:body-part:7:weapon:0", null], ["interlude:item:22:body-part:10:armor", null], ["interlude:item:01:body-part:7:weapon", null],
+    ["interlude:item:1:body-part:7:shield", null], ["interlude:item:1234567890:body-part:7:weapon", null], ["fighter-equipment:0", null],
+  ])("parses the item model record id %s canonically", (id, identity) => {
+    expect(parseItemModelRecordId(id)).toEqual(identity);
+  });
+
+  it("refuses item model records of one item that disagree on body part or unit kind", async () => {
+    serveFiles(new Map());
+    const catalog = catalogWith({ models: [model("interlude:item:26:body-part:6:armor:0", "Fighter.A"), model("interlude:item:26:body-part:7:armor:1", "Fighter.B")] });
+    await expect(buildNativeCatalogIndex(catalog, new AbortController().signal))
+      .rejects.toThrow("Native catalog item 26 model records disagree on body part or unit kind.");
   });
 
   it("resolves lane skill records that share one root bundle through the cast skill identity owner", async () => {
