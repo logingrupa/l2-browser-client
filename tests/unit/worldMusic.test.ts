@@ -16,7 +16,7 @@ function bundle(volumes: NativeMusicVolume[], failFetch = new Set<string>()) {
     original: { file: "audio/a.ogg", bytes: 1, sha256: "a".repeat(64), mime: "audio/ogg; codecs=vorbis", sourceSha256: "b".repeat(64), sourcePath: "x" },
     derivative: { file: "derived/a.m4a", bytes: 1, sha256: "c".repeat(64), mime: "audio/mp4", label: "derived AAC" } }]));
   const fetched: string[] = [];
-  const music: NativeMusic = { manifestSha256: "d".repeat(64), volumes, tracks,
+  const music: NativeMusic = { manifestSha256: "d".repeat(64), sourceMap: "maps/20_20.unr", volumes, tracks,
     fetchTrack: async (key, variant) => {
       fetched.push(`${variant}:${key}`);
       if (failFetch.has(`${variant}:${key}`)) throw new Error("missing");

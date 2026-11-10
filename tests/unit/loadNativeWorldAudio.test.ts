@@ -8,6 +8,7 @@ import { selectMusicVolume } from "../../src/audio/worldMusic";
 
 const sha = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
 const encode = (value: unknown) => new TextEncoder().encode(JSON.stringify(value));
+const catalogRecords = (records: readonly unknown[]) => ({ tileId: null, records });
 
 function serve(files: Map<string, Uint8Array>) {
   const fetcher = vi.fn(async (url: string) => {
@@ -38,7 +39,7 @@ describe("staged world-audio loader", () => {
   it("verifies manifests, converts emitters like section placements and fetches sounds lazily", async () => {
     const { files, entry, wavPath } = ambienceFixture();
     const fetcher = serve(files);
-    const loaded = await loadNativeWorldAudio([entry], new AbortController().signal);
+    const loaded = await loadNativeWorldAudio(catalogRecords([entry]), new AbortController().signal);
     expect(fetcher).toHaveBeenCalledTimes(1);
     const emitter = loaded.ambience!.emitters[0]!;
     expect(emitter.native).toEqual([20528, 70576, -3424]);
@@ -58,8 +59,8 @@ describe("staged world-audio loader", () => {
       radius: { maxRadiusMultiplier: { value: 50, symbol: "?GAudioMaxRadiusMultiplier@@3MA", status: "static", image: { sha256: "a".repeat(64) } } } });
     const manifestSha = sha(manifest), prefix = `/l2/world-audio/${manifestSha}/`;
     serve(new Map([[`${prefix}manifest.json`, manifest]]));
-    const loaded = await loadNativeWorldAudio([{ id: "map-20-20-ambience", kind: "native-map-ambience", manifest: `${prefix}manifest.json`,
-      manifestBytes: manifest.length, manifestSha256: manifestSha }], new AbortController().signal);
+    const loaded = await loadNativeWorldAudio(catalogRecords([{ id: "map-20-20-ambience", kind: "native-map-ambience", manifest: `${prefix}manifest.json`,
+      manifestBytes: manifest.length, manifestSha256: manifestSha }]), new AbortController().signal);
     expect(loaded.ambience!.emitters[0]).toMatchObject({ soundRadius: 64, soundVolume: 190, soundPitch: null, ambientRandom: null,
       defaults: ["soundRadius", "soundVolume", "soundPitch", "ambientSoundType", "ambientRandom", "ambientSoundStartTime"] });
   });
@@ -68,11 +69,13 @@ describe("staged world-audio loader", () => {
     const { files, entry } = ambienceFixture();
     serve(files);
     const signal = new AbortController().signal;
-    await expect(loadNativeWorldAudio([{ ...entry, manifestSha256: "f".repeat(64) }], signal)).rejects.toThrow("invalid catalog entry");
-    await expect(loadNativeWorldAudio([{ ...entry, kind: "native-map-music" }], signal)).rejects.toThrow("kind differs");
-    await expect(loadNativeWorldAudio([entry, entry], signal)).rejects.toThrow("invalid catalog entry");
-    await expect(loadNativeWorldAudio([{ ...entry, manifestBytes: 3 }], signal)).rejects.toThrow("hash/length");
-    expect(await loadNativeWorldAudio(undefined, signal)).toEqual({ music: null, ambience: null, manifests: [] });
+    await expect(loadNativeWorldAudio(catalogRecords([{ ...entry, manifestSha256: "f".repeat(64) }]), signal)).rejects.toThrow("invalid catalog entry");
+    await expect(loadNativeWorldAudio(catalogRecords([{ ...entry, kind: "native-map-music" }]), signal)).rejects.toThrow("kind differs");
+    await expect(loadNativeWorldAudio(catalogRecords([{ ...entry, kind: "world-audio" }]), signal)).rejects.toThrow("kind differs");
+    await expect(loadNativeWorldAudio(catalogRecords([entry, entry]), signal)).rejects.toThrow("invalid catalog entry");
+    await expect(loadNativeWorldAudio(catalogRecords([{ ...entry, manifestBytes: 3 }]), signal)).rejects.toThrow("hash/length");
+    expect(await loadNativeWorldAudio(catalogRecords([]), signal))
+      .toEqual({ music: null, ambience: null, placementAudio: null, manifests: [], silentReason: null });
   });
 });
 
@@ -84,7 +87,7 @@ describe.runIf(staged)("staged 20_20 world audio", () => {
   it("lands emitters around the loaded section and the spawn inside MusicVolume1", async () => {
     const catalog = JSON.parse(readFileSync(catalogPath, "utf8"));
     vi.stubGlobal("fetch", vi.fn(async (url: string) => new Response(readFileSync(resolve(root, "public", url.slice(1))))));
-    const loaded = await loadNativeWorldAudio(catalog.worldAudio, new AbortController().signal);
+    const loaded = await loadNativeWorldAudio(catalogRecords(catalog.worldAudio), new AbortController().signal);
     expect(loaded.ambience!.emitters).toHaveLength(2622);
     expect(loaded.ambience!.sounds.size).toBe(106);
     expect(loaded.ambience!.radiusMultiplier.value).toBe(50);
@@ -99,8 +102,6 @@ describe.runIf(staged)("staged 20_20 world audio", () => {
     const hi = [0, 2].map(axis => Math.max(...placements.map(p => p.matrix[12 + axis]!)));
     const inSection = loaded.ambience!.emitters.filter(e => e.position[0] >= lo[0]! && e.position[0] <= hi[0]! && e.position[2] >= lo[1]! && e.position[2] <= hi[1]!);
     expect(inSection.length).toBeGreaterThan(20);
-    // Same conversion as placements: emitters sit on this section's terrain heights
-    // (about -37 m to -13 m); one authored wind emitter is 3.6 km up (never audible).
     const outliers = inSection.filter(e => e.position[1] > 1000);
     expect(outliers.map(e => e.group)).toEqual(["None,s_mountain_wind_loop"]);
     expect(inSection.filter(e => e.position[1] <= 1000).every(e => e.position[1] > -40 && e.position[1] < -10)).toBe(true);

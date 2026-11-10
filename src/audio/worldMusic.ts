@@ -45,7 +45,17 @@ export interface WorldMusicOptions {
   gestureTarget?: Pick<EventTarget, "addEventListener" | "removeEventListener"> | null;
 }
 
+export interface WorldMusicVolumeSummary {
+  id: string;
+  object: string;
+  musicId: number;
+  boundsNative: { min: NativeVector; max: NativeVector };
+}
+
 export interface WorldMusicInspection {
+  sourceMap: string | null;
+  volumes: WorldMusicVolumeSummary[];
+  trackNames: string[];
   enabled: boolean;
   state: MusicPhase;
   volume: { id: string; musicId: number; forcePlayMusic: boolean | null; group: string | null } | null;
@@ -325,7 +335,9 @@ export function createWorldMusic(music: NativeMusic, mixer: WorldAudioMixer, opt
     inspection(): WorldMusicInspection {
       const slot = playing, key = slot?.key ?? null, track = key ? music.tracks.get(key) : undefined;
       const position = slot ? Number(slot.element.currentTime) : NaN;
-      return { enabled, state: phase,
+      return { sourceMap: music.sourceMap, enabled, state: phase,
+        volumes: music.volumes.map(volume => ({ id: volume.id, object: volume.object, musicId: volume.musicId, boundsNative: volume.boundsNative })),
+        trackNames: [...music.tracks.values()].map(track => track.storedString),
         volume: current ? { id: current.id, musicId: current.musicId, forcePlayMusic: current.forcePlayMusic, group: current.group } : null,
         inside: inside.map(volume => volume.id),
         track: slot && track ? { key: track.key, storedString: track.storedString, volumeId: slot.volumeId ?? "", variant: variant(track.key),

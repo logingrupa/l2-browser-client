@@ -28,6 +28,7 @@ export interface WorldAmbienceOptions {
 }
 
 export interface WorldAmbienceInspection {
+  sourceMap: string | null;
   enabled: boolean;
   timeOfDay: AmbienceTimeOfDay;
   isDay: boolean;
@@ -72,14 +73,19 @@ export function ambientGain(emitter: NativeAmbientEmitter, distanceUnits: number
   return linear * inverse;
 }
 
-export const ambientIsDay = (hour: number): boolean => hour >= nativeAmbientRules.dayStartHour;
+const ambientSoundTypeAlways = 0;
+const ambientSoundTypeDay = 1;
+const ambientSoundTypeNight = 2;
+const ambientSoundTypeWater = 3;
+
+export const ambientIsDay =(hour: number): boolean => hour >= nativeAmbientRules.dayStartHour;
 
 export function ambientTypeAllowed(type: number | null, isDay: boolean, listenerInWater = false): boolean {
   const value = type ?? ambientSoundObjectDefaults.ambientSoundType;
-  if (value === 0) return !listenerInWater; // AST1_Always
-  if (value === 1) return isDay && !listenerInWater; // AST1_Day
-  if (value === 2) return !isDay && !listenerInWater; // AST1_Night
-  if (value === 3) return listenerInWater; // AST1_Water
+  if (value === ambientSoundTypeAlways) return !listenerInWater;
+  if (value === ambientSoundTypeDay) return isDay && !listenerInWater;
+  if (value === ambientSoundTypeNight) return !isDay && !listenerInWater;
+  if (value === ambientSoundTypeWater) return listenerInWater;
   return false;
 }
 
@@ -192,7 +198,8 @@ export function createWorldAmbience(ambience: NativeAmbience, mixer: WorldAudioM
       const previous = periods.get(emitter.id);
       periods.set(emitter.id, index);
       const shot = oneShots.get(emitter.id);
-      if (shot?.active()) { shot.setGain(candidate.gain, interval); continue; } // never the same object twice
+      const sameObjectStillPlaying = shot?.active() ? shot : null;
+      if (sameObjectStillPlaying) { sameObjectStillPlaying.setGain(candidate.gain, interval); continue; }
       if (previous === undefined || previous === index || !running || candidate.gain <= 0) continue;
       rolls++;
       if (random() * 100 >= ambientValue(emitter, "ambientRandom")) continue;
@@ -225,7 +232,7 @@ export function createWorldAmbience(ambience: NativeAmbience, mixer: WorldAudioM
     get enabled() { return enabled; },
     get timeOfDay() { return timeOfDay; },
     inspection(): WorldAmbienceInspection {
-      return { enabled, timeOfDay, isDay: ambientIsDay(hour), hour, emitters: ambience.emitters.length, candidates: candidatesCount, inRange, gated,
+      return { sourceMap: ambience.sourceMap, enabled, timeOfDay, isDay: ambientIsDay(hour), hour, emitters: ambience.emitters.length, candidates: candidatesCount, inRange, gated,
         sounds: { loaded: loaded.size, loading: loading.size, released, failed: Object.fromEntries(failed) },
         loops: [...loops.values()].map(loop => ({ id: loop.emitter.id, sound: loop.emitter.sound!, distanceUnits: loop.distanceUnits,
           distance: loop.distanceUnits * .01, gain: loop.gain })).sort((a, b) => b.gain - a.gain),

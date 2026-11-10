@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { WorldAudioMixer } from "../../src/audio/WorldAudioMixer";
 import { ambientGain, ambientIsDay, ambientLoops, ambientPeriodIndex, ambientPlaybackRate, ambientRangeUnits, ambientSoundObjectDefaults,
   ambientTypeAllowed, ambientValue, createWorldAmbience } from "../../src/audio/worldAmbience";
-import type { NativeAmbience, NativeAmbientEmitter, NativeAmbientSound } from "../../src/assets/native/loadNativeWorldAudio";
+import type { NativeAmbience, NativeAmbientEmitter, NativeWorldAudioSound } from "../../src/assets/native/loadNativeWorldAudio";
 import { nativeFlameNativeToBrowser } from "../../src/scene/world/nativeFlameBillboards";
 import { fakeMixerContext, flush, type FakeGainNode } from "./fakeWebAudio";
 
@@ -13,10 +13,10 @@ function emitter(id: string, native: [number, number, number], fields: Partial<N
 }
 
 function bundle(emitters: NativeAmbientEmitter[]) {
-  const sounds = new Map<string, NativeAmbientSound>([["wind", 1], ["bird", 2]].map(([key, first]) =>
+  const sounds = new Map<string, NativeWorldAudioSound>([["wind", 1], ["bird", 2]].map(([key, first]) =>
     [key as string, { key: key as string, object: `AmbSound.${key}`, file: "audio/x.wav", bytes: 1, sha256: "a".repeat(64), mime: "audio/wav", durationSeconds: 2, first }]));
   const fetches: string[] = [];
-  const ambience: NativeAmbience = { manifestSha256: "b".repeat(64), emitters, sounds,
+  const ambience: NativeAmbience = { manifestSha256: "b".repeat(64), sourceMap: "maps/20_20.unr", emitters, sounds,
     radiusMultiplier: { value: 50, symbol: "?GAudioMaxRadiusMultiplier@@3MA", status: "static", imageSha256: "c".repeat(64) },
     fetchSound: async key => { fetches.push(key); return new Uint8Array([key === "wind" ? 1 : 2]); } };
   return { ambience, fetches };
@@ -73,7 +73,7 @@ describe("world ambience playback", () => {
     const far = emitter("far", [7000, 0, 0], { soundRadius: 120 });
     const { context, mixer, world, fetches, at } = await setup([near, far]);
     await at(0);
-    expect(fetches).toEqual(["wind"]); // the far emitter is outside 50R + margin
+    expect(fetches, "the far emitter is outside 50R plus margin").toEqual(["wind"]);
     await mixer.unlock(); await flush();
     await at(1);
     const source = context.sources[0]!;
@@ -86,23 +86,23 @@ describe("world ambience playback", () => {
     expect(world.inspection()).toMatchObject({ candidates: 1, inRange: 1, loops: [{ id: "near", distanceUnits: 100 }], voices: { limit: 16, loopLimit: 8 } });
     await at(2, [3000, 0, 0]);
     expect(level.gain.events.at(-1)![1]).toBeCloseTo(ambientGain(near, 2900, 50));
-    expect(fade.gain.pending(10)).toEqual([["set", 0, 10], ["ramp", 1, 10.05]]); // fade untouched by level updates
+    expect(fade.gain.pending(10), "fade untouched by level updates").toEqual([["set", 0, 10], ["ramp", 1, 10.05]]);
   });
 
   it("rolls one-shots once per WAV length from StartTime with p = Random/100 and never plays an object twice", async () => {
     const bird = emitter("bird", [0, 0, 0], { sound: "bird", ambientRandom: 40, ambientSoundStartTime: .5, ambientSoundType: 1 });
     const { context, mixer, world, at, setRoll } = await setup([bird]);
     await mixer.unlock(); await at(0); await flush();
-    await at(.3); // period index (0.3 − 0.5)/2 → -1, same as the first observation: no roll
-    expect(world.inspection().oneShots).toMatchObject({ rolls: 0, started: 0 });
-    setRoll(.39); await at(2.6); // crossed into period 1: 39 < 40 → plays
-    expect(world.inspection().oneShots).toMatchObject({ rolls: 1, started: 1, active: 1 });
+    await at(.3);
+    expect(world.inspection().oneShots, "period index -1 equals the first observation, so no roll").toMatchObject({ rolls: 0, started: 0 });
+    setRoll(.39); await at(2.6);
+    expect(world.inspection().oneShots, "period 1 rolls 39 below 40 and plays").toMatchObject({ rolls: 1, started: 1, active: 1 });
     expect(context.sources[0]!.loop).toBe(false);
-    setRoll(0); await at(4.6); // next period, but the same object is still playing
-    expect(world.inspection().oneShots).toMatchObject({ rolls: 1, started: 1 });
+    setRoll(0); await at(4.6);
+    expect(world.inspection().oneShots, "the same object still plays in the next period").toMatchObject({ rolls: 1, started: 1 });
     context.sources[0]!.end();
-    setRoll(.4); await at(6.6); // 40 is not < 40 → no play
-    expect(world.inspection().oneShots).toMatchObject({ rolls: 2, started: 1, active: 0 });
+    setRoll(.4); await at(6.6);
+    expect(world.inspection().oneShots, "40 is not below 40, so nothing plays").toMatchObject({ rolls: 2, started: 1, active: 0 });
   });
 
   it("gates by the game-hour chips (Auto uses the local clock) and caps voices at 16 with ≤ 8 loops", async () => {
@@ -117,7 +117,8 @@ describe("world ambience playback", () => {
     expect(world.inspection()).toMatchObject({ timeOfDay: "auto", isDay: false, candidates: 25, gated: 12, inRange: 13 });
     hour = 9; await at(.6);
     expect(world.inspection()).toMatchObject({ isDay: true, gated: 1, inRange: 24 });
-    await at(2.1); // every day bird crosses a period boundary
+    const everyDayBirdCrossesAPeriodBoundarySeconds = 2.1;
+    await at(everyDayBirdCrossesAPeriodBoundarySeconds);
     const state = world.inspection();
     expect(state.loops).toHaveLength(8);
     expect(state.voices.active).toBe(16);
