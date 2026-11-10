@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-46-PLAN.md
-last_updated: "2026-11-10T07:50:46.601Z"
+stopped_at: Completed 02-62-PLAN.md
+last_updated: "2026-11-10T08:51:42.317Z"
 last_activity: 2026-11-10
-last_activity_desc: Phase 02 plan 02-46 complete (tile world audio runtime)
-state_head: 68b76b2c11bed6b62c3ac32dedbdff3e92455181
+last_activity_desc: Phase 02 plan 02-62 complete (BSP lightmaps and tile lighting export)
+state_head: 6f00e9d26a99b307c211f23d8dd2483d790a5bd0
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 78
+  completed_plans: 79
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 02 (Stage A breadth) - EXECUTING
-Plan: 02-46 complete, 61 plans summarized
+Plan: 02-62 complete, 62 plans summarized
 Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-10 - Plan 02-46 complete: `?map=XX_YY` loads the tile's own world-audio resources dispatched by manifest kind (ambience, music, StepSound placement audio); tile:20_20 original music and an ambience loop played after a phone tap and a desktop click (actors-lane report world-tile-audio-f60ce2d8, owner listening pending); sheet cards tile-general; runtime pass-through of placement audio is an integration follow-up
+Last activity: 2026-11-10 - Plan 02-62 complete: `--step lighting` writes one native-tile-lighting typed payload per tile with the BSP lightmap pages (texels as stored, hour sets, UVs per node range), light, fog, LevelInfo and water volume fields with provenance, StaticMeshInstance light lists, terrain shadow maps and the typed Env.int and timeenv0..3 program (20_21 and 20_20); BSP sections keyed by lightmap texture; MAT-02 stays Pending until 02-64 and 02-67
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -130,6 +130,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P65 | 27 min | 3 tasks | 26 files |
 | Phase 2 P69 | 45min | 3 tasks | 56 files |
 | Phase 02 P46 | 36min | 3 tasks | 19 files |
+| Phase 02 P62 | 60min | 3 tasks | 27 files |
 
 ## Accumulated Context
 
@@ -314,6 +315,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-46: tile world-audio records dispatch by fetched manifest kind; loader input is {tileId, records}; a silent tile names no tile audio resources (row 656)
 - [Phase 02]: 02-46: the audible report under artifacts/lane-store/actors/reports/ is the only record the actors-lane tile audio check writes (row 657)
 - [Phase 02]: 02-46: placementAudio and silentReason reach the world audio sheet after the integration pass-through; music pick, looping, volume selection and ambient gain labelled unverified (rows 659, 660)
+- [Phase 02]: 02-62: BSP lightmaps convert now (D2) through our own reader of the Level.Model tail; the bsp step keys sections by render section lightmap texture (algorithm 2); structured lighting records ride as one RECS.canonicalJson array; WaterVolumes are not in VOLS and stay a named gap; MAT-02 stays Pending (OVERNIGHT-DECISIONS rows 661 to 670)
 
 ### Pending Todos
 
@@ -416,6 +418,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-10T07:50:45.829Z
-Stopped at: Completed 02-46-PLAN.md
+Last session: 2026-11-10T08:51:41.434Z
+Stopped at: Completed 02-62-PLAN.md
 Resume file: None
