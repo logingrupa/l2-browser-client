@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-40-PLAN.md
-last_updated: "2026-11-10T00:31:52.621Z"
+stopped_at: Completed 02-48-PLAN.md
+last_updated: "2026-11-10T00:51:33.841Z"
 last_activity: 2026-11-10
-last_activity_desc: Phase 02 plan 02-38 complete (window registry and UI-03)
-state_head: 3675cba90e2d24bd9ca068974de7d12e5654ee7e
+last_activity_desc: Phase 02 plan 02-48 complete (cell-aware collision world)
+state_head: 2531124d754517a3070034d92912607894d41a0d
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 70
+  completed_plans: 71
   percent: 0
 ---
 
@@ -122,6 +122,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P38 | 40min | 3 tasks | 22 files |
 | Phase 02 P39 | 21 min | 3 tasks | 17 files |
 | Phase 02 P40 | 55min | 3 tasks | 27 files |
+| Phase 02 P48 | 20min | 3 tasks | 18 files |
 
 ## Accumulated Context
 
@@ -292,6 +293,9 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-38: buildNativeWindowRegistry is the one window listing for the Sandbox picker, ordered by base name then ordinal; the window layer clips with overflow hidden as a presentation rule; UI-02 and UI-03 complete (rows 559, 562 to 566)
 - [Phase 02]: 02-39: contract commit A ff64387 adds clipListings to createSandboxRuntimeActions from the runtime clip hub; SandboxPickerHost extends ActorClipListingSource; the Clips picker rereads on open and from a Reread clip listings button (rows 567 to 570)
 - [Phase 02]: 02-40: decision H markers unresolved {field: {reason, previousValue}} in the four human recipes and the female fighter stage profile; the loader reports unresolved profiles; chargrp generator: 15 rows, 1 padding, 8 body assemblies, every key a listed gap; class and hair joins need decoded fields the 4dd2 layouts lack; ACT-01 Pending (rows 571 to 586)
+- [Phase 02]: Plan 02-48: the MOVE-01 collision world holds decoded native-tile-collision cells per streaming cell with requireCell, addCell, removeCell and isReady in float32 source units; requireCell kept because readiness needs declared cells (rows 587 to 589)
+- [Phase 02]: Plan 02-48: the cell loader reads asset.json plus the payload.bin pinned inside it, as 02-30 writes it, and shares one tile BSP tree load per world and tile; the movement core boundary test type-checks with --lib es2022 alone; decodeNativeJsonResource is the one JSON decode owner (rows 590 to 593)
+- [Phase 02]: Plan 02-48: WORLD-04 and MOVE-01 stay Pending until 02-67, 02-49 and 02-65 wire the runtime context, the residency ring and the traces (row 594)
 
 ### Pending Todos
 
@@ -356,6 +360,8 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 - Character class join (02-40, rows 573, 577 and 578): no decoded source joins a chargrp row to its actor class or to a hairgrp/helmetgrp record, so all 14 character keys stay gaps with 8 body assemblies converted; rows 2, 3 and 5 wait on texture licensee 123/27 and rows 1, 9 and 13 on a missing serialized Animation reference; `docs/ASSET_PIPELINE.md` still calls hair colour 0 a recipe choice (row 584).
 - Particles overlap review (DEC-OWN-12): after the clean-room rewrite, 39 blocking and 816 reviewer runs in the rewritten particle sources are under independent review; particles exits 1 until that review is applied.
 - Headless WebGPU refusal (02-39): in one full run of `tests/browser/sandbox-npc-gremlin.spec.ts` the SwiftShader adapter answered "WebGPU is required" on the seventh case's world load; the case passed in the first run and alone. Find why the adapter refuses after several world loads in one worker.
+- Player-characters evidence heading (found in 02-48): `tests/unit/laneOwnership.test.ts` fails because `docs/parts/player-characters/EVIDENCE.md` (actors lane, 02-40) has no `## Evidence` section; the actors part adds it, which makes `pnpm test:unit` green again (deferred-items.md).
+- Movement overlap review (DEC-OWN-12, 02-48): the movement area reports 108 blocking and 1,732 unreviewed reviewer runs in the collision world code; independent review before the push.
 
 ## Deferred Verification
 
@@ -376,6 +382,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-10T00:31:51.765Z
-Stopped at: Completed 02-40-PLAN.md
+Last session: 2026-11-10T00:51:32.750Z
+Stopped at: Completed 02-48-PLAN.md
 Resume file: None
