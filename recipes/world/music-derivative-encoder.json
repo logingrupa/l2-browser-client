@@ -2,7 +2,8 @@
   "schemaVersion": 1,
   "kind": "native-music-derivative-encoder",
   "copiedFrom": {
-    "recipe": "recipes/native-music-20_20.json",
+    "commit": "158e398e85aa822e5d2ef6236186fac6811ced2c",
+    "recipe": "the 20_20 music bundle recipe deleted by plan 02-45",
     "block": "derivative"
   },
   "derivative": {

@@ -49,7 +49,7 @@ class AdapterTests(unittest.TestCase):
 
     def job(self, adapter='assets', **extra):
         value = {'id': 'fixture', 'adapter': adapter, 'source': 'original'}
-        if adapter in ('assets', 'migration', 'sounds', 'ambient'):
+        if adapter in ('assets', 'migration', 'sounds'):
             value['recipe'] = 'recipes/request.json'
         return {**value, **extra}
 
@@ -85,12 +85,11 @@ class AdapterTests(unittest.TestCase):
             {'relativePath': 'test.int', 'bytes': len(original), 'sha256': sha(original)}]})
         return self.job('environment', files=['test.int'])
 
-    def audio(self, name='sounds', unsupported=False):
+    def audio(self, unsupported=False):
         from native_audio import decode_native_audio
-        module = adapters._audio_module(name)
+        module = adapters._sounds_module()
         request = {'kind': 'audio', 'package': 'sound/Test.uax', 'object': 'Test.tone'}
-        write(self.root, 'recipes/request.json', {'fixture': name})
-        identity = 'stableId' if name == 'sounds' else 'referenceKey'
+        write(self.root, 'recipes/request.json', {'fixture': 'sounds'})
         package = {'relativePath': 'sound/Test.uax', 'sha256': sha(b'src'), 'bytes': 3}
         wav = b'RIFF' + struct.pack('<I', 38) + b'WAVEfmt ' + struct.pack('<IHHIIHH', 16, 1, 1, 22050, 44100, 2, 16) + b'data' + struct.pack('<Ih', 2, 0)
         raw = b'prefix' + wav + b'tail'
@@ -98,21 +97,15 @@ class AdapterTests(unittest.TestCase):
         write(self.output, 'source/serialized.bin', raw)
         decoded, mime, metadata = decode_native_audio(native_path)
         metadata.update(nativeFormat='WAV', nativePayloadSha256=sha(wav), nativeExportIndex=3)
-        source = {identity: 'exact-source-identity', 'id': 'interlude:Test.tone', 'sourcePackage': package,
+        source = {'stableId': 'exact-source-identity', 'id': 'interlude:Test.tone', 'sourcePackage': package,
             'export': {'object': 'Test.tone', 'exportIndex': 3, 'offset': 100, 'size': len(raw)},
             'nativeSound': {'nativeFormat': 'WAV', 'exportIndex': 3, 'embeddedPayloadOffsetUnwrapped': 106,
                             'embeddedPayloadBytes': len(wav), 'embeddedPayloadSha256': sha(wav)},
             'serializedExport': {'path': 'source/serialized.bin', 'bytes': len(raw), 'sha256': sha(raw)}}
-        if name == 'sounds':
-            source['nativePayload'] = {'path': 'source/native.bin', 'bytes': len(wav), 'sha256': sha(wav)}
-            inventory = {'counts': {'packages': 1, 'sounds': 1, 'unsupportedPackages': 0, 'unsupportedSourceRecords': 0},
-                         'packages': [{'source': package, 'status': 'enumerated'}], 'expectedInventoryMatch': True,
-                         'sounds': [source], 'limitations': ['Synthetic source only.']}
-        else:
-            source['nativePayloadFile'] = 'source/native.bin'
-            inventory = {'counts': {'declarations': 1, 'authoredReferences': 1, 'distinctReferences': 1, 'omittedReferences': 0},
-                         'expectedInventoryMatch': True, 'objects': [{'status': 'authored-reference'}],
-                         'sounds': [source], 'limitations': ['Synthetic source only.']}
+        source['nativePayload'] = {'path': 'source/native.bin', 'bytes': len(wav), 'sha256': sha(wav)}
+        inventory = {'counts': {'packages': 1, 'sounds': 1, 'unsupportedPackages': 0, 'unsupportedSourceRecords': 0},
+                     'packages': [{'source': package, 'status': 'enumerated'}], 'expectedInventoryMatch': True,
+                     'sounds': [source], 'limitations': ['Synthetic source only.']}
         native_source = {'edition': 'interlude', 'package': 'Test', 'object': 'Test.tone', 'sha256': sha(b'src')}
         provenance = {'schemaVersion': 1, 'request': request, 'source': native_source,
             'dependencies': {'sound/Test.uax': sha(b'src')}, 'converterSha256': native_assets.implementation_hash(),
@@ -124,29 +117,29 @@ class AdapterTests(unittest.TestCase):
         archive = native_assets.archive_bytes(asset, files)
         for key, data in {**files, 'asset.json': json_bytes(asset), 'asset.l2asset': archive}.items():
             write(self.output, 'asset/' + key, data)
-        result = {identity: source[identity], 'status': 'exported-and-verified', 'products': {
+        result = {'stableId': source['stableId'], 'status': 'exported-and-verified', 'products': {
             'archive': {'path': 'asset/asset.l2asset', 'bytes': len(archive), 'sha256': sha(archive)},
             'audio': {'path': 'asset/audio.wav', 'bytes': len(decoded), 'sha256': sha(decoded), 'mime': mime, 'metadata': metadata}}}
         if unsupported:
-            result = {identity: source[identity], 'status': 'unsupported-codec', 'error': 'Synthetic unsupported codec.'}
-        write(self.output, 'run.json', {'kind': 'native-staged-sound-products' if name == 'sounds' else 'native-map-ambient-audio-products',
+            result = {'stableId': source['stableId'], 'status': 'unsupported-codec', 'error': 'Synthetic unsupported codec.'}
+        write(self.output, 'run.json', {'kind': 'native-staged-sound-products',
             'recipeSha256': sha((self.root / 'recipes/request.json').read_bytes()), 'inputLockSha256': sha(self.lock.read_bytes()),
             'implementation': module.implementation()})
         write(self.output, 'inventory.json', inventory)
         write(self.output, 'coverage.json', module.coverage_document(inventory, [result]))
         self.audio_manifest()
-        return self.job(name)
+        return self.job('sounds')
 
     def audio_manifest(self):
         rows = [{'path': path.relative_to(self.output).as_posix(), 'bytes': path.stat().st_size, 'sha256': sha(path.read_bytes())}
                 for path in sorted(self.output.rglob('*')) if path.is_file() and path.name != 'SHA256-MANIFEST.json']
         write(self.output, 'SHA256-MANIFEST.json', {'schemaVersion': 1, 'files': rows})
 
-    def rewrite_audio(self, name, inventory=None, results=None):
+    def rewrite_audio(self, inventory=None, results=None):
         inventory = inventory or json.loads((self.output / 'inventory.json').read_bytes())
         results = results or json.loads((self.output / 'coverage.json').read_bytes())['sounds']
         write(self.output, 'inventory.json', inventory)
-        write(self.output, 'coverage.json', adapters._audio_module(name).coverage_document(inventory, results))
+        write(self.output, 'coverage.json', adapters._sounds_module().coverage_document(inventory, results))
         self.audio_manifest()
 
     def migration(self, bundle=False):
@@ -182,26 +175,7 @@ class AdapterTests(unittest.TestCase):
         write(self.output, 'products.json', native_migration.product_files(self.output))
         return self.job('migration')
 
-    def sky(self):
-        source = {'converterSha256': sha((ROOT / 'scripts/native_sky.py').read_bytes()),
-            'ddsWrapperSha256': sha((ROOT / 'scripts/native_assets_lib/texture_dds.py').read_bytes()),
-            'mapSha256': sha(b'map'), 'skyPackageSha256': sha(b'sky'), 'enginePackageSha256': sha(b'engine')}
-        snapshot = {'kind': 'native-sky-source-snapshot', 'id': 'synthetic-sky', 'source': source, 'parts': [
-            {'nodeRanges': [1], 'positions': [0, 0, 0, 1, 0, 0, 0, 1, 0], 'indices': [0, 1, 2],
-             'texture': {'sourceReference': 'Test.WhiteCloud'}}]}
-        write(self.output, 'sky.json', snapshot)
-        write(self.output, 'sky.glb', b'synthetic-integrity-fixture-not-a-rendering-test')
-        products = {name: {'sha256': sha((self.output / name).read_bytes()), 'bytes': (self.output / name).stat().st_size}
-                    for name in ('sky.json', 'sky.glb')}
-        write(self.output, 'manifest.json', {'schemaVersion': 1, 'kind': 'native-sky-source-bundle', 'id': snapshot['id'],
-            'source': source, 'files': products, 'counts': {'nodes': 1, 'vertices': 3, 'triangles': 1, 'materialRoots': 1, 'textures': 1},
-            'limitations': ['Synthetic integrity fixture; no geometry validation or render claim.']})
-        write(self.root, 'recipes/lock.json', {'schemaVersion': 1, 'files': [
-            {'relativePath': name, 'bytes': len(data), 'sha256': sha(data)} for name, data in [
-                ('maps/20_20.unr', b'map'), ('textures/l2_skies.utx', b'sky'), ('system/Engine.u', b'engine')]]})
-        return self.job('sky')
-
-    def test_six_named_adapters_have_no_arbitrary_shell_or_staging_fields(self):
+    def test_four_named_adapters_have_no_arbitrary_shell_or_staging_fields(self):
         for adapter in adapters.ADAPTERS:
             with self.subTest(adapter=adapter):
                 adapters.validate_job(self.job(adapter))
@@ -213,7 +187,7 @@ class AdapterTests(unittest.TestCase):
                 adapters.validate_job(self.job(**{key: value}))
 
     def test_only_supported_job_specific_fields_are_admitted(self):
-        for job in [self.job('sky', recipe='recipes/a.json'), self.job('environment', recipe='recipes/a.json'),
+        for job in [self.job('environment', recipe='recipes/a.json'),
                     self.job(files=['Env.int']), {k: v for k, v in self.job().items() if k != 'recipe'},
                     self.job('environment', files=[]), self.job('environment', files=['../test.int']),
                     self.job('environment', files=['Env.int', 'env.int']), self.job(dependsOn=['fixture']),
@@ -226,10 +200,10 @@ class AdapterTests(unittest.TestCase):
 
     def test_command_argv_for_all_adapters_is_fixed_and_offline(self):
         scripts = {'assets': 'native_assets.py', 'migration': 'native_migration.py', 'environment': 'export-native-environment.py',
-                   'sky': 'native_sky.py', 'sounds': 'export-native-sounds.py', 'ambient': 'export-native-map-audio.py'}
+                   'sounds': 'export-native-sounds.py'}
         for filename in scripts.values(): write(self.root, 'scripts/' + filename, b'# fixture')
         write(self.root, 'recipes/request.json', [])
-        for adapter in ['assets', 'environment', 'sky', 'sounds', 'ambient']:
+        for adapter in ['assets', 'environment', 'sounds']:
             job = self.job(adapter)
             if adapter == 'environment': job['files'] = ['test.int']
             argv = adapters.command(job, self.source, self.lock, self.output, self.root)
@@ -326,7 +300,7 @@ class AdapterTests(unittest.TestCase):
             adapters.collect(job, self.output, self.lock, self.root)
 
     def test_missing_product_output_is_not_inferred_from_exit_status(self):
-        for adapter in ['environment', 'sky', 'sounds', 'ambient', 'migration']:
+        for adapter in ['environment', 'sounds', 'migration']:
             with self.subTest(adapter=adapter), self.assertRaises((ValueError, FileNotFoundError)):
                 adapters.collect(self.job(adapter), self.output, self.lock, self.root)
 
@@ -363,19 +337,12 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(result['sourceDependencies'], {'sound/Test.uax': sha(b'src')})
         self.assertEqual(before, {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in self.output.rglob('*') if p.is_file()})
 
-    def test_ambient_collector_uses_reference_identity_and_preserves_omission_limit(self):
-        job = self.audio('ambient')
-        result = adapters.collect(job, self.output, self.lock, self.root)
-        self.assertEqual(result['status'], 'converted')
-        self.assertEqual(result['counts']['exportedSounds'], 1)
-        self.assertTrue(any('no browser staging' in row for row in result['limits']))
-
-    def test_missing_ambient_identity_does_not_vacuously_equal_none(self):
-        job = self.audio('ambient')
+    def test_missing_sound_identity_does_not_vacuously_equal_none(self):
+        job = self.audio()
         inventory = json.loads((self.output / 'inventory.json').read_bytes())
         results = json.loads((self.output / 'coverage.json').read_bytes())['sounds']
-        del inventory['sounds'][0]['referenceKey']; del results[0]['referenceKey']
-        self.rewrite_audio('ambient', inventory, results)
+        del inventory['sounds'][0]['stableId']; del results[0]['stableId']
+        self.rewrite_audio(inventory, results)
         with self.assertRaisesRegex(ValueError, 'source/result identity'):
             adapters.collect(job, self.output, self.lock, self.root)
 
@@ -383,7 +350,7 @@ class AdapterTests(unittest.TestCase):
         job = self.audio()
         results = json.loads((self.output / 'coverage.json').read_bytes())['sounds']
         results[0]['stableId'] = 'other-source'
-        self.rewrite_audio('sounds', results=results)
+        self.rewrite_audio(results=results)
         with self.assertRaisesRegex(ValueError, 'source/result identity'):
             adapters.collect(job, self.output, self.lock, self.root)
 
@@ -391,7 +358,7 @@ class AdapterTests(unittest.TestCase):
         job = self.audio()
         inventory = json.loads((self.output / 'inventory.json').read_bytes())
         inventory['sounds'][0]['export']['object'] = 'Test.different'
-        self.rewrite_audio('sounds', inventory)
+        self.rewrite_audio(inventory)
         with self.assertRaisesRegex(ValueError, 'archive identity'):
             adapters.collect(job, self.output, self.lock, self.root)
 
@@ -399,7 +366,7 @@ class AdapterTests(unittest.TestCase):
         job = self.audio()
         inventory = json.loads((self.output / 'inventory.json').read_bytes())
         inventory['sounds'][0]['nativeSound']['exportIndex'] = 4
-        self.rewrite_audio('sounds', inventory)
+        self.rewrite_audio(inventory)
         with self.assertRaisesRegex(ValueError, 'payload/export-index join'):
             adapters.collect(job, self.output, self.lock, self.root)
 
@@ -409,14 +376,16 @@ class AdapterTests(unittest.TestCase):
         data = path.read_bytes().replace(b'RIFF', b'RIFX'); path.write_bytes(data)
         inventory = json.loads((self.output / 'inventory.json').read_bytes())
         inventory['sounds'][0]['serializedExport']['sha256'] = sha(data)
-        self.rewrite_audio('sounds', inventory)
+        self.rewrite_audio(inventory)
         with self.assertRaisesRegex(ValueError, 'retained serialized'):
             adapters.collect(job, self.output, self.lock, self.root)
 
     def test_audio_native_payload_corruption_is_rejected_despite_new_manifest(self):
-        job = self.audio('ambient')
+        job = self.audio()
         path = self.output / 'source/native.bin'; path.write_bytes(path.read_bytes()[:-2] + b'xx')
-        self.audio_manifest()
+        inventory = json.loads((self.output / 'inventory.json').read_bytes())
+        inventory['sounds'][0]['nativePayload']['sha256'] = sha(path.read_bytes())
+        self.rewrite_audio(inventory)
         with self.assertRaisesRegex(ValueError, 'payload/export-index join'):
             adapters.collect(job, self.output, self.lock, self.root)
 
@@ -426,26 +395,6 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(result['status'], 'partial')
         self.assertEqual(result['counts']['exportedSounds'], 0)
         self.assertEqual(result['unsupported'][0]['status'], 'unsupported-codec')
-
-    def test_sky_collector_checks_source_snapshot_and_derived_counts(self):
-        job = self.sky()
-        result = adapters.collect(job, self.output, self.lock, self.root)
-        self.assertEqual(result['counts'], {'nodes': 1, 'vertices': 3, 'triangles': 1, 'materialRoots': 1, 'textures': 1})
-        self.assertEqual(set(result['sourceDependencies']), {'maps/20_20.unr', 'textures/l2_skies.utx', 'system/Engine.u'})
-
-    def test_sky_inflated_coverage_is_rejected(self):
-        job = self.sky()
-        path = self.output / 'manifest.json'; value = json.loads(path.read_bytes()); value['counts']['vertices'] += 1
-        path.write_bytes(json_bytes(value))
-        with self.assertRaisesRegex(ValueError, 'coverage counts differ'):
-            adapters.collect(job, self.output, self.lock, self.root)
-
-    def test_sky_stale_converter_pin_is_rejected(self):
-        job = self.sky()
-        path = self.output / 'manifest.json'; value = json.loads(path.read_bytes()); value['source']['converterSha256'] = '0' * 64
-        path.write_bytes(json_bytes(value))
-        with self.assertRaisesRegex(ValueError, 'snapshot identity differs'):
-            adapters.collect(job, self.output, self.lock, self.root)
 
     def test_migration_collector_uses_active_archives_and_never_calls_writing_validator(self):
         import native_migration

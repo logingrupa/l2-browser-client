@@ -40,7 +40,7 @@ export const COLOUR_CONSTANTS = {
   byteOrder: {
     id: "colour.byte-order",
     value: ["B", "G", "R", "A"],
-    provenance: `${materialNotes} colour.byte-order: B, G, R, A in lineage2js/src/assets/unreal/un-color.ts:37-43 and src/scene/world/nativeMaterialGraph.ts, R, G, B, A in scripts/native_sky.py:166; B, G, R, A until the R != B fixture`,
+    provenance: `${materialNotes} colour.byte-order: B, G, R, A in lineage2js/src/assets/unreal/un-color.ts:37-43 and src/scene/world/nativeMaterialGraph.ts, R, G, B, A in scripts/world/sky_step.py:184; B, G, R, A until the R != B fixture`,
     status: "unknown",
     interludeEvidence: null,
     runtimeDefault: ["B", "G", "R", "A"],

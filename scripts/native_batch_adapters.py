@@ -11,7 +11,7 @@ import sys
 import zipfile
 
 ROOT = Path(__file__).resolve().parent.parent
-ADAPTERS = frozenset(('assets', 'migration', 'environment', 'sky', 'sounds', 'ambient'))
+ADAPTERS = frozenset(('assets', 'migration', 'environment', 'sounds'))
 HASH = re.compile(r'[a-f0-9]{64}')
 ID = re.compile(r'[a-z0-9][a-z0-9-]{0,79}')
 COMMON_LIMIT = 'Offline conversion coverage only; no browser staging, world playback, Editor acceptance or native parity is established.'
@@ -75,7 +75,7 @@ def validate_job(job):
         values = job['dependsOn']
         require(isinstance(values, list) and all(isinstance(v, str) and ID.fullmatch(v) for v in values)
                 and len(values) == len(set(values)) and job['id'] not in values, 'Invalid job dependencies')
-    needs_recipe = job['adapter'] in ('assets', 'migration', 'sounds', 'ambient')
+    needs_recipe = job['adapter'] in ('assets', 'migration', 'sounds')
     require(('recipe' in job) == needs_recipe, 'This adapter requires exactly its supported recipe field')
     if needs_recipe:
         relative_name(job['recipe'])
@@ -105,10 +105,9 @@ def recipe_paths(job, project_root=ROOT):
     return sorted(set(paths))
 
 
-def _audio_module(name):
-    filename = 'export-native-sounds.py' if name == 'sounds' else 'export-native-map-audio.py'
-    spec = importlib.util.spec_from_file_location('_batch_' + name, ROOT / 'scripts' / filename)
-    require(spec is not None and spec.loader is not None, 'Missing audio adapter module')
+def _sounds_module():
+    spec = importlib.util.spec_from_file_location('_batch_sounds', ROOT / 'scripts' / 'export-native-sounds.py')
+    require(spec is not None and spec.loader is not None, 'Missing sounds adapter module')
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -118,7 +117,7 @@ def adapter_pins(name):
     require(isinstance(name, str) and name in ADAPTERS, 'Unknown batch adapter')
     files = {'scripts/native_batch_adapters.py'}
     result = {}
-    if name in ('assets', 'migration', 'sounds', 'ambient'):
+    if name in ('assets', 'migration', 'sounds'):
         import native_assets
         result['fingerprint:native-assets'] = native_assets.implementation_hash()
         tool = Path(native_assets.UMODEL)
@@ -130,17 +129,10 @@ def adapter_pins(name):
     if name == 'migration':
         files.update('scripts/' + item for item in ('native_migration.py', 'native_source_stage.py', 'native_actor_profiles.py',
             'native_texture_validation.py', 'validate-native-gltf.mjs'))
-    elif name in ('sounds', 'ambient'):
-        files.update('scripts/' + item for item in _audio_module(name).implementation()['files'])
+    elif name == 'sounds':
+        files.update('scripts/' + item for item in _sounds_module().implementation()['files'])
     elif name == 'environment':
         files.update('scripts/' + item for item in ('native_environment.py', 'export-native-environment.py', 'native_catalog/ue2.py'))
-    elif name == 'sky':
-        files.update('scripts/' + item for item in ('native_sky.py', 'native_bsp_floor.py', 'world/bsp_reader_binding.py', 'world/map_actor_properties.py',
-            'native_catalog/ue2.py', 'native_assets_lib/gltf.py', 'native_assets_lib/texture_dds.py'))
-        files.update(path.relative_to(ROOT).as_posix() for path in (ROOT / 'scripts/vendor/lineage2elbera_bsp').rglob('*.py'))
-        from PIL import DdsImagePlugin, Image
-        for label, path in [('Pillow-DdsImagePlugin', DdsImagePlugin.__file__), ('Pillow-imaging', Image.core.__file__)]:
-            result['tool:' + label] = digest(Path(path).read_bytes())
     result.update({name: digest(child(ROOT, name).read_bytes()) for name in sorted(files)})
     return dict(sorted(result.items()))
 
@@ -151,7 +143,7 @@ def command(job, source_root, source_lock, output, project_root=ROOT):
     recipe_paths(job, project_root)
     recipe = str(child(project_root, job['recipe'])) if 'recipe' in job else None
     script = {'assets': 'native_assets.py', 'migration': 'native_migration.py', 'environment': 'export-native-environment.py',
-              'sky': 'native_sky.py', 'sounds': 'export-native-sounds.py', 'ambient': 'export-native-map-audio.py'}[name]
+              'sounds': 'export-native-sounds.py'}[name]
     argv = [sys.executable, '-B', str(child(project_root, 'scripts/' + script))]
     source_root, source_lock, output = map(lambda value: str(Path(value).absolute()), (source_root, source_lock, output))
     if name == 'assets':
@@ -162,8 +154,6 @@ def command(job, source_root, source_lock, output, project_root=ROOT):
         return argv + ['--recipe', recipe, '--client', source_root, '--output', output]
     if name == 'environment':
         return argv + ['--input-dir', source_root, '--output', output] + (['--files', *job['files']] if 'files' in job else [])
-    if name == 'sky':
-        return argv + ['--client', source_root, '--output', output]
     return argv + ['--client-snapshot', source_root, '--input-lock', source_lock, '--recipe', recipe, '--output', output]
 
 
@@ -285,28 +275,6 @@ def _environment(job, output, pins):
         expected.keys(), dependencies, unsupported, ['Source tables do not select native file/type/time/interpolation or runtime colors.'])
 
 
-def _sky(output, pins):
-    manifest = read_json(child(output, 'manifest.json'))
-    require(manifest.get('schemaVersion') == 1 and manifest.get('kind') == 'native-sky-source-bundle', 'Wrong sky product kind')
-    products = _checked_files(output, manifest['files'])
-    require({'sky.json', 'sky.glb'} <= set(products), 'Sky payloads are incomplete')
-    snapshot = read_json(child(output, 'sky.json'))
-    require(snapshot.get('kind') == 'native-sky-source-snapshot' and snapshot.get('source') == manifest['source']
-            and snapshot.get('id') == manifest.get('id'), 'Sky snapshot identity differs')
-    source = manifest['source']
-    require(source.get('converterSha256') == digest((ROOT / 'scripts/native_sky.py').read_bytes()) and
-            source.get('ddsWrapperSha256') == digest((ROOT / 'scripts/native_assets_lib/texture_dds.py').read_bytes()), 'Sky converter pins changed')
-    dependencies = {}
-    _dependencies({'maps/20_20.unr': source['mapSha256'], 'textures/l2_skies.utx': source['skyPackageSha256'],
-                   'system/Engine.u': source['enginePackageSha256']}, pins, dependencies)
-    parts = snapshot['parts']
-    counts = {'nodes': sum(len(part['nodeRanges']) for part in parts), 'vertices': sum(len(part['positions']) // 3 for part in parts),
-              'triangles': sum(len(part['indices']) // 3 for part in parts), 'materialRoots': len(parts),
-              'textures': len({part['texture']['sourceReference'] for part in parts})}
-    require(counts == manifest['counts'], 'Sky coverage counts differ from retained geometry')
-    return _result('converted', counts, ['manifest.json', *products], dependencies, [], manifest['limitations'])
-
-
 def _migration(job, output, pins, source_lock, project_root):
     import native_migration
     recipe = read_json(child(project_root, job['recipe']))
@@ -361,15 +329,15 @@ def require_passed_migration_gltf_summary(summary):
             and type(summary.get('warnings')) is int and summary['warnings'] >= 0, 'Migration glTF validation summary is missing or failed')
 
 
-def _audio(job, output, pins, source_lock, project_root):
-    name = job['adapter']; module = _audio_module(name)
+def _sounds(job, output, pins, source_lock, project_root):
+    module = _sounds_module()
     owner = read_json(child(output, 'run.json')); inventory = read_json(child(output, 'inventory.json'))
     coverage = read_json(child(output, 'coverage.json')); manifest = read_json(child(output, 'SHA256-MANIFEST.json'))
-    require(owner.get('kind') == ('native-staged-sound-products' if name == 'sounds' else 'native-map-ambient-audio-products')
+    require(owner.get('kind') == 'native-staged-sound-products'
             and owner.get('recipeSha256') == digest(child(project_root, job['recipe']).read_bytes())
             and owner.get('inputLockSha256') == digest(Path(source_lock).read_bytes())
             and owner.get('implementation') == module.implementation(), 'Audio owner/implementation/source pins differ')
-    require(coverage.get('kind') == ('native-staged-sound-coverage' if name == 'sounds' else 'native-map-ambient-export-coverage'), 'Wrong audio coverage kind')
+    require(coverage.get('kind') == 'native-staged-sound-coverage', 'Wrong audio coverage kind')
     require(coverage == module.coverage_document(inventory, coverage['sounds']), 'Audio coverage counters/status differ')
     require(len(coverage['sounds']) == len(inventory['sounds']), 'Audio source/product row count differs')
     require(manifest.get('schemaVersion') == 1 and isinstance(manifest.get('files'), list), 'Invalid audio output manifest')
@@ -382,13 +350,10 @@ def _audio(job, output, pins, source_lock, project_root):
         if path.is_file(): actual.add(path.relative_to(Path(output)).as_posix())
     require(actual == set(files) | {'SHA256-MANIFEST.json'}, 'Audio file closure changed or run is incomplete')
     dependencies = {}
-    if 'map' in inventory:
-        row = inventory['map']; _dependencies({row['relativePath']: row['sha256']}, pins, dependencies)
     for row in inventory.get('packages', []):
         source = row['source']; _dependencies({source['relativePath']: source['sha256']}, pins, dependencies)
     for source, result in zip(inventory['sounds'], coverage['sounds']):
-        identity = 'stableId' if name == 'sounds' else 'referenceKey'
-        require(isinstance(source.get(identity), str) and result.get(identity) == source[identity], 'Audio source/result identity differs')
+        require(isinstance(source.get('stableId'), str) and result.get('stableId') == source['stableId'], 'Audio source/result identity differs')
         if source.get('sourcePackage'):
             package = source['sourcePackage']; _dependencies({package['relativePath']: package['sha256']}, pins, dependencies)
         if result['status'] == 'exported-and-verified':
@@ -407,12 +372,9 @@ def _audio(job, output, pins, source_lock, project_root):
             metadata = provenance['metadata']; native = source['nativeSound']
             raw_descriptor = source['serializedExport']
             _checked_files(output, {raw_descriptor['path']: raw_descriptor})
-            if name == 'sounds':
-                native_descriptor = source['nativePayload']
-                _checked_files(output, {native_descriptor['path']: native_descriptor})
-                native_path = child(output, native_descriptor['path'])
-            else:
-                native_path = child(output, source['nativePayloadFile'])
+            native_descriptor = source['nativePayload']
+            _checked_files(output, {native_descriptor['path']: native_descriptor})
+            native_path = child(output, native_descriptor['path'])
             original = native_path.read_bytes()
             require(metadata['nativePayloadSha256'] == digest(original) == native['embeddedPayloadSha256'] and
                     metadata['nativeExportIndex'] == export['exportIndex'] == native['exportIndex'] and
@@ -433,9 +395,8 @@ def _audio(job, output, pins, source_lock, project_root):
                     and audio_path.read_bytes() == decoded, 'Audio decoded payload/metadata join differs')
             _checked_files(output, {audio_descriptor['path']: audio_descriptor})
     unsupported = [row for row in coverage['sounds'] if row['status'] != 'exported-and-verified']
-    if name == 'sounds':
-        unsupported += [row for row in inventory.get('packages', []) if row.get('status') == 'unsupported-package']
-    complete = coverage['status'] in ('selected-staged-sounds-exported', 'referenced-dependencies-exported-omissions-unresolved')
+    unsupported += [row for row in inventory.get('packages', []) if row.get('status') == 'unsupported-package']
+    complete = coverage['status'] == 'selected-staged-sounds-exported'
     return _result('converted' if complete else 'partial', coverage['counts'], ['SHA256-MANIFEST.json', *files],
                    dependencies, unsupported, inventory.get('limitations', []))
 
@@ -457,8 +418,7 @@ def collect(job, output, source_lock, project_root=ROOT):
         pins = _lock(source_lock)
         if job['adapter'] == 'assets': return _assets(job, output, pins, project_root)
         if job['adapter'] == 'environment': return _environment(job, output, pins)
-        if job['adapter'] == 'sky': return _sky(output, pins)
         if job['adapter'] == 'migration': return _migration(job, output, pins, source_lock, project_root)
-        return _audio(job, output, pins, source_lock, project_root)
+        return _sounds(job, output, pins, source_lock, project_root)
     except (KeyError, TypeError, IndexError) as error:
         raise ValueError('Malformed ' + job['adapter'] + ' product/receipt: ' + str(error)) from error

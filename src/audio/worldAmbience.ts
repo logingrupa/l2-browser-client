@@ -2,34 +2,6 @@ import type { NativeAmbience, NativeAmbientEmitter, NativeVector } from "../asse
 import { nativeFlameBrowserToNative } from "../scene/world/nativeFlameBillboards";
 import type { WorldAudioMixer, WorldAudioVoice } from "./WorldAudioMixer";
 
-/** Map ambience from the 20_20 AmbientSoundObject fields (bundle:
- * pnpm assets:ambient → scripts/bundle-native-ambience.py → stage_native_world_audio.py).
- *
- * Native rules (proved from bytes, native-sound-answers-20261107/REPORT.md Q3;
- * live path inline in UALAudioSubsystem::Update 0x1000d5a1..0x1000d966):
- * - Omitted fields take the Engine.u class defaults (Random 100, Radius 64,
- *   Volume 190, Pitch 64, type Always, StartTime 0).
- * - Candidate when 3D distance <= SoundRadius × GAudioMaxRadiusMultiplier (50,
- *   read by the bundler from the original Core.dll), in source units.
- * - Type gate: Always/Day/Night need the listener out of water; Water needs it
- *   in water. Day = hour >= 6, Night = hour < 6.
- * - AmbientRandom 100 (or <= 0) loops; 1..99 = one one-shot attempt per WAV
- *   length counted from AmbientSoundStartTime, played when appRand()%100 < Random.
- * - Gain clamp((Vol/255) × SoundVolume × (50R − d)/(50R), 0, 1), times the
- *   OpenAL inverse-clamped factor R/(R + rolloff × (d − R)) when d > R
- *   (reference distance R, pinned l2.ini RollOff 0.5, SoundVolume 1.0).
- * - playbackRate clamp(Pitch/64, 0.5, 2). 16 ambient slots; the same object
- *   never plays twice at once.
- *
- * Presentation choices (labelled; native unproved): listener = local pawn
- * Location; game hour = Auto (local clock) / Day / Night chips; the period
- * clock starts when the page starts; at most 8 loops loudest-first (with 20 %
- * hysteresis) and one-shots use the remaining of the 16 slots first-come;
- * loops start at sample 0; a 50 ms anti-click ramp replaces the native
- * per-tick gain start at 0; a pan-only Web Audio panner; the browser has no
- * water volumes, so Water-type emitters never play and the listener is never
- * in water. Sounds are fetched and decoded only near the listener and
- * released again once far away. */
 export const ambientSoundObjectDefaults = {
   ambientRandom: 100, soundRadius: 64, soundVolume: 190, soundPitch: 64, ambientSoundType: 0, ambientSoundStartTime: 0,
 } as const;
@@ -45,12 +17,9 @@ export const ambienceTimeChoices: readonly AmbienceTimeOfDay[] = ["auto", "day",
 export interface WorldAmbienceOptions {
   now?: () => number;
   random?: () => number;
-  /** Local clock hour 0–24 for Auto (presentation choice). */
   clockHour?: () => number;
   updateIntervalSeconds?: number;
-  /** Extra source units beyond the audible range at which payloads are prefetched. */
   prefetchMarginUnits?: number;
-  /** Seconds a fetched sound may stay unused before it is released. */
   releaseAfterSeconds?: number;
   maxLoopVoices?: number;
   maxVoices?: number;
@@ -64,9 +33,7 @@ export interface WorldAmbienceInspection {
   isDay: boolean;
   hour: number;
   emitters: number;
-  /** Emitters with a sound within SoundRadius × 50 of the listener (any type). */
   candidates: number;
-  /** Candidates that pass the type gate (played or eligible). */
   inRange: number;
   gated: number;
   sounds: { loaded: number; loading: number; released: number; failed: Record<string, string> };
@@ -91,12 +58,10 @@ export const ambientValue = <K extends keyof typeof ambientSoundObjectDefaults>(
   return typeof value === "number" && Number.isFinite(value) ? value : ambientSoundObjectDefaults[field];
 };
 
-/** Audible range in source units (SoundRadius × multiplier). */
 export function ambientRangeUnits(emitter: NativeAmbientEmitter, multiplier: number): number {
   return ambientValue(emitter, "soundRadius") * multiplier;
 }
 
-/** Linear gain before bus/master for a source-unit distance (native formula). */
 export function ambientGain(emitter: NativeAmbientEmitter, distanceUnits: number, multiplier: number,
   soundVolume: number = nativeAmbientRules.soundVolume, rolloff: number = nativeAmbientRules.rolloff): number {
   const radius = ambientValue(emitter, "soundRadius"), outer = radius * multiplier;
@@ -109,7 +74,6 @@ export function ambientGain(emitter: NativeAmbientEmitter, distanceUnits: number
 
 export const ambientIsDay = (hour: number): boolean => hour >= nativeAmbientRules.dayStartHour;
 
-/** Native type gate. The browser has no water volumes (listenerInWater false). */
 export function ambientTypeAllowed(type: number | null, isDay: boolean, listenerInWater = false): boolean {
   const value = type ?? ambientSoundObjectDefaults.ambientSoundType;
   if (value === 0) return !listenerInWater; // AST1_Always
@@ -128,7 +92,6 @@ export function ambientPlaybackRate(emitter: NativeAmbientEmitter): number {
   return Math.min(2, Math.max(.5, ambientValue(emitter, "soundPitch") / 64));
 }
 
-/** One-shot period index: one attempt per WAV length, counted from StartTime. */
 export function ambientPeriodIndex(time: number, startTime: number, wavSeconds: number): number {
   return Math.floor((time - startTime) / wavSeconds);
 }
@@ -205,7 +168,6 @@ export function createWorldAmbience(ambience: NativeAmbience, mixer: WorldAudioM
       candidates.push({ emitter, distanceUnits, gain: ambientGain(emitter, distanceUnits, multiplier), loop: ambientLoops(emitter) });
     }
     const running = mixer.contextState() === "running" && !mixer.isPaused;
-    // Loops: loudest first; playing loops rank 20 % higher so the set does not thrash.
     const wanted = candidates.filter(candidate => candidate.loop && candidate.gain > 0 && loaded.has(candidate.emitter.sound!))
       .sort((a, b) => (loops.has(b.emitter.id) ? b.gain * 1.2 : b.gain) - (loops.has(a.emitter.id) ? a.gain * 1.2 : a.gain))
       .slice(0, maxLoops);
@@ -221,7 +183,6 @@ export function createWorldAmbience(ambience: NativeAmbience, mixer: WorldAudioM
         playbackRate: ambientPlaybackRate(candidate.emitter), fadeInSeconds: RAMP, position: candidate.emitter.position });
       if (voice) loops.set(candidate.emitter.id, { voice, emitter: candidate.emitter, gain: candidate.gain, distanceUnits: candidate.distanceUnits });
     }
-    // One-shots: one roll per crossed WAV-length period (phase = StartTime).
     const visible = new Set<string>();
     for (const candidate of candidates) {
       if (candidate.loop) continue;
@@ -243,7 +204,6 @@ export function createWorldAmbience(ambience: NativeAmbience, mixer: WorldAudioM
       if (voice) { oneShots.set(emitter.id, voice); started++; } else skipped++;
     }
     for (const id of [...periods.keys()]) if (!visible.has(id)) periods.delete(id);
-    // Release decoded sounds that have been far away for a while.
     for (const key of [...loaded]) {
       if (time - (lastNeeded.get(key) ?? -Infinity) < releaseAfter) continue;
       if (mixer.unregister(mixerKey(key))) { loaded.delete(key); lastNeeded.delete(key); released++; }

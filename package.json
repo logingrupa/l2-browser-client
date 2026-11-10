@@ -30,7 +30,6 @@
 		"assets:pipeline": "python -B scripts/native_batch.py",
 		"assets:editor": "node scripts/native_editor_import.mjs",
 		"assets:effects": "python scripts/native_effects.py",
-		"assets:ambient": "python -B scripts/export-native-map-audio.py",
 		"assets:sounds": "python -B scripts/export-native-sounds.py",
 		"assets:convert": "python scripts/native_assets.py convert",
 		"assets:batch": "python scripts/native_assets.py batch",

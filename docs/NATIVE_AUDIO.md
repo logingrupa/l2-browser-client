@@ -9,7 +9,7 @@ Original Interlude audio: conversion, per-bundle binding and browser playback. S
 - A browser rule without native evidence is labelled "presentation choice" on the dev sheet. Native facts: `artifacts/native-parity/research/native-sound-answers-20261107/REPORT.md`.
 - Playback stays in presentation, outside `GameWorldAdapter` (ARCH-04). `src/audio/WorldAudioMixer.ts` unlocks on the first trusted gesture; controls in Dev > Audio.
 - `pnpm assets:sounds` exports the 4,773 sounds of the 18 locked UAX packages (`artifacts/native-parity/research/native-world-audio-20261106/sound-batch-integration/REPORT.md`). Never rerun it to bind one actor or skill.
-- Bundlers in `scripts/`: `export-native-music.py`, `bundle-native-ambience.py`, `bundle-native-placement-audio.py`, `bundle-native-animation-audio.py`, `bundle-native-skill-audio.py`; plus `pnpm assets:ambient`. Every `assets:*` run is integration thread only.
+- Bundlers in `scripts/`: `bundle-native-placement-audio.py`, `bundle-native-animation-audio.py`, `bundle-native-skill-audio.py`. Tile ambience, placement audio and music come from `scripts/world/convert_tile.py --step audio`. Every `assets:*` run is integration thread only.
 
 ## Open
 
