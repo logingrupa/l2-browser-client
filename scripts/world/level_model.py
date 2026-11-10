@@ -8,7 +8,6 @@ REVIEWED_LEVEL_MODEL_LICENSEE = 28
 SURFACE_LIGHTMAP_INDEX_LAYOUT = True
 INDEX_NONE = -1
 LEAF_HULL_BOUND_WORDS = 6
-SKY_ZONE_CLASS = 'Engine.SkyZoneInfo'
 
 
 class LevelModelLayoutError(FormatError):
@@ -79,17 +78,3 @@ def read_level_model(package):
     require_level_model_ranges(model)
     return LevelModel(package, adapter, reader, export, binding, model, checks)
 
-
-def zone_actor_export(package, zone_actor_reference):
-    if zone_actor_reference <= 0 or zone_actor_reference > len(package.exports):
-        return None
-    return package.exports[zone_actor_reference - 1]
-
-
-def sky_zone_indices(package, model):
-    indices = set()
-    for zone_index, zone in enumerate(model.zones):
-        actor = zone_actor_export(package, zone[0])
-        if actor is not None and actor['classObject'] == SKY_ZONE_CLASS:
-            indices.add(zone_index)
-    return frozenset(indices)

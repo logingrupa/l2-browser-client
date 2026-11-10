@@ -6,8 +6,8 @@ from native_store.coverage_denominators import UNKNOWN_DENOMINATOR
 from native_store.gap_rows import GapRowError, load_gap_reason_patterns, validate_gap_row
 
 GAP_CENSUS_STATUS_PRECEDENCE = ('converted', 'failed', 'gap', 'pending')
-GAP_CENSUS_STEP_ORDER = ('census', 'raw', 'chunks', 'terrain', 'manifest', 'meshes', 'bsp', 'collision', 'movers', 'sky', 'audio',
-                         'minimap', 'terrain-material', 'decode', 'name-index', 'layout', 'controls', 'textures', 'field-cp', 'field-mp',
+GAP_CENSUS_STEP_ORDER = ('census', 'raw', 'chunks', 'terrain', 'manifest', 'meshes', 'bsp', 'collision', 'movers', 'emitters', 'bsp-visibility',
+                         'sky', 'audio', 'minimap', 'terrain-material', 'decode', 'name-index', 'layout', 'controls', 'textures', 'field-cp', 'field-mp',
                          'npc-model', 'npc-profile', 'npc-sound-identities', 'skills', 'characters')
 GAP_CENSUS_LOAD_STATUSES = ('pass', 'failed', 'unverified')
 UNVERIFIED_LOAD_STATUS = 'unverified'

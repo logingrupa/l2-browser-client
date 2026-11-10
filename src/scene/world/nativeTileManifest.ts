@@ -11,7 +11,13 @@ export interface NativeTileChunkRecord {
   readonly manifestBytes: number;
 }
 
-export type NativeTileResourceKind = "native-tile-collision" | "movers";
+const tileResourcePathPatterns = {
+  "native-tile-collision": /^\/l2\/maps\/([a-f0-9]{64})\/native-tile-collision\/asset\.json$/,
+  movers: /^\/l2\/movers\/([a-f0-9]{64})\/tile-movers\.json$/,
+  "bsp-visibility": /^\/l2\/maps\/([a-f0-9]{64})\/native-tile-bsp-visibility\/asset\.json$/,
+} as const;
+
+export type NativeTileResourceKind = keyof typeof tileResourcePathPatterns;
 
 export interface NativeTileResource {
   readonly kind: NativeTileResourceKind;
@@ -39,11 +45,7 @@ const anchorFields = ["playerStart", "location"];
 const chunkRecordFields = ["chunkId", "manifest", "manifestSha256", "manifestBytes"];
 const chunkManifestPathPattern = /^\/l2\/maps\/([a-f0-9]{64})\/native-tile-chunk-runtime\/manifest\.json$/;
 const tileResourceFields = ["kind", "manifest", "manifestSha256", "manifestBytes"];
-const tileResourcePathPatterns: Readonly<Record<NativeTileResourceKind, RegExp>> = {
-  "native-tile-collision": /^\/l2\/maps\/([a-f0-9]{64})\/native-tile-collision\/asset\.json$/,
-  movers: /^\/l2\/movers\/([a-f0-9]{64})\/tile-movers\.json$/,
-};
-const isTileResourceKind = (value: unknown): value is NativeTileResourceKind => value === "native-tile-collision" || value === "movers";
+const isTileResourceKind = (value: unknown): value is NativeTileResourceKind => typeof value === "string" && Object.hasOwn(tileResourcePathPatterns, value);
 const maximumTileResourceBytes = 128 * 1024 * 1024;
 const maximumTileChunks = 256;
 const maximumChunkManifestBytes = 8_000_000;
@@ -80,8 +82,9 @@ function parseTileResources(value: unknown, label: string): readonly NativeTileR
       typeof resource.manifestSha256 !== "string" || !nativeTileSha256Pattern.test(resource.manifestSha256) || typeof resource.manifest !== "string" ||
       tileResourcePathPatterns[resource.kind].exec(resource.manifest)?.[1] !== resource.manifestSha256 || !Number.isSafeInteger(resource.manifestBytes) ||
       (resource.manifestBytes as number) < 1 || (resource.manifestBytes as number) > maximumTileResourceBytes) {
-      throw new Error(`${label} resources hold at most one native-tile-collision record at /l2/maps/<sha256>/native-tile-collision/asset.json ` +
-        "and one movers record at /l2/movers/<sha256>/tile-movers.json.");
+      throw new Error(`${label} resources hold at most one record of each kind at its own path: native-tile-collision and bsp-visibility at ` +
+        "/l2/maps/<sha256>/native-tile-collision/asset.json and /l2/maps/<sha256>/native-tile-bsp-visibility/asset.json, movers at " +
+        "/l2/movers/<sha256>/tile-movers.json.");
     }
     kinds.add(resource.kind);
     return { kind: resource.kind, manifest: resource.manifest, manifestSha256: resource.manifestSha256, manifestBytes: resource.manifestBytes as number };

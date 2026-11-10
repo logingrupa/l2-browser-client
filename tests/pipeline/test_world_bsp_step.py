@@ -19,7 +19,7 @@ from world.bsp_chunk_geometry import (BspPolyFlags, BspSurfaceMaterial, assign_n
                                       drawn_node_indices, load_bsp_poly_flags)
 from world.bsp_step import BSP_STEP_ALGORITHM_VERSION, sealed_bsp_chunks
 from world.bsp_surface_materials import convert_surface_material
-from world.level_model import LevelModelLayoutError, LevelModelRangeError, read_level_model, require_level_model_ranges, sky_zone_indices
+from world.level_model import LevelModelLayoutError, LevelModelRangeError, read_level_model, require_level_model_ranges
 from world.raw_map_step import read_tile_map_lock_record
 from world.static_placement_plan import ChunkRectangle
 from world.tile_manifest_step import build_tile_chunk_manifest
@@ -73,12 +73,6 @@ class LevelModelTests(unittest.TestCase):
             with self.assertRaises(LevelModelRangeError) as caught:
                 require_level_model_ranges(model)
             self.assertEqual(caught.exception.field, field)
-
-    def test_sky_zones_are_the_zones_whose_actor_is_a_sky_zone_info_export(self):
-        package = SimpleNamespace(exports=[{'classObject': 'Engine.ZoneInfo'}, {'classObject': 'Engine.SkyZoneInfo'}])
-        model = build_synthetic_level_model([], zones=(synthetic_zone(), synthetic_zone(1), synthetic_zone(2), synthetic_zone(-4)))
-        self.assertEqual(sky_zone_indices(package, model), frozenset({2}))
-        self.assertEqual(sky_zone_indices(SimpleNamespace(exports=[{'classObject': 'Engine.ZoneInfo'}]), model), frozenset())
 
 
 class BspSectionTests(unittest.TestCase):

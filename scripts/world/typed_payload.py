@@ -93,3 +93,13 @@ def write_typed_payload_asset(output_directory, arrays, asset_metadata):
     for name, payload in ((TYPED_PAYLOAD_PAYLOAD_NAME, asset.payload_bytes), (TYPED_PAYLOAD_ASSET_NAME, asset.asset_bytes)):
         immutable_write(directory / name, payload)
     return asset
+
+
+def write_tile_typed_payload_resource(store_root, folder, arrays, asset_metadata):
+    asset = typed_payload_asset(arrays, asset_metadata)
+    relative = f'maps/{asset.asset_sha256}/{folder}'
+    directory = store_root / relative
+    write_typed_payload_asset(directory, arrays, asset_metadata)
+    outputs = [{'path': (directory / name).relative_to(store_root.parent).as_posix(), 'sha256': sha256_hex(payload), 'bytes': len(payload)}
+               for name, payload in ((TYPED_PAYLOAD_ASSET_NAME, asset.asset_bytes), (TYPED_PAYLOAD_PAYLOAD_NAME, asset.payload_bytes))]
+    return {'resource': f'/l2/{relative}/{TYPED_PAYLOAD_ASSET_NAME}', 'sha256': asset.asset_sha256, 'bytes': len(asset.asset_bytes)}, outputs

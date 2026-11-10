@@ -29,7 +29,7 @@ from world.terrain_collision_source import read_terrain_collision
 from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
-from world.typed_payload import TYPED_PAYLOAD_ASSET_NAME, typed_payload_asset, write_typed_payload_asset
+from world.typed_payload import write_tile_typed_payload_resource
 
 COLLISION_STEP_ALGORITHM_VERSION = 2
 COLLISION_STEP_NAME = 'collision'
@@ -200,16 +200,6 @@ def terrain_by_chunk(project_root, tile_id, lock_record, package, actors, chunk_
     return {chunk['chunkId']: read_terrain_collision(native, samples, words, terrain, terrain_actor, chunk) for chunk in chunk_plan['chunks']}
 
 
-def write_collision_asset(store_root, folder, arrays, metadata):
-    asset = typed_payload_asset(arrays, metadata)
-    directory = store_root / 'maps' / asset.asset_sha256 / folder
-    write_typed_payload_asset(directory, arrays, metadata)
-    relative = f'maps/{asset.asset_sha256}/{folder}'
-    outputs = [{'path': (directory / name).relative_to(store_root.parent).as_posix(), 'sha256': sha256_hex(payload), 'bytes': len(payload)}
-               for name, payload in (('asset.json', asset.asset_bytes), ('payload.bin', asset.payload_bytes))]
-    return {'resource': f'/l2/{relative}/{TYPED_PAYLOAD_ASSET_NAME}', 'sha256': asset.asset_sha256, 'bytes': len(asset.asset_bytes)}, outputs
-
-
 def chunk_collision_records(context, chunk_plan, placements_by_chunk, meshes_by_chunk, volumes_by_chunk, movers_by_chunk, terrains, gap_rows_by_chunk):
     records, outputs = {}, []
     for chunk in chunk_plan['chunks']:
@@ -219,7 +209,7 @@ def chunk_collision_records(context, chunk_plan, placements_by_chunk, meshes_by_
         volumes = volumes_by_chunk.get(chunk_id, [])
         mover_slots = sorted(movers_by_chunk.get(chunk_id, []), key=lambda record: (record['exportIndex'], record['slot']))
         arrays = [*vols_arrays(volumes), *smsh_arrays(meshes), *plac_arrays(placements), *movr_arrays(mover_slots), *terr_arrays(terrains.get(chunk_id))]
-        resource, written = write_collision_asset(context['storeRoot'], CHUNK_COLLISION_FOLDER, arrays, context['metadata'])
+        resource, written = write_tile_typed_payload_resource(context['storeRoot'], CHUNK_COLLISION_FOLDER, arrays, context['metadata'])
         outputs.extend(written)
         records[chunk_id] = {**resource, 'volumes': len(volumes), 'meshes': len(meshes), 'placements': len(placements),
                              'terrainSamples': len(terrains[chunk_id]['heights']) if chunk_id in terrains else 0,
@@ -274,7 +264,7 @@ def run_collision_step(project_root, client_root, tile_id):
         gap_rows_by_chunk.setdefault(record['chunkId'], []).append(row)
     ledger.begin(unit_key, fingerprint)
     surface_flags = lambda node: unsigned_flags(level.model.surfs[node.i_surf].flags)
-    tile_resource, outputs = write_collision_asset(context['storeRoot'], TILE_COLLISION_FOLDER, bspt_arrays(level.model, surface_flags), context['metadata'])
+    tile_resource, outputs = write_tile_typed_payload_resource(context['storeRoot'], TILE_COLLISION_FOLDER, bspt_arrays(level.model, surface_flags), context['metadata'])
     chunks, chunk_outputs = chunk_collision_records(context, chunk_plan, placements_by_chunk, meshes_by_chunk, volumes_by_chunk, movers_by_chunk, terrains,
                                                     gap_rows_by_chunk)
     product = {'tileId': tile_id, 'tile': {**tile_resource, 'nodeCount': len(level.model.nodes), 'leafHulls': len(level.model.leaf_hulls),

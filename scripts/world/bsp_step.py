@@ -2,9 +2,8 @@ import json
 from pathlib import Path
 
 from native_assets import UMODEL, Converter, implementation_hash
-from native_assets_lib.class_defaults import ReferenceClientClassScripts, read_class_defaults_with_provenance
+from native_assets_lib.class_defaults import ReferenceClientClassScripts
 from native_assets_lib.gltf import json_bytes
-from native_catalog.ue2 import FormatError
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import immutable_write, sha256_hex, verify_store_destinations
 from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN
@@ -13,11 +12,13 @@ from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_inp
 from world.bsp_chunk_geometry import (BSP_POLY_FLAGS_PATH, BspPolygonError, assign_nodes_to_chunks, build_chunk_sections, chunk_bsp_glb, chunk_bsp_record,
                                       drawn_node_indices, fan_triangle_indices, load_bsp_poly_flags, node_source_polygon)
 from world.bsp_surface_materials import convert_surface_material, surface_material_identities
-from world.level_model import LevelModelLayoutError, read_level_model, sky_zone_indices
+from world.level_model import LevelModelLayoutError, read_level_model
+from world.level_zones import outdoor_zone_indices, read_level_zones, sky_zone_indices
 from world.map_sources import MapSources
 from world.native_terrain_sectors import native_terrain
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
 from world.static_mesh_step import STATIC_MESH_CONVERTER_FOLDER, conversion_failure_reason
+from world.static_placement import ClassDefaults
 from world.static_placement_plan import FAILED_STATUS, chunk_rectangles
 from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
@@ -29,8 +30,6 @@ BSP_CHUNKS_PRODUCT_NAME = 'bsp-chunks.json'
 CHUNK_BSP_FOLDER = 'native-tile-chunk-bsp'
 CHUNK_BSP_RESOURCE_NAME = 'bsp.glb'
 BSP_NODE_OUTSIDE_CHUNK_GRID_REASON = 'bsp-node-outside-chunk-grid'
-OUTDOOR_ZONE_INDEX = 0
-SUN_AFFECT_FIELD = 'bSunAffect'
 UNDECODED_LIGHTMAP_TEXTURE_OF_RECORD = {}
 
 
@@ -82,27 +81,6 @@ def tile_bsp_row(tile_id, source_identity, gap_rows, evidence):
 def object_gap_row(tile_id, source_identity, evidence, status, reason, object_name):
     identity = {**source_identity, 'object': object_name} if QUALIFIED_OBJECT_NAME_PATTERN.fullmatch(object_name or '') else source_identity
     return tile_step_row(tile_id, BSP_STEP_NAME, status, reason, identity, evidence)
-
-
-def zone_actor_sun_affect(actor, class_work_root, class_scripts):
-    serialized = [prop for prop in actor['properties'] if prop['name'] == SUN_AFFECT_FIELD and prop['status'] == 'decoded']
-    if serialized:
-        return serialized[-1]['value'] is True
-    default, = read_class_defaults_with_provenance(actor['classObject'], [SUN_AFFECT_FIELD], class_work_root, class_scripts)
-    return default.value is True
-
-
-def outdoor_zone_indices(package, model, actors_by_object, class_work_root, class_scripts):
-    outdoor = {OUTDOOR_ZONE_INDEX}
-    for zone_index, zone in enumerate(model.zones):
-        if zone_index == OUTDOOR_ZONE_INDEX or zone[0] <= 0:
-            continue
-        actor = actors_by_object.get(package.object_name(zone[0]))
-        if actor is None:
-            raise FormatError(f'zone {zone_index} actor {package.object_name(zone[0])} is not a raw map actor')
-        if zone_actor_sun_affect(actor, class_work_root, class_scripts):
-            outdoor.add(zone_index)
-    return frozenset(outdoor)
 
 
 class BspGapRows:
@@ -185,7 +163,7 @@ def run_bsp_step(project_root, client_root, tile_id):
     require_tile_id(tile_id)
     lock_record = read_tile_map_lock_record(tile_id)
     source_identity = {'path': tile_map_path(tile_id), 'sha256': lock_record['eSha256']}
-    chunks_fingerprint, raw_products, chunk_plan = sealed_chunk_plan(project_root, tile_id, lock_record)
+    chunks_fingerprint, _, chunk_plan = sealed_chunk_plan(project_root, tile_id, lock_record)
     ledger, unit_key, config = bsp_ledger(project_root), tile_unit_key(tile_id), bsp_unit_config(chunks_fingerprint)
     step_directory = ledger.unit_step_directory(unit_key)
     receipt_evidence = (step_directory / RECEIPT_RECORD_NAME).relative_to(ledger.lane_folder).as_posix()
@@ -195,17 +173,16 @@ def run_bsp_step(project_root, client_root, tile_id):
                             receipt_evidence)
     client = Path(client_root).resolve()
     package = read_locked_map_package(client, tile_id, lock_record)
-    actors_by_object = {actor['object']: actor for actor in json.loads((raw_products / 'actors.json').read_text(encoding='utf-8'))}
     try:
         level = read_level_model(package)
         rectangles = chunk_rectangles(chunk_plan, native_terrain(package))
-        outdoor_zones = outdoor_zone_indices(package, level.model, actors_by_object, lane_work_root(project_root, WORLD_LANE_NAME),
-                                             ReferenceClientClassScripts(client))
+        zones = read_level_zones(package, level.model, ClassDefaults(lane_work_root(project_root, WORLD_LANE_NAME), ReferenceClientClassScripts(client)))
     except LevelModelLayoutError as error:
         return tile_step_row(tile_id, BSP_STEP_NAME, GAP_STATUS, error.reason, source_identity, step_evidence)
     except ValueError as error:
         return tile_step_row(tile_id, BSP_STEP_NAME, FAILED_STATUS, conversion_failure_reason(error), source_identity, step_evidence)
-    gaps, flags, sky_zones = BspGapRows(tile_id, source_identity, receipt_evidence), load_bsp_poly_flags(), sky_zone_indices(package, level.model)
+    gaps, flags, sky_zones = BspGapRows(tile_id, source_identity, receipt_evidence), load_bsp_poly_flags(), sky_zone_indices(zones)
+    outdoor_zones = outdoor_zone_indices(zones)
     drawn = drawn_node_indices(level.model, flags, sky_zones)
     nodes_by_chunk, outside = assign_nodes_to_chunks(level.model, drawn, rectangles)
     for index in outside:
