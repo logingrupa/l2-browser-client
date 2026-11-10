@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-69-PLAN.md
-last_updated: "2026-11-10T06:06:39.332Z"
+stopped_at: Completed 02-46-PLAN.md
+last_updated: "2026-11-10T07:50:46.601Z"
 last_activity: 2026-11-10
-last_activity_desc: Phase 02 plan 02-65 complete (movement core traces and MoveActor)
-state_head: ea125b0fef27d48b884c368bcd78159e551acdeb
+last_activity_desc: Phase 02 plan 02-46 complete (tile world audio runtime)
+state_head: 68b76b2c11bed6b62c3ac32dedbdff3e92455181
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 77
+  completed_plans: 78
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 02 (Stage A breadth) - EXECUTING
-Plan: 02-65 complete, 59 of 71 plans summarized
+Plan: 02-46 complete, 61 plans summarized
 Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-10 - Plan 02-65 complete: our own MoveActor, SingleLineCheck, PointCheck and volume containment run in float32 source units over the collision world across BSP trees, brush volumes, static meshes, movers, terrain and pawn cylinders, with unconfirmed rows in recipes/world/movement-native-rules.json and synthetic golden traces; runtime callers come in 02-66 and 02-67
+Last activity: 2026-11-10 - Plan 02-46 complete: `?map=XX_YY` loads the tile's own world-audio resources dispatched by manifest kind (ambience, music, StepSound placement audio); tile:20_20 original music and an ambience loop played after a phone tap and a desktop click (actors-lane report world-tile-audio-f60ce2d8, owner listening pending); sheet cards tile-general; runtime pass-through of placement audio is an integration follow-up
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -129,6 +129,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P63 | 25 min | 3 tasks | 28 files |
 | Phase 02 P65 | 27 min | 3 tasks | 26 files |
 | Phase 2 P69 | 45min | 3 tasks | 56 files |
+| Phase 02 P46 | 36min | 3 tasks | 19 files |
 
 ## Accumulated Context
 
@@ -310,6 +311,9 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-65: brush volume box sweeps clip path-plane hulls with the brush box; movers collide closed unless marked open (rows 634, 635)
 - [Phase 02]: 02-65: MOVE-01 and WORLD-08 stay Pending until pawn physics (02-66) and runtime wiring (02-67) land (row 641)
 - [Phase 2]: 02-69: Power Strike plays through the particle simulator and particleFragmentChain; RibbonEmitter, the five natives and tile map emitter playback simulate; skeletal slots bind programs through createNativeMaterial; FX-01, ACT-06 and MAT-01 stay Pending (rows 642 to 655)
+- [Phase 02]: 02-46: tile world-audio records dispatch by fetched manifest kind; loader input is {tileId, records}; a silent tile names no tile audio resources (row 656)
+- [Phase 02]: 02-46: the audible report under artifacts/lane-store/actors/reports/ is the only record the actors-lane tile audio check writes (row 657)
+- [Phase 02]: 02-46: placementAudio and silentReason reach the world audio sheet after the integration pass-through; music pick, looping, volume selection and ambient gain labelled unverified (rows 659, 660)
 
 ### Pending Todos
 
@@ -388,6 +392,7 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 - Library skinning (02-69, row 652): the library vertex stage has no bone influence, so skinned skeletal slots keep their converted texture material (`library-vertex-stage-unskinned`); integration adds skinning to `createNativeMaterial`, and the actor converter writes `nativeMaterialProgram` per slot so slots bind through the library.
 - Ribbon drawing (02-69, row 648): the staged manifest binds no texture to a RibbonEmitter, so ribbons simulate but `loadEffectComponent` refuses them with ribbon-texture-unstaged; staging binds the ribbon texture and the effects lane adds the point-strip renderer.
 - Emitter native caller (02-69, rows 649 and 650): no adapter-event placement layer calls `applyEmitterNative` or `attachWeaponTrail` yet, so Power Strike plays without AdjustparticleLife, SetSizeScale or SetDelayed; the placement layer lands with the skill-cast adapter events.
+- World audio sheet pass-through (02-46, row 659): `loadNativeWorldAudio` returns `placementAudio` and `silentReason`, and `attachWorldAudioControls` takes both, but `src/runtime/loadNativeSliceAudio.ts` (`watchWorldAudio`) and the two `setWorldAudio` calls in `src/runtime/attachNativeSliceSheet.ts` do not pass them yet, so the live sheet says no placement audio is loaded on a tile that has it; integration adds the two fields to `NativeSliceWorldAudioState` and passes them through.
 
 ## Deferred Verification
 
@@ -408,6 +413,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-10T06:06:36.226Z
-Stopped at: Completed 02-69-PLAN.md
+Last session: 2026-11-10T07:50:45.829Z
+Stopped at: Completed 02-46-PLAN.md
 Resume file: None
