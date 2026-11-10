@@ -6,13 +6,25 @@ import { buildNativeCatalogIndex, describeNativeCatalogLookup, skillCatalogKey }
 import { readNativeCatalog } from "../../../src/assets/native/readNativeCatalog";
 import { selectedCastSkill } from "../../../src/effects/castSkillIndex";
 import { createNativeEffectComponentPreview, type NativeEffectComponentPreview } from "../../../src/effects/nativeEffectComponentPreview";
-import { loadNativeEffectComponents, simulatedEffectEmitterClasses } from "../../../src/effects/nativeEffectComponents";
+import { loadNativeEffectComponents, simulatedEffectEmitterClasses, type EffectBundle } from "../../../src/effects/nativeEffectComponents";
+import { loadEmitterActorPlayback } from "../../../src/effects/particles/render/emitterActorPlayback";
 import { createWebGPUEngine } from "../../../src/engine/createWebGPUEngine";
+
+export interface SimulatedCastActor {
+  readonly actorObject: string;
+  readonly dispatchStages: readonly string[];
+  readonly status: "destroyed" | "running" | "refused";
+  readonly reason: string | null;
+  readonly simulationSteps: number;
+  readonly peakLiveParticles: number;
+  readonly drawnFrames: number;
+}
 
 export type NativeSkillEffectHarnessState =
   | { readonly state: "running" }
+  | { readonly state: "casting"; readonly key: string; readonly actorObject: string; readonly liveParticles: number }
   | { readonly state: "done"; readonly key: string; readonly lookupStatus: string; readonly note: string;
-      readonly preview: ReturnType<NativeEffectComponentPreview["snapshot"]> | null }
+      readonly preview: ReturnType<NativeEffectComponentPreview["snapshot"]> | null; readonly cast: readonly SimulatedCastActor[] }
   | { readonly state: "failed"; readonly reason: string };
 
 declare global {
@@ -21,6 +33,9 @@ declare global {
 
 const lifetime = new AbortController();
 const previewSettleMilliseconds = 60_000;
+const castStepSeconds = 1 / 60;
+const castFrameLimit = 600;
+const castSessionSeed = 1;
 
 function requiredElement<ElementType extends HTMLElement>(id: string, elementType: { new(): ElementType }): ElementType {
   const element = document.getElementById(id);
@@ -49,6 +64,35 @@ async function firstReadyPreview(preview: NativeEffectComponentPreview): Promise
   }
 }
 
+async function playCastActor(scene: Scene, bundle: EffectBundle, key: string, actorObject: string, dispatchStages: readonly string[]): Promise<SimulatedCastActor> {
+  const actor = bundle.manifest.actors.find(row => row.object === actorObject)!;
+  const unsimulated = bundle.manifest.components.filter(row => row.actor === actorObject && !simulatedEffectEmitterClasses.has(row.class));
+  if (unsimulated.length > 0) {
+    return { actorObject, dispatchStages, status: "refused", reason: `emitter-class-unported:${unsimulated[0]!.class}`, simulationSteps: 0, peakLiveParticles: 0, drawnFrames: 0 };
+  }
+  const playback = await loadEmitterActorPlayback(scene, bundle, { actorObject: actor.object, emitterObjects: null, sessionSeed: castSessionSeed }, lifetime.signal);
+  let drawnFrames = 0;
+  const meshes = playback.components.flatMap(component => component.meshes);
+  for (const mesh of meshes) mesh.onBeforeRenderObservable.add(() => { drawnFrames += 1; });
+  try {
+    playback.start();
+    for (let frame = 0; frame < castFrameLimit && playback.playing; frame += 1) {
+      playback.advance(castStepSeconds);
+      window.__nativeSkillEffectHarness = { state: "casting", key, actorObject, liveParticles: playback.liveParticles() };
+      await new Promise(resolve => requestAnimationFrame(resolve));
+    }
+    const inspection = playback.inspect();
+    return { actorObject, dispatchStages, status: inspection.destroyed ? "destroyed" : "running", reason: null,
+      simulationSteps: inspection.simulationSteps, peakLiveParticles: inspection.peakLiveParticles, drawnFrames };
+  } finally { playback.dispose(); }
+}
+
+async function playSimulatedCast(scene: Scene, bundle: EffectBundle, key: string): Promise<SimulatedCastActor[]> {
+  const cast: SimulatedCastActor[] = [];
+  for (const actor of bundle.manifest.actors) cast.push(await playCastActor(scene, bundle, key, actor.object, actor.dispatchStages ?? []));
+  return cast;
+}
+
 async function showSelectedSkill(): Promise<NativeSkillEffectHarnessState> {
   const selected = selectedCastSkill(location);
   if (selected === null) throw new Error("the native skill effect harness needs ?skill=<id>:<level>");
@@ -58,7 +102,7 @@ async function showSelectedSkill(): Promise<NativeSkillEffectHarnessState> {
   const noteElement = requiredElement("native-skill-effect-note", HTMLParagraphElement);
   noteElement.dataset.lookupStatus = lookup.status;
   noteElement.textContent = note;
-  if (lookup.status !== "converted") return { state: "done", key, lookupStatus: lookup.status, note, preview: null };
+  if (lookup.status !== "converted") return { state: "done", key, lookupStatus: lookup.status, note, preview: null, cast: [] };
   const bundle = await loadNativeEffectComponents(lifetime.signal);
   if (bundle === null) throw new Error(`${key} is converted in the catalog index but its effect bundle did not load`);
   const engine = await createWebGPUEngine(requiredElement("native-skill-effect-canvas", HTMLCanvasElement));
@@ -70,7 +114,10 @@ async function showSelectedSkill(): Promise<NativeSkillEffectHarnessState> {
   listComponents(preview);
   engine.runRenderLoop(() => { preview.update(); scene.render(); });
   await firstReadyPreview(preview);
-  return { state: "done", key, lookupStatus: lookup.status, note, preview: preview.snapshot() };
+  const previewSnapshot = preview.snapshot();
+  await preview.select(null);
+  const cast = await playSimulatedCast(scene, bundle, key);
+  return { state: "done", key, lookupStatus: lookup.status, note, preview: previewSnapshot, cast };
 }
 
 window.__nativeSkillEffectHarness = { state: "running" };

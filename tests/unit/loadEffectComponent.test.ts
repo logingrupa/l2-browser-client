@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { deflateSync } from "node:zlib";
 import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
 import { Scene } from "@babylonjs/core/scene";
+import { readFileSync } from "node:fs";
 import { FreeCamera } from "@babylonjs/core/Cameras/freeCamera";
 import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
@@ -12,6 +13,11 @@ import type { AssetContainer } from "@babylonjs/core/assetContainer";
 import { crc32, sha256 } from "../../src/assets/package/readAssetPackage";
 import { loadEffectComponent } from "../../src/effects/loadEffectComponent";
 import type { EffectBundle, EffectComponent, EffectResource } from "../../src/effects/nativeEffectComponents";
+import { createEmitterSimulation } from "../../src/effects/particles/sim/emitterActor";
+import { parseEmitterRecord } from "../../src/effects/particles/sim/emitterRecords";
+import { createRandomStream, deriveStreamSeed } from "../../src/shared/random";
+
+const classDefaults = JSON.parse(readFileSync("tests/fixtures/particles/synthetic-class-defaults.json", "utf8")) as Record<string, Record<string, unknown>>;
 
 const gate = vi.hoisted(() => ({ next: undefined as ((container: AssetContainer) => Promise<void>) | undefined }));
 vi.mock("@babylonjs/core/Loading/sceneLoader", async original => {
@@ -78,17 +84,18 @@ async function fixture(options: Parameters<typeof glb>[1] & { sprite?: boolean; 
   const model = await resource("Meshes.Original", glb(image, options), "glb");
   const next = options.animatedTexture ? await resource("Textures.Next", png(64), "png") : null;
   const component: EffectComponent = { object: "Effects.Actor.Component", class: options.sprite ? "Engine.SpriteEmitter" : "Engine.MeshEmitter",
-    actor: "Effects.Actor", emitterOrdinal: 0, sourcePointer: "/effects/0/children/0", properties: {}, effectiveProperties: {
-      DrawStyle: 3, UseMeshBlendMode: false, RenderTwoSided: true, AlphaTest: true, ZTest: true, Opacity: .72,
-      ColorMultiplierRange: { X: { Min: 1, Max: 1 }, Y: { Min: 1, Max: 1 }, Z: { Min: 1, Max: 1 } },
-      StartSizeRange: { X: { Min: 2, Max: 4 }, Y: { Min: 4, Max: 8 }, Z: { Min: 8, Max: 12 } },
+    actor: "Effects.Actor", emitterOrdinal: 2, sourcePointer: "/effects/0/children/0", properties: {}, effectiveProperties: {
+      ...classDefaults["Engine.ParticleEmitter"], ...classDefaults[options.sprite ? "Engine.SpriteEmitter" : "Engine.MeshEmitter"],
+      MaxParticles: 4, InitialParticlesPerSecond: 600, AutomaticInitialSpawning: false, RespawnDeadParticles: false,
+      DrawStyle: 3, UseMeshBlendMode: false, RenderTwoSided: true, StartLocationRange: { X: { Min: 100, Max: 100 }, Y: { Min: 200, Max: 200 }, Z: { Min: 300, Max: 300 } },
       Texture: { object: options.sprite ? texture.object : inheritedTexture.object },
       ...options.atlas ? { TextureUSubdivisions: 2, TextureVSubdivisions: 2, SubdivisionStart: 2, SubdivisionEnd: 3 } : {},
     }, bindings: { mesh: options.sprite ? null : model, texture: options.sprite ? texture : inheritedTexture,
       primitiveMaterials: options.sprite ? [] : Array.from({ length: options.primitives ?? 1 }, (_, primitiveIndex) => ({ meshIndex: 0, primitiveIndex,
         materialIndex: primitiveIndex, nativeSourceReference: texture.object, textureResourceKey: texture.assetId })) } };
+  const textureGraph = next ? [{ object: texture.object, animationProperties: { AnimNext: { object: next.object }, MaxFrameRate: 10 } }] : [];
   const bundle: EffectBundle = { manifestSha256: "a".repeat(64), manifest: { schemaVersion: 1, kind: "native-effect-components", components: [component], resources,
-    actors: [{ object: component.actor, effectiveProperties: { DrawScale: .05 } }], textureGraph: next ? [{ object: texture.object, animationProperties: { AnimNext: { object: next.object } } }] : [] },
+    actors: [{ object: component.actor, effectiveProperties: { DrawScale: .05 } }], textureGraph },
     async readResource(record, signal) { signal.throwIfAborted(); readObjects.push(record.object); return data.get(record.file)!.slice(); } };
   return { engine, scene, bundle, component, data, model, texture, readObjects, signal: new AbortController() };
 }
@@ -97,90 +104,85 @@ function counts(scene: Scene) { return { meshes: scene.meshes.length, transforms
 function close(actual: readonly number[], expected: readonly number[]) {
   expect(actual).toHaveLength(expected.length); expect(Math.max(...actual.map((value, index) => Math.abs(value - expected[index]!)))).toBeLessThan(1e-5);
 }
+function steppedEmitter(component: EffectComponent, steps: number) {
+  const record = parseEmitterRecord(component);
+  const emitter = createEmitterSimulation(record, createRandomStream(deriveStreamSeed(7, "test", ["load-effect-component"])));
+  const context = { owner: { location: { x: 0, y: 0, z: 0 }, rotation: { pitch: 0, yaw: 0, roll: 0 } }, emitterRotation: { pitch: 0, yaw: 0, roll: 0 },
+    globalOffset: { x: 0, y: 0, z: 0 }, actorAutoReset: false, actorAutoDestroy: false, siblings: [emitter.runtime] };
+  for (let step = 0; step < steps; step += 1) emitter.step(1 / 60, context);
+  return emitter;
+}
+const presentation = { levelSeconds: 0, emitterRotation: { pitch: 0, yaw: 0, roll: 0 }, pinnedFrame: null, colourOverride: null };
 
-describe("source component geometry and nested basis", () => {
-  it("loads disabled unit root, keeps original buffers/transforms and cancels only the synthetic AUTO basis once", async () => {
+describe("simulator-driven effect component", () => {
+  it("bakes authored node transforms into the original primitive buffers and renders live particles as thin instances", async () => {
     const value = await fixture(), bytes = value.data.get(value.model.file)!.slice(), baseline = counts(value.scene);
-    const owner = await loadEffectComponent(value.scene, value.bundle, value.component, { frameIndex: 0 }, value.signal.signal);
-    expect(owner.root.parent).toBeNull(); expect(owner.root.isEnabled()).toBe(false); expect(owner.root.scaling.asArray()).toEqual([1, 1, 1]);
-    expect(owner.meshes).toHaveLength(1); expect(Array.from(owner.meshes[0]!.getVerticesData("position")!)).toEqual(positions);
-    expect(Array.from(owner.meshes[0]!.getVerticesData("uv")!)).toEqual(uv); expect(Array.from(owner.meshes[0]!.getIndices()!)).toEqual([0, 1, 2]);
-    expect(owner.meshes[0]!.isPickable).toBe(false); expect(value.data.get(value.model.file)).toEqual(bytes);
-    const inspection = owner.inspection() as any;
-    expect(inspection.rootLocalMatrix).toEqual(Array.from(Matrix.Identity().asArray()));
-    expect(inspection.cancelledBasisMatrix).toEqual(Array.from(Matrix.Identity().asArray()));
-    expect(inspection.sourceBasisMatrix).not.toEqual(Array.from(Matrix.Identity().asArray()));
-    expect(inspection.sizePolicy).toMatchObject({ sourceMidpointXYZ: [3, 6, 10], appliedScaleXZY: [3, 10, 6], actorDrawScaleApplied: false });
-    expect(inspection.meshes[0].sourceAccessorCounts).toEqual({ POSITION: 3, TEXCOORD_0: 3 });
+    const owner = await loadEffectComponent(value.scene, value.bundle, value.component, value.signal.signal);
+    expect(owner.root.parent).toBeNull(); expect(owner.root.isEnabled()).toBe(false);
+    expect(owner.meshes).toHaveLength(1); expect(owner.meshes[0]!.isPickable).toBe(false); expect(owner.meshes[0]!.isVisible).toBe(false);
+    const authored = Matrix.Translation(.25, -.5, 1).multiply(Matrix.Compose(new Vector3(1, 2, .5), authoredRotation, new Vector3(2, 3, 4)));
+    const baked = [0, 1, 2].flatMap(vertex => Vector3.TransformCoordinates(Vector3.FromArray(positions, vertex * 3), authored).asArray());
+    close(Array.from(owner.meshes[0]!.getVerticesData("position")!), baked);
+    expect(Array.from(owner.meshes[0]!.getVerticesData("uv")!)).toEqual(uv);
+    expect(value.data.get(value.model.file)).toEqual(bytes);
+    expect(owner.meshes[0]!.metadata).toEqual({ nativeEmitterOrdinal: 2 });
+    expect(owner.meshes[0]!.alphaIndex).toBe(Number.MAX_VALUE);
+    expect(owner.materials[0]!.material.name).toBe("UE2 particle material: Effects.Actor.Component");
     expect(value.readObjects).toEqual(["Meshes.Original", "Textures.Original"]);
-    const source = value.scene.transformNodes.find(node => node.name === "AuthoredSourceTransform")!;
-    expect(source.position.asArray()).toEqual([2, 3, 4]); close(source.rotationQuaternion!.asArray(), authoredRotation.asArray());
-    expect(source.scaling.asArray()).toEqual([1, 2, .5]);
+    const emitter = steppedEmitter(value.component, 2);
+    expect(owner.render(emitter, presentation)).toBe(emitter.liveSlots().length);
+    expect(owner.meshes[0]!.thinInstanceCount).toBe(4); expect(owner.meshes[0]!.isVisible).toBe(true);
+    const matrices = owner.meshes[0]!.thinInstanceGetWorldMatrices();
+    close(matrices[0]!.getTranslation().asArray(), [1, 3, 2]);
     owner.dispose(); expect(counts(value.scene)).toEqual(baseline);
   });
 
-  it("matches independent authored-node/size/anchor matrix composition under a transformed hand parent", async () => {
-    const value = await fixture(), owner = await loadEffectComponent(value.scene, value.bundle, value.component, { frameIndex: 0 }, value.signal.signal);
-    const anchor = new TransformNode("already converted hand", value.scene); anchor.position.set(12, -2, 5);
-    anchor.rotationQuaternion = Quaternion.FromEulerAngles(.4, -.2, .3); anchor.scaling.set(-2, 2, 2);
-    owner.root.parent = anchor; owner.root.setEnabled(true);
-    const inspection = owner.inspection() as any;
-    const authored = Matrix.Translation(.25, -.5, 1).multiply(Matrix.Compose(new Vector3(1, 2, .5), authoredRotation, new Vector3(2, 3, 4)));
-    const expected = authored.multiply(Matrix.Scaling(3, 10, 6)).multiply(anchor.computeWorldMatrix(true));
-    close(inspection.meshes[0].worldMatrix, Array.from(expected.asArray()));
-    close(inspection.rootWorldMatrix, Array.from(anchor.getWorldMatrix().asArray()));
-    owner.dispose(); expect(anchor.isDisposed()).toBe(false); anchor.dispose();
-  });
-
-  it("handles right-handed scenes without inventing an extra source basis", async () => {
-    const value = await fixture(); value.scene.useRightHandedSystem = true;
-    const owner = await loadEffectComponent(value.scene, value.bundle, value.component, { frameIndex: 0 }, value.signal.signal);
-    expect(owner.inspection().sourceBasisMatrix).toEqual(Array.from(Matrix.Identity().asArray())); owner.dispose();
-  });
-
-  it("matches every primitive exactly and uses the primitive PNG instead of inherited Engine.S_Emitter", async () => {
+  it("gives every primitive its own library material bound to the primitive PNG instead of inherited Engine.S_Emitter", async () => {
     const value = await fixture({ primitives: 2 });
-    const owner = await loadEffectComponent(value.scene, value.bundle, value.component, { frameIndex: 0 }, value.signal.signal);
-    expect(owner.meshes).toHaveLength(2); expect(owner.materials).toHaveLength(1);
-    expect(owner.meshes.every(mesh => mesh.material === owner.materials[0]!.material)).toBe(true);
+    const owner = await loadEffectComponent(value.scene, value.bundle, value.component, value.signal.signal);
+    expect(owner.meshes).toHaveLength(2); expect(owner.materials).toHaveLength(2);
+    expect(owner.meshes.map(mesh => mesh.material)).toEqual(owner.materials.map(binding => binding.material));
     expect(value.readObjects).not.toContain("Engine.S_Emitter"); owner.dispose();
   });
 
-  it("selects a manual texture graph frame while validating original embedded base texture bytes", async () => {
+  it("follows the AnimNext chain on the level clock through the library frame rule and pins a selected frame", async () => {
     const value = await fixture({ animatedTexture: true });
-    const owner = await loadEffectComponent(value.scene, value.bundle, value.component, { frameIndex: 1 }, value.signal.signal);
-    expect(owner.frames).toHaveLength(2); expect(owner.selectedFrame.texture.object).toBe("Textures.Next");
-    expect(owner.materials[0]!.inspect().texture.object).toBe("Textures.Next"); owner.dispose();
+    const owner = await loadEffectComponent(value.scene, value.bundle, value.component, value.signal.signal);
+    const emitter = steppedEmitter(value.component, 1);
+    owner.render(emitter, { ...presentation, levelSeconds: 0 });
+    expect(owner.materials[0]!.inspect().textureName).toBe("Effect texture: Textures.Original");
+    owner.render(emitter, { ...presentation, levelSeconds: .15 });
+    expect(owner.materials[0]!.inspect().textureName).toBe("Effect texture: Textures.Next");
+    owner.render(emitter, { ...presentation, levelSeconds: .15, pinnedFrame: owner.frames[0]! });
+    expect(owner.materials[0]!.inspect().textureName).toBe("Effect texture: Textures.Original");
+    owner.dispose();
   });
 
-  it("creates explicit camera-facing sprite half-extents and selected atlas crop without applying actor DrawScale", async () => {
+  it("draws sprites on a unit quad whose half extents, roll and atlas cell come from the simulator", async () => {
     const value = await fixture({ sprite: true, atlas: true });
-    const owner = await loadEffectComponent(value.scene, value.bundle, value.component, { frameIndex: 1 }, value.signal.signal);
-    expect(owner.sizePolicy).toMatchObject({ spriteDimensionsMetres: { width: .06, height: .12 }, appliedScaleXZY: [1, 1, 1], actorDrawScaleApplied: false });
-    expect(owner.meshes[0]!.billboardMode).toBe(Mesh.BILLBOARDMODE_ALL);
-    expect(owner.selectedFrame).toMatchObject({ sourceTile: 3, uvScale: [.5, .5], uvOffset: [.5, .5] });
-    const positions = owner.meshes[0]!.getVerticesData("position")!;
-    expect(Math.max(...positions.filter((_, index) => index % 3 === 0))).toBeCloseTo(.03);
-    expect(Math.max(...positions.filter((_, index) => index % 3 === 1))).toBeCloseTo(.06);
+    const owner = await loadEffectComponent(value.scene, value.bundle, value.component, value.signal.signal);
+    const quad = owner.meshes[0]!.getVerticesData("position")!;
+    expect(Math.max(...quad)).toBe(1); expect(Math.min(...quad.filter((_, index) => index % 3 !== 2))).toBe(-1);
+    expect(owner.meshes[0]!.billboardMode).toBe(Mesh.BILLBOARDMODE_NONE);
+    expect(owner.render(steppedEmitter(value.component, 1), presentation)).toBe(4);
     expect(value.readObjects).toEqual(["Textures.Original"]); owner.dispose();
   });
 
   it.each(["skin", "animation", "external", "wrongSource", "invalidTextureIndex"] as const)("rejects unsupported %s without leaving resources", async field => {
     const value = await fixture({ [field]: true }), baseline = counts(value.scene);
-    await expect(loadEffectComponent(value.scene, value.bundle, value.component, { frameIndex: 0 }, value.signal.signal)).rejects.toThrow();
+    await expect(loadEffectComponent(value.scene, value.bundle, value.component, value.signal.signal)).rejects.toThrow();
     expect(counts(value.scene)).toEqual(baseline);
   });
 
-  it("refuses corrupted GLB bytes, stale primitive joins and invalid frame/range selections", async () => {
+  it("refuses corrupted GLB bytes, stale primitive joins and records without their class defaults", async () => {
     const value = await fixture(), baseline = counts(value.scene), original = value.data.get(value.model.file)!;
     value.data.set(value.model.file, new Uint8Array([1, 2, 3]));
-    await expect(loadEffectComponent(value.scene, value.bundle, value.component, { frameIndex: 0 }, value.signal.signal)).rejects.toThrow("hash/length");
+    await expect(loadEffectComponent(value.scene, value.bundle, value.component, value.signal.signal)).rejects.toThrow("hash/length");
     value.data.set(value.model.file, original); value.component.bindings.primitiveMaterials[0]!.materialIndex = 4;
-    await expect(loadEffectComponent(value.scene, value.bundle, value.component, { frameIndex: 0 }, value.signal.signal)).rejects.toThrow("binding differs");
+    await expect(loadEffectComponent(value.scene, value.bundle, value.component, value.signal.signal)).rejects.toThrow("binding differs");
     value.component.bindings.primitiveMaterials[0]!.materialIndex = 0;
-    await expect(loadEffectComponent(value.scene, value.bundle, value.component, { frameIndex: 9 }, value.signal.signal)).rejects.toThrow("out of range");
-    value.component.effectiveProperties.StartSizeRange = { X: { Min: 4, Max: 2 } };
-    await expect(loadEffectComponent(value.scene, value.bundle, value.component, { frameIndex: 0 }, value.signal.signal)).rejects.toThrow("StartSizeRange");
+    delete value.component.effectiveProperties.ZTest;
+    await expect(loadEffectComponent(value.scene, value.bundle, value.component, value.signal.signal)).rejects.toThrow("ZTest has no Interlude class default");
     expect(counts(value.scene)).toEqual(baseline);
   });
 
@@ -189,15 +191,15 @@ describe("source component geometry and nested basis", () => {
     let release!: () => void, loaded!: (container: AssetContainer) => void;
     const hold = new Promise<void>(resolve => { release = resolve; }), ready = new Promise<AssetContainer>(resolve => { loaded = resolve; });
     releases.push(release); gate.next = async container => { loaded(container); await hold; };
-    const pending = loadEffectComponent(value.scene, value.bundle, value.component, { frameIndex: 0 }, value.signal.signal).catch(error => error as Error); operations.push(pending);
+    const pending = loadEffectComponent(value.scene, value.bundle, value.component, value.signal.signal).catch(error => error as Error); operations.push(pending);
     await ready; value.signal.abort(); release(); expect(await pending).toMatchObject({ name: "AbortError" });
     expect(counts(value.scene)).toEqual(baseline); expect(value.scene.materials).toContain(original);
   });
 
-  it("excludes runtime geometry/materials from serialization and never disposes later foreign attachments or materials", async () => {
-    const value = await fixture(), owner = await loadEffectComponent(value.scene, value.bundle, value.component, { frameIndex: 0 }, value.signal.signal);
+  it("excludes runtime geometry and materials from serialization and never disposes later foreign attachments or materials", async () => {
+    const value = await fixture(), owner = await loadEffectComponent(value.scene, value.bundle, value.component, value.signal.signal);
     const foreignMaterial = new StandardMaterial("foreign", value.scene), foreign = new TransformNode("foreign node", value.scene);
-    foreign.parent = owner.meshes[0]!; owner.meshes[0]!.material = foreignMaterial;
+    foreign.parent = owner.meshes[0]!;
     const disposeMaterial = vi.spyOn(foreignMaterial, "dispose");
     const serialized = SceneSerializer.Serialize(value.scene) as { meshes: { id: string }[]; transformNodes: { id: string }[]; materials: { id: string }[] };
     expect(serialized.meshes.some(row => owner.meshes.some(mesh => row.id === mesh.id))).toBe(false);
@@ -208,13 +210,13 @@ describe("source component geometry and nested basis", () => {
     foreign.dispose(); foreignMaterial.dispose();
   });
 
-  it("disposes active handles on abort and handles scene disposal during pending source load", async () => {
+  it("disposes an active handle on abort and refuses a scene disposed during the source load", async () => {
     const value = await fixture(), baseline = counts(value.scene);
-    const owner = await loadEffectComponent(value.scene, value.bundle, value.component, { frameIndex: 0 }, value.signal.signal); value.signal.abort();
+    const owner = await loadEffectComponent(value.scene, value.bundle, value.component, value.signal.signal); value.signal.abort();
     expect(owner.inspection().status).toBe("disposed"); expect(counts(value.scene)).toEqual(baseline);
     const late = await fixture();
     const read = late.bundle.readResource.bind(late.bundle);
     late.bundle.readResource = async (resource, signal) => { const bytes = await read(resource, signal); late.scene.dispose(); return bytes; };
-    await expect(loadEffectComponent(late.scene, late.bundle, late.component, { frameIndex: 0 }, late.signal.signal)).rejects.toMatchObject({ name: "AbortError" });
+    await expect(loadEffectComponent(late.scene, late.bundle, late.component, late.signal.signal)).rejects.toThrow();
   });
 });

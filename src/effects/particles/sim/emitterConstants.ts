@@ -95,6 +95,8 @@ export const PARTICLE_CONSTANTS = {
     `Engine.dll 4dd2f63c USpriteEmitter::FillVertexBuffer 0x1030A880 -> 0x106EFD60: relative time 0x106F0145-0x106F018E, cell and next cell 0x106F0B54-0x106F0CC4 (the next cell is compared with the count, not clamped), blend byte 0x106F0D47-0x106F0DA2 with a truncating fistp`, "Engine.dll 4dd2f63c USpriteEmitter::FillVertexBuffer 0x106EFD60"),
   meshMaterialRoute: constantRow("fx.mesh-material-route", "unconfirmed", "UseMeshBlendMode keeps the mesh materials and ignores particle colour; otherwise the DrawStyle particle material with RenderTwoSided from the record",
     `${referenceNotes} Sprite and mesh presentation; lineage2js mesh-emitter.ts:22-56, mesh-emitter-material.ts:55-68`),
+  particleAlphaTest: constantRow("fx.particle-alpha-test", "unconfirmed", 0,
+    "Our rule carried over from the earlier preview material: with AlphaTest the particle fragment is discarded when texel alpha times particle alpha is at or below 0; the native alpha reference is unresolved until POL-04 reads UParticleEmitter::RenderParticles 0x10603DD0"),
   respawnLoopGuard: constantRow("fx.respawn-loop-guard", "unconfirmed", 64,
     "Our guard, not a reference value: a spawn whose Time stays above MaxLifetime after 64 respawn passes is refused with a named error instead of recursing"),
   maximumParticlesGuard: constantRow("fx.max-particles-guard", "unconfirmed", 16384,

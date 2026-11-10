@@ -106,7 +106,7 @@ export async function checkSkillLoadKey(page: LoadCheckPage, key: string, record
   const loadedComponents: LoadedEffectComponent[] = [];
   try {
     for (const component of simulatedComponents) {
-      loadedComponents.push(await loadEffectComponent(scene, bundle, component, { frameIndex: 0 }, page.signal));
+      loadedComponents.push(await loadEffectComponent(scene, bundle, component, page.signal));
     }
   } finally {
     for (const loaded of loadedComponents) loaded.dispose();

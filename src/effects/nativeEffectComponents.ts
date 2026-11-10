@@ -19,7 +19,7 @@ export interface EffectComponent {
 export interface EffectManifest {
   schemaVersion: number; kind: string; id?: string; bundleId?: string;
   components: EffectComponent[]; resources: Record<string, EffectResource>;
-  actors: { object: string; effectiveProperties: Record<string, unknown>; dispatchStages?: string[] }[];
+  actors: { object: string; properties?: Record<string, unknown>; effectiveProperties: Record<string, unknown>; dispatchStages?: string[] }[];
   textureGraph: { object: string; animationProperties: Record<string, unknown> }[];
 }
 export interface EffectBundle {
@@ -56,7 +56,8 @@ export function parseEffectManifest(input: unknown): EffectManifest {
   requireValue(Array.isArray(input.actors) && input.actors.length > 0 && input.actors.length <= 64, "invalid actors");
   const actors = new Set<string>();
   for (const actor of input.actors) {
-    requireValue(effectObject(actor) && named(actor.object) && !actors.has(actor.object) && effectObject(actor.effectiveProperties), "invalid actor identity");
+    requireValue(effectObject(actor) && named(actor.object) && !actors.has(actor.object) && effectObject(actor.effectiveProperties) &&
+      (actor.properties === undefined || effectObject(actor.properties)), "invalid actor identity");
     actors.add(actor.object);
   }
   requireValue(Array.isArray(input.components) && input.components.length > 0 && input.components.length <= 64, "invalid components");
@@ -129,6 +130,12 @@ export async function loadNativeSkillEffectComponents(signal: AbortSignal, skill
 
 export function loadNativeEffectComponents(signal: AbortSignal): Promise<EffectBundle | null> {
   return loadNativeSkillEffectComponents(signal, selectedCastSkill(globalThis.location) ?? reviewedPowerStrikeSkill);
+}
+
+export function dispatchStageActor(bundle: EffectBundle, stage: "init" | "shot"): string {
+  const actors = bundle.manifest.actors.filter(actor => actor.dispatchStages?.includes(stage));
+  requireValue(actors.length === 1, `the bundle has ${actors.length} ${stage} actors, not exactly one`);
+  return actors[0]!.object;
 }
 
 export interface EffectFrame { label: string; texture: EffectResource; uvScale: [number, number]; uvOffset: [number, number]; sourceTile: number | null }

@@ -20,7 +20,9 @@
     "AddVelocityFromOtherEmitter": -1,
     "SpawnFromOtherEmitter": -1,
     "AddVelocityMultiplierRange": { "X": { "Min": 1.0, "Max": 1.0 }, "Y": { "Min": 1.0, "Max": 1.0 }, "Z": { "Min": 1.0, "Max": 1.0 } },
-    "ColorMultiplierRange": { "X": { "Min": 1.0, "Max": 1.0 }, "Y": { "Min": 1.0, "Max": 1.0 }, "Z": { "Min": 1.0, "Max": 1.0 } }
+    "ColorMultiplierRange": { "X": { "Min": 1.0, "Max": 1.0 }, "Y": { "Min": 1.0, "Max": 1.0 }, "Z": { "Min": 1.0, "Max": 1.0 } },
+    "AlphaTest": true,
+    "ZTest": true
   },
   "Engine.SpriteEmitter": {
     "ProjectionNormal": { "X": 0.0, "Y": 0.0, "Z": 1.0 }
