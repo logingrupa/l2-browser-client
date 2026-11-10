@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-42-PLAN.md
-last_updated: "2026-11-10T03:25:23.421Z"
+stopped_at: Completed 02-45-PLAN.md
+last_updated: "2026-11-10T04:20:53.074Z"
 last_activity: 2026-11-10
 last_activity_desc: Phase 02 plan 02-48 complete (cell-aware collision world)
-state_head: 855df19bbc25c14df1d8d9fc44af026422b7906c
+state_head: 398035b8b3ca3a6b9127df62eac1585cfb7f8e1f
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 73
+  completed_plans: 74
   percent: 0
 ---
 
@@ -125,6 +125,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P48 | 20min | 3 tasks | 18 files |
 | Phase 02 P61 | 50min | 3 tasks | 32 files |
 | Phase 02 P42 | 61min | 3 tasks | 31 files |
+| Phase 02 P45 | 55min | 5 tasks | 65 files |
 
 ## Accumulated Context
 
@@ -300,6 +301,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: Plan 02-48: WORLD-04 and MOVE-01 stay Pending until 02-67, 02-49 and 02-65 wire the runtime context, the residency ring and the traces (row 594)
 - [Phase 02]: 02-61: level_zones.py is the one zone table, the bsp step reads it; world writes the Emitter actor export with the actors bundle writer record functions; solidity census grid 16 x 16 x 8 is a project rule; VIS-01, WORLD-01 and FX-01 stay Pending (OVERNIGHT-DECISIONS rows 595 to 600)
 - [Phase 02]: 02-42: item model records interlude:item:<id>:body-part:<bodyPart>:weapon|armor:<ordinal>, one per item and unit; armor in a body-part slot is the gap equipment-slot-meaning-undecoded:<bodyPart>; the actors items step covers weapon and armor keys only; gap census items step and catalog_index_keys item keys as a lane confirmation; ACT-03 stays Pending (OVERNIGHT-DECISIONS rows 603 to 614)
+- [Phase 02]: 02-45: any tile's sky comes from its one SkyZoneInfo zone through the 02-59 material graph (generic 20_20 sky.glb BIN chunk equals the served sky); ambience, StepSound placement audio and MusicVolume music convert per tile from exact references with original bytes as world-audio resources; the legacy 20_20 sky and audio chain, batch sky and ambient adapters and assets:ambient are deleted (OVERNIGHT-DECISIONS rows 615 to 624)
 
 ### Pending Todos
 
@@ -391,6 +393,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-10T03:25:22.525Z
-Stopped at: Completed 02-42-PLAN.md
+Last session: 2026-11-10T04:20:52.370Z
+Stopped at: Completed 02-45-PLAN.md
 Resume file: None

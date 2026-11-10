@@ -92,7 +92,7 @@ Plans:
   3. A developer casts any skill by ID and level and sees its visual and hears its sound where the source resolves them; effects whose emitter class or feature is not yet covered by the FX-01 emitter port show as explicit gaps with the class or feature named.
   4. All 40 tables are available as JSON with the inventory showing route and status each (sysstring/systemmsg count resolved), and the developer opens any of the about 140 `interface.xdat` windows from the pinnable sandbox sheet, filled with sandbox data.
   5. One coverage report lists converted, loads and gap counts per part, and walking across tile borders loads and unloads bounded cells without losing nearby collision, with a recorded baseline measurement.
-**Plans**: 56/71 plans executed
+**Plans**: 57/71 plans executed
 - [x] 02-71-PLAN.md
 - [x] 02-01-PLAN.md
 - [x] 02-02-PLAN.md
@@ -138,7 +138,7 @@ Plans:
 - [x] 02-42-PLAN.md
 - [x] 02-43-PLAN.md
 - [x] 02-44-PLAN.md
-- [ ] 02-45-PLAN.md
+- [x] 02-45-PLAN.md
 - [ ] 02-46-PLAN.md
 - [ ] 02-47-PLAN.md
 - [x] 02-48-PLAN.md
@@ -221,7 +221,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 (Phase 5 may start b
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundations | 17/17 | In Progress | - |
-| 2. Stage A breadth | 56/71 | In Progress | - |
+| 2. Stage A breadth | 57/71 | In Progress | - |
 | 3. Stage A checks | 0/TBD | Not started | - |
 | 4. Stage B adapter | 0/TBD | Not started | - |
 | 5. Native-parity polish | 0/TBD | Not started | - |
