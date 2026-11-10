@@ -200,7 +200,8 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
       containers.push(container);
       bspChunks.push(bspChunk);
     }
-    tileVisibility = await attachTileVisibility(scene, manifest, bspChunks, lifetime.signal);
+    tileVisibility = await attachTileVisibility(scene, manifest,
+      { bspChunks, placements: instances, terrainMeshes: loaded.flatMap(entry => entry.meshes) }, lifetime.signal);
     if (disposed || scene.isDisposed) throw new Error("Native tile was disposed during loading.");
     const moverResource = manifest.resources.find(resource => resource.kind === "movers");
     if (moverResource) {
@@ -221,6 +222,7 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
     const extent = nativeMeshBounds(terrainMeshes);
     lifetime.signal.throwIfAborted();
     return { manifest: view, manifestSha256: pinnedManifest.manifestSha256, terrainMeshes, supportMeshes: [], ...extent, spawnCandidate, moverTargets,
+      tileVisibility: tileVisibility.binding,
       inspection: () => ({ ...inspectNativeWorldScene({ terrainMeshes, instances, modelCount: templates.size, disposed, preview: null, previewEnabled: false,
         materialFailure: null, unsupportedRuntimeMaterials: [], bspMeshes, sectionWindow: terrainInfoChunkPlanWindow }),
         terrainChunks, tileAnchor: anchor, meshGapCount, bspSections: bspChunks.reduce((sum, chunk) => sum + chunk.sections.length, 0),

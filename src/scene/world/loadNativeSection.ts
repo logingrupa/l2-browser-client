@@ -16,7 +16,7 @@ import { selectedNativeTileIdentity } from "./selectedNativeTile";
 import type { NativeTileSectionView } from "./loadNativeTileChunks";
 import { disposeNativeModelInstances, instantiateNativeModelPlacements, type NativeModelInstance } from "./nativeModelPlacements";
 import type { NativeMover } from "./nativeMovers";
-import type { TileVisibilityInspection } from "./bspVisibility/bindTileVisibility";
+import type { TileVisibilityBinding, TileVisibilityInspection } from "./bspVisibility/bindTileVisibility";
 
 interface Resource { file: string; sha256: string; bytes: number; }
 interface Model { id: string; sourceObject: string; model: Resource; archive: Resource; }
@@ -53,6 +53,7 @@ export interface NativeSection {
   readonly maximum: Vector3;
   readonly spawnCandidate: Vector3 | null;
   readonly moverTargets?: readonly NativeMover[];
+  readonly tileVisibility?: TileVisibilityBinding | null;
   inspection(): NativeWorldSceneInspection;
   setTerrainPreview(enabled: boolean): void;
   dispose(): void;

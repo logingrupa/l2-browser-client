@@ -6,9 +6,11 @@ import type { Scene } from "@babylonjs/core/scene";
 import { normalizeVector, type Vector3 as SourceVector } from "../../../shared/math/vector3";
 import { worldPositionToSource } from "../../../world/sourceFrame";
 import type { NativeBspNodeRange, NativeBspSection } from "../nativeBspResources";
-import type { BspVisibilityModel } from "./core/decodeBspVisibility";
+import type { NativeModelInstance } from "../nativeModelPlacements";
+import type { NativeTileChunkPlacement } from "../nativeTileChunkManifest";
+import { memberKindStaticMesh, type BspVisibilityModel } from "./core/decodeBspVisibility";
 import type { ViewPose } from "./core/viewFrustum";
-import type { IndexBlock, TileViewSource, TileVisibilityTargets, TranslucentSectionTarget } from "./bindTileVisibility";
+import type { IndexBlock, TileViewSource, TileVisibilityTargets, TranslucentSectionTarget, VisibilityTarget } from "./bindTileVisibility";
 
 export interface TileVisibilityBspChunk {
   readonly chunkOrdinal: number;
@@ -17,11 +19,17 @@ export interface TileVisibilityBspChunk {
   readonly meshes: readonly AbstractMesh[];
 }
 
+export interface TileVisibilityScene {
+  readonly bspChunks: readonly TileVisibilityBspChunk[];
+  readonly placements: readonly NativeModelInstance<NativeTileChunkPlacement>[];
+  readonly terrainMeshes: readonly AbstractMesh[];
+}
+
 export type TileVisibilityTargetsResult =
   | { readonly kind: "bound"; readonly targets: TileVisibilityTargets; readonly translucentSections: readonly number[] }
   | { readonly kind: "gap"; readonly reason: string };
 
-export const sectionUnmappedReason = "bsp-visibility-section-unmapped";
+const sectionUnmappedReason = "bsp-visibility-section-unmapped";
 
 function sourceVector(world: Vector3): SourceVector {
   return worldPositionToSource({ x: world.x, y: world.y, z: world.z });
@@ -97,8 +105,22 @@ function sectionMeshes(model: BspVisibilityModel, chunks: readonly TileVisibilit
   return { meshes, translucent };
 }
 
-export function tileVisibilityTargets(model: BspVisibilityModel, chunks: readonly TileVisibilityBspChunk[]): TileVisibilityTargetsResult {
-  const mapped = sectionMeshes(model, chunks);
+function meshVisibilityTarget(meshes: readonly AbstractMesh[]): VisibilityTarget {
+  return { setVisible(visible) { for (const mesh of meshes) mesh.isVisible = visible; } };
+}
+
+function placementTargets(model: BspVisibilityModel, placements: readonly NativeModelInstance<NativeTileChunkPlacement>[]): Map<number, VisibilityTarget> {
+  const placementByExportIndex = new Map(placements.map(placement => [placement.source.exportIndex, placement]));
+  const targets = new Map<number, VisibilityTarget>();
+  model.members.kind.forEach((kind, member) => {
+    const placement = kind === memberKindStaticMesh ? placementByExportIndex.get(model.members.exportIndex[member]!) : undefined;
+    if (placement) targets.set(member, meshVisibilityTarget(placement.root.getChildMeshes().filter(mesh => mesh.getTotalVertices() > 0)));
+  });
+  return targets;
+}
+
+export function tileVisibilityTargets(model: BspVisibilityModel, scene: TileVisibilityScene): TileVisibilityTargetsResult {
+  const mapped = sectionMeshes(model, scene.bspChunks);
   if (typeof mapped === "string") return { kind: "gap", reason: `${sectionUnmappedReason}: ${mapped}` };
   const translucentSections = new Map<number, TranslucentSectionTarget>(), translucentOrderErrors: string[] = [];
   mapped.meshes.forEach((mesh, section) => {
@@ -107,5 +129,7 @@ export function tileVisibilityTargets(model: BspVisibilityModel, chunks: readonl
     if (typeof target === "string") translucentOrderErrors.push(`section ${section}: ${target}; file order kept`);
     else translucentSections.set(section, target);
   });
-  return { kind: "bound", targets: { translucentSections, translucentOrderErrors }, translucentSections: [...translucentSections.keys()] };
+  const targets: TileVisibilityTargets = { sections: mapped.meshes.map(mesh => meshVisibilityTarget([mesh])), members: placementTargets(model, scene.placements),
+    terrain: [meshVisibilityTarget(scene.terrainMeshes)], translucentSections, translucentOrderErrors };
+  return { kind: "bound", targets, translucentSections: [...translucentSections.keys()] };
 }

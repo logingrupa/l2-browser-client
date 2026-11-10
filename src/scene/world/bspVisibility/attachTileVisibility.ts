@@ -1,7 +1,11 @@
 import type { Scene } from "@babylonjs/core/scene";
+import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { NativeTileBspChunk } from "../loadNativeTileChunks";
+import type { NativeModelInstance } from "../nativeModelPlacements";
+import type { NativeTileChunkPlacement } from "../nativeTileChunkManifest";
 import type { NativeTileManifest } from "../nativeTileManifest";
 import { sceneTileViewSource, tileVisibilityTargets } from "./babylonTileVisibilityTargets";
+import { committedBspVisibilityRules } from "./bspVisibilityRules";
 import { bindTileVisibility, type TileVisibilityBinding, type TileVisibilityInspection } from "./bindTileVisibility";
 import type { BspVisibilityModel } from "./core/decodeBspVisibility";
 import { createTileVisibilityFrameSource } from "./core/tileVisibilityFrame";
@@ -26,7 +30,13 @@ function unlistedResourceReason(manifest: NativeTileManifest): string {
   return row?.reason ?? resourceUnlistedReason;
 }
 
-export async function attachTileVisibility(scene: Scene, manifest: NativeTileManifest, bspChunks: readonly NativeTileBspChunk[], signal: AbortSignal):
+export interface TileVisibilityContents {
+  readonly bspChunks: readonly NativeTileBspChunk[];
+  readonly placements: readonly NativeModelInstance<NativeTileChunkPlacement>[];
+  readonly terrainMeshes: readonly AbstractMesh[];
+}
+
+export async function attachTileVisibility(scene: Scene, manifest: NativeTileManifest, contents: TileVisibilityContents, signal: AbortSignal):
   Promise<AttachedTileVisibility> {
   const resource = manifest.resources.find(entry => entry.kind === bspVisibilityStep);
   if (resource === undefined) return unboundTileVisibility(manifest.tileId, unlistedResourceReason(manifest));
@@ -39,9 +49,11 @@ export async function attachTileVisibility(scene: Scene, manifest: NativeTileMan
     return unboundTileVisibility(manifest.tileId, `${payloadInvalidReasonPrefix}${name}: ${message}`);
   }
   const chunkOrdinalById = new Map(manifest.chunks.map((record, ordinal) => [record.chunkId, ordinal]));
-  const mapped = tileVisibilityTargets(model, bspChunks.map(chunk => ({ ...chunk, chunkOrdinal: chunkOrdinalById.get(chunk.chunkId)! })));
+  const mapped = tileVisibilityTargets(model, { placements: contents.placements, terrainMeshes: contents.terrainMeshes,
+    bspChunks: contents.bspChunks.map(chunk => ({ ...chunk, chunkOrdinal: chunkOrdinalById.get(chunk.chunkId)! })) });
   if (mapped.kind === "gap") return unboundTileVisibility(manifest.tileId, mapped.reason);
   const binding = bindTileVisibility({ tileId: manifest.tileId, model, view: sceneTileViewSource(scene), targets: mapped.targets,
-    frameSource: createTileVisibilityFrameSource(model, mapped.translucentSections) });
+    frameSource: createTileVisibilityFrameSource(model, mapped.translucentSections, committedBspVisibilityRules.limits),
+    limitRules: committedBspVisibilityRules.limitRules });
   return { binding, inspection: () => binding.inspection(), dispose: () => binding.dispose() };
 }

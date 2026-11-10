@@ -10,6 +10,7 @@ import {
 } from "../support/bspVisibilityFixture";
 import type { TypedPayloadFixtureArray } from "../support/typedPayloadFixture";
 
+const mostVisibleLimits = { portalRange: Infinity, portalDepthCap: Infinity, staticMeshRange: Infinity, emitterRange: Infinity };
 const at = (x: number) => ({ x, y: 0, z: 0 });
 const poseAt = (x: number): ViewPose => ({ position: at(x), forward: { x: 1, y: 0, z: 0 }, up: { x: 0, y: 0, z: 1 }, verticalFieldOfView: Math.PI / 3,
   aspectRatio: 2, near: 10, far: Infinity });
@@ -86,12 +87,12 @@ describe("translucentOrder", () => {
 describe("tile visibility frame source", () => {
   it("reports the camera zone, every zone visible while culling is off, and reuses a frame for an unchanged float32 pose", () => {
     const model = threeRoomVisibilityModel();
-    const source = createTileVisibilityFrameSource(model, [threeRoomSections.translucentWalls]);
-    const first = source.frame(poseAt(-500));
+    const source = createTileVisibilityFrameSource(model, [threeRoomSections.translucentWalls], mostVisibleLimits);
+    const first = source.frame(poseAt(-500), false);
     expect(first).toMatchObject({ culling: false, cameraZone: threeRoomZones.camera, visibleZoneCount: 4, skyZones: [threeRoomZones.behindWall] });
     expect([...first.sectionVisible]).toEqual([1, 1]);
-    expect(source.frame(poseAt(-500 + 1e-9))).toBe(first);
-    expect(source.frame(poseAt(500)).cameraZone).toBe(threeRoomZones.throughPortal);
+    expect(source.frame(poseAt(-500 + 1e-9), false)).toBe(first);
+    expect(source.frame(poseAt(500), false).cameraZone).toBe(threeRoomZones.throughPortal);
     expect({ computed: source.computedFrameCount, hits: source.cacheHitCount }).toEqual({ computed: 2, hits: 1 });
   });
 });

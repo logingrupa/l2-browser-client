@@ -3,7 +3,7 @@ export interface ZoneSet {
   readonly high: number;
 }
 
-export const zoneSetWordBits = 32;
+const zoneSetWordBits = 32;
 export const zoneSetWordCount = 2;
 export const maximumZoneCount = zoneSetWordBits * zoneSetWordCount;
 export const emptyZoneSet: ZoneSet = { low: 0, high: 0 };

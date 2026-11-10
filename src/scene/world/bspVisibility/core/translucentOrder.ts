@@ -14,7 +14,7 @@ function rankCoplanarChainReversed(model: BspVisibilityModel, node: number, rank
   return nextRank;
 }
 
-export function rankNodesBackToFront(model: BspVisibilityModel, camera: Vector3): Int32Array {
+function rankNodesBackToFront(model: BspVisibilityModel, camera: Vector3): Int32Array {
   const rank = new Int32Array(model.nodeCount).fill(indexNone), pending = [rootNode * stepKindCount + visitSubtreeStep];
   let nextRank = 0;
   while (pending.length) {
