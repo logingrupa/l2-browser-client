@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-63-PLAN.md
-last_updated: "2026-11-10T04:50:17.864Z"
+stopped_at: Completed 02-65-PLAN.md
+last_updated: "2026-11-10T05:19:10.690Z"
 last_activity: 2026-11-10
-last_activity_desc: Phase 02 plan 02-48 complete (cell-aware collision world)
-state_head: 5f670c0609c77fced6cd66b1d931861c3312fc3f
+last_activity_desc: Phase 02 plan 02-65 complete (movement core traces and MoveActor)
+state_head: f8dab3d28cb25782e4caee4b8a4eeb46cc8467b6
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 75
+  completed_plans: 76
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 02 (Stage A breadth) - EXECUTING
-Plan: 02-63 complete, 58 of 71 plans summarized
+Plan: 02-65 complete, 59 of 71 plans summarized
 Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-10 - Plan 02-63 complete: the Babylon-free BSP visibility walk (camera zone, portal walk, section walk, static mesh and map emitter gating, translucent back-to-front order) runs per frame on tile 20_21 through bindTileVisibility; culling is the presentation variable world.visibility.culling, off until PERF-02; tile:20_21 browser check passes in three viewports
+Last activity: 2026-11-10 - Plan 02-65 complete: our own MoveActor, SingleLineCheck, PointCheck and volume containment run in float32 source units over the collision world across BSP trees, brush volumes, static meshes, movers, terrain and pawn cylinders, with unconfirmed rows in recipes/world/movement-native-rules.json and synthetic golden traces; runtime callers come in 02-66 and 02-67
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -127,6 +127,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P42 | 61min | 3 tasks | 31 files |
 | Phase 02 P45 | 55min | 5 tasks | 65 files |
 | Phase 02 P63 | 25 min | 3 tasks | 28 files |
+| Phase 02 P65 | 27 min | 3 tasks | 26 files |
 
 ## Accumulated Context
 
@@ -304,6 +305,9 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-42: item model records interlude:item:<id>:body-part:<bodyPart>:weapon|armor:<ordinal>, one per item and unit; armor in a body-part slot is the gap equipment-slot-meaning-undecoded:<bodyPart>; the actors items step covers weapon and armor keys only; gap census items step and catalog_index_keys item keys as a lane confirmation; ACT-03 stays Pending (OVERNIGHT-DECISIONS rows 603 to 614)
 - [Phase 02]: 02-45: any tile's sky comes from its one SkyZoneInfo zone through the 02-59 material graph (generic 20_20 sky.glb BIN chunk equals the served sky); ambience, StepSound placement audio and MusicVolume music convert per tile from exact references with original bytes as world-audio resources; the legacy 20_20 sky and audio chain, batch sky and ambient adapters and assets:ambient are deleted (OVERNIGHT-DECISIONS rows 615 to 624)
 - [Phase 02]: 02-63: map-emitter and member gating follow world.visibility.culling (off by default until PERF-02); memberVisible is keyed by placement export index; sections are RNGE (chunk ordinal, primitive) pairs checked against the chunk BSP node ranges (OVERNIGHT-DECISIONS rows 625 to 631)
+- [Phase 02]: 02-65: the core parses the movement rules document with guards; the ?raw runtime binding lands with the first runtime caller (row 632)
+- [Phase 02]: 02-65: brush volume box sweeps clip path-plane hulls with the brush box; movers collide closed unless marked open (rows 634, 635)
+- [Phase 02]: 02-65: MOVE-01 and WORLD-08 stay Pending until pawn physics (02-66) and runtime wiring (02-67) land (row 641)
 
 ### Pending Todos
 
@@ -397,6 +401,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-10T04:50:17.082Z
-Stopped at: Completed 02-63-PLAN.md
+Last session: 2026-11-10T05:19:09.962Z
+Stopped at: Completed 02-65-PLAN.md
 Resume file: None
