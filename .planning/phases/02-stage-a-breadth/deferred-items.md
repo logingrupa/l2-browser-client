@@ -28,3 +28,7 @@ Out-of-scope problems found while executing a plan. Each is left for its owning 
 
 - `pnpm test:editor`, 2026-11-09 18:45 Riga, on branch `plan/autonomous-roadmap`: `tests/editor/editorGeometryCompat.test.ts` refuses its fixture: `tests/fixtures/editor-5.5.3-geometry.cjs` is `i/lf w/crlf` in this CRLF checkout, so it reads 4,686 bytes instead of the pinned 4,597 and fails "Installed Editor writer fixture changed". Plan 02-71 did not touch that fixture or test; a `.gitattributes` eol rule for the fixture is the fix (same cause as the vendored BSP reader pin). `tests/editor/nativeEditorScene.test.ts` timed out at 5,000 ms only while the pipeline suite ran beside it and passed on the idle rerun.
 - `src/materials/ue2/model/constants/combinerConstants.ts:43` cites `scripts/native_sky.py:166` for the sky RGBA colour order; that line already held the texture receipt before 02-71, and the colour tag read is now `scripts/native_sky.py:160`. The render-materials owner re-points or drops the line citation; 02-45 deletes `native_sky.py`.
+
+## Found during 02-48
+
+- `pnpm test:unit`, 2026-11-10 02:48 Riga: `tests/unit/laneOwnership.test.ts` "has an evidence doc for player-characters under 30 KB with the three sections" fails because `docs/parts/player-characters/EVIDENCE.md` (actors lane, last edited by 02-40) has `## Passes now` and `## Open` but no `## Evidence` heading. 02-48 did not touch that doc; the actors part adds the heading. Every other test passes (2,430 passed, 72 skipped).
