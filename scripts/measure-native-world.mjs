@@ -10,9 +10,11 @@ const options = Object.fromEntries(process.argv.slice(2).map(arg => {
   if (!match) throw Error(`Expected --name=value, got ${arg}`);
   return [match[1], match[2]];
 }));
-const allowed = new Set(['label','sample-ms','warmup-ms','repetitions','route','view','profile-ms','output']);
+const allowed = new Set(['label','sample-ms','warmup-ms','repetitions','route','view','profile-ms','output','map']);
 for (const key of Object.keys(options)) if (!allowed.has(key)) throw Error(`Unknown option ${key}`);
 const check = (value, message) => { if (!value) throw Error(message); };
+const selectedMap = options.map ?? null;
+check(selectedMap === null || /^\d{2}_\d{2}$/.test(selectedMap), 'Invalid map');
 check(process.env.WORLD_HARDWARE_TEST === '1', 'WORLD_HARDWARE_TEST=1 required');
 check(/^[a-z0-9-]+$/.test(options.label ?? ''), '--label=short-identifier required');
 const integer = (name, fallback, min, max) => {
@@ -41,7 +43,20 @@ const limits=[
   'JS heap/wrapper/internal counts do not establish GPU or total process residency.',
   'No recording, trace, profiler, screenshot or full scene snapshot during timed samples.'
 ];
-await json('PLAN.json',{label:options.label,variants,view,sampleMs,warmupMs,repetitions,profileMs,
+const routeUrl=variant=>{const parameters=new URLSearchParams();if(variant==='authored')parameters.set('authored','1');if(selectedMap!==null)parameters.set('map',selectedMap);
+  const query=parameters.toString();return `${origin}/${query?`?${query}`:''}`;};
+const scenarioId=selectedMap===null?'supported-20-20-two-actor-idle-v1':`tile-${selectedMap}-residency-idle-v1`;
+const checkSelectedTileReady=native=>{
+  check(native.world?.tileId===selectedMap&&native.collisionCells?.missingCellIds.length===0&&!native.worldFailure,'Selected tile or its collision cells missing');
+  const localPlayer=native.entities.find(entity=>entity.id==='local-player');
+  check(localPlayer?.hasNativeModel===true&&localPlayer.missingAssetDiagnostic===null,'Local player is a fallback');
+};
+const checkSupportedSectionReady=native=>{
+  check(native.world?.modelCount===62&&native.world?.placementCount===157&&native.world.texturesReady&&!native.worldFailure,'World scope/readiness changed');
+  check(native.nativeSky?.meshes===3&&native.nativeSky.texturesReady&&!native.skyFailure,'Sky missing');
+  check(native.entities.length===2&&native.entities.every(e=>e.hasNativeModel),'Two native actors missing');
+};
+await json('PLAN.json',{label:options.label,map:selectedMap,variants,view,sampleMs,warmupMs,repetitions,profileMs,
   browser:{channel:'chromium',headless:true,gpuOverrideFlags:[],viewport:{width:1920,height:1080},deviceScaleFactor:1},
   host,limits,runnerSha256:sha(await readFile(script)),indexSha256:sha(await readFile(join(dist,'index.html'))),
   catalogSha256:sha(await readFile(join(dist,'l2/catalog.json'))),finalAcceptance:false});
@@ -92,7 +107,7 @@ try {
     });
     try {
       const began=performance.now();
-      await page.goto(`${origin}/${variant==='authored'?'?authored=1':''}`,{waitUntil:'domcontentloaded'});
+      await page.goto(routeUrl(variant),{waitUntil:'domcontentloaded'});
       await page.waitForFunction(()=>document.body.dataset.worldState==='ready'&&!!window.__nativeSlice,null,{timeout:240000});
       await page.locator('#loading').waitFor({state:'detached',timeout:240000});
       receipt.loadReadyMs=performance.now()-began;
@@ -105,9 +120,7 @@ try {
       check(receipt.ready.gpu.devices===1&&receipt.ready.gpu.adapters.every(a=>a.vendor==='nvidia'&&a.architecture==='pascal'&&!a.fallback),'NVIDIA/Pascal hardware missing');
       check(receipt.ready.gpu.contexts.includes('webgpu')&&!receipt.ready.gpu.contexts.some(c=>/webgl/i.test(c)),'Unexpected rendering backend');
       const native=receipt.ready.native;
-      check(native.world?.modelCount===62&&native.world?.placementCount===157&&native.world.texturesReady&&!native.worldFailure,'World scope/readiness changed');
-      check(native.nativeSky?.meshes===3&&native.nativeSky.texturesReady&&!native.skyFailure,'Sky missing');
-      check(native.entities.length===2&&native.entities.every(e=>e.hasNativeModel),'Two native actors missing');
+      if(selectedMap===null)checkSupportedSectionReady(native);else checkSelectedTileReady(native);
       const minimumRegisteredSoundsWithoutOptionalBundles=9;
       check(native.nativeAudio.state==='locked'&&native.nativeAudio.locked!==false&&native.nativeAudio.registered>=minimumRegisteredSoundsWithoutOptionalBundles,'Audio preview changed');
       check(native.nativeAudio.stepSounds&&'failure'in native.nativeAudio.stepSounds&&'combatFailure'in native.nativeAudio&&native.nativeAudio.worldAudio,'Optional audio diagnostics missing');
@@ -124,13 +137,13 @@ try {
       check(receipt.probeBefore.engine.isWebGPU&&receipt.probeBefore.engine.name==='WebGPU','Actual engine is not WebGPU');
       await page.bringToFront();
       await page.waitForTimeout(warmupMs);
-      receipt.scenario=await page.evaluate(({view})=>{
+      receipt.scenario=await page.evaluate(({view,scenarioId})=>{
         const n=window.__nativeSlice.snapshot(),canvas=document.getElementById('canvas');
-        return {id:'supported-20-20-two-actor-idle-v1',view,viewport:[innerWidth,innerHeight,devicePixelRatio],renderSize:[canvas.width,canvas.height],
+        return {id:scenarioId,view,viewport:[innerWidth,innerHeight,devicePixelRatio],renderSize:[canvas.width,canvas.height],
           camera:n.camera,manifestSha256:n.world.manifestSha256,models:n.world.modelCount,placements:n.world.placementCount,
           entities:n.entities.map(e=>({id:e.id,position:e.position,modelId:e.modelId,animation:e.animation,animationSequence:e.animationSequence})),
           flames:n.flameReplay?{clockMode:'ordinary-unpaused-loop'}:null,audio:'locked',sky:'stored-materials',crowdActors:2,powerStrikeEffects:0};
-      },{view});
+      },{view,scenarioId});
       receipt.scenarioSha256=sha(Buffer.from(JSON.stringify(receipt.scenario)));
       await page.screenshot({path:join(output,`${variant}-before.png`)});
       const settleScreenshotAndDiagnosticsBeforeSamplingMs=1000;

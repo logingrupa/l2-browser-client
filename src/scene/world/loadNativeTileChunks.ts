@@ -138,6 +138,19 @@ function chunkMeshGapCount(chunks: readonly NativeTileChunkManifest[]): number {
   return chunks.filter(chunk => chunk.gaps.some(row => row.step === staticMeshStep && row.status !== "pass")).length;
 }
 
+function isCollisionMesh(mesh: AbstractMesh): boolean {
+  return mesh.metadata?.worldSupportsWalking === true || mesh.metadata?.worldCollision === true;
+}
+
+function tileMeshCounts(meshes: readonly AbstractMesh[]) {
+  const liveMeshes = meshes.filter(mesh => !mesh.isDisposed() && mesh.getTotalVertices() > 0);
+  return {
+    meshCount: liveMeshes.length,
+    vertexCount: liveMeshes.reduce((sum, mesh) => sum + mesh.getTotalVertices(), 0),
+    collisionMeshCount: liveMeshes.filter(isCollisionMesh).length,
+  };
+}
+
 export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, tileId: string): Promise<NativeSection | null> {
   signal.throwIfAborted();
   if (scene.isDisposed || !scene.useRightHandedSystem) throw new Error("Native tile requires a live right-handed scene.");
@@ -236,6 +249,8 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
       tileVisibility: tileVisibility.binding, environmentClock: tileLighting.environmentClock,
       inspection: () => ({ ...inspectNativeWorldScene({ terrainMeshes, instances, modelCount: templates.size, disposed, preview: null, previewEnabled: false,
         materialFailure: null, unsupportedRuntimeMaterials: [], bspMeshes, sectionWindow: terrainInfoChunkPlanWindow }),
+        tileId, chunkCount: chunks.length, loadedChunkCount: chunks.length,
+        ...tileMeshCounts([...terrainMeshes, ...bspMeshes, ...instances.flatMap(instance => instance.root.getChildMeshes())]),
         terrainChunks, tileAnchor: anchor, meshGapCount, bspSections: bspChunks.reduce((sum, chunk) => sum + chunk.sections.length, 0),
         bspResources: bspChunks.map(chunk => chunk.resource), moverCount: moverTargets.length,
         moverCollisionMeshCount: moverTargets.flatMap(target => target.meshes).filter(mesh => mesh.metadata?.worldCollision === true).length,

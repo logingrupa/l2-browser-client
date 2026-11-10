@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "mode": "headless-swiftshader",
+  "fpsMeasured": false,
+  "catalogSha256": "7c9dae88f307d59dddbe2772a20283e0b977abc98e745be453730b7d738392ec",
+  "tileId": "20_21",
+  "records": {
+    "beforeResidency": {
+      "measuredAtRiga": "2026-11-11T00:57:22+02:00",
+      "loadReadyMilliseconds": 48687,
+      "l2RequestCount": 532,
+      "l2ResponseBytes": 370129764,
+      "chunkCount": 16,
+      "loadedChunkCount": 16,
+      "meshCount": 12427,
+      "vertexCount": 760817,
+      "collisionCellCount": 16,
+      "collisionCells": {
+        "status": "resident",
+        "requiredCellCount": 16,
+        "residentCellCount": 16,
+        "missingCellIds": []
+      }
+    }
+  }
+}

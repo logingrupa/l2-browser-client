@@ -244,6 +244,12 @@ export function inspectNativeWorldScene(input: NativeWorldSceneInspectionInput) 
 }
 
 export type NativeWorldSceneInspection = ReturnType<typeof inspectNativeWorldScene> & {
+  readonly tileId?: string;
+  readonly chunkCount?: number;
+  readonly loadedChunkCount?: number;
+  readonly meshCount?: number;
+  readonly vertexCount?: number;
+  readonly collisionMeshCount?: number;
   readonly terrainChunks?: NativeTileSectionView["terrainChunks"];
   readonly tileAnchor?: NativeTileSectionView["anchor"];
   readonly meshGapCount?: number;
