@@ -5,6 +5,7 @@ from world.bsp_visibility_step import BSP_VISIBILITY_STEP_NAME, run_bsp_visibili
 from world.collision_step import COLLISION_STEP_NAME, run_collision_step
 from world.lighting_step import LIGHTING_STEP_NAME, run_lighting_step
 from world.map_emitter_step import MAP_EMITTER_STEP_NAME, run_map_emitter_step
+from world.minimap_step import MINIMAP_STEP_NAME, run_minimap_step
 from world.mover_step import MOVER_STEP_NAME, run_mover_step
 from world.raw_map_step import RAW_STEP_NAME, run_raw_map_step
 from world.sky_step import SKY_STEP_NAME, run_sky_step
@@ -21,7 +22,8 @@ def source_tile_step_runners():
             STATIC_MESH_STEP_NAME: run_static_mesh_step, BSP_STEP_NAME: run_bsp_step, MOVER_STEP_NAME: run_mover_step,
             COLLISION_STEP_NAME: run_collision_step, MAP_EMITTER_STEP_NAME: run_map_emitter_step,
             BSP_VISIBILITY_STEP_NAME: run_bsp_visibility_step, SKY_STEP_NAME: run_sky_step,
-            WORLD_AUDIO_STEP_NAME: run_world_audio_step, LIGHTING_STEP_NAME: run_lighting_step}
+            WORLD_AUDIO_STEP_NAME: run_world_audio_step, LIGHTING_STEP_NAME: run_lighting_step,
+            MINIMAP_STEP_NAME: run_minimap_step}
 
 
 TILE_STEP_NAMES = (*source_tile_step_runners(), TILE_MANIFEST_STEP_NAME)

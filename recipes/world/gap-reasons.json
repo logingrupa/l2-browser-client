@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 13,
+  "listVersion": 14,
   "reasons": [
     "terrain-height-version-unsupported:<version>",
     "terrain-quads-all-hidden",
@@ -30,6 +30,7 @@
     "lighting-water-volume-unlinked:<class>",
     "object-gaps:<count>",
     "batch-pending",
-    "upstream-step-failed:<step>"
+    "upstream-step-failed:<step>",
+    "minimap-join-unresolved:<what>"
   ]
 }

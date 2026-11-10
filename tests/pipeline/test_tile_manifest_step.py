@@ -149,7 +149,7 @@ class TileManifestTests(unittest.TestCase):
             tile_store_files(REAL_TILE_ID, REAL_SOURCE_IDENTITY, plan, list(reversed(records)), glbs, EVIDENCE)
 
     def test_the_step_constants(self):
-        self.assertEqual((TILE_MANIFEST_STEP_ALGORITHM_VERSION, TILE_CATALOG_CAPACITY), (10, 163))
+        self.assertEqual((TILE_MANIFEST_STEP_ALGORITHM_VERSION, TILE_CATALOG_CAPACITY), (11, 163))
         self.assertEqual(PENDING_TILE_STEPS, ('meshes', 'bsp', 'collision', 'movers', 'emitters', 'bsp-visibility', 'sky', 'audio', 'lighting', 'minimap',
                                               'terrain-material'))
 
