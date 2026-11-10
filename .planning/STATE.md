@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-39-PLAN.md
-last_updated: "2026-11-09T23:37:09.835Z"
+stopped_at: Completed 02-40-PLAN.md
+last_updated: "2026-11-10T00:31:52.621Z"
 last_activity: 2026-11-10
 last_activity_desc: Phase 02 plan 02-38 complete (window registry and UI-03)
-state_head: f5379e23ea64845780e078a3b25421a97b9dc726
+state_head: 3675cba90e2d24bd9ca068974de7d12e5654ee7e
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 69
+  completed_plans: 70
   percent: 0
 ---
 
@@ -121,6 +121,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P31 | 41min | 4 tasks | 38 files |
 | Phase 02 P38 | 40min | 3 tasks | 22 files |
 | Phase 02 P39 | 21 min | 3 tasks | 17 files |
+| Phase 02 P40 | 55min | 3 tasks | 27 files |
 
 ## Accumulated Context
 
@@ -290,6 +291,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-38: rendered control types declared in recipes/data/native-window-control-types.json with an agreement test; the controls ledger step writes one control-type-unsupported row per window naming its first unsupported control (rows 558, 560, 561)
 - [Phase 02]: 02-38: buildNativeWindowRegistry is the one window listing for the Sandbox picker, ordered by base name then ordinal; the window layer clips with overflow hidden as a presentation rule; UI-02 and UI-03 complete (rows 559, 562 to 566)
 - [Phase 02]: 02-39: contract commit A ff64387 adds clipListings to createSandboxRuntimeActions from the runtime clip hub; SandboxPickerHost extends ActorClipListingSource; the Clips picker rereads on open and from a Reread clip listings button (rows 567 to 570)
+- [Phase 02]: 02-40: decision H markers unresolved {field: {reason, previousValue}} in the four human recipes and the female fighter stage profile; the loader reports unresolved profiles; chargrp generator: 15 rows, 1 padding, 8 body assemblies, every key a listed gap; class and hair joins need decoded fields the 4dd2 layouts lack; ACT-01 Pending (rows 571 to 586)
 
 ### Pending Todos
 
@@ -374,6 +376,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-09T23:37:09.138Z
-Stopped at: Completed 02-39-PLAN.md
+Last session: 2026-11-10T00:31:51.765Z
+Stopped at: Completed 02-40-PLAN.md
 Resume file: None
