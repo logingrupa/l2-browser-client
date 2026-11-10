@@ -21,6 +21,13 @@ describe("src/scene/world/movement/core import boundary", () => {
       "src/scene/world/movement/core/collisionCell.ts",
       "src/scene/world/movement/core/collisionWorld.ts",
       "src/scene/world/movement/core/decodeNativeTileCollision.ts",
+      "src/scene/world/movement/core/movementRules.ts",
+      "src/scene/world/movement/core/collisionTrace.ts",
+      "src/scene/world/movement/core/convexHullClip.ts",
+      "src/scene/world/movement/core/bspCollisionTrace.ts",
+      "src/scene/world/movement/core/cylinderTrace.ts",
+      "src/scene/world/movement/core/lineCheck.ts",
+      "src/scene/world/movement/core/moveActor.ts",
     ]));
   });
 
