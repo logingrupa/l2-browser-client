@@ -1,9 +1,7 @@
 import { planeDistance, type Plane } from "../../../../shared/math/plane";
-import type { Vector3 } from "../../../../shared/math/vector3";
+import { dotProduct, float32Difference, float32Vector, type Vector3 } from "../../../../shared/math/vector3";
 import type { CollisionBspTree } from "./collisionCell";
-import {
-  boxSupportAlongNormal, isZeroExtent, negateVector, pointAlongSweep, ZERO_VECTOR, type CollisionSweep, type PrimitiveSweepHit,
-} from "./collisionTrace";
+import { isZeroExtent, negateVector, type CollisionSweep, type PrimitiveSweepHit } from "./collisionTrace";
 import { CollisionWorldError } from "./collisionWorld";
 import { clipSweepAgainstPlanes, convexHullClipPlanes, planesOverlapBox, type ConvexHull } from "./convexHullClip";
 import type { MovementNativeRules } from "./movementRules";
@@ -26,9 +24,14 @@ export interface SolidCollisionTree {
   hullBelow(node: number, side: SolidTreeSide, outwardPathPlanes: readonly Plane[]): KeyedConvexHull | null;
 }
 
-interface RayEntry {
-  readonly time: number;
-  readonly splitterNode: number | null;
+interface SolidEntry {
+  readonly location: Vector3;
+  readonly splitterNode: number;
+}
+
+interface RaySegmentWalk {
+  readonly tree: SolidCollisionTree;
+  readonly sideTolerance: number;
 }
 
 const noNode = -1;
@@ -38,40 +41,60 @@ const frontOutsideBit = (outside: boolean, csg: boolean) => outside || csg;
 const backOutsideBit = (outside: boolean, csg: boolean) => outside && !csg;
 const outwardPlaneOfSide = (plane: Plane, side: SolidTreeSide): Plane =>
   side === "back" ? plane : { normal: negateVector(plane.normal), w: -plane.w };
+const float32PlaneDistance = (plane: Plane, point: Vector3) => Math.fround(planeDistance(plane, point));
 
 function requireWalkDepth(tree: SolidCollisionTree, depth: number): void {
   if (depth > tree.nodeCount) throw new CollisionWorldError(`${tree.owner} walk passed ${tree.nodeCount} nodes; the tree has a cycle.`);
 }
 
-function walkRay(tree: SolidCollisionTree, sweep: CollisionSweep, rules: MovementNativeRules, node: number, outside: boolean,
-  startTime: number, endTime: number, splitterNode: number | null, depth: number): RayEntry | null {
-  if (node === noNode) return outside ? null : { time: startTime, splitterNode };
-  requireWalkDepth(tree, depth);
-  const plane = tree.nodePlane(node), csg = tree.isCsgNode(node);
-  const startDistance = planeDistance(plane, pointAlongSweep(sweep, startTime)), endDistance = planeDistance(plane, pointAlongSweep(sweep, endTime));
-  const sideEpsilon = rules.bspSideEpsilon;
-  if (startDistance > -sideEpsilon && endDistance > -sideEpsilon) {
-    return walkRay(tree, sweep, rules, tree.frontChild(node), frontOutsideBit(outside, csg), startTime, endTime, splitterNode, depth + 1);
+function splitPoint(start: Vector3, end: Vector3, startDistance: number, endDistance: number): Vector3 {
+  const fraction = Math.fround(startDistance / (endDistance - startDistance));
+  const splitComponent = (startComponent: number, endComponent: number) =>
+    Math.fround(startComponent + Math.fround(Math.fround(startComponent - endComponent) * fraction));
+  return { x: splitComponent(start.x, end.x), y: splitComponent(start.y, end.y), z: splitComponent(start.z, end.z) };
+}
+
+function solidEntryAlongSegment(walk: RaySegmentWalk, segmentStart: Vector3, segmentEnd: Vector3, firstNode: number, firstOutside: boolean,
+  firstSplitterNode: number, depth: number): SolidEntry | null {
+  const { tree, sideTolerance } = walk;
+  let node = firstNode, outside = firstOutside, splitterNode = firstSplitterNode, start = segmentStart;
+  for (let walkDepth = depth; node !== noNode; walkDepth += 1) {
+    requireWalkDepth(tree, walkDepth);
+    const plane = tree.nodePlane(node), csg = tree.isCsgNode(node);
+    const startDistance = float32PlaneDistance(plane, start), endDistance = float32PlaneDistance(plane, segmentEnd);
+    if (startDistance > -sideTolerance && endDistance > -sideTolerance) {
+      outside = frontOutsideBit(outside, csg);
+      node = tree.frontChild(node);
+      continue;
+    }
+    if (startDistance < sideTolerance && endDistance < sideTolerance) {
+      outside = backOutsideBit(outside, csg);
+      node = tree.backChild(node);
+      continue;
+    }
+    const middle = splitPoint(start, segmentEnd, startDistance, endDistance);
+    const startInFront = startDistance > 0;
+    const nearChild = startInFront ? tree.frontChild(node) : tree.backChild(node);
+    const nearOutside = startInFront ? frontOutsideBit(outside, csg) : backOutsideBit(outside, csg);
+    const nearEntry = solidEntryAlongSegment(walk, start, middle, nearChild, nearOutside, splitterNode, walkDepth + 1);
+    if (nearEntry !== null) return nearEntry;
+    outside = startInFront ? backOutsideBit(outside, csg) : frontOutsideBit(outside, csg);
+    splitterNode = node;
+    node = startInFront ? tree.backChild(node) : tree.frontChild(node);
+    start = middle;
   }
-  if (startDistance < sideEpsilon && endDistance < sideEpsilon) {
-    return walkRay(tree, sweep, rules, tree.backChild(node), backOutsideBit(outside, csg), startTime, endTime, splitterNode, depth + 1);
-  }
-  const splitTime = startTime + (endTime - startTime) * startDistance / (startDistance - endDistance);
-  const startInFront = startDistance > 0;
-  const nearChild = startInFront ? tree.frontChild(node) : tree.backChild(node), farChild = startInFront ? tree.backChild(node) : tree.frontChild(node);
-  const nearOutside = startInFront ? frontOutsideBit(outside, csg) : backOutsideBit(outside, csg);
-  const farOutside = startInFront ? backOutsideBit(outside, csg) : frontOutsideBit(outside, csg);
-  return walkRay(tree, sweep, rules, nearChild, nearOutside, startTime, splitTime, splitterNode, depth + 1)
-    ?? walkRay(tree, sweep, rules, farChild, farOutside, splitTime, endTime, node, depth + 1);
+  return outside ? null : { location: start, splitterNode };
 }
 
 export function traceSolidTreeRay(tree: SolidCollisionTree, sweep: CollisionSweep, rules: MovementNativeRules): PrimitiveSweepHit | null {
   if (tree.nodeCount === 0) return null;
-  const entry = walkRay(tree, sweep, rules, rootNode, tree.rootOutside, 0, 1, null, 0);
+  const start = float32Vector(sweep.start), end = float32Vector(sweep.end);
+  const entry = solidEntryAlongSegment({ tree, sideTolerance: rules.bspSideEpsilon }, start, end, rootNode, tree.rootOutside, rootNode, 0);
   if (entry === null) return null;
-  if (entry.splitterNode === null) return { time: entry.time, normal: ZERO_VECTOR };
-  const splitter = tree.nodePlane(entry.splitterNode);
-  return { time: entry.time, normal: planeDistance(splitter, sweep.start) < 0 ? negateVector(splitter.normal) : splitter.normal };
+  const delta = float32Difference(end, start), entryOffset = float32Difference(entry.location, start);
+  const time = Math.fround(Math.fround(dotProduct(entryOffset, delta)) / Math.fround(dotProduct(delta, delta)));
+  const splitterNormal = tree.nodePlane(entry.splitterNode).normal;
+  return { time, normal: Math.fround(dotProduct(splitterNormal, negateVector(delta))) < 0 ? negateVector(splitterNormal) : splitterNormal };
 }
 
 interface HullWalk {
@@ -105,13 +128,19 @@ function solidHulls(tree: SolidCollisionTree, sidesToVisit: HullWalk["sidesToVis
   return [...walk.hullsByKey.values()];
 }
 
+function boxPushOut(plane: Plane, extent: Vector3, rules: MovementNativeRules): number {
+  const pushOutAlongAxis = (normalComponent: number, extentComponent: number) =>
+    Math.abs(Math.fround(normalComponent * Math.fround(extentComponent * rules.bspPushOutScale)));
+  return Math.fround(pushOutAlongAxis(plane.normal.x, extent.x) + pushOutAlongAxis(plane.normal.y, extent.y) + pushOutAlongAxis(plane.normal.z, extent.z));
+}
+
 function sweptBoxHulls(tree: SolidCollisionTree, sweep: CollisionSweep, rules: MovementNativeRules): ConvexHull[] {
   return solidHulls(tree, plane => {
-    const pushOut = rules.bspPushOutScale * boxSupportAlongNormal(plane.normal, sweep.extent);
-    const startDistance = planeDistance(plane, sweep.start), endDistance = planeDistance(plane, sweep.end);
+    const pushOut = boxPushOut(plane, sweep.extent, rules);
+    const startDistance = float32PlaneDistance(plane, sweep.start), endDistance = float32PlaneDistance(plane, sweep.end);
     const visitFront = startDistance >= -pushOut || endDistance >= -pushOut, visitBack = startDistance <= pushOut || endDistance <= pushOut;
-    const startSideFirst: readonly SolidTreeSide[] = startDistance >= 0 ? ["front", "back"] : ["back", "front"];
-    return startSideFirst.filter(side => side === "front" ? visitFront : visitBack);
+    const sideOrder: readonly SolidTreeSide[] = endDistance <= startDistance ? ["front", "back"] : ["back", "front"];
+    return sideOrder.filter(side => side === "front" ? visitFront : visitBack);
   });
 }
 
@@ -134,7 +163,7 @@ export function solidTreeHoldsPoint(tree: SolidCollisionTree, point: Vector3): b
   for (let depth = 0; node !== noNode; depth += 1) {
     requireWalkDepth(tree, depth);
     const csg = tree.isCsgNode(node);
-    if (planeDistance(tree.nodePlane(node), point) > 0) {
+    if (float32PlaneDistance(tree.nodePlane(node), point) > 0) {
       outside = frontOutsideBit(outside, csg);
       node = tree.frontChild(node);
     } else {
@@ -148,10 +177,9 @@ export function solidTreeHoldsPoint(tree: SolidCollisionTree, point: Vector3): b
 export function solidTreeOverlapsBox(tree: SolidCollisionTree, centre: Vector3, extent: Vector3, rules: MovementNativeRules): boolean {
   if (isZeroExtent(extent)) return solidTreeHoldsPoint(tree, centre);
   const hulls = solidHulls(tree, plane => {
-    const pushOut = rules.bspPushOutScale * boxSupportAlongNormal(plane.normal, extent);
-    const distance = planeDistance(plane, centre);
-    const sides: SolidTreeSide[] = distance > -pushOut ? ["front"] : [];
-    return distance > pushOut ? sides : [...sides, "back"];
+    const pushOut = boxPushOut(plane, extent, rules), distance = float32PlaneDistance(plane, centre);
+    const frontSides: readonly SolidTreeSide[] = distance > -pushOut ? ["front"] : [];
+    return distance <= pushOut ? [...frontSides, "back"] : frontSides;
   });
   return hulls.some(hull => planesOverlapBox(convexHullClipPlanes(hull, rules), centre, extent));
 }
