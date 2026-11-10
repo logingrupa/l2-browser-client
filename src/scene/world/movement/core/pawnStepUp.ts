@@ -1,53 +1,62 @@
-import { crossProduct, dotProduct, float32Scaled, type Vector3 } from "../../../../shared/math/vector3";
+import { crossProduct, dotProduct, float32Scaled, float32Vector, float32VectorSize, type Vector3 } from "../../../../shared/math/vector3";
 import { moveActor, type MoveActorHit } from "./moveActor";
-import { horizontalDirection, pawnCylinderAt, slideAlongPlane, ZERO_VELOCITY, type PawnBody, type PawnPhysicsContext } from "./pawnBody";
+import type { MovementNativeRules } from "./movementRules";
+import { pawnCylinderAt, safeNormal, slideAlongPlane, ZERO_VELOCITY, type PawnBody, type PawnPhysicsContext } from "./pawnBody";
 
-const squaredLength = (vector: Vector3) => dotProduct(vector, vector);
+export type CheckResultTimeAndNormal = Pick<MoveActorHit, "time" | "normal">;
 
-export function twoWallAdjust(desiredDirection: Vector3, delta: Vector3, newNormal: Vector3, oldNormal: Vector3, hitTime: number): Vector3 {
-  if (dotProduct(oldNormal, newNormal) <= 0) {
-    const crease = crossProduct(newNormal, oldNormal);
-    const creaseLength = Math.sqrt(squaredLength(crease));
-    if (creaseLength === 0) return ZERO_VELOCITY;
-    const creaseDirection = { x: crease.x / creaseLength, y: crease.y / creaseLength, z: crease.z / creaseLength };
-    const alongCrease = float32Scaled(creaseDirection, dotProduct(delta, creaseDirection) * (1 - hitTime));
-    return dotProduct(alongCrease, desiredDirection) < 0 ? float32Scaled(alongCrease, -1) : alongCrease;
+const UNBLOCKED_CHECK_RESULT: CheckResultTimeAndNormal = { time: 1, normal: ZERO_VELOCITY };
+
+const float32SizeSquared = (vector: Vector3) => Math.fround(dotProduct(vector, vector));
+
+export function twoWallAdjust(desiredDirection: Vector3, delta: Vector3, hitNormal: Vector3, oldHitNormal: Vector3, hitTime: number,
+  rules: MovementNativeRules): Vector3 {
+  if (!(Math.fround(dotProduct(hitNormal, oldHitNormal)) > 0)) {
+    const creaseDirection = safeNormal(float32Vector(crossProduct(hitNormal, oldHitNormal)), rules);
+    const alongCrease = float32Scaled(creaseDirection, Math.fround((1 - hitTime) * Math.fround(dotProduct(delta, creaseDirection))));
+    return Math.fround(dotProduct(desiredDirection, alongCrease)) < 0 ? float32Scaled(alongCrease, -1) : alongCrease;
   }
-  const slide = slideAlongPlane(delta, newNormal, 1 - hitTime);
-  return dotProduct(slide, desiredDirection) > 0 ? slide : ZERO_VELOCITY;
+  const slide = slideAlongPlane(delta, hitNormal, hitTime);
+  return Math.fround(dotProduct(desiredDirection, slide)) > 0 ? slide : ZERO_VELOCITY;
 }
 
 export function slideAlongSurface(context: PawnPhysicsContext, body: PawnBody, location: Vector3, desiredDirection: Vector3, delta: Vector3,
-  slideNormal: Vector3, wallHit: MoveActorHit): Vector3 {
+  slideNormal: Vector3, hitTime: number): Vector3 {
   const { world, rules, surroundings } = context;
-  const slideDelta = slideAlongPlane(delta, slideNormal, 1 - wallHit.time);
-  if (dotProduct(slideDelta, desiredDirection) < 0) return location;
+  const slideDelta = slideAlongPlane(delta, slideNormal, hitTime);
+  if (Math.fround(dotProduct(slideDelta, delta)) < 0) return location;
   const slide = moveActor(world, pawnCylinderAt(body, location), slideDelta, rules, surroundings);
   if (slide.hit === null) return slide.location;
-  const adjustedDelta = twoWallAdjust(desiredDirection, slideDelta, slide.hit.normal, wallHit.normal, slide.hit.time);
+  const adjustedDelta = twoWallAdjust(desiredDirection, slideDelta, slide.hit.normal, slideNormal, slide.hit.time, rules);
   return moveActor(world, pawnCylinderAt(body, slide.location), adjustedDelta, rules, surroundings).location;
 }
 
-export function stepUpPawn(context: PawnPhysicsContext, body: PawnBody, start: Vector3, desiredDirection: Vector3, delta: Vector3, hit: MoveActorHit): Vector3 {
+export function stepUpPawn(context: PawnPhysicsContext, body: PawnBody, start: Vector3, gravityDirection: Vector3, desiredDirection: Vector3,
+  delta: Vector3, hit: CheckResultTimeAndNormal): Vector3 {
   const { world, rules, surroundings } = context;
-  const { maxStepHeight, maxStepSideZ, minFloorZ, stepUpWallZ, stepUpRecursion } = rules.pawn;
-  const stepDown = { x: 0, y: 0, z: -maxStepHeight };
+  const { maxStepHeight, maxStepSideZ, minFloorZ, stepUpRecursion } = rules.pawn;
+  const stepDown = float32Scaled(gravityDirection, maxStepHeight);
   const moveFrom = (location: Vector3, moveDelta: Vector3) => moveActor(world, pawnCylinderAt(body, location), moveDelta, rules, surroundings);
-  const isStepFace = Math.abs(hit.normal.z) < maxStepSideZ || hit.normal.z >= minFloorZ;
-  let location = start, currentHit: MoveActorHit | null = hit;
-  if (isStepFace) {
-    const lifted = moveFrom(start, { x: 0, y: 0, z: maxStepHeight }).location;
+  let location = start, currentHit = hit;
+  if (Math.abs(hit.normal.z) < maxStepSideZ || hit.normal.z >= minFloorZ) {
+    const lifted = moveFrom(start, float32Scaled(stepDown, -1)).location;
     const across = moveFrom(lifted, delta);
     location = across.location;
-    currentHit = across.hit;
+    currentHit = across.hit ?? UNBLOCKED_CHECK_RESULT;
+  } else if (body.mode !== "walking") {
+    const slopeRise = Math.fround(float32VectorSize(delta) * hit.normal.z);
+    const upSlope = moveFrom(start, float32Vector({ x: delta.x, y: delta.y, z: delta.z + slopeRise }));
+    location = upSlope.location;
+    currentHit = upSlope.hit ?? UNBLOCKED_CHECK_RESULT;
   }
-  if (currentHit !== null && currentHit.time < 1) {
-    if (Math.abs(currentHit.normal.z) < stepUpWallZ && squaredLength(delta) * currentHit.time > stepUpRecursion) {
+  if (currentHit.time < 1) {
+    if (Math.abs(currentHit.normal.z) < maxStepSideZ && float32SizeSquared(delta) * currentHit.time > stepUpRecursion) {
       const down = moveFrom(location, stepDown);
-      if (down.hit === null) return down.location;
-      return stepUpPawn(context, body, down.location, desiredDirection, float32Scaled(delta, 1 - down.hit.time), down.hit);
+      const downHit = down.hit ?? UNBLOCKED_CHECK_RESULT;
+      return stepUpPawn(context, body, down.location, gravityDirection, desiredDirection, float32Scaled(delta, Math.fround(1 - downHit.time)), downHit);
     }
-    location = slideAlongSurface(context, body, location, desiredDirection, delta, horizontalDirection(currentHit.normal), currentHit);
+    const flattenedWallNormal = safeNormal({ x: currentHit.normal.x, y: currentHit.normal.y, z: 0 }, rules);
+    location = slideAlongSurface(context, body, location, desiredDirection, delta, flattenedWallNormal, currentHit.time);
   }
   return moveFrom(location, stepDown).location;
 }

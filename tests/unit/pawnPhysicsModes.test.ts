@@ -93,15 +93,15 @@ describe("stepUp, wall slide and twoWallAdjust", () => {
 
   it("moves along the crease of facing walls and drops a slide that turns against the desired direction", () => {
     const facingSlopes = [{ x: -0.8, y: 0, z: 0.6 }, { x: 0.8, y: 0, z: 0.6 }] as const;
-    const crease = twoWallAdjust({ x: 0.6, y: 0.8, z: 0 }, { x: 10, y: 5, z: 0 }, facingSlopes[0], facingSlopes[1], 0.5);
+    const crease = twoWallAdjust({ x: 0.6, y: 0.8, z: 0 }, { x: 10, y: 5, z: 0 }, facingSlopes[0], facingSlopes[1], 0.5, pawnRules);
     expect(crease.x).toBeCloseTo(0, 6);
     expect(crease.y).toBeCloseTo(2.5, 5);
     expect(crease.z).toBeCloseTo(0, 6);
-    const flipped = twoWallAdjust({ x: 0, y: -1, z: 0 }, { x: 10, y: 5, z: 0 }, facingSlopes[0], facingSlopes[1], 0.5);
+    const flipped = twoWallAdjust({ x: 0, y: -1, z: 0 }, { x: 10, y: 5, z: 0 }, facingSlopes[0], facingSlopes[1], 0.5, pawnRules);
     expect(flipped.y).toBeCloseTo(-2.5, 5);
-    const slide = twoWallAdjust({ x: 1, y: 0, z: 0 }, { x: 10, y: 4, z: 0 }, { x: -0.6, y: -0.8, z: 0 }, { x: -1, y: 0, z: 0 }, 0.5);
+    const slide = twoWallAdjust({ x: 1, y: 0, z: 0 }, { x: 10, y: 4, z: 0 }, { x: -0.6, y: -0.8, z: 0 }, { x: -1, y: 0, z: 0 }, 0.5, pawnRules);
     expect(slide.x).toBeGreaterThan(0);
-    const against = twoWallAdjust({ x: 1, y: 0, z: 0 }, { x: 10, y: 0, z: 0 }, { x: -1, y: 0, z: 0 }, { x: -0.6, y: -0.8, z: 0 }, 0.5);
+    const against = twoWallAdjust({ x: 1, y: 0, z: 0 }, { x: 10, y: 0, z: 0 }, { x: -1, y: 0, z: 0 }, { x: -0.6, y: -0.8, z: 0 }, 0.5, pawnRules);
     expect(against).toEqual({ x: 0, y: 0, z: 0 });
   });
 });

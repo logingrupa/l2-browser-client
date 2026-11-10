@@ -47,7 +47,7 @@ export interface PawnMovementRules {
   readonly minFloorZ: number;
   readonly maxStepSideZ: number;
   readonly stepUpRecursion: number;
-  readonly stepUpWallZ: number;
+  readonly safeNormalSquareSumMinimum: number;
   readonly steepSlide: number;
   readonly volumeGravity: number;
   readonly terminalVelocity: number;
@@ -182,7 +182,7 @@ export function parseMovementNativeRules(document: unknown): MovementNativeRules
       minFloorZ: numberRule("movement.minFloorZ"),
       maxStepSideZ: numberRule("movement.maxStepSideZ"),
       stepUpRecursion: numberRule("movement.stepUpRecursion"),
-      stepUpWallZ: numberRule("movement.stepUpWallZ"),
+      safeNormalSquareSumMinimum: numberRule("movement.safeNormalSquareSumMinimum"),
       steepSlide: numberRule("movement.steepSlide"),
       volumeGravity: numberRule("movement.volumeGravity"),
       terminalVelocity: numberRule("movement.terminalVelocity"),

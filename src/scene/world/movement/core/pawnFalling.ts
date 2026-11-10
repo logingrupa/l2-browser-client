@@ -1,7 +1,7 @@
 import { float32Vector, type Vector3 } from "../../../../shared/math/vector3";
 import { moveActor } from "./moveActor";
 import {
-  horizontalLength, isPawnInWater, isWalkableFloorNormal, pawnCylinderAt, unitDirection, velocityFromDisplacement,
+  horizontalLength, isPawnInWater, isWalkableFloorNormal, pawnCylinderAt, safeNormal, velocityFromDisplacement,
   type PawnBody, type PawnPhysicsContext, type PawnStepResult,
 } from "./pawnBody";
 import { slideAlongSurface } from "./pawnStepUp";
@@ -33,6 +33,6 @@ export function fallPawn(context: PawnPhysicsContext, body: PawnBody, tickSecond
     };
     return { body: landedBody, unusedSeconds: tickSeconds * (1 - fall.hit.time) };
   }
-  const location = slideAlongSurface(context, body, fall.location, unitDirection(delta), delta, fall.hit.normal, fall.hit);
+  const location = slideAlongSurface(context, body, fall.location, safeNormal(delta, rules), delta, fall.hit.normal, fall.hit.time);
   return { body: { ...body, location, velocity: velocityFromDisplacement(body.location, location, tickSeconds) }, unusedSeconds: 0 };
 }

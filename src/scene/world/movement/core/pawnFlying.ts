@@ -1,16 +1,14 @@
 import { dotProduct, float32Scaled, float32Vector, type Vector3 } from "../../../../shared/math/vector3";
 import { moveActor, type MoveActorHit } from "./moveActor";
 import type { MovementNativeRules } from "./movementRules";
-import { pawnCylinderAt, unitDirection, velocityFromDisplacement, type PawnBody, type PawnPhysicsContext, type PawnStepResult } from "./pawnBody";
+import {
+  pawnCylinderAt, physicsVolumeGravityDirection, safeNormal, velocityFromDisplacement, type PawnBody, type PawnPhysicsContext, type PawnStepResult,
+} from "./pawnBody";
 import { slideAlongSurface, stepUpPawn } from "./pawnStepUp";
 
-function physicsVolumeGravityDirection(rules: MovementNativeRules): Vector3 {
-  return { x: 0, y: 0, z: rules.pawn.volumeGravity > 0 ? 1 : -1 };
-}
-
-function hitsWallInLevelFlight(rules: MovementNativeRules, hit: MoveActorHit, float32Velocity: Vector3): boolean {
+function hitsWallInLevelFlight(rules: MovementNativeRules, hit: MoveActorHit, gravityDirection: Vector3, float32Velocity: Vector3): boolean {
   const { flyingStepWallZ, flyingLevelDotMinimum, flyingLevelDotMaximum } = rules.pawn;
-  const velocityAlongGravity = Math.fround(dotProduct(physicsVolumeGravityDirection(rules), unitDirection(float32Velocity)));
+  const velocityAlongGravity = Math.fround(dotProduct(gravityDirection, safeNormal(float32Velocity, rules)));
   return Math.abs(hit.normal.z) < flyingStepWallZ && velocityAlongGravity < flyingLevelDotMaximum && velocityAlongGravity > flyingLevelDotMinimum;
 }
 
@@ -26,13 +24,14 @@ export function flyPawn(context: PawnPhysicsContext, body: PawnBody, velocity: V
   const flightDelta = float32Scaled(float32Velocity, deltaTime);
   const flight = moveActor(world, pawnCylinderAt(body, oldLocation), flightDelta, rules, surroundings);
   if (flight.hit === null) return flownPawn(body, flight.location, oldLocation, deltaTime);
-  const desiredDirection = unitDirection(flightDelta);
-  if (hitsWallInLevelFlight(rules, flight.hit, float32Velocity)) {
+  const gravityDirection = physicsVolumeGravityDirection(rules);
+  const desiredDirection = safeNormal(flightDelta, rules);
+  if (hitsWallInLevelFlight(rules, flight.hit, gravityDirection, float32Velocity)) {
     const remainingDelta = float32Scaled(flightDelta, Math.fround(1 - flight.hit.time));
-    const location = stepUpPawn(context, body, flight.location, desiredDirection, remainingDelta, flight.hit);
+    const location = stepUpPawn(context, body, flight.location, gravityDirection, desiredDirection, remainingDelta, flight.hit);
     const oldLocationWithoutStepUp = { ...oldLocation, z: Math.fround(oldLocation.z - flight.location.z + location.z) };
     return flownPawn(body, location, oldLocationWithoutStepUp, deltaTime);
   }
-  const location = slideAlongSurface(context, body, flight.location, desiredDirection, flightDelta, flight.hit.normal, flight.hit);
+  const location = slideAlongSurface(context, body, flight.location, desiredDirection, flightDelta, flight.hit.normal, flight.hit.time);
   return flownPawn(body, location, oldLocation, deltaTime);
 }

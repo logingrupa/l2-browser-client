@@ -3,7 +3,7 @@ import type { CollisionPrimitive } from "./collisionTrace";
 import { singleLineCheck, type LineCheckHit } from "./lineCheck";
 import { moveActor } from "./moveActor";
 import {
-  horizontalDirection, horizontalLength, isWalkableFloorNormal, pawnCylinderAt, pawnExtent, ZERO_VELOCITY,
+  horizontalDirection, horizontalLength, isWalkableFloorNormal, pawnCylinderAt, pawnExtent, physicsVolumeGravityDirection, ZERO_VELOCITY,
   type PawnBody, type PawnPhysicsContext, type PawnStepResult,
 } from "./pawnBody";
 import { stepUpPawn } from "./pawnStepUp";
@@ -52,7 +52,7 @@ function walkSubstep(context: PawnPhysicsContext, body: PawnBody, velocity: Vect
   const walk = moveActor(world, pawnCylinderAt(body, start), desiredDelta, rules, surroundings);
   let location = walk.hit === null
     ? walk.location
-    : stepUpPawn(context, body, walk.location, horizontalDirection(desiredDelta), float32Scaled(desiredDelta, 1 - walk.hit.time), walk.hit);
+    : stepUpPawn(context, body, walk.location, physicsVolumeGravityDirection(rules), horizontalDirection(desiredDelta), float32Scaled(desiredDelta, 1 - walk.hit.time), walk.hit);
   const floorHit = probeFloor(context, body, location);
   if (floorHit !== null && isWalkableFloorNormal(floorHit.normal, rules)) {
     const settlement = settleIntoFloorBand(context, body, location, floorHit);

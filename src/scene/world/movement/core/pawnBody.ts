@@ -1,4 +1,4 @@
-import { dotProduct, float32Vector, type Vector3 } from "../../../../shared/math/vector3";
+import { dotProduct, float32Difference, float32Scaled, float32Vector, type Vector3 } from "../../../../shared/math/vector3";
 import type { CollisionPrimitive, CollisionSurroundings } from "./collisionTrace";
 import type { CollisionWorld } from "./collisionWorld";
 import type { MovingActor } from "./moveActor";
@@ -40,9 +40,14 @@ export const horizontalLength = (vector: Vector3) => Math.hypot(vector.x, vector
 
 export const isWalkableFloorNormal = (normal: Vector3, rules: MovementNativeRules) => normal.z >= rules.pawn.minFloorZ;
 
-export function unitDirection(vector: Vector3): Vector3 {
-  const length = Math.hypot(vector.x, vector.y, vector.z);
-  return length === 0 ? ZERO_VELOCITY : { x: vector.x / length, y: vector.y / length, z: vector.z / length };
+export function physicsVolumeGravityDirection(rules: MovementNativeRules): Vector3 {
+  return { x: 0, y: 0, z: rules.pawn.volumeGravity > 0 ? 1 : -1 };
+}
+
+export function safeNormal(vector: Vector3, rules: MovementNativeRules): Vector3 {
+  const squareSum = Math.fround(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z);
+  if (squareSum < rules.pawn.safeNormalSquareSumMinimum) return ZERO_VELOCITY;
+  return float32Scaled(vector, Math.fround(1 / Math.fround(Math.sqrt(squareSum))));
 }
 
 export function horizontalDirection(vector: Vector3): Vector3 {
@@ -51,7 +56,7 @@ export function horizontalDirection(vector: Vector3): Vector3 {
 }
 
 export function velocityFromDisplacement(start: Vector3, end: Vector3, seconds: number): Vector3 {
-  return float32Vector({ x: (end.x - start.x) / seconds, y: (end.y - start.y) / seconds, z: (end.z - start.z) / seconds });
+  return float32Scaled(float32Difference(end, start), Math.fround(1 / seconds));
 }
 
 export function isPawnInWater(context: PawnPhysicsContext, location: Vector3): boolean {
@@ -60,9 +65,7 @@ export function isPawnInWater(context: PawnPhysicsContext, location: Vector3): b
   return volumesContaining(context.world, waterlinePoint, context.rules).length > 0;
 }
 
-export function slideAlongPlane(delta: Vector3, normal: Vector3, remainingFraction: number): Vector3 {
-  const intoPlane = dotProduct(delta, normal);
-  return float32Vector({
-    x: (delta.x - normal.x * intoPlane) * remainingFraction, y: (delta.y - normal.y * intoPlane) * remainingFraction, z: (delta.z - normal.z * intoPlane) * remainingFraction,
-  });
+export function slideAlongPlane(delta: Vector3, normal: Vector3, hitTime: number): Vector3 {
+  const intoPlane = Math.fround(dotProduct(delta, normal));
+  return float32Scaled(float32Difference(delta, float32Scaled(normal, intoPlane)), Math.fround(1 - hitTime));
 }

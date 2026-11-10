@@ -1,21 +1,25 @@
 import { describe, expect, it } from "vitest";
 import type { Vector3 } from "../../src/shared/math/vector3";
+import type { CollisionWorld } from "../../src/scene/world/movement/core/collisionWorld";
 import { parseMovementNativeRules } from "../../src/scene/world/movement/core/movementRules";
 import type { PawnPhysicsContext } from "../../src/scene/world/movement/core/pawnBody";
 import { flyPawn } from "../../src/scene/world/movement/core/pawnFlying";
 import { readCommittedMovementRulesDocument } from "../fixtures/movement/movementCollisionFixtures";
-import { blockingBox, boxVolumeWorld, floorSlab, pawnContext, pawnRules, standingPawn, syntheticPawnRadius } from "../fixtures/movement/pawnWorldFixtures";
+import {
+  blockingBox, boxVolumeWorld, floorSlab, pawnContext, pawnRules, standingPawn, syntheticPawnHalfHeight, syntheticPawnRadius,
+} from "../fixtures/movement/pawnWorldFixtures";
 
 const tickSeconds = 1 / 60;
 const deltaTime = Math.fround(tickSeconds);
 const lowWallFaceX = 100;
 const lowWallWorld = boxVolumeWorld([blockingBox([228, 0, -79], [128, 512, 64])]);
+const hangingWallWorld = boxVolumeWorld([blockingBox([228, 0, syntheticPawnHalfHeight - 5 + 64], [128, 512, 64])]);
 const lastXBeforeLowWall = lowWallFaceX - syntheticPawnRadius;
 
-function contextWithVolumeGravity(volumeGravity: number): PawnPhysicsContext {
+function contextWithVolumeGravity(volumeGravity: number, world: CollisionWorld = lowWallWorld): PawnPhysicsContext {
   const document = readCommittedMovementRulesDocument() as { rows: Record<string, unknown>[] };
   const rows = document.rows.map(row => row.id === "movement.volumeGravity" ? { ...row, value: volumeGravity, runtimeDefault: volumeGravity } : row);
-  return { ...pawnContext(lowWallWorld), rules: parseMovementNativeRules({ ...document, rows }) };
+  return { ...pawnContext(world), rules: parseMovementNativeRules({ ...document, rows }) };
 }
 
 const flyIntoLowWall = (context: PawnPhysicsContext, startZ: number, velocity: Vector3) =>
@@ -34,15 +38,16 @@ describe("flyPawn follows APawn::physFlying", () => {
     expect(pawnRules.pawn.flyingLevelDotMaximum).toBe(0.5);
   });
 
-  it("moves by the float32 velocity times the float32 deltaTime and writes Velocity back as the move over deltaTime", () => {
+  it("moves by the float32 velocity times the float32 deltaTime and writes Velocity back through Core FVector::operator/", () => {
     const start = { x: 10.3, y: -4.1, z: 7.7 }, velocity = { x: 107.3, y: 20.5, z: 53.6 };
     const step = flyPawn(pawnContext(boxVolumeWorld([floorSlab(-1000)])), standingPawn(start, "flying"), velocity, tickSeconds);
     const axes = ["x", "y", "z"] as const;
     const expectedLocation = Object.fromEntries(axes.map(axis =>
       [axis, Math.fround(Math.fround(start[axis]) + Math.fround(Math.fround(velocity[axis]) * deltaTime))])) as unknown as Vector3;
     expect(step.body.location).toEqual(expectedLocation);
+    const inverseDeltaTime = Math.fround(1 / deltaTime);
     expect(step.body.velocity).toEqual(Object.fromEntries(axes.map(axis =>
-      [axis, Math.fround((expectedLocation[axis] - Math.fround(start[axis])) / deltaTime)])));
+      [axis, Math.fround(Math.fround(expectedLocation[axis] - Math.fround(start[axis])) * inverseDeltaTime)])));
     expect(step.body.mode).toBe("flying");
     expect(step.unusedSeconds).toBe(0);
   });
@@ -70,5 +75,13 @@ describe("flyPawn follows APawn::physFlying", () => {
     const gentleDescent = { x: 600, y: 0, z: -200 };
     expect(flyIntoLowWall(contextWithVolumeGravity(-1500), 5, gentleDescent).location.x).toBeGreaterThan(lastXBeforeLowWall);
     expect(flyIntoLowWall(contextWithVolumeGravity(1500), 5, gentleDescent).location.x).toBeLessThanOrEqual(lastXBeforeLowWall);
+  });
+
+  it("hands GravDir to APawn::stepUp, so under upward volume gravity a level flier steps down under a wall hanging into its top", () => {
+    const levelFlight = { x: 600, y: 0, z: 0 };
+    const underUpwardGravity = flyIntoLowWall(contextWithVolumeGravity(1500, hangingWallWorld), 0, levelFlight);
+    expect(underUpwardGravity.location.x).toBeGreaterThan(lastXBeforeLowWall);
+    expect(underUpwardGravity.velocity.z).toBe(0);
+    expect(flyIntoLowWall(contextWithVolumeGravity(-1500, hangingWallWorld), 0, levelFlight).location.x).toBeLessThanOrEqual(lastXBeforeLowWall);
   });
 });
