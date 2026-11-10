@@ -11,13 +11,13 @@ from typing import NamedTuple
 
 from native_store.build_coverage_report import write_coverage_report
 from native_store.gap_rows import read_gap_rows, sorted_gap_rows, write_gap_rows
-from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root, require_converter_output
-from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, RECEIPT_RECORD_NAME, FreeDiskFloorRefusedError, MachineWindowRefusedError,
-                                      UnitLedger, UnitLedgerError, require_batch_preflight, run_at_below_normal_priority)
+from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, require_converter_output
+from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, FreeDiskFloorRefusedError, MachineWindowRefusedError, UnitLedgerError,
+                                      require_batch_preflight, run_at_below_normal_priority)
 from native_store.write_lane_catalog import write_lane_catalog
 from reference_client_guard import require_reference_client
-from world.eligible_tile_selection import (FAILED_STATUS, PASS_STATUS, SealedTileStep, failed_step_row, read_tile_census,
-                                           select_eligible_tiles, step_level_rows, upstream_failed_row)
+from world.eligible_tile_selection import (FAILED_STATUS, PASS_STATUS, failed_step_row, read_tile_census, sealed_tile_step,
+                                           select_eligible_tiles, step_level_rows, unit_step_evidence, upstream_failed_row)
 from world.raw_map_step import read_tile_map_lock_record, tile_map_path, tile_unit_key
 from world.tile_census import DEFAULT_CONVERSION_CLIENT_ROOT, WORLD_LANE_NAME
 from world.tile_manifest_step import TILE_MANIFEST_STEP_NAME
@@ -27,7 +27,6 @@ BATCH_EXIT_DONE = 0
 BATCH_EXIT_ERROR = 1
 BATCH_EXIT_MACHINE_WINDOW = 2
 BATCH_EXIT_DISK_FLOOR = 3
-SEAL_INSPECTION_ALGORITHM_VERSION = 1
 NOTHING_TO_DO_MESSAGE = 'nothing to do: every eligible tile of the census has every registered step sealed'
 
 
@@ -68,25 +67,6 @@ def positive_limit_argument(value):
     if limit < 1:
         raise argparse.ArgumentTypeError(f'--limit must be at least 1: {limit}')
     return limit
-
-
-def seal_inspection_ledger(project_root, step):
-    return UnitLedger(lane_work_root(project_root, WORLD_LANE_NAME), step, SEAL_INSPECTION_ALGORITHM_VERSION)
-
-
-def sealed_tile_step(project_root, tile_id, step):
-    ledger = seal_inspection_ledger(project_root, step)
-    unit_key = tile_unit_key(tile_id)
-    receipt = ledger.sealed_receipt(unit_key)
-    if receipt is None:
-        return None
-    evidence = (ledger.unit_step_directory(unit_key) / RECEIPT_RECORD_NAME).relative_to(ledger.lane_folder).as_posix()
-    return SealedTileStep(receipt['gapRows'], evidence)
-
-
-def unit_step_evidence(project_root, tile_id, step):
-    ledger = seal_inspection_ledger(project_root, step)
-    return ledger.unit_step_directory(tile_unit_key(tile_id)).relative_to(ledger.lane_folder).as_posix()
 
 
 def is_step_sealed(project_root, tile_id, step):

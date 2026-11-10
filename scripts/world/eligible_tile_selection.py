@@ -2,7 +2,10 @@ import json
 from pathlib import Path
 from typing import NamedTuple
 
-from world.raw_map_step import TILE_ID_PATTERN, tile_map_path, tile_step_row
+from native_store.store_paths import lane_work_root
+from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger
+from world.raw_map_step import TILE_ID_PATTERN, tile_map_path, tile_step_row, tile_unit_key
+from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import (ELIGIBLE_STATUS, TILE_CENSUS_RELATIVE_PATH, TILE_KIND, TileCensusError,
                                           validate_tile_census)
 
@@ -15,6 +18,7 @@ BATCH_PENDING_REASON = 'batch-pending'
 OBJECT_GAPS_REASON_PREFIX = 'object-gaps:'
 UPSTREAM_STEP_FAILED_REASON_PREFIX = 'upstream-step-failed:'
 DECODE_FAILED_REASON_PREFIX = 'decode-failed:'
+SEAL_INSPECTION_ALGORITHM_VERSION = 1
 
 
 class SealedTileStep(NamedTuple):
@@ -37,6 +41,25 @@ def select_eligible_tiles(census):
             raise TileCensusError(f'eligible tile census row {row["key"]} does not name its own map {row["map"]!r}')
         tile_ids.append(tile_id)
     return tile_ids
+
+
+def seal_inspection_ledger(project_root, step):
+    return UnitLedger(lane_work_root(project_root, WORLD_LANE_NAME), step, SEAL_INSPECTION_ALGORITHM_VERSION)
+
+
+def sealed_tile_step(project_root, tile_id, step):
+    ledger = seal_inspection_ledger(project_root, step)
+    unit_key = tile_unit_key(tile_id)
+    receipt = ledger.sealed_receipt(unit_key)
+    if receipt is None:
+        return None
+    evidence = (ledger.unit_step_directory(unit_key) / RECEIPT_RECORD_NAME).relative_to(ledger.lane_folder).as_posix()
+    return SealedTileStep(receipt['gapRows'], evidence)
+
+
+def unit_step_evidence(project_root, tile_id, step):
+    ledger = seal_inspection_ledger(project_root, step)
+    return ledger.unit_step_directory(tile_unit_key(tile_id)).relative_to(ledger.lane_folder).as_posix()
 
 
 def first_line_of_error(error):
@@ -74,3 +97,11 @@ def step_level_rows(tile_id, source_identity, step_names, step_results, sealed_s
         else:
             rows.append(tile_step_row(tile_id, step, PENDING_STATUS, BATCH_PENDING_REASON, source_identity, TILE_CENSUS_RELATIVE_PATH))
     return rows
+
+
+def seal_derived_step_row(project_root, row):
+    tile_id = row['key'].removeprefix(TILE_KEY_PREFIX)
+    if row['status'] == FAILED_STATUS:
+        return row
+    sealed_step = sealed_tile_step(project_root, tile_id, row['step'])
+    return row if sealed_step is None else sealed_step_row(tile_id, row['step'], row['sourceIdentity'], sealed_step)

@@ -18,7 +18,7 @@ from native_store.unit_ledger import (RUNNING_MARKER_NAME, SEAL_RECORD_NAME, Fre
 from world import convert_tile_batch
 from world.convert_tile_batch import (BATCH_EXIT_DISK_FLOOR, BATCH_EXIT_DONE, BATCH_EXIT_ERROR, BATCH_EXIT_MACHINE_WINDOW,
                                       NOTHING_TO_DO_MESSAGE, TileBatchUsageError, run_tile_batch)
-from world.eligible_tile_selection import SealedTileStep, select_eligible_tiles, step_level_rows
+from world.eligible_tile_selection import SealedTileStep, seal_derived_step_row, select_eligible_tiles, step_level_rows
 from world.raw_map_step import tile_step_row
 from world.tile_census_validation import TILE_CENSUS_RELATIVE_PATH, TileCensusError
 from world.tile_step_registry import TILE_STEP_NAMES
@@ -235,6 +235,15 @@ class TileBatchOrderTests(TileBatchTestCase):
         self.run_batch(steps, limit=3)
         self.assertEqual(self.gap_row_file_bytes(), first_bytes)
         self.assertEqual(sorted(first_bytes), sorted(f'{step}.json' for step in SYNTHETIC_STEP_NAMES))
+
+    def test_the_single_step_row_follows_the_same_seal_rule_as_the_batch(self):
+        steps = LedgerBackedSteps(self.project_root, object_gaps={('10_11', 'meshes'): 2})
+        [meshes_row] = steps('meshes', '10_11')
+        self.assertEqual(seal_derived_step_row(self.project_root, meshes_row)['reason'], 'object-gaps:2')
+        failed_row = {**meshes_row, 'status': 'failed', 'reason': 'decode-failed:ValueError:later attempt'}
+        self.assertEqual(seal_derived_step_row(self.project_root, failed_row), failed_row)
+        unsealed_row = tile_step_row('10_11', 'raw', 'gap', 'player-start-missing', synthetic_source_identity('10_11'), 'evidence.json')
+        self.assertEqual(seal_derived_step_row(self.project_root, unsealed_row), unsealed_row)
 
     def test_refuses_a_limit_below_one(self):
         with self.assertRaises(TileBatchUsageError):
