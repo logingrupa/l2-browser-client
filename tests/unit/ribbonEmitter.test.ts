@@ -28,12 +28,18 @@ function swingingBladeSample(stepIndex: number, ribbonWidth: number): RibbonPoin
   return { location: { ...sweep, z: 50 }, locationUnder: { ...sweep, z: 150 }, width: ribbonWidth };
 }
 
-function ribbonWithBlade(record: RibbonEmitterRecord, seed: number): { ribbon: RibbonEmitterSimulation; advanceStep(): void } {
+function ribbonWithBlade(record: RibbonEmitterRecord, seed: number): { ribbon: RibbonEmitterSimulation; advanceStep(bladeMoves?: boolean): void } {
   const ribbon = createRibbonEmitterSimulation(record, createEmitterRandomStream(seed, 0, 0));
-  let stepIndex = 0;
-  ribbon.attachPointSource(ribbonWidth => swingingBladeSample(stepIndex, ribbonWidth));
+  let bladeSweepIndex = 0;
+  ribbon.attachPointSource(ribbonWidth => swingingBladeSample(bladeSweepIndex, ribbonWidth));
   const context = standaloneStepContext(ribbon);
-  return { ribbon, advanceStep() { stepIndex += 1; ribbon.step(stepSeconds, context); } };
+  return {
+    ribbon,
+    advanceStep(bladeMoves = true) {
+      if (bladeMoves) bladeSweepIndex += 1;
+      ribbon.step(stepSeconds, context);
+    },
+  };
 }
 
 function ribbonTrace(seed: number): number[][] {
@@ -73,7 +79,7 @@ describe("RibbonEmitter simulation", () => {
     expect(Math.max(...counts)).toBe(ribbonRecord.NumPoints);
     expect(ribbon.ribbonPoints().every(point => point.width === ribbonRecord.RibbonWidth)).toBe(true);
     for (let stepIndex = 60; stepIndex < 70; stepIndex += 1) advanceStep();
-    expect(ribbon.numPointsAfterDrops).toBeLessThan(ribbonRecord.NumPoints);
+    expect(ribbon.numPoints).toBeLessThan(ribbonRecord.NumPoints);
   });
 
   it("moves an active head particle to the owner location before it samples, as UpdateParticles 0x10693CBA-0x10693CD1 does", () => {
@@ -105,6 +111,45 @@ describe("RibbonEmitter simulation", () => {
     expect(createEmitterSimulation(ribbonRecord, createEmitterRandomStream(1, 0, 0)).kind).toBe("ribbon");
   });
 
+  it("removes the last point but never the head on a rejected sample with bDecayPoints, as 0x106941E0-0x106941F7 does, and restarts the timer", () => {
+    const decaying = ribbonWithBlade(ribbonRecordWith({ AccDrop: 0, NumPoints: 60, bUseInterpolation: false, bDecayPoints: true }), 1);
+    while (decaying.ribbon.ribbonPoints().length < 5) decaying.advanceStep();
+    const sampledPoints = decaying.ribbon.ribbonPoints();
+    const stillStepsToFirstReject = [1, 2, 3].map(() => { decaying.advanceStep(false); return decaying.ribbon.ribbonPoints().length; });
+    expect(stillStepsToFirstReject).toEqual([5, 5, 4]);
+    expect(decaying.ribbon.ribbonPoints()).toEqual(sampledPoints.slice(0, 4));
+    const stillStepsToSecondReject = [1, 2, 3].map(() => { decaying.advanceStep(false); return decaying.ribbon.ribbonPoints().length; });
+    expect(stillStepsToSecondReject).toEqual([4, 4, 3]);
+    for (let stillStep = 0; stillStep < 30; stillStep += 1) decaying.advanceStep(false);
+    expect(decaying.ribbon.ribbonPoints()).toEqual(sampledPoints.slice(0, 1));
+  });
+
+  it("holds the sample timer at RealSampleRate on a rejected sample without bDecayPoints, as 0x106941BA-0x106941D1 does, so a moved blade samples on the next step", () => {
+    const holding = ribbonWithBlade(ribbonRecordWith({ AccDrop: 0, NumPoints: 60, bUseInterpolation: false, bDecayPoints: false }), 1);
+    while (holding.ribbon.ribbonPoints().length < 3) holding.advanceStep();
+    for (let stillStep = 0; stillStep < 10; stillStep += 1) holding.advanceStep(false);
+    expect(holding.ribbon.ribbonPoints()).toHaveLength(3);
+    expect(holding.ribbon.bDecaying).toBe(false);
+    holding.advanceStep();
+    expect(holding.ribbon.ribbonPoints()).toHaveLength(4);
+  });
+
+  it("sets bDecaying (+0x5AC bit 1) on a rejected first sample and on a decay step and clears it on an accepted sample", () => {
+    let bladeSweepIndex = 1;
+    const actor = createEmitterActorSimulation({ actor: parseEmitterActorRecord(fixture.actor), emitters: [ribbonRecord], sessionSeed: 1, effectSerial: 0 });
+    const actorRibbon = actor.emitters[0]! as RibbonEmitterSimulation;
+    actorRibbon.attachPointSource(ribbonWidth => swingingBladeSample(bladeSweepIndex, ribbonWidth));
+    expect(actorRibbon.bDecaying).toBe(false);
+    actor.step(stepSeconds, STATIONARY_OWNER);
+    expect(actorRibbon.ribbonPoints()).toHaveLength(1);
+    expect(actorRibbon.bDecaying).toBe(true);
+    while (actorRibbon.ribbonPoints().length < 2) { bladeSweepIndex += 1; actor.step(stepSeconds, STATIONARY_OWNER); }
+    expect(actorRibbon.bDecaying).toBe(false);
+    applyEmitterNative(actor, { name: "Kill" });
+    actor.step(stepSeconds, STATIONARY_OWNER);
+    expect(actorRibbon.bDecaying).toBe(true);
+  });
+
   it("keeps a single point after a synced kill, because (MaxLifetime - Time) / 0 gives an endless decay rate", () => {
     const actor = createEmitterActorSimulation({ actor: parseEmitterActorRecord(fixture.actor), emitters: [ribbonRecord], sessionSeed: 1, effectSerial: 0 });
     const actorRibbon = actor.emitters[0]! as RibbonEmitterSimulation;
@@ -119,11 +164,11 @@ describe("RibbonEmitter simulation", () => {
   it("keeps its points and its lowered point limit through a reset, as URibbonEmitter has no Reset override", () => {
     const { ribbon, advanceStep } = ribbonWithBlade(ribbonRecord, 1);
     for (let stepIndex = 0; stepIndex < 70; stepIndex += 1) advanceStep();
-    const pointsBeforeReset = ribbon.ribbonPoints(), numPointsBeforeReset = ribbon.numPointsAfterDrops;
+    const pointsBeforeReset = ribbon.ribbonPoints(), numPointsBeforeReset = ribbon.numPoints;
     expect(numPointsBeforeReset).toBeLessThan(ribbonRecord.NumPoints);
     ribbon.reset(standaloneStepContext(ribbon));
     expect(ribbon.ribbonPoints()).toEqual(pointsBeforeReset);
-    expect(ribbon.numPointsAfterDrops).toBe(numPointsBeforeReset);
+    expect(ribbon.numPoints).toBe(numPointsBeforeReset);
   });
 
   it("empties the points when the head particle respawns, as URibbonEmitter::SpawnParticle does with bSamplePoints", () => {
