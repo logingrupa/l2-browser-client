@@ -4,23 +4,31 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Material } from "@babylonjs/core/Materials/material";
 import { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial";
 import { RawTexture } from "@babylonjs/core/Materials/Textures/rawTexture";
+import type { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import type { Scene } from "@babylonjs/core/scene";
 import { createRandomStream, deriveStreamSeed, type RandomStream } from "../../../shared/random";
 import type { ResolvedMaterialBlend } from "../model/blendTable";
 import { DIAGNOSTIC_CONSTANTS } from "../model/constants/diagnosticConstants";
 import { FOG_DISABLED, type FogState } from "../model/fog";
+import type { MaterialLighting } from "../model/lighting";
 import { evaluateMaterialFrame, type MaterialFrameState } from "../model/materialFrame";
 import { programNode } from "../model/materialProgram";
 import { textureCoordinateSourceChannel } from "../model/modifiers";
 import type { CompiledMaterialStagePlan } from "../model/stagePlan";
 import { babylonBlendStateForPair, blendFactorPairKey, type BabylonBlendState } from "./blendState";
 import { bindFogUniforms } from "./fogUniforms";
-import { buildFragmentChain, colourSourceUniformName, samplerUniformName, textureCoordinateRowUName, textureCoordinateRowVName } from "./fragmentChain";
+import {
+  buildFragmentChain, colourSourceUniformName, lightmapCoordinatesVaryingName, lightmapSamplerName, samplerUniformName, textureCoordinateRowUName,
+  textureCoordinateRowVName,
+} from "./fragmentChain";
 import type { LoadedNativeMaterial } from "./loadNativeMaterial";
 
 export { particleFragmentChain, type ParticleFragmentChain } from "./particleFragmentChain";
 export { selectTextureFrame, type SelectedTextureFrame, type TextureFrameSource } from "../model/textureFrames";
+export type { MaterialLighting } from "../model/lighting";
+export { evaluateFogState, FOG_DISABLED, type CameraZoneFogRecord, type FogInputs, type FogRangeRecord, type FogState } from "../model/fog";
+export { loadNativeMaterial, type LoadedNativeMaterial } from "./loadNativeMaterial";
 
 export interface NativeMaterialUniforms {
   readonly levelSeconds: number;
@@ -31,6 +39,7 @@ export interface NativeMaterialUniforms {
 
 export interface NativeMaterialOptions {
   readonly sessionSeed: number;
+  readonly lighting: MaterialLighting;
 }
 
 export interface NativeMaterialBlendInspection extends Omit<ResolvedMaterialBlend, "status"> {
@@ -41,6 +50,8 @@ export interface NativeMaterialInspection {
   readonly materialId: string;
   readonly root: string;
   readonly status: "compiled" | "diagnostic";
+  readonly lighting: MaterialLighting;
+  readonly lightmapBound: boolean;
   readonly reasons: readonly string[];
   readonly unportedClass: string | null;
   readonly blend: NativeMaterialBlendInspection | null;
@@ -53,24 +64,36 @@ export interface NativeMaterialInspection {
 export interface NativeMaterial {
   readonly material: ShaderMaterial;
   update(uniforms: NativeMaterialUniforms): void;
+  setLightmap(lightmap: BaseTexture): void;
   inspect(): NativeMaterialInspection;
   dispose(): void;
 }
 
-const vertexSource = [
-  "precision highp float;",
-  "attribute vec3 position;",
-  "attribute vec2 uv;",
-  "uniform mat4 worldViewProjection;",
-  "uniform mat4 worldView;",
-  "varying vec2 ue2TextureCoordinates;",
-  "varying float ue2ViewDepth;",
-  "void main() {",
-  "  ue2TextureCoordinates = uv;",
-  "  ue2ViewDepth = (worldView * vec4(position, 1.0)).z;",
-  "  gl_Position = worldViewProjection * vec4(position, 1.0);",
-  "}",
-].join("\n");
+const lightmapCoordinatesAttribute = "uv2";
+
+function vertexSourceFor(lighting: MaterialLighting): string {
+  const lightmapped = lighting === "lightmap";
+  return [
+    "precision highp float;",
+    "attribute vec3 position;",
+    "attribute vec2 uv;",
+    ...(lightmapped ? [`attribute vec2 ${lightmapCoordinatesAttribute};`, `varying vec2 ${lightmapCoordinatesVaryingName};`] : []),
+    "uniform mat4 worldViewProjection;",
+    "uniform mat4 worldView;",
+    "varying vec2 ue2TextureCoordinates;",
+    "varying float ue2ViewDepth;",
+    "void main() {",
+    "  ue2TextureCoordinates = uv;",
+    ...(lightmapped ? [`  ${lightmapCoordinatesVaryingName} = ${lightmapCoordinatesAttribute};`] : []),
+    "  ue2ViewDepth = (worldView * vec4(position, 1.0)).z;",
+    "  gl_Position = worldViewProjection * vec4(position, 1.0);",
+    "}",
+  ].join("\n");
+}
+
+function vertexAttributesFor(lighting: MaterialLighting): string[] {
+  return lighting === "lightmap" ? ["position", "uv", lightmapCoordinatesAttribute] : ["position", "uv"];
+}
 
 const diagnosticColourUniform = "ue2DiagnosticColour";
 const diagnosticFragmentSource = [
@@ -79,9 +102,9 @@ const diagnosticFragmentSource = [
   `void main() { gl_FragColor = ${diagnosticColourUniform}; }`,
 ].join("\n");
 
-function createDiagnosticMaterial(scene: Scene, loaded: LoadedNativeMaterial, reasons: readonly string[], unportedClass: string | null): NativeMaterial {
-  const material = new ShaderMaterial(`UE2 diagnostic: ${loaded.program.root}`, scene, { vertexSource, fragmentSource: diagnosticFragmentSource }, {
-    attributes: ["position", "uv"], uniforms: ["worldViewProjection", "worldView", diagnosticColourUniform], samplers: [],
+function createDiagnosticMaterial(scene: Scene, loaded: LoadedNativeMaterial, lighting: MaterialLighting, reasons: readonly string[], unportedClass: string | null): NativeMaterial {
+  const material = new ShaderMaterial(`UE2 diagnostic: ${loaded.program.root}`, scene, { vertexSource: vertexSourceFor("unlit"), fragmentSource: diagnosticFragmentSource }, {
+    attributes: vertexAttributesFor("unlit"), uniforms: ["worldViewProjection", "worldView", diagnosticColourUniform], samplers: [],
   });
   material.doNotSerialize = true;
   material.setColor4(diagnosticColourUniform, new Color4(...DIAGNOSTIC_CONSTANTS.magenta.runtimeDefault));
@@ -89,8 +112,9 @@ function createDiagnosticMaterial(scene: Scene, loaded: LoadedNativeMaterial, re
   return {
     material,
     update: uniforms => { lastUniforms = uniforms; },
-    inspect: () => ({ materialId: loaded.materialId, root: loaded.program.root, status: "diagnostic", reasons: [...reasons], unportedClass, blend: null,
-      samplerCount: 0, colourSourceCount: 0, uniforms: lastUniforms, frame: null }),
+    setLightmap: () => {},
+    inspect: () => ({ materialId: loaded.materialId, root: loaded.program.root, status: "diagnostic", lighting, lightmapBound: false, reasons: [...reasons],
+      unportedClass, blend: null, samplerCount: 0, colourSourceCount: 0, uniforms: lastUniforms, frame: null }),
     dispose: () => material.dispose(true, false),
   };
 }
@@ -140,17 +164,17 @@ function bindFrame(material: ShaderMaterial, textures: readonly RawTexture[][], 
   frame.colourSourceValues.forEach((colour, colourSourceIndex) => material.setColor4(colourSourceUniformName(colourSourceIndex), new Color4(...colour)));
 }
 
-function createCompiledMaterial(scene: Scene, loaded: LoadedNativeMaterial, plan: CompiledMaterialStagePlan, jitterStream: RandomStream): NativeMaterial {
+function createCompiledMaterial(scene: Scene, loaded: LoadedNativeMaterial, plan: CompiledMaterialStagePlan, jitterStream: RandomStream, lighting: MaterialLighting): NativeMaterial {
   const babylonBlend = babylonBlendStateForPair(plan.blend.pair);
-  if (!babylonBlend) return createDiagnosticMaterial(scene, loaded, [`babylon-blend-pair-unavailable:${blendFactorPairKey(plan.blend.pair)}`], null);
+  if (!babylonBlend) return createDiagnosticMaterial(scene, loaded, lighting, [`babylon-blend-pair-unavailable:${blendFactorPairKey(plan.blend.pair)}`], null);
   const coordinateReason = unsupportedCoordinateReason(loaded, plan);
-  if (coordinateReason) return createDiagnosticMaterial(scene, loaded, [coordinateReason], null);
+  if (coordinateReason) return createDiagnosticMaterial(scene, loaded, lighting, [coordinateReason], null);
   const initialFrame = evaluateMaterialFrame(loaded.program, plan, 0, jitterStream);
-  if (initialFrame.status === "unported") return createDiagnosticMaterial(scene, loaded, [initialFrame.reason], null);
-  const chain = buildFragmentChain(plan);
+  if (initialFrame.status === "unported") return createDiagnosticMaterial(scene, loaded, lighting, [initialFrame.reason], null);
+  const chain = buildFragmentChain(plan, lighting);
   const textures = createSamplerTextures(scene, loaded, plan);
-  const material = new ShaderMaterial(`UE2 material: ${plan.root}`, scene, { vertexSource, fragmentSource: chain.fragmentSource }, {
-    attributes: ["position", "uv"], uniforms: ["worldViewProjection", "worldView", ...chain.uniforms], samplers: [...chain.samplers],
+  const material = new ShaderMaterial(`UE2 material: ${plan.root}`, scene, { vertexSource: vertexSourceFor(lighting), fragmentSource: chain.fragmentSource }, {
+    attributes: vertexAttributesFor(lighting), uniforms: ["worldViewProjection", "worldView", ...chain.uniforms], samplers: [...chain.samplers],
     needAlphaBlending: babylonBlend.alphaMode !== Constants.ALPHA_DISABLE, needAlphaTesting: plan.blend.alphaTest,
   });
   material.doNotSerialize = true;
@@ -159,6 +183,7 @@ function createCompiledMaterial(scene: Scene, loaded: LoadedNativeMaterial, plan
   bindFogUniforms(material, plan.blend.fogFamily, FOG_DISABLED);
   let lastUniforms: NativeMaterialUniforms | null = null;
   let lastFrame: MaterialFrameState = initialFrame;
+  let lightmapBound = false;
   const { status: _status, ...blendRecord } = plan.blend;
   return {
     material,
@@ -170,8 +195,13 @@ function createCompiledMaterial(scene: Scene, loaded: LoadedNativeMaterial, plan
       lastUniforms = uniforms;
       lastFrame = frame;
     },
+    setLightmap: lightmap => {
+      if (lighting !== "lightmap") throw new Error(`UE2 material ${plan.root} was built ${lighting} and takes no lightmap.`);
+      material.setTexture(lightmapSamplerName, lightmap);
+      lightmapBound = true;
+    },
     inspect: () => ({
-      materialId: loaded.materialId, root: plan.root, status: "compiled", reasons: [], unportedClass: null,
+      materialId: loaded.materialId, root: plan.root, status: "compiled", lighting, lightmapBound, reasons: [], unportedClass: null,
       blend: { ...blendRecord, babylonAlphaMode: babylonBlend.alphaModeName }, samplerCount: plan.samplers.length, colourSourceCount: plan.colourSources.length,
       uniforms: lastUniforms, frame: lastFrame,
     }),
@@ -183,7 +213,7 @@ function createCompiledMaterial(scene: Scene, loaded: LoadedNativeMaterial, plan
 }
 
 export function createNativeMaterial(scene: Scene, loaded: LoadedNativeMaterial, options: NativeMaterialOptions): NativeMaterial {
-  if (loaded.plan.status === "diagnostic") return createDiagnosticMaterial(scene, loaded, loaded.plan.reasons, loaded.plan.unportedClass);
+  if (loaded.plan.status === "diagnostic") return createDiagnosticMaterial(scene, loaded, options.lighting, loaded.plan.reasons, loaded.plan.unportedClass);
   const jitterStream = createRandomStream(deriveStreamSeed(options.sessionSeed, "tex-jitter", [loaded.materialId]));
-  return createCompiledMaterial(scene, loaded, loaded.plan, jitterStream);
+  return createCompiledMaterial(scene, loaded, loaded.plan, jitterStream, options.lighting);
 }

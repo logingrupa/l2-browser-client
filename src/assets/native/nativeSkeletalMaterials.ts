@@ -47,7 +47,7 @@ export async function bindSkeletalSlotMaterials(scene: Scene, container: AssetCo
       const inspection = (status: SkeletalSlotStatus) => ({ slot: slotMaterial.name, status, programMaterialId, meshes: users.length });
       if (programMaterialId === null) { slots.push(inspection("program-unconverted")); continue; }
       if (users.some(mesh => mesh.skeleton !== null)) { slots.push(inspection("library-vertex-stage-unskinned")); continue; }
-      const nativeMaterial = createNativeMaterial(scene, await options.loadProgram(programMaterialId, signal), { sessionSeed: options.sessionSeed });
+      const nativeMaterial = createNativeMaterial(scene, await options.loadProgram(programMaterialId, signal), { sessionSeed: options.sessionSeed, lighting: "unlit" });
       created.push(nativeMaterial);
       signal.throwIfAborted();
       for (const mesh of users) mesh.material = nativeMaterial.material;

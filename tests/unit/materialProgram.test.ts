@@ -18,7 +18,7 @@ import {
 const fixtureStoreRoot = new URL("../fixtures/lane-store/", import.meta.url);
 const swatchImage = textureImageFor(swatchTexturePng());
 const scenes: Scene[] = [];
-const testMaterialOptions = { sessionSeed: 1 };
+const testMaterialOptions = { sessionSeed: 1, lighting: "unlit" } as const;
 
 function parsed(program: FixtureProgram) {
   return parseMaterialProgram(JSON.parse(JSON.stringify(program)));

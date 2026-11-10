@@ -17,6 +17,9 @@ import type { NativeTileSectionView } from "./loadNativeTileChunks";
 import { disposeNativeModelInstances, instantiateNativeModelPlacements, type NativeModelInstance } from "./nativeModelPlacements";
 import type { NativeMover } from "./nativeMovers";
 import type { TileVisibilityBinding, TileVisibilityInspection } from "./bspVisibility/bindTileVisibility";
+import type { TileLightingGapInspection } from "./lighting/attachTileLighting";
+import type { TileLightingInspection } from "./lighting/bindTileLighting";
+import type { WorldEnvironmentClock } from "./lighting/worldEnvironmentClock";
 
 interface Resource { file: string; sha256: string; bytes: number; }
 interface Model { id: string; sourceObject: string; model: Resource; archive: Resource; }
@@ -54,6 +57,7 @@ export interface NativeSection {
   readonly spawnCandidate: Vector3 | null;
   readonly moverTargets?: readonly NativeMover[];
   readonly tileVisibility?: TileVisibilityBinding | null;
+  readonly environmentClock?: WorldEnvironmentClock | null;
   inspection(): NativeWorldSceneInspection;
   setTerrainPreview(enabled: boolean): void;
   dispose(): void;
@@ -249,6 +253,7 @@ export type NativeWorldSceneInspection = ReturnType<typeof inspectNativeWorldSce
   readonly bspSections?: number;
   readonly bspResources?: readonly string[];
   readonly bspVisibility?: TileVisibilityInspection;
+  readonly lighting?: TileLightingInspection | TileLightingGapInspection;
 };
 
 export async function loadNativeGlbContainer(scene: Scene, url: string, bytes: Uint8Array<ArrayBuffer>): Promise<AssetContainer> {

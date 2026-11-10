@@ -61,7 +61,7 @@ async function renderSwatch(): Promise<void> {
   camera.orthoBottom = -1;
   const quad = MeshBuilder.CreatePlane("material-swatch-quad", { size: 2 }, scene);
   const controller = new AbortController();
-  const nativeMaterial = createNativeMaterial(scene, await loadNativeMaterial(parameters.materialId, controller.signal), { sessionSeed: swatchSessionSeed });
+  const nativeMaterial = createNativeMaterial(scene, await loadNativeMaterial(parameters.materialId, controller.signal), { sessionSeed: swatchSessionSeed, lighting: "unlit" });
   nativeMaterial.update({ levelSeconds: parameters.levelSeconds, hour: parameters.hour, environmentType: parameters.environmentType, fog: FOG_DISABLED });
   quad.material = nativeMaterial.material;
   swatchState.material = nativeMaterial.inspect();

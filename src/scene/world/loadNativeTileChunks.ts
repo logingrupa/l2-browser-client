@@ -9,6 +9,8 @@ import {
   type NativeSection, type NativeSectionManifest,
 } from "./loadNativeSection";
 import { attachTileVisibility, type AttachedTileVisibility } from "./bspVisibility/attachTileVisibility";
+import { attachTileLighting, type AttachedTileLighting } from "./lighting/attachTileLighting";
+import { FOG_DISABLED } from "../../materials/ue2/babylon/material";
 import { parseNativeBspSectionExtras, type NativeBspNodeRange, type NativeBspSection, type NativeTileBspResource } from "./nativeBspResources";
 import { loadNativeTileMovers, type NativeTileMovers } from "./loadNativeTileMovers";
 import { disposeNativeModelInstances, instantiateNativeModelPlacements, type NativeModelInstance } from "./nativeModelPlacements";
@@ -141,7 +143,7 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
   if (scene.isDisposed || !scene.useRightHandedSystem) throw new Error("Native tile requires a live right-handed scene.");
   const lifetime = new AbortController(), containers: AssetContainer[] = [], templates = new Map<string, AssetContainer>();
   const instances: NativeModelInstance<NativeTileChunkPlacement>[] = [];
-  let tileMovers: NativeTileMovers | null = null, tileVisibility: AttachedTileVisibility | null = null;
+  let tileMovers: NativeTileMovers | null = null, tileVisibility: AttachedTileVisibility | null = null, tileLighting: AttachedTileLighting | null = null;
   let disposed = false;
   const dispose = () => {
     if (disposed) return;
@@ -149,6 +151,7 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
     scene.onDisposeObservable.remove(observer);
     tileMovers?.dispose();
     tileVisibility?.dispose();
+    tileLighting?.dispose();
     disposeNativeModelInstances(instances);
     for (const container of [...containers, ...templates.values()]) container.dispose();
   };
@@ -203,6 +206,10 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
     tileVisibility = await attachTileVisibility(scene, manifest,
       { bspChunks, placements: instances, terrainMeshes: loaded.flatMap(entry => entry.meshes) }, lifetime.signal);
     if (disposed || scene.isDisposed) throw new Error("Native tile was disposed during loading.");
+    const chunkOrdinalById = new Map(manifest.chunks.map((record, ordinal) => [record.chunkId, ordinal]));
+    tileLighting = await attachTileLighting(scene, manifest, bspChunks.map(chunk => ({ ...chunk, chunkOrdinal: chunkOrdinalById.get(chunk.chunkId)! })),
+      () => FOG_DISABLED, lifetime.signal);
+    if (disposed || scene.isDisposed) throw new Error("Native tile was disposed during loading.");
     const moverResource = manifest.resources.find(resource => resource.kind === "movers");
     if (moverResource) {
       tileMovers = await loadNativeTileMovers(scene, moverResource, lifetime.signal);
@@ -222,13 +229,13 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
     const extent = nativeMeshBounds(terrainMeshes);
     lifetime.signal.throwIfAborted();
     return { manifest: view, manifestSha256: pinnedManifest.manifestSha256, terrainMeshes, supportMeshes: [], ...extent, spawnCandidate, moverTargets,
-      tileVisibility: tileVisibility.binding,
+      tileVisibility: tileVisibility.binding, environmentClock: tileLighting.environmentClock,
       inspection: () => ({ ...inspectNativeWorldScene({ terrainMeshes, instances, modelCount: templates.size, disposed, preview: null, previewEnabled: false,
         materialFailure: null, unsupportedRuntimeMaterials: [], bspMeshes, sectionWindow: terrainInfoChunkPlanWindow }),
         terrainChunks, tileAnchor: anchor, meshGapCount, bspSections: bspChunks.reduce((sum, chunk) => sum + chunk.sections.length, 0),
         bspResources: bspChunks.map(chunk => chunk.resource), moverCount: moverTargets.length,
         moverCollisionMeshCount: moverTargets.flatMap(target => target.meshes).filter(mesh => mesh.metadata?.worldCollision === true).length,
-        movers: moverTargets.map(target => target.inspection()), bspVisibility: tileVisibility!.inspection() }),
+        movers: moverTargets.map(target => target.inspection()), bspVisibility: tileVisibility!.inspection(), lighting: tileLighting!.inspection() }),
       setTerrainPreview() {}, dispose };
   } catch (error) { dispose(); throw error; }
 }

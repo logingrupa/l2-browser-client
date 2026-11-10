@@ -1,4 +1,6 @@
 import { COMBINER_CONSTANTS } from "../model/constants/combinerConstants";
+import { LIGHTING_CONSTANTS } from "../model/constants/lightingConstants";
+import type { MaterialLighting } from "../model/lighting";
 import type { ColourExpression, CompiledMaterialStagePlan } from "../model/stagePlan";
 
 export interface FragmentChainSource {
@@ -12,6 +14,8 @@ export const textureCoordinateRowUName = (samplerIndex: number) => `ue2Coordinat
 export const textureCoordinateRowVName = (samplerIndex: number) => `ue2CoordinateRowV${samplerIndex}`;
 export const colourSourceUniformName = (colourSourceIndex: number) => `ue2Colour${colourSourceIndex}`;
 export const fogUniformNames = { range: "ue2FogRange", colour: "ue2FogColour" } as const;
+export const lightmapSamplerName = "ue2Lightmap";
+export const lightmapCoordinatesVaryingName = "ue2LightmapCoordinates";
 
 const maskChannelSwizzle = { red: "r", green: "g", blue: "b", alpha: "a" } as const;
 const glslFloat = (value: number) => (Number.isInteger(value) ? `${value}.0` : `${value}`);
@@ -121,12 +125,17 @@ function emitExpression(builder: ChainBuilder, expression: ColourExpression, use
   }
 }
 
-export function buildFragmentChain(plan: CompiledMaterialStagePlan): FragmentChainSource {
+function litColour(result: string, lighting: MaterialLighting): string {
+  if (lighting === "unlit") return `${result}.rgb`;
+  return `${result}.rgb * ${glslFloat(LIGHTING_CONSTANTS.modulate2x.runtimeDefault)} * texture2D(${lightmapSamplerName}, ${lightmapCoordinatesVaryingName}).rgb`;
+}
+
+export function buildFragmentChain(plan: CompiledMaterialStagePlan, lighting: MaterialLighting): FragmentChainSource {
   const builder: ChainBuilder = { statements: [], nextVariable: 0 };
   const blend = plan.blend;
   const usesSourceAlpha = blend.alphaTest || [blend.pair.source, blend.pair.destination].some(factor => factor === "source-alpha" || factor === "inverse-source-alpha");
   const result = emitExpression(builder, plan.expression, usesSourceAlpha);
-  const samplers = plan.samplers.map((_, index) => samplerUniformName(index));
+  const samplers = [...plan.samplers.map((_, index) => samplerUniformName(index)), ...(lighting === "lightmap" ? [lightmapSamplerName] : [])];
   const coordinateRows = plan.samplers.flatMap((_, index) => [textureCoordinateRowUName(index), textureCoordinateRowVName(index)]);
   const colourUniforms = plan.colourSources.map((_, index) => colourSourceUniformName(index));
   const alphaTest = blend.alphaTest ? `if (${result}.a < ${glslFloat(blend.alphaReference / 255)}) { discard; }` : "";
@@ -134,6 +143,7 @@ export function buildFragmentChain(plan: CompiledMaterialStagePlan): FragmentCha
     "precision highp float;",
     "varying vec2 ue2TextureCoordinates;",
     "varying float ue2ViewDepth;",
+    ...(lighting === "lightmap" ? [`varying vec2 ${lightmapCoordinatesVaryingName};`] : []),
     ...samplers.map(name => `uniform sampler2D ${name};`),
     ...coordinateRows.map(name => `uniform vec3 ${name};`),
     ...colourUniforms.map(name => `uniform vec4 ${name};`),
@@ -143,7 +153,7 @@ export function buildFragmentChain(plan: CompiledMaterialStagePlan): FragmentCha
     ...builder.statements.map(statement => `  ${statement}`),
     `  ${alphaTest}`,
     `  float ue2FogFactor = ${fogUniformNames.range}.z > 0.5 ? clamp((ue2ViewDepth - ${fogUniformNames.range}.x) / max(${fogUniformNames.range}.y - ${fogUniformNames.range}.x, 0.000001), 0.0, 1.0) : 0.0;`,
-    `  gl_FragColor = vec4(mix(clamp(${result}.rgb, 0.0, 1.0), ${fogUniformNames.colour}.rgb, ue2FogFactor), clamp(${result}.a, 0.0, 1.0));`,
+    `  gl_FragColor = vec4(mix(clamp(${litColour(result, lighting)}, 0.0, 1.0), ${fogUniformNames.colour}.rgb, ue2FogFactor), clamp(${result}.a, 0.0, 1.0));`,
     "}",
   ].join("\n");
   return { fragmentSource, uniforms: [...coordinateRows, ...colourUniforms, fogUniformNames.range, fogUniformNames.colour], samplers };
