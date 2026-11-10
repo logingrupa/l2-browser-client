@@ -12,9 +12,10 @@ from native_store.tile_manifest_validation import load_tile_manifest_vocabulary
 from support.actor_class_defaults import SyntheticActorClassDefaults
 from support.converted_model_fixture import converted_model_glb
 from support.bsp_room_fixture import ROOM_ZONES, room_model
+from world.bsp_visibility_census import build_bsp_visibility_census
 from world.bsp_leaf_membership import INDEX_NONE, leaf_for_point, leaves_for_box, point_check_outside, solidity_disagreements, zones_for_box
 from world.bsp_visibility_step import (BSP_VISIBILITY_STEP_ALGORITHM_VERSION, BSP_VISIBILITY_STEP_NAME, load_bsp_visibility_rules,
-                                       model_unreadable_reason, tile_bsp_visibility_row, tile_visibility_payload)
+                                       model_unreadable_reason, solidity_census, solidity_gap_rows, tile_bsp_visibility_row, tile_visibility_payload)
 from world.level_model import LevelModelRangeError
 from world.tile_manifest_step import tile_resources
 from world.typed_payload import ARRAY_NAME_PATTERN, typed_payload_asset
@@ -66,6 +67,36 @@ class PointCheckTests(unittest.TestCase):
         disagreements = solidity_disagreements(room_model(wall_flags=0), (4, 4, 2), NOT_CSG_NODE_FLAGS)
         self.assertEqual(len(disagreements), 16)
         self.assertTrue(all(record.point[0] < 50.0 and record.leaf == 0 and not record.point_check_outside for record in disagreements))
+
+
+class SolidityCensusTests(unittest.TestCase):
+    def test_the_census_samples_the_recipe_grid_and_writes_one_disagreement_gap_row_per_tile(self):
+        document = {'censusSampleGrid': {'cellsPerAxis': [4, 4, 2]}}
+        self.assertEqual(solidity_gap_rows(TILE_ID, SOURCE_IDENTITY, EVIDENCE, solidity_census(room_model(), document, RULES)), [])
+        census = solidity_census(room_model(wall_flags=0), document, RULES)
+        self.assertEqual((census['cellsPerAxis'], len(census['disagreements'])), ([4, 4, 2], 16))
+        self.assertEqual(census['disagreements'][0], {'point': [12.5, 12.5, 12.5], 'leaf': 0, 'zone': 1, 'pointCheckOutside': False})
+        row, = solidity_gap_rows(TILE_ID, SOURCE_IDENTITY, EVIDENCE, census)
+        self.assertEqual(validate_gap_row(row)['reason'], 'bsp-visibility-solidity-disagreement')
+
+
+class VisibilityCensusTests(unittest.TestCase):
+    def product(self, disagreements, cells_per_axis=(16, 16, 8)):
+        return {'resource': {'sha256': '7' * 64}, 'counts': {'nodes': 3, 'leaves': 2, 'zones': 3, 'portals': 1},
+                'members': [{'kind': 'static-mesh'}, {'kind': 'map-emitter'}, {'kind': 'map-emitter'}],
+                'solidity': {'cellsPerAxis': list(cells_per_axis), 'disagreements': [{}] * disagreements},
+                'gapRows': [{'reason': 'bsp-visibility-solidity-disagreement'}] if disagreements else []}
+
+    def test_the_census_counts_each_tile_in_tile_order(self):
+        census = build_bsp_visibility_census({'20_21': self.product(0), '20_20': self.product(12)})
+        self.assertEqual(census['sampleCellsPerAxis'], [16, 16, 8])
+        self.assertEqual([(row['tileId'], row['staticMeshMembers'], row['emitterPlacements'], row['solidityDisagreements'], row['gapReasons'])
+                          for row in census['tiles']],
+                         [('20_20', 1, 2, 12, ['bsp-visibility-solidity-disagreement']), ('20_21', 1, 2, 0, [])])
+
+    def test_products_of_two_sample_grids_are_refused(self):
+        with self.assertRaises(ValueError):
+            build_bsp_visibility_census({'20_21': self.product(0), '20_20': self.product(0, (4, 4, 2))})
 
 
 class VisibilityPayloadTests(unittest.TestCase):
@@ -137,7 +168,7 @@ class VisibilityRecipeAndRegistrationTests(unittest.TestCase):
                                                                 'manifestSha256': sha256, 'manifestBytes': 2000}])
 
     def test_the_step_name_and_version_are_pinned(self):
-        self.assertEqual((BSP_VISIBILITY_STEP_NAME, BSP_VISIBILITY_STEP_ALGORITHM_VERSION), ('bsp-visibility', 2))
+        self.assertEqual((BSP_VISIBILITY_STEP_NAME, BSP_VISIBILITY_STEP_ALGORITHM_VERSION), ('bsp-visibility', 3))
 
 
 if __name__ == '__main__':

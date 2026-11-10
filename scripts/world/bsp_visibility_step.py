@@ -10,6 +10,7 @@ from native_store.catalog_writer import sha256_hex
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from world.bsp_chunk_geometry import BSP_POLY_FLAGS_PATH
+from world.bsp_leaf_membership import solidity_disagreements
 from world.bsp_step import sealed_bsp_chunks
 from world.bsp_visibility_payload import bsp_visibility_arrays, portal_node_indices, require_visibility_model, visibility_outdoor_zones
 from world.level_model import LevelModelLayoutError, LevelModelRangeError, read_level_model
@@ -24,12 +25,14 @@ from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 from world.typed_payload import write_tile_typed_payload_resource
 from world.visibility_members import map_emitter_members, static_mesh_members
 
-BSP_VISIBILITY_STEP_ALGORITHM_VERSION = 2
+BSP_VISIBILITY_STEP_ALGORITHM_VERSION = 3
 BSP_VISIBILITY_STEP_NAME = 'bsp-visibility'
 BSP_VISIBILITY_PRODUCT_NAME = 'bsp-visibility.json'
 TILE_BSP_VISIBILITY_FOLDER = 'native-tile-bsp-visibility'
 BSP_VISIBILITY_RULES_PATH = Path(__file__).resolve().parents[2] / 'recipes' / 'world' / 'bsp-visibility.json'
 MODEL_UNREADABLE_REASON_PREFIX = 'bsp-visibility-model-unreadable:'
+SOLIDITY_DISAGREEMENT_REASON = 'bsp-visibility-solidity-disagreement'
+POINT_CHECK_NOT_CSG_RULE = 'point-check-not-csg-node-flags'
 PORTAL_FLAG_RULE = 'pf-portal'
 PORTAL_FLAG_NAME = 'PF_PORTAL'
 ZONE_ONE_FALLBACK_RULE = 'outdoor-zone1-fallback'
@@ -128,6 +131,18 @@ def tile_visibility_payload(model, zones, rules, node_ranges, members):
     return arrays, outdoor_zones, visibility_counts(model, zones, portal_nodes, node_ranges, members)
 
 
+def solidity_census(model, document, rules):
+    cells_per_axis = tuple(document['censusSampleGrid']['cellsPerAxis'])
+    disagreements = solidity_disagreements(model, cells_per_axis, rules[POINT_CHECK_NOT_CSG_RULE]['runtimeDefault'])
+    return {'cellsPerAxis': list(cells_per_axis), 'disagreements': [record.to_record() for record in disagreements]}
+
+
+def solidity_gap_rows(tile_id, source_identity, evidence, census):
+    if not census['disagreements']:
+        return []
+    return [tile_step_row(tile_id, BSP_VISIBILITY_STEP_NAME, GAP_STATUS, SOLIDITY_DISAGREEMENT_REASON, source_identity, evidence)]
+
+
 def run_bsp_visibility_step(project_root, client_root, tile_id):
     require_tile_id(tile_id)
     lock_record = read_tile_map_lock_record(tile_id)
@@ -144,7 +159,7 @@ def run_bsp_visibility_step(project_root, client_root, tile_id):
                           '--step emitters first')
     client = Path(client_root).resolve()
     package = read_locked_map_package(client, tile_id, lock_record)
-    _, rules = load_bsp_visibility_rules()
+    document, rules = load_bsp_visibility_rules()
     class_defaults = ClassDefaults(lane_work_root(project_root, WORLD_LANE_NAME), ReferenceClientClassScripts(client))
     actors_by_object = {actor['object']: actor for actor in json.loads((unit.raw_products / 'actors.json').read_text(encoding='utf-8'))}
     store_root = lane_store_root(project_root, WORLD_LANE_NAME)
@@ -165,9 +180,11 @@ def run_bsp_visibility_step(project_root, client_root, tile_id):
     products_directory = unit.ledger.begin(unit.unit_key, unit.fingerprint) / PRODUCTS_FOLDER_NAME
     products_directory.mkdir()
     resource, outputs = write_tile_typed_payload_resource(store_root, TILE_BSP_VISIBILITY_FOLDER, arrays, metadata)
-    gap_rows = []
+    census = solidity_census(model, document, rules)
+    gap_rows = solidity_gap_rows(tile_id, source_identity, receipt_evidence, census)
     product = {'tileId': tile_id, 'resource': resource, 'counts': counts, 'visibilityOutdoorZones': sorted(outdoor_zones),
-               'zones': [zone.to_record() for zone in zones], 'members': [member.to_record() for member in members], 'gapRows': gap_rows}
+               'zones': [zone.to_record() for zone in zones], 'members': [member.to_record() for member in members], 'solidity': census,
+               'gapRows': gap_rows}
     product_payload = json_bytes(product)
     product_path = products_directory / BSP_VISIBILITY_PRODUCT_NAME
     product_path.write_bytes(product_payload)
