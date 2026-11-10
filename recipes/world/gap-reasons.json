@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 8,
+  "listVersion": 9,
   "reasons": [
     "terrain-height-version-unsupported:<version>",
     "terrain-quads-all-hidden",
@@ -16,6 +16,9 @@
     "sky-zone-ambiguous:<count>",
     "sky-material-external:<package>",
     "sky-texture-format-unsupported:<id>",
-    "sky-material-texture-count:<count>"
+    "sky-material-texture-count:<count>",
+    "ambient-emitter-unreadable",
+    "reference-file-not-lock-equal:<path>",
+    "sound-payload-unverified:<check>"
   ]
 }

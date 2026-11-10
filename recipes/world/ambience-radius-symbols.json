@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-ambience-radius-symbols",
+  "copiedFrom": {
+    "recipe": "recipes/native-ambience-20_20.json",
+    "block": "radiusMultiplier"
+  },
+  "radiusMultiplier": {
+    "path": "artifacts/native-parity/research/flame-runtime/inputs/Core.dll",
+    "bytes": 1372180,
+    "sha256": "9462f87a5e77d21865e2e00264efd44df25feb47aa78f8a72e9cf66ce4e919bf",
+    "sourceHost": "IMPORTA-PC",
+    "sourcePath": "C:/Lineage2-client/system/Core.dll",
+    "export": "?GAudioMaxRadiusMultiplier@@3MA",
+    "defaultRadiusExport": "?GAudioDefaultRadius@@3MA"
+  }
+}

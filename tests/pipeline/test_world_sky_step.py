@@ -15,7 +15,8 @@ from support.level_model_fixture import build_synthetic_level_model, square_poin
 from world.sky_geometry import SKY_GLB_GENERATOR, SkyRootSurface, build_sky_glb, build_sky_zone_parts, sky_root_translation_metres, \
     sky_zone_material_identities
 from world.sky_materials import SkyTextureUnsupported, external_reference_reasons, single_graph_texture_export
-from world.sky_step import SKY_STEP_ALGORITHM_VERSION, SKY_STEP_NAME, SkyGapRows, alpha_source, presentation_field_gap, sky_bundle_files, tile_sky_row
+from world.sky_step import SKY_STEP_ALGORITHM_VERSION, SKY_STEP_NAME, alpha_source, presentation_field_gap, sky_bundle_files, tile_sky_row
+from world.tile_step_gap_rows import TileStepGapRows
 from world.tile_manifest_step import PENDING_TILE_STEPS, pending_steps_after_sealed, tile_level_gap_rows, tile_resources
 
 REFERENCE_CLIENT = Path('E:/Lineage2-client')
@@ -120,7 +121,7 @@ class SkyStepRecordTests(unittest.TestCase):
             self.assertTrue(is_listed_reason(reason, patterns), reason)
 
     def test_an_ambiguous_sky_zone_is_a_gap_row_and_a_sealed_sky_leaves_pending(self):
-        gaps = SkyGapRows(TILE_ID, SOURCE_IDENTITY, EVIDENCE)
+        gaps = TileStepGapRows(TILE_ID, SKY_STEP_NAME, SOURCE_IDENTITY, EVIDENCE)
         gaps.add('gap', 'sky-zone-ambiguous:2')
         product = {'manifest': None, 'gapRows': gaps.rows()}
         self.assertEqual(tile_sky_row(TILE_ID, SOURCE_IDENTITY, product['gapRows'], EVIDENCE)['reason'], 'sky-zone-ambiguous:2')
@@ -159,7 +160,7 @@ class RealClientSkyTests(unittest.TestCase):
         level = read_level_model(package)
         zones = read_level_zones(package, level.model, ClassDefaults(lane_work_root(REPOSITORY_ROOT, 'world'), ReferenceClientClassScripts(REFERENCE_CLIENT)))
         [zone_index] = sorted(sky_zone_indices(zones))
-        gaps = SkyGapRows(tile_id, {'path': f'maps/{tile_id}.unr', 'sha256': lock_record['eSha256']}, EVIDENCE)
+        gaps = TileStepGapRows(tile_id, SKY_STEP_NAME, {'path': f'maps/{tile_id}.unr', 'sha256': lock_record['eSha256']}, EVIDENCE)
         converted = convert_tile_sky(REPOSITORY_ROOT, REFERENCE_CLIENT.resolve(), tile_id, lock_record, package, level, zone_index, gaps)
         return converted, gaps.rows()
 
