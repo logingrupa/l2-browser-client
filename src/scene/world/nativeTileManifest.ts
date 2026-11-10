@@ -15,6 +15,7 @@ const tileResourcePathPatterns = {
   "native-tile-collision": /^\/l2\/maps\/([a-f0-9]{64})\/native-tile-collision\/asset\.json$/,
   movers: /^\/l2\/movers\/([a-f0-9]{64})\/tile-movers\.json$/,
   "bsp-visibility": /^\/l2\/maps\/([a-f0-9]{64})\/native-tile-bsp-visibility\/asset\.json$/,
+  "map-emitters": /^\/l2\/map-emitters\/([a-f0-9]{64})\/tile-emitters\.json$/,
 } as const;
 
 export type NativeTileResourceKind = keyof typeof tileResourcePathPatterns;
@@ -84,7 +85,7 @@ function parseTileResources(value: unknown, label: string): readonly NativeTileR
       (resource.manifestBytes as number) < 1 || (resource.manifestBytes as number) > maximumTileResourceBytes) {
       throw new Error(`${label} resources hold at most one record of each kind at its own path: native-tile-collision and bsp-visibility at ` +
         "/l2/maps/<sha256>/native-tile-collision/asset.json and /l2/maps/<sha256>/native-tile-bsp-visibility/asset.json, movers at " +
-        "/l2/movers/<sha256>/tile-movers.json.");
+        "/l2/movers/<sha256>/tile-movers.json, map-emitters at /l2/map-emitters/<sha256>/tile-emitters.json.");
     }
     kinds.add(resource.kind);
     return { kind: resource.kind, manifest: resource.manifest, manifestSha256: resource.manifestSha256, manifestBytes: resource.manifestBytes as number };

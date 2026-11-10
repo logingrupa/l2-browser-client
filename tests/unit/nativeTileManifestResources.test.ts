@@ -21,7 +21,18 @@ const bspVisibility = { kind: "bsp-visibility", manifest: `/l2/maps/${visibility
 const collision = { kind: "native-tile-collision", manifest: `/l2/maps/${collisionSha256}/native-tile-collision/asset.json`,
   manifestSha256: collisionSha256, manifestBytes: 1000 };
 
+const emittersSha256 = "5".repeat(64);
+const mapEmitters = { kind: "map-emitters", manifest: `/l2/map-emitters/${emittersSha256}/tile-emitters.json`, manifestSha256: emittersSha256,
+  manifestBytes: 900 };
+
 describe("native tile manifest resources", () => {
+  it("accepts one pinned map-emitters manifest and refuses it at another path", () => {
+    expect(parseNativeTileManifest(tileManifest([bspVisibility, collision, mapEmitters])).resources.map(resource => resource.kind))
+      .toEqual(["bsp-visibility", "native-tile-collision", "map-emitters"]);
+    expect(() => parseNativeTileManifest(tileManifest([{ ...mapEmitters, manifest: `/l2/maps/${emittersSha256}/tile-emitters.json` }])))
+      .toThrow(/at most one record of each kind/);
+  });
+
   it("accepts one pinned bsp-visibility typed payload beside the collision resource", () => {
     expect(parseNativeTileManifest(tileManifest([bspVisibility, collision])).resources.map(resource => resource.kind))
       .toEqual(["bsp-visibility", "native-tile-collision"]);

@@ -14,6 +14,7 @@ from world.bsp_step import sealed_bsp_chunks
 from world.bsp_visibility_payload import bsp_visibility_arrays, portal_node_indices, require_visibility_model, visibility_outdoor_zones
 from world.level_model import LevelModelLayoutError, LevelModelRangeError, read_level_model
 from world.level_zones import read_level_zones, sky_zone_indices
+from world.map_emitter_step import sealed_map_emitters
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
 from world.static_mesh_step import sealed_static_meshes
 from world.static_placement import ClassDefaults
@@ -21,9 +22,9 @@ from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 from world.typed_payload import write_tile_typed_payload_resource
-from world.visibility_members import static_mesh_members
+from world.visibility_members import map_emitter_members, static_mesh_members
 
-BSP_VISIBILITY_STEP_ALGORITHM_VERSION = 1
+BSP_VISIBILITY_STEP_ALGORITHM_VERSION = 2
 BSP_VISIBILITY_STEP_NAME = 'bsp-visibility'
 BSP_VISIBILITY_PRODUCT_NAME = 'bsp-visibility.json'
 TILE_BSP_VISIBILITY_FOLDER = 'native-tile-bsp-visibility'
@@ -45,6 +46,7 @@ class BspVisibilityUnit(NamedTuple):
     chunk_plan: dict
     bsp: dict
     static_meshes: dict
+    map_emitters: dict
 
 
 def load_bsp_visibility_rules():
@@ -64,12 +66,14 @@ def bsp_visibility_unit(project_root, tile_id, lock_record):
     _, raw_products, chunk_plan = sealed_chunk_plan(project_root, tile_id, lock_record)
     bsp_fingerprint, bsp = sealed_bsp_chunks(project_root, tile_id, lock_record)
     meshes_fingerprint, static_meshes = sealed_static_meshes(project_root, tile_id, lock_record)
+    emitters_fingerprint, map_emitters = sealed_map_emitters(project_root, tile_id, lock_record)
     document, _ = load_bsp_visibility_rules()
-    config = {'bspFingerprint': bsp_fingerprint, 'meshesFingerprint': meshes_fingerprint, 'rulesSha256': sha256_hex(canonical_json_bytes(document))}
+    config = {'bspFingerprint': bsp_fingerprint, 'meshesFingerprint': meshes_fingerprint, 'emittersFingerprint': emitters_fingerprint,
+              'rulesSha256': sha256_hex(canonical_json_bytes(document))}
     inputs = locked_input_records([tile_map_path(tile_id)])
     ledger = bsp_visibility_ledger(project_root)
     fingerprint = ledger.unit_fingerprint([record['sha256'] for record in inputs], config)
-    return BspVisibilityUnit(ledger, tile_unit_key(tile_id), fingerprint, config, inputs, raw_products, chunk_plan, bsp, static_meshes)
+    return BspVisibilityUnit(ledger, tile_unit_key(tile_id), fingerprint, config, inputs, raw_products, chunk_plan, bsp, static_meshes, map_emitters)
 
 
 def bsp_visibility_product_path(ledger, unit_key):
@@ -135,8 +139,9 @@ def run_bsp_visibility_step(project_root, client_root, tile_id):
     if unit.ledger.is_sealed(unit.unit_key, unit.fingerprint):
         product = json.loads(bsp_visibility_product_path(unit.ledger, unit.unit_key).read_text(encoding='utf-8'))
         return tile_bsp_visibility_row(tile_id, source_identity, product['gapRows'], receipt_evidence)
-    if unit.bsp is None or unit.static_meshes is None:
-        raise FormatError(f'bsp-visibility of {unit.unit_key} needs sealed bsp and meshes units; run --step meshes and --step bsp first')
+    if unit.bsp is None or unit.static_meshes is None or unit.map_emitters is None:
+        raise FormatError(f'bsp-visibility of {unit.unit_key} needs sealed bsp, meshes and emitters units; run --step meshes, --step bsp and '
+                          '--step emitters first')
     client = Path(client_root).resolve()
     package = read_locked_map_package(client, tile_id, lock_record)
     _, rules = load_bsp_visibility_rules()
@@ -146,8 +151,10 @@ def run_bsp_visibility_step(project_root, client_root, tile_id):
     try:
         model = read_level_model(package).model
         zones = read_level_zones(package, model, class_defaults)
-        members = static_mesh_members(model, unit.static_meshes, actors_by_object, class_defaults, store_model_reader(store_root, unit.static_meshes),
-                                      rules[STATIC_MESH_MARGIN_RULE]['runtimeDefault'], sky_zone_indices(zones))
+        sky_zones = sky_zone_indices(zones)
+        members = [*static_mesh_members(model, unit.static_meshes, actors_by_object, class_defaults, store_model_reader(store_root, unit.static_meshes),
+                                        rules[STATIC_MESH_MARGIN_RULE]['runtimeDefault'], sky_zones),
+                   *map_emitter_members(model, unit.map_emitters, sky_zones)]
         node_ranges = tile_node_ranges(unit.bsp, unit.chunk_plan)
         arrays, outdoor_zones, counts = tile_visibility_payload(model, zones, rules, node_ranges, members)
     except LevelModelLayoutError as error:

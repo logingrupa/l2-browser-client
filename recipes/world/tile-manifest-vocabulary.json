@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 4,
-  "resourceKinds": ["native-tile-collision", "movers", "bsp-visibility"],
+  "listVersion": 5,
+  "resourceKinds": ["native-tile-collision", "movers", "bsp-visibility", "map-emitters"],
   "maskUvRules": []
 }

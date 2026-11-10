@@ -11,12 +11,11 @@ from native_store.gap_rows import validate_gap_row
 from native_store.tile_manifest_validation import load_tile_manifest_vocabulary
 from support.actor_class_defaults import SyntheticActorClassDefaults
 from support.converted_model_fixture import converted_model_glb
-from support.level_model_fixture import build_synthetic_level_model, square_points, synthetic_polygon, synthetic_zone
+from support.bsp_room_fixture import ROOM_ZONES, room_model
 from world.bsp_leaf_membership import INDEX_NONE, leaf_for_point, leaves_for_box, point_check_outside, solidity_disagreements, zones_for_box
 from world.bsp_visibility_step import (BSP_VISIBILITY_STEP_ALGORITHM_VERSION, BSP_VISIBILITY_STEP_NAME, load_bsp_visibility_rules,
                                        model_unreadable_reason, tile_bsp_visibility_row, tile_visibility_payload)
 from world.level_model import LevelModelRangeError
-from world.level_zones import LevelZone, ZoneField
 from world.tile_manifest_step import tile_resources
 from world.typed_payload import ARRAY_NAME_PATTERN, typed_payload_asset
 from world.visibility_members import MEMBER_SKY_FLAG, MEMBER_UNBOUNDED_FLAG, STATIC_MESH_MEMBER_KIND, static_mesh_members
@@ -24,38 +23,10 @@ from world.visibility_members import MEMBER_SKY_FLAG, MEMBER_UNBOUNDED_FLAG, STA
 TILE_ID = '00_00'
 SOURCE_IDENTITY = {'path': f'maps/{TILE_ID}.unr', 'sha256': hashlib.sha256(b'synthetic visibility tile').hexdigest()}
 EVIDENCE = f'work/tile__{TILE_ID}/bsp-visibility/receipt.json'
-NOT_CSG_NODE_FLAG = 0x01
-ALL_ZONES = (1 << 64) - 1
 SHARED_STATUSES = {'ue2-data', 'unconfirmed', 'confirmed-interlude', 'corrected-interlude', 'unknown'}
 RULE_FIELDS = {'id', 'value', 'provenance', 'status', 'interludeEvidence', 'runtimeDefault'}
 _, RULES = load_bsp_visibility_rules()
 NOT_CSG_NODE_FLAGS = RULES['point-check-not-csg-node-flags']['runtimeDefault']
-
-
-def ceiling_points(height):
-    return [(0.0, 0.0, height), (0.0, 100.0, height), (100.0, 100.0, height), (100.0, 0.0, height)]
-
-
-def wall_points(x):
-    return [(x, 0.0, 0.0), (x, 100.0, 0.0), (x, 100.0, 50.0), (x, 0.0, 50.0)]
-
-
-def room_model(wall_flags=NOT_CSG_NODE_FLAG, render_bound=INDEX_NONE):
-    model = build_synthetic_level_model(
-        [synthetic_polygon(square_points(0, 0, 100), front=1, zones=(0, 1), render_bound=render_bound),
-         synthetic_polygon(ceiling_points(50.0), front=2, zones=(0, 1)),
-         synthetic_polygon(wall_points(50.0), zones=(1, 2), node_flags=wall_flags, surface_flags=0x04000000)],
-        zones=(synthetic_zone(), synthetic_zone(), synthetic_zone()), leaves=[(1, -1, -1, 0b110), (2, -1, -1, ALL_ZONES)], root_outside=1)
-    model.nodes[2].i_leaf = (0, 1)
-    return model
-
-
-def zone_row(zone_index, outdoor=False, sky=False, unresolved=False):
-    field = ZoneField('bSunAffect', outdoor, 'authored', 'Engine.ZoneInfo')
-    return LevelZone(zone_index, None, None, ALL_ZONES, ALL_ZONES, field, (), (), outdoor, sky, unresolved)
-
-
-ROOM_ZONES = (zone_row(0, outdoor=True), zone_row(1), zone_row(2, sky=True))
 
 
 class ZoneLocateTests(unittest.TestCase):
@@ -166,7 +137,7 @@ class VisibilityRecipeAndRegistrationTests(unittest.TestCase):
                                                                 'manifestSha256': sha256, 'manifestBytes': 2000}])
 
     def test_the_step_name_and_version_are_pinned(self):
-        self.assertEqual((BSP_VISIBILITY_STEP_NAME, BSP_VISIBILITY_STEP_ALGORITHM_VERSION), ('bsp-visibility', 1))
+        self.assertEqual((BSP_VISIBILITY_STEP_NAME, BSP_VISIBILITY_STEP_ALGORITHM_VERSION), ('bsp-visibility', 2))
 
 
 if __name__ == '__main__':

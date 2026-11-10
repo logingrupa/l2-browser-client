@@ -65,6 +65,11 @@ def unbounded_member(member_id, kind, export_index):
     return VisibilityMember(member_id, kind, export_index, MEMBER_UNBOUNDED_FLAG, ZERO_EXTENT, 0, ())
 
 
+def map_emitter_members(model, map_emitters, sky_zones):
+    return [located_member(model, placement['id'], MAP_EMITTER_MEMBER_KIND, placement['exportIndex'], tuple(placement['origin']), ZERO_EXTENT, sky_zones)
+            for placement in map_emitters['placements']]
+
+
 def static_mesh_placements(static_meshes):
     return sorted((placement for chunk in static_meshes['chunks'].values() for model in chunk['models'] for placement in model['placements']),
                   key=lambda placement: placement['exportIndex'])

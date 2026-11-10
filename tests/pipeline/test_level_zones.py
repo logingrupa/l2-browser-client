@@ -10,7 +10,8 @@ from native_catalog.ue2 import Package
 from support.actor_class_defaults import SyntheticActorClassDefaults
 from support.level_model_fixture import build_synthetic_level_model, square_points, synthetic_polygon, synthetic_zone
 from ue2_package_fixture import compact, package_bytes, tag
-from world.level_zones import (AUTHORED_PROVENANCE, UNRESOLVED_PROVENANCE, outdoor_zone_indices, read_level_zones, sky_zone_indices)
+from world.actor_field_values import AUTHORED_PROVENANCE, UNRESOLVED_PROVENANCE
+from world.level_zones import outdoor_zone_indices, read_level_zones, sky_zone_indices
 
 BOOL_PROPERTY_TYPE = 3
 FLOAT_PROPERTY_TYPE = 4

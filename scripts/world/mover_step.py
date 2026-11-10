@@ -6,8 +6,8 @@ from native_assets import implementation_hash
 from native_assets_lib.gltf import json_bytes
 from native_catalog.ue2 import FormatError
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import add_store_file, immutable_write, sha256_hex, verify_store_destinations
-from native_store.store_paths import confined_child_path, lane_store_root, lane_work_root
+from native_store.catalog_writer import sha256_hex
+from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from world.map_sources import MapSources
 from world.mover_class_defaults import MOVER_CLASS, MOVER_CLASS_UNIT_KEY, mover_class_evidence, sealed_mover_class_receipt_sha256
@@ -19,6 +19,7 @@ from world.static_placement import read_class_evidence
 from world.static_placement_plan import FAILED_STATUS
 from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
+from world.tile_json_resource import write_tile_json_resource
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 
 MOVER_STEP_ALGORITHM_VERSION = 1
@@ -167,17 +168,6 @@ def product_mover_entry(mover, collision, model_record):
             'openSourceRows': mover.source_rows['open'], 'collision': collision}
 
 
-def write_tile_movers_manifest(store_root, manifest):
-    payload = canonical_json_bytes(manifest)
-    relative = f'{TILE_MOVERS_FOLDER}/{sha256_hex(payload)}/{TILE_MOVERS_NAME}'
-    destination = {}
-    add_store_file(destination, relative, payload)
-    verify_store_destinations(store_root, destination)
-    immutable_write(confined_child_path(store_root, relative), payload)
-    return {'resource': f'/l2/{relative}', 'sha256': sha256_hex(payload), 'bytes': len(payload)}, \
-        {'path': (store_root / relative).relative_to(store_root.parent).as_posix(), 'sha256': sha256_hex(payload), 'bytes': len(payload)}
-
-
 def class_evidence_record(evidence):
     return {'unit': MOVER_CLASS_UNIT_KEY, 'evidenceSha256': evidence.evidence_sha256,
             'classes': [{'object': definition['object'], 'package': definition['source']['package'], 'packageSha256': definition['source']['packageSha256']}
@@ -253,7 +243,7 @@ def run_mover_step(project_root, client_root, tile_id):
                     'sourceMap': {'path': tile_map_path(tile_id), 'sha256': lock_record['eSha256']}, 'classEvidence': class_evidence_record(evidence),
                     'models': [tile_model_entry(model) for model in models],
                     'movers': [tile_mover_entry(mover, collision) for (mover, _), collision in zip(converted, collisions)], 'gaps': gap_rows}
-        manifest_record, manifest_output = write_tile_movers_manifest(lane_store_root(project_root, WORLD_LANE_NAME), manifest)
+        manifest_record, manifest_output = write_tile_json_resource(lane_store_root(project_root, WORLD_LANE_NAME), TILE_MOVERS_FOLDER, TILE_MOVERS_NAME, manifest)
         outputs.append(manifest_output)
     product = {'tileId': tile_id, 'exportCount': len(items), 'manifest': manifest_record,
                'movers': [product_mover_entry(mover, collision, outcome.model_record) for (mover, outcome), collision in zip(converted, collisions)],
