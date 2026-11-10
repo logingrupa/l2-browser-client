@@ -4,7 +4,7 @@ import type { ParticleEmitterRecord } from "./emitterRecords";
 import { drawRange, rangeCenter } from "./particleSpawn";
 import {
   createEmitterCounters, createParticleColumns, listLiveSlots,
-  type EmitterCounters, type EmitterRuntime, type EmitterStepContext, type ParticleColumns,
+  type EmitterClassOverrides, type EmitterCounters, type EmitterRuntime, type EmitterStepContext, type ParticleColumns,
 } from "./particleState";
 import { updateParticles } from "./particleUpdate";
 
@@ -69,6 +69,7 @@ function restartEmitter(runtime: EmitterRuntime, context: EmitterStepContext): v
 function initializeEmitter(runtime: EmitterRuntime, context: EmitterStepContext): void {
   restartEmitter(runtime, context);
   runtime.counters.initialized = true;
+  runtime.classOverrides?.afterInitialize(runtime);
 }
 
 function initialDelayHoldsStep(counters: EmitterCounters, stepSeconds: number): boolean {
@@ -128,9 +129,10 @@ function stepEmitter(runtime: EmitterRuntime, stepSeconds: number, context: Emit
   return "running";
 }
 
-export function createParticleEmitterSimulation(record: ParticleEmitterRecord, stream: RandomStream, uniformSize: boolean): ParticleEmitterSimulation {
+export function createParticleEmitterSimulation(record: ParticleEmitterRecord, stream: RandomStream, uniformSize: boolean,
+  classOverrides: EmitterClassOverrides | null): ParticleEmitterSimulation {
   const counters = createEmitterCounters(record.Disabled);
-  const runtime: EmitterRuntime = { record, stream, columns: createParticleColumns(record.MaxParticles), counters, uniformSize };
+  const runtime: EmitterRuntime = { record, stream, columns: createParticleColumns(record.MaxParticles), counters, uniformSize, classOverrides };
   return {
     get record() { return runtime.record; },
     get columns() { return runtime.columns; },

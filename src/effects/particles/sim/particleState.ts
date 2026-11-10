@@ -52,12 +52,19 @@ export interface OwnerPose {
   readonly rotation: Rotator;
 }
 
+export interface EmitterClassOverrides {
+  afterInitialize(runtime: EmitterRuntime): void;
+  afterSpawnParticle(runtime: EmitterRuntime): void;
+  afterUpdateParticles(runtime: EmitterRuntime, stepSeconds: number): void;
+}
+
 export interface EmitterRuntime {
   record: ParticleEmitterRecord;
   readonly stream: RandomStream;
   columns: ParticleColumns;
   readonly counters: EmitterCounters;
   readonly uniformSize: boolean;
+  readonly classOverrides: EmitterClassOverrides | null;
 }
 
 export interface EmitterStepContext {

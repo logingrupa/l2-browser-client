@@ -23,7 +23,7 @@ export function meshMaterialRoute(record: MeshEmitterRecord): MeshMaterialRoute 
 }
 
 export function createMeshEmitterSimulation(record: MeshEmitterRecord, stream: RandomStream): MeshEmitterSimulation {
-  const simulation = createParticleEmitterSimulation(record, stream, record.UniformSize);
+  const simulation = createParticleEmitterSimulation(record, stream, record.UniformSize, null);
   return Object.assign(simulation as ParticleEmitterSimulation & { readonly record: MeshEmitterRecord }, {
     kind: "mesh" as const,
     staticMesh: record.StaticMesh,

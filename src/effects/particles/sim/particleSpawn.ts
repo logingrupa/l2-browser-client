@@ -162,5 +162,6 @@ export function spawnParticle(runtime: EmitterRuntime, slot: number, ageSeconds:
     spawnAgeSeconds = time % maxLifetime;
   }
   counters.dead = false;
+  runtime.classOverrides?.afterSpawnParticle(runtime);
   return true;
 }
