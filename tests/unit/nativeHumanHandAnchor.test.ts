@@ -5,7 +5,7 @@ import { GetEnvironmentBRDFTexture } from "@babylonjs/core/Misc/brdfTextureTools
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import type { AssetPackage } from "../../src/assets/package/readAssetPackage";
-import { resolveNativeHumanHandAnchor } from "../../src/assets/native/nativeHumanHandAnchor";
+import { resolveNativeCharacterHandAnchor, resolveNativeHumanHandAnchor } from "../../src/assets/native/nativeHumanHandAnchor";
 import { nativeCharacterFactory } from "../../src/assets/native/NativeCharacterVisual";
 import { nativeVisualClips, nativeVisualFixture } from "../fixtures/nativeVisualFixture";
 import type { WorldEntity } from "../../src/world/worldTypes";
@@ -47,6 +47,29 @@ describe("qualified human hand anchor selection", () => {
       expect(resolveNativeHumanHandAnchor(asset).binding).toBeNull();
     }
     expect(resolveNativeHumanHandAnchor({} as AssetPackage).binding).toBeNull();
+  });
+});
+
+describe("generated character hand anchor from class defaults", () => {
+  const classDefaults = { class: "LineageWarrior.Fixture", classPackageSha256: "b".repeat(64), HeadBone: "NativeRoot", RightHandBone: "NativeBone" };
+  const profile = (actorClassDefaults: unknown) => ({ sourceObject: "Fixture.Upper", sourceEvidence: actorClassDefaults === undefined ? {} : { actorClassDefaults } });
+
+  it("binds the right hand to the RightHandBone joint the class defaults name when the model skin holds it", async () => {
+    const asset = await nativeVisualFixture({ skinned: true });
+    expect(resolveNativeCharacterHandAnchor(profile(classDefaults), asset)).toEqual({ binding: { id: "right-hand", sourceObject: "Fixture.Upper",
+      boneName: "NativeBone" }, reason: null, sourceClass: "LineageWarrior.Fixture", modelSha256: asset.manifest.files[0]!.sha256 });
+  });
+
+  it.each([
+    ["no class defaults", undefined, "class-template-mapping-undecoded"],
+    ["class defaults without a class", { ...classDefaults, class: null }, "class-template-mapping-undecoded"],
+    ["a null RightHandBone", { ...classDefaults, RightHandBone: null }, "actor-default-unresolved:RightHandBone"],
+    ["an empty RightHandBone", { ...classDefaults, RightHandBone: "" }, "actor-default-unresolved:RightHandBone"],
+    ["a joint absent from the skin", { ...classDefaults, RightHandBone: "Weapon_R_Bone" }, "actor-default-unresolved:RightHandBone"],
+    ["a joint name differing only in case", { ...classDefaults, RightHandBone: "nativebone" }, "actor-default-unresolved:RightHandBone"],
+  ])("gives a null binding for %s and never picks a joint by name pattern or index", async (_label, actorClassDefaults, reason) => {
+    const asset = await nativeVisualFixture({ skinned: true });
+    expect(resolveNativeCharacterHandAnchor(profile(actorClassDefaults), asset)).toEqual({ binding: null, reason, sourceClass: null, modelSha256: null });
   });
 });
 

@@ -8,6 +8,7 @@ import "@babylonjs/loaders/glTF";
 import "../package/nativeSkinWeights";
 import { validatePackageModel, type AssetPackage } from "../package/readAssetPackage";
 import { createNativeClipPlayback, validateNativeClipDuration, type NativeClipPlayback } from "../package/nativeClipPlayback";
+import { readRetainedGlbBoneIdentity } from "./nativeGlbBoneIdentity";
 
 interface NativeModel {
   readonly container: AssetContainer;
@@ -59,29 +60,6 @@ export interface NativeBoneAnchorView {
 export interface NativeBoneAnchor extends NativeBoneAnchorView {
   inspection(): NativeBoneAnchorInspection;
   dispose(): void;
-}
-
-function retainedGlbBoneIdentityJoin(asset: AssetPackage, sourceObject: string, boneName: string) {
-  const bytes = asset.files.get(asset.manifest.model!.file)!;
-  const jsonSize = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(12, true);
-  const document = JSON.parse(new TextDecoder().decode(bytes.subarray(20, 20 + jsonSize))) as {
-    meshes?: { name?: string }[]; nodes?: { name?: string; mesh?: number; skin?: number }[]; skins?: { joints?: number[] }[];
-  };
-  const name = sourceObject.split(".").at(-1);
-  const meshes = document.meshes?.flatMap((mesh, index) => mesh.name === name ? [index] : []) ?? [];
-  if (meshes.length !== 1 || !Array.isArray(document.nodes) || !Array.isArray(document.skins)) throw new Error("Native bone source mesh or skin identity is missing or ambiguous.");
-  const meshIndex = meshes[0]!;
-  const nodes = document.nodes.flatMap((node, index) => node.mesh === meshIndex ? [index] : []);
-  if (nodes.length !== 1) throw new Error("Native bone source mesh node identity is missing or ambiguous.");
-  const meshNodeIndex = nodes[0]!, skinIndex = document.nodes[meshNodeIndex]!.skin;
-  const joints = typeof skinIndex === "number" && Number.isInteger(skinIndex) && skinIndex >= 0 ? document.skins[skinIndex]?.joints : undefined;
-  if (!Array.isArray(joints) || joints.some(index => !Number.isInteger(index) || index < 0 || !document.nodes![index]) || new Set(joints).size !== joints.length) {
-    throw new Error("Native bone source skin joints are missing or ambiguous.");
-  }
-  const matches = joints.flatMap((nodeIndex, index) => document.nodes![nodeIndex]!.name === boneName ? [{ nodeIndex, index }] : []);
-  if (matches.length !== 1) throw new Error("Native bone name is missing or ambiguous in the source skin.");
-  return { gltfMeshPointer: `/meshes/${meshIndex}`, gltfMeshNodePointer: `/nodes/${meshNodeIndex}`,
-    gltfSkinPointer: `/skins/${skinIndex}`, gltfNodePointer: `/nodes/${matches[0]!.nodeIndex}`, jointIndex: matches[0]!.index };
 }
 
 function gltfPointers(node: TransformNode): readonly string[] {
@@ -221,7 +199,7 @@ export class NativeActor {
     }
     const matches = skeleton.bones.filter(bone => bone.name === boneName);
     if (matches.length !== 1) throw new Error("Native bone name is missing or ambiguous in the loaded skeleton.");
-    const bone = matches[0]!, linked = bone.getTransformNode(), binding = retainedGlbBoneIdentityJoin(this.asset, sourceObject, boneName);
+    const bone = matches[0]!, linked = bone.getTransformNode(), binding = readRetainedGlbBoneIdentity(this.asset, sourceObject, boneName);
     const ownedNodes = [...this.base.container.transformNodes, ...this.base.container.meshes];
     const linkedOwned = () => !!linked && !linked.isDisposed() && linked.getScene() === this.scene && ownedNodes.includes(linked)
       && linked.isDescendantOf(this.base.root) && this.base.root.parent === this.root && bone.getTransformNode() === linked;

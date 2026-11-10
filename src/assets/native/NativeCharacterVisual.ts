@@ -10,7 +10,7 @@ import type { NativeActionCuePlayer, NativeActionCuePreview } from "../../audio/
 import type { NativeClipPreviewHub } from "./nativeClipPreview";
 import { parseActorClipEvents } from "./actorClipEvents";
 import { listActorClips } from "../../animation/actorClipPlayback";
-import { presentEquippedItem } from "./nativeEquippedItemPresentation";
+import { presentEquippedItem, type GeneratedCharacterProfile } from "./nativeEquippedItemPresentation";
 import { NativeEquippedBodyPartItems, type EquippedItemPresenter } from "./nativeEquippedBodyPartItems";
 import { servedCatalogEquippedItemSource, type NativeEquippedItemSource } from "./nativeEquippedItemSource";
 
@@ -24,6 +24,7 @@ export interface NativeCharacterProfile {
   readonly actorScale?: Vector3;
   readonly forwardAxis?: Vector3;
   readonly boneAnchors?: readonly { id: string; sourceObject: string; boneName: string }[];
+  readonly generatedProfile?: GeneratedCharacterProfile;
 }
 
 async function loadNativeCharacterAsset(asset: NativeCharacterProfile["asset"], signal: AbortSignal): Promise<AssetPackage> {
@@ -126,7 +127,8 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
       labelHeight: .6, selectionRadius: .25 };
     const profile = profiles.get(initial.appearanceId ?? "");
     const bodyPartItems = new NativeEquippedBodyPartItems(scene, equippedItemSource, lifetime.signal, message => status?.(message));
-    const presentBodyPartItem: EquippedItemPresenter = (slot, lookup) => presentEquippedItem(slot, lookup, { asset: characterAsset! });
+    const presentBodyPartItem: EquippedItemPresenter = (slot, lookup) => presentEquippedItem(slot, lookup,
+      { asset: characterAsset!, ...(profile?.generatedProfile ? { generatedProfile: profile.generatedProfile } : {}) });
     const updateBodyPartItems = () => { if (actor && initialized && !disposed) bodyPartItems.update(actor, current.equipment, presentBodyPartItem); };
     const tagMeshes = (owner: NativeActor) => {
       for (const mesh of owner.ownedMeshes()) { mesh.isPickable = mesh.getTotalVertices() > 0; mesh.metadata = { ...mesh.metadata, clientEntityId: initial.id }; }
