@@ -97,6 +97,28 @@ describe("RibbonEmitter simulation", () => {
     expect(unspawned.ribbonPoints()).toEqual([]);
   });
 
+  it("leaves the update at the zero Location test 0x10693E44 without a point source, as the GetNewRibbonPoint exits that write only Width do", () => {
+    const unattached = createRibbonEmitterSimulation(ribbonRecord, createEmitterRandomStream(1, 0, 0));
+    const zeroLocation = createRibbonEmitterSimulation(ribbonRecord, createEmitterRandomStream(1, 0, 0));
+    zeroLocation.attachPointSource(ribbonWidth => ({ location: { x: 0, y: 0, z: 0 }, locationUnder: { x: 5, y: -3, z: 150 }, width: ribbonWidth }));
+    const unattachedContext = standaloneStepContext(unattached), zeroLocationContext = standaloneStepContext(zeroLocation);
+    const stepBoth = () => { unattached.step(stepSeconds, unattachedContext); zeroLocation.step(stepSeconds, zeroLocationContext); };
+    for (let stepIndex = 0; stepIndex < 10; stepIndex += 1) stepBoth();
+    expect(unattached.ribbonPoints()).toEqual([]);
+    expect(zeroLocation.ribbonPoints()).toEqual([]);
+    let bladeSweepIndex = 0;
+    const bladeSource = (ribbonWidth: number) => swingingBladeSample(bladeSweepIndex, ribbonWidth);
+    unattached.attachPointSource(bladeSource);
+    zeroLocation.attachPointSource(bladeSource);
+    for (let stepIndex = 0; stepIndex < 30; stepIndex += 1) {
+      bladeSweepIndex += 1;
+      stepBoth();
+      expect(unattached.ribbonPoints()).toEqual(zeroLocation.ribbonPoints());
+      expect([unattached.bDecaying, unattached.numPoints]).toEqual([zeroLocation.bDecaying, zeroLocation.numPoints]);
+    }
+    expect(unattached.ribbonPoints().length).toBeGreaterThan(1);
+  });
+
   it("holds a still blade and decays its points after a kill", () => {
     let stepIndex = 0;
     const actor = createEmitterActorSimulation({ actor: parseEmitterActorRecord(fixture.actor), emitters: [ribbonRecord], sessionSeed: 1, effectSerial: 0 });

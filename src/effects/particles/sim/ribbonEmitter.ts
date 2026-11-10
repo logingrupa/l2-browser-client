@@ -19,7 +19,7 @@ export interface RibbonEmitterSimulation extends ParticleEmitterSimulation {
   readonly numPoints: number;
   readonly bDecaying: boolean;
   ribbonPoints(): readonly RibbonPoint[];
-  attachPointSource(source: RibbonPointSource | null): void;
+  attachPointSource(source: RibbonPointSource): void;
 }
 
 export interface WeaponTrailAttachment {
@@ -59,6 +59,7 @@ const float32RibbonPoint = ({ location, locationUnder, width }: RibbonPoint): Ri
   ({ location: float32Vector(location), locationUnder: float32Vector(locationUnder), width: Math.fround(width) });
 const ribbonPointWithZeroMovingDirections = ({ location, locationUnder, width }: RibbonPoint): RibbonPointWithMovingDirections =>
   ({ location, locationUnder, width, movingDirection: zeroVector, movingDirectionUnder: zeroVector });
+const getNewRibbonPointWritingOnlyWidth: RibbonPointSource = ribbonWidth => ({ location: zeroVector, locationUnder: zeroVector, width: ribbonWidth });
 
 function fVectorDivideAssign(vector: Vector3, divisor: number): Vector3 {
   return float32Scaled(vector, Math.fround(1 / divisor));
@@ -119,7 +120,7 @@ export function createRibbonEmitterSimulation(record: RibbonEmitterRecord, strea
   let bKilled = false;
   let bDecaying = false;
   let lastSampledPoint = ribbonPointWithZeroMovingDirections({ location: zeroVector, locationUnder: zeroVector, width: 0 });
-  let getNewRibbonPoint: RibbonPointSource | null = null;
+  let getNewRibbonPoint: RibbonPointSource = getNewRibbonPointWritingOnlyWidth;
   const ribbonEmitterRecordOf = (runtime: EmitterRuntime) => runtime.record as RibbonEmitterRecord;
 
   const setRibbonPoint2MovingDirections = (ribbonEmitterRecord: RibbonEmitterRecord, newRibbonPoint: RibbonPoint) => {
@@ -185,7 +186,6 @@ export function createRibbonEmitterSimulation(record: RibbonEmitterRecord, strea
     if (ribbonPoints.length >= ribbonInterpolationRule.insertFromPointCount) insertCntrPointsBeforeRibbonPoint3(ribbonEmitterRecord, newRibbonPoint.width);
   };
   const updateWithSamplePointsAndNoKillPending = (ribbonEmitterRecord: RibbonEmitterRecord, deltaTime: number, particlesZeroTime: number) => {
-    if (getNewRibbonPoint === null) return;
     const newRibbonPoint = float32RibbonPoint(getNewRibbonPoint(Math.fround(ribbonEmitterRecord.RibbonWidth)));
     if (fVectorEquals(newRibbonPoint.location, zeroVector)) return;
     const ribbonPointsNumWasZero = ribbonPoints.length === 0;
@@ -234,7 +234,7 @@ export function createRibbonEmitterSimulation(record: RibbonEmitterRecord, strea
     kind: "ribbon" as const,
     ribbonPoints: (): readonly RibbonPoint[] =>
       ribbonPoints.map(({ location, locationUnder, width }) => ({ location: { ...location }, locationUnder: { ...locationUnder }, width })),
-    attachPointSource(source: RibbonPointSource | null) { getNewRibbonPoint = source; },
+    attachPointSource(source: RibbonPointSource) { getNewRibbonPoint = source; },
   });
   return Object.defineProperties(ribbon, {
     numPoints: { get: () => numPoints, enumerable: true },
