@@ -156,7 +156,7 @@ describe("weapon trail attachment", () => {
     expect(attachWeaponTrail(ribbonRecord, { casterEntityKind: npcKind, weaponLength: 80, shotTimeSeconds: .9 })).toBeNull();
   });
 
-  it("places the trail along the weapon as APawn::AttachTrailer does for a player caster", () => {
+  it("places the trail along the weapon as APawn::AttachTrailer does when a pawn effect call site passes ExtraLife 0.8", () => {
     expect(rule).toEqual({
       endOffsetPerWeaponLength: Math.fround(1.06), startOffsetPerEndOffset: 0.5, thresholdTimePerShotTime: 0.5, fadeInEndTimeShotTimeDivisor: 3,
       actorLifeSpanAfterShotSeconds: Math.fround(0.8),
@@ -178,6 +178,11 @@ describe("weapon trail attachment", () => {
     expect(trail.emitter.RibbonWidth).toBe(Number.POSITIVE_INFINITY);
     expect(trail.emitter.StartBoneOffset.x).toBe(Math.fround(unroundedEndOffset * 0.5));
     expect(Number.isFinite(trail.emitter.StartBoneOffset.x)).toBe(true);
+  });
+
+  it("keeps the record NumPoints, as all three Engine.dll AttachTrailer call sites pass 0 and 0x104F2D42 skips the store", () => {
+    const trail = attachWeaponTrail(ribbonRecordWith({ NumPoints: 37 }), { casterEntityKind: playerKind, weaponLength: 80, shotTimeSeconds: .9 })!;
+    expect(trail.emitter.NumPoints).toBe(37);
   });
 
   it("attaches no trail for a weapon without a positive length and refuses a non-finite input", () => {
