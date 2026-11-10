@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-61-PLAN.md
-last_updated: "2026-11-10T01:46:01.977Z"
+stopped_at: Completed 02-42-PLAN.md
+last_updated: "2026-11-10T03:25:23.421Z"
 last_activity: 2026-11-10
 last_activity_desc: Phase 02 plan 02-48 complete (cell-aware collision world)
-state_head: d832e29a505538e124c1052f7f97d8aab8e80a99
+state_head: 855df19bbc25c14df1d8d9fc44af026422b7906c
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 72
+  completed_plans: 73
   percent: 0
 ---
 
@@ -124,6 +124,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P40 | 55min | 3 tasks | 27 files |
 | Phase 02 P48 | 20min | 3 tasks | 18 files |
 | Phase 02 P61 | 50min | 3 tasks | 32 files |
+| Phase 02 P42 | 61min | 3 tasks | 31 files |
 
 ## Accumulated Context
 
@@ -298,6 +299,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: Plan 02-48: the cell loader reads asset.json plus the payload.bin pinned inside it, as 02-30 writes it, and shares one tile BSP tree load per world and tile; the movement core boundary test type-checks with --lib es2022 alone; decodeNativeJsonResource is the one JSON decode owner (rows 590 to 593)
 - [Phase 02]: Plan 02-48: WORLD-04 and MOVE-01 stay Pending until 02-67, 02-49 and 02-65 wire the runtime context, the residency ring and the traces (row 594)
 - [Phase 02]: 02-61: level_zones.py is the one zone table, the bsp step reads it; world writes the Emitter actor export with the actors bundle writer record functions; solidity census grid 16 x 16 x 8 is a project rule; VIS-01, WORLD-01 and FX-01 stay Pending (OVERNIGHT-DECISIONS rows 595 to 600)
+- [Phase 02]: 02-42: item model records interlude:item:<id>:body-part:<bodyPart>:weapon|armor:<ordinal>, one per item and unit; armor in a body-part slot is the gap equipment-slot-meaning-undecoded:<bodyPart>; the actors items step covers weapon and armor keys only; gap census items step and catalog_index_keys item keys as a lane confirmation; ACT-03 stays Pending (OVERNIGHT-DECISIONS rows 603 to 614)
 
 ### Pending Todos
 
@@ -388,6 +390,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-10T01:46:00.879Z
-Stopped at: Completed 02-61-PLAN.md
+Last session: 2026-11-10T03:25:22.525Z
+Stopped at: Completed 02-42-PLAN.md
 Resume file: None
