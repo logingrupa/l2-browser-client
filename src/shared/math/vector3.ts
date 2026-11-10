@@ -37,3 +37,23 @@ export function normalizeVector(vector: Vector3): Vector3 {
   if (length === 0) throw new RangeError("Cannot normalize a zero-length vector.");
   return scaleVector(vector, 1 / length);
 }
+
+export function float32Vector(vector: Vector3): Vector3 {
+  return { x: Math.fround(vector.x), y: Math.fround(vector.y), z: Math.fround(vector.z) };
+}
+
+export function float32Sum(left: Vector3, right: Vector3): Vector3 {
+  return float32Vector(addVectors(left, right));
+}
+
+export function float32Difference(left: Vector3, right: Vector3): Vector3 {
+  return float32Vector(subtractVectors(left, right));
+}
+
+export function float32Scaled(vector: Vector3, scale: number): Vector3 {
+  return float32Vector(scaleVector(vector, scale));
+}
+
+export function float32VectorSize(vector: Vector3): number {
+  return Math.fround(Math.sqrt(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z));
+}

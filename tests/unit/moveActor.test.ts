@@ -50,12 +50,18 @@ describe("moveActor against converted BSP collision", () => {
     expect(result.hit!.primitive).toEqual({ kind: "bsp-tree", tileId: fixtureTileId });
     expect(result.hit!.source).toBe("bsp-collision-tree");
     expect(result.hit!.normal).toEqual({ x: -1, y: 0, z: 0 });
-    const wallFace = 256, testLength = 302, boxBackoff = rules.backoff.bspBox.maximum;
-    expect(boxBackoff).toBe(4);
-    expect(result.location.x).toBeCloseTo(wallFace - pawnRadius - boxBackoff - rules.moveActorExtension, 4);
-    expect(result.hit!.time).toBeCloseTo((wallFace - pawnRadius - boxBackoff - rules.moveActorExtension) / 300, 6);
-    expect(Math.min(Math.max(0.1 * testLength, 0.1), 4)).toBe(boxBackoff);
+    const wallFace = 256, boxBackoffUnits = 4;
+    expect(rules.backoff.bspBox).toMatchObject({ kind: "clamped-fraction", maximumDistance: boxBackoffUnits });
+    expect(result.location.x).toBeCloseTo(wallFace - pawnRadius - boxBackoffUnits - rules.moveActorExtension, 4);
+    expect(result.hit!.time).toBeCloseTo((wallFace - pawnRadius - boxBackoffUnits - rules.moveActorExtension) / 300, 6);
     expect(result.location).toEqual({ x: result.location.x, y: 0, z: 0 });
+  });
+
+  it("stays put with time 0 when the backed-off hit lies inside the 2-unit extension, as ULevel::MoveActor does", () => {
+    const start = { x: 245, y: 0, z: 0 };
+    const result = moveActor(wallWorld(), actorAt(start), { x: 10, y: 0, z: 0 }, rules);
+    expect(result.location).toEqual(start);
+    expect(result.hit).toMatchObject({ time: 0, source: "bsp-collision-tree", normal: { x: -1, y: 0, z: 0 } });
   });
 
   it("returns the full delta when the move misses every primitive", () => {
@@ -108,14 +114,31 @@ describe("traceCylinder", () => {
 });
 
 describe("movement native rules recipe", () => {
-  it("gives every row a provenance and a status from the shared vocabulary and keeps every row unconfirmed or weaker", () => {
+  it("gives every row a provenance and a shared status, and Interlude binary evidence exactly on the confirmed and corrected rows", () => {
     expect(rules.rows.length).toBeGreaterThan(0);
     for (const row of rules.rows) {
       expect(row.provenance.length).toBeGreaterThan(0);
-      expect(["ue2-data", "unconfirmed", "unknown"]).toContain(row.status);
-      expect(row.interludeEvidence).toBeNull();
+      expect(["ue2-data", "unconfirmed", "unknown", "confirmed-interlude", "corrected-interlude"]).toContain(row.status);
+      if (row.status === "confirmed-interlude" || row.status === "corrected-interlude") expect(row.interludeEvidence).toMatch(/^(Engine|Core)\.dll /);
+      else expect(row.interludeEvidence).toBeNull();
     }
     expect(rules.rows.map(row => row.id)).toEqual(expect.arrayContaining(["movement.maxStepHeight", "movement.minFloorZ"]));
+  });
+
+  it("derives the move extension, the backoffs, the BSP side tolerance and the push-out from the Interlude binaries", () => {
+    const derivedRowIds = [
+      "collision.moveActorExtension", "collision.nearZeroDelta", "collision.backoff.bspRay", "collision.backoff.bspBoxFraction", "collision.backoff.bspBoxMinimum",
+      "collision.backoff.bspBoxMaximum", "collision.backoff.staticMeshFraction", "collision.backoff.staticMeshMinimum", "collision.backoff.staticMeshMaximum",
+      "collision.backoff.terrain", "collision.backoff.pawnCylinder", "collision.bspPushOut", "collision.bspTolerances.side", "collision.isCsg",
+    ];
+    for (const id of derivedRowIds) {
+      const row = rules.rows.find(candidate => candidate.id === id)!;
+      expect(row.status).toMatch(/^(confirmed|corrected)-interlude$/);
+      expect(row.provenance).toMatch(/^(Engine|Core)\.dll [0-9a-f]{8} /);
+      expect(row.provenance).not.toMatch(/lineage2js/i);
+    }
+    expect(rules.bspSideEpsilon).toBe(Math.fround(0.001));
+    expect(rules.bspPushOutScale).toBe(Math.fround(1.1));
   });
 
   it("refuses a status outside the shared vocabulary, a missing provenance and a confirmed row without Interlude evidence", () => {
@@ -123,7 +146,7 @@ describe("movement native rules recipe", () => {
     const withFirstRow = (change: Record<string, unknown>) => ({ ...document, rows: [{ ...document.rows[0], ...change }, ...document.rows.slice(1)] });
     expect(() => parseMovementNativeRules(withFirstRow({ status: "guessed" }))).toThrow(MovementRulesError);
     expect(() => parseMovementNativeRules(withFirstRow({ provenance: " " }))).toThrow(/needs a provenance/);
-    expect(() => parseMovementNativeRules(withFirstRow({ status: "confirmed-interlude" }))).toThrow(/without interludeEvidence/);
+    expect(() => parseMovementNativeRules(withFirstRow({ status: "confirmed-interlude", interludeEvidence: null }))).toThrow(/without interludeEvidence/);
     expect(() => parseMovementNativeRules({ ...document, rows: [...document.rows, document.rows[0]] })).toThrow(/twice/);
   });
 });

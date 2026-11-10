@@ -1,4 +1,4 @@
-import { addVectors, scaleVector, subtractVectors, type Vector3 } from "../../../../shared/math/vector3";
+import { addVectors, float32Difference, float32Scaled, float32Sum, scaleVector, subtractVectors, type Vector3 } from "../../../../shared/math/vector3";
 import type { CollisionMoverSource } from "./collisionCell";
 import { CollisionWorldError } from "./collisionWorld";
 
@@ -70,7 +70,9 @@ export const pointAlongSweep = (sweep: CollisionSweep, time: number) => addVecto
 
 export const negateVector = (vector: Vector3): Vector3 => ({ x: 0 - vector.x, y: 0 - vector.y, z: 0 - vector.z });
 
-export const float32Vector = (vector: Vector3): Vector3 => ({ x: Math.fround(vector.x), y: Math.fround(vector.y), z: Math.fround(vector.z) });
+export const float32SweepDelta = (sweep: CollisionSweep) => float32Difference(sweep.end, sweep.start);
+
+export const float32PointAlongSweep = (sweep: CollisionSweep, time: number) => float32Sum(sweep.start, float32Scaled(float32SweepDelta(sweep), time));
 
 const isFiniteVector = (vector: Vector3) => Number.isFinite(vector.x) && Number.isFinite(vector.y) && Number.isFinite(vector.z);
 

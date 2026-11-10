@@ -1,10 +1,8 @@
 import type { ReferenceConstantStatus } from "../../../../shared/referenceConstant";
 
-export interface CollisionBackoffRule {
-  readonly fraction: number;
-  readonly minimum: number;
-  readonly maximum: number;
-}
+export type CollisionBackoffRule =
+  | { readonly kind: "fixed-distance"; readonly distance: number }
+  | { readonly kind: "clamped-fraction"; readonly fraction: number; readonly minimumDistance: number; readonly maximumDistance: number };
 
 export interface CollisionBackoffRules {
   readonly bspRay: CollisionBackoffRule;
@@ -93,10 +91,13 @@ export function parseMovementNativeRules(document: unknown): MovementNativeRules
     if (typeof runtimeDefault !== "boolean") throw new MovementRulesError(`needs a boolean ${id} row.`);
     return runtimeDefault;
   };
-  const constantBackoff = (id: string): CollisionBackoffRule => ({ fraction: 0, minimum: numberRule(id), maximum: numberRule(id) });
-  const scaledBackoff = (prefix: string): CollisionBackoffRule => {
-    const backoff = { fraction: numberRule(`${prefix}Fraction`), minimum: numberRule(`${prefix}Minimum`), maximum: numberRule(`${prefix}Maximum`) };
-    if (backoff.minimum > backoff.maximum) throw new MovementRulesError(`${prefix} minimum exceeds its maximum.`);
+  const fixedDistanceBackoff = (id: string): CollisionBackoffRule => ({ kind: "fixed-distance", distance: numberRule(id) });
+  const clampedFractionBackoff = (prefix: string): CollisionBackoffRule => {
+    const backoff = {
+      kind: "clamped-fraction" as const, fraction: numberRule(`${prefix}Fraction`),
+      minimumDistance: numberRule(`${prefix}Minimum`), maximumDistance: numberRule(`${prefix}Maximum`),
+    };
+    if (backoff.minimumDistance > backoff.maximumDistance) throw new MovementRulesError(`${prefix} minimum exceeds its maximum.`);
     return backoff;
   };
   return {
@@ -104,11 +105,11 @@ export function parseMovementNativeRules(document: unknown): MovementNativeRules
     moveActorExtension: numberRule("collision.moveActorExtension"),
     nearZeroDelta: numberRule("collision.nearZeroDelta"),
     backoff: {
-      bspRay: constantBackoff("collision.backoff.bspRay"),
-      bspBox: scaledBackoff("collision.backoff.bspBox"),
-      staticMesh: scaledBackoff("collision.backoff.staticMesh"),
-      terrain: constantBackoff("collision.backoff.terrain"),
-      pawnCylinder: constantBackoff("collision.backoff.pawnCylinder"),
+      bspRay: fixedDistanceBackoff("collision.backoff.bspRay"),
+      bspBox: clampedFractionBackoff("collision.backoff.bspBox"),
+      staticMesh: clampedFractionBackoff("collision.backoff.staticMesh"),
+      terrain: fixedDistanceBackoff("collision.backoff.terrain"),
+      pawnCylinder: fixedDistanceBackoff("collision.backoff.pawnCylinder"),
     },
     bspPushOutScale: numberRule("collision.bspPushOut"),
     bspSideEpsilon: numberRule("collision.bspTolerances.side"),
@@ -127,6 +128,15 @@ export function parseMovementNativeRules(document: unknown): MovementNativeRules
   };
 }
 
-export function backoffDistance(rule: CollisionBackoffRule, testLength: number): number {
-  return Math.min(Math.max(rule.fraction * testLength, rule.minimum), rule.maximum);
+function clampBetween(value: number, minimum: number, maximum: number): number {
+  return value < minimum ? minimum : value < maximum ? value : maximum;
+}
+
+function backoffTime(rule: CollisionBackoffRule, traceLength: number): number {
+  if (rule.kind === "fixed-distance") return rule.distance / traceLength;
+  return clampBetween(Math.fround(rule.fraction), Math.fround(rule.minimumDistance / traceLength), Math.fround(rule.maximumDistance / traceLength));
+}
+
+export function hitTimeAfterBackoff(rule: CollisionBackoffRule, hitTime: number, traceLength: number): number {
+  return clampBetween(Math.fround(hitTime - backoffTime(rule, traceLength)), 0, 1);
 }
