@@ -10,9 +10,9 @@ import {
 } from "./loadNativeSection";
 import { attachTileVisibility, type AttachedTileVisibility } from "./bspVisibility/attachTileVisibility";
 import { attachTileLighting, type AttachedTileLighting } from "./lighting/attachTileLighting";
-import { FOG_DISABLED } from "../../materials/ue2/babylon/material";
 import { parseNativeBspSectionExtras, type NativeBspNodeRange, type NativeBspSection, type NativeTileBspResource } from "./nativeBspResources";
 import { loadNativeTileMovers, type NativeTileMovers } from "./loadNativeTileMovers";
+import { loadTileMapEmitterPlacements } from "./tileMapEmitterPlacements";
 import { disposeNativeModelInstances, instantiateNativeModelPlacements, type NativeModelInstance } from "./nativeModelPlacements";
 import {
   describeNativeTileGapRow, parseNativeTileChunkManifest, type NativeTileChunkManifest, type NativeTileChunkModel, type NativeTileChunkPlacement,
@@ -207,8 +207,12 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
       { bspChunks, placements: instances, terrainMeshes: loaded.flatMap(entry => entry.meshes) }, lifetime.signal);
     if (disposed || scene.isDisposed) throw new Error("Native tile was disposed during loading.");
     const chunkOrdinalById = new Map(manifest.chunks.map((record, ordinal) => [record.chunkId, ordinal]));
-    tileLighting = await attachTileLighting(scene, manifest, bspChunks.map(chunk => ({ ...chunk, chunkOrdinal: chunkOrdinalById.get(chunk.chunkId)! })),
-      () => FOG_DISABLED, lifetime.signal);
+    const visibilityBinding = tileVisibility.binding;
+    tileLighting = await attachTileLighting(scene, manifest, { bspChunks: bspChunks.map(chunk => ({ ...chunk, chunkOrdinal: chunkOrdinalById.get(chunk.chunkId)! })),
+      staticMeshes: instances.flatMap(instance => instance.root.getChildMeshes().filter(mesh => mesh.getTotalVertices() > 0)),
+      terrainMeshes: loaded.flatMap(entry => entry.meshes), cameraFrame: () => visibilityBinding?.frame() ?? null }, lifetime.signal);
+    if (disposed || scene.isDisposed) throw new Error("Native tile was disposed during loading.");
+    const mapEmitterPlacements = await loadTileMapEmitterPlacements(manifest, lifetime.signal);
     if (disposed || scene.isDisposed) throw new Error("Native tile was disposed during loading.");
     const moverResource = manifest.resources.find(resource => resource.kind === "movers");
     if (moverResource) {
@@ -235,7 +239,8 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
         terrainChunks, tileAnchor: anchor, meshGapCount, bspSections: bspChunks.reduce((sum, chunk) => sum + chunk.sections.length, 0),
         bspResources: bspChunks.map(chunk => chunk.resource), moverCount: moverTargets.length,
         moverCollisionMeshCount: moverTargets.flatMap(target => target.meshes).filter(mesh => mesh.metadata?.worldCollision === true).length,
-        movers: moverTargets.map(target => target.inspection()), bspVisibility: tileVisibility!.inspection(), lighting: tileLighting!.inspection() }),
+        movers: moverTargets.map(target => target.inspection()), bspVisibility: tileVisibility!.inspection(), lighting: tileLighting!.inspection(),
+        mapEmitterPlacements: { gap: mapEmitterPlacements.gap, placements: mapEmitterPlacements.inspection(exportIndex => visibilityBinding?.memberVisible(exportIndex) ?? true) } }),
       setTerrainPreview() {}, dispose };
   } catch (error) { dispose(); throw error; }
 }

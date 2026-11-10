@@ -10,6 +10,7 @@ import { fetchVerifiedNativeResource, validateSectionGlb } from "./loadNativeSec
 import { selectNativeSkyLiteral, type NativeEnvironmentTables } from "./nativeEnvironmentTables";
 import { createNativeSkyLiteralComparison } from "./nativeSkyLiteralComparison";
 import { readSelectedTileSkySource } from "./nativeTileSkySource";
+import { surfaceMaterialProgramId } from "./lighting/surfaceMaterialProgram";
 import { selectedNativeTileIdentity } from "./selectedNativeTile";
 
 export const nativeSkySource = {
@@ -98,6 +99,14 @@ export async function createNativeSkyPresentation(scene: Scene, signal: AbortSig
     if (!authored) { container?.dispose(); skyRoot.dispose(); }
     throw new Error(`Sky snapshot requires one material mesh for each of its ${source.materialRoots} material roots.`);
   }
+  let librarySurfaces;
+  try {
+    librarySurfaces = skyMeshes.map(mesh => ({ mesh: mesh.name, programMaterialId: surfaceMaterialProgramId(mesh.material) }))
+      .map(surface => ({ ...surface, status: surface.programMaterialId === null ? "program-unconverted" as const : "library-environment-clock-unwired" as const }));
+  } catch (error) {
+    if (!authored) { container?.dispose(); skyRoot.dispose(); }
+    throw error;
+  }
   const skySet = new Set(skyMeshes), worldGroups = new Map<AbstractMesh, number>();
   const savedRoot = { position: skyRoot.position.clone(), z: skyRoot.scaling.z };
   const savedMeshes = skyMeshes.map(mesh => ({ mesh, group: mesh.renderingGroupId, pickable: mesh.isPickable,
@@ -165,7 +174,7 @@ export async function createNativeSkyPresentation(scene: Scene, signal: AbortSig
     triangles: skyMeshes.reduce((n, mesh) => n + mesh.getTotalIndices() / 3, 0),
     texturesReady: materials.every(entry => entry.material.getActiveTextures().every(texture => texture.isReady())),
     mode: "source sky room; browser camera-follow background; optional literal color comparison",
-    comparison: comparison?.inspection() ?? null,
+    comparison: comparison?.inspection() ?? null, librarySurfaces,
     nativeTimeOfDay: "unverified", nativeCloudMotion: "unverified", nativeVisibleParity: "unverified",
   }) };
 }
