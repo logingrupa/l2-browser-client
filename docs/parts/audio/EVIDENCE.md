@@ -38,10 +38,26 @@ Generated routes come from `scripts/actors/combat_role_routes.py`: the decoded d
 
 Hand-recipe cross-check (test only, `tests/pipeline/test_combat_role_routes.py`): the bound npcgrp attackItem, defense and damage routes and the ALAudio critical route agree with the former columns; no bound route disagrees.
 
+## Tile world audio (02-46)
+
+Status: audible labelled, owner listening pending. WORLD-02 stays Pending until the owner listening round and the integration wiring below.
+
+- Route: with `?map=XX_YY`, `readSelectedTileWorldAudioRecords` (`src/assets/native/readSelectedTileWorldAudio.ts`) lists the `world-audio` resources of that tile manifest, and `loadNativeWorldAudio` dispatches each by its fetched manifest kind (`native-map-ambience`, `native-map-music`, `native-tile-placement-audio`) after the SHA-256 and length check. Without `?map=` the catalog `worldAudio` slice loads as before with strict kind equality. A selected tile without world-audio resources loads silent with the reason `no tile audio resources`.
+- Check: `NATIVE_STORE_ROOT=world pnpm test:e2e tests/browser/world-tile-audio.spec.ts` passed twice on 2026-11-10 (2 passed, 1.8 min, port 5173 free): the phone run (932 x 430 landscape, `isMobile`, `hasTouch`, unlock by a touchscreen tap on the canvas, portrait 430 x 932 no horizontal scroll) and the desktop run (1440 x 900, unlock by a mouse click). Headless SwiftShader, so no performance claim.
+- Report: `artifacts/lane-store/actors/reports/world-tile-audio-f60ce2d838a827528ae80907ed511549d84abb152904f59247f1dbb84b84bd6e.json` (served world lane catalog SHA-256, written 09:47 Riga, file SHA-256 `96c14b31...`), two entries for `tile:20_20`:
+  - music: manifest `fdf8f738...`, `20_20.MusicVolume0`, `music:D03_F` original Ogg, `played: true`, music bus peak 0.0000877 (the first run read 0.000277; the track opens quietly at the pinned l2.ini MusicVolume 0.1).
+  - ambience: manifest `0e3362b4...`, `20_20.AmbientSoundObject4222`, `ambsound.dungeon.d_wind_loop_21` loop, `played: true`, ambience bus peak 0.0442.
+- Placement: the test stops the player at the centre of the first MusicVolume with the server stop command (`cannot-move`), then `set-animation idle` publishes that position. `move-local` cannot reach it: MusicVolume0 of 20_20 lies under the terrain and navigation only grounds a target within 0.8 m. This is a test fixture position computed from the manifest bounds, not a gameplay value.
+- Silent sources: placement audio (543 placements, 15 StepSound sounds on 20_20) is loaded and parsed but not played; automatic surface footstep playback is polish (DEC-OWN-1). MusicVolume1 of 20_20 was not entered by the check.
+- Sheet: the music, ambience and placement audio cards take the map path, volume, emitter and placement counts and track names from the loaded manifests and point at `scripts/world/world_audio_step.py`. Selection, looping, silence outside volumes and gain are labelled unverified or presentation. Unit tests: `tests/unit/tileWorldAudio.test.ts`, `loadNativeWorldAudio.test.ts`, `worldAudioControls.test.ts`, `worldMusic.test.ts` (on-plane MusicVolume edge).
+- Known false presentation until integration: `src/runtime/**` does not yet pass `placementAudio` and `silentReason` to `setWorldAudio`, so the live sheet shows "No StepSound placement audio loaded" on a tile that has it (index rule 14; integration follow-up in STATE.md).
+- This actors-lane check writes only the report above; the `tile:20_20` load-check record stays with the world lane specs (02-31, 02-45).
+
 ## Open
 
+- Owner listening round for the tile world audio report (research A16).
 - ACT-05 breadth: 979 NPC bundles and every skill bundle wait for later slices; skill bundles stay route gaps until a proof anchor names the skillsoundgrp members; player characters wait for plan 02-40.
-- 5,269 sounds, 250 music files and 45 voice files with a labelled listen check (CHECK-02). World ambient, placement and music audio per tile is WORLD-02 in the world part.
+- 5,269 sounds, 250 music files and 45 voice files with a labelled listen check (CHECK-02). Tiles other than 20_20 have no audible check yet.
 - The 21 sealed bundles in the actors lane store were built before the builder recorded the decoded table reader provenance by `path` (`out_of_bundle_reader_provenance` in `scripts/native_assets_lib/combat_audio_bundle.py`). Their manifests still name `{file: dats/npcgrp.xml, sha256}`, which the lane catalog writer reads as a bundle file pin and refuses (row 478). The builder change alters their fingerprint, so `convert_actors.py --batch actor-sounds` reseals them: the batch decides skip or redo through `UnitLedger.is_sealed` on the bundle fingerprint, and each resealed bundle replaces its own `combatAudio` record. A rebuilt bundle pins only the manifest and the WAV files it holds (`tests/pipeline/test_native_combat_audio.py` `LaneStoreCombatAudioPinTests`).
 - The audio part has no committed coverage denominator, so the actor sound gap rows live in the lane work folder, not in `gap-rows/` (row 477).
 
@@ -49,6 +65,6 @@ Hand-recipe cross-check (test only, `tests/pipeline/test_combat_role_routes.py`)
 
 Notes: `docs/NATIVE_AUDIO.md`. Acceptance: `recipes/native-audio.acceptance.json`.
 - Lane tool support for this repo is not available on DATABASE-PC yet; use plain `git worktree` until it lands.
-- Tests: `tests/pipeline/test_combat_audio_recipe_unresolved_routing.py`, `test_combat_role_routes.py`, `test_actor_sound_bindings.py`, `tests/unit/combatAudioRoleRouting.test.ts`, `tests/unit/nativeCombatAudio.test.ts`, `tests/browser/sandbox-actor-audio.spec.ts`.
+- Tests: `tests/pipeline/test_combat_audio_recipe_unresolved_routing.py`, `test_combat_role_routes.py`, `test_actor_sound_bindings.py`, `tests/unit/combatAudioRoleRouting.test.ts`, `tests/unit/nativeCombatAudio.test.ts`, `tests/browser/sandbox-actor-audio.spec.ts`, `tests/browser/world-tile-audio.spec.ts`.
 - Count differences to check in the decoder inventory: 435 vs 433 `.utx`, `chargrp` has 15 rows.
 - The 02-23 tiles sweep is plan 02-70, which runs after 02-16 (wave 9; OVERNIGHT-DECISIONS row 303). 02-23 is complete with Tasks 1 and 2 (02-23-SUMMARY.md).
