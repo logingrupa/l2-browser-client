@@ -130,7 +130,7 @@ VIS-01, WORLD-01 and FX-01 inputs. `convert_tile.py --map <XX_YY> --step emitter
 - Emitters: each `Engine.Emitter` goes to `/l2/map-emitters/<sha>/tile-emitters.json` (`native-tile-map-emitters` v1) with transform, actor rules and the actors bundle writer's emitter records. 20_21: 6 placements, 9 emitters (6 Mesh, 3 Sprite), 0 gaps; 20_20: none, pass, no resource.
 - Visibility: one typed payload per tile at `/l2/maps/<sha>/native-tile-bsp-visibility/asset.json` (NODE, BNDS, LEAF, ZONE, PORT, RNGE, MEMB); rules are rows of `recipes/world/bsp-visibility.json`, unsourced limits at their most-visible value until POL-04.
 - Census `docs/parts/world/bsp-visibility-census.json` (16 x 16 x 8 samples): 20_21 4,493 nodes, 1,532 leaves, 39 zones, 62 portals, 2,923 mesh members, 6 emitters (2 in solid space), 0 disagreements; 20_20 4,675 nodes, 30 zones, 3,439 members, 12 leaf and PointCheck disagreements (`bsp-visibility-solidity-disagreement`).
-- Browser: tile:20_21 with both new resources passes `world-tile-meshes.spec.ts` (2026-11-10 03:33 Riga). Open: emitter textures and meshes convert with 02-69 playback; the walk is 02-63. Tests: `test_level_zones.py`, `test_world_bsp_visibility_step.py`, `test_world_map_emitter_step.py`, `nativeTileManifestResources.test.ts`.
+- Browser: tile:20_21 with both new resources passes `world-tile-meshes.spec.ts` (2026-11-10 03:33 Riga). Open: emitter textures and meshes convert with 02-69. Tests: `test_level_zones.py`, `test_world_bsp_visibility_step.py`, `test_world_map_emitter_step.py`.
 
 ## Reader licensee growth (WORLD-01, 02-52)
 
@@ -155,8 +155,15 @@ WORLD-02 and MAT-01 input. `convert_tile.py --map <XX_YY> --step sky`, `--step a
 - 20_20: 2,622 emitters (2,620 with sound, 2 omitted references), 106 sounds, types 1: 876, 2: 999, omitted: 747, equal to the staged ambience `e2fe18be...` including emitter rows and WAV hashes; 543 placements, 15 step sounds; 2 volumes, 9 tracks, restored Ogg and AAC hashes equal to the staged music `d4fca6b8...`; the join equals `tests/fixtures/world-07/music-id-join.json`.
 - 20_21: 2,875 emitters (2,864 with sound, 11 omitted), 132 sounds; 2 placements, 3 step sounds; 3 volumes, 13 tracks.
 - Gap rows by reason: none on either tile for sky or audio. Vocabulary `listVersion` 7 adds `sky` and `world-audio`; gap reasons `listVersion` 10.
-- Deleted (owner rule, OVERNIGHT-DECISIONS rows 373 and 380): the 20_20 sky converter, sky stager and BSP floor helpers, the map ambient exporter, the music and ambience bundlers, the world audio stager, the four 20_20 audio recipes, the batch `sky` and `ambient` adapters, `assets:ambient`, and their tests.
+- Deleted (OVERNIGHT-DECISIONS rows 373 and 380): the legacy 20_20 sky and audio converters, stagers, recipes, batch adapters, `assets:ambient` and their tests.
 - Browser: tile:20_21 sky check passes in three viewports (`world-tile-sky.spec.ts`, lane catalog f60ce2d8, 2026-11-10 06:15 Riga); the desktop frame looks down at the ground, the inspection proves the sky (3 meshes, textures ready, tile source id). Open: playback of tile audio is 02-46. Tests: `test_world_sky_step.py`, `test_world_audio_step.py`, `nativeSkyPresentation.test.ts`, `nativeTileManifestResources.test.ts`.
+
+## BSP visibility walk (02-63)
+
+VIS-01, in `src/scene/world/bspVisibility/core/` (Babylon-free, imports only `src/shared/**`). Per frame: zone locate (PlaneDot >= 0 front), seed, portal expansion, front-to-back walk, member gating (meshes by leaf, zone, range; map emitters by zone and horizontal range, `memberVisible`), outdoor view in solid space, translucent back-to-front order. Babylon only sets `isVisible` and rewrites translucent indices.
+- `world.visibility.culling` is a presentation variable, off until PERF-02 (sheet switch: 02-67); off, only locate and translucent order run. Limits are recipe rows at infinity until POL-04.
+- A 17 x 9 pick grid gives the same door and targeting answers with culling on and off. No resource, a refused payload or unmapped ranges: the tile draws everything and `bspVisibility.gap` names why.
+- Browser: tile:20_21 reports its camera zone, 97 of 97 sections, 0 translucent, culling off (`world-bsp-visibility.spec.ts`, three viewports, catalog f60ce2d8, 2026-11-10 06:37 Riga). No converted tile has a translucent section, so index rewriting is proven on the unit fixture only. Tests: `bspTranslucentOrder`, `bspVisibilityWalk`, `bindTileVisibility`, `importBoundaries.bspVisibility`.
 
 ## Evidence
 
