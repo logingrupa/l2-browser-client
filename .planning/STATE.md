@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-66-PLAN.md
-last_updated: "2026-11-10T09:33:42.807Z"
+stopped_at: Completed 02-47-PLAN.md
+last_updated: "2026-11-10T11:22:04.030Z"
 last_activity: 2026-11-10
 last_activity_desc: Phase 02 plan 02-66 complete (pawn physics, follow camera and movement presenter)
-state_head: 59d6f10b73192f183dbdb7edf35d055fa35b074c
+state_head: 88fd8fde84a8298cf1ed52fbe776e0e4417ed9a7
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 80
+  completed_plans: 81
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 02 (Stage A breadth) - EXECUTING
-Plan: 02-62 complete, 62 plans summarized
+Plan: 02-47 complete, 64 plans summarized
 Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-10 - Plan 02-62 complete: `--step lighting` writes one native-tile-lighting typed payload per tile with the BSP lightmap pages (texels as stored, hour sets, UVs per node range), light, fog, LevelInfo and water volume fields with provenance, StaticMeshInstance light lists, terrain shadow maps and the typed Env.int and timeenv0..3 program (20_21 and 20_20); BSP sections keyed by lightmap texture; MAT-02 stays Pending until 02-64 and 02-67
+Last activity: 2026-11-10 - Plan 02-47 complete: `scripts/world/convert_tile_batch.py --eligible --limit <n>` runs every registered world step on the next eligible census tiles with a preflight per step (exit 2 machine window, 3 disk floor); four clean slices sealed 11 tiles through manifest (16_25 failed at terrain, 27 batch-pending), all 11 load-check pass on world lane catalog 1b73e4e9; resume with `--eligible --limit 3`
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -132,6 +132,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P46 | 36min | 3 tasks | 19 files |
 | Phase 02 P62 | 60min | 3 tasks | 27 files |
 | Phase 02 P66 | 20min | 3 tasks | 30 files |
+| Phase 02 P47 | 100min | 4 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -320,6 +321,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-66: the movement presenter reads speeds walk and run (required) plus optional swim, fly and nonAttackSpeedRate keys, moveType 1 is run, record positions are feet with the half-height cylinder (OVERNIGHT-DECISIONS rows 671 to 673)
 - [Phase 02]: 02-66: stop snaps remote pawns beyond 200 units, correct snaps, teleport raises the feet by H + 10 and falls; every containing PhysicsVolume is water until VOLS carries WaterVolumes; pawnTraits supplies local player, run start frames and flying (rows 674 to 676)
 - [Phase 02]: 02-66: movement overlap 121 blocking and 2,546 unreviewed runs recorded for the orchestrator review; MOVE-01 and WORLD-05 stay Pending until 02-67 wires the port (rows 679 and 680)
+- [Phase 02]: 02-47: the eligible tile batch writes one seal-derived row per tile and step into the per-step gap-row files; a tile whose first unsealed step holds a recorded failure waits until that step seals (OVERNIGHT-DECISIONS rows 681 to 690)
 
 ### Pending Todos
 
@@ -423,6 +425,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-10T09:33:41.819Z
-Stopped at: Completed 02-66-PLAN.md
+Last session: 2026-11-10T11:22:03.026Z
+Stopped at: Completed 02-47-PLAN.md
 Resume file: None
