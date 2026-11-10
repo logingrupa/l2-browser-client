@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
+import type { Vector3 } from "../../src/shared/math/vector3";
 import type { WorldEntity } from "../../src/world/worldTypes";
 import { PARTICLE_CONSTANTS } from "../../src/effects/particles/sim/emitterConstants";
 import { createEmitterActorSimulation, createEmitterSimulation } from "../../src/effects/particles/sim/emitterActor";
 import { applyEmitterNative } from "../../src/effects/particles/sim/emitterNatives";
 import { EmitterRecordError, parseEmitterActorRecord, parseEmitterRecord, type RibbonEmitterRecord } from "../../src/effects/particles/sim/emitterRecords";
 import { createEmitterRandomStream } from "../../src/effects/particles/sim/particleEmitter";
+import { readSlotVector, type OwnerPose } from "../../src/effects/particles/sim/particleState";
 import {
   attachWeaponTrail, createRibbonEmitterSimulation, RibbonEmitterError, type RibbonEmitterSimulation, type RibbonPoint,
 } from "../../src/effects/particles/sim/ribbonEmitter";
@@ -71,7 +73,22 @@ describe("RibbonEmitter simulation", () => {
     expect(Math.max(...counts)).toBe(ribbonRecord.NumPoints);
     expect(ribbon.ribbonPoints().every(point => point.width === ribbonRecord.RibbonWidth)).toBe(true);
     for (let stepIndex = 60; stepIndex < 70; stepIndex += 1) advanceStep();
-    expect(ribbon.pointLimit).toBeLessThan(ribbonRecord.NumPoints);
+    expect(ribbon.numPointsAfterDrops).toBeLessThan(ribbonRecord.NumPoints);
+  });
+
+  it("moves an active head particle to the owner location before it samples, as UpdateParticles 0x10693CBA-0x10693CD1 does", () => {
+    const ownerAt = (location: Vector3): OwnerPose => ({ location, rotation: STATIONARY_OWNER.rotation });
+    const spawnOwner = ownerAt({ x: 100, y: -20, z: 7 }), movedOwner = ownerAt({ x: 160.25, y: -48, z: 9.5 });
+    const ribbon = createRibbonEmitterSimulation(ribbonRecord, createEmitterRandomStream(1, 0, 0));
+    ribbon.attachPointSource(ribbonWidth => swingingBladeSample(1, ribbonWidth));
+    ribbon.step(stepSeconds, standaloneStepContext(ribbon, spawnOwner));
+    ribbon.step(stepSeconds, standaloneStepContext(ribbon, movedOwner));
+    expect(readSlotVector(ribbon.columns.location, 0)).toEqual(movedOwner.location);
+    const unspawned = createRibbonEmitterSimulation(ribbonRecordWith({ InitialParticlesPerSecond: 0 }), createEmitterRandomStream(1, 0, 0));
+    unspawned.attachPointSource(ribbonWidth => swingingBladeSample(1, ribbonWidth));
+    unspawned.step(stepSeconds, standaloneStepContext(unspawned, movedOwner));
+    expect(readSlotVector(unspawned.columns.location, 0)).toEqual({ x: 0, y: 0, z: 0 });
+    expect(unspawned.ribbonPoints()).toEqual([]);
   });
 
   it("holds a still blade and decays its points after a kill", () => {
@@ -102,11 +119,11 @@ describe("RibbonEmitter simulation", () => {
   it("keeps its points and its lowered point limit through a reset, as URibbonEmitter has no Reset override", () => {
     const { ribbon, advanceStep } = ribbonWithBlade(ribbonRecord, 1);
     for (let stepIndex = 0; stepIndex < 70; stepIndex += 1) advanceStep();
-    const pointsBeforeReset = ribbon.ribbonPoints(), limitBeforeReset = ribbon.pointLimit;
-    expect(limitBeforeReset).toBeLessThan(ribbonRecord.NumPoints);
+    const pointsBeforeReset = ribbon.ribbonPoints(), numPointsBeforeReset = ribbon.numPointsAfterDrops;
+    expect(numPointsBeforeReset).toBeLessThan(ribbonRecord.NumPoints);
     ribbon.reset(standaloneStepContext(ribbon));
     expect(ribbon.ribbonPoints()).toEqual(pointsBeforeReset);
-    expect(ribbon.pointLimit).toBe(limitBeforeReset);
+    expect(ribbon.numPointsAfterDrops).toBe(numPointsBeforeReset);
   });
 
   it("empties the points when the head particle respawns, as URibbonEmitter::SpawnParticle does with bSamplePoints", () => {
@@ -152,6 +169,15 @@ describe("weapon trail attachment", () => {
     });
     expect(trail.actorLifeSpanSeconds).toBe(Math.fround(shotTime + Math.fround(0.8)));
     expect(ribbonRecord.RibbonWidth).toBe(12);
+  });
+
+  it("halves the unrounded end offset product for the start offset, as fmul st(3) at 0x104F2CF3 does", () => {
+    const weaponLength = 3.3e38, unroundedEndOffset = Math.fround(weaponLength) * Math.fround(1.06);
+    const trail = attachWeaponTrail(ribbonRecord, { casterEntityKind: playerKind, weaponLength, shotTimeSeconds: .9 })!;
+    expect(trail.emitter.EndBoneOffset.x).toBe(Number.POSITIVE_INFINITY);
+    expect(trail.emitter.RibbonWidth).toBe(Number.POSITIVE_INFINITY);
+    expect(trail.emitter.StartBoneOffset.x).toBe(Math.fround(unroundedEndOffset * 0.5));
+    expect(Number.isFinite(trail.emitter.StartBoneOffset.x)).toBe(true);
   });
 
   it("attaches no trail for a weapon without a positive length and refuses a non-finite input", () => {

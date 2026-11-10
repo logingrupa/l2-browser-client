@@ -179,5 +179,5 @@ export function updateParticles(runtime: EmitterRuntime, stepSeconds: number, co
   counters.dead = everySlotDead && (counters.killPending || rate === 0 && !record.RespawnDeadParticles);
   counters.lastOwnerLocation = context.owner.location;
   counters.lastStepSeconds = stepSeconds;
-  runtime.classOverrides?.afterUpdateParticles(runtime, stepSeconds);
+  runtime.classOverrides?.afterUpdateParticles(runtime, stepSeconds, context);
 }

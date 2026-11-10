@@ -55,7 +55,7 @@ export interface OwnerPose {
 export interface EmitterClassOverrides {
   afterInitialize(runtime: EmitterRuntime): void;
   afterSpawnParticle(runtime: EmitterRuntime): void;
-  afterUpdateParticles(runtime: EmitterRuntime, stepSeconds: number): void;
+  afterUpdateParticles(runtime: EmitterRuntime, stepSeconds: number, context: EmitterStepContext): void;
 }
 
 export interface EmitterRuntime {
