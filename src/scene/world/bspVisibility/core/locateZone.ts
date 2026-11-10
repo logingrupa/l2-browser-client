@@ -8,6 +8,7 @@ export interface ZoneLocation {
 
 const backSide = 0;
 const frontSide = 1;
+const sidesPerNode = 2;
 const planeComponentCount = 4;
 
 export function nodePlaneDot(model: BspVisibilityModel, node: number, point: Vector3): number {
@@ -16,16 +17,10 @@ export function nodePlaneDot(model: BspVisibilityModel, node: number, point: Vec
 }
 
 export function locateZone(model: BspVisibilityModel, point: Vector3): ZoneLocation {
-  let node = 0;
-  for (;;) {
-    const side = nodePlaneDot(model, node, point) >= 0 ? frontSide : backSide;
+  for (let node = 0; ;) {
+    const side = Math.fround(nodePlaneDot(model, node, point)) < 0 ? backSide : frontSide;
     const child = side === frontSide ? model.nodeFront[node]! : model.nodeBack[node]!;
-    if (child !== indexNone) {
-      node = child;
-      continue;
-    }
-    const sideLeaf = model.nodeLeaf[node * 2 + side]!, otherLeaf = model.nodeLeaf[node * 2 + 1 - side]!;
-    const leaf = sideLeaf !== indexNone ? sideLeaf : otherLeaf;
-    return leaf !== indexNone ? { leaf, zone: model.leafZone[leaf]! } : { leaf: indexNone, zone: model.nodeZone[node * 2 + side]! };
+    if (child === indexNone) return { leaf: model.nodeLeaf[node * sidesPerNode + side]!, zone: model.nodeZone[node * sidesPerNode + side]! };
+    node = child;
   }
 }

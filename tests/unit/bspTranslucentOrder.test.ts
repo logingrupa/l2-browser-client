@@ -65,6 +65,17 @@ describe("locateZone", () => {
     expect(locateZone(model, at(500)).zone).toBe(threeRoomZones.throughPortal);
     expect(locateZone(model, at(1500)).zone).toBe(threeRoomZones.behindWall);
   });
+
+  it("returns the last node's leaf on the point's side even when that leaf is INDEX_NONE, as UModel::PointRegion does", () => {
+    const solidFront = decodeArrays(replaceArray("NODE.leaf", [0, -1, 1, -1, -1, -1, -1, -1, 2, -1]));
+    expect(locateZone(solidFront, at(2500))).toEqual({ leaf: -1, zone: threeRoomZones.behindWall });
+  });
+
+  it("takes the zone from the last node's side rather than from the leaf", () => {
+    const { camera, throughPortal, behindWall } = threeRoomZones;
+    const leafZoneDiffers = decodeArrays(replaceArray("LEAF.zone", [camera, throughPortal, camera, behindWall]));
+    expect(locateZone(leafZoneDiffers, at(1500))).toEqual({ leaf: 2, zone: behindWall });
+  });
 });
 
 describe("translucentOrder", () => {
@@ -81,6 +92,15 @@ describe("translucentOrder", () => {
 
   it("orders nothing when the tile has no translucent section", () => {
     expect(orderTranslucentSections(model, at(-500), new Map()).size).toBe(0);
+  });
+
+  it("draws a coplanar chain from its last member back to its head for a camera on either side", () => {
+    const chainModel = decodeArrays(replaceArray("RNGE.node", [0, 2, 4]));
+    const chainRanges = translucentSectionRangesOf(chainModel, [threeRoomSections.translucentWalls]);
+    const chainNodes = (cameraX: number) =>
+      [...orderTranslucentSections(chainModel, at(cameraX), chainRanges).get(threeRoomSections.translucentWalls)!].map(range => chainModel.ranges.node[range]);
+    expect(chainNodes(-500)).toEqual([2, 0]);
+    expect(chainNodes(2000)).toEqual([2, 0]);
   });
 });
 
