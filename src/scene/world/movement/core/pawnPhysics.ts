@@ -1,8 +1,10 @@
 import type { Vector3 } from "../../../../shared/math/vector3";
-import { ZERO_VELOCITY, type PawnBody, type PawnPhysicsContext, type PawnPhysicsMode, type PawnStepResult } from "./pawnBody";
+import { isPawnInWater, ZERO_VELOCITY, type PawnBody, type PawnPhysicsContext, type PawnPhysicsMode, type PawnStepResult } from "./pawnBody";
 import { fallPawn } from "./pawnFalling";
+import { flyPawn } from "./pawnFlying";
 import { headingOfDirection, turnYawTowards, yawStepForTick } from "./pawnRotation";
 import { calculatePawnVelocity, currentPawnSpeed, hasPawnArrived, type PawnSpeedEnvironment, type PawnSpeeds } from "./pawnVelocity";
+import { swimPawn } from "./pawnSwimming";
 import { walkPawn } from "./pawnWalking";
 
 export interface PawnMoveGoal {
@@ -27,13 +29,22 @@ export interface PawnSimulation {
 }
 
 const speedEnvironmentByMode: Readonly<Record<PawnPhysicsMode, PawnSpeedEnvironment>> = {
-  walking: "ground", falling: "ground",
+  walking: "ground", falling: "ground", swimming: "water", flying: "air",
 };
+
+function resolvePawnMode(context: PawnPhysicsContext, body: PawnBody, traits: PawnTraits): PawnPhysicsMode {
+  if (traits.flies) return "flying";
+  if (body.mode === "flying") return "falling";
+  if (body.mode !== "swimming" && isPawnInWater(context, body.location)) return "swimming";
+  return body.mode;
+}
 
 function stepPawnMode(context: PawnPhysicsContext, body: PawnBody, desiredVelocity: Vector3, tickSeconds: number, traits: PawnTraits): PawnStepResult {
   switch (body.mode) {
     case "walking": return walkPawn(context, body, desiredVelocity, tickSeconds, traits.isLocalPlayer);
     case "falling": return fallPawn(context, body, tickSeconds);
+    case "swimming": return swimPawn(context, body, desiredVelocity, tickSeconds);
+    case "flying": return flyPawn(context, body, desiredVelocity, tickSeconds);
   }
 }
 
@@ -45,7 +56,9 @@ function runPawnMode(context: PawnPhysicsContext, body: PawnBody, desiredVelocit
 }
 
 function advanceOneTick(context: PawnPhysicsContext, simulation: PawnSimulation, traits: PawnTraits, tickSeconds: number): PawnSimulation {
-  const { goal, body } = simulation;
+  const { goal } = simulation;
+  const mode = resolvePawnMode(context, simulation.body, traits);
+  const body: PawnBody = mode === simulation.body.mode ? simulation.body : { ...simulation.body, mode, floor: null, restsInFloorBand: false };
   const environment = speedEnvironmentByMode[body.mode];
   const measuresVertical = environment !== "ground";
   const moveTimerSeconds = goal === null ? 0 : Math.fround(simulation.moveTimerSeconds + tickSeconds);

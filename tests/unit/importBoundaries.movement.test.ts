@@ -34,6 +34,18 @@ describe("src/scene/world/movement/core import boundary", () => {
       "src/scene/world/movement/core/terrainTrace.ts",
       "src/scene/world/movement/core/pointCheck.ts",
       "src/scene/world/movement/core/volumeContainment.ts",
+      "src/scene/world/movement/core/pawnBody.ts",
+      "src/scene/world/movement/core/pawnWalking.ts",
+      "src/scene/world/movement/core/pawnStepUp.ts",
+      "src/scene/world/movement/core/pawnFalling.ts",
+      "src/scene/world/movement/core/pawnSwimming.ts",
+      "src/scene/world/movement/core/pawnFlying.ts",
+      "src/scene/world/movement/core/pawnVelocity.ts",
+      "src/scene/world/movement/core/pawnRotation.ts",
+      "src/scene/world/movement/core/pawnPhysics.ts",
+      "src/scene/world/movement/core/positionReports.ts",
+      "src/scene/world/movement/core/behindViewCamera.ts",
+      "src/scene/world/movement/core/clickTrace.ts",
     ]));
   });
 

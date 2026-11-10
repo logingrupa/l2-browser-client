@@ -75,6 +75,7 @@ describe("movementPresenter applies server movement through the MOVE-01 port", (
     const pawn = pawnOf(presenter, localPlayerId);
     expect(pawn.isMoving).toBe(false);
     expect(pawn.feetPosition.x).toBeLessThan(100 - 9);
+    expect(pawn.feetPosition.y).toBe(0);
     expect(cannotMove[0]!.intent).toEqual({ type: "cannot-move", position: pawn.feetPosition, heading: 0 });
   });
 

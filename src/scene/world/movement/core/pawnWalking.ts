@@ -1,11 +1,12 @@
-import { float32Vector, type Vector3 } from "../../../../shared/math/vector3";
+import { float32Scaled, float32Vector, type Vector3 } from "../../../../shared/math/vector3";
 import type { CollisionPrimitive } from "./collisionTrace";
 import { singleLineCheck, type LineCheckHit } from "./lineCheck";
 import { moveActor } from "./moveActor";
 import {
-  horizontalLength, isWalkableFloorNormal, pawnCylinderAt, pawnExtent, ZERO_VELOCITY,
+  horizontalDirection, horizontalLength, isWalkableFloorNormal, pawnCylinderAt, pawnExtent, ZERO_VELOCITY,
   type PawnBody, type PawnPhysicsContext, type PawnStepResult,
 } from "./pawnBody";
+import { stepUpPawn } from "./pawnStepUp";
 
 interface FloorSettlement {
   readonly location: Vector3;
@@ -48,7 +49,10 @@ function walkSubstep(context: PawnPhysicsContext, body: PawnBody, velocity: Vect
   const { world, rules, surroundings } = context;
   const start = body.location;
   const desiredDelta = float32Vector({ x: velocity.x * tickSeconds, y: velocity.y * tickSeconds, z: 0 });
-  let location = moveActor(world, pawnCylinderAt(body, start), desiredDelta, rules, surroundings).location;
+  const walk = moveActor(world, pawnCylinderAt(body, start), desiredDelta, rules, surroundings);
+  let location = walk.hit === null
+    ? walk.location
+    : stepUpPawn(context, body, walk.location, horizontalDirection(desiredDelta), float32Scaled(desiredDelta, 1 - walk.hit.time), walk.hit);
   const floorHit = probeFloor(context, body, location);
   if (floorHit !== null && isWalkableFloorNormal(floorHit.normal, rules)) {
     const settlement = settleIntoFloorBand(context, body, location, floorHit);

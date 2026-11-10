@@ -1,8 +1,16 @@
-import { float32Vector } from "../../../../shared/math/vector3";
+import { float32Vector, type Vector3 } from "../../../../shared/math/vector3";
 import { moveActor } from "./moveActor";
 import {
-  isWalkableFloorNormal, pawnCylinderAt, slideAlongPlane, velocityFromDisplacement, type PawnBody, type PawnPhysicsContext, type PawnStepResult,
+  horizontalLength, isPawnInWater, isWalkableFloorNormal, pawnCylinderAt, unitDirection, velocityFromDisplacement,
+  type PawnBody, type PawnPhysicsContext, type PawnStepResult,
 } from "./pawnBody";
+import { slideAlongSurface } from "./pawnStepUp";
+
+function waterEntryVelocity(velocity: Vector3, context: PawnPhysicsContext): Vector3 {
+  const { speed, horizontalFactor, threshold } = context.rules.pawn.waterEntry;
+  const slowsOnEntry = velocity.z < 0 && velocity.z > threshold;
+  return slowsOnEntry ? float32Vector({ ...velocity, z: speed - horizontalFactor * horizontalLength(velocity) }) : velocity;
+}
 
 export function fallPawn(context: PawnPhysicsContext, body: PawnBody, tickSeconds: number): PawnStepResult {
   const { world, rules, surroundings } = context;
@@ -15,6 +23,9 @@ export function fallPawn(context: PawnPhysicsContext, body: PawnBody, tickSecond
     z: (previousVelocity.z + nextVelocity.z) * tickSeconds / 2,
   });
   const fall = moveActor(world, pawnCylinderAt(body, body.location), delta, rules, surroundings);
+  if (isPawnInWater(context, fall.location)) {
+    return { body: { ...body, location: fall.location, velocity: waterEntryVelocity(nextVelocity, context), mode: "swimming", floor: null }, unusedSeconds: 0 };
+  }
   if (fall.hit === null) return { body: { ...body, location: fall.location, velocity: nextVelocity }, unusedSeconds: 0 };
   if (isWalkableFloorNormal(fall.hit.normal, rules)) {
     const landedBody: PawnBody = {
@@ -22,7 +33,6 @@ export function fallPawn(context: PawnPhysicsContext, body: PawnBody, tickSecond
     };
     return { body: landedBody, unusedSeconds: tickSeconds * (1 - fall.hit.time) };
   }
-  const slideDelta = slideAlongPlane(delta, fall.hit.normal, 1 - fall.hit.time);
-  const slide = moveActor(world, pawnCylinderAt(body, fall.location), slideDelta, rules, surroundings);
-  return { body: { ...body, location: slide.location, velocity: velocityFromDisplacement(body.location, slide.location, tickSeconds) }, unusedSeconds: 0 };
+  const location = slideAlongSurface(context, body, fall.location, unitDirection(delta), delta, fall.hit.normal, fall.hit);
+  return { body: { ...body, location, velocity: velocityFromDisplacement(body.location, location, tickSeconds) }, unusedSeconds: 0 };
 }
