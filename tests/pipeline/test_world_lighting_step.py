@@ -8,11 +8,17 @@ sys.path.insert(0, str(Path(__file__).parent))
 from native_catalog.ue2 import FormatError
 from native_store.gap_rows import load_gap_reason_patterns
 from native_store.tile_manifest_validation import load_tile_manifest_vocabulary
+from support.level_model_fixture import build_synthetic_level_model, square_points, synthetic_polygon
+from support.lighting_actor_fixture import (ENVIRONMENT_LIGHTS, LIGHTING_CLASS_DEFAULTS, SCENE_LIGHTS, SECTOR_LIGHTS, SECTOR_SHADOW_MAPS,
+                                            read_synthetic_chain, synthetic_actor_rows, synthetic_lighting_package)
 from support.lightmap_tail_fixture import (build_lightmap_tail, lightmap_model_and_package, lightmap_node, page_mip_bytes, render_section_bytes)
 from world.bsp_lightmaps import LIGHTMAP_ATLAS_EDGE, NO_LIGHTMAP, node_lightmap_texture, read_bsp_lightmaps
 from world.convert_tile import TILE_STEP_NAMES
-from world.lighting_payload import bsp_lightmap_arrays, typed_payload_byte_count
-from world.lighting_step import APPLIED_LIGHTING_RULES, LIGHTING_STEP_ALGORITHM_VERSION, LIGHTING_STEP_NAME, load_lighting_rules
+from world.light_actors import ClassChains, LightingActor, read_lighting_actors, read_static_mesh_light_lists
+from world.lighting_payload import bsp_lightmap_arrays, static_mesh_light_list_arrays, terrain_lighting_arrays, typed_payload_byte_count
+from world.lighting_step import (APPLIED_LIGHTING_RULES, LIGHTING_STEP_ALGORITHM_VERSION, LIGHTING_STEP_NAME, load_lighting_rules,
+                                 water_volume_links)
+from world.terrain_lighting import read_terrain_sector_lighting
 from world.typed_payload import typed_payload_asset
 
 REFERENCE_CLIENT = Path('E:/Lineage2-client')
@@ -85,22 +91,81 @@ class BspLightmapPayloadTests(unittest.TestCase):
             read_bsp_lightmaps(package, model)
 
 
+def field_rows(actor):
+    return [(field.field, field.value, field.provenance) for field in actor.fields]
+
+
+class LightingActorTests(unittest.TestCase):
+    def setUp(self):
+        self.package = synthetic_lighting_package()
+        self.class_chains = ClassChains(LIGHTING_CLASS_DEFAULTS, read_synthetic_chain)
+        self.model = build_synthetic_level_model([synthetic_polygon(square_points(-64, -64, 128))])
+
+    def test_light_and_fog_actors_keep_every_declared_field_with_its_provenance_and_level_brightness_as_declared(self):
+        lights, fog_infos, level_infos, water_volumes = read_lighting_actors(self.package, self.model, synthetic_actor_rows(), self.class_chains)
+        self.assertEqual(water_volumes, ())
+        self.assertEqual(field_rows(lights[0]), [('LightType', 1, 'class-default'), ('LightEffect', None, 'ue-zero'),
+                                                 ('LightBrightness', 56.0, 'authored'), ('Location', None, 'ue-zero'),
+                                                 ('Rotation', None, 'ue-zero'), ('bDynamicLight', None, 'ue-zero'), ('bDirectional', None, 'ue-zero')])
+        self.assertEqual(field_rows(fog_infos[0]), [('AffectRange', None, 'ue-zero'), ('FogRange1', None, 'ue-zero'), ('Location', None, 'ue-zero')])
+        self.assertEqual(field_rows(level_infos[0]), [('Brightness', 1.0, 'class-default')])
+        self.assertEqual(lights[0].to_record()['fields'][2], {'field': 'LightBrightness', 'value': 56.0, 'provenance': 'authored',
+                                                               'declaringClass': 'Engine.Light'})
+        self.assertIsInstance(lights[0].zone, int)
+
+    def test_a_static_mesh_light_list_keeps_its_light_indices_and_visibility_bits_in_source_order(self):
+        light_lists = read_static_mesh_light_lists(self.package, synthetic_actor_rows())
+        self.assertEqual([(entry.light_reference, entry.visibility_bits, entry.applied) for entry in light_lists[0].scene_lights], list(SCENE_LIGHTS))
+        self.assertEqual([(entry.light_reference, entry.visibility_bits, entry.applied) for entry in light_lists[0].environment_lights],
+                         list(ENVIRONMENT_LIGHTS))
+        named = arrays_by_name(static_mesh_light_list_arrays(light_lists))
+        self.assertEqual((named['SMLL.actorExportIndex'].values, named['SMLL.instanceExportIndex'].values), ((9,), (4,)))
+        self.assertEqual((named['SMSC.light'].values, bytes(named['SMSC.bits'].values)), ((1, 2), b'\x05\x0a\x01'))
+        self.assertEqual((named['SMSC.bitStart'].values, named['SMEN.hour'].values), ((0, 1, 3), (12.0,)))
+
+    def test_terrain_sector_shadow_maps_and_light_bits_keep_their_stored_bytes(self):
+        sector = read_terrain_sector_lighting(self.package, 5)
+        self.assertEqual([(light.light_reference, light.visibility_bits) for light in sector.lights], list(SECTOR_LIGHTS))
+        self.assertEqual(sector.shadow_maps, SECTOR_SHADOW_MAPS)
+        named = arrays_by_name(terrain_lighting_arrays([sector]))
+        self.assertEqual(bytes(named['TSHM.bytes'].values), b''.join(SECTOR_SHADOW_MAPS))
+        self.assertEqual((named['TSHM.hour'].values, named['TSEC.shadowMapStart'].values), ((6.0, 18.0), (0, 2)))
+
+    def test_an_export_that_is_not_a_terrain_sector_is_refused(self):
+        with self.assertRaisesRegex(FormatError, 'not a terrain sector'):
+            read_terrain_sector_lighting(self.package, 4)
+
+    def test_water_volumes_link_to_their_vols_entry_by_export_index_and_an_unlisted_one_is_a_named_gap(self):
+        water_volumes = [LightingActor(index, f'00_00.WaterVolume{index}', 'GamePlay.WaterVolume', 'Gameplay.WaterVolume', 1, ()) for index in (7, 8)]
+        collision = {'volumes': [{'exportIndex': 7, 'classObject': 'GamePlay.WaterVolume', 'chunkId': 'chunk-0-0', 'decision': 'brush'},
+                                 {'exportIndex': 9, 'classObject': 'Engine.PhysicsVolume', 'chunkId': None, 'decision': 'declared-none'}]}
+        links, reasons = water_volume_links(water_volumes, collision)
+        self.assertEqual([(link['exportIndex'], link['zone'], link['volsChunkId'], link['volsDecision']) for link in links],
+                         [(7, 1, 'chunk-0-0', 'brush'), (8, 1, None, None)])
+        self.assertEqual(reasons, ['lighting-water-volume-unlinked:GamePlay.WaterVolume'])
+
+    def test_a_class_chain_matches_its_base_class_without_regard_to_case(self):
+        chains = ClassChains(LIGHTING_CLASS_DEFAULTS, lambda class_name: [{'identity': {'object': 'GamePlay.WaterVolume'}, 'declaredFields': []}])
+        self.assertTrue(chains.is_subclass('Gameplay.WaterVolume', 'Gameplay.WaterVolume'))
+
+
 class LightingRegistrationTests(unittest.TestCase):
     def test_the_step_kind_and_reasons_are_registered(self):
         self.assertIn(LIGHTING_STEP_NAME, TILE_STEP_NAMES)
         self.assertEqual(LIGHTING_STEP_ALGORITHM_VERSION, 1)
         self.assertIn('lighting', load_tile_manifest_vocabulary().resource_kinds)
         patterns = load_gap_reason_patterns()
-        for reason in ('lighting-lightmap-index-invalid:<index>', 'lighting-payload-too-large', 'environment-program-unresolved:<file>'):
+        for reason in ('lighting-lightmap-index-invalid:<index>', 'lighting-payload-too-large', 'environment-program-unresolved:<file>',
+                       'lighting-water-volume-unlinked:<class>'):
             self.assertIn(reason, patterns)
 
-    def test_every_rule_row_is_sourced_with_a_shared_status_and_every_applied_rule_has_a_row(self):
+    def test_every_rule_row_is_sourced_with_unconfirmed_or_stronger_status_and_every_applied_rule_has_a_row(self):
         rows = load_lighting_rules()['rows']
         for row in rows:
             with self.subTest(row['id']):
                 self.assertEqual(set(row), RULE_FIELDS)
                 self.assertTrue(row['provenance'])
-                self.assertIn(row['status'], SHARED_STATUSES)
+                self.assertIn(row['status'], SHARED_STATUSES - {'unknown'})
         self.assertLessEqual(set(APPLIED_LIGHTING_RULES), {row['id'] for row in rows})
 
 

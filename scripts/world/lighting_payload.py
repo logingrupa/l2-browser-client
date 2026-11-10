@@ -1,5 +1,6 @@
 from typing import NamedTuple
 
+from native_store.canonical_json import canonical_json_bytes
 from world.bsp_lightmaps import LIGHTMAP_PAGE_MIPS, NO_LIGHTMAP, node_lightmap_texture, node_lightmap_uvs
 from world.typed_payload import BYTES_PER_ELEMENT_OF_TYPE, TYPED_PAYLOAD_ALIGNMENT, TypedPayloadArray
 
@@ -89,6 +90,48 @@ def lightmap_node_range_arrays(ranges):
             array('LMNR.texture', 'int32', [lightmap_range.texture for lightmap_range in ranges]),
             array('LMNR.uvStart', 'uint32', prefix_starts(len(lightmap_range.uvs) for lightmap_range in ranges)),
             array('LMUV.uv', 'float32', [value for lightmap_range in ranges for uv in lightmap_range.uvs for value in uv])]
+
+
+def slot_center_hour(slot, slot_count):
+    return HOURS_PER_DAY * (slot + 0.5) / slot_count
+
+
+def visibility_entry_arrays(group, entries, hours=None):
+    arrays = [array(f'{group}.light', 'int32', [entry.light_reference for entry in entries]),
+              array(f'{group}.bitStart', 'uint32', prefix_starts(len(entry.visibility_bits) for entry in entries)),
+              array(f'{group}.bits', 'uint8', b''.join(entry.visibility_bits for entry in entries))]
+    if hours is not None:
+        arrays.append(array(f'{group}.hour', 'float32', hours))
+    return arrays
+
+
+def static_mesh_light_list_arrays(light_lists):
+    scene = [entry for light_list in light_lists for entry in light_list.scene_lights]
+    environment = [entry for light_list in light_lists for entry in light_list.environment_lights]
+    environment_hours = [slot_center_hour(slot, len(light_list.environment_lights))
+                         for light_list in light_lists for slot in range(len(light_list.environment_lights))]
+    return [array('SMLL.actorExportIndex', 'int32', [light_list.actor_export_index for light_list in light_lists]),
+            array('SMLL.instanceExportIndex', 'int32', [light_list.instance_export_index for light_list in light_lists]),
+            array('SMLL.colorCount', 'uint32', [light_list.color_count for light_list in light_lists]),
+            array('SMLL.sceneStart', 'uint32', prefix_starts(len(light_list.scene_lights) for light_list in light_lists)),
+            array('SMLL.environmentStart', 'uint32', prefix_starts(len(light_list.environment_lights) for light_list in light_lists)),
+            *visibility_entry_arrays('SMSC', scene), array('SMSC.applied', 'int32', [entry.applied for entry in scene]),
+            *visibility_entry_arrays('SMEN', environment, environment_hours), array('SMEN.applied', 'int32', [entry.applied for entry in environment])]
+
+
+def terrain_lighting_arrays(sectors):
+    shadow_maps = [shadow_map for sector in sectors for shadow_map in sector.shadow_maps]
+    return [array('TSEC.exportIndex', 'int32', [sector.export_index for sector in sectors]),
+            array('TSEC.lightStart', 'uint32', prefix_starts(len(sector.lights) for sector in sectors)),
+            array('TSEC.shadowMapStart', 'uint32', prefix_starts(len(sector.shadow_maps) for sector in sectors)),
+            *visibility_entry_arrays('TLIT', [light for sector in sectors for light in sector.lights]),
+            array('TSHM.hour', 'float32', [slot_center_hour(slot, len(sector.shadow_maps)) for sector in sectors for slot in range(len(sector.shadow_maps))]),
+            array('TSHM.byteStart', 'uint32', prefix_starts(len(shadow_map) for shadow_map in shadow_maps)),
+            array('TSHM.bytes', 'uint8', b''.join(shadow_maps))]
+
+
+def lighting_records_array(records):
+    return array('RECS.canonicalJson', 'uint8', canonical_json_bytes(records))
 
 
 def bsp_lightmap_arrays(package, lightmaps, model, node_ranges):
