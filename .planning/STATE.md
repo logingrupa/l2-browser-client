@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-48-PLAN.md
-last_updated: "2026-11-10T00:51:33.841Z"
+stopped_at: Completed 02-61-PLAN.md
+last_updated: "2026-11-10T01:46:01.977Z"
 last_activity: 2026-11-10
 last_activity_desc: Phase 02 plan 02-48 complete (cell-aware collision world)
-state_head: 2531124d754517a3070034d92912607894d41a0d
+state_head: d832e29a505538e124c1052f7f97d8aab8e80a99
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 71
+  completed_plans: 72
   percent: 0
 ---
 
@@ -123,6 +123,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P39 | 21 min | 3 tasks | 17 files |
 | Phase 02 P40 | 55min | 3 tasks | 27 files |
 | Phase 02 P48 | 20min | 3 tasks | 18 files |
+| Phase 02 P61 | 50min | 3 tasks | 32 files |
 
 ## Accumulated Context
 
@@ -296,6 +297,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: Plan 02-48: the MOVE-01 collision world holds decoded native-tile-collision cells per streaming cell with requireCell, addCell, removeCell and isReady in float32 source units; requireCell kept because readiness needs declared cells (rows 587 to 589)
 - [Phase 02]: Plan 02-48: the cell loader reads asset.json plus the payload.bin pinned inside it, as 02-30 writes it, and shares one tile BSP tree load per world and tile; the movement core boundary test type-checks with --lib es2022 alone; decodeNativeJsonResource is the one JSON decode owner (rows 590 to 593)
 - [Phase 02]: Plan 02-48: WORLD-04 and MOVE-01 stay Pending until 02-67, 02-49 and 02-65 wire the runtime context, the residency ring and the traces (row 594)
+- [Phase 02]: 02-61: level_zones.py is the one zone table, the bsp step reads it; world writes the Emitter actor export with the actors bundle writer record functions; solidity census grid 16 x 16 x 8 is a project rule; VIS-01, WORLD-01 and FX-01 stay Pending (OVERNIGHT-DECISIONS rows 595 to 600)
 
 ### Pending Todos
 
@@ -337,6 +339,7 @@ Integration thread (rule 4: only the integration thread writes the main checkout
 - Needs Human (plan 02-38): cd C:/laragon/www/l2-browser-client && python -B C:/Users/rolan/.t3/worktrees/l2-browser-client/autonomous-roadmap/scripts/native_store/merge_lane_store.py --lane-store C:/Users/rolan/.t3/worktrees/l2-browser-client/autonomous-roadmap/artifacts/lane-store/data-ui/l2 --target public/l2 --expected-base-catalog-sha256 55c12147db306264deb2be33f6b9cd661d1376d12dc2aa6473be3700322972fe (printed by `python -B scripts/native_store/write_lane_catalog.py --lane data-ui --plan`; data-ui lane catalog `65a042ef...` with 248 windows, 43 tables and 4 UI textures)
 - Needs Human (plan 02-40): cd C:/laragon/www/l2-browser-client && python -B C:/Users/rolan/.t3/worktrees/l2-browser-client/autonomous-roadmap/scripts/native_store/merge_lane_store.py --lane-store C:/Users/rolan/.t3/worktrees/l2-browser-client/autonomous-roadmap/artifacts/lane-store/actors/l2 --target public/l2 --expected-base-catalog-sha256 55c12147db306264deb2be33f6b9cd661d1376d12dc2aa6473be3700322972fe (printed by `python -B scripts/native_store/write_lane_catalog.py --lane actors --plan`; actors lane catalog `64d8fcb4...` with 121 models including the 8 chargrp body assemblies `character-model:<index>`)
 - Needs Human (plan 02-40): restage the human characters in the main checkout from the merged actors lane store so the shared store drops the old hair colour 0 and female fighter 8 / 23.5; the four hand recipes and recipes/native-player-ffighter-stage.json keep their unresolved markers until the integration thread retires them
+- Needs Human (plan 02-61): cd C:/laragon/www/l2-browser-client && python -B C:/Users/rolan/.t3/worktrees/l2-browser-client/autonomous-roadmap/scripts/native_store/merge_lane_store.py --lane-store C:/Users/rolan/.t3/worktrees/l2-browser-client/autonomous-roadmap/artifacts/lane-store/world/l2 --target public/l2 --expected-base-catalog-sha256 55c12147db306264deb2be33f6b9cd661d1376d12dc2aa6473be3700322972fe (printed by `python -B scripts/native_store/write_lane_catalog.py --lane world --plan`; world lane catalog `deb324fb...` with the tile manifests of 20_21 and 20_20 pinning the new `bsp-visibility` and `map-emitters` resources)
 
 - Resolved (plan 02-57, OVERNIGHT-DECISIONS rows 193, 258 and 299): the 17 blocking runs and 956 reviewer runs in the 02-56 shared modules are signed off by independent fresh-context Claude reviewers (`tools/reference-overlap/signedOffRuns.json`, `tools/reference-overlap/reviewedRuns/`); bsp-visibility, movement and particles exit 0 with `--require-reviewed`. The owner may revoke any entry.
 - Resolved (OVERNIGHT-DECISIONS row 376): the lane-confirmation items of rows 211, 228, 292 and 293, and 301 are accepted by this integration branch.
@@ -346,6 +349,7 @@ Integration thread (rule 4: only the integration thread writes the main checkout
 
 Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in this run and leaves this list when it lands.
 
+- 02-61: the map emitter export keeps the references of its emitter records (textures, static meshes) unconverted; 02-69 converts them with map emitter playback. 20_20 now has sealed meshes, bsp, emitters and bsp-visibility units in the world lane, but no collision unit (02-47 batch).
 - Legacy 20_20 chain (rows 373, 418 and 505 to 511): 02-29 Task 3 and plan 02-71 are done (oracle extended with the served world-audio and step-sound manifests; raw map, section, terrain patch, Editor append and deco-grass chain cut). 02-30 Task 3 (BSP floor and building) is done. Still open: 02-31 Task 3 (movers), 02-45 Task 4 (sky and the 20_20 audio chain), each once its replacement passes the oracle subset, and 02-47 Task 3 sweeps any survivor and closes this item.
 - NPC batch breadth (rows 379, 420, 425 to 443 and 444): 80 of 429 model units are sealed under the current converter and 4 of 20 packs are written; continue `convert_actors.py --batch npcs --limit 20` slices in later runs, then rewrite the actors lane catalog.
 - BSP surface material files (02-30, row 518): the bsp step writes `native-materials/<sha>/graph.json` and `program.json` for each surface root, but no store manifest pins them, so the lane merge does not carry them; the material route (02-60, 02-62) adds the pin.
@@ -382,6 +386,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-10T00:51:32.750Z
-Stopped at: Completed 02-48-PLAN.md
+Last session: 2026-11-10T01:46:00.879Z
+Stopped at: Completed 02-61-PLAN.md
 Resume file: None
