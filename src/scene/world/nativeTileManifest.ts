@@ -1,4 +1,6 @@
-import { tileIdPattern } from "../../assets/native/nativeCatalogRecords";
+import { readTileCatalogRecord, tileIdPattern } from "../../assets/native/nativeCatalogRecords";
+import { readNativeCatalogUnlessNotStaged } from "../../assets/native/readNativeCatalog";
+import { decodeNativeJsonResource, fetchVerifiedNativeResource } from "./loadNativeSection";
 import {
   hasExactKeys, isFiniteVector, isQualifiedObjectName, nativeTileChunkGridPosition, nativeTileSha256Pattern, parseNativeTileGapRows,
   type NativeTileGapRow, type NativeTileVector,
@@ -16,6 +18,7 @@ const tileResourcePathTemplates = {
   movers: "/l2/movers/<sha256>/tile-movers.json",
   "bsp-visibility": "/l2/maps/<sha256>/native-tile-bsp-visibility/asset.json",
   "map-emitters": "/l2/map-emitters/<sha256>/tile-emitters.json",
+  sky: "/l2/skies/<sha256>/manifest.json",
 } as const;
 
 export type NativeTileResourceKind = keyof typeof tileResourcePathTemplates;
@@ -127,4 +130,22 @@ export function parseNativeTileManifest(input: unknown): NativeTileManifest {
     anchor: { playerStart: anchor.playerStart, location: anchor.location },
     chunks: parseChunkRecords(input.chunks, label), resources: parseTileResources(input.resources, label),
     gaps: parseNativeTileGapRows(input.gaps, tileId, label) };
+}
+
+export interface PinnedNativeTileManifest {
+  readonly manifest: NativeTileManifest;
+  readonly manifestSha256: string;
+}
+
+export async function readNativeTileManifest(tileId: string, signal: AbortSignal): Promise<PinnedNativeTileManifest | null> {
+  const catalog = await readNativeCatalogUnlessNotStaged(signal);
+  if (!catalog) return null;
+  const records = catalog.tiles.map(readTileCatalogRecord).filter(record => record.tile === tileId);
+  if (records.length > 1) throw new Error(`Native catalog lists tile ${tileId} twice.`);
+  const record = records[0];
+  if (!record) return null;
+  const manifest = parseNativeTileManifest(decodeNativeJsonResource(
+    await fetchVerifiedNativeResource(record.manifest, record.manifestSha256, signal, record.manifestBytes), "Native tile manifest"));
+  if (manifest.tileId !== tileId) throw new Error(`Native tile manifest names tile ${manifest.tileId}, not ${tileId}.`);
+  return { manifest, manifestSha256: record.manifestSha256 };
 }

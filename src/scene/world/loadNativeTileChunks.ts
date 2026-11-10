@@ -3,9 +3,7 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { AssetContainer } from "@babylonjs/core/assetContainer";
 import type { Scene } from "@babylonjs/core/scene";
-import { readTileCatalogRecord } from "../../assets/native/nativeCatalogRecords";
 import { assetPackageLimits, readAssetPackage } from "../../assets/package/readAssetPackage";
-import { readNativeCatalogUnlessNotStaged } from "../../assets/native/readNativeCatalog";
 import {
   decodeNativeJsonResource, fetchVerifiedNativeResource, inspectNativeWorldScene, loadNativeGlbContainer, nativeMeshBounds, terrainInfoChunkPlanWindow, validateSectionGlb,
   type NativeSection, type NativeSectionManifest,
@@ -17,7 +15,7 @@ import {
   describeNativeTileGapRow, parseNativeTileChunkManifest, type NativeTileChunkManifest, type NativeTileChunkModel, type NativeTileChunkPlacement,
   type NativeTileChunkTerrain, type NativeTileVector,
 } from "./nativeTileChunkManifest";
-import { parseNativeTileManifest, type NativeTileManifest } from "./nativeTileManifest";
+import { readNativeTileManifest, type NativeTileManifest } from "./nativeTileManifest";
 
 export interface NativeTileTerrainChunk {
   readonly chunkId: string;
@@ -137,14 +135,6 @@ function chunkMeshGapCount(chunks: readonly NativeTileChunkManifest[]): number {
   return chunks.filter(chunk => chunk.gaps.some(row => row.step === staticMeshStep && row.status !== "pass")).length;
 }
 
-async function selectedTileRecord(signal: AbortSignal, tileId: string) {
-  const catalog = await readNativeCatalogUnlessNotStaged(signal);
-  if (!catalog) return null;
-  const records = catalog.tiles.map(readTileCatalogRecord).filter(record => record.tile === tileId);
-  if (records.length > 1) throw new Error(`Native catalog lists tile ${tileId} twice.`);
-  return records[0] ?? null;
-}
-
 export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, tileId: string): Promise<NativeSection | null> {
   signal.throwIfAborted();
   if (scene.isDisposed || !scene.useRightHandedSystem) throw new Error("Native tile requires a live right-handed scene.");
@@ -163,11 +153,9 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
   const observer = scene.onDisposeObservable.addOnce(dispose);
   signal.addEventListener("abort", dispose, { once: true });
   try {
-    const record = await selectedTileRecord(lifetime.signal, tileId);
-    if (!record) { dispose(); return null; }
-    const manifest = parseNativeTileManifest(decodeNativeJsonResource(
-      await fetchVerifiedNativeResource(record.manifest, record.manifestSha256, lifetime.signal, record.manifestBytes), "Native tile manifest"));
-    if (manifest.tileId !== tileId) throw new Error(`Native tile manifest names tile ${manifest.tileId}, not ${tileId}.`);
+    const pinnedManifest = await readNativeTileManifest(tileId, lifetime.signal);
+    if (!pinnedManifest) { dispose(); return null; }
+    const manifest = pinnedManifest.manifest;
     const chunks: NativeTileChunkManifest[] = [];
     for (const chunkRecord of manifest.chunks) {
       const chunk = parseNativeTileChunkManifest(decodeNativeJsonResource(
@@ -228,7 +216,7 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
     const meshGapCount = chunkMeshGapCount(chunks);
     const extent = nativeMeshBounds(terrainMeshes);
     lifetime.signal.throwIfAborted();
-    return { manifest: view, manifestSha256: record.manifestSha256, terrainMeshes, supportMeshes: [], ...extent, spawnCandidate, moverTargets,
+    return { manifest: view, manifestSha256: pinnedManifest.manifestSha256, terrainMeshes, supportMeshes: [], ...extent, spawnCandidate, moverTargets,
       inspection: () => ({ ...inspectNativeWorldScene({ terrainMeshes, instances, modelCount: templates.size, disposed, preview: null, previewEnabled: false,
         materialFailure: null, unsupportedRuntimeMaterials: [], bspMeshes, sectionWindow: terrainInfoChunkPlanWindow }),
         terrainChunks, tileAnchor: anchor, meshGapCount, bspSections: bspChunks.reduce((sum, chunk) => sum + chunk.sections.length, 0),

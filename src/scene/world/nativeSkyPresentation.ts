@@ -6,9 +6,10 @@ import type { AssetContainer } from "@babylonjs/core/assetContainer";
 import type { Scene } from "@babylonjs/core/scene";
 import { sha256 } from "../../assets/package/readAssetPackage";
 import { nativeResourceUrl } from "../../assets/native/nativeResourceUrl";
-import { validateSectionGlb } from "./loadNativeSection";
+import { fetchVerifiedNativeResource, validateSectionGlb } from "./loadNativeSection";
 import { selectNativeSkyLiteral, type NativeEnvironmentTables } from "./nativeEnvironmentTables";
 import { createNativeSkyLiteralComparison } from "./nativeSkyLiteralComparison";
+import { readSelectedTileSkySource } from "./nativeTileSkySource";
 import { selectedNativeTileIdentity } from "./selectedNativeTile";
 
 export const nativeSkySource = {
@@ -17,17 +18,53 @@ export const nativeSkySource = {
   sourceMapSha256: "1beddad24c10a35a1b2e9151727a85158e3e01992299a6671de876645eb1f1e4",
   modelSha256: "b8c5a64fb1682fa9865c202459c7516cf2690112a34ebb33a972cc2278c7f983",
   modelBytes: 451180,
+  materialRoots: 3,
 } as const;
-const nativeSkySourceTileId = "20_20";
+
+interface LoadedSkySource {
+  readonly manifestSha256: string;
+  readonly sourceId: string;
+  readonly materialRoots: number;
+  readonly tileId: string | null;
+  readonly tileSkyGap: string | null;
+  readonly bytes: Uint8Array<ArrayBuffer>;
+}
+
+async function fetchPinnedSkyGlb(signal: AbortSignal): Promise<Uint8Array<ArrayBuffer> | null> {
+  const response = await fetch(nativeResourceUrl(`/l2/skies/${nativeSkySource.manifestSha256}/sky.glb`), { signal });
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error(`Sky source returned HTTP ${response.status}.`);
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  signal.throwIfAborted();
+  if (bytes.byteLength !== nativeSkySource.modelBytes || await sha256(bytes) !== nativeSkySource.modelSha256) {
+    throw new Error("Sky source hash/length mismatch.");
+  }
+  return bytes;
+}
+
+async function loadSkySource(signal: AbortSignal, tileSelected: boolean): Promise<LoadedSkySource | null> {
+  if (!tileSelected) {
+    const bytes = await fetchPinnedSkyGlb(signal);
+    return bytes && { manifestSha256: nativeSkySource.manifestSha256, sourceId: nativeSkySource.sourceId, materialRoots: nativeSkySource.materialRoots,
+      tileId: null, tileSkyGap: null, bytes };
+  }
+  const tileSky = await readSelectedTileSkySource(globalThis.location, signal);
+  if (tileSky === null || tileSky.status === "absent") return null;
+  if (tileSky.status === "gap") throw new Error(`Native tile ${tileSky.tileId} sky is a gap: ${tileSky.reason}.`);
+  const bytes = await fetchVerifiedNativeResource(tileSky.glb.resource, tileSky.glb.sha256, signal, tileSky.glb.bytes);
+  return { manifestSha256: tileSky.manifestSha256, sourceId: tileSky.sourceId, materialRoots: tileSky.materialRoots, tileId: tileSky.tileId,
+    tileSkyGap: tileSky.gapReason, bytes };
+}
 
 export async function createNativeSkyPresentation(scene: Scene, signal: AbortSignal) {
   signal.throwIfAborted();
-  const selectedTileId = selectedNativeTileIdentity(globalThis.location);
-  if (selectedTileId !== null && selectedTileId !== nativeSkySourceTileId) return null;
-  const candidates = scene.transformNodes.filter(node => node.metadata?.nativeSkyRoot);
+  const tileSelected = selectedNativeTileIdentity(globalThis.location) !== null;
+  const candidates = tileSelected ? [] : scene.transformNodes.filter(node => node.metadata?.nativeSkyRoot);
   if (candidates.length > 1) throw new Error("Multiple authored native sky roots.");
   let root: TransformNode | undefined = candidates[0], container: AssetContainer | undefined;
   const authored = !!root;
+  let source: Omit<LoadedSkySource, "bytes"> = { manifestSha256: nativeSkySource.manifestSha256, sourceId: nativeSkySource.sourceId,
+    materialRoots: nativeSkySource.materialRoots, tileId: null, tileSkyGap: null };
   if (!scene.useRightHandedSystem) throw new Error("Native sky needs the world right-handed coordinate adapter.");
   if (root) {
     const marker = root.metadata.nativeSkyRoot;
@@ -39,31 +76,27 @@ export async function createNativeSkyPresentation(scene: Scene, signal: AbortSig
       throw new Error("Authored sky root has an unsupported identity or coordinate adapter.");
     }
   } else {
-    const base = `/l2/skies/${nativeSkySource.manifestSha256}`;
-    const response = await fetch(nativeResourceUrl(`${base}/sky.glb`), { signal });
-    if (response.status === 404) return null;
-    if (!response.ok) throw new Error(`Sky source returned HTTP ${response.status}.`);
-    const bytes = new Uint8Array(await response.arrayBuffer());
-    signal.throwIfAborted();
-    if (bytes.byteLength !== nativeSkySource.modelBytes || await sha256(bytes) !== nativeSkySource.modelSha256) {
-      throw new Error("Sky source hash/length mismatch.");
-    }
+    const loaded = await loadSkySource(signal, tileSelected);
+    if (!loaded) return null;
+    const { bytes, ...identity } = loaded;
+    source = identity;
     validateSectionGlb(bytes);
     try {
       container = await LoadAssetContainerAsync(bytes, scene, { pluginExtension: ".glb" });
       signal.throwIfAborted();
       if (scene.isDisposed) throw new Error("Sky scene disposed while loading.");
       root = new TransformNode("Native sky · stored source state", scene);
-      root.metadata = { nativeSkyRoot: { schemaVersion: 1, ...nativeSkySource, sourceSnapshot: true } };
+      root.metadata = { nativeSkyRoot: { schemaVersion: 1, manifestSha256: source.manifestSha256, sourceId: source.sourceId, tileId: source.tileId,
+        sourceSnapshot: true } };
       for (const node of container.rootNodes) node.parent = root;
       container.addAllToScene();
     } catch (error) { container?.dispose(); root?.dispose(); throw error; }
   }
   const skyRoot = root;
   const skyMeshes = skyRoot.getChildMeshes().filter(mesh => mesh.getTotalVertices() > 0);
-  if (skyMeshes.length !== 3 || skyMeshes.some(mesh => !mesh.material)) {
+  if (skyMeshes.length !== source.materialRoots || skyMeshes.some(mesh => !mesh.material)) {
     if (!authored) { container?.dispose(); skyRoot.dispose(); }
-    throw new Error("Sky snapshot requires its three material meshes.");
+    throw new Error(`Sky snapshot requires one material mesh for each of its ${source.materialRoots} material roots.`);
   }
   const skySet = new Set(skyMeshes), worldGroups = new Map<AbstractMesh, number>();
   const savedRoot = { position: skyRoot.position.clone(), z: skyRoot.scaling.z };
@@ -127,7 +160,7 @@ export async function createNativeSkyPresentation(scene: Scene, signal: AbortSig
     },
     restoreEnvironmentLiteral() { comparison?.restore(); },
     inspection: () => ({ status: disposed ? "disposed" : "source-snapshot", authored,
-    manifestSha256: nativeSkySource.manifestSha256, sourceId: nativeSkySource.sourceId,
+    manifestSha256: source.manifestSha256, sourceId: source.sourceId, tileId: source.tileId, tileSkyGap: source.tileSkyGap,
     meshes: skyMeshes.length, vertices: skyMeshes.reduce((n, mesh) => n + mesh.getTotalVertices(), 0),
     triangles: skyMeshes.reduce((n, mesh) => n + mesh.getTotalIndices() / 3, 0),
     texturesReady: materials.every(entry => entry.material.getActiveTextures().every(texture => texture.isReady())),
