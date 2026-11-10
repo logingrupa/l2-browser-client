@@ -1818,11 +1818,7 @@
           [13,"8714ad6d5dcd939538c3a0134d5ab891df6c9b91a27d13893811b8c6b623c6ec","345be3463703c6ca42b21686437fa25b2034d27b96eb1b2eb4f70704c80361c7",false,"Our mask-op value object vs reference skill effect nested literals; nested string-property shape only, distinct identifiers."],
           [13,"e0d8a0818e931d0543aaafbbf0e61f5a35a6b4418c3a5193832a145c85535870","406e745d52b2bbc1d7c50660cd663e1cb79a3425dcf274aed3979a00196c4a30",false,"Our runtimeDefault mask-op object vs reference transform defines block; nested empty-string keys shape, no shared names."],
           [12,"95561c3bfbe5e7f696c0fa649e4cc71f097daa9948df590b63163dc4370101c9","54f1b4a83db10987bb67b133926dac37a73c83e153dd504b3312aa07f26f6659",false,"Our colour byte-order row vs reference effect binding string arrays; string array literal shape only, values differ."],
-          [18,"4403d5052e1e72324924f3fb208b1976f875f33846afe3b0d230fa6d0f362b47","54f1b4a83db10987bb67b133926dac37a73c83e153dd504b3312aa07f26f6659",false,"Our four-string byte-order array row vs reference effect bindings and recipes arrays; syntax-only overlap."],
           [14,"8e4ba0474d4484900b39393288822b6a5584a029acdf22f2efdffe1ab60df736","54f1b4a83db10987bb67b133926dac37a73c83e153dd504b3312aa07f26f6659",false,"Our byte-order array value vs reference effect binding name arrays; four-string array then key, nothing distinctive."],
-          [15,"1db2a5d98443b4e56de896a29feb2630e0838af87808c932510878f8e3bd2b41","54f1b4a83db10987bb67b133926dac37a73c83e153dd504b3312aa07f26f6659",false,"Our byte-order array tail vs reference effect binding arrays; string array plus property keys, no shared names."],
-          [13,"9ed79d3f14e356b2ec660390cd4058ee7f33ba67396721be7ce02f4fa0d14a92","54f1b4a83db10987bb67b133926dac37a73c83e153dd504b3312aa07f26f6659",false,"Our byte-order array tail vs reference effect binding arrays; generic string list followed by string properties."],
-          [12,"70e0b5a6296350cca5129fb9b29131c3dea69355d078567fb3bdb29ff3c17705","526a97afde8919d4373ac64cbd134d7cee8d969f327b705e463ffa6e7903ea6e",false,"Our byte-order row tail vs reference skill effect override entry; array close and string properties only."],
           [12,"49127e9e223cbef0740fd101642daafc72451c7a09267a2c2df26c1979a0682e","54f1b4a83db10987bb67b133926dac37a73c83e153dd504b3312aa07f26f6659",false,"Our runtimeDefault byte-order array vs reference effect binding string arrays; plain four-string array literal."],
           [12,"277c739aac82b908115c6d07a05e71c2c76d80997f5d3e0992935b0679f25192","44c8aff6603512068950a53bb1df7fbd29e5b8c6f87895691d8226cbf64085a4",false,"Our fade-forms constant row vs reference shader defines literals; same area but only key-string object shape shared."],
           [19,"947296cdfc9ec2f9dcdf0e49847b575ed2b9851a10bf195aa31c57fc6f32b6c5","2c465c20d41fb064dcb2aab4809da9de53b7e6bf317c2ca4f45662002e1c6a04",false,"Our fade-forms ReferenceConstantRow vs reference skill effect and config tables; only string-property shape shared."],
@@ -4268,6 +4264,18 @@
           [12,"f39ee66d85220892221ea5944fbea5c26ee040ace3e132db2db4868e9d7b562a","1909f5387aa899e5e21e6f47437b3f13b87069b6457f0f1d6fb5008541f262bb",false,"Ours: duplicate-field check through a Set of lowercased names. Reference: Array.from Set of permeating lights. Only the new Set(map(...)) idiom"],
           [12,"68cc5c8cf1cea3cfe6c55c254559766a7a19d587054a82360cc22095b00926ee","13756a02527116b09e57ab5494ccf8c4f20b2e771ad9830b0df7d00966d4d889",false,"Ours: programField lookup returning field or null. Reference: getBaseActor prototype delegation. Only the nullable return-type and return-call syntax is shared."],
           [12,"b0a6b078283bb9cb5bedfad9b8f4227ab69916494abec219e5efea851379b023","eaded312ca6624efce320fe77540f73be0f26370d26a49f317b5fe01ca489c1a",false,"Ours: case-insensitive material field find, which FName forces. Reference: head and bone-name finds with a different normaliser. Only the find"]
+        ]
+      }
+    },
+    {
+      "reviewedOn": "2026-11-10",
+      "method": "Every unreviewed reviewer run of 12 or more tokens reported by tools/reference-overlap for the materials area on 2026-11-10 was reviewed by two fresh-context Claude reviewers who did not write the code (side-by-side provenance and a skeptic who answers derived unless copying is ruled out). A run either lens did not mark generic was escalated to three more reviewers (idiom, provenance, skeptic) and signed off only when all three said generic with high confidence. Codex was unavailable until 2026-11-12 (OVERNIGHT-DECISIONS row 40). The owner may revoke any entry.",
+      "files": {
+        "src/materials/ue2/model/constants/combinerConstants.ts": [
+          [18,"dd5bf1245c3ee0998541902dc89cabadfed3d42620b6f2c556b4254e74f42f69","54f1b4a83db10987bb67b133926dac37a73c83e153dd504b3312aa07f26f6659",false,"Colour byte-order row (four-string array, then string keys) vs skill effect bindings; only object-literal punctuation shared, no names or strings."],
+          [15,"c633e2a4c4029e183bdb392bb8efb7aa8dde8e3486d0cfec1cd1e04269a8bf25","54f1b4a83db10987bb67b133926dac37a73c83e153dd504b3312aa07f26f6659",false,"Byte-order row array tail plus provenance/status vs effect-list tail plus effectGroup; only literal shape is shared, no names or strings."],
+          [13,"fff6e0555c99d42cf3e347d34a372645e67ce6f07cb526472152a96d7bc4cb4d","54f1b4a83db10987bb67b133926dac37a73c83e153dd504b3312aa07f26f6659",false,"Colour constant row vs three-effect skill binding entries; only the string-array-then-key punctuation is shared, nothing distinctive."],
+          [12,"97910fa321d47f8dab0680a9b20e2f262a87d3b61c5d16a34b22138af43236df","526a97afde8919d4373ac64cbd134d7cee8d969f327b705e463ffa6e7903ea6e",false,"Constants row keys (provenance, status, interludeEvidence) vs effect spawn fields (host/owner, rotation/physics); key-colon-string pattern only."]
         ]
       }
     }
