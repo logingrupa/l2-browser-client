@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-45-PLAN.md
-last_updated: "2026-11-10T04:20:53.074Z"
+stopped_at: Completed 02-63-PLAN.md
+last_updated: "2026-11-10T04:50:17.864Z"
 last_activity: 2026-11-10
 last_activity_desc: Phase 02 plan 02-48 complete (cell-aware collision world)
-state_head: 398035b8b3ca3a6b9127df62eac1585cfb7f8e1f
+state_head: 5f670c0609c77fced6cd66b1d931861c3312fc3f
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 74
+  completed_plans: 75
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 02 (Stage A breadth) - EXECUTING
-Plan: 02-38 complete, 51 of 71 plans summarized
+Plan: 02-63 complete, 58 of 71 plans summarized
 Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-10 - Plan 02-38 complete: the window registry lists all 248 windows and any opens by id from the Sandbox window picker; 111 windows hold 462 controls of 26 unsupported types as `controls` gap rows; textures sealed for all 248 windows (4 references converted); the DEC-OWN-10 style scan passes; StatusWnd and AbnormalStatusWnd pass at 1440 x 900, 932 x 430 and the 430 x 932 no-scroll check; a windows sweep slice recorded 20 passes. UI-02 and UI-03 complete.
+Last activity: 2026-11-10 - Plan 02-63 complete: the Babylon-free BSP visibility walk (camera zone, portal walk, section walk, static mesh and map emitter gating, translucent back-to-front order) runs per frame on tile 20_21 through bindTileVisibility; culling is the presentation variable world.visibility.culling, off until PERF-02; tile:20_21 browser check passes in three viewports
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -126,6 +126,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P61 | 50min | 3 tasks | 32 files |
 | Phase 02 P42 | 61min | 3 tasks | 31 files |
 | Phase 02 P45 | 55min | 5 tasks | 65 files |
+| Phase 02 P63 | 25 min | 3 tasks | 28 files |
 
 ## Accumulated Context
 
@@ -302,6 +303,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-61: level_zones.py is the one zone table, the bsp step reads it; world writes the Emitter actor export with the actors bundle writer record functions; solidity census grid 16 x 16 x 8 is a project rule; VIS-01, WORLD-01 and FX-01 stay Pending (OVERNIGHT-DECISIONS rows 595 to 600)
 - [Phase 02]: 02-42: item model records interlude:item:<id>:body-part:<bodyPart>:weapon|armor:<ordinal>, one per item and unit; armor in a body-part slot is the gap equipment-slot-meaning-undecoded:<bodyPart>; the actors items step covers weapon and armor keys only; gap census items step and catalog_index_keys item keys as a lane confirmation; ACT-03 stays Pending (OVERNIGHT-DECISIONS rows 603 to 614)
 - [Phase 02]: 02-45: any tile's sky comes from its one SkyZoneInfo zone through the 02-59 material graph (generic 20_20 sky.glb BIN chunk equals the served sky); ambience, StepSound placement audio and MusicVolume music convert per tile from exact references with original bytes as world-audio resources; the legacy 20_20 sky and audio chain, batch sky and ambient adapters and assets:ambient are deleted (OVERNIGHT-DECISIONS rows 615 to 624)
+- [Phase 02]: 02-63: map-emitter and member gating follow world.visibility.culling (off by default until PERF-02); memberVisible is keyed by placement export index; sections are RNGE (chunk ordinal, primitive) pairs checked against the chunk BSP node ranges (OVERNIGHT-DECISIONS rows 625 to 631)
 
 ### Pending Todos
 
@@ -370,6 +372,7 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 - Character class join (02-40, rows 573, 577 and 578): no decoded source joins a chargrp row to its actor class or to a hairgrp/helmetgrp record, so all 14 character keys stay gaps with 8 body assemblies converted; rows 2, 3 and 5 wait on texture licensee 123/27 and rows 1, 9 and 13 on a missing serialized Animation reference; `docs/ASSET_PIPELINE.md` still calls hair colour 0 a recipe choice (row 584).
 - Headless WebGPU refusal (02-39): in one full run of `tests/browser/sandbox-npc-gremlin.spec.ts` the SwiftShader adapter answered "WebGPU is required" on the seventh case's world load; the case passed in the first run and alone. Find why the adapter refuses after several world loads in one worker.
 - Player-characters evidence heading (found in 02-48): `tests/unit/laneOwnership.test.ts` fails because `docs/parts/player-characters/EVIDENCE.md` (actors lane, 02-40) has no `## Evidence` section; the actors part adds it, which makes `pnpm test:unit` green again (deferred-items.md).
+- BSP visibility overlap review (DEC-OWN-12, 02-63, row 631): the bsp-visibility area reports 290 blocking and 3,521 unreviewed reviewer runs on the new walk code (report `artifacts/reference-overlap/02-63-bsp-visibility.json`); independent review before the push. The culling sheet switch reads `NativeSection.tileVisibility` in 02-67 (row 630); translucent index rewriting is proven on the unit fixture only, since no converted tile holds a translucent BSP section.
 - Movement overlap review (DEC-OWN-12, 02-48): the movement area reports 108 blocking and 1,732 unreviewed reviewer runs in the collision world code; independent review before the push.
 - Item breadth (02-42, rows 603 to 614): 102 of 2,969 convertible item units are sealed and 1,546 items pending; continue `convert_actors.py --batch items --limit 50` slices, rewrite the actors lane catalog and run an items sweep slice after each.
 - Item catalog size (02-42): an item model record is about 3.6 KB, so all item records would pass the 32 MB catalog limit; share the limitations text per archive or move item records into a pinned manifest before the batch finishes.
@@ -393,6 +396,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-10T04:20:52.370Z
-Stopped at: Completed 02-45-PLAN.md
+Last session: 2026-11-10T04:50:17.082Z
+Stopped at: Completed 02-63-PLAN.md
 Resume file: None
