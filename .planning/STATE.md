@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-64-PLAN.md
-last_updated: "2026-11-10T12:03:01.536Z"
+stopped_at: Completed 02-50-PLAN.md
+last_updated: "2026-11-10T20:39:55.192Z"
 last_activity: 2026-11-10
 last_activity_desc: Phase 02 plan 02-66 complete (pawn physics, follow camera and movement presenter)
-state_head: 75a39762439756c07d1c9fc1de8895b57d2edf85
+state_head: 27d56224d68f4ccd983f0b8bdb1da121ea8489b8
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 82
+  completed_plans: 83
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 02 (Stage A breadth) - EXECUTING
-Plan: 02-47 complete, 64 plans summarized
+Plan: 02-50 complete, 66 plans summarized
 Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-10 - Plan 02-47 complete: `scripts/world/convert_tile_batch.py --eligible --limit <n>` runs every registered world step on the next eligible census tiles with a preflight per step (exit 2 machine window, 3 disk floor); four clean slices sealed 11 tiles through manifest (16_25 failed at terrain, 27 batch-pending), all 11 load-check pass on world lane catalog 1b73e4e9; resume with `--eligible --limit 3`
+Last activity: 2026-11-10 - Plan 02-50 complete: `convert_tile.py --step minimap` joins radar, town map and zone name textures with decoded zonename and huntingzone rows by exact names into a `native-tile-minimap` resource on all 11 converted tiles (world lane catalog 7c9dae88); the committed census lists 153 tiles, all gap (radar-texture 153, zone-grid 153); WORLD-06 stays Pending
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -134,6 +134,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P66 | 20min | 3 tasks | 30 files |
 | Phase 02 P47 | 100min | 4 tasks | 13 files |
 | Phase 2 P64 | 40min | 3 tasks | 34 files |
+| Phase 2 P50 | 40min | 3 tasks | 18 files |
 
 ## Accumulated Context
 
@@ -324,6 +325,10 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-66: movement overlap 121 blocking and 2,546 unreviewed runs recorded for the orchestrator review; MOVE-01 and WORLD-05 stay Pending until 02-67 wires the port (rows 679 and 680)
 - [Phase 02]: 02-47: the eligible tile batch writes one seal-derived row per tile and step into the per-step gap-row files; a tile whose first unsealed step holds a recorded failure waits until that step seals (OVERNIGHT-DECISIONS rows 681 to 690)
 - [Phase 2]: 02-64: tile fog and lighting move from presentationConfiguration to L2 data (lighting resource, environment clock, camera-environment record through the UE2 material library); presentationConfiguration keeps camera and debug values, and its lights and fog mode 0 remain only for surfaces not yet on the library; lightmaps draw once programs carry texture image pins; MAT-02, MAT-01 and FX-01 stay Pending (OVERNIGHT-DECISIONS rows 691 to 702)
+- [Phase 2]: 02-50: minimap textures, zones and hunting zones join tiles by exact names only; each joined item records its rule and source (row 710)
+- [Phase 2]: 02-50: zone joins gated on every zonename MapX and MapY inside the locked grid; 21 rows lie outside, so zone joins are gaps (row 712)
+- [Phase 2]: 02-50: tile-frame-extent projection labelled unverified; native-tile-minimap v1 under maps/<sha>/native-tile-minimap/ (rows 714, 715)
+- [Phase 2]: 02-50: registry, gap-row file, census CLI and ownership follow repository rules the plan text predates (row 717)
 
 ### Pending Todos
 
@@ -370,6 +375,7 @@ Integration thread (rule 4: only the integration thread writes the main checkout
 - Needs Human (plan 02-45): cd C:/laragon/www/l2-browser-client && python -B C:/Users/rolan/.t3/worktrees/l2-browser-client/autonomous-roadmap/scripts/native_store/merge_lane_store.py --lane-store C:/Users/rolan/.t3/worktrees/l2-browser-client/autonomous-roadmap/artifacts/lane-store/world/l2 --target public/l2 --expected-base-catalog-sha256 55c12147db306264deb2be33f6b9cd661d1376d12dc2aa6473be3700322972fe (printed by `python -B scripts/native_store/write_lane_catalog.py --lane world --plan`; world lane catalog `f60ce2d8...` with the tile manifests of 20_20 and 20_21 pinning one `sky` and three `world-audio` resources each)
 - Needs Human (plan 02-62): cd C:/laragon/www/l2-browser-client && python -B C:/Users/rolan/.t3/worktrees/l2-browser-client/autonomous-roadmap/scripts/native_store/merge_lane_store.py --lane-store C:/Users/rolan/.t3/worktrees/l2-browser-client/autonomous-roadmap/artifacts/lane-store/world/l2 --target public/l2 --expected-base-catalog-sha256 55c12147db306264deb2be33f6b9cd661d1376d12dc2aa6473be3700322972fe (printed by `python -B scripts/native_store/write_lane_catalog.py --lane world --plan`; world lane catalog `af47f330...` with the tile manifests of 20_21 and 20_20 pinning one `lighting` resource each and the BSP chunks keyed by lightmap texture)
 - Needs Human (plan 02-47): cd C:/laragon/www/l2-browser-client && python -B C:/Users/rolan/.t3/worktrees/l2-browser-client/autonomous-roadmap/scripts/native_store/merge_lane_store.py --lane-store C:/Users/rolan/.t3/worktrees/l2-browser-client/autonomous-roadmap/artifacts/lane-store/world/l2 --target public/l2 --expected-base-catalog-sha256 55c12147db306264deb2be33f6b9cd661d1376d12dc2aa6473be3700322972fe (printed by `python -B scripts/native_store/write_lane_catalog.py --lane world --plan`; world lane catalog `1b73e4e9...` with 11 tile records, all 11 load-check pass)
+- Needs Human (plan 02-50): the same world lane restage command, now against world lane catalog `7c9dae88...`, whose 11 tile manifests each pin one `minimap` resource (`native-tile-minimap` v1)
 
 - Resolved (plan 02-57, OVERNIGHT-DECISIONS rows 193, 258 and 299): the 17 blocking runs and 956 reviewer runs in the 02-56 shared modules are signed off by independent fresh-context Claude reviewers (`tools/reference-overlap/signedOffRuns.json`, `tools/reference-overlap/reviewedRuns/`); bsp-visibility, movement and particles exit 0 with `--require-reviewed`. The owner may revoke any entry.
 - Resolved (OVERNIGHT-DECISIONS row 376): the lane-confirmation items of rows 211, 228, 292 and 293, and 301 are accepted by this integration branch.
@@ -378,6 +384,8 @@ Integration thread (rule 4: only the integration thread writes the main checkout
 ## Open follow-ups
 
 Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in this run and leaves this list when it lands.
+
+- Minimap radar source (02-50, rows 710 to 717): no export of `L2_RadarMap.utx` (118/0, 18 town-named textures) equals a tile id, `<tile id>_map` or a zone `map` value, so all 153 census tiles are `minimap-join-unresolved:radar-texture` gaps; 21 zonename rows hold MapX or MapY outside the locked grid, so zone joins are `zone-grid` gaps. Find the client data that names the per-tile radar image or a sourced georeference for the `int_worldmap` pieces, and settle the out-of-grid rows on IMPORTA, before 02-51 draws the minimap.
 
 - Map emitter playback (02-61, 02-69, 02-64, rows 651 and 696): the tile inspection lists each placement with its `memberVisible` gate, but none reaches `playTileMapEmitters`: the emitter records keep unparsed struct fields (row 668), no class defaults are merged and their meshes and textures are unconverted. Merge the class defaults in the emitters step, decode the structs, convert the referenced resources, then start the playable placements with a placement view.
 - Eligible tile batch (02-47, OVERNIGHT-DECISIONS rows 681 to 690): 27 of 39 eligible tiles are `batch-pending`; continue `node scripts/check-machine-schedule.mjs && python -B scripts/world/convert_tile_batch.py --eligible --limit 3` until it prints nothing to do, then the tiles sweep with `LOAD_CHECK_LIMIT=<catalog tile count>`. 16_25 fails at terrain (`Terrain layer 10 names only one of Texture and AlphaMap`); fix the terrain layer reader, then `convert_tile.py --map 16_25 --step terrain` puts it back in the batch.
@@ -429,6 +437,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-10T12:02:59.843Z
-Stopped at: Completed 02-64-PLAN.md
+Last session: 2026-11-10T20:39:54.437Z
+Stopped at: Completed 02-50-PLAN.md
 Resume file: None
