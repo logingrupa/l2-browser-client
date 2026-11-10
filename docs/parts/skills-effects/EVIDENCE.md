@@ -27,7 +27,7 @@ Every decoded skillgrp row has one binding, built by `scripts/actors/skill_bindi
 - The staged folder holds every file its manifest pins: the resources and, since 2026-11-09, the source bundle manifest and graph as `source-bundle/<sha256>.json`, so `write_lane_catalog.py --lane actors` pins the effect records (`tests/pipeline/test_skill_effect_store_pins.py`). The 22 sealed roots were reconverted with that stage: the same 17 converted and 5 gap roots, and the same gap-row counts.
 - Every key that names a converted root gets the record `interlude:skill:<id>:level:<level>:native-description-action` with `bundleId` `interlude:skill-root:<description>`.
 - Sprite, Mesh, Beam, Ribbon and VertMesh emitter records and their texture and static mesh references convert. Spark, Trail and other classes keep their records and convert nothing. VertMesh objects stay raw native data: the Converter has no VertMesh adapter.
-- `recipes/actors/emitter-class-coverage.json` lists the classes the browser runs (`Engine.MeshEmitter`, `Engine.SpriteEmitter`). A key passes only when every emitter class of its root is listed; otherwise it is `emitter-class-unported:<class>` (FX-01).
+- `recipes/actors/emitter-class-coverage.json` lists the classes the simulator runs (`Engine.MeshEmitter`, `Engine.RibbonEmitter`, `Engine.SpriteEmitter`). A key passes only when every emitter class of its root is listed; otherwise it is `emitter-class-unported:<class>` (FX-01).
 
 Resume command: `python -B scripts/actors/convert_actors.py --client E:/Lineage2-client --batch skills --limit 20`. A rerun skips sealed roots (`alreadySealedRoots`).
 
@@ -77,7 +77,6 @@ Our own deterministic port of the UE2 emitter classes in plain TypeScript under 
 | `tests/unit/importBoundaries.particles.test.ts` | 16 passed |
 | `node tools/reference-overlap/referenceOverlap.mjs --area particles` | 110 blocking runs and 2,508 unreviewed reviewer runs, all structural (typed field tables, vector literals); report `artifacts/reference-overlap/02-68-particles.json`. Independent reviewer sign-off pending. |
 
-Open for FX-01: RibbonEmitter, the L2 emitter natives (AdjustparticleLife, SetSizeScale, SetDelayed, Kill, Trigger), rendering through the material library and the Power Strike preview switch follow in 02-69. The closed-form preview modules stay until then.
 
 ### Clean-room rewrite of the overlap spans (2026-11-09)
 
@@ -100,11 +99,38 @@ POL-04 corrections (2026-11-09, simulator version 2). The rewrite found five pla
 - Spawn refusal (`fx.spawn-refusal`, 2026-11-09): `UParticleEmitter::SpawnParticle` 0x10604190 returns 0 before any draw when MaxParticles is 0, then without an Owner, then when KillPending is set, then when LifetimeRange.Max (float32) is not above 0 (guards 0x106041C3 to 0x106041F7). SpawnParticles 0x10605C40 then leaves ParticleIndex and ActiveParticles alone and moves on to the next birth age; nothing clears AllParticlesDead and the stream is untouched. `spawnParticle` now reports the refusal and the slot only advances on success. Every step here has an owner and Kill is not ported, so only the first and last guards can refuse. The golden traces and Power Strike hashes did not change.
 - Sine table (`fx.sine-table`, 2026-11-09): Core.dll `FGlobalMath::FGlobalMath` 0x1014D330 fills SinTab (GMath +0x8C) with 16384 entries f32(appSin(fl(2i * pi) / 16384)), and SqrtTab (+0x1008C) with f32(sqrt(i / 16384)), which our code does not use. appSin 0x1012D720 jumps to the CRT sin 0x1017C430, which takes its SSE2 path 0x10186480: the CRT turns SSE2 math on at 0x1017FFEB from cpuid before the C++ initialisers run (`_cinit` 0x101833C6, then the GMath initialiser at 0x101C0010), and every FPU exception is masked. So the half-turn entry is f32(sin(pi)), not the x87 fsin value 1.2246063538223773e-16 a CPU without SSE2 would store, and our special entry is gone. `tests/unit/sharedMath.test.ts` computes every entry with a 192-bit sine and checks that each lies more than 2^-50 from a float32 rounding midpoint, so any sine accurate to a few ulps gives the same table. `tests/pipeline/test_world_static_placement.py` proves the placement converter table equal to it as well. The golden traces did not change.
 
+## FX-01 playback, natives and ribbons (plan 02-69, 2026-11-10)
+
+Effect playback runs on the simulator and the UE2 material library. The closed-form timelines, the per-slot pool and the preview material (`nativeEffectInitTimeline.ts`, `nativeEffectShotTimeline.ts`, `nativeEffectParticlePool.ts`, `nativeEffectMaterial.ts`) are deleted with their tests.
+
+- Vertex stage: `src/effects/particles/render/particleInstances.ts` writes each live slot as one thin instance (matrix, colour, atlas cell, sprite half extent and roll) in browser axes through `sourcePositionToWorld`. Mesh particles draw T * R * S with the GLB primitive node transforms baked into the vertices; sprites face the camera in the vertex shader. Instance buffers grow with the emitter columns (threat T-02-69-01).
+- Fragment stage: `particleMaterialBinding.ts` builds the material from `particleFragmentChain(DrawStyle)` with the record's ZTest, ZWrite, AlphaTest and RenderTwoSided, colour texel * particle colour, and sets `metadata.nativeEmitterOrdinal` on every effect mesh. No effect mesh sets `alphaIndex`. DrawStyle 3 and 6 keep the shipped pairs (`ALPHA_SCREENMODE`, `ALPHA_ONEONE`) until the swatch comparison is recorded; `particleMaterialBinding.test.ts` fails if they flip.
+- `loadEffectComponent.ts` loads one emitter's geometry and its texture chain (AnimNext frames follow the library `selectTextureFrame`), and every mesh primitive gets its own material and texture. `emitterActorPlayback.ts` runs an emitter actor on `createEffectScheduler`; the init, shot and component previews play through it, and an AutoDestroy actor ends the preview.
+- Natives: `emitterNatives.ts` applies AdjustparticleLife, SetSizeScale, SetDelayed, Kill and Trigger to a live emitter actor from a closed name list; an unknown name is refused (threat T-02-69-02). No module under `src/effects`, `src/ui`, `src/runtime` or `src/scene` calls it: the adapter-event placement layer is the only intended caller (`emitterNatives.test.ts`).
+- RibbonEmitter: `ribbonEmitter.ts` samples, interpolates, drops and decays ribbon points from a point source and matches its synthetic golden trace at 0 ulp. `attachWeaponTrail` applies the fx.weapon-trail row and gives an EntityKind npc caster no trail. Ribbons simulate but do not draw yet: the staged manifest binds no RibbonEmitter texture (`ribbon-texture-unstaged`).
+- Map emitters: `mapEmitterPlayback.ts` `playTileMapEmitters` spawns each placement on the scheduler and shows it only while `isPlacementVisible` (the 02-63 memberVisible) and the frustum test pass; hidden placements keep simulating.
+- Coverage: `recipes/actors/emitter-class-coverage.json` listVersion 2 adds `Engine.RibbonEmitter`; BeamEmitter, VertMeshEmitter, SparkEmitter and TrailEmitter stay `emitter-class-unported:<class>`.
+- Skeletal slots (MAT-01): `src/assets/native/nativeSkeletalMaterials.ts` binds a slot whose GLB material extras carry `nativeMaterialProgram` through `createNativeMaterial`; an unported program shows the library magenta diagnostic. No converted actor GLB carries a program id yet, so every slot reports `program-unconverted` and keeps its converted texture material; skinned slots report `library-vertex-stage-unskinned` because the library vertex stage has no skinning.
+
+| Check | Result |
+| --- | --- |
+| `tests/unit/particleMaterialBinding.test.ts` | shipped DrawStyle 3 and 6 pairs, record depth, culling and alpha test, emitter ordinal metadata, instance matrices, atlas cells and overrides |
+| `tests/unit/loadEffectComponent.test.ts`, `nativeEffectRetained.test.ts` | baked primitive geometry, per-primitive library materials, AnimNext frames, refusals and cleanup; all six retained Power Strike components render live particles |
+| `tests/unit/ribbonEmitter.test.ts` | synthetic ribbon golden trace at seed 1, step 1/60, 0 ulp (334 rows); NPC caster gets no trail |
+| `tests/unit/emitterNatives.test.ts`, `mapEmitterPlayback.test.ts`, `nativeSkeletalMaterials.test.ts` | each native as its row states; visibility gate; library and magenta slots |
+| `DEV_PORT=5175 pnpm test:e2e tests/browser/sandbox-skill-cast.spec.ts` (shared store) | 4 passed: `?skill=3:1` plays `lineageeffect.s_u002_a` (init) and `lineageeffect.p_u004_a` (shot) to destruction with live particles drawn; screenshots `artifacts/skill-evidence/skill-3-1-cast-1440x900.png` and `skill-3-1-cast-932x430.png`; no horizontal scroll at 430 x 932 |
+| `node tools/reference-overlap/referenceOverlap.mjs --area particles` | 547 blocking runs (479 are the GLSL source line array of `particleMaterialBinding.ts`), 2,552 unreviewed reviewer runs, 4 stale sign-offs; report `artifacts/reference-overlap/02-69-particles.json`. Independent reviewer sign-off pending. |
+
+PTDS 3 and 6 stay as shipped until the swatch comparison with L2.exe is recorded here.
+
 ## Open
 
 - 223 roots wait for the resume command; 8,539 keys are pending.
-- Loads: no skill key loads every simulated component yet; the preview loader refuses multi-texture mesh emitters and random color multipliers (FX-01).
-- Beam, Ribbon and VertMesh wait for the FX-01 simulator kinds (Ribbon in 02-69, Beam and VertMesh in Phase 5); VertMesh meshes need a Converter adapter.
+- Loads: the actors lane keys have not been rechecked since the loader runs on the simulator (FX-01).
+- Ribbons draw once staging binds a RibbonEmitter texture; Beam and VertMesh wait for Phase 5, and VertMesh meshes need a Converter adapter.
+- The emitter natives and the weapon trail need the adapter-event placement layer; the Power Strike previews do not call AdjustparticleLife yet.
+- Tile map emitters need the 02-64 world binding to merge class defaults into the tile-emitters.json records and call `playTileMapEmitters`.
+- Skeletal slot programs need the actor converter to write `nativeMaterialProgram` and the library vertex stage to skin.
 - Five roots are refused by the converter; their reasons are in the gap rows.
 - Runtime presentation of a converted effect on a `skill-cast` event for skills other than Power Strike is integration wiring (`createNativeSliceEffects.ts`).
 - The cast check still runs on the harness page; the dev store switch now serves the actors lane as its restage union, so the native route can start on it.
@@ -112,4 +138,4 @@ POL-04 corrections (2026-11-09, simulator version 2). The rewrite found five pla
 
 ## Evidence
 
-Recipe: `recipes/native-power-strike.json`. Notes: `docs/NATIVE_POWER_STRIKE.md`. Particle rules: `docs/parts/skills-effects/PARTICLE_SEMANTICS.md`. Plan summaries: `.planning/phases/02-stage-a-breadth/02-43-SUMMARY.md`, `02-68-SUMMARY.md`. Decisions: OVERNIGHT-DECISIONS rows 397 to 408 and 486 to 497.
+Recipe: `recipes/native-power-strike.json`. Notes: `docs/NATIVE_POWER_STRIKE.md`. Particle rules: `docs/parts/skills-effects/PARTICLE_SEMANTICS.md`. Plan summaries: `.planning/phases/02-stage-a-breadth/02-43-SUMMARY.md`, `02-68-SUMMARY.md`, `02-69-SUMMARY.md`. Decisions: OVERNIGHT-DECISIONS rows 397 to 408, 486 to 497 and 642 to 655.
