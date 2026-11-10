@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 6,
+  "listVersion": 7,
   "reasons": [
     "conversion-pending",
     "mesh-package-not-in-client:<package>",
@@ -17,6 +17,7 @@
     "effect-bundle-class-limit:<count>",
     "emitter-class-unported:<class>",
     "emitter-feature-unported:<property>",
-    "combat-role-route-unresolved:<table>/<role>"
+    "combat-role-route-unresolved:<table>/<role>",
+    "assembly-part-limit-exceeded:<count>"
   ]
 }

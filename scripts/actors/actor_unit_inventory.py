@@ -38,6 +38,11 @@ def decoded_table_identity(decoded_table):
     return {'path': decoded_table['source'], 'sha256': decoded_table['sourceSha256']}
 
 
+def convertible_model_unit_count(census):
+    return sum(1 for unit in census['units']
+               if unit['unitKind'] in (NPC_MODEL_UNIT_KIND, CHARGRP_ROW_UNIT_KIND) and unit['status'] == CONVERTIBLE_UNIT_STATUS)
+
+
 def first_gap_reason(reasons):
     return next((reason for reason in reasons if reason is not None), None)
 

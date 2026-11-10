@@ -7,12 +7,13 @@ if str(SCRIPTS_ROOT) not in sys.path:
 
 import argparse
 import json
-import re
 import shutil
 
+from actors.actor_arguments import chargrp_index_argument, skill_level_argument, slice_limit_argument, table_id_argument
 from actors.actor_census import SOUND_PACKAGE_SUFFIXES, TEXTURE_PACKAGE_SUFFIXES, ActorPackageCensus
 from actors.actor_unit_inventory import (ACTOR_UNIT_CENSUS_RELATIVE_PATH, CONVERTIBLE_UNIT_STATUS, NO_MESH_IN_ROW_REASON, NPC_MODEL_UNIT_KIND,
-                                         NPC_PART_NAME, conversion_unit_key, decoded_table_identity)
+                                         NPC_PART_NAME, conversion_unit_key, convertible_model_unit_count, decoded_table_identity)
+from actors.character_census import CHARACTER_BATCH_NAME, run_character_conversion
 from actors.npc_requests import (ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX, CONVERTER_REFUSED_REASON_PREFIX, FAILED_STATUS, GAP_STATUS,
                                  NPC_NAME_EMPTY_REASON, NPC_NAME_ROW_MISSING_REASON, NPC_PROFILE_STEP, PASS_STATUS, TRANSIENT_FAILURES,
                                  SOUND_PACKAGE_NOT_IN_CLIENT_STATUS, SOUND_PACKAGE_REFUSED_STATUS, animation_reference_gap_reason,
@@ -23,6 +24,7 @@ from actors.npc_batch import (NpcSourceIdentities, npc_batch_plan, printed_batch
                               shared_store_npc_ids)
 from actors.skill_effect_conversion import (SkillEffectConversionRun, convert_skill, convert_skill_batch_slice, printed_skill_outcome,
                                             skill_outcomes_failed)
+from actors.path_free_messages import path_free_reason
 from actors.npc_store_records import (MODEL_ARCHIVE_FILE_NAME, bundle_output_records, converted_model_store_files_and_record,
                                       PROFILE_MANIFEST_FILE_NAME, file_output_record, profile_bundle_store_files_and_record,
                                       profile_record_npc_ids)
@@ -49,40 +51,17 @@ NPC_PROFILE_ALGORITHM_VERSION = 1
 CONVERTER_WORK_FOLDER = 'converter'
 PROFILE_BUNDLE_FOLDER = 'bundle'
 IDENTITY_RECORD_NAME = 'sound-and-effect-identities.json'
-NPC_ID_PATTERN = re.compile(r'^[0-9]{1,10}$')
-MAXIMUM_SAFE_INTEGER = 2 ** 53 - 1
-SLICE_LIMIT_PATTERN = re.compile(r'^[1-9][0-9]{0,5}$')
 NPC_BATCH_NAME = 'npcs'
 SKILL_BATCH_NAME = 'skills'
 ACTOR_SOUNDS_BATCH_NAME = 'actor-sounds'
-CONVERT_ACTORS_DESCRIPTION = ('Convert one NPC id, one skill id and level or one actor sound bundle, or the next slice of the NPC, skill or '
-                              'actor-sounds batch, into the actors lane store as sealed ledger units: NPC models and profile bundles, skill '
-                              'visual roots, or per-bundle combat sounds. --print-batch-plan prints the NPC batch plan and writes nothing.')
+CONVERT_ACTORS_DESCRIPTION = ('Convert one NPC id, one skill id and level, one actor sound bundle or one chargrp row, or the next slice of the '
+                              'NPC, skill, actor-sounds or characters batch, into the actors lane store as sealed ledger units: NPC models and '
+                              'profile bundles, skill visual roots, per-bundle combat sounds, or generated character assemblies with their '
+                              'census. --print-batch-plan prints the NPC batch plan and writes nothing.')
 
 
 class ConvertActorsError(ValueError):
     pass
-
-
-def table_id_argument(flag):
-    def parsed_table_id(text):
-        if not NPC_ID_PATTERN.fullmatch(text) or int(text) > MAXIMUM_SAFE_INTEGER:
-            raise argparse.ArgumentTypeError(f'{flag} must match {NPC_ID_PATTERN.pattern} within the safe integer range: {text!r}')
-        return int(text)
-    return parsed_table_id
-
-
-def skill_level_argument(text):
-    if not SLICE_LIMIT_PATTERN.fullmatch(text):
-        raise argparse.ArgumentTypeError(f'--level must be an unpadded integer of at least 1: {text!r}')
-    return int(text)
-
-
-def path_free_reason(message, source_root, output_root):
-    for root, placeholder in ((source_root, '<source>'), (output_root, '<output>')):
-        for spelling in {str(root), Path(root).as_posix()}:
-            message = message.replace(spelling, placeholder)
-    return ' '.join(message.split())
 
 
 class NpcConversionRun:
@@ -268,9 +247,6 @@ class NpcConversionRun:
         self.seal(npc_key, self.profile_ledger, npc_key, fingerprint, inputs, config, outputs, None, step_gap_rows)
         return self.unit_outcome(self.profile_ledger, npc_key, PASS_STATUS, None, False, outputs)
 
-    def convertible_npc_model_unit_count(self):
-        return sum(1 for unit in self.census['units'] if unit['unitKind'] == NPC_MODEL_UNIT_KIND and unit['status'] == CONVERTIBLE_UNIT_STATUS)
-
     def write_store_records(self, model_unit_key, npc_key):
         model_receipt_outputs = self.sealed_outcome(npc_key, self.model_ledger, model_unit_key)['outputs']
         model_files, model_record = converted_model_store_files_and_record(
@@ -282,7 +258,7 @@ class NpcConversionRun:
         for record in catalog.get('npcProfiles', []):
             if record['id'] != profile_record['id'] and npc_id in profile_record_npc_ids(self.store_root, record):
                 raise ConvertActorsError(f'{npc_key} already has a profile in lane record {record["id"]}; the NPC batch owns it')
-        catalog = merge_catalog_slice(catalog, 'models', model_record, self.convertible_npc_model_unit_count())
+        catalog = merge_catalog_slice(catalog, 'models', model_record, convertible_model_unit_count(self.census))
         catalog = merge_catalog_slice(catalog, 'npcProfiles', profile_record, MAXIMUM_NPC_PROFILE_BUNDLES)
         for slice_name in ('models', 'npcProfiles'):
             catalog[slice_name] = sorted(catalog[slice_name], key=lambda record: record['id'])
@@ -312,12 +288,6 @@ def convert_npc(project_root, client_access, converter, npc_id, ledger_root, sto
 
 def printed_outcome(outcome):
     return {key: outcome[key] for key in ('key', 'step', 'status', 'reason', 'cacheHit')}
-
-
-def slice_limit_argument(text):
-    if not SLICE_LIMIT_PATTERN.fullmatch(text):
-        raise argparse.ArgumentTypeError(f'--limit must be an integer of at least 1: {text!r}')
-    return int(text)
 
 
 def batch_plan(census_and_tables, client_root):
@@ -365,7 +335,8 @@ def main(argv=None):
     mode.add_argument('--npc', type=table_id_argument('--npc'))
     mode.add_argument('--skill', type=table_id_argument('--skill'))
     mode.add_argument('--actor-sounds', type=actor_sound_key_argument)
-    mode.add_argument('--batch', choices=[NPC_BATCH_NAME, SKILL_BATCH_NAME, ACTOR_SOUNDS_BATCH_NAME])
+    mode.add_argument('--character', type=chargrp_index_argument)
+    mode.add_argument('--batch', choices=[NPC_BATCH_NAME, SKILL_BATCH_NAME, ACTOR_SOUNDS_BATCH_NAME, CHARACTER_BATCH_NAME])
     mode.add_argument('--print-batch-plan', action='store_true')
     parser.add_argument('--level', type=skill_level_argument)
     parser.add_argument('--limit', type=slice_limit_argument)
@@ -390,6 +361,11 @@ def main(argv=None):
                 outcomes = run_actor_sound_conversion(REPOSITORY_ROOT, client_access, converter, output_root, lane_work_root(REPOSITORY_ROOT, LANE_NAME),
                                                       decode_table, arguments.actor_sounds, arguments.limit,
                                                       lambda: require_batch_preflight(REPOSITORY_ROOT, LANE_NAME, BATCH_MINIMUM_FREE_BYTES))
+            elif arguments.character is not None or arguments.batch == CHARACTER_BATCH_NAME:
+                outcomes = run_character_conversion(REPOSITORY_ROOT, client_access, converter, output_root, decode_table, arguments,
+                                                    lambda: require_batch_preflight(REPOSITORY_ROOT, LANE_NAME, BATCH_MINIMUM_FREE_BYTES))
+                for outcome in outcomes:
+                    print(json.dumps(printed_outcome(outcome), sort_keys=True), flush=True)
             elif arguments.batch:
                 outcomes = run_batch_slice(client_access, output_root, converter, arguments.limit)
             else:

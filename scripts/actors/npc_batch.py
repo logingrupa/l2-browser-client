@@ -4,7 +4,7 @@ from pathlib import Path, PurePosixPath
 from typing import NamedTuple
 
 from actors.actor_unit_inventory import (ACTOR_UNIT_CENSUS_RELATIVE_PATH, CONVERTIBLE_UNIT_STATUS, NPC_MODEL_UNIT_KIND, NPC_PART_NAME,
-                                         conversion_unit_key, decoded_table_identity)
+                                         conversion_unit_key, convertible_model_unit_count, decoded_table_identity)
 from actors.effect_bundle_packing import native_class_closure, pack_items_by_class_closure
 from actors.npc_requests import (ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX, CONVERTER_REFUSED_REASON_PREFIX, FAILED_STATUS, GAP_STATUS,
                                  NPC_NAME_EMPTY_REASON, NPC_NAME_ROW_MISSING_REASON, NPC_PROFILE_RECIPE_ID_PREFIX, NPC_PROFILE_STEP, PASS_STATUS,
@@ -356,7 +356,7 @@ class NpcBatchSlice:
                 model_files, model_record = converted_model_store_files_and_record(
                     unit_key, self.run.model_ledger.lane_output_path(model_outputs[0]['path']))
                 files.update(model_files)
-                catalog = catalog_with_record_replaced(catalog, 'models', model_record, self.run.convertible_npc_model_unit_count())
+                catalog = catalog_with_record_replaced(catalog, 'models', model_record, convertible_model_unit_count(self.run.census))
             superseded_ids = {f'{NPC_PROFILE_RECIPE_ID_PREFIX}{npc_id}' for npc_id in bundle_npc_ids}
             catalog = {**catalog, 'npcProfiles': [record for record in catalog.get('npcProfiles', []) if record['id'] not in superseded_ids]}
             catalog = catalog_with_record_replaced(catalog, 'npcProfiles', profile_record, MAXIMUM_NPC_PROFILE_BUNDLES)
