@@ -3,37 +3,12 @@ import { WorldAudioMixer } from "../../src/audio/WorldAudioMixer";
 import { attachWorldAudioControls } from "../../src/audio/worldAudioControls";
 import type { WorldAmbience } from "../../src/audio/worldAmbience";
 import { evidenceStatus, worldAudioVariables } from "../../src/runtime/nativeSliceSheet";
+import type { NativePlacementAudio } from "../../src/assets/native/loadNativeWorldAudio";
+import type { WorldMusic } from "../../src/audio/worldMusic";
 import { fakeMixerContext } from "./fakeWebAudio";
+import { MinimalFakeDomElement, minimalFakeDocument } from "./minimalFakeDomElement";
 
-class MinimalFakeDomElement {
-  children: (MinimalFakeDomElement | string)[] = [];
-  parent: MinimalFakeDomElement | null = null;
-  dataset: Record<string, string> = {};
-  attributes = new Map<string, string>();
-  className = ""; type = ""; value = ""; min = ""; max = ""; step = ""; id = ""; disabled = false; tabIndex = 0;
-  private text = "";
-  private listeners = new Map<string, ((event: unknown) => void)[]>();
-  constructor(readonly tagName: string) {}
-  get textContent(): string { return this.text + this.children.map(child => typeof child === "string" ? child : child.textContent).join(""); }
-  set textContent(value: string) { this.text = value; this.children = []; }
-  get isConnected(): boolean { return true; }
-  setAttribute(name: string, value: string): void { this.attributes.set(name, value); }
-  getAttribute(name: string): string | null { return this.attributes.get(name) ?? null; }
-  append(...nodes: (MinimalFakeDomElement | string)[]): void { for (const node of nodes) { if (typeof node !== "string") node.parent = this; this.children.push(node); } }
-  remove(): void { if (this.parent) this.parent.children = this.parent.children.filter(child => child !== this); this.parent = null; }
-  addEventListener(type: string, listener: (event: unknown) => void, options?: { signal?: AbortSignal }): void {
-    this.listeners.set(type, [...(this.listeners.get(type) ?? []), listener]);
-    options?.signal?.addEventListener("abort", () => this.listeners.set(type, []));
-  }
-  dispatch(type: string, event: unknown = { type }): void { for (const listener of this.listeners.get(type) ?? []) listener(event); }
-  click(): void { this.dispatch("click"); }
-  focus(): void {}
-  getClientRects(): unknown[] { return [1]; }
-  all(): MinimalFakeDomElement[] { return this.children.flatMap(child => typeof child === "string" ? [] : [child, ...child.all()]); }
-  byTestId(id: string): MinimalFakeDomElement { return this.all().find(element => element.dataset.testid === id)!; }
-}
-
-beforeEach(() => { vi.stubGlobal("document", { createElement: (tag: string) => new MinimalFakeDomElement(tag.toUpperCase()) }); });
+beforeEach(() => { vi.stubGlobal("document", minimalFakeDocument); });
 afterEach(() => { vi.unstubAllGlobals(); });
 
 function ambienceStub() {
@@ -87,8 +62,9 @@ describe("world audio controls", () => {
     for (const card of controls.cards()) for (const name of card.rows) expect(existingRowNames.has(name), `${card.testId}: ${name}`).toBe(true);
     for (const card of controls.cards()) expect(host.byTestId(card.testId), card.testId).toBeDefined();
     const evidenceBadgeOfRow = (name: string) => evidenceStatus(hoverCardRows.find(row => row.name === name)!.status);
-    expect([evidenceBadgeOfRow("Music rule"), evidenceBadgeOfRow("Ambient gain rule"), evidenceBadgeOfRow("Music region"), evidenceBadgeOfRow("Nearby ambient emitters")])
-      .toEqual(["native", "native", "native", "native"]);
+    expect([evidenceBadgeOfRow("Music rule"), evidenceBadgeOfRow("Ambient gain rule"), evidenceBadgeOfRow("Music region")])
+      .toEqual(["unverified", "unverified", "unverified"]);
+    expect([evidenceBadgeOfRow("Nearby ambient emitters"), evidenceBadgeOfRow("Ambient range multiplier")]).toEqual(["native", "native"]);
     expect([evidenceBadgeOfRow("Ambient game hour"), evidenceBadgeOfRow("Ambient listener"), evidenceBadgeOfRow("Music listener"), evidenceBadgeOfRow("Limiter"), evidenceBadgeOfRow("Music level")])
       .toEqual(["presentation", "presentation", "presentation", "presentation", "presentation"]);
     const variables = worldAudioVariables(hoverCardRows);
@@ -103,12 +79,43 @@ describe("world audio controls", () => {
     const mixer = new WorldAudioMixer({ makeContext }), host = new MinimalFakeDomElement("DIV");
     const volume = { id: "interlude:20_20.MusicVolume1", musicId: 202002, forcePlayMusic: true, group: 0 };
     const music = { enabled: true, volumes: [], next: vi.fn(),
-      inspection: () => ({ enabled: true, state: "gap", volume, inside: [volume.id], track: null, nextPick: "music:F10_S01", gapRemainingSeconds: 11.2,
+      inspection: () => ({ sourceMap: "maps/20_20.unr", volumes: [], trackNames: ["F09_F", "F10_S01"], enabled: true, state: "gap", volume, inside: [volume.id], track: null, nextPick: "music:F10_S01", gapRemainingSeconds: 11.2,
         fading: [], candidates: ["music:F09_F", "music:F10_S01"], gain: .1, streaming: "", failures: {}, rules: {}, policy: "" }) };
     const controls = attachWorldAudioControls(host as unknown as HTMLElement, mixer, { music: music as never, isVisible: () => true });
     expect(host.byTestId("world-music-now-playing").textContent)
       .toBe("Gap 12 s left → F10_S01 (native 30 s silence after each track) · 20_20.MusicVolume1 · ID 202002");
     expect(controls.describe().find(row => row.name === "Music rule")!.value()).toBe("gap (12 s left, next F10_S01 pre-rolled to preload)");
+    controls.dispose();
+  });
+
+  it("describes the selected tile from its loaded manifests and names no fixed tile", () => {
+    const { makeContext } = fakeMixerContext();
+    const mixer = new WorldAudioMixer({ makeContext }), host = new MinimalFakeDomElement("DIV");
+    const volume = { id: "interlude:20_21.MusicVolume5", object: "20_21.MusicVolume5", musicId: 202102, forcePlayMusic: null, group: null,
+      boundsNative: { min: [0, 0, 0], max: [1, 1, 1] } };
+    const music = { enabled: true, volumes: [volume], next: vi.fn(),
+      inspection: () => ({ sourceMap: "maps/20_21.unr", volumes: [volume], trackNames: ["D04_F", "D04_S01"], enabled: true, state: "silent", volume: null,
+        inside: [], track: null, nextPick: null, gapRemainingSeconds: null, fading: [], candidates: [], gain: .1, streaming: "", failures: {}, rules: {}, policy: "" }) };
+    const { ambience } = ambienceStub();
+    const placementAudio = { manifestSha256: "e".repeat(64), sourceMap: "maps/20_21.unr", properties: ["StepSound_1", "StepSound_2"],
+      placements: [{ placementId: "interlude:20_21.StaticMeshActor1", sounds: ["marsh_run_01", "marsh_run_02"] },
+        { placementId: "interlude:20_21.StaticMeshActor2", sounds: ["marsh_run_01", null] }],
+      sounds: new Map([["marsh_run_01", {}], ["marsh_run_02", {}]]), fetchSound: vi.fn() } as unknown as NativePlacementAudio;
+    const controls = attachWorldAudioControls(host as unknown as HTMLElement, mixer, { music: music as unknown as WorldMusic, isVisible: () => true });
+    controls.setWorldAudio({ music: music as unknown as WorldMusic, ambience: { ...ambience, inspection: () => ({ ...ambience.inspection(), sourceMap: "maps/20_21.unr" }) } as WorldAmbience,
+      placementAudio, failure: null });
+    expect(host.byTestId("world-music-now-playing").textContent).toBe("Music: outside every MusicVolume, silent; default music unresolved.");
+    expect(host.byTestId("world-placement-audio").textContent)
+      .toBe("2 placements bind 3 StepSound references to 2 sounds (StepSound_1, StepSound_2); automatic footstep playback is polish (DEC-OWN-1).");
+    const nowPlayingCard = controls.cards().find(card => card.testId === "world-music-now-playing")!;
+    expect(nowPlayingCard.description).toContain("maps/20_21.unr MusicVolume brushes (1 volumes) → nMusicID → musicinfo.dat strings (D04_F, D04_S01)");
+    const rows = controls.describe(), sourceOf = (name: string) => rows.find(row => row.name === name)!.source;
+    expect(sourceOf("Now playing")).toContain("scripts/world/world_audio_step.py");
+    expect(sourceOf("Nearby ambient emitters")).toBe("AmbientSoundObject fields of maps/20_21.unr, converted by scripts/world/world_audio_step.py; omitted fields use Engine.u class defaults");
+    expect(sourceOf("Placement audio")).toContain("StepSound properties of maps/20_21.unr");
+    expect(rows.find(row => row.name === "Placement audio")!.status).toContain("polish item (DEC-OWN-1)");
+    const everyText = JSON.stringify([controls.cards(), rows.map(row => [row.name, row.values, row.source, row.status])]);
+    expect(everyText).not.toContain("20_20");
     controls.dispose();
   });
 

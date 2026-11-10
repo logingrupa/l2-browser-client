@@ -4,7 +4,6 @@ import { createWorldMusic, musicVolumeContains, nativeMusicRules, selectMusicVol
 import type { NativeMusic, NativeMusicTrack, NativeMusicVolume } from "../../src/assets/native/loadNativeWorldAudio";
 import { FakeMediaElement, fakeMixerContext, flush, type FakeGainNode } from "./fakeWebAudio";
 
-/** Axis-aligned box as six convex planes (inside: n·p - w <= 0), native units. */
 function box(id: string, min: [number, number, number], max: [number, number, number], tracks: string[], forcePlayMusic: boolean | null = null): NativeMusicVolume {
   return { id, object: id, exportIndex: 1, musicId: 100, forcePlayMusic, group: null, tracks, boundsNative: { min, max },
     planes: [[-1, 0, 0, -min[0]], [1, 0, 0, max[0]], [0, -1, 0, -min[1]], [0, 1, 0, max[1]], [0, 0, -1, -min[2]], [0, 0, 1, max[2]]] };
@@ -58,9 +57,15 @@ describe("music volume selection (native lookup)", () => {
     expect(selectMusicVolume([dungeon, fortress], spawn)).toMatchObject({ volume: fortress });
     const plain = box("plain", [0, 90000, -5000], [20000, 99000, 0], ["music:X"]);
     expect(selectMusicVolume([plain, fortress], spawn).volume).toBe(fortress);
-    expect(selectMusicVolume([fortress, plain], spawn).volume).toBe(fortress); // later hit lacks bForcePlayMusic
+    expect(selectMusicVolume([fortress, plain], spawn).volume, "the later hit lacks bForcePlayMusic").toBe(fortress);
     expect(selectMusicVolume([plain, { ...plain, id: "plain2" }], spawn).volume!.id).toBe("plain");
     expect(selectMusicVolume([dungeon, fortress], [20000, 90000, -3455])).toEqual({ volume: null, inside: [] });
+  });
+
+  it("counts a listener exactly on a plane as inside, by the manifest insideRule nx*X + ny*Y + nz*Z - W <= 0", () => {
+    expect(musicVolumeContains(fortress, [8898, 95034, -3374.79])).toBe(true);
+    expect(musicVolumeContains(fortress, [11000, 96601, -2675])).toBe(true);
+    expect(musicVolumeContains(fortress, [8897, 95034, -3374.79])).toBe(false);
   });
 });
 
@@ -73,17 +78,16 @@ describe("world music playback (native rules)", () => {
     await at(0, [50, 50, 0]);
     expect(world.inspection()).toMatchObject({ state: "waiting-for-unlock", volume: { id: "MusicVolume1", forcePlayMusic: true }, nextPick: "music:F10_S01" });
     expect(fetched).toEqual(["original:music:F10_S01"]);
-    expect(elements).toHaveLength(0); // no element before the first gesture
+    expect(elements, "no element before the first gesture").toHaveLength(0);
     void mixer.unlock();
-    // Inside the same synchronous gesture: elements exist, are blessed and the pick plays.
-    expect(elements).toHaveLength(2);
+    expect(elements, "inside the same synchronous gesture the elements exist, are blessed and the pick plays").toHaveLength(2);
     const [first, second] = elements;
     expect(first!.plays.at(-1)).toMatch(/^blob:1:4:audio\/ogg/);
     expect(first!.loop).toBe(false);
     expect(second!.plays[0]).toMatch(/^data:audio\/wav;base64,/);
     const level = (context.media[0]!.connections[0] as FakeGainNode).connections[0] as FakeGainNode;
     expect(level.gain.value).toBe(nativeMusicRules.musicVolume);
-    expect((context.media[0]!.connections[0] as FakeGainNode).gain.value).toBe(1); // no fade-in
+    expect((context.media[0]!.connections[0] as FakeGainNode).gain.value, "no fade-in").toBe(1);
     await flush();
     expect(world.inspection()).toMatchObject({ state: "playing", track: { storedString: "F10_S01", variant: "original", volumeId: "MusicVolume1" },
       nextPick: "music:F04_S01", gain: .1 });
@@ -101,7 +105,7 @@ describe("world music playback (native rules)", () => {
     expect(world.inspection().state).toBe("gap");
     expect(world.inspection().gapRemainingSeconds).toBeCloseTo(.1);
     await at(30.1, [50, 50, 0]);
-    expect(world.inspection()).toMatchObject({ state: "playing", track: { storedString: "F09_F" } }); // same track again: allowed
+    expect(world.inspection(), "the same track may play again").toMatchObject({ state: "playing", track: { storedString: "F09_F" } });
     expect(elements.flatMap(element => element.plays).filter(src => src.startsWith("blob:"))).toHaveLength(2);
   });
 
@@ -126,12 +130,12 @@ describe("world music playback (native rules)", () => {
     await mixer.unlock(); await flush();
     await at(5, [500, 500, 0]);
     expect(world.inspection()).toMatchObject({ state: "playing", volume: null, track: { storedString: "F09_F" } });
-    expect(elements[0]!.paused).toBe(false); // never stopped on leaving
+    expect(elements[0]!.paused, "never stopped on leaving").toBe(false);
     elements[0]!.fire("ended");
     await at(100, [500, 500, 0]);
     expect(world.inspection()).toMatchObject({ state: "silent", track: null, nextPick: null });
-    await at(101, [50, 50, 0]); // re-entering starts a pick at once
-    expect(world.inspection()).toMatchObject({ state: "playing", volume: { id: "MusicVolume1" } });
+    await at(101, [50, 50, 0]);
+    expect(world.inspection(), "re-entering starts a pick at once").toMatchObject({ state: "playing", volume: { id: "MusicVolume1" } });
   });
 
   it("falls back to the labelled AAC derivative when the browser cannot play the Ogg", async () => {
@@ -147,7 +151,8 @@ describe("world music playback (native rules)", () => {
 
   it("retries a refused play() inside the next trusted gesture (iOS autoplay)", async () => {
     const { mixer, world, elements, listeners, at } = setup([volume], { rolls: [0] });
-    await mixer.unlock(); await flush(); // unlocked before the music had a pick
+    const unlockedBeforeTheMusicHadAPick = mixer.unlock();
+    await unlockedBeforeTheMusicHadAPick; await flush();
     await at(0, [50, 50, 0]);
     expect(elements).toHaveLength(2);
     for (const element of elements) element.refuse = "NotAllowedError";

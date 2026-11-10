@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { loadNativeWorldAudio, nativeAmbientEmitterFields, noTileAudioResourcesReason, readNativeWorldAudioRecords } from "../../src/assets/native/loadNativeWorldAudio";
 import { readSelectedTileWorldAudioRecords } from "../../src/assets/native/readSelectedTileWorldAudio";
+import { WorldAudioMixer } from "../../src/audio/WorldAudioMixer";
+import { attachWorldAudioControls } from "../../src/audio/worldAudioControls";
 import { decodeJsonDocument, fixtureTileId, jsonBytes, readFixtureTileFiles, sha256Hex } from "../support/nativeTileFixtureStore";
+import { fakeMixerContext } from "./fakeWebAudio";
+import { MinimalFakeDomElement, minimalFakeDocument } from "./minimalFakeDomElement";
 
 const signal = () => new AbortController().signal;
 const tileMapPath = `maps/${fixtureTileId}.unr`;
@@ -93,6 +97,21 @@ describe("tile world-audio loading", () => {
     tileAudioStore([]);
     expect(await loadNativeWorldAudio(await readNativeWorldAudioRecords(signal()), signal()))
       .toEqual({ music: null, ambience: null, placementAudio: null, manifests: [], silentReason: noTileAudioResourcesReason });
+  });
+
+  it("tells the sheet that a tile without music is outside every MusicVolume, silent, with default music unresolved", async () => {
+    tileAudioStore([]);
+    const loaded = await loadNativeWorldAudio(await readNativeWorldAudioRecords(signal()), signal());
+    vi.stubGlobal("document", minimalFakeDocument);
+    const { makeContext } = fakeMixerContext();
+    const host = new MinimalFakeDomElement("DIV");
+    const controls = attachWorldAudioControls(host as unknown as HTMLElement, new WorldAudioMixer({ makeContext }), { isVisible: () => true });
+    controls.setWorldAudio({ music: null, ambience: null, placementAudio: loaded.placementAudio, silentReason: loaded.silentReason, failure: null });
+    expect(host.byTestId("world-music-now-playing").textContent)
+      .toBe("No MusicVolume music loaded (no tile audio resources): outside every MusicVolume, silent; default music unresolved.");
+    expect(host.byTestId("world-ambience-nearby").textContent).toBe("No AmbientSoundObject ambience loaded (no tile audio resources).");
+    expect(host.byTestId("world-placement-audio").textContent).toBe("No StepSound placement audio loaded.");
+    controls.dispose();
   });
 
   it("refuses an unknown manifest kind, an unbound placement sound and a manifest of another tile", async () => {
