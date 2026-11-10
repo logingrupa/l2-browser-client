@@ -76,6 +76,12 @@ def read_character_sources(project_root, client_root, decode_table, class_work_r
                             LazyClassDefinitionReader(client_root, class_work_root))
 
 
+def model_gap_reason(census_reason, generated):
+    if census_reason:
+        return census_reason
+    return None if generated['request'] else generated['gaps'][0]['reason']
+
+
 def manifest_source_sha256(manifest):
     return manifest['sourceSha256'] if manifest else None
 
@@ -153,7 +159,7 @@ class CharacterConversionRun:
         if self.ledger.is_sealed(key, fingerprint):
             return self.write_model_record(row_index, self.sealed_outcome(row_index))
         step_directory = self.ledger.begin(key, fingerprint)
-        model_reason = config['censusReason'] or (None if generated['request'] else generated['gaps'][0]['reason'])
+        model_reason = model_gap_reason(config['censusReason'], generated)
         outputs = []
         if model_reason is None:
             try:

@@ -87,6 +87,194 @@ class CharacterRequestTracerTests(unittest.TestCase):
         self.assertEqual(resolution['evidence']['fields'], ['class', 'description'])
 
 
+CLASS_PACKAGE_SHA256 = 'e' * 64
+JOINED_CLASS = 'LineageWarrior.SyntheticFighter'
+
+
+def joined_classinfo(actor_class=JOINED_CLASS):
+    return {'sourceSha256': 'b' * 64, 'records': {'class': [{'chargrp_index': 0, 'actor_class': actor_class}]}}
+
+
+def class_definitions(definitions):
+    def read_class_definition(reference):
+        return definitions[reference]
+    return read_class_definition
+
+
+def joined_actor_class(properties):
+    return {'class': JOINED_CLASS, 'packageSha256': CLASS_PACKAGE_SHA256, 'properties': properties}
+
+
+def joined_class_reader(actor_class):
+    return class_definitions({JOINED_CLASS: {'properties': actor_class['properties'] if actor_class else {}, 'nativeSuperClass': None}})
+
+
+def joined_layout_manifest(records):
+    return {'sourceSha256': 'f' * 64, 'records': records}
+
+
+def hair_record(join_value, textures=('MFighter.Hair_m000_t00_ah',), mesh='Fighter.Hair_m000_ah'):
+    return {'template_key': join_value, 'hair_mesh': [{'param_hair_mesh': mesh}],
+            'hair_texture': [{'param_hair_texture': texture} for texture in textures]}
+
+
+class CharacterClassJoinTests(unittest.TestCase):
+    def test_a_decoded_classinfo_join_names_the_class_and_a_bare_class_name_does_not(self):
+        self.assertEqual(resolve_character_actor_class(joined_classinfo(), 0)['class'], JOINED_CLASS)
+        self.assertIsNone(resolve_character_actor_class(joined_classinfo(), 1)['class'])
+        self.assertIsNone(resolve_character_actor_class(joined_classinfo('SyntheticFighter'), 0)['class'])
+
+    def test_a_joined_class_gives_the_face_a_head_bone_attachment_that_the_converter_accepts(self):
+        from native_assets import Converter
+        row = synthetic_chargrp_row()
+        actor_class = joined_actor_class({'HeadBone': 'Bip01_head', 'Mesh': {'class': 'SkeletalMesh', 'object': 'Fighter.Face_m000_f'}})
+        face = build_character_request(row, 0, actor_class, character_sources([row], read_class_definition=joined_class_reader(actor_class)))
+        face = face['request']['parts'][-1]
+        self.assertEqual(face['rigidAttachment'], {'bone': 'Bip01_head', 'source': {'class': JOINED_CLASS, 'packageSha256': CLASS_PACKAGE_SHA256,
+                                                                                    'bonePath': ['HeadBone'], 'meshPath': ['Mesh']}})
+        self.assertEqual(face['sourceBinding']['meshPath'], ['Char', 0, 'face_mesh', 0, 'param_face_mesh'])
+        converter = type('ConverterDouble', (), {'class_cache': {JOINED_CLASS: {'properties': actor_class['properties'], 'source': {},
+                                                                               'sourceScriptSha256': '', 'uelibSha256': '', 'helperSha256': '',
+                                                                               'limitations': []}},
+                                                 'package': lambda self, name: (name, None),
+                                                 'recorded_source_sha256': lambda self, path: CLASS_PACKAGE_SHA256})()
+        evidence = Converter.verify_actor_attachment(converter, None, {**face, 'object': face['object']})
+        self.assertEqual((evidence['bone'], evidence['class']), ('Bip01_head', JOINED_CLASS))
+
+    def test_several_face_textures_leave_the_face_slot_unbound_instead_of_choosing_one(self):
+        row = synthetic_chargrp_row(face_textures=('MFighter.Face_t00', 'MFighter.Face_t01'))
+        actor_class = joined_actor_class({'HeadBone': 'Bip01_head'})
+        generated = build_character_request(row, 0, actor_class, character_sources([row], read_class_definition=joined_class_reader(actor_class)))
+        self.assertEqual(generated['request']['parts'][-1]['materials'], [])
+        self.assertNotIn('texturePath', generated['request']['parts'][-1]['sourceBinding'])
+
+
+class CharacterLayoutJoinTests(unittest.TestCase):
+    def generated_with_hair(self, records, actor_class=None, table='hairgrp'):
+        row = {**synthetic_chargrp_row(), 'template_key': 0}
+        manifests = {'hairgrp': joined_layout_manifest(records) if table == 'hairgrp' else None,
+                     'helmetgrp': joined_layout_manifest(records) if table == 'helmetgrp' else None}
+        return build_character_request(row, 0, actor_class, character_sources([row], read_class_definition=joined_class_reader(actor_class),
+                                                                              **manifests))
+
+    def test_one_joined_record_binds_the_hair_texture_with_its_citation_and_the_field_proof(self):
+        from data.hair_table_adapter import HAIR_TABLE_FIELD_PROOF
+        generated = self.generated_with_hair([hair_record(1), hair_record(0)])
+        hair_part = generated['request']['parts'][-1]
+        self.assertEqual((hair_part['package'], hair_part['object'], hair_part['materials']), ('Fighter', 'Hair_m000_ah', ['0=MFighter.Hair_m000_t00_ah']))
+        self.assertEqual(hair_part['layoutBinding'], {'table': 'hairgrp', 'sourceSha256': 'f' * 64, 'recordOrdinal': 1,
+                                                      'fieldPath': ['hair_texture', 0, 'param_hair_texture']})
+        self.assertEqual((generated['hair']['joinField'], generated['hair']['candidateCount']), ('template_key', 1))
+        self.assertTrue(any(HAIR_TABLE_FIELD_PROOF in limitation for limitation in generated['request']['limitations']))
+
+    def test_a_joined_hair_mesh_in_the_class_sub_meshes_attaches_to_the_head_bone(self):
+        actor_class = joined_actor_class({'HeadBone': 'Bip01_head', 'SubMeshes': [None, {'class': 'SkeletalMesh', 'object': 'Fighter.Hair_m000_ah'}]})
+        hair_part = self.generated_with_hair([hair_record(0)], actor_class)['request']['parts'][-1]
+        self.assertEqual(hair_part['rigidAttachment']['source']['meshPath'], ['SubMeshes', 1])
+
+    def test_several_colour_records_or_no_joined_record_stay_hair_gaps_with_the_candidate_count(self):
+        for records, count in (([hair_record(0, ('MFighter.Hair_t00', 'MFighter.Hair_t01'))], 2), ([hair_record(0), hair_record(0)], 2),
+                               ([hair_record(5)], 0)):
+            with self.subTest(count=count):
+                generated = self.generated_with_hair(records)
+                self.assertEqual((generated['hair']['status'], generated['hair']['reason'], generated['hair']['candidateCount']),
+                                 ('gap', 'hair-layout-undecoded', count))
+                self.assertNotIn('Hair', json.dumps(generated['request']['parts']))
+
+    def test_the_same_rules_on_helmetgrp_give_helmet_gaps(self):
+        generated = self.generated_with_hair([hair_record(0, ('MFighter.Hair_t00', 'MFighter.Hair_t01'))], table='helmetgrp')
+        self.assertEqual((generated['helmet']['reason'], generated['helmet']['candidateCount']), ('helmet-layout-undecoded', 2))
+
+
+class CharacterCollisionChainTests(unittest.TestCase):
+    def profile(self, definitions):
+        from actors.character_requests import character_profile_fields
+        return character_profile_fields(joined_actor_class(definitions[JOINED_CLASS]['properties']), class_definitions(definitions))
+
+    def test_declared_values_are_copied_exactly_and_an_omitted_value_comes_from_the_declared_parent(self):
+        profile = self.profile({JOINED_CLASS: {'properties': {'CollisionHeight': 23.0001}, 'nativeSuperClass': 'LineageWarrior.LineagePawn'},
+                                'LineageWarrior.LineagePawn': {'properties': {'CollisionRadius': 9.999}, 'nativeSuperClass': None}})
+        self.assertEqual(profile['collision'], {'collisionRadius': {'value': 9.999, 'class': 'LineageWarrior.LineagePawn'},
+                                                'collisionHeight': {'value': 23.0001, 'class': JOINED_CLASS}})
+        self.assertEqual(profile['reason'], 'actor-default-unresolved:WaitAnimName')
+        self.assertEqual(profile['actorClassDefaults'], {'class': JOINED_CLASS, 'classPackageSha256': CLASS_PACKAGE_SHA256,
+                                                         'HeadBone': None, 'RightHandBone': None})
+
+    def test_a_value_absent_through_the_whole_ancestry_stays_actor_default_unresolved(self):
+        profile = self.profile({JOINED_CLASS: {'properties': {'CollisionHeight': 22.5}, 'nativeSuperClass': 'Engine.Pawn'},
+                                'Engine.Pawn': {'properties': {}, 'nativeSuperClass': None}})
+        self.assertEqual(profile['reason'], 'actor-default-unresolved:CollisionRadius')
+        self.assertEqual(profile['collision']['collisionRadius']['classChain'], [JOINED_CLASS, 'Engine.Pawn'])
+
+    def test_the_female_fighter_row_is_compared_with_the_audit_values_and_never_adjusted(self):
+        stage = json.loads((ROOT / 'recipes' / 'native-player-ffighter-stage.json').read_bytes())
+        audit_values = {field: entry['previousValue'] for field, entry in stage['profiles'][0]['unresolved'].items()}
+        row = synthetic_chargrp_row()
+        generated = build_character_request(row, 1, None, character_sources([row, row]))
+        self.assertEqual((generated['profileFields']['reason'], generated['profileFields']['collision']), (CLASS_TEMPLATE_MAPPING_UNDECODED_REASON, None))
+        self.assertEqual(audit_values, {'collisionRadius': 8, 'collisionHeight': 23.5})
+        for module in ('character_requests.py', 'character_conversion.py', 'character_census.py', 'convert_actors.py'):
+            self.assertNotIn('previousValue', (ROOT / 'scripts' / 'actors' / module).read_text(encoding='utf-8'))
+
+
+class CharacterEdgeTests(unittest.TestCase):
+    def generated(self, row, row_index=0, rows=None):
+        return build_character_request(row, row_index, None, character_sources(rows or [row]))
+
+    def test_sixteen_parts_request_and_seventeen_are_an_assembly_part_limit_gap_without_truncation(self):
+        self.assertEqual(len(self.generated(synthetic_chargrp_row(body_mesh_count=16))['request']['parts']), 16)
+        over = self.generated(synthetic_chargrp_row(body_mesh_count=17))
+        self.assertIsNone(over['request'])
+        self.assertEqual(over['gaps'][0], {'field': 'parts', 'reason': 'assembly-part-limit-exceeded:17'})
+
+    def test_two_rows_sharing_a_mesh_keep_separate_requests(self):
+        row = synthetic_chargrp_row()
+        first, second = self.generated(row, 0, [row, row]), self.generated(row, 1, [row, row])
+        self.assertEqual((first['request']['name'], second['request']['name']), ('character-0', 'character-1'))
+        self.assertEqual(second['request']['parts'][0]['sourceBinding']['meshPath'][1], 1)
+
+    def test_an_empty_face_mesh_is_a_face_gap_and_an_empty_texture_leaves_the_slot_unbound(self):
+        row = synthetic_chargrp_row(face_mesh='')
+        row['body_texture']['body_texture2'] = ''
+        generated = self.generated(row)
+        self.assertIn({'field': 'face', 'reason': 'no-mesh-in-row'}, generated['gaps'])
+        self.assertEqual(generated['request']['parts'][1]['materials'], [])
+        self.assertNotIn('texturePath', generated['request']['parts'][1]['sourceBinding'])
+        self.assertEqual(generated['parts'][1], {'field': 'body_mesh2', 'status': 'requested-unbound', 'reason': None})
+
+    def test_an_unqualified_reference_is_an_actor_default_gap_never_a_bare_name_fallback(self):
+        row = synthetic_chargrp_row()
+        row['body_mesh']['body_mesh1'] = 'Body_m001_1'
+        generated = self.generated(row)
+        self.assertEqual(generated['parts'][0], {'field': 'body_mesh1', 'status': 'gap', 'reason': 'actor-default-unresolved:body_mesh1'})
+        self.assertNotIn('Body_m001_1', [part['object'] for part in generated['request']['parts']])
+
+    def test_requests_are_byte_identical_across_runs_and_body_fields_sort_numerically(self):
+        row = synthetic_chargrp_row(body_mesh_count=10)
+        self.assertEqual(json.dumps(self.generated(row), sort_keys=True), json.dumps(self.generated(row), sort_keys=True))
+        self.assertEqual([part['sourceBinding']['meshPath'][3] for part in self.generated(row)['request']['parts']],
+                         [f'body_mesh{number}' for number in range(1, 11)])
+
+    def test_a_row_without_body_mesh_is_padding_with_its_field_evidence_and_no_key(self):
+        from actors.character_census import padding_census_row
+        from actors.character_requests import is_padding_row
+        row = {**synthetic_chargrp_row(), 'body_mesh': {'body_mesh1': '', 'body_mesh2': ''}}
+        self.assertTrue(is_padding_row(row))
+        census_row = padding_census_row(14, row)
+        self.assertEqual((census_row['key'], census_row['padding']), (None, True))
+        self.assertEqual(census_row['gaps'], [{'field': 'body_mesh1', 'reason': 'no-mesh-in-row'}, {'field': 'body_mesh2', 'reason': 'no-mesh-in-row'}])
+
+    def test_a_census_gap_such_as_the_skeletal_gate_wins_before_any_conversion_attempt(self):
+        from actors.character_conversion import model_gap_reason
+        generated = self.generated(synthetic_chargrp_row())
+        self.assertEqual(model_gap_reason('skeletal-licensee-unsupported:123/27', generated), 'skeletal-licensee-unsupported:123/27')
+        self.assertIsNone(model_gap_reason(None, generated))
+
+    def test_the_key_is_an_unpadded_index(self):
+        from actors.character_requests import character_key
+        self.assertEqual((character_key(0), character_key(14)), ('character:0', 'character:14'))
+
+
 class ReferenceClientRowZeroCrossCheckTests(unittest.TestCase):
     def setUp(self):
         if not (REFERENCE_CLIENT / 'system' / 'chargrp.dat').is_file():

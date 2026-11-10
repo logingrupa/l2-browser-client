@@ -1,0 +1,1069 @@
+{
+ "chargrpSourceSha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f",
+ "classJoin": {
+  "decodedFields": [
+   "class",
+   "description"
+  ],
+  "requiredFields": [
+   "chargrp_index",
+   "actor_class"
+  ]
+ },
+ "classinfoSourceSha256": "537681972450e4f3264efcc00748a3776f2420fa7e1531556934ebe41e560507",
+ "counts": {
+  "characters": 14,
+  "gapKeys": 14,
+  "modelsConverted": 8,
+  "padding": 1,
+  "pendingKeys": 0,
+  "profilesWritten": 0,
+  "rows": 15
+ },
+ "hairFieldProof": "client int32 layout of system/Engine.dll 4dd2f63c606df5671702911fa1f8ddcc4099bf2b98b81e8aa88eed47f5405b08: FL2GameData::HairDataLoad 0x10451720, HelmHairDataLoad 0x10466140, AccessaryHairDataLoad 0x104675f0",
+ "hairgrpSourceSha256": "03df44930cd3752e0f67c99ad2f402028a4406d53a5e30978adc92b589c8fa59",
+ "helmetgrpSourceSha256": "ace5b171bf7bd6203de614257a4a523fe07e6fb14abc19af351f7b51c1809237",
+ "layoutRecordFields": {
+  "hairgrp": [],
+  "helmetgrp": [
+   "key",
+   "pairs"
+  ]
+ },
+ "rows": [
+  {
+   "chargrpIndex": 0,
+   "collision": {
+    "heightClass": null,
+    "radiusClass": null,
+    "reason": "class-template-mapping-undecoded",
+    "status": "gap"
+   },
+   "gaps": [
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded"
+    },
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "class-template-mapping-undecoded"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:0",
+   "model": "converted",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded",
+     "status": "gap"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 1,
+   "collision": {
+    "heightClass": null,
+    "radiusClass": null,
+    "reason": "class-template-mapping-undecoded",
+    "status": "gap"
+   },
+   "gaps": [
+    {
+     "field": "model",
+     "reason": "animation-reference-missing"
+    },
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded"
+    },
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "class-template-mapping-undecoded"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:1",
+   "model": "gap",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded",
+     "status": "gap"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 2,
+   "collision": {
+    "heightClass": null,
+    "radiusClass": null,
+    "reason": "class-template-mapping-undecoded",
+    "status": "gap"
+   },
+   "gaps": [
+    {
+     "field": "model",
+     "reason": "texture-licensee-unsupported:123/27"
+    },
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded"
+    },
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "class-template-mapping-undecoded"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:2",
+   "model": "gap",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded",
+     "status": "gap"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 3,
+   "collision": {
+    "heightClass": null,
+    "radiusClass": null,
+    "reason": "class-template-mapping-undecoded",
+    "status": "gap"
+   },
+   "gaps": [
+    {
+     "field": "model",
+     "reason": "texture-licensee-unsupported:123/27"
+    },
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded"
+    },
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "class-template-mapping-undecoded"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:3",
+   "model": "gap",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded",
+     "status": "gap"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 4,
+   "collision": {
+    "heightClass": null,
+    "radiusClass": null,
+    "reason": "class-template-mapping-undecoded",
+    "status": "gap"
+   },
+   "gaps": [
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded"
+    },
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "class-template-mapping-undecoded"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:4",
+   "model": "converted",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded",
+     "status": "gap"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 5,
+   "collision": {
+    "heightClass": null,
+    "radiusClass": null,
+    "reason": "class-template-mapping-undecoded",
+    "status": "gap"
+   },
+   "gaps": [
+    {
+     "field": "model",
+     "reason": "texture-licensee-unsupported:123/27"
+    },
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded"
+    },
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "class-template-mapping-undecoded"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:5",
+   "model": "gap",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded",
+     "status": "gap"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 6,
+   "collision": {
+    "heightClass": null,
+    "radiusClass": null,
+    "reason": "class-template-mapping-undecoded",
+    "status": "gap"
+   },
+   "gaps": [
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded"
+    },
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "class-template-mapping-undecoded"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:6",
+   "model": "converted",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded",
+     "status": "gap"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 7,
+   "collision": {
+    "heightClass": null,
+    "radiusClass": null,
+    "reason": "class-template-mapping-undecoded",
+    "status": "gap"
+   },
+   "gaps": [
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded"
+    },
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "class-template-mapping-undecoded"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:7",
+   "model": "converted",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded",
+     "status": "gap"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 8,
+   "collision": {
+    "heightClass": null,
+    "radiusClass": null,
+    "reason": "class-template-mapping-undecoded",
+    "status": "gap"
+   },
+   "gaps": [
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded"
+    },
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "class-template-mapping-undecoded"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:8",
+   "model": "converted",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded",
+     "status": "gap"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 9,
+   "collision": {
+    "heightClass": null,
+    "radiusClass": null,
+    "reason": "class-template-mapping-undecoded",
+    "status": "gap"
+   },
+   "gaps": [
+    {
+     "field": "model",
+     "reason": "animation-reference-missing"
+    },
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded"
+    },
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "class-template-mapping-undecoded"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:9",
+   "model": "gap",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded",
+     "status": "gap"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 10,
+   "collision": {
+    "heightClass": null,
+    "radiusClass": null,
+    "reason": "class-template-mapping-undecoded",
+    "status": "gap"
+   },
+   "gaps": [
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded"
+    },
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "class-template-mapping-undecoded"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:10",
+   "model": "converted",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded",
+     "status": "gap"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 11,
+   "collision": {
+    "heightClass": null,
+    "radiusClass": null,
+    "reason": "class-template-mapping-undecoded",
+    "status": "gap"
+   },
+   "gaps": [
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded"
+    },
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "class-template-mapping-undecoded"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:11",
+   "model": "converted",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded",
+     "status": "gap"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 12,
+   "collision": {
+    "heightClass": null,
+    "radiusClass": null,
+    "reason": "class-template-mapping-undecoded",
+    "status": "gap"
+   },
+   "gaps": [
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded"
+    },
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "class-template-mapping-undecoded"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:12",
+   "model": "converted",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded",
+     "status": "gap"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 13,
+   "collision": {
+    "heightClass": null,
+    "radiusClass": null,
+    "reason": "class-template-mapping-undecoded",
+    "status": "gap"
+   },
+   "gaps": [
+    {
+     "field": "model",
+     "reason": "animation-reference-missing"
+    },
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded"
+    },
+    {
+     "field": "hair",
+     "reason": "hair-layout-undecoded"
+    },
+    {
+     "field": "helmet",
+     "reason": "helmet-layout-undecoded"
+    },
+    {
+     "field": "profile",
+     "reason": "class-template-mapping-undecoded"
+    }
+   ],
+   "hair": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "hair-layout-undecoded",
+    "status": "gap"
+   },
+   "helmet": {
+    "candidateCount": null,
+    "joinField": null,
+    "reason": "helmet-layout-undecoded",
+    "status": "gap"
+   },
+   "key": "character:13",
+   "model": "gap",
+   "padding": false,
+   "parts": [
+    {
+     "field": "body_mesh1",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": null,
+     "status": "requested"
+    },
+    {
+     "field": "face",
+     "reason": "class-template-mapping-undecoded",
+     "status": "gap"
+    }
+   ],
+   "profile": "gap"
+  },
+  {
+   "chargrpIndex": 14,
+   "collision": null,
+   "gaps": [
+    {
+     "field": "body_mesh1",
+     "reason": "no-mesh-in-row"
+    },
+    {
+     "field": "body_mesh2",
+     "reason": "no-mesh-in-row"
+    },
+    {
+     "field": "body_mesh3",
+     "reason": "no-mesh-in-row"
+    },
+    {
+     "field": "body_mesh4",
+     "reason": "no-mesh-in-row"
+    }
+   ],
+   "hair": null,
+   "helmet": null,
+   "key": null,
+   "model": null,
+   "padding": true,
+   "parts": [],
+   "profile": null
+  }
+ ],
+ "schemaVersion": 1
+}
