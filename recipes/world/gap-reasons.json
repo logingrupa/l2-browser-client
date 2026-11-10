@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 12,
+  "listVersion": 13,
   "reasons": [
     "terrain-height-version-unsupported:<version>",
     "terrain-quads-all-hidden",
@@ -27,6 +27,9 @@
     "lighting-lightmap-index-invalid:<index>",
     "lighting-payload-too-large",
     "environment-program-unresolved:<file>",
-    "lighting-water-volume-unlinked:<class>"
+    "lighting-water-volume-unlinked:<class>",
+    "object-gaps:<count>",
+    "batch-pending",
+    "upstream-step-failed:<step>"
   ]
 }

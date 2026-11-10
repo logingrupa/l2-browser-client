@@ -13,7 +13,7 @@ from support.lighting_actor_fixture import (ENVIRONMENT_LIGHTS, LIGHTING_CLASS_D
                                             read_synthetic_chain, synthetic_actor_rows, synthetic_lighting_package)
 from support.lightmap_tail_fixture import (build_lightmap_tail, lightmap_model_and_package, lightmap_node, page_mip_bytes, render_section_bytes)
 from world.bsp_lightmaps import LIGHTMAP_ATLAS_EDGE, NO_LIGHTMAP, node_lightmap_texture, read_bsp_lightmaps
-from world.convert_tile import TILE_STEP_NAMES
+from world.tile_step_registry import TILE_STEP_NAMES
 from world.light_actors import ClassChains, LightingActor, read_lighting_actors, read_static_mesh_light_lists
 from world.lighting_payload import bsp_lightmap_arrays, static_mesh_light_list_arrays, terrain_lighting_arrays, typed_payload_byte_count
 from world.lighting_step import (APPLIED_LIGHTING_RULES, LIGHTING_STEP_ALGORITHM_VERSION, LIGHTING_STEP_NAME, load_lighting_rules,

@@ -19,8 +19,8 @@ from native_store.canonical_json import canonical_json_bytes
 from native_store.gap_rows import GapRowError
 from native_store.store_paths import StorePathError
 from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, BELOW_NORMAL_PRIORITY_CLASS, BatchPreflightRefusedError,
-                                      UnitLedger, UnitLedgerError, locked_input_records, require_batch_preflight,
-                                      unit_directory_name)
+                                      FreeDiskFloorRefusedError, MachineWindowRefusedError, UnitLedger, UnitLedgerError,
+                                      locked_input_records, require_batch_preflight, unit_directory_name)
 from reference_client_guard import REFERENCE_CLIENT_LOCK_FILE_FIELDS
 
 try:
@@ -64,7 +64,7 @@ class BatchPreflightTests(unittest.TestCase):
             local_now=local_now or (lambda: datetime(2026, 11, 10, 14, 0, tzinfo=RIGA_WINTER_OFFSET)))
 
     def test_refuses_inside_the_prominence_backup_window_through_a_real_node_process(self):
-        with self.assertRaises(BatchPreflightRefusedError) as refusal:
+        with self.assertRaises(MachineWindowRefusedError) as refusal:
             self.preflight('PROMINENCE-PC', '2026-11-10T21:15:00Z')
         self.assertIn('inside nightly backup window', str(refusal.exception))
         self.assertIn('2026-11-10T23:15:00+02:00', str(refusal.exception))
@@ -86,7 +86,7 @@ class BatchPreflightTests(unittest.TestCase):
         self.assertRegex(result['rigaTime'], r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+0[23]:00$')
 
     def test_refuses_free_disk_below_the_floor_with_value_and_riga_time(self):
-        with self.assertRaises(BatchPreflightRefusedError) as refusal:
+        with self.assertRaises(FreeDiskFloorRefusedError) as refusal:
             self.preflight('PROMINENCE-PC', '2026-11-10T12:00:00Z', free_bytes=BATCH_MINIMUM_FREE_BYTES - 1)
         self.assertEqual(str(refusal.exception), f'free disk {BATCH_MINIMUM_FREE_BYTES - 1} bytes is below the batch floor '
                                                  f'{BATCH_MINIMUM_FREE_BYTES} bytes at 2026-11-10T14:00:00+02:00')
@@ -96,6 +96,7 @@ class BatchPreflightTests(unittest.TestCase):
             self.preflight('PROMINENCE-PC', '2026-11-10T12:00:00Z',
                            local_now=lambda: datetime(2026, 11, 10, 15, 0, tzinfo=RIGA_SUMMER_OFFSET))
         self.assertEqual(str(refusal.exception), 'host clock offset +03:00 differs from Europe/Riga +02:00')
+        self.assertNotIsInstance(refusal.exception, (MachineWindowRefusedError, FreeDiskFloorRefusedError))
 
     def test_reports_a_failing_schedule_check_as_an_error(self):
         with self.assertRaises(UnitLedgerError) as failure:

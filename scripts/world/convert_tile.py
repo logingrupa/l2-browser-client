@@ -10,31 +10,13 @@ import json
 
 from native_store.gap_rows import read_gap_rows, write_gap_rows
 from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
-from native_store.store_paths import REPOSITORY_ROOT, require_converter_output
+from native_store.store_paths import REPOSITORY_ROOT
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, require_batch_preflight, run_at_below_normal_priority
 from reference_client_guard import require_reference_client
-from world.bsp_step import BSP_STEP_NAME, run_bsp_step
-from world.bsp_visibility_step import BSP_VISIBILITY_STEP_NAME, run_bsp_visibility_step
-from world.collision_step import COLLISION_STEP_NAME, run_collision_step
-from world.lighting_step import LIGHTING_STEP_NAME, run_lighting_step
-from world.map_emitter_step import MAP_EMITTER_STEP_NAME, run_map_emitter_step
-from world.mover_step import MOVER_STEP_NAME, run_mover_step
-from world.raw_map_step import RAW_STEP_NAME, TILE_ID_PATTERN, run_raw_map_step
-from world.sky_step import SKY_STEP_NAME, run_sky_step
-from world.static_mesh_step import STATIC_MESH_STEP_NAME, run_static_mesh_step
-from world.terrain_chunk_step import TERRAIN_STEP_NAME, run_terrain_chunk_step
+from world.raw_map_step import TILE_ID_PATTERN
 from world.tile_census import WORLD_LANE_NAME
-from world.tile_chunk_plan import CHUNK_PLAN_STEP_NAME, run_chunk_plan_step
-from world.tile_manifest_step import TILE_MANIFEST_STEP_NAME, run_tile_manifest_step
-from world.world_audio_step import WORLD_AUDIO_STEP_NAME, run_world_audio_step
+from world.tile_step_registry import DEFAULT_TILE_STORE_OUTPUT, TILE_STEP_NAMES, run_tile_step
 
-SOURCE_TILE_STEPS = {RAW_STEP_NAME: run_raw_map_step, CHUNK_PLAN_STEP_NAME: run_chunk_plan_step, TERRAIN_STEP_NAME: run_terrain_chunk_step,
-                     STATIC_MESH_STEP_NAME: run_static_mesh_step, BSP_STEP_NAME: run_bsp_step, MOVER_STEP_NAME: run_mover_step,
-                     COLLISION_STEP_NAME: run_collision_step, MAP_EMITTER_STEP_NAME: run_map_emitter_step,
-                     BSP_VISIBILITY_STEP_NAME: run_bsp_visibility_step, SKY_STEP_NAME: run_sky_step,
-                     WORLD_AUDIO_STEP_NAME: run_world_audio_step, LIGHTING_STEP_NAME: run_lighting_step}
-TILE_STEP_NAMES = (*SOURCE_TILE_STEPS, TILE_MANIFEST_STEP_NAME)
-DEFAULT_TILE_STORE_OUTPUT = Path('artifacts') / 'lane-store' / WORLD_LANE_NAME / 'l2'
 FAILED_ROW_STATUS = 'failed'
 
 
@@ -50,12 +32,6 @@ def record_tile_step_gap_row(project_root, row):
     return write_gap_rows(project_root, WORLD_LANE_NAME, row['step'], [*rows, row])
 
 
-def run_tile_step(step, client, tile_id, output):
-    if step == TILE_MANIFEST_STEP_NAME:
-        return run_tile_manifest_step(REPOSITORY_ROOT, tile_id, require_converter_output(REPOSITORY_ROOT, REPOSITORY_ROOT / output))
-    return [SOURCE_TILE_STEPS[step](REPOSITORY_ROOT, client, tile_id)]
-
-
 def main(argv=None):
     parser = argparse.ArgumentParser(description='Run one world conversion step for one map tile of the locked reference client.')
     parser.add_argument('--client', type=Path, required=True)
@@ -69,7 +45,7 @@ def main(argv=None):
         require_batch_preflight(REPOSITORY_ROOT, WORLD_LANE_NAME, BATCH_MINIMUM_FREE_BYTES)
         run_at_below_normal_priority()
         with lane_coverage_refreshed_at_exit(REPOSITORY_ROOT, WORLD_LANE_NAME):
-            rows = run_tile_step(arguments.step, arguments.client, arguments.map, arguments.output)
+            rows = run_tile_step(REPOSITORY_ROOT, arguments.step, arguments.client, arguments.map, arguments.output)
             for row in rows:
                 record_tile_step_gap_row(REPOSITORY_ROOT, row)
     except (OSError, ValueError) as error:

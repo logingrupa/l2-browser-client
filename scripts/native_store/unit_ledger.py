@@ -41,6 +41,14 @@ class BatchPreflightRefusedError(UnitLedgerError):
     pass
 
 
+class MachineWindowRefusedError(BatchPreflightRefusedError):
+    pass
+
+
+class FreeDiskFloorRefusedError(BatchPreflightRefusedError):
+    pass
+
+
 def sha256_of_bytes(payload):
     return hashlib.sha256(payload).hexdigest()
 
@@ -161,7 +169,7 @@ def require_batch_preflight(project_root, lane_name, minimum_free_bytes, *, run_
                             disk_usage=shutil.disk_usage, local_now=None):
     exit_code, schedule, schedule_message = read_machine_schedule(run_command)
     if exit_code == MACHINE_SCHEDULE_EXIT_INSIDE_WINDOW:
-        raise BatchPreflightRefusedError(f'batch refused on {schedule["host"]}: {schedule_message}')
+        raise MachineWindowRefusedError(f'batch refused on {schedule["host"]}: {schedule_message}')
     require_host_clock_on_riga_time(schedule['rigaTime'], local_now() if local_now else datetime.now().astimezone())
     try:
         lane_root = lane_store_root(project_root, lane_name)
@@ -169,7 +177,7 @@ def require_batch_preflight(project_root, lane_name, minimum_free_bytes, *, run_
         raise BatchPreflightRefusedError(f'batch refused for lane {lane_name}: {error}') from error
     free_bytes = disk_usage(nearest_existing_ancestor(lane_root)).free
     if free_bytes < minimum_free_bytes:
-        raise BatchPreflightRefusedError(
+        raise FreeDiskFloorRefusedError(
             f'free disk {free_bytes} bytes is below the batch floor {minimum_free_bytes} bytes at {schedule["rigaTime"]}')
     return {'host': schedule['host'], 'rigaTime': schedule['rigaTime'], 'freeBytes': free_bytes, 'laneStoreRoot': lane_root}
 
