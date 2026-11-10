@@ -176,6 +176,7 @@ export async function loadEffectComponent(scene: Scene, bundle: EffectBundle, in
   const matches = bundle.manifest.components.filter(row => row.object === component.object);
   requireValue(matches.length === 1 && JSON.stringify(matches[0]) === JSON.stringify(component), "component differs from its bundle record.");
   const record = parseEmitterRecord(component);
+  if (record.emitterClass === "Engine.RibbonEmitter") throw new Error(`Effect component ${component.object}: ribbon-texture-unstaged, the bundle binds no RibbonEmitter texture to draw its point strip with.`);
   const sprite = record.emitterClass === "Engine.SpriteEmitter";
   const root = new TransformNode(`Effect component: ${component.object}`, scene);
   root.id = `native-effect-component:${root.uniqueId}`; root.doNotSerialize = true; root.setEnabled(false);

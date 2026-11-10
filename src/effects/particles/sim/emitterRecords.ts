@@ -1,7 +1,7 @@
 import type { Vector3 } from "../../../shared/math/vector3";
 import { PARTICLE_CONSTANTS } from "./emitterConstants";
 
-export const SIMULATED_EMITTER_CLASSES = ["Engine.SpriteEmitter", "Engine.MeshEmitter"] as const;
+export const SIMULATED_EMITTER_CLASSES = ["Engine.SpriteEmitter", "Engine.MeshEmitter", "Engine.RibbonEmitter"] as const;
 export type SimulatedEmitterClass = (typeof SIMULATED_EMITTER_CLASSES)[number];
 export type FieldProvenance = "authored" | "class-default" | "ue-zero";
 
@@ -27,7 +27,7 @@ export class EmitterRecordError extends Error {
 
 const enumOrdinalCounts = {
   "coordinate-system": 5, "draw-style": 7, "direction-usage": 8, "start-location-shape": 4,
-  "velocity-direction": 4, "rotation-source": 4, "mesh-spawning": 3, "skeletal-location-update": 3,
+  "velocity-direction": 4, "rotation-source": 4, "mesh-spawning": 3, "skeletal-location-update": 3, "ribbon-point-drop": 4,
 } as const;
 type EnumFieldKind = keyof typeof enumOrdinalCounts;
 type FieldKind = "boolean" | "float" | "integer" | "range" | "range-vector" | "vector" | "fade-factor" | "rotator"
@@ -60,7 +60,8 @@ const particleEmitterFields = {
   AddLocationFromOtherEmitter: classDefaultField("integer"), AddVelocityFromOtherEmitter: classDefaultField("integer"),
   SpawnFromOtherEmitter: classDefaultField("integer"), AddVelocityMultiplierRange: classDefaultField("range-vector"),
   ColorMultiplierRange: classDefaultField("range-vector"), AlphaTest: classDefaultField("boolean"), ZTest: classDefaultField("boolean"),
-  ZWrite: field("boolean"), Acceleration: field("vector"), IndependentSprayAccel: field("boolean"), UseCollision: field("boolean"), UseCollisionPlanes: field("boolean"),
+  ZWrite: field("boolean"), SpawnOnTriggerPPS: field("float"), SpawnOnTriggerRange: field("range"), ResetOnTrigger: field("boolean"),
+  ForcedLifeTime: field("boolean"), ForcedFade: field("boolean"), ForcedMaxParticles: field("boolean"), Acceleration: field("vector"), IndependentSprayAccel: field("boolean"), UseCollision: field("boolean"), UseCollisionPlanes: field("boolean"),
   UseColorScale: field("boolean"), ColorScale: field("color-curve"), ColorScaleRepeats: field("float"),
   FadeOutStartTime: field("float"), FadeOut: field("boolean"), FadeInEndTime: field("float"), FadeIn: field("boolean"),
   UseActorForces: field("boolean"), WeatherEffect: field("boolean"), AutoDestroy: field("boolean"), AutoReset: field("boolean"),
@@ -84,6 +85,13 @@ const meshEmitterFields = {
   ...particleEmitterFields, UseMeshBlendMode: classDefaultField("boolean"), StaticMesh: field("object-reference"),
   RenderTwoSided: field("boolean"), UseParticleColor: field("boolean"),
 } as const;
+const ribbonEmitterFields = {
+  ...particleEmitterFields, SampleRate: field("float"), NumPoints: field("integer"), AccDrop: field("ribbon-point-drop"),
+  PointsDropRate: field("integer"), ThresholdTime: field("float"), MinPoints: field("integer"), ThresholdTime2: field("float"), RibbonWidth: field("float"),
+  MinSampleDist: field("float"), StartBoneOffset: field("vector"), EndBoneOffset: field("vector"),
+  bUseInterpolation: field("boolean"), CntrPoints: field("integer"), ScaleRatio: field("float"), bSamplePoints: field("boolean"), bDecayPoints: field("boolean"),
+  bDecayPointsWhenStopped: field("boolean"), bSyncDecayWhenKilled: field("boolean"), bUseBoneDistance: field("boolean"),
+} as const;
 const emitterActorFields = {
   SpeedRate: classDefaultField("float"), bNoDelete: classDefaultField("boolean"), DrawScale: classDefaultField("float"),
   DrawScale3D: classDefaultField("vector"), VisibilityInterpRange: classDefaultField("float"), bSetSizeScale: classDefaultField("boolean"),
@@ -97,7 +105,8 @@ export const MAXIMUM_PARTICLES_PER_EMITTER = PARTICLE_CONSTANTS.maximumParticles
 interface ParsedRecordBase { readonly object: string; readonly provenanceByField: Readonly<Record<string, FieldProvenance>> }
 export type SpriteEmitterRecord = ParsedRecordBase & { readonly emitterClass: "Engine.SpriteEmitter" } & FieldValues<typeof spriteEmitterFields>;
 export type MeshEmitterRecord = ParsedRecordBase & { readonly emitterClass: "Engine.MeshEmitter" } & FieldValues<typeof meshEmitterFields>;
-export type ParticleEmitterRecord = SpriteEmitterRecord | MeshEmitterRecord;
+export type RibbonEmitterRecord = ParsedRecordBase & { readonly emitterClass: "Engine.RibbonEmitter" } & FieldValues<typeof ribbonEmitterFields>;
+export type ParticleEmitterRecord = SpriteEmitterRecord | MeshEmitterRecord | RibbonEmitterRecord;
 export type EmitterActorRecord = ParsedRecordBase & FieldValues<typeof emitterActorFields>;
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
@@ -185,11 +194,15 @@ export function parseEmitterRecord(source: EmitterSourceRecord): ParticleEmitter
   let record: ParticleEmitterRecord;
   if (emitterClass === "Engine.SpriteEmitter") record = { ...readFields(source, spriteEmitterFields), emitterClass };
   else if (emitterClass === "Engine.MeshEmitter") record = { ...readFields(source, meshEmitterFields), emitterClass };
+  else if (emitterClass === "Engine.RibbonEmitter") record = { ...readFields(source, ribbonEmitterFields), emitterClass };
   else throw new EmitterRecordError(source.object, `class ${String(emitterClass)} is not a simulated emitter class.`);
   if (record.MaxParticles < 0 || record.MaxParticles > MAXIMUM_PARTICLES_PER_EMITTER) {
     throw new EmitterRecordError(source.object, `MaxParticles ${record.MaxParticles} is outside 0 to ${MAXIMUM_PARTICLES_PER_EMITTER}.`);
   }
   if (record.TextureUSubdivisions < 0 || record.TextureVSubdivisions < 0) throw new EmitterRecordError(source.object, "texture subdivisions must not be negative.");
+  if (record.emitterClass === "Engine.RibbonEmitter" && (record.NumPoints < 0 || record.NumPoints + record.CntrPoints > MAXIMUM_PARTICLES_PER_EMITTER || record.CntrPoints < 0)) {
+    throw new EmitterRecordError(source.object, `NumPoints ${record.NumPoints} and CntrPoints ${record.CntrPoints} must stay within 0 to ${MAXIMUM_PARTICLES_PER_EMITTER}.`);
+  }
   return Object.freeze(record);
 }
 

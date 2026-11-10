@@ -43,6 +43,8 @@ export interface EmitterCounters {
   disabled: boolean;
   dead: boolean;
   warmedUp: boolean;
+  killPending: boolean;
+  spawnOnTrigger: number;
 }
 
 export interface OwnerPose {
@@ -51,9 +53,9 @@ export interface OwnerPose {
 }
 
 export interface EmitterRuntime {
-  readonly record: ParticleEmitterRecord;
+  record: ParticleEmitterRecord;
   readonly stream: RandomStream;
-  readonly columns: ParticleColumns;
+  columns: ParticleColumns;
   readonly counters: EmitterCounters;
   readonly uniformSize: boolean;
 }
@@ -84,6 +86,7 @@ export function createEmitterCounters(disabled: boolean): EmitterCounters {
   return {
     activeSlots: 0, nextSlot: 0, spawnFraction: 0, otherEmitterCursor: 0, delaySeconds: 0, initialized: false, resetTimerSeconds: 0,
     inactive: false, inactiveSeconds: 0, lastStepSeconds: 0, lastOwnerLocation: { x: 0, y: 0, z: 0 }, disabled, dead: false, warmedUp: false,
+    killPending: false, spawnOnTrigger: 0,
   };
 }
 

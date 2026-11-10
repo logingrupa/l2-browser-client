@@ -21,6 +21,7 @@ export interface EffectScheduler {
   readonly stepSeconds: number;
   readonly liveEffects: readonly ScheduledEffect[];
   spawnEffect(actor: EmitterActorRecord, emitters: readonly ParticleEmitterRecord[], ownerKey: string): ScheduledEffect;
+  removeEffect(effect: ScheduledEffect): void;
   advanceFrame(): number;
 }
 
@@ -37,6 +38,9 @@ export function createEffectScheduler(settings: EffectSchedulerSettings): Effect
       nextEffectSerial += 1;
       liveEffects = [...liveEffects, effect];
       return effect;
+    },
+    removeEffect(effect) {
+      liveEffects = liveEffects.filter(liveEffect => liveEffect !== effect);
     },
     advanceFrame() {
       const dueSteps = accumulator.advance(settings.clock.frameDeltaSeconds);

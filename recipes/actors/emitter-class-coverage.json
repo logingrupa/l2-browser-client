@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 1,
-  "simulated": ["Engine.MeshEmitter", "Engine.SpriteEmitter"],
-  "source": "src/effects/nativeEffectComponents.ts simulatedEffectEmitterClasses, run by src/effects/loadEffectComponent.ts"
+  "listVersion": 2,
+  "simulated": ["Engine.MeshEmitter", "Engine.RibbonEmitter", "Engine.SpriteEmitter"],
+  "source": "src/effects/particles/sim/emitterRecords.ts SIMULATED_EMITTER_CLASSES, mirrored by src/effects/nativeEffectComponents.ts simulatedEffectEmitterClasses"
 }

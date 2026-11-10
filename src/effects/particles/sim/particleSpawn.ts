@@ -146,13 +146,13 @@ function spawnParticleOnce(runtime: EmitterRuntime, slot: number, ageSeconds: nu
   columns.flags[slot] = PARTICLE_FLAG.active | PARTICLE_FLAG.justSpawned;
 }
 
-function spawnRefused(record: ParticleEmitterRecord): boolean {
-  return record.MaxParticles === 0 || Math.fround(record.LifetimeRange.max) <= 0;
+function spawnRefused(record: ParticleEmitterRecord, killPending: boolean): boolean {
+  return record.MaxParticles === 0 || killPending || Math.fround(record.LifetimeRange.max) <= 0;
 }
 
 export function spawnParticle(runtime: EmitterRuntime, slot: number, ageSeconds: number, context: EmitterStepContext, ownerVelocity: Vector3): boolean {
   const { record, columns, counters } = runtime;
-  if (spawnRefused(record)) return false;
+  if (spawnRefused(record, counters.killPending)) return false;
   let spawnAgeSeconds = ageSeconds;
   for (let pass = 0; ; pass += 1) {
     if (pass >= respawnPassLimit) throw new Error(`Emitter ${record.object}: a spawn stayed past MaxLifetime after ${respawnPassLimit} respawn passes.`);

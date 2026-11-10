@@ -7,9 +7,10 @@ import { createEmitterRandomStream, type EmitterStepOutcome, type UnportedEmitte
 import { IDENTITY_ROTATOR } from "./particleRotation";
 import { drawRange, drawRangeVector } from "./particleSpawn";
 import type { EmitterStepContext, OwnerPose } from "./particleState";
+import { createRibbonEmitterSimulation, type RibbonEmitterSimulation } from "./ribbonEmitter";
 import { createSpriteEmitterSimulation, type SpriteEmitterSimulation } from "./spriteEmitter";
 
-export type EmitterSimulation = SpriteEmitterSimulation | MeshEmitterSimulation;
+export type EmitterSimulation = SpriteEmitterSimulation | MeshEmitterSimulation | RibbonEmitterSimulation;
 export type ActorStepOutcome = "running" | "destroyed";
 
 export interface EmitterFeatureGap extends UnportedEmitterFeature {
@@ -33,10 +34,15 @@ export interface EmitterActorSimulation {
   readonly featureGaps: readonly EmitterFeatureGap[];
   readonly unresolvedFields: readonly string[];
   step(stepSeconds: number, owner: OwnerPose): ActorStepOutcome;
+  replaceActorRecord(next: EmitterActorRecord, unresolvedField: string | null): void;
 }
 
 export function createEmitterSimulation(record: ParticleEmitterRecord, stream: RandomStream): EmitterSimulation {
-  return record.emitterClass === "Engine.SpriteEmitter" ? createSpriteEmitterSimulation(record, stream) : createMeshEmitterSimulation(record, stream);
+  switch (record.emitterClass) {
+    case "Engine.SpriteEmitter": return createSpriteEmitterSimulation(record, stream);
+    case "Engine.MeshEmitter": return createMeshEmitterSimulation(record, stream);
+    case "Engine.RibbonEmitter": return createRibbonEmitterSimulation(record, stream);
+  }
 }
 
 function requireEmitterOrder(actor: EmitterActorRecord, emitters: readonly ParticleEmitterRecord[]): void {
@@ -57,7 +63,8 @@ function listUnresolvedFields(actor: EmitterActorRecord, emitters: readonly Part
 }
 
 export function createEmitterActorSimulation(input: EmitterActorSimulationInput): EmitterActorSimulation {
-  const { actor, sessionSeed, effectSerial } = input;
+  const { sessionSeed, effectSerial } = input;
+  let actor = input.actor;
   requireEmitterOrder(actor, input.emitters);
   const actorStream = createRandomStream(deriveStreamSeed(sessionSeed, "emitter", [effectSerial, "actor"]));
   const emitters = input.emitters.map((record, ordinal) => createEmitterSimulation(record, createEmitterRandomStream(sessionSeed, effectSerial, ordinal)));
@@ -72,15 +79,20 @@ export function createEmitterActorSimulation(input: EmitterActorSimulationInput)
   const stepContext = (owner: OwnerPose): EmitterStepContext => ({
     owner, emitterRotation, globalOffset, actorAutoReset: actor.AutoReset, actorAutoDestroy: actor.AutoDestroy, siblings,
   });
+  const unresolvedFields = listUnresolvedFields(actor, input.emitters);
   return {
-    record: actor,
+    get record() { return actor; },
     emitters,
     get destroyed() { return destroyed; },
     get globalOffset() { return globalOffset; },
     get emitterRotation() { return emitterRotation; },
     get lastEmitterOutcomes() { return lastEmitterOutcomes; },
     featureGaps: emitters.flatMap(emitter => emitter.unportedFeatures.map(feature => ({ ...feature, emitter: emitter.record.object }))),
-    unresolvedFields: listUnresolvedFields(actor, input.emitters),
+    unresolvedFields,
+    replaceActorRecord(next, unresolvedField) {
+      actor = next;
+      if (unresolvedField !== null && !unresolvedFields.includes(unresolvedField)) unresolvedFields.push(unresolvedField);
+    },
     step(stepSeconds, owner) {
       if (destroyed) return "destroyed";
       const scaledStepSeconds = stepSeconds * actor.SpeedRate;

@@ -1,6 +1,7 @@
 import { sha256 } from "../assets/package/readAssetPackage";
 import { nativeResourceUrl } from "../assets/native/nativeResourceUrl";
 import { readNativeCatalog } from "../assets/native/readNativeCatalog";
+import { SIMULATED_EMITTER_CLASSES } from "./particles/sim/emitterRecords";
 import { buildCastSkillIndex, lookupCastSkill, reviewedPowerStrikeSkill, selectedCastSkill, type SkillEffectComponentIdentity } from "./castSkillIndex";
 
 export interface EffectResource {
@@ -28,7 +29,7 @@ export interface EffectBundle {
 }
 export const effectObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
-export const simulatedEffectEmitterClasses: ReadonlySet<string> = new Set(["Engine.MeshEmitter", "Engine.SpriteEmitter"]);
+export const simulatedEffectEmitterClasses: ReadonlySet<string> = new Set(SIMULATED_EMITTER_CLASSES);
 const digest = (value: unknown): value is string => typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
 const named = (value: unknown): value is string => typeof value === "string" && value.length > 0 && value.length < 512;
 const integer = (value: unknown): value is number => Number.isSafeInteger(value) && Number(value) >= 0;

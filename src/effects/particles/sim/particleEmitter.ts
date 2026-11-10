@@ -129,13 +129,15 @@ function stepEmitter(runtime: EmitterRuntime, stepSeconds: number, context: Emit
 }
 
 export function createParticleEmitterSimulation(record: ParticleEmitterRecord, stream: RandomStream, uniformSize: boolean): ParticleEmitterSimulation {
-  const columns = createParticleColumns(record.MaxParticles), counters = createEmitterCounters(record.Disabled);
-  const runtime: EmitterRuntime = { record, stream, columns, counters, uniformSize };
+  const counters = createEmitterCounters(record.Disabled);
+  const runtime: EmitterRuntime = { record, stream, columns: createParticleColumns(record.MaxParticles), counters, uniformSize };
   return {
-    record, runtime, columns, counters, storageSpace: particleStorageSpace(record.CoordinateSystem), unportedFeatures: listUnportedEmitterFeatures(record),
+    get record() { return runtime.record; },
+    get columns() { return runtime.columns; },
+    runtime, counters, storageSpace: particleStorageSpace(record.CoordinateSystem), unportedFeatures: listUnportedEmitterFeatures(record),
     step: (stepSeconds, context) => stepEmitter(runtime, stepSeconds, context),
     reset: context => restartEmitter(runtime, context),
     markDrawn: () => { counters.inactive = false; },
-    liveSlots: () => listLiveSlots(columns, counters),
+    liveSlots: () => listLiveSlots(runtime.columns, counters),
   };
 }

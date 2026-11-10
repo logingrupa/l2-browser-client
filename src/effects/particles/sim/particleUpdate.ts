@@ -16,12 +16,17 @@ const identityVector = [1, 1, 1] as const;
 const whiteBytes = [colorByteScale, colorByteScale, colorByteScale, colorByteScale] as const;
 const clampUnit = (value: number) => Math.min(1, Math.max(0, value));
 
-function spawnRate(runtime: EmitterRuntime): number {
+function baseSpawnRate(runtime: EmitterRuntime): number {
   const { record, counters } = runtime;
   if (counters.activeSlots >= record.MaxParticles) return Math.fround(record.ParticlesPerSecond);
   if (!record.AutomaticInitialSpawning) return Math.fround(record.InitialParticlesPerSecond);
   const lifetimeCenter = rangeCenter(record.LifetimeRange);
   return lifetimeCenter > 0 ? Math.fround(record.MaxParticles / lifetimeCenter) : 0;
+}
+
+function spawnRate(runtime: EmitterRuntime): number {
+  const rate = baseSpawnRate(runtime);
+  return runtime.counters.spawnOnTrigger > 0 ? Math.fround(rate + runtime.record.SpawnOnTriggerPPS) : rate;
 }
 
 function spawnIntoNextSlot(runtime: EmitterRuntime, ageSeconds: number, context: EmitterStepContext, ownerVelocity: Vector3): number | null {
@@ -39,7 +44,10 @@ function spawnDueParticles(runtime: EmitterRuntime, stepSeconds: number, rate: n
   const owedParticles = Math.fround(rate * birthStepSeconds + leftoverBeforeStep);
   const wholeParticlesOwed = Math.floor(owedParticles);
   counters.spawnFraction = Math.fround(owedParticles - wholeParticlesOwed);
-  const birthCount = Math.min(record.MaxParticles, Math.max(0, wholeParticlesOwed)), secondsBetweenBirths = Math.fround(1 / rate);
+  const owedWithinMaximum = Math.min(record.MaxParticles, Math.max(0, wholeParticlesOwed));
+  const birthCount = counters.spawnOnTrigger > 0 ? Math.min(owedWithinMaximum, counters.spawnOnTrigger) : owedWithinMaximum;
+  if (counters.spawnOnTrigger > 0) counters.spawnOnTrigger -= birthCount;
+  const secondsBetweenBirths = Math.fround(1 / rate);
   const firstBirthAgeSeconds = Math.fround(secondsBetweenBirths * leftoverBeforeStep + birthStepSeconds - secondsBetweenBirths);
   const birthSlots: number[] = [];
   for (let birthOrdinal = 0; birthOrdinal < birthCount; birthOrdinal += 1) {
@@ -161,14 +169,14 @@ export function updateParticles(runtime: EmitterRuntime, stepSeconds: number, co
   const ownerStepSeconds = Math.min(ownerVelocityStepClamp.maximum, Math.max(ownerVelocityStepClamp.minimum, counters.lastStepSeconds));
   const ownerVelocity = scaleVector(ownerDisplacement, 1 / ownerStepSeconds);
   const rate = spawnRate(runtime);
-  if (rate > 0) spawnDueParticles(runtime, stepSeconds, rate, context, ownerDisplacement, ownerVelocity);
+  if (rate > 0 && !counters.killPending) spawnDueParticles(runtime, stepSeconds, rate, context, ownerDisplacement, ownerVelocity);
   const visitedSlotCount = Math.min(counters.activeSlots, record.MaxParticles);
   let deadCount = 0;
   for (let slot = 0; slot < visitedSlotCount; slot += 1) {
     if (!advanceParticleInSlot(runtime, slot, stepSeconds, context, ownerVelocity)) deadCount += 1;
   }
   const everySlotDead = deadCount >= record.MaxParticles || counters.activeSlots - deadCount <= 0;
-  counters.dead = everySlotDead && rate === 0 && !record.RespawnDeadParticles;
+  counters.dead = everySlotDead && (counters.killPending || rate === 0 && !record.RespawnDeadParticles);
   counters.lastOwnerLocation = context.owner.location;
   counters.lastStepSeconds = stepSeconds;
 }

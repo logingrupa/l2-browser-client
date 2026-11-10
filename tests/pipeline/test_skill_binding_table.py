@@ -146,7 +146,7 @@ class EmitterClassTests(unittest.TestCase):
 
     def test_a_root_passes_only_when_every_emitter_class_is_simulated(self):
         simulated = read_simulated_emitter_classes(REPOSITORY_ROOT)
-        self.assertEqual(simulated, frozenset({'Engine.MeshEmitter', 'Engine.SpriteEmitter'}))
+        self.assertEqual(simulated, frozenset({'Engine.MeshEmitter', 'Engine.RibbonEmitter', 'Engine.SpriteEmitter'}))
         self.assertEqual(emitter_class_root_outcome(['Engine.MeshEmitter', 'Engine.SpriteEmitter'], simulated), ('pass', None))
         self.assertEqual(emitter_class_root_outcome(['Engine.SparkEmitter', 'Engine.BeamEmitter', 'Engine.SpriteEmitter'], simulated),
                          ('gap', 'emitter-class-unported:Engine.BeamEmitter'))

@@ -28,20 +28,19 @@ function subdivisionBlendByte(atlasPosition: number): number {
 
 export function createSpriteEmitterSimulation(record: SpriteEmitterRecord, stream: RandomStream): SpriteEmitterSimulation {
   const simulation = createParticleEmitterSimulation(record, stream, record.UniformSize || record.UseDirectionAs === DIRECTION_USAGE_NONE);
-  const { columns } = simulation;
   const columnCount = Math.max(1, record.TextureUSubdivisions), rowCount = Math.max(1, record.TextureVSubdivisions);
   const lastCell = columnCount * rowCount - 1;
   const atlasCellAt = (cell: number, nextCell: number, blendWeight: number): SpriteAtlasCell =>
     ({ cell, column: Math.floor(cell / rowCount), row: cell % rowCount, nextCell, blendWeight });
-  return {
-    ...simulation,
-    kind: "sprite",
-    record,
-    spriteRoll(slot) {
+  return Object.assign(simulation as ParticleEmitterSimulation & { readonly record: SpriteEmitterRecord }, {
+    kind: "sprite" as const,
+    spriteRoll(slot: number) {
+      const { columns } = simulation;
       if (!record.SpinParticles) return 0;
       return readSlotVector(columns.startSpin, slot).z + columns.time[slot]! * readSlotVector(columns.spinRate, slot).z;
     },
-    atlasCell(slot) {
+    atlasCell(slot: number) {
+      const { columns } = simulation;
       const randomCell = columns.subdivision[slot]!;
       if (randomCell >= 0) return atlasCellAt(Math.min(randomCell, lastCell), Math.min(randomCell, lastCell), 0);
       const rangeSet = record.SubdivisionEnd !== 0;
@@ -52,5 +51,5 @@ export function createSpriteEmitterSimulation(record: SpriteEmitterRecord, strea
       const nextCell = cell + 1 === cellCount ? cell : cell + 1;
       return atlasCellAt(cell, nextCell, record.BlendBetweenSubdivisions ? subdivisionBlendByte(position) / colorByteScale : 0);
     },
-  };
+  });
 }

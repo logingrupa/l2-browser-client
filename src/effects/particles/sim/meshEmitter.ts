@@ -24,14 +24,12 @@ export function meshMaterialRoute(record: MeshEmitterRecord): MeshMaterialRoute 
 
 export function createMeshEmitterSimulation(record: MeshEmitterRecord, stream: RandomStream): MeshEmitterSimulation {
   const simulation = createParticleEmitterSimulation(record, stream, record.UniformSize);
-  const { columns } = simulation;
-  return {
-    ...simulation,
-    kind: "mesh",
-    record,
+  return Object.assign(simulation as ParticleEmitterSimulation & { readonly record: MeshEmitterRecord }, {
+    kind: "mesh" as const,
     staticMesh: record.StaticMesh,
     materialRoute: meshMaterialRoute(record),
-    meshRotator(slot) {
+    meshRotator(slot: number) {
+      const { columns } = simulation;
       if (!record.SpinParticles) return IDENTITY_ROTATOR;
       const startSpin = readSlotVector(columns.startSpin, slot), spinRate = readSlotVector(columns.spinRate, slot), time = columns.time[slot]!;
       return {
@@ -40,5 +38,5 @@ export function createMeshEmitterSimulation(record: MeshEmitterRecord, stream: R
         roll: Math.trunc(startSpin.z + time * spinRate.z),
       };
     },
-  };
+  });
 }

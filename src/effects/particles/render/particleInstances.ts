@@ -57,6 +57,7 @@ function atlasRectangle(emitter: EmitterSimulation, slot: number): readonly [num
 }
 
 export function writeParticleInstances(emitter: EmitterSimulation, buffers: ParticleInstanceBuffers, frame: ParticleInstanceFrame = unrotatedFrame): number {
+  if (emitter.kind === "ribbon") throw new Error(`Emitter ${emitter.record.object}: ribbons draw as a point strip, not as particle instances.`);
   const liveSlots = emitter.liveSlots();
   if (liveSlots.length > buffers.capacity) throw new RangeError(`Emitter ${emitter.record.object} has ${liveSlots.length} live particles for ${buffers.capacity} instances.`);
   const emitterAxes = rotatorAxes(frame.emitterRotation), { columns } = emitter;
