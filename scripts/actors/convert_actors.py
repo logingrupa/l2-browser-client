@@ -268,6 +268,15 @@ class NpcConversionRun:
         write_store(self.store_root, {**model_files, **profile_files}, before, json_bytes(catalog))
 
 
+def require_actors_lane_store_output(project_root, output):
+    output_root = require_converter_output(project_root, output)
+    actors_lane_store = lane_store_root(project_root, LANE_NAME)
+    if output_root != actors_lane_store:
+        raise ConvertActorsError(f'actor conversion seals its ledger, gap rows and coverage in the {LANE_NAME} lane, so --output may name '
+                                 f'only the {LANE_NAME} lane store {actors_lane_store}: {output_root}')
+    return output_root
+
+
 def npcgrp_row_for(npcgrp, npc_id):
     rows = [row for row in npcgrp['data']['npc'] if row['npc_id'] == npc_id]
     if len(rows) != 1:
@@ -353,11 +362,11 @@ def main(argv=None):
     if (arguments.skill is None) != (arguments.level is None):
         parser.error('--level is required with --skill and only valid with --skill')
     try:
+        output_root = require_actors_lane_store_output(REPOSITORY_ROOT, arguments.output)
         client_access = require_reference_client(arguments.client)
         if arguments.print_batch_plan:
             print_batch_plan(client_access)
             return 0
-        output_root = require_converter_output(REPOSITORY_ROOT, arguments.output)
         require_batch_preflight(REPOSITORY_ROOT, LANE_NAME, BATCH_MINIMUM_FREE_BYTES)
         run_at_below_normal_priority()
         with lane_coverage_refreshed_at_exit(REPOSITORY_ROOT, LANE_NAME):

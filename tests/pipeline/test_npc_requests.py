@@ -1,3 +1,4 @@
+import io
 import json
 from pathlib import Path, PurePosixPath
 import shutil
@@ -284,6 +285,26 @@ class ConvertNpcGapTests(unittest.TestCase):
         catalog, _ = read_store_catalog(lane_store_root(self.project_root, 'actors'))
         self.assertEqual((catalog['models'], catalog['npcProfiles']), ([written_records[1][0]], [written_records[1][1]]))
 
+
+
+class ActorsLaneStoreOutputTests(unittest.TestCase):
+    def test_only_the_actors_lane_store_is_an_admitted_output(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project_root = Path(temporary).resolve()
+            (project_root / 'artifacts').mkdir()
+            actors_lane_store = lane_store_root(project_root, 'actors')
+            self.assertEqual(convert_actors.require_actors_lane_store_output(project_root, actors_lane_store), actors_lane_store)
+            with self.assertRaisesRegex(convert_actors.ConvertActorsError, 'may name only the actors lane store'):
+                convert_actors.require_actors_lane_store_output(project_root, project_root / 'artifacts' / 'actors-trial' / 'l2')
+
+    def test_the_command_line_refuses_a_trial_output_before_it_reads_the_client(self):
+        trial_output = REPOSITORY_ROOT / 'artifacts' / 'actors-trial' / 'l2'
+        with patch.object(convert_actors, 'require_reference_client') as require_reference_client,                 patch('sys.stderr', new_callable=io.StringIO) as stderr:
+            exit_code = convert_actors.main(['--client', str(REFERENCE_CLIENT_ROOT), '--actor-sounds', 'npc:20001', '--output', str(trial_output)])
+        self.assertEqual(exit_code, 1)
+        require_reference_client.assert_not_called()
+        self.assertIn('may name only the actors lane store', stderr.getvalue())
+        self.assertFalse(trial_output.exists())
 
 @unittest.skipUnless(REFERENCE_CLIENT_ROOT.is_dir() and REFERENCE_CLIENT_LOCK.is_file(), 'needs E:/Lineage2-client and the reference client lock')
 class GremlinProfileRecipeFromDecodedRowsTests(unittest.TestCase):
