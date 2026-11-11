@@ -9,7 +9,9 @@ STORE_PATHS_RELATIVE_PATH = 'scripts/native_store/store_paths.py'
 OUTPUT_GUARD_NAME = 'require_converter_output'
 OUTPUT_OPTION = '--output'
 LANE_SCRIPT_FOLDERS = ('world', 'actors', 'data')
-DEDUPLICATED_HELPER_NAMES = {'checked', 'child', 'relative_name', 'safe_relative'}
+DEDUPLICATED_HELPER_NAMES = {'checked', 'child', 'reject_links', 'relative_name', 'safe_relative'}
+PATH_HELPER_CALLER_PATHS = ('scripts/native_batch.py', 'scripts/stage_native_players.py', 'scripts/export-native-sounds.py',
+                            'scripts/native_assets_lib/sound_export_guards.py')
 STORE_PATH_HELPER_NAMES = {'refuse_reparse_points', 'confined_child_path', 'require_portable_relative_path'}
 OUTPUT_GUARDED_MAIN_ENTRY_POINTS = ('scripts/data/convert_tables.py', 'scripts/native_catalog/cli.py')
 COMMITTED_REPORT_ENTRY_POINTS = ('scripts/data/sysstring_systemmsg_counts.py',)
@@ -149,7 +151,7 @@ class ConverterOutputGuardScanTests(unittest.TestCase):
                                                         'without-output.py': without_output}), ['unguarded.py'])
 
     def test_path_helpers_have_one_owner(self):
-        for relative_path in ('scripts/native_batch.py', 'scripts/stage_native_players.py'):
+        for relative_path in PATH_HELPER_CALLER_PATHS:
             with self.subTest(relative_path=relative_path):
                 self.assertFalse(top_level_function_names(relative_path) & DEDUPLICATED_HELPER_NAMES)
         owners = sorted(path.relative_to(REPOSITORY_ROOT).as_posix() for path in SCRIPTS_ROOT.rglob('*.py')

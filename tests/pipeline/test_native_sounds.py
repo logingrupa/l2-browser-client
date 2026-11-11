@@ -12,6 +12,8 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/'scripts'))
 import native_assets
+from native_assets_lib.sha256_identity import sha256_hex_digest
+from native_assets_lib.sound_export_guards import output_files_receipt, sound_export_json_bytes
 from reference_client_lock_fixture import lock_client_as_reference_root
 from sound_package_fixture import sound_package, wav_bytes
 from ue2_package_fixture import compact, package_bytes
@@ -47,7 +49,7 @@ class NativeSoundBatchTests(unittest.TestCase):
         self.stack.enter_context(patch.object(batch, 'ROOT', self.root))
         self.tool = self.root/'tool.exe'
         self.tool.write_bytes(b'pinned analysis input; must never run')
-        self.stack.enter_context(patch.object(native_assets, 'UMODEL_SHA256', batch.digest(self.tool.read_bytes())))
+        self.stack.enter_context(patch.object(native_assets, 'UMODEL_SHA256', sha256_hex_digest(self.tool.read_bytes())))
         self.native_process = self.stack.enter_context(patch('native_assets.subprocess.run', side_effect=AssertionError('No native process permitted')))
 
     def fixture(self, **options):
@@ -59,14 +61,14 @@ class NativeSoundBatchTests(unittest.TestCase):
         mixed = options.pop('mixed', False)
         data = mixed_name_package() if mixed else sound_package(**options)
         source.write_bytes(data.replace(b'wind_loop', b'wind-loop') if hyphen else data)
-        pin = {'relativePath': 'sounds/AmbSound.uax', 'bytes': source.stat().st_size, 'sha256': batch.digest(source.read_bytes())}
+        pin = {'relativePath': 'sounds/AmbSound.uax', 'bytes': source.stat().st_size, 'sha256': sha256_hex_digest(source.read_bytes())}
         (self.root/'recipes').mkdir()
         lock = self.root/'recipes/lock.json'
-        lock.write_bytes(batch.canonical({'schemaVersion': 1, 'sourceHost': 'IMPORTA-PC',
+        lock.write_bytes(sound_export_json_bytes({'schemaVersion': 1, 'sourceHost': 'IMPORTA-PC',
             'sourceRoot': 'C:/Lineage2-client', 'files': [pin]}))
         sounds = 2 if mixed or options.get('duplicate') else 0 if options.get('wrong_class') else 1
         recipe = self.root/'recipes/recipe.json'
-        recipe.write_bytes(batch.canonical({'schemaVersion': 1, 'kind': 'native-sound-packages',
+        recipe.write_bytes(sound_export_json_bytes({'schemaVersion': 1, 'kind': 'native-sound-packages',
             'source': {'host': 'IMPORTA-PC', 'root': 'C:/Lineage2-client'}, 'selection': batch.SELECTION,
             'packages': [{'file': pin['relativePath'], 'bytes': pin['bytes'], 'sha256': pin['sha256'], 'expectedSounds': sounds}],
             'expectedInventory': {'packages': 1, 'sounds': sounds}}))
@@ -74,28 +76,29 @@ class NativeSoundBatchTests(unittest.TestCase):
             umodel=self.tool, output=self.root/'artifacts/output', verify_only=False, reuse_from=None)
 
     def read(self, args, name):
-        return batch.load_json((args.output/name).read_bytes())
+        return batch.decode_sound_export_json((args.output/name).read_bytes())
 
     def snapshot(self, path, mtime=False):
         return {p.relative_to(path).as_posix(): (p.read_bytes(), p.stat().st_mtime_ns) if mtime else p.read_bytes()
                 for p in path.rglob('*') if p.is_file()}
 
     def rewrite(self, path, value):
-        path.write_bytes(batch.canonical(value))
+        path.write_bytes(sound_export_json_bytes(value))
 
     def rehash(self, args):
-        self.rewrite(args.output/'SHA256-MANIFEST.json', {'schemaVersion': 1, 'files': batch.files_receipt(args.output)})
+        self.rewrite(args.output/'SHA256-MANIFEST.json', {'schemaVersion': 1, 'files': output_files_receipt(args.output)})
 
     def output_from_previous_name_policy_wrapper(self, args):
         previous_wrapper_implementation = batch.implementation()
         previous_wrapper_implementation['files']['export-native-sounds.py'] = 'a07ac02e417616f0000754ee746cc19cd59ce5eee085cb2fb4fc20d1500c022f'
-        with patch.object(batch, 'FULL_OBJECT', batch.REFERENCE), \
+        with patch.object(batch, 'FULL_OBJECT_NAME_PATTERN', batch.FORMER_FULL_OBJECT_NAME_PATTERN), \
                 patch.object(batch, 'implementation', return_value=previous_wrapper_implementation):
             return batch.run(args)
 
-    def test_implementation_pins_the_sound_exporter_its_guards_and_footstep_config(self):
+    def test_implementation_pins_the_sound_exporter_its_guards_footstep_config_and_store_paths(self):
         self.assertEqual(set(batch.implementation()['files']),
-                         {'export-native-sounds.py', 'native_assets_lib/sound_export_guards.py', 'native_assets_lib/footstep_config.py'})
+                         {'export-native-sounds.py', 'native_assets_lib/sound_export_guards.py', 'native_assets_lib/footstep_config.py',
+                          'native_store/store_paths.py'})
 
     def test_real_converter_clean_repeat_and_cache_preserve_bytes_and_times(self):
         args = self.fixture()
@@ -146,7 +149,7 @@ class NativeSoundBatchTests(unittest.TestCase):
         row = self.read(args, 'inventory.json')['sounds'][0]
         self.assertEqual(row['export']['object'], 'AmbSound.Default.wind-loop')
         self.assertEqual(row['id'], 'interlude:AmbSound.Default.wind-loop')
-        self.assertIsNone(batch.REFERENCE.fullmatch(row['export']['object']))
+        self.assertIsNone(batch.FORMER_FULL_OBJECT_NAME_PATTERN.fullmatch(row['export']['object']))
         media = self.read(args, 'coverage.json')['sounds'][0]['products']['audio']
         self.assertEqual((args.output/media['path']).read_bytes(), wav_bytes())
 
@@ -276,7 +279,7 @@ class NativeSoundBatchTests(unittest.TestCase):
         except OSError:
             self.skipTest('Host does not allow test symlink creation')
         args.output, args.reuse_from = self.root/'artifacts/new-target', link
-        with self.assertRaisesRegex(ValueError, 'Linked/reparse'):
+        with self.assertRaisesRegex(ValueError, 'reparse boundary refused'):
             batch.run(args)
         self.assertFalse(args.output.exists())
 
@@ -346,7 +349,7 @@ class NativeSoundBatchTests(unittest.TestCase):
 
     def test_recipe_cannot_drop_locked_package_or_change_source_pin(self):
         args = self.fixture()
-        recipe = batch.load_json(args.recipe.read_bytes())
+        recipe = batch.decode_sound_export_json(args.recipe.read_bytes())
         altered = json.loads(json.dumps(recipe))
         altered['packages'] = []
         self.rewrite(args.recipe, altered)
@@ -360,7 +363,7 @@ class NativeSoundBatchTests(unittest.TestCase):
 
     def test_unexpected_inventory_count_is_partial_not_false_complete(self):
         args = self.fixture()
-        recipe = batch.load_json(args.recipe.read_bytes())
+        recipe = batch.decode_sound_export_json(args.recipe.read_bytes())
         recipe['packages'][0]['expectedSounds'] = 2
         recipe['expectedInventory']['sounds'] = 2
         self.rewrite(args.recipe, recipe)
@@ -372,10 +375,10 @@ class NativeSoundBatchTests(unittest.TestCase):
         args = self.fixture()
         source = args.client_snapshot/'sounds/AmbSound.uax'
         source.write_bytes(b'unsupported package header')
-        lock = batch.load_json(args.input_lock.read_bytes())
-        recipe = batch.load_json(args.recipe.read_bytes())
+        lock = batch.decode_sound_export_json(args.input_lock.read_bytes())
+        recipe = batch.decode_sound_export_json(args.recipe.read_bytes())
         for row in (lock['files'][0], recipe['packages'][0]):
-            row.update(bytes=source.stat().st_size, sha256=batch.digest(source.read_bytes()))
+            row.update(bytes=source.stat().st_size, sha256=sha256_hex_digest(source.read_bytes()))
         self.rewrite(args.input_lock, lock)
         self.rewrite(args.recipe, recipe)
         result = batch.run(args)
@@ -408,7 +411,7 @@ class NativeSoundBatchTests(unittest.TestCase):
 
     def test_unsafe_source_and_duplicate_case_lock_rejected(self):
         args = self.fixture()
-        lock = batch.load_json(args.input_lock.read_bytes())
+        lock = batch.decode_sound_export_json(args.input_lock.read_bytes())
         for name in ('../evil.uax', 'sounds\\evil.uax', 'sounds/NUL.uax', 'sounds/trailing.uax.'):
             altered = json.loads(json.dumps(lock))
             altered['files'][0]['relativePath'] = name
@@ -436,7 +439,7 @@ class NativeSoundBatchTests(unittest.TestCase):
         batch.run(args)
         row = self.read(args, 'coverage.json')['sounds'][0]
         export_manifest = args.output/row['products']['archive']['path'].removesuffix('asset.l2asset')/'evidence/export-manifest.json'
-        forged = batch.load_json(export_manifest.read_bytes())
+        forged = batch.decode_sound_export_json(export_manifest.read_bytes())
         forged['files'] = []
         self.rewrite(export_manifest, forged)
         self.rehash(args)
@@ -484,7 +487,7 @@ class NativeSoundBatchTests(unittest.TestCase):
         args = self.fixture()
         batch.run(args)
         index = next((args.output/'cache/index').glob('*.json'))
-        row = batch.load_json(index.read_bytes())
+        row = batch.decode_sound_export_json(index.read_bytes())
         row['directory'] = '../../outside'
         self.rewrite(index, row)
         self.rehash(args)
@@ -520,7 +523,7 @@ class NativeSoundBatchTests(unittest.TestCase):
         except OSError:
             self.skipTest('Host does not allow test symlink creation')
         args.output = link/'output'
-        with self.assertRaisesRegex(ValueError, 'Linked/reparse'):
+        with self.assertRaisesRegex(ValueError, 'reparse boundary refused'):
             batch.run(args)
         self.assertFalse((target/'output').exists())
 

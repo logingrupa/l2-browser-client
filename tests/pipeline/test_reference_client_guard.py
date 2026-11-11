@@ -13,7 +13,7 @@ import build_reference_client_lock
 import reference_client_guard
 from build_reference_client_lock import classify_reference_client_trees, write_reference_client_lock
 from hash_reference_client_tree import hash_tree
-from native_assets_lib.sound_export_guards import Sources
+from native_assets_lib.sound_export_guards import LockedSoundSources
 from reference_client_guard import (ReferenceClientLock, ReferenceClientLockError, current_host_name, is_locked_reference_root,
     read_reference_client_lock, require_reference_client)
 from reference_client_lock_fixture import use_reference_client_lock
@@ -296,7 +296,7 @@ class PerFileReaderBindingTests(GuardedConversionRootTestCase):
     def test_map_audio_sources_read_only_lock_equal_files(self):
         lock = {'schemaVersion': 1, 'sourceHost': 'TEST-HOST', 'sourceRoot': 'C:/test-client',
             'files': [self.locked_input_row('animations/Fighter.ukx'), self.locked_input_row('animations/Mage.ukx')]}
-        sources = Sources(self.trees.conversion_root, lock)
+        sources = LockedSoundSources(self.trees.conversion_root, lock)
         self.assertEqual(sources.read('animations/Fighter.ukx'), b'equal package')
         with self.assertRaisesRegex(ReferenceClientLockError, 'animations/Mage.ukx is differing, not equal'):
             sources.read('animations/Mage.ukx')
