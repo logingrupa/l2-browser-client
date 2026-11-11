@@ -19,6 +19,7 @@ from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, read_reference_cl
 NPCGRP_TABLE_NAME = 'npcgrp'
 NPCGRP_SOURCE_PATH = 'system/npcgrp.dat'
 OUTSIDE_STORE_RESOURCE = '/l2/../outside-store.json'
+UNLOCKED_SOURCE_SHA256 = '1' * 64
 
 
 def locked_npcgrp_sha256():
@@ -44,13 +45,13 @@ class DataUiTableManifestTests(unittest.TestCase):
         self.store_root = lane_store_root(self.project_root, DATA_UI_LANE_NAME)
         self.payload = npcgrp_manifest_payload(locked_npcgrp_sha256())
 
-    def write_tables_record(self, resource, manifest_bytes):
+    def write_tables_record(self, resource, manifest_bytes, manifest_sha256=None, source_sha256=None):
         manifest_path = self.store_root / resource[len('/l2/'):]
         manifest_path.parent.mkdir(parents=True, exist_ok=True)
         manifest_path.write_bytes(self.payload)
         write_store_catalog(self.store_root, {'schemaVersion': 1, 'models': [], 'tables': [
-            {'id': NPCGRP_TABLE_NAME, 'manifest': resource, 'manifestSha256': hashlib.sha256(self.payload).hexdigest(),
-             'manifestBytes': manifest_bytes, 'sourceSha256': locked_npcgrp_sha256()}]})
+            {'id': NPCGRP_TABLE_NAME, 'manifest': resource, 'manifestSha256': manifest_sha256 or hashlib.sha256(self.payload).hexdigest(),
+             'manifestBytes': manifest_bytes, 'sourceSha256': source_sha256 or locked_npcgrp_sha256()}]})
 
     def pinned_resource(self):
         return f'/l2/tables/{hashlib.sha256(self.payload).hexdigest()}/{NPCGRP_TABLE_NAME}.json'
@@ -87,6 +88,18 @@ class DataUiTableManifestTests(unittest.TestCase):
                   'manifestSha256': hashlib.sha256(b'{"profiles": []}').hexdigest()}
         with self.assertRaises(StorePathError):
             npc_profile_rows(self.store_root, {'npcProfiles': [record]})
+
+
+    def test_a_manifest_whose_sha256_differs_from_its_record_is_refused_by_the_character_route(self):
+        self.write_tables_record(self.pinned_resource(), len(self.payload), manifest_sha256='0' * 64)
+        with self.assertRaises(DataUiTableManifestError):
+            data_ui_table_manifest(self.project_root, NPCGRP_TABLE_NAME)
+
+    def test_a_manifest_not_decoded_from_the_locked_client_file_is_refused_by_the_character_route(self):
+        self.payload = npcgrp_manifest_payload(UNLOCKED_SOURCE_SHA256)
+        self.write_tables_record(self.pinned_resource(), len(self.payload), source_sha256=UNLOCKED_SOURCE_SHA256)
+        with self.assertRaises(DataUiTableManifestError):
+            data_ui_table_manifest(self.project_root, NPCGRP_TABLE_NAME)
 
 
 if __name__ == '__main__':
