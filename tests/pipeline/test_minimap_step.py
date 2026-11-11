@@ -17,7 +17,7 @@ from native_store.unit_ledger import UnitLedger
 from world.minimap_join import RADAR_PACKAGE_ROLE, TOWN_MAP_PACKAGE_ROLE, ZONE_NAME_PACKAGE_ROLE, ZONENAME_TABLE_ROLE, HUNTINGZONE_TABLE_ROLE
 from world import minimap_step
 from world.minimap_sources import MinimapSources, locked_tile_ids, tile_frame_extent
-from world.minimap_step import MINIMAP_STEP_NAME, run_minimap_step, sealed_minimap
+from world.minimap_step import MINIMAP_STEP_NAME, MinimapStepError, run_minimap_step, sealed_minimap
 from world.raw_map_step import (PRODUCTS_FOLDER_NAME, RAW_MAP_STEP_ALGORITHM_VERSION, RAW_STEP_NAME, raw_map_recipe, read_tile_map_lock_record,
                                 tile_unit_key)
 from world.tile_census import WORLD_LANE_NAME
@@ -95,6 +95,19 @@ class SyntheticTextureConverter:
         return {'file': str(target / 'asset.l2asset'), 'sha256': hashlib.sha256(archive).hexdigest()}
 
 
+class FailingTextureConverter:
+    def __init__(self, error):
+        self.error = error
+
+    def convert(self, request):
+        raise self.error
+
+
+class MisreportedArchiveConverter(SyntheticTextureConverter):
+    def convert(self, request):
+        return {**super().convert(request), 'sha256': '0' * 64}
+
+
 class MinimapStepTests(unittest.TestCase):
     def setUp(self):
         self.temporary_directory = tempfile.TemporaryDirectory()
@@ -137,6 +150,27 @@ class MinimapStepTests(unittest.TestCase):
             rerun = run_minimap_step(self.project_root, CLIENT_ROOT, TILE_ID, synthetic_sources(), self.converter)
         self.assertEqual(rerun['status'], 'pass')
         self.assertEqual(len(self.converter.requests), 2)
+
+    def test_a_converter_refusal_of_the_radar_texture_is_a_sealed_decode_gap(self):
+        write_project(self.project_root)
+        converter = FailingTextureConverter(ValueError('UModel failed or reported an error; inspect export.log'))
+        row = run_minimap_step(self.project_root, CLIENT_ROOT, TILE_ID, synthetic_sources(), converter)
+        self.assertEqual((row['status'], row['reason']), ('gap', 'decode-failed:ValueError:UModel failed or reported an error'))
+        self.assertIsNotNone(sealed_minimap(self.project_root, TILE_ID, read_tile_map_lock_record(TILE_ID))[0])
+
+    def test_an_environment_failure_during_radar_conversion_propagates_and_leaves_the_unit_unsealed(self):
+        write_project(self.project_root)
+        converter = FailingTextureConverter(PermissionError('umodel.exe is locked'))
+        with self.assertRaises(PermissionError):
+            run_minimap_step(self.project_root, CLIENT_ROOT, TILE_ID, synthetic_sources(), converter)
+        self.assertEqual(sealed_minimap(self.project_root, TILE_ID, read_tile_map_lock_record(TILE_ID)), (None, None))
+
+    def test_a_converted_archive_that_differs_from_its_reported_hash_propagates_and_leaves_the_unit_unsealed(self):
+        write_project(self.project_root)
+        converter = MisreportedArchiveConverter(self.project_root / 'converter')
+        with self.assertRaisesRegex(MinimapStepError, 'differs from its reported SHA-256'):
+            run_minimap_step(self.project_root, CLIENT_ROOT, TILE_ID, synthetic_sources(), converter)
+        self.assertEqual(sealed_minimap(self.project_root, TILE_ID, read_tile_map_lock_record(TILE_ID)), (None, None))
 
     def test_a_radar_package_outside_the_reviewed_versions_is_a_licensee_gap_with_no_texture_output(self):
         write_project(self.project_root)

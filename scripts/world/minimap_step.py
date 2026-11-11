@@ -5,7 +5,6 @@ import struct
 
 from native_assets import UMODEL, Converter, implementation_hash
 from native_assets_lib.gltf import json_bytes
-from native_catalog.ue2 import FormatError
 from native_store.catalog_writer import add_store_file, immutable_write, sha256_hex, verify_store_destinations
 from native_store.store_paths import confined_child_path, lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
@@ -18,7 +17,7 @@ from world.minimap_sources import (MINIMAP_PACKAGE_PATHS, MINIMAP_TABLE_PATHS, M
 from world.raw_map_step import (PRODUCTS_FOLDER_NAME, RAW_STEP_NAME, read_tile_census_row, read_tile_map_lock_record, require_tile_id,
                                 tile_map_path, tile_step_row, tile_unit_key)
 from world.sky_materials import read_sky_material_package
-from world.static_mesh_step import conversion_failure_reason
+from world.static_mesh_step import MODEL_CONVERSION_ERRORS, conversion_failure_reason
 from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS, TILE_CENSUS_RELATIVE_PATH
 from world.tile_chunk_plan import CHUNK_PLAN_STEP_NAME, ChunkPlanStepError, raw_unit_fingerprint, sealed_chunk_plan
@@ -113,7 +112,7 @@ def read_minimap_sources(client):
 
 def png_dimensions(png_bytes):
     if png_bytes[:8] != PNG_SIGNATURE or png_bytes[12:16] != b'IHDR':
-        raise FormatError('converted radar texture is not a PNG with an IHDR chunk')
+        raise MinimapStepError('converted radar texture is not a PNG with an IHDR chunk')
     return list(struct.unpack('>II', png_bytes[16:24]))
 
 
@@ -121,8 +120,7 @@ def radar_texture_converter(project_root, client):
     return Converter(client, lane_work_root(project_root, WORLD_LANE_NAME) / RADAR_TEXTURE_CONVERTER_FOLDER, UMODEL, project_root=project_root)
 
 
-def convert_radar_texture(store_root, converter, radar_texture, radar_package):
-    conversion = converter.convert({'kind': 'texture', 'package': radar_package['packageName'], 'object': radar_texture['object']})
+def store_converted_radar_texture(store_root, conversion, radar_texture):
     archive_path = Path(conversion['file'])
     archive = archive_path.read_bytes()
     if hashlib.sha256(archive).hexdigest() != conversion['sha256']:
@@ -159,11 +157,13 @@ def tile_minimap(project_root, client, store_root, tile_id, frame, sources, conv
     radar_texture = tile_join['radarTexture']
     if radar_texture is None:
         return tile_join, None, [], []
+    radar_converter = converter or radar_texture_converter(project_root, client)
     try:
-        radar_record, dimensions, output = convert_radar_texture(store_root, converter or radar_texture_converter(project_root, client), radar_texture,
-                                                                 sources.packages[RADAR_PACKAGE_ROLE])
-    except (FormatError, ValueError, OSError) as error:
+        conversion = radar_converter.convert({'kind': 'texture', 'package': sources.packages[RADAR_PACKAGE_ROLE]['packageName'],
+                                              'object': radar_texture['object']})
+    except MODEL_CONVERSION_ERRORS as error:
         return tile_join, None, [], [{'reason': conversion_failure_reason(error), 'evidence': radar_texture['object']}]
+    radar_record, dimensions, output = store_converted_radar_texture(store_root, conversion, radar_texture)
     return join_tile_minimap(tile_id, frame, sources, {radar_texture['object']: dimensions}), radar_record, [output], []
 
 
