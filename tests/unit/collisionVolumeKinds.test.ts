@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { CollisionWorldError } from "../../src/scene/world/movement/core/collisionWorld";
 import { decodeNativeTileCollisionCell } from "../../src/scene/world/movement/core/decodeNativeTileCollision";
+import { isPawnInWater } from "../../src/scene/world/movement/core/pawnBody";
+import { advancePawnSimulation } from "../../src/scene/world/movement/core/pawnPhysics";
 import { blockingBoxVolume, emptyChunkArrays, fixtureCellId, fixtureTileId, volumeArrays, waterPhysicsVolume } from "../fixtures/movement/movementCollisionFixtures";
+import { blockingBox, boxVolumeWorld, centreAboveFloor, floorSlab, pawnContext, physicsBox, standingPawn, waterBox } from "../fixtures/movement/pawnWorldFixtures";
 import { readCollisionFixturePayload, replaceFixtureArray } from "../support/nativeTileCollisionFixture";
 import type { TypedPayloadFixtureArray } from "../support/typedPayloadFixture";
 
@@ -52,5 +55,37 @@ describe("VOLS volume kinds and physics fields", () => {
   it("refuses a gravity or terminal velocity that is not finite", () => {
     expect(() => decodeVolumes(replaceFixtureArray(kindedVolumeArrays(), "VOLS.terminalVelocity", [0, Number.NaN])))
       .toThrow("VOLS.terminalVelocity[1] = NaN is not finite.");
+  });
+});
+
+const walker = { isLocalPlayer: false, walkAnimationFramesInMove: null, flies: false };
+const floorTopZ = -600;
+const volumeCentre = [0, 0, -500] as const, volumeHalfSize = [2048, 2048, 200] as const;
+const pawnLocation = centreAboveFloor(0, 0, floorTopZ);
+
+function modeAfterOneFrame(boxes: Parameters<typeof boxVolumeWorld>[0]) {
+  const simulation = { body: standingPawn(pawnLocation), yaw: 0, goal: null, moveTimerSeconds: 0, speedUnresolved: false };
+  return advancePawnSimulation(pawnContext(boxVolumeWorld([floorSlab(floorTopZ), ...boxes])), simulation, walker, 1 / 60).body.mode;
+}
+
+describe("the pawn water test reads the containing volume's water flag", () => {
+  it("keeps a pawn walking inside a physics volume whose water flag is false and swims inside one whose flag is true", () => {
+    expect(modeAfterOneFrame([physicsBox(volumeCentre, volumeHalfSize, { water: false, priority: 0 })])).toBe("walking");
+    expect(modeAfterOneFrame([physicsBox(volumeCentre, volumeHalfSize, { water: true, priority: 0 })])).toBe("swimming");
+  });
+
+  it("never puts a pawn in water inside a blocking volume or a physics volume whose water flag is unresolved", () => {
+    expect(isPawnInWater(pawnContext(boxVolumeWorld([blockingBox(volumeCentre, volumeHalfSize)])), pawnLocation)).toBe(false);
+    expect(isPawnInWater(pawnContext(boxVolumeWorld([physicsBox(volumeCentre, volumeHalfSize, { water: null, priority: 0 })])), pawnLocation)).toBe(false);
+  });
+
+  it("reads the water flag of the containing physics volume with the highest priority", () => {
+    const water = (priority: number) => physicsBox(volumeCentre, volumeHalfSize, { water: true, priority });
+    const dry = (priority: number) => physicsBox(volumeCentre, volumeHalfSize, { water: false, priority });
+    expect(isPawnInWater(pawnContext(boxVolumeWorld([water(0), dry(5)])), pawnLocation)).toBe(false);
+    expect(isPawnInWater(pawnContext(boxVolumeWorld([dry(0), water(5)])), pawnLocation)).toBe(true);
+    expect(isPawnInWater(pawnContext(boxVolumeWorld([physicsBox(volumeCentre, volumeHalfSize, { water: false, priority: null }), water(-3)])), pawnLocation))
+      .toBe(true);
+    expect(isPawnInWater(pawnContext(boxVolumeWorld([waterBox(volumeCentre, volumeHalfSize)])), pawnLocation)).toBe(true);
   });
 });

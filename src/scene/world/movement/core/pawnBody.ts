@@ -3,7 +3,7 @@ import type { CollisionPrimitive, CollisionSurroundings } from "./collisionTrace
 import type { CollisionWorld } from "./collisionWorld";
 import type { MovingActor } from "./moveActor";
 import type { MovementNativeRules } from "./movementRules";
-import { volumesContaining } from "./volumeContainment";
+import { governingPhysicsVolume, volumesContaining } from "./volumeContainment";
 
 export type PawnPhysicsMode = "walking" | "falling" | "swimming" | "flying";
 
@@ -60,9 +60,8 @@ export function velocityFromDisplacement(start: Vector3, end: Vector3, seconds: 
 }
 
 export function isPawnInWater(context: PawnPhysicsContext, location: Vector3): boolean {
-  if (!context.rules.pawn.physicsVolumeIsWater) return false;
   const waterlinePoint = { x: location.x, y: location.y, z: location.z + context.rules.pawn.waterlineProbe };
-  return volumesContaining(context.world, waterlinePoint, context.rules).length > 0;
+  return governingPhysicsVolume(volumesContaining(context.world, waterlinePoint, context.rules))?.volume.water === true;
 }
 
 export function slideAlongPlane(delta: Vector3, normal: Vector3, hitTime: number): Vector3 {

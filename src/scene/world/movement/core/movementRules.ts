@@ -52,7 +52,6 @@ export interface PawnMovementRules {
   readonly volumeGravity: number;
   readonly terminalVelocity: number;
   readonly waterlineProbe: number;
-  readonly physicsVolumeIsWater: boolean;
   readonly waterEntry: VerticalSpeedChangeRules;
   readonly waterExit: VerticalSpeedChangeRules;
   readonly flyingStepWallZ: number;
@@ -192,7 +191,6 @@ export function parseMovementNativeRules(document: unknown): MovementNativeRules
       volumeGravity: numberRule("movement.volumeGravity"),
       terminalVelocity: numberRule("movement.terminalVelocity"),
       waterlineProbe: numberRule("movement.waterlineProbe"),
-      physicsVolumeIsWater: booleanRule("movement.physicsVolumeIsWater"),
       waterEntry: verticalSpeedChange("movement.waterEntry"),
       waterExit: verticalSpeedChange("movement.waterExit"),
       flyingStepWallZ: numberRule("movement.flying.stepWallZ"),
