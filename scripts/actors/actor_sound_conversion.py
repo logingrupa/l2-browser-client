@@ -4,7 +4,7 @@ from typing import NamedTuple
 import zipfile
 from pathlib import Path, PurePosixPath
 
-from actors.actor_census import SOUND_PACKAGE_SUFFIXES, ActorPackageCensus
+from actors.actor_census import SOUND_PACKAGE_SUFFIXES, ActorPackageCensus, package_name_of
 from actors.actor_sound_bindings import (ACTOR_SOUND_STEP, actor_sound_bundle_id, actor_sound_gap_row, actor_sound_gap_rows,
                                          actor_sound_reference_counts, build_actor_sound_recipe, unresolved_reference_entries)
 from actors.actor_unit_inventory import decoded_string_values
@@ -87,8 +87,7 @@ class ActorSoundConversionRun:
         return Path(path).relative_to(self.project_root).as_posix()
 
     def is_sound_package_reference(self, reference):
-        paths = self.package_census.resolve_package_paths(reference, ('',)) if False else \
-            self.package_census.lock_equal_paths_by_stem.get(reference.split('.', 1)[0].casefold(), ())
+        paths = self.package_census.lock_equal_paths_by_stem.get(package_name_of(reference).casefold(), ())
         return bool(paths) and all(PurePosixPath(path).suffix.lower() in SOUND_PACKAGE_SUFFIXES for path in paths)
 
     def table(self, name):
