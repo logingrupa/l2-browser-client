@@ -11,7 +11,7 @@ import { validateSectionGlb } from "./loadNativeSection";
 import { selectNativeSkyLiteral, type NativeEnvironmentTables } from "./nativeEnvironmentTables";
 import { createNativeSkyLiteralComparison } from "./nativeSkyLiteralComparison";
 import { readSelectedTileSkySource } from "./nativeTileSkySource";
-import { surfaceMaterialProgramId } from "./lighting/surfaceMaterialProgram";
+import { readNativeMaterialProgramPin } from "../../assets/native/nativeMaterialProgramPin";
 import { selectedNativeTileIdentity } from "./selectedNativeTile";
 
 export const nativeSkySource = {
@@ -102,7 +102,7 @@ export async function createNativeSkyPresentation(scene: Scene, signal: AbortSig
   }
   let librarySurfaces;
   try {
-    librarySurfaces = skyMeshes.map(mesh => ({ mesh: mesh.name, programMaterialId: surfaceMaterialProgramId(mesh.material) }))
+    librarySurfaces = skyMeshes.map(mesh => ({ mesh: mesh.name, programMaterialId: readNativeMaterialProgramPin(mesh.material) }))
       .map(surface => ({ ...surface, status: surface.programMaterialId === null ? "program-unconverted" as const : "library-environment-clock-unwired" as const }));
   } catch (error) {
     if (!authored) { container?.dispose(); skyRoot.dispose(); }

@@ -9,7 +9,7 @@ import { createNativeMaterial, type FogState, type LoadedNativeMaterial, type Na
 import type { NativeBspNodeRange, NativeBspSection } from "../nativeBspResources";
 import type { TileLightingModel } from "./decodeTileLighting";
 import { decodeDxt1Texels, lightmapHourPages, lightmapPageAtHour } from "./lightmapPages";
-import { surfaceMaterialProgramId } from "./surfaceMaterialProgram";
+import { readNativeMaterialProgramPin } from "../../../assets/native/nativeMaterialProgramPin";
 import { planLightmapSections, type LightmapSectionPlan } from "./tileLightmapSections";
 import type { WorldEnvironmentSample } from "./worldEnvironmentClock";
 
@@ -103,7 +103,7 @@ export async function bindTileLighting(settings: TileLightingSettings, signal: A
   };
   try {
     for (const plan of plans) {
-      const mesh = meshOfPlan(bspChunks, plan), programMaterialId = surfaceMaterialProgramId(mesh.material);
+      const mesh = meshOfPlan(bspChunks, plan), programMaterialId = readNativeMaterialProgramPin(mesh.material);
       const unbound = (status: TileLightingSurfaceStatus, reasons: readonly string[]) =>
         sections.push({ plan, status, programMaterialId, reasons, nativeMaterial: null, boundPage: null });
       if (plan.kind === "gap") { unbound("lighting-gap", [plan.reason]); continue; }

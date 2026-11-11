@@ -10,7 +10,7 @@ import type { NativeTileManifest } from "../nativeTileManifest";
 import { bindTileLighting, type TileLightingBinding, type TileLightingBspChunk, type TileLightingInspection } from "./bindTileLighting";
 import type { TileLightingModel } from "./decodeTileLighting";
 import { loadTileLighting } from "./loadTileLighting";
-import { surfaceMaterialProgramId } from "./surfaceMaterialProgram";
+import { readNativeMaterialProgramPin } from "../../../assets/native/nativeMaterialProgramPin";
 import { createWorldEnvironmentClock, type WorldEnvironmentClock } from "./worldEnvironmentClock";
 
 export interface TileLightingGapInspection {
@@ -51,7 +51,7 @@ function unboundTileLighting(gap: string): AttachedTileLighting {
 function unlitSurfaceCounts(meshes: readonly AbstractMesh[], programStatus: UnlitSurfaceStatus): Partial<Record<UnlitSurfaceStatus, number>> {
   const counts: Partial<Record<UnlitSurfaceStatus, number>> = {};
   for (const mesh of meshes) {
-    const status = surfaceMaterialProgramId(mesh.material) === null ? "program-unconverted" : programStatus;
+    const status = readNativeMaterialProgramPin(mesh.material) === null ? "program-unconverted" : programStatus;
     counts[status] = (counts[status] ?? 0) + 1;
   }
   return counts;
