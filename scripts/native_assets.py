@@ -136,10 +136,16 @@ def require_unique_umodel_leaf_name(package, selected):
         raise ValueError('UModel cannot safely select this duplicate leaf name')
 
 
+def implementation_source_paths():
+    scripts = Path(__file__).parent
+    return sorted([Path(__file__), scripts / 'native_audio.py', scripts / 'native_animation_families.py', scripts / 'native_effect_bundle.py',
+                   scripts / 'reference_client_guard.py', scripts / 'native_store' / 'store_paths.py',
+                   *(scripts / 'native_catalog').glob('*.py'), *(scripts / 'native_catalog').glob('*.ps1'), *(scripts / 'native_assets_lib').glob('*.py')])
+
+
 def implementation_hash():
     scripts = Path(__file__).parent
-    paths = [Path(__file__), scripts / 'native_audio.py', scripts / 'native_animation_families.py', scripts / 'native_effect_bundle.py', *(scripts / 'native_catalog').glob('*.py'), *(scripts / 'native_catalog').glob('*.ps1'), *(scripts / 'native_assets_lib').glob('*.py')]
-    return sha(json_bytes({path.relative_to(scripts).as_posix(): hash_file(path) for path in sorted(paths)}))
+    return sha(json_bytes({path.relative_to(scripts).as_posix(): hash_file(path) for path in implementation_source_paths()}))
 
 
 class Converter:
