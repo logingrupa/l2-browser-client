@@ -7,12 +7,13 @@ from typing import NamedTuple
 from actors.npc_store_records import converted_model_store_files_and_record
 from native_assets import UMODEL, Converter, implementation_hash
 from native_assets_lib.gltf import json_bytes
-from native_assets_lib.static_materials import REVIEWED_VERSIONS
+from native_assets_lib.static_materials import REVIEWED_VERSIONS, static_material_layout_unreviewed_reason
 from native_catalog.ue2 import FormatError
 from native_store.catalog_writer import add_store_file, immutable_write, sha256_hex, verify_store_destinations
-from native_store.store_paths import confined_child_path, lane_store_root, lane_work_root
+from native_store.store_paths import REPOSITORY_ROOT, confined_child_path, lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from reference_client_guard import require_reference_client
+from static_material_package_census import STATIC_MESH_PACKAGE_CENSUS_RELATIVE_PATH, validate_static_mesh_package_census
 from world.native_terrain_sectors import native_terrain
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
 from world.static_placement import read_class_evidence
@@ -65,12 +66,32 @@ def static_mesh_ledger(project_root):
     return UnitLedger(lane_work_root(project_root, WORLD_LANE_NAME), STATIC_MESH_STEP_NAME, STATIC_MESH_STEP_ALGORITHM_VERSION)
 
 
+def read_static_mesh_package_census():
+    return validate_static_mesh_package_census(json.loads((REPOSITORY_ROOT / STATIC_MESH_PACKAGE_CENSUS_RELATIVE_PATH).read_text(encoding='utf-8')))
+
+
+def static_material_review_state(census, package_records):
+    rows_by_casefolded_path = {row['path'].casefold(): row for row in census['packages']}
+    state = []
+    for record in package_records:
+        row = rows_by_casefolded_path.get(record['path'].casefold())
+        if row is None or row['sha256'] != record['sha256']:
+            raise StaticMeshStepError(f'static mesh package census {STATIC_MESH_PACKAGE_CENSUS_RELATIVE_PATH} holds no row with the lock eSha256 '
+                                      f'of {record["path"]}; regenerate it with scripts/static_material_package_census.py')
+        version = (row['packageVersion'], row['licensee'])
+        state.append([record['path'], *version, version in REVIEWED_VERSIONS])
+    return sorted(state)
+
+
 def static_mesh_unit(project_root, tile_id, lock_record):
     chunks_fingerprint, raw_products, chunk_plan = sealed_chunk_plan(project_root, tile_id, lock_record)
     requests_by_reference = static_mesh_requests_by_reference(raw_products)
-    inputs = locked_input_records(sorted({tile_map_path(tile_id), *(request['package'] for request in requests_by_reference.values())}))
+    package_paths = sorted({request['package'] for request in requests_by_reference.values()})
+    inputs = locked_input_records(sorted({tile_map_path(tile_id), *package_paths}))
     ledger = static_mesh_ledger(project_root)
-    config = {'chunksFingerprint': chunks_fingerprint, 'converterSha256': implementation_hash()}
+    config = {'chunksFingerprint': chunks_fingerprint, 'converterSha256': implementation_hash(),
+              'staticMaterialReviewState': static_material_review_state(read_static_mesh_package_census(),
+                                                                        [record for record in inputs if record['path'] in package_paths])}
     fingerprint = ledger.unit_fingerprint([record['sha256'] for record in inputs], config)
     return StaticMeshUnit(ledger, tile_unit_key(tile_id), fingerprint, config, inputs, chunk_plan, raw_products, requests_by_reference)
 
@@ -96,7 +117,7 @@ def package_gate_reason(header):
     if 'error' in header:
         return FAILED_STATUS, f'decode-failed:{header["error"]}'
     if (header['packageVersion'], header['licensee']) not in REVIEWED_VERSIONS:
-        return GAP_STATUS, f'static-material-layout-unreviewed:{header["packageVersion"]}/{header["licensee"]}'
+        return GAP_STATUS, static_material_layout_unreviewed_reason(header['packageVersion'], header['licensee'])
     return None
 
 
