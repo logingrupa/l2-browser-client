@@ -35,9 +35,10 @@ interface TileStoreOptions {
   readonly archives?: ReadonlyMap<string, Uint8Array<ArrayBuffer>>;
   readonly secondChunkBsp?: { readonly glb: Uint8Array<ArrayBuffer>; readonly served?: Uint8Array<ArrayBuffer> };
   readonly tileMovers?: boolean;
+  readonly tileMoverServerRealId?: number;
 }
 
-function tileMoverResponses(): { readonly resource: Document; readonly responses: [string, Uint8Array<ArrayBuffer>][] } {
+function tileMoverResponses(serverRealId: number): { readonly resource: Document; readonly responses: [string, Uint8Array<ArrayBuffer>][] } {
   const model = glb({ asset: { version: "2.0" }, extras: { fixture: "tile mover model" } }), modelSha256 = sha256Hex(model), archiveSha256 = "a".repeat(64);
   const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0];
   const manifest = { kind: "native-tile-movers", schemaVersion: 1, tileId: fixtureTileId, sourceMap: { path: `maps/${fixtureTileId}.unr`, sha256: "c".repeat(64) },
@@ -46,7 +47,7 @@ function tileMoverResponses(): { readonly resource: Document; readonly responses
       archive: { resource: `/l2/${archiveSha256}/asset.l2asset`, sha256: archiveSha256, bytes: 10 },
       model: { resource: `/l2/${archiveSha256}/model.glb`, sha256: modelSha256, bytes: model.byteLength } }],
     movers: [3, 7].map(index => ({ id: `interlude:${fixtureTileId}.Mover${index}`, actorName: `Mover${index}`, exportIndex: index,
-      modelId: "interlude:fixture_s.Door", serverObject: { realId: 0, id: 0, type: 0 }, closedMatrix: [...identity, index, 0, 0, 1],
+      modelId: "interlude:fixture_s.Door", serverObject: { realId: serverRealId, id: 0, type: 0 }, closedMatrix: [...identity, index, 0, 0, 1],
       openMatrix: [...identity, index, 1, 0, 1], moveTimeSeconds: 1, initialKey: 0, initiallyClosed: true, keys: [], sounds: [],
       collision: { decision: "gap", slots: [], evidence: ["rule-disagreement:bStatic"] } })) };
   const bytes = jsonBytes(manifest), sha256 = sha256Hex(bytes), resource = `/l2/movers/${sha256}/tile-movers.json`;
@@ -92,7 +93,7 @@ function tileStore(options: TileStoreOptions = {}) {
   const secondChunkBytes = jsonBytes(secondChunk), secondChunkSha256 = sha256Hex(secondChunkBytes);
   const tile = decodeJsonDocument(fixture.tile.bytes);
   if (options.anchorLocation) tile.anchor = { ...(tile.anchor as Document), location: options.anchorLocation };
-  const movers = options.tileMovers ? tileMoverResponses() : null;
+  const movers = options.tileMovers ? tileMoverResponses(options.tileMoverServerRealId ?? 0) : null;
   if (movers) tile.resources = [movers.resource];
   tile.chunks = [...(tile.chunks as Document[]), { chunkId: "chunk-0-1", manifestSha256: secondChunkSha256, manifestBytes: secondChunkBytes.byteLength,
     manifest: `/l2/maps/${secondChunkSha256}/native-tile-chunk-runtime/manifest.json` }];
@@ -169,11 +170,21 @@ describe("native tile chunk loading", () => {
     const section = (await load())!;
     const inspection = section.inspection();
     expect(inspection.moverCount).toBe(2);
+    expect(inspection.moverGap).toBeNull();
     expect(inspection.moverCollisionMeshCount).toBe(0);
     expect(inspection.movers!.map(mover => [mover.id, mover.state, mover.matrix[12]])).toEqual([
       [`interlude:${fixtureTileId}.Mover3`, "closed", 3], [`interlude:${fixtureTileId}.Mover7`, "closed", 7]]);
     expect(section.tileMovers!.targets.flatMap(target => target.meshes).every(mesh => mesh.metadata.worldCollision === undefined)).toBe(true);
     section.dispose();
+    expect(scene.transformNodes.filter(node => node.name.includes(".Mover"))).toEqual([]);
+  });
+
+  it("keeps the tile and reports a movers gap when the tile mover manifest refuses a mover", async () => {
+    serve(tileStore({ tileMovers: true, tileMoverServerRealId: -1 }));
+    const section = (await load())!;
+    expect(section.tileMovers).toBeNull();
+    expect(section.inspection()).toMatchObject({ moverCount: 0, moverGap: "movers-invalid:Native tile mover identity, motion or timing is invalid." });
+    expect(section.terrainMeshes).toHaveLength(2);
     expect(scene.transformNodes.filter(node => node.name.includes(".Mover"))).toEqual([]);
   });
 

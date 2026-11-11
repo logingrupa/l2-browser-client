@@ -30,7 +30,7 @@ export function inspectNativeTileSection(input: NativeTileSectionInspectionInput
     tileId: input.tileId, chunkCount: input.chunks.length, loadedChunkCount: input.loadedChunkCount, ...tileMeshCounts(input.countedMeshes),
     terrainChunks: describeTerrainChunks(input.chunks), tileAnchor: input.anchor, meshGapCount: chunkMeshGapCount(input.chunks),
     bspSections: bspChunks.reduce((sum, chunk) => sum + chunk.sections.length, 0), bspResources: bspChunks.map(chunk => chunk.resource),
-    moverCount: moverTargets.length,
+    moverCount: moverTargets.length, moverGap: systems.moverGap,
     moverCollisionMeshCount: moverTargets.flatMap(target => target.meshes).filter(mesh => mesh.metadata?.worldCollision === true).length,
     movers: moverTargets.map(target => target.inspection()), bspVisibility: systems.visibility.inspection(), lighting: systems.lighting.inspection(),
     mapEmitterPlacements: { gap: systems.mapEmitterPlacements.gap,

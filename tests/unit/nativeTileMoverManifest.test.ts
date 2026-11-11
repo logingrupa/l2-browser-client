@@ -67,6 +67,10 @@ describe("native tile mover manifest", () => {
     }
   });
 
+  it("accepts any positive move time the movers step converts", () => {
+    expect(parseNativeTileMoverManifest(tileMoverManifest({ movers: [tileMover(1, { moveTimeSeconds: 150 })] })).movers[0]!.moveTimeSeconds).toBe(150);
+  });
+
   it("rejects a model resource that is not pinned beside its archive", () => {
     const manifest = tileMoverManifest();
     const model = { ...manifest.models[0]!, model: { resource: `/l2/${modelSha256}/model.glb`, sha256: modelSha256, bytes: 400 } };

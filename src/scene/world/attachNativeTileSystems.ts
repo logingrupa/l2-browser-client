@@ -20,10 +20,12 @@ export interface AttachedNativeTileSystems {
   readonly lighting: AttachedTileLighting;
   readonly mapEmitterPlacements: Awaited<ReturnType<typeof loadTileMapEmitterPlacements>>;
   readonly movers: NativeTileMovers | null;
+  readonly moverGap: string | null;
   dispose(): void;
 }
 
 const disposedDuringLoading = () => new Error("Native tile was disposed during loading.");
+const moverResourceInvalidReasonPrefix = "movers-invalid:";
 
 export async function attachNativeTileSystems(scene: Scene, manifest: NativeTileManifest, contents: NativeTileSystemContents, signal: AbortSignal,
   isDisposed: () => boolean): Promise<AttachedNativeTileSystems> {
@@ -41,12 +43,19 @@ export async function attachNativeTileSystems(scene: Scene, manifest: NativeTile
     const mapEmitterPlacements = await loadTileMapEmitterPlacements(manifest, signal);
     if (isDisposed()) throw disposedDuringLoading();
     const moverResource = manifest.resources.find(resource => resource.kind === "movers");
+    let moverGap: string | null = null;
     if (moverResource) {
-      movers = await loadNativeTileMovers(scene, moverResource, signal);
+      try {
+        movers = await loadNativeTileMovers(scene, moverResource, signal);
+        if (movers.manifest.tileId !== manifest.tileId) throw new Error(`Native tile mover manifest names tile ${movers.manifest.tileId}, not ${manifest.tileId}.`);
+      } catch (error) {
+        signal.throwIfAborted();
+        movers?.dispose(); movers = null;
+        moverGap = `${moverResourceInvalidReasonPrefix}${error instanceof Error ? error.message : String(error)}`;
+      }
       if (isDisposed()) throw disposedDuringLoading();
-      if (movers.manifest.tileId !== manifest.tileId) throw new Error(`Native tile mover manifest names tile ${movers.manifest.tileId}, not ${manifest.tileId}.`);
     }
-    return { visibility, lighting, mapEmitterPlacements, movers, dispose };
+    return { visibility, lighting, mapEmitterPlacements, movers, moverGap, dispose };
   } catch (error) {
     dispose();
     throw error;

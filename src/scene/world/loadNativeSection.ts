@@ -248,6 +248,7 @@ export type NativeWorldSceneInspection = ReturnType<typeof inspectNativeWorldSce
   readonly tileAnchor?: NativeTileSectionView["anchor"];
   readonly meshGapCount?: number;
   readonly moverCount?: number;
+  readonly moverGap?: string | null;
   readonly moverCollisionMeshCount?: number;
   readonly movers?: readonly ReturnType<NativeMover["inspection"]>[];
   readonly bspSections?: number;

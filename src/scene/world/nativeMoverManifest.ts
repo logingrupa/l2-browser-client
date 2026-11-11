@@ -33,7 +33,6 @@ const hash = /^[a-f0-9]{64}$/;
 const maximumMoverResourceBytes = 128 * 1024 * 1024;
 const maximumMoverModels = 32;
 const maximumMovers = 512;
-const maximumMoveTimeSeconds = 120;
 const rigidTolerance = 1e-5;
 const qualifiedSourceObject = /^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+$/;
 export const moverObject = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
@@ -41,7 +40,7 @@ const positiveId = (value: unknown): value is number => typeof value === "number
 const nonNegativeInteger = (value: unknown): value is number => typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 const finiteMatrix = (value: unknown): value is number[] => Array.isArray(value) && value.length === 16 && value.every(n => typeof n === "number" && Number.isFinite(n));
 const affineMatrix = (matrix: readonly number[]) => matrix[3] === 0 && matrix[7] === 0 && matrix[11] === 0 && matrix[15] === 1;
-const validMoveTime = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value) && value > 0 && value <= maximumMoveTimeSeconds;
+const validMoveTime = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value) && value > 0;
 function resource(value: unknown, name: string): value is MoverResource {
   return moverObject(value) && typeof value.file === "string" && new RegExp(`^models/[a-f0-9]{64}/${name}$`).test(value.file) &&
     typeof value.sha256 === "string" && hash.test(value.sha256) && positiveId(value.bytes) && value.bytes <= maximumMoverResourceBytes;
