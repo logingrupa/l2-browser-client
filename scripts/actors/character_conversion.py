@@ -13,7 +13,7 @@ from actors.npc_requests import (CONVERTER_REFUSED_REASON_PREFIX, FAILED_STATUS,
                                  animation_reference_gap_reason, serialized_animation_reference)
 from actors.path_free_messages import path_free_reason
 from actors.npc_store_records import (MODEL_ARCHIVE_FILE_NAME, catalog_with_record_replaced, converted_model_store_files_and_record,
-                                      file_output_record)
+                                      file_output_record, write_catalog_without_record)
 from data.lane_unit_outcomes import replace_step_gap_row
 from native_assets import UMODEL_SHA256, implementation_hash
 from native_assets_lib.gltf import json_bytes
@@ -133,7 +133,7 @@ class CharacterConversionRun:
         key = character_key(row_index)
         generated, config, inputs, fingerprint = self.unit_work(row_index)
         if self.ledger.is_sealed(key, fingerprint):
-            return self.write_model_record(row_index, self.sealed_outcome(row_index))
+            return self.synchronize_model_record(row_index, self.sealed_outcome(row_index))
         step_directory = self.ledger.begin(key, fingerprint)
         model_reason = model_gap_reason(config['censusReason'], generated)
         outputs = []
@@ -151,13 +151,14 @@ class CharacterConversionRun:
         gap_row = self.gap_row(row_index, reason) if reason else None
         self.ledger.seal(key, fingerprint, {'config': config, 'inputs': inputs, 'outputs': outputs, 'gapRows': [gap_row] if gap_row else []})
         replace_step_gap_row(self.project_root, CHARACTER_LANE_NAME, CHARACTER_STEP, key, gap_row)
-        return self.write_model_record(row_index, self.outcome(row_index, reason, False, outputs))
+        return self.synchronize_model_record(row_index, self.outcome(row_index, reason, False, outputs))
 
-    def write_model_record(self, row_index, outcome):
+    def synchronize_model_record(self, row_index, outcome):
+        record_id = CHARACTER_MODEL_ID_PREFIX + str(row_index)
         if not outcome['outputs']:
+            write_catalog_without_record(self.store_root, 'models', record_id)
             return outcome
-        files, record = converted_model_store_files_and_record(CHARACTER_MODEL_ID_PREFIX + str(row_index),
-                                                               self.ledger.lane_output_path(outcome['outputs'][0]['path']))
+        files, record = converted_model_store_files_and_record(record_id, self.ledger.lane_output_path(outcome['outputs'][0]['path']))
         catalog, before = read_store_catalog(self.store_root)
         catalog = catalog_with_record_replaced(catalog, 'models', record, model_record_capacity(self.census))
         catalog['models'] = sorted(catalog['models'], key=lambda existing: existing['id'])

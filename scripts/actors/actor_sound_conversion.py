@@ -12,7 +12,7 @@ from actors.data_ui_table_manifest import DATA_UI_LANE_NAME, data_ui_table_manif
 from actors.combat_role_routes import (bind_combat_role_routes, combat_route_table_manifest, descriptor_record_field_names,
                                        read_combat_role_route_proof)
 from actors.npc_requests import CONVERTER_REFUSED_REASON_PREFIX
-from actors.npc_store_records import catalog_with_record_replaced, file_output_record
+from actors.npc_store_records import catalog_with_record_replaced, file_output_record, write_catalog_without_record
 from actors.path_free_messages import path_free_reason
 from native_assets import UMODEL_SHA256, implementation_hash
 from native_assets_lib import combat_audio_bundle
@@ -327,6 +327,8 @@ class ActorSoundConversionRun:
         manifests = combat_audio_manifest_outputs(receipt)
         if manifests:
             self.write_catalog_record(bundle_key, manifests[0], catalog_capacity)
+        else:
+            write_catalog_without_record(self.store_root, 'combatAudio', actor_sound_bundle_id(bundle_key))
         self.replace_bundle_gap_rows(bundle_key, receipt['gapRows'])
         manifest = json.loads(self.bundle_ledger.lane_output_path(manifests[0]['path']).read_bytes()) if manifests else None
         return {'key': bundle_key, 'step': ACTOR_SOUND_STEP, 'status': 'gap' if receipt['gapRows'] else 'pass',
@@ -357,6 +359,7 @@ class ActorSoundConversionRun:
 def no_sound_row_bundle_outcome(run, bundle_key, reason, source_identity):
     row = actor_sound_gap_row(bundle_key, reason, source_identity, ACTOR_SOUND_GAP_ROWS_RELATIVE_PATH)
     run.replace_bundle_gap_rows(bundle_key, [row])
+    write_catalog_without_record(run.store_root, 'combatAudio', actor_sound_bundle_id(bundle_key))
     return {'key': bundle_key, 'step': ACTOR_SOUND_STEP, 'status': 'gap', 'reason': reason, 'cacheHit': False, 'bundleId': None,
             'references': actor_sound_reference_counts(None)}
 

@@ -5,7 +5,8 @@ import zipfile
 
 from native_actor_profiles import verify_npc_profiles
 from native_assets import verify_archive
-from native_store.catalog_writer import add_store_file, merge_catalog_slice, sha256_hex
+from native_assets_lib.gltf import json_bytes
+from native_store.catalog_writer import add_store_file, merge_catalog_slice, read_store_catalog, sha256_hex, write_store
 from native_store.store_paths import StorePathError, confined_child_path
 
 NATIVE_RESOURCE_PREFIX = '/l2/'
@@ -48,9 +49,21 @@ def profile_bundle_store_files_and_record(client_root, bundle_root):
     return files, record
 
 
+def catalog_without_record(catalog, slice_name, record_id):
+    if slice_name not in catalog:
+        return catalog
+    return {**catalog, slice_name: [existing for existing in catalog[slice_name] if existing.get('id') != record_id]}
+
+
 def catalog_with_record_replaced(catalog, slice_name, record, capacity):
-    kept_records = [existing for existing in catalog.get(slice_name, []) if existing.get('id') != record['id']]
-    return merge_catalog_slice({**catalog, slice_name: kept_records}, slice_name, record, capacity)
+    return merge_catalog_slice(catalog_without_record(catalog, slice_name, record['id']), slice_name, record, capacity)
+
+
+def write_catalog_without_record(store_root, slice_name, record_id):
+    catalog, before = read_store_catalog(store_root)
+    pruned = catalog_without_record(catalog, slice_name, record_id)
+    if pruned != catalog:
+        write_store(store_root, {}, before, json_bytes(pruned))
 
 
 def native_resource_store_path(store_root, resource):

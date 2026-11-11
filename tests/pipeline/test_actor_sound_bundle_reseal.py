@@ -8,16 +8,21 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
 from actors.actor_sound_batch import ActorSoundBundles, run_actor_sound_slice
-from actors.actor_sound_bindings import ACTOR_SOUND_STEP
-from actors.actor_sound_conversion import ACTOR_SOUND_ALGORITHM_VERSION, ACTOR_SOUND_UNIT_STEP, ActorSoundConversionRun
+from actors.actor_sound_bindings import ACTOR_SOUND_STEP, NO_EXACT_SKILL_SOUND_ROW_REASON, actor_sound_bundle_id
+from actors.actor_sound_conversion import (ACTOR_SOUND_ALGORITHM_VERSION, ACTOR_SOUND_UNIT_STEP, ActorSoundConversionRun,
+                                           no_sound_row_bundle_outcome)
 from catalog_store_fixture import write_profile_manifest, write_store_catalog
+from native_store.catalog_writer import read_store_catalog
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import UnitLedger
 
 FIRST_BUILDER_SHA256 = 'a' * 64
 CHANGED_BUILDER_SHA256 = 'b' * 64
 GREMLIN_PROFILE = {'npcId': 20001, 'name': 'Gremlin', 'modelCatalogId': 'npc-model:gremlin', 'mesh': 'LineageMonsters.gremlin_m00'}
-NO_BOUND_NPCGRP_ROUTES = {'table': 'npcgrp', 'routes': {}, 'unresolved': {
+STALE_GREMLIN_COMBAT_AUDIO_RECORD = {'id': actor_sound_bundle_id('npc:20001'), 'manifest': f'/l2/combat-audio/{"d" * 64}/manifest.json',
+                                     'manifestBytes': 1, 'manifestSha256': 'd' * 64}
+STALE_SKILL_COMBAT_AUDIO_RECORD = {**STALE_GREMLIN_COMBAT_AUDIO_RECORD, 'id': actor_sound_bundle_id('skill:1:1')}
+NO_BOUND_NPCGRP_ROUTES ={'table': 'npcgrp', 'routes': {}, 'unresolved': {
     role: {'reason': f'combat-role-route-unresolved:npcgrp/{role}', 'detail': 'route proof is missing'}
     for role in ('attackItem', 'attackVoice', 'defense', 'damage')}}
 
@@ -81,6 +86,22 @@ class ActorSoundBundleResealTests(unittest.TestCase):
         self.assertEqual((receipt['unitKey'], receipt['config']['builderSha256']), ('npc:20001', CHANGED_BUILDER_SHA256))
         self.assertFalse(first_run.bundle_ledger.is_sealed('npc:20001', first_run.bundle_work('npc:20001', receipt['config']['actorRows'],
                                                                                              first_run.sealed_sound_outcome).fingerprint))
+
+    def test_a_bundle_resealed_without_a_manifest_loses_its_combat_audio_record(self):
+        store_root = lane_store_root(self.project_root, 'actors')
+        catalog, _ = read_store_catalog(store_root)
+        write_store_catalog(store_root, {**catalog, 'combatAudio': [STALE_GREMLIN_COMBAT_AUDIO_RECORD]})
+        _, outcomes = self.run_batch(FIRST_BUILDER_SHA256)
+        self.assertEqual([(outcome['key'], outcome['bundleId']) for outcome in outcomes], [('npc:20001', None)])
+        self.assertEqual(read_store_catalog(store_root)[0]['combatAudio'], [])
+
+    def test_a_bundle_that_loses_its_sound_row_loses_its_combat_audio_record(self):
+        run = SyntheticActorSoundRun(self.project_root, FIRST_BUILDER_SHA256)
+        catalog, _ = read_store_catalog(run.store_root)
+        write_store_catalog(run.store_root, {**catalog, 'combatAudio': [STALE_SKILL_COMBAT_AUDIO_RECORD]})
+        outcome = no_sound_row_bundle_outcome(run, 'skill:1:1', NO_EXACT_SKILL_SOUND_ROW_REASON, {'path': 'system/skillsoundgrp.dat', 'sha256': 'c' * 64})
+        self.assertEqual((outcome['status'], outcome['bundleId']), ('gap', None))
+        self.assertEqual(read_store_catalog(run.store_root)[0]['combatAudio'], [])
 
 
 if __name__ == '__main__':
