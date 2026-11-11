@@ -6,12 +6,13 @@ from typing import NamedTuple
 import PIL
 from PIL import DdsImagePlugin, Image
 
+from data.texture_package_census import unsupported_licensee_reason
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib.material_graph import read_material_graph
 from native_assets_lib.material_program import derive_material_program, read_material_class_defaults
 from native_assets_lib.material_resources import write_native_material_resources
 from native_assets_lib.texture_dds import UnsupportedTextureDDS, build_texture_dds
-from native_assets_lib.texture_mips import UnsupportedTextureSource, build_texture_source
+from native_assets_lib.texture_mips import REVIEWED_VERSIONS, UnsupportedTextureSource, build_texture_source
 from native_catalog.ue2 import FormatError, Package, Reader, summary, unwrap
 from world.bsp_reader_binding import pinned_bytes
 
@@ -187,6 +188,10 @@ def sky_layout_texture_source(package, item):
 
 def native_texture_source(package, item):
     if package.summary['version'] == TABLE_PACKAGE_LAYOUT_VERSION:
+        layout = (package.summary['version'], package.summary['licenseeVersion'])
+        if layout not in REVIEWED_VERSIONS:
+            raise SkyTextureUnsupported(unsupported_licensee_reason(*layout),
+                                        f'sky texture {item["object"]} lies in a {layout[0]}/{layout[1]} package outside the reviewed texture layouts')
         try:
             return build_texture_source(package, item)
         except UnsupportedTextureSource as error:
