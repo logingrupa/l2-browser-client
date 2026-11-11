@@ -7,6 +7,7 @@ import sys
 from actors.effect_bundle_packing import native_class_closure, pack_items_by_class_closure
 from actors.npc_requests import CONVERTER_REFUSED_REASON_PREFIX, FAILED_STATUS, GAP_STATUS, TRANSIENT_FAILURES
 from actors.npc_store_records import file_output_record
+from actors.path_free_messages import path_free_reason
 from actors.skill_binding_table import (EFFECT_BUNDLE_CLASS_LIMIT_REASON_PREFIX, NO_EXACT_SKILLSOUND_ROW_REASON, SKILLS_GAP_ROW_STEP,
                                         VISUAL_ROOT_STATUS, DecodedSkillTables, emitter_class_root_outcome, representative_skill_binding,
                                         skill_binding_gap_rows, skill_bindings_by_visual_root, visual_roots_in_first_key_order)
@@ -82,13 +83,6 @@ def class_limit_reason(visual_root, closure_of):
     if packing.over_limit_items:
         return f'{EFFECT_BUNDLE_CLASS_LIMIT_REASON_PREFIX}{len(closure_of(visual_root))}'
     return None
-
-
-def path_free_reason(message, *roots):
-    for root in roots:
-        for spelling in {str(root), Path(root).as_posix()}:
-            message = message.replace(spelling, '<path>')
-    return ' '.join(message.split())
 
 
 def stage_effect_bundle(project_root, bundle_root, effects_root):
