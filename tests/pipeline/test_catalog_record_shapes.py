@@ -17,12 +17,16 @@ from native_store.catalog_writer import (NATIVE_RESOURCE_PATH_PATTERN, TABLE_ID_
                                          merge_catalog_slice, merge_catalog_slice_records, validate_catalog_record)
 from native_store import tile_manifest_validation
 from native_store.data_ui_table_manifest import DECODED_TABLE_KIND, DECODED_TABLE_RECORDS_TYPE_BY_ROUTE, DECODED_TABLE_SCHEMA_VERSION
-from native_store.tile_manifest_validation import (MASK_UV_RULES_BASE, TILE_RESOURCE_KINDS_BASE, VOCABULARY_FILE, TileManifestError,
-                                                   load_tile_manifest_vocabulary, validate_tile_chunk_manifest, validate_tile_manifest)
+from native_store.tile_manifest_validation import (CHUNK_COMPONENT_PATH_TEMPLATES, CHUNK_MANIFEST_PATH_TEMPLATE, MASK_UV_RULES_BASE,
+                                                   MAXIMUM_CHUNK_MODELS, MAXIMUM_CHUNK_PLACEMENTS, MODEL_ARCHIVE_PATH_TEMPLATE,
+                                                   REPEATABLE_TILE_RESOURCE_KINDS, TILE_RESOURCE_KINDS_BASE, TILE_RESOURCE_PATH_TEMPLATES, VOCABULARY_FILE,
+                                                   TileManifestError, load_tile_manifest_vocabulary, validate_tile_chunk_manifest, validate_tile_manifest)
 
 GOLDEN_ROOT = ROOT / 'tests' / 'fixtures' / 'golden'
 GOLDEN_CATALOG = json.loads((GOLDEN_ROOT / 'l2' / 'catalog.json').read_bytes())
 BROWSER_RESOURCE_URL_SOURCE = ROOT / 'src' / 'assets' / 'native' / 'nativeResourceUrl.ts'
+BROWSER_TILE_MANIFEST_SOURCES = tuple(ROOT / 'src' / 'scene' / 'world' / name
+                                      for name in ('nativeTileManifest.ts', 'nativeTileChunkManifest.ts', 'nativeBspResources.ts'))
 CATALOG_INDEX_KEYS_PATH = ROOT / 'tests' / 'fixtures' / 'catalog-index-keys.json'
 TABLE_INVENTORY_PATH = ROOT / 'docs' / 'parts' / 'data' / 'dat-table-inventory.json'
 SKILL_EFFECT_COMPONENT_PATTERN = re.compile(r'^interlude:skill:(\d+):level:(\d+):')
@@ -56,7 +60,21 @@ SHA256_A, SHA256_B = 'a' * 64, 'b' * 64
 
 
 def pinned_resource(kind, sha256):
-    return {'kind': kind, 'manifest': f'/l2/{kind}/{sha256}/manifest.json', 'manifestSha256': sha256, 'manifestBytes': 10}
+    return {'kind': kind, 'manifest': TILE_RESOURCE_PATH_TEMPLATES[kind].replace('<sha256>', sha256), 'manifestSha256': sha256, 'manifestBytes': 10}
+
+
+def chunk_terrain(sha256):
+    return {'resource': f'/l2/maps/{sha256}/native-tile-chunk-terrain/terrain.glb', 'sha256': sha256, 'maskUvRule': 'extrapolated'}
+
+
+def chunk_placement(model_id, placement_id='placement-1', **fields):
+    return {'id': placement_id, 'modelId': model_id, 'sourceActor': 'SyntheticFixture.StaticMeshActor0', 'exportIndex': 1,
+            'sourceMesh': 'SyntheticFixture.Mesh', 'matrix': [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], 'materialOverrides': [],
+            'collision': {}, **fields}
+
+
+def chunk_model(placements, model_id='interlude:SyntheticFixture.Model'):
+    return {'id': model_id, 'archive': f'/l2/{SHA256_A}/asset.l2asset', 'archiveSha256': SHA256_A, 'placements': placements}
 
 
 def write_vocabulary_root(test_case, document):
@@ -288,7 +306,16 @@ class TileManifestValidationTests(unittest.TestCase):
             'unknown kind': (changed(GOLDEN_TILE_MANIFEST, resources=[pinned_resource('lighting', SHA256_A)]), 'not in the tile manifest vocabulary'),
             'kind order': (changed(GOLDEN_TILE_MANIFEST, resources=[pinned_resource('world-audio', SHA256_B), pinned_resource('world-audio', SHA256_A)]),
                            r'sorted by \(kind, manifest\)'),
-            'repeated pair': (changed(GOLDEN_TILE_MANIFEST, resources=[pinned_resource('sky', SHA256_A), pinned_resource('sky', SHA256_A)]), 'twice'),
+            'repeated pair': (changed(GOLDEN_TILE_MANIFEST, resources=[pinned_resource('world-audio', SHA256_A), pinned_resource('world-audio', SHA256_A)]),
+                              'twice'),
+            'two minimap resources': (changed(GOLDEN_TILE_MANIFEST, resources=[pinned_resource('minimap', SHA256_A), pinned_resource('minimap', SHA256_B)]),
+                                      'lists more than one minimap resource'),
+            'two sky resources': (changed(GOLDEN_TILE_MANIFEST, resources=[pinned_resource('sky', SHA256_A), pinned_resource('sky', SHA256_A)]),
+                                  'lists more than one sky resource'),
+            'sky outside its template': (changed(GOLDEN_TILE_MANIFEST, resources=[changed(pinned_resource('sky', SHA256_A), manifest=f'/l2/{SHA256_A}/x.json')]),
+                                         r'sky resource manifest path must match \^/l2/skies/'),
+            'sky under another kind folder': (changed(GOLDEN_TILE_MANIFEST, resources=[
+                changed(pinned_resource('sky', SHA256_A), manifest=pinned_resource('minimap', SHA256_A)['manifest'])]), 'sky resource manifest path must match'),
             'other tile gap': (changed(GOLDEN_TILE_MANIFEST, gaps=[changed(GOLDEN_CHUNK_MANIFEST['gaps'][0], key='tile:00_01')]),
                                'must be keyed tile:00_00'),
             'extra key': (changed(GOLDEN_TILE_MANIFEST, models=[]), 'must hold exactly'),
@@ -299,11 +326,37 @@ class TileManifestValidationTests(unittest.TestCase):
 
     def test_chunk_manifest_refusals(self):
         sector_range = GOLDEN_CHUNK_MANIFEST['sectorRange']
-        terrain = {'resource': f'/l2/{SHA256_A}/asset.l2asset', 'sha256': SHA256_A, 'maskUvRule': 'extrapolated'}
+        terrain = chunk_terrain(SHA256_A)
         gaps_without_terrain = [row for row in GOLDEN_CHUNK_MANIFEST['gaps'] if row['step'] != 'terrain']
         passing_terrain_gap = changed(next(row for row in GOLDEN_CHUNK_MANIFEST['gaps'] if row['step'] == 'terrain'), status='pass', reason=None)
-        model = {'id': 'interlude:SyntheticFixture.Model', 'archive': f'/l2/{SHA256_A}/asset.l2asset', 'archiveSha256': SHA256_B, 'placements': []}
+        model_id = 'interlude:SyntheticFixture.Model'
+        model = changed(chunk_model([chunk_placement(model_id)]), archiveSha256=SHA256_B)
+        one_placement_per_model = [chunk_model([chunk_placement(f'model-{index}', f'placement-{index}')], f'model-{index}')
+                                   for index in range(MAXIMUM_CHUNK_MODELS + 1)]
+        too_many_placements = [chunk_model([chunk_placement(model_id, f'placement-{index}') for index in range(MAXIMUM_CHUNK_PLACEMENTS + 1)])]
         cases = {
+            'terrain archive path': (changed(GOLDEN_CHUNK_MANIFEST, terrain=changed(terrain, resource=f'/l2/{SHA256_A}/asset.l2asset')),
+                                     'terrain resource path must match'),
+            'collision in the terrain folder': (changed(GOLDEN_CHUNK_MANIFEST, collision={'resource': terrain['resource'], 'sha256': SHA256_A}),
+                                                'collision resource path must match'),
+            'bsp at a hash path': (changed(GOLDEN_CHUNK_MANIFEST, bsp={'resource': f'/l2/maps/{SHA256_A}/x.glb', 'sha256': SHA256_A}),
+                                   'bsp resource path must match'),
+            'model without placements': (changed(GOLDEN_CHUNK_MANIFEST, models=[chunk_model([])]), 'placements must be a non-empty list'),
+            'placement of another model': (changed(GOLDEN_CHUNK_MANIFEST, models=[chunk_model([chunk_placement('other')])]), 'modelId must be its model'),
+            'placement without a qualified actor': (changed(GOLDEN_CHUNK_MANIFEST, models=[chunk_model([chunk_placement(model_id, sourceActor='Actor')])]),
+                                                    'sourceActor must be a qualified object name'),
+            'placement export index zero': (changed(GOLDEN_CHUNK_MANIFEST, models=[chunk_model([chunk_placement(model_id, exportIndex=0)])]),
+                                            'exportIndex must be a safe integer of at least 1'),
+            'placement singular matrix': (changed(GOLDEN_CHUNK_MANIFEST, models=[chunk_model([chunk_placement(model_id, matrix=[0] * 15 + [1])])]),
+                                          'invertible affine transform'),
+            'placement material overrides': (changed(GOLDEN_CHUNK_MANIFEST, models=[chunk_model([chunk_placement(model_id, materialOverrides=[{}])])]),
+                                             'materialOverrides must be an empty list'),
+            'placement listed twice': (changed(GOLDEN_CHUNK_MANIFEST, models=[chunk_model([chunk_placement(model_id), chunk_placement(model_id)])]),
+                                       'listed once in the chunk'),
+            'placement without collision object': (changed(GOLDEN_CHUNK_MANIFEST, models=[chunk_model([chunk_placement(model_id, collision=None)])]),
+                                                   'collision must be an object'),
+            'models over the bound': (changed(GOLDEN_CHUNK_MANIFEST, models=one_placement_per_model), f'at most {MAXIMUM_CHUNK_MODELS} models'),
+            'placements over the bound': (changed(GOLDEN_CHUNK_MANIFEST, models=too_many_placements), f'the bound is {MAXIMUM_CHUNK_PLACEMENTS}'),
             'chunk id off the range': (changed(GOLDEN_CHUNK_MANIFEST, chunkId='chunk-1-0'), 'chunk id must be chunk-'),
             'unaligned first column': (changed(GOLDEN_CHUNK_MANIFEST, sectorRange=changed(sector_range, firstColumn=2)), 'multiple of 4'),
             'five sectors wide': (changed(GOLDEN_CHUNK_MANIFEST, sectorRange=changed(sector_range, lastColumn=4)), 'span 1 to 4 sectors'),
@@ -319,10 +372,45 @@ class TileManifestValidationTests(unittest.TestCase):
                 validate_tile_chunk_manifest(manifest, self.vocabulary)
 
     def test_chunk_with_terrain_and_no_models_passes(self):
-        terrain = {'resource': f'/l2/{SHA256_A}/asset.l2asset', 'sha256': SHA256_A, 'maskUvRule': 'extrapolated'}
         gaps = [row for row in GOLDEN_CHUNK_MANIFEST['gaps'] if row['step'] != 'terrain']
-        manifest = changed(GOLDEN_CHUNK_MANIFEST, terrain=terrain, gaps=gaps)
+        manifest = changed(GOLDEN_CHUNK_MANIFEST, terrain=chunk_terrain(SHA256_A), gaps=gaps)
         self.assertEqual(validate_tile_chunk_manifest(manifest, self.vocabulary)['models'], [])
+
+    def test_chunk_with_a_placed_model_and_every_component_passes(self):
+        gaps = [row for row in GOLDEN_CHUNK_MANIFEST['gaps'] if row['step'] not in ('terrain', 'bsp', 'collision')]
+        model_id = 'interlude:SyntheticFixture.Model'
+        manifest = changed(GOLDEN_CHUNK_MANIFEST, terrain=chunk_terrain(SHA256_A), gaps=gaps, models=[chunk_model([chunk_placement(model_id)])],
+                           bsp={'resource': f'/l2/maps/{SHA256_B}/native-tile-chunk-bsp/bsp.glb', 'sha256': SHA256_B},
+                           collision={'resource': f'/l2/maps/{SHA256_B}/native-tile-chunk-collision/asset.json', 'sha256': SHA256_B})
+        self.assertEqual(validate_tile_chunk_manifest(manifest, self.vocabulary), manifest)
+
+    def test_a_vocabulary_kind_without_a_path_template_is_refused(self):
+        with self.assertRaisesRegex(TileManifestError, 'resource kinds have no path template: weather'):
+            load_tile_manifest_vocabulary(write_vocabulary_root(self, changed(FIRST_WORLD_VOCABULARY, resourceKinds=['weather'])))
+
+
+def browser_path_regex_text(template):
+    return '/^' + template.replace('/', '\\/').replace('.', '\\.').replace('<sha256>', '([a-f0-9]{64})') + '$/'
+
+
+class TileManifestBrowserParityTests(unittest.TestCase):
+    def setUp(self):
+        self.tile_source = BROWSER_TILE_MANIFEST_SOURCES[0].read_text(encoding='utf-8')
+        self.browser_sources = '\n'.join(path.read_text(encoding='utf-8') for path in BROWSER_TILE_MANIFEST_SOURCES)
+
+    def test_tile_resource_path_templates_and_repeatable_kinds_match_the_browser_reader(self):
+        template_block = re.search(r'const tileResourcePathTemplates = \{\n(?P<body>.*?)\n\} as const;', self.tile_source, re.DOTALL)
+        browser_templates = dict(re.findall(r'^\s*"?([a-z][a-z-]*)"?: "([^"]+)",$', template_block['body'], re.MULTILINE))
+        self.assertEqual(browser_templates, dict(TILE_RESOURCE_PATH_TEMPLATES))
+        repeatable_kinds = re.search(r'repeatableTileResourceKinds[^=]*= new Set\(\[(?P<kinds>[^\]]*)\]\)', self.tile_source)['kinds']
+        self.assertEqual(frozenset(re.findall(r'"([^"]+)"', repeatable_kinds)), REPEATABLE_TILE_RESOURCE_KINDS)
+
+    def test_chunk_paths_and_bounds_match_the_browser_reader(self):
+        for template in (CHUNK_MANIFEST_PATH_TEMPLATE, MODEL_ARCHIVE_PATH_TEMPLATE, *CHUNK_COMPONENT_PATH_TEMPLATES.values()):
+            with self.subTest(template):
+                self.assertIn(browser_path_regex_text(template), self.browser_sources)
+        self.assertIn(f'const maximumChunkModels = {MAXIMUM_CHUNK_MODELS};', self.browser_sources)
+        self.assertIn(f'const maximumChunkPlacements = {MAXIMUM_CHUNK_PLACEMENTS};', self.browser_sources)
 
 
 if __name__ == '__main__':

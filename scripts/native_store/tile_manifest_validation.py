@@ -4,10 +4,11 @@ import json
 import math
 from pathlib import Path
 import re
+from types import MappingProxyType
 from typing import NamedTuple
 
-from native_store.catalog_writer import (TILE_ID_PATTERN, TILE_MANIFEST_MAXIMUM_BYTES, refuse_duplicate_json_keys, refuse_non_finite_json_number,
-                                         require_byte_length, require_pinned_path)
+from native_store.catalog_writer import (TILE_ID_PATTERN, TILE_MANIFEST_MAXIMUM_BYTES, is_safe_integer, refuse_duplicate_json_keys,
+                                         refuse_non_finite_json_number, require_byte_length, require_pinned_path)
 from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN as QUALIFIED_OBJECT_PATTERN
 from native_store.gap_rows import GapRowError, load_gap_reason_patterns, validate_gap_row
 from native_store.store_paths import REPOSITORY_ROOT, SHA256_PATTERN
@@ -33,12 +34,42 @@ SECTOR_RANGE_FIELDS = ('firstColumn', 'lastColumn', 'firstRow', 'lastRow')
 TERRAIN_COMPONENT_FIELDS = ('resource', 'sha256', 'maskUvRule')
 COMPONENT_RESOURCE_FIELDS = ('resource', 'sha256')
 MODEL_FIELDS = ('id', 'archive', 'archiveSha256', 'placements')
+PLACEMENT_FIELDS = ('id', 'modelId', 'sourceActor', 'exportIndex', 'sourceMesh', 'matrix', 'materialOverrides', 'collision')
 NULLABLE_CHUNK_COMPONENT_STEPS = ('terrain', 'bsp', 'collision')
 TILE_RESOURCE_MAXIMUM_BYTES = 128 * 1024 * 1024
-CHUNK_MANIFEST_PATH_PATTERN = re.compile(r'^/l2/maps/(?P<sha256>[a-f0-9]{64})/native-tile-chunk-runtime/manifest\.json$')
-HASH_ADDRESSED_RESOURCE_PATH_PATTERN = re.compile(
-    r'^/l2/(?:[a-z][a-z0-9-]*/)?(?P<sha256>[a-f0-9]{64})/(?:[A-Za-z0-9_-][A-Za-z0-9._-]*/)*[A-Za-z0-9_-][A-Za-z0-9._-]*$')
-MODEL_ARCHIVE_PATH_PATTERN = re.compile(r'^/l2/(?P<sha256>[a-f0-9]{64})/asset\.l2asset$')
+SHA256_PLACEHOLDER = '<sha256>'
+TILE_RESOURCE_PATH_TEMPLATES = MappingProxyType({
+    'native-tile-collision': '/l2/maps/<sha256>/native-tile-collision/asset.json',
+    'movers': '/l2/movers/<sha256>/tile-movers.json',
+    'bsp-visibility': '/l2/maps/<sha256>/native-tile-bsp-visibility/asset.json',
+    'map-emitters': '/l2/map-emitters/<sha256>/tile-emitters.json',
+    'sky': '/l2/skies/<sha256>/manifest.json',
+    'world-audio': '/l2/world-audio/<sha256>/manifest.json',
+    'lighting': '/l2/maps/<sha256>/native-tile-lighting/asset.json',
+    'minimap': '/l2/maps/<sha256>/native-tile-minimap/manifest.json',
+})
+REPEATABLE_TILE_RESOURCE_KINDS = frozenset({'world-audio'})
+CHUNK_MANIFEST_PATH_TEMPLATE = '/l2/maps/<sha256>/native-tile-chunk-runtime/manifest.json'
+CHUNK_COMPONENT_PATH_TEMPLATES = MappingProxyType({'terrain': '/l2/maps/<sha256>/native-tile-chunk-terrain/terrain.glb',
+                                                   'bsp': '/l2/maps/<sha256>/native-tile-chunk-bsp/bsp.glb',
+                                                   'collision': '/l2/maps/<sha256>/native-tile-chunk-collision/asset.json'})
+MODEL_ARCHIVE_PATH_TEMPLATE = '/l2/<sha256>/asset.l2asset'
+MAXIMUM_CHUNK_MODELS = 1024
+MAXIMUM_CHUNK_PLACEMENTS = 4096
+PLACEMENT_MATRIX_LENGTH = 16
+AFFINE_BOTTOM_ROW_INDICES = (3, 7, 11)
+AFFINE_CORNER_INDEX = 15
+MINIMUM_PLACEMENT_DETERMINANT = 1e-12
+
+
+def hash_addressed_path_pattern(template):
+    return re.compile('^' + re.escape(template).replace(re.escape(SHA256_PLACEHOLDER), '(?P<sha256>[a-f0-9]{64})') + '$')
+
+
+TILE_RESOURCE_PATH_PATTERNS = MappingProxyType({kind: hash_addressed_path_pattern(template) for kind, template in TILE_RESOURCE_PATH_TEMPLATES.items()})
+CHUNK_MANIFEST_PATH_PATTERN = hash_addressed_path_pattern(CHUNK_MANIFEST_PATH_TEMPLATE)
+CHUNK_COMPONENT_PATH_PATTERNS = MappingProxyType({step: hash_addressed_path_pattern(template) for step, template in CHUNK_COMPONENT_PATH_TEMPLATES.items()})
+MODEL_ARCHIVE_PATH_PATTERN = hash_addressed_path_pattern(MODEL_ARCHIVE_PATH_TEMPLATE)
 
 
 class TileManifestError(ValueError):
@@ -117,8 +148,11 @@ def load_tile_manifest_vocabulary(repository_root=REPOSITORY_ROOT):
         raise TileManifestError(f'tile manifest vocabulary schemaVersion must be {VOCABULARY_SCHEMA_VERSION}: {vocabulary_path}')
     if not (type(document['listVersion']) is int and document['listVersion'] >= 1):
         raise TileManifestError(f'tile manifest vocabulary listVersion must be an integer of at least 1: {vocabulary_path}')
-    return TileManifestVocabulary(read_vocabulary_entries(document, 'resourceKinds', TILE_RESOURCE_KINDS_BASE, vocabulary_path),
-                                  read_vocabulary_entries(document, 'maskUvRules', MASK_UV_RULES_BASE, vocabulary_path))
+    resource_kinds = read_vocabulary_entries(document, 'resourceKinds', TILE_RESOURCE_KINDS_BASE, vocabulary_path)
+    untemplated_kinds = sorted(resource_kinds - set(TILE_RESOURCE_PATH_TEMPLATES))
+    if untemplated_kinds:
+        raise TileManifestError(f'tile manifest vocabulary resource kinds have no path template: {", ".join(untemplated_kinds)} in {vocabulary_path}')
+    return TileManifestVocabulary(resource_kinds, read_vocabulary_entries(document, 'maskUvRules', MASK_UV_RULES_BASE, vocabulary_path))
 
 
 def require_gap_rows(gaps, tile_id, label):
@@ -174,7 +208,9 @@ def require_tile_resources(resources, resource_kinds, label):
         if resource['kind'] not in resource_kinds:
             known_kinds = ', '.join(sorted(resource_kinds)) or 'none'
             raise TileManifestError(f'{label} resource kind {resource["kind"]!r} is not in the tile manifest vocabulary ({known_kinds})')
-        require_pinned_manifest_entry(resource, HASH_ADDRESSED_RESOURCE_PATH_PATTERN, TILE_RESOURCE_MAXIMUM_BYTES,
+        if resource['kind'] not in REPEATABLE_TILE_RESOURCE_KINDS and any(kind == resource['kind'] for kind, _ in order_keys):
+            raise TileManifestError(f'{label} lists more than one {resource["kind"]} resource')
+        require_pinned_manifest_entry(resource, TILE_RESOURCE_PATH_PATTERNS[resource['kind']], TILE_RESOURCE_MAXIMUM_BYTES,
                                       f'{label} {resource["kind"]} resource')
         order_key = (resource['kind'], resource['manifest'])
         if order_key in order_keys:
@@ -221,17 +257,50 @@ def require_sector_range(sector_range, chunk_position, label):
                                 f'{sector_range!r}')
 
 
-def require_component_resource(component, fields, label):
+def require_component_resource(component, fields, step, label):
     require_exact_keys(component, fields, label)
-    require_pinned_path(component['resource'], component['sha256'], HASH_ADDRESSED_RESOURCE_PATH_PATTERN, TileManifestError,
+    require_pinned_path(component['resource'], component['sha256'], CHUNK_COMPONENT_PATH_PATTERNS[step], TileManifestError,
                         f'{label} resource')
     return component
 
 
+def upper_left_determinant(matrix):
+    a, b, c, _, d, e, f, _, g, h, i = matrix[:11]
+    return a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g)
+
+
+def is_affine_placement_matrix(matrix):
+    return (isinstance(matrix, list) and len(matrix) == PLACEMENT_MATRIX_LENGTH
+            and all(type(component) in (int, float) and math.isfinite(component) for component in matrix)
+            and all(matrix[index] == 0 for index in AFFINE_BOTTOM_ROW_INDICES) and matrix[AFFINE_CORNER_INDEX] == 1
+            and abs(upper_left_determinant(matrix)) >= MINIMUM_PLACEMENT_DETERMINANT)
+
+
+def require_chunk_placement(placement, model_id, placement_ids, label):
+    require_exact_keys(placement, PLACEMENT_FIELDS, f'{label} placement')
+    placement_label = f'{label} placement {placement["id"]!r}'
+    if not (isinstance(placement['id'], str) and placement['id']) or placement['id'] in placement_ids:
+        raise TileManifestError(f'{placement_label} id must be a non-empty string listed once in the chunk')
+    if placement['modelId'] != model_id:
+        raise TileManifestError(f'{placement_label} modelId must be its model {model_id}: {placement["modelId"]!r}')
+    require_qualified_object(placement['sourceActor'], f'{placement_label} sourceActor')
+    if not is_safe_integer(placement['exportIndex'], 1):
+        raise TileManifestError(f'{placement_label} exportIndex must be a safe integer of at least 1: {placement["exportIndex"]!r}')
+    if not (isinstance(placement['sourceMesh'], str) and placement['sourceMesh']):
+        raise TileManifestError(f'{placement_label} sourceMesh must be a non-empty string: {placement["sourceMesh"]!r}')
+    if not is_affine_placement_matrix(placement['matrix']):
+        raise TileManifestError(f'{placement_label} matrix must be 16 finite numbers of an invertible affine transform: {placement["matrix"]!r}')
+    if placement['materialOverrides'] != []:
+        raise TileManifestError(f'{placement_label} materialOverrides must be an empty list: {placement["materialOverrides"]!r}')
+    if not isinstance(placement['collision'], dict):
+        raise TileManifestError(f'{placement_label} collision must be an object: {placement["collision"]!r}')
+    placement_ids.add(placement['id'])
+
+
 def require_chunk_models(models, label):
-    if not isinstance(models, list):
-        raise TileManifestError(f'{label} models must be a list: {models!r}')
-    model_ids = set()
+    if not (isinstance(models, list) and len(models) <= MAXIMUM_CHUNK_MODELS):
+        raise TileManifestError(f'{label} models must be a list of at most {MAXIMUM_CHUNK_MODELS} models')
+    model_ids, placement_ids = set(), set()
     for model in models:
         require_exact_keys(model, MODEL_FIELDS, f'{label} model')
         if not (isinstance(model['id'], str) and model['id']):
@@ -241,8 +310,12 @@ def require_chunk_models(models, label):
         model_ids.add(model['id'])
         require_pinned_path(model['archive'], model['archiveSha256'], MODEL_ARCHIVE_PATH_PATTERN, TileManifestError,
                             f'{label} model {model["id"]} archive')
-        if not isinstance(model['placements'], list):
-            raise TileManifestError(f'{label} model {model["id"]} placements must be a list: {model["placements"]!r}')
+        if not (isinstance(model['placements'], list) and model['placements']):
+            raise TileManifestError(f'{label} model {model["id"]} placements must be a non-empty list: {model["placements"]!r}')
+        for placement in model['placements']:
+            require_chunk_placement(placement, model['id'], placement_ids, label)
+    if len(placement_ids) > MAXIMUM_CHUNK_PLACEMENTS:
+        raise TileManifestError(f'{label} lists {len(placement_ids)} placements; the bound is {MAXIMUM_CHUNK_PLACEMENTS}')
 
 
 def validate_tile_chunk_manifest(manifest, vocabulary=None):
@@ -258,12 +331,12 @@ def validate_tile_chunk_manifest(manifest, vocabulary=None):
             if gap_row is None or gap_row['status'] == 'pass':
                 raise TileManifestError(f'{label} has no {step}; it needs a {step} gap row whose status is not pass')
     if manifest['terrain'] is not None:
-        terrain = require_component_resource(manifest['terrain'], TERRAIN_COMPONENT_FIELDS, f'{label} terrain')
+        terrain = require_component_resource(manifest['terrain'], TERRAIN_COMPONENT_FIELDS, 'terrain', f'{label} terrain')
         if terrain['maskUvRule'] not in mask_uv_rules:
             raise TileManifestError(f'{label} terrain maskUvRule {terrain["maskUvRule"]!r} is not in the tile manifest vocabulary '
                                     f'({", ".join(sorted(mask_uv_rules))})')
     for step in ('bsp', 'collision'):
         if manifest[step] is not None:
-            require_component_resource(manifest[step], COMPONENT_RESOURCE_FIELDS, f'{label} {step}')
+            require_component_resource(manifest[step], COMPONENT_RESOURCE_FIELDS, step, f'{label} {step}')
     require_chunk_models(manifest['models'], label)
     return manifest
