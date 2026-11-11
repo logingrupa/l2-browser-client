@@ -5,6 +5,8 @@ from world.terrain_layers import terrain_mask_uv, texture_uv
 
 NEUTRAL_INSPECTION_MATERIAL_NAME = 'Neutral geometry inspection; native terrain shader pending'
 RECTANGLE_REGION_KIND = 'native-sector-rectangle'
+MASK_UV_SET = 0
+BASE_LAYER_UV_SET = 1
 
 
 def rectangle_sample_grid(region):
@@ -42,14 +44,16 @@ def build_terrain_rectangle_gltf(native, points, words, layers, region, mask_uv_
     builder = GltfBuilder(generator)
     attributes = {'POSITION': builder.accessor(positions, len(positions), 'VEC3'),
                   'NORMAL': builder.accessor(normals, len(normals), 'VEC3'),
-                  'TEXCOORD_0': builder.accessor(mask_uv, len(mask_uv), 'VEC2'),
-                  'TEXCOORD_1': builder.accessor(layer_uvs[0], len(positions), 'VEC2')}
+                  'TEXCOORD_0': builder.accessor(mask_uv, len(mask_uv), 'VEC2')}
+    if layers:
+        attributes['TEXCOORD_1'] = builder.accessor(layer_uvs[0], len(positions), 'VEC2')
     index_accessor = builder.accessor(indices, len(indices), 'SCALAR', 5125)
     for index, layer in enumerate(layers):
         layer['uvAccessor'] = builder.accessor(layer_uvs[index], len(positions), 'VEC2')
     builder.data.update(meshes=[{'name': region['object'], 'primitives': [{'attributes': attributes, 'indices': index_accessor, 'material': 0}],
                                 'extras': {'nativeObject': region['object'], 'nativeBounds': region['bounds'], 'sourceToGltf': SOURCE_TO_GLTF,
-                                           'maskUvSet': 0, 'baseLayerUvSet': 1, 'nativeLayers': layers}}],
+                                           'maskUvSet': MASK_UV_SET, 'baseLayerUvSet': BASE_LAYER_UV_SET if layers else None,
+                                           'nativeLayers': layers}}],
                         materials=[{'name': NEUTRAL_INSPECTION_MATERIAL_NAME,
                                     'pbrMetallicRoughness': {'baseColorFactor': [.5, .5, .5, 1], 'metallicFactor': 0, 'roughnessFactor': 1}}],
                         nodes=[{'name': region['object'], 'mesh': 0}], scenes=[{'nodes': [0]}], scene=0)

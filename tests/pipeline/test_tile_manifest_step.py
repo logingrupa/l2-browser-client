@@ -48,7 +48,7 @@ def synthetic_tile(tile_id, sector_columns, sector_rows, anchor_location=(128.0,
     plan = plan_tile_chunks(tile_id, native, terrain_record, actors, first_enabled_player_start(actors, {}))
     layers = synthetic_layer_records([0])
     results = build_tile_terrain_chunks(tile_id, native, points, words or synthetic_topology_words(native), layers,
-                                        tile_layer_summaries(synthetic_serialized_layers([0]), layers), plan['chunks'],
+                                        tile_layer_summaries(synthetic_serialized_layers([0]), layers, {}), plan['chunks'],
                                         FIXTURE_SOURCE_IDENTITY, FIXTURE_EVIDENCE)
     return plan, [record for record, _ in results], {record['chunkId']: glb for record, glb in results if glb is not None}
 

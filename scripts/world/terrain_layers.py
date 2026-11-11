@@ -8,6 +8,32 @@ from world.terrain_coordinates import dot, f32
 UV_TOLERANCE = 0.00001
 QUALIFIED_MASK_UV_RULE_ID = 'interlude-20_20-submitted-mask-uv-20261106'
 QUALIFIED_MASK_UV_FORMULA = '(gridXY + 0.5) / heightmapDimensions - max(gridXY - 240, 0) / 4096'
+LAYER_INCOMPLETE_REASON_PREFIX = 'terrain-layer-incomplete:'
+
+
+def layer_object_presence(layer):
+    texture, alpha_map = (property_value(layer['properties'], name) for name in ('Texture', 'AlphaMap'))
+    return bool(texture and texture['object']), bool(alpha_map and alpha_map['object'])
+
+
+def is_empty_layer_slot(layer):
+    return not any(layer_object_presence(layer))
+
+
+def layer_gap_reason(layer):
+    texture_present, alpha_map_present = layer_object_presence(layer)
+    if texture_present != alpha_map_present:
+        return f'{LAYER_INCOMPLETE_REASON_PREFIX}{layer["index"]}'
+    return None
+
+
+def terrain_layer_gap_reasons(serialized_layers):
+    gap_reasons = {}
+    for layer in serialized_layers:
+        reason = layer_gap_reason(layer)
+        if reason is not None:
+            gap_reasons[layer['index']] = reason
+    return gap_reasons
 
 
 def serialized_matrix(properties):
@@ -65,16 +91,16 @@ def layer_sampling_source(layer, package, terrain_export, source_path):
             'interpretation': 'Original property tags, array indices and bytes; no defaults, resampling or native sampling/blend semantics inferred.'}
 
 
-def layer_records(terrain, native, package, source_path):
+def layer_records(terrain, native, package, source_path, layer_gap_reasons):
     terrain_export = package.exports[native['exportIndex']-1]
     if terrain['id'] != 'interlude:'+terrain_export['object'] or native['object'] != terrain_export['object']:
         raise FormatError('Terrain layer source identity differs from native export')
     records = []
     for layer in terrain['layers']:
+        if is_empty_layer_slot(layer) or layer['index'] in layer_gap_reasons:
+            continue
         props = layer['properties']
         texture, alpha = property_value(props, 'Texture'), property_value(props, 'AlphaMap')
-        if not texture or not texture['object'] or not alpha or not alpha['object']:
-            continue
         matrix = serialized_matrix(props)
         scale = [property_value(props, name) for name in ('UScale', 'VScale')]
         rot = property_value(props, 'LayerRotation')
@@ -99,6 +125,4 @@ def layer_records(terrain, native, package, source_path):
                         'maskUVStatus': 'inspection-candidate; native mask sampling remains unverified',
                         'nativeSamplingSource': layer_sampling_source(layer, package, terrain_export, source_path),
                         'channelAndBlendStatus': 'Lineage compressed alpha-map channel selection and layer blending remain unverified; source references and bUseAlpha are preserved'})
-    if not records:
-        raise FormatError('No supported native terrain layers')
     return records

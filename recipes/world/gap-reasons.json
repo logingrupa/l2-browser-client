@@ -1,9 +1,10 @@
 {
   "schemaVersion": 1,
-  "listVersion": 18,
+  "listVersion": 19,
   "reasons": [
     "terrain-height-version-unsupported:<version>",
     "terrain-quads-all-hidden",
+    "terrain-layer-incomplete:<index>",
     "player-start-missing",
     "placement-outside-chunk-grid",
     "placement-class-unsupported:<class>",

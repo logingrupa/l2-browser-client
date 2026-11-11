@@ -14,13 +14,14 @@ from world.native_terrain_sectors import (read_height_samples, read_topology_wor
                                           source_backed_terrain_points, native_terrain)
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
 from world.static_placement import read_class_evidence, require_terrain_not_inverted
-from world.terrain_layers import QUALIFIED_MASK_UV_FORMULA, QUALIFIED_MASK_UV_RULE_ID, layer_records
+from world.terrain_layers import (QUALIFIED_MASK_UV_FORMULA, QUALIFIED_MASK_UV_RULE_ID, is_empty_layer_slot, layer_records,
+                                  terrain_layer_gap_reasons)
 from world.terrain_rectangle_mesh import build_terrain_rectangle_gltf
 from world.tile_census import WORLD_LANE_NAME, WORLD_PART_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, read_raw_terrain_record, sealed_chunk_plan
 
-TERRAIN_CHUNK_STEP_ALGORITHM_VERSION = 1
+TERRAIN_CHUNK_STEP_ALGORITHM_VERSION = 2
 TERRAIN_STEP_NAME = 'terrain'
 TERRAIN_CHUNK_INDEX_PRODUCT_NAME = 'terrain-chunks.json'
 TERRAIN_CHUNK_RESOURCE_NAME = 'terrain.glb'
@@ -49,25 +50,18 @@ def extrapolated_mask_uv_rule():
     return {'id': QUALIFIED_MASK_UV_RULE_ID, 'formula': QUALIFIED_MASK_UV_FORMULA, 'status': EXTRAPOLATED_MASK_UV_STATUS}
 
 
-def is_empty_layer_slot(layer):
-    texture, alpha_map = (property_value(layer['properties'], name) for name in ('Texture', 'AlphaMap'))
-    texture_present, alpha_map_present = bool(texture and texture['object']), bool(alpha_map and alpha_map['object'])
-    if texture_present != alpha_map_present:
-        raise FormatError(f'Terrain layer {layer["index"]} names only one of Texture and AlphaMap')
-    return not texture_present
-
-
-def tile_layer_summaries(serialized_layers, records):
+def tile_layer_summaries(serialized_layers, records, layer_gap_reasons):
     serialized_indices = [layer['index'] for layer in serialized_layers]
     if any(later <= earlier for earlier, later in zip(serialized_indices, serialized_indices[1:])):
         raise FormatError(f'Serialized terrain Layers indices are not ascending: {serialized_indices}')
-    filled_indices = [layer['index'] for layer in serialized_layers if not is_empty_layer_slot(layer)]
+    listed_layers = [layer for layer in serialized_layers if layer['index'] not in layer_gap_reasons]
+    placeable_indices = [layer['index'] for layer in listed_layers if not is_empty_layer_slot(layer)]
     record_indices = [record['index'] for record in records]
-    if record_indices != filled_indices:
-        raise FormatError(f'Terrain layer records {record_indices} differ from the filled serialized Layers {filled_indices}')
+    if record_indices != placeable_indices:
+        raise FormatError(f'Terrain layer records {record_indices} differ from the placeable serialized Layers {placeable_indices}')
     records_by_index = {record['index']: record for record in records}
     summaries = []
-    for layer in serialized_layers:
+    for layer in listed_layers:
         record = records_by_index.get(layer['index'])
         if record is None:
             summaries.append({'index': layer['index'], 'texture': None, 'alphaMap': None,
@@ -130,10 +124,19 @@ def terrain_unit_config(chunks_fingerprint):
     return {'chunksFingerprint': chunks_fingerprint, 'cachedSectorBoundsPolicy': CACHED_SECTOR_BOUNDS_POLICY}
 
 
-def tile_terrain_row(tile_id, source_identity, records, evidence):
-    chunk_gap_rows = [row for record in records for row in record['gapRows']]
-    if chunk_gap_rows:
-        return tile_step_row(tile_id, TERRAIN_STEP_NAME, GAP_STATUS, chunk_gap_rows[0]['reason'], source_identity, evidence)
+def terrain_layer_gap_rows(tile_id, source_identity, terrain_object, layer_gap_reasons, evidence):
+    return [tile_step_row(tile_id, TERRAIN_STEP_NAME, GAP_STATUS, reason, {**source_identity, 'object': terrain_object}, evidence)
+            for _, reason in sorted(layer_gap_reasons.items())]
+
+
+def tile_terrain_gap_rows(layer_gap_rows, records):
+    return [*layer_gap_rows, *(row for record in records for row in record['gapRows'])]
+
+
+def tile_terrain_row(tile_id, source_identity, layer_gap_rows, records, evidence):
+    gap_rows = tile_terrain_gap_rows(layer_gap_rows, records)
+    if gap_rows:
+        return tile_step_row(tile_id, TERRAIN_STEP_NAME, GAP_STATUS, gap_rows[0]['reason'], source_identity, evidence)
     return tile_step_row(tile_id, TERRAIN_STEP_NAME, 'pass', None, source_identity, evidence)
 
 
@@ -167,7 +170,8 @@ def run_terrain_chunk_step(project_root, client, tile_id):
     receipt_evidence = (step_directory / RECEIPT_RECORD_NAME).relative_to(ledger.lane_folder).as_posix()
     index_path = step_directory / PRODUCTS_FOLDER_NAME / TERRAIN_CHUNK_INDEX_PRODUCT_NAME
     if ledger.is_sealed(unit_key, fingerprint):
-        return tile_terrain_row(tile_id, source_identity, json.loads(index_path.read_text(encoding='utf-8'))['chunks'], receipt_evidence)
+        terrain_index = json.loads(index_path.read_text(encoding='utf-8'))
+        return tile_terrain_row(tile_id, source_identity, terrain_index['layerGapRows'], terrain_index['chunks'], receipt_evidence)
     actors = json.loads((raw_products / 'actors.json').read_text(encoding='utf-8'))
     terrain_actor = next(actor for actor in actors if actor['id'] == terrain['id'])
     try:
@@ -175,8 +179,10 @@ def run_terrain_chunk_step(project_root, client, tile_id):
         native = native_terrain(package)
         points = source_backed_terrain_points(native, terrain, terrain_actor, read_height_samples(raw_products, terrain))
         words = read_topology_words(raw_products, terrain, native)
-        layers = layer_records(terrain, native, package, tile_map_path(tile_id))
-        layer_summaries = tile_layer_summaries(terrain['layers'], layers)
+        layer_gap_reasons = terrain_layer_gap_reasons(terrain['layers'])
+        layers = layer_records(terrain, native, package, tile_map_path(tile_id), layer_gap_reasons)
+        layer_summaries = tile_layer_summaries(terrain['layers'], layers, layer_gap_reasons)
+        layer_gap_rows = terrain_layer_gap_rows(tile_id, source_identity, native['object'], layer_gap_reasons, receipt_evidence)
         require_terrain_not_inverted(terrain_actor, read_class_evidence(client, lane_work_root(project_root, WORLD_LANE_NAME)))
         results = build_tile_terrain_chunks(tile_id, native, points, words, layers, layer_summaries, chunk_plan['chunks'],
                                             source_identity, receipt_evidence)
@@ -198,7 +204,7 @@ def run_terrain_chunk_step(project_root, client, tile_id):
         if glb is not None:
             write_product(f'{record["chunkId"]}/{TERRAIN_CHUNK_RESOURCE_NAME}', glb)
     records = [record for record, _ in results]
-    write_product(TERRAIN_CHUNK_INDEX_PRODUCT_NAME, canonical_json_bytes({'tileId': tile_id, 'chunks': records}))
+    write_product(TERRAIN_CHUNK_INDEX_PRODUCT_NAME, canonical_json_bytes({'tileId': tile_id, 'layerGapRows': layer_gap_rows, 'chunks': records}))
     ledger.seal(unit_key, fingerprint, {'config': config, 'inputs': inputs, 'outputs': outputs,
-                                        'gapRows': [row for record in records for row in record['gapRows']]})
-    return tile_terrain_row(tile_id, source_identity, records, receipt_evidence)
+                                        'gapRows': tile_terrain_gap_rows(layer_gap_rows, records)})
+    return tile_terrain_row(tile_id, source_identity, layer_gap_rows, records, receipt_evidence)
