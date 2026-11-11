@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import struct
 import subprocess
 import sys
 import tempfile
@@ -270,6 +271,91 @@ class BundleMemberGuardTests(TemporaryStoreTestCase):
             {'id': 'interlude:skill:3:level:1:synthetic', 'manifest': f'/l2/{folder}/manifest.json', 'manifestSha256': manifest_sha256}]}
         files = pinned_store_files(self.store_root, catalog)
         self.assertEqual(sorted(relative for relative, _ in files.values()), [f'{folder}/manifest.json', f'{folder}/{texture_pin["file"]}'])
+
+
+def synthetic_glb_with_materials(materials):
+    document = json_bytes({'asset': {'version': '2.0'}, 'materials': materials})
+    document += b' ' * (-len(document) % 4)
+    return struct.pack('<III', 0x46546C67, 2, 20 + len(document)) + struct.pack('<II', len(document), 0x4E4F534A) + document
+
+
+def native_material_program_pin(program_sha256):
+    return {'directory': f'native-materials/{program_sha256}', 'programSha256': program_sha256}
+
+
+class SyntheticWorldTile:
+    def __init__(self, store_root, program_pins=None):
+        self.store_root = store_root
+        self.program = json_bytes({'schemaVersion': 1, 'kind': 'ue2-material-program', 'nodes': []})
+        self.program_sha256 = sha256_hex(self.program)
+        program_pins = [native_material_program_pin(self.program_sha256)] if program_pins is None else program_pins
+        self.sky_members = {'sky.glb': synthetic_glb_with_materials([{'name': 'sky'}]), 'WhiteCloud.png': b'synthetic sky texture bytes'}
+        sky_manifest = json_bytes({'schemaVersion': 1, 'kind': 'native-tile-sky', 'layout': {'files': {'sky.json': 'evidence text, not a pin'}},
+                                   'files': {name: {'bytes': len(payload), 'sha256': sha256_hex(payload)} for name, payload in self.sky_members.items()}})
+        self.sky_folder = f'skies/{sha256_hex(sky_manifest)}'
+        self.bsp_glb = synthetic_glb_with_materials([{'name': 'surface', 'extras': {'nativeMaterialProgram': pin}} for pin in program_pins])
+        self.bsp_relative = f'native-tile-chunk-bsp/{sha256_hex(self.bsp_glb)}/bsp.glb'
+        tile = json_bytes({'schemaVersion': 1, 'resources': [
+            {'kind': 'sky', 'resource': f'/l2/{self.sky_folder}/manifest.json', 'sha256': sha256_hex(sky_manifest)},
+            {'kind': 'bsp', 'resource': f'/l2/{self.bsp_relative}', 'sha256': sha256_hex(self.bsp_glb)}]})
+        self.tile_relative = f'tiles/{sha256_hex(tile)}/tile.json'
+        self.record = {'id': '15_20', 'manifest': f'/l2/{self.tile_relative}', 'manifestSha256': sha256_hex(tile), 'manifestBytes': len(tile)}
+        write_file(store_root / self.tile_relative, tile)
+        write_file(store_root / self.sky_folder / 'manifest.json', sky_manifest)
+        for name, payload in self.sky_members.items():
+            write_file(store_root / self.sky_folder / name, payload)
+        write_file(store_root / self.bsp_relative, self.bsp_glb)
+        write_file(store_root / f'native-materials/{self.program_sha256}/program.json', self.program)
+
+    def catalog(self, source_catalog_sha256=None):
+        catalog = {'schemaVersion': 1, 'models': [], 'tiles': [self.record]}
+        if source_catalog_sha256 is not None:
+            catalog['sourceCatalogSha256'] = source_catalog_sha256
+        return catalog
+
+    def runtime_relative_paths(self):
+        return sorted([self.tile_relative, f'{self.sky_folder}/manifest.json', *(f'{self.sky_folder}/{name}' for name in self.sky_members),
+                       self.bsp_relative, f'native-materials/{self.program_sha256}/program.json'])
+
+
+class WorldTileRuntimePinTests(TemporaryStoreTestCase):
+    def setUp(self):
+        super().setUp()
+        self.store_root = self.temporary_root / 'lane' / 'l2'
+
+    def test_the_walk_reaches_sky_bundle_files_named_by_a_files_map_and_material_programs_named_by_glb_extras(self):
+        tile = SyntheticWorldTile(self.store_root)
+        files = pinned_store_files(self.store_root, tile.catalog())
+        self.assertEqual(sorted(relative for relative, _ in files.values()), tile.runtime_relative_paths())
+
+    def test_the_merge_copies_the_sky_glb_and_the_material_program_the_browser_fetches(self):
+        tile = SyntheticWorldTile(self.store_root)
+        write_file(self.store_root / 'catalog.json', json_bytes(tile.catalog(sha256_hex(GOLDEN_CATALOG_BYTES))))
+        target_root = self.temporary_root / 'target' / 'l2'
+        shutil.copytree(GOLDEN_ROOT / 'l2', target_root)
+        result = merge_lane_store(self.store_root, target_root, sha256_hex(GOLDEN_CATALOG_BYTES))
+        self.assertEqual(result['copiedFiles'], tile.runtime_relative_paths())
+        self.assertEqual((target_root / tile.sky_folder / 'sky.glb').read_bytes(), tile.sky_members['sky.glb'])
+        self.assertEqual((target_root / f'native-materials/{tile.program_sha256}/program.json').read_bytes(), tile.program)
+
+    def test_a_glb_material_program_pin_whose_directory_differs_from_its_sha256_is_refused(self):
+        tile = SyntheticWorldTile(self.store_root, [{'directory': f'native-materials/{"7" * 64}', 'programSha256': '6' * 64}])
+        with self.assertRaisesRegex(ValueError, 'nativeMaterialProgram is not a native-materials program pin'):
+            pinned_store_files(self.store_root, tile.catalog())
+
+    def test_a_glb_material_program_whose_bytes_are_missing_is_refused(self):
+        tile = SyntheticWorldTile(self.store_root, [native_material_program_pin('6' * 64)])
+        with self.assertRaisesRegex(CatalogWriteError, f'pinned store file is missing from .*: native-materials/{"6" * 64}/program.json'):
+            pinned_store_files(self.store_root, tile.catalog())
+
+    def test_a_files_map_entry_with_fields_other_than_sha256_and_bytes_is_refused(self):
+        manifest_bytes = json_bytes({'files': {'sky.glb': {'sha256': '6' * 64, 'bytes': 1, 'kind': 'glb'}}})
+        folder = f'skies/{sha256_hex(manifest_bytes)}'
+        write_file(self.store_root / folder / 'manifest.json', manifest_bytes)
+        catalog = {'schemaVersion': 1, 'models': [], 'effectComponents': [
+            {'id': 'interlude:sky:synthetic', 'manifest': f'/l2/{folder}/manifest.json', 'manifestSha256': sha256_hex(manifest_bytes)}]}
+        with self.assertRaisesRegex(CatalogWriteError, "bundle file map entry 'sky.glb' must hold only sha256 and bytes"):
+            pinned_store_files(self.store_root, catalog)
 
 
 if __name__ == '__main__':

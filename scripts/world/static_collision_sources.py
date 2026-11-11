@@ -5,6 +5,7 @@ from typing import NamedTuple
 
 from native_assets_lib.class_defaults import ClassDefaultError
 from native_catalog.ue2 import FormatError
+from native_store.glb_container import glb_document_and_binary
 from world.gltf_builder import GLTF_FLOAT_COMPONENT
 
 COLLISION_RULES_PATH = Path(__file__).resolve().parents[2] / 'recipes' / 'world' / 'collision-declaration-rules.json'
@@ -128,12 +129,6 @@ def decide_placement_collision(placement, class_evidence, model_slot_properties,
         return {**record, 'decision': GAP_DECISION, 'evidence': [f'field:{ENABLE_COLLISION_FIELD}']}
     slots = [index for index, properties in enumerate(model_slot_properties) if properties[ENABLE_COLLISION_FIELD]]
     return {**record, 'decision': SLOTS_DECISION, 'slots': slots, 'evidence': selector_notes}
-
-
-def glb_document_and_binary(glb):
-    json_length = struct.unpack_from('<I', glb, 12)[0]
-    binary_length = struct.unpack_from('<I', glb, 20 + json_length)[0]
-    return json.loads(glb[20:20 + json_length]), glb[28 + json_length:28 + json_length + binary_length]
 
 
 def accessor_rows(document, binary, accessor_index, components, formats):

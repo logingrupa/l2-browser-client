@@ -2,9 +2,10 @@ import math
 from typing import NamedTuple
 
 from native_catalog.ue2 import FormatError
+from native_store.glb_container import glb_document_and_binary
 from world.bsp_leaf_membership import leaf_for_point, leaves_for_box, zone_set_of_leaves
 from world.gltf_builder import GLTF_FLOAT_COMPONENT
-from world.static_collision_sources import GLTF_TO_SOURCE_AXIS_ORDER, GLTF_TO_SOURCE_UNITS, accessor_rows, glb_document_and_binary
+from world.static_collision_sources import GLTF_TO_SOURCE_AXIS_ORDER, GLTF_TO_SOURCE_UNITS, accessor_rows
 from world.static_placement import static_matrix, resolved_static_values
 
 STATIC_MESH_MEMBER_KIND = 0

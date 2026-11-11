@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import NamedTuple
 
 from native_catalog.ue2 import FormatError
+from native_store.native_material_program_pins import NATIVE_MATERIAL_PROGRAM_EXTRAS_FIELD
 from world.gltf_builder import GltfBuilder
 from world.static_placement_plan import chunk_for_origin
 from world.terrain_coordinates import f32
@@ -184,7 +185,7 @@ def section_geometry(model, section, material, primitive, node_ranges):
 
 def gltf_material_record(builder, material, unlit, image_of_identity):
     record = {'name': material.identity, 'pbrMetallicRoughness': {'metallicFactor': 0, 'roughnessFactor': 1},
-              'extras': {'nativeSourceReference': material.identity, 'nativeMaterialProgram': material.program,
+              'extras': {'nativeSourceReference': material.identity, NATIVE_MATERIAL_PROGRAM_EXTRAS_FIELD: material.program,
                          'translucent': material.translucent}}
     if material.png is None:
         record['pbrMetallicRoughness']['baseColorFactor'] = list(UNBOUND_MATERIAL_COLOUR)

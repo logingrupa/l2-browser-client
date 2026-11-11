@@ -9,6 +9,8 @@ import re
 import tempfile
 from typing import NamedTuple
 
+from native_store.native_material_program_pins import (MATERIAL_PROGRAM_FILE_NAME, glb_native_material_program_sha256s,
+                                                       native_material_program_directory)
 from native_store.store_paths import (SHA256_PATTERN, StorePathError, confined_child_path, refuse_reparse_points,
                                       require_portable_relative_path)
 
@@ -36,6 +38,9 @@ PINNED_FILE_REFERENCE_FIELDS = (('manifest', 'manifestSha256', 'manifestBytes'),
 BUNDLE_MEMBER_PATH_FIELD = 'file'
 BUNDLE_MEMBER_SHA256_FIELD = 'sha256'
 BUNDLE_MEMBER_BYTES_FIELD = 'bytes'
+BUNDLE_MEMBER_MAP_FIELD = 'files'
+BUNDLE_MEMBER_MAP_PIN_FIELDS = frozenset({BUNDLE_MEMBER_SHA256_FIELD, BUNDLE_MEMBER_BYTES_FIELD})
+PINNED_GLB_SUFFIX = '.glb'
 DRIVE_LETTER_PATTERN = re.compile(r'^[A-Za-z]:')
 STORE_ROOT_BUNDLE_FOLDER = ''
 PINNED_MANIFEST_SUFFIX = '.json'
@@ -286,6 +291,20 @@ def require_bundle_member_pin(value, label, bundle_folder):
     return PinnedFileReference(relative, sha256, byte_length, bundle_folder)
 
 
+def is_bundle_member_map(value):
+    members = value.get(BUNDLE_MEMBER_MAP_FIELD)
+    return isinstance(members, dict) and any(isinstance(pin, dict) and BUNDLE_MEMBER_SHA256_FIELD in pin for pin in members.values())
+
+
+def bundle_member_map_references(members, label, bundle_folder):
+    references = []
+    for member, pin in members.items():
+        if not (isinstance(pin, dict) and BUNDLE_MEMBER_SHA256_FIELD in pin and set(pin) <= BUNDLE_MEMBER_MAP_PIN_FIELDS):
+            raise CatalogWriteError(f'{label} bundle file map entry {member!r} must hold only sha256 and bytes: {pin!r}')
+        references.append(require_bundle_member_pin({BUNDLE_MEMBER_PATH_FIELD: member, **pin}, label, bundle_folder))
+    return references
+
+
 def pinned_file_references(value, label, bundle_folder):
     if isinstance(value, list):
         return [reference for item in value for reference in pinned_file_references(item, label, bundle_folder)]
@@ -295,7 +314,17 @@ def pinned_file_references(value, label, bundle_folder):
                   for path_field, sha256_field, bytes_field in PINNED_FILE_REFERENCE_FIELDS if is_file_pin(value, path_field, sha256_field)]
     if is_bundle_member_pin(value):
         references.append(require_bundle_member_pin(value, label, bundle_folder))
+    if is_bundle_member_map(value):
+        references.extend(bundle_member_map_references(value[BUNDLE_MEMBER_MAP_FIELD], label, bundle_folder))
     return references + [reference for item in value.values() for reference in pinned_file_references(item, label, bundle_folder)]
+
+
+def glb_material_program_references(glb, label):
+    references = []
+    for program_sha256 in glb_native_material_program_sha256s(glb, label):
+        directory = native_material_program_directory(program_sha256)
+        references.append(PinnedFileReference(f'{directory}/{MATERIAL_PROGRAM_FILE_NAME}', program_sha256, None, directory))
+    return references
 
 
 def catalog_pinned_file_references(catalog):
@@ -343,6 +372,8 @@ def pinned_store_files(store_root, catalog):
         if reference.bundle_folder is None and reference.relative.endswith(PINNED_MANIFEST_SUFFIX):
             manifest = json.loads(payload, object_pairs_hook=refuse_duplicate_json_keys, parse_constant=refuse_non_finite_json_number)
             pending.extend(pinned_file_references(manifest, f'store file {reference.relative}', bundle_folder_of(reference.relative)))
+        if reference.relative.casefold().endswith(PINNED_GLB_SUFFIX):
+            pending.extend(glb_material_program_references(payload, f'store file {reference.relative}'))
     return files
 
 
