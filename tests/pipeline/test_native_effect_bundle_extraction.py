@@ -12,6 +12,7 @@ from reference_client_lock_fixture import lock_client_as_checked_conversion_root
 
 EFFECT_OBJECT = 'Fixture.Effect'
 SPRITE_TEXTURE_OBJECT = 'Fixture.SpriteTexture'
+SPARK_TEXTURE_OBJECT = 'Fixture.SparkTexture'
 SKILL_TABLE_PATH = 'system/skillgrp.dat'
 SOUND_TABLE_PATH = 'system/skillsoundgrp.dat'
 SKILL_ID = 3
@@ -21,6 +22,11 @@ SKILL_LEVEL = 1
 def sprite_emitter_child():
     return {'name': 'SpriteA', 'object': EFFECT_OBJECT + '.SpriteA', 'class': 'Engine.SpriteEmitter',
         'properties': {'Texture': {'class': 'Texture', 'object': SPRITE_TEXTURE_OBJECT}}}
+
+
+def spark_emitter_child():
+    return {'name': 'SparkA', 'object': EFFECT_OBJECT + '.SparkA', 'class': 'Engine.SparkEmitter',
+        'properties': {'Texture': {'class': 'Texture', 'object': SPARK_TEXTURE_OBJECT}}}
 
 
 class FullyReadPropertyReader:
@@ -113,6 +119,15 @@ class EffectBundleExtractionTests(unittest.TestCase):
             for spelling in (str(self.root), self.root.as_posix()):
                 self.assertNotIn(spelling, gap['reason'])
         self.assertEqual(lane_result['gaps'], main_result['gaps'])
+
+    def test_spark_emitter_is_retained_as_an_unconverted_gap_while_the_sprite_emitter_references_still_convert(self):
+        result, recorded_requests = self.extract([sprite_emitter_child(), spark_emitter_child()], self.root / 'bundle',
+            self.root / 'converter')
+        self.assertEqual([request['object'] for request in recorded_requests], [SPRITE_TEXTURE_OBJECT])
+        unconverted_emitter_gaps = [gap for gap in result['gaps'] if gap['feature'] == 'emitter-class-unconverted']
+        self.assertEqual(unconverted_emitter_gaps, [{'feature': 'emitter-class-unconverted', 'object': EFFECT_OBJECT + '.SparkA',
+            'class': 'Engine.SparkEmitter', 'reason': bundle.UNCONVERTED_EMITTER_REASON}])
+        self.assertEqual(result['support']['emitters'], 2)
 
 
 if __name__ == '__main__':
