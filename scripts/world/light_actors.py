@@ -43,6 +43,7 @@ class LightingActors(NamedTuple):
     fog_infos: tuple
     level_infos: tuple
     water_volumes: tuple
+    unresolved_classes: tuple
 
 
 class StaticMeshLightEntry(NamedTuple):
@@ -72,8 +73,7 @@ class ClassChains:
         return self.chains[class_name]
 
     def casefolded_class_names(self, class_name):
-        chain = self.chain(class_name)
-        return () if chain is None else tuple(definition['identity']['object'].casefold() for definition in chain)
+        return tuple(definition['identity']['object'].casefold() for definition in self.chain(class_name))
 
     def is_subclass(self, class_name, base_class):
         return base_class.casefold() in self.casefolded_class_names(class_name)
@@ -122,20 +122,22 @@ def lighting_actor(package, model, actor, class_chains, base_class, extra_fields
 
 
 def read_lighting_actors(package, model, actors, class_chains):
-    lights, fog_infos, level_infos, water_volumes = [], [], [], []
+    lights, fog_infos, level_infos, water_volumes, unresolved_classes = [], [], [], [], set()
     for actor in actors:
-        if class_chains.is_subclass(actor['classObject'], LIGHT_BASE_CLASS):
+        if actor['classObject'] == LEVEL_INFO_CLASS:
+            export = package.exports[actor['exportIndex'] - 1]
+            brightness = resolved_actor_field(LEVEL_BRIGHTNESS_FIELD, serialized_actor_values(package, export), actor['classObject'],
+                                              class_chains.class_defaults)
+            level_infos.append(LightingActor(actor['exportIndex'], actor['object'], actor['classObject'], LEVEL_INFO_CLASS, None, (brightness,)))
+        elif class_chains.chain(actor['classObject']) is None:
+            unresolved_classes.add(actor['classObject'])
+        elif class_chains.is_subclass(actor['classObject'], LIGHT_BASE_CLASS):
             lights.append(lighting_actor(package, model, actor, class_chains, LIGHT_BASE_CLASS, LIGHT_ACTOR_FIELDS))
         elif class_chains.is_subclass(actor['classObject'], FOG_INFO_BASE_CLASS):
             fog_infos.append(lighting_actor(package, model, actor, class_chains, FOG_INFO_BASE_CLASS, FOG_INFO_ACTOR_FIELDS))
         elif class_chains.is_subclass(actor['classObject'], WATER_VOLUME_BASE_CLASS):
             water_volumes.append(lighting_actor(package, model, actor, class_chains, WATER_VOLUME_BASE_CLASS, WATER_VOLUME_ACTOR_FIELDS))
-        elif actor['classObject'] == LEVEL_INFO_CLASS:
-            export = package.exports[actor['exportIndex'] - 1]
-            brightness = resolved_actor_field(LEVEL_BRIGHTNESS_FIELD, serialized_actor_values(package, export), actor['classObject'],
-                                              class_chains.class_defaults)
-            level_infos.append(LightingActor(actor['exportIndex'], actor['object'], actor['classObject'], LEVEL_INFO_CLASS, None, (brightness,)))
-    return LightingActors(tuple(lights), tuple(fog_infos), tuple(level_infos), tuple(water_volumes))
+    return LightingActors(tuple(lights), tuple(fog_infos), tuple(level_infos), tuple(water_volumes), tuple(sorted(unresolved_classes)))
 
 
 def instance_reference(actor):

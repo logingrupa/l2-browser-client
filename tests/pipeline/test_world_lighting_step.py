@@ -5,19 +5,20 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
+from native_assets_lib.class_defaults import ClassDefaultError
 from native_catalog.ue2 import FormatError
 from native_store.gap_rows import load_gap_reason_patterns
 from native_store.tile_manifest_validation import load_tile_manifest_vocabulary
 from support.level_model_fixture import build_synthetic_level_model, square_points, synthetic_polygon
-from support.lighting_actor_fixture import (ENVIRONMENT_LIGHTS, LIGHTING_CLASS_DEFAULTS, SCENE_LIGHTS, SECTOR_LIGHTS, SECTOR_SHADOW_MAPS,
-                                            read_synthetic_chain, synthetic_actor_rows, synthetic_lighting_package)
+from support.lighting_actor_fixture import (ENVIRONMENT_LIGHTS, LIGHT_CLASS, LIGHTING_CLASS_DEFAULTS, SCENE_LIGHTS, SECTOR_LIGHTS,
+                                            SECTOR_SHADOW_MAPS, read_synthetic_chain, synthetic_actor_rows, synthetic_lighting_package)
 from support.lightmap_tail_fixture import (build_lightmap_tail, lightmap_model_and_package, lightmap_node, page_mip_bytes, render_section_bytes)
 from world.bsp_lightmaps import LIGHTMAP_ATLAS_EDGE, NO_LIGHTMAP, node_lightmap_texture, read_bsp_lightmaps
 from world.tile_step_registry import TILE_STEP_NAMES
 from world.light_actors import ClassChains, LightingActor, read_lighting_actors, read_static_mesh_light_lists
 from world.lighting_payload import bsp_lightmap_arrays, static_mesh_light_list_arrays, terrain_lighting_arrays, typed_payload_byte_count
-from world.lighting_step import (APPLIED_LIGHTING_RULES, LIGHTING_STEP_ALGORITHM_VERSION, LIGHTING_STEP_NAME, load_lighting_rules,
-                                 water_volume_links)
+from world.lighting_step import (APPLIED_LIGHTING_RULES, LIGHTING_STEP_ALGORITHM_VERSION, LIGHTING_STEP_NAME, class_chain_unresolved_reasons,
+                                 load_lighting_rules, water_volume_links)
 from world.terrain_lighting import read_terrain_sector_lighting
 from world.typed_payload import typed_payload_asset
 
@@ -102,8 +103,9 @@ class LightingActorTests(unittest.TestCase):
         self.model = build_synthetic_level_model([synthetic_polygon(square_points(-64, -64, 128))])
 
     def test_light_and_fog_actors_keep_every_declared_field_with_its_provenance_and_level_brightness_as_declared(self):
-        lights, fog_infos, level_infos, water_volumes = read_lighting_actors(self.package, self.model, synthetic_actor_rows(), self.class_chains)
-        self.assertEqual(water_volumes, ())
+        lights, fog_infos, level_infos, water_volumes, unresolved_classes = read_lighting_actors(self.package, self.model, synthetic_actor_rows(),
+                                                                                                 self.class_chains)
+        self.assertEqual((water_volumes, unresolved_classes), ((), ()))
         self.assertEqual(field_rows(lights[0]), [('LightType', 1, 'class-default'), ('LightEffect', None, 'ue-zero'),
                                                  ('LightBrightness', 56.0, 'authored'), ('Location', None, 'ue-zero'),
                                                  ('Rotation', None, 'ue-zero'), ('bDynamicLight', None, 'ue-zero'), ('bDirectional', None, 'ue-zero')])
@@ -144,6 +146,17 @@ class LightingActorTests(unittest.TestCase):
                          [(7, 1, 'chunk-0-0', 'brush'), (8, 1, None, None)])
         self.assertEqual(reasons, ['lighting-water-volume-unlinked:GamePlay.WaterVolume'])
 
+    def test_an_actor_whose_class_chain_cannot_be_read_stays_a_named_gap_instead_of_vanishing(self):
+        def read_chain_refusing_lights(class_name):
+            if class_name == LIGHT_CLASS:
+                raise ClassDefaultError(f'decompiled class {class_name} has unparsed default properties')
+            return read_synthetic_chain(class_name)
+        chains = ClassChains(LIGHTING_CLASS_DEFAULTS, read_chain_refusing_lights)
+        actors = read_lighting_actors(self.package, self.model, synthetic_actor_rows(), chains)
+        self.assertEqual((actors.lights, len(actors.fog_infos), len(actors.level_infos)), ((), 1, 1))
+        self.assertEqual(actors.unresolved_classes, (LIGHT_CLASS,))
+        self.assertEqual(class_chain_unresolved_reasons(actors.unresolved_classes), ['lighting-class-chain-unresolved:Engine.Light'])
+
     def test_a_class_chain_matches_its_base_class_without_regard_to_case(self):
         chains = ClassChains(LIGHTING_CLASS_DEFAULTS, lambda class_name: [{'identity': {'object': 'GamePlay.WaterVolume'}, 'declaredFields': []}])
         self.assertTrue(chains.is_subclass('Gameplay.WaterVolume', 'Gameplay.WaterVolume'))
@@ -152,11 +165,11 @@ class LightingActorTests(unittest.TestCase):
 class LightingRegistrationTests(unittest.TestCase):
     def test_the_step_kind_and_reasons_are_registered(self):
         self.assertIn(LIGHTING_STEP_NAME, TILE_STEP_NAMES)
-        self.assertEqual(LIGHTING_STEP_ALGORITHM_VERSION, 1)
+        self.assertEqual(LIGHTING_STEP_ALGORITHM_VERSION, 2)
         self.assertIn('lighting', load_tile_manifest_vocabulary().resource_kinds)
         patterns = load_gap_reason_patterns()
         for reason in ('lighting-lightmap-index-invalid:<index>', 'lighting-payload-too-large', 'environment-program-unresolved:<file>',
-                       'lighting-water-volume-unlinked:<class>'):
+                       'lighting-water-volume-unlinked:<class>', 'lighting-class-chain-unresolved:<class>'):
             self.assertIn(reason, patterns)
 
     def test_every_rule_row_is_sourced_with_unconfirmed_or_stronger_status_and_every_applied_rule_has_a_row(self):

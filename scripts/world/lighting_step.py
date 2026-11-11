@@ -32,7 +32,7 @@ from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 from world.typed_payload import write_tile_typed_payload_resource
 
-LIGHTING_STEP_ALGORITHM_VERSION = 1
+LIGHTING_STEP_ALGORITHM_VERSION = 2
 LIGHTING_STEP_NAME = 'lighting'
 LIGHTING_PRODUCT_NAME = 'lighting.json'
 TILE_LIGHTING_FOLDER = 'native-tile-lighting'
@@ -43,6 +43,7 @@ APPLIED_LIGHTING_RULES = ('lightmap-render-section-texture', 'lightmap-record-la
                           'bsp-lightmap-slot', 'static-mesh-instance-layout', 'terrain-sector-lighting-layout', 'time-slot-center')
 LIGHTING_PAYLOAD_TOO_LARGE_REASON = 'lighting-payload-too-large'
 WATER_VOLUME_UNLINKED_REASON_PREFIX = 'lighting-water-volume-unlinked:'
+CLASS_CHAIN_UNRESOLVED_REASON_PREFIX = 'lighting-class-chain-unresolved:'
 
 
 class LightingUnit(NamedTuple):
@@ -111,6 +112,10 @@ def water_volume_unlinked_reason(class_object):
     return f'{WATER_VOLUME_UNLINKED_REASON_PREFIX}{class_object}'
 
 
+def class_chain_unresolved_reasons(unresolved_classes):
+    return [f'{CLASS_CHAIN_UNRESOLVED_REASON_PREFIX}{class_object}' for class_object in unresolved_classes]
+
+
 def water_volume_links(water_volumes, collision):
     volumes_by_export = {volume['exportIndex']: volume for volume in collision['volumes']}
     links = []
@@ -150,7 +155,8 @@ def tile_lighting_payload(package, client, unit, class_defaults):
               'terrainSectors': len(sectors), 'terrainSectorLights': sum(len(sector.lights) for sector in sectors),
               'terrainShadowMaps': sum(len(sector.shadow_maps) for sector in sectors),
               'environmentTypes': len(program['environmentTypes']), 'unresolvedEnvironmentFiles': program['unresolved']}
-    return arrays, sorted({*reasons, *program['unresolved'], *water_reasons}), counts
+    chain_reasons = class_chain_unresolved_reasons(lighting_actors.unresolved_classes)
+    return arrays, sorted({*reasons, *program['unresolved'], *water_reasons, *chain_reasons}), counts
 
 
 def run_lighting_step(project_root, client_root, tile_id):
