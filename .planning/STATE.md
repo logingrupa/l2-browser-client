@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 02-90-PLAN.md
-last_updated: "2026-11-11T14:11:55.422Z"
+stopped_at: Completed 02-93-PLAN.md
+last_updated: "2026-11-11T14:27:44.301Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 03 plan 03-01 complete (side-by-side check record writer and key content digest; Phase 3 start commit cb09cdc)
-state_head: 2e55ddaa81e5136764c3c902f5c5d96dc70911f6
+state_head: e1ed85d35e71773bbf703081bcacda38c8e1cc86
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 131
-  completed_plans: 98
+  completed_plans: 99
   percent: 0
 ---
 
@@ -144,6 +144,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 03 P02 | 26min | 2 tasks | 11 files |
 | Phase 03 P03 | 137min | 3 tasks | 6 files |
 | Phase 2 P90 | 25min | 2 tasks | 17 files |
+| Phase 2 P93 | 15min | 2 tasks | 18 files |
 
 ## Accumulated Context
 
@@ -360,6 +361,10 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 2]: P957: raw_map_unit_fingerprint is keyed by map path, tile_manifest_unit returns the whole manifest unit, and the registry entry is unit_step_seal with injected seal checks
 - [Phase 2]: P958: a stale seal is batch work even with a recorded gap or failed row and reads pending batch-pending until rerun; inspection OSError or ValueError is not current in tile_has_work and a failed row in tile_rows
 - [Phase 2]: P959: upstream_failed_row moves to tile_step_gap_rows.py to cut the minimap_step import cycle
+- [Phase 2]: P960: the unresolved speed profile carries isSourced false, playerProfileId and source and no number; an adapter given no speed refuses move-local with speed-unresolved:no-speed-profile
+- [Phase 2]: P961: the movement overlap area scans scripts/world/collision_*.py, static_collision_sources.py and terrain_collision_source.py, the realised names of the collision steps 03-movement.md lists
+- [Phase 2]: P962: the Python overlap scanner drops string-only statements (docstrings) and import and from statements to their logical line end, and newlines emit no token
+- [Phase 2]: P963: the unreachable speed unresolved readout branch of src/ui/nativeLocomotionControls.ts (data-ui lane) stays unedited and is listed for 02-89
 
 ### Pending Todos
 
@@ -486,6 +491,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-11T14:11:54.756Z
-Stopped at: Completed 02-90-PLAN.md
+Last session: 2026-11-11T14:27:43.680Z
+Stopped at: Completed 02-93-PLAN.md
 Resume file: None
