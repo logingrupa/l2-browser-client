@@ -74,6 +74,8 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
     const name = error instanceof Error ? error.name : "Error", message = error instanceof Error ? error.message : String(error);
     return unboundTileLighting(`${payloadInvalidReasonPrefix}${name}: ${message}`);
   }
+  const staticMeshSlots = unlitSurfaceCounts(surfaces.staticMeshes, "library-vertex-lighting-unported");
+  const terrainLayers = unlitSurfaceCounts(surfaces.terrainMeshes, "library-terrain-layers-unported");
   const presentationClock = createPresentationClock();
   const environmentClock = createWorldEnvironmentClock({ program: model.records.environmentProgram, presentationClock });
   let cameraEnvironment = cameraEnvironmentOf(scene, model, surfaces.cameraFrame);
@@ -81,8 +83,6 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
     presentationClock.advance(scene.getEngine().getDeltaTime() / millisecondsPerSecond);
     cameraEnvironment = cameraEnvironmentOf(scene, model, surfaces.cameraFrame);
   });
-  const staticMeshSlots = unlitSurfaceCounts(surfaces.staticMeshes, "library-vertex-lighting-unported");
-  const terrainLayers = unlitSurfaceCounts(surfaces.terrainMeshes, "library-terrain-layers-unported");
   try {
     const binding = await bindTileLighting({ scene, model, bspChunks: surfaces.bspChunks, sessionSeed: drawNativeSessionSeed(),
       environment: () => environmentClock.sample(), levelSeconds: () => presentationClock.levelSeconds, fog: () => cameraEnvironment.fog,
