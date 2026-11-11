@@ -8,7 +8,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from native_assets_lib.static_materials import (ELBERA_CROSS_CHECK_TOOL, LAYOUT_EVIDENCE_SOURCE, LAYOUT_REVIEWED_LICENSEES,
                                                 REVIEWED_VERSION_EVIDENCE, REVIEWED_VERSIONS, STATIC_MATERIAL_CROSS_CHECKS_PATH,
-                                                STATIC_MATERIAL_REAL_CLIENT_CASES_PATH, STATIC_MESH_CLASS_OBJECT,
+                                                STATIC_MATERIAL_PACKAGE_VERSION, STATIC_MATERIAL_REAL_CLIENT_CASES_PATH,
+                                                STATIC_MESH_CLASS_OBJECT,
                                                 native_static_materials)
 from native_assets_lib.static_material_cross_check import static_material_cross_check_row
 from native_catalog.ue2 import Package
@@ -17,7 +18,7 @@ from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, require_reference
 from world.elbera_reader_cross_check import elbera_tool_record
 
 CONVERSION_CLIENT_ROOT = Path('E:/Lineage2-client')
-LAYOUT_REVIEWED_VERSIONS = frozenset((123, licensee) for licensee in LAYOUT_REVIEWED_LICENSEES)
+LAYOUT_REVIEWED_VERSIONS = frozenset((STATIC_MATERIAL_PACKAGE_VERSION, licensee) for licensee in LAYOUT_REVIEWED_LICENSEES)
 CROSS_CHECK_ROWS = json.loads((ROOT / STATIC_MATERIAL_CROSS_CHECKS_PATH).read_bytes())['rows']
 VERSION_CASES = json.loads((ROOT / STATIC_MATERIAL_REAL_CLIENT_CASES_PATH).read_bytes())['cases']
 
@@ -31,8 +32,9 @@ def cross_check_row_for(rows, version):
     return matches[0] if len(matches) == 1 else None
 
 
-def reviewed_version_evidence_problems(reviewed_versions, evidence_by_version, cross_check_rows):
+def reviewed_version_evidence_problems(reviewed_versions, evidence_by_version, cross_check_rows, version_cases):
     problems = []
+    case_versions = {(STATIC_MATERIAL_PACKAGE_VERSION, case['licenseeVersion']) for case in version_cases}
     for version in sorted(reviewed_versions):
         evidence = evidence_by_version.get(version)
         if evidence is None:
@@ -40,6 +42,8 @@ def reviewed_version_evidence_problems(reviewed_versions, evidence_by_version, c
             continue
         if evidence.get('layoutSource') != LAYOUT_EVIDENCE_SOURCE:
             problems.append(f'{version}: no layout source')
+        if version not in case_versions:
+            problems.append(f'{version}: no real-client case')
         if version in LAYOUT_REVIEWED_VERSIONS:
             continue
         cross_check = evidence.get('crossCheck')
@@ -57,23 +61,33 @@ def reviewed_version_evidence_problems(reviewed_versions, evidence_by_version, c
 class ReviewedVersionEvidenceTests(unittest.TestCase):
     def test_every_reviewed_version_has_an_evidence_record_and_cross_checked_ones_an_equal_row(self):
         self.assertEqual(set(REVIEWED_VERSION_EVIDENCE), set(REVIEWED_VERSIONS))
-        self.assertEqual(reviewed_version_evidence_problems(REVIEWED_VERSIONS, REVIEWED_VERSION_EVIDENCE, CROSS_CHECK_ROWS), [])
+        self.assertEqual(reviewed_version_evidence_problems(REVIEWED_VERSIONS, REVIEWED_VERSION_EVIDENCE, CROSS_CHECK_ROWS, VERSION_CASES), [])
 
     def test_a_missing_record_a_missing_row_and_an_unequal_row_each_fail(self):
         cross_checked = sorted(REVIEWED_VERSIONS - LAYOUT_REVIEWED_VERSIONS)
         self.assertTrue(cross_checked)
         version = cross_checked[0]
         without_record = {key: value for key, value in REVIEWED_VERSION_EVIDENCE.items() if key != version}
-        self.assertEqual(reviewed_version_evidence_problems(REVIEWED_VERSIONS, without_record, CROSS_CHECK_ROWS),
+        self.assertEqual(reviewed_version_evidence_problems(REVIEWED_VERSIONS, without_record, CROSS_CHECK_ROWS, VERSION_CASES),
                          [f'{version}: no evidence record'])
         without_row = [row for row in CROSS_CHECK_ROWS if tuple(row['version']) != version]
-        self.assertEqual(reviewed_version_evidence_problems(REVIEWED_VERSIONS, REVIEWED_VERSION_EVIDENCE, without_row),
+        self.assertEqual(reviewed_version_evidence_problems(REVIEWED_VERSIONS, REVIEWED_VERSION_EVIDENCE, without_row, VERSION_CASES),
                          [f'{version}: no equal cross-check row'])
         unequal_rows = [dict(row, equal=False) if tuple(row['version']) == version else row for row in CROSS_CHECK_ROWS]
-        self.assertEqual(reviewed_version_evidence_problems(REVIEWED_VERSIONS, REVIEWED_VERSION_EVIDENCE, unequal_rows),
+        self.assertEqual(reviewed_version_evidence_problems(REVIEWED_VERSIONS, REVIEWED_VERSION_EVIDENCE, unequal_rows, VERSION_CASES),
                          [f'{version}: no equal cross-check row'])
-        self.assertEqual(reviewed_version_evidence_problems(REVIEWED_VERSIONS | {(123, 13)}, REVIEWED_VERSION_EVIDENCE, CROSS_CHECK_ROWS),
+        self.assertEqual(reviewed_version_evidence_problems(REVIEWED_VERSIONS | {(123, 13)}, REVIEWED_VERSION_EVIDENCE, CROSS_CHECK_ROWS,
+                                                            VERSION_CASES),
                          ['(123, 13): no evidence record'])
+
+    def test_a_reviewed_version_without_a_real_client_case_fails(self):
+        for version in sorted(REVIEWED_VERSIONS):
+            with self.subTest(version=version):
+                cases_without_version = [case for case in VERSION_CASES
+                                         if (STATIC_MATERIAL_PACKAGE_VERSION, case['licenseeVersion']) != version]
+                self.assertEqual(reviewed_version_evidence_problems({version}, REVIEWED_VERSION_EVIDENCE, CROSS_CHECK_ROWS,
+                                                                    cases_without_version),
+                                 [f'{version}: no real-client case'])
 
     def test_cross_check_rows_name_the_pinned_elbera_tool_and_one_row_per_version(self):
         versions = [tuple(row['version']) for row in CROSS_CHECK_ROWS]

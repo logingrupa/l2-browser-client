@@ -22,7 +22,7 @@ LAYOUT_EVIDENCE = {
 STATIC_MATERIAL_REAL_CLIENT_CASES_PATH = 'tests/pipeline/fixtures/static-material-versions.json'
 STATIC_MATERIAL_CROSS_CHECKS_PATH = 'tests/fixtures/static-materials/cross-checks.json'
 LAYOUT_EVIDENCE_SOURCE = 'LAYOUT_EVIDENCE'
-LAYOUT_REVIEWED_LICENSEES = (16, 19, 20, 22, 23, 25, 28, 30, 31)
+LAYOUT_REVIEWED_LICENSEES = (16, 22, 23, 25, 31)
 ELBERA_CROSS_CHECK_TOOL = {
     'tool': 'Elbera l2lib',
     'commit': '12c9656',
@@ -58,6 +58,14 @@ REVIEWED_VERSION_EVIDENCE = {
         'staticmeshes/dion_curumadungeon_boss_s.usx', 7, '6582779888b8ed53f7c948d9666de07b139ac614036abc12f6f182fc56ad6579'),
     (STATIC_MATERIAL_PACKAGE_VERSION, 15): cross_checked_version_evidence(
         'staticmeshes/dion_partisan_door_s.usx', 2, 'cf11092fbce09469b2428ab3e342521c301bc70be08136f5a3dab0e7e083c9f0'),
+    (STATIC_MATERIAL_PACKAGE_VERSION, 19): cross_checked_version_evidence(
+        'staticmeshes/aden_hunter_tunnel_s.usx', 8, '672cc46fceedf12609f80d8a47dec31e9026ed3540e35685f720fa09bd3cb8d5'),
+    (STATIC_MATERIAL_PACKAGE_VERSION, 20): cross_checked_version_evidence(
+        'staticmeshes/aden_castle_door_s.usx', 5, 'acce0cc085f8a227f751571cc195b3494b4d8307ab21a2fc0ded688ab4ad7d89'),
+    (STATIC_MATERIAL_PACKAGE_VERSION, 28): cross_checked_version_evidence(
+        'staticmeshes/Aden_Castle_S.usx', 54, '490e4d439e801474329b8d7930f3c75dab047edfdc39993223e840792553517a'),
+    (STATIC_MATERIAL_PACKAGE_VERSION, 30): cross_checked_version_evidence(
+        'staticmeshes/aden_village_s.usx', 35, '1d361cfb08863e171088c8c00b8973b88a4d9aa23d490b31353cccb24fb78fec'),
 }
 REVIEWED_VERSIONS = frozenset(REVIEWED_VERSION_EVIDENCE)
 
