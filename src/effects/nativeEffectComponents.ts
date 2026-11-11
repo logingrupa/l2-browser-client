@@ -2,7 +2,7 @@ import { sha256 } from "../assets/package/readAssetPackage";
 import { nativeResourceUrl } from "../assets/native/nativeResourceUrl";
 import { readNativeCatalog } from "../assets/native/readNativeCatalog";
 import { SIMULATED_EMITTER_CLASSES } from "./particles/sim/emitterRecords";
-import { buildCastSkillIndex, lookupCastSkill, reviewedPowerStrikeSkill, selectedCastSkill, type SkillEffectComponentIdentity } from "./castSkillIndex";
+import { buildCastSkillIndex, lookupCastSkill, reviewedPowerStrikeSkill, selectedCastSkill, type CastSkillRecord, type SkillEffectComponentIdentity } from "./castSkillIndex";
 
 export interface EffectResource {
   assetId: string; object: string; file: string; sha256: string; bytes: number;
@@ -17,11 +17,15 @@ export interface EffectComponent {
   properties: Record<string, unknown>; effectiveProperties: Record<string, unknown>;
   bindings: { mesh: EffectResource | null; texture: EffectResource | null; primitiveMaterials: EffectPrimitive[] };
 }
+export interface EffectStageRecord {
+  class: string; stage: string; effectObject: string; effectiveProperties: Record<string, unknown>;
+}
 export interface EffectManifest {
   schemaVersion: number; kind: string; id?: string; bundleId?: string;
   components: EffectComponent[]; resources: Record<string, EffectResource>;
   actors: { object: string; properties?: Record<string, unknown>; effectiveProperties: Record<string, unknown>; dispatchStages?: string[] }[];
   textureGraph: { object: string; animationProperties: Record<string, unknown> }[];
+  stages?: EffectStageRecord[];
 }
 export interface EffectBundle {
   manifest: EffectManifest; manifestSha256: string;
@@ -93,6 +97,11 @@ export function parseEffectManifest(input: unknown): EffectManifest {
     requireValue(effectObject(texture) && named(texture.object) && !textures.has(texture.object) && effectObject(texture.animationProperties), "invalid texture graph entry");
     textures.add(texture.object);
   }
+  requireValue(input.stages === undefined || Array.isArray(input.stages) && input.stages.length <= 256, "invalid stages");
+  for (const stage of input.stages ?? []) {
+    requireValue(effectObject(stage) && named(stage.class) && named(stage.stage) && named(stage.effectObject) &&
+      effectObject(stage.effectiveProperties), "invalid stage record");
+  }
   return input as unknown as EffectManifest;
 }
 
@@ -111,7 +120,11 @@ export async function loadNativeSkillEffectComponents(signal: AbortSignal, skill
   signal.throwIfAborted();
   const { effectComponents } = await readNativeCatalog(signal);
   const selected = lookupCastSkill(buildCastSkillIndex(effectComponents), skill.skillId, skill.level);
-  if (!selected) return null;
+  return selected ? loadCastSkillEffectBundle(selected, signal) : null;
+}
+
+export async function loadCastSkillEffectBundle(selected: CastSkillRecord, signal: AbortSignal): Promise<EffectBundle> {
+  signal.throwIfAborted();
   const entry = selected.entry;
   requireValue(digest(entry.manifestSha256), "selected effect has no manifest SHA-256");
   requireValue(entry.bundleId === undefined || named(entry.bundleId), "selected effect bundle id is invalid");

@@ -87,6 +87,12 @@ describe("effect manifest source identity and primitive routing", () => {
     const raw = copyRetainedManifest(); raw.components[1]!.bindings.primitiveMaterials[0]!.nativeSourceReference = "Invented.OtherTexture";
     expect(() => parseEffectManifest(raw)).toThrow(/primitive texture identity differs/);
   });
+  it("accepts named skill action stage records and rejects a stage record without an effect object", () => {
+    const stage = { class: "Engine.SkillAction_LocateEffect", stage: "ShotActions", effectObject: "lineageeffect.p_u004_a", effectiveProperties: { bSpawnOnTarget: true } };
+    expect(parseEffectManifest({ ...copyRetainedManifest(), stages: [stage] }).stages).toEqual([stage]);
+    expect(() => parseEffectManifest({ ...copyRetainedManifest(), stages: [{ ...stage, effectObject: "" }] })).toThrow(/invalid stage record/);
+    expect(() => parseEffectManifest({ ...copyRetainedManifest(), stages: {} })).toThrow(/invalid stages/);
+  });
 });
 
 describe("optional effect metadata and lazy resource loading", () => {
