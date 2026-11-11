@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 from typing import NamedTuple
 
+from actors.skill_effect_conversion import read_simulated_emitter_classes
 from native_assets_lib.class_defaults import ReferenceClientClassScripts
 from native_assets_lib.gltf import json_bytes
 from native_store.catalog_writer import sha256_hex
@@ -15,7 +16,7 @@ from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 from world.tile_json_resource import write_tile_json_resource
 
-MAP_EMITTER_STEP_ALGORITHM_VERSION = 1
+MAP_EMITTER_STEP_ALGORITHM_VERSION = 2
 MAP_EMITTER_STEP_NAME = 'emitters'
 MAP_EMITTERS_PRODUCT_NAME = 'map-emitters.json'
 TILE_MAP_EMITTERS_KIND = 'native-tile-map-emitters'
@@ -41,7 +42,7 @@ def map_emitter_ledger(project_root):
 def map_emitter_unit(project_root, tile_id, lock_record):
     chunks_fingerprint, raw_products, _ = sealed_chunk_plan(project_root, tile_id, lock_record)
     inputs = locked_input_records([tile_map_path(tile_id)])
-    config = {'chunksFingerprint': chunks_fingerprint}
+    config = {'chunksFingerprint': chunks_fingerprint, 'simulatedEmitterClasses': sorted(read_simulated_emitter_classes(project_root))}
     ledger = map_emitter_ledger(project_root)
     fingerprint = ledger.unit_fingerprint([record['sha256'] for record in inputs], config)
     return MapEmitterUnit(ledger, tile_unit_key(tile_id), fingerprint, config, inputs, raw_products)
@@ -68,14 +69,14 @@ def map_emitter_gap_row(tile_id, source_identity, evidence, gap):
     return tile_step_row(tile_id, MAP_EMITTER_STEP_NAME, GAP_STATUS, gap.reason, {**source_identity, 'object': gap.object_name}, evidence)
 
 
-def read_tile_map_emitters(package, actors_by_object, class_defaults, tile_id, source_identity, evidence):
+def read_tile_map_emitters(package, actors_by_object, class_defaults, simulated_emitter_classes, tile_id, source_identity, evidence):
     placements, gap_rows = [], []
     for item in emitter_actor_exports(package):
         actor = actors_by_object.get(item['object'])
         if actor is None:
             gap_rows.append(map_emitter_gap_row(tile_id, source_identity, evidence, MapEmitterGap(item['object'], EMITTER_ACTOR_NOT_EXTRACTED_REASON)))
             continue
-        placement, actor_gap = read_map_emitter_placement(package, item, actor, class_defaults)
+        placement, actor_gap = read_map_emitter_placement(package, item, actor, class_defaults, simulated_emitter_classes)
         if actor_gap is not None:
             gap_rows.append(map_emitter_gap_row(tile_id, source_identity, evidence, actor_gap))
             continue
@@ -107,7 +108,8 @@ def run_map_emitter_step(project_root, client_root, tile_id):
     package = read_locked_map_package(client, tile_id, lock_record)
     class_defaults = ClassDefaults(lane_work_root(project_root, WORLD_LANE_NAME), ReferenceClientClassScripts(client))
     actors_by_object = {actor['object']: actor for actor in json.loads((unit.raw_products / 'actors.json').read_text(encoding='utf-8'))}
-    placements, gap_rows = read_tile_map_emitters(package, actors_by_object, class_defaults, tile_id, source_identity, receipt_evidence)
+    placements, gap_rows = read_tile_map_emitters(package, actors_by_object, class_defaults, frozenset(unit.config['simulatedEmitterClasses']), tile_id,
+                                                  source_identity, receipt_evidence)
     products_directory = unit.ledger.begin(unit.unit_key, unit.fingerprint) / PRODUCTS_FOLDER_NAME
     products_directory.mkdir()
     outputs, manifest_record = [], None

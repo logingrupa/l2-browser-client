@@ -7,6 +7,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
+from actors.skill_effect_conversion import read_simulated_emitter_classes
 from native_catalog.ue2 import FormatError, Package
 from native_store.gap_rows import validate_gap_row
 from native_store.tile_manifest_validation import load_tile_manifest_vocabulary
@@ -27,8 +28,9 @@ BOOL_PROPERTY_TYPE = 3
 ARRAY_PROPERTY_TYPE = 9
 BOOL_TRUE_BIT = 128
 EMITTER_IMPORTS = [('Core', 'Package', 0, 'Engine'), ('Core', 'Class', -1, 'Emitter'), ('Core', 'Class', -1, 'SpriteEmitter'),
-                   ('Core', 'Class', -1, 'SparkEmitter')]
-EMITTER_CLASS_IMPORT, SPRITE_EMITTER_CLASS_IMPORT, SPARK_EMITTER_CLASS_IMPORT = -2, -3, -4
+                   ('Core', 'Class', -1, 'SparkEmitter'), ('Core', 'Class', -1, 'BeamEmitter')]
+EMITTER_CLASS_IMPORT, SPRITE_EMITTER_CLASS_IMPORT, SPARK_EMITTER_CLASS_IMPORT, BEAM_EMITTER_CLASS_IMPORT = -2, -3, -4, -5
+BEAM_EMITTER_EXPORT_INDEX = 5
 PROPERTY_NAMES = ['Emitters', 'AutoDestroy', 'MaxParticles']
 EMITTER_CLASS = 'Engine.Emitter'
 EMITTER_ACTOR_DEFAULTS = {**ACTOR_DEFAULTS, **{field: (None, 'ue-zero', EMITTER_CLASS) for field in ACTOR_RULE_FIELDS},
@@ -36,7 +38,8 @@ EMITTER_ACTOR_DEFAULTS = {**ACTOR_DEFAULTS, **{field: (None, 'ue-zero', EMITTER_
 PARTICLE_EMITTER_DEFAULTS = {field: (None, 'ue-zero', 'Engine.ParticleEmitter') for field in EMITTER_RULE_FIELDS}
 _, RULES = load_bsp_visibility_rules()
 CLASS_DEFAULTS = SyntheticActorClassDefaults({EMITTER_CLASS: EMITTER_ACTOR_DEFAULTS, 'Engine.SpriteEmitter': PARTICLE_EMITTER_DEFAULTS,
-                                              'Engine.SparkEmitter': PARTICLE_EMITTER_DEFAULTS})
+                                              'Engine.SparkEmitter': PARTICLE_EMITTER_DEFAULTS, 'Engine.BeamEmitter': PARTICLE_EMITTER_DEFAULTS})
+SIMULATED_EMITTER_CLASSES = read_simulated_emitter_classes(ROOT)
 
 
 def emitter_actor_body(emitter_export_index, auto_destroy):
@@ -51,12 +54,14 @@ def particle_emitter_body(offset, names):
     return tag(names, 'MaxParticles', INTEGER_PROPERTY_TYPE, struct.pack('<i', 4)) + compact(names['None'])
 
 
-def emitter_package(with_emitters=True, second_emitter_export_index=2):
+def emitter_package(with_emitters=True, second_emitter_export_index=2, with_beam_emitter=False):
     exports = [{'name': 'SpriteEmitter0', 'class': SPRITE_EMITTER_CLASS_IMPORT, 'body': particle_emitter_body},
                {'name': 'SparkEmitter0', 'class': SPARK_EMITTER_CLASS_IMPORT, 'body': particle_emitter_body}]
     if with_emitters:
         exports += [{'name': 'Emitter7', 'class': EMITTER_CLASS_IMPORT, 'body': emitter_actor_body(1, True)},
                     {'name': 'Emitter2', 'class': EMITTER_CLASS_IMPORT, 'body': emitter_actor_body(second_emitter_export_index, False)}]
+    if with_beam_emitter:
+        exports.append({'name': 'BeamEmitter0', 'class': BEAM_EMITTER_CLASS_IMPORT, 'body': particle_emitter_body})
     return Package(package_bytes(PROPERTY_NAMES, EMITTER_IMPORTS, exports), f'{TILE_ID}.unr')
 
 
@@ -76,7 +81,8 @@ def field_record(records, field):
 
 class MapEmitterExportTests(unittest.TestCase):
     def setUp(self):
-        self.placements, self.gap_rows = read_tile_map_emitters(emitter_package(), RAW_ACTORS, CLASS_DEFAULTS, TILE_ID, SOURCE_IDENTITY, EVIDENCE)
+        self.placements, self.gap_rows = read_tile_map_emitters(emitter_package(), RAW_ACTORS, CLASS_DEFAULTS, SIMULATED_EMITTER_CLASSES, TILE_ID,
+                                                                SOURCE_IDENTITY, EVIDENCE)
 
     def test_two_emitter_actors_export_two_placements_in_export_index_order(self):
         self.assertEqual([(placement.record['id'], placement.record['exportIndex']) for placement in self.placements],
@@ -103,15 +109,28 @@ class MapEmitterExportTests(unittest.TestCase):
             validate_gap_row(row)
         self.assertEqual(tile_map_emitter_row(TILE_ID, SOURCE_IDENTITY, self.gap_rows, EVIDENCE)['status'], 'gap')
 
+    def test_a_converted_emitter_class_the_simulation_does_not_port_is_a_named_unported_gap(self):
+        self.assertNotIn('Engine.BeamEmitter', SIMULATED_EMITTER_CLASSES)
+        placements, gap_rows = read_tile_map_emitters(emitter_package(second_emitter_export_index=BEAM_EMITTER_EXPORT_INDEX, with_beam_emitter=True),
+                                                      RAW_ACTORS, CLASS_DEFAULTS, SIMULATED_EMITTER_CLASSES, TILE_ID, SOURCE_IDENTITY, EVIDENCE)
+        beam, = placements[1].record['bundle']['emitters']
+        self.assertEqual((beam['class'], beam['converted']), ('Engine.BeamEmitter', True))
+        self.assertEqual([(row['reason'], row['sourceIdentity']['object']) for row in gap_rows],
+                         [('emitter-class-unported:Engine.BeamEmitter', f'{TILE_ID}.BeamEmitter0')])
+        for row in gap_rows:
+            validate_gap_row(row)
+
     def test_a_map_without_emitter_actors_passes_with_no_resource(self):
-        placements, gap_rows = read_tile_map_emitters(emitter_package(with_emitters=False), {}, CLASS_DEFAULTS, TILE_ID, SOURCE_IDENTITY, EVIDENCE)
+        placements, gap_rows = read_tile_map_emitters(emitter_package(with_emitters=False), {}, CLASS_DEFAULTS, SIMULATED_EMITTER_CLASSES, TILE_ID,
+                                                      SOURCE_IDENTITY, EVIDENCE)
         self.assertEqual((placements, gap_rows), ([], []))
         self.assertEqual(tile_map_emitter_row(TILE_ID, SOURCE_IDENTITY, gap_rows, EVIDENCE)['status'], 'pass')
         self.assertEqual(tile_resources(None, None, None, {'manifest': None, 'gapRows': []}), [])
 
     def test_an_emitter_actor_missing_from_the_raw_actors_is_a_named_gap_and_the_other_emitters_still_export(self):
         raw_actors = {name: actor for name, actor in RAW_ACTORS.items() if name != f'{TILE_ID}.Emitter2'}
-        placements, gap_rows = read_tile_map_emitters(emitter_package(), raw_actors, CLASS_DEFAULTS, TILE_ID, SOURCE_IDENTITY, EVIDENCE)
+        placements, gap_rows = read_tile_map_emitters(emitter_package(), raw_actors, CLASS_DEFAULTS, SIMULATED_EMITTER_CLASSES, TILE_ID, SOURCE_IDENTITY,
+                                                      EVIDENCE)
         self.assertEqual([placement.record['id'] for placement in placements], [f'interlude:{TILE_ID}.Emitter7'])
         self.assertEqual([(row['reason'], row['sourceIdentity']['object']) for row in gap_rows],
                          [('decode-failed:emitter-actor-not-extracted', f'{TILE_ID}.Emitter2')])
@@ -121,7 +140,7 @@ class MapEmitterExportTests(unittest.TestCase):
     def test_an_emitter_reference_past_the_export_table_is_refused_as_a_format_error(self):
         package = emitter_package(second_emitter_export_index=99)
         with self.assertRaisesRegex(FormatError, 'emitter export 99 outside the export table of 4 exports'):
-            read_tile_map_emitters(package, RAW_ACTORS, CLASS_DEFAULTS, TILE_ID, SOURCE_IDENTITY, EVIDENCE)
+            read_tile_map_emitters(package, RAW_ACTORS, CLASS_DEFAULTS, SIMULATED_EMITTER_CLASSES, TILE_ID, SOURCE_IDENTITY, EVIDENCE)
 
     def test_the_kind_is_in_the_vocabulary_and_the_tile_resource_pins_the_manifest(self):
         self.assertIn('map-emitters', load_tile_manifest_vocabulary().resource_kinds)
@@ -131,7 +150,7 @@ class MapEmitterExportTests(unittest.TestCase):
                          [{'kind': 'map-emitters', 'manifest': product['manifest']['resource'], 'manifestSha256': sha256, 'manifestBytes': 900}])
 
     def test_the_step_name_and_version_are_pinned(self):
-        self.assertEqual((MAP_EMITTER_STEP_NAME, MAP_EMITTER_STEP_ALGORITHM_VERSION), ('emitters', 1))
+        self.assertEqual((MAP_EMITTER_STEP_NAME, MAP_EMITTER_STEP_ALGORITHM_VERSION), ('emitters', 2))
 
 
 class MapEmitterMembershipTests(unittest.TestCase):

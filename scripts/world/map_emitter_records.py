@@ -56,7 +56,7 @@ def emitter_record(package, reference, class_defaults):
             'properties': values}
 
 
-def emitter_bundle(package, references, class_defaults):
+def emitter_bundle(package, references, class_defaults, simulated_emitter_classes):
     emitters, gaps = [], []
     for reference in references:
         if reference < 0:
@@ -64,7 +64,7 @@ def emitter_bundle(package, references, class_defaults):
             continue
         record = emitter_record(package, reference, class_defaults)
         emitters.append(record)
-        if not record['converted']:
+        if record['class'] not in simulated_emitter_classes:
             gaps.append(MapEmitterGap(record['object'], EMITTER_CLASS_UNPORTED_REASON_PREFIX + record['class']))
     return {'emitters': emitters}, gaps
 
@@ -73,14 +73,14 @@ def emitter_source_rows(actor, class_defaults):
     return static_matrix(resolved_transform_values(actor, class_defaults, EMITTER_ACTOR_CLASS))
 
 
-def read_map_emitter_placement(package, item, actor, class_defaults):
+def read_map_emitter_placement(package, item, actor, class_defaults, simulated_emitter_classes):
     tags, _, _, _ = actor_properties(package, item)
     values = object_values(package, tags)
     try:
         rows = emitter_source_rows(actor, class_defaults)
     except TransformFieldError as error:
         return None, MapEmitterGap(item['object'], ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX + error.field)
-    bundle, gaps = emitter_bundle(package, emitter_references(tags), class_defaults)
+    bundle, gaps = emitter_bundle(package, emitter_references(tags), class_defaults, simulated_emitter_classes)
     record = {'id': actor['id'], 'exportIndex': item['exportIndex'], 'transform': rows,
               'actorRules': [resolved_actor_field(field, values, EMITTER_ACTOR_CLASS, class_defaults).to_record() for field in ACTOR_RULE_FIELDS],
               'bundle': bundle}
