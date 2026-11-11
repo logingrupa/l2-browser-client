@@ -31,6 +31,7 @@ TILE_COLUMN_COUNT = 17
 TILE_ROW_COUNT = 9
 NON_TILE_MAP_COUNT = 10
 SYNTHETIC_OBJECT_GAP_REASON = 'decode-failed:synthetic unreadable object'
+SYNTHETIC_LAYOUT_GAP_REASON = 'map-licensee-unsupported:123/25'
 WORLD_GAP_ROWS_FOLDER = Path('artifacts/lane-store/world/gap-rows')
 
 
@@ -73,8 +74,9 @@ def synthetic_source_identity(tile_id):
 
 
 class LedgerBackedSteps:
-    def __init__(self, project_root, failing=(), object_gaps=None, killed_at=None):
+    def __init__(self, project_root, failing=(), object_gaps=None, killed_at=None, layout_gaps=()):
         self.project_root, self.failing, self.object_gaps, self.killed_at = project_root, set(failing), object_gaps or {}, killed_at
+        self.layout_gaps = set(layout_gaps)
         self.calls, self.begun = [], []
 
     def ledger(self, step):
@@ -89,6 +91,8 @@ class LedgerBackedSteps:
             return [tile_step_row(tile_id, step, 'pass', None, synthetic_source_identity(tile_id), receipt_evidence)]
         if (tile_id, step) in self.failing:
             raise ValueError('synthetic decode failure\nsecond line')
+        if (tile_id, step) in self.layout_gaps:
+            return [tile_step_row(tile_id, step, 'gap', SYNTHETIC_LAYOUT_GAP_REASON, synthetic_source_identity(tile_id), TILE_CENSUS_RELATIVE_PATH)]
         self.begun.append((tile_id, step))
         step_directory = ledger.begin(unit_key, fingerprint)
         if (tile_id, step) == self.killed_at:
@@ -228,6 +232,16 @@ class TileBatchOrderTests(TileBatchTestCase):
         retried = self.run_batch(steps)
         self.assertEqual(retried.attempted_tile_ids, ['10_11'])
         self.assertEqual(self.rows_by_tile_and_step()[('tile:10_11', 'manifest')]['status'], 'pass')
+
+    def test_an_unsealed_step_level_gap_settles_its_tile_like_a_recorded_failure(self):
+        steps = LedgerBackedSteps(self.project_root, layout_gaps={('10_11', 'chunks')})
+        first = self.run_batch(steps)
+        self.assertEqual(first.attempted_tile_ids, ['10_11'])
+        self.assertEqual(self.rows_by_tile_and_step()[('tile:10_11', 'chunks')]['reason'], SYNTHETIC_LAYOUT_GAP_REASON)
+        steps.calls.clear()
+        self.assertEqual(self.run_batch(steps).attempted_tile_ids, ['12_13'])
+        self.assertNotIn(('10_11', 'chunks'), steps.calls)
+        self.assertEqual(self.rows_by_tile_and_step()[('tile:10_11', 'chunks')]['reason'], SYNTHETIC_LAYOUT_GAP_REASON)
 
     def test_two_runs_over_the_same_sealed_state_write_byte_identical_rows(self):
         steps = LedgerBackedSteps(self.project_root, object_gaps={('10_11', 'raw'): 1})

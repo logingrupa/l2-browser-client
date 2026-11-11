@@ -16,7 +16,7 @@ from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, FreeDiskFloorRef
                                       require_batch_preflight, run_at_below_normal_priority)
 from native_store.write_lane_catalog import write_lane_catalog
 from reference_client_guard import require_reference_client
-from world.eligible_tile_selection import (FAILED_STATUS, PASS_STATUS, failed_step_row, read_tile_census, sealed_tile_step,
+from world.eligible_tile_selection import (FAILED_STATUS, GAP_STATUS, PASS_STATUS, failed_step_row, read_tile_census, sealed_tile_step,
                                            select_eligible_tiles, step_level_rows, unit_step_evidence, upstream_failed_row)
 from world.raw_map_step import read_tile_map_lock_record, tile_map_path, tile_unit_key
 from world.tile_census import DEFAULT_CONVERSION_CLIENT_ROOT, WORLD_LANE_NAME
@@ -27,6 +27,7 @@ BATCH_EXIT_DONE = 0
 BATCH_EXIT_ERROR = 1
 BATCH_EXIT_MACHINE_WINDOW = 2
 BATCH_EXIT_DISK_FLOOR = 3
+SETTLING_UNSEALED_STATUSES = (FAILED_STATUS, GAP_STATUS)
 NOTHING_TO_DO_MESSAGE = 'nothing to do: every eligible tile of the census has every registered step sealed'
 
 
@@ -81,7 +82,7 @@ def tile_has_work(project_root, tile_id, step_names, recorded_rows):
         if is_step_sealed(project_root, tile_id, step):
             continue
         recorded_row = recorded_rows.get((tile_unit_key(tile_id), step))
-        return recorded_row is None or recorded_row['status'] != FAILED_STATUS
+        return recorded_row is None or recorded_row['status'] not in SETTLING_UNSEALED_STATUSES
     return False
 
 
