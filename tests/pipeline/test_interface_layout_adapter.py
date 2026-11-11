@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT / 'scripts' / 'data'))
 sys.path.insert(0, str(ROOT / 'tests' / 'fixtures' / 'xdat'))
 import convert_ui
 import interface_layout_adapter as adapter
-from native_store.catalog_writer import WINDOW_MANIFEST_PATH_PATTERN, validate_catalog_record
+from native_store.catalog_writer import WINDOW_MANIFEST_PATH_PATTERN, CatalogWriteError, validate_catalog_record
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import UnitLedger
 from pinned_elbera_module import ELBERA_ROOT, load_pinned_elbera_module
@@ -235,6 +235,16 @@ class ConvertWindowUnitTests(unittest.TestCase):
         seal_path = lane_work_root(self.project_root, 'data-ui') / 'window__SyntheticStatusWnd' / 'layout' / 'complete.json'
         self.assertTrue(seal_path.is_file())
         self.assertEqual(self.convert(['SyntheticStatusWnd']), [{'unit': 'window:SyntheticStatusWnd', 'status': 'skipped-sealed'}])
+
+    def test_decoded_window_manifests_are_read_through_the_shared_pinned_file_reader(self):
+        self.convert(['SyntheticStatusWnd'])
+        [manifest] = convert_ui.decoded_window_manifests(self.output_root)
+        self.assertEqual(manifest['windowId'], 'SyntheticStatusWnd')
+        [record] = self.windows_records()
+        manifest_path = self.output_root / record['manifest'].removeprefix('/l2/')
+        manifest_path.write_bytes(manifest_path.read_bytes().replace(b'SyntheticStatusWnd', b'SyntheticStatusWnX'))
+        with self.assertRaisesRegex(CatalogWriteError, 'pinned store file SHA-256 differs from its pin'):
+            convert_ui.decoded_window_manifests(self.output_root)
 
     def test_unknown_window_is_refused(self):
         with self.assertRaisesRegex(convert_ui.ConvertUiError, 'no root window MissingWnd'):

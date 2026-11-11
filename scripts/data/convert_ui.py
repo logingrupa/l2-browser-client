@@ -15,9 +15,10 @@ from interface_layout_adapter import (ELBERA_INTERFACE_JSON_PATH, ELBERA_PARSE_X
                                       interface_window_census, window_identifiers, window_layout_manifest)
 from lane_unit_outcomes import seal_unit_decode_failure, seal_unit_manifest, write_pinned_manifest_to_store
 from native_assets import UMODEL, UMODEL_SHA256, Converter, implementation_hash
-from native_store.catalog_writer import read_store_catalog, replace_file, sha256_hex, validate_catalog_record
+from native_store.catalog_writer import (read_pinned_file, read_store_catalog, replace_file, require_file_pin, sha256_hex,
+                                         validate_catalog_record)
 from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
-from native_store.store_paths import REPOSITORY_ROOT, confined_child_path, lane_store_root, lane_work_root, require_converter_output
+from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root, require_converter_output
 from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, UnitLedger, locked_input_records, require_batch_preflight,
                                       run_at_below_normal_priority)
 from pinned_elbera_module import ELBERA_ROOT, load_pinned_elbera_module, resolve_elbera_path
@@ -39,7 +40,6 @@ TEXTURE_PACKAGE_CENSUS_PATH = REPOSITORY_ROOT / 'docs' / 'parts' / 'ui' / 'textu
 UI_TEXTURE_RECIPE_PATH = REPOSITORY_ROOT / 'recipes' / 'data' / 'ui-textures.json'
 WINDOW_FIELD_BINDINGS_PATH = REPOSITORY_ROOT / 'recipes' / 'data' / 'window-field-bindings.json'
 UI_TEXTURE_CONVERTER_FOLDER = 'ui-texture-converter'
-NATIVE_RESOURCE_PREFIX = '/l2/'
 
 
 class ConvertUiError(ValueError):
@@ -126,9 +126,8 @@ def decoded_window_manifests_with_records(output_root):
     catalog, _ = read_store_catalog(output_root)
     manifests = []
     for record in catalog.get(WINDOWS_CATALOG_SLICE, []):
-        manifest_bytes = confined_child_path(output_root, record['manifest'].removeprefix(NATIVE_RESOURCE_PREFIX)).read_bytes()
-        if (sha256_hex(manifest_bytes), len(manifest_bytes)) != (record['manifestSha256'], record['manifestBytes']):
-            raise ConvertUiError(f'window manifest {record["manifest"]} differs from its catalog SHA-256 or byte length')
+        manifest_bytes = read_pinned_file(output_root, require_file_pin(record, 'manifest', 'manifestSha256', 'manifestBytes',
+                                                                        f'windows record {record["id"]}'))
         manifest = json.loads(manifest_bytes)
         if manifest.get('windowId') != record['id']:
             raise ConvertUiError(f'window manifest {record["manifest"]} names {manifest.get("windowId")!r}, not its catalog id {record["id"]}')

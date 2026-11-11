@@ -11,8 +11,8 @@ import json
 from hash_reference_client_tree import canonical_json_bytes
 from lane_unit_outcomes import seal_unit_manifest, write_pinned_manifest_to_store
 from convert_tables import DECODE_STEP, LANE_NAME, NATIVE_TABLE_MANIFEST_KIND, TABLES_CATALOG_CAPACITY, TABLES_CATALOG_SLICE
-from native_store.catalog_writer import (TABLE_NAME_INDEX_ID_SUFFIX, is_table_name_index_id, read_store_catalog, sha256_hex,
-                                         validate_catalog_record)
+from native_store.catalog_writer import (TABLE_NAME_INDEX_ID_SUFFIX, is_table_name_index_id, read_pinned_file, read_store_catalog,
+                                         require_file_pin, sha256_hex, validate_catalog_record)
 from native_store.gap_rows import read_gap_rows
 from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root, require_converter_output
@@ -79,14 +79,6 @@ def decode_gap_row(project_root, table):
     return next((row for row in read_gap_rows(project_root, LANE_NAME) if row['step'] == DECODE_STEP and row['key'] == unit_key), None)
 
 
-def verified_source_manifest_bytes(output_root, source_record):
-    source_path = Path(output_root) / source_record['manifest'].removeprefix('/l2/')
-    source_bytes = source_path.read_bytes()
-    if len(source_bytes) != source_record['manifestBytes'] or sha256_hex(source_bytes) != source_record['manifestSha256']:
-        raise TableNameIndexError(f'source manifest {source_record["manifest"]} differs from its catalog manifestSha256; refused')
-    return source_bytes
-
-
 def write_table_name_index(project_root, table, output_root, ledger):
     source = require_name_index_source(table)
     unit_key = f'table:{table}'
@@ -103,7 +95,8 @@ def write_table_name_index(project_root, table, output_root, ledger):
     fingerprint = ledger.unit_fingerprint([source_record['manifestSha256']], config)
     if ledger.is_sealed(unit_key, fingerprint):
         return {'unit': unit_key, 'status': 'skipped-sealed'}
-    source_bytes = verified_source_manifest_bytes(output_root, source_record)
+    source_bytes = read_pinned_file(output_root, require_file_pin(source_record, 'manifest', 'manifestSha256', 'manifestBytes',
+                                                                  f'tables record {table}'))
     ledger.begin(unit_key, fingerprint)
     name_index = native_table_name_index(table, json.loads(source_bytes), source_record['manifestSha256'])
     index_bytes = canonical_json_bytes(name_index)

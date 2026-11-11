@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT / 'scripts' / 'data'))
 import table_name_indexes
 from convert_tables import LOCAL_DESCRIPTOR_ROUTE, write_table_to_store
 from hash_reference_client_tree import canonical_json_bytes
-from native_store.catalog_writer import validate_catalog_record
+from native_store.catalog_writer import CatalogWriteError, validate_catalog_record
 from native_store.gap_rows import write_gap_rows
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import UnitLedger
@@ -151,10 +151,10 @@ class WriteTableNameIndexTests(unittest.TestCase):
             built_bytes.append((self.catalog_path.read_bytes(), (self.output_root / record['manifest'].removeprefix('/l2/')).read_bytes()))
         self.assertEqual(built_bytes[0], built_bytes[1])
 
-    def test_source_manifest_bytes_that_differ_from_the_catalog_pin_are_refused(self):
+    def test_source_manifest_bytes_that_differ_from_the_catalog_pin_are_refused_by_the_shared_pinned_file_reader(self):
         _, manifest_path = self.store_source_table(npcname_manifest([npc_row(1, 'Name')]))
         manifest_path.write_bytes(manifest_path.read_bytes().replace(b'Name', b'Nama'))
-        with self.assertRaisesRegex(TableNameIndexError, 'differs from its catalog manifestSha256; refused'):
+        with self.assertRaisesRegex(CatalogWriteError, 'pinned store file SHA-256 differs from its pin'):
             write_table_name_index(self.project_root, 'npcname-e', self.output_root, self.new_ledger())
         self.assertNotIn('npcname_e_names', self.tables_records_by_id())
 
