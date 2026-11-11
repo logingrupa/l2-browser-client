@@ -12,6 +12,7 @@ sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 from actors.actor_sound_batch import npc_profile_rows
 from actors.actor_sound_conversion import ActorSoundConversionError, ActorSoundConversionRun
 from catalog_store_fixture import write_store_catalog
+from native_store.catalog_writer import CatalogWriteError
 from native_store.data_ui_table_manifest import DATA_UI_LANE_NAME, DataUiTableManifestError, data_ui_table_manifest
 from native_store.store_paths import StorePathError, lane_store_root
 from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, read_reference_client_lock
@@ -90,6 +91,16 @@ class DataUiTableManifestTests(unittest.TestCase):
         with self.assertRaises(StorePathError):
             npc_profile_rows(self.store_root, {'npcProfiles': [record]})
 
+    def test_an_npc_profile_manifest_whose_byte_length_differs_from_its_pin_is_refused(self):
+        payload = b'{"profiles": []}'
+        manifest_sha256 = hashlib.sha256(payload).hexdigest()
+        manifest_path = self.store_root / 'npc-profiles' / manifest_sha256 / 'manifest.json'
+        manifest_path.parent.mkdir(parents=True, exist_ok=True)
+        manifest_path.write_bytes(payload)
+        record = {'id': 'native-npc-profiles', 'manifest': f'/l2/npc-profiles/{manifest_sha256}/manifest.json',
+                  'manifestSha256': manifest_sha256, 'manifestBytes': len(payload) + 1}
+        with self.assertRaisesRegex(CatalogWriteError, 'byte length differs'):
+            npc_profile_rows(self.store_root, {'npcProfiles': [record]})
 
     def test_a_manifest_whose_sha256_differs_from_its_record_is_refused_by_the_character_route(self):
         self.write_tables_record(self.pinned_resource(), len(self.payload), manifest_sha256='0' * 64)
