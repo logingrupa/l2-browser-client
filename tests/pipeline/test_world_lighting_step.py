@@ -13,6 +13,9 @@ from support.level_model_fixture import build_synthetic_level_model, square_poin
 from support.lighting_actor_fixture import (ENVIRONMENT_LIGHTS, LIGHT_CLASS, LIGHTING_CLASS_DEFAULTS, SCENE_LIGHTS, SECTOR_LIGHTS,
                                             SECTOR_SHADOW_MAPS, read_synthetic_chain, synthetic_actor_rows, synthetic_lighting_package)
 from support.lightmap_tail_fixture import (build_lightmap_tail, lightmap_model_and_package, lightmap_node, page_mip_bytes, render_section_bytes)
+from support.water_volume_fixture import (PHYSICS_VOLUME_CLASS, SYNTHETIC_CHUNK_ID, WATER_VOLUME_CLASS, synthetic_volume_actor, synthetic_volume_context,
+                                          synthetic_volume_map)
+from world.collision_step import volume_records
 from world.bsp_lightmaps import LIGHTMAP_ATLAS_EDGE, NO_LIGHTMAP, node_lightmap_texture, read_bsp_lightmaps
 from world.tile_step_registry import TILE_STEP_NAMES
 from world.light_actors import ClassChains, LightingActor, read_lighting_actors, read_static_mesh_light_lists
@@ -137,13 +140,25 @@ class LightingActorTests(unittest.TestCase):
         with self.assertRaisesRegex(FormatError, 'not a terrain sector'):
             read_terrain_sector_lighting(self.package, 4)
 
-    def test_water_volumes_link_to_their_vols_entry_by_export_index_and_an_unlisted_one_is_a_named_gap(self):
-        water_volumes = [LightingActor(index, f'00_00.WaterVolume{index}', 'GamePlay.WaterVolume', 'Gameplay.WaterVolume', 1, ()) for index in (7, 8)]
-        collision = {'volumes': [{'exportIndex': 7, 'classObject': 'GamePlay.WaterVolume', 'chunkId': 'chunk-0-0', 'decision': 'brush'},
-                                 {'exportIndex': 9, 'classObject': 'Engine.PhysicsVolume', 'chunkId': None, 'decision': 'declared-none'}]}
-        links, reasons = water_volume_links(water_volumes, collision)
+    def collision_volumes_of(self, actors):
+        package, level, rectangles = synthetic_volume_map()
+        _, records = volume_records(synthetic_volume_context(), package, level, actors, rectangles)
+        return {'volumes': records}
+
+    def water_volume_actors(self, export_indices):
+        return [LightingActor(index, f'00_00.WaterVolume{index}', 'GamePlay.WaterVolume', WATER_VOLUME_CLASS, 1, ()) for index in export_indices]
+
+    def test_a_water_volume_the_collision_step_admits_links_to_its_vols_entry_and_writes_no_unlinked_row(self):
+        collision = self.collision_volumes_of([synthetic_volume_actor(WATER_VOLUME_CLASS, 7), synthetic_volume_actor(PHYSICS_VOLUME_CLASS, 9)])
+        links, reasons = water_volume_links(self.water_volume_actors([7]), collision)
         self.assertEqual([(link['exportIndex'], link['zone'], link['volsChunkId'], link['volsDecision']) for link in links],
-                         [(7, 1, 'chunk-0-0', 'brush'), (8, 1, None, None)])
+                         [(7, 1, SYNTHETIC_CHUNK_ID, 'declared-none')])
+        self.assertEqual(reasons, [])
+
+    def test_a_water_volume_missing_from_the_collision_volumes_is_a_named_gap(self):
+        collision = self.collision_volumes_of([synthetic_volume_actor(WATER_VOLUME_CLASS, 7)])
+        links, reasons = water_volume_links(self.water_volume_actors([7, 8]), collision)
+        self.assertEqual([(link['exportIndex'], link['volsChunkId']) for link in links], [(7, SYNTHETIC_CHUNK_ID), (8, None)])
         self.assertEqual(reasons, ['lighting-water-volume-unlinked:GamePlay.WaterVolume'])
 
     def test_an_actor_whose_class_chain_cannot_be_read_stays_a_named_gap_instead_of_vanishing(self):
