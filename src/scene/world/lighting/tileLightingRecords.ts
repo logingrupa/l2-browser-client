@@ -68,6 +68,7 @@ function readZone(value: unknown, position: number): TileLightingZone {
   requireRecords(typeof enabled === "boolean" || enabled === null, `${label} bDistanceFog is not a boolean.`);
   if (enabled !== true) return { zoneIndex, fog: { distanceFog: false, sunAffected: sunAffect.value === true, fog: null }, unresolvedReason: null };
   requireRecords(typeof start === "number" && typeof end === "number" && Number.isFinite(start) && Number.isFinite(end), `${label} fog range is not two numbers.`);
+  if (end <= start) return { zoneIndex, fog: null, unresolvedReason: `lighting-zone-fog-range-not-increasing:${zoneIndex}:${start}:${end}` };
   return { zoneIndex, unresolvedReason: null, fog: { distanceFog: true, sunAffected: sunAffect.value === true,
     fog: { colourBytes: readFogColourBytes(fields.get("DistanceFogColor")!.value, label), startSourceUnits: start, endSourceUnits: end } } };
 }

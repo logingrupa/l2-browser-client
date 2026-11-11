@@ -4,7 +4,8 @@ import type { TileVisibilityFrame } from "../../src/scene/world/bspVisibility/co
 import { zoneSetOf } from "../../src/scene/world/bspVisibility/core/zoneSet";
 import { cameraEnvironmentGaps, computeCameraEnvironment } from "../../src/scene/world/cameraEnvironment";
 import { collisionWorldFromFixtures, committedMovementRules, fixtureCellId, mixedChunkArrays, waterPhysicsVolume } from "../fixtures/movement/movementCollisionFixtures";
-import { tileLightingModel } from "../support/tileLightingFixture";
+import { decodeTileLighting } from "../../src/scene/world/lighting/decodeTileLighting";
+import { tileLightingArrays, tileLightingModel, tileLightingPayload, tileLightingRecordsDocument } from "../support/tileLightingFixture";
 
 const records = tileLightingModel().records;
 const rules = committedMovementRules();
@@ -33,6 +34,18 @@ describe("computeCameraEnvironment", () => {
     expect(unknown).toMatchObject({ cameraZone: -1, fog: FOG_DISABLED });
     expect(unknown.gaps).toContain(cameraEnvironmentGaps.cameraZoneUnknown);
     expect(computeCameraEnvironment({ frame: frameInZone(9), cameraSourcePosition: null, collision: null, records }).gaps).toContain("lighting-zone-unlisted:9");
+  });
+
+  it("names a decoded zone fog range whose end does not pass its start as a gap instead of throwing in the frame loop", () => {
+    const document = tileLightingRecordsDocument();
+    const distanceFogEnd = document.zones[1]!.distanceFog.find(record => record.field === "DistanceFogEnd")!;
+    distanceFogEnd.value = 100;
+    const payload = tileLightingPayload(tileLightingArrays(document));
+    const flatRecords = decodeTileLighting(payload.assetRecord, payload.payloadBytes).records;
+    expect(flatRecords.zones[1]).toEqual({ zoneIndex: 1, fog: null, unresolvedReason: "lighting-zone-fog-range-not-increasing:1:100:100" });
+    const environment = computeCameraEnvironment({ frame: frameInZone(1), cameraSourcePosition: null, collision: null, records: flatRecords });
+    expect(environment.fog).toEqual(FOG_DISABLED);
+    expect(environment.gaps).toContain("lighting-zone-fog-range-not-increasing:1:100:100");
   });
 
   it("finds the physics volume around the camera through volumesContaining and names the missing water flag", () => {
