@@ -152,9 +152,9 @@ def reader_cross_check_row(client, reader, licensee, tile_id):
         relative_path, ours, theirs = heightmap_decodes(access, sources, tile_id, licensee)
     else:
         relative_path, ours, theirs = map_decodes(client, access, sources, tile_id, licensee, reader)
-    _, lock_sha256 = access.require_equal_file_with_locked_sha256(relative_path)
+    _, package_sha256 = access.require_equal_file_with_sha256(relative_path)
     return {'reader': reader, 'version': REVIEWED_PACKAGE_VERSION, 'licensee': licensee, 'tile': tile_id, 'package': relative_path,
-            'lockSha256': lock_sha256, 'ourDecodeSha256': ours, 'crossCheckDecodeSha256': theirs, 'tool': elbera_tool_record(),
+            'lockSha256': package_sha256, 'ourDecodeSha256': ours, 'crossCheckDecodeSha256': theirs, 'tool': elbera_tool_record(),
             'equal': ours == theirs}
 
 

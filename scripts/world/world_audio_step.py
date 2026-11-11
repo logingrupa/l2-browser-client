@@ -125,10 +125,10 @@ class TileSounds:
 def core_library_radius(client_access, gaps):
     spec = radius_symbols()
     try:
-        path, locked_sha256 = client_access.require_equal_file_with_locked_sha256(CORE_LIBRARY_PATH)
+        path, core_library_sha256 = client_access.require_equal_file_with_sha256(CORE_LIBRARY_PATH)
     except ReferenceClientLockError:
-        locked_sha256 = None
-    image = None if locked_sha256 != spec['sha256'] else path.read_bytes()
+        core_library_sha256 = None
+    image = None if core_library_sha256 != spec['sha256'] else path.read_bytes()
     if image is None or sha256_hex(image) != spec['sha256']:
         gaps.add(GAP_STATUS, REFERENCE_FILE_NOT_LOCK_EQUAL_REASON_PREFIX + CORE_LIBRARY_PATH)
         return None

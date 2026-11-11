@@ -95,9 +95,9 @@ class ActorSoundConversionRun:
     def table(self, name):
         if name not in self.tables:
             decoded = self.decode_table(self.client_access.root, name)
-            original_path, locked_sha256 = self.client_access.require_equal_file_with_locked_sha256(decoded['source'])
+            original_path, guarded_sha256 = self.client_access.require_equal_file_with_sha256(decoded['source'])
             original = original_path.read_bytes()
-            if sha256_hex_digest(original) != decoded['sourceSha256'] or locked_sha256 not in (None, decoded['sourceSha256']):
+            if sha256_hex_digest(original) != decoded['sourceSha256'] or guarded_sha256 != decoded['sourceSha256']:
                 raise ActorSoundConversionError(f'{decoded["source"]} changed between decoding and the guarded read')
             self.tables[name] = {'decoded': decoded, 'original': original, 'rows': decoded['data'][combat_audio_bundle.TABLES[name]],
                                  'identity': {'path': decoded['source'], 'sha256': decoded['sourceSha256']}}

@@ -110,17 +110,12 @@ def files_in_and_outside_read_scope(client_access):
     return readable_names, outside_names, ignored_links
 
 
-def read_scope_file_sha256(client_access, name):
-    path, locked_sha256 = client_access.require_equal_file_with_locked_sha256(name)
-    return path, locked_sha256 if locked_sha256 is not None else file_hash(path)
-
-
 def inventory(client_access):
     readable_names, outside_names, ignored_links = files_in_and_outside_read_scope(client_access)
     records = []
     directories, extensions = defaultdict(lambda: {'files': 0, 'bytes': 0}), defaultdict(lambda: {'files': 0, 'bytes': 0})
     for name in readable_names:
-        path, sha256 = read_scope_file_sha256(client_access, name)
+        path, sha256 = client_access.require_equal_file_with_sha256(name)
         record = {'path': name, 'bytes': path.stat().st_size, 'sha256': sha256,
             'extension': path.suffix.lower(), 'observation': inspect_header(path)}
         records.append(record)
@@ -220,7 +215,7 @@ def verify(client_access, output):
             or ignored != catalog['ignoredLinks']):
         raise FormatError('Native client file inventory changed')
     for row in catalog['files']:
-        path, sha256 = read_scope_file_sha256(client_access, row['path'])
+        path, sha256 = client_access.require_equal_file_with_sha256(row['path'])
         if path.stat().st_size != row['bytes'] or sha256 != row['sha256']:
             raise FormatError('Native source hash mismatch: ' + row['path'])
     if digest(json_bytes(catalog['files'])) != catalog['inventorySha256']:

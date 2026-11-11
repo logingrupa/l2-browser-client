@@ -146,7 +146,7 @@ def decoded_config_keys(decoded):
 
 def config_routes(run):
     try:
-        path, _ = run.client_access.require_equal_file_with_locked_sha256(ALAUDIO_CONFIG_RELATIVE_PATH)
+        path = run.client_access.require_equal_file(ALAUDIO_CONFIG_RELATIVE_PATH)
     except ReferenceClientLockError as error:
         return {'routes': {}, 'unresolved': {role: {'reason': f'combat-role-route-unresolved:alaudio/{role}', 'detail': str(error)}
                                              for role in ('critical', 'soulshot')}}

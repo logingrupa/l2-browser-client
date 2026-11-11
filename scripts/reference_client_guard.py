@@ -90,17 +90,31 @@ class ReferenceClientAccess:
         self.lock = lock
         self.requires_lock = requires_lock
 
-    def require_equal_file(self, relative_path):
-        return self.require_equal_file_with_locked_sha256(relative_path)[0]
-
-    def require_equal_file_with_locked_sha256(self, relative_path):
+    def confined_path(self, relative_path):
         require_confined_relative_path(relative_path)
         path = (self.root / relative_path).resolve()
         if not path.is_relative_to(self.root):
             raise ReferenceClientLockError(f'reference client path escapes its root: {relative_path}')
-        if not self.requires_lock:
-            return path, None
-        return path, self.require_lock_equal_record(relative_path, path)['eSha256']
+        return path
+
+    def require_equal_file(self, relative_path):
+        path = self.confined_path(relative_path)
+        if self.requires_lock:
+            self.require_lock_equal_record(relative_path, path)
+        return path
+
+    def require_equal_file_with_sha256(self, relative_path):
+        path = self.confined_path(relative_path)
+        if self.requires_lock:
+            return path, self.require_lock_equal_record(relative_path, path)['eSha256']
+        return path, self.reference_root_file_sha256(relative_path, path)
+
+    def reference_root_file_sha256(self, relative_path, path):
+        try:
+            status = os.stat(path)
+        except FileNotFoundError:
+            raise ReferenceClientLockError(f'reference client root {self.root.as_posix()} has no {relative_path}') from None
+        return sha256_of_file_cached_by_identity(path, status)
 
     def is_in_read_scope(self, relative_path):
         if not self.requires_lock:

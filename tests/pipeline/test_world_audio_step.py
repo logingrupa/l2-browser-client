@@ -165,7 +165,7 @@ class RadiusTests(unittest.TestCase):
         def refuse(relative_path):
             raise ReferenceClientLockError(f'{relative_path} is not equal')
         gaps = TileStepGapRows(TILE_ID, WORLD_AUDIO_STEP_NAME, SOURCE_IDENTITY, EVIDENCE)
-        self.assertIsNone(core_library_radius(SimpleNamespace(require_equal_file_with_locked_sha256=refuse), gaps))
+        self.assertIsNone(core_library_radius(SimpleNamespace(require_equal_file_with_sha256=refuse), gaps))
         self.assertEqual([row['reason'] for row in gaps.rows()], [f'reference-file-not-lock-equal:{CORE_LIBRARY_PATH}'])
 
     def test_the_radius_symbols_live_in_the_world_recipe(self):

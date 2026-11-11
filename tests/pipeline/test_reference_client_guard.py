@@ -127,18 +127,22 @@ class ReferenceClientGuardTests(GuardedConversionRootTestCase):
             access.require_equal_file('animations/Fighter.ukx')
             self.assertEqual(hashing.call_count, 2)
 
-    def test_equal_file_with_locked_sha256_returns_the_lock_digest_only_on_a_lock_checked_root(self):
+    def test_equal_file_with_sha256_returns_the_lock_digest_on_a_lock_checked_root_and_the_file_digest_on_the_reference_root(self):
         self.trees.write_lock()
         locked_sha256 = read_reference_client_lock(self.trees.lock_path).record('animations/Fighter.ukx')['eSha256']
         self.assertEqual(locked_sha256, hashlib.sha256(b'equal package').hexdigest())
         conversion_access = require_reference_client(self.trees.conversion_root)
-        self.assertEqual(conversion_access.require_equal_file_with_locked_sha256('animations/Fighter.ukx'),
+        self.assertEqual(conversion_access.require_equal_file_with_sha256('animations/Fighter.ukx'),
                          (self.trees.conversion_root / 'animations/Fighter.ukx', locked_sha256))
-        self.assertEqual(require_reference_client(self.trees.importa_root).require_equal_file_with_locked_sha256('animations/Fighter.ukx'),
-                         (self.trees.importa_root / 'animations/Fighter.ukx', None))
+        reference_access = require_reference_client(self.trees.importa_root)
+        reference_package = self.trees.importa_root / 'animations/Fighter.ukx'
+        self.assertEqual(reference_access.require_equal_file_with_sha256('animations/Fighter.ukx'),
+                         (reference_package, hashlib.sha256(reference_package.read_bytes()).hexdigest()))
+        with self.assertRaisesRegex(ReferenceClientLockError, 'reference client root .* has no animations/Absent.ukx'):
+            reference_access.require_equal_file_with_sha256('animations/Absent.ukx')
         (self.trees.conversion_root / 'animations/Fighter.ukx').write_bytes(b'edited package')
         with self.assertRaisesRegex(ReferenceClientLockError, 'reference client lock is stale for animations/Fighter.ukx; re-lock ordered'):
-            conversion_access.require_equal_file_with_locked_sha256('animations/Fighter.ukx')
+            conversion_access.require_equal_file_with_sha256('animations/Fighter.ukx')
 
     def test_changed_bytes_report_a_stale_lock(self):
         self.trees.write_lock()
