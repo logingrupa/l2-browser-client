@@ -1,3 +1,4 @@
+import argparse
 import copy
 import io
 import json
@@ -11,8 +12,8 @@ import wave
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from actors.actor_sound_batch import (CHARACTER_CENSUS_RELATIVE_PATH, bundle_sort_key, character_census_reason, decoded_config_keys,
-                                      run_actor_sound_slice)
+from actors.actor_sound_batch import (CHARACTER_CENSUS_RELATIVE_PATH, actor_sound_key_argument, bundle_sort_key, decoded_config_keys,
+                                      run_actor_sound_slice, skipped_character_bundles)
 from actors.actor_sound_bindings import (ACTOR_SOUND_BUNDLE_ID_PREFIX, NO_EXACT_SKILL_SOUND_ROW_REASON, NPC_NATIVE_NUMERIC_FIELDS,
                                          actor_sound_bundle_id, actor_sound_gap_row, actor_sound_gap_rows, actor_sound_reference_counts,
                                          build_actor_sound_recipe, skill_actor_row)
@@ -227,14 +228,26 @@ class ActorSoundSkillAndCharacterTests(unittest.TestCase):
         self.assertEqual([row['reason'] for row in rows], ['combat-role-route-unresolved:skillsoundgrp/cast',
                                                            'combat-role-route-unresolved:skillsoundgrp/shot'])
 
-    def test_characters_are_skipped_with_the_census_reason_until_the_character_census_lists_them(self):
+    def test_characters_are_skipped_with_their_census_reasons_and_an_absent_census_is_named(self):
         with tempfile.TemporaryDirectory(prefix='character-census-') as temporary:
-            self.assertEqual(character_census_reason(temporary), 'character-census-absent')
+            self.assertEqual(skipped_character_bundles(temporary),
+                             {'count': 0, 'skippedReason': 'character-census-absent', 'skippedByReason': {}})
             census_path = Path(temporary) / CHARACTER_CENSUS_RELATIVE_PATH
             census_path.parent.mkdir(parents=True)
-            census_path.write_text('{}', encoding='utf-8')
-            self.assertIsNone(character_census_reason(temporary))
+            census_path.write_text(json.dumps({'schemaVersion': 1, 'rows': [
+                {'padding': False, 'profile': 'gap', 'gaps': [{'field': 'hair', 'reason': 'hair-layout-undecoded'},
+                                                              {'field': 'profile', 'reason': 'class-template-mapping-undecoded'}]},
+                {'padding': False, 'profile': 'gap', 'gaps': [{'field': 'profile', 'reason': 'class-template-mapping-undecoded'}]},
+                {'padding': False, 'profile': 'pending', 'gaps': []},
+                {'padding': False, 'profile': 'written', 'gaps': []},
+                {'padding': True, 'profile': None, 'gaps': [{'field': 'body_mesh1', 'reason': 'no-mesh-in-row'}]}]}), encoding='utf-8')
+            self.assertEqual(skipped_character_bundles(temporary), {'count': 0, 'skippedReason': None, 'skippedByReason': {
+                'character-profile-pending': 1, 'character-sound-bundle-not-built': 1, 'class-template-mapping-undecoded': 2}})
 
+    def test_a_character_key_is_refused_as_an_actor_sound_bundle(self):
+        with self.assertRaises(argparse.ArgumentTypeError):
+            actor_sound_key_argument('character:0')
+        self.assertEqual(actor_sound_key_argument('skill:4:2'), 'skill:4:2')
 
 class FakeSoundBundles:
     def __init__(self, keys, sealed_keys):
@@ -249,9 +262,9 @@ class FakeSoundBundles:
 
 
 class ActorSoundBatchSliceTests(unittest.TestCase):
-    def test_bundle_keys_order_characters_then_npcs_then_skills_by_number(self):
-        keys = ['skill:3:2', 'npc:100', 'skill:3:10', 'npc:20001', 'npc:9', 'character:2']
-        self.assertEqual(sorted(keys, key=bundle_sort_key), ['character:2', 'npc:9', 'npc:100', 'npc:20001', 'skill:3:2', 'skill:3:10'])
+    def test_bundle_keys_order_npcs_then_skills_by_number(self):
+        keys = ['skill:3:2', 'npc:100', 'skill:3:10', 'npc:20001', 'npc:9']
+        self.assertEqual(sorted(keys, key=bundle_sort_key), ['npc:9', 'npc:100', 'npc:20001', 'skill:3:2', 'skill:3:10'])
 
     def test_a_slice_skips_sealed_bundles_converts_up_to_the_limit_and_runs_the_preflight_before_each(self):
         sealed_keys = ('npc:1', 'npc:3')

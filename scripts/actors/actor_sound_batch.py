@@ -1,10 +1,13 @@
 import argparse
+from collections import Counter
 import json
 import re
 from pathlib import Path
 
 from actors.actor_sound_bindings import actor_sound_reference_counts, skill_actor_row
 from actors.actor_sound_conversion import ActorSoundConversionRun, combat_audio_manifest_outputs
+from actors.character_census import CHARACTER_CENSUS_RELATIVE_PATH, CHARACTER_CENSUS_SCHEMA_VERSION, PENDING_STATUS
+from actors.character_requests import GAP_STATUS
 from actors.combat_role_routes import (COMBAT_ROLE_ROUTE_PROOF, bind_combat_role_routes, combat_route_config_manifest)
 from actors.skill_binding_table import DecodedSkillTables
 from native_assets_lib.footstep_config import decode_config
@@ -14,15 +17,16 @@ from native_store.catalog_writer import read_pinned_file, read_store_catalog, re
 from reference_client_guard import ReferenceClientLockError
 
 ACTOR_SOUND_CENSUS_RELATIVE_PATH = 'docs/parts/audio/actor-sound-census.json'
-CHARACTER_CENSUS_RELATIVE_PATH = 'docs/parts/player-characters/character-census.json'
 CHARACTER_CENSUS_ABSENT_REASON = 'character-census-absent'
+CHARACTER_PROFILE_PENDING_REASON = 'character-profile-pending'
+CHARACTER_SOUND_BUNDLE_NOT_BUILT_REASON = 'character-sound-bundle-not-built'
 ALAUDIO_CONFIG_RELATIVE_PATH = 'system/ALAudio.int'
 ROUTE_CENSUS_TABLES = ('chargrp', 'npcgrp', 'armorgrp', 'weapongrp', 'skillsoundgrp')
 SKILL_COMPONENT_ID = re.compile(r'^interlude:skill:(?P<id>[0-9]{1,9}):level:(?P<level>[1-9][0-9]{0,3}):native-description-action$')
 CONFIG_SECTION_HEADER = re.compile(r'^\[(?P<section>[A-Za-z_][A-Za-z_0-9]*)\]$')
 CONFIG_ASSIGNMENT = re.compile(r'^\s*(?P<key>[A-Za-z_][A-Za-z_0-9]*)\s*=')
-BUNDLE_KIND_ORDER = ('character', 'npc', 'skill')
-ACTOR_SOUND_KEY = re.compile(r'^(?:character:[0-9]{1,4}|npc:[0-9]{1,9}|skill:[0-9]{1,9}:[1-9][0-9]{0,3})$')
+BUNDLE_KIND_ORDER = ('npc', 'skill')
+ACTOR_SOUND_KEY = re.compile(r'^(?:npc:[0-9]{1,9}|skill:[0-9]{1,9}:[1-9][0-9]{0,3})$')
 
 
 def npc_profile_rows(store_root, catalog):
@@ -49,8 +53,23 @@ def skill_bundle_keys(catalog):
     return keys
 
 
-def character_census_reason(project_root):
-    return None if (Path(project_root) / CHARACTER_CENSUS_RELATIVE_PATH).is_file() else CHARACTER_CENSUS_ABSENT_REASON
+def character_census_skipped_reason(census_row):
+    if census_row['profile'] == GAP_STATUS:
+        return next(gap['reason'] for gap in census_row['gaps'] if gap['field'] == 'profile')
+    if census_row['profile'] == PENDING_STATUS:
+        return CHARACTER_PROFILE_PENDING_REASON
+    return CHARACTER_SOUND_BUNDLE_NOT_BUILT_REASON
+
+
+def skipped_character_bundles(project_root):
+    census_path = Path(project_root) / CHARACTER_CENSUS_RELATIVE_PATH
+    if not census_path.is_file():
+        return {'count': 0, 'skippedReason': CHARACTER_CENSUS_ABSENT_REASON, 'skippedByReason': {}}
+    census = json.loads(census_path.read_bytes())
+    if not (isinstance(census, dict) and census.get('schemaVersion') == CHARACTER_CENSUS_SCHEMA_VERSION and isinstance(census.get('rows'), list)):
+        raise ValueError(f'{CHARACTER_CENSUS_RELATIVE_PATH} is not a character census v{CHARACTER_CENSUS_SCHEMA_VERSION} with rows')
+    skipped = Counter(character_census_skipped_reason(row) for row in census['rows'] if not row['padding'])
+    return {'count': 0, 'skippedReason': None, 'skippedByReason': dict(sorted(skipped.items()))}
 
 
 def bundle_sort_key(bundle_key):
@@ -63,7 +82,7 @@ class ActorSoundBundles:
         catalog, _ = read_store_catalog(store_root)
         self.npc_profiles = npc_profile_rows(store_root, catalog)
         self.skill_keys = skill_bundle_keys(catalog)
-        self.character_reason = character_census_reason(project_root)
+        self.skipped_characters = skipped_character_bundles(project_root)
         self.keys = sorted([*self.npc_profiles, *self.skill_keys], key=bundle_sort_key)
         self.skill_tables, self.skill_bindings_by_key = None, None
 
@@ -167,7 +186,7 @@ def actor_sound_census(run, bundles):
                                                'sha256': run.route_proof['sha256'] if run.route_proof else None},
             'routes': routes,
             'bundles': {'npc': len(bundles.npc_profiles), 'skill': len(bundles.skill_keys),
-                        'character': {'count': 0, 'skippedReason': bundles.character_reason}},
+                        'character': bundles.skipped_characters},
             'references': summed_counts(count for counts in per_table.values() for count in counts),
             'perTable': {table: summed_counts(counts) for table, counts in sorted(per_table.items())},
             'sealedBundles': sorted(sealed, key=bundle_sort_key)}
