@@ -14,7 +14,7 @@ from material_graph_fixture import build_synthetic_material_package, synthetic_e
 from native_assets_lib.class_defaults import ReferenceClientClassScripts
 from native_assets_lib.material_graph import MaterialGraphError, REVIEWED_MATERIAL_CLASSES, read_material_graph
 from native_assets_lib.material_program import MaterialProgramError, derive_material_program, read_material_class_defaults
-from native_assets_lib.material_resources import MaterialResourceError, write_native_material_resources
+from native_assets_lib.material_resources import MaterialResourceError, write_material_program_record, write_native_material_resources
 from native_catalog.effects import UELIB
 from native_catalog.ue2 import Package
 from native_store.canonical_json import canonical_json_bytes
@@ -22,6 +22,8 @@ from native_store.gap_rows import SEED_GAP_REASONS_PATH, load_gap_reason_pattern
 from native_store.store_paths import ConverterOutputRefusedError
 from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, require_reference_client
 from synthetic_class_scripts import SyntheticClassScripts, scratch_work_root
+from world.bsp_surface_materials import material_program_record
+from world.sky_materials import write_sky_material_program
 
 CONVERSION_CLIENT_ROOT = Path('E:/Lineage2-client')
 MAIN_FIXTURE = 'shader-combiner-panner-texture.json'
@@ -279,6 +281,20 @@ class MaterialResourceWriterTests(unittest.TestCase):
         self.assertEqual(write_native_material_resources(output_root, graph, program), written)
         with self.assertRaisesRegex(MaterialResourceError, 'another graph'):
             write_native_material_resources(output_root, graph, {**program, 'graphSha256': '0' * 64})
+
+    def test_program_record_writer_returns_the_directory_and_program_pin_the_world_steps_write_today(self):
+        _, graph = graph_of(MAIN_FIXTURE, 'SkyShader')
+        program = derive_material_program(graph, SYNTHETIC_CLASS_DEFAULTS)
+        output_root = scratch_work_root(self, 'material-program-record-') / 'l2'
+        record, files = write_material_program_record(output_root, graph, program)
+        program_bytes = canonical_json_bytes(program)
+        self.assertEqual(record, {'directory': 'native-materials/' + hashlib.sha256(program_bytes).hexdigest(),
+                                  'programSha256': hashlib.sha256(program_bytes).hexdigest()})
+        self.assertEqual(files, write_native_material_resources(output_root, graph, program)['files'])
+        self.assertEqual(material_program_record(output_root, graph, program), (record, files))
+        self.assertEqual(write_sky_material_program(output_root, graph, program), (record, files))
+        with self.assertRaises(ConverterOutputRefusedError):
+            write_material_program_record(ROOT / 'public' / 'l2', graph, program)
 
 
 @unittest.skipUnless(CONVERSION_CLIENT_ROOT.is_dir() and REFERENCE_CLIENT_LOCK_PATH.is_file() and UELIB.is_file(),

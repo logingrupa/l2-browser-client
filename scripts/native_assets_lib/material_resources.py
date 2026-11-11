@@ -28,3 +28,9 @@ def write_native_material_resources(output_root, graph, program):
         immutable_write(store_root / directory / file_name, payload)
         files.append({'path': f'{directory}/{file_name}', 'sha256': hashlib.sha256(payload).hexdigest(), 'bytes': len(payload)})
     return {'directory': directory, 'files': files}
+
+
+def write_material_program_record(store_root, graph, program):
+    written = write_native_material_resources(store_root, graph, program)
+    program_file = next(record for record in written['files'] if record['path'] == f'{written["directory"]}/{MATERIAL_PROGRAM_FILE_NAME}')
+    return {'directory': written['directory'], 'programSha256': program_file['sha256']}, written['files']

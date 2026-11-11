@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 from types import MappingProxyType
 
 from native_assets_lib.class_defaults import read_class_defaults_with_provenance, read_class_field_declarations
@@ -16,6 +17,10 @@ UNCONFIRMED_ENUM_MEMBERS = {('Engine.FinalBlend', 'FrameBufferBlending'): ('FB_A
 TRIGGER_IGNORING_ENUM_MEMBERS = {('Engine.MaterialSequence', 'TriggerAction'): 'MSTA_Ignore'}
 TEXTURE_CLASS = 'Engine.Texture'
 NO_TEXTURE_IMAGES = MappingProxyType({})
+MAXIMUM_TEXTURE_IMAGE_BYTES = 33554432
+TEXTURE_IMAGE_MEMBERS = ('bytes', 'path', 'sha256')
+SHA256_PATTERN = re.compile(r'[a-f0-9]{64}')
+NATIVE_RESOURCE_PATH_PATTERN = re.compile(r'/l2/(?:[A-Za-z0-9_-][A-Za-z0-9._-]*/)*[A-Za-z0-9_-][A-Za-z0-9._-]*')
 
 
 class MaterialProgramError(ValueError):
@@ -132,6 +137,31 @@ def reviewed_program_fields(node, declarations):
     return checked_fields, sorted(reasons)
 
 
+def checked_texture_image(node_id, pin):
+    if not isinstance(pin, dict) or sorted(pin) != list(TEXTURE_IMAGE_MEMBERS):
+        raise MaterialProgramError(f'texture image pin of {node_id} must be an object that holds exactly {", ".join(TEXTURE_IMAGE_MEMBERS)}')
+    path, sha256, size = pin['path'], pin['sha256'], pin['bytes']
+    if not (isinstance(path, str) and NATIVE_RESOURCE_PATH_PATTERN.fullmatch(path)):
+        raise MaterialProgramError(f'texture image path {path!r} of {node_id} is not a native resource path under /l2/')
+    if not (isinstance(sha256, str) and SHA256_PATTERN.fullmatch(sha256)):
+        raise MaterialProgramError(f'texture image sha256 {sha256!r} of {node_id} is not a SHA-256')
+    if not (type(size) is int and 0 < size <= MAXIMUM_TEXTURE_IMAGE_BYTES):
+        raise MaterialProgramError(f'texture image bytes {size!r} of {node_id} must be a positive size up to {MAXIMUM_TEXTURE_IMAGE_BYTES}')
+    return {'path': path, 'sha256': sha256, 'bytes': size}
+
+
+def checked_texture_images(graph, texture_images):
+    classes_by_node = {node['object']: node['classObject'] for node in graph['nodes']}
+    checked = {}
+    for node_id, pin in texture_images.items():
+        if node_id not in classes_by_node:
+            raise MaterialProgramError(f'texture image pin names no node {node_id} of {graph["root"]}')
+        if classes_by_node[node_id] != TEXTURE_CLASS:
+            raise MaterialProgramError(f'texture image pin names {node_id} of {classes_by_node[node_id]}, not {TEXTURE_CLASS}')
+        checked[node_id] = checked_texture_image(node_id, pin)
+    return checked
+
+
 def program_node(node, class_defaults, texture_images):
     record = {'id': node['object'], 'class': node['classObject'], 'status': node['status']}
     if node['classObject'] == TEXTURE_CLASS:
@@ -145,7 +175,8 @@ def program_node(node, class_defaults, texture_images):
 
 
 def derive_material_program(graph, class_defaults, texture_images=NO_TEXTURE_IMAGES):
-    nodes = [program_node(node, class_defaults, texture_images) for node in graph['nodes']]
+    checked_images = checked_texture_images(graph, texture_images)
+    nodes = [program_node(node, class_defaults, checked_images) for node in graph['nodes']]
     return {'schemaVersion': MATERIAL_PROGRAM_SCHEMA_VERSION, 'kind': MATERIAL_PROGRAM_KIND, 'graphSha256': material_graph_sha256(graph),
             'root': graph['root'], 'nodes': nodes,
             'gapReasons': sorted(set(graph['gapReasons']) | {reason for node in nodes for reason in node['gapReasons']})}

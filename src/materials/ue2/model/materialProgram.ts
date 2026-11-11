@@ -66,7 +66,7 @@ const fieldProvenances: readonly MaterialFieldProvenance[] = ["authored", "class
 const fieldStatuses: readonly MaterialFieldStatus[] = ["typed", "raw", "unported", "unconfirmed"];
 const nodeStatuses: readonly MaterialNodeStatus[] = ["reviewed", "unported", "preserved-data"];
 const maximumProgramNodes = 128;
-const maximumTextureImageBytes = 32 * 1024 * 1024;
+export const maximumTextureImageBytes = 32 * 1024 * 1024;
 
 type JsonRecord = Readonly<Record<string, unknown>>;
 

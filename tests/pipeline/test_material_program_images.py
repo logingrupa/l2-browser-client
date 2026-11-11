@@ -11,7 +11,7 @@ import zlib
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 
-from native_assets_lib.material_program import derive_material_program
+from native_assets_lib.material_program import MAXIMUM_TEXTURE_IMAGE_BYTES, MaterialProgramError, derive_material_program
 from native_store.canonical_json import canonical_json_bytes
 from test_material_graph import MAIN_FIXTURE, SYNTHETIC_CLASS_DEFAULTS, graph_of
 
@@ -79,6 +79,37 @@ class TextureImagePinTests(unittest.TestCase):
             TEXTURED_PROGRAM_FIXTURE_PATH.parent.mkdir(parents=True, exist_ok=True)
             TEXTURED_PROGRAM_FIXTURE_PATH.write_bytes(program_bytes)
         self.assertEqual(TEXTURED_PROGRAM_FIXTURE_PATH.read_bytes(), program_bytes)
+
+
+class TextureImagePinRefusalTests(unittest.TestCase):
+    def assert_pin_refused(self, texture_images, message):
+        with self.assertRaisesRegex(MaterialProgramError, message):
+            textured_program(texture_images)
+
+    def test_a_pin_for_a_node_that_is_not_a_texture_is_refused(self):
+        self.assert_pin_refused({PANNER_NODE: synthetic_texture_image()}, 'Engine.TexPanner, not Engine.Texture')
+        self.assert_pin_refused({'SyntheticMaterials.Missing': synthetic_texture_image()}, 'no node SyntheticMaterials.Missing')
+
+    def test_a_path_outside_the_native_store_is_refused(self):
+        for path in ('/public/texture.png', 'l2/texture.png', '/l2/../texture.png', '/l2/', '/l2/a b.png', '/l2/.hidden/texture.png'):
+            with self.subTest(path=path):
+                self.assert_pin_refused({TEXTURE_NODE: {**synthetic_texture_image(), 'path': path}}, 'not a native resource path')
+
+    def test_a_malformed_sha256_is_refused(self):
+        for sha256 in ('A' * 64, 'a' * 63, 'g' * 64, None):
+            with self.subTest(sha256=sha256):
+                self.assert_pin_refused({TEXTURE_NODE: {**synthetic_texture_image(), 'sha256': sha256}}, 'not a SHA-256')
+
+    def test_a_size_outside_the_library_limit_is_refused(self):
+        for size in (0, -1, MAXIMUM_TEXTURE_IMAGE_BYTES + 1, True, 1.5):
+            with self.subTest(size=size):
+                self.assert_pin_refused({TEXTURE_NODE: {**synthetic_texture_image(), 'bytes': size}}, 'positive size up to')
+        at_limit = {**synthetic_texture_image(), 'bytes': MAXIMUM_TEXTURE_IMAGE_BYTES}
+        self.assertEqual(image_members_by_node(textured_program({TEXTURE_NODE: at_limit}))[TEXTURE_NODE], at_limit)
+
+    def test_a_pin_with_other_members_is_refused(self):
+        self.assert_pin_refused({TEXTURE_NODE: {**synthetic_texture_image(), 'mime': 'image/png'}}, 'holds exactly bytes, path, sha256')
+        self.assert_pin_refused({TEXTURE_NODE: 'texture.png'}, 'holds exactly bytes, path, sha256')
 
 
 if __name__ == '__main__':
