@@ -668,7 +668,7 @@ Every gap plan carries the rules above ("Rules every plan carries" 1 to 14) and 
 - 02-84: `src/effects/skillCastPresentation.ts` with `createSkillCastPresentation`; emitter actor playback `applyNative(call)`; converted catalog lookups carry `namedGaps`.
 - 02-86: tile resource kind `surface-materials`.
 - 02-87: sheet test ids `sandbox-skill-cast-note` and `sandbox-actor-sounds-note`.
-- 02-88: `WALK_TILE_IDS` for `tests/browser/world-tile-walk.spec.ts`.
+- 02-88: `WALK_TILE_IDS` for `tests/browser/world-tile-walk.spec.ts`; walk records in `artifacts/lane-store/world/measurements/tile-walks-<catalogSha256>.json` (load-check record shape, written with `writeLoadCheckRecordFile`), so the tiles sweep is the one writer of `tile:` load-check records; the tracer slice summary `artifacts/lane-store/world/measurements/tile-batch-tracer-slice.json`.
 - 02-89: sweep kind `tables` and `tests/browser/load-sweep-tables.spec.ts`; the restage line `Needs Human (plan 02-89): <command>` replaces the per-lane and 02-55 lines.
 
 ### Gap map
