@@ -20261,6 +20261,58 @@
       "reviewedOn": "2026-11-11",
       "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
       "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "scripts/world/bsp_visibility_census.py",
+      "tokenCount": 20,
+      "sourceTokensSha256": "5f7c787f9a18d62a615995e7afb8983d657d66718acb395fb82859fd853e4925",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native-effects.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-11",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "scripts/world/bsp_visibility_census.py",
+      "tokenCount": 24,
+      "sourceTokensSha256": "98993539548c0de9fce50ca2c4694c3b081a491115e649642f35a6601ef13744",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native-effects.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-11",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "scripts/world/bsp_visibility_census.py",
+      "tokenCount": 22,
+      "sourceTokensSha256": "e486d326f8e3bf5b156828310a9f1c98f94b3db4d97c04dc5b09cca5875c4648",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/unreal/skills/native-effects.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-11",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "movement",
+      "sourceFile": "scripts/world/collision_step.py",
+      "tokenCount": 20,
+      "sourceTokensSha256": "ef23cbbb64c1b1edeac5edf267701aa820b73a21a2b4453d598c771c70cad399",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/physics/collision-primitive.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-11",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
     }
   ]
 }
