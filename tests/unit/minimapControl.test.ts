@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderNativeWindow } from "../../src/ui/nativeWindows/nativeWindowRenderer";
-import type { NativeWindowMinimapTileSource } from "../../src/ui/nativeWindows/nativeWindowManifestLoader";
+import type { NativeWindowMinimapTileSource, NativeWindowTextureResolution } from "../../src/ui/nativeWindows/nativeWindowManifestLoader";
 import type { WorldEntity } from "../../src/world/worldTypes";
 import { installMiniDom, type FakeElement, type MiniDom } from "./support/miniDom";
 import {
@@ -107,6 +107,25 @@ describe("renderMinimapControl", () => {
     expect(minimapPart(container, "marker")?.getAttribute("data-native-gap")).toBe("texture-reference-unresolved");
     expect(minimapPart(container, "zone-name")?.getAttribute("data-native-gap")).toBe("label-unresolved");
     expect(minimapPart(container, "zone-name")?.textContent).toBe("");
+  });
+
+  it("revokes a radar image URL that resolves after the window is disposed and draws no image for it", async () => {
+    const revokeObjectUrlSpy = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
+    try {
+      let resolveRadarImage: (resolution: NativeWindowTextureResolution) => void = () => undefined;
+      const tileSource: NativeWindowMinimapTileSource = {
+        ...syntheticMinimapTileSource(new Map([["20_21", syntheticTileMinimap("20_21")]])),
+        loadRadarImage: () => new Promise<NativeWindowTextureResolution>(resolve => { resolveRadarImage = resolve; }),
+      };
+      const rendered = render(syntheticLocalPlayerAt(64, 320), tileSource);
+      const control = await readyMinimap();
+      rendered.dispose();
+      resolveRadarImage({ status: "resolved", url: syntheticRadarImageUrl("20_21") });
+      await vi.waitFor(() => expect(revokeObjectUrlSpy).toHaveBeenCalledWith(syntheticRadarImageUrl("20_21")));
+      expect(control.querySelector("img")).toBeNull();
+    } finally {
+      revokeObjectUrlSpy.mockRestore();
+    }
   });
 
   it("shows the adapter position gap when the adapter reports no local player", async () => {
