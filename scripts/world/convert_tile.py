@@ -13,7 +13,7 @@ from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
 from native_store.store_paths import REPOSITORY_ROOT, require_converter_output
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, require_batch_preflight, run_at_below_normal_priority
 from reference_client_guard import require_reference_client
-from world.eligible_tile_selection import own_step_row, seal_derived_step_row
+from world.eligible_tile_selection import failed_step_row, locked_tile_source_identity, own_step_row, seal_derived_step_row, unit_step_evidence
 from world.raw_map_step import RAW_STEP_NAME, TILE_ID_PATTERN
 from world.tile_census import WORLD_LANE_NAME
 from world.tile_step_registry import DEFAULT_TILE_STORE_OUTPUT, TILE_STEP_NAMES, run_tile_step
@@ -28,7 +28,14 @@ def record_tile_step_gap_row(project_root, row):
 
 
 def converted_step_row(project_root, step, client, map_name, store_root):
-    return seal_derived_step_row(project_root, own_step_row(step, run_tile_step(project_root, step, client, map_name, store_root)))
+    source_identity = locked_tile_source_identity(map_name) if TILE_ID_PATTERN.fullmatch(map_name) else None
+    try:
+        rows = run_tile_step(project_root, step, client, map_name, store_root)
+    except (OSError, ValueError) as error:
+        if source_identity is not None:
+            record_tile_step_gap_row(project_root, failed_step_row(map_name, step, source_identity, error, unit_step_evidence(project_root, map_name, step)))
+        raise
+    return seal_derived_step_row(project_root, own_step_row(step, rows))
 
 
 def main(argv=None):

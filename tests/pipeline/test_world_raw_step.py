@@ -353,6 +353,18 @@ class ConvertTileCommandTests(SyntheticTileTestCase):
         self.assertEqual((exit_code, printed_rows), (0, [manifest_row]))
         self.assertEqual(read_gap_rows(self.project_root, 'world'), [bsp_gap_row, manifest_row])
 
+    def test_a_step_that_raises_records_its_failed_row_over_an_older_pass_row(self):
+        self.write_client(two_actors_sharing_one_mesh())
+        write_gap_rows(self.project_root, 'world', 'collision', [self.tile_row('collision', 'pass', None)])
+        failure = ValueError('collision of tile:20_21 needs a sealed bsp unit; run --step bsp first')
+        with patch.object(convert_tile, 'run_tile_step', side_effect=failure):
+            exit_code, errors = self.run_refused_command(['--client', str(self.client), '--map', TILE_ID, '--step', 'collision'])
+        self.assertEqual(exit_code, 1)
+        self.assertIn('Tile conversion failed', errors)
+        [collision_row] = read_gap_rows(self.project_root, 'world')
+        self.assertEqual((collision_row['step'], collision_row['status'], collision_row['reason']),
+                         ('collision', 'failed', f'decode-failed:ValueError:{failure}'))
+
     def test_the_command_refuses_a_map_argument_that_is_neither_a_tile_id_nor_a_census_map_naming_it(self):
         self.write_client(two_actors_sharing_one_mesh())
         exit_code, errors = self.run_refused_command(['--client', str(self.client), '--map', '../maps/20_21', '--step', 'raw'])
