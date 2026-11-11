@@ -55,9 +55,15 @@ def census_counts(rows):
             'pendingKeys': sum(1 for row in characters if row['profile'] == PENDING_STATUS)}
 
 
+def current_character_receipt(run, row_index):
+    key = character_key(row_index)
+    _, _, _, fingerprint = run.unit_work(row_index)
+    return run.ledger.sealed_receipt(key) if run.ledger.is_sealed(key, fingerprint) else None
+
+
 def character_census(run):
     chargrp_rows = run.sources.chargrp['data'][CHARGRP_ROW_COLLECTION]
-    rows = [padding_census_row(index, row) if is_padding_row(row) else character_census_row(index, run.ledger.sealed_receipt(character_key(index)))
+    rows = [padding_census_row(index, row) if is_padding_row(row) else character_census_row(index, current_character_receipt(run, index))
             for index, row in enumerate(chargrp_rows)]
     sources = {table: manifest['sourceSha256'] if manifest else None for table, manifest in
                ((CLASSINFO_TABLE_NAME, run.sources.classinfo), (HAIRGRP_TABLE_NAME, run.sources.hairgrp), (HELMETGRP_TABLE_NAME, run.sources.helmetgrp))}

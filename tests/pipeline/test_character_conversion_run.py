@@ -12,6 +12,7 @@ sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
 from actors import character_conversion
 from actors.actor_unit_inventory import ACTOR_UNIT_CENSUS_RELATIVE_PATH, CHARGRP_ROW_UNIT_KIND, CONVERTIBLE_UNIT_STATUS
+from actors.character_census import PENDING_STATUS, character_census, run_character_batch
 from actors.character_conversion import CHARACTER_MODEL_ID_PREFIX, CharacterConversionRun
 from actors.npc_requests import CONVERTER_REFUSED_REASON_PREFIX
 from catalog_store_fixture import model_record
@@ -83,6 +84,16 @@ class CharacterConversionRunTests(unittest.TestCase):
         [outcome] = self.converted_outcomes(CHANGED_CONVERTER_SHA256, [1], SYNTHETIC_REFUSAL)
         self.assertEqual((outcome['outputs'], outcome['reason']), ([], CONVERTER_REFUSED_REASON_PREFIX + SYNTHETIC_REFUSAL))
         self.assertEqual(self.catalog_model_ids(), [])
+
+    def test_the_census_reports_rows_sealed_under_an_older_converter_as_pending(self):
+        self.converted_outcomes(FIRST_CONVERTER_SHA256, CHARACTER_ROW_INDEXES)
+        run = SyntheticCharacterRun(self.project_root, self.client_root)
+        with mock.patch.object(character_conversion, 'implementation_hash', return_value=CHANGED_CONVERTER_SHA256):
+            run_character_batch(run, 1, lambda: None)
+            census = character_census(run)
+        self.assertEqual([row['model'] for row in census['rows']], [None, 'converted', PENDING_STATUS, PENDING_STATUS])
+        self.assertEqual((census['counts']['modelsConverted'], census['counts']['pendingKeys']), (1, 2))
+
 
 if __name__ == '__main__':
     unittest.main()
