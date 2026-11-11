@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-54-PLAN.md
-last_updated: "2026-11-11T04:03:06.335Z"
+stopped_at: Completed 02-55-PLAN.md
+last_updated: "2026-11-11T04:56:33.992Z"
 last_activity: 2026-11-11
-last_activity_desc: Phase 02 plan 02-66 complete (pawn physics, follow camera and movement presenter)
-state_head: 5f5ebd552aebf88c22c4885b99d967d712f2aa93
+last_activity_desc: Phase 02 plan 02-55 complete (integration union, union coverage and the restage handoff)
+state_head: 9ce34c86ef9dfb898f90e8bd5fda292726fcee56
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 87
+  completed_plans: 88
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 02 (Stage A breadth) - EXECUTING
-Plan: 02-51 complete, 69 plans summarized
+Plan: 02-55 complete, 71 plans summarized
 Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-11 - Plan 02-51 complete: MinimapCtrl renders in MinimapWnd and NewRadarWnd through the native window registry, a pure tile-grid planner around the adapter local player (half-open frames, one texture pixel per CSS pixel, labelled unverified and presentation), sourced gap cells, marker unverified, marker texture and zone name unresolved; browser check pass at 932 x 430 and 1440 x 900, no scroll at 430 x 932, real radar case skipped (no radar texture joined); WORLD-06 stays Pending
+Last activity: 2026-11-11 - Plan 02-55 complete: the world, actors and data-ui lane stores are one integration lane store (catalog bba52c47, 0 missing and 0 mismatched pins), the gap census over the union passes, one 5-key load slice per kind ran on the union (windows, npcs, items and skills 5 pass each, tiles 5 failed for want of a collision resource), docs/coverage.md and STATUS come from the union, and the one restage command is the Needs Human (plan 02-55) line; INT-01 stays partial: staging Needs Human
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -139,6 +139,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P49 | 72 min | 3 tasks | 28 files |
 | Phase 02 P51 | 50min | 3 tasks | 21 files |
 | Phase 02 P54 | 191min | 3 tasks | 17 files |
+| Phase 02 P55 | 43min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -340,6 +341,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-54: the tile census gates on reviewed_reader_pairs (map gate = raw-map, map-actor and terrain-info; height gate = g16-heightmap) and records reviewedReaderPairs; 149 of 163 eligible, Lobby eligible with its raw step sealed (rows 752 to 754)
 - [Phase 02]: 02-54: the level model reader stays 123/28, so 41 newly eligible tiles hold a bsp gap and fail the load check; the batch settles a tile whose first unsealed step is a gap (rows 755, 756)
 - [Phase 02]: 02-54: the meshes fingerprint carries staticMaterialReviewState from the committed .usx census; every sealed meshes unit re-ran once; WORLD-01 and WORLD-03 stay Pending (rows 757 to 761)
+- [Phase 02]: 02-55: integration union of the world, actors and data-ui lane stores (catalog bba52c47); union loads only from slices run on the union catalog, LOAD_CHECK_LIMIT=5 per kind; INT-01 stays partial: staging Needs Human (rows 762 to 764)
 
 ### Pending Todos
 
@@ -465,6 +467,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-11T04:03:05.549Z
-Stopped at: Completed 02-54-PLAN.md
+Last session: 2026-11-11T04:56:33.388Z
+Stopped at: Completed 02-55-PLAN.md
 Resume file: None
