@@ -64,7 +64,9 @@ created: "2026-11-11"
 | 03-13-01..03 | 13 | 8 | CHECK-04 | T-03-28, T-03-29 | same, actors | pipeline | actors step tests per 03-13 verify | per fix | pending |
 | 03-14-01/02 | 14 | 9 | CHECK-04 | T-03-30, T-03-31 | same, data-ui | pipeline | `test_convert_tables.py`, `test_ui_texture_step.py`, `test_gap_*.py` | per fix | pending |
 | 03-15-01..03 | 15 | 10 | CHECK-05 | T-03-32, T-03-33 | report generated, balanced, tied to the lock | command | report command and the balance check in 03-15 | n/a | pending |
-| 03-16-01..03 | 16 | 11 | CHECK-03 | T-03-34 | no pass claimed without a judged record | unit | `pnpm vitest run tests/unit/laneOwnership.test.ts` | yes | pending |
+| 03-16-01/02 | 16 | 11 | CHECK-03 | T-03-34 | world-lane block counts equal the report; exactly three `##` headings | unit, command | `pnpm vitest run tests/unit/laneOwnership.test.ts` and the stage A block gate in 03-16 | yes | pending |
+| 03-19-01..03 | 19 | 11 | CHECK-03 | T-03-38 | actors-lane block counts equal the report; audio waits for the owner's listen batch | unit, command | `pnpm vitest run tests/unit/laneOwnership.test.ts` and the stage A block gate in 03-19 | yes | pending |
+| 03-20-01/02 | 20 | 11 | CHECK-03 | T-03-39 | data-ui block counts equal the report; table verdicts only through displaying pairs | unit, command | `pnpm vitest run tests/unit/laneOwnership.test.ts` and the stage A block gate in 03-20 | yes | pending |
 | 03-17-01..03 | 17 | 12 | CHECK-01, CHECK-02, CHECK-03 | T-03-35, T-03-36 | owner lines start with the refusing preflight | command, full suite | `pnpm typecheck && pnpm test:unit && python scripts/test_pipeline.py` | n/a | pending |
 
 *Status: pending, green, red, flaky*

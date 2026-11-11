@@ -1,6 +1,6 @@
 # Phase 3: Stage A checks - plan index
 
-Planned 2026-11-11 (autonomous; the owner is away), revised once after the plan check (18 plans in 12 waves). Binding inputs: `03-CONTEXT.md` (P1 to P20), the research refinements P21 to P23 and the planning rows P24 to P44 in `C:/laragon/l2b-orchestration/autonomous-roadmap/pending-decision-rows.md` (all provisional, owner review). Every plan reads this file; its rules and definitions are part of each plan.
+Planned 2026-11-11 (autonomous; the owner is away), revised twice after the plan check (20 plans in 12 waves). Binding inputs: `03-CONTEXT.md` (P1 to P20), the research refinements P21 to P23 and the planning rows P24 to P44, P91 and P92 in `C:/laragon/l2b-orchestration/autonomous-roadmap/pending-decision-rows.md` (all provisional, owner review). Every plan reads this file; its rules and definitions are part of each plan.
 
 ## Plans and waves
 
@@ -22,10 +22,12 @@ Planned 2026-11-11 (autonomous; the owner is away), revised once after the plan 
 | 8 | 03-13 | actors, npcs | Actors converter fixes and the re-run chain | CHECK-04 |
 | 9 | 03-14 | data-ui, ui | Data and UI converter fixes and the re-run chain | CHECK-04 |
 | 10 | 03-15 | integration, adapter-dispatch | Final union sweeps and the generated stage A exit report | CHECK-05 |
-| 11 | 03-16 | world, actors, data-ui (one task each) | Stage A check sections in the lane EVIDENCE docs | CHECK-03 |
+| 11 | 03-16 | world, world | Stage A check sections in the world, minimap and movement-geodata EVIDENCE docs (split by lane in revision 2, P91) | CHECK-03 |
+| 11 | 03-19 | actors, npcs | Stage A check sections in the npcs, items, skills-effects, player-characters and audio EVIDENCE docs (split from 03-16, P91) | CHECK-03 |
+| 11 | 03-20 | data-ui, ui | Stage A check sections in the ui, data and sandbox EVIDENCE docs (split from 03-16, P91) | CHECK-03 |
 | 12 | 03-17 | integration, adapter-dispatch | Needs Human session lines, VERIFICATION Open, STATUS, adapter-dispatch evidence | CHECK-01, CHECK-02, CHECK-03 |
 
-The fix plans 03-12, 03-13 and 03-14 are chained because each rebuilds the integration union. Waves state dependencies; execution stays one sequential executor (rule 1). 03-08 and 03-09 depend on 03-18 as well as 03-07, because their sandbox halves record `diagnosticMaterials`.
+The fix plans 03-12, 03-13 and 03-14 are chained because each rebuilds the integration union. Waves state dependencies; execution stays one sequential executor (rule 1). 03-08 and 03-09 depend on 03-18 as well as 03-07, because their sandbox halves record `diagnosticMaterials`. 03-16, 03-19 and 03-20 each write one lane's EVIDENCE docs, share no file and run in wave 11 after 03-15; 03-17 depends on all three.
 
 Phase exit (P16, P43): by P7 no plan captures a native half, so ROADMAP Phase 3 success criteria 1 and 2 stay human_needed until the offline Debug, server and listen sessions of 03-17 run. 03-17 and the phase verification report them human_needed with those Needs Human lines, never passed; the phase closes human_needed with Stage A not yet proven. Phase 4 may proceed (its server closes the server batch); Phase 5, which depends on Phase 3 stage A complete, waits for the three sessions.
 
@@ -39,7 +41,7 @@ Phase exit (P16, P43): by P7 no plan captures a native half, so ROADMAP Phase 3 
 6. IMPORTA-PC is read-only (`ssh -p 2026 rolan@importa-pc.tail40ecb2.ts.net`, `-o BatchMode=yes`): hashes, listings and process queries only. Phase 3 starts no L2.exe, registers no scheduled task, injects no input and changes no profile, `LocalMap` or audio routing there, and no T3 agent drives it (P7). No native half is ever faked or borrowed; the 2026-11-05 captures are background only.
 7. Code rules (AGENTS.md): no comments of any kind, docstrings included; when a file is touched, every comment in the whole file goes and what it explained is renamed into the code. Full-word names, files under about 400 lines, no dead code, no speculative options, TypeScript strict with no `any`, pnpm only. Every behaviour change ships with a Vitest or pipeline test; UI-affecting changes also get a Playwright check. Never invent a Lineage II value; every value comes from the reference client through a pinned recipe, script or decoded table.
 8. Record the plan start with `git rev-parse HEAD` before Task 1. Before each docs commit run `node scripts/check-lane-ownership.mjs --base <base> --part <slug>`; a plan that writes files of several lanes runs the check at the end of each task with that task's start commit as base, before the next task commits.
-9. Docs use plain hyphens and sentence-case headings. EVIDENCE.md stays under 30,720 bytes with exactly the headings `## Passes now`, `## Open` and `## Evidence`. STATUS.md stays one line per part, rewritten in place.
+9. Docs use plain hyphens and sentence-case headings. EVIDENCE.md stays under 30,720 bytes with exactly the headings `## Passes now`, `## Open` and `## Evidence`, in that order. A plan that touches a doc with any other `##` heading makes it a `###` sub-heading under the heading its content belongs to, with its text unchanged (planning row P92). STATUS.md stays one line per part, rewritten in place.
 10. The last task of every plan stops what the plan started (Playwright `webServer`, browsers, Vitest workers, Python runs, ssh) by PID or by a command line holding this worktree path or port 5173 or 5175, never by image name, and confirms no listener remains on 5173 or 5175.
 
 ## Shared definitions
