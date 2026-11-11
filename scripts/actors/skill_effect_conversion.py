@@ -13,6 +13,7 @@ from actors.skill_binding_table import (EFFECT_BUNDLE_CLASS_LIMIT_REASON_PREFIX,
                                         skill_binding_gap_rows, skill_bindings_by_visual_root, visual_roots_in_first_key_order)
 from actors.skill_unit_inventory import skill_root_key
 from native_assets import UMODEL_SHA256, implementation_hash
+from native_assets_lib.gltf import json_bytes
 from native_catalog.effects import UELIB_SHA256, SourcePackages, skill_actions
 from native_catalog.ue2 import FormatError
 from native_effect_bundle import MAX_CLASSES, migrate_effect_bundle
@@ -234,7 +235,7 @@ class SkillEffectConversionRun:
                 record = skill_effect_component_record(binding['skillId'], binding['level'], visual_root, outcome['manifestSha256'])
                 catalog = merge_catalog_slice(catalog, 'effectComponents', record, len(self.tables.binding_rows))
         catalog['effectComponents'] = sorted(catalog.get('effectComponents', []), key=lambda record: record['id'])
-        after = canonical_json_bytes(catalog)
+        after = json_bytes(catalog)
         return write_store(self.store_root, files, before, after)
 
     def finish(self):

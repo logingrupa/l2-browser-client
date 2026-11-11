@@ -1,5 +1,6 @@
 from pathlib import Path
 import sys
+from types import SimpleNamespace
 import tempfile
 import unittest
 
@@ -9,7 +10,9 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from actors.skill_effect_conversion import (ROOT_OUTCOME_RECORD_NAME, SKILL_EFFECT_ROOT_ALGORITHM_VERSION, SKILL_EFFECT_ROOT_STEP,
                                             STAGED_EFFECTS_FOLDER, STAGED_MANIFEST_NAME, SkillEffectConversionRun)
 from actors.npc_store_records import file_output_record
+from native_assets_lib.gltf import json_bytes
 from native_store.canonical_json import canonical_json_bytes
+from native_store.catalog_writer import STORE_CATALOG_NAME, read_store_catalog
 from native_store.store_paths import lane_work_root
 from native_store.unit_ledger import UnitLedger
 
@@ -28,7 +31,9 @@ class SyntheticSkillEffectRun(SkillEffectConversionRun):
     def __init__(self, project_root, simulated_emitter_classes):
         self.project_root = Path(project_root)
         self.ledger = UnitLedger(lane_work_root(project_root, 'actors'), SKILL_EFFECT_ROOT_STEP, SKILL_EFFECT_ROOT_ALGORITHM_VERSION)
+        self.store_root = self.project_root / 'artifacts' / 'lane-store' / 'actors' / 'l2'
         self.bindings_by_root = {VISUAL_ROOT: [{'key': 'skill:1011:1', 'skillId': 1011, 'level': 1, 'soundRowOrdinal': 1}]}
+        self.tables = SimpleNamespace(binding_rows=self.bindings_by_root[VISUAL_ROOT])
         self.simulated_emitter_classes = simulated_emitter_classes
         self.tool_identity = {'converterSha256': 'b' * 64}
         self.input_records = INPUT_RECORDS
@@ -66,6 +71,15 @@ class SealedSkillRootOutcomeTests(unittest.TestCase):
         outcome = SyntheticSkillEffectRun(self.project_root, SIMULATED_BEFORE_RIBBON).root_outcomes()[VISUAL_ROOT]
         self.assertEqual((outcome['status'], outcome['reason'], outcome['converted']),
                          ('gap', 'emitter-class-unported:Engine.RibbonEmitter', True))
+
+    def test_a_rewrite_with_unchanged_outcomes_keeps_the_compact_lane_catalog_bytes_the_other_actor_writers_wrote(self):
+        run = SyntheticSkillEffectRun(self.project_root, SIMULATED_BEFORE_RIBBON)
+        run.write_store_records(run.root_outcomes())
+        catalog, _ = read_store_catalog(run.store_root)
+        compact_catalog_bytes = json_bytes(catalog)
+        (run.store_root / STORE_CATALOG_NAME).write_bytes(compact_catalog_bytes)
+        run.write_store_records(run.root_outcomes())
+        self.assertEqual((run.store_root / STORE_CATALOG_NAME).read_bytes(), compact_catalog_bytes)
 
 
 if __name__ == '__main__':
