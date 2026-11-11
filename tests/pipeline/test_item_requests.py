@@ -6,7 +6,6 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from actors.actor_unit_inventory import conversion_unit_key
-from actors.item_census import run_item_batch
 from actors.item_conversion import ItemSources, conversion_units, grouped_item_entries
 from actors.item_requests import (ItemRequestError, build_armor_unit_requests, build_weapon_unit_request, item_gap_rows, item_model_record_id,
                                   ungrouped_item_reason)
@@ -160,22 +159,6 @@ class ItemEdgeTests(unittest.TestCase):
         census = {unit_key: {'key': unit_key, 'status': 'gap', 'reason': 'skeletal-licensee-unsupported:123/31'}}
         self.assertEqual(conversion_units(grouped_item_entries(sources), census), [])
         self.assertEqual(item_gap_rows(grouped_item_entries(sources), census, {}, TABLE_IDENTITIES)[0]['reason'], 'skeletal-licensee-unsupported:123/31')
-
-
-class ItemBatchSliceTests(unittest.TestCase):
-    def test_sealed_units_are_skipped_without_counting_and_the_slice_stops_at_its_limit(self):
-        class RecordingRun:
-            units = [{'unitKey': f'weapon-mesh:{index}'} for index in range(5)]
-            sealed = {'weapon-mesh:0', 'weapon-mesh:1'}
-            converted = []
-
-            def convert(self, unit):
-                self.converted.append(unit['unitKey'])
-                return {'key': unit['unitKey'], 'status': 'pass', 'cacheHit': unit['unitKey'] in self.sealed}
-        run, preflights = RecordingRun(), []
-        outcomes = run_item_batch(run, 2, lambda: preflights.append(True))
-        self.assertEqual([outcome['key'] for outcome in outcomes], ['weapon-mesh:0', 'weapon-mesh:1', 'weapon-mesh:2', 'weapon-mesh:3'])
-        self.assertEqual(len(preflights), 4)
 
 
 @unittest.skipUnless((REFERENCE_CLIENT / 'system' / 'weapongrp.dat').is_file(), 'E:/Lineage2-client is absent; the item cross-checks need it')

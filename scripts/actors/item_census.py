@@ -75,10 +75,13 @@ def run_item_batch(run, limit, preflight):
     for unit in run.units:
         if converted >= limit:
             break
+        if run.is_unit_sealed(unit):
+            outcomes.append(run.sealed_outcome(unit))
+            continue
         preflight()
-        outcome = run.convert(unit)
-        converted += 0 if outcome['cacheHit'] else 1
-        outcomes.append(outcome)
+        outcomes.append(run.convert(unit))
+        converted += 1
+    run.write_item_records(outcomes)
     return outcomes
 
 
@@ -95,5 +98,6 @@ def run_item_conversion(project_root, client_access, converter, output_root, dec
         outcomes = run_item_batch(run, arguments.limit, preflight)
     else:
         outcomes = [run.convert(unit) for unit in item_units(run, arguments.item)]
+        run.write_item_records(outcomes)
     write_item_census_and_gap_rows(run, arguments.limit)
     return outcomes
