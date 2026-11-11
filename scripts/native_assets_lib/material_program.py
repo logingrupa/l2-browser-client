@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from types import MappingProxyType
 
 from native_assets_lib.class_defaults import read_class_defaults_with_provenance, read_class_field_declarations
 from native_assets_lib.material_graph import ARRAY_PROPERTY_TYPE, OBJECT_PROPERTY_TYPE, material_feature_unported_reason
@@ -13,6 +14,8 @@ BYTE_PROPERTY_TYPE = 1
 PROGRAM_PROVENANCE_OF_CLASS_DEFAULT = {'authored': 'class-default', 'class-default': 'class-default', 'ue-zero': 'ue-zero'}
 UNCONFIRMED_ENUM_MEMBERS = {('Engine.FinalBlend', 'FrameBufferBlending'): ('FB_Add',)}
 TRIGGER_IGNORING_ENUM_MEMBERS = {('Engine.MaterialSequence', 'TriggerAction'): 'MSTA_Ignore'}
+TEXTURE_CLASS = 'Engine.Texture'
+NO_TEXTURE_IMAGES = MappingProxyType({})
 
 
 class MaterialProgramError(ValueError):
@@ -129,8 +132,10 @@ def reviewed_program_fields(node, declarations):
     return checked_fields, sorted(reasons)
 
 
-def program_node(node, class_defaults):
+def program_node(node, class_defaults, texture_images):
     record = {'id': node['object'], 'class': node['classObject'], 'status': node['status']}
+    if node['classObject'] == TEXTURE_CLASS:
+        record['image'] = texture_images.get(node['object'])
     if node['status'] != 'reviewed':
         return {**record, 'gapReasons': list(node['gapReasons']), 'fields': []}
     if node['classObject'] not in class_defaults:
@@ -139,8 +144,8 @@ def program_node(node, class_defaults):
     return {**record, 'gapReasons': reasons, 'fields': fields}
 
 
-def derive_material_program(graph, class_defaults):
-    nodes = [program_node(node, class_defaults) for node in graph['nodes']]
+def derive_material_program(graph, class_defaults, texture_images=NO_TEXTURE_IMAGES):
+    nodes = [program_node(node, class_defaults, texture_images) for node in graph['nodes']]
     return {'schemaVersion': MATERIAL_PROGRAM_SCHEMA_VERSION, 'kind': MATERIAL_PROGRAM_KIND, 'graphSha256': material_graph_sha256(graph),
             'root': graph['root'], 'nodes': nodes,
             'gapReasons': sorted(set(graph['gapReasons']) | {reason for node in nodes for reason in node['gapReasons']})}
