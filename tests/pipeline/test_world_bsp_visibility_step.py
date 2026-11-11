@@ -42,6 +42,14 @@ class ZoneLocateTests(unittest.TestCase):
     def test_a_point_in_solid_space_has_no_leaf_and_the_zone_of_its_side(self):
         self.assertEqual(leaf_for_point(room_model(), (25.0, 10.0, -5.0)), (INDEX_NONE, 0))
 
+    def test_an_empty_leaf_slot_keeps_index_none_and_the_node_side_zone_with_no_fallback(self):
+        model = room_model()
+        model.nodes[2].i_leaf = (INDEX_NONE, 1)
+        self.assertEqual(leaf_for_point(model, (25.0, 10.0, 25.0)), (INDEX_NONE, 1))
+
+    def test_a_plane_distance_that_rounds_to_float32_zero_goes_front(self):
+        self.assertEqual(leaf_for_point(room_model(), (25.0, 10.0, -1e-50)), (0, 1))
+
     def test_a_box_across_a_plane_collects_both_leaves_and_their_zones(self):
         model = room_model()
         self.assertEqual(leaves_for_box(model, (50.0, 10.0, 25.0), (5.0, 5.0, 5.0)), (0, 1))

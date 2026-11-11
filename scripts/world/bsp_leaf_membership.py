@@ -1,5 +1,7 @@
 from typing import NamedTuple
 
+from world.terrain_coordinates import f32
+
 INDEX_NONE = -1
 BACK_SIDE = 0
 FRONT_SIDE = 1
@@ -30,13 +32,11 @@ def leaf_for_point(model, point):
         return PointLeaf(INDEX_NONE, 0)
     node = model.nodes[ROOT_NODE_INDEX]
     while True:
-        side = FRONT_SIDE if plane_dot(node.plane, point) >= 0 else BACK_SIDE
+        side = BACK_SIDE if f32(plane_dot(node.plane, point)) < 0 else FRONT_SIDE
         child = node.i_front if side == FRONT_SIDE else node.i_back
         if child == INDEX_NONE:
-            break
+            return PointLeaf(node.i_leaf[side], node.i_zone[side])
         node = model.nodes[child]
-    leaf = node.i_leaf[side] if node.i_leaf[side] != INDEX_NONE else node.i_leaf[1 - side]
-    return PointLeaf(leaf, model.leaves[leaf][0] if leaf != INDEX_NONE else node.i_zone[side])
 
 
 def leaves_for_box(model, center, half_extent):

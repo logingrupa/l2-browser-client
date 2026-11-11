@@ -32,7 +32,7 @@ from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 from world.typed_payload import write_tile_typed_payload_resource
 
-LIGHTING_STEP_ALGORITHM_VERSION = 2
+LIGHTING_STEP_ALGORITHM_VERSION = 3
 LIGHTING_STEP_NAME = 'lighting'
 LIGHTING_PRODUCT_NAME = 'lighting.json'
 TILE_LIGHTING_FOLDER = 'native-tile-lighting'
