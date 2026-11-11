@@ -16,7 +16,7 @@ from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 from world.tile_json_resource import write_tile_json_resource
 
-MAP_EMITTER_STEP_ALGORITHM_VERSION = 2
+MAP_EMITTER_STEP_ALGORITHM_VERSION = 3
 MAP_EMITTER_STEP_NAME = 'emitters'
 MAP_EMITTERS_PRODUCT_NAME = 'map-emitters.json'
 TILE_MAP_EMITTERS_KIND = 'native-tile-map-emitters'

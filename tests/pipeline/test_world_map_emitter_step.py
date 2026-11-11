@@ -15,7 +15,7 @@ from support.actor_class_defaults import ACTOR_DEFAULTS, SyntheticActorClassDefa
 from support.bsp_room_fixture import ROOM_ZONES, room_model
 from ue2_package_fixture import compact, package_bytes, tag
 from world.bsp_visibility_step import load_bsp_visibility_rules, tile_visibility_payload
-from world.map_emitter_records import ACTOR_RULE_FIELDS, EMITTER_RULE_FIELDS
+from world.map_emitter_records import ACTOR_RULE_FIELDS, EMITTER_RULE_FIELDS, emitter_record_gap_reason
 from world.map_emitter_step import MAP_EMITTER_STEP_ALGORITHM_VERSION, MAP_EMITTER_STEP_NAME, read_tile_map_emitters, tile_map_emitter_row
 from world.tile_manifest_step import tile_resources
 from world.visibility_members import MAP_EMITTER_MEMBER_KIND, map_emitter_members
@@ -120,6 +120,20 @@ class MapEmitterExportTests(unittest.TestCase):
         for row in gap_rows:
             validate_gap_row(row)
 
+    def test_an_emitter_record_with_an_unparsed_struct_or_an_unconverted_reference_is_a_named_gap(self):
+        texture = {'class': 'Object', 'object': 'Effects_T.Glow'}
+        unparsed = {'unparsedHex': '0000803f', 'type': 10, 'struct': 'RangeVector'}
+        sprite = {'class': 'Engine.SpriteEmitter', 'properties': {'MaxParticles': 4, 'Texture': texture, 'ColorScale': [None, unparsed]}}
+        self.assertEqual(emitter_record_gap_reason(sprite, SIMULATED_EMITTER_CLASSES), 'map-emitter-struct-unparsed:ColorScale[1]')
+        sprite['properties']['ColorScale'] = []
+        self.assertEqual(emitter_record_gap_reason(sprite, SIMULATED_EMITTER_CLASSES), 'map-emitter-resource-unconverted:Effects_T.Glow')
+        self.assertIsNone(emitter_record_gap_reason({**sprite, 'properties': {'MaxParticles': 4}}, SIMULATED_EMITTER_CLASSES))
+        self.assertEqual(emitter_record_gap_reason({**sprite, 'class': 'Engine.BeamEmitter'}, SIMULATED_EMITTER_CLASSES),
+                         'emitter-class-unported:Engine.BeamEmitter')
+        for reason in ('map-emitter-struct-unparsed:ColorScale[1]', 'map-emitter-resource-unconverted:Effects_T.Glow'):
+            validate_gap_row({'key': f'tile:{TILE_ID}', 'part': 'world', 'step': MAP_EMITTER_STEP_NAME, 'status': 'gap', 'reason': reason,
+                              'sourceIdentity': {**SOURCE_IDENTITY, 'object': f'{TILE_ID}.SpriteEmitter0'}, 'evidence': EVIDENCE})
+
     def test_a_map_without_emitter_actors_passes_with_no_resource(self):
         placements, gap_rows = read_tile_map_emitters(emitter_package(with_emitters=False), {}, CLASS_DEFAULTS, SIMULATED_EMITTER_CLASSES, TILE_ID,
                                                       SOURCE_IDENTITY, EVIDENCE)
@@ -150,7 +164,7 @@ class MapEmitterExportTests(unittest.TestCase):
                          [{'kind': 'map-emitters', 'manifest': product['manifest']['resource'], 'manifestSha256': sha256, 'manifestBytes': 900}])
 
     def test_the_step_name_and_version_are_pinned(self):
-        self.assertEqual((MAP_EMITTER_STEP_NAME, MAP_EMITTER_STEP_ALGORITHM_VERSION), ('emitters', 2))
+        self.assertEqual((MAP_EMITTER_STEP_NAME, MAP_EMITTER_STEP_ALGORITHM_VERSION), ('emitters', 3))
 
 
 class MapEmitterMembershipTests(unittest.TestCase):

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 17,
+  "listVersion": 18,
   "reasons": [
     "terrain-height-version-unsupported:<version>",
     "terrain-quads-all-hidden",
@@ -20,6 +20,8 @@
     "sky-texture-format-unsupported:<id>",
     "sky-material-texture-count:<count>",
     "ambient-emitter-unreadable",
+    "map-emitter-struct-unparsed:<property>",
+    "map-emitter-resource-unconverted:<object>",
     "reference-file-not-lock-equal:<path>",
     "sound-payload-unverified:<check>",
     "music-join-unresolved:<musicId>",

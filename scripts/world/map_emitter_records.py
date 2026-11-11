@@ -12,6 +12,8 @@ ARRAY_PROPERTY_TYPE = 9
 ACTOR_RULE_FIELDS = ('GlobalOffsetRange', 'TimeTillResetRange', 'AutoReset', 'AutoDestroy', 'SpeedRate', 'bRotEmitter', 'RotPerSecond')
 EMITTER_RULE_FIELDS = ('InitialDelayRange', 'WarmupTicksPerSecond', 'RelativeWarmupTime')
 EMITTER_CLASS_UNPORTED_REASON_PREFIX = 'emitter-class-unported:'
+EMITTER_STRUCT_UNPARSED_REASON_PREFIX = 'map-emitter-struct-unparsed:'
+EMITTER_RESOURCE_UNCONVERTED_REASON_PREFIX = 'map-emitter-resource-unconverted:'
 ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX = 'actor-default-unresolved:'
 EMITTER_REFERENCE_NOT_LOCAL_REASON = 'decode-failed:emitter-reference-not-local'
 
@@ -56,6 +58,33 @@ def emitter_record(package, reference, class_defaults):
             'properties': values}
 
 
+def emitter_property_entries(properties):
+    for name, value in properties.items():
+        if isinstance(value, list):
+            yield from ((f'{name}[{index}]', element) for index, element in enumerate(value))
+        else:
+            yield name, value
+
+
+def is_unparsed_struct(value):
+    return isinstance(value, dict) and 'unparsedHex' in value
+
+
+def is_object_reference(value):
+    return isinstance(value, dict) and isinstance(value.get('object'), str)
+
+
+def emitter_record_gap_reason(record, simulated_emitter_classes):
+    if record['class'] not in simulated_emitter_classes:
+        return EMITTER_CLASS_UNPORTED_REASON_PREFIX + record['class']
+    entries = list(emitter_property_entries(record['properties']))
+    unparsed_property = next((label for label, value in entries if is_unparsed_struct(value)), None)
+    if unparsed_property is not None:
+        return EMITTER_STRUCT_UNPARSED_REASON_PREFIX + unparsed_property
+    referenced_object = next((value['object'] for _, value in entries if is_object_reference(value)), None)
+    return None if referenced_object is None else EMITTER_RESOURCE_UNCONVERTED_REASON_PREFIX + referenced_object
+
+
 def emitter_bundle(package, references, class_defaults, simulated_emitter_classes):
     emitters, gaps = [], []
     for reference in references:
@@ -64,8 +93,9 @@ def emitter_bundle(package, references, class_defaults, simulated_emitter_classe
             continue
         record = emitter_record(package, reference, class_defaults)
         emitters.append(record)
-        if record['class'] not in simulated_emitter_classes:
-            gaps.append(MapEmitterGap(record['object'], EMITTER_CLASS_UNPORTED_REASON_PREFIX + record['class']))
+        reason = emitter_record_gap_reason(record, simulated_emitter_classes)
+        if reason is not None:
+            gaps.append(MapEmitterGap(record['object'], reason))
     return {'emitters': emitters}, gaps
 
 
