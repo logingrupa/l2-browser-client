@@ -6,7 +6,7 @@ import { decodeNativeTileBspTree, decodeNativeTileCollisionCell } from "../../..
 import { parseMovementNativeRules, type MovementNativeRules } from "../../../src/scene/world/movement/core/movementRules";
 import { compareFloat32ByUlp, readGoldenTrace, writeGoldenTrace, type GoldenTrace } from "../../support/goldenTrace";
 import {
-  boxFacePolygon, boxHalfExtent, boxPlanes, collisionChunkFixtureArrays, readCollisionFixturePayload,
+  boxFacePolygon, boxHalfExtent, boxPlanes, collisionChunkFixtureArrays, float32Words, readCollisionFixturePayload,
 } from "../../support/nativeTileCollisionFixture";
 import type { TypedPayloadFixtureArray } from "../../support/typedPayloadFixture";
 
@@ -21,10 +21,6 @@ export function readCommittedMovementRulesDocument(): unknown {
 
 export function committedMovementRules(): MovementNativeRules {
   return parseMovementNativeRules(readCommittedMovementRulesDocument());
-}
-
-export function float32Words(values: readonly number[]): number[] {
-  return Array.from(new Int32Array(Float32Array.from(values).buffer));
 }
 
 const wallNearX = 256, wallFarX = 320, wallHalfSpan = 1024;

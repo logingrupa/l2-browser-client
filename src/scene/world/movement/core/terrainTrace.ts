@@ -1,7 +1,6 @@
 import { crossProduct, dotProduct, normalizeVector, subtractVectors, type Vector3 } from "../../../../shared/math/vector3";
 import type { CollisionTerrain } from "./collisionCell";
 import { negateVector, type CollisionSweep, type PrimitiveSweepHit } from "./collisionTrace";
-import { CollisionWorldError } from "./collisionWorld";
 import type { MovementNativeRules } from "./movementRules";
 
 export interface TerrainSweepHit extends PrimitiveSweepHit {
@@ -32,7 +31,6 @@ const terrainGeometryCache = new WeakMap<CollisionTerrain, TerrainGeometry>();
 
 function terrainFrame(terrain: CollisionTerrain): TerrainFrame {
   const [locationX, locationY, locationZ] = terrain.location, [scaleX, scaleY, scaleZ] = terrain.terrainScale;
-  if (!(scaleX > 0 && scaleY > 0 && scaleZ > 0)) throw new CollisionWorldError("terrain has a non-positive TerrainScale.");
   return {
     origin: {
       x: Math.fround(Math.fround(-locationX / scaleX) + Math.floor(terrain.heightmapWidth / 2)),

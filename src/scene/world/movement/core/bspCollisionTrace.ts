@@ -3,6 +3,7 @@ import { dotProduct, float32Difference, float32Vector, type Vector3 } from "../.
 import type { CollisionBspTree } from "./collisionCell";
 import { isZeroExtent, negateVector, type CollisionSweep, type PrimitiveSweepHit } from "./collisionTrace";
 import { CollisionWorldError } from "./collisionWorld";
+import { leafHullBoxFloats } from "./decodeNativeTileCollision";
 import { clipSweepAgainstPlanes, convexHullClipPlanes, planesOverlapBox, type ConvexHull } from "./convexHullClip";
 import type { MovementNativeRules } from "./movementRules";
 
@@ -185,29 +186,19 @@ export function solidTreeOverlapsBox(tree: SolidCollisionTree, centre: Vector3, 
 }
 
 const leafHullCache = new WeakMap<CollisionBspTree, Map<number, ConvexHull>>();
-const leafHullBoxWordCount = 6;
-
-function float32FromInt32Words(words: Int32Array): Float32Array {
-  return new Float32Array(Int32Array.from(words).buffer);
-}
 
 function readLeafHull(tree: CollisionBspTree, owner: string, collisionBound: number, rules: MovementNativeRules): ConvexHull {
   const planes: Plane[] = [];
   let wordIndex = collisionBound;
-  for (; ; wordIndex += 1) {
-    if (wordIndex >= tree.leafHulls.length) throw new CollisionWorldError(`${owner} BSPT.leafHulls run at ${collisionBound} has no terminator.`);
+  for (; tree.leafHulls[wordIndex]! >= 0; wordIndex += 1) {
     const reference = tree.leafHulls[wordIndex]!;
-    if (reference < 0) break;
     if (planes.length + 1 >= rules.hullPlaneLimit) throw new CollisionWorldError(`${owner} BSPT.leafHulls run at ${collisionBound} reaches ${rules.hullPlaneLimit} planes.`);
     const planeNode = reference & ~rules.leafHullFlipBit;
     if (planeNode >= tree.nodeCount) throw new CollisionWorldError(`${owner} BSPT.leafHulls[${wordIndex}] names node ${planeNode} of ${tree.nodeCount}.`);
     const plane = tileTreeNodePlane(tree, planeNode);
     planes.push((reference & rules.leafHullFlipBit) !== 0 ? { normal: negateVector(plane.normal), w: -plane.w } : plane);
   }
-  const boxStart = wordIndex + 1;
-  if (boxStart + leafHullBoxWordCount > tree.leafHulls.length) throw new CollisionWorldError(`${owner} BSPT.leafHulls run at ${collisionBound} has no hull box.`);
-  const box = float32FromInt32Words(tree.leafHulls.subarray(boxStart, boxStart + leafHullBoxWordCount));
-  if (!box.every(Number.isFinite)) throw new CollisionWorldError(`${owner} BSPT.leafHulls run at ${collisionBound} holds a non-finite hull box.`);
+  const box = leafHullBoxFloats(tree.leafHulls, wordIndex + 1);
   return { planes, boxMinimum: { x: box[0]!, y: box[1]!, z: box[2]! }, boxMaximum: { x: box[3]!, y: box[4]!, z: box[5]! } };
 }
 

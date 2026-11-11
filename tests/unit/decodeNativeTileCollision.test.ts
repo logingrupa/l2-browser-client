@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { CollisionWorldError } from "../../src/scene/world/movement/core/collisionWorld";
 import { decodeNativeTileBspTree, decodeNativeTileCollisionCell } from "../../src/scene/world/movement/core/decodeNativeTileCollision";
 import {
-  collisionBspTreeFixtureArrays, collisionChunkFixtureArrays, readCollisionFixturePayload, replaceFixtureArray,
+  collisionBspTreeFixtureArrays, collisionChunkFixtureArrays, float32Words, readCollisionFixturePayload, replaceFixtureArray,
 } from "../support/nativeTileCollisionFixture";
 import type { TypedPayloadFixtureArray } from "../support/typedPayloadFixture";
 
@@ -10,6 +10,10 @@ const cellIdentity = { cellId: "20_21/chunk-0-0", tileId: "20_21" };
 const decodeCell = (arrays: readonly TypedPayloadFixtureArray[]) => decodeNativeTileCollisionCell(readCollisionFixturePayload(arrays), cellIdentity);
 const decodeTree = (arrays: readonly TypedPayloadFixtureArray[]) => decodeNativeTileBspTree(readCollisionFixturePayload(arrays), "20_21");
 const fixtureValues = (arrays: readonly TypedPayloadFixtureArray[], name: string) => arrays.find(array => array.name === name)!.values;
+const replaceFixtureArrays = (arrays: readonly TypedPayloadFixtureArray[], replacements: Readonly<Record<string, readonly number[]>>) =>
+  Object.entries(replacements).reduce((replaced, [name, values]) => replaceFixtureArray(replaced, name, values), [...arrays]);
+const volumeNodeArrays = ["VOLS.planes", "VOLS.front", "VOLS.back", "VOLS.nodeFlags", "VOLS.vertexStart", "VOLS.vertexCount", "VOLS.vertices"];
+const hullBoxWords = float32Words([0, 0, 0, 512, 512, 0]);
 
 describe("decodeNativeTileCollisionCell", () => {
   it("returns the volume, static mesh, placement, mover and terrain primitives in source units with their declared sources", () => {
@@ -80,10 +84,24 @@ describe("decodeNativeTileCollisionCell", () => {
     ["a terrain rectangle outside its heightmap", "TERR.vertexRectangle", [3, 1, 2, 2], /TERR\.vertexRectangle 3,1 2x2 leaves the 4x4 heightmap/],
     ["a terrain height count off its rectangle", "TERR.heights", [1, 2, 3], /TERR\.heights holds 3 values; 4 are declared/],
     ["a quad visibility value that is not a bit", "TERR.quadVisibility", [7], /TERR\.quadVisibility\[0\] must be 0 or 1/],
+    ["a volume with nodes and a zero DrawScale", "VOLS.drawScale", [0], /volume 0 VOLS\.drawScale 0 by VOLS\.drawScale3D 1,2,1 is singular for a volume with 6 nodes/],
+    ["a volume with nodes and a zero DrawScale3D axis", "VOLS.drawScale3D", [1, 0, 1], /volume 0 VOLS\.drawScale 1 by VOLS\.drawScale3D 1,0,1 is singular/],
+    ["a terrain scale that is not positive", "TERR.terrainScale", [128, 0, 64], /TERR\.terrainScale = 128,0,64 is not positive on every axis/],
   ])("throws CollisionWorldError naming the cell, group and field for %s", (_case, name, values, message) => {
     const decode = () => decodeCell(replaceFixtureArray(collisionChunkFixtureArrays(), name, values));
     expect(decode).toThrow(CollisionWorldError);
     expect(decode).toThrow(message);
+  });
+
+  it("refuses a volume whose nodes hold no polygon vertices, since its hull box has no points", () => {
+    const arrays = replaceFixtureArrays(collisionChunkFixtureArrays(), { "VOLS.vertexStart": [0, 0, 0, 0, 0, 0], "VOLS.vertexCount": [0, 0, 0, 0, 0, 0], "VOLS.vertices": [] });
+    expect(() => decodeCell(arrays)).toThrow(/volume 0 VOLS\.vertexCount is 0 for all 6 nodes, so the volume has no hull box/);
+  });
+
+  it("keeps a volume with no nodes and the zero DrawScale the converter writes when the transform is absent", () => {
+    const noNodes = Object.fromEntries(volumeNodeArrays.map(name => [name, []]));
+    const arrays = replaceFixtureArrays(collisionChunkFixtureArrays(), { ...noNodes, "VOLS.nodeCount": [0], "VOLS.drawScale": [0], "VOLS.drawScale3D": [0, 0, 0] });
+    expect(decodeCell(arrays).volumes[0]).toMatchObject({ drawScale: 0, drawScale3D: [0, 0, 0], nodes: [] });
   });
 
   it("refuses a static mesh index count that is not whole triangles when the ranges still cover the indices", () => {
@@ -104,11 +122,11 @@ describe("decodeNativeTileBspTree", () => {
     expect([...tree.coplanar]).toEqual([-1, -1, -1]);
     expect([...tree.nodeFlags]).toEqual([0, 1, 32]);
     expect([...tree.numVertices]).toEqual([3, 0, 4]);
-    expect([...tree.collisionBound]).toEqual([0, -1, 2]);
+    expect([...tree.collisionBound]).toEqual([0, -1, 8]);
     expect([...tree.vertexPool]).toEqual([0, -1, 3]);
     expect([...tree.vertexPoints]).toEqual([0, 1, 2, 0, 1, 2, 3]);
     expect([...tree.points]).toEqual(fixtureValues(arrays, "BSPT.points"));
-    expect([...tree.leafHulls]).toEqual([0, -1, 2, -1]);
+    expect([...tree.leafHulls]).toEqual(fixtureValues(arrays, "BSPT.leafHulls"));
     expect(tree.rootOutside).toBe(true);
     expect([...tree.surfaceFlags]).toEqual([0, 32, 2147483648]);
   });
@@ -117,7 +135,7 @@ describe("decodeNativeTileBspTree", () => {
     ["a front child outside the node array", "BSPT.front", [3, -1, -1], /tile 20_21 BSPT\.front\[0\] = 3 is outside -1 to 2/],
     ["a back child outside the node array", "BSPT.back", [2, -2, -1], /BSPT\.back\[1\] = -2 is outside -1 to 2/],
     ["a coplanar child outside the node array", "BSPT.coplanar", [-1, 5, -1], /BSPT\.coplanar\[1\] = 5/],
-    ["a collision bound past the leaf hulls", "BSPT.collisionBound", [0, -1, 4], /BSPT\.collisionBound\[2\] = 4 is outside -1 to 3/],
+    ["a collision bound past the leaf hulls", "BSPT.collisionBound", [0, -1, 16], /BSPT\.collisionBound\[2\] = 16 is outside -1 to 15/],
     ["a vertex point past the points", "BSPT.vertexPoints", [0, 1, 2, 0, 1, 2, 4], /BSPT\.vertexPoints\[6\] = 4 is outside 0 to 3/],
     ["a vertex pool past the vertex points", "BSPT.vertexPool", [0, -1, 4], /BSPT\.vertexPool\[2\] = 4 with 4 vertices leaves the 7 vertex points/],
     ["a node count mismatch", "BSPT.nodeFlags", [0, 1], /BSPT\.nodeFlags holds 2 values; 3 are declared/],
@@ -126,6 +144,21 @@ describe("decodeNativeTileBspTree", () => {
     const decode = () => decodeTree(replaceFixtureArray(collisionBspTreeFixtureArrays(), name, values));
     expect(decode).toThrow(CollisionWorldError);
     expect(decode).toThrow(message);
+  });
+
+  it.each([
+    ["a leaf hull run with no terminator", [0, 2], /tile 20_21 BSPT\.leafHulls run at 0 has no terminator/],
+    ["a leaf hull run with no hull box", [0, -1, ...hullBoxWords.slice(0, 5)], /tile 20_21 BSPT\.leafHulls run at 0 has no hull box/],
+    ["a leaf hull run with a non-finite hull box", [0, -1, ...float32Words([0, 0, 0, Number.NaN, 512, 0])], /tile 20_21 BSPT\.leafHulls run at 0 holds a non-finite hull box/],
+  ])("throws CollisionWorldError at decode for %s", (_case, leafHulls, message) => {
+    const decode = () => decodeTree(replaceFixtureArrays(collisionBspTreeFixtureArrays(), { "BSPT.leafHulls": leafHulls, "BSPT.collisionBound": [0, -1, 0] }));
+    expect(decode).toThrow(CollisionWorldError);
+    expect(decode).toThrow(message);
+  });
+
+  it("checks only leaf hull runs a node names", () => {
+    const tree = decodeTree(replaceFixtureArrays(collisionBspTreeFixtureArrays(), { "BSPT.leafHulls": [0, -1, ...hullBoxWords, 2], "BSPT.collisionBound": [0, -1, 0] }));
+    expect([...tree.leafHulls]).toEqual([0, -1, ...hullBoxWords, 2]);
   });
 
   it("keeps a vertex entry no node pool references even when it names no point, as converted tiles hold such entries", () => {

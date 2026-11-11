@@ -21,6 +21,11 @@ const moverSourceByCode: readonly CollisionMoverSource[] = ["static-slot-enable-
 const volumeTransformFieldCount = 5;
 const matrixElementCount = 16;
 const noIndex = -1;
+const leafHullBoxWordCount = 6;
+
+export function leafHullBoxFloats(leafHulls: Int32Array, boxStart: number): Float32Array {
+  return new Float32Array(Int32Array.from(leafHulls.subarray(boxStart, boxStart + leafHullBoxWordCount)).buffer);
+}
 
 function requireCollision(condition: boolean, owner: string, field: string, message: string): asserts condition {
   if (!condition) throw new CollisionWorldError(`${owner} ${field} ${message}`);
@@ -58,6 +63,13 @@ function decodeBoolean(owner: string, field: string, value: number, index: numbe
 const sourceVector = (view: Float32Array | Int32Array, index: number): CollisionSourceVector =>
   [view[index * 3]!, view[index * 3 + 1]!, view[index * 3 + 2]!];
 
+function requireTraceableVolume(volumeOwner: string, drawScale: number, drawScale3D: CollisionSourceVector, nodes: readonly CollisionVolumeNode[]): void {
+  requireCollision(drawScale !== 0 && drawScale3D.every(scale => scale !== 0), volumeOwner, "VOLS.drawScale",
+    `${drawScale} by VOLS.drawScale3D ${drawScale3D.join(",")} is singular for a volume with ${nodes.length} nodes.`);
+  requireCollision(nodes.some(node => node.polygon.length > 0), volumeOwner, "VOLS.vertexCount",
+    `is 0 for all ${nodes.length} nodes, so the volume has no hull box.`);
+}
+
 function decodeVolumes(payload: TypedPayload, owner: string): CollisionVolume[] {
   const exportIndex = payload.uint32("VOLS.exportIndex"), volumeCount = exportIndex.length;
   const kind = payload.uint8("VOLS.kind"), decision = payload.uint8("VOLS.decision"), location = payload.float32("VOLS.location");
@@ -94,6 +106,7 @@ function decodeVolumes(payload: TypedPayload, owner: string): CollisionVolume[] 
         polygon: vertices.subarray(firstVertex * 3, (firstVertex + vertexCount[node]!) * 3),
       };
     });
+    if (volumeNodeCount > 0) requireTraceableVolume(volumeOwner, drawScale[volumeIndex]!, sourceVector(drawScale3D, volumeIndex), nodes);
     return {
       exportIndex: volumeExportIndex,
       kind: decodeCode(owner, "VOLS.kind", volumeKindByCode, kind[volumeIndex]!, volumeIndex),
@@ -175,6 +188,7 @@ function decodeTerrain(payload: TypedPayload, owner: string): CollisionTerrain |
   requireCount(owner, "TERR.terrainScale", terrainScale, 3);
   requireCount(owner, "TERR.heightmapSize", heightmapSize, 2);
   requireCount(owner, "TERR.vertexRectangle", vertexRectangle, 4);
+  requireCollision(terrainScale.every(scale => scale > 0), owner, "TERR.terrainScale", `= ${terrainScale.join(",")} is not positive on every axis.`);
   const heightmapWidth = heightmapSize[0]!, heightmapHeight = heightmapSize[1]!;
   const firstColumn = vertexRectangle[0]!, firstRow = vertexRectangle[1]!, columns = vertexRectangle[2]!, rows = vertexRectangle[3]!;
   requireCollision(firstColumn + columns <= heightmapWidth && firstRow + rows <= heightmapHeight, owner, "TERR.vertexRectangle",
@@ -205,6 +219,16 @@ export function decodeNativeTileCollisionCell(payload: TypedPayload, identity: C
   };
 }
 
+function requireLeafHullRun(owner: string, leafHulls: Int32Array, runStart: number): void {
+  const field = `BSPT.leafHulls run at ${runStart}`;
+  let terminatorIndex = runStart;
+  while (terminatorIndex < leafHulls.length && leafHulls[terminatorIndex]! >= 0) terminatorIndex += 1;
+  requireCollision(terminatorIndex < leafHulls.length, owner, field, "has no terminator.");
+  const boxStart = terminatorIndex + 1;
+  requireCollision(boxStart + leafHullBoxWordCount <= leafHulls.length, owner, field, "has no hull box.");
+  requireCollision(leafHullBoxFloats(leafHulls, boxStart).every(Number.isFinite), owner, field, "holds a non-finite hull box.");
+}
+
 export function decodeNativeTileBspTree(payload: TypedPayload, tileId: string): CollisionBspTree {
   const owner = `tile ${tileId}`;
   const front = payload.int32("BSPT.front"), nodeCount = front.length;
@@ -224,6 +248,7 @@ export function decodeNativeTileBspTree(payload: TypedPayload, tileId: string): 
   requireIndexRange(owner, "BSPT.back", back, noIndex, nodeCount);
   requireIndexRange(owner, "BSPT.coplanar", coplanar, noIndex, nodeCount);
   requireIndexRange(owner, "BSPT.collisionBound", collisionBound, noIndex, leafHulls.length);
+  for (const runStart of new Set(collisionBound)) if (runStart !== noIndex) requireLeafHullRun(owner, leafHulls, runStart);
   const pointCount = points.length / 3;
   numVertices.forEach((nodeVertexCount, node) => {
     if (nodeVertexCount === 0) return;

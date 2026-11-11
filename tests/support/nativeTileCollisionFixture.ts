@@ -19,6 +19,10 @@ export function boxFacePolygon(normal: readonly [number, number, number]): numbe
   });
 }
 
+export function float32Words(values: readonly number[]): number[] {
+  return Array.from(new Int32Array(Float32Array.from(values).buffer));
+}
+
 const identityMatrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 const translatedMatrix = (x: number, y: number, z: number) => [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1];
 
@@ -78,11 +82,11 @@ export function collisionBspTreeFixtureArrays(): TypedPayloadFixtureArray[] {
     { name: "BSPT.coplanar", type: "int32", values: [-1, -1, -1] },
     { name: "BSPT.nodeFlags", type: "uint8", values: [0, 1, 32] },
     { name: "BSPT.numVertices", type: "uint8", values: [3, 0, 4] },
-    { name: "BSPT.collisionBound", type: "int32", values: [0, -1, 2] },
+    { name: "BSPT.collisionBound", type: "int32", values: [0, -1, 8] },
     { name: "BSPT.vertexPool", type: "int32", values: [0, -1, 3] },
     { name: "BSPT.vertexPoints", type: "int32", values: [0, 1, 2, 0, 1, 2, 3] },
     { name: "BSPT.points", type: "float32", values: [0, 0, 0, 512, 0, 0, 512, 512, 0, 0, 512, 0] },
-    { name: "BSPT.leafHulls", type: "int32", values: [0, -1, 2, -1] },
+    { name: "BSPT.leafHulls", type: "int32", values: [0, -1, ...float32Words([0, 0, -1, 512, 512, 0]), 2, -1, ...float32Words([0, 0, 0, 512, 512, 1])] },
     { name: "BSPT.rootOutside", type: "uint8", values: [1] },
     { name: "BSPT.surfaceFlags", type: "uint32", values: [0, 32, 2147483648] },
   ];

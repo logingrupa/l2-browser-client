@@ -5,7 +5,6 @@ import type { Vector3 } from "../../../../shared/math/vector3";
 import { solidTreeHoldsPoint, solidTreeOverlapsBox, traceSolidTree, type SolidCollisionTree } from "./bspCollisionTrace";
 import type { CollisionSourceVector, CollisionVolume } from "./collisionCell";
 import { boundsOfPoints, type CollisionSweep, type PrimitiveSweepHit } from "./collisionTrace";
-import { CollisionWorldError } from "./collisionWorld";
 import type { MovementNativeRules } from "./movementRules";
 
 interface VolumeWorldGeometry {
@@ -40,12 +39,10 @@ export function ue2ActorLocalToWorld(location: CollisionSourceVector, rotation: 
 function volumeWorldGeometry(volume: CollisionVolume, owner: string): VolumeWorldGeometry {
   const cached = volumeGeometryCache.get(volume);
   if (cached !== undefined) return cached;
-  if (volume.drawScale === 0 || volume.drawScale3D.some(scale => scale === 0)) throw new CollisionWorldError(`${owner} has a singular scale.`);
   const localToWorld = ue2ActorLocalToWorld(volume.location, volume.rotation, volume.drawScale, volume.drawScale3D, volume.prePivot);
   const planes = volume.nodes.map(node => transformPlane({ normal: { x: node.plane[0], y: node.plane[1], z: node.plane[2] }, w: node.plane[3] }, localToWorld));
   const localVertices = volume.nodes.flatMap(node => Array.from({ length: node.polygon.length / 3 },
     (_, vertex): Vector3 => ({ x: node.polygon[vertex * 3]!, y: node.polygon[vertex * 3 + 1]!, z: node.polygon[vertex * 3 + 2]! })));
-  if (localVertices.length === 0) throw new CollisionWorldError(`${owner} has nodes but no polygon vertices for its hull box.`);
   const localBounds = boundsOfPoints(localVertices);
   const worldCorners = [0, 1, 2, 3, 4, 5, 6, 7].map(corner => transformPoint(localToWorld, {
     x: corner & 1 ? localBounds.maximum.x : localBounds.minimum.x, y: corner & 2 ? localBounds.maximum.y : localBounds.minimum.y,
