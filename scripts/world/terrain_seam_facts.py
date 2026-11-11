@@ -175,18 +175,17 @@ def build_terrain_seam_facts(project_root, client_access):
 def main(argv=None):
     parser = argparse.ArgumentParser(description='Measure how adjacent eligible tile terrains meet, from their sealed raw steps, into a tracked doc.')
     parser.add_argument('--client', type=Path, required=True)
-    parser.add_argument('--output', default=TERRAIN_SEAM_FACTS_RELATIVE_PATH, help='repository-relative destination of the facts file')
     arguments = parser.parse_args(argv)
     try:
         client_access = require_reference_client(arguments.client)
         run_at_below_normal_priority()
-        require_committed_destination(arguments.output)
+        require_committed_destination(TERRAIN_SEAM_FACTS_RELATIVE_PATH)
         payload = canonical_json_bytes(build_terrain_seam_facts(REPOSITORY_ROOT, client_access))
-        write_committed_world_bytes(arguments.output, payload)
+        write_committed_world_bytes(TERRAIN_SEAM_FACTS_RELATIVE_PATH, payload)
     except (OSError, ValueError) as error:
         print(f'Terrain seam facts failed: {error}', file=sys.stderr)
         return 1
-    print(json.dumps({'output': arguments.output, 'sha256': hashlib.sha256(payload).hexdigest(), 'bytes': len(payload)}, indent=1))
+    print(json.dumps({'output': TERRAIN_SEAM_FACTS_RELATIVE_PATH, 'sha256': hashlib.sha256(payload).hexdigest(), 'bytes': len(payload)}, indent=1))
     return 0
 
 
