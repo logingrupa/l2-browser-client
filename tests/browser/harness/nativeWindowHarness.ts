@@ -25,7 +25,15 @@ const harnessContainer = document.getElementById("native-window-harness");
 if (!(harnessContainer instanceof HTMLElement)) throw new Error("Native window harness page is missing #native-window-harness.");
 const container = harnessContainer;
 
-const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 });
+const harnessParameters = new URLSearchParams(location.search);
+const playerScenePositionText = harnessParameters.get("playerScenePosition");
+const playerScenePositionTexts = playerScenePositionText === null ? ["0", "0", "0"] : playerScenePositionText.split(",");
+const playerScenePositionComponents = playerScenePositionTexts.map(Number);
+const playerScenePositionValid = playerScenePositionTexts.length === 3 && playerScenePositionTexts.every(component => component.trim() !== "") &&
+  playerScenePositionComponents.every(Number.isFinite);
+const [playerSceneX, playerSceneY, playerSceneZ] = playerScenePositionValid ? playerScenePositionComponents : [0, 0, 0];
+
+const adapter = new NativeSliceAdapter({ x: playerSceneX!, y: playerSceneY!, z: playerSceneZ! });
 let localPlayer: WorldEntity | null = adapter.getInitialState().find(entity => entity.kind === "local-player") ?? null;
 const layer = createNativeWindowLayer(container, () => localPlayer);
 adapter.subscribe(event => {
@@ -54,7 +62,11 @@ window.__nativeWindowHarness = {
 };
 
 async function openRequestedWindow(): Promise<void> {
-  const windowId = new URLSearchParams(location.search).get("window");
+  if (!playerScenePositionValid) {
+    failure = { windowId: null, reason: "?playerScenePosition= must hold three finite numbers x,y,z" };
+    return;
+  }
+  const windowId = harnessParameters.get("window");
   if (windowId === null || !windowIdPattern.test(windowId)) {
     failure = { windowId: null, reason: `?window= must match ${windowIdPattern.source}` };
     return;

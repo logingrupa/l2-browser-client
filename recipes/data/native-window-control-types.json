@@ -4,7 +4,8 @@
     "Window",
     "Texture",
     "Button",
-    "TextBox"
+    "TextBox",
+    "MinimapCtrl"
   ],
   "source": "src/ui/nativeWindows/nativeWindowRenderer.ts rendered types (presentation)"
 }

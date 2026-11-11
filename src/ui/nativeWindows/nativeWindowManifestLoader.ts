@@ -1,6 +1,9 @@
-import { readWindowCatalogRecord } from "../../assets/native/nativeCatalogRecords";
+import { readTileCatalogRecord, readWindowCatalogRecord } from "../../assets/native/nativeCatalogRecords";
 import { windowCatalogKey } from "../../assets/native/nativeCatalogIndex";
 import { readNativeCatalog, type NativeCatalog } from "../../assets/native/readNativeCatalog";
+import { readAssetPackage } from "../../assets/package/readAssetPackage";
+import { loadNativeTileMinimap, type NativeTileMinimap, type NativeTileMinimapRadarTexture } from "../../scene/world/minimapJoin";
+import { readNativeTileManifest } from "../../scene/world/nativeTileManifest";
 import { fetchCatalogPinnedBytes } from "../fetchCatalogPinnedBytes";
 import { parseNativeWindowManifest, type NativeWindowManifest } from "./nativeWindowLayoutTree";
 
@@ -12,10 +15,18 @@ export type NativeWindowTextureResolution =
   | { readonly status: "resolved"; readonly url: string }
   | { readonly status: "gap"; readonly reason: string };
 
+export interface NativeWindowMinimapTileSource {
+  readonly tileIds: readonly string[];
+  loadTileMinimap(tileId: string): Promise<NativeTileMinimap | null>;
+  loadRadarImage(radarTexture: NativeTileMinimapRadarTexture): Promise<NativeWindowTextureResolution>;
+}
+
 interface UiTextureCatalogRecord { readonly image: string; readonly imageBytes: number; readonly imageSha256: string }
 
 const uiTextureIdPrefix = "ui-texture:";
 const textureNotInCatalogReason = "texture-not-in-catalog";
+const textureArchiveImageNotPngReason = "texture-archive-image-not-png";
+const pngMimeType = "image/png";
 const maximumImageBytes = 32 * 1024 * 1024;
 const sha256Pattern = /^[a-f0-9]{64}$/;
 
@@ -71,13 +82,34 @@ export async function resolveNativeWindowTextures(catalog: NativeCatalog, refere
       }
       const record = readUiTextureRecord(value, reference);
       const bytes = await fetchCatalogPinnedBytes(record.image, record.imageBytes, record.imageSha256, signal, "Native UI texture");
-      resolutions.set(reference, { status: "resolved", url: URL.createObjectURL(new Blob([bytes], { type: "image/png" })) });
+      resolutions.set(reference, { status: "resolved", url: URL.createObjectURL(new Blob([bytes], { type: pngMimeType })) });
     }
   } catch (error) {
     revokeNativeWindowTextures(resolutions);
     throw error;
   }
   return resolutions;
+}
+
+async function resolveRadarTextureArchiveImage(radarTexture: NativeTileMinimapRadarTexture, signal: AbortSignal): Promise<NativeWindowTextureResolution> {
+  const archiveBytes = await fetchCatalogPinnedBytes(radarTexture.archive, radarTexture.archiveBytes, radarTexture.archiveSha256, signal, "Native radar texture archive");
+  const texturePackage = await readAssetPackage(archiveBytes);
+  const imageFile = texturePackage.manifest.kind === "texture" ? texturePackage.manifest.image?.file : undefined;
+  const inventory = texturePackage.manifest.files.find(file => file.path === imageFile);
+  const imageBytes = imageFile === undefined ? undefined : texturePackage.files.get(imageFile);
+  if (inventory?.mime !== pngMimeType || imageBytes === undefined) return { status: "gap", reason: textureArchiveImageNotPngReason };
+  return { status: "resolved", url: URL.createObjectURL(new Blob([imageBytes.slice()], { type: pngMimeType })) };
+}
+
+export function nativeWindowMinimapTileSource(catalog: NativeCatalog, signal: AbortSignal): NativeWindowMinimapTileSource {
+  return {
+    tileIds: catalog.tiles.map(record => readTileCatalogRecord(record).tile),
+    loadTileMinimap: async tileId => {
+      const pinnedTileManifest = await readNativeTileManifest(tileId, signal);
+      return pinnedTileManifest === null ? null : loadNativeTileMinimap(pinnedTileManifest.manifest, signal);
+    },
+    loadRadarImage: radarTexture => resolveRadarTextureArchiveImage(radarTexture, signal),
+  };
 }
 
 export function revokeNativeWindowTextures(resolutions: ReadonlyMap<string, NativeWindowTextureResolution>): void {

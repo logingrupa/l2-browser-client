@@ -1,6 +1,6 @@
 import type { WorldEntity } from "../../world/worldTypes";
 import { readNativeWindowFieldBindings, type NativeWindowFieldBinding } from "./nativeWindowFieldBindings";
-import { loadNativeWindowManifest, resolveNativeWindowTextures, revokeNativeWindowTextures, type NativeWindowTextureResolution } from "./nativeWindowManifestLoader";
+import { loadNativeWindowManifest, nativeWindowMinimapTileSource, resolveNativeWindowTextures, revokeNativeWindowTextures, type NativeWindowTextureResolution } from "./nativeWindowManifestLoader";
 import { renderNativeWindow, type RenderedNativeWindow } from "./nativeWindowRenderer";
 
 export type NativeWindowOpenResult =
@@ -54,6 +54,7 @@ export function createNativeWindowLayer(container: HTMLElement, readLocalPlayer:
     const bounds = container.getBoundingClientRect();
     const rendered = renderNativeWindow(container, load.manifest, {
       localPlayer: readLocalPlayer(), textures, fieldBindings: windowBindings, screen: { width: bounds.width, height: bounds.height },
+      minimapTileSource: nativeWindowMinimapTileSource(load.catalog, lifetime.signal),
     });
     const result = { status: "opened", windowId, key: load.key, window: rendered } as const;
     openWindows.set(windowId, { result, textures });

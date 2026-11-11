@@ -2,15 +2,18 @@ import type { WorldEntity } from "../../world/worldTypes";
 import { resolveNativeWindowRectangles, type NativeWindowRectangle, type NativeWindowScreen } from "./nativeWindowAnchors";
 import type { NativeWindowFieldBinding } from "./nativeWindowFieldBindings";
 import type { NativeWindowManifest, NativeWindowNode } from "./nativeWindowLayoutTree";
-import type { NativeWindowTextureResolution } from "./nativeWindowManifestLoader";
+import type { NativeWindowMinimapTileSource, NativeWindowTextureResolution } from "./nativeWindowManifestLoader";
+import { minimapControlType, renderMinimapControl, type RenderedMinimapControl } from "./minimapControl";
+import { placeNativeWindowElement } from "./nativeWindowPlacement";
 
-export const nativeWindowRenderedControlTypes: readonly string[] = ["Window", "Texture", "Button", "TextBox"];
+export const nativeWindowRenderedControlTypes: readonly string[] = ["Window", "Texture", "Button", "TextBox", minimapControlType];
 
 export interface NativeWindowRenderInputs {
   readonly localPlayer: WorldEntity | null;
   readonly textures: ReadonlyMap<string, NativeWindowTextureResolution>;
   readonly fieldBindings: readonly NativeWindowFieldBinding[];
   readonly screen: NativeWindowScreen;
+  readonly minimapTileSource: NativeWindowMinimapTileSource;
 }
 
 export interface NativeWindowControlGap { readonly controlName: string; readonly reason: string }
@@ -33,6 +36,7 @@ interface RenderedControl {
   readonly rectangle: NativeWindowRectangle;
   readonly staticGaps: readonly string[];
   readonly gauge: RenderedGauge | null;
+  readonly minimap: RenderedMinimapControl | null;
 }
 
 interface RenderedGauge {
@@ -42,19 +46,11 @@ interface RenderedGauge {
   liveGap: string | null;
 }
 
-function placeElement(element: HTMLElement, left: number, top: number, width: number, height: number): void {
-  element.style.position = "absolute";
-  element.style.left = `${left}px`;
-  element.style.top = `${top}px`;
-  element.style.width = `${width}px`;
-  element.style.height = `${height}px`;
-}
-
 function textureImage(url: string, width: number, height: number): HTMLImageElement {
   const image = document.createElement("img");
   image.setAttribute("alt", "");
   image.setAttribute("src", url);
-  placeElement(image, 0, 0, width, height);
+  placeNativeWindowElement(image, 0, 0, width, height);
   return image;
 }
 
@@ -89,7 +85,7 @@ function gaugeFor(binding: NativeWindowFieldBinding, rectangle: NativeWindowRect
   if (binding.gapReason !== null) return { gauge: null, gaps: [binding.gapReason] };
   const fillElement = document.createElement("div");
   fillElement.setAttribute("data-native-gauge-fill", binding.worldField ?? "");
-  placeElement(fillElement, 0, 0, 0, rectangle.height);
+  placeNativeWindowElement(fillElement, 0, 0, 0, rectangle.height);
   const fillTexture = binding.fillTextureRef === null ? undefined : textures.get(binding.fillTextureRef);
   const fillImage = fillTexture?.status === "resolved" ? textureImage(fillTexture.url, 0, rectangle.height) : null;
   if (fillImage !== null) fillElement.append(fillImage);
@@ -138,14 +134,16 @@ export function renderNativeWindow(container: HTMLElement, windowManifest: Nativ
     const element = document.createElement("div");
     element.setAttribute("data-native-control", node.name);
     element.setAttribute("data-native-type", node.type);
-    placeElement(element, rectangle.left - (parentRectangle?.left ?? 0), rectangle.top - (parentRectangle?.top ?? 0), rectangle.width, rectangle.height);
+    placeNativeWindowElement(element, rectangle.left - (parentRectangle?.left ?? 0), rectangle.top - (parentRectangle?.top ?? 0), rectangle.width, rectangle.height);
     const texture = firstTextureGapOrImage(node, rectangle, renderInputs.textures);
     if (texture.image !== null) element.append(texture.image);
     const binding = bindingByNode.get(node);
     const bound = binding === undefined ? { gauge: null, gaps: [] } : gaugeFor(binding, rectangle, renderInputs.textures);
     const nodeAnchorGaps = anchorGaps.filter(gap => gap.node === node).map(gap => gap.reason);
     const staticGaps = [...staticControlGaps(node, nodeAnchorGaps), ...(texture.gap === null ? [] : [texture.gap]), ...bound.gaps];
-    controls.push({ node, element, rectangle, staticGaps, gauge: bound.gauge });
+    const minimap = node.type === minimapControlType
+      ? renderMinimapControl(element, rectangle, { localPlayer: renderInputs.localPlayer, tileSource: renderInputs.minimapTileSource }) : null;
+    controls.push({ node, element, rectangle, staticGaps, gauge: bound.gauge, minimap });
     node.children.forEach(child => element.append(renderNode(child, rectangle)));
     return element;
   };
@@ -154,6 +152,7 @@ export function renderNativeWindow(container: HTMLElement, windowManifest: Nativ
   const refresh = (localPlayer: WorldEntity | null): void => {
     for (const control of controls) {
       if (control.gauge !== null) refreshGauge(control, control.gauge, localPlayer);
+      control.minimap?.refresh(localPlayer);
       markControlGaps(control);
     }
   };
@@ -163,6 +162,9 @@ export function renderNativeWindow(container: HTMLElement, windowManifest: Nativ
     element,
     get gaps() { return controls.flatMap(control => controlGapReasons(control).map(reason => ({ controlName: control.node.name, reason }))); },
     refresh,
-    dispose: () => element.remove(),
+    dispose: () => {
+      controls.forEach(control => control.minimap?.dispose());
+      element.remove();
+    },
   };
 }
