@@ -1,11 +1,19 @@
 export type CollisionSourceVector = readonly [number, number, number];
 export type CollisionSourcePlane = readonly [number, number, number, number];
 
-export type CollisionVolumeKind = "Engine.BlockingVolume" | "Engine.PhysicsVolume";
+export type CollisionVolumeKind = "blocking" | "physics";
 export type CollisionVolumeDecision = "declared-none" | "blocking" | "gap";
 export type CollisionPlacementDecision = "declared-none" | "slots" | "gap";
 export type CollisionTransformProvenance = "authored" | "class-default" | "ue-zero";
+export type CollisionPhysicsFieldProvenance = CollisionTransformProvenance | "unresolved";
 export type CollisionMoverSource = "static-slot-enable-collision";
+
+export interface CollisionVolumePhysicsFieldProvenance {
+  readonly water: CollisionPhysicsFieldProvenance;
+  readonly priority: CollisionPhysicsFieldProvenance;
+  readonly gravity: CollisionPhysicsFieldProvenance;
+  readonly terminalVelocity: CollisionPhysicsFieldProvenance;
+}
 
 export interface CollisionVolumeTransformProvenance {
   readonly location: CollisionTransformProvenance;
@@ -33,6 +41,11 @@ export interface CollisionVolume {
   readonly drawScale3D: CollisionSourceVector;
   readonly prePivot: CollisionSourceVector;
   readonly transformProvenance: CollisionVolumeTransformProvenance;
+  readonly water: boolean | null;
+  readonly priority: number | null;
+  readonly gravity: CollisionSourceVector | null;
+  readonly terminalVelocity: number | null;
+  readonly physicsFieldProvenance: CollisionVolumePhysicsFieldProvenance;
   readonly rootOutside: boolean;
   readonly nodes: readonly CollisionVolumeNode[];
 }

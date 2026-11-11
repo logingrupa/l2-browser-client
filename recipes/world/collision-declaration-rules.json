@@ -1,10 +1,43 @@
 {
   "schemaVersion": 1,
-  "volumeClasses": ["Engine.BlockingVolume", "Engine.PhysicsVolume"],
+  "volumeKinds": [
+    {"kind": "blocking", "baseClass": "Engine.BlockingVolume"},
+    {"kind": "physics", "baseClass": "Engine.PhysicsVolume"}
+  ],
+  "physicsVolumeFields": [
+    {"payloadField": "water", "field": "bL2WaterVolume", "declaredType": "bool"},
+    {"payloadField": "priority", "field": "Priority", "declaredType": "int"},
+    {"payloadField": "gravity", "field": "Gravity", "declaredType": "Vector"},
+    {"payloadField": "terminalVelocity", "field": "TerminalVelocity", "declaredType": "float"}
+  ],
   "blockingFlagFields": ["bCollideActors", "bBlockPlayers"],
   "crossCheckFlagFields": ["bStatic", "bCollideActors", "bBlockActors", "bBlockPlayers", "bBlockNonZeroExtentTraces"],
   "staticMeshSelectorFields": ["UseSimpleLineCollision", "UseSimpleBoxCollision", "UseSimpleKarmaCollision", "CollisionModel"],
   "rules": [
+    {
+      "id": "collision.volume-kind.blocking",
+      "value": "a placed actor whose class chain, read through the class-default reader, reaches Engine.BlockingVolume is a VOLS volume of kind blocking (VOLS.kind payload code 0)",
+      "provenance": "class chains decompiled from the locked system/Engine.u (sha256 9b04ff5cb4258e84dfa8efbdd85d9121f3bdcb5822a9a21ca69d200d05a69761) through the pinned UELib (sha256 64ebfa8b290429b9d5b5e81f5018734c03ded27bb814c69b904cc269268f7bbc) by scripts/native_assets_lib/class_defaults.py cached_class_chain: Engine.BlockingVolume extends Engine.Volume; the payload code is ours, not a Lineage II value (OVERNIGHT-DECISIONS row 937)",
+      "status": "ue2-data",
+      "interludeEvidence": null,
+      "runtimeDefault": "class-chain admission, kind blocking"
+    },
+    {
+      "id": "collision.volume-kind.physics",
+      "value": "a placed actor whose class chain reaches Engine.PhysicsVolume (GamePlay.WaterVolume, Engine.DefaultPhysicsVolume and every other subclass) is a VOLS volume of kind physics (VOLS.kind payload code 1); an actor whose chain reaches neither base class, such as Engine.MusicVolume, is not a VOLS volume",
+      "provenance": "class chains decompiled from the locked system/Engine.u (sha256 9b04ff5cb4258e84dfa8efbdd85d9121f3bdcb5822a9a21ca69d200d05a69761) and system/GamePlay.u (sha256 714639cdad265a7caeaf0f91ce76bb50492390eaa3faea15ed5a28a3e830b64a) through the pinned UELib (sha256 64ebfa8b290429b9d5b5e81f5018734c03ded27bb814c69b904cc269268f7bbc): Engine.PhysicsVolume and Engine.MusicVolume extend Engine.Volume, GamePlay.WaterVolume and Engine.DefaultPhysicsVolume extend Engine.PhysicsVolume; the payload code is ours (OVERNIGHT-DECISIONS row 937)",
+      "status": "ue2-data",
+      "interludeEvidence": null,
+      "runtimeDefault": "class-chain admission, kind physics"
+    },
+    {
+      "id": "collision.physics-volume-fields",
+      "value": "each VOLS volume carries bL2WaterVolume (bool) as VOLS.water, Priority (int) as VOLS.priority, Gravity (Vector) as VOLS.gravity and TerminalVelocity (float) as VOLS.terminalVelocity, each authored on the actor, a class default, or ue-zero; a field the volume's class chain does not declare with that type is unresolved and never defaulted",
+      "provenance": "field declarations of Engine.PhysicsVolume in the locked system/Engine.u (sha256 9b04ff5cb4258e84dfa8efbdd85d9121f3bdcb5822a9a21ca69d200d05a69761) read through the pinned UELib (sha256 64ebfa8b290429b9d5b5e81f5018734c03ded27bb814c69b904cc269268f7bbc) by scripts/native_assets_lib/class_defaults.py read_class_field_declarations: bL2WaterVolume:bool, Priority:int, Gravity:Vector, TerminalVelocity:float; GamePlay.WaterVolume (system/GamePlay.u sha256 714639cdad265a7caeaf0f91ce76bb50492390eaa3faea15ed5a28a3e830b64a) defaultproperties set bL2WaterVolume true and no class in the chain sets bWaterVolume, so bL2WaterVolume is the water flag the scripts author (OVERNIGHT-DECISIONS rows 675 and 937)",
+      "status": "unconfirmed",
+      "interludeEvidence": null,
+      "runtimeDefault": "bL2WaterVolume is the water flag; unresolved fields stay unresolved"
+    },
     {
       "id": "collision.blocking-flags",
       "value": "a placement or volume blocks the player when bCollideActors and bBlockPlayers both resolve true; either resolving false is declared-none",

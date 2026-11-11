@@ -57,10 +57,18 @@ export interface BoxVolumeDeclaration {
   readonly location: readonly [number, number, number];
   readonly rotation: readonly [number, number, number];
   readonly drawScale3D: readonly [number, number, number];
+  readonly water: boolean | null;
+  readonly priority: number | null;
 }
 
-export const blockingBoxVolume: BoxVolumeDeclaration = { kindCode: 0, decisionCode: 1, location: [1600, -2400, 300], rotation: [0, 0, 0], drawScale3D: [1, 1, 2] };
-export const waterPhysicsVolume: BoxVolumeDeclaration = { kindCode: 1, decisionCode: 0, location: [-1000, 0, 0], rotation: [0, 8192, 0], drawScale3D: [4, 4, 2] };
+export const blockingBoxVolume: BoxVolumeDeclaration = {
+  kindCode: 0, decisionCode: 1, location: [1600, -2400, 300], rotation: [0, 0, 0], drawScale3D: [1, 1, 2], water: null, priority: null,
+};
+export const waterPhysicsVolume: BoxVolumeDeclaration = {
+  kindCode: 1, decisionCode: 0, location: [-1000, 0, 0], rotation: [0, 8192, 0], drawScale3D: [4, 4, 2], water: true, priority: 0,
+};
+const authoredProvenanceCode = 0, unresolvedProvenanceCode = 3;
+const fieldProvenanceCode = (value: boolean | number | null) => value === null ? unresolvedProvenanceCode : authoredProvenanceCode;
 export const placementTranslation = [1500, -2500, 40] as const;
 export const moverClosedTranslation = [3000, -2500, 40] as const;
 export const moverOpenTranslation = [3000, -2500, 176] as const;
@@ -84,6 +92,14 @@ export function volumeArrays(volumes: readonly BoxVolumeDeclaration[]): TypedPay
     { name: "VOLS.drawScale3D", type: "float32", values: volumes.flatMap(volume => [...volume.drawScale3D]) },
     { name: "VOLS.prePivot", type: "float32", values: volumes.flatMap(() => [0, 0, 0]) },
     { name: "VOLS.transformProvenance", type: "uint8", values: volumes.flatMap(() => [0, 0, 0, 0, 0]) },
+    { name: "VOLS.water", type: "uint8", values: volumes.map(volume => volume.water === true ? 1 : 0) },
+    { name: "VOLS.priority", type: "int32", values: volumes.map(volume => volume.priority ?? 0) },
+    { name: "VOLS.gravity", type: "float32", values: volumes.flatMap(() => [0, 0, 0]) },
+    { name: "VOLS.terminalVelocity", type: "float32", values: volumes.map(() => 0) },
+    {
+      name: "VOLS.physicsFieldProvenance", type: "uint8",
+      values: volumes.flatMap(volume => [fieldProvenanceCode(volume.water), fieldProvenanceCode(volume.priority), unresolvedProvenanceCode, unresolvedProvenanceCode]),
+    },
     { name: "VOLS.rootOutside", type: "uint8", values: volumes.map(() => 1) },
     { name: "VOLS.nodeStart", type: "uint32", values: volumes.map((_, volumeIndex) => volumeIndex * nodeCount) },
     { name: "VOLS.nodeCount", type: "uint32", values: volumes.map(() => nodeCount) },

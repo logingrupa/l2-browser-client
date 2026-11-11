@@ -1,8 +1,8 @@
 import type { TypedPayload } from "../../../../shared/typedPayload";
 import type {
-  CollisionBspTree, CollisionCell, CollisionMover, CollisionMoverSource, CollisionPlacement, CollisionPlacementDecision, CollisionSourceVector,
-  CollisionStaticMesh, CollisionTerrain, CollisionTransformProvenance, CollisionVolume, CollisionVolumeDecision, CollisionVolumeKind,
-  CollisionVolumeNode,
+  CollisionBspTree, CollisionCell, CollisionMover, CollisionMoverSource, CollisionPhysicsFieldProvenance, CollisionPlacement, CollisionPlacementDecision,
+  CollisionSourceVector, CollisionStaticMesh, CollisionTerrain, CollisionTransformProvenance, CollisionVolume, CollisionVolumeDecision, CollisionVolumeKind,
+  CollisionVolumeNode, CollisionVolumePhysicsFieldProvenance,
 } from "./collisionCell";
 import { CollisionWorldError } from "./collisionWorld";
 
@@ -13,10 +13,12 @@ export interface CollisionCellIdentity {
 
 type TypedArrayView = Float32Array | Int32Array | Uint32Array | Uint8Array;
 
-const volumeKindByCode: readonly CollisionVolumeKind[] = ["Engine.BlockingVolume", "Engine.PhysicsVolume"];
+const volumeKindByCode: readonly CollisionVolumeKind[] = ["blocking", "physics"];
 const volumeDecisionByCode: readonly CollisionVolumeDecision[] = ["declared-none", "blocking", "gap"];
 const placementDecisionByCode: readonly CollisionPlacementDecision[] = ["declared-none", "slots", "gap"];
 const transformProvenanceByCode: readonly CollisionTransformProvenance[] = ["authored", "class-default", "ue-zero"];
+const physicsFieldProvenanceByCode: readonly CollisionPhysicsFieldProvenance[] = ["authored", "class-default", "ue-zero", "unresolved"];
+const volumePhysicsFieldCount = 4;
 const moverSourceByCode: readonly CollisionMoverSource[] = ["static-slot-enable-collision"];
 const volumeTransformFieldCount = 5;
 const matrixElementCount = 16;
@@ -70,6 +72,39 @@ function requireTraceableVolume(volumeOwner: string, drawScale: number, drawScal
     `is 0 for all ${nodes.length} nodes, so the volume has no hull box.`);
 }
 
+type VolumePhysicsFields = Pick<CollisionVolume, "water" | "priority" | "gravity" | "terminalVelocity" | "physicsFieldProvenance">;
+
+function volumePhysicsFieldReader(payload: TypedPayload, owner: string, volumeCount: number): (volumeIndex: number) => VolumePhysicsFields {
+  const water = payload.uint8("VOLS.water"), priority = payload.int32("VOLS.priority"), gravity = payload.float32("VOLS.gravity");
+  const terminalVelocity = payload.float32("VOLS.terminalVelocity"), provenance = payload.uint8("VOLS.physicsFieldProvenance");
+  for (const [field, view] of [["VOLS.water", water], ["VOLS.priority", priority], ["VOLS.terminalVelocity", terminalVelocity]] as const) {
+    requireCount(owner, field, view, volumeCount);
+  }
+  requireCount(owner, "VOLS.gravity", gravity, volumeCount * 3);
+  requireCount(owner, "VOLS.physicsFieldProvenance", provenance, volumeCount * volumePhysicsFieldCount);
+  for (const [field, view] of [["VOLS.gravity", gravity], ["VOLS.terminalVelocity", terminalVelocity]] as const) {
+    const index = view.findIndex(value => !Number.isFinite(value));
+    requireCollision(index < 0, owner, `${field}[${index}]`, `= ${view[index]} is not finite.`);
+  }
+  return volumeIndex => {
+    const fieldProvenance = (fieldIndex: number) => {
+      const index = volumeIndex * volumePhysicsFieldCount + fieldIndex;
+      return decodeCode(owner, "VOLS.physicsFieldProvenance", physicsFieldProvenanceByCode, provenance[index]!, index);
+    };
+    const physicsFieldProvenance: CollisionVolumePhysicsFieldProvenance = {
+      water: fieldProvenance(0), priority: fieldProvenance(1), gravity: fieldProvenance(2), terminalVelocity: fieldProvenance(3),
+    };
+    const waterFlag = decodeBoolean(owner, "VOLS.water", water[volumeIndex]!, volumeIndex);
+    return {
+      water: physicsFieldProvenance.water === "unresolved" ? null : waterFlag,
+      priority: physicsFieldProvenance.priority === "unresolved" ? null : priority[volumeIndex]!,
+      gravity: physicsFieldProvenance.gravity === "unresolved" ? null : sourceVector(gravity, volumeIndex),
+      terminalVelocity: physicsFieldProvenance.terminalVelocity === "unresolved" ? null : terminalVelocity[volumeIndex]!,
+      physicsFieldProvenance,
+    };
+  };
+}
+
 function decodeVolumes(payload: TypedPayload, owner: string): CollisionVolume[] {
   const exportIndex = payload.uint32("VOLS.exportIndex"), volumeCount = exportIndex.length;
   const kind = payload.uint8("VOLS.kind"), decision = payload.uint8("VOLS.decision"), location = payload.float32("VOLS.location");
@@ -81,6 +116,7 @@ function decodeVolumes(payload: TypedPayload, owner: string): CollisionVolume[] 
   for (const [field, view] of [["VOLS.location", location], ["VOLS.rotation", rotation], ["VOLS.drawScale3D", drawScale3D],
     ["VOLS.prePivot", prePivot]] as const) requireCount(owner, field, view, volumeCount * 3);
   requireCount(owner, "VOLS.transformProvenance", transformProvenance, volumeCount * volumeTransformFieldCount);
+  const physicsFields = volumePhysicsFieldReader(payload, owner, volumeCount);
   const planes = payload.float32("VOLS.planes"), front = payload.int32("VOLS.front"), back = payload.int32("VOLS.back");
   const nodeFlags = payload.uint8("VOLS.nodeFlags"), vertexStart = payload.uint32("VOLS.vertexStart"), vertexCount = payload.uint32("VOLS.vertexCount");
   const vertices = payload.float32("VOLS.vertices"), totalNodeCount = front.length;
@@ -117,6 +153,7 @@ function decodeVolumes(payload: TypedPayload, owner: string): CollisionVolume[] 
         location: provenance(volumeIndex, 0), rotation: provenance(volumeIndex, 1), drawScale: provenance(volumeIndex, 2),
         drawScale3D: provenance(volumeIndex, 3), prePivot: provenance(volumeIndex, 4),
       },
+      ...physicsFields(volumeIndex),
       rootOutside: decodeBoolean(owner, "VOLS.rootOutside", rootOutside[volumeIndex]!, volumeIndex),
       nodes,
     };

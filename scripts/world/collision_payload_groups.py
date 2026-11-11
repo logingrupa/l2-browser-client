@@ -1,8 +1,10 @@
 from world.typed_payload import TypedPayloadArray
 
 DECISION_CODE = {'declared-none': 0, 'slots': 1, 'blocking': 1, 'gap': 2}
-VOLUME_KIND_CODE = {'Engine.BlockingVolume': 0, 'Engine.PhysicsVolume': 1}
-PROVENANCE_CODE = {'authored': 0, 'class-default': 1, 'ue-zero': 2}
+VOLUME_KIND_CODE = {'blocking': 0, 'physics': 1}
+PROVENANCE_CODE = {'authored': 0, 'class-default': 1, 'ue-zero': 2, 'unresolved': 3}
+PHYSICS_VOLUME_PAYLOAD_FIELDS = ('water', 'priority', 'gravity', 'terminalVelocity')
+PHYSICS_VOLUME_ARRAY_TYPES = {'water': 'uint8', 'priority': 'int32', 'gravity': 'float32', 'terminalVelocity': 'float32'}
 STATIC_SLOT_ENABLE_COLLISION_SOURCE = 'static-slot-enable-collision'
 COLLISION_SOURCE_CODE = {STATIC_SLOT_ENABLE_COLLISION_SOURCE: 0}
 TRANSFORM_FIELDS = ('Location', 'Rotation', 'DrawScale', 'DrawScale3D', 'PrePivot')
@@ -38,6 +40,20 @@ def transform_values(volume, field):
     return [value[axis] for axis in VECTOR_AXES] if value else [0.0, 0.0, 0.0]
 
 
+def physics_field_values(volume, payload_field):
+    value = volume['physicsFields'][payload_field]['value']
+    if payload_field == 'gravity':
+        return [0.0, 0.0, 0.0] if value is None else [value[axis] for axis in VECTOR_AXES]
+    return [0 if value is None else int(value) if payload_field == 'water' else value]
+
+
+def physics_arrays(volumes):
+    return [*(array(f'VOLS.{payload_field}', PHYSICS_VOLUME_ARRAY_TYPES[payload_field],
+                    [value for volume in volumes for value in physics_field_values(volume, payload_field)]) for payload_field in PHYSICS_VOLUME_PAYLOAD_FIELDS),
+            array('VOLS.physicsFieldProvenance', 'uint8', [PROVENANCE_CODE[volume['physicsFields'][payload_field]['provenance']]
+                                                           for volume in volumes for payload_field in PHYSICS_VOLUME_PAYLOAD_FIELDS])]
+
+
 def vols_arrays(volumes):
     nodes = [node for volume in volumes for node in volume['nodes']]
     node_starts, vertex_starts, first_node, first_vertex = [], [], 0, 0
@@ -50,11 +66,11 @@ def vols_arrays(volumes):
     provenance = [PROVENANCE_CODE[volume['transform'][field]['provenance']] if volume['transform'] else PROVENANCE_CODE['ue-zero']
                   for volume in volumes for field in TRANSFORM_FIELDS]
     return [array('VOLS.exportIndex', 'uint32', [volume['exportIndex'] for volume in volumes]),
-            array('VOLS.kind', 'uint8', [VOLUME_KIND_CODE[volume['classObject']] for volume in volumes]),
+            array('VOLS.kind', 'uint8', [VOLUME_KIND_CODE[volume['kind']] for volume in volumes]),
             array('VOLS.decision', 'uint8', [DECISION_CODE[volume['decision']] for volume in volumes]),
             *(array(f'VOLS.{field[0].lower()}{field[1:]}', 'int32' if field == 'Rotation' else 'float32',
                     [value for volume in volumes for value in transform_values(volume, field)]) for field in TRANSFORM_FIELDS),
-            array('VOLS.transformProvenance', 'uint8', provenance),
+            array('VOLS.transformProvenance', 'uint8', provenance), *physics_arrays(volumes),
             array('VOLS.rootOutside', 'uint8', [volume['rootOutside'] or 0 for volume in volumes]),
             array('VOLS.nodeStart', 'uint32', node_starts), array('VOLS.nodeCount', 'uint32', [len(volume['nodes']) for volume in volumes]),
             array('VOLS.planes', 'float32', [value for node in nodes for value in node['plane']]),

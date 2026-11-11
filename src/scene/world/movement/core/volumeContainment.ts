@@ -14,7 +14,7 @@ export interface ContainingVolume {
 export function volumesContaining(world: CollisionWorld, point: Vector3, rules: MovementNativeRules): readonly ContainingVolume[] {
   requireFiniteVector(point, "A volume containment point");
   return world.residentCells().flatMap(cell => cell.volumes.flatMap((volume, volumeIndex): ContainingVolume[] => {
-    if (volume.kind !== "Engine.PhysicsVolume" || volume.nodes.length === 0) return [];
+    if (volume.kind !== "physics" || volume.nodes.length === 0) return [];
     return volumeHoldsPoint(volume, `cell ${cell.cellId} volume ${volumeIndex}`, point, rules) ? [{ cellId: cell.cellId, volumeIndex, volume }] : [];
   }));
 }

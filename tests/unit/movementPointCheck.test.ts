@@ -69,7 +69,7 @@ describe("volumesContaining", () => {
     const [centreX, centreY, centreZ] = waterPhysicsVolume.location;
     const inside = volumesContaining(mixedWorld(), { x: centreX + 300, y: centreY, z: centreZ + 50 }, rules);
     expect(inside.map(containing => [containing.cellId, containing.volumeIndex, containing.volume.kind]))
-      .toEqual([[fixtureCellId, 1, "Engine.PhysicsVolume"]]);
+      .toEqual([[fixtureCellId, 1, "physics"]]);
     expect(volumesContaining(mixedWorld(), { x: centreX + 380, y: centreY, z: centreZ }, rules)).toEqual([]);
     expect(volumesContaining(mixedWorld(), { x: centreX, y: centreY, z: centreZ + 140 }, rules)).toEqual([]);
     expect(volumesContaining(mixedWorld(), { x: 1600, y: -2400, z: 300 }, rules)).toEqual([]);

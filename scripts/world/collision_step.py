@@ -17,6 +17,7 @@ from world.level_model import LevelModelLayoutError, read_level_model
 from world.light_actors import reference_client_class_chains
 from world.map_sources import MapSources
 from world.mover_step import sealed_movers
+from world.physics_volume_fields import read_physics_volume_fields
 from world.native_terrain_sectors import read_height_samples, read_topology_words, native_terrain
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
 from world.static_collision_sources import (COLLISION_RULES_PATH, COLLISION_UNREADABLE_REASON, GAP_DECISION, SLOTS_DECISION,
@@ -33,15 +34,13 @@ from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 from world.typed_payload import write_tile_typed_payload_resource
 
-COLLISION_STEP_ALGORITHM_VERSION = 4
+COLLISION_STEP_ALGORITHM_VERSION = 5
 COLLISION_STEP_NAME = 'collision'
 COLLISION_PRODUCT_NAME = 'collision.json'
 TILE_COLLISION_FOLDER = 'native-tile-collision'
 CHUNK_COLLISION_FOLDER = 'native-tile-chunk-collision'
 TRANSFORM_FIELD_UNREADABLE_REASON_PREFIX = 'collision-transform-field-unreadable:'
 TRANSFORM_FIELD_EVIDENCE_PREFIX = 'transform-field:'
-UNADMITTED_VOLUME_CLASS_REASON_PREFIX = 'collision-volume-class-unadmitted:'
-UNADMITTED_VOLUME_CLASS_EVIDENCE_PREFIX = 'volume-class-unadmitted:'
 MOVER_OUTSIDE_CHUNK_GRID_EVIDENCE = 'chunk:outside-grid'
 ZERO_MATRIX = [[0.0] * 4 for _ in range(4)]
 
@@ -101,7 +100,6 @@ def tile_collision_row(tile_id, source_identity, gap_rows, evidence):
 
 def gap_reason_of(evidence):
     for evidence_prefix, reason_prefix in ((TRANSFORM_FIELD_EVIDENCE_PREFIX, TRANSFORM_FIELD_UNREADABLE_REASON_PREFIX),
-                                           (UNADMITTED_VOLUME_CLASS_EVIDENCE_PREFIX, UNADMITTED_VOLUME_CLASS_REASON_PREFIX),
                                            (PLACEMENT_CLASS_UNSUPPORTED_REASON_PREFIX, PLACEMENT_CLASS_UNSUPPORTED_REASON_PREFIX)):
         matching = [entry for entry in evidence if entry.startswith(evidence_prefix)]
         if matching:
@@ -182,27 +180,27 @@ def mover_slot_records(context, movers, rectangles, meshes_by_chunk):
     return movers_by_chunk, decisions
 
 
+def volume_kind_of(class_chains, rules, class_object):
+    if class_chains.chain(class_object) is None:
+        return None
+    return next((volume_kind.kind for volume_kind in rules.volume_kinds if class_chains.is_subclass(class_object, volume_kind.base_class)), None)
+
+
+def admitted_volume_actors(class_chains, rules, actors):
+    admitted = [(actor, volume_kind_of(class_chains, rules, actor['classObject'])) for actor in sorted(actors, key=lambda actor: actor['exportIndex'])]
+    return [(actor, kind) for actor, kind in admitted if kind is not None]
+
+
 def volume_records(context, package, level, actors, rectangles):
     volumes_by_chunk, records = {}, []
-    for actor in sorted((actor for actor in actors if actor['classObject'] in context['rules'].volume_classes), key=lambda actor: actor['exportIndex']):
-        volume = read_volume(package, level.adapter, level.reader, actor, context['classEvidence'], context['rules'])
+    for actor, kind in admitted_volume_actors(context['classChains'], context['rules'], actors):
+        volume = {**read_volume(package, level.adapter, level.reader, actor, context['classEvidence'], context['rules']), 'kind': kind,
+                  'physicsFields': read_physics_volume_fields(actor, context['classChains'], context['classEvidence'], context['rules'])}
         chunk_id = chunk_for_origin(rectangles, volume['centroid'][0], volume['centroid'][1]) if volume['centroid'] else None
         records.append({key: value for key, value in volume.items() if key != 'nodes'} | {'chunkId': chunk_id, 'nodeCount': len(volume['nodes'])})
         if chunk_id is not None:
             volumes_by_chunk.setdefault(chunk_id, []).append(volume)
     return volumes_by_chunk, records
-
-
-def is_unadmitted_volume_subclass(class_chains, volume_classes, class_object):
-    return (class_object not in volume_classes and class_chains.chain(class_object) is not None
-            and any(class_chains.is_subclass(class_object, volume_class) for volume_class in volume_classes))
-
-
-def unadmitted_volume_records(class_chains, rules, actors):
-    return [{'object': actor['object'], 'exportIndex': actor['exportIndex'], 'decision': GAP_DECISION,
-             'evidence': [UNADMITTED_VOLUME_CLASS_EVIDENCE_PREFIX + actor['classObject']]}
-            for actor in sorted(actors, key=lambda actor: actor['exportIndex'])
-            if is_unadmitted_volume_subclass(class_chains, rules.volume_classes, actor['classObject'])]
 
 
 def unsupported_placement_class_records(class_chains, actors):
@@ -247,8 +245,9 @@ def chunk_collision_records(context, chunk_plan, placements_by_chunk, meshes_by_
 
 
 def collision_context(project_root, client, unit, lock_record):
+    class_evidence = read_class_evidence(client, lane_work_root(project_root, WORLD_LANE_NAME))
     return {'storeRoot': lane_store_root(project_root, WORLD_LANE_NAME), 'rules': load_collision_rules(), 'requests': unit.requests,
-            'classEvidence': read_class_evidence(client, lane_work_root(project_root, WORLD_LANE_NAME)), 'mapSources': MapSources(client),
+            'classEvidence': class_evidence, 'classChains': reference_client_class_chains(class_evidence), 'mapSources': MapSources(client),
             'staticMeshes': unit.static_meshes, 'metadata': {'sourceSha256': lock_record['eSha256'], 'converterVersion': collision_converter_version()}}
 
 
@@ -286,10 +285,9 @@ def run_collision_step(project_root, client_root, tile_id):
     placement_gaps = object_gap_rows(tile_id, source_identity, receipt_evidence, decisions)
     volume_gaps = object_gap_rows(tile_id, source_identity, receipt_evidence, volumes)
     mover_gaps = object_gap_rows(tile_id, source_identity, receipt_evidence, mover_decisions)
-    class_chains = reference_client_class_chains(context['classEvidence'])
-    unadmitted_volume_gaps = object_gap_rows(tile_id, source_identity, receipt_evidence, unadmitted_volume_records(class_chains, context['rules'], actors))
-    unsupported_placement_class_gaps = object_gap_rows(tile_id, source_identity, receipt_evidence, unsupported_placement_class_records(class_chains, actors))
-    gap_rows = sorted([*placement_gaps, *volume_gaps, *mover_gaps, *unadmitted_volume_gaps, *unsupported_placement_class_gaps],
+    unsupported_placement_class_gaps = object_gap_rows(tile_id, source_identity, receipt_evidence,
+                                                       unsupported_placement_class_records(context['classChains'], actors))
+    gap_rows = sorted([*placement_gaps, *volume_gaps, *mover_gaps, *unsupported_placement_class_gaps],
                       key=lambda row: (row['sourceIdentity']['object'].casefold(), row['reason']))
     gap_rows_by_chunk = {}
     for record, row in zip([record for record in [*decisions, *volumes, *mover_decisions] if record['decision'] == GAP_DECISION],

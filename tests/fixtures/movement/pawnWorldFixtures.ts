@@ -14,13 +14,27 @@ export const syntheticPawnHalfHeight = 23;
 export const pawnRules: MovementNativeRules = committedMovementRules();
 export const committedMoveTypes = { walk: pawnRules.pawn.walkMoveType, run: pawnRules.pawn.runMoveType };
 
-const boxDeclaration = (kindCode: number, decisionCode: number, centre: SourceTriple, halfSize: SourceTriple, rotation: SourceTriple): BoxVolumeDeclaration => ({
+interface BoxPhysicsFields {
+  readonly water: boolean | null;
+  readonly priority: number | null;
+}
+
+const unresolvedPhysicsFields: BoxPhysicsFields = { water: null, priority: null };
+
+const boxDeclaration = (
+  kindCode: number, decisionCode: number, centre: SourceTriple, halfSize: SourceTriple, rotation: SourceTriple, physicsFields: BoxPhysicsFields,
+): BoxVolumeDeclaration => ({
   kindCode, decisionCode, location: centre, rotation, drawScale3D: [halfSize[0] / boxHalfExtent, halfSize[1] / boxHalfExtent, halfSize[2] / boxHalfExtent],
+  ...physicsFields,
 });
 
-export const blockingBox = (centre: SourceTriple, halfSize: SourceTriple, rotation: SourceTriple = [0, 0, 0]) => boxDeclaration(0, 1, centre, halfSize, rotation);
+export const blockingBox = (centre: SourceTriple, halfSize: SourceTriple, rotation: SourceTriple = [0, 0, 0]) =>
+  boxDeclaration(0, 1, centre, halfSize, rotation, unresolvedPhysicsFields);
 
-export const waterBox = (centre: SourceTriple, halfSize: SourceTriple) => boxDeclaration(1, 0, centre, halfSize, [0, 0, 0]);
+export const physicsBox = (centre: SourceTriple, halfSize: SourceTriple, physicsFields: BoxPhysicsFields) =>
+  boxDeclaration(1, 0, centre, halfSize, [0, 0, 0], physicsFields);
+
+export const waterBox = (centre: SourceTriple, halfSize: SourceTriple) => physicsBox(centre, halfSize, { water: true, priority: 0 });
 
 export const floorSlab = (topZ: number, minimumX = -2048, maximumX = 2048) =>
   blockingBox([(minimumX + maximumX) / 2, 0, topZ - 64], [(maximumX - minimumX) / 2, 2048, 64]);

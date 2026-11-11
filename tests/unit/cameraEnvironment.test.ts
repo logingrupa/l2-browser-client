@@ -52,7 +52,7 @@ describe("computeCameraEnvironment", () => {
     const world = collisionWorldFromFixtures(mixedChunkArrays(), null);
     const [x, y, z] = waterPhysicsVolume.location;
     const inside = computeCameraEnvironment({ frame: frameInZone(1), cameraSourcePosition: { x: x + 300, y, z: z + 50 }, collision: { world, rules }, records });
-    expect(inside.containingVolume).toMatchObject({ cellId: fixtureCellId, volumeIndex: 1, volume: { kind: "Engine.PhysicsVolume" } });
+    expect(inside.containingVolume).toMatchObject({ cellId: fixtureCellId, volumeIndex: 1, volume: { kind: "physics" } });
     expect(inside.gaps).toContain(cameraEnvironmentGaps.volumeWaterFlagAbsent);
     expect(inside.fog.source).toBe("camera-zone");
     const outside = computeCameraEnvironment({ frame: frameInZone(1), cameraSourcePosition: { x: x + 380, y, z }, collision: { world, rules }, records });

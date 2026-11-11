@@ -24,9 +24,11 @@ describe("decodeNativeTileCollisionCell", () => {
     expect(cell.volumes).toHaveLength(1);
     const [volume] = cell.volumes;
     expect(volume).toMatchObject({
-      exportIndex: 417, kind: "Engine.BlockingVolume", decision: "blocking", location: [1024, -2048, 96], rotation: [0, 16384, 0], drawScale: 1,
+      exportIndex: 417, kind: "blocking", decision: "blocking", location: [1024, -2048, 96], rotation: [0, 16384, 0], drawScale: 1,
       drawScale3D: [1, 2, 1], prePivot: [0, 0, 0], rootOutside: true,
       transformProvenance: { location: "authored", rotation: "authored", drawScale: "class-default", drawScale3D: "class-default", prePivot: "ue-zero" },
+      water: null, priority: null, gravity: null, terminalVelocity: null,
+      physicsFieldProvenance: { water: "unresolved", priority: "unresolved", gravity: "unresolved", terminalVelocity: "unresolved" },
     });
     expect(volume!.nodes).toHaveLength(6);
     expect(volume!.nodes.map(node => node.plane)).toEqual([[1, 0, 0, 64], [-1, 0, 0, 64], [0, 1, 0, 64], [0, -1, 0, 64], [0, 0, 1, 64], [0, 0, -1, 64]]);

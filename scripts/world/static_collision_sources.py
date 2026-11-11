@@ -6,14 +6,17 @@ from typing import NamedTuple
 from native_assets_lib.class_defaults import ClassDefaultError
 from native_catalog.ue2 import FormatError
 from native_store.glb_container import glb_document_and_binary
+from world.collision_payload_groups import PHYSICS_VOLUME_PAYLOAD_FIELDS, VOLUME_KIND_CODE
 from world.gltf_builder import GLTF_FLOAT_COMPONENT
 
 COLLISION_RULES_PATH = Path(__file__).resolve().parents[2] / 'recipes' / 'world' / 'collision-declaration-rules.json'
 COLLISION_RULES_SCHEMA_VERSION = 1
 CONSTANTS_ROW_FIELDS = frozenset({'id', 'value', 'provenance', 'status', 'interludeEvidence', 'runtimeDefault'})
 CONSTANTS_ROW_STATUSES = ('ue2-data', 'unconfirmed', 'confirmed-interlude', 'corrected-interlude', 'unknown')
-COLLISION_RULES_DOCUMENT_FIELDS = frozenset({'schemaVersion', 'volumeClasses', 'blockingFlagFields', 'crossCheckFlagFields', 'staticMeshSelectorFields',
-                                             'rules'})
+COLLISION_RULES_DOCUMENT_FIELDS = frozenset({'schemaVersion', 'volumeKinds', 'physicsVolumeFields', 'blockingFlagFields', 'crossCheckFlagFields',
+                                             'staticMeshSelectorFields', 'rules'})
+VOLUME_KIND_RECORD_FIELDS = frozenset({'kind', 'baseClass'})
+PHYSICS_VOLUME_FIELD_RECORD_FIELDS = frozenset({'payloadField', 'field', 'declaredType'})
 COLLISION_UNREADABLE_REASON = 'collision-unreadable'
 DECLARED_NONE_DECISION = 'declared-none'
 SLOTS_DECISION = 'slots'
@@ -31,11 +34,49 @@ INDEX_FORMAT_OF_COMPONENT = {5121: 'B', 5123: 'H', 5125: 'I'}
 GLTF_TRIANGLES_MODE = 4
 
 
+class VolumeKind(NamedTuple):
+    kind: str
+    base_class: str
+
+
+class PhysicsVolumeField(NamedTuple):
+    payload_field: str
+    field: str
+    declared_type: str
+
+
 class CollisionRules(NamedTuple):
-    volume_classes: tuple
+    volume_kinds: tuple
+    physics_volume_fields: tuple
     blocking_fields: tuple
     cross_check_fields: tuple
     selector_fields: tuple
+
+
+def require_string_records(path, name, records, record_fields):
+    if not (isinstance(records, list) and records and all(isinstance(record, dict) and set(record) == record_fields
+                                                          and all(isinstance(value, str) and value for value in record.values())
+                                                          for record in records)):
+        raise FormatError(f'collision declaration rules {name} must be a non-empty list of {sorted(record_fields)} records: {path}')
+    return records
+
+
+def load_volume_kinds(path, records):
+    kinds = tuple(VolumeKind(record['kind'], record['baseClass'])
+                  for record in require_string_records(path, 'volumeKinds', records, VOLUME_KIND_RECORD_FIELDS))
+    if tuple(sorted(kind.kind for kind in kinds)) != tuple(sorted(VOLUME_KIND_CODE)):
+        raise FormatError(f'collision declaration rules volumeKinds {[kind.kind for kind in kinds]} differ from the VOLS.kind codes '
+                          f'{sorted(VOLUME_KIND_CODE)}: {path}')
+    return kinds
+
+
+def load_physics_volume_fields(path, records):
+    fields = tuple(PhysicsVolumeField(record['payloadField'], record['field'], record['declaredType'])
+                   for record in require_string_records(path, 'physicsVolumeFields', records, PHYSICS_VOLUME_FIELD_RECORD_FIELDS))
+    if tuple(field.payload_field for field in fields) != PHYSICS_VOLUME_PAYLOAD_FIELDS:
+        raise FormatError(f'collision declaration rules physicsVolumeFields {[field.payload_field for field in fields]} differ from the VOLS '
+                          f'physics arrays {list(PHYSICS_VOLUME_PAYLOAD_FIELDS)}: {path}')
+    return fields
 
 
 def load_collision_rules(path=COLLISION_RULES_PATH):
@@ -49,8 +90,8 @@ def load_collision_rules(path=COLLISION_RULES_PATH):
         if not (isinstance(row, dict) and set(row) == CONSTANTS_ROW_FIELDS and isinstance(row['provenance'], str) and row['provenance']
                 and row['status'] in CONSTANTS_ROW_STATUSES):
             raise FormatError(f'collision declaration rule row is invalid: {row!r}')
-    return CollisionRules(tuple(document['volumeClasses']), tuple(document['blockingFlagFields']), tuple(document['crossCheckFlagFields']),
-                          tuple(document['staticMeshSelectorFields']))
+    return CollisionRules(load_volume_kinds(path, document['volumeKinds']), load_physics_volume_fields(path, document['physicsVolumeFields']),
+                          tuple(document['blockingFlagFields']), tuple(document['crossCheckFlagFields']), tuple(document['staticMeshSelectorFields']))
 
 
 def serialized_actor_value(actor, field):
