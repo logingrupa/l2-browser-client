@@ -5,7 +5,10 @@ import re
 from native_store.coverage_denominators import UNKNOWN_DENOMINATOR
 from native_store.gap_rows import GapRowError, load_gap_reason_patterns, validate_gap_row
 
-GAP_CENSUS_STATUS_PRECEDENCE = ('converted', 'failed', 'gap', 'pending')
+GAP_CENSUS_STATUS_PRECEDENCE = ('failed', 'gap', 'converted', 'pending')
+CONVERTED_CENSUS_STATUS = 'converted'
+CONVERTED_OVERRIDING_STATUSES = GAP_CENSUS_STATUS_PRECEDENCE[:GAP_CENSUS_STATUS_PRECEDENCE.index(CONVERTED_CENSUS_STATUS)]
+GAP_ROW_STATUS_PRECEDENCE = tuple(status for status in GAP_CENSUS_STATUS_PRECEDENCE if status != CONVERTED_CENSUS_STATUS)
 GAP_CENSUS_STEP_ORDER = ('census', 'raw', 'chunks', 'terrain', 'manifest', 'meshes', 'bsp', 'collision', 'movers', 'emitters', 'bsp-visibility',
                          'sky', 'audio', 'lighting', 'minimap', 'terrain-material', 'decode', 'name-index', 'layout', 'controls', 'textures', 'field-cp', 'field-mp',
                          'npc-model', 'npc-profile', 'npc-sound-identities', 'skills', 'characters', 'items')
@@ -135,8 +138,8 @@ def census_part_keys(part, denominator, part_rows, converted_part_keys):
     return tuple(sorted(keys))
 
 
-def deciding_row(rows):
-    for status in GAP_CENSUS_STATUS_PRECEDENCE[1:]:
+def deciding_row(rows, statuses):
+    for status in statuses:
         status_rows = [row for row in rows if row['status'] == status]
         if status_rows:
             return min(status_rows, key=lambda row: (-GAP_CENSUS_STEP_ORDER.index(row['step']), row['reason'],
@@ -153,16 +156,13 @@ def catalog_keys_not_refused_by_verdict_step(part, catalog_part_keys, rows_by_ke
 
 
 def census_row(part, key, converted, rows, load_status):
-    if converted:
-        status, reason = 'converted', None
-    else:
-        row = deciding_row(rows)
-        status, reason = row['status'], row['reason']
+    row = deciding_row(rows, CONVERTED_OVERRIDING_STATUSES if converted else GAP_ROW_STATUS_PRECEDENCE)
+    status, reason = (CONVERTED_CENSUS_STATUS, None) if row is None else (row['status'], row['reason'])
     return {'key': key, 'part': part, 'status': status, 'reason': reason, 'converted': converted, 'loads': load_status}
 
 
 def require_every_key_stated(part, denominator, keys, rows_by_key, converted_part_keys):
-    unstated_keys = [key for key in keys if key not in converted_part_keys and deciding_row(rows_by_key.get(key, [])) is None]
+    unstated_keys = [key for key in keys if key not in converted_part_keys and deciding_row(rows_by_key.get(key, []), GAP_ROW_STATUS_PRECEDENCE) is None]
     if unstated_keys:
         raise GapCensusIncompleteError(f'part {part}: {len(unstated_keys)} denominator keys ({denominator["source"]}) have no failed, gap or '
                                        f'pending row and no converted entry: {first_keys_text(unstated_keys)}')

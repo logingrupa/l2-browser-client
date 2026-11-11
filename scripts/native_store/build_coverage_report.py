@@ -33,8 +33,9 @@ TABLE_CATALOG_KEY_PREFIX = 'table:'
 ACTORS_LANE_NAME = 'actors'
 LOBBY_MAP_KEY = 'map:Lobby'
 LOADS_RULE_TEXT = 'Loads counts only recorded load checks; everything else is unverified.'
-CENSUS_RULE_TEXT = ('Every denominator key has exactly one census status: converted when a catalog lists it, else the failed, gap or '
-                    'pending row of its latest step. Gap counts rows with status gap or failed.')
+CENSUS_RULE_TEXT = ('Every denominator key has exactly one census status: the failed or gap row of its latest step when it has one, else '
+                    'converted when a catalog lists it, else the pending row of its latest step. Converted counts catalog-listed keys; '
+                    'gap counts rows with status gap or failed, so a catalog-listed key with a failed or gap step counts in both.')
 MARKDOWN_TABLE_HEADER = ('| Part | Denominator | Converted | Loads pass | Loads failed | Loads unverified | Gap | Pending | Denominator source |\n'
                          '| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n')
 
@@ -141,9 +142,9 @@ def validate_coverage_row(row, part_names, reason_patterns):
         raise CoverageReportError(f'coverage row {key} status {row["status"]!r} does not fit its reason {row["reason"]!r}')
     if row['reason'] is not None and not is_listed_reason(row['reason'], reason_patterns):
         raise CoverageReportError(f'coverage row {key} reason is not listed: {row["reason"]!r}')
-    if not (type(row['converted']) is bool and row['converted'] == (row['status'] == 'pass') and row['loads'] in GAP_CENSUS_LOAD_STATUSES
+    if not (type(row['converted']) is bool and (row['converted'] or row['status'] != 'pass') and row['loads'] in GAP_CENSUS_LOAD_STATUSES
             and isinstance(row['steps'], list)):
-        raise CoverageReportError(f'coverage row {key} needs converted equal to a pass status, a load status and a step list')
+        raise CoverageReportError(f'coverage row {key} needs converted on a pass status, a load status and a step list')
     for step in row['steps']:
         validate_coverage_step(step, key)
     step_names = [step['step'] for step in row['steps']]
@@ -214,7 +215,7 @@ def lobby_status_text(report):
     lobby_row = next((row for row in report['rows'] if row['key'] == LOBBY_MAP_KEY), None)
     if lobby_row is None:
         return ''
-    status_text = 'converted' if lobby_row['converted'] else f'{lobby_row["status"]} `{lobby_row["reason"]}`'
+    status_text = 'converted' if lobby_row['status'] == 'pass' else f'{lobby_row["status"]} `{lobby_row["reason"]}`'
     return f'Lobby (`{LOBBY_MAP_KEY}`) has the census status {status_text}.\n'
 
 

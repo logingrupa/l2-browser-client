@@ -81,13 +81,23 @@ class GapCensusWorldTests(unittest.TestCase):
             self.build(gap_rows)
 
     def test_failed_wins_over_gap_and_gap_over_pending_whatever_the_step(self):
-        self.assertEqual(GAP_CENSUS_STATUS_PRECEDENCE, ('converted', 'failed', 'gap', 'pending'))
+        self.assertEqual(GAP_CENSUS_STATUS_PRECEDENCE, ('failed', 'gap', 'converted', 'pending'))
         gap_rows = self.gap_rows + [world_row('tile:00_01', 'raw', 'pending', 'step-pending:raw'),
                                     world_row('map:Lobby', 'raw', 'failed', 'decode-failed:Truncated')]
         census_rows = census_rows_by_key(self.build(gap_rows))
         self.assertEqual((census_rows['tile:00_01']['status'], census_rows['tile:00_01']['reason']),
                          ('gap', 'map-licensee-unsupported:123/25'))
         self.assertEqual((census_rows['map:Lobby']['status'], census_rows['map:Lobby']['reason']), ('failed', 'decode-failed:Truncated'))
+
+    def test_a_catalog_listed_key_with_a_failed_or_gap_step_takes_that_status_and_stays_converted(self):
+        gap_rows = self.gap_rows + [world_row('tile:00_03', 'bsp', 'gap', 'map-licensee-unsupported:123/25'),
+                                    world_row('tile:00_03', 'collision', 'failed', 'decode-failed:FormatError')]
+        census_rows = census_rows_by_key(self.build(gap_rows))
+        self.assertEqual(census_rows['tile:00_03'], {'key': 'tile:00_03', 'part': 'world', 'status': 'failed', 'reason': 'decode-failed:FormatError',
+                                                     'converted': True, 'loads': 'unverified'})
+        census_rows = census_rows_by_key(self.build(gap_rows[:-1]))
+        self.assertEqual((census_rows['tile:00_03']['status'], census_rows['tile:00_03']['reason'], census_rows['tile:00_03']['converted']),
+                         ('gap', 'map-licensee-unsupported:123/25', True))
 
     def test_a_pass_row_never_converts_a_key_without_a_catalog_entry(self):
         self.converted_keys = set()

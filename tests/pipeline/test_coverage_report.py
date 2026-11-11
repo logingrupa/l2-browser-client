@@ -234,7 +234,7 @@ class CoverageReportWorldTests(CoverageProjectTestCase):
         super().setUp()
         world_keys = load_census_denominators(['world'])['world']['keys']
         write_gap_rows(self.project_root, 'world', 'census', [
-            world_gap_row(key, 'census', 'pending', 'step-pending:raw') if key == 'tile:20_21'
+            world_gap_row(key, 'census', 'pending', 'step-pending:raw') if key in ('tile:20_20', 'tile:20_21')
             else world_gap_row(key, 'census', 'gap', 'census-pending') for key in world_keys])
 
     def test_denominators_come_from_the_reference_lock_the_tile_census_and_the_inventory(self):
@@ -274,6 +274,23 @@ class CoverageReportWorldTests(CoverageProjectTestCase):
                                                     'gap': 161, 'pending': 1})
         self.assertEqual(report['parts']['minimap']['pending'], 'unknown')
         self.assertIn('Lobby (`map:Lobby`) has the census status gap `census-pending`.', coverage_markdown(report))
+
+    def test_a_converted_tile_whose_collision_step_failed_is_a_failed_row_counted_as_converted_and_as_gap(self):
+        write_gap_rows(self.project_root, 'world', 'collision', [world_gap_row('tile:20_20', 'collision', 'failed', 'decode-failed:FormatError')])
+        write_store_catalog(self.store_root, {'schemaVersion': 1, 'models': [], 'sections': [{'id': 'map-20-20-section'}]})
+        report = self.build_report(('world',))
+        tile_row = rows_by_key(report)['tile:20_20']
+        self.assertEqual((tile_row['status'], tile_row['reason'], tile_row['converted']), ('failed', 'decode-failed:FormatError', True))
+        self.assertEqual(report['parts']['world'], {'denominator': 163, 'converted': 1, 'loads': {'pass': 0, 'failed': 0, 'unverified': 1},
+                                                    'gap': 162, 'pending': 1})
+        self.assertEqual(validate_coverage_report(report), report)
+
+    def test_a_pass_row_that_is_not_converted_is_refused(self):
+        write_store_catalog(self.store_root, {'schemaVersion': 1, 'models': [], 'sections': [{'id': 'map-20-20-section'}]})
+        report = self.build_report(('world',))
+        rows_by_key(report)['tile:20_20']['converted'] = False
+        with self.assertRaisesRegex(CoverageReportError, 'tile:20_20 needs converted on a pass status'):
+            validate_coverage_report(report)
 
     def test_a_converted_key_outside_an_enumerated_denominator_is_refused(self):
         write_store_catalog(self.store_root, {'schemaVersion': 1, 'models': [], 'sections': [{'id': 'map-99-99-section'}]})
