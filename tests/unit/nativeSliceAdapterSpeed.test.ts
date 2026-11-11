@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  ACIS_HUMAN_FIGHTER_SPEED, NativeSliceAdapter, SYNTHETIC_SLICE_SPEED, nativeSliceSpeedProfile,
+  ACIS_HUMAN_FIGHTER_SPEED, NativeSliceAdapter, isNativeSliceAdapterWithSourcedSpeed, nativeSliceSpeedProfile, type NativeSliceSpeedProfile,
 } from "../../src/world/NativeSliceAdapter";
 import type { WorldEvent } from "../../src/world/worldTypes";
 import { createMovementPresenter } from "../../src/scene/world/movement/movementPresenter";
@@ -9,8 +9,8 @@ import { boxVolumeWorld, committedMoveTypes, floorSlab, pawnRules } from "../fix
 const origin = { x: 0, y: 0, z: 0 };
 const player = (adapter: NativeSliceAdapter) => adapter.getInitialState().find(entity => entity.id === "local-player")!;
 const native = nativeSliceSpeedProfile("human-male-fighter", 100);
-function adapter(walkSupported = true) {
-  return new NativeSliceAdapter(origin, null, undefined, { walkSupported, speed: native, collision: { radius: 9, height: 23 }, moveTypes: committedMoveTypes });
+function adapter(walkSupported = true, speed: NativeSliceSpeedProfile = native) {
+  return new NativeSliceAdapter(origin, null, undefined, { walkSupported, speed, collision: { radius: 9, height: 23 }, moveTypes: committedMoveTypes });
 }
 
 describe("native slice walk/run speed (aCis server data)", () => {
@@ -18,9 +18,11 @@ describe("native slice walk/run speed (aCis server data)", () => {
     expect(native).toMatchObject({ walkMetresPerSecond: .8, runMetresPerSecond: 1.15, runStartSeconds: .4 });
     expect(native.source).toContain("aCis server data");
     expect(ACIS_HUMAN_FIGHTER_SPEED).toMatchObject({ walkUnitsPerSecond: 80, runUnitsPerSecond: 115 });
-    expect(nativeSliceSpeedProfile("human-male-fighter", 50).walkMetresPerSecond).toBe(1.6);
+    expect(nativeSliceSpeedProfile("human-male-fighter", 50)).toMatchObject({ walkMetresPerSecond: 1.6 });
     expect(() => nativeSliceSpeedProfile("human-male-fighter", 0)).toThrow("units");
-    expect(new NativeSliceAdapter(origin).speedProfile).toBe(SYNTHETIC_SLICE_SPEED);
+    expect(new NativeSliceAdapter(origin).speedProfile).toEqual({ isSourced: false, playerProfileId: "no-speed-profile",
+      source: "speed unresolved: the adapter was given no player speed profile" });
+    if (!native.isSourced) throw new Error("The human fighter speed must be sourced.");
     expect(() => new NativeSliceAdapter(origin, null, undefined, { walkSupported: false,
       speed: { ...native, runMetresPerSecond: Number.NaN } })).toThrow("speed profile");
   });
@@ -29,10 +31,9 @@ describe("native slice walk/run speed (aCis server data)", () => {
     expect(nativeSliceSpeedProfile("human-female-fighter", 100)).toEqual(native);
     for (const profileId of ["human-male-mystic", "human-female-mystic"]) {
       const unresolved = nativeSliceSpeedProfile(profileId, 100);
-      expect(unresolved.isSourced).toBe(false);
-      expect(unresolved.source).toContain(`speed unresolved for ${profileId}`);
-      expect(unresolved.source).not.toContain("aCis");
-      expect(unresolved).toMatchObject({ walkMetresPerSecond: SYNTHETIC_SLICE_SPEED.walkMetresPerSecond, runMetresPerSecond: SYNTHETIC_SLICE_SPEED.runMetresPerSecond });
+      expect(unresolved).toEqual({ isSourced: false, playerProfileId: profileId,
+        source: `speed unresolved for ${profileId}: no sourced server speed is recorded for this class` });
+      expect(Object.values(unresolved).some(value => typeof value === "number")).toBe(false);
     }
     expect(native.isSourced).toBe(true);
   });
@@ -46,6 +47,29 @@ describe("native slice walk/run speed (aCis server data)", () => {
     const moves = events.flatMap(event => event.type === "move" ? [[event.moveType, event.speeds]] : []);
     expect(moves).toEqual([[pawnRules.pawn.runMoveType, { walk: 80, run: 115 }], [pawnRules.pawn.walkMoveType, { walk: 80, run: 115 }]]);
     expect(player(value).position).toEqual(origin);
+  });
+
+  it("refuses move-local with speed-unresolved for a profile without a sourced server speed and sends no move record", () => {
+    const value = adapter(true, nativeSliceSpeedProfile("human-male-mystic", 100)), events: WorldEvent[] = [];
+    value.subscribe(event => events.push(event));
+    value.dispatch({ type: "move-local", position: { x: 0, y: 0, z: 10 } });
+    value.dispatch({ type: "set-locomotion", mode: "walk" });
+    value.dispatch({ type: "move-local", position: { x: 0, y: 0, z: 10 } });
+    expect(events.filter(event => event.type === "move")).toEqual([]);
+    expect(events.filter(event => event.type === "command-rejected")).toEqual([
+      { type: "command-rejected", commandType: "move-local", reason: "speed-unresolved:human-male-mystic" },
+      { type: "command-rejected", commandType: "move-local", reason: "speed-unresolved:human-male-mystic" }]);
+    expect(value.locomotionMode).toBe("walk");
+    expect(isNativeSliceAdapterWithSourcedSpeed(value)).toBe(false);
+    expect(isNativeSliceAdapterWithSourcedSpeed(adapter())).toBe(true);
+  });
+
+  it("refuses move-local from an adapter given no speed profile", () => {
+    const value = new NativeSliceAdapter(origin, null, undefined, { walkSupported: true, collision: { radius: 9, height: 23 }, moveTypes: committedMoveTypes });
+    const events: WorldEvent[] = [];
+    value.subscribe(event => events.push(event));
+    value.dispatch({ type: "move-local", position: { x: 0, y: 0, z: 10 } });
+    expect(events).toEqual([{ type: "command-rejected", commandType: "move-local", reason: "speed-unresolved:no-speed-profile" }]);
   });
 
   it("has its run move record presented at run speed by the movement presenter reading the same rules", () => {

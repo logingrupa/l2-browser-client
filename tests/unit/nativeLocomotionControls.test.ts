@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { NativeSliceAdapter, nativeSliceSpeedProfile } from "../../src/world/NativeSliceAdapter";
+import { NativeSliceAdapter, isNativeSliceAdapterWithSourcedSpeed, type NativeSliceAdapterWithSourcedSpeed } from "../../src/world/NativeSliceAdapter";
 import { attachNativeLocomotionControls } from "../../src/ui/nativeLocomotionControls";
+import { sourcedHumanFighterSpeed } from "../fixtures/movement/pawnWorldFixtures";
 
 class FakeElement extends EventTarget {
   children: FakeElement[] = []; parent: FakeElement | null = null; dataset: Record<string, string> = {};
@@ -17,10 +18,15 @@ class FakeElement extends EventTarget {
 let host: FakeElement;
 beforeEach(() => { vi.stubGlobal("document", { createElement: (tag: string) => new FakeElement(tag) }); host = new FakeElement("div"); });
 afterEach(() => vi.unstubAllGlobals());
+function sourcedFighterAdapter(walkSupported: boolean): NativeSliceAdapterWithSourcedSpeed {
+  const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, null, undefined, { walkSupported, speed: sourcedHumanFighterSpeed });
+  if (!isNativeSliceAdapterWithSourcedSpeed(adapter)) throw new Error("The human fighter speed must be sourced.");
+  return adapter;
+}
 
 describe("walk/run dev controls", () => {
   it("shows the armed gait as a chip radiogroup with the aCis speeds and dispatches set-locomotion", () => {
-    const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, null, undefined, { walkSupported: true, speed: nativeSliceSpeedProfile("human-male-fighter", 100) });
+    const adapter = sourcedFighterAdapter(true);
     const controls = attachNativeLocomotionControls(host as unknown as HTMLElement, adapter, true, null);
     const group = host.all().find(element => element.className === "dev-chips")!;
     expect([group.getAttribute("role"), group.getAttribute("aria-label")]).toEqual(["radiogroup", "Movement gait"]);
@@ -37,15 +43,8 @@ describe("walk/run dev controls", () => {
     adapter.dispose();
   });
 
-  it("marks the readout unresolved for a profile without a sourced server speed", () => {
-    const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, null, undefined, { walkSupported: true, speed: nativeSliceSpeedProfile("human-male-mystic", 100) });
-    attachNativeLocomotionControls(host as unknown as HTMLElement, adapter, true, null);
-    expect(host.find("native-locomotion-speed").textContent).toBe("0.70 m/s (walk speed for the first 0 s), speed unresolved");
-    adapter.dispose();
-  });
-
   it("disables Walk without a verified walk clip and shows the reason", () => {
-    const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 });
+    const adapter = sourcedFighterAdapter(false);
     attachNativeLocomotionControls(host as unknown as HTMLElement, adapter, false, "Walking needs one verified walk/run pair for this character.");
     expect(host.find("native-locomotion-walk").disabled).toBe(true);
     expect(host.all().some(element => element.textContent.startsWith("Walking needs"))).toBe(true);

@@ -3,11 +3,11 @@ import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import type { NativePlayerProfile } from "../assets/native/loadNativePlayerProfiles";
 import type { NativeClipPreviewHub } from "../assets/native/nativeClipPreview";
 import type { resolveNativeLocomotionClips } from "../assets/native/nativeLocomotion";
-import type { NativeSliceAdapter } from "../world/NativeSliceAdapter";
+import { isNativeSliceAdapterWithSourcedSpeed, type NativeSliceAdapter, type NativeSliceAdapterWithSourcedSpeed } from "../world/NativeSliceAdapter";
 import type { WorldGroundContact } from "../world/WorldNavigation";
 import type { EntityRegistry } from "../entities/EntityRegistry";
 import type { WorldInterface } from "../ui/WorldInterface";
-import type { DevSection } from "../ui/devSheet/DevSheet";
+import type { DevGroup, DevSection } from "../ui/devSheet/DevSheet";
 import type { VariableInfo } from "../ui/devSheet/types";
 import type { createNativeFootstepPreview } from "../audio/nativeFootstepPreview";
 import type { createFootstepGroundSampler } from "../audio/footstepSurfaceGround";
@@ -108,18 +108,39 @@ function attachAudioSection(section: DevSection, context: NativeSliceSheetContex
   return audioControls;
 }
 
-function attachMovementSection(section: DevSection, context: NativeSliceSheetContext, tools: NativeSliceSheetTools, gaitVariables: () => VariableInfo[]): void {
-  const { adapter, locomotionClips, footsteps, footstepGround, audio, ui } = context;
-  const { describe } = tools;
-  const gaitGroup = section.group("gait", "Walk / run"), groundGroup = section.group("ground", "Ground under fighter");
-  const footstepGroup = section.group("footsteps", "Footsteps");
+function movementSpeedVariable(adapter: NativeSliceAdapter, sourceUnitsPerMetre: number): VariableInfo {
+  const speed = adapter.speedProfile;
+  if (!speed.isSourced) {
+    return { name: "movement.speed", value: () => "speed-unresolved: move-local is refused", values: "no speed (no sourced server speed for this class)",
+      source: speed.source, status: "unverified" };
+  }
+  return { name: "movement.speed", value: () => `${(adapter.locomotionMode === "walk" ? speed.walkMetresPerSecond : speed.runMetresPerSecond).toFixed(2)} m/s in the next move record`,
+    values: `walk ${speed.walkMetresPerSecond.toFixed(2)} | run ${speed.runMetresPerSecond.toFixed(2)} m/s (walk speed for the first ${speed.runStartSeconds} s of a run)`,
+    source: `${speed.source} ÷ sourceUnitsPerMetre ${sourceUnitsPerMetre}. Speeds are server data (no client file holds them); no acceleration ramp (APawn::calcVelocity).`,
+    status: "presentation" };
+}
+
+function attachSourcedGaitCard(gaitGroup: DevGroup, adapter: NativeSliceAdapterWithSourcedSpeed, context: NativeSliceSheetContext,
+  tools: NativeSliceSheetTools, gaitVariables: () => VariableInfo[]): void {
+  const { locomotionClips } = context;
   const locomotionControls = attachNativeLocomotionControls(gaitGroup.element, adapter, locomotionClips.walkClip !== null, locomotionClips.reason);
   context.addRelease(() => locomotionControls.dispose());
   const locomotionRoot = gaitGroup.element.querySelector<HTMLElement>('[data-testid="native-locomotion-controls"]');
-  const locomotionNote = locomotionClips.reason ? "" : describe.foldStaticNoteIntoDescription(locomotionRoot?.querySelector<HTMLElement>("p"));
+  const locomotionNote = locomotionClips.reason ? "" : tools.describe.foldStaticNoteIntoDescription(locomotionRoot?.querySelector<HTMLElement>("p"));
   const speed = adapter.speedProfile;
-  const speedOrigin = speed.isSourced ? "Speeds are aCis server data" : `Speed unresolved for ${context.playerProfile.name}, synthetic stand-in`;
-  describe.element(locomotionRoot, { title: "Walk / run", description: `${locomotionNote} ${speedOrigin} (walk ${speed.walkMetresPerSecond.toFixed(2)}, run ${speed.runMetresPerSecond.toFixed(2)} m/s); a run starts at walk speed for ${speed.runStartSeconds} s. Footsteps follow the armed gait.`.trim(), variables: gaitVariables });
+  tools.describe.element(locomotionRoot, { title: "Walk / run", description: `${locomotionNote} Speeds are aCis server data (walk ${speed.walkMetresPerSecond.toFixed(2)}, run ${speed.runMetresPerSecond.toFixed(2)} m/s); a run starts at walk speed for ${speed.runStartSeconds} s. Footsteps follow the armed gait.`.trim(), variables: gaitVariables });
+}
+
+function attachMovementSection(section: DevSection, context: NativeSliceSheetContext, tools: NativeSliceSheetTools, gaitVariables: () => VariableInfo[]): void {
+  const { adapter, footsteps, footstepGround, audio, ui } = context;
+  const { describe } = tools;
+  const gaitGroup = section.group("gait", "Walk / run"), groundGroup = section.group("ground", "Ground under fighter");
+  const footstepGroup = section.group("footsteps", "Footsteps");
+  if (isNativeSliceAdapterWithSourcedSpeed(adapter)) attachSourcedGaitCard(gaitGroup, adapter, context, tools, gaitVariables);
+  else {
+    gaitGroup.note(`speed-unresolved: ${adapter.speedProfile.source}`, { tone: "warning", testId: "native-speed-unresolved", title: "Walk / run",
+      hint: `No sourced server speed exists for ${context.playerProfile.name}, so the adapter refuses move-local and the gait card is not shown.`, variables: gaitVariables });
+  }
   const groundContext = () => footstepGround.describe(context.localSurfaceContact());
   const resolvedSurface = () => footsteps.autoSurface().resolve(groundContext());
   groundGroup.readout({ label: "Ground", testId: "native-ground-readout", value: () => resolvedSurface().summary,
@@ -271,12 +292,7 @@ export function attachNativeSliceSheet(context: NativeSliceSheetContext): Native
     { name: "movement.walkClip", value: () => locomotionClips.walkClip ?? "unavailable", values: "original clip name",
       source: locomotionClips.walkSource === "profile-alias" ? "profile WalkAnimName[0] alias (no staged footstep pair: walking is silent)" : "actor animation archive + staged footstep notify pair (catalog.animationAudio)", status: "native" },
     { name: "movement.runClip", value: () => locomotionClips.runClip, values: "original clip name", source: "player profile run clip (RunAnimName[0])", status: "native" },
-    { name: "movement.speed", value: () => `${(adapter.locomotionMode === "walk" ? adapter.speedProfile.walkMetresPerSecond : adapter.speedProfile.runMetresPerSecond).toFixed(2)} m/s in the next move record`,
-      values: `walk ${adapter.speedProfile.walkMetresPerSecond.toFixed(2)} | run ${adapter.speedProfile.runMetresPerSecond.toFixed(2)} m/s (walk speed for the first ${adapter.speedProfile.runStartSeconds} s of a run)`,
-      source: adapter.speedProfile.isSourced
-        ? `${adapter.speedProfile.source} ÷ sourceUnitsPerMetre ${playerProfile.sourceUnitsPerMetre}. Speeds are server data (no client file holds them); no acceleration ramp (APawn::calcVelocity).`
-        : adapter.speedProfile.source,
-      status: adapter.speedProfile.isSourced ? "presentation" : "unverified" },
+    movementSpeedVariable(adapter, playerProfile.sourceUnitsPerMetre),
     { name: "movement.clipRate", value: () => "1.0", values: "1.0 × NonAttackSpeedRate (1.0)", source: "UpdateMovementAnimation 0x10624cc0: walk/run clips are not stretched to the travel speed", status: "native" },
   ];
   attachHeadsUpDisplayCards(context, tools, gaitVariables);

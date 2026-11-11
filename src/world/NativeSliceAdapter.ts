@@ -25,33 +25,44 @@ const localMoveTypesAbsentReason = "local-move-types-absent";
 const velocityWithoutAccelerationRampRoutine = "APawn::calcVelocity 0x10639950";
 const runStartAtWalkSpeedRoutine = "APawn::GetCurSpeed 0x1061eaf0 (MoveTimer <= WalkAnimFrameInMove / 30)";
 
-export interface NativeSliceSpeedProfile {
+export interface SourcedNativeSliceSpeedProfile {
+  readonly isSourced: true;
   readonly walkMetresPerSecond: number;
   readonly runMetresPerSecond: number;
   readonly walkSourceUnitsPerSecond: number;
   readonly runSourceUnitsPerSecond: number;
   readonly runStartSeconds: number;
   readonly source: string;
-  readonly isSourced: boolean;
 }
-export const SYNTHETIC_SLICE_SPEED: NativeSliceSpeedProfile = Object.freeze({
-  walkMetresPerSecond: .7, runMetresPerSecond: .7, walkSourceUnitsPerSecond: 70, runSourceUnitsPerSecond: 70, runStartSeconds: 0, source: "synthetic slice speed (presentation choice)", isSourced: false });
+export interface UnresolvedNativeSliceSpeedProfile {
+  readonly isSourced: false;
+  readonly playerProfileId: string;
+  readonly source: string;
+}
+export type NativeSliceSpeedProfile = SourcedNativeSliceSpeedProfile | UnresolvedNativeSliceSpeedProfile;
+export type NativeSliceAdapterWithSourcedSpeed = NativeSliceAdapter & { readonly speedProfile: SourcedNativeSliceSpeedProfile };
 export const ACIS_HUMAN_FIGHTER_SPEED = Object.freeze({ walkUnitsPerSecond: 80, runUnitsPerSecond: 115, runStartSeconds: 12 / 30,
   source: "aCis server data, not client data (humanFighter.xml line 6, sha256 6f7ef9f6b5cb8e5e…, class 0, both sexes: walkSpd 80, runSpd 115 UU/s, move multiplier 1.0; " +
     `chargrp walkanimframe 12/30 s run start, rows 0..13, ${runStartAtWalkSpeedRoutine}; no acceleration ramp, ${velocityWithoutAccelerationRampRoutine})` });
 const sourcedServerSpeedByPlayerProfileId: ReadonlyMap<string, typeof ACIS_HUMAN_FIGHTER_SPEED> = new Map([
   ["human-male-fighter", ACIS_HUMAN_FIGHTER_SPEED], ["human-female-fighter", ACIS_HUMAN_FIGHTER_SPEED]]);
+const speedProfileAbsent: UnresolvedNativeSliceSpeedProfile = Object.freeze({ isSourced: false, playerProfileId: "no-speed-profile",
+  source: "speed unresolved: the adapter was given no player speed profile" });
+function speedUnresolvedReason(speed: UnresolvedNativeSliceSpeedProfile): string { return `speed-unresolved:${speed.playerProfileId}`; }
 export function nativeSliceSpeedProfile(playerProfileId: string, sourceUnitsPerMetre: number): NativeSliceSpeedProfile {
   if (!Number.isFinite(sourceUnitsPerMetre) || sourceUnitsPerMetre <= 0) throw new Error("Invalid source units per metre.");
   const sourcedServerSpeed = sourcedServerSpeedByPlayerProfileId.get(playerProfileId);
   if (!sourcedServerSpeed) {
-    return Object.freeze({ ...SYNTHETIC_SLICE_SPEED,
-      source: `speed unresolved for ${playerProfileId}: no sourced server speed is recorded for this class; ${SYNTHETIC_SLICE_SPEED.source}` });
+    return Object.freeze({ isSourced: false, playerProfileId,
+      source: `speed unresolved for ${playerProfileId}: no sourced server speed is recorded for this class` });
   }
-  return Object.freeze({ walkMetresPerSecond: sourcedServerSpeed.walkUnitsPerSecond / sourceUnitsPerMetre,
+  return Object.freeze({ isSourced: true, walkMetresPerSecond: sourcedServerSpeed.walkUnitsPerSecond / sourceUnitsPerMetre,
     runMetresPerSecond: sourcedServerSpeed.runUnitsPerSecond / sourceUnitsPerMetre,
     walkSourceUnitsPerSecond: sourcedServerSpeed.walkUnitsPerSecond, runSourceUnitsPerSecond: sourcedServerSpeed.runUnitsPerSecond,
-    runStartSeconds: sourcedServerSpeed.runStartSeconds, source: sourcedServerSpeed.source, isSourced: true });
+    runStartSeconds: sourcedServerSpeed.runStartSeconds, source: sourcedServerSpeed.source });
+}
+export function isNativeSliceAdapterWithSourcedSpeed(adapter: NativeSliceAdapter): adapter is NativeSliceAdapterWithSourcedSpeed {
+  return adapter.speedProfile.isSourced;
 }
 
 export class NativeSliceAdapter implements GameWorldAdapter {
@@ -79,9 +90,9 @@ export class NativeSliceAdapter implements GameWorldAdapter {
     }
     this.localCollision = collision;
     this.moveTypes = locomotion.moveTypes ?? null;
-    const speed = locomotion.speed ?? SYNTHETIC_SLICE_SPEED;
-    if (![speed.walkMetresPerSecond, speed.runMetresPerSecond, speed.walkSourceUnitsPerSecond, speed.runSourceUnitsPerSecond].every(value => Number.isFinite(value) && value > 0) ||
-      !Number.isFinite(speed.runStartSeconds) || speed.runStartSeconds < 0) throw new Error("Invalid native slice speed profile.");
+    const speed = locomotion.speed ?? speedProfileAbsent;
+    if (speed.isSourced && (![speed.walkMetresPerSecond, speed.runMetresPerSecond, speed.walkSourceUnitsPerSecond, speed.runSourceUnitsPerSecond].every(value => Number.isFinite(value) && value > 0) ||
+      !Number.isFinite(speed.runStartSeconds) || speed.runStartSeconds < 0)) throw new Error("Invalid native slice speed profile.");
     this.speed = speed;
     this.specialAttackPreviewSupported = locomotion.specialAttackPreviewSupported === true;
     const player: WorldEntity = { id: "local-player", kind: "local-player", displayName: presentation.displayName,
@@ -191,12 +202,14 @@ export class NativeSliceAdapter implements GameWorldAdapter {
     if (player.health <= 0 || ![origin.x, origin.y, origin.z, destination.x, destination.y, destination.z].every(Number.isFinite)) return;
     if (this.localCollision === null) { this.emit(commandRejectedEvent(command.type, localCollisionAbsentReason)); return; }
     if (this.moveTypes === null) { this.emit(commandRejectedEvent(command.type, localMoveTypesAbsentReason)); return; }
+    const speed = this.speed;
+    if (!speed.isSourced) { this.emit(commandRejectedEvent(command.type, speedUnresolvedReason(speed))); return; }
     this.localMoveIssued = true;
     const { actionPreview, actionTargetId, ...ordinary } = player;
     if (actionPreview !== undefined || actionTargetId !== undefined || player.animation !== "idle") this.update({ ...ordinary, animation: "idle" });
     this.emit({ type: "move", entityId: player.id, origin: worldPositionToSource(origin), destination: worldPositionToSource(destination),
       moveType: this.locomotionMode === "walk" ? this.moveTypes.walk : this.moveTypes.run,
-      speeds: { walk: this.speed.walkSourceUnitsPerSecond, run: this.speed.runSourceUnitsPerSecond },
+      speeds: { walk: speed.walkSourceUnitsPerSecond, run: speed.runSourceUnitsPerSecond },
       collision: { radius: this.localCollision.radius, height: this.localCollision.height } });
   }
   private stopLocalMove(player: WorldEntity): void {

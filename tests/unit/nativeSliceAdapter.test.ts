@@ -3,18 +3,18 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { NativeSliceAdapter } from "../../src/world/NativeSliceAdapter";
 import { reportedHeadingNotIntegerReason, reportedPositionNotFiniteReason } from "../../src/world/sandboxCommands";
 import type { WorldEvent } from "../../src/world/worldTypes";
-import { committedMoveTypes } from "../fixtures/movement/pawnWorldFixtures";
+import { committedMoveTypes, sourcedHumanFighterSpeed as speed } from "../fixtures/movement/pawnWorldFixtures";
 
 const origin = { x: 2, y: 3, z: 4 };
 const collision = { radius: 9, height: 23 };
 const moveTypes = committedMoveTypes;
 function player(adapter: NativeSliceAdapter) { return adapter.getInitialState().find(entity => entity.id === "local-player")!; }
-function movingAdapter() { return new NativeSliceAdapter(origin, null, undefined, { walkSupported: true, collision, moveTypes }); }
+function movingAdapter() { return new NativeSliceAdapter(origin, null, undefined, { walkSupported: true, speed, collision, moveTypes }); }
 function recorded(adapter: NativeSliceAdapter) { const events: WorldEvent[] = []; adapter.subscribe(event => events.push(event)); return events; }
 
 describe("native slice adapter boundary", () => {
   it("answers move-local with one move record in source units and moves no entity itself", () => {
-    const vector = new Vector3(2, 3, 4), adapter = new NativeSliceAdapter(vector, 22, undefined, { walkSupported: false, collision, moveTypes });
+    const vector = new Vector3(2, 3, 4), adapter = new NativeSliceAdapter(vector, 22, undefined, { walkSupported: false, speed, collision, moveTypes });
     expect(player(adapter)).toMatchObject({ position: origin, appearanceId: "native-human-fighter", equipment: { upper: 22 } });
     vector.x = 999;
     const snapshot = player(adapter); Reflect.set(snapshot.position, "x", 123);
@@ -22,7 +22,7 @@ describe("native slice adapter boundary", () => {
     const events = recorded(adapter);
     adapter.dispatch({ type: "move-local", position: new Vector3(2.7, 900, 4) });
     expect(events).toEqual([{ type: "move", entityId: "local-player", origin: { x: 200, y: 400, z: 300 }, destination: { x: 270, y: 400, z: 90000 },
-      moveType: moveTypes.run, speeds: { walk: 70, run: 70 }, collision }]);
+      moveType: moveTypes.run, speeds: { walk: 80, run: 115 }, collision }]);
     expect(player(adapter)).toMatchObject({ position: origin, animation: "idle" });
     adapter.dispose();
   });
@@ -110,7 +110,7 @@ describe("native slice adapter boundary", () => {
   });
 
   it("stops after a special-attack preview toward the monster on world +x with the source heading along source +X", () => {
-    const adapter = new NativeSliceAdapter(origin, null, undefined, { walkSupported: true, specialAttackPreviewSupported: true, collision, moveTypes });
+    const adapter = new NativeSliceAdapter(origin, null, undefined, { walkSupported: true, specialAttackPreviewSupported: true, speed, collision, moveTypes });
     adapter.dispatch({ type: "move-local", position: { x: 9, y: 3, z: 4 } });
     adapter.dispatch({ type: "preview-action", action: "special-attack", targetId: "native-musveren" });
     adapter.dispatch({ type: "move-local", position: { x: 9, y: 3, z: 4 } });

@@ -13,7 +13,7 @@ import type { TileCollisionLoad } from "../../src/runtime/tileCollisionCells";
 import { createCollisionWorldNavigation } from "../../src/runtime/collisionWorldNavigation";
 import { readCollisionFixturePayload } from "../support/nativeTileCollisionFixture";
 import { emptyChunkArrays, fixtureCellId, fixtureTileId, volumeArrays, type BoxVolumeDeclaration } from "../fixtures/movement/movementCollisionFixtures";
-import { blockingBox, committedMoveTypes, floorSlab, pawnRules } from "../fixtures/movement/pawnWorldFixtures";
+import { blockingBox, committedMoveTypes, floorSlab, pawnRules, sourcedHumanFighterSpeed } from "../fixtures/movement/pawnWorldFixtures";
 
 const localPlayerId = "local-player";
 const frameSeconds = 1 / 60;
@@ -39,7 +39,7 @@ async function wiredWorld(boxes: readonly BoxVolumeDeclaration[] = [floorSlab(0)
   const engine = new NullEngine(), scene = new Scene(engine);
   scene.useRightHandedSystem = true;
   const camera = new ArcRotateCamera("follow", Math.PI / 2, Math.PI / 3, 4, new Vector3(0, 1, 0), scene);
-  const adapter = new NativeSliceAdapter(origin, null, undefined, { walkSupported: true, collision: { radius: 9, height: 23 }, moveTypes: committedMoveTypes });
+  const adapter = new NativeSliceAdapter(origin, null, undefined, { walkSupported: true, speed: sourcedHumanFighterSpeed, collision: { radius: 9, height: 23 }, moveTypes: committedMoveTypes });
   const commands: WorldCommand[] = [];
   adapter.subscribeCommands(command => commands.push(command));
   const loader = boxCellLoader(boxes);
@@ -101,7 +101,7 @@ describe("world movement wiring", () => {
   it("does not advance any pawn when the cell load fails, and names the failure", async () => {
     const engine = new NullEngine(), scene = new Scene(engine);
     const camera = new ArcRotateCamera("follow", 0, 1, 4, Vector3.Zero(), scene);
-    const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, null, undefined, { walkSupported: true, collision: { radius: 9, height: 23 }, moveTypes: committedMoveTypes });
+    const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, null, undefined, { walkSupported: true, speed: sourcedHumanFighterSpeed, collision: { radius: 9, height: 23 }, moveTypes: committedMoveTypes });
     const movement: WorldMovement = wireWorldMovement({ adapter, camera, rules: pawnRules, collisionWorld: createCollisionWorld(),
       loadCollisionCells: () => Promise.reject(new Error("tile 90_90 collision is not staged")), loadedBounds, localPlayerId,
       localWalkAnimationFramesInMove: null, signal: new AbortController().signal });
@@ -116,7 +116,7 @@ describe("world movement wiring", () => {
   it("treats a loader that leaves the cells to a streaming section as resident with no whole-tile load", async () => {
     const engine = new NullEngine(), scene = new Scene(engine);
     const camera = new ArcRotateCamera("follow", 0, 1, 4, Vector3.Zero(), scene);
-    const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, null, undefined, { walkSupported: true, collision: { radius: 9, height: 23 }, moveTypes: committedMoveTypes });
+    const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, null, undefined, { walkSupported: true, speed: sourcedHumanFighterSpeed, collision: { radius: 9, height: 23 }, moveTypes: committedMoveTypes });
     const movement = wireWorldMovement({ adapter, camera, rules: pawnRules, collisionWorld: createCollisionWorld(), loadCollisionCells: () => Promise.resolve(null),
       loadedBounds, localPlayerId, localWalkAnimationFramesInMove: null, signal: new AbortController().signal });
     releases.push(() => { movement.release(); adapter.dispose(); scene.dispose(); engine.dispose(); });
@@ -141,7 +141,7 @@ describe("world movement wiring", () => {
   it("finds the floor under a vertical probe when the loaded bounds are flat at the floor height", async () => {
     const engine = new NullEngine(), scene = new Scene(engine);
     const camera = new ArcRotateCamera("follow", 0, 1, 4, Vector3.Zero(), scene);
-    const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, null, undefined, { walkSupported: true, collision: { radius: 9, height: 23 }, moveTypes: committedMoveTypes });
+    const adapter = new NativeSliceAdapter({ x: 0, y: 0, z: 0 }, null, undefined, { walkSupported: true, speed: sourcedHumanFighterSpeed, collision: { radius: 9, height: 23 }, moveTypes: committedMoveTypes });
     const loader = boxCellLoader([floorSlab(0)]);
     const flatBounds = { minimum: { x: -20, y: 0, z: -20 }, maximum: { x: 20, y: 0, z: 20 } };
     const movement = wireWorldMovement({ adapter, camera, rules: pawnRules, collisionWorld: createCollisionWorld(), loadCollisionCells: loader.load,

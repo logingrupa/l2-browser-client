@@ -2,6 +2,7 @@ import type { Vector3 } from "../../../src/shared/math/vector3";
 import type { CollisionWorld } from "../../../src/scene/world/movement/core/collisionWorld";
 import type { PawnBody, PawnPhysicsContext } from "../../../src/scene/world/movement/core/pawnBody";
 import type { MovementNativeRules } from "../../../src/scene/world/movement/core/movementRules";
+import { nativeSliceSpeedProfile } from "../../../src/world/NativeSliceAdapter";
 import { boxHalfExtent } from "../../support/nativeTileCollisionFixture";
 import {
   collisionWorldFromFixtures, committedMovementRules, emptyChunkArrays, volumeArrays, type BoxVolumeDeclaration,
@@ -13,6 +14,7 @@ export const syntheticPawnRadius = 9;
 export const syntheticPawnHalfHeight = 23;
 export const pawnRules: MovementNativeRules = committedMovementRules();
 export const committedMoveTypes = { walk: pawnRules.pawn.walkMoveType, run: pawnRules.pawn.runMoveType };
+export const sourcedHumanFighterSpeed = nativeSliceSpeedProfile("human-male-fighter", 100);
 
 interface BoxPhysicsFields {
   readonly water: boolean | null;
