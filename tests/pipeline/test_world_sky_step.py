@@ -91,6 +91,19 @@ class SkyZoneGeometryTests(unittest.TestCase):
         self.assertIn(b'ring-png', binary)
         self.assertEqual(document['materials'][0]['pbrMetallicRoughness']['baseColorFactor'], [206 / 255, 150 / 255, 0, 1])
 
+    def test_only_the_position_accessor_carries_bounds_like_the_served_sky(self):
+        package = SimpleNamespace(object_name=object_name)
+        snapshot = {'id': f'interlude:{TILE_ID}.Model1.SkyZoneInfo0', 'rootTranslationMetres': [0.0, 0.0, 0.0],
+                    'parts': build_sky_zone_parts(package, synthetic_sky_model(), SKY_ZONE, [root_surface('Sky_T.Shaders.Haze', 'Ring')])}
+        document, _ = glb_chunks(build_sky_glb(snapshot, {'Ring.png': b'ring-png'}))
+        attributes = document['meshes'][0]['primitives'][0]['attributes']
+        accessors = document['accessors']
+        self.assertEqual(accessors[attributes['POSITION']]['min'], [0.0, 0.0, 0.0])
+        self.assertEqual(accessors[attributes['POSITION']]['max'], [struct.unpack('<f', struct.pack('<f', metres))[0] for metres in (2.64, 0.0, 0.64)])
+        self.assertNotIn('min', accessors[attributes['NORMAL']])
+        self.assertNotIn('max', accessors[attributes['NORMAL']])
+        self.assertEqual(accessors[document['meshes'][0]['primitives'][0]['indices']]['componentType'], 5125)
+
 
 class SkyMaterialTests(unittest.TestCase):
     def test_a_root_without_its_color_or_with_untyped_flags_is_a_named_feature_gap(self):

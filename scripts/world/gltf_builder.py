@@ -6,6 +6,8 @@ from world.terrain_coordinates import f32
 
 GLB_MAGIC = 0x46546c67
 GLB_VERSION = 2
+GLTF_FLOAT_COMPONENT = 5126
+GLTF_UNSIGNED_INTEGER_COMPONENT = 5125
 
 
 def embedded_glb_bytes(document, binary):
@@ -29,11 +31,11 @@ class GltfBuilder:
         self.data['bufferViews'].append({'buffer': 0, 'byteOffset': offset, 'byteLength': len(payload)})
         return len(self.data['bufferViews'])-1
 
-    def accessor(self, rows, count, kind, component=5126):
+    def accessor(self, rows, count, kind, component=GLTF_FLOAT_COMPONENT, bounds=True):
         flat = [v for row in rows for v in row] if kind != 'SCALAR' else rows
-        view = self.buffer_view(struct.pack('<'+str(len(flat))+('f' if component == 5126 else 'I'), *flat))
+        view = self.buffer_view(struct.pack('<'+str(len(flat))+('f' if component == GLTF_FLOAT_COMPONENT else 'I'), *flat))
         accessor = {'bufferView': view, 'componentType': component, 'count': count, 'type': kind}
-        if kind == 'VEC3':
+        if kind == 'VEC3' and bounds:
             accessor['min'] = [f32(min(row[i] for row in rows)) for i in range(3)]
             accessor['max'] = [f32(max(row[i] for row in rows)) for i in range(3)]
         self.data['accessors'].append(accessor)

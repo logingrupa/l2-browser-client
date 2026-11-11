@@ -1,19 +1,12 @@
 import math
-import struct
 from typing import NamedTuple
 
-from native_assets_lib.gltf import json_bytes
 from native_catalog.ue2 import FormatError
+from world.gltf_builder import GLTF_UNSIGNED_INTEGER_COMPONENT, GltfBuilder
+from world.terrain_coordinates import cross, dot, f32, subtract
 
 NATIVE_UNIT_TO_METRE_SCALE = 0.01
-GLB_MAGIC = 0x46546C67
-GLB_VERSION = 2
-GLB_HEADER_BYTES = 12
-GLB_CHUNK_HEADER_BYTES = 8
-GLTF_FLOAT_COMPONENT = 5126
-GLTF_UNSIGNED_INTEGER_COMPONENT = 5125
 GLTF_REPEAT_WRAP = 10497
-GLTF_ACCESSOR_TYPES = {1: 'SCALAR', 2: 'VEC2', 3: 'VEC3'}
 SKY_GLB_GENERATOR = 'scripts/world/sky_geometry.py'
 SOURCE_TO_BROWSER_AXES = (0, 2, 1)
 SKY_COORDINATE_RULE = ('positions=sourceXYZ→XZY*0.01; exactly one root translation=-SkyZoneXYZ→XZY*0.01; no pre-subtraction; '
@@ -29,22 +22,6 @@ class SkyRootSurface(NamedTuple):
     alpha_source: str
     render_two_sided: bool
     texture: dict
-
-
-def float32(value):
-    return struct.unpack('<f', struct.pack('<f', value))[0]
-
-
-def cross(left, right):
-    return [left[1] * right[2] - left[2] * right[1], left[2] * right[0] - left[0] * right[2], left[0] * right[1] - left[1] * right[0]]
-
-
-def difference(left, right):
-    return [left[axis] - right[axis] for axis in range(3)]
-
-
-def dot(left, right):
-    return sum(x * y for x, y in zip(left, right))
 
 
 def sky_zone_material_nodes(package, model, zone_index):
@@ -86,12 +63,12 @@ def append_node(part, package, model, node_index, texture):
     start, first_index = len(part['positions']) // 3, len(part['indices'])
     base, texture_u, texture_v = model.points[surface.p_base], model.vectors[surface.v_texture_u], model.vectors[surface.v_texture_v]
     for point in points:
-        part['positions'].extend(float32(point[axis] * NATIVE_UNIT_TO_METRE_SCALE) for axis in SOURCE_TO_BROWSER_AXES)
-        part['normals'].extend(float32(normal[axis]) for axis in SOURCE_TO_BROWSER_AXES)
-        relative = difference(point, base)
-        part['uvs'].extend((float32(dot(relative, texture_u) / texture['width']), float32(dot(relative, texture_v) / texture['height'])))
+        part['positions'].extend(f32(point[axis] * NATIVE_UNIT_TO_METRE_SCALE) for axis in SOURCE_TO_BROWSER_AXES)
+        part['normals'].extend(f32(normal[axis]) for axis in SOURCE_TO_BROWSER_AXES)
+        relative = subtract(point, base)
+        part['uvs'].extend((f32(dot(relative, texture_u) / texture['width']), f32(dot(relative, texture_v) / texture['height'])))
     for corner in range(1, len(points) - 1):
-        if dot(cross(difference(points[corner], points[0]), difference(points[corner + 1], points[0])), normal) <= 0:
+        if dot(cross(subtract(points[corner], points[0]), subtract(points[corner + 1], points[0])), normal) <= 0:
             raise FormatError(f'sky node {node_index} fan triangle {corner} is degenerate or wound against its plane')
         part['indices'].extend((start, start + corner + 1, start + corner))
     part['nodeRanges'].append({'node': node_index, 'surface': node.i_surf, 'vertexStart': start, 'vertexCount': len(points),
@@ -118,25 +95,14 @@ def sky_root_translation_metres(location):
     return [-location[axis] * NATIVE_UNIT_TO_METRE_SCALE for axis in SOURCE_TO_BROWSER_AXES]
 
 
-class GlbBuffer:
-    def __init__(self):
-        self.binary, self.views, self.accessors = bytearray(), [], []
+def vector_rows(values, dimensions):
+    return [values[start:start + dimensions] for start in range(0, len(values), dimensions)]
 
-    def append(self, data):
-        self.binary.extend(b'\0' * (-len(self.binary) % 4))
-        offset = len(self.binary)
-        self.binary.extend(data)
-        self.views.append({'buffer': 0, 'byteOffset': offset, 'byteLength': len(data)})
-        return len(self.views) - 1
 
-    def accessor(self, values, dimensions, integer=False, bounds=False):
-        view = self.append(struct.pack('<' + str(len(values)) + ('I' if integer else 'f'), *values))
-        accessor = {'bufferView': view, 'componentType': GLTF_UNSIGNED_INTEGER_COMPONENT if integer else GLTF_FLOAT_COMPONENT,
-                    'count': len(values) // dimensions, 'type': GLTF_ACCESSOR_TYPES[dimensions]}
-        if bounds:
-            accessor.update(min=[min(values[axis::3]) for axis in range(3)], max=[max(values[axis::3]) for axis in range(3)])
-        self.accessors.append(accessor)
-        return len(self.accessors) - 1
+def sky_part_attributes(builder, part):
+    positions, normals, uvs = vector_rows(part['positions'], 3), vector_rows(part['normals'], 3), vector_rows(part['uvs'], 2)
+    return {'POSITION': builder.accessor(positions, len(positions), 'VEC3'), 'NORMAL': builder.accessor(normals, len(normals), 'VEC3', bounds=False),
+            'TEXCOORD_0': builder.accessor(uvs, len(uvs), 'VEC2')}
 
 
 def sky_part_material(part, texture_index):
@@ -149,24 +115,16 @@ def sky_part_material(part, texture_index):
 
 
 def build_sky_glb(snapshot, files):
-    buffer, meshes, materials, images, textures = GlbBuffer(), [], [], [], []
+    builder, meshes, materials, textures = GltfBuilder(SKY_GLB_GENERATOR), [], [], []
     for index, part in enumerate(snapshot['parts']):
-        attributes = {'POSITION': buffer.accessor(part['positions'], 3, bounds=True), 'NORMAL': buffer.accessor(part['normals'], 3),
-                      'TEXCOORD_0': buffer.accessor(part['uvs'], 2)}
-        indices = buffer.accessor(part['indices'], 1, integer=True)
-        images.append({'bufferView': buffer.append(files[part['texture']['png']['file']]), 'mimeType': 'image/png'})
-        textures.append({'source': index, 'sampler': 0})
+        attributes = sky_part_attributes(builder, part)
+        indices = builder.accessor(part['indices'], len(part['indices']), 'SCALAR', GLTF_UNSIGNED_INTEGER_COMPONENT)
+        textures.append({'source': builder.embedded_image(files[part['texture']['png']['file']]), 'sampler': 0})
         materials.append(sky_part_material(part, index))
         meshes.append({'name': part['sourceMaterial'], 'primitives': [{'attributes': attributes, 'indices': indices, 'material': index}]})
     nodes = [{'name': snapshot['id'], 'translation': snapshot['rootTranslationMetres'], 'children': list(range(1, len(snapshot['parts']) + 1))}]
     nodes += [{'mesh': index, 'name': part['sourceMaterial']} for index, part in enumerate(snapshot['parts'])]
-    document = {'asset': {'version': '2.0', 'generator': SKY_GLB_GENERATOR}, 'extensionsUsed': ['KHR_materials_unlit'],
-                'buffers': [{'byteLength': len(buffer.binary)}], 'bufferViews': buffer.views, 'accessors': buffer.accessors, 'images': images,
-                'textures': textures, 'samplers': [{'wrapS': GLTF_REPEAT_WRAP, 'wrapT': GLTF_REPEAT_WRAP}], 'materials': materials,
-                'meshes': meshes, 'nodes': nodes, 'scenes': [{'nodes': [0]}], 'scene': 0}
-    text = json_bytes(document)
-    text += b' ' * (-len(text) % 4)
-    binary = bytes(buffer.binary) + b'\0' * (-len(buffer.binary) % 4)
-    total = GLB_HEADER_BYTES + 2 * GLB_CHUNK_HEADER_BYTES + len(text) + len(binary)
-    return (struct.pack('<III', GLB_MAGIC, GLB_VERSION, total) + struct.pack('<I4s', len(text), b'JSON') + text
-            + struct.pack('<I4s', len(binary), b'BIN\0') + binary)
+    builder.data.update({'extensionsUsed': ['KHR_materials_unlit'], 'textures': textures,
+                         'samplers': [{'wrapS': GLTF_REPEAT_WRAP, 'wrapT': GLTF_REPEAT_WRAP}], 'materials': materials, 'meshes': meshes,
+                         'nodes': nodes, 'scenes': [{'nodes': [0]}], 'scene': 0})
+    return builder.glb()
