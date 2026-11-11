@@ -111,6 +111,10 @@ def skill_effect_component_record(skill_id, level, visual_root, manifest_sha256)
             'manifest': f'/l2/{EFFECT_STORE_FOLDER}/{manifest_sha256}/{STAGED_MANIFEST_NAME}', 'manifestSha256': manifest_sha256}
 
 
+def read_staged_manifest(step_directory, manifest_sha256):
+    return json.loads((step_directory / STAGED_EFFECTS_FOLDER / manifest_sha256 / STAGED_MANIFEST_NAME).read_bytes())
+
+
 def staged_emitter_classes(manifest):
     return sorted({component['class'] for component in manifest['components']})
 
@@ -193,12 +197,17 @@ class SkillEffectConversionRun:
                         'manifestSha256': None}
             reason = CONVERTER_REFUSED_REASON_PREFIX + path_free_reason(message, self.client_access.root, step_directory)
             return {'status': GAP_STATUS, 'reason': reason, 'emitterClasses': [], 'manifestSha256': None}
-        manifest = json.loads((step_directory / STAGED_EFFECTS_FOLDER / manifest_sha256 / STAGED_MANIFEST_NAME).read_bytes())
-        unbound_reason = unbound_simulated_component_reason(manifest, self.simulated_emitter_classes)
-        if unbound_reason is not None:
-            return {'status': GAP_STATUS, 'reason': unbound_reason, 'emitterClasses': staged_emitter_classes(manifest), 'manifestSha256': None}
+        manifest = read_staged_manifest(step_directory, manifest_sha256)
         return {'status': CONVERTED_ROOT_STATUS, 'reason': None, 'emitterClasses': staged_emitter_classes(manifest),
                 'manifestSha256': manifest_sha256}
+
+    def converted_root_outcome(self, visual_root, sealed):
+        manifest = read_staged_manifest(self.ledger.unit_step_directory(skill_root_key(visual_root)), sealed['manifestSha256'])
+        unbound_reason = unbound_simulated_component_reason(manifest, self.simulated_emitter_classes)
+        if unbound_reason is not None:
+            return {**sealed, 'status': GAP_STATUS, 'reason': unbound_reason, 'converted': False}
+        status, reason = emitter_class_root_outcome(sealed['emitterClasses'], self.simulated_emitter_classes)
+        return {**sealed, 'status': status, 'reason': reason, 'converted': True}
 
     def root_outcomes(self):
         outcomes = {}
@@ -207,8 +216,7 @@ class SkillEffectConversionRun:
             if sealed is None:
                 continue
             if sealed['status'] == CONVERTED_ROOT_STATUS:
-                status, reason = emitter_class_root_outcome(sealed['emitterClasses'], self.simulated_emitter_classes)
-                outcomes[visual_root] = {**sealed, 'status': status, 'reason': reason, 'converted': True}
+                outcomes[visual_root] = self.converted_root_outcome(visual_root, sealed)
             else:
                 outcomes[visual_root] = {**sealed, 'converted': False}
         return outcomes
