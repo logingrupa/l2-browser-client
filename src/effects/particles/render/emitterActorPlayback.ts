@@ -96,6 +96,10 @@ export async function loadEmitterActorPlayback(scene: Scene, bundle: EffectBundl
   let effect: ScheduledEffect | null = null, pins = unpinned, disposed = false;
   let simulatedSeconds = 0, simulationSteps = 0, peakLiveParticles = 0;
   const liveByEmitter = () => effect && !effect.actor.destroyed ? effect.actor.emitters.map(emitter => emitter.liveSlots().length) : components.map(() => 0);
+  const releaseEffect = () => {
+    if (effect) scheduler.removeEffect(effect);
+    effect = null;
+  };
   const renderEffect = () => {
     const live = effect && !effect.actor.destroyed ? effect : null;
     components.forEach((component, index) => {
@@ -113,11 +117,12 @@ export async function loadEmitterActorPlayback(scene: Scene, bundle: EffectBundl
     start() {
       requirePlayback(!disposed, "the playback is disposed.");
       clock.seek(0);
+      releaseEffect();
       effect = scheduler.spawnEffect(actor, emitterRecords, actor.object);
       simulatedSeconds = 0; simulationSteps = 0; peakLiveParticles = 0;
       renderEffect();
     },
-    stop() { effect = null; renderEffect(); },
+    stop() { releaseEffect(); renderEffect(); },
     advance(elapsedSeconds) {
       if (disposed || effect === null) return;
       clock.advance(elapsedSeconds);
@@ -151,7 +156,7 @@ export async function loadEmitterActorPlayback(scene: Scene, bundle: EffectBundl
     },
     dispose() {
       if (disposed) return;
-      disposed = true; effect = null;
+      disposed = true; releaseEffect();
       for (const component of components) component.dispose();
       root.dispose(false, false);
     },
