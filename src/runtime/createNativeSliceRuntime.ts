@@ -22,6 +22,7 @@ import { loadNativeSliceWorld } from "./loadNativeSliceWorld";
 import { beginNativeSliceAudioLoads, createNativeSliceCombatAudio, loadNativeSliceAudio } from "./loadNativeSliceAudio";
 import { createNativeSliceEffects } from "./createNativeSliceEffects";
 import { attachNativeSliceDiagnostics } from "./nativeSliceDiagnostics";
+import { applyNativeSliceCameraPose, assertNativeSliceCameraPoseWithinLimits, type NativeSliceCameraPose } from "./nativeSliceCameraPose";
 import { attachNativeSliceSheet } from "./attachNativeSliceSheet";
 import { createNativeFootstepPreview, NATIVE_FOOTSTEP_WORLD_DEFAULT } from "../audio/nativeFootstepPreview";
 import { createFootstepGroundSampler } from "../audio/footstepSurfaceGround";
@@ -280,6 +281,12 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       camera.setTarget(bounds.min.add(bounds.max).scale(.5), false, false, true);
       camera.radius = Math.max(1, bounds.max.subtract(bounds.min).length() * 1.7);
     };
+    const setCameraPose = (pose: NativeSliceCameraPose) => {
+      assertNativeSliceCameraPoseWithinLimits(camera, pose);
+      effectCamera?.release();
+      followFighter = false;
+      applyNativeSliceCameraPose(camera, pose);
+    };
     if (section) {
       camera.upperRadiusLimit = Math.max(60, section.maximum.subtract(section.minimum).length() * 2);
       camera.maxZ = Math.max(camera.maxZ, camera.upperRadiusLimit * 4);
@@ -353,7 +360,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     boundaryReleases.push(() => { scene.onBeforeRenderObservable.remove(observer); });
     boundaryReleases.push(attachNativeSliceDiagnostics({ scene, camera, registry, adapter, ui, playerProfile, musveren, handAnchor,
       specialAttackPreview, locomotionClips, world, audio: nativeAudio, footsteps, footstepGround, localSurfaceContact, combatAudio, combatFailure, effects,
-      doors, movement, environment, materialOverrides, frameFlame, failFlames, isDisposed: () => disposed, addRelease }));
+      doors, movement, environment, materialOverrides, frameFlame, setCameraPose, failFlames, isDisposed: () => disposed, addRelease }));
     return stop;
   } catch (error) { stop(); throw error; }
 }

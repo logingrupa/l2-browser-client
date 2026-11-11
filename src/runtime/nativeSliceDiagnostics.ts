@@ -33,6 +33,7 @@ import type { NativeSliceAudio } from "./loadNativeSliceAudio";
 import type { NativeSliceEffects } from "./createNativeSliceEffects";
 import type { WorldMovement, WorldMovementCollisionCells, WorldMovementInspection } from "./worldMovementWiring";
 import type { WorldEnvironment, WorldEnvironmentInspection } from "./worldEnvironmentWiring";
+import type { NativeSliceCameraPose } from "./nativeSliceCameraPose";
 
 export interface NativeSliceDiagnosticInputs {
   scene: Scene;
@@ -58,6 +59,7 @@ export interface NativeSliceDiagnosticInputs {
   environment: WorldEnvironment;
   materialOverrides: ReturnType<typeof createNativeMaterialOverrides>;
   frameFlame: (placementId: string) => void;
+  setCameraPose: (pose: NativeSliceCameraPose) => void;
   failFlames: (error: unknown) => void;
   isDisposed: () => boolean;
   addRelease: (release: () => void) => void;
@@ -121,6 +123,7 @@ export function attachNativeSliceDiagnostics(inputs: NativeSliceDiagnosticInputs
       audio.worldAudio.music?.setEnabled(enabled); audio.worldAudio.ambience?.setEnabled(enabled);
     },
     frameFlame: inputs.frameFlame,
+    setCameraPose: inputs.setCameraPose,
     collisionSurfaceHeightsAt: (x: number, z: number) => inputs.movement.collisionSurfaceHeightsAt(x, z),
     interactDoor(id: string) {
       if (!doors) throw new Error("Native doors are unavailable.");
@@ -168,4 +171,4 @@ declare global { interface Window { __nativeSlice?: { snapshot(): { entities: Re
   fog?: { enabled: boolean; mode: number; start: number; end: number };
   world?: (ReturnType<NativeSection["inspection"]> & { manifestSha256: string; sourceSpawn: number[]; nativeLocationMatch: string; collision: string }) | null;
   fps?: number; camera?: { target: number[]; alpha: number; beta: number; radius: number;
-    lowerRadiusLimit: number | null; upperRadiusLimit: number | null; lowerBetaLimit: number | null; upperBetaLimit: number | null } }; dispatch: NativeSliceAdapter["dispatch"]; performance(): Promise<ReturnType<typeof createWorldPerformanceProbe>>; captureAudio?(): MediaStream | null; setWorldAudioEnabled?(enabled: boolean): void; setFlameReplay?(time: NativeFlameReplayTime): void; frameFlame?(placementId: string): void; collisionSurfaceHeightsAt?(x: number, z: number): number[]; interactDoor?(id: string): void } } }
+    lowerRadiusLimit: number | null; upperRadiusLimit: number | null; lowerBetaLimit: number | null; upperBetaLimit: number | null } }; dispatch: NativeSliceAdapter["dispatch"]; performance(): Promise<ReturnType<typeof createWorldPerformanceProbe>>; captureAudio?(): MediaStream | null; setWorldAudioEnabled?(enabled: boolean): void; setFlameReplay?(time: NativeFlameReplayTime): void; frameFlame?(placementId: string): void; setCameraPose?(pose: NativeSliceCameraPose): void; collisionSurfaceHeightsAt?(x: number, z: number): number[]; interactDoor?(id: string): void } } }
