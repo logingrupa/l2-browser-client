@@ -1,4 +1,5 @@
 import type { WorldEntity } from "../../world/worldTypes";
+import type { NativeWindowScreen } from "./nativeWindowAnchors";
 import { readNativeWindowFieldBindings, type NativeWindowFieldBinding } from "./nativeWindowFieldBindings";
 import { loadNativeWindowManifest, nativeWindowMinimapTileSource, resolveNativeWindowTextures, revokeNativeWindowTextures, type NativeWindowTextureResolution } from "./nativeWindowManifestLoader";
 import { renderNativeWindow, type RenderedNativeWindow } from "./nativeWindowRenderer";
@@ -41,6 +42,15 @@ export function createNativeWindowLayer(container: HTMLElement, readLocalPlayer:
   const fieldBindings = readNativeWindowFieldBindings();
   const openWindows = new Map<string, OpenNativeWindow>();
   const pendingOpens = new Map<string, Promise<NativeWindowOpenResult>>();
+  const containerScreen = (): NativeWindowScreen => {
+    const bounds = container.getBoundingClientRect();
+    return { width: bounds.width, height: bounds.height };
+  };
+  const containerResizeObserver = new ResizeObserver(() => {
+    const screen = containerScreen();
+    for (const openWindow of openWindows.values()) openWindow.result.window.layout(screen);
+  });
+  containerResizeObserver.observe(container);
 
   const loadAndRender = async (windowId: string): Promise<NativeWindowOpenResult> => {
     const load = await loadNativeWindowManifest(windowId, lifetime.signal);
@@ -51,9 +61,8 @@ export function createNativeWindowLayer(container: HTMLElement, readLocalPlayer:
       revokeNativeWindowTextures(textures);
       lifetime.signal.throwIfAborted();
     }
-    const bounds = container.getBoundingClientRect();
     const rendered = renderNativeWindow(container, load.manifest, {
-      localPlayer: readLocalPlayer(), textures, fieldBindings: windowBindings, screen: { width: bounds.width, height: bounds.height },
+      localPlayer: readLocalPlayer(), textures, fieldBindings: windowBindings, screen: containerScreen(),
       minimapTileSource: nativeWindowMinimapTileSource(load.catalog, lifetime.signal),
     });
     const result = { status: "opened", windowId, key: load.key, window: rendered } as const;
@@ -94,6 +103,7 @@ export function createNativeWindowLayer(container: HTMLElement, readLocalPlayer:
     openWindowIds: () => [...openWindows.keys()],
     dispose: () => {
       lifetime.abort();
+      containerResizeObserver.disconnect();
       [...openWindows.keys()].forEach(close);
     },
   };

@@ -14,7 +14,7 @@ function fakeLocation(href: string) {
 
 function openedResult(windowId: string, gapCount: number): NativeWindowOpenResult {
   const gaps = Array.from({ length: gapCount }, (_, position) => ({ controlName: `Control${position}`, reason: "label-unresolved" }));
-  return { status: "opened", windowId, key: `window:${windowId}`, window: { element: {} as HTMLElement, gaps, refresh() {}, dispose() {} } };
+  return { status: "opened", windowId, key: `window:${windowId}`, window: { element: {} as HTMLElement, gaps, refresh() {}, layout() {}, dispose() {} } };
 }
 
 function createActions(href = "http://127.0.0.1:5173/", open: NativeWindowLayer["open"] = async windowId => openedResult(windowId, 0),

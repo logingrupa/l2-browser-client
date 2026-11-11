@@ -15,6 +15,7 @@ export interface MinimapControlContext {
 
 export interface RenderedMinimapControl {
   refresh(localPlayer: WorldEntity | null): void;
+  resize(controlSize: MinimapControlSize): void;
   dispose(): void;
 }
 
@@ -36,7 +37,8 @@ function errorText(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-export function renderMinimapControl(element: HTMLElement, controlSize: MinimapControlSize, context: MinimapControlContext): RenderedMinimapControl {
+export function renderMinimapControl(element: HTMLElement, initialControlSize: MinimapControlSize, context: MinimapControlContext): RenderedMinimapControl {
+  let controlSize = initialControlSize;
   let localPlayer = context.localPlayer;
   let loadedTiles: readonly WorldMapTile[] | null = null;
   let loadFailure: string | null = null;
@@ -144,6 +146,11 @@ export function renderMinimapControl(element: HTMLElement, controlSize: MinimapC
   return {
     refresh: nextLocalPlayer => {
       localPlayer = nextLocalPlayer;
+      draw();
+    },
+    resize: nextControlSize => {
+      controlSize = nextControlSize;
+      placeNativeWindowElement(stateGapElement, 0, 0, controlSize.width, controlSize.height);
       draw();
     },
     dispose: () => {

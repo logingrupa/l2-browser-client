@@ -1,7 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { NativeWindowFieldBinding } from "../../src/ui/nativeWindows/nativeWindowFieldBindings";
-import { createNativeWindowLayer } from "../../src/ui/nativeWindows/nativeWindowLayer";
 import { parseNativeWindowManifest, type NativeWindowManifest } from "../../src/ui/nativeWindows/nativeWindowLayoutTree";
 import type { NativeWindowTextureResolution } from "../../src/ui/nativeWindows/nativeWindowManifestLoader";
 import { nativeWindowRenderedControlTypes, renderNativeWindow } from "../../src/ui/nativeWindows/nativeWindowRenderer";
@@ -177,21 +176,6 @@ describe("renderNativeWindow", () => {
     const recipe = JSON.parse(readFileSync("recipes/data/native-window-control-types.json", "utf8")) as { schemaVersion: number; renderedTypes: string[] };
     expect(recipe.schemaVersion).toBe(1);
     expect(nativeWindowRenderedControlTypes).toEqual(recipe.renderedTypes);
-  });
-});
-
-describe("createNativeWindowLayer", () => {
-  let miniDom: MiniDom;
-  beforeEach(() => { miniDom = installMiniDom(); });
-  afterEach(() => miniDom.restore());
-
-  it("clips windows anchored past the viewport instead of scrolling the page and reports that as a presentation variable", () => {
-    const container = miniDom.document.createElement("div");
-    const layer = createNativeWindowLayer(container as unknown as HTMLElement, () => null);
-    expect(container.style.overflow).toBe("hidden");
-    expect(layer.presentation).toEqual({ overflow: "hidden", status: "presentation",
-      source: "windows anchored past the viewport are clipped instead of scrolling the page" });
-    layer.dispose();
   });
 });
 

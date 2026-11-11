@@ -34,7 +34,7 @@ function fakeWindowLayerOver(index: NativeCatalogIndex, openedWindowIds: string[
       if (lookup.status !== "converted") return { status: "not-in-catalog", windowId, key: lookup.key, reason: lookup.reason };
       openedWindowIds.push(windowId);
       const result: NativeWindowOpenResult = { status: "opened", windowId, key: lookup.key,
-        window: { element: {} as HTMLElement, gaps: [], refresh() {}, dispose() {} } };
+        window: { element: {} as HTMLElement, gaps: [], refresh() {}, layout() {}, dispose() {} } };
       return result;
     },
   };
