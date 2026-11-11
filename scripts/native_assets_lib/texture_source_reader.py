@@ -1,6 +1,7 @@
 import copy
 import json
 
+from native_assets_lib.lineage_material_prefix import NO_MATERIAL_PREFIX, SHADER_BLOCK_MATERIAL_PREFIX, lineage_material_prefix
 from native_assets_lib.sha256_identity import sha256_hex_digest
 from native_catalog.ue2 import FormatError, Reader
 
@@ -21,7 +22,9 @@ PALETTE_CLASS_OBJECT = 'Engine.Palette'
 BYTE_PROPERTY_TYPE = 1
 INTEGER_PROPERTY_TYPE = 2
 OBJECT_PROPERTY_TYPE = 5
+SHADER_BLOCK_REVIEWED_LICENSEE = 30
 TEXTURE_FORMAT_UNSUPPORTED_REASON_PREFIX = 'texture-format-unsupported:'
+TEXTURE_LICENSEE_UNSUPPORTED_REASON_PREFIX = 'texture-licensee-unsupported:'
 OMITTED_FORMAT_EVIDENCE = {
     'value': 0, 'class': 'Engine.BitmapMaterial', 'field': 'Format',
     'enginePackageSha256': '9b04ff5cb4258e84dfa8efbdd85d9121f3bdcb5822a9a21ca69d200d05a69761',
@@ -48,6 +51,10 @@ class UnsupportedTextureSource(ValueError):
 
 def texture_format_unsupported_reason(format_id):
     return f'{TEXTURE_FORMAT_UNSUPPORTED_REASON_PREFIX}{format_id}'
+
+
+def texture_licensee_unsupported_reason(package_version, licensee):
+    return f'{TEXTURE_LICENSEE_UNSUPPORTED_REASON_PREFIX}{package_version}/{licensee}'
 
 
 def require_texture_source(condition, message):
@@ -124,10 +131,14 @@ def read_licensee30_material_block(reader):
 
 
 def read_lineage_material_prefix(reader, package_version, licensee):
-    if package_version < 123:
+    material_prefix = lineage_material_prefix(package_version, licensee)
+    if material_prefix == NO_MATERIAL_PREFIX:
         return {}
+    if material_prefix == SHADER_BLOCK_MATERIAL_PREFIX and licensee != SHADER_BLOCK_REVIEWED_LICENSEE:
+        raise UnsupportedTextureSource(texture_licensee_unsupported_reason(package_version, licensee),
+                                       f'Lineage shader block of licensee {licensee} differs from the reviewed licensee {SHADER_BLOCK_REVIEWED_LICENSEE} block')
     prefix = {'reservedInt32': reader.number('i')}
-    if licensee == 30:
+    if material_prefix == SHADER_BLOCK_MATERIAL_PREFIX:
         prefix['licensee30Material'] = read_licensee30_material_block(reader)
     return prefix
 

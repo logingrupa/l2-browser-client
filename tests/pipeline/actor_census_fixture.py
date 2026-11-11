@@ -33,7 +33,7 @@ SYNTHETIC_PACKAGES = {
     'animations/SyntheticTwin.ukx': wrapped_package('animations/SyntheticTwin.ukx', 123, 28),
     'staticmeshes/syntheticTWIN.ukx': wrapped_package('staticmeshes/syntheticTWIN.ukx', 123, 28),
     'systextures/SyntheticMonstersTex.utx': wrapped_package('systextures/SyntheticMonstersTex.utx', 123, 28),
-    'systextures/SyntheticEldersTex.utx': wrapped_package('systextures/SyntheticEldersTex.utx', 123, 23),
+    'systextures/SyntheticEldersTex.utx': wrapped_package('systextures/SyntheticEldersTex.utx', 123, 31),
     'systextures/SyntheticUnusedTex.utx': wrapped_package('systextures/SyntheticUnusedTex.utx', 123, 28),
     'sounds/SyntheticSound.uax': b'synthetic sound package bytes that the census never reads',
 }

@@ -1,4 +1,20 @@
 {
+ "materialPrefixEvidence": [
+  {
+   "commit": "12c9656",
+   "file": "tools/l2lib/README.md",
+   "section": "Lineage2 UMaterial extra fields (v123 packages); Texture export body",
+   "sha256": "32b12d39022a92f4fef951edbecf4094c0a01a8237531c92d81918da752f0a9c",
+   "source": "Elbera"
+  },
+  {
+   "commit": "a0bfb468d42be831b126632fd8a0ae6b3614f981",
+   "file": "Unreal/UnrealMaterial/UnMaterial2.h",
+   "section": "UMaterial::Serialize LINEAGE2 block, secondary reference cited by repository and revision",
+   "sha256": "9e27b80d6f8c2625decba49745bd65a7f3e54abd957ee7a627e3f4bdb3d8b0c9",
+   "source": "gildor2/UEViewer"
+  }
+ ],
  "rows": [
   {
    "converterNativeMipsEqual": true,
@@ -9,13 +25,14 @@
    "format": "DXT1",
    "licensee": 0,
    "lockSha256": "f0050b0663b5286092598c440cbdfcb63d2424e1a9010c9450b616db86924abd",
+   "materialPrefix": "none",
    "object": "L2_RadarMap.RadarMaps.Global",
    "ourMipSha256": [
     "68c5eb0c32f69bd932ca9fffce85652636985e883021e0a0eff27f30fd40fb2d"
    ],
    "package": "systextures/L2_RadarMap.utx",
    "packageVersion": 118,
-   "selection": "first Texture export in export order whose Format has a reviewed block wrapper",
+   "selection": "first Texture export in export order whose Format has a reviewed block wrapper and whose leaf name is unique for UModel",
    "status": "reviewed",
    "tool": {
     "commit": "12c9656",
@@ -34,13 +51,148 @@
    "format": "DXT5",
    "licensee": 0,
    "lockSha256": "d4021abc3be7cca7858f6bb36721fde81cc7679ef82cc671b6bc1b0589649544",
+   "materialPrefix": "none",
    "object": "L2UI_CH3.RefineEffect.refinegrade2_27",
    "ourMipSha256": [
     "ae0a0df116a5184a7771ea4f1efa3d4fc6a15c27bf149b66231fc199c67857ea"
    ],
    "package": "systextures/L2UI_CH3.utx",
    "packageVersion": 118,
-   "selection": "first Texture export in export order whose Format has a reviewed block wrapper",
+   "selection": "first Texture export in export order whose Format has a reviewed block wrapper and whose leaf name is unique for UModel",
+   "status": "reviewed",
+   "tool": {
+    "commit": "12c9656",
+    "name": "Elbera l2lib",
+    "pins": {
+     "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
+    }
+   }
+  },
+  {
+   "converterNativeMipsEqual": true,
+   "elberaMipSha256": [
+    "338d47006d6ee29385850cab9dc2a7ca29eeb8d5a438a7efd18f7e26114ad334",
+    "adebef0c501be1ef49a9a5be9bc192dd7a2a5c8677a97fdf9e8e877a504b6db1",
+    "dc7e737f757037f4b0cfbab5a6ed0f2cc11b95e06670e63f657245b721f1f3fe",
+    "b33b4b7dafd1b144769a70c90668269d1fd28c204e67050412a5786df8f29e64",
+    "fdf80d4ea4c89c1c8200165a99b25236162b72ab91ce5f2eaf5fc1d9fe01912b",
+    "15f1c0f531b2c786de65e363cff3ae6b498b0ec5b3469d6b6dd2d14539c9cb35",
+    "5284ba7df99cfb953a4b80652b1fc19926f319ff1f0a87f7f7c5117f3d6b63f0",
+    "8d8b48e9bbac2e2e90c8f27f7391413dd7b34620ac1f81b90250d20fd3b49008",
+    "bc33c1ba4d6c4441983694e62f78d4c0f61496cf0691020cc85b8dd626d729a3",
+    "dd8f760d51871f7a69500a6bd0edf94530f098131e8c71815328f35814f589b4"
+   ],
+   "failingCheck": null,
+   "format": "DXT1",
+   "licensee": 0,
+   "lockSha256": "b967bd5159cc459db1eeebdf36bb435d76aa6d1cdf252b92911d03cd62ddb87b",
+   "materialPrefix": "none",
+   "object": "improved_model_npc_01.a_fighterguild_teacher_MHuman_re.a_fighterguild_teacher_MHuman_re_t00_ori",
+   "ourMipSha256": [
+    "338d47006d6ee29385850cab9dc2a7ca29eeb8d5a438a7efd18f7e26114ad334",
+    "adebef0c501be1ef49a9a5be9bc192dd7a2a5c8677a97fdf9e8e877a504b6db1",
+    "dc7e737f757037f4b0cfbab5a6ed0f2cc11b95e06670e63f657245b721f1f3fe",
+    "b33b4b7dafd1b144769a70c90668269d1fd28c204e67050412a5786df8f29e64",
+    "fdf80d4ea4c89c1c8200165a99b25236162b72ab91ce5f2eaf5fc1d9fe01912b",
+    "15f1c0f531b2c786de65e363cff3ae6b498b0ec5b3469d6b6dd2d14539c9cb35",
+    "5284ba7df99cfb953a4b80652b1fc19926f319ff1f0a87f7f7c5117f3d6b63f0",
+    "8d8b48e9bbac2e2e90c8f27f7391413dd7b34620ac1f81b90250d20fd3b49008",
+    "bc33c1ba4d6c4441983694e62f78d4c0f61496cf0691020cc85b8dd626d729a3",
+    "dd8f760d51871f7a69500a6bd0edf94530f098131e8c71815328f35814f589b4"
+   ],
+   "package": "animations/improved_model_npc_01.ukx",
+   "packageVersion": 123,
+   "selection": "first Texture export in export order whose Format has a reviewed block wrapper and whose leaf name is unique for UModel",
+   "status": "reviewed",
+   "tool": {
+    "commit": "12c9656",
+    "name": "Elbera l2lib",
+    "pins": {
+     "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
+    }
+   }
+  },
+  {
+   "converterNativeMipsEqual": true,
+   "elberaMipSha256": [
+    "f8afd26999c867ece8ec937b0b02e5863f9df41c3b6d9a750200de614307e3cd",
+    "e5b4f3e2a46ea3f54daab9acd0b3eff56130facd4f8557bd19e27580e1faed99",
+    "30901baa87ab37c3f12e2be1e0dbe9c5a4a04d334dc02622021c6ad61d9ad25e",
+    "b62786400ab13e1e662e33314b4a56826958567270c684cbb80192639d3832b3",
+    "4cf166630dfceba0b46b92e6e8c3deeb2cd42ec048ea428c2ada7092de931c3a",
+    "9aa181c1281263846c9516bc10695c9341600179d96358797d95c39d0d285ab0",
+    "f5b3fdec1c3abed37f4434c994c0c32dabb5b72965bf5877e2d83cfa8ee088de",
+    "7585f4b5e8a3cc5faad9be67f876cee2b302b3a6708a654727eabe58e115f7ee",
+    "0b84564722a2b0685124c19757c3f795325a1be1be0ebc0b7ccfaf48849a0235",
+    "74ef940aea1b9d2f378300ac9bf9f84ce5d26dd0d080991baa4ca75f94116a6c",
+    "84c9d57d451b371dd5c127c93590f7b102c2a8de89fd0754428f7e6484b00a33"
+   ],
+   "failingCheck": null,
+   "format": "DXT1",
+   "licensee": 16,
+   "lockSha256": "49ca13891903eefb50467fc9b868b0279985ae8b846327c210159f3a55cc086f",
+   "materialPrefix": "reserved-int32",
+   "object": "logbg.LogonScreen",
+   "ourMipSha256": [
+    "f8afd26999c867ece8ec937b0b02e5863f9df41c3b6d9a750200de614307e3cd",
+    "e5b4f3e2a46ea3f54daab9acd0b3eff56130facd4f8557bd19e27580e1faed99",
+    "30901baa87ab37c3f12e2be1e0dbe9c5a4a04d334dc02622021c6ad61d9ad25e",
+    "b62786400ab13e1e662e33314b4a56826958567270c684cbb80192639d3832b3",
+    "4cf166630dfceba0b46b92e6e8c3deeb2cd42ec048ea428c2ada7092de931c3a",
+    "9aa181c1281263846c9516bc10695c9341600179d96358797d95c39d0d285ab0",
+    "f5b3fdec1c3abed37f4434c994c0c32dabb5b72965bf5877e2d83cfa8ee088de",
+    "7585f4b5e8a3cc5faad9be67f876cee2b302b3a6708a654727eabe58e115f7ee",
+    "0b84564722a2b0685124c19757c3f795325a1be1be0ebc0b7ccfaf48849a0235",
+    "74ef940aea1b9d2f378300ac9bf9f84ce5d26dd0d080991baa4ca75f94116a6c",
+    "84c9d57d451b371dd5c127c93590f7b102c2a8de89fd0754428f7e6484b00a33"
+   ],
+   "package": "systextures/logbg.utx",
+   "packageVersion": 123,
+   "selection": "first Texture export in export order whose Format has a reviewed block wrapper and whose leaf name is unique for UModel",
+   "status": "reviewed",
+   "tool": {
+    "commit": "12c9656",
+    "name": "Elbera l2lib",
+    "pins": {
+     "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
+    }
+   }
+  },
+  {
+   "converterNativeMipsEqual": true,
+   "elberaMipSha256": [
+    "9a7908bf8da0aaf8a038d02a13ba43f80d8c343a49cdbe02ef49bc55ff9a55d1",
+    "3aaffa4921ef29b610840a07bed8a263d615721706fca22aaba59cd7618ec6cb",
+    "5035696f8a2cc224ac6f953b0a21ba57e2bc31812f933e27c96275ffe62b6705",
+    "ab1489a7a18fc86e761e10c0070f8278f4db4f347d946577046c19f7eeaaf054",
+    "a1989e7659f37b2306746850e5d50910c8b20e56dc9da3fb8c2ea754ebe3c052",
+    "bc532f1c49c4d62645512c2b428d5b1a5007349866bb41945991366f1f5880f5",
+    "4fe5b6f2a2d02b2b0984c01f1a65632c222ffa640f8e05c43edad50b23d9e221",
+    "84b102d5cd9ceede0060fda1c21ddce289e961318517ec3c4537371c77c5e716",
+    "21708a67c47193c5a9644a7ad4ee869ea43c8d5c4f5a58201364e09f7e027422",
+    "3eba9c5aa7f06f152c8d226f1f083605b698a76b87cde3507a74ae1762864510"
+   ],
+   "failingCheck": null,
+   "format": "DXT1",
+   "licensee": 18,
+   "lockSha256": "a5f5abfa607dae87690c85cb32144362ed23c47daa7b020386775a20f60f968f",
+   "materialPrefix": "reserved-int32",
+   "object": "aden_caslte_door_t.Aden_c_door",
+   "ourMipSha256": [
+    "9a7908bf8da0aaf8a038d02a13ba43f80d8c343a49cdbe02ef49bc55ff9a55d1",
+    "3aaffa4921ef29b610840a07bed8a263d615721706fca22aaba59cd7618ec6cb",
+    "5035696f8a2cc224ac6f953b0a21ba57e2bc31812f933e27c96275ffe62b6705",
+    "ab1489a7a18fc86e761e10c0070f8278f4db4f347d946577046c19f7eeaaf054",
+    "a1989e7659f37b2306746850e5d50910c8b20e56dc9da3fb8c2ea754ebe3c052",
+    "bc532f1c49c4d62645512c2b428d5b1a5007349866bb41945991366f1f5880f5",
+    "4fe5b6f2a2d02b2b0984c01f1a65632c222ffa640f8e05c43edad50b23d9e221",
+    "84b102d5cd9ceede0060fda1c21ddce289e961318517ec3c4537371c77c5e716",
+    "21708a67c47193c5a9644a7ad4ee869ea43c8d5c4f5a58201364e09f7e027422",
+    "3eba9c5aa7f06f152c8d226f1f083605b698a76b87cde3507a74ae1762864510"
+   ],
+   "package": "textures/aden_caslte_door_t.utx",
+   "packageVersion": 123,
+   "selection": "first Texture export in export order whose Format has a reviewed block wrapper and whose leaf name is unique for UModel",
    "status": "reviewed",
    "tool": {
     "commit": "12c9656",
@@ -65,6 +217,7 @@
    "format": "DXT1",
    "licensee": 20,
    "lockSha256": "125f36eda3bc276cfc89b172d01fe46aed5e543c00cc83e46d01724b64cede1c",
+   "materialPrefix": "reserved-int32",
    "object": "default.Icon.Stats2",
    "ourMipSha256": [
     "dc434ace0ad06818558ec4a76782e2d2f08d63688756fe25a25a79cef0961f12",
@@ -77,7 +230,115 @@
    ],
    "package": "systextures/default.utx",
    "packageVersion": 123,
-   "selection": "first Texture export in export order whose Format has a reviewed block wrapper",
+   "selection": "first Texture export in export order whose Format has a reviewed block wrapper and whose leaf name is unique for UModel",
+   "status": "reviewed",
+   "tool": {
+    "commit": "12c9656",
+    "name": "Elbera l2lib",
+    "pins": {
+     "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
+    }
+   }
+  },
+  {
+   "converterNativeMipsEqual": true,
+   "elberaMipSha256": [
+    "78ac3567898b6ea7c6c8bf9fd83e8d549254f69f549b2fedd2b613d26e6392b4"
+   ],
+   "failingCheck": null,
+   "format": "DXT1",
+   "licensee": 23,
+   "lockSha256": "c239eafd3132e65d0d7ac32d9d5d3068e61ab8dcec42192a740655eb220df58c",
+   "materialPrefix": "reserved-int32",
+   "object": "town_map.Town.town_map_dwarf_t00",
+   "ourMipSha256": [
+    "78ac3567898b6ea7c6c8bf9fd83e8d549254f69f549b2fedd2b613d26e6392b4"
+   ],
+   "package": "systextures/town_map.utx",
+   "packageVersion": 123,
+   "selection": "first Texture export in export order whose Format has a reviewed block wrapper and whose leaf name is unique for UModel",
+   "status": "reviewed",
+   "tool": {
+    "commit": "12c9656",
+    "name": "Elbera l2lib",
+    "pins": {
+     "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
+    }
+   }
+  },
+  {
+   "converterNativeMipsEqual": true,
+   "elberaMipSha256": [
+    "71f9a87634f2b6f739da3dddefa3ff4c0427b448a9977c6dbe7ab1830600d235",
+    "409e14a456189ff24dbb3664462bb5b149e5eba22867b3cbcd5350c0fa4f92a2",
+    "ae24ab54e51743086ac3ff34db7cf901c51be3774c108cf952cb228167c5fb39",
+    "a9462f5f2fe3c45da6f8486168ea8e740abc85fa339cca24d41b6c31d89e6f71",
+    "f1f0c7d1cdb983e7168c3493e9c7fb264abf08653fd20de75168e1e3dfd45fe6",
+    "98a7a9be719e2a5aceac1595c8147f973484f810dda73c17a590ba2afbdd5643",
+    "f5ae886581ee65e5578ad1e0a595559e26d4031d25e1cdaa465496fc19fbc132"
+   ],
+   "failingCheck": null,
+   "format": "DXT1",
+   "licensee": 25,
+   "lockSha256": "98d0acf19a0d583077050bb84e901e364195f2a5f8b7952cf405d6427950d93f",
+   "materialPrefix": "reserved-int32",
+   "object": "goldcubes.Cubes.s-00",
+   "ourMipSha256": [
+    "71f9a87634f2b6f739da3dddefa3ff4c0427b448a9977c6dbe7ab1830600d235",
+    "409e14a456189ff24dbb3664462bb5b149e5eba22867b3cbcd5350c0fa4f92a2",
+    "ae24ab54e51743086ac3ff34db7cf901c51be3774c108cf952cb228167c5fb39",
+    "a9462f5f2fe3c45da6f8486168ea8e740abc85fa339cca24d41b6c31d89e6f71",
+    "f1f0c7d1cdb983e7168c3493e9c7fb264abf08653fd20de75168e1e3dfd45fe6",
+    "98a7a9be719e2a5aceac1595c8147f973484f810dda73c17a590ba2afbdd5643",
+    "f5ae886581ee65e5578ad1e0a595559e26d4031d25e1cdaa465496fc19fbc132"
+   ],
+   "package": "systextures/goldcubes.utx",
+   "packageVersion": 123,
+   "selection": "first Texture export in export order whose Format has a reviewed block wrapper and whose leaf name is unique for UModel",
+   "status": "reviewed",
+   "tool": {
+    "commit": "12c9656",
+    "name": "Elbera l2lib",
+    "pins": {
+     "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
+    }
+   }
+  },
+  {
+   "converterNativeMipsEqual": true,
+   "elberaMipSha256": [
+    "36723153392d24219ba2f5f88e8a31671ab1f6b9a1dfb1db75b001598ecdffbe",
+    "34fcf2efca2240e272d5f1462b60119afc27a1c6324cdee7d44b07709853fa8a",
+    "d62419221c94362a659601a3dd865b8568683bdfa8e4bcf4e67afa3584fe4739",
+    "4bdd71c9f20a7e3f2f2d38e86580c546650c661a66bc35c807b054aff46ce1f0",
+    "fdc41d8b675e8e2c09d726b1f730e8ff2cd515602def88c609a6be92dde3184f",
+    "58dc126af28aaf9429f6e8901cd08fe828786cda30fe1fccea811013b95bf508",
+    "2109ff98a33fdb09b4b8c41b8bbb4f98628ed2e2a2420a9af4e4229881f1865b",
+    "0768c978152f0147f2390f6ff57955f6678c16bbca1829bae5578c3d6fae380e",
+    "d4b3750c3bb67af2c580d2eefffef3b8c2b3bfcb77c768656f08767f02dabf60",
+    "00bc1cd2c4e5d45f0a87a15d91322fe630b4ff1eb6eb6daa9ad0bd5a18275d72"
+   ],
+   "failingCheck": null,
+   "format": "DXT1",
+   "licensee": 27,
+   "lockSha256": "54905a7f0700c51ee25a166e3eafa9ceac5dbb87011edffd9a40f6e9268f062a",
+   "materialPrefix": "reserved-int32",
+   "object": "fdarkelf.UpBody.FDarkElf_m004_t68_u_ori",
+   "ourMipSha256": [
+    "36723153392d24219ba2f5f88e8a31671ab1f6b9a1dfb1db75b001598ecdffbe",
+    "34fcf2efca2240e272d5f1462b60119afc27a1c6324cdee7d44b07709853fa8a",
+    "d62419221c94362a659601a3dd865b8568683bdfa8e4bcf4e67afa3584fe4739",
+    "4bdd71c9f20a7e3f2f2d38e86580c546650c661a66bc35c807b054aff46ce1f0",
+    "fdc41d8b675e8e2c09d726b1f730e8ff2cd515602def88c609a6be92dde3184f",
+    "58dc126af28aaf9429f6e8901cd08fe828786cda30fe1fccea811013b95bf508",
+    "2109ff98a33fdb09b4b8c41b8bbb4f98628ed2e2a2420a9af4e4229881f1865b",
+    "0768c978152f0147f2390f6ff57955f6678c16bbca1829bae5578c3d6fae380e",
+    "d4b3750c3bb67af2c580d2eefffef3b8c2b3bfcb77c768656f08767f02dabf60",
+    "00bc1cd2c4e5d45f0a87a15d91322fe630b4ff1eb6eb6daa9ad0bd5a18275d72"
+   ],
+   "package": "systextures/fdarkelf.utx",
+   "packageVersion": 123,
+   "selection": "first Texture export in export order whose Format has a reviewed block wrapper and whose leaf name is unique for UModel",
    "status": "reviewed",
    "tool": {
     "commit": "12c9656",
@@ -103,6 +364,7 @@
    "format": "DXT1",
    "licensee": 28,
    "lockSha256": "67866a7598fe6d4dacd298be3cc4331df4f8c02843ac8b2621160c4d47047e91",
+   "materialPrefix": "reserved-int32",
    "object": "DropItemsTex.drop_potion.drop_potion_black_ori",
    "ourMipSha256": [
     "958b8a37551a7f214f04853eaf572b5af2c6a8643acc4d085be54bcfb4f3b03c",
@@ -116,7 +378,7 @@
    ],
    "package": "systextures/DropItemsTex.utx",
    "packageVersion": 123,
-   "selection": "first Texture export in export order whose Format has a reviewed block wrapper",
+   "selection": "first Texture export in export order whose Format has a reviewed block wrapper and whose leaf name is unique for UModel",
    "status": "reviewed",
    "tool": {
     "commit": "12c9656",
@@ -142,6 +404,7 @@
    "format": "DXT1",
    "licensee": 30,
    "lockSha256": "dab7a7690b078de4676176d0dadc7e01f80a54c4bff65ba96505e66e93f7efdd",
+   "materialPrefix": "reserved-int32-and-shader-block",
    "object": "aden_village_t.Aden_V_wall06_fence",
    "ourMipSha256": [
     "32e0fa9367d94f284dd096a4570c4413c5752a8f66233d910b6d13ad2ca63925",
@@ -155,7 +418,7 @@
    ],
    "package": "textures/aden_village_t.utx",
    "packageVersion": 123,
-   "selection": "first Texture export in export order whose Format has a reviewed block wrapper",
+   "selection": "first Texture export in export order whose Format has a reviewed block wrapper and whose leaf name is unique for UModel",
    "status": "reviewed",
    "tool": {
     "commit": "12c9656",

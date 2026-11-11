@@ -69,7 +69,7 @@ class CharacterUnitInventoryTests(InventoryTestCase):
     def test_unreviewed_body_texture_package_is_the_row_gap(self):
         chargrp = synthetic_chargrp([synthetic_character([SYNTHETIC_MESH], ['SyntheticEldersTex.body_t00'])])
         _, rows = character_units_and_rows(chargrp, self.package_census)
-        self.assertEqual(reasons_by_key(rows), {'character:0': 'texture-licensee-unsupported:123/23'})
+        self.assertEqual(reasons_by_key(rows), {'character:0': 'texture-licensee-unsupported:123/31'})
 
 
 class ItemUnitInventoryTests(InventoryTestCase):

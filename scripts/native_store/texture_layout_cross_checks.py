@@ -10,25 +10,28 @@ import json
 from pathlib import PurePosixPath
 
 from native_assets import UMODEL, Converter
+from native_assets_lib.lineage_material_prefix import MATERIAL_PREFIX_EVIDENCE, lineage_material_prefix
 from native_assets_lib.sha256_identity import sha256_hex_digest
 from native_assets_lib.texture_mips import REVIEWED_VERSIONS, read_texture_source_for_layout
 from native_assets_lib.texture_package_118 import read_unreal_package
-from native_assets_lib.texture_source_reader import FORMATS, P8_FORMAT_ID
+from native_assets_lib.texture_source_reader import FORMATS, P8_FORMAT_ID, UnsupportedTextureSource
 from native_catalog.ue2 import FormatError
 from native_store.store_paths import REPOSITORY_ROOT, lane_work_root
 from reference_client_guard import require_reference_client
 from world.elbera_reader_cross_check import elbera_export_named, elbera_package, elbera_tool_record, elbera_ue2package_module
 
-CROSS_CHECKS_RELATIVE_PATH = 'tests/fixtures/texture-layouts/cross-checks.json'
+TEXTURE_LAYOUT_FIXTURE_FOLDER = 'tests/fixtures/texture-layouts'
+CROSS_CHECKS_RELATIVE_PATH = f'{TEXTURE_LAYOUT_FIXTURE_FOLDER}/cross-checks.json'
+FIXTURE_FIELDS = ('expected', 'licensee', 'materialPrefix', 'packageVersion', 'schemaVersion', 'syntheticBody')
 CROSS_CHECK_SCHEMA_VERSION = 1
 INTEGRATION_LANE = 'integration'
 CONVERTER_WORK_FOLDER = 'texture-layouts'
 TEXTURE_CLASS_NAME = 'Texture'
 REVIEWED_STATUS = 'reviewed'
 REFUSED_STATUS = 'refused'
-SELECTION_RULE = 'first Texture export in export order whose Format has a reviewed block wrapper'
-ROW_FIELDS = ('converterNativeMipsEqual', 'elberaMipSha256', 'failingCheck', 'format', 'licensee', 'lockSha256', 'object',
-              'ourMipSha256', 'package', 'packageVersion', 'selection', 'status', 'tool')
+SELECTION_RULE = 'first Texture export in export order whose Format has a reviewed block wrapper and whose leaf name is unique for UModel'
+ROW_FIELDS = ('converterNativeMipsEqual', 'elberaMipSha256', 'failingCheck', 'format', 'licensee', 'lockSha256', 'materialPrefix',
+              'object', 'ourMipSha256', 'package', 'packageVersion', 'selection', 'status', 'tool')
 RECOMPUTED_FIELDS = tuple(field for field in ROW_FIELDS if field != 'converterNativeMipsEqual')
 
 
@@ -42,18 +45,15 @@ def texture_format_id(package, item):
     return formats[0] if formats else P8_FORMAT_ID
 
 
+def has_unique_texture_leaf_name(package, item):
+    return sum(1 for other in package.exports if other['className'] == TEXTURE_CLASS_NAME and other['name'].casefold() == item['name'].casefold()) == 1
+
+
 def first_reviewed_format_texture(package):
     for item in package.exports:
-        if item['className'] == TEXTURE_CLASS_NAME and texture_format_id(package, item) in FORMATS:
+        if item['className'] == TEXTURE_CLASS_NAME and texture_format_id(package, item) in FORMATS and has_unique_texture_leaf_name(package, item):
             return item
-    raise TextureLayoutCrossCheckError(f'{package.filename} holds no Texture export with a reviewed format')
-
-
-def named_texture(package, object_name):
-    matches = [item for item in package.exports if item['className'] == TEXTURE_CLASS_NAME and item['object'] == object_name]
-    if len(matches) != 1:
-        raise TextureLayoutCrossCheckError(f'{package.filename} holds {len(matches)} Texture exports named {object_name}')
-    return matches[0]
+    raise TextureLayoutCrossCheckError(f'{package.filename} holds no Texture export with a reviewed format and a unique leaf name')
 
 
 def elbera_texture_mip_payloads(access, relative_path, object_name):
@@ -68,7 +68,16 @@ def our_texture_mip_payloads(package, item):
     return [files[mip['file']] for mip in metadata['mips']]
 
 
-def failing_check(our_hashes, our_error, elbera_hashes, elbera_error):
+def material_prefix_rule_failure(layout, reviewed_versions):
+    material_prefix = lineage_material_prefix(*layout)
+    if material_prefix in {lineage_material_prefix(*reviewed_layout) for reviewed_layout in reviewed_versions}:
+        return None
+    return f'the Lineage material prefix rule gives {material_prefix}, the prefix of no reviewed layout'
+
+
+def failing_check(rule_failure, our_hashes, our_error, elbera_hashes, elbera_error):
+    if rule_failure is not None:
+        return rule_failure
     if our_error is not None:
         return f'our reader refuses the texture: {our_error}'
     if elbera_error is not None:
@@ -78,21 +87,22 @@ def failing_check(our_hashes, our_error, elbera_hashes, elbera_error):
     return None
 
 
-def texture_layout_cross_check_row(access, relative_path, object_name=None):
+def texture_layout_cross_check_row(access, relative_path):
     path, lock_sha256 = access.require_equal_file_with_sha256(relative_path)
     package = read_unreal_package(path.read_bytes(), PurePosixPath(relative_path).name)
-    item = first_reviewed_format_texture(package) if object_name is None else named_texture(package, object_name)
+    item = first_reviewed_format_texture(package)
     our_hashes = our_error = elbera_hashes = elbera_error = None
     try:
         our_hashes = [sha256_hex_digest(payload) for payload in our_texture_mip_payloads(package, item)]
-    except FormatError as error:
+    except (FormatError, UnsupportedTextureSource) as error:
         our_error = str(error)
     try:
         elbera_hashes = [sha256_hex_digest(payload) for payload in elbera_texture_mip_payloads(access, relative_path, item['object'])]
     except Exception as error:
         elbera_error = f'{type(error).__name__}: {error}'
-    check = failing_check(our_hashes, our_error, elbera_hashes, elbera_error)
-    return {'packageVersion': package.summary['version'], 'licensee': package.summary['licenseeVersion'], 'package': relative_path,
+    layout = (package.summary['version'], package.summary['licenseeVersion'])
+    check = failing_check(material_prefix_rule_failure(layout, REVIEWED_VERSIONS), our_hashes, our_error, elbera_hashes, elbera_error)
+    return {'packageVersion': layout[0], 'licensee': layout[1], 'package': relative_path, 'materialPrefix': lineage_material_prefix(*layout),
             'lockSha256': lock_sha256, 'object': item['object'], 'format': FORMATS[texture_format_id(package, item)],
             'selection': SELECTION_RULE, 'ourMipSha256': our_hashes, 'elberaMipSha256': elbera_hashes,
             'status': REVIEWED_STATUS if check is None else REFUSED_STATUS, 'failingCheck': check, 'tool': elbera_tool_record()}
@@ -123,8 +133,11 @@ def read_cross_check_rows(project_root):
     if not path.is_file():
         return []
     document = json.loads(path.read_bytes())
-    if not (isinstance(document, dict) and document.get('schemaVersion') == CROSS_CHECK_SCHEMA_VERSION and isinstance(document.get('rows'), list)):
-        raise TextureLayoutCrossCheckError(f'{CROSS_CHECKS_RELATIVE_PATH} must be {{schemaVersion {CROSS_CHECK_SCHEMA_VERSION}, rows}}')
+    if not (isinstance(document, dict) and sorted(document) == ['materialPrefixEvidence', 'rows', 'schemaVersion']
+            and document['schemaVersion'] == CROSS_CHECK_SCHEMA_VERSION and isinstance(document['rows'], list)
+            and document['materialPrefixEvidence'] == list(MATERIAL_PREFIX_EVIDENCE)):
+        raise TextureLayoutCrossCheckError(f'{CROSS_CHECKS_RELATIVE_PATH} must be {{schemaVersion {CROSS_CHECK_SCHEMA_VERSION}, '
+                                           'materialPrefixEvidence equal to the cited prefix rule evidence, rows}}')
     return document['rows']
 
 
@@ -134,10 +147,30 @@ def cross_check_row_identity(row):
 
 def write_cross_check_row(project_root, row):
     rows = [existing for existing in read_cross_check_rows(project_root) if cross_check_row_identity(existing) != cross_check_row_identity(row)]
-    document = {'schemaVersion': CROSS_CHECK_SCHEMA_VERSION, 'rows': sorted([*rows, row], key=cross_check_row_identity)}
+    document = {'schemaVersion': CROSS_CHECK_SCHEMA_VERSION, 'materialPrefixEvidence': list(MATERIAL_PREFIX_EVIDENCE),
+                'rows': sorted([*rows, row], key=cross_check_row_identity)}
     path = cross_checks_path(project_root)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes((json.dumps(document, indent=1, sort_keys=True, ensure_ascii=False) + '\n').encode('utf-8'))
+
+
+def texture_layout_fixture_path(project_root, layout):
+    return Path(project_root) / TEXTURE_LAYOUT_FIXTURE_FOLDER / f'texture-{layout[0]}-{layout[1]}.json'
+
+
+def read_texture_layout_fixture(project_root, layout):
+    path = texture_layout_fixture_path(project_root, layout)
+    if not path.is_file():
+        raise TextureLayoutCrossCheckError(f'reviewed texture layout {layout[0]}/{layout[1]} has no synthetic fixture {path.name}')
+    fixture = json.loads(path.read_bytes())
+    if not (isinstance(fixture, dict) and tuple(sorted(fixture)) == FIXTURE_FIELDS and fixture['schemaVersion'] == CROSS_CHECK_SCHEMA_VERSION
+            and (fixture['packageVersion'], fixture['licensee']) == layout and fixture['materialPrefix'] == lineage_material_prefix(*layout)):
+        raise TextureLayoutCrossCheckError(f'{path.name} must hold {FIXTURE_FIELDS} for layout {layout[0]}/{layout[1]} and its cited material prefix')
+    return fixture
+
+
+def read_texture_layout_fixtures(project_root, reviewed_versions):
+    return {layout: read_texture_layout_fixture(project_root, layout) for layout in sorted(reviewed_versions)}
 
 
 def validate_cross_check_rows(rows, reviewed_versions):

@@ -124,7 +124,7 @@ class NpcUnitInventoryTests(unittest.TestCase):
             'npc:2': 'package-name-ambiguous:SyntheticTwin',
             'npc:3': 'skeletal-licensee-unsupported:123/23',
             'npc:4': 'texture-package-not-in-client:AbsentTex',
-            'npc:5': 'texture-licensee-unsupported:123/23',
+            'npc:5': 'texture-licensee-unsupported:123/31',
             'npc:6': 'decode-failed:unsupported-native',
             'npc:7': 'conversion-pending',
         })

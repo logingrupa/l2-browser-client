@@ -69,8 +69,8 @@ class TableLayoutTextureRefusalTests(unittest.TestCase):
         return caught.exception.reason
 
     def test_an_unreviewed_texture_package_licensee_is_a_licensee_gap_not_a_format_gap(self):
-        reason = self.refusal_reason(23, DXT1_FORMAT)
-        self.assertEqual(reason, 'texture-licensee-unsupported:123/23')
+        reason = self.refusal_reason(31, DXT1_FORMAT)
+        self.assertEqual(reason, 'texture-licensee-unsupported:123/31')
         self.assertTrue(is_listed_reason(reason, load_gap_reason_patterns(ROOT)))
 
     def test_an_unreviewed_format_in_a_reviewed_package_is_a_format_gap(self):

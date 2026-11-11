@@ -139,7 +139,7 @@ def require_unique_umodel_leaf_name(package, selected):
 def implementation_source_paths():
     scripts = Path(__file__).parent
     return sorted([Path(__file__), scripts / 'native_audio.py', scripts / 'native_animation_families.py', scripts / 'native_effect_bundle.py',
-                   scripts / 'reference_client_guard.py', scripts / 'native_store' / 'store_paths.py',
+                   scripts / 'reference_client_guard.py', scripts / 'native_store' / 'store_paths.py', scripts / 'data' / 'pinned_elbera_module.py',
                    *(scripts / 'native_catalog').glob('*.py'), *(scripts / 'native_catalog').glob('*.ps1'), *(scripts / 'native_assets_lib').glob('*.py')])
 
 

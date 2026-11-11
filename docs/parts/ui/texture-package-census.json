@@ -4,8 +4,8 @@
    "licensee": 23,
    "packageVersion": 123,
    "path": "systextures/cubemaps.utx",
-   "reason": "texture-licensee-unsupported:123/23",
-   "reviewed": false
+   "reason": null,
+   "reviewed": true
   },
   {
    "licensee": 20,
@@ -32,15 +32,15 @@
    "licensee": 27,
    "packageVersion": 123,
    "path": "systextures/fdarkelf.utx",
-   "reason": "texture-licensee-unsupported:123/27",
-   "reviewed": false
+   "reason": null,
+   "reviewed": true
   },
   {
    "licensee": 27,
    "packageVersion": 123,
    "path": "systextures/fdwarf.utx",
-   "reason": "texture-licensee-unsupported:123/27",
-   "reviewed": false
+   "reason": null,
+   "reviewed": true
   },
   {
    "licensee": 28,
@@ -81,8 +81,8 @@
    "licensee": 25,
    "packageVersion": 123,
    "path": "systextures/goldcubes.utx",
-   "reason": "texture-licensee-unsupported:123/25",
-   "reviewed": false
+   "reason": null,
+   "reviewed": true
   },
   {
    "licensee": 28,
@@ -109,8 +109,8 @@
    "licensee": 18,
    "packageVersion": 123,
    "path": "systextures/l2_skilltime.utx",
-   "reason": "texture-licensee-unsupported:123/18",
-   "reviewed": false
+   "reason": null,
+   "reviewed": true
   },
   {
    "licensee": 28,
@@ -158,8 +158,8 @@
    "licensee": 27,
    "packageVersion": 123,
    "path": "systextures/lineagedecostex.utx",
-   "reason": "texture-licensee-unsupported:123/27",
-   "reviewed": false
+   "reason": null,
+   "reviewed": true
   },
   {
    "licensee": 28,
@@ -186,8 +186,8 @@
    "licensee": 25,
    "packageVersion": 123,
    "path": "systextures/lineagemonsterstex2.utx",
-   "reason": "texture-licensee-unsupported:123/25",
-   "reviewed": false
+   "reason": null,
+   "reviewed": true
   },
   {
    "licensee": 28,
@@ -228,15 +228,15 @@
    "licensee": 16,
    "packageVersion": 123,
    "path": "systextures/logbg.utx",
-   "reason": "texture-licensee-unsupported:123/16",
-   "reviewed": false
+   "reason": null,
+   "reviewed": true
   },
   {
    "licensee": 27,
    "packageVersion": 123,
    "path": "systextures/mdarkelf.utx",
-   "reason": "texture-licensee-unsupported:123/27",
-   "reviewed": false
+   "reason": null,
+   "reviewed": true
   },
   {
    "licensee": 28,
@@ -284,8 +284,8 @@
    "licensee": 18,
    "packageVersion": 123,
    "path": "systextures/pledge.utx",
-   "reason": "texture-licensee-unsupported:123/18",
-   "reviewed": false
+   "reason": null,
+   "reviewed": true
   },
   {
    "licensee": 0,
@@ -319,22 +319,22 @@
    "licensee": 23,
    "packageVersion": 123,
    "path": "systextures/town_map.utx",
-   "reason": "texture-licensee-unsupported:123/23",
-   "reviewed": false
+   "reason": null,
+   "reviewed": true
   },
   {
    "licensee": 16,
    "packageVersion": 123,
    "path": "systextures/uwindowfonts.utx",
-   "reason": "texture-licensee-unsupported:123/16",
-   "reviewed": false
+   "reason": null,
+   "reviewed": true
   },
   {
    "licensee": 16,
    "packageVersion": 123,
    "path": "systextures/wareffectstextures.utx",
-   "reason": "texture-licensee-unsupported:123/16",
-   "reviewed": false
+   "reason": null,
+   "reviewed": true
   }
  ],
  "referenceTreeLockSha256": "1957c96800aa45cb10c984f3f2e6f8d1f5f0b1713f086f20560db01f4d1d2b52",
