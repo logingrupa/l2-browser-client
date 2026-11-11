@@ -175,7 +175,7 @@ Plans:
   2. For world, actor and skill audio, listen-check results are recorded as labelled audible clips with verdicts; successful extraction or decoding is never recorded as a pass.
   3. Each mismatch becomes a converter fix (re-run shows the corrected result in the sandbox) or a listed gap; no tile is hand-patched.
   4. A stage A exit report states per part how many items were converted, load, were checked, and how many pass, mismatch, are unverified or are gaps, tied to the IMPORTA-PC hash lock.
-**Plans**: 18 plans
+**Plans**: 20 plans
 
 Plans:
 **Wave 1**
@@ -215,7 +215,9 @@ Plans:
 - [ ] 03-15-PLAN.md - Final union sweeps and the generated stage A exit report (CHECK-05)
 
 **Wave 11** *(blocked on Wave 10 completion)*
-- [ ] 03-16-PLAN.md - Stage A check sections in the lane EVIDENCE docs (CHECK-03)
+- [ ] 03-16-PLAN.md - Stage A check sections in the world-lane EVIDENCE docs: world, minimap, movement-geodata (CHECK-03)
+- [ ] 03-19-PLAN.md - Stage A check sections in the actors-lane EVIDENCE docs, split from 03-16 (CHECK-03)
+- [ ] 03-20-PLAN.md - Stage A check sections in the data-ui-lane EVIDENCE docs, split from 03-16 (CHECK-03)
 
 **Wave 12** *(blocked on Wave 11 completion)*
 - [ ] 03-17-PLAN.md - Needs Human session lines, VERIFICATION Open, STATUS, phase gate (CHECK-01, CHECK-02, CHECK-03)
