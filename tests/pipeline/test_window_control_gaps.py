@@ -14,7 +14,7 @@ import window_control_gaps
 
 INTERFACE_SHA256 = '1' * 64
 MANIFEST_SHA256 = '2' * 64
-RENDERED_TYPES = ('Window', 'Texture', 'Button', 'TextBox')
+RENDERED_TYPES = ('Window', 'Texture', 'Button', 'TextBox', 'MinimapCtrl')
 SOURCE_IDENTITY = {'path': 'system/interface.xdat', 'sha256': INTERFACE_SHA256}
 
 
@@ -45,7 +45,8 @@ class WindowControlGapRowTests(unittest.TestCase):
 
     def test_only_rendered_types_give_no_rows(self):
         manifest = synthetic_manifest('SyntheticPlainWnd', synthetic_node('SyntheticPlainWnd', 'Window', [
-            synthetic_node('SyntheticBackTex', 'Texture'), synthetic_node('SyntheticCloseButton', 'Button'), synthetic_node('SyntheticTitle', 'TextBox')]))
+            synthetic_node('SyntheticBackTex', 'Texture'), synthetic_node('SyntheticCloseButton', 'Button'), synthetic_node('SyntheticTitle', 'TextBox'),
+            synthetic_node('SyntheticMinimap', 'MinimapCtrl')]))
         self.assertEqual(window_control_gaps.window_control_gap_rows(manifest, RENDERED_TYPES, SOURCE_IDENTITY), [])
 
     def test_nested_controls_come_in_source_order_and_ordinal_ids_keep_their_ordinal_in_the_key(self):
@@ -61,7 +62,7 @@ class WindowControlGapRowTests(unittest.TestCase):
 
 
 class RenderedControlTypeRecipeTests(unittest.TestCase):
-    def test_the_committed_recipe_lists_the_four_rendered_types(self):
+    def test_the_committed_recipe_lists_the_five_rendered_types(self):
         self.assertEqual(window_control_gaps.read_rendered_control_types(), RENDERED_TYPES)
 
     def test_a_recipe_with_repeated_or_missing_types_is_refused(self):
