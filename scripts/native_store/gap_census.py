@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 
 from native_store.coverage_denominators import UNKNOWN_DENOMINATOR
+from native_store.gap_census_derived_parts import DERIVED_KEY_KIND_PARTS
 from native_store.gap_rows import GapRowError, load_gap_reason_patterns, validate_gap_row
 
 GAP_CENSUS_STATUS_PRECEDENCE = ('failed', 'gap', 'converted', 'pending')
@@ -16,7 +17,7 @@ GAP_CENSUS_LOAD_STATUSES = ('pass', 'failed', 'unverified')
 UNVERIFIED_LOAD_STATUS = 'unverified'
 CONVERSION_VERDICT_STEP_BY_PART = {'skills-effects': 'skills'}
 CATALOG_KEY_KIND_PARTS = {'table': 'data', 'tile': 'world', 'map': 'world', 'character': 'player-characters', 'window': 'ui',
-                          'npc': 'npcs', 'item': 'items', 'skill': 'skills-effects'}
+                          'npc': 'npcs', 'item': 'items', 'skill': 'skills-effects', **DERIVED_KEY_KIND_PARTS}
 SKILL_ROW_AMBIGUOUS_REASON_PATTERN = re.compile(r'^skill-row-ambiguous:(?P<count>[1-9]\d{0,8})$')
 NAMED_MISSING_KEY_LIMIT = 5
 ITEMS_PART = 'items'

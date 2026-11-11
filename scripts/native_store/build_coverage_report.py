@@ -16,6 +16,7 @@ from native_store.catalog_writer import is_table_name_index_id, replace_file
 from native_store.coverage_denominators import COVERAGE_PART_ORDER, UNKNOWN_DENOMINATOR, CoverageReportError
 from native_store.gap_census import GAP_CENSUS_LOAD_STATUSES, ITEM_CENSUS_STEP, ITEMS_PART, build_gap_census
 from native_store.gap_census_denominators import census_item_join_rows, load_census_denominators, measured_part_names
+from native_store.gap_census_derived_parts import DERIVED_PARTS, DERIVED_SOURCE_PARTS, derived_converted_keys, derived_part_rows
 from native_store.gap_rows import (GAP_ROW_STATUSES, INTEGRATION_LANE_NAME, is_listed_reason, load_gap_reason_patterns, read_gap_rows,
                                    write_gap_rows)
 from native_store.load_check_records import is_catalog_key, is_riga_timestamp, read_load_check_records
@@ -55,12 +56,24 @@ def merged_load_statuses(project_root, lane_names_by_catalog_sha256):
     return load_status_by_key
 
 
+def derived_source_lane_names(part_names):
+    source_parts = {derived_part.source_part for derived_part in DERIVED_PARTS.values() if derived_part.part in part_names}
+    return tuple(sorted(lane_name for lane_name, lane_parts in read_lane_parts_by_name().items() if source_parts & set(lane_parts)))
+
+
 def measured_gap_rows(project_root, lane_names, part_names):
-    return [row for lane_name in lane_names for row in read_gap_rows(project_root, lane_name) if row['part'] in part_names]
+    gap_rows_by_lane_name = {lane_name: read_gap_rows(project_root, lane_name)
+                             for lane_name in {*lane_names, *derived_source_lane_names(part_names)}}
+    lane_rows = [row for lane_name in lane_names for row in gap_rows_by_lane_name[lane_name] if row['part'] in part_names]
+    source_rows = [row for lane_name in derived_source_lane_names(part_names) for row in gap_rows_by_lane_name[lane_name]
+                   if row['part'] in DERIVED_SOURCE_PARTS]
+    return lane_rows, source_rows
 
 
 def store_converted_keys(project_root, store_root, catalog):
-    return denominator_catalog_keys(catalog_index_keys(store_root, catalog, Path(project_root) / 'public' / 'l2'))
+    shared_store_root = Path(project_root) / 'public' / 'l2'
+    return denominator_catalog_keys(catalog_index_keys(store_root, catalog, shared_store_root)) | derived_converted_keys(store_root, catalog,
+                                                                                                                          shared_store_root)
 
 
 def write_item_join_rows(project_root, lane_names, part_names):
@@ -112,7 +125,8 @@ def build_coverage_report(project_root, store_root, lane_names, generated_at_rig
         census_catalog, census_catalog_sha256 = read_measured_catalog(census_store_root)
         converted_keys |= store_converted_keys(project_root, census_store_root, census_catalog)
         lane_names_by_catalog_sha256.setdefault(census_catalog_sha256, set()).add(census_lane_name)
-    gap_rows = measured_gap_rows(project_root, write_item_join_rows(project_root, lane_names, part_names), part_names)
+    lane_rows, source_rows = measured_gap_rows(project_root, write_item_join_rows(project_root, lane_names, part_names), part_names)
+    gap_rows = lane_rows + derived_part_rows(denominators, source_rows)
     census_rows = build_gap_census(denominators, gap_rows, converted_keys, merged_load_statuses(project_root, lane_names_by_catalog_sha256))
     steps_by_key = coverage_steps_by_key(gap_rows)
     rows = [coverage_row(census_row, steps_by_key.get(census_row['key'], [])) for census_row in census_rows]

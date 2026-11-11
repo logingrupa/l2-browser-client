@@ -252,7 +252,9 @@ class CoverageReportWorldTests(CoverageProjectTestCase):
                 self.assertEqual((denominators[part]['count'], denominators[part]['keys']), (count, None))
                 self.assertIn(source, denominators[part]['source'])
         self.assertEqual(denominators['ui']['count'], 248)
-        for part in ('sandbox', 'audio', 'minimap', 'movement-geodata'):
+        self.assertEqual((denominators['minimap']['count'], len(denominators['minimap']['keys'])), (153, 153))
+        self.assertIn('recipes/reference-client-tree.lock.json', denominators['minimap']['source'])
+        for part in ('sandbox', 'audio', 'movement-geodata'):
             with self.subTest(part):
                 self.assertEqual((denominators[part]['count'], denominators[part]['keys']), ('unknown', None))
 
@@ -263,7 +265,7 @@ class CoverageReportWorldTests(CoverageProjectTestCase):
         report = self.build_report(('world',))
         report_rows = rows_by_key(report)
         self.assertEqual(tuple(report['parts']), ('world', 'minimap', 'movement-geodata'))
-        self.assertEqual(len(report['rows']), 163)
+        self.assertEqual(len([row for row in report['rows'] if row['part'] == 'world']), 163)
         self.assertEqual(report_rows['tile:20_21']['steps'], [{'step': 'census', 'status': 'pending', 'reason': 'step-pending:raw'},
                                                               {'step': 'raw', 'status': 'pass', 'reason': None},
                                                               {'step': 'terrain', 'status': 'pending', 'reason': 'step-pending:terrain'}])
@@ -272,7 +274,7 @@ class CoverageReportWorldTests(CoverageProjectTestCase):
         self.assertEqual((report_rows['map:Lobby']['status'], report_rows['map:Lobby']['reason']), ('gap', 'census-pending'))
         self.assertEqual(report['parts']['world'], {'denominator': 163, 'converted': 1, 'loads': {'pass': 0, 'failed': 0, 'unverified': 1},
                                                     'gap': 161, 'pending': 1})
-        self.assertEqual(report['parts']['minimap']['pending'], 'unknown')
+        self.assertEqual((report['parts']['minimap']['denominator'], report['parts']['minimap']['pending']), (153, 153))
         self.assertIn('Lobby (`map:Lobby`) has the census status gap `census-pending`.', coverage_markdown(report))
 
     def test_a_converted_tile_whose_collision_step_failed_is_a_failed_row_counted_as_converted_and_as_gap(self):

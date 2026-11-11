@@ -25,6 +25,7 @@ CATALOG_KEY_PATTERNS = {
     'table': re.compile(r'^table:[a-z][a-z0-9_]*(?:-[a-z])?$'),
     'window': re.compile(r'^window:[A-Za-z][A-Za-z0-9_]{0,63}(?:#[1-9]\d{0,3})?$'),
     'character': re.compile(r'^character:\d{1,4}$'),
+    'minimap': re.compile(r'^minimap:\d{2}_\d{2}$'),
 }
 SEED_GAP_REASONS_PATH = REPOSITORY_ROOT / 'scripts' / 'native_store' / 'gap_reasons.json'
 SEED_GAP_REASON_LIST_NAME = 'seed'

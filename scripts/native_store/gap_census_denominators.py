@@ -9,6 +9,7 @@ from native_store.coverage_denominators import (COVERAGE_PART_ORDER, NO_COMMITTE
                                                 inventory_table_count_denominator, read_dat_table_inventory, repository_relative_text,
                                                 require_catalog_key, table_denominator, unknown_denominator, world_denominator)
 from native_store.data_ui_table_manifest import DATA_UI_LANE_NAME, DataUiTableManifestError, data_ui_table_manifest
+from native_store.gap_census_derived_parts import derived_tile_denominator
 from native_store.gap_census import ETCITEM_TABLE_NAME, ITEMNAME_TABLE_NAME, ITEMS_PART, GapCensusIncompleteError, item_census_rows
 from native_store.store_paths import REPOSITORY_ROOT, read_lane_parts_by_name
 from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH
@@ -75,6 +76,7 @@ PART_DENOMINATOR_LOADERS = {
     'npcs': partial(actor_census_table_denominator, 'npcgrp'),
     'items': partial(inventory_record_count_denominator, ITEMNAME_TABLE_NAME),
     'skills-effects': partial(inventory_record_count_denominator, 'skillgrp'),
+    'minimap': partial(derived_tile_denominator, 'minimap'),
 }
 
 
