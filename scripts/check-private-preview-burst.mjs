@@ -4,7 +4,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
-import { nativeSectionResourcePaths, privatePreviewCatalogPath } from './private-preview-targets.mjs';
+import { nativeSectionManifestPath, nativeSectionResourcePaths, privatePreviewCatalogPath } from './private-preview-targets.mjs';
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(directory, '..');
@@ -22,20 +22,24 @@ const key = (await fs.readFile(path.join(privateDirectory, 'access-key'), 'utf8'
 if (!/^[a-f0-9]{64}$/.test(key)) throw Error('Invalid private access key; value suppressed.');
 const sanitize = value => String(value).replaceAll(key, '[private]').replace(/\/enter\?[^\s"']*/g, '/enter?[private]');
 const distDirectory = path.join(root, 'dist');
-const readDistFile = urlPath => fs.readFile(path.join(distDirectory, `.${urlPath}`));
+const distFilePath = urlPath => {
+  const local = path.resolve(distDirectory, `.${decodeURIComponent(urlPath)}`);
+  if (!local.startsWith(distDirectory + path.sep)) throw Error('Native resource is outside dist.');
+  return local;
+};
+const readDistFile = urlPath => fs.readFile(distFilePath(urlPath));
 const catalogBytes = await readDistFile(privatePreviewCatalogPath);
 const catalog = JSON.parse(catalogBytes);
 if (!Array.isArray(catalog.sections) || catalog.sections.length === 0) throw Error('The built native catalog lists no sections.');
 const sectionResourcePaths = await Promise.all(catalog.sections.map(async sectionRecord =>
-  nativeSectionResourcePaths(sectionRecord, JSON.parse(await readDistFile(sectionRecord.manifest)))));
+  nativeSectionResourcePaths(sectionRecord, JSON.parse(await readDistFile(nativeSectionManifestPath(sectionRecord))))));
 const paths = [...new Set([privatePreviewCatalogPath, ...sectionResourcePaths.flat()])];
 const concurrencyIndex = process.argv.indexOf('--concurrency');
 const requestedConcurrency = concurrencyIndex >= 0 ? Number(process.argv[concurrencyIndex + 1]) : null;
 if (concurrencyIndex >= 0 && (!Number.isSafeInteger(requestedConcurrency) || requestedConcurrency < 1 || requestedConcurrency > paths.length)) throw Error('--concurrency must be an integer within the resource count.');
 const waves = requestedConcurrency === null ? [64, 256, paths.length] : [requestedConcurrency];
 for (const resource of paths) {
-  const local = path.resolve(distDirectory, `.${decodeURIComponent(resource)}`);
-  if (!local.startsWith(distDirectory + path.sep) || !(await fs.stat(local)).isFile()) throw Error('Native resource is missing or outside dist.');
+  if (!(await fs.stat(distFilePath(resource))).isFile()) throw Error('Native resource is missing from dist.');
 }
 const socketAndLogSettleMilliseconds = 250;
 const logFile = path.join(privateDirectory, 'origin-error.log');

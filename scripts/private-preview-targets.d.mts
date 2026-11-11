@@ -11,4 +11,5 @@ export interface PrivatePreviewSectionManifest {
   bsp?: { model: { file: string } }[];
 }
 
+export declare function nativeSectionManifestPath(sectionRecord: PrivatePreviewSectionRecord): string;
 export declare function nativeSectionResourcePaths(sectionRecord: PrivatePreviewSectionRecord, sectionManifest: PrivatePreviewSectionManifest): string[];

@@ -12,14 +12,24 @@ function resourceFile(resource, label) {
   return file;
 }
 
-export function nativeSectionResourcePaths(sectionRecord, sectionManifest) {
+function nativeSectionBasePath(sectionRecord) {
   const manifestSha256 = sectionRecord?.manifestSha256;
   if (typeof manifestSha256 !== 'string' || !sha256Pattern.test(manifestSha256)) throw Error('Native catalog section has no valid manifest hash.');
-  const sectionBase = `/l2/maps/${manifestSha256}/`;
-  if (sectionRecord.manifest !== `${sectionBase}map-section-runtime/manifest.json`) throw Error('Native catalog section manifest path is not hash-addressed.');
+  return `/l2/maps/${manifestSha256}/`;
+}
+
+export function nativeSectionManifestPath(sectionRecord) {
+  const manifestPath = `${nativeSectionBasePath(sectionRecord)}map-section-runtime/manifest.json`;
+  if (sectionRecord.manifest !== manifestPath) throw Error('Native catalog section manifest path is not hash-addressed.');
+  return manifestPath;
+}
+
+export function nativeSectionResourcePaths(sectionRecord, sectionManifest) {
+  const manifestPath = nativeSectionManifestPath(sectionRecord);
+  const sectionBase = nativeSectionBasePath(sectionRecord);
   if (!Array.isArray(sectionManifest?.models)) throw Error('Native section manifest has no model list.');
   return [...new Set([
-    sectionRecord.manifest,
+    manifestPath,
     `${sectionBase}map-section/${resourceFile(sectionManifest.terrain, 'terrain')}`,
     ...(sectionManifest.terrainPatches ?? []).map(patch => `${sectionBase}map-section/${resourceFile(patch.model, 'terrain patch')}`),
     ...sectionManifest.models.map(model => `${sectionBase}map-section-models/${resourceFile(model.model, 'model')}`),

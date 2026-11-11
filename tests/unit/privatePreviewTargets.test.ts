@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { nativeSectionResourcePaths, privatePreviewCatalogPath, privatePreviewOrigin, privatePreviewWorldPath } from "../../scripts/private-preview-targets.mjs";
+import { nativeSectionManifestPath, nativeSectionResourcePaths, privatePreviewCatalogPath, privatePreviewOrigin, privatePreviewWorldPath } from "../../scripts/private-preview-targets.mjs";
 
 const privatePreviewScriptPaths = [
   "scripts/private-preview.mjs",
@@ -61,6 +61,20 @@ describe("private preview targets", () => {
   it("refuses a section manifest path that is not hash-addressed", () => {
     expect(() => nativeSectionResourcePaths({ ...sectionRecord, manifest: "/l2/maps/other/manifest.json" }, { terrain: { file: "terrain.glb" }, models: [] }))
       .toThrow("Native catalog section manifest path is not hash-addressed.");
+  });
+
+  it("validates the section manifest path from the catalog record alone, before any manifest is read", () => {
+    expect(nativeSectionManifestPath(sectionRecord)).toBe(sectionRecord.manifest);
+    expect(() => nativeSectionManifestPath({ ...sectionRecord, manifest: "/../.assets/private-preview/access-key" }))
+      .toThrow("Native catalog section manifest path is not hash-addressed.");
+    expect(() => nativeSectionManifestPath({ ...sectionRecord, manifestSha256: "../.assets" }))
+      .toThrow("Native catalog section has no valid manifest hash.");
+  });
+
+  it("reads each section manifest only through its validated path inside dist in the burst check", () => {
+    const burstScriptText = readFileSync("scripts/check-private-preview-burst.mjs", "utf8");
+    expect(burstScriptText).toContain("readDistFile(nativeSectionManifestPath(sectionRecord))");
+    expect(burstScriptText).not.toContain("readDistFile(sectionRecord.manifest)");
   });
 
   it("refuses a resource file that climbs out of the section", () => {
