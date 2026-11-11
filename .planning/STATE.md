@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 02-74-PLAN.md
-last_updated: "2026-11-11T14:49:04.269Z"
+stopped_at: Completed 02-81-PLAN.md
+last_updated: "2026-11-11T15:30:28.616Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 03 plan 03-01 complete (side-by-side check record writer and key content digest; Phase 3 start commit cb09cdc)
-state_head: c44ce3459169dcc7d5de6213770ce48891463dff
+state_head: bedbd1d506f728125587c1555dc53b796beaef63
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 131
-  completed_plans: 100
+  completed_plans: 101
   percent: 0
 ---
 
@@ -146,6 +146,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 2 P90 | 25min | 2 tasks | 17 files |
 | Phase 2 P93 | 15min | 2 tasks | 18 files |
 | Phase 2 P74 | 10min | 3 tasks | 14 files |
+| Phase 2 P81 | 35min | 3 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -371,6 +372,13 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 2]: P966: materialProgram.ts exports maximumTextureImageBytes and material_program.py holds MAXIMUM_TEXTURE_IMAGE_BYTES = 33554432; materialProgramImagePins.test.ts reads the Python literal and checks equality and the limit edge
 - [Phase 2]: P967: tests/fixtures/material-programs/textured-program.json is the synthetic SkyPanner program with a 2 x 2 stored-deflate PNG pin, regenerated only with MATERIAL_PROGRAM_FIXTURE_UPDATE=1, and is -text in .gitattributes
 - [Phase 2]: P968: the CONV-02 build1590 tangent repair has its Needs Human line in STATE.md from 02-74, because OUTPUT_CONTRACT cites it
+- [Phase 2]: P969: the tile seam rule rows read from Engine.dll 4dd2f63c carry confirmed-interlude with addresses, not the plan's ue2-data
+- [Phase 2]: P970: the seam strip draws in the owning tile's edge chunks but is not collided, because ATerrainInfo::LineCheck 0x10722630 clamps quads to HeightmapX - 2; TERR and worldResidencyRing.ts stay unchanged
+- [Phase 2]: P971: a seam uses the tile-grid neighbour only when both Location map indices equal the tile ids; a neighbour map the client lacks keeps the own clamped sample; an unreadable or misplaced neighbour is terrain-seam-neighbour-unavailable:<tileId>, an unsealed eligible one pending step-pending:raw
+- [Phase 2]: P972: world gap reasons listVersion 21 adds terrain-seam-neighbour-unavailable:<tileId> instead of the planned terrain-seam-rule-unresolved and drops collision-volume-class-unadmitted:<class>
+- [Phase 2]: P973: read_tile_census and select_eligible_tiles live in scripts/world/eligible_tiles.py (import cycle with the terrain step)
+- [Phase 2]: P974: seam gap rows are deduplicated object rows on the owner's terrain export in the terrain index seamGapRows and the seal gapRows
+- [Phase 2]: P975: world-tile-border.spec.ts now walks 15_20 to 15_21 and is recorded unverified for the 17_12 to 18_12 seam until 02-88 and the MOVE-01 floor follow-up
 
 ### Pending Todos
 
@@ -433,7 +441,7 @@ Integration thread (rule 4: only the integration thread writes the main checkout
 
 Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in this run and leaves this list when it lands.
 
-- Tile seam (02-49, row 743): adjacent converted tiles leave a 128-unit strip with no terrain, BSP or collision cell (terrain ends at heightmap point 255, 32,640 units, tiles sit 32,768 apart); `world-tile-border.spec.ts` drops the player 116.8 m crossing 17_12 into 18_12 (x -656.64 to -655.36 m). The world lane finds how the reference client closes the strip (terrain edge rule or neighbour stitching) and converts or ports it; the border spec turns green with it.
+- Tile seam (02-49, row 743; 02-81, rows 969 to 975): Engine.dll draws the 128-unit strip from the neighbour's facing heights (`recipes/world/terrain-seam-rules.json`) and the terrain step now converts it, but `ATerrainInfo::LineCheck` 0x10722630 clamps to quad HeightmapX - 2, so no strip quad collides and `world-tile-border.spec.ts` still drops the player crossing 17_12 into 18_12 (MOVE-01). The movement owner reads the walking floor loss in Engine.dll (APawn physWalking and the ULevel floor traces) to find what keeps the reference pawn up, and ports it; the border spec turns green with it. The spec walks the first adjacent pair of the world lane catalog (15_20 to 15_21 after 02-88).
 - Chunk-incremental tile systems (02-49, row 740): BSP visibility, lighting and map emitters bind the selected tile's startup chunks only; neighbour tiles and reloaded chunks draw without them.
 - WorldNavigation lane handoff (02-67, row 726): `src/world/WorldNavigation.ts` stays only as a type. The actors lane moves `src/audio/footstepSurfaceGround.ts` and `src/audio/nativeFootstepPreview.ts` off `WorldGroundContact`, and the world lane moves `src/scene/world/nativeDoorInteractions.ts` and `src/scene/world/nativeGroundContact.ts` to collision world queries; then the file and its `importBoundaries.test.ts` listing go.
 - Camera environment accessor (02-67, row 725): the runtime re-reads the tile lighting inspection when the camera zone changes; the world lane exposes the camera environment from `NativeSection` once fog info or water volumes become inputs.
@@ -498,6 +506,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-11T14:49:03.619Z
-Stopped at: Completed 02-74-PLAN.md
+Last session: 2026-11-11T15:30:10.679Z
+Stopped at: Completed 02-81-PLAN.md
 Resume file: None
