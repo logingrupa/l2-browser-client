@@ -5,7 +5,6 @@ from types import MappingProxyType
 from typing import NamedTuple
 
 from actors.actor_sound_bindings import ACTOR_SOUND_BUNDLE_ID_PREFIX, ACTOR_SOUND_STEP, AUDIO_PART_NAME
-from actors.npc_requests import NPC_SOUND_IDENTITY_STEP
 from actors.skill_unit_inventory import SKILL_SOUND_ROW_UNIT_KIND
 from native_store.catalog_index_keys import read_manifest_bytes, store_root_candidates, validated_slice_records
 from native_store.catalog_writer import CatalogWriteError, refuse_duplicate_json_keys, refuse_non_finite_json_number
@@ -16,6 +15,7 @@ from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH
 TILE_KEY_KIND = 'tile'
 NPC_KEY_KIND = 'npc'
 NPC_SOUNDS_KEY_KIND = 'npc-sounds'
+NPC_SOUND_IDENTITY_STEP = 'npc-sound-identities'
 SOURCE_ANCHOR_STEP = 'census'
 STEP_PENDING_REASON_PREFIX = 'step-pending:'
 MINIMAP_RESOURCE_KIND = 'minimap'

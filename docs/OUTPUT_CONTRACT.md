@@ -446,7 +446,12 @@ Plan 02-07 writes it and 02-26 completes it.
   Census precedence is failed, gap, converted, pending, and a `pass` row
   must be converted (6d189c8). For skills-effects a non-pass `skills` row
   keeps a published key at that row's status with `converted` false
-  (f5828ee).
+  (f5828ee), except a named emitter gap (DEC-OWN-12, plan 02-72): a row
+  whose reason is `emitter-class-unported:<class>` or
+  `emitter-feature-unported:<property>` leaves the published key converted,
+  so it reads status gap with that reason and `converted` true. The
+  coverage markdown lists those converted keys below the table, one count
+  per part and reason.
 - Derived parts (plan 02-72, one owner
   `scripts/native_store/gap_census_derived_parts.py`, table `DERIVED_PARTS`):
   `minimap:<XX_YY>` and `tile-collision:<XX_YY>` count the 153 locked tile

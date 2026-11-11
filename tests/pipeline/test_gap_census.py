@@ -15,7 +15,7 @@ from catalog_store_fixture import write_store_catalog
 from native_store.build_coverage_report import build_coverage_report, validate_coverage_report
 from native_store.canonical_json import canonical_json_bytes
 from native_store.gap_census import (GAP_CENSUS_STATUS_PRECEDENCE, GAP_CENSUS_STEP_ORDER, GapCensusIncompleteError, build_gap_census,
-                                     item_census_rows)
+                                     is_named_emitter_gap_reason, item_census_rows)
 from native_store.gap_census_denominators import census_item_join_rows, load_census_denominators
 from native_store.unit_ledger import locked_input_records
 
@@ -177,15 +177,28 @@ class GapCensusPartTests(unittest.TestCase):
         with self.assertRaisesRegex(GapCensusIncompleteError, r'part items: .*item:1'):
             item_census_rows([1, 2], [item_row(1)], [1], ITEM_TABLE_SOURCES)
 
-    def test_a_published_skill_key_whose_skills_row_is_an_unported_emitter_class_gap_stays_that_gap(self):
-        denominators = {'skills-effects': counted_denominator(2)}
+    def test_a_published_skill_key_with_a_named_emitter_gap_stays_converted_and_shows_that_gap(self):
+        denominators = {'skills-effects': counted_denominator(4)}
         skills_rows = [census_gap_row('skill:1011:1', 'skills-effects', 'skills', 'gap', 'emitter-class-unported:Engine.BeamEmitter',
                                       'system/skillgrp.dat'),
+                       census_gap_row('skill:1012:1', 'skills-effects', 'skills', 'gap', 'emitter-feature-unported:UseMeshBlendMode',
+                                      'system/skillgrp.dat'),
+                       census_gap_row('skill:1013:1', 'skills-effects', 'skills', 'gap', 'converter-refused:FormatError', 'system/skillgrp.dat'),
                        census_gap_row('skill:3:1', 'skills-effects', 'skills', 'pass', None, 'system/skillgrp.dat')]
-        census_rows = census_rows_by_key(build_gap_census(denominators, skills_rows, {'skill:1011:1', 'skill:3:1'}, {}))
+        census_rows = census_rows_by_key(build_gap_census(denominators, skills_rows, {'skill:1011:1', 'skill:1012:1', 'skill:1013:1', 'skill:3:1'},
+                                                          {}))
         self.assertEqual([(census_rows[key]['status'], census_rows[key]['reason'], census_rows[key]['converted'])
-                          for key in ('skill:1011:1', 'skill:3:1')],
-                         [('gap', 'emitter-class-unported:Engine.BeamEmitter', False), ('converted', None, True)])
+                          for key in ('skill:1011:1', 'skill:1012:1', 'skill:1013:1', 'skill:3:1')],
+                         [('gap', 'emitter-class-unported:Engine.BeamEmitter', True),
+                          ('gap', 'emitter-feature-unported:UseMeshBlendMode', True),
+                          ('gap', 'converter-refused:FormatError', False), ('converted', None, True)])
+
+    def test_the_named_emitter_rule_matches_only_the_two_listed_emitter_reasons(self):
+        self.assertTrue(is_named_emitter_gap_reason('emitter-class-unported:Engine.BeamEmitter'))
+        self.assertTrue(is_named_emitter_gap_reason('emitter-feature-unported:UseMeshBlendMode'))
+        for reason in ('map-emitter-struct-unparsed:Particles', 'emitter-class-unported:', 'converter-refused:emitter', None):
+            with self.subTest(reason):
+                self.assertFalse(is_named_emitter_gap_reason(reason))
 
     def test_skill_rows_count_ambiguous_rows_only_when_declared(self):
         denominators = {'skills-effects': counted_denominator(4)}

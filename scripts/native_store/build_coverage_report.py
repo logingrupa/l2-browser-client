@@ -15,7 +15,8 @@ from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_index_keys import catalog_index_keys, read_measured_catalog
 from native_store.catalog_writer import is_table_name_index_id, replace_file
 from native_store.coverage_denominators import COVERAGE_PART_ORDER, UNKNOWN_DENOMINATOR, CoverageReportError
-from native_store.gap_census import GAP_CENSUS_LOAD_STATUSES, ITEM_CENSUS_STEP, ITEMS_PART, build_gap_census
+from native_store.gap_census import (GAP_CENSUS_LOAD_STATUSES, ITEM_CENSUS_STEP, ITEMS_PART, NAMED_EMITTER_GAP_REASONS, build_gap_census,
+                                     is_named_emitter_gap_reason)
 from native_store.gap_census_denominators import census_item_join_rows, load_census_denominators, measured_part_names, skill_sound_census_rows
 from native_store.gap_census_derived_parts import DERIVED_PARTS, DERIVED_SOURCE_PARTS, derived_converted_keys, derived_part_rows
 from native_store.gap_rows import (GAP_ROW_STATUSES, INTEGRATION_LANE_NAME, is_listed_reason, load_gap_reason_patterns, read_gap_rows,
@@ -235,6 +236,25 @@ def lobby_status_text(report):
     return f'Lobby (`{LOBBY_MAP_KEY}`) has the census status {status_text}.\n'
 
 
+def named_emitter_gap_counts_by_part(report):
+    counts_by_part = {}
+    for row in report['rows']:
+        if row['converted'] and row['status'] != 'pass' and is_named_emitter_gap_reason(row['reason']):
+            reason_counts = counts_by_part.setdefault(row['part'], {})
+            reason_counts[row['reason']] = reason_counts.get(row['reason'], 0) + 1
+    return counts_by_part
+
+
+def named_emitter_gaps_text(report):
+    counts_by_part = named_emitter_gap_counts_by_part(report)
+    if not counts_by_part:
+        return ''
+    reason_list = ' or '.join(f'`{reason}`' for reason in NAMED_EMITTER_GAP_REASONS)
+    part_lines = ''.join(f'- {part}: ' + ', '.join(f'`{reason}` {count}' for reason, count in sorted(reason_counts.items())) + '\n'
+                         for part, reason_counts in counts_by_part.items())
+    return f'Converted keys that carry a named emitter gap ({reason_list}), counted per part and reason:\n\n{part_lines}\n'
+
+
 def census_lanes_text(census_lane_names):
     if not census_lane_names:
         return ''
@@ -250,6 +270,7 @@ def coverage_markdown(report, census_lane_names=()):
             f'(Riga) by `pnpm report:coverage`.{census_lanes_text(census_lane_names)}\n\n'
             f'{MARKDOWN_TABLE_HEADER}{table_rows}\n'
             f'{CENSUS_RULE_TEXT} {LOADS_RULE_TEXT}\n\n'
+            f'{named_emitter_gaps_text(report)}'
             f'{lobby_status_text(report)}')
 
 

@@ -4,7 +4,7 @@ import re
 
 from native_store.coverage_denominators import UNKNOWN_DENOMINATOR
 from native_store.gap_census_derived_parts import DERIVED_KEY_KIND_PARTS
-from native_store.gap_rows import GapRowError, load_gap_reason_patterns, validate_gap_row
+from native_store.gap_rows import GapRowError, compile_gap_reason_pattern, load_gap_reason_patterns, validate_gap_row
 
 GAP_CENSUS_STATUS_PRECEDENCE = ('failed', 'gap', 'converted', 'pending')
 CONVERTED_CENSUS_STATUS = 'converted'
@@ -18,6 +18,8 @@ UNVERIFIED_LOAD_STATUS = 'unverified'
 CONVERSION_VERDICT_STEP_BY_PART = {'skills-effects': 'skills'}
 CATALOG_KEY_KIND_PARTS = {'table': 'data', 'tile': 'world', 'map': 'world', 'character': 'player-characters', 'window': 'ui',
                           'npc': 'npcs', 'item': 'items', 'skill': 'skills-effects', **DERIVED_KEY_KIND_PARTS}
+NAMED_EMITTER_GAP_REASONS = ('emitter-class-unported:<class>', 'emitter-feature-unported:<property>')
+NAMED_EMITTER_GAP_REASON_PATTERNS = tuple(compile_gap_reason_pattern(reason) for reason in NAMED_EMITTER_GAP_REASONS)
 SKILL_ROW_AMBIGUOUS_REASON_PATTERN = re.compile(r'^skill-row-ambiguous:(?P<count>[1-9]\d{0,8})$')
 NAMED_MISSING_KEY_LIMIT = 5
 ITEMS_PART = 'items'
@@ -148,12 +150,19 @@ def deciding_row(rows, statuses):
     return None
 
 
+def is_named_emitter_gap_reason(reason):
+    return isinstance(reason, str) and any(pattern.fullmatch(reason) for pattern in NAMED_EMITTER_GAP_REASON_PATTERNS)
+
+
+def refuses_conversion(row, verdict_step):
+    return row['step'] == verdict_step and row['status'] != 'pass' and not is_named_emitter_gap_reason(row['reason'])
+
+
 def catalog_keys_not_refused_by_verdict_step(part, catalog_part_keys, rows_by_key):
     verdict_step = CONVERSION_VERDICT_STEP_BY_PART.get(part)
     if verdict_step is None:
         return catalog_part_keys
-    return {key for key in catalog_part_keys
-            if not any(row['step'] == verdict_step and row['status'] != 'pass' for row in rows_by_key.get(key, []))}
+    return {key for key in catalog_part_keys if not any(refuses_conversion(row, verdict_step) for row in rows_by_key.get(key, []))}
 
 
 def census_row(part, key, converted, rows, load_status):

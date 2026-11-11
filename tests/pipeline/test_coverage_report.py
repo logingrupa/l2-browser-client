@@ -35,7 +35,8 @@ ACTOR_DENOMINATORS = (('npcs', 'docs/parts/npcs/actor-unit-census.json npcgrp ro
 COVERAGE_MODULE_PATHS = (ROOT / 'scripts' / 'native_store' / 'build_coverage_report.py',
                          ROOT / 'scripts' / 'native_store' / 'coverage_denominators.py',
                          ROOT / 'scripts' / 'native_store' / 'gap_census.py',
-                         ROOT / 'scripts' / 'native_store' / 'gap_census_denominators.py')
+                         ROOT / 'scripts' / 'native_store' / 'gap_census_denominators.py',
+                         ROOT / 'scripts' / 'native_store' / 'gap_census_derived_parts.py')
 
 
 def table_record(table_name):

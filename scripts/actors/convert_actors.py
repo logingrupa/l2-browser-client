@@ -16,8 +16,8 @@ from actors.actor_unit_inventory import (ACTOR_UNIT_CENSUS_RELATIVE_PATH, CONVER
 from actors.character_census import CHARACTER_BATCH_NAME, run_character_conversion
 from actors.item_census import ITEM_BATCH_NAME, run_item_conversion
 from actors.npc_requests import (ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX, CONVERTER_REFUSED_REASON_PREFIX, FAILED_STATUS, GAP_STATUS,
-                                 NPC_NAME_EMPTY_REASON, NPC_NAME_ROW_MISSING_REASON, NPC_PROFILE_STEP, NPC_SOUND_IDENTITY_STEP, PASS_STATUS,
-                                 TRANSIENT_FAILURES, SOUND_PACKAGE_NOT_IN_CLIENT_STATUS, SOUND_PACKAGE_REFUSED_STATUS, animation_reference_gap_reason,
+                                 NPC_NAME_EMPTY_REASON, NPC_NAME_ROW_MISSING_REASON, NPC_PROFILE_STEP, PASS_STATUS, TRANSIENT_FAILURES,
+                                 SOUND_PACKAGE_NOT_IN_CLIENT_STATUS, SOUND_PACKAGE_REFUSED_STATUS, animation_reference_gap_reason,
                                  label_npc_sound_identities, npc_effect_binding_record, npc_model_request, npc_profile_recipe,
                                  npc_sound_references, package_stem, serialized_animation_reference)
 from actors.actor_sound_batch import actor_sound_key_argument, run_actor_sound_conversion
@@ -46,6 +46,7 @@ from reference_client_guard import ReferenceClientLockError, require_reference_c
 
 LANE_NAME = 'actors'
 NPC_MODEL_STEP = 'npc-model'
+NPC_SOUND_IDENTITY_STEP = 'npc-sound-identities'
 NPC_MODEL_ALGORITHM_VERSION = 1
 NPC_PROFILE_ALGORITHM_VERSION = 1
 CONVERTER_WORK_FOLDER = 'converter'

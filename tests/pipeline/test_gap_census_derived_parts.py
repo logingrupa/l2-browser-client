@@ -12,7 +12,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
 from catalog_store_fixture import write_store_catalog
-from native_store.build_coverage_report import build_coverage_report
+from native_store.build_coverage_report import build_coverage_report, count_part_rows, coverage_markdown, validate_coverage_report
 from native_store.gap_census import build_gap_census
 from native_store.gap_census_denominators import load_census_denominators, skill_sound_census_row
 from native_store.gap_census_derived_parts import derived_converted_keys, derived_part_rows, derived_tile_denominator
@@ -230,6 +230,36 @@ class CommittedDerivedDenominatorTests(unittest.TestCase):
         self.assertLessEqual(kinds.count('npc-sounds'), 6519)
         for source in ('recipes/reference-client-tree.lock.json', 'system/npcgrp.dat', 'docs/parts/npcs/actor-unit-census.json skill-sound-row'):
             self.assertIn(source, audio['source'])
+
+
+def skills_coverage_row(key, status, reason, converted):
+    return {'key': key, 'part': 'skills-effects', 'status': status, 'reason': reason, 'converted': converted,
+            'loads': 'pass' if converted else 'unverified', 'steps': [{'step': 'skills', 'status': status, 'reason': reason}]}
+
+
+class NamedEmitterGapReportTests(unittest.TestCase):
+    def test_converted_named_emitter_gaps_count_as_gap_and_are_listed_per_part_and_reason(self):
+        rows = [skills_coverage_row('skill:1011:1', 'gap', 'emitter-class-unported:Engine.BeamEmitter', True),
+                skills_coverage_row('skill:1011:2', 'gap', 'emitter-class-unported:Engine.BeamEmitter', True),
+                skills_coverage_row('skill:1012:1', 'gap', 'emitter-feature-unported:UseMeshBlendMode', True),
+                skills_coverage_row('skill:1013:1', 'gap', 'converter-refused:FormatError', False),
+                skills_coverage_row('skill:3:1', 'pass', None, True)]
+        report = {'schemaVersion': 1, 'catalogSha256': 'a' * 64, 'storeRoot': 'artifacts/lane-store/integration/l2',
+                  'generatedAtRiga': GENERATED_AT_RIGA, 'denominators': {'skills-effects': {'count': 5, 'source': 'synthetic committed count'}},
+                  'parts': {'skills-effects': count_part_rows(rows, 5)}, 'rows': rows}
+        self.assertEqual(validate_coverage_report(report), report)
+        counts = report['parts']['skills-effects']
+        self.assertEqual((counts['converted'], counts['gap'], counts['pending'], counts['loads']['pass']), (1, 4, 0, 4))
+        markdown = coverage_markdown(report)
+        self.assertIn('- skills-effects: `emitter-class-unported:Engine.BeamEmitter` 2, `emitter-feature-unported:UseMeshBlendMode` 1\n', markdown)
+        self.assertNotIn('converter-refused:FormatError`', markdown)
+
+    def test_a_report_without_named_emitter_gaps_has_no_named_gap_line(self):
+        rows = [skills_coverage_row('skill:3:1', 'pass', None, True)]
+        report = {'schemaVersion': 1, 'catalogSha256': 'a' * 64, 'storeRoot': 'artifacts/lane-store/integration/l2',
+                  'generatedAtRiga': GENERATED_AT_RIGA, 'denominators': {'skills-effects': {'count': 1, 'source': 'synthetic committed count'}},
+                  'parts': {'skills-effects': count_part_rows(rows, 1)}, 'rows': rows}
+        self.assertNotIn('named emitter gap', coverage_markdown(report))
 
 
 if __name__ == '__main__':
