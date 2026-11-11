@@ -175,18 +175,19 @@ Plans:
   2. For world, actor and skill audio, listen-check results are recorded as labelled audible clips with verdicts; successful extraction or decoding is never recorded as a pass.
   3. Each mismatch becomes a converter fix (re-run shows the corrected result in the sandbox) or a listed gap; no tile is hand-patched.
   4. A stage A exit report states per part how many items were converted, load, were checked, and how many pass, mismatch, are unverified or are gaps, tied to the IMPORTA-PC hash lock.
-**Plans**: 17 plans
+**Plans**: 18 plans
 
 Plans:
 **Wave 1**
 - [ ] 03-01-PLAN.md - Check record module and key content digest; names the Phase 3 start commit (CHECK-01, CHECK-02, CHECK-03)
-- [ ] 03-02-PLAN.md - set-environment sandbox command, camera pose setter, visible diagnostic materials (CHECK-01, CHECK-04)
+- [ ] 03-02-PLAN.md - set-environment sandbox command and camera pose setter (CHECK-01)
 - [ ] 03-03-PLAN.md - Union currency, LOAD_CHECK_KEYS selector, full union load sweeps (CHECK-01, CHECK-05)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 03-04-PLAN.md - Pair queue and the record writer CLI: queue, ingest, judge (CHECK-01, CHECK-02, CHECK-03)
 - [ ] 03-05-PLAN.md - Stage A exit report on the coverage owner, schema 2, TS reader (CHECK-05)
 - [ ] 03-06-PLAN.md - Native capture driver and import, transcript-tested, not run against IMPORTA (CHECK-01, CHECK-02)
+- [ ] 03-18-PLAN.md - Visible diagnostic materials in the sandbox snapshot, split from 03-02 (CHECK-01, CHECK-04)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 - [ ] 03-07-PLAN.md - Sandbox-half slice runner and every queued window half (CHECK-01, CHECK-03)
