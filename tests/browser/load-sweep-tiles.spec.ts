@@ -1,27 +1,22 @@
 import { expect, test, type Page } from "@playwright/test";
-import { readTileCatalogRecord } from "../../src/assets/native/nativeCatalogRecords";
 import { readLoadCheckRecords } from "./support/loadCheckRecordFile";
 import {
   firstMessageLine, keysNotRecordedExactlyOnce, loadCheckKindKeyPrefix, loadCheckLaneNames, loadCheckSkipReason, loadCheckSliceTimeoutMilliseconds,
   loadCheckSpecTitle, loadCheckTileLoadTimeoutMilliseconds, playwrightLoadCheckActions, readLoadCheckSliceSettings, runLoadCheckSlice,
   type LoadCheckOutcome,
 } from "./support/loadCheckRecords";
+import { readServedTileManifests, servedTileManifestSha256, type ServedTileManifests } from "./support/servedTileCatalog";
 
 const kind = "tiles";
 const settings = readLoadCheckSliceSettings(process.env, loadCheckLaneNames());
 
 test.skip(settings === null || settings.kind !== kind, loadCheckSkipReason(kind));
 
-async function servedTileManifestSha256(page: Page, baseUrl: string, tileId: string): Promise<string> {
+async function fetchServedTileManifests(page: Page, baseUrl: string): Promise<ServedTileManifests> {
   const catalogUrl = new URL("/l2/catalog.json", baseUrl).href;
   const answer = await page.request.get(catalogUrl);
   if (!answer.ok()) throw new Error(`served catalog ${catalogUrl} answered ${answer.status()}`);
-  const catalog: unknown = await answer.json();
-  const tileRecords: unknown = typeof catalog === "object" && catalog !== null && "tiles" in catalog ? catalog.tiles : undefined;
-  if (!Array.isArray(tileRecords)) throw new Error(`served catalog ${catalogUrl} has no tiles list`);
-  const tileRecord = tileRecords.map(readTileCatalogRecord).find(record => record.tile === tileId);
-  if (tileRecord === undefined) throw new Error(`served catalog ${catalogUrl} has no tiles record ${tileId}`);
-  return tileRecord.manifestSha256;
+  return readServedTileManifests(await answer.json(), catalogUrl);
 }
 
 async function settledNativeRouteState(keyPage: Page): Promise<string> {
@@ -35,9 +30,9 @@ async function settledNativeRouteState(keyPage: Page): Promise<string> {
   return routeState;
 }
 
-async function checkTileLoadKey(page: Page, baseUrl: string, key: string): Promise<LoadCheckOutcome> {
+async function checkTileLoadKey(page: Page, servedTileManifests: ServedTileManifests, key: string): Promise<LoadCheckOutcome> {
   const tileId = key.slice(loadCheckKindKeyPrefix(kind).length);
-  const expectedManifestSha256 = await servedTileManifestSha256(page, baseUrl, tileId);
+  const expectedManifestSha256 = servedTileManifestSha256(servedTileManifests, tileId);
   const keyPage = await page.context().newPage();
   const pageErrors: string[] = [];
   keyPage.on("pageerror", error => pageErrors.push(error.message));
@@ -64,7 +59,8 @@ async function checkTileLoadKey(page: Page, baseUrl: string, key: string): Promi
 test(loadCheckSpecTitle(kind), async ({ page, baseURL }) => {
   if (settings === null || baseURL === undefined) throw new Error("the tiles slice needs its settings and the Playwright baseURL");
   test.setTimeout(loadCheckSliceTimeoutMilliseconds(settings, loadCheckTileLoadTimeoutMilliseconds));
-  const summary = await runLoadCheckSlice(settings, playwrightLoadCheckActions(page, baseURL, settings, key => checkTileLoadKey(page, baseURL, key)));
+  const servedTileManifests = await fetchServedTileManifests(page, baseURL);
+  const summary = await runLoadCheckSlice(settings, playwrightLoadCheckActions(page, baseURL, settings, key => checkTileLoadKey(page, servedTileManifests, key)));
   console.log(`load sweep ${kind}: ${JSON.stringify(summary)}`);
   const recordedKeys = readLoadCheckRecords(settings.laneName, summary.catalogSha256).map(record => record.key);
   expect(keysNotRecordedExactlyOnce(summary.checkedKeys, recordedKeys)).toEqual([]);
