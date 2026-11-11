@@ -5766,19 +5766,6 @@
     },
     {
       "area": "movement",
-      "sourceFile": "src/scene/world/movement/core/volumeContainment.ts",
-      "tokenCount": 20,
-      "sourceTokensSha256": "226be5dfa6d81eaa4ba780f7cb6b384095eb9be9da606b25e91f100fa16597eb",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/unreal/skills/skill-effect-placement.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "movement",
       "sourceFile": "src/scene/world/movement/core/volumeTrace.ts",
       "tokenCount": 23,
       "sourceTokensSha256": "ce41e2c375779df1bf40e9dbbbaf7da5b3475fd6ee5546006de2ef97fa9f8272",
@@ -16114,19 +16101,6 @@
     {
       "area": "movement",
       "sourceFile": "src/scene/world/movement/core/pawnBody.ts",
-      "tokenCount": 23,
-      "sourceTokensSha256": "e9a4291a8be21c4edbcbccacb47fee4c91fdcd2867756e554207b07e506d2d74",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/unreal/skills/skill-visual-definition.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "movement",
-      "sourceFile": "src/scene/world/movement/core/pawnBody.ts",
       "tokenCount": 20,
       "sourceTokensSha256": "c19bf2e5f820bb8ce9a747971d8747a5158bb22e198a760020c49961cc19419f",
       "referenceFiles": [
@@ -20269,6 +20243,19 @@
       "sourceTokensSha256": "56ce62c666fb9f0b80865e100e192c7dffe8fa5bc69ca7bb2477bb46302f551a",
       "referenceFiles": [
         ".assets/reference/lineage2js/src/assets/unreal/skeletal-mesh/un-skeletal-mesh.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-11",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "movement",
+      "sourceFile": "src/scene/world/movement/core/volumeContainment.ts",
+      "tokenCount": 20,
+      "sourceTokensSha256": "c267f06d9678764eee611678ae0fc3525037d614ef57c16d43cb86a94ff13b53",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/objects/components/actor-ownership-component.ts"
       ],
       "verdict": "generic",
       "reviewedOn": "2026-11-11",
