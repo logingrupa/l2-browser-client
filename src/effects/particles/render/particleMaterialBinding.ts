@@ -10,6 +10,7 @@ import { FOG_DISABLED, type FogState } from "../../../materials/ue2/model/fog";
 import { PARTICLE_CONSTANTS } from "../sim/emitterConstants";
 import type { ParticleEmitterRecord } from "../sim/emitterRecords";
 import { meshMaterialRoute } from "../sim/meshEmitter";
+import { emitterFeatureGapReason, type EmitterFeatureGapReason } from "../sim/particleEmitter";
 import { PARTICLE_INSTANCE_ATTRIBUTES } from "./particleInstances";
 
 export interface ParticleMaterialBindingInput {
@@ -40,6 +41,12 @@ export interface ParticleMaterialBinding {
   inspect(): ParticleMaterialInspection;
   dispose(): void;
 }
+
+export type ParticleMaterialOutcome =
+  | { readonly drawn: true; readonly binding: ParticleMaterialBinding }
+  | { readonly drawn: false; readonly reason: EmitterFeatureGapReason };
+
+type ParticleMaterialRoute = { readonly drawn: true; readonly renderTwoSided: boolean } | { readonly drawn: false; readonly reason: EmitterFeatureGapReason };
 
 export interface NativeEmitterMeshMetadata {
   readonly nativeEmitterOrdinal: number;
@@ -119,18 +126,19 @@ function fragmentSource(chain: ParticleFragmentChain): string {
   ].join("\n");
 }
 
-function requireParticleDrawStyleRoute(record: ParticleEmitterRecord): boolean {
-  if (record.emitterClass !== "Engine.MeshEmitter") return false;
+function particleMaterialRoute(record: ParticleEmitterRecord): ParticleMaterialRoute {
+  if (record.emitterClass === "Engine.SpriteEmitter") return { drawn: true, renderTwoSided: true };
+  if (record.emitterClass !== "Engine.MeshEmitter") return { drawn: true, renderTwoSided: false };
   const route = meshMaterialRoute(record);
-  if (route.kind !== "particle-draw-style") throw new Error(`Emitter ${record.object}: emitter-feature-unported:UseMeshBlendMode keeps the static mesh materials.`);
-  return route.renderTwoSided;
+  return route.kind === "particle-draw-style" ? { drawn: true, renderTwoSided: route.renderTwoSided } : { drawn: false, reason: emitterFeatureGapReason("UseMeshBlendMode") };
 }
 
-export function bindParticleMaterial(scene: Scene, mesh: Mesh, input: ParticleMaterialBindingInput): ParticleMaterialBinding {
+export function bindParticleMaterial(scene: Scene, mesh: Mesh, input: ParticleMaterialBindingInput): ParticleMaterialOutcome {
   const { record, emitterOrdinal } = input;
   if (!Number.isSafeInteger(emitterOrdinal) || emitterOrdinal < 0) throw new RangeError(`Emitter ordinal ${emitterOrdinal} must be a non-negative integer.`);
+  const route = particleMaterialRoute(record);
+  if (!route.drawn) return route;
   const sprite = record.emitterClass === "Engine.SpriteEmitter";
-  const renderTwoSided = sprite || requireParticleDrawStyleRoute(record);
   const chain = particleFragmentChain(record.DrawStyle);
   const material = new ShaderMaterial(`UE2 particle material: ${record.object}`, scene, { vertexSource: particleVertexSource(scene), fragmentSource: fragmentSource(chain) }, {
     attributes: ["position", "uv", ...Object.values(PARTICLE_INSTANCE_ATTRIBUTES)],
@@ -144,7 +152,7 @@ export function bindParticleMaterial(scene: Scene, mesh: Mesh, input: ParticleMa
   material.alphaMode = chain.babylonBlend.alphaMode;
   material.disableColorWrite = !chain.babylonBlend.colourWrite;
   material.transparencyMode = record.AlphaTest ? Material.MATERIAL_ALPHATESTANDBLEND : Material.MATERIAL_ALPHABLEND;
-  material.backFaceCulling = !renderTwoSided;
+  material.backFaceCulling = !route.renderTwoSided;
   material.disableDepthWrite = !record.ZWrite;
   material.forceDepthWrite = record.ZWrite;
   material.depthFunction = record.ZTest ? Constants.LEQUAL : Constants.ALWAYS;
@@ -155,7 +163,7 @@ export function bindParticleMaterial(scene: Scene, mesh: Mesh, input: ParticleMa
   mesh.material = material;
   const metadata: NativeEmitterMeshMetadata = { nativeEmitterOrdinal: emitterOrdinal };
   mesh.metadata = metadata;
-  return {
+  const binding: ParticleMaterialBinding = {
     material,
     chain,
     setTexture(next) { texture = next; material.setTexture(samplerName, next); },
@@ -167,4 +175,5 @@ export function bindParticleMaterial(scene: Scene, mesh: Mesh, input: ParticleMa
     }),
     dispose: () => material.dispose(true, false),
   };
+  return { drawn: true, binding };
 }

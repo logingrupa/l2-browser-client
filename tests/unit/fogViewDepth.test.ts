@@ -45,7 +45,9 @@ function nativeMaterialVertexSource(scene: Scene): string {
 function particleMaterialVertexSource(scene: Scene): string {
   const texture = RawTexture.CreateRGBATexture(new Uint8Array([255, 255, 255, 255]), 1, 1, scene);
   const record = parseEmitterRecord(readSyntheticParticleFixture("synthetic-sprite").components[0]!);
-  return vertexSourceOf(bindParticleMaterial(scene, new Mesh("particle mesh", scene), { record, emitterOrdinal: 0, texture }).material);
+  const outcome = bindParticleMaterial(scene, new Mesh("particle mesh", scene), { record, emitterOrdinal: 0, texture });
+  if (!outcome.drawn) throw new Error(`the synthetic sprite was not drawn: ${outcome.reason}`);
+  return vertexSourceOf(outcome.binding.material);
 }
 
 function viewSpaceDepthOfPointAhead(scene: Scene, metresAhead: number): number {

@@ -12,6 +12,7 @@ import { sha256, validatePackageModel } from "../assets/package/readAssetPackage
 import { selectTextureFrame } from "../materials/ue2/babylon/material";
 import type { EmitterSimulation } from "./particles/sim/emitterActor";
 import { parseEmitterRecord, type ParticleEmitterRecord, type Rotator } from "./particles/sim/emitterRecords";
+import type { EmitterFeatureGapReason } from "./particles/sim/particleEmitter";
 import { attachParticleInstanceBuffers, createParticleInstanceBuffers, uploadParticleInstances, writeParticleInstances, type ParticleInstanceBuffers } from "./particles/render/particleInstances";
 import { bindParticleMaterial, type ParticleMaterialBinding } from "./particles/render/particleMaterialBinding";
 import { effectFrames, effectObject, type EffectBundle, type EffectComponent, type EffectFrame, type EffectPrimitive, type EffectResource } from "./nativeEffectComponents";
@@ -181,7 +182,7 @@ export async function loadEffectComponent(scene: Scene, bundle: EffectBundle, in
   const root = new TransformNode(`Effect component: ${component.object}`, scene);
   root.id = `native-effect-component:${root.uniqueId}`; root.doNotSerialize = true; root.setEnabled(false);
   const draws: PrimitiveDraw[] = [], textures = new Map<string, RawTexture>(), ownedMeshes: Mesh[] = [];
-  let buffers: ParticleInstanceBuffers | null = null, liveInstances = 0, disposed = false;
+  let buffers: ParticleInstanceBuffers | null = null, liveInstances = 0, disposed = false, notDrawnReason: EmitterFeatureGapReason | null = null;
   const detachForeignChildren = () => {
     const owned = new Set<TransformNode>([root, ...ownedMeshes]);
     for (const node of owned) if (!node.isDisposed()) for (const child of node.getChildren(undefined, true)) if (!(child instanceof TransformNode && owned.has(child))) child.parent = null;
@@ -197,6 +198,11 @@ export async function loadEffectComponent(scene: Scene, bundle: EffectBundle, in
     if (!root.isDisposed()) root.dispose(false, false);
   };
   const sceneObserver = scene.onDisposeObservable.addOnce(dispose);
+  const releaseUndrawnResources = () => {
+    for (const mesh of ownedMeshes.splice(0)) mesh.dispose(false, false);
+    for (const texture of textures.values()) texture.dispose();
+    textures.clear();
+  };
   const textureFor = async (resource: EffectResource) => {
     const known = textures.get(resource.assetId);
     if (known) return known;
@@ -238,10 +244,12 @@ export async function loadEffectComponent(scene: Scene, bundle: EffectBundle, in
       for (const frameTexture of textureChain.slice(1)) await textureFor(frameTexture);
       source.mesh.id = `${root.id}:${source.primitive ? `${source.primitive.meshIndex}:${source.primitive.primitiveIndex}` : "sprite"}`;
       source.mesh.doNotSerialize = true; source.mesh.isPickable = false; source.mesh.parent = root;
-      const material = bindParticleMaterial(scene, source.mesh, { record, emitterOrdinal: component.emitterOrdinal, texture });
+      const outcome = bindParticleMaterial(scene, source.mesh, { record, emitterOrdinal: component.emitterOrdinal, texture });
+      if (!outcome.drawn) { notDrawnReason = outcome.reason; break; }
       if (source.primitive === null) CreatePlaneVertexData({ size: 2 }).applyToMesh(source.mesh);
-      draws.push({ mesh: source.mesh, primitive: source.primitive, textureChain, maximumFrameRate: maximumFrameRateOf(bundle, textureChain[0]!), material });
+      draws.push({ mesh: source.mesh, primitive: source.primitive, textureChain, maximumFrameRate: maximumFrameRateOf(bundle, textureChain[0]!), material: outcome.binding });
     }
+    if (notDrawnReason !== null) releaseUndrawnResources();
     signal.throwIfAborted(); requireValue(!scene.isDisposed, "scene was disposed before the component was ready.");
     for (const draw of draws) if (!scene.meshes.includes(draw.mesh)) scene.addMesh(draw.mesh);
     const frames = effectFrames(bundle.manifest, component, canonicalResource(bundle, sources[0]!.texture, ".png"));
@@ -252,13 +260,14 @@ export async function loadEffectComponent(scene: Scene, bundle: EffectBundle, in
       buffers = next;
       return next;
     };
-    ensureBuffers(record.MaxParticles);
+    if (notDrawnReason === null) ensureBuffers(record.MaxParticles);
     signal.addEventListener("abort", dispose, { once: true });
     return {
       root, meshes: draws.map(draw => draw.mesh), frames, component, record, materials: draws.map(draw => draw.material),
       render(emitter, presentation) {
         requireValue(!disposed, "the component is disposed.");
         requireValue(emitter.record.object === record.object, `emitter ${emitter.record.object} does not belong to ${record.object}.`);
+        if (notDrawnReason !== null) return 0;
         const target = ensureBuffers(emitter.columns.capacity);
         const pinned = presentation.pinnedFrame;
         liveInstances = writeParticleInstances(emitter, target, {
@@ -277,7 +286,7 @@ export async function loadEffectComponent(scene: Scene, bundle: EffectBundle, in
       inspection() {
         return {
           status: disposed ? "disposed" : "ready", componentObject: component.object, componentClass: component.class, emitterOrdinal: component.emitterOrdinal,
-          sourceBundleSha256: bundle.manifestSha256, rootId: root.id, rootEnabled: !disposed && root.isEnabled(), liveInstances,
+          sourceBundleSha256: bundle.manifestSha256, rootId: root.id, rootEnabled: !disposed && root.isEnabled(), liveInstances, notDrawnReason,
           instanceCapacity: buffers?.capacity ?? 0,
           meshes: draws.map(draw => ({ id: draw.mesh.id, sourcePrimitive: draw.primitive, vertices: draw.mesh.getTotalVertices(), indices: draw.mesh.getTotalIndices(),
             thinInstances: disposed ? 0 : draw.mesh.thinInstanceCount, visible: !disposed && draw.mesh.isVisible, materialId: draw.mesh.material?.id ?? null,

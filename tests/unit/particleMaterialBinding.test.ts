@@ -5,7 +5,7 @@ import { RawTexture } from "@babylonjs/core/Materials/Textures/rawTexture";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { Scene } from "@babylonjs/core/scene";
 import { BLEND_CONSTANTS } from "../../src/materials/ue2/model/constants/blendConstants";
-import { bindParticleMaterial } from "../../src/effects/particles/render/particleMaterialBinding";
+import { bindParticleMaterial, type ParticleMaterialBindingInput } from "../../src/effects/particles/render/particleMaterialBinding";
 import { createParticleInstanceBuffers, writeParticleInstances } from "../../src/effects/particles/render/particleInstances";
 import { createEmitterSimulation } from "../../src/effects/particles/sim/emitterActor";
 import { parseEmitterRecord, type EmitterSourceRecord } from "../../src/effects/particles/sim/emitterRecords";
@@ -30,6 +30,12 @@ function sceneWithTexture() {
   return { scene, texture, mesh: new Mesh("particle mesh", scene) };
 }
 
+function drawnBinding(scene: Scene, mesh: Mesh, input: ParticleMaterialBindingInput) {
+  const outcome = bindParticleMaterial(scene, mesh, input);
+  if (!outcome.drawn) throw new Error(`${input.record.object} was not drawn: ${outcome.reason}`);
+  return outcome.binding;
+}
+
 function steppedEmitter(source: EmitterSourceRecord, steps: number) {
   const emitter = createEmitterSimulation(parseEmitterRecord(source), createRandomStream(deriveStreamSeed(3, "test", [source.object])));
   const context = standaloneStepContext(emitter);
@@ -40,7 +46,7 @@ function steppedEmitter(source: EmitterSourceRecord, steps: number) {
 describe("particle material binding through the UE2 material library", () => {
   it.each([[3, "ALPHA_SCREENMODE"], [6, "ALPHA_ONEONE"]] as const)("keeps the shipped DrawStyle %s pair until the swatch comparison is recorded", (drawStyle, alphaModeName) => {
     const { scene, texture, mesh } = sceneWithTexture();
-    const binding = bindParticleMaterial(scene, mesh, { record: parseEmitterRecord(withOverrides(meshSource, { DrawStyle: drawStyle })), emitterOrdinal: 1, texture });
+    const binding = drawnBinding(scene, mesh, { record: parseEmitterRecord(withOverrides(meshSource, { DrawStyle: drawStyle })), emitterOrdinal: 1, texture });
     expect(binding.inspect().babylonAlphaMode).toBe(alphaModeName);
     expect(binding.chain.blend.pair).toEqual(BLEND_CONSTANTS.particleDrawStylePairs.runtimeDefault[drawStyle]!.pair);
     expect(binding.chain.blend.pair).not.toEqual(binding.chain.blend.referencePair);
@@ -50,7 +56,7 @@ describe("particle material binding through the UE2 material library", () => {
   it("takes depth, culling and alpha test from the record and tags the mesh with its emitter ordinal", () => {
     const { scene, texture, mesh } = sceneWithTexture();
     const record = parseEmitterRecord(withOverrides(meshSource, { ZTest: false, ZWrite: true, AlphaTest: false, RenderTwoSided: false }));
-    const binding = bindParticleMaterial(scene, mesh, { record, emitterOrdinal: 4, texture });
+    const binding = drawnBinding(scene, mesh, { record, emitterOrdinal: 4, texture });
     expect(mesh.material).toBe(binding.material);
     expect(mesh.metadata).toEqual({ nativeEmitterOrdinal: 4 });
     expect(mesh.alphaIndex).toBe(Number.MAX_VALUE);
@@ -62,16 +68,27 @@ describe("particle material binding through the UE2 material library", () => {
 
   it("draws sprites two-sided with the camera-facing vertex stage and the class-default depth test", () => {
     const { scene, texture, mesh } = sceneWithTexture();
-    const binding = bindParticleMaterial(scene, mesh, { record: parseEmitterRecord(spriteSource), emitterOrdinal: 0, texture });
+    const binding = drawnBinding(scene, mesh, { record: parseEmitterRecord(spriteSource), emitterOrdinal: 0, texture });
     expect(binding.material.backFaceCulling).toBe(false);
     expect(binding.material.options.defines).toEqual(["PARTICLE_SPRITE"]);
     expect(binding.material).toMatchObject({ depthFunction: Constants.LEQUAL, disableDepthWrite: true });
   });
 
-  it("refuses a mesh emitter that keeps its static mesh materials", () => {
+  it("leaves a mesh emitter that keeps its static mesh materials not drawn with the UseMeshBlendMode feature gap", () => {
     const { scene, texture, mesh } = sceneWithTexture();
-    expect(() => bindParticleMaterial(scene, mesh, { record: parseEmitterRecord(withOverrides(meshSource, { UseMeshBlendMode: true })), emitterOrdinal: 0, texture }))
-      .toThrow("emitter-feature-unported:UseMeshBlendMode");
+    const materialCount = scene.materials.length;
+    const outcome = bindParticleMaterial(scene, mesh, { record: parseEmitterRecord(withOverrides(meshSource, { UseMeshBlendMode: true })), emitterOrdinal: 0, texture });
+    expect(outcome).toEqual({ drawn: false, reason: "emitter-feature-unported:UseMeshBlendMode" });
+    expect(mesh.material).toBeNull();
+    expect(mesh.metadata).toBeNull();
+    expect(scene.materials).toHaveLength(materialCount);
+  });
+
+  it("binds the DrawStyle particle material for a mesh emitter whose UseMeshBlendMode is false", () => {
+    const { scene, texture, mesh } = sceneWithTexture();
+    const outcome = bindParticleMaterial(scene, mesh, { record: parseEmitterRecord(withOverrides(meshSource, { UseMeshBlendMode: false, DrawStyle: 3 })), emitterOrdinal: 0, texture });
+    expect(outcome.drawn).toBe(true);
+    expect(mesh.material).toBe(outcome.drawn ? outcome.binding.material : null);
   });
 });
 

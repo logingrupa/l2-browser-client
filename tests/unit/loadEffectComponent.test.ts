@@ -13,6 +13,7 @@ import type { AssetContainer } from "@babylonjs/core/assetContainer";
 import { crc32, sha256 } from "../../src/assets/package/readAssetPackage";
 import { loadEffectComponent } from "../../src/effects/loadEffectComponent";
 import type { EffectBundle, EffectComponent, EffectResource } from "../../src/effects/nativeEffectComponents";
+import { loadEmitterActorPlayback } from "../../src/effects/particles/render/emitterActorPlayback";
 import { createEmitterSimulation } from "../../src/effects/particles/sim/emitterActor";
 import { parseEmitterRecord } from "../../src/effects/particles/sim/emitterRecords";
 import { createRandomStream, deriveStreamSeed } from "../../src/shared/random";
@@ -218,5 +219,47 @@ describe("simulator-driven effect component", () => {
     const read = late.bundle.readResource.bind(late.bundle);
     late.bundle.readResource = async (resource, signal) => { const bytes = await read(resource, signal); late.scene.dispose(); return bytes; };
     await expect(loadEffectComponent(late.scene, late.bundle, late.component, late.signal.signal)).rejects.toThrow();
+  });
+});
+
+async function spriteAndMeshMaterialsActor() {
+  const sprite = await fixture({ sprite: true }), mesh = await fixture();
+  const spriteComponent: EffectComponent = { ...sprite.component, object: "Effects.Actor.SpriteEmitter0", emitterOrdinal: 0 };
+  const meshComponent: EffectComponent = { ...mesh.component, object: "Effects.Actor.MeshEmitter1", emitterOrdinal: 1,
+    effectiveProperties: { ...mesh.component.effectiveProperties, UseMeshBlendMode: true } };
+  const bundle: EffectBundle = { manifestSha256: "b".repeat(64),
+    manifest: { ...sprite.bundle.manifest, components: [spriteComponent, meshComponent],
+      resources: { ...sprite.bundle.manifest.resources, ...mesh.bundle.manifest.resources },
+      actors: [{ object: "Effects.Actor", effectiveProperties: { ...classDefaults["Engine.Emitter"], Emitters: [{ symbol: "SpriteEmitter0" }, { symbol: "MeshEmitter1" }] } }] },
+    async readResource(record, signal) { signal.throwIfAborted(); return (sprite.data.get(record.file) ?? mesh.data.get(record.file))!.slice(); } };
+  return { scene: sprite.scene, bundle, signal: sprite.signal };
+}
+
+describe("a mesh emitter that keeps its static mesh materials", () => {
+  it("loads as a component with nothing drawn and its UseMeshBlendMode gap, releasing the source mesh and textures", async () => {
+    const value = await fixture(), baseline = counts(value.scene);
+    value.component.effectiveProperties.UseMeshBlendMode = true;
+    const owner = await loadEffectComponent(value.scene, value.bundle, value.component, value.signal.signal);
+    expect(owner.meshes).toEqual([]); expect(owner.materials).toEqual([]);
+    expect(counts(value.scene)).toEqual({ ...baseline, transforms: baseline.transforms + 1 });
+    expect(owner.inspection()).toMatchObject({ status: "ready", notDrawnReason: "emitter-feature-unported:UseMeshBlendMode", meshes: [], materials: [], instanceCapacity: 0 });
+    const emitter = steppedEmitter(value.component, 2);
+    expect(emitter.liveSlots().length).toBeGreaterThan(0);
+    expect(owner.render(emitter, presentation)).toBe(0);
+    expect(emitter.counters.inactive).toBe(true);
+    owner.dispose(); expect(counts(value.scene)).toEqual(baseline);
+  });
+
+  it("leaves the actor loaded with its sprite emitter drawn, the mesh emitter not drawn and listed in featureGaps", async () => {
+    const value = await spriteAndMeshMaterialsActor();
+    const playback = await loadEmitterActorPlayback(value.scene, value.bundle, { actorObject: "Effects.Actor", emitterObjects: null, sessionSeed: 3 }, value.signal.signal);
+    playback.start();
+    for (let frame = 0; frame < 3; frame += 1) playback.advance(1 / 30);
+    const [spriteComponent, meshComponent] = playback.components;
+    expect(spriteComponent!.meshes[0]!.thinInstanceCount).toBeGreaterThan(0);
+    expect(meshComponent!.meshes).toEqual([]);
+    expect(meshComponent!.inspection().notDrawnReason).toBe("emitter-feature-unported:UseMeshBlendMode");
+    expect(playback.inspect().featureGaps).toEqual(["Effects.Actor.MeshEmitter1 emitter-feature-unported:UseMeshBlendMode"]);
+    playback.dispose();
   });
 });
