@@ -1,17 +1,18 @@
 # Phase 3: Stage A checks - plan index
 
-Planned 2026-11-11 (autonomous; the owner is away). Binding inputs: `03-CONTEXT.md` (P1 to P20), the research refinements P21 to P23 and the planning rows P24 to P42 in `C:/laragon/l2b-orchestration/autonomous-roadmap/pending-decision-rows.md` (all provisional, owner review). Every plan reads this file; its rules and definitions are part of each plan.
+Planned 2026-11-11 (autonomous; the owner is away), revised once after the plan check (18 plans in 12 waves). Binding inputs: `03-CONTEXT.md` (P1 to P20), the research refinements P21 to P23 and the planning rows P24 to P44 in `C:/laragon/l2b-orchestration/autonomous-roadmap/pending-decision-rows.md` (all provisional, owner review). Every plan reads this file; its rules and definitions are part of each plan.
 
 ## Plans and waves
 
 | Wave | Plan | Lane, `--part` | Objective | Requirements |
 | --- | --- | --- | --- | --- |
 | 1 | 03-01 | integration, adapter-dispatch | Check record module and key content digest; names the Phase 3 start commit | CHECK-01, CHECK-02, CHECK-03 |
-| 1 | 03-02 | integration, adapter-dispatch | `set-environment` sandbox command, camera pose setter, visible diagnostic materials | CHECK-01, CHECK-04 |
+| 1 | 03-02 | integration, adapter-dispatch | `set-environment` sandbox command and camera pose setter | CHECK-01 |
 | 1 | 03-03 | integration, adapter-dispatch | Union currency, key-list sweep selector, full union load sweeps | CHECK-01, CHECK-05 |
 | 2 | 03-04 | integration, adapter-dispatch | Pair queue and the record writer CLI (queue, ingest, judge) | CHECK-01, CHECK-02, CHECK-03 |
 | 2 | 03-05 | integration then actors | Stage A exit report on the coverage owner, schema 2, TS reader | CHECK-05 |
 | 2 | 03-06 | integration, adapter-dispatch | Native capture driver and import, transcript-tested, never run against IMPORTA | CHECK-01, CHECK-02 |
+| 2 | 03-18 | integration, adapter-dispatch | Visible diagnostic materials in the `__nativeSlice` snapshot (split from 03-02 in revision 1, P44; after 03-02 because both edit `nativeSliceDiagnostics.ts`) | CHECK-01, CHECK-04 |
 | 3 | 03-07 | data-ui, ui | Sandbox-half slice runner, windows spec, all queued window halves | CHECK-01, CHECK-03 |
 | 4 | 03-08 | world, world | Tile and minimap halves | CHECK-01, CHECK-03 |
 | 4 | 03-09 | actors, npcs | NPC, item and skill halves | CHECK-01, CHECK-03 |
@@ -24,7 +25,9 @@ Planned 2026-11-11 (autonomous; the owner is away). Binding inputs: `03-CONTEXT.
 | 11 | 03-16 | world, actors, data-ui (one task each) | Stage A check sections in the lane EVIDENCE docs | CHECK-03 |
 | 12 | 03-17 | integration, adapter-dispatch | Needs Human session lines, VERIFICATION Open, STATUS, adapter-dispatch evidence | CHECK-01, CHECK-02, CHECK-03 |
 
-The fix plans 03-12, 03-13 and 03-14 are chained because each rebuilds the integration union. Waves state dependencies; execution stays one sequential executor (rule 1).
+The fix plans 03-12, 03-13 and 03-14 are chained because each rebuilds the integration union. Waves state dependencies; execution stays one sequential executor (rule 1). 03-08 and 03-09 depend on 03-18 as well as 03-07, because their sandbox halves record `diagnosticMaterials`.
+
+Phase exit (P16, P43): by P7 no plan captures a native half, so ROADMAP Phase 3 success criteria 1 and 2 stay human_needed until the offline Debug, server and listen sessions of 03-17 run. 03-17 and the phase verification report them human_needed with those Needs Human lines, never passed; the phase closes human_needed with Stage A not yet proven. Phase 4 may proceed (its server closes the server batch); Phase 5, which depends on Phase 3 stage A complete, waits for the three sessions.
 
 ## Rules every plan carries
 

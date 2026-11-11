@@ -43,8 +43,9 @@ created: "2026-11-11"
 | 03-01-02 | 01 | 1 | CHECK-01 | - | digest moves only with the key's content | pipeline | `python -B -m unittest discover -s tests/pipeline -p "test_side_by_side_key_digest.py" -v` | W0 | pending |
 | 03-01-03 | 01 | 1 | CHECK-02, CHECK-03 | T-03-01 | no pass without both halves and an independent reviewer; audio owner-only | pipeline | `python -B -m unittest discover -s tests/pipeline -p "test_side_by_side_*.py" -v` | W0 | pending |
 | 03-02-01 | 02 | 1 | CHECK-01 | T-03-04 | hour only through the adapter event | unit | `pnpm vitest run tests/unit/nativeSliceSetEnvironment.test.ts tests/unit/gameWorldAdapterContract.test.ts` | W0 | pending |
-| 03-02-02 | 02 | 1 | CHECK-01 | T-03-05 | out-of-limit pose refused, camera unchanged | unit | `pnpm vitest run tests/unit/nativeSliceCameraPose.test.ts` | W0 | pending |
-| 03-02-03 | 02 | 1 | CHECK-04 | - | N/A | unit, e2e | `pnpm vitest run tests/unit/visibleDiagnosticMaterials.test.ts` and `pnpm test:e2e tests/browser/nativeSliceFraming.spec.ts` | W0 | pending |
+| 03-02-02 | 02 | 1 | CHECK-01 | T-03-05 | out-of-limit pose refused, camera unchanged | unit, e2e | `pnpm vitest run tests/unit/nativeSliceCameraPose.test.ts` and `pnpm test:e2e tests/browser/nativeSliceFraming.spec.ts` | W0 | pending |
+| 03-18-01 | 18 | 2 | CHECK-04, CHECK-01 | T-03-37 | diagnostic list read from the material's own inspect values | e2e | `pnpm test:e2e tests/browser/nativeSliceDiagnosticMaterials.spec.ts` | W0 | pending |
+| 03-18-02 | 18 | 2 | CHECK-04 | T-03-37 | only disabled or invisible meshes and compiled materials left out | unit | `pnpm vitest run tests/unit/visibleDiagnosticMaterials.test.ts` | W0 | pending |
 | 03-03-01 | 03 | 1 | CHECK-01 | T-03-06 | selected keys validated | unit, e2e | `pnpm vitest run tests/unit/loadCheckRecords.test.ts` | yes | pending |
 | 03-03-02/03 | 03 | 1 | CHECK-05 | T-03-07 | union loads only on the union catalog | command | pending-count command in 03-03 context prints 0 per kind | n/a | pending |
 | 03-04-01 | 04 | 2 | CHECK-01 | T-03-08 | ingest re-hashes and refuses stale digests | pipeline | `python -B -m unittest discover -s tests/pipeline -p "test_record_side_by_side_checks.py" -v` | W0 | pending |
@@ -76,7 +77,8 @@ created: "2026-11-11"
 - [ ] `tests/pipeline/test_side_by_side_check_records.py`, `test_side_by_side_key_digest.py` (03-01)
 - [ ] `tests/pipeline/test_pair_queue.py`, `test_record_side_by_side_checks.py` (03-04)
 - [ ] `tests/pipeline/native_capture_transcript_fixture.py`, `test_native_capture_driver.py`, `test_import_native_captures.py` (03-06; synthetic transcripts, no L2 bytes)
-- [ ] `tests/unit/nativeSliceSetEnvironment.test.ts`, `nativeSliceCameraPose.test.ts`, `visibleDiagnosticMaterials.test.ts`, `tests/browser/nativeSliceFraming.spec.ts` (03-02)
+- [ ] `tests/unit/nativeSliceSetEnvironment.test.ts`, `nativeSliceCameraPose.test.ts`, `tests/browser/nativeSliceFraming.spec.ts` (03-02)
+- [ ] `tests/unit/visibleDiagnosticMaterials.test.ts`, `tests/browser/nativeSliceDiagnosticMaterials.spec.ts` (03-18)
 - [ ] `tests/unit/sandboxHalfCaptures.test.ts` (03-07), `tests/unit/audioClipCaptures.test.ts` (03-10), `tests/pipeline/test_list_check_defects.py` (03-11)
 - [ ] Extend `tests/pipeline/test_coverage_report.py` and `tests/unit/readNativeCoverage.test.ts` for schema 2 (03-05)
 - No framework install is needed.
@@ -91,6 +93,22 @@ created: "2026-11-11"
 | Native halves for windows, the minimap, other tiles and server-route items | CHECK-01 | Needs the Phase 4 stock Mobius server | STATE line `Needs Human (plan 03-17, server batch)`; re-opens as a Phase 3 follow-up once Mobius runs |
 | Listen verdicts for world, actor and skill audio | CHECK-02 | Needs the owner's ears; no tool records L2.exe audio | STATE line `Needs Human (plan 03-17, listen batch)`: clip folder and the owner-only judge command |
 | Main-checkout restage of the final union | CHECK-04 follow-through | Only the integration thread in the main checkout may write `public/l2` | STATE line `Needs Human (plan 03-17, restage)` |
+
+---
+
+## Phase verification outcome
+
+By P7 no plan in this phase starts L2.exe or captures a native half, so ROADMAP Phase 3 success criteria 1 and 2 cannot hold inside the phase (P16, plan-check revision 1, planning row P43).
+
+| Criterion | Status the phase verification reports | Evidence or closing step |
+|-----------|----------------------------------------|--------------------------|
+| SC1 paired screenshots | human_needed | STATE lines `Needs Human (plan 03-17, offline Debug batch)` and `Needs Human (plan 03-17, server batch)`; every pair record stays unverified until then |
+| SC2 listen checks | human_needed | STATE line `Needs Human (plan 03-17, listen batch)`; every audio record stays `listen-needs-owner` until then |
+| SC3 fixes or gaps | verified | the 03-12 to 03-14 pipeline tests and re-run records |
+| SC4 exit report | verified | `docs/coverage.md` "Stage A exit" from 03-15 and the 03-05 report tests |
+
+- `03-VERIFICATION.md` reports status human_needed, lists SC1 and SC2 as human_needed with the lines above as its human verification items, and never reports either as passed.
+- Stage A is not yet proven while SC1 and SC2 are human_needed: Phase 4 may proceed, because its stock Mobius server closes the server batch; Phase 5, which depends on Phase 3 stage A complete, waits for the three sessions. 03-17 writes both facts into STATE.
 
 ---
 

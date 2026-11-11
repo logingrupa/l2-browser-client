@@ -505,16 +505,19 @@ case "set-environment":
 | A5 | The census files expose a usable class field per part (package, licensee, emitter class, window type) for the queue's second step. [ASSUMED; files exist, fields not opened this session] | 4.4 | The planner opens `actor-unit-census.json`, `tile-census.json` and `interface-window-census.json` and writes down the exact field. If a field is missing, that step uses census order and logs a row. |
 | A6 | Skill audio bundles are reachable by skill key in the union catalog. [ASSUMED] | 4.6 | If they are not keyed, skill clips wait, and the audio record count states it. |
 
-## Open questions
+## Open questions (RESOLVED)
 
 1. **Which keys are "the Phase 2 waiting keys"?**
    - Known: the evidence lines name the rules (npcgrp texture slot, PTDS 3 and 6, the 20_20 sky, 4dd2 hair, the minimap projection, `window:StatusWnd`).
    - Unclear: the exact npc, skill and tile keys that show each rule and also load on the union.
    - Recommendation: the queue plan selects them with a written rule. For example, take the lowest npc id whose npcgrp row has more than one non-empty `texture_name` slot and a union load pass. Log it as a row and never hand-list keys.
+   - RESOLVED: planning row P27 fixes each waiting-key rule by name (`npc-texture-slot`, `ptds-3`, `ptds-6`, `sky-20-20`, `minimap-projection`, `hair-4dd2`, `statuswnd`) in 03-PLAN-INDEX.md "Queue" step 1, built by `build_pair_queue.py` in 03-04; a rule whose key is not eligible is listed with key null and its reason, so no key is hand-listed. The class field of queue step 2 (research A5) is fixed by planning row P26, and the per-kind slice size by P28.
 2. **Should sandbox halves for `native-needs-server` parts (ui, other tiles) be captured now?**
    - Recommendation: yes. They are cheap and unattended, they find sandbox-side defects for CHECK-04, and the record stays unverified.
+   - RESOLVED: yes, by planning row P29. 03-07 captures every queued window half and 03-08 the tile and minimap halves; each record carries session kind `server` and the stored reason `native-needs-server` (03-PLAN-INDEX.md "Queue"), never a pass.
 3. **Minimap and audio counts.**
    - Recommendation: report record counts with denominator `unknown` (P15). Do not add key kinds.
+   - RESOLVED: decision P15 in 03-CONTEXT.md keeps sandbox, audio, minimap and movement-geodata at denominator `unknown` with the reason stated in the report; audio records are keyed by owning key, role and source SHA-256 (P23) and minimap records by tile key in `docs/parts/minimap/side-by-side-checks.json` (P37); 03-05 reports their record counts beside the unknown denominator, and new key kinds stay deferred (03-CONTEXT.md "Deferred Ideas").
 
 ## Environment availability
 
