@@ -167,6 +167,16 @@ class GapCensusPartTests(unittest.TestCase):
         with self.assertRaisesRegex(GapCensusIncompleteError, r'part items: .*item:1'):
             item_census_rows([1, 2], [item_row(1)], [1], ITEM_TABLE_SOURCES)
 
+    def test_a_published_skill_key_whose_skills_row_is_an_unported_emitter_class_gap_stays_that_gap(self):
+        denominators = {'skills-effects': counted_denominator(2)}
+        skills_rows = [census_gap_row('skill:1011:1', 'skills-effects', 'skills', 'gap', 'emitter-class-unported:Engine.BeamEmitter',
+                                      'system/skillgrp.dat'),
+                       census_gap_row('skill:3:1', 'skills-effects', 'skills', 'pass', None, 'system/skillgrp.dat')]
+        census_rows = census_rows_by_key(build_gap_census(denominators, skills_rows, {'skill:1011:1', 'skill:3:1'}, {}))
+        self.assertEqual([(census_rows[key]['status'], census_rows[key]['reason'], census_rows[key]['converted'])
+                          for key in ('skill:1011:1', 'skill:3:1')],
+                         [('gap', 'emitter-class-unported:Engine.BeamEmitter', False), ('converted', None, True)])
+
     def test_skill_rows_count_ambiguous_rows_only_when_declared(self):
         denominators = {'skills-effects': counted_denominator(4)}
         declared_rows = [skill_row(3, 1), skill_row(3, 2), skill_row(4, 1, 'skill-row-ambiguous:2')]

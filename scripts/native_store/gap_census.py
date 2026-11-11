@@ -11,6 +11,7 @@ GAP_CENSUS_STEP_ORDER = ('census', 'raw', 'chunks', 'terrain', 'manifest', 'mesh
                          'npc-model', 'npc-profile', 'npc-sound-identities', 'skills', 'characters', 'items')
 GAP_CENSUS_LOAD_STATUSES = ('pass', 'failed', 'unverified')
 UNVERIFIED_LOAD_STATUS = 'unverified'
+CONVERSION_VERDICT_STEP_BY_PART = {'skills-effects': 'skills'}
 CATALOG_KEY_KIND_PARTS = {'table': 'data', 'tile': 'world', 'map': 'world', 'character': 'player-characters', 'window': 'ui',
                           'npc': 'npcs', 'item': 'items', 'skill': 'skills-effects'}
 SKILL_ROW_AMBIGUOUS_REASON_PATTERN = re.compile(r'^skill-row-ambiguous:(?P<count>[1-9]\d{0,8})$')
@@ -143,6 +144,14 @@ def deciding_row(rows):
     return None
 
 
+def catalog_keys_not_refused_by_verdict_step(part, catalog_part_keys, rows_by_key):
+    verdict_step = CONVERSION_VERDICT_STEP_BY_PART.get(part)
+    if verdict_step is None:
+        return catalog_part_keys
+    return {key for key in catalog_part_keys
+            if not any(row['step'] == verdict_step and row['status'] != 'pass' for row in rows_by_key.get(key, []))}
+
+
 def census_row(part, key, converted, rows, load_status):
     if converted:
         status, reason = 'converted', None
@@ -175,11 +184,12 @@ def build_gap_census(denominators, gap_rows, catalog_index_keys, load_checks):
     census_rows = []
     for part, denominator in denominators.items():
         part_rows = rows_by_part.get(part, [])
-        converted_part_keys = {key for key in catalog_index_keys if catalog_key_part(key) == part}
-        keys = census_part_keys(part, denominator, part_rows, converted_part_keys)
+        catalog_part_keys = {key for key in catalog_index_keys if catalog_key_part(key) == part}
+        keys = census_part_keys(part, denominator, part_rows, catalog_part_keys)
         rows_by_key = {}
         for row in part_rows:
             rows_by_key.setdefault(row['key'], []).append(row)
+        converted_part_keys = catalog_keys_not_refused_by_verdict_step(part, catalog_part_keys, rows_by_key)
         require_every_key_stated(part, denominator, keys, rows_by_key, converted_part_keys)
         census_rows.extend(census_row(part, key, key in converted_part_keys, rows_by_key.get(key, []),
                                       load_checks.get(key, UNVERIFIED_LOAD_STATUS)) for key in keys)
