@@ -93,7 +93,8 @@ function emitCombiner(builder: ChainBuilder, expression: Extract<ColourExpressio
     invertMask: expression.invertMask,
     modulateMultiplier: expression.colourMultiplier,
   };
-  return declare(builder, `clamp(vec4(${combinerColour(combiner)}, ${combinerAlpha(combiner)}), 0.0, 1.0)`);
+  const [resultMinimum, resultMaximum] = COMBINER_CONSTANTS.resultClamp.runtimeDefault;
+  return declare(builder, `clamp(vec4(${combinerColour(combiner)}, ${combinerAlpha(combiner)}), ${glslFloat(resultMinimum)}, ${glslFloat(resultMaximum)})`);
 }
 
 function emitShader(builder: ChainBuilder, expression: Extract<ColourExpression, { kind: "shader" }>, usesDiffuseAlpha: boolean): string {

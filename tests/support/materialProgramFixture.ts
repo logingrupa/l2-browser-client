@@ -119,21 +119,25 @@ export function swatchTexturePng(): Uint8Array {
   return encodeSolidRgbaPng(swatchTextureSize, swatchTextureSize, swatchTextureRgba);
 }
 
-export function swatchTextureNode(id: string, image: FixtureTextureImage): FixtureProgramNode {
+export function swatchTextureNode(id: string, image: FixtureTextureImage, size = swatchTextureSize): FixtureProgramNode {
   return reviewedNode(id, "Engine.Texture", [
-    field("USize", swatchTextureSize), field("VSize", swatchTextureSize), field("UClampMode", enumValue(0, "TC_Wrap"), "ue-zero"),
+    field("USize", size), field("VSize", size), field("UClampMode", enumValue(0, "TC_Wrap"), "ue-zero"),
     field("VClampMode", enumValue(0, "TC_Wrap"), "ue-zero"), field("bMasked", false, "ue-zero"), field("bAlphaTexture", false, "ue-zero"),
     field("AnimNext", null, "ue-zero"), field("MaxFrameRate", 0, "ue-zero"),
   ], image);
 }
 
+function overwritingFinalBlendNode(id: string, material: string): FixtureProgramNode {
+  return reviewedNode(id, "Engine.FinalBlend", [
+    field("Material", nodeReference(material)), field("FrameBufferBlending", enumValue(0, "FB_Overwrite"), "ue-zero"),
+    field("ZWrite", true, "class-default"), field("ZTest", true, "class-default"), field("AlphaTest", false, "ue-zero"),
+    field("TwoSided", false, "ue-zero"), field("AlphaRef", 0, "ue-zero"),
+  ]);
+}
+
 export function syntheticSwatchProgram(image: FixtureTextureImage): FixtureProgram {
   return programOf("SyntheticSwatch.SwatchFinalBlend", [
-    reviewedNode("SyntheticSwatch.SwatchFinalBlend", "Engine.FinalBlend", [
-      field("Material", nodeReference("SyntheticSwatch.SwatchShader")), field("FrameBufferBlending", enumValue(0, "FB_Overwrite"), "ue-zero"),
-      field("ZWrite", true, "class-default"), field("ZTest", true, "class-default"), field("AlphaTest", false, "ue-zero"),
-      field("TwoSided", false, "ue-zero"), field("AlphaRef", 0, "ue-zero"),
-    ]),
+    overwritingFinalBlendNode("SyntheticSwatch.SwatchFinalBlend", "SyntheticSwatch.SwatchShader"),
     reviewedNode("SyntheticSwatch.SwatchShader", "Engine.Shader", [
       field("Diffuse", nodeReference("SyntheticSwatch.SwatchTexture")), field("Opacity", null, "ue-zero"),
       field("OutputBlending", enumValue(0, "OB_Normal"), "ue-zero"), field("TwoSided", false, "ue-zero"), field("DetailScale", 8, "class-default"),
@@ -146,19 +150,81 @@ export function syntheticUnportedProgram(): FixtureProgram {
   return programOf("SyntheticSwatch.TriggeredOscillator", [unportedNode("SyntheticSwatch.TriggeredOscillator", "Engine.TexOscillatorTriggered")]);
 }
 
-export function materialSwatchFixtureFiles(): { readonly files: readonly FixtureStoreFile[]; readonly swatchMaterialId: string; readonly unportedMaterialId: string } {
+export const combinerSwatchInputRgba = {
+  material1: [128, 64, 255, 200],
+  material2: [255, 128, 200, 100],
+  mask: [10, 51, 90, 30],
+} as const;
+
+export type CombinerSwatchInput = keyof typeof combinerSwatchInputRgba;
+
+export interface CombinerSwatchCase {
+  readonly colourOperation: number;
+  readonly alphaOperation: number;
+  readonly modulate2X: boolean;
+}
+
+const combinerColourOperationCount = 8;
+const combinerAlphaOperationCount = 5;
+const combinerSwatchInputs = Object.keys(combinerSwatchInputRgba) as CombinerSwatchInput[];
+const combinerSwatchInputNodeId = (input: CombinerSwatchInput) => `SyntheticCombinerSwatch.${input}`;
+const multiplyColourOperation = 2;
+
+export const combinerSwatchCases: readonly CombinerSwatchCase[] = Array.from({ length: combinerColourOperationCount }, (_, colourOperation) => ({
+  colourOperation, alphaOperation: colourOperation % combinerAlphaOperationCount, modulate2X: colourOperation === multiplyColourOperation,
+}));
+
+export function combinerSwatchInputPng(input: CombinerSwatchInput): Uint8Array {
+  return encodeSolidRgbaPng(1, 1, combinerSwatchInputRgba[input]);
+}
+
+export function syntheticCombinerSwatchProgram(swatchCase: CombinerSwatchCase): FixtureProgram {
+  return programOf("SyntheticCombinerSwatch.Overwrite", [
+    overwritingFinalBlendNode("SyntheticCombinerSwatch.Overwrite", "SyntheticCombinerSwatch.Combiner"),
+    reviewedNode("SyntheticCombinerSwatch.Combiner", "Engine.Combiner", [
+      field("CombineOperation", enumValue(swatchCase.colourOperation, `CO_${swatchCase.colourOperation}`)),
+      field("AlphaOperation", enumValue(swatchCase.alphaOperation, `AO_${swatchCase.alphaOperation}`)),
+      field("Material1", nodeReference(combinerSwatchInputNodeId("material1"))), field("Material2", nodeReference(combinerSwatchInputNodeId("material2"))),
+      field("Mask", nodeReference(combinerSwatchInputNodeId("mask"))), field("InvertMask", false, "ue-zero"),
+      field("Modulate2X", swatchCase.modulate2X), field("Modulate4X", false, "ue-zero"),
+    ]),
+    ...combinerSwatchInputs.map(input => swatchTextureNode(combinerSwatchInputNodeId(input), textureImageFor(combinerSwatchInputPng(input)), 1)),
+  ]);
+}
+
+export interface CombinerSwatchFixture { readonly swatchCase: CombinerSwatchCase; readonly materialId: string }
+
+function combinerSwatchFixtureFiles(): { readonly files: FixtureStoreFile[]; readonly combinerSwatches: CombinerSwatchFixture[] } {
+  const files: FixtureStoreFile[] = combinerSwatchInputs.map(input => {
+    const png = combinerSwatchInputPng(input);
+    return { storePath: textureImageFor(png).path, bytes: png };
+  });
+  const combinerSwatches = combinerSwatchCases.map(swatchCase => {
+    const bytes = canonicalProgramBytes(syntheticCombinerSwatchProgram(swatchCase));
+    const materialId = sha256Hex(bytes);
+    files.push({ storePath: `/l2/native-materials/${materialId}/program.json`, bytes });
+    return { swatchCase, materialId };
+  });
+  return { files, combinerSwatches };
+}
+
+export function materialSwatchFixtureFiles(): {
+  readonly files: readonly FixtureStoreFile[]; readonly swatchMaterialId: string; readonly unportedMaterialId: string; readonly combinerSwatches: readonly CombinerSwatchFixture[];
+} {
   const png = swatchTexturePng();
   const image = textureImageFor(png);
   const swatchBytes = canonicalProgramBytes(syntheticSwatchProgram(image));
   const unportedBytes = canonicalProgramBytes(syntheticUnportedProgram());
   const swatchMaterialId = sha256Hex(swatchBytes);
   const unportedMaterialId = sha256Hex(unportedBytes);
+  const combiner = combinerSwatchFixtureFiles();
   return {
-    swatchMaterialId, unportedMaterialId,
+    swatchMaterialId, unportedMaterialId, combinerSwatches: combiner.combinerSwatches,
     files: [
       { storePath: image.path, bytes: png },
       { storePath: `/l2/native-materials/${swatchMaterialId}/program.json`, bytes: swatchBytes },
       { storePath: `/l2/native-materials/${unportedMaterialId}/program.json`, bytes: unportedBytes },
+      ...combiner.files,
     ],
   };
 }

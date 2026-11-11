@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { buildFragmentChain } from "../../src/materials/ue2/babylon/fragmentChain";
 import { combineAlpha, combineColour, combinerMaskValue, evaluateColourExpression } from "../../src/materials/ue2/model/combiner";
+import { COMBINER_CONSTANTS } from "../../src/materials/ue2/model/constants/combinerConstants";
+import { parseMaterialProgram } from "../../src/materials/ue2/model/materialProgram";
 import type { ColourUnits } from "../../src/materials/ue2/model/materialFieldValues";
+import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
+import { combinerSwatchCases, combinerSwatchInputRgba, syntheticCombinerSwatchProgram } from "../support/materialProgramFixture";
 
 const bytes = (...channels: number[]): ColourUnits => channels.map(channel => channel / 255) as unknown as ColourUnits;
 const first = bytes(128, 64, 255, 200);
@@ -55,6 +60,35 @@ describe("Combiner alpha operations", () => {
 
   it("gives alpha 0 for AO_Use_Mask without a Mask", () => {
     expect(combineAlpha(0, first, second, null)).toBe(0);
+  });
+});
+
+describe("the combiner swatch programs of the GPU pixel oracle", () => {
+  const swatchInputBytes = Object.fromEntries(Object.entries(combinerSwatchInputRgba).map(([input, rgba]) => [input, bytes(...rgba)]));
+
+  it("cover every colour operation 0-7 and every alpha operation 0-4", () => {
+    expect([...new Set(combinerSwatchCases.map(swatchCase => swatchCase.colourOperation))].sort()).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+    expect([...new Set(combinerSwatchCases.map(swatchCase => swatchCase.alphaOperation))].sort()).toEqual([0, 1, 2, 3, 4]);
+  });
+
+  it.each(combinerSwatchCases)("compile colour operation $colourOperation and alpha operation $alphaOperation to the CPU combiner result", swatchCase => {
+    const plan = compileMaterialStagePlan(parseMaterialProgram(JSON.parse(JSON.stringify(syntheticCombinerSwatchProgram(swatchCase)))));
+    if (plan.status !== "compiled") throw new Error(`combiner swatch program did not compile: ${plan.reasons.join(", ")}`);
+    const samplerTexels = plan.samplers.map(sampler => swatchInputBytes[sampler.textureNode.split(".")[1]!]!);
+    const evaluated = evaluateColourExpression(plan.expression, { samplerTexels, colourSourceValues: [], usesDiffuseAlpha: false });
+    const { material1, material2, mask } = swatchInputBytes as Record<"material1" | "material2" | "mask", ColourUnits>;
+    const maskValue = combinerMaskValue(mask, false);
+    const colour = combineColour(swatchCase.colourOperation, material1, material2, maskValue, mask, swatchCase.modulate2X ? 2 : 1);
+    expect(evaluated).toEqual([...colour, combineAlpha(swatchCase.alphaOperation, material1, material2, maskValue)]);
+  });
+
+  it("emit the combiner clamp bounds from the combiner.result-clamp row", () => {
+    const plan = compileMaterialStagePlan(parseMaterialProgram(JSON.parse(JSON.stringify(syntheticCombinerSwatchProgram(combinerSwatchCases[3]!)))));
+    if (plan.status !== "compiled") throw new Error("combiner swatch program did not compile");
+    const [resultMinimum, resultMaximum] = COMBINER_CONSTANTS.resultClamp.runtimeDefault;
+    const combinerStatement = buildFragmentChain(plan, "unlit").fragmentSource.split("\n").find(line => line.includes("= clamp(vec4("));
+    expect(combinerStatement).toMatch(/^\s*vec4 ue2Value\d+ = clamp\(vec4\(.+\), /);
+    expect(combinerStatement?.endsWith(`, ${resultMinimum.toFixed(1)}, ${resultMaximum.toFixed(1)});`)).toBe(true);
   });
 });
 
