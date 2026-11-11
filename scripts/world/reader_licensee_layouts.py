@@ -27,7 +27,7 @@ ELBERA_TERRAIN_SERIALIZE_SHA256 = 'eee0d53e2d84c8a8c51c2b8854c5fe842a78e3cfbf772
 UEVIEWER_MATERIAL_HEADER_PATH = 'Unreal/UnrealMaterial/UnMaterial2.h'
 VENDORED_BSP_READER_SOURCE_NAME = 'Elbera vendored BSP reader'
 VENDORED_BSP_READER_PATH = 'scripts/vendor/lineage2elbera_bsp/__init__.py'
-REVIEWED_LEVEL_MODEL_LICENSEES = (28, 23)
+REVIEWED_LEVEL_MODEL_LICENSEES = (28, 23, 25)
 READER_GAP_REASON_TEMPLATES = {
     G16_HEIGHTMAP_READER: ('terrain-height-version-unsupported:{version}', 'terrain-height-licensee-unsupported:{version}/{licensee}'),
     **{reader: ('map-version-unsupported:{version}', 'map-licensee-unsupported:{version}/{licensee}')

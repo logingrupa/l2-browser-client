@@ -201,6 +201,25 @@
  {
   "reader": "level-model",
   "version": 123,
+  "licensee": 25,
+  "tile": "15_20",
+  "package": "maps/15_20.unr",
+  "lockSha256": "b2f06c9c932438226de8bd6e9c93deb14a1420ff79bb7d5f703cb728cb2ac9df",
+  "ourDecodeSha256": "448c58b0a0e44d790890ff343f8332c7529e70518fd104ef2b2d7aa155e73d3d",
+  "crossCheckDecodeSha256": "448c58b0a0e44d790890ff343f8332c7529e70518fd104ef2b2d7aa155e73d3d",
+  "tool": {
+   "name": "Elbera l2lib",
+   "commit": "12c9656",
+   "pins": {
+    "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
+   }
+  },
+  "equal": true,
+  "refusalReason": null
+ },
+ {
+  "reader": "level-model",
+  "version": 123,
   "licensee": 28,
   "tile": "20_21",
   "package": "maps/20_21.unr",
