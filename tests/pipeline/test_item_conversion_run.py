@@ -12,7 +12,7 @@ sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
 from actors import item_conversion
 from actors.actor_unit_inventory import ACTOR_UNIT_CENSUS_RELATIVE_PATH
-from actors.item_census import run_item_batch
+from actors.item_census import item_census, run_item_batch
 from actors.item_conversion import ItemConversionRun
 from actors.item_unit_inventory import weapon_selection
 from catalog_store_fixture import model_record
@@ -22,6 +22,7 @@ from native_store.unit_ledger import locked_input_records
 from test_item_requests import convertible_census_units, item_sources, synthetic_weapon_row
 
 FIRST_CONVERTER_SHA256 = 'c' * 64
+CHANGED_CONVERTER_SHA256 = 'd' * 64
 WEAPON_ROWS = (synthetic_weapon_row(1), synthetic_weapon_row(2, meshes=('LineageWeapons.long_m00_wp',)),
                synthetic_weapon_row(3, meshes=('LineageWeapons.bow_m00_wp',)), synthetic_weapon_row(4, meshes=('LineageWeapons.axe_m00_wp',)))
 
@@ -92,6 +93,16 @@ class ItemConversionRunTests(unittest.TestCase):
         self.write_store.reset_mock()
         outcomes = run_item_batch(SyntheticItemRun(self.project_root, self.client_root), 4, lambda: None)
         self.assertEqual(([outcome['cacheHit'] for outcome in outcomes], self.write_store.call_count), ([True] * 4, 0))
+
+    def test_the_census_reports_units_sealed_under_an_older_converter_as_pending(self):
+        run_item_batch(SyntheticItemRun(self.project_root, self.client_root), 4, lambda: None)
+        self.implementation_hash.return_value = CHANGED_CONVERTER_SHA256
+        run = SyntheticItemRun(self.project_root, self.client_root)
+        run_item_batch(run, 1, lambda: None)
+        census = item_census(run, 1)
+        self.assertEqual(census['units']['weapon'], {'convertible': 4, 'converted': 1, 'gap': 0, 'pending': 3})
+        self.assertEqual([row['unitKey'] for row in census['sealedUnits']], [run.units[0]['unitKey']])
+        self.assertEqual(census['items']['pending'], 3)
 
 
 if __name__ == '__main__':

@@ -176,6 +176,6 @@ class ItemConversionRun:
     def sealed_outcomes_by_unit_key(self):
         outcomes = {}
         for unit in self.units:
-            if self.ledger.sealed_receipt(unit['unitKey']) is not None:
+            if self.is_unit_sealed(unit):
                 outcomes[unit['unitKey']] = self.sealed_outcome(unit)
         return outcomes
