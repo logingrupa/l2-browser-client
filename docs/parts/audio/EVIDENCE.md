@@ -16,6 +16,8 @@ Status: audible labelled, owner listening pending. The report rows are evidence 
 - Gap rows (one or more per bundle, every row through `validate_gap_row`): `artifacts/lane-store/actors/work/actor-sounds/actor-sound-gap-rows.json`. Every NPC bundle carries `combat-role-route-unresolved:npcgrp/attackVoice`.
 - Report: `artifacts/lane-store/actors/audio-reports/f0ccc57981bbea24b9416dec4f6c33e603bd4f4fbb69634e414e7fd2e9cab133.json` (served lane catalog SHA-256), 21 bundles, 219 rows `{key, sourceIdentity, played, peak}`, all `played: true` with finite peaks from 0.5506 to 1.2550. The tracer report for npc:20001 alone is `e00eb4b2....json` (6 rows). Runs used headless SwiftShader, so no performance claim.
 - The npcgrp `sound_vol` and `sound_radius` labels stay swapped through the builder's native mapping (the Gremlin manifest carries soundRadius 50, soundVolume 250, soundRandom 70).
+- Refusal reasons of the sound conversion and the bundle builder are path-free (`<source>`, `<output>`) like the other converter routes, and a bundle resealed without a manifest or without a sound row loses its `actor-sounds` combatAudio record (9297264, b587d05; `tests/pipeline/test_actor_sound_refusal_reasons.py`, `test_actor_sound_bundle_reseal.py`).
+- `export-native-sounds.py` reads strict JSON (32 MiB cap), SHA-256, reparse refusal and confined portable paths from their shared owners (15f79ef). Its implementation fingerprint now also pins `native_store/store_paths.py`, so `run.json` fingerprints of earlier exports no longer match: an existing sound output needs a fresh destination or `--reuse-from`.
 
 ### Decision H item 3 routing
 
@@ -65,6 +67,6 @@ Status: audible labelled, owner listening pending. WORLD-02 stays Pending until 
 
 Notes: `docs/NATIVE_AUDIO.md`. Acceptance: `recipes/native-audio.acceptance.json`.
 - Lane tool support for this repo is not available on DATABASE-PC yet; use plain `git worktree` until it lands.
-- Tests: `tests/pipeline/test_combat_audio_recipe_unresolved_routing.py`, `test_combat_role_routes.py`, `test_actor_sound_bindings.py`, `tests/unit/combatAudioRoleRouting.test.ts`, `tests/unit/nativeCombatAudio.test.ts`, `tests/browser/sandbox-actor-audio.spec.ts`, `tests/browser/world-tile-audio.spec.ts`.
+- Tests: `tests/pipeline/test_combat_audio_recipe_unresolved_routing.py`, `test_combat_role_routes.py`, `test_actor_sound_bindings.py`, `test_actor_sound_refusal_reasons.py`, `test_actor_sound_bundle_reseal.py`, `tests/unit/combatAudioRoleRouting.test.ts`, `tests/unit/nativeCombatAudio.test.ts`, `tests/browser/sandbox-actor-audio.spec.ts`, `tests/browser/world-tile-audio.spec.ts`.
 - Count differences to check in the decoder inventory: 435 vs 433 `.utx`, `chargrp` has 15 rows.
 - The 02-23 tiles sweep is plan 02-70, which runs after 02-16 (wave 9; OVERNIGHT-DECISIONS row 303). 02-23 is complete with Tasks 1 and 2 (02-23-SUMMARY.md).

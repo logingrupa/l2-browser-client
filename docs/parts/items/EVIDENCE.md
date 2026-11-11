@@ -8,9 +8,10 @@ ACT-03 breadth started (plan 02-42, 2026-11-10). Items convert from their decode
 
 - Generator. `scripts/actors/item_requests.py` builds one unit request per weapongrp row and one per non-empty armorgrp race column, from the decoded row only. The mesh and texture paths are cited in `sourceBinding`. Item 1 equals the reviewed `Native-Small-Sword-ClassID1` recipe and item 22 column `m_HumnFigh` equals `MFighter-Leather-Shirt-ClassID22` (cross-check tests on E:, the recipes are read by the tests only).
 - Record ids. One catalog `models` record per item and unit: `interlude:item:<itemId>:body-part:<bodyPart>:weapon` or `...:armor:<raceColumnOrdinal>`. Items that share one unit share one export and one archive and keep their own record.
-- Conversion. `convert_actors.py --item <id>` and `--batch items --limit <n>` convert census-convertible units on the unit ledger (step `items`) into `artifacts/lane-store/actors/l2`. Weapons convert without an animation, armor with the mesh's serialized animation reference. Every package keeps every file its `asset.json` lists (`verify_archive`), and the item step adds no socket or attachment data.
+- Conversion. `convert_actors.py --item <id>` and `--batch items --limit <n>` convert census-convertible units on the unit ledger (step `items`) into `artifacts/lane-store/actors/l2`. Weapons convert without an animation, armor with the mesh's serialized animation reference. Every package keeps every file its `asset.json` lists (`verify_archive`), and the item step adds no socket or attachment data. A run hashes the converter once and reads the reference client lock once for all units; `--batch items` skips sealed units before the machine-schedule preflight and writes the store catalog at most once per slice, still republishing sealed records the catalog lacks (8a30d1c).
 - Index. `buildNativeCatalogIndex` answers `item:<id>` from the item model records with the slot `equipmentSlotForBodyPart(bodyPart)` builds. The player profile upper record of item 22 keeps its key.
 - Presentation. `presentEquippedItem` attaches a weapon at the hand anchor: the reviewed MFighter and FFighter rigs (`Weapon_R_Bone`), or, for a generated character, the `RightHandBone` of its class defaults when that joint is in the model skin. It is labelled `presentation`; the native attachment transform is unverified. Everything else is a labelled gap: armor in a body-part slot is `equipment-slot-meaning-undecoded:<bodyPart>`, an unanchored weapon names its anchor reason.
+- Body-part item lookups resolve through the runtime's served catalog and catalog index (`catalogEquippedItemSource` in `createNativeSliceRuntime`), with no second `catalog.json` or `coverage.json` read (d9950d1). The attachment lifecycle is covered for unequip during a pending lookup or model load, a same-slot swap, gap diagnostic order and dispose, with no leaked anchor or mesh (5620800).
 
 ### Census
 
@@ -25,7 +26,7 @@ ACT-03 breadth started (plan 02-42, 2026-11-10). Items convert from their decode
 | gap `mesh-texture-pairing-undecoded:2/2` | 257 |
 | gap `skeletal-licensee-unsupported:123/31` | 121 |
 
-Units: weapon 375 convertible, 19 converted; armor 2,594 convertible, 60 converted, 23 `animation-reference-missing`. 102 units are sealed. A rerun reported the 51 sealed units of the first slice with `cacheHit: true` and converted only the next one.
+Units: weapon 375 convertible, 19 converted; armor 2,594 convertible, 60 converted, 23 `animation-reference-missing`. 102 units are sealed. A rerun reported the 51 sealed units of the first slice with `cacheHit: true` and converted only the next one. Since 55ff726 the census and the item gap rows count only units sealed under their current fingerprint; other units are pending. A unit that reconverts into a gap drops the model record of each of its items (4fee86f).
 
 The upper-slot item 22 has the decoded `body_part` 10; its body-part records exist, but the index keeps the profile upper record for its key.
 
@@ -57,5 +58,5 @@ Actors lane catalog `b070325c...` (161 item records of 282 models):
 ## Evidence
 
 - Code: `scripts/actors/item_requests.py`, `item_conversion.py`, `item_census.py`, `src/assets/native/nativeCatalogIndex.ts`, `nativeEquippedItemPresentation.ts`, `nativeEquippedBodyPartItems.ts`, `nativeHumanHandAnchor.ts`.
-- Tests: `tests/pipeline/test_item_requests.py`, `tests/unit/nativeCatalogIndex.test.ts`, `tests/unit/nativeHumanHandAnchor.test.ts`, `tests/unit/nativeEquippedItemPresentation.test.ts`, `tests/browser/sandbox-equip.spec.ts`, `tests/browser/load-sweep-items.spec.ts`.
+- Tests: `tests/pipeline/test_item_requests.py`, `tests/pipeline/test_item_conversion_run.py`, `tests/unit/nativeCatalogIndex.test.ts`, `tests/unit/nativeHumanHandAnchor.test.ts`, `tests/unit/nativeEquippedItemPresentation.test.ts`, `tests/unit/nativeEquippedItemSource.test.ts`, `tests/unit/nativeEquippedBodyPartItems.test.ts`, `tests/browser/sandbox-equip.spec.ts`, `tests/browser/load-sweep-items.spec.ts`.
 - Summary: `.planning/phases/02-stage-a-breadth/02-42-SUMMARY.md`. Decisions: OVERNIGHT-DECISIONS rows 603 to 614.

@@ -41,6 +41,13 @@ is the Python validator and `readAssetPackage` is the browser validator.
 The writer refuses when the reference lock is missing, so no package carries
 an invented `clientBuild` or `converterVersion`.
 
+`implementation_hash()` covers every non-empty script module that
+`native_assets.py` imports, including `reference_client_guard.py` and
+`native_store/store_paths.py` since 47fd758;
+`tests/pipeline/test_converter_implementation_hash.py` fails when an imported
+module is not hashed. That change moved existing cache entries and staged
+`converterSha256` values.
+
 ## Units and handedness per route
 
 | Route | Unit | Frame | Recorded as |
@@ -55,9 +62,9 @@ with the opposite handedness, so the upper-left 3x3 determinant is negative;
 the writer asserts that before it records `handedness: "right"`.
 
 In v1, the same `unit`, `sourceUnitsPerMetre` and `sourceToGltf` sit inside
-`model`, with no handedness or up axis. The browser reader exposes one
-normalised `manifest.coordinates` for both versions, and the Python helper
-`asset_coordinates(manifest)` does the same for scripts.
+`model`, with no handedness or up axis. The browser reader
+(`readAssetPackage.ts`) exposes one normalised `manifest.coordinates` for both
+versions and is the only coordinate reader.
 
 ## Source preservation
 

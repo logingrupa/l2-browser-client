@@ -33,6 +33,8 @@ Gap by reason (the `characters` step row of each key):
 | `texture-licensee-unsupported:123/27` | 2, 3, 5 (census gate, no conversion attempt) |
 | `animation-reference-missing` | 1, 9, 13 (the base body mesh holds no serialized Animation reference; no animation name is synthesized) |
 
+Since the Phase 2 review fixes (4cb97cd, b587d05), the census reports a row as pending unless its receipt is sealed under the row's current unit fingerprint, and a row that reconverts into a model gap loses its `character-model:<index>` catalog record (`tests/pipeline/test_character_conversion_run.py`, 7 cases: cache hit, refused conversion, padding row, batch limit, census counts, stale census, reconversion gap).
+
 Rules the generator holds:
 - Body parts follow `body_mesh1` upward with their `body_texture` fields and cite `["Char", <row>, "body_mesh", "body_meshN"]`.
 - The row 0 body parts equal the four body parts of `recipes/native-mfighter.json` (cross-check test only).
@@ -84,7 +86,7 @@ Item 2, female fighter collision:
 - Generator: `scripts/actors/character_requests.py`, `scripts/actors/character_conversion.py`, `scripts/actors/character_census.py`, run through `scripts/actors/convert_actors.py --character <index>` and `--batch characters --limit <n>`.
 - Recipes with decision H markers: `recipes/native-mfighter.json`, `recipes/native-ffighter.json`, `recipes/native-mmagic.json`, `recipes/native-fmagic.json`, `recipes/native-player-ffighter-stage.json`.
 - Loader: `src/assets/native/loadNativePlayerProfiles.ts` (`{ profiles, unresolved }`) and `src/assets/native/loadNativeCatalog.ts` (the `has unresolved` throw).
-- Pipeline tests: `tests/pipeline/test_character_recipe_unresolved_values.py` (7 OK) and `tests/pipeline/test_character_requests.py` (23 OK, with the row 0 cross-check against `recipes/native-mfighter.json`).
+- Pipeline tests: `tests/pipeline/test_character_recipe_unresolved_values.py` (7 OK), `tests/pipeline/test_character_requests.py` (23 OK, with the row 0 cross-check against `recipes/native-mfighter.json`) and `tests/pipeline/test_character_conversion_run.py` (run, batch and census).
 - Unit tests: `tests/unit/nativePlayerProfiles.test.ts` and `tests/unit/nativeCatalogIndex.test.ts`.
 - Browser: `tests/browser/sandbox-characters.spec.ts`. Load checks: `artifacts/lane-store/actors/load-checks/64d8fcb444e4b84f8042fc314d9eac6e0073acd3ef0b9ff6944d72e3be588e9f.json`.
 - Screenshots: `artifacts/character-evidence/character-first-1440x900.png`, `artifacts/character-evidence/character-first-932x430.png`, `artifacts/character-evidence/characters-sweep-1440x900.png`.
