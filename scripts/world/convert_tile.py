@@ -14,17 +14,11 @@ from native_store.store_paths import REPOSITORY_ROOT, require_converter_output
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, require_batch_preflight, run_at_below_normal_priority
 from reference_client_guard import require_reference_client
 from world.eligible_tile_selection import seal_derived_step_row
-from world.raw_map_step import TILE_ID_PATTERN
+from world.raw_map_step import RAW_STEP_NAME, TILE_ID_PATTERN
 from world.tile_census import WORLD_LANE_NAME
 from world.tile_step_registry import DEFAULT_TILE_STORE_OUTPUT, TILE_STEP_NAMES, run_tile_step
 
 FAILED_ROW_STATUS = 'failed'
-
-
-def tile_id_argument(value):
-    if not TILE_ID_PATTERN.fullmatch(value):
-        raise argparse.ArgumentTypeError(f'map must be a tile id XX_YY: {value!r}')
-    return value
 
 
 def record_tile_step_gap_row(project_root, row):
@@ -34,13 +28,16 @@ def record_tile_step_gap_row(project_root, row):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description='Run one world conversion step for one map tile of the locked reference client.')
+    parser = argparse.ArgumentParser(description='Run one world conversion step for one map tile, or the raw step for one non-tile census map, of the locked reference client.')
     parser.add_argument('--client', type=Path, required=True)
-    parser.add_argument('--map', type=tile_id_argument, required=True)
+    parser.add_argument('--map', required=True, help='a tile id XX_YY, or for --step raw a non-tile map name of the tile census')
     parser.add_argument('--step', choices=sorted(TILE_STEP_NAMES), required=True)
     parser.add_argument('--output', type=Path, default=DEFAULT_TILE_STORE_OUTPUT,
                         help='world lane store for --step manifest; a relative path is taken from the repository root')
     arguments = parser.parse_args(argv)
+    if arguments.step != RAW_STEP_NAME and not TILE_ID_PATTERN.fullmatch(arguments.map):
+        parser.error(f'--step {arguments.step} converts tile maps only and needs a tile id XX_YY; '
+                     f'a non-tile census map runs --step {RAW_STEP_NAME} alone: {arguments.map!r}')
     try:
         require_reference_client(arguments.client)
         require_batch_preflight(REPOSITORY_ROOT, WORLD_LANE_NAME, BATCH_MINIMUM_FREE_BYTES)

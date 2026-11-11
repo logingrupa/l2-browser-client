@@ -16,7 +16,8 @@ from world import convert_tile
 from world.convert_tile import record_tile_step_gap_row
 from world.map_actor_properties import HAS_STACK
 from world.raw_map_extraction import build_map
-from world.raw_map_step import RAW_MAP_STEP_ALGORITHM_VERSION, raw_map_recipe, run_raw_map_step
+from world.raw_map_step import RAW_MAP_STEP_ALGORITHM_VERSION, RawMapStepError, raw_map_recipe, run_raw_map_step
+from world.tile_step_registry import TILE_STEP_NAMES
 from reference_client_lock_fixture import lock_client_as_checked_conversion_root
 from ue2_package_fixture import compact, package_bytes, tag
 
@@ -28,6 +29,11 @@ GAP_TILE_REASON = 'map-licensee-unsupported:123/25'
 UNREVIEWED_MAP_LICENSEE = 27
 MESH_PACKAGE_PATH = 'staticmeshes/SyntheticMeshes.usx'
 UNIT_STEP_FOLDER = Path('artifacts/lane-store/world/work/tile__20_21/raw')
+NON_TILE_MAP_NAME = 'Lobby'
+NON_TILE_MAP_PATH = 'maps/Lobby.unr'
+NON_TILE_GAP_MAP_NAME = 'skylevel'
+NON_TILE_GAP_REASON = 'map-version-unsupported:118'
+NON_TILE_UNIT_STEP_FOLDER = Path('artifacts/lane-store/world/work/map__Lobby/raw')
 SYNTHETIC_CENSUS_LOCK_SHA256 = '0' * 64
 REAL_CLIENT_ROOT = Path('E:/Lineage2-client')
 REAL_TILE_MAP_SHA256 = 'e123be27672ce30235829fc09a3da0aa381e7be14add0fe30ce15f1dd4379f93'
@@ -102,17 +108,23 @@ class SyntheticTileTestCase(unittest.TestCase):
 
     def write_client(self, map_exports, licensee=28):
         (self.client / MAP_PATH).write_bytes(synthetic_map_bytes(map_exports, licensee))
+        (self.client / NON_TILE_MAP_PATH).write_bytes(synthetic_map_bytes(map_exports, licensee))
         (self.client / MESH_PACKAGE_PATH).write_bytes(synthetic_mesh_package_bytes())
-        lock_path = lock_client_as_checked_conversion_root(self, self.client, self.client.parent / 'reference', [MAP_PATH, MESH_PACKAGE_PATH])
+        lock_path = lock_client_as_checked_conversion_root(self, self.client, self.client.parent / 'reference',
+                                                           [MAP_PATH, NON_TILE_MAP_PATH, MESH_PACKAGE_PATH])
         lock = json.loads(lock_path.read_text(encoding='utf-8'))
         lock['files'][f'maps/{GAP_TILE_ID}.unr'] = lock_record('1' * 64)
+        lock['files'][f'maps/{NON_TILE_GAP_MAP_NAME}.unr'] = lock_record('3' * 64)
         lock_path.write_text(json.dumps(lock), encoding='utf-8')
         self.map_sha256 = hashlib.sha256((self.client / MAP_PATH).read_bytes()).hexdigest()
         self.write_census()
 
     def write_census(self):
-        rows = [{'key': f'tile:{GAP_TILE_ID}', 'map': f'maps/{GAP_TILE_ID}.unr', 'status': 'gap', 'reason': GAP_TILE_REASON},
-                {'key': TILE_KEY, 'map': MAP_PATH, 'status': 'eligible', 'reason': None}]
+        rows = [{'key': f'map:{NON_TILE_MAP_NAME}', 'kind': 'non-tile', 'map': NON_TILE_MAP_PATH, 'status': 'eligible', 'reason': None},
+                {'key': f'map:{NON_TILE_GAP_MAP_NAME}', 'kind': 'non-tile', 'map': f'maps/{NON_TILE_GAP_MAP_NAME}.unr', 'status': 'gap',
+                 'reason': NON_TILE_GAP_REASON},
+                {'key': f'tile:{GAP_TILE_ID}', 'kind': 'tile', 'map': f'maps/{GAP_TILE_ID}.unr', 'status': 'gap', 'reason': GAP_TILE_REASON},
+                {'key': TILE_KEY, 'kind': 'tile', 'map': MAP_PATH, 'status': 'eligible', 'reason': None}]
         census_path = self.project_root / 'docs/parts/world/tile-census.json'
         census_path.parent.mkdir(parents=True, exist_ok=True)
         census_path.write_text(json.dumps({'schemaVersion': 1, 'referenceTreeLockSha256': SYNTHETIC_CENSUS_LOCK_SHA256, 'maps': rows}),
@@ -232,6 +244,39 @@ class RawMapStepTests(SyntheticTileTestCase):
         self.assertEqual(self.read_product('section-bindings.json'), [])
 
 
+class NonTileRawStepTests(SyntheticTileTestCase):
+    def test_a_non_tile_census_map_seals_under_its_map_key_and_unit_directory(self):
+        self.write_client(two_actors_sharing_one_mesh())
+        row = self.run_step(NON_TILE_MAP_NAME)
+        map_sha256 = hashlib.sha256((self.client / NON_TILE_MAP_PATH).read_bytes()).hexdigest()
+        self.assertEqual(row, {'key': 'map:Lobby', 'part': 'world', 'step': 'raw', 'status': 'pass', 'reason': None,
+                               'sourceIdentity': {'path': NON_TILE_MAP_PATH, 'sha256': map_sha256},
+                               'evidence': 'work/map__Lobby/raw/receipt.json'})
+        receipt = json.loads((self.project_root / NON_TILE_UNIT_STEP_FOLDER / 'receipt.json').read_text(encoding='utf-8'))
+        self.assertEqual(receipt['config'], {'schemaVersion': 1, 'kind': 'native-map-raw', 'map': NON_TILE_MAP_PATH, 'sourceSha256': map_sha256})
+        self.assertEqual(receipt['inputs'], [{'path': NON_TILE_MAP_PATH, 'sha256': map_sha256}])
+        self.assertTrue((self.project_root / NON_TILE_UNIT_STEP_FOLDER / 'complete.json').is_file())
+
+    def test_a_non_tile_gap_map_returns_its_census_reason_without_touching_the_client(self):
+        self.write_client(two_actors_sharing_one_mesh())
+        with patch('world.raw_map_step.build_map', side_effect=AssertionError('client read for a census gap')) as build:
+            row = run_raw_map_step(self.project_root, self.client / 'absent-client', NON_TILE_GAP_MAP_NAME)
+        build.assert_not_called()
+        self.assertEqual(row, {'key': 'map:skylevel', 'part': 'world', 'step': 'raw', 'status': 'gap', 'reason': NON_TILE_GAP_REASON,
+                               'sourceIdentity': {'path': 'maps/skylevel.unr', 'sha256': '3' * 64},
+                               'evidence': 'docs/parts/world/tile-census.json'})
+        self.assertFalse((self.project_root / 'artifacts/lane-store/world/work').exists())
+
+    def test_a_name_that_is_not_a_non_tile_census_map_is_refused_naming_it(self):
+        self.write_client(two_actors_sharing_one_mesh())
+        for refused_name in ('../maps/20_21', 'Unknown', 'map:Lobby', 'Lobby.unr', '20_21.unr', 'lobby', ''):
+            with self.subTest(name=refused_name), patch('world.raw_map_step.build_map', side_effect=AssertionError('client read')):
+                with self.assertRaises(RawMapStepError) as refusal:
+                    self.run_step(refused_name)
+                self.assertIn(repr(refused_name), str(refusal.exception))
+        self.assertFalse((self.project_root / 'artifacts/lane-store/world/work').exists())
+
+
 class TileStepGapRowRecorderTests(SyntheticTileTestCase):
     def row(self, key, status, reason):
         return {'key': key, 'part': 'world', 'step': 'raw', 'status': status, 'reason': reason,
@@ -260,16 +305,46 @@ class ConvertTileCommandTests(SyntheticTileTestCase):
         priority.assert_called_once()
         return exit_code, json.loads(output.getvalue())
 
+    def run_refused_command(self, arguments):
+        errors = io.StringIO()
+        with patch.object(convert_tile, 'REPOSITORY_ROOT', self.project_root), \
+                patch.object(convert_tile, 'require_batch_preflight'), patch.object(convert_tile, 'run_at_below_normal_priority'), \
+                contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(errors):
+            try:
+                exit_code = convert_tile.main(arguments)
+            except SystemExit as exit_request:
+                exit_code = exit_request.code
+        return exit_code, errors.getvalue()
+
+    def test_the_command_runs_the_raw_step_for_a_non_tile_census_map(self):
+        self.write_client(two_actors_sharing_one_mesh())
+        exit_code, printed_rows = self.run_command(['--client', str(self.client), '--map', NON_TILE_MAP_NAME, '--step', 'raw'])
+        self.assertEqual((exit_code, [(row['key'], row['status']) for row in printed_rows]), (0, [('map:Lobby', 'pass')]))
+        self.assertEqual(read_gap_rows(self.project_root, 'world'), printed_rows)
+
+    def test_a_non_tile_map_with_any_step_other_than_raw_is_refused_naming_the_step(self):
+        self.write_client(two_actors_sharing_one_mesh())
+        for step in TILE_STEP_NAMES:
+            if step == 'raw':
+                continue
+            with self.subTest(step=step):
+                exit_code, errors = self.run_refused_command(['--client', str(self.client), '--map', NON_TILE_MAP_NAME, '--step', step])
+                self.assertNotEqual(exit_code, 0)
+                self.assertIn(f'--step {step}', errors)
+        self.assertEqual(read_gap_rows(self.project_root, 'world'), [])
+
     def test_the_command_records_the_step_row_and_exits_one_on_a_failed_tile(self):
         self.write_client(two_actors_sharing_one_mesh(), licensee=UNREVIEWED_MAP_LICENSEE)
         exit_code, printed_rows = self.run_command(['--client', str(self.client), '--map', TILE_ID, '--step', 'raw'])
         self.assertEqual((exit_code, [row['status'] for row in printed_rows]), (1, ['failed']))
         self.assertEqual(read_gap_rows(self.project_root, 'world'), printed_rows)
 
-    def test_the_command_refuses_a_map_argument_that_is_not_a_tile_id(self):
+    def test_the_command_refuses_a_map_argument_that_is_neither_a_tile_id_nor_a_census_map_naming_it(self):
         self.write_client(two_actors_sharing_one_mesh())
-        with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
-            convert_tile.main(['--client', str(self.client), '--map', '../20_21', '--step', 'raw'])
+        exit_code, errors = self.run_refused_command(['--client', str(self.client), '--map', '../maps/20_21', '--step', 'raw'])
+        self.assertNotEqual(exit_code, 0)
+        self.assertIn("'../maps/20_21'", errors)
+        self.assertFalse((self.project_root / 'artifacts/lane-store/world/work').exists())
 
 
 @unittest.skipUnless((REAL_CLIENT_ROOT / MAP_PATH).is_file(), 'the conversion client E:/Lineage2-client is absent on this host')
