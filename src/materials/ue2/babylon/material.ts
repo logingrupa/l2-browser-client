@@ -18,6 +18,7 @@ import { textureCoordinateSourceChannel } from "../model/modifiers";
 import type { CompiledMaterialStagePlan } from "../model/stagePlan";
 import { babylonBlendStateForPair, blendFactorPairKey, type BabylonBlendState } from "./blendState";
 import { bindFogUniforms } from "./fogUniforms";
+import { forwardViewDepthExpression } from "./fogViewDepth";
 import {
   buildFragmentChain, colourSourceUniformName, lightmapCoordinatesVaryingName, lightmapSamplerName, samplerUniformName, textureCoordinateRowUName,
   textureCoordinateRowVName,
@@ -71,7 +72,7 @@ export interface NativeMaterial {
 
 const lightmapCoordinatesAttribute = "uv2";
 
-function vertexSourceFor(lighting: MaterialLighting): string {
+function vertexSourceFor(scene: Scene, lighting: MaterialLighting): string {
   const lightmapped = lighting === "lightmap";
   return [
     "precision highp float;",
@@ -85,7 +86,7 @@ function vertexSourceFor(lighting: MaterialLighting): string {
     "void main() {",
     "  ue2TextureCoordinates = uv;",
     ...(lightmapped ? [`  ${lightmapCoordinatesVaryingName} = ${lightmapCoordinatesAttribute};`] : []),
-    "  ue2ViewDepth = (worldView * vec4(position, 1.0)).z;",
+    `  ue2ViewDepth = ${forwardViewDepthExpression(scene, "worldView * vec4(position, 1.0)")};`,
     "  gl_Position = worldViewProjection * vec4(position, 1.0);",
     "}",
   ].join("\n");
@@ -103,7 +104,7 @@ const diagnosticFragmentSource = [
 ].join("\n");
 
 function createDiagnosticMaterial(scene: Scene, loaded: LoadedNativeMaterial, lighting: MaterialLighting, reasons: readonly string[], unportedClass: string | null): NativeMaterial {
-  const material = new ShaderMaterial(`UE2 diagnostic: ${loaded.program.root}`, scene, { vertexSource: vertexSourceFor("unlit"), fragmentSource: diagnosticFragmentSource }, {
+  const material = new ShaderMaterial(`UE2 diagnostic: ${loaded.program.root}`, scene, { vertexSource: vertexSourceFor(scene, "unlit"), fragmentSource: diagnosticFragmentSource }, {
     attributes: vertexAttributesFor("unlit"), uniforms: ["worldViewProjection", "worldView", diagnosticColourUniform], samplers: [],
   });
   material.doNotSerialize = true;
@@ -173,7 +174,7 @@ function createCompiledMaterial(scene: Scene, loaded: LoadedNativeMaterial, plan
   if (initialFrame.status === "unported") return createDiagnosticMaterial(scene, loaded, lighting, [initialFrame.reason], null);
   const chain = buildFragmentChain(plan, lighting);
   const textures = createSamplerTextures(scene, loaded, plan);
-  const material = new ShaderMaterial(`UE2 material: ${plan.root}`, scene, { vertexSource: vertexSourceFor(lighting), fragmentSource: chain.fragmentSource }, {
+  const material = new ShaderMaterial(`UE2 material: ${plan.root}`, scene, { vertexSource: vertexSourceFor(scene, lighting), fragmentSource: chain.fragmentSource }, {
     attributes: vertexAttributesFor(lighting), uniforms: ["worldViewProjection", "worldView", ...chain.uniforms], samplers: [...chain.samplers],
     needAlphaBlending: babylonBlend.alphaMode !== Constants.ALPHA_DISABLE, needAlphaTesting: plan.blend.alphaTest,
   });
