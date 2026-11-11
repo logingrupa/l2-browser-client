@@ -1,7 +1,6 @@
 import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
 import { GLTFLoaderAnimationStartMode } from "@babylonjs/loaders/glTF/glTFFileLoader";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
-import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { AssetContainer } from "@babylonjs/core/assetContainer";
 import type { Scene } from "@babylonjs/core/scene";
 import "@babylonjs/loaders/glTF";
@@ -15,7 +14,6 @@ import type { NativeMover } from "./nativeMovers";
 
 export interface NativeMovers {
   readonly targets: readonly NativeMover[];
-  readonly collisionMeshes: readonly AbstractMesh[];
   readonly manifestSha256: string;
   dispose(): void;
 }
@@ -75,6 +73,6 @@ export async function loadNativeMovers(scene: Scene, terrainSha256: string, sign
     moverTargets = createNativeMoverTargets(scene, models, manifest.movers, markCatalogMoverCollisionMeshes);
     const targets = moverTargets.targets;
     lifetime.signal.throwIfAborted();
-    return { targets, collisionMeshes: targets.flatMap(target => [...target.meshes]), manifestSha256: record.manifestSha256, dispose };
+    return { targets, manifestSha256: record.manifestSha256, dispose };
   } catch (error) { dispose(); throw error; }
 }

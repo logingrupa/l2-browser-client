@@ -5,12 +5,18 @@ import { AssetContainer } from "@babylonjs/core/assetContainer";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { LoadAssetContainerAsync } from "@babylonjs/core/Loading/sceneLoader";
+import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { loadNativeSliceWorld } from "../../src/runtime/loadNativeSliceWorld";
+import { loadNativeMovers } from "../../src/scene/world/loadNativeMovers";
 import { loadNativeSection, type NativeSection } from "../../src/scene/world/loadNativeSection";
 import { loadNativeTileChunks, type NativeTileSectionView } from "../../src/scene/world/loadNativeTileChunks";
 import { decodeJsonDocument, fixtureTileId, jsonBytes, readFixtureTileFiles, sha256Hex } from "../support/nativeTileFixtureStore";
 import { assetFixture } from "../fixtures/assetPackageFixture";
 
 vi.mock("@babylonjs/core/Loading/sceneLoader", () => ({ LoadAssetContainerAsync: vi.fn() }));
+vi.mock("../../src/scene/world/loadNativeMovers", () => ({ loadNativeMovers: vi.fn(async () => null) }));
+vi.mock("../../src/scene/world/nativeSkyPresentation", () => ({ createNativeSkyPresentation: async () => null }));
 
 type Document = Record<string, unknown>;
 
@@ -166,8 +172,24 @@ describe("native tile chunk loading", () => {
     expect(inspection.moverCollisionMeshCount).toBe(0);
     expect(inspection.movers!.map(mover => [mover.id, mover.state, mover.matrix[12]])).toEqual([
       [`interlude:${fixtureTileId}.Mover3`, "closed", 3], [`interlude:${fixtureTileId}.Mover7`, "closed", 7]]);
-    expect(section.moverTargets!.flatMap(target => target.meshes).every(mesh => mesh.metadata.worldCollision === undefined)).toBe(true);
+    expect(section.tileMovers!.targets.flatMap(target => target.meshes).every(mesh => mesh.metadata.worldCollision === undefined)).toBe(true);
     section.dispose();
+    expect(scene.transformNodes.filter(node => node.name.includes(".Mover"))).toEqual([]);
+  });
+
+  it("hands the tile movers to the slice world as its door targets instead of looking up catalog movers by terrain", async () => {
+    const store = tileStore({ tileMovers: true }); serve(store);
+    const camera = new ArcRotateCamera("slice camera", 0, 0, 10, Vector3.Zero(), scene);
+    const world = await loadNativeSliceWorld(scene, camera, { origin: Vector3.Zero(), leatherShirt: true, flamePreviewEnabled: false },
+      async (_scene, _camera, signal) => ({ section: await loadNativeTileChunks(_scene, signal, fixtureTileId), release: () => {} }),
+      new AbortController().signal, { requireWorld: false, validateLifetime: () => {} });
+    expect(world.worldFailure).toBeUndefined();
+    expect(loadNativeMovers).not.toHaveBeenCalled();
+    expect(world.movers).toBe(world.section!.tileMovers);
+    expect(world.movers!.targets.map(target => target.source.id)).toEqual([`interlude:${fixtureTileId}.Mover3`, `interlude:${fixtureTileId}.Mover7`]);
+    const tile = decodeJsonDocument(store.responses.get(store.tilePath)!);
+    expect(world.movers!.manifestSha256).toBe((tile.resources as Document[])[0]!.manifestSha256);
+    world.release();
     expect(scene.transformNodes.filter(node => node.name.includes(".Mover"))).toEqual([]);
   });
 

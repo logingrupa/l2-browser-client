@@ -56,7 +56,7 @@ describe("additive native mover loading", () => {
     const [a, b] = owner.targets; expect(a!.root.isWorldMatrixFrozen).toBe(false); expect(a!.root.doNotSerialize).toBe(true);
     expect(a!.meshes[0]!.material).toBe(b!.meshes[0]!.material); expect(a!.meshes[0]!.material!.backFaceCulling).toBe(true);
     a!.requestToggle(); a!.advance(.5); expect(a!.inspection().matrix[13]).toBeCloseTo(.68); expect(b!.inspection().matrix[13]).toBe(0);
-    expect(owner.collisionMeshes.every(mesh => mesh.metadata.worldSupportsWalking === false && mesh.isPickable)).toBe(true);
+    expect(owner.targets.flatMap(target => [...target.meshes]).every(mesh => mesh.metadata.worldSupportsWalking === false && mesh.isPickable)).toBe(true);
     owner.dispose(); expect(scene.meshes).toHaveLength(0); expect(scene.transformNodes).toHaveLength(0); expect(scene.materials).toHaveLength(0);
   });
   it("keeps a section without registered movers unchanged", async () => {

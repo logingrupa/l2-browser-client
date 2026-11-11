@@ -17,6 +17,7 @@ import type { NativeTileChunkResidencyInspection } from "./nativeTileChunkReside
 import type { StreamedTileInspection } from "./streamNativeTileChunks";
 import { disposeNativeModelInstances, instantiateNativeModelPlacements, type NativeModelInstance } from "./nativeModelPlacements";
 import type { NativeMover } from "./nativeMovers";
+import type { NativeMovers } from "./loadNativeMovers";
 import type { TileVisibilityBinding, TileVisibilityInspection } from "./bspVisibility/bindTileVisibility";
 import type { TileLightingGapInspection, TileLightingRuntimeInspection } from "./lighting/attachTileLighting";
 import type { MapEmitterPlacementInspection } from "./tileMapEmitterPlacements";
@@ -56,7 +57,7 @@ export interface NativeSection {
   readonly minimum: Vector3;
   readonly maximum: Vector3;
   readonly spawnCandidate: Vector3 | null;
-  readonly moverTargets?: readonly NativeMover[];
+  readonly tileMovers?: NativeMovers | null;
   readonly tileVisibility?: TileVisibilityBinding | null;
   readonly environmentClock?: WorldEnvironmentClock | null;
   inspection(): NativeWorldSceneInspection;

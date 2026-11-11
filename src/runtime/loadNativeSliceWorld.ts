@@ -109,8 +109,11 @@ export async function loadNativeSliceWorld(scene: Scene, camera: ArcRotateCamera
       if (section) {
         releases.push(() => section?.dispose());
         options.validateLifetime();
-        movers = await loadNativeMovers(scene, section.manifest.terrain.sha256, worldLifetime.signal);
-        if (movers) releases.push(() => movers?.dispose());
+        if (section.tileMovers !== undefined) movers = section.tileMovers;
+        else {
+          movers = await loadNativeMovers(scene, section.manifest.terrain.sha256, worldLifetime.signal);
+          if (movers) releases.push(() => movers?.dispose());
+        }
         options.validateLifetime();
         if (options.requireWorld && section.inspection().materialFailure) throw new Error(`Native terrain materials failed: ${section.inspection().materialFailure}`);
         if (!section.spawnCandidate) throw new Error("The staged native section has no source-derived surface candidate.");

@@ -3,15 +3,13 @@ import type { AssetContainer } from "@babylonjs/core/assetContainer";
 import type { Scene } from "@babylonjs/core/scene";
 import { fetchVerifiedNativeResource } from "../../assets/native/fetchVerifiedNativeResource";
 import { decodeNativeJsonResource, loadNativeGlbContainer } from "./loadNativeSection";
+import type { NativeMovers } from "./loadNativeMovers";
 import { parseNativeTileMoverManifest, type NativeTileMoverManifest } from "./nativeMoverManifest";
 import { createNativeMoverTargets, type NativeMoverTargets } from "./nativeMoverTargets";
-import type { NativeMover } from "./nativeMovers";
 import type { NativeTileResource } from "./nativeTileManifest";
 
-export interface NativeTileMovers {
+export interface NativeTileMovers extends NativeMovers {
   readonly manifest: NativeTileMoverManifest;
-  readonly targets: readonly NativeMover[];
-  dispose(): void;
 }
 
 function leaveTileMoverMeshesOutOfCollision(meshes: readonly Mesh[]): void {
@@ -38,6 +36,6 @@ export async function loadNativeTileMovers(scene: Scene, moverResource: NativeTi
       if (container.skeletons.length || container.animationGroups.length) throw new Error(`Native tile mover model ${model.id} must be rigid source geometry.`);
     }
     moverTargets = createNativeMoverTargets(scene, templates, manifest.movers, leaveTileMoverMeshesOutOfCollision);
-    return { manifest, targets: moverTargets.targets, dispose };
+    return { manifest, manifestSha256: moverResource.manifestSha256, targets: moverTargets.targets, dispose };
   } catch (error) { dispose(); throw error; }
 }

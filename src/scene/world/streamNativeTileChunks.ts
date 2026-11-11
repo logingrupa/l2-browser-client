@@ -123,7 +123,7 @@ export async function streamNativeTileChunks(scene: Scene, signal: AbortSignal, 
     lifetime.signal.throwIfAborted();
     return { manifest: view, manifestSha256: selected.manifestSha256, terrainMeshes: [], supportMeshes: [], spawnCandidate,
       get minimum() { return residentTerrainExtent().minimum; }, get maximum() { return residentTerrainExtent().maximum; },
-      moverTargets: attached.movers?.targets ?? [], tileVisibility: attached.visibility.binding, environmentClock: attached.lighting.environmentClock,
+      tileMovers: attached.movers, tileVisibility: attached.visibility.binding, environmentClock: attached.lighting.environmentClock,
       inspection, setTerrainPreview() {}, dispose };
   } catch (error) { dispose(); throw error; }
 }
