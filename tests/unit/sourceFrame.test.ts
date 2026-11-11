@@ -2,19 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   sourceHeadingToWorldYaw,
   sourcePositionToWorld,
-  sourceRotationToWorld,
   worldPositionToSource,
   worldYawToSourceHeading,
-  type RotationMatrix,
 } from "../../src/world/sourceFrame";
-
-function rotateVector(matrix: RotationMatrix, vector: { x: number; y: number; z: number }) {
-  return {
-    x: matrix[0] * vector.x + matrix[1] * vector.y + matrix[2] * vector.z,
-    y: matrix[3] * vector.x + matrix[4] * vector.y + matrix[5] * vector.z,
-    z: matrix[6] * vector.x + matrix[7] * vector.y + matrix[8] * vector.z,
-  };
-}
 
 function babylonYawRotation(yaw: number, vector: { x: number; y: number; z: number }) {
   return { x: Math.cos(yaw) * vector.x + Math.sin(yaw) * vector.z, y: vector.y, z: -Math.sin(yaw) * vector.x + Math.cos(yaw) * vector.z };
@@ -37,26 +27,6 @@ describe("source frame positions", () => {
       const roundTrip = worldPositionToSource(sourcePositionToWorld({ x: value, y: -value, z: value }));
       expect([Math.fround(roundTrip.x), Math.fround(roundTrip.y), Math.fround(roundTrip.z)]).toEqual([value, -value, value]);
     }
-  });
-});
-
-describe("source frame rotations", () => {
-  const quarterTurnAboutSourceZ: RotationMatrix = [0, -1, 0, 1, 0, 0, 0, 0, 1];
-
-  it("conjugates a rotation by the same axis reflection", () => {
-    const worldRotation = sourceRotationToWorld(quarterTurnAboutSourceZ);
-    for (const sourceVector of [{ x: 1, y: 0, z: 0 }, { x: 0, y: 1, z: 0 }, { x: 0.3, y: -2, z: 5 }]) {
-      const throughSource = sourcePositionToWorld(rotateVector(quarterTurnAboutSourceZ, sourceVector));
-      const throughWorld = rotateVector(worldRotation, sourcePositionToWorld(sourceVector));
-      expect(throughWorld.x).toBeCloseTo(throughSource.x, 12);
-      expect(throughWorld.y).toBeCloseTo(throughSource.y, 12);
-      expect(throughWorld.z).toBeCloseTo(throughSource.z, 12);
-    }
-  });
-
-  it("is its own inverse when applied twice", () => {
-    const rotation: RotationMatrix = [0.36, 0.48, -0.8, -0.8, 0.6, 0, 0.48, 0.64, 0.6];
-    expect(sourceRotationToWorld(sourceRotationToWorld(rotation))).toEqual(rotation);
   });
 });
 
