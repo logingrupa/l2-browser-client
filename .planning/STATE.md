@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-49-PLAN.md
-last_updated: "2026-11-10T23:58:51.499Z"
+stopped_at: Completed 02-51-PLAN.md
+last_updated: "2026-11-11T00:50:19.454Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 02 plan 02-66 complete (pawn physics, follow camera and movement presenter)
-state_head: ac5a8c3f4f15d7c07bb3e7929416f3d903daddb0
+state_head: 382eff6e1f1d9dbcc7455074ce5f097523f39331
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 85
+  completed_plans: 86
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 02 (Stage A breadth) - EXECUTING
-Plan: 02-67 complete, 67 plans summarized
+Plan: 02-51 complete, 69 plans summarized
 Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-11 - Plan 02-67 complete: one movement path through the MOVE-01 port (adapter move records, presenter, tile collision cells via provideCollisionCellContext, click trace, CalcBehindView follow camera), adapter environment events drive the tile clock, camera maxZ follows fogEnd, one transparent comparator; synthetic movement and mesh navigation deleted, WorldNavigation type left to its lane importers; VIS-01 complete, MOVE-01, MAT-02 and WORLD-05 stay Pending
+Last activity: 2026-11-11 - Plan 02-51 complete: MinimapCtrl renders in MinimapWnd and NewRadarWnd through the native window registry, a pure tile-grid planner around the adapter local player (half-open frames, one texture pixel per CSS pixel, labelled unverified and presentation), sourced gap cells, marker unverified, marker texture and zone name unresolved; browser check pass at 932 x 430 and 1440 x 900, no scroll at 430 x 932, real radar case skipped (no radar texture joined); WORLD-06 stays Pending
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -137,6 +137,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 2 P50 | 40min | 3 tasks | 18 files |
 | Phase 02 P67 | 105min | 3 tasks | 55 files |
 | Phase 02 P49 | 72 min | 3 tasks | 28 files |
+| Phase 02 P51 | 50min | 3 tasks | 21 files |
 
 ## Accumulated Context
 
@@ -334,6 +335,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-67: one movement path through the MOVE-01 port: move-local becomes a move record, the presenter moves pawns over the whole selected tile's collision cells until 02-49 adds the ring, intents leave after the frame; the BSP tree decoder checks only referenced vertex entries (OVERNIGHT-DECISIONS rows 718 to 722)
 - [Phase 02]: 02-67: follow camera is CalcBehindView with the orbit radius as unobstructed distance; maxZ follows fogEnd while fog is on (owner review); one transparent comparator by distance then emitter ordinal; synthetic movement and mesh navigation deleted, WorldNavigation kept for its lane importers; VIS-01 closes, MAT-02, MOVE-01 and WORLD-05 stay Pending (rows 723 to 730)
 - [Phase 02]: 02-49: the tile route streams the selected tile and its converted neighbours in player-centred rings (1, 2, 3 chunk edges, presentation), cells required before load and removed before disposal, null-level culling on visual meshes; the runtime provides the collision context before the world loads; the 128-unit tile seam drops the player at a border (OVERNIGHT-DECISIONS rows 734 to 744)
+- [Phase 02]: 02-51: MinimapCtrl draws a tile grid by XX_YY tile id around the adapter local player at one texture pixel per CSS pixel, labelled tile-grid unverified and presentation; half-open tile frames; read-only two-lane spec overlay until the 02-55 union; WORLD-06 stays Pending (OVERNIGHT-DECISIONS rows 745 to 751)
 
 ### Pending Todos
 
@@ -401,6 +403,7 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 - `tests/browser/nativeBsp.spec.ts` still pins mesh-contact heights from the absent Actor940 oracle (it skips); rewrite it against the collision world once the oracle is restaged (02-67).
 
 - Minimap radar source (02-50, rows 710 to 717): no export of `L2_RadarMap.utx` (118/0, 18 town-named textures) equals a tile id, `<tile id>_map` or a zone `map` value, so all 153 census tiles are `minimap-join-unresolved:radar-texture` gaps; 21 zonename rows hold MapX or MapY outside the locked grid, so zone joins are `zone-grid` gaps. Find the client data that names the per-tile radar image or a sourced georeference for the `int_worldmap` pieces, and settle the out-of-grid rows on IMPORTA, before 02-51 draws the minimap.
+- Minimap view (02-51, row 751): the real-data case "shows the 20_21 radar texture cell and the marker" in `tests/browser/world-minimap.spec.ts` stays skipped and unverified until the radar source above joins a tile; the marker texture and zone name text stay unresolved because both decoded MinimapCtrl records have an empty `textures` list
 
 - Map emitter playback (02-61, 02-69, 02-64, rows 651 and 696): the tile inspection lists each placement with its `memberVisible` gate, but none reaches `playTileMapEmitters`: the emitter records keep unparsed struct fields (row 668), no class defaults are merged and their meshes and textures are unconverted. Merge the class defaults in the emitters step, decode the structs, convert the referenced resources, then start the playable placements with a placement view.
 - Eligible tile batch (02-47, OVERNIGHT-DECISIONS rows 681 to 690): 27 of 39 eligible tiles are `batch-pending`; continue `node scripts/check-machine-schedule.mjs && python -B scripts/world/convert_tile_batch.py --eligible --limit 3` until it prints nothing to do, then the tiles sweep with `LOAD_CHECK_LIMIT=<catalog tile count>`. 16_25 fails at terrain (`Terrain layer 10 names only one of Texture and AlphaMap`); fix the terrain layer reader, then `convert_tile.py --map 16_25 --step terrain` puts it back in the batch.
@@ -452,6 +455,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-10T23:58:51.084Z
-Stopped at: Completed 02-49-PLAN.md
+Last session: 2026-11-11T00:49:57.116Z
+Stopped at: Completed 02-51-PLAN.md
 Resume file: None
