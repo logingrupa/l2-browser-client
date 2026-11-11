@@ -237,6 +237,25 @@
   "refusalReason": null
  },
  {
+  "reader": "level-model",
+  "version": 123,
+  "licensee": 30,
+  "tile": "17_22",
+  "package": "maps/17_22.unr",
+  "lockSha256": "84e621382ac36c9d5a8b1ec0b631ff40f18e042e135b4a1b9437fd97f1dad4d6",
+  "ourDecodeSha256": "4833df5488b71ec283ba4ed138e0e4110918158f394cad52bafc722747d2d5a1",
+  "crossCheckDecodeSha256": "4833df5488b71ec283ba4ed138e0e4110918158f394cad52bafc722747d2d5a1",
+  "tool": {
+   "name": "Elbera l2lib",
+   "commit": "12c9656",
+   "pins": {
+    "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
+   }
+  },
+  "equal": true,
+  "refusalReason": null
+ },
+ {
   "reader": "map-actor",
   "version": 123,
   "licensee": 16,
