@@ -16,6 +16,7 @@ from native_assets_lib.gltf import json_bytes
 from native_store.catalog_writer import (NATIVE_RESOURCE_PATH_PATTERN, TABLE_ID_PATTERN, TABLE_MANIFEST_MAXIMUM_BYTES, CatalogWriteError,
                                          merge_catalog_slice, merge_catalog_slice_records, validate_catalog_record)
 from native_store import tile_manifest_validation
+from native_store.data_ui_table_manifest import DECODED_TABLE_KIND, DECODED_TABLE_RECORDS_TYPE_BY_ROUTE, DECODED_TABLE_SCHEMA_VERSION
 from native_store.tile_manifest_validation import (MASK_UV_RULES_BASE, TILE_RESOURCE_KINDS_BASE, VOCABULARY_FILE, TileManifestError,
                                                    load_tile_manifest_vocabulary, validate_tile_chunk_manifest, validate_tile_manifest)
 
@@ -109,6 +110,16 @@ class CatalogRecordShapeTests(unittest.TestCase):
     def test_golden_tables_record_passes_and_an_empty_table_is_representable(self):
         self.assertEqual(validate_catalog_record('tables', GOLDEN_TABLE_RECORD), GOLDEN_TABLE_RECORD)
         self.assertEqual(validate_catalog_record('tables', changed(GOLDEN_TABLE_RECORD, recordCount=0))['recordCount'], 0)
+
+    def test_golden_table_manifest_holds_records_in_the_shape_its_route_writes(self):
+        manifest = golden_store_json(GOLDEN_TABLE_RECORD['manifest'])
+        self.assertEqual((manifest['kind'], manifest['schemaVersion'], manifest['table']),
+                         (DECODED_TABLE_KIND, DECODED_TABLE_SCHEMA_VERSION, GOLDEN_TABLE_RECORD['id']))
+        self.assertIsInstance(manifest['records'], DECODED_TABLE_RECORDS_TYPE_BY_ROUTE[manifest['route']])
+        record_lists = [value for value in manifest['records'].values() if isinstance(value, list)]
+        self.assertEqual(len(record_lists), 1)
+        self.assertEqual(manifest['recordCount'], len(record_lists[0]))
+        self.assertEqual(GOLDEN_TABLE_RECORD['recordCount'], manifest['recordCount'])
 
     def test_tables_record_refusals(self):
         other_manifest = GOLDEN_TABLE_RECORD['manifest'].rsplit('/', 1)[0] + '/other.json'

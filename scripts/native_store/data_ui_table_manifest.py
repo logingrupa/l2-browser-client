@@ -1,5 +1,6 @@
 import json
 
+from native_catalog.tables import decoded_table_record_count
 from native_store.catalog_writer import (CatalogWriteError, read_pinned_file, read_store_catalog, refuse_duplicate_json_keys,
                                          refuse_non_finite_json_number, require_file_pin, validate_catalog_record)
 from native_store.store_paths import lane_store_root
@@ -15,6 +16,13 @@ DECODED_TABLE_RECORDS_TYPE_BY_ROUTE = {LOCAL_DESCRIPTOR_ROUTE: dict, ELBERA_ADAP
 
 class DataUiTableManifestError(ValueError):
     pass
+
+
+def native_table_manifest(table, decoded_table, route):
+    return {'kind': DECODED_TABLE_KIND, 'schemaVersion': DECODED_TABLE_SCHEMA_VERSION, 'table': table,
+            'sourcePath': decoded_table['source'], 'sourceSha256': decoded_table['sourceSha256'],
+            'descriptorSha256': decoded_table['schema']['descriptorSha256'], 'route': route,
+            'recordCount': decoded_table_record_count(decoded_table), 'records': decoded_table['data']}
 
 
 def data_ui_tables_record(store_root, table_name):

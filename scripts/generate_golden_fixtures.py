@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from native_assets import SOURCE_TO_GLTF, archive_bytes, sha
 from native_assets_lib.asset_manifest import asset_coordinates_record, build_asset_manifest, reference_client_build, source_path_record
 from native_assets_lib.gltf import json_bytes
+from native_store.data_ui_table_manifest import LOCAL_DESCRIPTOR_ROUTE, native_table_manifest
 from reference_client_guard import (ENGINE_LIBRARY_RELATIVE_PATH, REFERENCE_CLIENT_LOCK_FILE_FIELDS, REFERENCE_CLIENT_LOCK_SCHEMA_VERSION,
     read_reference_client_lock)
 
@@ -133,9 +134,10 @@ def synthetic_tile_files():
 
 def synthetic_table_files():
     source_sha256 = sha(b'synthetic table source for golden fixtures')
-    table = {'kind': 'native-table', 'schemaVersion': 1, 'table': SYNTHETIC_TABLE_ID, 'sourcePath': f'system/{SYNTHETIC_TABLE_ID}.dat',
-        'sourceSha256': source_sha256, 'descriptorSha256': sha(b'synthetic table descriptor for golden fixtures'), 'route': 'local-descriptor',
-        'recordCount': 1, 'records': [{'id': 0}]}
+    decoded_table = {'source': f'system/{SYNTHETIC_TABLE_ID}.dat', 'sourceSha256': source_sha256,
+        'schema': {'descriptorSha256': sha(b'synthetic table descriptor for golden fixtures')},
+        'data': {'count': 1, 'records': [{'id': 0}]}}
+    table = native_table_manifest(SYNTHETIC_TABLE_ID, decoded_table, LOCAL_DESCRIPTOR_ROUTE)
     table_path, table_bytes, table_pin = pinned_json_manifest('l2/tables/{sha256}/' + SYNTHETIC_TABLE_ID + '.json', table)
     return {table_path: table_bytes}, {'id': SYNTHETIC_TABLE_ID, **table_pin, 'recordCount': table['recordCount'], 'sourceSha256': source_sha256}
 

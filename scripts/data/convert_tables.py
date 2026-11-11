@@ -16,12 +16,11 @@ from hash_reference_client_tree import canonical_json_bytes
 from lane_unit_outcomes import seal_unit_decode_failure, seal_unit_decode_gap, seal_unit_manifest, write_pinned_manifest_to_store
 from native_catalog.table_layout_pins import CRYPTO_HASH, SCHEMA_HASHES, TABLES
 from native_catalog.table_source_resolver import descriptor_layout_for_file_name
-from native_catalog.tables import (DESCRIPTOR_FILE, decode_table, decoded_table_record_count, interlude_descriptor_links,
-                                   table_layout_schema)
+from native_catalog.tables import DESCRIPTOR_FILE, decode_table, interlude_descriptor_links, table_layout_schema
 from native_catalog.ue2 import FormatError
 from native_store.catalog_writer import sha256_hex, validate_catalog_record
 from native_store.data_ui_table_manifest import (DECODED_TABLE_KIND, DECODED_TABLE_SCHEMA_VERSION, ELBERA_ADAPTER_ROUTE,
-                                                 LOCAL_DESCRIPTOR_ROUTE)
+                                                 LOCAL_DESCRIPTOR_ROUTE, native_table_manifest)
 from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root
 from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, UnitLedger, locked_input_records, require_batch_preflight,
@@ -61,13 +60,6 @@ def table_unit_plan(table, links):
     config = {'table': table, 'layout': layout, 'descriptorSha256': SCHEMA_HASHES[DESCRIPTOR_FILE],
               'layoutSha256': table_layout_schema(layout).sha256, 'cryptoSha256': CRYPTO_HASH}
     return locked_table_inputs(file_name), config
-
-
-def native_table_manifest(table, decoded_table, route):
-    return {'kind': DECODED_TABLE_KIND, 'schemaVersion': DECODED_TABLE_SCHEMA_VERSION, 'table': table,
-            'sourcePath': decoded_table['source'], 'sourceSha256': decoded_table['sourceSha256'],
-            'descriptorSha256': decoded_table['schema']['descriptorSha256'], 'route': route,
-            'recordCount': decoded_table_record_count(decoded_table), 'records': decoded_table['data']}
 
 
 def elbera_hair_table_manifest(table, decoded_hair_table):

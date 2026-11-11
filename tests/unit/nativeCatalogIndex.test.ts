@@ -164,9 +164,9 @@ describe("native catalog L2-ID index", () => {
   });
 });
 
-const tableManifestSha256 = "5e4cbff3f9a9bb05450e6b39c5f8abdd25cd964542ac7a7033cec2781205d3d1";
+const tableManifestSha256 = "cb5cd696271ad05fa5b6e55782f81d4cd2dbca3ec69b81958860a369276896e2";
 function tableRecord(id: string) {
-  return { id, manifest: `/l2/tables/${tableManifestSha256}/${id}.json`, manifestSha256: tableManifestSha256, manifestBytes: 343,
+  return { id, manifest: `/l2/tables/${tableManifestSha256}/${id}.json`, manifestSha256: tableManifestSha256, manifestBytes: 365,
     recordCount: 1, sourceSha256: "8".repeat(64) };
 }
 
@@ -175,7 +175,7 @@ describe("native catalog table and window keys", () => {
     const { index } = await goldenCatalogIndex();
     expect(index.lookup(tableCatalogKey("syntheticfixture"))).toEqual({ status: "converted", key: "table:syntheticfixture", record: {
       table: "syntheticfixture", manifest: `/l2/tables/${tableManifestSha256}/syntheticfixture.json`, manifestSha256: tableManifestSha256,
-      manifestBytes: 343, recordCount: 1, sourceSha256: "87ee2596f2296f45554c8d048b5b270e409be68c3120048871fa1d2e84bffde6" } });
+      manifestBytes: 365, recordCount: 1, sourceSha256: "87ee2596f2296f45554c8d048b5b270e409be68c3120048871fa1d2e84bffde6" } });
     expect(index.lookup(tableCatalogKey("npcgrp"))).toEqual({ status: "not-in-catalog", key: "table:npcgrp", reason: "not in catalog" });
     expect(index.lookup(windowCatalogKey("SyntheticFixtureWnd"))).toMatchObject({ status: "converted", record: { window: "SyntheticFixtureWnd" } });
     expect(index.lookup(windowCatalogKey("StatusWnd"))).toEqual({ status: "not-in-catalog", key: "window:StatusWnd", reason: "not in catalog" });
