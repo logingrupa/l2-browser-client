@@ -4,7 +4,7 @@ import type { Page } from "@playwright/test";
 import { readLaneOwnership } from "../../../scripts/check-lane-ownership.mjs";
 import { formatRigaTimestamp } from "../../../scripts/check-machine-schedule.mjs";
 import type { LoadCheckHarnessState } from "../harness/loadCheckHarness";
-import { servedLaneCatalogSha256, readLoadCheckRecords, writeLoadCheckRecord, type LoadCheckRecord } from "./loadCheckRecordFile";
+import { isCatalogKey, servedLaneCatalogSha256, readLoadCheckRecords, writeLoadCheckRecord, type LoadCheckRecord } from "./loadCheckRecordFile";
 
 export const LOAD_CHECK_KINDS = ["tiles", "npcs", "items", "skills", "windows"] as const;
 export type LoadCheckKind = (typeof LOAD_CHECK_KINDS)[number];
@@ -26,6 +26,7 @@ export interface LoadCheckSliceSettings {
   readonly laneName: string;
   readonly kind: LoadCheckKind;
   readonly limit: number;
+  readonly selectedKeys: readonly string[] | null;
 }
 
 export interface LoadCheckSliceActions {
@@ -55,8 +56,21 @@ function isLoadCheckKind(value: string): value is LoadCheckKind {
   return (LOAD_CHECK_KINDS as readonly string[]).includes(value);
 }
 
+function readSelectedLoadCheckKeys(selectedKeysText: string | undefined, kind: LoadCheckKind): readonly string[] | null {
+  if (selectedKeysText === undefined) return null;
+  const prefix = loadCheckKindKeyPrefix(kind);
+  const selectedKeys = selectedKeysText.split(",");
+  for (const [index, key] of selectedKeys.entries()) {
+    if (key === "") throw new Error(`LOAD_CHECK_KEYS ${JSON.stringify(selectedKeysText)} holds an empty entry; list catalog keys separated by single commas`);
+    if (!key.startsWith(prefix)) throw new Error(`LOAD_CHECK_KEYS entry ${JSON.stringify(key)} is not a ${prefix} key of LOAD_CHECK_KIND ${kind}`);
+    if (!isCatalogKey(key)) throw new Error(`LOAD_CHECK_KEYS entry ${JSON.stringify(key)} is not a catalog key`);
+    if (selectedKeys.indexOf(key) !== index) throw new Error(`LOAD_CHECK_KEYS lists ${JSON.stringify(key)} twice`);
+  }
+  return selectedKeys;
+}
+
 export function readLoadCheckSliceSettings(environment: Readonly<Record<string, string | undefined>>, laneNames: readonly string[]): LoadCheckSliceSettings | null {
-  const { NATIVE_STORE_ROOT: laneName, LOAD_CHECK_KIND: kind, LOAD_CHECK_LIMIT: limitText } = environment;
+  const { NATIVE_STORE_ROOT: laneName, LOAD_CHECK_KIND: kind, LOAD_CHECK_LIMIT: limitText, LOAD_CHECK_KEYS: selectedKeysText } = environment;
   if (!laneName || !kind || !limitText) return null;
   if (!laneNames.includes(laneName)) throw new Error(`NATIVE_STORE_ROOT ${JSON.stringify(laneName)} is not a lane; use one of ${laneNames.join(", ")}`);
   if (!isLoadCheckKind(kind)) throw new Error(`LOAD_CHECK_KIND ${JSON.stringify(kind)} is not one of ${LOAD_CHECK_KINDS.join(", ")}`);
@@ -64,11 +78,15 @@ export function readLoadCheckSliceSettings(environment: Readonly<Record<string, 
   if (!plainDecimalPattern.test(limitText) || !Number.isSafeInteger(limit)) {
     throw new Error(`LOAD_CHECK_LIMIT ${JSON.stringify(limitText)} is not a positive safe integer in plain decimal digits`);
   }
-  return { laneName, kind, limit };
+  return { laneName, kind, limit, selectedKeys: readSelectedLoadCheckKeys(selectedKeysText, kind) };
 }
 
-export function pendingLoadCheckKeys(convertedKeys: readonly string[], recordedKeys: ReadonlySet<string>, limit: number): readonly string[] {
-  return convertedKeys.filter(key => !recordedKeys.has(key)).slice(0, limit);
+export function pendingLoadCheckKeys(convertedKeys: readonly string[], recordedKeys: ReadonlySet<string>, limit: number,
+  selectedKeys: readonly string[] | null): readonly string[] {
+  if (selectedKeys === null) return convertedKeys.filter(key => !recordedKeys.has(key)).slice(0, limit);
+  const unconvertedKey = selectedKeys.find(key => !convertedKeys.includes(key));
+  if (unconvertedKey !== undefined) throw new Error(`LOAD_CHECK_KEYS selects ${unconvertedKey}, which is not a converted key of the served catalog`);
+  return selectedKeys.filter(key => !recordedKeys.has(key)).slice(0, limit);
 }
 
 export function keysNotRecordedExactlyOnce(checkedKeys: readonly string[], recordedKeys: readonly string[]): readonly string[] {
@@ -86,7 +104,8 @@ export function loadCheckSpecTitle(kind: LoadCheckKind): string {
 export function loadCheckSkipReason(kind: LoadCheckKind): string {
   return `a load sweep runs only as a slice: NATIVE_STORE_ROOT=<lane> LOAD_CHECK_KIND=${kind} LOAD_CHECK_LIMIT=<n> `
     + `pnpm test:e2e tests/browser/load-sweep-${kind}.spec.ts, started only while nothing listens on port 5173; `
-    + "it writes one record per key to artifacts/lane-store/<lane>/load-checks/<catalogSha256>.json";
+    + "it writes one record per key to artifacts/lane-store/<lane>/load-checks/<catalogSha256>.json; "
+    + "the optional LOAD_CHECK_KEYS=<key,key> limits the slice to those converted keys, in that order, to re-sweep the keys a converter fix touched";
 }
 
 export function loadCheckSliceTimeoutMilliseconds(settings: LoadCheckSliceSettings, perKeyMilliseconds: number): number {
@@ -118,7 +137,7 @@ export async function runLoadCheckSlice(settings: LoadCheckSliceSettings, action
   const foreignKey = convertedKeys.find(key => !key.startsWith(prefix));
   if (foreignKey !== undefined) throw new Error(`converted key list for ${prefix} holds ${foreignKey}`);
   const checkedKeys: string[] = [];
-  for (const key of pendingLoadCheckKeys(convertedKeys, recordedKeys, settings.limit)) {
+  for (const key of pendingLoadCheckKeys(convertedKeys, recordedKeys, settings.limit, settings.selectedKeys)) {
     const outcome = await checkedOutcome(actions, key);
     await actions.writeRecord(catalogSha256, { key, ...outcome, atRiga: actions.nowAtRiga() });
     checkedKeys.push(key);

@@ -39,6 +39,10 @@ const catalogKeyPatterns: Readonly<Record<string, RegExp>> = {
   character: /^character:\d{1,4}$/,
 };
 
+export function isCatalogKey(key: string): boolean {
+  return Object.values(catalogKeyPatterns).some((pattern) => pattern.test(key));
+}
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -60,7 +64,7 @@ function validateLoadCheckRecord(value: unknown): LoadCheckRecord {
   const refuse = (problem: string) => new Error(`load-check record ${JSON.stringify(value)} refused: ${problem}`);
   if (!isPlainObject(value) || !hasExactlyFields(value, loadCheckRecordFields)) throw refuse(`fields must be exactly ${loadCheckRecordFields.join(", ")}`);
   const { key, status, reason, atRiga, assetManifestSchemaVersion } = value;
-  if (typeof key !== "string" || !Object.values(catalogKeyPatterns).some((pattern) => pattern.test(key))) {
+  if (typeof key !== "string" || !isCatalogKey(key)) {
     throw refuse(`key is not a catalog key (${Object.keys(catalogKeyPatterns).join(", ")})`);
   }
   if (status === "pass") {

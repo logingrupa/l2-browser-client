@@ -19,7 +19,7 @@ const laneNames = ["actors", "data-ui", "integration", "world"];
 const firstCatalogSha256 = "a".repeat(64);
 const secondCatalogSha256 = "b".repeat(64);
 const passOutcome: LoadCheckOutcome = { status: "pass", reason: null, assetManifestSchemaVersion: 2 };
-const windowsSettings: LoadCheckSliceSettings = { laneName: "data-ui", kind: "windows", limit: 10 };
+const windowsSettings: LoadCheckSliceSettings = { laneName: "data-ui", kind: "windows", limit: 10, selectedKeys: null };
 
 interface FakeRecordStore {
 	readonly recordsByCatalog: Map<string, LoadCheckRecord[]>;
@@ -65,9 +65,29 @@ describe("load-check slice settings", () => {
 		expect(readLoadCheckSliceSettings({ LOAD_CHECK_KIND: "windows", LOAD_CHECK_LIMIT: "2" }, laneNames)).toBeNull();
 	});
 
-	it("reads the lane, kind and limit of a complete slice request", () => {
+	it("reads the lane, kind and limit of a complete slice request and selects no keys while LOAD_CHECK_KEYS is unset", () => {
 		expect(readLoadCheckSliceSettings({ NATIVE_STORE_ROOT: "data-ui", LOAD_CHECK_KIND: "windows", LOAD_CHECK_LIMIT: "2" }, laneNames))
-			.toEqual({ laneName: "data-ui", kind: "windows", limit: 2 });
+			.toEqual({ laneName: "data-ui", kind: "windows", limit: 2, selectedKeys: null });
+	});
+
+	it("reads LOAD_CHECK_KEYS as the selected catalog keys in the given order", () => {
+		const request = { NATIVE_STORE_ROOT: "integration", LOAD_CHECK_KIND: "windows", LOAD_CHECK_LIMIT: "5", LOAD_CHECK_KEYS: "window:StatusWnd,window:InventoryWnd" };
+		expect(readLoadCheckSliceSettings(request, laneNames)?.selectedKeys).toEqual(["window:StatusWnd", "window:InventoryWnd"]);
+		expect(readLoadCheckSliceSettings({ ...request, LOAD_CHECK_KIND: "skills", LOAD_CHECK_KEYS: "skill:1001:2" }, laneNames)?.selectedKeys)
+			.toEqual(["skill:1001:2"]);
+	});
+
+	it("refuses a LOAD_CHECK_KEYS entry that is empty, of another kind, not a catalog key or listed twice", () => {
+		const request = { NATIVE_STORE_ROOT: "integration", LOAD_CHECK_KIND: "windows", LOAD_CHECK_LIMIT: "5" };
+		for (const selectedKeys of ["", "window:StatusWnd,", ",window:StatusWnd", " window:StatusWnd"]) {
+			expect(() => readLoadCheckSliceSettings({ ...request, LOAD_CHECK_KEYS: selectedKeys }, laneNames)).toThrow("LOAD_CHECK_KEYS");
+		}
+		expect(() => readLoadCheckSliceSettings({ ...request, LOAD_CHECK_KEYS: "window:StatusWnd,npc:20001" }, laneNames))
+			.toThrow("LOAD_CHECK_KEYS entry \"npc:20001\" is not a window: key");
+		expect(() => readLoadCheckSliceSettings({ ...request, LOAD_CHECK_KEYS: "window:Status Wnd" }, laneNames))
+			.toThrow("LOAD_CHECK_KEYS entry \"window:Status Wnd\" is not a catalog key");
+		expect(() => readLoadCheckSliceSettings({ ...request, LOAD_CHECK_KEYS: "window:StatusWnd,window:StatusWnd" }, laneNames))
+			.toThrow("LOAD_CHECK_KEYS lists \"window:StatusWnd\" twice");
 	});
 
 	it("refuses a lane that is not in lanes.json, an unknown kind and a limit that is not a positive safe integer", () => {
@@ -86,6 +106,7 @@ describe("load-check slice settings", () => {
 			expect(reason).toContain(`NATIVE_STORE_ROOT=<lane> LOAD_CHECK_KIND=${kind} LOAD_CHECK_LIMIT=<n> pnpm test:e2e tests/browser/load-sweep-${kind}.spec.ts`);
 			expect(reason).toContain("port 5173");
 			expect(reason).toContain("artifacts/lane-store/<lane>/load-checks/<catalogSha256>.json");
+			expect(reason).toContain("LOAD_CHECK_KEYS=<key,key>");
 		}
 	});
 });
@@ -95,12 +116,22 @@ describe("pending load-check keys", () => {
 	const recordedKeys = new Set(["window:B"]);
 
 	it("drops recorded keys and keeps the index order", () => {
-		expect(pendingLoadCheckKeys(convertedKeys, recordedKeys, 10)).toEqual(["window:A", "window:C", "window:D"]);
+		expect(pendingLoadCheckKeys(convertedKeys, recordedKeys, 10, null)).toEqual(["window:A", "window:C", "window:D"]);
 	});
 
 	it("takes at most the limit when it equals or is below the pending count", () => {
-		expect(pendingLoadCheckKeys(convertedKeys, recordedKeys, 3)).toEqual(["window:A", "window:C", "window:D"]);
-		expect(pendingLoadCheckKeys(convertedKeys, recordedKeys, 2)).toEqual(["window:A", "window:C"]);
+		expect(pendingLoadCheckKeys(convertedKeys, recordedKeys, 3, null)).toEqual(["window:A", "window:C", "window:D"]);
+		expect(pendingLoadCheckKeys(convertedKeys, recordedKeys, 2, null)).toEqual(["window:A", "window:C"]);
+	});
+
+	it("keeps the selected order, skips selected keys already recorded and applies the limit", () => {
+		expect(pendingLoadCheckKeys(convertedKeys, recordedKeys, 10, ["window:D", "window:B", "window:A"])).toEqual(["window:D", "window:A"]);
+		expect(pendingLoadCheckKeys(convertedKeys, recordedKeys, 1, ["window:D", "window:A"])).toEqual(["window:D"]);
+	});
+
+	it("refuses a selected key that is not converted", () => {
+		expect(() => pendingLoadCheckKeys(convertedKeys, recordedKeys, 10, ["window:A", "window:Missing"]))
+			.toThrow("LOAD_CHECK_KEYS selects window:Missing, which is not a converted key of the served catalog");
 	});
 
 	it("lists the keys the slice checked that the record file does not hold exactly once", () => {
@@ -186,6 +217,21 @@ describe("resumable load-check slice", () => {
 		expect(summary).toEqual({ catalogSha256: secondCatalogSha256, checkedKeys: ["window:A", "window:B"], skippedAsRecorded: 0 });
 		expect(store.recordsByCatalog.get(secondCatalogSha256)).toHaveLength(2);
 		expect(store.recordsByCatalog.get(firstCatalogSha256)).toHaveLength(2);
+	});
+
+	it("checks only the selected keys in the selected order", async () => {
+		const store = createFakeRecordStore();
+		const summary = await runLoadCheckSlice({ ...windowsSettings, selectedKeys: ["window:C", "window:A"] },
+			fakeSliceActions(store, { convertedKeys: ["window:A", "window:B", "window:C"] }));
+		expect(summary).toEqual({ catalogSha256: firstCatalogSha256, checkedKeys: ["window:C", "window:A"], skippedAsRecorded: 0 });
+		expect(store.checkedKeys).toEqual(["window:C", "window:A"]);
+	});
+
+	it("checks nothing when a selected key is not converted", async () => {
+		const store = createFakeRecordStore();
+		await expect(runLoadCheckSlice({ ...windowsSettings, selectedKeys: ["window:A", "window:Z"] },
+			fakeSliceActions(store, { convertedKeys: ["window:A"] }))).rejects.toThrow("window:Z");
+		expect(store.checkedKeys).toEqual([]);
 	});
 
 	it("stops at the limit in index order", async () => {
