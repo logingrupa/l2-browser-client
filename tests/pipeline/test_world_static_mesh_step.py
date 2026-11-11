@@ -11,6 +11,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
+from native_assets_lib.class_defaults import ClassDefaultError
 from native_assets_lib.gltf import json_bytes
 from native_store.canonical_json import canonical_json_bytes
 from native_store.gap_rows import load_gap_reason_patterns, validate_gap_row
@@ -20,6 +21,7 @@ from world.static_mesh_step import (STATIC_MESH_STEP_ALGORITHM_VERSION, Converte
                                     assign_static_placements, placeable_requests, placement_accounting_difference, run_static_mesh_step,
                                     static_mesh_ledger, static_mesh_outcomes, static_meshes_product)
 from world.freeze_world_oracle import matrix_canonical_sha256
+from world.light_actors import ClassChains, reference_client_class_chains
 from world.native_terrain_sectors import native_terrain
 from world.raw_map_step import read_tile_map_lock_record
 from world.static_placement import gltf_placement, read_class_evidence, resolved_static_values, static_matrix
@@ -40,6 +42,18 @@ ORACLE_TILE_ID = '20_20'
 ORACLE_PATH = ROOT / 'recipes/world/oracle/20_20/expected.json'
 UNRESOLVED_COLLISION = {'bBlockActors': {'status': 'omitted-class-default-unresolved'}}
 CLASS_EVIDENCE = SyntheticActorClassDefaults()
+SYNTHETIC_CLASS_CHAINS = {'Engine.StaticMeshActor': ('Engine.StaticMeshActor', 'Engine.Actor'),
+                          'Engine.MovableStaticMeshActor': ('Engine.MovableStaticMeshActor', 'Engine.StaticMeshActor', 'Engine.Actor'),
+                          'Engine.Mover': ('Engine.Mover', 'Engine.Brush', 'Engine.Actor')}
+
+
+def read_synthetic_class_chain(class_name):
+    if class_name not in SYNTHETIC_CLASS_CHAINS:
+        raise ClassDefaultError(f'no class script for {class_name}')
+    return [{'identity': {'object': name}} for name in SYNTHETIC_CLASS_CHAINS[class_name]]
+
+
+CLASS_CHAINS = ClassChains(CLASS_EVIDENCE, read_synthetic_class_chain)
 
 
 def synthetic_native():
@@ -109,7 +123,7 @@ class PlanStaticPlacementsTests(unittest.TestCase):
         actors = [static_mesh_actor(9, 'Rock_S.Rock', 100.0, 100.0), static_mesh_actor(3, 'Rock_S.Rock', 1500.0, 100.0),
                   static_mesh_actor(5, 'Tree_S.Tree', 110.0, 120.0)]
         actors[1]['sourceTransform']['Location']['value']['Z'] = -90000.0
-        plan = plan_static_placements(list(reversed(actors)), self.rectangles, CLASS_EVIDENCE)
+        plan = plan_static_placements(list(reversed(actors)), self.rectangles, CLASS_CHAINS)
         self.assertEqual([placement['exportIndex'] for placement in plan.placements_by_chunk['chunk-0-0']], [5, 9])
         self.assertEqual([placement['exportIndex'] for placement in plan.placements_by_chunk['chunk-1-0']], [3])
         self.assertEqual(plan.placements_by_chunk['chunk-1-1'], [])
@@ -121,10 +135,23 @@ class PlanStaticPlacementsTests(unittest.TestCase):
     def test_outside_grid_and_singular_actors_are_rows_and_other_classes_are_not_placements(self):
         actors = [static_mesh_actor(1, 'Rock_S.Rock', TILE_EDGE + 1, 5.0), static_mesh_actor(2, 'Rock_S.Rock', 5.0, 5.0, draw_scale=0.0),
                   static_mesh_actor(3, None, 5.0, 5.0), static_mesh_actor(4, 'Rock_S.Rock', 5.0, 5.0, class_object='Engine.Mover')]
-        plan = plan_static_placements(actors, self.rectangles, CLASS_EVIDENCE)
+        plan = plan_static_placements(actors, self.rectangles, CLASS_CHAINS)
         self.assertEqual([(entry.placement['exportIndex'], entry.status, entry.reason) for entry in plan.unplaced], [
             (1, 'gap', 'placement-outside-chunk-grid'), (2, 'failed', 'decode-failed:FormatError:Singular static actor scale')])
         self.assertTrue(all(not placements for placements in plan.placements_by_chunk.values()))
+
+    def test_a_static_mesh_actor_subclass_is_one_gap_row_naming_its_class_and_an_unreadable_class_is_skipped(self):
+        actors = [static_mesh_actor(6, 'Rock_S.Rock', 5.0, 5.0), static_mesh_actor(8, None, 5.0, 5.0, class_object='Engine.MovableStaticMeshActor'),
+                  static_mesh_actor(9, None, 5.0, 5.0, class_object='Synthetic.UnreadableClass')]
+        plan = plan_static_placements(actors, self.rectangles, CLASS_CHAINS)
+        self.assertEqual([(entry.placement['sourceActor'], entry.status, entry.reason) for entry in plan.unplaced],
+                         [(f'{TILE_ID}.StaticMeshActor8', 'gap', 'placement-class-unsupported:Engine.MovableStaticMeshActor')])
+        self.assertEqual([placement['exportIndex'] for placement in plan.placements_by_chunk['chunk-0-0']], [6])
+        assignment = assign_static_placements(plan, {}, {}, StaticMeshAssignment(TILE_ID, SOURCE_IDENTITY, EVIDENCE))
+        patterns = load_gap_reason_patterns()
+        for row in assignment.gap_rows():
+            validate_gap_row(row, patterns)
+        self.assertIsNone(placement_accounting_difference(actors, CLASS_CHAINS, assignment))
 
 
 class RecordingConverter:
@@ -219,7 +246,7 @@ class StaticMeshAssignmentTests(unittest.TestCase):
     def setUp(self):
         native = synthetic_native()
         self.chunk_plan = synthetic_chunk_plan(native)
-        self.plan = plan_static_placements(synthetic_tile_actors(), chunk_rectangles(self.chunk_plan, native), CLASS_EVIDENCE)
+        self.plan = plan_static_placements(synthetic_tile_actors(), chunk_rectangles(self.chunk_plan, native), CLASS_CHAINS)
 
     def assignment(self):
         return assign_static_placements(self.plan, synthetic_requests_by_reference(), synthetic_outcomes(),
@@ -236,9 +263,14 @@ class StaticMeshAssignmentTests(unittest.TestCase):
         self.assertEqual(placed, {10, 11, 12})
         self.assertEqual(gapped, {13, 14, 15, 16, 17})
         self.assertFalse(placed & gapped)
-        self.assertIsNone(placement_accounting_difference(synthetic_tile_actors(), assignment))
-        self.assertEqual(placement_accounting_difference([*synthetic_tile_actors(), static_mesh_actor(19, 'Rock_S.Rock', 1.0, 1.0)], assignment),
-                         '8 placed or gapped of 9 StaticMeshActor exports with a StaticMesh reference')
+        self.assertIsNone(placement_accounting_difference(synthetic_tile_actors(), CLASS_CHAINS, assignment))
+        self.assertEqual(placement_accounting_difference([*synthetic_tile_actors(), static_mesh_actor(19, 'Rock_S.Rock', 1.0, 1.0)], CLASS_CHAINS,
+                                                         assignment),
+                         '8 placed or gapped of 9 StaticMeshActor exports with a StaticMesh reference or of a StaticMeshActor subclass')
+        self.assertEqual(placement_accounting_difference([*synthetic_tile_actors(), static_mesh_actor(19, None, 1.0, 1.0,
+                                                                                                      class_object='Engine.MovableStaticMeshActor')],
+                                                         CLASS_CHAINS, assignment),
+                         '8 placed or gapped of 9 StaticMeshActor exports with a StaticMesh reference or of a StaticMeshActor subclass')
 
     def test_each_gap_row_names_its_listed_reason_and_object(self):
         rows = self.assignment().gap_rows()
@@ -268,7 +300,7 @@ class StaticMeshAssignmentTests(unittest.TestCase):
         native = synthetic_native()
         shuffled = synthetic_tile_actors()
         random.Random(29).shuffle(shuffled)
-        plan = plan_static_placements(shuffled, chunk_rectangles(self.chunk_plan, native), CLASS_EVIDENCE)
+        plan = plan_static_placements(shuffled, chunk_rectangles(self.chunk_plan, native), CLASS_CHAINS)
         assignment = assign_static_placements(plan, synthetic_requests_by_reference(), synthetic_outcomes(),
                                               StaticMeshAssignment(TILE_ID, SOURCE_IDENTITY, EVIDENCE))
         self.assertEqual(json_bytes(static_meshes_product(TILE_ID, self.chunk_plan, assignment, synthetic_outcomes())),
@@ -285,7 +317,7 @@ class ChunkManifestStaticMeshTests(unittest.TestCase):
         self.chunk_plan = synthetic_chunk_plan(native)
         self.chunk_plan.update(frame={'terrainInfo': 'Fixture.TerrainInfo0', 'location': [0.0, 0.0, 0.0], 'terrainScale': [128.0, 128.0, 76.0]},
                                anchor={'playerStart': 'Fixture.PlayerStart0', 'location': [1.0, 1.0, 1.0]})
-        plan = plan_static_placements(synthetic_tile_actors(), chunk_rectangles(self.chunk_plan, native), CLASS_EVIDENCE)
+        plan = plan_static_placements(synthetic_tile_actors(), chunk_rectangles(self.chunk_plan, native), CLASS_CHAINS)
         assignment = assign_static_placements(plan, synthetic_requests_by_reference(), synthetic_outcomes(),
                                               StaticMeshAssignment(TILE_ID, SOURCE_IDENTITY, EVIDENCE))
         self.product = static_meshes_product(TILE_ID, self.chunk_plan, assignment, synthetic_outcomes())
@@ -344,6 +376,7 @@ class RunStaticMeshStepTests(unittest.TestCase):
                 patch.object(static_mesh_step, 'read_locked_map_package'), \
                 patch.object(static_mesh_step, 'native_terrain', return_value=self.native), \
                 patch.object(static_mesh_step, 'read_class_evidence', return_value=CLASS_EVIDENCE), \
+                patch.object(static_mesh_step, 'reference_client_class_chains', return_value=CLASS_CHAINS), \
                 patch.object(static_mesh_step, 'static_mesh_outcomes', return_value=outcomes) as converted:
             row = run_static_mesh_step(self.project_root, Path('E:/Lineage2-client'), TILE_ID)
         return row, converted.call_count, ledger.unit_step_directory(unit.unit_key)
@@ -422,7 +455,8 @@ class OracleSectionSubsetTests(unittest.TestCase):
             self.skipTest(f'the {ORACLE_TILE_ID} raw and chunk plan units are not sealed: {error}')
         actors = json.loads((unit.raw_products / 'actors.json').read_text(encoding='utf-8'))
         rectangles = chunk_rectangles(unit.chunk_plan, native_terrain(read_locked_map_package(REFERENCE_CLIENT, ORACLE_TILE_ID, lock_record)))
-        return unit, plan_static_placements(actors, rectangles, read_class_evidence(REFERENCE_CLIENT, lane_work_root(ROOT, 'world')))
+        return unit, plan_static_placements(actors, rectangles,
+                                            reference_client_class_chains(read_class_evidence(REFERENCE_CLIENT, lane_work_root(ROOT, 'world'))))
 
     def test_the_generic_20_20_plan_holds_every_oracle_placement_with_its_mesh_and_rotation_scale(self):
         oracle_section = json.loads(ORACLE_PATH.read_text(encoding='utf-8'))['section']

@@ -22,7 +22,8 @@ from synthetic_terrain_fixture import synthetic_native_terrain
 from world.blocking_volume_geometry import read_volume
 from world.collision_payload_groups import bspt_arrays, plac_arrays, vols_arrays
 from world import collision_step
-from world.collision_step import COLLISION_STEP_ALGORITHM_VERSION, CollisionUnit, gap_reason_of, run_collision_step, unadmitted_volume_records
+from world.collision_step import (COLLISION_STEP_ALGORITHM_VERSION, CollisionUnit, gap_reason_of, run_collision_step, unadmitted_volume_records,
+                                  unsupported_placement_class_records)
 from world.level_model import LevelModelLayoutError
 from world.light_actors import ClassChains
 from world.static_collision_sources import decide_placement_collision, load_collision_rules, static_mesh_collision_triangles
@@ -136,7 +137,8 @@ class VolumeTests(unittest.TestCase):
 class UnadmittedVolumeClassTests(unittest.TestCase):
     CLASS_CHAINS = {'Gameplay.WaterVolume': ('Gameplay.WaterVolume', 'Engine.PhysicsVolume', 'Engine.Volume', 'Engine.Brush', 'Engine.Actor'),
                     'Engine.PhysicsVolume': ('Engine.PhysicsVolume', 'Engine.Volume', 'Engine.Brush', 'Engine.Actor'),
-                    'Engine.StaticMeshActor': ('Engine.StaticMeshActor', 'Engine.Actor')}
+                    'Engine.StaticMeshActor': ('Engine.StaticMeshActor', 'Engine.Actor'),
+                    'Engine.MovableStaticMeshActor': ('Engine.MovableStaticMeshActor', 'Engine.StaticMeshActor', 'Engine.Actor')}
 
     def read_chain(self, class_name):
         if class_name not in self.CLASS_CHAINS:
@@ -150,6 +152,17 @@ class UnadmittedVolumeClassTests(unittest.TestCase):
         self.assertEqual([(record['object'], record['decision']) for record in records], [(f'{TILE_ID}.Actor9', 'gap')])
         reason = gap_reason_of(records[0]['evidence'])
         self.assertEqual(reason, 'collision-volume-class-unadmitted:Gameplay.WaterVolume')
+        validate_gap_row({'key': f'tile:{TILE_ID}', 'part': 'world', 'step': 'collision', 'status': 'gap', 'reason': reason,
+                          'sourceIdentity': {**SOURCE_IDENTITY, 'object': records[0]['object']}, 'evidence': EVIDENCE})
+
+
+    def test_a_static_mesh_actor_subclass_is_a_collision_gap_row_naming_its_class(self):
+        actors = [actor('Engine.MovableStaticMeshActor', export_index=9), actor('Engine.StaticMeshActor', export_index=4),
+                  actor('Gameplay.WaterVolume', export_index=3), actor('Synthetic.UnreadableClass', export_index=5)]
+        records = unsupported_placement_class_records(ClassChains(None, self.read_chain), actors)
+        self.assertEqual([(record['object'], record['decision']) for record in records], [(f'{TILE_ID}.Actor9', 'gap')])
+        reason = gap_reason_of(records[0]['evidence'])
+        self.assertEqual(reason, 'placement-class-unsupported:Engine.MovableStaticMeshActor')
         validate_gap_row({'key': f'tile:{TILE_ID}', 'part': 'world', 'step': 'collision', 'status': 'gap', 'reason': reason,
                           'sourceIdentity': {**SOURCE_IDENTITY, 'object': records[0]['object']}, 'evidence': EVIDENCE})
 
@@ -224,7 +237,7 @@ class CollisionManifestTests(unittest.TestCase):
         validate_tile_chunk_manifest(manifest)
         self.assertEqual(tile_resources(collision, None)[0]['kind'], 'native-tile-collision')
         self.assertIn('native-tile-collision', load_tile_manifest_vocabulary().resource_kinds)
-        self.assertEqual(COLLISION_STEP_ALGORITHM_VERSION, 3)
+        self.assertEqual(COLLISION_STEP_ALGORITHM_VERSION, 4)
 
     def test_every_rule_row_has_provenance_and_a_shared_status(self):
         document = json.loads((ROOT / 'recipes/world/collision-declaration-rules.json').read_text(encoding='utf-8'))

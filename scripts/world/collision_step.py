@@ -24,7 +24,8 @@ from world.static_collision_sources import (COLLISION_RULES_PATH, COLLISION_UNRE
                                             static_mesh_selectors)
 from world.static_mesh_step import conversion_failure_reason, sealed_static_meshes, static_mesh_requests_by_reference
 from world.static_placement import TransformFieldError, read_class_evidence, resolved_static_values, static_matrix
-from world.static_placement_plan import FAILED_STATUS, chunk_for_origin, chunk_rectangles, static_mesh_actors
+from world.static_placement_plan import (FAILED_STATUS, PLACEMENT_CLASS_UNSUPPORTED_REASON_PREFIX, chunk_for_origin, chunk_rectangles,
+                                         static_mesh_actor_subclass_actors, static_mesh_actors)
 from world.terrain_chunk_step import sealed_terrain_chunks
 from world.terrain_collision_source import read_terrain_collision
 from world.tile_census import WORLD_LANE_NAME
@@ -32,7 +33,7 @@ from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 from world.typed_payload import write_tile_typed_payload_resource
 
-COLLISION_STEP_ALGORITHM_VERSION = 3
+COLLISION_STEP_ALGORITHM_VERSION = 4
 COLLISION_STEP_NAME = 'collision'
 COLLISION_PRODUCT_NAME = 'collision.json'
 TILE_COLLISION_FOLDER = 'native-tile-collision'
@@ -100,7 +101,8 @@ def tile_collision_row(tile_id, source_identity, gap_rows, evidence):
 
 def gap_reason_of(evidence):
     for evidence_prefix, reason_prefix in ((TRANSFORM_FIELD_EVIDENCE_PREFIX, TRANSFORM_FIELD_UNREADABLE_REASON_PREFIX),
-                                           (UNADMITTED_VOLUME_CLASS_EVIDENCE_PREFIX, UNADMITTED_VOLUME_CLASS_REASON_PREFIX)):
+                                           (UNADMITTED_VOLUME_CLASS_EVIDENCE_PREFIX, UNADMITTED_VOLUME_CLASS_REASON_PREFIX),
+                                           (PLACEMENT_CLASS_UNSUPPORTED_REASON_PREFIX, PLACEMENT_CLASS_UNSUPPORTED_REASON_PREFIX)):
         matching = [entry for entry in evidence if entry.startswith(evidence_prefix)]
         if matching:
             return reason_prefix + matching[0].removeprefix(evidence_prefix)
@@ -203,6 +205,12 @@ def unadmitted_volume_records(class_chains, rules, actors):
             if is_unadmitted_volume_subclass(class_chains, rules.volume_classes, actor['classObject'])]
 
 
+def unsupported_placement_class_records(class_chains, actors):
+    return [{'object': actor['object'], 'exportIndex': actor['exportIndex'], 'decision': GAP_DECISION,
+             'evidence': [PLACEMENT_CLASS_UNSUPPORTED_REASON_PREFIX + actor['classObject']]}
+            for actor in static_mesh_actor_subclass_actors(actors, class_chains)]
+
+
 def object_gap_rows(tile_id, source_identity, evidence_path, records):
     return [tile_step_row(tile_id, COLLISION_STEP_NAME, GAP_STATUS, gap_reason_of(record['evidence']), {**source_identity, 'object': record['object']},
                           evidence_path) for record in records if record['decision'] == GAP_DECISION]
@@ -278,9 +286,11 @@ def run_collision_step(project_root, client_root, tile_id):
     placement_gaps = object_gap_rows(tile_id, source_identity, receipt_evidence, decisions)
     volume_gaps = object_gap_rows(tile_id, source_identity, receipt_evidence, volumes)
     mover_gaps = object_gap_rows(tile_id, source_identity, receipt_evidence, mover_decisions)
-    unadmitted_volume_gaps = object_gap_rows(tile_id, source_identity, receipt_evidence,
-                                             unadmitted_volume_records(reference_client_class_chains(context['classEvidence']), context['rules'], actors))
-    gap_rows = sorted([*placement_gaps, *volume_gaps, *mover_gaps, *unadmitted_volume_gaps], key=lambda row: (row['sourceIdentity']['object'].casefold(), row['reason']))
+    class_chains = reference_client_class_chains(context['classEvidence'])
+    unadmitted_volume_gaps = object_gap_rows(tile_id, source_identity, receipt_evidence, unadmitted_volume_records(class_chains, context['rules'], actors))
+    unsupported_placement_class_gaps = object_gap_rows(tile_id, source_identity, receipt_evidence, unsupported_placement_class_records(class_chains, actors))
+    gap_rows = sorted([*placement_gaps, *volume_gaps, *mover_gaps, *unadmitted_volume_gaps, *unsupported_placement_class_gaps],
+                      key=lambda row: (row['sourceIdentity']['object'].casefold(), row['reason']))
     gap_rows_by_chunk = {}
     for record, row in zip([record for record in [*decisions, *volumes, *mover_decisions] if record['decision'] == GAP_DECISION],
                            [*placement_gaps, *volume_gaps, *mover_gaps]):

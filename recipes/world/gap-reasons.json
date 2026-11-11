@@ -1,11 +1,12 @@
 {
   "schemaVersion": 1,
-  "listVersion": 16,
+  "listVersion": 17,
   "reasons": [
     "terrain-height-version-unsupported:<version>",
     "terrain-quads-all-hidden",
     "player-start-missing",
     "placement-outside-chunk-grid",
+    "placement-class-unsupported:<class>",
     "placement-material-override-unsupported",
     "static-mesh-reference-unresolved",
     "bsp-node-outside-chunk-grid",

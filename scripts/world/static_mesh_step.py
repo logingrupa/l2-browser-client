@@ -14,15 +14,16 @@ from native_store.store_paths import REPOSITORY_ROOT, confined_child_path, lane_
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from reference_client_guard import require_reference_client
 from static_material_package_census import STATIC_MESH_PACKAGE_CENSUS_RELATIVE_PATH, validate_static_mesh_package_census
+from world.light_actors import reference_client_class_chains
 from world.native_terrain_sectors import native_terrain
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
 from world.static_placement import read_class_evidence
-from world.static_placement_plan import FAILED_STATUS, chunk_rectangles, plan_static_placements, static_mesh_actors
+from world.static_placement_plan import FAILED_STATUS, chunk_rectangles, plan_static_placements, static_mesh_actor_subclass_actors, static_mesh_actors
 from world.tile_census import WORLD_LANE_NAME, read_package_header
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 
-STATIC_MESH_STEP_ALGORITHM_VERSION = 2
+STATIC_MESH_STEP_ALGORITHM_VERSION = 3
 STATIC_MESH_STEP_NAME = 'meshes'
 STATIC_MESHES_PRODUCT_NAME = 'static-meshes.json'
 STATIC_MESH_CONVERTER_FOLDER = 'static-mesh-converter'
@@ -235,10 +236,11 @@ def static_meshes_product(tile_id, chunk_plan, assignment, mesh_outcomes):
             'unplacedGapRows': assignment.chunk_gap_rows(None), 'gapRows': assignment.gap_rows()}
 
 
-def placement_accounting_difference(actors, assignment):
-    expected = len(static_mesh_actors(actors))
+def placement_accounting_difference(actors, class_chains, assignment):
+    expected = len(static_mesh_actors(actors)) + len(static_mesh_actor_subclass_actors(actors, class_chains))
     accounted = assignment.placed_count() + len(assignment.gapped)
-    return None if accounted == expected else f'{accounted} placed or gapped of {expected} StaticMeshActor exports with a StaticMesh reference'
+    return None if accounted == expected else (f'{accounted} placed or gapped of {expected} StaticMeshActor exports with a StaticMesh reference '
+                                               'or of a StaticMeshActor subclass')
 
 
 def write_static_mesh_store_files(project_root, product, mesh_outcomes):
@@ -271,16 +273,17 @@ def run_static_mesh_step(project_root, client_root, tile_id):
         return tile_static_mesh_row(tile_id, source_identity, product['gapRows'], receipt_evidence)
     client = Path(client_root).resolve()
     actors = json.loads((unit.raw_products / 'actors.json').read_text(encoding='utf-8'))
+    class_chains = reference_client_class_chains(read_class_evidence(client, lane_work_root(project_root, WORLD_LANE_NAME)))
     try:
         rectangles = chunk_rectangles(unit.chunk_plan, native_terrain(read_locked_map_package(client, tile_id, lock_record)))
-        plan = plan_static_placements(actors, rectangles, read_class_evidence(client, lane_work_root(project_root, WORLD_LANE_NAME)))
+        plan = plan_static_placements(actors, rectangles, class_chains)
     except FormatError as error:
         return tile_step_row(tile_id, STATIC_MESH_STEP_NAME, FAILED_STATUS, f'decode-failed:{error}', source_identity,
                              step_directory.relative_to(unit.ledger.lane_folder).as_posix())
     mesh_outcomes = static_mesh_outcomes(project_root, client, placeable_requests(plan, unit.requests_by_reference))
     assignment = assign_static_placements(plan, unit.requests_by_reference, mesh_outcomes,
                                           StaticMeshAssignment(tile_id, source_identity, receipt_evidence))
-    difference = placement_accounting_difference(actors, assignment)
+    difference = placement_accounting_difference(actors, class_chains, assignment)
     if difference is not None:
         return tile_step_row(tile_id, STATIC_MESH_STEP_NAME, FAILED_STATUS, f'decode-failed:placement accounting: {difference}', source_identity,
                              step_directory.relative_to(unit.ledger.lane_folder).as_posix())

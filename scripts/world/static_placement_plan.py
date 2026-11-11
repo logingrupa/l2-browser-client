@@ -1,12 +1,12 @@
 from typing import NamedTuple
 
 from native_catalog.ue2 import FormatError
-from world.static_placement import gltf_placement, resolved_static_values, static_matrix
+from world.static_placement import STATIC_MESH_ACTOR_CLASS, gltf_placement, resolved_static_values, static_matrix
 from world.terrain_coordinates import coords_point
 from world.tile_census_validation import GAP_STATUS
 
-STATIC_MESH_ACTOR_CLASS = 'Engine.StaticMeshActor'
 PLACEMENT_OUTSIDE_CHUNK_GRID_REASON = 'placement-outside-chunk-grid'
+PLACEMENT_CLASS_UNSUPPORTED_REASON_PREFIX = 'placement-class-unsupported:'
 FAILED_STATUS = 'failed'
 
 
@@ -67,18 +67,33 @@ def static_mesh_actors(actors):
                   key=lambda actor: actor['exportIndex'])
 
 
+def is_static_mesh_actor_subclass(class_chains, class_object):
+    return (class_object != STATIC_MESH_ACTOR_CLASS and class_chains.chain(class_object) is not None
+            and class_chains.is_subclass(class_object, STATIC_MESH_ACTOR_CLASS))
+
+
+def static_mesh_actor_subclass_actors(actors, class_chains):
+    return sorted((actor for actor in actors if is_static_mesh_actor_subclass(class_chains, actor['classObject'])),
+                  key=lambda actor: actor['exportIndex'])
+
+
+def unsupported_class_placement(actor):
+    return {'id': actor['id'], 'sourceActor': actor['object'], 'exportIndex': actor['exportIndex']}
+
+
 def placement_identity(actor):
     return {'id': actor['id'], 'sourceActor': actor['object'], 'exportIndex': actor['exportIndex'], 'sourceMesh': actor['staticMesh']['object'],
             'matrix': None, 'materialOverrides': actor['materialOverrides'], 'collision': actor['collision']}
 
 
-def plan_static_placements(actors, rectangles, class_evidence):
+def plan_static_placements(actors, rectangles, class_chains):
     placements_by_chunk = {rectangle.chunk_id: [] for rectangle in rectangles}
-    unplaced = []
+    unplaced = [UnplacedStaticActor(unsupported_class_placement(actor), GAP_STATUS, PLACEMENT_CLASS_UNSUPPORTED_REASON_PREFIX + actor['classObject'])
+                for actor in static_mesh_actor_subclass_actors(actors, class_chains)]
     for actor in static_mesh_actors(actors):
         placement = placement_identity(actor)
         try:
-            values = resolved_static_values(actor, class_evidence)
+            values = resolved_static_values(actor, class_chains.class_defaults)
             placement['matrix'] = gltf_placement(static_matrix(values))
         except FormatError as error:
             unplaced.append(UnplacedStaticActor(placement, FAILED_STATUS, f'decode-failed:{type(error).__name__}:{error}'))
