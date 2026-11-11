@@ -14,6 +14,7 @@ from world.bsp_step import sealed_bsp_chunks
 from world.collision_payload_groups import (NO_MESH, STATIC_SLOT_ENABLE_COLLISION_SOURCE, bspt_arrays, movr_arrays, plac_arrays, smsh_arrays, terr_arrays,
                                             vols_arrays)
 from world.level_model import LevelModelLayoutError, read_level_model
+from world.light_actors import reference_client_class_chains
 from world.map_sources import MapSources
 from world.mover_step import sealed_movers
 from world.native_terrain_sectors import read_height_samples, read_topology_words, native_terrain
@@ -31,13 +32,15 @@ from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 from world.typed_payload import write_tile_typed_payload_resource
 
-COLLISION_STEP_ALGORITHM_VERSION = 2
+COLLISION_STEP_ALGORITHM_VERSION = 3
 COLLISION_STEP_NAME = 'collision'
 COLLISION_PRODUCT_NAME = 'collision.json'
 TILE_COLLISION_FOLDER = 'native-tile-collision'
 CHUNK_COLLISION_FOLDER = 'native-tile-chunk-collision'
 TRANSFORM_FIELD_UNREADABLE_REASON_PREFIX = 'collision-transform-field-unreadable:'
 TRANSFORM_FIELD_EVIDENCE_PREFIX = 'transform-field:'
+UNADMITTED_VOLUME_CLASS_REASON_PREFIX = 'collision-volume-class-unadmitted:'
+UNADMITTED_VOLUME_CLASS_EVIDENCE_PREFIX = 'volume-class-unadmitted:'
 MOVER_OUTSIDE_CHUNK_GRID_EVIDENCE = 'chunk:outside-grid'
 ZERO_MATRIX = [[0.0] * 4 for _ in range(4)]
 
@@ -96,8 +99,12 @@ def tile_collision_row(tile_id, source_identity, gap_rows, evidence):
 
 
 def gap_reason_of(evidence):
-    transform = [entry for entry in evidence if entry.startswith(TRANSFORM_FIELD_EVIDENCE_PREFIX)]
-    return TRANSFORM_FIELD_UNREADABLE_REASON_PREFIX + transform[0].removeprefix(TRANSFORM_FIELD_EVIDENCE_PREFIX) if transform else COLLISION_UNREADABLE_REASON
+    for evidence_prefix, reason_prefix in ((TRANSFORM_FIELD_EVIDENCE_PREFIX, TRANSFORM_FIELD_UNREADABLE_REASON_PREFIX),
+                                           (UNADMITTED_VOLUME_CLASS_EVIDENCE_PREFIX, UNADMITTED_VOLUME_CLASS_REASON_PREFIX)):
+        matching = [entry for entry in evidence if entry.startswith(evidence_prefix)]
+        if matching:
+            return reason_prefix + matching[0].removeprefix(evidence_prefix)
+    return COLLISION_UNREADABLE_REASON
 
 
 def chunk_of_placement(static_meshes):
@@ -184,6 +191,18 @@ def volume_records(context, package, level, actors, rectangles):
     return volumes_by_chunk, records
 
 
+def is_unadmitted_volume_subclass(class_chains, volume_classes, class_object):
+    return (class_object not in volume_classes and class_chains.chain(class_object) is not None
+            and any(class_chains.is_subclass(class_object, volume_class) for volume_class in volume_classes))
+
+
+def unadmitted_volume_records(class_chains, rules, actors):
+    return [{'object': actor['object'], 'exportIndex': actor['exportIndex'], 'decision': GAP_DECISION,
+             'evidence': [UNADMITTED_VOLUME_CLASS_EVIDENCE_PREFIX + actor['classObject']]}
+            for actor in sorted(actors, key=lambda actor: actor['exportIndex'])
+            if is_unadmitted_volume_subclass(class_chains, rules.volume_classes, actor['classObject'])]
+
+
 def object_gap_rows(tile_id, source_identity, evidence_path, records):
     return [tile_step_row(tile_id, COLLISION_STEP_NAME, GAP_STATUS, gap_reason_of(record['evidence']), {**source_identity, 'object': record['object']},
                           evidence_path) for record in records if record['decision'] == GAP_DECISION]
@@ -259,7 +278,9 @@ def run_collision_step(project_root, client_root, tile_id):
     placement_gaps = object_gap_rows(tile_id, source_identity, receipt_evidence, decisions)
     volume_gaps = object_gap_rows(tile_id, source_identity, receipt_evidence, volumes)
     mover_gaps = object_gap_rows(tile_id, source_identity, receipt_evidence, mover_decisions)
-    gap_rows = sorted([*placement_gaps, *volume_gaps, *mover_gaps], key=lambda row: (row['sourceIdentity']['object'].casefold(), row['reason']))
+    unadmitted_volume_gaps = object_gap_rows(tile_id, source_identity, receipt_evidence,
+                                             unadmitted_volume_records(reference_client_class_chains(context['classEvidence']), context['rules'], actors))
+    gap_rows = sorted([*placement_gaps, *volume_gaps, *mover_gaps, *unadmitted_volume_gaps], key=lambda row: (row['sourceIdentity']['object'].casefold(), row['reason']))
     gap_rows_by_chunk = {}
     for record, row in zip([record for record in [*decisions, *volumes, *mover_decisions] if record['decision'] == GAP_DECISION],
                            [*placement_gaps, *volume_gaps, *mover_gaps]):

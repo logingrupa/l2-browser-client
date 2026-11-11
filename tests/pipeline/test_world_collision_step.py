@@ -11,6 +11,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
+from native_assets_lib.class_defaults import ClassDefaultError
 from native_catalog.ue2 import FormatError
 from native_store.gap_rows import validate_gap_row
 from native_store.tile_manifest_validation import load_tile_manifest_vocabulary, validate_tile_chunk_manifest
@@ -21,8 +22,9 @@ from synthetic_terrain_fixture import synthetic_native_terrain
 from world.blocking_volume_geometry import read_volume
 from world.collision_payload_groups import bspt_arrays, plac_arrays, vols_arrays
 from world import collision_step
-from world.collision_step import COLLISION_STEP_ALGORITHM_VERSION, CollisionUnit, gap_reason_of, run_collision_step
+from world.collision_step import COLLISION_STEP_ALGORITHM_VERSION, CollisionUnit, gap_reason_of, run_collision_step, unadmitted_volume_records
 from world.level_model import LevelModelLayoutError
+from world.light_actors import ClassChains
 from world.static_collision_sources import decide_placement_collision, load_collision_rules, static_mesh_collision_triangles
 from world.terrain_collision_source import read_terrain_collision
 from world.tile_manifest_step import build_tile_chunk_manifest, tile_resources
@@ -131,6 +133,27 @@ class VolumeTests(unittest.TestCase):
         self.assertTrue(all(array.values == () for array in vols_arrays([])))
 
 
+class UnadmittedVolumeClassTests(unittest.TestCase):
+    CLASS_CHAINS = {'Gameplay.WaterVolume': ('Gameplay.WaterVolume', 'Engine.PhysicsVolume', 'Engine.Volume', 'Engine.Brush', 'Engine.Actor'),
+                    'Engine.PhysicsVolume': ('Engine.PhysicsVolume', 'Engine.Volume', 'Engine.Brush', 'Engine.Actor'),
+                    'Engine.StaticMeshActor': ('Engine.StaticMeshActor', 'Engine.Actor')}
+
+    def read_chain(self, class_name):
+        if class_name not in self.CLASS_CHAINS:
+            raise ClassDefaultError(f'no class script for {class_name}')
+        return [{'identity': {'object': name}} for name in self.CLASS_CHAINS[class_name]]
+
+    def test_a_physics_volume_subclass_left_out_of_vols_is_a_gap_row_naming_its_class(self):
+        actors = [actor('Gameplay.WaterVolume', export_index=9), actor('Engine.PhysicsVolume', export_index=3),
+                  actor('Engine.StaticMeshActor', export_index=4), actor('Synthetic.UnreadableClass', export_index=5)]
+        records = unadmitted_volume_records(ClassChains(None, self.read_chain), RULES, actors)
+        self.assertEqual([(record['object'], record['decision']) for record in records], [(f'{TILE_ID}.Actor9', 'gap')])
+        reason = gap_reason_of(records[0]['evidence'])
+        self.assertEqual(reason, 'collision-volume-class-unadmitted:Gameplay.WaterVolume')
+        validate_gap_row({'key': f'tile:{TILE_ID}', 'part': 'world', 'step': 'collision', 'status': 'gap', 'reason': reason,
+                          'sourceIdentity': {**SOURCE_IDENTITY, 'object': records[0]['object']}, 'evidence': EVIDENCE})
+
+
 class TreeAndTerrainTests(unittest.TestCase):
     def test_the_bspt_group_is_the_stored_tree_and_poly_flags_never_change_solidity(self):
         polygons = [synthetic_polygon(square_points(0, 0, 10), front=1, back=-1, collision_bound=0, node_flags=1),
@@ -201,7 +224,7 @@ class CollisionManifestTests(unittest.TestCase):
         validate_tile_chunk_manifest(manifest)
         self.assertEqual(tile_resources(collision, None)[0]['kind'], 'native-tile-collision')
         self.assertIn('native-tile-collision', load_tile_manifest_vocabulary().resource_kinds)
-        self.assertEqual(COLLISION_STEP_ALGORITHM_VERSION, 2)
+        self.assertEqual(COLLISION_STEP_ALGORITHM_VERSION, 3)
 
     def test_every_rule_row_has_provenance_and_a_shared_status(self):
         document = json.loads((ROOT / 'recipes/world/collision-declaration-rules.json').read_text(encoding='utf-8'))

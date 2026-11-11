@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 15,
+  "listVersion": 16,
   "reasons": [
     "terrain-height-version-unsupported:<version>",
     "terrain-quads-all-hidden",
@@ -11,6 +11,7 @@
     "bsp-node-outside-chunk-grid",
     "bsp-chunk-without-nodes",
     "collision-transform-field-unreadable:<field>",
+    "collision-volume-class-unadmitted:<class>",
     "bsp-visibility-model-unreadable:<field>",
     "bsp-visibility-solidity-disagreement",
     "sky-zone-ambiguous:<count>",
