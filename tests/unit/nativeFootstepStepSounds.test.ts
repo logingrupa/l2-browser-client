@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { sha256 } from "../../src/assets/package/readAssetPackage";
 import { loadNativeStepSounds, NATIVE_STEPSOUND_PACKAGE_KIND } from "../../src/assets/native/loadNativeStepSounds";
 import { loadNativeAnimationAudio } from "../../src/assets/native/loadNativeAnimationAudio";
@@ -49,19 +49,24 @@ async function fixture(mutate: (manifest: Json & { sounds: Json[]; surfaces: Jso
   const bytes = encoder.encode(JSON.stringify(manifest)), hash = await sha256(bytes), prefix = `/l2/step-sounds/${hash}/`;
   const records = [{ id: "human-fighter-footsteps", manifest: "/l2/animation-audio/x/manifest.json", manifestSha256: "f".repeat(64) },
     { id: "stepsound-surfaces", kind: NATIVE_STEPSOUND_PACKAGE_KIND, manifest: `${prefix}manifest.json`, manifestBytes: bytes.length, manifestSha256: hash }];
-  const fetchBytes = async (path: string) => {
+  const bytesAtPath = (path: string) => {
     if (path === `${prefix}manifest.json`) return bytes;
     const file = files.get(path.slice(prefix.length)); if (!file) throw new Error(`missing ${path}`); return file;
   };
-  return { records, fetchBytes, count: sounds.length };
+  return { records, bytesAtPath, count: sounds.length };
 }
 const signal = new AbortController().signal;
+function serveResourceBytes(bytesAtPath: (path: string) => Uint8Array | Promise<Uint8Array>): void {
+  vi.stubGlobal("fetch", async (path: string) => new Response((await bytesAtPath(path)).slice()));
+}
+afterEach(() => { vi.unstubAllGlobals(); });
 
 describe("package-keyed stepsound loader", () => {
   it("verifies all package sounds, classifies each exactly once and keeps exact names and placement declarations", async () => {
-    const { records, fetchBytes, count } = await fixture();
+    const { records, bytesAtPath, count } = await fixture();
     expect(count).toBe(93);
-    const bundle = await loadNativeStepSounds(records, signal, { fetchBytes });
+    serveResourceBytes(bytesAtPath);
+    const bundle = await loadNativeStepSounds(records, signal);
     const library = bundle.library!;
     expect(bundle.sounds).toHaveLength(93); expect(library.soundCount).toBe(93);
     expect([...library.surfaces.keys()]).toEqual([...FOOTSTEP_SURFACES]);
@@ -92,15 +97,17 @@ describe("package-keyed stepsound loader", () => {
     ["a duplicated StepSound slot property", (m: Json) => {
       ((((m.placements as Json).declared as Json[])[0]!.slots as Json[])[2]!).property = "StepSound_1"; }, "slot property"],
   ])("fails loudly on %s", async (_label, mutate, message) => {
-    const { records, fetchBytes } = await fixture(mutate as never);
-    await expect(loadNativeStepSounds(records, signal, { fetchBytes })).rejects.toThrow(new RegExp(message as string));
+    const { records, bytesAtPath } = await fixture(mutate as never);
+    serveResourceBytes(bytesAtPath);
+    await expect(loadNativeStepSounds(records, signal)).rejects.toThrow(new RegExp(message as string));
   });
 
   it("rejects altered WAV bytes and duplicate catalog entries", async () => {
-    const { records, fetchBytes } = await fixture();
-    await expect(loadNativeStepSounds(records, signal, { fetchBytes: async path => path.endsWith(".wav") ? encoder.encode("RIFFxWAVE") : fetchBytes(path) }))
-      .rejects.toThrow("hash/length mismatch");
-    await expect(loadNativeStepSounds([records[1], { ...records[1], id: "again" }], signal, { fetchBytes })).rejects.toThrow("multiple package entries");
+    const { records, bytesAtPath } = await fixture();
+    serveResourceBytes(path => path.endsWith(".wav") ? encoder.encode("RIFFxWAVE") : bytesAtPath(path));
+    await expect(loadNativeStepSounds(records, signal)).rejects.toThrow("hash/length mismatch");
+    serveResourceBytes(bytesAtPath);
+    await expect(loadNativeStepSounds([records[1], { ...records[1], id: "again" }], signal)).rejects.toThrow("multiple package entries");
   });
 });
 
@@ -111,7 +118,8 @@ const staged = existsSync(catalogPath) && (JSON.parse(readFileSync(catalogPath, 
 describe.skipIf(!staged)("actually staged stepsound.uax package", () => {
   it("loads all 93 original Sounds with Stone's two variants, water/boots separate and eight Wood placement declarations", async () => {
     const records = JSON.parse(readFileSync(catalogPath, "utf8")).animationAudio;
-    const bundle = await loadNativeStepSounds(records, signal, { fetchBytes: async path => new Uint8Array(readFileSync(join(root, "public", path))) });
+    serveResourceBytes(path => new Uint8Array(readFileSync(join(root, "public", path))));
+    const bundle = await loadNativeStepSounds(records, signal);
     const library = bundle.library!;
     expect(library.soundCount).toBe(93); expect(bundle.sounds).toHaveLength(93);
     expect(library.packageSha256).toBe("e4243b4bbcb4cd1dde927e4f4dec45caba5796385ad655855e87bd8572d57f05");

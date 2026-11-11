@@ -1,5 +1,4 @@
-import { sha256 } from "../package/readAssetPackage";
-import { nativeResourceUrl } from "./nativeResourceUrl";
+import { fetchVerifiedNativeResource } from "./fetchVerifiedNativeResource";
 import {
   FOOTSTEP_SURFACES, isFootstepSurface, type FootstepSurfaceId, type StepSoundClip, type StepSoundLibrary,
   type StepSoundPlacement, type StepSoundPlacementSlot, type StepSoundSurface,
@@ -25,31 +24,12 @@ export interface NativeStepSoundBundle {
   sounds: { key: string; bytes: Uint8Array }[];
   manifest: string | null;
 }
-export interface NativeStepSoundLoadOptions {
-  /** Injected for tests; defaults to a verified same-origin fetch. */
-  fetchBytes?: (path: string, signal: AbortSignal) => Promise<Uint8Array>;
-}
-
-async function defaultFetch(path: string, signal: AbortSignal): Promise<Uint8Array> {
-  const response = await fetch(nativeResourceUrl(path), { signal });
-  requireMatch(response.ok, `request returned ${response.status}`);
-  return new Uint8Array(await response.arrayBuffer());
-}
-
-async function pinned(fetchBytes: NonNullable<NativeStepSoundLoadOptions["fetchBytes"]>, path: string, expectedHash: string,
-  size: number, signal: AbortSignal): Promise<Uint8Array> {
+async function pinned(path: string, expectedHash: string, size: number, signal: AbortSignal): Promise<Uint8Array> {
   requireMatch(hash.test(expectedHash) && Number.isSafeInteger(size) && size > 0 && size <= 8_000_000, "invalid resource pin");
-  const bytes = await fetchBytes(path, signal);
-  requireMatch(bytes.length === size && await sha256(bytes) === expectedHash, `resource hash/length mismatch: ${path}`);
-  signal.throwIfAborted(); return bytes;
+  return fetchVerifiedNativeResource(path, expectedHash, signal, size);
 }
 
-/** Loads the package-keyed stepsound bundle from `catalog.animationAudio`
- * entries of kind `native-stepsound-package`. Every original Sound is verified
- * and classified exactly once; a missing entry yields `library: null`. */
-export async function loadNativeStepSounds(records: unknown, signal: AbortSignal,
-  options: NativeStepSoundLoadOptions = {}): Promise<NativeStepSoundBundle> {
-  const fetchBytes = options.fetchBytes ?? defaultFetch;
+export async function loadNativeStepSounds(records: unknown, signal: AbortSignal): Promise<NativeStepSoundBundle> {
   const entries = list(records ?? [], 16, "catalog list").map(value => record(value, "catalog entry"))
     .filter(entry => entry.kind === NATIVE_STEPSOUND_PACKAGE_KIND);
   requireMatch(entries.length <= 1, "multiple package entries");
@@ -57,7 +37,7 @@ export async function loadNativeStepSounds(records: unknown, signal: AbortSignal
   if (!entry) return { library: null, sounds: [], manifest: null };
   const manifestHash = text(entry.manifestSha256), prefix = `/l2/step-sounds/${manifestHash}/`;
   requireMatch(hash.test(manifestHash) && entry.manifest === `${prefix}manifest.json`, "invalid catalog entry");
-  const bytes = await pinned(fetchBytes, `${prefix}manifest.json`, manifestHash, Number(entry.manifestBytes), signal);
+  const bytes = await pinned(`${prefix}manifest.json`, manifestHash, Number(entry.manifestBytes), signal);
   const manifest = record(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)), "manifest");
   requireMatch(manifest.schemaVersion === 1 && manifest.kind === NATIVE_STEPSOUND_PACKAGE_KIND, "unsupported manifest");
   const packageInfo = record(manifest.package, "package");
@@ -142,7 +122,7 @@ export async function loadNativeStepSounds(records: unknown, signal: AbortSignal
   const unique = new Map<string, Row>();
   for (const row of rows.values()) if (!unique.has(row.clip.key)) unique.set(row.clip.key, row);
   const sounds = await Promise.all([...unique.values()].map(async row =>
-    ({ key: row.clip.key, bytes: await pinned(fetchBytes, prefix + row.file, row.clip.sha256, row.bytes, signal) })));
+    ({ key: row.clip.key, bytes: await pinned(prefix + row.file, row.clip.sha256, row.bytes, signal) })));
   signal.throwIfAborted();
   return { manifest: manifestHash, sounds, library: { manifestSha256: manifestHash, packageSha256: packageSha, soundCount: rows.size,
     surfaces, events: { Water_In: waterIn, Water_Out: waterOut }, boots, placements, sectionManifestSha256 } };

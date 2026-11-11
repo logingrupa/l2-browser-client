@@ -1,5 +1,5 @@
-import { sha256, validatePackageModel, type AssetPackage } from "../package/readAssetPackage";
-import { nativeResourceUrl } from "./nativeResourceUrl";
+import { validatePackageModel, type AssetPackage } from "../package/readAssetPackage";
+import { fetchVerifiedNativeResource } from "./fetchVerifiedNativeResource";
 import {
   boundAliasStatuses, isNativeAnimationAlias, requiredNativeAliases, unboundAliasStatuses,
   type NativeAliasEvidence, type NativeAliasEvidenceRow, type NativeAliasStatus, type NativePlayerClips,
@@ -193,10 +193,7 @@ export async function loadNativePlayerProfiles(records: unknown, signal: AbortSi
     if (bundles.has(id) || entry.manifest !== `/l2/player-profiles/${expectedHash}/manifest.json` ||
       !Number.isSafeInteger(entry.manifestBytes) || (entry.manifestBytes as number) <= 0 || (entry.manifestBytes as number) > 2_000_000) throw new Error("Native player manifest reference is invalid.");
     bundles.add(id);
-    const response = await fetch(nativeResourceUrl(entry.manifest as string), { signal });
-    if (!response.ok) throw new Error(`Native player profile request returned ${response.status}.`);
-    const bytes = new Uint8Array(await response.arrayBuffer());
-    if (bytes.byteLength !== entry.manifestBytes || await sha256(bytes) !== expectedHash) throw new Error("Native player profile manifest hash/length mismatch.");
+    const bytes = await fetchVerifiedNativeResource(entry.manifest, expectedHash, signal, entry.manifestBytes as number);
     const manifest = object(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)) as unknown);
     if (manifest.schemaVersion !== 1 || manifest.kind !== "native-player-profiles" || !Array.isArray(manifest.profiles) ||
       !manifest.profiles.length || manifest.profiles.length > 128) throw new Error("Native player manifest is invalid.");

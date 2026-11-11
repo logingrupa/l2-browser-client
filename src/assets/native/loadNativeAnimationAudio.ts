@@ -1,8 +1,11 @@
-import { sha256, type AssetPackage } from "../package/readAssetPackage";
-import { nativeResourceUrl } from "./nativeResourceUrl";
+import type { AssetPackage } from "../package/readAssetPackage";
 import type { NativeFootstepDefinition } from "../../audio/nativeFootstepPreview";
+import { fetchVerifiedNativeResource } from "./fetchVerifiedNativeResource";
+import { NATIVE_STEPSOUND_DECO_GRASS_KIND } from "./loadNativeStepDecoGrass";
+import { NATIVE_STEPSOUND_PACKAGE_KIND } from "./loadNativeStepSounds";
 
 const hash = /^[a-f0-9]{64}$/;
+const catalogKindsWithTheirOwnLoader = new Set([NATIVE_STEPSOUND_PACKAGE_KIND, NATIVE_STEPSOUND_DECO_GRASS_KIND]);
 const properties = new Set(["Default", "DefaultActor", "Grass", "Water"].flatMap(surface =>
   ["Walk", "Run"].map(gait => `${surface}${gait}Sound`)));
 function requireMatch(value: unknown, message: string): asserts value { if (!value) throw Error(message); }
@@ -26,11 +29,7 @@ function equal(a: unknown, b: unknown): boolean {
 }
 async function resource(path: string, expectedHash: string, size: number, signal: AbortSignal): Promise<Uint8Array> {
   requireMatch(hash.test(expectedHash) && Number.isSafeInteger(size) && size > 0 && size <= 8_000_000, "Invalid animation-audio resource pin");
-  const response = await fetch(nativeResourceUrl(path), { signal });
-  requireMatch(response.ok, `Animation audio request returned ${response.status}`);
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  requireMatch(bytes.length === size && await sha256(bytes) === expectedHash, "Animation-audio resource hash/length mismatch");
-  signal.throwIfAborted(); return bytes;
+  return fetchVerifiedNativeResource(path, expectedHash, signal, size);
 }
 
 export interface NativeAnimationAudioBundle {
@@ -40,19 +39,12 @@ export interface NativeAnimationAudioBundle {
   retainedConditionalEvents: number;
 }
 
-/** Supplement existing actors with verified dependencies. No model replacement,
- * leaf-name lookup, surface inference, random selection or audio unlock. The
- * complete raw event must still match the selected actor package at its ordinal. */
 export async function loadNativeAnimationAudio(records: unknown, assets: ReadonlyMap<string, AssetPackage>,
   archiveHashes: ReadonlyMap<string, string>, signal: AbortSignal): Promise<NativeAnimationAudioBundle> {
   const result: NativeAnimationAudioBundle = { definitions: [], sounds: [], manifests: [], retainedConditionalEvents: 0 };
   const bundles = new Set<string>(), admitted = new Set<string>(), registered = new Map<string, Uint8Array>();
   for (const value of list(records ?? [], 16)) {
-    // The package-keyed stepsound bundle and the deco-grass footstep grid share
-    // this catalog list; each has its own loader (loadNativeStepSounds,
-    // loadNativeStepDecoGrass) and is never an actor sidecar.
-    const kind = object(value).kind;
-    if (kind === "native-stepsound-package" || kind === "native-stepsound-deco-grass") continue;
+    if (catalogKindsWithTheirOwnLoader.has(String(object(value).kind))) continue;
     const entry = object(value), id = text(entry.id), manifestHash = text(entry.manifestSha256);
     const prefix = `/l2/animation-audio/${manifestHash}/`;
     requireMatch(hash.test(manifestHash) && entry.manifest === `${prefix}manifest.json` && !bundles.has(id), "Invalid animation-audio catalog entry");
@@ -74,7 +66,7 @@ export async function loadNativeAnimationAudio(records: unknown, assets: Readonl
     const needed = new Set<string>();
     for (const raw of list(manifest.actors, 128)) {
       const actor = object(raw), catalogId = text(actor.catalogId), asset = assets.get(catalogId);
-      if (!asset) continue; // The other player variant is not loaded into this world.
+      if (!asset) continue;
       requireMatch(!admitted.has(catalogId), "Animation-audio actor is duplicated"); admitted.add(catalogId);
       requireMatch(typeof actor.archiveSha256 === "string" && hash.test(actor.archiveSha256) &&
         actor.assetId === asset.manifest.id && actor.archiveSha256 === archiveHashes.get(catalogId) &&
@@ -122,7 +114,6 @@ export async function loadNativeAnimationAudio(records: unknown, assets: Readonl
         (definition.events as { ordinal: number; notify: string; timeSeconds: number; arrays: typeof arrays }[]).push({ ordinal,
           notify: text(event.object), timeSeconds: event.timeSeconds, arrays });
       }
-      // A partial sidecar cannot silently drop an event from a selected clip.
       const originalOrdinals = (asset.manifest.animationEvents ?? []).flatMap((event, index) =>
         event && typeof event === "object" && clips.has(String((event as Record<string, unknown>).clip)) ? [index] : []);
       requireMatch(equal(originalOrdinals, list(actor.events, 65536).map(event => object(event).ordinal)), "Animation-audio selected clip coverage differs");

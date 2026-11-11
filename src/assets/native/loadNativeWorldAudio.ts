@@ -1,5 +1,4 @@
-import { sha256 } from "../package/readAssetPackage";
-import { nativeResourceUrl } from "./nativeResourceUrl";
+import { fetchVerifiedNativeResource } from "./fetchVerifiedNativeResource";
 import { nativeFlameNativeToBrowser } from "../../scene/world/nativeFlameBillboards";
 import { readNativeCatalog } from "./readNativeCatalog";
 import { readSelectedTileWorldAudioRecords, tileWorldAudioRecordKind } from "./readSelectedTileWorldAudio";
@@ -114,11 +113,7 @@ function mapPathFromSource(manifest: Record<string, unknown>): string | null {
 
 async function resource(path: string, expectedHash: string, size: number, signal: AbortSignal): Promise<Uint8Array> {
   requireMatch(hash.test(expectedHash) && Number.isSafeInteger(size) && size > 0 && size <= MAX_PAYLOAD, "invalid resource pin");
-  const response = await fetch(nativeResourceUrl(path), { signal });
-  requireMatch(response.ok, `request returned ${response.status}`);
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  requireMatch(bytes.length === size && await sha256(bytes) === expectedHash, "resource hash/length mismatch");
-  signal.throwIfAborted(); return bytes;
+  return fetchVerifiedNativeResource(path, expectedHash, signal, size);
 }
 
 function audioFile(value: unknown, prefix: string, extension: string, mimes: readonly string[]): NativeWorldAudioFile {

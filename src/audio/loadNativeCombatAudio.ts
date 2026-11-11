@@ -1,5 +1,4 @@
-import { sha256 } from "../assets/package/readAssetPackage";
-import { nativeResourceUrl } from "../assets/native/nativeResourceUrl";
+import { fetchVerifiedNativeResource } from "../assets/native/fetchVerifiedNativeResource";
 import { readNativeCatalog } from "../assets/native/readNativeCatalog";
 
 export type NativeCombatRole = "attackItem" | "attackVoice" | "defense" | "damage" | "cast" | "shot" | "critical" | "soulshot";
@@ -62,13 +61,9 @@ function list(value: unknown, limit: number): unknown[] {
 }
 const integer = (value: unknown): value is number => Number.isSafeInteger(value);
 
-async function resource(path: string, expectedHash: string, size: number, signal: AbortSignal, fetcher: typeof fetch): Promise<Uint8Array> {
+async function resource(path: string, expectedHash: string, size: number, signal: AbortSignal): Promise<Uint8Array> {
   requireMatch(hash.test(expectedHash) && Number.isSafeInteger(size) && size > 0 && size <= 8_000_000, "Invalid combat-audio resource pin");
-  const response = await fetcher(nativeResourceUrl(path), { signal });
-  requireMatch(response.ok, `Combat audio request returned ${response.status}`);
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  requireMatch(bytes.length === size && await sha256(bytes) === expectedHash, "Combat-audio resource hash/length mismatch");
-  signal.throwIfAborted(); return bytes;
+  return fetchVerifiedNativeResource(path, expectedHash, signal, size);
 }
 
 function groupLessReferenceAgreesWithAdmittedExport(reference: string, exported: string): boolean {
@@ -127,18 +122,18 @@ export function parseNativeCombatManifest(raw: unknown, manifestSha256: string, 
 }
 
 export async function loadNativeCombatAudio(signal: AbortSignal,
-  options: { id?: string; fetch?: typeof fetch } = {}): Promise<NativeCombatAudioBundle | null> {
-  const fetcher = options.fetch ?? fetch, id = options.id ?? "native-combat-audio";
-  const { combatAudio } = await readNativeCatalog(signal, fetcher);
+  options: { id?: string } = {}): Promise<NativeCombatAudioBundle | null> {
+  const id = options.id ?? "native-combat-audio";
+  const { combatAudio } = await readNativeCatalog(signal);
   const matches = combatAudio.map(object).filter(entry => entry.id === id);
   requireMatch(matches.length <= 1, "Combat-audio catalog identity is duplicated");
   if (!matches.length) return null;
   const entry = matches[0]!, manifestHash = text(entry.manifestSha256), prefix = `/l2/combat-audio/${manifestHash}/`;
   requireMatch(hash.test(manifestHash) && entry.manifest === `${prefix}manifest.json`, "Invalid combat-audio catalog entry");
-  const bytes = await resource(`${prefix}manifest.json`, manifestHash, Number(entry.manifestBytes), signal, fetcher);
+  const bytes = await resource(`${prefix}manifest.json`, manifestHash, Number(entry.manifestBytes), signal);
   const parsed = parseNativeCombatManifest(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)), manifestHash, id);
   const sounds = await Promise.all(parsed.needed.map(async sound =>
-    ({ key: sound.key, bytes: await resource(prefix + sound.file, sound.sha256, sound.bytes, signal, fetcher) })));
+    ({ key: sound.key, bytes: await resource(prefix + sound.file, sound.sha256, sound.bytes, signal) })));
   signal.throwIfAborted();
   return { id: parsed.id, manifestSha256: manifestHash, selections: parsed.selections, sounds };
 }

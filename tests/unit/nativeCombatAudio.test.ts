@@ -407,16 +407,17 @@ describe("combat bundle loader", () => {
       const value = files.get(url);
       if (!value) return new Response(null, { status: 404 });
       return value instanceof Uint8Array ? new Response(value.slice().buffer) : new Response(JSON.stringify(value));
-    }) as unknown as typeof fetch;
-    await expect(loadNativeCombatAudio(new AbortController().signal, { fetch: fetcher })).resolves.toBeNull();
+    });
+    vi.stubGlobal("fetch", fetcher);
+    await expect(loadNativeCombatAudio(new AbortController().signal)).resolves.toBeNull();
     files.set("/l2/catalog.json", { schemaVersion: 1, models: [], combatAudio: [{ id: "native-combat-audio",
       manifest: `/l2/combat-audio/${manifestSha}/manifest.json`, manifestBytes: manifestBytes.length, manifestSha256: manifestSha }] });
     files.set(`/l2/combat-audio/${manifestSha}/manifest.json`, manifestBytes);
     files.set(`/l2/combat-audio/${manifestSha}/audio/${wavSha}.wav`, wav);
-    const loaded = await loadNativeCombatAudio(new AbortController().signal, { fetch: fetcher });
+    const loaded = await loadNativeCombatAudio(new AbortController().signal);
     expect(loaded?.sounds).toEqual([{ key: `native-combat:${wavSha}`, bytes: wav }]);
     files.set(`/l2/combat-audio/${manifestSha}/audio/${wavSha}.wav`, new Uint8Array([0, 0, 0, 0]));
-    await expect(loadNativeCombatAudio(new AbortController().signal, { fetch: fetcher })).rejects.toThrow("hash/length mismatch");
+    await expect(loadNativeCombatAudio(new AbortController().signal)).rejects.toThrow("hash/length mismatch");
   });
 
   it("selects one bundle by id from a catalog holding more than eight combat-audio records and refuses a duplicated id", async () => {
@@ -430,12 +431,13 @@ describe("combat bundle loader", () => {
       const value = files.get(url);
       if (!value) return new Response(null, { status: 404 });
       return value instanceof Uint8Array ? new Response(value.slice().buffer) : new Response(JSON.stringify(value));
-    }) as unknown as typeof fetch;
-    const loaded = await loadNativeCombatAudio(new AbortController().signal, { id: "actor-sounds:npc:20011", fetch: fetcher });
+    });
+    vi.stubGlobal("fetch", fetcher);
+    const loaded = await loadNativeCombatAudio(new AbortController().signal, { id: "actor-sounds:npc:20011" });
     expect(loaded?.id).toBe("actor-sounds:npc:20011");
     expect(loaded?.sounds).toEqual([{ key: `native-combat:${wavSha}`, bytes: wav }]);
     files.set("/l2/catalog.json", { schemaVersion: 1, models: [], combatAudio: [...records, record("actor-sounds:npc:20011")] });
-    await expect(loadNativeCombatAudio(new AbortController().signal, { id: "actor-sounds:npc:20011", fetch: fetcher })).rejects.toThrow("duplicated");
+    await expect(loadNativeCombatAudio(new AbortController().signal, { id: "actor-sounds:npc:20011" })).rejects.toThrow("duplicated");
   });
 });
 
@@ -516,10 +518,13 @@ describe("combat audio controls", () => {
 const stagedCatalog = existsSync("public/l2/catalog.json") ? JSON.parse(readFileSync("public/l2/catalog.json", "utf8")) as
   { combatAudio?: unknown[]; models: { id: string; archive: string }[] } : null;
 describe.skipIf(!stagedCatalog?.combatAudio)("staged combat bundle with the real actor packages", () => {
-  const disk = (async (url: string) => {
-    const path = `public${url}`;
-    return existsSync(path) ? new Response(readFileSync(path)) : new Response(null, { status: 404 });
-  }) as unknown as typeof fetch;
+  const loadFromDisk = (options: { id?: string } = {}) => {
+    vi.stubGlobal("fetch", async (url: string) => {
+      const path = `public${url}`;
+      return existsSync(path) ? new Response(readFileSync(path)) : new Response(null, { status: 404 });
+    });
+    return loadNativeCombatAudio(new AbortController().signal, options);
+  };
   const verifiedArchivesByCatalogId = new Map<string, Promise<AssetPackage>>();
   const archive = async (id: string): Promise<AssetPackage> => {
     if (!verifiedArchivesByCatalogId.has(id)) verifiedArchivesByCatalogId.set(id,
@@ -528,7 +533,7 @@ describe.skipIf(!stagedCatalog?.combatAudio)("staged combat bundle with the real
   };
 
   it("loads the native-meaning numbers and ALAudio.int config, and plays both Hand AttackShots on Musveren", async () => {
-    const staged = (await loadNativeCombatAudio(new AbortController().signal, { fetch: disk }))!;
+    const staged = (await loadFromDisk())!;
     expect(staged.sounds.length).toBe(59);
     const musveren = staged.selections.find(row => row.id === "greater-musveren")!;
     expect(musveren.numeric).toEqual({ soundRadius: 50, soundVolume: 250, soundRandom: 70 });
@@ -568,7 +573,7 @@ describe.skipIf(!stagedCatalog?.combatAudio)("staged combat bundle with the real
     ["human-male-mystic:0", "MMagic", "Magic", "chrsound.MHMagician_Normal_Attack.MHMagician_1H_Atk_1", "ChrSound.MHMagician_Dmg_1"],
     ["human-female-mystic:0", "FMagic", "Magic", "chrsound.FHMagician_Normal_Attack.FHMagician_1H_Atk_1", "ChrSound.FHMagician_Dmg_1"],
   ])("%s plays its own fist, attack voice and hurt voice from the staged bundle", async (catalogId, cls, pkg, voice, hurt) => {
-    const staged = (await loadNativeCombatAudio(new AbortController().signal, { fetch: disk }))!;
+    const staged = (await loadFromDisk())!;
     const [player, monster] = await Promise.all([archive(catalogId), archive("musveren:0")]);
     const attack = `Atk01_Hand_${cls}`, first = (player.manifest.animationEvents ?? [])
       .find(row => (row as { clip?: string }).clip === attack) as { sourceFrames: number; sourceRate: number };
@@ -596,7 +601,7 @@ describe.skipIf(!stagedCatalog?.combatAudio)("staged combat bundle with the real
   });
 
   it("female special attack: the direct fist_2 cue blocks a fist_2 AttackItem pick on the same pawn (shared IsPlaying)", async () => {
-    const staged = (await loadNativeCombatAudio(new AbortController().signal, { fetch: disk }))!;
+    const staged = (await loadFromDisk())!;
     const female = await archive("human-female-fighter:0"), monster = await archive("musveren:0");
     const fake = fakeMixer();
     const cues = await createNativeActionCuePreview(new Map([["human-female-fighter:0", female], ["musveren:0", monster]]), fake.mixer,

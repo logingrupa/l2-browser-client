@@ -1,5 +1,4 @@
-import { sha256 } from "../package/readAssetPackage";
-import { nativeResourceUrl } from "./nativeResourceUrl";
+import { fetchVerifiedNativeResource } from "./fetchVerifiedNativeResource";
 
 export interface NativeNpcProfile {
   readonly id: string;
@@ -56,10 +55,7 @@ export async function loadNativeNpcProfiles(records: unknown, signal: AbortSigna
       throw new Error("Native NPC profile catalog entry is invalid.");
     }
     bundles.add(record.id);
-    const response = await fetch(nativeResourceUrl(record.manifest as string), { signal });
-    if (!response.ok) throw new Error(`Native NPC profile request returned ${response.status}.`);
-    const bytes = new Uint8Array(await response.arrayBuffer());
-    if (bytes.byteLength !== record.manifestBytes || await sha256(bytes) !== record.manifestSha256) throw new Error("Native NPC profile manifest hash/length mismatch.");
+    const bytes = await fetchVerifiedNativeResource(record.manifest, record.manifestSha256, signal, record.manifestBytes as number);
     const manifest = object(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)) as unknown);
     if (manifest.schemaVersion !== 1 || manifest.kind !== "native-npc-profiles" || manifest.support !== "source-profile-fields-ready" ||
       !Array.isArray(manifest.unsupported) || manifest.unsupported.length ||

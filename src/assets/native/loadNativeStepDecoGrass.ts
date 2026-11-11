@@ -1,5 +1,4 @@
-import { sha256 } from "../package/readAssetPackage";
-import { nativeResourceUrl } from "./nativeResourceUrl";
+import { fetchVerifiedNativeResource } from "./fetchVerifiedNativeResource";
 
 export const NATIVE_STEPSOUND_DECO_GRASS_KIND = "native-stepsound-deco-grass";
 export const DECO_GRASS_APPROXIMATION_LABEL = "approximation of native deco instance count - browser does not render decorations";
@@ -24,7 +23,6 @@ export interface FootstepDecoGrassField {
   read(nativeX: number, nativeY: number): FootstepDecoGrassReading;
 }
 export interface NativeStepDecoGrassBundle { field: FootstepDecoGrassField | null; manifest: string | null }
-export interface NativeStepDecoGrassLoadOptions { fetchBytes?: (path: string, signal: AbortSignal) => Promise<Uint8Array> }
 export interface FootstepDecoGrassGeometry {
   readonly terrain: string;
   readonly quads: readonly [number, number];
@@ -86,23 +84,12 @@ export function createFootstepDecoGrassField(geometry: FootstepDecoGrassGeometry
   };
 }
 
-async function defaultFetch(path: string, signal: AbortSignal): Promise<Uint8Array> {
-  const response = await fetch(nativeResourceUrl(path), { signal });
-  requireMatch(response.ok, `request returned ${response.status}`);
-  return new Uint8Array(await response.arrayBuffer());
-}
-
-async function pinned(fetchBytes: NonNullable<NativeStepDecoGrassLoadOptions["fetchBytes"]>, path: string, expected: string,
-  size: number, signal: AbortSignal): Promise<Uint8Array> {
+async function pinned(path: string, expected: string, size: number, signal: AbortSignal): Promise<Uint8Array> {
   requireMatch(hash.test(expected) && integer(size) && size > 0 && size <= 8_000_000, "invalid resource pin");
-  const bytes = await fetchBytes(path, signal);
-  requireMatch(bytes.length === size && await sha256(bytes) === expected, `resource hash/length mismatch: ${path}`);
-  signal.throwIfAborted(); return bytes;
+  return fetchVerifiedNativeResource(path, expected, signal, size);
 }
 
-export async function loadNativeStepDecoGrass(records: unknown, signal: AbortSignal,
-  options: NativeStepDecoGrassLoadOptions = {}): Promise<NativeStepDecoGrassBundle> {
-  const fetchBytes = options.fetchBytes ?? defaultFetch;
+export async function loadNativeStepDecoGrass(records: unknown, signal: AbortSignal): Promise<NativeStepDecoGrassBundle> {
   requireMatch(Array.isArray(records ?? []) && (records as unknown[] ?? []).length <= 16, "invalid catalog list");
   const entries = ((records ?? []) as unknown[]).map(value => record(value, "catalog entry")).filter(entry => entry.kind === NATIVE_STEPSOUND_DECO_GRASS_KIND);
   requireMatch(entries.length <= 1, "multiple deco-grass entries");
@@ -110,7 +97,7 @@ export async function loadNativeStepDecoGrass(records: unknown, signal: AbortSig
   if (!entry) return { field: null, manifest: null };
   const manifestHash = String(entry.manifestSha256), prefix = `/l2/step-sounds/${manifestHash}/`;
   requireMatch(hash.test(manifestHash) && entry.manifest === `${prefix}manifest.json`, "invalid catalog entry");
-  const bytes = await pinned(fetchBytes, `${prefix}manifest.json`, manifestHash, Number(entry.manifestBytes), signal);
+  const bytes = await pinned(`${prefix}manifest.json`, manifestHash, Number(entry.manifestBytes), signal);
   const manifest = record(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)), "manifest");
   requireMatch(manifest.schemaVersion === 1 && manifest.kind === NATIVE_STEPSOUND_DECO_GRASS_KIND, "unsupported manifest");
   const terrain = record(manifest.terrain, "terrain"), grid = record(manifest.grid, "grid"), rule = record(manifest.rule, "rule");
@@ -123,7 +110,7 @@ export async function loadNativeStepDecoGrass(records: unknown, signal: AbortSig
     "invalid grid descriptor");
   requireMatch(rule.countRadius === 64 && rule.grassMinimumCount === 2 && rule.status === "approximation" && typeof rule.id === "string",
     "rule differs from the native 64-unit, count > 1 gate");
-  const payload = await pinned(fetchBytes, `${prefix}${grid.file}`, gridSha, Number(grid.bytes), signal);
+  const payload = await pinned(`${prefix}${grid.file}`, gridSha, Number(grid.bytes), signal);
   const view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength), perQuad = new Float32Array(quadsX * quadsY);
   for (let index = 0; index < perQuad.length; index++) perQuad[index] = view.getUint16(index * 2, true) / scale;
   const field = createFootstepDecoGrassField({ terrain: terrain.object as string, quads: [quadsX, quadsY], quadSize: quadSize as [number, number],
