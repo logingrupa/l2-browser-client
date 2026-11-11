@@ -5,6 +5,7 @@ import { nativeSandboxPresentation } from "../scene/presentationConfiguration";
 import type { NativeSliceSheetTools } from "./nativeSliceSheet";
 import { attachScenePresentationGroup } from "./attachScenePresentationGroup";
 import type { NativeSliceSheetContext } from "./attachNativeSliceSheet";
+import type { DisplayGammaInspection } from "../materials/ue2/babylon/displayGammaPostProcess";
 
 export interface NativeSliceCameraControls {
   follow: () => void;
@@ -77,9 +78,29 @@ function attachFlameGroup(section: DevSection, context: NativeSliceSheetContext,
   return { showFlameFailure };
 }
 
+const unsettledRowStatuses: ReadonlySet<string> = new Set(["unconfirmed", "unknown"]);
+
+function describeRampRowValue(value: unknown): string {
+  if (typeof value === "number") return ` ${value}`;
+  if (typeof value === "object" && value !== null) return ` ${Object.entries(value).map(([name, entry]) => `${name} ${String(entry)}`).join(", ")}`;
+  return "";
+}
+
+function attachDisplayGammaGroup(section: DevSection, displayGamma: DisplayGammaInspection): void {
+  const gammaGroup = section.group("display-gamma", "Display gamma");
+  const rowText = displayGamma.rows.map(row => `${row.id}${describeRampRowValue(row.runtimeDefault)} (${row.status})`).join("; ");
+  gammaGroup.note(`UpdateGamma ramp on the native world camera: ${rowText}. Interface windows and this sheet are outside it.`, {
+    testId: "sandbox-display-gamma-note",
+    hint: "One final post-process maps each colour channel through the 256-entry ramp. Rows marked unconfirmed stay runtime defaults until l2.ini and user.ini decode.",
+    variables: () => displayGamma.rows.map(row => ({ name: row.id, value: () => `${describeRampRowValue(row.runtimeDefault).trim() || "formula"} (${row.status})`,
+      source: row.provenance, status: unsettledRowStatuses.has(row.status) ? "unverified" : "native" })),
+  });
+}
+
 export function attachNativeSliceWorldSheet(section: DevSection, context: NativeSliceSheetContext, tools: NativeSliceSheetTools): NativeSliceWorldSheet {
   attachCameraGroup(section, context, tools);
   attachSkyGroup(section, context, tools);
+  attachDisplayGammaGroup(section, context.displayGamma);
   const flameSheet = attachFlameGroup(section, context, tools);
   attachScenePresentationGroup(section, nativeSandboxPresentation, { sceneName: "native sandbox scene", readoutTestId: "native-scene-presentation" });
   return flameSheet;

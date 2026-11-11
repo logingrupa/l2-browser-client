@@ -30,6 +30,7 @@ import type { NativeSliceAudio } from "./loadNativeSliceAudio";
 import type { NativeSliceEffects } from "./createNativeSliceEffects";
 import type { NativeSliceSettings } from "./createNativeSliceRuntime";
 import { nativeWorldLocationTitles } from "./nativeWorldLocationTitles";
+import type { DisplayGammaInspection } from "../materials/ue2/babylon/displayGammaPostProcess";
 
 export interface NativeSliceSheetContext {
   scene: Scene;
@@ -44,6 +45,7 @@ export interface NativeSliceSheetContext {
   profileStagesLeatherShirt: boolean;
   archiveHashes: ReadonlyMap<string, string> | undefined;
   clipPreview: NativeClipPreviewHub;
+  displayGamma: DisplayGammaInspection;
   locomotionClips: ReturnType<typeof resolveNativeLocomotionClips>;
   specialAttackPreview: { clip: string | null; reason: string | null };
   world: NativeSliceWorld;

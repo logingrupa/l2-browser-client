@@ -51,6 +51,7 @@ import { hasUnappliedActorPivot, nativeNpcCharacterProfile, sandboxNpcAppearance
 import type { WorldEntity } from "../world/worldTypes";
 import type { WorldPosition } from "../world/sourceFrame";
 import { createCollisionWorldNavigation } from "./collisionWorldNavigation";
+import { attachDisplayGammaPostProcess } from "../materials/ue2/babylon/displayGammaPostProcess";
 import { sampleFootstepSurfaceContact } from "./footstepSurfaceContact";
 
 const loadedSandboxNpcAppearanceByModel: ReadonlyMap<string, string> = new Map([["musveren:0", "native-musveren"]]);
@@ -308,8 +309,10 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       });
       boundaryReleases.push(() => effectCamera?.dispose());
     }
+    const displayGamma = attachDisplayGammaPostProcess(camera);
+    boundaryReleases.push(() => displayGamma.dispose());
     const nativeSliceSheet = attachNativeSliceSheet({ scene, camera, canvas, ui, adapter, registry, settings, playerProfile, playerChoices,
-      profileStagesLeatherShirt, archiveHashes: catalog.archiveHashes, clipPreview,
+      profileStagesLeatherShirt, archiveHashes: catalog.archiveHashes, clipPreview, displayGamma: displayGamma.inspect(),
       locomotionClips, specialAttackPreview, world, audio: nativeAudio, footsteps, footstepGround, localSurfaceContact, combatAudio, combatFailure, effects,
       cameraControls: { follow, frameWorld, frameFlame, flamePlacementIds, isFollowingFighter: () => followFighter },
       focusEffectCamera: () => effectCamera?.focus(), isDisposed: () => disposed, addRelease });
