@@ -23,7 +23,7 @@ export function evaluateMaterialFrame(program: MaterialProgram, plan: CompiledMa
     samplerMatrices.push(evaluation.matrix);
   }
   const samplerFrameIndices = plan.samplers.map(sampler =>
-    selectTextureFrame({ kind: "anim-next", frameCount: sampler.frameNodes.length, maximumFrameRate: sampler.maximumFrameRate }, levelSeconds).index);
+    selectTextureFrame({ frameCount: sampler.frameNodes.length, maximumFrameRate: sampler.maximumFrameRate }, levelSeconds).index);
   const colourSourceValues = plan.colourSources.map(source => colourSourceValue(programNode(program, source.node), levelSeconds));
   return { status: "evaluated", samplerMatrices, samplerFrameIndices, colourSourceValues };
 }

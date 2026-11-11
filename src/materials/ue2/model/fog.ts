@@ -1,7 +1,5 @@
-import type { ParticleDrawStyleBlend, ResolvedMaterialBlend } from "./blendTable";
 import type { FogFamily } from "./constants/blendFactorTypes";
 import { FOG_CONSTANTS } from "./constants/fogConstants";
-import type { ColourUnits } from "./materialFieldValues";
 
 export type FogColourBytes = readonly [number, number, number];
 export type FogSourceName = "environment-preset" | "camera-zone" | "fog-info" | "water-volume";
@@ -69,10 +67,6 @@ export function evaluateFogState(inputs: FogInputs): FogState {
   return state;
 }
 
-export function fogFamilyForBlend(blend: ResolvedMaterialBlend | ParticleDrawStyleBlend): FogFamily {
-  return blend.fogFamily;
-}
-
 export function fogTargetColour(family: FogFamily, state: FogState): readonly [number, number, number] | null {
   if (!state.enabled) return null;
   switch (family) {
@@ -84,17 +78,4 @@ export function fogTargetColour(family: FogFamily, state: FogState): readonly [n
     }
     case "none": return null;
   }
-}
-
-export function fogFactor(viewDepthSourceUnits: number, state: FogState): number {
-  if (!state.enabled) return 0;
-  return Math.min(1, Math.max(0, (viewDepthSourceUnits - state.startSourceUnits) / (state.endSourceUnits - state.startSourceUnits)));
-}
-
-export function applyFog(colour: ColourUnits, viewDepthSourceUnits: number, family: FogFamily, state: FogState): ColourUnits {
-  const target = fogTargetColour(family, state);
-  if (target === null) return colour;
-  const factor = fogFactor(viewDepthSourceUnits, state);
-  const mix = (index: 0 | 1 | 2) => colour[index] + (target[index] - colour[index]) * factor;
-  return [mix(0), mix(1), mix(2), colour[3]];
 }

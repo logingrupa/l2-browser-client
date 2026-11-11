@@ -3,7 +3,7 @@ import { blendFactorsForParticleDrawStyle, type ParticleDrawStyleBlend } from ".
 import type { FogState } from "../model/fog";
 import { babylonBlendStateForPair, blendFactorPairKey, type BabylonBlendState } from "./blendState";
 import { bindFogUniforms } from "./fogUniforms";
-import { fogUniformNames } from "./fragmentChain";
+import { fogFactorExpression, foggedColourExpression, fogUniformNames } from "./fragmentChain";
 
 export interface ParticleFragmentChain {
   readonly blend: ParticleDrawStyleBlend;
@@ -18,8 +18,8 @@ const particleFragmentFunctionSource = [
   `uniform vec4 ${fogUniformNames.range};`,
   `uniform vec4 ${fogUniformNames.colour};`,
   "vec4 ue2ParticleFragment(vec4 sourceColour, float viewDepth) {",
-  `  float fogFactor = ${fogUniformNames.range}.z > 0.5 ? clamp((viewDepth - ${fogUniformNames.range}.x) / max(${fogUniformNames.range}.y - ${fogUniformNames.range}.x, 0.000001), 0.0, 1.0) : 0.0;`,
-  `  return vec4(mix(clamp(sourceColour.rgb, 0.0, 1.0), ${fogUniformNames.colour}.rgb, fogFactor), clamp(sourceColour.a, 0.0, 1.0));`,
+  `  float fogFactor = ${fogFactorExpression("viewDepth")};`,
+  `  return ${foggedColourExpression("sourceColour.rgb", "sourceColour.a", "fogFactor")};`,
   "}",
 ].join("\n");
 

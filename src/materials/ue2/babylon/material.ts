@@ -13,8 +13,6 @@ import { DIAGNOSTIC_CONSTANTS } from "../model/constants/diagnosticConstants";
 import { FOG_DISABLED, type FogState } from "../model/fog";
 import type { MaterialLighting } from "../model/lighting";
 import { evaluateMaterialFrame, type MaterialFrameState } from "../model/materialFrame";
-import { programNode } from "../model/materialProgram";
-import { textureCoordinateSourceChannel } from "../model/modifiers";
 import type { CompiledMaterialStagePlan } from "../model/stagePlan";
 import { babylonBlendStateForPair, blendFactorPairKey, type BabylonBlendState } from "./blendState";
 import { bindFogUniforms } from "./fogUniforms";
@@ -26,7 +24,7 @@ import {
 import type { LoadedNativeMaterial } from "./loadNativeMaterial";
 
 export { particleFragmentChain, type ParticleFragmentChain } from "./particleFragmentChain";
-export { selectTextureFrame, type SelectedTextureFrame, type TextureFrameSource } from "../model/textureFrames";
+export { selectTextureFrame } from "../model/textureFrames";
 export type { MaterialLighting } from "../model/lighting";
 export { evaluateFogState, FOG_DISABLED, type CameraZoneFogRecord, type FogInputs, type FogRangeRecord, type FogState } from "../model/fog";
 export { loadNativeMaterial, type LoadedNativeMaterial } from "./loadNativeMaterial";
@@ -146,15 +144,6 @@ function applyBlendState(material: ShaderMaterial, blend: ResolvedMaterialBlend,
   material.backFaceCulling = !blend.twoSided;
 }
 
-function unsupportedCoordinateReason(loaded: LoadedNativeMaterial, plan: CompiledMaterialStagePlan): string | null {
-  for (const modifierId of plan.samplers.flatMap(sampler => sampler.textureCoordinateModifiers)) {
-    const modifier = programNode(loaded.program, modifierId);
-    if (modifier.class === "Engine.TexEnvMap") return "material-feature-unported:EnvMapType";
-    if (modifier.class === "Engine.TexCoordSource" && textureCoordinateSourceChannel(modifier) !== 0) return "material-feature-unported:SourceChannel";
-  }
-  return null;
-}
-
 function bindFrame(material: ShaderMaterial, textures: readonly RawTexture[][], frame: MaterialFrameState): void {
   textures.forEach((frames, samplerIndex) => {
     const matrix = frame.samplerMatrices[samplerIndex]!;
@@ -168,8 +157,6 @@ function bindFrame(material: ShaderMaterial, textures: readonly RawTexture[][], 
 function createCompiledMaterial(scene: Scene, loaded: LoadedNativeMaterial, plan: CompiledMaterialStagePlan, jitterStream: RandomStream, lighting: MaterialLighting): NativeMaterial {
   const babylonBlend = babylonBlendStateForPair(plan.blend.pair);
   if (!babylonBlend) return createDiagnosticMaterial(scene, loaded, lighting, [`babylon-blend-pair-unavailable:${blendFactorPairKey(plan.blend.pair)}`], null);
-  const coordinateReason = unsupportedCoordinateReason(loaded, plan);
-  if (coordinateReason) return createDiagnosticMaterial(scene, loaded, lighting, [coordinateReason], null);
   const initialFrame = evaluateMaterialFrame(loaded.program, plan, 0, jitterStream);
   if (initialFrame.status === "unported") return createDiagnosticMaterial(scene, loaded, lighting, [initialFrame.reason], null);
   const chain = buildFragmentChain(plan, lighting);

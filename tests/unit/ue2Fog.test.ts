@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { buildDisplayGammaTable, defaultDisplayGammaSettings, DISPLAY_GAMMA_ENTRY_COUNT } from "../../src/materials/ue2/model/displayGamma";
-import { applyFog, evaluateFogState, FOG_DISABLED, fogFactor, fogFamilyForBlend, fogTargetColour, type FogInputs } from "../../src/materials/ue2/model/fog";
+import { evaluateFogState, FOG_DISABLED, fogTargetColour, type FogInputs } from "../../src/materials/ue2/model/fog";
 import { blendFactorsForParticleDrawStyle } from "../../src/materials/ue2/model/blendTable";
-import type { ColourUnits } from "../../src/materials/ue2/model/materialFieldValues";
+import { parseMaterialProgram } from "../../src/materials/ue2/model/materialProgram";
+import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
+import { buildFragmentChain, fogFactorExpression, foggedColourExpression } from "../../src/materials/ue2/babylon/fragmentChain";
+import { particleFragmentChain } from "../../src/materials/ue2/babylon/particleFragmentChain";
+import { swatchTexturePng, syntheticSwatchProgram, textureImageFor } from "../support/materialProgramFixture";
 
 const preset = { colourBytes: [100, 110, 120] as const, startSourceUnits: 2000, endSourceUnits: 8000 };
 const zoneFog = { colourBytes: [10, 20, 30] as const, startSourceUnits: 100, endSourceUnits: 1100 };
@@ -38,25 +42,38 @@ describe("evaluateFogState", () => {
 
 describe("fog families", () => {
   const state = evaluateFogState({ ...noSources, fogInfo });
-  const colour: ColourUnits = [0.8, 0.6, 0.4, 0.5];
 
-  it.each([[500, 0], [2500, 0.5], [4500, 1], [9000, 1]])("fog factor at view depth %f is %f", (depth, factor) => {
-    expect(fogFactor(depth, state)).toBeCloseTo(factor, 12);
-  });
-
-  it("fogs toward the fog colour, black or 127/255 grey and leaves alpha alone", () => {
-    const halfway = applyFog(colour, 2500, "fog-colour", state);
-    [0.4 + 100 / 255, 0.3 + 25 / 255, 0.2 + 12.5 / 255, 0.5].forEach((expected, index) => expect(halfway[index]).toBeCloseTo(expected, 12));
-    expect(applyFog(colour, 4500, "black", state)).toEqual([0, 0, 0, 0.5]);
-    expect(applyFog(colour, 4500, "neutral-grey", state)).toEqual([127 / 255, 127 / 255, 127 / 255, 0.5]);
-    expect(applyFog(colour, 4500, "none", state)).toEqual(colour);
+  it("targets the fog colour, black or 127/255 grey, and nothing for the none family or with fog off", () => {
+    expect(fogTargetColour("fog-colour", state)).toEqual([200 / 255, 50 / 255, 25 / 255]);
+    expect(fogTargetColour("black", state)).toEqual([0, 0, 0]);
+    expect(fogTargetColour("neutral-grey", state)).toEqual([127 / 255, 127 / 255, 127 / 255]);
+    expect(fogTargetColour("none", state)).toBeNull();
     expect(fogTargetColour("fog-colour", FOG_DISABLED)).toBeNull();
   });
 
   it("takes the particle family from the draw style row", () => {
-    expect(fogFamilyForBlend(blendFactorsForParticleDrawStyle(3))).toBe("black");
-    expect(fogFamilyForBlend(blendFactorsForParticleDrawStyle(2))).toBe("fog-colour");
-    expect(fogFamilyForBlend(blendFactorsForParticleDrawStyle(1))).toBe("none");
+    expect(blendFactorsForParticleDrawStyle(3).fogFamily).toBe("black");
+    expect(blendFactorsForParticleDrawStyle(2).fogFamily).toBe("fog-colour");
+    expect(blendFactorsForParticleDrawStyle(1).fogFamily).toBe("none");
+  });
+});
+
+describe("fog shader source", () => {
+  it("ramps linearly from the start to the end distance, clamps, and mixes the target colour over the clamped colour with alpha untouched", () => {
+    expect(fogFactorExpression("depth")).toBe("ue2FogRange.z > 0.5 ? clamp((depth - ue2FogRange.x) / max(ue2FogRange.y - ue2FogRange.x, 0.000001), 0.0, 1.0) : 0.0");
+    expect(foggedColourExpression("colour.rgb", "colour.a", "factor")).toBe("vec4(mix(clamp(colour.rgb, 0.0, 1.0), ue2FogColour.rgb, factor), clamp(colour.a, 0.0, 1.0))");
+  });
+
+  it("is the one fog expression the material and particle fragment chains both draw with", () => {
+    const program = parseMaterialProgram(JSON.parse(JSON.stringify(syntheticSwatchProgram(textureImageFor(swatchTexturePng())))));
+    const plan = compileMaterialStagePlan(program);
+    if (plan.status !== "compiled") throw new Error(plan.reasons.join(", "));
+    const materialSource = buildFragmentChain(plan, "unlit").fragmentSource;
+    expect(materialSource).toContain(`float ue2FogFactor = ${fogFactorExpression("ue2ViewDepth")};`);
+    expect(materialSource).toMatch(/gl_FragColor = vec4\(mix\(clamp\(.+, 0\.0, 1\.0\), ue2FogColour\.rgb, ue2FogFactor\), clamp\(.+\.a, 0\.0, 1\.0\)\);/);
+    const particleSource = particleFragmentChain(3).fragmentFunctionSource;
+    expect(particleSource).toContain(`float fogFactor = ${fogFactorExpression("viewDepth")};`);
+    expect(particleSource).toContain(`return ${foggedColourExpression("sourceColour.rgb", "sourceColour.a", "fogFactor")};`);
   });
 });
 

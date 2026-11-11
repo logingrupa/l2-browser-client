@@ -14,6 +14,15 @@ export const textureCoordinateRowUName = (samplerIndex: number) => `ue2Coordinat
 export const textureCoordinateRowVName = (samplerIndex: number) => `ue2CoordinateRowV${samplerIndex}`;
 export const colourSourceUniformName = (colourSourceIndex: number) => `ue2Colour${colourSourceIndex}`;
 export const fogUniformNames = { range: "ue2FogRange", colour: "ue2FogColour" } as const;
+
+export function fogFactorExpression(viewDepth: string): string {
+  const range = fogUniformNames.range;
+  return `${range}.z > 0.5 ? clamp((${viewDepth} - ${range}.x) / max(${range}.y - ${range}.x, 0.000001), 0.0, 1.0) : 0.0`;
+}
+
+export function foggedColourExpression(colour: string, alpha: string, fogFactor: string): string {
+  return `vec4(mix(clamp(${colour}, 0.0, 1.0), ${fogUniformNames.colour}.rgb, ${fogFactor}), clamp(${alpha}, 0.0, 1.0))`;
+}
 export const lightmapSamplerName = "ue2Lightmap";
 export const lightmapCoordinatesVaryingName = "ue2LightmapCoordinates";
 
@@ -152,8 +161,8 @@ export function buildFragmentChain(plan: CompiledMaterialStagePlan, lighting: Ma
     "void main() {",
     ...builder.statements.map(statement => `  ${statement}`),
     `  ${alphaTest}`,
-    `  float ue2FogFactor = ${fogUniformNames.range}.z > 0.5 ? clamp((ue2ViewDepth - ${fogUniformNames.range}.x) / max(${fogUniformNames.range}.y - ${fogUniformNames.range}.x, 0.000001), 0.0, 1.0) : 0.0;`,
-    `  gl_FragColor = vec4(mix(clamp(${litColour(result, lighting)}, 0.0, 1.0), ${fogUniformNames.colour}.rgb, ue2FogFactor), clamp(${result}.a, 0.0, 1.0));`,
+    `  float ue2FogFactor = ${fogFactorExpression("ue2ViewDepth")};`,
+    `  gl_FragColor = ${foggedColourExpression(litColour(result, lighting), `${result}.a`, "ue2FogFactor")};`,
     "}",
   ].join("\n");
   return { fragmentSource, uniforms: [...coordinateRows, ...colourUniforms, fogUniformNames.range, fogUniformNames.colour], samplers };

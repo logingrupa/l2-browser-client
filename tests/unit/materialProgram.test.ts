@@ -173,7 +173,7 @@ describe("createNativeMaterial", () => {
     expect(translucent.fragmentFunctionSource).toContain("vec4 ue2ParticleFragment(vec4 sourceColour, float viewDepth)");
     expect(particleFragmentChain(6).babylonBlend.alphaMode).toBe(Constants.ALPHA_ONEONE);
     expect(() => particleFragmentChain(2)).toThrow(/destination-colour,source-colour has no Babylon blend state/);
-    expect(selectTextureFrame({ kind: "anim-next", frameCount: 4, maximumFrameRate: 10 }, 0.25).index).toBe(2);
+    expect(selectTextureFrame({ frameCount: 4, maximumFrameRate: 10 }, 0.25).index).toBe(2);
     expect(FOG_DISABLED.fogEnd).toBeNull();
   });
 });

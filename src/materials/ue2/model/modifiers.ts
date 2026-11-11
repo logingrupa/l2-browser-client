@@ -29,10 +29,6 @@ export function multiplyTextureCoordinateMatrices(outer: TextureCoordinateMatrix
   return [a * g + b * j, a * h + b * k, a * i + b * l + c, d * g + e * j, d * h + e * k, d * i + e * l + f];
 }
 
-export function applyTextureCoordinateMatrix(matrix: TextureCoordinateMatrix, u: number, v: number): readonly [number, number] {
-  return [matrix[0] * u + matrix[1] * v + matrix[2], matrix[3] * u + matrix[4] * v + matrix[5]];
-}
-
 function fraction(value: number): number {
   return value - Math.floor(value);
 }
@@ -113,6 +109,11 @@ export function texScalerMatrix(node: MaterialProgramNode): TextureCoordinateMat
   return [readNumberField(node, "UScale"), 0, readNumberField(node, "UOffset"), 0, readNumberField(node, "VScale"), readNumberField(node, "VOffset")];
 }
 
+function texCoordSourceMatrix(node: MaterialProgramNode): TextureCoordinateEvaluation {
+  if (readNumberField(node, "SourceChannel") !== 0) return { status: "unported", reason: "material-feature-unported:SourceChannel" };
+  return { status: "evaluated", matrix: IDENTITY_TEXTURE_COORDINATE_MATRIX };
+}
+
 export function textureCoordinateModifierMatrix(node: MaterialProgramNode, context: TextureCoordinateContext): TextureCoordinateEvaluation {
   if (node.status !== "reviewed") return { status: "unported", reason: node.gapReasons[0] ?? `material-class-unported:${node.class}` };
   switch (node.class) {
@@ -120,8 +121,8 @@ export function textureCoordinateModifierMatrix(node: MaterialProgramNode, conte
     case "Engine.TexRotator": return texRotatorMatrix(node, context);
     case "Engine.TexOscillator": return texOscillatorMatrix(node, context);
     case "Engine.TexScaler": return { status: "evaluated", matrix: texScalerMatrix(node) };
-    case "Engine.TexCoordSource":
-    case "Engine.TexEnvMap": return { status: "evaluated", matrix: IDENTITY_TEXTURE_COORDINATE_MATRIX };
+    case "Engine.TexCoordSource": return texCoordSourceMatrix(node);
+    case "Engine.TexEnvMap": return { status: "unported", reason: "material-feature-unported:EnvMapType" };
     default: return { status: "unported", reason: `material-class-unported:${node.class}` };
   }
 }
@@ -134,16 +135,6 @@ export function textureCoordinateChainMatrix(program: MaterialProgram, outerFirs
     combined = multiplyTextureCoordinateMatrices(evaluation.matrix, combined);
   }
   return { status: "evaluated", matrix: combined };
-}
-
-export function textureCoordinateSourceChannel(node: MaterialProgramNode): number {
-  return readNumberField(node, "SourceChannel");
-}
-
-export function environmentMapCoordinates(reflection: readonly [number, number, number], viewRotation: readonly number[] | null): readonly [number, number] {
-  const direction = viewRotation === null ? reflection : [0, 1, 2].map(row =>
-    viewRotation[row * 3]! * reflection[0] + viewRotation[row * 3 + 1]! * reflection[1] + viewRotation[row * 3 + 2]! * reflection[2]);
-  return [direction[0]! * 0.5 + 0.5, direction[1]! * 0.5 + 0.5];
 }
 
 const fadeWeightByFadeType = new Map<string, (cycles: number) => number>([

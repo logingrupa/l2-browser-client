@@ -6,7 +6,6 @@ import { createNativeMaterial } from "../../src/materials/ue2/babylon/material";
 import { buildFragmentChain, lightmapCoordinatesVaryingName, lightmapSamplerName } from "../../src/materials/ue2/babylon/fragmentChain";
 import type { LoadedNativeMaterial } from "../../src/materials/ue2/babylon/loadNativeMaterial";
 import { LIGHTING_CONSTANTS } from "../../src/materials/ue2/model/constants/lightingConstants";
-import { applyModulate2xLighting } from "../../src/materials/ue2/model/lighting";
 import { parseMaterialProgram } from "../../src/materials/ue2/model/materialProgram";
 import { compileMaterialStagePlan, type CompiledMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
 import { swatchTexturePng, syntheticSwatchProgram, textureImageFor } from "../support/materialProgramFixture";
@@ -35,14 +34,8 @@ afterEach(() => {
 });
 
 describe("Modulate2X lighting", () => {
-  it("doubles the colour by the light in the byte domain and saturates at one", () => {
-    expect(LIGHTING_CONSTANTS.modulate2x).toMatchObject({ status: "unconfirmed", runtimeDefault: 2 });
-    const lit = applyModulate2xLighting([100 / 255, 200 / 255, 40 / 255, 0.5], [0.5, 0.5, 0]);
-    expect(lit.map(channel => Math.round(channel * 255))).toEqual([100, 200, 0, 128]);
-    expect(applyModulate2xLighting([200 / 255, 1, 1, 1], [1, 1, 1])).toEqual([1, 1, 1, 1]);
-  });
-
   it("samples the lightmap on its own coordinates and multiplies before fog only when the material is lightmapped", () => {
+    expect(LIGHTING_CONSTANTS.modulate2x).toMatchObject({ status: "unconfirmed", runtimeDefault: 2 });
     const plan = swatchMaterial().plan as CompiledMaterialStagePlan;
     const lightmapped = buildFragmentChain(plan, "lightmap"), unlit = buildFragmentChain(plan, "unlit");
     expect(lightmapped.samplers).toContain(lightmapSamplerName);

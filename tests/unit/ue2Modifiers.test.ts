@@ -5,8 +5,8 @@ import { createRandomStream, deriveStreamSeed, randomRange } from "../../src/sha
 import { evaluateMaterialFrame } from "../../src/materials/ue2/model/materialFrame";
 import { parseMaterialProgram, programNode, type MaterialProgram } from "../../src/materials/ue2/model/materialProgram";
 import {
-  applyTextureCoordinateMatrix, colourSourceValue, environmentMapCoordinates, fadeColourBytes, textureCoordinateChainMatrix,
-  textureCoordinateModifierMatrix, textureCoordinateSourceChannel, type TextureCoordinateMatrix,
+  colourSourceValue, fadeColourBytes, IDENTITY_TEXTURE_COORDINATE_MATRIX, textureCoordinateChainMatrix, textureCoordinateModifierMatrix,
+  type TextureCoordinateMatrix,
 } from "../../src/materials/ue2/model/modifiers";
 import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
 import { selectTextureFrame } from "../../src/materials/ue2/model/textureFrames";
@@ -53,6 +53,10 @@ function evaluated(program: MaterialProgram, nodeId: string, levelSeconds: numbe
   return evaluation.matrix;
 }
 
+function transformedCoordinates(matrix: TextureCoordinateMatrix, u: number, v: number): readonly [number, number] {
+  return [matrix[0] * u + matrix[1] * v + matrix[2], matrix[3] * u + matrix[4] * v + matrix[5]];
+}
+
 function expectMatrix(actual: TextureCoordinateMatrix, expected: readonly number[]): void {
   actual.forEach((value, index) => expect(value).toBeCloseTo(expected[index]!, 9));
 }
@@ -69,7 +73,7 @@ describe("texture coordinate modifiers", () => {
       field("UOffset", 2), field("VOffset", 2), ...extra])]);
     const quarterTurn = Math.PI / 4;
     const fixed = evaluated(rotatorNode("TR_FixedRotation", []), "Synthetic.Rotator", 3);
-    expect(applyTextureCoordinateMatrix(fixed, 0.5, 0.5).map(value => Number(value.toFixed(12)))).toEqual([0.5, 0.5]);
+    expect(transformedCoordinates(fixed, 0.5, 0.5).map(value => Number(value.toFixed(12)))).toEqual([0.5, 0.5]);
     expectMatrix(fixed, [Math.cos(quarterTurn), -Math.sin(quarterTurn), 0.5 - 0.5 * Math.cos(quarterTurn) + 0.5 * Math.sin(quarterTurn),
       Math.sin(quarterTurn), Math.cos(quarterTurn), 0.5 - 0.5 * Math.sin(quarterTurn) - 0.5 * Math.cos(quarterTurn)]);
     const constant = evaluated(rotatorNode("TR_ConstantlyRotating", []), "Synthetic.Rotator", 2);
@@ -114,14 +118,19 @@ describe("texture coordinate modifiers", () => {
     expectMatrix(evaluated(program, "Synthetic.Scaler", 0), [2, 0, 0.1, 0, 3, 0.2]);
     const chain = textureCoordinateChainMatrix(program, ["Synthetic.Scaler", "Synthetic.Panner"], context(0.5));
     if (chain.status !== "evaluated") throw new Error(chain.reason);
-    expect(applyTextureCoordinateMatrix(chain.matrix, 1, 1).map(value => Number(value.toFixed(12)))).toEqual([2 * 1 + 0.1 + 0.5, 3 * 1 + 0.2]);
+    expect(transformedCoordinates(chain.matrix, 1, 1).map(value => Number(value.toFixed(12)))).toEqual([2 * 1 + 0.1 + 0.5, 3 * 1 + 0.2]);
   });
 
-  it("TexCoordSource names its channel and TexEnvMap maps a reflection to texture space", () => {
-    const program = programWith([modifier("Synthetic.Source", "Engine.TexCoordSource", [field("SourceChannel", 2)])]);
-    expect(textureCoordinateSourceChannel(programNode(program, "Synthetic.Source"))).toBe(2);
-    expect(environmentMapCoordinates([0.2, -0.4, 0.8], null)).toEqual([0.6, 0.3]);
-    expect(environmentMapCoordinates([1, 0, 0], [0, 1, 0, 1, 0, 0, 0, 0, 1])).toEqual([0.5, 1]);
+  it("passes TexCoordSource channel 0 through and reports another channel and every TexEnvMap unported", () => {
+    const firstChannel = programWith([modifier("Synthetic.Source", "Engine.TexCoordSource", [field("SourceChannel", 0)])]);
+    expect(textureCoordinateModifierMatrix(programNode(firstChannel, "Synthetic.Source"), context(1)))
+      .toEqual({ status: "evaluated", matrix: IDENTITY_TEXTURE_COORDINATE_MATRIX });
+    const thirdChannel = programWith([modifier("Synthetic.Source", "Engine.TexCoordSource", [field("SourceChannel", 2)])]);
+    expect(textureCoordinateModifierMatrix(programNode(thirdChannel, "Synthetic.Source"), context(1)))
+      .toEqual({ status: "unported", reason: "material-feature-unported:SourceChannel" });
+    const environmentMap = programWith([modifier("Synthetic.EnvironmentMap", "Engine.TexEnvMap", [])]);
+    expect(textureCoordinateModifierMatrix(programNode(environmentMap, "Synthetic.EnvironmentMap"), context(1)))
+      .toEqual({ status: "unported", reason: "material-feature-unported:EnvMapType" });
   });
 
   it("reports a triggered modifier unported instead of evaluating it", () => {
@@ -164,15 +173,9 @@ describe("colour sources", () => {
 describe("selectTextureFrame", () => {
   it("follows AnimNext and MaxFrameRate like the flame owner's tick at frame seams", () => {
     for (const levelSeconds of [0, 0.0999999, 0.1, 0.21, 0.3, 1.19999, 1.2, 7.35]) {
-      expect(selectTextureFrame({ kind: "anim-next", frameCount: 12, maximumFrameRate: 10 }, levelSeconds).index)
+      expect(selectTextureFrame({ frameCount: 12, maximumFrameRate: 10 }, levelSeconds).index)
         .toBe(selectNativeFlameFrame(levelSeconds, { maxFrameRate: 10, totalFrameNum: 12 }).index);
     }
-  });
-
-  it("steps a MaterialSequence through its entries and wraps when looping", () => {
-    const sequence = { kind: "material-sequence" as const, displaySeconds: [0.5, 1, 0.25], loop: true };
-    expect([0, 0.49, 0.5, 1.49, 1.5, 1.75, 2].map(levelSeconds => selectTextureFrame(sequence, levelSeconds).index)).toEqual([0, 0, 1, 1, 2, 0, 0]);
-    expect(selectTextureFrame({ ...sequence, loop: false }, 9).index).toBe(2);
   });
 
   it("evaluates a compiled plan's matrices, frames and colour sources at a level time", () => {

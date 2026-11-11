@@ -267,7 +267,7 @@ export async function loadEffectComponent(scene: Scene, bundle: EffectBundle, in
         });
         for (const draw of draws) {
           const frameIndex = pinned ? draw.textureChain.findIndex(texture => texture.assetId === pinned.texture.assetId)
-            : selectTextureFrame({ kind: "anim-next", frameCount: draw.textureChain.length, maximumFrameRate: draw.maximumFrameRate }, presentation.levelSeconds).index;
+            : selectTextureFrame({ frameCount: draw.textureChain.length, maximumFrameRate: draw.maximumFrameRate }, presentation.levelSeconds).index;
           draw.material.setTexture(textures.get(draw.textureChain[Math.max(0, frameIndex)]!.assetId)!);
           uploadParticleInstances(draw.mesh, liveInstances);
         }
