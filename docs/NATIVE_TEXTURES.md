@@ -4,7 +4,7 @@ What a texture archive keeps and what the runtime uses. Native mips, palettes an
 
 ## Now
 
-- `assets:convert --kind texture` and `assets:migrate` write archives. `scripts/native_assets_lib/texture_mips.py` reads UE123 licensee 20, 28 and 30 in P8, DXT1 and DXT5; other layouts record `nativeTextureSource.status = unsupported`. No recompression or generated mips.
+- `assets:convert --kind texture` and `assets:migrate` write archives. `scripts/native_assets_lib/texture_mips.py` reads UE2 118/0 and UE123 licensee 0, 16, 18, 20, 23, 25, 27, 28 and 30 in P8, DXT1 and DXT5, each pair with an exact Elbera mip row in `tests/fixtures/texture-layouts/cross-checks.json`; other layouts and formats record `nativeTextureSource.status = unsupported` with `gapReason` `texture-licensee-unsupported:<v>/<lic>` or `texture-format-unsupported:<format>`. No recompression or generated mips.
 - Files: `texture.png` (mip-0 preview), `native-texture-source.json`, `native/texture-export.bin`, `native/mipNN.bin`, and `native/palette-export.bin` plus `native/palette.rgba` when a palette exists. DXT1 and DXT5 add `texture.dds` (original blocks) and `native-texture-dds.json` under `image.derivatives`. Model archives with `materialPolicy: preserve-native-graph` keep these files under `native-materials/textures/<identity>/`.
 - `scripts/native_assets_lib/texture_dds.py` writes the DDS; `scripts/native_texture_validation.py` rebuilds it from source and rejects a mismatch.
 - Terrain and flame materials upload decoded RGBA `RawTexture`. No DDS gain is measured.

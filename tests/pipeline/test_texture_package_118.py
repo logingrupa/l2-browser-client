@@ -1,14 +1,19 @@
 from pathlib import Path
 import struct
 import sys
+import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
+from native_assets import UMODEL, Converter
 from native_assets_lib.texture_mips import build_texture_source
 from native_assets_lib.texture_package_118 import PACKAGE_118_LAYOUT_EVIDENCE, UnrealPackage118, read_texture_source_118, read_unreal_package
+from native_assets_lib.texture_source_reader import FORMATS, UnsupportedTextureSource
 from native_catalog.ue2 import FormatError, Package
+from native_store.gap_rows import is_listed_reason, load_gap_reason_patterns
+from reference_client_guard import require_reference_client
 from ue2_package_fixture import compact, package_bytes, tag
 from world.sky_materials import read_sky_material_package, sky_layout_texture_source
 
@@ -20,6 +25,9 @@ TEXTURE_PROPERTY_NAMES = ['Format', 'USize', 'VSize']
 BYTE_PROPERTY_KIND = 1
 INTEGER_PROPERTY_KIND = 2
 DXT1_FORMAT = 3
+RGBA8_FORMAT = 5
+REFERENCE_CLIENT_ROOT = Path('E:/Lineage2-client')
+UI_PACKAGE_PATH = 'systextures/L2UI_CH3.utx'
 RESERVED_INT32_PREFIX = struct.pack('<i', -741)
 THREE_DXT1_MIPS = ((4, 4, (2, 2)), (2, 2, (1, 1)), (1, 1, (0, 0)))
 
@@ -28,10 +36,10 @@ def dxt1_block(level):
     return bytes((level * 37 + index) % 256 for index in range(8))
 
 
-def texture_body(mips, material_prefix=b'', lazy_array_end_shift=0):
+def texture_body(mips, material_prefix=b'', lazy_array_end_shift=0, format_id=DXT1_FORMAT):
     def body(offset, names):
         width, height = mips[0][0], mips[0][1]
-        record = (tag(names, 'Format', BYTE_PROPERTY_KIND, bytes([DXT1_FORMAT])) + tag(names, 'USize', INTEGER_PROPERTY_KIND, struct.pack('<i', width))
+        record = (tag(names, 'Format', BYTE_PROPERTY_KIND, bytes([format_id])) + tag(names, 'USize', INTEGER_PROPERTY_KIND, struct.pack('<i', width))
                   + tag(names, 'VSize', INTEGER_PROPERTY_KIND, struct.pack('<i', height)) + compact(names['None']) + material_prefix + compact(len(mips)))
         for level, (mip_width, mip_height, bits) in enumerate(mips):
             payload, size = dxt1_block(level), compact(8)
@@ -47,8 +55,18 @@ def synthetic_package_bytes(package_version, licensee, body):
     return bytes(data)
 
 
-def package_118_bytes(mips=THREE_DXT1_MIPS, lazy_array_end_shift=0):
-    return synthetic_package_bytes(118, 0, texture_body(mips, lazy_array_end_shift=lazy_array_end_shift))
+def package_118_bytes(mips=THREE_DXT1_MIPS, lazy_array_end_shift=0, format_id=DXT1_FORMAT):
+    return synthetic_package_bytes(118, 0, texture_body(mips, lazy_array_end_shift=lazy_array_end_shift, format_id=format_id))
+
+
+def first_texture_with_format(package, format_id):
+    textures = [item for item in package.exports if item['className'] == 'Texture']
+    for item in textures:
+        tags, _ = package.properties(item)
+        unique = sum(1 for other in textures if other['name'].casefold() == item['name'].casefold()) == 1
+        if unique and [tag['value'] for tag in tags if tag['name'] == 'Format'] == [format_id]:
+            return item
+    raise AssertionError(f'{package.filename} holds no uniquely named texture of format {format_id}')
 
 
 def mip_record_projection(mips):
@@ -103,6 +121,14 @@ class TextureSource118Tests(unittest.TestCase):
         with self.assertRaisesRegex(FormatError, 'dimensions disagree with bits'):
             read_texture_source_118(package, package.exports[0])
 
+    def test_a_format_without_a_reviewed_block_wrapper_is_a_listed_format_gap(self):
+        package = read_unreal_package(package_118_bytes(format_id=RGBA8_FORMAT), PACKAGE_FILENAME)
+        self.assertNotIn(RGBA8_FORMAT, FORMATS)
+        with self.assertRaises(UnsupportedTextureSource) as caught:
+            read_texture_source_118(package, package.exports[0])
+        self.assertEqual(caught.exception.reason, 'texture-format-unsupported:5')
+        self.assertTrue(is_listed_reason(caught.exception.reason, load_gap_reason_patterns(ROOT)))
+
     def test_a_table_layout_package_is_not_read_as_118(self):
         package = read_unreal_package(synthetic_package_bytes(123, 28, texture_body(THREE_DXT1_MIPS, RESERVED_INT32_PREFIX)), PACKAGE_FILENAME)
         with self.assertRaisesRegex(FormatError, 'is not read by the reviewed 118/0 package reader'):
@@ -127,6 +153,28 @@ class BuildTextureSourceDispatchTests(unittest.TestCase):
         self.assertEqual(metadata_123['nativePrefix']['reservedInt32'], -741)
         self.assertEqual([mip['sha256'] for mip in metadata_123['mips']], [mip['sha256'] for mip in metadata_118['mips']])
         self.assertEqual([files_123[mip['file']] for mip in metadata_123['mips']], [files_118[mip['file']] for mip in metadata_118['mips']])
+
+
+
+class ConverterFormatGapTests(unittest.TestCase):
+    def setUp(self):
+        if not UMODEL.is_file():
+            self.skipTest(f'pinned UModel {UMODEL} is unavailable')
+        try:
+            self.access = require_reference_client(REFERENCE_CLIENT_ROOT)
+        except (OSError, ValueError) as error:
+            self.skipTest(f'locked reference client {REFERENCE_CLIENT_ROOT} is unavailable: {error}')
+
+    def test_an_rgba8_ui_texture_keeps_its_named_format_gap_in_the_converter_metadata(self):
+        package = read_unreal_package(self.access.require_equal_file(UI_PACKAGE_PATH).read_bytes(), 'L2UI_CH3.utx')
+        item = first_texture_with_format(package, RGBA8_FORMAT)
+        with tempfile.TemporaryDirectory() as temporary:
+            project_root = Path(temporary)
+            converter = Converter(REFERENCE_CLIENT_ROOT, project_root / 'artifacts' / 'texture-format-gap', UMODEL, project_root=project_root)
+            conversion = converter.convert({'kind': 'texture', 'package': 'L2UI_CH3', 'object': item['object']})
+        native_source = conversion['metadata']['nativeTextureSource']
+        self.assertEqual((native_source['status'], native_source['gapReason']), ('unsupported', 'texture-format-unsupported:5'))
+        self.assertEqual(conversion['metadata']['nativeTextureDDS']['status'], 'unsupported')
 
 
 if __name__ == '__main__':

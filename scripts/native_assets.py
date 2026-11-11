@@ -661,7 +661,7 @@ class Converter:
                             metadata['nativeTextureDDS'] = {'status': 'unsupported', 'reason': str(error)}
                             limitations.append('Compressed texture derivative unsupported: ' + str(error))
                     except UnsupportedTextureSource as error:
-                        metadata['nativeTextureSource'] = {'status': 'unsupported', 'reason': str(error)}
+                        metadata['nativeTextureSource'] = {'status': 'unsupported', 'reason': str(error), 'gapReason': error.reason}
                         metadata['nativeTextureDDS'] = {'status': 'unsupported', 'reason': 'Native texture source sidecar is unavailable: ' + str(error)}
                         limitations.append('Original native mip sidecar unsupported: ' + str(error))
                 else:

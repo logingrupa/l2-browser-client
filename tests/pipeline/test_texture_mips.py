@@ -11,6 +11,7 @@ sys.path.insert(0, str(ROOT/'scripts'))
 from native_assets_lib.texture_mips import build_texture_source, UnsupportedTextureSource
 from native_assets_lib.texture_source_reader import MAX_MIPS
 from native_catalog.ue2 import FormatError, Package
+from native_store.gap_rows import is_listed_reason, load_gap_reason_patterns
 
 
 def compact(value):
@@ -82,6 +83,24 @@ def fixture(fmt=3, omit_format=False, dimensions=(4,4), levels=None, palette=Fal
            'outerIndex':0,'exportIndex':2,'offset':start+len(texture),'size':len(palette_bytes)}
     package.exports = [item,pal]
     return package,item,offsets,colors
+
+
+class TextureSourceGapReasonTests(unittest.TestCase):
+    def refusal_reason(self, **kwargs):
+        package,item,_,_ = fixture(**kwargs)
+        with self.assertRaises(UnsupportedTextureSource) as caught:
+            build_texture_source(package,item)
+        return caught.exception.reason
+
+    def test_an_unreviewed_format_in_a_reviewed_layout_is_a_listed_format_gap(self):
+        reason = self.refusal_reason(fmt=7)
+        self.assertEqual(reason,'texture-format-unsupported:7')
+        self.assertTrue(is_listed_reason(reason,load_gap_reason_patterns(ROOT)))
+
+    def test_an_unreviewed_layout_is_a_listed_licensee_gap(self):
+        reason = self.refusal_reason(version=(123,31))
+        self.assertEqual(reason,'texture-licensee-unsupported:123/31')
+        self.assertTrue(is_listed_reason(reason,load_gap_reason_patterns(ROOT)))
 
 
 class TextureMipTests(unittest.TestCase):
