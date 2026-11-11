@@ -12,7 +12,7 @@ import { parseActorClipEvents } from "./actorClipEvents";
 import { listActorClips } from "../../animation/actorClipPlayback";
 import { presentEquippedItem, type GeneratedCharacterProfile } from "./nativeEquippedItemPresentation";
 import { NativeEquippedBodyPartItems, type EquippedItemPresenter } from "./nativeEquippedBodyPartItems";
-import { servedCatalogEquippedItemSource, type NativeEquippedItemSource } from "./nativeEquippedItemSource";
+import type { NativeEquippedItemSource } from "./nativeEquippedItemSource";
 
 export type NativeCharacterAssetLoader = (signal: AbortSignal) => Promise<AssetPackage>;
 
@@ -101,9 +101,9 @@ class NativeActorDriver implements CharacterAnimationDriver {
   dispose(): void { for (const cues of this.cuePlayers) cues.dispose(); this.actor.pause(); }
 }
 
-export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeCharacterProfile>, actionCuePreview?: NativeActionCuePreview,
-  footstepPreview?: Pick<NativeActionCuePreview, "bindActor">, clipPreview?: Pick<NativeClipPreviewHub, "register">,
-  equippedItemSource: NativeEquippedItemSource = servedCatalogEquippedItemSource()): CharacterVisualFactory {
+export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeCharacterProfile>, equippedItemSource: NativeEquippedItemSource,
+  actionCuePreview?: NativeActionCuePreview, footstepPreview?: Pick<NativeActionCuePreview, "bindActor">,
+  clipPreview?: Pick<NativeClipPreviewHub, "register">): CharacterVisualFactory {
   return (scene: Scene, initial: WorldEntity, status?: (message: string) => void): CharacterVisual => {
     let unregisterPreview: (() => void) | undefined;
     const root = new TransformNode(`entity:${initial.id}`, scene);

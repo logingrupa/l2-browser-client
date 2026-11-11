@@ -11,6 +11,7 @@ import { createNativeClipPreviewHub } from "../../src/assets/native/nativeClipPr
 import type { CharacterVisual } from "../../src/assets/CharacterVisual";
 import type { WorldEntity } from "../../src/world/worldTypes";
 import { nativeVisualClips, nativeVisualFixture } from "../fixtures/nativeVisualFixture";
+import { itemlessEquippedItemSource } from "../fixtures/nativeEquippedItemSourceFixture";
 
 const initial: WorldEntity = { id: "fixture-player", kind: "local-player", displayName: "Fixture player", appearanceId: "fixture",
   health: 100, maximumHealth: 100, position: { x: 0, y: 0, z: 0 }, orientationRadians: 0, animation: "idle" };
@@ -32,7 +33,7 @@ describe("native character presentation boundary", () => {
   });
   async function create(profile: Partial<NativeCharacterProfile> = {}, entity = initial) {
     const status = vi.fn<(message: string) => void>();
-    const visual = nativeCharacterFactory(new Map([["fixture", { asset: await nativeVisualFixture(), clips: nativeVisualClips, ...profile }]]))(scene, entity, status);
+    const visual = nativeCharacterFactory(new Map([["fixture", { asset: await nativeVisualFixture(), clips: nativeVisualClips, ...profile }]]), itemlessEquippedItemSource)(scene, entity, status);
     visuals.push(visual); return { visual, status };
   }
   function gateCreate() {
@@ -81,7 +82,7 @@ describe("native character presentation boundary", () => {
 
   it("previews one exact package clip without changing the requested state, then resumes that state", async () => {
     const hub = createNativeClipPreviewHub(), status = vi.fn<(message: string) => void>();
-    const visual = nativeCharacterFactory(new Map([["fixture", { asset: await nativeVisualFixture(), clips: nativeVisualClips }]]), undefined, undefined, hub)(scene, initial, status);
+    const visual = nativeCharacterFactory(new Map([["fixture", { asset: await nativeVisualFixture(), clips: nativeVisualClips }]]), itemlessEquippedItemSource, undefined, undefined, hub)(scene, initial, status);
     visuals.push(visual);
     expect(hub.play(initial.id, nativeVisualClips.death)).toBe("The native model has not loaded yet.");
     await visual.ready;
@@ -399,7 +400,7 @@ describe("native character presentation boundary", () => {
   it("rejects unsupported initial equipment and absent profiles instead of declaring readiness", async () => {
     const { visual } = await create({}, { ...initial, equipment: { upper: 999 } });
     await expect(visual.ready).rejects.toThrow("Native item 999 has no verified upper-body binding");
-    const missing = nativeCharacterFactory(new Map())(scene, initial); visuals.push(missing);
+    const missing = nativeCharacterFactory(new Map(), itemlessEquippedItemSource)(scene, initial); visuals.push(missing);
     await expect(missing.ready).rejects.toThrow("native profile unavailable");
     expect(scene.meshes).toHaveLength(0); expect(scene.transformNodes).toHaveLength(0);
   });

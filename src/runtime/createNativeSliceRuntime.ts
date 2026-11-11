@@ -6,6 +6,7 @@ import { readNativeCatalog } from "../assets/native/readNativeCatalog";
 import { defaultNativePlayerProfile } from "../assets/native/loadNativePlayerProfiles";
 import type { AssetPackage } from "../assets/package/readAssetPackage";
 import { nativeCharacterFactory, type NativeCharacterProfile } from "../assets/native/NativeCharacterVisual";
+import { catalogEquippedItemSource } from "../assets/native/nativeEquippedItemSource";
 import { createNativeClipPreviewHub } from "../assets/native/nativeClipPreview";
 import { NativeSliceAdapter, nativeSliceSpeedProfile } from "../world/NativeSliceAdapter";
 import { EntityRegistry } from "../entities/EntityRegistry";
@@ -193,7 +194,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     boundaryReleases.push(() => ui.dispose());
     registry = new EntityRegistry(scene, adapter, ui.labels, message => ui.showStatus(message), {
       createVisual: sandboxCharacterVisualFactory(catalogIndex,
-        sandboxNpcVisualFactory(catalogIndex, nativeCharacterFactory(profiles, actionCues, footsteps, clipPreview), sandboxAppearanceOfNpc),
+        sandboxNpcVisualFactory(catalogIndex, nativeCharacterFactory(profiles, catalogEquippedItemSource(servedCatalog, catalogIndex), actionCues, footsteps, clipPreview), sandboxAppearanceOfNpc),
         sandboxLoadedPlayerProfileAppearance(playerProfile.id, appearanceId)),
       actorClipPlayer: entityId => clipPreview.actorClipPlayer(entityId),
       ...(section ? { ground: (position: WorldPosition) => movement.groundBelow(position) } : {}),

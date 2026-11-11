@@ -9,6 +9,7 @@ import { resolveNativeSpecialAttackPreview } from "../../src/assets/native/nativ
 import type { NativeActionCueCoverage } from "../../src/audio/nativeActionCuePreview";
 import type { AssetPackage } from "../../src/assets/package/readAssetPackage";
 import { nativeVisualClips, nativeVisualFixture } from "../fixtures/nativeVisualFixture";
+import { itemlessEquippedItemSource } from "../fixtures/nativeEquippedItemSourceFixture";
 
 const releases: (() => void)[] = [];
 afterEach(() => { for (const release of releases.splice(0).reverse()) release(); });
@@ -110,7 +111,7 @@ describe("native visual source-action selection and lifetime", () => {
     const entity: WorldEntity = { id: "fixture", kind: "local-player", appearanceId: "fixture", displayName: "Fixture",
       health: 100, maximumHealth: 100, animation: "idle", position: { x: 2, y: 3, z: 4 }, orientationRadians: .2 };
     const visual = nativeCharacterFactory(new Map([["fixture", { asset,
-      clips: { ...nativeVisualClips, specialAttack: nativeVisualClips.run } }]]))(scene, entity);
+      clips: { ...nativeVisualClips, specialAttack: nativeVisualClips.run } }]]), itemlessEquippedItemSource)(scene, entity);
     releases.push(() => visual.dispose()); await visual.ready;
     function update(next: WorldEntity, retrigger = false) { visual.setEntity(next); visual.animation.setState(next.animation, retrigger); }
     return { visual, entity, update, scene };

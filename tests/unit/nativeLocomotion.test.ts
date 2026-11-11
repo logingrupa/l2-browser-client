@@ -12,6 +12,7 @@ import type { WorldAudioPlaybackReceipt } from "../../src/audio/WorldAudioMixer"
 import { readAssetPackage, sha256, type AssetPackage } from "../../src/assets/package/readAssetPackage";
 import { storedPackage } from "../fixtures/assetPackageFixture";
 import { nativeVisualClips, nativeVisualFixture } from "../fixtures/nativeVisualFixture";
+import { itemlessEquippedItemSource } from "../fixtures/nativeEquippedItemSourceFixture";
 
 const origin = { x: 2, y: 3, z: 4 };
 const adapters: NativeSliceAdapter[] = [];
@@ -172,7 +173,7 @@ async function createVisual(profile: Partial<NativeCharacterProfile> = {}, foots
   const engine = new NullEngine(), scene = new Scene(engine); GetEnvironmentBRDFTexture(scene);
   disposals.push(() => { scene.dispose(); engine.dispose(); });
   const configured: NativeCharacterProfile = { asset: await testOnlyWalkingFixtureCopiedFromIdle(), clips: { ...nativeVisualClips, walk: walkClip }, ...profile };
-  const visual = nativeCharacterFactory(new Map([["fixture", configured]]), undefined, footsteps)(scene, entity);
+  const visual = nativeCharacterFactory(new Map([["fixture", configured]]), itemlessEquippedItemSource, undefined, footsteps)(scene, entity);
   disposals.push(() => visual.dispose()); await visual.ready; return { visual, scene, asset: configured.asset };
 }
 

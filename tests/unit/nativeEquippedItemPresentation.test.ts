@@ -81,7 +81,7 @@ describe("body-part items on a native character visual", () => {
     };
     const statuses: string[] = [];
     const visual = nativeCharacterFactory(new Map([["fixture", { asset: await nativeVisualFixture({ skinned: true }), clips: nativeVisualClips,
-      generatedProfile }]]), undefined, undefined, undefined, source)(scene, initial, message => statuses.push(message));
+      generatedProfile }]]), source)(scene, initial, message => statuses.push(message));
     releases.push(() => visual.dispose());
     await visual.ready;
     const meshesBeforeEquip = scene.meshes.length;
