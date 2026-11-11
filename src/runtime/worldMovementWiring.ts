@@ -80,6 +80,11 @@ const groundQueryLimit = 64;
 
 const toRotatorUnits = (radians: number) => Math.round(radians * rotatorUnitsPerHalfTurn / Math.PI);
 
+function clampToCameraRadiusLimits(camera: ArcRotateCamera, radius: number): number {
+  const raised = camera.lowerRadiusLimit === null ? radius : Math.max(radius, camera.lowerRadiusLimit);
+  return camera.upperRadiusLimit === null ? raised : Math.min(raised, camera.upperRadiusLimit);
+}
+
 function boundsDiagonalSourceLength(bounds: WorldBounds): number {
   const { minimum, maximum } = bounds;
   return worldDistanceToSource(Math.hypot(maximum.x - minimum.x, maximum.y - minimum.y, maximum.z - minimum.z));
@@ -164,7 +169,7 @@ export function wireWorldMovement(options: WorldMovementOptions): WorldMovement 
       if (queryKey !== lastBehindView?.queryKey) lastBehindView = { queryKey, view: calculateBehindView(collisionWorld, query, rules) };
       const view = lastBehindView.view;
       hitDistance = view.hitDistance === null ? null : sourceDistanceToWorld(view.hitDistance);
-      appliedRadius = sourceDistanceToWorld(view.distance - rules.camera.wallMargin);
+      appliedRadius = clampToCameraRadiusLimits(camera, sourceDistanceToWorld(view.distance - rules.camera.wallMargin));
       camera.radius = appliedRadius;
     },
     collisionSurfaceHeightsAt(x, z) {

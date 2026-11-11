@@ -186,6 +186,24 @@ describe("world movement wiring", () => {
     expect(movement.inspection().followCamera.desiredRadius).toBe(6);
   });
 
+  it("keeps the follow camera zoom across camera updates when the wall-clamped radius falls below the camera lower radius limit", async () => {
+    const { camera, movement, settle } = await wiredWorld([floorSlab(0), blockingBox([0, 40, 100], [512, 16, 128])]);
+    await settle();
+    camera.lowerRadiusLimit = .4;
+    camera.alpha = Math.PI / 2; camera.beta = Math.PI / 2; camera.radius = 4; camera.setTarget(new Vector3(0, 1, 0));
+    movement.constrainFollowCamera();
+    camera.update();
+    movement.constrainFollowCamera();
+    camera.update();
+    expect(camera.radius).toBe(.4);
+    expect(movement.inspection().followCamera).toMatchObject({ desiredRadius: 4, appliedRadius: .4 });
+    camera.alpha = -Math.PI / 2;
+    movement.constrainFollowCamera();
+    camera.update();
+    expect(movement.inspection().followCamera).toMatchObject({ desiredRadius: 4, hitDistance: null });
+    expect(camera.radius).toBeCloseTo(4, 5);
+  });
+
   it("grounds a presented position on the collision surface below its step height and answers straight walks for the door approach", async () => {
     const { movement, settle } = await wiredWorld([floorSlab(0), blockingBox([100, 0, 64], [16, 512, 64])]);
     expect(movement.groundBelow({ x: 0, y: .5, z: 0 })).toBeNull();
