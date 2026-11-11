@@ -175,7 +175,49 @@ Plans:
   2. For world, actor and skill audio, listen-check results are recorded as labelled audible clips with verdicts; successful extraction or decoding is never recorded as a pass.
   3. Each mismatch becomes a converter fix (re-run shows the corrected result in the sandbox) or a listed gap; no tile is hand-patched.
   4. A stage A exit report states per part how many items were converted, load, were checked, and how many pass, mismatch, are unverified or are gaps, tied to the IMPORTA-PC hash lock.
-**Plans**: TBD
+**Plans**: 17 plans
+
+Plans:
+**Wave 1**
+- [ ] 03-01-PLAN.md - Check record module and key content digest; names the Phase 3 start commit (CHECK-01, CHECK-02, CHECK-03)
+- [ ] 03-02-PLAN.md - set-environment sandbox command, camera pose setter, visible diagnostic materials (CHECK-01, CHECK-04)
+- [ ] 03-03-PLAN.md - Union currency, LOAD_CHECK_KEYS selector, full union load sweeps (CHECK-01, CHECK-05)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 03-04-PLAN.md - Pair queue and the record writer CLI: queue, ingest, judge (CHECK-01, CHECK-02, CHECK-03)
+- [ ] 03-05-PLAN.md - Stage A exit report on the coverage owner, schema 2, TS reader (CHECK-05)
+- [ ] 03-06-PLAN.md - Native capture driver and import, transcript-tested, not run against IMPORTA (CHECK-01, CHECK-02)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 03-07-PLAN.md - Sandbox-half slice runner and every queued window half (CHECK-01, CHECK-03)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 03-08-PLAN.md - Tile and minimap sandbox halves (CHECK-01, CHECK-03)
+- [ ] 03-09-PLAN.md - NPC, item and skill sandbox halves (CHECK-01, CHECK-03)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 03-10-PLAN.md - Labelled audio clips for queued keys, listen-needs-owner (CHECK-02, CHECK-03)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+- [ ] 03-11-PLAN.md - Defect list from the halves and the union loads (CHECK-04)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+- [ ] 03-12-PLAN.md - World converter fixes and the re-run chain (CHECK-04)
+
+**Wave 8** *(blocked on Wave 7 completion)*
+- [ ] 03-13-PLAN.md - Actors converter fixes and the re-run chain (CHECK-04)
+
+**Wave 9** *(blocked on Wave 8 completion)*
+- [ ] 03-14-PLAN.md - Data and UI converter fixes and the re-run chain (CHECK-04)
+
+**Wave 10** *(blocked on Wave 9 completion)*
+- [ ] 03-15-PLAN.md - Final union sweeps and the generated stage A exit report (CHECK-05)
+
+**Wave 11** *(blocked on Wave 10 completion)*
+- [ ] 03-16-PLAN.md - Stage A check sections in the lane EVIDENCE docs (CHECK-03)
+
+**Wave 12** *(blocked on Wave 11 completion)*
+- [ ] 03-17-PLAN.md - Needs Human session lines, VERIFICATION Open, STATUS, phase gate (CHECK-01, CHECK-02, CHECK-03)
 
 ### Phase 4: Stage B adapter
 **Goal**: A stock Mobius server drives the client through `GameWorldAdapter` and the client displays what it sends; SpacetimeDB replaces it only if Mobius does not fit.

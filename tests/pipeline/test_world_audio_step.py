@@ -14,17 +14,22 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from native_assets_lib.world_ambience import FIELDS
 from native_store.gap_rows import is_listed_reason, load_gap_reason_patterns
+from native_store.store_paths import lane_work_root
+from native_store.unit_ledger import UnitLedger
 from reference_client_guard import ReferenceClientLockError
 import world.exact_sound_sources as exact_sound_sources
+import world.world_audio_step as world_audio_step
 from world.ambient_sound_inventory import AmbientEmitterUnreadable, ambient_emitter_row, inventory_ambient_sounds
 from world.exact_sound_sources import ConvertedSound, ResolvedSound, SoundSourceGap, convert_exact_sound, resolve_exact_sound
 from world.music_volume_join import join_music_volumes
 from world.placement_audio_inventory import inventory_placement_audio, placement_audio_properties
+from world.raw_map_step import PRODUCTS_FOLDER_NAME, RAW_MAP_STEP_ALGORITHM_VERSION, RAW_STEP_NAME, raw_map_recipe, read_tile_map_lock_record, tile_unit_key
+from world.tile_census import WORLD_LANE_NAME
 import world.tile_music as tile_music
 from world.tile_manifest_step import tile_resources
 from world.tile_step_gap_rows import TileStepGapRows
-from world.world_audio_step import (CORE_LIBRARY_PATH, PLACEMENT_AUDIO_KIND, WORLD_AUDIO_STEP_ALGORITHM_VERSION, WORLD_AUDIO_STEP_NAME,
-                                    core_library_radius, placement_audio_bundle)
+from world.world_audio_step import (CORE_LIBRARY_PATH, PLACEMENT_AUDIO_KIND, WORLD_AUDIO_STEP_ALGORITHM_VERSION, WORLD_AUDIO_STEP_NAME, TileSounds,
+                                    core_library_radius, placement_audio_bundle, run_world_audio_step, sealed_world_audio)
 
 REFERENCE_CLIENT = Path('E:/Lineage2-client')
 STAGED_AMBIENCE_MANIFEST = ROOT / 'public/l2/world-audio/e2fe18be38caf3a8476e194b0ad1641b62f04dbd9dd1925f4c09ddd5d8e74a01/manifest.json'
@@ -204,10 +209,20 @@ class MusicJoinTests(unittest.TestCase):
         self.assertEqual((volumes, refusal), ([], 'Unsupported serialized brush transform: Rotation'))
         self.assertEqual([row['reason'] for row in gaps.rows()], ['music-volume-unreadable'])
 
-    def test_a_missing_encoder_is_an_unpinned_derivative_gap(self):
-        gaps = TileStepGapRows(TILE_ID, WORLD_AUDIO_STEP_NAME, SOURCE_IDENTITY, EVIDENCE)
+    def test_a_missing_encoder_resolves_to_no_pinned_encoder(self):
         with patch.object(tile_music.shutil, 'which', return_value=None):
-            self.assertEqual(tile_music.pinned_encoder(tile_music.music_derivative_spec(), gaps), (None, None))
+            self.assertEqual(tile_music.pinned_music_encoder(), tile_music.PinnedMusicEncoder(None, None))
+
+    def test_an_unpinned_encoder_is_a_derivative_gap_without_a_music_bundle(self):
+        gaps = TileStepGapRows(TILE_ID, WORLD_AUDIO_STEP_NAME, SOURCE_IDENTITY, EVIDENCE)
+        join = SimpleNamespace(music_files=['music/a_track.ogg'])
+        with patch.object(tile_music, 'music_volumes', return_value=[music_volume(7, '00_00.MusicVolume0')]), \
+                patch.object(tile_music, 'decode_table', return_value={'source': 'system/musicinfo.dat'}), \
+                patch.object(tile_music, 'musicinfo_rows', return_value=[]), patch.object(tile_music, 'lock_equal_paths', return_value=[]), \
+                patch.object(tile_music, 'join_music_volumes', return_value=([join], [])):
+            music = tile_music.convert_tile_music(None, None, TILE_ID, {'eSha256': SOURCE_IDENTITY['sha256']}, b'', tile_music.PinnedMusicEncoder(None, None),
+                                                  gaps)
+        self.assertEqual((music.files, music.input_paths), (None, ['system/musicinfo.dat', 'music/a_track.ogg']))
         self.assertEqual([row['reason'] for row in gaps.rows()], ['music-derivative-encoder-unpinned'])
 
     def test_a_source_that_is_not_44_1_khz_stereo_is_refused_before_encoding(self):
@@ -232,6 +247,78 @@ class MusicJoinTests(unittest.TestCase):
             self.assertTrue(is_listed_reason(reason, load_gap_reason_patterns(ROOT)), reason)
 
 
+RERUN_TILE_ID = '20_20'
+PINNED_ENCODER_PATH = 'C:/pinned/ffmpeg.exe'
+PINNED_ENCODER_IDENTITY = {'name': 'ffmpeg', 'version': 'pinned', 'sha256': 'e' * 64, 'banner': 'ffmpeg version pinned'}
+
+
+def seal_raw_unit(project_root, tile_id):
+    lock_record = read_tile_map_lock_record(tile_id)
+    ledger = UnitLedger(lane_work_root(project_root, WORLD_LANE_NAME), RAW_STEP_NAME, RAW_MAP_STEP_ALGORITHM_VERSION)
+    fingerprint = ledger.unit_fingerprint([lock_record['eSha256']], raw_map_recipe(tile_id, lock_record))
+    products = ledger.begin(tile_unit_key(tile_id), fingerprint) / PRODUCTS_FOLDER_NAME
+    products.mkdir()
+    (products / 'actors.json').write_bytes(b'[]')
+    output = {'path': (products / 'actors.json').relative_to(ledger.lane_folder).as_posix(), 'sha256': hashlib.sha256(b'[]').hexdigest(), 'bytes': 2}
+    ledger.seal(tile_unit_key(tile_id), fingerprint, {'config': raw_map_recipe(tile_id, lock_record),
+                                                      'inputs': [{'path': f'maps/{tile_id}.unr', 'sha256': lock_record['eSha256']}],
+                                                      'outputs': [output], 'gapRows': []})
+
+
+def pinned_identity_of(executable, encoder_spec):
+    if executable != PINNED_ENCODER_PATH:
+        raise ValueError('No local AAC encoder: install the pinned ffmpeg or pass --ffmpeg')
+    return PINNED_ENCODER_IDENTITY
+
+
+def environment_dependent_tile_audio(*arguments):
+    gaps = arguments[-1]
+    if tile_music.shutil.which('ffmpeg') != PINNED_ENCODER_PATH:
+        gaps.add('gap', 'music-derivative-encoder-unpinned')
+        return [], {'music': {'volumes': 1, 'joined': 1}}, []
+    manifest = json.dumps({'kind': 'native-map-music', 'tileId': RERUN_TILE_ID}).encode('utf-8')
+    return [(tile_music.MUSIC_KIND, {'manifest.json': manifest})], {'music': {'volumes': 1, 'joined': 1, 'presented': 1, 'tracks': 1}}, []
+
+
+class WorldAudioRerunTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary_directory = tempfile.TemporaryDirectory()
+        self.project_root = Path(self.temporary_directory.name)
+        seal_raw_unit(self.project_root, RERUN_TILE_ID)
+
+    def tearDown(self):
+        self.temporary_directory.cleanup()
+
+    def run_audio_step(self, encoder_path):
+        with patch.object(tile_music.shutil, 'which', return_value=encoder_path), patch.object(tile_music, 'encoder_identity', side_effect=pinned_identity_of), \
+                patch.object(world_audio_step, 'convert_tile_audio', side_effect=environment_dependent_tile_audio) as convert:
+            row = run_world_audio_step(self.project_root, REFERENCE_CLIENT, RERUN_TILE_ID)
+            _, product = sealed_world_audio(self.project_root, RERUN_TILE_ID, read_tile_map_lock_record(RERUN_TILE_ID))
+        return row, product, convert.call_count
+
+    def test_a_music_gap_sealed_without_the_encoder_is_converted_again_once_the_pinned_encoder_is_present(self):
+        row, product, conversions = self.run_audio_step(None)
+        self.assertEqual((row['status'], row['reason'], product['manifests'], conversions), ('gap', 'music-derivative-encoder-unpinned', [], 1))
+        row, product, conversions = self.run_audio_step(PINNED_ENCODER_PATH)
+        self.assertEqual((row['status'], row['reason'], conversions), ('pass', None, 1))
+        self.assertEqual([manifest['kind'] for manifest in product['manifests']], ['native-map-music'])
+        row, product, conversions = self.run_audio_step(PINNED_ENCODER_PATH)
+        self.assertEqual((row['status'], conversions), ('pass', 0))
+
+    def test_a_sound_converter_that_refuses_to_start_fails_the_step_instead_of_sealing_a_gap(self):
+        gaps = TileStepGapRows(TILE_ID, WORLD_AUDIO_STEP_NAME, SOURCE_IDENTITY, EVIDENCE)
+        refusal = ValueError('UModel hash differs from the reviewed build1590; refuse unpinned conversion')
+        with patch.object(world_audio_step, 'require_reference_client', return_value=SimpleNamespace(lock=None)), \
+                patch.object(world_audio_step, 'lock_equal_sound_package_paths', return_value=[]), patch.object(world_audio_step, 'ExactSoundPackages'), \
+                patch.object(world_audio_step, 'resolve_exact_sound', return_value=SimpleNamespace(package_path='sounds/AmbSound.uax')), \
+                patch.object(world_audio_step, 'world_sound_converter', side_effect=refusal):
+            sounds = TileSounds(self.project_root, REFERENCE_CLIENT, gaps)
+            with self.assertRaises(ValueError) as caught:
+                sounds.convert('AmbSound.Wind.gust')
+        self.assertIs(caught.exception, refusal)
+        self.assertEqual(gaps.rows(), [])
+
+
 @unittest.skipUnless(REFERENCE_CLIENT.is_dir() and STAGED_AMBIENCE_MANIFEST.is_file(),
                      'the conversion client E:/Lineage2-client or the staged 20_20 ambience in public/l2 is absent')
 class RealClientAudioTests(unittest.TestCase):
@@ -246,7 +333,7 @@ class RealClientAudioTests(unittest.TestCase):
         lock_record = read_tile_map_lock_record('20_20')
         gaps = TileStepGapRows('20_20', WORLD_AUDIO_STEP_NAME, {'path': 'maps/20_20.unr', 'sha256': lock_record['eSha256']}, EVIDENCE)
         bundles, coverage, _ = convert_tile_audio(REPOSITORY_ROOT, REFERENCE_CLIENT.resolve(), '20_20', lock_record,
-                                                  raw_unit_fingerprint(REPOSITORY_ROOT, '20_20', lock_record)[1], gaps)
+                                                  raw_unit_fingerprint(REPOSITORY_ROOT, '20_20', lock_record)[1], tile_music.pinned_music_encoder(), gaps)
         self.assertEqual(gaps.rows(), [])
         self.assertEqual({key: coverage['ambience'][key] for key in staged['coverage']}, staged['coverage'])
         ambience = json.loads(dict(bundles)[AMBIENCE_KIND]['manifest.json'])

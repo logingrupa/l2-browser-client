@@ -35,6 +35,11 @@ class TileMusic(NamedTuple):
     input_paths: list
 
 
+class PinnedMusicEncoder(NamedTuple):
+    executable: str | None
+    identity: dict | None
+
+
 class MusicTrackRefused(ValueError):
     def __init__(self, reason, message):
         super().__init__(message)
@@ -76,22 +81,21 @@ def tile_music_volumes(map_data, map_path, gaps):
         return [], str(error)
 
 
-def pinned_encoder(derivative, gaps):
-    encoder = shutil.which('ffmpeg')
+def pinned_music_encoder():
+    executable = shutil.which('ffmpeg')
     try:
-        return encoder, encoder_identity(encoder, derivative['encoder'])
+        return PinnedMusicEncoder(executable, encoder_identity(executable, music_derivative_spec()['encoder']))
     except ENCODER_FAILURES:
-        gaps.add(GAP_STATUS, MUSIC_DERIVATIVE_ENCODER_UNPINNED_REASON)
-        return None, None
+        return PinnedMusicEncoder(None, None)
 
 
-def joined_volume_tracks(client_access, join, tracks, payloads, derivative, encoder, identity, gaps):
+def joined_volume_tracks(client_access, join, tracks, payloads, derivative, music_encoder, gaps):
     keys = []
     for stored_string, relative_path in zip(join.ordered_strings, join.music_files):
         key = 'music:' + stored_string
         if key not in tracks:
             try:
-                tracks[key], files = music_track(client_access, relative_path, stored_string, derivative, encoder, identity)
+                tracks[key], files = music_track(client_access, relative_path, stored_string, derivative, music_encoder.executable, music_encoder.identity)
             except MusicTrackRefused as refusal:
                 gaps.add(GAP_STATUS, refusal.reason, join.volume['object'])
                 return None
@@ -112,7 +116,7 @@ def music_manifest(tile_id, lock_record, volumes, tracks, payloads):
             'coverage': {'volumes': len(volumes), 'tracks': len(tracks), 'files': len(payloads), 'runtimeConnected': False}, 'limits': MUSIC_LIMITS}
 
 
-def convert_tile_music(client, client_access, tile_id, lock_record, map_data, gaps):
+def convert_tile_music(client, client_access, tile_id, lock_record, map_data, music_encoder, gaps):
     volumes, refusal = tile_music_volumes(map_data, f'maps/{tile_id}.unr', gaps)
     if not volumes:
         return TileMusic(None, {'volumes': 0, 'musicVolumeRefusal': refusal}, [])
@@ -122,13 +126,13 @@ def convert_tile_music(client, client_access, tile_id, lock_record, map_data, ga
     for join_gap in join_gaps:
         gaps.add(GAP_STATUS, join_gap.reason, join_gap.volume['object'])
     input_paths = [decoded['source'], *sorted({path for join in joins for path in join.music_files})]
-    derivative = music_derivative_spec()
-    encoder, identity = pinned_encoder(derivative, gaps)
-    if encoder is None:
+    if music_encoder.identity is None:
+        gaps.add(GAP_STATUS, MUSIC_DERIVATIVE_ENCODER_UNPINNED_REASON)
         return TileMusic(None, {'volumes': len(volumes), 'joined': len(joins)}, input_paths)
+    derivative = music_derivative_spec()
     tracks, payloads, music_volume_rows = {}, {}, []
     for join in joins:
-        keys = joined_volume_tracks(client_access, join, tracks, payloads, derivative, encoder, identity, gaps)
+        keys = joined_volume_tracks(client_access, join, tracks, payloads, derivative, music_encoder, gaps)
         if keys is not None:
             music_volume_rows.append({**join.volume, 'musicInfo': {'id': join.music_id, 'cnt': len(join.ordered_strings),
                                                                    'orderedStrings': list(join.ordered_strings), 'files': list(join.music_files)},

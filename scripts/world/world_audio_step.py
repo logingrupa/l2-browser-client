@@ -20,7 +20,7 @@ from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import raw_unit_fingerprint, read_locked_map_package
 from world.tile_json_resource import BUNDLE_MANIFEST_NAME, write_tile_resource_bundle
-from world.tile_music import MUSIC_KIND, convert_tile_music, music_derivative_spec
+from world.tile_music import MUSIC_KIND, convert_tile_music, music_derivative_spec, pinned_music_encoder
 from world.tile_step_gap_rows import TileStepGapRows, tile_step_summary_row
 
 WORLD_AUDIO_STEP_ALGORITHM_VERSION = 1
@@ -52,11 +52,12 @@ def world_audio_ledger(project_root):
     return UnitLedger(lane_work_root(project_root, WORLD_LANE_NAME), WORLD_AUDIO_STEP_NAME, WORLD_AUDIO_STEP_ALGORITHM_VERSION)
 
 
-def world_audio_unit_config(project_root, tile_id, lock_record):
+def world_audio_unit_config(project_root, tile_id, lock_record, music_encoder):
     return {'rawFingerprint': raw_unit_fingerprint(project_root, tile_id, lock_record)[0],
             'placementPropertiesSha256': sha256_hex(canonical_json_bytes(list(placement_audio_properties()))),
             'radiusSymbolsSha256': sha256_hex(canonical_json_bytes(radius_symbols())),
-            'musicDerivativeSha256': sha256_hex(canonical_json_bytes(music_derivative_spec()))}
+            'musicDerivativeSha256': sha256_hex(canonical_json_bytes(music_derivative_spec())),
+            'musicEncoder': music_encoder.identity}
 
 
 def world_audio_product_path(ledger, unit_key):
@@ -75,7 +76,7 @@ def current_world_audio_receipt(ledger, unit_key, tile_id, config):
 
 def sealed_world_audio(project_root, tile_id, lock_record):
     ledger, unit_key = world_audio_ledger(project_root), tile_unit_key(tile_id)
-    receipt = current_world_audio_receipt(ledger, unit_key, tile_id, world_audio_unit_config(project_root, tile_id, lock_record))
+    receipt = current_world_audio_receipt(ledger, unit_key, tile_id, world_audio_unit_config(project_root, tile_id, lock_record, pinned_music_encoder()))
     if receipt is None:
         return None, None
     return receipt['fingerprint'], json.loads(world_audio_product_path(ledger, unit_key).read_text(encoding='utf-8'))
@@ -99,11 +100,19 @@ class TileSounds:
         self.converted[key] = None
         try:
             resolved = resolve_exact_sound(self.packages, reference)
-            self.converter = self.converter or world_sound_converter(self.project_root, self.client)
-            self.converted[key] = convert_exact_sound(self.converter, resolved)
-        except SoundSourceGap as gap:
-            self.gaps.add(GAP_STATUS, gap.reason, reference)
         except ValueError as error:
+            self.record_sound_failure(reference, error)
+            return
+        self.converter = self.converter or world_sound_converter(self.project_root, self.client)
+        try:
+            self.converted[key] = convert_exact_sound(self.converter, resolved)
+        except ValueError as error:
+            self.record_sound_failure(reference, error)
+
+    def record_sound_failure(self, reference, error):
+        if isinstance(error, SoundSourceGap):
+            self.gaps.add(GAP_STATUS, error.reason, reference)
+        else:
             self.gaps.add(FAILED_STATUS, conversion_failure_reason(error), reference)
 
     def available(self):
@@ -182,7 +191,7 @@ def placement_audio_bundle(tile_id, lock_record, placements, properties, sounds,
     return bundle_files(manifest, records, sounds), {'placements': len(rows), 'sounds': len(records)}
 
 
-def convert_tile_audio(project_root, client, tile_id, lock_record, raw_products, gaps):
+def convert_tile_audio(project_root, client, tile_id, lock_record, raw_products, music_encoder, gaps):
     package = read_locked_map_package(client, tile_id, lock_record)
     sounds = TileSounds(project_root, client, gaps)
     inventory = inventory_ambient_sounds(package, RAW_MAP_PRODUCT_PATH)
@@ -203,7 +212,7 @@ def convert_tile_audio(project_root, client, tile_id, lock_record, raw_products,
         files, coverage['placementAudio'] = placement_audio_bundle(tile_id, lock_record, placements, properties, sounds, gaps)
         bundles.append((PLACEMENT_AUDIO_KIND, files))
     map_data = sounds.client_access.require_equal_file(tile_map_path(tile_id)).read_bytes()
-    music = convert_tile_music(client, sounds.client_access, tile_id, lock_record, map_data, gaps)
+    music = convert_tile_music(client, sounds.client_access, tile_id, lock_record, map_data, music_encoder, gaps)
     coverage['music'] = music.coverage
     if music.files is not None:
         bundles.append((MUSIC_KIND, music.files))
@@ -214,7 +223,9 @@ def run_world_audio_step(project_root, client_root, tile_id):
     require_tile_id(tile_id)
     lock_record = read_tile_map_lock_record(tile_id)
     source_identity = {'path': tile_map_path(tile_id), 'sha256': lock_record['eSha256']}
-    ledger, unit_key, config = world_audio_ledger(project_root), tile_unit_key(tile_id), world_audio_unit_config(project_root, tile_id, lock_record)
+    music_encoder = pinned_music_encoder()
+    ledger, unit_key = world_audio_ledger(project_root), tile_unit_key(tile_id)
+    config = world_audio_unit_config(project_root, tile_id, lock_record, music_encoder)
     receipt_evidence = (ledger.unit_step_directory(unit_key) / RECEIPT_RECORD_NAME).relative_to(ledger.lane_folder).as_posix()
     if current_world_audio_receipt(ledger, unit_key, tile_id, config) is not None:
         product = json.loads(world_audio_product_path(ledger, unit_key).read_text(encoding='utf-8'))
@@ -223,7 +234,7 @@ def run_world_audio_step(project_root, client_root, tile_id):
     gaps = TileStepGapRows(tile_id, WORLD_AUDIO_STEP_NAME, source_identity, receipt_evidence)
     try:
         bundles, coverage, input_paths = convert_tile_audio(project_root, client, tile_id, lock_record, raw_unit_fingerprint(project_root, tile_id, lock_record)[1],
-                                                            gaps)
+                                                            music_encoder, gaps)
     except FormatError as error:
         gaps.add(FAILED_STATUS, conversion_failure_reason(error))
         bundles, coverage, input_paths = [], {}, []
