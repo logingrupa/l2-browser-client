@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 import struct
 
-from native_assets import UMODEL, Converter
+from native_assets import UMODEL, Converter, implementation_hash
 from native_assets_lib.gltf import json_bytes
 from native_catalog.ue2 import FormatError
 from native_store.catalog_writer import add_store_file, immutable_write, sha256_hex, verify_store_destinations
@@ -49,7 +49,8 @@ def minimap_ledger(project_root):
 
 
 def minimap_unit_config(raw_fingerprint, chunk_plan_fingerprint):
-    return {'rawFingerprint': raw_fingerprint, 'chunkPlanFingerprint': chunk_plan_fingerprint, 'joinAlgorithmVersion': MINIMAP_JOIN_ALGORITHM_VERSION}
+    return {'rawFingerprint': raw_fingerprint, 'chunkPlanFingerprint': chunk_plan_fingerprint, 'converterSha256': implementation_hash(),
+            'joinAlgorithmVersion': MINIMAP_JOIN_ALGORITHM_VERSION}
 
 
 def minimap_input_records(tile_id):

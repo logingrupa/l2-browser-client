@@ -5,6 +5,7 @@ import struct
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
@@ -14,6 +15,7 @@ from native_store.tile_manifest_validation import (TILE_MANIFEST_KIND, TILE_MANI
                                                    validate_tile_manifest)
 from native_store.unit_ledger import UnitLedger
 from world.minimap_join import RADAR_PACKAGE_ROLE, TOWN_MAP_PACKAGE_ROLE, ZONE_NAME_PACKAGE_ROLE, ZONENAME_TABLE_ROLE, HUNTINGZONE_TABLE_ROLE
+from world import minimap_step
 from world.minimap_sources import MinimapSources, locked_tile_ids, tile_frame_extent
 from world.minimap_step import MINIMAP_STEP_NAME, run_minimap_step, sealed_minimap
 from world.raw_map_step import (PRODUCTS_FOLDER_NAME, RAW_MAP_STEP_ALGORITHM_VERSION, RAW_STEP_NAME, raw_map_recipe, read_tile_map_lock_record,
@@ -126,6 +128,15 @@ class MinimapStepTests(unittest.TestCase):
         rerun = run_minimap_step(self.project_root, CLIENT_ROOT, TILE_ID, synthetic_sources(), self.converter)
         self.assertEqual(rerun['status'], 'pass')
         self.assertEqual(len(self.converter.requests), 1)
+
+    def test_a_changed_converter_implementation_reconverts_a_sealed_tile(self):
+        write_project(self.project_root)
+        with mock.patch.object(minimap_step, 'implementation_hash', return_value='a' * 64):
+            run_minimap_step(self.project_root, CLIENT_ROOT, TILE_ID, synthetic_sources(), self.converter)
+        with mock.patch.object(minimap_step, 'implementation_hash', return_value='b' * 64):
+            rerun = run_minimap_step(self.project_root, CLIENT_ROOT, TILE_ID, synthetic_sources(), self.converter)
+        self.assertEqual(rerun['status'], 'pass')
+        self.assertEqual(len(self.converter.requests), 2)
 
     def test_a_radar_package_outside_the_reviewed_versions_is_a_licensee_gap_with_no_texture_output(self):
         write_project(self.project_root)
