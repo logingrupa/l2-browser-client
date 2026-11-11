@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 02-93-PLAN.md
-last_updated: "2026-11-11T14:27:44.301Z"
+stopped_at: Completed 02-74-PLAN.md
+last_updated: "2026-11-11T14:49:04.269Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 03 plan 03-01 complete (side-by-side check record writer and key content digest; Phase 3 start commit cb09cdc)
-state_head: e1ed85d35e71773bbf703081bcacda38c8e1cc86
+state_head: c44ce3459169dcc7d5de6213770ce48891463dff
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 131
-  completed_plans: 99
+  completed_plans: 100
   percent: 0
 ---
 
@@ -145,6 +145,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 03 P03 | 137min | 3 tasks | 6 files |
 | Phase 2 P90 | 25min | 2 tasks | 17 files |
 | Phase 2 P93 | 15min | 2 tasks | 18 files |
+| Phase 2 P74 | 10min | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -365,6 +366,11 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 2]: P961: the movement overlap area scans scripts/world/collision_*.py, static_collision_sources.py and terrain_collision_source.py, the realised names of the collision steps 03-movement.md lists
 - [Phase 2]: P962: the Python overlap scanner drops string-only statements (docstrings) and import and from statements to their logical line end, and newlines emit no token
 - [Phase 2]: P963: the unreachable speed unresolved readout branch of src/ui/nativeLocomotionControls.ts (data-ui lane) stays unedited and is listed for 02-89
+- [Phase 2]: P964: only Engine.Texture nodes carry the image member (the pin or null); other nodes carry none, so programs that reach no Texture keep their bytes
+- [Phase 2]: P965: a texture image pin must hold exactly bytes, path and sha256, and a pin naming no node of the graph is refused like a pin on another class
+- [Phase 2]: P966: materialProgram.ts exports maximumTextureImageBytes and material_program.py holds MAXIMUM_TEXTURE_IMAGE_BYTES = 33554432; materialProgramImagePins.test.ts reads the Python literal and checks equality and the limit edge
+- [Phase 2]: P967: tests/fixtures/material-programs/textured-program.json is the synthetic SkyPanner program with a 2 x 2 stored-deflate PNG pin, regenerated only with MATERIAL_PROGRAM_FIXTURE_UPDATE=1, and is -text in .gitattributes
+- [Phase 2]: P968: the CONV-02 build1590 tangent repair has its Needs Human line in STATE.md from 02-74, because OUTPUT_CONTRACT cites it
 
 ### Pending Todos
 
@@ -394,6 +400,7 @@ Owner decisions:
 - Needs Human (01-VERIFICATION.md): confirm the five prohibitions that can only be judged, not tested.
 - Needs Human (phase 1 verification): Phase 1 is human_needed with 6 of 6 criteria verified; it stays pending until the two items above are reviewed (OVERNIGHT-DECISIONS row 59); Phase 1 is not marked complete.
 - Resolved (plan 02-60, OVERNIGHT-DECISIONS rows 254, 298 and the clean-room rewrite rows of 2026-11-09): the 11 materials runs once left for the owner were rewritten clean-room from the Interlude binaries; the rewritten code passed the independent review and materials exits 0 with `--require-reviewed`.
+- Needs Human (CONV-02 gap item a, plan 02-74, OVERNIGHT-DECISIONS rows 887 and 968): decide the build1590 tangent repair: prove the zero-vector tangents with a test, or remove `repair_vertex_metadata` and the `omit-zero-tangent-attribute` record from `scripts/native_assets_lib/gltf.py` (removal changes converted output). Until then both steps run with `unresolved:` evidence, pinned by name in `REPAIR_STEPS_AWAITING_OWNER_DECISION` of `tests/pipeline/test_source_preservation_contract.py`; every other running repair needs repo-backed defect evidence.
 
 Integration thread (rule 4: only the integration thread writes the main checkout's `public/l2`):
 - Needs Human (plans 01-12, 02-17 to 02-34, OVERNIGHT-DECISIONS rows 376 and 377): restage `public/l2` from the main checkout to asset.json v2, then merge each lane store with the command `python -B scripts/native_store/write_lane_catalog.py --lane <lane> --plan` prints in this worktree (data-ui, actors and world; actors lane catalog `7ab1cdcf...` after the pack rebuild of row 444; base catalog `55c12147...`). After that restage, in one change: delete v1 acceptance in `src/assets/package/readAssetPackage.ts`, `src/effects/nativePowerStrikeSource.ts` and `scripts/native_assets_lib/asset_manifest.py` and regenerate the golden fixtures without `model-v1.l2asset` (01-12); delete the `legacy-single-mesh-match` NPC join in `src/assets/native/nativeCatalogIndex.ts` (02-05, row 326); switch the `musveren:0` reads in `src/runtime/createNativeSliceRuntime.ts` to the joined id of `nativeSliceNpcIds` (02-33). After this branch merges, run `pnpm assets:migrate` once in the main checkout (it writes only `artifacts/native-parity/migration`) and then `pnpm assets:migrate --verify-only`, because plan 02-71 changed the migration recipe (map jobs removed, `flame-native-material-graph` added; OVERNIGHT-DECISIONS rows 506 and 507).
@@ -444,7 +451,7 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 - Two converted-key owners (03-03, P816): the load-check harness list (`buildNativeCatalogIndex`) has `npc:21622` and `skill:3:1` as converted on the union, while `scripts/native_store/catalog_index_keys.py` does not; 03-11 takes the disagreement as a key index defect.
 - Eligible tile batch (02-47, 02-54, rows 681 to 690 and 752 to 761): 79 of 148 eligible tiles are `batch-pending` (20_22 onward in census order); continue `node scripts/check-machine-schedule.mjs && python -B scripts/world/convert_tile_batch.py --eligible --limit 4` until it prints nothing to do, then the tiles sweep with `LOAD_CHECK_LIMIT=<catalog tile count>`. Terrain fails on 16_25 (`Terrain layer 10 names only one of Texture and AlphaMap`) and on 18_23, 19_23, 19_24, 20_16 and 20_17 (`Non-XY/rotated layer requires a separately verified UV adapter`); fix the terrain layer reader, then `convert_tile.py --step terrain` on those tiles.
 - NPC batch breadth (rows 379, 420, 425 to 443 and 444): 80 of 429 model units are sealed under the current converter and 4 of 20 packs are written; continue `convert_actors.py --batch npcs --limit 20` slices in later runs, then rewrite the actors lane catalog.
-- BSP surface material files and texture image pins (02-30, 02-60, 02-64, rows 250, 518 and 693): the bsp step writes `native-materials/<sha>/graph.json` and `program.json` for each surface root, but no store manifest pins them, so the lane merge does not carry them, and no program Texture node carries its `image` pin, so all 89 world lane programs compile to `texture-image-absent` and 02-64 keeps every 20_21 BSP section on its converted material. Write the texture image pins in the material program derivation, pin the program files from the tile or chunk manifest, rerun bsp and lighting, then the lightmaps draw through the library.
+- BSP surface material files and texture image pins (02-30, 02-60, 02-64, rows 250, 518 and 693): the bsp step writes `native-materials/<sha>/graph.json` and `program.json` for each surface root, but no store manifest pins them, so the lane merge does not carry them, and no program Texture node carries its `image` pin, so all 89 world lane programs compile to `texture-image-absent` and 02-64 keeps every 20_21 BSP section on its converted material. Plan 02-74 gave `derive_material_program` the `texture_images` pins (each Texture node writes its pin or null) and `write_material_program_record`; 02-86 converts each Texture node to a store PNG, passes the pins, replaces the bsp and sky program writers with that owner and pins the program files from the tile or chunk manifest; then rerun bsp and lighting, and the lightmaps draw through the library.
 - Library vertex lighting and terrain layers (02-64, row 695): static mesh slots and terrain layers carry no program pin and the library has no vertex-colour or layer input; the lighting resource already holds the light lists, visibility bits and terrain shadow maps. Sky surfaces carry no program pin either (row 694).
 - Materials overlap review (DEC-OWN-12, 02-64, row 702): the materials area reports 35 blocking and 313 unreviewed runs and 34 stale sign-offs after the library lightmap input (report `artifacts/reference-overlap/02-64-materials.json`); independent review before the push.
 - Water volumes in VOLS (02-62, row 666): `recipes/world/collision-declaration-rules.json` admits only Engine.BlockingVolume and Engine.PhysicsVolume, so the lighting resource links no WaterVolume to VOLS (`lighting-water-volume-unlinked:Gameplay.WaterVolume`, 20_21: 5, 20_20: 4); admit PhysicsVolume subclasses in the collision step together with the MOVE-01 volume kind codes, then rerun collision and lighting. 02-66 swimming and the falling water entry read water from VOLS through `volumesContaining`, so they need the same export with bL2WaterVolume, Priority, Gravity and TerminalVelocity (row 675).
@@ -491,6 +498,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-11T14:27:43.680Z
-Stopped at: Completed 02-93-PLAN.md
+Last session: 2026-11-11T14:49:03.619Z
+Stopped at: Completed 02-74-PLAN.md
 Resume file: None
