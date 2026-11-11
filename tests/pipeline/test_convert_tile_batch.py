@@ -20,7 +20,7 @@ from world.convert_tile_batch import (BATCH_EXIT_DISK_FLOOR, BATCH_EXIT_DONE, BA
                                       NOTHING_TO_DO_MESSAGE, TileBatchUsageError, run_tile_batch)
 from world.eligible_tile_selection import SealedTileStep, seal_derived_step_row, select_eligible_tiles, step_level_rows
 from world.raw_map_step import tile_step_row
-from world.tile_census_validation import TILE_CENSUS_RELATIVE_PATH, TileCensusError
+from world.tile_census_validation import CENSUS_READER_NAMES, TILE_CENSUS_RELATIVE_PATH, TileCensusError
 from world.tile_step_registry import TILE_STEP_NAMES
 
 SYNTHETIC_STEP_NAMES = ('raw', 'chunks', 'meshes', 'manifest')
@@ -64,6 +64,7 @@ def synthetic_census(eligible_tile_ids, schema_version=1):
                  for tile_id in census_tile_ids()]
     non_tile_rows = [gap_census_row(f'map:Synthetic{index}', f'maps/Synthetic{index}.unr', 'non-tile') for index in range(NON_TILE_MAP_COUNT)]
     return {'schemaVersion': schema_version, 'referenceTreeLockSha256': 'b' * 64,
+            'reviewedReaderPairs': {reader: [[123, 28]] for reader in sorted(CENSUS_READER_NAMES)},
             'maps': sorted([*non_tile_rows, *tile_rows], key=lambda row: row['key'])}
 
 

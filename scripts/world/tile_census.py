@@ -19,11 +19,12 @@ from native_store.gap_rows import load_gap_reason_patterns, validate_gap_row, wr
 from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
 from native_store.unit_ledger import run_at_below_normal_priority
 from reference_client_guard import require_reference_client
+from world.reader_licensee_layouts import G16_HEIGHTMAP_READER, MAP_READERS, reader_gap_reason, reviewed_reader_pairs
 from world.committed_world_data import REPOSITORY_ROOT, require_committed_destination, write_committed_world_bytes
-from world.tile_census_validation import (DECLARED_TERRAIN_MAP_BASIS, ELIGIBLE_STATUS, GAP_STATUS, GATE_FAIL, GATE_MISSING, GATE_NOT_APPLICABLE,
-                                          GATE_PASS, NON_TILE_KIND, PACKAGE_NAME_TERRAIN_MAP_BASIS, SUPPORTED_PACKAGE_LICENSEE,
-                                          SUPPORTED_PACKAGE_VERSION, TILE_CENSUS_RELATIVE_PATH, TILE_CENSUS_SCHEMA_VERSION, TILE_KIND,
-                                          TileCensusError, validate_tile_census)
+from world.tile_census_validation import (CENSUS_READER_NAMES, DECLARED_TERRAIN_MAP_BASIS, ELIGIBLE_STATUS, GAP_STATUS, GATE_FAIL,
+                                          GATE_MISSING, GATE_NOT_APPLICABLE, GATE_PASS, NON_TILE_KIND, PACKAGE_NAME_TERRAIN_MAP_BASIS,
+                                          TILE_CENSUS_RELATIVE_PATH, TILE_CENSUS_SCHEMA_VERSION, TILE_KIND, TileCensusError,
+                                          validate_tile_census)
 
 DEFAULT_CONVERSION_CLIENT_ROOT = Path('E:/Lineage2-client')
 WORLD_LANE_NAME = 'world'
@@ -78,14 +79,18 @@ def read_package_header(client_access, relative_path):
     return {'packageVersion': package_summary['version'], 'licensee': package_summary['licenseeVersion'], 'wrapper': package_summary['wrapper']}
 
 
+def reviewed_pair_gate(readers, header):
+    package_pair = (header['packageVersion'], header['licensee'])
+    for reader in readers:
+        if package_pair not in reviewed_reader_pairs(reader):
+            return GATE_FAIL, reader_gap_reason(reader, *package_pair)
+    return GATE_PASS, None
+
+
 def map_reader_gate(header):
     if 'error' in header:
         return GATE_FAIL, f'decode-failed:{header["error"]}'
-    if header['packageVersion'] != SUPPORTED_PACKAGE_VERSION:
-        return GATE_FAIL, f'map-version-unsupported:{header["packageVersion"]}'
-    if header['licensee'] != SUPPORTED_PACKAGE_LICENSEE:
-        return GATE_FAIL, f'map-licensee-unsupported:{SUPPORTED_PACKAGE_VERSION}/{header["licensee"]}'
-    return GATE_PASS, None
+    return reviewed_pair_gate(MAP_READERS, header)
 
 
 def terrain_map_package_record(basis, terrain_map_object, package_path, header):
@@ -96,11 +101,7 @@ def terrain_map_package_record(basis, terrain_map_object, package_path, header):
 def terrain_height_gate_from_header(package_path, header):
     if 'error' in header:
         raise TileCensusError(f'terrain height package {package_path} header is unreadable ({header["error"]}); no listed gap reason covers it')
-    if header['packageVersion'] != SUPPORTED_PACKAGE_VERSION:
-        return GATE_FAIL, f'terrain-height-version-unsupported:{header["packageVersion"]}'
-    if header['licensee'] != SUPPORTED_PACKAGE_LICENSEE:
-        return GATE_FAIL, f'terrain-height-licensee-unsupported:{SUPPORTED_PACKAGE_VERSION}/{header["licensee"]}'
-    return GATE_PASS, None
+    return reviewed_pair_gate((G16_HEIGHTMAP_READER,), header)
 
 
 def terrain_height_gate_by_package_name(client_access, lock_records, tile_id):
@@ -158,19 +159,17 @@ def terrain_height_gate_of_readable_tile(client_access, lock_records, map_relati
 def census_row(client_access, lock_records, census_key):
     header = read_package_header(client_access, census_key['map'])
     map_gate, map_reason = map_reader_gate(header)
-    if census_key['kind'] == TILE_KIND and map_reason is None:
+    if census_key['kind'] == NON_TILE_KIND:
+        terrain_gate, terrain_reason, terrain_map_package = GATE_NOT_APPLICABLE, None, None
+    elif map_reason is None:
         terrain_gate, terrain_reason, terrain_map_package = terrain_height_gate_of_readable_tile(client_access, lock_records, census_key['map'])
-    elif census_key['kind'] == TILE_KIND:
+    else:
         terrain_gate, terrain_reason, terrain_map_package = terrain_height_gate_by_package_name(
             client_access, lock_records, census_key['key'].split(':', 1)[1])
-    elif map_reason is None:
-        raise TileCensusError(f'non-tile map {census_key["map"]} passes the map reader gate; no listed status covers a non-tile map that reads')
-    else:
-        terrain_gate, terrain_reason, terrain_map_package = GATE_NOT_APPLICABLE, None, None
     reason = map_reason if map_reason is not None else terrain_reason
     return {**census_key, 'packageVersion': header.get('packageVersion'), 'licensee': header.get('licensee'), 'wrapper': header.get('wrapper'),
             'mapReaderGate': map_gate, 'terrainHeightGate': terrain_gate, 'terrainMapPackage': terrain_map_package,
-            'status': ELIGIBLE_STATUS if reason is None and terrain_gate == GATE_PASS else GAP_STATUS, 'reason': reason}
+            'status': ELIGIBLE_STATUS if reason is None else GAP_STATUS, 'reason': reason}
 
 
 def census_gap_row(row, lock_records):
@@ -191,9 +190,14 @@ def reference_tree_lock_sha256(lock):
     return hashlib.sha256(lock_canonical_json_bytes(lock)).hexdigest()
 
 
+def census_reviewed_reader_pairs():
+    return {reader: [list(pair) for pair in reviewed_reader_pairs(reader)] for reader in sorted(CENSUS_READER_NAMES)}
+
+
 def build_tile_census(client_access, lock, lock_records):
     rows = [census_row(client_access, lock_records, census_key) for census_key in map_census_keys(lock_records)]
-    census = {'schemaVersion': TILE_CENSUS_SCHEMA_VERSION, 'referenceTreeLockSha256': reference_tree_lock_sha256(lock), 'maps': rows}
+    census = {'schemaVersion': TILE_CENSUS_SCHEMA_VERSION, 'referenceTreeLockSha256': reference_tree_lock_sha256(lock),
+              'reviewedReaderPairs': census_reviewed_reader_pairs(), 'maps': rows}
     tile_census_gap_rows(census, lock_records)
     return census
 
