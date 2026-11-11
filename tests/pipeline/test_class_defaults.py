@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 
+from native_assets_lib import class_defaults
 from native_assets_lib.class_defaults import (CLASS_DEFAULT_PROVENANCES, ClassDefaultError, ClassDefaultValue,
                                               ReferenceClientClassScripts, declared_fields, read_class_defaults_with_provenance,
                                               read_class_field_declarations)
@@ -142,6 +145,33 @@ class SyntheticClassChainTests(unittest.TestCase):
         class_scripts.package_sha256 = 'b' * 64
         read_class_defaults_with_provenance('Synthetic.Middle', ['FieldB'], work_root, class_scripts)
         self.assertEqual(class_scripts.decompiled_classes[3:], ['Synthetic.Middle', 'Synthetic.Base'])
+
+    def test_the_cache_is_rebuilt_when_the_class_default_parser_changes(self):
+        work_root = scratch_work_root(self, 'class-defaults-')
+        class_scripts = synthetic_chain_scripts()
+        first = read_class_defaults_with_provenance('Synthetic.Leaf', ['FieldA', 'FieldB'], work_root, class_scripts)
+        with patch.object(class_defaults, 'class_default_parser_sha256', return_value='c' * 64):
+            second = read_class_defaults_with_provenance('Synthetic.Leaf', ['FieldA', 'FieldB'], work_root, class_scripts)
+        self.assertEqual(second, first)
+        self.assertEqual(class_scripts.decompiled_classes, ['Synthetic.Leaf', 'Synthetic.Middle', 'Synthetic.Base'] * 2)
+        cached = json.loads((work_root / 'class-defaults' / 'Synthetic.Leaf.json').read_bytes())
+        self.assertEqual(cached['parserSha256'], 'c' * 64)
+
+    def test_a_current_cache_entry_with_an_unexpected_shape_is_refused(self):
+        work_root = scratch_work_root(self, 'class-defaults-')
+        class_scripts = synthetic_chain_scripts()
+        read_class_defaults_with_provenance('Synthetic.Leaf', ['FieldA'], work_root, class_scripts)
+        cache_path = work_root / 'class-defaults' / 'Synthetic.Leaf.json'
+        cached = json.loads(cache_path.read_bytes())
+        malformed_entries = {'declared fields not a list': dict(cached, declaredFields={'FieldA': 'float'}),
+                             'enum members not strings': dict(cached, enums={'Kind': [1, 2]}),
+                             'unexpected field': dict(cached, extra=True),
+                             'not an object': [cached]}
+        for label, entry in malformed_entries.items():
+            with self.subTest(label):
+                cache_path.write_text(json.dumps(entry), encoding='utf-8')
+                with self.assertRaisesRegex(ClassDefaultError, 'class-default cache'):
+                    read_class_defaults_with_provenance('Synthetic.Leaf', ['FieldA'], work_root, class_scripts)
 
     def test_declared_fields_reads_only_top_level_variables_with_their_types(self):
         self.assertEqual(declared_fields(SYNTHETIC_CLASS_SCRIPTS['Synthetic.Base'][1]), [

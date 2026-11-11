@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import functools
 import hashlib
 import json
 from pathlib import Path
@@ -14,7 +15,13 @@ from native_store.store_paths import REPOSITORY_ROOT, require_converter_output
 
 CLASS_DEFAULT_PROVENANCES = ('authored', 'class-default', 'ue-zero')
 CLASS_DEFAULT_CACHE_FOLDER_NAME = 'class-defaults'
-CLASS_DEFAULT_CACHE_SCHEMA_VERSION = 1
+CLASS_DEFAULT_CACHE_SCHEMA_VERSION = 2
+CLASS_DEFAULT_CACHE_FIELDS = ('declaredFields', 'enums', 'identity', 'parserSha256', 'properties', 'schemaVersion', 'scriptSha256')
+DECLARED_FIELD_RECORD_FIELDS = ('name', 'type')
+SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
+CLASS_DEFAULT_PARSER_SOURCE_PATHS = (Path(__file__).resolve(), SCRIPTS_ROOT / 'native_catalog' / 'effects.py',
+                                     SCRIPTS_ROOT / 'native_catalog' / 'extract_ue_defaults.ps1')
+SHA256_PATTERN = re.compile(r'[0-9a-f]{64}')
 DECOMPILE_WORK_FOLDER_NAME = 'decompiled'
 MAXIMUM_CLASS_CHAIN_LENGTH = 64
 QUALIFIED_CLASS_NAME_PATTERN = re.compile(r'[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+')
@@ -154,16 +161,46 @@ def decompiled_class_definition(identity, class_scripts, cache_folder):
     if leaf_class_name(parsed['superClass']) != leaf_class_name(identity['superClass']):
         raise ClassDefaultError(f'decompiled superclass {parsed["superClass"]} of {class_object} differs from the export table {identity["superClass"]}')
     enums = {name: [member for member, _ in sorted(members.items(), key=lambda entry: entry[1])] for name, members in parsed['enums'].items()}
-    return {'schemaVersion': CLASS_DEFAULT_CACHE_SCHEMA_VERSION, 'identity': identity, 'properties': parsed['properties'],
-            'declaredFields': declared_fields(script_text), 'enums': enums,
+    return {'schemaVersion': CLASS_DEFAULT_CACHE_SCHEMA_VERSION, 'identity': identity, 'parserSha256': class_default_parser_sha256(),
+            'properties': parsed['properties'], 'declaredFields': declared_fields(script_text), 'enums': enums,
             'scriptSha256': hashlib.sha256(script_text.encode('utf-8')).hexdigest()}
+
+
+@functools.cache
+def class_default_parser_sha256():
+    source_hashes = {path.relative_to(SCRIPTS_ROOT).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+                     for path in CLASS_DEFAULT_PARSER_SOURCE_PATHS}
+    return hashlib.sha256(canonical_json_bytes(source_hashes)).hexdigest()
+
+
+def is_string_list(value):
+    return isinstance(value, list) and all(isinstance(item, str) for item in value)
+
+
+def has_class_definition_shape(definition):
+    declared = definition['declaredFields']
+    enums = definition['enums']
+    return (tuple(sorted(definition)) == CLASS_DEFAULT_CACHE_FIELDS and isinstance(definition['properties'], dict)
+            and isinstance(declared, list)
+            and all(isinstance(field, dict) and tuple(sorted(field)) == DECLARED_FIELD_RECORD_FIELDS and is_string_list(list(field.values()))
+                    for field in declared)
+            and isinstance(enums, dict) and all(is_string_list(members) for members in enums.values())
+            and isinstance(definition['scriptSha256'], str) and SHA256_PATTERN.fullmatch(definition['scriptSha256']) is not None)
 
 
 def read_cached_class_definition(cache_path):
     try:
-        return json.loads(cache_path.read_text(encoding='utf-8'))
+        cached = json.loads(cache_path.read_text(encoding='utf-8'))
     except ValueError as error:
         raise ClassDefaultError(f'class-default cache is not JSON: {cache_path}') from error
+    if not isinstance(cached, dict):
+        raise ClassDefaultError(f'class-default cache is not a JSON object: {cache_path}')
+    return cached
+
+
+def is_current_class_definition(cached, identity):
+    return (cached.get('schemaVersion') == CLASS_DEFAULT_CACHE_SCHEMA_VERSION and cached.get('parserSha256') == class_default_parser_sha256()
+            and cached.get('identity') == identity)
 
 
 def cached_class_definition(class_object, class_scripts, cache_folder):
@@ -172,7 +209,9 @@ def cached_class_definition(class_object, class_scripts, cache_folder):
     cache_path = cache_folder / f'{identity["object"]}.json'
     if cache_path.is_file():
         cached = read_cached_class_definition(cache_path)
-        if cached.get('schemaVersion') == CLASS_DEFAULT_CACHE_SCHEMA_VERSION and cached.get('identity') == identity:
+        if is_current_class_definition(cached, identity):
+            if not has_class_definition_shape(cached):
+                raise ClassDefaultError(f'class-default cache has an unexpected shape: {cache_path}')
             return cached
     definition = decompiled_class_definition(identity, class_scripts, cache_folder)
     replace_file(cache_path, canonical_json_bytes(definition))
