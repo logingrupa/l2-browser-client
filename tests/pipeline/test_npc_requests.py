@@ -16,6 +16,7 @@ from actors.npc_requests import (animation_reference_gap_reason, label_npc_sound
 import native_actor_profiles
 from native_assets_lib.source_table_binding import verify_source_table_binding
 from native_catalog.ue2 import FormatError
+from native_store.catalog_writer import add_store_file, read_store_catalog
 from native_store.gap_rows import read_gap_rows, validate_gap_row
 from native_store.store_paths import lane_store_root, lane_work_root
 from reference_client_guard import ReferenceClientAccess, read_reference_client_lock
@@ -263,6 +264,25 @@ class ConvertNpcGapTests(unittest.TestCase):
         failed = self.run_npc(1)[0]
         self.assertEqual((failed['status'], failed['reason']), ('failed', 'disk went away'))
         self.assertFalse((lane_work_root(self.project_root, 'actors') / unit_key.replace(':', '__') / 'npc-model' / 'complete.json').exists())
+
+    def test_a_reconverted_npc_replaces_its_model_and_profile_records_in_the_lane_store(self):
+        run = self.conversion_run()
+        model_unit_key = model_catalog_id_of(self.convertible_selection)
+        written_records = []
+        for archive_sha256, manifest_sha256 in (('1' * 64, '3' * 64), ('2' * 64, '4' * 64)):
+            model_files, model_record = {}, {'id': model_unit_key, 'archive': f'/l2/{archive_sha256}/asset.l2asset',
+                                              'archiveSha256': archive_sha256, 'source': {'object': self.convertible_selection['mesh']}}
+            add_store_file(model_files, f'{archive_sha256}/asset.l2asset', archive_sha256.encode())
+            profile_files, profile_record = {}, {'id': 'interlude:npc-profiles:1', 'manifest': f'/l2/npc-profiles/{manifest_sha256}/manifest.json',
+                                                  'manifestSha256': manifest_sha256, 'manifestBytes': len(manifest_sha256)}
+            add_store_file(profile_files, f'npc-profiles/{manifest_sha256}/manifest.json', manifest_sha256.encode())
+            with (patch.object(run, 'sealed_outcome', return_value={'outputs': [{'path': 'work/model/asset.l2asset'}]}),
+                  patch.object(convert_actors, 'converted_model_store_files_and_record', return_value=(model_files, model_record)),
+                  patch.object(convert_actors, 'profile_bundle_store_files_and_record', return_value=(profile_files, profile_record))):
+                run.write_store_records(model_unit_key, 'npc:1')
+            written_records.append((model_record, profile_record))
+        catalog, _ = read_store_catalog(lane_store_root(self.project_root, 'actors'))
+        self.assertEqual((catalog['models'], catalog['npcProfiles']), ([written_records[1][0]], [written_records[1][1]]))
 
 
 @unittest.skipUnless(REFERENCE_CLIENT_ROOT.is_dir() and REFERENCE_CLIENT_LOCK.is_file(), 'needs E:/Lineage2-client and the reference client lock')

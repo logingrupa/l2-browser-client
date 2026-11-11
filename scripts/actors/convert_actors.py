@@ -26,9 +26,9 @@ from actors.npc_batch import (NpcSourceIdentities, npc_batch_plan, printed_batch
 from actors.skill_effect_conversion import (SkillEffectConversionRun, convert_skill, convert_skill_batch_slice, printed_skill_outcome,
                                             skill_outcomes_failed)
 from actors.path_free_messages import path_free_reason
-from actors.npc_store_records import (MODEL_ARCHIVE_FILE_NAME, bundle_output_records, converted_model_store_files_and_record,
-                                      PROFILE_MANIFEST_FILE_NAME, file_output_record, profile_bundle_store_files_and_record,
-                                      profile_record_npc_ids)
+from actors.npc_store_records import (MODEL_ARCHIVE_FILE_NAME, bundle_output_records, catalog_with_record_replaced,
+                                      converted_model_store_files_and_record, PROFILE_MANIFEST_FILE_NAME, file_output_record,
+                                      profile_bundle_store_files_and_record, profile_record_npc_ids)
 from data.lane_unit_outcomes import replace_step_gap_row
 from native_actor_profiles import MAXIMUM_NPC_PROFILE_BUNDLES, migrate_npc_profiles, npc_profile_tool_pins
 from native_assets import UMODEL, UMODEL_SHA256, Converter, implementation_hash
@@ -36,7 +36,7 @@ from native_assets_lib.gltf import json_bytes
 from native_catalog.effects import SourcePackages
 from native_catalog.tables import decode_table
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import merge_catalog_slice, read_store_catalog, write_store
+from native_store.catalog_writer import read_store_catalog, write_store
 from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN
 from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root, require_converter_output
@@ -261,8 +261,8 @@ class NpcConversionRun:
         for record in catalog.get('npcProfiles', []):
             if record['id'] != profile_record['id'] and npc_id in profile_record_npc_ids(self.store_root, record):
                 raise ConvertActorsError(f'{npc_key} already has a profile in lane record {record["id"]}; the NPC batch owns it')
-        catalog = merge_catalog_slice(catalog, 'models', model_record, model_record_capacity(self.census))
-        catalog = merge_catalog_slice(catalog, 'npcProfiles', profile_record, MAXIMUM_NPC_PROFILE_BUNDLES)
+        catalog = catalog_with_record_replaced(catalog, 'models', model_record, model_record_capacity(self.census))
+        catalog = catalog_with_record_replaced(catalog, 'npcProfiles', profile_record, MAXIMUM_NPC_PROFILE_BUNDLES)
         for slice_name in ('models', 'npcProfiles'):
             catalog[slice_name] = sorted(catalog[slice_name], key=lambda record: record['id'])
         write_store(self.store_root, {**model_files, **profile_files}, before, json_bytes(catalog))
