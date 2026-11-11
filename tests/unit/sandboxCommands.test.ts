@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { GameWorldAdapter } from "../../src/world/GameWorldAdapter";
 import { NativeSliceAdapter } from "../../src/world/NativeSliceAdapter";
-import type { WorldEntity, WorldEvent, WorldPosition } from "../../src/world/worldTypes";
+import type { WorldEntity, WorldEvent } from "../../src/world/worldTypes";
+import type { WorldPosition } from "../../src/world/sourceFrame";
 
 const createAdapter = (): GameWorldAdapter => new NativeSliceAdapter({ x: 0, y: 0, z: 0 });
 

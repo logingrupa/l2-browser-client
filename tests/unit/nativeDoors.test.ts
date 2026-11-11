@@ -11,7 +11,8 @@ import { parseNativeMoverManifest, nativeMoverMapSha256, type NativeMoverRecord 
 import { createNativeDoorInteractions } from "../../src/scene/world/nativeDoorInteractions";
 import { NativeSliceAdapter } from "../../src/world/NativeSliceAdapter";
 import type { WorldNavigation } from "../../src/world/WorldNavigation";
-import type { WorldCommand, WorldPosition } from "../../src/world/worldTypes";
+import type { WorldCommand } from "../../src/world/worldTypes";
+import type { WorldPosition } from "../../src/world/sourceFrame";
 import { createMovementPresenter } from "../../src/scene/world/movement/movementPresenter";
 import { sourcePositionToWorld } from "../../src/world/sourceFrame";
 import { boxVolumeWorld, floorSlab, pawnRules } from "../fixtures/movement/pawnWorldFixtures";

@@ -2,7 +2,7 @@ import { expect, test, type Browser, type BrowserContextOptions, type Page } fro
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { sourcePositionToWorld } from "../../src/world/sourceFrame";
-import type { WorldPosition } from "../../src/world/worldTypes";
+import type { WorldPosition } from "../../src/world/sourceFrame";
 import { syntheticTileFrameCentreScene } from "../fixtures/tileMinimapManifestFixture";
 import { desktopViewport, expectNoHorizontalScrollOnPortraitPhone, landscapePhone } from "./browserViewports";
 import { syntheticMinimapTiles, type SyntheticMinimapTiles } from "./support/syntheticMinimapTiles";

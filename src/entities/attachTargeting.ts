@@ -2,7 +2,7 @@ import { PointerEventTypes } from "@babylonjs/core/Events/pointerEvents";
 import "@babylonjs/core/Culling/ray";
 import type { Scene } from "@babylonjs/core/scene";
 import type { GameWorldAdapter } from "../world/GameWorldAdapter";
-import type { WorldPosition } from "../world/worldTypes";
+import type { WorldPosition } from "../world/sourceFrame";
 import type { EntityRegistry } from "./EntityRegistry";
 import type { DoorTargeting } from "../scene/world/nativeDoorInteractions";
 

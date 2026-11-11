@@ -3,7 +3,7 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Scene } from "@babylonjs/core/scene";
 import type { WorldGroundContact } from "../world/WorldNavigation";
-import type { WorldPosition } from "../world/worldTypes";
+import type { WorldPosition } from "../world/sourceFrame";
 
 const downward = new Vector3(0, -1, 0);
 

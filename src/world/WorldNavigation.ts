@@ -1,4 +1,4 @@
-import type { WorldPosition } from "./worldTypes";
+import type { WorldPosition } from "./sourceFrame";
 
 export interface WorldSupportSample {
   readonly meshId: string;

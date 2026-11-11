@@ -47,7 +47,8 @@ import { committedMovementRules } from "./committedMovementRules";
 import { cameraFogOnZoneChange, wireWorldEnvironment } from "./worldEnvironmentWiring";
 import { installTransparentRenderingOrder } from "./transparentRenderingOrder";
 import { hasUnappliedActorPivot, nativeNpcCharacterProfile, sandboxNpcAppearances } from "./sandboxNpcAppearances";
-import type { WorldEntity, WorldPosition } from "../world/worldTypes";
+import type { WorldEntity } from "../world/worldTypes";
+import type { WorldPosition } from "../world/sourceFrame";
 import { createCollisionWorldNavigation } from "./collisionWorldNavigation";
 import { sampleFootstepSurfaceContact } from "./footstepSurfaceContact";
 

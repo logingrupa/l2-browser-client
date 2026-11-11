@@ -1,7 +1,6 @@
 import { tileIdPattern } from "../../assets/native/nativeCatalogRecords";
 import { minimapTexturePosition, type NativeTileMinimap, type NativeTileMinimapProjection } from "../../scene/world/minimapJoin";
-import { worldPositionToSource } from "../../world/sourceFrame";
-import type { WorldPosition } from "../../world/worldTypes";
+import { worldPositionToSource, type WorldPosition } from "../../world/sourceFrame";
 
 export interface WorldMapTile { readonly tileId: string; readonly minimap: NativeTileMinimap | null }
 

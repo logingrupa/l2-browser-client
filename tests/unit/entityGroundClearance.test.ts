@@ -5,7 +5,8 @@ import { GetEnvironmentBRDFTexture } from "@babylonjs/core/Misc/brdfTextureTools
 import { EntityRegistry } from "../../src/entities/EntityRegistry";
 import { nativeCharacterFactory } from "../../src/assets/native/NativeCharacterVisual";
 import type { GameWorldAdapter } from "../../src/world/GameWorldAdapter";
-import type { WorldEntity, WorldEvent, WorldPosition } from "../../src/world/worldTypes";
+import type { WorldEntity, WorldEvent } from "../../src/world/worldTypes";
+import type { WorldPosition } from "../../src/world/sourceFrame";
 import { nativeVisualClips, nativeVisualFixture } from "../fixtures/nativeVisualFixture";
 import { itemlessEquippedItemSource } from "../fixtures/nativeEquippedItemSourceFixture";
 

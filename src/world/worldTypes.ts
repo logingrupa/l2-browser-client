@@ -1,10 +1,4 @@
-import type { SourcePosition } from "./sourceFrame";
-
-export interface WorldPosition {
-  readonly x: number;
-  readonly y: number;
-  readonly z: number;
-}
+import type { SourcePosition, WorldPosition } from "./sourceFrame";
 
 export type AnimationState = "idle" | "run" | "attack";
 export type LocomotionMode = "walk" | "run";

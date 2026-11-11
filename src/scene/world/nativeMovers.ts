@@ -1,7 +1,7 @@
 import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
-import type { WorldPosition } from "../../world/worldTypes";
+import type { WorldPosition } from "../../world/sourceFrame";
 import { moverPose, type NativeMoverRecord } from "./nativeMoverManifest";
 
 interface Geometry { vertices: Vector3[]; indices: number[]; local: Matrix }
@@ -16,8 +16,6 @@ function inTriangle(p: WorldPosition, a: Vector3, b: Vector3, c: Vector3): boole
   const area = (b.x - a.x) * (c.z - a.z) - (b.z - a.z) * (c.x - a.x);
   return Math.abs(area) > 1e-10 && [side(a, b), side(b, c), side(c, a)].every(n => n * Math.sign(area) >= -1e-9);
 }
-/** One independently movable source leaf/gate. Geometry is projected onto XZ for
- * approach distance; the separate closed-foot height check prevents roof use. */
 export class NativeMover {
   private readonly closed;
   private readonly open;
@@ -76,8 +74,6 @@ export class NativeMover {
     if (!Number.isFinite(seconds) || seconds < 0) throw new Error("Invalid mover elapsed time.");
     if (this.root.isDisposed() || this.fraction === this.destination) return;
     const next = this.fraction + Math.sign(this.destination - this.fraction) * Math.min(Math.abs(this.destination - this.fraction), seconds / this.source.moveTimeSeconds);
-    // Sample the short motion interval so a large frame cannot sweep a leaf
-    // through the local capsule. This is browser policy, not native encroachment.
     if (player && player.position.y + player.height > this.minimumY && player.position.y < this.maximumY) {
       const steps = Math.max(1, Math.ceil(Math.abs(next - this.fraction) / .02));
       for (let i = 1; i <= steps; i++) if (this.distance(player.position, this.fraction + (next - this.fraction) * i / steps) < player.radius + .025) {

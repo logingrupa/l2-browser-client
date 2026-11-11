@@ -3,7 +3,8 @@ import "@babylonjs/core/Rendering/outlineRenderer";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { Scene } from "@babylonjs/core/scene";
-import type { WorldCommand, WorldEntity, WorldPosition } from "../../world/worldTypes";
+import type { WorldCommand, WorldEntity } from "../../world/worldTypes";
+import type { WorldPosition } from "../../world/sourceFrame";
 import type { WorldNavigation } from "../../world/WorldNavigation";
 import type { NativeMover } from "./nativeMovers";
 

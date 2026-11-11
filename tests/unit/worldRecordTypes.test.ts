@@ -2,7 +2,8 @@ import { describe, expectTypeOf, it } from "vitest";
 import type { AccountSession, AccountSessionState } from "../../src/world/AccountSession";
 import type { GameWorldAdapter } from "../../src/world/GameWorldAdapter";
 import type { SourcePosition } from "../../src/world/sourceFrame";
-import type { WorldCommand, WorldEntity, WorldEvent, WorldPosition } from "../../src/world/worldTypes";
+import type { WorldCommand, WorldEntity, WorldEvent } from "../../src/world/worldTypes";
+import type { WorldPosition } from "../../src/world/sourceFrame";
 
 type EventOfType<EventType extends WorldEvent["type"]> = Extract<WorldEvent, { readonly type: EventType }>;
 type CommandOfType<CommandType extends WorldCommand["type"]> = Extract<WorldCommand, { readonly type: CommandType }>;

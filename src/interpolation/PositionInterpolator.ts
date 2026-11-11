@@ -1,4 +1,4 @@
-import type { WorldPosition } from "../world/worldTypes";
+import type { WorldPosition } from "../world/sourceFrame";
 
 const convergencePerSecond = 12;
 const teleportDistanceMetres = 8;
@@ -9,7 +9,6 @@ function validatePosition(position: WorldPosition): void {
   }
 }
 
-/** Frame-rate-independent smoothing; this never changes authoritative world state. */
 export class PositionInterpolator {
   private currentPosition: WorldPosition;
   private targetPosition: WorldPosition;

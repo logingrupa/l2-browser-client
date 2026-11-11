@@ -1,8 +1,8 @@
 import type { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import type { GameWorldAdapter } from "../world/GameWorldAdapter";
-import type { WorldEvent, WorldPosition } from "../world/worldTypes";
+import type { WorldEvent } from "../world/worldTypes";
 import {
-  sourceDistanceToWorld, sourceHeadingToWorldYaw, sourcePositionToWorld, worldDistanceToSource, worldPositionToSource,
+  sourceDistanceToWorld, sourceHeadingToWorldYaw, sourcePositionToWorld, worldDistanceToSource, worldPositionToSource, type WorldPosition,
 } from "../world/sourceFrame";
 import type { CollisionWorld, CollisionWorldInspection } from "../scene/world/movement/core/collisionWorld";
 import type { MovementNativeRules } from "../scene/world/movement/core/movementRules";

@@ -1,4 +1,5 @@
-import type { BodyPartEquipmentSlot, EquipmentSlot, WorldCommand, WorldEntity, WorldEvent, WorldPosition } from "./worldTypes";
+import type { BodyPartEquipmentSlot, EquipmentSlot, WorldCommand, WorldEntity, WorldEvent } from "./worldTypes";
+import type { WorldPosition } from "./sourceFrame";
 
 type EquipItemCommand = Extract<WorldCommand, { readonly type: "equip-item" }>;
 type CastSkillCommand = Extract<WorldCommand, { readonly type: "cast-skill" }>;

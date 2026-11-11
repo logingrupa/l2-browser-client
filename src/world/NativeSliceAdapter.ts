@@ -1,8 +1,8 @@
 import type { GameWorldAdapter } from "./GameWorldAdapter";
-import type { LocomotionMode, WorldCommand, WorldEntity, WorldEvent, WorldPosition } from "./worldTypes";
+import type { LocomotionMode, WorldCommand, WorldEntity, WorldEvent } from "./worldTypes";
 import { commandRejectedEvent, createSpawnedCharacterEntity, createSpawnedNpcEntity, entityWithClampedHealth, entityWithEquippedItem, entityWithRequestedClip,
   isLineageIdentifier, reportedPositionRejectionReason, skillCastEvent, unknownWorldCommandError } from "./sandboxCommands";
-import { sourceHeadingToWorldYaw, sourcePositionToWorld, worldPositionToSource, worldYawToSourceHeading } from "./sourceFrame";
+import { sourceHeadingToWorldYaw, sourcePositionToWorld, worldPositionToSource, worldYawToSourceHeading, type WorldPosition } from "./sourceFrame";
 
 type PreviewActionCommand = Extract<WorldCommand, { readonly type: "preview-action" }>;
 type ReportPositionCommand = Extract<WorldCommand, { readonly type: "report-position" }>;
