@@ -23,6 +23,7 @@ from world.reader_licensee_layouts import (LEVEL_MODEL_READER, MAP_ACTOR_CROSS_C
                                            require_reviewed_reader_layout)
 from world.tile_census import WORLD_LANE_NAME
 
+ELIGIBLE_MAP_LICENSEES = (28, 23, 25, 30, 18, 31, 20, 19)
 LEVEL_MODEL_SOURCE = ROOT / 'scripts/world/level_model.py'
 VENDORED_EVIDENCE_SOURCE = 'Elbera vendored BSP reader'
 REAL_CLIENT_ROOT = Path('E:/Lineage2-client')
@@ -100,6 +101,9 @@ class LevelModelRecordTests(unittest.TestCase):
             vendored = [entry for entry in record['evidence'] if entry['source'] == VENDORED_EVIDENCE_SOURCE]
             self.assertEqual(len(vendored), 1)
             self.assertEqual(hashlib.sha256((ROOT / vendored[0]['file']).read_bytes()).hexdigest(), vendored[0]['sha256'])
+
+    def test_every_eligible_map_licensee_has_a_level_model_verdict_row(self):
+        self.assertEqual(sorted(level_model_rows(read_cross_check_rows(ROOT))), sorted(ELIGIBLE_MAP_LICENSEES))
 
     def test_each_level_model_row_is_either_an_adopted_equal_pair_or_a_refusal_naming_its_failing_check(self):
         rows = level_model_rows(read_cross_check_rows(ROOT))
