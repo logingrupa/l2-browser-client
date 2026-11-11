@@ -156,6 +156,9 @@ export class NativeSliceAdapter implements GameWorldAdapter {
       case "cannot-move":
         if (player) this.stopAtReportedPosition(player, command);
         break;
+      case "set-environment":
+        this.emit({ type: "environment", gameMinutes: command.gameMinutes, environmentType: command.environmentType });
+        break;
       default: {
         const unhandledCommand: never = command;
         throw unknownWorldCommandError(unhandledCommand);

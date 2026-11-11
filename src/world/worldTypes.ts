@@ -73,4 +73,5 @@ export type WorldCommand =
   | { readonly type: "cast-skill"; readonly skillId: number; readonly level: number; readonly targetId?: string }
   | { readonly type: "set-health"; readonly entityId: string; readonly health: number }
   | { readonly type: "report-position"; readonly position: SourcePosition; readonly heading: number }
-  | { readonly type: "cannot-move"; readonly position: SourcePosition; readonly heading: number };
+  | { readonly type: "cannot-move"; readonly position: SourcePosition; readonly heading: number }
+  | { readonly type: "set-environment"; readonly gameMinutes: number; readonly environmentType: number };

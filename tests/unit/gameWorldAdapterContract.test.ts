@@ -18,8 +18,10 @@ describe("GameWorldAdapter contract", () => {
     expectTypeOf<WorldCommand["type"]>().toEqualTypeOf<
       | "set-animation" | "preview-action" | "set-locomotion" | "move-local" | "spawn-npc"
       | "despawn" | "set-paused" | "equip-item" | "cast-skill" | "set-health" | "spawn-character" | "play-clip"
-      | "report-position" | "cannot-move"
+      | "report-position" | "cannot-move" | "set-environment"
     >();
+    expectTypeOf<Extract<WorldCommand, { readonly type: "set-environment" }>>()
+      .toEqualTypeOf<{ readonly type: "set-environment"; readonly gameMinutes: number; readonly environmentType: number }>();
     expectTypeOf<Extract<WorldCommand, { readonly type: "spawn-character" }>>()
       .toEqualTypeOf<{ readonly type: "spawn-character"; readonly characterTemplateIndex: number }>();
     expectTypeOf<Extract<WorldCommand, { readonly type: "play-clip" }>>()
