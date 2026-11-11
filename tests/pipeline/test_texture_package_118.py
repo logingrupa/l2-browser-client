@@ -15,7 +15,6 @@ from native_catalog.ue2 import FormatError, Package
 from native_store.gap_rows import is_listed_reason, load_gap_reason_patterns
 from reference_client_guard import require_reference_client
 from ue2_package_fixture import compact, package_bytes, tag
-from world.sky_materials import read_sky_material_package, sky_layout_texture_source
 
 PACKAGE_FILENAME = 'Synthetic_T.utx'
 PACKAGE_VERSION_OFFSET = 4
@@ -69,10 +68,6 @@ def first_texture_with_format(package, format_id):
     raise AssertionError(f'{package.filename} holds no uniquely named texture of format {format_id}')
 
 
-def mip_record_projection(mips):
-    return [(mip['level'], mip['width'], mip['height'], mip['sourceOffset'], mip['sourceBytes'], mip['sha256']) for mip in mips]
-
-
 class UnrealPackage118Tests(unittest.TestCase):
     def test_a_118_package_reads_its_tables_and_qualified_texture_name(self):
         package = read_unreal_package(package_118_bytes(), PACKAGE_FILENAME)
@@ -100,15 +95,17 @@ class UnrealPackage118Tests(unittest.TestCase):
 
 
 class TextureSource118Tests(unittest.TestCase):
-    def test_three_dxt1_mips_decode_to_the_mip_records_of_the_sky_reader(self):
+    def test_three_dxt1_mips_keep_every_payload_at_its_source_offset_and_the_whole_export(self):
         data = package_118_bytes()
         package = read_unreal_package(data, PACKAGE_FILENAME)
         metadata, files = read_texture_source_118(package, package.exports[0])
-        sky_package = read_sky_material_package(data, PACKAGE_FILENAME)
-        sky_metadata, sky_files = sky_layout_texture_source(sky_package, sky_package.exports[0])
-        self.assertEqual(mip_record_projection(metadata['mips']), mip_record_projection(sky_metadata['mips']))
-        self.assertEqual([files[mip['file']] for mip in metadata['mips']], [sky_files[mip['file']] for mip in sky_metadata['mips']])
-        self.assertEqual(files['native/texture-export.bin'], sky_files['native/texture-export.bin'])
+        self.assertEqual([(mip['level'], mip['width'], mip['height'], mip['sourceBytes']) for mip in metadata['mips']],
+                         [(0, 4, 4, 8), (1, 2, 2, 8), (2, 1, 1, 8)])
+        for mip in metadata['mips']:
+            payload = bytes(package.data[mip['sourceOffset']:mip['sourceOffset'] + mip['sourceBytes']])
+            self.assertEqual((files[mip['file']], payload), (dxt1_block(mip['level']), dxt1_block(mip['level'])))
+        export = package.exports[0]
+        self.assertEqual(files['native/texture-export.bin'], bytes(package.data[export['offset']:export['offset'] + export['size']]))
         self.assertEqual((metadata['format']['name'], metadata['mipCount'], metadata['completeTo1x1']), ('DXT1', 3, True))
 
     def test_a_mip_whose_lazy_array_end_differs_from_its_payload_is_refused(self):

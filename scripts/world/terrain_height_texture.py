@@ -1,10 +1,11 @@
 import struct
 import zlib
 
+from native_assets_lib.lineage_material_prefix import RESERVED_INT32_MATERIAL_PREFIX
 from native_catalog.ue2 import FormatError
 from world.map_actor_properties import property_value
 from world.map_sources import sha
-from world.reader_licensee_layouts import RESERVED_INT32_MATERIAL_PREFIX, require_reviewed_reader_layout
+from world.reader_licensee_layouts import require_reviewed_reader_layout
 
 TEXF_G16_FORMAT = 10
 MAXIMUM_MIP_LEVELS = 32

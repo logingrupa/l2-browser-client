@@ -12,6 +12,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from data.pinned_elbera_module import ELBERA_ROOT, PinnedElberaModuleError, resolve_elbera_path
+from native_assets_lib.lineage_material_prefix import lineage_material_prefix
 from native_catalog.ue2 import FormatError, Package
 from world.raw_map_extraction import build_map
 from reference_client_guard import ReferenceClientLockError, require_reference_client
@@ -32,7 +33,7 @@ from world.reader_cross_check_rows import (build_map_into_temporary_directory, c
 from world.tile_census import WORLD_LANE_NAME
 from world.reader_licensee_layouts import (BASELINE_LICENSEE, G16_HEIGHTMAP_READER, MAP_ACTOR_READER, MAP_READERS, RAW_MAP_READER,
                                            READER_LICENSEE_LAYOUTS, REVIEWED_PACKAGE_VERSION, TERRAIN_INFO_READER,
-                                           lineage_material_prefix, require_reviewed_reader_layout, reviewed_reader_pairs)
+                                           require_reviewed_reader_layout, reviewed_reader_pairs)
 from world.terrain_height_texture import read_g16
 from reference_client_lock_fixture import lock_client_as_checked_conversion_root
 from world_reader_fixture_packages import (g16_heightmap_package_bytes, map_package_bytes, read_world_reader_fixture,

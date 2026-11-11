@@ -2,8 +2,8 @@ import json
 from pathlib import Path
 import struct
 
+from native_assets_lib.lineage_material_prefix import NO_MATERIAL_PREFIX, RESERVED_INT32_MATERIAL_PREFIX, SHADER_BLOCK_MATERIAL_PREFIX
 from world.map_actor_properties import HAS_STACK
-from world.reader_licensee_layouts import NO_MATERIAL_PREFIX, RESERVED_INT32_MATERIAL_PREFIX, SHADER_BLOCK_MATERIAL_PREFIX
 from ue2_package_fixture import compact, package_bytes, tag
 
 ROOT = Path(__file__).resolve().parents[2]

@@ -1,5 +1,6 @@
 from data.pinned_elbera_module import ELBERA_COMMIT
-from native_assets_lib.texture_mips import LAYOUT_EVIDENCE as TEXTURE_LAYOUT_EVIDENCE
+from native_assets_lib.lineage_material_prefix import (ELBERA_L2LIB_README_PATH, ELBERA_L2LIB_README_SHA256, ELBERA_SOURCE_NAME,
+                                                     MATERIAL_PREFIX_EVIDENCE, layout_evidence, lineage_material_prefix)
 from native_catalog.ue2 import FormatError
 from world.bsp_reader_binding import READER_SHA as VENDORED_BSP_READER_SHA256
 from world.elbera_reader_cross_check import ELBERA_L2LIB_PINS, ELBERA_UE2PACKAGE_PATH
@@ -13,18 +14,8 @@ MAP_READERS = (MAP_ACTOR_READER, TERRAIN_INFO_READER, RAW_MAP_READER)
 REVIEWED_PACKAGE_VERSION = 123
 BASELINE_LICENSEE = 28
 WORLD_READER_FIXTURE_FOLDER = 'tests/fixtures/world-readers'
-NO_MATERIAL_PREFIX = 'none'
-RESERVED_INT32_MATERIAL_PREFIX = 'reserved-int32'
-SHADER_BLOCK_MATERIAL_PREFIX = 'reserved-int32-and-shader-block'
-LINEAGE_MATERIAL_MINIMUM_PACKAGE_VERSION = 123
-LINEAGE_RESERVED_INT32_LICENSEES = range(16, 37)
-LINEAGE_SHADER_BLOCK_LICENSEES = range(30, 37)
-ELBERA_SOURCE_NAME = 'Elbera'
-ELBERA_L2LIB_README_PATH = 'tools/l2lib/README.md'
-ELBERA_L2LIB_README_SHA256 = '32b12d39022a92f4fef951edbecf4094c0a01a8237531c92d81918da752f0a9c'
 ELBERA_TERRAIN_SERIALIZE_PATH = 'docs/native-terrain-collision-inputs.md'
 ELBERA_TERRAIN_SERIALIZE_SHA256 = 'eee0d53e2d84c8a8c51c2b8854c5fe842a78e3cfbf77256b46cedd7d58f7da03'
-UEVIEWER_MATERIAL_HEADER_PATH = 'Unreal/UnrealMaterial/UnMaterial2.h'
 VENDORED_BSP_READER_SOURCE_NAME = 'Elbera vendored BSP reader'
 VENDORED_BSP_READER_PATH = 'scripts/vendor/lineage2elbera_bsp/__init__.py'
 REVIEWED_LEVEL_MODEL_LICENSEES = (28, 23, 25, 30, 31)
@@ -35,17 +26,6 @@ READER_GAP_REASON_TEMPLATES = {
 }
 
 
-def layout_evidence(source, commit, file, sha256, section):
-    return {'source': source, 'commit': commit, 'file': file, 'sha256': sha256, 'section': section}
-
-
-MATERIAL_FIELD_EVIDENCE = (
-    layout_evidence(ELBERA_SOURCE_NAME, ELBERA_COMMIT, ELBERA_L2LIB_README_PATH, ELBERA_L2LIB_README_SHA256,
-                    'Lineage2 UMaterial extra fields (v123 packages); Texture export body'),
-    layout_evidence(TEXTURE_LAYOUT_EVIDENCE['repository'], TEXTURE_LAYOUT_EVIDENCE['revision'], UEVIEWER_MATERIAL_HEADER_PATH,
-                    TEXTURE_LAYOUT_EVIDENCE['files'][UEVIEWER_MATERIAL_HEADER_PATH],
-                    'UMaterial::Serialize LINEAGE2 block, secondary reference cited by repository and revision'),
-)
 ACTOR_PROPERTY_EVIDENCE = (
     layout_evidence(ELBERA_SOURCE_NAME, ELBERA_COMMIT, ELBERA_L2LIB_README_PATH, ELBERA_L2LIB_README_SHA256,
                     'Property tags, packed UE1-style variant'),
@@ -63,7 +43,7 @@ LEVEL_MODEL_EVIDENCE = (
     layout_evidence(VENDORED_BSP_READER_SOURCE_NAME, ELBERA_COMMIT, VENDORED_BSP_READER_PATH, VENDORED_BSP_READER_SHA256,
                     'level_model_binding: ULevelBase::Serialize writes its first actor array for LicenseeVersion 23 or later; validate_model'),
 )
-READER_EVIDENCE = {G16_HEIGHTMAP_READER: MATERIAL_FIELD_EVIDENCE, MAP_ACTOR_READER: ACTOR_PROPERTY_EVIDENCE,
+READER_EVIDENCE = {G16_HEIGHTMAP_READER: MATERIAL_PREFIX_EVIDENCE, MAP_ACTOR_READER: ACTOR_PROPERTY_EVIDENCE,
                    TERRAIN_INFO_READER: TERRAIN_INFO_EVIDENCE, RAW_MAP_READER: ACTOR_PROPERTY_EVIDENCE, LEVEL_MODEL_READER: LEVEL_MODEL_EVIDENCE}
 READER_FIXTURE_STEMS = {G16_HEIGHTMAP_READER: 'g16-heightmap', **{reader: 'map' for reader in MAP_READERS}, LEVEL_MODEL_READER: 'level-model'}
 MAP_ACTOR_CROSS_CHECK_TILES = {28: '20_21', 30: '17_22', 23: '17_20', 18: '17_18', 31: '19_23', 16: '24_10', 19: '26_11', 20: '24_26',
@@ -78,14 +58,6 @@ REVIEWED_LICENSEE_CROSS_CHECK_TILES = {
                      20: '24_26', 25: '15_20'},
     LEVEL_MODEL_READER: {licensee: MAP_ACTOR_CROSS_CHECK_TILES[licensee] for licensee in REVIEWED_LEVEL_MODEL_LICENSEES},
 }
-
-
-def lineage_material_prefix(package_version, licensee_version):
-    if package_version < LINEAGE_MATERIAL_MINIMUM_PACKAGE_VERSION or licensee_version not in LINEAGE_RESERVED_INT32_LICENSEES:
-        return NO_MATERIAL_PREFIX
-    if licensee_version in LINEAGE_SHADER_BLOCK_LICENSEES:
-        return SHADER_BLOCK_MATERIAL_PREFIX
-    return RESERVED_INT32_MATERIAL_PREFIX
 
 
 def material_prefix_differences(licensee_version):
@@ -114,7 +86,7 @@ def reviewed_reader_layout(reader, licensee_version, cross_check_tile):
         evidence = READER_EVIDENCE[reader]
     else:
         record['differencesFrom123_28'] = map_material_export_differences(licensee_version)
-        evidence = (*READER_EVIDENCE[reader], *(MATERIAL_FIELD_EVIDENCE if record['differencesFrom123_28'] else ()))
+        evidence = (*READER_EVIDENCE[reader], *(MATERIAL_PREFIX_EVIDENCE if record['differencesFrom123_28'] else ()))
     record['evidence'] = [dict(entry) for entry in evidence]
     return record
 

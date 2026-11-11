@@ -5,6 +5,7 @@ import struct
 
 from native_assets import UMODEL, Converter, implementation_hash
 from native_assets_lib.gltf import json_bytes
+from native_assets_lib.texture_package_118 import read_unreal_package
 from native_store.catalog_writer import add_store_file, immutable_write, sha256_hex, verify_store_destinations
 from native_store.store_paths import confined_child_path, lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
@@ -15,7 +16,6 @@ from world.minimap_sources import (MINIMAP_PACKAGE_PATHS, MINIMAP_TABLE_PATHS, M
                                    locked_tile_ids, tile_frame_extent)
 from world.raw_map_step import (PRODUCTS_FOLDER_NAME, RAW_STEP_NAME, read_tile_census_row, read_tile_map_lock_record, require_tile_id,
                                 tile_map_path, tile_step_row, tile_unit_key)
-from world.sky_materials import read_sky_material_package
 from world.static_mesh_step import MODEL_CONVERSION_ERRORS, conversion_failure_reason
 from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS, TILE_CENSUS_RELATIVE_PATH
@@ -95,7 +95,7 @@ def sealed_minimap(project_root, tile_id, lock_record):
 
 def read_texture_package_index(client, relative_path):
     path = require_reference_client(client).require_equal_file(relative_path)
-    package = read_sky_material_package(path.read_bytes(), path.name)
+    package = read_unreal_package(path.read_bytes(), path.name)
     return {'path': relative_path, 'sha256': package.source_hash, 'packageVersion': package.summary['version'],
             'licensee': package.summary['licenseeVersion'], 'packageName': package.package_name,
             'exports': [{'exportIndex': export['exportIndex'], 'name': export['name'], 'object': export['object']}

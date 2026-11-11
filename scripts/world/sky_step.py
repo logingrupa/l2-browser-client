@@ -4,6 +4,7 @@ from typing import NamedTuple
 
 from native_assets_lib.class_defaults import ReferenceClientClassScripts
 from native_assets_lib.gltf import json_bytes
+from native_assets_lib.texture_package_118 import read_unreal_package
 from native_catalog.ue2 import FormatError
 from native_store.catalog_writer import sha256_hex
 from native_store.store_paths import lane_store_root, lane_work_root
@@ -16,8 +17,8 @@ from world.map_sources import MapSources, require_lock_equal_client_path
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
 from world.sky_geometry import SKY_COORDINATE_RULE, SKY_UV_RULE, SkyRootSurface, build_sky_glb, build_sky_zone_parts, sky_root_translation_metres, \
     sky_zone_material_identities
-from world.sky_materials import SkyTextureUnsupported, read_sky_material_graph, read_sky_material_package, single_graph_texture_export, \
-    sky_material_program, sky_texture_products, write_sky_material_program
+from world.sky_materials import SkyTextureUnsupported, read_sky_material_graph, single_graph_texture_export, sky_material_program, sky_texture_products, \
+    write_sky_material_program
 from world.static_mesh_step import conversion_failure_reason
 from world.static_placement import ClassDefaults
 from world.static_placement_plan import FAILED_STATUS
@@ -66,7 +67,7 @@ class SkyMaterialPackages:
         relative = candidates[0]
         if relative not in self.packages:
             path = require_lock_equal_client_path(self.client, relative)
-            self.packages[relative] = read_sky_material_package(path.read_bytes(), path.name)
+            self.packages[relative] = read_unreal_package(path.read_bytes(), path.name)
         package = self.packages[relative]
         matches = [item for item in package.exports if item['object'].casefold() == identity.casefold()]
         if len(matches) != 1:
