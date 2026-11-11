@@ -61,8 +61,9 @@ export function writeParticleInstances(emitter: EmitterSimulation, buffers: Part
   const liveSlots = emitter.liveSlots();
   if (liveSlots.length > buffers.capacity) throw new RangeError(`Emitter ${emitter.record.object} has ${liveSlots.length} live particles for ${buffers.capacity} instances.`);
   const emitterAxes = rotatorAxes(frame.emitterRotation), { columns } = emitter;
+  const locationAxes = emitter.storageSpace === "owner" ? emitterAxes : rotatorAxes(IDENTITY_ROTATOR);
   liveSlots.forEach((slot, instance) => {
-    const location = sourcePositionToWorld(rotateByAxes(readSlotVector(columns.location, slot), emitterAxes));
+    const location = sourcePositionToWorld(rotateByAxes(readSlotVector(columns.location, slot), locationAxes));
     const size = readSlotVector(columns.size, slot), vectorOffset = instance * PARTICLE_VECTOR_STRIDE;
     if (emitter.kind === "sprite") {
       writeMatrix(buffers.matrices, instance, [{ x: 1, y: 0, z: 0 }, { x: 0, y: 1, z: 0 }, { x: 0, y: 0, z: 1 }], location);
