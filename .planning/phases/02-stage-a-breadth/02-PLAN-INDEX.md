@@ -10,7 +10,8 @@ Sources: `02-RESEARCH.md` sections 4, 6 and 11 (where 6 and 11 disagree, 11 wins
 - Research ids (in `02-RESEARCH.md` and `02-VALIDATION.md`) are different from 02-10 on. Only 02-01 to 02-09 keep their numbers. Translate a research id with the "Research" column. Never cite a research id as a plan id.
 - Wave = 1 + the highest wave among a plan's Phase 2 dependencies. Phase 1 dependencies count as wave 0. With one executor, a wave groups plans; nothing runs in parallel.
 - Phase gate: no Phase 2 plan starts before Phase 1 is complete (summaries for 01-14, 01-16 and 01-17 exist). `depends_on` lists a Phase 1 plan only where a plan uses its artifacts directly.
-- Plan count: 71.
+- Plans 02-72 to 02-89 are gap closure plans (`gap_closure: true`, waves 18 to 22) written from `02-VERIFICATION.md` (2026-11-11) by `/gsd-plan-phase 2 --gaps`. They have no research id. Section "Gap closure (waves 18 to 22)" holds their rules, shared names, gap map and overlaps.
+- Plan count: 89 (71 plus 18 gap closure plans).
 
 ## Rules every plan carries
 
@@ -129,6 +130,24 @@ Sources: `02-RESEARCH.md` sections 4, 6 and 11 (where 6 and 11 disagree, 11 wins
 | 02-69 | new | Ribbon emitter, L2 emitter natives and particle rendering | actors, skills-effects | FX-01, ACT-06, MAT-01 | 02-58, 02-60, 02-61, 02-68 | 12 |
 | 02-70 | 02-46 | Tiles load sweep through ?map= | integration, adapter-dispatch | INT-01 | 02-23, 02-16 | 9 |
 | 02-71 | new | Retire the legacy 20_20 chain | integration, adapter-dispatch | WORLD-01, CONV-01 | 02-16, 02-52 | 9 |
+| 02-72 | gap | Coverage census: named emitter gaps on converted roots and derived-part denominators | integration, adapter-dispatch | INT-01, WORLD-03, WORLD-06, ACT-05, FX-01 | 02-55 | 18 |
+| 02-73 | gap | Texture layouts: UE2 118/0 and the cited Lineage licensees in the texture library | integration, adapter-dispatch | UI-03, WORLD-06, ACT-01 | 02-55 | 18 |
+| 02-74 | gap | Texture image pins in material programs | integration, adapter-dispatch | MAT-01, MAT-02 | 02-72 | 19 |
+| 02-75 | gap | Terrain layer gaps per layer and current seals in the tile batch | world, world | WORLD-01, WORLD-03 | 02-55 | 18 |
+| 02-76 | gap | Level model reader for the eligible map licensees | world, world | WORLD-01, WORLD-08 | 02-55 | 18 |
+| 02-77 | gap | Physics volume kinds and water in the VOLS collision group | world, world | WORLD-08, MOVE-01, MAT-02, WORLD-05 | 02-55 | 18 |
+| 02-78 | gap | NPC rows batch and NPC sound bundles to completion | actors, npcs | ACT-02, ACT-05 | 02-73, 02-74 | 20 |
+| 02-79 | gap | Skill keys and item batches to completion with the catalog size projection | actors, skills-effects | ACT-03, ACT-06, FX-01 | 02-73, 02-74 | 20 |
+| 02-80 | gap | Spawned actor sound cues from the actor-sounds bundle | actors, audio | ACT-05 | 02-55 | 18 |
+| 02-81 | gap | Tile seam facts and the source-backed seam closure | world, world | WORLD-04, MOVE-01, WORLD-08 | 02-75, 02-77 | 19 |
+| 02-82 | gap | Sky and radar map textures through the shared 118/0 layout | world, minimap | WORLD-06, WORLD-02 | 02-73 | 19 |
+| 02-83 | gap | Character keys: class join search, texture licensee rerun and animation references | actors, player-characters | ACT-01 | 02-73, 02-74 | 20 |
+| 02-84 | gap | Skill cast presentation for any converted skill and named gap notes in the catalog index | actors, skills-effects | ACT-06, FX-01 | 02-72 | 19 |
+| 02-85 | gap | UI skin textures through the shared texture layouts and the windows load slices | data-ui, ui | UI-02, UI-03, UI-01 | 02-73, 02-74 | 20 |
+| 02-86 | gap | BSP and sky surface programs with texture image pins, pinned from the tile manifests | world, world | MAT-01, MAT-02 | 02-74, 02-82 | 20 |
+| 02-87 | gap | Runtime wiring: spawned actor sounds and any converted skill on skill-cast | integration, adapter-dispatch | ACT-05, ACT-06, FX-01, SAND-02 | 02-80, 02-84 | 20 |
+| 02-88 | gap | Eligible tile batch to completion, world lane sweeps and the WORLD-05 walk | world, world | WORLD-01, WORLD-02, WORLD-03, WORLD-05, WORLD-06 | 02-75, 02-76, 02-77, 02-81, 02-82, 02-86 | 21 |
+| 02-89 | gap | Union, coverage, tables load check, requirement bookkeeping and the Needs Human list | integration, adapter-dispatch | INT-01, UI-02, UI-03, DATA-03, CONV-01, CONV-02 | 02-72 to 02-88 | 22 |
 
 Research to new id (02-56 to 02-69 and 02-71 have none): 02-01..02-09 = same; 02-10 = 02-17; 02-11 = 02-19; 02-12 = 02-20; 02-13 = 02-12; 02-14 = 02-14; 02-15 = 02-15; 02-16 = 02-16; 02-17 = 02-21; 02-18 = 02-22; 02-19 = 02-25; 02-20 = 02-27; 02-21 = 02-28; 02-22 = 02-35; 02-22b = 02-37; 02-23 = 02-38; 02-24 = 02-11; 02-25 = 02-29; 02-26 = 02-30; 02-27a = 02-45; 02-27b = 02-46; 02-28 = 02-47; 02-29 = 02-48; 02-30 = 02-49; 02-31a = 02-50; 02-31b = 02-51; 02-32w = 02-52; 02-32i = 02-53; 02-33 = 02-54; 02-34 = 02-32; 02-35 = 02-33; 02-36 = 02-34; 02-37 = 02-40; 02-38 = 02-41; 02-39 = 02-42; 02-40 = 02-43; 02-41a = 02-36; 02-41b = 02-39; 02-42 = 02-44; 02-43 = 02-55; 02-44 = 02-10; 02-45 = 02-18; 02-46 = 02-23 and 02-70; 02-47 = 02-24; 02-48 = 02-26; 02-49 = 02-31; 02-50 = 02-13.
 
@@ -153,6 +172,11 @@ Research to new id (02-56 to 02-69 and 02-71 have none): 02-01..02-09 = same; 02
 | 15 | 02-50, 02-67 |
 | 16 | 02-49, 02-51, 02-54 |
 | 17 | 02-55 |
+| 18 | 02-72, 02-73, 02-75, 02-76, 02-77, 02-80 (gap closure) |
+| 19 | 02-74, 02-81, 02-82, 02-84 (gap closure) |
+| 20 | 02-78, 02-79, 02-83, 02-85, 02-86, 02-87 (gap closure) |
+| 21 | 02-88 (gap closure) |
+| 22 | 02-89 (gap closure) |
 
 The run order is the wave order (GSD runs waves in order, and plans inside a wave in id order). Waves and the master table columns `depends_on` and Wave are regenerated from the plan frontmatter, which is the source of truth; a dependency may have a higher id (for example 02-35 depends on 02-41). Tracers plus census-based gap coverage are "done for this run"; breadth plans seal resumable units and continue in later runs.
 
@@ -493,6 +517,7 @@ Manifest kinds:
 | 7. World geometry, collision, sky and audio | 02-29, 02-30, 02-31, 02-45, 02-46, 02-47 | Static meshes, BSP and collision, movers, sky and tile audio, eligible-39 batch |
 | 8. World streaming, maps and reader growth | 02-48, 02-49, 02-50, 02-51, 02-52, 02-53, 02-54 | Collision world cells, streaming baseline and residency, minimap and world map, map, terrain and static-material reader growth, licensee tiles |
 | 9. DEC-OWN-12 own implementations | 02-56, 02-57, 02-58, 02-59, 02-60, 02-61, 02-62, 02-63, 02-64, 02-65, 02-66, 02-67, 02-68, 02-69 | Shared modules and source frame, vendor boundary and overlap check, adapter record types, class-default and material readers, material library, zones, map emitters and BSP visibility, lighting, the visibility walk, lighting runtime, the movement port, runtime wiring, the emitter port |
+| 10. Gap closure | 02-72 to 02-89 | Coverage denominators and named emitter gaps, texture layouts and image pins, terrain layers, level model licensees, water volumes, the tile seam, batches to completion, actor sounds and any-skill cast, UI skin, the union, bookkeeping and the Needs Human list (section "Gap closure") |
 
 ## Plan details
 
@@ -610,3 +635,94 @@ Each entry gives the one-line objective and the key `files_modified`. Planners a
 ## Same-wave file overlap (checked 2026-11-08)
 
 Plans in the same wave share only append-only tracking files (`.planning/OVERNIGHT-DECISIONS.md`, `STATUS.md`, `.planning/STATE.md`) and three documents (`docs/OUTPUT_CONTRACT.md` in wave 2 by 02-06 and 02-08, `docs/parts/npcs/EVIDENCE.md` in wave 6 by 02-33 and 02-36, `docs/parts/world/EVIDENCE.md` in wave 8 by 02-16 and 02-52). With one sequential executor (`workflow.use_worktrees: false`) plans never run at the same time, so these are edits in sequence, not conflicts. If plans are ever run in parallel worktrees, those pairs must be serialized. The DEC-OWN-12 world plans (02-30, 02-31, 02-45, 02-61, 02-62) also share `scripts/world/convert_tile.py`, `scripts/world/tile_manifest_step.py`, `recipes/world/gap-reasons.json` and `recipes/world/tile-manifest-vocabulary.json`; they run in sequence under the one executor, each with its own `listVersion` bump. 02-71 (wave 9) shares tracking files with the other wave-9 plans, `tests/pipeline/test_converter_independence.py` with 02-25 and 02-29, and `tests/pipeline/test_client_entry_points.py`, `test_native_map_lock.py`, `docs/OUTPUT_CONTRACT.md`, `docs/NATIVE_WORLD.md`, `docs/research/INDEX.md`, `docs/parts/world/EVIDENCE.md` and `.planning/lanes.json` with 02-29; in id order 02-25 and 02-29 run first. The same files return in the deletion tasks of 02-30, 02-31, 02-45 and 02-47, one plan at a time.
+
+## Gap closure (waves 18 to 22)
+
+Source: `02-VERIFICATION.md` (2026-11-11, gaps_found, 5 of 22 truths) with its `gaps`, `regressions` and `human_verification` frontmatter, the open items of `02-REVIEW-FIX.md`, and STATE.md Needs Human and Open follow-ups. Phase 3 (`.planning/phases/03-stage-a-checks/`) runs after these plans; its later waves (03-03 sweeps, 03-12 to 03-15 re-runs) re-sweep the union that 02-89 leaves.
+
+### Gap closure rules (G1 to G10)
+
+Every gap plan carries the rules above ("Rules every plan carries" 1 to 14) and these:
+
+1. G1 Commits: commit only this plan's paths with `git commit --only -m "<message>" -- <paths>` (`git add` a new file first). Never `git add -A`, `git stash`, `git reset` or `git checkout`. If git reports that `index.lock` exists, wait 15 seconds and retry, at most 6 times. Messages are plain prose with plain hyphens and carry no attribution line of any kind. One owner per piece of logic: a move between lanes lands as the new owner in one plan and the deletion of the old copy in the next plan of the other lane (02-73 then 02-82, 02-74 then 02-86), each named in both plans.
+2. G2 Owner away: never ask and never wait. Take the Recommended option, else the most reversible one, and append a row `| P<n> | <YYYY-MM-DD HH:MM Riga> | <question> | <choice> | <reason> |` to `C:/laragon/l2b-orchestration/autonomous-roadmap/pending-decision-rows.md`, numbering after the last P row. New requirements are marked "provisional, owner review". Reversibility ratings add no checkpoint.
+3. G3 Phase 3 boundary: gap plans never edit `.planning/phases/03-stage-a-checks/**`, `scripts/side_by_side/**`, `scripts/native_store/side_by_side_*.py`, `docs/parts/*/side-by-side-checks.json`, `tests/browser/side-by-side-*.spec.ts` or the Phase 3 fixtures and harnesses. Before a gap plan edits a file a Phase 3 plan also lists (table "Files shared with Phase 3"), `git status --porcelain -- <file>` must print nothing; otherwise the task stops and the plan resumes after that executor's commit. A gap plan never edits a file holding another executor's uncommitted change.
+4. G4 Stores: lane outputs only under `artifacts/lane-store/<lane>/`, the union only under `artifacts/lane-store/integration/`. Never write `public/l2` or the main checkout, never run `assets:*`, `world:stage`, `assets:stage`, `stage_*`, `derive-*`, `migrate-*`, preview scripts or `merge_lane_store.py`.
+5. G5 Batches: resumable on the unit ledger. Every slice runs as `node scripts/check-machine-schedule.mjs && python C:/laragon/l2b-orchestration/autonomous-roadmap/run_below_normal.py <command>`. Before the first slice and before every 5 slices, measure free disk (`shutil.disk_usage`) and project the bytes of the remaining units (output bytes per sealed unit so far times remaining units); stop with both numbers recorded when free space minus the projection is below the ledger floor. Exit 2 (machine window) or 3 (disk floor) stops the plan cleanly; re-running it resumes. A batch truth holds only when its coverage shows nothing pending.
+6. G6 Converter version: 02-73 and 02-74 edit converter implementation sources (`scripts/native_assets.py`, `scripts/native_assets_lib/**`), which changes the converter version and reseals every converter-cached unit on its next run. Every full batch (02-78, 02-79, 02-83, 02-85, 02-88) runs after both, and no later gap plan edits `scripts/native_assets.py`, `scripts/native_assets_lib/**`, `scripts/native_catalog/**`, `scripts/native_effect_bundle.py`, `scripts/native_audio.py`, `scripts/native_animation_families.py`, `scripts/reference_client_guard.py` or `scripts/native_store/store_paths.py`. World code plans may run one tracer tile before that; 02-88 re-runs it.
+7. G7 Facts: never invent a Lineage II value, never fit values, never hand-patch one tile. A reader grows only with a cited layout, a fixture of indices and hashes and an exact Elbera or UELib cross-check. Binaries (Engine.dll 4dd2f63c, Core.dll) are read statically with recorded addresses and never run. Where the facts are absent, the plan writes the gap rows with the reason and the evidence of its search, and 02-89 lists the item for a person.
+8. G8 Evidence docs: world code plans (02-75, 02-76, 02-77, 02-81, 02-82, 02-86) report in their SUMMARY; 02-88 writes the world, minimap and movement-geodata EVIDENCE once and trims world EVIDENCE under 30,720 bytes. Actors, data-ui and integration plans write their own part's EVIDENCE, keeping a `## Evidence` section.
+9. G9 Union and tracking: only 02-89 rebuilds the integration union and writes `docs/coverage.md`, `STATUS.md`, `.planning/REQUIREMENTS.md` and `.planning/STATE.md`. Lane plans rewrite their own lane catalog and lane coverage only.
+10. G10 Not planned as work: items that need the owner, the main-checkout restage, the GTX 1060, IMPORTA-PC or a server (02-89 keeps them in STATE.md Needs Human with exact steps), and code gaps outside this round's brief, which 02-89 lists under Open follow-ups with their reason: display gamma at runtime, library programs for static mesh, terrain and skeletal owners, ribbon drawing, map emitter playback, chunk-incremental tile systems, struct fields, CP and MP adapter fields, armor slot meaning and the weapon socket transform, the skillsoundgrp route, TextBox labels and the 25 unsupported control types. The CONV-02 build1590 tangent repair is an owner decision.
+
+### Shared names added by the gap plans
+
+- 02-72: key kinds `minimap:XX_YY` (part minimap), `tile-collision:XX_YY` (movement-geodata), `tile-audio:XX_YY`, `npc-sounds:<id>` and `skill-sound-row:<n>` (audio) in `CATALOG_KEY_PATTERNS`; `scripts/native_store/gap_census_derived_parts.py` with `DERIVED_PARTS`; the named emitter gap rule (a converted key with an `emitter-class-unported:<class>` or `emitter-feature-unported:<property>` row is status gap with converted true; part `converted` counts pass rows only); the sandbox stays unknown with its reason.
+- 02-73: `scripts/native_assets_lib/texture_package_118.py` (`UnrealPackage118`, `read_texture_source_118`), `scripts/native_assets_lib/lineage_material_prefix.py`, `REVIEWED_VERSIONS` with (118, 0) and the cited 123 pairs that pass, `tests/fixtures/texture-layouts/cross-checks.json`, reason `texture-format-unsupported:<format>`.
+- 02-74: `derive_material_program(graph, class_defaults, texture_images=...)`, `write_material_program_record(store_root, graph, program)`, fixture `tests/fixtures/material-programs/textured-program.json`.
+- 02-75: reasons `terrain-layer-incomplete:<index>` and `terrain-layer-uv-unverified:<index>`; batch seal inspection version 2 (current step fingerprints).
+- 02-76: reader `level-model` in `READER_LICENSEE_LAYOUTS`, fixtures `tests/fixtures/world-readers/level-model-123-<licensee>.json`.
+- 02-77: VOLS arrays `VOLS.kind`, `VOLS.water`, `VOLS.priority`, `VOLS.gravity`, `VOLS.terminalVelocity` (field sources from the Engine.PhysicsVolume declarations); rule row `movement.physicsVolumeIsWater` removed.
+- 02-80: `src/audio/spawnedActorSoundCues.ts` with `loadSpawnedActorSounds` and `bindSpawnedActorSoundCues`.
+- 02-81: `docs/parts/world/terrain-seam-facts.json`, `recipes/world/terrain-seam-rules.json`, reason `terrain-seam-rule-unresolved`.
+- 02-84: `src/effects/skillCastPresentation.ts` with `createSkillCastPresentation`; emitter actor playback `applyNative(call)`; converted catalog lookups carry `namedGaps`.
+- 02-86: tile resource kind `surface-materials`.
+- 02-87: sheet test ids `sandbox-skill-cast-note` and `sandbox-actor-sounds-note`.
+- 02-88: `WALK_TILE_IDS` for `tests/browser/world-tile-walk.spec.ts`.
+- 02-89: sweep kind `tables` and `tests/browser/load-sweep-tables.spec.ts`; the restage line `Needs Human (plan 02-89): <command>` replaces the per-lane and 02-55 lines.
+
+### Gap map
+
+| Verification item | Plans | Left for a person (02-89 Needs Human) |
+|---|---|---|
+| SC1a pick and walk any tile | 02-75, 02-76, 02-88 | restage of the shared store |
+| SC1b tile audio | 02-75 (stale audio seals), 02-88 | listening round |
+| SC1c gaps in coverage | 02-72, 02-88 | - |
+| SC1d minimap and world map | 02-73, 02-82 (reader half; join stays a named gap) | IMPORTA-PC: per-tile radar source, int_worldmap georeference, 21 out-of-grid zonename rows |
+| SC2a NPCs | 02-78 | - |
+| SC2b characters | 02-73 (123/27), 02-83 | IMPORTA-PC class join if 02-83 finds no one-to-one source |
+| SC2c items | 02-79 (batch and record shape) | - (armor slot meaning and weapon socket stay open follow-ups) |
+| SC2e actor sounds | 02-78 (bundles), 02-80, 02-87 | listening round |
+| SC3a cast any skill | 02-79 (batch), 02-84, 02-87 | - |
+| SC3b skill sound | not planned: skillsoundgrp route stays a named gap (G10) | - |
+| SC3c emitter class and feature gaps | 02-72, 02-84, 02-87 | - |
+| SC4d open any window | 02-73, 02-85 | owner: procedural HUD under UI-03 |
+| SC4e window data | not planned: CP and MP fields, TextBox labels, 25 control types (G10); UI-02 back to Pending in 02-89 | - |
+| SC5a one coverage report | 02-72, 02-89 (tables load check, union) | restage |
+| SC5c tile seam | 02-81 | IMPORTA-PC when the seam rule stays unknown |
+| MAT-01 and MAT-02 | 02-74, 02-77, 02-86 | owner review (provisional) |
+| CONV-02 tangent repair | not planned: owner decision | owner |
+| Regressions UI-02 and UI-03 | 02-85, 02-89 bookkeeping | owner: HUD decision |
+| DATA-03 and CONV-01 drift | 02-89 (Complete only on passing tests) | - |
+| Human verification items | 02-89 keeps them in STATE.md Needs Human | all |
+
+### Files shared with Phase 3 (rule G3)
+
+| File | Gap plan | Phase 3 plan |
+|---|---|---|
+| `scripts/native_store/build_coverage_report.py` | 02-72 | 03-05 |
+| `scripts/world/convert_tile_batch.py`, `tests/pipeline/test_convert_tile_batch.py` | 02-75 | 03-12 |
+| `recipes/world/gap-reasons.json` | 02-75, 02-81 | 03-12 |
+| `tests/pipeline/test_ui_texture_step.py` | 02-85 | 03-14 |
+| `docs/parts/world/EVIDENCE.md`, `docs/parts/minimap/EVIDENCE.md`, `docs/parts/movement-geodata/EVIDENCE.md` | 02-88 | 03-16 |
+| `docs/parts/{npcs,audio,skills-effects,items,player-characters}/EVIDENCE.md` | 02-78, 02-79, 02-80, 02-83, 02-84 | 03-19 |
+| `docs/parts/ui/EVIDENCE.md` | 02-85 | 03-20 |
+| `docs/parts/adapter-dispatch/EVIDENCE.md` | 02-87 | 03-02, 03-17 |
+| `tests/browser/support/loadCheckRecords.ts`, `tests/unit/loadCheckRecords.test.ts` | 02-89 | 03-03 |
+| `docs/coverage.md` | 02-89 | 03-15 |
+| `STATUS.md` | 02-89 | 03-02, 03-17 |
+| `.planning/STATE.md` | 02-89 | 03-17 |
+
+Read only for gap plans: `tests/browser/harness/actorAudioHarness.ts` (03-10), `src/runtime/nativeSliceDiagnostics.ts` and `src/runtime/nativeSliceCameraPose.ts` (03-02, 03-18), `src/materials/ue2/babylon/material.ts` (03-18), `src/world/worldTypes.ts` and `src/world/NativeSliceAdapter.ts` (03-02), `src/assets/native/readNativeCoverage.ts` and `tests/unit/nativeCatalogIndexCoverage.test.ts` (03-05).
+
+Contract note: 02-72 gives audio, minimap and movement-geodata committed denominators through new key kinds. Phase 3 planning row P15 kept them unknown until "a contract change with a logged decision"; 02-72 is that change and logs it as a pending decision row. The 03-05 truth that these three parts stay unknown is superseded for them when 03-05 runs; the sandbox stays unknown with the P15 reason.
+
+### Dependency notes (gap plans)
+
+- Every wave-18 gap plan depends on 02-55, the phase tail, so the gap round starts after the union and restage handoff.
+- 02-74 depends on 02-72 only for `docs/OUTPUT_CONTRACT.md`. 02-81 depends on 02-75 (terrain step) and 02-77 (collision step). 02-82 depends on 02-73 (shared 118/0 reader and prefix rule). 02-84 depends on 02-72 (named emitter gap rows). 02-86 depends on 02-74 (image pins) and 02-82 (sky on the shared reader). 02-87 depends on 02-80 and 02-84.
+- 02-78, 02-79, 02-83 and 02-85 depend on 02-73 and 02-74 (rule G6). 02-88 depends on every world gap plan. 02-89 depends on all gap plans.
+
+### Same-wave file overlap (gap waves, checked 2026-11-11)
+
+Wave 18 (02-72, 02-73, 02-75, 02-76, 02-77, 02-80), wave 19 (02-74, 02-81, 02-82, 02-84) and wave 20 (02-78, 02-79, 02-83, 02-85, 02-86, 02-87) have no shared file inside a wave; each plan writes its own EVIDENCE doc. Across waves, in wave order: `docs/OUTPUT_CONTRACT.md` (02-72, then 02-74); `recipes/world/gap-reasons.json` (02-75, then 02-81); `scripts/world/terrain_chunk_step.py` and `tests/pipeline/test_terrain_chunk_step.py` (02-75, then 02-81); `scripts/world/reader_licensee_layouts.py` and `tests/pipeline/test_world_reader_licensees.py` (02-76, then 02-82); `scripts/world/bsp_step.py` (02-76, then 02-86); `scripts/world/sky_materials.py` and `tests/pipeline/test_world_sky_materials.py` (02-82, then 02-86); `docs/parts/audio/EVIDENCE.md` (02-80, then 02-78); `docs/parts/skills-effects/EVIDENCE.md` (02-84, then 02-79). The actors lane store and catalog are written by 02-78, 02-79 and 02-83 in id order inside wave 20, and the world lane store by the world plans in wave order.
