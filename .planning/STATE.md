@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 02-84-PLAN.md
-last_updated: "2026-11-11T16:17:19.919Z"
+stopped_at: Completed 02-92-PLAN.md
+last_updated: "2026-11-11T16:42:29.371Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 03 plan 03-01 complete (side-by-side check record writer and key content digest; Phase 3 start commit cb09cdc)
-state_head: 2b3c023560d0a512b16efd8cb410c10d8fa9a90a
+state_head: be2acde056ef8de2881d1e7080281868c7b0fd8a
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 131
-  completed_plans: 103
+  completed_plans: 104
   percent: 0
 ---
 
@@ -149,6 +149,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 2 P81 | 35min | 3 tasks | 16 files |
 | Phase 2 P82 | 30min | 2 tasks | 14 files |
 | Phase 2 P84 | 12min | 3 tasks | 24 files |
+| Phase 02 P92 | 25min | 3 tasks | 24 files |
 
 ## Accumulated Context
 
@@ -393,6 +394,10 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 2]: P985: loadCastSkillEffectBundle is split out of loadNativeSkillEffectComponents and parseEffectManifest validates the optional stages records
 - [Phase 2]: P986: converted catalog lookups always carry namedGaps through one convertedLookup helper; ten shared test doubles updated
 - [Phase 2]: P987: skills-effects EVIDENCE kept under 30,720 bytes by condensing ribbon address detail the constants rows hold
+- [Phase 02]: 988 (02-92): the 20_21 meshes product holds no no-adapter row; the tracer converts FX_E_S.Flameset.Default_Flame01 (2,539 of 2,545 meshes refusals) and rhion_orc_dungeon_s.rhion_orc_dungeon48 with diagnostic slots that collision reads
+- [Phase 02]: 989 (02-92): diagnostic slot UNSUPPORTED_MATERIAL_ADAPTER_SLOT_<n> with nativeRuntimeStatus unsupported-diagnostic and limitation material-adapter-unsupported:<class>:<object>; BSP surface refusal unchanged; converter hash c4bf8e6c
+- [Phase 02]: 990 (02-92): eight committed combiner swatch fixture programs are the GPU pixel cases; the CPU combiner is the oracle within one 8-bit step
+- [Phase 02]: 991 (02-92): the UpdateGamma ramp runs as the last native world camera post-process from a 256 x 1 r32float lookup; World tab note sandbox-display-gamma-note
 
 ### Pending Todos
 
@@ -521,6 +526,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-11T16:17:19.127Z
-Stopped at: Completed 02-84-PLAN.md
+Last session: 2026-11-11T16:42:28.714Z
+Stopped at: Completed 02-92-PLAN.md
 Resume file: None
