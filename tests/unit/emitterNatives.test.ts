@@ -41,6 +41,22 @@ describe("L2 emitter natives on live emitters", () => {
     expect(actor.unresolvedFields).toContain("EL_LifeSpan");
   });
 
+  it("keeps ageing every allocated slot when AdjustparticleLife lowers ForcedMaxParticles after initialization", () => {
+    const actor = spriteActor({}, { MaxParticles: 10, ForcedMaxParticles: true, LifetimeRange: { Min: 1, Max: 1 } });
+    const emitter = actor.emitters[0]!;
+    for (let step = 0; step < 2; step += 1) actor.step(stepSeconds, STATIONARY_OWNER);
+    expect(emitter.liveSlots()).toHaveLength(10);
+    applyEmitterNative(actor, { name: "AdjustparticleLife", lifeSeconds: 1.0125 });
+    expect(emitter.record.MaxParticles).toBe(4);
+    expect(emitter.columns.capacity).toBe(10);
+    const lastSlotTimeBefore = emitter.columns.time[9]!;
+    actor.step(stepSeconds, STATIONARY_OWNER);
+    expect(emitter.columns.time[9]!).toBeGreaterThan(lastSlotTimeBefore);
+    for (let step = 0; step < 90; step += 1) actor.step(stepSeconds, STATIONARY_OWNER);
+    expect(emitter.liveSlots()).toEqual([]);
+    expect(actor.lastEmitterOutcomes[0]).toBe("dead");
+  });
+
   it("SetSizeScale scales the spawn fields only on a bSetSizeScale actor", () => {
     const actor = spriteActor({ bSetSizeScale: true }), before = actor.emitters[0]!.record;
     applyEmitterNative(actor, { name: "SetSizeScale", scale: 2 });

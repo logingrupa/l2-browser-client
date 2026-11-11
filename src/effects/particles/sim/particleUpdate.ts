@@ -4,7 +4,7 @@ import { curvePhase, relativeParticleAge, sampleCurve } from "./particleCurves";
 import { revolveAboutAxes } from "./particleRotation";
 import { drawRange, drawRangeVector, rangeCenter, spawnParticle } from "./particleSpawn";
 import {
-  PARTICLE_FLAG, hasParticleFlag, readSlotVector, setParticleFlag, writeSlotColor, writeSlotVector,
+  PARTICLE_FLAG, countVisitedSlots, hasParticleFlag, readSlotVector, setParticleFlag, writeSlotColor, writeSlotVector,
   type EmitterRuntime, type EmitterStepContext,
 } from "./particleState";
 
@@ -164,18 +164,18 @@ function advanceParticleInSlot(runtime: EmitterRuntime, slot: number, stepSecond
 }
 
 export function updateParticles(runtime: EmitterRuntime, stepSeconds: number, context: EmitterStepContext): void {
-  const { record, counters } = runtime;
+  const { record, columns, counters } = runtime;
   const ownerDisplacement = subtractVectors(context.owner.location, counters.lastOwnerLocation);
   const ownerStepSeconds = Math.min(ownerVelocityStepClamp.maximum, Math.max(ownerVelocityStepClamp.minimum, counters.lastStepSeconds));
   const ownerVelocity = scaleVector(ownerDisplacement, 1 / ownerStepSeconds);
   const rate = spawnRate(runtime);
   if (rate > 0 && !counters.killPending) spawnDueParticles(runtime, stepSeconds, rate, context, ownerDisplacement, ownerVelocity);
-  const visitedSlotCount = Math.min(counters.activeSlots, record.MaxParticles);
+  const visitedSlotCount = countVisitedSlots(columns, counters);
   let deadCount = 0;
   for (let slot = 0; slot < visitedSlotCount; slot += 1) {
     if (!advanceParticleInSlot(runtime, slot, stepSeconds, context, ownerVelocity)) deadCount += 1;
   }
-  const everySlotDead = deadCount >= record.MaxParticles || counters.activeSlots - deadCount <= 0;
+  const everySlotDead = deadCount >= columns.capacity || counters.activeSlots - deadCount <= 0;
   counters.dead = everySlotDead && (counters.killPending || rate === 0 && !record.RespawnDeadParticles);
   counters.lastOwnerLocation = context.owner.location;
   counters.lastStepSeconds = stepSeconds;

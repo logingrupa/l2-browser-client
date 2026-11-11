@@ -127,8 +127,12 @@ export function setParticleFlag(columns: ParticleColumns, slot: number, flag: nu
   columns.flags[slot] = enabled ? columns.flags[slot]! | flag : columns.flags[slot]! & ~flag;
 }
 
+export function countVisitedSlots(columns: ParticleColumns, counters: EmitterCounters): number {
+  return Math.min(columns.capacity, counters.activeSlots);
+}
+
 export function listLiveSlots(columns: ParticleColumns, counters: EmitterCounters): number[] {
-  const slotLimit = Math.min(columns.capacity, counters.activeSlots), liveSlots: number[] = [];
+  const slotLimit = countVisitedSlots(columns, counters), liveSlots: number[] = [];
   for (let slot = 0; slot < slotLimit; slot += 1) if (hasParticleFlag(columns, slot, PARTICLE_FLAG.active)) liveSlots.push(slot);
   return liveSlots;
 }
