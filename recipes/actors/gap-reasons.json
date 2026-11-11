@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 8,
+  "listVersion": 9,
   "reasons": [
     "conversion-pending",
     "mesh-package-not-in-client:<package>",
@@ -19,6 +19,7 @@
     "emitter-feature-unported:<property>",
     "combat-role-route-unresolved:<table>/<role>",
     "assembly-part-limit-exceeded:<count>",
-    "mesh-texture-pairing-undecoded:<meshes>/<textures>"
+    "mesh-texture-pairing-undecoded:<meshes>/<textures>",
+    "npc-names-no-sound"
   ]
 }

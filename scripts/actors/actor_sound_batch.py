@@ -4,8 +4,9 @@ import json
 import re
 from pathlib import Path
 
-from actors.actor_sound_bindings import actor_sound_reference_counts, skill_actor_row
-from actors.actor_sound_conversion import ActorSoundConversionRun, combat_audio_manifest_outputs
+from actors.actor_sound_bindings import (NO_EXACT_SKILL_SOUND_ROW_REASON, NPC_NAMES_NO_SOUND_REASON, actor_sound_reference_counts,
+                                         skill_actor_row)
+from actors.actor_sound_conversion import ActorSoundConversionRun, NoSoundBundle, combat_audio_manifest_outputs
 from actors.character_census import CHARACTER_CENSUS_RELATIVE_PATH, CHARACTER_CENSUS_SCHEMA_VERSION, PENDING_STATUS
 from actors.character_requests import GAP_STATUS
 from actors.combat_role_routes import (COMBAT_ROLE_ROUTE_PROOF, bind_combat_role_routes, combat_route_config_manifest)
@@ -26,6 +27,7 @@ SKILL_COMPONENT_ID = re.compile(r'^interlude:skill:(?P<id>[0-9]{1,9}):level:(?P<
 CONFIG_SECTION_HEADER = re.compile(r'^\[(?P<section>[A-Za-z_][A-Za-z_0-9]*)\]$')
 CONFIG_ASSIGNMENT = re.compile(r'^\s*(?P<key>[A-Za-z_][A-Za-z_0-9]*)\s*=')
 BUNDLE_KIND_ORDER = ('npc', 'skill')
+NO_SOUND_ROW_BINDING_FIELDS = ('key', 'skillId', 'level', 'soundRowOrdinal', 'soundReason')
 ACTOR_SOUND_KEY = re.compile(r'^(?:npc:[0-9]{1,9}|skill:[0-9]{1,9}:[1-9][0-9]{0,3})$')
 
 
@@ -101,22 +103,34 @@ class ActorSoundBundles:
     def actor_rows(self, run, bundle_key):
         if bundle_key in self.npc_profiles:
             return [npc_actor_row(self.npc_profiles[bundle_key])]
+        return [skill_actor_row(self.skill_binding(run, bundle_key), self.skill_tables.sound_rows)]
+
+    def no_sound_bundle(self, run, bundle_key):
+        if bundle_key in self.npc_profiles:
+            actor_row = npc_actor_row(self.npc_profiles[bundle_key])
+            if not run.names_no_sound(actor_row):
+                return None
+            return NoSoundBundle(bundle_key, NPC_NAMES_NO_SOUND_REASON, run.table(actor_row['table'])['identity'],
+                                 {'npcMatch': actor_row['match']})
         if bundle_key not in self.skill_keys:
             raise ValueError(f'{bundle_key} is not an actor bundle of the actors lane catalog')
-        actor_row = skill_actor_row(self.skill_binding(run, bundle_key), self.skill_tables.sound_rows)
-        return None if actor_row is None else [actor_row]
+        skill_binding = self.skill_binding(run, bundle_key)
+        if skill_binding['soundRowOrdinal'] is not None:
+            return None
+        return NoSoundBundle(bundle_key, NO_EXACT_SKILL_SOUND_ROW_REASON, self.sound_table_identity(),
+                             {'skillBinding': {field: skill_binding[field] for field in NO_SOUND_ROW_BINDING_FIELDS}})
 
     def is_sealed(self, run, bundle_key):
-        actor_rows = self.actor_rows(run, bundle_key)
-        if actor_rows is None:
-            return run.is_no_sound_row_bundle_sealed(self.skill_binding(run, bundle_key), self.sound_table_identity())
-        return run.is_bundle_sealed(bundle_key, actor_rows)
+        no_sound_bundle = self.no_sound_bundle(run, bundle_key)
+        if no_sound_bundle is not None:
+            return run.is_no_sound_bundle_sealed(no_sound_bundle)
+        return run.is_bundle_sealed(bundle_key, self.actor_rows(run, bundle_key))
 
     def convert(self, run, bundle_key):
-        actor_rows = self.actor_rows(run, bundle_key)
-        if actor_rows is None:
-            return run.convert_no_sound_row_bundle(self.skill_binding(run, bundle_key), self.sound_table_identity(), self.capacity())
-        return run.convert_bundle(bundle_key, actor_rows, self.capacity())
+        no_sound_bundle = self.no_sound_bundle(run, bundle_key)
+        if no_sound_bundle is not None:
+            return run.convert_no_sound_bundle(no_sound_bundle, self.capacity())
+        return run.convert_bundle(bundle_key, self.actor_rows(run, bundle_key), self.capacity())
 
 
 def run_actor_sound_slice(run, bundles, limit, preflight):

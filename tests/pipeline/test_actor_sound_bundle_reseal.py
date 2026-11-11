@@ -10,9 +10,9 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
 from actors.actor_sound_batch import ActorSoundBundles, run_actor_sound_slice
-from actors.actor_sound_bindings import ACTOR_SOUND_STEP, NO_EXACT_SKILL_SOUND_ROW_REASON, actor_sound_bundle_id
+from actors.actor_sound_bindings import ACTOR_SOUND_STEP, NO_EXACT_SKILL_SOUND_ROW_REASON, NPC_NAMES_NO_SOUND_REASON, actor_sound_bundle_id
 from actors.actor_sound_conversion import (ACTOR_SOUND_ALGORITHM_VERSION, ACTOR_SOUND_GAP_ROWS_RELATIVE_PATH, ACTOR_SOUND_UNIT_STEP,
-                                           ActorSoundConversionRun)
+                                           ActorSoundConversionRun, NoSoundBundle)
 from catalog_store_fixture import write_profile_manifest, write_store_catalog
 from native_store.catalog_writer import read_store_catalog
 from native_store.store_paths import lane_store_root, lane_work_root
@@ -21,6 +21,10 @@ from native_store.unit_ledger import UnitLedger
 FIRST_BUILDER_SHA256 = 'a' * 64
 CHANGED_BUILDER_SHA256 = 'b' * 64
 GREMLIN_PROFILE = {'npcId': 20001, 'name': 'Gremlin', 'modelCatalogId': 'npc-model:gremlin', 'mesh': 'LineageMonsters.gremlin_m00'}
+SILENT_PROFILE = {'npcId': 30001, 'name': 'Silent', 'modelCatalogId': 'npc-model:silent', 'mesh': 'SyntheticMonsters.silent_m00'}
+SYNTHETIC_NPCGRP_ROWS = [{'npc_id': 20001, 'damage_sound': ['MonSound.gremlin_dmg_1', ''], 'attack_sound1': ['']},
+                         {'npc_id': 30001, 'damage_sound': ['', ''], 'attack_sound1': ['']}]
+NPCGRP_IDENTITY = {'path': 'system/npcgrp.dat', 'sha256': 'c' * 64}
 STALE_GREMLIN_COMBAT_AUDIO_RECORD = {'id': actor_sound_bundle_id('npc:20001'), 'manifest': f'/l2/combat-audio/{"d" * 64}/manifest.json',
                                      'manifestBytes': 1, 'manifestSha256': 'd' * 64}
 STALE_SKILL_COMBAT_AUDIO_RECORD = {**STALE_GREMLIN_COMBAT_AUDIO_RECORD, 'id': actor_sound_bundle_id('skill:1:1')}
@@ -41,8 +45,8 @@ class SyntheticActorSoundRun(ActorSoundConversionRun):
         self.bundle_ledger = UnitLedger(work_root, ACTOR_SOUND_STEP, ACTOR_SOUND_ALGORITHM_VERSION)
         self.lane_folder = self.bundle_ledger.lane_folder
         self.synthetic_builder_sha256 = builder_sha256
-        self.tables = {'npcgrp': {'identity': {'path': 'system/npcgrp.dat', 'sha256': 'c' * 64}, 'original': b'synthetic npcgrp',
-                                  'decoded': {'synthetic': 'npcgrp'}}}
+        self.tables = {'npcgrp': {'identity': NPCGRP_IDENTITY, 'original': b'synthetic npcgrp', 'decoded': {'synthetic': 'npcgrp'},
+                                  'rows': SYNTHETIC_NPCGRP_ROWS}}
 
     def routes(self, name):
         return NO_BOUND_NPCGRP_ROUTES
@@ -131,9 +135,25 @@ class ActorSoundBundleResealTests(unittest.TestCase):
         run = SyntheticActorSoundRun(self.project_root, FIRST_BUILDER_SHA256)
         catalog, _ = read_store_catalog(run.store_root)
         write_store_catalog(run.store_root, {**catalog, 'combatAudio': [STALE_SKILL_COMBAT_AUDIO_RECORD]})
-        outcome = run.convert_no_sound_row_bundle(NO_SOUND_ROW_SKILL_BINDING, SKILLSOUNDGRP_IDENTITY, 5)
+        outcome = run.convert_no_sound_bundle(NoSoundBundle('skill:1:1', NO_EXACT_SKILL_SOUND_ROW_REASON, SKILLSOUNDGRP_IDENTITY, {}), 5)
         self.assertEqual((outcome['status'], outcome['bundleId']), ('gap', None))
         self.assertEqual(read_store_catalog(run.store_root)[0]['combatAudio'], [])
+
+    def test_an_npc_whose_row_names_no_sound_gets_no_bundle_record_and_a_listed_gap_sealed_once(self):
+        store_root = lane_store_root(self.project_root, 'actors')
+        profile_record = write_profile_manifest(store_root, 'native-npc-profiles', [GREMLIN_PROFILE, SILENT_PROFILE])
+        stale_silent_record = {**STALE_GREMLIN_COMBAT_AUDIO_RECORD, 'id': actor_sound_bundle_id('npc:30001')}
+        write_store_catalog(store_root, {'schemaVersion': 1, 'models': [], 'npcProfiles': [profile_record], 'combatAudio': [stale_silent_record]})
+        run, outcomes = self.run_batch(FIRST_BUILDER_SHA256)
+        self.assertEqual([(outcome['key'], outcome['status'], outcome['reason'], outcome['bundleId']) for outcome in outcomes],
+                         [('npc:20001', 'gap', 'combat-role-route-unresolved:npcgrp/attackItem', None),
+                          ('npc:30001', 'gap', NPC_NAMES_NO_SOUND_REASON, None)])
+        self.assertEqual(read_store_catalog(store_root)[0]['combatAudio'], [])
+        silent_receipt = next(receipt for receipt in run.bundle_ledger.sealed_receipts() if receipt['unitKey'] == 'npc:30001')
+        self.assertEqual(([row['reason'] for row in silent_receipt['gapRows']], silent_receipt['config']['sourceTableIdentity'],
+                          silent_receipt['config']['npcMatch']), ([NPC_NAMES_NO_SOUND_REASON], NPCGRP_IDENTITY, [{'pointer': '/npc_id', 'value': 30001}]))
+        _, second_outcomes = self.run_batch(FIRST_BUILDER_SHA256)
+        self.assertEqual(second_outcomes, [])
 
 if __name__ == '__main__':
     unittest.main()

@@ -14,6 +14,7 @@ ACTOR_SOUND_RECIPE_DESCRIPTION = ('Generated actor sound bundle: every role rout
 SELECTION_IDENTITY_FIELDS = ('label', 'catalogId', 'sourceObject', 'itemId', 'skillId', 'level')
 REFERENCE_COUNT_NAMES = {'exact-identity': 'exactIdentity', 'unique-package-leaf-candidate': 'uniquePackageLeafCandidate'}
 NO_EXACT_SKILL_SOUND_ROW_REASON = 'no-exact-skillsound-row'
+NPC_NAMES_NO_SOUND_REASON = 'npc-names-no-sound'
 SKILL_SOUND_TABLE_NAME = 'skillsoundgrp'
 
 
