@@ -4,6 +4,7 @@ import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { AssetContainer } from "@babylonjs/core/assetContainer";
 import type { Scene } from "@babylonjs/core/scene";
 import { assetPackageLimits, readAssetPackage } from "../../assets/package/readAssetPackage";
+import { sourcePositionToWorld } from "../../world/sourceFrame";
 import { decodeNativeJsonResource, fetchVerifiedNativeResource, loadNativeGlbContainer, nativeMeshBounds, validateSectionGlb } from "./loadNativeSection";
 import type { NativeTileBspChunk, NativeTileSpawnAnchor, NativeTileTerrainChunk } from "./loadNativeTileChunks";
 import { parseNativeBspSectionExtras, type NativeTileBspResource } from "./nativeBspResources";
@@ -32,7 +33,6 @@ export interface AnchorOnChunkTerrain<Entry extends TerrainChunkForAnchor> {
 
 const maximumChunkTerrainBytes = 128 * 1024 * 1024;
 const maximumChunkBspBytes = 128 * 1024 * 1024;
-const sourceUnitsToGltfMetres = 0.01;
 const tileSpawnAnchorRule = "authored PlayerStart XY on the chunk terrain surface; authored Z kept as a diagnostic";
 const surfaceRayClearanceMetres = 1;
 const staticMeshStep = "meshes";
@@ -41,7 +41,8 @@ export type TileSpawnAnchorRule = typeof tileSpawnAnchorRule;
 
 export function authoredAnchorPosition(manifest: NativeTileManifest): Vector3 {
   const [x, y, z] = manifest.anchor.location;
-  return new Vector3(x, z, y).scale(sourceUnitsToGltfMetres);
+  const world = sourcePositionToWorld({ x, y, z });
+  return new Vector3(world.x, world.y, world.z);
 }
 
 function terrainSurfaceHeight(meshes: readonly AbstractMesh[], position: Vector3, minimumY: number, maximumY: number): number | null {

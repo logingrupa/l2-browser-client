@@ -1,4 +1,5 @@
 import { nativeResourceUrl } from "../../assets/native/nativeResourceUrl";
+import { worldPositionToSource, type WorldPosition } from "../../world/sourceFrame";
 import { decodeNativeJsonResource, fetchVerifiedNativeResource } from "./loadNativeSection";
 import { hasExactKeys, isPlainRecord, nativeTileSha256Pattern } from "./nativeTileChunkManifest";
 import type { NativeTileManifest } from "./nativeTileManifest";
@@ -84,11 +85,6 @@ export type NativeTileMinimapTexturePosition =
   | { readonly position: { readonly u: number; readonly v: number; readonly status: "unverified" }; readonly reason: null }
   | { readonly position: null; readonly reason: string };
 
-export interface NativeTileMinimapScenePosition {
-  readonly x: number;
-  readonly z: number;
-}
-
 const manifestFields = ["kind", "schemaVersion", "tileId", "sourceInputs", "radarTexture", "townMapTextures", "zoneNameTextures", "zones",
   "huntingZones", "projection", "gaps", "labels"];
 const radarTextureFields = ["archive", "archiveSha256", "archiveBytes", "sourceObject", "rule"];
@@ -105,7 +101,6 @@ const tileIdPattern = /^\d{2}_\d{2}$/;
 const maximumArchiveBytes = 64 * 1024 * 1024;
 const maximumTextureDimension = 16384;
 const maximumListedItems = 4096;
-const nativeUnitsPerSceneMetre = 100;
 const outsideTileFrameReason = "outside-tile-frame";
 const projectionGapReason = "minimap-join-unresolved:projection";
 
@@ -243,12 +238,12 @@ export async function loadNativeTileMinimap(tileManifest: NativeTileManifest, si
   return parseNativeTileMinimapManifest(decodeNativeJsonResource(bytes, `Native tile ${tileManifest.tileId} minimap manifest`), tileManifest.tileId);
 }
 
-export function minimapTexturePosition(minimap: NativeTileMinimap, scenePosition: NativeTileMinimapScenePosition): NativeTileMinimapTexturePosition {
+export function minimapTexturePosition(minimap: NativeTileMinimap, scenePosition: WorldPosition): NativeTileMinimapTexturePosition {
   const projection = minimap.projection;
   if (projection === null) {
     return { position: null, reason: (minimap.gaps.find(gap => gap.reason === projectionGapReason) ?? minimap.gaps[0]!).reason };
   }
-  const nativeX = scenePosition.x * nativeUnitsPerSceneMetre, nativeY = scenePosition.z * nativeUnitsPerSceneMetre;
+  const { x: nativeX, y: nativeY } = worldPositionToSource(scenePosition);
   const [minimumX, minimumY] = projection.frameMinimumNative, [maximumX, maximumY] = projection.frameMaximumNative;
   if (nativeX < minimumX || nativeX > maximumX || nativeY < minimumY || nativeY > maximumY) return { position: null, reason: outsideTileFrameReason };
   return { position: { u: (nativeX - minimumX) / (maximumX - minimumX), v: (nativeY - minimumY) / (maximumY - minimumY), status: "unverified" },

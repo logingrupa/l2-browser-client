@@ -73,17 +73,17 @@ describe("minimapTexturePosition", () => {
   const minimap: NativeTileMinimap = parseNativeTileMinimapManifest(minimapManifest(), "20_21");
 
   it("maps the frame minimum to (0, 0) and the frame maximum to (1, 1), labelled unverified", () => {
-    expect(minimapTexturePosition(minimap, { x: -128, z: 0 })).toEqual({ position: { u: 0, v: 0, status: "unverified" }, reason: null });
-    expect(minimapTexturePosition(minimap, { x: 128, z: 256 })).toEqual({ position: { u: 1, v: 1, status: "unverified" }, reason: null });
+    expect(minimapTexturePosition(minimap, { x: -128, y: 0, z: 0 })).toEqual({ position: { u: 0, v: 0, status: "unverified" }, reason: null });
+    expect(minimapTexturePosition(minimap, { x: 128, y: 0, z: 256 })).toEqual({ position: { u: 1, v: 1, status: "unverified" }, reason: null });
   });
 
   it("returns null with the reason outside the frame or when the projection is a gap", () => {
-    expect(minimapTexturePosition(minimap, { x: 128.5, z: 100 })).toEqual({ position: null, reason: "outside-tile-frame" });
-    expect(minimapTexturePosition(parseNativeTileMinimapManifest(gapManifest(), "20_21"), { x: 0, z: 0 }))
+    expect(minimapTexturePosition(minimap, { x: 128.5, y: 0, z: 100 })).toEqual({ position: null, reason: "outside-tile-frame" });
+    expect(minimapTexturePosition(parseNativeTileMinimapManifest(gapManifest(), "20_21"), { x: 0, y: 0, z: 0 }))
       .toEqual({ position: null, reason: "minimap-join-unresolved:zone-grid" });
     const projectionGap = parseNativeTileMinimapManifest(minimapManifest({ projection: null,
       gaps: [{ reason: "texture-licensee-unsupported:118/0", evidence: "radar" }, { reason: "minimap-join-unresolved:projection", evidence: "frame" }] }), "20_21");
-    expect(minimapTexturePosition(projectionGap, { x: 0, z: 0 })).toEqual({ position: null, reason: "minimap-join-unresolved:projection" });
+    expect(minimapTexturePosition(projectionGap, { x: 0, y: 0, z: 0 })).toEqual({ position: null, reason: "minimap-join-unresolved:projection" });
   });
 });
 
