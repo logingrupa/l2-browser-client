@@ -197,7 +197,7 @@ export class NativeSliceAdapter implements GameWorldAdapter {
   private acceptReportedPosition(player: WorldEntity, command: ReportPositionCommand): void {
     const rejectionReason = reportedPositionRejectionReason(command);
     if (rejectionReason) { this.emit(commandRejectedEvent(command.type, rejectionReason)); return; }
-    this.update({ ...player, position: sourcePositionToWorld(command.position) });
+    this.update({ ...player, position: sourcePositionToWorld(command.position), orientationRadians: sourceHeadingToWorldYaw(command.heading) });
   }
   private stopAtReportedPosition(player: WorldEntity, command: CannotMoveCommand): void {
     const rejectionReason = reportedPositionRejectionReason(command);

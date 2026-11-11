@@ -82,11 +82,21 @@ describe("native slice adapter boundary", () => {
     adapter.dispose();
   });
 
-  it("mirrors an accepted reported source position into the local player's metre position", () => {
+  it("mirrors an accepted reported source position and heading into the local player's metre position and yaw", () => {
     const adapter = new NativeSliceAdapter(origin), events = recorded(adapter);
     adapter.dispatch({ type: "report-position", position: { x: 500, y: 600, z: 300 }, heading: 16384 });
-    expect(player(adapter)).toMatchObject({ position: { x: 5, y: 3, z: 6 }, orientationRadians: 0 });
+    expect(player(adapter)).toMatchObject({ position: { x: 5, y: 3, z: 6 }, orientationRadians: -Math.PI / 2 });
     expect(events).toEqual([{ type: "update", entity: player(adapter) }]);
+    adapter.dispose();
+  });
+
+  it("stops a local move at the last reported heading when an animation interrupts it", () => {
+    const adapter = movingAdapter();
+    adapter.dispatch({ type: "move-local", position: { x: 9, y: 3, z: 4 } });
+    adapter.dispatch({ type: "report-position", position: { x: 500, y: 600, z: 300 }, heading: 16384 });
+    const events = recorded(adapter);
+    adapter.dispatch({ type: "set-animation", animation: "attack" });
+    expect(events.filter(event => event.type === "stop")).toEqual([{ type: "stop", entityId: "local-player", position: { x: 500, y: 600, z: 300 }, heading: 16384 }]);
     adapter.dispose();
   });
 
