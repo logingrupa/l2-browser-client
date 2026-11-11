@@ -1,10 +1,8 @@
 {
   "schemaVersion": 1,
   "volumeClasses": ["Engine.BlockingVolume", "Engine.PhysicsVolume"],
-  "placementClass": "Engine.StaticMeshActor",
   "blockingFlagFields": ["bCollideActors", "bBlockPlayers"],
   "crossCheckFlagFields": ["bStatic", "bCollideActors", "bBlockActors", "bBlockPlayers", "bBlockNonZeroExtentTraces"],
-  "transformFields": ["Location", "Rotation", "DrawScale", "DrawScale3D", "PrePivot"],
   "staticMeshSelectorFields": ["UseSimpleLineCollision", "UseSimpleBoxCollision", "UseSimpleKarmaCollision", "CollisionModel"],
   "rules": [
     {

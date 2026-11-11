@@ -11,6 +11,8 @@ COLLISION_RULES_PATH = Path(__file__).resolve().parents[2] / 'recipes' / 'world'
 COLLISION_RULES_SCHEMA_VERSION = 1
 CONSTANTS_ROW_FIELDS = frozenset({'id', 'value', 'provenance', 'status', 'interludeEvidence', 'runtimeDefault'})
 CONSTANTS_ROW_STATUSES = ('ue2-data', 'unconfirmed', 'confirmed-interlude', 'corrected-interlude', 'unknown')
+COLLISION_RULES_DOCUMENT_FIELDS = frozenset({'schemaVersion', 'volumeClasses', 'blockingFlagFields', 'crossCheckFlagFields', 'staticMeshSelectorFields',
+                                             'rules'})
 COLLISION_UNREADABLE_REASON = 'collision-unreadable'
 DECLARED_NONE_DECISION = 'declared-none'
 SLOTS_DECISION = 'slots'
@@ -30,25 +32,24 @@ GLTF_TRIANGLES_MODE = 4
 
 class CollisionRules(NamedTuple):
     volume_classes: tuple
-    placement_class: str
     blocking_fields: tuple
     cross_check_fields: tuple
-    transform_fields: tuple
     selector_fields: tuple
-    rows: tuple
 
 
 def load_collision_rules(path=COLLISION_RULES_PATH):
     document = json.loads(Path(path).read_text(encoding='utf-8'))
     if document.get('schemaVersion') != COLLISION_RULES_SCHEMA_VERSION:
         raise FormatError(f'collision declaration rules must be schemaVersion {COLLISION_RULES_SCHEMA_VERSION}: {path}')
+    if set(document) != COLLISION_RULES_DOCUMENT_FIELDS:
+        raise FormatError(f'collision declaration rules fields {sorted(document)} differ from the fields the collision steps read '
+                          f'{sorted(COLLISION_RULES_DOCUMENT_FIELDS)}: {path}')
     for row in document['rules']:
         if not (isinstance(row, dict) and set(row) == CONSTANTS_ROW_FIELDS and isinstance(row['provenance'], str) and row['provenance']
                 and row['status'] in CONSTANTS_ROW_STATUSES):
             raise FormatError(f'collision declaration rule row is invalid: {row!r}')
-    return CollisionRules(tuple(document['volumeClasses']), document['placementClass'], tuple(document['blockingFlagFields']),
-                          tuple(document['crossCheckFlagFields']), tuple(document['transformFields']),
-                          tuple(document['staticMeshSelectorFields']), tuple(row['id'] for row in document['rules']))
+    return CollisionRules(tuple(document['volumeClasses']), tuple(document['blockingFlagFields']), tuple(document['crossCheckFlagFields']),
+                          tuple(document['staticMeshSelectorFields']))
 
 
 def serialized_actor_value(actor, field):

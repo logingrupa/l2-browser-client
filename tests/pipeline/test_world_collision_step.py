@@ -241,10 +241,18 @@ class CollisionManifestTests(unittest.TestCase):
 
     def test_every_rule_row_has_provenance_and_a_shared_status(self):
         document = json.loads((ROOT / 'recipes/world/collision-declaration-rules.json').read_text(encoding='utf-8'))
-        self.assertEqual(len(RULES.rows), len(document['rules']))
         for row in document['rules']:
             self.assertTrue(row['provenance'])
             self.assertIn(row['status'], ('ue2-data', 'unconfirmed', 'confirmed-interlude', 'corrected-interlude', 'unknown'))
+
+    def test_a_rules_recipe_naming_a_field_no_collision_step_reads_is_rejected(self):
+        document = json.loads((ROOT / 'recipes/world/collision-declaration-rules.json').read_text(encoding='utf-8'))
+        for ungoverned_field, value in (('placementClass', 'Engine.MovableStaticMeshActor'), ('transformFields', ['Location'])):
+            with self.subTest(field=ungoverned_field), tempfile.TemporaryDirectory() as folder:
+                recipe_path = Path(folder) / 'collision-declaration-rules.json'
+                recipe_path.write_text(json.dumps({**document, ungoverned_field: value}), encoding='utf-8')
+                with self.assertRaisesRegex(FormatError, 'differ from the fields the collision steps read'):
+                    load_collision_rules(recipe_path)
 
     def test_placement_records_keep_their_export_order_and_mesh_links(self):
         arrays = {array.name: array.values for array in plac_arrays([
