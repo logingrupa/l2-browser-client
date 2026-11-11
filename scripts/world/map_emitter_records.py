@@ -45,6 +45,8 @@ def emitter_references(tags):
 
 
 def emitter_record(package, reference, class_defaults):
+    if not 1 <= reference <= len(package.exports):
+        raise FormatError(f'Emitter actor names emitter export {reference} outside the export table of {len(package.exports)} exports')
     item = package.exports[reference - 1]
     tags, reader = package.properties(item)
     values = object_values(package, tags)

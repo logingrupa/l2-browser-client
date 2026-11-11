@@ -7,7 +7,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
-from native_catalog.ue2 import Package
+from native_catalog.ue2 import FormatError, Package
 from native_store.gap_rows import validate_gap_row
 from native_store.tile_manifest_validation import load_tile_manifest_vocabulary
 from support.actor_class_defaults import ACTOR_DEFAULTS, SyntheticActorClassDefaults
@@ -51,12 +51,12 @@ def particle_emitter_body(offset, names):
     return tag(names, 'MaxParticles', INTEGER_PROPERTY_TYPE, struct.pack('<i', 4)) + compact(names['None'])
 
 
-def emitter_package(with_emitters=True):
+def emitter_package(with_emitters=True, second_emitter_export_index=2):
     exports = [{'name': 'SpriteEmitter0', 'class': SPRITE_EMITTER_CLASS_IMPORT, 'body': particle_emitter_body},
                {'name': 'SparkEmitter0', 'class': SPARK_EMITTER_CLASS_IMPORT, 'body': particle_emitter_body}]
     if with_emitters:
         exports += [{'name': 'Emitter7', 'class': EMITTER_CLASS_IMPORT, 'body': emitter_actor_body(1, True)},
-                    {'name': 'Emitter2', 'class': EMITTER_CLASS_IMPORT, 'body': emitter_actor_body(2, False)}]
+                    {'name': 'Emitter2', 'class': EMITTER_CLASS_IMPORT, 'body': emitter_actor_body(second_emitter_export_index, False)}]
     return Package(package_bytes(PROPERTY_NAMES, EMITTER_IMPORTS, exports), f'{TILE_ID}.unr')
 
 
@@ -108,6 +108,11 @@ class MapEmitterExportTests(unittest.TestCase):
         self.assertEqual((placements, gap_rows), ([], []))
         self.assertEqual(tile_map_emitter_row(TILE_ID, SOURCE_IDENTITY, gap_rows, EVIDENCE)['status'], 'pass')
         self.assertEqual(tile_resources(None, None, None, {'manifest': None, 'gapRows': []}), [])
+
+    def test_an_emitter_reference_past_the_export_table_is_refused_as_a_format_error(self):
+        package = emitter_package(second_emitter_export_index=99)
+        with self.assertRaisesRegex(FormatError, 'emitter export 99 outside the export table of 4 exports'):
+            read_tile_map_emitters(package, RAW_ACTORS, CLASS_DEFAULTS, TILE_ID, SOURCE_IDENTITY, EVIDENCE)
 
     def test_the_kind_is_in_the_vocabulary_and_the_tile_resource_pins_the_manifest(self):
         self.assertIn('map-emitters', load_tile_manifest_vocabulary().resource_kinds)
