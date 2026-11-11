@@ -3,12 +3,15 @@ import hashlib
 import json
 from pathlib import Path
 import sys
+import tempfile
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
+from native_catalog.ue2 import FormatError
 from native_store.gap_rows import validate_gap_row
 from native_store.tile_manifest_validation import load_tile_manifest_vocabulary, validate_tile_chunk_manifest
 from support.converted_model_fixture import converted_model_glb
@@ -17,7 +20,9 @@ from support.level_model_fixture import build_synthetic_level_model, square_poin
 from synthetic_terrain_fixture import synthetic_native_terrain
 from world.blocking_volume_geometry import read_volume
 from world.collision_payload_groups import bspt_arrays, plac_arrays, vols_arrays
-from world.collision_step import COLLISION_STEP_ALGORITHM_VERSION, gap_reason_of
+from world import collision_step
+from world.collision_step import COLLISION_STEP_ALGORITHM_VERSION, CollisionUnit, gap_reason_of, run_collision_step
+from world.level_model import LevelModelLayoutError
 from world.static_collision_sources import decide_placement_collision, load_collision_rules, static_mesh_collision_triangles
 from world.terrain_collision_source import read_terrain_collision
 from world.tile_manifest_step import build_tile_chunk_manifest, tile_resources
@@ -150,6 +155,37 @@ class TreeAndTerrainTests(unittest.TestCase):
         self.assertEqual((terrain['location'], terrain['terrainScale'], terrain['vertexRectangle']), ([1.0, 2.0, 3.0], [128.0, 128.0, 76.0], [0, 0, 5, 3]))
         self.assertEqual(terrain['heights'], samples)
         self.assertEqual((terrain['quadVisibility'][:2], terrain['edgeTurn'][:2]), ([False, True], [True, False]))
+
+
+class CollisionStepOrderTests(unittest.TestCase):
+    def run_with_unsealed_bsp(self, level_model_outcome):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        lane_folder = Path(temporary.name)
+        raw_products = lane_folder / 'raw'
+        raw_products.mkdir()
+        (raw_products / 'actors.json').write_text('[]', encoding='utf-8')
+        ledger = SimpleNamespace(lane_folder=lane_folder, is_sealed=lambda unit_key, fingerprint: False,
+                                 unit_step_directory=lambda unit_key: lane_folder / 'work' / 'tile__00_00' / 'collision')
+        unit = CollisionUnit(ledger, f'tile:{TILE_ID}', 'f' * 64, {'bspFingerprint': None}, [], raw_products, {'chunks': []}, {'chunks': {}},
+                             {}, {'movers': []})
+        with patch.object(collision_step, 'read_tile_map_lock_record', return_value={'eSha256': SOURCE_IDENTITY['sha256']}), \
+                patch.object(collision_step, 'collision_unit', return_value=unit), \
+                patch.object(collision_step, 'read_locked_map_package', return_value=SimpleNamespace()), \
+                patch.object(collision_step, 'read_level_model', side_effect=level_model_outcome), \
+                patch.object(collision_step, 'native_terrain', return_value=None), \
+                patch.object(collision_step, 'chunk_rectangles', return_value={}):
+            return run_collision_step(ROOT, ROOT, TILE_ID)
+
+    def test_a_level_model_layout_gap_is_the_collision_gap_even_without_a_bsp_seal(self):
+        row = self.run_with_unsealed_bsp(LevelModelLayoutError('map-licensee-unsupported:123/25', 'Level.Model layout of 123/25 is unreviewed'))
+        self.assertEqual((row['status'], row['reason']), ('gap', 'map-licensee-unsupported:123/25'))
+        validate_gap_row(row)
+
+    def test_a_readable_level_model_without_a_bsp_seal_names_only_the_bsp_step(self):
+        with self.assertRaises(FormatError) as refusal:
+            self.run_with_unsealed_bsp([SimpleNamespace()])
+        self.assertIn('needs a sealed bsp unit; run --step bsp first', str(refusal.exception))
 
 
 class CollisionManifestTests(unittest.TestCase):

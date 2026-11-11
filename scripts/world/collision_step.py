@@ -236,8 +236,8 @@ def run_collision_step(project_root, client_root, tile_id):
     if ledger.is_sealed(unit_key, fingerprint):
         return tile_collision_row(tile_id, source_identity, json.loads(collision_product_path(ledger, unit_key).read_text(encoding='utf-8'))['gapRows'],
                                   receipt_evidence)
-    if static_meshes is None or config['bspFingerprint'] is None or unit.movers is None:
-        raise FormatError(f'collision of {unit_key} needs sealed meshes, bsp and movers units; run --step meshes, --step bsp and --step movers first')
+    if static_meshes is None or unit.movers is None:
+        raise FormatError(f'collision of {unit_key} needs sealed meshes and movers units; run --step meshes and --step movers first')
     client = Path(client_root).resolve()
     package = read_locked_map_package(client, tile_id, lock_record)
     actors = json.loads((raw_products / 'actors.json').read_text(encoding='utf-8'))
@@ -249,6 +249,8 @@ def run_collision_step(project_root, client_root, tile_id):
     except ValueError as error:
         return tile_step_row(tile_id, COLLISION_STEP_NAME, FAILED_STATUS, conversion_failure_reason(error), source_identity,
                              step_directory.relative_to(ledger.lane_folder).as_posix())
+    if config['bspFingerprint'] is None:
+        raise FormatError(f'collision of {unit_key} needs a sealed bsp unit; run --step bsp first')
     context = collision_context(project_root, client, unit, lock_record)
     placements_by_chunk, meshes_by_chunk, decisions = placement_records(context, actors)
     volumes_by_chunk, volumes = volume_records(context, package, level, actors, rectangles)
