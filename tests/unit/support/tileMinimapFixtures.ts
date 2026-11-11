@@ -2,41 +2,17 @@ import { parseNativeTileMinimapManifest, type NativeTileMinimap } from "../../..
 import { parseNativeWindowManifest, type NativeWindowManifest } from "../../../src/ui/nativeWindows/nativeWindowLayoutTree";
 import type { NativeWindowMinimapTileSource, NativeWindowTextureResolution } from "../../../src/ui/nativeWindows/nativeWindowManifestLoader";
 import type { WorldEntity } from "../../../src/world/worldTypes";
+import { syntheticTileMinimapManifest } from "../../fixtures/tileMinimapManifestFixture";
 
-export const syntheticTileTextureSize = 256;
-export const syntheticTileFrameNativeSize = 25600;
-const sourceSha256 = "c".repeat(64);
-const radarGapReason = "minimap-join-unresolved:radar-texture";
-
-function syntheticTileGridColumnAndRow(tileId: string): readonly [number, number] {
-  const [column, row] = tileId.split("_").map(Number);
-  return [column!, row!];
-}
-
-export function syntheticTileFrameMinimumNative(tileId: string): readonly [number, number] {
-  const [column, row] = syntheticTileGridColumnAndRow(tileId);
-  return [(column - 20) * syntheticTileFrameNativeSize, (row - 20) * syntheticTileFrameNativeSize];
-}
+export { syntheticTileTextureSize } from "../../fixtures/tileMinimapManifestFixture";
 
 export function syntheticRadarArchiveSha256(tileId: string): string {
   return tileId.replace("_", "").padStart(64, "a");
 }
 
 export function syntheticTileMinimap(tileId: string, options: { readonly radar: boolean } = { radar: true }): NativeTileMinimap {
-  const [minimumX, minimumY] = syntheticTileFrameMinimumNative(tileId);
-  const archiveSha256 = syntheticRadarArchiveSha256(tileId);
-  return parseNativeTileMinimapManifest({
-    kind: "native-tile-minimap", schemaVersion: 1, tileId,
-    sourceInputs: [{ path: "systextures/L2_RadarMap.utx", sha256: sourceSha256 }],
-    radarTexture: options.radar
-      ? { archive: `/l2/${archiveSha256}/asset.l2asset`, archiveSha256, archiveBytes: 4096, sourceObject: `Radar.Maps.${tileId}`, rule: "tile-id" } : null,
-    townMapTextures: [], zoneNameTextures: [], zones: [], huntingZones: [],
-    projection: options.radar ? { rule: "tile-frame-extent", status: "unverified", frameMinimumNative: [minimumX, minimumY],
-      frameMaximumNative: [minimumX + syntheticTileFrameNativeSize, minimumY + syntheticTileFrameNativeSize],
-      textureWidth: syntheticTileTextureSize, textureHeight: syntheticTileTextureSize } : null,
-    gaps: options.radar ? [] : [{ reason: radarGapReason, evidence: "synthetic radar gap" }],
-    labels: { schemaFieldMeaning: "synthetic fixture" },
-  }, tileId);
+  const radarArchive = options.radar ? { archiveSha256: syntheticRadarArchiveSha256(tileId), archiveBytes: 4096 } : null;
+  return parseNativeTileMinimapManifest(syntheticTileMinimapManifest(tileId, radarArchive), tileId);
 }
 
 export function syntheticLocalPlayerAt(sceneX: number, sceneZ: number): WorldEntity {
