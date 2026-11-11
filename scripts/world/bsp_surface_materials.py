@@ -11,7 +11,8 @@ from native_assets_lib.material_resources import write_native_material_resources
 from world.bsp_chunk_geometry import BspSurfaceMaterial
 from world.static_mesh_step import conversion_failure_reason
 
-TRANSLUCENT_BLEND_FIELD_OF_CLASS = {'Engine.Shader': 'OutputBlending', 'Engine.FinalBlend': 'FrameBufferBlending'}
+OPAQUE_BLEND_MEMBERS_OF_CLASS = {'Engine.Shader': ('OutputBlending', frozenset({'OB_Normal', 'OB_Masked'})),
+                                 'Engine.FinalBlend': ('FrameBufferBlending', frozenset({'FB_Overwrite'}))}
 UNPORTED_NODE_STATUS = 'unported'
 PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
 PNG_DIMENSIONS_OFFSET = 16
@@ -51,11 +52,14 @@ def root_program_node(program):
 
 def program_blend_is_translucent(program):
     root = root_program_node(program)
-    field_name = TRANSLUCENT_BLEND_FIELD_OF_CLASS.get(root['class'])
-    field = next((field for field in root['fields'] if field_name and field['field'].casefold() == field_name.casefold()), None)
-    if field is None or not isinstance(field['value'], dict) or type(field['value'].get('ordinal')) is not int:
+    blend = OPAQUE_BLEND_MEMBERS_OF_CLASS.get(root['class'])
+    if blend is None:
         return False
-    return field['value']['ordinal'] != 0
+    field_name, opaque_members = blend
+    field = next((field for field in root['fields'] if field['field'].casefold() == field_name.casefold()), None)
+    if field is None or not isinstance(field['value'], dict) or not isinstance(field['value'].get('name'), str):
+        return False
+    return field['value']['name'] not in opaque_members
 
 
 def unbound_surface_material(identity, program_record, gap_reasons, store_outputs):

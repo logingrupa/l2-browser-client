@@ -49,11 +49,11 @@
     },
     {
       "id": "bsp.translucent-program-blend",
-      "value": "a section is translucent when the root node of its material program holds OutputBlending (Engine.Shader) or FrameBufferBlending (Engine.FinalBlend) decoded to an ordinal other than 0",
-      "provenance": "enum members decoded from the Interlude Engine.Shader and Engine.FinalBlend class scripts through the 02-59 material program; ordinal 0 is the declared first member and the zero class default",
+      "value": "a section is translucent when the root node of its material program holds OutputBlending (Engine.Shader) decoded to a member other than OB_Normal or OB_Masked, or FrameBufferBlending (Engine.FinalBlend) decoded to a member other than FB_Overwrite",
+      "provenance": "enum members decoded from the Interlude Engine.Shader and Engine.FinalBlend class scripts through the 02-59 material program; the opaque members are the depth-writing blends of src/materials/ue2/model/constants/blendConstants.ts rows blend.ob-pairs, blend.fb-pairs, blend.alpha-test and blend.depth-write (OB_Masked alpha-tests with depth write)",
       "status": "unconfirmed",
       "interludeEvidence": null,
-      "runtimeDefault": "translucent for any non-zero blending ordinal of the root program node"
+      "runtimeDefault": "translucent for any root program blending member other than OB_Normal, OB_Masked or FB_Overwrite"
     }
   ]
 }

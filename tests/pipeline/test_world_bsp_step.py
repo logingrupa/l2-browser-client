@@ -18,7 +18,7 @@ from world import bsp_surface_materials
 from world.bsp_chunk_geometry import (BspPolyFlags, BspSurfaceMaterial, assign_nodes_to_chunks, build_chunk_sections, chunk_bsp_glb,
                                       drawn_node_indices, load_bsp_poly_flags)
 from world.bsp_step import BSP_STEP_ALGORITHM_VERSION, sealed_bsp_chunks
-from world.bsp_surface_materials import convert_surface_material
+from world.bsp_surface_materials import convert_surface_material, program_blend_is_translucent
 from world.level_model import LevelModelLayoutError, LevelModelRangeError, read_level_model, require_level_model_ranges
 from world.raw_map_step import read_tile_map_lock_record
 from world.static_placement_plan import ChunkRectangle
@@ -39,6 +39,12 @@ SERVED_STORE = ROOT / 'public' / 'l2'
 def textured(identity, translucent=False):
     png = b'\x89PNG\r\n\x1a\n' + struct.pack('>I4sII', 13, b'IHDR', 64, 32) + bytes(5)
     return BspSurfaceMaterial(identity, png, 64, 32, translucent, None)
+
+
+def blend_root_program(class_name, field_name, members, ordinal):
+    root = {'id': 'Synthetic.Root', 'class': class_name, 'status': 'reviewed',
+            'fields': [{'field': field_name, 'value': {'ordinal': ordinal, 'name': members[ordinal]}}]}
+    return {'root': root['id'], 'nodes': [root]}
 
 
 def glb_document(glb):
@@ -152,6 +158,24 @@ class SurfaceMaterialTests(unittest.TestCase):
         self.assertIn('material-class-unported:Engine.TexOscillatorTriggered', outcome.gap_reasons)
         self.assertTrue(outcome.material.program['directory'].startswith('native-materials/'))
 
+    def test_only_the_depth_writing_shader_and_final_blend_members_are_opaque(self):
+        output_blending = ('OB_Normal', 'OB_Masked', 'OB_Modulate', 'OB_Translucent', 'OB_Invisible', 'OB_Brighten', 'OB_Darken')
+        frame_buffer_blending = ('FB_Overwrite', 'FB_Modulate', 'FB_AlphaBlend', 'FB_AlphaModulate_MightNotFogCorrectly', 'FB_Translucent',
+                                 'FB_Darken', 'FB_Brighten', 'FB_Invisible', 'FB_Add')
+        shader = {member: program_blend_is_translucent(blend_root_program('Engine.Shader', 'OutputBlending', output_blending, ordinal))
+                  for ordinal, member in enumerate(output_blending)}
+        final_blend = {member: program_blend_is_translucent(blend_root_program('Engine.FinalBlend', 'FrameBufferBlending', frame_buffer_blending,
+                                                                                ordinal))
+                       for ordinal, member in enumerate(frame_buffer_blending)}
+        self.assertEqual({member for member, translucent in shader.items() if not translucent}, {'OB_Normal', 'OB_Masked'})
+        self.assertEqual({member for member, translucent in final_blend.items() if not translucent}, {'FB_Overwrite'})
+
+    def test_a_root_without_a_blend_field_is_opaque(self):
+        self.assertFalse(program_blend_is_translucent(blend_root_program('Engine.Texture', 'OutputBlending', ('OB_Translucent',), 0)))
+        program = blend_root_program('Engine.Shader', 'OutputBlending', ('OB_Translucent',), 0)
+        program['nodes'][0]['fields'] = []
+        self.assertFalse(program_blend_is_translucent(program))
+
     def test_a_missing_material_export_is_a_decode_failure(self):
         map_sources = SimpleNamespace(paths={}, get=lambda relative: None)
         outcome = convert_surface_material('Missing.Material', map_sources, None, None, None, None)
@@ -183,7 +207,7 @@ class BspManifestTests(unittest.TestCase):
         self.assertEqual((manifest['bsp'], row['status'], row['reason']), (None, 'gap', 'bsp-chunk-without-nodes'))
 
     def test_the_step_version_is_pinned(self):
-        self.assertEqual(BSP_STEP_ALGORITHM_VERSION, 2)
+        self.assertEqual(BSP_STEP_ALGORITHM_VERSION, 3)
 
 
 @unittest.skipUnless(REFERENCE_CLIENT.is_dir(), 'the conversion client E:/Lineage2-client is absent')
