@@ -216,10 +216,9 @@ describe("world movement wiring", () => {
     expect(movement.groundBelow({ x: Number.NaN, y: 0, z: 0 })).toBeNull();
     expect(movement.isStraightWalkBlocked({ x: 0, y: 0, z: 0 }, { x: .5, y: 0, z: 0 }, { radius: 9, height: 23 })).toBe(false);
     expect(movement.isStraightWalkBlocked({ x: 0, y: 0, z: 0 }, { x: 2, y: 0, z: 0 }, { radius: 9, height: 23 })).toBe(true);
-    const navigation = createCollisionWorldNavigation(movement, { x: 0, y: 0, z: 0 }, { radius: 9, height: 23 });
+    const navigation = createCollisionWorldNavigation(movement, { radius: 9, height: 23 });
     expect(navigation.move({ x: 0, y: 0, z: 0 }, { x: 2, y: 0, z: 0 })).toEqual({ position: { x: 0, y: 0, z: 0 }, blocked: true });
     expect(navigation.move({ x: 0, y: 0, z: 0 }, { x: .5, y: 0, z: 0 })).toEqual({ position: { x: .5, y: 0, z: 0 }, blocked: false });
     expect(navigation.destination({ x: .3, y: .05, z: 0 })!.y).toBeCloseTo(0, 1);
-    expect(navigation.spawn({ x: .3, y: .05, z: 0 })!.x).toBeCloseTo(.3, 4);
   });
 });

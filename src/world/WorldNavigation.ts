@@ -17,10 +17,6 @@ export interface WorldGroundContact {
 }
 
 export interface WorldNavigation {
-  readonly origin: WorldPosition;
-  ground(position: WorldPosition): WorldPosition | null;
-  groundContact?(position: WorldPosition): WorldGroundContact | null;
   destination(position: WorldPosition): WorldPosition | null;
-  spawn(offset: WorldPosition, occupied?: readonly WorldPosition[]): WorldPosition | null;
-  move(from: WorldPosition, to: WorldPosition): { position: WorldPosition; blocked: boolean; contact?: WorldGroundContact };
+  move(from: WorldPosition, to: WorldPosition): { position: WorldPosition; blocked: boolean };
 }

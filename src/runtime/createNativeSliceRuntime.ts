@@ -228,7 +228,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     const doors = movers ? createNativeDoorInteractions(scene, movers.targets, {
       player: presentedLocalPlayer, dispatch: command => adapter.dispatch(command),
       onCommand: listener => adapter.subscribeCommands(listener), paused: () => adapter.isPaused || isSceneSuspended(scene),
-    }, createCollisionWorldNavigation(movement, origin, { radius: playerProfile.collisionRadius, height: playerProfile.collisionHeight }),
+    }, createCollisionWorldNavigation(movement, { radius: playerProfile.collisionRadius, height: playerProfile.collisionHeight }),
     playerCapsuleFromSourceCollision(), message => ui.showStatus(message)) : undefined;
     if (doors) boundaryReleases.push(() => doors.dispose());
     const releaseOnSceneDisposeObserver = scene.onDisposeObservable.add(stop);
