@@ -47,18 +47,24 @@ def dot(left, right):
     return sum(x * y for x, y in zip(left, right))
 
 
+def sky_zone_material_nodes(package, model, zone_index):
+    for node_index, node in enumerate(model.nodes):
+        if zone_index not in node.i_zone:
+            continue
+        identity = package.object_name(model.surfs[node.i_surf].material)
+        if identity is not None:
+            yield node_index, identity
+
+
 def sky_zone_node_indices(package, model, zone_index, material_identity):
-    return [node_index for node_index, node in enumerate(model.nodes)
-            if zone_index in node.i_zone and package.object_name(model.surfs[node.i_surf].material).casefold() == material_identity.casefold()]
+    return [node_index for node_index, identity in sky_zone_material_nodes(package, model, zone_index)
+            if identity.casefold() == material_identity.casefold()]
 
 
 def sky_zone_material_identities(package, model, zone_index):
     identities = []
-    for node in model.nodes:
-        if zone_index not in node.i_zone:
-            continue
-        identity = package.object_name(model.surfs[node.i_surf].material)
-        if identity is not None and identity.casefold() not in {known.casefold() for known in identities}:
+    for _, identity in sky_zone_material_nodes(package, model, zone_index):
+        if identity.casefold() not in {known.casefold() for known in identities}:
             identities.append(identity)
     return identities
 

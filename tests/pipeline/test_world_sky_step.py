@@ -47,7 +47,8 @@ def synthetic_sky_model():
     return build_synthetic_level_model([synthetic_polygon(square_points(0, 0, 64), material=1, zones=(SKY_ZONE, SKY_ZONE)),
                                         synthetic_polygon(square_points(100, 0, 64), material=3, zones=(0, SKY_ZONE)),
                                         synthetic_polygon(square_points(200, 0, 64), material=4, zones=(SKY_ZONE, 0)),
-                                        synthetic_polygon(square_points(300, 0, 64), material=3, zones=(0, 0))],
+                                        synthetic_polygon(square_points(300, 0, 64), material=3, zones=(0, 0)),
+                                        synthetic_polygon(square_points(400, 0, 64), material=0, zones=(SKY_ZONE, SKY_ZONE))],
                                        zones=(synthetic_zone(), synthetic_zone(5)))
 
 
@@ -68,6 +69,12 @@ class SkyZoneGeometryTests(unittest.TestCase):
         self.assertEqual(part['indices'][:6], [0, 2, 1, 0, 3, 2])
         self.assertEqual(part['positions'][3:6], [struct.unpack('<f', struct.pack('<f', 0.64))[0], 0.0, 0.0])
         self.assertEqual(part['uvs'][2:4], [1.0, 0.0])
+
+    def test_a_sky_zone_node_without_a_material_is_skipped_by_every_root(self):
+        package = SimpleNamespace(object_name=object_name)
+        roots = [root_surface('Sky_T.Shaders.Haze', 'Ring'), root_surface('Sky_T.Shaders.Back', 'Chip')]
+        parts = build_sky_zone_parts(package, synthetic_sky_model(), SKY_ZONE, roots)
+        self.assertEqual([[node_range['node'] for node_range in part['nodeRanges']] for part in parts], [[0, 2], [1]])
 
     def test_the_root_translation_is_minus_the_sky_zone_location_in_browser_axes(self):
         self.assertEqual(sky_root_translation_metres([100.0, 200.0, 300.0]), [-1.0, -3.0, -2.0])
