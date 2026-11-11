@@ -45,4 +45,15 @@ describe("attachTileLighting", () => {
     scene.dispose();
     engine.dispose();
   });
+
+  it("attaches lighting on a scene that has no camera yet", async () => {
+    const engine = new NullEngine();
+    const scene = new Scene(engine);
+    const attached = await attachTileLighting(scene, lightingTileManifest(),
+      { bspChunks: [], staticMeshes: [], terrainMeshes: [], cameraFrame: () => null }, new AbortController().signal);
+    expect(attached.inspection()).toHaveProperty("cameraEnvironment");
+    attached.dispose();
+    scene.dispose();
+    engine.dispose();
+  });
 });

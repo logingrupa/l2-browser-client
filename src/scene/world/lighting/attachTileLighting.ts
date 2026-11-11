@@ -58,8 +58,8 @@ function unlitSurfaceCounts(meshes: readonly AbstractMesh[], programStatus: Unli
 }
 
 function cameraEnvironmentOf(scene: Scene, model: TileLightingModel, cameraFrame: () => TileVisibilityFrame | null): CameraEnvironment {
-  const camera = scene.activeCamera;
-  const cameraSourcePosition = camera === null ? null : worldPositionToSource({ x: camera.globalPosition.x, y: camera.globalPosition.y, z: camera.globalPosition.z });
+  const cameraPosition = scene.activeCamera?.globalPosition;
+  const cameraSourcePosition = cameraPosition === undefined ? null : worldPositionToSource({ x: cameraPosition.x, y: cameraPosition.y, z: cameraPosition.z });
   return computeCameraEnvironment({ frame: cameraFrame(), cameraSourcePosition, collision: null, records: model.records });
 }
 
