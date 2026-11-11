@@ -1,5 +1,5 @@
 import { decodeNativeJsonResource, fetchVerifiedNativeResource } from "./loadNativeSection";
-import { nativeTileSha256Pattern } from "./nativeTileChunkManifest";
+import { isPlainRecord, nativeTileSha256Pattern } from "./nativeManifestRecordGuards";
 import { readNativeTileManifest } from "./nativeTileManifest";
 import { selectedNativeTileIdentity } from "./selectedNativeTile";
 
@@ -31,23 +31,19 @@ const skyStep = "sky";
 const maximumSkyGlbBytes = 64 * 1024 * 1024;
 const maximumSkyMaterialRoots = 64;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
 function parseSkyBundleManifest(input: unknown, tileId: string, manifestResource: string, manifestSha256: string, gapReason: string | null): NativeTileSkyResource {
   const label = `Native tile ${tileId} sky manifest`;
-  if (!isRecord(input) || input.kind !== skyBundleKind || input.schemaVersion !== 1 || input.tileId !== tileId ||
+  if (!isPlainRecord(input) || input.kind !== skyBundleKind || input.schemaVersion !== 1 || input.tileId !== tileId ||
     typeof input.id !== "string" || !input.id.startsWith(`interlude:${tileId}.`)) {
     throw new Error(`${label} kind, schema version, tile or source id is invalid.`);
   }
   const counts = input.counts, files = input.files;
-  const materialRoots = isRecord(counts) ? counts.materialRoots : undefined;
+  const materialRoots = isPlainRecord(counts) ? counts.materialRoots : undefined;
   if (typeof materialRoots !== "number" || !Number.isSafeInteger(materialRoots) || materialRoots < 1 || materialRoots > maximumSkyMaterialRoots) {
     throw new Error(`${label} must count 1 to ${maximumSkyMaterialRoots} material roots.`);
   }
-  const glb = isRecord(files) ? files["sky.glb"] : undefined;
-  if (!isRecord(glb) || typeof glb.sha256 !== "string" || !nativeTileSha256Pattern.test(glb.sha256) || typeof glb.bytes !== "number" ||
+  const glb = isPlainRecord(files) ? files["sky.glb"] : undefined;
+  if (!isPlainRecord(glb) || typeof glb.sha256 !== "string" || !nativeTileSha256Pattern.test(glb.sha256) || typeof glb.bytes !== "number" ||
     !Number.isSafeInteger(glb.bytes) || glb.bytes < 1 || glb.bytes > maximumSkyGlbBytes) {
     throw new Error(`${label} must pin sky.glb with its SHA-256 and 1 to ${maximumSkyGlbBytes} bytes.`);
   }

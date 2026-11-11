@@ -2,9 +2,9 @@ import { readTileCatalogRecord, tileIdPattern } from "../../assets/native/native
 import { readNativeCatalogUnlessNotStaged } from "../../assets/native/readNativeCatalog";
 import { decodeNativeJsonResource, fetchVerifiedNativeResource } from "./loadNativeSection";
 import {
-  hasExactKeys, isFiniteVector, isQualifiedObjectName, nativeTileChunkGridPosition, nativeTileSha256Pattern, parseNativeTileGapRows,
-  type NativeTileGapRow, type NativeTileVector,
+  isFiniteVector, isQualifiedObjectName, nativeTileChunkGridPosition, parseNativeTileGapRows, type NativeTileGapRow, type NativeTileVector,
 } from "./nativeTileChunkManifest";
+import { hasExactKeys, nativeTileSha256Pattern } from "./nativeManifestRecordGuards";
 
 export interface NativeTileChunkRecord {
   readonly chunkId: string;

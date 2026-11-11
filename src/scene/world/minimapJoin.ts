@@ -1,7 +1,7 @@
 import { nativeResourceUrl } from "../../assets/native/nativeResourceUrl";
 import { worldPositionToSource, type WorldPosition } from "../../world/sourceFrame";
 import { decodeNativeJsonResource, fetchVerifiedNativeResource } from "./loadNativeSection";
-import { hasExactKeys, isPlainRecord, nativeTileSha256Pattern } from "./nativeTileChunkManifest";
+import { hasExactKeys, isPlainRecord, nativeTileSha256Pattern } from "./nativeManifestRecordGuards";
 import type { NativeTileManifest } from "./nativeTileManifest";
 
 export class NativeTileMinimapError extends Error {

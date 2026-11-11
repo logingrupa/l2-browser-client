@@ -1,5 +1,6 @@
 import { tileIdPattern } from "../../assets/native/nativeCatalogRecords";
 import { parseNativeTileBspResource, type NativeTileBspResource } from "./nativeBspResources";
+import { hasExactKeys, isPlainRecord, nativeTileSha256Pattern } from "./nativeManifestRecordGuards";
 
 export type NativeTileVector = readonly [number, number, number];
 export type NativeTileGapStatus = "pass" | "gap" | "pending" | "failed";
@@ -61,7 +62,6 @@ export interface NativeTileChunkManifest {
   readonly gaps: readonly NativeTileGapRow[];
 }
 
-export const nativeTileSha256Pattern = /^[a-f0-9]{64}$/;
 const chunkIdPattern = /^chunk-(\d{1,3})-(\d{1,3})$/;
 const stepNamePattern = /^[a-z][a-z0-9-]{0,63}$/;
 const qualifiedObjectPattern = /^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+$/;
@@ -82,16 +82,6 @@ const maximumChunkPlacements = 4096;
 const placementMatrixLength = 16;
 const affineBottomRowIndices = [3, 7, 11] as const;
 const minimumPlacementDeterminant = 1e-12;
-
-export function isPlainRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-export function hasExactKeys(value: unknown, fields: readonly string[]): value is Record<string, unknown> {
-  if (!isPlainRecord(value)) return false;
-  const keys = Object.keys(value);
-  return keys.length === fields.length && fields.every(field => Object.hasOwn(value, field));
-}
 
 export function isFiniteVector(value: unknown): value is NativeTileVector {
   return Array.isArray(value) && value.length === 3 && value.every(component => typeof component === "number" && Number.isFinite(component));

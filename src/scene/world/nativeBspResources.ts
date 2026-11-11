@@ -1,3 +1,5 @@
+import { hasExactKeys, isPlainRecord, nativeTileSha256Pattern } from "./nativeManifestRecordGuards";
+
 export const nativeBspResources: Readonly<Record<string, { brush: string; stem: string; placement: string }>> = {
   "interlude:20_20.Model798.Brush397": { brush: "20_20.Brush397", stem: "bsp-floor", placement: "interlude:20_20.StaticMeshActor940" },
   ...Object.fromEntries(["walls", "floor", "ceiling"].map(part => [
@@ -35,25 +37,16 @@ export interface NativeBspSectionExtras {
 const tileBspResourceFields = ["resource", "sha256"];
 const sectionFields = ["primitive", "material", "unlit", "lightmap", "outdoor", "translucent"];
 const nodeRangeFields = ["node", "primitive", "firstIndex", "indexCount"];
-const sha256Pattern = /^[a-f0-9]{64}$/;
 const tileBspResourcePattern = /^\/l2\/maps\/([a-f0-9]{64})\/native-tile-chunk-bsp\/bsp\.glb$/;
 const maximumBspSections = 4096;
 const maximumBspNodeRanges = 1_000_000;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function hasExactFields(value: unknown, fields: readonly string[]): value is Record<string, unknown> {
-  return isRecord(value) && Object.keys(value).length === fields.length && fields.every(field => Object.hasOwn(value, field));
-}
 
 function isCount(value: unknown): value is number {
   return Number.isSafeInteger(value) && (value as number) >= 0;
 }
 
 export function parseNativeTileBspResource(input: unknown): NativeTileBspResource {
-  if (!hasExactFields(input, tileBspResourceFields) || typeof input.sha256 !== "string" || !sha256Pattern.test(input.sha256) ||
+  if (!hasExactKeys(input, tileBspResourceFields) || typeof input.sha256 !== "string" || !nativeTileSha256Pattern.test(input.sha256) ||
     typeof input.resource !== "string") {
     throw new Error("Native tile BSP resource must hold exactly resource and a lowercase SHA-256.");
   }
@@ -64,7 +57,7 @@ export function parseNativeTileBspResource(input: unknown): NativeTileBspResourc
 }
 
 function parseSection(value: unknown, index: number): NativeBspSection {
-  if (!hasExactFields(value, sectionFields) || value.primitive !== index || typeof value.material !== "string" || !value.material ||
+  if (!hasExactKeys(value, sectionFields) || value.primitive !== index || typeof value.material !== "string" || !value.material ||
     typeof value.unlit !== "boolean" || !(value.lightmap === null || (Number.isSafeInteger(value.lightmap) && (value.lightmap as number) >= -1)) ||
     typeof value.outdoor !== "boolean" || typeof value.translucent !== "boolean") {
     throw new Error(`Native BSP section ${index} is invalid.`);
@@ -74,7 +67,7 @@ function parseSection(value: unknown, index: number): NativeBspSection {
 }
 
 function parseNodeRange(value: unknown, sectionCount: number): NativeBspNodeRange {
-  if (!hasExactFields(value, nodeRangeFields) || !isCount(value.node) || !isCount(value.primitive) || value.primitive >= sectionCount ||
+  if (!hasExactKeys(value, nodeRangeFields) || !isCount(value.node) || !isCount(value.primitive) || value.primitive >= sectionCount ||
     !isCount(value.firstIndex) || !isCount(value.indexCount) || value.indexCount === 0 || value.indexCount % 3 !== 0) {
     throw new Error("Native BSP node range is invalid.");
   }
@@ -92,7 +85,7 @@ function requireContiguousRanges(nodeRanges: readonly NativeBspNodeRange[], sect
 }
 
 export function parseNativeBspSectionExtras(extras: unknown): NativeBspSectionExtras {
-  if (!isRecord(extras) || !Array.isArray(extras.nativeBspSections) || !Array.isArray(extras.nativeBspNodeRanges) ||
+  if (!isPlainRecord(extras) || !Array.isArray(extras.nativeBspSections) || !Array.isArray(extras.nativeBspNodeRanges) ||
     !extras.nativeBspSections.length || extras.nativeBspSections.length > maximumBspSections ||
     extras.nativeBspNodeRanges.length > maximumBspNodeRanges) {
     throw new Error("Native BSP GLB extras must list sections and node ranges.");
