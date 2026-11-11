@@ -16,7 +16,7 @@ How the browser runtime builds scenes, reads converted assets and takes gameplay
 
 ## Server boundary and presentation invariants
 
-`GameWorldAdapter` has five frozen methods: `getInitialState`, `subscribe`, `dispatch`, `advance`, `dispose`. The world frame is metres, Y up, right-handed, matching `useRightHandedSystem = true`: `world = (x, z, y) * 0.01` from UE2 source units, through `src/world/sourceFrame.ts` once it lands (DEC-OWN-12). Mesh navigation (`src/scene/navigation/meshNavigation.ts`) implements the Babylon-free `WorldNavigation`; UI drives the adapter through narrow interfaces such as `NativeLocomotionControlTarget`.
+`GameWorldAdapter` has four frozen methods: `getInitialState`, `subscribe`, `dispatch`, `dispose`; plan 02-67 removed `advance` (d62ef44), and `.planning/PROJECT.md` and ARCH-02 still name five until the owner records that decision (independent review WR-48). The world frame is metres, Y up, right-handed, matching `useRightHandedSystem = true`: `world = (x, z, y) * 0.01` from UE2 source units, through `src/world/sourceFrame.ts` (DEC-OWN-12). `src/runtime/collisionWorldNavigation.ts` implements the Babylon-free `WorldNavigation` for the door interactions; UI drives the adapter through narrow interfaces such as `NativeLocomotionControlTarget`.
 
 | Invariant | Test in `tests/unit/` |
 | --- | --- |

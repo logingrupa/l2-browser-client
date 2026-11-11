@@ -8,12 +8,13 @@ The eight `Engine.Mover` actors of `20_20` become a separate bundle, staged as a
 - Endpoints follow `Engine.Mover.BeginPlay`: position = BasePos + KeyPos[KeyNum], rotation = BaseRot + KeyRot[KeyNum]. Recovered defaults: `MoveTime=1.0`, `StayOpenTime=4.0`, `bClosed=true`. `SavedPos` and `SavedRot` are sentinels, never placement.
 - `scripts/world/mover_step.py` (`convert_tile.py --step movers`) converts every `Engine.Mover` of a tile into a `native-tile-movers` resource; on 20_20 it yields the eight served movers unchanged. The 20_20 derive and stage scripts are retired (plan 02-31); the served `map-20-20-movers` record stays until the restage.
 - `src/scene/world/loadNativeMovers.ts` checks hashes and the terrain binding. `nativeMovers.ts` and `nativeDoorInteractions.ts` handle hover, approach and toggle.
+- On the `?map=` tile route the selected tile's movers are the slice world's doors (hover, approach and local toggle through `createNativeDoorInteractions`; 91574b9, `tests/unit/loadNativeTileChunks.test.ts`). Tile door meshes stay out of collision (`moverCollisionMeshCount` 0).
 - Browser policy, not native data: 2 m reach, 1.5 m vertical tolerance, 0.8 m stand-off (`browserDoorInteractionPolicy`), no auto-close after `StayOpenTime`. Leaves move over the one-second `MoveTime` and block walking.
 - Tests: `tests/pipeline/test_world_mover_step.py`, `tests/unit/nativeTileMoverManifest.test.ts`, `tests/unit/nativeMoverLoader.test.ts`, `nativeDoors.test.ts`, `tests/browser/world-tile-movers.spec.ts`.
 
 ## Open
 
-- Door interaction for tile movers (open and close through the runtime) is wired by integration (WORLD-01).
+- Neighbour-tile movers never load: tile systems bind only to the selected tile (row 740 follow-up, WORLD-01).
 - `ItemSound2.Castle` door sounds are kept, not played (WORLD-02, POL-02).
 - Doors toggle locally in the sandbox. Server authority and replication through `GameWorldAdapter`: NET-04.
 - `MeshGrade` variants, native glide and encroachment, `RangeDelta[0..3]`. No requirement.

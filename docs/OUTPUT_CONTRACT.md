@@ -140,16 +140,16 @@ New records are appended after the existing ones.
 
 | Key | Converted when |
 | --- | --- |
-| `npc:<npcId>` | A staged NPC profile carries `modelCatalogId` naming a `models` record whose `source.object` is exactly the profile `mesh`; a profile naming a model of another mesh makes the whole index unavailable, so `write_lane_catalog.py` and `merge_lane_store.py` refuse that lane. A profile without that field (the currently staged store) keeps the exact single-mesh join on `source.object` until the restage |
-| `item:<itemId>` | A staged player profile lists the item with a staged model |
+| `npc:<npcId>` | A staged NPC profile carries `modelCatalogId` (`^npc-model:[a-f0-9]{64}$`) naming a `models` record whose `source.object` is exactly the profile `mesh`; a profile naming a model of another mesh makes the whole index unavailable, so `write_lane_catalog.py` and `merge_lane_store.py` refuse that lane. A profile without that field is accepted only in the shared-store bundle `native-npc-profiles` (the currently staged store), where it keeps the legacy single-mesh join on `source.object` over records that are not `npc-model:` records until the restage; several matches answer `not-in-catalog`, and any other bundle refuses such a profile. `scripts/native_store/catalog_index_keys.py` applies the same rules as the browser (411fae3) |
+| `item:<itemId>` | A staged player profile lists the item with a staged model, or a `models` record id follows the item model route `interlude:item:<id>:body-part:<bp>:weapon|armor:<race>` (`itemModelLookups` in `nativeCatalogIndex.ts`, `item_model_keys` in `catalog_index_keys.py`) |
 | `skill:<skillId>:<level>` | An effect component id has the form `interlude:skill:<id>:level:<level>:` |
 | `table:<name>` | A `tables` record has that id |
 | `window:<id>` | A `windows` record has that id. Until a catalog has window records, a missing window answers "interface windows are not converted yet (UI-01)" |
 | `tile:<XX_YY>` | A `tiles` record has that id; a legacy section id `map-XX-YY-section` still answers when no tiles record exists for that tile |
 | `character:<chargrpIndex>` | A staged player profile carries `chargrpIndex` |
 
-The two optional profile fields are `modelCatalogId` (pattern
-`^[a-z0-9][a-z0-9:-]{0,95}$`, the `id` of a `models` record) and
+The two optional profile fields are `modelCatalogId` (on an NPC profile
+`^npc-model:[a-f0-9]{64}$`, the `id` of a `models` record) and
 `chargrpIndex` (a safe integer of at least 0). Any other key answers
 `not-in-catalog` with a reason. The client loads assets
 only through `readNativeCatalog`. `recipes/native-inputs.lock.json` pins
@@ -173,7 +173,7 @@ rows keyed `tile:<tileId>`, one per step, sorted by step.
 | `frame` | `{terrainInfo, location, terrainScale}`: the TerrainInfo object and its `Location` and `TerrainScale` vectors |
 | `anchor` | `{playerStart, location}`: the first enabled PlayerStart in source order |
 | `chunks` | 1 to 256 `{chunkId, manifest, manifestSha256, manifestBytes}`, manifest `/l2/maps/<manifestSha256>/native-tile-chunk-runtime/manifest.json`, at most 8,000,000 bytes, sorted by (column, row) as integers, no chunk twice. A tile with no chunk is a gap row, not a manifest |
-| `resources` | `{kind, manifest, manifestSha256, manifestBytes}` with `kind` in the vocabulary below, a hash-addressed manifest path (`/l2/[<prefix>/]<manifestSha256>/<file>`), at most 128 MiB (the `.l2asset` archive limit), sorted by `(kind, manifest)`. One kind may appear several times; the same `(kind, manifest)` pair twice is refused |
+| `resources` | `{kind, manifest, manifestSha256, manifestBytes}` with `kind` in the vocabulary below, a hash-addressed manifest path (`/l2/[<prefix>/]<manifestSha256>/<file>`), at most 128 MiB (the `.l2asset` archive limit), sorted by `(kind, manifest)`, each manifest path on its kind's one path template. Only `world-audio` may appear more than once; the same `(kind, manifest)` pair twice is refused |
 | `gaps` | Gap rows for the tile |
 
 `native-tile-chunk-runtime` v1, at
@@ -187,7 +187,7 @@ rows keyed `tile:<tileId>`, one per step, sorted by step.
 | `sectorRange` | `{firstColumn, lastColumn, firstRow, lastRow}`; `firstColumn` and `firstRow` are multiples of 4, 1 to 4 sectors per axis, and the chunk id is `chunk-<firstColumn / 4>-<firstRow / 4>`, so neighbouring chunks share an edge and never overlap |
 | `terrain` | `null` or `{resource, sha256, maskUvRule}`; `maskUvRule` is in the vocabulary (`extrapolated` outside the 20_20 capture) |
 | `bsp`, `collision` | `null` or `{resource, sha256}`; collision is its own resource and is never fed by LOD |
-| `models` | Zero or more `{id, archive, archiveSha256, placements}`, archive `/l2/<archiveSha256>/asset.l2asset`, `placements` a list, no id twice |
+| `models` | Zero or more `{id, archive, archiveSha256, placements}`, archive `/l2/<archiveSha256>/asset.l2asset`, `placements` a non-empty list, no id twice; at most 1,024 models and 4,096 placements per chunk (15583d0, the browser reader bounds) |
 | `gaps` | Gap rows for the tile; a `null` terrain, bsp or collision needs a gap row for that step whose status is not `pass` |
 
 Component resource paths are hash-addressed like tile resources, with the
@@ -198,8 +198,15 @@ retired by plan 02-71, and the kind leaves with the restage.
 `native-table` v1, at `/l2/tables/<sha>/<table>.json`, one per decoded table:
 `{kind: "native-table", schemaVersion: 1, table, sourcePath, sourceSha256,
 descriptorSha256, route, recordCount, records}`. `route` is
-`local-descriptor` or `elbera-adapter`; `recordCount` equals the length of
-`records` and the catalog record's `recordCount`. A `FLOAT` field whose
+`local-descriptor` or `elbera-adapter`. On `local-descriptor`, `records` is
+the decoded data object (a count field plus one record list in source order)
+and `recordCount` is the length of that list; on `elbera-adapter` (hairgrp,
+helmetgrp, hairaccessarygrp) `records` is a list and `recordCount` is its
+length (decision 226; the golden fixture follows this since d9f9dd5). The
+catalog record's `recordCount` is the same number.
+`scripts/native_store/data_ui_table_manifest.py` owns both routes and refuses
+any other route, or a records shape other than the one of the route its
+caller reads. A `FLOAT` field whose
 float32 is NaN or infinite is written as
 `{"nonFiniteFloat32SourceBytes": "<8 uppercase hex, source byte order>"}`
 (`NON_FINITE_FLOAT32_KEY` in `scripts/native_catalog/tables.py`), so the
@@ -253,9 +260,15 @@ The DEC-OWN-12 tile resource kinds (provisional, owner review):
 - `map-emitters`: the per-tile Emitter actor export (FX-01), a JSON manifest
   like `movers`.
 
-The first three are `.l2asset` packages whose `asset.json` records units
-`source` and axes UE2 Z up (`.planning/PROJECT.md`), written by
-`scripts/world/typed_payload.py` and read by `src/shared/typedPayload.ts`.
+The first three are typed payload folders, not `.l2asset` packages:
+`maps/<asset.json sha256>/<folder>/` holds `asset.json` (`units` `source`,
+`axes` UE2 Z up as in `.planning/PROJECT.md`, `sourceSha256`,
+`converterVersion`, `arrays` with `name`, `type`, `count`, `byteOffset` and
+`byteLength`, and `payload` `{file, sha256, bytes}`) and `payload.bin` with
+its arrays aligned to 4 bytes. They are not ZIP_STORED and have no
+`schemaVersion`, `id`, `files` or `clientBuild` fields (OVERNIGHT-DECISIONS
+rows 518 and 590). `scripts/world/typed_payload.py` writes them and
+`src/shared/typedPayload.ts` reads them.
 
 ## Lane stores
 
@@ -276,8 +289,9 @@ A lane store reuses the shared store prefixes exactly:
 | `world-audio/<sha>/`, `animation-audio/<sha>/`, `combat-audio/<sha>/`, `step-sounds/<sha>/` | Audio bundles |
 | `effects/<sha>/`, `movers/<sha>/` | Effect components and movers |
 | `tiles/<sha>/tile.json`, `maps/<sha>/native-tile-chunk-runtime/manifest.json` | Tile and chunk manifests (see "Manifest kinds") |
-| `native-materials/<sha>/graph.json`, `native-materials/<sha>/program.json` | Source-preserving UE2 material graph of one root and its typed program (plan 02-59, `write_native_material_resources`). `<sha>` is the SHA-256 of `program.json`, which holds the graph's `graphSha256`. Every program field is `authored`, `class-default` or `ue-zero` |
-| `skies/`, `environments/` | Outside the catalog |
+| `native-materials/<sha>/graph.json`, `native-materials/<sha>/program.json` | Source-preserving UE2 material graph of one root and its typed program (plan 02-59, `write_native_material_resources`). `<sha>` is the SHA-256 of `program.json`, which holds the graph's `graphSha256`. Every program field is `authored`, `class-default` or `ue-zero`. The lane merge walk reaches each `program.json` through a GLB material's `extras.nativeMaterialProgram` `{directory, programSha256}` pin (a190cba) |
+| `skies/<sha>/` | Sky bundles: a tile manifest pins `skies/<sha>/manifest.json`, and the lane merge walk copies the members of its name-keyed `files` map (a190cba) |
+| `environments/` | Outside the catalog |
 
 The prefix `/l2/models/<sha>/` is never used. The tile resource kinds,
 including the DEC-OWN-12 kinds, are listed under "Manifest kinds". Every
@@ -419,6 +433,13 @@ Plan 02-07 writes it and 02-26 completes it.
   Without that header, as in production, only the served catalog matches.
 - "Loads" counts only from load-check records; everything else is
   `unverified`.
+- A catalog-listed key whose latest step row is failed or gap takes that
+  step's status and reason, keeps `converted` true and counts in both
+  `converted` and `gap`; a pending step does not override `converted`.
+  Census precedence is failed, gap, converted, pending, and a `pass` row
+  must be converted (6d189c8). For skills-effects a non-pass `skills` row
+  keeps a published key at that row's status with `converted` false
+  (f5828ee).
 - First step for a lane: `pnpm report:coverage --store-root
   artifacts/lane-store/<lane>/l2 --lane <lane>` writes its first
   `coverage.json`. A lane store without one gets none from a lane run or a

@@ -75,6 +75,7 @@ Item 2, female fighter collision:
   - Until one does, no face, collision, alias or profile exists, and no character key converts.
   - A candidate for owner review: the actor class whose default `Mesh` equals the row's face mesh (OVERNIGHT-DECISIONS).
 - Hair and helmet: no decoded key field joins `hairgrp`/`helmetgrp` to `chargrp`.
+- Since 21a7a94 the data-ui table reader reads `hairgrp` and `helmetgrp` on the `elbera-adapter` route (list records), so `--character` and `--batch characters` no longer exit 1. The committed `character-census.json` (`layoutRecordFields` `hairgrp` `[]`) predates that reader change and refreshes at the next `--batch characters` run, which only the integration thread may run.
 - Texture licensee 123/27 (rows 2, 3, 5) waits on the texture reader.
 - Animation reference (rows 1, 9, 13): the body mesh names no animation.
 - The shared store still serves the old hair colour 0 and the female fighter 8 / 23.5 until the restage in STATE.md.
