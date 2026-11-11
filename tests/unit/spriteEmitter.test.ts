@@ -78,6 +78,16 @@ describe("SpriteEmitter simulation", () => {
     }
   });
 
+  it("reports an age-driven BlendBetweenSubdivisions atlas as an unported feature, because the renderer samples one cell", () => {
+    const blendGapsFor = (overrides: Record<string, unknown>) => createSpriteEmitterSimulation(parseEmitterRecord({
+      ...spriteSource, effectiveProperties: { ...spriteSource.effectiveProperties, ...overrides },
+    }) as SpriteEmitterRecord, createEmitterRandomStream(1, 0, 0)).unportedFeatures.filter(feature => feature.property === "BlendBetweenSubdivisions");
+    expect(blendGapsFor({})).toEqual([{ reason: "emitter-feature-unported:BlendBetweenSubdivisions", property: "BlendBetweenSubdivisions", value: true }]);
+    expect(blendGapsFor({ BlendBetweenSubdivisions: false })).toEqual([]);
+    expect(blendGapsFor({ UseRandomSubdivision: true })).toEqual([]);
+    expect(blendGapsFor({ TextureUSubdivisions: 1, TextureVSubdivisions: 1, SubdivisionStart: 0, SubdivisionEnd: 0 })).toEqual([]);
+  });
+
   it("refuses an unknown field type and a missing class default with a named error", () => {
     expect(() => parseEmitterRecord({ ...spriteSource, effectiveProperties: { ...spriteSource.effectiveProperties, MaxParticles: "six" } }))
       .toThrow(new EmitterRecordError(spriteSource.object, "field MaxParticles is not a valid integer value."));

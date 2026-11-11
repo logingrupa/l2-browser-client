@@ -41,8 +41,11 @@ const cameraFacingDirectionUsages: readonly number[] = [DIRECTION_USAGE.none, DI
 
 function listSpriteFeatureChecks(record: ParticleEmitterRecord): EmitterFeatureCheck[] {
   if (record.emitterClass !== "Engine.SpriteEmitter") return [];
+  const atlasCellCount = Math.max(1, record.TextureUSubdivisions) * Math.max(1, record.TextureVSubdivisions);
+  const ageDrivenAtlasBlends = record.BlendBetweenSubdivisions && !record.UseRandomSubdivision && atlasCellCount > 1;
   return [
     ["UseDirectionAs", record.UseDirectionAs, !cameraFacingDirectionUsages.includes(record.UseDirectionAs)],
+    ["BlendBetweenSubdivisions", record.BlendBetweenSubdivisions, ageDrivenAtlasBlends],
   ];
 }
 
