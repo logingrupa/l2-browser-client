@@ -10,7 +10,7 @@ from hash_reference_client_tree import canonical_json_bytes
 from interface_layout_adapter import INTERFACE_XDAT_PATH
 from lane_unit_outcomes import DECODE_FAILED_REASON_PREFIX, lane_relative_path, replace_step_gap_row
 from native_store.catalog_writer import add_store_file, merge_catalog_slice, read_store_catalog, write_store
-from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN
+from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN, read_gap_rows
 from native_store.store_paths import SHA256_PATTERN, STEP_NAME_PATTERN
 from texture_package_census import reference_tree_lock_sha256, validate_texture_package_census
 
@@ -165,6 +165,14 @@ def window_gap_rows(window_name, unit_key, requests_by_reference, outcomes, gap_
     return rows
 
 
+def replace_window_gap_rows(project_root, lane_name, unit_key, gap_rows):
+    gap_rows_by_step = {row['step']: row for row in gap_rows}
+    previous_field_steps = {row['step'] for row in read_gap_rows(project_root, lane_name)
+                            if row['key'] == unit_key and row['step'].startswith(ABSENT_FIELD_STEP_PREFIX)}
+    for step in sorted({TEXTURES_STEP, *previous_field_steps, *gap_rows_by_step}):
+        replace_step_gap_row(project_root, lane_name, step, unit_key, gap_rows_by_step.get(step))
+
+
 def convert_window_textures(project_root, window_id, requests, converter, ledger, output_root, *, converter_identity, field_bindings_document):
     unit_key = f'window:{window_id}'
     window_name = window_id.split('#')[0]
@@ -189,10 +197,7 @@ def convert_window_textures(project_root, window_id, requests, converter, ledger
     evidence = lane_relative_path(ledger, outcomes_path)
     gap_rows = window_gap_rows(window_name, unit_key, {request['reference']: request for request in window_requests}, outcomes, gap_bindings,
                                requests['interfaceSha256'], evidence)
-    replace_step_gap_row(project_root, ledger.lane_name, TEXTURES_STEP, unit_key, next((row for row in gap_rows if row['step'] == TEXTURES_STEP), None))
-    for row in gap_rows:
-        if row['step'] != TEXTURES_STEP:
-            replace_step_gap_row(project_root, ledger.lane_name, row['step'], unit_key, row)
+    replace_window_gap_rows(project_root, ledger.lane_name, unit_key, gap_rows)
     ledger.seal(unit_key, fingerprint, {'config': config, 'inputs': inputs, 'gapRows': gap_rows, 'outputs': [
         {'path': evidence, 'sha256': hashlib.sha256(outcomes_bytes).hexdigest(), 'bytes': len(outcomes_bytes)}, *store_outputs]})
     return {'unit': unit_key, 'status': 'gap' if gap_rows else 'converted', 'converted': len(conversions),

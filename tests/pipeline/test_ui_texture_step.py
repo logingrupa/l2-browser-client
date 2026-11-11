@@ -115,10 +115,10 @@ class ConvertWindowTexturesTests(unittest.TestCase):
         self.requests = ui_texture_step.ui_texture_requests([synthetic_manifest('SyntheticStatusWnd', [
             'SyntheticUI.Status.Plate', 'SyntheticUI.Status.Broken', 'SyntheticUI.Status.plate', 'Absent.Status.Plate'])], CENSUS, LOCK)
 
-    def convert(self):
+    def convert(self, field_bindings_document=FIELD_BINDINGS):
         ledger = UnitLedger(lane_work_root(self.project_root, 'data-ui'), ui_texture_step.TEXTURES_STEP, ui_texture_step.UI_TEXTURE_ALGORITHM_VERSION)
         return ui_texture_step.convert_window_textures(self.project_root, 'SyntheticStatusWnd', self.requests, self.converter, ledger, self.output_root,
-                                                       converter_identity={'implementation': 'synthetic'}, field_bindings_document=FIELD_BINDINGS)
+                                                       converter_identity={'implementation': 'synthetic'}, field_bindings_document=field_bindings_document)
 
     def test_converts_records_gaps_and_binding_gaps_then_seals_and_skips_a_rerun(self):
         result = self.convert()
@@ -142,6 +142,15 @@ class ConvertWindowTexturesTests(unittest.TestCase):
         self.assertIn('decode-failed:SyntheticDecodeError', [outcome.get('reason') for outcome in outcomes])
         self.assertEqual(self.convert(), {'unit': 'window:SyntheticStatusWnd', 'status': 'skipped-sealed'})
         self.assertEqual(len(self.converter.requests), 3)
+
+    def test_a_resolved_field_binding_removes_its_field_gap_row_on_the_next_run(self):
+        self.convert()
+        resolved_bindings = {**FIELD_BINDINGS, 'bindings': [
+            {**binding, 'gapReason': None} if binding['controlName'] == 'SyntheticCpBar' else binding for binding in FIELD_BINDINGS['bindings']]}
+        result = self.convert(resolved_bindings)
+        self.assertEqual(result['fieldGaps'], 0)
+        self.assertEqual([(row['step'], row['key']) for row in read_gap_rows(self.project_root, 'data-ui')],
+                         [('textures', 'window:SyntheticStatusWnd')])
 
     def test_a_raising_reference_alone_is_a_decode_failed_gap_row(self):
         self.requests = ui_texture_step.ui_texture_requests([synthetic_manifest('SyntheticStatusWnd', ['SyntheticUI.Status.Broken'])], CENSUS, LOCK)
