@@ -13,6 +13,7 @@ from actors.combat_role_routes import (bind_combat_role_routes, combat_route_tab
                                        read_combat_role_route_proof)
 from actors.npc_requests import CONVERTER_REFUSED_REASON_PREFIX
 from actors.npc_store_records import catalog_with_record_replaced, file_output_record
+from actors.path_free_messages import path_free_reason
 from native_assets import UMODEL_SHA256, implementation_hash
 from native_assets_lib import combat_audio_bundle
 from native_assets_lib.footstep_config import sound_payload
@@ -206,7 +207,8 @@ class ActorSoundConversionRun:
         except ReferenceClientLockError:
             raise
         except ValueError as error:
-            return {'status': 'refused', 'reason': CONVERTER_REFUSED_REASON_PREFIX + ' '.join(str(error).split())}
+            return {'status': 'refused', 'reason': CONVERTER_REFUSED_REASON_PREFIX
+                    + path_free_reason(str(error), self.client_access.root, self.converter.output)}
         (step_directory / NATIVE_PAYLOAD_FILE_NAME).write_bytes(payload)
         shutil.copyfile(result['file'], step_directory / CONVERTED_ARCHIVE_FILE_NAME)
         (step_directory / CONVERTED_AUDIO_FILE_NAME).write_bytes(audio)
@@ -312,7 +314,7 @@ class ActorSoundConversionRun:
         except ReferenceClientLockError:
             raise
         except ValueError as error:
-            return None, outputs, CONVERTER_REFUSED_REASON_PREFIX + ' '.join(str(error).split())
+            return None, outputs, CONVERTER_REFUSED_REASON_PREFIX + path_free_reason(str(error), self.client_access.root, self.lane_folder)
         outputs.append(file_output_record(self.lane_folder, bundle_folder / 'manifest.json'))
         return manifest, outputs, None
 
