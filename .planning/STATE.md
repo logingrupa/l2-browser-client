@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 03-02-PLAN.md
-last_updated: "2026-11-11T08:09:00.812Z"
+stopped_at: Completed 03-03-PLAN.md
+last_updated: "2026-11-11T10:30:04.253Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 03 plan 03-01 complete (side-by-side check record writer and key content digest; Phase 3 start commit cb09cdc)
-state_head: 625fdf6df8f071edc384b732f5c4b92bbd9efe17
+state_head: 65ed5e8dc31e7becadb415d64285893621fb4d27
 progress:
   total_phases: 6
   completed_phases: 0
-  total_plans: 123
-  completed_plans: 90
+  total_plans: 131
+  completed_plans: 91
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 03 (Stage A checks) - EXECUTING
-Plan: 03-02 complete, 2 of 20 plans summarized
+Plan: 03-03 complete, 3 of 20 plans summarized
 Status: Executing Phase 3 from start commit cb09cdc; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-11 - Plan 03-02 complete: the 15-member WorldCommand contract adds set-environment, answered with the adapter environment event the clock validates, and window.__nativeSlice.setCameraPose applies a snapshot camera pose exactly or refuses it with the field or limit it breaks (it leaves follow mode through the runtime); the framing Playwright check passes on the integration 20_20 capture route (P614, P615); CHECK-01 stays open until records exist
+Last activity: 2026-11-11 - Plan 03-03 complete: the union rebuilt unchanged at bba52c47, and every converted union key of the five load kinds has one load-check record (windows 248/248, items 96/96, npcs 999/1000, tiles 22/62, skills 1835/3064 pass; skill failures are invalid atlas tile range 1145 and invalid primitive binding 84); LOAD_CHECK_KEYS re-sweeps the keys a fix touched; CHECK-01 and CHECK-05 stay open until pairs and the report exist
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -142,6 +142,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P55 | 43min | 3 tasks | 6 files |
 | Phase 3 P01 | 28min | 3 tasks | 7 files |
 | Phase 03 P02 | 26min | 2 tasks | 11 files |
+| Phase 03 P03 | 137min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -348,6 +349,9 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 3]: 03-01: audio records keep nativeHalf null, store only listen-needs-owner and take pass or mismatch only from owner; the writer owns sandboxHalfHistory; the lock comparison applies to written records only (P601 to P613 in pending-decision-rows.md)
 - [Phase 03]: 03-02 P614: the framing spec runs on NATIVE_STORE_ROOT=integration at /?map=20_20 (capture route); the default-route store has no lighting resource until the main-checkout restage
 - [Phase 03]: 03-02 P615: setCameraPose validates, releases effect inspection, leaves follow mode, then applies, in createNativeSliceRuntime; the pose holds until Follow fighter
+- [Phase 03]: P813: 03-03 union load sweep slice sizes come from the first measured slice per kind; every run stayed under 26 minutes
+- [Phase 03]: P815: tile:16_10 (ECONNRESET, fixed in the tiles spec) and npc:18168 (mid-sweep source reload) keep infrastructure failure records on bba52c47; 03-11 must not list them as converter defects
+- [Phase 03]: P816: the load-check harness key list has npc:21622 and skill:3:1 that Python catalog_index_keys lacks; open follow-up for 03-11
 
 ### Pending Todos
 
@@ -422,7 +426,9 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 - Minimap view (02-51, row 751): the real-data case "shows the 20_21 radar texture cell and the marker" in `tests/browser/world-minimap.spec.ts` stays skipped and unverified until the radar source above joins a tile; the marker texture and zone name text stay unresolved because both decoded MinimapCtrl records have an empty `textures` list
 
 - Map emitter playback (02-61, 02-69, 02-64, rows 651 and 696): the tile inspection lists each placement with its `memberVisible` gate, but none reaches `playTileMapEmitters`: the emitter records keep unparsed struct fields (row 668), no class defaults are merged and their meshes and textures are unconverted. Merge the class defaults in the emitters step, decode the structs, convert the referenced resources, then start the playable placements with a placement view.
-- Union tile loads (02-55, row 763): the first union tiles slice checked 15_20 to 15_24, which all fail for want of a native-tile-collision resource, so the union catalog `bba52c47...` has no tile pass yet; continue `NATIVE_STORE_ROOT=integration LOAD_CHECK_KIND=tiles LOAD_CHECK_LIMIT=<n> pnpm test:e2e tests/browser/load-sweep-tiles.spec.ts` while port 5173 is free until it reaches the 22 tiles that pass on the world lane, or re-sweep after the restage.
+- Union tile loads (02-55, row 763; 03-03): every union tile on `bba52c47...` has a load record: 22 pass and 40 fail, 39 of them for want of a native-tile-collision resource (map licensees 18, 23, 25 and 30) and `tile:16_10` (licensee 25, no collision pin) with an infrastructure `read ECONNRESET` the tiles spec no longer produces; the collision pins for those licensees stay a world follow-up, and the next union rebuild re-sweeps them.
+- Load-check infrastructure records (03-03, P815): `npc:18168` on `bba52c47...` failed with a hot-reload module error from a concurrent `src` commit during the sweep, and `tile:16_10` with `read ECONNRESET`; 03-11 lists neither as a converter defect.
+- Two converted-key owners (03-03, P816): the load-check harness list (`buildNativeCatalogIndex`) has `npc:21622` and `skill:3:1` as converted on the union, while `scripts/native_store/catalog_index_keys.py` does not; 03-11 takes the disagreement as a key index defect.
 - Eligible tile batch (02-47, 02-54, rows 681 to 690 and 752 to 761): 79 of 148 eligible tiles are `batch-pending` (20_22 onward in census order); continue `node scripts/check-machine-schedule.mjs && python -B scripts/world/convert_tile_batch.py --eligible --limit 4` until it prints nothing to do, then the tiles sweep with `LOAD_CHECK_LIMIT=<catalog tile count>`. Terrain fails on 16_25 (`Terrain layer 10 names only one of Texture and AlphaMap`) and on 18_23, 19_23, 19_24, 20_16 and 20_17 (`Non-XY/rotated layer requires a separately verified UV adapter`); fix the terrain layer reader, then `convert_tile.py --step terrain` on those tiles.
 - NPC batch breadth (rows 379, 420, 425 to 443 and 444): 80 of 429 model units are sealed under the current converter and 4 of 20 packs are written; continue `convert_actors.py --batch npcs --limit 20` slices in later runs, then rewrite the actors lane catalog.
 - BSP surface material files and texture image pins (02-30, 02-60, 02-64, rows 250, 518 and 693): the bsp step writes `native-materials/<sha>/graph.json` and `program.json` for each surface root, but no store manifest pins them, so the lane merge does not carry them, and no program Texture node carries its `image` pin, so all 89 world lane programs compile to `texture-image-absent` and 02-64 keeps every 20_21 BSP section on its converted material. Write the texture image pins in the material program derivation, pin the program files from the tile or chunk manifest, rerun bsp and lighting, then the lightmaps draw through the library.
@@ -473,6 +479,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-11T08:09:00.008Z
-Stopped at: Completed 03-02-PLAN.md
+Last session: 2026-11-11T10:30:03.594Z
+Stopped at: Completed 03-03-PLAN.md
 Resume file: None
