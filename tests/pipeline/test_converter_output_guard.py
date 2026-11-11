@@ -7,6 +7,8 @@ SCRIPTS_ROOT = REPOSITORY_ROOT / 'scripts'
 TESTS_ROOT = REPOSITORY_ROOT / 'tests'
 STORE_PATHS_RELATIVE_PATH = 'scripts/native_store/store_paths.py'
 OUTPUT_GUARD_NAME = 'require_converter_output'
+LANE_STORE_ROOT_GUARD_NAME = 'lane_store_root'
+OUTPUT_ROOT_GUARD_NAMES = (OUTPUT_GUARD_NAME, LANE_STORE_ROOT_GUARD_NAME)
 OUTPUT_OPTION = '--output'
 LANE_SCRIPT_FOLDERS = ('world', 'actors', 'data')
 DEDUPLICATED_HELPER_NAMES = {'checked', 'child', 'reject_links', 'relative_name', 'safe_relative'}
@@ -15,6 +17,7 @@ PATH_HELPER_CALLER_PATHS = ('scripts/native_batch.py', 'scripts/stage_native_pla
 STORE_PATH_HELPER_NAMES = {'refuse_reparse_points', 'confined_child_path', 'require_portable_relative_path'}
 OUTPUT_GUARDED_MAIN_ENTRY_POINTS = ('scripts/data/convert_tables.py', 'scripts/native_catalog/cli.py')
 COMMITTED_REPORT_ENTRY_POINTS = ('scripts/data/sysstring_systemmsg_counts.py',)
+DATA_UI_LANE_ONLY_ENTRY_POINTS = ('scripts/data/convert_tables.py', 'scripts/data/convert_ui.py', 'scripts/data/table_name_indexes.py')
 ARGUMENT_ERROR_METHOD_NAME = 'error'
 PLAYER_STAGE_MODULE = 'stage_native_players'
 STRICT_JSON_HELPER_OWNERS = {
@@ -134,14 +137,27 @@ class ConverterOutputGuardScanTests(unittest.TestCase):
         for relative_path in OUTPUT_GUARDED_MAIN_ENTRY_POINTS:
             with self.subTest(relative_path=relative_path):
                 main_function = function_named(parse_script(relative_path).body, 'main')
-                guard_calls = calls_named(main_function, OUTPUT_GUARD_NAME)
-                self.assertTrue(guard_calls, f'{relative_path} main must call {OUTPUT_GUARD_NAME}')
+                guard_calls = sorted((call for guard_name in OUTPUT_ROOT_GUARD_NAMES for call in calls_named(main_function, guard_name)),
+                                     key=lambda call: (call.lineno, call.col_offset))
+                self.assertTrue(guard_calls, f'{relative_path} main must call one of {", ".join(OUTPUT_ROOT_GUARD_NAMES)}')
                 self.assertEqual(guard_calls[0].lineno, first_work_after_argument_parsing(main_function))
+
+    def test_the_lane_store_root_is_the_converter_output_guard_result(self):
+        lane_store_root_function = function_named(parse_script(STORE_PATHS_RELATIVE_PATH).body, LANE_STORE_ROOT_GUARD_NAME)
+        self.assertIsInstance(lane_store_root_function.body[0], ast.Return)
+        self.assertEqual(called_function_name(lane_store_root_function.body[0].value), OUTPUT_GUARD_NAME)
 
     def test_committed_report_entry_points_take_no_output_option(self):
         for relative_path in COMMITTED_REPORT_ENTRY_POINTS:
             with self.subTest(relative_path=relative_path):
                 self.assertFalse(registers_output_option(parse_script(relative_path)))
+
+    def test_data_ui_entry_points_write_only_the_lane_store_and_take_no_output_option(self):
+        for relative_path in DATA_UI_LANE_ONLY_ENTRY_POINTS:
+            with self.subTest(relative_path=relative_path):
+                module_tree = parse_script(relative_path)
+                self.assertFalse(registers_output_option(module_tree))
+                self.assertTrue(calls_named(function_named(module_tree.body, 'main'), LANE_STORE_ROOT_GUARD_NAME))
 
     def test_scan_flags_an_output_option_without_the_guard(self):
         unguarded = ast.parse("parser.add_argument('--output')\noutput = arguments.output\n")
