@@ -137,6 +137,18 @@ describe("renderNativeWindow", () => {
     expect(readFileSync("src/ui/nativeWindows/nativeWindowRenderer.ts", "utf8")).not.toMatch(/innerHTML|outerHTML|insertAdjacentHTML/);
   });
 
+  it("draws only the first texture of a control and keeps it a gap instead of substituting a later resolved texture", () => {
+    const rendered = render([], localPlayerWithHealth(100), new Map<string, NativeWindowTextureResolution>([
+      ["SyntheticUI.StatusWnd.BackPlate", { status: "resolved", url: "blob:synthetic/back-plate" }],
+      ["SyntheticUI.StatusWnd.GaugeFill", { status: "gap", reason: "texture-not-in-catalog" }],
+      ["SyntheticUI.StatusWnd.GaugeBack", { status: "resolved", url: "blob:synthetic/gauge-back" }],
+    ]));
+    const gauge = control(container, "SyntheticGaugeBar");
+    expect(gauge.querySelector("img")).toBeNull();
+    expect(gauge.getAttribute("data-native-gap")).toBe("control-type-unsupported:BarCtrl texture-not-in-catalog");
+    expect(rendered.gaps).toContainEqual({ controlName: "SyntheticGaugeBar", reason: "texture-not-in-catalog" });
+  });
+
   it("renders an empty positioned box for a control without textures and the root box only for an empty window", () => {
     const plain = parseNativeWindowManifest(syntheticManifests.find(manifest => manifest.windowId === "SyntheticPlainWnd"));
     const rendered = renderNativeWindow(container as unknown as HTMLElement, plain, { localPlayer: null, textures: new Map(), fieldBindings: [], screen,

@@ -26,6 +26,7 @@ export interface RenderedNativeWindow {
 }
 
 const labelUnresolvedReason = "label-unresolved";
+const textureNotInCatalogReason = "texture-not-in-catalog";
 const textBoxControlType = "TextBox";
 const controlTypeUnsupportedPrefix = "control-type-unsupported:";
 const adapterFieldAbsentPrefix = "adapter-field-absent:";
@@ -56,12 +57,11 @@ function textureImage(url: string, width: number, height: number): HTMLImageElem
 
 function firstTextureGapOrImage(node: NativeWindowNode, rectangle: NativeWindowRectangle,
   textures: ReadonlyMap<string, NativeWindowTextureResolution>): { readonly image: HTMLImageElement | null; readonly gap: string | null } {
-  if (node.textures.length === 0) return { image: null, gap: null };
-  const resolutions = node.textures.map(reference => textures.get(reference) ?? { status: "gap" as const, reason: "texture-not-in-catalog" });
-  const resolved = resolutions.find(resolution => resolution.status === "resolved");
-  if (resolved !== undefined) return { image: textureImage(resolved.url, rectangle.width, rectangle.height), gap: null };
-  const firstGap = resolutions[0]!;
-  return { image: null, gap: firstGap.status === "gap" ? firstGap.reason : null };
+  const firstReference = node.textures[0];
+  if (firstReference === undefined) return { image: null, gap: null };
+  const resolution: NativeWindowTextureResolution = textures.get(firstReference) ??{ status: "gap", reason: textureNotInCatalogReason };
+  if (resolution.status === "gap") return { image: null, gap: resolution.reason };
+  return { image: textureImage(resolution.url, rectangle.width, rectangle.height), gap: null };
 }
 
 function uniqueBindingNodes(root: NativeWindowNode, bindings: readonly NativeWindowFieldBinding[]): ReadonlyMap<NativeWindowNode, NativeWindowFieldBinding> {
@@ -89,7 +89,7 @@ function gaugeFor(binding: NativeWindowFieldBinding, rectangle: NativeWindowRect
   const fillTexture = binding.fillTextureRef === null ? undefined : textures.get(binding.fillTextureRef);
   const fillImage = fillTexture?.status === "resolved" ? textureImage(fillTexture.url, 0, rectangle.height) : null;
   if (fillImage !== null) fillElement.append(fillImage);
-  const fillGap = binding.fillTextureRef !== null && fillTexture?.status !== "resolved" ? [fillTexture?.status === "gap" ? fillTexture.reason : "texture-not-in-catalog"] : [];
+  const fillGap = binding.fillTextureRef !== null && fillTexture?.status !== "resolved" ? [fillTexture?.status === "gap" ? fillTexture.reason : textureNotInCatalogReason] : [];
   return { gauge: { binding, fillElement, fillImage, liveGap: null }, gaps: fillGap };
 }
 
