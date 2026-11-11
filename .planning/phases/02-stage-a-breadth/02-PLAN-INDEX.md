@@ -694,10 +694,10 @@ Every gap plan carries the rules above ("Rules every plan carries" 1 to 14) and 
 | SC2c items | 02-79 (batch and record shape) | - (armor slot meaning and weapon socket stay open follow-ups) |
 | SC2e actor sounds | 02-78 (bundles), 02-80, 02-87 | listening round |
 | SC3a cast any skill | 02-79 (batch), 02-84, 02-87 | - |
-| SC3b skill sound | not planned: skillsoundgrp route stays a named gap (G10) | - |
+| SC3b skill sound | 02-89 Task 3 (explicit STATE.md records: Open follow-ups with ACT-05, what is missing and what unblocks it; Needs Human for the skillsoundgrp route anchors) | IMPORTA-PC: skillsoundgrp serialization and cast and shot anchors |
 | SC3c emitter class and feature gaps | 02-72, 02-84, 02-94 (feature rows in the census), 02-87 | - |
 | SC4d open any window | 02-73, 02-85 | owner: procedural HUD under UI-03 |
-| SC4e window data | not planned: CP and MP fields, TextBox labels, 25 control types (G10); UI-02 back to Pending in 02-89 | - |
+| SC4e window data | 02-89 Task 3 (explicit STATE.md records: Open follow-ups with UI-02 and NET-05 for CP and MP fields, TextBox labels and the 25 control types; Needs Human for CP and MP from server data); UI-02 back to Pending in 02-89 | server: CP and MP (NET-05) |
 | SC5a one coverage report | 02-72, 02-89 (tables load check, union) | restage |
 | SC5c tile seam | 02-81 | IMPORTA-PC when the seam rule stays unknown |
 | MAT-01 and MAT-02 | 02-74, 02-77, 02-86, 02-91 (lightmaps on every resident chunk), 02-92 (combiner oracle, display gamma) | owner review (provisional) |
@@ -725,7 +725,7 @@ The 18 findings the independent review fix round deferred (`phase2-independent-f
 | GPU combiner untested, CPU twin unused (slice-09, `src/materials/ue2/model/combiner.ts:99`) | MAT-01 | 02-92 Task 2 | P729, P808, P817 |
 | Texture `image` member no converter writes (slice-10, `src/materials/ue2/model/materialProgram.ts:156`) | MAT-01 | 02-74 Tasks 1 and 2, 02-86 Tasks 1 and 2 | - |
 | Display gamma ramp never applied (slice-10, `src/materials/ue2/model/displayGamma.ts:30`) | MAT-01 | 02-92 Task 3 | P730, P809 |
-| Emitters step pass while no placement plays (slice-11, `src/scene/world/tileMapEmitterPlacements.ts:70`) | WORLD-01, FX-01 | converter half landed in d70fe6d; restage in 02-88 Task 2 through 02-90; playback stays an Open follow-up | P716, row 651 |
+| Emitters step pass while no placement plays (slice-11, `src/scene/world/tileMapEmitterPlacements.ts:70`) | WORLD-01, FX-01 | converter half landed in d70fe6d; restage in 02-88 Task 2 through 02-90; playback recorded in 02-89 Task 3 (explicit STATE.md Open follow-ups record with WORLD-01 and FX-01, what is missing and what unblocks it) | P716, row 651 |
 | Unsourced ring and LOD cull cap draw distance (slice-12, `src/scene/world/worldResidencyRing.ts:39`) | WORLD-04, VIS-01 | 02-91 Task 3 (limit rows) | P737, P806; the value stays with the owner (02-89 Needs Human) |
 | Adapter contract dropped `advance()` (slice-14, `src/world/GameWorldAdapter.ts:3`) | ARCH-02 | 02-89 Task 3 (Needs Human with exact steps) | P741; owner records the four-method freeze |
 | Unsourced classes move at 70 UU/s (slice-14, `src/world/NativeSliceAdapter.ts:187`) | MOVE-01, ARCH-03 | 02-93 Task 1 | P744, P810; row 49 review stays with the owner |
