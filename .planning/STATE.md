@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 02-92-PLAN.md
-last_updated: "2026-11-11T16:42:29.371Z"
+stopped_at: Completed 02-94-PLAN.md
+last_updated: "2026-11-11T16:59:05.817Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 03 plan 03-01 complete (side-by-side check record writer and key content digest; Phase 3 start commit cb09cdc)
-state_head: be2acde056ef8de2881d1e7080281868c7b0fd8a
+state_head: 2bde0ccbd6ee2d5a4df17094d7ccaeb6a79747f8
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 131
-  completed_plans: 104
+  completed_plans: 105
   percent: 0
 ---
 
@@ -150,6 +150,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 2 P82 | 30min | 2 tasks | 14 files |
 | Phase 2 P84 | 12min | 3 tasks | 24 files |
 | Phase 02 P92 | 25min | 3 tasks | 24 files |
+| Phase 02 P94 | 30min | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -398,6 +399,10 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 989 (02-92): diagnostic slot UNSUPPORTED_MATERIAL_ADAPTER_SLOT_<n> with nativeRuntimeStatus unsupported-diagnostic and limitation material-adapter-unsupported:<class>:<object>; BSP surface refusal unchanged; converter hash c4bf8e6c
 - [Phase 02]: 990 (02-92): eight committed combiner swatch fixture programs are the GPU pixel cases; the CPU combiner is the oracle within one 8-bit step
 - [Phase 02]: 991 (02-92): the UpdateGamma ramp runs as the last native world camera post-process from a 256 x 1 r32float lookup; World tab note sandbox-display-gamma-note
+- [Phase 02]: 992 (02-94): one gap row per skill key and step, so a converted root with unported emitter features names the first emitter-feature-unported:<property> reason (component order, then recipe order) with converted true; the root outcome lists every feature as emitterFeatureGaps and the batch summary counts roots per reason (emitterFeatureGapRoots)
+- [Phase 02]: 993 (02-94): an unported emitter class keeps the emitter-class-unported reason; its feature gaps are still listed
+- [Phase 02]: 994 (02-94): recipes/actors/emitter-feature-coverage.json reads a missing non-class-default field as UE zero and refuses a missing class-default field; classDefault flags and named constants are checked by tests/unit/emitterFeatureCoverage.test.ts
+- [Phase 02]: 995 (02-94): bindParticleMaterial returns a not-drawn outcome for a UseMeshBlendMode MeshEmitter; loadEffectComponent releases its sources, renders nothing and reports notDrawnReason; featureGaps lists the gap through listUnportedEmitterFeatures
 
 ### Pending Todos
 
@@ -526,6 +531,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-11T16:42:28.714Z
-Stopped at: Completed 02-92-PLAN.md
+Last session: 2026-11-11T16:59:04.988Z
+Stopped at: Completed 02-94-PLAN.md
 Resume file: None
