@@ -73,6 +73,8 @@ interface CompileState {
   readonly samplers: MaterialSampler[];
   readonly colourSources: MaterialColourSource[];
   readonly reasons: string[];
+  readonly nodesBeingCompiled: Set<string>;
+  readonly compiledExpressions: Map<string, ColourExpression>;
   unportedClass: string | null;
 }
 
@@ -177,6 +179,18 @@ function compileMaterialSequence(state: CompileState, node: MaterialProgramNode)
 
 function compileNode(state: CompileState, node: MaterialProgramNode, modifiers: readonly string[], depth: number): ColourExpression {
   if (depth > maximumCompileDepth) return fail(state, `material-graph-depth-exceeds:${maximumCompileDepth}`);
+  if (state.nodesBeingCompiled.has(node.id)) return fail(state, `material-graph-cycle:${node.id}`);
+  const expressionKey = JSON.stringify([node.id, ...modifiers]);
+  const compiledExpression = state.compiledExpressions.get(expressionKey);
+  if (compiledExpression) return compiledExpression;
+  state.nodesBeingCompiled.add(node.id);
+  const expression = compileNodeExpression(state, node, modifiers, depth);
+  state.nodesBeingCompiled.delete(node.id);
+  state.compiledExpressions.set(expressionKey, expression);
+  return expression;
+}
+
+function compileNodeExpression(state: CompileState, node: MaterialProgramNode, modifiers: readonly string[], depth: number): ColourExpression {
   if (node.status !== "reviewed") {
     state.unportedClass ??= node.class;
     for (const reason of node.gapReasons) fail(state, reason);
@@ -203,7 +217,7 @@ function compileNode(state: CompileState, node: MaterialProgramNode, modifiers: 
 
 export function compileMaterialStagePlan(program: MaterialProgram): MaterialStagePlan {
   const blend = blendFactorsForMaterial(program);
-  const state: CompileState = { program, samplers: [], colourSources: [], reasons: [], unportedClass: null };
+  const state: CompileState = { program, samplers: [], colourSources: [], reasons: [], nodesBeingCompiled: new Set(), compiledExpressions: new Map(), unportedClass: null };
   const expression = compileNode(state, programNode(program, program.root), [], 0);
   if (blend.status === "diagnostic" && !state.reasons.includes(blend.reason)) state.reasons.unshift(blend.reason);
   if (state.reasons.length > 0 || blend.status === "diagnostic") {
