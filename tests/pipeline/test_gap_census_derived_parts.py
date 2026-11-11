@@ -12,8 +12,9 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
 from catalog_store_fixture import write_store_catalog
-from native_store.build_coverage_report import build_coverage_report, count_part_rows, coverage_markdown, validate_coverage_report
-from native_store.gap_census import build_gap_census
+from native_store.build_coverage_report import (build_coverage_report, count_part_rows, coverage_markdown,
+                                                other_source_lane_derived_converted_keys, validate_coverage_report)
+from native_store.gap_census import GapCensusIncompleteError, build_gap_census
 from native_store.gap_census_denominators import load_census_denominators, skill_sound_census_row
 from native_store.gap_census_derived_parts import derived_converted_keys, derived_part_rows, derived_tile_denominator
 from native_store.gap_rows import write_gap_rows
@@ -174,6 +175,24 @@ class MovementGeodataAndTileAudioTests(DerivedPartsTestCase):
                           ('audio', 'pending', 'upstream-step-failed:collision', False),
                           ('movement-geodata', 'pending', 'step-pending:collision', False),
                           ('audio', 'converted', None, True)])
+
+
+class OtherSourceLaneConvertedKeysTests(DerivedPartsTestCase):
+    def test_an_actors_lane_report_takes_tile_audio_conversions_from_the_world_lane_store_that_wrote_the_audio_step_rows(self):
+        write_tile_store(self.store_root, {'20_20': [('world-audio', ())]})
+        converted_keys = other_source_lane_derived_converted_keys(self.project_root, ('actors',), ('audio', 'npcs'))
+        self.assertEqual({key for key in converted_keys if key.startswith('tile-audio:')}, {'tile-audio:20_20'})
+        denominators = {'audio': derived_tile_denominator('tile-audio')}
+        source_rows = [*self.world_census_rows, world_row('tile:20_20', 'audio', 'pass', None)]
+        with self.assertRaisesRegex(GapCensusIncompleteError, 'tile-audio:20_20'):
+            build_gap_census(denominators, derived_part_rows(denominators, source_rows, set()), set(), {})
+        census_rows = census_by_key(build_gap_census(denominators, derived_part_rows(denominators, source_rows, converted_keys),
+                                                     converted_keys, {}))
+        self.assertEqual((census_rows['tile-audio:20_20']['status'], census_rows['tile-audio:20_20']['converted']), ('converted', True))
+
+    def test_a_measured_lane_and_a_source_lane_without_a_catalog_add_no_converted_keys(self):
+        write_tile_store(self.store_root, {'20_20': [('world-audio', ())]})
+        self.assertEqual(other_source_lane_derived_converted_keys(self.project_root, ('world',), ('world', 'audio', 'npcs')), set())
 
 
 class NpcAndSkillSoundTests(unittest.TestCase):

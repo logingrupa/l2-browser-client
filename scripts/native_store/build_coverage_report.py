@@ -13,7 +13,7 @@ sys.path.insert(0, str(SCRIPTS_ROOT))
 from actors.actor_sound_bindings import AUDIO_PART_NAME
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_index_keys import catalog_index_keys, read_measured_catalog
-from native_store.catalog_writer import is_table_name_index_id, replace_file
+from native_store.catalog_writer import STORE_CATALOG_NAME, is_table_name_index_id, replace_file
 from native_store.coverage_denominators import COVERAGE_PART_ORDER, UNKNOWN_DENOMINATOR, CoverageReportError
 from native_store.gap_census import (GAP_CENSUS_LOAD_STATUSES, ITEM_CENSUS_STEP, ITEMS_PART, NAMED_EMITTER_GAP_REASONS, build_gap_census,
                                      is_named_emitter_gap_reason)
@@ -79,6 +79,18 @@ def store_converted_keys(project_root, store_root, catalog):
                                                                                                                           shared_store_root)
 
 
+def other_source_lane_derived_converted_keys(project_root, lane_names, part_names):
+    shared_store_root = Path(project_root) / 'public' / 'l2'
+    converted_keys = set()
+    for source_lane_name in derived_source_lane_names(part_names):
+        source_store_root = lane_store_root(project_root, source_lane_name)
+        if source_lane_name in lane_names or not (source_store_root / STORE_CATALOG_NAME).is_file():
+            continue
+        source_catalog, _ = read_measured_catalog(source_store_root)
+        converted_keys |= derived_converted_keys(source_store_root, source_catalog, shared_store_root)
+    return converted_keys
+
+
 def write_item_join_rows(project_root, lane_names, part_names):
     if ITEMS_PART not in part_names:
         return lane_names
@@ -122,6 +134,7 @@ def build_coverage_report(project_root, store_root, lane_names, generated_at_rig
     part_names = measured_part_names(lane_names)
     denominators = load_census_denominators(lane_names)
     converted_keys = store_converted_keys(project_root, store_root, catalog)
+    converted_keys |= other_source_lane_derived_converted_keys(project_root, lane_names, part_names)
     lane_names_by_catalog_sha256 = {catalog_sha256: set(lane_names)}
     for census_lane_name in census_lane_names:
         census_store_root = lane_store_root(project_root, census_lane_name)
