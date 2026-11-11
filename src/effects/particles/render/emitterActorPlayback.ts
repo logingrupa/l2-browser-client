@@ -5,6 +5,7 @@ import { createPresentationClock } from "../../../shared/presentationClock";
 import { loadEffectComponent, type LoadedEffectComponent } from "../../loadEffectComponent";
 import type { EffectBundle, EffectFrame } from "../../nativeEffectComponents";
 import { createEffectScheduler, type ScheduledEffect } from "../effectScheduler";
+import { applyEmitterNative, type EmitterNativeOutcome } from "../sim/emitterNatives";
 import { parseEmitterActorRecord, parseEmitterRecord, type EmitterActorRecord } from "../sim/emitterRecords";
 import { IDENTITY_ROTATOR } from "../sim/particleRotation";
 import type { OwnerPose } from "../sim/particleState";
@@ -45,6 +46,7 @@ export interface EmitterActorPlayback {
   stop(): void;
   advance(elapsedSeconds: number): void;
   setPins(pins: EmitterActorPlaybackPins): void;
+  applyNative(call: unknown): EmitterNativeOutcome;
   liveParticles(): number;
   bounds(): { minimum: Vector3; maximum: Vector3 } | null;
   inspect(): EmitterActorPlaybackInspection;
@@ -131,6 +133,10 @@ export async function loadEmitterActorPlayback(scene: Scene, bundle: EffectBundl
       renderEffect();
     },
     setPins(next) { pins = next; if (effect) renderEffect(); },
+    applyNative(call) {
+      requirePlayback(!disposed && effect !== null, `${actor.object} has no started effect to apply a native to.`);
+      return applyEmitterNative(effect.actor, call);
+    },
     liveParticles: () => liveByEmitter().reduce((sum, count) => sum + count, 0),
     bounds() {
       if (disposed || !root.isEnabled()) return null;

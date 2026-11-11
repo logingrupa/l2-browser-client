@@ -6,6 +6,7 @@ import type { LoadedEffectComponent } from "../../src/effects/loadEffectComponen
 import type { EffectBundle, EffectComponent } from "../../src/effects/nativeEffectComponents";
 import type { EffectScheduler } from "../../src/effects/particles/effectScheduler";
 import { loadEmitterActorPlayback } from "../../src/effects/particles/render/emitterActorPlayback";
+import { EmitterNativeError } from "../../src/effects/particles/sim/emitterNatives";
 import { readSyntheticParticleFixture } from "./support/particleFixtures";
 
 const createdSchedulers = vi.hoisted(() => [] as EffectScheduler[]);
@@ -36,14 +37,15 @@ const spriteFixture = readSyntheticParticleFixture("synthetic-sprite");
 const releases: (() => void)[] = [];
 afterEach(() => { releases.splice(0).reverse().forEach(release => release()); createdSchedulers.splice(0); });
 
-function loopingBundle(): EffectBundle {
+function loopingBundle(actorOverrides: Record<string, unknown> = {}): EffectBundle {
   const actor = spriteFixture.actor;
   return {
     manifestSha256: "0".repeat(64),
     readResource: async () => { throw new Error("the stub components read no resources"); },
     manifest: {
       schemaVersion: 1, kind: "effect", resources: {}, textureGraph: [],
-      actors: [{ object: actor.object, properties: actor.properties, effectiveProperties: { ...actor.effectiveProperties, AutoDestroy: false, AutoReset: true } }],
+      actors: [{ object: actor.object, properties: actor.properties,
+        effectiveProperties: { ...actor.effectiveProperties, AutoDestroy: false, AutoReset: true, ...actorOverrides } }],
       components: spriteFixture.components.map((component, emitterOrdinal) => ({
         object: component.object, class: component.class!, actor: actor.object, emitterOrdinal, sourcePointer: `${emitterOrdinal}`,
         properties: component.properties, effectiveProperties: component.effectiveProperties,
@@ -53,10 +55,10 @@ function loopingBundle(): EffectBundle {
   };
 }
 
-async function loadedPlayback() {
+async function loadedPlayback(actorOverrides: Record<string, unknown> = {}) {
   const engine = new NullEngine(), scene = new Scene(engine);
   releases.push(() => { scene.dispose(); engine.dispose(); });
-  const playback = await loadEmitterActorPlayback(scene, loopingBundle(), { actorObject: spriteFixture.actor.object, emitterObjects: null, sessionSeed: 5 }, new AbortController().signal);
+  const playback = await loadEmitterActorPlayback(scene, loopingBundle(actorOverrides), { actorObject: spriteFixture.actor.object, emitterObjects: null, sessionSeed: 5 }, new AbortController().signal);
   releases.push(() => playback.dispose());
   return { playback, scheduler: createdSchedulers.at(-1)! };
 }
@@ -76,5 +78,29 @@ describe("emitter actor playback scheduler ownership", () => {
     playback.start(); playback.advance(0.25);
     playback.dispose();
     expect(scheduler.liveEffects).toEqual([]);
+  });
+});
+
+describe("emitter actor playback native hook", () => {
+  it("applies SetSizeScale 2 once to the started simulation through applyEmitterNative", async () => {
+    const { playback, scheduler } = await loadedPlayback({ bSetSizeScale: true });
+    playback.start();
+    const emitter = scheduler.liveEffects[0]!.actor.emitters[0]!, before = emitter.record.StartSizeRange;
+    expect(playback.applyNative({ name: "SetSizeScale", scale: 2 })).toEqual({ name: "SetSizeScale", changedEmitters: [emitter.record.object], skipped: null });
+    expect(emitter.record.StartSizeRange.x).toEqual({ min: before.x.min * 2, max: before.x.max * 2 });
+    expect(emitter.record.StartSizeRange.y).toEqual({ min: before.y.min * 2, max: before.y.max * 2 });
+  });
+
+  it("refuses a call outside the five natives with the EmitterNativeError message and changes nothing", async () => {
+    const { playback, scheduler } = await loadedPlayback({ bSetSizeScale: true });
+    playback.start();
+    const before = scheduler.liveEffects[0]!.actor.emitters[0]!.record;
+    expect(() => playback.applyNative({ name: "SetSpeedScale", scale: 2 })).toThrow(EmitterNativeError);
+    expect(scheduler.liveEffects[0]!.actor.emitters[0]!.record).toBe(before);
+  });
+
+  it("refuses a native before the playback starts an effect", async () => {
+    const { playback } = await loadedPlayback();
+    expect(() => playback.applyNative({ name: "Kill" })).toThrow("has no started effect");
   });
 });

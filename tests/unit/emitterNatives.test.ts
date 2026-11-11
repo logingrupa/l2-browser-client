@@ -99,9 +99,9 @@ describe("L2 emitter natives on live emitters", () => {
     expect(applyEmitterNative(actor, { name: "Trigger" }).changedEmitters).toEqual([]);
   });
 
-  it("reaches no emitter from the render loop, the UI or the runtime: only the adapter-event placement layer may call it", () => {
+  it("reaches emitters only through the native hook of the emitter actor playback, never from the UI, the runtime or the scene", () => {
     const callers = ["src/effects", "src/ui", "src/runtime", "src/scene"].flatMap(folder => listTypeScriptModules(folder))
       .filter(modulePath => readSourceImports(modulePath).some(sourceImport => sourceImport.resolvedModulePath === "src/effects/particles/sim/emitterNatives.ts"));
-    expect(callers).toEqual([]);
+    expect(callers).toEqual(["src/effects/particles/render/emitterActorPlayback.ts"]);
   });
 });

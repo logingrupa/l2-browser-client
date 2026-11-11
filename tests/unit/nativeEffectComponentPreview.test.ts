@@ -31,6 +31,7 @@ function fixture() {
       root, components: [], get playing() { return playing; },
       start: vi.fn<EmitterActorPlayback["start"]>(() => { playing = true; }), stop: vi.fn(() => { playing = false; }), advance: vi.fn<EmitterActorPlayback["advance"]>(), setPins: vi.fn<EmitterActorPlayback["setPins"]>(),
       liveParticles: () => playing ? 3 : 0, bounds: () => null,
+      applyNative: () => { throw new Error("the component preview applies no emitter native"); },
       inspect: () => ({ actorObject: "Effect" }) as unknown as ReturnType<EmitterActorPlayback["inspect"]>,
       dispose: vi.fn<EmitterActorPlayback["dispose"]>(() => root.dispose()),
     };
