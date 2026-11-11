@@ -146,18 +146,30 @@ export function environmentMapCoordinates(reflection: readonly [number, number, 
   return [direction[0]! * 0.5 + 0.5, direction[1]! * 0.5 + 0.5];
 }
 
-function fadeWeight(fadeType: string, cycles: number): number | null {
-  if (fadeType === "FC_Sinusoidal") return Math.fround(0.5 + 0.5 * Math.cos(cycles * Math.PI * 0.5));
-  if (fadeType === "FC_Linear") return Math.fround(Math.floor(cycles) % 2 !== 0 ? fraction(cycles) : 1 - fraction(cycles));
+const fadeWeightByFadeType = new Map<string, (cycles: number) => number>([
+  ["FC_Sinusoidal", cycles => Math.fround(0.5 + 0.5 * Math.cos(cycles * Math.PI * 0.5))],
+  ["FC_Linear", cycles => Math.fround(Math.floor(cycles) % 2 !== 0 ? fraction(cycles) : 1 - fraction(cycles))],
+]);
+
+function fadePeriod(node: MaterialProgramNode): number {
+  return Math.fround(readNumberField(node, "FadePeriod"));
+}
+
+function fadeWeightOf(node: MaterialProgramNode): ((cycles: number) => number) | undefined {
+  return fadeWeightByFadeType.get(readEnumName(node, "ColorFadeType") ?? "");
+}
+
+export function fadeColourGapReason(node: MaterialProgramNode): string | null {
+  if (!(fadePeriod(node) > 0)) return "material-feature-unported:FadePeriod";
+  if (fadeWeightOf(node) === undefined) return "material-feature-unported:ColorFadeType";
   return null;
 }
 
 export function fadeColourBytes(node: MaterialProgramNode, levelSeconds: number): readonly [number, number, number, number] {
-  const period = Math.fround(readNumberField(node, "FadePeriod"));
-  if (!(period > 0)) throw new MaterialProgramError(`Material program: ${node.id}.FadePeriod must be positive, not ${period}.`);
-  const cycles = Math.fround((Math.fround(levelSeconds) + Math.fround(readNumberField(node, "FadePhase"))) / period);
-  const weight = fadeWeight(readEnumName(node, "ColorFadeType") ?? "", cycles);
-  if (weight === null) throw new MaterialProgramError(`Material program: ${node.id}.ColorFadeType is not a reviewed fade type.`);
+  const gapReason = fadeColourGapReason(node);
+  if (gapReason !== null) throw new MaterialProgramError(`Material program: ${node.id} is ${gapReason}.`);
+  const cycles = Math.fround((Math.fround(levelSeconds) + Math.fround(readNumberField(node, "FadePhase"))) / fadePeriod(node));
+  const weight = fadeWeightOf(node)!(cycles);
   const oppositeWeight = Math.fround(1 - weight);
   const first = readColourField(node, "Color1"), second = readColourField(node, "Color2");
   const channel = (index: number) => {

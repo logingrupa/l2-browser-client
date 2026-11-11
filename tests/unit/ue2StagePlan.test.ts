@@ -43,3 +43,22 @@ describe("compileMaterialStagePlan graph walk", () => {
     expect(plan.status === "compiled" && plan.samplers.map(sampler => sampler.textureNode)).toEqual([textureId]);
   });
 });
+
+describe("compileMaterialStagePlan colour sources", () => {
+  const fadeNode = (fadePeriod: number, colorFadeType: FixtureProgramField) => reviewedNode("Synthetic.Fade", "Engine.FadeColor", [
+    field("FadePeriod", fadePeriod), field("FadePhase", 0, "ue-zero"), colorFadeType]);
+
+  it("compiles a FadeColor with a positive FadePeriod and a reviewed ColorFadeType", () => {
+    expect(stagePlanOf("Synthetic.Fade", [fadeNode(0.4, field("ColorFadeType", enumValue(1, "FC_Sinusoidal")))]).status).toBe("compiled");
+  });
+
+  it("names a FadeColor whose FadePeriod is not positive instead of compiling it", () => {
+    expect(stagePlanOf("Synthetic.Fade", [fadeNode(0, field("ColorFadeType", enumValue(1, "FC_Sinusoidal")))]))
+      .toMatchObject({ status: "diagnostic", reasons: ["material-feature-unported:FadePeriod"] });
+  });
+
+  it("names a FadeColor whose ColorFadeType is unset instead of compiling it", () => {
+    expect(stagePlanOf("Synthetic.Fade", [fadeNode(0.4, field("ColorFadeType", null, "ue-zero"))]))
+      .toMatchObject({ status: "diagnostic", reasons: ["material-feature-unported:ColorFadeType"] });
+  });
+});

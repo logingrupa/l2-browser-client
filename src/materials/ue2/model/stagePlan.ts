@@ -1,5 +1,6 @@
 import { blendFactorsForMaterial, type MaterialBlend, type ResolvedMaterialBlend } from "./blendTable";
 import { fieldIsUnported, readBooleanField, readEnumOrdinal, readNumberField, readReferenceField, type MaterialReference } from "./materialFieldValues";
+import { fadeColourGapReason } from "./modifiers";
 import { programNode, type MaterialProgram, type MaterialProgramNode, type MaterialTextureImage } from "./materialProgram";
 
 export type ColourSourceKind = "constant-colour" | "fade-colour" | "color-modifier";
@@ -205,7 +206,11 @@ function compileNodeExpression(state: CompileState, node: MaterialProgramNode, m
     case "Engine.Texture": return compileTexture(state, node, modifiers);
     case "Engine.Combiner": return compileCombiner(state, node, modifiers, depth);
     case "Engine.ConstantColor": return { kind: "colour-source", colourSourceIndex: addColourSource(state, node, "constant-colour") };
-    case "Engine.FadeColor": return { kind: "colour-source", colourSourceIndex: addColourSource(state, node, "fade-colour") };
+    case "Engine.FadeColor": {
+      const fadeGapReason = fadeColourGapReason(node);
+      if (fadeGapReason !== null) return fail(state, fadeGapReason);
+      return { kind: "colour-source", colourSourceIndex: addColourSource(state, node, "fade-colour") };
+    }
     case "Engine.ColorModifier": {
       const colourSourceIndex = addColourSource(state, node, "color-modifier");
       return { kind: "modulate", input: compileRequired(state, node, "Material", modifiers, depth), colourSourceIndex, alphaBlend: readBooleanField(node, "AlphaBlend") };
