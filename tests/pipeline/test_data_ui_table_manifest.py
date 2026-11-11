@@ -11,9 +11,12 @@ sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
 from actors.actor_sound_batch import npc_profile_rows
 from actors.actor_sound_conversion import ActorSoundConversionError, ActorSoundConversionRun
+from actors.character_conversion import read_character_sources
+from actors.character_requests import CLASSINFO_TABLE_NAME, HAIRGRP_TABLE_NAME, HELMETGRP_TABLE_NAME
 from catalog_store_fixture import write_store_catalog
 from native_store.catalog_writer import CatalogWriteError
-from native_store.data_ui_table_manifest import DATA_UI_LANE_NAME, DataUiTableManifestError, data_ui_table_manifest
+from native_store.data_ui_table_manifest import (DATA_UI_LANE_NAME, ELBERA_ADAPTER_ROUTE, LOCAL_DESCRIPTOR_ROUTE, DataUiTableManifestError,
+                                                 data_ui_table_manifest)
 from native_store.store_paths import StorePathError, lane_store_root
 from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, read_reference_client_lock
 
@@ -21,15 +24,38 @@ NPCGRP_TABLE_NAME = 'npcgrp'
 NPCGRP_SOURCE_PATH = 'system/npcgrp.dat'
 OUTSIDE_STORE_RESOURCE = '/l2/../outside-store.json'
 UNLOCKED_SOURCE_SHA256 = '1' * 64
+ELBERA_HAIRGRP_RECORDS = [[[0, 0], [1, 1], [-1, -1]], [[0, 0], [-1, 2], [-1, -1]]]
+ELBERA_HELMETGRP_RECORDS = [{'key': 1, 'pairs': [[[0, 0], [1, 1]]]}]
+DECODED_CHARGRP_TABLE = {'source': 'system/chargrp.dat', 'sourceSha256': 'a' * 64, 'data': {'Char': []}}
+
+
+def locked_source_sha256(source_path):
+    return read_reference_client_lock(REFERENCE_CLIENT_LOCK_PATH).record(source_path)['eSha256']
 
 
 def locked_npcgrp_sha256():
-    return read_reference_client_lock(REFERENCE_CLIENT_LOCK_PATH).record(NPCGRP_SOURCE_PATH)['eSha256']
+    return locked_source_sha256(NPCGRP_SOURCE_PATH)
 
 
-def npcgrp_manifest_payload(source_sha256, table_name=NPCGRP_TABLE_NAME):
-    return json.dumps({'kind': 'native-table', 'schemaVersion': 1, 'table': table_name, 'sourcePath': NPCGRP_SOURCE_PATH,
-                       'sourceSha256': source_sha256, 'records': {}}, sort_keys=True).encode()
+def decoded_table_manifest_payload(table_name, source_path, source_sha256, route, records):
+    return json.dumps({'kind': 'native-table', 'schemaVersion': 1, 'table': table_name, 'sourcePath': source_path,
+                       'sourceSha256': source_sha256, 'route': route, 'records': records}, sort_keys=True).encode()
+
+
+def npcgrp_manifest_payload(source_sha256, table_name=NPCGRP_TABLE_NAME, route=LOCAL_DESCRIPTOR_ROUTE, records=None):
+    return decoded_table_manifest_payload(table_name, NPCGRP_SOURCE_PATH, source_sha256, route, {} if records is None else records)
+
+
+def write_pinned_tables_records(store_root, payloads_by_table):
+    records = []
+    for table_name, payload in payloads_by_table.items():
+        manifest_sha256 = hashlib.sha256(payload).hexdigest()
+        manifest_path = store_root / 'tables' / manifest_sha256 / f'{table_name}.json'
+        manifest_path.parent.mkdir(parents=True, exist_ok=True)
+        manifest_path.write_bytes(payload)
+        records.append({'id': table_name, 'manifest': f'/l2/tables/{manifest_sha256}/{table_name}.json', 'manifestSha256': manifest_sha256,
+                        'manifestBytes': len(payload), 'recordCount': 0, 'sourceSha256': json.loads(payload)['sourceSha256']})
+    write_store_catalog(store_root, {'schemaVersion': 1, 'models': [], 'tables': records})
 
 
 class ClientTableSoundRun(ActorSoundConversionRun):
@@ -112,6 +138,35 @@ class DataUiTableManifestTests(unittest.TestCase):
         self.write_tables_record(self.pinned_resource(), len(self.payload))
         with self.assertRaisesRegex(DataUiTableManifestError, 'must be a native-table v1 manifest of npcgrp'):
             data_ui_table_manifest(self.project_root, NPCGRP_TABLE_NAME)
+
+    def test_a_manifest_with_list_records_on_the_local_descriptor_route_is_refused(self):
+        self.payload = npcgrp_manifest_payload(locked_npcgrp_sha256(), records=[])
+        self.write_tables_record(self.pinned_resource(), len(self.payload))
+        with self.assertRaisesRegex(DataUiTableManifestError, 'on the local-descriptor route with a sourcePath and dict records'):
+            data_ui_table_manifest(self.project_root, NPCGRP_TABLE_NAME)
+
+    def test_an_elbera_adapter_manifest_is_refused_where_the_caller_reads_the_local_descriptor_route(self):
+        self.payload = npcgrp_manifest_payload(locked_npcgrp_sha256(), route=ELBERA_ADAPTER_ROUTE, records=[])
+        self.write_tables_record(self.pinned_resource(), len(self.payload))
+        with self.assertRaisesRegex(DataUiTableManifestError, 'on the local-descriptor route'):
+            data_ui_table_manifest(self.project_root, NPCGRP_TABLE_NAME)
+
+    def test_the_character_route_reads_elbera_adapter_hair_and_helmet_manifests_beside_a_local_descriptor_classinfo(self):
+        payloads_by_table = {
+            CLASSINFO_TABLE_NAME: decoded_table_manifest_payload(CLASSINFO_TABLE_NAME, f'system/{CLASSINFO_TABLE_NAME}.dat',
+                                                                 locked_source_sha256(f'system/{CLASSINFO_TABLE_NAME}.dat'),
+                                                                 LOCAL_DESCRIPTOR_ROUTE, {'class': []}),
+            HAIRGRP_TABLE_NAME: decoded_table_manifest_payload(HAIRGRP_TABLE_NAME, f'system/{HAIRGRP_TABLE_NAME}.dat',
+                                                               locked_source_sha256(f'system/{HAIRGRP_TABLE_NAME}.dat'),
+                                                               ELBERA_ADAPTER_ROUTE, ELBERA_HAIRGRP_RECORDS),
+            HELMETGRP_TABLE_NAME: decoded_table_manifest_payload(HELMETGRP_TABLE_NAME, f'system/{HELMETGRP_TABLE_NAME}.dat',
+                                                                 locked_source_sha256(f'system/{HELMETGRP_TABLE_NAME}.dat'),
+                                                                 ELBERA_ADAPTER_ROUTE, ELBERA_HELMETGRP_RECORDS)}
+        write_pinned_tables_records(self.store_root, payloads_by_table)
+        sources = read_character_sources(self.project_root, self.project_root, lambda client_root, table_name: DECODED_CHARGRP_TABLE,
+                                         self.project_root / 'class-work')
+        self.assertEqual((sources.classinfo['records'], sources.hairgrp['records'], sources.helmetgrp['records']),
+                         ({'class': []}, ELBERA_HAIRGRP_RECORDS, ELBERA_HELMETGRP_RECORDS))
 
     def test_a_manifest_not_decoded_from_the_locked_client_file_is_refused_by_the_character_route(self):
         self.payload = npcgrp_manifest_payload(UNLOCKED_SOURCE_SHA256)

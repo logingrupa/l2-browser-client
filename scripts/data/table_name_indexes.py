@@ -10,9 +10,10 @@ import json
 
 from hash_reference_client_tree import canonical_json_bytes
 from lane_unit_outcomes import seal_unit_manifest, write_pinned_manifest_to_store
-from convert_tables import DECODE_STEP, LANE_NAME, NATIVE_TABLE_MANIFEST_KIND, TABLES_CATALOG_CAPACITY, TABLES_CATALOG_SLICE
+from convert_tables import DECODE_STEP, LANE_NAME, TABLES_CATALOG_CAPACITY, TABLES_CATALOG_SLICE
 from native_store.catalog_writer import (TABLE_NAME_INDEX_ID_SUFFIX, is_table_name_index_id, read_pinned_file, read_store_catalog,
                                          require_file_pin, sha256_hex, validate_catalog_record)
+from native_store.data_ui_table_manifest import DECODED_TABLE_KIND
 from native_store.gap_rows import read_gap_rows
 from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root, require_converter_output
@@ -43,9 +44,9 @@ def require_name_index_source(table):
 
 
 def source_rows(table, source_manifest, source):
-    if not (isinstance(source_manifest, dict) and source_manifest.get('kind') == NATIVE_TABLE_MANIFEST_KIND
+    if not (isinstance(source_manifest, dict) and source_manifest.get('kind') == DECODED_TABLE_KIND
             and source_manifest.get('table') == table and isinstance(source_manifest.get('records'), dict)):
-        raise TableNameIndexError(f'source manifest is not a {NATIVE_TABLE_MANIFEST_KIND} manifest of {table}')
+        raise TableNameIndexError(f'source manifest is not a {DECODED_TABLE_KIND} manifest of {table}')
     rows = source_manifest['records'].get(source.rows_field)
     if not isinstance(rows, list):
         raise TableNameIndexError(f'{table} manifest records hold no {source.rows_field} list')

@@ -200,7 +200,7 @@ class GapCensusPartTests(unittest.TestCase):
 def write_decoded_table(store_root, table_name, source_sha256, records):
     record_count = records['data']
     payload = json.dumps({'descriptorSha256': 'f' * 64, 'kind': 'native-table', 'recordCount': record_count,
-                          'records': records, 'route': 'local-decoded', 'schemaVersion': 1, 'sourcePath': f'system/{table_name}.dat',
+                          'records': records, 'route': 'local-descriptor', 'schemaVersion': 1, 'sourcePath': f'system/{table_name}.dat',
                           'sourceSha256': source_sha256, 'table': table_name}, sort_keys=True).encode()
     manifest_sha256 = hashlib.sha256(payload).hexdigest()
     manifest_path = store_root / 'tables' / manifest_sha256 / f'{table_name}.json'

@@ -8,6 +8,9 @@ from native_store.unit_ledger import locked_input_records
 DATA_UI_LANE_NAME = 'data-ui'
 DECODED_TABLE_KIND = 'native-table'
 DECODED_TABLE_SCHEMA_VERSION = 1
+LOCAL_DESCRIPTOR_ROUTE = 'local-descriptor'
+ELBERA_ADAPTER_ROUTE = 'elbera-adapter'
+DECODED_TABLE_RECORDS_TYPE_BY_ROUTE = {LOCAL_DESCRIPTOR_ROUTE: dict, ELBERA_ADAPTER_ROUTE: list}
 
 
 class DataUiTableManifestError(ValueError):
@@ -28,7 +31,7 @@ def data_ui_tables_record(store_root, table_name):
     return records[0] if records else None
 
 
-def data_ui_table_manifest(project_root, table_name):
+def data_ui_table_manifest(project_root, table_name, route=LOCAL_DESCRIPTOR_ROUTE):
     store_root = lane_store_root(project_root, DATA_UI_LANE_NAME)
     record = data_ui_tables_record(store_root, table_name)
     if record is None:
@@ -44,9 +47,11 @@ def data_ui_table_manifest(project_root, table_name):
         raise DataUiTableManifestError(f'{label} is not strict JSON: {error}') from error
     if not (isinstance(manifest, dict) and manifest.get('kind') == DECODED_TABLE_KIND
             and manifest.get('schemaVersion') == DECODED_TABLE_SCHEMA_VERSION and manifest.get('table') == table_name
-            and isinstance(manifest.get('sourcePath'), str) and isinstance(manifest.get('records'), dict)):
+            and isinstance(manifest.get('sourcePath'), str) and manifest.get('route') == route
+            and isinstance(manifest.get('records'), DECODED_TABLE_RECORDS_TYPE_BY_ROUTE[route])):
+        records_type_name = DECODED_TABLE_RECORDS_TYPE_BY_ROUTE[route].__name__
         raise DataUiTableManifestError(f'{label} must be a {DECODED_TABLE_KIND} v{DECODED_TABLE_SCHEMA_VERSION} manifest of {table_name} '
-                                       'with a sourcePath and records')
+                                       f'on the {route} route with a sourcePath and {records_type_name} records')
     locked_sha256 = locked_input_records([manifest['sourcePath']])[0]['sha256']
     if not (manifest.get('sourceSha256') == record['sourceSha256'] == locked_sha256):
         raise DataUiTableManifestError(f'{label} is not decoded from the locked {manifest["sourcePath"]}')

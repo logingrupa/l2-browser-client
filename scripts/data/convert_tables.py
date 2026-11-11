@@ -20,6 +20,8 @@ from native_catalog.tables import (DESCRIPTOR_FILE, decode_table, decoded_table_
                                    table_layout_schema)
 from native_catalog.ue2 import FormatError
 from native_store.catalog_writer import sha256_hex, validate_catalog_record
+from native_store.data_ui_table_manifest import (DECODED_TABLE_KIND, DECODED_TABLE_SCHEMA_VERSION, ELBERA_ADAPTER_ROUTE,
+                                                 LOCAL_DESCRIPTOR_ROUTE)
 from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root, require_converter_output
 from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, UnitLedger, locked_input_records, require_batch_preflight,
@@ -32,10 +34,6 @@ DECODE_TABLE_ALGORITHM_VERSION = 3
 LANE_NAME = 'data-ui'
 PART_NAME = 'data'
 DECODE_STEP = 'decode'
-LOCAL_DESCRIPTOR_ROUTE = 'local-descriptor'
-ELBERA_ADAPTER_ROUTE = 'elbera-adapter'
-NATIVE_TABLE_MANIFEST_KIND = 'native-table'
-NATIVE_TABLE_MANIFEST_SCHEMA_VERSION = 1
 TABLES_CATALOG_SLICE = 'tables'
 TABLES_CATALOG_CAPACITY = EXPECTED_DAT_TABLE_COUNT + len(NAME_INDEX_SOURCES)
 SYSTEM_DAT_PATH_PATTERN = re.compile(r'system/([^/]+)\.dat', re.IGNORECASE)
@@ -66,14 +64,14 @@ def table_unit_plan(table, links):
 
 
 def native_table_manifest(table, decoded_table, route):
-    return {'kind': NATIVE_TABLE_MANIFEST_KIND, 'schemaVersion': NATIVE_TABLE_MANIFEST_SCHEMA_VERSION, 'table': table,
+    return {'kind': DECODED_TABLE_KIND, 'schemaVersion': DECODED_TABLE_SCHEMA_VERSION, 'table': table,
             'sourcePath': decoded_table['source'], 'sourceSha256': decoded_table['sourceSha256'],
             'descriptorSha256': decoded_table['schema']['descriptorSha256'], 'route': route,
             'recordCount': decoded_table_record_count(decoded_table), 'records': decoded_table['data']}
 
 
 def elbera_hair_table_manifest(table, decoded_hair_table):
-    return {'kind': NATIVE_TABLE_MANIFEST_KIND, 'schemaVersion': NATIVE_TABLE_MANIFEST_SCHEMA_VERSION, 'table': table,
+    return {'kind': DECODED_TABLE_KIND, 'schemaVersion': DECODED_TABLE_SCHEMA_VERSION, 'table': table,
             'sourcePath': decoded_hair_table['sourcePath'], 'sourceSha256': decoded_hair_table['sourceSha256'],
             'descriptorSha256': ELBERA_HAIR_SELECTION_SCRIPT_SHA256, 'route': ELBERA_ADAPTER_ROUTE,
             'recordCount': decoded_hair_table['recordCount'], 'records': decoded_hair_table['records']}

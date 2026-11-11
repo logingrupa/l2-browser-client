@@ -17,7 +17,7 @@ from data.lane_unit_outcomes import replace_step_gap_row
 from native_assets import UMODEL_SHA256, implementation_hash
 from native_assets_lib.gltf import json_bytes
 from native_store.catalog_writer import read_store_catalog, write_store
-from native_store.data_ui_table_manifest import data_ui_table_manifest
+from native_store.data_ui_table_manifest import ELBERA_ADAPTER_ROUTE, data_ui_table_manifest
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from reference_client_guard import ReferenceClientLockError
 
@@ -48,7 +48,8 @@ class LazyClassDefinitionReader:
 
 def read_character_sources(project_root, client_root, decode_table, class_work_root):
     return CharacterSources(decode_table(Path(client_root), 'chargrp'), data_ui_table_manifest(project_root, CLASSINFO_TABLE_NAME),
-                            data_ui_table_manifest(project_root, HAIRGRP_TABLE_NAME), data_ui_table_manifest(project_root, HELMETGRP_TABLE_NAME),
+                            data_ui_table_manifest(project_root, HAIRGRP_TABLE_NAME, ELBERA_ADAPTER_ROUTE),
+                            data_ui_table_manifest(project_root, HELMETGRP_TABLE_NAME, ELBERA_ADAPTER_ROUTE),
                             LazyClassDefinitionReader(client_root, class_work_root))
 
 
