@@ -46,6 +46,12 @@ describe("actor clip events parsed from asset.json", () => {
     expect(event?.sound).toBeNull();
   });
 
+  it("keeps a function-only notify with no notify object and a source time past the clip end, as the converter writes it", () => {
+    const [event] = parseActorClipEvents([sourceEvent({ type: "unresolved-native-notify", object: null, function: "None", sound: null, properties: {},
+      normalizedTime: 1.860465168952942, timeSeconds: 3.72093033790588 })]);
+    expect([event?.type, event?.notifyObject, event?.normalizedTime, event?.timeSeconds]).toEqual(["unresolved-native-notify", null, 1.860465168952942, 3.72093033790588]);
+  });
+
   it("keeps events at normalized time 0 and exactly 1", () => {
     const events = parseActorClipEvents([sourceEvent({ normalizedTime: 0, timeSeconds: 0 }), sourceEvent({ normalizedTime: 1, timeSeconds: 2 })]);
     expect(events.map(event => [event.ordinal, event.normalizedTime, event.timeSeconds])).toEqual([[0, 0, 0], [1, 1, 2]]);
@@ -66,9 +72,9 @@ describe("actor clip events parsed from asset.json", () => {
 
   it.each([
     ["clip", undefined], ["clip", 4], ["animationSet", undefined], ["animationSet", null], ["type", undefined], ["type", 1],
-    ["timingBasis", undefined], ["timingBasis", false], ["object", undefined], ["function", 0],
-    ["normalizedTime", -0.01], ["normalizedTime", 1.01], ["normalizedTime", Number.NaN], ["normalizedTime", "0.5"],
-    ["timeSeconds", -1], ["timeSeconds", Number.POSITIVE_INFINITY], ["timeSeconds", undefined],
+    ["timingBasis", undefined], ["timingBasis", false], ["object", undefined], ["object", 7], ["function", 0],
+    ["normalizedTime", Number.NaN], ["normalizedTime", Number.POSITIVE_INFINITY], ["normalizedTime", "0.5"],
+    ["timeSeconds", Number.NaN], ["timeSeconds", Number.POSITIVE_INFINITY], ["timeSeconds", undefined],
     ["sourceFrames", 0], ["sourceFrames", -3], ["sourceFrames", Number.POSITIVE_INFINITY], ["sourceFrames", "60"],
     ["sourceRate", 0], ["sourceRate", Number.NaN], ["sourceRate", undefined],
     ["sound", 3], ["sound", undefined], ["properties", null], ["properties", []], ["properties", "Sound"],

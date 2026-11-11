@@ -5,7 +5,7 @@ export interface ActorClipEvent {
   readonly normalizedTime: number;
   readonly timeSeconds: number;
   readonly type: string;
-  readonly notifyObject: string;
+  readonly notifyObject: string | null;
   readonly notifyFunction: string;
   readonly sound: string | null;
   readonly properties: Readonly<Record<string, unknown>>;
@@ -50,12 +50,8 @@ function requireNumberWithin(source: SourceEventRecord, ordinal: number, field: 
   return value;
 }
 
-function requireNormalizedTime(source: SourceEventRecord, ordinal: number): number {
-  return requireNumberWithin(source, ordinal, "normalizedTime", value => value >= 0 && value <= 1);
-}
-
-function requireNonNegativeFiniteNumber(source: SourceEventRecord, ordinal: number, field: string): number {
-  return requireNumberWithin(source, ordinal, field, value => value >= 0);
+function requireFiniteNumber(source: SourceEventRecord, ordinal: number, field: string): number {
+  return requireNumberWithin(source, ordinal, field, () => true);
 }
 
 function requirePositiveFiniteNumber(source: SourceEventRecord, ordinal: number, field: string): number {
@@ -74,10 +70,10 @@ function parseActorClipEvent(source: unknown, ordinal: number): ActorClipEvent {
     ordinal,
     animationSet: requireText(source, ordinal, "animationSet"),
     clip: requireText(source, ordinal, "clip"),
-    normalizedTime: requireNormalizedTime(source, ordinal),
-    timeSeconds: requireNonNegativeFiniteNumber(source, ordinal, "timeSeconds"),
+    normalizedTime: requireFiniteNumber(source, ordinal, "normalizedTime"),
+    timeSeconds: requireFiniteNumber(source, ordinal, "timeSeconds"),
     type: requireText(source, ordinal, "type"),
-    notifyObject: requireText(source, ordinal, "object"),
+    notifyObject: requireTextOrNull(source, ordinal, "object"),
     notifyFunction: requireText(source, ordinal, "function"),
     sound: requireTextOrNull(source, ordinal, "sound"),
     properties: requireProperties(source, ordinal),
