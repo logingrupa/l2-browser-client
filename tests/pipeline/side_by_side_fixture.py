@@ -2,8 +2,12 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import json
+from pathlib import Path
 
 from catalog_store_fixture import model_record, write_profile_manifest, write_store_catalog
+from reference_client_guard import (ENGINE_LIBRARY_RELATIVE_PATH, REFERENCE_CLIENT_LOCK_FILE_FIELDS, REFERENCE_CLIENT_LOCK_PATH,
+                                    REFERENCE_CLIENT_LOCK_SCHEMA_VERSION, REPOSITORY_ROOT)
 
 FIRST_NPC_ID = 1001
 SECOND_NPC_ID = 1002
@@ -18,6 +22,9 @@ CATALOG_SHA256 = 'c' * 64
 SANDBOX_PNG_SHA256 = 'd' * 64
 CAPTURED_AT_RIGA = '2026-11-11T09:00:00+02:00'
 SANDBOX_CAPTURED_BY = 'executor:03-07'
+NATIVE_CAPTURED_BY = 'executor:03-17'
+FRESH_REVIEWER = 'reviewer:agent-7f3a'
+JUDGED_AT_RIGA = '2026-11-11T10:00:00+02:00'
 DESKTOP_VIEWPORT = {'width': 1440, 'height': 900}
 
 
@@ -107,9 +114,10 @@ def tile_native_selection():
     return {'route': 'offline-debug-startup', 'map': '20_20'}
 
 
-def image_sandbox_half(part, key, key_content_sha256='a' * 64, png_sha256=SANDBOX_PNG_SHA256, captured_at_riga=CAPTURED_AT_RIGA):
+def image_sandbox_half(part, key, key_content_sha256='a' * 64, png_sha256=SANDBOX_PNG_SHA256, captured_at_riga=CAPTURED_AT_RIGA,
+                       png_path=None):
     return {'catalogSha256': CATALOG_SHA256, 'keyContentSha256': key_content_sha256,
-            'pngPath': f'artifacts/side-by-side/{part}/sandbox/{key.replace(":", "_")}.png', 'pngSha256': png_sha256,
+            'pngPath': png_path or f'artifacts/side-by-side/{part}/sandbox/{key.replace(":", "_")}.png', 'pngSha256': png_sha256,
             'viewport': dict(DESKTOP_VIEWPORT), 'cameraPose': {'target': [0.0, 1.5, -2.0], 'alpha': 1.2, 'beta': 0.8, 'radius': 12.0},
             'environment': {'gameMinutes': 720, 'environmentType': 0, 'source': 'environment-event'},
             'diagnosticMaterials': None if key.startswith('window:') else [], 'capturedBy': SANDBOX_CAPTURED_BY,
@@ -124,3 +132,42 @@ def unverified_record(part, key, native_selection, reason='native-session-needs-
 
 def unverified_tile_record(key='tile:20_20', **sandbox_half_changes):
     return unverified_record('world', key, {**tile_native_selection(), 'map': key.split(':', 1)[1]}, **sandbox_half_changes)
+
+
+def write_reference_client_lock(project_root):
+    lock_path = Path(project_root) / REFERENCE_CLIENT_LOCK_PATH.relative_to(REPOSITORY_ROOT)
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    engine_library_sha256 = hashlib.sha256(b'synthetic engine library').hexdigest()
+    lock_path.write_bytes(json.dumps({
+        'schemaVersion': REFERENCE_CLIENT_LOCK_SCHEMA_VERSION, 'referenceHost': 'IMPORTA-PC', 'referenceRoot': 'C:/Lineage2-client',
+        'fileFields': REFERENCE_CLIENT_LOCK_FILE_FIELDS,
+        'files': {ENGINE_LIBRARY_RELATIVE_PATH: ['equal', 24, engine_library_sha256, 24, engine_library_sha256, 0]},
+    }).encode('utf-8'))
+    return lock_path
+
+
+def native_half(part, key, reference_tree_lock_sha256, captured_by=NATIVE_CAPTURED_BY):
+    return {'referenceTreeLockSha256': reference_tree_lock_sha256,
+            'receiptPath': f'artifacts/side-by-side/{part}/native/{key.replace(":", "_")}.json', 'receiptSha256': '1' * 64,
+            'pngSha256': '2' * 64, 'windowSize': {'width': 1024, 'height': 768}, 'l2IniSha256Before': '3' * 64,
+            'l2IniSha256After': '3' * 64, 'controllerSha256': '4' * 64, 'controlDocumentSha256': '5' * 64, 'capturedBy': captured_by,
+            'capturedAtRiga': CAPTURED_AT_RIGA}
+
+
+def judged_tile_record(verdict, reference_tree_lock_sha256, reviewer=FRESH_REVIEWER, key='tile:20_20'):
+    record = unverified_tile_record(key)
+    record.update({'verdict': verdict, 'reason': None, 'nativeHalf': native_half('world', key, reference_tree_lock_sha256),
+                   'reviewer': reviewer, 'judgedAtRiga': JUDGED_AT_RIGA})
+    if verdict == 'mismatch':
+        record.update({'difference': 'The sandbox sky is darker than the native sky.', 'suspectedStep': 'environment-program'})
+    return record
+
+
+def audio_record(key='npc:1001', role='combat', source_sha256='6' * 64, clip_sha256='7' * 64):
+    return {'key': key, 'role': role, 'sourcePackage': 'SyntheticSounds', 'sourceObject': 'synthetic.attack', 'sourceSha256': source_sha256,
+            'verdict': 'unverified', 'reason': 'listen-needs-owner', 'nativeSelection': {'route': 'listen', 'role': role},
+            'sandboxHalf': {'catalogSha256': CATALOG_SHA256, 'keyContentSha256': 'a' * 64,
+                            'clipPath': f'artifacts/side-by-side/audio/clips/{key.replace(":", "_")}-{role}.wav', 'clipSha256': clip_sha256,
+                            'durationSeconds': 1.5, 'peakAboveZero': True, 'capturedBy': 'executor:03-10', 'capturedAtRiga': CAPTURED_AT_RIGA},
+            'nativeHalf': None, 'difference': None, 'suspectedStep': None, 'reviewer': None, 'judgedAtRiga': None,
+            'sandboxHalfHistory': [], 'displayedTableRows': []}

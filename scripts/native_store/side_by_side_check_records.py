@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import math
 from pathlib import Path
 import re
 
@@ -10,7 +9,9 @@ from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import CatalogWriteError, refuse_duplicate_json_keys, refuse_non_finite_json_number, replace_file
 from native_store.coverage_denominators import COVERAGE_PART_ORDER
 from native_store.load_check_records import is_catalog_key, is_riga_timestamp
-from native_store.store_paths import SHA256_PATTERN, StorePathError, require_portable_relative_path
+from native_store.side_by_side_check_halves import (AUDIO_PART, OWNER_IDENTITY, RecordContext, SideBySideCheckRecordError, is_non_empty_text,
+                                                    is_non_negative_integer, is_sha256, require_exact_fields, sandbox_half_history_entry,
+                                                    validate_native_half, validate_sandbox_half, validate_sandbox_half_history)
 from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, REPOSITORY_ROOT, read_reference_client_lock
 
 SIDE_BY_SIDE_SCHEMA_VERSION = 1
@@ -21,23 +22,18 @@ STORED_UNVERIFIED_REASONS = ('native-session-needs-owner', 'native-needs-server'
                              'framing-not-comparable', 'reviewer-uncertain', 'review-pending')
 COMPUTED_UNVERIFIED_REASONS = ('sandbox-capture-failed', 'loads-failed', 'loads-unrecorded', 'stale-after-fix', 'not-yet-queued',
                                'no-pair-shows-table')
-AUDIO_PART = 'audio'
+LISTEN_NEEDS_OWNER_REASON = 'listen-needs-owner'
+REVIEW_PENDING_REASON = 'review-pending'
+REVIEWER_UNCERTAIN_REASON = 'reviewer-uncertain'
 AUDIO_ROLES = ('ambience', 'placement', 'music', 'voice', 'combat', 'skill')
 SIDE_BY_SIDE_DOCUMENT_FIELDS = frozenset({'schemaVersion', 'part', 'records'})
 SIDE_BY_SIDE_RECORD_FIELDS = frozenset({'key', 'verdict', 'reason', 'nativeSelection', 'sandboxHalf', 'nativeHalf', 'difference',
                                         'suspectedStep', 'reviewer', 'judgedAtRiga', 'sandboxHalfHistory', 'displayedTableRows'})
-SANDBOX_HALF_FIELDS = frozenset({'catalogSha256', 'keyContentSha256', 'pngPath', 'pngSha256', 'viewport', 'cameraPose', 'environment',
-                                 'diagnosticMaterials', 'capturedBy', 'capturedAtRiga'})
-SANDBOX_HALF_HISTORY_FIELDS = frozenset({'pngSha256', 'keyContentSha256', 'capturedAtRiga'})
-VIEWPORT_FIELDS = frozenset({'width', 'height'})
-CAMERA_POSE_FIELDS = frozenset({'target', 'alpha', 'beta', 'radius'})
-ENVIRONMENT_FIELDS = frozenset({'gameMinutes', 'environmentType', 'source'})
-DIAGNOSTIC_MATERIAL_FIELDS = frozenset({'root', 'unportedClass', 'reasons'})
-CAPTURED_BY_PATTERN = re.compile(r'^executor:03-\d{2}$')
-MAXIMUM_SAFE_INTEGER = 2 ** 53 - 1
-WINDOW_KEY_PREFIX = 'window:'
-SIDE_BY_SIDE_ARTIFACTS_FOLDER = ('artifacts', 'side-by-side')
-SANDBOX_IMAGE_FOLDER = 'sandbox'
+AUDIO_RECORD_FIELDS = SIDE_BY_SIDE_RECORD_FIELDS | {'role', 'sourcePackage', 'sourceObject', 'sourceSha256'}
+DISPLAYED_TABLE_ROWS_FIELDS = frozenset({'tableKey', 'rowIds'})
+TABLE_KEY_PREFIX = 'table:'
+REVIEWER_PATTERN = re.compile(r'^(?:owner|reviewer:[A-Za-z0-9][A-Za-z0-9:._-]{0,127})$')
+MINIMAP_PART = 'minimap'
 NATIVE_SELECTION_FIELDS_BY_KIND = {
     'tile': frozenset({'route', 'map'}),
     'npc': frozenset({'viewer', 'searchText', 'expectedMeshText', 'expectedTextureTexts'}),
@@ -45,6 +41,7 @@ NATIVE_SELECTION_FIELDS_BY_KIND = {
     'skill': frozenset({'viewer', 'skillId', 'level'}),
     'window': frozenset({'route', 'window'}),
     'minimap': frozenset({'route', 'window', 'map'}),
+    'audio': frozenset({'route', 'role'}),
 }
 NATIVE_SELECTION_CHOICES_BY_KIND = {
     'tile': {'route': ('offline-debug-startup', 'server-world')},
@@ -53,24 +50,10 @@ NATIVE_SELECTION_CHOICES_BY_KIND = {
     'skill': {'viewer': ('sv',)},
     'window': {'route': ('server-world',)},
     'minimap': {'route': ('server-world',)},
+    'audio': {'route': ('listen',), 'role': AUDIO_ROLES},
 }
 NATIVE_SELECTION_INTEGER_FIELDS = frozenset({'itemId', 'skillId', 'level'})
 NATIVE_SELECTION_TEXT_LIST_FIELDS = frozenset({'expectedTextureTexts', 'expectedMeshTexts'})
-MINIMAP_PART = 'minimap'
-
-
-class SideBySideCheckRecordError(ValueError):
-    pass
-
-
-class RecordContext:
-    def __init__(self, part, identity, path):
-        self.part = part
-        self.identity = identity
-        self.path = path
-
-    def refuse(self, rule):
-        raise SideBySideCheckRecordError(f'side-by-side record {self.identity} of part {self.part} {rule}: {self.path}')
 
 
 def require_known_part(part):
@@ -88,127 +71,23 @@ def current_reference_tree_lock_sha256(project_root):
     return reference_client_build(read_reference_client_lock(lock_path))['referenceTreeLockSha256']
 
 
-def is_sha256(value):
-    return isinstance(value, str) and SHA256_PATTERN.fullmatch(value) is not None
+def record_identity(record, part):
+    if part == AUDIO_PART:
+        return record['key'], record['role'], record['sourceSha256']
+    return (record['key'],)
 
 
-def is_non_empty_text(value):
-    return isinstance(value, str) and value.strip() != ''
-
-
-def is_finite_number(value):
-    return type(value) in (int, float) and math.isfinite(value)
-
-
-def is_positive_integer(value):
-    return type(value) is int and 0 < value <= MAXIMUM_SAFE_INTEGER
-
-
-def is_non_negative_integer(value):
-    return type(value) is int and 0 <= value <= MAXIMUM_SAFE_INTEGER
-
-
-def record_identity(record):
-    return record['key']
-
-
-def describe_identity(record):
-    key = record.get('key') if isinstance(record, dict) else None
-    return repr(key)
-
-
-def require_sha256_fields(value, fields, owner, context):
-    for field in fields:
-        if not is_sha256(value[field]):
-            context.refuse(f'{owner} {field} must be 64 lowercase hex characters, not {value[field]!r}')
-
-
-def require_exact_fields(value, fields, owner, context):
-    if not (isinstance(value, dict) and set(value) == fields):
-        context.refuse(f'{owner} must hold exactly {", ".join(sorted(fields))}')
-
-
-def require_confined_artifact_path(value, folder_parts, owner, context):
-    try:
-        require_portable_relative_path(value)
-    except StorePathError:
-        context.refuse(f'{owner} must be a portable repository-relative path, not {value!r}')
-    path_parts = tuple(value.split('/'))
-    if not (len(path_parts) > len(folder_parts) and path_parts[:len(folder_parts)] == folder_parts):
-        context.refuse(f'{owner} must stay under {"/".join(folder_parts)}/, not {value!r}')
-
-
-def require_capture_identity(half, owner, context):
-    if not (isinstance(half['capturedBy'], str) and CAPTURED_BY_PATTERN.fullmatch(half['capturedBy'])):
-        context.refuse(f'{owner} capturedBy must match {CAPTURED_BY_PATTERN.pattern}, not {half["capturedBy"]!r}')
-    if not is_riga_timestamp(half['capturedAtRiga']):
-        context.refuse(f'{owner} capturedAtRiga must be ISO 8601 with the Riga offset, not {half["capturedAtRiga"]!r}')
-
-
-def validate_viewport(viewport, context):
-    require_exact_fields(viewport, VIEWPORT_FIELDS, 'sandboxHalf.viewport', context)
-    if not all(is_positive_integer(viewport[field]) for field in VIEWPORT_FIELDS):
-        context.refuse('sandboxHalf.viewport width and height must be positive integers')
-
-
-def validate_camera_pose(camera_pose, context):
-    if camera_pose is None:
-        return
-    require_exact_fields(camera_pose, CAMERA_POSE_FIELDS, 'sandboxHalf.cameraPose', context)
-    target = camera_pose['target']
-    if not (isinstance(target, list) and len(target) == 3 and all(is_finite_number(component) for component in target)):
-        context.refuse('sandboxHalf.cameraPose target must be three finite numbers')
-    if not all(is_finite_number(camera_pose[field]) for field in ('alpha', 'beta', 'radius')):
-        context.refuse('sandboxHalf.cameraPose alpha, beta and radius must be finite numbers')
-
-
-def validate_environment(environment, context):
-    if environment is None:
-        return
-    require_exact_fields(environment, ENVIRONMENT_FIELDS, 'sandboxHalf.environment', context)
-    if not (is_finite_number(environment['gameMinutes']) and environment['gameMinutes'] >= 0):
-        context.refuse('sandboxHalf.environment gameMinutes must be a finite number of at least 0')
-    if not is_non_negative_integer(environment['environmentType']):
-        context.refuse('sandboxHalf.environment environmentType must be an integer of at least 0')
-    if not is_non_empty_text(environment['source']):
-        context.refuse('sandboxHalf.environment source must be non-empty text')
-
-
-def validate_diagnostic_materials(record, diagnostic_materials, context):
-    if record['key'].startswith(WINDOW_KEY_PREFIX):
-        if diagnostic_materials is not None:
-            context.refuse('sandboxHalf.diagnosticMaterials must be null for a window key')
-        return
-    if not isinstance(diagnostic_materials, list):
-        context.refuse('sandboxHalf.diagnosticMaterials must be a list for a key that is not a window')
-    for diagnostic_material in diagnostic_materials:
-        require_exact_fields(diagnostic_material, DIAGNOSTIC_MATERIAL_FIELDS, 'sandboxHalf.diagnosticMaterials entry', context)
-        if not (is_non_empty_text(diagnostic_material['root'])
-                and (diagnostic_material['unportedClass'] is None or is_non_empty_text(diagnostic_material['unportedClass']))
-                and isinstance(diagnostic_material['reasons'], list)
-                and all(is_non_empty_text(reason) for reason in diagnostic_material['reasons'])):
-            context.refuse('sandboxHalf.diagnosticMaterials entry needs a root, an unportedClass text or null and a list of reason texts')
-    roots = [diagnostic_material['root'] for diagnostic_material in diagnostic_materials]
-    if roots != sorted(set(roots)):
-        context.refuse('sandboxHalf.diagnosticMaterials must be sorted by root with no repeated root')
-
-
-def validate_image_sandbox_half(record, part, context):
-    half = record['sandboxHalf']
-    require_exact_fields(half, SANDBOX_HALF_FIELDS, 'sandboxHalf', context)
-    require_sha256_fields(half, ('catalogSha256', 'keyContentSha256', 'pngSha256'), 'sandboxHalf', context)
-    require_confined_artifact_path(half['pngPath'], (*SIDE_BY_SIDE_ARTIFACTS_FOLDER, part, SANDBOX_IMAGE_FOLDER), 'sandboxHalf.pngPath',
-                                   context)
-    validate_viewport(half['viewport'], context)
-    validate_camera_pose(half['cameraPose'], context)
-    validate_environment(half['environment'], context)
-    validate_diagnostic_materials(record, half['diagnosticMaterials'], context)
-    require_capture_identity(half, 'sandboxHalf', context)
+def describe_identity(record, part):
+    if not isinstance(record, dict):
+        return repr(None)
+    if part == AUDIO_PART:
+        return repr((record.get('key'), record.get('role'), record.get('sourceSha256')))
+    return repr(record.get('key'))
 
 
 def native_selection_kind(record, part):
-    if part == MINIMAP_PART:
-        return MINIMAP_PART
+    if part in (MINIMAP_PART, AUDIO_PART):
+        return part
     return record['key'].split(':', 1)[0]
 
 
@@ -232,47 +111,123 @@ def validate_native_selection(record, part, context):
             context.refuse(f'nativeSelection {field} is not valid for a {kind} key: {value!r}')
 
 
-def validate_sandbox_half_history(record, context):
-    history = record['sandboxHalfHistory']
-    if not isinstance(history, list):
-        context.refuse('sandboxHalfHistory must be a list')
-    for entry in history:
-        require_exact_fields(entry, SANDBOX_HALF_HISTORY_FIELDS, 'sandboxHalfHistory entry', context)
-        require_sha256_fields(entry, sorted(SANDBOX_HALF_HISTORY_FIELDS - {'capturedAtRiga'}), 'sandboxHalfHistory entry', context)
-        if not is_riga_timestamp(entry['capturedAtRiga']):
-            context.refuse('sandboxHalfHistory entry capturedAtRiga must be ISO 8601 with the Riga offset')
-
-
-def validate_verdict(record, context):
-    if record['verdict'] not in SIDE_BY_SIDE_VERDICTS:
-        context.refuse(f'verdict must be one of {", ".join(SIDE_BY_SIDE_VERDICTS)}, not {record["verdict"]!r}')
-    if record['reason'] in COMPUTED_UNVERIFIED_REASONS:
-        context.refuse(f'reason {record["reason"]} is computed by the report and is never stored')
-    if record['reason'] not in STORED_UNVERIFIED_REASONS:
-        context.refuse(f'unverified reason must be one of {", ".join(STORED_UNVERIFIED_REASONS)}, not {record["reason"]!r}')
+def validate_audio_identity(record, context):
+    if record['role'] not in AUDIO_ROLES:
+        context.refuse(f'role must be one of {", ".join(AUDIO_ROLES)}, not {record["role"]!r}')
+    for field in ('sourcePackage', 'sourceObject'):
+        if not is_non_empty_text(record[field]):
+            context.refuse(f'{field} must be non-empty text')
+    if not is_sha256(record['sourceSha256']):
+        context.refuse(f'sourceSha256 must be 64 lowercase hex characters, not {record["sourceSha256"]!r}')
+    if record['nativeSelection']['role'] != record['role']:
+        context.refuse('nativeSelection role must equal the record role')
     if record['nativeHalf'] is not None:
-        context.refuse('nativeHalf must be null')
-    for field in ('difference', 'suspectedStep', 'reviewer', 'judgedAtRiga'):
-        if record[field] is not None:
-            context.refuse(f'{field} must be null for an unverified record')
+        context.refuse('nativeHalf must be null for an audio record; the owner listens to the native client')
+
+
+def validate_reviewer(record, context):
+    reviewer = record['reviewer']
+    if reviewer is None:
+        if record['judgedAtRiga'] is not None:
+            context.refuse('judgedAtRiga must be null without a reviewer')
+        return
+    capturers = [half['capturedBy'] for half in (record['sandboxHalf'], record['nativeHalf']) if half is not None]
+    if any(reviewer in (capturer, f'reviewer:{capturer}') for capturer in capturers):
+        context.refuse(f'reviewer must differ from the capturer of either half: {reviewer!r}')
+    if not (isinstance(reviewer, str) and REVIEWER_PATTERN.fullmatch(reviewer)):
+        context.refuse(f'reviewer must be owner or reviewer:<agent id>, not {reviewer!r}')
+    if not is_riga_timestamp(record['judgedAtRiga']):
+        context.refuse(f'judgedAtRiga must be ISO 8601 with the Riga offset, not {record["judgedAtRiga"]!r}')
+
+
+def validate_unverified_judgement(record, part, context):
+    reason = record['reason']
+    if reason in COMPUTED_UNVERIFIED_REASONS:
+        context.refuse(f'reason {reason} is computed by the report and is never stored')
+    if reason not in STORED_UNVERIFIED_REASONS:
+        context.refuse(f'unverified reason must be one of {", ".join(STORED_UNVERIFIED_REASONS)}, not {reason!r}')
+    if part == AUDIO_PART and reason != LISTEN_NEEDS_OWNER_REASON:
+        context.refuse(f'audio record unverified reason must be {LISTEN_NEEDS_OWNER_REASON}, not {reason}')
+    if reason in (REVIEW_PENDING_REASON, REVIEWER_UNCERTAIN_REASON) and record['nativeHalf'] is None:
+        context.refuse(f'{reason} needs a nativeHalf')
+    if reason == REVIEWER_UNCERTAIN_REASON:
+        if record['reviewer'] is None:
+            context.refuse(f'{reason} needs a reviewer')
+    elif record['reviewer'] is not None or record['judgedAtRiga'] is not None:
+        context.refuse(f'reviewer and judgedAtRiga must be null for reason {reason}')
+
+
+def validate_judged_verdict(record, part, context):
+    verdict = record['verdict']
+    if record['reason'] is not None:
+        context.refuse(f'{verdict} record must have reason null')
+    if part != AUDIO_PART and record['nativeHalf'] is None:
+        context.refuse(f'{verdict} needs a nativeHalf')
+    if record['reviewer'] is None:
+        context.refuse(f'{verdict} needs a reviewer')
+    if part == AUDIO_PART and record['reviewer'] != OWNER_IDENTITY:
+        context.refuse(f'audio pass or mismatch is accepted only from reviewer {OWNER_IDENTITY}, not {record["reviewer"]!r}')
+    if verdict == 'mismatch':
+        for field in ('difference', 'suspectedStep'):
+            if not is_non_empty_text(record[field]):
+                context.refuse(f'mismatch needs a {field} text')
+
+
+def validate_judgement(record, part, context):
+    verdict = record['verdict']
+    if verdict not in SIDE_BY_SIDE_VERDICTS:
+        context.refuse(f'verdict must be one of {", ".join(SIDE_BY_SIDE_VERDICTS)}, not {verdict!r}')
+    if verdict != 'mismatch' and (record['difference'] is not None or record['suspectedStep'] is not None):
+        context.refuse('difference must be null unless the verdict is mismatch, and so must suspectedStep')
+    if verdict == 'unverified':
+        validate_unverified_judgement(record, part, context)
+    else:
+        validate_judged_verdict(record, part, context)
+    validate_reviewer(record, context)
+
+
+def is_sorted_unique_row_id_list(row_ids):
+    if not (isinstance(row_ids, list) and row_ids):
+        return False
+    if not (all(is_non_negative_integer(row_id) for row_id in row_ids) or all(is_non_empty_text(row_id) for row_id in row_ids)):
+        return False
+    return all(earlier < later for earlier, later in zip(row_ids, row_ids[1:]))
+
+
+def validate_displayed_table_rows(displayed_table_rows, context):
+    if not isinstance(displayed_table_rows, list):
+        context.refuse('displayedTableRows must be a list')
+    for entry in displayed_table_rows:
+        require_exact_fields(entry, DISPLAYED_TABLE_ROWS_FIELDS, 'displayedTableRows entry', context)
+        if not (is_catalog_key(entry['tableKey']) and entry['tableKey'].startswith(TABLE_KEY_PREFIX)):
+            context.refuse(f'displayedTableRows tableKey must be a table: catalog key, not {entry["tableKey"]!r}')
+        if not is_sorted_unique_row_id_list(entry['rowIds']):
+            context.refuse(f'displayedTableRows {entry["tableKey"]} rowIds must be a non-empty sorted list of unique row ids, '
+                           'all integers or all texts')
+    table_keys = [entry['tableKey'] for entry in displayed_table_rows]
+    if table_keys != sorted(set(table_keys)):
+        context.refuse('displayedTableRows must be sorted by tableKey with no repeated tableKey')
 
 
 def validate_side_by_side_record(record, part, path, reference_tree_lock_sha256):
     require_known_part(part)
-    context = RecordContext(part, describe_identity(record), path)
-    require_exact_fields(record, SIDE_BY_SIDE_RECORD_FIELDS, 'record', context)
+    context = RecordContext(part, describe_identity(record, part), path)
+    require_exact_fields(record, AUDIO_RECORD_FIELDS if part == AUDIO_PART else SIDE_BY_SIDE_RECORD_FIELDS, 'record', context)
     if not is_catalog_key(record['key']):
         context.refuse('key must be a catalog key')
     validate_native_selection(record, part, context)
-    validate_verdict(record, context)
-    validate_image_sandbox_half(record, part, context)
-    validate_sandbox_half_history(record, context)
-    if record['displayedTableRows'] != []:
-        context.refuse('displayedTableRows must be an empty list')
+    if part == AUDIO_PART:
+        validate_audio_identity(record, context)
+    validate_sandbox_half(record['key'], record['sandboxHalf'], part, context)
+    if record['nativeHalf'] is not None:
+        validate_native_half(record['nativeHalf'], part, reference_tree_lock_sha256, context)
+    validate_judgement(record, part, context)
+    validate_sandbox_half_history(record['sandboxHalfHistory'], part, context)
+    validate_displayed_table_rows(record['displayedTableRows'], context)
     return record
 
 
-def validate_side_by_side_document(document, part, path, reference_tree_lock_sha256):
+def validate_side_by_side_document(document, part, path):
     if not (isinstance(document, dict) and set(document) == SIDE_BY_SIDE_DOCUMENT_FIELDS):
         raise SideBySideCheckRecordError(f'side-by-side document must hold exactly {", ".join(sorted(SIDE_BY_SIDE_DOCUMENT_FIELDS))}: {path}')
     if document['schemaVersion'] != SIDE_BY_SIDE_SCHEMA_VERSION:
@@ -281,8 +236,7 @@ def validate_side_by_side_document(document, part, path, reference_tree_lock_sha
         raise SideBySideCheckRecordError(f'side-by-side document part {document["part"]!r} differs from its path part {part}: {path}')
     if not isinstance(document['records'], list):
         raise SideBySideCheckRecordError(f'side-by-side document records must be a list: {path}')
-    identities = [record_identity(validate_side_by_side_record(record, part, path, reference_tree_lock_sha256))
-                  for record in document['records']]
+    identities = [record_identity(validate_side_by_side_record(record, part, path, None), part) for record in document['records']]
     if len(set(identities)) != len(identities):
         raise SideBySideCheckRecordError(f'side-by-side document of part {part} repeats a record identity: {path}')
     if identities != sorted(identities):
@@ -305,21 +259,35 @@ def read_side_by_side_records(project_root, part):
     path = side_by_side_checks_path(project_root, part)
     if not path.is_file():
         return []
-    return validate_side_by_side_document(decode_side_by_side_document(path), part, path, None)['records']
+    return validate_side_by_side_document(decode_side_by_side_document(path), part, path)['records']
+
+
+def record_with_writer_history(record, stored_record, part, path):
+    stored_history = [] if stored_record is None else stored_record['sandboxHalfHistory']
+    if record['sandboxHalfHistory'] not in ([], stored_history):
+        raise SideBySideCheckRecordError(f'side-by-side record {describe_identity(record, part)} of part {part} sandboxHalfHistory is kept by '
+                                         f'the writer and must be empty or equal the stored history: {path}')
+    history = list(stored_history)
+    if stored_record is not None and stored_record['sandboxHalf'] != record['sandboxHalf']:
+        history.append(sandbox_half_history_entry(stored_record['sandboxHalf'], part))
+    return {**record, 'sandboxHalfHistory': history}
 
 
 def write_side_by_side_records(project_root, part, records):
     path = side_by_side_checks_path(project_root, part)
+    has_native_half = any(isinstance(record, dict) and record.get('nativeHalf') is not None for record in records)
+    reference_tree_lock_sha256 = current_reference_tree_lock_sha256(project_root) if has_native_half else None
     for record in records:
-        validate_side_by_side_record(record, part, path, None)
-    records_by_identity = {record_identity(record): record for record in read_side_by_side_records(project_root, part)}
-    incoming_identities = [record_identity(record) for record in records]
+        validate_side_by_side_record(record, part, path, reference_tree_lock_sha256)
+    incoming_identities = [record_identity(record, part) for record in records]
     if len(set(incoming_identities)) != len(incoming_identities):
         raise SideBySideCheckRecordError(f'side-by-side records written for part {part} repeat a record identity: {path}')
-    for record in records:
-        records_by_identity[record_identity(record)] = record
+    stored_records_by_identity = {record_identity(record, part): record for record in read_side_by_side_records(project_root, part)}
+    records_by_identity = dict(stored_records_by_identity)
+    for identity, record in zip(incoming_identities, records):
+        records_by_identity[identity] = record_with_writer_history(record, stored_records_by_identity.get(identity), part, path)
     document = {'schemaVersion': SIDE_BY_SIDE_SCHEMA_VERSION, 'part': part,
                 'records': [records_by_identity[identity] for identity in sorted(records_by_identity)]}
-    validate_side_by_side_document(document, part, path, None)
+    validate_side_by_side_document(document, part, path)
     replace_file(path, canonical_json_bytes(document))
     return document
