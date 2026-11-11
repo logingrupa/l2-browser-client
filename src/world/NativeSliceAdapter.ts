@@ -14,10 +14,14 @@ export interface NativeSliceCollisionCylinder {
   readonly height: number;
 }
 
+export interface NativeSliceMoveTypes {
+  readonly walk: number;
+  readonly run: number;
+}
+
 const sandboxActorSpacingMetres = 1.4;
-const walkMoveType = 0;
-const runMoveType = 1;
 const localCollisionAbsentReason = "local-collision-cylinder-absent";
+const localMoveTypesAbsentReason = "local-move-types-absent";
 const velocityWithoutAccelerationRampRoutine = "APawn::calcVelocity 0x10639950";
 const runStartAtWalkSpeedRoutine = "APawn::GetCurSpeed 0x1061eaf0 (MoveTimer <= WalkAnimFrameInMove / 30)";
 
@@ -64,15 +68,17 @@ export class NativeSliceAdapter implements GameWorldAdapter {
   private readonly walkSupported: boolean;
   private readonly specialAttackPreviewSupported: boolean;
   private readonly localCollision: NativeSliceCollisionCylinder | null;
+  private readonly moveTypes: NativeSliceMoveTypes | null;
   constructor(origin: WorldPosition, upperItem: number | null = null,
     presentation: { displayName: string; appearanceId: string } = { displayName: "Human male fighter", appearanceId: "native-human-fighter" },
-    locomotion: { walkSupported: boolean; specialAttackPreviewSupported?: boolean; speed?: NativeSliceSpeedProfile; collision?: NativeSliceCollisionCylinder } = { walkSupported: false }) {
+    locomotion: { walkSupported: boolean; specialAttackPreviewSupported?: boolean; speed?: NativeSliceSpeedProfile; collision?: NativeSliceCollisionCylinder; moveTypes?: NativeSliceMoveTypes } = { walkSupported: false }) {
     this.walkSupported = locomotion.walkSupported === true;
     const collision = locomotion.collision ?? null;
     if (collision !== null && !([collision.radius, collision.height].every(value => Number.isFinite(value) && value > 0))) {
       throw new Error("Invalid native slice collision cylinder.");
     }
     this.localCollision = collision;
+    this.moveTypes = locomotion.moveTypes ?? null;
     const speed = locomotion.speed ?? SYNTHETIC_SLICE_SPEED;
     if (![speed.walkMetresPerSecond, speed.runMetresPerSecond, speed.walkSourceUnitsPerSecond, speed.runSourceUnitsPerSecond].every(value => Number.isFinite(value) && value > 0) ||
       !Number.isFinite(speed.runStartSeconds) || speed.runStartSeconds < 0) throw new Error("Invalid native slice speed profile.");
@@ -184,11 +190,12 @@ export class NativeSliceAdapter implements GameWorldAdapter {
     const origin = command.origin ?? player.position, destination = command.position;
     if (player.health <= 0 || ![origin.x, origin.y, origin.z, destination.x, destination.y, destination.z].every(Number.isFinite)) return;
     if (this.localCollision === null) { this.emit(commandRejectedEvent(command.type, localCollisionAbsentReason)); return; }
+    if (this.moveTypes === null) { this.emit(commandRejectedEvent(command.type, localMoveTypesAbsentReason)); return; }
     this.localMoveIssued = true;
     const { actionPreview, actionTargetId, ...ordinary } = player;
     if (actionPreview !== undefined || actionTargetId !== undefined || player.animation !== "idle") this.update({ ...ordinary, animation: "idle" });
     this.emit({ type: "move", entityId: player.id, origin: worldPositionToSource(origin), destination: worldPositionToSource(destination),
-      moveType: this.locomotionMode === "walk" ? walkMoveType : runMoveType,
+      moveType: this.locomotionMode === "walk" ? this.moveTypes.walk : this.moveTypes.run,
       speeds: { walk: this.speed.walkSourceUnitsPerSecond, run: this.speed.runSourceUnitsPerSecond },
       collision: { radius: this.localCollision.radius, height: this.localCollision.height } });
   }

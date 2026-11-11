@@ -10,12 +10,13 @@ import type { NativeActionCueCoverage } from "../../src/audio/nativeActionCuePre
 import type { AssetPackage } from "../../src/assets/package/readAssetPackage";
 import { nativeVisualClips, nativeVisualFixture } from "../fixtures/nativeVisualFixture";
 import { itemlessEquippedItemSource } from "../fixtures/nativeEquippedItemSourceFixture";
+import { committedMoveTypes } from "../fixtures/movement/pawnWorldFixtures";
 
 const releases: (() => void)[] = [];
 afterEach(() => { for (const release of releases.splice(0).reverse()) release(); });
 function createAdapter(supported = true) {
   const adapter = new NativeSliceAdapter({ x: 2, y: 3, z: 4 }, null, undefined,
-    { walkSupported: true, specialAttackPreviewSupported: supported, collision: { radius: 9, height: 23 } });
+    { walkSupported: true, specialAttackPreviewSupported: supported, collision: { radius: 9, height: 23 }, moveTypes: committedMoveTypes });
   releases.push(() => adapter.dispose()); return adapter;
 }
 const player = (adapter: NativeSliceAdapter) => adapter.getInitialState().find(entity => entity.id === "local-player")!;

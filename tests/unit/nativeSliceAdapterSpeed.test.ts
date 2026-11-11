@@ -3,12 +3,14 @@ import {
   ACIS_HUMAN_FIGHTER_SPEED, NativeSliceAdapter, SYNTHETIC_SLICE_SPEED, nativeSliceSpeedProfile,
 } from "../../src/world/NativeSliceAdapter";
 import type { WorldEvent } from "../../src/world/worldTypes";
+import { createMovementPresenter } from "../../src/scene/world/movement/movementPresenter";
+import { boxVolumeWorld, committedMoveTypes, floorSlab, pawnRules } from "../fixtures/movement/pawnWorldFixtures";
 
 const origin = { x: 0, y: 0, z: 0 };
 const player = (adapter: NativeSliceAdapter) => adapter.getInitialState().find(entity => entity.id === "local-player")!;
 const native = nativeSliceSpeedProfile("human-male-fighter", 100);
 function adapter(walkSupported = true) {
-  return new NativeSliceAdapter(origin, null, undefined, { walkSupported, speed: native, collision: { radius: 9, height: 23 } });
+  return new NativeSliceAdapter(origin, null, undefined, { walkSupported, speed: native, collision: { radius: 9, height: 23 }, moveTypes: committedMoveTypes });
 }
 
 describe("native slice walk/run speed (aCis server data)", () => {
@@ -35,14 +37,28 @@ describe("native slice walk/run speed (aCis server data)", () => {
     expect(native.isSourced).toBe(true);
   });
 
-  it("sends walk 80 and run 115 source units per second in every move record, with moveType 0 walking and 1 running", () => {
+  it("sends walk 80 and run 115 source units per second in every move record, with the committed walk and run move types", () => {
     const value = adapter(), events: WorldEvent[] = [];
     value.subscribe(event => events.push(event));
     value.dispatch({ type: "move-local", position: { x: 0, y: 0, z: 10 } });
     value.dispatch({ type: "set-locomotion", mode: "walk" });
     value.dispatch({ type: "move-local", position: { x: 0, y: 0, z: 10 } });
     const moves = events.flatMap(event => event.type === "move" ? [[event.moveType, event.speeds]] : []);
-    expect(moves).toEqual([[1, { walk: 80, run: 115 }], [0, { walk: 80, run: 115 }]]);
+    expect(moves).toEqual([[pawnRules.pawn.runMoveType, { walk: 80, run: 115 }], [pawnRules.pawn.walkMoveType, { walk: 80, run: 115 }]]);
     expect(player(value).position).toEqual(origin);
+  });
+
+  it("has its run move record presented at run speed by the movement presenter reading the same rules", () => {
+    const value = adapter();
+    const presenter = createMovementPresenter({
+      collisionWorld: boxVolumeWorld([floorSlab(0)]), rules: pawnRules, reportIntent: () => undefined,
+      pawnTraits: () => ({ isLocalPlayer: false, walkAnimationFramesInMove: null, flies: false }),
+    });
+    value.subscribe(event => presenter.applyEvent(event));
+    value.dispatch({ type: "move-local", origin: { x: 0, y: .03, z: 0 }, position: { x: 0, y: .03, z: 10 } });
+    const frameCount = 30, frameSeconds = 1 / 60;
+    for (let frame = 0; frame < frameCount; frame += 1) presenter.advance(frameSeconds);
+    const travelled = presenter.inspection().pawns[0]!.feetPosition.y;
+    expect(travelled).toBeCloseTo(115 * frameCount * frameSeconds, 0);
   });
 });

@@ -3,16 +3,18 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { NativeSliceAdapter } from "../../src/world/NativeSliceAdapter";
 import { reportedHeadingNotIntegerReason, reportedPositionNotFiniteReason } from "../../src/world/sandboxCommands";
 import type { WorldEvent } from "../../src/world/worldTypes";
+import { committedMoveTypes } from "../fixtures/movement/pawnWorldFixtures";
 
 const origin = { x: 2, y: 3, z: 4 };
 const collision = { radius: 9, height: 23 };
+const moveTypes = committedMoveTypes;
 function player(adapter: NativeSliceAdapter) { return adapter.getInitialState().find(entity => entity.id === "local-player")!; }
-function movingAdapter() { return new NativeSliceAdapter(origin, null, undefined, { walkSupported: true, collision }); }
+function movingAdapter() { return new NativeSliceAdapter(origin, null, undefined, { walkSupported: true, collision, moveTypes }); }
 function recorded(adapter: NativeSliceAdapter) { const events: WorldEvent[] = []; adapter.subscribe(event => events.push(event)); return events; }
 
 describe("native slice adapter boundary", () => {
   it("answers move-local with one move record in source units and moves no entity itself", () => {
-    const vector = new Vector3(2, 3, 4), adapter = new NativeSliceAdapter(vector, 22, undefined, { walkSupported: false, collision });
+    const vector = new Vector3(2, 3, 4), adapter = new NativeSliceAdapter(vector, 22, undefined, { walkSupported: false, collision, moveTypes });
     expect(player(adapter)).toMatchObject({ position: origin, appearanceId: "native-human-fighter", equipment: { upper: 22 } });
     vector.x = 999;
     const snapshot = player(adapter); Reflect.set(snapshot.position, "x", 123);
@@ -20,7 +22,7 @@ describe("native slice adapter boundary", () => {
     const events = recorded(adapter);
     adapter.dispatch({ type: "move-local", position: new Vector3(2.7, 900, 4) });
     expect(events).toEqual([{ type: "move", entityId: "local-player", origin: { x: 200, y: 400, z: 300 }, destination: { x: 270, y: 400, z: 90000 },
-      moveType: 1, speeds: { walk: 70, run: 70 }, collision }]);
+      moveType: moveTypes.run, speeds: { walk: 70, run: 70 }, collision }]);
     expect(player(adapter)).toMatchObject({ position: origin, animation: "idle" });
     adapter.dispose();
   });
@@ -79,6 +81,13 @@ describe("native slice adapter boundary", () => {
     adapter.dispatch({ type: "move-local", position: { x: 5, y: 3, z: 4 } });
     expect(events).toEqual([{ type: "command-rejected", commandType: "move-local", reason: "local-collision-cylinder-absent" }]);
     expect(() => new NativeSliceAdapter(origin, null, undefined, { walkSupported: false, collision: { radius: 0, height: 23 } })).toThrow("collision cylinder");
+    adapter.dispose();
+  });
+
+  it("refuses move-local with a named reason when the movement rules gave it no walk and run move types", () => {
+    const adapter = new NativeSliceAdapter(origin, null, undefined, { walkSupported: true, collision }), events = recorded(adapter);
+    adapter.dispatch({ type: "move-local", position: { x: 5, y: 3, z: 4 } });
+    expect(events).toEqual([{ type: "command-rejected", commandType: "move-local", reason: "local-move-types-absent" }]);
     adapter.dispose();
   });
 

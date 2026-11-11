@@ -61,6 +61,7 @@ export interface PawnMovementRules {
   readonly substeps: PawnSubstepRules;
   readonly arrivalSlack: number;
   readonly runStartFramesPerSecond: number;
+  readonly walkMoveType: number;
   readonly runMoveType: number;
   readonly localPlayerYawRate: number;
   readonly otherPawnYawRate: number;
@@ -173,6 +174,10 @@ export function parseMovementNativeRules(document: unknown): MovementNativeRules
     minimum: numberRule("movement.floorBand.minimum"), maximum: numberRule("movement.floorBand.maximum"), target: numberRule("movement.floorBand.target"),
   };
   if (!(floorBand.minimum <= floorBand.target && floorBand.target <= floorBand.maximum)) throw new MovementRulesError("movement.floorBand target lies outside its band.");
+  const walkMoveType = numberRule("movement.walkMoveType"), runMoveType = numberRule("movement.runMoveType");
+  if (!Number.isInteger(walkMoveType) || !Number.isInteger(runMoveType) || walkMoveType === runMoveType) {
+    throw new MovementRulesError("movement.walkMoveType and movement.runMoveType must be two different integers.");
+  }
   return {
     rows,
     pawn: {
@@ -202,7 +207,8 @@ export function parseMovementNativeRules(document: unknown): MovementNativeRules
       },
       arrivalSlack: numberRule("movement.arrivalSlack"),
       runStartFramesPerSecond: numberRule("movement.runStart"),
-      runMoveType: numberRule("movement.runMoveType"),
+      walkMoveType,
+      runMoveType,
       localPlayerYawRate: numberRule("movement.yawRate.localPlayer"),
       otherPawnYawRate: numberRule("movement.yawRate.otherPawn"),
       snapDistance: numberRule("movement.snapThresholds"),

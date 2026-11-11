@@ -12,6 +12,7 @@ type SourceTriple = readonly [number, number, number];
 export const syntheticPawnRadius = 9;
 export const syntheticPawnHalfHeight = 23;
 export const pawnRules: MovementNativeRules = committedMovementRules();
+export const committedMoveTypes = { walk: pawnRules.pawn.walkMoveType, run: pawnRules.pawn.runMoveType };
 
 const boxDeclaration = (kindCode: number, decisionCode: number, centre: SourceTriple, halfSize: SourceTriple, rotation: SourceTriple): BoxVolumeDeclaration => ({
   kindCode, decisionCode, location: centre, rotation, drawScale3D: [halfSize[0] / boxHalfExtent, halfSize[1] / boxHalfExtent, halfSize[2] / boxHalfExtent],

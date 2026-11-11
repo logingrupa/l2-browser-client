@@ -158,7 +158,8 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       { displayName: playerProfile.name, appearanceId }, { walkSupported: locomotionClips.walkClip !== null,
         specialAttackPreviewSupported: specialAttackPreview.clip !== null,
         speed: nativeSliceSpeedProfile(playerProfile.id, playerProfile.sourceUnitsPerMetre),
-        collision: { radius: playerProfile.collisionRadius, height: playerProfile.collisionHeight } });
+        collision: { radius: playerProfile.collisionRadius, height: playerProfile.collisionHeight },
+        moveTypes: { walk: committedMovementRules.pawn.walkMoveType, run: committedMovementRules.pawn.runMoveType } });
     boundaryReleases.push(() => adapter.dispose());
     const movementLifetime = new AbortController();
     boundaryReleases.push(() => movementLifetime.abort());

@@ -149,4 +149,15 @@ describe("movement native rules recipe", () => {
     expect(() => parseMovementNativeRules(withFirstRow({ status: "confirmed-interlude", interludeEvidence: null }))).toThrow(/without interludeEvidence/);
     expect(() => parseMovementNativeRules({ ...document, rows: [...document.rows, document.rows[0]] })).toThrow(/twice/);
   });
+
+  it("reads one walk and one run move type and refuses them equal or fractional", () => {
+    const document = readCommittedMovementRulesDocument() as { rows: Record<string, unknown>[] };
+    const withWalkMoveType = (walkMoveType: number) => ({
+      ...document, rows: document.rows.map(row => row.id === "movement.walkMoveType" ? { ...row, value: walkMoveType, runtimeDefault: walkMoveType } : row),
+    });
+    const rules = parseMovementNativeRules(document);
+    expect(rules.pawn.walkMoveType).not.toBe(rules.pawn.runMoveType);
+    expect(() => parseMovementNativeRules(withWalkMoveType(rules.pawn.runMoveType))).toThrow(/two different integers/);
+    expect(() => parseMovementNativeRules(withWalkMoveType(.5))).toThrow(/two different integers/);
+  });
 });
