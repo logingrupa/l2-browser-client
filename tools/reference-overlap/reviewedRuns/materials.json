@@ -4539,6 +4539,15 @@
           [12,"d479230b6927b8d38745d4b424998b2c9771a0a9f428d5a54fa040156335fb7e","1ca0d6d71253f28dc29330928307d3d77aac2ffe529babc4894e934b45de3603",false,"Our CompileState initial literal vs reference light uniforms, hair particles and shadow projector literals; no shared identifiers or strings."]
         ]
       }
+    },
+    {
+      "reviewedOn": "2026-11-11",
+      "method": "A run left open by the first escalation (one provenance verdict at medium confidence) went to a second escalation of three fresh-context Claude reviewers (idiom, side-by-side provenance, skeptic) on 2026-11-11; it is recorded only because all three said generic with high confidence. The owner may revoke any entry.",
+      "files": {
+        "src/materials/ue2/model/stagePlan.ts": [
+          [13,"39b47aaa4a08dd68133aab0945bfd2f350d8e9d0b25636060990e544fe1af06a","7998cd2a26bd83b6786603c3cd3b05e2c6c2430588bbde61d19a0720370f5bf9",true,"Shared shape is only the standard depth-first in-progress guard; ours checks the cycle first, fails with a named cycle and memoises per node and modifiers; names differ; no reference names in history."]
+        ]
+      }
     }
   ]
 }
