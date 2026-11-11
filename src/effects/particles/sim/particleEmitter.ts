@@ -35,35 +35,54 @@ export function createEmitterRandomStream(sessionSeed: number, effectSerial: num
   return createRandomStream(deriveStreamSeed(sessionSeed, "emitter", [effectSerial, emitterOrdinal]));
 }
 
-type EmitterFeatureCheck = readonly [property: string, value: boolean | number, isUnported: boolean];
+export interface EmitterFeatureCheck {
+  readonly property: string;
+  readonly value: boolean | number;
+  readonly isUnported: boolean;
+}
 
-const cameraFacingDirectionUsages: readonly number[] = [DIRECTION_USAGE.none, DIRECTION_USAGE.scale];
+const featureCheck = (property: string, value: boolean | number, isUnported: boolean): EmitterFeatureCheck => ({ property, value, isUnported });
+
+export const CAMERA_FACING_DIRECTION_USAGES: readonly number[] = [DIRECTION_USAGE.none, DIRECTION_USAGE.scale];
 
 function listSpriteFeatureChecks(record: ParticleEmitterRecord): EmitterFeatureCheck[] {
   if (record.emitterClass !== "Engine.SpriteEmitter") return [];
   const atlasCellCount = Math.max(1, record.TextureUSubdivisions) * Math.max(1, record.TextureVSubdivisions);
   const ageDrivenAtlasBlends = record.BlendBetweenSubdivisions && !record.UseRandomSubdivision && atlasCellCount > 1;
   return [
-    ["UseDirectionAs", record.UseDirectionAs, !cameraFacingDirectionUsages.includes(record.UseDirectionAs)],
-    ["BlendBetweenSubdivisions", record.BlendBetweenSubdivisions, ageDrivenAtlasBlends],
+    featureCheck("UseDirectionAs", record.UseDirectionAs, !CAMERA_FACING_DIRECTION_USAGES.includes(record.UseDirectionAs)),
+    featureCheck("BlendBetweenSubdivisions", record.BlendBetweenSubdivisions, ageDrivenAtlasBlends),
   ];
 }
 
-export function listUnportedEmitterFeatures(record: ParticleEmitterRecord): UnportedEmitterFeature[] {
-  const unported: EmitterFeatureCheck[] = [
-    ["UseCollision", record.UseCollision, record.UseCollision],
-    ["UseCollisionPlanes", record.UseCollisionPlanes, record.UseCollisionPlanes],
-    ["UseActorForces", record.UseActorForces, record.UseActorForces],
-    ["MeshSpawning", record.MeshSpawning, record.MeshSpawning !== 0],
-    ["UseSkeletalLocationAs", record.UseSkeletalLocationAs, record.UseSkeletalLocationAs !== 0],
-    ["SpawnFromOtherEmitter", record.SpawnFromOtherEmitter, record.SpawnFromOtherEmitter >= 0],
-    ["UseRotationFrom", record.UseRotationFrom, record.UseRotationFrom === ROTATION_SOURCE.normal],
-    ["CoordinateSystem", record.CoordinateSystem, record.CoordinateSystem === COORDINATE_SYSTEM.relativeRotation],
-    ["WeatherEffect", record.WeatherEffect, record.WeatherEffect],
+function listMeshFeatureChecks(record: ParticleEmitterRecord): EmitterFeatureCheck[] {
+  if (record.emitterClass !== "Engine.MeshEmitter") return [];
+  return [featureCheck("UseMeshBlendMode", record.UseMeshBlendMode, record.UseMeshBlendMode)];
+}
+
+export function listEmitterFeatureChecks(record: ParticleEmitterRecord): EmitterFeatureCheck[] {
+  return [
+    featureCheck("UseCollision", record.UseCollision, record.UseCollision),
+    featureCheck("UseCollisionPlanes", record.UseCollisionPlanes, record.UseCollisionPlanes),
+    featureCheck("UseActorForces", record.UseActorForces, record.UseActorForces),
+    featureCheck("MeshSpawning", record.MeshSpawning, record.MeshSpawning !== 0),
+    featureCheck("UseSkeletalLocationAs", record.UseSkeletalLocationAs, record.UseSkeletalLocationAs !== 0),
+    featureCheck("SpawnFromOtherEmitter", record.SpawnFromOtherEmitter, record.SpawnFromOtherEmitter >= 0),
+    featureCheck("UseRotationFrom", record.UseRotationFrom, record.UseRotationFrom === ROTATION_SOURCE.normal),
+    featureCheck("CoordinateSystem", record.CoordinateSystem, record.CoordinateSystem === COORDINATE_SYSTEM.relativeRotation),
+    featureCheck("WeatherEffect", record.WeatherEffect, record.WeatherEffect),
     ...listSpriteFeatureChecks(record),
+    ...listMeshFeatureChecks(record),
   ];
-  return unported.filter(([, , isUnported]) => isUnported)
-    .map(([property, value]) => ({ reason: `emitter-feature-unported:${property}` as const, property, value }));
+}
+
+export function emitterFeatureGapReason(property: string): EmitterFeatureGapReason {
+  return `emitter-feature-unported:${property}`;
+}
+
+export function listUnportedEmitterFeatures(record: ParticleEmitterRecord): UnportedEmitterFeature[] {
+  return listEmitterFeatureChecks(record).filter(check => check.isUnported)
+    .map(({ property, value }) => ({ reason: emitterFeatureGapReason(property), property, value }));
 }
 
 function particleStorageSpace(coordinateSystem: number): ParticleStorageSpace {

@@ -4,7 +4,10 @@ import json
 import subprocess
 import sys
 
+from collections import Counter
+
 from actors.effect_bundle_packing import native_class_closure, pack_items_by_class_closure
+from actors.emitter_feature_coverage import read_emitter_feature_rules, unported_emitter_feature_reasons
 from actors.npc_requests import CONVERTER_REFUSED_REASON_PREFIX, FAILED_STATUS, GAP_STATUS, TRANSIENT_FAILURES
 from actors.npc_store_records import file_output_record
 from actors.path_free_messages import path_free_reason
@@ -114,6 +117,17 @@ def staged_emitter_classes(manifest):
     return sorted({component['class'] for component in manifest['components']})
 
 
+def staged_emitter_feature_gaps(manifest, feature_rules):
+    return [{'emitter': component['object'], 'reason': reason} for component in manifest['components']
+            for reason in unported_emitter_feature_reasons(component, feature_rules)]
+
+
+def emitter_feature_gap_roots_by_reason(root_outcomes):
+    roots_by_reason = Counter(reason for outcome in root_outcomes.values()
+                              for reason in {gap['reason'] for gap in outcome.get('emitterFeatureGaps', [])})
+    return dict(sorted(roots_by_reason.items()))
+
+
 def unbound_simulated_component_reason(manifest, simulated_emitter_classes):
     for component in manifest['components']:
         if component['class'] not in simulated_emitter_classes:
@@ -132,6 +146,7 @@ class SkillEffectConversionRun:
         self.bindings_by_root = skill_bindings_by_visual_root(self.tables.binding_rows)
         self.ledger = UnitLedger(ledger_root, SKILL_EFFECT_ROOT_STEP, SKILL_EFFECT_ROOT_ALGORITHM_VERSION)
         self.simulated_emitter_classes = read_simulated_emitter_classes(project_root)
+        self.emitter_feature_rules = read_emitter_feature_rules(project_root)
         self.packages = packages or SourcePackages(client_access.root)
         self.tool_identity = {'umodelSha256': UMODEL_SHA256, 'uelibSha256': UELIB_SHA256, 'converterSha256': implementation_hash(),
                               **{path: hashlib.sha256((self.project_root / path).read_bytes()).hexdigest() for path in TOOL_IDENTITY_FILES}}
@@ -202,7 +217,10 @@ class SkillEffectConversionRun:
         if unbound_reason is not None:
             return {**sealed, 'status': GAP_STATUS, 'reason': unbound_reason, 'converted': False}
         status, reason = emitter_class_root_outcome(sealed['emitterClasses'], self.simulated_emitter_classes)
-        return {**sealed, 'status': status, 'reason': reason, 'converted': True}
+        feature_gaps = staged_emitter_feature_gaps(manifest, self.emitter_feature_rules)
+        if status != GAP_STATUS and feature_gaps:
+            status, reason = GAP_STATUS, feature_gaps[0]['reason']
+        return {**sealed, 'status': status, 'reason': reason, 'converted': True, 'emitterFeatureGaps': feature_gaps}
 
     def root_outcomes(self):
         outcomes = {}
@@ -243,7 +261,8 @@ class SkillEffectConversionRun:
         gap_rows = self.write_gap_rows(root_outcomes)
         store = self.write_store_records(root_outcomes)
         return {'store': store, 'gapRowStatuses': {status: sum(1 for row in gap_rows if row['status'] == status)
-                                                   for status in sorted({row['status'] for row in gap_rows})}}
+                                                   for status in sorted({row['status'] for row in gap_rows})},
+                'emitterFeatureGapRoots': emitter_feature_gap_roots_by_reason(root_outcomes)}
 
 
 def binding_of_skill(run, skill_id, level):
