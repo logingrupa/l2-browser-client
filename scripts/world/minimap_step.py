@@ -5,13 +5,17 @@ import struct
 
 from native_assets import UMODEL, Converter, implementation_hash
 from native_assets_lib.gltf import json_bytes
+from native_assets_lib.texture_mips import UnsupportedTextureSource, build_texture_source
 from native_assets_lib.texture_package_118 import read_unreal_package
+from native_assets_lib.texture_source_reader import TEXTURE_FORMAT_UNSUPPORTED_REASON_PREFIX, TEXTURE_LICENSEE_UNSUPPORTED_REASON_PREFIX
+from native_catalog.ue2 import FormatError
 from native_store.catalog_writer import add_store_file, immutable_write, sha256_hex, verify_store_destinations
 from native_store.store_paths import confined_child_path, lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from reference_client_guard import require_reference_client
 from world.minimap_join import (HUNTINGZONE_TABLE_ROLE, MINIMAP_JOIN_ALGORITHM_VERSION, RADAR_PACKAGE_ROLE, SCHEMA_FIELD_MEANING_LABEL,
-                                TOWN_MAP_PACKAGE_ROLE, ZONE_NAME_PACKAGE_ROLE, ZONENAME_TABLE_ROLE, join_minimap_sources, locked_tile_grid)
+                                TEXTURE_SOURCE_GAP_STATUS, TEXTURE_SOURCE_READABLE_STATUS, TOWN_MAP_PACKAGE_ROLE, ZONE_NAME_PACKAGE_ROLE,
+                                ZONENAME_TABLE_ROLE, join_minimap_sources, locked_tile_grid)
 from world.minimap_sources import (MINIMAP_PACKAGE_PATHS, MINIMAP_TABLE_PATHS, MinimapSources, decoded_table_rows, lock_equal_minimap_source_paths,
                                    locked_tile_ids, tile_frame_extent)
 from world.raw_map_step import (PRODUCTS_FOLDER_NAME, RAW_STEP_NAME, read_tile_census_row, read_tile_map_lock_record, require_tile_id,
@@ -35,7 +39,8 @@ TEXTURE_ARCHIVE_NAME = 'asset.l2asset'
 TEXTURE_IMAGE_NAME = 'texture.png'
 PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
 TEXTURE_CLASS_NAME = 'Texture'
-OBJECT_GAP_REASON_PREFIXES = ('texture-licensee-unsupported', 'decode-failed')
+DECODE_FAILED_REASON_PREFIX = 'decode-failed:'
+OBJECT_GAP_REASON_PREFIXES = (TEXTURE_LICENSEE_UNSUPPORTED_REASON_PREFIX, TEXTURE_FORMAT_UNSUPPORTED_REASON_PREFIX, DECODE_FAILED_REASON_PREFIX)
 
 
 class MinimapStepError(ValueError):
@@ -93,13 +98,27 @@ def sealed_minimap(project_root, tile_id, lock_record):
     return receipt['fingerprint'], json.loads(minimap_product_path(ledger, unit_key).read_text(encoding='utf-8'))
 
 
-def read_texture_package_index(client, relative_path):
-    path = require_reference_client(client).require_equal_file(relative_path)
-    package = read_unreal_package(path.read_bytes(), path.name)
+def texture_export_source_status(package, export):
+    try:
+        metadata, _ = build_texture_source(package, export)
+    except UnsupportedTextureSource as error:
+        return {'status': TEXTURE_SOURCE_GAP_STATUS, 'reason': error.reason}
+    except FormatError as error:
+        return {'status': TEXTURE_SOURCE_GAP_STATUS, 'reason': conversion_failure_reason(error)}
+    return {'status': TEXTURE_SOURCE_READABLE_STATUS, 'format': metadata['format']['name']}
+
+
+def texture_package_index(package, relative_path):
     return {'path': relative_path, 'sha256': package.source_hash, 'packageVersion': package.summary['version'],
             'licensee': package.summary['licenseeVersion'], 'packageName': package.package_name,
-            'exports': [{'exportIndex': export['exportIndex'], 'name': export['name'], 'object': export['object']}
+            'exports': [{'exportIndex': export['exportIndex'], 'name': export['name'], 'object': export['object'],
+                         'textureSource': texture_export_source_status(package, export)}
                         for export in package.exports if export['className'] == TEXTURE_CLASS_NAME]}
+
+
+def read_texture_package_index(client, relative_path):
+    path = require_reference_client(client).require_equal_file(relative_path)
+    return texture_package_index(read_unreal_package(path.read_bytes(), path.name), relative_path)
 
 
 def read_minimap_sources(client):
@@ -168,7 +187,7 @@ def tile_minimap(project_root, client, store_root, tile_id, frame, sources, conv
 
 def gap_object_name(gap, tile_join):
     radar_candidates = tile_join['radarCandidates']
-    return radar_candidates[0]['object'] if gap['reason'].split(':')[0] in OBJECT_GAP_REASON_PREFIXES and radar_candidates else None
+    return radar_candidates[0]['object'] if gap['reason'].startswith(OBJECT_GAP_REASON_PREFIXES) and radar_candidates else None
 
 
 def run_minimap_step(project_root, client_root, tile_id, sources=None, converter=None):

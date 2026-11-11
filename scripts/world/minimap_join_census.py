@@ -10,12 +10,11 @@ from collections import Counter
 import hashlib
 import json
 
-from native_assets_lib.texture_mips import REVIEWED_VERSIONS
 from native_store.unit_ledger import run_at_below_normal_priority
 from reference_client_guard import require_reference_client
 from world.committed_world_data import REPOSITORY_ROOT, require_committed_destination, write_committed_world_bytes
-from world.minimap_join import join_minimap_sources, locked_tile_grid, RADAR_PACKAGE_ROLE, TOWN_MAP_PACKAGE_ROLE, ZONE_NAME_PACKAGE_ROLE, \
-    ZONENAME_TABLE_ROLE, HUNTINGZONE_TABLE_ROLE
+from world.minimap_join import (HUNTINGZONE_TABLE_ROLE, RADAR_PACKAGE_ROLE, TEXTURE_SOURCE_READABLE_STATUS, TOWN_MAP_PACKAGE_ROLE, ZONE_NAME_PACKAGE_ROLE,
+                                ZONENAME_TABLE_ROLE, join_minimap_sources, locked_tile_grid)
 from world.minimap_sources import MINIMAP_PACKAGE_PATHS, MINIMAP_TABLE_PATHS, locked_tile_ids, tile_frame_extent
 from world.minimap_step import read_minimap_sources, read_texture_package_index
 from world.raw_map_step import read_tile_map_lock_record
@@ -43,6 +42,11 @@ def extracted_tile_frames(project_root, tile_ids):
     return frames
 
 
+def texture_source_label(export):
+    texture_source = export['textureSource']
+    return texture_source['format'] if texture_source['status'] == TEXTURE_SOURCE_READABLE_STATUS else texture_source['reason']
+
+
 def package_rows(packages):
     rows = []
     for role, path in MINIMAP_PACKAGE_PATHS.items():
@@ -51,8 +55,9 @@ def package_rows(packages):
             rows.append({'role': role, 'path': path, 'lockEqual': False})
             continue
         rows.append({'role': role, 'path': path, 'lockEqual': True, 'sha256': package['sha256'], 'packageVersion': package['packageVersion'],
-                     'licensee': package['licensee'], 'reviewed': (package['packageVersion'], package['licensee']) in REVIEWED_VERSIONS,
-                     'textureExportCount': len(package['exports'])})
+                     'licensee': package['licensee'], 'textureExportCount': len(package['exports']),
+                     'textureSourceCounts': dict(sorted(Counter(texture_source_label(export) for export in package['exports']).items())),
+                     'textureExports': [{'object': export['object'], 'textureSource': export['textureSource']} for export in package['exports']]})
     return rows
 
 

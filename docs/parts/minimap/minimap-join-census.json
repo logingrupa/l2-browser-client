@@ -1,7 +1,7 @@
 {
- "algorithmVersion": 1,
+ "algorithmVersion": 2,
  "gapReasonCounts": {
-  "minimap-join-unresolved:projection": 141,
+  "minimap-join-unresolved:projection": 84,
   "minimap-join-unresolved:radar-texture": 153,
   "minimap-join-unresolved:zone-grid": 153
  },
@@ -31,36 +31,1646 @@
    "lockEqual": true,
    "packageVersion": 118,
    "path": "systextures/L2_RadarMap.utx",
-   "reviewed": false,
    "role": "radar",
    "sha256": "f0050b0663b5286092598c440cbdfcb63d2424e1a9010c9450b616db86924abd",
-   "textureExportCount": 18
+   "textureExportCount": 18,
+   "textureExports": [
+    {
+     "object": "L2_RadarMap.RadarMaps.dark_elven_village",
+     "textureSource": {
+      "reason": "texture-format-unsupported:5",
+      "status": "gap"
+     }
+    },
+    {
+     "object": "L2_RadarMap.RadarMaps.dion_castle_town",
+     "textureSource": {
+      "reason": "texture-format-unsupported:5",
+      "status": "gap"
+     }
+    },
+    {
+     "object": "L2_RadarMap.RadarMaps.dwarven_village",
+     "textureSource": {
+      "reason": "texture-format-unsupported:5",
+      "status": "gap"
+     }
+    },
+    {
+     "object": "L2_RadarMap.RadarMaps.elven_village",
+     "textureSource": {
+      "reason": "texture-format-unsupported:5",
+      "status": "gap"
+     }
+    },
+    {
+     "object": "L2_RadarMap.RadarMaps.floran_village",
+     "textureSource": {
+      "reason": "texture-format-unsupported:5",
+      "status": "gap"
+     }
+    },
+    {
+     "object": "L2_RadarMap.RadarMaps.giran_castle_town",
+     "textureSource": {
+      "reason": "texture-format-unsupported:5",
+      "status": "gap"
+     }
+    },
+    {
+     "object": "L2_RadarMap.RadarMaps.Global",
+     "textureSource": {
+      "format": "DXT1",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "L2_RadarMap.RadarMaps.gludin_village",
+     "textureSource": {
+      "reason": "texture-format-unsupported:5",
+      "status": "gap"
+     }
+    },
+    {
+     "object": "L2_RadarMap.RadarMaps.gludio_castle_town",
+     "textureSource": {
+      "reason": "texture-format-unsupported:5",
+      "status": "gap"
+     }
+    },
+    {
+     "object": "L2_RadarMap.RadarMaps.godard_castle_town",
+     "textureSource": {
+      "reason": "texture-format-unsupported:5",
+      "status": "gap"
+     }
+    },
+    {
+     "object": "L2_RadarMap.RadarMaps.heine",
+     "textureSource": {
+      "reason": "texture-format-unsupported:5",
+      "status": "gap"
+     }
+    },
+    {
+     "object": "L2_RadarMap.RadarMaps.hunters_village",
+     "textureSource": {
+      "reason": "texture-format-unsupported:5",
+      "status": "gap"
+     }
+    },
+    {
+     "object": "L2_RadarMap.RadarMaps.orc_village",
+     "textureSource": {
+      "reason": "texture-format-unsupported:5",
+      "status": "gap"
+     }
+    },
+    {
+     "object": "L2_RadarMap.RadarMaps.rune_village",
+     "textureSource": {
+      "reason": "texture-format-unsupported:5",
+      "status": "gap"
+     }
+    },
+    {
+     "object": "L2_RadarMap.RadarMaps.talkin_island_village",
+     "textureSource": {
+      "reason": "texture-format-unsupported:5",
+      "status": "gap"
+     }
+    },
+    {
+     "object": "L2_RadarMap.RadarMaps.town_of_aden",
+     "textureSource": {
+      "reason": "texture-format-unsupported:5",
+      "status": "gap"
+     }
+    },
+    {
+     "object": "L2_RadarMap.RadarMaps.town_of_oren",
+     "textureSource": {
+      "reason": "texture-format-unsupported:5",
+      "status": "gap"
+     }
+    },
+    {
+     "object": "L2_RadarMap.RadarMaps.town_of_schuttgart",
+     "textureSource": {
+      "reason": "texture-format-unsupported:5",
+      "status": "gap"
+     }
+    }
+   ],
+   "textureSourceCounts": {
+    "DXT1": 1,
+    "texture-format-unsupported:5": 17
+   }
   },
   {
    "licensee": 23,
    "lockEqual": true,
    "packageVersion": 123,
    "path": "systextures/town_map.utx",
-   "reviewed": false,
    "role": "town-map",
    "sha256": "c239eafd3132e65d0d7ac32d9d5d3068e61ab8dcec42192a740655eb220df58c",
-   "textureExportCount": 6
+   "textureExportCount": 6,
+   "textureExports": [
+    {
+     "object": "town_map.Town.town_map_dwarf_t00",
+     "textureSource": {
+      "format": "DXT1",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "town_map.Town.town_map_talking_t00",
+     "textureSource": {
+      "format": "DXT1",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "town_map.Town.town_map_orc_t00",
+     "textureSource": {
+      "format": "DXT1",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "town_map.Town.town_map_darkelf_t00",
+     "textureSource": {
+      "format": "DXT1",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "town_map.Town.town_map_elf_t00",
+     "textureSource": {
+      "format": "DXT1",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "town_map.Icon.icon_i00",
+     "textureSource": {
+      "reason": "texture-format-unsupported:7",
+      "status": "gap"
+     }
+    }
+   ],
+   "textureSourceCounts": {
+    "DXT1": 5,
+    "texture-format-unsupported:7": 1
+   }
   },
   {
    "licensee": 28,
    "lockEqual": true,
    "packageVersion": 123,
    "path": "systextures/l2zonename.utx",
-   "reviewed": true,
    "role": "zone-name",
    "sha256": "ab0eae4e8adaefe1e6dde408247d136848a9665a035a4522e1eb0f224c5a66d7",
-   "textureExportCount": 204
+   "textureExportCount": 204,
+   "textureExports": [
+    {
+     "object": "l2zonename.17_19",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.17_20",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.17_22",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.17_23",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.17_24",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.15_19",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.23_12",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.21_26",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.15_17",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.15_16",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.15_18",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.17_25",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.17_18",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.17_17",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.17_16",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.17_15",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.17_14",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.17_13",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.17_12",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.17_11",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.17_10",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.16_26",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.16_25",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.16_24",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.16_23",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.16_22",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.16_21",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.16_20",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.16_19",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.16_18",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.16_17",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.16_16",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.16_15",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.16_14",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.16_13",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.16_12",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.16_11",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.16_10",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.15_26",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.15_25",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.15_24",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.15_23",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.15_22",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.15_21",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.15_20",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.17_26",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.18_10",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.18_11",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.18_12",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.18_13",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.18_14",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.18_15",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.18_16",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.18_17",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.18_18",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.18_19",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.18_20",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.18_21",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.18_22",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.18_23",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.18_24",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.18_25",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.18_26",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.19_10",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.19_11",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.19_12",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.19_13",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.19_14",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.19_15",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.19_16",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.19_17",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.19_18",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.19_19",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.19_20",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.19_21",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.19_22",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.19_23",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.19_24",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.19_25",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.19_26",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.20_10",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.20_11",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.20_12",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.20_13",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.20_14",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.20_15",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.20_16",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.20_17",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.20_18",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.20_19",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.20_20",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.20_21",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.20_22",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.20_23",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.20_24",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.24_19",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.20_26",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.21_10",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.21_11",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.21_12",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.21_13",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.21_14",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.21_15",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.21_16",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.21_17",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.21_18",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.21_19",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.21_20",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.21_21",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.21_22",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.21_23",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.21_24",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.21_25",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.22_10",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.22_11",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.22_12",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.22_13",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.22_14",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.22_15",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.22_16",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.22_17",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.22_18",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.22_19",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.22_20",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.22_21",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.22_22",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.22_23",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.22_24",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.22_25",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.22_26",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.23_10",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.23_11",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.23_13",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.23_14",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.23_15",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.23_16",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.23_17",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.23_18",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.23_19",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.23_20",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.23_21",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.23_22",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.23_23",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.23_24",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.23_25",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.23_26",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.24_10",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.24_11",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.24_12",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.24_13",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.24_14",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.24_15",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.24_16",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.24_17",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.24_18",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.20_25",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.26_26",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.24_22",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.24_23",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.24_24",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.24_25",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.24_26",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.25_10",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.25_11",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.25_14",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.25_15",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.25_16",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.25_17",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.25_18",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.25_19",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.25_20",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.25_21",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.25_22",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.25_23",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.25_24",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.25_25",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.25_26",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.26_10",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.26_11",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.26_12",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.26_13",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.26_14",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.26_15",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.26_16",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.26_17",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.26_18",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.26_19",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.26_20",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.26_21",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.26_22",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.26_23",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.26_24",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.26_25",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.24_20",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.15_10",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.15_11",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.15_14",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.15_12",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.17_21",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.15_15",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.15_13",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.25_13",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.25_12",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    },
+    {
+     "object": "l2zonename.24_21",
+     "textureSource": {
+      "format": "P8",
+      "status": "readable"
+     }
+    }
+   ],
+   "textureSourceCounts": {
+    "P8": 204
+   }
   }
  ],
  "referenceTreeLockSha256": "1957c96800aa45cb10c984f3f2e6f8d1f5f0b1713f086f20560db01f4d1d2b52",
  "ruleMatchCounts": {
   "huntingzone-name": 0,
-  "huntingzone-start-in-frame": 11,
+  "huntingzone-start-in-frame": 80,
   "tile-id": 153,
   "tile-id-map": 0,
   "zonename-grid": 0,
@@ -91,8 +1701,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -109,8 +1718,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -127,8 +1735,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -145,8 +1752,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -163,8 +1769,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -181,8 +1786,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -199,8 +1803,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -217,8 +1820,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -235,8 +1837,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -253,8 +1854,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -271,8 +1871,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -289,8 +1888,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -307,8 +1905,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -325,8 +1922,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -343,8 +1939,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -361,10 +1956,11 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    55
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -400,8 +1996,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -418,8 +2013,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -436,8 +2030,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -471,8 +2064,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -489,8 +2081,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -507,10 +2098,12 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    44,
+    176
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -525,10 +2118,12 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    39,
+    175
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -543,10 +2138,13 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    35,
+    36,
+    42
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -579,8 +2177,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -597,10 +2194,16 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    48,
+    49,
+    50,
+    51,
+    54,
+    56
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -615,8 +2218,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -684,8 +2286,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -702,10 +2303,13 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    130,
+    131,
+    135
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -720,8 +2324,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -755,8 +2358,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -773,10 +2375,11 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    76
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -812,10 +2415,14 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    32,
+    41,
+    57,
+    59
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -850,10 +2457,12 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    40,
+    45
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -868,10 +2477,12 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    46,
+    161
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -886,8 +2497,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -904,8 +2514,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -957,10 +2566,11 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    136
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -975,10 +2585,11 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    132
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -993,10 +2604,11 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    137
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -1028,10 +2640,11 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    178
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -1046,10 +2659,12 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    73,
+    164
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -1064,10 +2679,12 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    77,
+    95
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -1082,10 +2699,13 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    66,
+    87,
+    163
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -1100,10 +2720,14 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    37,
+    43,
+    47,
+    60
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -1118,10 +2742,12 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    31,
+    62
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -1136,10 +2762,13 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    33,
+    34,
+    64
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -1154,10 +2783,11 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    63
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -1172,8 +2802,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -1190,8 +2819,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -1226,10 +2854,11 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    134
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -1244,10 +2873,12 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    133,
+    155
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -1262,8 +2893,7 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
    "huntingZoneIds": [],
    "projection": null,
@@ -1280,10 +2910,11 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    202
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -1298,10 +2929,13 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    218,
+    219,
+    220
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -1316,10 +2950,24 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    1,
+    16,
+    30,
+    67,
+    74,
+    75,
+    86,
+    97,
+    121,
+    138,
+    177,
+    179,
+    180,
+    200
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -1334,10 +2982,11 @@
   {
    "gapReasons": [
     "minimap-join-unresolved:zone-grid",
-    "minimap-join-unresolved:radar-texture",
-    "minimap-join-unresolved:projection"
+    "minimap-join-unresolved:radar-texture"
    ],
-   "huntingZoneIds": [],
+   "huntingZoneIds": [
+    68
+   ],
    "projection": null,
    "radarTexture": null,
    "reason": "minimap-join-unresolved:zone-grid",
@@ -2847,7 +4496,7 @@
    ]
   }
  ],
- "tilesWithFrame": 12,
+ "tilesWithFrame": 69,
  "worldMapPieces": {
   "citation": "Elbera tools/maps/build_minimap.py at 12c9656",
   "lockEqual": true,

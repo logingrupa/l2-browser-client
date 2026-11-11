@@ -9,6 +9,9 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
+sys.path.insert(0, str(Path(__file__).parent))
+from native_assets_lib.lineage_material_prefix import NO_MATERIAL_PREFIX
+from native_assets_lib.texture_package_118 import read_unreal_package
 from native_store.gap_rows import is_listed_reason, load_gap_reason_patterns
 from native_store.store_paths import lane_work_root
 from native_store.tile_manifest_validation import (TILE_MANIFEST_KIND, TILE_MANIFEST_SCHEMA_VERSION, TileManifestError, load_tile_manifest_vocabulary,
@@ -17,7 +20,7 @@ from native_store.unit_ledger import UnitLedger
 from world.minimap_join import RADAR_PACKAGE_ROLE, TOWN_MAP_PACKAGE_ROLE, ZONE_NAME_PACKAGE_ROLE, ZONENAME_TABLE_ROLE, HUNTINGZONE_TABLE_ROLE
 from world import minimap_step
 from world.minimap_sources import MinimapSources, locked_tile_ids, tile_frame_extent
-from world.minimap_step import MINIMAP_STEP_NAME, MinimapStepError, run_minimap_step, sealed_minimap
+from world.minimap_step import MINIMAP_STEP_NAME, MinimapStepError, run_minimap_step, sealed_minimap, texture_package_index
 from world.raw_map_step import (PRODUCTS_FOLDER_NAME, RAW_MAP_STEP_ALGORITHM_VERSION, RAW_STEP_NAME, raw_map_recipe, read_tile_map_lock_record,
                                 tile_unit_key)
 from world.tile_census import WORLD_LANE_NAME
@@ -25,11 +28,18 @@ from world.tile_census_validation import ELIGIBLE_STATUS, TILE_CENSUS_RELATIVE_P
 from world.tile_chunk_plan import CHUNK_PLAN_PRODUCT_NAME, CHUNK_PLAN_STEP_ALGORITHM_VERSION, CHUNK_PLAN_STEP_NAME, chunk_plan_unit_config
 from world.tile_manifest_step import TILE_MANIFEST_STEP_NAME, tile_resources
 from world.tile_step_registry import TILE_STEP_NAMES
+from texture_layout_fixture import PACKAGE_VERSION_OFFSET, TEXTURE_CLASS_REFERENCE, TEXTURE_IMPORTS, TEXTURE_PROPERTY_NAMES, synthetic_texture_body
+from ue2_package_fixture import package_bytes
 
 TILE_ID = '20_21'
 CLIENT_ROOT = Path('E:/Lineage2-client')
 PACKAGE_SHA256 = '3' * 64
 TABLE_SHA256 = '4' * 64
+RADAR_PACKAGE_FILENAME = 'L2_RadarMap.utx'
+RADAR_PACKAGE_PATH = f'systextures/{RADAR_PACKAGE_FILENAME}'
+DXT1_FORMAT = 3
+RGBA8_FORMAT = 5
+READABLE_DXT1_SOURCE = {'status': 'readable', 'format': 'DXT1'}
 CHUNK_PLAN_FRAME = {'heightmapDimensions': [256, 256], 'location': [16384.0, 114688.0, 160.0], 'terrainScale': [128.0, 128.0, 76.0],
                     'terrainInfo': '20_21.TerrainInfo0'}
 
@@ -68,13 +78,23 @@ def write_project(project_root, census_status=ELIGIBLE_STATUS, seal_raw=True, se
 
 def texture_package(name, export_names, version):
     return {'path': f'systextures/{name}.utx', 'sha256': PACKAGE_SHA256, 'packageVersion': version[0], 'licensee': version[1], 'packageName': name,
-            'exports': [{'exportIndex': index, 'name': export_name, 'object': f'{name}.Maps.{export_name}'} for index, export_name in enumerate(export_names, 1)]}
+            'exports': [{'exportIndex': index, 'name': export_name, 'object': f'{name}.Maps.{export_name}', 'textureSource': dict(READABLE_DXT1_SOURCE)}
+                        for index, export_name in enumerate(export_names, 1)]}
 
 
-def synthetic_sources(radar_version=(123, 28)):
+def synthetic_radar_package_index(package_version, licensee, format_id=DXT1_FORMAT):
+    fixture = {'packageVersion': package_version, 'licensee': licensee, 'materialPrefix': NO_MATERIAL_PREFIX,
+               'syntheticBody': {'formatId': format_id, 'reservedInt32': 0, 'mips': [[2, 2], [1, 1]]}}
+    data = bytearray(package_bytes(TEXTURE_PROPERTY_NAMES, TEXTURE_IMPORTS,
+                                   [{'name': TILE_ID, 'class': TEXTURE_CLASS_REFERENCE, 'body': synthetic_texture_body(fixture)}]))
+    struct.pack_into('<HH', data, PACKAGE_VERSION_OFFSET, package_version, licensee)
+    return texture_package_index(read_unreal_package(bytes(data), RADAR_PACKAGE_FILENAME), RADAR_PACKAGE_PATH)
+
+
+def synthetic_sources(radar_index=None):
     table = lambda name, rows: {'table': name, 'path': f'system/{name}-e.dat', 'sha256': TABLE_SHA256, 'rows': rows}
     return MinimapSources(
-        {RADAR_PACKAGE_ROLE: texture_package('Radar', [TILE_ID], radar_version), TOWN_MAP_PACKAGE_ROLE: texture_package('town_map', [], (123, 23)),
+        {RADAR_PACKAGE_ROLE: radar_index or texture_package('Radar', [TILE_ID], (123, 28)), TOWN_MAP_PACKAGE_ROLE: texture_package('town_map', [], (123, 23)),
          ZONE_NAME_PACKAGE_ROLE: texture_package('l2zonename', [TILE_ID], (123, 28))},
         {ZONENAME_TABLE_ROLE: table('zonename', [{'ID': 1, 'MapX': 20, 'MapY': 21, 'Name': 'Gludio Territory', 'map': ''}]),
          HUNTINGZONE_TABLE_ROLE: table('huntingzone', [{'id': 4, 'name': 'Cruma Marshlands', 'loc': {'start_npc_x': 5106.0, 'start_npc_y': 126916.0,
@@ -172,14 +192,34 @@ class MinimapStepTests(unittest.TestCase):
             run_minimap_step(self.project_root, CLIENT_ROOT, TILE_ID, synthetic_sources(), converter)
         self.assertEqual(sealed_minimap(self.project_root, TILE_ID, read_tile_map_lock_record(TILE_ID)), (None, None))
 
-    def test_a_radar_package_outside_the_reviewed_versions_is_a_licensee_gap_with_no_texture_output(self):
+    def test_a_joined_118_0_radar_texture_reads_through_the_shared_texture_library_and_converts_into_the_tile_minimap(self):
         write_project(self.project_root)
-        row = run_minimap_step(self.project_root, CLIENT_ROOT, TILE_ID, synthetic_sources((118, 11)), self.converter)
-        self.assertEqual((row['status'], row['reason']), ('gap', 'texture-licensee-unsupported:118/11'))
+        radar_index = synthetic_radar_package_index(118, 0)
+        self.assertEqual([(export['object'], export['textureSource']) for export in radar_index['exports']],
+                         [(f'L2_RadarMap.{TILE_ID}', READABLE_DXT1_SOURCE)])
+        row = run_minimap_step(self.project_root, CLIENT_ROOT, TILE_ID, synthetic_sources(radar_index), self.converter)
+        self.assertEqual((row['status'], row['reason']), ('pass', None))
+        self.assertEqual(self.converter.requests, [{'kind': 'texture', 'package': 'L2_RadarMap', 'object': f'L2_RadarMap.{TILE_ID}'}])
         _, manifest = self.read_manifest()
+        self.assertEqual((manifest['radarTexture']['sourceObject'], manifest['radarTexture']['rule']), (f'L2_RadarMap.{TILE_ID}', 'tile-id'))
+        self.assertEqual(manifest['gaps'], [])
+
+    def assert_radar_cell_gap_without_texture_output(self, radar_index, reason):
+        write_project(self.project_root)
+        row = run_minimap_step(self.project_root, CLIENT_ROOT, TILE_ID, synthetic_sources(radar_index), self.converter)
+        self.assertEqual((row['status'], row['reason']), ('gap', reason))
+        product, manifest = self.read_manifest()
         self.assertIsNone(manifest['radarTexture'])
-        self.assertIn('texture-licensee-unsupported:118/11', [gap['reason'] for gap in manifest['gaps']])
+        self.assertEqual([(gap['reason'], gap['sourceIdentity'].get('object')) for gap in product['gapRows'] if gap['reason'] == reason],
+                         [(reason, f'L2_RadarMap.{TILE_ID}')])
         self.assertEqual(self.converter.requests, [])
+        self.assertTrue(is_listed_reason(reason, load_gap_reason_patterns()))
+
+    def test_a_joined_radar_texture_of_an_unreviewed_format_is_a_format_gap_on_the_radar_cell(self):
+        self.assert_radar_cell_gap_without_texture_output(synthetic_radar_package_index(118, 0, RGBA8_FORMAT), f'texture-format-unsupported:{RGBA8_FORMAT}')
+
+    def test_a_joined_radar_texture_in_an_unreviewed_layout_is_the_library_licensee_gap(self):
+        self.assert_radar_cell_gap_without_texture_output(synthetic_radar_package_index(123, 31), 'texture-licensee-unsupported:123/31')
 
     def test_a_census_gap_tile_returns_its_census_gap_without_touching_the_client(self):
         write_project(self.project_root, census_status='gap', seal_raw=False)

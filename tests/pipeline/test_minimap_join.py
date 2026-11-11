@@ -21,11 +21,12 @@ PACKAGE_SHA256 = '1' * 64
 TABLE_SHA256 = '2' * 64
 FRAME = {'frameMinimumNative': [0.0, 98304.0], 'frameMaximumNative': [32640.0, 130944.0]}
 LOCKED_GRID = locked_tile_grid(['16_10', '26_26'])
+READABLE_DXT1_SOURCE = {'status': 'readable', 'format': 'DXT1'}
 
 
-def texture_package(name, export_names, version=(123, 28)):
-    return {'path': f'systextures/{name}.utx', 'sha256': PACKAGE_SHA256, 'packageVersion': version[0], 'licensee': version[1], 'packageName': name,
-            'exports': [{'exportIndex': index, 'name': export_name, 'object': f'{name}.Group.{export_name}'}
+def texture_package(name, export_names, texture_source=READABLE_DXT1_SOURCE):
+    return {'path': f'systextures/{name}.utx', 'sha256': PACKAGE_SHA256, 'packageVersion': 123, 'licensee': 28, 'packageName': name,
+            'exports': [{'exportIndex': index, 'name': export_name, 'object': f'{name}.Group.{export_name}', 'textureSource': dict(texture_source)}
                         for index, export_name in enumerate(export_names, 1)]}
 
 
@@ -41,9 +42,9 @@ def table(name, rows):
     return {'table': name, 'path': f'system/{name}-e.dat', 'sha256': TABLE_SHA256, 'rows': rows}
 
 
-def joined_tile(radar_exports=(), town_exports=(), zone_name_exports=(), zone_rows=(), hunting_rows=(), frame=FRAME, radar_version=(123, 28),
+def joined_tile(radar_exports=(), town_exports=(), zone_name_exports=(), zone_rows=(), hunting_rows=(), frame=FRAME, radar_source=READABLE_DXT1_SOURCE,
                 dimensions=None, tile_id='20_21'):
-    result = join_minimap_sources([tile_id], {} if frame is None else {tile_id: frame}, texture_package('Radar', radar_exports, radar_version),
+    result = join_minimap_sources([tile_id], {} if frame is None else {tile_id: frame}, texture_package('Radar', radar_exports, radar_source),
                                   texture_package('town_map', town_exports), texture_package('l2zonename', zone_name_exports),
                                   table('zonename', list(zone_rows)), table('huntingzone', list(hunting_rows)), LOCKED_GRID, dimensions)
     return result['tiles'][0]
@@ -115,11 +116,18 @@ class EmptyInputAndProjectionTests(unittest.TestCase):
             self.assertEqual(gap_reasons(tile)[0], 'minimap-join-unresolved:source-package-absent')
             self.assertEqual(tile['status'], 'gap')
 
-    def test_a_radar_package_outside_the_reviewed_versions_is_a_licensee_gap(self):
-        tile = joined_tile(radar_exports=['20_21'], radar_version=(118, 11))
-        self.assertIsNone(tile['radarTexture'])
-        self.assertIn('texture-licensee-unsupported:118/11', gap_reasons(tile))
-        self.assertNotIn('minimap-join-unresolved:projection', gap_reasons(tile))
+    def test_a_joined_radar_export_the_shared_texture_library_refuses_keeps_the_library_reason(self):
+        for reason in ('texture-licensee-unsupported:123/31', 'texture-format-unsupported:5'):
+            tile = joined_tile(radar_exports=['20_21'], radar_source={'status': 'gap', 'reason': reason})
+            self.assertIsNone(tile['radarTexture'])
+            self.assertEqual([candidate['object'] for candidate in tile['radarCandidates']], ['Radar.Group.20_21'])
+            self.assertIn(reason, gap_reasons(tile))
+            self.assertNotIn('minimap-join-unresolved:projection', gap_reasons(tile))
+
+    def test_an_unjoined_radar_export_the_library_refuses_adds_no_texture_reason(self):
+        tile = joined_tile(radar_exports=['town'], radar_source={'status': 'gap', 'reason': 'texture-format-unsupported:5'})
+        self.assertIn('minimap-join-unresolved:radar-texture', gap_reasons(tile))
+        self.assertNotIn('texture-format-unsupported:5', gap_reasons(tile))
 
     def test_a_square_texture_gives_the_unverified_tile_frame_extent_projection_and_a_non_square_one_a_gap(self):
         tile = joined_tile(radar_exports=['20_21'], zone_rows=[zone_row(1, 20, 21)], hunting_rows=[hunting_row(1, 1.0, 100000.0)],
@@ -173,9 +181,11 @@ class MinimapJoinCensusTests(unittest.TestCase):
 
     def test_package_rows_rule_counts_and_row_counts_are_integers_and_world_map_pieces_are_evidence_only(self):
         census = synthetic_census()
-        self.assertEqual([(row['path'], row['packageVersion'], row['licensee'], row['reviewed'], row['textureExportCount']) for row in census['packages']],
-                         [('systextures/L2_RadarMap.utx', 123, 28, True, 1), ('systextures/town_map.utx', 123, 28, True, 0),
-                          ('systextures/l2zonename.utx', 123, 28, True, 2)])
+        self.assertEqual([(row['path'], row['packageVersion'], row['licensee'], row['textureExportCount'], row['textureSourceCounts'])
+                          for row in census['packages']],
+                         [('systextures/L2_RadarMap.utx', 123, 28, 1, {'DXT1': 1}), ('systextures/town_map.utx', 123, 28, 0, {}),
+                          ('systextures/l2zonename.utx', 123, 28, 2, {'DXT1': 2})])
+        self.assertEqual(census['packages'][0]['textureExports'], [{'object': 'Radar.Group.town', 'textureSource': READABLE_DXT1_SOURCE}])
         self.assertTrue(all(type(count) is int for count in census['ruleMatchCounts'].values()))
         self.assertEqual([row['rowCount'] for row in census['tables']], [1, 1])
         self.assertEqual((census['worldMapPieces']['pieces'], census['worldMapPieces']['usedByJoin']),

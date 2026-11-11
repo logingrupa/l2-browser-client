@@ -1,8 +1,6 @@
 from collections import Counter
 
-from native_assets_lib.texture_mips import REVIEWED_VERSIONS
-
-MINIMAP_JOIN_ALGORITHM_VERSION = 1
+MINIMAP_JOIN_ALGORITHM_VERSION = 2
 TILE_ID_RULE = 'tile-id'
 TILE_ID_MAP_RULE = 'tile-id-map'
 ZONENAME_MAP_RULE = 'zonename-map'
@@ -31,7 +29,8 @@ ZONE_NAME_PACKAGE_ROLE = 'zone-name'
 ZONENAME_TABLE_ROLE = 'zonename'
 HUNTINGZONE_TABLE_ROLE = 'huntingzone'
 SCHEMA_FIELD_MEANING_LABEL = 'schema field name, meaning unverified on IMPORTA'
-TEXTURE_LICENSEE_UNSUPPORTED_REASON_PREFIX = 'texture-licensee-unsupported:'
+TEXTURE_SOURCE_READABLE_STATUS = 'readable'
+TEXTURE_SOURCE_GAP_STATUS = 'gap'
 
 
 def join_unresolved_reason(what):
@@ -109,9 +108,8 @@ def projection_gap_evidence(frame, texture_dimensions):
     return None
 
 
-def texture_licensee_gap_reason(package):
-    version = (package['packageVersion'], package['licensee'])
-    return None if version in REVIEWED_VERSIONS else f'{TEXTURE_LICENSEE_UNSUPPORTED_REASON_PREFIX}{version[0]}/{version[1]}'
+def joined_export_texture_source(package, item):
+    return next(export['textureSource'] for export in package['exports'] if export['exportIndex'] == item['source']['exportIndex'])
 
 
 class TileMinimapJoin:
@@ -190,9 +188,9 @@ def joined_radar_texture(join):
     if not radar_objects:
         join.add_gap(RADAR_TEXTURE_UNRESOLVED, 'no radar export equals the tile id, <tile id>_map or a joined zone map value')
         return None, radar_textures
-    licensee_gap_reason = texture_licensee_gap_reason(join.packages[RADAR_PACKAGE_ROLE])
-    if licensee_gap_reason is not None:
-        join.add_reason(licensee_gap_reason, f'{radar_textures[0]["object"]} lies in a package outside the reviewed texture reader versions')
+    texture_source = joined_export_texture_source(join.packages[RADAR_PACKAGE_ROLE], radar_textures[0])
+    if texture_source['status'] != TEXTURE_SOURCE_READABLE_STATUS:
+        join.add_reason(texture_source['reason'], f'{radar_textures[0]["object"]} is not readable by the shared texture library')
         return None, radar_textures
     return radar_textures[0], radar_textures
 
