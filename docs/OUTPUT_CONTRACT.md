@@ -87,10 +87,14 @@ named `repair_*`, `restore_*` or `preserve_*` under `scripts/` (vendor
 excluded), files directly under `scripts/` named `repair-*`, `restore-*` or
 `preserve-*`, glTF repair record kinds written by `scripts/native_assets_lib`,
 and `fnRepair*` or `repair*` exports under `src/` (none today). The defect
-evidence is a repo path that shows the defect, or an explicit unresolved note
-naming the missing proof. `SourcePreservationCensusTests` fails on a missing
-step, on a row for a step that no longer exists and on evidence that is
-neither.
+evidence is a repo path that shows the defect. `unresolved:` evidence is
+refused, except for `repair_vertex_metadata` and `omit-zero-tangent-attribute`,
+which run with unresolved evidence until the owner decides the CONV-02
+build1590 tangent repair (prove the defect with a test or remove the repair,
+STATE.md Needs Human). `SourcePreservationCensusTests` fails on a missing
+step, on a row for a step that no longer exists, on evidence that is not a
+repo path outside that list, and when that list and the unresolved rows
+differ.
 
 | Step | Kind | Where | Defect evidence | Preserves |
 | --- | --- | --- | --- | --- |

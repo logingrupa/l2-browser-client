@@ -84,16 +84,22 @@ def scanned_source_preservation_steps():
 
 def defect_evidence_problem(cell):
     if cell.startswith(UNRESOLVED_EVIDENCE_PREFIX):
-        return None if cell[len(UNRESOLVED_EVIDENCE_PREFIX):].strip() else 'unresolved evidence names no missing proof'
+        return 'a running repair needs repo-backed defect evidence, not unresolved'
     match = EVIDENCE_PATH_PATTERN.fullmatch(cell)
     if not match:
-        return f'evidence is neither a repo path nor unresolved: {cell!r}'
+        return f'evidence is not a repo path: {cell!r}'
     path = ROOT / match['path']
     if not path.is_file():
         return f'evidence path does not exist: {match["path"]}'
     if match['line'] and not 1 <= int(match['line']) <= len(path.read_text(encoding='utf-8').splitlines()):
         return f'evidence line is outside {match["path"]}: {match["line"]}'
     return None
+
+
+def unresolved_evidence_problem(cell):
+    if not cell.startswith(UNRESOLVED_EVIDENCE_PREFIX):
+        return f'evidence does not start with {UNRESOLVED_EVIDENCE_PREFIX!r}: {cell!r}'
+    return None if cell[len(UNRESOLVED_EVIDENCE_PREFIX):].strip() else 'unresolved evidence names no missing proof'
 
 
 def read_source_preservation_section():

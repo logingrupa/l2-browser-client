@@ -16,11 +16,13 @@ from reference_client_lock_fixture import lock_client_as_reference_root
 from source_preservation_scan import (acceptance_member_sha256s, acceptance_member_value_texts, acceptance_text_from_members,
     banned_identifier_violations, banned_identifiers_in_text, defect_evidence_problem, files_containing,
     normalisation_scan_files, read_source_preservation_section, scanned_source_preservation_steps, script_files,
-    source_preservation_rows)
+    source_preservation_rows, UNRESOLVED_EVIDENCE_PREFIX, unresolved_evidence_problem)
 
 REVIEWED_UMODEL_BUILD1590_SHA256 = '13502e5a4d8f6b5f32252afebd6360f7302ccfaccf6b8dda65beff0be2d364a0'
 REPO_OWNED_UMODEL_FOLDER = '/.assets/native-tools/umodel/'
 NORMALISATION_SCAN_ALLOW_LIST = ('scripts/audit_musveren_weights.py',)
+REPAIR_STEPS_AWAITING_OWNER_DECISION = ('omit-zero-tangent-attribute', 'repair_vertex_metadata')
+OWNER_DECISION_REQUIREMENT = 'CONV-02'
 SKIN_WEIGHT_ATTRIBUTE_ALLOW_LIST = {
     'scripts/native_assets_lib/weights.py': 'restore_native_weights restores source float influences',
     'scripts/native_assets_lib/rigid.py': 'is_root_rigid reads weights to prove a root-only rigid skin',
@@ -179,10 +181,24 @@ class SourcePreservationCensusTests(unittest.TestCase):
         documented = sorted(row['Step'] for row in self.steps_table())
         self.assertEqual(documented, scanned_source_preservation_steps())
 
-    def test_every_row_has_repo_backed_or_explicitly_unresolved_defect_evidence(self):
+    def test_every_row_outside_the_owner_decision_list_has_repo_backed_defect_evidence(self):
         problems = sorted((row['Step'], defect_evidence_problem(row['Defect evidence'])) for row in self.steps_table()
-                          if defect_evidence_problem(row['Defect evidence']))
+                          if row['Step'] not in REPAIR_STEPS_AWAITING_OWNER_DECISION and defect_evidence_problem(row['Defect evidence']))
         self.assertEqual(problems, [])
+
+    def test_owner_decision_list_is_exactly_the_unresolved_rows(self):
+        unresolved_steps = sorted(row['Step'] for row in self.steps_table() if row['Defect evidence'].startswith(UNRESOLVED_EVIDENCE_PREFIX))
+        self.assertEqual(unresolved_steps, sorted(REPAIR_STEPS_AWAITING_OWNER_DECISION))
+        evidence_by_step = {row['Step']: row['Defect evidence'] for row in self.steps_table()}
+        problems = sorted((step, unresolved_evidence_problem(evidence_by_step[step])) for step in REPAIR_STEPS_AWAITING_OWNER_DECISION
+                          if unresolved_evidence_problem(evidence_by_step[step]))
+        self.assertEqual(problems, [])
+
+    def test_contract_names_the_repairs_awaiting_the_owner_decision(self):
+        prose = '\n'.join(line for line in read_source_preservation_section().splitlines() if not line.startswith('|'))
+        for text in (*REPAIR_STEPS_AWAITING_OWNER_DECISION, OWNER_DECISION_REQUIREMENT, 'owner decides', 'SourcePreservationCensusTests'):
+            with self.subTest(text=text):
+                self.assertIn(text, prose)
 
     def test_evidence_check_refuses_invented_and_empty_proof(self):
         self.assertIsNotNone(defect_evidence_problem('tests/pipeline/test_no_such_proof.py:1'))
@@ -190,6 +206,16 @@ class SourcePreservationCensusTests(unittest.TestCase):
         self.assertIsNotNone(defect_evidence_problem(''))
         self.assertIsNotNone(defect_evidence_problem('scripts/native_assets.py:999999'))
         self.assertIsNone(defect_evidence_problem('scripts/native_assets.py:1'))
+
+    def test_evidence_check_refuses_unresolved_evidence_on_a_running_repair(self):
+        self.assertEqual(defect_evidence_problem('unresolved: no test reproduces the defect'),
+                         'a running repair needs repo-backed defect evidence, not unresolved')
+
+    def test_unresolved_check_accepts_only_a_named_missing_proof(self):
+        self.assertIsNone(unresolved_evidence_problem('unresolved: no test reproduces the defect'))
+        self.assertIsNotNone(unresolved_evidence_problem('unresolved: '))
+        self.assertIsNotNone(unresolved_evidence_problem('unresolved:  '))
+        self.assertIsNotNone(unresolved_evidence_problem('scripts/native_assets.py:1'))
 
 
 class ParityAcceptanceFileTests(unittest.TestCase):
