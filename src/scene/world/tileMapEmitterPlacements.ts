@@ -1,4 +1,5 @@
-import { decodeNativeJsonResource, fetchVerifiedNativeResource } from "./loadNativeSection";
+import { fetchVerifiedNativeResource } from "../../assets/native/fetchVerifiedNativeResource";
+import { decodeNativeJsonResource } from "./loadNativeSection";
 import type { NativeTileManifest } from "./nativeTileManifest";
 
 export interface MapEmitterPlacementInspection {

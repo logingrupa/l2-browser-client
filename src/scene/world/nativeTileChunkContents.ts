@@ -5,7 +5,8 @@ import type { AssetContainer } from "@babylonjs/core/assetContainer";
 import type { Scene } from "@babylonjs/core/scene";
 import { assetPackageLimits, readAssetPackage } from "../../assets/package/readAssetPackage";
 import { sourcePositionToWorld } from "../../world/sourceFrame";
-import { decodeNativeJsonResource, fetchVerifiedNativeResource, loadNativeGlbContainer, nativeMeshBounds, validateSectionGlb } from "./loadNativeSection";
+import { fetchVerifiedNativeResource } from "../../assets/native/fetchVerifiedNativeResource";
+import { decodeNativeJsonResource, loadNativeGlbContainer, nativeMeshBounds, validateSectionGlb } from "./loadNativeSection";
 import type { NativeTileBspChunk, NativeTileSpawnAnchor, NativeTileTerrainChunk } from "./loadNativeTileChunks";
 import { parseNativeBspSectionExtras, type NativeTileBspResource } from "./nativeBspResources";
 import {

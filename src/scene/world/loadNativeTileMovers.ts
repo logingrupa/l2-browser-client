@@ -1,7 +1,8 @@
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
 import type { AssetContainer } from "@babylonjs/core/assetContainer";
 import type { Scene } from "@babylonjs/core/scene";
-import { decodeNativeJsonResource, fetchVerifiedNativeResource, loadNativeGlbContainer } from "./loadNativeSection";
+import { fetchVerifiedNativeResource } from "../../assets/native/fetchVerifiedNativeResource";
+import { decodeNativeJsonResource, loadNativeGlbContainer } from "./loadNativeSection";
 import { parseNativeTileMoverManifest, type NativeTileMoverManifest } from "./nativeMoverManifest";
 import { createNativeMoverTargets, type NativeMoverTargets } from "./nativeMoverTargets";
 import type { NativeMover } from "./nativeMovers";

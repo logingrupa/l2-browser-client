@@ -1,4 +1,5 @@
-import { decodeNativeJsonResource, fetchVerifiedNativeResource } from "./loadNativeSection";
+import { fetchVerifiedNativeResource } from "../../assets/native/fetchVerifiedNativeResource";
+import { decodeNativeJsonResource } from "./loadNativeSection";
 import { isPlainRecord, nativeTileSha256Pattern } from "./nativeManifestRecordGuards";
 import { readNativeTileManifest } from "./nativeTileManifest";
 import { selectedNativeTileIdentity } from "./selectedNativeTile";

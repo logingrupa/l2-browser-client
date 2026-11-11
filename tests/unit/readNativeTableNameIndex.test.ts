@@ -63,7 +63,7 @@ describe("native table name index reader", () => {
 
   it("refuses a manifest whose bytes differ from the catalog SHA-256", async () => {
     await servedNameIndex(nameIndexManifest(gremlinEntries), { tamper: true });
-    await expect(readNativeTableNameIndex("npcname-e", new AbortController().signal)).rejects.toThrow(/differs from its catalog length or SHA-256/);
+    await expect(readNativeTableNameIndex("npcname-e", new AbortController().signal)).rejects.toThrow(/Native resource hash\/length mismatch/);
   });
 
   it("reports not-in-catalog with its reason when the catalog has no name index record", async () => {

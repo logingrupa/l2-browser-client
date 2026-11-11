@@ -1,7 +1,7 @@
 import { readTableCatalogRecord, tableIdPattern, type NativeTableCatalogRecord } from "../../assets/native/nativeCatalogRecords";
 import { tableCatalogKey } from "../../assets/native/nativeCatalogIndex";
 import { readNativeCatalog } from "../../assets/native/readNativeCatalog";
-import { fetchCatalogPinnedBytes } from "../fetchCatalogPinnedBytes";
+import { fetchVerifiedNativeResource } from "../../assets/native/fetchVerifiedNativeResource";
 
 export interface NativeTableNameEntry {
   readonly identifiers: readonly number[];
@@ -84,7 +84,7 @@ async function fetchNativeTableNameIndex(tableId: string, signal: AbortSignal): 
   const catalog = await readNativeCatalog(signal);
   const record = catalog.tables.map(readTableCatalogRecord).find(tableRecord => tableRecord.table === recordId);
   if (record === undefined) return { status: "not-in-catalog", key, reason: `${recordId} has no tables record in the served catalog` };
-  const bytes = await fetchCatalogPinnedBytes(record.manifest, record.manifestBytes, record.manifestSha256, signal, "Native table name index");
+  const bytes = await fetchVerifiedNativeResource(record.manifest, record.manifestSha256, signal, record.manifestBytes);
   const { identifierFields, entries } = parseNameIndexManifest(decodeNameIndexJson(bytes, record.manifest), tableId, record);
   signal.throwIfAborted();
   return { status: "converted", key, manifest: record.manifest, identifierFields, entries };

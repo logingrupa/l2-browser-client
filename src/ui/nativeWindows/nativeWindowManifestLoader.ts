@@ -4,7 +4,7 @@ import { readNativeCatalog, type NativeCatalog } from "../../assets/native/readN
 import { readAssetPackage } from "../../assets/package/readAssetPackage";
 import { loadNativeTileMinimap, type NativeTileMinimap, type NativeTileMinimapRadarTexture } from "../../scene/world/minimapJoin";
 import { readNativeTileManifest } from "../../scene/world/nativeTileManifest";
-import { fetchCatalogPinnedBytes } from "../fetchCatalogPinnedBytes";
+import { fetchVerifiedNativeResource } from "../../assets/native/fetchVerifiedNativeResource";
 import { parseNativeWindowManifest, type NativeWindowManifest } from "./nativeWindowLayoutTree";
 
 export type NativeWindowManifestLoad =
@@ -40,7 +40,7 @@ export async function loadNativeWindowManifest(windowId: string, signal: AbortSi
   const catalog = await readNativeCatalog(signal);
   const record = catalog.windows.map(readWindowCatalogRecord).find(windowRecord => windowRecord.window === windowId);
   if (record === undefined) return { status: "not-in-catalog", key, reason: `${key} has no windows record in the served catalog` };
-  const bytes = await fetchCatalogPinnedBytes(record.manifest, record.manifestBytes, record.manifestSha256, signal, "Native window manifest");
+  const bytes = await fetchVerifiedNativeResource(record.manifest, record.manifestSha256, signal, record.manifestBytes);
   const manifest = parseNativeWindowManifest(decodeManifestText(bytes));
   if (manifest.windowId !== windowId) throw new Error(`Native window manifest ${record.manifest} holds ${manifest.windowId}, not ${windowId}.`);
   return { status: "loaded", key, manifest, catalog };
@@ -81,7 +81,7 @@ export async function resolveNativeWindowTextures(catalog: NativeCatalog, refere
         continue;
       }
       const record = readUiTextureRecord(value, reference);
-      const bytes = await fetchCatalogPinnedBytes(record.image, record.imageBytes, record.imageSha256, signal, "Native UI texture");
+      const bytes = await fetchVerifiedNativeResource(record.image, record.imageSha256, signal, record.imageBytes);
       resolutions.set(reference, { status: "resolved", url: URL.createObjectURL(new Blob([bytes], { type: pngMimeType })) });
     }
   } catch (error) {
@@ -92,7 +92,7 @@ export async function resolveNativeWindowTextures(catalog: NativeCatalog, refere
 }
 
 async function resolveRadarTextureArchiveImage(radarTexture: NativeTileMinimapRadarTexture, signal: AbortSignal): Promise<NativeWindowTextureResolution> {
-  const archiveBytes = await fetchCatalogPinnedBytes(radarTexture.archive, radarTexture.archiveBytes, radarTexture.archiveSha256, signal, "Native radar texture archive");
+  const archiveBytes = await fetchVerifiedNativeResource(radarTexture.archive, radarTexture.archiveSha256, signal, radarTexture.archiveBytes);
   const texturePackage = await readAssetPackage(archiveBytes);
   const imageFile = texturePackage.manifest.kind === "texture" ? texturePackage.manifest.image?.file : undefined;
   const inventory = texturePackage.manifest.files.find(file => file.path === imageFile);

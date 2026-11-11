@@ -5,8 +5,7 @@ import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { AssetContainer } from "@babylonjs/core/assetContainer";
 import type { Scene } from "@babylonjs/core/scene";
 import "@babylonjs/loaders/glTF";
-import { sha256 } from "../../assets/package/readAssetPackage";
-import { nativeResourceUrl } from "../../assets/native/nativeResourceUrl";
+import { fetchVerifiedNativeResource } from "../../assets/native/fetchVerifiedNativeResource";
 import { readNativeCatalogUnlessNotStaged, type NativeCatalog } from "../../assets/native/readNativeCatalog";
 import { applyNativeTerrainPreview, type NativeTerrainPreview } from "./nativeTerrainPreview";
 import { attachNativeBspSupport } from "./nativeBspSupport";
@@ -169,16 +168,6 @@ async function stagedSection(signal: AbortSignal, identity: string): Promise<{ r
 export function decodeNativeJsonResource(bytes: Uint8Array, label: string): unknown {
   try { return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)); }
   catch { throw new Error(`${label} is not UTF-8 JSON.`); }
-}
-
-export async function fetchVerifiedNativeResource(url: string, hash: string, signal: AbortSignal, length?: number): Promise<Uint8Array<ArrayBuffer>> {
-  const response = await fetch(nativeResourceUrl(url), { signal });
-  if (!response.ok) throw new Error(`Native section resource returned HTTP ${response.status}: ${url}`);
-  const buffer = await response.arrayBuffer();
-  signal.throwIfAborted();
-  const bytes = new Uint8Array(buffer);
-  if (length !== undefined && bytes.byteLength !== length || await sha256(bytes) !== hash) throw new Error(`Native section resource hash/length mismatch: ${url}`);
-  return bytes;
 }
 
 export function validateSectionGlb(bytes: Uint8Array<ArrayBuffer>): Record<string, unknown> {

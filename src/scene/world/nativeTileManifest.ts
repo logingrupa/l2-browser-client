@@ -1,6 +1,7 @@
 import { readTileCatalogRecord, tileIdPattern } from "../../assets/native/nativeCatalogRecords";
 import { readNativeCatalogUnlessNotStaged } from "../../assets/native/readNativeCatalog";
-import { decodeNativeJsonResource, fetchVerifiedNativeResource } from "./loadNativeSection";
+import { fetchVerifiedNativeResource } from "../../assets/native/fetchVerifiedNativeResource";
+import { decodeNativeJsonResource } from "./loadNativeSection";
 import {
   isFiniteVector, isQualifiedObjectName, nativeTileChunkGridPosition, parseNativeTileGapRows, type NativeTileGapRow, type NativeTileVector,
 } from "./nativeTileChunkManifest";
