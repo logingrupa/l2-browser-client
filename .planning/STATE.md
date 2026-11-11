@@ -1,18 +1,18 @@
 ---
 gsd_state_version: "1.0"
-current_phase: 02
-current_phase_name: Stage A breadth
+current_phase: 03
+current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 02-55-PLAN.md
-last_updated: "2026-11-11T04:56:33.992Z"
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-11-11T07:40:47.474Z"
 last_activity: 2026-11-11
-last_activity_desc: Phase 02 plan 02-55 complete (integration union, union coverage and the restage handoff)
-state_head: 9ce34c86ef9dfb898f90e8bd5fda292726fcee56
+last_activity_desc: Phase 03 plan 03-01 complete (side-by-side check record writer and key content digest; Phase 3 start commit cb09cdc)
+state_head: f7914fd9c53629fadda19632bd075a1490bcb270
 progress:
   total_phases: 6
   completed_phases: 0
-  total_plans: 88
-  completed_plans: 88
+  total_plans: 108
+  completed_plans: 89
   percent: 0
 ---
 
@@ -23,14 +23,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-11-08)
 
 **Core value:** A fully converted Lineage II Interlude client that runs in the browser and matches L2.exe side by side, driven only by what a server sends.
-**Current focus:** Phase 02 - Stage A breadth (Phase 1 verification deferred to the owner)
+**Current focus:** Phase 03 - Stage A checks (Phase 1 verification deferred to the owner; Phase 2 verification reported gaps)
 
 ## Current Position
 
-Phase: 02 (Stage A breadth) - EXECUTING
-Plan: 02-55 complete, 71 plans summarized
-Status: Executing Phase 2; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-11 - Plan 02-55 complete: the world, actors and data-ui lane stores are one integration lane store (catalog bba52c47, 0 missing and 0 mismatched pins), the gap census over the union passes, one 5-key load slice per kind ran on the union (windows, npcs, items and skills 5 pass each, tiles 5 failed for want of a collision resource), docs/coverage.md and STATUS come from the union, and the one restage command is the Needs Human (plan 02-55) line; INT-01 stays partial: staging Needs Human
+Phase: 03 (Stage A checks) - EXECUTING
+Plan: 03-01 complete, 1 of 20 plans summarized
+Status: Executing Phase 3 from start commit cb09cdc; Phase 1 is verification_deferred_human (see Deferred Verification)
+Last activity: 2026-11-11 - Plan 03-01 complete: scripts/native_store/side_by_side_check_records.py is the one validated writer of docs/parts/<part>/side-by-side-checks.json (judged records need both halves and an independent reviewer, audio verdicts are owner-only, native halves carry reference_client_build of the lock), and key_content_sha256_by_key digests every union key (62 tile, 248 window, 43 table, 1000 npc, 96 item, 3064 skill); CHECK-01 to CHECK-03 stay open until records exist
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -140,6 +140,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P51 | 50min | 3 tasks | 21 files |
 | Phase 02 P54 | 191min | 3 tasks | 17 files |
 | Phase 02 P55 | 43min | 3 tasks | 6 files |
+| Phase 3 P01 | 28min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -342,6 +343,8 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-54: the level model reader stays 123/28, so 41 newly eligible tiles hold a bsp gap and fail the load check; the batch settles a tile whose first unsealed step is a gap (rows 755, 756)
 - [Phase 02]: 02-54: the meshes fingerprint carries staticMaterialReviewState from the committed .usx census; every sealed meshes unit re-ran once; WORLD-01 and WORLD-03 stay Pending (rows 757 to 761)
 - [Phase 02]: 02-55: integration union of the world, actors and data-ui lane stores (catalog bba52c47); union loads only from slices run on the union catalog, LOAD_CHECK_LIMIT=5 per kind; INT-01 stays partial: staging Needs Human (rows 762 to 764)
+- [Phase 3]: 03-01: side_by_side_check_records.py is the one writer of docs/parts/<part>/side-by-side-checks.json; later plans write records only through write_side_by_side_records (P12)
+- [Phase 3]: 03-01: audio records keep nativeHalf null, store only listen-needs-owner and take pass or mismatch only from owner; the writer owns sandboxHalfHistory; the lock comparison applies to written records only (P601 to P613 in pending-decision-rows.md)
 
 ### Pending Todos
 
@@ -467,6 +470,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-11T04:56:33.388Z
-Stopped at: Completed 02-55-PLAN.md
+Last session: 2026-11-11T07:40:46.116Z
+Stopped at: Completed 03-01-PLAN.md
 Resume file: None

@@ -175,11 +175,11 @@ Plans:
   2. For world, actor and skill audio, listen-check results are recorded as labelled audible clips with verdicts; successful extraction or decoding is never recorded as a pass.
   3. Each mismatch becomes a converter fix (re-run shows the corrected result in the sandbox) or a listed gap; no tile is hand-patched.
   4. A stage A exit report states per part how many items were converted, load, were checked, and how many pass, mismatch, are unverified or are gaps, tied to the IMPORTA-PC hash lock.
-**Plans**: 20 plans
+**Plans**: 1/20 plans executed
 
 Plans:
 **Wave 1**
-- [ ] 03-01-PLAN.md - Check record module and key content digest; names the Phase 3 start commit (CHECK-01, CHECK-02, CHECK-03)
+- [x] 03-01-PLAN.md - Check record module and key content digest; names the Phase 3 start commit (CHECK-01, CHECK-02, CHECK-03)
 - [ ] 03-02-PLAN.md - set-environment sandbox command and camera pose setter (CHECK-01)
 - [ ] 03-03-PLAN.md - Union currency, LOAD_CHECK_KEYS selector, full union load sweeps (CHECK-01, CHECK-05)
 
@@ -267,7 +267,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 (Phase 5 may start b
 |-------|----------------|--------|-----------|
 | 1. Foundations | 17/17 | In Progress | - |
 | 2. Stage A breadth | 71/71 | In Progress | - |
-| 3. Stage A checks | 0/TBD | Not started | - |
+| 3. Stage A checks | 1/20 | In Progress | - |
 | 4. Stage B adapter | 0/TBD | Not started | - |
 | 5. Native-parity polish | 0/TBD | Not started | - |
 | 6. Performance and build reproducibility | 0/TBD | Not started | - |
