@@ -19,6 +19,8 @@ export interface CollisionHorizontalPosition {
   readonly y: number;
 }
 
+export type CollisionReadiness = "ready" | "cell-not-resident" | "no-collision-cell";
+
 export interface CollisionWorldInspection {
   readonly requiredCellCount: number;
   readonly residentCellCount: number;
@@ -30,7 +32,7 @@ export interface CollisionWorld {
   requireCell(cellId: string, footprint: CollisionCellFootprint): void;
   addCell(cellId: string, cell: CollisionCell): void;
   removeCell(cellId: string): void;
-  isReady(position: CollisionHorizontalPosition): boolean;
+  collisionReadiness(position: CollisionHorizontalPosition): CollisionReadiness;
   setTileBspTree(tileId: string, tree: CollisionBspTree): void;
   tileBspTree(tileId: string): CollisionBspTree | null;
   residentCells(): readonly CollisionCell[];
@@ -96,13 +98,16 @@ export function createCollisionWorld(): CollisionWorld {
       if (removedCell !== undefined && !tileHasResidentCell(removedCell.tileId)) bspTreesByTileId.delete(removedCell.tileId);
       revision += 1;
     },
-    isReady(position) {
-      if (!Number.isFinite(position.x) || !Number.isFinite(position.y)) throw new CollisionWorldError("isReady needs a finite source-unit position.");
+    collisionReadiness(position) {
+      if (!Number.isFinite(position.x) || !Number.isFinite(position.y)) throw new CollisionWorldError("collisionReadiness needs a finite source-unit position.");
       const x = Math.fround(position.x), y = Math.fround(position.y);
+      let heldByResidentCell = false;
       for (const [cellId, footprint] of footprintsByCellId) {
-        if (!cellsByCellId.has(cellId) && footprintHolds(footprint, x, y)) return false;
+        if (!footprintHolds(footprint, x, y)) continue;
+        if (!cellsByCellId.has(cellId)) return "cell-not-resident";
+        heldByResidentCell = true;
       }
-      return true;
+      return heldByResidentCell ? "ready" : "no-collision-cell";
     },
     setTileBspTree(tileId, tree) {
       if (typeof tileId !== "string" || tileId.length === 0) throw new CollisionWorldError("setTileBspTree needs a non-empty tile id.");

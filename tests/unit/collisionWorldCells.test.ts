@@ -15,30 +15,31 @@ const decodedTree = (tileId = "20_21") => decodeNativeTileBspTree(readCollisionF
 describe("collision world cells", () => {
   it("is not ready inside a required cell until the cell is added, and removing the cell drops its requirement", () => {
     const world = createCollisionWorld();
-    expect(world.isReady(insideFirstCell)).toBe(true);
+    expect(world.collisionReadiness(insideFirstCell)).toBe("no-collision-cell");
     world.requireCell(firstCellId, firstFootprint);
-    expect(world.isReady(insideFirstCell)).toBe(false);
+    expect(world.collisionReadiness(insideFirstCell)).toBe("cell-not-resident");
     expect(world.inspection()).toEqual({ requiredCellCount: 1, residentCellCount: 0, missingCellIds: [firstCellId], revision: 1 });
     const cell = decodedCell(firstCellId);
     world.addCell(firstCellId, cell);
-    expect(world.isReady(insideFirstCell)).toBe(true);
+    expect(world.collisionReadiness(insideFirstCell)).toBe("ready");
     expect(world.residentCells()).toEqual([cell]);
     expect(world.inspection()).toEqual({ requiredCellCount: 1, residentCellCount: 1, missingCellIds: [], revision: 2 });
     world.removeCell(firstCellId);
     expect(world.residentCells()).toEqual([]);
     expect(world.inspection()).toEqual({ requiredCellCount: 0, residentCellCount: 0, missingCellIds: [], revision: 3 });
-    expect(world.isReady(insideFirstCell)).toBe(true);
+    expect(world.collisionReadiness(insideFirstCell)).toBe("no-collision-cell");
     world.requireCell(firstCellId, firstFootprint);
-    expect(world.isReady(insideFirstCell)).toBe(false);
+    expect(world.collisionReadiness(insideFirstCell)).toBe("cell-not-resident");
     expect(world.inspection().revision).toBe(4);
   });
 
-  it("stays ready outside every missing cell footprint", () => {
+  it("is ready only inside a resident cell footprint and names a point outside every footprint as holding no collision cell", () => {
     const world = createCollisionWorld();
     world.requireCell(firstCellId, firstFootprint);
-    expect(world.isReady({ x: 4097, y: 1024 })).toBe(true);
-    expect(world.isReady({ x: -1, y: 1024 })).toBe(true);
-    expect(world.isReady({ x: 4096, y: 4096 })).toBe(false);
+    world.addCell(firstCellId, decodedCell(firstCellId));
+    expect(world.collisionReadiness({ x: 4096, y: 4096 })).toBe("ready");
+    expect(world.collisionReadiness({ x: 4097, y: 1024 })).toBe("no-collision-cell");
+    expect(world.collisionReadiness({ x: -1, y: 1024 })).toBe("no-collision-cell");
   });
 
   it("removes a required cell that never became resident in one revision", () => {
@@ -55,10 +56,10 @@ describe("collision world cells", () => {
     expect(world.inspection().missingCellIds).toEqual([firstCellId, eastCellId]);
     const sharedEdge = { x: 4096, y: 2048 };
     world.addCell(firstCellId, decodedCell(firstCellId));
-    expect(world.isReady(sharedEdge)).toBe(false);
-    expect(world.isReady(insideFirstCell)).toBe(true);
+    expect(world.collisionReadiness(sharedEdge)).toBe("cell-not-resident");
+    expect(world.collisionReadiness(insideFirstCell)).toBe("ready");
     world.addCell(eastCellId, decodedCell(eastCellId));
-    expect(world.isReady(sharedEdge)).toBe(true);
+    expect(world.collisionReadiness(sharedEdge)).toBe("ready");
     expect(world.inspection()).toEqual({ requiredCellCount: 2, residentCellCount: 2, missingCellIds: [], revision: 4 });
     expect(world.residentCells().map(cell => cell.cellId)).toEqual([firstCellId, eastCellId]);
   });
@@ -66,7 +67,7 @@ describe("collision world cells", () => {
   it("compares positions and footprints as float32 source units", () => {
     const world = createCollisionWorld();
     world.requireCell(firstCellId, { minimumX: 0, minimumY: 0, maximumX: 0.1, maximumY: 0.1 });
-    expect(world.isReady({ x: Math.fround(0.1), y: 0 })).toBe(false);
+    expect(world.collisionReadiness({ x: Math.fround(0.1), y: 0 })).toBe("cell-not-resident");
     world.requireCell(firstCellId, { minimumX: 0, minimumY: 0, maximumX: Math.fround(0.1), maximumY: Math.fround(0.1) });
     expect(world.inspection().revision).toBe(1);
   });
@@ -103,7 +104,7 @@ describe("collision world cells", () => {
       world.setTileBspTree("20_21", decodedTree());
       world.setTileBspTree("20_21", decodedTree());
     }, /tile 20_21 already holds its BSP tree/],
-    ["a non-finite readiness position", (world: CollisionWorld) => world.isReady({ x: Number.NaN, y: 0 }), /isReady needs a finite source-unit position/],
+    ["a non-finite readiness position", (world: CollisionWorld) => world.collisionReadiness({ x: Number.NaN, y: 0 }), /collisionReadiness needs a finite source-unit position/],
   ])("throws CollisionWorldError for %s", (_case, act, message) => {
     const world = createCollisionWorld();
     expect(() => act(world)).toThrow(CollisionWorldError);

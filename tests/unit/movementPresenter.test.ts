@@ -91,6 +91,16 @@ describe("movementPresenter applies server movement through the MOVE-01 port", (
     expect(intents).toEqual([]);
   });
 
+  it("holds a pawn outside every collision cell and reports collision-cell-absent instead of letting it fall", () => {
+    const { presenter, intents, advanceFrames } = presenterOn(boxVolumeWorld([floorSlab(0)]));
+    presenter.applyEvent(moveEvent(localPlayerId, { x: 4200, y: 0, z: feetZ }, { x: 4500, y: 0, z: feetZ }));
+    advanceFrames(90);
+    expect(pawnOf(presenter, localPlayerId)).toMatchObject({
+      heldReason: "collision-cell-absent", isMoving: true, feetPosition: { x: 4200, y: 0, z: feetZ },
+    });
+    expect(intents).toEqual([]);
+  });
+
   it("snaps a remote pawn to a move origin farther than the snap threshold and walks the local pawn from where it stands", () => {
     const { presenter, advanceFrames } = presenterOn(boxVolumeWorld([floorSlab(0)]));
     presenter.applyEvent(moveEvent("remote", { x: 0, y: 0, z: feetZ }, { x: 0, y: 0, z: feetZ }));

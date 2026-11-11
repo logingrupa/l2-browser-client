@@ -79,7 +79,7 @@ describe("collision cell loading", () => {
     expect(cell.volumes[0]!.exportIndex).toBe(417);
     expect((await loadTileBspTree(tileId, tileCollision, signal())).nodeCount).toBe(3);
     expect(world.residentCells()).toEqual([]);
-    expect(world.isReady({ x: 100, y: 100 })).toBe(false);
+    expect(world.collisionReadiness({ x: 100, y: 100 })).toBe("cell-not-resident");
   });
 
   it("refuses a chunk collision resource whose bytes differ from its SHA-256 pin", async () => {

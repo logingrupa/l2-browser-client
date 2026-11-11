@@ -2,7 +2,7 @@ import { float32Vector, type Vector3 } from "../../../shared/math/vector3";
 import type { SourcePosition } from "../../../world/sourceFrame";
 import type { WorldCommand, WorldEvent } from "../../../world/worldTypes";
 import type { CollisionPrimitive } from "./core/collisionTrace";
-import type { CollisionWorld } from "./core/collisionWorld";
+import type { CollisionReadiness, CollisionWorld } from "./core/collisionWorld";
 import type { MovementNativeRules } from "./core/movementRules";
 import { ZERO_VELOCITY, type PawnPhysicsContext, type PawnPhysicsMode } from "./core/pawnBody";
 import { advancePawnSimulation, type PawnSimulation, type PawnTraits } from "./core/pawnPhysics";
@@ -11,7 +11,7 @@ import { advancePositionReports, INITIAL_POSITION_REPORT_STATE, type PositionRep
 
 export type MovementIntent = Extract<WorldCommand, { readonly type: "report-position" | "cannot-move" }>;
 
-export type MovementHeldReason = "collision-not-ready" | "speed-unresolved";
+export type MovementHeldReason = "collision-not-ready" | "collision-cell-absent" | "speed-unresolved";
 
 export interface MovementPresenterOptions {
   readonly collisionWorld: CollisionWorld;
@@ -57,6 +57,10 @@ interface PresentedPawn {
 type MoveEvent = Extract<WorldEvent, { readonly type: "move" }>;
 
 const headingUnitsPerTurn = 65536;
+const heldReasonByCollisionReadiness: Readonly<Record<Exclude<CollisionReadiness, "ready">, MovementHeldReason>> = {
+  "cell-not-resident": "collision-not-ready",
+  "no-collision-cell": "collision-cell-absent",
+};
 const optionalSpeedKeys = ["swimWalk", "swimRun", "flyWalk", "flyRun"] as const;
 
 function requirePosition(position: SourcePosition, label: string): void {
@@ -190,7 +194,8 @@ export function createMovementPresenter(options: MovementPresenterOptions): Move
 
   function advancePawn(entityId: string, pawn: PresentedPawn, frameSeconds: number): PresentedPawn {
     const { location } = pawn.simulation.body;
-    if (!collisionWorld.isReady({ x: location.x, y: location.y })) return { ...pawn, heldReason: "collision-not-ready" };
+    const readiness = collisionWorld.collisionReadiness({ x: location.x, y: location.y });
+    if (readiness !== "ready") return { ...pawn, heldReason: heldReasonByCollisionReadiness[readiness] };
     const traits = pawnTraits(entityId);
     const simulation = advancePawnSimulation(context, pawn.simulation, traits, frameSeconds);
     const advanced: PresentedPawn = { ...pawn, simulation, heldReason: simulation.speedUnresolved ? "speed-unresolved" : null };
