@@ -18,8 +18,8 @@ from support.converted_model_fixture import converted_model_glb
 from world.collision_payload_groups import movr_arrays
 from world.collision_step import mover_slot_records
 from world.mover_class_defaults import MoverDefaults, qualified_classes
-from world.mover_records import (MOVER_UNSUPPORTED_TOKENS, MoverUnsupportedError, endpoint_matrix, indexed_properties, is_rigid_rows, mover_mesh,
-                                 qualified_motion, resolved_field)
+from world.mover_records import (MOVER_UNSUPPORTED_TOKENS, MoverUnsupportedError, endpoint_matrix, endpoint_source_rows, indexed_properties,
+                                 is_rigid_rows, mover_mesh, non_rigid_key_token, qualified_motion, resolved_field)
 from world.mover_step import (MOVER_STEP_NAME, MoverConversion, MoverStepError, ReadMover, converted_movers, mover_models, read_tile_movers,
                               require_every_mover_classified, run_mover_step)
 from world.static_mesh_step import ConvertedStaticMesh, package_gate_reason
@@ -237,7 +237,7 @@ class MoverUnsupportedTokenTests(unittest.TestCase):
     def test_the_token_list_is_the_closed_set_of_qualification_failures(self):
         self.assertEqual(MOVER_UNSUPPORTED_TOKENS, ('unconsumed-native-tail', 'key-count:<n>', 'initial-key:<n>', 'not-initially-closed',
                                                     'field-unresolved:<fieldName>', 'invalid-move-time', 'saved-placement-differs-from-initial-key',
-                                                    'no-static-mesh', 'mesh-unresolved', 'non-rigid-key-transform'))
+                                                    'no-static-mesh', 'mesh-unresolved', 'non-rigid-key-transform', 'actor-scale'))
         with self.assertRaisesRegex(ValueError, 'not listed'):
             MoverUnsupportedError('door-is-blue')
         with self.assertRaisesRegex(ValueError, 'not listed'):
@@ -268,6 +268,21 @@ class MoverUnsupportedTokenTests(unittest.TestCase):
         self.assertTrue(is_rigid_rows(identity))
         self.assertFalse(is_rigid_rows([[2.0, 0.0, 0.0, 0.0], *identity[1:]]))
         self.assertFalse(is_rigid_rows([[-1.0, 0.0, 0.0, 0.0], *identity[1:]]))
+
+    def test_a_rigid_key_on_a_scaled_or_mirrored_actor_names_the_actor_scale(self):
+        origin, no_rotation, yaw = {'X': 0, 'Y': 0, 'Z': 0}, {'Pitch': 0, 'Yaw': 0, 'Roll': 0}, {'Pitch': 0, 'Yaw': 16384, 'Roll': 0}
+        unit_transforms = {name: {'value': value} for name, value in {
+            'Location': origin, 'Rotation': no_rotation, 'PrePivot': origin, 'DrawScale': 1.0,
+            'DrawScale3D': {'X': 1.0, 'Y': 1.0, 'Z': 1.0}}.items()}
+        patterns = load_gap_reason_patterns()
+        scales = ((1.0, {'X': 1.0, 'Y': 1.0, 'Z': 1.02}), (1.0, {'X': -1.0, 'Y': 1.0, 'Z': 1.0}), (2.0, {'X': 1.0, 'Y': 1.0, 'Z': 1.0}))
+        for draw_scale, draw_scale_3d in scales:
+            transforms = {**unit_transforms, 'DrawScale': {'value': draw_scale}, 'DrawScale3D': {'value': draw_scale_3d}}
+            self.assertFalse(is_rigid_rows(endpoint_source_rows(origin, no_rotation, origin, yaw, transforms)))
+            token = non_rigid_key_token(origin, no_rotation, origin, yaw, transforms)
+            self.assertEqual(token, 'actor-scale')
+            self.assertTrue(any(pattern.fullmatch(MoverUnsupportedError(token).reason) for pattern in patterns.values()))
+            self.assertEqual(transforms['DrawScale3D']['value'], draw_scale_3d)
 
 
 def read_mover(export_index, mesh_object):

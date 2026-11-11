@@ -15,8 +15,9 @@ MOVER_SCALAR_FIELDS = (('BasePos', 'Vector'), ('BaseRot', 'Rotator'), ('KeyNum',
                        ('L2ServerObjectType', 'Actor.EL2ObjectType'))
 MOVER_UNSUPPORTED_TOKENS = ('unconsumed-native-tail', 'key-count:<n>', 'initial-key:<n>', 'not-initially-closed', 'field-unresolved:<fieldName>',
                             'invalid-move-time', 'saved-placement-differs-from-initial-key', 'no-static-mesh', 'mesh-unresolved',
-                            'non-rigid-key-transform')
+                            'non-rigid-key-transform', 'actor-scale')
 MOVER_UNSUPPORTED_REASON_PREFIX = 'mover-unsupported:'
+UNIT_SCALE_VALUES = {'DrawScale': 1.0, 'DrawScale3D': {'X': 1.0, 'Y': 1.0, 'Z': 1.0}}
 RIGID_TOLERANCE = 1e-5
 SAVED_PLACEMENT_TOLERANCE = 1e-8
 
@@ -91,6 +92,15 @@ def is_rigid_rows(rows):
     return unit and orthogonal and determinant > 0
 
 
+def with_unit_scale(transforms):
+    return {**transforms, **{name: {**transforms[name], 'value': value} for name, value in UNIT_SCALE_VALUES.items()}}
+
+
+def non_rigid_key_token(base_pos, base_rot, key_pos, key_rot, transforms):
+    unscaled_rows = endpoint_source_rows(base_pos, base_rot, key_pos, key_rot, with_unit_scale(transforms))
+    return 'actor-scale' if is_rigid_rows(unscaled_rows) else 'non-rigid-key-transform'
+
+
 def resolved_field(defaults, properties, name, kind, index=None, count=None):
     try:
         return defaults.resolve(properties, name, kind, index, count)
@@ -122,7 +132,8 @@ def mover_keys(defaults, properties, resolved, num_keys):
         except FormatError as error:
             raise MoverUnsupportedError('non-rigid-key-transform') from error
         if index < num_keys and not is_rigid_rows(rows):
-            raise MoverUnsupportedError('non-rigid-key-transform')
+            raise MoverUnsupportedError(non_rigid_key_token(resolved['BasePos']['value'], resolved['BaseRot']['value'], position['value'],
+                                                            rotation['value'], resolved))
         keys.append(({'index': index, 'active': index < num_keys, 'position': position, 'rotation': rotation, 'matrix': gltf_placement(rows)}, rows))
     return keys
 

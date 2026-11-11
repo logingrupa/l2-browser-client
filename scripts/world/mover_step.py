@@ -22,7 +22,7 @@ from world.tile_census_validation import GAP_STATUS
 from world.tile_json_resource import write_tile_json_resource
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 
-MOVER_STEP_ALGORITHM_VERSION = 1
+MOVER_STEP_ALGORITHM_VERSION = 2
 MOVER_STEP_NAME = 'movers'
 MOVERS_PRODUCT_NAME = 'movers.json'
 TILE_MOVERS_KIND = 'native-tile-movers'
