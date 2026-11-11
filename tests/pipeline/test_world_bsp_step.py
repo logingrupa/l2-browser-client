@@ -198,6 +198,15 @@ class SurfaceMaterialTests(unittest.TestCase):
         self.assertEqual({member for member, translucent in shader.items() if not translucent}, {'OB_Normal', 'OB_Masked'})
         self.assertEqual({member for member, translucent in final_blend.items() if not translucent}, {'FB_Overwrite'})
 
+    def test_an_ob_normal_shader_with_an_opacity_input_blends_like_the_runtime_and_is_translucent(self):
+        program = blend_root_program('Engine.Shader', 'OutputBlending', ('OB_Normal',), 0)
+        program['nodes'][0]['fields'].append({'field': 'Opacity', 'value': {'node': 'Synthetic.OpacityTexture'}})
+        self.assertTrue(program_blend_is_translucent(program))
+        program['nodes'][0]['fields'][-1] = {'field': 'Opacity', 'value': {'externalObject': 'Other.OpacityTexture'}}
+        self.assertTrue(program_blend_is_translucent(program))
+        program['nodes'][0]['fields'][-1] = {'field': 'Opacity', 'value': None}
+        self.assertFalse(program_blend_is_translucent(program))
+
     def test_a_root_without_a_blend_field_is_opaque(self):
         self.assertFalse(program_blend_is_translucent(blend_root_program('Engine.Texture', 'OutputBlending', ('OB_Translucent',), 0)))
         program = blend_root_program('Engine.Shader', 'OutputBlending', ('OB_Translucent',), 0)
@@ -235,7 +244,7 @@ class BspManifestTests(unittest.TestCase):
         self.assertEqual((manifest['bsp'], row['status'], row['reason']), (None, 'gap', 'bsp-chunk-without-nodes'))
 
     def test_the_step_version_is_pinned(self):
-        self.assertEqual(BSP_STEP_ALGORITHM_VERSION, 3)
+        self.assertEqual(BSP_STEP_ALGORITHM_VERSION, 4)
 
 
 @unittest.skipUnless(REFERENCE_CLIENT.is_dir(), 'the conversion client E:/Lineage2-client is absent')

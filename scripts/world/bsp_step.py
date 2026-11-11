@@ -25,7 +25,7 @@ from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 
-BSP_STEP_ALGORITHM_VERSION = 3
+BSP_STEP_ALGORITHM_VERSION = 4
 BSP_STEP_NAME = 'bsp'
 BSP_CHUNKS_PRODUCT_NAME = 'bsp-chunks.json'
 CHUNK_BSP_FOLDER = 'native-tile-chunk-bsp'

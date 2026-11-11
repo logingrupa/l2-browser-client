@@ -11,7 +11,11 @@ from native_assets_lib.material_resources import write_native_material_resources
 from world.bsp_chunk_geometry import BspSurfaceMaterial
 from world.static_mesh_step import conversion_failure_reason
 
-OPAQUE_BLEND_MEMBERS_OF_CLASS = {'Engine.Shader': ('OutputBlending', frozenset({'OB_Normal', 'OB_Masked'})),
+SHADER_CLASS = 'Engine.Shader'
+SHADER_OPACITY_FIELD = 'Opacity'
+OPACITY_BLENDED_SHADER_MEMBER = 'OB_Normal'
+PROGRAM_REFERENCE_KEYS = ('node', 'externalObject')
+OPAQUE_BLEND_MEMBERS_OF_CLASS = {SHADER_CLASS: ('OutputBlending', frozenset({'OB_Normal', 'OB_Masked'})),
                                  'Engine.FinalBlend': ('FrameBufferBlending', frozenset({'FB_Overwrite'}))}
 UNPORTED_NODE_STATUS = 'unported'
 PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
@@ -50,16 +54,28 @@ def root_program_node(program):
     return next(node for node in program['nodes'] if node['id'] == program['root'])
 
 
+def root_field_value(root, field_name):
+    field = next((field for field in root['fields'] if field['field'].casefold() == field_name.casefold()), None)
+    return None if field is None else field['value']
+
+
+def shader_has_opacity_input(root):
+    value = root_field_value(root, SHADER_OPACITY_FIELD)
+    return isinstance(value, dict) and any(isinstance(value.get(key), str) for key in PROGRAM_REFERENCE_KEYS)
+
+
 def program_blend_is_translucent(program):
     root = root_program_node(program)
     blend = OPAQUE_BLEND_MEMBERS_OF_CLASS.get(root['class'])
     if blend is None:
         return False
     field_name, opaque_members = blend
-    field = next((field for field in root['fields'] if field['field'].casefold() == field_name.casefold()), None)
-    if field is None or not isinstance(field['value'], dict) or not isinstance(field['value'].get('name'), str):
+    value = root_field_value(root, field_name)
+    if not isinstance(value, dict) or not isinstance(value.get('name'), str):
         return False
-    return field['value']['name'] not in opaque_members
+    if root['class'] == SHADER_CLASS and value['name'] == OPACITY_BLENDED_SHADER_MEMBER and shader_has_opacity_input(root):
+        return True
+    return value['name'] not in opaque_members
 
 
 def unbound_surface_material(identity, program_record, gap_reasons, store_outputs):
