@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 02
 current_phase_name: Stage A breadth
 status: executing
-stopped_at: Completed 02-51-PLAN.md
-last_updated: "2026-11-11T00:50:19.454Z"
+stopped_at: Completed 02-54-PLAN.md
+last_updated: "2026-11-11T04:03:06.335Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 02 plan 02-66 complete (pawn physics, follow camera and movement presenter)
-state_head: 382eff6e1f1d9dbcc7455074ce5f097523f39331
+state_head: 5f5ebd552aebf88c22c4885b99d967d712f2aa93
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 88
-  completed_plans: 86
+  completed_plans: 87
   percent: 0
 ---
 
@@ -138,6 +138,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P67 | 105min | 3 tasks | 55 files |
 | Phase 02 P49 | 72 min | 3 tasks | 28 files |
 | Phase 02 P51 | 50min | 3 tasks | 21 files |
+| Phase 02 P54 | 191min | 3 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -336,6 +337,9 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-67: follow camera is CalcBehindView with the orbit radius as unobstructed distance; maxZ follows fogEnd while fog is on (owner review); one transparent comparator by distance then emitter ordinal; synthetic movement and mesh navigation deleted, WorldNavigation kept for its lane importers; VIS-01 closes, MAT-02, MOVE-01 and WORLD-05 stay Pending (rows 723 to 730)
 - [Phase 02]: 02-49: the tile route streams the selected tile and its converted neighbours in player-centred rings (1, 2, 3 chunk edges, presentation), cells required before load and removed before disposal, null-level culling on visual meshes; the runtime provides the collision context before the world loads; the 128-unit tile seam drops the player at a border (OVERNIGHT-DECISIONS rows 734 to 744)
 - [Phase 02]: 02-51: MinimapCtrl draws a tile grid by XX_YY tile id around the adapter local player at one texture pixel per CSS pixel, labelled tile-grid unverified and presentation; half-open tile frames; read-only two-lane spec overlay until the 02-55 union; WORLD-06 stays Pending (OVERNIGHT-DECISIONS rows 745 to 751)
+- [Phase 02]: 02-54: the tile census gates on reviewed_reader_pairs (map gate = raw-map, map-actor and terrain-info; height gate = g16-heightmap) and records reviewedReaderPairs; 149 of 163 eligible, Lobby eligible with its raw step sealed (rows 752 to 754)
+- [Phase 02]: 02-54: the level model reader stays 123/28, so 41 newly eligible tiles hold a bsp gap and fail the load check; the batch settles a tile whose first unsealed step is a gap (rows 755, 756)
+- [Phase 02]: 02-54: the meshes fingerprint carries staticMaterialReviewState from the committed .usx census; every sealed meshes unit re-ran once; WORLD-01 and WORLD-03 stay Pending (rows 757 to 761)
 
 ### Pending Todos
 
@@ -457,6 +461,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-11T00:49:57.116Z
-Stopped at: Completed 02-51-PLAN.md
+Last session: 2026-11-11T04:03:05.549Z
+Stopped at: Completed 02-54-PLAN.md
 Resume file: None
