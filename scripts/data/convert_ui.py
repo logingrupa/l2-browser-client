@@ -18,7 +18,7 @@ from native_assets import UMODEL, UMODEL_SHA256, Converter, implementation_hash
 from native_store.catalog_writer import (read_pinned_file, read_store_catalog, replace_file, require_file_pin, sha256_hex,
                                          validate_catalog_record)
 from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
-from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root, require_converter_output
+from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root
 from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, UnitLedger, locked_input_records, require_batch_preflight,
                                       run_at_below_normal_priority)
 from pinned_elbera_module import ELBERA_ROOT, load_pinned_elbera_module, resolve_elbera_path
@@ -192,7 +192,6 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description='Convert the Interlude interface into the data-ui lane store, one sealed unit per root window.')
     parser.add_argument('--step', choices=(LAYOUT_STEP, CONTROLS_STEP, TEXTURES_STEP), required=True)
     parser.add_argument('--client', type=Path, required=True)
-    parser.add_argument('--output', type=Path)
     parser.add_argument('--elbera-root', type=Path, default=ELBERA_ROOT)
     selection = parser.add_mutually_exclusive_group()
     selection.add_argument('--window', action='append')
@@ -203,7 +202,7 @@ def main(argv=None):
         parser.error('--batch windows needs --limit with a positive unit count')
     try:
         client_access = require_reference_client(arguments.client)
-        output_root = require_converter_output(REPOSITORY_ROOT, arguments.output or lane_store_root(REPOSITORY_ROOT, LANE_NAME))
+        output_root = lane_store_root(REPOSITORY_ROOT, LANE_NAME)
         require_batch_preflight(REPOSITORY_ROOT, LANE_NAME, BATCH_MINIMUM_FREE_BYTES)
         run_at_below_normal_priority()
         requested_window_ids = list(dict.fromkeys(arguments.window)) if arguments.window else None

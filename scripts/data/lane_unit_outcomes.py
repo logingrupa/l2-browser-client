@@ -45,9 +45,9 @@ def write_pinned_manifest_to_store(output_root, slice_name, record, manifest_rel
 
 
 def seal_unit_manifest(project_root, ledger, unit_key, fingerprint, inputs, config, manifest_path, record):
+    manifest_output = {'path': lane_relative_path(ledger, manifest_path), 'sha256': record['manifestSha256'], 'bytes': record['manifestBytes']}
     replace_unit_gap_row(project_root, ledger, unit_key, None)
-    ledger.seal(unit_key, fingerprint, {'config': config, 'inputs': inputs, 'gapRows': [], 'outputs': [
-        {'path': lane_relative_path(ledger, manifest_path), 'sha256': record['manifestSha256'], 'bytes': record['manifestBytes']}]})
+    ledger.seal(unit_key, fingerprint, {'config': config, 'inputs': inputs, 'gapRows': [], 'outputs': [manifest_output]})
 
 
 def seal_unit_decode_failure(project_root, ledger, unit_key, fingerprint, step_directory, part_name, inputs, config, error):

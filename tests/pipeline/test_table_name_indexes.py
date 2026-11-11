@@ -172,17 +172,16 @@ class WriteTableNameIndexTests(unittest.TestCase):
 
 
 class TableNameIndexCommandTests(unittest.TestCase):
-    def test_output_under_public_l2_is_refused(self):
+    def test_an_output_folder_other_than_the_lane_store_is_not_accepted(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             project_root = Path(temporary_directory).resolve()
             (project_root / 'artifacts').mkdir()
-            (project_root / 'public' / 'l2').mkdir(parents=True)
             error_output = io.StringIO()
-            with patch.object(table_name_indexes, 'REPOSITORY_ROOT', project_root), contextlib.redirect_stderr(error_output):
-                exit_code = table_name_indexes.main(['--output', str(project_root / 'public' / 'l2')])
-            self.assertEqual(exit_code, 1)
-            self.assertIn('converter output must be a dedicated folder under', error_output.getvalue())
-            self.assertEqual(sorted(path.name for path in project_root.rglob('*')), ['artifacts', 'l2', 'public'])
+            with patch.object(table_name_indexes, 'REPOSITORY_ROOT', project_root), contextlib.redirect_stderr(error_output),                     self.assertRaises(SystemExit) as raised:
+                table_name_indexes.main(['--output', str(project_root / 'artifacts' / 'tables-scratch')])
+            self.assertEqual(raised.exception.code, 2)
+            self.assertIn('unrecognized arguments: --output', error_output.getvalue())
+            self.assertEqual(sorted(path.name for path in project_root.rglob('*')), ['artifacts'])
 
 
 if __name__ == '__main__':

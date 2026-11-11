@@ -15,6 +15,7 @@ import convert_tables
 from convert_tables import (DECODE_TABLE_ALGORITHM_VERSION, LOCAL_DESCRIPTOR_ROUTE, TABLES_CATALOG_CAPACITY, convert_table_unit,
                             native_table_manifest, write_table_to_store)
 from hash_reference_client_tree import canonical_json_bytes
+from lane_unit_outcomes import LaneUnitOutcomeError, replace_unit_gap_row, seal_unit_manifest
 from native_catalog.tables import CRYPTO_SOURCE, NON_FINITE_FLOAT32_KEY, SAFE_PACKAGE_TRAILER, SCHEMA_ROOT, interlude_descriptor_links
 from native_store.catalog_writer import TABLE_MANIFEST_PATH_PATTERN, CatalogWriteError, validate_catalog_record
 from native_store.gap_rows import read_gap_rows
@@ -199,20 +200,35 @@ class TablesCatalogCapacityTests(unittest.TestCase):
 
 
 class ConvertTablesOutputGuardTests(unittest.TestCase):
-    def test_output_under_public_l2_is_refused_before_any_other_work(self):
+    def test_an_output_folder_other_than_the_lane_store_is_not_accepted_before_any_other_work(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             project_root = Path(temporary_directory).resolve()
             (project_root / 'artifacts').mkdir()
-            (project_root / 'public' / 'l2').mkdir(parents=True)
             error_output = io.StringIO()
-            with patch.object(convert_tables, 'REPOSITORY_ROOT', project_root), \
-                    patch.object(convert_tables, 'require_reference_client', side_effect=AssertionError('client read before the guard')), \
-                    contextlib.redirect_stderr(error_output):
-                exit_code = convert_tables.main(['--client', 'E:/Lineage2-client', '--output', str(project_root / 'public' / 'l2'),
-                                                 '--table', 'npcname-e'])
-            self.assertEqual(exit_code, 1)
-            self.assertIn('converter output must be a dedicated folder under', error_output.getvalue())
-            self.assertEqual(sorted(path.name for path in project_root.rglob('*')), ['artifacts', 'l2', 'public'])
+            with patch.object(convert_tables, 'REPOSITORY_ROOT', project_root),                     patch.object(convert_tables, 'require_reference_client', side_effect=AssertionError('client read before the guard')),                     contextlib.redirect_stderr(error_output), self.assertRaises(SystemExit) as raised:
+                convert_tables.main(['--client', 'E:/Lineage2-client', '--output', str(project_root / 'artifacts' / 'tables-scratch'),
+                                     '--table', 'npcname-e'])
+            self.assertEqual(raised.exception.code, 2)
+            self.assertIn('unrecognized arguments: --output', error_output.getvalue())
+            self.assertEqual(sorted(path.name for path in project_root.rglob('*')), ['artifacts'])
+
+
+class SealUnitManifestTests(unittest.TestCase):
+    def test_a_manifest_outside_the_lane_folder_is_refused_before_the_unit_gap_row_is_removed(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            project_root = Path(temporary_directory).resolve()
+            (project_root / 'artifacts').mkdir()
+            ledger = UnitLedger(lane_work_root(project_root, 'data-ui'), 'decode', DECODE_TABLE_ALGORITHM_VERSION)
+            gap_row = {'key': 'table:npcgrp', 'part': 'data', 'step': 'decode', 'status': 'gap', 'reason': 'decode-failed:FormatError',
+                       'sourceIdentity': {'path': 'system/npcgrp.dat', 'sha256': 'a' * 64}, 'evidence': 'work/table__npcgrp/decode/receipt.json'}
+            replace_unit_gap_row(project_root, ledger, 'table:npcgrp', gap_row)
+            fingerprint = ledger.unit_fingerprint(['a' * 64], {'table': 'npcgrp'})
+            ledger.begin('table:npcgrp', fingerprint)
+            record = {'manifestSha256': 'b' * 64, 'manifestBytes': 2}
+            with self.assertRaises(LaneUnitOutcomeError):
+                seal_unit_manifest(project_root, ledger, 'table:npcgrp', fingerprint, [], {'table': 'npcgrp'},
+                                   project_root / 'artifacts' / 'tables-scratch' / 'npcgrp.json', record)
+            self.assertEqual(read_gap_rows(project_root, 'data-ui'), [gap_row])
 
 
 if __name__ == '__main__':

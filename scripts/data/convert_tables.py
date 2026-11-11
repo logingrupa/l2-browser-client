@@ -23,7 +23,7 @@ from native_store.catalog_writer import sha256_hex, validate_catalog_record
 from native_store.data_ui_table_manifest import (DECODED_TABLE_KIND, DECODED_TABLE_SCHEMA_VERSION, ELBERA_ADAPTER_ROUTE,
                                                  LOCAL_DESCRIPTOR_ROUTE)
 from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
-from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root, require_converter_output
+from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root
 from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, UnitLedger, locked_input_records, require_batch_preflight,
                                       run_at_below_normal_priority)
 import reference_client_guard
@@ -136,7 +136,6 @@ def convert_table_batch(project_root, client_access, output_root, ledger, limit,
 def main(argv=None):
     parser = argparse.ArgumentParser(description='Decode descriptor-linked Interlude .dat tables and the Elbera-parsed hair tables into the data-ui lane store, one sealed unit per table.')
     parser.add_argument('--client', type=Path, required=True)
-    parser.add_argument('--output', type=Path)
     selection = parser.add_mutually_exclusive_group(required=True)
     selection.add_argument('--table', action='append')
     selection.add_argument('--batch', choices=(TABLES_CATALOG_SLICE,))
@@ -145,7 +144,7 @@ def main(argv=None):
     if arguments.batch and not (arguments.limit and arguments.limit > 0):
         parser.error('--batch tables needs --limit with a positive unit count')
     try:
-        output_root = require_converter_output(REPOSITORY_ROOT, arguments.output or lane_store_root(REPOSITORY_ROOT, LANE_NAME))
+        output_root = lane_store_root(REPOSITORY_ROOT, LANE_NAME)
         client_access = require_reference_client(arguments.client)
         require_batch_preflight(REPOSITORY_ROOT, LANE_NAME, BATCH_MINIMUM_FREE_BYTES)
         run_at_below_normal_priority()

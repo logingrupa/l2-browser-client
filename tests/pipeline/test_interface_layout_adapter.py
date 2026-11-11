@@ -1,5 +1,7 @@
 from collections import Counter
+import contextlib
 import hashlib
+import io
 import json
 from pathlib import Path
 import sys
@@ -257,6 +259,19 @@ class ConvertWindowUnitTests(unittest.TestCase):
                          [('window:SyntheticStatusWnd', 'decode-failed:IndexError'), ('window:SyntheticPlainWnd', 'decode-failed:IndexError')])
         gap_rows = json.loads((self.project_root / 'artifacts' / 'lane-store' / 'data-ui' / 'gap-rows' / 'layout.json').read_bytes())['rows']
         self.assertEqual([(row['key'], row['part']) for row in gap_rows], [('window:SyntheticPlainWnd', 'ui'), ('window:SyntheticStatusWnd', 'ui')])
+
+
+class ConvertUiCommandTests(unittest.TestCase):
+    def test_an_output_folder_other_than_the_lane_store_is_not_accepted_before_any_other_work(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            project_root = Path(temporary_directory).resolve()
+            (project_root / 'artifacts').mkdir()
+            error_output = io.StringIO()
+            with patch.object(convert_ui, 'REPOSITORY_ROOT', project_root),                     patch.object(convert_ui, 'require_reference_client', side_effect=AssertionError('client read before the guard')),                     contextlib.redirect_stderr(error_output), self.assertRaises(SystemExit) as raised:
+                convert_ui.main(['--step', 'textures', '--client', 'E:/Lineage2-client', '--output', str(project_root / 'artifacts' / 'ui-scratch')])
+            self.assertEqual(raised.exception.code, 2)
+            self.assertIn('unrecognized arguments: --output', error_output.getvalue())
+            self.assertEqual(sorted(path.name for path in project_root.rglob('*')), ['artifacts'])
 
 
 if __name__ == '__main__':
