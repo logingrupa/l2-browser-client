@@ -97,6 +97,17 @@ class BspGapRows:
         return [self.rows_by_identity[key] for key in sorted(self.rows_by_identity, key=lambda key: (key[1].casefold(), key[0]))]
 
 
+def node_brush_actor_name(model, package, index):
+    return package.object_name(model.surfs[model.nodes[index].i_surf].actor)
+
+
+def chunk_grid_nodes(model, package, node_indices, rectangles, gaps):
+    nodes_by_chunk, outside = assign_nodes_to_chunks(model, node_indices, rectangles)
+    for index in outside:
+        gaps.add(GAP_STATUS, BSP_NODE_OUTSIDE_CHUNK_GRID_REASON, node_brush_actor_name(model, package, index))
+    return nodes_by_chunk
+
+
 def drawable_chunk_nodes(model, package, nodes_by_chunk, gaps):
     kept = {}
     for chunk_id, node_indices in nodes_by_chunk.items():
@@ -106,7 +117,7 @@ def drawable_chunk_nodes(model, package, nodes_by_chunk, gaps):
             try:
                 fan_triangle_indices(node_source_polygon(model, node), node.plane[:3], 0, index)
             except BspPolygonError as error:
-                gaps.add(FAILED_STATUS, conversion_failure_reason(error), package.object_name(model.surfs[node.i_surf].actor))
+                gaps.add(FAILED_STATUS, conversion_failure_reason(error), node_brush_actor_name(model, package, index))
                 continue
             kept[chunk_id].append(index)
     return kept
@@ -185,9 +196,7 @@ def run_bsp_step(project_root, client_root, tile_id):
     gaps, flags, sky_zones = BspGapRows(tile_id, source_identity, receipt_evidence), load_bsp_poly_flags(), sky_zone_indices(zones)
     outdoor_zones = outdoor_zone_indices(zones)
     drawn = drawn_node_indices(level.model, flags, sky_zones)
-    nodes_by_chunk, outside = assign_nodes_to_chunks(level.model, drawn, rectangles)
-    for index in outside:
-        gaps.add(GAP_STATUS, BSP_NODE_OUTSIDE_CHUNK_GRID_REASON, package.object_name(level.model.surfs[level.model.nodes[index].i_surf].actor))
+    nodes_by_chunk = chunk_grid_nodes(level.model, package, drawn, rectangles, gaps)
     kept_nodes = drawable_chunk_nodes(level.model, package, nodes_by_chunk, gaps)
     identities = surface_material_identities(package, level.model)
     used_identities = {identities[level.model.nodes[index].i_surf] for indices in kept_nodes.values() for index in indices}

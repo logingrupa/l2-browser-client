@@ -17,7 +17,7 @@ from synthetic_class_scripts import scratch_work_root
 from world import bsp_surface_materials
 from world.bsp_chunk_geometry import (BspPolyFlags, BspSurfaceMaterial, assign_nodes_to_chunks, build_chunk_sections, chunk_bsp_glb,
                                       drawn_node_indices, load_bsp_poly_flags)
-from world.bsp_step import BSP_STEP_ALGORITHM_VERSION, sealed_bsp_chunks
+from world.bsp_step import BSP_STEP_ALGORITHM_VERSION, BspGapRows, chunk_grid_nodes, drawable_chunk_nodes, sealed_bsp_chunks
 from world.bsp_surface_materials import convert_surface_material, program_blend_is_translucent
 from world.level_model import LevelModelLayoutError, LevelModelRangeError, read_level_model, require_level_model_ranges
 from world.raw_map_step import read_tile_map_lock_record
@@ -141,6 +141,34 @@ class BspSectionTests(unittest.TestCase):
         self.assertEqual(document['materials'][0]['extras']['unboundSourceMaterial'], MATERIAL)
         self.assertNotIn('TEXCOORD_0', document['meshes'][0]['primitives'][0]['attributes'])
         self.assertNotIn('images', document)
+
+
+class BspNodeGapRowTests(unittest.TestCase):
+    package = SimpleNamespace(object_name=lambda reference: {2: '00_00.Brush7', 3: '00_00.Brush9'}[reference])
+
+    def gaps(self):
+        return BspGapRows(TILE_ID, SOURCE_IDENTITY, EVIDENCE)
+
+    def test_a_node_outside_every_chunk_rectangle_is_a_gap_row_naming_its_brush_actor(self):
+        model = build_synthetic_level_model([synthetic_polygon(square_points(100, 0, 10)), synthetic_polygon(square_points(5000, 0, 10), actor=3)])
+        gaps = self.gaps()
+        self.assertEqual(chunk_grid_nodes(model, self.package, [0, 1], RECTANGLES, gaps), {'chunk-0-0': [0], 'chunk-1-0': []})
+        self.assertEqual([(row['status'], row['reason'], row['sourceIdentity']) for row in gaps.rows()],
+                         [('gap', 'bsp-node-outside-chunk-grid', {**SOURCE_IDENTITY, 'object': '00_00.Brush9'})])
+
+    def test_a_reversed_or_edge_on_winding_drops_the_node_with_a_failed_row_naming_its_brush_actor(self):
+        polygons = [synthetic_polygon(square_points(0, 0, 10)), synthetic_polygon(square_points(20, 0, 10), actor=3),
+                    synthetic_polygon(square_points(40, 0, 10))]
+        model = build_synthetic_level_model(polygons)
+        model.nodes[1].plane = tuple(-component for component in model.nodes[1].plane)
+        model.nodes[2].plane = (1.0, 0.0, 0.0, 0.0)
+        gaps = self.gaps()
+        self.assertEqual(drawable_chunk_nodes(model, self.package, {'chunk-0-0': [0, 1, 2]}, gaps), {'chunk-0-0': [0]})
+        self.assertEqual([(row['status'], row['reason'], row['sourceIdentity']) for row in gaps.rows()],
+                         [('failed', 'decode-failed:BspPolygonError:node 2 polygon winding is reversed or degenerate against its stored plane',
+                           {**SOURCE_IDENTITY, 'object': '00_00.Brush7'}),
+                          ('failed', 'decode-failed:BspPolygonError:node 1 polygon winding is reversed or degenerate against its stored plane',
+                           {**SOURCE_IDENTITY, 'object': '00_00.Brush9'})])
 
 
 class SurfaceMaterialTests(unittest.TestCase):
