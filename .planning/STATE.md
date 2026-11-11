@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 02-82-PLAN.md
-last_updated: "2026-11-11T15:57:24.793Z"
+stopped_at: Completed 02-84-PLAN.md
+last_updated: "2026-11-11T16:17:19.919Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 03 plan 03-01 complete (side-by-side check record writer and key content digest; Phase 3 start commit cb09cdc)
-state_head: 7f5e272b312d5685c5f9c5d88910fded95a455f9
+state_head: 2b3c023560d0a512b16efd8cb410c10d8fa9a90a
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 131
-  completed_plans: 102
+  completed_plans: 103
   percent: 0
 ---
 
@@ -148,6 +148,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 2 P74 | 10min | 3 tasks | 14 files |
 | Phase 2 P81 | 35min | 3 tasks | 16 files |
 | Phase 2 P82 | 30min | 2 tasks | 14 files |
+| Phase 2 P84 | 12min | 3 tasks | 24 files |
 
 ## Accumulated Context
 
@@ -385,6 +386,13 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 2]: P978: minimap package indexes carry a per-export textureSource from build_texture_source; a refused joined radar export keeps the library reason on the radar cell and is not converted; the REVIEWED_VERSIONS refusal in minimap_join.py is deleted
 - [Phase 2]: P979: MINIMAP_JOIN_ALGORITHM_VERSION 2 with the name rules unchanged
 - [Phase 2]: P980: Lineage material prefix constants are imported from native_assets_lib.lineage_material_prefix everywhere; no re-export from reader_licensee_layouts.py
+- [Phase 2]: P981: skill effect placements come only from SkillAction_LocateEffect stage rows (bSpawnOnTarget true is the target, otherwise the caster); 3:1 records none and keeps its reviewed init and shot previews
+- [Phase 2]: P982: AttachOn bones, offsets, bRelativeToCylinder, bSizeScale and stage timing are listed as unappliedFields; playbacks sit at the anchor pivot and start at the cast
+- [Phase 2]: P983: no served effect manifest records an emitter native call; applyNative lands on the emitter actor playback with tests and the presentation applies none
+- [Phase 2]: P984: not-drawn reasons emitter-class-unported:<class>, skill-effect-anchor-unavailable:<side>, the load failure message, and skill-cast-superseded for a superseded cast
+- [Phase 2]: P985: loadCastSkillEffectBundle is split out of loadNativeSkillEffectComponents and parseEffectManifest validates the optional stages records
+- [Phase 2]: P986: converted catalog lookups always carry namedGaps through one convertedLookup helper; ten shared test doubles updated
+- [Phase 2]: P987: skills-effects EVIDENCE kept under 30,720 bytes by condensing ribbon address detail the constants rows hold
 
 ### Pending Todos
 
@@ -491,7 +499,7 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 - Library exports (02-69, rows 653 and 692): `src/materials/ue2/babylon/material.ts` re-exports `FOG_DISABLED`, the fog evaluator and `loadNativeMaterial` since 02-64; `particleMaterialBinding.ts` and `NativeActor.ts` (actors lane) still import them from `model/fog` and `babylon/loadNativeMaterial` and move to material.ts. `src/materials/ue2/model/constants/blendConstants.ts` provenance still cites the deleted `src/effects/nativeEffectMaterial.ts:152`; the shipped pairs now live only in its own runtimeDefault.
 - Library skinning (02-69, row 652): the library vertex stage has no bone influence, so skinned skeletal slots keep their converted texture material (`library-vertex-stage-unskinned`); integration adds skinning to `createNativeMaterial`, and the actor converter writes `nativeMaterialProgram` per slot so slots bind through the library.
 - Ribbon drawing (02-69, row 648): the staged manifest binds no texture to a RibbonEmitter, so ribbons simulate but `loadEffectComponent` refuses them with ribbon-texture-unstaged; staging binds the ribbon texture and the effects lane adds the point-strip renderer.
-- Emitter native caller (02-69, rows 649 and 650): no adapter-event placement layer calls `applyEmitterNative` or `attachWeaponTrail` yet, so Power Strike plays without AdjustparticleLife, SetSizeScale or SetDelayed; the placement layer lands with the skill-cast adapter events.
+- Emitter native caller (02-69, rows 649 and 650; 02-84, rows 981 to 987): the skill cast presentation (`skillCastPresentation.ts`) is the placement layer and the playback hook `applyNative` is the only importer of `emitterNatives.ts`, but no served effect manifest records a native call with its arguments, so no skill applies AdjustparticleLife, SetSizeScale or SetDelayed and `attachWeaponTrail` has no caller. The converter must record the native calls (for example the argument behind the stage flag `bSizeScale`) before the presentation applies them; AttachOn bones, offsets and stage timing stay unapplied (`placements[].unappliedFields`).
 - World audio sheet pass-through (02-46, row 659): `loadNativeWorldAudio` returns `placementAudio` and `silentReason`, and `attachWorldAudioControls` takes both, but `src/runtime/loadNativeSliceAudio.ts` (`watchWorldAudio`) and the two `setWorldAudio` calls in `src/runtime/attachNativeSliceSheet.ts` do not pass them yet, so the live sheet says no placement audio is loaded on a tile that has it; integration adds the two fields to `NativeSliceWorldAudioState` and passes them through.
 
 ## Deferred Verification
@@ -513,6 +521,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-11T15:57:24.136Z
-Stopped at: Completed 02-82-PLAN.md
+Last session: 2026-11-11T16:17:19.127Z
+Stopped at: Completed 02-84-PLAN.md
 Resume file: None
