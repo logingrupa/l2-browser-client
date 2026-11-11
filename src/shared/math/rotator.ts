@@ -107,7 +107,3 @@ export function sineOfRadiansFromTable(radians: number): number {
 export function cosineOfRadiansFromTable(radians: number): number {
   return rotatorSineFromTable(rotatorUnitsPerQuarterTurn - Math.trunc(radians * rotatorUnitsPerTurn / -radiansPerTurn));
 }
-
-export function rotatorSineExact(rotatorUnits: number): number {
-  return Math.sin(rotatorUnitsToRadians(rotatorUnits));
-}

@@ -1,20 +1,10 @@
 import { describe, expect, it } from "vitest";
-import {
-  IDENTITY_AFFINE_MATRIX,
-  invertAffineMatrix,
-  inverseTransposeLinear,
-  multiplyAffineMatrices,
-  multiplyMatrix3Vector,
-  transformDirection,
-  transformPoint,
-  type AffineMatrix,
-} from "../../src/shared/math/affineMatrix";
+import { inverseTransposeLinear, multiplyMatrix3Vector, transformPoint, type AffineMatrix } from "../../src/shared/math/affineMatrix";
 import { planeDistance, planeFromNormalAndPoint, transformPlane } from "../../src/shared/math/plane";
 import { float32SineWithRoundingMargin } from "./support/highPrecisionSine";
 import {
   ROTATOR_CONSTANTS,
   ROTATOR_RULE_BY_USE,
-  rotatorSineExact,
   rotatorSineFromTable,
   rotatorUnitsToRadians,
 } from "../../src/shared/math/rotator";
@@ -50,22 +40,13 @@ describe("vector math", () => {
 });
 
 describe("affine matrix math", () => {
-  it("gives identity when the inverse multiplies the matrix, within float64 tolerance 1e-12", () => {
-    for (const product of [multiplyAffineMatrices(invertAffineMatrix(shearedPlacement), shearedPlacement),
-      multiplyAffineMatrices(shearedPlacement, invertAffineMatrix(shearedPlacement))]) {
-      product.linear.forEach((value, index) => expect(Math.abs(value - IDENTITY_AFFINE_MATRIX.linear[index]!)).toBeLessThan(float64Tolerance));
-      expectVectorClose(product.translation, IDENTITY_AFFINE_MATRIX.translation);
-    }
-  });
-
-  it("transforms points with translation and directions without it", () => {
+  it("transforms points with the linear part and the translation", () => {
     expectVectorClose(transformPoint(shearedPlacement, { x: 1, y: 0, z: 0 }), { x: 122, y: -45.25, z: 7.6 });
-    expect(transformDirection(shearedPlacement, { x: 1, y: 0, z: 0 })).toEqual({ x: 2, y: -0.25, z: 0.1 });
-    expectVectorClose(transformPoint(invertAffineMatrix(shearedPlacement), transformPoint(shearedPlacement, { x: -3, y: 8, z: 0.5 })), { x: -3, y: 8, z: 0.5 });
+    expect(multiplyMatrix3Vector(shearedPlacement.linear, { x: 1, y: 0, z: 0 })).toEqual({ x: 2, y: -0.25, z: 0.1 });
   });
 
-  it("refuses to invert a singular matrix", () => {
-    expect(() => invertAffineMatrix({ linear: [1, 2, 3, 2, 4, 6, 0, 0, 1], translation: { x: 0, y: 0, z: 0 } })).toThrow(RangeError);
+  it("refuses the inverse-transpose of a singular matrix", () => {
+    expect(() => inverseTransposeLinear({ linear: [1, 2, 3, 2, 4, 6, 0, 0, 1], translation: { x: 0, y: 0, z: 0 } })).toThrow(RangeError);
   });
 
   it("maps a plane normal with the inverse-transpose so it stays perpendicular to transformed in-plane vectors", () => {
@@ -73,8 +54,9 @@ describe("affine matrix math", () => {
     const inPlaneVectors = [{ x: 2, y: -1, z: 0 }, { x: 1, y: 0, z: 1 }];
     inPlaneVectors.forEach(vector => expect(Math.abs(dotProduct(vector, normal))).toBeLessThan(float64Tolerance));
     const transformedNormal = multiplyMatrix3Vector(inverseTransposeLinear(shearedPlacement), normal);
-    for (const vector of inPlaneVectors) expect(Math.abs(dotProduct(transformDirection(shearedPlacement, vector), transformedNormal))).toBeLessThan(float64Tolerance);
-    expect(Math.abs(dotProduct(transformDirection(shearedPlacement, normal), transformedNormal))).toBeGreaterThan(0.1);
+    const transformDirection = (direction: Vector3) => multiplyMatrix3Vector(shearedPlacement.linear, direction);
+    for (const vector of inPlaneVectors) expect(Math.abs(dotProduct(transformDirection(vector), transformedNormal))).toBeLessThan(float64Tolerance);
+    expect(Math.abs(dotProduct(transformDirection(normal), transformedNormal))).toBeGreaterThan(0.1);
   });
 });
 
@@ -105,7 +87,6 @@ describe("rotator rules", () => {
     expect(rotatorUnitsToRadians(32768)).toBe(Math.PI);
     expect(rotatorUnitsToRadians(65536)).toBe(2 * Math.PI);
     expect(rotatorUnitsToRadians(-16384)).toBe(-Math.PI / 2);
-    expect(rotatorSineExact(16384)).toBe(1);
   });
 
   it("reads a 16384-entry float32 table indexed by floor(units / 4) mod 16384", () => {
@@ -138,7 +119,7 @@ describe("rotator rules", () => {
   it("pins the largest table-to-exact difference over all 65536 inputs", () => {
     let largestDifference = 0, largestDifferenceUnits = -1;
     for (let units = 0; units < 65536; units += 1) {
-      const difference = Math.abs(rotatorSineFromTable(units) - rotatorSineExact(units));
+      const difference = Math.abs(rotatorSineFromTable(units) - Math.sin(rotatorUnitsToRadians(units)));
       if (difference > largestDifference) { largestDifference = difference; largestDifferenceUnits = units; }
     }
     expect(largestDifference).toBe(0.0002876213937629265);

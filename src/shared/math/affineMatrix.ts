@@ -17,16 +17,6 @@ export function multiplyMatrix3Vector(matrix: Matrix3, vector: Vector3): Vector3
   };
 }
 
-function multiplyMatrix3(left: Matrix3, right: Matrix3): Matrix3 {
-  const element = (row: number, column: number) =>
-    left[row * 3]! * right[column]! + left[row * 3 + 1]! * right[3 + column]! + left[row * 3 + 2]! * right[6 + column]!;
-  return [
-    element(0, 0), element(0, 1), element(0, 2),
-    element(1, 0), element(1, 1), element(1, 2),
-    element(2, 0), element(2, 1), element(2, 2),
-  ];
-}
-
 function transposeMatrix3(matrix: Matrix3): Matrix3 {
   return [matrix[0], matrix[3], matrix[6], matrix[1], matrix[4], matrix[7], matrix[2], matrix[5], matrix[8]];
 }
@@ -44,25 +34,8 @@ function invertMatrix3(matrix: Matrix3): Matrix3 {
   ];
 }
 
-export function multiplyAffineMatrices(outer: AffineMatrix, inner: AffineMatrix): AffineMatrix {
-  return {
-    linear: multiplyMatrix3(outer.linear, inner.linear),
-    translation: addVectors(multiplyMatrix3Vector(outer.linear, inner.translation), outer.translation),
-  };
-}
-
 export function transformPoint(matrix: AffineMatrix, point: Vector3): Vector3 {
   return addVectors(multiplyMatrix3Vector(matrix.linear, point), matrix.translation);
-}
-
-export function transformDirection(matrix: AffineMatrix, direction: Vector3): Vector3 {
-  return multiplyMatrix3Vector(matrix.linear, direction);
-}
-
-export function invertAffineMatrix(matrix: AffineMatrix): AffineMatrix {
-  const inverseLinear = invertMatrix3(matrix.linear);
-  const inverseTranslation = multiplyMatrix3Vector(inverseLinear, matrix.translation);
-  return { linear: inverseLinear, translation: { x: -inverseTranslation.x, y: -inverseTranslation.y, z: -inverseTranslation.z } };
 }
 
 export function inverseTransposeLinear(matrix: AffineMatrix): Matrix3 {
