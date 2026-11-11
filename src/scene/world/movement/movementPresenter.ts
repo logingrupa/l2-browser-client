@@ -108,6 +108,10 @@ function requireMoveEvent(event: MoveEvent): void {
 
 const distanceBetween = (left: Vector3, right: Vector3) => Math.hypot(left.x - right.x, left.y - right.y, left.z - right.z);
 
+const holdPawn = (pawn: PresentedPawn, heldReason: MovementHeldReason): PresentedPawn => ({
+  ...pawn, reports: { ...pawn.reports, progressAnchor: null }, heldReason,
+});
+
 export function createMovementPresenter(options: MovementPresenterOptions): MovementPresenter {
   const { collisionWorld, rules, reportIntent, pawnTraits } = options;
   const context: PawnPhysicsContext = { world: collisionWorld, rules, surroundings: {} };
@@ -195,10 +199,11 @@ export function createMovementPresenter(options: MovementPresenterOptions): Move
   function advancePawn(entityId: string, pawn: PresentedPawn, frameSeconds: number): PresentedPawn {
     const { location } = pawn.simulation.body;
     const readiness = collisionWorld.collisionReadiness({ x: location.x, y: location.y });
-    if (readiness !== "ready") return { ...pawn, heldReason: heldReasonByCollisionReadiness[readiness] };
+    if (readiness !== "ready") return holdPawn(pawn, heldReasonByCollisionReadiness[readiness]);
     const traits = pawnTraits(entityId);
     const simulation = advancePawnSimulation(context, pawn.simulation, traits, frameSeconds);
-    const advanced: PresentedPawn = { ...pawn, simulation, heldReason: simulation.speedUnresolved ? "speed-unresolved" : null };
+    if (simulation.speedUnresolved) return holdPawn({ ...pawn, simulation }, "speed-unresolved");
+    const advanced: PresentedPawn = { ...pawn, simulation, heldReason: null };
     return traits.isLocalPlayer ? emitReports(entityId, advanced) : advanced;
   }
 

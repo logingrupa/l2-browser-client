@@ -5,7 +5,7 @@ import { createCollisionWorld, type CollisionWorld } from "../../src/scene/world
 import {
   createMovementPresenter, MovementPresenterError, type MovementIntent, type MovementPresenter,
 } from "../../src/scene/world/movement/movementPresenter";
-import { blockingBox, boxVolumeWorld, floorSlab, pawnRules, syntheticPawnHalfHeight } from "../fixtures/movement/pawnWorldFixtures";
+import { blockingBox, boxVolumeWorld, floorSlab, pawnRules, syntheticPawnHalfHeight, waterBox } from "../fixtures/movement/pawnWorldFixtures";
 
 const frameSeconds = 1 / 60;
 const localPlayerId = "local-player";
@@ -36,7 +36,11 @@ const moveEvent = (entityId: string, origin: SourcePosition, destination: Source
   type: "move", entityId, origin, destination, moveType, speeds: { walk: 80, run: 115 }, collision: { radius: 9, height: syntheticPawnHalfHeight },
 });
 
-const pawnOf = (presenter: MovementPresenter, entityId: string) => presenter.inspection().pawns.find(pawn => pawn.entityId === entityId)!;
+const swimmingMoveEvent = (entityId: string, origin: SourcePosition, destination: SourcePosition): WorldEvent => ({
+  type: "move", entityId, origin, destination, moveType: 0, speeds: { walk: 80, run: 115, swimWalk: 50, swimRun: 70 }, collision: { radius: 9, height: syntheticPawnHalfHeight },
+});
+
+const pawnOf =(presenter: MovementPresenter, entityId: string) => presenter.inspection().pawns.find(pawn => pawn.entityId === entityId)!;
 
 describe("movementPresenter applies server movement through the MOVE-01 port", () => {
   it("walks a pawn to its move goal along the floor, turning at the local yaw rate, and stops there", () => {
@@ -99,6 +103,30 @@ describe("movementPresenter applies server movement through the MOVE-01 port", (
       heldReason: "collision-cell-absent", isMoving: true, feetPosition: { x: 4200, y: 0, z: feetZ },
     });
     expect(intents).toEqual([]);
+  });
+
+  it("holds a local pawn whose move record lacks the swim speed as speed-unresolved without reporting cannot-move", () => {
+    const { presenter, intents, advanceFrames } = presenterOn(boxVolumeWorld([floorSlab(-600), waterBox([0, 0, -250], [2048, 2048, 250])]));
+    presenter.applyEvent(moveEvent(localPlayerId, { x: 0, y: 0, z: -300 }, { x: 0, y: 0, z: -400 }));
+    advanceFrames(90);
+    expect(pawnOf(presenter, localPlayerId)).toMatchObject({
+      heldReason: "speed-unresolved", isMoving: true, feetPosition: { x: 0, y: 0, z: -300 },
+    });
+    expect(intents).toEqual([]);
+  });
+
+  it("restarts the stuck window after a hold so a resumed swim is not reported as cannot-move", () => {
+    const { presenter, intents, advanceFrames } = presenterOn(boxVolumeWorld([floorSlab(-600), waterBox([0, 0, -250], [2048, 2048, 250])]));
+    const swimMove = swimmingMoveEvent(localPlayerId, { x: 0, y: 0, z: -300 }, { x: 0, y: 0, z: -400 });
+    presenter.applyEvent(swimMove);
+    advanceFrames(1);
+    presenter.applyEvent(moveEvent(localPlayerId, { x: 0, y: 0, z: -300 }, { x: 0, y: 0, z: -400 }));
+    advanceFrames(60);
+    expect(pawnOf(presenter, localPlayerId).heldReason).toBe("speed-unresolved");
+    presenter.applyEvent(swimMove);
+    advanceFrames(1);
+    expect(pawnOf(presenter, localPlayerId)).toMatchObject({ heldReason: null, isMoving: true });
+    expect(intents.filter(entry => entry.intent.type === "cannot-move")).toEqual([]);
   });
 
   it("snaps a remote pawn to a move origin farther than the snap threshold and walks the local pawn from where it stands", () => {
