@@ -22,6 +22,7 @@ GOLDEN_ROOT = ROOT / 'tests' / 'fixtures' / 'golden'
 GOLDEN_CATALOG_BYTES = (GOLDEN_ROOT / 'l2' / 'catalog.json').read_bytes()
 NATIVE_RESOURCE_PREFIX = '/l2/'
 PROFILE_RECORD_ID = 'interlude:npc-profiles:synthetic-fixture'
+SYNTHETIC_NPC_MODEL_CATALOG_ID = 'npc-model:' + '6' * 64
 RAW_CLASS_EXPORT = 'source/classes/SyntheticFixture.Actor.bin'
 CLASS_DEFINITION = 'source/classes/SyntheticFixture.Actor.json'
 SOURCE_SELECTIONS = 'source/npc-selections.json'
@@ -61,7 +62,8 @@ def synthetic_profile_bundle_members():
 
 
 def synthetic_profile_manifest(member_pins):
-    return {'schemaVersion': 1, 'id': 'synthetic-fixture-npc-profiles', 'kind': 'native-npc-profiles', 'profiles': [{'npcId': 20001, 'mesh': 'SyntheticFixture.Mesh'}],
+    return {'schemaVersion': 1, 'id': 'synthetic-fixture-npc-profiles', 'kind': 'native-npc-profiles',
+            'profiles': [{'npcId': 20001, 'mesh': 'SyntheticFixture.Mesh', 'modelCatalogId': SYNTHETIC_NPC_MODEL_CATALOG_ID}],
             'sourceFiles': [{'path': 'system/SyntheticFixture.u', 'bytes': 10, 'sha256': '5' * 64}],
             'sourceSelections': SOURCE_SELECTIONS, 'classDefinitions': ['SyntheticFixture.Actor'], 'files': member_pins}
 
