@@ -30,6 +30,8 @@ const textureNotInCatalogReason = "texture-not-in-catalog";
 const textBoxControlType = "TextBox";
 const controlTypeUnsupportedPrefix = "control-type-unsupported:";
 const adapterFieldAbsentPrefix = "adapter-field-absent:";
+const bindingControlMissingPrefix = "binding-control-missing:";
+const bindingControlAmbiguousPrefix = "binding-control-ambiguous:";
 
 interface RenderedControl {
   readonly node: NativeWindowNode;
@@ -64,7 +66,8 @@ function firstTextureGapOrImage(node: NativeWindowNode, rectangle: NativeWindowR
   return { image: textureImage(resolution.url, rectangle.width, rectangle.height), gap: null };
 }
 
-function uniqueBindingNodes(root: NativeWindowNode, bindings: readonly NativeWindowFieldBinding[]): ReadonlyMap<NativeWindowNode, NativeWindowFieldBinding> {
+function uniqueBindingNodes(root: NativeWindowNode, bindings: readonly NativeWindowFieldBinding[]): {
+  readonly bindingByNode: ReadonlyMap<NativeWindowNode, NativeWindowFieldBinding>; readonly unplacedBindingGaps: readonly string[] } {
   const nodesByName = new Map<string, NativeWindowNode[]>();
   const pending = [root];
   while (pending.length > 0) {
@@ -73,11 +76,13 @@ function uniqueBindingNodes(root: NativeWindowNode, bindings: readonly NativeWin
     pending.push(...node.children);
   }
   const bindingByNode = new Map<NativeWindowNode, NativeWindowFieldBinding>();
+  const unplacedBindingGaps: string[] = [];
   for (const binding of bindings) {
     const candidates = nodesByName.get(binding.controlName) ?? [];
     if (candidates.length === 1) bindingByNode.set(candidates[0]!, binding);
+    else unplacedBindingGaps.push((candidates.length === 0 ? bindingControlMissingPrefix : bindingControlAmbiguousPrefix) + binding.controlName);
   }
-  return bindingByNode;
+  return { bindingByNode, unplacedBindingGaps };
 }
 
 function gaugeFor(binding: NativeWindowFieldBinding, rectangle: NativeWindowRectangle,
@@ -127,7 +132,8 @@ function markControlGaps(control: RenderedControl): void {
 
 export function renderNativeWindow(container: HTMLElement, windowManifest: NativeWindowManifest, renderInputs: NativeWindowRenderInputs): RenderedNativeWindow {
   const { rectangles, gaps: anchorGaps } = resolveNativeWindowRectangles(windowManifest.root, renderInputs.screen);
-  const bindingByNode = uniqueBindingNodes(windowManifest.root, renderInputs.fieldBindings.filter(binding => binding.windowId === windowManifest.windowId));
+  const { bindingByNode, unplacedBindingGaps } = uniqueBindingNodes(windowManifest.root,
+    renderInputs.fieldBindings.filter(binding => binding.windowId === windowManifest.windowId));
   const controls: RenderedControl[] = [];
   const renderNode = (node: NativeWindowNode, parentRectangle: NativeWindowRectangle | null): HTMLElement => {
     const rectangle = rectangles.get(node)!;
@@ -140,7 +146,8 @@ export function renderNativeWindow(container: HTMLElement, windowManifest: Nativ
     const binding = bindingByNode.get(node);
     const bound = binding === undefined ? { gauge: null, gaps: [] } : gaugeFor(binding, rectangle, renderInputs.textures);
     const nodeAnchorGaps = anchorGaps.filter(gap => gap.node === node).map(gap => gap.reason);
-    const staticGaps = [...staticControlGaps(node, nodeAnchorGaps), ...(texture.gap === null ? [] : [texture.gap]), ...bound.gaps];
+    const staticGaps = [...staticControlGaps(node, nodeAnchorGaps), ...(texture.gap === null ? [] : [texture.gap]), ...bound.gaps,
+      ...(node === windowManifest.root ? unplacedBindingGaps : [])];
     const minimap = node.type === minimapControlType
       ? renderMinimapControl(element, rectangle, { localPlayer: renderInputs.localPlayer, tileSource: renderInputs.minimapTileSource }) : null;
     controls.push({ node, element, rectangle, staticGaps, gauge: bound.gauge, minimap });

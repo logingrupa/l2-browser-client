@@ -23,16 +23,16 @@ const screen = { width: 1440, height: 900 };
 const markupText = "<b>Greeting</b>";
 const bindingSource = { document: "synthetic", sha256: "b".repeat(64), excerpt: "synthetic binding" };
 
-function syntheticStatusManifest(): NativeWindowManifest {
+function syntheticStatusManifest(textBoxCount = 1): NativeWindowManifest {
   const fixture = syntheticManifests.find(manifest => manifest.windowId === "SyntheticStatusWnd")!;
   const root = fixture.root as Record<string, unknown>;
-  const textBox = {
+  const textBoxes = Array.from({ length: textBoxCount }, (_, textBoxIndex) => ({
     name: "SyntheticLevelText", type: "TextBox", width: 0, height: 0, x: 1, y: 2, sizeMode: "absolute",
     position: { selfAnchor: 1, targetAnchor: 1, target: "", offsetX: 1, offsetY: 2 }, textures: [], children: [],
-    sourceOffset: 700, tail: { offset: 700, end: 720, sha256: "c".repeat(64) },
+    sourceOffset: 700 + textBoxIndex * 20, tail: { offset: 700 + textBoxIndex * 20, end: 720 + textBoxIndex * 20, sha256: "c".repeat(64) },
     textLayout: { defaultText: markupText, autoSize: 1, fontType: 6, alignEnum: 1 },
-  };
-  return parseNativeWindowManifest({ ...fixture, root: { ...root, children: [...(root.children as unknown[]), textBox] } });
+  }));
+  return parseNativeWindowManifest({ ...fixture, root: { ...root, children: [...(root.children as unknown[]), ...textBoxes] } });
 }
 
 function localPlayerWithHealth(health: number): WorldEntity {
@@ -147,6 +147,19 @@ describe("renderNativeWindow", () => {
     expect(gauge.querySelector("img")).toBeNull();
     expect(gauge.getAttribute("data-native-gap")).toBe("control-type-unsupported:BarCtrl texture-not-in-catalog");
     expect(rendered.gaps).toContainEqual({ controlName: "SyntheticGaugeBar", reason: "texture-not-in-catalog" });
+  });
+
+  it("marks the window root with a gap for a field binding whose control is missing or ambiguous and draws no gauge for it", () => {
+    const rendered = renderNativeWindow(container as unknown as HTMLElement, syntheticStatusManifest(2), { localPlayer: localPlayerWithHealth(100),
+      textures: resolvedTextures, fieldBindings: [healthBinding("SyntheticRenamedBar", null), healthBinding("SyntheticLevelText", null)], screen,
+      minimapTileSource: emptyMinimapTileSource });
+    expect(rendered.element.getAttribute("data-native-gap"))
+      .toBe("binding-control-missing:SyntheticRenamedBar binding-control-ambiguous:SyntheticLevelText");
+    expect(rendered.gaps).toEqual(expect.arrayContaining([
+      { controlName: "SyntheticStatusWnd", reason: "binding-control-missing:SyntheticRenamedBar" },
+      { controlName: "SyntheticStatusWnd", reason: "binding-control-ambiguous:SyntheticLevelText" },
+    ]));
+    expect(container.querySelector("[data-native-gauge-fill]")).toBeNull();
   });
 
   it("renders an empty positioned box for a control without textures and the root box only for an empty window", () => {
