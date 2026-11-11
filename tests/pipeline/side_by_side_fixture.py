@@ -3,8 +3,17 @@ from __future__ import annotations
 import copy
 import hashlib
 
-from catalog_store_fixture import write_store_catalog
+from catalog_store_fixture import model_record, write_profile_manifest, write_store_catalog
 
+FIRST_NPC_ID = 1001
+SECOND_NPC_ID = 1002
+FIRST_NPC_MESH = 'LineageMonsters.first_mesh'
+SECOND_NPC_MESH = 'LineageMonsters.second_mesh'
+TWO_PART_ITEM_ID = 57
+ONE_PART_ITEM_ID = 58
+SKILL_ID = 1011
+CHARACTER_CHARGRP_INDEX = 0
+UPPER_ITEM_ID = 1146
 CATALOG_SHA256 = 'c' * 64
 SANDBOX_PNG_SHA256 = 'd' * 64
 CAPTURED_AT_RIGA = '2026-11-11T09:00:00+02:00'
@@ -37,6 +46,59 @@ def single_record_catalog():
 
 def write_single_record_store(store_root):
     catalog = single_record_catalog()
+    write_store_catalog(store_root, catalog)
+    return catalog
+
+
+def effect_component_record(component_id):
+    return {**pinned_manifest_record(component_id, 'effects', 'manifest.json'), 'bundleId': f'interlude:skill-root:{component_id}'}
+
+
+def npc_profile(npc_id, mesh, name):
+    return {'id': f'npc:{npc_id}', 'npcId': npc_id, 'name': name, 'mesh': mesh}
+
+
+def actor_store_catalog(store_root, first_npc_name='First', models=None, effect_components=None):
+    npc_profiles_record = write_profile_manifest(store_root, 'native-npc-profiles', [npc_profile(FIRST_NPC_ID, FIRST_NPC_MESH, first_npc_name),
+                                                                                       npc_profile(SECOND_NPC_ID, SECOND_NPC_MESH, 'Second')])
+    return {**single_record_catalog(), 'models': actor_models() if models is None else models, 'npcProfiles': [npc_profiles_record],
+            'effectComponents': skill_effect_components() if effect_components is None else effect_components}
+
+
+def actor_models():
+    return [model_record('npc-model:first', FIRST_NPC_MESH), model_record('npc-model:second', SECOND_NPC_MESH),
+            model_record(f'interlude:item:{TWO_PART_ITEM_ID}:body-part:0:weapon', 'LineageWeapons.first_blade'),
+            model_record(f'interlude:item:{TWO_PART_ITEM_ID}:body-part:1:armor:3', 'LineageWeapons.first_guard'),
+            model_record(f'interlude:item:{ONE_PART_ITEM_ID}:body-part:0:weapon', 'LineageWeapons.second_blade')]
+
+
+def skill_effect_components():
+    return [effect_component_record(f'interlude:skill:{SKILL_ID}:level:10:cast'),
+            effect_component_record(f'interlude:skill:{SKILL_ID}:level:10:impact'),
+            effect_component_record(f'interlude:skill:{SKILL_ID}:level:11:cast')]
+
+
+def with_changed_pin(records, record_id, field):
+    changed = copy.deepcopy(records)
+    for record in changed:
+        if record['id'] == record_id:
+            record[field] = hashlib.sha256(f'changed:{record[field]}'.encode()).hexdigest()
+    return changed
+
+
+def write_actor_store(store_root, **catalog_changes):
+    catalog = actor_store_catalog(store_root, **catalog_changes)
+    write_store_catalog(store_root, catalog)
+    return catalog
+
+
+def write_player_store(store_root, character_model_id='character-model:0', upper_item_model_id='character-equipment:0'):
+    player_profiles_record = write_profile_manifest(store_root, 'native-player-profiles', [
+        {'id': 'player:human-male-fighter', 'chargrpIndex': CHARACTER_CHARGRP_INDEX, 'catalogId': character_model_id,
+         'upperItems': [{'itemId': UPPER_ITEM_ID, 'catalogId': upper_item_model_id}]}])
+    catalog = {'schemaVersion': 1, 'playerProfiles': [player_profiles_record],
+               'models': [model_record('character-model:0', 'LineageFighter.human_male'),
+                          model_record('character-equipment:0', 'LineageFighter.human_male_tunic')]}
     write_store_catalog(store_root, catalog)
     return catalog
 

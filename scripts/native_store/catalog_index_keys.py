@@ -124,9 +124,13 @@ def model_ids_by_source_object(source_objects_by_model_id):
     return model_ids_by_object
 
 
-def npc_profile_key(profile, source_objects_by_model_id, model_ids_by_object):
+def npc_profile_npc_key(profile):
     npc_id = require_safe_integer(profile.get('npcId'), 'NPC profile npcId')
-    key = require_key(f'npc:{npc_id}', 'npc', f'NPC profile {npc_id}')
+    return require_key(f'npc:{npc_id}', 'npc', f'NPC profile {npc_id}')
+
+
+def npc_profile_model_id(profile, source_objects_by_model_id, model_ids_by_object):
+    npc_id = require_safe_integer(profile.get('npcId'), 'NPC profile npcId')
     mesh = profile.get('mesh')
     if not isinstance(mesh, str):
         raise CoverageReportError(f'NPC profile {npc_id} has no mesh name')
@@ -140,11 +144,16 @@ def npc_profile_key(profile, source_objects_by_model_id, model_ids_by_object):
         if model_source_object != mesh:
             raise CoverageReportError(f'NPC profile {npc_id} names model {model_catalog_id} of a different mesh: the model source object '
                                       f'is {model_source_object!r}, the profile mesh is {mesh!r}')
-        return key
+        return model_catalog_id
     matching_model_ids = sorted(model_ids_by_object.get(mesh, []))
     if len(matching_model_ids) > 1:
         raise CoverageReportError(f'NPC profile {npc_id} mesh {mesh} matches several models: {", ".join(matching_model_ids)}')
-    return key if matching_model_ids else None
+    return matching_model_ids[0] if matching_model_ids else None
+
+
+def npc_profile_key(profile, source_objects_by_model_id, model_ids_by_object):
+    key = npc_profile_npc_key(profile)
+    return key if npc_profile_model_id(profile, source_objects_by_model_id, model_ids_by_object) is not None else None
 
 
 def npc_keys(catalog, models, store_roots):
@@ -161,25 +170,28 @@ def require_npc_profiles_join_models_of_their_mesh(lane_store_root, lane_catalog
     npc_keys(lane_catalog, list(served_models_by_id.values()), store_root_candidates(lane_store_root, shared_store_root))
 
 
-def player_profile_keys(profile, model_ids):
-    keys = set()
+def player_profile_model_ids_by_key(profile, model_ids):
+    model_ids_by_key = {}
     upper_items = profile.get('upperItems', [])
     if not (isinstance(upper_items, list) and all(isinstance(item, dict) for item in upper_items)):
         raise CoverageReportError(f'player profile {profile.get("id")!r} upperItems must be a list of objects')
     for item in upper_items:
         item_id = require_safe_integer(item.get('itemId'), f'player profile {profile.get("id")!r} upper item itemId')
         if item.get('catalogId') in model_ids:
-            keys.add(require_key(f'item:{item_id}', 'item', f'player profile {profile.get("id")!r} upper item'))
+            key = require_key(f'item:{item_id}', 'item', f'player profile {profile.get("id")!r} upper item')
+            model_ids_by_key.setdefault(key, set()).add(item['catalogId'])
     if 'chargrpIndex' in profile:
         chargrp_index = require_safe_integer(profile['chargrpIndex'], f'player profile {profile.get("id")!r} chargrpIndex')
         if profile.get('catalogId') in model_ids:
-            keys.add(require_key(f'character:{chargrp_index}', 'character', f'player profile {profile.get("id")!r}'))
-    return keys
+            key = require_key(f'character:{chargrp_index}', 'character', f'player profile {profile.get("id")!r}')
+            model_ids_by_key.setdefault(key, set()).add(profile['catalogId'])
+    return model_ids_by_key
 
 
 def player_keys(catalog, models, store_roots):
     model_ids = {model['id'] for model in models}
-    return {key for profile in staged_profiles(catalog, 'playerProfiles', store_roots) for key in player_profile_keys(profile, model_ids)}
+    return {key for profile in staged_profiles(catalog, 'playerProfiles', store_roots)
+            for key in player_profile_model_ids_by_key(profile, model_ids)}
 
 
 def item_model_keys(models):
