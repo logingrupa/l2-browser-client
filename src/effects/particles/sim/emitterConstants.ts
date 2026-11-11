@@ -145,7 +145,7 @@ export const PARTICLE_CONSTANTS = {
 
 export const COORDINATE_SYSTEM = { independent: 0, relative: 1, absolute: 2, relativeRotation: 3, spray: 4 } as const;
 export const DRAW_STYLE = { regular: 0, alphaBlend: 1, modulated: 2, translucent: 3, alphaModulate: 4, darken: 5, brighten: 6 } as const;
-export const DIRECTION_USAGE_NONE = 0;
+export const DIRECTION_USAGE = { none: 0, up: 1, right: 2, forward: 3, normal: 4, upAndNormal: 5, rightAndNormal: 6, scale: 7 } as const;
 export const START_LOCATION_SHAPE = { box: 0, sphere: 1, polar: 2, all: 3 } as const;
 export const VELOCITY_DIRECTION = { none: 0, startPositionAndOwner: 1, ownerAndStartPosition: 2, addRadial: 3 } as const;
 export const ROTATION_SOURCE = { none: 0, actor: 1, offset: 2, normal: 3 } as const;

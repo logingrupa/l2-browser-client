@@ -1,5 +1,5 @@
 import { createRandomStream, deriveStreamSeed, type RandomStream } from "../../../shared/random";
-import { COORDINATE_SYSTEM, ROTATION_SOURCE } from "./emitterConstants";
+import { COORDINATE_SYSTEM, DIRECTION_USAGE, ROTATION_SOURCE } from "./emitterConstants";
 import type { ParticleEmitterRecord } from "./emitterRecords";
 import { drawRange, rangeCenter } from "./particleSpawn";
 import {
@@ -35,8 +35,19 @@ export function createEmitterRandomStream(sessionSeed: number, effectSerial: num
   return createRandomStream(deriveStreamSeed(sessionSeed, "emitter", [effectSerial, emitterOrdinal]));
 }
 
+type EmitterFeatureCheck = readonly [property: string, value: boolean | number, isUnported: boolean];
+
+const cameraFacingDirectionUsages: readonly number[] = [DIRECTION_USAGE.none, DIRECTION_USAGE.scale];
+
+function listSpriteFeatureChecks(record: ParticleEmitterRecord): EmitterFeatureCheck[] {
+  if (record.emitterClass !== "Engine.SpriteEmitter") return [];
+  return [
+    ["UseDirectionAs", record.UseDirectionAs, !cameraFacingDirectionUsages.includes(record.UseDirectionAs)],
+  ];
+}
+
 export function listUnportedEmitterFeatures(record: ParticleEmitterRecord): UnportedEmitterFeature[] {
-  const unported: [string, boolean | number, boolean][] = [
+  const unported: EmitterFeatureCheck[] = [
     ["UseCollision", record.UseCollision, record.UseCollision],
     ["UseCollisionPlanes", record.UseCollisionPlanes, record.UseCollisionPlanes],
     ["UseActorForces", record.UseActorForces, record.UseActorForces],
@@ -46,6 +57,7 @@ export function listUnportedEmitterFeatures(record: ParticleEmitterRecord): Unpo
     ["UseRotationFrom", record.UseRotationFrom, record.UseRotationFrom === ROTATION_SOURCE.normal],
     ["CoordinateSystem", record.CoordinateSystem, record.CoordinateSystem === COORDINATE_SYSTEM.relativeRotation],
     ["WeatherEffect", record.WeatherEffect, record.WeatherEffect],
+    ...listSpriteFeatureChecks(record),
   ];
   return unported.filter(([, , isUnported]) => isUnported)
     .map(([property, value]) => ({ reason: `emitter-feature-unported:${property}` as const, property, value }));

@@ -1,5 +1,5 @@
 import type { RandomStream } from "../../../shared/random";
-import { DIRECTION_USAGE_NONE, PARTICLE_CONSTANTS } from "./emitterConstants";
+import { DIRECTION_USAGE, PARTICLE_CONSTANTS } from "./emitterConstants";
 import type { SpriteEmitterRecord } from "./emitterRecords";
 import { relativeParticleAge } from "./particleCurves";
 import { createParticleEmitterSimulation, type ParticleEmitterSimulation } from "./particleEmitter";
@@ -27,7 +27,7 @@ function subdivisionBlendByte(atlasPosition: number): number {
 }
 
 export function createSpriteEmitterSimulation(record: SpriteEmitterRecord, stream: RandomStream): SpriteEmitterSimulation {
-  const simulation = createParticleEmitterSimulation(record, stream, record.UniformSize || record.UseDirectionAs === DIRECTION_USAGE_NONE, null);
+  const simulation = createParticleEmitterSimulation(record, stream, record.UniformSize || record.UseDirectionAs === DIRECTION_USAGE.none, null);
   const columnCount = Math.max(1, record.TextureUSubdivisions), rowCount = Math.max(1, record.TextureVSubdivisions);
   const lastCell = columnCount * rowCount - 1;
   const atlasCellAt = (cell: number, nextCell: number, blendWeight: number): SpriteAtlasCell =>

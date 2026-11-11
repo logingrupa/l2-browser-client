@@ -166,12 +166,13 @@ describe("Power Strike real-client traces", () => {
     const hashesPath = `${PARTICLE_FIXTURE_FOLDER}/power-strike.hashes.json`, sourceBytes = readFileSync(powerStrikeEffectSource);
     const effectSourceSha256 = createHash("sha256").update(sourceBytes).digest("hex");
     const effects = (JSON.parse(sourceBytes.toString("utf8")) as { effects: EffectSourceActor[] }).effects;
-    const seed = 1, stepLimit = 600, regeneratedTraces: Record<string, number[][]> = {};
+    const seed = 1, stepLimit = 600, regeneratedTraces: Record<string, number[][]> = {}, featureGaps: string[] = [];
     for (const effect of effects) {
       const actor = createEmitterActorSimulation({ actor: parseEmitterActorRecord(effect), emitters: effect.children.map(parseEmitterRecord), sessionSeed: seed, effectSerial: 0 });
-      expect(actor.featureGaps).toEqual([]);
+      featureGaps.push(...actor.featureGaps.map(gap => `${gap.emitter} ${gap.reason}`));
       regeneratedTraces[effect.object] = actorTraceRows(actor, stepLimit);
     }
+    expect(featureGaps).toEqual(["lineageeffect.p_u004_a.SpriteEmitter9 emitter-feature-unported:UseDirectionAs"]);
     const traceSha256ByActor = Object.fromEntries(Object.entries(regeneratedTraces)
       .map(([object, rows]) => [object, createHash("sha256").update(JSON.stringify(rows)).digest("hex")]));
     const regenerated: PowerStrikeHashes = { effectSourceSha256, seed, stepSeconds, stepLimit, simulatorVersion: PARTICLE_SIMULATOR_VERSION, traceSha256ByActor };

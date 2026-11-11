@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { PARTICLE_CONSTANTS } from "../../src/effects/particles/sim/emitterConstants";
+import { DIRECTION_USAGE, PARTICLE_CONSTANTS } from "../../src/effects/particles/sim/emitterConstants";
 import { EmitterRecordError, parseEmitterRecord, type SpriteEmitterRecord } from "../../src/effects/particles/sim/emitterRecords";
 import { createEmitterRandomStream } from "../../src/effects/particles/sim/particleEmitter";
 import { readSlotVector } from "../../src/effects/particles/sim/particleState";
@@ -64,6 +64,18 @@ describe("SpriteEmitter simulation", () => {
     const startSize = readSlotVector(simulation.columns.startSize, 0);
     expect(startSize.y).toBe(startSize.x);
     expect(startSize.z).toBe(startSize.x);
+  });
+
+  it("reports every UseDirectionAs basis except None and Scale as an unported feature, because sprites draw camera-facing", () => {
+    const directionGapsFor = (useDirectionAs: number) => createSpriteEmitterSimulation(parseEmitterRecord({
+      ...spriteSource, effectiveProperties: { ...spriteSource.effectiveProperties, UseDirectionAs: useDirectionAs, BlendBetweenSubdivisions: false },
+    }) as SpriteEmitterRecord, createEmitterRandomStream(1, 0, 0)).unportedFeatures.filter(feature => feature.property === "UseDirectionAs");
+    expect(directionGapsFor(DIRECTION_USAGE.none)).toEqual([]);
+    expect(directionGapsFor(DIRECTION_USAGE.scale)).toEqual([]);
+    for (const useDirectionAs of [DIRECTION_USAGE.up, DIRECTION_USAGE.right, DIRECTION_USAGE.forward, DIRECTION_USAGE.normal,
+      DIRECTION_USAGE.upAndNormal, DIRECTION_USAGE.rightAndNormal]) {
+      expect(directionGapsFor(useDirectionAs)).toEqual([{ reason: "emitter-feature-unported:UseDirectionAs", property: "UseDirectionAs", value: useDirectionAs }]);
+    }
   });
 
   it("refuses an unknown field type and a missing class default with a named error", () => {
