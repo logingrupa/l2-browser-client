@@ -8,7 +8,6 @@ from actors.actor_census import SOUND_PACKAGE_SUFFIXES, ActorPackageCensus, pack
 from actors.actor_sound_bindings import (ACTOR_SOUND_STEP, actor_sound_bundle_id, actor_sound_gap_row, actor_sound_gap_rows,
                                          actor_sound_reference_counts, build_actor_sound_recipe, unresolved_reference_entries)
 from actors.actor_unit_inventory import decoded_string_values
-from actors.data_ui_table_manifest import DATA_UI_LANE_NAME, data_ui_table_manifest
 from actors.combat_role_routes import (bind_combat_role_routes, combat_route_table_manifest, descriptor_record_field_names,
                                        read_combat_role_route_proof)
 from actors.npc_requests import CONVERTER_REFUSED_REASON_PREFIX
@@ -23,6 +22,7 @@ from native_assets_lib.skill_audio_bundle import REFERENCE, reference_candidates
 from native_catalog.tables import interlude_table_layout
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import read_store_catalog, replace_file, write_store
+from native_store.data_ui_table_manifest import DATA_UI_LANE_NAME, data_ui_table_manifest
 from native_store.gap_rows import gap_reason_list_versions, load_gap_reason_patterns, sorted_gap_rows, validate_gap_row
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from reference_client_guard import ReferenceClientLockError

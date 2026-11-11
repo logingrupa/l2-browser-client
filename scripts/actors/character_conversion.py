@@ -5,7 +5,6 @@ from pathlib import Path
 
 from actors.actor_census import MESH_PACKAGE_SUFFIXES, TEXTURE_PACKAGE_SUFFIXES, ActorPackageCensus
 from actors.actor_unit_inventory import ACTOR_UNIT_CENSUS_RELATIVE_PATH, model_record_capacity, decoded_table_identity
-from actors.data_ui_table_manifest import data_ui_table_manifest
 from actors.character_requests import (CHARACTER_STEP, CLASSINFO_TABLE_NAME, GAP_STATUS, HAIRGRP_TABLE_NAME, HELMETGRP_TABLE_NAME,
                                        build_character_request, character_gap_rows, character_key, chargrp_row_at, is_padding_row,
                                        resolve_character_actor_class)
@@ -18,6 +17,7 @@ from data.lane_unit_outcomes import replace_step_gap_row
 from native_assets import UMODEL_SHA256, implementation_hash
 from native_assets_lib.gltf import json_bytes
 from native_store.catalog_writer import read_store_catalog, write_store
+from native_store.data_ui_table_manifest import data_ui_table_manifest
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from reference_client_guard import ReferenceClientLockError
 

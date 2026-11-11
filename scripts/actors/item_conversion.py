@@ -6,7 +6,6 @@ from pathlib import Path
 from actors.actor_census import MESH_PACKAGE_SUFFIXES, TEXTURE_PACKAGE_SUFFIXES, ActorPackageCensus
 from actors.actor_unit_inventory import (ACTOR_UNIT_CENSUS_RELATIVE_PATH, ARMOR_MESH_UNIT_KIND, CONVERTIBLE_UNIT_STATUS, decoded_table_identity,
                                          model_record_capacity)
-from actors.data_ui_table_manifest import data_ui_table_manifest
 from actors.item_requests import (ARMORGRP_TABLE_NAME, GAP_STATUS, ITEM_STEP, PASS_STATUS, WEAPONGRP_TABLE_NAME, build_armor_unit_requests,
                                   build_weapon_unit_request, item_gap_row)
 from actors.item_unit_inventory import armorgrp_mtx_column_names
@@ -17,6 +16,7 @@ from actors.path_free_messages import path_free_reason
 from native_assets import UMODEL_SHA256, implementation_hash
 from native_assets_lib.gltf import json_bytes
 from native_store.catalog_writer import read_store_catalog, write_store
+from native_store.data_ui_table_manifest import data_ui_table_manifest
 from native_store.gap_census_denominators import decoded_item_ids
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from reference_client_guard import ReferenceClientLockError

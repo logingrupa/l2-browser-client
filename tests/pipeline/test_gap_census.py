@@ -17,9 +17,15 @@ from native_store.canonical_json import canonical_json_bytes
 from native_store.gap_census import (GAP_CENSUS_STATUS_PRECEDENCE, GAP_CENSUS_STEP_ORDER, GapCensusIncompleteError, build_gap_census,
                                      item_census_rows)
 from native_store.gap_census_denominators import census_item_join_rows, load_census_denominators
+from native_store.unit_ledger import locked_input_records
 
 SOURCE_SHA256 = 'b' * 64
 WORLD_KEYS = ('map:Lobby', 'tile:00_01', 'tile:00_02', 'tile:00_03')
+UNLOCKED_ITEM_TABLE_SHA256 = 'c' * 64
+
+
+def locked_table_sha256(table_name):
+    return locked_input_records([f'system/{table_name}.dat'])[0]['sha256']
 
 
 def census_gap_row(key, part, step, status, reason, path='maps/source.unr'):
@@ -213,19 +219,27 @@ class GapCensusItemJoinTests(unittest.TestCase):
         self.store_root.mkdir(parents=True)
 
     def test_item_join_rows_read_the_decoded_itemname_and_etcitem_tables(self):
-        table_records = [write_decoded_table(self.store_root, 'etcitemgrp', 'd' * 64, {'data': 1, 'item': [{'object_id': 2}]}),
-                         write_decoded_table(self.store_root, 'itemname-e', 'c' * 64,
+        etcitem_sha256, itemname_sha256 = locked_table_sha256('etcitemgrp'), locked_table_sha256('itemname-e')
+        table_records = [write_decoded_table(self.store_root, 'etcitemgrp', etcitem_sha256, {'data': 1, 'item': [{'object_id': 2}]}),
+                         write_decoded_table(self.store_root, 'itemname-e', itemname_sha256,
                                              {'data': 3, 'item_name': [{'id': 1}, {'id': 2}, {'id': 3}]})]
         write_store_catalog(self.store_root, {'schemaVersion': 1, 'models': [], 'tables': table_records})
         join_rows = census_item_join_rows(self.project_root, [item_row(1)])
         self.assertEqual([(row['key'], row['reason'], row['sourceIdentity']) for row in join_rows], [
-            ('item:2', 'etcitem-presentation-unplanned', {'path': 'system/etcitemgrp.dat', 'sha256': 'd' * 64}),
-            ('item:3', 'item-group-row-absent', {'path': 'system/itemname-e.dat', 'sha256': 'c' * 64})])
+            ('item:2', 'etcitem-presentation-unplanned', {'path': 'system/etcitemgrp.dat', 'sha256': etcitem_sha256}),
+            ('item:3', 'item-group-row-absent', {'path': 'system/itemname-e.dat', 'sha256': itemname_sha256})])
 
     def test_a_lane_catalog_without_a_decoded_etcitem_table_is_refused(self):
-        table_records = [write_decoded_table(self.store_root, 'itemname-e', 'c' * 64, {'data': 1, 'item_name': [{'id': 1}]})]
+        table_records = [write_decoded_table(self.store_root, 'itemname-e', locked_table_sha256('itemname-e'), {'data': 1, 'item_name': [{'id': 1}]})]
         write_store_catalog(self.store_root, {'schemaVersion': 1, 'models': [], 'tables': table_records})
         with self.assertRaisesRegex(GapCensusIncompleteError, 'part items: .*etcitemgrp'):
+            census_item_join_rows(self.project_root, [item_row(1)])
+
+    def test_an_item_table_not_decoded_from_the_locked_client_file_is_refused(self):
+        table_records = [write_decoded_table(self.store_root, 'etcitemgrp', locked_table_sha256('etcitemgrp'), {'data': 1, 'item': [{'object_id': 2}]}),
+                         write_decoded_table(self.store_root, 'itemname-e', UNLOCKED_ITEM_TABLE_SHA256, {'data': 1, 'item_name': [{'id': 1}]})]
+        write_store_catalog(self.store_root, {'schemaVersion': 1, 'models': [], 'tables': table_records})
+        with self.assertRaisesRegex(GapCensusIncompleteError, 'part items: .*not decoded from the locked system/itemname-e.dat'):
             census_item_join_rows(self.project_root, [item_row(1)])
 
 

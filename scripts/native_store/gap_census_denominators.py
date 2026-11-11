@@ -4,21 +4,18 @@ from functools import partial
 import json
 
 from build_dat_table_inventory import DEFAULT_INVENTORY_OUTPUT_PATH
-from native_store.catalog_index_keys import read_manifest_bytes, read_measured_catalog, store_root_candidates, validated_slice_records
 from native_store.catalog_writer import CatalogWriteError, refuse_duplicate_json_keys, refuse_non_finite_json_number
 from native_store.coverage_denominators import (COVERAGE_PART_ORDER, NO_COMMITTED_DENOMINATOR_SOURCE, TILE_CENSUS_PATH, CoverageReportError,
                                                 inventory_table_count_denominator, read_dat_table_inventory, repository_relative_text,
                                                 require_catalog_key, table_denominator, unknown_denominator, world_denominator)
+from native_store.data_ui_table_manifest import DATA_UI_LANE_NAME, DataUiTableManifestError, data_ui_table_manifest
 from native_store.gap_census import ETCITEM_TABLE_NAME, ITEMNAME_TABLE_NAME, ITEMS_PART, GapCensusIncompleteError, item_census_rows
-from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, read_lane_parts_by_name
+from native_store.store_paths import REPOSITORY_ROOT, read_lane_parts_by_name
 from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH
 
 ACTOR_UNIT_CENSUS_PATH = REPOSITORY_ROOT / 'docs' / 'parts' / 'npcs' / 'actor-unit-census.json'
 INTERFACE_WINDOW_CENSUS_PATH = REPOSITORY_ROOT / 'docs' / 'parts' / 'ui' / 'interface-window-census.json'
 DECODED_ITEM_ID_FIELDS = {ITEMNAME_TABLE_NAME: ('item_name', 'id'), ETCITEM_TABLE_NAME: ('item', 'object_id')}
-DECODED_TABLE_KIND = 'native-table'
-DECODED_TABLE_SCHEMA_VERSION = 1
-DATA_UI_LANE_NAME = 'data-ui'
 WINDOW_CENSUS_SCHEMA_VERSION = 1
 
 
@@ -86,23 +83,13 @@ def load_census_denominators(lane_names):
             for part in measured_part_names(lane_names)}
 
 
-def decoded_table_manifest(store_root, catalog, table_name):
-    records = [record for record in validated_slice_records(catalog, 'tables') if record['id'] == table_name]
-    if len(records) != 1:
-        raise GapCensusIncompleteError(f'part {ITEMS_PART}: the {DATA_UI_LANE_NAME} lane catalog needs one decoded {table_name} table '
-                                       f'record: {store_root}')
-    label = f'decoded {table_name} table manifest'
-    payload = read_manifest_bytes(records[0], store_root_candidates(store_root, None), label)
+def census_item_table_manifest(project_root, table_name):
     try:
-        manifest = json.loads(payload, object_pairs_hook=refuse_duplicate_json_keys, parse_constant=refuse_non_finite_json_number)
-    except (CatalogWriteError, ValueError) as error:
-        raise GapCensusIncompleteError(f'part {ITEMS_PART}: {label} is not strict JSON: {error}') from error
-    if not (isinstance(manifest, dict) and manifest.get('kind') == DECODED_TABLE_KIND
-            and manifest.get('schemaVersion') == DECODED_TABLE_SCHEMA_VERSION and manifest.get('table') == table_name
-            and manifest.get('sourceSha256') == records[0]['sourceSha256'] and isinstance(manifest.get('sourcePath'), str)
-            and isinstance(manifest.get('records'), dict)):
-        raise GapCensusIncompleteError(f'part {ITEMS_PART}: {label} must be a {DECODED_TABLE_KIND} v{DECODED_TABLE_SCHEMA_VERSION} '
-                                       f'manifest of {table_name} with the catalog sourceSha256')
+        manifest = data_ui_table_manifest(project_root, table_name)
+    except DataUiTableManifestError as error:
+        raise GapCensusIncompleteError(f'part {ITEMS_PART}: {error}') from error
+    if manifest is None:
+        raise GapCensusIncompleteError(f'part {ITEMS_PART}: the {DATA_UI_LANE_NAME} lane catalog needs one decoded {table_name} table record')
     return manifest
 
 
@@ -115,9 +102,7 @@ def decoded_item_ids(manifest, table_name):
 
 
 def census_item_join_rows(project_root, weapon_and_armor_rows):
-    store_root = lane_store_root(project_root, DATA_UI_LANE_NAME)
-    catalog, _ = read_measured_catalog(store_root)
-    manifests = {table_name: decoded_table_manifest(store_root, catalog, table_name) for table_name in DECODED_ITEM_ID_FIELDS}
+    manifests = {table_name: census_item_table_manifest(project_root, table_name) for table_name in DECODED_ITEM_ID_FIELDS}
     sources = {table_name: {'path': manifest['sourcePath'], 'sha256': manifest['sourceSha256']} for table_name, manifest in manifests.items()}
     return item_census_rows(decoded_item_ids(manifests[ITEMNAME_TABLE_NAME], ITEMNAME_TABLE_NAME), weapon_and_armor_rows,
                             decoded_item_ids(manifests[ETCITEM_TABLE_NAME], ETCITEM_TABLE_NAME), sources)
