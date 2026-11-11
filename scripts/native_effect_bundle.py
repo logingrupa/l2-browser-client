@@ -322,9 +322,10 @@ def object_values(package, tags):
     return tagged_values(package, normalized)
 
 
-def _normal_reason(error, client, output):
-    value = str(error).replace(str(client), '<source>').replace(str(output), '<output>')
-    value = value.replace(str(client).replace('\\', '/'), '<source>').replace(str(output).replace('\\', '/'), '<output>')
+def _path_free_gap_reason(error, client, output, converter_output):
+    value = str(error)
+    for root, placeholder in ((client, '<source>'), (output, '<output>'), (converter_output, '<converter>')):
+        value = value.replace(str(root), placeholder).replace(str(root).replace('\\', '/'), placeholder)
     return re.sub(r'([/\\]\.work[/\\])[^/\\\s]+', r'\1<job>', value)
 
 
@@ -387,7 +388,7 @@ def _extract_bundle(client, recipe, output, save, converter_output):
             record, package, item = packages.resolve(reference, None if expected in ('Object', 'Material') else expected)
         except FormatError as error:
             unresolved.append({'from': from_object, 'field': field, 'reference': reference,
-                'expectedClass': expected, 'reason': _normal_reason(error, client, output)})
+                'expectedClass': expected, 'reason': _path_free_gap_reason(error, client, output, converter_output)})
             continue
         edges.append({'from': from_object, 'field': field, **record})
         key = record['object'].casefold()
@@ -414,9 +415,9 @@ def _extract_bundle(client, recipe, output, save, converter_output):
                         for prop, _, ref in references(node['effectiveProperties']))
                 except FormatError as error:
                     gaps.append({'feature': 'material-class-defaults', 'object': record['object'],
-                        'reason': _normal_reason(error, client, output)})
+                        'reason': _path_free_gap_reason(error, client, output, converter_output)})
         except FormatError as error:
-            node['propertyDecodeGap'] = _normal_reason(error, client, output)
+            node['propertyDecodeGap'] = _path_free_gap_reason(error, client, output, converter_output)
         kind = ASSET_KINDS.get(item['className'])
         if not kind:
             node['status'] = 'raw-native-data-only'
@@ -430,7 +431,7 @@ def _extract_bundle(client, recipe, output, save, converter_output):
             verify_archive(Path(result['file']))
         except (ValueError, FormatError) as error:
             node['status'] = 'conversion-unsupported'
-            node['conversionGap'] = _normal_reason(error, client, output)
+            node['conversionGap'] = _path_free_gap_reason(error, client, output, converter_output)
             gaps.append({'feature': 'asset-conversion', 'object': record['object'], 'reason': node['conversionGap']})
             continue
         archive_path = Path(result['file'])
