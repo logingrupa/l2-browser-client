@@ -24,7 +24,7 @@ from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, UnitLedger, lock
 from pinned_elbera_module import ELBERA_ROOT, load_pinned_elbera_module, resolve_elbera_path
 import reference_client_guard
 from reference_client_guard import require_reference_client
-from ui_texture_step import (TEXTURES_STEP, UI_TEXTURE_ALGORITHM_VERSION, convert_window_textures, ui_texture_recipe_bytes,
+from ui_texture_step import (FAILED_STATUS, TEXTURES_STEP, UI_TEXTURE_ALGORITHM_VERSION, convert_window_textures, ui_texture_recipe_bytes,
                              ui_texture_requests)
 from window_control_gaps import CONTROLS_ALGORITHM_VERSION, CONTROLS_STEP, convert_window_controls, read_rendered_control_types
 
@@ -220,7 +220,7 @@ def main(argv=None):
     except (OSError, ValueError) as error:
         print(f'UI conversion failed: {error}', file=sys.stderr)
         return 1
-    return 0
+    return 1 if any(result.get('status') == FAILED_STATUS for result in results) else 0
 
 
 if __name__ == '__main__':

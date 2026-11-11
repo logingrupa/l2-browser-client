@@ -12,6 +12,7 @@ from lane_unit_outcomes import DECODE_FAILED_REASON_PREFIX, lane_relative_path, 
 from native_store.catalog_writer import add_store_file, merge_catalog_slice, read_store_catalog, write_store
 from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN, read_gap_rows
 from native_store.store_paths import SHA256_PATTERN, STEP_NAME_PATTERN
+from reference_client_guard import ReferenceClientLockError
 from texture_package_census import reference_tree_lock_sha256, validate_texture_package_census
 
 UI_TEXTURE_ALGORITHM_VERSION = 1
@@ -25,7 +26,8 @@ ADAPTER_FIELD_ABSENT_PATTERN = re.compile(r'adapter-field-absent:(?P<field>[a-z]
 ABSENT_FIELD_STEP_PREFIX = 'field-'
 TEXTURE_OUTCOMES_RECORD_NAME = 'texture-outcomes.json'
 PART_NAME = 'ui'
-TEXTURE_CONVERSION_ERRORS = (ValueError, OSError, subprocess.SubprocessError)
+TRANSIENT_TEXTURE_CONVERSION_FAILURES = (OSError, subprocess.SubprocessError)
+FAILED_STATUS = 'failed'
 UNRESOLVED_PACKAGE_FIELDS = {'packageName': None, 'packagePath': None, 'packageSha256': None, 'packageVersion': None, 'licensee': None,
                              'nativeSidecarReviewed': None}
 
@@ -129,7 +131,9 @@ def convert_reference(request, converter):
         return {'reference': request['reference'], 'status': 'gap', 'reason': request['reason']}, None
     try:
         conversion = converter.convert({'kind': 'texture', 'package': request['packageName'], 'object': request['reference']})
-    except TEXTURE_CONVERSION_ERRORS as error:
+    except ReferenceClientLockError:
+        raise
+    except ValueError as error:
         return {'reference': request['reference'], 'status': 'gap', 'reason': DECODE_FAILED_REASON_PREFIX + type(error).__name__,
                 'message': str(error)}, None
     record, files = converted_texture_record(request, conversion)
@@ -187,7 +191,10 @@ def convert_window_textures(project_root, window_id, requests, converter, ledger
     if ledger.is_sealed(unit_key, fingerprint):
         return {'unit': unit_key, 'status': 'skipped-sealed'}
     step_directory = ledger.begin(unit_key, fingerprint)
-    converted_outcomes = [convert_reference(request, converter) for request in window_requests]
+    try:
+        converted_outcomes = [convert_reference(request, converter) for request in window_requests]
+    except TRANSIENT_TEXTURE_CONVERSION_FAILURES as error:
+        return {'unit': unit_key, 'status': FAILED_STATUS, 'reason': f'{type(error).__name__}: {error}'}
     outcomes = [outcome for outcome, _ in converted_outcomes]
     conversions = [conversion for _, conversion in converted_outcomes if conversion is not None]
     store_outputs = write_texture_records(output_root, conversions, len(requests['textures'])) if conversions else []

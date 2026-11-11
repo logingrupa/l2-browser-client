@@ -1,6 +1,7 @@
 import hashlib
 import json
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 from types import SimpleNamespace
@@ -13,6 +14,7 @@ from hash_reference_client_tree import canonical_json_bytes
 from native_store.gap_rows import read_gap_rows, read_gap_reason_list
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import UnitLedger
+from reference_client_guard import ReferenceClientLockError
 import ui_texture_step
 
 INTERFACE_SHA256 = '1' * 64
@@ -46,12 +48,13 @@ class FakeConverter:
     def __init__(self, output, failing_objects):
         self.output = output
         self.failing_objects = failing_objects
+        self.failing_error = SyntheticDecodeError('synthetic package table refused')
         self.requests = []
 
     def convert(self, request):
         self.requests.append(request)
         if request['object'] in self.failing_objects:
-            raise SyntheticDecodeError('synthetic package table refused')
+            raise self.failing_error
         image = b'\x89PNG\r\n\x1a\n' + request['object'].encode()
         archive = b'PK' + image
         archive_sha256 = hashlib.sha256(archive).hexdigest()
@@ -115,6 +118,9 @@ class ConvertWindowTexturesTests(unittest.TestCase):
         self.requests = ui_texture_step.ui_texture_requests([synthetic_manifest('SyntheticStatusWnd', [
             'SyntheticUI.Status.Plate', 'SyntheticUI.Status.Broken', 'SyntheticUI.Status.plate', 'Absent.Status.Plate'])], CENSUS, LOCK)
 
+    def ledger(self):
+        return UnitLedger(lane_work_root(self.project_root, 'data-ui'), ui_texture_step.TEXTURES_STEP, ui_texture_step.UI_TEXTURE_ALGORITHM_VERSION)
+
     def convert(self, field_bindings_document=FIELD_BINDINGS):
         ledger = UnitLedger(lane_work_root(self.project_root, 'data-ui'), ui_texture_step.TEXTURES_STEP, ui_texture_step.UI_TEXTURE_ALGORITHM_VERSION)
         return ui_texture_step.convert_window_textures(self.project_root, 'SyntheticStatusWnd', self.requests, self.converter, ledger, self.output_root,
@@ -159,6 +165,23 @@ class ConvertWindowTexturesTests(unittest.TestCase):
         self.assertEqual((texture_row['reason'], texture_row['sourceIdentity']), ('decode-failed:SyntheticDecodeError', {
             'path': SYNTHETIC_PACKAGE_PATH, 'sha256': SYNTHETIC_PACKAGE_SHA256, 'object': 'SyntheticUI.Status.Broken'}))
         self.assertFalse((self.output_root / 'catalog.json').exists())
+
+    def test_a_transient_converter_failure_leaves_the_window_unsealed_with_no_gap_row_and_no_store_write(self):
+        for failing_error in (subprocess.TimeoutExpired('umodel', 300), OSError('disk full')):
+            with self.subTest(type(failing_error).__name__):
+                self.converter.failing_error = failing_error
+                result = self.convert()
+                self.assertEqual((result['status'], result['reason'].split(':')[0]), ('failed', type(failing_error).__name__))
+                self.assertIsNone(self.ledger().sealed_receipt('window:SyntheticStatusWnd'))
+                self.assertEqual(read_gap_rows(self.project_root, 'data-ui'), [])
+                self.assertFalse((self.output_root / 'catalog.json').exists())
+
+    def test_a_reference_client_lock_error_propagates_and_leaves_the_window_unsealed(self):
+        self.converter.failing_error = ReferenceClientLockError('systextures/SyntheticUI.utx differs from the reference client lock')
+        with self.assertRaises(ReferenceClientLockError):
+            self.convert()
+        self.assertIsNone(self.ledger().sealed_receipt('window:SyntheticStatusWnd'))
+        self.assertEqual(read_gap_rows(self.project_root, 'data-ui'), [])
 
 
 class DataUiGapReasonListTests(unittest.TestCase):
