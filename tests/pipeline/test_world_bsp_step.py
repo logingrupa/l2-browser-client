@@ -61,7 +61,7 @@ def two_square_model(**second):
 class LevelModelTests(unittest.TestCase):
     def test_a_package_outside_the_vendored_layout_is_a_gap_ready_refusal(self):
         for summary, reason in (({'version': 118, 'licenseeVersion': 28}, 'map-version-unsupported:118'),
-                                ({'version': 123, 'licenseeVersion': 25}, 'map-licensee-unsupported:123/25')):
+                                ({'version': 123, 'licenseeVersion': 24}, 'map-licensee-unsupported:123/24')):
             with self.assertRaises(LevelModelLayoutError) as caught:
                 read_level_model(SimpleNamespace(summary=summary, filename='00_00.unr'))
             self.assertEqual(caught.exception.reason, reason)

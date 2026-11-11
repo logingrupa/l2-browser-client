@@ -180,6 +180,44 @@
   "equal": true
  },
  {
+  "reader": "level-model",
+  "version": 123,
+  "licensee": 23,
+  "tile": "17_20",
+  "package": "maps/17_20.unr",
+  "lockSha256": "67986c39dc97d6d060fd843db0ec2531a78d105f82d42a70bfc107db8f362199",
+  "ourDecodeSha256": "4b3a4bf10b65a4b82c106805e67dc0ab064120f5515657a1871bf5dbdd093f70",
+  "crossCheckDecodeSha256": "4b3a4bf10b65a4b82c106805e67dc0ab064120f5515657a1871bf5dbdd093f70",
+  "tool": {
+   "name": "Elbera l2lib",
+   "commit": "12c9656",
+   "pins": {
+    "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
+   }
+  },
+  "equal": true,
+  "refusalReason": null
+ },
+ {
+  "reader": "level-model",
+  "version": 123,
+  "licensee": 28,
+  "tile": "20_21",
+  "package": "maps/20_21.unr",
+  "lockSha256": "e123be27672ce30235829fc09a3da0aa381e7be14add0fe30ce15f1dd4379f93",
+  "ourDecodeSha256": "0f4f7163a1248066686834a612914a7172d060ed99535a94203432c4f61e2057",
+  "crossCheckDecodeSha256": "0f4f7163a1248066686834a612914a7172d060ed99535a94203432c4f61e2057",
+  "tool": {
+   "name": "Elbera l2lib",
+   "commit": "12c9656",
+   "pins": {
+    "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
+   }
+  },
+  "equal": true,
+  "refusalReason": null
+ },
+ {
   "reader": "map-actor",
   "version": 123,
   "licensee": 16,

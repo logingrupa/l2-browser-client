@@ -13,7 +13,7 @@ from world.bsp_chunk_geometry import (BSP_POLY_FLAGS_PATH, BspPolygonError, assi
                                       drawn_node_indices, fan_triangle_indices, load_bsp_poly_flags, node_source_polygon)
 from world.bsp_lightmaps import lightmap_texture_of_record, read_bsp_lightmaps
 from world.bsp_surface_materials import convert_surface_material, surface_material_identities
-from world.level_model import LevelModelLayoutError, read_level_model
+from world.level_model import LevelModelLayoutError, read_level_model, reviewed_level_model_layout
 from world.level_zones import outdoor_zone_indices, read_level_zones, sky_zone_indices
 from world.map_sources import MapSources
 from world.native_terrain_sectors import native_terrain
@@ -31,6 +31,7 @@ BSP_CHUNKS_PRODUCT_NAME = 'bsp-chunks.json'
 CHUNK_BSP_FOLDER = 'native-tile-chunk-bsp'
 CHUNK_BSP_RESOURCE_NAME = 'bsp.glb'
 BSP_NODE_OUTSIDE_CHUNK_GRID_REASON = 'bsp-node-outside-chunk-grid'
+RAW_MANIFEST_PRODUCT_NAME = 'manifest.json'
 
 
 def bsp_ledger(project_root):
@@ -45,8 +46,17 @@ def poly_flags_recipe_sha256():
     return sha256_hex(canonical_json_bytes(json.loads(BSP_POLY_FLAGS_PATH.read_text(encoding='utf-8'))))
 
 
-def bsp_unit_config(chunks_fingerprint):
-    return {'chunksFingerprint': chunks_fingerprint, 'converterSha256': implementation_hash(), 'polyFlagsSha256': poly_flags_recipe_sha256()}
+def tile_level_model_layout(raw_products):
+    native_package = json.loads((raw_products / RAW_MANIFEST_PRODUCT_NAME).read_text(encoding='utf-8'))['nativePackage']
+    try:
+        return reviewed_level_model_layout(native_package, RAW_MANIFEST_PRODUCT_NAME)
+    except LevelModelLayoutError:
+        return None
+
+
+def bsp_unit_config(chunks_fingerprint, level_model_layout):
+    return {'chunksFingerprint': chunks_fingerprint, 'converterSha256': implementation_hash(), 'polyFlagsSha256': poly_flags_recipe_sha256(),
+            'levelModelLayout': level_model_layout}
 
 
 def bsp_product_path(ledger, unit_key):
@@ -64,9 +74,9 @@ def current_sealed_receipt(ledger, unit_key, tile_id, config):
 
 
 def sealed_bsp_chunks(project_root, tile_id, lock_record):
-    chunks_fingerprint, _, _ = sealed_chunk_plan(project_root, tile_id, lock_record)
+    chunks_fingerprint, raw_products, _ = sealed_chunk_plan(project_root, tile_id, lock_record)
     ledger, unit_key = bsp_ledger(project_root), tile_unit_key(tile_id)
-    receipt = current_sealed_receipt(ledger, unit_key, tile_id, bsp_unit_config(chunks_fingerprint))
+    receipt = current_sealed_receipt(ledger, unit_key, tile_id, bsp_unit_config(chunks_fingerprint, tile_level_model_layout(raw_products)))
     if receipt is None:
         return None, None
     return receipt['fingerprint'], json.loads(bsp_product_path(ledger, unit_key).read_text(encoding='utf-8'))
@@ -174,8 +184,9 @@ def run_bsp_step(project_root, client_root, tile_id):
     require_tile_id(tile_id)
     lock_record = read_tile_map_lock_record(tile_id)
     source_identity = {'path': tile_map_path(tile_id), 'sha256': lock_record['eSha256']}
-    chunks_fingerprint, _, chunk_plan = sealed_chunk_plan(project_root, tile_id, lock_record)
-    ledger, unit_key, config = bsp_ledger(project_root), tile_unit_key(tile_id), bsp_unit_config(chunks_fingerprint)
+    chunks_fingerprint, raw_products, chunk_plan = sealed_chunk_plan(project_root, tile_id, lock_record)
+    config = bsp_unit_config(chunks_fingerprint, tile_level_model_layout(raw_products))
+    ledger, unit_key = bsp_ledger(project_root), tile_unit_key(tile_id)
     step_directory = ledger.unit_step_directory(unit_key)
     receipt_evidence = (step_directory / RECEIPT_RECORD_NAME).relative_to(ledger.lane_folder).as_posix()
     step_evidence = step_directory.relative_to(ledger.lane_folder).as_posix()

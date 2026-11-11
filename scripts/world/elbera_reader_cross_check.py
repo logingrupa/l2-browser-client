@@ -89,3 +89,20 @@ def elbera_terrain_sector_properties(reference_access, relative_path):
         property_end, properties = elbera_property_projection(package, package.body_reader(export))
         sectors.append({'exportIndex': export.index + 1, 'propertyEnd': property_end, 'properties': properties})
     return {'terrainInfoExportIndex': terrain_info.index + 1, 'propertyEnd': terrain_info_end, 'sectors': sectors}
+
+
+def level_model_projection(object_name, model):
+    return {'object': object_name, 'nodes': len(model.nodes), 'surfaces': len(model.surfs), 'points': len(model.points),
+            'vertices': len(model.verts), 'leaves': len(model.leaves), 'tailBytes': model.lightmap_tail}
+
+
+def elbera_level_model_projection(reference_access, relative_path):
+    package = elbera_package(reference_access, relative_path)
+    module = elbera_ue2package_module()
+    try:
+        model = module.level_model(package)
+    except (module.L2Error, ValueError) as error:
+        raise ElberaCrossCheckError(f'Elbera cannot read the level model of {relative_path}: {error}') from error
+    if model is None:
+        raise ElberaCrossCheckError(f'Elbera finds no zoned UModel in {relative_path}')
+    return level_model_projection(module.qualified_ref(package, model.export.index + 1), model)

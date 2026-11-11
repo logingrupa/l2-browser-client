@@ -1,12 +1,14 @@
 from data.pinned_elbera_module import ELBERA_COMMIT
 from native_assets_lib.texture_mips import LAYOUT_EVIDENCE as TEXTURE_LAYOUT_EVIDENCE
 from native_catalog.ue2 import FormatError
+from world.bsp_reader_binding import READER_SHA as VENDORED_BSP_READER_SHA256
 from world.elbera_reader_cross_check import ELBERA_L2LIB_PINS, ELBERA_UE2PACKAGE_PATH
 
 G16_HEIGHTMAP_READER = 'g16-heightmap'
 MAP_ACTOR_READER = 'map-actor'
 TERRAIN_INFO_READER = 'terrain-info'
 RAW_MAP_READER = 'raw-map'
+LEVEL_MODEL_READER = 'level-model'
 MAP_READERS = (MAP_ACTOR_READER, TERRAIN_INFO_READER, RAW_MAP_READER)
 REVIEWED_PACKAGE_VERSION = 123
 BASELINE_LICENSEE = 28
@@ -23,9 +25,13 @@ ELBERA_L2LIB_README_SHA256 = '32b12d39022a92f4fef951edbecf4094c0a01a8237531c92d8
 ELBERA_TERRAIN_SERIALIZE_PATH = 'docs/native-terrain-collision-inputs.md'
 ELBERA_TERRAIN_SERIALIZE_SHA256 = 'eee0d53e2d84c8a8c51c2b8854c5fe842a78e3cfbf77256b46cedd7d58f7da03'
 UEVIEWER_MATERIAL_HEADER_PATH = 'Unreal/UnrealMaterial/UnMaterial2.h'
+VENDORED_BSP_READER_SOURCE_NAME = 'Elbera vendored BSP reader'
+VENDORED_BSP_READER_PATH = 'scripts/vendor/lineage2elbera_bsp/__init__.py'
+REVIEWED_LEVEL_MODEL_LICENSEES = (28, 23)
 READER_GAP_REASON_TEMPLATES = {
     G16_HEIGHTMAP_READER: ('terrain-height-version-unsupported:{version}', 'terrain-height-licensee-unsupported:{version}/{licensee}'),
-    **{reader: ('map-version-unsupported:{version}', 'map-licensee-unsupported:{version}/{licensee}') for reader in MAP_READERS},
+    **{reader: ('map-version-unsupported:{version}', 'map-licensee-unsupported:{version}/{licensee}')
+       for reader in (*MAP_READERS, LEVEL_MODEL_READER)},
 }
 
 
@@ -51,18 +57,26 @@ TERRAIN_INFO_EVIDENCE = (
     layout_evidence(ELBERA_SOURCE_NAME, ELBERA_COMMIT, ELBERA_TERRAIN_SERIALIZE_PATH, ELBERA_TERRAIN_SERIALIZE_SHA256,
                     'Source bindings: ATerrainInfo::Serialize, licensee version 17 or later writes sector references and counts'),
 )
+LEVEL_MODEL_EVIDENCE = (
+    layout_evidence(ELBERA_SOURCE_NAME, ELBERA_COMMIT, ELBERA_UE2PACKAGE_PATH, ELBERA_L2LIB_PINS[ELBERA_UE2PACKAGE_PATH],
+                    'UModel / UPolys block comment, _read_model and read_model: file 123 FBspSurf iLightMapIndex for LicenseeVersion 21 or later'),
+    layout_evidence(VENDORED_BSP_READER_SOURCE_NAME, ELBERA_COMMIT, VENDORED_BSP_READER_PATH, VENDORED_BSP_READER_SHA256,
+                    'level_model_binding: ULevelBase::Serialize writes its first actor array for LicenseeVersion 23 or later; validate_model'),
+)
 READER_EVIDENCE = {G16_HEIGHTMAP_READER: MATERIAL_FIELD_EVIDENCE, MAP_ACTOR_READER: ACTOR_PROPERTY_EVIDENCE,
-                   TERRAIN_INFO_READER: TERRAIN_INFO_EVIDENCE, RAW_MAP_READER: ACTOR_PROPERTY_EVIDENCE}
-READER_FIXTURE_STEMS = {G16_HEIGHTMAP_READER: 'g16-heightmap', **{reader: 'map' for reader in MAP_READERS}}
+                   TERRAIN_INFO_READER: TERRAIN_INFO_EVIDENCE, RAW_MAP_READER: ACTOR_PROPERTY_EVIDENCE, LEVEL_MODEL_READER: LEVEL_MODEL_EVIDENCE}
+READER_FIXTURE_STEMS = {G16_HEIGHTMAP_READER: 'g16-heightmap', **{reader: 'map' for reader in MAP_READERS}, LEVEL_MODEL_READER: 'level-model'}
+MAP_ACTOR_CROSS_CHECK_TILES = {28: '20_21', 30: '17_22', 23: '17_20', 18: '17_18', 31: '19_23', 16: '24_10', 19: '26_11', 20: '24_26',
+                               25: '15_20'}
 REVIEWED_LICENSEE_CROSS_CHECK_TILES = {
     G16_HEIGHTMAP_READER: {28: '20_21', 25: '20_15', 23: '18_24', 12: '16_24', 20: '16_21', 22: '19_21', 19: '24_11',
                            15: '23_10', 16: '17_25', 18: '18_13'},
-    MAP_ACTOR_READER: {28: '20_21', 30: '17_22', 23: '17_20', 18: '17_18', 31: '19_23', 16: '24_10', 19: '26_11',
-                       20: '24_26', 25: '15_20'},
+    MAP_ACTOR_READER: MAP_ACTOR_CROSS_CHECK_TILES,
     TERRAIN_INFO_READER: {28: '20_21', 30: '17_22', 23: '17_20', 18: '17_18', 31: '19_23', 19: '26_11', 20: '24_26',
                           25: '15_20'},
     RAW_MAP_READER: {28: '20_21', 30: '17_22', 23: '17_20', 18: '17_18', 31: '19_23', 16: '24_10', 19: '26_11',
                      20: '24_26', 25: '15_20'},
+    LEVEL_MODEL_READER: {licensee: MAP_ACTOR_CROSS_CHECK_TILES[licensee] for licensee in REVIEWED_LEVEL_MODEL_LICENSEES},
 }
 
 
@@ -94,6 +108,9 @@ def reviewed_reader_layout(reader, licensee_version, cross_check_tile):
     if reader == G16_HEIGHTMAP_READER:
         record['differencesFrom123_28'] = material_prefix_differences(licensee_version)
         record['materialPrefix'] = lineage_material_prefix(REVIEWED_PACKAGE_VERSION, licensee_version)
+        evidence = READER_EVIDENCE[reader]
+    elif reader == LEVEL_MODEL_READER:
+        record['differencesFrom123_28'] = []
         evidence = READER_EVIDENCE[reader]
     else:
         record['differencesFrom123_28'] = map_material_export_differences(licensee_version)
@@ -131,3 +148,11 @@ def require_reviewed_reader_layout(reader, package_summary):
     if record is None:
         raise FormatError(reader_gap_reason(reader, version, licensee))
     return record
+
+
+def reader_cross_check_tile(reader, licensee):
+    if reader == LEVEL_MODEL_READER:
+        if licensee not in MAP_ACTOR_CROSS_CHECK_TILES:
+            raise FormatError(f'licensee {licensee} has no map-actor cross-check tile to read its Level.Model from')
+        return MAP_ACTOR_CROSS_CHECK_TILES[licensee]
+    return require_reviewed_reader_layout(reader, {'version': REVIEWED_PACKAGE_VERSION, 'licenseeVersion': licensee})['crossCheck']['tile']

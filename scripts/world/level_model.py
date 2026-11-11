@@ -2,9 +2,8 @@ from typing import NamedTuple
 
 from native_catalog.ue2 import FormatError
 from world.bsp_reader_binding import PackageAdapter, reviewed_reader
+from world.reader_licensee_layouts import LEVEL_MODEL_READER, require_reviewed_reader_layout
 
-REVIEWED_LEVEL_MODEL_VERSION = 123
-REVIEWED_LEVEL_MODEL_LICENSEE = 28
 SURFACE_LIGHTMAP_INDEX_LAYOUT = True
 INDEX_NONE = -1
 LEAF_HULL_BOUND_WORDS = 6
@@ -32,14 +31,11 @@ class LevelModel(NamedTuple):
     checks: dict
 
 
-def require_reviewed_level_model_layout(package):
-    version, licensee = package.summary['version'], package.summary['licenseeVersion']
-    if version != REVIEWED_LEVEL_MODEL_VERSION:
-        raise LevelModelLayoutError(f'map-version-unsupported:{version}',
-                                    f'{package.filename} version {version} is outside the vendored reader layout {REVIEWED_LEVEL_MODEL_VERSION}')
-    if licensee != REVIEWED_LEVEL_MODEL_LICENSEE:
-        raise LevelModelLayoutError(f'map-licensee-unsupported:{version}/{licensee}',
-                                    f'{package.filename} licensee {licensee} is outside the vendored reader layout {REVIEWED_LEVEL_MODEL_LICENSEE}')
+def reviewed_level_model_layout(package_summary, filename):
+    try:
+        return require_reviewed_reader_layout(LEVEL_MODEL_READER, package_summary)
+    except FormatError as error:
+        raise LevelModelLayoutError(str(error), f'{filename} is outside the reviewed level-model reader layouts: {error}') from error
 
 
 def require_index_or_none(value, size, field, node_index):
@@ -66,8 +62,7 @@ def require_level_model_ranges(model):
             leaf_hull_run_end(model.leaf_hulls, node.i_collision_bound, node_index)
 
 
-def read_level_model(package):
-    require_reviewed_level_model_layout(package)
+def read_vendored_level_model(package):
     adapter, reader = PackageAdapter(package), reviewed_reader()
     try:
         export, binding = reader.level_model_binding(adapter)
@@ -78,3 +73,7 @@ def read_level_model(package):
     require_level_model_ranges(model)
     return LevelModel(package, adapter, reader, export, binding, model, checks)
 
+
+def read_level_model(package):
+    reviewed_level_model_layout(package.summary, package.filename)
+    return read_vendored_level_model(package)
