@@ -109,6 +109,15 @@ class MapEmitterExportTests(unittest.TestCase):
         self.assertEqual(tile_map_emitter_row(TILE_ID, SOURCE_IDENTITY, gap_rows, EVIDENCE)['status'], 'pass')
         self.assertEqual(tile_resources(None, None, None, {'manifest': None, 'gapRows': []}), [])
 
+    def test_an_emitter_actor_missing_from_the_raw_actors_is_a_named_gap_and_the_other_emitters_still_export(self):
+        raw_actors = {name: actor for name, actor in RAW_ACTORS.items() if name != f'{TILE_ID}.Emitter2'}
+        placements, gap_rows = read_tile_map_emitters(emitter_package(), raw_actors, CLASS_DEFAULTS, TILE_ID, SOURCE_IDENTITY, EVIDENCE)
+        self.assertEqual([placement.record['id'] for placement in placements], [f'interlude:{TILE_ID}.Emitter7'])
+        self.assertEqual([(row['reason'], row['sourceIdentity']['object']) for row in gap_rows],
+                         [('decode-failed:emitter-actor-not-extracted', f'{TILE_ID}.Emitter2')])
+        for row in gap_rows:
+            validate_gap_row(row)
+
     def test_an_emitter_reference_past_the_export_table_is_refused_as_a_format_error(self):
         package = emitter_package(second_emitter_export_index=99)
         with self.assertRaisesRegex(FormatError, 'emitter export 99 outside the export table of 4 exports'):

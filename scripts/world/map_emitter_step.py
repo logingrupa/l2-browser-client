@@ -7,7 +7,7 @@ from native_assets_lib.gltf import json_bytes
 from native_store.catalog_writer import sha256_hex
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
-from world.map_emitter_records import emitter_actor_exports, read_map_emitter_placement
+from world.map_emitter_records import MapEmitterGap, emitter_actor_exports, read_map_emitter_placement
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
 from world.static_placement import ClassDefaults
 from world.tile_census import WORLD_LANE_NAME
@@ -22,6 +22,7 @@ TILE_MAP_EMITTERS_KIND = 'native-tile-map-emitters'
 TILE_MAP_EMITTERS_SCHEMA_VERSION = 1
 TILE_MAP_EMITTERS_FOLDER = 'map-emitters'
 TILE_MAP_EMITTERS_NAME = 'tile-emitters.json'
+EMITTER_ACTOR_NOT_EXTRACTED_REASON = 'decode-failed:emitter-actor-not-extracted'
 
 
 class MapEmitterUnit(NamedTuple):
@@ -70,7 +71,11 @@ def map_emitter_gap_row(tile_id, source_identity, evidence, gap):
 def read_tile_map_emitters(package, actors_by_object, class_defaults, tile_id, source_identity, evidence):
     placements, gap_rows = [], []
     for item in emitter_actor_exports(package):
-        placement, actor_gap = read_map_emitter_placement(package, item, actors_by_object[item['object']], class_defaults)
+        actor = actors_by_object.get(item['object'])
+        if actor is None:
+            gap_rows.append(map_emitter_gap_row(tile_id, source_identity, evidence, MapEmitterGap(item['object'], EMITTER_ACTOR_NOT_EXTRACTED_REASON)))
+            continue
+        placement, actor_gap = read_map_emitter_placement(package, item, actor, class_defaults)
         if actor_gap is not None:
             gap_rows.append(map_emitter_gap_row(tile_id, source_identity, evidence, actor_gap))
             continue
