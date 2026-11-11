@@ -1,3 +1,4 @@
+import ast
 import hashlib
 import json
 from pathlib import Path
@@ -93,6 +94,13 @@ class StaticMeshTriangleTests(unittest.TestCase):
         self.assertAlmostEqual(positions[1][0], 1.0, places=5)
         self.assertAlmostEqual(positions[2][2], 2.0, places=5)
         self.assertEqual(indices, [0, 2, 1])
+
+    def test_the_gltf_float_component_has_one_owner_in_the_world_lane(self):
+        owners = sorted(path.name for path in (ROOT / 'scripts' / 'world').glob('*.py')
+                        for statement in ast.parse(path.read_text(encoding='utf-8')).body
+                        if isinstance(statement, ast.Assign) and any(isinstance(target, ast.Name) and target.id == 'GLTF_FLOAT_COMPONENT'
+                                                                     for target in statement.targets))
+        self.assertEqual(owners, ['gltf_builder.py'])
 
 
 class VolumeTests(unittest.TestCase):

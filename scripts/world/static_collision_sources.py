@@ -5,6 +5,7 @@ from typing import NamedTuple
 
 from native_assets_lib.class_defaults import ClassDefaultError
 from native_catalog.ue2 import FormatError
+from world.gltf_builder import GLTF_FLOAT_COMPONENT
 
 COLLISION_RULES_PATH = Path(__file__).resolve().parents[2] / 'recipes' / 'world' / 'collision-declaration-rules.json'
 COLLISION_RULES_SCHEMA_VERSION = 1
@@ -24,7 +25,6 @@ UNRESOLVED_INTRINSIC_SELECTORS_EVIDENCE = 'selectors:unresolved-intrinsic'
 GLTF_TO_SOURCE_UNITS = 100.0
 GLTF_TO_SOURCE_AXIS_ORDER = (0, 2, 1)
 INDEX_FORMAT_OF_COMPONENT = {5121: 'B', 5123: 'H', 5125: 'I'}
-GLTF_FLOAT_COMPONENT = 5126
 GLTF_TRIANGLES_MODE = 4
 
 
