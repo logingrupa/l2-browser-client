@@ -1,5 +1,5 @@
 import type { Scene } from "@babylonjs/core/scene";
-import { worldPositionToSource, type SourcePosition, type WorldPosition } from "../../../world/sourceFrame";
+import type { WorldPosition } from "../../../world/sourceFrame";
 import type { CollisionWorld } from "./core/collisionWorld";
 
 export interface CollisionCellContext {
@@ -25,9 +25,4 @@ export function provideCollisionCellContext(scene: Scene, context: CollisionCell
 
 export function collisionCellContextFor(scene: Scene): CollisionCellContext | null {
   return collisionCellContextsByScene.get(scene) ?? null;
-}
-
-export function collisionFocusSourcePosition(context: CollisionCellContext): SourcePosition | null {
-  const focus = context.focusPosition();
-  return focus === null ? null : worldPositionToSource(focus);
 }

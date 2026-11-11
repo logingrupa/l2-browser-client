@@ -3,7 +3,7 @@ import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
 import { Scene } from "@babylonjs/core/scene";
 import { createCollisionWorld, type CollisionWorld } from "../../src/scene/world/movement/core/collisionWorld";
 import {
-  collisionCellContextFor, collisionFocusSourcePosition, provideCollisionCellContext,
+  collisionCellContextFor, provideCollisionCellContext,
 } from "../../src/scene/world/movement/collisionCellContext";
 import { loadChunkCollisionCell, loadTileBspTree, nativeTileCollisionCellId } from "../../src/scene/world/movement/loadCollisionCells";
 import type { NativeTileChunkManifest } from "../../src/scene/world/nativeTileChunkManifest";
@@ -148,23 +148,18 @@ describe("collision cell context", () => {
     return { engine, scene: new Scene(engine) };
   };
 
-  it("hands the world and the focus to the scene, converted to source units, and refuses a second provider", () => {
+  it("hands the world and the focus to the scene and refuses a second provider", () => {
     const { engine, scene } = createScene();
     const world = createCollisionWorld();
     expect(collisionCellContextFor(scene)).toBeNull();
     const context = { world, focusPosition: () => ({ x: 1.5, y: 2, z: -3.25 }) };
     const withdraw = provideCollisionCellContext(scene, context);
     expect(collisionCellContextFor(scene)).toBe(context);
-    expect(collisionFocusSourcePosition(context)).toEqual({ x: 150, y: -325, z: 200 });
     expect(() => provideCollisionCellContext(scene, { world, focusPosition: () => null })).toThrow(/already has a collision cell context provider/);
     withdraw();
     expect(collisionCellContextFor(scene)).toBeNull();
     scene.dispose();
     engine.dispose();
-  });
-
-  it("returns a null focus while the runtime has no player", () => {
-    expect(collisionFocusSourcePosition({ world: createCollisionWorld(), focusPosition: () => null })).toBeNull();
   });
 
   it("withdraws the context when the scene is disposed", () => {
