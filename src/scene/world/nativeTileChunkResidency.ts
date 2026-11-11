@@ -65,7 +65,6 @@ export interface NativeTileChunkResidencyOptions<Loaded extends LoadedResidencyC
 }
 
 export interface NativeTileChunkResidency<Loaded extends LoadedResidencyChunk> {
-  update(): void;
   ready(): Promise<void>;
   addChunks(chunks: readonly ResidencyChunk[]): void;
   residentChunks(): readonly ResidentChunk<Loaded>[];
@@ -82,6 +81,9 @@ const maximumLoadsInFlight = 3;
 const residencySettingsSource = "derived from the converted chunk edge";
 const compareCellIds = (left: string, right: string) => left < right ? -1 : left > right ? 1 : 0;
 const emptyPlan: WorldResidencyPlan = { visibleCellIds: [], requiredCellIds: [], retainedCellIds: [], loadOrder: [] };
+const sameCellIds = (left: readonly string[], right: readonly string[]) => left.length === right.length && left.every((cellId, index) => cellId === right[index]);
+const samePlanRings = (left: WorldResidencyPlan, right: WorldResidencyPlan) => sameCellIds(left.visibleCellIds, right.visibleCellIds)
+  && sameCellIds(left.requiredCellIds, right.requiredCellIds) && sameCellIds(left.retainedCellIds, right.retainedCellIds);
 
 function sourceFootprint(footprint: WorldResidencyFootprint): CollisionCellFootprint {
   const minimum = worldPositionToSource({ x: footprint.minimumX, y: 0, z: footprint.minimumZ });
@@ -162,9 +164,14 @@ export function createNativeTileChunkResidency<Loaded extends LoadedResidencyChu
     options.loadChunk(chunk, abort.signal).then(loaded => settleLoad(chunk, abort, { loaded }), (error: unknown) => settleLoad(chunk, abort, { error }));
   };
 
+  const planForFocus = (focus: WorldPosition) => planWorldResidency([...chunksByCellId.values()], focus, settings);
   function replan(): void {
     if (disposed) return;
-    plan = planWorldResidency([...chunksByCellId.values()], focusPoint(), settings);
+    applyPlan(planForFocus(focusPoint()));
+  }
+
+  function applyPlan(nextPlan: WorldResidencyPlan): void {
+    plan = nextPlan;
     initialRingCellIds ??= plan.requiredCellIds;
     const required = new Set(plan.requiredCellIds), retained = new Set(plan.retainedCellIds), visible = new Set(plan.visibleCellIds);
     for (const cellId of plan.requiredCellIds) {
@@ -199,19 +206,21 @@ export function createNativeTileChunkResidency<Loaded extends LoadedResidencyChu
   }
 
   const observer = scene.onBeforeRenderObservable.add(() => {
-    const holding = chunksHoldingFocus(focusPoint());
+    const focus = focusPoint();
+    const holding = chunksHoldingFocus(focus);
     const nextFocusKey = holding.map(chunk => chunk.cellId).join("|");
-    if (nextFocusKey === focusKey) return;
-    focusKey = nextFocusKey;
-    options.onFocusChunks?.(holding);
-    replan();
+    if (nextFocusKey !== focusKey) {
+      focusKey = nextFocusKey;
+      options.onFocusChunks?.(holding);
+    }
+    const nextPlan = planForFocus(focus);
+    if (!samePlanRings(nextPlan, plan)) applyPlan(nextPlan);
   });
 
   addKnownChunks(options.chunks);
   replan();
 
   return {
-    update: replan,
     ready() {
       return new Promise<void>(resolve => { readyWaiters.push(resolve); resolveReadyWhenInitialRingSettled(); });
     },
