@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { defaultNativePlayerProfile } from "../../src/assets/native/loadNativePlayerProfiles";
 import {
-  buildNativeCatalogIndex, characterCatalogKey, describeNativeCatalogLookup, itemCatalogKey, unavailableNativeCatalogIndex, npcCatalogKey,
+  actorSoundsCatalogKey, buildNativeCatalogIndex, characterCatalogKey, describeNativeCatalogLookup, itemCatalogKey, unavailableNativeCatalogIndex, npcCatalogKey,
   parseItemModelRecordId, skillCatalogKey, tableCatalogKey, tileCatalogKey, windowCatalogKey,
 } from "../../src/assets/native/nativeCatalogIndex";
 import { readNativeCatalog, type NativeCatalog } from "../../src/assets/native/readNativeCatalog";
@@ -67,6 +67,22 @@ describe("native catalog L2-ID index", () => {
     ["interlude:item:1:body-part:7:shield", null], ["interlude:item:1234567890:body-part:7:weapon", null], ["fighter-equipment:0", null],
   ])("parses the item model record id %s canonically", (id, identity) => {
     expect(parseItemModelRecordId(id)).toEqual(identity);
+  });
+
+  it("answers actor-sounds keys from the generated combat-audio records of any entity key and skips hand bundles", async () => {
+    serveFiles(new Map());
+    const record = (id: string) => ({ id, manifest: `/l2/combat-audio/${"a".repeat(64)}/manifest.json`, manifestSha256: "a".repeat(64), manifestBytes: 1 });
+    const index = await buildNativeCatalogIndex(catalogWith({ combatAudio: [record("native-combat-audio"), record("actor-sounds:npc:20001"),
+      record("actor-sounds:character:3")] }), new AbortController().signal);
+    expect(index.lookup(actorSoundsCatalogKey(npcCatalogKey(20001)))).toEqual({ status: "converted", key: "actor-sounds:npc:20001",
+      record: { entityCatalogKey: "npc:20001" } });
+    expect(index.lookup(actorSoundsCatalogKey(characterCatalogKey(3))).status).toBe("converted");
+    expect(index.lookup(actorSoundsCatalogKey(npcCatalogKey(20002)))).toEqual({ status: "not-in-catalog", key: "actor-sounds:npc:20002",
+      reason: "not in catalog" });
+    expect(index.keys("actor-sounds:")).toEqual(["actor-sounds:character:3", "actor-sounds:npc:20001"]);
+    expect(index.keys("native-combat-audio")).toEqual([]);
+    expect(() => actorSoundsCatalogKey("")).toThrow(RangeError);
+    expect(() => actorSoundsCatalogKey("actor-sounds:npc:20001")).toThrow(RangeError);
   });
 
   it("refuses item model records of one item that disagree on body part or unit kind", async () => {

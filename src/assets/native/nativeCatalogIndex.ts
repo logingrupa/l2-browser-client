@@ -10,6 +10,7 @@ import { parseSkillEffectComponentId } from "../../effects/castSkillIndex";
 import { readNativeCoverageUnlessAbsent, type NativeCoverageStatus } from "./readNativeCoverage";
 import { equipmentSlotForBodyPart } from "../../world/sandboxCommands";
 import type { EquipmentSlot } from "../../world/worldTypes";
+import { generatedActorSoundBundlePrefix } from "../../audio/combatAudioRoleRouting";
 
 export interface NativeNpcCatalogRecord {
   readonly npcId: number; readonly profileId: string; readonly modelCatalogId: string; readonly join: NativeNpcModelJoinKind;
@@ -24,9 +25,10 @@ export interface NativeItemModelRecordIdentity {
 export interface NativeSkillCatalogRecord { readonly skillId: number; readonly level: number; readonly effectComponentId: string }
 export interface NativeTileCatalogRecord { readonly tile: string; readonly sectionId: string }
 export interface NativeCharacterCatalogRecord { readonly chargrpIndex: number; readonly playerProfileId: string; readonly catalogId: string }
+export interface NativeActorSoundsCatalogRecord { readonly entityCatalogKey: string }
 export type NativeCatalogRecord =
   | NativeNpcCatalogRecord | NativeItemCatalogRecord | NativeSkillCatalogRecord | NativeTileCatalogRecord | NativeTileManifestCatalogRecord
-  | NativeTableCatalogRecord | NativeWindowCatalogRecord | NativeCharacterCatalogRecord;
+  | NativeTableCatalogRecord | NativeWindowCatalogRecord | NativeCharacterCatalogRecord | NativeActorSoundsCatalogRecord;
 
 export type NativeCatalogLookup =
   | { readonly status: "converted"; readonly key: string; readonly record: NativeCatalogRecord }
@@ -62,6 +64,13 @@ export function skillCatalogKey(skillId: number, level: number): string {
 
 export function characterCatalogKey(chargrpIndex: number): string {
   return `character:${requireCatalogInteger(chargrpIndex, 0, "Chargrp index")}`;
+}
+
+export function actorSoundsCatalogKey(entityCatalogKey: string): string {
+  if (!entityCatalogKey || entityCatalogKey.startsWith(generatedActorSoundBundlePrefix)) {
+    throw new RangeError("Actor sounds are keyed by a nonempty entity catalog key.");
+  }
+  return `${generatedActorSoundBundlePrefix}${entityCatalogKey}`;
 }
 
 export function tableCatalogKey(table: string): string {
@@ -176,6 +185,11 @@ function skillLookups(effectComponents: readonly unknown[]): NativeCatalogLookup
   return lookups;
 }
 
+function actorSoundsLookups(combatAudio: readonly unknown[]): NativeCatalogLookup[] {
+  return combatAudio.map(value => catalogRecordIdentity(value, "combat audio")).filter(record => record.id.startsWith(generatedActorSoundBundlePrefix))
+    .map(record => ({ status: "converted", key: record.id, record: { entityCatalogKey: record.id.slice(generatedActorSoundBundlePrefix.length) } }));
+}
+
 function legacySectionTileLookups(sections: readonly unknown[]): NativeCatalogLookup[] {
   const sectionIds = new Set<string>();
   const lookups: NativeCatalogLookup[] = [];
@@ -212,6 +226,7 @@ export async function buildNativeCatalogIndex(catalog: NativeCatalog, signal: Ab
     if (profile.chargrpIndex !== undefined) addEntry(characterLookup(profile, profile.chargrpIndex, sourceObjectsByModelId));
   }
   for (const lookup of skillLookups(catalog.effectComponents)) addEntry(lookup);
+  for (const lookup of actorSoundsLookups(catalog.combatAudio)) addEntry(lookup);
   for (const value of catalog.tables) {
     const record = readTableCatalogRecord(value);
     addEntry({ status: "converted", key: tableCatalogKey(record.table), record });

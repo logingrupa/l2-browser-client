@@ -66,7 +66,7 @@ async function resource(path: string, expectedHash: string, size: number, signal
   return fetchVerifiedNativeResource(path, expectedHash, signal, size);
 }
 
-function groupLessReferenceAgreesWithAdmittedExport(reference: string, exported: string): boolean {
+export function groupLessReferenceAgreesWithAdmittedExport(reference: string, exported: string): boolean {
   const left = reference.toLowerCase().split("."), right = exported.toLowerCase().split(".");
   if (left.length === right.length) return left.join(".") === right.join(".");
   return left.length === 2 && right.length >= 3 && left[0] === right[0] && left[1] === right.at(-1);
