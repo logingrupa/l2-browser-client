@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-11-11T07:40:47.474Z"
+stopped_at: Completed 03-02-PLAN.md
+last_updated: "2026-11-11T08:09:00.812Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 03 plan 03-01 complete (side-by-side check record writer and key content digest; Phase 3 start commit cb09cdc)
-state_head: f7914fd9c53629fadda19632bd075a1490bcb270
+state_head: 625fdf6df8f071edc384b732f5c4b92bbd9efe17
 progress:
   total_phases: 6
   completed_phases: 0
-  total_plans: 108
-  completed_plans: 89
+  total_plans: 123
+  completed_plans: 90
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 03 (Stage A checks) - EXECUTING
-Plan: 03-01 complete, 1 of 20 plans summarized
+Plan: 03-02 complete, 2 of 20 plans summarized
 Status: Executing Phase 3 from start commit cb09cdc; Phase 1 is verification_deferred_human (see Deferred Verification)
-Last activity: 2026-11-11 - Plan 03-01 complete: scripts/native_store/side_by_side_check_records.py is the one validated writer of docs/parts/<part>/side-by-side-checks.json (judged records need both halves and an independent reviewer, audio verdicts are owner-only, native halves carry reference_client_build of the lock), and key_content_sha256_by_key digests every union key (62 tile, 248 window, 43 table, 1000 npc, 96 item, 3064 skill); CHECK-01 to CHECK-03 stay open until records exist
+Last activity: 2026-11-11 - Plan 03-02 complete: the 15-member WorldCommand contract adds set-environment, answered with the adapter environment event the clock validates, and window.__nativeSlice.setCameraPose applies a snapshot camera pose exactly or refuses it with the field or limit it breaks (it leaves follow mode through the runtime); the framing Playwright check passes on the integration 20_20 capture route (P614, P615); CHECK-01 stays open until records exist
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -141,6 +141,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P54 | 191min | 3 tasks | 17 files |
 | Phase 02 P55 | 43min | 3 tasks | 6 files |
 | Phase 3 P01 | 28min | 3 tasks | 7 files |
+| Phase 03 P02 | 26min | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -345,6 +346,8 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-55: integration union of the world, actors and data-ui lane stores (catalog bba52c47); union loads only from slices run on the union catalog, LOAD_CHECK_LIMIT=5 per kind; INT-01 stays partial: staging Needs Human (rows 762 to 764)
 - [Phase 3]: 03-01: side_by_side_check_records.py is the one writer of docs/parts/<part>/side-by-side-checks.json; later plans write records only through write_side_by_side_records (P12)
 - [Phase 3]: 03-01: audio records keep nativeHalf null, store only listen-needs-owner and take pass or mismatch only from owner; the writer owns sandboxHalfHistory; the lock comparison applies to written records only (P601 to P613 in pending-decision-rows.md)
+- [Phase 03]: 03-02 P614: the framing spec runs on NATIVE_STORE_ROOT=integration at /?map=20_20 (capture route); the default-route store has no lighting resource until the main-checkout restage
+- [Phase 03]: 03-02 P615: setCameraPose validates, releases effect inspection, leaves follow mode, then applies, in createNativeSliceRuntime; the pose holds until Follow fighter
 
 ### Pending Todos
 
@@ -470,6 +473,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-11T07:40:46.116Z
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-11-11T08:09:00.008Z
+Stopped at: Completed 03-02-PLAN.md
 Resume file: None
