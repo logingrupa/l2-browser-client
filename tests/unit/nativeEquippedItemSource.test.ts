@@ -3,7 +3,7 @@ import { unavailableNativeCatalogIndex, type NativeCatalogIndex, type NativeCata
 import { catalogEquippedItemSource } from "../../src/assets/native/nativeEquippedItemSource";
 import { catalogWith, model } from "../support/nativeCatalogIndexFixtures";
 
-const weaponLookup: NativeCatalogLookup = { status: "converted", key: "item:1",
+const weaponLookup: NativeCatalogLookup = { status: "converted", key: "item:1", namedGaps: [],
   record: { itemId: 1, slot: "body-part:7", catalogIds: ["interlude:item:1:body-part:7:weapon"], playerProfileIds: [] } };
 
 function recordingIndex(): NativeCatalogIndex & { readonly requestedKeys: string[] } {

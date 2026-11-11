@@ -30,6 +30,7 @@ export interface SkillCastInspection {
   readonly placements: readonly SkillEffectPlacement[];
   readonly notDrawn: readonly SkillCastNotDrawn[];
   readonly featureGaps: readonly string[];
+  readonly namedGaps: readonly string[];
 }
 
 export interface SkillCastPresentation {
@@ -121,7 +122,7 @@ export function createSkillCastPresentation(context: SkillCastPresentationContex
       const lookup = catalogIndex.lookup(key);
       const answered = { key, casterId: event.casterId, targetId: event.targetId ?? null, catalogStatus: lookup.status };
       if (lookup.status !== "converted") {
-        return { ...answered, reason: lookup.reason, emitterActors: 0, placements: [], notDrawn: [], featureGaps: [] };
+        return { ...answered, reason: lookup.reason, emitterActors: 0, placements: [], notDrawn: [], featureGaps: [], namedGaps: [] };
       }
       const record = lookupCastSkill(castSkillIndex, event.skillId, event.level);
       if (!record) throw new Error(`Skill cast presentation: ${key} is converted in the catalog index but has no effect component record.`);
@@ -140,10 +141,10 @@ export function createSkillCastPresentation(context: SkillCastPresentationContex
           if (presentationsByCaster.get(event.casterId) === presentation) releaseCaster(event.casterId);
           throw failure;
         }
-        return { ...answered, reason: skillCastSupersededReason, emitterActors: 0, placements, notDrawn, featureGaps: [] };
+        return { ...answered, reason: skillCastSupersededReason, emitterActors: 0, placements, notDrawn, featureGaps: [], namedGaps: lookup.namedGaps };
       }
       const featureGaps = [...new Set(presentation.playbacks.flatMap(playback => playback.inspect().featureGaps))].sort();
-      return { ...answered, reason: null, emitterActors: presentation.playbacks.length, placements, notDrawn, featureGaps };
+      return { ...answered, reason: null, emitterActors: presentation.playbacks.length, placements, notDrawn, featureGaps, namedGaps: lookup.namedGaps };
     },
     advance(elapsedSeconds) {
       if (disposed) return;

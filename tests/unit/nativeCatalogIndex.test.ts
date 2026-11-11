@@ -28,17 +28,17 @@ afterEach(() => { vi.unstubAllGlobals(); });
 describe("native catalog L2-ID index", () => {
   it("reports converted IDs only when a catalog record backs them", async () => {
     const index = await buildNativeCatalogIndex(await inlineCatalog(), new AbortController().signal);
-    expect(index.lookup(npcCatalogKey(21622))).toEqual({ status: "converted", key: "npc:21622",
+    expect(index.lookup(npcCatalogKey(21622))).toEqual({ status: "converted", key: "npc:21622", namedGaps: [],
       record: { npcId: 21622, profileId: "npc:21622", modelCatalogId: "musveren:0", join: "legacy-single-mesh-match" } });
     expect(index.lookup(npcCatalogKey(1))).toEqual({ status: "not-in-catalog", key: "npc:1", reason: "not in catalog" });
     expect(index.lookup(npcCatalogKey(20001))).toEqual({ status: "not-in-catalog", key: "npc:20001",
       reason: "NPC profile staged but mesh LineageMonsters.unconverted_m00 has no converted model" });
-    expect(index.lookup(itemCatalogKey(22))).toEqual({ status: "converted", key: "item:22",
+    expect(index.lookup(itemCatalogKey(22))).toEqual({ status: "converted", key: "item:22", namedGaps: [],
       record: { itemId: 22, slot: "upper", catalogIds: ["fighter-equipment:0"], playerProfileIds: ["human-male-fighter"] } });
-    expect(index.lookup(skillCatalogKey(3, 1))).toEqual({ status: "converted", key: "skill:3:1",
+    expect(index.lookup(skillCatalogKey(3, 1))).toEqual({ status: "converted", key: "skill:3:1", namedGaps: [],
       record: { skillId: 3, level: 1, effectComponentId: "interlude:skill:3:level:1:raw-source-dispatch" } });
     expect(index.lookup(skillCatalogKey(3, 2)).status).toBe("not-in-catalog");
-    expect(index.lookup(tileCatalogKey("20_20"))).toEqual({ status: "converted", key: "tile:20_20",
+    expect(index.lookup(tileCatalogKey("20_20"))).toEqual({ status: "converted", key: "tile:20_20", namedGaps: [],
       record: { tile: "20_20", sectionId: "map-20-20-section" } });
     expect(index.lookup(windowCatalogKey("StatusWnd"))).toEqual({ status: "not-in-catalog", key: "window:StatusWnd",
       reason: "interface windows are not converted yet (UI-01)" });
@@ -51,11 +51,11 @@ describe("native catalog L2-ID index", () => {
       model("interlude:item:1:body-part:7:weapon", "LineageWeapons.small_sword_m00_wp"),
       model("interlude:item:26:body-part:6:armor:2", "Fighter.FFighter_m002_l"), model("interlude:item:26:body-part:6:armor:0", "Fighter.MFighter_m002_l"),
       model("interlude:item:22:body-part:10:armor:0", "Fighter.MFighter_m001_u")] }, new AbortController().signal);
-    expect(index.lookup(itemCatalogKey(1))).toEqual({ status: "converted", key: "item:1",
+    expect(index.lookup(itemCatalogKey(1))).toEqual({ status: "converted", key: "item:1", namedGaps: [],
       record: { itemId: 1, slot: "body-part:7", catalogIds: ["interlude:item:1:body-part:7:weapon"], playerProfileIds: [] } });
-    expect(index.lookup(itemCatalogKey(26))).toEqual({ status: "converted", key: "item:26", record: { itemId: 26, slot: "body-part:6",
+    expect(index.lookup(itemCatalogKey(26))).toEqual({ status: "converted", key: "item:26", namedGaps: [], record: { itemId: 26, slot: "body-part:6",
       catalogIds: ["interlude:item:26:body-part:6:armor:0", "interlude:item:26:body-part:6:armor:2"], playerProfileIds: [] } });
-    expect(index.lookup(itemCatalogKey(22))).toEqual({ status: "converted", key: "item:22",
+    expect(index.lookup(itemCatalogKey(22))).toEqual({ status: "converted", key: "item:22", namedGaps: [],
       record: { itemId: 22, slot: "upper", catalogIds: ["fighter-equipment:0"], playerProfileIds: ["human-male-fighter"] } });
     expect(index.keys("item:")).toEqual(["item:1", "item:22", "item:26"]);
   });
@@ -74,7 +74,7 @@ describe("native catalog L2-ID index", () => {
     const record = (id: string) => ({ id, manifest: `/l2/combat-audio/${"a".repeat(64)}/manifest.json`, manifestSha256: "a".repeat(64), manifestBytes: 1 });
     const index = await buildNativeCatalogIndex(catalogWith({ combatAudio: [record("native-combat-audio"), record("actor-sounds:npc:20001"),
       record("actor-sounds:character:3")] }), new AbortController().signal);
-    expect(index.lookup(actorSoundsCatalogKey(npcCatalogKey(20001)))).toEqual({ status: "converted", key: "actor-sounds:npc:20001",
+    expect(index.lookup(actorSoundsCatalogKey(npcCatalogKey(20001)))).toEqual({ status: "converted", key: "actor-sounds:npc:20001", namedGaps: [],
       record: { entityCatalogKey: "npc:20001" } });
     expect(index.lookup(actorSoundsCatalogKey(characterCatalogKey(3))).status).toBe("converted");
     expect(index.lookup(actorSoundsCatalogKey(npcCatalogKey(20002)))).toEqual({ status: "not-in-catalog", key: "actor-sounds:npc:20002",
@@ -98,7 +98,7 @@ describe("native catalog L2-ID index", () => {
       manifest: `/l2/effects/${"a".repeat(64)}/manifest.json`, manifestSha256: "a".repeat(64) });
     const index = await buildNativeCatalogIndex(catalogWith({ effectComponents: [record(1), record(2), { id: "interlude:skill:1011:level:0:x" }] }),
       new AbortController().signal);
-    expect(index.lookup(skillCatalogKey(1011, 2))).toEqual({ status: "converted", key: "skill:1011:2",
+    expect(index.lookup(skillCatalogKey(1011, 2))).toEqual({ status: "converted", key: "skill:1011:2", namedGaps: [],
       record: { skillId: 1011, level: 2, effectComponentId: "interlude:skill:1011:level:2:native-description-action" } });
     expect(index.keys("skill:")).toEqual(["skill:1011:1", "skill:1011:2"]);
   });
@@ -180,6 +180,34 @@ describe("native catalog L2-ID index", () => {
   });
 });
 
+describe("named gaps on converted catalog keys", () => {
+  const beamGapReason = "emitter-class-unported:Engine.BeamEmitter";
+  const skillRecord = (skillId: number) => ({ id: `interlude:skill:${skillId}:level:1:native-description-action`,
+    manifest: `/l2/effects/${"a".repeat(64)}/manifest.json`, manifestSha256: "a".repeat(64) });
+  const skillCoverageRow = (skillId: number, status: string, reason: string | null) => ({ key: skillCatalogKey(skillId, 1), part: "skills-effects", status, reason,
+    converted: true, loads: "pass", steps: [{ step: "skills", status, reason }] });
+
+  async function skillIndexWithCoverage(rows: unknown[]) {
+    const catalog = catalogWith({ effectComponents: [skillRecord(1011), skillRecord(3)] });
+    serveFiles(new Map(), { schemaVersion: 1, catalogSha256: catalog.servedCatalogSha256, storeRoot: "artifacts/lane-store/integration/l2",
+      generatedAtRiga: "2026-11-11T13:32:14+02:00", denominators: {}, parts: {}, rows });
+    return buildNativeCatalogIndex(catalog, new AbortController().signal);
+  }
+
+  it("answers a converted skill whose coverage row is a named emitter gap as converted with that reason in namedGaps", async () => {
+    const index = await skillIndexWithCoverage([skillCoverageRow(1011, "gap", beamGapReason), skillCoverageRow(3, "pass", null)]);
+    expect(index.lookup(skillCatalogKey(1011, 1))).toEqual({ status: "converted", key: "skill:1011:1", namedGaps: [beamGapReason],
+      record: { skillId: 1011, level: 1, effectComponentId: "interlude:skill:1011:level:1:native-description-action" } });
+    expect(index.lookup(skillCatalogKey(3, 1))).toMatchObject({ status: "converted", namedGaps: [] });
+  });
+
+  it("names the gap in the description of a converted lookup", async () => {
+    const index = await skillIndexWithCoverage([skillCoverageRow(1011, "gap", beamGapReason)]);
+    expect(describeNativeCatalogLookup(index.lookup(skillCatalogKey(1011, 1)))).toBe(`skill:1011:1 converted with named gaps: ${beamGapReason}`);
+    expect(describeNativeCatalogLookup(index.lookup(skillCatalogKey(3, 1)))).toBe("skill:3:1 converted");
+  });
+});
+
 const tableManifestSha256 = "cb5cd696271ad05fa5b6e55782f81d4cd2dbca3ec69b81958860a369276896e2";
 function tableRecord(id: string) {
   return { id, manifest: `/l2/tables/${tableManifestSha256}/${id}.json`, manifestSha256: tableManifestSha256, manifestBytes: 365,
@@ -189,7 +217,7 @@ function tableRecord(id: string) {
 describe("native catalog table and window keys", () => {
   it("answers the golden table and window records and keeps the agreed key list", async () => {
     const { index } = await goldenCatalogIndex();
-    expect(index.lookup(tableCatalogKey("syntheticfixture"))).toEqual({ status: "converted", key: "table:syntheticfixture", record: {
+    expect(index.lookup(tableCatalogKey("syntheticfixture"))).toEqual({ status: "converted", key: "table:syntheticfixture", namedGaps: [], record: {
       table: "syntheticfixture", manifest: `/l2/tables/${tableManifestSha256}/syntheticfixture.json`, manifestSha256: tableManifestSha256,
       manifestBytes: 365, recordCount: 1, sourceSha256: "87ee2596f2296f45554c8d048b5b270e409be68c3120048871fa1d2e84bffde6" } });
     expect(index.lookup(tableCatalogKey("npcgrp"))).toEqual({ status: "not-in-catalog", key: "table:npcgrp", reason: "not in catalog" });
@@ -245,9 +273,9 @@ describe("native catalog NPC model and character joins", () => {
     const catalog = await profileCatalog([firstLaneProfile, secondLaneProfile], [femaleFighterProfile],
       [model(firstUnitModelId, sharedMesh), model(secondUnitModelId, sharedMesh)]);
     const index = await buildNativeCatalogIndex(catalog, new AbortController().signal);
-    expect(index.lookup(npcCatalogKey(20842))).toEqual({ status: "converted", key: "npc:20842",
+    expect(index.lookup(npcCatalogKey(20842))).toEqual({ status: "converted", key: "npc:20842", namedGaps: [],
       record: { npcId: 20842, profileId: "npc:20842", modelCatalogId: firstUnitModelId, join: "model-catalog-id" } });
-    expect(index.lookup(npcCatalogKey(20843))).toEqual({ status: "converted", key: "npc:20843",
+    expect(index.lookup(npcCatalogKey(20843))).toEqual({ status: "converted", key: "npc:20843", namedGaps: [],
       record: { npcId: 20843, profileId: "npc:20843", modelCatalogId: secondUnitModelId, join: "model-catalog-id" } });
   });
 
@@ -273,7 +301,7 @@ describe("native catalog NPC model and character joins", () => {
   it("joins a shared-store profile without modelCatalogId by its single legacy mesh match", async () => {
     const catalog = await profileCatalog([musverenProfile], [femaleFighterProfile], [model("musveren:0", sharedMesh)]);
     const index = await buildNativeCatalogIndex(catalog, new AbortController().signal);
-    expect(index.lookup(npcCatalogKey(21622))).toEqual({ status: "converted", key: "npc:21622",
+    expect(index.lookup(npcCatalogKey(21622))).toEqual({ status: "converted", key: "npc:21622", namedGaps: [],
       record: { npcId: 21622, profileId: "npc:21622", modelCatalogId: "musveren:0", join: "legacy-single-mesh-match" } });
   });
 
@@ -312,7 +340,7 @@ describe("native catalog NPC model and character joins", () => {
     const catalog = await profileCatalog([musverenProfile], [{ ...femaleFighterProfile, chargrpIndex: 3 }, { ...femaleMysticProfile, chargrpIndex: 4 }],
       [model("human-female-fighter:0", "Fixture.Female")]);
     const index = await buildNativeCatalogIndex(catalog, new AbortController().signal);
-    expect(index.lookup(characterCatalogKey(3))).toEqual({ status: "converted", key: "character:3",
+    expect(index.lookup(characterCatalogKey(3))).toEqual({ status: "converted", key: "character:3", namedGaps: [],
       record: { chargrpIndex: 3, playerProfileId: "human-female-fighter", catalogId: "human-female-fighter:0" } });
     expect(index.lookup(characterCatalogKey(4))).toEqual({ status: "not-in-catalog", key: "character:4",
       reason: "player profile human-female-mystic model human-female-mystic:0 is not in the catalog" });
@@ -346,7 +374,7 @@ describe("native catalog L2-ID index on the golden catalog", () => {
   it("reads tile 00_00 from the tiles record of the golden catalog bytes", async () => {
     const { catalog, index } = await goldenCatalogIndex();
     expect(catalog.servedCatalogSha256).toBe(await goldenCatalogSha256());
-    expect(index.lookup(tileCatalogKey("00_00"))).toEqual({ status: "converted", key: "tile:00_00", record: { tile: "00_00", tileCatalogId: "00_00",
+    expect(index.lookup(tileCatalogKey("00_00"))).toEqual({ status: "converted", key: "tile:00_00", namedGaps: [], record: { tile: "00_00", tileCatalogId: "00_00",
       manifest: `/l2/tiles/${tileManifestSha256}/tile.json`, manifestSha256: tileManifestSha256, manifestBytes: 620 } });
   });
 
@@ -372,7 +400,7 @@ describe("native catalog tile records", () => {
   it("answers a tile from its tiles record and an adjacent tile from a legacy section", async () => {
     const index = await indexOf({ tiles: [tileRecord("20_20")], sections: [{ id: "map-20-21-section" }] });
     expect(index.lookup(tileCatalogKey("20_20"))).toMatchObject({ status: "converted", record: { tile: "20_20", tileCatalogId: "20_20" } });
-    expect(index.lookup(tileCatalogKey("20_21"))).toEqual({ status: "converted", key: "tile:20_21", record: { tile: "20_21", sectionId: "map-20-21-section" } });
+    expect(index.lookup(tileCatalogKey("20_21"))).toEqual({ status: "converted", key: "tile:20_21", namedGaps: [], record: { tile: "20_21", sectionId: "map-20-21-section" } });
     expect(index.keys("tile:")).toEqual(["tile:20_20", "tile:20_21"]);
   });
 

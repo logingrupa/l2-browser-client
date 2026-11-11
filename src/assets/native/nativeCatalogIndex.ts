@@ -31,7 +31,7 @@ export type NativeCatalogRecord =
   | NativeTableCatalogRecord | NativeWindowCatalogRecord | NativeCharacterCatalogRecord | NativeActorSoundsCatalogRecord;
 
 export type NativeCatalogLookup =
-  | { readonly status: "converted"; readonly key: string; readonly record: NativeCatalogRecord }
+  | { readonly status: "converted"; readonly key: string; readonly record: NativeCatalogRecord; readonly namedGaps: readonly string[] }
   | { readonly status: "not-in-catalog"; readonly key: string; readonly reason: string }
   | { readonly status: "gap"; readonly key: string; readonly reason: string; readonly coverageStatus: Exclude<NativeCoverageStatus, "pass"> };
 
@@ -89,9 +89,15 @@ export function tileCatalogKey(tile: string): string {
 }
 
 export function describeNativeCatalogLookup(lookup: NativeCatalogLookup): string {
-  if (lookup.status === "converted") return `${lookup.key} converted`;
+  if (lookup.status === "converted") {
+    return lookup.namedGaps.length ? `${lookup.key} converted with named gaps: ${lookup.namedGaps.join(", ")}` : `${lookup.key} converted`;
+  }
   if (lookup.status === "gap") return `${lookup.key} gap: ${lookup.reason}`;
   return lookup.reason === notInCatalogReason ? `${lookup.key} not in catalog` : `${lookup.key} not in catalog: ${lookup.reason}`;
+}
+
+function convertedLookup(key: string, record: NativeCatalogRecord): NativeCatalogLookup {
+  return { status: "converted", key, record, namedGaps: [] };
 }
 
 function duplicateEntries(key: string): Error {
@@ -121,8 +127,7 @@ export function readModelSourceObjects(models: readonly unknown[]): ReadonlyMap<
 function npcCatalogLookup(profile: NativeNpcProfile, sourceObjectsByModelId: ReadonlyMap<string, string | null>): NativeCatalogLookup {
   const key = npcCatalogKey(profile.npcId), modelJoin = joinNpcProfileToModel(profile, sourceObjectsByModelId);
   if (modelJoin.status === "missing") return { status: "not-in-catalog", key, reason: modelJoin.reason };
-  return { status: "converted", key,
-    record: { npcId: profile.npcId, profileId: profile.id, modelCatalogId: modelJoin.modelCatalogId, join: modelJoin.join } };
+  return convertedLookup(key, { npcId: profile.npcId, profileId: profile.id, modelCatalogId: modelJoin.modelCatalogId, join: modelJoin.join });
 }
 
 function upperItemLookups(playerProfiles: Iterable<NativePlayerProfile>, sourceObjectsByModelId: ReadonlyMap<string, string | null>): NativeCatalogLookup[] {
@@ -136,8 +141,8 @@ function upperItemLookups(playerProfiles: Iterable<NativePlayerProfile>, sourceO
       upperItems.set(item.itemId, staged);
     }
   }
-  return [...upperItems].map(([itemId, staged]) => ({ status: "converted", key: itemCatalogKey(itemId), record: { itemId, slot: "upper",
-    catalogIds: [...staged.catalogIds].sort(), playerProfileIds: [...staged.playerProfileIds].sort() } }));
+  return [...upperItems].map(([itemId, staged]) => convertedLookup(itemCatalogKey(itemId), { itemId, slot: "upper",
+    catalogIds: [...staged.catalogIds].sort(), playerProfileIds: [...staged.playerProfileIds].sort() }));
 }
 
 export function parseItemModelRecordId(id: string): NativeItemModelRecordIdentity | null {
@@ -161,8 +166,8 @@ function itemModelLookups(models: readonly unknown[]): NativeCatalogLookup[] {
     }
     staged.catalogIds.push(model.id);
   }
-  return [...modelsByItem].map(([itemId, staged]) => ({ status: "converted", key: itemCatalogKey(itemId), record: { itemId,
-    slot: equipmentSlotForBodyPart(staged.identity.bodyPart)!, catalogIds: staged.catalogIds.sort(), playerProfileIds: [] } }));
+  return [...modelsByItem].map(([itemId, staged]) => convertedLookup(itemCatalogKey(itemId), { itemId,
+    slot: equipmentSlotForBodyPart(staged.identity.bodyPart)!, catalogIds: staged.catalogIds.sort(), playerProfileIds: [] }));
 }
 
 function characterLookup(profile: NativePlayerProfile, chargrpIndex: number, sourceObjectsByModelId: ReadonlyMap<string, string | null>): NativeCatalogLookup {
@@ -170,7 +175,7 @@ function characterLookup(profile: NativePlayerProfile, chargrpIndex: number, sou
   if (!sourceObjectsByModelId.has(profile.catalogId)) {
     return { status: "not-in-catalog", key, reason: `player profile ${profile.id} model ${profile.catalogId} is not in the catalog` };
   }
-  return { status: "converted", key, record: { chargrpIndex, playerProfileId: profile.id, catalogId: profile.catalogId } };
+  return convertedLookup(key, { chargrpIndex, playerProfileId: profile.id, catalogId: profile.catalogId });
 }
 
 function skillLookups(effectComponents: readonly unknown[]): NativeCatalogLookup[] {
@@ -180,14 +185,14 @@ function skillLookups(effectComponents: readonly unknown[]): NativeCatalogLookup
     const identity = parseSkillEffectComponentId(component.id);
     if (!identity) continue;
     const { skillId, level } = identity;
-    lookups.push({ status: "converted", key: skillCatalogKey(skillId, level), record: { skillId, level, effectComponentId: component.id } });
+    lookups.push(convertedLookup(skillCatalogKey(skillId, level), { skillId, level, effectComponentId: component.id }));
   }
   return lookups;
 }
 
 function actorSoundsLookups(combatAudio: readonly unknown[]): NativeCatalogLookup[] {
   return combatAudio.map(value => catalogRecordIdentity(value, "combat audio")).filter(record => record.id.startsWith(generatedActorSoundBundlePrefix))
-    .map(record => ({ status: "converted", key: record.id, record: { entityCatalogKey: record.id.slice(generatedActorSoundBundlePrefix.length) } }));
+    .map(record => convertedLookup(record.id, { entityCatalogKey: record.id.slice(generatedActorSoundBundlePrefix.length) }));
 }
 
 function legacySectionTileLookups(sections: readonly unknown[]): NativeCatalogLookup[] {
@@ -200,7 +205,7 @@ function legacySectionTileLookups(sections: readonly unknown[]): NativeCatalogLo
     const match = sectionTilePattern.exec(section.id);
     if (!match) continue;
     const tile = `${match[1]}_${match[2]}`;
-    lookups.push({ status: "converted", key: tileCatalogKey(tile), record: { tile, sectionId: section.id } });
+    lookups.push(convertedLookup(tileCatalogKey(tile), { tile, sectionId: section.id }));
   }
   return lookups;
 }
@@ -229,21 +234,23 @@ export async function buildNativeCatalogIndex(catalog: NativeCatalog, signal: Ab
   for (const lookup of actorSoundsLookups(catalog.combatAudio)) addEntry(lookup);
   for (const value of catalog.tables) {
     const record = readTableCatalogRecord(value);
-    addEntry({ status: "converted", key: tableCatalogKey(record.table), record });
+    addEntry(convertedLookup(tableCatalogKey(record.table), record));
   }
   for (const value of catalog.windows) {
     const record = readWindowCatalogRecord(value);
-    addEntry({ status: "converted", key: windowCatalogKey(record.window), record });
+    addEntry(convertedLookup(windowCatalogKey(record.window), record));
   }
   for (const value of catalog.tiles) {
     const record = readTileCatalogRecord(value);
-    addEntry({ status: "converted", key: tileCatalogKey(record.tile), record });
+    addEntry(convertedLookup(tileCatalogKey(record.tile), record));
   }
   for (const lookup of legacySectionTileLookups(catalog.sections)) if (!entries.has(lookup.key)) addEntry(lookup);
 
   for (const row of (await readNativeCoverageUnlessAbsent(signal, catalog.servedCatalogSha256, catalog.laneCatalogSha256))?.rows ?? []) {
-    if (row.status === "pass" || entries.has(row.key)) continue;
-    addEntry({ status: "gap", key: row.key, reason: row.reason, coverageStatus: row.status });
+    if (row.status === "pass") continue;
+    const entry = entries.get(row.key);
+    if (entry === undefined) addEntry({ status: "gap", key: row.key, reason: row.reason, coverageStatus: row.status });
+    else if (entry.status === "converted" && row.converted) entries.set(row.key, { ...entry, namedGaps: [row.reason] });
   }
 
   const missingWindowReason = catalog.windows.length ? notInCatalogReason : windowsNotConvertedReason;

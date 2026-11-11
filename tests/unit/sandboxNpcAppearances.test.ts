@@ -60,7 +60,7 @@ describe("sandbox NPC appearances", () => {
 
   it("presents a spawned lane NPC id with its converted model through the catalog index", async () => {
     const index: NativeCatalogIndex = {
-      lookup: key => key === "npc:20001" ? { status: "converted", key, record: gremlinRecord } : { status: "not-in-catalog", key, reason: "not in catalog" },
+      lookup: key => key === "npc:20001" ? { status: "converted", key, namedGaps: [], record: gremlinRecord } : { status: "not-in-catalog", key, reason: "not in catalog" },
       keys: () => ["npc:20001"],
     };
     expect(resolveSandboxNpcPresentation(index, 20001, sandboxNpcAppearances(await laneSources())))

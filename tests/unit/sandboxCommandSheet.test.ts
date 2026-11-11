@@ -6,10 +6,10 @@ import { installMiniDom, type MiniDom } from "./support/miniDom";
 import { attachSandboxSheetWithFakes, fakeCatalogIndexOver } from "./support/sandboxCommandSheetFakes";
 
 const fakeCatalogIndex = fakeCatalogIndexOver(new Map<string, NativeCatalogLookup>([
-  ["item:22", { status: "converted", key: "item:22", record: { itemId: 22, slot: "upper", catalogIds: ["fighter-equipment:0"], playerProfileIds: ["human-male-fighter"] } }],
-  ["skill:3:1", { status: "converted", key: "skill:3:1", record: { skillId: 3, level: 1, effectComponentId: "interlude:skill:3:level:1:raw-source-dispatch" } }],
-  ["npc:21622", { status: "converted", key: "npc:21622", record: { npcId: 21622, profileId: "native-npc-profiles", modelCatalogId: "musveren:0", join: "legacy-single-mesh-match" } }],
-  ["window:StatusWnd", { status: "converted", key: "window:StatusWnd", record: { window: "StatusWnd", manifest: "/l2/windows/statuswnd/manifest.json", manifestSha256: "0".repeat(64), manifestBytes: 1 } }],
+  ["item:22", { status: "converted", key: "item:22", namedGaps: [], record: { itemId: 22, slot: "upper", catalogIds: ["fighter-equipment:0"], playerProfileIds: ["human-male-fighter"] } }],
+  ["skill:3:1", { status: "converted", key: "skill:3:1", namedGaps: [], record: { skillId: 3, level: 1, effectComponentId: "interlude:skill:3:level:1:raw-source-dispatch" } }],
+  ["npc:21622", { status: "converted", key: "npc:21622", namedGaps: [], record: { npcId: 21622, profileId: "native-npc-profiles", modelCatalogId: "musveren:0", join: "legacy-single-mesh-match" } }],
+  ["window:StatusWnd", { status: "converted", key: "window:StatusWnd", namedGaps: [], record: { window: "StatusWnd", manifest: "/l2/windows/statuswnd/manifest.json", manifestSha256: "0".repeat(64), manifestBytes: 1 } }],
 ]));
 
 let dom: MiniDom;

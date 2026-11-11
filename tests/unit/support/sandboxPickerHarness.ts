@@ -12,7 +12,7 @@ import { fakeMedia, fire, installMiniDom, type FakeElement, type MiniDom } from 
 export type CatalogEntries = Readonly<Record<string, NativeCatalogLookup>>;
 
 export function converted(key: string, record: Record<string, unknown> = {}): NativeCatalogLookup {
-  return { status: "converted", key, record: record as never };
+  return { status: "converted", key, namedGaps: [], record: record as never };
 }
 
 export function nameEntries(rows: readonly (readonly [readonly number[], string])[]): NativeTableNameEntry[] {

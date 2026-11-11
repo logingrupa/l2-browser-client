@@ -11,7 +11,7 @@ function catalogIndexOf(lookups: readonly NativeCatalogLookup[]): NativeCatalogI
 }
 
 function convertedWindow(windowId: string): NativeCatalogLookup {
-  return { status: "converted", key: `window:${windowId}`, record: { window: windowId, manifest: "/l2/windows/x/window.json", manifestSha256: "x", manifestBytes: 1 } };
+  return { status: "converted", key: `window:${windowId}`, namedGaps: [], record: { window: windowId, manifest: "/l2/windows/x/window.json", manifestSha256: "x", manifestBytes: 1 } };
 }
 
 describe("buildNativeWindowRegistry", () => {
@@ -21,7 +21,7 @@ describe("buildNativeWindowRegistry", () => {
       { status: "gap", key: "window:ChatWnd", reason: "decode-failed:FormatError", coverageStatus: "gap" },
       { status: "gap", key: "window:BoardWnd", reason: "decode-failed:IndexError", coverageStatus: "failed" },
       { status: "gap", key: "window:MinimapWnd", reason: "layout step not run", coverageStatus: "pending" },
-      { status: "converted", key: "table:chargrp", record: {} as never },
+      { status: "converted", key: "table:chargrp", namedGaps: [], record: {} as never },
     ]));
     expect(registry.map(entry => [entry.windowId, entry.status, entry.reason])).toEqual([
       ["BoardWnd", "gap", "decode-failed:IndexError"],
@@ -53,7 +53,7 @@ describe("buildNativeWindowRegistry", () => {
   });
 
   it("gives an empty registry for a catalog with no windows slice", () => {
-    expect(buildNativeWindowRegistry(catalogIndexOf([{ status: "converted", key: "table:chargrp", record: {} as never }]))).toEqual([]);
+    expect(buildNativeWindowRegistry(catalogIndexOf([{ status: "converted", key: "table:chargrp", namedGaps: [], record: {} as never }]))).toEqual([]);
   });
 
   it("refuses a catalog window key that is not a window id", () => {

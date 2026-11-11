@@ -22,7 +22,7 @@ function deferred<Value>(): Deferred<Value> {
 }
 
 const weaponCatalogId = (itemId: number) => `interlude:item:${itemId}:body-part:7:weapon`;
-const convertedWeapon = (itemId: number): NativeCatalogLookup => ({ status: "converted", key: `item:${itemId}`,
+const convertedWeapon = (itemId: number): NativeCatalogLookup => ({ status: "converted", key: `item:${itemId}`, namedGaps: [],
   record: { itemId, slot: "body-part:7", catalogIds: [weaponCatalogId(itemId)], playerProfileIds: [] } });
 const generatedProfile: GeneratedCharacterProfile = { chargrpIndex: 0, sourceObject: "Fixture.Upper", sourceEvidence: { actorClassDefaults: {
   class: "LineageWarrior.Fixture", classPackageSha256: "b".repeat(64), HeadBone: "NativeRoot", RightHandBone: "NativeBone" } } };

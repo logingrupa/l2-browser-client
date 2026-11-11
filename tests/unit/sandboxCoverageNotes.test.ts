@@ -5,17 +5,17 @@ import { installMiniDom, type FakeElement, type MiniDom } from "./support/miniDo
 import { attachSandboxSheetWithFakes, fakeCatalogIndexOver } from "./support/sandboxCommandSheetFakes";
 
 const rabbitGapReason = "converter-refused:Mesh bone has no unique native parent/name mapping: bip01 r finger0nub";
-const gremlinLookup: NativeCatalogLookup = { status: "converted", key: "npc:20001",
+const gremlinLookup: NativeCatalogLookup = { status: "converted", key: "npc:20001", namedGaps: [],
   record: { npcId: 20001, profileId: "interlude:npc-profiles:pack-b01bce43a24fdadd", modelCatalogId: "npc-model:gremlin", join: "model-catalog-id" } };
 const rabbitLookup: NativeCatalogLookup = { status: "gap", key: "npc:20002", reason: rabbitGapReason, coverageStatus: "gap" };
 
 const laneLookups: readonly NativeCatalogLookup[] = [
   gremlinLookup, rabbitLookup,
-  { status: "converted", key: "item:22", record: { itemId: 22, slot: "upper", catalogIds: ["fighter-equipment:0"], playerProfileIds: ["human-male-fighter"] } },
+  { status: "converted", key: "item:22", namedGaps: [], record: { itemId: 22, slot: "upper", catalogIds: ["fighter-equipment:0"], playerProfileIds: ["human-male-fighter"] } },
   { status: "gap", key: "item:23", reason: "item-mesh-unresolved", coverageStatus: "pending" },
-  { status: "converted", key: "skill:3:1", record: { skillId: 3, level: 1, effectComponentId: "interlude:skill:3:level:1:raw-source-dispatch" } },
+  { status: "converted", key: "skill:3:1", namedGaps: [], record: { skillId: 3, level: 1, effectComponentId: "interlude:skill:3:level:1:raw-source-dispatch" } },
   { status: "gap", key: "skill:7:1", reason: "native-skill-dispatch-required", coverageStatus: "gap" },
-  { status: "converted", key: "window:StatusWnd", record: { window: "StatusWnd", manifest: "/l2/windows/statuswnd/manifest.json", manifestSha256: "0".repeat(64), manifestBytes: 1 } },
+  { status: "converted", key: "window:StatusWnd", namedGaps: [], record: { window: "StatusWnd", manifest: "/l2/windows/statuswnd/manifest.json", manifestSha256: "0".repeat(64), manifestBytes: 1 } },
   { status: "gap", key: "window:InventoryWnd", reason: "window-texture-missing", coverageStatus: "failed" },
 ];
 

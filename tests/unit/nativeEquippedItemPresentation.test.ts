@@ -11,11 +11,11 @@ import type { WorldEntity } from "../../src/world/worldTypes";
 import { nativeVisualClips, nativeVisualFixture } from "../fixtures/nativeVisualFixture";
 
 const weaponRecordId = "interlude:item:1:body-part:7:weapon";
-const weaponLookup: NativeCatalogLookup = { status: "converted", key: "item:1",
+const weaponLookup: NativeCatalogLookup = { status: "converted", key: "item:1", namedGaps: [],
   record: { itemId: 1, slot: "body-part:7", catalogIds: [weaponRecordId], playerProfileIds: [] } };
-const armorLookup: NativeCatalogLookup = { status: "converted", key: "item:26", record: { itemId: 26, slot: "body-part:6",
+const armorLookup: NativeCatalogLookup = { status: "converted", key: "item:26", namedGaps: [], record: { itemId: 26, slot: "body-part:6",
   catalogIds: ["interlude:item:26:body-part:6:armor:0", "interlude:item:26:body-part:6:armor:2"], playerProfileIds: [] } };
-const upperLookup: NativeCatalogLookup = { status: "converted", key: "item:22",
+const upperLookup: NativeCatalogLookup = { status: "converted", key: "item:22", namedGaps: [],
   record: { itemId: 22, slot: "upper", catalogIds: ["fighter-equipment:0"], playerProfileIds: ["human-male-fighter"] } };
 const classDefaults = { class: "LineageWarrior.Fixture", classPackageSha256: "b".repeat(64), HeadBone: "NativeRoot", RightHandBone: "NativeBone" };
 const generatedProfile: GeneratedCharacterProfile = { chargrpIndex: 0, sourceObject: "Fixture.Upper", sourceEvidence: { actorClassDefaults: classDefaults } };

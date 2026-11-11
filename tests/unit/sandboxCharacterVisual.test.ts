@@ -29,8 +29,8 @@ function catalogIndexOver(lookups: readonly NativeCatalogLookup[]): NativeCatalo
 }
 
 const characterLookups: readonly NativeCatalogLookup[] = [
-  { status: "converted", key: "character:0", record: { chargrpIndex: 0, playerProfileId: loadedProfileId, catalogId: "human-male-fighter:0" } },
-  { status: "converted", key: "character:1", record: { chargrpIndex: 1, playerProfileId: "human-female-fighter", catalogId: "human-female-fighter:0" } },
+  { status: "converted", key: "character:0", namedGaps: [], record: { chargrpIndex: 0, playerProfileId: loadedProfileId, catalogId: "human-male-fighter:0" } },
+  { status: "converted", key: "character:1", namedGaps: [], record: { chargrpIndex: 1, playerProfileId: "human-female-fighter", catalogId: "human-female-fighter:0" } },
   { status: "gap", key: "character:4", reason: "converter-refused:chargrp row 4", coverageStatus: "gap" },
 ];
 
@@ -111,7 +111,7 @@ describe("spawn-character presentation through the catalog index", () => {
   });
 
   it("refuses a converted character key that holds another record kind", () => {
-    const index = catalogIndexOver([{ status: "converted", key: "character:2", record: { itemId: 2, slot: "upper", catalogIds: [], playerProfileIds: [] } }]);
+    const index = catalogIndexOver([{ status: "converted", key: "character:2", namedGaps: [], record: { itemId: 2, slot: "upper", catalogIds: [], playerProfileIds: [] } }]);
     expect(() => resolveSandboxCharacterPresentation(index, 2, appearanceOfCharacterRecord)).toThrow("character:2 does not hold a character catalog record.");
   });
 

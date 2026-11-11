@@ -71,8 +71,8 @@ function catalogIndexOf(lookups: readonly NativeCatalogLookup[]): NativeCatalogI
   };
 }
 
-function convertedSkill(skillId: number, level: number): NativeCatalogLookup {
-  return { status: "converted", key: `skill:${skillId}:${level}`,
+function convertedSkill(skillId: number, level: number, namedGaps: readonly string[] = []): NativeCatalogLookup {
+  return { status: "converted", key: `skill:${skillId}:${level}`, namedGaps,
     record: { skillId, level, effectComponentId: `interlude:skill:${skillId}:level:${level}:native-description-action` } };
 }
 
@@ -144,6 +144,25 @@ describe("skill cast presentation", () => {
     const inspection = await presentation.present({ type: "skill-cast", casterId: "local-player", skillId: 10, level: 1 });
     expect(inspection).toMatchObject({ emitterActors: 0, placements: [{ actorObject, side: "target", sourceStage: "ShotActions" }],
       notDrawn: [{ object: actorObject, reason: "skill-effect-anchor-unavailable:target" }] });
+  });
+
+  it("carries the named gaps of the catalog index beside the feature gaps of the started emitter actors", async () => {
+    const manifestSha256 = "c".repeat(64), beamGapReason = "emitter-class-unported:Engine.BeamEmitter";
+    bundlesByManifestSha256.set(manifestSha256, syntheticBundle(manifestSha256, [casterStage(actorObject)]));
+    const { scene, anchors } = presentationScene(["local-player"]);
+    const presentation = createSkillCastPresentation({
+      scene, catalogIndex: catalogIndexOf([convertedSkill(12, 1, [beamGapReason])]),
+      castSkillIndex: buildCastSkillIndex([effectComponentRecord(12, 1, manifestSha256)]),
+      anchors: entityId => anchors.get(entityId) ?? null, signal: new AbortController().signal,
+    });
+    releases.push(() => presentation.dispose());
+    const inspection = await presentation.present({ type: "skill-cast", casterId: "local-player", skillId: 12, level: 1 });
+    expect(inspection).toMatchObject({ emitterActors: 1, namedGaps: [beamGapReason], featureGaps: [
+      `${spriteFixture.components[0]!.object} emitter-feature-unported:BlendBetweenSubdivisions`,
+      `${spriteFixture.components[0]!.object} emitter-feature-unported:UseDirectionAs`,
+    ] });
+    const absent = await presentation.present({ type: "skill-cast", casterId: "local-player", skillId: 13, level: 1 });
+    expect(absent).toMatchObject({ catalogStatus: "not-in-catalog", namedGaps: [] });
   });
 
   it("disposes the previous presentation of a caster when that caster casts again", async () => {
