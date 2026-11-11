@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { COMBINER_CONSTANTS } from "../../src/materials/ue2/model/constants/combinerConstants";
 import { parseMaterialProgram } from "../../src/materials/ue2/model/materialProgram";
 import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
 import {
@@ -60,5 +61,20 @@ describe("compileMaterialStagePlan colour sources", () => {
   it("names a FadeColor whose ColorFadeType is unset instead of compiling it", () => {
     expect(stagePlanOf("Synthetic.Fade", [fadeNode(0.4, field("ColorFadeType", null, "ue-zero"))]))
       .toMatchObject({ status: "diagnostic", reasons: ["material-feature-unported:ColorFadeType"] });
+  });
+});
+
+describe("compileMaterialStagePlan absent inputs", () => {
+  it("names a Shader with no Diffuse instead of drawing it white", () => {
+    const shader = reviewedNode("Synthetic.Shader", "Engine.Shader", [
+      field("Diffuse", null, "ue-zero"), field("Opacity", null, "ue-zero"), field("OutputBlending", enumValue(0, "OB_Normal"), "ue-zero")]);
+    expect(stagePlanOf("Synthetic.Shader", [shader])).toMatchObject({ status: "diagnostic", reasons: ["material-reference-absent:Synthetic.Shader.Diffuse"] });
+  });
+
+  it("reads an absent Combiner Material as the white of the unconfirmed combiner.absent-material row", () => {
+    const plan = stagePlanOf("Synthetic.Combiner", [combinerNode("Synthetic.Combiner", 3, { material1: textureId }), swatchTextureNode(textureId, image)]);
+    expect(COMBINER_CONSTANTS.absentMaterial).toMatchObject({ id: "combiner.absent-material", status: "unconfirmed", runtimeDefault: "white" });
+    expect(plan.status === "compiled" && plan.expression).toMatchObject({
+      kind: "combiner", material1: { kind: "texture", samplerIndex: 0 }, material2: { kind: COMBINER_CONSTANTS.absentMaterial.runtimeDefault } });
   });
 });

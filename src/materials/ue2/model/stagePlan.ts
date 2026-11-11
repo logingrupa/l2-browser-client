@@ -1,3 +1,4 @@
+import { COMBINER_CONSTANTS } from "./constants/combinerConstants";
 import { blendFactorsForMaterial, type MaterialBlend, type ResolvedMaterialBlend } from "./blendTable";
 import { fieldIsUnported, readBooleanField, readEnumOrdinal, readNumberField, readReferenceField, type MaterialReference } from "./materialFieldValues";
 import { fadeColourGapReason } from "./modifiers";
@@ -138,7 +139,7 @@ function compileShader(state: CompileState, node: MaterialProgramNode, modifiers
   if (readReferenceField(node, "Detail").kind !== "none") fail(state, "material-feature-unported:Detail");
   return {
     kind: "shader",
-    diffuse: compileReference(state, node, "Diffuse", modifiers, depth) ?? { kind: "white" },
+    diffuse: compileRequired(state, node, "Diffuse", modifiers, depth),
     opacity: compileReference(state, node, "Opacity", modifiers, depth),
     specular: compileReference(state, node, "Specular", modifiers, depth),
     specularityMask: compileReference(state, node, "SpecularityMask", modifiers, depth),
@@ -151,6 +152,7 @@ function compileShader(state: CompileState, node: MaterialProgramNode, modifiers
 const combinerColourOperationCount = 8;
 const combinerAlphaOperationCount = 5;
 const maskReadingColourOperations = new Set([5, 6, 7]);
+const absentCombinerMaterial: ColourExpression = { kind: COMBINER_CONSTANTS.absentMaterial.runtimeDefault };
 
 function compileCombiner(state: CompileState, node: MaterialProgramNode, modifiers: readonly string[], depth: number): ColourExpression {
   const colourOperation = readEnumOrdinal(node, "CombineOperation");
@@ -166,8 +168,8 @@ function compileCombiner(state: CompileState, node: MaterialProgramNode, modifie
     alphaOperation,
     colourMultiplier: readBooleanField(node, "Modulate4X") ? 4 : readBooleanField(node, "Modulate2X") ? 2 : 1,
     invertMask: readBooleanField(node, "InvertMask"),
-    material1: compileReference(state, node, "Material1", modifiers, depth) ?? { kind: "white" },
-    material2: compileReference(state, node, "Material2", modifiers, depth) ?? { kind: "white" },
+    material1: compileReference(state, node, "Material1", modifiers, depth) ?? absentCombinerMaterial,
+    material2: compileReference(state, node, "Material2", modifiers, depth) ?? absentCombinerMaterial,
     mask: compileReference(state, node, "Mask", modifiers, depth),
   };
 }

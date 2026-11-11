@@ -34,6 +34,14 @@ export const COMBINER_CONSTANTS = {
     interludeEvidence: null,
     runtimeDefault: 0,
   },
+  absentMaterial: {
+    id: "combiner.absent-material",
+    value: "white",
+    provenance: `${materialNotes} Combiner operations: c1, a1 come from Material1 and c2, a2 from Material2, white when absent`,
+    status: "unconfirmed",
+    interludeEvidence: null,
+    runtimeDefault: "white",
+  },
 } as const satisfies Record<string, ReferenceConstantRow<unknown>>;
 
 export const COLOUR_CONSTANTS = {
