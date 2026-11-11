@@ -97,11 +97,3 @@ def require_supported_asset_manifest(manifest):
     if manifest['schemaVersion'] == 2:
         require_version_two_fields(manifest)
     return manifest
-
-
-def asset_coordinates(manifest):
-    require_supported_asset_manifest(manifest)
-    if manifest['schemaVersion'] == 2:
-        return manifest['coordinates']
-    model = manifest['model']
-    return {'unit': model['unit'], 'sourceUnitsPerMetre': model['sourceUnitsPerMetre'], 'handedness': None, 'upAxis': None, 'sourceToGltf': model['sourceToGltf']}

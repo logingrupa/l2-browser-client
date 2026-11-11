@@ -12,7 +12,7 @@ GOLDEN = ROOT / 'tests' / 'fixtures' / 'golden'
 sys.path.insert(0, str(ROOT / 'scripts'))
 from generate_golden_fixtures import write_golden_fixtures, fixture_pin_bytes
 from native_assets import SOURCE_TO_GLTF
-from native_assets_lib.asset_manifest import (SUPPORTED_ASSET_MANIFEST_VERSIONS, asset_coordinates, asset_coordinates_record,
+from native_assets_lib.asset_manifest import (SUPPORTED_ASSET_MANIFEST_VERSIONS, asset_coordinates_record,
     build_asset_manifest, reference_client_build, require_supported_asset_manifest, source_path_record)
 from native_assets_lib.gltf import json_bytes
 from reference_client_guard import ReferenceClientLockError, read_reference_client_lock
@@ -116,12 +116,6 @@ class ManifestVersionTests(unittest.TestCase):
             build_asset_manifest(kind='audio', coordinates=asset_coordinates_record(SOURCE_TO_GLTF, 100), **common)
         with self.assertRaisesRegex(ValueError, 'carry coordinates'):
             build_asset_manifest(kind='model', **common)
-
-    def test_asset_coordinates_reads_both_versions(self):
-        self.assertEqual(asset_coordinates(golden_manifest('model-v2.l2asset'))['handedness'], 'right')
-        version_one = asset_coordinates(golden_manifest('model-v1.l2asset'))
-        self.assertEqual((version_one['unit'], version_one['sourceUnitsPerMetre'], version_one['sourceToGltf'], version_one['handedness']),
-            ('metre', 100, SOURCE_TO_GLTF, None))
 
 
 class GoldenFixtureTests(unittest.TestCase):
