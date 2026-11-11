@@ -1,4 +1,17 @@
 import type { ReferenceConstantRow } from "../referenceConstant";
+import type { Vector3 } from "./vector3";
+
+export interface RotatorUnits {
+  readonly pitch: number;
+  readonly yaw: number;
+  readonly roll: number;
+}
+
+export interface RotatorAxes {
+  readonly forward: Vector3;
+  readonly right: Vector3;
+  readonly up: Vector3;
+}
 
 export type RotatorRule = "sine-table" | "exact";
 export type RotatorUse = "particle-revolution" | "camera-direction" | "texture-rotator" | "placement";
@@ -73,6 +86,19 @@ export function rotatorSineFromTable(rotatorUnits: number): number {
 const rotatorUnitsPerTurn = ROTATOR_CONSTANTS.unitsPerTurn.runtimeDefault;
 const rotatorUnitsPerQuarterTurn = rotatorUnitsPerTurn / 4;
 const radiansPerTurn = 2 * Math.PI;
+
+export function rotatorAxes(rotator: RotatorUnits): RotatorAxes {
+  const sine = (units: number) => rotatorSineFromTable(units), cosine = (units: number) => rotatorSineFromTable(units + rotatorUnitsPerQuarterTurn);
+  const sinePitch = sine(rotator.pitch), cosinePitch = cosine(rotator.pitch);
+  const sineYaw = sine(rotator.yaw), cosineYaw = cosine(rotator.yaw);
+  const sineRoll = sine(rotator.roll), cosineRoll = cosine(rotator.roll);
+  const rollSineTimesPitchSine = sineRoll * sinePitch, rollCosineTimesPitchSine = cosineRoll * sinePitch;
+  return {
+    forward: { x: cosinePitch * cosineYaw, y: cosinePitch * sineYaw, z: sinePitch },
+    right: { x: rollSineTimesPitchSine * cosineYaw - cosineRoll * sineYaw, y: rollSineTimesPitchSine * sineYaw + cosineRoll * cosineYaw, z: -sineRoll * cosinePitch },
+    up: { x: -(rollCosineTimesPitchSine * cosineYaw + sineRoll * sineYaw), y: sineRoll * cosineYaw - rollCosineTimesPitchSine * sineYaw, z: cosineRoll * cosinePitch },
+  };
+}
 
 export function sineOfRadiansFromTable(radians: number): number {
   return rotatorSineFromTable(Math.trunc(radians * rotatorUnitsPerTurn / radiansPerTurn));

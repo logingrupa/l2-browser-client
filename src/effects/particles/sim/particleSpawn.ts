@@ -1,9 +1,9 @@
-import { cosineOfRadiansFromTable, sineOfRadiansFromTable } from "../../../shared/math/rotator";
+import { cosineOfRadiansFromTable, rotatorAxes, sineOfRadiansFromTable } from "../../../shared/math/rotator";
 import { addVectors, scaleVector, vectorLength, type Vector3 } from "../../../shared/math/vector3";
 import { randomRange, randomUnitVector, type RandomStream } from "../../../shared/random";
 import { COORDINATE_SYSTEM, PARTICLE_CONSTANTS, ROTATION_SOURCE, START_LOCATION_SHAPE, VELOCITY_DIRECTION } from "./emitterConstants";
 import type { FloatRange, ParticleEmitterRecord, RangeVector } from "./emitterRecords";
-import { rotateByAxes, rotateByRotators, rotatorAxes } from "./particleRotation";
+import { rotateByAxes, rotateByRotators } from "./particleRotation";
 import { PARTICLE_FLAG, readSlotVector, writeSlotColor, writeSlotVector, type EmitterRuntime, type EmitterStepContext } from "./particleState";
 
 const spinUnitsPerTurn = PARTICLE_CONSTANTS.spinUnitsPerTurn.runtimeDefault;

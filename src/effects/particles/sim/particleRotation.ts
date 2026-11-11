@@ -1,33 +1,13 @@
-import { ROTATOR_CONSTANTS, rotatorSineFromTable } from "../../../shared/math/rotator";
+import { ROTATOR_CONSTANTS, rotatorAxes, type RotatorAxes } from "../../../shared/math/rotator";
 import type { Vector3 } from "../../../shared/math/vector3";
 import { PARTICLE_CONSTANTS } from "./emitterConstants";
 import type { Rotator } from "./emitterRecords";
 
-export interface RotatorAxes {
-  readonly forward: Vector3;
-  readonly right: Vector3;
-  readonly up: Vector3;
-}
-
-const quarterTurnUnits = ROTATOR_CONSTANTS.unitsPerTurn.runtimeDefault / 4;
 const sineTableLength = ROTATOR_CONSTANTS.sineTableLength.runtimeDefault;
 const rotatorUnitsPerSineTableEntry = ROTATOR_CONSTANTS.unitsPerTurn.runtimeDefault / sineTableLength;
 const spinUnitsPerTurn = PARTICLE_CONSTANTS.spinUnitsPerTurn.runtimeDefault;
 
 export const IDENTITY_ROTATOR: Rotator = { pitch: 0, yaw: 0, roll: 0 };
-
-export function rotatorAxes(rotator: Rotator): RotatorAxes {
-  const sine = (units: number) => rotatorSineFromTable(units), cosine = (units: number) => rotatorSineFromTable(units + quarterTurnUnits);
-  const sinePitch = sine(rotator.pitch), cosinePitch = cosine(rotator.pitch);
-  const sineYaw = sine(rotator.yaw), cosineYaw = cosine(rotator.yaw);
-  const sineRoll = sine(rotator.roll), cosineRoll = cosine(rotator.roll);
-  const rollSineTimesPitchSine = sineRoll * sinePitch, rollCosineTimesPitchSine = cosineRoll * sinePitch;
-  return {
-    forward: { x: cosinePitch * cosineYaw, y: cosinePitch * sineYaw, z: sinePitch },
-    right: { x: rollSineTimesPitchSine * cosineYaw - cosineRoll * sineYaw, y: rollSineTimesPitchSine * sineYaw + cosineRoll * cosineYaw, z: -sineRoll * cosinePitch },
-    up: { x: -(rollCosineTimesPitchSine * cosineYaw + sineRoll * sineYaw), y: sineRoll * cosineYaw - rollCosineTimesPitchSine * sineYaw, z: cosineRoll * cosinePitch },
-  };
-}
 
 export function rotateByAxes(vector: Vector3, axes: RotatorAxes): Vector3 {
   return {

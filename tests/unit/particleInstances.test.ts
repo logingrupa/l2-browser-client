@@ -3,7 +3,8 @@ import { createParticleInstanceBuffers, PARTICLE_MATRIX_STRIDE, writeParticleIns
 import { createEmitterActorSimulation, type EmitterActorSimulation } from "../../src/effects/particles/sim/emitterActor";
 import { COORDINATE_SYSTEM, PARTICLE_CONSTANTS } from "../../src/effects/particles/sim/emitterConstants";
 import { parseEmitterActorRecord, parseEmitterRecord } from "../../src/effects/particles/sim/emitterRecords";
-import { rotateByAxes, rotatorAxes } from "../../src/effects/particles/sim/particleRotation";
+import { rotateByAxes } from "../../src/effects/particles/sim/particleRotation";
+import { rotatorAxes } from "../../src/shared/math/rotator";
 import { readSlotVector } from "../../src/effects/particles/sim/particleState";
 import { sourcePositionToWorld } from "../../src/world/sourceFrame";
 import { STATIONARY_OWNER, readSyntheticParticleFixture } from "./support/particleFixtures";

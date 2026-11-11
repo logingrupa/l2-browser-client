@@ -1,6 +1,6 @@
 import { transformPoint, type AffineMatrix } from "../../../../shared/math/affineMatrix";
 import { transformPlane, type Plane } from "../../../../shared/math/plane";
-import { rotatorSineFromTable } from "../../../../shared/math/rotator";
+import { rotatorAxes } from "../../../../shared/math/rotator";
 import type { Vector3 } from "../../../../shared/math/vector3";
 import { solidTreeHoldsPoint, solidTreeOverlapsBox, traceSolidTree, type SolidCollisionTree } from "./bspCollisionTrace";
 import type { CollisionSourceVector, CollisionVolume } from "./collisionCell";
@@ -13,21 +13,13 @@ interface VolumeWorldGeometry {
   readonly boxMaximum: Vector3;
 }
 
-const quarterTurn = 16384;
 const volumeGeometryCache = new WeakMap<CollisionVolume, VolumeWorldGeometry>();
 
 export function ue2ActorLocalToWorld(location: CollisionSourceVector, rotation: CollisionSourceVector, drawScale: number,
   drawScale3D: CollisionSourceVector, prePivot: CollisionSourceVector): AffineMatrix {
   const [pitch, yaw, roll] = rotation;
-  const sinePitch = rotatorSineFromTable(pitch), sineYaw = rotatorSineFromTable(yaw), sineRoll = rotatorSineFromTable(roll);
-  const cosinePitch = rotatorSineFromTable(pitch + quarterTurn), cosineYaw = rotatorSineFromTable(yaw + quarterTurn);
-  const cosineRoll = rotatorSineFromTable(roll + quarterTurn);
-  const rotationRows = [
-    [cosinePitch * cosineYaw, cosinePitch * sineYaw, sinePitch],
-    [sineRoll * sinePitch * cosineYaw - cosineRoll * sineYaw, sineRoll * sinePitch * sineYaw + cosineRoll * cosineYaw, -sineRoll * cosinePitch],
-    [-(cosineRoll * sinePitch * cosineYaw + sineRoll * sineYaw), cosineYaw * sineRoll - cosineRoll * sinePitch * sineYaw, cosineRoll * cosinePitch],
-  ];
-  const basisRows = rotationRows.map((row, axis) => row.map(value => value * drawScale3D[axis]! * drawScale));
+  const { forward, right, up } = rotatorAxes({ pitch, yaw, roll });
+  const basisRows = [forward, right, up].map((row, axis) => [row.x, row.y, row.z].map(value => value * drawScale3D[axis]! * drawScale));
   const column = (index: number) => [basisRows[0]![index]!, basisRows[1]![index]!, basisRows[2]![index]!] as const;
   const translationComponent = (index: number) => location[index]! - (prePivot[0] * column(index)[0] + prePivot[1] * column(index)[1] + prePivot[2] * column(index)[2]);
   return {

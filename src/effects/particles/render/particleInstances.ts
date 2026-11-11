@@ -1,10 +1,11 @@
 import type { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { rotatorAxes } from "../../../shared/math/rotator";
 import type { Vector3 } from "../../../shared/math/vector3";
 import { sourcePositionToWorld } from "../../../world/sourceFrame";
 import type { EmitterSimulation } from "../sim/emitterActor";
 import { PARTICLE_CONSTANTS } from "../sim/emitterConstants";
 import type { Rotator } from "../sim/emitterRecords";
-import { IDENTITY_ROTATOR, rotateByAxes, rotatorAxes } from "../sim/particleRotation";
+import { IDENTITY_ROTATOR, rotateByAxes } from "../sim/particleRotation";
 import { readSlotColor, readSlotVector } from "../sim/particleState";
 
 export const PARTICLE_INSTANCE_ATTRIBUTES = { colour: "particleColour", atlas: "particleAtlas", sprite: "particleSprite" } as const;
