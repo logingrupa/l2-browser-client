@@ -1,0 +1,7228 @@
+{
+  "method": "Each terrain point is the heightmap index mapped through the source-backed CalcCoords of the TerrainInfo Location, TerrainScale and heightmap size (scripts/world/terrain_coordinates.py, checked equal to the serialized native ToWorld). A seam pair is the lower tile (owner) and the next tile in X or Y (neighbour); the strip width is the neighbour first point minus the owner last point on the seam axis; the facing edges are the owner last column or row and the neighbour first column or row, compared as source-unit heights.",
+  "pairs": [
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 1140.000244140625,
+        "neighbourEdgeSha256": "ca9a6ccdf4181156da0dd1cd2ef4e1cb199ff53fd2ba4deed1804f131d97f072",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "15_20",
+        "16_20"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 32768.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 1461.302490234375,
+        "neighbourEdgeSha256": "112a0e8bfeb4c5bbab03c0629e3141853ff0ce287d47ed59842ddec1c8da9a48",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "15_21",
+        "16_21"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 15.3486328125,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "15_22",
+        "16_22"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 15.3486328125,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "15_23",
+        "16_23"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 508.30224609375,
+        "neighbourEdgeSha256": "5fbb4ede388bf8f78b6768e28d2fb674f18867d0a0374f286b58f63cf9afe29f",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "15_24",
+        "16_24"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 136.00048828125,
+        "neighbourEdgeSha256": "41aa89808f0d4159ad348337edd7c2fe1386c0b247f4abde4d5c6bf67e65d015",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "15_25",
+        "16_25"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 256,
+        "largestDifference": 0.0,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "15_26",
+        "16_26"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 1667.5419921875,
+        "neighbourEdgeSha256": "c4cbef32f2c192bc9ce7300345ceedb875117c6acfe3e7df40d4abeca2203cde",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "16_10",
+        "17_10"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 0.59375,
+        "neighbourEdgeSha256": "401096b8ccb6c3c2b4103cd06c4df05d6d3562271037d38907d7b3bd4395d900",
+        "ownerEdgeSha256": "172b3b0f985755c064d4c10965dbff62523f1ad77fc57fe86ba3e7567c1f84ad",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "16_11",
+        "17_11"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 16.0,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "16_12",
+        "17_12"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 320.6513671875,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "16_19",
+        "17_19"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 435.302734375,
+        "neighbourEdgeSha256": "2f337fb00006f489b732814fe70b5aee4f447e34ca41dc15bb0b0afb7cf1007b",
+        "ownerEdgeSha256": "844d53c0b2810924337c4d992312ad58a00972f11e0ec89253062e381ae96d1b",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "16_20",
+        "17_20"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 57,
+        "largestDifference": 81.9375,
+        "neighbourEdgeSha256": "1f79e912bbca3544c509ceb8640a8f01d032a86c163862463f1179561875bf4b",
+        "ownerEdgeSha256": "64862bc854a7739b916f97c1335fd09a810402b67f8d1569895cea789e6b6484",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "16_21",
+        "17_21"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 41.375,
+        "neighbourEdgeSha256": "7cfb3ebb11b14565bdf2417bd1560afc69252a36d77c61333ad73e405376ae54",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "16_22",
+        "17_22"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 95.32861328125,
+        "neighbourEdgeSha256": "07d94b066071c372f0adf5dcd404d738bdfdf4ce54940ac0a03cccf9caf4265b",
+        "ownerEdgeSha256": "a78c12277fca5387925da0bf74fbaf08ab4b4b8f8c4496dcced58ec615065c98",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "16_24",
+        "17_24"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 17,
+        "largestDifference": 563.171630859375,
+        "neighbourEdgeSha256": "56688529e48a8ca0813774e355943fca854fb76f9848d6f380e1476212126f1f",
+        "ownerEdgeSha256": "18cf556254ccec89821d503be80c82c12b3853fcb36d44767e0487ee9b80101b",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "16_25",
+        "17_25"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 337.30224609375,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "16_26",
+        "17_26"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 1346.890625,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "c4cbef32f2c192bc9ce7300345ceedb875117c6acfe3e7df40d4abeca2203cde",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "17_10",
+        "18_10"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 1346.59375,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "acff9461949e373b445cc56ab4d2505423bfcab78fc61b6cb691d69536f624ad",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "17_11",
+        "18_11"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 256,
+        "largestDifference": 0.0,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "17_12",
+        "18_12"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 320.6513671875,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "17_18",
+        "18_18"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 48.0361328125,
+        "neighbourEdgeSha256": "2fd981f749ec6e6f4250a7a68973e8a5fa7f823d2e886f31d2106a45955cc382",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "17_19",
+        "18_19"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 53,
+        "largestDifference": 152.59375,
+        "neighbourEdgeSha256": "7d8d9833c6076bea43d17118954906da4e3d1a59c5b58d554aca6015451f3700",
+        "ownerEdgeSha256": "f23d4bfd84164522a46b4d0dced460f8871e0e7c49c4877fd16c63cdcc571fb0",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "17_20",
+        "18_20"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 10,
+        "largestDifference": 187.03125,
+        "neighbourEdgeSha256": "9c0609ea10297f9168782d209b55e53db7e605c54f3592f03a8a8ce85a73f7b2",
+        "ownerEdgeSha256": "d9a9349f699e547efce8295674dab0f67c311bf49b2844b0d3dcb9d22684434b",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "17_21",
+        "18_21"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 108.843505859375,
+        "neighbourEdgeSha256": "6b60e3dec913c955f7ddb82dba9872eef27fd8c8d91bda2190cb9b4c826fca3a",
+        "ownerEdgeSha256": "b1bf8ba917e7cfb024f3eaa4dad937235df2c3cf85758913c23ad7cfad9231b2",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "17_22",
+        "18_22"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 236,
+        "largestDifference": 19.0,
+        "neighbourEdgeSha256": "6836ec8da02fff85ba81747e20222d5b72264cbe02eb53e27516db1ff85d97e4",
+        "ownerEdgeSha256": "37c19a7d73008326654540ed70f92747e838ff5b6c4892724aa92cc1b47a3eda",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "17_24",
+        "18_24"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 41.00048828125,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "cfd60bebfd08a5fce274097377f49eec1142422c4d65a198f76c6f23dd0a4643",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "17_25",
+        "18_25"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 337.30224609375,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "17_26",
+        "18_26"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 256,
+        "largestDifference": 0.0,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_10",
+        "19_10"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 3605.333740234375,
+        "neighbourEdgeSha256": "82f3a17b2e944accdad68aa1e71fda43290909466ae6ccf360ba4aa09e014ff2",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_13",
+        "19_13"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 317.8644104003906,
+        "neighbourEdgeSha256": "1e7f4342bf2b7198c6e337f3870e41c54af205e08c3fb768d4b35f57cc033d32",
+        "ownerEdgeSha256": "3fd425e4aa346f0d93566bd2e8b59de66c1ec32c904afb35110aa83b2fe48b74",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_14",
+        "19_14"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 321.302734375,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_15",
+        "19_15"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 320.6513671875,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_17",
+        "19_17"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 139.2919921875,
+        "neighbourEdgeSha256": "b00d246e8a5c7b293cacc9b60fcce21751356587562fb1c006b5ad7d17e33cce",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_18",
+        "19_18"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 7,
+        "largestDifference": 451.84375,
+        "neighbourEdgeSha256": "75db35d6f91f94668e5b83ba4d149763fcb3cb4dc6f1ba4fb0a1d229e8776040",
+        "ownerEdgeSha256": "5ca200dc542666ef509cde98b31a3aadddf20ec7d037ba453050f17017689c21",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_19",
+        "19_19"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 5,
+        "largestDifference": 39.1875,
+        "neighbourEdgeSha256": "396dcf61a754974d4dae9a9db6e4da0950e282e2fa939d99195ef11c21a10be4",
+        "ownerEdgeSha256": "2da0c7615be0dcc5dd55b665f740599fbc7bed7db5462c5f3e7bab05f809653f",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_20",
+        "19_20"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 9,
+        "largestDifference": 132.703125,
+        "neighbourEdgeSha256": "19a2a7f12574b80fb08d0fda21880603fa9d4c77fb038e34b6e157e6b995ad0b",
+        "ownerEdgeSha256": "e5ce5b8bfa5a52cd84afa503a5d95223c14db2897850b98478e064d598d46f49",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_21",
+        "19_21"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 98.5625,
+        "neighbourEdgeSha256": "55e7e93d0158026112e8cb8c5f9f398f01937fe4c823db1a24a2098bfa218cd3",
+        "ownerEdgeSha256": "93255dbce0e31ee294dacf008274461ed4fd560e2ffbe8c78423283204e1e6d8",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_22",
+        "19_22"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 5,
+        "largestDifference": 73.921875,
+        "neighbourEdgeSha256": "d6117fdcf2609c57eb4d8fa9dbbd72419455b19955fa22459b1e4777f806e743",
+        "ownerEdgeSha256": "0e70e95bde5ebabe90bfdf2e22a596a11d18371e2a939bcda604142f2351d8ce",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_23",
+        "19_23"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 52,
+        "largestDifference": 250.562255859375,
+        "neighbourEdgeSha256": "2dcdda3599681e072cc3f6eb8cfc51b05eb865a8dfa5ef2a853b440efacdd41d",
+        "ownerEdgeSha256": "7084e60d90bbda730f7a3af70790ab4f3508be163e96acca575996d274447a43",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_24",
+        "19_24"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 15.99951171875,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_25",
+        "19_25"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 256,
+        "largestDifference": 0.0,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "19_10",
+        "20_10"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 73,
+        "largestDifference": 641.25,
+        "neighbourEdgeSha256": "7cc862c72222a9669508ddac74ea840e86363922429707999a520976a14568ee",
+        "ownerEdgeSha256": "810c0b46189afc194f5356cf95a1c8a838e95db92fd0d4278be6609800ab7f03",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "19_13",
+        "20_13"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 39,
+        "largestDifference": 276.6875,
+        "neighbourEdgeSha256": "b5088fc070a0a65c16972605df93e3e4d595df67b55739d53a78f41c5a971212",
+        "ownerEdgeSha256": "c71d461b9d291f2578397258b9a968a921beb95861b478c8251b41ce3d6495e1",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "19_14",
+        "20_14"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 58,
+        "largestDifference": 337.84375,
+        "neighbourEdgeSha256": "72048d4a6815e1db3b400c9ef39197a28a6f860a2e495ca9788be6dec92ca6d9",
+        "ownerEdgeSha256": "1de3a73a3743c51c1887fb464439acf3a0125c970809361ec33ec37e8996cea9",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "19_15",
+        "20_15"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 21.99462890625,
+        "neighbourEdgeSha256": "8b38eef54795f5461797bb8e8bf2dcf467415739a8a500b14ba69e34edb7ab46",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "19_16",
+        "20_16"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 320.6513671875,
+        "neighbourEdgeSha256": "6bf4af0967733c1972e6b2af0df29e33deac9f470c2a5b1b34bd33c1a49de305",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "19_17",
+        "20_17"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 25,
+        "largestDifference": 126.171875,
+        "neighbourEdgeSha256": "3956f3b3494d8bf52e16a21437360976f2f6241951189510ba4c1ef1f5b09a94",
+        "ownerEdgeSha256": "6e0e31755bb723d5b0632499c9f0d08fa6cec191e4deec5ede7428d469e2dc3d",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "19_18",
+        "20_18"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 2,
+        "largestDifference": 95.296875,
+        "neighbourEdgeSha256": "956583710f92ceb204be85603ecb3277f4bb7e430faa262c2b62eece4ef13706",
+        "ownerEdgeSha256": "c392af4b4dd6be596ef6029366d1f39ce69b66e19022f707dcc906d2a2015a2e",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "19_19",
+        "20_19"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 24,
+        "largestDifference": 78.375,
+        "neighbourEdgeSha256": "dd5d1ef45442940ec5d90e05c9e7d05124adbaf340865013300ae5ffc86f6ea1",
+        "ownerEdgeSha256": "78fb545d7c14553cf4f2d86c64384198f6452c86236ba3e98021e4989c4e2ae4",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "19_20",
+        "20_20"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "x",
+      "facingEdge": {
+        "equalCount": 132,
+        "largestDifference": 127.953125,
+        "neighbourEdgeSha256": "c425895d655b36a18b4fe4d7451188f226ec0b13b3adfee89ca0bba51973800d",
+        "ownerEdgeSha256": "b8a8c83a3eb39a38153bc577798829594ea1c640948d699aca1dfaa3b56723e6",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "19_21",
+        "20_21"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "19_22",
+        "20_22"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "20_22"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "19_23",
+        "20_23"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "20_23"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "19_24",
+        "20_24"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "20_24"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "19_25",
+        "20_25"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "20_25"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "20_13",
+        "21_13"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_13"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "20_14",
+        "21_14"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_14"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "20_15",
+        "21_15"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_15"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "20_16",
+        "21_16"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_16"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "20_17",
+        "21_17"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_17"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "20_18",
+        "21_18"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_18"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "20_19",
+        "21_19"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_19"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "20_20",
+        "21_20"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_20"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "20_21",
+        "21_21"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_21"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "20_22",
+        "21_22"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "20_22"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_22"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "20_23",
+        "21_23"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "20_23"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_23"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "20_24",
+        "21_24"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "20_24"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_24"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "20_25",
+        "21_25"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "20_25"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_25"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "21_13",
+        "22_13"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_13"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_13"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "21_14",
+        "22_14"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_14"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_14"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "21_15",
+        "22_15"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_15"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_15"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "21_16",
+        "22_16"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_16"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_16"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "21_17",
+        "22_17"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_17"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_17"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "21_18",
+        "22_18"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_18"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_18"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "21_19",
+        "22_19"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_19"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_19"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "21_20",
+        "22_20"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_20"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_20"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "21_21",
+        "22_21"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_21"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_21"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "21_22",
+        "22_22"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_22"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_22"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "21_23",
+        "22_23"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_23"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_23"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "21_24",
+        "22_24"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_24"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_24"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "21_25",
+        "22_25"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_25"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_25"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_13",
+        "23_13"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_13"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_13"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_14",
+        "23_14"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_14"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_14"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_15",
+        "23_15"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_15"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_15"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_16",
+        "23_16"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_16"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_16"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_17",
+        "23_17"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_17"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_17"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_18",
+        "23_18"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_18"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_18"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_19",
+        "23_19"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_19"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_19"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_20",
+        "23_20"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_20"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_20"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_21",
+        "23_21"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_21"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_21"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_22",
+        "23_22"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_22"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_22"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_23",
+        "23_23"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_23"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_23"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_24",
+        "23_24"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_24"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_24"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_25",
+        "23_25"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_25"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_25"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_26",
+        "23_26"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_26"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_26"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_11",
+        "24_11"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_11"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_11"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_12",
+        "24_12"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_12"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_12"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_13",
+        "24_13"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_13"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_13"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_14",
+        "24_14"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_14"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_14"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_15",
+        "24_15"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_15"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_15"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_16",
+        "24_16"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_16"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_16"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_17",
+        "24_17"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_17"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_17"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_18",
+        "24_18"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_18"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_18"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_19",
+        "24_19"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_19"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_19"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_20",
+        "24_20"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_20"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_20"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_21",
+        "24_21"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_21"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_21"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_22",
+        "24_22"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_22"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_22"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_23",
+        "24_23"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_23"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_23"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_24",
+        "24_24"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_24"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_24"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_25",
+        "24_25"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_25"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_25"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_26",
+        "24_26"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_26"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_26"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "24_11",
+        "25_11"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_11"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_11"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "24_12",
+        "25_12"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_12"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_12"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "24_14",
+        "25_14"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_14"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_14"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "24_15",
+        "25_15"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_15"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_15"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "24_16",
+        "25_16"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_16"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_16"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "24_17",
+        "25_17"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_17"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_17"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "24_18",
+        "25_18"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_18"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_18"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "24_19",
+        "25_19"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_19"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_19"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "24_20",
+        "25_20"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_20"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_20"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "24_21",
+        "25_21"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_21"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_21"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "25_11",
+        "26_11"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_11"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "26_11"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "25_12",
+        "26_12"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_12"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "26_12"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "25_14",
+        "26_14"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_14"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "26_14"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "25_15",
+        "26_15"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_15"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "26_15"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "x",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "25_16",
+        "26_16"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_16"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "26_16"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 256,
+        "largestDifference": 0.0,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": -32640.0,
+      "tiles": [
+        "15_20",
+        "15_21"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 336.6513671875,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 32896.0,
+      "tiles": [
+        "15_21",
+        "15_22"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 256,
+        "largestDifference": 0.0,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "15_22",
+        "15_23"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 336.6513671875,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "15_23",
+        "15_24"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 337.30224609375,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "15_24",
+        "15_25"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 337.30224609375,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "15_25",
+        "15_26"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 1666.6513671875,
+        "neighbourEdgeSha256": "172b3b0f985755c064d4c10965dbff62523f1ad77fc57fe86ba3e7567c1f84ad",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "16_10",
+        "16_11"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 1330.0,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "172b3b0f985755c064d4c10965dbff62523f1ad77fc57fe86ba3e7567c1f84ad",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "16_11",
+        "16_12"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 19.0,
+        "neighbourEdgeSha256": "5f50c0e230322d48832fa4c9bef55470b558f5b69724e3e07f9370f4b690a897",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "16_19",
+        "16_20"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 1442.302490234375,
+        "neighbourEdgeSha256": "54164965e6678ef5daad60677a5b8ba6e155c30b2b7d4ce413c9b31e8f1daa97",
+        "ownerEdgeSha256": "6d35cf9c491314dc192c99d25e637b708e6786a524e203a71562992c23c0ed97",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "16_20",
+        "16_21"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 97.96875,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "9ef3dfd63324d8857dbee11fc9ac04ce3bd624d86c0b3aae093b0e3da0145fbe",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "16_21",
+        "16_22"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 256,
+        "largestDifference": 0.0,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "16_22",
+        "16_23"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 186.99951171875,
+        "neighbourEdgeSha256": "03e2b33e4ac38b386e0c50500bef3548f5f1ab60ec0b7bd3abcab424c4a0373f",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "16_23",
+        "16_24"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 678.984619140625,
+        "neighbourEdgeSha256": "e625302a872a74ff7d7edfb18888eddff2970270d12a6ab02d95f274e26d01c6",
+        "ownerEdgeSha256": "488ee20d4173275c9a4d61ead16f67d9e9ad67873f69971936c650f8b85d7fc9",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "16_24",
+        "16_25"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 435.302734375,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "36b638746bd76b4e21611e2e7ac1afa3eb486c493c141d6d687bbaf75eee002a",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "16_25",
+        "16_26"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 0.296875,
+        "neighbourEdgeSha256": "401096b8ccb6c3c2b4103cd06c4df05d6d3562271037d38907d7b3bd4395d900",
+        "ownerEdgeSha256": "c4cbef32f2c192bc9ce7300345ceedb875117c6acfe3e7df40d4abeca2203cde",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "17_10",
+        "17_11"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 1346.59375,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "401096b8ccb6c3c2b4103cd06c4df05d6d3562271037d38907d7b3bd4395d900",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "17_11",
+        "17_12"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 320.6513671875,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "17_18",
+        "17_19"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 19.6513671875,
+        "neighbourEdgeSha256": "258aaf70fa2d29d580881cd5b06546684084a779006e560c2385f4844592f339",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "17_19",
+        "17_20"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 19,
+        "largestDifference": 113.703125,
+        "neighbourEdgeSha256": "61c59d2df65f54fdc3806e70288ffa01c0031467550a5d1211d832e0405aae5f",
+        "ownerEdgeSha256": "caa0e6aed16f77c014cd6b3975eceb4bae9b42b110f91ab93a3891a43c465ab8",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "17_20",
+        "17_21"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 199.687255859375,
+        "neighbourEdgeSha256": "eb62fb544863251d844479f46fd3622f6553b9890f59b7cb1825833d85957617",
+        "ownerEdgeSha256": "8dcf3ca51a71307ad6aacbc0ed88b8d479b510430dc72c7b095c1f0ba99bb6a8",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "17_21",
+        "17_22"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 207,
+        "largestDifference": 19.890625,
+        "neighbourEdgeSha256": "cb53d9861725e717e047ee5317a599576e60c224ee1359f4a5f46c7a0c658649",
+        "ownerEdgeSha256": "efdc5f9ceaf891726bf316bfd100d68a7d860c063ae79468b12dcc414736767b",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "17_24",
+        "17_25"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 3.00048828125,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "5f50c0e230322d48832fa4c9bef55470b558f5b69724e3e07f9370f4b690a897",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "17_25",
+        "17_26"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 256,
+        "largestDifference": 0.0,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_10",
+        "18_11"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 256,
+        "largestDifference": 0.0,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_11",
+        "18_12"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 320.6513671875,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_12",
+        "18_13"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 1337.4169921875,
+        "neighbourEdgeSha256": "d115a6c9842f97e693d0f0c075085b57e0f8504f7e1ba44108c0c12cb74d5691",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_13",
+        "18_14"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 336.6513671875,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_14",
+        "18_15"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 256,
+        "largestDifference": 0.0,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_17",
+        "18_18"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 109.3076171875,
+        "neighbourEdgeSha256": "440dbe67934c559f2ca7ddb9cb11aa25f92ef79e2c336b26f8d3514d5b02d7c3",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_18",
+        "18_19"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 34,
+        "largestDifference": 215.53125,
+        "neighbourEdgeSha256": "8276c58d3363762d5d4e66a338b67b547f0c1801056740088953630cabb348f6",
+        "ownerEdgeSha256": "798af8f66bfda66ceba9e99c90a58e379714c13f5a806eeaf60769c39053a459",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_19",
+        "18_20"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 62,
+        "largestDifference": 16.921875,
+        "neighbourEdgeSha256": "47ea07fecb11454d96e94c7aeb6be1f0e56faa395d4be15bffa94167008c0425",
+        "ownerEdgeSha256": "ecf1b3071a480eea12c37e7e17a51e3603ba7c55c4840dcf926ba8e4957c3766",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_20",
+        "18_21"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 120.828125,
+        "neighbourEdgeSha256": "3f6f667212040386f31c63258e164d7fe2303b1529d9b41d6cfb2c060e41ced0",
+        "ownerEdgeSha256": "96a34d1aa502f3b417cd964ee5dd03c157b40b6ed1e7889d88c7852c4855e416",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_21",
+        "18_22"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 3,
+        "largestDifference": 138.9375,
+        "neighbourEdgeSha256": "ed68fc811117ca085b3db3dabdcffbdb3b391a93f46163c8f811174538959f91",
+        "ownerEdgeSha256": "9dbc094539c1b5951dffb42a59dfaaf802eca5e35a4f8c3d68e2a88a8f2d7881",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_22",
+        "18_23"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 103,
+        "largestDifference": 114.296875,
+        "neighbourEdgeSha256": "14bae7b932b0d7745e320aad068d1847135bfd18d5af7d3ce4ae1668285d6585",
+        "ownerEdgeSha256": "bc4764c627380075ff83ce6469617fd40ef0746bc8b6a9f439a70b63479f1df1",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_23",
+        "18_24"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 79.00048828125,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "a87b580c306fa6f1212206a121eb42c44b43ceccc488885865f6943df154e947",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_24",
+        "18_25"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 337.30224609375,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "18_25",
+        "18_26"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 29,
+        "largestDifference": 454.515625,
+        "neighbourEdgeSha256": "31f32441caecb4dc27de3540995befa4ab2ffd0dee3d0879e0b67ea10afc9bc7",
+        "ownerEdgeSha256": "d0501d184e86f4a16516d7b713e3667a2dbdb4cfc68e3ebb67940ced33dac033",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "19_13",
+        "19_14"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 27,
+        "largestDifference": 398.703125,
+        "neighbourEdgeSha256": "6b52640ab5857755d09c405a97a227d9986caa98cd2b777789b78c97a49bb6ba",
+        "ownerEdgeSha256": "8dd2cb0e73abad49093300d36cf42ec8e82f3105d3a0732ee26aebb4d346326f",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "19_14",
+        "19_15"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 0.6513671875,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "19_15",
+        "19_16"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 320.6513671875,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "19_16",
+        "19_17"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 349.802734375,
+        "neighbourEdgeSha256": "cd5391f3cc16d94e1503fc0cec940e08ef4d5ca348724e2a328e778f31248630",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "19_17",
+        "19_18"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 6,
+        "largestDifference": 383.265625,
+        "neighbourEdgeSha256": "4e32999ea996d7a417db503737d1cb51208a4ecd81096644bb91f9e32d19773f",
+        "ownerEdgeSha256": "f766577e47dcddcdffa175c3026b0f0ec11da7c080f51eb08f57dade6a727c3d",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "19_18",
+        "19_19"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 33,
+        "largestDifference": 29.09375,
+        "neighbourEdgeSha256": "7a9da4c70dc0611609655b4a26c108eef88a133a59b00a496e89b646c5d88e7a",
+        "ownerEdgeSha256": "bc45c2d15172d4a0c98d79bb2791181265e9ba10d8809556f1784a90e2ffeeb8",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "19_19",
+        "19_20"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 117,
+        "largestDifference": 54.625,
+        "neighbourEdgeSha256": "50ec02aa8d7c1eb91722f7be8af7897b8aed33daf5e5f3e2a2e7dda443ff5fe9",
+        "ownerEdgeSha256": "a3d2ce2d999db8f3ca371e01de106198abcba2bc2c18e231e2a08801cbf91496",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "19_20",
+        "19_21"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 95,
+        "largestDifference": 46.609375,
+        "neighbourEdgeSha256": "1dcbdc45783b59e9e4f93360f856e3d1e66c27a3f07b0352b704dba70599519d",
+        "ownerEdgeSha256": "a42ad92c1eef6342b641e5cbe339eee3fe721d3cfee19d866a992d52be9e3a41",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "19_21",
+        "19_22"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 14,
+        "largestDifference": 323.890625,
+        "neighbourEdgeSha256": "64ef3769f75ca92ac73deb00a94d0a4541fac5b6e8f85788a9d2cf3a40956c79",
+        "ownerEdgeSha256": "791b8f84c4d3e55e5dad590a2913f28d0b3594cb1e41fe3a0575eed6ef3f605e",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "19_22",
+        "19_23"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 2,
+        "largestDifference": 199.203125,
+        "neighbourEdgeSha256": "bf44b4f119ee6ea69d60b6aa5b389209f090c665b56c48ae3c605dac1be25679",
+        "ownerEdgeSha256": "3bdc036a034accd864726ba0490a18174ad4fe9e787783b5f0d156cc8320febe",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "19_23",
+        "19_24"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 256,
+        "largestDifference": 0.0,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "19_24",
+        "19_25"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 9,
+        "largestDifference": 578.015625,
+        "neighbourEdgeSha256": "03cedde106abdf422fdd4686a2b60632e265e3840a1ab0289ee00d1e9a51a49e",
+        "ownerEdgeSha256": "c99af15d90b033d6aed61ed07c444fbd5cc1460abd162aece4a8a867a9340c06",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "20_13",
+        "20_14"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 11,
+        "largestDifference": 1756.609375,
+        "neighbourEdgeSha256": "f20489969f6bb6289e337cee2a6837db8db863d63464f8d753ec650cdcfb4433",
+        "ownerEdgeSha256": "62d6148f4a9cc5667ea72e92d798fdd83f8299bcfca93c58474f69c0ac2e1f7d",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "20_14",
+        "20_15"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 183.73388671875,
+        "neighbourEdgeSha256": "f950ad1f23db4563be6b7bc57d5d00b284397472513d7c14b9d23866606da5de",
+        "ownerEdgeSha256": "2941d0fecf23bb0ed54ff75bdee0613a6d09ef926fb2d08769ffa1b62c30ec52",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "20_15",
+        "20_16"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 35.65087890625,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "f3036e758ff1b73b8b9635f132b87ac6a2163b4b789496fde0898c37e7dff01d",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "20_16",
+        "20_17"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 0,
+        "largestDifference": 31.8232421875,
+        "neighbourEdgeSha256": "e1c579a481d0936de1a7c24844b17bb3a9837faa01dd45ac75400c3a916e2360",
+        "ownerEdgeSha256": "aa7644caaa14232e0e076fb536bb13e42d7aa20aa9cb19b3d3257db52279dea1",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "20_17",
+        "20_18"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 3,
+        "largestDifference": 81.640625,
+        "neighbourEdgeSha256": "1df954ff32c41a691bcc178a540b595d1d61e903c7141c4f76a05ea59dadb28e",
+        "ownerEdgeSha256": "c31d2c6adeb3ada5754210fbaec77a1c259e64f3125fc4dbc7477a1041a55fce",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "20_18",
+        "20_19"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 9,
+        "largestDifference": 30.28125,
+        "neighbourEdgeSha256": "56f5cbc44061d843c48cdd3945e48004e30a137d6b93f58f796fa2ea6cc8046a",
+        "ownerEdgeSha256": "33d8df4255b2fc01e07a64b66d9fba515154954ed2c3eb72e1ba8cb3076aab42",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "20_19",
+        "20_20"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": 0.0,
+      "axis": "y",
+      "facingEdge": {
+        "equalCount": 25,
+        "largestDifference": 209.296875,
+        "neighbourEdgeSha256": "97a5f23c981c7ba9cb964403f32052d2f671da18a9a1657fee937962e592ca97",
+        "ownerEdgeSha256": "8c6f8b576537ecdec23d4241ca33ace31a099955e5fac542e68b6b3acd6c2088",
+        "sampleCount": 256
+      },
+      "measured": true,
+      "stripWidth": 128.0,
+      "tiles": [
+        "20_20",
+        "20_21"
+      ],
+      "unmeasuredTerrains": []
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "20_21",
+        "20_22"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "20_22"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "20_22",
+        "20_23"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "20_22"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "20_23"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "20_23",
+        "20_24"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "20_23"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "20_24"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "20_24",
+        "20_25"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "20_24"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "20_25"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "21_13",
+        "21_14"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_13"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_14"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "21_14",
+        "21_15"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_14"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_15"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "21_15",
+        "21_16"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_15"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_16"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "21_16",
+        "21_17"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_16"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_17"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "21_17",
+        "21_18"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_17"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_18"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "21_18",
+        "21_19"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_18"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_19"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "21_19",
+        "21_20"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_19"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_20"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "21_20",
+        "21_21"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_20"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_21"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "21_21",
+        "21_22"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_21"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_22"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "21_22",
+        "21_23"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_22"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_23"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "21_23",
+        "21_24"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_23"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_24"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "21_24",
+        "21_25"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_24"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "21_25"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_13",
+        "22_14"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_13"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_14"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_14",
+        "22_15"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_14"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_15"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_15",
+        "22_16"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_15"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_16"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_16",
+        "22_17"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_16"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_17"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_17",
+        "22_18"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_17"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_18"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_18",
+        "22_19"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_18"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_19"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_19",
+        "22_20"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_19"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_20"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_20",
+        "22_21"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_20"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_21"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_21",
+        "22_22"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_21"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_22"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_22",
+        "22_23"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_22"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_23"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_23",
+        "22_24"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_23"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_24"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_24",
+        "22_25"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_24"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_25"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "22_25",
+        "22_26"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_25"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "22_26"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_10",
+        "23_11"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_10"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_11"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_11",
+        "23_12"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_11"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_12"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_12",
+        "23_13"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_12"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_13"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_13",
+        "23_14"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_13"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_14"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_14",
+        "23_15"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_14"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_15"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_15",
+        "23_16"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_15"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_16"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_16",
+        "23_17"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_16"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_17"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_17",
+        "23_18"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_17"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_18"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_18",
+        "23_19"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_18"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_19"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_19",
+        "23_20"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_19"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_20"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_20",
+        "23_21"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_20"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_21"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_21",
+        "23_22"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_21"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_22"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_22",
+        "23_23"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_22"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_23"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_23",
+        "23_24"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_23"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_24"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_24",
+        "23_25"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_24"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_25"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "23_25",
+        "23_26"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_25"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "23_26"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "24_11",
+        "24_12"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_11"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_12"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "24_12",
+        "24_13"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_12"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_13"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "24_13",
+        "24_14"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_13"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_14"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "24_14",
+        "24_15"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_14"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_15"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "24_15",
+        "24_16"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_15"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_16"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "24_16",
+        "24_17"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_16"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_17"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "24_17",
+        "24_18"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_17"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_18"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "24_18",
+        "24_19"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_18"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_19"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "24_19",
+        "24_20"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_19"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_20"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "24_20",
+        "24_21"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_20"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_21"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "24_21",
+        "24_22"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_21"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_22"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "24_22",
+        "24_23"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_22"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_23"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "24_23",
+        "24_24"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_23"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_24"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "24_24",
+        "24_25"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_24"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_25"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "24_25",
+        "24_26"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_25"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "24_26"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "25_11",
+        "25_12"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_11"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_12"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "25_14",
+        "25_15"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_14"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_15"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "25_15",
+        "25_16"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_15"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_16"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "25_16",
+        "25_17"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_16"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_17"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "25_17",
+        "25_18"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_17"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_18"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "25_18",
+        "25_19"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_18"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_19"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "25_19",
+        "25_20"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_19"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_20"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "25_20",
+        "25_21"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_20"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "25_21"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "26_11",
+        "26_12"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "26_11"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "26_12"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "26_14",
+        "26_15"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "26_14"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "26_15"
+        }
+      ]
+    },
+    {
+      "acrossAxisOffset": null,
+      "axis": "y",
+      "facingEdge": null,
+      "measured": false,
+      "stripWidth": null,
+      "tiles": [
+        "26_15",
+        "26_16"
+      ],
+      "unmeasuredTerrains": [
+        {
+          "reason": "step-pending:raw",
+          "tileId": "26_15"
+        },
+        {
+          "reason": "step-pending:raw",
+          "tileId": "26_16"
+        }
+      ]
+    }
+  ],
+  "referenceTreeLockSha256": "1957c96800aa45cb10c984f3f2e6f8d1f5f0b1713f086f20560db01f4d1d2b52",
+  "schemaVersion": 1,
+  "summary": {
+    "adjacentPairs": 254,
+    "eligibleTiles": 148,
+    "everyMeasuredFacingEdgeEqual": false,
+    "measuredPairs": 108,
+    "measuredTerrains": 69,
+    "notMeasuredPairs": 146,
+    "notMeasuredReasons": {
+      "step-pending:raw": 278
+    },
+    "pairsWithEveryFacingSampleEqual": 11,
+    "stripWidthCounts": {
+      "-32640.0": 1,
+      "128.0": 106,
+      "32896.0": 1
+    }
+  },
+  "terrains": {
+    "15_20": {
+      "coveredExtent": {
+        "max": [
+          -131200.0,
+          98176.0
+        ],
+        "min": [
+          -163840.0,
+          65536.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -147456.0,
+        81920.0,
+        -160.65130615234375
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "15_21": {
+      "coveredExtent": {
+        "max": [
+          -131200.0,
+          98176.0
+        ],
+        "min": [
+          -163840.0,
+          65536.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -147456.0,
+        81920.0,
+        -160.65130615234375
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "15_22": {
+      "coveredExtent": {
+        "max": [
+          -131200.0,
+          163712.0
+        ],
+        "min": [
+          -163840.0,
+          131072.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -147456.0,
+        147456.0,
+        176.0
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "15_23": {
+      "coveredExtent": {
+        "max": [
+          -131200.0,
+          196480.0
+        ],
+        "min": [
+          -163840.0,
+          163840.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -147456.0,
+        180224.0,
+        176.0
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "15_24": {
+      "coveredExtent": {
+        "max": [
+          -131200.0,
+          229248.0
+        ],
+        "min": [
+          -163840.0,
+          196608.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -147456.0,
+        212992.0,
+        -160.65127563476562
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "15_25": {
+      "coveredExtent": {
+        "max": [
+          -131200.0,
+          262016.0
+        ],
+        "min": [
+          -163840.0,
+          229376.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -147456.0,
+        245760.0,
+        176.65126037597656
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "15_26": {
+      "coveredExtent": {
+        "max": [
+          -131200.0,
+          294784.0
+        ],
+        "min": [
+          -163840.0,
+          262144.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -147456.0,
+        278528.0,
+        -160.65127563476562
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "16_10": {
+      "coveredExtent": {
+        "max": [
+          -98432.0,
+          -229504.0
+        ],
+        "min": [
+          -131072.0,
+          -262144.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -114688.0,
+        -245760.0,
+        -160.6513214111328
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "16_11": {
+      "coveredExtent": {
+        "max": [
+          -98432.0,
+          -196736.0
+        ],
+        "min": [
+          -131072.0,
+          -229376.0
+        ]
+      },
+      "heightmapSha256": "7be22648127941d7f936759ee9b11b087b59398ac38fa9af8595906690fd5082",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -114688.0,
+        -212992.0,
+        176.0
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "16_12": {
+      "coveredExtent": {
+        "max": [
+          -98432.0,
+          -163968.0
+        ],
+        "min": [
+          -131072.0,
+          -196608.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -114688.0,
+        -180224.0,
+        176.0
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "16_19": {
+      "coveredExtent": {
+        "max": [
+          -98432.0,
+          65408.0
+        ],
+        "min": [
+          -131072.0,
+          32768.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -114688.0,
+        49152.0,
+        -160.6512908935547
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "16_20": {
+      "coveredExtent": {
+        "max": [
+          -98432.0,
+          98176.0
+        ],
+        "min": [
+          -131072.0,
+          65536.0
+        ]
+      },
+      "heightmapSha256": "371cf996fd30a2de37c1e33923b75b609734c0912acfc5a2ef20af7c6ff9354d",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -114688.0,
+        81920.0,
+        -160.65127563476562
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "16_21": {
+      "coveredExtent": {
+        "max": [
+          -98432.0,
+          130944.0
+        ],
+        "min": [
+          -131072.0,
+          98304.0
+        ]
+      },
+      "heightmapSha256": "6c3ec50c21d3e04ce669ea1eece361b0197da4a80e5adcc465421832df551058",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -114688.0,
+        114688.0,
+        160.65127563476562
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "16_22": {
+      "coveredExtent": {
+        "max": [
+          -98432.0,
+          163712.0
+        ],
+        "min": [
+          -131072.0,
+          131072.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -114688.0,
+        147456.0,
+        160.65127563476562
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "16_23": {
+      "coveredExtent": {
+        "max": [
+          -98432.0,
+          196480.0
+        ],
+        "min": [
+          -131072.0,
+          163840.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -114688.0,
+        180224.0,
+        160.65127563476562
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "16_24": {
+      "coveredExtent": {
+        "max": [
+          -98432.0,
+          229248.0
+        ],
+        "min": [
+          -131072.0,
+          196608.0
+        ]
+      },
+      "heightmapSha256": "6147364b38530546c82c16ffc8e62c1730e3a0a6aed6549871bf0c7f51fd6f7a",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -114688.0,
+        212992.0,
+        176.65126037597656
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "16_25": {
+      "coveredExtent": {
+        "max": [
+          -98432.0,
+          262016.0
+        ],
+        "min": [
+          -131072.0,
+          229376.0
+        ]
+      },
+      "heightmapSha256": "fc21648c2ce4def2ee8505e5089b19f31beb40275570286e7964c9298d930bc2",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -114688.0,
+        245760.0,
+        160.65126037597656
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "16_26": {
+      "coveredExtent": {
+        "max": [
+          -98432.0,
+          294784.0
+        ],
+        "min": [
+          -131072.0,
+          262144.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -114688.0,
+        278528.0,
+        -160.65127563476562
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "17_10": {
+      "coveredExtent": {
+        "max": [
+          -65664.0,
+          -229504.0
+        ],
+        "min": [
+          -98304.0,
+          -262144.0
+        ]
+      },
+      "heightmapSha256": "fa5e63b9c83f67a62ce338ece6f5d166aa657c5ace5f93a64077933cd5f8f93b",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -81920.0,
+        -245760.0,
+        176.0
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "17_11": {
+      "coveredExtent": {
+        "max": [
+          -65664.0,
+          -196736.0
+        ],
+        "min": [
+          -98304.0,
+          -229376.0
+        ]
+      },
+      "heightmapSha256": "d21436febb9beb3b485d4cef51f28402e9c0a7c511b89b844095ac3736aa44b3",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -81920.0,
+        -212992.0,
+        176.0
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "17_12": {
+      "coveredExtent": {
+        "max": [
+          -65664.0,
+          -163968.0
+        ],
+        "min": [
+          -98304.0,
+          -196608.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -81920.0,
+        -180224.0,
+        160.0
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "17_18": {
+      "coveredExtent": {
+        "max": [
+          -65664.0,
+          32640.0
+        ],
+        "min": [
+          -98304.0,
+          0.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -81920.0,
+        16384.0,
+        -160.65127563476562
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "17_19": {
+      "coveredExtent": {
+        "max": [
+          -65664.0,
+          65408.0
+        ],
+        "min": [
+          -98304.0,
+          32768.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -81920.0,
+        49152.0,
+        160.0
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "17_20": {
+      "coveredExtent": {
+        "max": [
+          -65664.0,
+          98176.0
+        ],
+        "min": [
+          -98304.0,
+          65536.0
+        ]
+      },
+      "heightmapSha256": "ed78300b2fe2abc55f020f137cac2b41b4e65cf7eb2a804fefdb574f2caa9953",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -81920.0,
+        81920.0,
+        160.65127563476562
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "17_21": {
+      "coveredExtent": {
+        "max": [
+          -65664.0,
+          130944.0
+        ],
+        "min": [
+          -98304.0,
+          98304.0
+        ]
+      },
+      "heightmapSha256": "4e0080423b26865eb115fecefce3b484c4d379c2572d9fb99a53ed283b6ec010",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -81920.0,
+        114688.0,
+        160.65126037597656
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "17_22": {
+      "coveredExtent": {
+        "max": [
+          -65664.0,
+          163712.0
+        ],
+        "min": [
+          -98304.0,
+          131072.0
+        ]
+      },
+      "heightmapSha256": "be6367b6738b8537ae04eccb5dfc43906d8581cfb0752f2b53db572c69e7975c",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -81920.0,
+        147456.0,
+        161.65126037597656
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "17_24": {
+      "coveredExtent": {
+        "max": [
+          -65664.0,
+          229248.0
+        ],
+        "min": [
+          -98304.0,
+          196608.0
+        ]
+      },
+      "heightmapSha256": "1d4a117eb4e64a5bd43a9ebfad21c0bc64413eb95534398ee85957bda7a5f21e",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -81920.0,
+        212992.0,
+        160.65126037597656
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "17_25": {
+      "coveredExtent": {
+        "max": [
+          -65664.0,
+          262016.0
+        ],
+        "min": [
+          -98304.0,
+          229376.0
+        ]
+      },
+      "heightmapSha256": "332f1c242c88a43f3d708e3d02bff3760efc0f577a8f425141a3466edad94973",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -81920.0,
+        245760.0,
+        160.65127563476562
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "17_26": {
+      "coveredExtent": {
+        "max": [
+          -65664.0,
+          294784.0
+        ],
+        "min": [
+          -98304.0,
+          262144.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -81920.0,
+        278528.0,
+        176.65126037597656
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "18_10": {
+      "coveredExtent": {
+        "max": [
+          -32896.0,
+          -229504.0
+        ],
+        "min": [
+          -65536.0,
+          -262144.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -49152.0,
+        -245760.0,
+        160.0
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "18_11": {
+      "coveredExtent": {
+        "max": [
+          -32896.0,
+          -196736.0
+        ],
+        "min": [
+          -65536.0,
+          -229376.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -49152.0,
+        -212992.0,
+        160.0
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "18_12": {
+      "coveredExtent": {
+        "max": [
+          -32896.0,
+          -163968.0
+        ],
+        "min": [
+          -65536.0,
+          -196608.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -49152.0,
+        -180224.0,
+        160.0
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "18_13": {
+      "coveredExtent": {
+        "max": [
+          -32896.0,
+          -131200.0
+        ],
+        "min": [
+          -65536.0,
+          -163840.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -49152.0,
+        -147456.0,
+        -160.65130615234375
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "18_14": {
+      "coveredExtent": {
+        "max": [
+          -32896.0,
+          -98432.0
+        ],
+        "min": [
+          -65536.0,
+          -131072.0
+        ]
+      },
+      "heightmapSha256": "9f288ba593efb7f5ad912a9af3f3b97c7c5693dbde3be93fd5bdd4c8447d4608",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -49152.0,
+        -114688.0,
+        176.0
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "18_15": {
+      "coveredExtent": {
+        "max": [
+          -32896.0,
+          -65664.0
+        ],
+        "min": [
+          -65536.0,
+          -98304.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -49152.0,
+        -81920.0,
+        -160.65130615234375
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "18_17": {
+      "coveredExtent": {
+        "max": [
+          -32896.0,
+          -128.0
+        ],
+        "min": [
+          -65536.0,
+          -32768.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -49152.0,
+        -16384.0,
+        160.0
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "18_18": {
+      "coveredExtent": {
+        "max": [
+          -32896.0,
+          32640.0
+        ],
+        "min": [
+          -65536.0,
+          0.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -49152.0,
+        16384.0,
+        160.0
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "18_19": {
+      "coveredExtent": {
+        "max": [
+          -32896.0,
+          65408.0
+        ],
+        "min": [
+          -65536.0,
+          32768.0
+        ]
+      },
+      "heightmapSha256": "aba245afdebbb805d479a9ba023dbfa873de3a3819757f06c0f09109a02e41c9",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -49152.0,
+        49152.0,
+        160.65127563476562
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "18_20": {
+      "coveredExtent": {
+        "max": [
+          -32896.0,
+          98176.0
+        ],
+        "min": [
+          -65536.0,
+          65536.0
+        ]
+      },
+      "heightmapSha256": "56e3d78f7974d442cdeb62969e688b509a2a19e6313dc4a2696a13f5091ff46c",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -49152.0,
+        81920.0,
+        160.6513671875
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "18_21": {
+      "coveredExtent": {
+        "max": [
+          -32896.0,
+          130944.0
+        ],
+        "min": [
+          -65536.0,
+          98304.0
+        ]
+      },
+      "heightmapSha256": "95c82b40ab33cf75b71ee7a1f5926fab60834061f36c3bbb85c11a5a78010c34",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -49152.0,
+        114688.0,
+        160.65126037597656
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "18_22": {
+      "coveredExtent": {
+        "max": [
+          -32896.0,
+          163712.0
+        ],
+        "min": [
+          -65536.0,
+          131072.0
+        ]
+      },
+      "heightmapSha256": "1db156509b4b7486f8fad6fd78156bde8c773c01e87f5871772c36deb4614056",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -49152.0,
+        147456.0,
+        160.65127563476562
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "18_23": {
+      "coveredExtent": {
+        "max": [
+          -32896.0,
+          196480.0
+        ],
+        "min": [
+          -65536.0,
+          163840.0
+        ]
+      },
+      "heightmapSha256": "6f0e7b59d1838eb193115ff66c41e55a1b6e17ebb827b963b94b67a0538efdec",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -49152.0,
+        180224.0,
+        160.65127563476562
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "18_24": {
+      "coveredExtent": {
+        "max": [
+          -32896.0,
+          229248.0
+        ],
+        "min": [
+          -65536.0,
+          196608.0
+        ]
+      },
+      "heightmapSha256": "f6c7087912fbe219973d0f71b733a1e90e7aee7c087cecef266babc70b4b894b",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -49152.0,
+        212992.0,
+        160.65126037597656
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "18_25": {
+      "coveredExtent": {
+        "max": [
+          -32896.0,
+          262016.0
+        ],
+        "min": [
+          -65536.0,
+          229376.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -49152.0,
+        245760.0,
+        176.65126037597656
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "18_26": {
+      "coveredExtent": {
+        "max": [
+          -32896.0,
+          294784.0
+        ],
+        "min": [
+          -65536.0,
+          262144.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -49152.0,
+        278528.0,
+        -160.65127563476562
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "19_10": {
+      "coveredExtent": {
+        "max": [
+          -128.0,
+          -229504.0
+        ],
+        "min": [
+          -32768.0,
+          -262144.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -16384.0,
+        -245760.0,
+        160.0
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "19_13": {
+      "coveredExtent": {
+        "max": [
+          -128.0,
+          -131200.0
+        ],
+        "min": [
+          -32768.0,
+          -163840.0
+        ]
+      },
+      "heightmapSha256": "244838faf7ff4ec19e990b54b6c340ed49ca33a0b1cafa64383da832c5354cab",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -16384.0,
+        -147456.0,
+        160.65127563476562
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "19_14": {
+      "coveredExtent": {
+        "max": [
+          -128.0,
+          -98432.0
+        ],
+        "min": [
+          -32768.0,
+          -131072.0
+        ]
+      },
+      "heightmapSha256": "6e7c47f83dcc82b003d219d9f47d8c967c4d22186c3b1a2d68df541c722f6c8b",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -16384.0,
+        -114688.0,
+        160.65127563476562
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "19_15": {
+      "coveredExtent": {
+        "max": [
+          -128.0,
+          -65664.0
+        ],
+        "min": [
+          -32768.0,
+          -98304.0
+        ]
+      },
+      "heightmapSha256": "be1fe931a0c4ac8a44ae2078e42aacf8c8c5b02825d456f6ec4a27c88b24fa09",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -16384.0,
+        -81920.0,
+        160.65127563476562
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "19_16": {
+      "coveredExtent": {
+        "max": [
+          -128.0,
+          -32896.0
+        ],
+        "min": [
+          -32768.0,
+          -65536.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -16384.0,
+        -49152.0,
+        160.0
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "19_17": {
+      "coveredExtent": {
+        "max": [
+          -128.0,
+          -128.0
+        ],
+        "min": [
+          -32768.0,
+          -32768.0
+        ]
+      },
+      "heightmapSha256": "34f4c78d02327e34ef1c62be6c8a88cc1c40abe14bbad14efcbe47418ea95363",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -16384.0,
+        -16384.0,
+        -160.65127563476562
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "19_18": {
+      "coveredExtent": {
+        "max": [
+          -128.0,
+          32640.0
+        ],
+        "min": [
+          -32768.0,
+          0.0
+        ]
+      },
+      "heightmapSha256": "c7a8f1744b42b9b8dae57cfa2c7af8074e1b20996decc8999ed8068f11bcbeea",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -16384.0,
+        16384.0,
+        160.65127563476562
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "19_19": {
+      "coveredExtent": {
+        "max": [
+          -128.0,
+          65408.0
+        ],
+        "min": [
+          -32768.0,
+          32768.0
+        ]
+      },
+      "heightmapSha256": "60a8e715bd04bbcf3c9d1776d170b93cb735551ab136b77ec544d7c458c94b9d",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -16384.0,
+        49152.0,
+        160.65126037597656
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "19_20": {
+      "coveredExtent": {
+        "max": [
+          -128.0,
+          98176.0
+        ],
+        "min": [
+          -32768.0,
+          65536.0
+        ]
+      },
+      "heightmapSha256": "ffe54048f2d3c56825ebf8e20d0b0fe85a33bbee093aeebe3e4d74cabad82f31",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -16384.0,
+        81920.0,
+        160.65126037597656
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "19_21": {
+      "coveredExtent": {
+        "max": [
+          -128.0,
+          130944.0
+        ],
+        "min": [
+          -32768.0,
+          98304.0
+        ]
+      },
+      "heightmapSha256": "c8cf8a49738238dc62f2c1a362684c559320dcc46c01281de1ca0bb08f032d50",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -16384.0,
+        114688.0,
+        160.65126037597656
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "19_22": {
+      "coveredExtent": {
+        "max": [
+          -128.0,
+          163712.0
+        ],
+        "min": [
+          -32768.0,
+          131072.0
+        ]
+      },
+      "heightmapSha256": "17015b892f9e4963ef13922feb720366fb696a399d9fc4fcef26f51ccd979d40",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -16384.0,
+        147456.0,
+        160.65126037597656
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "19_23": {
+      "coveredExtent": {
+        "max": [
+          -128.0,
+          196480.0
+        ],
+        "min": [
+          -32768.0,
+          163840.0
+        ]
+      },
+      "heightmapSha256": "4b0de355d60114cff120aa1d4fb0db506d7468f21f480da061820862c3acb0a1",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -16384.0,
+        180224.0,
+        160.65127563476562
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "19_24": {
+      "coveredExtent": {
+        "max": [
+          -128.0,
+          229248.0
+        ],
+        "min": [
+          -32768.0,
+          196608.0
+        ]
+      },
+      "heightmapSha256": "ed8a7e08cd530e68dc24de26d4b84ca2bcbec979ebe01baf5a82b95d41a41386",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -16384.0,
+        212992.0,
+        160.65126037597656
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "19_25": {
+      "coveredExtent": {
+        "max": [
+          -128.0,
+          262016.0
+        ],
+        "min": [
+          -32768.0,
+          229376.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        -16384.0,
+        245760.0,
+        160.65127563476562
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "20_10": {
+      "coveredExtent": {
+        "max": [
+          32640.0,
+          -229504.0
+        ],
+        "min": [
+          0.0,
+          -262144.0
+        ]
+      },
+      "heightmapSha256": "8df2b5f8c010e9eb846f083437b0ecc933e3ec20abc070623645eb416a9bf023",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        16384.0,
+        -245760.0,
+        160.0
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "20_13": {
+      "coveredExtent": {
+        "max": [
+          32640.0,
+          -131200.0
+        ],
+        "min": [
+          0.0,
+          -163840.0
+        ]
+      },
+      "heightmapSha256": "1b1c33d26d3fa84a0c4436a804691104c847757b502aa25c42cccfbae6759167",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        16384.0,
+        -147456.0,
+        160.65127563476562
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "20_14": {
+      "coveredExtent": {
+        "max": [
+          32640.0,
+          -98432.0
+        ],
+        "min": [
+          0.0,
+          -131072.0
+        ]
+      },
+      "heightmapSha256": "d6b2c8fe7a3e3f591c09016d76f4d33f821e6d8aca758b9fa0988cb41b926624",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        16384.0,
+        -114688.0,
+        160.65127563476562
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "20_15": {
+      "coveredExtent": {
+        "max": [
+          32640.0,
+          -65664.0
+        ],
+        "min": [
+          0.0,
+          -98304.0
+        ]
+      },
+      "heightmapSha256": "050a8f5bf57d8ef1bda8a2919c07622ddd0cf3be19946b991cbc44556e1fa18b",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        16384.0,
+        -81920.0,
+        160.65127563476562
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "20_16": {
+      "coveredExtent": {
+        "max": [
+          32640.0,
+          -32896.0
+        ],
+        "min": [
+          0.0,
+          -65536.0
+        ]
+      },
+      "heightmapSha256": "9819a02696496afc11e2b8ba9f55f98b1f5638eb65472bdd5ac6a92b11d8d0a9",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        16384.0,
+        -49152.0,
+        176.6513214111328
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "20_17": {
+      "coveredExtent": {
+        "max": [
+          32640.0,
+          -128.0
+        ],
+        "min": [
+          0.0,
+          -32768.0
+        ]
+      },
+      "heightmapSha256": "cb4cedc0d4da110a1c19a905ee3f1052335d9deaccdbe2f94a712ddd5d0e669c",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        16384.0,
+        -16384.0,
+        160.0
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "20_18": {
+      "coveredExtent": {
+        "max": [
+          32640.0,
+          32640.0
+        ],
+        "min": [
+          0.0,
+          0.0
+        ]
+      },
+      "heightmapSha256": "87735a3327c52599dec90bc8022edefb6d0c6725b651309e9e2b17b1d1dda85e",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        16384.0,
+        16384.0,
+        160.65127563476562
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "20_19": {
+      "coveredExtent": {
+        "max": [
+          32640.0,
+          65408.0
+        ],
+        "min": [
+          0.0,
+          32768.0
+        ]
+      },
+      "heightmapSha256": "4f9ab8806c92c5828d6d7ec332d33ead0266f8f840c1e12dff67d1564e8ae373",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        16384.0,
+        49152.0,
+        160.65126037597656
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "20_20": {
+      "coveredExtent": {
+        "max": [
+          32640.0,
+          98176.0
+        ],
+        "min": [
+          0.0,
+          65536.0
+        ]
+      },
+      "heightmapSha256": "85fff0a8c5b9fa717270180110f9a4a8711bf0818c0b153839d380c14c2abab9",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        16384.0,
+        81920.0,
+        160.65126037597656
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "20_21": {
+      "coveredExtent": {
+        "max": [
+          32640.0,
+          130944.0
+        ],
+        "min": [
+          0.0,
+          98304.0
+        ]
+      },
+      "heightmapSha256": "8350ef7b55a52e9f18458c8868c8a423ac2a87206bb6511534eb0290c28577d1",
+      "heightmapSize": [
+        256,
+        256
+      ],
+      "location": [
+        16384.0,
+        114688.0,
+        160.65127563476562
+      ],
+      "measured": true,
+      "terrainScale": [
+        128.0,
+        128.0,
+        76.0
+      ]
+    },
+    "20_22": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "20_23": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "20_24": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "20_25": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "21_13": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "21_14": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "21_15": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "21_16": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "21_17": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "21_18": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "21_19": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "21_20": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "21_21": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "21_22": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "21_23": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "21_24": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "21_25": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "22_13": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "22_14": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "22_15": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "22_16": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "22_17": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "22_18": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "22_19": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "22_20": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "22_21": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "22_22": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "22_23": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "22_24": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "22_25": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "22_26": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "23_10": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "23_11": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "23_12": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "23_13": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "23_14": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "23_15": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "23_16": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "23_17": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "23_18": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "23_19": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "23_20": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "23_21": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "23_22": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "23_23": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "23_24": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "23_25": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "23_26": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "24_11": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "24_12": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "24_13": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "24_14": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "24_15": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "24_16": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "24_17": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "24_18": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "24_19": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "24_20": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "24_21": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "24_22": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "24_23": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "24_24": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "24_25": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "24_26": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "25_11": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "25_12": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "25_14": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "25_15": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "25_16": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "25_17": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "25_18": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "25_19": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "25_20": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "25_21": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "26_11": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "26_12": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "26_14": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "26_15": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    },
+    "26_16": {
+      "measured": false,
+      "reason": "step-pending:raw"
+    }
+  }
+}
