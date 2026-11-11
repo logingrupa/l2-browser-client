@@ -22,8 +22,6 @@ export interface NativeWindowLayer {
   readonly presentation: NativeWindowLayerPresentation;
   open(windowId: string): Promise<NativeWindowOpenResult>;
   refresh(): void;
-  close(windowId: string): void;
-  openWindowIds(): readonly string[];
   dispose(): void;
 }
 
@@ -84,14 +82,6 @@ export function createNativeWindowLayer(container: HTMLElement, readLocalPlayer:
     return opening;
   };
 
-  const close = (windowId: string): void => {
-    const openWindow = openWindows.get(windowId);
-    if (openWindow === undefined) return;
-    openWindow.result.window.dispose();
-    revokeNativeWindowTextures(openWindow.textures);
-    openWindows.delete(windowId);
-  };
-
   return {
     presentation: nativeWindowLayerPresentation,
     open,
@@ -99,12 +89,14 @@ export function createNativeWindowLayer(container: HTMLElement, readLocalPlayer:
       const localPlayer = readLocalPlayer();
       for (const openWindow of openWindows.values()) openWindow.result.window.refresh(localPlayer);
     },
-    close,
-    openWindowIds: () => [...openWindows.keys()],
     dispose: () => {
       lifetime.abort();
       containerResizeObserver.disconnect();
-      [...openWindows.keys()].forEach(close);
+      for (const openWindow of openWindows.values()) {
+        openWindow.result.window.dispose();
+        revokeNativeWindowTextures(openWindow.textures);
+      }
+      openWindows.clear();
     },
   };
 }

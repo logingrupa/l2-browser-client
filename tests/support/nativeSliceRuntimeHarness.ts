@@ -118,7 +118,7 @@ function resetRuntimeBoundaryMocks() {
   mocks.audioControls.mockReset().mockReturnValue({ update() {}, dispose() {}, describe: () => [], cards: () => [], setWorldAudio() {} });
   mocks.factory.mockReset().mockReturnValue(() => undefined);
   mocks.releaseSandboxWindowLayer.mockReset();
-  mocks.sandboxWindowLayer.mockReset().mockReturnValue({ layer: { open: vi.fn(), refresh() {}, close() {}, openWindowIds: () => [], dispose() {} },
+  mocks.sandboxWindowLayer.mockReset().mockReturnValue({ layer: { open: vi.fn(), refresh() {}, dispose() {} },
     release: mocks.releaseSandboxWindowLayer });
   mocks.load.mockResolvedValue({ models: new Map([["human-male-fighter:0", {}], ["musveren:0", { manifest: { source: { object: "Native.Musveren" } } }], ["fighter-equipment:0", {}]]),
     npcProfiles: new Map([["npc:21622", { id: "npc:21622", npcId: 21622, mesh: "Native.Musveren", collisionHeight: 36, sourceUnitsPerMetre: 100, drawScale: 1.2, drawScale3D: [1, 1, 1] }]]) });

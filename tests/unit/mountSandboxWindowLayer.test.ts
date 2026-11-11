@@ -15,7 +15,7 @@ describe("mountSandboxWindowLayer", () => {
   beforeEach(() => {
     dom = installMiniDom();
     layerDouble.refresh.mockReset(); layerDouble.dispose.mockReset();
-    layerDouble.create.mockReset().mockReturnValue({ open: vi.fn(), refresh: layerDouble.refresh, close: vi.fn(), openWindowIds: () => [], dispose: layerDouble.dispose });
+    layerDouble.create.mockReset().mockReturnValue({ open: vi.fn(), refresh: layerDouble.refresh, dispose: layerDouble.dispose });
   });
   afterEach(() => { dom.restore(); });
 
