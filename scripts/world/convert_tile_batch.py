@@ -16,9 +16,10 @@ from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, FreeDiskFloorRef
                                       require_batch_preflight, run_at_below_normal_priority)
 from native_store.write_lane_catalog import write_lane_catalog
 from reference_client_guard import require_reference_client
-from world.eligible_tile_selection import (FAILED_STATUS, GAP_STATUS, PASS_STATUS, failed_step_row, read_tile_census, sealed_tile_step,
-                                           select_eligible_tiles, step_level_rows, unit_step_evidence, upstream_failed_row)
-from world.raw_map_step import read_tile_map_lock_record, tile_map_path, tile_unit_key
+from world.eligible_tile_selection import (FAILED_STATUS, GAP_STATUS, PASS_STATUS, StepSealMissingError, failed_step_row, locked_tile_source_identity,
+                                           own_step_row, read_tile_census, sealed_tile_step, select_eligible_tiles, step_level_rows, unit_step_evidence,
+                                           upstream_failed_row)
+from world.raw_map_step import tile_unit_key
 from world.tile_census import DEFAULT_CONVERSION_CLIENT_ROOT, WORLD_LANE_NAME
 from world.tile_manifest_step import TILE_MANIFEST_STEP_NAME
 from world.tile_step_registry import DEFAULT_TILE_STORE_OUTPUT, TILE_STEP_NAMES, run_tile_step
@@ -32,10 +33,6 @@ NOTHING_TO_DO_MESSAGE = 'nothing to do: every eligible tile of the census has ev
 
 
 class TileBatchUsageError(ValueError):
-    pass
-
-
-class StepSealMissingError(ValueError):
     pass
 
 
@@ -84,17 +81,6 @@ def tile_has_work(project_root, tile_id, step_names, recorded_rows):
         recorded_row = recorded_rows.get((tile_unit_key(tile_id), step))
         return recorded_row is None or recorded_row['status'] not in SETTLING_UNSEALED_STATUSES
     return False
-
-
-def locked_tile_source_identity(tile_id):
-    return {'path': tile_map_path(tile_id), 'sha256': read_tile_map_lock_record(tile_id)['eSha256']}
-
-
-def own_step_row(step, rows):
-    matching_rows = [row for row in rows if row['step'] == step]
-    if len(matching_rows) != 1:
-        raise StepSealMissingError(f'step {step} returned {len(matching_rows)} rows of its own step')
-    return matching_rows[0]
 
 
 class TileStepRun:

@@ -13,7 +13,7 @@ from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
 from native_store.store_paths import REPOSITORY_ROOT, require_converter_output
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, require_batch_preflight, run_at_below_normal_priority
 from reference_client_guard import require_reference_client
-from world.eligible_tile_selection import seal_derived_step_row
+from world.eligible_tile_selection import own_step_row, seal_derived_step_row
 from world.raw_map_step import RAW_STEP_NAME, TILE_ID_PATTERN
 from world.tile_census import WORLD_LANE_NAME
 from world.tile_step_registry import DEFAULT_TILE_STORE_OUTPUT, TILE_STEP_NAMES, run_tile_step
@@ -25,6 +25,10 @@ def record_tile_step_gap_row(project_root, row):
     rows = [existing_row for existing_row in read_gap_rows(project_root, WORLD_LANE_NAME)
             if existing_row['step'] == row['step'] and existing_row['key'] != row['key']]
     return write_gap_rows(project_root, WORLD_LANE_NAME, row['step'], [*rows, row])
+
+
+def converted_step_row(project_root, step, client, map_name, store_root):
+    return seal_derived_step_row(project_root, own_step_row(step, run_tile_step(project_root, step, client, map_name, store_root)))
 
 
 def main(argv=None):
@@ -44,15 +48,13 @@ def main(argv=None):
         run_at_below_normal_priority()
         with lane_coverage_refreshed_at_exit(REPOSITORY_ROOT, WORLD_LANE_NAME):
             store_root = require_converter_output(REPOSITORY_ROOT, REPOSITORY_ROOT / arguments.output)
-            rows = [seal_derived_step_row(REPOSITORY_ROOT, row) if row['step'] == arguments.step else row
-                    for row in run_tile_step(REPOSITORY_ROOT, arguments.step, arguments.client, arguments.map, store_root)]
-            for row in rows:
-                record_tile_step_gap_row(REPOSITORY_ROOT, row)
+            row = converted_step_row(REPOSITORY_ROOT, arguments.step, arguments.client, arguments.map, store_root)
+            record_tile_step_gap_row(REPOSITORY_ROOT, row)
     except (OSError, ValueError) as error:
         print(f'Tile conversion failed: {error}', file=sys.stderr)
         return 1
-    print(json.dumps(rows, indent=1))
-    return 1 if any(row['status'] == FAILED_ROW_STATUS for row in rows) else 0
+    print(json.dumps([row], indent=1))
+    return 1 if row['status'] == FAILED_ROW_STATUS else 0
 
 
 if __name__ == '__main__':

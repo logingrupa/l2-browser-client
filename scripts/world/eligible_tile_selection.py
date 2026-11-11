@@ -4,7 +4,7 @@ from typing import NamedTuple
 
 from native_store.store_paths import lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger
-from world.raw_map_step import TILE_ID_PATTERN, tile_map_path, tile_step_row, tile_unit_key, unit_step_row
+from world.raw_map_step import TILE_ID_PATTERN, read_tile_map_lock_record, tile_map_path, tile_step_row, tile_unit_key, unit_step_row
 from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import (ELIGIBLE_STATUS, TILE_CENSUS_RELATIVE_PATH, TILE_KIND, TileCensusError,
                                           validate_tile_census)
@@ -19,6 +19,10 @@ OBJECT_GAPS_REASON_PREFIX = 'object-gaps:'
 UPSTREAM_STEP_FAILED_REASON_PREFIX = 'upstream-step-failed:'
 DECODE_FAILED_REASON_PREFIX = 'decode-failed:'
 SEAL_INSPECTION_ALGORITHM_VERSION = 1
+
+
+class StepSealMissingError(ValueError):
+    pass
 
 
 class SealedTileStep(NamedTuple):
@@ -41,6 +45,17 @@ def select_eligible_tiles(census):
             raise TileCensusError(f'eligible tile census row {row["key"]} does not name its own map {row["map"]!r}')
         tile_ids.append(tile_id)
     return tile_ids
+
+
+def locked_tile_source_identity(tile_id):
+    return {'path': tile_map_path(tile_id), 'sha256': read_tile_map_lock_record(tile_id)['eSha256']}
+
+
+def own_step_row(step, rows):
+    matching_rows = [row for row in rows if row['step'] == step]
+    if len(matching_rows) != 1:
+        raise StepSealMissingError(f'step {step} returned {len(matching_rows)} rows of its own step')
+    return matching_rows[0]
 
 
 def seal_inspection_ledger(project_root, step):

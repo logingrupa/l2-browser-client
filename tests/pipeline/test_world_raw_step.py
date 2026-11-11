@@ -339,6 +339,20 @@ class ConvertTileCommandTests(SyntheticTileTestCase):
         self.assertEqual((exit_code, [row['status'] for row in printed_rows]), (1, ['failed']))
         self.assertEqual(read_gap_rows(self.project_root, 'world'), printed_rows)
 
+    def tile_row(self, step, status, reason):
+        return {'key': TILE_KEY, 'part': 'world', 'step': step, 'status': status, 'reason': reason,
+                'sourceIdentity': {'path': MAP_PATH, 'sha256': self.map_sha256}, 'evidence': f'work/tile__20_21/{step}/receipt.json'}
+
+    def test_a_manifest_run_records_only_its_own_row_and_keeps_the_rows_of_other_steps(self):
+        self.write_client(two_actors_sharing_one_mesh())
+        bsp_gap_row = self.tile_row('bsp', 'gap', GAP_TILE_REASON)
+        write_gap_rows(self.project_root, 'world', 'bsp', [bsp_gap_row])
+        manifest_row = self.tile_row('manifest', 'pass', None)
+        with patch.object(convert_tile, 'run_tile_step', return_value=[manifest_row, self.tile_row('bsp', 'pending', 'step-pending:bsp')]):
+            exit_code, printed_rows = self.run_command(['--client', str(self.client), '--map', TILE_ID, '--step', 'manifest'])
+        self.assertEqual((exit_code, printed_rows), (0, [manifest_row]))
+        self.assertEqual(read_gap_rows(self.project_root, 'world'), [bsp_gap_row, manifest_row])
+
     def test_the_command_refuses_a_map_argument_that_is_neither_a_tile_id_nor_a_census_map_naming_it(self):
         self.write_client(two_actors_sharing_one_mesh())
         exit_code, errors = self.run_refused_command(['--client', str(self.client), '--map', '../maps/20_21', '--step', 'raw'])
