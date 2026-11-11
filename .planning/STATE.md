@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 02-81-PLAN.md
-last_updated: "2026-11-11T15:30:28.616Z"
+stopped_at: Completed 02-82-PLAN.md
+last_updated: "2026-11-11T15:57:24.793Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 03 plan 03-01 complete (side-by-side check record writer and key content digest; Phase 3 start commit cb09cdc)
-state_head: bedbd1d506f728125587c1555dc53b796beaef63
+state_head: 7f5e272b312d5685c5f9c5d88910fded95a455f9
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 131
-  completed_plans: 101
+  completed_plans: 102
   percent: 0
 ---
 
@@ -147,6 +147,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 2 P93 | 15min | 2 tasks | 18 files |
 | Phase 2 P74 | 10min | 3 tasks | 14 files |
 | Phase 2 P81 | 35min | 3 tasks | 16 files |
+| Phase 2 P82 | 30min | 2 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -379,6 +380,11 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 2]: P973: read_tile_census and select_eligible_tiles live in scripts/world/eligible_tiles.py (import cycle with the terrain step)
 - [Phase 2]: P974: seam gap rows are deduplicated object rows on the owner's terrain export in the terrain index seamGapRows and the seal gapRows
 - [Phase 2]: P975: world-tile-border.spec.ts now walks 15_20 to 15_21 and is recorded unverified for the 17_12 to 18_12 seam until 02-88 and the MOVE-01 floor follow-up
+- [Phase 2]: P976: the 20_21 sky step on the shared 118/0 reader keeps every texture, DDS, PNG, GLB and material byte; native and DDS metadata gain only the shared reader fields, so the plan's byte identity holds for payloads, not for metadata; no projection shim
+- [Phase 2]: P977: the sky equality baseline is a run of the code at plan start; the 2026-11-10 20_21 sky seal is not reproduced by that code (material program drift, same fingerprint)
+- [Phase 2]: P978: minimap package indexes carry a per-export textureSource from build_texture_source; a refused joined radar export keeps the library reason on the radar cell and is not converted; the REVIEWED_VERSIONS refusal in minimap_join.py is deleted
+- [Phase 2]: P979: MINIMAP_JOIN_ALGORITHM_VERSION 2 with the name rules unchanged
+- [Phase 2]: P980: Lineage material prefix constants are imported from native_assets_lib.lineage_material_prefix everywhere; no re-export from reader_licensee_layouts.py
 
 ### Pending Todos
 
@@ -450,7 +456,8 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 - WORLD-05 tile sweep (02-67, row 730): the port walk passes on 20_21 (`world-movement-port.spec.ts`, `world-tile-walk.spec.ts`) and on `/` over tile 20_20 (`nativeSlice.spec.ts`); run the same walk on the other 9 converted tiles of the world lane catalog, then WORLD-05 closes.
 - `tests/browser/nativeBsp.spec.ts` still pins mesh-contact heights from the absent Actor940 oracle (it skips); rewrite it against the collision world once the oracle is restaged (02-67).
 
-- Minimap radar source (02-50, rows 710 to 717): no export of `L2_RadarMap.utx` (118/0, 18 town-named textures) equals a tile id, `<tile id>_map` or a zone `map` value, so all 153 census tiles are `minimap-join-unresolved:radar-texture` gaps; 21 zonename rows hold MapX or MapY outside the locked grid, so zone joins are `zone-grid` gaps. Find the client data that names the per-tile radar image or a sourced georeference for the `int_worldmap` pieces, and settle the out-of-grid rows on IMPORTA, before 02-51 draws the minimap.
+- Minimap radar source (02-50, rows 710 to 717; 02-82, rows 976 to 980): no export of `L2_RadarMap.utx` (118/0, 18 town-named textures) equals a tile id, `<tile id>_map` or a zone `map` value, so all 153 census tiles are `minimap-join-unresolved:radar-texture` gaps; 21 zonename rows hold MapX or MapY outside the locked grid, so zone joins are `zone-grid` gaps. Find the client data that names the per-tile radar image or a sourced georeference for the `int_worldmap` pieces, and settle the out-of-grid rows on IMPORTA, before 02-51 draws the minimap. Since 02-82 the shared texture library reads the package: 1 export (`RadarMaps.Global`) is readable DXT1 and the 17 town exports are `texture-format-unsupported:5` (RGBA8), so a sourced join of a town map also needs an RGBA8 layout cross-checked like the 02-73 rows.
+- Converter output guard scan (02-82, deferred-items.md): `test_converter_output_guard` flags `scripts/world/terrain_seam_facts.py` (02-81) as an entry point with an output option that does not call the converter output guard; the world lane adds the guard call or drops the option.
 - Minimap view (02-51, row 751): the real-data case "shows the 20_21 radar texture cell and the marker" in `tests/browser/world-minimap.spec.ts` stays skipped and unverified until the radar source above joins a tile; the marker texture and zone name text stay unresolved because both decoded MinimapCtrl records have an empty `textures` list
 
 - Map emitter playback (02-61, 02-69, 02-64, rows 651 and 696): the tile inspection lists each placement with its `memberVisible` gate, but none reaches `playTileMapEmitters`: the emitter records keep unparsed struct fields (row 668), no class defaults are merged and their meshes and textures are unconverted. Merge the class defaults in the emitters step, decode the structs, convert the referenced resources, then start the playable placements with a placement view.
@@ -506,6 +513,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-11T15:30:10.679Z
-Stopped at: Completed 02-81-PLAN.md
+Last session: 2026-11-11T15:57:24.136Z
+Stopped at: Completed 02-82-PLAN.md
 Resume file: None
