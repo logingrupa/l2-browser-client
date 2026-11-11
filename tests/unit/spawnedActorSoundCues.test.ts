@@ -102,6 +102,43 @@ describe("spawned actor sound cues", () => {
       .toEqual([[cueOne.key, "first"], [cueTwo.key, "second"]]);
   });
 
+  it("lists a notify without a bundle slot as unbound with its sound identity and plays nothing for it", () => {
+    const { binding, mixer, advanceTo } = drivenBinding(syntheticBundle("actor-sounds:npc:20001", [cueOne]),
+      [soundEvent("atk01", "SyntheticSound.Group.Missing", .4, "Synthetic.AnimNotify_Sound9"), soundEvent("atk01", null, .2)]);
+    expect(binding.coverage.bound).toEqual([]);
+    expect(binding.coverage.unbound).toEqual([{ clip: "atk01", notify: "Synthetic.AnimNotify_Sound9", sound: "SyntheticSound.Group.Missing",
+      timeSeconds: .4, reason: "notify-sound-has-no-bundle-slot" }]);
+    advanceTo(clockAt("atk01", .9));
+    expect(mixer.played).toEqual([]);
+    expect(mixer.registered.size).toBe(0);
+  });
+
+  it("lists a group-less notify that agrees with several bundle sounds as unbound instead of picking one", () => {
+    const sameLeaf = [{ object: "SyntheticSound.GroupA.Hit", key: "native-combat:a" }, { object: "SyntheticSound.GroupB.Hit", key: "native-combat:b" }];
+    const { binding } = drivenBinding(syntheticBundle("actor-sounds:npc:20001", sameLeaf), [soundEvent("atk01", "SyntheticSound.Hit", .4)]);
+    expect(binding.coverage.unbound.map(notify => notify.reason)).toEqual(["notify-sound-matches-several-bundle-sounds"]);
+  });
+
+  it("lists every role slot as role-routing-unresolved with its slot keys and never plays a role slot by itself", () => {
+    const { binding, mixer, advanceTo } = drivenBinding(syntheticBundle("actor-sounds:npc:20001", [cueOne, cueTwo]), []);
+    expect(binding.coverage).toEqual({ bundleId: "actor-sounds:npc:20001", bound: [], unbound: [], unresolvedRoles: [{ selection: "synthetic-actor",
+      role: "damage", field: "damage_sound", slotKeys: [cueOne.key, cueTwo.key], reason: "combat-role-route-unresolved:npcgrp/damage" }] });
+    advanceTo(clockAt("atk01", .9));
+    expect(mixer.played).toEqual([]);
+  });
+
+  it("stops the playing cue and plays nothing more once disposed", () => {
+    const { binding, mixer, advanceTo } = drivenBinding(syntheticBundle("actor-sounds:npc:20001", [cueOne]), [soundEvent("atk01", cueOne.object, .4)]);
+    advanceTo(clockAt("atk01", .5));
+    binding.dispose();
+    expect(mixer.stoppedOwners).toEqual([mixer.played[0]!.owner]);
+    advanceTo(clockAt("atk01", .1));
+    advanceTo(clockAt("atk01", .6));
+    binding.dispose();
+    expect(mixer.played).toHaveLength(1);
+    expect(mixer.stoppedOwners).toHaveLength(1);
+  });
+
   it("refuses to bind a bundle that is not an actor-sounds bundle", () => {
     expect(() => drivenBinding(syntheticBundle("native-combat-audio", [cueOne]), [])).toThrow("bind only actor-sounds: bundles");
   });
