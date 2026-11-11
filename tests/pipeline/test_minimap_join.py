@@ -116,9 +116,9 @@ class EmptyInputAndProjectionTests(unittest.TestCase):
             self.assertEqual(tile['status'], 'gap')
 
     def test_a_radar_package_outside_the_reviewed_versions_is_a_licensee_gap(self):
-        tile = joined_tile(radar_exports=['20_21'], radar_version=(118, 0))
+        tile = joined_tile(radar_exports=['20_21'], radar_version=(118, 11))
         self.assertIsNone(tile['radarTexture'])
-        self.assertIn('texture-licensee-unsupported:118/0', gap_reasons(tile))
+        self.assertIn('texture-licensee-unsupported:118/11', gap_reasons(tile))
         self.assertNotIn('minimap-join-unresolved:projection', gap_reasons(tile))
 
     def test_a_square_texture_gives_the_unverified_tile_frame_extent_projection_and_a_non_square_one_a_gap(self):

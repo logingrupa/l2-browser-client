@@ -27,7 +27,7 @@ LOCK = SimpleNamespace(document={'schemaVersion': 1, 'synthetic': True}, records
     'systextures/Changed.utx': {'class': 'differs', 'eSha256': '5' * 64},
 })
 CENSUS = {'schemaVersion': 1, 'referenceTreeLockSha256': hashlib.sha256(canonical_json_bytes(LOCK.document)).hexdigest(), 'packages': [
-    {'path': SYNTHETIC_PACKAGE_PATH, 'packageVersion': 118, 'licensee': 0, 'reviewed': False, 'reason': 'texture-licensee-unsupported:118/0'},
+    {'path': SYNTHETIC_PACKAGE_PATH, 'packageVersion': 118, 'licensee': 11, 'reviewed': False, 'reason': 'texture-licensee-unsupported:118/11'},
 ]}
 FIELD_BINDINGS = {'schemaVersion': 1, 'bindings': [
     {'windowId': 'SyntheticStatusWnd', 'controlName': 'SyntheticHpBar', 'gapReason': None},
@@ -65,7 +65,7 @@ class FakeConverter:
         (target / 'asset.json').write_bytes(json.dumps({
             'id': 'interlude:' + request['object'], 'image': {'file': 'texture.png'},
             'source': {'edition': 'interlude', 'package': request['package'], 'object': request['object'], 'sha256': SYNTHETIC_PACKAGE_SHA256,
-                       'packageVersion': 118, 'licenseeVersion': 0, 'path': {'host': 'SYNTHETIC', 'absolutePath': 'C:/synthetic.utx'}},
+                       'packageVersion': 118, 'licenseeVersion': 11, 'path': {'host': 'SYNTHETIC', 'absolutePath': 'C:/synthetic.utx'}},
             'files': [{'path': 'texture.png', 'sha256': hashlib.sha256(image).hexdigest(), 'bytes': len(image), 'mime': 'image/png'}],
         }).encode())
         return {'file': str(target / 'asset.l2asset'), 'sha256': archive_sha256, 'id': 'interlude:' + request['object']}
@@ -83,7 +83,7 @@ class UiTextureRequestTests(unittest.TestCase):
         plate = recipe['textures'][0]
         self.assertEqual(plate['windowIds'], ['SyntheticOtherWnd', 'SyntheticStatusWnd'])
         self.assertEqual((plate['packageName'], plate['packagePath'], plate['packageSha256']), ('SyntheticUI', SYNTHETIC_PACKAGE_PATH, SYNTHETIC_PACKAGE_SHA256))
-        self.assertEqual((plate['packageVersion'], plate['licensee'], plate['nativeSidecarReviewed'], plate['reason']), (118, 0, False, None))
+        self.assertEqual((plate['packageVersion'], plate['licensee'], plate['nativeSidecarReviewed'], plate['reason']), (118, 11, False, None))
         self.assertEqual(recipe['textures'][1]['packagePath'], SYNTHETIC_PACKAGE_PATH)
 
     def test_ambiguous_missing_and_not_lock_equal_packages_are_unresolved(self):

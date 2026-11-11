@@ -18,8 +18,8 @@
    "licensee": 0,
    "packageVersion": 118,
    "path": "systextures/Direction.utx",
-   "reason": "texture-licensee-unsupported:118/0",
-   "reviewed": false
+   "reason": null,
+   "reviewed": true
   },
   {
    "licensee": 28,
@@ -95,15 +95,15 @@
    "licensee": 0,
    "packageVersion": 118,
    "path": "systextures/L2_Pawn.utx",
-   "reason": "texture-licensee-unsupported:118/0",
-   "reviewed": false
+   "reason": null,
+   "reviewed": true
   },
   {
    "licensee": 0,
    "packageVersion": 118,
    "path": "systextures/L2_RadarMap.utx",
-   "reason": "texture-licensee-unsupported:118/0",
-   "reviewed": false
+   "reason": null,
+   "reviewed": true
   },
   {
    "licensee": 18,
@@ -130,15 +130,15 @@
    "licensee": 0,
    "packageVersion": 118,
    "path": "systextures/l2ui.utx",
-   "reason": "texture-licensee-unsupported:118/0",
-   "reviewed": false
+   "reason": null,
+   "reviewed": true
   },
   {
    "licensee": 0,
    "packageVersion": 118,
    "path": "systextures/L2UI_CH3.utx",
-   "reason": "texture-licensee-unsupported:118/0",
-   "reviewed": false
+   "reason": null,
+   "reviewed": true
   },
   {
    "licensee": 28,
@@ -291,8 +291,8 @@
    "licensee": 0,
    "packageVersion": 118,
    "path": "systextures/sek.utx",
-   "reason": "texture-licensee-unsupported:118/0",
-   "reviewed": false
+   "reason": null,
+   "reviewed": true
   },
   {
    "licensee": 28,
@@ -312,8 +312,8 @@
    "licensee": 0,
    "packageVersion": 118,
    "path": "systextures/symbol.utx",
-   "reason": "texture-licensee-unsupported:118/0",
-   "reviewed": false
+   "reason": null,
+   "reviewed": true
   },
   {
    "licensee": 23,

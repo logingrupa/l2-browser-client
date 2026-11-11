@@ -8,7 +8,8 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/'scripts'))
-from native_assets_lib.texture_mips import build_texture_source, UnsupportedTextureSource, MAX_MIPS
+from native_assets_lib.texture_mips import build_texture_source, UnsupportedTextureSource
+from native_assets_lib.texture_source_reader import MAX_MIPS
 from native_catalog.ue2 import FormatError, Package
 
 
@@ -85,8 +86,6 @@ def fixture(fmt=3, omit_format=False, dimensions=(4,4), levels=None, palette=Fal
 
 class TextureMipTests(unittest.TestCase):
     def test_dxt5_color_and_both_alpha_selector_modes_survive_native_records(self):
-        # Independent BC3 blocks: alpha endpoints, 16 packed 3-bit selectors,
-        # RGB565 red/green endpoints and packed 2-bit color selectors.
         eight_alpha = bytes.fromhex('ff0088c6fa88c6fa00f8e007e4e4e4e4')
         six_alpha = bytes.fromhex('00ff88c6fa88c6fa00f8e007e4e4e4e4')
         self.assertEqual([(int.from_bytes(eight_alpha[2:8], 'little') >> (index*3)) & 7 for index in range(16)], list(range(8))*2)

@@ -174,11 +174,11 @@ class MinimapStepTests(unittest.TestCase):
 
     def test_a_radar_package_outside_the_reviewed_versions_is_a_licensee_gap_with_no_texture_output(self):
         write_project(self.project_root)
-        row = run_minimap_step(self.project_root, CLIENT_ROOT, TILE_ID, synthetic_sources((118, 0)), self.converter)
-        self.assertEqual((row['status'], row['reason']), ('gap', 'texture-licensee-unsupported:118/0'))
+        row = run_minimap_step(self.project_root, CLIENT_ROOT, TILE_ID, synthetic_sources((118, 11)), self.converter)
+        self.assertEqual((row['status'], row['reason']), ('gap', 'texture-licensee-unsupported:118/11'))
         _, manifest = self.read_manifest()
         self.assertIsNone(manifest['radarTexture'])
-        self.assertIn('texture-licensee-unsupported:118/0', [gap['reason'] for gap in manifest['gaps']])
+        self.assertIn('texture-licensee-unsupported:118/11', [gap['reason'] for gap in manifest['gaps']])
         self.assertEqual(self.converter.requests, [])
 
     def test_a_census_gap_tile_returns_its_census_gap_without_touching_the_client(self):
@@ -204,7 +204,7 @@ class MinimapRegistrationTests(unittest.TestCase):
         patterns = load_gap_reason_patterns()
         for what in ('radar-texture', 'radar-texture-conflict', 'zone-grid', 'zone-rows', 'hunting-zone-rows', 'projection', 'source-package-absent'):
             self.assertTrue(is_listed_reason(f'minimap-join-unresolved:{what}', patterns), what)
-        self.assertTrue(is_listed_reason('texture-licensee-unsupported:118/0', patterns))
+        self.assertTrue(is_listed_reason('texture-licensee-unsupported:118/11', patterns))
 
     def test_the_lock_names_the_153_locked_tiles(self):
         self.assertEqual(len(locked_tile_ids()), 153)

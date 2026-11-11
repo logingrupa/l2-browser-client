@@ -13,7 +13,6 @@ import tempfile
 import zipfile
 
 from native_audio import decode_native_audio
-from native_catalog.ue2 import Package
 from native_assets_lib.gltf import Document, json_bytes, safe_name
 from native_assets_lib.asset_manifest import asset_coordinates_record, build_asset_manifest, reference_client_build, require_supported_asset_manifest, source_path_record
 from native_assets_lib.umodel_import_closure import index_package_files_by_casefolded_stem, require_lock_equal_import_closure, resolve_package_path
@@ -23,6 +22,7 @@ from native_assets_lib.weights import restore_native_weights
 from native_assets_lib.static_materials import native_static_materials
 from native_assets_lib.source_table_binding import material_overrides_by_slot, verify_source_table_binding
 from native_assets_lib.texture_mips import build_texture_source, UnsupportedTextureSource
+from native_assets_lib.texture_package_118 import read_unreal_package
 from native_assets_lib.texture_dds import build_texture_dds, UnsupportedTextureDDS
 from native_assets_lib.converter_source_digests import ConverterSourceDigests
 from native_assets_lib.conversion_evidence import write_conversion_evidence
@@ -197,7 +197,7 @@ class Converter:
         key = path.relative_to(self.client).as_posix()
         cached = self.package_cache.get(key)
         if cached is None or cached.source_hash != self.dependencies[key]:
-            cached = Package(path.read_bytes(), path.name)
+            cached = read_unreal_package(path.read_bytes(), path.name)
             self.package_cache[key] = cached
         return path, cached
 
