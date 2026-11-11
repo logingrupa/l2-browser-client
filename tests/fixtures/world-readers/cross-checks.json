@@ -182,6 +182,25 @@
  {
   "reader": "level-model",
   "version": 123,
+  "licensee": 18,
+  "tile": "17_18",
+  "package": "maps/17_18.unr",
+  "lockSha256": "c46277211a86a6779b41079bba9ac1c72438d4c4e025361628afb51915e578fb",
+  "ourDecodeSha256": null,
+  "crossCheckDecodeSha256": "0bdd4050187d5d484d19501873a91b904e8006365fc4d48a480b909273019fd7",
+  "tool": {
+   "name": "Elbera l2lib",
+   "commit": "12c9656",
+   "pins": {
+    "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
+   }
+  },
+  "equal": false,
+  "refusalReason": "vendored reader: 17_18.unr Level.Model: unsupported serialized Level layout (requires version123/licensee>=23)"
+ },
+ {
+  "reader": "level-model",
+  "version": 123,
   "licensee": 23,
   "tile": "17_20",
   "package": "maps/17_20.unr",
