@@ -17,8 +17,8 @@ from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, FreeDiskFloorRef
 from native_store.write_lane_catalog import write_lane_catalog
 from reference_client_guard import require_reference_client
 from world.eligible_tile_selection import (FAILED_STATUS, GAP_STATUS, PASS_STATUS, StepSealMissingError, failed_step_row, locked_tile_source_identity,
-                                           own_step_row, read_tile_census, sealed_step_of_current_seal, sealed_tile_step, select_eligible_tiles,
-                                           step_level_rows, unit_step_evidence)
+                                           own_step_row, sealed_step_of_current_seal, sealed_tile_step, step_level_rows, unit_step_evidence)
+from world.eligible_tiles import read_tile_census, select_eligible_tiles
 from world.raw_map_step import tile_unit_key
 from world.tile_census import DEFAULT_CONVERSION_CLIENT_ROOT, WORLD_LANE_NAME
 from world.tile_manifest_step import TILE_MANIFEST_STEP_NAME

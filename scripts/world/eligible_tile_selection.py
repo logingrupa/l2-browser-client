@@ -1,14 +1,10 @@
-import json
-from pathlib import Path
 from typing import NamedTuple
 
-from world.raw_map_step import TILE_ID_PATTERN, read_tile_map_lock_record, tile_map_path, tile_step_row, tile_unit_key, unit_step_row
-from world.tile_census_validation import (ELIGIBLE_STATUS, TILE_CENSUS_RELATIVE_PATH, TILE_KIND, TileCensusError,
-                                          validate_tile_census)
+from world.raw_map_step import read_tile_map_lock_record, tile_map_path, tile_step_row, tile_unit_key, unit_step_row
+from world.tile_census_validation import TILE_CENSUS_RELATIVE_PATH
 from world.tile_step_current_seals import CURRENT_SEAL_STATE, TILE_STEP_SEAL_CHECKS, unit_step_directory_evidence, unit_step_seal
 from world.tile_step_gap_rows import PENDING_STATUS
 
-TILE_KEY_PREFIX = 'tile:'
 PASS_STATUS = 'pass'
 GAP_STATUS = 'gap'
 FAILED_STATUS = 'failed'
@@ -24,23 +20,6 @@ class StepSealMissingError(ValueError):
 class SealedTileStep(NamedTuple):
     gap_rows: list
     evidence: str
-
-
-def read_tile_census(project_root):
-    return json.loads((Path(project_root) / TILE_CENSUS_RELATIVE_PATH).read_text(encoding='utf-8'))
-
-
-def select_eligible_tiles(census):
-    validate_tile_census(census)
-    tile_ids = []
-    for row in census['maps']:
-        if row['kind'] != TILE_KIND or row['status'] != ELIGIBLE_STATUS:
-            continue
-        tile_id = row['key'].removeprefix(TILE_KEY_PREFIX)
-        if not (row['key'].startswith(TILE_KEY_PREFIX) and TILE_ID_PATTERN.fullmatch(tile_id) and row['map'] == tile_map_path(tile_id)):
-            raise TileCensusError(f'eligible tile census row {row["key"]} does not name its own map {row["map"]!r}')
-        tile_ids.append(tile_id)
-    return tile_ids
 
 
 def locked_tile_source_identity(tile_id):

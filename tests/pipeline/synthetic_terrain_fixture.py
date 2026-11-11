@@ -21,7 +21,8 @@ def synthetic_native_terrain(sector_columns, sector_rows, quads_per_sector=SYNTH
                             'offset': [column * quads_per_sector, row * quads_per_sector],
                             'quads': [quads_per_sector, quads_per_sector], 'bounds': [0.0] * 6})
     return {'object': SYNTHETIC_TERRAIN_OBJECT, 'exportIndex': 1, 'width': sector_columns * quads_per_sector + 1,
-            'height': sector_rows * quads_per_sector + 1, 'sectorsX': sector_columns, 'sectorsY': sector_rows, 'sectors': sectors}
+            'height': sector_rows * quads_per_sector + 1, 'sectorsX': sector_columns, 'sectorsY': sector_rows, 'sectors': sectors,
+            'toWorld': {'origin': [0.0, 0.0, 0.0], 'axes': [[SYNTHETIC_SAMPLE_SPACING, 0.0, 0.0], [0.0, SYNTHETIC_SAMPLE_SPACING, 0.0], [0.0, 0.0, 1.0]]}}
 
 
 def synthetic_height(x, y):

@@ -16,9 +16,9 @@ from native_store.canonical_json import canonical_json_bytes
 from native_store.unit_ledger import run_at_below_normal_priority
 from reference_client_guard import require_reference_client
 from world.committed_world_data import REPOSITORY_ROOT, require_committed_destination, write_committed_world_bytes
-from world.eligible_tile_selection import read_tile_census, select_eligible_tiles
+from world.eligible_tiles import read_tile_census, select_eligible_tiles
 from world.native_terrain_sectors import native_terrain, read_height_samples
-from world.raw_map_step import read_tile_map_lock_record
+from world.raw_map_step import RAW_STEP_NAME, read_tile_map_lock_record
 from world.terrain_coordinates import calculated_coords, coords_point, xyz
 from world.tile_census import reference_tree_lock_sha256
 from world.tile_chunk_plan import (TERRAIN_HEIGHT_PACKAGE_MISSING_REASON, ChunkPlanStepError, raw_unit_fingerprint, read_locked_map_package,
@@ -26,7 +26,7 @@ from world.tile_chunk_plan import (TERRAIN_HEIGHT_PACKAGE_MISSING_REASON, ChunkP
 
 TERRAIN_SEAM_FACTS_SCHEMA_VERSION = 1
 TERRAIN_SEAM_FACTS_RELATIVE_PATH = 'docs/parts/world/terrain-seam-facts.json'
-RAW_STEP_PENDING_REASON = 'step-pending:raw'
+RAW_STEP_PENDING_REASON = f'step-pending:{RAW_STEP_NAME}'
 TERRAIN_LOCATION_UNRESOLVED_REASON = 'actor-default-unresolved:Location'
 DECODE_FAILED_REASON_PREFIX = 'decode-failed:'
 SEAM_AXIS_INDEX = {'x': 0, 'y': 1}

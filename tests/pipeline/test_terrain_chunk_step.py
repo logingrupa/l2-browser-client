@@ -26,6 +26,7 @@ EVIDENCE = 'work/tile__20_21/terrain/receipt.json'
 REAL_TERRAIN_INDEX_PATH = ROOT / 'artifacts/lane-store/world/work/tile__20_21/terrain/products/terrain-chunks.json'
 WORLD_07_DISCRIMINATING_CASES_PATH = ROOT / 'tests/fixtures/world-07/discriminating-cases.json'
 THREE_LAYER_FOUR_SECTOR_CHUNK_GLB_SHA256 = '73680f738faafea18a0f1d21f3290d11b3374319d8e3f159a77b3c0149af5306'
+NO_SEAM_STRIP = {'column': None, 'row': None, 'corner': None}
 
 
 def synthetic_chunk_plan(native):
@@ -36,7 +37,7 @@ def synthetic_chunk_plan(native):
 
 
 def build_synthetic_chunks(sector_columns, sector_rows, layer_indices=(0, 1, 2), words=None, mutate=None, empty_layer_indices=(),
-                           texture_only_layer_indices=(), placement_overrides=None):
+                           texture_only_layer_indices=(), placement_overrides=None, seam_far_heights=None):
     native, points = synthetic_terrain(sector_columns, sector_rows)
     if mutate:
         mutate(native)
@@ -46,7 +47,7 @@ def build_synthetic_chunks(sector_columns, sector_rows, layer_indices=(0, 1, 2),
     records = synthetic_layer_records([index for index in layer_indices if index not in empty_layer_indices and index not in layer_gap_reasons])
     summaries = tile_layer_summaries(serialized_layers, records, layer_gap_reasons)
     results = build_tile_terrain_chunks(TILE_ID, native, points, words or synthetic_topology_words(native),
-                                        records, summaries, plan['chunks'], SOURCE_IDENTITY, EVIDENCE)
+                                        records, summaries, plan['chunks'], SOURCE_IDENTITY, EVIDENCE, seam_far_heights or NO_SEAM_STRIP)
     return native, points, plan, {record['chunkId']: (record, glb) for record, glb in results}, [record for record, _ in results]
 
 
@@ -58,7 +59,7 @@ class ExtrapolatedRuleTests(unittest.TestCase):
     def test_the_rule_is_the_20_20_submitted_formula_labelled_extrapolated(self):
         self.assertEqual(extrapolated_mask_uv_rule(), {'id': 'interlude-20_20-submitted-mask-uv-20261106',
                                                         'formula': QUALIFIED_MASK_UV_FORMULA, 'status': 'extrapolated'})
-        self.assertEqual(TERRAIN_CHUNK_STEP_ALGORITHM_VERSION, 2)
+        self.assertEqual(TERRAIN_CHUNK_STEP_ALGORITHM_VERSION, 3)
 
     def test_every_chunk_record_and_glb_carries_the_extrapolated_label_and_its_source(self):
         _, _, _, by_chunk, records = build_synthetic_chunks(8, 8)
@@ -105,7 +106,8 @@ class ChunkAdjacencyTests(unittest.TestCase):
         whole_rectangle = {'minOffset': [0, 0], 'maxOffset': [14, 14]}
         region, _ = select_terrain_sectors(native, oracle, {'terrainSectorRectangle': whole_rectangle})
         whole_files, whole_statistics = build_terrain_rectangle_gltf(native, points, words, synthetic_layer_records((0, 1, 2)), region,
-                                                                     extrapolated_mask_uv_rule(), whole_rectangle, 'terrain_chunk_step.py')
+                                                                     extrapolated_mask_uv_rule(), whole_rectangle, 'terrain_chunk_step.py',
+                                                                     NO_SEAM_STRIP)
         chunk_triangles = [glb_triangle_positions(glb_mesh_arrays(glb)) for _, glb in by_chunk.values()]
         self.assertEqual(sum(len(triangles) for triangles in chunk_triangles), whole_statistics['triangleCount'])
         self.assertEqual(sum(record['triangleCount'] for record in records), whole_statistics['triangleCount'])
@@ -126,11 +128,12 @@ class EmptyAndFailedChunkTests(unittest.TestCase):
         plan = synthetic_chunk_plan(native)
         records = synthetic_layer_records((0,))
         summaries = tile_layer_summaries(synthetic_serialized_layers((0,)), records, {})
-        [(record, glb)] = build_tile_terrain_chunks(TILE_ID, native, points, words, records, summaries, plan['chunks'], SOURCE_IDENTITY, EVIDENCE)
+        [(record, glb)] = build_tile_terrain_chunks(TILE_ID, native, points, words, records, summaries, plan['chunks'], SOURCE_IDENTITY, EVIDENCE,
+                                                    NO_SEAM_STRIP)
         self.assertIsNone(glb)
         self.assertIsNone(record['terrain'])
         self.assertEqual((record['hiddenQuads'], record['triangleCount'], record['gapRows']), (64, 0, []))
-        self.assertEqual(tile_terrain_row(TILE_ID, SOURCE_IDENTITY, [], [record], EVIDENCE)['status'], 'pass')
+        self.assertEqual(tile_terrain_row(TILE_ID, SOURCE_IDENTITY, [], [record], [], EVIDENCE)['status'], 'pass')
 
     def test_a_chunk_whose_sector_xy_bounds_disagree_with_the_samples_gets_one_decode_gap_row(self):
         def shift_one_sector_x_bound(native):
@@ -146,7 +149,7 @@ class EmptyAndFailedChunkTests(unittest.TestCase):
         self.assertEqual((gap_row['key'], gap_row['step'], gap_row['status']), ('tile:20_21', 'terrain', 'gap'))
         self.assertIn('Fixture.TerrainInfo0.TerrainSector36', record['sectorObjects'])
         self.assertTrue(all(by_chunk[name][1] is not None for name in ('chunk-0-0', 'chunk-0-1', 'chunk-1-0')))
-        tile_row = tile_terrain_row(TILE_ID, SOURCE_IDENTITY, [], records, EVIDENCE)
+        tile_row = tile_terrain_row(TILE_ID, SOURCE_IDENTITY, [], records, [], EVIDENCE)
         self.assertEqual((tile_row['status'], tile_row['reason']), ('gap', gap_row['reason']))
 
     def test_two_builds_of_the_same_source_give_byte_identical_records_and_glbs(self):
@@ -205,7 +208,7 @@ class LayerGapTests(unittest.TestCase):
         _, _, _, by_chunk, chunk_records = build_synthetic_chunks(4, 4, layer_indices=(0, 1, 2, 3, 4), texture_only_layer_indices=(3,))
         self.assertEqual([layer['index'] for layer in chunk_records[0]['layers']], [0, 1, 2, 4])
         self.assertEqual([layer['index'] for layer in glb_mesh_arrays(by_chunk['chunk-0-0'][1])['extras']['nativeLayers']], [0, 1, 2, 4])
-        tile_row = tile_terrain_row(TILE_ID, SOURCE_IDENTITY, [gap_row], chunk_records, EVIDENCE)
+        tile_row = tile_terrain_row(TILE_ID, SOURCE_IDENTITY, [gap_row], chunk_records, [], EVIDENCE)
         self.assertEqual((tile_row['status'], tile_row['reason']), ('gap', 'terrain-layer-incomplete:3'))
 
     def test_a_terrain_whose_only_filled_layer_is_incomplete_still_writes_its_height_mesh_without_a_base_layer_uv_set(self):
@@ -220,7 +223,7 @@ class LayerGapTests(unittest.TestCase):
         self.assertEqual(arrays['POSITION'], [float32_point(points[y * native['width'] + x]) for y in range(9) for x in range(9)])
         self.assertEqual((arrays['extras']['maskUvSet'], arrays['extras']['baseLayerUvSet'], arrays['extras']['nativeLayers']), (0, None, []))
         gap_rows = terrain_layer_gap_rows(TILE_ID, SOURCE_IDENTITY, SYNTHETIC_TERRAIN_OBJECT, {0: 'terrain-layer-incomplete:0'}, EVIDENCE)
-        tile_row = tile_terrain_row(TILE_ID, SOURCE_IDENTITY, gap_rows, chunk_records, EVIDENCE)
+        tile_row = tile_terrain_row(TILE_ID, SOURCE_IDENTITY, gap_rows, chunk_records, [], EVIDENCE)
         self.assertEqual((tile_row['status'], tile_row['reason']), ('gap', 'terrain-layer-incomplete:0'))
 
     def test_a_terrain_with_a_placeable_layer_keeps_texcoord_1_from_its_first_layer_byte_for_byte(self):

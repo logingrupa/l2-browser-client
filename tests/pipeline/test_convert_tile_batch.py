@@ -20,7 +20,8 @@ from tile_step_seal_fixture import LOCKED_TILE_ID, seal_raw_unit, seal_unit, til
 from world import convert_tile_batch, world_audio_step
 from world.convert_tile_batch import (BATCH_EXIT_DISK_FLOOR, BATCH_EXIT_DONE, BATCH_EXIT_ERROR, BATCH_EXIT_MACHINE_WINDOW,
                                       NOTHING_TO_DO_MESSAGE, TileBatchUsageError, run_tile_batch)
-from world.eligible_tile_selection import SealedTileStep, seal_derived_step_row, select_eligible_tiles, step_level_rows
+from world.eligible_tile_selection import SealedTileStep, seal_derived_step_row, step_level_rows
+from world.eligible_tiles import select_eligible_tiles
 from world.raw_map_step import read_tile_map_lock_record, tile_step_row, tile_unit_key
 from world.tile_census_validation import CENSUS_READER_NAMES, TILE_CENSUS_RELATIVE_PATH, TileCensusError
 from world.tile_music import pinned_music_encoder
