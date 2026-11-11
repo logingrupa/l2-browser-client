@@ -32,7 +32,7 @@ describe("native slice adapter boundary", () => {
     adapter.dispatch({ type: "move-local", position: { x: 5, y: 0, z: 4 } });
     adapter.dispatch({ type: "set-animation", animation: "attack" });
     adapter.dispatch({ type: "set-animation", animation: "attack" });
-    expect(events.filter(event => event.type === "stop")).toEqual([{ type: "stop", entityId: "local-player", position: { x: 200, y: 400, z: 300 }, heading: 0 }]);
+    expect(events.filter(event => event.type === "stop")).toEqual([{ type: "stop", entityId: "local-player", position: { x: 200, y: 400, z: 300 }, heading: 16384 }]);
     expect(player(adapter)).toMatchObject({ position: origin, animation: "attack", animationSequence: 2 });
     adapter.dispose();
   });
@@ -94,7 +94,7 @@ describe("native slice adapter boundary", () => {
   it("mirrors an accepted reported source position and heading into the local player's metre position and yaw", () => {
     const adapter = new NativeSliceAdapter(origin), events = recorded(adapter);
     adapter.dispatch({ type: "report-position", position: { x: 500, y: 600, z: 300 }, heading: 16384 });
-    expect(player(adapter)).toMatchObject({ position: { x: 5, y: 3, z: 6 }, orientationRadians: -Math.PI / 2 });
+    expect(player(adapter)).toMatchObject({ position: { x: 5, y: 3, z: 6 }, orientationRadians: 0 });
     expect(events).toEqual([{ type: "update", entity: player(adapter) }]);
     adapter.dispose();
   });
@@ -106,6 +106,17 @@ describe("native slice adapter boundary", () => {
     const events = recorded(adapter);
     adapter.dispatch({ type: "set-animation", animation: "attack" });
     expect(events.filter(event => event.type === "stop")).toEqual([{ type: "stop", entityId: "local-player", position: { x: 500, y: 600, z: 300 }, heading: 16384 }]);
+    adapter.dispose();
+  });
+
+  it("stops after a special-attack preview toward the monster on world +x with the source heading along source +X", () => {
+    const adapter = new NativeSliceAdapter(origin, null, undefined, { walkSupported: true, specialAttackPreviewSupported: true, collision, moveTypes });
+    adapter.dispatch({ type: "move-local", position: { x: 9, y: 3, z: 4 } });
+    adapter.dispatch({ type: "preview-action", action: "special-attack", targetId: "native-musveren" });
+    adapter.dispatch({ type: "move-local", position: { x: 9, y: 3, z: 4 } });
+    const events = recorded(adapter);
+    adapter.dispatch({ type: "set-animation", animation: "idle" });
+    expect(events.filter(event => event.type === "stop")).toEqual([{ type: "stop", entityId: "local-player", position: { x: 200, y: 400, z: 300 }, heading: 0 }]);
     adapter.dispose();
   });
 

@@ -5,6 +5,9 @@ import {
   worldPositionToSource,
   worldYawToSourceHeading,
 } from "../../src/world/sourceFrame";
+import { headingOfDirection } from "../../src/scene/world/movement/core/pawnRotation";
+
+const visualRootForward = { x: 0, y: 0, z: 1 };
 
 function babylonYawRotation(yaw: number, vector: { x: number; y: number; z: number }) {
   return { x: Math.cos(yaw) * vector.x + Math.sin(yaw) * vector.z, y: vector.y, z: -Math.sin(yaw) * vector.x + Math.cos(yaw) * vector.z };
@@ -32,17 +35,26 @@ describe("source frame positions", () => {
 
 describe("source frame headings", () => {
   it("points heading 0 along world +X", () => {
-    const facing = babylonYawRotation(sourceHeadingToWorldYaw(0), { x: 1, y: 0, z: 0 });
+    const facing = babylonYawRotation(sourceHeadingToWorldYaw(0), visualRootForward);
     expect(facing.x).toBeCloseTo(1, 12);
     expect(facing.z).toBeCloseTo(0, 12);
   });
 
   it("points heading 16384 along the world axis that source +Y maps to", () => {
     const sourcePlusY = sourcePositionToWorld({ x: 0, y: 100, z: 0 });
-    const facing = babylonYawRotation(sourceHeadingToWorldYaw(16384), { x: 1, y: 0, z: 0 });
+    const facing = babylonYawRotation(sourceHeadingToWorldYaw(16384), visualRootForward);
     expect(facing.x).toBeCloseTo(sourcePlusY.x, 12);
     expect(facing.y).toBeCloseTo(sourcePlusY.y, 12);
     expect(facing.z).toBeCloseTo(sourcePlusY.z, 12);
+  });
+
+  it("faces the visual root forward along every source movement direction the pawn heading is taken from", () => {
+    for (const [sourceX, sourceY] of [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-3, 2]]) {
+      const facing = babylonYawRotation(sourceHeadingToWorldYaw(headingOfDirection({ x: sourceX!, y: sourceY!, z: 0 })), visualRootForward);
+      const movement = sourcePositionToWorld({ x: sourceX!, y: sourceY!, z: 0 }), movementLength = Math.hypot(movement.x, movement.z);
+      expect(facing.x).toBeCloseTo(movement.x / movementLength, 4);
+      expect(facing.z).toBeCloseTo(movement.z / movementLength, 4);
+    }
   });
 
   it("inverts every heading modulo 65536", () => {

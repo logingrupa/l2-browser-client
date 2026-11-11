@@ -14,6 +14,7 @@ const sourceUnitsPerMetre = 100;
 const metresPerSourceUnit = 0.01;
 const headingUnitsPerTurn = 65536;
 const headingUnitsPerHalfTurn = 32768;
+const worldYawFacingWorldPlusX = Math.PI / 2;
 
 export function sourcePositionToWorld(source: SourcePosition): WorldPosition {
   return { x: source.x * metresPerSourceUnit, y: source.z * metresPerSourceUnit, z: source.y * metresPerSourceUnit };
@@ -32,9 +33,9 @@ export function worldDistanceToSource(worldDistance: number): number {
 }
 
 export function sourceHeadingToWorldYaw(sourceHeading: number): number {
-  return -sourceHeading * Math.PI / headingUnitsPerHalfTurn;
+  return worldYawFacingWorldPlusX - sourceHeading * Math.PI / headingUnitsPerHalfTurn;
 }
 
 export function worldYawToSourceHeading(worldYaw: number): number {
-  return Math.round(-worldYaw * headingUnitsPerHalfTurn / Math.PI) & (headingUnitsPerTurn - 1);
+  return Math.round((worldYawFacingWorldPlusX - worldYaw) * headingUnitsPerHalfTurn / Math.PI) & (headingUnitsPerTurn - 1);
 }
