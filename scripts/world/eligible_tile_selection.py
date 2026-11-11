@@ -2,12 +2,10 @@ import json
 from pathlib import Path
 from typing import NamedTuple
 
-from native_store.store_paths import lane_work_root
-from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger
 from world.raw_map_step import TILE_ID_PATTERN, read_tile_map_lock_record, tile_map_path, tile_step_row, tile_unit_key, unit_step_row
-from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import (ELIGIBLE_STATUS, TILE_CENSUS_RELATIVE_PATH, TILE_KIND, TileCensusError,
                                           validate_tile_census)
+from world.tile_step_current_seals import CURRENT_SEAL_STATE, TILE_STEP_SEAL_CHECKS, unit_step_directory_evidence, unit_step_seal
 
 TILE_KEY_PREFIX = 'tile:'
 PASS_STATUS = 'pass'
@@ -18,7 +16,6 @@ BATCH_PENDING_REASON = 'batch-pending'
 OBJECT_GAPS_REASON_PREFIX = 'object-gaps:'
 UPSTREAM_STEP_FAILED_REASON_PREFIX = 'upstream-step-failed:'
 DECODE_FAILED_REASON_PREFIX = 'decode-failed:'
-SEAL_INSPECTION_ALGORITHM_VERSION = 1
 
 
 class StepSealMissingError(ValueError):
@@ -58,26 +55,20 @@ def own_step_row(step, rows):
     return matching_rows[0]
 
 
-def seal_inspection_ledger(project_root, step):
-    return UnitLedger(lane_work_root(project_root, WORLD_LANE_NAME), step, SEAL_INSPECTION_ALGORITHM_VERSION)
+def sealed_step_of_current_seal(seal):
+    return SealedTileStep(seal.receipt['gapRows'], seal.evidence) if seal.state == CURRENT_SEAL_STATE else None
 
 
-def sealed_unit_step(project_root, unit_key, step):
-    ledger = seal_inspection_ledger(project_root, step)
-    receipt = ledger.sealed_receipt(unit_key)
-    if receipt is None:
-        return None
-    evidence = (ledger.unit_step_directory(unit_key) / RECEIPT_RECORD_NAME).relative_to(ledger.lane_folder).as_posix()
-    return SealedTileStep(receipt['gapRows'], evidence)
+def sealed_unit_step(project_root, unit_key, step, step_seal_checks):
+    return sealed_step_of_current_seal(unit_step_seal(project_root, unit_key, step, step_seal_checks))
 
 
-def sealed_tile_step(project_root, tile_id, step):
-    return sealed_unit_step(project_root, tile_unit_key(tile_id), step)
+def sealed_tile_step(project_root, tile_id, step, step_seal_checks):
+    return sealed_unit_step(project_root, tile_unit_key(tile_id), step, step_seal_checks)
 
 
-def unit_step_evidence(project_root, tile_id, step):
-    ledger = seal_inspection_ledger(project_root, step)
-    return ledger.unit_step_directory(tile_unit_key(tile_id)).relative_to(ledger.lane_folder).as_posix()
+def unit_step_evidence(project_root, tile_id, step, step_seal_checks=TILE_STEP_SEAL_CHECKS):
+    return unit_step_directory_evidence(project_root, tile_unit_key(tile_id), step, step_seal_checks)
 
 
 def first_line_of_error(error):
@@ -117,8 +108,8 @@ def step_level_rows(tile_id, source_identity, step_names, step_results, sealed_s
     return rows
 
 
-def seal_derived_step_row(project_root, row):
+def seal_derived_step_row(project_root, row, step_seal_checks=TILE_STEP_SEAL_CHECKS):
     if row['status'] == FAILED_STATUS:
         return row
-    sealed_step = sealed_unit_step(project_root, row['key'], row['step'])
+    sealed_step = sealed_unit_step(project_root, row['key'], row['step'], step_seal_checks)
     return row if sealed_step is None else sealed_unit_step_row(row['key'], row['step'], row['sourceIdentity'], sealed_step)

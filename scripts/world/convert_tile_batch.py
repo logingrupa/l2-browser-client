@@ -12,16 +12,17 @@ from typing import NamedTuple
 from native_store.build_coverage_report import write_coverage_report
 from native_store.gap_rows import read_gap_rows, sorted_gap_rows, write_gap_rows
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, require_converter_output
-from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, FreeDiskFloorRefusedError, MachineWindowRefusedError, UnitLedgerError,
-                                      require_batch_preflight, run_at_below_normal_priority)
+from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, FreeDiskFloorRefusedError, MachineWindowRefusedError, require_batch_preflight,
+                                      run_at_below_normal_priority)
 from native_store.write_lane_catalog import write_lane_catalog
 from reference_client_guard import require_reference_client
 from world.eligible_tile_selection import (FAILED_STATUS, GAP_STATUS, PASS_STATUS, StepSealMissingError, failed_step_row, locked_tile_source_identity,
-                                           own_step_row, read_tile_census, sealed_tile_step, select_eligible_tiles, step_level_rows, unit_step_evidence,
-                                           upstream_failed_row)
+                                           own_step_row, read_tile_census, sealed_step_of_current_seal, sealed_tile_step, select_eligible_tiles,
+                                           step_level_rows, unit_step_evidence, upstream_failed_row)
 from world.raw_map_step import tile_unit_key
 from world.tile_census import DEFAULT_CONVERSION_CLIENT_ROOT, WORLD_LANE_NAME
 from world.tile_manifest_step import TILE_MANIFEST_STEP_NAME
+from world.tile_step_current_seals import CURRENT_SEAL_STATE, STALE_SEAL_STATE, TILE_STEP_SEAL_CHECKS, UNSEALED_STATE, unit_step_seal
 from world.tile_step_registry import DEFAULT_TILE_STORE_OUTPUT, TILE_STEP_NAMES, run_tile_step
 
 BATCH_EXIT_DONE = 0
@@ -29,6 +30,7 @@ BATCH_EXIT_ERROR = 1
 BATCH_EXIT_MACHINE_WINDOW = 2
 BATCH_EXIT_DISK_FLOOR = 3
 SETTLING_UNSEALED_STATUSES = (FAILED_STATUS, GAP_STATUS)
+SEAL_INSPECTION_ERRORS = (OSError, ValueError)
 NOTHING_TO_DO_MESSAGE = 'nothing to do: every eligible tile of the census has every registered step sealed'
 
 
@@ -67,25 +69,29 @@ def positive_limit_argument(value):
     return limit
 
 
-def is_step_sealed(project_root, tile_id, step):
+def inspected_seal_state(project_root, tile_id, step, step_seal_checks):
     try:
-        return sealed_tile_step(project_root, tile_id, step) is not None
-    except UnitLedgerError:
-        return False
+        return unit_step_seal(project_root, tile_unit_key(tile_id), step, step_seal_checks).state
+    except SEAL_INSPECTION_ERRORS:
+        return UNSEALED_STATE
 
 
-def tile_has_work(project_root, tile_id, step_names, recorded_rows):
+def tile_has_work(project_root, tile_id, step_names, recorded_rows, step_seal_checks):
     for step in step_names:
-        if is_step_sealed(project_root, tile_id, step):
+        seal_state = inspected_seal_state(project_root, tile_id, step, step_seal_checks)
+        if seal_state == CURRENT_SEAL_STATE:
             continue
+        if seal_state == STALE_SEAL_STATE:
+            return True
         recorded_row = recorded_rows.get((tile_unit_key(tile_id), step))
         return recorded_row is None or recorded_row['status'] not in SETTLING_UNSEALED_STATUSES
     return False
 
 
 class TileStepRun:
-    def __init__(self, project_root, step_runner, preflight, step_names):
+    def __init__(self, project_root, step_runner, preflight, step_names, step_seal_checks):
         self.project_root, self.step_runner, self.preflight, self.step_names = project_root, step_runner, preflight, step_names
+        self.step_seal_checks = step_seal_checks
         self.preflights = []
 
     def checked_preflight(self, tile_id, step):
@@ -98,12 +104,12 @@ class TileStepRun:
         return None
 
     def step_result(self, tile_id, step, source_identity):
-        evidence = unit_step_evidence(self.project_root, tile_id, step)
+        evidence = unit_step_evidence(self.project_root, tile_id, step, self.step_seal_checks)
         try:
             row = own_step_row(step, self.step_runner(step, tile_id))
             if row['status'] == FAILED_STATUS:
                 return row
-            if sealed_tile_step(self.project_root, tile_id, step) is not None:
+            if sealed_tile_step(self.project_root, tile_id, step, self.step_seal_checks) is not None:
                 return None
             if row['status'] == PASS_STATUS:
                 raise StepSealMissingError(f'step {step} of {tile_unit_key(tile_id)} reported pass without a ledger seal')
@@ -116,7 +122,7 @@ class TileStepRun:
         for step in self.step_names:
             if failed_step is not None and step != TILE_MANIFEST_STEP_NAME:
                 step_results[step] = upstream_failed_row(tile_id, step, source_identity, failed_step,
-                                                         unit_step_evidence(self.project_root, tile_id, failed_step))
+                                                         unit_step_evidence(self.project_root, tile_id, failed_step, self.step_seal_checks))
                 continue
             stop = self.checked_preflight(tile_id, step)
             if stop is not None:
@@ -130,27 +136,30 @@ class TileStepRun:
         return step_results, None
 
 
-def sealed_tile_steps(project_root, tile_id, source_identity, step_names):
-    sealed_steps, inspection_failures = {}, {}
+def inspected_tile_seals(project_root, tile_id, source_identity, step_names, step_seal_checks):
+    sealed_steps, stale_steps, inspection_failures = {}, set(), {}
     for step in step_names:
         try:
-            sealed_step = sealed_tile_step(project_root, tile_id, step)
-        except UnitLedgerError as error:
-            inspection_failures[step] = failed_step_row(tile_id, step, source_identity, error, unit_step_evidence(project_root, tile_id, step))
+            seal = unit_step_seal(project_root, tile_unit_key(tile_id), step, step_seal_checks)
+        except SEAL_INSPECTION_ERRORS as error:
+            inspection_failures[step] = failed_step_row(tile_id, step, source_identity, error,
+                                                        unit_step_evidence(project_root, tile_id, step, step_seal_checks))
             continue
-        if sealed_step is not None:
-            sealed_steps[step] = sealed_step
-    return sealed_steps, inspection_failures
+        if seal.state == CURRENT_SEAL_STATE:
+            sealed_steps[step] = sealed_step_of_current_seal(seal)
+        elif seal.state == STALE_SEAL_STATE:
+            stale_steps.add(step)
+    return sealed_steps, stale_steps, inspection_failures
 
 
-def recorded_unsealed_step_rows(tile_id, step_names, sealed_steps, recorded_rows):
-    recorded_step_rows = {step: recorded_rows.get((tile_unit_key(tile_id), step)) for step in step_names if step not in sealed_steps}
+def recorded_unsealed_step_rows(tile_id, step_names, steps_answered_by_seal, recorded_rows):
+    recorded_step_rows = {step: recorded_rows.get((tile_unit_key(tile_id), step)) for step in step_names if step not in steps_answered_by_seal}
     return {step: row for step, row in recorded_step_rows.items() if row is not None and row['status'] != PASS_STATUS}
 
 
-def tile_rows(project_root, tile_id, source_identity, step_names, step_results, recorded_rows):
-    sealed_steps, inspection_failures = sealed_tile_steps(project_root, tile_id, source_identity, step_names)
-    recorded_step_rows = recorded_unsealed_step_rows(tile_id, step_names, sealed_steps, recorded_rows)
+def tile_rows(project_root, tile_id, source_identity, step_names, step_results, recorded_rows, step_seal_checks):
+    sealed_steps, stale_steps, inspection_failures = inspected_tile_seals(project_root, tile_id, source_identity, step_names, step_seal_checks)
+    recorded_step_rows = recorded_unsealed_step_rows(tile_id, step_names, {*sealed_steps, *stale_steps}, recorded_rows)
     return step_level_rows(tile_id, source_identity, step_names, {**recorded_step_rows, **inspection_failures, **step_results}, sealed_steps)
 
 
@@ -167,18 +176,19 @@ def write_tile_step_rows(project_root, step_names, tile_ids, rows):
             write_gap_rows(project_root, WORLD_LANE_NAME, step, desired_rows)
 
 
-def run_tile_batch(project_root, limit, step_runner, preflight, step_names=TILE_STEP_NAMES, tile_source_identity=locked_tile_source_identity):
+def run_tile_batch(project_root, limit, step_runner, preflight, step_seal_checks, step_names=TILE_STEP_NAMES,
+                   tile_source_identity=locked_tile_source_identity):
     if not (type(limit) is int and limit >= 1):
         raise TileBatchUsageError(f'batch limit must be a whole number of at least 1: {limit!r}')
     tile_ids = select_eligible_tiles(read_tile_census(project_root))
     recorded_rows = {(row['key'], row['step']): row for row in read_gap_rows(project_root, WORLD_LANE_NAME)}
     source_identities = {tile_id: tile_source_identity(tile_id) for tile_id in tile_ids}
-    tile_step_run = TileStepRun(project_root, step_runner, preflight, step_names)
+    tile_step_run = TileStepRun(project_root, step_runner, preflight, step_names, step_seal_checks)
     step_results_by_tile, attempted_tile_ids, stop = {}, [], None
     for tile_id in tile_ids:
         if len(attempted_tile_ids) >= limit:
             break
-        if not tile_has_work(project_root, tile_id, step_names, recorded_rows):
+        if not tile_has_work(project_root, tile_id, step_names, recorded_rows, step_seal_checks):
             continue
         attempted_tile_ids.append(tile_id)
         step_results_by_tile[tile_id], stop = tile_step_run.run_tile(tile_id, source_identities[tile_id])
@@ -186,7 +196,7 @@ def run_tile_batch(project_root, limit, step_runner, preflight, step_names=TILE_
             break
     rows = [row for tile_id in tile_ids
             for row in tile_rows(project_root, tile_id, source_identities[tile_id], step_names, step_results_by_tile.get(tile_id, {}),
-                                 {} if tile_id in step_results_by_tile else recorded_rows)]
+                                 {} if tile_id in step_results_by_tile else recorded_rows, step_seal_checks)]
     write_tile_step_rows(project_root, step_names, tile_ids, rows)
     return TileBatchOutcome(BATCH_EXIT_DONE if stop is None else stop.exit_code, attempted_tile_ids, stop, tile_step_run.preflights, rows)
 
@@ -235,7 +245,7 @@ def main(argv=None):
         store_root = require_converter_output(REPOSITORY_ROOT, REPOSITORY_ROOT / arguments.output)
         outcome = run_tile_batch(REPOSITORY_ROOT, arguments.limit,
                                  lambda step, tile_id: run_tile_step(REPOSITORY_ROOT, step, arguments.client, tile_id, store_root),
-                                 world_batch_preflight(REPOSITORY_ROOT), tile_source_identity=locked_tile_source_identity)
+                                 world_batch_preflight(REPOSITORY_ROOT), TILE_STEP_SEAL_CHECKS, tile_source_identity=locked_tile_source_identity)
         lane_outputs = refresh_world_lane_outputs(REPOSITORY_ROOT) if outcome.exit_code == BATCH_EXIT_DONE else None
     except (OSError, ValueError) as error:
         print(f'Tile batch failed: {error}', file=sys.stderr)

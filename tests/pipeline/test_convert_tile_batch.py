@@ -10,18 +10,23 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from native_assets_lib.gltf import json_bytes
 from native_store.gap_rows import read_gap_rows
 from native_store.store_paths import lane_work_root
 from native_store.unit_ledger import (RUNNING_MARKER_NAME, SEAL_RECORD_NAME, FreeDiskFloorRefusedError, MachineWindowRefusedError,
                                       UnitLedger)
-from world import convert_tile_batch
+from tile_step_seal_fixture import LOCKED_TILE_ID, seal_raw_unit, seal_unit, tile_map_inputs, unpinned_music_encoder
+from world import convert_tile_batch, world_audio_step
 from world.convert_tile_batch import (BATCH_EXIT_DISK_FLOOR, BATCH_EXIT_DONE, BATCH_EXIT_ERROR, BATCH_EXIT_MACHINE_WINDOW,
                                       NOTHING_TO_DO_MESSAGE, TileBatchUsageError, run_tile_batch)
 from world.eligible_tile_selection import SealedTileStep, seal_derived_step_row, select_eligible_tiles, step_level_rows
-from world.raw_map_step import tile_step_row
+from world.raw_map_step import read_tile_map_lock_record, tile_step_row, tile_unit_key
 from world.tile_census_validation import CENSUS_READER_NAMES, TILE_CENSUS_RELATIVE_PATH, TileCensusError
+from world.tile_music import pinned_music_encoder
+from world.tile_step_current_seals import CURRENT_SEAL_STATE, TILE_STEP_SEAL_CHECKS, TileStepSealCheck, unit_step_seal
 from world.tile_step_registry import TILE_STEP_NAMES
+from world.world_audio_step import WORLD_AUDIO_STEP_NAME, world_audio_unit_config
 
 SYNTHETIC_STEP_NAMES = ('raw', 'chunks', 'meshes', 'manifest')
 SYNTHETIC_MAP_SHA256 = 'a' * 64
@@ -73,19 +78,33 @@ def synthetic_source_identity(tile_id):
     return {'path': f'maps/{tile_id}.unr', 'sha256': SYNTHETIC_MAP_SHA256}
 
 
+def synthetic_step_ledger(project_root, step):
+    return UnitLedger(lane_work_root(project_root, 'world'), step, SYNTHETIC_ALGORITHM_VERSION)
+
+
+def synthetic_unit_fingerprint(ledger, unit_key):
+    return ledger.unit_fingerprint([SYNTHETIC_MAP_SHA256], {'tile': unit_key.removeprefix('tile:')})
+
+
+def synthetic_seal_is_current(project_root, unit_key, ledger):
+    return ledger.is_sealed(unit_key, synthetic_unit_fingerprint(ledger, unit_key))
+
+
+def synthetic_seal_checks():
+    return {step: TileStepSealCheck(lambda project_root, step=step: synthetic_step_ledger(project_root, step), synthetic_seal_is_current, ())
+            for step in TILE_STEP_NAMES}
+
+
 class LedgerBackedSteps:
     def __init__(self, project_root, failing=(), object_gaps=None, killed_at=None, layout_gaps=()):
         self.project_root, self.failing, self.object_gaps, self.killed_at = project_root, set(failing), object_gaps or {}, killed_at
         self.layout_gaps = set(layout_gaps)
         self.calls, self.begun = [], []
 
-    def ledger(self, step):
-        return UnitLedger(lane_work_root(self.project_root, 'world'), step, SYNTHETIC_ALGORITHM_VERSION)
-
     def __call__(self, step, tile_id):
         self.calls.append((tile_id, step))
-        ledger, unit_key = self.ledger(step), f'tile:{tile_id}'
-        fingerprint = ledger.unit_fingerprint([SYNTHETIC_MAP_SHA256], {'tile': tile_id})
+        ledger, unit_key = synthetic_step_ledger(self.project_root, step), f'tile:{tile_id}'
+        fingerprint = synthetic_unit_fingerprint(ledger, unit_key)
         receipt_evidence = f'work/tile__{tile_id}/{step}/receipt.json'
         if ledger.is_sealed(unit_key, fingerprint):
             return [tile_step_row(tile_id, step, 'pass', None, synthetic_source_identity(tile_id), receipt_evidence)]
@@ -134,9 +153,9 @@ class TileBatchTestCase(unittest.TestCase):
         census_path.parent.mkdir(parents=True)
         census_path.write_text(json.dumps(synthetic_census(self.eligible_tile_ids)), encoding='utf-8')
 
-    def run_batch(self, steps, limit=1, preflight=None, step_names=SYNTHETIC_STEP_NAMES):
-        return run_tile_batch(self.project_root, limit, steps, preflight or RecordingPreflight(), step_names=step_names,
-                              tile_source_identity=synthetic_source_identity)
+    def run_batch(self, steps, limit=1, preflight=None, step_names=SYNTHETIC_STEP_NAMES, step_seal_checks=None):
+        return run_tile_batch(self.project_root, limit, steps, preflight or RecordingPreflight(), step_seal_checks or synthetic_seal_checks(),
+                              step_names=step_names, tile_source_identity=synthetic_source_identity)
 
     def rows_by_tile_and_step(self):
         return {(row['key'], row['step']): row for row in read_gap_rows(self.project_root, 'world')}
@@ -254,11 +273,11 @@ class TileBatchOrderTests(TileBatchTestCase):
     def test_the_single_step_row_follows_the_same_seal_rule_as_the_batch(self):
         steps = LedgerBackedSteps(self.project_root, object_gaps={('10_11', 'meshes'): 2})
         [meshes_row] = steps('meshes', '10_11')
-        self.assertEqual(seal_derived_step_row(self.project_root, meshes_row)['reason'], 'object-gaps:2')
+        self.assertEqual(seal_derived_step_row(self.project_root, meshes_row, synthetic_seal_checks())['reason'], 'object-gaps:2')
         failed_row = {**meshes_row, 'status': 'failed', 'reason': 'decode-failed:ValueError:later attempt'}
-        self.assertEqual(seal_derived_step_row(self.project_root, failed_row), failed_row)
+        self.assertEqual(seal_derived_step_row(self.project_root, failed_row, synthetic_seal_checks()), failed_row)
         unsealed_row = tile_step_row('10_11', 'raw', 'gap', 'player-start-missing', synthetic_source_identity('10_11'), 'evidence.json')
-        self.assertEqual(seal_derived_step_row(self.project_root, unsealed_row), unsealed_row)
+        self.assertEqual(seal_derived_step_row(self.project_root, unsealed_row, synthetic_seal_checks()), unsealed_row)
 
     def test_refuses_a_limit_below_one(self):
         with self.assertRaises(TileBatchUsageError):
@@ -299,6 +318,48 @@ class TileBatchInterruptionTests(TileBatchTestCase):
                                                        BATCH_EXIT_DISK_FLOOR)
 
 
+class WorldAudioResealingSteps:
+    def __init__(self, project_root, algorithm_version):
+        self.project_root, self.algorithm_version, self.calls = project_root, algorithm_version, []
+
+    def __call__(self, step, tile_id):
+        self.calls.append((tile_id, step))
+        if step == WORLD_AUDIO_STEP_NAME:
+            config = world_audio_unit_config(self.project_root, tile_id, read_tile_map_lock_record(tile_id), pinned_music_encoder())
+            seal_unit(self.project_root, step, self.algorithm_version, tile_unit_key(tile_id), config, tile_map_inputs(tile_id))
+        return [tile_step_row(tile_id, step, 'pass', None, synthetic_source_identity(tile_id), f'work/tile__{tile_id}/{step}/receipt.json')]
+
+
+class StaleSealBatchTests(TileBatchTestCase):
+    eligible_tile_ids = (LOCKED_TILE_ID,)
+    current_world_audio_version = 3
+    step_names = ('raw', WORLD_AUDIO_STEP_NAME)
+
+    def setUp(self):
+        super().setUp()
+        self.enterContext(unpinned_music_encoder())
+        self.enterContext(patch.object(world_audio_step, 'WORLD_AUDIO_STEP_ALGORITHM_VERSION', self.current_world_audio_version))
+        seal_raw_unit(self.project_root, LOCKED_TILE_ID)
+        self.steps = WorldAudioResealingSteps(self.project_root, self.current_world_audio_version)
+
+    def test_a_world_audio_seal_two_versions_below_the_step_is_batch_work_and_the_slice_reruns_it(self):
+        WorldAudioResealingSteps(self.project_root, self.current_world_audio_version - 2)(WORLD_AUDIO_STEP_NAME, LOCKED_TILE_ID)
+        self.assertTrue(convert_tile_batch.tile_has_work(self.project_root, LOCKED_TILE_ID, self.step_names, {}, TILE_STEP_SEAL_CHECKS))
+        outcome = self.run_batch(self.steps, step_names=self.step_names, step_seal_checks=TILE_STEP_SEAL_CHECKS)
+        self.assertEqual(outcome.attempted_tile_ids, [LOCKED_TILE_ID])
+        self.assertIn((LOCKED_TILE_ID, WORLD_AUDIO_STEP_NAME), self.steps.calls)
+        seal = unit_step_seal(self.project_root, tile_unit_key(LOCKED_TILE_ID), WORLD_AUDIO_STEP_NAME, TILE_STEP_SEAL_CHECKS)
+        self.assertEqual((seal.state, seal.receipt['algorithmVersion']), (CURRENT_SEAL_STATE, self.current_world_audio_version))
+        self.assertEqual(self.rows_by_tile_and_step()[(tile_unit_key(LOCKED_TILE_ID), WORLD_AUDIO_STEP_NAME)]['status'], 'pass')
+
+    def test_a_tile_whose_every_seal_is_current_has_no_work(self):
+        self.steps(WORLD_AUDIO_STEP_NAME, LOCKED_TILE_ID)
+        self.steps.calls.clear()
+        self.assertFalse(convert_tile_batch.tile_has_work(self.project_root, LOCKED_TILE_ID, self.step_names, {}, TILE_STEP_SEAL_CHECKS))
+        self.assertEqual(self.run_batch(self.steps, step_names=self.step_names, step_seal_checks=TILE_STEP_SEAL_CHECKS).attempted_tile_ids, [])
+        self.assertEqual(self.steps.calls, [])
+
+
 class TileBatchCommandLineTests(TileBatchTestCase):
     eligible_tile_ids = ('10_11',)
 
@@ -307,6 +368,7 @@ class TileBatchCommandLineTests(TileBatchTestCase):
         refused_step_runner = step_runner or (lambda *step_arguments: self.fail(f'no step may run: {step_arguments}'))
         with (patch.object(convert_tile_batch, 'REPOSITORY_ROOT', self.project_root),
               patch.object(convert_tile_batch, 'require_reference_client'),
+              patch.object(convert_tile_batch, 'TILE_STEP_SEAL_CHECKS', synthetic_seal_checks()),
               patch.object(convert_tile_batch, 'world_batch_preflight', lambda project_root: RecordingPreflight()),
               patch.object(convert_tile_batch, 'locked_tile_source_identity', synthetic_source_identity),
               patch.object(convert_tile_batch, 'refresh_world_lane_outputs', lambda project_root: {'refreshed': True}),
@@ -336,6 +398,7 @@ class TileBatchCommandLineTests(TileBatchTestCase):
         with patch.object(convert_tile_batch, 'world_batch_preflight', lambda project_root: machine_window_preflight):
             with (patch.object(convert_tile_batch, 'REPOSITORY_ROOT', self.project_root),
                   patch.object(convert_tile_batch, 'require_reference_client'),
+                  patch.object(convert_tile_batch, 'TILE_STEP_SEAL_CHECKS', synthetic_seal_checks()),
                   patch.object(convert_tile_batch, 'locked_tile_source_identity', synthetic_source_identity),
                   patch.object(convert_tile_batch, 'refresh_world_lane_outputs', lambda project_root: self.fail('refresh in a machine window')),
                   contextlib.redirect_stdout(io.StringIO()) as printed):

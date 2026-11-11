@@ -12,6 +12,7 @@ from reference_client_guard import ReferenceClientLockError, require_reference_c
 from world.ambient_sound_inventory import AMBIENT_EMITTER_UNREADABLE_REASON, AmbientEmitterUnreadable, ambient_emitter_row, inventory_ambient_sounds
 from world.exact_sound_sources import ExactSoundPackages, SoundSourceGap, convert_exact_sound, lock_equal_sound_package_paths, resolve_exact_sound, \
     sound_record, world_sound_converter
+from world.locked_input_receipt import receipt_with_current_version_config_and_locked_inputs
 from world.placement_audio_inventory import inventory_placement_audio, placement_audio_properties
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_unit_key
 from world.static_mesh_step import conversion_failure_reason
@@ -64,19 +65,10 @@ def world_audio_product_path(ledger, unit_key):
     return ledger.unit_step_directory(unit_key) / PRODUCTS_FOLDER_NAME / WORLD_AUDIO_PRODUCT_NAME
 
 
-def current_world_audio_receipt(ledger, unit_key, tile_id, config):
-    receipt = ledger.sealed_receipt(unit_key)
-    if receipt is None or receipt['algorithmVersion'] != WORLD_AUDIO_STEP_ALGORITHM_VERSION or receipt['config'] != config:
-        return None
-    paths = [record['path'] for record in receipt['inputs']]
-    if tile_map_path(tile_id) not in paths or locked_input_records(paths) != receipt['inputs']:
-        return None
-    return receipt
-
-
 def sealed_world_audio(project_root, tile_id, lock_record):
     ledger, unit_key = world_audio_ledger(project_root), tile_unit_key(tile_id)
-    receipt = current_world_audio_receipt(ledger, unit_key, tile_id, world_audio_unit_config(project_root, tile_id, lock_record, pinned_music_encoder()))
+    config = world_audio_unit_config(project_root, tile_id, lock_record, pinned_music_encoder())
+    receipt = receipt_with_current_version_config_and_locked_inputs(ledger, unit_key, tile_id, config)
     if receipt is None:
         return None, None
     return receipt['fingerprint'], json.loads(world_audio_product_path(ledger, unit_key).read_text(encoding='utf-8'))
@@ -227,7 +219,7 @@ def run_world_audio_step(project_root, client_root, tile_id):
     ledger, unit_key = world_audio_ledger(project_root), tile_unit_key(tile_id)
     config = world_audio_unit_config(project_root, tile_id, lock_record, music_encoder)
     receipt_evidence = (ledger.unit_step_directory(unit_key) / RECEIPT_RECORD_NAME).relative_to(ledger.lane_folder).as_posix()
-    if current_world_audio_receipt(ledger, unit_key, tile_id, config) is not None:
+    if receipt_with_current_version_config_and_locked_inputs(ledger, unit_key, tile_id, config) is not None:
         product = json.loads(world_audio_product_path(ledger, unit_key).read_text(encoding='utf-8'))
         return tile_world_audio_row(tile_id, source_identity, product['gapRows'], receipt_evidence)
     client = Path(client_root).resolve()
