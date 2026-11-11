@@ -23,6 +23,12 @@ const importAttributesKeywords = new Set(["with", "assert"]);
 const numericLiteralPattern = /0[xX][0-9a-fA-F_]+n?|0[bB][01_]+n?|0[oO][0-7_]+n?|(?:\d[\d_]*(?:\.[\d_]*)?|\.\d[\d_]*)(?:[eE][+-]?\d+)?[fFuUn]?/y;
 const identifierPattern = /[\p{ID_Start}_$][\p{ID_Continue}$‌‍]*/uy;
 
+export function readNumericLiteral(text, index) {
+  numericLiteralPattern.lastIndex = index;
+  const literalText = numericLiteralPattern.exec(text)[0];
+  return { normalised: canonicalNumericLiteral(literalText), endIndex: index + literalText.length };
+}
+
 function canonicalNumericLiteral(literalText) {
   const digitsText = literalText.replaceAll("_", "");
   if (digitsText.endsWith("n")) return `${BigInt(digitsText.slice(0, -1)).toString()}n`;
@@ -46,7 +52,7 @@ function matchPunctuator(text, index) {
   return punctuators.find(punctuator => text.startsWith(punctuator, index)) ?? text[index];
 }
 
-function countNewlines(text, startIndex, endIndex) {
+export function countNewlines(text, startIndex, endIndex) {
   let newlineCount = 0;
   for (let index = startIndex; index < endIndex; index += 1) if (text[index] === "\n") newlineCount += 1;
   return newlineCount;
@@ -79,9 +85,8 @@ function scanSourceTokens(text) {
     } else if (character === "\"" || character === "'" || character === "`") {
       pushToken(stringPlaceholder, quotedStringEnd(text, index));
     } else if (/\d/.test(character) || (character === "." && /\d/.test(text[index + 1] ?? ""))) {
-      numericLiteralPattern.lastIndex = index;
-      const literalText = numericLiteralPattern.exec(text)[0];
-      pushToken(canonicalNumericLiteral(literalText), index + literalText.length);
+      const numericLiteral = readNumericLiteral(text, index);
+      pushToken(numericLiteral.normalised, numericLiteral.endIndex);
     } else {
       identifierPattern.lastIndex = index;
       const word = identifierPattern.exec(text)?.[0];

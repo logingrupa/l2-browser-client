@@ -7,11 +7,13 @@ import { defaultReviewedRunsDirectory, loadReviewedRuns, markReviewedRuns, valid
 import { sha256OfReferenceFiles, sha256OfSourceTokens } from "./runHashes.mjs";
 import { findSharedTokenRuns } from "./sharedTokenRuns.mjs";
 import { defaultSignedOffRunsPath, loadSignedOffRuns, signOffReviewerRuns, validateSignedOffRuns } from "./signedOffRuns.mjs";
+import { normalisePythonSourceTokens } from "./pythonSourceTokens.mjs";
 import { normaliseSourceTokens } from "./sourceTokens.mjs";
 
 export { ReferenceOverlapSetupError } from "./referenceOverlapSetupError.mjs";
 export { findSharedTokenRuns } from "./sharedTokenRuns.mjs";
 export { signOffReviewerRuns } from "./signedOffRuns.mjs";
+export { normalisePythonSourceTokens } from "./pythonSourceTokens.mjs";
 export { normaliseSourceTokens } from "./sourceTokens.mjs";
 
 const exitCodeNoFinding = 0;
@@ -55,11 +57,15 @@ function verifyReferenceClones(referenceRoot, clones) {
   }));
 }
 
+function normaliseTokensForFileExtension(filePath, text) {
+  return path.extname(filePath) === ".py" ? normalisePythonSourceTokens(text) : normaliseSourceTokens(text);
+}
+
 function buildTokenCorpus(rootDirectory, filePaths, boundaryLabel) {
   const tokens = [];
   const tokenFileIndexes = [];
   filePaths.forEach((filePath, fileIndex) => {
-    for (const token of normaliseSourceTokens(readFileSync(path.join(rootDirectory, filePath), "utf8"))) {
+    for (const token of normaliseTokensForFileExtension(filePath, readFileSync(path.join(rootDirectory, filePath), "utf8"))) {
       tokens.push(token);
       tokenFileIndexes.push(fileIndex);
     }

@@ -228,7 +228,7 @@ describe("overlap area map", () => {
 
   it("reads reference files as text only and never executes them", () => {
     const toolSources = readdirSync(toolDirectory).filter(fileName => fileName.endsWith(".mjs")).map(fileName => readFileSync(path.join(toolDirectory, fileName), "utf8"));
-    expect(toolSources.length).toBe(8);
+    expect(toolSources.length).toBe(9);
     for (const toolSource of toolSources) expect(toolSource).not.toMatch(/child_process|\bimport\(|\brequire\(|\beval\(|new Function|node:vm|node:worker_threads/);
   });
 });

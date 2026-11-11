@@ -36,7 +36,10 @@
         "src/shared/math/vector3.ts",
         "src/shared/math/affineMatrix.ts",
         "src/shared/math/plane.ts",
-        "src/shared/typedPayload.ts"
+        "src/shared/typedPayload.ts",
+        "scripts/world/bsp_visibility*.py",
+        "scripts/world/bsp_leaf_membership.py",
+        "scripts/world/level_zones.py"
       ],
       "referenceGlobs": [
         ".assets/reference/lineage2js/src/objects/**/*.ts",
@@ -57,7 +60,10 @@
         "src/scene/world/movement/**/*.ts",
         "src/shared/math/rotator.ts",
         "src/shared/fixedStep.ts",
-        "src/world/sourceFrame.ts"
+        "src/world/sourceFrame.ts",
+        "scripts/world/collision_*.py",
+        "scripts/world/static_collision_sources.py",
+        "scripts/world/terrain_collision_source.py"
       ],
       "referenceGlobs": [
         ".assets/reference/lineage2js/src/physics/**/*.ts",
