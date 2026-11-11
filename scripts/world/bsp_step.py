@@ -15,6 +15,7 @@ from world.bsp_lightmaps import lightmap_texture_of_record, read_bsp_lightmaps
 from world.bsp_surface_materials import convert_surface_material, surface_material_identities
 from world.level_model import LevelModelLayoutError, read_level_model, reviewed_level_model_layout
 from world.level_zones import outdoor_zone_indices, read_level_zones, sky_zone_indices
+from world.locked_input_receipt import receipt_with_current_version_config_and_locked_inputs
 from world.map_sources import MapSources
 from world.native_terrain_sectors import native_terrain
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
@@ -63,20 +64,14 @@ def bsp_product_path(ledger, unit_key):
     return ledger.unit_step_directory(unit_key) / PRODUCTS_FOLDER_NAME / BSP_CHUNKS_PRODUCT_NAME
 
 
-def current_sealed_receipt(ledger, unit_key, tile_id, config):
-    receipt = ledger.sealed_receipt(unit_key)
-    if receipt is None or receipt['algorithmVersion'] != BSP_STEP_ALGORITHM_VERSION or receipt['config'] != config:
-        return None
-    paths = [record['path'] for record in receipt['inputs']]
-    if tile_map_path(tile_id) not in paths or locked_input_records(paths) != receipt['inputs']:
-        return None
-    return receipt
+def sealed_bsp_unit_config(project_root, tile_id, lock_record):
+    chunks_fingerprint, raw_products, _ = sealed_chunk_plan(project_root, tile_id, lock_record)
+    return bsp_unit_config(chunks_fingerprint, tile_level_model_layout(raw_products))
 
 
 def sealed_bsp_chunks(project_root, tile_id, lock_record):
-    chunks_fingerprint, raw_products, _ = sealed_chunk_plan(project_root, tile_id, lock_record)
     ledger, unit_key = bsp_ledger(project_root), tile_unit_key(tile_id)
-    receipt = current_sealed_receipt(ledger, unit_key, tile_id, bsp_unit_config(chunks_fingerprint, tile_level_model_layout(raw_products)))
+    receipt = receipt_with_current_version_config_and_locked_inputs(ledger, unit_key, tile_id, sealed_bsp_unit_config(project_root, tile_id, lock_record))
     if receipt is None:
         return None, None
     return receipt['fingerprint'], json.loads(bsp_product_path(ledger, unit_key).read_text(encoding='utf-8'))
@@ -190,7 +185,7 @@ def run_bsp_step(project_root, client_root, tile_id):
     step_directory = ledger.unit_step_directory(unit_key)
     receipt_evidence = (step_directory / RECEIPT_RECORD_NAME).relative_to(ledger.lane_folder).as_posix()
     step_evidence = step_directory.relative_to(ledger.lane_folder).as_posix()
-    if current_sealed_receipt(ledger, unit_key, tile_id, config) is not None:
+    if receipt_with_current_version_config_and_locked_inputs(ledger, unit_key, tile_id, config) is not None:
         return tile_bsp_row(tile_id, source_identity, json.loads(bsp_product_path(ledger, unit_key).read_text(encoding='utf-8'))['gapRows'],
                             receipt_evidence)
     client = Path(client_root).resolve()

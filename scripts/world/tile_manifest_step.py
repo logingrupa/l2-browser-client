@@ -1,4 +1,5 @@
 import json
+from typing import NamedTuple
 
 from native_assets_lib.gltf import json_bytes
 from native_store.canonical_json import canonical_json_bytes
@@ -49,6 +50,14 @@ TILES_CATALOG_SLICE = 'tiles'
 
 class TileManifestStepError(ValueError):
     pass
+
+
+class TileManifestUnit(NamedTuple):
+    ledger: object
+    unit_key: str
+    fingerprint: str
+    config: dict
+    sealed_upstream: dict
 
 
 def pending_step_row(tile_id, step, source_identity, evidence):
@@ -266,14 +275,30 @@ def tile_manifest_ledger(project_root):
     return UnitLedger(lane_work_root(project_root, WORLD_LANE_NAME), TILE_MANIFEST_STEP_NAME, TILE_MANIFEST_STEP_ALGORITHM_VERSION)
 
 
-def tile_manifest_unit_config(chunks_fingerprint, terrain_fingerprint, static_meshes_fingerprint, bsp_fingerprint, collision_fingerprint,
-                              movers_fingerprint, bsp_visibility_fingerprint, map_emitters_fingerprint, sky_fingerprint,
-                              world_audio_fingerprint, lighting_fingerprint, minimap_fingerprint):
-    return {'chunksFingerprint': chunks_fingerprint, 'terrainFingerprint': terrain_fingerprint, 'meshesFingerprint': static_meshes_fingerprint,
-            'bspFingerprint': bsp_fingerprint, 'collisionFingerprint': collision_fingerprint, 'moversFingerprint': movers_fingerprint,
-            'bspVisibilityFingerprint': bsp_visibility_fingerprint, 'emittersFingerprint': map_emitters_fingerprint,
-            'skyFingerprint': sky_fingerprint, 'audioFingerprint': world_audio_fingerprint, 'lightingFingerprint': lighting_fingerprint,
-            'minimapFingerprint': minimap_fingerprint}
+def sealed_tile_manifest_upstream(project_root, tile_id, lock_record):
+    return {STATIC_MESH_STEP_NAME: sealed_static_meshes(project_root, tile_id, lock_record), BSP_STEP_NAME: sealed_bsp_chunks(project_root, tile_id, lock_record),
+            COLLISION_STEP_NAME: sealed_collision(project_root, tile_id, lock_record), MOVER_STEP_NAME: sealed_movers(project_root, tile_id, lock_record),
+            BSP_VISIBILITY_STEP_NAME: sealed_bsp_visibility(project_root, tile_id, lock_record),
+            MAP_EMITTER_STEP_NAME: sealed_map_emitters(project_root, tile_id, lock_record), SKY_STEP_NAME: sealed_sky(project_root, tile_id, lock_record),
+            WORLD_AUDIO_STEP_NAME: sealed_world_audio(project_root, tile_id, lock_record),
+            LIGHTING_STEP_NAME: sealed_lighting(project_root, tile_id, lock_record), MINIMAP_STEP_NAME: sealed_minimap(project_root, tile_id, lock_record)}
+
+
+def tile_manifest_unit_config(terrain_unit, sealed_upstream):
+    fingerprints = {step: fingerprint for step, (fingerprint, _) in sealed_upstream.items()}
+    return {'chunksFingerprint': terrain_unit.chunks_fingerprint, 'terrainFingerprint': terrain_unit.fingerprint,
+            'meshesFingerprint': fingerprints[STATIC_MESH_STEP_NAME], 'bspFingerprint': fingerprints[BSP_STEP_NAME],
+            'collisionFingerprint': fingerprints[COLLISION_STEP_NAME], 'moversFingerprint': fingerprints[MOVER_STEP_NAME],
+            'bspVisibilityFingerprint': fingerprints[BSP_VISIBILITY_STEP_NAME], 'emittersFingerprint': fingerprints[MAP_EMITTER_STEP_NAME],
+            'skyFingerprint': fingerprints[SKY_STEP_NAME], 'audioFingerprint': fingerprints[WORLD_AUDIO_STEP_NAME],
+            'lightingFingerprint': fingerprints[LIGHTING_STEP_NAME], 'minimapFingerprint': fingerprints[MINIMAP_STEP_NAME]}
+
+
+def tile_manifest_unit(project_root, tile_id, lock_record, terrain_unit):
+    sealed_upstream = sealed_tile_manifest_upstream(project_root, tile_id, lock_record)
+    ledger = tile_manifest_ledger(project_root)
+    config = tile_manifest_unit_config(terrain_unit, sealed_upstream)
+    return TileManifestUnit(ledger, tile_unit_key(tile_id), ledger.unit_fingerprint([lock_record['eSha256']], config), config, sealed_upstream)
 
 
 def require_world_lane_store(project_root, output):
@@ -302,21 +327,10 @@ def run_tile_manifest_step(project_root, tile_id, output):
         chunk_plan_receipt = chunk_plan_ledger(project_root).unit_step_directory(unit_key) / RECEIPT_RECORD_NAME
         return [tile_step_row(tile_id, TILE_MANIFEST_STEP_NAME, GAP_STATUS, chunk_plan['anchorGap']['reason'], source_identity,
                               chunk_plan_receipt.relative_to(terrain_unit.ledger.lane_folder).as_posix())]
-    static_meshes_fingerprint, static_meshes = sealed_static_meshes(project_root, tile_id, lock_record)
-    bsp_fingerprint, bsp = sealed_bsp_chunks(project_root, tile_id, lock_record)
-    collision_fingerprint, collision = sealed_collision(project_root, tile_id, lock_record)
-    movers_fingerprint, movers = sealed_movers(project_root, tile_id, lock_record)
-    bsp_visibility_fingerprint, bsp_visibility = sealed_bsp_visibility(project_root, tile_id, lock_record)
-    map_emitters_fingerprint, map_emitters = sealed_map_emitters(project_root, tile_id, lock_record)
-    sky_fingerprint, sky = sealed_sky(project_root, tile_id, lock_record)
-    world_audio_fingerprint, world_audio = sealed_world_audio(project_root, tile_id, lock_record)
-    lighting_fingerprint, lighting = sealed_lighting(project_root, tile_id, lock_record)
-    minimap_fingerprint, minimap = sealed_minimap(project_root, tile_id, lock_record)
-    ledger = tile_manifest_ledger(project_root)
-    config = tile_manifest_unit_config(terrain_unit.chunks_fingerprint, terrain_unit.fingerprint, static_meshes_fingerprint, bsp_fingerprint,
-                                       collision_fingerprint, movers_fingerprint, bsp_visibility_fingerprint, map_emitters_fingerprint,
-                                       sky_fingerprint, world_audio_fingerprint, lighting_fingerprint, minimap_fingerprint)
-    fingerprint = ledger.unit_fingerprint([lock_record['eSha256']], config)
+    unit = tile_manifest_unit(project_root, tile_id, lock_record, terrain_unit)
+    ledger, config, fingerprint = unit.ledger, unit.config, unit.fingerprint
+    static_meshes, bsp, collision, movers, bsp_visibility, map_emitters, sky, world_audio, lighting, minimap = (
+        product for _, product in unit.sealed_upstream.values())
     receipt_evidence = (ledger.unit_step_directory(unit_key) / RECEIPT_RECORD_NAME).relative_to(ledger.lane_folder).as_posix()
     if ledger.is_sealed(unit_key, fingerprint):
         return tile_manifest_step_rows(tile_id, source_identity, receipt_evidence, static_meshes, bsp, collision, movers, bsp_visibility, map_emitters,

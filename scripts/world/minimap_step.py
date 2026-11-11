@@ -9,7 +9,6 @@ from native_store.catalog_writer import add_store_file, immutable_write, sha256_
 from native_store.store_paths import confined_child_path, lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from reference_client_guard import require_reference_client
-from world.eligible_tile_selection import upstream_failed_row
 from world.minimap_join import (HUNTINGZONE_TABLE_ROLE, MINIMAP_JOIN_ALGORITHM_VERSION, RADAR_PACKAGE_ROLE, SCHEMA_FIELD_MEANING_LABEL,
                                 TOWN_MAP_PACKAGE_ROLE, ZONE_NAME_PACKAGE_ROLE, ZONENAME_TABLE_ROLE, join_minimap_sources, locked_tile_grid)
 from world.minimap_sources import (MINIMAP_PACKAGE_PATHS, MINIMAP_TABLE_PATHS, MinimapSources, decoded_table_rows, lock_equal_minimap_source_paths,
@@ -22,7 +21,7 @@ from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS, TILE_CENSUS_RELATIVE_PATH
 from world.tile_chunk_plan import CHUNK_PLAN_STEP_NAME, ChunkPlanStepError, raw_unit_fingerprint, sealed_chunk_plan
 from world.tile_json_resource import write_tile_json_resource
-from world.tile_step_gap_rows import TileStepGapRows, tile_step_summary_row
+from world.tile_step_gap_rows import TileStepGapRows, tile_step_summary_row, upstream_failed_row
 
 MINIMAP_STEP_ALGORITHM_VERSION = 1
 MINIMAP_STEP_NAME = 'minimap'

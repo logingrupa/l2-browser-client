@@ -92,6 +92,14 @@ def raw_map_unit(project_root, map_name):
     return RawMapUnit(row['key'], row['map'], row)
 
 
+def raw_map_ledger(project_root):
+    return UnitLedger(lane_work_root(project_root, WORLD_LANE_NAME), RAW_STEP_NAME, RAW_MAP_STEP_ALGORITHM_VERSION)
+
+
+def raw_map_unit_fingerprint(project_root, map_path, lock_record):
+    return raw_map_ledger(project_root).unit_fingerprint([lock_record['eSha256']], map_raw_recipe(map_path, lock_record))
+
+
 def read_map_lock_record(map_path):
     lock = reference_client_guard.read_reference_client_lock(reference_client_guard.REFERENCE_CLIENT_LOCK_PATH)
     record = lock.record(map_path)
@@ -141,8 +149,8 @@ def run_raw_map_step(project_root, client, map_name):
     if lock_record['class'] != LOCK_EQUAL_CLASS:
         raise RawMapStepError(f'{unit.map_path} has lock class {lock_record["class"]}, not {LOCK_EQUAL_CLASS}')
     recipe = map_raw_recipe(unit.map_path, lock_record)
-    ledger = UnitLedger(lane_work_root(project_root, WORLD_LANE_NAME), RAW_STEP_NAME, RAW_MAP_STEP_ALGORITHM_VERSION)
-    fingerprint = ledger.unit_fingerprint([lock_record['eSha256']], recipe)
+    ledger = raw_map_ledger(project_root)
+    fingerprint = raw_map_unit_fingerprint(project_root, unit.map_path, lock_record)
     step_directory = ledger.unit_step_directory(unit_key)
     receipt_evidence = (step_directory / RECEIPT_RECORD_NAME).relative_to(ledger.lane_folder).as_posix()
     if ledger.is_sealed(unit_key, fingerprint):

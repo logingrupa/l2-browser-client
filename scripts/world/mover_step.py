@@ -9,6 +9,7 @@ from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import sha256_hex
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
+from world.locked_input_receipt import receipt_with_current_version_config_and_locked_inputs
 from world.map_sources import MapSources
 from world.mover_class_defaults import MOVER_CLASS, MOVER_CLASS_UNIT_KEY, mover_class_evidence, sealed_mover_class_receipt_sha256
 from world.mover_records import MoverUnsupportedError, read_mover_actor
@@ -96,18 +97,21 @@ def movers_product_path(ledger, unit_key):
     return ledger.unit_step_directory(unit_key) / PRODUCTS_FOLDER_NAME / MOVERS_PRODUCT_NAME
 
 
-def sealed_movers(project_root, tile_id, lock_record):
+def sealed_mover_unit_config(project_root, tile_id, lock_record):
     class_receipt_sha256 = sealed_mover_class_receipt_sha256(project_root)
     if class_receipt_sha256 is None:
-        return None, None
+        return None
     chunks_fingerprint, _, _ = sealed_chunk_plan(project_root, tile_id, lock_record)
-    ledger, unit_key = mover_ledger(project_root), tile_unit_key(tile_id)
-    receipt = ledger.sealed_receipt(unit_key)
-    if (receipt is None or receipt['algorithmVersion'] != MOVER_STEP_ALGORITHM_VERSION
-            or receipt['config'] != mover_unit_config(chunks_fingerprint, class_receipt_sha256)):
+    return mover_unit_config(chunks_fingerprint, class_receipt_sha256)
+
+
+def sealed_movers(project_root, tile_id, lock_record):
+    config = sealed_mover_unit_config(project_root, tile_id, lock_record)
+    if config is None:
         return None, None
-    paths = [record['path'] for record in receipt['inputs']]
-    if tile_map_path(tile_id) not in paths or locked_input_records(paths) != receipt['inputs']:
+    ledger, unit_key = mover_ledger(project_root), tile_unit_key(tile_id)
+    receipt = receipt_with_current_version_config_and_locked_inputs(ledger, unit_key, tile_id, config)
+    if receipt is None:
         return None, None
     return receipt['fingerprint'], json.loads(movers_product_path(ledger, unit_key).read_text(encoding='utf-8'))
 

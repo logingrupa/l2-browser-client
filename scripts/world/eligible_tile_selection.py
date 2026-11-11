@@ -6,15 +6,14 @@ from world.raw_map_step import TILE_ID_PATTERN, read_tile_map_lock_record, tile_
 from world.tile_census_validation import (ELIGIBLE_STATUS, TILE_CENSUS_RELATIVE_PATH, TILE_KIND, TileCensusError,
                                           validate_tile_census)
 from world.tile_step_current_seals import CURRENT_SEAL_STATE, TILE_STEP_SEAL_CHECKS, unit_step_directory_evidence, unit_step_seal
+from world.tile_step_gap_rows import PENDING_STATUS
 
 TILE_KEY_PREFIX = 'tile:'
 PASS_STATUS = 'pass'
 GAP_STATUS = 'gap'
 FAILED_STATUS = 'failed'
-PENDING_STATUS = 'pending'
 BATCH_PENDING_REASON = 'batch-pending'
 OBJECT_GAPS_REASON_PREFIX = 'object-gaps:'
-UPSTREAM_STEP_FAILED_REASON_PREFIX = 'upstream-step-failed:'
 DECODE_FAILED_REASON_PREFIX = 'decode-failed:'
 
 
@@ -79,10 +78,6 @@ def first_line_of_error(error):
 def failed_step_row(tile_id, step, source_identity, error, evidence):
     reason = f'{DECODE_FAILED_REASON_PREFIX}{type(error).__name__}:{first_line_of_error(error)}'
     return tile_step_row(tile_id, step, FAILED_STATUS, reason, source_identity, evidence)
-
-
-def upstream_failed_row(tile_id, step, source_identity, failed_step, evidence):
-    return tile_step_row(tile_id, step, PENDING_STATUS, f'{UPSTREAM_STEP_FAILED_REASON_PREFIX}{failed_step}', source_identity, evidence)
 
 
 def sealed_unit_step_row(unit_key, step, source_identity, sealed_step):

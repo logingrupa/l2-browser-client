@@ -10,6 +10,7 @@ from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from world.level_model import LevelModelLayoutError, read_level_model
 from world.level_zones import read_level_zones, sky_zone_indices, zone_actor_export
+from world.locked_input_receipt import receipt_with_current_version_config_and_locked_inputs
 from world.map_actor_properties import actor_properties, decode_property
 from world.map_sources import MapSources, require_lock_equal_client_path
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
@@ -92,19 +93,9 @@ def sky_product_path(ledger, unit_key):
     return ledger.unit_step_directory(unit_key) / PRODUCTS_FOLDER_NAME / SKY_PRODUCT_NAME
 
 
-def current_sky_receipt(ledger, unit_key, tile_id, config):
-    receipt = ledger.sealed_receipt(unit_key)
-    if receipt is None or receipt['algorithmVersion'] != SKY_STEP_ALGORITHM_VERSION or receipt['config'] != config:
-        return None
-    paths = [record['path'] for record in receipt['inputs']]
-    if tile_map_path(tile_id) not in paths or locked_input_records(paths) != receipt['inputs']:
-        return None
-    return receipt
-
-
 def sealed_sky(project_root, tile_id, lock_record):
     ledger, unit_key = sky_ledger(project_root), tile_unit_key(tile_id)
-    receipt = current_sky_receipt(ledger, unit_key, tile_id, sky_unit_config(project_root, tile_id, lock_record))
+    receipt = receipt_with_current_version_config_and_locked_inputs(ledger, unit_key, tile_id, sky_unit_config(project_root, tile_id, lock_record))
     if receipt is None:
         return None, None
     return receipt['fingerprint'], json.loads(sky_product_path(ledger, unit_key).read_text(encoding='utf-8'))
@@ -245,7 +236,7 @@ def run_sky_step(project_root, client_root, tile_id):
     ledger, unit_key, config = sky_ledger(project_root), tile_unit_key(tile_id), sky_unit_config(project_root, tile_id, lock_record)
     step_directory = ledger.unit_step_directory(unit_key)
     receipt_evidence = (step_directory / RECEIPT_RECORD_NAME).relative_to(ledger.lane_folder).as_posix()
-    if current_sky_receipt(ledger, unit_key, tile_id, config) is not None:
+    if receipt_with_current_version_config_and_locked_inputs(ledger, unit_key, tile_id, config) is not None:
         return tile_sky_row(tile_id, source_identity, json.loads(sky_product_path(ledger, unit_key).read_text(encoding='utf-8'))['gapRows'], receipt_evidence)
     client = Path(client_root).resolve()
     package = read_locked_map_package(client, tile_id, lock_record)

@@ -18,11 +18,12 @@ from native_store.write_lane_catalog import write_lane_catalog
 from reference_client_guard import require_reference_client
 from world.eligible_tile_selection import (FAILED_STATUS, GAP_STATUS, PASS_STATUS, StepSealMissingError, failed_step_row, locked_tile_source_identity,
                                            own_step_row, read_tile_census, sealed_step_of_current_seal, sealed_tile_step, select_eligible_tiles,
-                                           step_level_rows, unit_step_evidence, upstream_failed_row)
+                                           step_level_rows, unit_step_evidence)
 from world.raw_map_step import tile_unit_key
 from world.tile_census import DEFAULT_CONVERSION_CLIENT_ROOT, WORLD_LANE_NAME
 from world.tile_manifest_step import TILE_MANIFEST_STEP_NAME
 from world.tile_step_current_seals import CURRENT_SEAL_STATE, STALE_SEAL_STATE, TILE_STEP_SEAL_CHECKS, UNSEALED_STATE, unit_step_seal
+from world.tile_step_gap_rows import upstream_failed_row
 from world.tile_step_registry import DEFAULT_TILE_STORE_OUTPUT, TILE_STEP_NAMES, run_tile_step
 
 BATCH_EXIT_DONE = 0

@@ -1,5 +1,6 @@
 import contextlib
 import hashlib
+import json
 from unittest.mock import patch
 
 from native_store.store_paths import lane_work_root
@@ -8,6 +9,7 @@ from world import tile_music
 from world.raw_map_step import (PRODUCTS_FOLDER_NAME, RAW_MAP_STEP_ALGORITHM_VERSION, RAW_STEP_NAME, raw_map_recipe, read_tile_map_lock_record,
                                 tile_map_path, tile_step_row, tile_unit_key)
 from world.tile_census import WORLD_LANE_NAME
+from world.tile_census_validation import TILE_CENSUS_RELATIVE_PATH
 
 LOCKED_TILE_ID = '20_15'
 SYNTHETIC_PRODUCT_NAME = 'product.json'
@@ -35,6 +37,13 @@ def tile_map_inputs(tile_id):
 def seal_raw_unit(project_root, tile_id):
     recipe = raw_map_recipe(tile_id, read_tile_map_lock_record(tile_id))
     return seal_unit(project_root, RAW_STEP_NAME, RAW_MAP_STEP_ALGORITHM_VERSION, tile_unit_key(tile_id), recipe, tile_map_inputs(tile_id))
+
+
+def write_single_tile_census(project_root, tile_id):
+    census_path = project_root / TILE_CENSUS_RELATIVE_PATH
+    census_path.parent.mkdir(parents=True, exist_ok=True)
+    census_path.write_text(json.dumps({'maps': [{'key': tile_unit_key(tile_id), 'map': tile_map_path(tile_id), 'status': 'eligible'}]}),
+                           encoding='utf-8')
 
 
 def object_gap_rows(tile_id, step, count):

@@ -1,6 +1,7 @@
 import hashlib
 import json
 from pathlib import Path
+from typing import NamedTuple
 
 from native_assets_lib.class_defaults import ClassDefaultError, ReferenceClientClassScripts, read_class_defaults_with_provenance
 from native_catalog.ue2 import FormatError, Package
@@ -11,8 +12,8 @@ from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger
 from world.map_actor_properties import property_value
 from world.map_sources import require_lock_equal_client_path
 from world.native_terrain_sectors import native_terrain
-from world.raw_map_step import (PRODUCTS_FOLDER_NAME, RAW_MAP_STEP_ALGORITHM_VERSION, RAW_STEP_NAME, RawMapStepError, raw_map_recipe,
-                                read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key)
+from world.raw_map_step import (PRODUCTS_FOLDER_NAME, RawMapStepError, raw_map_ledger, raw_map_unit_fingerprint, read_tile_map_lock_record,
+                                require_tile_id, tile_map_path, tile_step_row, tile_unit_key)
 from world.terrain_coordinates import SOURCE_TO_GLTF, xyz
 from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
@@ -30,6 +31,14 @@ TERRAIN_HEIGHT_PACKAGE_MISSING_REASON = 'terrain-height-package-missing'
 
 class ChunkPlanStepError(ValueError):
     pass
+
+
+class ChunkPlanUnit(NamedTuple):
+    ledger: object
+    unit_key: str
+    fingerprint: str
+    config: dict
+    raw_products: Path
 
 
 def chunk_identifier(column, row):
@@ -111,8 +120,8 @@ def plan_tile_chunks(tile_id, native, terrain_record, actors, player_start_selec
 
 
 def raw_unit_fingerprint(project_root, tile_id, lock_record):
-    raw_ledger = UnitLedger(lane_work_root(project_root, WORLD_LANE_NAME), RAW_STEP_NAME, RAW_MAP_STEP_ALGORITHM_VERSION)
-    fingerprint = raw_ledger.unit_fingerprint([lock_record['eSha256']], raw_map_recipe(tile_id, lock_record))
+    raw_ledger = raw_map_ledger(project_root)
+    fingerprint = raw_map_unit_fingerprint(project_root, tile_map_path(tile_id), lock_record)
     if not raw_ledger.is_sealed(tile_unit_key(tile_id), fingerprint):
         raise ChunkPlanStepError(f'raw unit of {tile_unit_key(tile_id)} is not sealed; run --step raw first')
     return fingerprint, raw_ledger.unit_step_directory(tile_unit_key(tile_id)) / PRODUCTS_FOLDER_NAME
@@ -126,14 +135,19 @@ def chunk_plan_unit_config(raw_fingerprint):
     return {'rawFingerprint': raw_fingerprint}
 
 
-def sealed_chunk_plan(project_root, tile_id, lock_record):
+def chunk_plan_unit(project_root, tile_id, lock_record):
     raw_fingerprint, raw_products = raw_unit_fingerprint(project_root, tile_id, lock_record)
     ledger = chunk_plan_ledger(project_root)
-    fingerprint = ledger.unit_fingerprint([lock_record['eSha256']], chunk_plan_unit_config(raw_fingerprint))
-    if not ledger.is_sealed(tile_unit_key(tile_id), fingerprint):
-        raise ChunkPlanStepError(f'chunk plan of {tile_unit_key(tile_id)} is not sealed; run --step chunks first')
-    plan_path = ledger.unit_step_directory(tile_unit_key(tile_id)) / PRODUCTS_FOLDER_NAME / CHUNK_PLAN_PRODUCT_NAME
-    return fingerprint, raw_products, json.loads(plan_path.read_text(encoding='utf-8'))
+    config = chunk_plan_unit_config(raw_fingerprint)
+    return ChunkPlanUnit(ledger, tile_unit_key(tile_id), ledger.unit_fingerprint([lock_record['eSha256']], config), config, raw_products)
+
+
+def sealed_chunk_plan(project_root, tile_id, lock_record):
+    unit = chunk_plan_unit(project_root, tile_id, lock_record)
+    if not unit.ledger.is_sealed(unit.unit_key, unit.fingerprint):
+        raise ChunkPlanStepError(f'chunk plan of {unit.unit_key} is not sealed; run --step chunks first')
+    plan_path = unit.ledger.unit_step_directory(unit.unit_key) / PRODUCTS_FOLDER_NAME / CHUNK_PLAN_PRODUCT_NAME
+    return unit.fingerprint, unit.raw_products, json.loads(plan_path.read_text(encoding='utf-8'))
 
 
 def read_raw_terrain_record(raw_products):
@@ -168,11 +182,8 @@ def run_chunk_plan_step(project_root, client, tile_id):
     require_tile_id(tile_id)
     lock_record = read_tile_map_lock_record(tile_id)
     source_identity = {'path': tile_map_path(tile_id), 'sha256': lock_record['eSha256']}
-    raw_fingerprint, raw_products = raw_unit_fingerprint(project_root, tile_id, lock_record)
-    ledger = chunk_plan_ledger(project_root)
-    unit_key = tile_unit_key(tile_id)
-    config = chunk_plan_unit_config(raw_fingerprint)
-    fingerprint = ledger.unit_fingerprint([lock_record['eSha256']], config)
+    unit = chunk_plan_unit(project_root, tile_id, lock_record)
+    ledger, unit_key, config, fingerprint, raw_products = unit.ledger, unit.unit_key, unit.config, unit.fingerprint, unit.raw_products
     step_directory = ledger.unit_step_directory(unit_key)
     receipt_evidence = (step_directory / RECEIPT_RECORD_NAME).relative_to(ledger.lane_folder).as_posix()
     if ledger.is_sealed(unit_key, fingerprint):

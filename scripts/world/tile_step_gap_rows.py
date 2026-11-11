@@ -1,6 +1,9 @@
 from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN
 from world.raw_map_step import tile_step_row
 
+PENDING_STATUS = 'pending'
+UPSTREAM_STEP_FAILED_REASON_PREFIX = 'upstream-step-failed:'
+
 
 class TileStepGapRows:
     def __init__(self, tile_id, step, source_identity, evidence):
@@ -18,6 +21,10 @@ class TileStepGapRows:
     def rows_for_objects(self, object_names):
         folded = {name.casefold() for name in object_names}
         return [row for row in self.rows() if row['sourceIdentity'].get('object', '').casefold() in folded]
+
+
+def upstream_failed_row(tile_id, step, source_identity, failed_step, evidence):
+    return tile_step_row(tile_id, step, PENDING_STATUS, f'{UPSTREAM_STEP_FAILED_REASON_PREFIX}{failed_step}', source_identity, evidence)
 
 
 def tile_step_summary_row(tile_id, step, source_identity, gap_rows, evidence):
