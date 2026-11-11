@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_index_keys import (ITEM_MODEL_RECORD_ID_PATTERN, LEGACY_SECTION_ID_PATTERN, SKILL_EFFECT_COMPONENT_ID_PATTERN,
-                                             catalog_index_keys, model_ids_by_source_object, model_source_objects_by_id,
+                                             catalog_index_keys, legacy_single_mesh_candidate_model_ids_by_source_object,
+                                             model_source_objects_by_id,
                                              npc_profile_model_id, npc_profile_npc_key, player_profile_model_ids_by_key,
                                              read_profile_manifest_profiles, require_key, store_root_candidates, validated_slice_records)
 from native_store.catalog_writer import sha256_hex
@@ -61,10 +62,10 @@ class AttributedRecords:
 
 def attribute_npc_records(attributed_records, catalog, models_by_id, store_roots):
     source_objects_by_model_id = model_source_objects_by_id(models_by_id.values())
-    model_ids_by_object = model_ids_by_source_object(source_objects_by_model_id)
+    model_ids_by_object = legacy_single_mesh_candidate_model_ids_by_source_object(source_objects_by_model_id)
     for pack_record in validated_slice_records(catalog, 'npcProfiles'):
         for profile in read_profile_manifest_profiles('npcProfiles', pack_record, store_roots):
-            model_id = npc_profile_model_id(profile, source_objects_by_model_id, model_ids_by_object)
+            model_id = npc_profile_model_id(pack_record['id'], profile, source_objects_by_model_id, model_ids_by_object)
             if model_id is not None:
                 key = npc_profile_npc_key(profile)
                 attributed_records.add(key, attributed_record_entry('npcProfiles', pack_record, profile))

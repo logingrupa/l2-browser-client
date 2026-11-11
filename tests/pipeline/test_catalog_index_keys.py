@@ -20,6 +20,8 @@ MUSVEREN_MESH = 'LineageMonsters.field_stalker_m00'
 FIGHTER_MESH = 'Fighter.MFighter_m001_u'
 SABER_TOOTHED_TIGER_EXPORT = 'LineageMonsters.Saber_toothed_tiger_m00'
 SABER_TOOTHED_TIGER_NPCGRP_SPELLING = 'LineageMonsters.saber_toothed_tiger_m00'
+MUSVEREN_NPC_MODEL_ID = 'npc-model:' + 'c' * 64
+LANE_NPC_PROFILE_PACK_RECORD_ID = 'interlude:npc-profiles:pack-0123456789abcdef'
 
 
 def golden_catalog():
@@ -55,19 +57,31 @@ class CatalogIndexKeysJoinTests(unittest.TestCase):
         self.models = [model_record('musveren:0', MUSVEREN_MESH), model_record('human-male-fighter:0', 'Magic.MMagic_M005_u'),
                        model_record('fighter-equipment:0', FIGHTER_MESH)]
 
-    def npc_keys(self, profiles, models=None):
-        record = write_profile_manifest(self.store_root, 'native-npc-profiles', profiles)
+    def npc_keys(self, profiles, models=None, pack_record_id='native-npc-profiles'):
+        record = {**write_profile_manifest(self.store_root, 'native-npc-profiles', profiles), 'id': pack_record_id}
         catalog = {'schemaVersion': 1, 'models': self.models if models is None else models, 'npcProfiles': [record]}
         return catalog_index_keys(self.store_root, catalog, self.shared_store_root)
 
     def test_an_npc_profile_with_a_model_catalog_id_joins_only_a_staged_model(self):
-        self.assertEqual(self.npc_keys([{'npcId': 21622, 'mesh': MUSVEREN_MESH, 'modelCatalogId': 'musveren:0'}]), ('npc:21622',))
-        self.assertEqual(self.npc_keys([{'npcId': 21622, 'mesh': MUSVEREN_MESH, 'modelCatalogId': 'musveren:9'}]), ())
+        models = [*self.models, model_record(MUSVEREN_NPC_MODEL_ID, MUSVEREN_MESH)]
+        self.assertEqual(self.npc_keys([{'npcId': 21622, 'mesh': MUSVEREN_MESH, 'modelCatalogId': MUSVEREN_NPC_MODEL_ID}], models,
+                                       LANE_NPC_PROFILE_PACK_RECORD_ID), ('npc:21622',))
+        self.assertEqual(self.npc_keys([{'npcId': 21622, 'mesh': MUSVEREN_MESH, 'modelCatalogId': 'npc-model:' + 'b' * 64}], models,
+                                       LANE_NPC_PROFILE_PACK_RECORD_ID), ())
+
+    def test_an_npc_profile_model_catalog_id_must_be_an_npc_model_id_like_the_browser_catalog_index(self):
+        with self.assertRaisesRegex(CoverageReportError, r"NPC profile 21622 modelCatalogId must match \^npc-model:\[a-f0-9\]\{64\}\$: 'musveren:0'"):
+            self.npc_keys([{'npcId': 21622, 'mesh': MUSVEREN_MESH, 'modelCatalogId': 'musveren:0'}])
+
+    def test_an_npc_profile_without_a_model_catalog_id_outside_the_shared_store_bundle_is_refused_like_the_browser_catalog_index(self):
+        with self.assertRaisesRegex(CoverageReportError, f'NPC profile 21622 in bundle {LANE_NPC_PROFILE_PACK_RECORD_ID} has no model catalog id'):
+            self.npc_keys([{'npcId': 21622, 'mesh': MUSVEREN_MESH}], pack_record_id=LANE_NPC_PROFILE_PACK_RECORD_ID)
 
     def test_an_npc_profile_naming_a_model_of_another_mesh_is_refused_like_the_browser_catalog_index(self):
-        with self.assertRaisesRegex(CoverageReportError, "NPC profile 21622 names model musveren:0 of a different mesh: the model source object "
-                                                         "is 'LineageMonsters.field_stalker_m00', the profile mesh is 'Other.mesh'"):
-            self.npc_keys([{'npcId': 21622, 'mesh': 'Other.mesh', 'modelCatalogId': 'musveren:0'}])
+        models = [*self.models, model_record(MUSVEREN_NPC_MODEL_ID, MUSVEREN_MESH)]
+        with self.assertRaisesRegex(CoverageReportError, f"NPC profile 21622 names model {MUSVEREN_NPC_MODEL_ID} of a different mesh: the model source "
+                                                         "object is 'LineageMonsters.field_stalker_m00', the profile mesh is 'Other.mesh'"):
+            self.npc_keys([{'npcId': 21622, 'mesh': 'Other.mesh', 'modelCatalogId': MUSVEREN_NPC_MODEL_ID}], models)
 
     def test_an_npc_profile_mesh_differing_from_its_model_only_in_case_is_refused(self):
         models = [*self.models, model_record('npc-model:' + 'a' * 64, SABER_TOOTHED_TIGER_EXPORT)]
@@ -80,12 +94,15 @@ class CatalogIndexKeysJoinTests(unittest.TestCase):
         with self.assertRaisesRegex(CoverageReportError, 'catalog models list model musveren:0 twice'):
             self.npc_keys([{'npcId': 21622, 'mesh': MUSVEREN_MESH}], [*self.models, model_record('musveren:0', MUSVEREN_MESH)])
 
-    def test_an_npc_profile_without_a_model_catalog_id_needs_exactly_one_model_with_its_mesh(self):
+    def test_a_shared_store_npc_profile_without_a_model_catalog_id_joins_exactly_one_legacy_model_with_its_mesh(self):
         self.assertEqual(self.npc_keys([{'npcId': 21622, 'mesh': MUSVEREN_MESH}]), ('npc:21622',))
         self.assertEqual(self.npc_keys([{'npcId': 21622, 'mesh': 'LineageMonsters.unstaged_m00'}]), ())
-        duplicate_models = [*self.models, model_record('musveren:1', MUSVEREN_MESH)]
-        with self.assertRaisesRegex(CoverageReportError, 'musveren:0, musveren:1'):
-            self.npc_keys([{'npcId': 21622, 'mesh': MUSVEREN_MESH}], duplicate_models)
+        self.assertEqual(self.npc_keys([{'npcId': 21622, 'mesh': MUSVEREN_MESH}], [*self.models, model_record('musveren:1', MUSVEREN_MESH)]), ())
+
+    def test_a_shared_store_npc_profile_without_a_model_catalog_id_never_joins_an_npc_model_record_like_the_browser_catalog_index(self):
+        lane_model = model_record(MUSVEREN_NPC_MODEL_ID, MUSVEREN_MESH)
+        self.assertEqual(self.npc_keys([{'npcId': 21622, 'mesh': MUSVEREN_MESH}], [*self.models, lane_model]), ('npc:21622',))
+        self.assertEqual(self.npc_keys([{'npcId': 21622, 'mesh': MUSVEREN_MESH}], [lane_model]), ())
 
     def test_player_profiles_give_item_keys_and_character_keys_for_staged_models(self):
         record = write_profile_manifest(self.store_root, 'native-player-profiles', [

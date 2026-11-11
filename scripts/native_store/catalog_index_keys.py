@@ -18,7 +18,8 @@ PROFILE_MANIFEST_PATH_PATTERNS = {
     'npcProfiles': re.compile(r'^/l2/npc-profiles/(?P<sha256>[a-f0-9]{64})/manifest\.json$'),
     'playerProfiles': re.compile(r'^/l2/player-profiles/(?P<sha256>[a-f0-9]{64})/manifest\.json$'),
 }
-MODEL_CATALOG_ID_PATTERN = re.compile(r'^[a-z0-9][a-z0-9:-]{0,95}$')
+NPC_MODEL_CATALOG_ID_PATTERN = re.compile(r'^npc-model:[a-f0-9]{64}$')
+SHARED_STORE_NPC_PROFILE_RECORD_ID = 'native-npc-profiles'
 ITEM_MODEL_RECORD_ID_PATTERN = re.compile(r'^interlude:item:(?P<item>0|[1-9]\d{0,8}):body-part:(?:0|[1-9]\d{0,8}):(?:weapon|armor:(?:0|[1-9]\d{0,8}))$')
 SKILL_EFFECT_COMPONENT_ID_PATTERN =re.compile(r'^interlude:skill:(?P<skill>\d{1,9}):level:(?P<level>[1-9]\d{0,3}):')
 LEGACY_SECTION_ID_PATTERN = re.compile(r'^map-(?P<column>\d{2})-(?P<row>\d{2})-section$')
@@ -116,10 +117,10 @@ def model_source_objects_by_id(models):
     return source_objects_by_model_id
 
 
-def model_ids_by_source_object(source_objects_by_model_id):
+def legacy_single_mesh_candidate_model_ids_by_source_object(source_objects_by_model_id):
     model_ids_by_object = {}
     for model_id, source_object in source_objects_by_model_id.items():
-        if source_object is not None:
+        if source_object is not None and not NPC_MODEL_CATALOG_ID_PATTERN.fullmatch(model_id):
             model_ids_by_object.setdefault(source_object, []).append(model_id)
     return model_ids_by_object
 
@@ -129,15 +130,15 @@ def npc_profile_npc_key(profile):
     return require_key(f'npc:{npc_id}', 'npc', f'NPC profile {npc_id}')
 
 
-def npc_profile_model_id(profile, source_objects_by_model_id, model_ids_by_object):
+def npc_profile_model_id(pack_record_id, profile, source_objects_by_model_id, model_ids_by_object):
     npc_id = require_safe_integer(profile.get('npcId'), 'NPC profile npcId')
     mesh = profile.get('mesh')
     if not isinstance(mesh, str):
         raise CoverageReportError(f'NPC profile {npc_id} has no mesh name')
     if 'modelCatalogId' in profile:
         model_catalog_id = profile['modelCatalogId']
-        if not (isinstance(model_catalog_id, str) and MODEL_CATALOG_ID_PATTERN.fullmatch(model_catalog_id)):
-            raise CoverageReportError(f'NPC profile {npc_id} modelCatalogId must match {MODEL_CATALOG_ID_PATTERN.pattern}: {model_catalog_id!r}')
+        if not (isinstance(model_catalog_id, str) and NPC_MODEL_CATALOG_ID_PATTERN.fullmatch(model_catalog_id)):
+            raise CoverageReportError(f'NPC profile {npc_id} modelCatalogId must match {NPC_MODEL_CATALOG_ID_PATTERN.pattern}: {model_catalog_id!r}')
         if model_catalog_id not in source_objects_by_model_id:
             return None
         model_source_object = source_objects_by_model_id[model_catalog_id]
@@ -145,23 +146,19 @@ def npc_profile_model_id(profile, source_objects_by_model_id, model_ids_by_objec
             raise CoverageReportError(f'NPC profile {npc_id} names model {model_catalog_id} of a different mesh: the model source object '
                                       f'is {model_source_object!r}, the profile mesh is {mesh!r}')
         return model_catalog_id
-    matching_model_ids = sorted(model_ids_by_object.get(mesh, []))
-    if len(matching_model_ids) > 1:
-        raise CoverageReportError(f'NPC profile {npc_id} mesh {mesh} matches several models: {", ".join(matching_model_ids)}')
-    return matching_model_ids[0] if matching_model_ids else None
-
-
-def npc_profile_key(profile, source_objects_by_model_id, model_ids_by_object):
-    key = npc_profile_npc_key(profile)
-    return key if npc_profile_model_id(profile, source_objects_by_model_id, model_ids_by_object) is not None else None
+    if pack_record_id != SHARED_STORE_NPC_PROFILE_RECORD_ID:
+        raise CoverageReportError(f'NPC profile {npc_id} in bundle {pack_record_id} has no model catalog id')
+    matching_model_ids = model_ids_by_object.get(mesh, [])
+    return matching_model_ids[0] if len(matching_model_ids) == 1 else None
 
 
 def npc_keys(catalog, models, store_roots):
     source_objects_by_model_id = model_source_objects_by_id(models)
-    model_ids_by_object = model_ids_by_source_object(source_objects_by_model_id)
-    keys = {npc_profile_key(profile, source_objects_by_model_id, model_ids_by_object)
-            for profile in staged_profiles(catalog, 'npcProfiles', store_roots)}
-    return keys - {None}
+    model_ids_by_object = legacy_single_mesh_candidate_model_ids_by_source_object(source_objects_by_model_id)
+    return {npc_profile_npc_key(profile)
+            for pack_record in validated_slice_records(catalog, 'npcProfiles')
+            for profile in read_profile_manifest_profiles('npcProfiles', pack_record, store_roots)
+            if npc_profile_model_id(pack_record['id'], profile, source_objects_by_model_id, model_ids_by_object) is not None}
 
 
 def require_npc_profiles_join_models_of_their_mesh(lane_store_root, lane_catalog, shared_store_root):
