@@ -10,8 +10,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from build_dat_table_inventory import (DECODED_TABLE_COUNT_SOURCE, ELBERA_ADAPTER_COUNT_SOURCE, ELBERA_ADAPTER_DECODED_STATUS,
     ELBERA_EVIDENCE_COUNT_SOURCE, ELBERA_EVIDENCE_RECORD_COUNTS, ELBERA_PARSER_PRESENT_STATUS, ELBERA_PARSER_SOURCES, LAYOUT_NOT_DECODED_STATUS, NOT_LOCK_EQUAL_STATUS, DatTableInventoryError,
-    classify_dat_table, count_descriptor_linked_table, elbera_parser_presence, in_use_slot_status, lock_equal_source_sha256,
-    validate_dat_table_inventory)
+    classify_dat_table, count_descriptor_linked_table, decoded_tables_project_root_and_lane_name, elbera_parser_presence, in_use_slot_status,
+    lock_equal_source_sha256, read_decoded_table_records, validate_dat_table_inventory)
 from data.hair_table_adapter import HAIR_TABLE_FIELD_PROOF, HAIR_TABLE_UNDECODED_REASONS
 from native_catalog.table_layout_pins import CLIENT_DERIVED_LAYOUTS
 from native_catalog.table_source_resolver import TableSourceResolutionError, descriptor_layout_links
@@ -200,6 +200,33 @@ class InUseSlotStatusTests(unittest.TestCase):
         self.manifest_path.write_bytes(self.manifest_bytes.replace(b'"tag_?": 0', b'"tag_?": 1'))
         with self.assertRaisesRegex(CatalogWriteError, 'SHA-256 differs from its pin'):
             in_use_slot_status(self.store_root, self.record, CLIENT_DERIVED_LAYOUTS['servername']['inUseSlots'])
+
+
+class DecodedTablesCatalogBoundaryTests(unittest.TestCase):
+    def setUp(self):
+        temporary_directory = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary_directory.cleanup)
+        self.project_root = Path(temporary_directory.name).resolve() / 'project'
+        self.catalog_path = self.project_root / 'artifacts' / 'lane-store' / 'data-ui' / 'l2' / 'catalog.json'
+
+    def test_a_missing_decoded_tables_catalog_is_refused(self):
+        with self.assertRaisesRegex(DatTableInventoryError, 'does not exist'):
+            read_decoded_table_records(self.catalog_path)
+
+    def test_a_decoded_tables_catalog_without_tables_records_is_refused(self):
+        self.catalog_path.parent.mkdir(parents=True)
+        for case, catalog in (('no slice', {'schemaVersion': 1, 'models': []}), ('empty slice', {'schemaVersion': 1, 'models': [], 'tables': []})):
+            with self.subTest(case):
+                self.catalog_path.write_bytes(json.dumps(catalog).encode())
+                with self.assertRaisesRegex(DatTableInventoryError, 'has no tables records'):
+                    read_decoded_table_records(self.catalog_path)
+
+    def test_the_gap_rows_come_from_the_lane_that_holds_the_decoded_tables_catalog(self):
+        self.assertEqual(decoded_tables_project_root_and_lane_name(self.catalog_path), (self.project_root, 'data-ui'))
+
+    def test_a_decoded_tables_catalog_outside_a_lane_store_is_refused(self):
+        with self.assertRaisesRegex(DatTableInventoryError, 'is not artifacts/lane-store/<lane>/l2/catalog.json'):
+            decoded_tables_project_root_and_lane_name(self.project_root / 'artifacts' / 'tables-scratch' / 'catalog.json')
 
 
 class SealedDecodeCountTests(unittest.TestCase):

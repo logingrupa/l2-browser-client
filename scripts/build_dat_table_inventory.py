@@ -11,14 +11,13 @@ from hash_reference_client_tree import canonical_json_bytes
 from native_catalog.table_layout_pins import CLIENT_DERIVED_LAYOUTS
 from native_catalog.table_source_resolver import descriptor_layout_for_file_name
 from native_catalog.tables import DESCRIPTOR_FILE, SCHEMA_HASHES, SCHEMA_ROOT, interlude_descriptor_links
-from native_store.catalog_writer import read_pinned_file, require_file_pin, validate_catalog_record
+from native_store.catalog_writer import STORE_CATALOG_NAME, read_pinned_file, require_file_pin, validate_catalog_record
 from native_store.gap_rows import read_gap_rows
 from reference_client_guard import require_reference_client
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_INVENTORY_OUTPUT_PATH = REPOSITORY_ROOT / 'docs' / 'parts' / 'data' / 'dat-table-inventory.json'
-DEFAULT_DECODED_TABLES_CATALOG_PATH = REPOSITORY_ROOT / 'artifacts' / 'lane-store' / 'data-ui' / 'l2' / 'catalog.json'
-DECODED_TABLES_LANE_NAME = 'data-ui'
+DEFAULT_DECODED_TABLES_CATALOG_PATH = REPOSITORY_ROOT / 'artifacts' / 'lane-store' / 'data-ui' / 'l2' / STORE_CATALOG_NAME
 DECODE_STEP = 'decode'
 INVENTORY_SCHEMA_VERSION = 1
 EXPECTED_DAT_TABLE_COUNT = 40
@@ -94,11 +93,23 @@ def describe_decode_against_elbera(table, record_count):
     return f'decoded, Elbera evidence differs ({elbera_count})'
 
 
+def decoded_tables_project_root_and_lane_name(catalog_path):
+    catalog_path = Path(catalog_path).resolve()
+    store_root = catalog_path.parent
+    lane_folder = store_root.parent
+    if not (catalog_path.name == STORE_CATALOG_NAME and store_root.name == 'l2' and lane_folder.parent.name == 'lane-store'
+            and lane_folder.parent.parent.name == 'artifacts'):
+        raise DatTableInventoryError(f'decoded tables catalog {catalog_path} is not artifacts/lane-store/<lane>/l2/{STORE_CATALOG_NAME}')
+    return lane_folder.parent.parent.parent, lane_folder.name
+
+
 def read_decoded_table_records(catalog_path):
     if not Path(catalog_path).is_file():
-        return []
-    catalog = json.loads(Path(catalog_path).read_bytes().decode('utf-8'))
-    return [validate_catalog_record('tables', record) for record in catalog.get('tables', [])]
+        raise DatTableInventoryError(f'decoded tables catalog {catalog_path} does not exist; run scripts/data/convert_tables.py first')
+    tables = json.loads(Path(catalog_path).read_bytes().decode('utf-8')).get('tables')
+    if not (isinstance(tables, list) and tables):
+        raise DatTableInventoryError(f'decoded tables catalog {catalog_path} has no tables records')
+    return [validate_catalog_record('tables', record) for record in tables]
 
 
 def undecoded_count(table, status):
@@ -170,10 +181,11 @@ def validate_dat_table_inventory(inventory):
     return inventory
 
 
-def build_dat_table_inventory(client_access, elbera_root, decoded_tables_catalog_path, gap_rows, schema_root=SCHEMA_ROOT):
+def build_dat_table_inventory(client_access, elbera_root, decoded_tables_catalog_path, schema_root=SCHEMA_ROOT):
     links = interlude_descriptor_links(schema_root)
     elbera_parser_statuses = elbera_parser_presence(elbera_root)
     decoded_records_by_table = {record['id']: record for record in read_decoded_table_records(decoded_tables_catalog_path)}
+    gap_rows = read_gap_rows(*decoded_tables_project_root_and_lane_name(decoded_tables_catalog_path))
     decode_gap_rows_by_key = {row['key']: row for row in gap_rows if row['step'] == DECODE_STEP}
     rows = []
     for file_name in reference_side_dat_file_names(client_access.lock):
@@ -212,8 +224,7 @@ def main(argv=None):
     arguments = parser.parse_args(argv)
     try:
         client_access = require_reference_client(arguments.client)
-        inventory = build_dat_table_inventory(client_access, arguments.elbera_root, arguments.decoded_tables_catalog,
-                                              read_gap_rows(REPOSITORY_ROOT, DECODED_TABLES_LANE_NAME))
+        inventory = build_dat_table_inventory(client_access, arguments.elbera_root, arguments.decoded_tables_catalog)
         arguments.output.parent.mkdir(parents=True, exist_ok=True)
         arguments.output.write_bytes(dat_table_inventory_bytes(inventory))
     except (OSError, ValueError) as error:
