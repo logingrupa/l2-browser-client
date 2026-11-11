@@ -202,7 +202,7 @@ class GapCensusPartTests(unittest.TestCase):
         self.assertEqual((actor_denominators['player-characters']['count'], actor_denominators['npcs']['count']), (15, 6519))
         self.assertIn('docs/parts/npcs/actor-unit-census.json chargrp rowCount', actor_denominators['player-characters']['source'])
         self.assertIn('docs/parts/data/dat-table-inventory.json itemname-e recordCount', actor_denominators['items']['source'])
-        self.assertEqual(actor_denominators['audio']['count'], 'unknown')
+        self.assertIn('skill-sound-row units (1398 keys)', actor_denominators['audio']['source'])
         window_denominator = load_census_denominators(['data-ui'])['ui']
         self.assertEqual((window_denominator['count'], len(window_denominator['keys'])), (248, 248))
         self.assertIn('window:StatusWnd', window_denominator['keys'])

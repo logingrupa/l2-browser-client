@@ -3,13 +3,18 @@ from __future__ import annotations
 from functools import partial
 import json
 
+from actors.actor_sound_bindings import AUDIO_PART_NAME
+from actors.actor_unit_inventory import CONVERTIBLE_UNIT_STATUS, GAP_UNIT_STATUS
+from actors.npc_requests import npc_sound_references
+from actors.skill_unit_inventory import SKILL_SOUND_ROW_UNIT_KIND
 from build_dat_table_inventory import DEFAULT_INVENTORY_OUTPUT_PATH
 from native_store.catalog_writer import CatalogWriteError, refuse_duplicate_json_keys, refuse_non_finite_json_number
-from native_store.coverage_denominators import (COVERAGE_PART_ORDER, NO_COMMITTED_DENOMINATOR_SOURCE, TILE_CENSUS_PATH, CoverageReportError,
+from native_store.coverage_denominators import (COVERAGE_PART_ORDER, SANDBOX_DENOMINATOR_SOURCE, TILE_CENSUS_PATH, CoverageReportError,
                                                 inventory_table_count_denominator, read_dat_table_inventory, repository_relative_text,
                                                 require_catalog_key, table_denominator, unknown_denominator, world_denominator)
 from native_store.data_ui_table_manifest import DATA_UI_LANE_NAME, DataUiTableManifestError, data_ui_table_manifest
-from native_store.gap_census_derived_parts import derived_tile_denominator
+from native_store.gap_census_derived_parts import (NPC_SOUNDS_KEY_KIND, SKILL_SOUND_ROW_STEP, STEP_PENDING_REASON_PREFIX,
+                                                  derived_tile_denominator)
 from native_store.gap_census import ETCITEM_TABLE_NAME, ITEMNAME_TABLE_NAME, ITEMS_PART, GapCensusIncompleteError, item_census_rows
 from native_store.store_paths import REPOSITORY_ROOT, read_lane_parts_by_name
 from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH
@@ -18,6 +23,9 @@ ACTOR_UNIT_CENSUS_PATH = REPOSITORY_ROOT / 'docs' / 'parts' / 'npcs' / 'actor-un
 INTERFACE_WINDOW_CENSUS_PATH = REPOSITORY_ROOT / 'docs' / 'parts' / 'ui' / 'interface-window-census.json'
 DECODED_ITEM_ID_FIELDS = {ITEMNAME_TABLE_NAME: ('item_name', 'id'), ETCITEM_TABLE_NAME: ('item', 'object_id')}
 WINDOW_CENSUS_SCHEMA_VERSION = 1
+NPCGRP_TABLE_NAME = 'npcgrp'
+NPCGRP_ROWS_FIELD = 'npc'
+NPCGRP_ID_FIELD = 'npc_id'
 
 
 def measured_part_names(lane_names):
@@ -68,6 +76,58 @@ def committed_window_denominator():
             'source': f'{repository_relative_text(INTERFACE_WINDOW_CENSUS_PATH)} rootWindowCount and windows[].windowId'}
 
 
+def npc_sound_denominator():
+    manifest = data_ui_table_manifest(REPOSITORY_ROOT, NPCGRP_TABLE_NAME)
+    if manifest is None:
+        raise CoverageReportError(f'the {DATA_UI_LANE_NAME} lane catalog needs one decoded {NPCGRP_TABLE_NAME} table record for the audio denominator')
+    npc_rows = manifest['records'].get(NPCGRP_ROWS_FIELD)
+    if not (isinstance(npc_rows, list) and all(isinstance(row, dict) and type(row.get(NPCGRP_ID_FIELD)) is int for row in npc_rows)):
+        raise CoverageReportError(f'decoded {NPCGRP_TABLE_NAME} records.{NPCGRP_ROWS_FIELD} must list objects with an integer {NPCGRP_ID_FIELD}')
+    keys = [require_catalog_key(f'{NPC_SOUNDS_KEY_KIND}:{row[NPCGRP_ID_FIELD]}', NPC_SOUNDS_KEY_KIND, f'decoded {NPCGRP_TABLE_NAME} row')
+            for row in npc_rows if any(reference for _, _, reference in npc_sound_references(row))]
+    if len(set(keys)) != len(keys):
+        raise CoverageReportError(f'decoded {NPCGRP_TABLE_NAME} repeats an {NPCGRP_ID_FIELD}')
+    return {'count': len(keys), 'keys': tuple(sorted(keys)),
+            'source': (f'{DATA_UI_LANE_NAME} lane decoded {manifest["sourcePath"]} (sha256 {manifest["sourceSha256"]}) rows naming a sound '
+                       f'in an npcgrp sound column ({len(keys)} {NPC_SOUNDS_KEY_KIND}:<id> keys)')}
+
+
+def skill_sound_row_units():
+    actor_census = read_committed_json(ACTOR_UNIT_CENSUS_PATH, 'actor unit census')
+    units = actor_census.get('units') if isinstance(actor_census, dict) else None
+    if not (isinstance(units, list) and all(isinstance(unit, dict) for unit in units)):
+        raise CoverageReportError(f'actor unit census needs a list of unit objects: {repository_relative_text(ACTOR_UNIT_CENSUS_PATH)}')
+    return [unit for unit in units if unit.get('unitKind') == SKILL_SOUND_ROW_UNIT_KIND]
+
+
+def skill_sound_row_denominator():
+    keys = [require_catalog_key(unit.get('key'), SKILL_SOUND_ROW_UNIT_KIND, 'actor unit census unit') for unit in skill_sound_row_units()]
+    return {'count': len(keys), 'keys': tuple(sorted(keys)),
+            'source': f'{repository_relative_text(ACTOR_UNIT_CENSUS_PATH)} {SKILL_SOUND_ROW_UNIT_KIND} units ({len(keys)} keys)'}
+
+
+def audio_denominator():
+    denominators = (derived_tile_denominator('tile-audio'), npc_sound_denominator(), skill_sound_row_denominator())
+    keys = tuple(sorted(key for denominator in denominators for key in denominator['keys']))
+    return {'count': len(keys), 'keys': keys, 'source': '; '.join(denominator['source'] for denominator in denominators)}
+
+
+def skill_sound_census_row(unit):
+    if unit.get('status') == CONVERTIBLE_UNIT_STATUS:
+        status, reason = 'pending', f'{STEP_PENDING_REASON_PREFIX}{SKILL_SOUND_ROW_STEP}'
+    elif unit.get('status') == GAP_UNIT_STATUS:
+        status, reason = 'gap', unit.get('reason')
+    else:
+        raise CoverageReportError(f'actor unit census {unit.get("key")!r} status must be {CONVERTIBLE_UNIT_STATUS} or {GAP_UNIT_STATUS}: '
+                                  f'{unit.get("status")!r}')
+    return {'key': unit['key'], 'part': AUDIO_PART_NAME, 'step': SKILL_SOUND_ROW_STEP, 'status': status, 'reason': reason,
+            'sourceIdentity': unit.get('sourceIdentity'), 'evidence': repository_relative_text(ACTOR_UNIT_CENSUS_PATH)}
+
+
+def skill_sound_census_rows():
+    return [skill_sound_census_row(unit) for unit in skill_sound_row_units()]
+
+
 PART_DENOMINATOR_LOADERS = {
     'data': inventory_table_key_denominator,
     'world': partial(world_denominator, REFERENCE_CLIENT_LOCK_PATH, TILE_CENSUS_PATH),
@@ -76,13 +136,15 @@ PART_DENOMINATOR_LOADERS = {
     'npcs': partial(actor_census_table_denominator, 'npcgrp'),
     'items': partial(inventory_record_count_denominator, ITEMNAME_TABLE_NAME),
     'skills-effects': partial(inventory_record_count_denominator, 'skillgrp'),
+    'sandbox': partial(unknown_denominator, SANDBOX_DENOMINATOR_SOURCE),
+    'audio': audio_denominator,
     'minimap': partial(derived_tile_denominator, 'minimap'),
+    'movement-geodata': partial(derived_tile_denominator, 'tile-collision'),
 }
 
 
 def load_census_denominators(lane_names):
-    return {part: PART_DENOMINATOR_LOADERS[part]() if part in PART_DENOMINATOR_LOADERS else unknown_denominator(NO_COMMITTED_DENOMINATOR_SOURCE)
-            for part in measured_part_names(lane_names)}
+    return {part: PART_DENOMINATOR_LOADERS[part]() for part in measured_part_names(lane_names)}
 
 
 def census_item_table_manifest(project_root, table_name):

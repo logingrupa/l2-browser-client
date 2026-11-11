@@ -252,11 +252,13 @@ class CoverageReportWorldTests(CoverageProjectTestCase):
                 self.assertEqual((denominators[part]['count'], denominators[part]['keys']), (count, None))
                 self.assertIn(source, denominators[part]['source'])
         self.assertEqual(denominators['ui']['count'], 248)
-        self.assertEqual((denominators['minimap']['count'], len(denominators['minimap']['keys'])), (153, 153))
-        self.assertIn('recipes/reference-client-tree.lock.json', denominators['minimap']['source'])
-        for part in ('sandbox', 'audio', 'movement-geodata'):
+        for part in ('minimap', 'movement-geodata'):
             with self.subTest(part):
-                self.assertEqual((denominators[part]['count'], denominators[part]['keys']), ('unknown', None))
+                self.assertEqual((denominators[part]['count'], len(denominators[part]['keys'])), (153, 153))
+                self.assertIn('recipes/reference-client-tree.lock.json', denominators[part]['source'])
+        self.assertEqual(denominators['audio']['count'], len(denominators['audio']['keys']))
+        self.assertEqual((denominators['sandbox']['count'], denominators['sandbox']['keys']), ('unknown', None))
+        self.assertIn('the sandbox is the checking tool', denominators['sandbox']['source'])
 
     def test_a_world_lane_report_gives_every_world_key_one_status_with_its_steps(self):
         write_gap_rows(self.project_root, 'world', 'raw', [world_gap_row('tile:20_21', 'raw', 'pass', None)])
@@ -277,13 +279,13 @@ class CoverageReportWorldTests(CoverageProjectTestCase):
         self.assertEqual((report['parts']['minimap']['denominator'], report['parts']['minimap']['pending']), (153, 153))
         self.assertIn('Lobby (`map:Lobby`) has the census status gap `census-pending`.', coverage_markdown(report))
 
-    def test_a_converted_tile_whose_collision_step_failed_is_a_failed_row_counted_as_converted_and_as_gap(self):
+    def test_a_converted_tile_whose_collision_step_failed_is_a_failed_row_that_counts_only_as_gap(self):
         write_gap_rows(self.project_root, 'world', 'collision', [world_gap_row('tile:20_20', 'collision', 'failed', 'decode-failed:FormatError')])
         write_store_catalog(self.store_root, {'schemaVersion': 1, 'models': [], 'sections': [{'id': 'map-20-20-section'}]})
         report = self.build_report(('world',))
         tile_row = rows_by_key(report)['tile:20_20']
         self.assertEqual((tile_row['status'], tile_row['reason'], tile_row['converted']), ('failed', 'decode-failed:FormatError', True))
-        self.assertEqual(report['parts']['world'], {'denominator': 163, 'converted': 1, 'loads': {'pass': 0, 'failed': 0, 'unverified': 1},
+        self.assertEqual(report['parts']['world'], {'denominator': 163, 'converted': 0, 'loads': {'pass': 0, 'failed': 0, 'unverified': 1},
                                                     'gap': 162, 'pending': 1})
         self.assertEqual(validate_coverage_report(report), report)
 

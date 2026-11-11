@@ -13,7 +13,7 @@ from world.tile_census_validation import NON_TILE_KIND, TILE_CENSUS_RELATIVE_PAT
 COVERAGE_PART_ORDER = ('data', 'sandbox', 'world', 'player-characters', 'ui', 'npcs', 'items', 'skills-effects', 'audio', 'minimap',
                        'movement-geodata')
 UNKNOWN_DENOMINATOR = 'unknown'
-NO_COMMITTED_DENOMINATOR_SOURCE = 'no committed denominator yet'
+SANDBOX_DENOMINATOR_SOURCE = 'the sandbox is the checking tool and has no key space (Phase 3 P15)'
 WORLD_MAP_PATH_PATTERN = re.compile(r'^maps/(?P<name>[^/]+)\.unr$')
 TILE_MAP_NAME_PATTERN = re.compile(r'^\d{2}_\d{2}$')
 TILE_CENSUS_PATH = REPOSITORY_ROOT / TILE_CENSUS_RELATIVE_PATH

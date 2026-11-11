@@ -10,12 +10,13 @@ import sys
 SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS_ROOT))
 
+from actors.actor_sound_bindings import AUDIO_PART_NAME
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_index_keys import catalog_index_keys, read_measured_catalog
 from native_store.catalog_writer import is_table_name_index_id, replace_file
 from native_store.coverage_denominators import COVERAGE_PART_ORDER, UNKNOWN_DENOMINATOR, CoverageReportError
 from native_store.gap_census import GAP_CENSUS_LOAD_STATUSES, ITEM_CENSUS_STEP, ITEMS_PART, build_gap_census
-from native_store.gap_census_denominators import census_item_join_rows, load_census_denominators, measured_part_names
+from native_store.gap_census_denominators import census_item_join_rows, load_census_denominators, measured_part_names, skill_sound_census_rows
 from native_store.gap_census_derived_parts import DERIVED_PARTS, DERIVED_SOURCE_PARTS, derived_converted_keys, derived_part_rows
 from native_store.gap_rows import (GAP_ROW_STATUSES, INTEGRATION_LANE_NAME, is_listed_reason, load_gap_reason_patterns, read_gap_rows,
                                    write_gap_rows)
@@ -35,8 +36,9 @@ ACTORS_LANE_NAME = 'actors'
 LOBBY_MAP_KEY = 'map:Lobby'
 LOADS_RULE_TEXT = 'Loads counts only recorded load checks; everything else is unverified.'
 CENSUS_RULE_TEXT = ('Every denominator key has exactly one census status: the failed or gap row of its latest step when it has one, else '
-                    'converted when a catalog lists it, else the pending row of its latest step. Converted counts catalog-listed keys; '
-                    'gap counts rows with status gap or failed, so a catalog-listed key with a failed or gap step counts in both.')
+                    'converted when a catalog lists it, else the pending row of its latest step. Converted counts pass rows and gap counts '
+                    'rows with status gap or failed, including catalog-listed keys with a failed or gap step, so converted, gap and pending '
+                    'add up to the denominator.')
 MARKDOWN_TABLE_HEADER = ('| Part | Denominator | Converted | Loads pass | Loads failed | Loads unverified | Gap | Pending | Denominator source |\n'
                          '| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n')
 
@@ -67,7 +69,7 @@ def measured_gap_rows(project_root, lane_names, part_names):
     lane_rows = [row for lane_name in lane_names for row in gap_rows_by_lane_name[lane_name] if row['part'] in part_names]
     source_rows = [row for lane_name in derived_source_lane_names(part_names) for row in gap_rows_by_lane_name[lane_name]
                    if row['part'] in DERIVED_SOURCE_PARTS]
-    return lane_rows, source_rows
+    return lane_rows, source_rows + (skill_sound_census_rows() if AUDIO_PART_NAME in part_names else [])
 
 
 def store_converted_keys(project_root, store_root, catalog):
@@ -102,7 +104,7 @@ def count_part_rows(rows, denominator_count):
     converted_rows = [row for row in rows if row['converted']]
     return {
         'denominator': denominator_count,
-        'converted': len(converted_rows),
+        'converted': sum(1 for row in rows if row['status'] == 'pass'),
         'loads': {load_status: sum(1 for row in converted_rows if row['loads'] == load_status) for load_status in GAP_CENSUS_LOAD_STATUSES},
         'gap': sum(1 for row in rows if row['status'] in ('gap', 'failed')),
         'pending': UNKNOWN_DENOMINATOR if denominator_count == UNKNOWN_DENOMINATOR else sum(1 for row in rows if row['status'] == 'pending'),
@@ -126,7 +128,7 @@ def build_coverage_report(project_root, store_root, lane_names, generated_at_rig
         converted_keys |= store_converted_keys(project_root, census_store_root, census_catalog)
         lane_names_by_catalog_sha256.setdefault(census_catalog_sha256, set()).add(census_lane_name)
     lane_rows, source_rows = measured_gap_rows(project_root, write_item_join_rows(project_root, lane_names, part_names), part_names)
-    gap_rows = lane_rows + derived_part_rows(denominators, source_rows)
+    gap_rows = lane_rows + derived_part_rows(denominators, source_rows, converted_keys)
     census_rows = build_gap_census(denominators, gap_rows, converted_keys, merged_load_statuses(project_root, lane_names_by_catalog_sha256))
     steps_by_key = coverage_steps_by_key(gap_rows)
     rows = [coverage_row(census_row, steps_by_key.get(census_row['key'], [])) for census_row in census_rows]

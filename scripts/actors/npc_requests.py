@@ -11,6 +11,7 @@ NPC_PROFILE_RECIPE_SCHEMA_VERSION = 1
 CONVERTER_SOURCE_UNITS_PER_METRE = 100
 NPC_PROFILE_RECIPE_ID_PREFIX = 'interlude:npc-profiles:'
 NPC_PROFILE_STEP = 'npc-profile'
+NPC_SOUND_IDENTITY_STEP = 'npc-sound-identities'
 ANIMATION_REFERENCE_MISSING_REASON = 'animation-reference-missing'
 ANIMATION_OUTSIDE_MESH_PACKAGE_REASON_PREFIX = 'animation-outside-mesh-package:'
 SOUND_IDENTITY_UNRESOLVED_REASON = 'sound-identity-unresolved'

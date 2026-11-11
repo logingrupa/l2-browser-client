@@ -389,7 +389,11 @@ row is exactly `{key, part, step, status, reason, sourceIdentity, evidence}`:
 
 - `key` is a catalog key: `tile:<XX_YY>`, `map:<name>` (the non-tile maps),
   `npc:<id>`, `item:<id>`, `skill:<id>:<level>`, `table:<name>`,
-  `window:<id>` or `character:<chargrpIndex>`.
+  `window:<id>` or `character:<chargrpIndex>`, or a derived key (plan 02-72):
+  `minimap:<XX_YY>` (part minimap), `tile-collision:<XX_YY>`
+  (movement-geodata), `tile-audio:<XX_YY>`, `npc-sounds:<id>` and
+  `skill-sound-row:<n>` (audio). Lanes write no derived rows: the census
+  builds them in memory (see "Coverage report").
 - `part` is a Stage A part of the `world`, `actors` or `data-ui` lane in
   `.planning/lanes.json`; `step` matches `^[a-z][a-z0-9-]{0,63}$`.
 - `status` is `pass`, `gap`, `pending` or `failed`. `pass` has `reason`
@@ -434,12 +438,40 @@ Plan 02-07 writes it and 02-26 completes it.
 - "Loads" counts only from load-check records; everything else is
   `unverified`.
 - A catalog-listed key whose latest step row is failed or gap takes that
-  step's status and reason, keeps `converted` true and counts in both
-  `converted` and `gap`; a pending step does not override `converted`.
+  step's status and reason, keeps `converted` true and counts in `gap`; a
+  pending step does not override `converted`. Part `converted` counts pass
+  rows only, so `converted` plus `gap` plus `pending` equals the
+  denominator of every counted part; loads count over rows with
+  `converted` true.
   Census precedence is failed, gap, converted, pending, and a `pass` row
   must be converted (6d189c8). For skills-effects a non-pass `skills` row
   keeps a published key at that row's status with `converted` false
   (f5828ee).
+- Derived parts (plan 02-72, one owner
+  `scripts/native_store/gap_census_derived_parts.py`, table `DERIVED_PARTS`):
+  `minimap:<XX_YY>` and `tile-collision:<XX_YY>` count the 153 locked tile
+  maps of `recipes/reference-client-tree.lock.json`; audio sums three
+  sources named in its denominator text: the same 153 tiles as
+  `tile-audio:<XX_YY>`, the `npc-sounds:<id>` of every decoded npcgrp row
+  (data-ui lane manifest pinned to the locked `system/npcgrp.dat`) that
+  names a sound in an npcgrp sound column (`npc_sound_references` in
+  `scripts/actors/npc_requests.py`), and the `skill-sound-row:<n>` units of
+  `docs/parts/npcs/actor-unit-census.json`.
+- A derived key is converted when the union holds its resource: a tile
+  manifest pinning a minimap resource whose join lists no gap
+  (`minimap`), pinning `native-tile-collision` (`tile-collision`), pinning
+  a `world-audio` resource or carrying no audio step gap row because the
+  step found no sound to convert (`tile-audio`), or a `combatAudio` record
+  `actor-sounds:npc:<id>` (`npc-sounds`). Otherwise it takes the lane step
+  row of its tile (`minimap`, `collision` or `audio` step of the world
+  lane), re-keyed in memory; an `npc-sounds` key of an npc that is not
+  converted takes that npc's rows, one of a converted npc takes its
+  `npc-sound-identities` row; a `skill-sound-row` takes its unit census
+  status (convertible is pending `step-pending:skill-sounds`). A missing
+  step row is pending `step-pending:<step>` (`step-pending:actor-sounds`
+  for npc sounds) with the identity of the source key's `census` row. No lane gap-row file changes.
+- The sandbox denominator stays `unknown` with the source "the sandbox is
+  the checking tool and has no key space (Phase 3 P15)".
 - First step for a lane: `pnpm report:coverage --store-root
   artifacts/lane-store/<lane>/l2 --lane <lane>` writes its first
   `coverage.json`. A lane store without one gets none from a lane run or a

@@ -26,6 +26,10 @@ CATALOG_KEY_PATTERNS = {
     'window': re.compile(r'^window:[A-Za-z][A-Za-z0-9_]{0,63}(?:#[1-9]\d{0,3})?$'),
     'character': re.compile(r'^character:\d{1,4}$'),
     'minimap': re.compile(r'^minimap:\d{2}_\d{2}$'),
+    'tile-collision': re.compile(r'^tile-collision:\d{2}_\d{2}$'),
+    'tile-audio': re.compile(r'^tile-audio:\d{2}_\d{2}$'),
+    'npc-sounds': re.compile(r'^npc-sounds:\d{1,9}$'),
+    'skill-sound-row': re.compile(r'^skill-sound-row:\d{1,9}$'),
 }
 SEED_GAP_REASONS_PATH = REPOSITORY_ROOT / 'scripts' / 'native_store' / 'gap_reasons.json'
 SEED_GAP_REASON_LIST_NAME = 'seed'
