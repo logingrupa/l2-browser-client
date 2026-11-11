@@ -30,7 +30,7 @@ from actors.npc_store_records import (MODEL_ARCHIVE_FILE_NAME, bundle_output_rec
                                       PROFILE_MANIFEST_FILE_NAME, file_output_record, profile_bundle_store_files_and_record,
                                       profile_record_npc_ids)
 from data.lane_unit_outcomes import replace_step_gap_row
-from native_actor_profiles import MAXIMUM_NPC_PROFILE_BUNDLES, migrate_npc_profiles
+from native_actor_profiles import MAXIMUM_NPC_PROFILE_BUNDLES, migrate_npc_profiles, npc_profile_tool_pins
 from native_assets import UMODEL, UMODEL_SHA256, Converter, implementation_hash
 from native_assets_lib.gltf import json_bytes
 from native_catalog.effects import SourcePackages
@@ -67,8 +67,9 @@ class ConvertActorsError(ValueError):
 
 
 class NpcConversionRun:
-    def __init__(self, project_root, client_access, converter, ledger_root, store_root):
+    def __init__(self, project_root, client_access, converter, ledger_root, store_root, profile_tool_pins=npc_profile_tool_pins):
         self.project_root, self.client_access, self.converter, self.store_root = Path(project_root), client_access, converter, store_root
+        self.profile_tool_pins = profile_tool_pins
         self.census, self.npcgrp, self.npcname, self.name_table = read_census_and_npc_tables(self.project_root, client_access.root, decode_table)
         self.units_by_key = {unit['key']: unit for unit in self.census['units']}
         self.model_ledger = UnitLedger(ledger_root, NPC_MODEL_STEP, NPC_MODEL_ALGORITHM_VERSION)
@@ -224,7 +225,7 @@ class NpcConversionRun:
 
     def convert_profile(self, npc_id, npc_key, row, model_unit_key, mesh_package_path):
         inputs = locked_input_records(sorted({self.npcgrp['source'], self.npcname['source'], mesh_package_path}))
-        config = {'npcId': npc_id, 'modelCatalogId': model_unit_key, 'nameTable': self.name_table}
+        config = {'npcId': npc_id, 'modelCatalogId': model_unit_key, 'nameTable': self.name_table, 'profileToolPins': self.profile_tool_pins()}
         fingerprint = self.profile_ledger.unit_fingerprint([record['sha256'] for record in inputs], config)
         if self.profile_ledger.is_sealed(npc_key, fingerprint):
             return self.sealed_outcome(npc_key, self.profile_ledger, npc_key)

@@ -25,6 +25,8 @@ REFERENCE_CLIENT_LOCK = REPOSITORY_ROOT / 'recipes' / 'reference-client-tree.loc
 SYNTHETIC_MESH = 'SyntheticMonsters.synthetic_m00'
 SYNTHETIC_TEXTURE = 'SyntheticMonstersTex.synthetic_t00'
 SYNTHETIC_ANIMATION = 'SyntheticMonsters.synthetic_anim'
+FIRST_PROFILE_TOOL_PINS = {'implementation': {'native_actor_profiles.py': 'd' * 64}, 'uelibSha256': 'e' * 64}
+CHANGED_PROFILE_TOOL_PINS = {'implementation': {'native_actor_profiles.py': 'f' * 64}, 'uelibSha256': 'e' * 64}
 
 
 def synthetic_npcgrp_row(npc_id, mesh=SYNTHETIC_MESH, textures=(SYNTHETIC_TEXTURE,), class_name='SyntheticMonster.synthetic'):
@@ -205,9 +207,9 @@ class ConvertNpcGapTests(unittest.TestCase):
         return convert_actors.convert_npc(self.project_root, self.client_access, self.converter, npc_id,
                                           lane_work_root(self.project_root, 'actors'), lane_store_root(self.project_root, 'actors'))
 
-    def conversion_run(self):
+    def conversion_run(self, profile_tool_pins=FIRST_PROFILE_TOOL_PINS):
         return convert_actors.NpcConversionRun(self.project_root, self.client_access, self.converter, lane_work_root(self.project_root, 'actors'),
-                                               lane_store_root(self.project_root, 'actors'))
+                                               lane_store_root(self.project_root, 'actors'), lambda: profile_tool_pins)
 
     def lane_reasons(self):
         return {(row['key'], row['step']): row['reason'] for row in read_gap_rows(self.project_root, 'actors')}
@@ -237,6 +239,18 @@ class ConvertNpcGapTests(unittest.TestCase):
                          ['npc-name-row-missing', 'npc-name-empty', 'actor-default-unresolved:DrawScale'])
         self.assertEqual(self.lane_reasons(), {('npc:1', 'npc-profile'): 'actor-default-unresolved:DrawScale',
                                                ('npc:2', 'npc-profile'): 'npc-name-row-missing', ('npc:4', 'npc-profile'): 'npc-name-empty'})
+
+    def test_a_sealed_profile_is_a_cache_hit_until_its_profile_tool_pins_change(self):
+        model_unit_key = model_catalog_id_of(self.convertible_selection)
+        def convert_missing_name_profile(profile_tool_pins):
+            return self.conversion_run(profile_tool_pins).convert_profile(2, 'npc:2', synthetic_npcgrp_row(2), model_unit_key,
+                                                                          'animations/LineageMonsters.ukx')
+        self.assertFalse(convert_missing_name_profile(FIRST_PROFILE_TOOL_PINS)['cacheHit'])
+        self.assertTrue(convert_missing_name_profile(FIRST_PROFILE_TOOL_PINS)['cacheHit'])
+        resealed = convert_missing_name_profile(CHANGED_PROFILE_TOOL_PINS)
+        self.assertEqual((resealed['status'], resealed['reason'], resealed['cacheHit']), ('gap', 'npc-name-row-missing', False))
+        receipt = json.loads((lane_work_root(self.project_root, 'actors') / 'npc__2' / 'npc-profile' / 'receipt.json').read_bytes())
+        self.assertEqual(receipt['config']['profileToolPins'], CHANGED_PROFILE_TOOL_PINS)
 
     def test_a_converter_refusal_is_a_path_free_listed_gap_and_an_os_error_is_failed_and_unsealed(self):
         unit_key = model_catalog_id_of(self.convertible_selection)
