@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { Vector3 } from "../../src/shared/math/vector3";
+import { CollisionWorldError } from "../../src/scene/world/movement/core/collisionWorld";
 import { singleLineCheck, type LineCheckHit, type LineCheckQuery } from "../../src/scene/world/movement/core/lineCheck";
 import { hitTimeAfterBackoff, type CollisionBackoffRule } from "../../src/scene/world/movement/core/movementRules";
 import type { GoldenTrace } from "../support/goldenTrace";
+import { replaceFixtureArray } from "../support/nativeTileCollisionFixture";
 import {
   collisionWorldFromFixtures, committedMovementRules, emptyChunkArrays, expectMovementGoldenTrace, fixtureCellId, fixtureTileId, flatTerrainZ,
   hiddenQuadIndex, mixedChunkArrays, moverExportIndex, raisedTerrainZ, terrainWorldPoint, turnedQuadIndex, wallTreeArrays,
@@ -72,6 +74,19 @@ describe("singleLineCheck over every converted primitive kind", () => {
     expect(outward).toMatchObject({ time: 0, location: { x: 280, y: 0, z: 0 }, normal: { x: -1, y: 0, z: 0 } });
     const inward = singleLineCheck(world, { start: { x: 280, y: 0, z: 0 }, end: { x: 100, y: 0, z: 0 }, extent: zeroExtent }, rules)!;
     expect(inward).toMatchObject({ time: 0, location: { x: 280, y: 0, z: 0 }, normal: { x: 1, y: 0, z: 0 } });
+  });
+
+  it.each([
+    ["a plane reference past the node array", () => [0, 5, -1], /tile 90_90 BSPT\.leafHulls\[1\] names node 5 of 2/],
+    ["as many plane references as the hull plane limit", () => [...Array.from({ length: rules.hullPlaneLimit }, () => 0), -1],
+      new RegExp(`tile 90_90 BSPT\.leafHulls run at 0 reaches ${rules.hullPlaneLimit} planes`)],
+  ])("refuses a box sweep into a BSP leaf hull run with %s", (_case, planeReferences, message) => {
+    const wallTree = wallTreeArrays(), wallLeafHulls = wallTree.find(array => array.name === "BSPT.leafHulls")!.values;
+    const hullBoxWords = wallLeafHulls.slice(wallLeafHulls.indexOf(-1) + 1);
+    const world = collisionWorldFromFixtures(emptyChunkArrays(), replaceFixtureArray(wallTree, "BSPT.leafHulls", [...planeReferences(), ...hullBoxWords]));
+    const crossWall = () => singleLineCheck(world, { start: { x: 0, y: 0, z: 0 }, end: { x: 512, y: 0, z: 0 }, extent: { x: 9, y: 9, z: 23 } }, rules);
+    expect(crossWall).toThrow(CollisionWorldError);
+    expect(crossWall).toThrow(message);
   });
 
   it("lands a box sweep on flat terrain with its bottom on the lifted triangle", () => {
