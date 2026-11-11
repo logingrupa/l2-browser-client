@@ -4,15 +4,15 @@ current_phase: 03
 current_phase_name: Stage A checks
 status: executing
 stopped_at: Completed 03-03-PLAN.md
-last_updated: "2026-11-11T12:50:45.008Z"
+last_updated: "2026-11-11T13:32:35.982Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 03 plan 03-01 complete (side-by-side check record writer and key content digest; Phase 3 start commit cb09cdc)
-state_head: fbb541843c9665a54903eae8f55a6b2c1379a33f
+state_head: f74ccca8ef7b1886ea608bd18c79a3decdfebf1e
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 131
-  completed_plans: 95
+  completed_plans: 96
   percent: 0
 ---
 
@@ -353,6 +353,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 03]: P815: tile:16_10 (ECONNRESET, fixed in the tiles spec) and npc:18168 (mid-sweep source reload) keep infrastructure failure records on bba52c47; 03-11 must not list them as converter defects
 - [Phase 03]: P816: the load-check harness key list has npc:21622 and skill:3:1 that Python catalog_index_keys lacks; open follow-up for 03-11
 - [Phase 02]: 02-76: level-model licensees 23, 25, 30 and 31 reviewed through the shared reader layouts with exact Elbera count cross-checks and fixtures; 18, 19 and 20 stay refused because the vendored ULevel binding reads only LicenseeVersion 23 or later
+- [Phase 02]: 02-77: VOLS admits every Engine.BlockingVolume and Engine.PhysicsVolume subclass by class chain (kinds blocking and physics) with bL2WaterVolume, Priority, Gravity and TerminalVelocity and their provenance; swimming reads the governing physics volume's decoded water flag and movement.physicsVolumeIsWater is deleted (P831 to P834)
 
 ### Pending Todos
 
