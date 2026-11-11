@@ -11,7 +11,8 @@ from actors.item_requests import (ARMORGRP_TABLE_NAME, GAP_STATUS, ITEM_STEP, PA
 from actors.item_unit_inventory import armorgrp_mtx_column_names
 from actors.npc_requests import (CONVERTER_REFUSED_REASON_PREFIX, FAILED_STATUS, TRANSIENT_FAILURES, animation_reference_gap_reason,
                                  serialized_animation_reference)
-from actors.npc_store_records import MODEL_ARCHIVE_FILE_NAME, catalog_with_record_replaced, converted_model_store_files_and_record, file_output_record
+from actors.npc_store_records import (MODEL_ARCHIVE_FILE_NAME, catalog_with_record_replaced, catalog_without_record,
+                                      converted_model_store_files_and_record, file_output_record)
 from actors.path_free_messages import path_free_reason
 from native_assets import UMODEL_SHA256, implementation_hash
 from native_assets_lib.gltf import json_bytes
@@ -157,18 +158,24 @@ class ItemConversionRun:
     def write_item_records(self, outcomes):
         catalog, before = read_store_catalog(self.store_root)
         present_ids = {record['id'] for record in catalog.get('models', [])}
-        files, records_replaced = {}, False
+        files, catalog_changed = {}, False
         for outcome in outcomes:
             unit = self.units_by_key[outcome['key']]
-            if outcome['status'] != PASS_STATUS or (outcome['cacheHit'] and all(entry['recordId'] in present_ids for entry in unit['entries'])):
+            record_ids = [entry['recordId'] for entry in unit['entries']]
+            if outcome['status'] == GAP_STATUS:
+                catalog_changed = catalog_changed or any(record_id in present_ids for record_id in record_ids)
+                for record_id in record_ids:
+                    catalog = catalog_without_record(catalog, 'models', record_id)
+                continue
+            if outcome['status'] != PASS_STATUS or (outcome['cacheHit'] and all(record_id in present_ids for record_id in record_ids)):
                 continue
             archive_path = self.ledger.lane_output_path(outcome['outputs'][0]['path'])
-            for entry in unit['entries']:
-                entry_files, record = converted_model_store_files_and_record(entry['recordId'], archive_path)
+            for record_id in record_ids:
+                entry_files, record = converted_model_store_files_and_record(record_id, archive_path)
                 files.update(entry_files)
                 catalog = catalog_with_record_replaced(catalog, 'models', record, model_record_capacity(self.census))
-                records_replaced = True
-        if not records_replaced:
+                catalog_changed = True
+        if not catalog_changed:
             return
         catalog['models'] = sorted(catalog['models'], key=lambda existing: existing['id'])
         write_store(self.store_root, files, before, json_bytes(catalog))

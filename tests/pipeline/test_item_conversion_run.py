@@ -15,6 +15,7 @@ from actors.actor_unit_inventory import ACTOR_UNIT_CENSUS_RELATIVE_PATH
 from actors.item_census import item_census, run_item_batch
 from actors.item_conversion import ItemConversionRun
 from actors.item_unit_inventory import weapon_selection
+from actors.npc_requests import CONVERTER_REFUSED_REASON_PREFIX
 from catalog_store_fixture import model_record
 from native_store.catalog_writer import read_store_catalog
 from native_store.store_paths import lane_store_root, lane_work_root
@@ -40,6 +41,12 @@ class SyntheticItemRun(ItemConversionRun):
     def converted_model_reason(self, unit):
         self.converted_unit_keys.append(unit['unitKey'])
         return None, {'file': self.converted_archive}
+
+
+class RefusingItemRun(SyntheticItemRun):
+    def converted_model_reason(self, unit):
+        self.converted_unit_keys.append(unit['unitKey'])
+        return CONVERTER_REFUSED_REASON_PREFIX + 'synthetic refusal', None
 
 
 def synthetic_model_store_files_and_record(record_id, archive_path):
@@ -103,6 +110,14 @@ class ItemConversionRunTests(unittest.TestCase):
         self.assertEqual(census['units']['weapon'], {'convertible': 4, 'converted': 1, 'gap': 0, 'pending': 3})
         self.assertEqual([row['unitKey'] for row in census['sealedUnits']], [run.units[0]['unitKey']])
         self.assertEqual(census['items']['pending'], 3)
+
+    def test_a_unit_that_reconverts_into_a_gap_removes_its_model_record(self):
+        run_item_batch(SyntheticItemRun(self.project_root, self.client_root), 4, lambda: None)
+        self.implementation_hash.return_value = CHANGED_CONVERTER_SHA256
+        run = RefusingItemRun(self.project_root, self.client_root)
+        outcomes = run_item_batch(run, 1, lambda: None)
+        self.assertEqual([outcome['status'] for outcome in outcomes], ['gap'])
+        self.assertEqual(self.catalog_model_ids(), [f'interlude:item:{item_id}:body-part:7:weapon' for item_id in (2, 3, 4)])
 
 
 if __name__ == '__main__':
