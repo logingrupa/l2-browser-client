@@ -37,6 +37,20 @@ UMODEL_SHA256 = '13502e5a4d8f6b5f32252afebd6360f7302ccfaccf6b8dda65beff0be2d364a
 SOURCE_TO_GLTF = [.01, 0, 0, 0, 0, 0, .01, 0, 0, .01, 0, 0, 0, 0, 0, 1]
 MAX_ARCHIVE = 128 * 1024 * 1024
 MAX_PAYLOAD = 96 * 1024 * 1024
+DIAGNOSTIC_MAGENTA_BASE_COLOUR = [1, 0, 1, 1]
+UNSUPPORTED_DIAGNOSTIC_RUNTIME_STATUS = 'unsupported-diagnostic'
+
+
+class UnsupportedMaterialAdapter(ValueError):
+    def __init__(self, class_name, object_name):
+        super().__init__(f'No diffuse material adapter for {class_name}: {object_name}')
+        self.class_name, self.object_name = class_name, object_name
+
+
+def write_magenta_diagnostic_material(material, name, extras):
+    material.clear()
+    material.update(name=name, pbrMetallicRoughness={'baseColorFactor': list(DIAGNOSTIC_MAGENTA_BASE_COLOUR), 'metallicFactor': 0, 'roughnessFactor': 1},
+                    extras=extras)
 
 
 def static_section_bindings(document):
@@ -267,7 +281,7 @@ class Converter:
             payload, properties, qualified = self.texture(work, item['object'])
             return payload, properties, qualified, []
         if item['className'] not in ('Shader', 'FinalBlend'):
-            raise ValueError(f'No diffuse material adapter for {item["className"]}: {item["object"]}')
+            raise UnsupportedMaterialAdapter(item['className'], item['object'])
         records, reader = package.properties(item)
         properties = {entry['name']: entry.get('value', {'rawHex': entry['payloadHex']}) for entry in records}
         link = properties.get('Diffuse' if item['className'] == 'Shader' else 'Material')
@@ -324,8 +338,18 @@ class Converter:
             if native_materials is not None:
                 slot.update(nativeSectionIndex=index, nativeMaterialSlot=native_slot,
                             nativeReferenceStatus=native_slot['referenceStatus'] if native_slot else 'outside-native-material-array')
+            unsupported_adapter = None
             if reference:
-                payload, properties, qualified, graph = self.material_texture(work, reference)
+                try:
+                    payload, properties, qualified, graph = self.material_texture(work, reference)
+                except UnsupportedMaterialAdapter as unsupported:
+                    unsupported_adapter = {'class': unsupported.class_name, 'object': unsupported.object_name}
+            if unsupported_adapter:
+                write_magenta_diagnostic_material(material, f'UNSUPPORTED_MATERIAL_ADAPTER_SLOT_{index}',
+                    {'binding': provenance, 'nativeRuntimeStatus': UNSUPPORTED_DIAGNOSTIC_RUNTIME_STATUS, 'unsupportedMaterialAdapter': unsupported_adapter})
+                limitations.append(f'material-adapter-unsupported:{unsupported_adapter["class"]}:{unsupported_adapter["object"]}')
+                slot.update(sourceReference=reference, nativeRuntimeStatus=UNSUPPORTED_DIAGNOSTIC_RUNTIME_STATUS, unsupportedMaterialAdapter=unsupported_adapter)
+            elif reference:
                 texture = document.image(payload, 'image/png', qualified)
                 material.clear()
                 material.update(name=qualified, pbrMetallicRoughness={'baseColorTexture': {'index': texture}, 'metallicFactor': 0, 'roughnessFactor': 1}, extras={'nativeProperties': properties, 'binding': provenance})
@@ -344,8 +368,7 @@ class Converter:
                     limitations.append(f'Material slot {index} has bAlphaTexture; native blend/shader behavior is not recovered.')
                 slot.update(texture=qualified, textureSha256=sha(payload), properties=properties, sourceReference=reference, nativeMaterialGraph=graph)
             else:
-                material.clear()
-                material.update(name=f'UNBOUND_SOURCE_SLOT_{index}', pbrMetallicRoughness={'baseColorFactor': [1, 0, 1, 1], 'metallicFactor': 0, 'roughnessFactor': 1}, extras={'unboundSourceMaterial': original})
+                write_magenta_diagnostic_material(material, f'UNBOUND_SOURCE_SLOT_{index}', {'unboundSourceMaterial': original})
                 limitations.append(f'Material slot {index}: {original}. Magenta diagnostic preview; native skin assignment has not been resolved.')
             if native_materials is not None:
                 material.setdefault('extras', {}).update(nativeSectionIndex=index,
