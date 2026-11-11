@@ -140,6 +140,11 @@ class ReferenceClientGuardTests(GuardedConversionRootTestCase):
                          (reference_package, hashlib.sha256(reference_package.read_bytes()).hexdigest()))
         with self.assertRaisesRegex(ReferenceClientLockError, 'reference client root .* has no animations/Absent.ukx'):
             reference_access.require_equal_file_with_sha256('animations/Absent.ukx')
+        reference_status = os.stat(reference_package)
+        reference_package.write_bytes(b'edited packag')
+        os.utime(reference_package, ns=(reference_status.st_atime_ns, reference_status.st_mtime_ns))
+        self.assertEqual(reference_access.require_equal_file_with_sha256('animations/Fighter.ukx'),
+                         (reference_package, hashlib.sha256(b'edited packag').hexdigest()))
         (self.trees.conversion_root / 'animations/Fighter.ukx').write_bytes(b'edited package')
         with self.assertRaisesRegex(ReferenceClientLockError, 'reference client lock is stale for animations/Fighter.ukx; re-lock ordered'):
             conversion_access.require_equal_file_with_sha256('animations/Fighter.ukx')

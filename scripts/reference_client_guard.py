@@ -111,10 +111,9 @@ class ReferenceClientAccess:
 
     def reference_root_file_sha256(self, relative_path, path):
         try:
-            status = os.stat(path)
+            return sha256_of_file(path)
         except FileNotFoundError:
             raise ReferenceClientLockError(f'reference client root {self.root.as_posix()} has no {relative_path}') from None
-        return sha256_of_file_cached_by_identity(path, status)
 
     def is_in_read_scope(self, relative_path):
         if not self.requires_lock:
