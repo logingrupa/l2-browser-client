@@ -5,8 +5,9 @@ import zipfile
 from pathlib import Path, PurePosixPath
 
 from actors.actor_census import SOUND_PACKAGE_SUFFIXES, ActorPackageCensus, package_name_of
-from actors.actor_sound_bindings import (ACTOR_SOUND_STEP, actor_sound_bundle_id, actor_sound_gap_row, actor_sound_gap_rows,
-                                         actor_sound_reference_counts, build_actor_sound_recipe, unresolved_reference_entries)
+from actors.actor_sound_bindings import (ACTOR_SOUND_STEP, NO_EXACT_SKILL_SOUND_ROW_REASON, actor_sound_bundle_id, actor_sound_gap_row,
+                                         actor_sound_gap_rows, actor_sound_reference_counts, build_actor_sound_recipe,
+                                         unresolved_reference_entries)
 from actors.actor_unit_inventory import decoded_string_values
 from actors.combat_role_routes import (bind_combat_role_routes, combat_route_table_manifest, descriptor_record_field_names,
                                        read_combat_role_route_proof)
@@ -39,6 +40,7 @@ NATIVE_PAYLOAD_FILE_NAME = 'native-payload.bin'
 CONVERTED_ARCHIVE_FILE_NAME = 'asset.l2asset'
 SOUND_OUTCOME_FILE_NAME = 'sound-outcome.json'
 SOUND_UNIT_KEY_PREFIX = 'sound:'
+NO_SOUND_ROW_BINDING_FIELDS = ('key', 'skillId', 'level', 'soundRowOrdinal', 'soundReason')
 
 
 class ActorSoundConversionError(ValueError):
@@ -288,6 +290,28 @@ class ActorSoundConversionRun:
         self.bundle_ledger.seal(bundle_key, work.fingerprint, {'config': work.config, 'inputs': work.inputs, 'outputs': outputs, 'gapRows': gap_rows})
         return self.sealed_bundle_outcome(bundle_key, catalog_capacity, False)
 
+    def no_sound_row_work(self, skill_binding, sound_table_identity):
+        inputs = locked_input_records([sound_table_identity['path']])
+        config = {'bundleKey': skill_binding['key'], 'actorRows': [], 'reason': NO_EXACT_SKILL_SOUND_ROW_REASON,
+                  'soundTableIdentity': sound_table_identity,
+                  'skillBinding': {field: skill_binding[field] for field in NO_SOUND_ROW_BINDING_FIELDS}}
+        return inputs, config, self.bundle_ledger.unit_fingerprint([record['sha256'] for record in inputs], config)
+
+    def is_no_sound_row_bundle_sealed(self, skill_binding, sound_table_identity):
+        _, _, fingerprint = self.no_sound_row_work(skill_binding, sound_table_identity)
+        return self.bundle_ledger.is_sealed(skill_binding['key'], fingerprint)
+
+    def convert_no_sound_row_bundle(self, skill_binding, sound_table_identity, catalog_capacity):
+        bundle_key = skill_binding['key']
+        inputs, config, fingerprint = self.no_sound_row_work(skill_binding, sound_table_identity)
+        if self.bundle_ledger.is_sealed(bundle_key, fingerprint):
+            return self.sealed_bundle_outcome(bundle_key, catalog_capacity, True)
+        step_directory = self.bundle_ledger.begin(bundle_key, fingerprint)
+        evidence = lane_relative(self.lane_folder, step_directory / RECEIPT_RECORD_NAME)
+        gap_row = actor_sound_gap_row(bundle_key, NO_EXACT_SKILL_SOUND_ROW_REASON, dict(sound_table_identity), evidence)
+        self.bundle_ledger.seal(bundle_key, fingerprint, {'config': config, 'inputs': inputs, 'outputs': [], 'gapRows': [gap_row]})
+        return self.sealed_bundle_outcome(bundle_key, catalog_capacity, False)
+
     def builder_sha256(self):
         return sha256_hex_digest(Path(combat_audio_bundle.__file__).read_bytes())
 
@@ -354,12 +378,4 @@ class ActorSoundConversionRun:
                     'reasonListVersions': gap_reason_list_versions(), 'rows': sorted_gap_rows(merged)}
         path.parent.mkdir(parents=True, exist_ok=True)
         replace_file(path, canonical_json_bytes(document))
-
-
-def no_sound_row_bundle_outcome(run, bundle_key, reason, source_identity):
-    row = actor_sound_gap_row(bundle_key, reason, source_identity, ACTOR_SOUND_GAP_ROWS_RELATIVE_PATH)
-    run.replace_bundle_gap_rows(bundle_key, [row])
-    write_catalog_without_record(run.store_root, 'combatAudio', actor_sound_bundle_id(bundle_key))
-    return {'key': bundle_key, 'step': ACTOR_SOUND_STEP, 'status': 'gap', 'reason': reason, 'cacheHit': False, 'bundleId': None,
-            'references': actor_sound_reference_counts(None)}
 

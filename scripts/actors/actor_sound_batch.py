@@ -3,8 +3,8 @@ import json
 import re
 from pathlib import Path
 
-from actors.actor_sound_bindings import NO_EXACT_SKILL_SOUND_ROW_REASON, actor_sound_reference_counts, skill_actor_row
-from actors.actor_sound_conversion import ActorSoundConversionRun, combat_audio_manifest_outputs, no_sound_row_bundle_outcome
+from actors.actor_sound_bindings import actor_sound_reference_counts, skill_actor_row
+from actors.actor_sound_conversion import ActorSoundConversionRun, combat_audio_manifest_outputs
 from actors.combat_role_routes import (COMBAT_ROLE_ROUTE_PROOF, bind_combat_role_routes, combat_route_config_manifest)
 from actors.skill_binding_table import DecodedSkillTables
 from native_assets_lib.footstep_config import decode_config
@@ -65,31 +65,38 @@ class ActorSoundBundles:
         self.skill_keys = skill_bundle_keys(catalog)
         self.character_reason = character_census_reason(project_root)
         self.keys = sorted([*self.npc_profiles, *self.skill_keys], key=bundle_sort_key)
-        self.skill_tables = None
+        self.skill_tables, self.skill_bindings_by_key = None, None
 
     def capacity(self):
         return max(1, len(self.keys))
+
+    def skill_binding(self, run, bundle_key):
+        if self.skill_tables is None:
+            self.skill_tables = DecodedSkillTables(run.project_root, run.client_access.root, run.decode_table)
+            self.skill_bindings_by_key = {row['key']: row for row in self.skill_tables.binding_rows}
+        return self.skill_bindings_by_key[bundle_key]
+
+    def sound_table_identity(self):
+        return {'path': self.skill_tables.sound_table['source'], 'sha256': self.skill_tables.sound_table['sourceSha256']}
 
     def actor_rows(self, run, bundle_key):
         if bundle_key in self.npc_profiles:
             return [npc_actor_row(self.npc_profiles[bundle_key])]
         if bundle_key not in self.skill_keys:
             raise ValueError(f'{bundle_key} is not an actor bundle of the actors lane catalog')
-        if self.skill_tables is None:
-            self.skill_tables = DecodedSkillTables(run.project_root, run.client_access.root, run.decode_table)
-        binding = next(row for row in self.skill_tables.binding_rows if row['key'] == bundle_key)
-        actor_row = skill_actor_row(binding, self.skill_tables.sound_rows)
+        actor_row = skill_actor_row(self.skill_binding(run, bundle_key), self.skill_tables.sound_rows)
         return None if actor_row is None else [actor_row]
 
     def is_sealed(self, run, bundle_key):
         actor_rows = self.actor_rows(run, bundle_key)
-        return actor_rows is not None and run.is_bundle_sealed(bundle_key, actor_rows)
+        if actor_rows is None:
+            return run.is_no_sound_row_bundle_sealed(self.skill_binding(run, bundle_key), self.sound_table_identity())
+        return run.is_bundle_sealed(bundle_key, actor_rows)
 
     def convert(self, run, bundle_key):
         actor_rows = self.actor_rows(run, bundle_key)
         if actor_rows is None:
-            identity = {'path': self.skill_tables.sound_table['source'], 'sha256': self.skill_tables.sound_table['sourceSha256']}
-            return no_sound_row_bundle_outcome(run, bundle_key, NO_EXACT_SKILL_SOUND_ROW_REASON, identity)
+            return run.convert_no_sound_row_bundle(self.skill_binding(run, bundle_key), self.sound_table_identity(), self.capacity())
         return run.convert_bundle(bundle_key, actor_rows, self.capacity())
 
 
