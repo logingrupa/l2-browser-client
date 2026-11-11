@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 03-03-PLAN.md
-last_updated: "2026-11-11T13:43:32.633Z"
+stopped_at: Completed 02-90-PLAN.md
+last_updated: "2026-11-11T14:11:55.422Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 03 plan 03-01 complete (side-by-side check record writer and key content digest; Phase 3 start commit cb09cdc)
-state_head: a56c6273d3a9cd2fed5e91517378adac118f8fbc
+state_head: 2e55ddaa81e5136764c3c902f5c5d96dc70911f6
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 131
-  completed_plans: 97
+  completed_plans: 98
   percent: 0
 ---
 
@@ -143,6 +143,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 3 P01 | 28min | 3 tasks | 7 files |
 | Phase 03 P02 | 26min | 2 tasks | 11 files |
 | Phase 03 P03 | 137min | 3 tasks | 6 files |
+| Phase 2 P90 | 25min | 2 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -355,6 +356,10 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-76: level-model licensees 23, 25, 30 and 31 reviewed through the shared reader layouts with exact Elbera count cross-checks and fixtures; 18, 19 and 20 stay refused because the vendored ULevel binding reads only LicenseeVersion 23 or later
 - [Phase 02]: 02-77: VOLS admits every Engine.BlockingVolume and Engine.PhysicsVolume subclass by class chain (kinds blocking and physics) with bL2WaterVolume, Priority, Gravity and TerminalVelocity and their provenance; swimming reads the governing physics volume's decoded water flag and movement.physicsVolumeIsWater is deleted (P831 to P834)
 - [Phase 02]: 02-80: any spawned entity's actor-sounds:<key> bundle loads through the catalog index (generated combatAudio records answer actor-sounds keys) and bindSpawnedActorSoundCues plays its clip notify cues from its own bundle on the entity clip clock; role slots stay listed combat-role-route-unresolved; 02-87 wires it on spawn (P835 to P839)
+- [Phase 2]: P956: the version, config and locked-inputs receipt rule lives in the leaf module scripts/world/locked_input_receipt.py (the registry imports every step that calls it); bsp, sky and movers drop their copies
+- [Phase 2]: P957: raw_map_unit_fingerprint is keyed by map path, tile_manifest_unit returns the whole manifest unit, and the registry entry is unit_step_seal with injected seal checks
+- [Phase 2]: P958: a stale seal is batch work even with a recorded gap or failed row and reads pending batch-pending until rerun; inspection OSError or ValueError is not current in tile_has_work and a failed row in tile_rows
+- [Phase 2]: P959: upstream_failed_row moves to tile_step_gap_rows.py to cut the minimap_step import cycle
 
 ### Pending Todos
 
@@ -440,7 +445,6 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 - Water volumes in VOLS (02-62, row 666): `recipes/world/collision-declaration-rules.json` admits only Engine.BlockingVolume and Engine.PhysicsVolume, so the lighting resource links no WaterVolume to VOLS (`lighting-water-volume-unlinked:Gameplay.WaterVolume`, 20_21: 5, 20_20: 4); admit PhysicsVolume subclasses in the collision step together with the MOVE-01 volume kind codes, then rerun collision and lighting. 02-66 swimming and the falling water entry read water from VOLS through `volumesContaining`, so they need the same export with bL2WaterVolume, Priority, Gravity and TerminalVelocity (row 675).
 - Struct fields in actor records (02-62, row 668): authored struct values (L2FogInfo AffectRange, FogRange1..5, Colors) come back from `world/actor_field_values.py` as tag bytes; decode the nested tags in that one reader so the lighting records carry Min, Max and the hour colours.
 - Level model reader licensees (02-54, rows 755 and 756): `scripts/world/level_model.py` reviews map 123/28 only, so 41 converted tiles of map licensees 18, 23, 25 and 30 hold a `bsp` gap `map-licensee-unsupported:123/<x>`, collision fails with `needs sealed meshes, bsp and movers units` and their load check fails with `pins no native-tile-collision resource`. Grow the level model reader one licensee at a time through `scripts/world/reader_licensee_layouts.py` with a cited layout and an exact cross-check, then rerun `convert_tile.py` from `--step bsp` on those tiles.
-- Stale seals in the batch (02-54, row 758): `convert_tile_batch.py` counts any sealed receipt as sealed (seal inspection version 1), so a fingerprint change, such as the 02-54 meshes review state, reaches sealed tiles only through `convert_tile.py`; let the batch compare the real step fingerprint so one resume command re-runs stale units.
 - Lane coverage with the catalog (row 445): `scripts/native_store/write_lane_catalog.py --lane <lane>` regenerates the lane's `coverage.json` from the catalog it just wrote, with a test that a catalog change cannot leave a coverage report pinned to the old catalog.
 
 Landed on 2026-11-09 (rows 419 to 424): the four undecoded tables decode from the client reading; the hair tables follow the 4dd2 Engine.dll int32 layout; `inventory()` reads only lock-equal E: files; UE2 package-qualified names match case-insensitively when one export matches (Core.dll evidence), with one owner `scripts/native_assets_lib/qualified_export_names.py`. Lane-boundary paths are recorded in rows 421 and 423.
@@ -482,6 +486,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-11T10:30:03.594Z
-Stopped at: Completed 03-03-PLAN.md
+Last session: 2026-11-11T14:11:54.756Z
+Stopped at: Completed 02-90-PLAN.md
 Resume file: None
