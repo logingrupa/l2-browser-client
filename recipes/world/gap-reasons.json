@@ -1,11 +1,12 @@
 {
   "schemaVersion": 1,
-  "listVersion": 20,
+  "listVersion": 21,
   "reasons": [
     "terrain-height-version-unsupported:<version>",
     "terrain-quads-all-hidden",
     "terrain-layer-incomplete:<index>",
     "terrain-layer-uv-unverified:<index>",
+    "terrain-seam-neighbour-unavailable:<tileId>",
     "player-start-missing",
     "placement-outside-chunk-grid",
     "placement-class-unsupported:<class>",
@@ -14,7 +15,6 @@
     "bsp-node-outside-chunk-grid",
     "bsp-chunk-without-nodes",
     "collision-transform-field-unreadable:<field>",
-    "collision-volume-class-unadmitted:<class>",
     "bsp-visibility-model-unreadable:<field>",
     "bsp-visibility-solidity-disagreement",
     "sky-zone-ambiguous:<count>",
