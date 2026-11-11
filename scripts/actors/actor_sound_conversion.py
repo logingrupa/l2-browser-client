@@ -8,6 +8,7 @@ from actors.actor_census import SOUND_PACKAGE_SUFFIXES, ActorPackageCensus, pack
 from actors.actor_sound_bindings import (ACTOR_SOUND_STEP, actor_sound_bundle_id, actor_sound_gap_row, actor_sound_gap_rows,
                                          actor_sound_reference_counts, build_actor_sound_recipe, unresolved_reference_entries)
 from actors.actor_unit_inventory import decoded_string_values
+from actors.data_ui_table_manifest import DATA_UI_LANE_NAME, data_ui_table_manifest
 from actors.combat_role_routes import (bind_combat_role_routes, combat_route_table_manifest, descriptor_record_field_names,
                                        read_combat_role_route_proof)
 from actors.npc_requests import CONVERTER_REFUSED_REASON_PREFIX
@@ -22,13 +23,11 @@ from native_catalog.tables import interlude_table_layout
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import read_store_catalog, replace_file, write_store
 from native_store.gap_rows import gap_reason_list_versions, load_gap_reason_patterns, sorted_gap_rows, validate_gap_row
-from native_store.store_paths import lane_store_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from reference_client_guard import ReferenceClientLockError
 
 ACTOR_SOUND_UNIT_STEP = 'actor-sound'
 ACTOR_SOUND_ALGORITHM_VERSION = 1
-DATA_UI_LANE_NAME = 'data-ui'
 COMBAT_AUDIO_STORE_FOLDER = 'combat-audio'
 ACTOR_SOUND_GAP_ROWS_RELATIVE_PATH = 'work/actor-sounds/actor-sound-gap-rows.json'
 ACTOR_SOUND_TABLES_FOLDER = 'work/actor-sounds/tables'
@@ -118,20 +117,17 @@ class ActorSoundConversionRun:
             path.write_bytes(payload)
         return {'path': self.repository_relative(path), 'bytes': len(payload), 'sha256': sha256_hex_digest(payload)}
 
-    def data_ui_table_manifest(self, name):
-        store_root = lane_store_root(self.project_root, DATA_UI_LANE_NAME)
-        catalog, _ = read_store_catalog(store_root)
-        records = [record for record in catalog.get('tables', []) if record['id'] == name]
-        if len(records) != 1:
-            raise ActorSoundConversionError(f'the {DATA_UI_LANE_NAME} lane catalog holds {len(records)} {name} tables records')
-        payload = (store_root.parent / records[0]['manifest'].lstrip('/')).read_bytes()
-        if sha256_hex_digest(payload) != records[0]['manifestSha256'] or records[0]['sourceSha256'] != self.table(name)['identity']['sha256']:
-            raise ActorSoundConversionError(f'the {DATA_UI_LANE_NAME} {name} manifest differs from its tables record or the client table')
-        return json.loads(payload)
+    def required_data_ui_table_manifest(self, name):
+        manifest = data_ui_table_manifest(self.project_root, name)
+        if manifest is None:
+            raise ActorSoundConversionError(f'the {DATA_UI_LANE_NAME} lane catalog holds no single {name} tables record')
+        if manifest['sourceSha256'] != self.table(name)['identity']['sha256']:
+            raise ActorSoundConversionError(f'the {DATA_UI_LANE_NAME} {name} manifest is not decoded from the client table')
+        return manifest
 
     def routes(self, name):
         if name not in self.routes_by_table:
-            manifest = self.data_ui_table_manifest(name)
+            manifest = self.required_data_ui_table_manifest(name)
             rows = manifest['records'][combat_audio_bundle.TABLES[name]]
             _, layout, _ = interlude_table_layout(name)
             route_manifest = combat_route_table_manifest(name, manifest['descriptorSha256'], descriptor_record_field_names(layout), rows,

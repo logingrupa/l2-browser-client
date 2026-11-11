@@ -6,7 +6,7 @@ import zipfile
 from native_actor_profiles import verify_npc_profiles
 from native_assets import verify_archive
 from native_store.catalog_writer import add_store_file, merge_catalog_slice, sha256_hex
-from native_store.store_paths import confined_child_path
+from native_store.store_paths import StorePathError, confined_child_path
 
 NATIVE_RESOURCE_PREFIX = '/l2/'
 MODEL_ARCHIVE_FILE_NAME = 'asset.l2asset'
@@ -53,9 +53,14 @@ def catalog_with_record_replaced(catalog, slice_name, record, capacity):
     return merge_catalog_slice({**catalog, slice_name: kept_records}, slice_name, record, capacity)
 
 
+def native_resource_store_path(store_root, resource):
+    if not (isinstance(resource, str) and resource.startswith(NATIVE_RESOURCE_PREFIX)):
+        raise StorePathError(f'store resource does not start with {NATIVE_RESOURCE_PREFIX}: {resource!r}')
+    return confined_child_path(Path(store_root), resource[len(NATIVE_RESOURCE_PREFIX):])
+
+
 def profile_record_npc_ids(store_root, record):
-    manifest_relative = record['manifest'][len(NATIVE_RESOURCE_PREFIX):]
-    manifest = json.loads(confined_child_path(Path(store_root), manifest_relative).read_bytes())
+    manifest = json.loads(native_resource_store_path(store_root, record['manifest']).read_bytes())
     return [profile['npcId'] for profile in manifest['profiles']]
 
 

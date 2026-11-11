@@ -6,6 +6,7 @@ from pathlib import Path
 from actors.actor_sound_bindings import NO_EXACT_SKILL_SOUND_ROW_REASON, actor_sound_reference_counts, skill_actor_row
 from actors.actor_sound_conversion import ActorSoundConversionRun, combat_audio_manifest_outputs, no_sound_row_bundle_outcome
 from actors.combat_role_routes import (COMBAT_ROLE_ROUTE_PROOF, bind_combat_role_routes, combat_route_config_manifest)
+from actors.npc_store_records import native_resource_store_path
 from actors.skill_binding_table import DecodedSkillTables
 from native_assets_lib.footstep_config import decode_config
 from native_assets_lib.sha256_identity import sha256_hex_digest
@@ -28,7 +29,7 @@ ACTOR_SOUND_KEY = re.compile(r'^(?:character:[0-9]{1,4}|npc:[0-9]{1,9}|skill:[0-
 def npc_profile_rows(store_root, catalog):
     profiles = {}
     for record in catalog.get('npcProfiles', []):
-        payload = (Path(store_root).parent / record['manifest'].lstrip('/')).read_bytes()
+        payload = native_resource_store_path(store_root, record['manifest']).read_bytes()
         if sha256_hex_digest(payload) != record['manifestSha256']:
             raise ValueError(f'npc profile manifest of {record["id"]} differs from its catalog pin')
         for profile in json.loads(payload)['profiles']:

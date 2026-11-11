@@ -6,7 +6,7 @@ from pathlib import Path
 from actors.actor_census import MESH_PACKAGE_SUFFIXES, TEXTURE_PACKAGE_SUFFIXES, ActorPackageCensus
 from actors.actor_unit_inventory import (ACTOR_UNIT_CENSUS_RELATIVE_PATH, ARMOR_MESH_UNIT_KIND, CONVERTIBLE_UNIT_STATUS, decoded_table_identity,
                                          model_record_capacity)
-from actors.character_conversion import data_ui_table_manifest
+from actors.data_ui_table_manifest import data_ui_table_manifest
 from actors.item_requests import (ARMORGRP_TABLE_NAME, GAP_STATUS, ITEM_STEP, PASS_STATUS, WEAPONGRP_TABLE_NAME, build_armor_unit_requests,
                                   build_weapon_unit_request, item_gap_row)
 from actors.item_unit_inventory import armorgrp_mtx_column_names

@@ -5,6 +5,7 @@ from pathlib import Path
 
 from actors.actor_census import MESH_PACKAGE_SUFFIXES, TEXTURE_PACKAGE_SUFFIXES, ActorPackageCensus
 from actors.actor_unit_inventory import ACTOR_UNIT_CENSUS_RELATIVE_PATH, model_record_capacity, decoded_table_identity
+from actors.data_ui_table_manifest import data_ui_table_manifest
 from actors.character_requests import (CHARACTER_STEP, CLASSINFO_TABLE_NAME, GAP_STATUS, HAIRGRP_TABLE_NAME, HELMETGRP_TABLE_NAME,
                                        build_character_request, character_gap_rows, character_key, chargrp_row_at, is_padding_row,
                                        resolve_character_actor_class)
@@ -16,40 +17,15 @@ from actors.npc_store_records import (MODEL_ARCHIVE_FILE_NAME, catalog_with_reco
 from data.lane_unit_outcomes import replace_step_gap_row
 from native_assets import UMODEL_SHA256, implementation_hash
 from native_assets_lib.gltf import json_bytes
-from native_store.catalog_writer import read_store_catalog, sha256_hex, write_store
-from native_store.store_paths import confined_child_path, lane_store_root
+from native_store.catalog_writer import read_store_catalog, write_store
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from reference_client_guard import ReferenceClientLockError
 
 CHARACTER_ALGORITHM_VERSION = 1
 CHARACTER_LANE_NAME = 'actors'
 CHARACTER_MODEL_ID_PREFIX = 'character-model:'
-DATA_UI_LANE_NAME = 'data-ui'
 PADDING_STATUS = 'padding'
 CharacterSources = namedtuple('CharacterSources', 'chargrp classinfo hairgrp helmetgrp read_class_definition')
-
-
-class CharacterConversionError(ValueError):
-    pass
-
-
-def data_ui_table_manifest(project_root, table_name):
-    store_root = lane_store_root(project_root, DATA_UI_LANE_NAME)
-    catalog_path = store_root / 'catalog.json'
-    if not catalog_path.is_file():
-        return None
-    records = [record for record in json.loads(catalog_path.read_bytes()).get('tables', []) if record['id'] == table_name]
-    if len(records) != 1:
-        return None
-    record = records[0]
-    manifest_bytes = confined_child_path(store_root, record['manifest'].removeprefix('/l2/')).read_bytes()
-    if sha256_hex(manifest_bytes) != record['manifestSha256'] or len(manifest_bytes) != record['manifestBytes']:
-        raise CharacterConversionError(f'data-ui lane manifest {record["manifest"]} differs from its tables record')
-    manifest = json.loads(manifest_bytes)
-    locked_sha256 = locked_input_records([manifest['sourcePath']])[0]['sha256']
-    if not (manifest['sourceSha256'] == record['sourceSha256'] == locked_sha256):
-        raise CharacterConversionError(f'data-ui lane manifest {record["manifest"]} is not decoded from the locked {manifest["sourcePath"]}')
-    return manifest
 
 
 class LazyClassDefinitionReader:
