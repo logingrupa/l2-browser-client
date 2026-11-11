@@ -27,7 +27,7 @@ def is_number(value):
     return type(value) in (int, float)
 
 
-def require_condition(condition, feature_property):
+def require_emitter_feature_condition(condition, feature_property):
     if not isinstance(condition, dict) or condition.get('test') not in LEAF_CONDITION_EXTRA_FIELDS.keys() | COMPOSITE_CONDITION_TESTS:
         raise EmitterFeatureCoverageError(f'{EMITTER_FEATURE_COVERAGE_RELATIVE_PATH} feature {feature_property} has a condition '
                                           f'outside {sorted(LEAF_CONDITION_EXTRA_FIELDS.keys() | COMPOSITE_CONDITION_TESTS)}')
@@ -37,7 +37,7 @@ def require_condition(condition, feature_property):
             raise EmitterFeatureCoverageError(f'{EMITTER_FEATURE_COVERAGE_RELATIVE_PATH} feature {feature_property} {test} needs '
                                               'exactly {test, conditions} with a non-empty condition list')
         for inner_condition in condition['conditions']:
-            require_condition(inner_condition, feature_property)
+            require_emitter_feature_condition(inner_condition, feature_property)
         return
     if set(condition) != LEAF_CONDITION_BASE_FIELDS | LEAF_CONDITION_EXTRA_FIELDS[test]:
         raise EmitterFeatureCoverageError(f'{EMITTER_FEATURE_COVERAGE_RELATIVE_PATH} feature {feature_property} {test} needs exactly '
@@ -63,7 +63,7 @@ def require_emitter_feature(feature):
             and len(set(feature['emitterClasses'])) == len(feature['emitterClasses'])):
         raise EmitterFeatureCoverageError(f'{EMITTER_FEATURE_COVERAGE_RELATIVE_PATH} features must be {{property, emitterClasses, when}} '
                                           'with unique Engine emitter class names')
-    require_condition(feature['when'], feature['property'])
+    require_emitter_feature_condition(feature['when'], feature['property'])
 
 
 def read_emitter_feature_rules(project_root):
