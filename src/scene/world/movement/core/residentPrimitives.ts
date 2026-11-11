@@ -23,7 +23,14 @@ export interface ResidentPrimitive {
 
 const locate = (hit: PrimitiveSweepHit | null, primitive: CollisionPrimitive): LocatedSweepHit | null => hit === null ? null : { ...hit, primitive };
 
-function cellPrimitives(cell: CollisionCell, surroundings: CollisionSurroundings, rules: MovementNativeRules): ResidentPrimitive[] {
+interface CellFixedPrimitives {
+  readonly volumesAndPlacements: readonly ResidentPrimitive[];
+  readonly terrain: readonly ResidentPrimitive[];
+}
+
+const cellFixedPrimitivesByRules = new WeakMap<MovementNativeRules, WeakMap<CollisionCell, CellFixedPrimitives>>();
+
+function buildCellFixedPrimitives(cell: CollisionCell, rules: MovementNativeRules): CellFixedPrimitives {
   const { cellId } = cell, bspBackoff = { rayBackoff: rules.backoff.bspRay, boxBackoff: rules.backoff.bspBox };
   const meshBackoff = { rayBackoff: rules.backoff.staticMesh, boxBackoff: rules.backoff.staticMesh };
   const volumes = cell.volumes.flatMap((volume, volumeIndex): ResidentPrimitive[] => {
@@ -45,16 +52,6 @@ function cellPrimitives(cell: CollisionCell, surroundings: CollisionSurroundings
       overlappedBy: (centre, extent) => staticMeshOverlapsBox(mesh, placement.matrix, centre, extent) ? primitive : null,
     }];
   });
-  const movers = cell.movers.map((mover, moverIndex): ResidentPrimitive => {
-    const mesh = cell.staticMeshes[mover.staticMeshIndex]!;
-    const matrix = surroundings.moverStates?.get(mover.exportIndex) === "open" ? mover.openMatrix : mover.closedMatrix;
-    const primitive: CollisionPrimitive = { kind: "mover", cellId, moverIndex, exportIndex: mover.exportIndex };
-    return {
-      source: mover.collisionSource, ...meshBackoff,
-      trace: sweep => locate(traceStaticMesh(mesh, matrix, sweep, rules), primitive),
-      overlappedBy: (centre, extent) => staticMeshOverlapsBox(mesh, matrix, centre, extent) ? primitive : null,
-    };
-  });
   const terrain = cell.terrain;
   const terrains: ResidentPrimitive[] = terrain === null ? [] : [{
     source: "terrain-heightmap", rayBackoff: rules.backoff.terrain, boxBackoff: rules.backoff.terrain,
@@ -67,7 +64,36 @@ function cellPrimitives(cell: CollisionCell, surroundings: CollisionSurroundings
       return contact === null ? null : { kind: "terrain", cellId, quadIndex: contact.quadIndex };
     },
   }];
-  return [...volumes, ...placements, ...movers, ...terrains];
+  return { volumesAndPlacements: [...volumes, ...placements], terrain: terrains };
+}
+
+function cellFixedPrimitives(cell: CollisionCell, rules: MovementNativeRules): CellFixedPrimitives {
+  const fixedPrimitivesByCell = cellFixedPrimitivesByRules.get(rules) ?? new WeakMap<CollisionCell, CellFixedPrimitives>();
+  cellFixedPrimitivesByRules.set(rules, fixedPrimitivesByCell);
+  const cached = fixedPrimitivesByCell.get(cell);
+  if (cached !== undefined) return cached;
+  const fixedPrimitives = buildCellFixedPrimitives(cell, rules);
+  fixedPrimitivesByCell.set(cell, fixedPrimitives);
+  return fixedPrimitives;
+}
+
+function moverPrimitives(cell: CollisionCell, surroundings: CollisionSurroundings, rules: MovementNativeRules): ResidentPrimitive[] {
+  const { cellId } = cell;
+  return cell.movers.map((mover, moverIndex): ResidentPrimitive => {
+    const mesh = cell.staticMeshes[mover.staticMeshIndex]!;
+    const matrix = surroundings.moverStates?.get(mover.exportIndex) === "open" ? mover.openMatrix : mover.closedMatrix;
+    const primitive: CollisionPrimitive = { kind: "mover", cellId, moverIndex, exportIndex: mover.exportIndex };
+    return {
+      source: mover.collisionSource, rayBackoff: rules.backoff.staticMesh, boxBackoff: rules.backoff.staticMesh,
+      trace: sweep => locate(traceStaticMesh(mesh, matrix, sweep, rules), primitive),
+      overlappedBy: (centre, extent) => staticMeshOverlapsBox(mesh, matrix, centre, extent) ? primitive : null,
+    };
+  });
+}
+
+function cellPrimitives(cell: CollisionCell, surroundings: CollisionSurroundings, rules: MovementNativeRules): ResidentPrimitive[] {
+  const fixedPrimitives = cellFixedPrimitives(cell, rules);
+  return [...fixedPrimitives.volumesAndPlacements, ...moverPrimitives(cell, surroundings, rules), ...fixedPrimitives.terrain];
 }
 
 export function residentPrimitives(world: CollisionWorld, surroundings: CollisionSurroundings, rules: MovementNativeRules): ResidentPrimitive[] {

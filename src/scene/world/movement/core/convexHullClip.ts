@@ -16,6 +16,8 @@ export interface AxisAlignedBoxOffsets {
 
 export type HullEntryRule = "after-minus-one" | "from-zero";
 
+const clipPlanesByRules = new WeakMap<MovementNativeRules, WeakMap<ConvexHull, readonly Plane[]>>();
+
 const axisComponent = (vector: Vector3, axisIndex: number) => axisIndex === 0 ? vector.x : axisIndex === 1 ? vector.y : vector.z;
 
 export function axisAlignedBoxPlanes(minimum: Vector3, maximum: Vector3, offsets: AxisAlignedBoxOffsets): Plane[] {
@@ -59,8 +61,14 @@ export function hullBevelPlanes(planes: readonly Plane[], rules: MovementNativeR
   return bevels;
 }
 
-export function convexHullClipPlanes(hull: ConvexHull, rules: MovementNativeRules): Plane[] {
-  return [...hull.planes, ...axisAlignedBoxPlanes(hull.boxMinimum, hull.boxMaximum, hullBoxOffsets(rules)), ...hullBevelPlanes(hull.planes, rules)];
+export function convexHullClipPlanes(hull: ConvexHull, rules: MovementNativeRules): readonly Plane[] {
+  const clipPlanesByHull = clipPlanesByRules.get(rules) ?? new WeakMap<ConvexHull, readonly Plane[]>();
+  clipPlanesByRules.set(rules, clipPlanesByHull);
+  const cached = clipPlanesByHull.get(hull);
+  if (cached !== undefined) return cached;
+  const clipPlanes = [...hull.planes, ...axisAlignedBoxPlanes(hull.boxMinimum, hull.boxMaximum, hullBoxOffsets(rules)), ...hullBevelPlanes(hull.planes, rules)];
+  clipPlanesByHull.set(hull, clipPlanes);
+  return clipPlanes;
 }
 
 export function clipSweepAgainstPlanes(planes: readonly Plane[], sweep: CollisionSweep, entryRule: HullEntryRule, rules: MovementNativeRules): PrimitiveSweepHit | null {
