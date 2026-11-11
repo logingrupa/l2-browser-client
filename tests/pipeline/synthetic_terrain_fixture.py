@@ -9,6 +9,8 @@ SYNTHETIC_SAMPLE_SPACING = 128.0
 ALL_BITS_SET = 0xFFFFFFFF
 ALTERNATING_BITS = 0x55555555
 IDENTITY_TEXTURE_MATRIX = [[1 / 128, 0, 0, 0], [0, 1 / 128, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+SYNTHETIC_XY_LAYER_PLACEMENT = {'UScale': 1.0, 'VScale': 1.0, 'UPan': 0.0, 'VPan': 0.0, 'TextureMapAxis': 0, 'TextureRotation': 0.0,
+                                'LayerRotation': {'Pitch': 0, 'Roll': 0, 'Yaw': 0}}
 
 
 def synthetic_native_terrain(sector_columns, sector_rows, quads_per_sector=SYNTHETIC_QUADS_PER_SECTOR):
@@ -54,18 +56,31 @@ def synthetic_layer_records(indices, textures=None):
              'useAlpha': True, 'worldToTextureRowMajor': IDENTITY_TEXTURE_MATRIX} for index in indices]
 
 
+def synthetic_scalar_property(name, value):
+    return {'name': name, 'arrayIndex': None, 'value': value}
+
+
 def synthetic_object_property(name, object_name):
-    return {'name': name, 'arrayIndex': None, 'value': {'index': 0, 'object': object_name}}
+    return synthetic_scalar_property(name, {'index': 0, 'object': object_name})
 
 
-def synthetic_serialized_layers(indices, empty_indices=(), texture_only_indices=()):
+def synthetic_terrain_matrix_property(rows):
+    return synthetic_scalar_property('TerrainMatrix', [
+        synthetic_scalar_property(plane, [synthetic_scalar_property(axis, value) for axis, value in zip('XYZW', row)])
+        for plane, row in zip(('XPlane', 'YPlane', 'ZPlane', 'WPlane'), rows)])
+
+
+def synthetic_serialized_layers(indices, empty_indices=(), texture_only_indices=(), placement_overrides=None):
     layers = []
     for index in indices:
         empty = index in empty_indices
+        placement = {**SYNTHETIC_XY_LAYER_PLACEMENT, **(placement_overrides or {}).get(index, {})}
         layers.append({'index': index, 'properties': [
             synthetic_object_property('Texture', None if empty else f'Fixture.Diffuse{index}'),
             synthetic_object_property('AlphaMap', None if empty or index in texture_only_indices else f'Fixture.Mask{index}'),
-            {'name': 'bUseAlpha', 'arrayIndex': None, 'value': not empty}]})
+            synthetic_scalar_property('bUseAlpha', not empty),
+            *(synthetic_scalar_property(name, value) for name, value in placement.items()),
+            synthetic_terrain_matrix_property(IDENTITY_TEXTURE_MATRIX)]})
     return layers
 
 

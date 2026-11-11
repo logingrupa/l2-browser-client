@@ -2,6 +2,7 @@ import hashlib
 import json
 from pathlib import Path
 import sys
+from types import SimpleNamespace
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -13,7 +14,7 @@ from world.native_terrain_sectors import sector_oracle, select_terrain_sectors
 from world.terrain_chunk_step import (TERRAIN_CHUNK_STEP_ALGORITHM_VERSION, build_tile_terrain_chunks, extrapolated_mask_uv_rule,
                                       terrain_layer_gap_rows, tile_layer_summaries, tile_terrain_row)
 from world.terrain_coordinates import f32, native_to_gltf
-from world.terrain_layers import QUALIFIED_MASK_UV_FORMULA, terrain_layer_gap_reasons
+from world.terrain_layers import QUALIFIED_MASK_UV_FORMULA, layer_records, terrain_layer_gap_reasons
 from world.terrain_rectangle_mesh import build_terrain_rectangle_gltf
 from world.tile_chunk_plan import plan_tile_chunks
 from synthetic_terrain_fixture import (SYNTHETIC_TERRAIN_OBJECT, glb_mesh_arrays, glb_triangle_positions, synthetic_layer_records,
@@ -35,12 +36,12 @@ def synthetic_chunk_plan(native):
 
 
 def build_synthetic_chunks(sector_columns, sector_rows, layer_indices=(0, 1, 2), words=None, mutate=None, empty_layer_indices=(),
-                           texture_only_layer_indices=()):
+                           texture_only_layer_indices=(), placement_overrides=None):
     native, points = synthetic_terrain(sector_columns, sector_rows)
     if mutate:
         mutate(native)
     plan = synthetic_chunk_plan(native)
-    serialized_layers = synthetic_serialized_layers(layer_indices, empty_layer_indices, texture_only_layer_indices)
+    serialized_layers = synthetic_serialized_layers(layer_indices, empty_layer_indices, texture_only_layer_indices, placement_overrides)
     layer_gap_reasons = terrain_layer_gap_reasons(serialized_layers)
     records = synthetic_layer_records([index for index in layer_indices if index not in empty_layer_indices and index not in layer_gap_reasons])
     summaries = tile_layer_summaries(serialized_layers, records, layer_gap_reasons)
@@ -230,6 +231,49 @@ class LayerGapTests(unittest.TestCase):
         arrays = glb_mesh_arrays(ungapped)
         self.assertEqual(arrays['attributeNames'], ['NORMAL', 'POSITION', 'TEXCOORD_0', 'TEXCOORD_1'])
         self.assertEqual((arrays['extras']['maskUvSet'], arrays['extras']['baseLayerUvSet']), (0, 1))
+
+
+class LayerUvGapTests(unittest.TestCase):
+    UNVERIFIED_PLACEMENTS = {'non-xy axis': {'TextureMapAxis': 1}, 'texture rotation': {'TextureRotation': 16384.0},
+                             'layer rotation': {'LayerRotation': {'Pitch': 0, 'Roll': 0, 'Yaw': 16384}}, 'u pan': {'UPan': 4.0},
+                             'v pan': {'VPan': 4.0}, 'zero scale': {'VScale': 0.0}, 'missing scale': {'UScale': None}}
+
+    def test_a_rotated_non_xy_panned_or_badly_scaled_layer_becomes_a_layer_uv_unverified_gap_row_and_the_other_layers_convert(self):
+        for case, placement in self.UNVERIFIED_PLACEMENTS.items():
+            with self.subTest(case=case):
+                serialized_layers = synthetic_serialized_layers((0, 1, 2, 3), placement_overrides={2: placement})
+                self.assertEqual(terrain_layer_gap_reasons(serialized_layers), {2: 'terrain-layer-uv-unverified:2'})
+                _, _, _, by_chunk, chunk_records = build_synthetic_chunks(4, 4, layer_indices=(0, 1, 2, 3), placement_overrides={2: placement})
+                self.assertEqual([layer['index'] for layer in chunk_records[0]['layers']], [0, 1, 3])
+                extras = glb_mesh_arrays(by_chunk['chunk-0-0'][1])['extras']
+                self.assertEqual(([layer['index'] for layer in extras['nativeLayers']], extras['baseLayerUvSet']), ([0, 1, 3], 1))
+
+    def test_the_uv_rule_reads_only_filled_layers_and_the_incomplete_reason_wins_over_the_uv_reason(self):
+        serialized_layers = synthetic_serialized_layers((0, 1, 2), empty_indices=(1,), texture_only_indices=(2,),
+                                                        placement_overrides={1: {'UScale': 0.0, 'VScale': 0.0}, 2: {'TextureMapAxis': 2}})
+        self.assertEqual(terrain_layer_gap_reasons(serialized_layers), {2: 'terrain-layer-incomplete:2'})
+
+    def test_every_layer_gap_row_is_a_listed_reason_naming_the_terrain_object(self):
+        layer_gap_reasons = terrain_layer_gap_reasons(synthetic_serialized_layers((0, 1, 2), texture_only_indices=(0,),
+                                                                                  placement_overrides={2: {'TextureMapAxis': 1}}))
+        gap_rows = terrain_layer_gap_rows(TILE_ID, SOURCE_IDENTITY, SYNTHETIC_TERRAIN_OBJECT, layer_gap_reasons, EVIDENCE)
+        for gap_row in gap_rows:
+            validate_gap_row(gap_row)
+        self.assertEqual([row['reason'] for row in gap_rows], ['terrain-layer-incomplete:0', 'terrain-layer-uv-unverified:2'])
+
+    def test_an_xy_layer_whose_serialized_matrix_differs_from_the_native_calculation_still_raises(self):
+        serialized_layers = synthetic_serialized_layers((0, 1), placement_overrides={1: {'TextureMapAxis': 1}})
+        terrain = {'id': f'interlude:{SYNTHETIC_TERRAIN_OBJECT}', 'layers': serialized_layers}
+        native = {'object': SYNTHETIC_TERRAIN_OBJECT, 'exportIndex': 1,
+                  'toHeightmap': {'origin': [0.0, 0.0, 0.0], 'axes': [[128.0, 0.0, 0.0], [0.0, 128.0, 0.0], [0.0, 0.0, 1.0]]}}
+        package = SimpleNamespace(exports=[{'object': SYNTHETIC_TERRAIN_OBJECT}])
+        layer_gap_reasons = terrain_layer_gap_reasons(serialized_layers)
+        self.assertEqual(layer_gap_reasons, {1: 'terrain-layer-uv-unverified:1'})
+        with self.assertRaisesRegex(FormatError, 'Serialized terrain UV matrix differs from native reference calculation'):
+            layer_records(terrain, native, package, 'maps/Fixture.unr', layer_gap_reasons)
+        every_layer_gapped = synthetic_serialized_layers((0, 1), texture_only_indices=(0,), placement_overrides={1: {'TextureMapAxis': 1}})
+        self.assertEqual(layer_records({**terrain, 'layers': every_layer_gapped}, native, package, 'maps/Fixture.unr',
+                                       terrain_layer_gap_reasons(every_layer_gapped)), [])
 
 
 @unittest.skipUnless(REAL_TERRAIN_INDEX_PATH.is_file(), 'the 20_21 terrain unit is not sealed in this checkout')

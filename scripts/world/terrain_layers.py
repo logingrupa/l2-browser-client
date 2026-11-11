@@ -9,6 +9,8 @@ UV_TOLERANCE = 0.00001
 QUALIFIED_MASK_UV_RULE_ID = 'interlude-20_20-submitted-mask-uv-20261106'
 QUALIFIED_MASK_UV_FORMULA = '(gridXY + 0.5) / heightmapDimensions - max(gridXY - 240, 0) / 4096'
 LAYER_INCOMPLETE_REASON_PREFIX = 'terrain-layer-incomplete:'
+LAYER_UV_UNVERIFIED_REASON_PREFIX = 'terrain-layer-uv-unverified:'
+UNROTATED_LAYER_ROTATION = {'Pitch': 0, 'Yaw': 0, 'Roll': 0}
 
 
 def layer_object_presence(layer):
@@ -20,10 +22,23 @@ def is_empty_layer_slot(layer):
     return not any(layer_object_presence(layer))
 
 
+def layer_uv_scale(properties):
+    return [property_value(properties, name) for name in ('UScale', 'VScale')]
+
+
+def has_verified_xy_uv_placement(properties):
+    return (property_value(properties, 'TextureMapAxis') == 0 and property_value(properties, 'TextureRotation') == 0
+            and property_value(properties, 'LayerRotation') == UNROTATED_LAYER_ROTATION
+            and all(property_value(properties, name) == 0 for name in ('UPan', 'VPan'))
+            and all(value is not None and value > 0 for value in layer_uv_scale(properties)))
+
+
 def layer_gap_reason(layer):
     texture_present, alpha_map_present = layer_object_presence(layer)
     if texture_present != alpha_map_present:
         return f'{LAYER_INCOMPLETE_REASON_PREFIX}{layer["index"]}'
+    if texture_present and not has_verified_xy_uv_placement(layer['properties']):
+        return f'{LAYER_UV_UNVERIFIED_REASON_PREFIX}{layer["index"]}'
     return None
 
 
@@ -102,12 +117,7 @@ def layer_records(terrain, native, package, source_path, layer_gap_reasons):
         props = layer['properties']
         texture, alpha = property_value(props, 'Texture'), property_value(props, 'AlphaMap')
         matrix = serialized_matrix(props)
-        scale = [property_value(props, name) for name in ('UScale', 'VScale')]
-        rot = property_value(props, 'LayerRotation')
-        if property_value(props, 'TextureMapAxis') != 0 or property_value(props, 'TextureRotation') != 0 or rot != {'Pitch': 0, 'Yaw': 0, 'Roll': 0}:
-            raise FormatError('Non-XY/rotated layer requires a separately verified UV adapter')
-        if any(property_value(props, key) != 0 for key in ('UPan', 'VPan')) or any(v is None or v <= 0 for v in scale):
-            raise FormatError('Nonzero pan/invalid layer scale is outside this verified UV case')
+        scale = layer_uv_scale(props)
         inv = native['toHeightmap']
         transposed_origin = [-f32(dot(inv['origin'], axis)) for axis in inv['axes']]
         tex_origin = [f32(dot([-v for v in transposed_origin], axis)) for axis in inv['axes']]
