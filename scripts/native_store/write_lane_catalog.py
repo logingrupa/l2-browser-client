@@ -23,7 +23,7 @@ LANE_CATALOG_DESCRIPTION = ('Pin a lane store catalog to the SHA-256 of the shar
 UNION_EXCLUDED_STORE_FILES = ('catalog.json', 'coverage.json')
 MERGE_LANE_STORE_SCRIPT = Path(__file__).resolve().parent / 'merge_lane_store.py'
 MAIN_CHECKOUT_STORE_TARGET = 'public/l2'
-PINNED_STORE_VERIFICATION_WORKER_COUNT = 6
+PINNED_STORE_VERIFICATION_WORKER_COUNT = 12
 
 
 class LaneCatalogError(ValueError):

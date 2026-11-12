@@ -36,6 +36,7 @@ POOLED_WALK_PROGRAM = '\n'.join([
     'sys.path.insert(0, sys.argv[1])',
     'from native_store import pinned_store_verification',
     'pinned_store_verification.POOLED_LEVEL_MINIMUM_REFERENCE_COUNT = 1',
+    'pinned_store_verification.POOLED_CHUNK_REFERENCE_COUNT = 4',
     'pool_worker_counts = []',
     'class RecordingProcessPoolExecutor(pinned_store_verification.ProcessPoolExecutor):',
     '    def __init__(self, max_workers):',

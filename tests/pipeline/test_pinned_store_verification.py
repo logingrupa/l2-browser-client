@@ -16,7 +16,7 @@ from native_store import catalog_writer
 from native_store.catalog_writer import (CatalogWriteError, PinnedFileReference, catalog_pinned_file_references, merge_catalog_slice,
                                          pinned_store_files, write_store)
 from native_store import pinned_store_verification
-from native_store.pinned_store_verification import verified_file_child_references, verify_pinned_store_files
+from native_store.pinned_store_verification import verified_chunk_outcomes, verified_file_child_references, verify_pinned_store_files
 from native_store.store_paths import lane_store_root
 from native_store import write_lane_catalog as lane_catalog_module
 from native_store.write_lane_catalog import PINNED_STORE_VERIFICATION_WORKER_COUNT, write_lane_catalog
@@ -97,6 +97,25 @@ class VerifyOnlyWalkTests(TemporaryStoreTestCase):
         self.assert_every_walk_refuses(CatalogWriteError, f'pinned store file is missing from .*: {bundle.member_relative(FIRST_WRONG_MEMBER)}$',
                                        self.store_root, catalog)
 
+    def test_every_walk_reports_a_repeated_reference_refusal_that_precedes_a_wrong_file_of_the_same_chunk(self):
+        payload = b'synthetic archive bytes'
+        write_file(self.store_root / 'kept/first.bin', payload)
+        catalog = {'schemaVersion': 1, 'models': [
+            {'id': 'first', 'archive': '/l2/kept/first.bin', 'archiveSha256': sha256_hex(payload)},
+            {'id': 'repeat', 'archive': '/l2/kept/first.bin', 'archiveSha256': '7' * 64},
+            {'id': 'missing', 'archive': '/l2/kept/missing.bin', 'archiveSha256': '8' * 64}]}
+        message = 'store file kept/first.bin is pinned with two different SHA-256 values'
+        self.assert_every_walk_refuses(CatalogWriteError, f'^{re.escape(message)}$', self.store_root, catalog)
+
+    def test_a_chunk_stops_at_its_first_refusal_and_returns_it_at_its_own_position(self):
+        payload = b'synthetic archive bytes'
+        for name in ('first', 'third'):
+            write_file(self.store_root / f'kept/{name}.bin', payload)
+        references = [PinnedFileReference(f'kept/{name}.bin', sha256_hex(payload), None, None) for name in ('first', 'second', 'third')]
+        outcomes = verified_chunk_outcomes(self.store_root, references)
+        self.assertEqual((outcomes[0], len(outcomes), type(outcomes[1])), ([], 2, CatalogWriteError))
+        self.assertRegex(str(outcomes[1]), 'pinned store file is missing from .*: kept/second.bin$')
+
     def test_every_walk_reports_the_wrong_file_of_the_earlier_level_first(self):
         tile = SyntheticWorldTile(self.store_root)
         write_file(self.store_root / tile.bsp_relative, b'other bytes')
@@ -144,7 +163,7 @@ class LaneCatalogVerificationCallSiteTests(ProfileBundleProjectTestCase):
                           (lane_store_root(self.project, 'integration'), PINNED_STORE_VERIFICATION_WORKER_COUNT),
                           (self.actors_store, PINNED_STORE_VERIFICATION_WORKER_COUNT)])
         self.assertFalse(hasattr(lane_catalog_module, 'pinned_store_files'))
-        self.assertEqual(PINNED_STORE_VERIFICATION_WORKER_COUNT, 6)
+        self.assertEqual(PINNED_STORE_VERIFICATION_WORKER_COUNT, 12)
 
 
 if __name__ == '__main__':
