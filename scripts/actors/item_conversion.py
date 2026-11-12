@@ -11,7 +11,7 @@ from actors.item_requests import (ARMORGRP_TABLE_NAME, GAP_STATUS, ITEM_STEP, PA
 from actors.item_unit_inventory import armorgrp_mtx_column_names
 from actors.npc_requests import (CONVERTER_REFUSED_REASON_PREFIX, FAILED_STATUS, TRANSIENT_FAILURES, animation_reference_gap_reason,
                                  serialized_animation_reference)
-from actors.npc_store_records import (MODEL_ARCHIVE_FILE_NAME, catalog_with_record_replaced, catalog_without_record,
+from actors.npc_store_records import (MODEL_ARCHIVE_FILE_NAME, catalog_with_records_replaced, catalog_without_records,
                                       converted_model_store_files_and_record, file_output_record)
 from actors.path_free_messages import path_free_reason
 from native_assets import UMODEL_SHA256, implementation_hash
@@ -90,6 +90,7 @@ class ItemConversionRun:
         self.input_paths_by_unit_key = {unit['unitKey']: self.unit_input_paths(unit) for unit in self.units}
         self.input_records_by_path = {record['path']: record for record in
                                       locked_input_records(sorted({path for paths in self.input_paths_by_unit_key.values() for path in paths}))}
+        self.sealed_outcomes = None
 
     def unit_input_paths(self, unit):
         request = unit['request']
@@ -104,9 +105,6 @@ class ItemConversionRun:
         config = {'request': unit['request'], 'converterSha256': self.converter_implementation_sha256, 'umodelSha256': UMODEL_SHA256}
         return inputs, config, self.ledger.unit_fingerprint([record['sha256'] for record in inputs], config)
 
-    def is_unit_sealed(self, unit):
-        return self.ledger.is_sealed(unit['unitKey'], self.unit_work(unit)[2])
-
     def item_table_of(self, unit):
         return self.grouped_items[unit['firstItemId']]['table']
 
@@ -114,10 +112,19 @@ class ItemConversionRun:
         return {'key': unit['unitKey'], 'step': ITEM_STEP, 'itemIds': sorted({entry['itemId'] for entry in unit['entries']}),
                 'status': status, 'reason': reason, 'cacheHit': cache_hit, 'outputs': list(outputs)}
 
-    def sealed_outcome(self, unit):
-        receipt = self.ledger.sealed_receipt(unit['unitKey'])
+    def receipt_outcome(self, unit, receipt):
         gap_rows = receipt['gapRows']
         return self.outcome(unit, GAP_STATUS if gap_rows else PASS_STATUS, gap_rows[0]['reason'] if gap_rows else None, True, receipt['outputs'])
+
+    def sealed_outcomes_by_unit_key(self):
+        if self.sealed_outcomes is None:
+            sealed_outcomes = {}
+            for unit in self.units:
+                receipt = self.ledger.sealed_receipt(unit['unitKey'])
+                if receipt is not None and receipt['fingerprint'] == self.unit_work(unit)[2]:
+                    sealed_outcomes[unit['unitKey']] = self.receipt_outcome(unit, receipt)
+            self.sealed_outcomes = sealed_outcomes
+        return self.sealed_outcomes
 
     def converted_model_reason(self, unit):
         request = unit['request']
@@ -136,9 +143,10 @@ class ItemConversionRun:
             return CONVERTER_REFUSED_REASON_PREFIX + path_free_reason(str(error), self.client_access.root, self.converter.output), None
 
     def convert(self, unit):
+        sealed_outcomes = self.sealed_outcomes_by_unit_key()
+        if unit['unitKey'] in sealed_outcomes:
+            return sealed_outcomes[unit['unitKey']]
         inputs, config, fingerprint = self.unit_work(unit)
-        if self.ledger.is_sealed(unit['unitKey'], fingerprint):
-            return self.sealed_outcome(unit)
         step_directory = self.ledger.begin(unit['unitKey'], fingerprint)
         try:
             reason, result = self.converted_model_reason(unit)
@@ -153,36 +161,32 @@ class ItemConversionRun:
         gap_rows = [{**item_gap_row(unit['firstItemId'], GAP_STATUS, reason, self.sources.identities[self.item_table_of(unit)]),
                      'evidence': evidence}] if reason else []
         self.ledger.seal(unit['unitKey'], fingerprint, {'config': config, 'inputs': inputs, 'outputs': outputs, 'gapRows': gap_rows})
+        sealed_outcomes[unit['unitKey']] = self.receipt_outcome(unit, self.ledger.sealed_receipt(unit['unitKey']))
         return self.outcome(unit, GAP_STATUS if reason else PASS_STATUS, reason, False, outputs)
 
     def write_item_records(self, outcomes):
         catalog, before = read_store_catalog(self.store_root)
         present_ids = {record['id'] for record in catalog.get('models', [])}
-        files, catalog_changed = {}, False
+        unchanged_catalog_bytes = json_bytes(catalog) if before is None else before
+        removed_record_ids, incoming_records, catalog_changed = set(), [], False
         for outcome in outcomes:
             unit = self.units_by_key[outcome['key']]
             record_ids = [entry['recordId'] for entry in unit['entries']]
             if outcome['status'] == GAP_STATUS:
                 catalog_changed = catalog_changed or any(record_id in present_ids for record_id in record_ids)
-                for record_id in record_ids:
-                    catalog = catalog_without_record(catalog, 'models', record_id)
+                removed_record_ids.update(record_ids)
                 continue
             if outcome['status'] != PASS_STATUS or (outcome['cacheHit'] and all(record_id in present_ids for record_id in record_ids)):
                 continue
-            archive_path = self.ledger.lane_output_path(outcome['outputs'][0]['path'])
-            for record_id in record_ids:
-                entry_files, record = converted_model_store_files_and_record(record_id, archive_path)
-                files.update(entry_files)
-                catalog = catalog_with_record_replaced(catalog, 'models', record, model_record_capacity(self.census))
-                catalog_changed = True
+            unit_files, unit_record = converted_model_store_files_and_record(record_ids[0],
+                                                                             self.ledger.lane_output_path(outcome['outputs'][0]['path']))
+            write_store(self.store_root, unit_files, before, unchanged_catalog_bytes)
+            before = unchanged_catalog_bytes
+            incoming_records.extend({**unit_record, 'id': record_id} for record_id in record_ids)
+            catalog_changed = True
         if not catalog_changed:
             return
+        catalog = catalog_with_records_replaced(catalog_without_records(catalog, 'models', removed_record_ids), 'models', incoming_records,
+                                                model_record_capacity(self.census))
         catalog['models'] = sorted(catalog['models'], key=lambda existing: existing['id'])
-        write_store(self.store_root, files, before, json_bytes(catalog))
-
-    def sealed_outcomes_by_unit_key(self):
-        outcomes = {}
-        for unit in self.units:
-            if self.is_unit_sealed(unit):
-                outcomes[unit['unitKey']] = self.sealed_outcome(unit)
-        return outcomes
+        write_store(self.store_root, {}, before, json_bytes(catalog))

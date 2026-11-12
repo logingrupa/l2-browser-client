@@ -71,12 +71,13 @@ def write_item_census_and_gap_rows(run, slice_limit):
 
 
 def run_item_batch(run, limit, preflight):
+    sealed_outcomes = run.sealed_outcomes_by_unit_key()
     outcomes, converted = [], 0
     for unit in run.units:
         if converted >= limit:
             break
-        if run.is_unit_sealed(unit):
-            outcomes.append(run.sealed_outcome(unit))
+        if unit['unitKey'] in sealed_outcomes:
+            outcomes.append(sealed_outcomes[unit['unitKey']])
             continue
         preflight()
         outcomes.append(run.convert(unit))

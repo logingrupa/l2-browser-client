@@ -16,7 +16,7 @@ from actors.item_census import item_census, run_item_batch
 from actors.item_conversion import ItemConversionRun
 from actors.item_unit_inventory import weapon_selection
 from actors.npc_requests import CONVERTER_REFUSED_REASON_PREFIX
-from catalog_store_fixture import model_record
+from catalog_store_fixture import model_record, write_store_catalog
 from native_store.catalog_writer import read_store_catalog
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import locked_input_records
@@ -28,12 +28,24 @@ WEAPON_ROWS = (synthetic_weapon_row(1), synthetic_weapon_row(2, meshes=('Lineage
                synthetic_weapon_row(3, meshes=('LineageWeapons.bow_m00_wp',)), synthetic_weapon_row(4, meshes=('LineageWeapons.axe_m00_wp',)))
 
 
+def write_actor_unit_census(project_root, weapon_rows):
+    census_path = Path(project_root) / ACTOR_UNIT_CENSUS_RELATIVE_PATH
+    census_path.parent.mkdir(parents=True)
+    census_units = convertible_census_units(*[('weapon-mesh', weapon_selection(row)) for row in weapon_rows])
+    census_path.write_text(json.dumps({'tables': [{'table': 'weapongrp', 'rowCount': len(weapon_rows)}, {'table': 'armorgrp', 'rowCount': 0}],
+                                       'units': [{**unit, 'unitKind': 'weapon-mesh'} for unit in census_units.values()]}))
+    return census_path
+
+
 class SyntheticItemRun(ItemConversionRun):
+    weapon_rows = WEAPON_ROWS
+    itemname_ids = (1, 2, 3, 4)
+
     def __init__(self, project_root, client_root):
         client_access = SimpleNamespace(root=Path(client_root), lock=SimpleNamespace(records_by_path={}))
         converter = SimpleNamespace(output=Path(client_root).parent / 'converter-output')
         super().__init__(project_root, client_access, converter, lane_work_root(project_root, 'actors'), lane_store_root(project_root, 'actors'),
-                         item_sources(list(WEAPON_ROWS), [], itemname_ids=[1, 2, 3, 4]))
+                         item_sources(list(self.weapon_rows), [], itemname_ids=list(self.itemname_ids)))
         self.converted_unit_keys = []
         self.converted_archive = Path(client_root).parent / 'converted.l2asset'
         self.converted_archive.write_bytes(b'synthetic converted archive')
@@ -60,11 +72,7 @@ class ItemConversionRunTests(unittest.TestCase):
         temporary_root = Path(temporary_directory.name).resolve()
         self.project_root, self.client_root = temporary_root / 'project', temporary_root / 'client'
         (self.project_root / 'artifacts').mkdir(parents=True)
-        census_path = self.project_root / ACTOR_UNIT_CENSUS_RELATIVE_PATH
-        census_path.parent.mkdir(parents=True)
-        census_units = convertible_census_units(*[('weapon-mesh', weapon_selection(row)) for row in WEAPON_ROWS])
-        census_path.write_text(json.dumps({'tables': [{'table': 'weapongrp', 'rowCount': len(WEAPON_ROWS)}, {'table': 'armorgrp', 'rowCount': 0}],
-                                           'units': [{**unit, 'unitKind': 'weapon-mesh'} for unit in census_units.values()]}))
+        write_actor_unit_census(self.project_root, WEAPON_ROWS)
         for name, replacement in (('converted_model_store_files_and_record', mock.Mock(side_effect=synthetic_model_store_files_and_record)),
                                   ('implementation_hash', mock.Mock(return_value=FIRST_CONVERTER_SHA256)),
                                   ('locked_input_records', mock.Mock(wraps=locked_input_records)),
@@ -85,6 +93,7 @@ class ItemConversionRunTests(unittest.TestCase):
         self.assertEqual((self.implementation_hash.call_count, self.locked_input_records.call_count), (1, 1))
 
     def test_the_batch_preflights_only_units_it_converts_and_writes_the_store_catalog_once(self):
+        write_store_catalog(lane_store_root(self.project_root, 'actors'), {'schemaVersion': 1, 'models': []})
         first_run = SyntheticItemRun(self.project_root, self.client_root)
         for unit in first_run.units[:2]:
             first_run.convert(unit)
@@ -92,7 +101,8 @@ class ItemConversionRunTests(unittest.TestCase):
         run, preflights = SyntheticItemRun(self.project_root, self.client_root), []
         outcomes = run_item_batch(run, 1, lambda: preflights.append(True))
         self.assertEqual([outcome['cacheHit'] for outcome in outcomes], [True, True, False])
-        self.assertEqual((len(preflights), run.converted_unit_keys, self.write_store.call_count), (1, [run.units[2]['unitKey']], 1))
+        catalog_replacing_calls = [call for call in self.write_store.call_args_list if call.args[3] != call.args[2]]
+        self.assertEqual((len(preflights), run.converted_unit_keys, len(catalog_replacing_calls)), (1, [run.units[2]['unitKey']], 1))
         self.assertEqual(self.catalog_model_ids(), [f'interlude:item:{item_id}:body-part:7:weapon' for item_id in (1, 2, 3)])
 
     def test_a_batch_of_units_whose_records_are_all_in_the_catalog_writes_nothing(self):

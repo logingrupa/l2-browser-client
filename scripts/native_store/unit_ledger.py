@@ -16,7 +16,7 @@ from native_store.gap_rows import load_gap_reason_patterns, sorted_gap_rows, val
 from native_store.store_paths import (REPOSITORY_ROOT, SHA256_PATTERN, STEP_NAME_PATTERN, StorePathError, confined_child_path,
                                       lane_store_root, lane_work_root, refuse_reparse_points, require_known_lane_name,
                                       require_portable_relative_path)
-from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, read_reference_client_lock
+from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, lock_file_identity, read_reference_client_lock
 
 BATCH_MINIMUM_FREE_BYTES = 4 * 1024 ** 3
 BELOW_NORMAL_PRIORITY_CLASS = 0x4000
@@ -93,8 +93,19 @@ def unit_directory_name(unit_key):
         raise UnitLedgerError(f'unit key does not give a portable folder name: {unit_key!r}') from error
 
 
+reference_client_locks_by_path_and_identity = {}
+
+
+def process_reference_client_lock(lock_path):
+    resolved_lock_path = Path(lock_path).resolve()
+    lock_key = (str(resolved_lock_path), lock_file_identity(resolved_lock_path))
+    if lock_key not in reference_client_locks_by_path_and_identity:
+        reference_client_locks_by_path_and_identity[lock_key] = read_reference_client_lock(Path(lock_path))
+    return reference_client_locks_by_path_and_identity[lock_key]
+
+
 def locked_input_records(relative_paths, lock_path=REFERENCE_CLIENT_LOCK_PATH):
-    lock = read_reference_client_lock(Path(lock_path))
+    lock = process_reference_client_lock(lock_path)
     records = []
     for relative_path in relative_paths:
         record = lock.record(relative_path)

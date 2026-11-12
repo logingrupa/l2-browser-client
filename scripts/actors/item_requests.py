@@ -5,7 +5,6 @@ from actors.actor_unit_inventory import (ARMOR_MESH_UNIT_KIND, ARMORGRP_TABLE_NA
 from actors.item_unit_inventory import ITEM_PART_NAME, armor_column_selection, weapon_selection
 from actors.npc_requests import ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX
 from native_store.gap_census import ETCITEM_PRESENTATION_UNPLANNED_REASON, ITEM_GROUP_ROW_ABSENT_REASON
-from native_store.gap_rows import validate_gap_row
 
 ITEM_ROW_COLLECTION = 'item'
 ITEM_STEP = 'items'
@@ -156,9 +155,9 @@ def grouped_item_status(entries, census_units_by_key, sealed_outcomes_by_unit_ke
 
 
 def item_gap_row(item_id, status, reason, source_identity):
-    return validate_gap_row({'key': item_key(item_id), 'part': ITEM_PART_NAME, 'step': ITEM_STEP, 'status': status, 'reason': reason,
-                             'sourceIdentity': {'path': source_identity['path'], 'sha256': source_identity['sha256']},
-                             'evidence': ITEM_CENSUS_RELATIVE_PATH})
+    return {'key': item_key(item_id), 'part': ITEM_PART_NAME, 'step': ITEM_STEP, 'status': status, 'reason': reason,
+            'sourceIdentity': {'path': source_identity['path'], 'sha256': source_identity['sha256']},
+            'evidence': ITEM_CENSUS_RELATIVE_PATH}
 
 
 def ungrouped_item_reason(item_id, etcitem_ids):
