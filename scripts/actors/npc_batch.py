@@ -9,8 +9,9 @@ from actors.effect_bundle_packing import native_class_closure, pack_items_by_cla
 from actors.npc_requests import (ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX, CONVERTER_REFUSED_REASON_PREFIX, FAILED_STATUS, GAP_STATUS,
                                  NPC_NAME_EMPTY_REASON, NPC_NAME_ROW_MISSING_REASON, NPC_PROFILE_RECIPE_ID_PREFIX, NPC_PROFILE_STEP, PASS_STATUS,
                                  TRANSIENT_FAILURES, npc_profile_selection, npc_profiles_recipe)
-from actors.npc_store_records import (PROFILE_MANIFEST_FILE_NAME, bundle_output_records, catalog_with_record_replaced,
-                                      converted_model_store_files_and_record, profile_bundle_store_files_and_record)
+from actors.npc_store_records import (PROFILE_MANIFEST_FILE_NAME, bundle_output_records, catalog_with_records_replaced,
+                                      converted_model_store_files_and_record, profile_bundle_store_files_and_record, profile_slice_with_pack_record)
+from data.lane_unit_outcomes import replace_step_gap_rows
 from native_actor_profiles import (ACTOR_CLASS_INHERITANCE_MESSAGE, MAXIMUM_NPC_PROFILE_BUNDLES, MAXIMUM_PROFILES_PER_BUNDLE,
                                    NATIVE_SKELETAL_MESH_EXPORT_KIND, UNMATCHED_ACTOR_CLASS_MESSAGE, UNMATCHED_NPC_MESH_MESSAGE,
                                    migrate_npc_profiles, npc_profile_tool_pins)
@@ -19,7 +20,6 @@ from native_assets_lib.gltf import json_bytes
 from native_effect_bundle import MAX_CLASSES
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import read_store_catalog, write_store
-from native_store.gap_rows import read_gap_rows, sorted_gap_rows, write_gap_rows
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, BatchPreflightRefusedError, UnitLedger, locked_input_records
 from reference_client_guard import ReferenceClientLockError
 
@@ -30,6 +30,7 @@ NPC_PROFILE_PACK_ID_HEX_LENGTH = 16
 NPC_PROFILE_PACK_STEP = 'npc-profile-pack'
 NPC_PROFILE_PACK_ALGORITHM_VERSION = 2
 PROFILE_BUNDLE_FOLDER = 'bundle'
+PROFILE_BUNDLE_MANIFEST_OUTPUT_SUFFIX = f'/{PROFILE_BUNDLE_FOLDER}/{PROFILE_MANIFEST_FILE_NAME}'
 CLASS_CLOSURE_OVER_LIMIT_REASON_PREFIX = 'class-closure-over-limit:'
 PROFILE_BUNDLE_CAPACITY_EXCEEDED_REASON = 'profile-bundle-capacity-exceeded'
 LANE_NAME = 'actors'
@@ -213,17 +214,16 @@ def planning_gap_row(gap, npcgrp, npcname):
             'sourceIdentity': identity, 'evidence': ACTOR_UNIT_CENSUS_RELATIVE_PATH}
 
 
-def replace_step_gap_rows_when_changed(project_root, step, replaced_keys, gap_rows):
-    current_rows = sorted_gap_rows(row for row in read_gap_rows(project_root, LANE_NAME) if row['step'] == step)
-    kept_rows = [row for row in current_rows if row['key'] not in replaced_keys]
-    desired_rows = sorted_gap_rows(kept_rows + list(gap_rows))
-    if desired_rows != current_rows:
-        write_gap_rows(project_root, LANE_NAME, step, desired_rows)
-    return desired_rows
-
-
 def sealed_receipt(ledger, unit_key):
     return json.loads((ledger.unit_step_directory(unit_key) / RECEIPT_RECORD_NAME).read_bytes())
+
+
+def current_or_rebuilt_record(catalog_record, pin_field, sealed_sha256, files, rebuilt_files_and_record):
+    if catalog_record is not None and catalog_record.get(pin_field) == sealed_sha256:
+        return catalog_record
+    rebuilt_files, rebuilt_record = rebuilt_files_and_record()
+    files.update(rebuilt_files)
+    return rebuilt_record
 
 
 class NpcBatchSlice:
@@ -256,6 +256,7 @@ class NpcBatchSlice:
         return outcomes
 
     def synchronize_model_gap_rows(self):
+        gap_row_was_recorded = any(row is not None for row in self.run.step_gap_rows.take_recorded(self.run.model_ledger.step).values())
         replaced_keys, gap_rows = set(), []
         for scheduled in self.plan.units:
             if not self.run.is_convertible_model_unit_sealed(scheduled.unit):
@@ -264,7 +265,7 @@ class NpcBatchSlice:
             replaced_keys.update(row_keys)
             unit_gap_rows = self.model_gap_rows(scheduled.unit['key'])
             gap_rows += [{**unit_gap_rows[0], 'key': row_key} for row_key in row_keys] if unit_gap_rows else []
-        replace_step_gap_rows_when_changed(self.run.project_root, self.run.model_ledger.step, replaced_keys, gap_rows)
+        replace_step_gap_rows(self.run.project_root, LANE_NAME, self.run.model_ledger.step, replaced_keys, gap_rows, gap_row_was_recorded)
 
     def pack_gap_row(self, pack_id, row, reason):
         evidence = self.pack_ledger.unit_step_directory(pack_unit_key(pack_id)) / RECEIPT_RECORD_NAME
@@ -335,7 +336,7 @@ class NpcBatchSlice:
         planning_rows = [planning_gap_row(gap, self.run.npcgrp, self.run.npcname) for gap in self.plan.planning_gaps]
         pack_rows = [row for _, receipt in sealed_packs for row in receipt['gapRows']]
         scheduled_keys = {f'npc:{row.npc_id}' for scheduled in self.plan.units for row in scheduled.rows}
-        replace_step_gap_rows_when_changed(self.run.project_root, NPC_PROFILE_STEP, scheduled_keys, planning_rows + pack_rows)
+        replace_step_gap_rows(self.run.project_root, LANE_NAME, NPC_PROFILE_STEP, scheduled_keys, planning_rows + pack_rows, False)
 
     def write_store_records(self, sealed_packs):
         catalog, before = read_store_catalog(self.run.store_root)
@@ -343,23 +344,30 @@ class NpcBatchSlice:
         if 'npcProfiles' in catalog:
             catalog['npcProfiles'] = [record for record in catalog['npcProfiles']
                                       if not record['id'].startswith(NPC_PROFILE_PACK_ID_PREFIX) or record['id'] in current_pack_ids]
-        files = {}
+        catalog_models_by_id, catalog_profiles_by_id = ({record['id']: record for record in catalog.get(slice_name, [])}
+                                                        for slice_name in ('models', 'npcProfiles'))
+        profile_slice = {'npcProfiles': catalog['npcProfiles']} if 'npcProfiles' in catalog else {}
+        files, model_records_by_unit_key = {}, {}
         for pack, receipt in sealed_packs:
             if not receipt['outputs']:
                 continue
             bundle_root = self.pack_ledger.unit_step_directory(pack_unit_key(pack.pack_id)) / PROFILE_BUNDLE_FOLDER
-            profile_files, profile_record = profile_bundle_store_files_and_record(self.run.client_access.root, bundle_root)
-            files.update(profile_files)
+            manifest_output = next(output for output in receipt['outputs'] if output['path'].endswith(PROFILE_BUNDLE_MANIFEST_OUTPUT_SUFFIX))
+            profile_record = current_or_rebuilt_record(
+                catalog_profiles_by_id.get(pack.pack_id), 'manifestSha256', manifest_output['sha256'], files,
+                lambda: profile_bundle_store_files_and_record(self.run.client_access.root, bundle_root))
             bundle_npc_ids = [profile['npcId'] for profile in json.loads((bundle_root / PROFILE_MANIFEST_FILE_NAME).read_bytes())['profiles']]
-            for unit_key in sorted({row.unit_key for row in pack.rows if row.npc_id in bundle_npc_ids}):
-                model_outputs = sealed_receipt(self.run.model_ledger, unit_key)['outputs']
-                model_files, model_record = converted_model_store_files_and_record(
-                    unit_key, self.run.model_ledger.lane_output_path(model_outputs[0]['path']))
-                files.update(model_files)
-                catalog = catalog_with_record_replaced(catalog, 'models', model_record, model_record_capacity(self.run.census))
+            for unit_key in sorted({row.unit_key for row in pack.rows if row.npc_id in bundle_npc_ids} - set(model_records_by_unit_key)):
+                model_output = sealed_receipt(self.run.model_ledger, unit_key)['outputs'][0]
+                model_records_by_unit_key[unit_key] = current_or_rebuilt_record(
+                    catalog_models_by_id.get(unit_key), 'archiveSha256', model_output['sha256'], files,
+                    lambda: converted_model_store_files_and_record(unit_key, self.run.model_ledger.lane_output_path(model_output['path'])))
             superseded_ids = {f'{NPC_PROFILE_RECIPE_ID_PREFIX}{npc_id}' for npc_id in bundle_npc_ids}
-            catalog = {**catalog, 'npcProfiles': [record for record in catalog.get('npcProfiles', []) if record['id'] not in superseded_ids]}
-            catalog = catalog_with_record_replaced(catalog, 'npcProfiles', profile_record, MAXIMUM_NPC_PROFILE_BUNDLES)
+            profile_slice = profile_slice_with_pack_record(profile_slice, superseded_ids, profile_record, MAXIMUM_NPC_PROFILE_BUNDLES)
+        if model_records_by_unit_key:
+            catalog = catalog_with_records_replaced(catalog, 'models', list(model_records_by_unit_key.values()),
+                                                    model_record_capacity(self.run.census))
+        catalog = {**catalog, **profile_slice}
         for slice_name in ('models', 'npcProfiles'):
             if slice_name in catalog:
                 catalog[slice_name] = sorted(catalog[slice_name], key=lambda record: record['id'])
@@ -374,18 +382,19 @@ def run_npc_batch_slice(run, plan, limit, preflight, profile_tool_pins=npc_profi
     if type(limit) is not int or limit < 1:
         raise NpcBatchError(f'the slice limit must be an integer of at least 1: {limit!r}')
     batch_slice = NpcBatchSlice(run, plan, preflight, profile_tool_pins)
-    unit_outcomes = batch_slice.convert_units(limit)
-    pack_outcomes, store = [], None
-    if batch_slice.stop_reason is None:
-        batch_slice.synchronize_model_gap_rows()
-        for pack in plan.packs:
-            outcome = batch_slice.convert_pack(pack)
-            if outcome is None:
-                break
-            pack_outcomes.append(outcome)
-    if batch_slice.stop_reason is None:
-        sealed_packs = batch_slice.sealed_pack_receipts()
-        batch_slice.synchronize_pack_gap_rows(sealed_packs)
-        store = batch_slice.write_store_records(sealed_packs)
+    with run.step_gap_rows.recorded_until_exit():
+        unit_outcomes = batch_slice.convert_units(limit)
+        pack_outcomes, store = [], None
+        if batch_slice.stop_reason is None:
+            batch_slice.synchronize_model_gap_rows()
+            for pack in plan.packs:
+                outcome = batch_slice.convert_pack(pack)
+                if outcome is None:
+                    break
+                pack_outcomes.append(outcome)
+        if batch_slice.stop_reason is None:
+            sealed_packs = batch_slice.sealed_pack_receipts()
+            batch_slice.synchronize_pack_gap_rows(sealed_packs)
+            store = batch_slice.write_store_records(sealed_packs)
     return {'unitOutcomes': unit_outcomes, 'packOutcomes': pack_outcomes, 'convertedUnits': len(unit_outcomes),
             'stopReason': batch_slice.stop_reason, 'store': store}

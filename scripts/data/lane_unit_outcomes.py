@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 from pathlib import Path
 
 from hash_reference_client_tree import canonical_json_bytes
 from native_store.catalog_writer import add_store_file, merge_catalog_slice, read_store_catalog, sha256_hex, write_store
-from native_store.gap_rows import read_gap_rows, write_gap_rows
+from native_store.gap_rows import read_gap_rows, sorted_gap_rows, write_gap_rows
 from native_store.unit_ledger import RECEIPT_RECORD_NAME
 
 DECODE_ERROR_RECORD_NAME = 'decode-error.json'
@@ -22,12 +23,42 @@ def lane_relative_path(ledger, path):
         raise LaneUnitOutcomeError(f'{path} is outside the {ledger.lane_name} lane folder {ledger.lane_folder}') from error
 
 
+def replace_step_gap_rows(project_root, lane_name, step, replaced_keys, gap_rows, rewrite_when_unchanged):
+    current_rows = sorted_gap_rows(row for row in read_gap_rows(project_root, lane_name) if row['step'] == step)
+    desired_rows = sorted_gap_rows([row for row in current_rows if row['key'] not in replaced_keys] + list(gap_rows))
+    if rewrite_when_unchanged or desired_rows != current_rows:
+        write_gap_rows(project_root, lane_name, step, desired_rows)
+    return desired_rows
+
+
 def replace_step_gap_row(project_root, lane_name, step, unit_key, gap_row):
-    step_rows = [row for row in read_gap_rows(project_root, lane_name) if row['step'] == step]
-    kept_rows = [row for row in step_rows if row['key'] != unit_key]
-    if gap_row is None and len(kept_rows) == len(step_rows):
-        return
-    write_gap_rows(project_root, lane_name, step, kept_rows + ([gap_row] if gap_row else []))
+    replace_step_gap_rows(project_root, lane_name, step, {unit_key}, [gap_row] if gap_row else [], gap_row is not None)
+
+
+class StepGapRowReplacements:
+    def __init__(self, project_root, lane_name):
+        self.project_root, self.lane_name = project_root, lane_name
+        self.recorded_rows_by_step = None
+
+    def replace(self, step, unit_key, gap_row):
+        if self.recorded_rows_by_step is None:
+            replace_step_gap_row(self.project_root, self.lane_name, step, unit_key, gap_row)
+        else:
+            self.recorded_rows_by_step.setdefault(step, {})[unit_key] = gap_row
+
+    def take_recorded(self, step):
+        return self.recorded_rows_by_step.pop(step, {})
+
+    @contextmanager
+    def recorded_until_exit(self):
+        self.recorded_rows_by_step = {}
+        try:
+            yield
+        finally:
+            recorded_rows_by_step, self.recorded_rows_by_step = self.recorded_rows_by_step, None
+            for step, rows_by_key in recorded_rows_by_step.items():
+                gap_rows = [row for row in rows_by_key.values() if row is not None]
+                replace_step_gap_rows(self.project_root, self.lane_name, step, set(rows_by_key), gap_rows, bool(gap_rows))
 
 
 def replace_unit_gap_row(project_root, ledger, unit_key, gap_row):

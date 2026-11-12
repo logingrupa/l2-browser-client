@@ -11,7 +11,7 @@ from actors.character_requests import (CHARACTER_STEP, CLASSINFO_TABLE_NAME, GAP
 from actors.npc_requests import (CONVERTER_REFUSED_REASON_PREFIX, FAILED_STATUS, PASS_STATUS, TRANSIENT_FAILURES,
                                  animation_reference_gap_reason, serialized_animation_reference)
 from actors.path_free_messages import path_free_reason
-from actors.npc_store_records import (MODEL_ARCHIVE_FILE_NAME, catalog_with_record_replaced, converted_model_store_files_and_record,
+from actors.npc_store_records import (MODEL_ARCHIVE_FILE_NAME, catalog_with_records_replaced, converted_model_store_files_and_record,
                                       file_output_record, write_catalog_without_record)
 from data.lane_unit_outcomes import replace_step_gap_row
 from native_assets import UMODEL_SHA256, implementation_hash
@@ -161,7 +161,7 @@ class CharacterConversionRun:
             return outcome
         files, record = converted_model_store_files_and_record(record_id, self.ledger.lane_output_path(outcome['outputs'][0]['path']))
         catalog, before = read_store_catalog(self.store_root)
-        catalog = catalog_with_record_replaced(catalog, 'models', record, model_record_capacity(self.census))
+        catalog = catalog_with_records_replaced(catalog, 'models', [record], model_record_capacity(self.census))
         catalog['models'] = sorted(catalog['models'], key=lambda existing: existing['id'])
         write_store(self.store_root, files, before, json_bytes(catalog))
         return outcome

@@ -26,10 +26,10 @@ from actors.npc_batch import (NpcSourceIdentities, npc_batch_plan, printed_batch
 from actors.skill_effect_conversion import (SkillEffectConversionRun, convert_skill, convert_skill_batch_slice, printed_skill_outcome,
                                             skill_outcomes_failed)
 from actors.path_free_messages import path_free_reason
-from actors.npc_store_records import (MODEL_ARCHIVE_FILE_NAME, bundle_output_records, catalog_with_record_replaced,
+from actors.npc_store_records import (MODEL_ARCHIVE_FILE_NAME, bundle_output_records, catalog_with_records_replaced,
                                       converted_model_store_files_and_record, PROFILE_MANIFEST_FILE_NAME, file_output_record,
                                       profile_bundle_store_files_and_record, profile_record_npc_ids)
-from data.lane_unit_outcomes import replace_step_gap_row
+from data.lane_unit_outcomes import StepGapRowReplacements
 from native_actor_profiles import MAXIMUM_NPC_PROFILE_BUNDLES, migrate_npc_profiles, npc_profile_tool_pins
 from native_assets import UMODEL, UMODEL_SHA256, Converter, implementation_hash
 from native_assets_lib.gltf import json_bytes
@@ -78,6 +78,7 @@ class NpcConversionRun:
         self.converter_output = converter.output
         self.converter_implementation_sha256 = implementation_hash()
         self.model_unit_work_by_key = {}
+        self.step_gap_rows = StepGapRowReplacements(self.project_root, LANE_NAME)
 
     def path_free_reason(self, error):
         return path_free_reason(str(error), self.client_access.root, self.converter_output)
@@ -88,7 +89,7 @@ class NpcConversionRun:
                 'sourceIdentity': source_identity, 'evidence': evidence.relative_to(ledger.lane_folder).as_posix()}
 
     def seal(self, npc_key, ledger, unit_key, fingerprint, inputs, config, outputs, gap_row, step_gap_rows=()):
-        replace_step_gap_row(self.project_root, LANE_NAME, ledger.step, npc_key, gap_row)
+        self.step_gap_rows.replace(ledger.step, npc_key, gap_row)
         ledger.seal(unit_key, fingerprint, {'config': config, 'inputs': inputs, 'outputs': outputs,
                                             'gapRows': ([gap_row] if gap_row else []) + list(step_gap_rows)})
 
@@ -96,7 +97,7 @@ class NpcConversionRun:
         receipt = json.loads((ledger.unit_step_directory(unit_key) / RECEIPT_RECORD_NAME).read_bytes())
         step_gap_rows = [row for row in receipt['gapRows'] if row['step'] == ledger.step]
         if step_gap_rows:
-            replace_step_gap_row(self.project_root, LANE_NAME, ledger.step, npc_key, {**step_gap_rows[0], 'key': npc_key})
+            self.step_gap_rows.replace(ledger.step, npc_key, {**step_gap_rows[0], 'key': npc_key})
             return {'key': unit_key, 'step': ledger.step, 'status': GAP_STATUS, 'reason': step_gap_rows[0]['reason'], 'cacheHit': True}
         return {'key': unit_key, 'step': ledger.step, 'status': PASS_STATUS, 'reason': None, 'cacheHit': True, 'outputs': receipt['outputs']}
 
@@ -240,7 +241,7 @@ class NpcConversionRun:
         identity_path.write_bytes(canonical_json_bytes({'soundIdentities': sound_identities, 'effectBindings': npc_effect_binding_record(row)}))
         outputs = [file_output_record(self.profile_ledger.lane_folder, identity_path)]
         sound_gap_row = self.sound_identity_gap_row(npc_key, npc_key, sound_identities)
-        replace_step_gap_row(self.project_root, LANE_NAME, NPC_SOUND_IDENTITY_STEP, npc_key, sound_gap_row)
+        self.step_gap_rows.replace(NPC_SOUND_IDENTITY_STEP, npc_key, sound_gap_row)
         step_gap_rows = [sound_gap_row] if sound_gap_row else []
         if reason is not None:
             self.seal(npc_key, self.profile_ledger, npc_key, fingerprint, inputs, config, outputs,
@@ -261,8 +262,8 @@ class NpcConversionRun:
         for record in catalog.get('npcProfiles', []):
             if record['id'] != profile_record['id'] and npc_id in profile_record_npc_ids(self.store_root, record):
                 raise ConvertActorsError(f'{npc_key} already has a profile in lane record {record["id"]}; the NPC batch owns it')
-        catalog = catalog_with_record_replaced(catalog, 'models', model_record, model_record_capacity(self.census))
-        catalog = catalog_with_record_replaced(catalog, 'npcProfiles', profile_record, MAXIMUM_NPC_PROFILE_BUNDLES)
+        catalog = catalog_with_records_replaced(catalog, 'models', [model_record], model_record_capacity(self.census))
+        catalog = catalog_with_records_replaced(catalog, 'npcProfiles', [profile_record], MAXIMUM_NPC_PROFILE_BUNDLES)
         for slice_name in ('models', 'npcProfiles'):
             catalog[slice_name] = sorted(catalog[slice_name], key=lambda record: record['id'])
         write_store(self.store_root, {**model_files, **profile_files}, before, json_bytes(catalog))

@@ -20,6 +20,7 @@ from native_catalog.ue2 import FormatError
 from native_store.catalog_writer import add_store_file, read_store_catalog
 from native_store.gap_rows import read_gap_rows, validate_gap_row
 from native_store.store_paths import lane_store_root, lane_work_root
+from native_store.unit_ledger import UnitLedger
 from reference_client_guard import ReferenceClientAccess, read_reference_client_lock
 
 REFERENCE_CLIENT_ROOT = Path('E:/Lineage2-client')
@@ -284,6 +285,22 @@ class ConvertNpcGapTests(unittest.TestCase):
             written_records.append((model_record, profile_record))
         catalog, _ = read_store_catalog(lane_store_root(self.project_root, 'actors'))
         self.assertEqual((catalog['models'], catalog['npcProfiles']), ([written_records[1][0]], [written_records[1][1]]))
+
+    def test_the_profile_row_and_the_sound_identity_row_are_on_disk_when_the_profile_unit_is_sealed(self):
+        run = self.conversion_run()
+        row = {**synthetic_npcgrp_row(2), 'damage_sound': [{'param_damage_sound': 'NoSuchSound.thing'}]}
+        lane_reasons_at_each_seal = []
+        seal_unit = UnitLedger.seal
+
+        def seal_after_reading_the_lane_gap_rows(ledger, unit_key, fingerprint, receipt):
+            lane_reasons_at_each_seal.append(self.lane_reasons())
+            return seal_unit(ledger, unit_key, fingerprint, receipt)
+
+        with patch.object(UnitLedger, 'seal', seal_after_reading_the_lane_gap_rows):
+            outcome = run.convert_profile(2, 'npc:2', row, model_catalog_id_of(self.convertible_selection), 'animations/LineageMonsters.ukx')
+        self.assertEqual((outcome['status'], outcome['reason']), ('gap', 'npc-name-row-missing'))
+        self.assertEqual(lane_reasons_at_each_seal, [{('npc:2', 'npc-profile'): 'npc-name-row-missing',
+                                                      ('npc:2', 'npc-sound-identities'): 'sound-identity-unresolved'}])
 
 
 
