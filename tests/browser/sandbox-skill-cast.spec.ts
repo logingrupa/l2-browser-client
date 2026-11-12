@@ -1,7 +1,8 @@
 import { expect, test, type Browser, type BrowserContextOptions, type Page } from "@playwright/test";
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { formatRigaTimestamp } from "../../scripts/check-machine-schedule.mjs";
+import { parseSkillEffectComponentId } from "../../src/effects/castSkillIndex";
 import { desktopViewport, landscapePhone } from "./browserViewports";
 import type { NativeSkillEffectHarnessState } from "./harness/nativeSkillEffectHarness";
 import { servedLaneCatalogSha256, writeLoadCheckRecord } from "./support/loadCheckRecordFile";
@@ -9,6 +10,9 @@ import { checkHarnessLoadKey } from "./support/loadCheckRecords";
 
 const laneName = "actors";
 const laneCatalogPath = resolve("artifacts/lane-store", laneName, "l2/catalog.json");
+const laneCoveragePath = resolve("artifacts/lane-store", laneName, "l2/coverage.json");
+const emitterClassGapPrefix = "emitter-class-unported:";
+const worldReadyTimeout = 240_000;
 const evidenceDirectory = resolve("artifacts/skill-evidence");
 const tracerSkill = "1011:1";
 const tracerKey = "skill:1011:1";
@@ -18,6 +22,7 @@ const dispatchRequiredKey = "skill:3:2";
 const harnessLoadTimeout = 120_000;
 const portraitPhone = { viewport: { width: 430, height: 932 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 };
 const powerStrikeSkill = "3:1";
+const powerStrikeKey = "skill:3:1";
 const powerStrikeActors = [{ actorObject: "lineageeffect.s_u002_a", dispatchStages: ["init"] }, { actorObject: "lineageeffect.p_u004_a", dispatchStages: ["shot"] }];
 type DoneState = Extract<NativeSkillEffectHarnessState, { state: "done" }>;
 
@@ -140,5 +145,95 @@ test.describe("actors lane store", () => {
     await withSkillPage(browser, portraitPhone, tracerSkill, async page => {
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     });
+  });
+});
+
+interface LaneSkillChoice { readonly skillId: number; readonly level: number; readonly key: string; readonly reason: string | null }
+
+function laneSkillChoices(): { readonly converted: LaneSkillChoice; readonly emitterClassGap: LaneSkillChoice } {
+  const catalog = JSON.parse(readFileSync(laneCatalogPath, "utf-8")) as { effectComponents?: { id: string }[] };
+  const coverage = JSON.parse(readFileSync(laneCoveragePath, "utf-8")) as { rows: { key: string; converted: boolean; reason: string | null }[] };
+  const rowByKey = new Map(coverage.rows.map(row => [row.key, row]));
+  const convertedChoices = (catalog.effectComponents ?? []).flatMap(record => {
+    const identity = parseSkillEffectComponentId(record.id);
+    if (identity === null) return [];
+    const key = `skill:${identity.skillId}:${identity.level}`, row = rowByKey.get(key);
+    return row?.converted ? [{ ...identity, key, reason: row.reason }] : [];
+  }).sort((first, second) => first.skillId - second.skillId || first.level - second.level);
+  const converted = convertedChoices.find(choice => choice.key !== powerStrikeKey);
+  const emitterClassGap = convertedChoices.find(choice => choice.reason?.startsWith(emitterClassGapPrefix));
+  if (!converted || !emitterClassGap) throw new Error("the actors lane store holds no converted skill other than 3:1 or no emitter class gap");
+  return { converted, emitterClassGap };
+}
+
+async function openSandboxTab(page: Page): Promise<string[]> {
+  const pageErrors: string[] = [];
+  page.on("pageerror", error => pageErrors.push(error.message));
+  await page.goto("/");
+  await expect(page.locator('body[data-world-state="ready"]')).toHaveCount(1, { timeout: worldReadyTimeout });
+  await page.getByTestId("dev-sheet-toggle").click();
+  await page.getByTestId("dev-tab-sandbox").click();
+  return pageErrors;
+}
+
+async function castFromPicker(page: Page, choice: LaneSkillChoice): Promise<string> {
+  await page.getByTestId("sandbox-cast-skill-skillId").fill(String(choice.skillId));
+  await page.getByTestId("sandbox-cast-skill-level").fill(String(choice.level));
+  await page.getByTestId("sandbox-cast-skill-submit").click();
+  const castNote = page.getByTestId("sandbox-skill-cast-note");
+  await expect(castNote).toHaveText(new RegExp(`^${choice.key} `), { timeout: harnessLoadTimeout });
+  await castNote.scrollIntoViewIfNeeded();
+  const noteText = (await castNote.textContent()) ?? "";
+  test.info().annotations.push({ type: "sandbox-skill-cast-note", description: noteText });
+  console.log(`sandbox-skill-cast-note: ${noteText}`);
+  return noteText;
+}
+
+function emitterActorCount(noteText: string): number {
+  const match = /\| emitter actors (\d+) \|/.exec(noteText);
+  if (!match) throw new Error(`the cast note names no emitter actor count: ${noteText}`);
+  return Number(match[1]);
+}
+
+test.describe("sandbox cast picker on the actors lane store", () => {
+  test.skip(process.env.NATIVE_STORE_ROOT !== laneName, "run with NATIVE_STORE_ROOT=actors");
+  test.skip(!existsSync(laneCatalogPath) || !existsSync(laneCoveragePath), "the actors lane store has no catalog or coverage");
+
+  for (const [label, contextOptions, viewportName] of [
+    ["1440 x 900", { viewport: desktopViewport }, "1440x900"],
+    ["932 x 430 on a landscape touch phone", landscapePhone, "932x430"],
+  ] as const) {
+    test(`casts the lowest converted skill other than 3:1 and the lowest emitter class gap through the cast picker at ${label}`, async ({ browser }) => {
+      test.setTimeout(worldReadyTimeout + harnessLoadTimeout * 3);
+      const { converted, emitterClassGap } = laneSkillChoices();
+      const context = await browser.newContext(contextOptions);
+      try {
+        const page = await context.newPage();
+        const pageErrors = await openSandboxTab(page);
+        mkdirSync(evidenceDirectory, { recursive: true });
+        const convertedNote = await castFromPicker(page, converted);
+        expect(emitterActorCount(convertedNote), convertedNote).toBeGreaterThan(0);
+        await page.screenshot({ path: resolve(evidenceDirectory, `sandbox-cast-${converted.key.replace(/:/g, "-")}-${viewportName}.png`) });
+        const gapNote = await castFromPicker(page, emitterClassGap);
+        expect(gapNote).toContain(`named gaps: ${emitterClassGap.reason}`);
+        await page.screenshot({ path: resolve(evidenceDirectory, `sandbox-cast-${emitterClassGap.key.replace(/:/g, "-")}-${viewportName}.png`) });
+        expect(pageErrors).toEqual([]);
+      } finally {
+        await context.close();
+      }
+    });
+  }
+
+  test("has no horizontal scroll at 430 x 932 portrait with the cast note shown", async ({ browser }) => {
+    test.setTimeout(worldReadyTimeout + harnessLoadTimeout * 2);
+    const context = await browser.newContext(portraitPhone);
+    try {
+      const page = await context.newPage();
+      await openSandboxTab(page);
+      await castFromPicker(page, laneSkillChoices().converted);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    } finally {
+      await context.close();
+    }
   });
 });
