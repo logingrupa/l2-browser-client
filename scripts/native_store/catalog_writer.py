@@ -9,6 +9,7 @@ import re
 import tempfile
 from typing import NamedTuple
 
+from native_store.interprocess_lock import store_publish_lock
 from native_store.native_material_program_pins import (MATERIAL_PROGRAM_FILE_NAME, glb_native_material_program_sha256s,
                                                        native_material_program_directory)
 from native_store.store_paths import (SHA256_PATTERN, StorePathError, confined_child_path, refuse_reparse_points,
@@ -415,15 +416,20 @@ def require_catalog_within_byte_limit(catalog_path, after):
         raise CatalogWriteError(f'Store catalog of {len(after)} bytes exceeds {MAXIMUM_CATALOG_BYTES} bytes; preserved: {catalog_path}')
 
 
+def write_store_files(store_root, files):
+    for relative, payload in files.values():
+        immutable_write(confined_child_path(store_root, relative), payload)
+
+
 def write_store(store_root, files, before, after):
     root = refuse_reparse_points(store_root)
-    missing_relative_paths = verify_store_destinations(root, files)
-    require_catalog_unchanged(root, before)
-    require_catalog_within_byte_limit(confined_child_path(root, STORE_CATALOG_NAME), after)
-    for relative, payload in files.values():
-        immutable_write(confined_child_path(root, relative), payload)
-    require_catalog_unchanged(root, before)
-    catalog_replaced = after != before
-    if catalog_replaced:
-        replace_file(confined_child_path(root, STORE_CATALOG_NAME), after)
+    with store_publish_lock(root):
+        missing_relative_paths = verify_store_destinations(root, files)
+        require_catalog_unchanged(root, before)
+        require_catalog_within_byte_limit(confined_child_path(root, STORE_CATALOG_NAME), after)
+        write_store_files(root, files)
+        require_catalog_unchanged(root, before)
+        catalog_replaced = after != before
+        if catalog_replaced:
+            replace_file(confined_child_path(root, STORE_CATALOG_NAME), after)
     return {'filesWritten': len(missing_relative_paths) + int(catalog_replaced), 'catalogSha256': sha256_hex(after)}

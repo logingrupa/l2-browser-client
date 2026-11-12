@@ -228,7 +228,7 @@ class SurfaceMaterialTests(unittest.TestCase):
         converter = SimpleNamespace(output=scratch_work_root(self, 'bsp-material-'),
                                     texture=lambda work, reference: (synthetic_png_bytes(), {}, reference),
                                     material_texture=lambda *arguments: self.fail('an unported root must not be textured'))
-        store_root = scratch_work_root(self, 'bsp-store-')
+        store_root = scratch_work_root(self, 'bsp-store-') / 'l2'
         texture_declarations = [{'field': 'USize', 'declaredType': 'int', 'declaringClass': 'Engine.Texture', 'enumMembers': None,
                                  'classDefault': {'field': 'USize', 'value': None, 'provenance': 'ue-zero', 'declaringClass': 'Engine.Texture'}}]
         with patch.object(bsp_surface_materials, 'kept_material_class_defaults', return_value={'Engine.Texture': texture_declarations}):

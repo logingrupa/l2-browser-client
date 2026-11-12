@@ -12,6 +12,8 @@ LOCK_FILE_SUFFIX = '.lock'
 LOCKFILE_EXCLUSIVE_LOCK = 0x2
 LOCKED_BYTE_COUNT = 1
 CONVERTER_LOCK_KEY_PREFIX = 'converter:'
+STORE_LOCK_KEY_PREFIX = 'store:'
+LANE_WORK_FOLDER_NAME = 'work'
 held_lock_file_path = None
 
 
@@ -68,3 +70,8 @@ def convert_under_request_lock(converter, request):
     key = '\n'.join([CONVERTER_LOCK_KEY_PREFIX + converter_folder.as_posix(), canonical_json_bytes(request).decode('ascii')])
     with interprocess_lock(lane_lock_folder(converter_folder.parent), key):
         return converter.convert(request)
+
+
+def store_publish_lock(store_root):
+    store_root = Path(store_root)
+    return interprocess_lock(lane_lock_folder(store_root.parent / LANE_WORK_FOLDER_NAME), STORE_LOCK_KEY_PREFIX + store_root.as_posix())

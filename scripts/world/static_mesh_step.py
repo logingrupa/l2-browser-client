@@ -9,9 +9,10 @@ from native_assets import UMODEL, Converter, implementation_hash
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib.static_materials import REVIEWED_VERSIONS, static_material_layout_unreviewed_reason
 from native_catalog.ue2 import FormatError
-from native_store.catalog_writer import add_store_file, immutable_write, sha256_hex, verify_store_destinations
+from native_store.catalog_writer import add_store_file, sha256_hex
 from native_store.interprocess_lock import convert_under_request_lock
-from native_store.store_paths import REPOSITORY_ROOT, confined_child_path, lane_store_root, lane_work_root
+from native_store.store_file_publish import publish_store_files
+from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from reference_client_guard import require_reference_client
 from static_material_package_census import STATIC_MESH_PACKAGE_CENSUS_RELATIVE_PATH, validate_static_mesh_package_census
@@ -252,9 +253,7 @@ def write_static_mesh_store_files(project_root, product, mesh_outcomes):
         if isinstance(outcome, ConvertedStaticMesh) and outcome.model_record['id'] in model_ids:
             for relative, payload in outcome.store_files.values():
                 add_store_file(store_files, relative, payload)
-    verify_store_destinations(store_root, store_files)
-    for relative, payload in store_files.values():
-        immutable_write(confined_child_path(store_root, relative), payload)
+    publish_store_files(store_root, store_files)
     return [{'path': (store_root / relative).relative_to(store_root.parent).as_posix(), 'sha256': sha256_hex(payload), 'bytes': len(payload)}
             for relative, payload in sorted(store_files.values())]
 

@@ -5,9 +5,10 @@ from native_assets import UMODEL, Converter, implementation_hash
 from native_assets_lib.class_defaults import ReferenceClientClassScripts
 from native_assets_lib.gltf import json_bytes
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import immutable_write, sha256_hex, verify_store_destinations
+from native_store.catalog_writer import sha256_hex
 from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN
-from native_store.store_paths import confined_child_path, lane_store_root, lane_work_root
+from native_store.store_file_publish import publish_store_files
+from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from world.bsp_chunk_geometry import (BSP_POLY_FLAGS_PATH, BspPolygonError, assign_nodes_to_chunks, build_chunk_sections, chunk_bsp_glb, chunk_bsp_record,
                                       drawn_node_indices, fan_triangle_indices, load_bsp_poly_flags, node_source_polygon)
@@ -143,9 +144,7 @@ def material_package_paths(map_sources, identities):
 def write_chunk_glbs(project_root, chunk_glbs):
     store_root = lane_store_root(project_root, WORLD_LANE_NAME)
     files = {chunk_bsp_store_path(sha256_hex(glb)): glb for glb in chunk_glbs.values()}
-    verify_store_destinations(store_root, {relative.casefold(): (relative, payload) for relative, payload in files.items()})
-    for relative, payload in files.items():
-        immutable_write(confined_child_path(store_root, relative), payload)
+    publish_store_files(store_root, {relative.casefold(): (relative, payload) for relative, payload in files.items()})
     return [{'path': (store_root / relative).relative_to(store_root.parent).as_posix(), 'sha256': sha256_hex(payload), 'bytes': len(payload)}
             for relative, payload in sorted(files.items())]
 

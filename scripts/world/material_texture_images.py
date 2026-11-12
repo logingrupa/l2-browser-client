@@ -1,9 +1,10 @@
 import hashlib
 from pathlib import Path
 
-from native_store.catalog_writer import immutable_write
+from native_store.catalog_writer import add_store_file
 from native_store.native_material_program_pins import NATIVE_MATERIALS_FOLDER
-from native_store.store_paths import REPOSITORY_ROOT, confined_child_path, require_converter_output
+from native_store.store_file_publish import publish_store_files
+from native_store.store_paths import REPOSITORY_ROOT, require_converter_output
 
 NATIVE_RESOURCE_PREFIX = '/l2/'
 MATERIAL_TEXTURE_IMAGES_FOLDER = 'textures'
@@ -39,9 +40,10 @@ def material_texture_image_pins(pngs_by_node):
 
 def write_material_texture_images(output_root, pngs_by_node):
     store_root = require_converter_output(REPOSITORY_ROOT, Path(output_root))
-    files = {}
+    records_by_path, store_files = {}, {}
     for png in pngs_by_node.values():
         record = material_texture_image_file(png)
-        immutable_write(confined_child_path(store_root, record['path']), png)
-        files[record['path']] = record
-    return [files[path] for path in sorted(files)]
+        add_store_file(store_files, record['path'], png)
+        records_by_path[record['path']] = record
+    publish_store_files(store_root, store_files)
+    return [records_by_path[path] for path in sorted(records_by_path)]
