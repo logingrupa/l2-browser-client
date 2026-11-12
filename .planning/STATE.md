@@ -435,7 +435,6 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 ### Blockers/Concerns
 
 - Stage A exit threshold on the gap list is undefined: DEC-OWN-7 allows failing tiles as gaps while the success metric says every part is converted. Owner to say how many gaps still count as stage A done.
-- Phase 1 needs ssh access to IMPORTA-PC (`fleet-importa-pc`) for the full-tree hash lock.
 - `hairgrp` and `helmetgrp` have no layout in the local descriptor; Elbera route may also lack them (blocks source-backed hair for ACT-01).
 - Streaming/LOD (WORLD-04) is a dependency of walking 153 tiles; the current native loader loads eagerly.
 - Native reference capture fails the fixed 30 FPS cadence gate (4.1 FPS) and DATABASE-PC has no 120 Hz display; both gate Phases 5 and 6, not stage A (screenshots and listen checks).
