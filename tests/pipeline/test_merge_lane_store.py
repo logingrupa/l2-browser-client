@@ -229,8 +229,10 @@ class LaneStoreMergeCommandLineTests(unittest.TestCase):
     def run_main_in(self, current_directory, arguments):
         os.chdir(current_directory)
         output, errors = io.StringIO(), io.StringIO()
-        with contextlib.redirect_stdout(output), contextlib.redirect_stderr(errors):
+        with (patch.object(merge_lane_store_module, 'run_at_below_normal_priority') as below_normal_priority,
+              contextlib.redirect_stdout(output), contextlib.redirect_stderr(errors)):
             exit_code = merge_lane_store_module.main(arguments)
+        below_normal_priority.assert_called_once_with()
         return exit_code, output.getvalue(), errors.getvalue()
 
     def merge_arguments(self, target, expected_base_catalog_sha256=None):

@@ -9,7 +9,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
@@ -20,6 +20,7 @@ from native_store.catalog_writer import (CatalogWriteError, NATIVE_RESOURCE_PATH
                                          read_store_catalog, write_store)
 from native_store.merge_lane_store import main_checkout_root
 from native_store.store_paths import StorePathError, lane_store_root
+from native_store.unit_ledger import UnitLedgerError
 from native_store import write_lane_catalog as lane_catalog_module
 from native_store.write_lane_catalog import LaneCatalogError, write_lane_catalog
 
@@ -109,6 +110,7 @@ class LaneCatalogWriterTests(unittest.TestCase):
     def run_main(self, arguments):
         output, errors = io.StringIO(), io.StringIO()
         with (patch.object(lane_catalog_module, 'REPOSITORY_ROOT', self.project),
+              patch.object(lane_catalog_module, 'run_at_below_normal_priority'),
               contextlib.redirect_stdout(output), contextlib.redirect_stderr(errors)):
             try:
                 exit_code = lane_catalog_module.main(arguments)
@@ -413,6 +415,26 @@ class LaneCatalogWriterTests(unittest.TestCase):
         summary = json.loads(output)
         self.assertEqual(sorted(summary), ['catalogSha256', 'filesWritten', 'lane', 'laneStoreRoot', 'recordsBySlice', 'sourceCatalogSha256'])
         self.assertEqual((summary['lane'], summary['filesWritten']), ('integration', 4))
+
+    def test_main_sets_below_normal_priority_before_it_writes_the_lane_catalog(self):
+        main_calls = Mock()
+        main_calls.write_lane_catalog.return_value = {'lane': 'world'}
+        with (patch.object(lane_catalog_module, 'run_at_below_normal_priority', main_calls.run_at_below_normal_priority),
+              patch.object(lane_catalog_module, 'write_lane_catalog', main_calls.write_lane_catalog),
+              contextlib.redirect_stdout(io.StringIO())):
+            self.assertEqual(lane_catalog_module.main(['--lane', 'world']), 0)
+        self.assertEqual([name for name, _, _ in main_calls.mock_calls], ['run_at_below_normal_priority', 'write_lane_catalog'])
+        main_calls.run_at_below_normal_priority.assert_called_once_with()
+
+    def test_main_reports_a_refused_priority_and_writes_no_lane_catalog(self):
+        errors = io.StringIO()
+        with (patch.object(lane_catalog_module, 'run_at_below_normal_priority',
+                           side_effect=UnitLedgerError('SetPriorityClass failed with Windows error 5')),
+              patch.object(lane_catalog_module, 'write_lane_catalog') as lane_catalog_writer,
+              contextlib.redirect_stderr(errors)):
+            exit_code = lane_catalog_module.main(['--lane', 'world'])
+        self.assertEqual((exit_code, errors.getvalue()), (1, 'SetPriorityClass failed with Windows error 5\n'))
+        lane_catalog_writer.assert_not_called()
 
 
 if __name__ == '__main__':

@@ -20,6 +20,7 @@ from native_store.catalog_index_keys import require_npc_profiles_join_models_of_
 from native_store.catalog_writer import (KNOWN_CATALOG_SLICES, decode_store_catalog, merge_catalog_slice_records, pinned_store_files,
                                          read_current_catalog_bytes, sha256_hex, validate_catalog_record, verify_store_destinations, write_store)
 from native_store.store_paths import SHA256_PATTERN, confined_child_path, refuse_reparse_points
+from native_store.unit_ledger import run_at_below_normal_priority
 
 LANE_STORE_MERGE_DESCRIPTION = ('Merge one verified lane store into the main checkout public/l2 store: every check runs before the first '
                                 'write and catalog.json is written last. Run only by the integration thread in the main checkout.')
@@ -181,6 +182,7 @@ def main(argv=None):
     parser.add_argument('--expected-base-catalog-sha256', required=True)
     arguments = parser.parse_args(argv)
     try:
+        run_at_below_normal_priority()
         require_sha256(arguments.expected_base_catalog_sha256, '--expected-base-catalog-sha256')
         main_checkout = require_main_checkout(Path.cwd())
         target = require_main_checkout_store_target(main_checkout, arguments.target)

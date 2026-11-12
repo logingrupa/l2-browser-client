@@ -94,6 +94,7 @@ class LaneCoverageRefreshTestCase(unittest.TestCase):
     def run_lane_catalog_main(self, arguments):
         output, errors = io.StringIO(), io.StringIO()
         with (patch.object(lane_catalog_module, 'REPOSITORY_ROOT', self.project_root),
+              patch.object(lane_catalog_module, 'run_at_below_normal_priority'),
               contextlib.redirect_stdout(output), contextlib.redirect_stderr(errors)):
             exit_code = lane_catalog_module.main(arguments)
         return exit_code, output.getvalue(), errors.getvalue()

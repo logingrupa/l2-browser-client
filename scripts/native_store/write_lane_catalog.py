@@ -16,6 +16,7 @@ from native_store.lane_coverage_refresh import refresh_lane_coverage
 from native_store.merge_lane_store import main_checkout_root
 from native_store.pinned_store_verification import verify_pinned_store_files
 from native_store.store_paths import REPOSITORY_ROOT, confined_child_path, lane_store_root, read_lane_parts_by_name
+from native_store.unit_ledger import run_at_below_normal_priority
 
 LANE_CATALOG_DESCRIPTION = ('Pin a lane store catalog to the SHA-256 of the shared public/l2 catalog it was built on, '
                             'union other lane stores into it, or print the exact restage command with --plan.')
@@ -123,6 +124,7 @@ def main(argv=None):
     parser.add_argument('--plan', action='store_true')
     arguments = parser.parse_args(argv)
     try:
+        run_at_below_normal_priority()
         summary = write_lane_catalog(REPOSITORY_ROOT, arguments.lane, arguments.union, plan_only=arguments.plan)
     except (ValueError, OSError) as error:
         print(str(error), file=sys.stderr)
