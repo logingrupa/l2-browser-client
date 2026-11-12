@@ -17,9 +17,11 @@ from native_assets_lib.class_defaults import ReferenceClientClassScripts, class_
 from native_catalog.effects import UELIB_SHA256
 from native_catalog.ue2 import FormatError
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import is_table_name_index_id, read_store_catalog, replace_file
+from native_store.catalog_writer import is_table_name_index_id, read_store_catalog
 from native_store.data_ui_table_manifest import DATA_UI_LANE_NAME, ELBERA_ADAPTER_ROUTE, LOCAL_DESCRIPTOR_ROUTE, data_ui_table_manifest
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root
+from reference_client_guard import require_reference_client
+from world.committed_world_data import require_committed_destination, write_committed_world_bytes
 
 CHARACTER_CLASS_SOURCES_SCHEMA_VERSION = 1
 CLASS_DEFAULT_FIELDS = (HEAD_BONE_FIELD, CLASS_MESH_FIELD, SUB_MESHES_FIELD)
@@ -152,7 +154,8 @@ def script_package_exports(client_root, class_scripts):
         try:
             _, package = class_scripts.packages.get(path.stem)
         except FormatError as error:
-            packages.append({'package': relative_path, 'sha256': hashlib.sha256(path.read_bytes()).hexdigest(), 'refused': str(error),
+            packages.append({'package': relative_path, 'sha256': require_reference_client(client_root).require_equal_file_with_sha256(relative_path)[1],
+                             'refused': str(error),
                              'names': set(), 'classes': {}})
             continue
         classes = {item['object']: package.object_name(item['superIndex']) for item in package.exports if item['className'] == CLASS_EXPORT_NAME}
@@ -238,13 +241,14 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description='Search the decoded tables of the data-ui lane and the locked client script packages for the '
                                                  'chargrp row to actor class join and write the result with its verdict.')
     parser.add_argument('--client', type=Path, required=True)
-    parser.add_argument('--output', type=Path, default=REPOSITORY_ROOT / CHARACTER_CLASS_SOURCES_RELATIVE_PATH)
     arguments = parser.parse_args(argv)
+    require_reference_client(arguments.client)
+    require_committed_destination(CHARACTER_CLASS_SOURCES_RELATIVE_PATH)
     from native_catalog.tables import decode_table
     client_root = arguments.client.resolve(strict=True)
     document = character_class_sources_document(REPOSITORY_ROOT, client_root, decode_table(client_root, CHARGRP_TABLE_NAME),
                                                 lane_work_root(REPOSITORY_ROOT, 'actors'))
-    replace_file(arguments.output, canonical_json_bytes(document))
+    write_committed_world_bytes(CHARACTER_CLASS_SOURCES_RELATIVE_PATH, canonical_json_bytes(document))
     print(json.dumps({'verdict': document['verdict'], 'rows': {row: entry['actorClass'] for row, entry in document['rows'].items()}}, sort_keys=True))
     return 0
 
