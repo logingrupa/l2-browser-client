@@ -38,6 +38,25 @@ Actors lane catalog `b070325c...` (161 item records of 282 models):
 - The items sweep slice (`LOAD_CHECK_KIND=items LOAD_CHECK_LIMIT=50`) wrote 50 more pass records. 51 pass, 0 failed in `artifacts/lane-store/actors/load-checks/b070325c295c4583bc23d3f46d50b9c7d09713e808e67591ddaf6501aebb1e9d.json`.
 - Lane coverage report: items 96 converted, 8,074 gap, 1,068 pending, loads 51 pass. Coverage counts a census-step gap before an items-step pending row, so its pending count is lower than the item census.
 
+### Catalog size projection (plan 02-79, 2026-11-12 07:21 Riga)
+
+Measured before the item batch with one `python -B -c` command over the actors lane catalog, the integration union catalog and the item census; the limit is `MAXIMUM_CATALOG_BYTES` imported from `scripts/native_store/catalog_writer.py`. Every term is taken at its upper bound:
+
+| Term | Value |
+| --- | ---: |
+| catalog byte limit | 33,554,432 |
+| integration union catalog | 1,810,934 |
+| actors lane catalog `064d9ad6...` (skills complete) | 6,333,702 |
+| item model record, largest of 161 (mean 2,514) | 2,903 |
+| item records per pass unit (sealed units in the census) | 2.038 |
+| convertible item units (all, since the converter change reseals the sealed ones) | 2,969 |
+| projected item records | 6,051 |
+| pending skill keys | 0 |
+| projected union, union plus lane catalog plus item records | 25,710,689 |
+| headroom | 7,843,743 |
+
+Decision (OVERNIGHT-DECISIONS row 1023): under the limit, so the item record shape stays and the item batch runs to completion.
+
 ### Browser checks
 
 `NATIVE_STORE_ROOT=actors DEV_PORT=5175 pnpm test:e2e tests/browser/sandbox-equip.spec.ts`, 4 passed on headless SwiftShader (no FPS claim):
@@ -52,7 +71,6 @@ Actors lane catalog `b070325c...` (161 item records of 282 models):
 - Which body part an armor replaces is undecoded, so armor never replaces a part on a body-part slot.
 - Weapons with two meshes and armor columns with two or four meshes are `mesh-texture-pairing-undecoded`; the mesh to texture pairing is not decoded.
 - Weapons on generated characters wait on the chargrp class join (02-40, `class-template-mapping-undecoded`).
-- At about 3.6 KB per record, the full item breadth would pass the 32 MB catalog limit; the record shape needs a decision before the batch finishes.
 - The actors lane store is not restaged (STATE.md, Needs Human plan 02-42).
 
 ## Evidence

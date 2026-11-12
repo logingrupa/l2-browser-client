@@ -24,18 +24,25 @@ Every decoded skillgrp row has one binding, built by `scripts/actors/skill_bindi
 ### Conversion
 
 - One sealed ledger unit per visual root (`skill-root:<description>`, step `skill-effect-root`), converted through `native_effect_bundle` from the first key with an exact sound row, staged with `scripts/stage-native-effect.mjs` and written to the actors lane store under `l2/effects/<sha>/`.
-- The staged folder holds every file its manifest pins: the resources and, since 2026-11-09, the source bundle manifest and graph as `source-bundle/<sha256>.json`, so `write_lane_catalog.py --lane actors` pins the effect records (`tests/pipeline/test_skill_effect_store_pins.py`). The 22 sealed roots were reconverted with that stage: the same 17 converted and 5 gap roots, and the same gap-row counts.
+- The staged folder holds every file its manifest pins: the resources and, since 2026-11-09, the source bundle manifest and graph as `source-bundle/<sha256>.json`, so `write_lane_catalog.py --lane actors` pins the effect records (`tests/pipeline/test_skill_effect_store_pins.py`).
 - Every key that names a converted root gets the record `interlude:skill:<id>:level:<level>:native-description-action` with `bundleId` `interlude:skill-root:<description>`.
-- Sprite, Mesh, Beam, Ribbon and VertMesh emitter records and their texture and static mesh references convert. Spark, Trail and other classes keep their records as `emitter-class-unconverted` gaps and convert no reference (6f613dd). VertMesh objects stay raw native data: the Converter has no VertMesh adapter. Bundle gap reasons put `<converter>` for the converter work folder, so no lane or host path reaches bundle gaps or the staged manifest (d4b5eb6).
-- `recipes/actors/emitter-class-coverage.json` lists the classes the simulator runs (`Engine.MeshEmitter`, `Engine.RibbonEmitter`, `Engine.SpriteEmitter`). A key passes only when every emitter class of its root is listed; otherwise it is `emitter-class-unported:<class>` (FX-01). Since 9d1189d `root_outcomes` checks each sealed root's unbound simulated components against the current list, so such a root is an unpublished `converter-refused` gap (`<object> has no converted resource`; 02-REVIEW-FIX).
-- Gap reasons scrub host paths through `actors/path_free_messages.py` (`<source>`, `<output>`), like the other actors routes (382c9b1).
-- The skills batch writes the lane catalog with the other actor writers' compact `json_bytes` (f48c353), so an unchanged finish keeps the catalog SHA-256 and its load checks.
+- Sprite, Mesh, Beam, Ribbon and VertMesh emitter records and their texture and static mesh references convert. Spark, Trail and other classes keep their records as `emitter-class-unconverted` gaps and convert no reference (6f613dd). VertMesh objects stay raw native data: the Converter has no VertMesh adapter. Bundle gap reasons write `<converter>` for the converter work folder (d4b5eb6).
+- `recipes/actors/emitter-class-coverage.json` lists the classes the simulator runs (`Engine.MeshEmitter`, `Engine.RibbonEmitter`, `Engine.SpriteEmitter`). A key passes only when every emitter class of its root is listed; otherwise it is `emitter-class-unported:<class>` (FX-01). Since 9d1189d a sealed root with an unbound simulated component is an unpublished `converter-refused` gap (02-REVIEW-FIX).
+- Gap reasons scrub host paths (`actors/path_free_messages.py`, 382c9b1); the catalog is written with the compact `json_bytes` (f48c353).
 
 Resume command: `python -B scripts/actors/convert_actors.py --client E:/Lineage2-client --batch skills --limit 20`. A rerun skips roots sealed under the current fingerprint (`alreadySealedRoots`).
 
-Batch under the current converter (plan 02-79, 2026-11-12). The 02-73, 02-74 and 02-92 converter change unsealed the 22 roots of 02-43, so the batch reseals them first, in first-key order. Before slice 1, 22 sealed roots held 888,979,304 bytes (40,408,150 per root); 245 roots project 9,899,996,750 bytes against 82,307,973,120 free and the 4 GiB ledger floor.
+Batch to completion (plan 02-79, 2026-11-12 03:04 to 07:21 Riga): the converter change of 02-73, 02-74 and 02-92 unsealed the 22 roots of 02-43, which were resealed first. 13 slices of 20 roots, all exit 0, lane catalog rewritten every 5 slices; `skill.mo.99`, refused under 02-43, now converts. Disk projection (G5) before slices 1, 2, 7 and 12: at most 45,215,051 bytes per root times 245 roots, 11,077,687,495 bytes against at least 71,556,415,488 free and the 4 GiB floor.
 
-Tracer slice 1 (20 roots, 796 s): 16 converted, 4 `converter-refused` (unsupported default-property syntax: `skill.at.100`, `skill.at.260`, `skill.at.92`, `skill.moment.110`). `skill.mo.99`, refused under 02-43, now converts. Of the 16 converted roots, the 02-94 feature rule marks 6 with `emitter-feature-unported:BlendBetweenSubdivisions`, 12 with `UseDirectionAs` and 1 with `UseMeshBlendMode` (a root can have several; its first names the key). Gap rows: 122 pass, 17,575 `native-skill-dispatch-required`, 634 `converter-refused`, 522 `emitter-class-unported:Engine.BeamEmitter`, 1,953 `emitter-feature-unported:UseDirectionAs`, 185 `emitter-feature-unported:BlendBetweenSubdivisions`, 8,821 `conversion-pending`. Lane catalog `88bb6070...a1a9` (2,782 effect components, 614 models, 5,175 combatAudio, 23 npcProfiles); `write_lane_catalog.py --lane actors --plan` prints its merge command. Lane coverage: skills-effects 122 converted, 20,870 gap, 8,820 pending.
+| Root outcome (245 roots) | Roots |
+| --- | --- |
+| converted, every emitter class simulated | 176 |
+| converted, `emitter-class-unported:Engine.BeamEmitter` | 22 |
+| converted, `emitter-class-unported:Engine.VertMeshEmitter` | 8 |
+| `converter-refused`: 20 unsupported default-property syntax, 2 no explicit effect-class reference (`skill.mb.832`, `skill.qu.4548`), 3 native object missing or ambiguous (`skill.bl.1147`, `skill.it.2178`, `skill.mo.87`) | 25 |
+| `no-exact-skillsound-row` | 14 |
+
+The 02-94 feature rule marks converted roots per property: `UseDirectionAs` 147, `BlendBetweenSubdivisions` 88, `UseMeshBlendMode` 4, `MeshSpawning` 1, `UseActorForces` 1 (a root can have several; the first names its keys). Gap rows `artifacts/lane-store/actors/gap-rows/skills.json` (29,812): 591 pass, 17,575 `native-skill-dispatch-required`, 6,468 `emitter-feature-unported:UseDirectionAs`, 1,945 `emitter-feature-unported:BlendBetweenSubdivisions` (8,413 feature rows), 1,562 `converter-refused`, 1,235 `emitter-class-unported:Engine.BeamEmitter`, 410 `emitter-class-unported:Engine.VertMeshEmitter`, 25 `no-exact-skillsound-row`, and `skill:3:1` (reviewed dispatch in the shared store). Lane catalog `064d9ad6...292e` (6,333,702 bytes: 10,649 effect components, 614 models, 5,175 combatAudio, 23 npcProfiles); `write_lane_catalog.py --lane actors --plan` prints its merge command. Lane coverage: skills-effects 591 converted, 29,221 gap, 0 pending, loads 10,649 unverified.
 
 ### Browser
 
@@ -47,7 +54,7 @@ Tracer slice 1 (20 roots, 796 s): 16 converted, 4 `converter-refused` (unsupport
 
 - `NATIVE_STORE_ROOT=actors DEV_PORT=5175 pnpm test:e2e tests/browser/sandbox-skill-cast.spec.ts`: 5 passed. `tests/browser/harness/native-skill-effect.html?skill=1011:1` lists the 5 components of `interlude:skill-root:skill.wh.1011` (3 Mesh, 1 Beam record, 1 Sprite) and draws the first component the preview loader accepts. `?skill=3:2` shows `skill:3:2 gap: native-skill-dispatch-required` with no component. Portrait 430 x 932 has no horizontal scroll.
 - Screenshots: `artifacts/skill-evidence/skill-1011-1-1440x900.png`, `skill-1011-1-932x430.png`, `skill-3-2-gap-1440x900.png`.
-- Skills sweep slice (`LOAD_CHECK_KIND=skills LOAD_CHECK_LIMIT=20`), records in `artifacts/lane-store/actors/load-checks/6965638a....json`, 21 records, all `failed`: 18 `skill.wh.1011` keys on `multiple independent primitive texture/frame routes are not supported in one preview`, 3 `skill.wh.1012` keys on `only constant finite nonnegative ColorMultiplierRange is supported`.
+- 02-43 skills sweep slice: 21 records, all `failed` on limits of the preview loader that 02-69 replaced (`load-checks/6965638a....json`).
 
 ## FX-01 emitter simulation core (plan 02-68, 2026-11-09)
 
@@ -139,18 +146,17 @@ POL-04 behaviour changes, each pinned in `tests/unit/ribbonEmitter.test.ts`: flo
 
 ## Open
 
-- 225 roots wait for the resume command (plan 02-79 runs them); 8,820 keys are pending.
 - Loads: the actors lane keys have not been rechecked since the loader runs on the simulator (FX-01).
 - Ribbons draw once staging binds a RibbonEmitter texture; Beam and VertMesh wait for Phase 5, and VertMesh meshes need a Converter adapter.
 - Emitter natives need a converted source of native calls with their arguments; the weapon trail needs its caller; the Power Strike previews do not call AdjustparticleLife yet.
 - The presentation places at the anchor pivot: AttachOn bones, offsets and stage timing (casting against shot) stay unapplied, and the skill sound (skillsoundgrp route) stays open.
 - Tile map emitters need the 02-64 world binding to merge class defaults into the tile-emitters.json records and call `playTileMapEmitters`.
 - Skeletal slot programs need the actor converter to write `nativeMaterialProgram` and the library vertex stage to skin.
-- Five roots are refused by the converter; their reasons are in the gap rows.
+- 25 roots are refused by the converter; their reasons are in the gap rows.
 - The next-cell cross-fade, the `UseDirectionAs` bases, ProjectionNormal and per-instance direction stay open under FX-01 (POL-04).
 - The sandbox wiring of the presentation to the `skill-cast` event and its sheet note is integration work (plan 02-87).
 - The cast check still runs on the harness page; the dev store switch serves the actors lane as its restage union.
-- Restage: the lane catalog `7ab1cdcf...` above is restaged from the main checkout (docs/parts/npcs/EVIDENCE.md).
+- Restage: the lane catalog is restaged from the main checkout (docs/parts/npcs/EVIDENCE.md).
 
 ## Evidence
 
