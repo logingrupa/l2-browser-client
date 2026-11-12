@@ -18,8 +18,7 @@ from native_store.unit_ledger import (RUNNING_MARKER_NAME, SEAL_RECORD_NAME, Fre
                                       UnitLedger)
 from tile_step_seal_fixture import LOCKED_TILE_ID, seal_raw_unit, seal_unit, tile_map_inputs, unpinned_music_encoder
 from world import convert_tile_batch, world_audio_step
-from world.convert_tile_batch import (BATCH_EXIT_DISK_FLOOR, BATCH_EXIT_DONE, BATCH_EXIT_ERROR, BATCH_EXIT_MACHINE_WINDOW,
-                                      NOTHING_TO_DO_MESSAGE, TileBatchUsageError, run_tile_batch)
+from world.convert_tile_batch import NOTHING_TO_DO_MESSAGE, TileBatchUsageError, run_tile_batch
 from world.eligible_tile_selection import SealedTileStep, seal_derived_step_row, step_level_rows
 from world.eligible_tiles import select_eligible_tiles
 from world.raw_map_step import read_tile_map_lock_record, tile_step_row, tile_unit_key
@@ -27,6 +26,7 @@ from world.tile_census_validation import CENSUS_READER_NAMES, TILE_CENSUS_RELATI
 from world.tile_music import pinned_music_encoder
 from world.tile_step_current_seals import CURRENT_SEAL_STATE, TILE_STEP_SEAL_CHECKS, TileStepSealCheck, unit_step_seal
 from world.tile_step_registry import TILE_STEP_NAMES
+from world.tile_step_workers import BATCH_EXIT_DISK_FLOOR, BATCH_EXIT_DONE, BATCH_EXIT_ERROR, BATCH_EXIT_MACHINE_WINDOW, TileStepRun
 from world.world_audio_step import WORLD_AUDIO_STEP_NAME, world_audio_unit_config
 
 SYNTHETIC_STEP_NAMES = ('raw', 'chunks', 'meshes', 'manifest')
@@ -155,7 +155,8 @@ class TileBatchTestCase(unittest.TestCase):
         census_path.write_text(json.dumps(synthetic_census(self.eligible_tile_ids)), encoding='utf-8')
 
     def run_batch(self, steps, limit=1, preflight=None, step_names=SYNTHETIC_STEP_NAMES, step_seal_checks=None):
-        return run_tile_batch(self.project_root, limit, steps, preflight or RecordingPreflight(), step_seal_checks or synthetic_seal_checks(),
+        return run_tile_batch(limit, 1, TileStepRun,
+                              (self.project_root, steps, preflight or RecordingPreflight(), step_seal_checks or synthetic_seal_checks()),
                               step_names=step_names, tile_source_identity=synthetic_source_identity)
 
     def rows_by_tile_and_step(self):
@@ -370,7 +371,7 @@ class TileBatchCommandLineTests(TileBatchTestCase):
         with (patch.object(convert_tile_batch, 'REPOSITORY_ROOT', self.project_root),
               patch.object(convert_tile_batch, 'require_reference_client'),
               patch.object(convert_tile_batch, 'TILE_STEP_SEAL_CHECKS', synthetic_seal_checks()),
-              patch.object(convert_tile_batch, 'world_batch_preflight', lambda project_root: RecordingPreflight()),
+              patch.object(convert_tile_batch, 'world_batch_preflight', lambda project_root, worker_count: RecordingPreflight()),
               patch.object(convert_tile_batch, 'locked_tile_source_identity', synthetic_source_identity),
               patch.object(convert_tile_batch, 'refresh_world_lane_outputs', lambda project_root: {'refreshed': True}),
               patch.object(convert_tile_batch, 'run_tile_step', refused_step_runner),
@@ -396,7 +397,7 @@ class TileBatchCommandLineTests(TileBatchTestCase):
 
     def test_a_machine_window_skips_the_lane_catalog_refresh(self):
         machine_window_preflight = RecordingPreflight({1: MachineWindowRefusedError('inside nightly backup window')})
-        with patch.object(convert_tile_batch, 'world_batch_preflight', lambda project_root: machine_window_preflight):
+        with patch.object(convert_tile_batch, 'world_batch_preflight', lambda project_root, worker_count: machine_window_preflight):
             with (patch.object(convert_tile_batch, 'REPOSITORY_ROOT', self.project_root),
                   patch.object(convert_tile_batch, 'require_reference_client'),
                   patch.object(convert_tile_batch, 'TILE_STEP_SEAL_CHECKS', synthetic_seal_checks()),
