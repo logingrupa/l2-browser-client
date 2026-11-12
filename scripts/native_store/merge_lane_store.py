@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import io
 import json
 import os
 from pathlib import Path
@@ -17,8 +16,10 @@ from native_assets import verify_archive
 from native_assets_lib.asset_manifest import require_supported_asset_manifest
 from native_assets_lib.gltf import json_bytes
 from native_store.catalog_index_keys import require_npc_profiles_join_models_of_their_mesh
-from native_store.catalog_writer import (KNOWN_CATALOG_SLICES, decode_store_catalog, merge_catalog_slice_records, pinned_store_files,
-                                         read_current_catalog_bytes, sha256_hex, validate_catalog_record, verify_store_destinations, write_store)
+from native_store.catalog_writer import (KNOWN_CATALOG_SLICES, decode_store_catalog, merge_catalog_slice_records, read_current_catalog_bytes,
+                                         sha256_hex, validate_catalog_record)
+from native_store.pinned_store_verification import PINNED_STORE_VERIFICATION_WORKER_COUNT, verify_pinned_store_files
+from native_store.store_file_copy import add_store_file_source, copy_store_files, missing_store_file_sources
 from native_store.store_paths import SHA256_PATTERN, confined_child_path, refuse_reparse_points
 from native_store.unit_ledger import run_at_below_normal_priority
 
@@ -126,17 +127,26 @@ def merged_target_catalog(target_catalog, records_by_slice):
     return merged
 
 
-def require_version_two_lane_archives(lane_store_root, files):
-    for relative, payload in files.values():
+def require_version_two_lane_archives(lane_store_root, verified_store_file_by_key):
+    for relative, verified_sha256 in verified_store_file_by_key.values():
         if not relative.endswith(LANE_ARCHIVE_SUFFIX):
             continue
-        if verify_archive(confined_child_path(lane_store_root, relative))['sha256'] != sha256_hex(payload):
+        archive_path = confined_child_path(lane_store_root, relative)
+        if verify_archive(archive_path)['sha256'] != verified_sha256:
             raise LaneStoreMergeRefusedError(f'lane archive changed while it was read: {relative}')
-        with zipfile.ZipFile(io.BytesIO(payload)) as archive:
+        with zipfile.ZipFile(archive_path) as archive:
             asset_manifest = require_supported_asset_manifest(json.loads(archive.read(ASSET_MANIFEST_NAME)))
         if asset_manifest['schemaVersion'] != LANE_ARCHIVE_SCHEMA_VERSION:
             raise LaneStoreMergeRefusedError(f'lane archive asset.json schemaVersion is {asset_manifest["schemaVersion"]}, '
                                              f'only {LANE_ARCHIVE_SCHEMA_VERSION} merges: {relative}')
+
+
+def verified_lane_store_file_sources(lane_store_root, verified_store_file_by_key):
+    store_file_sources = {}
+    for verified_store_file in verified_store_file_by_key.values():
+        add_store_file_source(store_file_sources, verified_store_file.relative,
+                              confined_child_path(lane_store_root, verified_store_file.relative), verified_store_file_by_key)
+    return store_file_sources
 
 
 def added_record_counts(records_by_slice):
@@ -156,12 +166,15 @@ def merge_verified_lane_store(lane_store_root, target_root, expected_base_catalo
     lane_root, target = refuse_reparse_points(lane_store_root), refuse_reparse_points(target_root)
     before = read_required_catalog_bytes(target, 'target store')
     records_by_slice, after = lane_union_catalog(read_required_catalog_bytes(lane_root, 'lane store'), before, expected_base_catalog_sha256)
-    files = pinned_store_files(lane_root, records_by_slice)
+    verified_store_file_by_key = verify_pinned_store_files(lane_root, records_by_slice, PINNED_STORE_VERIFICATION_WORKER_COUNT)
     require_npc_profiles_join_models_of_their_mesh(lane_root, records_by_slice, target)
-    require_version_two_lane_archives(lane_root, files)
-    copied_files = sorted(verify_store_destinations(target, files))
-    unchanged_files = sorted(relative for relative, _ in files.values() if relative not in copied_files)
-    write_store(target, files, before, after)
+    require_version_two_lane_archives(lane_root, verified_store_file_by_key)
+    store_file_sources = verified_lane_store_file_sources(lane_root, verified_store_file_by_key)
+    copied_files = sorted(store_file_source.relative for store_file_source in missing_store_file_sources(target, store_file_sources))
+    copied_relative_paths = set(copied_files)
+    unchanged_files = sorted(store_file_source.relative for store_file_source in store_file_sources.values()
+                             if store_file_source.relative not in copied_relative_paths)
+    copy_store_files(target, store_file_sources, before, after)
     return {'beforeCatalogSha256': sha256_hex(before), 'afterCatalogSha256': sha256_hex(after), 'copiedFiles': copied_files,
             'unchangedFiles': unchanged_files, 'addedRecordsBySlice': added_record_counts(records_by_slice)}
 

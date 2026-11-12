@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import deque
 import copy
 import hashlib
 import json
@@ -377,21 +376,6 @@ def pinned_file_child_references(reference, payload):
     if reference.relative.casefold().endswith(PINNED_GLB_SUFFIX):
         child_references.extend(glb_material_program_references(payload, f'store file {reference.relative}'))
     return child_references
-
-
-def pinned_store_files(store_root, catalog):
-    files, verified_sha256_by_store_file_key, pending = {}, {}, deque(catalog_pinned_file_references(catalog))
-    while pending:
-        reference = pending.popleft()
-        key = reference.relative.casefold()
-        if key in verified_sha256_by_store_file_key:
-            require_one_sha256_per_store_file(verified_sha256_by_store_file_key[key], reference)
-            continue
-        payload = read_pinned_file(store_root, reference)
-        add_store_file(files, reference.relative, payload)
-        verified_sha256_by_store_file_key[key] = reference.sha256
-        pending.extend(pinned_file_child_references(reference, payload))
-    return files
 
 
 def verify_store_destinations(store_root, files):

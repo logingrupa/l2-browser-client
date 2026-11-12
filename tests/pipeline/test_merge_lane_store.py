@@ -1,5 +1,6 @@
 import contextlib
 import copy
+import functools
 import hashlib
 import io
 import json
@@ -9,6 +10,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 import zipfile
@@ -19,6 +21,9 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from native_assets_lib.gltf import json_bytes
 from native_store import merge_lane_store as merge_lane_store_module
 from native_store.merge_lane_store import LaneStoreMergeRefusedError, merge_lane_store
+from native_store.pinned_store_verification import PINNED_STORE_VERIFICATION_WORKER_COUNT, verify_pinned_store_files
+from native_store.store_file_copy import copy_store_files
+from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES
 
 GOLDEN_ROOT = ROOT / 'tests' / 'fixtures' / 'golden'
 GOLDEN_CATALOG = json.loads((GOLDEN_ROOT / 'l2' / 'catalog.json').read_bytes())
@@ -148,6 +153,15 @@ class LaneStoreMergeTests(unittest.TestCase):
         self.assertEqual({relative: (target_root / relative).stat().st_mtime_ns for relative in modification_times}, modification_times)
         self.assertEqual(json.loads((target_root / 'catalog.json').read_bytes())['tiles'], [tile_record])
 
+    def test_one_merge_verifies_the_lane_once_with_the_verification_walk_and_its_worker_count(self):
+        base_sha256 = self.fixture.target_catalog_sha256()
+        with patch.object(merge_lane_store_module, 'verify_pinned_store_files', wraps=verify_pinned_store_files) as verification_walk:
+            result = self.fixture.merge()
+        verification_walk.assert_called_once_with(self.fixture.lane_root, self.fixture.lane_records, PINNED_STORE_VERIFICATION_WORKER_COUNT)
+        self.assertEqual(result, {'beforeCatalogSha256': base_sha256, 'afterCatalogSha256': self.fixture.target_catalog_sha256(),
+                                  'copiedFiles': sorted(relative_resource(path) for path in self.fixture.lane_files),
+                                  'unchangedFiles': [], 'addedRecordsBySlice': {'models': 1}})
+
 
 class LaneStoreMergeRefusalTests(unittest.TestCase):
     def setUp(self):
@@ -219,6 +233,34 @@ class LaneStoreMergeRefusalTests(unittest.TestCase):
         self.fixture.lane_records['skillTrees'] = []
         self.fixture.write_lane_store()
         self.assert_refused_without_touching_the_target('lane catalog holds fields the merge does not know: skillTrees')
+
+    def test_a_lane_archive_that_changes_after_the_verification_walk_is_refused(self):
+        archive_relative = relative_resource(LANE_MODEL_RECORD['archive'])
+
+        def verify_then_replace_the_lane_archive(store_root, catalog, worker_count):
+            verified_store_file_by_key = verify_pinned_store_files(store_root, catalog, worker_count)
+            write_file(self.fixture.lane_root / archive_relative, MODEL_VERSION_ONE_BYTES)
+            return verified_store_file_by_key
+
+        with patch.object(merge_lane_store_module, 'verify_pinned_store_files', verify_then_replace_the_lane_archive):
+            self.assert_refused_without_touching_the_target('lane archive changed while it was read: ' + archive_relative)
+
+    def test_a_lane_file_that_changes_after_the_archive_check_is_refused_by_the_copy_and_leaves_no_file(self):
+        check_lane_archives = merge_lane_store_module.require_version_two_lane_archives
+
+        def check_then_change_the_lane_archive(lane_store_root, verified_store_file_by_key):
+            check_lane_archives(lane_store_root, verified_store_file_by_key)
+            write_file(self.fixture.lane_root / relative_resource(LANE_MODEL_RECORD['archive']), b'lane archive changed before the copy')
+
+        with patch.object(merge_lane_store_module, 'require_version_two_lane_archives', check_then_change_the_lane_archive):
+            self.assert_refused_without_touching_the_target('Store file source no longer has its expected SHA-256')
+
+    def test_a_target_volume_with_only_the_floor_free_is_refused_before_the_first_write(self):
+        def floor_only_disk_usage(volume_path):
+            return SimpleNamespace(free=BATCH_MINIMUM_FREE_BYTES)
+
+        with patch.object(merge_lane_store_module, 'copy_store_files', functools.partial(copy_store_files, disk_usage=floor_only_disk_usage)):
+            self.assert_refused_without_touching_the_target('nothing was written')
 
 
 class LaneStoreMergeCommandLineTests(unittest.TestCase):

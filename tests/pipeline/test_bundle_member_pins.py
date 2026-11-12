@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 
 from native_assets_lib.gltf import json_bytes
-from native_store.catalog_writer import CatalogWriteError, pinned_store_files
+from native_store.catalog_writer import CatalogWriteError
 from native_store.merge_lane_store import LaneStoreMergeRefusedError, merge_lane_store
 from native_store import pinned_store_verification
 from native_store.pinned_store_verification import verify_pinned_store_files
@@ -46,7 +46,7 @@ POOLED_WALK_PROGRAM = '\n'.join([
     'catalog = json.loads(Path(sys.argv[3]).read_text(encoding="utf-8"))',
     'try:',
     '    verified = pinned_store_verification.verify_pinned_store_files(Path(sys.argv[2]), catalog, int(sys.argv[4]))',
-    '    outcome = {"verifiedSha256ByStoreFileKey": verified}',
+    '    outcome = {"verifiedStoreFilesByKey": verified}',
     'except Exception as refusal:',
     '    outcome = {"refusalType": type(refusal).__module__ + "." + type(refusal).__qualname__, "refusalMessage": str(refusal)}',
     'print(json.dumps({**outcome, "poolWorkerCounts": pool_worker_counts}))',
@@ -148,21 +148,19 @@ class TemporaryStoreTestCase(unittest.TestCase):
         return json.loads(completed.stdout)
 
     def assert_every_walk_verifies(self, store_root, catalog):
-        verified = {key: sha256_hex(payload) for key, (_, payload) in pinned_store_files(store_root, catalog).items()}
-        self.assertEqual(verify_pinned_store_files(store_root, catalog, POOLED_WALK_WORKER_COUNT), verified)
+        verified_store_file_by_key = verify_pinned_store_files(store_root, catalog, POOLED_WALK_WORKER_COUNT)
+        for key, (relative, sha256) in verified_store_file_by_key.items():
+            self.assertEqual((key, sha256), (relative.casefold(), sha256_hex((store_root / relative).read_bytes())))
         self.assertEqual(self.pooled_walk_outcome(store_root, catalog),
-                         {'verifiedSha256ByStoreFileKey': verified, 'poolWorkerCounts': [POOLED_WALK_WORKER_COUNT]})
+                         {'verifiedStoreFilesByKey': {key: list(verified) for key, verified in verified_store_file_by_key.items()},
+                          'poolWorkerCounts': [POOLED_WALK_WORKER_COUNT]})
 
     def assert_every_walk_refuses(self, error_type, message_pattern, store_root, catalog, pool_worker_counts=(POOLED_WALK_WORKER_COUNT,)):
-        with self.assertRaisesRegex(error_type, message_pattern) as collecting_walk:
-            pinned_store_files(store_root, catalog)
-        refusal_type, refusal_message = type(collecting_walk.exception), str(collecting_walk.exception)
-        with self.assertRaises(refusal_type) as verify_only_walk:
+        with self.assertRaisesRegex(error_type, message_pattern) as inline_walk:
             verify_pinned_store_files(store_root, catalog, POOLED_WALK_WORKER_COUNT)
-        self.assertIs(type(verify_only_walk.exception), refusal_type)
-        self.assertEqual(str(verify_only_walk.exception), refusal_message)
+        refusal_type = type(inline_walk.exception)
         self.assertEqual(self.pooled_walk_outcome(store_root, catalog),
-                         {'refusalType': f'{refusal_type.__module__}.{refusal_type.__qualname__}', 'refusalMessage': refusal_message,
+                         {'refusalType': f'{refusal_type.__module__}.{refusal_type.__qualname__}', 'refusalMessage': str(inline_walk.exception),
                           'poolWorkerCounts': list(pool_worker_counts)})
 
 
@@ -180,10 +178,11 @@ class ProfileBundleProjectTestCase(TemporaryStoreTestCase):
 class ProfileBundleLaneTests(ProfileBundleProjectTestCase):
     def test_a_profile_bundle_manifest_pins_its_files_by_relative_path_and_members_are_never_parsed_for_pins(self):
         catalog = json.loads((self.actors_store / 'catalog.json').read_bytes())
-        files = pinned_store_files(self.actors_store, catalog)
-        self.assertEqual(sorted(relative for relative, _ in files.values()), self.bundle.pinned_relative_paths())
+        verified_store_file_by_key = verify_pinned_store_files(self.actors_store, catalog, POOLED_WALK_WORKER_COUNT)
+        self.assertEqual(sorted(relative for relative, _ in verified_store_file_by_key.values()), self.bundle.pinned_relative_paths())
         for member, payload in self.bundle.members.items():
-            self.assertEqual(files[self.bundle.member_relative(member).casefold()], (self.bundle.member_relative(member), payload))
+            self.assertEqual(verified_store_file_by_key[self.bundle.member_relative(member).casefold()],
+                             (self.bundle.member_relative(member), sha256_hex(payload)))
 
     def test_the_lane_catalog_pins_the_bundle_and_plan_prints_the_restage_command(self):
         subprocess.run(['git', 'init', '--quiet', str(self.project)], check=True, capture_output=True)
@@ -311,14 +310,15 @@ class BundleMemberGuardTests(TemporaryStoreTestCase):
         payload = b'member beside a root manifest'
         bundle = ProfileBundle({'flat-member.bin': payload}, manifest_folder='')
         catalog = bundle.write(self.store_root)
-        files = pinned_store_files(self.store_root, catalog)
-        self.assertEqual(sorted(relative for relative, _ in files.values()), ['flat-member.bin', 'manifest.json'])
+        verified_store_file_by_key = verify_pinned_store_files(self.store_root, catalog, POOLED_WALK_WORKER_COUNT)
+        self.assertEqual(sorted(relative for relative, _ in verified_store_file_by_key.values()), ['flat-member.bin', 'manifest.json'])
 
     def test_an_effect_bundle_from_another_lane_follows_the_same_rule_and_pins_a_repeated_resource_once(self):
         bundle = SyntheticEffectBundle(self.store_root)
         folder, texture_pin = bundle.folder, bundle.texture_pin
-        files = pinned_store_files(self.store_root, bundle.catalog)
-        self.assertEqual(sorted(relative for relative, _ in files.values()), [f'{folder}/manifest.json', f'{folder}/{texture_pin["file"]}'])
+        verified_store_file_by_key = verify_pinned_store_files(self.store_root, bundle.catalog, POOLED_WALK_WORKER_COUNT)
+        self.assertEqual(sorted(relative for relative, _ in verified_store_file_by_key.values()),
+                         [f'{folder}/manifest.json', f'{folder}/{texture_pin["file"]}'])
 
 
 class SyntheticEffectBundle:
@@ -390,8 +390,8 @@ class WorldTileRuntimePinTests(TemporaryStoreTestCase):
 
     def test_the_walk_reaches_sky_bundle_files_named_by_a_files_map_and_material_programs_named_by_glb_extras(self):
         tile = SyntheticWorldTile(self.store_root)
-        files = pinned_store_files(self.store_root, tile.catalog())
-        self.assertEqual(sorted(relative for relative, _ in files.values()), tile.runtime_relative_paths())
+        verified_store_file_by_key = verify_pinned_store_files(self.store_root, tile.catalog(), POOLED_WALK_WORKER_COUNT)
+        self.assertEqual(sorted(relative for relative, _ in verified_store_file_by_key.values()), tile.runtime_relative_paths())
 
     def test_the_merge_copies_the_sky_glb_and_the_material_program_the_browser_fetches(self):
         tile = SyntheticWorldTile(self.store_root)

@@ -1,0 +1,14 @@
+Suite baseline of quick task 261112-i80, taken before the first edit of Task 1
+checkout: C:/laragon/www/l2b-speed, branch lane/speed, HEAD 0a59a9febe84410b8bd38f91cb90fe70675c49ea, 2026-11-12
+command: python C:/laragon/l2b-orchestration/autonomous-roadmap/run_below_normal.py python -B scripts/test_pipeline.py
+tests run: 2181 (424.549 s)
+result line: FAILED (errors=2, skipped=67)
+exit status: 1
+
+ERROR and FAIL lines of the run, sorted (2 ERROR, 0 FAIL):
+ERROR: test_the_20_20_ambient_counts_equal_the_staged_ambience (test_world_audio_step.RealClientAudioTests.test_the_20_20_ambient_counts_equal_the_staged_ambience)
+ERROR: test_the_generic_20_20_step_holds_the_brush397_and_brush610_nodes_at_their_native_positions (test_world_bsp_step.OracleBrushSubsetTests.test_the_generic_20_20_step_holds_the_brush397_and_brush610_nodes_at_their_native_positions)
+
+Test ids, sorted:
+test_world_audio_step.RealClientAudioTests.test_the_20_20_ambient_counts_equal_the_staged_ambience
+test_world_bsp_step.OracleBrushSubsetTests.test_the_generic_20_20_step_holds_the_brush397_and_brush610_nodes_at_their_native_positions

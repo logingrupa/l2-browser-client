@@ -12,7 +12,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from actors.skill_effect_conversion import add_staged_effect_store_files, skill_effect_component_record, stage_effect_bundle
 from effect_source_bundle_fixture import write_sprite_effect_source_bundle
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import CatalogWriteError, merge_catalog_slice, pinned_store_files, write_store
+from native_store.catalog_writer import CatalogWriteError, merge_catalog_slice, write_store
+from native_store.pinned_store_verification import PINNED_STORE_VERIFICATION_WORKER_COUNT, verify_pinned_store_files
 
 VISUAL_ROOT = 'skill.fixture.root'
 
@@ -48,7 +49,8 @@ class StagedSkillEffectStoreTests(unittest.TestCase):
             self.assertEqual((self.store_root / self.effect_store_relative(source_bundle[field]['file'])).read_bytes(), payload)
 
     def test_a_store_written_from_a_staged_root_pins_every_file_its_effect_manifest_names(self):
-        pinned_relatives = {relative for relative, _ in pinned_store_files(self.store_root, self.catalog).values()}
+        verified_store_file_by_key = verify_pinned_store_files(self.store_root, self.catalog, PINNED_STORE_VERIFICATION_WORKER_COUNT)
+        pinned_relatives = {verified_store_file.relative for verified_store_file in verified_store_file_by_key.values()}
         source_bundle = self.staged_manifest['sourceBundle']
         resource_files = {resource['file'] for resource in self.staged_manifest['resources'].values()}
         expected = {self.effect_store_relative(member) for member in
@@ -58,7 +60,7 @@ class StagedSkillEffectStoreTests(unittest.TestCase):
     def test_a_store_missing_the_source_graph_is_still_refused_by_the_pin_check(self):
         (self.store_root / self.effect_store_relative(self.staged_manifest['sourceBundle']['graph']['file'])).unlink()
         with self.assertRaisesRegex(CatalogWriteError, 'pinned store file is missing'):
-            pinned_store_files(self.store_root, self.catalog)
+            verify_pinned_store_files(self.store_root, self.catalog, PINNED_STORE_VERIFICATION_WORKER_COUNT)
 
 
 if __name__ == '__main__':

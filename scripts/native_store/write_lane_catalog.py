@@ -10,11 +10,12 @@ sys.path.insert(0, str(SCRIPTS_ROOT))
 
 from native_assets_lib.gltf import json_bytes
 from native_store.catalog_index_keys import require_npc_profiles_join_models_of_their_mesh
-from native_store.catalog_writer import (KNOWN_CATALOG_SLICES, add_store_file, merge_catalog_slice_records, read_store_catalog, sha256_hex,
-                                         sha256_of_file, verify_store_destinations, write_store)
+from native_store.catalog_writer import (KNOWN_CATALOG_SLICES, merge_catalog_slice_records, read_store_catalog, sha256_hex, sha256_of_file,
+                                         write_store)
 from native_store.lane_coverage_refresh import refresh_lane_coverage
 from native_store.merge_lane_store import main_checkout_root
-from native_store.pinned_store_verification import verify_pinned_store_files
+from native_store.pinned_store_verification import PINNED_STORE_VERIFICATION_WORKER_COUNT, verify_pinned_store_files
+from native_store.store_file_copy import add_store_file_source, copy_store_files, missing_store_file_sources
 from native_store.store_paths import REPOSITORY_ROOT, confined_child_path, lane_store_root, read_lane_parts_by_name
 from native_store.unit_ledger import run_at_below_normal_priority
 
@@ -23,7 +24,6 @@ LANE_CATALOG_DESCRIPTION = ('Pin a lane store catalog to the SHA-256 of the shar
 UNION_EXCLUDED_STORE_FILES = ('catalog.json', 'coverage.json')
 MERGE_LANE_STORE_SCRIPT = Path(__file__).resolve().parent / 'merge_lane_store.py'
 MAIN_CHECKOUT_STORE_TARGET = 'public/l2'
-PINNED_STORE_VERIFICATION_WORKER_COUNT = 12
 
 
 class LaneCatalogError(ValueError):
@@ -52,7 +52,7 @@ def union_lane_store_relative_paths(union_store_root):
     return sorted(relative for relative in relative_paths if relative not in UNION_EXCLUDED_STORE_FILES)
 
 
-def merge_union_lane(project_root, union_lane_name, base_sha256, catalog, files):
+def merge_union_lane(project_root, union_lane_name, base_sha256, catalog, store_file_sources):
     union_store_root = lane_store_root(project_root, union_lane_name)
     union_catalog, union_catalog_bytes = read_store_catalog(union_store_root)
     if union_catalog_bytes is None:
@@ -61,10 +61,10 @@ def merge_union_lane(project_root, union_lane_name, base_sha256, catalog, files)
     if union_base_sha256 != base_sha256:
         raise LaneCatalogError(f'union lane {union_lane_name} was built on base catalog sha256 {union_base_sha256}; '
                                f'the current base catalog sha256 is {base_sha256}')
-    verify_pinned_store_files(union_store_root, union_catalog, PINNED_STORE_VERIFICATION_WORKER_COUNT)
+    verified_store_file_by_key = verify_pinned_store_files(union_store_root, union_catalog, PINNED_STORE_VERIFICATION_WORKER_COUNT)
     require_npc_profiles_join_models_of_their_mesh(union_store_root, union_catalog, shared_store_root(project_root))
     for relative in union_lane_store_relative_paths(union_store_root):
-        add_store_file(files, relative, confined_child_path(union_store_root, relative).read_bytes())
+        add_store_file_source(store_file_sources, relative, confined_child_path(union_store_root, relative), verified_store_file_by_key)
     for slice_name in KNOWN_CATALOG_SLICES:
         incoming_records = union_catalog.get(slice_name, [])
         if incoming_records:
@@ -99,19 +99,22 @@ def write_lane_catalog(project_root, lane_name, union_lane_names=(), plan_only=F
         raise LaneCatalogError(f'lane {lane_name} has no catalog: {store_root / "catalog.json"}')
     verify_pinned_store_files(store_root, catalog, PINNED_STORE_VERIFICATION_WORKER_COUNT)
     require_npc_profiles_join_models_of_their_mesh(store_root, catalog, shared_store_root(project_root))
-    files = {}
+    store_file_sources = {}
     for union_lane_name in union_lane_names:
-        catalog = merge_union_lane(project_root, union_lane_name, base_sha256, catalog, files)
+        catalog = merge_union_lane(project_root, union_lane_name, base_sha256, catalog, store_file_sources)
     catalog['sourceCatalogSha256'] = base_sha256
     after = json_bytes(catalog)
     summary = {'lane': lane_name, 'laneStoreRoot': store_root.as_posix(), 'catalogSha256': sha256_hex(after),
                'sourceCatalogSha256': base_sha256, 'recordsBySlice': records_by_slice(catalog)}
     if plan_only:
-        if verify_store_destinations(store_root, files) or after != before:
+        if missing_store_file_sources(store_root, store_file_sources) or after != before:
             raise LaneCatalogError(f'lane {lane_name} is not written yet; run write_lane_catalog.py without --plan first')
         return {**summary, 'filesWritten': 0,
                 'restageCommand': restage_command(project_root, lane_name, base_sha256)}
-    files_written = write_store(store_root, files, before, after)['filesWritten']
+    if union_lane_names:
+        files_written = copy_store_files(store_root, store_file_sources, before, after)['filesWritten']
+    else:
+        files_written = write_store(store_root, {}, before, after)['filesWritten']
     refresh_lane_coverage(project_root, lane_name)
     return {**summary, 'filesWritten': files_written}
 

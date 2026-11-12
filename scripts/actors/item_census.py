@@ -5,6 +5,7 @@ from actors.actor_unit_inventory import ARMOR_MESH_UNIT_KIND, WEAPON_MESH_UNIT_K
 from actors.item_conversion import ETCITEM_TABLE_NAME, ITEM_LANE_NAME, ITEMNAME_TABLE_NAME, ItemConversionRun, read_item_sources
 from actors.item_requests import (ARMORGRP_TABLE_NAME, ITEM_CENSUS_RELATIVE_PATH, ITEM_STEP, PASS_STATUS, PENDING_STATUS, WEAPONGRP_TABLE_NAME,
                                   grouped_item_status, item_gap_rows, ungrouped_item_reason)
+from actors.item_unit_workers import item_worker_run, outcomes_converted_by_workers
 from native_store.gap_rows import write_gap_rows
 from native_store.store_paths import lane_work_root
 
@@ -70,20 +71,43 @@ def write_item_census_and_gap_rows(run, slice_limit):
     return path
 
 
-def run_item_batch(run, limit, preflight):
+def selected_slice_units(run, limit):
     sealed_outcomes = run.sealed_outcomes_by_unit_key()
-    outcomes, converted = [], 0
+    slice_units, unsealed_units = [], []
     for unit in run.units:
-        if converted >= limit:
+        if len(unsealed_units) >= limit:
             break
-        if unit['unitKey'] in sealed_outcomes:
-            outcomes.append(sealed_outcomes[unit['unitKey']])
-            continue
-        preflight()
-        outcomes.append(run.convert(unit))
-        converted += 1
+        slice_units.append(unit)
+        if unit['unitKey'] not in sealed_outcomes:
+            unsealed_units.append(unit)
+    return slice_units, unsealed_units
+
+
+def written_slice_outcomes(run, slice_units, unsealed_units, converted_outcomes):
+    converted_outcomes_by_unit_key = {unit['unitKey']: outcome for unit, outcome in zip(unsealed_units, converted_outcomes, strict=True)}
+    sealed_outcomes = run.sealed_outcomes_by_unit_key()
+    outcomes = [converted_outcomes_by_unit_key[unit['unitKey']] if unit['unitKey'] in converted_outcomes_by_unit_key
+                else sealed_outcomes[unit['unitKey']] for unit in slice_units]
     run.write_item_records(outcomes)
     return outcomes
+
+
+def run_item_batch(run, limit, preflight):
+    slice_units, unsealed_units = selected_slice_units(run, limit)
+    converted_outcomes = []
+    for unit in unsealed_units:
+        preflight()
+        converted_outcomes.append(run.convert(unit))
+    return written_slice_outcomes(run, slice_units, unsealed_units, converted_outcomes)
+
+
+def run_pooled_item_batch(run, limit, preflight, worker_count, worker_run_factory, worker_run_arguments):
+    slice_units, unsealed_units = selected_slice_units(run, limit)
+    converted_outcomes = outcomes_converted_by_workers([unit['unitKey'] for unit in unsealed_units], worker_count, worker_run_factory,
+                                                       worker_run_arguments, preflight)
+    for unit, outcome in zip(unsealed_units, converted_outcomes, strict=True):
+        run.add_sealed_outcome_of_converted_unit(unit, outcome)
+    return written_slice_outcomes(run, slice_units, unsealed_units, converted_outcomes)
 
 
 def item_units(run, item_id):
@@ -94,11 +118,15 @@ def item_units(run, item_id):
 
 def run_item_conversion(project_root, client_access, converter, output_root, decode_table, arguments, preflight):
     sources = read_item_sources(project_root, client_access.root, decode_table)
-    run = ItemConversionRun(project_root, client_access, converter, lane_work_root(project_root, ITEM_LANE_NAME), output_root, sources)
-    if arguments.batch == ITEM_BATCH_NAME:
-        outcomes = run_item_batch(run, arguments.limit, preflight)
-    else:
+    ledger_root = lane_work_root(project_root, ITEM_LANE_NAME)
+    run = ItemConversionRun(project_root, client_access, converter, ledger_root, output_root, sources)
+    if arguments.batch != ITEM_BATCH_NAME:
         outcomes = [run.convert(unit) for unit in item_units(run, arguments.item)]
         run.write_item_records(outcomes)
+    elif arguments.workers in (None, 1):
+        outcomes = run_item_batch(run, arguments.limit, preflight)
+    else:
+        outcomes = run_pooled_item_batch(run, arguments.limit, preflight, arguments.workers, item_worker_run,
+                                         (project_root, client_access.root, converter.output, converter.umodel, ledger_root, output_root))
     write_item_census_and_gap_rows(run, arguments.limit)
     return outcomes

@@ -16,7 +16,8 @@ from native_assets_lib.gltf import json_bytes
 from native_assets_lib import combat_audio_bundle as subject
 from native_assets_lib.sha256_identity import sha256_hex_digest
 from native_catalog.table_layout_pins import MTX_DEFINITION_EVIDENCE
-from native_store.catalog_writer import pinned_store_files, read_store_catalog, write_store
+from native_store.catalog_writer import read_store_catalog, write_store
+from native_store.pinned_store_verification import PINNED_STORE_VERIFICATION_WORKER_COUNT, verify_pinned_store_files
 from native_store.store_paths import lane_store_root
 from native_store.write_lane_catalog import write_lane_catalog
 import stage_native_combat_audio as stager
@@ -351,7 +352,8 @@ class LaneStoreCombatAudioPinTests(CombatAudioFixture):
 
     def test_the_bundle_pins_only_the_files_it_holds_and_the_lane_catalog_writer_pins_it(self):
         catalog, _ = read_store_catalog(self.store_root)
-        pinned = {relative for relative, _ in pinned_store_files(self.store_root, catalog).values()}
+        verified_store_file_by_key = verify_pinned_store_files(self.store_root, catalog, PINNED_STORE_VERIFICATION_WORKER_COUNT)
+        pinned = {verified_store_file.relative for verified_store_file in verified_store_file_by_key.values()}
         held = {path.relative_to(self.store_root).as_posix() for path in self.bundle_folder.rglob('*') if path.is_file()}
         self.assertEqual(pinned, held)
         self.write('public/l2/catalog.json', json_bytes({'schemaVersion': 1, 'models': []}))

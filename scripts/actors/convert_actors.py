@@ -15,6 +15,7 @@ from actors.actor_unit_inventory import (ACTOR_UNIT_CENSUS_RELATIVE_PATH, CONVER
                                          NPC_PART_NAME, conversion_unit_key, model_record_capacity, decoded_table_identity)
 from actors.character_census import CHARACTER_BATCH_NAME, run_character_conversion
 from actors.item_census import ITEM_BATCH_NAME, run_item_conversion
+from actors.item_unit_workers import worker_count_argument
 from actors.npc_requests import (ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX, CONVERTER_REFUSED_REASON_PREFIX, FAILED_STATUS, GAP_STATUS,
                                  NPC_NAME_EMPTY_REASON, NPC_NAME_ROW_MISSING_REASON, NPC_PROFILE_STEP, PASS_STATUS, TRANSIENT_FAILURES,
                                  SOUND_PACKAGE_NOT_IN_CLIENT_STATUS, SOUND_PACKAGE_REFUSED_STATUS, animation_reference_gap_reason,
@@ -357,11 +358,14 @@ def main(argv=None):
     mode.add_argument('--print-batch-plan', action='store_true')
     parser.add_argument('--level', type=skill_level_argument)
     parser.add_argument('--limit', type=slice_limit_argument)
+    parser.add_argument('--workers', type=worker_count_argument, help='Worker processes of the items batch; never run two slices of one batch side by side.')
     arguments = parser.parse_args(argv)
     if (arguments.batch is None) != (arguments.limit is None):
         parser.error('--limit is required with --batch and only valid with --batch')
     if (arguments.skill is None) != (arguments.level is None):
         parser.error('--level is required with --skill and only valid with --skill')
+    if arguments.workers is not None and arguments.batch != ITEM_BATCH_NAME:
+        parser.error('--workers is only valid with --batch items')
     try:
         output_root = require_actors_lane_store_output(REPOSITORY_ROOT, arguments.output)
         client_access = require_reference_client(arguments.client)

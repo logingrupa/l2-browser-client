@@ -22,4 +22,5 @@ How client files become `.l2asset` packages and catalog entries ([OUTPUT_CONTRAC
 
 - Other `assets:*` commands in `package.json`; `scripts/bundle-native-*-audio.py`.
 - `pnpm test:pipeline` runs `tests/pipeline/` and `scripts/native_catalog/` tests.
+- Batch speed, worker processes and the rules for parallel work: [BATCH_PIPELINE_SPEED.md](BATCH_PIPELINE_SPEED.md).
 - [NATIVE_TEXTURES.md](NATIVE_TEXTURES.md), [NATIVE_AUDIO.md](NATIVE_AUDIO.md), `docs/parts/<part>/EVIDENCE.md`, [research/INDEX.md](research/INDEX.md).
