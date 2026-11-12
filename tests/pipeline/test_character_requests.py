@@ -158,8 +158,25 @@ class CharacterClassJoinTests(unittest.TestCase):
         row = synthetic_chargrp_row(face_textures=('MFighter.Face_t00', 'MFighter.Face_t01'))
         actor_class = joined_actor_class({'HeadBone': 'Bip01_head'})
         generated = build_character_request(row, 0, actor_class, character_sources([row], read_class_definition=joined_class_reader(actor_class)))
-        self.assertEqual(generated['request']['parts'][-1]['materials'], [])
-        self.assertNotIn('texturePath', generated['request']['parts'][-1]['sourceBinding'])
+        face = generated['request']['parts'][-1]
+        self.assertEqual(face['materials'], [])
+        self.assertNotIn('sourceBinding', face)
+        self.assertEqual(face['rigidAttachment']['source']['meshPath'], ['Mesh'])
+        self.assertIn(f'The face mesh is chargrp Char/0/face_mesh/0, checked against the {JOINED_CLASS} Mesh default; its 2 face_texture entries '
+                      'leave slot 0 unbound until a source selects one.', generated['request']['limitations'])
+
+    def test_every_generated_table_binding_passes_the_converter_binding_check(self):
+        from native_assets_lib.source_table_binding import verify_source_table_binding
+        for face_textures in (('MFighter.Face_m000_t00_f',), ('MFighter.Face_t00', 'MFighter.Face_t01')):
+            row = synthetic_chargrp_row(face_textures=face_textures)
+            row['body_texture']['body_texture2'] = ''
+            actor_class = joined_actor_class({'HeadBone': 'Bip01_head'})
+            generated = build_character_request(row, 0, actor_class, character_sources([row], read_class_definition=joined_class_reader(actor_class)))
+            decoded_table = {**synthetic_chargrp_table([row]), 'schema': {}, 'decodedSha256': 'a' * 64}
+            for part in generated['request']['parts']:
+                if 'sourceBinding' in part:
+                    with self.subTest(part=part['object'], faceTextures=len(face_textures)):
+                        verify_source_table_binding(part, decoded_table)
 
 
 SOURCED_CLASS = 'LineageWarrior.SourcedFighter'
@@ -328,7 +345,7 @@ class CharacterEdgeTests(unittest.TestCase):
         generated = self.generated(row)
         self.assertIn({'field': 'face', 'reason': 'no-mesh-in-row'}, generated['gaps'])
         self.assertEqual(generated['request']['parts'][1]['materials'], [])
-        self.assertNotIn('texturePath', generated['request']['parts'][1]['sourceBinding'])
+        self.assertEqual(generated['request']['parts'][1]['sourceBinding']['texturePath'], ['Char', 0, 'body_texture', 'body_texture2'])
         self.assertEqual(generated['parts'][1], {'field': 'body_mesh2', 'status': 'requested-unbound', 'reason': None})
 
     def test_an_unqualified_reference_is_an_actor_default_gap_never_a_bare_name_fallback(self):

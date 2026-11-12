@@ -26,7 +26,7 @@ CLASS_TEMPLATE_MAPPING_UNDECODED_REASON = 'class-template-mapping-undecoded'
 CHARACTER_CLASS_SOURCES_RELATIVE_PATH = 'docs/parts/player-characters/character-class-sources.json'
 CLASS_SOURCES_ROUTE = 'character-class-sources'
 ADOPTED_CLASS_SOURCES_VERDICT, NOT_DECIDED_CLASS_SOURCES_VERDICT = 'adopted', 'not-decided'
-HEAD_BONE_FIELD, RIGHT_HAND_BONE_FIELD, SUB_MESHES_FIELD = 'HeadBone', 'RightHandBone', 'SubMeshes'
+HEAD_BONE_FIELD, RIGHT_HAND_BONE_FIELD, SUB_MESHES_FIELD, CLASS_MESH_FIELD = 'HeadBone', 'RightHandBone', 'SubMeshes', 'Mesh'
 COLLISION_SOURCE_FIELDS = (('collisionRadius', 'CollisionRadius'), ('collisionHeight', 'CollisionHeight'))
 IDLE_ANIMATION_FAMILY_FIELD = 'WaitAnimName'
 REQUESTED_STATUS, UNBOUND_TEXTURE_STATUS, BOUND_STATUS, GAP_STATUS = 'requested', 'requested-unbound', 'bound', 'gap'
@@ -71,10 +71,11 @@ def part_status(field, status, reason=None):
 
 def table_mesh_part(mesh, texture, mesh_path, texture_path, chargrp_table):
     package_name, object_name = mesh.split('.', 1)
-    binding = {'table': CHARGRP_TABLE_NAME, 'sourceSha256': chargrp_table['sourceSha256'], 'meshPath': mesh_path}
-    if texture:
-        binding['texturePath'] = texture_path
-    return {'package': package_name, 'object': object_name, 'materials': [f'0={texture}'] if texture else [], 'sourceBinding': binding}
+    part = {'package': package_name, 'object': object_name, 'materials': [f'0={texture}'] if texture else []}
+    if texture_path is not None:
+        part['sourceBinding'] = {'table': CHARGRP_TABLE_NAME, 'sourceSha256': chargrp_table['sourceSha256'], 'meshPath': mesh_path,
+                                 'texturePath': texture_path}
+    return part
 
 
 def body_parts(chargrp_row, row_index, chargrp_table):
@@ -86,8 +87,10 @@ def body_parts(chargrp_row, row_index, chargrp_table):
         if reason:
             statuses.append(part_status(mesh_field, GAP_STATUS, reason))
             continue
-        parts.append(table_mesh_part(mesh, texture, [CHARGRP_ROW_COLLECTION, row_index, BODY_MESH_GROUP, mesh_field],
-                                     [CHARGRP_ROW_COLLECTION, row_index, BODY_TEXTURE_GROUP, texture_field], chargrp_table))
+        texture_path = ([CHARGRP_ROW_COLLECTION, row_index, BODY_TEXTURE_GROUP, texture_field]
+                        if texture_field in chargrp_row[BODY_TEXTURE_GROUP] else None)
+        parts.append(table_mesh_part(mesh, texture, [CHARGRP_ROW_COLLECTION, row_index, BODY_MESH_GROUP, mesh_field], texture_path,
+                                     chargrp_table))
         statuses.append(part_status(mesh_field, REQUESTED_STATUS if texture else UNBOUND_TEXTURE_STATUS))
     return parts, statuses
 
@@ -107,16 +110,24 @@ def rigid_head_attachment(actor_class, mesh_path):
 
 def face_part(chargrp_row, row_index, chargrp_table, actor_class):
     meshes = [entry[FACE_MESH_FIELD] for entry in chargrp_row[FACE_MESH_GROUP]]
-    textures = [entry[FACE_TEXTURE_FIELD] for entry in chargrp_row[FACE_TEXTURE_GROUP] if entry[FACE_TEXTURE_FIELD]]
+    texture_entries = chargrp_row[FACE_TEXTURE_GROUP]
     reason = (NO_MESH_IN_ROW_REASON if len(meshes) != 1 or not meshes[0] else
               unqualified_reference_reason(FACE_MESH_FIELD, meshes[0]) or class_head_bone_reason(actor_class))
     if reason:
         return None, part_status(FACE_FIELD_NAME, GAP_STATUS, reason)
-    texture = textures[0] if len(textures) == 1 else ''
+    single_texture = len(texture_entries) == 1
+    texture = texture_entries[0][FACE_TEXTURE_FIELD] if single_texture else ''
     part = table_mesh_part(meshes[0], texture, [CHARGRP_ROW_COLLECTION, row_index, FACE_MESH_GROUP, 0, FACE_MESH_FIELD],
-                           [CHARGRP_ROW_COLLECTION, row_index, FACE_TEXTURE_GROUP, 0, FACE_TEXTURE_FIELD], chargrp_table)
-    part['rigidAttachment'] = rigid_head_attachment(actor_class, ['Mesh'])
+                           [CHARGRP_ROW_COLLECTION, row_index, FACE_TEXTURE_GROUP, 0, FACE_TEXTURE_FIELD] if single_texture else None,
+                           chargrp_table)
+    part['rigidAttachment'] = rigid_head_attachment(actor_class, [CLASS_MESH_FIELD])
     return part, part_status(FACE_FIELD_NAME, REQUESTED_STATUS if texture else UNBOUND_TEXTURE_STATUS)
+
+
+def unbound_face_limitation(chargrp_row, row_index, actor_class):
+    return (f'The face mesh is chargrp {CHARGRP_ROW_COLLECTION}/{row_index}/{FACE_MESH_GROUP}/0, checked against the {actor_class["class"]} '
+            f'{CLASS_MESH_FIELD} default; its {len(chargrp_row[FACE_TEXTURE_GROUP])} {FACE_TEXTURE_GROUP} entries leave slot 0 unbound '
+            'until a source selects one.')
 
 
 def classinfo_rows(classinfo_table):
@@ -262,6 +273,7 @@ def build_character_request(chargrp_row, row_index, actor_class, sources):
         gaps.insert(0, {'field': 'parts', 'reason': ASSEMBLY_PART_LIMIT_EXCEEDED_REASON_PREFIX + str(len(parts))})
     elif parts:
         limitations = (list(CHARACTER_REQUEST_LIMITATIONS) + ([actor_class_join_limitation(actor_class)] if actor_class else [])
+                       + ([unbound_face_limitation(chargrp_row, row_index, actor_class)] if face and 'sourceBinding' not in face else [])
                        + [layout_binding_limitation(binding) for binding in (hair, helmet) if binding['status'] == BOUND_STATUS])
         request = {'kind': 'model', 'name': character_key(row_index).replace(':', '-'), 'animation': None, 'withEventAudio': True,
                    'parts': parts, 'limitations': limitations}

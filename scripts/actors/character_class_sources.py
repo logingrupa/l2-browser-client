@@ -9,7 +9,7 @@ import argparse
 import hashlib
 import json
 
-from actors.character_requests import (ADOPTED_CLASS_SOURCES_VERDICT, BODY_MESH_GROUP, CHARACTER_CLASS_SOURCES_RELATIVE_PATH,
+from actors.character_requests import (ADOPTED_CLASS_SOURCES_VERDICT, BODY_MESH_GROUP, CHARACTER_CLASS_SOURCES_RELATIVE_PATH, CLASS_MESH_FIELD,
                                        CHARGRP_ROW_COLLECTION, CHARGRP_TABLE_NAME, FACE_MESH_FIELD, FACE_MESH_GROUP, HEAD_BONE_FIELD,
                                        NOT_DECIDED_CLASS_SOURCES_VERDICT, SUB_MESHES_FIELD, is_padding_row)
 from data.hair_table_adapter import HAIR_TABLE_PARSERS
@@ -22,8 +22,7 @@ from native_store.data_ui_table_manifest import DATA_UI_LANE_NAME, ELBERA_ADAPTE
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root
 
 CHARACTER_CLASS_SOURCES_SCHEMA_VERSION = 1
-MESH_FIELD = 'Mesh'
-CLASS_DEFAULT_FIELDS = (HEAD_BONE_FIELD, MESH_FIELD, SUB_MESHES_FIELD)
+CLASS_DEFAULT_FIELDS = (HEAD_BONE_FIELD, CLASS_MESH_FIELD, SUB_MESHES_FIELD)
 CHARGRP_INDEX_FIELD_FRAGMENT = 'chargrp'
 SCRIPT_PACKAGE_FOLDER, SCRIPT_PACKAGE_SUFFIX = 'system', '.u'
 PAWN_CLASS = 'Engine.Pawn'
@@ -178,7 +177,7 @@ def pawn_class_ancestries(packages):
 def class_default_record(class_name, package, work_root, class_scripts):
     values = {value.field: value for value in read_class_defaults_with_provenance(class_name, list(CLASS_DEFAULT_FIELDS), work_root, class_scripts)}
     sub_meshes = values[SUB_MESHES_FIELD].value or []
-    meshes = [entry['object'] for entry in [values[MESH_FIELD].value] + list(sub_meshes) if isinstance(entry, dict) and entry.get('object')]
+    meshes = [entry['object'] for entry in [values[CLASS_MESH_FIELD].value] + list(sub_meshes) if isinstance(entry, dict) and entry.get('object')]
     return {'class': class_name, 'package': package['package'], 'packageSha256': package['sha256'], 'headBone': values[HEAD_BONE_FIELD].value,
             'headBoneDeclaringClass': values[HEAD_BONE_FIELD].declaring_class, 'meshes': meshes}
 
