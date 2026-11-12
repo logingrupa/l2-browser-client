@@ -14,8 +14,9 @@ from actors.actor_unit_inventory import ACTOR_UNIT_CENSUS_RELATIVE_PATH, NPC_MOD
 from data import lane_unit_outcomes
 from native_assets_lib.gltf import json_bytes
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import CatalogWriteError, pinned_store_files
+from native_store.catalog_writer import CatalogWriteError
 from native_store.gap_rows import gap_reason_list_versions
+from native_store.pinned_store_verification import PINNED_STORE_VERIFICATION_WORKER_COUNT, verify_pinned_store_files
 from native_store.store_paths import lane_gap_rows_path, lane_store_root, lane_work_root
 from test_npc_batch import MESH_PACKAGE_PATH, OTHER_MESH_PACKAGE_PATH, FakeConverter, NpcBatchFixture, synthetic_unit
 
@@ -199,14 +200,14 @@ class NpcBatchRecordRebuildTests(NpcBookkeepingFixture):
         self.run_slice_that_converts_nothing()
         self.assertFalse(self.beta_store_file.exists())
         with self.assertRaisesRegex(CatalogWriteError, '^pinned store file is missing from'):
-            pinned_store_files(self.store_root, json.loads(self.catalog_path.read_bytes()))
+            verify_pinned_store_files(self.store_root, json.loads(self.catalog_path.read_bytes()), PINNED_STORE_VERIFICATION_WORKER_COUNT)
 
     def test_the_changed_store_file_of_a_current_record_is_refused_by_the_verification_walk_only(self):
         self.beta_store_file.write_bytes(OTHER_ARCHIVE_BYTES)
         self.run_slice_that_converts_nothing()
         self.assertEqual(self.beta_store_file.read_bytes(), OTHER_ARCHIVE_BYTES)
         with self.assertRaisesRegex(CatalogWriteError, '^pinned store file SHA-256 differs from its pin'):
-            pinned_store_files(self.store_root, json.loads(self.catalog_path.read_bytes()))
+            verify_pinned_store_files(self.store_root, json.loads(self.catalog_path.read_bytes()), PINNED_STORE_VERIFICATION_WORKER_COUNT)
 
 
 if __name__ == '__main__':
