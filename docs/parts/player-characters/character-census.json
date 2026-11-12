@@ -1,6 +1,11 @@
 {
  "chargrpSourceSha256": "2bb52de25ef3558f51e458c0095efcd9c509dfd5b5695a269f268b5f235fbc0f",
  "classJoin": {
+  "classSources": {
+   "path": "docs/parts/player-characters/character-class-sources.json",
+   "resultSha256": "df77711a37805524a6f3fc01dd3e0794ea9db276f5510eb2b2f1ec99b6033e81",
+   "verdict": "adopted"
+  },
   "decodedFields": [
    "class",
    "description"
@@ -14,7 +19,7 @@
  "counts": {
   "characters": 14,
   "gapKeys": 14,
-  "modelsConverted": 8,
+  "modelsConverted": 9,
   "padding": 1,
   "pendingKeys": 0,
   "profilesWritten": 0,
@@ -34,16 +39,12 @@
   {
    "chargrpIndex": 0,
    "collision": {
-    "heightClass": null,
-    "radiusClass": null,
-    "reason": "class-template-mapping-undecoded",
-    "status": "gap"
+    "heightClass": "LineageWarrior.MFighter",
+    "radiusClass": "LineageWarrior.MFighter",
+    "reason": null,
+    "status": "resolved"
    },
    "gaps": [
-    {
-     "field": "face",
-     "reason": "class-template-mapping-undecoded"
-    },
     {
      "field": "hair",
      "reason": "hair-layout-undecoded"
@@ -54,7 +55,7 @@
     },
     {
      "field": "profile",
-     "reason": "class-template-mapping-undecoded"
+     "reason": "actor-default-unresolved:WaitAnimName"
     }
    ],
    "hair": {
@@ -95,8 +96,8 @@
     },
     {
      "field": "face",
-     "reason": "class-template-mapping-undecoded",
-     "status": "gap"
+     "reason": null,
+     "status": "requested-unbound"
     }
    ],
    "profile": "gap"
@@ -104,19 +105,15 @@
   {
    "chargrpIndex": 1,
    "collision": {
-    "heightClass": null,
-    "radiusClass": null,
-    "reason": "class-template-mapping-undecoded",
-    "status": "gap"
+    "heightClass": "LineageWarrior.FFighter",
+    "radiusClass": "LineageWarrior.FFighter",
+    "reason": null,
+    "status": "resolved"
    },
    "gaps": [
     {
      "field": "model",
      "reason": "animation-reference-missing"
-    },
-    {
-     "field": "face",
-     "reason": "class-template-mapping-undecoded"
     },
     {
      "field": "hair",
@@ -128,7 +125,7 @@
     },
     {
      "field": "profile",
-     "reason": "class-template-mapping-undecoded"
+     "reason": "actor-default-unresolved:WaitAnimName"
     }
    ],
    "hair": {
@@ -169,8 +166,8 @@
     },
     {
      "field": "face",
-     "reason": "class-template-mapping-undecoded",
-     "status": "gap"
+     "reason": null,
+     "status": "requested-unbound"
     }
    ],
    "profile": "gap"
@@ -178,19 +175,15 @@
   {
    "chargrpIndex": 2,
    "collision": {
-    "heightClass": null,
-    "radiusClass": null,
-    "reason": "class-template-mapping-undecoded",
-    "status": "gap"
+    "heightClass": "LineageWarrior.MDarkElf",
+    "radiusClass": "LineageWarrior.MDarkElf",
+    "reason": null,
+    "status": "resolved"
    },
    "gaps": [
     {
      "field": "model",
-     "reason": "texture-licensee-unsupported:123/27"
-    },
-    {
-     "field": "face",
-     "reason": "class-template-mapping-undecoded"
+     "reason": "animation-reference-missing"
     },
     {
      "field": "hair",
@@ -202,7 +195,7 @@
     },
     {
      "field": "profile",
-     "reason": "class-template-mapping-undecoded"
+     "reason": "actor-default-unresolved:WaitAnimName"
     }
    ],
    "hair": {
@@ -243,8 +236,8 @@
     },
     {
      "field": "face",
-     "reason": "class-template-mapping-undecoded",
-     "status": "gap"
+     "reason": null,
+     "status": "requested-unbound"
     }
    ],
    "profile": "gap"
@@ -252,20 +245,12 @@
   {
    "chargrpIndex": 3,
    "collision": {
-    "heightClass": null,
-    "radiusClass": null,
-    "reason": "class-template-mapping-undecoded",
-    "status": "gap"
+    "heightClass": "LineageWarrior.FDarkElf",
+    "radiusClass": "LineageWarrior.FDarkElf",
+    "reason": null,
+    "status": "resolved"
    },
    "gaps": [
-    {
-     "field": "model",
-     "reason": "texture-licensee-unsupported:123/27"
-    },
-    {
-     "field": "face",
-     "reason": "class-template-mapping-undecoded"
-    },
     {
      "field": "hair",
      "reason": "hair-layout-undecoded"
@@ -276,7 +261,7 @@
     },
     {
      "field": "profile",
-     "reason": "class-template-mapping-undecoded"
+     "reason": "actor-default-unresolved:WaitAnimName"
     }
    ],
    "hair": {
@@ -292,7 +277,7 @@
     "status": "gap"
    },
    "key": "character:3",
-   "model": "gap",
+   "model": "converted",
    "padding": false,
    "parts": [
     {
@@ -317,8 +302,8 @@
     },
     {
      "field": "face",
-     "reason": "class-template-mapping-undecoded",
-     "status": "gap"
+     "reason": null,
+     "status": "requested-unbound"
     }
    ],
    "profile": "gap"
@@ -326,16 +311,12 @@
   {
    "chargrpIndex": 4,
    "collision": {
-    "heightClass": null,
-    "radiusClass": null,
-    "reason": "class-template-mapping-undecoded",
-    "status": "gap"
+    "heightClass": "LineageWarrior.MDwarf",
+    "radiusClass": "LineageWarrior.MDwarf",
+    "reason": null,
+    "status": "resolved"
    },
    "gaps": [
-    {
-     "field": "face",
-     "reason": "class-template-mapping-undecoded"
-    },
     {
      "field": "hair",
      "reason": "hair-layout-undecoded"
@@ -346,7 +327,7 @@
     },
     {
      "field": "profile",
-     "reason": "class-template-mapping-undecoded"
+     "reason": "actor-default-unresolved:WaitAnimName"
     }
    ],
    "hair": {
@@ -387,8 +368,8 @@
     },
     {
      "field": "face",
-     "reason": "class-template-mapping-undecoded",
-     "status": "gap"
+     "reason": null,
+     "status": "requested-unbound"
     }
    ],
    "profile": "gap"
@@ -396,20 +377,12 @@
   {
    "chargrpIndex": 5,
    "collision": {
-    "heightClass": null,
-    "radiusClass": null,
-    "reason": "class-template-mapping-undecoded",
-    "status": "gap"
+    "heightClass": "LineageWarrior.FDwarf",
+    "radiusClass": "LineageWarrior.FDwarf",
+    "reason": null,
+    "status": "resolved"
    },
    "gaps": [
-    {
-     "field": "model",
-     "reason": "texture-licensee-unsupported:123/27"
-    },
-    {
-     "field": "face",
-     "reason": "class-template-mapping-undecoded"
-    },
     {
      "field": "hair",
      "reason": "hair-layout-undecoded"
@@ -420,7 +393,7 @@
     },
     {
      "field": "profile",
-     "reason": "class-template-mapping-undecoded"
+     "reason": "actor-default-unresolved:WaitAnimName"
     }
    ],
    "hair": {
@@ -436,7 +409,7 @@
     "status": "gap"
    },
    "key": "character:5",
-   "model": "gap",
+   "model": "converted",
    "padding": false,
    "parts": [
     {
@@ -461,8 +434,8 @@
     },
     {
      "field": "face",
-     "reason": "class-template-mapping-undecoded",
-     "status": "gap"
+     "reason": null,
+     "status": "requested-unbound"
     }
    ],
    "profile": "gap"
@@ -470,16 +443,12 @@
   {
    "chargrpIndex": 6,
    "collision": {
-    "heightClass": null,
-    "radiusClass": null,
-    "reason": "class-template-mapping-undecoded",
-    "status": "gap"
+    "heightClass": "LineageWarrior.MElf",
+    "radiusClass": "LineageWarrior.MElf",
+    "reason": null,
+    "status": "resolved"
    },
    "gaps": [
-    {
-     "field": "face",
-     "reason": "class-template-mapping-undecoded"
-    },
     {
      "field": "hair",
      "reason": "hair-layout-undecoded"
@@ -490,7 +459,7 @@
     },
     {
      "field": "profile",
-     "reason": "class-template-mapping-undecoded"
+     "reason": "actor-default-unresolved:WaitAnimName"
     }
    ],
    "hair": {
@@ -531,8 +500,8 @@
     },
     {
      "field": "face",
-     "reason": "class-template-mapping-undecoded",
-     "status": "gap"
+     "reason": null,
+     "status": "requested-unbound"
     }
    ],
    "profile": "gap"
@@ -540,16 +509,12 @@
   {
    "chargrpIndex": 7,
    "collision": {
-    "heightClass": null,
-    "radiusClass": null,
-    "reason": "class-template-mapping-undecoded",
-    "status": "gap"
+    "heightClass": "LineageWarrior.FElf",
+    "radiusClass": "LineageWarrior.FElf",
+    "reason": null,
+    "status": "resolved"
    },
    "gaps": [
-    {
-     "field": "face",
-     "reason": "class-template-mapping-undecoded"
-    },
     {
      "field": "hair",
      "reason": "hair-layout-undecoded"
@@ -560,7 +525,7 @@
     },
     {
      "field": "profile",
-     "reason": "class-template-mapping-undecoded"
+     "reason": "actor-default-unresolved:WaitAnimName"
     }
    ],
    "hair": {
@@ -601,8 +566,8 @@
     },
     {
      "field": "face",
-     "reason": "class-template-mapping-undecoded",
-     "status": "gap"
+     "reason": null,
+     "status": "requested-unbound"
     }
    ],
    "profile": "gap"
@@ -610,15 +575,15 @@
   {
    "chargrpIndex": 8,
    "collision": {
-    "heightClass": null,
-    "radiusClass": null,
-    "reason": "class-template-mapping-undecoded",
-    "status": "gap"
+    "heightClass": "LineageWarrior.MMagic",
+    "radiusClass": "LineageWarrior.MMagic",
+    "reason": null,
+    "status": "resolved"
    },
    "gaps": [
     {
-     "field": "face",
-     "reason": "class-template-mapping-undecoded"
+     "field": "model",
+     "reason": "converter-refused:Rigid attachment requires one verified root-only rigid skin"
     },
     {
      "field": "hair",
@@ -630,7 +595,7 @@
     },
     {
      "field": "profile",
-     "reason": "class-template-mapping-undecoded"
+     "reason": "actor-default-unresolved:WaitAnimName"
     }
    ],
    "hair": {
@@ -646,7 +611,7 @@
     "status": "gap"
    },
    "key": "character:8",
-   "model": "converted",
+   "model": "gap",
    "padding": false,
    "parts": [
     {
@@ -671,8 +636,8 @@
     },
     {
      "field": "face",
-     "reason": "class-template-mapping-undecoded",
-     "status": "gap"
+     "reason": null,
+     "status": "requested-unbound"
     }
    ],
    "profile": "gap"
@@ -680,19 +645,15 @@
   {
    "chargrpIndex": 9,
    "collision": {
-    "heightClass": null,
-    "radiusClass": null,
-    "reason": "class-template-mapping-undecoded",
-    "status": "gap"
+    "heightClass": "LineageWarrior.FMagic",
+    "radiusClass": "LineageWarrior.FMagic",
+    "reason": null,
+    "status": "resolved"
    },
    "gaps": [
     {
      "field": "model",
      "reason": "animation-reference-missing"
-    },
-    {
-     "field": "face",
-     "reason": "class-template-mapping-undecoded"
     },
     {
      "field": "hair",
@@ -704,7 +665,7 @@
     },
     {
      "field": "profile",
-     "reason": "class-template-mapping-undecoded"
+     "reason": "actor-default-unresolved:WaitAnimName"
     }
    ],
    "hair": {
@@ -745,8 +706,8 @@
     },
     {
      "field": "face",
-     "reason": "class-template-mapping-undecoded",
-     "status": "gap"
+     "reason": null,
+     "status": "requested-unbound"
     }
    ],
    "profile": "gap"
@@ -754,16 +715,12 @@
   {
    "chargrpIndex": 10,
    "collision": {
-    "heightClass": null,
-    "radiusClass": null,
-    "reason": "class-template-mapping-undecoded",
-    "status": "gap"
+    "heightClass": "LineageWarrior.MOrc",
+    "radiusClass": "LineageWarrior.MOrc",
+    "reason": null,
+    "status": "resolved"
    },
    "gaps": [
-    {
-     "field": "face",
-     "reason": "class-template-mapping-undecoded"
-    },
     {
      "field": "hair",
      "reason": "hair-layout-undecoded"
@@ -774,7 +731,7 @@
     },
     {
      "field": "profile",
-     "reason": "class-template-mapping-undecoded"
+     "reason": "actor-default-unresolved:WaitAnimName"
     }
    ],
    "hair": {
@@ -815,8 +772,8 @@
     },
     {
      "field": "face",
-     "reason": "class-template-mapping-undecoded",
-     "status": "gap"
+     "reason": null,
+     "status": "requested-unbound"
     }
    ],
    "profile": "gap"
@@ -824,16 +781,12 @@
   {
    "chargrpIndex": 11,
    "collision": {
-    "heightClass": null,
-    "radiusClass": null,
-    "reason": "class-template-mapping-undecoded",
-    "status": "gap"
+    "heightClass": "LineageWarrior.FOrc",
+    "radiusClass": "LineageWarrior.FOrc",
+    "reason": null,
+    "status": "resolved"
    },
    "gaps": [
-    {
-     "field": "face",
-     "reason": "class-template-mapping-undecoded"
-    },
     {
      "field": "hair",
      "reason": "hair-layout-undecoded"
@@ -844,7 +797,7 @@
     },
     {
      "field": "profile",
-     "reason": "class-template-mapping-undecoded"
+     "reason": "actor-default-unresolved:WaitAnimName"
     }
    ],
    "hair": {
@@ -885,8 +838,8 @@
     },
     {
      "field": "face",
-     "reason": "class-template-mapping-undecoded",
-     "status": "gap"
+     "reason": null,
+     "status": "requested-unbound"
     }
    ],
    "profile": "gap"
@@ -894,16 +847,12 @@
   {
    "chargrpIndex": 12,
    "collision": {
-    "heightClass": null,
-    "radiusClass": null,
-    "reason": "class-template-mapping-undecoded",
-    "status": "gap"
+    "heightClass": "LineageWarrior.MShaman",
+    "radiusClass": "LineageWarrior.MShaman",
+    "reason": null,
+    "status": "resolved"
    },
    "gaps": [
-    {
-     "field": "face",
-     "reason": "class-template-mapping-undecoded"
-    },
     {
      "field": "hair",
      "reason": "hair-layout-undecoded"
@@ -914,7 +863,7 @@
     },
     {
      "field": "profile",
-     "reason": "class-template-mapping-undecoded"
+     "reason": "actor-default-unresolved:WaitAnimName"
     }
    ],
    "hair": {
@@ -955,8 +904,8 @@
     },
     {
      "field": "face",
-     "reason": "class-template-mapping-undecoded",
-     "status": "gap"
+     "reason": null,
+     "status": "requested-unbound"
     }
    ],
    "profile": "gap"
@@ -964,19 +913,15 @@
   {
    "chargrpIndex": 13,
    "collision": {
-    "heightClass": null,
-    "radiusClass": null,
-    "reason": "class-template-mapping-undecoded",
-    "status": "gap"
+    "heightClass": "LineageWarrior.FShaman",
+    "radiusClass": "LineageWarrior.FShaman",
+    "reason": null,
+    "status": "resolved"
    },
    "gaps": [
     {
      "field": "model",
      "reason": "animation-reference-missing"
-    },
-    {
-     "field": "face",
-     "reason": "class-template-mapping-undecoded"
     },
     {
      "field": "hair",
@@ -988,7 +933,7 @@
     },
     {
      "field": "profile",
-     "reason": "class-template-mapping-undecoded"
+     "reason": "actor-default-unresolved:WaitAnimName"
     }
    ],
    "hair": {
@@ -1029,8 +974,8 @@
     },
     {
      "field": "face",
-     "reason": "class-template-mapping-undecoded",
-     "status": "gap"
+     "reason": null,
+     "status": "requested-unbound"
     }
    ],
    "profile": "gap"
