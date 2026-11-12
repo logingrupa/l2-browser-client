@@ -42,7 +42,7 @@ Batch to completion (plan 02-79, 2026-11-12 03:04 to 07:21 Riga): the converter 
 | `converter-refused`: 20 unsupported default-property syntax, 2 no explicit effect-class reference (`skill.mb.832`, `skill.qu.4548`), 3 native object missing or ambiguous (`skill.bl.1147`, `skill.it.2178`, `skill.mo.87`) | 25 |
 | `no-exact-skillsound-row` | 14 |
 
-The 02-94 feature rule marks converted roots per property: `UseDirectionAs` 147, `BlendBetweenSubdivisions` 88, `UseMeshBlendMode` 4, `MeshSpawning` 1, `UseActorForces` 1 (a root can have several; the first names its keys). Gap rows `artifacts/lane-store/actors/gap-rows/skills.json` (29,812): 591 pass, 17,575 `native-skill-dispatch-required`, 6,468 `emitter-feature-unported:UseDirectionAs`, 1,945 `emitter-feature-unported:BlendBetweenSubdivisions` (8,413 feature rows), 1,562 `converter-refused`, 1,235 `emitter-class-unported:Engine.BeamEmitter`, 410 `emitter-class-unported:Engine.VertMeshEmitter`, 25 `no-exact-skillsound-row`, and `skill:3:1` (reviewed dispatch in the shared store). Lane catalog `064d9ad6...292e` (6,333,702 bytes: 10,649 effect components, 614 models, 5,175 combatAudio, 23 npcProfiles); `write_lane_catalog.py --lane actors --plan` prints its merge command. Lane coverage: skills-effects 591 converted, 29,221 gap, 0 pending, loads 10,649 unverified.
+The 02-94 feature rule marks converted roots per property: `UseDirectionAs` 147, `BlendBetweenSubdivisions` 88, `UseMeshBlendMode` 4, `MeshSpawning` 1, `UseActorForces` 1 (a root can have several; the first names its keys). Gap rows `artifacts/lane-store/actors/gap-rows/skills.json` (29,812): 591 pass, 17,575 `native-skill-dispatch-required`, 6,468 `emitter-feature-unported:UseDirectionAs`, 1,945 `emitter-feature-unported:BlendBetweenSubdivisions` (8,413 feature rows), 1,562 `converter-refused`, 1,235 `emitter-class-unported:Engine.BeamEmitter`, 410 `emitter-class-unported:Engine.VertMeshEmitter`, 25 `no-exact-skillsound-row`, and `skill:3:1` (reviewed dispatch in the shared store). Lane catalog `064d9ad6...` (6,333,702 bytes, 10,649 effect components); `--plan` prints its merge command. Lane coverage: skills-effects 591 converted, 29,221 gap, 0 pending, loads 10,649 unverified.
 
 ### Browser
 
@@ -54,7 +54,7 @@ The 02-94 feature rule marks converted roots per property: `UseDirectionAs` 147,
 
 - `NATIVE_STORE_ROOT=actors DEV_PORT=5175 pnpm test:e2e tests/browser/sandbox-skill-cast.spec.ts`: 5 passed. `tests/browser/harness/native-skill-effect.html?skill=1011:1` lists the 5 components of `interlude:skill-root:skill.wh.1011` (3 Mesh, 1 Beam record, 1 Sprite) and draws the first component the preview loader accepts. `?skill=3:2` shows `skill:3:2 gap: native-skill-dispatch-required` with no component. Portrait 430 x 932 has no horizontal scroll.
 - Screenshots: `artifacts/skill-evidence/skill-1011-1-1440x900.png`, `skill-1011-1-932x430.png`, `skill-3-2-gap-1440x900.png`.
-- 02-43 skills sweep slice: 21 records, all `failed` on limits of the preview loader that 02-69 replaced (`load-checks/6965638a....json`).
+- 02-79 skills sweep slice (`NATIVE_STORE_ROOT=actors LOAD_CHECK_KIND=skills LOAD_CHECK_LIMIT=25`, port 5173 free, 2026-11-12 12:39 Riga) on lane catalog `469805d3...`: 25 pass, 0 failed (skill 1011 levels 1 to 18, 1012 levels 1 to 3, 1013 levels 1, 10, 101, 102), `load-checks/469805d3....json`.
 
 ## FX-01 emitter simulation core (plan 02-68, 2026-11-09)
 
@@ -146,7 +146,7 @@ POL-04 behaviour changes, each pinned in `tests/unit/ribbonEmitter.test.ts`: flo
 
 ## Open
 
-- Loads: the actors lane keys have not been rechecked since the loader runs on the simulator (FX-01).
+- Loads: 25 actors lane keys pass on the simulator loader (02-79); the others wait for the union sweeps (03-03).
 - Ribbons draw once staging binds a RibbonEmitter texture; Beam and VertMesh wait for Phase 5, and VertMesh meshes need a Converter adapter.
 - Emitter natives need a converted source of native calls with their arguments; the weapon trail needs its caller; the Power Strike previews do not call AdjustparticleLife yet.
 - The presentation places at the anchor pivot: AttachOn bones, offsets and stage timing (casting against shot) stay unapplied, and the skill sound (skillsoundgrp route) stays open.
