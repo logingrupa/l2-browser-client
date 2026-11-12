@@ -14,6 +14,8 @@ from material_graph_fixture import build_synthetic_material_package
 from native_store.tile_manifest_validation import validate_tile_chunk_manifest
 from support.level_model_fixture import build_synthetic_level_model, square_points, synthetic_polygon, synthetic_zone
 from synthetic_class_scripts import scratch_work_root
+from test_material_graph import SYNTHETIC_CLASS_DEFAULTS
+from test_material_program_images import synthetic_png_bytes
 from world import bsp_surface_materials
 from world.bsp_chunk_geometry import (BspPolyFlags, BspSurfaceMaterial, assign_nodes_to_chunks, build_chunk_sections, chunk_bsp_glb,
                                       drawn_node_indices, load_bsp_poly_flags)
@@ -21,6 +23,7 @@ from world.bsp_step import BSP_STEP_ALGORITHM_VERSION, BspGapRows, chunk_grid_no
 from world.bsp_surface_materials import convert_surface_material, program_blend_is_translucent
 from world.level_model import LevelModelLayoutError, LevelModelRangeError, read_level_model, require_level_model_ranges
 from world.raw_map_step import read_tile_map_lock_record
+from world.static_mesh_step import conversion_failure_reason
 from world.static_placement_plan import ChunkRectangle
 from world.tile_manifest_step import build_tile_chunk_manifest
 
@@ -30,6 +33,9 @@ EVIDENCE = f'work/tile__{TILE_ID}/bsp/receipt.json'
 FLAGS = BspPolyFlags(visual_skip_mask=0x1 | 0x80 | 0x04000000, unlit_mask=0x00400000)
 MATERIAL = 'SyntheticTextures.Floor'
 OTHER_MATERIAL = 'syntheticTextures.Alpha'
+TEXTURED_MATERIAL_FIXTURE = 'shader-combiner-panner-texture.json'
+TEXTURED_MATERIAL = 'SyntheticMaterials.SkyShader'
+TEXTURED_MATERIAL_TEXTURE = 'SyntheticMaterials.SkyTexture'
 RECTANGLES = [ChunkRectangle('chunk-0-0', (0.0, 0.0), (1024.0, 1024.0)), ChunkRectangle('chunk-1-0', (1024.0, 0.0), (2048.0, 1024.0))]
 REFERENCE_CLIENT = Path('E:/Lineage2-client')
 ORACLE_PATH = ROOT / 'recipes/world/oracle/20_20/expected.json'
@@ -172,10 +178,53 @@ class BspNodeGapRowTests(unittest.TestCase):
 
 
 class SurfaceMaterialTests(unittest.TestCase):
+    def textured_surface_outcome(self, convert_texture):
+        package = build_synthetic_material_package(TEXTURED_MATERIAL_FIXTURE)
+        map_sources = SimpleNamespace(paths={'syntheticmaterials': ['textures/SyntheticMaterials.utx']}, get=lambda relative: package)
+        converted_references = []
+
+        def texture(work, reference):
+            converted_references.append(reference)
+            return convert_texture(reference), {}, reference
+
+        converter = SimpleNamespace(output=scratch_work_root(self, 'bsp-material-'), texture=texture,
+                                    material_texture=lambda work, identity: (synthetic_png_bytes(), {}, identity, []))
+        store_root = scratch_work_root(self, 'bsp-store-') / 'l2'
+        with patch.object(bsp_surface_materials, 'read_material_class_defaults', return_value=SYNTHETIC_CLASS_DEFAULTS):
+            outcome = convert_surface_material(TEXTURED_MATERIAL, map_sources, converter, store_root, None, store_root)
+        program_path = store_root / outcome.material.program['directory'] / 'program.json'
+        return outcome, json.loads(program_path.read_bytes()), store_root, converted_references
+
+    def test_every_reviewed_texture_node_is_converted_and_pinned_by_its_png_in_the_store(self):
+        png = synthetic_png_bytes()
+        outcome, program, store_root, converted_references = self.textured_surface_outcome(lambda reference: png)
+        png_sha256 = hashlib.sha256(png).hexdigest()
+        image = {'path': f'/l2/native-materials/textures/{png_sha256}/texture.png', 'sha256': png_sha256, 'bytes': len(png)}
+        self.assertEqual(converted_references, [TEXTURED_MATERIAL_TEXTURE])
+        self.assertEqual({node['id']: node['image'] for node in program['nodes'] if node['class'] == 'Engine.Texture'},
+                         {TEXTURED_MATERIAL_TEXTURE: image})
+        self.assertEqual((store_root / image['path'].removeprefix('/l2/')).read_bytes(), png)
+        self.assertEqual(sorted(record['path'] for record in outcome.store_outputs),
+                         sorted([f'{outcome.material.program["directory"]}/graph.json', f'{outcome.material.program["directory"]}/program.json',
+                                 image['path'].removeprefix('/l2/')]))
+        self.assertEqual(outcome.material.png, png)
+
+    def test_a_texture_that_fails_conversion_keeps_a_null_image_and_its_conversion_gap_reason(self):
+        failure = ValueError('UModel failed or reported an error; inspect export.log')
+
+        def refuse(reference):
+            raise failure
+
+        outcome, program, _, _ = self.textured_surface_outcome(refuse)
+        self.assertEqual([node['image'] for node in program['nodes'] if node['class'] == 'Engine.Texture'], [None])
+        self.assertIn(conversion_failure_reason(failure), outcome.gap_reasons)
+        self.assertEqual([record['path'].rsplit('/', 1)[1] for record in outcome.store_outputs], ['graph.json', 'program.json'])
+
     def test_an_unported_material_class_gets_its_gap_reason_and_no_substitute_texture(self):
         package = build_synthetic_material_package('unported-classes-and-features.json')
         map_sources = SimpleNamespace(paths={'syntheticunported': ['textures/SyntheticUnported.utx']}, get=lambda relative: package)
         converter = SimpleNamespace(output=scratch_work_root(self, 'bsp-material-'),
+                                    texture=lambda work, reference: (synthetic_png_bytes(), {}, reference),
                                     material_texture=lambda *arguments: self.fail('an unported root must not be textured'))
         store_root = scratch_work_root(self, 'bsp-store-')
         texture_declarations = [{'field': 'USize', 'declaredType': 'int', 'declaringClass': 'Engine.Texture', 'enumMembers': None,
@@ -244,7 +293,7 @@ class BspManifestTests(unittest.TestCase):
         self.assertEqual((manifest['bsp'], row['status'], row['reason']), (None, 'gap', 'bsp-chunk-without-nodes'))
 
     def test_the_step_version_is_pinned(self):
-        self.assertEqual(BSP_STEP_ALGORITHM_VERSION, 4)
+        self.assertEqual(BSP_STEP_ALGORITHM_VERSION, 5)
 
 
 @unittest.skipUnless(REFERENCE_CLIENT.is_dir(), 'the conversion client E:/Lineage2-client is absent')

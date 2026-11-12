@@ -26,7 +26,7 @@ from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
 
-BSP_STEP_ALGORITHM_VERSION = 4
+BSP_STEP_ALGORITHM_VERSION = 5
 BSP_STEP_NAME = 'bsp'
 BSP_CHUNKS_PRODUCT_NAME = 'bsp-chunks.json'
 CHUNK_BSP_FOLDER = 'native-tile-chunk-bsp'
@@ -150,10 +150,14 @@ def write_chunk_glbs(project_root, chunk_glbs):
             for relative, payload in sorted(files.items())]
 
 
-def material_store_outputs(project_root, outcomes):
-    store_root = lane_store_root(project_root, WORLD_LANE_NAME)
+def surface_material_files(outcomes):
     records = {record['path']: record for outcome in outcomes.values() for record in outcome.store_outputs}
-    return [{**record, 'path': (store_root / path).relative_to(store_root.parent).as_posix()} for path, record in sorted(records.items())]
+    return [records[path] for path in sorted(records)]
+
+
+def material_store_outputs(project_root, material_files):
+    store_root = lane_store_root(project_root, WORLD_LANE_NAME)
+    return [{**record, 'path': (store_root / record['path']).relative_to(store_root.parent).as_posix()} for record in material_files]
 
 
 def chunk_records(level, chunk_plan, kept_nodes, identities, outcomes, flags, outdoor_zones, lightmap_textures, gaps):
@@ -210,16 +214,16 @@ def run_bsp_step(project_root, client_root, tile_id):
     inputs = locked_input_records(sorted({tile_map_path(tile_id), *material_package_paths(map_sources, used_identities)}))
     fingerprint = ledger.unit_fingerprint([record['sha256'] for record in inputs], config)
     records, glbs = chunk_records(level, chunk_plan, kept_nodes, identities, outcomes, flags, outdoor_zones, lightmap_textures, gaps)
-    gap_rows = gaps.rows()
+    gap_rows, material_files = gaps.rows(), surface_material_files(outcomes)
     product = {'tileId': tile_id, 'levelModel': level.binding['model'], 'nodeCount': len(level.model.nodes), 'drawnNodeCount': len(drawn),
                'outdoorZones': sorted(outdoor_zones), 'skyZones': sorted(sky_zones), 'chunks': records,
                'materials': [{'identity': identity, 'program': outcome.material.program, 'textured': outcome.material.png is not None,
                               'translucent': outcome.material.translucent, 'gapReasons': outcome.gap_reasons}
                              for identity, outcome in sorted(outcomes.items())],
-               'gapRows': gap_rows}
+               'materialFiles': material_files, 'gapRows': gap_rows}
     products_directory = ledger.begin(unit_key, fingerprint) / PRODUCTS_FOLDER_NAME
     products_directory.mkdir()
-    outputs = write_chunk_glbs(project_root, glbs) + material_store_outputs(project_root, outcomes)
+    outputs = write_chunk_glbs(project_root, glbs) + material_store_outputs(project_root, material_files)
     product_payload = json_bytes(product)
     product_path = products_directory / BSP_CHUNKS_PRODUCT_NAME
     product_path.write_bytes(product_payload)

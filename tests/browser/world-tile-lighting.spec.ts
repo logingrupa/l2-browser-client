@@ -90,6 +90,7 @@ async function openTileAndReadLighting(page: Page, screenshotName: string) {
   expect(hour).toBeGreaterThanOrEqual(12);
   expect(inspection.sectionCount).toBe(servedBspSectionCount());
   expect(Object.values(inspection.statusCounts!).reduce((sum, count) => sum + count, 0)).toBe(sections.length);
+  expect(inspection.statusCounts!["library-compiled"], "a 20_21 BSP section draws through the UE2 material library").toBeGreaterThan(0);
   const lightmapped = sections.filter(section => section.lighting === "lightmapped");
   expect(lightmapped.length).toBe(inspection.lightmappedSectionCount);
   for (const section of lightmapped) {

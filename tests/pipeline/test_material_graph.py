@@ -22,7 +22,6 @@ from native_store.gap_rows import SEED_GAP_REASONS_PATH, load_gap_reason_pattern
 from native_store.store_paths import ConverterOutputRefusedError
 from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, require_reference_client
 from synthetic_class_scripts import SyntheticClassScripts, scratch_work_root
-from world.bsp_surface_materials import material_program_record
 from world.sky_materials import write_sky_material_program
 
 CONVERSION_CLIENT_ROOT = Path('E:/Lineage2-client')
@@ -291,7 +290,6 @@ class MaterialResourceWriterTests(unittest.TestCase):
         self.assertEqual(record, {'directory': 'native-materials/' + hashlib.sha256(program_bytes).hexdigest(),
                                   'programSha256': hashlib.sha256(program_bytes).hexdigest()})
         self.assertEqual(files, write_native_material_resources(output_root, graph, program)['files'])
-        self.assertEqual(material_program_record(output_root, graph, program), (record, files))
         self.assertEqual(write_sky_material_program(output_root, graph, program), (record, files))
         with self.assertRaises(ConverterOutputRefusedError):
             write_material_program_record(ROOT / 'public' / 'l2', graph, program)

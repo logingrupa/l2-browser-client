@@ -7,8 +7,9 @@ from typing import NamedTuple
 from native_catalog.ue2 import FormatError
 from native_assets_lib.material_graph import read_material_graph
 from native_assets_lib.material_program import derive_material_program, read_material_class_defaults
-from native_assets_lib.material_resources import write_native_material_resources
+from native_assets_lib.material_resources import write_material_program_record
 from world.bsp_chunk_geometry import BspSurfaceMaterial
+from world.material_texture_images import material_texture_image_pins, reviewed_texture_nodes, write_material_texture_images
 from world.static_mesh_step import conversion_failure_reason
 
 SHADER_CLASS = 'Engine.Shader'
@@ -82,21 +83,29 @@ def unbound_surface_material(identity, program_record, gap_reasons, store_output
     return SurfaceMaterialOutcome(BspSurfaceMaterial(identity, None, None, None, False, program_record), gap_reasons, store_outputs)
 
 
-def material_program_record(store_root, graph, program):
-    written = write_native_material_resources(store_root, graph, program)
-    program_file = next(record for record in written['files'] if record['path'].endswith('program.json'))
-    return {'directory': written['directory'], 'programSha256': program_file['sha256']}, written['files']
+def converted_texture_pngs(graph, converter):
+    pngs_by_node, gap_reasons = {}, []
+    for node in reviewed_texture_nodes(graph):
+        try:
+            with tempfile.TemporaryDirectory(dir=converter.output) as work:
+                pngs_by_node[node['object']], _, _ = converter.texture(Path(work), node['object'])
+        except MATERIAL_CONVERSION_ERRORS as error:
+            gap_reasons.append(conversion_failure_reason(error))
+    return pngs_by_node, gap_reasons
 
 
 def convert_surface_material(identity, map_sources, converter, class_work_root, class_scripts, store_root):
     try:
         package, item = resolve_material_export(map_sources, identity)
         graph = read_material_graph(package, item)
-        program = derive_material_program(graph, read_material_class_defaults(graph, class_work_root, class_scripts))
-        program_record, store_outputs = material_program_record(store_root, graph, program)
+        pngs_by_node, texture_gap_reasons = converted_texture_pngs(graph, converter)
+        program = derive_material_program(graph, read_material_class_defaults(graph, class_work_root, class_scripts),
+                                          texture_images=material_texture_image_pins(pngs_by_node))
+        program_record, program_files = write_material_program_record(store_root, graph, program)
+        store_outputs = [*program_files, *write_material_texture_images(store_root, pngs_by_node)]
     except MATERIAL_CONVERSION_ERRORS as error:
         return unbound_surface_material(identity, None, [conversion_failure_reason(error)], [])
-    gap_reasons = list(program['gapReasons'])
+    gap_reasons = sorted({*program['gapReasons'], *texture_gap_reasons})
     if root_program_node(program)['status'] == UNPORTED_NODE_STATUS:
         return unbound_surface_material(identity, program_record, gap_reasons, store_outputs)
     try:
