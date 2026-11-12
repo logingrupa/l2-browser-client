@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 02-79-PLAN.md
-last_updated: "2026-11-12T14:13:24.022Z"
+stopped_at: Completed 02-83-PLAN.md
+last_updated: "2026-11-12T15:19:19.949Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 03 plan 03-01 complete (side-by-side check record writer and key content digest; Phase 3 start commit cb09cdc)
-state_head: ddc0b51dea20b6b3fbc1eda92802819bb6b416ee
+state_head: adc09e3405233e0ec6055dc0908bd3d4aa206f6f
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 131
-  completed_plans: 107
+  completed_plans: 108
   percent: 0
 ---
 
@@ -153,6 +153,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P94 | 30min | 2 tasks | 11 files |
 | Phase 02 P78 | 7h 31m | 3 tasks | 11 files |
 | Phase 02 P79 | 9h 52m | 3 tasks | 5 files |
+| Phase 02 P83 | 34min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -410,6 +411,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-78: npc:21622 stays pending in the actors lane until the restage and the 03-11 key index fix P816 (row 1021)
 - [Phase 02]: 02-78: the remaining NPC sound bundles ran as one slice of 4,077 (row 1022)
 - [Phase 02]: 02-79: the item model record shape stays; measured union projection 25,710,689 of 33,554,432 bytes, final 22,227,730 (row 1023)
+- [Phase 02]: 02-83: the chargrp to actor class join is adopted from the locked client (14 rows to 14 LineageWarrior classes through the class Mesh and SubMeshes defaults, body and face mesh row identity, one to one; rows 1035 to 1038)
 
 ### Pending Todos
 
@@ -511,7 +513,7 @@ Landed on 2026-11-09 (rows 419 to 424): the four undecoded tables decode from th
 Landed on 2026-11-09 (rows 425 to 443): the effect staging writes every file its manifests pin, so the actors lane catalog pins; `NATIVE_STORE_ROOT=<lane>` serves the union the restage would write (one owner `merge_lane_store.lane_union_catalog`, refused when the lane was built on another shared catalog), and the tile:20_21 walk is a recorded pass on the world lane union; a tile is titled by its own tile id; the lane catalog writer, the merge and the coverage join refuse an NPC profile whose model is of another mesh, the same rule as the browser.
 
 Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cdcf...`; npc:20001 spawns in the sandbox under the actors union (browser check passed); the coverage reader accepts the lane catalog the dev switch attests.
-- Character class join (02-40, rows 573, 577 and 578): no decoded source joins a chargrp row to its actor class or to a hairgrp/helmetgrp record, so all 14 character keys stay gaps with 8 body assemblies converted; rows 2, 3 and 5 wait on texture licensee 123/27 and rows 1, 9 and 13 on a missing serialized Animation reference; `docs/ASSET_PIPELINE.md` still calls hair colour 0 a recipe choice (row 584).
+- Character keys (02-40 rows 573 to 584, 02-83 rows 1035 to 1038): the class join is adopted from the locked client (`docs/parts/player-characters/character-class-sources.json`) and 9 assemblies convert with face and class collision, but all 14 keys stay gaps: no sourced idle animation family (`actor-default-unresolved:WaitAnimName`, no profile written), rows 1, 2, 9 and 13 `animation-reference-missing`, row 8 converter-refused on its skinned face, hair and helmet undecoded, the 3 face textures per row unselected; `docs/ASSET_PIPELINE.md` still calls hair colour 0 a recipe choice (row 584).
 - Headless WebGPU refusal (02-39): in one full run of `tests/browser/sandbox-npc-gremlin.spec.ts` the SwiftShader adapter answered "WebGPU is required" on the seventh case's world load; the case passed in the first run and alone. Find why the adapter refuses after several world loads in one worker.
 - Player-characters evidence heading (found in 02-48): `tests/unit/laneOwnership.test.ts` fails because `docs/parts/player-characters/EVIDENCE.md` (actors lane, 02-40) has no `## Evidence` section; the actors part adds it, which makes `pnpm test:unit` green again (deferred-items.md).
 - BSP visibility overlap review (DEC-OWN-12, 02-63, row 631): the bsp-visibility area reports 290 blocking and 3,521 unreviewed reviewer runs on the new walk code (report `artifacts/reference-overlap/02-63-bsp-visibility.json`); independent review before the push. The culling sheet switch reads `NativeSection.tileVisibility` in 02-67 (row 630); translucent index rewriting is proven on the unit fixture only, since no converted tile holds a translucent BSP section.
@@ -544,6 +546,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-12T10:53:15.499Z
-Stopped at: Completed 02-79-PLAN.md
+Last session: 2026-11-12T15:19:19.205Z
+Stopped at: Completed 02-83-PLAN.md
 Resume file: None
