@@ -23,6 +23,7 @@ CLASSINFO_ACTOR_CLASS_FIELD = 'actor_class'
 CONVERTER_ASSEMBLY_PART_LIMIT = 16
 ASSEMBLY_PART_LIMIT_EXCEEDED_REASON_PREFIX = 'assembly-part-limit-exceeded:'
 CLASS_TEMPLATE_MAPPING_UNDECODED_REASON = 'class-template-mapping-undecoded'
+CHARACTER_CLASS_SOURCES_RELATIVE_PATH = 'docs/parts/player-characters/character-class-sources.json'
 HEAD_BONE_FIELD, RIGHT_HAND_BONE_FIELD, SUB_MESHES_FIELD = 'HeadBone', 'RightHandBone', 'SubMeshes'
 COLLISION_SOURCE_FIELDS = (('collisionRadius', 'CollisionRadius'), ('collisionHeight', 'CollisionHeight'))
 IDLE_ANIMATION_FAMILY_FIELD = 'WaitAnimName'

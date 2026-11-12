@@ -83,6 +83,7 @@ Item 2, female fighter collision:
 
 ## Evidence
 
+- Class source search: `docs/parts/player-characters/character-class-sources.json`, written by `python -B scripts/actors/character_class_sources.py --client E:/Lineage2-client` (plan 02-83). It lists every searched table and script package with its SHA-256, each candidate and the verdict `adopted`: 14 rows, 14 `LineageWarrior` classes, one to one.
 - Census: `docs/parts/player-characters/character-census.json` (`--batch characters --limit 15`, 2026-11-10; a rerun rewrote it byte-identically with `cacheHit: true`).
 - Generator: `scripts/actors/character_requests.py`, `scripts/actors/character_conversion.py`, `scripts/actors/character_census.py`, run through `scripts/actors/convert_actors.py --character <index>` and `--batch characters --limit <n>`.
 - Recipes with decision H markers: `recipes/native-mfighter.json`, `recipes/native-ffighter.json`, `recipes/native-mmagic.json`, `recipes/native-fmagic.json`, `recipes/native-player-ffighter-stage.json`.
