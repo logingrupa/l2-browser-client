@@ -5929,62 +5929,10 @@
     {
       "area": "bsp-visibility",
       "sourceFile": "src/scene/world/bspVisibility/attachTileVisibility.ts",
-      "tokenCount": 22,
-      "sourceTokensSha256": "b539300bfe9229263b0f60953c07f73ad9c3b3c8d17f6f564a9e8760134128e6",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/decode-worker/decode-cache.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "bsp-visibility",
-      "sourceFile": "src/scene/world/bspVisibility/attachTileVisibility.ts",
-      "tokenCount": 21,
-      "sourceTokensSha256": "92952029212fc7bc08c4ae05c702d76f5e98ff67b2b8065ccb76a77e285df92e",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/decode-worker/decode-engine.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "bsp-visibility",
-      "sourceFile": "src/scene/world/bspVisibility/attachTileVisibility.ts",
-      "tokenCount": 22,
-      "sourceTokensSha256": "e1ee15f9dc943632d6e4ef4d255e25393a35af45e0021aa206f0e459bae7c692",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/decode-worker/decode-engine.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "bsp-visibility",
-      "sourceFile": "src/scene/world/bspVisibility/attachTileVisibility.ts",
       "tokenCount": 21,
       "sourceTokensSha256": "f5b253887358be2b3ad46cef8088cacc8fa680b173b88afd04432551599d34ac",
       "referenceFiles": [
         ".assets/reference/lineage2js/src/rendering/translucent-render-list.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "bsp-visibility",
-      "sourceFile": "src/scene/world/bspVisibility/attachTileVisibility.ts",
-      "tokenCount": 22,
-      "sourceTokensSha256": "c9607ec8898f0beac74070203567d08afe309e5cc88f5584572b63acef76046a",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/objects/components/pawn-attack-component.ts"
       ],
       "verdict": "generic",
       "reviewedOn": "2026-11-10",
@@ -6064,209 +6012,10 @@
     {
       "area": "bsp-visibility",
       "sourceFile": "src/scene/world/bspVisibility/babylonTileVisibilityTargets.ts",
-      "tokenCount": 21,
-      "sourceTokensSha256": "8d1ee0f3a3a1eeb4cb0d537c710c298e4fd437298c42034f6187a74d5ffee284",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/decode-worker/collect-transferables.ts",
-        ".assets/reference/lineage2js/src/assets/decode-worker/decode-engine.ts",
-        ".assets/reference/lineage2js/src/assets/decoders/batch-data.ts",
-        ".assets/reference/lineage2js/src/assets/decoders/object-batching.ts",
-        ".assets/reference/lineage2js/src/assets/decoders/point-normals.ts",
-        ".assets/reference/lineage2js/src/assets/decoders/static-mesh-texture-batching.ts",
-        ".assets/reference/lineage2js/src/assets/unreal/model/un-model.ts",
-        ".assets/reference/lineage2js/src/assets/unreal/un-vert-mesh.ts",
-        ".assets/reference/lineage2js/src/objects/components/transform-component.ts",
-        ".assets/reference/lineage2js/src/objects/dynamic-hair-simulation.ts",
-        ".assets/reference/lineage2js/src/objects/skeletal-animation-mixer.ts",
-        ".assets/reference/lineage2js/src/objects/zone-object.ts",
-        ".assets/reference/lineage2js/src/rendering/l2-env.ts",
-        ".assets/reference/lineage2js/src/rendering/render-manager.ts",
-        ".assets/reference/lineage2js/src/rendering/static-lighting.ts",
-        ".assets/reference/lineage2js/src/rendering/translucent-draw-list.ts",
-        ".assets/reference/lineage2js/src/rendering/vertex-lighting.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "bsp-visibility",
-      "sourceFile": "src/scene/world/bspVisibility/babylonTileVisibilityTargets.ts",
-      "tokenCount": 20,
-      "sourceTokensSha256": "3b2062867b5eb6c894aaa8a4867ec9a249ffe71713923221fc9555727a7e9d80",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/decode-worker/decode-engine.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "bsp-visibility",
-      "sourceFile": "src/scene/world/bspVisibility/babylonTileVisibilityTargets.ts",
-      "tokenCount": 22,
-      "sourceTokensSha256": "5f6cdb7f5394c4222e534544c5d5341c65595b8a6c231341a136f53e541df12b",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/unreal/skeletal-mesh/un-skeletal-mesh.ts",
-        ".assets/reference/lineage2js/src/objects/lit-actor.ts",
-        ".assets/reference/lineage2js/src/objects/skeletal-animation-mixer.ts",
-        ".assets/reference/lineage2js/src/rendering/portal-visibility.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "bsp-visibility",
-      "sourceFile": "src/scene/world/bspVisibility/babylonTileVisibilityTargets.ts",
-      "tokenCount": 27,
-      "sourceTokensSha256": "511a7e8e2d2b2dd7477c4f6b3892a491839b3f154e9d756f928596083158b5eb",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/objects/zone-object.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "bsp-visibility",
-      "sourceFile": "src/scene/world/bspVisibility/babylonTileVisibilityTargets.ts",
-      "tokenCount": 21,
-      "sourceTokensSha256": "96d2846fde8f164f5100cb23c45bc3e26ca6804b6f8b79522355fe606424d352",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/decoders/batch-data.ts",
-        ".assets/reference/lineage2js/src/rendering/door-portals.ts",
-        ".assets/reference/lineage2js/src/rendering/l2-env.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "bsp-visibility",
-      "sourceFile": "src/scene/world/bspVisibility/babylonTileVisibilityTargets.ts",
-      "tokenCount": 23,
-      "sourceTokensSha256": "66b6e09482e3708a7c99da5073af998dc27047e2d5891298a34d47781670b7d5",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/decode-worker/decode-engine.ts",
-        ".assets/reference/lineage2js/src/assets/decoders/object-batching.ts",
-        ".assets/reference/lineage2js/src/assets/decoders/object3d-decoder.ts",
-        ".assets/reference/lineage2js/src/objects/skeletal-animation-mixer.ts",
-        ".assets/reference/lineage2js/src/rendering/translucent-render-list.ts",
-        ".assets/reference/lineage2js/src/rendering/visualizer.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "bsp-visibility",
-      "sourceFile": "src/scene/world/bspVisibility/babylonTileVisibilityTargets.ts",
-      "tokenCount": 20,
-      "sourceTokensSha256": "f9668e8d141ba63c9ec28b1b364e8b03da05cf401a958ad423b3a625df111040",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/decoders/static-lighting.ts",
-        ".assets/reference/lineage2js/src/objects/emitters/beam-emitter.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "bsp-visibility",
-      "sourceFile": "src/scene/world/bspVisibility/babylonTileVisibilityTargets.ts",
-      "tokenCount": 22,
-      "sourceTokensSha256": "cfde6acab587e8f99ced2e1310c76987a137f12bec65e245d555b28e49252757",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/decoders/batch-data.ts",
-        ".assets/reference/lineage2js/src/objects/skeletal-animation-mixer.ts",
-        ".assets/reference/lineage2js/src/rendering/visualizer.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "bsp-visibility",
-      "sourceFile": "src/scene/world/bspVisibility/babylonTileVisibilityTargets.ts",
       "tokenCount": 20,
       "sourceTokensSha256": "8c7aee896191a982ab3255a2e81698615ed81dff381f9df8f37acb342916f65a",
       "referenceFiles": [
         ".assets/reference/lineage2js/src/assets/decoders/batch-data.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "bsp-visibility",
-      "sourceFile": "src/scene/world/bspVisibility/babylonTileVisibilityTargets.ts",
-      "tokenCount": 20,
-      "sourceTokensSha256": "60964bdf07141221e793165e04baeedf501d796f769ab0107dc560761d95eee6",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/decoders/texture-decoder.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "bsp-visibility",
-      "sourceFile": "src/scene/world/bspVisibility/bindTileVisibility.ts",
-      "tokenCount": 30,
-      "sourceTokensSha256": "2b2f81b583d8f172a5841d3fdd43ea32d1cf812557a8c05f2c5cca9de46fb8c6",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/decoders/object-batching.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "bsp-visibility",
-      "sourceFile": "src/scene/world/bspVisibility/bindTileVisibility.ts",
-      "tokenCount": 20,
-      "sourceTokensSha256": "c632bbc2506421821b5fbb0306194fc96203bcbf5e5e28da04fc5321af7777ca",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/decode-worker/decode-worker-client.ts",
-        ".assets/reference/lineage2js/src/rendering/static-lighting.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "bsp-visibility",
-      "sourceFile": "src/scene/world/bspVisibility/bindTileVisibility.ts",
-      "tokenCount": 21,
-      "sourceTokensSha256": "97ac31362c0e06d967dad679aa0a153fe84180793675f8d6ab64bf2f242a0628",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/objects/components/skill-effect-host.ts"
-      ],
-      "verdict": "generic",
-      "reviewedOn": "2026-11-10",
-      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
-      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
-    },
-    {
-      "area": "bsp-visibility",
-      "sourceFile": "src/scene/world/bspVisibility/bindTileVisibility.ts",
-      "tokenCount": 21,
-      "sourceTokensSha256": "7f04a6b4a29f63f5e561ea1eab923dd8e30106f1f9fa8d9a5b73c77f59962276",
-      "referenceFiles": [
-        ".assets/reference/lineage2js/src/assets/decoders/point-normals.ts"
       ],
       "verdict": "generic",
       "reviewedOn": "2026-11-10",
@@ -20714,6 +20463,327 @@
       ],
       "verdict": "generic",
       "reviewedOn": "2026-11-11",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/scene/world/bspVisibility/attachTileVisibility.ts",
+      "tokenCount": 20,
+      "sourceTokensSha256": "ab66696093c884e2c85a95ccb47513e1b3a1a6fe0cd2c28aad4e61e6b3eb6c66",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decoders/static-mesh-texture-batching.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-12",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/scene/world/bspVisibility/attachTileVisibility.ts",
+      "tokenCount": 22,
+      "sourceTokensSha256": "ff038cbbfda2bc1a534e04b5ca5c3823b302082d52695e79e7a360224df7a991",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decoders/object3d-decoder.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-12",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/scene/world/bspVisibility/attachTileVisibility.ts",
+      "tokenCount": 22,
+      "sourceTokensSha256": "dbfcecab8ff99f57fcaaedf258250b0f03e38d90274db8d2d5c8f298883cbe0d",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decoders/material-decoder.ts",
+        ".assets/reference/lineage2js/src/assets/decoders/object3d-decoder.ts",
+        ".assets/reference/lineage2js/src/objects/components/pawn-attack-component.ts",
+        ".assets/reference/lineage2js/src/objects/music-volume.ts",
+        ".assets/reference/lineage2js/src/objects/zone-object.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-12",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/scene/world/bspVisibility/attachTileVisibility.ts",
+      "tokenCount": 20,
+      "sourceTokensSha256": "4b6cf60a568f03218aceffcebb7f1585ba7a8826668c8e8e69b3c187b7076e54",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decoders/material-decoder.ts",
+        ".assets/reference/lineage2js/src/assets/decoders/object3d-decoder.ts",
+        ".assets/reference/lineage2js/src/assets/unreal/conf-files/un-conf-system.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-12",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/scene/world/bspVisibility/attachTileVisibility.ts",
+      "tokenCount": 21,
+      "sourceTokensSha256": "407f17ffac25fabc90e45b063f658de12735518ed7e5ca1716f98360cfd19eb9",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decoders/object3d-decoder.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-12",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/scene/world/bspVisibility/attachTileVisibility.ts",
+      "tokenCount": 21,
+      "sourceTokensSha256": "d738372c5f14d7e0838a98b22977e93fb2973b1565b15bb78b27a98e735b6eae",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/asset-manager.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-12",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/scene/world/bspVisibility/attachTileVisibility.ts",
+      "tokenCount": 20,
+      "sourceTokensSha256": "b432a59017bca15a0d027259d5b63047cf607175fea381f9b0c80208943bad6c",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decoders/object3d-decoder.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-12",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/scene/world/bspVisibility/babylonTileVisibilityTargets.ts",
+      "tokenCount": 21,
+      "sourceTokensSha256": "70d9a1e323b2a0a9ed30d1a6f7fc55f594f9570bdefff2dfbba4140a68ec093d",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/objects/components/pawn-attack-component.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-12",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/scene/world/bspVisibility/babylonTileVisibilityTargets.ts",
+      "tokenCount": 20,
+      "sourceTokensSha256": "9f7203e83671a2b869aca01e7b41d087c1e49d80d936525d63453708e2fbf7b9",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decoders/batch-data.ts",
+        ".assets/reference/lineage2js/src/objects/lit-actor.ts",
+        ".assets/reference/lineage2js/src/objects/skeletal-animation-mixer.ts",
+        ".assets/reference/lineage2js/src/objects/terrain.ts",
+        ".assets/reference/lineage2js/src/objects/zone-object.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-12",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/scene/world/bspVisibility/babylonTileVisibilityTargets.ts",
+      "tokenCount": 21,
+      "sourceTokensSha256": "edac7763cd8197d89b51bb7b90bf8bd34862bb6964c669d45894f6472db72d9b",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/unreal/skills/skill-effect-placement.ts",
+        ".assets/reference/lineage2js/src/objects/emitters/beam-emitter.ts",
+        ".assets/reference/lineage2js/src/objects/zone-object.ts",
+        ".assets/reference/lineage2js/src/rendering/camera/controllers/zup-orbit-controls.ts",
+        ".assets/reference/lineage2js/src/rendering/l2-env.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-12",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/scene/world/bspVisibility/babylonTileVisibilityTargets.ts",
+      "tokenCount": 22,
+      "sourceTokensSha256": "b2e50fe2ec6a5149ad044e0c05d1c1e54438e7f8e6238770cf6274653bdf5bc9",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/objects/zone-object.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-12",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/scene/world/bspVisibility/babylonTileVisibilityTargets.ts",
+      "tokenCount": 21,
+      "sourceTokensSha256": "6b25ac1aa2b2b7ddad03406171cb350e68a696e531e4603cbe4ab4b11dafbe8e",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decoders/batch-data.ts",
+        ".assets/reference/lineage2js/src/rendering/door-portals.ts",
+        ".assets/reference/lineage2js/src/rendering/l2-env.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-12",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/scene/world/bspVisibility/babylonTileVisibilityTargets.ts",
+      "tokenCount": 20,
+      "sourceTokensSha256": "f9668e8d141ba63c9ec28b1b364e8b03da05cf401a958ad423b3a625df111040",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decode-worker/decode-engine.ts",
+        ".assets/reference/lineage2js/src/assets/decoders/object-batching.ts",
+        ".assets/reference/lineage2js/src/assets/decoders/object3d-decoder.ts",
+        ".assets/reference/lineage2js/src/assets/decoders/static-lighting.ts",
+        ".assets/reference/lineage2js/src/objects/skeletal-animation-mixer.ts",
+        ".assets/reference/lineage2js/src/rendering/translucent-render-list.ts",
+        ".assets/reference/lineage2js/src/rendering/visualizer.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-12",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/scene/world/bspVisibility/babylonTileVisibilityTargets.ts",
+      "tokenCount": 22,
+      "sourceTokensSha256": "4a1a64ba89682828662a6786e847de778398c8be224741374cd778218704e305",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/objects/emitters/beam-emitter.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-12",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/scene/world/bspVisibility/babylonTileVisibilityTargets.ts",
+      "tokenCount": 20,
+      "sourceTokensSha256": "f89d5e32f4af0026b8435b0b4d636bbcfb2a078dcb4d5704164e07a31fbbd50e",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decoders/texture-decoder.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-12",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/scene/world/bspVisibility/babylonTileVisibilityTargets.ts",
+      "tokenCount": 20,
+      "sourceTokensSha256": "8a82e8f3a98df1f8dd1c1e7abec507c2fba6707eb9625cb53fe648303d32a2e2",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/rendering/translucent-render-list.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-12",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/scene/world/bspVisibility/bindTileVisibility.ts",
+      "tokenCount": 25,
+      "sourceTokensSha256": "549189b314405e348360b098db6bea4cfcb1d6ab4e86b907717b530b5acd5445",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/unreal/skills/skill-effect-host.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-12",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/scene/world/bspVisibility/bindTileVisibility.ts",
+      "tokenCount": 24,
+      "sourceTokensSha256": "57def86446757acac70b34d1fb35f147fdb140486496aebe9791e352444c5ccc",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/unreal/skills/skill-effect-host.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-12",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/scene/world/bspVisibility/bindTileVisibility.ts",
+      "tokenCount": 21,
+      "sourceTokensSha256": "73c150bbfbe4e34e157bbbb62bc963e90b2b8acaff91bccd2136a3a9b1bbcf8b",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/unreal/skills/skill-effect-host.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-12",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/scene/world/bspVisibility/bindTileVisibility.ts",
+      "tokenCount": 24,
+      "sourceTokensSha256": "b2f31dd9076a3c5306d748a6d159bfbd740f62fabd37ffff2ae81a0129d91884",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decoders/object-batching.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-12",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/scene/world/bspVisibility/bindTileVisibility.ts",
+      "tokenCount": 23,
+      "sourceTokensSha256": "66ebbaf4b5d9fb835e851bf74952c723ee879064aaa7e929dfda5178d1f4c0f6",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decoders/point-normals.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-12",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/scene/world/bspVisibility/bindTileVisibility.ts",
+      "tokenCount": 21,
+      "sourceTokensSha256": "aed97a55d1f2d81ae75f7a1b4a7c5de53095a44e09e1d2959056d498aaabd889",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decode-worker/decode-engine.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-12",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "bsp-visibility",
+      "sourceFile": "src/scene/world/bspVisibility/core/tileVisibilityFrame.ts",
+      "tokenCount": 20,
+      "sourceTokensSha256": "ecf1d93ea9f0c0080b69d6e044560fd01530fe1725bbc224d0af42d5df6ed908",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/objects/bsp-collider.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-12",
       "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
       "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
     }
