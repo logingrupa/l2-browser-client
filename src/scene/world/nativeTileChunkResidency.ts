@@ -64,8 +64,14 @@ export interface NativeTileChunkResidencyOptions<Loaded extends LoadedResidencyC
   onFocusChunks?(chunks: readonly ResidencyChunk[]): void;
 }
 
+export interface ResidencyChunkEventListener<Loaded extends LoadedResidencyChunk> {
+  chunkLoaded(resident: ResidentChunk<Loaded>): void;
+  chunkDisposed(resident: ResidentChunk<Loaded>): void;
+}
+
 export interface NativeTileChunkResidency<Loaded extends LoadedResidencyChunk> {
   ready(): Promise<void>;
+  subscribeChunkEvents(listener: ResidencyChunkEventListener<Loaded>): () => void;
   addChunks(chunks: readonly ResidencyChunk[]): void;
   residentChunks(): readonly ResidentChunk<Loaded>[];
   inspection(): NativeTileChunkResidencyInspection;
@@ -102,6 +108,9 @@ export function createNativeTileChunkResidency<Loaded extends LoadedResidencyChu
   let plan = emptyPlan, disposedChunkCount = 0, disposed = false, focusKey: string | null = null;
   let initialRingCellIds: readonly string[] | null = null;
   const readyWaiters: (() => void)[] = [];
+  const chunkEventListeners = new Set<ResidencyChunkEventListener<Loaded>>();
+  const announceChunkLoaded = (resident: ResidentChunk<Loaded>) => { for (const listener of [...chunkEventListeners]) listener.chunkLoaded(resident); };
+  const announceChunkDisposed = (resident: ResidentChunk<Loaded>) => { for (const listener of [...chunkEventListeners]) listener.chunkDisposed(resident); };
 
   const addKnownChunks = (chunks: readonly ResidencyChunk[]) => {
     for (const chunk of chunks) if (!chunksByCellId.has(chunk.cellId)) chunksByCellId.set(chunk.cellId, chunk);
@@ -116,6 +125,7 @@ export function createNativeTileChunkResidency<Loaded extends LoadedResidencyChu
   };
   const disposeLoaded = (cellId: string, loaded: Loaded) => {
     releaseRequirement(cellId);
+    announceChunkDisposed({ chunk: chunksByCellId.get(cellId)!, loaded });
     loaded.container.dispose();
     statesByCellId.delete(cellId);
     disposedChunkCount += 1;
@@ -154,6 +164,7 @@ export function createNativeTileChunkResidency<Loaded extends LoadedResidencyChu
       for (const mesh of loaded.visualMeshes) mesh.addLODLevel(settings.lodCullDistanceMetres, null);
       const loadedState: Extract<ChunkState<Loaded>, { kind: "loaded" }> = { kind: "loaded", loaded, visible: false };
       statesByCellId.set(chunk.cellId, loadedState);
+      announceChunkLoaded({ chunk, loaded });
     }
     replan();
   };
@@ -224,6 +235,10 @@ export function createNativeTileChunkResidency<Loaded extends LoadedResidencyChu
     ready() {
       return new Promise<void>(resolve => { readyWaiters.push(resolve); resolveReadyWhenInitialRingSettled(); });
     },
+    subscribeChunkEvents(listener) {
+      chunkEventListeners.add(listener);
+      return () => { chunkEventListeners.delete(listener); };
+    },
     addChunks(chunks) {
       addKnownChunks(chunks);
       replan();
@@ -256,6 +271,7 @@ export function createNativeTileChunkResidency<Loaded extends LoadedResidencyChu
         if (state.kind === "loaded") disposeLoaded(cellId, state.loaded);
       }
       statesByCellId.clear();
+      chunkEventListeners.clear();
       for (const cellId of [...requiredInWorld]) releaseRequirement(cellId);
       for (const resolve of readyWaiters.splice(0)) resolve();
     },

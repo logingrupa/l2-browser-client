@@ -1,6 +1,5 @@
 import type { Scene } from "@babylonjs/core/scene";
 import { sourceDistanceToWorld } from "../../world/sourceFrame";
-import { attachNativeTileSystems, type AttachedNativeTileSystems } from "./attachNativeTileSystems";
 import { nativeMeshBounds, type NativeSection, type NativeWorldSceneInspection } from "./loadNativeSection";
 import type { NativeTileSectionView } from "./loadNativeTileChunks";
 import { createTileModelTemplates, loadResidencyChunk, type LoadedTileResidencyChunk, type TileModelTemplates } from "./loadResidencyChunk";
@@ -10,12 +9,14 @@ import { createNativeTileChunkResidency, type NativeTileChunkResidency, type Res
 import { describeNativeTileGapRow } from "./nativeTileChunkManifest";
 import { readCatalogTileIds, readResidencyTile, type ResidencyTile } from "./nativeTileResidencyTiles";
 import { inspectNativeTileSection } from "./nativeTileSectionInspection";
+import { createStreamedTileSystems, type StreamedTileSystemsInspection } from "./streamedTileSystems";
 import { neighbouringTileIds, worldResidencySettingsForChunkEdge } from "./worldResidencyRing";
 
 export interface StreamedTileInspection {
   readonly tileId: string;
   readonly chunkCount: number;
   readonly gap: string | null;
+  readonly systems: StreamedTileSystemsInspection | null;
 }
 
 const disposedDuringLoading = () => new Error("Native tile was disposed during loading.");
@@ -29,13 +30,16 @@ export async function streamNativeTileChunks(scene: Scene, signal: AbortSignal, 
   const lifetime = new AbortController();
   const tileReads = new Map<string, Promise<ResidencyTile | null>>(), tiles = new Map<string, ResidencyTile>(), tileGaps = new Map<string, string>();
   const templatesByTile = new Map<string, TileModelTemplates>(), tilesWithKnownNeighbours = new Set<string>();
-  let residency: NativeTileChunkResidency<LoadedTileResidencyChunk> | null = null, systems: AttachedNativeTileSystems | null = null;
+  let residency: NativeTileChunkResidency<LoadedTileResidencyChunk> | null = null, stopChunkEvents: (() => void) | null = null;
   let disposed = false;
+  const tileSystems = createStreamedTileSystems({ scene, selectedTileId: tileId, signal: lifetime.signal, manifestOf: systemsTileId => tiles.get(systemsTileId)!.manifest,
+    isDisposed: () => disposed || scene.isDisposed });
   const dispose = () => {
     if (disposed) return;
     disposed = true; lifetime.abort(); signal.removeEventListener("abort", dispose);
     scene.onDisposeObservable.remove(observer);
-    systems?.dispose();
+    stopChunkEvents?.();
+    tileSystems.dispose();
     residency?.dispose();
     for (const templates of templatesByTile.values()) templates.dispose();
   };
@@ -87,6 +91,7 @@ export async function streamNativeTileChunks(scene: Scene, signal: AbortSignal, 
       },
     });
     residency = activeResidency;
+    stopChunkEvents = activeResidency.subscribeChunkEvents(tileSystems);
     await activeResidency.ready();
     if (disposed || scene.isDisposed) throw disposedDuringLoading();
     const startupResident = activeResidency.residentChunks();
@@ -95,10 +100,7 @@ export async function streamNativeTileChunks(scene: Scene, signal: AbortSignal, 
     const { chunk: anchorChunk, surface: spawnCandidate } = anchorOnChunkTerrain(terrainEntries, authoredAnchor);
     const anchor = tileSpawnAnchor(selected.manifest, authoredAnchor, spawnCandidate);
     const bspChunks = selectedResident.flatMap(({ loaded }) => loaded.bspChunk === null ? [] : [loaded.bspChunk]);
-    const instances = selectedResident.flatMap(({ loaded }) => loaded.instances);
-    const terrainMeshes = terrainEntries.flatMap(entry => entry.meshes);
-    const attached = await attachNativeTileSystems(scene, selected.manifest, { bspChunks, instances, terrainMeshes }, lifetime.signal, () => disposed || scene.isDisposed);
-    systems = attached;
+    const attached = await tileSystems.attachSelectedTile();
     const view: NativeTileSectionView = { kind: "native-tile-runtime", tileId, terrainChunks: describeTerrainChunks(selected.chunks), bspChunks, anchor, models: [], placements: [],
       terrain: { file: "terrain.glb", sha256: anchorChunk.terrain.sha256, bytes: anchorChunk.bytes, materialStatus: "neutral-inspection" },
       gaps: selected.manifest.gaps.filter(row => row.status !== "pass").map(describeNativeTileGapRow) };
@@ -108,7 +110,8 @@ export async function streamNativeTileChunks(scene: Scene, signal: AbortSignal, 
       return residentTerrain.length === 0 ? startupExtent : nativeMeshBounds(residentTerrain);
     };
     const streamedTiles = (): StreamedTileInspection[] => [...new Set([...tiles.keys(), ...tileGaps.keys()])].sort()
-      .map(streamedTileId => ({ tileId: streamedTileId, chunkCount: tiles.get(streamedTileId)?.chunks.length ?? 0, gap: tileGaps.get(streamedTileId) ?? null }));
+      .map(streamedTileId => ({ tileId: streamedTileId, chunkCount: tiles.get(streamedTileId)?.chunks.length ?? 0, gap: tileGaps.get(streamedTileId) ?? null,
+        systems: tileSystems.inspection(streamedTileId) }));
     const inspection = (): NativeWorldSceneInspection => {
       const resident = activeResidency.residentChunks(), selectedNow = resident.filter(({ chunk }) => chunk.tileId === tileId);
       const residencyInspection = activeResidency.inspection();

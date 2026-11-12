@@ -1,7 +1,7 @@
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Scene } from "@babylonjs/core/scene";
 import { attachTileVisibility, type AttachedTileVisibility } from "./bspVisibility/attachTileVisibility";
-import { attachTileLighting, type AttachedTileLighting } from "./lighting/attachTileLighting";
+import { attachTileLighting, type AttachedTileLighting, type TileLightingChunkSurfaces } from "./lighting/attachTileLighting";
 import type { NativeTileBspChunk } from "./loadNativeTileChunks";
 import { loadNativeTileMovers, type NativeTileMovers } from "./loadNativeTileMovers";
 import type { NativeModelInstance } from "./nativeModelPlacements";
@@ -9,8 +9,9 @@ import type { NativeTileChunkPlacement } from "./nativeTileChunkManifest";
 import type { NativeTileManifest } from "./nativeTileManifest";
 import { loadTileMapEmitterPlacements } from "./tileMapEmitterPlacements";
 
-export interface NativeTileSystemContents {
-  readonly bspChunks: readonly NativeTileBspChunk[];
+export interface NativeTileChunkSystemContents {
+  readonly chunkId: string;
+  readonly bspChunk: NativeTileBspChunk | null;
   readonly instances: readonly NativeModelInstance<NativeTileChunkPlacement>[];
   readonly terrainMeshes: readonly AbstractMesh[];
 }
@@ -21,24 +22,31 @@ export interface AttachedNativeTileSystems {
   readonly mapEmitterPlacements: Awaited<ReturnType<typeof loadTileMapEmitterPlacements>>;
   readonly movers: NativeTileMovers | null;
   readonly moverGap: string | null;
+  addChunk(contents: NativeTileChunkSystemContents): Promise<void>;
+  removeChunk(chunkId: string): void;
+  boundChunkIds(): readonly string[];
   dispose(): void;
 }
 
 const disposedDuringLoading = () => new Error("Native tile was disposed during loading.");
 const moverResourceInvalidReasonPrefix = "movers-invalid:";
 
-export async function attachNativeTileSystems(scene: Scene, manifest: NativeTileManifest, contents: NativeTileSystemContents, signal: AbortSignal,
+function staticMeshesOf(instances: readonly NativeModelInstance<NativeTileChunkPlacement>[]): AbstractMesh[] {
+  return instances.flatMap(instance => instance.root.getChildMeshes().filter(mesh => mesh.getTotalVertices() > 0));
+}
+
+export async function attachNativeTileSystems(scene: Scene, manifest: NativeTileManifest, initialChunks: readonly NativeTileChunkSystemContents[], signal: AbortSignal,
   isDisposed: () => boolean): Promise<AttachedNativeTileSystems> {
   let visibility: AttachedTileVisibility | null = null, lighting: AttachedTileLighting | null = null, movers: NativeTileMovers | null = null;
   const dispose = () => { movers?.dispose(); visibility?.dispose(); lighting?.dispose(); };
   try {
-    visibility = await attachTileVisibility(scene, manifest, { bspChunks: contents.bspChunks, placements: contents.instances, terrainMeshes: contents.terrainMeshes }, signal);
+    visibility = await attachTileVisibility(scene, manifest, { bspChunks: initialChunks.flatMap(chunk => chunk.bspChunk === null ? [] : [chunk.bspChunk]),
+      placements: initialChunks.flatMap(chunk => chunk.instances), terrainMeshes: initialChunks.flatMap(chunk => chunk.terrainMeshes) }, signal);
     if (isDisposed()) throw disposedDuringLoading();
     const chunkOrdinalById = new Map(manifest.chunks.map((record, ordinal) => [record.chunkId, ordinal]));
     const visibilityBinding = visibility.binding;
-    lighting = await attachTileLighting(scene, manifest, { bspChunks: contents.bspChunks.map(chunk => ({ ...chunk, chunkOrdinal: chunkOrdinalById.get(chunk.chunkId)! })),
-      staticMeshes: contents.instances.flatMap(instance => instance.root.getChildMeshes().filter(mesh => mesh.getTotalVertices() > 0)),
-      terrainMeshes: contents.terrainMeshes, cameraFrame: () => visibilityBinding?.frame() ?? null }, signal);
+    const attachedLighting = await attachTileLighting(scene, manifest, () => visibilityBinding?.frame() ?? null, signal);
+    lighting = attachedLighting;
     if (isDisposed()) throw disposedDuringLoading();
     const mapEmitterPlacements = await loadTileMapEmitterPlacements(manifest, signal);
     if (isDisposed()) throw disposedDuringLoading();
@@ -55,7 +63,30 @@ export async function attachNativeTileSystems(scene: Scene, manifest: NativeTile
       }
       if (isDisposed()) throw disposedDuringLoading();
     }
-    return { visibility, lighting, mapEmitterPlacements, movers, moverGap, dispose };
+    const bindingsByChunkId = new Map<string, object>();
+    const lightingSurfacesOf = (contents: NativeTileChunkSystemContents): TileLightingChunkSurfaces => ({ chunkId: contents.chunkId,
+      bspChunk: contents.bspChunk === null ? null : { ...contents.bspChunk, chunkOrdinal: chunkOrdinalById.get(contents.chunkId)! },
+      staticMeshes: staticMeshesOf(contents.instances), terrainMeshes: contents.terrainMeshes });
+    const addChunk = async (contents: NativeTileChunkSystemContents) => {
+      if (bindingsByChunkId.has(contents.chunkId)) return;
+      const chunkBinding = {};
+      bindingsByChunkId.set(contents.chunkId, chunkBinding);
+      try {
+        await attachedLighting.addChunk(lightingSurfacesOf(contents));
+      } catch (error) {
+        if (bindingsByChunkId.get(contents.chunkId) === chunkBinding) bindingsByChunkId.delete(contents.chunkId);
+        throw error;
+      }
+    };
+    for (const contents of initialChunks) await addChunk(contents);
+    if (isDisposed()) throw disposedDuringLoading();
+    return { visibility, lighting: attachedLighting, mapEmitterPlacements, movers, moverGap, addChunk,
+      removeChunk(chunkId) {
+        if (!bindingsByChunkId.delete(chunkId)) return;
+        attachedLighting.removeChunk(chunkId);
+      },
+      boundChunkIds: () => [...bindingsByChunkId.keys()].sort(),
+      dispose };
   } catch (error) {
     dispose();
     throw error;

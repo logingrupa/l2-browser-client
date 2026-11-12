@@ -217,6 +217,36 @@ describe("native tile chunk residency collision inputs", () => {
     expect(residency.inspection().visibleChunkCount).toBe(4);
   });
 
+  it("announces each settled load and each disposal before its container goes, to a listener added after ready, and never a failed chunk", async () => {
+    const { residency, events, pending, renderFrame, resolveAll, setFocusX } = residencyHarness([0, 1, 2, 3, 4, 5], 5);
+    const startupEvents: string[] = [];
+    const stopStartupEvents = residency.subscribeChunkEvents({
+      chunkLoaded: resident => { startupEvents.push(`chunkLoaded:${resident.chunk.cellId}`); },
+      chunkDisposed: resident => { startupEvents.push(`chunkDisposed:${resident.chunk.cellId}`); },
+    });
+    await resolveAll();
+    await residency.ready();
+    expect(startupEvents).toEqual(["chunkLoaded:90_90/chunk-0-0", "chunkLoaded:90_90/chunk-1-0", "chunkLoaded:90_90/chunk-2-0"]);
+    stopStartupEvents();
+    const announcedLoads = new Map<string, unknown>();
+    residency.subscribeChunkEvents({
+      chunkLoaded: resident => { events.push(`chunkLoaded:${resident.chunk.cellId}`); announcedLoads.set(resident.chunk.cellId, resident.loaded); },
+      chunkDisposed: resident => { events.push(`chunkDisposed:${resident.chunk.cellId}`); expect(resident.loaded.terrainMeshes[0]!.isDisposed()).toBe(false); },
+    });
+    const eventsBeforeWalk = events.length;
+    setFocusX(55);
+    renderFrame();
+    pending.get("90_90/chunk-3-0")!.reject(new Error("chunk payload refused"));
+    pending.delete("90_90/chunk-3-0");
+    await flush();
+    await resolveAll();
+    const walkEvents = events.slice(eventsBeforeWalk).filter(event => event.startsWith("chunk"));
+    expect(walkEvents).toEqual(["chunkDisposed:90_90/chunk-0-0", "chunkDisposed:90_90/chunk-1-0", "chunkLoaded:90_90/chunk-5-0", "chunkLoaded:90_90/chunk-4-0"]);
+    expect(events.indexOf("chunkDisposed:90_90/chunk-0-0")).toBeLessThan(events.indexOf("dispose:90_90/chunk-0-0"));
+    expect(startupEvents).toHaveLength(3);
+    expect(residency.residentChunks().find(resident => resident.chunk.cellId === "90_90/chunk-4-0")!.loaded).toBe(announcedLoads.get("90_90/chunk-4-0"));
+  });
+
   it("removes every cell and disposes every container on dispose", async () => {
     const { residency, resolveLoad, pending, world, events } = residencyHarness([0, 1, 2], 5);
     await resolveLoad("90_90/chunk-0-0");

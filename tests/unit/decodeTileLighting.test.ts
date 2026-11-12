@@ -138,8 +138,9 @@ describe("bindTileLighting", () => {
     });
     const chunk: TileLightingBspChunk = { chunkId: "chunk-0-0", chunkOrdinal: 0, sections, nodeRanges, meshes };
     let environment: WorldEnvironmentSample = { gameMinutes: 60, hour: 1, environmentType: 0, source: "environment-program-fallback" };
-    const binding = await bindTileLighting({ scene, model: tileLightingModel(), bspChunks: [chunk], sessionSeed: 1, environment: () => environment,
-      levelSeconds: () => 0, fog: () => FOG_DISABLED, loadProgram: async () => loaded }, new AbortController().signal);
+    const binding = bindTileLighting({ scene, model: tileLightingModel(), sessionSeed: 1, environment: () => environment,
+      levelSeconds: () => 0, fog: () => FOG_DISABLED, loadProgram: async () => loaded });
+    await binding.addChunk(chunk);
     const pagesAtOne = binding.inspection().sections.map(section => section.page);
     expect(binding.inspection().sections.map(section => section.status)).toEqual(["library-compiled", "library-compiled", "program-unconverted"]);
     expect(meshes[0]!.material!.getClassName()).toBe("ShaderMaterial");
@@ -151,6 +152,44 @@ describe("bindTileLighting", () => {
     expect(pagesAtOne).toEqual([0, 8, null]);
     expect(pagesAtThirteen).toEqual([4, 8, null]);
     expect(binding.inspection().sections[0]!.hourPages).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+    const boundMaterial = meshes[0]!.material!;
+    binding.removeChunk("chunk-0-0");
+    expect(binding.inspection()).toMatchObject({ sectionCount: 0, lightmappedSectionCount: 0, sections: [] });
+    expect(scene.materials.includes(boundMaterial)).toBe(false);
+    for (const [primitive, mesh] of meshes.entries()) {
+      if (primitive === 2) continue;
+      mesh.material = new Material(`${sections[primitive]!.material} converted again`, scene);
+      mesh.material.metadata = { gltf: { extras: { nativeMaterialProgram: { directory: `native-materials/${loaded.materialId}`, programSha256: loaded.materialId } } } };
+    }
+    await binding.addChunk(chunk);
+    expect(binding.inspection()).toMatchObject({ sectionCount: 3, lightmappedSectionCount: 2 });
+    expect(meshes[0]!.material!.getClassName()).toBe("ShaderMaterial");
+    binding.dispose();
+  });
+
+  it("binds no material for a chunk removed while its program loads and keeps no sections for it", async () => {
+    const scene = new Scene(new NullEngine());
+    scenes.push(scene);
+    const meshes = sections.map((section, primitive) => {
+      const mesh = new Mesh(section.material, scene);
+      Object.assign(new VertexData(), { positions: Array.from({ length: primitiveVertexCounts[primitive]! * 3 }, (_, index) => index), indices: primitiveIndices[primitive] })
+        .applyToMesh(mesh);
+      mesh.material = new Material(`${section.material} converted`, scene);
+      mesh.material.metadata = { gltf: { extras: { nativeMaterialProgram: { directory: `native-materials/${"ab".repeat(32)}`, programSha256: "ab".repeat(32) } } } };
+      return mesh;
+    });
+    const originalMaterials = meshes.map(mesh => mesh.material);
+    let releaseProgram: (() => void) | null = null;
+    const binding = bindTileLighting({ scene, model: tileLightingModel(), sessionSeed: 1,
+      environment: () => ({ gameMinutes: 60, hour: 1, environmentType: 0, source: "environment-program-fallback" }), levelSeconds: () => 0, fog: () => FOG_DISABLED,
+      loadProgram: (_materialId, signal) => new Promise((_resolve, reject) => { releaseProgram = () => reject(signal.reason); }) });
+    const adding = binding.addChunk({ chunkId: "chunk-0-0", chunkOrdinal: 0, sections, nodeRanges, meshes });
+    await Promise.resolve();
+    binding.removeChunk("chunk-0-0");
+    releaseProgram!();
+    await expect(adding).rejects.toThrow();
+    expect(meshes.map(mesh => mesh.material)).toEqual(originalMaterials);
+    expect(binding.inspection().sections).toEqual([]);
     binding.dispose();
   });
 });

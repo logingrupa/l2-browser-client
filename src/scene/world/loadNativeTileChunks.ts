@@ -2,7 +2,7 @@ import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { AssetContainer } from "@babylonjs/core/assetContainer";
 import type { Scene } from "@babylonjs/core/scene";
 import { nativeMeshBounds, type NativeSection, type NativeSectionManifest } from "./loadNativeSection";
-import { attachNativeTileSystems, type AttachedNativeTileSystems } from "./attachNativeTileSystems";
+import { attachNativeTileSystems, type AttachedNativeTileSystems, type NativeTileChunkSystemContents } from "./attachNativeTileSystems";
 import type { NativeBspNodeRange, NativeBspSection } from "./nativeBspResources";
 import { collisionCellContextFor } from "./movement/collisionCellContext";
 import {
@@ -66,6 +66,13 @@ function tileModelsById(chunks: readonly NativeTileChunkManifest[]): ReadonlyMap
   return models;
 }
 
+function chunkSystemContentsOfTile(chunks: readonly NativeTileChunkManifest[], terrainMeshesByChunkId: ReadonlyMap<string, readonly AbstractMesh[]>,
+  bspChunks: readonly NativeTileBspChunk[], instances: readonly NativeModelInstance<NativeTileChunkPlacement>[]): NativeTileChunkSystemContents[] {
+  const chunkIdByPlacementId = new Map(chunks.flatMap(chunk => chunk.models.flatMap(model => model.placements.map(placement => [placement.id, chunk.chunkId] as const))));
+  return chunks.map(chunk => ({ chunkId: chunk.chunkId, bspChunk: bspChunks.find(bspChunk => bspChunk.chunkId === chunk.chunkId) ?? null,
+    instances: instances.filter(instance => chunkIdByPlacementId.get(instance.source.id) === chunk.chunkId), terrainMeshes: terrainMeshesByChunkId.get(chunk.chunkId) ?? [] }));
+}
+
 export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, tileId: string): Promise<NativeSection | null> {
   signal.throwIfAborted();
   if (scene.isDisposed || !scene.useRightHandedSystem) throw new Error("Native tile requires a live right-handed scene.");
@@ -90,7 +97,7 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
     if (!pinnedManifest) { dispose(); return null; }
     const manifest = pinnedManifest.manifest;
     const chunks = await readTileChunkManifests(manifest, lifetime.signal);
-    const loaded: LoadedChunkTerrain[] = [];
+    const loaded: LoadedChunkTerrain[] = [], terrainMeshesByChunkId = new Map<string, readonly AbstractMesh[]>();
     for (const chunk of chunks) {
       if (!chunk.terrain) continue;
       const terrain = await loadChunkTerrain(scene, chunk, chunk.terrain, lifetime.signal);
@@ -98,6 +105,7 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
       containers.push(terrain.container);
       for (const mesh of terrain.meshes) mesh.metadata = { ...mesh.metadata, worldSupportsWalking: true };
       loaded.push(terrain);
+      terrainMeshesByChunkId.set(chunk.chunkId, terrain.meshes);
     }
     const authoredAnchor = authoredAnchorPosition(manifest);
     const { chunk: anchorChunk, surface: spawnCandidate } = anchorOnChunkTerrain(loaded, authoredAnchor);
@@ -117,7 +125,8 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
       bspChunks.push(bspChunk);
     }
     const terrainMeshes = loaded.flatMap(entry => entry.meshes);
-    const attached = await attachNativeTileSystems(scene, manifest, { bspChunks, instances, terrainMeshes }, lifetime.signal, () => disposed || scene.isDisposed);
+    const attached = await attachNativeTileSystems(scene, manifest, chunkSystemContentsOfTile(chunks, terrainMeshesByChunkId, bspChunks, instances), lifetime.signal,
+      () => disposed || scene.isDisposed);
     systems = attached;
     for (const container of containers) container.addAllToScene();
     const view: NativeTileSectionView = { kind: "native-tile-runtime", tileId, terrainChunks: describeTerrainChunks(chunks), bspChunks, anchor, models: [], placements: [],

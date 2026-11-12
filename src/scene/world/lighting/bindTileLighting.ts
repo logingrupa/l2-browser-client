@@ -26,7 +26,6 @@ export interface TileLightingBspChunk {
 export interface TileLightingSettings {
   readonly scene: Scene;
   readonly model: TileLightingModel;
-  readonly bspChunks: readonly TileLightingBspChunk[];
   readonly sessionSeed: number;
   readonly environment: () => WorldEnvironmentSample;
   readonly levelSeconds: () => number;
@@ -59,6 +58,8 @@ export interface TileLightingInspection {
 }
 
 export interface TileLightingBinding {
+  addChunk(chunk: TileLightingBspChunk): Promise<void>;
+  removeChunk(chunkId: string): void;
   inspection(): TileLightingInspection;
   dispose(): void;
 }
@@ -72,20 +73,38 @@ interface BoundSection {
   boundPage: number | null;
 }
 
+interface PreparedSection {
+  readonly section: BoundSection;
+  readonly mesh: Mesh | null;
+}
+
+interface BoundChunk {
+  readonly chunkOrdinal: number;
+  readonly abort: AbortController;
+  sections: readonly BoundSection[];
+}
+
 function pageAtHour(model: TileLightingModel, plan: LightmapSectionPlan, hour: number): number | null {
   return plan.kind === "lightmapped" ? lightmapPageAtHour(model, plan.lightmapTexture, hour, plan.outdoor) : null;
 }
 
-function meshOfPlan(chunks: readonly TileLightingBspChunk[], plan: LightmapSectionPlan): AbstractMesh {
-  return chunks.find(chunk => chunk.chunkId === plan.chunkId)!.meshes[plan.primitive]!;
+function disposeSectionMaterials(sections: readonly BoundSection[]): void {
+  for (const section of sections) section.nativeMaterial?.dispose();
 }
 
-export async function bindTileLighting(settings: TileLightingSettings, signal: AbortSignal): Promise<TileLightingBinding> {
-  const { scene, model, bspChunks } = settings;
-  const plans = planLightmapSections(model, bspChunks.map(chunk => ({ ...chunk,
-    primitiveVertexCount: primitive => chunk.meshes[primitive]!.getTotalVertices(),
-    primitiveIndices: primitive => chunk.meshes[primitive]!.getIndices() ?? [] })));
-  const pageTextures = new Map<number, BaseTexture>(), programs = new Map<string, LoadedNativeMaterial>(), sections: BoundSection[] = [];
+function applyPreparedSections(prepared: readonly PreparedSection[]): BoundSection[] {
+  for (const { section, mesh } of prepared) {
+    if (mesh === null || section.nativeMaterial === null) continue;
+    if (section.plan.kind === "lightmapped") mesh.setVerticesData(VertexBuffer.UV2Kind, section.plan.lightmapCoordinates, false, 2);
+    mesh.material = section.nativeMaterial.material;
+  }
+  return prepared.map(({ section }) => section);
+}
+
+export function bindTileLighting(settings: TileLightingSettings): TileLightingBinding {
+  const { scene, model } = settings;
+  const pageTextures = new Map<number, BaseTexture>(), programs = new Map<string, LoadedNativeMaterial>(), chunks = new Map<string, BoundChunk>();
+  let disposed = false;
   const pageTexture = (page: number): BaseTexture => {
     const cached = pageTextures.get(page);
     if (cached) return cached;
@@ -97,45 +116,66 @@ export async function bindTileLighting(settings: TileLightingSettings, signal: A
     pageTextures.set(page, texture);
     return texture;
   };
-  const disposeAll = () => {
-    for (const section of sections) section.nativeMaterial?.dispose();
-    for (const texture of pageTextures.values()) texture.dispose();
+  const programFor = async (programMaterialId: string, signal: AbortSignal) => {
+    let loaded = programs.get(programMaterialId);
+    if (!loaded) { loaded = await settings.loadProgram(programMaterialId, signal); programs.set(programMaterialId, loaded); }
+    signal.throwIfAborted();
+    return loaded;
   };
-  try {
-    for (const plan of plans) {
-      const mesh = meshOfPlan(bspChunks, plan), programMaterialId = readNativeMaterialProgramPin(mesh.material);
-      const unbound = (status: TileLightingSurfaceStatus, reasons: readonly string[]) =>
-        sections.push({ plan, status, programMaterialId, reasons, nativeMaterial: null, boundPage: null });
-      if (plan.kind === "gap") { unbound("lighting-gap", [plan.reason]); continue; }
-      if (programMaterialId === null) { unbound("program-unconverted", []); continue; }
-      let loaded = programs.get(programMaterialId);
-      if (!loaded) { loaded = await settings.loadProgram(programMaterialId, signal); programs.set(programMaterialId, loaded); }
-      signal.throwIfAborted();
-      const nativeMaterial = createNativeMaterial(scene, loaded, { sessionSeed: settings.sessionSeed, lighting: plan.kind === "lightmapped" ? "lightmap" : "unlit" });
-      const inspected = nativeMaterial.inspect();
-      if (inspected.status !== "compiled") { nativeMaterial.dispose(); unbound("library-diagnostic", inspected.reasons); continue; }
-      if (!(mesh instanceof Mesh)) { nativeMaterial.dispose(); unbound("lighting-gap", [`lighting-mesh-not-editable:${mesh.name}`]); continue; }
-      if (plan.kind === "lightmapped") mesh.setVerticesData(VertexBuffer.UV2Kind, plan.lightmapCoordinates, false, 2);
-      mesh.material = nativeMaterial.material;
-      sections.push({ plan, status: "library-compiled", programMaterialId, reasons: [], nativeMaterial, boundPage: null });
-    }
-  } catch (error) { disposeAll(); throw error; }
+  const prepareSection = async (plan: LightmapSectionPlan, mesh: AbstractMesh, signal: AbortSignal): Promise<PreparedSection> => {
+    const programMaterialId = readNativeMaterialProgramPin(mesh.material);
+    const unbound = (status: TileLightingSurfaceStatus, reasons: readonly string[]): PreparedSection =>
+      ({ section: { plan, status, programMaterialId, reasons, nativeMaterial: null, boundPage: null }, mesh: null });
+    if (plan.kind === "gap") return unbound("lighting-gap", [plan.reason]);
+    if (programMaterialId === null) return unbound("program-unconverted", []);
+    const loaded = await programFor(programMaterialId, signal);
+    const nativeMaterial = createNativeMaterial(scene, loaded, { sessionSeed: settings.sessionSeed, lighting: plan.kind === "lightmapped" ? "lightmap" : "unlit" });
+    const inspected = nativeMaterial.inspect();
+    if (inspected.status !== "compiled") { nativeMaterial.dispose(); return unbound("library-diagnostic", inspected.reasons); }
+    if (!(mesh instanceof Mesh)) { nativeMaterial.dispose(); return unbound("lighting-gap", [`lighting-mesh-not-editable:${mesh.name}`]); }
+    return { section: { plan, status: "library-compiled", programMaterialId, reasons: [], nativeMaterial, boundPage: null }, mesh };
+  };
+  const boundSections = () => [...chunks.values()].sort((left, right) => left.chunkOrdinal - right.chunkOrdinal).flatMap(chunk => chunk.sections);
   const step = () => {
     const environment = settings.environment(), uniforms = { levelSeconds: settings.levelSeconds(), hour: environment.hour,
       environmentType: environment.environmentType, fog: settings.fog() };
-    for (const section of sections) {
+    for (const chunk of chunks.values()) for (const section of chunk.sections) {
       if (!section.nativeMaterial) continue;
       const page = pageAtHour(model, section.plan, environment.hour);
       if (page !== null && page !== section.boundPage) { section.nativeMaterial.setLightmap(pageTexture(page)); section.boundPage = page; }
       section.nativeMaterial.update(uniforms);
     }
   };
-  step();
+  const removeChunk = (chunkId: string) => {
+    const bound = chunks.get(chunkId);
+    if (bound === undefined) return;
+    chunks.delete(chunkId);
+    bound.abort.abort();
+    disposeSectionMaterials(bound.sections);
+  };
   const observer = scene.onBeforeRenderObservable.add(step);
-  let disposed = false;
   return {
+    async addChunk(chunk) {
+      if (disposed || chunks.has(chunk.chunkId)) return;
+      const bound: BoundChunk = { chunkOrdinal: chunk.chunkOrdinal, abort: new AbortController(), sections: [] };
+      chunks.set(chunk.chunkId, bound);
+      const prepared: PreparedSection[] = [];
+      try {
+        const plans = planLightmapSections(model, [{ ...chunk, primitiveVertexCount: primitive => chunk.meshes[primitive]!.getTotalVertices(),
+          primitiveIndices: primitive => chunk.meshes[primitive]!.getIndices() ?? [] }]);
+        for (const plan of plans) prepared.push(await prepareSection(plan, chunk.meshes[plan.primitive]!, bound.abort.signal));
+        bound.abort.signal.throwIfAborted();
+      } catch (error) {
+        disposeSectionMaterials(prepared.map(({ section }) => section));
+        if (chunks.get(chunk.chunkId) === bound) chunks.delete(chunk.chunkId);
+        throw error;
+      }
+      bound.sections = applyPreparedSections(prepared);
+      step();
+    },
+    removeChunk,
     inspection() {
-      const environment = settings.environment();
+      const environment = settings.environment(), sections = boundSections();
       const statusCounts = { "library-compiled": 0, "library-diagnostic": 0, "program-unconverted": 0, "lighting-gap": 0 };
       for (const section of sections) statusCounts[section.status] += 1;
       return { gap: null, sourceSha256: model.sourceSha256, environment, fog: settings.fog(), sectionCount: sections.length,
@@ -149,7 +189,8 @@ export async function bindTileLighting(settings: TileLightingSettings, signal: A
       if (disposed) return;
       disposed = true;
       scene.onBeforeRenderObservable.remove(observer);
-      disposeAll();
+      for (const chunkId of [...chunks.keys()]) removeChunk(chunkId);
+      for (const texture of pageTextures.values()) texture.dispose();
     },
   };
 }
