@@ -44,31 +44,46 @@ class SyntheticDecodeError(ValueError):
     pass
 
 
+SYNTHETIC_FORMAT_GAP_REASON = 'texture-format-unsupported:5'
+PRESERVED_NATIVE_SOURCE = {'status': 'preserved', 'manifest': 'native-texture-source.json'}
+FORMAT_GAP_NATIVE_SOURCE = {'status': 'unsupported', 'reason': 'Native texture source format is unreviewed: 5', 'gapReason': SYNTHETIC_FORMAT_GAP_REASON}
+
+
 class FakeConverter:
-    def __init__(self, output, failing_objects):
+    def __init__(self, output, failing_objects, format_gap_objects=()):
         self.output = output
         self.failing_objects = failing_objects
+        self.format_gap_objects = set(format_gap_objects)
         self.failing_error = SyntheticDecodeError('synthetic package table refused')
+        self.native_source_override = None
         self.requests = []
+
+    def native_source(self, object_name):
+        if self.native_source_override is not None:
+            return self.native_source_override
+        return FORMAT_GAP_NATIVE_SOURCE if object_name in self.format_gap_objects else PRESERVED_NATIVE_SOURCE
 
     def convert(self, request):
         self.requests.append(request)
         if request['object'] in self.failing_objects:
             raise self.failing_error
         image = b'\x89PNG\r\n\x1a\n' + request['object'].encode()
-        archive = b'PK' + image
+        provenance = json.dumps({'schemaVersion': 1, 'metadata': {'nativeTextureSource': self.native_source(request['object'])}}).encode()
+        archive = b'PK' + image + provenance
         archive_sha256 = hashlib.sha256(archive).hexdigest()
         target = self.output / archive_sha256
         target.mkdir(parents=True, exist_ok=True)
         (target / 'texture.png').write_bytes(image)
+        (target / 'provenance.json').write_bytes(provenance)
         (target / 'asset.l2asset').write_bytes(archive)
         (target / 'asset.json').write_bytes(json.dumps({
             'id': 'interlude:' + request['object'], 'image': {'file': 'texture.png'},
             'source': {'edition': 'interlude', 'package': request['package'], 'object': request['object'], 'sha256': SYNTHETIC_PACKAGE_SHA256,
                        'packageVersion': 118, 'licenseeVersion': 11, 'path': {'host': 'SYNTHETIC', 'absolutePath': 'C:/synthetic.utx'}},
-            'files': [{'path': 'texture.png', 'sha256': hashlib.sha256(image).hexdigest(), 'bytes': len(image), 'mime': 'image/png'}],
+            'files': [{'path': 'provenance.json', 'sha256': hashlib.sha256(provenance).hexdigest(), 'bytes': len(provenance), 'mime': 'application/json'},
+                      {'path': 'texture.png', 'sha256': hashlib.sha256(image).hexdigest(), 'bytes': len(image), 'mime': 'image/png'}],
         }).encode())
-        return {'file': str(target / 'asset.l2asset'), 'sha256': archive_sha256, 'id': 'interlude:' + request['object']}
+        return {'file': str(target / 'asset.l2asset'), 'sha256': archive_sha256, 'id': 'interlude:' + request['object'], 'cacheHit': False}
 
 
 class UiTextureRequestTests(unittest.TestCase):
@@ -157,6 +172,36 @@ class ConvertWindowTexturesTests(unittest.TestCase):
         self.assertEqual(result['fieldGaps'], 0)
         self.assertEqual([(row['step'], row['key']) for row in read_gap_rows(self.project_root, 'data-ui')],
                          [('textures', 'window:SyntheticStatusWnd')])
+
+    def test_a_refused_native_texture_source_draws_its_image_and_names_the_format_gap_per_texture(self):
+        self.converter.format_gap_objects = {'SyntheticUI.Status.Gauge'}
+        self.requests = ui_texture_step.ui_texture_requests([synthetic_manifest('SyntheticStatusWnd', [
+            'SyntheticUI.Status.Plate', 'SyntheticUI.Status.Gauge'])], CENSUS, LOCK)
+        result = self.convert()
+        self.assertEqual((result['status'], result['converted'], result['textureGaps'], result['nativeSourceGaps']), ('gap', 2, 0, 1))
+        records = json.loads((self.output_root / 'catalog.json').read_bytes())['textures']
+        self.assertEqual([record['id'] for record in records], ['ui-texture:SyntheticUI.Status.Gauge', 'ui-texture:SyntheticUI.Status.Plate'])
+        [texture_row] = [row for row in read_gap_rows(self.project_root, 'data-ui') if row['step'] == 'textures']
+        self.assertEqual((texture_row['reason'], texture_row['sourceIdentity']['object']), (SYNTHETIC_FORMAT_GAP_REASON, 'SyntheticUI.Status.Gauge'))
+        outcomes = json.loads((self.project_root / 'artifacts' / 'lane-store' / 'data-ui' / texture_row['evidence']).read_bytes())['outcomes']
+        self.assertEqual({outcome['reference']: (outcome['status'], outcome['nativeSourceGapReason']) for outcome in outcomes}, {
+            'SyntheticUI.Status.Gauge': ('converted', SYNTHETIC_FORMAT_GAP_REASON), 'SyntheticUI.Status.Plate': ('converted', None)})
+
+    def test_a_texture_that_does_not_draw_names_the_window_row_before_a_native_source_gap(self):
+        self.converter.format_gap_objects = {'SyntheticUI.Status.Gauge'}
+        self.requests = ui_texture_step.ui_texture_requests([synthetic_manifest('SyntheticStatusWnd', [
+            'SyntheticUI.Status.Gauge', 'Absent.Status.Plate'])], CENSUS, LOCK)
+        self.convert()
+        [texture_row] = [row for row in read_gap_rows(self.project_root, 'data-ui') if row['step'] == 'textures']
+        self.assertEqual((texture_row['reason'], texture_row['sourceIdentity']['object']), ('texture-reference-unresolved', 'Absent.Status.Plate'))
+
+    def test_a_native_texture_source_record_outside_the_converter_contract_is_refused(self):
+        self.requests = ui_texture_step.ui_texture_requests([synthetic_manifest('SyntheticStatusWnd', ['SyntheticUI.Status.Plate'])], CENSUS, LOCK)
+        for native_source in ({'status': 'unsupported', 'gapReason': 'decode-failed:FormatError'}, {'status': 'unsupported'}, {'status': 'absent'}):
+            with self.subTest(native_source=native_source):
+                self.converter.native_source_override = native_source
+                with self.assertRaisesRegex(ui_texture_step.UiTextureStepError, 'nativeTextureSource'):
+                    self.convert()
 
     def test_a_raising_reference_alone_is_a_decode_failed_gap_row(self):
         self.requests = ui_texture_step.ui_texture_requests([synthetic_manifest('SyntheticStatusWnd', ['SyntheticUI.Status.Broken'])], CENSUS, LOCK)

@@ -9,13 +9,14 @@ import subprocess
 from hash_reference_client_tree import canonical_json_bytes
 from interface_layout_adapter import INTERFACE_XDAT_PATH
 from lane_unit_outcomes import DECODE_FAILED_REASON_PREFIX, lane_relative_path, replace_step_gap_row
+from native_assets_lib.texture_source_reader import TEXTURE_FORMAT_UNSUPPORTED_REASON_PREFIX, TEXTURE_LICENSEE_UNSUPPORTED_REASON_PREFIX
 from native_store.catalog_writer import add_store_file, merge_catalog_slice, read_store_catalog, write_store
 from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN, read_gap_rows
 from native_store.store_paths import SHA256_PATTERN, STEP_NAME_PATTERN
 from reference_client_guard import ReferenceClientLockError
 from texture_package_census import reference_tree_lock_sha256, validate_texture_package_census
 
-UI_TEXTURE_ALGORITHM_VERSION = 1
+UI_TEXTURE_ALGORITHM_VERSION = 2
 UI_TEXTURE_RECIPE_SCHEMA_VERSION = 1
 TEXTURES_STEP = 'textures'
 TEXTURES_CATALOG_SLICE = 'textures'
@@ -25,6 +26,11 @@ TEXTURE_REFERENCE_UNRESOLVED_REASON = 'texture-reference-unresolved'
 ADAPTER_FIELD_ABSENT_PATTERN = re.compile(r'adapter-field-absent:(?P<field>[a-z][A-Za-z0-9]*)')
 ABSENT_FIELD_STEP_PREFIX = 'field-'
 TEXTURE_OUTCOMES_RECORD_NAME = 'texture-outcomes.json'
+PROVENANCE_FILE_NAME = 'provenance.json'
+PRESERVED_NATIVE_SOURCE_STATUS = 'preserved'
+UNSUPPORTED_NATIVE_SOURCE_STATUS = 'unsupported'
+NATIVE_SOURCE_GAP_REASON_PATTERN = re.compile(
+    rf'{re.escape(TEXTURE_FORMAT_UNSUPPORTED_REASON_PREFIX)}\d+|{re.escape(TEXTURE_LICENSEE_UNSUPPORTED_REASON_PREFIX)}\d+/\d+')
 PART_NAME = 'ui'
 TRANSIENT_TEXTURE_CONVERSION_FAILURES = (OSError, subprocess.SubprocessError)
 FAILED_STATUS = 'failed'
@@ -109,6 +115,25 @@ def source_identity(path, sha256, object_name):
     return identity
 
 
+def pinned_archive_file(archive_directory, asset_manifest, file_name, reference):
+    [file_entry] = [entry for entry in asset_manifest['files'] if entry['path'] == file_name]
+    payload = (archive_directory / file_name).read_bytes()
+    if (hashlib.sha256(payload).hexdigest(), len(payload)) != (file_entry['sha256'], file_entry['bytes']):
+        raise UiTextureStepError(f'converted {file_name} of {reference} differs from its asset.json entry')
+    return file_entry, payload
+
+
+def native_source_gap_reason(provenance, reference):
+    native_source = provenance.get('metadata', {}).get('nativeTextureSource')
+    status = native_source.get('status') if isinstance(native_source, dict) else None
+    if status == PRESERVED_NATIVE_SOURCE_STATUS:
+        return None
+    reason = native_source.get('gapReason') if status == UNSUPPORTED_NATIVE_SOURCE_STATUS else None
+    if not isinstance(reason, str) or not NATIVE_SOURCE_GAP_REASON_PATTERN.fullmatch(reason):
+        raise UiTextureStepError(f'converted {reference} has no preserved nativeTextureSource and no listed texture gap reason: {native_source!r}')
+    return reason
+
+
 def converted_texture_record(request, conversion):
     archive_path = Path(conversion['file'])
     archive_sha256 = conversion['sha256']
@@ -116,14 +141,13 @@ def converted_texture_record(request, conversion):
         raise UiTextureStepError(f'converted archive {archive_path} differs from its reported SHA-256')
     asset_manifest = json.loads((archive_path.parent / 'asset.json').read_bytes())
     image_name = asset_manifest['image']['file']
-    [image_entry] = [entry for entry in asset_manifest['files'] if entry['path'] == image_name]
-    image_bytes = (archive_path.parent / image_name).read_bytes()
-    if (hashlib.sha256(image_bytes).hexdigest(), len(image_bytes)) != (image_entry['sha256'], image_entry['bytes']):
-        raise UiTextureStepError(f'converted image {image_name} of {request["reference"]} differs from its asset.json entry')
+    image_entry, image_bytes = pinned_archive_file(archive_path.parent, asset_manifest, image_name, request['reference'])
+    _, provenance_bytes = pinned_archive_file(archive_path.parent, asset_manifest, PROVENANCE_FILE_NAME, request['reference'])
+    gap_reason = native_source_gap_reason(json.loads(provenance_bytes), request['reference'])
     record = {'id': UI_TEXTURE_ID_PREFIX + request['reference'], 'archive': f'/l2/{archive_sha256}/asset.l2asset', 'archiveSha256': archive_sha256,
               'assetId': asset_manifest['id'], 'image': f'/l2/{archive_sha256}/{image_name}', 'imageBytes': len(image_bytes),
               'imageSha256': image_entry['sha256'], 'source': {key: value for key, value in asset_manifest['source'].items() if key != 'path'}}
-    return record, {f'{archive_sha256}/asset.l2asset': archive_path.read_bytes(), f'{archive_sha256}/{image_name}': image_bytes}
+    return record, {f'{archive_sha256}/asset.l2asset': archive_path.read_bytes(), f'{archive_sha256}/{image_name}': image_bytes}, gap_reason
 
 
 def convert_reference(request, converter):
@@ -136,8 +160,9 @@ def convert_reference(request, converter):
     except ValueError as error:
         return {'reference': request['reference'], 'status': 'gap', 'reason': DECODE_FAILED_REASON_PREFIX + type(error).__name__,
                 'message': str(error)}, None
-    record, files = converted_texture_record(request, conversion)
-    return {'reference': request['reference'], 'status': 'converted', 'id': record['id'], 'archiveSha256': record['archiveSha256']}, (record, files)
+    record, files, gap_reason = converted_texture_record(request, conversion)
+    return {'reference': request['reference'], 'status': 'converted', 'id': record['id'], 'archiveSha256': record['archiveSha256'],
+            'nativeSourceGapReason': gap_reason}, (record, files)
 
 
 def write_texture_records(output_root, conversions, capacity):
@@ -155,12 +180,16 @@ def write_texture_records(output_root, conversions, capacity):
 
 def window_gap_rows(window_name, unit_key, requests_by_reference, outcomes, gap_bindings, interface_sha256, evidence):
     rows = []
-    first_texture_gap = next((outcome for outcome in outcomes if outcome['status'] == 'gap'), None)
+    texture_gaps = [(outcome['reference'], outcome['reason']) for outcome in outcomes if outcome['status'] == 'gap']
+    native_source_gaps = [(outcome['reference'], outcome['nativeSourceGapReason']) for outcome in outcomes
+                          if outcome['status'] == 'converted' and outcome['nativeSourceGapReason'] is not None]
+    first_texture_gap = next(iter(texture_gaps + native_source_gaps), None)
     if first_texture_gap is not None:
-        request = requests_by_reference[first_texture_gap['reference']]
+        reference, reason = first_texture_gap
+        request = requests_by_reference[reference]
         identity = (source_identity(request['packagePath'], request['packageSha256'], request['reference']) if request['packagePath']
                     else source_identity(INTERFACE_XDAT_PATH, interface_sha256, request['reference']))
-        rows.append({'key': unit_key, 'part': PART_NAME, 'step': TEXTURES_STEP, 'status': 'gap', 'reason': first_texture_gap['reason'],
+        rows.append({'key': unit_key, 'part': PART_NAME, 'step': TEXTURES_STEP, 'status': 'gap', 'reason': reason,
                      'sourceIdentity': identity, 'evidence': evidence})
     for binding in gap_bindings:
         rows.append({'key': unit_key, 'part': PART_NAME, 'step': ABSENT_FIELD_STEP_PREFIX + binding['field'], 'status': 'gap',
@@ -208,4 +237,5 @@ def convert_window_textures(project_root, window_id, requests, converter, ledger
     ledger.seal(unit_key, fingerprint, {'config': config, 'inputs': inputs, 'gapRows': gap_rows, 'outputs': [
         {'path': evidence, 'sha256': hashlib.sha256(outcomes_bytes).hexdigest(), 'bytes': len(outcomes_bytes)}, *store_outputs]})
     return {'unit': unit_key, 'status': 'gap' if gap_rows else 'converted', 'converted': len(conversions),
-            'textureGaps': sum(1 for outcome in outcomes if outcome['status'] == 'gap'), 'fieldGaps': len(gap_bindings)}
+            'textureGaps': sum(1 for outcome in outcomes if outcome['status'] == 'gap'),
+            'nativeSourceGaps': sum(1 for outcome in outcomes if outcome.get('nativeSourceGapReason') is not None), 'fieldGaps': len(gap_bindings)}

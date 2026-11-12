@@ -24,6 +24,8 @@ UNREAL_PACKAGE_SIGNATURE = 0x9E2A83C1
 LINEAGE_VERSION_121_WRAPPER = 'Lineage2Ver121'.encode('utf-16le')
 SYNTHETIC_UNREVIEWED_PAIR = (1, 2)
 REVIEWED_PAIR = min(REVIEWED_VERSIONS)
+UE2_118_REVIEWED_PAIR = (118, 0)
+UE2_118_UNREVIEWED_PAIR = (118, 11)
 GARBAGE_HEADER = bytes(range(HEADER_BYTE_COUNT))
 
 
@@ -84,6 +86,18 @@ class TexturePackageCensusRowTests(unittest.TestCase):
         row = texture_package_census_row(tree.access, 'systextures/Other.utx')
         self.assertEqual((row['packageVersion'], row['licensee'], row['reviewed']), (*SYNTHETIC_UNREVIEWED_PAIR, False))
         self.assertEqual(row['reason'], f'texture-licensee-unsupported:{SYNTHETIC_UNREVIEWED_PAIR[0]}/{SYNTHETIC_UNREVIEWED_PAIR[1]}')
+
+    def test_ue2_118_0_package_is_reviewed_and_118_11_keeps_its_licensee_reason(self):
+        self.assertIn(UE2_118_REVIEWED_PAIR, REVIEWED_VERSIONS)
+        self.assertNotIn(UE2_118_UNREVIEWED_PAIR, REVIEWED_VERSIONS)
+        tree = SyntheticTexturePackageTree(self, {
+            'systextures/Synthetic_Reviewed.utx': synthetic_wrapped_package_header('Synthetic_Reviewed.utx', *UE2_118_REVIEWED_PAIR),
+            'systextures/Synthetic_Unreviewed.utx': synthetic_wrapped_package_header('Synthetic_Unreviewed.utx', *UE2_118_UNREVIEWED_PAIR)})
+        reviewed_row = texture_package_census_row(tree.access, 'systextures/Synthetic_Reviewed.utx')
+        unreviewed_row = texture_package_census_row(tree.access, 'systextures/Synthetic_Unreviewed.utx')
+        self.assertEqual((reviewed_row['packageVersion'], reviewed_row['licensee'], reviewed_row['reviewed'], reviewed_row['reason']), (118, 0, True, None))
+        self.assertEqual((unreviewed_row['packageVersion'], unreviewed_row['licensee'], unreviewed_row['reviewed'], unreviewed_row['reason']),
+                         (118, 11, False, 'texture-licensee-unsupported:118/11'))
 
     def test_garbage_header_is_a_decode_failed_row(self):
         tree = SyntheticTexturePackageTree(self, {'systextures/Broken.utx': GARBAGE_HEADER})
@@ -184,6 +198,14 @@ class CommittedTexturePackageCensusTests(unittest.TestCase):
             if not row['reviewed']:
                 with self.subTest(path=row['path']):
                     self.assertRegex(row['reason'], f'^(?:{self.UNREVIEWED_REASON_PATTERN})$')
+
+    def test_every_row_of_a_reviewed_pair_is_reviewed_with_no_reason(self):
+        for row in self.census['packages']:
+            if (row['packageVersion'], row['licensee']) in REVIEWED_VERSIONS:
+                with self.subTest(path=row['path']):
+                    self.assertEqual((row['reviewed'], row['reason']), (True, None))
+        ue2_118_paths = {row['path'] for row in self.census['packages'] if (row['packageVersion'], row['licensee']) == UE2_118_REVIEWED_PAIR}
+        self.assertTrue({'systextures/L2UI_CH3.utx', 'systextures/l2ui.utx', 'systextures/L2_RadarMap.utx'} <= ue2_118_paths)
 
     def test_packages_later_plans_convert_are_censused(self):
         census_paths = {row['path'] for row in self.census['packages']}
