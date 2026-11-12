@@ -4,7 +4,7 @@ from actors.actor_unit_inventory import NO_MESH_IN_ROW_REASON
 from actors.character_conversion import PADDING_STATUS, CharacterConversionRun, read_character_sources
 from actors.character_requests import (BODY_MESH_GROUP, CHARGRP_ROW_COLLECTION, CLASSINFO_ACTOR_CLASS_FIELD, CLASSINFO_CHARGRP_INDEX_FIELD,
                                        CLASSINFO_TABLE_NAME, GAP_STATUS, HAIRGRP_TABLE_NAME, HELMETGRP_TABLE_NAME, character_key,
-                                       is_padding_row, manifest_record_fields, resolve_character_actor_class)
+                                       classinfo_class_resolution, is_padding_row, manifest_record_fields)
 from data.hair_table_adapter import HAIR_TABLE_FIELD_PROOF
 from native_store.store_paths import lane_work_root
 
@@ -71,7 +71,9 @@ def character_census(run):
             'classinfoSourceSha256': sources[CLASSINFO_TABLE_NAME], 'hairgrpSourceSha256': sources[HAIRGRP_TABLE_NAME],
             'helmetgrpSourceSha256': sources[HELMETGRP_TABLE_NAME], 'hairFieldProof': HAIR_TABLE_FIELD_PROOF,
             'classJoin': {'requiredFields': [CLASSINFO_CHARGRP_INDEX_FIELD, CLASSINFO_ACTOR_CLASS_FIELD],
-                          'decodedFields': resolve_character_actor_class(run.sources.classinfo, 0)['evidence']['fields']},
+                          'decodedFields': classinfo_class_resolution(run.sources.classinfo, 0)['evidence']['fields'],
+                          'classSources': {'path': run.sources.class_sources['path'], 'resultSha256': run.sources.class_sources['sha256'],
+                                           'verdict': run.sources.class_sources['document']['verdict']}},
             'layoutRecordFields': {HAIRGRP_TABLE_NAME: manifest_record_fields(run.sources.hairgrp),
                                    HELMETGRP_TABLE_NAME: manifest_record_fields(run.sources.helmetgrp)},
             'counts': census_counts(rows), 'rows': rows}

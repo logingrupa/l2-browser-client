@@ -12,7 +12,7 @@ sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 from actors.actor_sound_batch import npc_profile_rows
 from actors.actor_sound_conversion import ActorSoundConversionError, ActorSoundConversionRun
 from actors.character_conversion import read_character_sources
-from actors.character_requests import CLASSINFO_TABLE_NAME, HAIRGRP_TABLE_NAME, HELMETGRP_TABLE_NAME
+from actors.character_requests import CHARACTER_CLASS_SOURCES_RELATIVE_PATH, CLASSINFO_TABLE_NAME, HAIRGRP_TABLE_NAME, HELMETGRP_TABLE_NAME
 from catalog_store_fixture import write_store_catalog
 from native_store.catalog_writer import CatalogWriteError
 from native_store.data_ui_table_manifest import (DATA_UI_LANE_NAME, ELBERA_ADAPTER_ROUTE, LOCAL_DESCRIPTOR_ROUTE, DataUiTableManifestError,
@@ -163,6 +163,9 @@ class DataUiTableManifestTests(unittest.TestCase):
                                                                  locked_source_sha256(f'system/{HELMETGRP_TABLE_NAME}.dat'),
                                                                  ELBERA_ADAPTER_ROUTE, ELBERA_HELMETGRP_RECORDS)}
         write_pinned_tables_records(self.store_root, payloads_by_table)
+        class_sources_path = self.project_root / CHARACTER_CLASS_SOURCES_RELATIVE_PATH
+        class_sources_path.parent.mkdir(parents=True)
+        class_sources_path.write_bytes((ROOT / CHARACTER_CLASS_SOURCES_RELATIVE_PATH).read_bytes())
         sources = read_character_sources(self.project_root, self.project_root, lambda client_root, table_name: DECODED_CHARGRP_TABLE,
                                          self.project_root / 'class-work')
         self.assertEqual((sources.classinfo['records'], sources.hairgrp['records'], sources.helmetgrp['records']),

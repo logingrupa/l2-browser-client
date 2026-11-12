@@ -9,8 +9,9 @@ import argparse
 import hashlib
 import json
 
-from actors.character_requests import (BODY_MESH_GROUP, CHARACTER_CLASS_SOURCES_RELATIVE_PATH, CHARGRP_ROW_COLLECTION, CHARGRP_TABLE_NAME,
-                                       FACE_MESH_FIELD, FACE_MESH_GROUP, HEAD_BONE_FIELD, SUB_MESHES_FIELD, is_padding_row)
+from actors.character_requests import (ADOPTED_CLASS_SOURCES_VERDICT, BODY_MESH_GROUP, CHARACTER_CLASS_SOURCES_RELATIVE_PATH,
+                                       CHARGRP_ROW_COLLECTION, CHARGRP_TABLE_NAME, FACE_MESH_FIELD, FACE_MESH_GROUP, HEAD_BONE_FIELD,
+                                       NOT_DECIDED_CLASS_SOURCES_VERDICT, SUB_MESHES_FIELD, is_padding_row)
 from data.hair_table_adapter import HAIR_TABLE_PARSERS
 from native_assets_lib.class_defaults import ReferenceClientClassScripts, class_default_parser_sha256, read_class_defaults_with_provenance
 from native_catalog.effects import UELIB_SHA256
@@ -21,7 +22,6 @@ from native_store.data_ui_table_manifest import DATA_UI_LANE_NAME, ELBERA_ADAPTE
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root
 
 CHARACTER_CLASS_SOURCES_SCHEMA_VERSION = 1
-ADOPTED_VERDICT, NOT_DECIDED_VERDICT = 'adopted', 'not-decided'
 MESH_FIELD = 'Mesh'
 CLASS_DEFAULT_FIELDS = (HEAD_BONE_FIELD, MESH_FIELD, SUB_MESHES_FIELD)
 CHARGRP_INDEX_FIELD_FRAGMENT = 'chargrp'
@@ -131,7 +131,8 @@ def class_join_verdict(row_indexes, table_candidates, class_candidates):
         rows[str(row)] = {'candidateClasses': classes, 'candidateCount': len(classes), 'tableRecordsWithoutClass': classless_records[row],
                           'actorClass': classes[0] if decided else None,
                           'classPackageSha256': packages_by_class.get(classes[0]) if decided else None}
-    verdict = ADOPTED_VERDICT if rows and all(entry['actorClass'] for entry in rows.values()) else NOT_DECIDED_VERDICT
+    decided = rows and all(entry['actorClass'] for entry in rows.values())
+    verdict = ADOPTED_CLASS_SOURCES_VERDICT if decided else NOT_DECIDED_CLASS_SOURCES_VERDICT
     return verdict, rows
 
 
@@ -224,13 +225,14 @@ def read_character_class_sources(project_root):
     path = Path(project_root) / CHARACTER_CLASS_SOURCES_RELATIVE_PATH
     if not path.is_file():
         raise CharacterClassSourcesError(f'{CHARACTER_CLASS_SOURCES_RELATIVE_PATH} is missing; run scripts/actors/character_class_sources.py')
-    payload = path.read_bytes()
-    document = json.loads(payload)
+    document = json.loads(path.read_bytes())
+    verdicts = (ADOPTED_CLASS_SOURCES_VERDICT, NOT_DECIDED_CLASS_SOURCES_VERDICT)
     rows = document.get('rows') if isinstance(document, dict) else None
-    if not (document.get('schemaVersion') == CHARACTER_CLASS_SOURCES_SCHEMA_VERSION and document.get('verdict') in (ADOPTED_VERDICT, NOT_DECIDED_VERDICT)
-            and isinstance(rows, dict) and all(isinstance(entry, dict) and isinstance(entry.get('candidateCount'), int) for entry in rows.values())):
+    if not (isinstance(rows, dict) and document.get('schemaVersion') == CHARACTER_CLASS_SOURCES_SCHEMA_VERSION
+            and document.get('verdict') in verdicts
+            and all(isinstance(entry, dict) and isinstance(entry.get('candidateCount'), int) for entry in rows.values())):
         raise CharacterClassSourcesError(f'{CHARACTER_CLASS_SOURCES_RELATIVE_PATH} is not a version {CHARACTER_CLASS_SOURCES_SCHEMA_VERSION} search result')
-    return {'path': CHARACTER_CLASS_SOURCES_RELATIVE_PATH, 'sha256': hashlib.sha256(payload).hexdigest(), 'document': document}
+    return {'path': CHARACTER_CLASS_SOURCES_RELATIVE_PATH, 'sha256': hashlib.sha256(canonical_json_bytes(document)).hexdigest(), 'document': document}
 
 
 def main(argv=None):

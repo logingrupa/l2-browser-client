@@ -5,9 +5,10 @@ from pathlib import Path
 
 from actors.actor_census import MESH_PACKAGE_SUFFIXES, TEXTURE_PACKAGE_SUFFIXES, ActorPackageCensus
 from actors.actor_unit_inventory import ACTOR_UNIT_CENSUS_RELATIVE_PATH, model_record_capacity, decoded_table_identity
-from actors.character_requests import (CHARACTER_STEP, CLASSINFO_TABLE_NAME, GAP_STATUS, HAIRGRP_TABLE_NAME, HELMETGRP_TABLE_NAME,
-                                       build_character_request, character_gap_rows, character_key, chargrp_row_at, is_padding_row,
-                                       resolve_character_actor_class)
+from actors.character_class_sources import read_character_class_sources
+from actors.character_requests import (CHARACTER_STEP, CLASSINFO_TABLE_NAME, CLASS_SOURCES_ROUTE, GAP_STATUS, HAIRGRP_TABLE_NAME,
+                                       HELMETGRP_TABLE_NAME, CharacterRequestError, build_character_request, character_gap_rows, character_key,
+                                       chargrp_row_at, is_padding_row, resolve_character_actor_class)
 from actors.npc_requests import (CONVERTER_REFUSED_REASON_PREFIX, FAILED_STATUS, PASS_STATUS, TRANSIENT_FAILURES,
                                  animation_reference_gap_reason, serialized_animation_reference)
 from actors.path_free_messages import path_free_reason
@@ -25,7 +26,7 @@ CHARACTER_ALGORITHM_VERSION = 1
 CHARACTER_LANE_NAME = 'actors'
 CHARACTER_MODEL_ID_PREFIX = 'character-model:'
 PADDING_STATUS = 'padding'
-CharacterSources = namedtuple('CharacterSources', 'chargrp classinfo hairgrp helmetgrp read_class_definition')
+CharacterSources = namedtuple('CharacterSources', 'chargrp classinfo hairgrp helmetgrp read_class_definition class_sources')
 
 
 class LazyClassDefinitionReader:
@@ -50,7 +51,7 @@ def read_character_sources(project_root, client_root, decode_table, class_work_r
     return CharacterSources(decode_table(Path(client_root), 'chargrp'), data_ui_table_manifest(project_root, CLASSINFO_TABLE_NAME),
                             data_ui_table_manifest(project_root, HAIRGRP_TABLE_NAME, ELBERA_ADAPTER_ROUTE),
                             data_ui_table_manifest(project_root, HELMETGRP_TABLE_NAME, ELBERA_ADAPTER_ROUTE),
-                            LazyClassDefinitionReader(client_root, class_work_root))
+                            LazyClassDefinitionReader(client_root, class_work_root), read_character_class_sources(project_root))
 
 
 def model_gap_reason(census_reason, generated):
@@ -73,11 +74,22 @@ class CharacterConversionRun:
         self.package_census = ActorPackageCensus(client_access, [])
         self.table_identity = decoded_table_identity(sources.chargrp)
 
-    def actor_class(self, class_reference):
+    def actor_class(self, class_resolution):
+        class_reference = class_resolution['class']
         if class_reference is None:
             return None
         definition = self.sources.read_class_definition(class_reference)
-        return {'class': class_reference, 'packageSha256': definition['source']['packageSha256'], 'properties': definition['properties']}
+        package_sha256 = definition['source']['packageSha256']
+        if class_resolution['route'] == CLASS_SOURCES_ROUTE:
+            sourced = class_resolution['evidence']['classSources']
+            if sourced['classPackageSha256'] != package_sha256:
+                raise CharacterRequestError(f'{class_reference} package differs from the one {sourced["path"]} was searched in; '
+                                            'rerun the class source search')
+            join_source = {'source': sourced['path'], 'sha256': sourced['resultSha256']}
+        else:
+            classinfo = class_resolution['evidence']['classinfo']
+            join_source = {'source': classinfo['table'], 'sha256': classinfo['sourceSha256']}
+        return {'class': class_reference, 'packageSha256': package_sha256, 'properties': definition['properties'], 'joinSource': join_source}
 
     def unit_inputs(self, request):
         paths = {self.sources.chargrp['source']}
@@ -89,8 +101,8 @@ class CharacterConversionRun:
 
     def unit_work(self, row_index):
         row = chargrp_row_at(self.sources.chargrp, row_index)
-        class_resolution = resolve_character_actor_class(self.sources.classinfo, row_index)
-        generated = build_character_request(row, row_index, self.actor_class(class_resolution['class']), self.sources)
+        class_resolution = resolve_character_actor_class(self.sources.classinfo, self.sources.class_sources, row_index)
+        generated = build_character_request(row, row_index, self.actor_class(class_resolution), self.sources)
         config = {'censusReason': self.units_by_key[character_key(row_index)]['reason'], 'classResolution': class_resolution,
                   'generated': generated, 'converterSha256': implementation_hash(), 'umodelSha256': UMODEL_SHA256,
                   'tableSources': {table: manifest_source_sha256(manifest) for table, manifest in

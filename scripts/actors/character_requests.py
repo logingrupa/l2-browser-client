@@ -24,6 +24,8 @@ CONVERTER_ASSEMBLY_PART_LIMIT = 16
 ASSEMBLY_PART_LIMIT_EXCEEDED_REASON_PREFIX = 'assembly-part-limit-exceeded:'
 CLASS_TEMPLATE_MAPPING_UNDECODED_REASON = 'class-template-mapping-undecoded'
 CHARACTER_CLASS_SOURCES_RELATIVE_PATH = 'docs/parts/player-characters/character-class-sources.json'
+CLASS_SOURCES_ROUTE = 'character-class-sources'
+ADOPTED_CLASS_SOURCES_VERDICT, NOT_DECIDED_CLASS_SOURCES_VERDICT = 'adopted', 'not-decided'
 HEAD_BONE_FIELD, RIGHT_HAND_BONE_FIELD, SUB_MESHES_FIELD = 'HeadBone', 'RightHandBone', 'SubMeshes'
 COLLISION_SOURCE_FIELDS = (('collisionRadius', 'CollisionRadius'), ('collisionHeight', 'CollisionHeight'))
 IDLE_ANIMATION_FAMILY_FIELD = 'WaitAnimName'
@@ -124,7 +126,7 @@ def classinfo_rows(classinfo_table):
     return collections[0]
 
 
-def resolve_character_actor_class(classinfo_table, row_index):
+def classinfo_class_resolution(classinfo_table, row_index):
     rows = classinfo_rows(classinfo_table) if classinfo_table else []
     fields = sorted({field for row in rows for field in row})
     evidence = {'table': CLASSINFO_TABLE_NAME, 'sourceSha256': classinfo_table['sourceSha256'] if classinfo_table else None, 'fields': fields}
@@ -135,6 +137,32 @@ def resolve_character_actor_class(classinfo_table, row_index):
     if not (isinstance(actor_class, str) and QUALIFIED_OBJECT_NAME_PATTERN.fullmatch(actor_class)):
         return {'class': None, 'reason': CLASS_TEMPLATE_MAPPING_UNDECODED_REASON, 'evidence': {**evidence, 'joinedRecords': len(joined)}}
     return {'class': actor_class, 'reason': None, 'evidence': {**evidence, 'joinedRecords': 1}}
+
+
+def class_sources_resolution(class_sources, row_index):
+    document = class_sources['document']
+    entry = document['rows'].get(str(row_index))
+    evidence = {'path': class_sources['path'], 'resultSha256': class_sources['sha256'], 'verdict': document['verdict'],
+                'candidateCount': entry['candidateCount'] if entry else 0}
+    actor_class = entry['actorClass'] if entry and document['verdict'] == ADOPTED_CLASS_SOURCES_VERDICT else None
+    if not (isinstance(actor_class, str) and QUALIFIED_OBJECT_NAME_PATTERN.fullmatch(actor_class)):
+        return {'class': None, 'reason': CLASS_TEMPLATE_MAPPING_UNDECODED_REASON, 'evidence': evidence}
+    return {'class': actor_class, 'reason': None, 'evidence': {**evidence, 'classPackageSha256': entry['classPackageSha256']}}
+
+
+def resolve_character_actor_class(classinfo_table, class_sources, row_index):
+    classinfo = classinfo_class_resolution(classinfo_table, row_index)
+    if classinfo['class']:
+        return {**classinfo, 'route': CLASSINFO_TABLE_NAME, 'evidence': {'classinfo': classinfo['evidence']}}
+    sourced = class_sources_resolution(class_sources, row_index)
+    return {**sourced, 'route': CLASS_SOURCES_ROUTE if sourced['class'] else None,
+            'evidence': {'classinfo': classinfo['evidence'], 'classSources': sourced['evidence']}}
+
+
+def actor_class_join_limitation(actor_class):
+    join = actor_class['joinSource']
+    return (f'The actor class {actor_class["class"]} (package sha256 {actor_class["packageSha256"]}) is joined to this chargrp row by '
+            f'{join["source"]} (sha256 {join["sha256"]}).')
 
 
 def layout_gap(reason, join_field, candidate_count, record_fields):
@@ -233,8 +261,8 @@ def build_character_request(chargrp_row, row_index, actor_class, sources):
     if len(parts) > CONVERTER_ASSEMBLY_PART_LIMIT:
         gaps.insert(0, {'field': 'parts', 'reason': ASSEMBLY_PART_LIMIT_EXCEEDED_REASON_PREFIX + str(len(parts))})
     elif parts:
-        limitations = list(CHARACTER_REQUEST_LIMITATIONS) + [layout_binding_limitation(binding) for binding in (hair, helmet)
-                                                              if binding['status'] == BOUND_STATUS]
+        limitations = (list(CHARACTER_REQUEST_LIMITATIONS) + ([actor_class_join_limitation(actor_class)] if actor_class else [])
+                       + [layout_binding_limitation(binding) for binding in (hair, helmet) if binding['status'] == BOUND_STATUS])
         request = {'kind': 'model', 'name': character_key(row_index).replace(':', '-'), 'animation': None, 'withEventAudio': True,
                    'parts': parts, 'limitations': limitations}
     return {'request': request, 'profileFields': character_profile_fields(actor_class, sources.read_class_definition),

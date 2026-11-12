@@ -6,10 +6,11 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from actors.character_class_sources import (ADOPTED_VERDICT, NOT_DECIDED_VERDICT, class_default_candidate, class_join_verdict,
+from actors.character_class_sources import (class_default_candidate, class_join_verdict,
                                             chargrp_row_meshes_by_row, pawn_class_ancestries, read_character_class_sources,
                                             table_record_candidates)
-from actors.character_requests import CHARACTER_CLASS_SOURCES_RELATIVE_PATH
+from actors.character_requests import (ADOPTED_CLASS_SOURCES_VERDICT as ADOPTED_VERDICT, CHARACTER_CLASS_SOURCES_RELATIVE_PATH,
+                                       NOT_DECIDED_CLASS_SOURCES_VERDICT as NOT_DECIDED_VERDICT)
 
 SHA256_PATTERN = re.compile(r'[0-9a-f]{64}')
 PAWN_CLASSES = {'LineageWarrior.SyntheticFighter', 'LineageWarrior.SyntheticMystic'}

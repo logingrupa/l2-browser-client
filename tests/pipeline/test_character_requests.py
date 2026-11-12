@@ -6,8 +6,8 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from actors.character_conversion import CharacterSources
-from actors.character_requests import (CLASS_TEMPLATE_MAPPING_UNDECODED_REASON, build_character_request, chargrp_row_at,
-                                       resolve_character_actor_class)
+from actors.character_requests import (CHARACTER_CLASS_SOURCES_RELATIVE_PATH, CLASS_SOURCES_ROUTE, CLASS_TEMPLATE_MAPPING_UNDECODED_REASON,
+                                       build_character_request, chargrp_row_at, resolve_character_actor_class)
 
 REFERENCE_CLIENT = Path('E:/Lineage2-client')
 SYNTHETIC_CHARGRP_SHA256 = 'a' * 64
@@ -42,13 +42,25 @@ def decoded_shape_helmetgrp():
     return {'sourceSha256': 'd' * 64, 'records': [{'key': 1, 'pairs': [[[0, 0], [1, 1]]]}, {'key': 2, 'pairs': [[[0, 0], [1, 1]]]}]}
 
 
+CLASS_SOURCES_RESULT_SHA256 = '9' * 64
+SOURCED_CLASS_PACKAGE_SHA256 = '7' * 64
+
+
+def class_sources_result(verdict, rows):
+    return {'path': CHARACTER_CLASS_SOURCES_RELATIVE_PATH, 'sha256': CLASS_SOURCES_RESULT_SHA256, 'document': {'verdict': verdict, 'rows': rows}}
+
+
+def not_decided_class_sources():
+    return class_sources_result('not-decided', {'0': {'candidateCount': 0, 'actorClass': None, 'classPackageSha256': None}})
+
+
 def refusing_class_reader(reference):
     raise AssertionError(f'no class may be read without a source join: {reference}')
 
 
-def character_sources(rows, classinfo=None, hairgrp=None, helmetgrp=None, read_class_definition=refusing_class_reader):
+def character_sources(rows, classinfo=None, hairgrp=None, helmetgrp=None, read_class_definition=refusing_class_reader, class_sources=None):
     return CharacterSources(synthetic_chargrp_table(rows), classinfo or decoded_shape_classinfo(), hairgrp or decoded_shape_hairgrp(),
-                            helmetgrp or decoded_shape_helmetgrp(), read_class_definition)
+                            helmetgrp or decoded_shape_helmetgrp(), read_class_definition, class_sources or not_decided_class_sources())
 
 
 class CharacterRequestTracerTests(unittest.TestCase):
@@ -81,10 +93,10 @@ class CharacterRequestTracerTests(unittest.TestCase):
         self.assertIsNone(self.generated['request']['animation'])
 
     def test_decoded_classinfo_fields_name_no_class_for_any_row(self):
-        resolution = resolve_character_actor_class(decoded_shape_classinfo(), 0)
+        resolution = resolve_character_actor_class(decoded_shape_classinfo(), not_decided_class_sources(), 0)
         self.assertIsNone(resolution['class'])
         self.assertEqual(resolution['reason'], CLASS_TEMPLATE_MAPPING_UNDECODED_REASON)
-        self.assertEqual(resolution['evidence']['fields'], ['class', 'description'])
+        self.assertEqual(resolution['evidence']['classinfo']['fields'], ['class', 'description'])
 
 
 CLASS_PACKAGE_SHA256 = 'e' * 64
@@ -102,7 +114,8 @@ def class_definitions(definitions):
 
 
 def joined_actor_class(properties):
-    return {'class': JOINED_CLASS, 'packageSha256': CLASS_PACKAGE_SHA256, 'properties': properties}
+    return {'class': JOINED_CLASS, 'packageSha256': CLASS_PACKAGE_SHA256, 'properties': properties,
+            'joinSource': {'source': 'classinfo-e', 'sha256': 'b' * 64}}
 
 
 def joined_class_reader(actor_class):
@@ -120,9 +133,9 @@ def hair_record(join_value, textures=('MFighter.Hair_m000_t00_ah',), mesh='Fight
 
 class CharacterClassJoinTests(unittest.TestCase):
     def test_a_decoded_classinfo_join_names_the_class_and_a_bare_class_name_does_not(self):
-        self.assertEqual(resolve_character_actor_class(joined_classinfo(), 0)['class'], JOINED_CLASS)
-        self.assertIsNone(resolve_character_actor_class(joined_classinfo(), 1)['class'])
-        self.assertIsNone(resolve_character_actor_class(joined_classinfo('SyntheticFighter'), 0)['class'])
+        self.assertEqual(resolve_character_actor_class(joined_classinfo(), not_decided_class_sources(), 0)['class'], JOINED_CLASS)
+        self.assertIsNone(resolve_character_actor_class(joined_classinfo(), not_decided_class_sources(), 1)['class'])
+        self.assertIsNone(resolve_character_actor_class(joined_classinfo('SyntheticFighter'), not_decided_class_sources(), 0)['class'])
 
     def test_a_joined_class_gives_the_face_a_head_bone_attachment_that_the_converter_accepts(self):
         from native_assets import Converter
@@ -147,6 +160,82 @@ class CharacterClassJoinTests(unittest.TestCase):
         generated = build_character_request(row, 0, actor_class, character_sources([row], read_class_definition=joined_class_reader(actor_class)))
         self.assertEqual(generated['request']['parts'][-1]['materials'], [])
         self.assertNotIn('texturePath', generated['request']['parts'][-1]['sourceBinding'])
+
+
+SOURCED_CLASS = 'LineageWarrior.SourcedFighter'
+
+
+def adopted_class_sources(actor_class=SOURCED_CLASS):
+    return class_sources_result('adopted', {'0': {'candidateCount': 1, 'actorClass': actor_class, 'classPackageSha256': SOURCED_CLASS_PACKAGE_SHA256},
+                                            '1': {'candidateCount': 1, 'actorClass': 'LineageWarrior.SourcedMystic',
+                                                  'classPackageSha256': SOURCED_CLASS_PACKAGE_SHA256}})
+
+
+def sourced_class_reader():
+    properties = {'HeadBone': 'Bip01_head', 'Mesh': {'class': 'SkeletalMesh', 'object': 'Fighter.Face_m000_f'}}
+    return class_definitions({SOURCED_CLASS: {'properties': properties, 'nativeSuperClass': None,
+                                              'source': {'packageSha256': SOURCED_CLASS_PACKAGE_SHA256}}})
+
+
+def sourced_actor_class(sources):
+    from actors.character_conversion import CharacterConversionRun
+    run = type('RunDouble', (), {'sources': sources})()
+    return CharacterConversionRun.actor_class(run, resolve_character_actor_class(sources.classinfo, sources.class_sources, 0))
+
+
+class CharacterClassSourcesRouteTests(unittest.TestCase):
+    def test_an_adopted_result_names_the_class_after_classinfo_with_the_result_path_and_hashes(self):
+        resolution = resolve_character_actor_class(decoded_shape_classinfo(), adopted_class_sources(), 0)
+        self.assertEqual((resolution['class'], resolution['reason'], resolution['route']), (SOURCED_CLASS, None, CLASS_SOURCES_ROUTE))
+        self.assertEqual(resolution['evidence']['classSources'], {'path': CHARACTER_CLASS_SOURCES_RELATIVE_PATH, 'resultSha256': CLASS_SOURCES_RESULT_SHA256,
+                                                                  'verdict': 'adopted', 'candidateCount': 1,
+                                                                  'classPackageSha256': SOURCED_CLASS_PACKAGE_SHA256})
+        self.assertEqual(resolve_character_actor_class(joined_classinfo(), adopted_class_sources(), 0)['class'], JOINED_CLASS)
+
+    def test_the_request_of_an_adopted_row_carries_the_class_with_the_result_path_and_sha256(self):
+        row = synthetic_chargrp_row()
+        sources = character_sources([row], read_class_definition=sourced_class_reader(), class_sources=adopted_class_sources())
+        actor_class = sourced_actor_class(sources)
+        self.assertEqual(actor_class['joinSource'], {'source': CHARACTER_CLASS_SOURCES_RELATIVE_PATH, 'sha256': CLASS_SOURCES_RESULT_SHA256})
+        generated = build_character_request(row, 0, actor_class, sources)
+        limitation = [line for line in generated['request']['limitations'] if SOURCED_CLASS in line]
+        self.assertEqual(len(limitation), 1)
+        for cited in (CHARACTER_CLASS_SOURCES_RELATIVE_PATH, CLASS_SOURCES_RESULT_SHA256, SOURCED_CLASS_PACKAGE_SHA256):
+            self.assertIn(cited, limitation[0])
+        self.assertEqual(generated['request']['parts'][-1]['rigidAttachment']['source']['class'], SOURCED_CLASS)
+
+    def test_a_class_package_other_than_the_searched_one_is_refused(self):
+        from actors.character_requests import CharacterRequestError
+        sources = character_sources([synthetic_chargrp_row()], read_class_definition=sourced_class_reader(),
+                                    class_sources=class_sources_result('adopted', {'0': {'candidateCount': 1, 'actorClass': SOURCED_CLASS,
+                                                                                         'classPackageSha256': '6' * 64}}))
+        with self.assertRaisesRegex(CharacterRequestError, 'rerun the class source search'):
+            sourced_actor_class(sources)
+
+    def test_a_not_decided_result_keeps_the_gap_with_the_result_file_as_evidence_even_for_a_single_candidate(self):
+        single = class_sources_result('not-decided', {'0': {'candidateCount': 1, 'actorClass': SOURCED_CLASS,
+                                                            'classPackageSha256': SOURCED_CLASS_PACKAGE_SHA256}})
+        for class_sources in (not_decided_class_sources(), single):
+            with self.subTest(candidates=class_sources['document']['rows']['0']['candidateCount']):
+                resolution = resolve_character_actor_class(decoded_shape_classinfo(), class_sources, 0)
+                self.assertEqual((resolution['class'], resolution['reason'], resolution['route']), (None, CLASS_TEMPLATE_MAPPING_UNDECODED_REASON, None))
+                self.assertEqual(resolution['evidence']['classSources']['path'], CHARACTER_CLASS_SOURCES_RELATIVE_PATH)
+
+    def test_an_adopted_class_borrows_no_animation_and_a_mesh_without_one_stays_animation_reference_missing(self):
+        from unittest import mock
+        from actors import character_conversion
+        from actors.character_conversion import CharacterConversionRun
+        from actors.npc_requests import ANIMATION_REFERENCE_MISSING_REASON
+        row = synthetic_chargrp_row()
+        sources = character_sources([row], read_class_definition=sourced_class_reader(), class_sources=adopted_class_sources())
+        request = build_character_request(row, 0, sourced_actor_class(sources), sources)['request']
+        self.assertIsNone(request['animation'])
+        converter = mock.Mock()
+        converter.package.return_value = (None, type('PackageDouble', (), {'package_name': 'Fighter'})())
+        run = type('RunDouble', (), {'converter': converter, 'client_access': None})()
+        with mock.patch.object(character_conversion, 'serialized_animation_reference', return_value=None):
+            self.assertEqual(CharacterConversionRun.converted_model_reason(run, request), (ANIMATION_REFERENCE_MISSING_REASON, None))
+        converter.convert.assert_not_called()
 
 
 class CharacterLayoutJoinTests(unittest.TestCase):
@@ -283,7 +372,8 @@ class ReferenceClientRowZeroCrossCheckTests(unittest.TestCase):
     def test_generated_row_zero_body_parts_equal_the_hand_written_male_fighter_body_parts(self):
         from native_catalog.tables import decode_table
         chargrp = decode_table(REFERENCE_CLIENT, 'chargrp')
-        sources = CharacterSources(chargrp, decoded_shape_classinfo(), decoded_shape_hairgrp(), decoded_shape_helmetgrp(), refusing_class_reader)
+        sources = CharacterSources(chargrp, decoded_shape_classinfo(), decoded_shape_hairgrp(), decoded_shape_helmetgrp(), refusing_class_reader,
+                                   not_decided_class_sources())
         generated = build_character_request(chargrp_row_at(chargrp, 0), 0, None, sources)
         recipe_parts = json.loads((ROOT / 'recipes' / 'native-mfighter.json').read_bytes())[0]['parts']
         recipe_body_parts = [{key: part[key] for key in ('package', 'object', 'materials', 'sourceBinding')}
