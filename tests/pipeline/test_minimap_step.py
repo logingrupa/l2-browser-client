@@ -102,13 +102,13 @@ def synthetic_sources(radar_index=None):
 
 
 class SyntheticTextureConverter:
-    def __init__(self, output_root, dimensions=(256, 256)):
-        self.output_root, self.dimensions, self.requests = Path(output_root), dimensions, []
+    def __init__(self, output, dimensions=(256, 256)):
+        self.output, self.dimensions, self.requests = Path(output), dimensions, []
 
     def convert(self, request):
         self.requests.append(request)
         archive = b'synthetic archive of ' + request['object'].encode('utf-8')
-        target = self.output_root / hashlib.sha256(archive).hexdigest()
+        target = self.output / hashlib.sha256(archive).hexdigest()
         target.mkdir(parents=True, exist_ok=True)
         (target / 'asset.l2asset').write_bytes(archive)
         (target / 'texture.png').write_bytes(png_header(*self.dimensions))
@@ -116,8 +116,8 @@ class SyntheticTextureConverter:
 
 
 class FailingTextureConverter:
-    def __init__(self, error):
-        self.error = error
+    def __init__(self, output, error):
+        self.output, self.error = Path(output), error
 
     def convert(self, request):
         raise self.error
@@ -173,14 +173,14 @@ class MinimapStepTests(unittest.TestCase):
 
     def test_a_converter_refusal_of_the_radar_texture_is_a_sealed_decode_gap(self):
         write_project(self.project_root)
-        converter = FailingTextureConverter(ValueError('UModel failed or reported an error; inspect export.log'))
+        converter = FailingTextureConverter(self.project_root / 'converter', ValueError('UModel failed or reported an error; inspect export.log'))
         row = run_minimap_step(self.project_root, CLIENT_ROOT, TILE_ID, synthetic_sources(), converter)
         self.assertEqual((row['status'], row['reason']), ('gap', 'decode-failed:ValueError:UModel failed or reported an error'))
         self.assertIsNotNone(sealed_minimap(self.project_root, TILE_ID, read_tile_map_lock_record(TILE_ID))[0])
 
     def test_an_environment_failure_during_radar_conversion_propagates_and_leaves_the_unit_unsealed(self):
         write_project(self.project_root)
-        converter = FailingTextureConverter(PermissionError('umodel.exe is locked'))
+        converter = FailingTextureConverter(self.project_root / 'converter', PermissionError('umodel.exe is locked'))
         with self.assertRaises(PermissionError):
             run_minimap_step(self.project_root, CLIENT_ROOT, TILE_ID, synthetic_sources(), converter)
         self.assertEqual(sealed_minimap(self.project_root, TILE_ID, read_tile_map_lock_record(TILE_ID)), (None, None))

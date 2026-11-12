@@ -10,6 +10,7 @@ from native_assets_lib.texture_package_118 import read_unreal_package
 from native_assets_lib.texture_source_reader import TEXTURE_FORMAT_UNSUPPORTED_REASON_PREFIX, TEXTURE_LICENSEE_UNSUPPORTED_REASON_PREFIX
 from native_catalog.ue2 import FormatError
 from native_store.catalog_writer import add_store_file, immutable_write, sha256_hex, verify_store_destinations
+from native_store.interprocess_lock import convert_under_request_lock
 from native_store.store_paths import confined_child_path, lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from reference_client_guard import require_reference_client
@@ -177,8 +178,8 @@ def tile_minimap(project_root, client, store_root, tile_id, frame, sources, conv
         return tile_join, None, [], []
     radar_converter = converter or radar_texture_converter(project_root, client)
     try:
-        conversion = radar_converter.convert({'kind': 'texture', 'package': sources.packages[RADAR_PACKAGE_ROLE]['packageName'],
-                                              'object': radar_texture['object']})
+        conversion = convert_under_request_lock(radar_converter, {'kind': 'texture', 'package': sources.packages[RADAR_PACKAGE_ROLE]['packageName'],
+                                                                  'object': radar_texture['object']})
     except MODEL_CONVERSION_ERRORS as error:
         return tile_join, None, [], [{'reason': conversion_failure_reason(error), 'evidence': radar_texture['object']}]
     radar_record, dimensions, output = store_converted_radar_texture(store_root, conversion, radar_texture)

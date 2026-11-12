@@ -8,6 +8,7 @@ from native_assets import Converter, UMODEL, verify_archive
 from native_assets_lib.footstep_config import REFERENCE, sound_payload
 from native_assets_lib.world_ambience import wav_facts
 from native_catalog.ue2 import FormatError, Package
+from native_store.interprocess_lock import convert_under_request_lock
 from native_store.store_paths import lane_work_root
 from world.tile_census import WORLD_LANE_NAME
 
@@ -94,7 +95,7 @@ def payload_unverified(check, resolved, detail):
 
 def convert_exact_sound(converter, resolved):
     request = {'kind': 'audio', 'package': resolved.package_path, 'object': resolved.export['object']}
-    converted = converter.convert(request)
+    converted = convert_under_request_lock(converter, request)
     archive_path = Path(converted['file'])
     checked = verify_archive(archive_path)
     with zipfile.ZipFile(archive_path) as archive:

@@ -10,6 +10,7 @@ from native_assets_lib.gltf import json_bytes
 from native_assets_lib.static_materials import REVIEWED_VERSIONS, static_material_layout_unreviewed_reason
 from native_catalog.ue2 import FormatError
 from native_store.catalog_writer import add_store_file, immutable_write, sha256_hex, verify_store_destinations
+from native_store.interprocess_lock import convert_under_request_lock
 from native_store.store_paths import REPOSITORY_ROOT, confined_child_path, lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from reference_client_guard import require_reference_client
@@ -136,7 +137,7 @@ def model_sort_key(model_record):
 
 
 def convert_static_mesh(converter, request):
-    result = converter.convert({'kind': 'model', 'package': request['package'], 'object': request['object']})
+    result = convert_under_request_lock(converter, {'kind': 'model', 'package': request['package'], 'object': request['object']})
     store_files, record = converted_model_store_files_and_record(None, Path(result['file']))
     archive_relative, model_relative = record['archive'].removeprefix('/l2/'), record['model'].removeprefix('/l2/')
     model_record = {'id': record['assetId'], 'sourceObject': record['source']['object'],

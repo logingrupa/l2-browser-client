@@ -7,6 +7,7 @@ from native_assets_lib.gltf import json_bytes
 from native_catalog.ue2 import FormatError
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import sha256_hex
+from native_store.interprocess_lock import interprocess_lock, lane_lock_folder
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from world.locked_input_receipt import receipt_with_current_version_config_and_locked_inputs
@@ -31,6 +32,7 @@ TILE_MOVERS_SCHEMA_VERSION = 1
 TILE_MOVERS_FOLDER = 'movers'
 TILE_MOVERS_NAME = 'tile-movers.json'
 RAW_MAP_PRODUCT_PATH = 'raw/map.unwrapped.bin'
+MOVER_CLASS_UNIT_LOCK_KEY = 'unit:' + MOVER_CLASS_UNIT_KEY
 TILE_MOVER_FIELDS = ('id', 'actorName', 'modelId', 'serverObject', 'closedMatrix', 'openMatrix', 'moveTimeSeconds', 'initialKey', 'initiallyClosed',
                      'keys', 'sounds')
 
@@ -97,8 +99,13 @@ def movers_product_path(ledger, unit_key):
     return ledger.unit_step_directory(unit_key) / PRODUCTS_FOLDER_NAME / MOVERS_PRODUCT_NAME
 
 
+def mover_class_unit_lock(project_root):
+    return interprocess_lock(lane_lock_folder(lane_work_root(project_root, WORLD_LANE_NAME)), MOVER_CLASS_UNIT_LOCK_KEY)
+
+
 def sealed_mover_unit_config(project_root, tile_id, lock_record):
-    class_receipt_sha256 = sealed_mover_class_receipt_sha256(project_root)
+    with mover_class_unit_lock(project_root):
+        class_receipt_sha256 = sealed_mover_class_receipt_sha256(project_root)
     if class_receipt_sha256 is None:
         return None
     chunks_fingerprint, _, _ = sealed_chunk_plan(project_root, tile_id, lock_record)
@@ -219,7 +226,8 @@ def run_mover_step(project_root, client_root, tile_id):
     source_identity = {'path': tile_map_path(tile_id), 'sha256': lock_record['eSha256']}
     client = Path(client_root).resolve()
     sources = MapSources(client)
-    evidence = mover_class_evidence(project_root, client)
+    with mover_class_unit_lock(project_root):
+        evidence = mover_class_evidence(project_root, client)
     unit = mover_unit(project_root, tile_id, lock_record, evidence.receipt_sha256, sources)
     step_directory = unit.ledger.unit_step_directory(unit.unit_key)
     receipt_evidence = (step_directory / RECEIPT_RECORD_NAME).relative_to(unit.ledger.lane_folder).as_posix()
