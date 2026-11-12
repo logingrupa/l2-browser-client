@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 02-94-PLAN.md
-last_updated: "2026-11-11T16:59:05.817Z"
+stopped_at: Completed 02-78-PLAN.md
+last_updated: "2026-11-12T00:58:26.431Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 03 plan 03-01 complete (side-by-side check record writer and key content digest; Phase 3 start commit cb09cdc)
-state_head: 2bde0ccbd6ee2d5a4df17094d7ccaeb6a79747f8
+state_head: 8b4d3b6acf5cfc927382361fd6d736b833a88d5b
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 131
-  completed_plans: 105
+  completed_plans: 106
   percent: 0
 ---
 
@@ -151,6 +151,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 2 P84 | 12min | 3 tasks | 24 files |
 | Phase 02 P92 | 25min | 3 tasks | 24 files |
 | Phase 02 P94 | 30min | 2 tasks | 11 files |
+| Phase 02 P78 | 7h 31m | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -403,6 +404,10 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 993 (02-94): an unported emitter class keeps the emitter-class-unported reason; its feature gaps are still listed
 - [Phase 02]: 994 (02-94): recipes/actors/emitter-feature-coverage.json reads a missing non-class-default field as UE zero and refuses a missing class-default field; classDefault flags and named constants are checked by tests/unit/emitterFeatureCoverage.test.ts
 - [Phase 02]: 995 (02-94): bindParticleMaterial returns a not-drawn outcome for a UseMeshBlendMode MeshEmitter; loadEffectComponent releases its sources, renders nothing and reports notDrawnReason; featureGaps lists the gap through listUnportedEmitterFeatures
+- [Phase 02]: 02-78: the lane coverage refresh fix in build_coverage_report.py (integration path) is a lane confirmation of a small tested change (row 1019)
+- [Phase 02]: 02-78: an NPC whose npcgrp sound columns are all empty seals an npc-names-no-sound unit with no combatAudio record (row 1020)
+- [Phase 02]: 02-78: npc:21622 stays pending in the actors lane until the restage and the 03-11 key index fix P816 (row 1021)
+- [Phase 02]: 02-78: the remaining NPC sound bundles ran as one slice of 4,077 (row 1022)
 
 ### Pending Todos
 
@@ -482,7 +487,8 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 - Load-check infrastructure records (03-03, P815): `npc:18168` on `bba52c47...` failed with a hot-reload module error from a concurrent `src` commit during the sweep, and `tile:16_10` with `read ECONNRESET`; 03-11 lists neither as a converter defect.
 - Two converted-key owners (03-03, P816): the load-check harness list (`buildNativeCatalogIndex`) has `npc:21622` and `skill:3:1` as converted on the union, while `scripts/native_store/catalog_index_keys.py` does not; 03-11 takes the disagreement as a key index defect.
 - Eligible tile batch (02-47, 02-54, rows 681 to 690 and 752 to 761): 79 of 148 eligible tiles are `batch-pending` (20_22 onward in census order); continue `node scripts/check-machine-schedule.mjs && python -B scripts/world/convert_tile_batch.py --eligible --limit 4` until it prints nothing to do, then the tiles sweep with `LOAD_CHECK_LIMIT=<catalog tile count>`. Terrain fails on 16_25 (`Terrain layer 10 names only one of Texture and AlphaMap`) and on 18_23, 19_23, 19_24, 20_16 and 20_17 (`Non-XY/rotated layer requires a separately verified UV adapter`); fix the terrain layer reader, then `convert_tile.py --step terrain` on those tiles.
-- NPC batch breadth (rows 379, 420, 425 to 443 and 444): 80 of 429 model units are sealed under the current converter and 4 of 20 packs are written; continue `convert_actors.py --batch npcs --limit 20` slices in later runs, then rewrite the actors lane catalog.
+- Actors lane shared-store row (02-78, row 1021): npc:21622 and npc-sounds:21622 stay pending in the actors lane coverage; they clear with the restage that writes the shared-store profile with `modelCatalogId` and the 03-11 key index fix (P816). Every other npcgrp row is converted or a listed gap on lane catalog `a1562da9...`.
+- Actor-sounds batch speed (02-78, row 1022): `run_actor_sound_slice` recomputes the fingerprint of every sealed bundle before converting new ones (about 0.5 s each) and each bundle rewrites the whole lane catalog; make both incremental before the 3,064 skill bundles run.
 - BSP surface material files and texture image pins (02-30, 02-60, 02-64, rows 250, 518 and 693): the bsp step writes `native-materials/<sha>/graph.json` and `program.json` for each surface root, but no store manifest pins them, so the lane merge does not carry them, and no program Texture node carries its `image` pin, so all 89 world lane programs compile to `texture-image-absent` and 02-64 keeps every 20_21 BSP section on its converted material. Plan 02-74 gave `derive_material_program` the `texture_images` pins (each Texture node writes its pin or null) and `write_material_program_record`; 02-86 converts each Texture node to a store PNG, passes the pins, replaces the bsp and sky program writers with that owner and pins the program files from the tile or chunk manifest; then rerun bsp and lighting, and the lightmaps draw through the library.
 - Library vertex lighting and terrain layers (02-64, row 695): static mesh slots and terrain layers carry no program pin and the library has no vertex-colour or layer input; the lighting resource already holds the light lists, visibility bits and terrain shadow maps. Sky surfaces carry no program pin either (row 694).
 - Materials overlap review (DEC-OWN-12, 02-64, row 702): the materials area reports 35 blocking and 313 unreviewed runs and 34 stale sign-offs after the library lightmap input (report `artifacts/reference-overlap/02-64-materials.json`); independent review before the push.
@@ -530,6 +536,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-11T16:59:04.988Z
-Stopped at: Completed 02-94-PLAN.md
+Last session: 2026-11-12T00:58:25.591Z
+Stopped at: Completed 02-78-PLAN.md
 Resume file: None
