@@ -25,22 +25,24 @@ class TransformFieldError(FormatError):
 class ClassDefaults:
     def __init__(self, work_root, class_scripts):
         self.work_root, self.class_scripts = work_root, class_scripts
-        self.read_outcomes_by_class_and_fields = {}
+        self.answers_by_class_and_fields, self.refusal_arguments_by_class_and_fields = {}, {}
 
-    def read_outcome(self, class_name, fields):
+    def read_answer(self, class_and_fields):
+        class_name, field_names = class_and_fields
         try:
-            return {value.field: value for value in read_class_defaults_with_provenance(class_name, list(fields), self.work_root, self.class_scripts)}
+            values = read_class_defaults_with_provenance(class_name, list(field_names), self.work_root, self.class_scripts)
         except ClassDefaultError as refusal:
-            return refusal
+            self.refusal_arguments_by_class_and_fields[class_and_fields] = refusal.args
+            raise
+        self.answers_by_class_and_fields[class_and_fields] = {value.field: value for value in values}
 
     def values(self, class_name, fields):
-        key = (class_name, tuple(fields))
-        if key not in self.read_outcomes_by_class_and_fields:
-            self.read_outcomes_by_class_and_fields[key] = self.read_outcome(class_name, fields)
-        read_outcome = self.read_outcomes_by_class_and_fields[key]
-        if isinstance(read_outcome, ClassDefaultError):
-            raise read_outcome.with_traceback(None)
-        return copy.deepcopy(read_outcome)
+        class_and_fields = (class_name, tuple(fields))
+        if class_and_fields in self.refusal_arguments_by_class_and_fields:
+            raise ClassDefaultError(*self.refusal_arguments_by_class_and_fields[class_and_fields])
+        if class_and_fields not in self.answers_by_class_and_fields:
+            self.read_answer(class_and_fields)
+        return copy.deepcopy(self.answers_by_class_and_fields[class_and_fields])
 
 
 def read_class_evidence(client, work_root):

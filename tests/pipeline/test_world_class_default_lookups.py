@@ -7,6 +7,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 
 from native_assets_lib.class_defaults import ClassDefaultError, ClassDefaultValue
+from native_catalog.ue2 import FormatError
 from world import static_placement
 from world.static_placement import ClassDefaults
 
@@ -51,11 +52,28 @@ class ClassDefaultLookupTests(unittest.TestCase):
         self.assertEqual(self.class_defaults.values('Engine.StaticMeshActor', ['Location'])['Location'].value, LOCATION_DEFAULT)
 
     def test_an_unresolved_default_is_refused_every_time_with_the_same_message_and_read_once(self):
+        refusals = []
         for _ in range(3):
             with self.assertRaises(ClassDefaultError) as refusal:
                 self.class_defaults.values('Engine.StaticMeshActor', ['Missing'])
-            self.assertEqual(str(refusal.exception), UNDECLARED_FIELD_MESSAGE)
+            refusals.append(refusal.exception)
+        self.assertEqual([(type(refusal), str(refusal)) for refusal in refusals], [(ClassDefaultError, UNDECLARED_FIELD_MESSAGE)] * 3)
+        self.assertEqual(len({id(refusal) for refusal in refusals}), 3)
         self.read_class_defaults.assert_called_once()
+
+    def test_a_field_list_given_as_a_one_shot_iterable_is_read_with_all_its_fields(self):
+        answer = self.class_defaults.values('Engine.StaticMeshActor', (name for name in ['Location', 'Rotation']))
+        self.assertEqual(sorted(answer), ['Location', 'Rotation'])
+        self.assertEqual(self.class_defaults.values('Engine.StaticMeshActor', ['Location', 'Rotation']), answer)
+        self.read_class_defaults.assert_called_once_with('Engine.StaticMeshActor', ['Location', 'Rotation'], WORK_ROOT, CLASS_SCRIPTS)
+
+    def test_a_failure_that_is_not_a_class_default_refusal_is_not_kept_and_the_next_ask_reads_again(self):
+        self.read_class_defaults.side_effect = [FormatError('Native package missing/ambiguous: Engine'),
+                                                [ClassDefaultValue('Location', dict(LOCATION_DEFAULT), 'class-default', 'Engine.StaticMeshActor')]]
+        with self.assertRaisesRegex(FormatError, 'Native package missing/ambiguous: Engine'):
+            self.class_defaults.values('Engine.StaticMeshActor', ['Location'])
+        self.assertEqual(self.class_defaults.values('Engine.StaticMeshActor', ['Location'])['Location'].value, LOCATION_DEFAULT)
+        self.assertEqual(self.read_class_defaults.call_count, 2)
 
     def test_two_class_default_readers_do_not_share_answers(self):
         self.class_defaults.values('Engine.StaticMeshActor', ['Location'])
