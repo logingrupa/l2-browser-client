@@ -203,6 +203,23 @@ class ConvertWindowTexturesTests(unittest.TestCase):
                 with self.assertRaisesRegex(ui_texture_step.UiTextureStepError, 'nativeTextureSource'):
                     self.convert()
 
+    def test_a_rerun_under_a_new_converter_replaces_its_stale_records_and_drops_the_record_of_a_reference_that_became_a_gap(self):
+        self.requests = ui_texture_step.ui_texture_requests([synthetic_manifest('SyntheticStatusWnd', [
+            'SyntheticUI.Status.Plate', 'SyntheticUI.Status.Broken'])], CENSUS, LOCK)
+        self.converter.failing_objects = set()
+        self.convert()
+        stale_records = json.loads((self.output_root / 'catalog.json').read_bytes())['textures']
+        self.converter.failing_objects = {'SyntheticUI.Status.Broken'}
+        self.converter.native_source_override = FORMAT_GAP_NATIVE_SOURCE
+        ledger = UnitLedger(lane_work_root(self.project_root, 'data-ui'), ui_texture_step.TEXTURES_STEP, ui_texture_step.UI_TEXTURE_ALGORITHM_VERSION)
+        result = ui_texture_step.convert_window_textures(self.project_root, 'SyntheticStatusWnd', self.requests, self.converter, ledger, self.output_root,
+                                                         converter_identity={'implementation': 'synthetic-next'}, field_bindings_document=FIELD_BINDINGS)
+        self.assertEqual((result['converted'], result['textureGaps']), (1, 1))
+        records = json.loads((self.output_root / 'catalog.json').read_bytes())['textures']
+        self.assertEqual([record['id'] for record in records], ['ui-texture:SyntheticUI.Status.Plate'])
+        [stale_plate] = [record for record in stale_records if record['id'] == 'ui-texture:SyntheticUI.Status.Plate']
+        self.assertNotEqual(records[0]['archiveSha256'], stale_plate['archiveSha256'])
+
     def test_a_raising_reference_alone_is_a_decode_failed_gap_row(self):
         self.requests = ui_texture_step.ui_texture_requests([synthetic_manifest('SyntheticStatusWnd', ['SyntheticUI.Status.Broken'])], CENSUS, LOCK)
         self.convert()

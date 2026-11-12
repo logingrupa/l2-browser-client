@@ -10,7 +10,8 @@ from hash_reference_client_tree import canonical_json_bytes
 from interface_layout_adapter import INTERFACE_XDAT_PATH
 from lane_unit_outcomes import DECODE_FAILED_REASON_PREFIX, lane_relative_path, replace_step_gap_row
 from native_assets_lib.texture_source_reader import TEXTURE_FORMAT_UNSUPPORTED_REASON_PREFIX, TEXTURE_LICENSEE_UNSUPPORTED_REASON_PREFIX
-from native_store.catalog_writer import add_store_file, merge_catalog_slice, read_store_catalog, write_store
+from actors.npc_store_records import catalog_with_records_replaced, catalog_without_records
+from native_store.catalog_writer import add_store_file, read_store_catalog, write_store
 from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN, read_gap_rows
 from native_store.store_paths import SHA256_PATTERN, STEP_NAME_PATTERN
 from reference_client_guard import ReferenceClientLockError
@@ -165,11 +166,16 @@ def convert_reference(request, converter):
             'nativeSourceGapReason': gap_reason}, (record, files)
 
 
-def write_texture_records(output_root, conversions, capacity):
+def write_texture_records(output_root, conversions, gap_references, capacity):
     catalog, before = read_store_catalog(output_root)
+    stale_gap_record_ids = {UI_TEXTURE_ID_PREFIX + reference for reference in gap_references} & {
+        record['id'] for record in catalog.get(TEXTURES_CATALOG_SLICE, [])}
+    if not conversions and not stale_gap_record_ids:
+        return []
+    catalog = catalog_without_records(catalog, TEXTURES_CATALOG_SLICE, stale_gap_record_ids)
+    catalog = catalog_with_records_replaced(catalog, TEXTURES_CATALOG_SLICE, [record for record, _ in conversions], capacity)
     store_files = {}
-    for record, files in conversions:
-        catalog = merge_catalog_slice(catalog, TEXTURES_CATALOG_SLICE, record, capacity)
+    for _, files in conversions:
         for relative, payload in files.items():
             add_store_file(store_files, relative, payload)
     catalog[TEXTURES_CATALOG_SLICE] = sorted(catalog[TEXTURES_CATALOG_SLICE], key=lambda record: record['id'])
@@ -226,7 +232,8 @@ def convert_window_textures(project_root, window_id, requests, converter, ledger
         return {'unit': unit_key, 'status': FAILED_STATUS, 'reason': f'{type(error).__name__}: {error}'}
     outcomes = [outcome for outcome, _ in converted_outcomes]
     conversions = [conversion for _, conversion in converted_outcomes if conversion is not None]
-    store_outputs = write_texture_records(output_root, conversions, len(requests['textures'])) if conversions else []
+    gap_references = [outcome['reference'] for outcome in outcomes if outcome['status'] == 'gap']
+    store_outputs = write_texture_records(output_root, conversions, gap_references, len(requests['textures']))
     outcomes_path = step_directory / TEXTURE_OUTCOMES_RECORD_NAME
     outcomes_bytes = canonical_json_bytes({'unit': unit_key, 'outcomes': outcomes})
     outcomes_path.write_bytes(outcomes_bytes)
