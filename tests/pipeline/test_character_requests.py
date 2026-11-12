@@ -156,7 +156,7 @@ class CharacterClassJoinTests(unittest.TestCase):
 
     def test_several_face_textures_leave_the_face_slot_unbound_instead_of_choosing_one(self):
         row = synthetic_chargrp_row(face_textures=('MFighter.Face_t00', 'MFighter.Face_t01'))
-        actor_class = joined_actor_class({'HeadBone': 'Bip01_head'})
+        actor_class = joined_actor_class({'HeadBone': 'Bip01_head', 'Mesh': {'class': 'SkeletalMesh', 'object': 'Fighter.Face_m000_f'}})
         generated = build_character_request(row, 0, actor_class, character_sources([row], read_class_definition=joined_class_reader(actor_class)))
         face = generated['request']['parts'][-1]
         self.assertEqual(face['materials'], [])
@@ -165,12 +165,26 @@ class CharacterClassJoinTests(unittest.TestCase):
         self.assertIn(f'The face mesh is chargrp Char/0/face_mesh/0, checked against the {JOINED_CLASS} Mesh default; its 2 face_texture entries '
                       'leave slot 0 unbound until a source selects one.', generated['request']['limitations'])
 
+    def test_the_face_takes_the_class_mesh_spelling_and_a_class_mesh_that_is_not_the_row_face_is_a_face_gap(self):
+        row = synthetic_chargrp_row()
+        for class_mesh, expected in (('fighter.FACE_m000_f', 'FACE_m000_f'), ('Fighter.Other_m000_f', None)):
+            with self.subTest(class_mesh=class_mesh):
+                actor_class = joined_actor_class({'HeadBone': 'Bip01_head', 'Mesh': {'class': 'SkeletalMesh', 'object': class_mesh}})
+                generated = build_character_request(row, 0, actor_class, character_sources([row], read_class_definition=joined_class_reader(actor_class)))
+                face = generated['request']['parts'][-1]
+                if expected:
+                    self.assertEqual((face['package'], face['object']), ('fighter', expected))
+                    self.assertEqual(face['sourceBinding']['meshPath'], ['Char', 0, 'face_mesh', 0, 'param_face_mesh'])
+                else:
+                    self.assertNotIn('rigidAttachment', face)
+                    self.assertIn({'field': 'face', 'reason': 'actor-default-unresolved:Mesh'}, generated['gaps'])
+
     def test_every_generated_table_binding_passes_the_converter_binding_check(self):
         from native_assets_lib.source_table_binding import verify_source_table_binding
         for face_textures in (('MFighter.Face_m000_t00_f',), ('MFighter.Face_t00', 'MFighter.Face_t01')):
             row = synthetic_chargrp_row(face_textures=face_textures)
             row['body_texture']['body_texture2'] = ''
-            actor_class = joined_actor_class({'HeadBone': 'Bip01_head'})
+            actor_class = joined_actor_class({'HeadBone': 'Bip01_head', 'Mesh': {'class': 'SkeletalMesh', 'object': 'Fighter.Face_m000_f'}})
             generated = build_character_request(row, 0, actor_class, character_sources([row], read_class_definition=joined_class_reader(actor_class)))
             decoded_table = {**synthetic_chargrp_table([row]), 'schema': {}, 'decodedSha256': 'a' * 64}
             for part in generated['request']['parts']:

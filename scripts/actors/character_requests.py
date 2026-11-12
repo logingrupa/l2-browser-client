@@ -102,6 +102,13 @@ def class_head_bone_reason(actor_class):
     return None if isinstance(head_bone, str) and head_bone else ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX + HEAD_BONE_FIELD
 
 
+def class_face_mesh_reason(actor_class, face_mesh):
+    class_mesh = actor_class['properties'].get(CLASS_MESH_FIELD)
+    class_mesh_object = class_mesh.get('object') if isinstance(class_mesh, dict) else None
+    matches = isinstance(class_mesh_object, str) and class_mesh_object.casefold() == face_mesh.casefold()
+    return None if matches else ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX + CLASS_MESH_FIELD
+
+
 def rigid_head_attachment(actor_class, mesh_path):
     return {'bone': actor_class['properties'][HEAD_BONE_FIELD],
             'source': {'class': actor_class['class'], 'packageSha256': actor_class['packageSha256'], 'bonePath': [HEAD_BONE_FIELD],
@@ -112,12 +119,13 @@ def face_part(chargrp_row, row_index, chargrp_table, actor_class):
     meshes = [entry[FACE_MESH_FIELD] for entry in chargrp_row[FACE_MESH_GROUP]]
     texture_entries = chargrp_row[FACE_TEXTURE_GROUP]
     reason = (NO_MESH_IN_ROW_REASON if len(meshes) != 1 or not meshes[0] else
-              unqualified_reference_reason(FACE_MESH_FIELD, meshes[0]) or class_head_bone_reason(actor_class))
+              unqualified_reference_reason(FACE_MESH_FIELD, meshes[0]) or class_head_bone_reason(actor_class)
+              or class_face_mesh_reason(actor_class, meshes[0]))
     if reason:
         return None, part_status(FACE_FIELD_NAME, GAP_STATUS, reason)
     single_texture = len(texture_entries) == 1
     texture = texture_entries[0][FACE_TEXTURE_FIELD] if single_texture else ''
-    part = table_mesh_part(meshes[0], texture, [CHARGRP_ROW_COLLECTION, row_index, FACE_MESH_GROUP, 0, FACE_MESH_FIELD],
+    part = table_mesh_part(actor_class['properties'][CLASS_MESH_FIELD]['object'], texture, [CHARGRP_ROW_COLLECTION, row_index, FACE_MESH_GROUP, 0, FACE_MESH_FIELD],
                            [CHARGRP_ROW_COLLECTION, row_index, FACE_TEXTURE_GROUP, 0, FACE_TEXTURE_FIELD] if single_texture else None,
                            chargrp_table)
     part['rigidAttachment'] = rigid_head_attachment(actor_class, [CLASS_MESH_FIELD])
