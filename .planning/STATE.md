@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 02-86-PLAN.md
-last_updated: "2026-11-12T17:27:14.689Z"
+stopped_at: Completed 02-87-PLAN.md
+last_updated: "2026-11-12T18:10:39.208Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 03 plan 03-01 complete (side-by-side check record writer and key content digest; Phase 3 start commit cb09cdc)
-state_head: 7641e2a4af9521ea376f95c752727b5e4da12fe1
+state_head: b61bcaac1af4e63ac694daa2623abb7c6c686397
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 131
-  completed_plans: 110
+  completed_plans: 111
   percent: 0
 ---
 
@@ -156,6 +156,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P83 | 34min | 3 tasks | 10 files |
 | Phase 2 P85 | 30min | 3 tasks | 6 files |
 | Phase 2 P86 | 1h 13m | 3 tasks | 17 files |
+| Phase 02 P87 | 31min | 3 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -419,6 +420,9 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 2]: 02-86: the surface-materials listing sits at native-materials/surface-materials-<sha>.json with a files map relative to native-materials/, so the lane merge walk copies graphs, programs and texture images as checked leaves (row 1042)
 - [Phase 2]: 02-86: material texture images live at native-materials/textures/<png sha256>/texture.png and every reviewed Texture node of a BSP or sky program pins its PNG (row 1043)
 - [Phase 2]: 02-86: the surface-materials path template in tile_manifest_validation.py and nativeTileManifest.ts is a lane confirmation of a small tested change (row 1044)
+- [Phase 02]: 02-87: every sandbox skill-cast runs createSkillCastPresentation and writes sandbox-skill-cast-note; startsStagedPowerStrike deleted, 3:1 goes the same path (rows 1055, 1056)
+- [Phase 02]: 02-87: wireSpawnedActorSounds (src/runtime) binds actor-sounds:<key> on adapter spawn once the clip hub lists clips; bindSpawnedActorSoundCues takes parsed clip events, one actors-lane foreign path (rows 1057 to 1060)
+- [Phase 02]: 02-87: the played-cue browser check uses npc:14663, the lowest of 591 of 5,175 npcs whose bundle binds a notify; npc:12077 binds none (row 1061)
 
 ### Pending Todos
 
@@ -555,6 +559,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-12T17:27:13.951Z
-Stopped at: Completed 02-86-PLAN.md
+Last session: 2026-11-12T18:10:38.464Z
+Stopped at: Completed 02-87-PLAN.md
 Resume file: None
