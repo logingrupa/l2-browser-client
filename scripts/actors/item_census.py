@@ -5,7 +5,7 @@ from actors.actor_unit_inventory import ARMOR_MESH_UNIT_KIND, WEAPON_MESH_UNIT_K
 from actors.item_conversion import ETCITEM_TABLE_NAME, ITEM_LANE_NAME, ITEMNAME_TABLE_NAME, ItemConversionRun, read_item_sources
 from actors.item_requests import (ARMORGRP_TABLE_NAME, ITEM_CENSUS_RELATIVE_PATH, ITEM_STEP, PASS_STATUS, PENDING_STATUS, WEAPONGRP_TABLE_NAME,
                                   grouped_item_status, item_gap_rows, ungrouped_item_reason)
-from actors.item_unit_workers import outcomes_converted_by_workers
+from actors.item_unit_workers import item_worker_run, outcomes_converted_by_workers
 from native_store.gap_rows import write_gap_rows
 from native_store.store_paths import lane_work_root
 
@@ -118,11 +118,15 @@ def item_units(run, item_id):
 
 def run_item_conversion(project_root, client_access, converter, output_root, decode_table, arguments, preflight):
     sources = read_item_sources(project_root, client_access.root, decode_table)
-    run = ItemConversionRun(project_root, client_access, converter, lane_work_root(project_root, ITEM_LANE_NAME), output_root, sources)
-    if arguments.batch == ITEM_BATCH_NAME:
-        outcomes = run_item_batch(run, arguments.limit, preflight)
-    else:
+    ledger_root = lane_work_root(project_root, ITEM_LANE_NAME)
+    run = ItemConversionRun(project_root, client_access, converter, ledger_root, output_root, sources)
+    if arguments.batch != ITEM_BATCH_NAME:
         outcomes = [run.convert(unit) for unit in item_units(run, arguments.item)]
         run.write_item_records(outcomes)
+    elif arguments.workers in (None, 1):
+        outcomes = run_item_batch(run, arguments.limit, preflight)
+    else:
+        outcomes = run_pooled_item_batch(run, arguments.limit, preflight, arguments.workers, item_worker_run,
+                                         (project_root, client_access.root, converter.output, converter.umodel, ledger_root, output_root))
     write_item_census_and_gap_rows(run, arguments.limit)
     return outcomes
