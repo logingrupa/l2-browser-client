@@ -62,8 +62,12 @@ async function walkAlongX(page: Page) {
     const distance = Math.hypot(player.authoritativePosition.x - origin.x, player.authoritativePosition.z - origin.z);
     return player.animation === "idle" ? distance : 0;
   };
-  await expect.poll(walkedMetres, { timeout: walkTimeout }).toBeGreaterThan(minimumWalkedMetres);
+  const walkSettled = await expect.poll(walkedMetres, { timeout: walkTimeout }).toBeGreaterThan(minimumWalkedMetres).then(() => true, () => false);
   const end = await localPlayer(page);
+  if (!walkSettled) {
+    throw new Error(`the local player did not walk more than ${minimumWalkedMetres} m and come to idle within ${walkTimeout} ms: animation ${end.animation}, `
+      + `position ${JSON.stringify(end.authoritativePosition)}, start ${JSON.stringify(origin)}`);
+  }
   expect(end.modelId).not.toBeNull();
   expect(end.missingAssetDiagnostic).toBeNull();
   return end.authoritativePosition;
@@ -73,8 +77,10 @@ async function walkTheTile(page: Page, tileRecord: TileCatalogRecord, screenshot
   const pageErrors: string[] = [];
   const world = await openTile(page, tileRecord, pageErrors);
   const end = await walkAlongX(page);
-  expect(end.y).toBeGreaterThanOrEqual(world.terrainBounds!.minimum[1]!);
-  expect(end.y).toBeLessThanOrEqual(world.terrainBounds!.maximum[1]!);
+  const terrainMinimumHeight = world.terrainBounds!.minimum[1]!;
+  const terrainMaximumHeight = world.terrainBounds!.maximum[1]!;
+  expect(end.y, `the walk ended at height ${end.y} m, below the terrain minimum ${terrainMinimumHeight} m`).toBeGreaterThanOrEqual(terrainMinimumHeight);
+  expect(end.y, `the walk ended at height ${end.y} m, above the terrain maximum ${terrainMaximumHeight} m`).toBeLessThanOrEqual(terrainMaximumHeight);
   await page.screenshot({ path: `test-results/${screenshotName}` });
   expect(pageErrors).toEqual([]);
 }
