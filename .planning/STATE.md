@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 02-78-PLAN.md
-last_updated: "2026-11-12T00:58:26.431Z"
+stopped_at: Completed 02-79-PLAN.md
+last_updated: "2026-11-12T10:53:16.550Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 03 plan 03-01 complete (side-by-side check record writer and key content digest; Phase 3 start commit cb09cdc)
-state_head: 8b4d3b6acf5cfc927382361fd6d736b833a88d5b
+state_head: c02e28569913cc6b4867b4feaab1e71f349f5bee
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 131
-  completed_plans: 106
+  completed_plans: 107
   percent: 0
 ---
 
@@ -152,6 +152,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P92 | 25min | 3 tasks | 24 files |
 | Phase 02 P94 | 30min | 2 tasks | 11 files |
 | Phase 02 P78 | 7h 31m | 3 tasks | 11 files |
+| Phase 02 P79 | 9h 52m | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -408,6 +409,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-78: an NPC whose npcgrp sound columns are all empty seals an npc-names-no-sound unit with no combatAudio record (row 1020)
 - [Phase 02]: 02-78: npc:21622 stays pending in the actors lane until the restage and the 03-11 key index fix P816 (row 1021)
 - [Phase 02]: 02-78: the remaining NPC sound bundles ran as one slice of 4,077 (row 1022)
+- [Phase 02]: 02-79: the item model record shape stays; measured union projection 25,710,689 of 33,554,432 bytes, final 22,227,730 (row 1023)
 
 ### Pending Todos
 
@@ -508,8 +510,7 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 - BSP visibility overlap review (DEC-OWN-12, 02-63, row 631): the bsp-visibility area reports 290 blocking and 3,521 unreviewed reviewer runs on the new walk code (report `artifacts/reference-overlap/02-63-bsp-visibility.json`); independent review before the push. The culling sheet switch reads `NativeSection.tileVisibility` in 02-67 (row 630); translucent index rewriting is proven on the unit fixture only, since no converted tile holds a translucent BSP section.
 - Movement overlap review (DEC-OWN-12, 02-48 and 02-65, row 638): the movement area reported 108 blocking and 1,732 unreviewed runs in the collision world code (02-48), and now 83 blocking and 2,727 unreviewed runs in the 02-65 trace and MoveActor code (local report `artifacts/plan-starts/02-65-reference-overlap-movement.json`); independent review before the push.
 - World evidence size (found in 02-65, row 640): `tests/unit/laneOwnership.test.ts` fails because `docs/parts/world/EVIDENCE.md` is 30,917 bytes after 02-63, over the 30 KB limit; the world part trims it, which makes `pnpm test:unit` green again.
-- Item breadth (02-42, rows 603 to 614): 102 of 2,969 convertible item units are sealed and 1,546 items pending; continue `convert_actors.py --batch items --limit 50` slices, rewrite the actors lane catalog and run an items sweep slice after each.
-- Item catalog size (02-42): an item model record is about 3.6 KB, so all item records would pass the 32 MB catalog limit; share the limitations text per archive or move item records into a pinned manifest before the batch finishes.
+- Lane catalog plan memory (02-79): `write_lane_catalog.py --plan` reads every pinned store file into memory (29.7 GB working set on the actors lane after the item batch); one run reported `pinned store file SHA-256 differs from its pin 9e1c2f79...: 9e1c2f79.../asset.l2asset` although the file bytes match the pin, and the next run passed; hash pinned files with a streaming digest so memory stays bounded and a repeat mismatch is a real one.
 - Particle overlap review (DEC-OWN-12, 02-69, row 654): the particles area reports 547 blocking and 2,552 unreviewed reviewer runs and 4 stale sign-offs (report `artifacts/reference-overlap/02-69-particles.json`); 479 blocking runs are the GLSL line array of `particleMaterialBinding.ts`, and the ribbon Hermite basis line in `ribbonEmitter.ts` matches the reference cubic point at 88 tokens. The independent reviewers check them and refresh the sign-offs.
 - Library exports (02-69, rows 653 and 692): `src/materials/ue2/babylon/material.ts` re-exports `FOG_DISABLED`, the fog evaluator and `loadNativeMaterial` since 02-64; `particleMaterialBinding.ts` and `NativeActor.ts` (actors lane) still import them from `model/fog` and `babylon/loadNativeMaterial` and move to material.ts. `src/materials/ue2/model/constants/blendConstants.ts` provenance still cites the deleted `src/effects/nativeEffectMaterial.ts:152`; the shipped pairs now live only in its own runtimeDefault.
 - Library skinning (02-69, row 652): the library vertex stage has no bone influence, so skinned skeletal slots keep their converted texture material (`library-vertex-stage-unskinned`); integration adds skinning to `createNativeMaterial`, and the actor converter writes `nativeMaterialProgram` per slot so slots bind through the library.
@@ -536,6 +537,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-12T00:58:25.591Z
-Stopped at: Completed 02-78-PLAN.md
+Last session: 2026-11-12T10:53:15.499Z
+Stopped at: Completed 02-79-PLAN.md
 Resume file: None
