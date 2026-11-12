@@ -146,6 +146,16 @@ class ItemConversionRun:
         sealed_outcomes = self.sealed_outcomes_by_unit_key()
         if unit['unitKey'] in sealed_outcomes:
             return sealed_outcomes[unit['unitKey']]
+        outcome = self.convert_unsealed_unit(unit)
+        self.add_sealed_outcome_of_converted_unit(unit, outcome)
+        return outcome
+
+    def add_sealed_outcome_of_converted_unit(self, unit, outcome):
+        if outcome['status'] == FAILED_STATUS:
+            return
+        self.sealed_outcomes_by_unit_key()[unit['unitKey']] = self.receipt_outcome(unit, self.ledger.sealed_receipt(unit['unitKey']))
+
+    def convert_unsealed_unit(self, unit):
         inputs, config, fingerprint = self.unit_work(unit)
         step_directory = self.ledger.begin(unit['unitKey'], fingerprint)
         try:
@@ -161,7 +171,6 @@ class ItemConversionRun:
         gap_rows = [{**item_gap_row(unit['firstItemId'], GAP_STATUS, reason, self.sources.identities[self.item_table_of(unit)]),
                      'evidence': evidence}] if reason else []
         self.ledger.seal(unit['unitKey'], fingerprint, {'config': config, 'inputs': inputs, 'outputs': outputs, 'gapRows': gap_rows})
-        sealed_outcomes[unit['unitKey']] = self.receipt_outcome(unit, self.ledger.sealed_receipt(unit['unitKey']))
         return self.outcome(unit, GAP_STATUS if reason else PASS_STATUS, reason, False, outputs)
 
     def write_item_records(self, outcomes):
