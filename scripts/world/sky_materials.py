@@ -9,17 +9,16 @@ from PIL import DdsImagePlugin, Image
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib.material_graph import read_material_graph
 from native_assets_lib.material_program import derive_material_program, read_material_class_defaults
-from native_assets_lib.material_resources import write_native_material_resources
 from native_assets_lib.texture_dds import UnsupportedTextureDDS, build_texture_dds
 from native_assets_lib.texture_mips import UnsupportedTextureSource, build_texture_source
 from native_assets_lib.texture_source_reader import TEXTURE_FORMAT_UNSUPPORTED_REASON_PREFIX
 from native_catalog.ue2 import FormatError
 from world.bsp_reader_binding import pinned_bytes
+from world.material_texture_images import TEXTURE_CLASS, material_texture_image_pins, reviewed_texture_nodes
 
 PINNED_PILLOW_VERSION = '12.3.0'
 DDS_PLUGIN_SHA256 = 'eae2016bb3476be917ff549086c18b89d8e911d0f6d3f0900486a90fe2808cac'
 IMAGING_BINARY_SHA256 = 'c8c519ec72bf75b2945b4fc4afa854af2fca8b970a403134f9ddda3e164d85e9'
-TEXTURE_CLASS = 'Engine.Texture'
 OBJECT_PROPERTY_IMPORT_TARGET = 'import'
 SKY_MATERIAL_EXTERNAL_REASON_PREFIX = 'sky-material-external:'
 SKY_TEXTURE_FORMAT_UNSUPPORTED_REASON_PREFIX = 'sky-texture-format-unsupported:'
@@ -55,14 +54,9 @@ def read_sky_material_graph(package, root_exports):
     return graphs
 
 
-def sky_material_program(graph, class_work_root, class_scripts):
-    return derive_material_program(graph, read_material_class_defaults(graph, class_work_root, class_scripts))
-
-
-def write_sky_material_program(store_root, graph, program):
-    written = write_native_material_resources(store_root, graph, program)
-    program_file = next(record for record in written['files'] if record['path'].endswith('program.json'))
-    return {'directory': written['directory'], 'programSha256': program_file['sha256']}, written['files']
+def sky_material_program(graph, class_work_root, class_scripts, pngs_by_node):
+    return derive_material_program(graph, read_material_class_defaults(graph, class_work_root, class_scripts),
+                                   texture_images=material_texture_image_pins(pngs_by_node))
 
 
 def graph_texture_exports(package, graph):
@@ -120,3 +114,17 @@ def sky_texture_products(package, texture_export):
                'dds': {'file': f'{name}.dds', 'sha256': sha256_hex(dds)}, 'decodedRgbaSha256': sha256_hex(image.tobytes()),
                'decoder': {'pillow': PIL.__version__, 'ddsPluginSha256': DDS_PLUGIN_SHA256, 'imagingBinarySha256': IMAGING_BINARY_SHA256}}
     return receipt, files
+
+
+def sky_texture_products_by_node(package, graph):
+    products, gap_reasons = {}, []
+    for node in reviewed_texture_nodes(graph):
+        try:
+            products[node['object']] = sky_texture_products(package, package.exports[node['exportIndex'] - 1])
+        except SkyTextureUnsupported as error:
+            gap_reasons.append(error.reason)
+    return products, gap_reasons
+
+
+def sky_texture_pngs_by_node(products):
+    return {node: files[receipt['png']['file']] for node, (receipt, files) in products.items()}

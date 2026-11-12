@@ -134,7 +134,7 @@ class SkyMaterialTests(unittest.TestCase):
 
 class SkyStepRecordTests(unittest.TestCase):
     def test_the_step_name_version_reasons_and_vocabulary_kind_are_registered(self):
-        self.assertEqual((SKY_STEP_NAME, SKY_STEP_ALGORITHM_VERSION), ('sky', 1))
+        self.assertEqual((SKY_STEP_NAME, SKY_STEP_ALGORITHM_VERSION), ('sky', 2))
         self.assertIn('sky', load_tile_manifest_vocabulary(ROOT).resource_kinds)
         patterns = load_gap_reason_patterns(ROOT)
         for reason in ('sky-zone-ambiguous:2', 'sky-material-external:Other_T', 'sky-texture-format-unsupported:0', 'sky-material-texture-count:2'):

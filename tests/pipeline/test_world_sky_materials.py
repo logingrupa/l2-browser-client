@@ -1,16 +1,22 @@
+import hashlib
 from pathlib import Path
 import struct
 import sys
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
+from native_assets_lib.material_graph import read_material_graph
+from native_assets_lib.material_resources import write_material_program_record
 from native_assets_lib.texture_package_118 import PACKAGE_118_LICENSEE, PACKAGE_118_VERSION, UnrealPackage118, read_unreal_package
 from native_catalog.ue2 import FormatError, Package
 from native_store.gap_rows import is_listed_reason, load_gap_reason_patterns
 from ue2_package_fixture import compact, package_bytes, tag
-from world.sky_materials import SkyTextureUnsupported, native_texture_source
+from world import sky_materials, sky_step
+from world.sky_materials import SkyTextureUnsupported, native_texture_source, sky_material_program, sky_texture_pngs_by_node, \
+    sky_texture_products_by_node
 
 SKY_PACKAGE_FILENAME = 'Sky_T.utx'
 PACKAGE_VERSION_OFFSET = 4
@@ -123,6 +129,38 @@ class SkyTexture118Tests(unittest.TestCase):
         with self.assertRaises(SkyTextureUnsupported) as caught:
             texture_118_source(package_118_bytes(format_id=UNREVIEWED_FORMAT))
         self.assertEqual(caught.exception.reason, f'sky-texture-format-unsupported:{UNREVIEWED_FORMAT}')
+
+
+class SkyProgramTextureImageTests(unittest.TestCase):
+    texture_declarations = {'Engine.Texture': [{'field': 'USize', 'declaredType': 'int', 'declaringClass': 'Engine.Texture', 'enumMembers': None,
+                                                'classDefault': {'field': 'USize', 'value': None, 'provenance': 'ue-zero',
+                                                                 'declaringClass': 'Engine.Texture'}}]}
+
+    def texture_root_program(self, data):
+        package = read_unreal_package(data, SKY_PACKAGE_FILENAME)
+        graph = read_material_graph(package, package.exports[0])
+        products, gap_reasons = sky_texture_products_by_node(package, graph)
+        with patch.object(sky_materials, 'read_material_class_defaults', return_value=self.texture_declarations):
+            program = sky_material_program(graph, None, None, sky_texture_pngs_by_node(products))
+        return program, products, gap_reasons
+
+    def test_the_sky_program_pins_the_png_of_the_sky_texture_the_step_converts(self):
+        program, products, gap_reasons = self.texture_root_program(package_118_bytes())
+        receipt, files = products['Sky_T.Haze']
+        png = files[receipt['png']['file']]
+        png_sha256 = hashlib.sha256(png).hexdigest()
+        self.assertEqual(gap_reasons, [])
+        self.assertEqual([node['image'] for node in program['nodes']],
+                         [{'path': f'/l2/native-materials/textures/{png_sha256}/texture.png', 'sha256': png_sha256, 'bytes': len(png)}])
+
+    def test_a_sky_texture_the_library_refuses_keeps_a_null_image_and_its_gap_reason(self):
+        program, products, gap_reasons = self.texture_root_program(package_118_bytes(format_id=UNREVIEWED_FORMAT))
+        self.assertEqual((products, gap_reasons), ({}, [f'sky-texture-format-unsupported:{UNREVIEWED_FORMAT}']))
+        self.assertEqual([node['image'] for node in program['nodes']], [None])
+
+    def test_the_sky_step_writes_its_programs_through_the_one_program_record_writer(self):
+        self.assertFalse(hasattr(sky_materials, 'write_sky_material_program'))
+        self.assertIs(sky_step.write_material_program_record, write_material_program_record)
 
 
 if __name__ == '__main__':

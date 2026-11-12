@@ -4,6 +4,7 @@ from typing import NamedTuple
 
 from native_assets_lib.class_defaults import ReferenceClientClassScripts
 from native_assets_lib.gltf import json_bytes
+from native_assets_lib.material_resources import write_material_program_record
 from native_assets_lib.texture_package_118 import read_unreal_package
 from native_catalog.ue2 import FormatError
 from native_store.catalog_writer import sha256_hex
@@ -17,8 +18,9 @@ from world.map_sources import MapSources, require_lock_equal_client_path
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
 from world.sky_geometry import SKY_COORDINATE_RULE, SKY_UV_RULE, SkyRootSurface, build_sky_glb, build_sky_zone_parts, sky_root_translation_metres, \
     sky_zone_material_identities
-from world.sky_materials import SkyTextureUnsupported, read_sky_material_graph, single_graph_texture_export, sky_material_program, sky_texture_products, \
-    write_sky_material_program
+from world.material_texture_images import write_material_texture_images
+from world.sky_materials import SkyTextureUnsupported, read_sky_material_graph, single_graph_texture_export, sky_material_program, \
+    sky_texture_pngs_by_node, sky_texture_products_by_node
 from world.static_mesh_step import conversion_failure_reason
 from world.static_placement import ClassDefaults
 from world.static_placement_plan import FAILED_STATUS
@@ -28,7 +30,7 @@ from world.tile_chunk_plan import raw_unit_fingerprint, read_locked_map_package
 from world.tile_json_resource import BUNDLE_MANIFEST_NAME, write_tile_resource_bundle
 from world.tile_step_gap_rows import TileStepGapRows, tile_step_summary_row
 
-SKY_STEP_ALGORITHM_VERSION = 1
+SKY_STEP_ALGORITHM_VERSION = 2
 SKY_STEP_NAME = 'sky'
 SKY_PRODUCT_NAME = 'sky.json'
 SKY_BUNDLE_KIND = 'native-sky-source-bundle'
@@ -78,7 +80,7 @@ class SkyMaterialPackages:
 class TileSkyConversion(NamedTuple):
     files: dict | None
     counts: dict | None
-    material_outputs: list
+    material_files: list
     package_paths: list
 
 
@@ -138,7 +140,7 @@ class SkyRootConversion:
     def __init__(self, client, store_root, class_work_root, gaps):
         self.packages, self.store_root, self.gaps = SkyMaterialPackages(client), store_root, gaps
         self.class_work_root, self.class_scripts = class_work_root, ReferenceClientClassScripts(client)
-        self.texture_files, self.store_outputs, self.materials = {}, [], []
+        self.texture_files, self.material_files, self.materials = {}, {}, []
 
     def add_texture_files(self, files):
         for name, payload in files.items():
@@ -150,15 +152,17 @@ class SkyRootConversion:
         try:
             package, root_export = self.packages.resolve(identity)
             [material] = read_sky_material_graph(package, [root_export])
-            program = sky_material_program(material.graph, self.class_work_root, self.class_scripts)
-            program_record, outputs = write_sky_material_program(self.store_root, material.graph, program)
+            products, texture_gap_reasons = sky_texture_products_by_node(package, material.graph)
+            pngs_by_node = sky_texture_pngs_by_node(products)
+            program = sky_material_program(material.graph, self.class_work_root, self.class_scripts, pngs_by_node)
+            program_record, program_files = write_material_program_record(self.store_root, material.graph, program)
+            image_files = write_material_texture_images(self.store_root, pngs_by_node)
         except (FormatError, ValueError) as error:
             self.gaps.add(FAILED_STATUS, conversion_failure_reason(error), identity)
             return None
-        self.store_outputs.extend({**record, 'path': (self.store_root / record['path']).relative_to(self.store_root.parent).as_posix()}
-                                  for record in outputs)
+        self.material_files.update((record['path'], record) for record in [*program_files, *image_files])
         self.materials.append({'mapReference': identity, 'root': root_export['object'], 'program': program_record, 'gapReasons': material.gap_reasons})
-        for reason in material.gap_reasons:
+        for reason in [*material.gap_reasons, *texture_gap_reasons]:
             self.gaps.add(GAP_STATUS, reason, root_export['object'])
         root_node = next(node for node in material.graph['nodes'] if node['exportIndex'] == root_export['exportIndex'])
         fields = root_presentation_fields(program)
@@ -168,10 +172,13 @@ class SkyRootConversion:
                 self.gaps.add(GAP_STATUS, field_gap, root_export['object'])
             return None
         try:
-            receipt, files = sky_texture_products(package, single_graph_texture_export(package, material.graph))
+            drawn_texture = single_graph_texture_export(package, material.graph)
         except SkyTextureUnsupported as error:
             self.gaps.add(GAP_STATUS, error.reason, root_export['object'])
             return None
+        if drawn_texture['object'] not in products:
+            return None
+        receipt, files = products[drawn_texture['object']]
         self.add_texture_files(files)
         return SkyRootSurface(root_export['object'], identity, list(bytes.fromhex(fields['Color']['value']['rawHex'])), fields['AlphaBlend']['value'],
                               alpha_source(fields['AlphaBlend']), fields['RenderTwoSided']['value'], receipt)
@@ -222,12 +229,13 @@ def convert_tile_sky(project_root, client, tile_id, lock_record, package, level,
     conversion = SkyRootConversion(client, lane_store_root(project_root, WORLD_LANE_NAME), lane_work_root(project_root, WORLD_LANE_NAME), gaps)
     roots = [root for identity in sky_zone_material_identities(package, level.model, zone_index) if (root := conversion.convert(identity)) is not None]
     package_paths = sorted(conversion.packages.packages)
+    material_files = [conversion.material_files[path] for path in sorted(conversion.material_files)]
     if not roots:
-        return TileSkyConversion(None, None, conversion.store_outputs, package_paths)
+        return TileSkyConversion(None, None, material_files, package_paths)
     parts = build_sky_zone_parts(package, level.model, zone_index, roots)
     snapshot = sky_snapshot(tile_id, level, zone_index, sky_actor, location, actor_properties_record, parts, conversion.materials, lock_record)
     files, counts = sky_bundle_files(snapshot, conversion.texture_files)
-    return TileSkyConversion(files, counts, conversion.store_outputs, package_paths)
+    return TileSkyConversion(files, counts, material_files, package_paths)
 
 
 def run_sky_step(project_root, client_root, tile_id):
@@ -260,13 +268,15 @@ def run_sky_step(project_root, client_root, tile_id):
     gap_rows = gaps.rows()
     products_directory = ledger.begin(unit_key, fingerprint) / PRODUCTS_FOLDER_NAME
     products_directory.mkdir()
-    manifest_record, bundle_outputs = (None, []) if converted.files is None else \
-        write_tile_resource_bundle(lane_store_root(project_root, WORLD_LANE_NAME), SKY_STORE_FOLDER, converted.files)
-    product = {'tileId': tile_id, 'skyZones': sky_zones, 'manifest': manifest_record, 'counts': converted.counts, 'gapRows': gap_rows}
+    store_root = lane_store_root(project_root, WORLD_LANE_NAME)
+    manifest_record, bundle_outputs = (None, []) if converted.files is None else write_tile_resource_bundle(store_root, SKY_STORE_FOLDER, converted.files)
+    material_outputs = [{**record, 'path': (store_root / record['path']).relative_to(store_root.parent).as_posix()} for record in converted.material_files]
+    product = {'tileId': tile_id, 'skyZones': sky_zones, 'manifest': manifest_record, 'counts': converted.counts,
+               'materialFiles': converted.material_files, 'gapRows': gap_rows}
     product_payload = json_bytes(product)
     product_path = products_directory / SKY_PRODUCT_NAME
     product_path.write_bytes(product_payload)
-    outputs_by_path = {record['path']: record for record in [*bundle_outputs, *converted.material_outputs]}
+    outputs_by_path = {record['path']: record for record in [*bundle_outputs, *material_outputs]}
     outputs = [*(outputs_by_path[output_path] for output_path in sorted(outputs_by_path)),
                {'path': product_path.relative_to(ledger.lane_folder).as_posix(), 'sha256': sha256_hex(product_payload), 'bytes': len(product_payload)}]
     ledger.seal(unit_key, fingerprint, {'config': config, 'inputs': inputs, 'outputs': outputs, 'gapRows': gap_rows})

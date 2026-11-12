@@ -22,7 +22,6 @@ from native_store.gap_rows import SEED_GAP_REASONS_PATH, load_gap_reason_pattern
 from native_store.store_paths import ConverterOutputRefusedError
 from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, require_reference_client
 from synthetic_class_scripts import SyntheticClassScripts, scratch_work_root
-from world.sky_materials import write_sky_material_program
 
 CONVERSION_CLIENT_ROOT = Path('E:/Lineage2-client')
 MAIN_FIXTURE = 'shader-combiner-panner-texture.json'
@@ -281,7 +280,7 @@ class MaterialResourceWriterTests(unittest.TestCase):
         with self.assertRaisesRegex(MaterialResourceError, 'another graph'):
             write_native_material_resources(output_root, graph, {**program, 'graphSha256': '0' * 64})
 
-    def test_program_record_writer_returns_the_directory_and_program_pin_the_world_steps_write_today(self):
+    def test_program_record_writer_returns_the_directory_and_program_pin_with_the_written_files(self):
         _, graph = graph_of(MAIN_FIXTURE, 'SkyShader')
         program = derive_material_program(graph, SYNTHETIC_CLASS_DEFAULTS)
         output_root = scratch_work_root(self, 'material-program-record-') / 'l2'
@@ -290,7 +289,6 @@ class MaterialResourceWriterTests(unittest.TestCase):
         self.assertEqual(record, {'directory': 'native-materials/' + hashlib.sha256(program_bytes).hexdigest(),
                                   'programSha256': hashlib.sha256(program_bytes).hexdigest()})
         self.assertEqual(files, write_native_material_resources(output_root, graph, program)['files'])
-        self.assertEqual(write_sky_material_program(output_root, graph, program), (record, files))
         with self.assertRaises(ConverterOutputRefusedError):
             write_material_program_record(ROOT / 'public' / 'l2', graph, program)
 
