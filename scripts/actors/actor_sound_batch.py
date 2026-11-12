@@ -4,17 +4,21 @@ import json
 import re
 from pathlib import Path
 
-from actors.actor_sound_bindings import (NO_EXACT_SKILL_SOUND_ROW_REASON, NPC_NAMES_NO_SOUND_REASON, actor_sound_reference_counts,
-                                         skill_actor_row)
-from actors.actor_sound_conversion import ActorSoundConversionRun, NoSoundBundle, combat_audio_manifest_outputs
+from actors.actor_sound_bindings import (ACTOR_SOUND_STEP, NO_EXACT_SKILL_SOUND_ROW_REASON, NPC_NAMES_NO_SOUND_REASON, actor_sound_bundle_id,
+                                         actor_sound_reference_counts, skill_actor_row)
+from actors.actor_sound_conversion import (ACTOR_SOUND_GAP_ROWS_RELATIVE_PATH, ActorSoundConversionRun, NoSoundBundle, bundle_store_state,
+                                           combat_audio_manifest_outputs)
 from actors.character_census import CHARACTER_CENSUS_RELATIVE_PATH, CHARACTER_CENSUS_SCHEMA_VERSION, PENDING_STATUS
 from actors.character_requests import GAP_STATUS
 from actors.combat_role_routes import (COMBAT_ROLE_ROUTE_PROOF, bind_combat_role_routes, combat_route_config_manifest)
+from actors.npc_store_records import catalog_with_records_replaced, catalog_without_records
 from actors.skill_binding_table import DecodedSkillTables
 from native_assets_lib.footstep_config import decode_config
+from native_assets_lib.gltf import json_bytes
 from native_assets_lib.sha256_identity import sha256_hex_digest
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import read_pinned_file, read_store_catalog, replace_file, require_file_pin
+from native_store.catalog_writer import read_pinned_file, read_store_catalog, replace_file, require_file_pin, write_store
+from native_store.gap_rows import gap_reason_list_versions, load_gap_reason_patterns, sorted_gap_rows, validate_gap_row
 from reference_client_guard import ReferenceClientLockError
 
 ACTOR_SOUND_CENSUS_RELATIVE_PATH = 'docs/parts/audio/actor-sound-census.json'
@@ -79,6 +83,44 @@ def bundle_sort_key(bundle_key):
     return BUNDLE_KIND_ORDER.index(kind), [int(part) for part in rest.split(':')]
 
 
+def write_bundle_catalog_records(store_root, converted_states, skipped_sealed_states, catalog_capacity):
+    catalog, before = read_store_catalog(store_root)
+    catalog_records_by_id = {record.get('id'): record for record in catalog.get('combatAudio', [])}
+    replaced_records = [state.combat_audio_record for state in converted_states.values() if state.combat_audio_record is not None]
+    replaced_records += [state.combat_audio_record for state in skipped_sealed_states.values() if state.combat_audio_record is not None
+                         and catalog_records_by_id.get(state.combat_audio_record['id']) != state.combat_audio_record]
+    removed_ids = {actor_sound_bundle_id(bundle_key) for bundle_key, state in converted_states.items() if state.combat_audio_record is None}
+    removed_ids |= {actor_sound_bundle_id(bundle_key) for bundle_key, state in skipped_sealed_states.items()
+                    if state.combat_audio_record is None and actor_sound_bundle_id(bundle_key) in catalog_records_by_id}
+    synchronized_catalog = catalog_with_records_replaced(catalog_without_records(catalog, 'combatAudio', removed_ids), 'combatAudio',
+                                                         replaced_records, catalog_capacity)
+    if replaced_records:
+        synchronized_catalog['combatAudio'] = sorted(synchronized_catalog['combatAudio'], key=lambda record: record['id'])
+    if replaced_records or synchronized_catalog != catalog:
+        write_store(store_root, {}, before, json_bytes(synchronized_catalog))
+
+
+def write_bundle_gap_rows(lane_folder, lane_name, converted_states, skipped_sealed_states):
+    path = lane_folder / ACTOR_SOUND_GAP_ROWS_RELATIVE_PATH
+    file_rows = json.loads(path.read_bytes())['rows'] if path.is_file() else []
+    file_rows_by_key = {}
+    for row in file_rows:
+        file_rows_by_key.setdefault(row['key'], []).append(row)
+    restored_states = {bundle_key: state for bundle_key, state in skipped_sealed_states.items()
+                       if file_rows_by_key.get(bundle_key, []) != state.gap_rows}
+    written_states = {**converted_states, **restored_states}
+    if not written_states:
+        return
+    merged_rows = [row for row in file_rows if row['key'] not in written_states]
+    merged_rows += [row for state in written_states.values() for row in state.gap_rows]
+    reason_patterns = load_gap_reason_patterns()
+    for row in merged_rows:
+        validate_gap_row(row, reason_patterns)
+    document = {'schemaVersion': 1, 'lane': lane_name, 'step': ACTOR_SOUND_STEP, 'reasonListVersions': gap_reason_list_versions(),
+                'rows': sorted_gap_rows(merged_rows)}
+    replace_file(path, canonical_json_bytes(document))
+
+
 class ActorSoundBundles:
     def __init__(self, project_root, store_root):
         catalog, _ = read_store_catalog(store_root)
@@ -120,28 +162,40 @@ class ActorSoundBundles:
         return NoSoundBundle(bundle_key, NO_EXACT_SKILL_SOUND_ROW_REASON, self.sound_table_identity(),
                              {'skillBinding': {field: skill_binding[field] for field in NO_SOUND_ROW_BINDING_FIELDS}})
 
-    def is_sealed(self, run, bundle_key):
+    def sealed_store_state(self, run, bundle_key):
         no_sound_bundle = self.no_sound_bundle(run, bundle_key)
         if no_sound_bundle is not None:
-            return run.is_no_sound_bundle_sealed(no_sound_bundle)
-        return run.is_bundle_sealed(bundle_key, self.actor_rows(run, bundle_key))
+            receipt = run.sealed_no_sound_bundle_receipt(no_sound_bundle)
+        else:
+            receipt = run.sealed_bundle_receipt(bundle_key, self.actor_rows(run, bundle_key))
+        return None if receipt is None else bundle_store_state(bundle_key, receipt)
 
     def convert(self, run, bundle_key):
         no_sound_bundle = self.no_sound_bundle(run, bundle_key)
         if no_sound_bundle is not None:
-            return run.convert_no_sound_bundle(no_sound_bundle, self.capacity())
-        return run.convert_bundle(bundle_key, self.actor_rows(run, bundle_key), self.capacity())
+            return run.convert_no_sound_bundle(no_sound_bundle)
+        return run.convert_bundle(bundle_key, self.actor_rows(run, bundle_key))
+
+    def synchronize_store(self, run, converted_states, skipped_sealed_states):
+        write_bundle_catalog_records(run.store_root, converted_states, skipped_sealed_states, self.capacity())
+        write_bundle_gap_rows(run.lane_folder, run.bundle_ledger.lane_name, converted_states, skipped_sealed_states)
 
 
 def run_actor_sound_slice(run, bundles, limit, preflight):
-    outcomes = []
-    for bundle_key in bundles.keys:
-        if len(outcomes) == limit:
-            break
-        if bundles.is_sealed(run, bundle_key):
-            continue
-        preflight()
-        outcomes.append(bundles.convert(run, bundle_key))
+    outcomes, converted_states, skipped_sealed_states = [], {}, {}
+    try:
+        for bundle_key in bundles.keys:
+            if len(outcomes) == limit:
+                break
+            sealed_state = bundles.sealed_store_state(run, bundle_key)
+            if sealed_state is not None:
+                skipped_sealed_states[bundle_key] = sealed_state
+                continue
+            preflight()
+            outcome, converted_states[bundle_key] = bundles.convert(run, bundle_key)
+            outcomes.append(outcome)
+    finally:
+        bundles.synchronize_store(run, converted_states, skipped_sealed_states)
     return outcomes
 
 
@@ -227,7 +281,12 @@ def printed_actor_sound_outcome(outcome):
 def run_actor_sound_conversion(project_root, client_access, converter, store_root, work_root, decode_table, bundle_key, limit, preflight):
     run = ActorSoundConversionRun(project_root, client_access, converter, store_root, work_root, decode_table)
     bundles = ActorSoundBundles(project_root, store_root)
-    outcomes = run_actor_sound_slice(run, bundles, limit, preflight) if bundle_key is None else [bundles.convert(run, bundle_key)]
+    if bundle_key is None:
+        outcomes = run_actor_sound_slice(run, bundles, limit, preflight)
+    else:
+        outcome, store_state = bundles.convert(run, bundle_key)
+        bundles.synchronize_store(run, {bundle_key: store_state}, {})
+        outcomes = [outcome]
     for outcome in outcomes:
         print(json.dumps(printed_actor_sound_outcome(outcome), sort_keys=True), flush=True)
     census = write_actor_sound_census(run, bundles)

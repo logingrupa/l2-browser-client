@@ -21,7 +21,7 @@ from native_catalog.effects import UELIB_SHA256, SourcePackages, skill_actions
 from native_catalog.ue2 import FormatError
 from native_effect_bundle import MAX_CLASSES, migrate_effect_bundle
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import add_store_file, merge_catalog_slice, read_store_catalog, write_store
+from native_store.catalog_writer import add_store_file, merge_catalog_slice_records, read_store_catalog, write_store
 from native_store.gap_rows import write_gap_rows
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from reference_client_guard import ReferenceClientLockError
@@ -243,15 +243,16 @@ class SkillEffectConversionRun:
         catalog, before = read_store_catalog(self.store_root)
         catalog['effectComponents'] = [record for record in catalog.get('effectComponents', [])
                                        if not str(record.get('bundleId', '')).startswith(SKILL_ROOT_BUNDLE_ID_PREFIX)]
-        files = {}
+        files, records = {}, []
         for visual_root, outcome in sorted(root_outcomes.items()):
             if not outcome['converted']:
                 continue
             staged_root = self.ledger.unit_step_directory(skill_root_key(visual_root)) / STAGED_EFFECTS_FOLDER / outcome['manifestSha256']
             add_staged_effect_store_files(files, staged_root, outcome['manifestSha256'])
-            for binding in self.bindings_by_root[visual_root]:
-                record = skill_effect_component_record(binding['skillId'], binding['level'], visual_root, outcome['manifestSha256'])
-                catalog = merge_catalog_slice(catalog, 'effectComponents', record, len(self.tables.binding_rows))
+            records += [skill_effect_component_record(binding['skillId'], binding['level'], visual_root, outcome['manifestSha256'])
+                        for binding in self.bindings_by_root[visual_root]]
+        if records:
+            catalog = merge_catalog_slice_records(catalog, 'effectComponents', records, len(self.tables.binding_rows))
         catalog['effectComponents'] = sorted(catalog.get('effectComponents', []), key=lambda record: record['id'])
         after = json_bytes(catalog)
         return write_store(self.store_root, files, before, after)

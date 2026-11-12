@@ -6,18 +6,17 @@ from pathlib import Path
 import re
 import sys
 import tempfile
-from types import SimpleNamespace
 import unittest
 import wave
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from actors.actor_sound_batch import (CHARACTER_CENSUS_RELATIVE_PATH, actor_sound_key_argument, bundle_sort_key, decoded_config_keys,
-                                      run_actor_sound_slice, skipped_character_bundles)
+                                      run_actor_sound_slice, skipped_character_bundles, write_bundle_catalog_records)
 from actors.actor_sound_bindings import (ACTOR_SOUND_BUNDLE_ID_PREFIX, NO_EXACT_SKILL_SOUND_ROW_REASON, NPC_NATIVE_NUMERIC_FIELDS,
                                          actor_sound_bundle_id, actor_sound_gap_row, actor_sound_gap_rows, actor_sound_reference_counts,
                                          build_actor_sound_recipe, skill_actor_row)
-from actors.actor_sound_conversion import ActorSoundConversionRun
+from actors.actor_sound_conversion import BundleStoreState, bundle_store_state
 from native_assets import archive_bytes
 from native_assets_lib import combat_audio_bundle
 from native_assets_lib.gltf import json_bytes
@@ -251,14 +250,17 @@ class ActorSoundSkillAndCharacterTests(unittest.TestCase):
 
 class FakeSoundBundles:
     def __init__(self, keys, sealed_keys):
-        self.keys, self.sealed_keys, self.converted = keys, sealed_keys, []
+        self.keys, self.sealed_keys, self.converted, self.synchronized = keys, sealed_keys, [], []
 
-    def is_sealed(self, run, bundle_key):
-        return bundle_key in self.sealed_keys
+    def sealed_store_state(self, run, bundle_key):
+        return BundleStoreState(None, []) if bundle_key in self.sealed_keys else None
 
     def convert(self, run, bundle_key):
         self.converted.append(bundle_key)
-        return {'key': bundle_key}
+        return {'key': bundle_key}, BundleStoreState(None, [])
+
+    def synchronize_store(self, run, converted_states, skipped_sealed_states):
+        self.synchronized.append((list(converted_states), list(skipped_sealed_states)))
 
 
 class ActorSoundBatchSliceTests(unittest.TestCase):
@@ -271,8 +273,11 @@ class ActorSoundBatchSliceTests(unittest.TestCase):
         bundles, preflights = FakeSoundBundles(['npc:1', 'npc:2', 'npc:3', 'npc:4'], sealed_keys), []
         outcomes = run_actor_sound_slice(None, bundles, 1, lambda: preflights.append(len(bundles.converted)))
         self.assertEqual([outcome['key'] for outcome in outcomes], ['npc:2'])
-        outcomes = run_actor_sound_slice(None, FakeSoundBundles(bundles.keys, sealed_keys), 5, lambda: None)
+        self.assertEqual(bundles.synchronized, [(['npc:2'], ['npc:1'])])
+        unlimited_bundles = FakeSoundBundles(bundles.keys, sealed_keys)
+        outcomes = run_actor_sound_slice(None, unlimited_bundles, 5, lambda: None)
         self.assertEqual([outcome['key'] for outcome in outcomes], ['npc:2', 'npc:4'])
+        self.assertEqual(unlimited_bundles.synchronized, [(['npc:2', 'npc:4'], ['npc:1', 'npc:3'])])
         self.assertEqual(preflights, [0])
 
     def test_the_alaudio_config_keys_are_read_per_section_in_file_order_without_comments(self):
@@ -283,11 +288,12 @@ class ActorSoundBatchSliceTests(unittest.TestCase):
 class ActorSoundCatalogRecordTests(unittest.TestCase):
     def test_a_resealed_bundle_replaces_its_own_combat_audio_record(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
-            run = SimpleNamespace(store_root=Path(temporary_directory).resolve() / 'artifacts' / 'lane-store' / 'actors' / 'l2')
+            store_root = Path(temporary_directory).resolve() / 'artifacts' / 'lane-store' / 'actors' / 'l2'
             for manifest_sha256 in ('a' * 64, 'b' * 64):
-                manifest_output = {'path': f'l2/combat-audio/{manifest_sha256}/manifest.json', 'bytes': 10, 'sha256': manifest_sha256}
-                ActorSoundConversionRun.write_catalog_record(run, 'npc:20001', manifest_output, 4)
-            catalog = json.loads((run.store_root / 'catalog.json').read_bytes())
+                receipt = {'outputs': [{'path': f'l2/combat-audio/{manifest_sha256}/manifest.json', 'bytes': 10, 'sha256': manifest_sha256}],
+                           'gapRows': []}
+                write_bundle_catalog_records(store_root, {'npc:20001': bundle_store_state('npc:20001', receipt)}, {}, 4)
+            catalog = json.loads((store_root / 'catalog.json').read_bytes())
         self.assertEqual(catalog['combatAudio'], [{'id': 'actor-sounds:npc:20001', 'manifest': f'/l2/combat-audio/{"b" * 64}/manifest.json',
                                                    'manifestBytes': 10, 'manifestSha256': 'b' * 64}])
 

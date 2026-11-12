@@ -44,7 +44,7 @@ class SyntheticActorSoundRun(ActorSoundConversionRun):
         self.sound_ledger = UnitLedger(work_root, ACTOR_SOUND_UNIT_STEP, ACTOR_SOUND_ALGORITHM_VERSION)
         self.bundle_ledger = UnitLedger(work_root, ACTOR_SOUND_STEP, ACTOR_SOUND_ALGORITHM_VERSION)
         self.lane_folder = self.bundle_ledger.lane_folder
-        self.synthetic_builder_sha256 = builder_sha256
+        self.combat_audio_builder_sha256 = builder_sha256
         self.tables = {'npcgrp': {'identity': NPCGRP_IDENTITY, 'original': b'synthetic npcgrp', 'decoded': {'synthetic': 'npcgrp'},
                                   'rows': SYNTHETIC_NPCGRP_ROWS}}
 
@@ -53,9 +53,6 @@ class SyntheticActorSoundRun(ActorSoundConversionRun):
 
     def bound_references(self, actor_rows):
         return []
-
-    def builder_sha256(self):
-        return self.synthetic_builder_sha256
 
 
 def snapshot_tree(root):
@@ -135,7 +132,8 @@ class ActorSoundBundleResealTests(unittest.TestCase):
         run = SyntheticActorSoundRun(self.project_root, FIRST_BUILDER_SHA256)
         catalog, _ = read_store_catalog(run.store_root)
         write_store_catalog(run.store_root, {**catalog, 'combatAudio': [STALE_SKILL_COMBAT_AUDIO_RECORD]})
-        outcome = run.convert_no_sound_bundle(NoSoundBundle('skill:1:1', NO_EXACT_SKILL_SOUND_ROW_REASON, SKILLSOUNDGRP_IDENTITY, {}), 5)
+        outcome, store_state = run.convert_no_sound_bundle(NoSoundBundle('skill:1:1', NO_EXACT_SKILL_SOUND_ROW_REASON, SKILLSOUNDGRP_IDENTITY, {}))
+        self.bundles_with_no_sound_row_skill(run).synchronize_store(run, {'skill:1:1': store_state}, {})
         self.assertEqual((outcome['status'], outcome['bundleId']), ('gap', None))
         self.assertEqual(read_store_catalog(run.store_root)[0]['combatAudio'], [])
 

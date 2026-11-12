@@ -12,7 +12,7 @@ from actors.actor_unit_inventory import decoded_string_values
 from actors.combat_role_routes import (bind_combat_role_routes, combat_route_table_manifest, descriptor_record_field_names,
                                        read_combat_role_route_proof)
 from actors.npc_requests import CONVERTER_REFUSED_REASON_PREFIX, npc_sound_references
-from actors.npc_store_records import catalog_with_record_replaced, file_output_record, write_catalog_without_record
+from actors.npc_store_records import file_output_record
 from actors.path_free_messages import path_free_reason
 from native_assets import UMODEL_SHA256, implementation_hash
 from native_assets_lib import combat_audio_bundle
@@ -22,9 +22,7 @@ from native_assets_lib.sha256_identity import sha256_hex_digest
 from native_assets_lib.skill_audio_bundle import REFERENCE, reference_candidates
 from native_catalog.tables import interlude_table_layout
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_writer import read_store_catalog, replace_file, write_store
 from native_store.data_ui_table_manifest import DATA_UI_LANE_NAME, data_ui_table_manifest
-from native_store.gap_rows import gap_reason_list_versions, load_gap_reason_patterns, sorted_gap_rows, validate_gap_row
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from reference_client_guard import ReferenceClientLockError
 
@@ -72,8 +70,22 @@ class BundleWork(NamedTuple):
     fingerprint: str
 
 
+class BundleStoreState(NamedTuple):
+    combat_audio_record: dict | None
+    gap_rows: list
+
+
 def combat_audio_manifest_outputs(receipt):
     return [output for output in receipt['outputs'] if PurePosixPath(output['path']).parts[:2] == ('l2', COMBAT_AUDIO_STORE_FOLDER)]
+
+
+def bundle_store_state(bundle_key, receipt):
+    manifests = combat_audio_manifest_outputs(receipt)
+    if not manifests:
+        return BundleStoreState(None, receipt['gapRows'])
+    record = {'id': actor_sound_bundle_id(bundle_key), 'manifest': '/' + manifests[0]['path'],
+              'manifestBytes': manifests[0]['bytes'], 'manifestSha256': manifests[0]['path'].split('/')[2]}
+    return BundleStoreState(record, receipt['gapRows'])
 
 
 def lane_relative(lane_folder, path):
@@ -89,6 +101,8 @@ class ActorSoundConversionRun:
         self.lane_folder = self.bundle_ledger.lane_folder
         self.package_census = ActorPackageCensus(client_access, [])
         self.route_proof = read_combat_role_route_proof()
+        self.converter_implementation_sha256 = implementation_hash()
+        self.combat_audio_builder_sha256 = sha256_hex_digest(Path(combat_audio_bundle.__file__).read_bytes())
         self.tables, self.routes_by_table, self.packages = {}, {}, {}
 
     def repository_relative(self, path):
@@ -180,7 +194,8 @@ class ActorSoundConversionRun:
     def sound_unit_work(self, package_record, export, inventory_row):
         request = {'kind': 'audio', 'package': package_record['path'], 'object': export['object']}
         inputs = locked_input_records([package_record['path']])
-        config = {'request': request, 'stableId': inventory_row['stableId'], 'converterSha256': implementation_hash(), 'umodelSha256': UMODEL_SHA256}
+        config = {'request': request, 'stableId': inventory_row['stableId'], 'converterSha256': self.converter_implementation_sha256,
+                  'umodelSha256': UMODEL_SHA256}
         unit_key = f'{SOUND_UNIT_KEY_PREFIX}{package_record["package"].source_hash}:{export["exportIndex"]}'
         return SoundUnitWork(unit_key, self.sound_ledger.unit_fingerprint([record['sha256'] for record in inputs], config), request, inputs, config)
 
@@ -272,18 +287,23 @@ class ActorSoundConversionRun:
         inventory, coverage_rows, converter_reasons, package_paths = corpus
         inputs = locked_input_records(sorted({self.table(table)['identity']['path'] for table in tables} | set(package_paths)))
         config = {'bundleKey': bundle_key, 'actorRows': actor_rows, 'routes': routes_by_table, 'inventorySha256': sha256_hex_digest(json_bytes(inventory)),
-                  'coverage': coverage_rows, 'converterReasons': converter_reasons, 'builderSha256': self.builder_sha256()}
+                  'coverage': coverage_rows, 'converterReasons': converter_reasons, 'builderSha256': self.combat_audio_builder_sha256}
         fingerprint = self.bundle_ledger.unit_fingerprint([record['sha256'] for record in inputs], config)
         return BundleWork(tables, routes_by_table, inventory, coverage_rows, converter_reasons, inputs, config, fingerprint)
 
-    def is_bundle_sealed(self, bundle_key, actor_rows):
-        work = self.bundle_work(bundle_key, actor_rows, self.sealed_sound_outcome)
-        return work is not None and self.bundle_ledger.is_sealed(bundle_key, work.fingerprint)
+    def receipt_sealed_with(self, bundle_key, fingerprint):
+        receipt = self.bundle_ledger.sealed_receipt(bundle_key)
+        return receipt if receipt is not None and receipt['fingerprint'] == fingerprint else None
 
-    def convert_bundle(self, bundle_key, actor_rows, catalog_capacity):
+    def sealed_bundle_receipt(self, bundle_key, actor_rows):
+        work = self.bundle_work(bundle_key, actor_rows, self.sealed_sound_outcome)
+        return None if work is None else self.receipt_sealed_with(bundle_key, work.fingerprint)
+
+    def convert_bundle(self, bundle_key, actor_rows):
         work = self.bundle_work(bundle_key, actor_rows, self.sound_unit)
-        if self.bundle_ledger.is_sealed(bundle_key, work.fingerprint):
-            return self.sealed_bundle_outcome(bundle_key, catalog_capacity, True)
+        sealed_receipt = self.receipt_sealed_with(bundle_key, work.fingerprint)
+        if sealed_receipt is not None:
+            return self.bundle_outcome(bundle_key, sealed_receipt, True), bundle_store_state(bundle_key, sealed_receipt)
         step_directory = self.bundle_ledger.begin(bundle_key, work.fingerprint)
         evidence = lane_relative(self.lane_folder, step_directory / RECEIPT_RECORD_NAME)
         manifest, outputs, refusal = self.built_bundle(bundle_key, actor_rows, work.routes_by_table, work.inventory, work.coverage_rows, step_directory)
@@ -293,8 +313,9 @@ class ActorSoundConversionRun:
             gap_rows.append(actor_sound_gap_row(bundle_key, refusal, dict(identities[work.tables[0]]), evidence))
         (step_directory / 'unresolved-references.json').write_bytes(canonical_json_bytes(unresolved_reference_entries(manifest, work.converter_reasons)))
         outputs.append(file_output_record(self.lane_folder, step_directory / 'unresolved-references.json'))
-        self.bundle_ledger.seal(bundle_key, work.fingerprint, {'config': work.config, 'inputs': work.inputs, 'outputs': outputs, 'gapRows': gap_rows})
-        return self.sealed_bundle_outcome(bundle_key, catalog_capacity, False)
+        receipt = self.bundle_ledger.seal(bundle_key, work.fingerprint,
+                                          {'config': work.config, 'inputs': work.inputs, 'outputs': outputs, 'gapRows': gap_rows})
+        return self.bundle_outcome(bundle_key, receipt, False), bundle_store_state(bundle_key, receipt)
 
     def names_no_sound(self, actor_row):
         return not any(reference for _, _, reference in npc_sound_references(self.actor_table_row(actor_row)))
@@ -305,22 +326,20 @@ class ActorSoundConversionRun:
                   'sourceTableIdentity': no_sound_bundle.source_table_identity, **no_sound_bundle.detail}
         return inputs, config, self.bundle_ledger.unit_fingerprint([record['sha256'] for record in inputs], config)
 
-    def is_no_sound_bundle_sealed(self, no_sound_bundle):
+    def sealed_no_sound_bundle_receipt(self, no_sound_bundle):
         _, _, fingerprint = self.no_sound_bundle_work(no_sound_bundle)
-        return self.bundle_ledger.is_sealed(no_sound_bundle.key, fingerprint)
+        return self.receipt_sealed_with(no_sound_bundle.key, fingerprint)
 
-    def convert_no_sound_bundle(self, no_sound_bundle, catalog_capacity):
+    def convert_no_sound_bundle(self, no_sound_bundle):
         inputs, config, fingerprint = self.no_sound_bundle_work(no_sound_bundle)
-        if self.bundle_ledger.is_sealed(no_sound_bundle.key, fingerprint):
-            return self.sealed_bundle_outcome(no_sound_bundle.key, catalog_capacity, True)
+        sealed_receipt = self.receipt_sealed_with(no_sound_bundle.key, fingerprint)
+        if sealed_receipt is not None:
+            return self.bundle_outcome(no_sound_bundle.key, sealed_receipt, True), bundle_store_state(no_sound_bundle.key, sealed_receipt)
         step_directory = self.bundle_ledger.begin(no_sound_bundle.key, fingerprint)
         evidence = lane_relative(self.lane_folder, step_directory / RECEIPT_RECORD_NAME)
         gap_row = actor_sound_gap_row(no_sound_bundle.key, no_sound_bundle.reason, dict(no_sound_bundle.source_table_identity), evidence)
-        self.bundle_ledger.seal(no_sound_bundle.key, fingerprint, {'config': config, 'inputs': inputs, 'outputs': [], 'gapRows': [gap_row]})
-        return self.sealed_bundle_outcome(no_sound_bundle.key, catalog_capacity, False)
-
-    def builder_sha256(self):
-        return sha256_hex_digest(Path(combat_audio_bundle.__file__).read_bytes())
+        receipt = self.bundle_ledger.seal(no_sound_bundle.key, fingerprint, {'config': config, 'inputs': inputs, 'outputs': [], 'gapRows': [gap_row]})
+        return self.bundle_outcome(no_sound_bundle.key, receipt, False), bundle_store_state(no_sound_bundle.key, receipt)
 
     def built_bundle(self, bundle_key, actor_rows, routes_by_table, inventory, coverage_rows, step_directory):
         inventory_bytes = canonical_json_bytes(inventory)
@@ -353,36 +372,10 @@ class ActorSoundConversionRun:
         payload = path.read_bytes()
         return {'path': self.repository_relative(path), 'bytes': len(payload), 'sha256': sha256_hex_digest(payload)}
 
-    def sealed_bundle_outcome(self, bundle_key, catalog_capacity, cache_hit):
-        receipt = json.loads((self.bundle_ledger.unit_step_directory(bundle_key) / RECEIPT_RECORD_NAME).read_bytes())
+    def bundle_outcome(self, bundle_key, receipt, cache_hit):
         manifests = combat_audio_manifest_outputs(receipt)
-        if manifests:
-            self.write_catalog_record(bundle_key, manifests[0], catalog_capacity)
-        else:
-            write_catalog_without_record(self.store_root, 'combatAudio', actor_sound_bundle_id(bundle_key))
-        self.replace_bundle_gap_rows(bundle_key, receipt['gapRows'])
         manifest = json.loads(self.bundle_ledger.lane_output_path(manifests[0]['path']).read_bytes()) if manifests else None
         return {'key': bundle_key, 'step': ACTOR_SOUND_STEP, 'status': 'gap' if receipt['gapRows'] else 'pass',
                 'reason': receipt['gapRows'][0]['reason'] if receipt['gapRows'] else None, 'cacheHit': cache_hit,
                 'bundleId': actor_sound_bundle_id(bundle_key) if manifests else None, 'references': actor_sound_reference_counts(manifest)}
-
-    def write_catalog_record(self, bundle_key, manifest_output, catalog_capacity):
-        record = {'id': actor_sound_bundle_id(bundle_key), 'manifest': '/' + manifest_output['path'],
-                  'manifestBytes': manifest_output['bytes'], 'manifestSha256': manifest_output['path'].split('/')[2]}
-        catalog, before = read_store_catalog(self.store_root)
-        catalog = catalog_with_record_replaced(catalog, 'combatAudio', record, catalog_capacity)
-        catalog['combatAudio'] = sorted(catalog['combatAudio'], key=lambda entry: entry['id'])
-        write_store(self.store_root, {}, before, json_bytes(catalog))
-
-    def replace_bundle_gap_rows(self, bundle_key, rows):
-        path = self.lane_folder / ACTOR_SOUND_GAP_ROWS_RELATIVE_PATH
-        existing = json.loads(path.read_bytes())['rows'] if path.is_file() else []
-        reason_patterns = load_gap_reason_patterns()
-        merged = [row for row in existing if row['key'] != bundle_key] + list(rows)
-        for row in merged:
-            validate_gap_row(row, reason_patterns)
-        document = {'schemaVersion': 1, 'lane': self.bundle_ledger.lane_name, 'step': ACTOR_SOUND_STEP,
-                    'reasonListVersions': gap_reason_list_versions(), 'rows': sorted_gap_rows(merged)}
-        path.parent.mkdir(parents=True, exist_ok=True)
-        replace_file(path, canonical_json_bytes(document))
 
