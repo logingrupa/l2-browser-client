@@ -4,10 +4,10 @@ current_phase: 03
 current_phase_name: Stage A checks
 status: executing
 stopped_at: Completed 02-79-PLAN.md
-last_updated: "2026-11-12T10:53:16.550Z"
+last_updated: "2026-11-12T12:58:59.657Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 03 plan 03-01 complete (side-by-side check record writer and key content digest; Phase 3 start commit cb09cdc)
-state_head: c02e28569913cc6b4867b4feaab1e71f349f5bee
+state_head: f1f643ea04966df90774c2f74e7890389a0235a2
 progress:
   total_phases: 6
   completed_phases: 0
@@ -431,6 +431,12 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - Lane tool support for this repo is not available on DATABASE-PC yet; use plain `git worktree` until it lands.
 - Count differences to check in the decoder inventory: 435 vs 433 `.utx`, `chargrp` has 15 rows.
 - The 02-23 tiles sweep is plan 02-70, which runs after 02-16 (wave 9; OVERNIGHT-DECISIONS row 303). 02-23 is complete with Tasks 1 and 2 (02-23-SUMMARY.md).
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Status | Directory |
+|---|-------------|------|--------|--------|-----------|
+| 261112-i67 | Pinned-store verification walk without payload retention, pooled across 12 worker processes in chunks, BelowNormal priority in the two store commands, catalog byte cap in write_store (full actors store walk 954-1,015 s and 29 GiB down to 48 s and 0.7 GiB) | 2026-11-12 | f1f643e | Verified at 361891a; chunked follow-up f1f643e tested | [261112-i67-pinned-store-verification-walk-without-p](./quick/261112-i67-pinned-store-verification-walk-without-p/) |
 
 ## Needs Human
 
