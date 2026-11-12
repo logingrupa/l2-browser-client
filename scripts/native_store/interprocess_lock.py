@@ -1,4 +1,4 @@
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 import ctypes
 from ctypes import wintypes
 import hashlib
@@ -13,6 +13,9 @@ LOCKFILE_EXCLUSIVE_LOCK = 0x2
 LOCKED_BYTE_COUNT = 1
 CONVERTER_LOCK_KEY_PREFIX = 'converter:'
 STORE_LOCK_KEY_PREFIX = 'store:'
+ARTIFACTS_FOLDER_NAME = 'artifacts'
+LANE_STORES_FOLDER_NAME = 'lane-store'
+LANE_STORE_FOLDER_NAME = 'l2'
 LANE_WORK_FOLDER_NAME = 'work'
 held_lock_file_path = None
 
@@ -72,6 +75,13 @@ def convert_under_request_lock(converter, request):
         return converter.convert(request)
 
 
-def store_publish_lock(store_root):
+def is_lane_store_root(store_root):
+    return (len(store_root.parts) > 4 and store_root.name == LANE_STORE_FOLDER_NAME and store_root.parents[1].name == LANE_STORES_FOLDER_NAME
+            and store_root.parents[2].name == ARTIFACTS_FOLDER_NAME)
+
+
+def lane_store_publish_lock(store_root):
     store_root = Path(store_root)
+    if not is_lane_store_root(store_root):
+        return nullcontext()
     return interprocess_lock(lane_lock_folder(store_root.parent / LANE_WORK_FOLDER_NAME), STORE_LOCK_KEY_PREFIX + store_root.as_posix())

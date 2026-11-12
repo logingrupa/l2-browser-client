@@ -9,7 +9,7 @@ import re
 import tempfile
 from typing import NamedTuple
 
-from native_store.interprocess_lock import store_publish_lock
+from native_store.interprocess_lock import lane_store_publish_lock
 from native_store.native_material_program_pins import (MATERIAL_PROGRAM_FILE_NAME, glb_native_material_program_sha256s,
                                                        native_material_program_directory)
 from native_store.store_paths import (SHA256_PATTERN, StorePathError, confined_child_path, refuse_reparse_points,
@@ -423,7 +423,7 @@ def write_store_files(store_root, files):
 
 def write_store(store_root, files, before, after):
     root = refuse_reparse_points(store_root)
-    with store_publish_lock(root):
+    with lane_store_publish_lock(root):
         missing_relative_paths = verify_store_destinations(root, files)
         require_catalog_unchanged(root, before)
         require_catalog_within_byte_limit(confined_child_path(root, STORE_CATALOG_NAME), after)

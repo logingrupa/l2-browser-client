@@ -128,6 +128,22 @@ class StoreFilePublishTests(StoreLockRecordingTestCase):
         self.assertEqual((self.locks_held_at_each_call, self.published_relative_paths()), ([], []))
 
 
+class StoreOutsideALaneTests(unittest.TestCase):
+    def test_a_store_root_that_is_no_lane_store_is_written_without_a_lock_file_and_nothing_is_created_beside_it(self):
+        temporary_directory = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary_directory.cleanup)
+        project_root = Path(temporary_directory.name).resolve() / 'project'
+        served_store_root = project_root / 'public' / 'l2'
+        served_store_root.mkdir(parents=True)
+        files = synthetic_store_files(2)
+        self.assertEqual(write_store(served_store_root, files, None, CATALOG_BYTES)['filesWritten'], 3)
+        publish_store_files(served_store_root, files)
+        self.assertEqual(sorted(path.relative_to(project_root).as_posix() for path in project_root.rglob('*') if path.is_file()),
+                         sorted(f'public/l2/{relative}' for relative in [STORE_CATALOG_NAME, *(relative for relative, _ in files.values())]))
+        self.assertEqual([path.name for path in served_store_root.parent.iterdir()], [served_store_root.name])
+        self.assertIsNone(interprocess_lock_module.held_lock_file_path)
+
+
 class WorldStepStorePublishTests(StoreLockRecordingTestCase):
     def test_static_mesh_store_files_are_published_under_the_store_lock(self):
         store_files = synthetic_store_files(2)
@@ -163,7 +179,7 @@ class WorldStepStorePublishTests(StoreLockRecordingTestCase):
         self.assertEqual(self.published_relative_paths(), [output['path'].removeprefix('l2/') for output in outputs])
 
     def test_material_texture_images_are_published_under_the_store_lock(self):
-        store_root = scratch_work_root(self, 'store-file-publish-') / 'l2'
+        store_root = lane_store_root(scratch_work_root(self, 'store-file-publish-'), 'world')
         records = material_texture_images.write_material_texture_images(store_root, {'SyntheticMaterials.SkyTexture': synthetic_png_bytes()})
         self.assert_every_call_held_the_store_lock(
             ['immutable_write'], lock_file_path(lane_lock_folder(store_root.parent / 'work'), STORE_LOCK_KEY_PREFIX + store_root.as_posix()))
