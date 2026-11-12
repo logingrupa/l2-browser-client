@@ -142,6 +142,13 @@ class RecordingPreflight:
         return {'rigaTime': '2026-11-10T12:00:00+02:00', 'freeBytes': 10 * 1024 ** 3}
 
 
+def write_synthetic_tile_census(project_root, eligible_tile_ids):
+    (project_root / 'artifacts').mkdir(parents=True)
+    census_path = project_root / TILE_CENSUS_RELATIVE_PATH
+    census_path.parent.mkdir(parents=True)
+    census_path.write_text(json.dumps(synthetic_census(eligible_tile_ids)), encoding='utf-8')
+
+
 class TileBatchTestCase(unittest.TestCase):
     eligible_tile_ids = ('10_11', '12_13', '14_15')
 
@@ -149,10 +156,7 @@ class TileBatchTestCase(unittest.TestCase):
         temporary_directory = tempfile.TemporaryDirectory()
         self.addCleanup(temporary_directory.cleanup)
         self.project_root = Path(temporary_directory.name).resolve() / 'project'
-        (self.project_root / 'artifacts').mkdir(parents=True)
-        census_path = self.project_root / TILE_CENSUS_RELATIVE_PATH
-        census_path.parent.mkdir(parents=True)
-        census_path.write_text(json.dumps(synthetic_census(self.eligible_tile_ids)), encoding='utf-8')
+        write_synthetic_tile_census(self.project_root, self.eligible_tile_ids)
 
     def run_batch(self, steps, limit=1, preflight=None, step_names=SYNTHETIC_STEP_NAMES, step_seal_checks=None):
         return run_tile_batch(limit, 1, TileStepRun,

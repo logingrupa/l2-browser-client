@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from native_store.gap_rows import sorted_gap_rows, write_gap_rows
+from native_store.store_paths import lane_work_root
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, FreeDiskFloorRefusedError
 from test_convert_tile_batch import (SYNTHETIC_LAYOUT_GAP_REASON, SYNTHETIC_STEP_NAMES, LedgerBackedSteps, RecordingPreflight, TileBatchTestCase,
                                      synthetic_seal_checks, synthetic_source_identity, synthetic_step_ledger, synthetic_unit_fingerprint)
@@ -295,6 +296,17 @@ class TileStepsPhaseTests(TileBatchPhaseTestCase):
                                              TileStepsTask(0, OWNER_TILE_ID, synthetic_source_identity(OWNER_TILE_ID), ('chunks', 'meshes'), None))
         self.assertEqual((outcome.started, outcome.stop), (True, None))
         self.assertEqual((steps.calls, preflight.calls, first_stopped_position.value), ([(OWNER_TILE_ID, 'chunks'), (OWNER_TILE_ID, 'meshes')], 2, 1))
+
+    def test_the_lane_work_root_exists_before_the_workers_are_built(self):
+        lane_work_root_existed = []
+
+        def workers_built_after_the_work_root(*workers_arguments):
+            lane_work_root_existed.append(lane_work_root(self.project_root, 'world').is_dir())
+            return TileStepWorkers(*workers_arguments)
+
+        with patch.object(convert_tile_batch, 'TileStepWorkers', workers_built_after_the_work_root):
+            self.run_batch(LedgerBackedSteps(self.project_root))
+        self.assertEqual(lane_work_root_existed, [True])
 
     def test_a_pool_that_breaks_while_tasks_are_submitted_gives_the_worker_died_outcome_for_every_task_without_a_future(self):
         tasks = [TileStepsTask(position, tile_id, synthetic_source_identity(tile_id), ('chunks',), None)
