@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 02-83-PLAN.md
-last_updated: "2026-11-12T15:19:19.949Z"
+stopped_at: Completed 02-85-PLAN.md
+last_updated: "2026-11-12T15:52:23.811Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 03 plan 03-01 complete (side-by-side check record writer and key content digest; Phase 3 start commit cb09cdc)
-state_head: adc09e3405233e0ec6055dc0908bd3d4aa206f6f
+state_head: b75317828134d6312cee5480620e1291651f8ef0
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 131
-  completed_plans: 108
+  completed_plans: 109
   percent: 0
 ---
 
@@ -154,6 +154,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P78 | 7h 31m | 3 tasks | 11 files |
 | Phase 02 P79 | 9h 52m | 3 tasks | 5 files |
 | Phase 02 P83 | 34min | 3 tasks | 10 files |
+| Phase 2 P85 | 30min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -412,6 +413,8 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-78: the remaining NPC sound bundles ran as one slice of 4,077 (row 1022)
 - [Phase 02]: 02-79: the item model record shape stays; measured union projection 25,710,689 of 33,554,432 bytes, final 22,227,730 (row 1023)
 - [Phase 02]: 02-83: the chargrp to actor class join is adopted from the locked client (14 rows to 14 LineageWarrior classes through the class Mesh and SubMeshes defaults, body and face mesh row identity, one to one; rows 1035 to 1038)
+- [Phase 2]: 02-85: a texture whose native source the library refuses draws its UModel PNG with a named per-texture gap (row 1039)
+- [Phase 2]: 02-85: the UI textures step replaces stale texture records on a converter change (row 1041)
 
 ### Pending Todos
 
@@ -546,6 +549,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-12T15:19:19.205Z
-Stopped at: Completed 02-83-PLAN.md
+Last session: 2026-11-12T15:52:23.010Z
+Stopped at: Completed 02-85-PLAN.md
 Resume file: None

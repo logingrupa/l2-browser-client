@@ -36,3 +36,7 @@ Out-of-scope problems found while executing a plan. Each is left for its owning 
 ## Found during 02-82
 
 - `python scripts/test_pipeline.py`, 2026-11-11 17:55 Riga: `test_converter_output_guard.ConverterOutputGuardScanTests.test_every_lane_entry_point_with_an_output_option_calls_the_guard` fails on `scripts/world/terrain_seam_facts.py` (added by 02-81 commits 445b6a8 and 35c51a4), an entry point with an output option that does not call the converter output guard. 02-82 did not touch that file; every other test passes (2,145 run, 57 skipped). Resolved in 7f6659f: the option is dropped and the script writes its committed path through require_committed_destination.
+
+## Found during 02-85
+
+- `python -B -m unittest discover -s tests/pipeline -p "test_converter_output_guard.py"`, 2026-11-12 17:34 Riga: `test_every_lane_entry_point_with_an_output_option_calls_the_guard` fails on `scripts/actors/character_class_sources.py` (added by 02-83 commit 2d018f8, actors lane), an entry point with an output option that does not call the converter output guard. 02-85 did not touch that file; the other 11 cases pass.
