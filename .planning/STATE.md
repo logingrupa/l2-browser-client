@@ -4,10 +4,10 @@ current_phase: 03
 current_phase_name: Stage A checks
 status: executing
 stopped_at: Completed 02-79-PLAN.md
-last_updated: "2026-11-12T14:13:24.022Z"
+last_updated: "2026-11-12T14:45:00.455Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 03 plan 03-01 complete (side-by-side check record writer and key content digest; Phase 3 start commit cb09cdc)
-state_head: ddc0b51dea20b6b3fbc1eda92802819bb6b416ee
+state_head: ccf784e2e2824248dff2867c71a8ca9a7e3fdb5f
 progress:
   total_phases: 6
   completed_phases: 0
@@ -438,6 +438,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 |---|-------------|------|--------|--------|-----------|
 | 261112-i67 | Pinned-store verification walk without payload retention, pooled across 12 worker processes in chunks, BelowNormal priority in the two store commands, catalog byte cap in write_store (full actors store walk 954-1,015 s and 29 GiB down to 48 s and 0.7 GiB) | 2026-11-12 | f1f643e | Verified at 361891a; chunked follow-up f1f643e tested | [261112-i67-pinned-store-verification-walk-without-p](./quick/261112-i67-pinned-store-verification-walk-without-p/) |
 | 261112-i80 | Batch bookkeeping without repeated work: batched catalog record replacement, one sealed check per unit per process, per-process lock reuse, per-slice catalog and gap-row writes (300 item units 706 s down to 405 s on one core, outputs byte-identical) | 2026-11-12 | ddc0b51 | Verified | [261112-i80-batch-bookkeeping-without-repeated-work-](./quick/261112-i80-batch-bookkeeping-without-repeated-work-/) |
+| 261112-l5d | Lane store union and merge copy files one at a time in hashed chunks with a free-space guard; the collecting walk is deleted (the union of three lanes needed about 41 GB of memory before) | 2026-11-12 | ccf784e | Verified | [261112-l5d-lane-store-union-and-merge-copy-files-on](./quick/261112-l5d-lane-store-union-and-merge-copy-files-on/) |
 
 ## Needs Human
 
