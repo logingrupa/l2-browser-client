@@ -14,12 +14,13 @@ from effect_source_bundle_fixture import write_sprite_effect_source_bundle
 from native_store.canonical_json import canonical_json_bytes
 from native_store import catalog_writer
 from native_store.catalog_writer import (CatalogWriteError, PinnedFileReference, catalog_pinned_file_references, merge_catalog_slice,
-                                         pinned_store_files, write_store)
+                                         write_store)
 from native_store import pinned_store_verification
-from native_store.pinned_store_verification import verified_chunk_outcomes, verified_file_child_references, verify_pinned_store_files
+from native_store.pinned_store_verification import (PINNED_STORE_VERIFICATION_WORKER_COUNT, verified_chunk_outcomes,
+                                                    verified_file_child_references, verify_pinned_store_files)
 from native_store.store_paths import lane_store_root
 from native_store import write_lane_catalog as lane_catalog_module
-from native_store.write_lane_catalog import PINNED_STORE_VERIFICATION_WORKER_COUNT, write_lane_catalog
+from native_store.write_lane_catalog import write_lane_catalog
 from test_bundle_member_pins import (POOLED_WALK_WORKER_COUNT, ProfileBundle, ProfileBundleProjectTestCase, SyntheticEffectBundle,
                                      SyntheticWorldTile, TemporaryStoreTestCase, native_material_program_pin, sha256_hex,
                                      synthetic_profile_bundle_members, write_file)
@@ -29,9 +30,6 @@ FIRST_WRONG_MEMBER, SECOND_WRONG_MEMBER = 'source/member-05.bin', 'source/member
 
 def verify_only_walk(store_root, catalog):
     return verify_pinned_store_files(store_root, catalog, POOLED_WALK_WORKER_COUNT)
-
-
-IN_PROCESS_WALKS = (pinned_store_files, verify_only_walk)
 
 
 class VerifyOnlyWalkTests(TemporaryStoreTestCase):
@@ -58,20 +56,18 @@ class VerifyOnlyWalkTests(TemporaryStoreTestCase):
 
     def test_a_repeated_reference_with_the_same_sha256_is_hashed_once(self):
         bundle = SyntheticEffectBundle(self.store_root)
-        for walk in IN_PROCESS_WALKS:
-            with self.subTest(walk=walk.__name__), patch.object(catalog_writer, 'sha256_hex', wraps=catalog_writer.sha256_hex) as hashed:
-                walk(self.store_root, bundle.catalog)
-                self.assertEqual(hashed.call_count, 2)
+        with patch.object(catalog_writer, 'sha256_hex', wraps=catalog_writer.sha256_hex) as hashed:
+            verify_only_walk(self.store_root, bundle.catalog)
+            self.assertEqual(hashed.call_count, 2)
 
     def test_a_repeated_reference_with_another_sha256_is_refused_without_a_second_hash(self):
         bundle = SyntheticEffectBundle(self.store_root, resource_pin_sha256='7' * 64)
         message = f'store file {bundle.folder}/{bundle.texture_pin["file"]} is pinned with two different SHA-256 values'
         self.assert_every_walk_refuses(CatalogWriteError, f'^{re.escape(message)}$', self.store_root, bundle.catalog)
-        for walk in IN_PROCESS_WALKS:
-            with self.subTest(walk=walk.__name__), patch.object(catalog_writer, 'sha256_hex', wraps=catalog_writer.sha256_hex) as hashed:
-                with self.assertRaises(CatalogWriteError) as refusal:
-                    walk(self.store_root, bundle.catalog)
-                self.assertEqual((str(refusal.exception), hashed.call_count), (message, 2))
+        with patch.object(catalog_writer, 'sha256_hex', wraps=catalog_writer.sha256_hex) as hashed:
+            with self.assertRaises(CatalogWriteError) as refusal:
+                verify_only_walk(self.store_root, bundle.catalog)
+            self.assertEqual((str(refusal.exception), hashed.call_count), (message, 2))
 
     def test_every_walk_verifies_a_profile_bundle_a_store_root_manifest_and_a_repeated_effect_resource(self):
         stores = (('profile-bundle', lambda store_root: ProfileBundle(synthetic_profile_bundle_members()).write(store_root)),
@@ -84,9 +80,11 @@ class VerifyOnlyWalkTests(TemporaryStoreTestCase):
                 self.assert_every_walk_verifies(store_root, write_store_and_return_catalog(store_root))
 
     def test_a_level_below_the_pooled_minimum_is_verified_in_the_calling_process(self):
-        catalog = ProfileBundle(synthetic_profile_bundle_members()).write(self.store_root)
-        verified = {key: sha256_hex(payload) for key, (_, payload) in pinned_store_files(self.store_root, catalog).items()}
-        self.assertEqual(verify_pinned_store_files(self.store_root, catalog, PINNED_STORE_VERIFICATION_WORKER_COUNT), verified)
+        bundle = ProfileBundle(synthetic_profile_bundle_members())
+        catalog = bundle.write(self.store_root)
+        verified_store_file_by_key = {relative.casefold(): (relative, sha256_hex((self.store_root / relative).read_bytes()))
+                                      for relative in bundle.pinned_relative_paths()}
+        self.assertEqual(verify_pinned_store_files(self.store_root, catalog, PINNED_STORE_VERIFICATION_WORKER_COUNT), verified_store_file_by_key)
         pinned_store_verification.ProcessPoolExecutor.assert_not_called()
 
     def test_every_walk_reports_the_first_of_two_wrong_files_in_one_level(self):
@@ -154,15 +152,14 @@ class StagedSkillEffectStoreWalkTests(TemporaryStoreTestCase):
 
 class LaneCatalogVerificationCallSiteTests(ProfileBundleProjectTestCase):
     def test_the_lane_catalog_verifies_the_target_lane_and_each_union_lane_without_collecting_payloads(self):
-        with (patch.object(lane_catalog_module, 'verify_pinned_store_files', wraps=verify_pinned_store_files) as verify_only_walk_calls,
-              patch.object(catalog_writer, 'pinned_store_files', side_effect=AssertionError('the lane catalog must not collect payloads'))):
+        with patch.object(lane_catalog_module, 'verify_pinned_store_files', wraps=verify_pinned_store_files) as verify_only_walk_calls:
             write_lane_catalog(self.project, 'actors')
             write_lane_catalog(self.project, 'integration', ('actors',))
         self.assertEqual([(call.args[0], call.args[2]) for call in verify_only_walk_calls.call_args_list],
                          [(self.actors_store, PINNED_STORE_VERIFICATION_WORKER_COUNT),
                           (lane_store_root(self.project, 'integration'), PINNED_STORE_VERIFICATION_WORKER_COUNT),
                           (self.actors_store, PINNED_STORE_VERIFICATION_WORKER_COUNT)])
-        self.assertFalse(hasattr(lane_catalog_module, 'pinned_store_files'))
+        self.assertFalse(hasattr(lane_catalog_module, 'add_store_file'))
         self.assertEqual(PINNED_STORE_VERIFICATION_WORKER_COUNT, 12)
 
 
