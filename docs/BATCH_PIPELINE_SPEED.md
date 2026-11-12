@@ -24,14 +24,17 @@ How the lane-store batches use the machine, what was measured, and what is still
 | 250 actor-sound bundles | 59 s | 32 s |
 | 20 skill roots | 538 s | 476 s (conversion itself is unchanged, see Open) |
 | Union of a 2.75 GB lane into an empty store | whole lane held in memory | 28 s, 0.06 GiB peak |
+| World tile 18_20, all 14 steps from scratch under the same profiler | 2,281 s (lighting 786, collision 556, meshes 534, visibility 210) | 439 s (lighting 33, collision 22, meshes 247, visibility 10) |
+| The same tile without a profiler | 1,005 s for its five slow steps in the plan 02-47 run | 346 to 352 s for all 14 steps (meshes 234, audio 38) |
 
 - The "before" numbers of the first row come from the live runs of plan 02-79; the others are the unchanged code at `bf14fb8` run in the lane checkout.
 - Outputs are byte-identical. Old against new code on 301 item units, 20 skill roots and 350 actor-sound bundles: `catalog.json`, 621 store files, the gap-row files, both census files and 671 receipts (clock and free-byte fields dropped). One worker against six on 301 item units: the same check over 451 store files and 301 receipts.
 - Worker memory: 1.4, 2.8, 5.5, 8.1, 10.7 and 15.0 GiB peak for 1, 2, 4, 6, 8 and 12 workers.
+- World tiles: every step asked `ClassDefaults.values` (`scripts/world/static_placement.py`) for the same class and field list once per placed actor, 1,778 s of the 2,281 s. It now reads each list once per step. The outputs and receipts of all 14 steps of tile 18_20 are identical before and after.
 
 ## Rules for parallel work
 
-- Remove repeated serial work before adding workers. Conversion was 24 to 47 percent of batch time; workers alone would have given about 1.25 times.
+- Remove repeated serial work before adding workers. Conversion was 24 to 47 percent of batch time; workers alone would have given about 1.25 times. On world tiles one repeated lookup was 78 percent of a heavy tile.
 - Processes, not threads, for work that is Python code: the path checks, glTF building and `json.loads` hold the interpreter lock.
 - One coordinator owns every shared file. Workers write only what no other worker writes, and return results that the coordinator consumes in submission order, so output bytes, printed lines and the first refusal do not depend on which worker finishes first.
 - Hand small work to a pool in chunks. One task per file kept the calling process busy for half of the verification walk; chunks of 64 references cut that to 1 s. A chunk stops at its first refusal and returns it at its own position.
@@ -44,7 +47,9 @@ How the lane-store batches use the machine, what was measured, and what is still
 
 - Unit fingerprints hash the on-disk bytes of the frozen converter sources (`implementation_hash` in `scripts/native_assets.py`), line endings included. `core.autocrlf` is true and the roadmap worktree holds some of those files with CRLF and some with LF. A git operation that rewrites one of them unseals every converted unit. A line-ending-proof hash belongs in the one planned converter change.
 - That planned converter change (rule G6 freezes the files until then) also carries: an atomic converter publish, without which skill roots and world tiles cannot convert in parallel; one class-defaults cache per run for skill roots (one PowerShell start per class is about half of a root's 26 s); decoded animation tracks kept per process for armor units; cheaper path checks in `scripts/native_store/store_paths.py`; removal of converter work folders after success.
-- World tiles (plan 02-88, about 17 h serial by the 02-47 rates) and the load sweeps (one browser page at a time) still run on one core.
+- World tiles still run on one core. What is left of a heavy tile is the mesh step: 1,585 UModel runs for 184 meshes, 1,225 of them one texture export each, inside the frozen converter. A texture export kept per process and parallel mesh conversion belong to the planned converter change.
+- The load sweeps check one browser page at a time.
+- Profile before adding workers: `python -B -m cProfile -o step.prof scripts/world/convert_tile.py --client E:/Lineage2-client --map XX_YY --step <step>` found the tile cost in ten minutes.
 - Each item model is stored five times (converter cache twice, ledger folder, store archive, store model) and the actors lane held about 94 GB after plan 02-79. Drive C: decides how much can run, not the CPU.
 - NPC profile packs spend most of their 156 s re-reading a table and re-hashing one package per NPC (`scripts/native_actor_profiles.py`, a pinned file: a fix reseals the 34 packs).
 
