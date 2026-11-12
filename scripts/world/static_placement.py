@@ -1,3 +1,4 @@
+import copy
 import math
 
 from native_assets_lib.class_defaults import ClassDefaultError, ReferenceClientClassScripts, read_class_defaults_with_provenance
@@ -24,9 +25,22 @@ class TransformFieldError(FormatError):
 class ClassDefaults:
     def __init__(self, work_root, class_scripts):
         self.work_root, self.class_scripts = work_root, class_scripts
+        self.read_outcomes_by_class_and_fields = {}
+
+    def read_outcome(self, class_name, fields):
+        try:
+            return {value.field: value for value in read_class_defaults_with_provenance(class_name, list(fields), self.work_root, self.class_scripts)}
+        except ClassDefaultError as refusal:
+            return refusal
 
     def values(self, class_name, fields):
-        return {value.field: value for value in read_class_defaults_with_provenance(class_name, list(fields), self.work_root, self.class_scripts)}
+        key = (class_name, tuple(fields))
+        if key not in self.read_outcomes_by_class_and_fields:
+            self.read_outcomes_by_class_and_fields[key] = self.read_outcome(class_name, fields)
+        read_outcome = self.read_outcomes_by_class_and_fields[key]
+        if isinstance(read_outcome, ClassDefaultError):
+            raise read_outcome.with_traceback(None)
+        return copy.deepcopy(read_outcome)
 
 
 def read_class_evidence(client, work_root):
