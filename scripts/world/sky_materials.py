@@ -8,12 +8,13 @@ from PIL import DdsImagePlugin, Image
 
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib.material_graph import read_material_graph
-from native_assets_lib.material_program import derive_material_program, read_material_class_defaults
+from native_assets_lib.material_program import derive_material_program
 from native_assets_lib.texture_dds import UnsupportedTextureDDS, build_texture_dds
 from native_assets_lib.texture_mips import UnsupportedTextureSource, build_texture_source
 from native_assets_lib.texture_source_reader import TEXTURE_FORMAT_UNSUPPORTED_REASON_PREFIX
 from native_catalog.ue2 import FormatError
 from world.bsp_reader_binding import pinned_bytes
+from world.class_default_reads import kept_material_class_defaults
 from world.material_texture_images import TEXTURE_CLASS, material_texture_image_pins, reviewed_texture_nodes
 
 PINNED_PILLOW_VERSION = '12.3.0'
@@ -55,7 +56,7 @@ def read_sky_material_graph(package, root_exports):
 
 
 def sky_material_program(graph, class_work_root, class_scripts, pngs_by_node):
-    return derive_material_program(graph, read_material_class_defaults(graph, class_work_root, class_scripts),
+    return derive_material_program(graph, kept_material_class_defaults(graph, class_work_root, class_scripts),
                                    texture_images=material_texture_image_pins(pngs_by_node))
 
 

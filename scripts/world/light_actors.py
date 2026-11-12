@@ -1,9 +1,10 @@
 from typing import NamedTuple
 
-from native_assets_lib.class_defaults import ClassDefaultError, cached_class_chain
+from native_assets_lib.class_defaults import ClassDefaultError
 from native_catalog.ue2 import FormatError
 from world.actor_field_values import resolved_actor_field, serialized_actor_values
 from world.bsp_leaf_membership import leaf_for_point
+from world.class_default_reads import kept_class_chain
 
 LIGHT_BASE_CLASS = 'Engine.Light'
 FOG_INFO_BASE_CLASS = 'Engine.L2FogInfo'
@@ -91,7 +92,7 @@ class ClassChains:
 
 
 def reference_client_class_chains(class_defaults):
-    return ClassChains(class_defaults, lambda class_name: cached_class_chain(class_name, class_defaults.work_root, class_defaults.class_scripts))
+    return ClassChains(class_defaults, lambda class_name: kept_class_chain(class_name, class_defaults.work_root, class_defaults.class_scripts))
 
 
 def location_point(location_field):

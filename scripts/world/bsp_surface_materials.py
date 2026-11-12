@@ -6,9 +6,10 @@ from typing import NamedTuple
 
 from native_catalog.ue2 import FormatError
 from native_assets_lib.material_graph import read_material_graph
-from native_assets_lib.material_program import derive_material_program, read_material_class_defaults
+from native_assets_lib.material_program import derive_material_program
 from native_assets_lib.material_resources import write_material_program_record
 from world.bsp_chunk_geometry import BspSurfaceMaterial
+from world.class_default_reads import kept_material_class_defaults
 from world.material_texture_images import material_texture_image_pins, reviewed_texture_nodes, write_material_texture_images
 from world.static_mesh_step import conversion_failure_reason
 
@@ -99,7 +100,7 @@ def convert_surface_material(identity, map_sources, converter, class_work_root, 
         package, item = resolve_material_export(map_sources, identity)
         graph = read_material_graph(package, item)
         pngs_by_node, texture_gap_reasons = converted_texture_pngs(graph, converter)
-        program = derive_material_program(graph, read_material_class_defaults(graph, class_work_root, class_scripts),
+        program = derive_material_program(graph, kept_material_class_defaults(graph, class_work_root, class_scripts),
                                           texture_images=material_texture_image_pins(pngs_by_node))
         program_record, program_files = write_material_program_record(store_root, graph, program)
         store_outputs = [*program_files, *write_material_texture_images(store_root, pngs_by_node)]

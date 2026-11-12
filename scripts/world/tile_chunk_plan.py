@@ -3,12 +3,13 @@ import json
 from pathlib import Path
 from typing import NamedTuple
 
-from native_assets_lib.class_defaults import ClassDefaultError, ReferenceClientClassScripts, read_class_defaults_with_provenance
+from native_assets_lib.class_defaults import ClassDefaultError, ReferenceClientClassScripts
 from native_catalog.ue2 import FormatError, Package
 from native_store.canonical_json import canonical_json_bytes
 from native_store.store_paths import lane_work_root
 from native_store.tile_manifest_validation import CHUNK_SECTOR_SPAN
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger
+from world.class_default_reads import kept_class_default_values
 from world.map_actor_properties import property_value
 from world.map_sources import require_lock_equal_client_path
 from world.native_terrain_sectors import native_terrain
@@ -170,8 +171,8 @@ def player_start_class_defaults(client, project_root, actors):
     if all(player_start_enabled_tag(actor) is not None for actor in player_starts):
         return {}
     try:
-        values = read_class_defaults_with_provenance(PLAYER_START_CLASS, [PLAYER_START_ENABLED_FIELD], lane_work_root(project_root, WORLD_LANE_NAME),
-                                                     ReferenceClientClassScripts(client))
+        values = kept_class_default_values(PLAYER_START_CLASS, [PLAYER_START_ENABLED_FIELD], lane_work_root(project_root, WORLD_LANE_NAME),
+                                           ReferenceClientClassScripts(client))
     except (ClassDefaultError, FormatError):
         return {}
     enabled = values[0]

@@ -1,8 +1,8 @@
-import copy
 import math
 
-from native_assets_lib.class_defaults import ClassDefaultError, ReferenceClientClassScripts, read_class_defaults_with_provenance
+from native_assets_lib.class_defaults import ClassDefaultError, ReferenceClientClassScripts
 from native_catalog.ue2 import FormatError
+from world.class_default_reads import kept_class_default_values
 from world.map_actor_properties import property_value
 from world.terrain_coordinates import f32, xyz
 
@@ -25,24 +25,9 @@ class TransformFieldError(FormatError):
 class ClassDefaults:
     def __init__(self, work_root, class_scripts):
         self.work_root, self.class_scripts = work_root, class_scripts
-        self.answers_by_class_and_fields, self.refusal_arguments_by_class_and_fields = {}, {}
-
-    def read_answer(self, class_and_fields):
-        class_name, field_names = class_and_fields
-        try:
-            values = read_class_defaults_with_provenance(class_name, list(field_names), self.work_root, self.class_scripts)
-        except ClassDefaultError as refusal:
-            self.refusal_arguments_by_class_and_fields[class_and_fields] = refusal.args
-            raise
-        self.answers_by_class_and_fields[class_and_fields] = {value.field: value for value in values}
 
     def values(self, class_name, fields):
-        class_and_fields = (class_name, tuple(fields))
-        if class_and_fields in self.refusal_arguments_by_class_and_fields:
-            raise ClassDefaultError(*self.refusal_arguments_by_class_and_fields[class_and_fields])
-        if class_and_fields not in self.answers_by_class_and_fields:
-            self.read_answer(class_and_fields)
-        return copy.deepcopy(self.answers_by_class_and_fields[class_and_fields])
+        return {value.field: value for value in kept_class_default_values(class_name, fields, self.work_root, self.class_scripts)}
 
 
 def read_class_evidence(client, work_root):

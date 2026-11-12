@@ -1,5 +1,7 @@
 from pathlib import Path
 import sys
+import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -8,11 +10,10 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 
 from native_assets_lib.class_defaults import ClassDefaultError, ClassDefaultValue
 from native_catalog.ue2 import FormatError
-from world import static_placement
+from world import class_default_reads
 from world.static_placement import ClassDefaults
 
-WORK_ROOT = ROOT / 'artifacts' / 'lane-store' / 'world' / 'work'
-CLASS_SCRIPTS = object()
+CLASS_SCRIPTS = SimpleNamespace(client_root=Path('E:/synthetic-client'))
 LOCATION_DEFAULT = {'X': 1.0, 'Y': 2.0, 'Z': 3.0}
 UNDECLARED_FIELD_MESSAGE = 'Missing is not declared by the class chain of Engine.StaticMeshActor'
 
@@ -25,16 +26,23 @@ def synthetic_class_defaults(class_name, fields, work_root, class_scripts):
 
 class ClassDefaultLookupTests(unittest.TestCase):
     def setUp(self):
-        reader = patch.object(static_placement, 'read_class_defaults_with_provenance', side_effect=synthetic_class_defaults)
+        temporary_directory = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary_directory.cleanup)
+        self.work_root = Path(temporary_directory.name).resolve() / 'work'
+        reader = patch.object(class_default_reads, 'read_class_defaults_with_provenance', side_effect=synthetic_class_defaults)
         self.read_class_defaults = reader.start()
         self.addCleanup(reader.stop)
-        self.class_defaults = ClassDefaults(WORK_ROOT, CLASS_SCRIPTS)
+        for kept_reads in (class_default_reads.kept_answers_by_read, class_default_reads.kept_refusal_arguments_by_read):
+            emptied_kept_reads = patch.dict(kept_reads, clear=True)
+            emptied_kept_reads.start()
+            self.addCleanup(emptied_kept_reads.stop)
+        self.class_defaults = ClassDefaults(self.work_root, CLASS_SCRIPTS)
 
     def test_one_class_and_field_list_is_read_once_however_often_it_is_asked(self):
         answers = [self.class_defaults.values('Engine.StaticMeshActor', ['Location']) for _ in range(50)]
         self.assertEqual(answers[0], {'Location': ClassDefaultValue('Location', LOCATION_DEFAULT, 'class-default', 'Engine.StaticMeshActor')})
         self.assertTrue(all(answer == answers[0] for answer in answers))
-        self.read_class_defaults.assert_called_once_with('Engine.StaticMeshActor', ['Location'], WORK_ROOT, CLASS_SCRIPTS)
+        self.read_class_defaults.assert_called_once_with('Engine.StaticMeshActor', ['Location'], self.work_root, CLASS_SCRIPTS)
 
     def test_another_class_or_another_field_list_is_read_on_its_own(self):
         self.class_defaults.values('Engine.StaticMeshActor', ['Location'])
@@ -65,7 +73,7 @@ class ClassDefaultLookupTests(unittest.TestCase):
         answer = self.class_defaults.values('Engine.StaticMeshActor', (name for name in ['Location', 'Rotation']))
         self.assertEqual(sorted(answer), ['Location', 'Rotation'])
         self.assertEqual(self.class_defaults.values('Engine.StaticMeshActor', ['Location', 'Rotation']), answer)
-        self.read_class_defaults.assert_called_once_with('Engine.StaticMeshActor', ['Location', 'Rotation'], WORK_ROOT, CLASS_SCRIPTS)
+        self.read_class_defaults.assert_called_once_with('Engine.StaticMeshActor', ['Location', 'Rotation'], self.work_root, CLASS_SCRIPTS)
 
     def test_a_failure_that_is_not_a_class_default_refusal_is_not_kept_and_the_next_ask_reads_again(self):
         self.read_class_defaults.side_effect = [FormatError('Native package missing/ambiguous: Engine'),
@@ -75,10 +83,11 @@ class ClassDefaultLookupTests(unittest.TestCase):
         self.assertEqual(self.class_defaults.values('Engine.StaticMeshActor', ['Location'])['Location'].value, LOCATION_DEFAULT)
         self.assertEqual(self.read_class_defaults.call_count, 2)
 
-    def test_two_class_default_readers_do_not_share_answers(self):
-        self.class_defaults.values('Engine.StaticMeshActor', ['Location'])
-        ClassDefaults(WORK_ROOT, CLASS_SCRIPTS).values('Engine.StaticMeshActor', ['Location'])
-        self.assertEqual(self.read_class_defaults.call_count, 2)
+    def test_two_class_default_readers_of_one_cache_folder_share_one_frozen_read(self):
+        first_answer = self.class_defaults.values('Engine.StaticMeshActor', ['Location'])
+        second_answer = ClassDefaults(self.work_root, CLASS_SCRIPTS).values('Engine.StaticMeshActor', ['Location'])
+        self.assertEqual(second_answer, first_answer)
+        self.assertEqual(self.read_class_defaults.call_count, 1)
 
 
 if __name__ == '__main__':
