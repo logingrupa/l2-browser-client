@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 02-87-PLAN.md
-last_updated: "2026-11-12T18:10:39.208Z"
+stopped_at: Completed 02-91-PLAN.md
+last_updated: "2026-11-12T19:30:24.532Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 03 plan 03-01 complete (side-by-side check record writer and key content digest; Phase 3 start commit cb09cdc)
-state_head: b61bcaac1af4e63ac694daa2623abb7c6c686397
+state_head: cda6e15ffe7521afab07202f84527376ec63364b
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 131
-  completed_plans: 111
+  completed_plans: 112
   percent: 0
 ---
 
@@ -157,6 +157,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 2 P85 | 30min | 3 tasks | 6 files |
 | Phase 2 P86 | 1h 13m | 3 tasks | 17 files |
 | Phase 02 P87 | 31min | 3 tasks | 15 files |
+| Phase 02 P91 | 72min | 3 tasks | 22 files |
 
 ## Accumulated Context
 
@@ -423,6 +424,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-87: every sandbox skill-cast runs createSkillCastPresentation and writes sandbox-skill-cast-note; startsStagedPowerStrike deleted, 3:1 goes the same path (rows 1055, 1056)
 - [Phase 02]: 02-87: wireSpawnedActorSounds (src/runtime) binds actor-sounds:<key> on adapter spawn once the clip hub lists clips; bindSpawnedActorSoundCues takes parsed clip events, one actors-lane foreign path (rows 1057 to 1060)
 - [Phase 02]: 02-87: the played-cue browser check uses npc:14663, the lowest of 591 of 5,175 npcs whose bundle binds a notify; npc:12077 binds none (row 1061)
+- [Phase 02]: 02-91: residency chunk events drive per-chunk visibility and lightmap binding on every streamed tile; neighbour tile systems attach on the first resident chunk and release on the last, the selected tile keeps its systems; culling reaches every tile; the row 735 ring and cull are presentation limit rows in the visibility inspection (OVERNIGHT-DECISIONS rows 1062 to 1066)
 
 ### Pending Todos
 
@@ -462,6 +464,7 @@ Owner decisions:
 - Needs Human (phase 1 verification): Phase 1 is human_needed with 6 of 6 criteria verified; it stays pending until the two items above are reviewed (OVERNIGHT-DECISIONS row 59); Phase 1 is not marked complete.
 - Resolved (plan 02-60, OVERNIGHT-DECISIONS rows 254, 298 and the clean-room rewrite rows of 2026-11-09): the 11 materials runs once left for the owner were rewritten clean-room from the Interlude binaries; the rewritten code passed the independent review and materials exits 0 with `--require-reviewed`.
 - Needs Human (CONV-02 gap item a, plan 02-74, OVERNIGHT-DECISIONS rows 887 and 968): decide the build1590 tangent repair: prove the zero-vector tangents with a test, or remove `repair_vertex_metadata` and the `omit-zero-tangent-attribute` record from `scripts/native_assets_lib/gltf.py` (removal changes converted output). Until then both steps run with `unresolved:` evidence, pinned by name in `REPAIR_STEPS_AWAITING_OWNER_DECISION` of `tests/pipeline/test_source_preservation_contract.py`; every other running repair needs repo-backed defect evidence.
+- Needs Human (plan 02-91, OVERNIGHT-DECISIONS rows 926, 940 and 1066): choose the streamed tile draw limit: keep the row 735 1-chunk-edge visual ring and null level-of-detail cull (81.92 m), or derive it from fog end or the far plane. The tile visibility inspection now lists both as presentation limit rows next to `static-mesh-range` at infinity; raising them changes the WORLD-04 and PERF-02 workload that only the GTX 1060 can measure.
 
 Integration thread (rule 4: only the integration thread writes the main checkout's `public/l2`):
 - Needs Human (plans 01-12, 02-17 to 02-34, OVERNIGHT-DECISIONS rows 376 and 377): restage `public/l2` from the main checkout to asset.json v2, then merge each lane store with the command `python -B scripts/native_store/write_lane_catalog.py --lane <lane> --plan` prints in this worktree (data-ui, actors and world; actors lane catalog `7ab1cdcf...` after the pack rebuild of row 444; base catalog `55c12147...`). After that restage, in one change: delete v1 acceptance in `src/assets/package/readAssetPackage.ts`, `src/effects/nativePowerStrikeSource.ts` and `scripts/native_assets_lib/asset_manifest.py` and regenerate the golden fixtures without `model-v1.l2asset` (01-12); delete the `legacy-single-mesh-match` NPC join in `src/assets/native/nativeCatalogIndex.ts` (02-05, row 326); switch the `musveren:0` reads in `src/runtime/createNativeSliceRuntime.ts` to the joined id of `nativeSliceNpcIds` (02-33). After this branch merges, run `pnpm assets:migrate` once in the main checkout (it writes only `artifacts/native-parity/migration`) and then `pnpm assets:migrate --verify-only`, because plan 02-71 changed the migration recipe (map jobs removed, `flame-native-material-graph` added; OVERNIGHT-DECISIONS rows 506 and 507).
@@ -495,7 +498,6 @@ Integration thread (rule 4: only the integration thread writes the main checkout
 Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in this run and leaves this list when it lands.
 
 - Tile seam (02-49, row 743; 02-81, rows 969 to 975): Engine.dll draws the 128-unit strip from the neighbour's facing heights (`recipes/world/terrain-seam-rules.json`) and the terrain step now converts it, but `ATerrainInfo::LineCheck` 0x10722630 clamps to quad HeightmapX - 2, so no strip quad collides and `world-tile-border.spec.ts` still drops the player crossing 17_12 into 18_12 (MOVE-01). The movement owner reads the walking floor loss in Engine.dll (APawn physWalking and the ULevel floor traces) to find what keeps the reference pawn up, and ports it; the border spec turns green with it. The spec walks the first adjacent pair of the world lane catalog (15_20 to 15_21 after 02-88).
-- Chunk-incremental tile systems (02-49, row 740): BSP visibility, lighting and map emitters bind the selected tile's startup chunks only; neighbour tiles and reloaded chunks draw without them.
 - WorldNavigation lane handoff (02-67, row 726): `src/world/WorldNavigation.ts` stays only as a type. The actors lane moves `src/audio/footstepSurfaceGround.ts` and `src/audio/nativeFootstepPreview.ts` off `WorldGroundContact`, and the world lane moves `src/scene/world/nativeDoorInteractions.ts` and `src/scene/world/nativeGroundContact.ts` to collision world queries; then the file and its `importBoundaries.test.ts` listing go.
 - Camera environment accessor (02-67, row 725): the runtime re-reads the tile lighting inspection when the camera zone changes; the world lane exposes the camera environment from `NativeSection` once fog info or water volumes become inputs.
 - Behind-view trace cost (02-67, row 723): `calculateBehindView` walks every resident primitive for its box trace; the movement core adds spatial culling before PERF-02 measures movement on the GTX 1060.
@@ -530,6 +532,8 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 - Headless WebGPU refusal (02-39): in one full run of `tests/browser/sandbox-npc-gremlin.spec.ts` the SwiftShader adapter answered "WebGPU is required" on the seventh case's world load; the case passed in the first run and alone. Find why the adapter refuses after several world loads in one worker.
 - Player-characters evidence heading (found in 02-48): `tests/unit/laneOwnership.test.ts` fails because `docs/parts/player-characters/EVIDENCE.md` (actors lane, 02-40) has no `## Evidence` section; the actors part adds it, which makes `pnpm test:unit` green again (deferred-items.md).
 - BSP visibility overlap review (DEC-OWN-12, 02-63, row 631): the bsp-visibility area reports 290 blocking and 3,521 unreviewed reviewer runs on the new walk code (report `artifacts/reference-overlap/02-63-bsp-visibility.json`); independent review before the push. The culling sheet switch reads `NativeSection.tileVisibility` in 02-67 (row 630); translucent index rewriting is proven on the unit fixture only, since no converted tile holds a translucent BSP section.
+- Stale chunk collision on the world lane (02-91): 18_24, 18_10, 20_10, 18_22 and 19_16, the tiles whose own chunks lie beyond the startup ring, stop at "Typed payload: array VOLS.water is not in the payload." because their chunk collision payloads predate the 02-77 VOLS fields; only 17_12, 18_12, 20_20 and 20_21 carry them. `tests/browser/world-tile-streamed-systems.spec.ts` therefore proves the after-startup chunk on 20_21's neighbour 20_20, and proves an own-tile chunk once the world batch reconverts those tiles' collision.
+- BSP visibility overlap review (DEC-OWN-12, 02-91, rows 1062 to 1066): after the per-chunk visibility targets the bsp-visibility area reports 23 blocking and 406 unreviewed runs and 17 stale sign-offs, in `attachTileVisibility.ts`, `babylonTileVisibilityTargets.ts`, `bindTileVisibility.ts` and `core/tileVisibilityFrame.ts` (report `artifacts/reference-overlap/02-91-bsp-visibility.json`); independent review before the push.
 - Movement overlap review (DEC-OWN-12, 02-48 and 02-65, row 638): the movement area reported 108 blocking and 1,732 unreviewed runs in the collision world code (02-48), and now 83 blocking and 2,727 unreviewed runs in the 02-65 trace and MoveActor code (local report `artifacts/plan-starts/02-65-reference-overlap-movement.json`); independent review before the push.
 - World evidence size (found in 02-65, row 640): `tests/unit/laneOwnership.test.ts` fails because `docs/parts/world/EVIDENCE.md` is 30,917 bytes after 02-63, over the 30 KB limit; the world part trims it, which makes `pnpm test:unit` green again.
 - Lane catalog plan memory (02-79): `write_lane_catalog.py --plan` reads every pinned store file into memory (29.7 GB working set on the actors lane after the item batch); one run reported `pinned store file SHA-256 differs from its pin 9e1c2f79...: 9e1c2f79.../asset.l2asset` although the file bytes match the pin, and the next run passed; hash pinned files with a streaming digest so memory stays bounded and a repeat mismatch is a real one.
@@ -559,6 +563,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-12T18:10:38.464Z
-Stopped at: Completed 02-87-PLAN.md
+Last session: 2026-11-12T19:30:23.802Z
+Stopped at: Completed 02-91-PLAN.md
 Resume file: None
