@@ -46,6 +46,7 @@ interface RecordedTileSystems {
   readonly added: string[];
   readonly removed: string[];
   readonly bound: Set<string>;
+  readonly cullingSettings: boolean[];
   readonly dispose: Mock<() => void>;
 }
 
@@ -54,7 +55,7 @@ describe("streamed native tile chunks", () => {
   let residencyOptions: NativeTileChunkResidencyOptions<LoadedTileResidencyChunk> | null;
   let resident: ResidentChunk<LoadedTileResidencyChunk>[], chunkListeners: Set<ResidencyChunkEventListener<LoadedTileResidencyChunk>>;
   let residencyDispose: Mock<() => void>, addedChunks: ResidencyChunk[][];
-  let templateDisposals: Map<string, Mock<() => void>>, recordedSystems: RecordedTileSystems[];
+  let templateDisposals: Map<string, Mock<() => void>>, recordedSystems: RecordedTileSystems[], tilesWhoseSystemsFail: Set<string>;
   const context: CollisionCellContext = { world: {} as CollisionWorld, focusPosition: () => null };
 
   function loadedChunk(chunk: ResidencyChunk): LoadedTileResidencyChunk {
@@ -81,7 +82,7 @@ describe("streamed native tile chunks", () => {
   beforeEach(() => {
     engine = new NullEngine(); scene = new Scene(engine); scene.useRightHandedSystem = true;
     residencyOptions = null; resident = []; chunkListeners = new Set(); addedChunks = []; residencyDispose = vi.fn<() => void>(); templateDisposals = new Map();
-    recordedSystems = [];
+    recordedSystems = []; tilesWhoseSystemsFail = new Set();
     vi.mocked(readCatalogTileIds).mockResolvedValue(new Set([selectedTileId, readableNeighbourTileId, unreadableNeighbourTileId]));
     vi.mocked(readResidencyTile).mockImplementation(async tileId => {
       if (tileId === unreadableNeighbourTileId) throw new Error(`Native tile ${tileId} pins no native-tile-collision resource.`);
@@ -108,11 +109,16 @@ describe("streamed native tile chunks", () => {
       return templates;
     });
     vi.mocked(attachNativeTileSystems).mockImplementation(async (_scene, manifest, initialChunks: readonly NativeTileChunkSystemContents[]) => {
+      if (tilesWhoseSystemsFail.has(manifest.tileId)) throw new Error(`Native tile ${manifest.tileId} lighting payload refused.`);
       const recorded: RecordedTileSystems = { tileId: manifest.tileId, added: [], removed: [], bound: new Set(initialChunks.map(chunk => chunk.chunkId)),
-        dispose: vi.fn<() => void>() };
+        cullingSettings: [], dispose: vi.fn<() => void>() };
       recordedSystems.push(recorded);
+      const binding = { frame: () => null, setCulling: (enabled: boolean) => { recorded.cullingSettings.push(enabled); } };
       return {
-        visibility: { binding: null }, lighting: { environmentClock: null }, movers: null, moverGap: null, mapEmitterPlacements: { gap: null, inspection: () => [] },
+        visibility: { binding, inspection: () => ({ gap: null, culling: recorded.cullingSettings.at(-1) ?? false, targetChunkIds: [...recorded.bound].sort(), unmappedChunks: [] }) },
+        lighting: { environmentClock: null, inspection: () => ({ gap: null, sectionCount: recorded.bound.size,
+          sections: [...recorded.bound].map(chunkId => ({ chunkId, lighting: "lightmapped" })) }) },
+        movers: null, moverGap: null, mapEmitterPlacements: { gap: null, inspection: () => [] },
         addChunk: async (contents: NativeTileChunkSystemContents) => { recorded.added.push(contents.chunkId); recorded.bound.add(contents.chunkId); },
         removeChunk: (chunkId: string) => { recorded.removed.push(chunkId); recorded.bound.delete(chunkId); },
         boundChunkIds: () => [...recorded.bound].sort(),
@@ -133,11 +139,12 @@ describe("streamed native tile chunks", () => {
     return (await streamNativeTileChunks(scene, new AbortController().signal, selectedTileId, context))!;
   }
 
-  it("attaches the selected tile's systems with its startup chunks and lists every known chunk in the residency", async () => {
+  it("attaches the selected tile's systems with its startup chunks and a startup neighbour chunk to its own tile's systems", async () => {
     const section = await streamWithStartupChunks([residencyChunk(selectedTileId, "chunk-0-0"), residencyChunk(readableNeighbourTileId, "chunk-0-0")]);
-    const [selectedSystems] = systemsOf(selectedTileId);
-    expect(vi.mocked(attachNativeTileSystems).mock.calls[0]![2].map(contents => contents.chunkId)).toEqual(["chunk-0-0"]);
-    expect([...selectedSystems!.bound]).toEqual(["chunk-0-0"]);
+    await vi.waitFor(() => expect(systemsOf(readableNeighbourTileId)[0]?.added).toEqual(["chunk-0-0"]));
+    const selectedCall = vi.mocked(attachNativeTileSystems).mock.calls.find(([, manifest]) => manifest.tileId === selectedTileId)!;
+    expect(selectedCall[2].map(contents => contents.chunkId)).toEqual(["chunk-0-0"]);
+    expect([...systemsOf(selectedTileId)[0]!.bound]).toEqual(["chunk-0-0"]);
     expect(residencyOptions!.chunks.map(chunk => chunk.cellId)).toEqual([
       `${selectedTileId}:chunk-0-0`, `${selectedTileId}:chunk-3-0`, `${readableNeighbourTileId}:chunk-0-0`]);
     section.dispose();
@@ -149,8 +156,9 @@ describe("streamed native tile chunks", () => {
     becomeResident(residencyChunk(selectedTileId, "chunk-3-0"));
     await Promise.resolve();
     expect(selectedSystems!.added).toEqual(["chunk-3-0"]);
-    expect(section.inspection().streamedTiles!.find(tile => tile.tileId === selectedTileId)!.systems)
-      .toEqual({ boundChunkIds: ["chunk-0-0", "chunk-3-0"], chunkFailures: [] });
+    expect(section.inspection().streamedTiles!.find(tile => tile.tileId === selectedTileId)!.systems).toMatchObject({ attached: true,
+      residentChunkIds: ["chunk-0-0", "chunk-3-0"], boundChunkIds: ["chunk-0-0", "chunk-3-0"], chunkFailures: [],
+      visibility: { gap: null, targetChunkIds: ["chunk-0-0", "chunk-3-0"] }, lighting: { gap: null, lightmappedChunkIds: ["chunk-0-0", "chunk-3-0"] } });
     leaveResidency(`${selectedTileId}:chunk-3-0`);
     expect(selectedSystems!.removed).toEqual(["chunk-3-0"]);
     expect([...selectedSystems!.bound]).toEqual(["chunk-0-0"]);
@@ -158,6 +166,56 @@ describe("streamed native tile chunks", () => {
     await Promise.resolve();
     expect(selectedSystems!.added).toEqual(["chunk-3-0", "chunk-3-0"]);
     expect([...selectedSystems!.bound].sort()).toEqual(["chunk-0-0", "chunk-3-0"]);
+    section.dispose();
+  });
+
+  it("gives a neighbour tile its own systems on its first resident chunk and releases them on its last disposed chunk", async () => {
+    const section = await streamWithStartupChunks([residencyChunk(selectedTileId, "chunk-0-0")]);
+    expect(systemsOf(readableNeighbourTileId)).toEqual([]);
+    becomeResident(residencyChunk(readableNeighbourTileId, "chunk-0-0"));
+    await vi.waitFor(() => expect(systemsOf(readableNeighbourTileId)[0]?.added).toEqual(["chunk-0-0"]));
+    const neighbourCall = vi.mocked(attachNativeTileSystems).mock.calls.find(([, manifest]) => manifest.tileId === readableNeighbourTileId)!;
+    expect(neighbourCall[2]).toEqual([]);
+    expect(section.inspection().streamedTiles!.find(tile => tile.tileId === readableNeighbourTileId)!.systems)
+      .toMatchObject({ attached: true, boundChunkIds: ["chunk-0-0"], lighting: { lightmappedChunkIds: ["chunk-0-0"] } });
+    leaveResidency(`${readableNeighbourTileId}:chunk-0-0`);
+    expect(systemsOf(readableNeighbourTileId)[0]!.dispose).toHaveBeenCalledTimes(1);
+    expect(section.inspection().streamedTiles!.find(tile => tile.tileId === readableNeighbourTileId)!.systems).toBeNull();
+    becomeResident(residencyChunk(readableNeighbourTileId, "chunk-0-0"));
+    await vi.waitFor(() => expect(systemsOf(readableNeighbourTileId)).toHaveLength(2));
+    section.dispose();
+    expect(systemsOf(readableNeighbourTileId)[1]!.dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the selected tile's systems after its last chunk leaves, since the section hands them to its callers", async () => {
+    const section = await streamWithStartupChunks([residencyChunk(selectedTileId, "chunk-0-0")]);
+    leaveResidency(`${selectedTileId}:chunk-0-0`);
+    const [selectedSystems] = systemsOf(selectedTileId);
+    expect(selectedSystems!.removed).toEqual(["chunk-0-0"]);
+    expect(selectedSystems!.dispose).not.toHaveBeenCalled();
+    expect(section.inspection().streamedTiles!.find(tile => tile.tileId === selectedTileId)!.systems).toMatchObject({ attached: true, boundChunkIds: [] });
+    section.dispose();
+  });
+
+  it("switches culling on every streamed tile's visibility, including a tile attached after the switch", async () => {
+    const section = await streamWithStartupChunks([residencyChunk(selectedTileId, "chunk-0-0")]);
+    section.tileVisibility!.setCulling(true);
+    becomeResident(residencyChunk(readableNeighbourTileId, "chunk-0-0"));
+    await vi.waitFor(() => expect(systemsOf(readableNeighbourTileId)).toHaveLength(1));
+    expect(systemsOf(selectedTileId)[0]!.cullingSettings).toEqual([false, true]);
+    expect(systemsOf(readableNeighbourTileId)[0]!.cullingSettings).toEqual([true]);
+    section.tileVisibility!.setCulling(false);
+    expect(systemsOf(readableNeighbourTileId)[0]!.cullingSettings).toEqual([true, false]);
+    section.dispose();
+  });
+
+  it("lists a neighbour tile whose systems cannot attach as a systems gap and keeps the section", async () => {
+    tilesWhoseSystemsFail.add(readableNeighbourTileId);
+    const section = await streamWithStartupChunks([residencyChunk(selectedTileId, "chunk-0-0")]);
+    becomeResident(residencyChunk(readableNeighbourTileId, "chunk-0-0"));
+    const neighbourSystems = () => section.inspection().streamedTiles!.find(tile => tile.tileId === readableNeighbourTileId)!.systems;
+    await vi.waitFor(() => expect(neighbourSystems()?.gap).toBe(`Native tile ${readableNeighbourTileId} lighting payload refused.`));
+    expect(neighbourSystems()).toMatchObject({ attached: false, residentChunkIds: ["chunk-0-0"], boundChunkIds: [], visibility: null, lighting: null });
     section.dispose();
   });
 

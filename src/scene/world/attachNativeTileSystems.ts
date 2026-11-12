@@ -40,11 +40,11 @@ export async function attachNativeTileSystems(scene: Scene, manifest: NativeTile
   let visibility: AttachedTileVisibility | null = null, lighting: AttachedTileLighting | null = null, movers: NativeTileMovers | null = null;
   const dispose = () => { movers?.dispose(); visibility?.dispose(); lighting?.dispose(); };
   try {
-    visibility = await attachTileVisibility(scene, manifest, { bspChunks: initialChunks.flatMap(chunk => chunk.bspChunk === null ? [] : [chunk.bspChunk]),
-      placements: initialChunks.flatMap(chunk => chunk.instances), terrainMeshes: initialChunks.flatMap(chunk => chunk.terrainMeshes) }, signal);
+    const attachedVisibility = await attachTileVisibility(scene, manifest, signal);
+    visibility = attachedVisibility;
     if (isDisposed()) throw disposedDuringLoading();
     const chunkOrdinalById = new Map(manifest.chunks.map((record, ordinal) => [record.chunkId, ordinal]));
-    const visibilityBinding = visibility.binding;
+    const visibilityBinding = attachedVisibility.binding;
     const attachedLighting = await attachTileLighting(scene, manifest, () => visibilityBinding?.frame() ?? null, signal);
     lighting = attachedLighting;
     if (isDisposed()) throw disposedDuringLoading();
@@ -72,17 +72,19 @@ export async function attachNativeTileSystems(scene: Scene, manifest: NativeTile
       const chunkBinding = {};
       bindingsByChunkId.set(contents.chunkId, chunkBinding);
       try {
+        attachedVisibility.addChunk({ chunkId: contents.chunkId, bspChunk: contents.bspChunk, placements: contents.instances, terrainMeshes: contents.terrainMeshes });
         await attachedLighting.addChunk(lightingSurfacesOf(contents));
       } catch (error) {
-        if (bindingsByChunkId.get(contents.chunkId) === chunkBinding) bindingsByChunkId.delete(contents.chunkId);
+        if (bindingsByChunkId.get(contents.chunkId) === chunkBinding) { bindingsByChunkId.delete(contents.chunkId); attachedVisibility.removeChunk(contents.chunkId); }
         throw error;
       }
     };
     for (const contents of initialChunks) await addChunk(contents);
     if (isDisposed()) throw disposedDuringLoading();
-    return { visibility, lighting: attachedLighting, mapEmitterPlacements, movers, moverGap, addChunk,
+    return { visibility: attachedVisibility, lighting: attachedLighting, mapEmitterPlacements, movers, moverGap, addChunk,
       removeChunk(chunkId) {
         if (!bindingsByChunkId.delete(chunkId)) return;
+        attachedVisibility.removeChunk(chunkId);
         attachedLighting.removeChunk(chunkId);
       },
       boundChunkIds: () => [...bindingsByChunkId.keys()].sort(),

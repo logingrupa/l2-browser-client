@@ -10,23 +10,23 @@ import type { NativeModelInstance } from "../nativeModelPlacements";
 import type { NativeTileChunkPlacement } from "../nativeTileChunkManifest";
 import { memberKindStaticMesh, type BspVisibilityModel } from "./core/decodeBspVisibility";
 import type { ViewPose } from "./core/viewFrustum";
-import type { IndexBlock, TileViewSource, TileVisibilityTargets, TranslucentSectionTarget, VisibilityTarget } from "./bindTileVisibility";
+import type { ChunkVisibilityTargets, IndexBlock, TileViewSource, TranslucentSectionTarget, VisibilityTarget } from "./bindTileVisibility";
 
-export interface TileVisibilityBspChunk {
-  readonly chunkOrdinal: number;
+export interface TileVisibilityBspMeshes {
   readonly sections: readonly NativeBspSection[];
   readonly nodeRanges: readonly NativeBspNodeRange[];
   readonly meshes: readonly AbstractMesh[];
 }
 
-export interface TileVisibilityScene {
-  readonly bspChunks: readonly TileVisibilityBspChunk[];
+export interface TileVisibilityChunk {
+  readonly chunkOrdinal: number;
+  readonly bspChunk: TileVisibilityBspMeshes | null;
   readonly placements: readonly NativeModelInstance<NativeTileChunkPlacement>[];
   readonly terrainMeshes: readonly AbstractMesh[];
 }
 
-export type TileVisibilityTargetsResult =
-  | { readonly kind: "bound"; readonly targets: TileVisibilityTargets; readonly translucentSections: readonly number[] }
+export type ChunkVisibilityTargetsResult =
+  | { readonly kind: "bound"; readonly targets: ChunkVisibilityTargets }
   | { readonly kind: "gap"; readonly reason: string };
 
 const sectionUnmappedReason = "bsp-visibility-section-unmapped";
@@ -81,28 +81,34 @@ function rangeKey(node: number, primitive: number, firstIndex: number, indexCoun
   return `${node}:${primitive}:${firstIndex}:${indexCount}`;
 }
 
-function sectionMeshes(model: BspVisibilityModel, chunks: readonly TileVisibilityBspChunk[]): { meshes: AbstractMesh[]; translucent: boolean[] } | string {
-  const chunkByOrdinal = new Map(chunks.map(chunk => [chunk.chunkOrdinal, chunk]));
-  const glbRangeKeys = new Map(chunks.map(chunk => [chunk.chunkOrdinal,
-    new Set(chunk.nodeRanges.map(range => rangeKey(range.node, range.primitive, range.firstIndex, range.indexCount)))]));
-  const sectionIndexCount = new Float64Array(model.sections.count);
+interface ChunkSectionMeshes {
+  readonly meshes: ReadonlyMap<number, AbstractMesh>;
+  readonly translucentSections: readonly number[];
+}
+
+function chunkSectionMeshes(model: BspVisibilityModel, chunk: TileVisibilityChunk): ChunkSectionMeshes | string {
+  const { chunkOrdinal, bspChunk } = chunk;
+  const glbRangeKeys = new Set((bspChunk?.nodeRanges ?? []).map(range => rangeKey(range.node, range.primitive, range.firstIndex, range.indexCount)));
+  const sectionIndexCount = new Map<number, number>();
   const { ranges } = model;
   for (let range = 0; range < ranges.count; range++) {
+    if (ranges.chunk[range] !== chunkOrdinal) continue;
     const key = rangeKey(ranges.node[range]!, ranges.primitive[range]!, ranges.firstIndex[range]!, ranges.indexCount[range]!);
-    if (!glbRangeKeys.get(ranges.chunk[range]!)?.has(key)) return `range of node ${ranges.node[range]} is not in the chunk BSP of chunk ${ranges.chunk[range]}`;
+    if (!glbRangeKeys.has(key)) return `range of node ${ranges.node[range]} is not in the chunk BSP of chunk ${chunkOrdinal}`;
     const section = ranges.section[range]!;
-    sectionIndexCount[section] = sectionIndexCount[section]! + ranges.indexCount[range]!;
+    sectionIndexCount.set(section, (sectionIndexCount.get(section) ?? 0) + ranges.indexCount[range]!);
   }
-  const meshes: AbstractMesh[] = [], translucent: boolean[] = [];
+  const meshes = new Map<number, AbstractMesh>(), translucentSections: number[] = [];
   for (let section = 0; section < model.sections.count; section++) {
-    const chunk = chunkByOrdinal.get(model.sections.chunk[section]!), primitive = model.sections.primitive[section]!;
-    const mesh = chunk?.meshes[primitive], description = chunk?.sections[primitive];
-    if (mesh === undefined || description === undefined) return `section ${section} names chunk ${model.sections.chunk[section]} primitive ${primitive}, which has no BSP mesh`;
-    if (mesh.getTotalIndices() !== sectionIndexCount[section]) return `section ${section} ranges hold ${sectionIndexCount[section]} indices for a mesh of ${mesh.getTotalIndices()}`;
-    meshes.push(mesh);
-    translucent.push(description.translucent);
+    if (model.sections.chunk[section] !== chunkOrdinal) continue;
+    const primitive = model.sections.primitive[section]!, mesh = bspChunk?.meshes[primitive], description = bspChunk?.sections[primitive];
+    if (mesh === undefined || description === undefined) return `section ${section} names chunk ${chunkOrdinal} primitive ${primitive}, which has no BSP mesh`;
+    const indexCount = sectionIndexCount.get(section) ?? 0;
+    if (mesh.getTotalIndices() !== indexCount) return `section ${section} ranges hold ${indexCount} indices for a mesh of ${mesh.getTotalIndices()}`;
+    meshes.set(section, mesh);
+    if (description.translucent) translucentSections.push(section);
   }
-  return { meshes, translucent };
+  return { meshes, translucentSections };
 }
 
 function meshVisibilityTarget(meshes: readonly AbstractMesh[]): VisibilityTarget {
@@ -119,17 +125,16 @@ function placementTargets(model: BspVisibilityModel, placements: readonly Native
   return targets;
 }
 
-export function tileVisibilityTargets(model: BspVisibilityModel, scene: TileVisibilityScene): TileVisibilityTargetsResult {
-  const mapped = sectionMeshes(model, scene.bspChunks);
+export function chunkVisibilityTargets(model: BspVisibilityModel, chunk: TileVisibilityChunk): ChunkVisibilityTargetsResult {
+  const mapped = chunkSectionMeshes(model, chunk);
   if (typeof mapped === "string") return { kind: "gap", reason: `${sectionUnmappedReason}: ${mapped}` };
   const translucentSections = new Map<number, TranslucentSectionTarget>(), translucentOrderErrors: string[] = [];
-  mapped.meshes.forEach((mesh, section) => {
-    if (!mapped.translucent[section]) return;
-    const target = translucentMeshTarget(mesh);
+  for (const section of mapped.translucentSections) {
+    const target = translucentMeshTarget(mapped.meshes.get(section)!);
     if (typeof target === "string") translucentOrderErrors.push(`section ${section}: ${target}; file order kept`);
     else translucentSections.set(section, target);
-  });
-  const targets: TileVisibilityTargets = { sections: mapped.meshes.map(mesh => meshVisibilityTarget([mesh])), members: placementTargets(model, scene.placements),
-    terrain: [meshVisibilityTarget(scene.terrainMeshes)], translucentSections, translucentOrderErrors };
-  return { kind: "bound", targets, translucentSections: [...translucentSections.keys()] };
+  }
+  const sections = new Map([...mapped.meshes].map(([section, mesh]) => [section, meshVisibilityTarget([mesh])]));
+  return { kind: "bound", targets: { sections, members: placementTargets(model, chunk.placements), terrain: meshVisibilityTarget(chunk.terrainMeshes),
+    translucentSections, translucentOrderErrors } };
 }

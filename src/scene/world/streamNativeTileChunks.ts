@@ -101,6 +101,7 @@ export async function streamNativeTileChunks(scene: Scene, signal: AbortSignal, 
     const anchor = tileSpawnAnchor(selected.manifest, authoredAnchor, spawnCandidate);
     const bspChunks = selectedResident.flatMap(({ loaded }) => loaded.bspChunk === null ? [] : [loaded.bspChunk]);
     const attached = await tileSystems.attachSelectedTile();
+    const selectedVisibility = attached.visibility.binding;
     const view: NativeTileSectionView = { kind: "native-tile-runtime", tileId, terrainChunks: describeTerrainChunks(selected.chunks), bspChunks, anchor, models: [], placements: [],
       terrain: { file: "terrain.glb", sha256: anchorChunk.terrain.sha256, bytes: anchorChunk.bytes, materialStatus: "neutral-inspection" },
       gaps: selected.manifest.gaps.filter(row => row.status !== "pass").map(describeNativeTileGapRow) };
@@ -126,7 +127,8 @@ export async function streamNativeTileChunks(scene: Scene, signal: AbortSignal, 
     lifetime.signal.throwIfAborted();
     return { manifest: view, manifestSha256: selected.manifestSha256, terrainMeshes: [], supportMeshes: [], spawnCandidate,
       get minimum() { return residentTerrainExtent().minimum; }, get maximum() { return residentTerrainExtent().maximum; },
-      tileMovers: attached.movers, tileVisibility: attached.visibility.binding, environmentClock: attached.lighting.environmentClock,
+      tileMovers: attached.movers, tileVisibility: selectedVisibility === null ? null : { ...selectedVisibility, setCulling: tileSystems.setCulling },
+      environmentClock: attached.lighting.environmentClock,
       inspection, setTerrainPreview() {}, dispose };
   } catch (error) { dispose(); throw error; }
 }

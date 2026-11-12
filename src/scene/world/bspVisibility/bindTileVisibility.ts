@@ -22,10 +22,10 @@ export interface TileViewSource {
   pose(): ViewPose | null;
 }
 
-export interface TileVisibilityTargets {
-  readonly sections: readonly VisibilityTarget[];
+export interface ChunkVisibilityTargets {
+  readonly sections: ReadonlyMap<number, VisibilityTarget>;
   readonly members: ReadonlyMap<number, VisibilityTarget>;
-  readonly terrain: readonly VisibilityTarget[];
+  readonly terrain: VisibilityTarget;
   readonly translucentSections: ReadonlyMap<number, TranslucentSectionTarget>;
   readonly translucentOrderErrors: readonly string[];
 }
@@ -34,7 +34,6 @@ export interface TileVisibilityBindingInput {
   readonly tileId: string;
   readonly model: BspVisibilityModel;
   readonly view: TileViewSource;
-  readonly targets: TileVisibilityTargets;
   readonly frameSource: TileVisibilityFrameSource;
   readonly limitRules: readonly BspVisibilityLimitRule[];
 }
@@ -54,6 +53,8 @@ export interface BoundTileVisibilityInspection {
   readonly sectionCount: number;
   readonly visibleSectionCount: number;
   readonly hiddenSectionCount: number;
+  readonly targetChunkIds: readonly string[];
+  readonly targetSectionCount: number;
   readonly translucentSectionCount: number;
   readonly translucentOrderErrors: readonly string[];
   readonly reorderedSectionWrites: number;
@@ -79,6 +80,8 @@ export interface TileVisibilityBinding {
   frame(): TileVisibilityFrame | null;
   memberVisible(exportIndex: number): boolean;
   setCulling(enabled: boolean): void;
+  addChunkTargets(chunkId: string, targets: ChunkVisibilityTargets): void;
+  removeChunkTargets(chunkId: string): void;
   describe(): VariableInfo[];
   inspection(): BoundTileVisibilityInspection;
   dispose(): void;
@@ -96,31 +99,46 @@ function countSet(flags: Uint8Array | undefined): number {
 }
 
 export function bindTileVisibility(input: TileVisibilityBindingInput): TileVisibilityBinding {
-  const { tileId, model, view, targets, frameSource, limitRules } = input;
+  const { tileId, model, view, frameSource, limitRules } = input;
   const memberByExportIndex = new Map(Array.from(model.members.exportIndex, (exportIndex, member) => [exportIndex, member]));
-  const appliedOrder = new Map<number, Int32Array>();
+  const appliedOrder = new Map<number, Int32Array>(), targetsByChunkId = new Map<string, ChunkVisibilityTargets>();
   const sectionShown = new Uint8Array(model.sections.count).fill(1), memberShown = new Uint8Array(model.members.count).fill(1);
+  let sectionTargets = new Map<number, VisibilityTarget>(), memberTargets = new Map<number, VisibilityTarget>(), terrainTargets: VisibilityTarget[] = [];
+  let translucentTargets = new Map<number, TranslucentSectionTarget>(), translucentOrderErrors: string[] = [];
   let terrainShown = true, cullingEnabled = false, latest: TileVisibilityFrame | null = null, reorderedSectionWrites = 0, disposed = false;
+  const indexChunkTargets = () => {
+    const chunks = [...targetsByChunkId.values()];
+    sectionTargets = new Map(chunks.flatMap(targets => [...targets.sections]));
+    memberTargets = new Map(chunks.flatMap(targets => [...targets.members]));
+    terrainTargets = chunks.map(targets => targets.terrain);
+    translucentTargets = new Map(chunks.flatMap(targets => [...targets.translucentSections]));
+    translucentOrderErrors = chunks.flatMap(targets => targets.translucentOrderErrors);
+    frameSource.setTranslucentSections([...translucentTargets.keys()].sort((left, right) => left - right));
+  };
+  const applyShownState = (targets: ChunkVisibilityTargets) => {
+    for (const [section, target] of targets.sections) if (sectionShown[section] === 0) target.setVisible(false);
+    for (const [member, target] of targets.members) if (memberShown[member] === 0) target.setVisible(false);
+    if (!terrainShown) targets.terrain.setVisible(false);
+  };
   const applyVisibility = (frame: TileVisibilityFrame) => {
     frame.sectionVisible.forEach((visible, section) => {
       if (visible === sectionShown[section]) return;
-      targets.sections[section]!.setVisible(visible === 1);
+      sectionTargets.get(section)?.setVisible(visible === 1);
       sectionShown[section] = visible;
     });
-    for (const [member, target] of targets.members) {
-      const visible = frame.memberVisible[member]!;
-      if (visible === memberShown[member]) continue;
-      target.setVisible(visible === 1);
+    frame.memberVisible.forEach((visible, member) => {
+      if (visible === memberShown[member]) return;
+      memberTargets.get(member)?.setVisible(visible === 1);
       memberShown[member] = visible;
-    }
+    });
     if (frame.terrainVisible !== terrainShown) {
-      for (const target of targets.terrain) target.setVisible(frame.terrainVisible);
+      for (const target of terrainTargets) target.setVisible(frame.terrainVisible);
       terrainShown = frame.terrainVisible;
     }
   };
   const applyTranslucentOrder = (frame: TileVisibilityFrame) => {
     for (const [section, order] of frame.translucentOrder) {
-      const target = targets.translucentSections.get(section);
+      const target = translucentTargets.get(section);
       if (target === undefined || sameOrder(appliedOrder.get(section), order)) continue;
       target.reorderIndexBlocks(Array.from(order, range => ({ firstIndex: model.ranges.firstIndex[range]!, indexCount: model.ranges.indexCount[range]! })));
       appliedOrder.set(section, order);
@@ -136,6 +154,7 @@ export function bindTileVisibility(input: TileVisibilityBindingInput): TileVisib
     applyVisibility(frame);
     applyTranslucentOrder(frame);
   };
+  const forgetAppliedOrder = (targets: ChunkVisibilityTargets) => { for (const section of targets.translucentSections.keys()) appliedOrder.delete(section); };
   const stopFrames = view.onFrame(step);
   return {
     frame: () => latest,
@@ -144,6 +163,20 @@ export function bindTileVisibility(input: TileVisibilityBindingInput): TileVisib
       return member === undefined || latest === null || latest.memberVisible[member] === 1;
     },
     setCulling(enabled) { cullingEnabled = enabled; },
+    addChunkTargets(chunkId, targets) {
+      if (disposed || targetsByChunkId.has(chunkId)) return;
+      targetsByChunkId.set(chunkId, targets);
+      applyShownState(targets);
+      forgetAppliedOrder(targets);
+      indexChunkTargets();
+    },
+    removeChunkTargets(chunkId) {
+      const targets = targetsByChunkId.get(chunkId);
+      if (targets === undefined) return;
+      targetsByChunkId.delete(chunkId);
+      forgetAppliedOrder(targets);
+      indexChunkTargets();
+    },
     describe: () => [{ name: cullingVariableName, value: () => cullingEnabled ? "on" : "off", values: "off | on",
       source: "bindTileVisibility: zone and portal culling of BSP sections, static meshes and map emitters; stays off until PERF-02 measures it",
       status: "presentation" }],
@@ -152,7 +185,8 @@ export function bindTileVisibility(input: TileVisibilityBindingInput): TileVisib
       outdoorView: latest?.outdoorView ?? false, zoneCount: model.zoneCount, visibleZoneCount: latest?.visibleZoneCount ?? 0, skyZones: latest?.skyZones ?? [],
       portalCount: model.portalNodes.length, openedPortalCount: latest?.openedPortalCount ?? 0, sectionCount: model.sections.count,
       visibleSectionCount: countSet(latest?.sectionVisible), hiddenSectionCount: latest ? model.sections.count - countSet(latest.sectionVisible) : 0,
-      translucentSectionCount: targets.translucentSections.size, translucentOrderErrors: targets.translucentOrderErrors, reorderedSectionWrites,
+      targetChunkIds: [...targetsByChunkId.keys()].sort(), targetSectionCount: sectionTargets.size,
+      translucentSectionCount: translucentTargets.size, translucentOrderErrors, reorderedSectionWrites,
       memberCount: model.members.count, mapEmitterCount: model.members.kind.filter(kind => kind === memberKindMapEmitter).length,
       visibleMemberCount: countSet(latest?.memberVisible), terrainVisible: latest?.terrainVisible ?? true,
       computedFrameCount: frameSource.computedFrameCount, cacheHitCount: frameSource.cacheHitCount, limitRules,

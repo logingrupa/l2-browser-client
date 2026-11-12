@@ -18,7 +18,8 @@ import type { StreamedTileInspection } from "./streamNativeTileChunks";
 import { disposeNativeModelInstances, instantiateNativeModelPlacements, type NativeModelInstance } from "./nativeModelPlacements";
 import type { NativeMover } from "./nativeMovers";
 import type { NativeMovers } from "./loadNativeMovers";
-import type { TileVisibilityBinding, TileVisibilityInspection } from "./bspVisibility/bindTileVisibility";
+import type { TileVisibilityRuntimeInspection } from "./bspVisibility/attachTileVisibility";
+import type { TileVisibilityBinding } from "./bspVisibility/bindTileVisibility";
 import type { TileLightingGapInspection, TileLightingRuntimeInspection } from "./lighting/attachTileLighting";
 import type { MapEmitterPlacementInspection } from "./tileMapEmitterPlacements";
 import type { WorldEnvironmentClock } from "./lighting/worldEnvironmentClock";
@@ -253,7 +254,7 @@ export type NativeWorldSceneInspection = ReturnType<typeof inspectNativeWorldSce
   readonly movers?: readonly ReturnType<NativeMover["inspection"]>[];
   readonly bspSections?: number;
   readonly bspResources?: readonly string[];
-  readonly bspVisibility?: TileVisibilityInspection;
+  readonly bspVisibility?: TileVisibilityRuntimeInspection;
   readonly lighting?: TileLightingRuntimeInspection | TileLightingGapInspection;
   readonly mapEmitterPlacements?: { readonly gap: string | null; readonly placements: readonly MapEmitterPlacementInspection[] };
 };

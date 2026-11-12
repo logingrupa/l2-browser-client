@@ -26,6 +26,7 @@ export interface TileVisibilityFrame {
 }
 
 export interface TileVisibilityFrameSource {
+  setTranslucentSections(sections: readonly number[]): void;
   frame(pose: ViewPose, culling: boolean): TileVisibilityFrame;
   readonly computedFrameCount: number;
   readonly cacheHitCount: number;
@@ -90,11 +91,14 @@ export function computeTileVisibilityFrame(model: BspVisibilityModel, translucen
     translucentOrder: orderTranslucentSections(model, camera, visibleTranslucentRanges) };
 }
 
-export function createTileVisibilityFrameSource(model: BspVisibilityModel, translucentSections: readonly number[], limits: TileVisibilityLimits):
-  TileVisibilityFrameSource {
-  const translucentSectionRanges = translucentSectionRangesOf(model, translucentSections);
+export function createTileVisibilityFrameSource(model: BspVisibilityModel, limits: TileVisibilityLimits): TileVisibilityFrameSource {
+  let translucentSectionRanges = translucentSectionRangesOf(model, []);
   let lastKey: readonly number[] | null = null, lastFrame: TileVisibilityFrame | null = null, computedFrameCount = 0, cacheHitCount = 0;
   return {
+    setTranslucentSections(sections) {
+      translucentSectionRanges = translucentSectionRangesOf(model, sections);
+      lastKey = null; lastFrame = null;
+    },
     frame(pose, culling) {
       const key = float32PoseKey(pose, culling);
       if (lastFrame !== null && lastKey !== null && key.every((value, index) => Object.is(value, lastKey![index]))) {

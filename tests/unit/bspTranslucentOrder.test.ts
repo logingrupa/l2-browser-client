@@ -107,12 +107,25 @@ describe("translucentOrder", () => {
 describe("tile visibility frame source", () => {
   it("reports the camera zone, every zone visible while culling is off, and reuses a frame for an unchanged float32 pose", () => {
     const model = threeRoomVisibilityModel();
-    const source = createTileVisibilityFrameSource(model, [threeRoomSections.translucentWalls], mostVisibleLimits);
+    const source = createTileVisibilityFrameSource(model, mostVisibleLimits);
+    source.setTranslucentSections([threeRoomSections.translucentWalls]);
     const first = source.frame(poseAt(-500), false);
     expect(first).toMatchObject({ culling: false, cameraZone: threeRoomZones.camera, visibleZoneCount: 4, skyZones: [threeRoomZones.behindWall] });
     expect([...first.sectionVisible]).toEqual([1, 1]);
     expect(source.frame(poseAt(-500 + 1e-9), false)).toBe(first);
     expect(source.frame(poseAt(500), false).cameraZone).toBe(threeRoomZones.throughPortal);
     expect({ computed: source.computedFrameCount, hits: source.cacheHitCount }).toEqual({ computed: 2, hits: 1 });
+  });
+
+  it("orders only the translucent sections it was given and recomputes the frame when that set changes", () => {
+    const model = threeRoomVisibilityModel();
+    const source = createTileVisibilityFrameSource(model, mostVisibleLimits);
+    expect(source.frame(poseAt(-500), false).translucentOrder.size).toBe(0);
+    source.setTranslucentSections([threeRoomSections.translucentWalls]);
+    const withTranslucentWalls = source.frame(poseAt(-500), false);
+    expect([...withTranslucentWalls.translucentOrder.keys()]).toEqual([threeRoomSections.translucentWalls]);
+    source.setTranslucentSections([]);
+    expect(source.frame(poseAt(-500), false).translucentOrder.size).toBe(0);
+    expect(source.computedFrameCount).toBe(3);
   });
 });
