@@ -17,6 +17,8 @@ import type { ViewPose } from "../../src/scene/world/bspVisibility/core/viewFrus
 import type { NativeTileBspChunk } from "../../src/scene/world/loadNativeTileChunks";
 import type { NativeBspSection } from "../../src/scene/world/nativeBspResources";
 import { parseNativeTileManifest } from "../../src/scene/world/nativeTileManifest";
+import { residencyDrawLimitRules, worldResidencySettingsForChunkEdge } from "../../src/scene/world/worldResidencyRing";
+import { committedBspVisibilityRules } from "../../src/scene/world/bspVisibility/bspVisibilityRules";
 import { threeRoomMembers, threeRoomSections, threeRoomVisibilityModel } from "../support/bspVisibilityFixture";
 
 vi.mock("../../src/scene/world/bspVisibility/loadBspVisibility", async () => {
@@ -174,9 +176,9 @@ describe("Babylon targets and picking", () => {
     expect(result).toMatchObject({ kind: "gap", reason: expect.stringMatching(/^bsp-visibility-section-unmapped: range of node 4/) });
   });
 
-  it("culls the resident chunks of a tile, keeps a non-resident chunk out of the walk and lists an unmapped resident chunk", async () => {
+  const visibilityTileManifest = () => {
     const visibilitySha256 = "c".repeat(64);
-    const manifest = parseNativeTileManifest({
+    return parseNativeTileManifest({
       kind: "native-tile-runtime", schemaVersion: 1, tileId: "20_21", sourceMap: "maps/20_21.unr", sourceSha256: "e".repeat(64),
       frame: { terrainInfo: "20_21.TerrainInfo0", location: [0, 0, 0], terrainScale: [1, 1, 1] }, anchor: { playerStart: "20_21.PlayerStart0", location: [0, 0, 0] },
       chunks: ["chunk-0-0", "chunk-1-0"].map((chunkId, ordinal) => ({ chunkId, manifest: `/l2/maps/${String(ordinal + 1).repeat(64)}/native-tile-chunk-runtime/manifest.json`,
@@ -185,7 +187,20 @@ describe("Babylon targets and picking", () => {
         manifestBytes: 100 }],
       gaps: [],
     });
-    const visibility = await attachTileVisibility(scene, manifest, new AbortController().signal);
+  };
+
+  it("lists the residency draw limit rows next to the committed visibility limit rows", async () => {
+    const drawLimitRules = residencyDrawLimitRules(worldResidencySettingsForChunkEdge(81.92));
+    const visibility = await attachTileVisibility(scene, visibilityTileManifest(), drawLimitRules, new AbortController().signal);
+    const { limitRules } = visibility.inspection() as BoundTileVisibilityRuntimeInspection;
+    expect(limitRules).toEqual([...committedBspVisibilityRules.limitRules, ...drawLimitRules]);
+    expect(limitRules.find(row => row.id === "static-mesh-range")!.runtimeDefault).toBe(Infinity);
+    expect(limitRules.filter(row => row.status === "presentation").map(row => row.id)).toEqual(["residency-visual-ring-radius", "residency-null-lod-cull-distance"]);
+    visibility.dispose();
+  });
+
+  it("culls the resident chunks of a tile, keeps a non-resident chunk out of the walk and lists an unmapped resident chunk", async () => {
+    const visibility = await attachTileVisibility(scene, visibilityTileManifest(), [], new AbortController().signal);
     const wallsBsp: NativeTileBspChunk = { chunkId: "chunk-0-0", resource: "/l2/bsp/walls", ...wallsChunk(triangleMesh("walls", 2)) };
     visibility.addChunk({ chunkId: "chunk-0-0", bspChunk: wallsBsp, placements: [], terrainMeshes: [] });
     expect(visibility.inspection()).toMatchObject({ gap: null, targetChunkIds: ["chunk-0-0"], unmappedChunks: [] });

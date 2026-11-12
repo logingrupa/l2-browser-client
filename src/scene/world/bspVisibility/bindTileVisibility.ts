@@ -1,4 +1,5 @@
 import type { VariableInfo } from "../../../ui/devSheet/types";
+import type { ResidencyDrawLimitRule } from "../worldResidencyRing";
 import type { BspVisibilityLimitRule } from "./bspVisibilityRules";
 import { memberKindMapEmitter, type BspVisibilityModel } from "./core/decodeBspVisibility";
 import type { TileVisibilityFrame, TileVisibilityFrameSource } from "./core/tileVisibilityFrame";
@@ -22,6 +23,8 @@ export interface TileViewSource {
   pose(): ViewPose | null;
 }
 
+export type TileVisibilityLimitRow = BspVisibilityLimitRule | ResidencyDrawLimitRule;
+
 export interface ChunkVisibilityTargets {
   readonly sections: ReadonlyMap<number, VisibilityTarget>;
   readonly members: ReadonlyMap<number, VisibilityTarget>;
@@ -35,7 +38,7 @@ export interface TileVisibilityBindingInput {
   readonly model: BspVisibilityModel;
   readonly view: TileViewSource;
   readonly frameSource: TileVisibilityFrameSource;
-  readonly limitRules: readonly BspVisibilityLimitRule[];
+  readonly limitRules: readonly TileVisibilityLimitRow[];
 }
 
 export interface BoundTileVisibilityInspection {
@@ -64,7 +67,7 @@ export interface BoundTileVisibilityInspection {
   readonly terrainVisible: boolean;
   readonly computedFrameCount: number;
   readonly cacheHitCount: number;
-  readonly limitRules: readonly BspVisibilityLimitRule[];
+  readonly limitRules: readonly TileVisibilityLimitRow[];
 }
 
 export interface TileVisibilityGapInspection {

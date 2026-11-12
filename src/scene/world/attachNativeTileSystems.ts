@@ -8,12 +8,18 @@ import type { NativeModelInstance } from "./nativeModelPlacements";
 import type { NativeTileChunkPlacement } from "./nativeTileChunkManifest";
 import type { NativeTileManifest } from "./nativeTileManifest";
 import { loadTileMapEmitterPlacements } from "./tileMapEmitterPlacements";
+import type { ResidencyDrawLimitRule } from "./worldResidencyRing";
 
 export interface NativeTileChunkSystemContents {
   readonly chunkId: string;
   readonly bspChunk: NativeTileBspChunk | null;
   readonly instances: readonly NativeModelInstance<NativeTileChunkPlacement>[];
   readonly terrainMeshes: readonly AbstractMesh[];
+}
+
+export interface NativeTileSystemsContents {
+  readonly initialChunks: readonly NativeTileChunkSystemContents[];
+  readonly drawLimitRules: readonly ResidencyDrawLimitRule[];
 }
 
 export interface AttachedNativeTileSystems {
@@ -35,12 +41,13 @@ function staticMeshesOf(instances: readonly NativeModelInstance<NativeTileChunkP
   return instances.flatMap(instance => instance.root.getChildMeshes().filter(mesh => mesh.getTotalVertices() > 0));
 }
 
-export async function attachNativeTileSystems(scene: Scene, manifest: NativeTileManifest, initialChunks: readonly NativeTileChunkSystemContents[], signal: AbortSignal,
+export async function attachNativeTileSystems(scene: Scene, manifest: NativeTileManifest, contents: NativeTileSystemsContents, signal: AbortSignal,
   isDisposed: () => boolean): Promise<AttachedNativeTileSystems> {
+  const { initialChunks, drawLimitRules } = contents;
   let visibility: AttachedTileVisibility | null = null, lighting: AttachedTileLighting | null = null, movers: NativeTileMovers | null = null;
   const dispose = () => { movers?.dispose(); visibility?.dispose(); lighting?.dispose(); };
   try {
-    const attachedVisibility = await attachTileVisibility(scene, manifest, signal);
+    const attachedVisibility = await attachTileVisibility(scene, manifest, drawLimitRules, signal);
     visibility = attachedVisibility;
     if (isDisposed()) throw disposedDuringLoading();
     const chunkOrdinalById = new Map(manifest.chunks.map((record, ordinal) => [record.chunkId, ordinal]));

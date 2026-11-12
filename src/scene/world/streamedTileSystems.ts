@@ -4,11 +4,13 @@ import type { UnmappedVisibilityChunk } from "./bspVisibility/attachTileVisibili
 import type { LoadedTileResidencyChunk } from "./loadResidencyChunk";
 import type { ResidencyChunkEventListener } from "./nativeTileChunkResidency";
 import type { NativeTileManifest } from "./nativeTileManifest";
+import type { ResidencyDrawLimitRule } from "./worldResidencyRing";
 
 export interface StreamedTileSystemsOptions {
   readonly scene: Scene;
   readonly selectedTileId: string;
   readonly signal: AbortSignal;
+  readonly drawLimitRules: readonly ResidencyDrawLimitRule[];
   manifestOf(tileId: string): NativeTileManifest;
   isDisposed(): boolean;
 }
@@ -84,7 +86,7 @@ function lightingSummary(systems: AttachedNativeTileSystems): StreamedTileLighti
 }
 
 export function createStreamedTileSystems(options: StreamedTileSystemsOptions): StreamedTileSystems {
-  const { scene, selectedTileId, signal } = options;
+  const { scene, selectedTileId, signal, drawLimitRules } = options;
   const records = new Map<string, TileSystemsRecord>();
   let disposed = false, cullingEnabled = false;
   const isDisposed = () => disposed || options.isDisposed();
@@ -108,7 +110,7 @@ export function createStreamedTileSystems(options: StreamedTileSystemsOptions): 
     return [...record.residentChunks].filter(([chunkId]) => !boundChunkIds.has(chunkId));
   };
   const attachStreamedTile = (record: TileSystemsRecord) => {
-    attachNativeTileSystems(scene, options.manifestOf(record.tileId), [], signal, () => isDisposed() || record.released).then(systems => {
+    attachNativeTileSystems(scene, options.manifestOf(record.tileId), { initialChunks: [], drawLimitRules }, signal, () => isDisposed() || record.released).then(systems => {
       if (isDisposed() || record.released) { systems.dispose(); return; }
       for (const [chunkId, loaded] of adoptSystems(record, systems)) void bindChunk(record, systems, chunkId, loaded);
     }, (error: unknown) => {
@@ -123,7 +125,7 @@ export function createStreamedTileSystems(options: StreamedTileSystemsOptions): 
   return {
     async attachSelectedTile() {
       const startupChunks = [...selected.residentChunks].map(([chunkId, loaded]) => chunkSystemContents(chunkId, loaded));
-      const systems = await attachNativeTileSystems(scene, options.manifestOf(selectedTileId), startupChunks, signal, isDisposed);
+      const systems = await attachNativeTileSystems(scene, options.manifestOf(selectedTileId), { initialChunks: startupChunks, drawLimitRules }, signal, isDisposed);
       if (isDisposed()) { systems.dispose(); throw disposedDuringLoading(); }
       for (const [chunkId, loaded] of adoptSystems(selected, systems)) {
         try { await systems.addChunk(chunkSystemContents(chunkId, loaded)); }

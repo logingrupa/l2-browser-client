@@ -125,7 +125,8 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
       bspChunks.push(bspChunk);
     }
     const terrainMeshes = loaded.flatMap(entry => entry.meshes);
-    const attached = await attachNativeTileSystems(scene, manifest, chunkSystemContentsOfTile(chunks, terrainMeshesByChunkId, bspChunks, instances), lifetime.signal,
+    const attached = await attachNativeTileSystems(scene, manifest,
+      { initialChunks: chunkSystemContentsOfTile(chunks, terrainMeshesByChunkId, bspChunks, instances), drawLimitRules: [] }, lifetime.signal,
       () => disposed || scene.isDisposed);
     systems = attached;
     for (const container of containers) container.addAllToScene();

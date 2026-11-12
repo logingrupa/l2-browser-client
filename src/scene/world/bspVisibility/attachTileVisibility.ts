@@ -4,6 +4,7 @@ import type { NativeTileBspChunk } from "../loadNativeTileChunks";
 import type { NativeModelInstance } from "../nativeModelPlacements";
 import type { NativeTileChunkPlacement } from "../nativeTileChunkManifest";
 import type { NativeTileManifest } from "../nativeTileManifest";
+import type { ResidencyDrawLimitRule } from "../worldResidencyRing";
 import { chunkVisibilityTargets, sceneTileViewSource } from "./babylonTileVisibilityTargets";
 import { committedBspVisibilityRules } from "./bspVisibilityRules";
 import { bindTileVisibility, type BoundTileVisibilityInspection, type TileVisibilityBinding, type TileVisibilityGapInspection } from "./bindTileVisibility";
@@ -50,7 +51,8 @@ function unlistedResourceReason(manifest: NativeTileManifest): string {
   return row?.reason ?? resourceUnlistedReason;
 }
 
-export async function attachTileVisibility(scene: Scene, manifest: NativeTileManifest, signal: AbortSignal): Promise<AttachedTileVisibility> {
+export async function attachTileVisibility(scene: Scene, manifest: NativeTileManifest, drawLimitRules: readonly ResidencyDrawLimitRule[], signal: AbortSignal):
+  Promise<AttachedTileVisibility> {
   const resource = manifest.resources.find(entry => entry.kind === bspVisibilityStep);
   if (resource === undefined) return unboundTileVisibility(manifest.tileId, unlistedResourceReason(manifest));
   let model: BspVisibilityModel;
@@ -63,7 +65,7 @@ export async function attachTileVisibility(scene: Scene, manifest: NativeTileMan
   }
   const chunkOrdinalById = new Map(manifest.chunks.map((record, ordinal) => [record.chunkId, ordinal]));
   const binding = bindTileVisibility({ tileId: manifest.tileId, model, view: sceneTileViewSource(scene),
-    frameSource: createTileVisibilityFrameSource(model, committedBspVisibilityRules.limits), limitRules: committedBspVisibilityRules.limitRules });
+    frameSource: createTileVisibilityFrameSource(model, committedBspVisibilityRules.limits), limitRules: [...committedBspVisibilityRules.limitRules, ...drawLimitRules] });
   const unmappedReasonByChunkId = new Map<string, string>();
   return {
     binding,

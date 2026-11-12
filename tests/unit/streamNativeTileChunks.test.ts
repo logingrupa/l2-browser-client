@@ -14,6 +14,7 @@ import { readCatalogTileIds, readResidencyTile, type ResidencyTile } from "../..
 import type { CollisionCellContext } from "../../src/scene/world/movement/collisionCellContext";
 import type { CollisionWorld } from "../../src/scene/world/movement/core/collisionWorld";
 import type { NativeTileBspChunk } from "../../src/scene/world/loadNativeTileChunks";
+import { residencyDrawLimitRules } from "../../src/scene/world/worldResidencyRing";
 
 vi.mock("../../src/scene/world/nativeTileResidencyTiles", () => ({ readResidencyTile: vi.fn(), readCatalogTileIds: vi.fn() }));
 vi.mock("../../src/scene/world/nativeTileChunkResidency", () => ({ createNativeTileChunkResidency: vi.fn() }));
@@ -108,7 +109,7 @@ describe("streamed native tile chunks", () => {
       templateDisposals.set(`templates ${templateDisposals.size}`, dispose);
       return templates;
     });
-    vi.mocked(attachNativeTileSystems).mockImplementation(async (_scene, manifest, initialChunks: readonly NativeTileChunkSystemContents[]) => {
+    vi.mocked(attachNativeTileSystems).mockImplementation(async (_scene, manifest, { initialChunks }) => {
       if (tilesWhoseSystemsFail.has(manifest.tileId)) throw new Error(`Native tile ${manifest.tileId} lighting payload refused.`);
       const recorded: RecordedTileSystems = { tileId: manifest.tileId, added: [], removed: [], bound: new Set(initialChunks.map(chunk => chunk.chunkId)),
         cullingSettings: [], dispose: vi.fn<() => void>() };
@@ -143,10 +144,12 @@ describe("streamed native tile chunks", () => {
     const section = await streamWithStartupChunks([residencyChunk(selectedTileId, "chunk-0-0"), residencyChunk(readableNeighbourTileId, "chunk-0-0")]);
     await vi.waitFor(() => expect(systemsOf(readableNeighbourTileId)[0]?.added).toEqual(["chunk-0-0"]));
     const selectedCall = vi.mocked(attachNativeTileSystems).mock.calls.find(([, manifest]) => manifest.tileId === selectedTileId)!;
-    expect(selectedCall[2].map(contents => contents.chunkId)).toEqual(["chunk-0-0"]);
+    expect(selectedCall[2].initialChunks.map(contents => contents.chunkId)).toEqual(["chunk-0-0"]);
     expect([...systemsOf(selectedTileId)[0]!.bound]).toEqual(["chunk-0-0"]);
     expect(residencyOptions!.chunks.map(chunk => chunk.cellId)).toEqual([
       `${selectedTileId}:chunk-0-0`, `${selectedTileId}:chunk-3-0`, `${readableNeighbourTileId}:chunk-0-0`]);
+    const neighbourCall = vi.mocked(attachNativeTileSystems).mock.calls.find(([, manifest]) => manifest.tileId === readableNeighbourTileId)!;
+    for (const call of [selectedCall, neighbourCall]) expect(call[2].drawLimitRules).toEqual(residencyDrawLimitRules(residencyOptions!.settings));
     section.dispose();
   });
 
@@ -175,7 +178,7 @@ describe("streamed native tile chunks", () => {
     becomeResident(residencyChunk(readableNeighbourTileId, "chunk-0-0"));
     await vi.waitFor(() => expect(systemsOf(readableNeighbourTileId)[0]?.added).toEqual(["chunk-0-0"]));
     const neighbourCall = vi.mocked(attachNativeTileSystems).mock.calls.find(([, manifest]) => manifest.tileId === readableNeighbourTileId)!;
-    expect(neighbourCall[2]).toEqual([]);
+    expect(neighbourCall[2].initialChunks).toEqual([]);
     expect(section.inspection().streamedTiles!.find(tile => tile.tileId === readableNeighbourTileId)!.systems)
       .toMatchObject({ attached: true, boundChunkIds: ["chunk-0-0"], lighting: { lightmappedChunkIds: ["chunk-0-0"] } });
     leaveResidency(`${readableNeighbourTileId}:chunk-0-0`);

@@ -9,8 +9,8 @@ import { createNativeTileChunkResidency, type NativeTileChunkResidency, type Res
 import { describeNativeTileGapRow } from "./nativeTileChunkManifest";
 import { readCatalogTileIds, readResidencyTile, type ResidencyTile } from "./nativeTileResidencyTiles";
 import { inspectNativeTileSection } from "./nativeTileSectionInspection";
-import { createStreamedTileSystems, type StreamedTileSystemsInspection } from "./streamedTileSystems";
-import { neighbouringTileIds, worldResidencySettingsForChunkEdge } from "./worldResidencyRing";
+import { createStreamedTileSystems, type StreamedTileSystems, type StreamedTileSystemsInspection } from "./streamedTileSystems";
+import { neighbouringTileIds, residencyDrawLimitRules, worldResidencySettingsForChunkEdge } from "./worldResidencyRing";
 
 export interface StreamedTileInspection {
   readonly tileId: string;
@@ -31,15 +31,13 @@ export async function streamNativeTileChunks(scene: Scene, signal: AbortSignal, 
   const tileReads = new Map<string, Promise<ResidencyTile | null>>(), tiles = new Map<string, ResidencyTile>(), tileGaps = new Map<string, string>();
   const templatesByTile = new Map<string, TileModelTemplates>(), tilesWithKnownNeighbours = new Set<string>();
   let residency: NativeTileChunkResidency<LoadedTileResidencyChunk> | null = null, stopChunkEvents: (() => void) | null = null;
-  let disposed = false;
-  const tileSystems = createStreamedTileSystems({ scene, selectedTileId: tileId, signal: lifetime.signal, manifestOf: systemsTileId => tiles.get(systemsTileId)!.manifest,
-    isDisposed: () => disposed || scene.isDisposed });
+  let tileSystems: StreamedTileSystems | null = null, disposed = false;
   const dispose = () => {
     if (disposed) return;
     disposed = true; lifetime.abort(); signal.removeEventListener("abort", dispose);
     scene.onDisposeObservable.remove(observer);
     stopChunkEvents?.();
-    tileSystems.dispose();
+    tileSystems?.dispose();
     residency?.dispose();
     for (const templates of templatesByTile.values()) templates.dispose();
   };
@@ -78,8 +76,12 @@ export async function streamNativeTileChunks(scene: Scene, signal: AbortSignal, 
     };
     const initialNeighbourChunks = await chunksOfNeighbours(tileId);
     const authoredAnchor = authoredAnchorPosition(selected.manifest);
+    const residencySettings = worldResidencySettingsForChunkEdge(sourceDistanceToWorld(selected.grid.chunkEdgeSourceUnits));
+    const activeTileSystems = createStreamedTileSystems({ scene, selectedTileId: tileId, signal: lifetime.signal, drawLimitRules: residencyDrawLimitRules(residencySettings),
+      manifestOf: systemsTileId => tiles.get(systemsTileId)!.manifest, isDisposed: () => disposed || scene.isDisposed });
+    tileSystems = activeTileSystems;
     const activeResidency = createNativeTileChunkResidency<LoadedTileResidencyChunk>({
-      scene, collisionWorld: context.world, settings: worldResidencySettingsForChunkEdge(sourceDistanceToWorld(selected.grid.chunkEdgeSourceUnits)),
+      scene, collisionWorld: context.world, settings: residencySettings,
       chunks: [...selected.residencyChunks, ...initialNeighbourChunks], initialFocus: { x: authoredAnchor.x, y: authoredAnchor.y, z: authoredAnchor.z },
       focusPosition: () => context.focusPosition(),
       loadChunk: (chunk, chunkSignal) => loadResidencyChunk(scene, tiles.get(chunk.tileId)!, templatesFor(chunk.tileId), chunk, chunkSignal),
@@ -91,7 +93,7 @@ export async function streamNativeTileChunks(scene: Scene, signal: AbortSignal, 
       },
     });
     residency = activeResidency;
-    stopChunkEvents = activeResidency.subscribeChunkEvents(tileSystems);
+    stopChunkEvents = activeResidency.subscribeChunkEvents(activeTileSystems);
     await activeResidency.ready();
     if (disposed || scene.isDisposed) throw disposedDuringLoading();
     const startupResident = activeResidency.residentChunks();
@@ -100,7 +102,7 @@ export async function streamNativeTileChunks(scene: Scene, signal: AbortSignal, 
     const { chunk: anchorChunk, surface: spawnCandidate } = anchorOnChunkTerrain(terrainEntries, authoredAnchor);
     const anchor = tileSpawnAnchor(selected.manifest, authoredAnchor, spawnCandidate);
     const bspChunks = selectedResident.flatMap(({ loaded }) => loaded.bspChunk === null ? [] : [loaded.bspChunk]);
-    const attached = await tileSystems.attachSelectedTile();
+    const attached = await activeTileSystems.attachSelectedTile();
     const selectedVisibility = attached.visibility.binding;
     const view: NativeTileSectionView = { kind: "native-tile-runtime", tileId, terrainChunks: describeTerrainChunks(selected.chunks), bspChunks, anchor, models: [], placements: [],
       terrain: { file: "terrain.glb", sha256: anchorChunk.terrain.sha256, bytes: anchorChunk.bytes, materialStatus: "neutral-inspection" },
@@ -112,7 +114,7 @@ export async function streamNativeTileChunks(scene: Scene, signal: AbortSignal, 
     };
     const streamedTiles = (): StreamedTileInspection[] => [...new Set([...tiles.keys(), ...tileGaps.keys()])].sort()
       .map(streamedTileId => ({ tileId: streamedTileId, chunkCount: tiles.get(streamedTileId)?.chunks.length ?? 0, gap: tileGaps.get(streamedTileId) ?? null,
-        systems: tileSystems.inspection(streamedTileId) }));
+        systems: activeTileSystems.inspection(streamedTileId) }));
     const inspection = (): NativeWorldSceneInspection => {
       const resident = activeResidency.residentChunks(), selectedNow = resident.filter(({ chunk }) => chunk.tileId === tileId);
       const residencyInspection = activeResidency.inspection();
@@ -127,7 +129,7 @@ export async function streamNativeTileChunks(scene: Scene, signal: AbortSignal, 
     lifetime.signal.throwIfAborted();
     return { manifest: view, manifestSha256: selected.manifestSha256, terrainMeshes: [], supportMeshes: [], spawnCandidate,
       get minimum() { return residentTerrainExtent().minimum; }, get maximum() { return residentTerrainExtent().maximum; },
-      tileMovers: attached.movers, tileVisibility: selectedVisibility === null ? null : { ...selectedVisibility, setCulling: tileSystems.setCulling },
+      tileMovers: attached.movers, tileVisibility: selectedVisibility === null ? null : { ...selectedVisibility, setCulling: activeTileSystems.setCulling },
       environmentClock: attached.lighting.environmentClock,
       inspection, setTerrainPreview() {}, dispose };
   } catch (error) { dispose(); throw error; }

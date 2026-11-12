@@ -53,7 +53,7 @@ describe("attachNativeTileSystems", () => {
   }
 
   it("adds a chunk to the visibility walk and the lighting at once and takes it out of both on remove", async () => {
-    const systems = await attachNativeTileSystems(scene, systemsTileManifest(), [], new AbortController().signal, () => false);
+    const systems = await attachNativeTileSystems(scene, systemsTileManifest(), { initialChunks: [], drawLimitRules: [] }, new AbortController().signal, () => false);
     expect(systems.boundChunkIds()).toEqual([]);
     await systems.addChunk(wallsChunk());
     expect(systems.boundChunkIds()).toEqual(["chunk-0-0"]);
@@ -67,7 +67,7 @@ describe("attachNativeTileSystems", () => {
   });
 
   it("takes a chunk whose lighting refuses it back out of the visibility walk", async () => {
-    const systems = await attachNativeTileSystems(scene, systemsTileManifest(), [], new AbortController().signal, () => false);
+    const systems = await attachNativeTileSystems(scene, systemsTileManifest(), { initialChunks: [], drawLimitRules: [] }, new AbortController().signal, () => false);
     const placedMesh = new Mesh("placed static mesh", scene), data = new VertexData();
     data.positions = [0, 0, 0, 1, 0, 0, 0, 1, 0];
     data.indices = [0, 1, 2];

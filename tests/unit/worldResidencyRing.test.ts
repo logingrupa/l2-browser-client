@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  footprintDistanceMetres, neighbouringTileIds, planWorldResidency, validateWorldResidencySettings, WorldResidencyError,
+  footprintDistanceMetres, neighbouringTileIds, planWorldResidency, residencyDrawLimitRules, validateWorldResidencySettings, WorldResidencyError,
   worldResidencySettingsForChunkEdge, type WorldResidencyChunk, type WorldResidencySettings,
 } from "../../src/scene/world/worldResidencyRing";
 
@@ -76,6 +76,16 @@ describe("world residency settings", () => {
     expect(derived.retainRadiusMetres).toBeCloseTo(245.76, 9);
     expect(derived.lodCullDistanceMetres).toBeCloseTo(81.92, 9);
     expect(() => worldResidencySettingsForChunkEdge(0)).toThrow(WorldResidencyError);
+  });
+
+  it("reports the visual ring and the null level-of-detail cull as presentation draw limit rows of decision row 735 in metres", () => {
+    const rows = residencyDrawLimitRules(worldResidencySettingsForChunkEdge(81.92));
+    expect(rows.map(({ id, status, provenance, unit }) => ({ id, status, provenance, unit }))).toEqual([
+      { id: "residency-visual-ring-radius", status: "presentation", provenance: "OVERNIGHT-DECISIONS row 735", unit: "metres" },
+      { id: "residency-null-lod-cull-distance", status: "presentation", provenance: "OVERNIGHT-DECISIONS row 735", unit: "metres" },
+    ]);
+    for (const row of rows) expect(row.runtimeDefault).toBeCloseTo(81.92, 9);
+    expect(residencyDrawLimitRules(settings).map(row => row.runtimeDefault)).toEqual([settings.visualRadiusMetres, settings.lodCullDistanceMetres]);
   });
 });
 

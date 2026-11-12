@@ -29,6 +29,14 @@ export interface WorldResidencyPlan {
   readonly loadOrder: readonly string[];
 }
 
+export interface ResidencyDrawLimitRule {
+  readonly id: "residency-visual-ring-radius" | "residency-null-lod-cull-distance";
+  readonly status: "presentation";
+  readonly provenance: typeof residencyDrawLimitProvenance;
+  readonly runtimeDefault: number;
+  readonly unit: "metres";
+}
+
 export class WorldResidencyError extends Error {
   constructor(message: string) {
     super(`World residency: ${message}`);
@@ -40,6 +48,7 @@ const visualRadiusChunkEdges = 1;
 const collisionRadiusChunkEdges = 2;
 const retainRadiusChunkEdges = 3;
 const lodCullDistanceChunkEdges = 1;
+const residencyDrawLimitProvenance = "OVERNIGHT-DECISIONS row 735";
 const tileIdPattern = /^(\d{2})_(\d{2})$/;
 const lastTileGridIndex = 99;
 
@@ -63,6 +72,12 @@ export function worldResidencySettingsForChunkEdge(chunkEdgeMetres: number): Wor
     visualRadiusMetres: visualRadiusChunkEdges * chunkEdgeMetres, collisionRadiusMetres: collisionRadiusChunkEdges * chunkEdgeMetres,
     retainRadiusMetres: retainRadiusChunkEdges * chunkEdgeMetres, lodCullDistanceMetres: lodCullDistanceChunkEdges * chunkEdgeMetres,
   });
+}
+
+export function residencyDrawLimitRules(settings: WorldResidencySettings): readonly ResidencyDrawLimitRule[] {
+  const row = (id: ResidencyDrawLimitRule["id"], runtimeDefault: number): ResidencyDrawLimitRule =>
+    ({ id, status: "presentation", provenance: residencyDrawLimitProvenance, runtimeDefault, unit: "metres" });
+  return [row("residency-visual-ring-radius", settings.visualRadiusMetres), row("residency-null-lod-cull-distance", settings.lodCullDistanceMetres)];
 }
 
 export function footprintDistanceMetres(point: WorldResidencyPoint, footprint: WorldResidencyFootprint): number {
