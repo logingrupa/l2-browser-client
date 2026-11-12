@@ -12,7 +12,8 @@ from typing import NamedTuple
 
 from native_store.build_coverage_report import write_coverage_report
 from native_store.gap_rows import read_gap_rows, sorted_gap_rows, write_gap_rows
-from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root, require_converter_output
+from native_store.lane_roots import create_lane_work_and_store_roots
+from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, require_converter_output
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, require_batch_preflight, run_at_below_normal_priority
 from native_store.worker_count_argument import worker_count_argument
 from native_store.write_lane_catalog import write_lane_catalog
@@ -181,7 +182,7 @@ def run_tile_batch(limit, worker_count, tile_step_run_factory, tile_step_run_arg
     selected = selected_tile_ids(project_root, tile_ids, limit, step_names, recorded_rows, step_seal_checks)
     seam_inputs = seam_input_tile_ids(project_root, tile_ids, selected, recorded_rows, step_seal_checks)
     step_results_by_tile, preflights_by_tile = {}, {tile_id: [] for tile_id in tile_ids}
-    lane_work_root(project_root, WORLD_LANE_NAME).mkdir(parents=True, exist_ok=True)
+    create_lane_work_and_store_roots(project_root, WORLD_LANE_NAME)
     workers = TileStepWorkers(worker_count, coordinator_run, tile_step_run_factory, tile_step_run_arguments)
     try:
         raw_results_by_tile, stop = seam_input_raw_results(workers, seam_inputs, selected, source_identities, preflights_by_tile)

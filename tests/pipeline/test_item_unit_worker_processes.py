@@ -187,8 +187,9 @@ class PooledItemBatchRefusalTests(unittest.TestCase):
         seal_paths = [unit_record_path(project_root, unit_key, SEAL_RECORD_NAME) for unit_key in SLICE_UNIT_KEYS]
         self.assertEqual([seal_path.is_file() for seal_path in seal_paths[:2]], [True, True])
         self.assertFalse(seal_paths[2].parents[1].exists())
-        self.assertEqual([path.exists() for path in (lane_store_root(project_root, 'actors'), lane_gap_rows_path(project_root, 'actors', 'items'),
-                                                     project_root / ITEM_CENSUS_RELATIVE_PATH)], [False, False, False])
+        self.assertEqual(list(lane_store_root(project_root, 'actors').iterdir()), [])
+        self.assertEqual([path.exists() for path in (lane_gap_rows_path(project_root, 'actors', 'items'), project_root / ITEM_CENSUS_RELATIVE_PATH)],
+                         [False, False])
 
 
 if __name__ == '__main__':

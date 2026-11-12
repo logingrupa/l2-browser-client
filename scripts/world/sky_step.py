@@ -8,7 +8,7 @@ from native_assets_lib.material_resources import write_material_program_record
 from native_assets_lib.texture_package_118 import read_unreal_package
 from native_catalog.ue2 import FormatError
 from native_store.catalog_writer import sha256_hex
-from native_store.store_paths import lane_store_root, lane_work_root
+from native_store.store_paths import StorePathError, lane_store_root, lane_work_root
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from world.level_model import LevelModelLayoutError, read_level_model
 from world.level_zones import read_level_zones, sky_zone_indices, zone_actor_export
@@ -157,6 +157,8 @@ class SkyRootConversion:
             program = sky_material_program(material.graph, self.class_work_root, self.class_scripts, pngs_by_node)
             program_record, program_files = write_material_program_record(self.store_root, material.graph, program)
             image_files = write_material_texture_images(self.store_root, pngs_by_node)
+        except StorePathError:
+            raise
         except (FormatError, ValueError) as error:
             self.gaps.add(FAILED_STATUS, conversion_failure_reason(error), identity)
             return None

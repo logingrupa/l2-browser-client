@@ -12,6 +12,7 @@ from actors import item_unit_workers
 from actors.item_census import run_pooled_item_batch, write_item_census_and_gap_rows
 from actors.item_conversion import ItemConversionError
 from actors.item_unit_workers import converted_unit_outcome, initialize_item_unit_worker
+from native_store.store_paths import lane_work_root
 from native_store.unit_ledger import SEAL_RECORD_NAME, BatchPreflightRefusedError, UnitLedger
 from test_item_batch_bookkeeping import ItemBatchFixture, item_record_id, weapon_unit_key
 from test_item_conversion_run import CHANGED_CONVERTER_SHA256, WEAPON_ROWS, SyntheticItemRun
@@ -142,6 +143,18 @@ class PooledSliceSelectionTests(DeferredPoolFixture, unittest.TestCase):
         self.assertEqual((executor.submitted_unit_keys, self.worker_runs), ([], []))
         self.assertEqual(outcomes, [run.sealed_outcomes_by_unit_key()[unit_key] for unit_key in unit_keys])
         self.assertEqual([outcome['cacheHit'] for outcome in outcomes], [True] * 4)
+
+    def test_the_lane_work_root_and_the_lane_store_root_exist_before_the_pool_is_built(self):
+        lane_roots_existed = []
+
+        def pool_built_after_the_lane_roots(max_workers, initializer, initargs):
+            lane_roots_existed.append((lane_work_root(self.project_root, 'actors').is_dir(), self.store_root.is_dir()))
+            return self.deferred_executor(max_workers, initializer, initargs)
+
+        run, _ = self.coordinator_run_and_unit_keys()
+        with mock.patch.object(item_unit_workers, 'ProcessPoolExecutor', pool_built_after_the_lane_roots):
+            self.pooled_slice_outcomes(run, 1, mock.Mock(), self.worker_run)
+        self.assertEqual(lane_roots_existed, [(True, True)])
 
     def test_a_worker_never_builds_the_sealed_outcome_map(self):
         run, unit_keys = self.coordinator_run_and_unit_keys()

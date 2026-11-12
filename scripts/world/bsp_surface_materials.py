@@ -8,6 +8,7 @@ from native_catalog.ue2 import FormatError
 from native_assets_lib.material_graph import read_material_graph
 from native_assets_lib.material_program import derive_material_program
 from native_assets_lib.material_resources import write_material_program_record
+from native_store.store_paths import StorePathError
 from world.bsp_chunk_geometry import BspSurfaceMaterial
 from world.class_default_reads import kept_material_class_defaults
 from world.material_texture_images import material_texture_image_pins, reviewed_texture_nodes, write_material_texture_images
@@ -104,6 +105,8 @@ def convert_surface_material(identity, map_sources, converter, class_work_root, 
                                           texture_images=material_texture_image_pins(pngs_by_node))
         program_record, program_files = write_material_program_record(store_root, graph, program)
         store_outputs = [*program_files, *write_material_texture_images(store_root, pngs_by_node)]
+    except StorePathError:
+        raise
     except MATERIAL_CONVERSION_ERRORS as error:
         return unbound_surface_material(identity, None, [conversion_failure_reason(error)], [])
     gap_reasons = sorted({*program['gapReasons'], *texture_gap_reasons})
