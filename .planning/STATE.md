@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 02-85-PLAN.md
-last_updated: "2026-11-12T15:52:23.811Z"
+stopped_at: Completed 02-86-PLAN.md
+last_updated: "2026-11-12T17:27:14.689Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 03 plan 03-01 complete (side-by-side check record writer and key content digest; Phase 3 start commit cb09cdc)
-state_head: b75317828134d6312cee5480620e1291651f8ef0
+state_head: 7641e2a4af9521ea376f95c752727b5e4da12fe1
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 131
-  completed_plans: 109
+  completed_plans: 110
   percent: 0
 ---
 
@@ -155,6 +155,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P79 | 9h 52m | 3 tasks | 5 files |
 | Phase 02 P83 | 34min | 3 tasks | 10 files |
 | Phase 2 P85 | 30min | 3 tasks | 6 files |
+| Phase 2 P86 | 1h 13m | 3 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -415,6 +416,9 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-83: the chargrp to actor class join is adopted from the locked client (14 rows to 14 LineageWarrior classes through the class Mesh and SubMeshes defaults, body and face mesh row identity, one to one; rows 1035 to 1038)
 - [Phase 2]: 02-85: a texture whose native source the library refuses draws its UModel PNG with a named per-texture gap (row 1039)
 - [Phase 2]: 02-85: the UI textures step replaces stale texture records on a converter change (row 1041)
+- [Phase 2]: 02-86: the surface-materials listing sits at native-materials/surface-materials-<sha>.json with a files map relative to native-materials/, so the lane merge walk copies graphs, programs and texture images as checked leaves (row 1042)
+- [Phase 2]: 02-86: material texture images live at native-materials/textures/<png sha256>/texture.png and every reviewed Texture node of a BSP or sky program pins its PNG (row 1043)
+- [Phase 2]: 02-86: the surface-materials path template in tile_manifest_validation.py and nativeTileManifest.ts is a lane confirmation of a small tested change (row 1044)
 
 ### Pending Todos
 
@@ -505,7 +509,7 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 - Eligible tile batch (02-47, 02-54, rows 681 to 690 and 752 to 761): 79 of 148 eligible tiles are `batch-pending` (20_22 onward in census order); continue `node scripts/check-machine-schedule.mjs && python -B scripts/world/convert_tile_batch.py --eligible --limit 4` until it prints nothing to do, then the tiles sweep with `LOAD_CHECK_LIMIT=<catalog tile count>`. Terrain fails on 16_25 (`Terrain layer 10 names only one of Texture and AlphaMap`) and on 18_23, 19_23, 19_24, 20_16 and 20_17 (`Non-XY/rotated layer requires a separately verified UV adapter`); fix the terrain layer reader, then `convert_tile.py --step terrain` on those tiles.
 - Actors lane shared-store row (02-78, row 1021): npc:21622 and npc-sounds:21622 stay pending in the actors lane coverage; they clear with the restage that writes the shared-store profile with `modelCatalogId` and the 03-11 key index fix (P816). Every other npcgrp row is converted or a listed gap on lane catalog `a1562da9...`.
 - Actor-sounds batch speed (02-78, row 1022): `run_actor_sound_slice` recomputes the fingerprint of every sealed bundle before converting new ones (about 0.5 s each) and each bundle rewrites the whole lane catalog; make both incremental before the 3,064 skill bundles run.
-- BSP surface material files and texture image pins (02-30, 02-60, 02-64, rows 250, 518 and 693): the bsp step writes `native-materials/<sha>/graph.json` and `program.json` for each surface root, but no store manifest pins them, so the lane merge does not carry them, and no program Texture node carries its `image` pin, so all 89 world lane programs compile to `texture-image-absent` and 02-64 keeps every 20_21 BSP section on its converted material. Plan 02-74 gave `derive_material_program` the `texture_images` pins (each Texture node writes its pin or null) and `write_material_program_record`; 02-86 converts each Texture node to a store PNG, passes the pins, replaces the bsp and sky program writers with that owner and pins the program files from the tile or chunk manifest; then rerun bsp and lighting, and the lightmaps draw through the library.
+- BSP surface material files and texture image pins (02-30, 02-60, 02-64, rows 250, 518, 693 and 1042 to 1045): plan 02-86 converts every reviewed Texture node of a BSP or sky program to `native-materials/textures/<sha>/texture.png`, pins it on the program through the one writer `write_material_program_record`, and each tile manifest pins one `surface-materials` listing whose files map the lane merge walk follows. On 20_21 114 of 125 BSP sections draw through the library (was 0), 110 lightmapped; 20_21 and 20_20 are re-run and the world lane catalog is 19f8d1dd. Open: the other world tiles reseal in the 02-88 batch (bsp version 5, sky version 2, manifest version 12), and the shared store carries the files only after the owner restage.
 - Library vertex lighting and terrain layers (02-64, row 695): static mesh slots and terrain layers carry no program pin and the library has no vertex-colour or layer input; the lighting resource already holds the light lists, visibility bits and terrain shadow maps. Sky surfaces carry no program pin either (row 694).
 - Materials overlap review (DEC-OWN-12, 02-64, row 702): the materials area reports 35 blocking and 313 unreviewed runs and 34 stale sign-offs after the library lightmap input (report `artifacts/reference-overlap/02-64-materials.json`); independent review before the push.
 - Water volumes in VOLS (02-62, row 666): `recipes/world/collision-declaration-rules.json` admits only Engine.BlockingVolume and Engine.PhysicsVolume, so the lighting resource links no WaterVolume to VOLS (`lighting-water-volume-unlinked:Gameplay.WaterVolume`, 20_21: 5, 20_20: 4); admit PhysicsVolume subclasses in the collision step together with the MOVE-01 volume kind codes, then rerun collision and lighting. 02-66 swimming and the falling water entry read water from VOLS through `volumesContaining`, so they need the same export with bL2WaterVolume, Priority, Gravity and TerminalVelocity (row 675).
@@ -551,6 +555,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-12T15:52:23.010Z
-Stopped at: Completed 02-85-PLAN.md
+Last session: 2026-11-12T17:27:13.951Z
+Stopped at: Completed 02-86-PLAN.md
 Resume file: None
