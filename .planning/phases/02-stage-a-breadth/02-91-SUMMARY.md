@@ -50,7 +50,7 @@ decisions:
   - "P1064: map emitter placements and movers attach per tile, since their resources carry no chunk key; memberVisible follows the per-chunk visibility members"
   - "P1065: NativeSection.tileVisibility.setCulling reaches every streamed tile's binding, including tiles attached later"
   - "P1066: residency-visual-ring-radius and residency-null-lod-cull-distance (presentation, row 735, metres) follow committedBspVisibilityRules.limitRules in the tile visibility inspection"
-requirements-completed: [WORLD-04, VIS-01, MAT-02]
+requirements-completed: []
 coverage:
   - id: D1
     description: "The residency announces chunk loads and disposals in order to listeners added after ready, never a failed load"
