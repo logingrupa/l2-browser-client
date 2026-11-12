@@ -14,7 +14,7 @@ from actors.item_conversion import ItemConversionRun
 from actors.item_requests import ITEM_CENSUS_RELATIVE_PATH
 from native_store import lane_coverage_refresh
 from native_store.store_paths import lane_gap_rows_path, lane_store_root
-from native_store.unit_ledger import SEAL_RECORD_NAME, run_at_below_normal_priority
+from native_store.unit_ledger import SEAL_RECORD_NAME, BatchPreflightRefusedError, run_at_below_normal_priority
 from test_item_batch_bookkeeping import SLICE_LIMIT, BookkeepingItemRun, archive_derived_store_files_and_record
 from test_item_conversion_run import FIRST_CONVERTER_SHA256
 
@@ -22,6 +22,7 @@ GATE_POLL_SECONDS = 0.01
 GATE_TIMEOUT_SECONDS = 60
 WORKER_RECORDS_FOLDER_NAME = 'item-unit-workers'
 SHARED_FILE_WRITE_MESSAGE = 'an item unit worker called a shared-file writer'
+SYNTHETIC_PREFLIGHT_REFUSAL_MESSAGE = 'synthetic preflight refusal once the first two units have begun'
 PooledBatchScenario = namedtuple('PooledBatchScenario', 'worker_run_factory worker_run_arguments_after_the_roots preflight')
 synthetic_worker_run = None
 
@@ -78,21 +79,48 @@ class LaterUnitsSealFirstItemRun(BookkeepingItemRun):
         return super().converted_model_reason(unit)
 
 
-def later_units_seal_first_worker_run(project_root, client_root, gated_unit_count):
+class FirstTwoUnitsBeginTogetherItemRun(BookkeepingItemRun):
+    def first_two_unit_folders(self):
+        return [self.ledger.unit_step_directory(unit['unitKey']) for unit in self.units[:2]]
+
+    def converted_model_reason(self, unit):
+        first_two_unit_folders = self.first_two_unit_folders()
+        if self.ledger.unit_step_directory(unit['unitKey']) in first_two_unit_folders:
+            for unit_folder in first_two_unit_folders:
+                wait_until_path_exists(unit_folder)
+        return super().converted_model_reason(unit)
+
+
+def synthetic_worker_run_of_class(run_class, project_root, client_root, *run_arguments_after_the_roots):
     global synthetic_worker_run
     start_synthetic_item_conversion_patches()
     refuse_shared_file_writers_in_this_process()
     write_worker_record(client_root)
-    synthetic_worker_run = LaterUnitsSealFirstItemRun(project_root, client_root, gated_unit_count)
+    synthetic_worker_run = run_class(project_root, client_root, *run_arguments_after_the_roots)
     return synthetic_worker_run
+
+
+def later_units_seal_first_worker_run(project_root, client_root, gated_unit_count):
+    return synthetic_worker_run_of_class(LaterUnitsSealFirstItemRun, project_root, client_root, gated_unit_count)
+
+
+def first_two_units_begin_together_worker_run(project_root, client_root):
+    return synthetic_worker_run_of_class(FirstTwoUnitsBeginTogetherItemRun, project_root, client_root)
 
 
 def passing_preflight():
     pass
 
 
+def preflight_refused_once_the_first_two_units_have_begun():
+    if all(unit_folder.exists() for unit_folder in synthetic_worker_run.first_two_unit_folders()):
+        raise BatchPreflightRefusedError(SYNTHETIC_PREFLIGHT_REFUSAL_MESSAGE)
+
+
 POOLED_BATCH_SCENARIOS_BY_NAME = {
-    'later-units-seal-first': PooledBatchScenario(later_units_seal_first_worker_run, (SLICE_LIMIT,), passing_preflight)}
+    'later-units-seal-first': PooledBatchScenario(later_units_seal_first_worker_run, (SLICE_LIMIT,), passing_preflight),
+    'refused-third-unit': PooledBatchScenario(first_two_units_begin_together_worker_run, (),
+                                              preflight_refused_once_the_first_two_units_have_begun)}
 
 
 class RecordingProcessPoolExecutor(ProcessPoolExecutor):

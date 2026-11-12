@@ -153,7 +153,10 @@ class ItemConversionRun:
     def add_sealed_outcome_of_converted_unit(self, unit, outcome):
         if outcome['status'] == FAILED_STATUS:
             return
-        self.sealed_outcomes_by_unit_key()[unit['unitKey']] = self.receipt_outcome(unit, self.ledger.sealed_receipt(unit['unitKey']))
+        receipt = self.ledger.sealed_receipt(unit['unitKey'])
+        if receipt is None or receipt['fingerprint'] != self.unit_work(unit)[2]:
+            raise ItemConversionError(f'converted item unit {unit["unitKey"]} has no seal under the fingerprint of this run')
+        self.sealed_outcomes_by_unit_key()[unit['unitKey']] = self.receipt_outcome(unit, receipt)
 
     def convert_unsealed_unit(self, unit):
         inputs, config, fingerprint = self.unit_work(unit)

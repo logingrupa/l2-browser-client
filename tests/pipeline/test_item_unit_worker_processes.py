@@ -20,7 +20,8 @@ from native_store.canonical_json import canonical_json_bytes
 from native_store.store_paths import lane_gap_rows_path, lane_store_root, lane_work_root
 from native_store.unit_ledger import (BELOW_NORMAL_PRIORITY_CLASS, OWNER_RECORD_NAME, RECEIPT_RECORD_NAME, RUNNING_MARKER_NAME, SEAL_RECORD_NAME,
                                       UnitLedger)
-from support.item_unit_worker_runs import WORKER_RECORDS_FOLDER_NAME, start_synthetic_item_conversion_patches
+from support.item_unit_worker_runs import (SYNTHETIC_PREFLIGHT_REFUSAL_MESSAGE, WORKER_RECORDS_FOLDER_NAME,
+                                           start_synthetic_item_conversion_patches)
 from test_item_batch_bookkeeping import (BOOKKEEPING_WEAPON_ROWS, BOW_ROW, REFUSED_LONG_SWORD_ROW, SHARED_SWORD_ROWS, SLICE_LIMIT,
                                          BookkeepingItemRun, expected_census, expected_gap_row_document, expected_item_records, weapon_unit_key)
 from test_item_conversion_run import write_actor_unit_census
@@ -33,6 +34,7 @@ POOLED_BATCH_PROGRAM = '\n'.join([
 ])
 POOLED_BATCH_TIMEOUT_SECONDS = 240
 LATER_UNITS_SEAL_FIRST_WORKER_COUNT = 4
+REFUSED_THIRD_UNIT_WORKER_COUNT = 2
 SLICE_UNIT_KEYS = [weapon_unit_key(SHARED_SWORD_ROWS[0]), weapon_unit_key(REFUSED_LONG_SWORD_ROW), weapon_unit_key(BOW_ROW)]
 LEDGER_RECORD_NAMES_WITH_PROCESS_FIELDS = (OWNER_RECORD_NAME, RECEIPT_RECORD_NAME, SEAL_RECORD_NAME)
 RECEIPT_CLOCK_AND_FREE_BYTE_FIELDS = ('finishedAtRiga', 'freeBytesBefore', 'freeBytesAfter')
@@ -157,6 +159,22 @@ class PooledItemBatchByteIdentityTests(unittest.TestCase):
         self.assertEqual(sorted(worker_records_by_process_id), sorted(owner_process_ids))
         self.assertEqual(list(worker_records_by_process_id.values()),
                          [{'priorityClass': BELOW_NORMAL_PRIORITY_CLASS}] * len(SLICE_UNIT_KEYS))
+
+
+class PooledItemBatchRefusalTests(unittest.TestCase):
+    def test_a_preflight_refusal_in_a_worker_for_the_third_unit_stops_the_slice_and_keeps_two_sealed_units(self):
+        temporary_directory = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary_directory.cleanup)
+        project_root, client_root = build_project_tree(Path(temporary_directory.name).resolve())
+        report = child_interpreter_report('refused-third-unit', project_root, client_root, REFUSED_THIRD_UNIT_WORKER_COUNT)
+        self.assertEqual((report['refusalType'], report['refusalMessage'], report['poolWorkerCounts'], report['storeWriteCallCount']),
+                         ('native_store.unit_ledger.BatchPreflightRefusedError', SYNTHETIC_PREFLIGHT_REFUSAL_MESSAGE,
+                          [REFUSED_THIRD_UNIT_WORKER_COUNT], 0))
+        seal_paths = [unit_record_path(project_root, unit_key, SEAL_RECORD_NAME) for unit_key in SLICE_UNIT_KEYS]
+        self.assertEqual([seal_path.is_file() for seal_path in seal_paths[:2]], [True, True])
+        self.assertFalse(seal_paths[2].parents[1].exists())
+        self.assertEqual([path.exists() for path in (lane_store_root(project_root, 'actors'), lane_gap_rows_path(project_root, 'actors', 'items'),
+                                                     project_root / ITEM_CENSUS_RELATIVE_PATH)], [False, False, False])
 
 
 if __name__ == '__main__':

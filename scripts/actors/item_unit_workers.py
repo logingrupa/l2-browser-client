@@ -5,6 +5,10 @@ ItemUnitWorker = namedtuple('ItemUnitWorker', 'run preflight')
 item_unit_worker = None
 
 
+class ItemUnitWorkerError(ValueError):
+    pass
+
+
 def initialize_item_unit_worker(run_factory, run_factory_arguments, preflight):
     global item_unit_worker
     item_unit_worker = ItemUnitWorker(run_factory(*run_factory_arguments), preflight)
@@ -12,6 +16,8 @@ def initialize_item_unit_worker(run_factory, run_factory_arguments, preflight):
 
 def converted_unit_outcome(unit_key):
     item_unit_worker.preflight()
+    if unit_key not in item_unit_worker.run.units_by_key:
+        raise ItemUnitWorkerError(f'the run of this item unit worker holds no unit {unit_key}')
     return item_unit_worker.run.convert_unsealed_unit(item_unit_worker.run.units_by_key[unit_key])
 
 
