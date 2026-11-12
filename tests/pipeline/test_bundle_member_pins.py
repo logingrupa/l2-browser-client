@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
@@ -15,6 +16,8 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from native_assets_lib.gltf import json_bytes
 from native_store.catalog_writer import CatalogWriteError, pinned_store_files
 from native_store.merge_lane_store import LaneStoreMergeRefusedError, merge_lane_store
+from native_store import pinned_store_verification
+from native_store.pinned_store_verification import verify_pinned_store_files
 from native_store.store_paths import StorePathError, lane_store_root
 from native_store.write_lane_catalog import write_lane_catalog
 
@@ -26,6 +29,27 @@ SYNTHETIC_NPC_MODEL_CATALOG_ID = 'npc-model:' + '6' * 64
 RAW_CLASS_EXPORT = 'source/classes/SyntheticFixture.Actor.bin'
 CLASS_DEFINITION = 'source/classes/SyntheticFixture.Actor.json'
 SOURCE_SELECTIONS = 'source/npc-selections.json'
+POOLED_WALK_WORKER_COUNT = 2
+POOLED_WALK_PROGRAM = '\n'.join([
+    'import json, sys',
+    'from pathlib import Path',
+    'sys.path.insert(0, sys.argv[1])',
+    'from native_store import pinned_store_verification',
+    'pinned_store_verification.POOLED_LEVEL_MINIMUM_REFERENCE_COUNT = 1',
+    'pool_worker_counts = []',
+    'class RecordingProcessPoolExecutor(pinned_store_verification.ProcessPoolExecutor):',
+    '    def __init__(self, max_workers):',
+    '        pool_worker_counts.append(max_workers)',
+    '        super().__init__(max_workers=max_workers)',
+    'pinned_store_verification.ProcessPoolExecutor = RecordingProcessPoolExecutor',
+    'catalog = json.loads(Path(sys.argv[3]).read_text(encoding="utf-8"))',
+    'try:',
+    '    verified = pinned_store_verification.verify_pinned_store_files(Path(sys.argv[2]), catalog, int(sys.argv[4]))',
+    '    outcome = {"verifiedSha256ByStoreFileKey": verified}',
+    'except Exception as refusal:',
+    '    outcome = {"refusalType": type(refusal).__module__ + "." + type(refusal).__qualname__, "refusalMessage": str(refusal)}',
+    'print(json.dumps({**outcome, "poolWorkerCounts": pool_worker_counts}))',
+])
 
 try:
     import _winapi
@@ -102,6 +126,10 @@ class TemporaryStoreTestCase(unittest.TestCase):
         temporary_directory = tempfile.TemporaryDirectory()
         self.addCleanup(temporary_directory.cleanup)
         self.temporary_root = Path(temporary_directory.name).resolve()
+        process_pool_guard = patch.object(pinned_store_verification, 'ProcessPoolExecutor', side_effect=AssertionError(
+            'the unittest process must not start a pool; use pooled_walk_outcome'))
+        process_pool_guard.start()
+        self.addCleanup(process_pool_guard.stop)
 
     def make_junction(self, link, target):
         if JUNCTION_FACTORY is None:
@@ -110,8 +138,34 @@ class TemporaryStoreTestCase(unittest.TestCase):
         JUNCTION_FACTORY(str(target), str(link))
         self.addCleanup(os.rmdir, link)
 
+    def pooled_walk_outcome(self, store_root, catalog):
+        catalog_file = self.temporary_root / 'pooled-walk-catalog.json'
+        catalog_file.write_text(json.dumps(catalog), encoding='utf-8')
+        completed = subprocess.run([sys.executable, '-B', '-c', POOLED_WALK_PROGRAM, str(ROOT / 'scripts'), str(store_root), str(catalog_file),
+                                    str(POOLED_WALK_WORKER_COUNT)], capture_output=True, text=True, check=False)
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        return json.loads(completed.stdout)
 
-class ProfileBundleLaneTests(TemporaryStoreTestCase):
+    def assert_every_walk_verifies(self, store_root, catalog):
+        verified = {key: sha256_hex(payload) for key, (_, payload) in pinned_store_files(store_root, catalog).items()}
+        self.assertEqual(verify_pinned_store_files(store_root, catalog, POOLED_WALK_WORKER_COUNT), verified)
+        self.assertEqual(self.pooled_walk_outcome(store_root, catalog),
+                         {'verifiedSha256ByStoreFileKey': verified, 'poolWorkerCounts': [POOLED_WALK_WORKER_COUNT]})
+
+    def assert_every_walk_refuses(self, error_type, message_pattern, store_root, catalog, pool_worker_counts=(POOLED_WALK_WORKER_COUNT,)):
+        with self.assertRaisesRegex(error_type, message_pattern) as collecting_walk:
+            pinned_store_files(store_root, catalog)
+        refusal_type, refusal_message = type(collecting_walk.exception), str(collecting_walk.exception)
+        with self.assertRaises(refusal_type) as verify_only_walk:
+            verify_pinned_store_files(store_root, catalog, POOLED_WALK_WORKER_COUNT)
+        self.assertIs(type(verify_only_walk.exception), refusal_type)
+        self.assertEqual(str(verify_only_walk.exception), refusal_message)
+        self.assertEqual(self.pooled_walk_outcome(store_root, catalog),
+                         {'refusalType': f'{refusal_type.__module__}.{refusal_type.__qualname__}', 'refusalMessage': refusal_message,
+                          'poolWorkerCounts': list(pool_worker_counts)})
+
+
+class ProfileBundleProjectTestCase(TemporaryStoreTestCase):
     def setUp(self):
         super().setUp()
         self.project = self.temporary_root / 'project'
@@ -121,6 +175,8 @@ class ProfileBundleLaneTests(TemporaryStoreTestCase):
         self.bundle = ProfileBundle(synthetic_profile_bundle_members())
         self.bundle.write(self.actors_store)
 
+
+class ProfileBundleLaneTests(ProfileBundleProjectTestCase):
     def test_a_profile_bundle_manifest_pins_its_files_by_relative_path_and_members_are_never_parsed_for_pins(self):
         catalog = json.loads((self.actors_store / 'catalog.json').read_bytes())
         files = pinned_store_files(self.actors_store, catalog)
@@ -260,19 +316,27 @@ class BundleMemberGuardTests(TemporaryStoreTestCase):
         self.assertEqual(sorted(relative for relative, _ in files.values()), ['flat-member.bin', 'manifest.json'])
 
     def test_an_effect_bundle_from_another_lane_follows_the_same_rule_and_pins_a_repeated_resource_once(self):
-        texture = b'synthetic sprite texture bytes'
-        texture_pin = {'assetId': 'interlude:Synthetic.Sprite', 'kind': 'texture', **bundle_member_pin(f'resources/{sha256_hex(texture)}.png', texture)}
-        manifest_bytes = json_bytes({'schemaVersion': 1, 'kind': 'native-effect-components', 'id': 'interlude:skill:3:level:1:synthetic',
-                                     'resources': {texture_pin['assetId']: texture_pin},
-                                     'components': [{'object': 'synthetic.Sprite', 'bindings': {'texture': texture_pin, 'mesh': None}}]})
-        manifest_sha256 = sha256_hex(manifest_bytes)
-        folder = f'effects/{manifest_sha256}'
-        write_file(self.store_root / folder / 'manifest.json', manifest_bytes)
-        write_file(self.store_root / folder / texture_pin['file'], texture)
-        catalog = {'schemaVersion': 1, 'models': [], 'effectComponents': [
-            {'id': 'interlude:skill:3:level:1:synthetic', 'manifest': f'/l2/{folder}/manifest.json', 'manifestSha256': manifest_sha256}]}
-        files = pinned_store_files(self.store_root, catalog)
+        bundle = SyntheticEffectBundle(self.store_root)
+        folder, texture_pin = bundle.folder, bundle.texture_pin
+        files = pinned_store_files(self.store_root, bundle.catalog)
         self.assertEqual(sorted(relative for relative, _ in files.values()), [f'{folder}/manifest.json', f'{folder}/{texture_pin["file"]}'])
+
+
+class SyntheticEffectBundle:
+    def __init__(self, store_root, resource_pin_sha256=None):
+        texture = b'synthetic sprite texture bytes'
+        self.texture_pin = {'assetId': 'interlude:Synthetic.Sprite', 'kind': 'texture',
+                            **bundle_member_pin(f'resources/{sha256_hex(texture)}.png', texture)}
+        resource_pin = self.texture_pin if resource_pin_sha256 is None else {**self.texture_pin, 'sha256': resource_pin_sha256}
+        manifest_bytes = json_bytes({'schemaVersion': 1, 'kind': 'native-effect-components', 'id': 'interlude:skill:3:level:1:synthetic',
+                                     'resources': {self.texture_pin['assetId']: resource_pin},
+                                     'components': [{'object': 'synthetic.Sprite', 'bindings': {'texture': self.texture_pin, 'mesh': None}}]})
+        manifest_sha256 = sha256_hex(manifest_bytes)
+        self.folder = f'effects/{manifest_sha256}'
+        write_file(store_root / self.folder / 'manifest.json', manifest_bytes)
+        write_file(store_root / self.folder / self.texture_pin['file'], texture)
+        self.catalog = {'schemaVersion': 1, 'models': [], 'effectComponents': [
+            {'id': 'interlude:skill:3:level:1:synthetic', 'manifest': f'/l2/{self.folder}/manifest.json', 'manifestSha256': manifest_sha256}]}
 
 
 def synthetic_glb_with_materials(materials):

@@ -10,10 +10,11 @@ sys.path.insert(0, str(SCRIPTS_ROOT))
 
 from native_assets_lib.gltf import json_bytes
 from native_store.catalog_index_keys import require_npc_profiles_join_models_of_their_mesh
-from native_store.catalog_writer import (KNOWN_CATALOG_SLICES, add_store_file, merge_catalog_slice_records, pinned_store_files, read_store_catalog,
-                                         sha256_hex, sha256_of_file, verify_store_destinations, write_store)
+from native_store.catalog_writer import (KNOWN_CATALOG_SLICES, add_store_file, merge_catalog_slice_records, read_store_catalog, sha256_hex,
+                                         sha256_of_file, verify_store_destinations, write_store)
 from native_store.lane_coverage_refresh import refresh_lane_coverage
 from native_store.merge_lane_store import main_checkout_root
+from native_store.pinned_store_verification import verify_pinned_store_files
 from native_store.store_paths import REPOSITORY_ROOT, confined_child_path, lane_store_root, read_lane_parts_by_name
 
 LANE_CATALOG_DESCRIPTION = ('Pin a lane store catalog to the SHA-256 of the shared public/l2 catalog it was built on, '
@@ -21,6 +22,7 @@ LANE_CATALOG_DESCRIPTION = ('Pin a lane store catalog to the SHA-256 of the shar
 UNION_EXCLUDED_STORE_FILES = ('catalog.json', 'coverage.json')
 MERGE_LANE_STORE_SCRIPT = Path(__file__).resolve().parent / 'merge_lane_store.py'
 MAIN_CHECKOUT_STORE_TARGET = 'public/l2'
+PINNED_STORE_VERIFICATION_WORKER_COUNT = 6
 
 
 class LaneCatalogError(ValueError):
@@ -58,7 +60,7 @@ def merge_union_lane(project_root, union_lane_name, base_sha256, catalog, files)
     if union_base_sha256 != base_sha256:
         raise LaneCatalogError(f'union lane {union_lane_name} was built on base catalog sha256 {union_base_sha256}; '
                                f'the current base catalog sha256 is {base_sha256}')
-    pinned_store_files(union_store_root, union_catalog)
+    verify_pinned_store_files(union_store_root, union_catalog, PINNED_STORE_VERIFICATION_WORKER_COUNT)
     require_npc_profiles_join_models_of_their_mesh(union_store_root, union_catalog, shared_store_root(project_root))
     for relative in union_lane_store_relative_paths(union_store_root):
         add_store_file(files, relative, confined_child_path(union_store_root, relative).read_bytes())
@@ -94,7 +96,7 @@ def write_lane_catalog(project_root, lane_name, union_lane_names=(), plan_only=F
     catalog, before = read_store_catalog(store_root)
     if plan_only and before is None:
         raise LaneCatalogError(f'lane {lane_name} has no catalog: {store_root / "catalog.json"}')
-    pinned_store_files(store_root, catalog)
+    verify_pinned_store_files(store_root, catalog, PINNED_STORE_VERIFICATION_WORKER_COUNT)
     require_npc_profiles_join_models_of_their_mesh(store_root, catalog, shared_store_root(project_root))
     files = {}
     for union_lane_name in union_lane_names:

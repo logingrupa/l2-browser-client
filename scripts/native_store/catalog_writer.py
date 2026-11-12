@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import deque
 import copy
 import hashlib
 import json
@@ -96,13 +97,18 @@ def immutable_write(path, payload):
     replace_file(path, payload)
 
 
-def add_store_file(files, relative, payload):
+def store_file_key(relative):
     require_portable_relative_path(relative)
     if not NATIVE_RESOURCE_PATH_PATTERN.fullmatch('/l2/' + relative):
         raise CatalogWriteError('Store file path is not a bounded /l2 resource path: ' + relative)
     key = relative.casefold()
     if key == STORE_CATALOG_NAME:
         raise CatalogWriteError('The store catalog is written only by write_store: ' + relative)
+    return key
+
+
+def add_store_file(files, relative, payload):
+    key = store_file_key(relative)
     if key in files and files[key] != (relative, payload):
         raise CatalogWriteError('Conflicting store file paths: ' + relative)
     files[key] = (relative, payload)
@@ -358,22 +364,33 @@ def read_pinned_file(store_root, reference):
     return payload
 
 
+def require_one_sha256_per_store_file(verified_sha256, reference):
+    if verified_sha256 != reference.sha256:
+        raise CatalogWriteError(f'store file {reference.relative} is pinned with two different SHA-256 values')
+
+
+def pinned_file_child_references(reference, payload):
+    child_references = []
+    if reference.bundle_folder is None and reference.relative.endswith(PINNED_MANIFEST_SUFFIX):
+        manifest = json.loads(payload, object_pairs_hook=refuse_duplicate_json_keys, parse_constant=refuse_non_finite_json_number)
+        child_references.extend(pinned_file_references(manifest, f'store file {reference.relative}', bundle_folder_of(reference.relative)))
+    if reference.relative.casefold().endswith(PINNED_GLB_SUFFIX):
+        child_references.extend(glb_material_program_references(payload, f'store file {reference.relative}'))
+    return child_references
+
+
 def pinned_store_files(store_root, catalog):
-    files, pending = {}, list(catalog_pinned_file_references(catalog))
+    files, verified_sha256_by_store_file_key, pending = {}, {}, deque(catalog_pinned_file_references(catalog))
     while pending:
-        reference = pending.pop(0)
-        already_collected = files.get(reference.relative.casefold())
-        if already_collected is not None:
-            if sha256_hex(already_collected[1]) != reference.sha256:
-                raise CatalogWriteError(f'store file {reference.relative} is pinned with two different SHA-256 values')
+        reference = pending.popleft()
+        key = reference.relative.casefold()
+        if key in verified_sha256_by_store_file_key:
+            require_one_sha256_per_store_file(verified_sha256_by_store_file_key[key], reference)
             continue
         payload = read_pinned_file(store_root, reference)
         add_store_file(files, reference.relative, payload)
-        if reference.bundle_folder is None and reference.relative.endswith(PINNED_MANIFEST_SUFFIX):
-            manifest = json.loads(payload, object_pairs_hook=refuse_duplicate_json_keys, parse_constant=refuse_non_finite_json_number)
-            pending.extend(pinned_file_references(manifest, f'store file {reference.relative}', bundle_folder_of(reference.relative)))
-        if reference.relative.casefold().endswith(PINNED_GLB_SUFFIX):
-            pending.extend(glb_material_program_references(payload, f'store file {reference.relative}'))
+        verified_sha256_by_store_file_key[key] = reference.sha256
+        pending.extend(pinned_file_child_references(reference, payload))
     return files
 
 
