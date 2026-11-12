@@ -247,6 +247,22 @@ class LaneCatalogWriterTests(unittest.TestCase):
                 write_store(self.world_store, files, before, json_bytes(merge_catalog_slice(catalog, 'models', MODEL_VERSION_TWO_RECORD, 4)))
         self.assertEqual((self.world_store / 'catalog.json').read_bytes(), b'{"schemaVersion":1,"models":[]}')
 
+    def test_write_store_refuses_a_catalog_over_the_byte_limit_before_any_write_and_accepts_one_at_the_limit(self):
+        self.stage_model_version_two(self.world_store)
+        catalog, before = read_store_catalog(self.world_store)
+        after = json_bytes(merge_catalog_slice(catalog, 'models', MODEL_VERSION_ONE_RECORD, 4))
+        files = {}
+        add_store_file(files, MODEL_VERSION_ONE_ARCHIVE, MODEL_VERSION_ONE_BYTES)
+        snapshot = snapshot_tree(self.project)
+        with patch.object(catalog_writer, 'MAXIMUM_CATALOG_BYTES', len(after) - 1):
+            with self.assertRaisesRegex(CatalogWriteError, f'Store catalog of {len(after)} bytes exceeds {len(after) - 1} bytes; preserved'):
+                write_store(self.world_store, files, before, after)
+        self.assertEqual(snapshot_tree(self.project), snapshot)
+        with patch.object(catalog_writer, 'MAXIMUM_CATALOG_BYTES', len(after)):
+            self.assertEqual(write_store(self.world_store, files, before, after)['filesWritten'], 2)
+        self.assertEqual((self.world_store / 'catalog.json').read_bytes(), after)
+        self.assertEqual((self.world_store / MODEL_VERSION_ONE_ARCHIVE).read_bytes(), MODEL_VERSION_ONE_BYTES)
+
     def test_read_store_catalog_refuses_duplicate_keys_non_finite_numbers_and_other_schemas(self):
         self.world_store.mkdir(parents=True)
         for payload, message in ((b'{"schemaVersion":1,"models":[],"models":[]}', 'Duplicate JSON key'),

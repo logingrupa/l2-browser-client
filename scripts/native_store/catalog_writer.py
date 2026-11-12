@@ -410,10 +410,16 @@ def require_catalog_unchanged(store_root, before):
         raise CatalogWriteError('Catalog changed since it was read; preserved')
 
 
+def require_catalog_within_byte_limit(catalog_path, after):
+    if len(after) > MAXIMUM_CATALOG_BYTES:
+        raise CatalogWriteError(f'Store catalog of {len(after)} bytes exceeds {MAXIMUM_CATALOG_BYTES} bytes; preserved: {catalog_path}')
+
+
 def write_store(store_root, files, before, after):
     root = refuse_reparse_points(store_root)
     missing_relative_paths = verify_store_destinations(root, files)
     require_catalog_unchanged(root, before)
+    require_catalog_within_byte_limit(confined_child_path(root, STORE_CATALOG_NAME), after)
     for relative, payload in files.values():
         immutable_write(confined_child_path(root, relative), payload)
     require_catalog_unchanged(root, before)

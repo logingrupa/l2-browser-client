@@ -252,8 +252,7 @@ class BundleMemberGuardTests(TemporaryStoreTestCase):
 
     def assert_pin_refused(self, error_type, message_pattern, member, payload=b'member bytes', member_pin=None, write_member=False):
         bundle, catalog = self.pin_store(member, payload, member_pin, write_member)
-        with self.assertRaisesRegex(error_type, message_pattern):
-            pinned_store_files(self.store_root, catalog)
+        self.assert_every_walk_refuses(error_type, message_pattern, self.store_root, catalog)
         return bundle
 
     def test_path_guards_refuse_absolute_drive_parent_backslash_and_separator_tricks(self):
@@ -292,21 +291,20 @@ class BundleMemberGuardTests(TemporaryStoreTestCase):
         write_file(outside / 'x.bin', b'outside bytes')
         bundle, catalog = self.pin_store('linked/x.bin', b'outside bytes', write_member=False)
         self.make_junction(self.store_root / bundle.member_relative('linked'), outside)
-        with self.assertRaisesRegex(CatalogWriteError, 'bundle file resolves outside its bundle folder npc-profiles/[0-9a-f]{64}'):
-            pinned_store_files(self.store_root, catalog)
+        self.assert_every_walk_refuses(CatalogWriteError, 'bundle file resolves outside its bundle folder npc-profiles/[0-9a-f]{64}',
+                                       self.store_root, catalog)
 
     def test_a_junction_inside_the_bundle_folder_is_refused(self):
         payload = b'member bytes behind a junction'
         bundle, catalog = self.pin_store('linked/x.bin', payload, write_member=False)
         write_file(self.store_root / bundle.member_relative('real/x.bin'), payload)
         self.make_junction(self.store_root / bundle.member_relative('linked'), self.store_root / bundle.member_relative('real'))
-        with self.assertRaisesRegex(StorePathError, 'Symlink/junction/reparse boundary refused'):
-            pinned_store_files(self.store_root, catalog)
+        self.assert_every_walk_refuses(StorePathError, 'Symlink/junction/reparse boundary refused', self.store_root, catalog)
 
     def test_a_catalog_record_cannot_pin_a_file_by_relative_path(self):
         catalog = {'schemaVersion': 1, 'models': [], 'npcProfiles': [{'id': PROFILE_RECORD_ID, 'file': 'x.bin', 'sha256': '6' * 64}]}
-        with self.assertRaisesRegex(CatalogWriteError, "pins 'x.bin' by a relative path; only a pinned store manifest names files"):
-            pinned_store_files(self.store_root, catalog)
+        self.assert_every_walk_refuses(CatalogWriteError, "pins 'x.bin' by a relative path; only a pinned store manifest names files",
+                                       self.store_root, catalog, pool_worker_counts=())
 
     def test_a_manifest_at_the_store_root_pins_files_beside_it(self):
         payload = b'member beside a root manifest'
@@ -406,13 +404,12 @@ class WorldTileRuntimePinTests(TemporaryStoreTestCase):
 
     def test_a_glb_material_program_pin_whose_directory_differs_from_its_sha256_is_refused(self):
         tile = SyntheticWorldTile(self.store_root, [{'directory': f'native-materials/{"7" * 64}', 'programSha256': '6' * 64}])
-        with self.assertRaisesRegex(ValueError, 'nativeMaterialProgram is not a native-materials program pin'):
-            pinned_store_files(self.store_root, tile.catalog())
+        self.assert_every_walk_refuses(ValueError, 'nativeMaterialProgram is not a native-materials program pin', self.store_root, tile.catalog())
 
     def test_a_glb_material_program_whose_bytes_are_missing_is_refused(self):
         tile = SyntheticWorldTile(self.store_root, [native_material_program_pin('6' * 64)])
-        with self.assertRaisesRegex(CatalogWriteError, f'pinned store file is missing from .*: native-materials/{"6" * 64}/program.json'):
-            pinned_store_files(self.store_root, tile.catalog())
+        self.assert_every_walk_refuses(CatalogWriteError, f'pinned store file is missing from .*: native-materials/{"6" * 64}/program.json',
+                                       self.store_root, tile.catalog())
 
     def test_a_files_map_entry_with_fields_other_than_sha256_and_bytes_is_refused(self):
         manifest_bytes = json_bytes({'files': {'sky.glb': {'sha256': '6' * 64, 'bytes': 1, 'kind': 'glb'}}})
@@ -420,8 +417,8 @@ class WorldTileRuntimePinTests(TemporaryStoreTestCase):
         write_file(self.store_root / folder / 'manifest.json', manifest_bytes)
         catalog = {'schemaVersion': 1, 'models': [], 'effectComponents': [
             {'id': 'interlude:sky:synthetic', 'manifest': f'/l2/{folder}/manifest.json', 'manifestSha256': sha256_hex(manifest_bytes)}]}
-        with self.assertRaisesRegex(CatalogWriteError, "bundle file map entry 'sky.glb' must hold only sha256 and bytes"):
-            pinned_store_files(self.store_root, catalog)
+        self.assert_every_walk_refuses(CatalogWriteError, "bundle file map entry 'sky.glb' must hold only sha256 and bytes",
+                                       self.store_root, catalog)
 
 
 if __name__ == '__main__':
