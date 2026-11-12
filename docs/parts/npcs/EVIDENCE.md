@@ -75,6 +75,9 @@ Run after the converter changes of 02-73, 02-74 and 02-92 (rule G6), so every ea
 
 - Slice 1 (19:26 to 19:29): 20 units, 19 pass, 1 `converter-refused:Native wedge has no point or influences`; all 24 packs pending. Its coverage refresh at exit failed: the actors lane coverage reads the world lane audio step rows for `tile-audio:XX_YY` but counted conversions only from its own catalog, so 21 tiles with a passing audio step had no status. Fixed in `build_coverage_report.py` (a lane report also takes the derived converted keys of the source lanes it does not measure; `tests/pipeline/test_gap_census_derived_parts.py`).
 - Slice 2 (19:33 to 19:39, tracer): 20 units, 18 pass, 2 refused (unique bone mapping, ambiguous influence slots), 1 pack written. Lane catalog `2498adff353c0e554e1f2ee3d79753278dec7cdc14e213580002648adf714b2d` (282 `models`, 1 `npcProfiles` pack, 26 `combatAudio`, 3,064 `effectComponents`) passes the mesh join check, and `write_lane_catalog.py --lane actors --plan` prints its merge command.
+- Slices 3 to 28 (19:40 to 21:52 Riga, lane catalog rewritten after every 5 slices and at the end, disk projection before every 5 slices, none below the floor): slice 25 was stopped after a few seconds and rerun. All 539 batch units are sealed under the current converter: 446 pass, 93 gap (`animation-reference-missing` 52, unique bone mapping 28, wedge without point 6, ambiguous influence slots 2, duplicate leaf name 2, unmapped section vertices 2, object missing 1). 23 of 24 packs hold a bundle; `pack-0101a7b6e73f3fa7` holds no row whose model passed.
+- Lane coverage on lane catalog `b34545d3a4f4782d79daa100a8ae91fc9c3fc8bec506d8acd6b1aa9acc376b3c` (614 `models`, 23 `npcProfiles` packs, 3,064 `effectComponents`): npcs 5,177 converted, 1,341 gap, 1 pending (npc:21622, see Open). Gap rows by reason: unique bone mapping 436, `skeletal-licensee-unsupported:123/0` 246 and `123/31` 239, `animation-reference-missing` 177, `no-mesh-in-row` 94, wedge without point 50, `npc-name-empty` 48, ambiguous influence slots 34, object missing 12, unmapped section vertices 3, duplicate leaf name 2. The catalog passes the mesh join check and `--plan` prints its merge command. Free bytes 99,135,758,336 before slice 1, 89,521,721,344 after slice 28.
+- After the actor-sounds batch (audio EVIDENCE, plan 02-78) the final lane catalog is `a1562da9aba4d7b8f9095a595a7a2e05fe8509e43079fb9c5f1bfec1f5668326` (614 `models`, 23 `npcProfiles`, 5,175 `combatAudio`, 3,064 `effectComponents`), with the same npcs counts; it passes the mesh join check and `--plan` prints its merge command. Every converted NPC has a sealed sound bundle or the `npc-names-no-sound` gap (5,175 bundles, 2 gaps).
 
 State after slice 6 (lane catalog `9a979250...7ea1`, superseded by the rerun under Open): 110 `models` records and 6 `npcProfiles` packs with 1,496 profiles. Model units sealed: 132 pass, 10 `converter-refused` (unique-bone mapping 5, `Native wedge has no point or influences` 2, `No diffuse material adapter for GlowModifier` 2, ambiguous influence slots 1). Pack-step gap rows are written under step `npc-profile` (row 368). The 02-22 record `interlude:npc-profiles:20001` is replaced by its pack, and its model record by the reconverted archive. Every gap row in the lane gap-row files passes `validate_gap_row`; no lane profile manifest lists a shared-store npc id, and every profile carries `modelCatalogId`.
 
@@ -96,7 +99,7 @@ Plan 02-21 adds a census only. It converts nothing and loads nothing. A "load" c
 - npc:20001 sandbox spawn: wired, browser check passed. `sandboxNpcAppearances` (`src/runtime/sandboxNpcAppearances.ts`) gives every converted NPC record without a loaded model the profile `native-npc:<id>`, whose model loads on spawn through `loadConvertedNpcModel`; Musveren keeps `musveren:0`. The state clips Wait, run, atk01 and death are the Musveren names, an unverified mapping that the factory refuses per model when a clip is missing; an unresolved PrePivot is not synthesized and a known nonzero one is named as the reason. A load that fails on spawn shows its reason on the entity label and as `missingAssetDiagnostic` in the snapshot. Vitest: `tests/unit/sandboxNpcAppearances.test.ts`, `sandboxMissingAsset.test.ts`, `nativeCharacterVisual.test.ts`. Browser: `NATIVE_STORE_ROOT=actors DEV_PORT=5175 pnpm test:e2e tests/browser/sandbox-lane-npc-spawn.spec.ts` passed on 2026-11-09 at 14:51 Riga on lane catalog `7ab1cdcf...35e7` (1 passed, 2.1 min): the spawn note names `npc-model:0f7fff4b...5ba9`, and the snapshot shows a native model with meshes and a skeleton and no missing-asset diagnostic. The lane `coverage.json` is pinned to that lane catalog, which the catalog answer attests in `X-Native-Store-Lane-Catalog-Sha256`. Screenshot `artifacts/npc-evidence/sandbox-npc-20001-spawn-1440x900.png` (the npc:20001 label sits at the left frame edge). Headless SwiftShader, no FPS claim. The default-store sandbox spec (`tests/browser/sandbox.spec.ts`, Musveren) passes at 13:57.
 - Earlier batch states (lane catalogs `9a979250...` and `7ab1cdcf...`, the 2026-11-09 rerun after converter hash `339281b0`, and the case-insensitive plan of 429 units and 20 packs) are superseded by the 02-78 batch under Passes now; details are in the 02-34 SUMMARY and git history.
 - ACT-04 presentation: the sandbox `play-clip` command that plays a listed clip through this API (02-37) and the developer sheet clip picker that reads `actorClipListing` (02-39) are open. Nothing yet shows events in a browser.
-- 6,519 `npcgrp` rows, spawnable by NPC ID (ACT-02): 5,084 census rows are pending conversion, 1,435 are census gaps (table below). The NPC batch has sealed 80 of 429 model units under the current converter (after slice 4); skeletal licensees 31 and 0 and texture licensees 23, 25, 27 and 0 wait on reader work.
+- 6,519 `npcgrp` rows, spawnable by NPC ID (ACT-02): the 02-78 counts are under Passes now. The one pending row, npc:21622 (Greater Musveren), is profiled only in the shared-store record `native-npc-profiles` with the legacy join, so lane packs leave it out (rows 354, 360); it leaves pending with the restage (Needs Human) and the key index disagreement P816 of 03-11. Skeletal licensees 31 and 0 wait on reader work.
 - chargrp hair and helmet layouts stay explicit gaps (`hair-layout-undecoded`, `helmet-layout-undecoded`) until 02-28 and 02-40 decode them.
 - 17,576 skillgrp rows have an empty description and need native skill dispatch (ACT-06).
 - Etcitem rows are not in this census; 02-26 adds their gap rows from the data lane decode.
@@ -142,114 +145,36 @@ The npcname path is the single language file the decoder resolves; 02-22 and 02-
 
 ### Package headers
 
-| Package | Version/licensee | Wrapper | Skeletal gate | Texture gate |
-|---|---|---|---|---|
-| `animations/DarkElf.ukx` | 123/30 | Lineage2Ver111 | accepted | not-applicable |
-| `animations/DropItems.ukx` | 123/28 | Lineage2Ver111 | accepted | not-applicable |
-| `animations/Dwarf.ukx` | 123/30 | Lineage2Ver111 | accepted | not-applicable |
-| `animations/Elf.ukx` | 123/28 | Lineage2Ver111 | accepted | not-applicable |
-| `animations/Fighter.ukx` | 123/30 | Lineage2Ver111 | accepted | not-applicable |
-| `animations/LineageAccessory.ukx` | 123/31 | Lineage2Ver111 | refused | not-applicable |
-| `animations/LineageEffectMeshes.ukx` | 123/28 | Lineage2Ver111 | accepted | not-applicable |
-| `animations/LineageMonsters.ukx` | 123/28 | Lineage2Ver111 | accepted | not-applicable |
-| `animations/LineageMonsters2.ukx` | 123/28 | Lineage2Ver111 | accepted | not-applicable |
-| `animations/LineageMonsters3.ukx` | 123/31 | Lineage2Ver111 | refused | not-applicable |
-| `animations/LineageNPCs2.ukx` | 123/28 | Lineage2Ver111 | accepted | not-applicable |
-| `animations/LineageNpcs.ukx` | 123/28 | Lineage2Ver111 | accepted | not-applicable |
-| `animations/LineageWeapons.ukx` | 123/28 | Lineage2Ver111 | accepted | not-applicable |
-| `animations/Magic.ukx` | 123/30 | Lineage2Ver111 | accepted | not-applicable |
-| `animations/Orc.ukx` | 123/30 | Lineage2Ver111 | accepted | not-applicable |
-| `animations/Shaman.ukx` | 123/30 | Lineage2Ver111 | accepted | not-applicable |
-| `animations/Skill.usk` | 123/28 | Lineage2Ver111 | accepted | not-applicable |
-| `animations/improved_model_npc_01.ukx` | 123/0 | UnrealPackage | refused | refused |
-| `animations/lineagedecos.ukx` | 123/28 | Lineage2Ver111 | accepted | not-applicable |
-| `animations/lineagenpcsev.ukx` | 123/28 | Lineage2Ver111 | accepted | not-applicable |
-| `systextures/DropItemsTex.utx` | 123/28 | Lineage2Ver121 | not-applicable | accepted |
-| `systextures/FFighter.utx` | 123/28 | Lineage2Ver121 | not-applicable | accepted |
-| `systextures/FMagic.utx` | 123/28 | Lineage2Ver121 | not-applicable | accepted |
-| `systextures/FOrc.utx` | 123/28 | Lineage2Ver121 | not-applicable | accepted |
-| `systextures/FShaman.utx` | 123/28 | Lineage2Ver121 | not-applicable | accepted |
-| `systextures/LineageAccessoryTex.utx` | 123/28 | Lineage2Ver121 | not-applicable | accepted |
-| `systextures/LineageEffectsTextures.utx` | 123/28 | Lineage2Ver121 | not-applicable | accepted |
-| `systextures/LineageMonstersTex3.utx` | 123/28 | Lineage2Ver121 | not-applicable | accepted |
-| `systextures/LineageNpcsTex.utx` | 123/28 | Lineage2Ver121 | not-applicable | accepted |
-| `systextures/LineageNpcsTex2.utx` | 123/28 | Lineage2Ver121 | not-applicable | accepted |
-| `systextures/LineageNpcsTexEV.utx` | 123/28 | Lineage2Ver121 | not-applicable | accepted |
-| `systextures/LineageWeaponsTex.utx` | 123/28 | Lineage2Ver121 | not-applicable | accepted |
-| `systextures/MFighter.utx` | 123/28 | Lineage2Ver121 | not-applicable | accepted |
-| `systextures/MMagic.utx` | 123/28 | Lineage2Ver121 | not-applicable | accepted |
-| `systextures/MOrc.utx` | 123/28 | Lineage2Ver121 | not-applicable | accepted |
-| `systextures/MShaman.utx` | 123/28 | Lineage2Ver121 | not-applicable | accepted |
-| `systextures/fdarkelf.utx` | 123/27 | Lineage2Ver121 | not-applicable | refused |
-| `systextures/fdwarf.utx` | 123/27 | Lineage2Ver121 | not-applicable | refused |
-| `systextures/felf.utx` | 123/28 | Lineage2Ver121 | not-applicable | accepted |
-| `systextures/lineagedecostex.utx` | 123/27 | Lineage2Ver121 | not-applicable | refused |
-| `systextures/lineagemonsterstex.utx` | 123/28 | Lineage2Ver121 | not-applicable | accepted |
-| `systextures/lineagemonsterstex2.utx` | 123/25 | Lineage2Ver121 | not-applicable | refused |
-| `systextures/mdarkelf.utx` | 123/27 | Lineage2Ver121 | not-applicable | refused |
-| `systextures/mdwarf.utx` | 123/28 | Lineage2Ver121 | not-applicable | accepted |
-| `systextures/melf.utx` | 123/28 | Lineage2Ver121 | not-applicable | accepted |
-| `textures/dion_curumadungeon_t.utx` | 123/23 | Lineage2Ver121 | not-applicable | refused |
-| `textures/interior_b_t.utx` | 123/25 | Lineage2Ver121 | not-applicable | refused |
-
-`animations/improved_model_npc_01.ukx` also holds textures that npcgrp rows name, so it carries both gates.
+The census lists 47 packages (`packages` in the committed census, with version, licensee, wrapper and both gates). Since 02-73 every texture gate is accepted. Skeletal gate refused: `animations/LineageAccessory.ukx` and `animations/LineageMonsters3.ukx` (123/31) and `animations/improved_model_npc_01.ukx` (123/0, which also holds textures npcgrp rows name).
 
 ### Units by kind
 
-| Unit kind | Convertible | Gap |
-|---|---|---|
-| armor-mesh | 2883 | 1805 |
-| chargrp-hair | 0 | 15 |
-| chargrp-helmet | 0 | 15 |
-| chargrp-row | 11 | 4 |
-| npc-model | 429 | 204 |
-| skill-root | 245 | 0 |
-| skill-sound-row | 1398 | 0 |
-| weapon-mesh | 523 | 0 |
+| Unit kind | Convertible | Gap | Gap reasons |
+|---|---|---|---|
+| armor-mesh | 3685 | 1003 | `skeletal-licensee-unsupported:123/31` |
+| chargrp-hair | 0 | 15 | `hair-layout-undecoded` |
+| chargrp-helmet | 0 | 15 | `helmet-layout-undecoded` |
+| chargrp-row | 14 | 1 | `no-mesh-in-row` |
+| npc-model | 539 | 94 | `skeletal-licensee-unsupported:123/0` 16, `123/31` 78 |
+| skill-root | 245 | 0 | |
+| skill-sound-row | 1398 | 0 | |
+| weapon-mesh | 523 | 0 | |
 
 "Convertible" means the header gates pass; it is not a conversion. Skill root effect-class support is decided in 02-43, and skill sound meaning in 02-44.
 
-| Unit kind | Gap reason | Units |
-|---|---|---|
-| armor-mesh | `skeletal-licensee-unsupported:123/31` | 1003 |
-| armor-mesh | `texture-licensee-unsupported:123/27` | 802 |
-| chargrp-hair | `hair-layout-undecoded` | 15 |
-| chargrp-helmet | `helmet-layout-undecoded` | 15 |
-| chargrp-row | `no-mesh-in-row` | 1 |
-| chargrp-row | `texture-licensee-unsupported:123/27` | 3 |
-| npc-model | `skeletal-licensee-unsupported:123/0` | 16 |
-| npc-model | `skeletal-licensee-unsupported:123/31` | 78 |
-| npc-model | `texture-licensee-unsupported:123/0` | 3 |
-| npc-model | `texture-licensee-unsupported:123/23` | 1 |
-| npc-model | `texture-licensee-unsupported:123/25` | 96 |
-| npc-model | `texture-licensee-unsupported:123/27` | 10 |
-
 ### Census rows by part
-
-| Part | Pending | Gap |
-|---|---|---|
-| items | 1331 | 996 |
-| npcs | 5084 | 1435 |
-| player-characters | 11 | 4 |
-| skills-effects | 12236 | 17576 |
 
 | Row kind | Reason | Rows |
 |---|---|---|
-| character | `conversion-pending` | 11 |
+| character | `conversion-pending` | 14 |
 | character | `no-mesh-in-row` | 1 |
-| character | `texture-licensee-unsupported:123/27` | 3 |
-| item | `conversion-pending` | 1331 |
+| item | `conversion-pending` | 1899 |
 | item | `no-mesh-in-row` | 307 |
 | item | `skeletal-licensee-unsupported:123/31` | 121 |
-| item | `texture-licensee-unsupported:123/27` | 568 |
-| npc | `conversion-pending` | 5084 |
+| npc | `conversion-pending` | 5940 |
 | npc | `no-mesh-in-row` | 94 |
 | npc | `skeletal-licensee-unsupported:123/0` | 246 |
 | npc | `skeletal-licensee-unsupported:123/31` | 239 |
-| npc | `texture-licensee-unsupported:123/0` | 34 |
-| npc | `texture-licensee-unsupported:123/23` | 1 |
-| npc | `texture-licensee-unsupported:123/25` | 810 |
-| npc | `texture-licensee-unsupported:123/27` | 11 |
 | skill | `conversion-pending` | 12236 |
 | skill | `native-skill-dispatch-required` | 17576 |
 

@@ -20,6 +20,15 @@ Status: audible labelled, owner listening pending. The report rows are evidence 
 - Refusal reasons of the sound conversion and the bundle builder are path-free (`<source>`, `<output>`) like the other converter routes, and a bundle resealed without a manifest or without a sound row loses its `actor-sounds` combatAudio record (9297264, b587d05; `tests/pipeline/test_actor_sound_refusal_reasons.py`, `test_actor_sound_bundle_reseal.py`).
 - `export-native-sounds.py` reads strict JSON (32 MiB cap), SHA-256, reparse refusal and confined portable paths from their shared owners (15f79ef). Its implementation fingerprint now also pins `native_store/store_paths.py`, so `run.json` fingerprints of earlier exports no longer match: an existing sound output needs a fresh destination or `--reuse-from`.
 
+### NPC actor sound batch to completion (plan 02-78)
+
+Run after the NPC batch of 02-78 (see the npcs EVIDENCE), so every converted NPC has its profile in the lane catalog. Disk projection before each slice from the bundle and sound unit receipts (none below the 4 GiB floor; before the last slice 4,077 bundles at 1,084,987 bytes each, 4,423,491,999 bytes, against 89,353,359,360 free).
+
+- Slices on 2026-11-11 and 12 (Riga): 100 bundles (21:54 to 21:58), 4 x 250 (22:03 to 23:02), one slice of 4,077 (23:03 to 02:28, decision row 1022), and `--actor-sounds npc:35647` for the one key left after it. The 21 bundles of 02-44 were resealed under the current builder.
+- All 5,177 profiled NPCs have a sealed `actor-sounds` unit (`docs/parts/audio/actor-sound-census.json`): 5,175 bundles with a `combatAudio` record and 2 `npc-names-no-sound` units without one (npc:13036 and npc:32131, whose npcgrp sound columns are all empty; decision row 1020). References: 46,080 unique package+leaf candidates, 0 exact identities, 76 unresolved (`sound-identity-unresolved`), 2,566 empty slots.
+- Gap rows (`work/actor-sounds/actor-sound-gap-rows.json`, all through `validate_gap_row`): `combat-role-route-unresolved:npcgrp/attackVoice` 5,175, `sound-identity-unresolved` 76, `npc-names-no-sound` 2.
+- Actors lane coverage on lane catalog `a1562da9aba4d7b8f9095a595a7a2e05fe8509e43079fb9c5f1bfec1f5668326` (5,175 `combatAudio`, 614 `models`, 23 `npcProfiles`, 3,064 `effectComponents`): audio 5,196 converted of 8,046 (npc-sounds 5,175 pass, 1,319 gap following their NPC, 1 pending: npc-sounds:21622, which follows npc:21622; tile-audio 21 pass from the world lane), 1,320 gap, 1,530 pending (1,398 skill-sound-row and 131 tile-audio rows wait on their own steps). `write_lane_catalog.py --lane actors --plan` prints its merge command. Free bytes after the batch: 82,335,555,584.
+
 ### Decision H item 3 routing
 
 The hand-typed role map of `recipes/native-combat-audio.json` is recorded unresolved: every selection has `roles: null` and `unresolved.roles` with `combat-role-route-unresolved:<table>/<role>` and the former column as `previousValue` (audit only). `scripts/bundle-native-combat-audio.py` refuses that recipe. At runtime any combat bundle whose id is not `actor-sounds:<key>` adds one diagnostic per role, so the staged 20_20 hand bundle keeps playing with its routing labelled unresolved.
@@ -59,12 +68,11 @@ Status: audible labelled, owner listening pending. WORLD-02 stays Pending until 
 ## Open
 
 - Owner listening round for the tile world audio report (research A16).
-- ACT-05 breadth: 979 NPC bundles and every skill bundle wait for later slices; skill bundles stay route gaps until a proof anchor names the skillsoundgrp members; player characters have no bundle route until their profiles are written (`character-sound-bundle-not-built`).
+- ACT-05 breadth: every converted NPC has its bundle or a listed gap (02-78 above); skill bundles stay route gaps until a proof anchor names the skillsoundgrp members; player characters have no bundle route until their profiles are written (`character-sound-bundle-not-built`).
 - Per-actor `actor-sounds:<key>` bundles are still not loaded at spawn (SC2e). Plan 02-80 added `src/audio/spawnedActorSoundCues.ts`: `loadSpawnedActorSounds(catalogKey, catalogIndex, signal)` loads the bundle of any npc or character key the catalog index lists (otherwise it returns null with the lookup reason), and `bindSpawnedActorSoundCues` plays each clip notify whose sound identity has one bundle slot, once per clip pass on the entity clip clock, from that entity's own bundle. Spawned actors play these notify-bound sounds once 02-87 wires the module on spawn (ACT-05).
 - Role slots of a spawned bundle (attackItem, damage, defense and the rest) never play by themselves: the binding coverage lists them as `combat-role-route-unresolved:<table>/<role>` with their slot keys until a source route exists, and lists every notify without exactly one bundle slot as unbound with its sound identity. No fallback sound plays.
 - 5,269 sounds, 250 music files and 45 voice files with a labelled listen check (CHECK-02). Tiles other than 20_20 have no audible check yet.
-- The 21 sealed bundles in the actors lane store were built before the builder recorded the decoded table reader provenance by `path` (`out_of_bundle_reader_provenance` in `scripts/native_assets_lib/combat_audio_bundle.py`). Their manifests still name `{file: dats/npcgrp.xml, sha256}`, which the lane catalog writer reads as a bundle file pin and refuses (row 478). The builder change alters their fingerprint, so `convert_actors.py --batch actor-sounds` reseals them: the batch decides skip or redo through `UnitLedger.is_sealed` on the bundle fingerprint, and each resealed bundle replaces its own `combatAudio` record. A rebuilt bundle pins only the manifest and the WAV files it holds (`tests/pipeline/test_native_combat_audio.py` `LaneStoreCombatAudioPinTests`).
-- The audio part has no committed coverage denominator, so the actor sound gap rows live in the lane work folder, not in `gap-rows/` (row 477).
+- The actor sound gap rows live in the lane work folder, not in `gap-rows/` (row 477); the npc-sounds coverage keys (02-72) follow the NPC rows and the `combatAudio` records.
 
 ## Evidence
 
