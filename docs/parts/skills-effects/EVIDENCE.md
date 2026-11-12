@@ -31,20 +31,11 @@ Every decoded skillgrp row has one binding, built by `scripts/actors/skill_bindi
 - Gap reasons scrub host paths through `actors/path_free_messages.py` (`<source>`, `<output>`), like the other actors routes (382c9b1).
 - The skills batch writes the lane catalog with the other actor writers' compact `json_bytes` (f48c353), so an unchanged finish keeps the catalog SHA-256 and its load checks.
 
-Resume command: `python -B scripts/actors/convert_actors.py --client E:/Lineage2-client --batch skills --limit 20`. A rerun skips sealed roots (`alreadySealedRoots`).
+Resume command: `python -B scripts/actors/convert_actors.py --client E:/Lineage2-client --batch skills --limit 20`. A rerun skips roots sealed under the current fingerprint (`alreadySealedRoots`).
 
-Roots sealed so far: 22 of 245 (tracer `skill.wh.1011`, one 20-root slice, one 1-root resume check).
+Batch under the current converter (plan 02-79, 2026-11-12). The 02-73, 02-74 and 02-92 converter change unsealed the 22 roots of 02-43, so the batch reseals them first, in first-key order. Before slice 1, 22 sealed roots held 888,979,304 bytes (40,408,150 per root); 245 roots project 9,899,996,750 bytes against 82,307,973,120 free and the 4 GiB ledger floor.
 
-| Root outcome | Roots |
-| --- | --- |
-| converted, all classes simulated | 16 |
-| converted, `emitter-class-unported:Engine.BeamEmitter` (`skill.wh.1011`) | 1 |
-| `converter-refused`: unsupported default-property syntax in the decompiled class (`skill.at.100`, `skill.at.260`, `skill.at.92`, `skill.moment.110`) | 4 |
-| `converter-refused`: `lineageeffect.mo_rapid_shot_ta.MeshEmitter3 has no converted resource` (`skill.mo.99`) | 1 |
-
-Gap rows `artifacts/lane-store/actors/gap-rows/skills.json`, one per key (29,812): 2,542 pass, 17,575 `native-skill-dispatch-required`, 634 `converter-refused`, 522 `emitter-class-unported:Engine.BeamEmitter`, 8,539 `conversion-pending`.
-
-Lane catalog `7ab1cdcf...35e7` (2026-11-09; contents and merge command in docs/parts/npcs/EVIDENCE.md): 3,064 skill records over 17 staged manifests. Lane coverage pinned to it (`build_coverage_report.py --lane actors`): skills-effects 3,064 converted, 18,210 gap, 8,538 pending, loads 3,064 unverified. Since f5828ee and 02-72 the 522 `emitter-class-unported:Engine.BeamEmitter` keys read gap with converted true (2,542 pass).
+Tracer slice 1 (20 roots, 796 s): 16 converted, 4 `converter-refused` (unsupported default-property syntax: `skill.at.100`, `skill.at.260`, `skill.at.92`, `skill.moment.110`). `skill.mo.99`, refused under 02-43, now converts. Of the 16 converted roots, the 02-94 feature rule marks 6 with `emitter-feature-unported:BlendBetweenSubdivisions`, 12 with `UseDirectionAs` and 1 with `UseMeshBlendMode` (a root can have several; its first names the key). Gap rows: 122 pass, 17,575 `native-skill-dispatch-required`, 634 `converter-refused`, 522 `emitter-class-unported:Engine.BeamEmitter`, 1,953 `emitter-feature-unported:UseDirectionAs`, 185 `emitter-feature-unported:BlendBetweenSubdivisions`, 8,821 `conversion-pending`. Lane catalog `88bb6070...a1a9` (2,782 effect components, 614 models, 5,175 combatAudio, 23 npcProfiles); `write_lane_catalog.py --lane actors --plan` prints its merge command. Lane coverage: skills-effects 122 converted, 20,870 gap, 8,820 pending.
 
 ### Browser
 
@@ -148,7 +139,7 @@ POL-04 behaviour changes, each pinned in `tests/unit/ribbonEmitter.test.ts`: flo
 
 ## Open
 
-- 223 roots wait for the resume command; 8,539 keys are pending.
+- 225 roots wait for the resume command (plan 02-79 runs them); 8,820 keys are pending.
 - Loads: the actors lane keys have not been rechecked since the loader runs on the simulator (FX-01).
 - Ribbons draw once staging binds a RibbonEmitter texture; Beam and VertMesh wait for Phase 5, and VertMesh meshes need a Converter adapter.
 - Emitter natives need a converted source of native calls with their arguments; the weapon trail needs its caller; the Power Strike previews do not call AdjustparticleLife yet.
@@ -156,7 +147,6 @@ POL-04 behaviour changes, each pinned in `tests/unit/ribbonEmitter.test.ts`: flo
 - Tile map emitters need the 02-64 world binding to merge class defaults into the tile-emitters.json records and call `playTileMapEmitters`.
 - Skeletal slot programs need the actor converter to write `nativeMaterialProgram` and the library vertex stage to skin.
 - Five roots are refused by the converter; their reasons are in the gap rows.
-- The skill census writes no `emitter-feature-unported` rows: skill 105 (`el_ice_bolt_ta` MeshEmitter3 and 6, UseMeshBlendMode=true) reads pass but `bindParticleMaterial` refuses it at load (ACT-06, plan 02-94).
 - The next-cell cross-fade, the `UseDirectionAs` bases, ProjectionNormal and per-instance direction stay open under FX-01 (POL-04).
 - The sandbox wiring of the presentation to the `skill-cast` event and its sheet note is integration work (plan 02-87).
 - The cast check still runs on the harness page; the dev store switch serves the actors lane as its restage union.
