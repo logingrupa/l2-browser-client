@@ -25,10 +25,10 @@ beforeEach(() => { dom = installMiniDom(); });
 afterEach(() => { for (const sheet of openSheets.splice(0)) sheet.dispose(); dom.restore(); });
 
 describe("sandbox section picker groups", () => {
-  it("holds the six picker groups and none of the superseded by-ID groups", () => {
+  it("holds the six picker groups, the skill cast presentation group and none of the superseded by-ID groups", () => {
     const { panel } = attachWithFakes();
     const groupIds = panel.querySelectorAll(".dev-group").map(group => group.dataset.group);
-    expect(groupIds).toEqual(["tile", "spawn", "equip", "cast", "window", "clips"]);
+    expect(groupIds).toEqual(["tile", "spawn", "equip", "cast", "window", "clips", "skill-cast"]);
     for (const supersededGroupId of ["spawn-npc", "equip-item", "cast-skill", "open-window"]) expect(groupIds).not.toContain(supersededGroupId);
   });
 
@@ -38,7 +38,7 @@ describe("sandbox section picker groups", () => {
       actorClipEntityIds: () => [], actorClipListing: () => null, previewing: () => null },
       catalogIndex: fakeCatalogIndex, readNameIndex: async () => ({ status: "not-in-catalog" as const, key: "table:none", reason: "none" }),
       selectedEntityId: () => null, currentTileId: () => null, signal: new AbortController().signal };
-    expect(() => attachSandboxCommandSheet({ section, adapter, pickerContext, indexFailure: null, powerStrike: null }))
+    expect(() => attachSandboxCommandSheet({ section, adapter, pickerContext, indexFailure: null, skillCast: null, skillCastFailure: null }))
       .toThrow("The sandbox pickers are already attached to this section.");
     release();
   });
@@ -116,21 +116,5 @@ describe("sandbox pickers dispatch through the runtime host", () => {
     expect(assignedLocations).toEqual(["http://127.0.0.1:5173/?map=20_21"]);
     expect(note("sandbox-tile-note")[0]!.textContent).toBe("tile 20_21 reloading");
     expect(adapter.dispatch).not.toHaveBeenCalled();
-  });
-});
-
-describe("sandbox Power Strike preview", () => {
-  it("starts the staged Power Strike preview once for a skill-cast of the converted skill 3 level 1", () => {
-    const { emit, powerStrike } = attachWithFakes();
-    emit({ type: "skill-cast", casterId: "local-player", skillId: 3, level: 1, targetId: "native-musveren" });
-    expect(powerStrike.start).toHaveBeenCalledOnce();
-  });
-
-  it("starts nothing for another skill and nothing after release", () => {
-    const { emit, powerStrike, release } = attachWithFakes();
-    emit({ type: "skill-cast", casterId: "local-player", skillId: 7, level: 1 });
-    release();
-    emit({ type: "skill-cast", casterId: "local-player", skillId: 3, level: 1 });
-    expect(powerStrike.start).not.toHaveBeenCalled();
   });
 });

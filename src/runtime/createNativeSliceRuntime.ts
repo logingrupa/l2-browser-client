@@ -240,8 +240,9 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     await registry.whenReady();
     validateLifetime();
     registry.update(0);
-    const effects = await createNativeSliceEffects({ scene, registry, adapter, fighter, musveren, specialAttackPreview, signal, validateLifetime, addRelease });
-    const { effectComponents, effectComponentFailure, initEffect, shotEffect, powerStrike, powerStrikeReason } = effects;
+    const effects = await createNativeSliceEffects({ scene, registry, catalogIndex, effectComponentRecords: servedCatalog.effectComponents,
+      adapter, fighter, musveren, specialAttackPreview, signal, validateLifetime, addRelease });
+    const { effectComponents, initEffect, shotEffect, skillCast } = effects;
     const materialOverrides = createNativeMaterialOverrides(scene, settings.materialOverrideEnabled ? {
       entityId: settings.materialEntityId ?? "local-player",
       sourceMaterial: settings.materialSource ?? "MFighter.UpBody.MFighter_m001_t04_u",
@@ -321,7 +322,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     const sandboxWindows = mountSandboxWindowLayer(ui.root, adapter, () => registry.localPlayer);
     boundaryReleases.push(sandboxWindows.release);
     boundaryReleases.push(attachSandboxCommandSheet({ section: ui.sheet.section("sandbox", { title: "Sandbox", order: 5 }), adapter,
-      indexFailure: catalogIndexFailure, powerStrike, pickerContext: {
+      indexFailure: catalogIndexFailure, skillCast, skillCastFailure: effects.skillCastFailure, pickerContext: {
         host: createSandboxRuntimeActions({ adapter, windowLayer: sandboxWindows.layer, location: window.location, signal: sandboxLifetime.signal,
           clipListings: clipPreview }),
         catalogIndex, readNameIndex: readNativeTableNameIndex, selectedEntityId: () => registry.selectedEntityId,
@@ -341,6 +342,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       effectComponents?.update();
       initEffect?.update();
       shotEffect?.update();
+      skillCast?.advance(animationClockSeconds);
       effectCamera?.update();
       const ear = localPawnListenerLocation();
       if (ear) {

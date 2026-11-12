@@ -2,6 +2,7 @@ import { vi } from "vitest";
 import { DevSheet, type DevSection } from "../../../src/ui/devSheet/DevSheet";
 import type { NativeCatalogIndex, NativeCatalogLookup } from "../../../src/assets/native/nativeCatalogIndex";
 import { createNativeClipPreviewHub } from "../../../src/assets/native/nativeClipPreview";
+import type { SkillCastPresentation } from "../../../src/effects/skillCastPresentation";
 import { attachSandboxCommandSheet } from "../../../src/runtime/attachSandboxCommandSheet";
 import { createSandboxRuntimeActions, type SandboxTileLocation } from "../../../src/runtime/sandboxRuntimeActions";
 import type { NativeWindowLayer, NativeWindowOpenResult } from "../../../src/ui/nativeWindows/nativeWindowLayer";
@@ -40,15 +41,19 @@ function fakeWindowLayerOver(index: NativeCatalogIndex, openedWindowIds: string[
   };
 }
 
+export type SandboxSkillCastFake = Pick<SkillCastPresentation, "present">;
+
 export interface SandboxSheetFakeOptions {
   readonly index: NativeCatalogIndex;
+  readonly skillCast?: SandboxSkillCastFake | null;
+  readonly skillCastFailure?: string | null;
   readonly selectedEntityId?: string | null;
   readonly indexFailure?: string | null;
   readonly search?: string;
 }
 
 export function attachSandboxSheetWithFakes(dom: MiniDom, options: SandboxSheetFakeOptions) {
-  const { index, selectedEntityId = "native-musveren", indexFailure = null, search = "" } = options;
+  const { index, selectedEntityId = "native-musveren", indexFailure = null, search = "", skillCastFailure = null } = options;
   const dispatched: WorldCommand[] = [];
   const listeners = new Set<(event: WorldEvent) => void>();
   const adapter = {
@@ -60,11 +65,11 @@ export function attachSandboxSheetWithFakes(dom: MiniDom, options: SandboxSheetF
   const location: SandboxTileLocation = { href: `http://127.0.0.1:5173/${search}`, search, assign: url => { assignedLocations.push(String(url)); } };
   const openedWindowIds: string[] = [];
   const lifetime = new AbortController();
-  const powerStrike = { start: vi.fn(async () => {}) };
+  const skillCast = options.skillCast === undefined ? { present: vi.fn(async () => { throw new Error("this test casts no skill"); }) } : options.skillCast;
   const { sheet, section } = createSandboxSection(dom);
   const host = createSandboxRuntimeActions({ adapter, windowLayer: fakeWindowLayerOver(index, openedWindowIds), location, signal: lifetime.signal,
     clipListings: createNativeClipPreviewHub() });
-  const release = attachSandboxCommandSheet({ section, adapter, indexFailure, powerStrike, pickerContext: {
+  const release = attachSandboxCommandSheet({ section, adapter, indexFailure, skillCast, skillCastFailure, pickerContext: {
     host, catalogIndex: index,
     readNameIndex: async tableId => ({ status: "not-in-catalog", key: `table:${tableId.replace(/-/g, "_")}_names`, reason: "no tables record in the served catalog" }),
     selectedEntityId: () => selectedEntityId, currentTileId: () => null, signal: lifetime.signal,
@@ -77,5 +82,5 @@ export function attachSandboxSheetWithFakes(dom: MiniDom, options: SandboxSheetF
     for (let turn = 0; turn < 5; turn += 1) await Promise.resolve();
   };
   const note = (testId: string) => panel.querySelectorAll(`[data-testid="${testId}"]`);
-  return { sheet, section, adapter, dispatched, listeners, emit, assignedLocations, openedWindowIds, powerStrike, release, submit, note, panel };
+  return { sheet, section, adapter, dispatched, listeners, emit, assignedLocations, openedWindowIds, skillCast, release, submit, note, panel };
 }

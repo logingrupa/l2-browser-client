@@ -2,7 +2,10 @@ import type { Scene } from "@babylonjs/core/scene";
 import type { AssetPackage } from "../assets/package/readAssetPackage";
 import type { NativeNpcProfile } from "../assets/native/loadNativeNpcProfiles";
 import type { EntityRegistry } from "../entities/EntityRegistry";
+import type { NativeCatalogIndex } from "../assets/native/nativeCatalogIndex";
 import type { NativeSliceAdapter } from "../world/NativeSliceAdapter";
+import { buildCastSkillIndex } from "../effects/castSkillIndex";
+import { createSkillCastPresentation, type SkillCastPresentation } from "../effects/skillCastPresentation";
 import { loadNativeEffectComponents } from "../effects/nativeEffectComponents";
 import { createNativeEffectComponentPreview, type NativeEffectComponentPreview } from "../effects/nativeEffectComponentPreview";
 import { createNativeEffectInitPreview, type NativeEffectInitPreview } from "../effects/nativeEffectInitPreview";
@@ -18,11 +21,15 @@ export interface NativeSliceEffects {
   shotEffect: NativeEffectShotPreview | null;
   powerStrike: NativePowerStrikePreview | null;
   powerStrikeReason: string | null;
+  skillCast: SkillCastPresentation | null;
+  skillCastFailure: string | null;
 }
 
 export interface NativeSliceEffectInputs {
   scene: Scene;
   registry: EntityRegistry;
+  catalogIndex: NativeCatalogIndex;
+  effectComponentRecords: readonly unknown[];
   adapter: NativeSliceAdapter;
   fighter: AssetPackage;
   musveren: NativeNpcProfile;
@@ -34,10 +41,22 @@ export interface NativeSliceEffectInputs {
 
 const localPlayerAlive = (registry: EntityRegistry) => () => (registry.localPlayer?.health ?? 0) > 0;
 
+function createRegistrySkillCastPresentation(inputs: NativeSliceEffectInputs): Pick<NativeSliceEffects, "skillCast" | "skillCastFailure"> {
+  const { scene, registry, catalogIndex, signal } = inputs;
+  try {
+    const skillCast = createSkillCastPresentation({ scene, catalogIndex, castSkillIndex: buildCastSkillIndex(inputs.effectComponentRecords), signal,
+      anchors: entityId => { const pivot = registry.actorPivot(entityId); return pivot?.isValid() ? pivot.root : null; } });
+    inputs.addRelease(() => skillCast.dispose());
+    return { skillCast, skillCastFailure: null };
+  } catch (error) {
+    return { skillCast: null, skillCastFailure: failureText(error, "The skill cast presentation could not be prepared.") };
+  }
+}
+
 export async function createNativeSliceEffects(inputs: NativeSliceEffectInputs): Promise<NativeSliceEffects> {
   const { scene, registry, adapter, specialAttackPreview, signal, addRelease } = inputs;
   const effects: NativeSliceEffects = { effectComponents: null, effectComponentFailure: null, initEffect: null, shotEffect: null,
-    powerStrike: null, powerStrikeReason: "Original skill effect components are not staged." };
+    powerStrike: null, powerStrikeReason: "Original skill effect components are not staged.", ...createRegistrySkillCastPresentation(inputs) };
   try {
     const effectBundle = await loadNativeEffectComponents(signal);
     inputs.validateLifetime();
