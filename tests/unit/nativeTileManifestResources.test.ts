@@ -52,6 +52,17 @@ describe("native tile manifest resources", () => {
       .toThrow(/map-emitters resource must be \/l2\/map-emitters\/<sha256>\/tile-emitters\.json with its SHA-256/);
   });
 
+  it("accepts one surface-materials listing beside the native-materials programs and refuses it at another path or twice", () => {
+    const listingSha256 = "f".repeat(64);
+    const surfaceMaterials = { kind: "surface-materials", manifest: `/l2/native-materials/surface-materials-${listingSha256}.json`,
+      manifestSha256: listingSha256, manifestBytes: 640 };
+    expect(parseNativeTileManifest(tileManifest([bspVisibility, surfaceMaterials])).resources.map(resource => resource.kind))
+      .toEqual(["bsp-visibility", "surface-materials"]);
+    expect(() => parseNativeTileManifest(tileManifest([surfaceMaterials, surfaceMaterials]))).toThrow(/lists more than one surface-materials resource/);
+    expect(() => parseNativeTileManifest(tileManifest([{ ...surfaceMaterials, manifest: `/l2/native-materials/${listingSha256}/listing.json` }])))
+      .toThrow(/surface-materials resource must be \/l2\/native-materials\/surface-materials-<sha256>\.json with its SHA-256/);
+  });
+
   it("accepts one pinned bsp-visibility typed payload beside the collision resource", () => {
     expect(parseNativeTileManifest(tileManifest([bspVisibility, collision])).resources.map(resource => resource.kind))
       .toEqual(["bsp-visibility", "native-tile-collision"]);

@@ -47,6 +47,7 @@ TILE_RESOURCE_PATH_TEMPLATES = MappingProxyType({
     'world-audio': '/l2/world-audio/<sha256>/manifest.json',
     'lighting': '/l2/maps/<sha256>/native-tile-lighting/asset.json',
     'minimap': '/l2/maps/<sha256>/native-tile-minimap/manifest.json',
+    'surface-materials': '/l2/native-materials/surface-materials-<sha256>.json',
 })
 REPEATABLE_TILE_RESOURCE_KINDS = frozenset({'world-audio'})
 CHUNK_MANIFEST_PATH_TEMPLATE = '/l2/maps/<sha256>/native-tile-chunk-runtime/manifest.json'

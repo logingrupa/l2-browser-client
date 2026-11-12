@@ -4,6 +4,7 @@ from typing import NamedTuple
 from native_assets_lib.gltf import json_bytes
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import add_store_file, merge_catalog_slice, read_store_catalog, sha256_hex, validate_catalog_record, write_store
+from native_store.native_material_program_pins import NATIVE_MATERIALS_FOLDER
 from native_store.store_paths import confined_child_path, lane_store_root, lane_work_root, require_converter_output
 from native_store.tile_manifest_validation import (FRAME_FIELDS, TILE_CHUNK_MANIFEST_KIND, TILE_MANIFEST_KIND, TILE_MANIFEST_SCHEMA_VERSION,
                                                    validate_tile_chunk_manifest, validate_tile_manifest)
@@ -24,7 +25,7 @@ from world.tile_chunk_plan import chunk_plan_ledger
 from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 
-TILE_MANIFEST_STEP_ALGORITHM_VERSION = 11
+TILE_MANIFEST_STEP_ALGORITHM_VERSION = 12
 TILE_MANIFEST_STEP_NAME = 'manifest'
 TILE_CATALOG_CAPACITY = 163
 PENDING_TILE_STEPS = ('meshes', 'bsp', 'collision', 'movers', 'emitters', 'bsp-visibility', 'sky', 'audio', 'lighting', 'minimap',
@@ -41,6 +42,9 @@ TILE_SKY_RESOURCE_KIND = 'sky'
 TILE_WORLD_AUDIO_RESOURCE_KIND = 'world-audio'
 TILE_LIGHTING_RESOURCE_KIND = 'lighting'
 TILE_MINIMAP_RESOURCE_KIND = 'minimap'
+TILE_SURFACE_MATERIALS_RESOURCE_KIND = 'surface-materials'
+SURFACE_MATERIALS_LISTING_KIND = 'native-tile-surface-materials'
+SURFACE_MATERIALS_LISTING_SCHEMA_VERSION = 1
 CHUNK_TERRAIN_FOLDER = 'native-tile-chunk-terrain'
 CHUNK_MANIFEST_FOLDER = 'native-tile-chunk-runtime'
 CHUNK_MANIFEST_NAME = 'manifest.json'
@@ -182,7 +186,8 @@ def pinned_tile_resource(kind, record):
     return {'kind': kind, 'manifest': record['resource'], 'manifestSha256': record['sha256'], 'manifestBytes': record['bytes']}
 
 
-def tile_resources(collision, movers, bsp_visibility=None, map_emitters=None, sky=None, world_audio=None, lighting=None, minimap=None):
+def tile_resources(collision, movers, bsp_visibility=None, map_emitters=None, sky=None, world_audio=None, lighting=None, minimap=None,
+                   surface_materials=None):
     resources = []
     if collision is not None:
         tile = collision['tile']
@@ -203,18 +208,45 @@ def tile_resources(collision, movers, bsp_visibility=None, map_emitters=None, sk
         resources.append(pinned_tile_resource(TILE_LIGHTING_RESOURCE_KIND, lighting['resource']))
     if minimap is not None:
         resources.append(pinned_tile_resource(TILE_MINIMAP_RESOURCE_KIND, minimap['manifest']))
+    if surface_materials is not None:
+        resources.append(pinned_tile_resource(TILE_SURFACE_MATERIALS_RESOURCE_KIND, surface_materials))
     return sorted(resources, key=lambda resource: (resource['kind'], resource['manifest']))
 
 
 def build_tile_manifest(tile_id, source_identity, chunk_plan, chunk_manifest_records, evidence, static_meshes=None, bsp=None, collision=None,
-                        movers=None, bsp_visibility=None, map_emitters=None, sky=None, world_audio=None, lighting=None, minimap=None):
+                        movers=None, bsp_visibility=None, map_emitters=None, sky=None, world_audio=None, lighting=None, minimap=None,
+                        surface_materials=None):
     manifest = {'kind': TILE_MANIFEST_KIND, 'schemaVersion': TILE_MANIFEST_SCHEMA_VERSION, 'tileId': tile_id,
                 'sourceMap': tile_map_path(tile_id), 'sourceSha256': source_identity['sha256'],
                 'frame': {field: chunk_plan['frame'][field] for field in FRAME_FIELDS}, 'anchor': dict(chunk_plan['anchor']),
-                'chunks': list(chunk_manifest_records), 'resources': tile_resources(collision, movers, bsp_visibility, map_emitters, sky, world_audio, lighting, minimap),
+                'chunks': list(chunk_manifest_records),
+                'resources': tile_resources(collision, movers, bsp_visibility, map_emitters, sky, world_audio, lighting, minimap, surface_materials),
                 'gaps': sorted_by_step(tile_level_gap_rows(tile_id, source_identity, evidence, static_meshes, bsp, collision, movers, bsp_visibility,
                                                            map_emitters, sky, world_audio, lighting, minimap))}
     return validate_tile_manifest(manifest)
+
+
+def surface_material_files(tile_id, bsp, sky):
+    files_by_path = {}
+    for product in (bsp, sky):
+        for record in [] if product is None else product['materialFiles']:
+            if not record['path'].startswith(NATIVE_MATERIALS_FOLDER + '/'):
+                raise TileManifestStepError(f'surface material file {record["path"]} of tile {tile_id} lies outside {NATIVE_MATERIALS_FOLDER}')
+            if files_by_path.setdefault(record['path'], record) != record:
+                raise TileManifestStepError(f'surface material file {record["path"]} of tile {tile_id} has two different pins')
+    return [files_by_path[path] for path in sorted(files_by_path)]
+
+
+def surface_materials_listing_store_path(listing_sha256):
+    return f'{NATIVE_MATERIALS_FOLDER}/surface-materials-{listing_sha256}.json'
+
+
+def surface_materials_listing(tile_id, material_files):
+    listing = {'kind': SURFACE_MATERIALS_LISTING_KIND, 'schemaVersion': SURFACE_MATERIALS_LISTING_SCHEMA_VERSION, 'tileId': tile_id,
+               'files': {record['path'].removeprefix(NATIVE_MATERIALS_FOLDER + '/'): {'sha256': record['sha256'], 'bytes': record['bytes']}
+                         for record in material_files}}
+    payload = canonical_json_bytes(listing)
+    return surface_materials_listing_store_path(sha256_hex(payload)), payload
 
 
 def pinned_manifest_entry(relative_path, payload):
@@ -243,9 +275,15 @@ def tile_store_files(tile_id, source_identity, chunk_plan, terrain_records, terr
         chunk_path = chunk_manifest_store_path(sha256_hex(chunk_payload))
         files[chunk_path] = chunk_payload
         chunk_manifest_records.append({'chunkId': chunk_plan_entry['chunkId'], **pinned_manifest_entry(chunk_path, chunk_payload)})
+    surface_materials = None
+    material_files = surface_material_files(tile_id, bsp, sky)
+    if material_files:
+        listing_path, listing_payload = surface_materials_listing(tile_id, material_files)
+        files[listing_path] = listing_payload
+        surface_materials = {'resource': '/l2/' + listing_path, 'sha256': sha256_hex(listing_payload), 'bytes': len(listing_payload)}
     tile_payload = canonical_json_bytes(build_tile_manifest(tile_id, source_identity, chunk_plan, chunk_manifest_records, evidence, static_meshes,
                                                             bsp, collision, movers, bsp_visibility, map_emitters, sky, world_audio, lighting,
-                                                            minimap))
+                                                            minimap, surface_materials))
     tile_path = tile_manifest_store_path(sha256_hex(tile_payload))
     files[tile_path] = tile_payload
     return files, validate_catalog_record(TILES_CATALOG_SLICE, {'id': tile_id, **pinned_manifest_entry(tile_path, tile_payload)})

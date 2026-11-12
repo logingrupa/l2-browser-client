@@ -11,11 +11,13 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
 from material_graph_fixture import build_synthetic_material_package
+from native_store.pinned_store_verification import verify_pinned_store_files
 from native_store.tile_manifest_validation import validate_tile_chunk_manifest
 from support.level_model_fixture import build_synthetic_level_model, square_points, synthetic_polygon, synthetic_zone
 from synthetic_class_scripts import scratch_work_root
 from test_material_graph import SYNTHETIC_CLASS_DEFAULTS
 from test_material_program_images import synthetic_png_bytes
+from test_tile_manifest_step import synthetic_tile
 from world import bsp_surface_materials
 from world.bsp_chunk_geometry import (BspPolyFlags, BspSurfaceMaterial, assign_nodes_to_chunks, build_chunk_sections, chunk_bsp_glb,
                                       drawn_node_indices, load_bsp_poly_flags)
@@ -25,7 +27,7 @@ from world.level_model import LevelModelLayoutError, LevelModelRangeError, read_
 from world.raw_map_step import read_tile_map_lock_record
 from world.static_mesh_step import conversion_failure_reason
 from world.static_placement_plan import ChunkRectangle
-from world.tile_manifest_step import build_tile_chunk_manifest
+from world.tile_manifest_step import TileManifestStepError, build_tile_chunk_manifest, tile_store_files
 
 TILE_ID = '00_00'
 SOURCE_IDENTITY = {'path': f'maps/{TILE_ID}.unr', 'sha256': hashlib.sha256(b'synthetic bsp tile').hexdigest()}
@@ -294,6 +296,60 @@ class BspManifestTests(unittest.TestCase):
 
     def test_the_step_version_is_pinned(self):
         self.assertEqual(BSP_STEP_ALGORITHM_VERSION, 5)
+
+
+def material_file(relative, payload):
+    return {'path': relative, 'sha256': hashlib.sha256(payload).hexdigest(), 'bytes': len(payload)}
+
+
+class SurfaceMaterialsResourceTests(unittest.TestCase):
+    def setUp(self):
+        self.store_root = scratch_work_root(self, 'surface-materials-store-') / 'l2'
+        program_sha256 = 'a' * 64
+        graph = json.dumps({'package': {'file': 'SyntheticMaterials.utx', 'sha256': 'b' * 64}}).encode()
+        self.payloads = {f'native-materials/{program_sha256}/graph.json': graph,
+                         f'native-materials/{program_sha256}/program.json': b'{"kind": "ue2-material-program"}',
+                         f'native-materials/textures/{"c" * 64}/texture.png': synthetic_png_bytes(),
+                         f'native-materials/textures/{"d" * 64}/texture.png': synthetic_png_bytes() + b'sky'}
+        for relative, payload in self.payloads.items():
+            (self.store_root / relative).parent.mkdir(parents=True, exist_ok=True)
+            (self.store_root / relative).write_bytes(payload)
+        self.records = {relative: material_file(relative, payload) for relative, payload in self.payloads.items()}
+        self.plan, self.terrain_records, self.terrain_glbs = synthetic_tile(TILE_ID, 1, 1)
+
+    def tile_files(self, bsp_files, sky_files):
+        bsp = {'chunks': {'chunk-0-0': {'resource': None, 'sha256': None, 'gapRows': []}}, 'gapRows': [], 'materialFiles': bsp_files}
+        sky = {'manifest': None, 'gapRows': [], 'materialFiles': sky_files}
+        return tile_store_files(TILE_ID, SOURCE_IDENTITY, self.plan, self.terrain_records, self.terrain_glbs, EVIDENCE, bsp=bsp, sky=sky)
+
+    def test_the_tile_manifest_pins_one_listing_the_store_walk_follows_to_every_material_file_of_its_bsp_and_sky(self):
+        paths = sorted(self.records)
+        bsp_files, sky_files = [self.records[path] for path in paths[:3]], [self.records[path] for path in paths[1:]]
+        files, record = self.tile_files(bsp_files, sky_files)
+        tile = json.loads(files[record['manifest'].removeprefix('/l2/')])
+        [resource] = [resource for resource in tile['resources'] if resource['kind'] == 'surface-materials']
+        listing_payload = files[resource['manifest'].removeprefix('/l2/')]
+        listing_sha256 = hashlib.sha256(listing_payload).hexdigest()
+        self.assertEqual((resource['manifest'], resource['manifestSha256'], resource['manifestBytes']),
+                         (f'/l2/native-materials/surface-materials-{listing_sha256}.json', listing_sha256, len(listing_payload)))
+        self.assertEqual(json.loads(listing_payload)['files'],
+                         {path.removeprefix('native-materials/'): {'sha256': self.records[path]['sha256'], 'bytes': self.records[path]['bytes']}
+                          for path in paths})
+        for relative, payload in files.items():
+            (self.store_root / relative).parent.mkdir(parents=True, exist_ok=True)
+            (self.store_root / relative).write_bytes(payload)
+        verified = verify_pinned_store_files(self.store_root, {'schemaVersion': 1, 'models': [], 'tiles': [record]}, 1)
+        self.assertTrue({path.casefold() for path in self.payloads} <= set(verified))
+
+    def test_a_tile_without_material_files_pins_no_listing(self):
+        files, record = self.tile_files([], [])
+        tile = json.loads(files[record['manifest'].removeprefix('/l2/')])
+        self.assertNotIn('surface-materials', [resource['kind'] for resource in tile['resources']])
+
+    def test_a_material_file_named_with_two_pins_is_refused(self):
+        path = sorted(self.records)[0]
+        with self.assertRaisesRegex(TileManifestStepError, 'two different pins'):
+            self.tile_files([self.records[path]], [{**self.records[path], 'bytes': 1}])
 
 
 @unittest.skipUnless(REFERENCE_CLIENT.is_dir(), 'the conversion client E:/Lineage2-client is absent')

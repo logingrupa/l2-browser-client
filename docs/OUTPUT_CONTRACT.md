@@ -249,7 +249,7 @@ from the world-owned `recipes/world/tile-manifest-vocabulary.json`, which
   creates it conditionally, and 02-04 never writes it.
 - Extenders: 02-30 `native-tile-collision`, 02-31 `movers`, 02-45 `sky` and
   `world-audio`, 02-50 `minimap`, 02-61 `map-emitters` and `bsp-visibility`,
-  02-62 `lighting`. A world plan appends its kind or mask rule and bumps
+  02-62 `lighting`, 02-86 `surface-materials`. A world plan appends its kind or mask rule and bumps
   `listVersion` by one per added entry, in the commit that adds the step
   writing it and before that step's first validation. A kind or rule that is
   not listed is refused, so a missing entry fails loudly.
@@ -263,6 +263,11 @@ The DEC-OWN-12 tile resource kinds (provisional, owner review):
 - `lighting`: one per tile (MAT-02).
 - `map-emitters`: the per-tile Emitter actor export (FX-01), a JSON manifest
   like `movers`.
+- `surface-materials`: one per tile whose BSP or sky converted a material
+  (MAT-01, MAT-02), at `native-materials/surface-materials-<sha>.json`. Its
+  `files` map lists every graph, program and texture image of those materials
+  by path relative to `native-materials/` with SHA-256 and size, so the lane
+  merge walk copies them as leaves and never parses a graph.
 
 The first three are typed payload folders, not `.l2asset` packages:
 `maps/<asset.json sha256>/<folder>/` holds `asset.json` (`units` `source`,
@@ -294,6 +299,7 @@ A lane store reuses the shared store prefixes exactly:
 | `effects/<sha>/`, `movers/<sha>/` | Effect components and movers |
 | `tiles/<sha>/tile.json`, `maps/<sha>/native-tile-chunk-runtime/manifest.json` | Tile and chunk manifests (see "Manifest kinds") |
 | `native-materials/<sha>/graph.json`, `native-materials/<sha>/program.json` | Source-preserving UE2 material graph of one root and its typed program (plan 02-59, `write_native_material_resources`). `<sha>` is the SHA-256 of `program.json`, which holds the graph's `graphSha256`. Every program field is `authored`, `class-default` or `ue-zero`. Each `Engine.Texture` node carries `image`: the `{path, sha256, bytes}` pin of its converted PNG under `/l2/`, which the converting caller passes to `derive_material_program` as `texture_images` (plan 02-74; a pin on another class, a path outside `/l2/`, a malformed SHA-256 or a size above `MAXIMUM_TEXTURE_IMAGE_BYTES`, equal to `maximumTextureImageBytes` in `src/materials/ue2/model/materialProgram.ts`, is refused), or null, which the library compiles to `texture-image-absent:<node>`; other nodes carry no `image`. `write_material_program_record` writes both files and returns the `{directory, programSha256}` pin. The lane merge walk reaches each `program.json` through a GLB material's `extras.nativeMaterialProgram` `{directory, programSha256}` pin (a190cba) |
+| `native-materials/textures/<sha>/texture.png` | A converted texture PNG that a program's `Engine.Texture` node pins by `image`; `<sha>` is the PNG SHA-256 (plan 02-86, `scripts/world/material_texture_images.py`) |
 | `skies/<sha>/` | Sky bundles: a tile manifest pins `skies/<sha>/manifest.json`, and the lane merge walk copies the members of its name-keyed `files` map (a190cba) |
 | `environments/` | Outside the catalog |
 
