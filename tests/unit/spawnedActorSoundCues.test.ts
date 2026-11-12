@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { NativeActorClock } from "../../src/assets/native/NativeActor";
+import { parseActorClipEvents } from "../../src/assets/native/actorClipEvents";
 import { buildNativeCatalogIndex } from "../../src/assets/native/nativeCatalogIndex";
 import { sha256 } from "../../src/assets/package/readAssetPackage";
 import { combatAudioRoleRoutingDiagnostics } from "../../src/audio/combatAudioRoleRouting";
@@ -42,9 +43,9 @@ function fakeMixer() {
   };
 }
 
-function drivenBinding(bundle: NativeCombatAudioBundle, clipEvents: unknown[], entityId = "npc-entity-1", mixer = fakeMixer()) {
+function drivenBinding(bundle: NativeCombatAudioBundle, sourceClipEvents: unknown[], entityId = "npc-entity-1", mixer = fakeMixer()) {
   let clock: NativeActorClock | null = null;
-  const binding = bindSpawnedActorSoundCues({ entityId, clipEvents, bundle, mixer, clipClock: () => clock });
+  const binding = bindSpawnedActorSoundCues({ entityId, clipEvents: parseActorClipEvents(sourceClipEvents), bundle, mixer, clipClock: () => clock });
   const advanceTo = (next: NativeActorClock | null) => { clock = next; binding.update(); };
   return { binding, mixer, advanceTo };
 }

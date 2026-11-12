@@ -25,10 +25,10 @@ beforeEach(() => { dom = installMiniDom(); });
 afterEach(() => { for (const sheet of openSheets.splice(0)) sheet.dispose(); dom.restore(); });
 
 describe("sandbox section picker groups", () => {
-  it("holds the six picker groups, the skill cast presentation group and none of the superseded by-ID groups", () => {
+  it("holds the six picker groups, the skill cast and actor sounds groups and none of the superseded by-ID groups", () => {
     const { panel } = attachWithFakes();
     const groupIds = panel.querySelectorAll(".dev-group").map(group => group.dataset.group);
-    expect(groupIds).toEqual(["tile", "spawn", "equip", "cast", "window", "clips", "skill-cast"]);
+    expect(groupIds).toEqual(["tile", "spawn", "equip", "cast", "window", "clips", "skill-cast", "actor-sounds"]);
     for (const supersededGroupId of ["spawn-npc", "equip-item", "cast-skill", "open-window"]) expect(groupIds).not.toContain(supersededGroupId);
   });
 
@@ -38,7 +38,8 @@ describe("sandbox section picker groups", () => {
       actorClipEntityIds: () => [], actorClipListing: () => null, previewing: () => null },
       catalogIndex: fakeCatalogIndex, readNameIndex: async () => ({ status: "not-in-catalog" as const, key: "table:none", reason: "none" }),
       selectedEntityId: () => null, currentTileId: () => null, signal: new AbortController().signal };
-    expect(() => attachSandboxCommandSheet({ section, adapter, pickerContext, indexFailure: null, skillCast: null, skillCastFailure: null }))
+    expect(() => attachSandboxCommandSheet({ section, adapter, pickerContext, indexFailure: null, skillCast: null, skillCastFailure: null,
+      actorSounds: { entries: () => [], subscribe: () => () => {} } }))
       .toThrow("The sandbox pickers are already attached to this section.");
     release();
   });

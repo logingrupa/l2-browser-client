@@ -34,6 +34,7 @@ import { isSceneSuspended } from "../engine/renderSuspension";
 import { sandboxNpcVisualFactory } from "./sandboxNpcVisual";
 import { sandboxCharacterVisualFactory, sandboxLoadedPlayerProfileAppearance } from "./sandboxCharacterVisual";
 import { attachSandboxCommandSheet } from "./attachSandboxCommandSheet";
+import { actorClipListingEvents, wireSpawnedActorSounds } from "./spawnedActorSoundWiring";
 import { createSandboxRuntimeActions } from "./sandboxRuntimeActions";
 import { mountSandboxWindowLayer } from "./mountSandboxWindowLayer";
 import { readNativeTableNameIndex } from "../ui/nativeTables/readNativeTableNameIndex";
@@ -205,6 +206,9 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       movementPose: entityId => movement.pose(entityId),
     });
     boundaryReleases.push(() => registry.dispose());
+    const spawnedActorSounds = wireSpawnedActorSounds({ adapter, catalogIndex, mixer: audio, signal,
+      clipEvents: entityId => actorClipListingEvents(clipPreview.actorClipListing(entityId)), clipClock: entityId => registry.sourceClock(entityId) });
+    boundaryReleases.push(() => spawnedActorSounds.dispose());
     localPlayerFocus = () => registry.localPlayerPosition;
     const localPawnListenerLocation = (): [number, number, number] | null => {
       const pawn = listenerFollowsLocalPawn() ? registry.localPlayerPosition : null;
@@ -322,7 +326,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
     const sandboxWindows = mountSandboxWindowLayer(ui.root, adapter, () => registry.localPlayer);
     boundaryReleases.push(sandboxWindows.release);
     boundaryReleases.push(attachSandboxCommandSheet({ section: ui.sheet.section("sandbox", { title: "Sandbox", order: 5 }), adapter,
-      indexFailure: catalogIndexFailure, skillCast, skillCastFailure: effects.skillCastFailure, pickerContext: {
+      indexFailure: catalogIndexFailure, skillCast, skillCastFailure: effects.skillCastFailure, actorSounds: spawnedActorSounds, pickerContext: {
         host: createSandboxRuntimeActions({ adapter, windowLayer: sandboxWindows.layer, location: window.location, signal: sandboxLifetime.signal,
           clipListings: clipPreview }),
         catalogIndex, readNameIndex: readNativeTableNameIndex, selectedEntityId: () => registry.selectedEntityId,
@@ -338,6 +342,7 @@ export async function createNativeSliceRuntime(scene: Scene, camera: ArcRotateCa
       doors?.update(cappedFrameSeconds);
       const animationClockSeconds = adapter.isPaused ? 0 : cappedFrameSeconds;
       registry.update(animationClockSeconds);
+      spawnedActorSounds.update();
       combatAudio?.update();
       effectComponents?.update();
       initEffect?.update();

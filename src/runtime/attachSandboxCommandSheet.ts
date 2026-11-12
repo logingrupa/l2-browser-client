@@ -7,6 +7,7 @@ import type { GameWorldAdapter } from "../world/GameWorldAdapter";
 import {
   sandboxSkillCastFailureNote, sandboxSkillCastInspectionNote, sandboxSkillCastUnavailableNote, type SandboxSkillCastNote,
 } from "./sandboxSkillCastNote";
+import type { SpawnedActorSounds } from "./spawnedActorSoundWiring";
 
 export interface SandboxCommandSheetContext {
   readonly section: DevSection;
@@ -15,10 +16,24 @@ export interface SandboxCommandSheetContext {
   readonly indexFailure: string | null;
   readonly skillCast: Pick<SkillCastPresentation, "present"> | null;
   readonly skillCastFailure: string | null;
+  readonly actorSounds: Pick<SpawnedActorSounds, "entries" | "subscribe">;
 }
 
 const sectionsWithAttachedPickers = new WeakSet<DevSection>();
 const skillCastNoteTestId = "sandbox-skill-cast-note";
+const actorSoundsNoteTestId = "sandbox-actor-sounds-note";
+
+function showActorSoundsNotes(group: DevGroup, actorSounds: SandboxCommandSheetContext["actorSounds"]): () => void {
+  let notes: HTMLParagraphElement[] = [];
+  const removeNotes = () => { for (const note of notes.splice(0)) note.remove(); };
+  const render = () => {
+    removeNotes();
+    notes = actorSounds.entries().map(entry => group.note(entry.text, { tone: entry.tone, testId: actorSoundsNoteTestId }));
+  };
+  const unsubscribe = actorSounds.subscribe(render);
+  render();
+  return () => { unsubscribe(); removeNotes(); };
+}
 
 function presentSkillCastsIntoNote(group: DevGroup, context: SandboxCommandSheetContext, isAttached: () => boolean) {
   let note: HTMLParagraphElement | null = null, latestCast = 0;
@@ -51,6 +66,7 @@ export function attachSandboxCommandSheet(context: SandboxCommandSheetContext): 
   const releases = sandboxPickerSections.map(picker => picker.attach(section.group(picker.id, picker.title), pickerContext));
   const skillCasts = presentSkillCastsIntoNote(section.group("skill-cast", "Skill cast presentation"), context, () => !released);
   releases.push(() => skillCasts.release());
+  releases.push(showActorSoundsNotes(section.group("actor-sounds", "Actor sounds"), context.actorSounds));
   releases.push(context.adapter.subscribe(event => {
     if (event.type === "skill-cast") skillCasts.present(event);
   }));

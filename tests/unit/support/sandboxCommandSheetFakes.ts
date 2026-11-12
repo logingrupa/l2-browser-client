@@ -5,6 +5,7 @@ import { createNativeClipPreviewHub } from "../../../src/assets/native/nativeCli
 import type { SkillCastPresentation } from "../../../src/effects/skillCastPresentation";
 import { attachSandboxCommandSheet } from "../../../src/runtime/attachSandboxCommandSheet";
 import { createSandboxRuntimeActions, type SandboxTileLocation } from "../../../src/runtime/sandboxRuntimeActions";
+import type { SpawnedActorSounds } from "../../../src/runtime/spawnedActorSoundWiring";
 import type { NativeWindowLayer, NativeWindowOpenResult } from "../../../src/ui/nativeWindows/nativeWindowLayer";
 import type { WorldCommand, WorldEvent } from "../../../src/world/worldTypes";
 import { fakeMedia, fire, type FakeElement, type MiniDom } from "./miniDom";
@@ -47,6 +48,7 @@ export interface SandboxSheetFakeOptions {
   readonly index: NativeCatalogIndex;
   readonly skillCast?: SandboxSkillCastFake | null;
   readonly skillCastFailure?: string | null;
+  readonly actorSounds?: Pick<SpawnedActorSounds, "entries" | "subscribe">;
   readonly selectedEntityId?: string | null;
   readonly indexFailure?: string | null;
   readonly search?: string;
@@ -65,11 +67,12 @@ export function attachSandboxSheetWithFakes(dom: MiniDom, options: SandboxSheetF
   const location: SandboxTileLocation = { href: `http://127.0.0.1:5173/${search}`, search, assign: url => { assignedLocations.push(String(url)); } };
   const openedWindowIds: string[] = [];
   const lifetime = new AbortController();
+  const actorSounds = options.actorSounds ?? { entries: () => [], subscribe: () => () => {} };
   const skillCast = options.skillCast === undefined ? { present: vi.fn(async () => { throw new Error("this test casts no skill"); }) } : options.skillCast;
   const { sheet, section } = createSandboxSection(dom);
   const host = createSandboxRuntimeActions({ adapter, windowLayer: fakeWindowLayerOver(index, openedWindowIds), location, signal: lifetime.signal,
     clipListings: createNativeClipPreviewHub() });
-  const release = attachSandboxCommandSheet({ section, adapter, indexFailure, skillCast, skillCastFailure, pickerContext: {
+  const release = attachSandboxCommandSheet({ section, adapter, indexFailure, skillCast, skillCastFailure, actorSounds, pickerContext: {
     host, catalogIndex: index,
     readNameIndex: async tableId => ({ status: "not-in-catalog", key: `table:${tableId.replace(/-/g, "_")}_names`, reason: "no tables record in the served catalog" }),
     selectedEntityId: () => selectedEntityId, currentTileId: () => null, signal: lifetime.signal,

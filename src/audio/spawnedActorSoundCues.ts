@@ -1,5 +1,5 @@
 import type { NativeActorClock } from "../assets/native/NativeActor";
-import { parseActorClipEvents } from "../assets/native/actorClipEvents";
+import type { ActorClipEvent } from "../assets/native/actorClipEvents";
 import { actorSoundsCatalogKey, describeNativeCatalogLookup, type NativeCatalogIndex } from "../assets/native/nativeCatalogIndex";
 import { generatedActorSoundBundlePrefix } from "./combatAudioRoleRouting";
 import {
@@ -47,7 +47,7 @@ export interface SpawnedActorSoundCueBinding {
 }
 export interface SpawnedActorSoundCueOptions {
   readonly entityId: string;
-  readonly clipEvents: readonly unknown[] | undefined;
+  readonly clipEvents: readonly ActorClipEvent[];
   readonly bundle: NativeCombatAudioBundle;
   readonly mixer: Pick<WorldAudioMixer, "register" | "play" | "stopOwner">;
   readonly clipClock: () => NativeActorClock | null;
@@ -86,9 +86,9 @@ function unresolvedRoles(bundle: NativeCombatAudioBundle): SpawnedActorUnresolve
   })));
 }
 
-function soundCoverage(bundle: NativeCombatAudioBundle, clipEvents: readonly unknown[] | undefined): SpawnedActorSoundCoverage {
+function soundCoverage(bundle: NativeCombatAudioBundle, clipEvents: readonly ActorClipEvent[]): SpawnedActorSoundCoverage {
   const objectsByKey = bundleSoundObjects(bundle), bound: SpawnedActorBoundNotify[] = [], unbound: SpawnedActorUnboundNotify[] = [];
-  for (const event of parseActorClipEvents(clipEvents)) {
+  for (const event of clipEvents) {
     if (event.sound === null) continue;
     const sound = event.sound;
     const notify = { clip: event.clip, notify: event.notifyObject, sound, timeSeconds: event.timeSeconds };
