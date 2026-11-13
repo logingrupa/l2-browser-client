@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 9,
+  "listVersion": 10,
   "reasons": [
     "conversion-pending",
     "mesh-package-not-in-client:<package>",
@@ -20,6 +20,8 @@
     "combat-role-route-unresolved:<table>/<role>",
     "assembly-part-limit-exceeded:<count>",
     "mesh-texture-pairing-undecoded:<meshes>/<textures>",
-    "npc-names-no-sound"
+    "npc-names-no-sound",
+    "skill-sound-row-names-no-sound",
+    "skillsound-row-match-ambiguous:<count>"
   ]
 }

@@ -1,6 +1,9 @@
 import copy
+import re
 
+from actors.actor_unit_inventory import decoded_string_values
 from actors.npc_requests import GAP_STATUS, SOUND_IDENTITY_UNRESOLVED_REASON
+from actors.skill_unit_inventory import SKILL_SOUND_ROW_UNIT_KIND
 from native_assets_lib.combat_audio_bundle import ADMITTED, POLICY, RECIPE_KIND
 from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN
 
@@ -13,9 +16,11 @@ ACTOR_SOUND_RECIPE_DESCRIPTION = ('Generated actor sound bundle: every role rout
                                   'decoded table descriptor and the pinned static route proof; unbound roles stay out and are gap rows.')
 SELECTION_IDENTITY_FIELDS = ('label', 'catalogId', 'sourceObject', 'itemId', 'skillId', 'level')
 REFERENCE_COUNT_NAMES = {'exact-identity': 'exactIdentity', 'unique-package-leaf-candidate': 'uniquePackageLeafCandidate'}
-NO_EXACT_SKILL_SOUND_ROW_REASON = 'no-exact-skillsound-row'
 NPC_NAMES_NO_SOUND_REASON = 'npc-names-no-sound'
 SKILL_SOUND_TABLE_NAME = 'skillsoundgrp'
+SKILL_SOUND_ROW_NAMES_NO_SOUND_REASON = 'skill-sound-row-names-no-sound'
+SKILL_SOUND_ROW_MATCH_AMBIGUOUS_REASON_PREFIX = 'skillsound-row-match-ambiguous:'
+ROLE_WORD_BOUNDARY = re.compile(r'(?<=[a-z])(?=[A-Z])')
 
 
 def actor_sound_bundle_id(bundle_key):
@@ -26,38 +31,57 @@ def actor_sound_selection_id(bundle_key, table):
     return f'{bundle_key.replace(":", "-")}-{table}'
 
 
-def actor_sound_selection(bundle_key, actor_row, routes):
-    roles = {role: route['fieldName'] for role, route in routes.items()}
-    if not roles:
-        return None
-    selection = {'id': actor_sound_selection_id(bundle_key, actor_row['table']), 'kind': actor_row['kind'], 'table': actor_row['table'],
-                 'match': copy.deepcopy(actor_row['match']), 'roles': roles}
+def selection_role_token(role):
+    return ROLE_WORD_BOUNDARY.sub('-', role).lower()
+
+
+def base_actor_sound_selection(selection_id, actor_row, roles):
+    selection = {'id': selection_id, 'kind': actor_row['kind'], 'table': actor_row['table'], 'match': copy.deepcopy(actor_row['match']),
+                 'roles': roles}
     for field in SELECTION_IDENTITY_FIELDS:
         if field in actor_row:
             selection[field] = copy.deepcopy(actor_row[field])
-    if actor_row['table'] == 'npcgrp':
-        selection['nativeNumeric'] = dict(NPC_NATIVE_NUMERIC_FIELDS)
     return selection
 
 
-def skill_actor_row(binding_row, sound_rows):
-    ordinal = binding_row['soundRowOrdinal']
-    if ordinal is None:
-        return None
-    sound_row = sound_rows[ordinal]
-    if (sound_row['skill_id'], sound_row['skill_level']) != (binding_row['skillId'], binding_row['level']):
-        raise ValueError(f'skillsoundgrp row {ordinal} does not belong to {binding_row["key"]}')
-    return {'table': SKILL_SOUND_TABLE_NAME, 'kind': 'skill', 'label': f'{binding_row["key"]} ({SKILL_SOUND_TABLE_NAME} row {ordinal})',
-            'skillId': binding_row['skillId'], 'level': binding_row['level'],
-            'match': [{'pointer': '/skill_id', 'value': binding_row['skillId']}, {'pointer': '/skill_level', 'value': binding_row['level']}]}
+def field_names_a_sound(decoded_row, field_name):
+    return any(decoded_string_values(decoded_row.get(field_name)))
 
 
-def build_actor_sound_recipe(bundle_key, actor_rows, routes_by_table, recipe_inputs):
+def member_selection(bundle_key, actor_row, role, record):
+    selection_id = f'{actor_sound_selection_id(bundle_key, actor_row["table"])}-{selection_role_token(role)}-member-{record["member"]}'
+    selection = base_actor_sound_selection(selection_id, actor_row, {role: record['fieldName']})
+    selection['label'] = f'{actor_row["label"]} {role} member {record["member"]}'
+    return selection
+
+
+def actor_sound_selections(bundle_key, actor_row, routes, decoded_row):
+    single_roles = {role: route['fieldName'] for role, route in routes.items() if not isinstance(route, list)}
     selections = []
-    for actor_row in actor_rows:
-        selection = actor_sound_selection(bundle_key, actor_row, routes_by_table[actor_row['table']]['routes'])
-        if selection is not None:
-            selections.append(selection)
+    if single_roles:
+        selection = base_actor_sound_selection(actor_sound_selection_id(bundle_key, actor_row['table']), actor_row, single_roles)
+        if actor_row['table'] == 'npcgrp':
+            selection['nativeNumeric'] = dict(NPC_NATIVE_NUMERIC_FIELDS)
+        selections.append(selection)
+    selections += [member_selection(bundle_key, actor_row, role, record) for role, route in routes.items() if isinstance(route, list)
+                   for record in route if field_names_a_sound(decoded_row, record['fieldName'])]
+    return selections
+
+
+def skill_sound_row_key(row_ordinal):
+    return f'{SKILL_SOUND_ROW_UNIT_KIND}:{row_ordinal}'
+
+
+def skill_sound_row_actor_row(row_ordinal, sound_row):
+    skill_id, level = sound_row['skill_id'], sound_row['skill_level']
+    return {'table': SKILL_SOUND_TABLE_NAME, 'kind': 'skill', 'label': f'{SKILL_SOUND_TABLE_NAME} row {row_ordinal} (skill {skill_id} level {level})',
+            'skillId': skill_id, 'level': level,
+            'match': [{'pointer': '/skill_id', 'value': skill_id}, {'pointer': '/skill_level', 'value': level}]}
+
+
+def build_actor_sound_recipe(bundle_key, actor_rows, decoded_rows, routes_by_table, recipe_inputs):
+    selections = [selection for actor_row, decoded_row in zip(actor_rows, decoded_rows, strict=True)
+                  for selection in actor_sound_selections(bundle_key, actor_row, routes_by_table[actor_row['table']]['routes'], decoded_row)]
     if not selections:
         return None
     tables = sorted({selection['table'] for selection in selections})

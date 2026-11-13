@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "kind": "combat-sound-routes",
+  "engine": {
+    "path": "system/Engine.dll",
+    "sha256": "4dd2f63c606df5671702911fa1f8ddcc4099bf2b98b81e8aa88eed47f5405b08",
+    "imageBase": "0x10300000"
+  },
+  "verification": {
+    "date": "2026-11-13",
+    "method": "Two independent lenses per route: capstone disassembly of the lock-equal Engine.dll and a full decode of every DAT row, by fresh-context agents that did not open the claims evidence.",
+    "workflow": "wf_9c5d90a4-15c",
+    "decisionRow": "P1147",
+    "verifiedFactsSha256": "005bb99792867cb6a9782c51c556af7fa92f13096cc1395eb78b95c84472fc45"
+  },
+  "ordinalNotation": "Zero-based logical DAT field ordinals: a length-prefixed string is one field, a count is one field, and a counted list expands by its count. ordinalConstant is the ordinal with every count term at zero, and ordinalCountTerms is the number of counted lists the ordinal sums.",
+  "routes": [
+    {
+      "table": "skillsoundgrp",
+      "role": "cast",
+      "anchors": [
+        "FL2SkillSoundData::Serialize 0x1044ec30",
+        "GetSkillSoundData 0x10478280",
+        "APawn::PlaySkillSound 0x104ee5a0",
+        "APawn::SkillEffectInit 0x104fa6ad"
+      ],
+      "selector": "GetSkillSoundData 0x10478280 takes the row of the skill id and level, else the level 1 row of the skill id.",
+      "trigger": "APawn::SkillEffectInit 0x104fa6ad calls APawn::PlaySkillSound 0x104ee5a0 stage 1 with a non-null effect actor; the sound plays on the effect actor.",
+      "members": [
+        {"member": 0, "rowMember": "+0x08", "datFieldOrdinal": "2", "ordinalConstant": 2, "ordinalCountTerms": 0},
+        {"member": 1, "rowMember": "+0x0c", "datFieldOrdinal": "11", "ordinalConstant": 11, "ordinalCountTerms": 0},
+        {"member": 2, "rowMember": "+0x10", "datFieldOrdinal": "20", "ordinalConstant": 20, "ordinalCountTerms": 0}
+      ]
+    },
+    {
+      "table": "skillsoundgrp",
+      "role": "shot",
+      "anchors": [
+        "FL2SkillSoundData::Serialize 0x1044ec30",
+        "GetSkillSoundData 0x10478280",
+        "APawn::PlaySkillSound 0x104ee5a0",
+        "APawn::SkillEffectShot 0x1050ceb2"
+      ],
+      "selector": "GetSkillSoundData 0x10478280 takes the row of the skill id and level, else the level 1 row of the skill id.",
+      "trigger": "APawn::SkillEffectShot 0x1050ceb2 calls APawn::PlaySkillSound 0x104ee5a0 stage 2.",
+      "members": [
+        {"member": 0, "rowMember": "+0x14", "datFieldOrdinal": "3", "ordinalConstant": 3, "ordinalCountTerms": 0},
+        {"member": 1, "rowMember": "+0x18", "datFieldOrdinal": "12", "ordinalConstant": 12, "ordinalCountTerms": 0},
+        {"member": 2, "rowMember": "+0x1c", "datFieldOrdinal": "21", "ordinalConstant": 21, "ordinalCountTerms": 0}
+      ]
+    }
+  ]
+}

@@ -4,6 +4,7 @@ from pathlib import Path
 import re
 
 from actors.actor_unit_inventory import decoded_string_values
+from actors.dat_field_ordinals import DESCRIPTOR_FIELD_ELEMENTS, descriptor_field_ordinal_terms, descriptor_record_collection
 from native_assets_lib.combat_audio_bundle import CONFIG_TABLE, SELECTION_KINDS
 from native_store.store_paths import REPOSITORY_ROOT
 
@@ -26,21 +27,19 @@ SERIALIZED_SOUND_MEMBER = re.compile(r'(\+0x[0-9a-f]+/\+0x[0-9a-f]+) snd([1-9][0
 DAT_ORDER_PHRASE = 'in DAT order'
 BRANCH_CLAUSE_TOKEN = re.compile(r'^a[0-9]+ (?P<token>[a-z]+)\b')
 BRANCH_CONFIG_KEY = re.compile(r'-> \[(?P<section>[A-Za-z]+)\] (?P<key>[A-Za-z_]+)')
-DESCRIPTOR_FIELD_ELEMENTS = ('node', 'for', 'wrapper')
 
 
 class CombatRouteUnresolved(Exception):
     pass
 
 
+class CombatRouteSourceConflict(ValueError):
+    pass
+
+
 def descriptor_record_field_names(layout):
-    collections = [element for element in layout if element.tag == 'for' and element.get('hidden') == 'false']
-    if len(collections) != 1:
-        collections = [element for element in layout if element.tag == 'for']
-    if len(collections) != 1:
-        raise ValueError(f'descriptor layout holds {len(collections)} record collections; one is required')
     names = []
-    for element in collections[0]:
+    for element in descriptor_record_collection(layout):
         name = element.get('name')
         if element.tag in DESCRIPTOR_FIELD_ELEMENTS and name and name not in names:
             names.append(name)
@@ -52,15 +51,16 @@ def is_sound_reference_field(rows, field_name, is_sound_package_reference):
     return bool(references) and all(is_sound_package_reference(reference) for reference in references)
 
 
-def combat_route_table_manifest(table, descriptor_sha256, field_names, rows, is_sound_package_reference):
+def combat_route_table_manifest(table, descriptor_sha256, layout, rows, is_sound_package_reference):
+    ordinal_terms = descriptor_field_ordinal_terms(layout, rows)
     return {'table': table, 'descriptorSha256': descriptor_sha256,
-            'fields': [{'name': name, 'soundReference': is_sound_reference_field(rows, name, is_sound_package_reference)}
-                       for name in field_names]}
+            'fields': [{'name': name, 'soundReference': is_sound_reference_field(rows, name, is_sound_package_reference),
+                        'ordinalTerms': ordinal_terms.get(name)} for name in descriptor_record_field_names(layout)]}
 
 
 def combat_route_config_manifest(config_sha256, decoded_config_keys):
     return {'table': CONFIG_TABLE, 'descriptorSha256': config_sha256,
-            'fields': [{'name': key, 'soundReference': True} for key in decoded_config_keys]}
+            'fields': [{'name': key, 'soundReference': True, 'ordinalTerms': None} for key in decoded_config_keys]}
 
 
 def read_combat_role_route_proof(roots=None):
@@ -147,13 +147,14 @@ def proof_problem(proof):
     return None
 
 
-def bind_combat_role_routes(table_manifest, route_proof):
+def proof_role_routes(table_manifest, roles, route_proof):
     table = table_manifest['table']
-    roles = SELECTION_KINDS[TABLE_SELECTION_KINDS[table]]
     routes, unresolved = {}, {}
+    if not roles:
+        return routes, unresolved
     problem = proof_problem(route_proof)
     if problem is not None:
-        return {'table': table, 'routes': routes, 'unresolved': {role: unresolved_route(table, role, problem) for role in roles}}
+        return routes, {role: unresolved_route(table, role, problem) for role in roles}
     native = route_proof['native']
     serialization = None
     if table != CONFIG_TABLE:
@@ -161,11 +162,64 @@ def bind_combat_role_routes(table_manifest, route_proof):
             sound_field_count = sum(1 for field in table_manifest['fields'] if field['soundReference'])
             serialization = serialized_sound_members(native, table, sound_field_count)
         except CombatRouteUnresolved as error:
-            return {'table': table, 'routes': routes, 'unresolved': {role: unresolved_route(table, role, str(error)) for role in roles}}
+            return routes, {role: unresolved_route(table, role, str(error)) for role in roles}
     for role in roles:
         try:
             routes[role] = (config_role_route(table_manifest, role, native, route_proof) if table == CONFIG_TABLE
                             else table_role_route(table_manifest, role, native, route_proof, serialization))
         except CombatRouteUnresolved as error:
             unresolved[role] = unresolved_route(table, role, str(error))
+    return routes, unresolved
+
+
+def recipe_entries_of_table(route_recipe, table):
+    document = route_recipe['document']
+    return {entry['role']: entry for entry in document['routes'] if entry['table'] == table}
+
+
+def refuse_roles_claimed_by_both_sources(table, recipe_roles):
+    proof_claims = table in TABLE_SERIALIZATION_ANCHOR_NAMES or (table == CONFIG_TABLE and bool(set(recipe_roles) & set(CONFIG_ROLE_BRANCH_TOKENS)))
+    if recipe_roles and proof_claims:
+        raise CombatRouteSourceConflict(f'{table} roles {sorted(recipe_roles)} are claimed by both the route recipe and the route proof')
+
+
+def recipe_member_field_name(table_manifest, member):
+    wanted = {'ordinalConstant': member['ordinalConstant'], 'ordinalCountTerms': member['ordinalCountTerms']}
+    names = [field['name'] for field in table_manifest['fields'] if field['ordinalTerms'] == wanted]
+    if len(names) != 1:
+        raise CombatRouteUnresolved(f'recipe member {member["member"]} at DAT field {member["datFieldOrdinal"]} matches {len(names)} '
+                                    f'decoded {table_manifest["table"]} fields')
+    return names[0]
+
+
+def recipe_role_route(table_manifest, entry, route_recipe):
+    proof = {'path': route_recipe['path'], 'sha256': route_recipe['sha256']}
+    records = [{**route_record(table_manifest, recipe_member_field_name(table_manifest, member), proof, list(entry['anchors'])),
+                'member': member['member']} for member in entry['members']]
+    if len(records) == 1:
+        return {key: value for key, value in records[0].items() if key != 'member'}
+    return records
+
+
+def bind_combat_role_routes(table_manifest, route_proof, route_recipe):
+    table = table_manifest['table']
+    roles = SELECTION_KINDS[TABLE_SELECTION_KINDS[table]]
+    recipe_entries = recipe_entries_of_table(route_recipe, table)
+    refuse_roles_claimed_by_both_sources(table, recipe_entries)
+    proof_routes, proof_unresolved = proof_role_routes(table_manifest, [role for role in roles if role not in recipe_entries], route_proof)
+    routes, unresolved = {}, {}
+    for role in roles:
+        if role in proof_routes:
+            routes[role] = proof_routes[role]
+        elif role in proof_unresolved:
+            unresolved[role] = proof_unresolved[role]
+        else:
+            try:
+                routes[role] = recipe_role_route(table_manifest, recipe_entries[role], route_recipe)
+            except CombatRouteUnresolved as error:
+                unresolved[role] = unresolved_route(table, role, str(error))
     return {'table': table, 'routes': routes, 'unresolved': unresolved}
+
+
+def bound_route_records(binding):
+    return [record for route in binding['routes'].values() for record in (route if isinstance(route, list) else [route])]

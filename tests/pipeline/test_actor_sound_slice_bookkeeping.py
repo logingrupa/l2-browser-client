@@ -15,6 +15,7 @@ from actors import actor_sound_batch, actor_sound_conversion
 from actors.actor_sound_batch import ActorSoundBundles, run_actor_sound_slice, write_actor_sound_census
 from actors.actor_sound_conversion import ACTOR_SOUND_GAP_ROWS_RELATIVE_PATH, ActorSoundConversionRun
 from actors.combat_role_routes import COMBAT_ROLE_ROUTE_PROOF
+from actors.combat_sound_route_recipe import read_combat_sound_route_recipe
 from actors.npc_store_records import file_output_record
 from catalog_store_fixture import write_profile_manifest, write_store_catalog
 from native_assets_lib import combat_audio_bundle
@@ -63,11 +64,13 @@ def unresolved_route_entry(table, role, detail):
 
 def expected_census():
     synthetic_table_routes = {role: unresolved_route_entry('npcgrp', role, 'route proof is missing') for role in NPCGRP_ROLES}
+    route_recipe = read_combat_sound_route_recipe(ROOT)
     return {'schemaVersion': 1, 'routeProof': {'path': COMBAT_ROLE_ROUTE_PROOF['path'], 'sha256': None},
+            'routeRecipe': {'path': 'recipes/actors/combat-sound-routes.json', 'sha256': route_recipe['sha256']},
             'routes': {'chargrp': synthetic_table_routes, 'npcgrp': synthetic_table_routes, 'armorgrp': synthetic_table_routes,
                        'weapongrp': synthetic_table_routes, 'skillsoundgrp': synthetic_table_routes,
                        'alaudio': {role: unresolved_route_entry('alaudio', role, ALAUDIO_LOCK_REFUSAL) for role in ('critical', 'soulshot')}},
-            'bundles': {'npc': 2, 'skill': 0, 'character': {'count': 0, 'skippedReason': 'character-census-absent', 'skippedByReason': {}}},
+            'bundles': {'npc': 2, 'skillSoundRow': 0, 'character': {'count': 0, 'skippedReason': 'character-census-absent', 'skippedByReason': {}}},
             'references': NO_REFERENCES, 'perTable': {'npcgrp': NO_REFERENCES}, 'sealedBundles': [GREMLIN_KEY, SILENT_KEY]}
 
 
@@ -127,7 +130,7 @@ class ActorSoundSliceFixture:
 
     def run_slice(self):
         run = ManifestActorSoundRun(self.project_root)
-        bundles = ActorSoundBundles(self.project_root, run.store_root)
+        bundles = ActorSoundBundles(self.project_root, run.store_root, [])
         return run, bundles, run_actor_sound_slice(run, bundles, 5, lambda: self.preflights.append(True))
 
     def assert_the_next_slice_writes_no_file(self):
@@ -170,7 +173,7 @@ class ActorSoundSliceWriteCountTests(ActorSoundSliceFixture, unittest.TestCase):
 
         run = ManifestActorSoundRun(self.project_root)
         with self.assertRaises(BatchPreflightRefusedError):
-            run_actor_sound_slice(run, ActorSoundBundles(self.project_root, run.store_root), 5, refuse_the_second_bundle)
+            run_actor_sound_slice(run, ActorSoundBundles(self.project_root, run.store_root, []), 5, refuse_the_second_bundle)
         self.assertEqual([receipt['unitKey'] for receipt in run.bundle_ledger.sealed_receipts()], [GREMLIN_KEY])
         self.assertEqual(self.catalog_path.read_bytes(), self.expected_catalog_bytes())
         self.assertEqual(self.gap_rows_path.read_bytes(), expected_gap_row_bytes(GREMLIN_GAP_ROWS))
@@ -195,7 +198,7 @@ class ActorSoundHashReuseTests(ActorSoundSliceFixture, unittest.TestCase):
             run = ConstructedActorSoundRun(self.project_root)
             sound_works = [run.sound_unit_work(SOUND_PACKAGE_RECORD, {'object': f'MonSound.hit_{export_index}', 'exportIndex': export_index},
                                                {'stableId': f'SYNTHETIC:{export_index}'}) for export_index in (1, 2, 3)]
-            outcomes = run_actor_sound_slice(run, ActorSoundBundles(self.project_root, run.store_root), 5, lambda: None)
+            outcomes = run_actor_sound_slice(run, ActorSoundBundles(self.project_root, run.store_root, []), 5, lambda: None)
         self.assertEqual((implementation_hash.call_count, len(builder_reads), len(outcomes)), (1, 1, 2))
         self.assertEqual([work.config['converterSha256'] for work in sound_works], [CONVERTER_SHA256] * 3)
         gremlin_receipt = next(receipt for receipt in run.bundle_ledger.sealed_receipts() if receipt['unitKey'] == GREMLIN_KEY)

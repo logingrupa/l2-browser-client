@@ -13,9 +13,9 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from actors.actor_sound_batch import (CHARACTER_CENSUS_RELATIVE_PATH, actor_sound_key_argument, bundle_sort_key, decoded_config_keys,
                                       run_actor_sound_slice, skipped_character_bundles, write_bundle_catalog_records)
-from actors.actor_sound_bindings import (ACTOR_SOUND_BUNDLE_ID_PREFIX, NO_EXACT_SKILL_SOUND_ROW_REASON, NPC_NATIVE_NUMERIC_FIELDS,
-                                         actor_sound_bundle_id, actor_sound_gap_row, actor_sound_gap_rows, actor_sound_reference_counts,
-                                         build_actor_sound_recipe, skill_actor_row)
+from actors.actor_sound_bindings import (ACTOR_SOUND_BUNDLE_ID_PREFIX, NPC_NATIVE_NUMERIC_FIELDS, SKILL_SOUND_ROW_MATCH_AMBIGUOUS_REASON_PREFIX,
+                                         SKILL_SOUND_ROW_NAMES_NO_SOUND_REASON, actor_sound_bundle_id, actor_sound_gap_row, actor_sound_gap_rows,
+                                         actor_sound_reference_counts, actor_sound_selections, build_actor_sound_recipe, skill_sound_row_actor_row)
 from actors.actor_sound_conversion import BundleStoreState, bundle_store_state
 from native_assets import archive_bytes
 from native_assets_lib import combat_audio_bundle
@@ -92,19 +92,20 @@ class ActorSoundCorpusFixture(unittest.TestCase):
             self.coverage['sounds'].append({'stableId': stable, 'status': 'exported-and-verified', 'products': {
                 'archive': {**archive, 'path': prefix + '/asset.l2asset'}, 'audio': {**audio, 'path': prefix + '/audio.wav'}}})
 
-    def recipe_inputs(self):
-        original = self.write('lane/tables/npcgrp.dat', b'synthetic npcgrp original')
-        table = {'schemaVersion': 1, 'edition': 'interlude', 'source': 'system/npcgrp.dat', 'sourceSha256': original['sha256'],
-                 'decodedSha256': sha256_hex_digest(json_bytes(self.rows)), 'schema': {'fixture': True},
-                 'data': {'npc': self.rows, 'data': len(self.rows)}}
-        decoded = self.write('lane/tables/npcgrp.json', json_bytes(table))
+    def recipe_inputs(self, table_name='npcgrp', collection='npc', rows=None):
+        rows = self.rows if rows is None else rows
+        original = self.write(f'lane/tables/{table_name}.dat', f'synthetic {table_name} original'.encode())
+        table = {'schemaVersion': 1, 'edition': 'interlude', 'source': f'system/{table_name}.dat', 'sourceSha256': original['sha256'],
+                 'decodedSha256': sha256_hex_digest(json_bytes(rows)), 'schema': {'fixture': True},
+                 'data': {collection: rows, 'data': len(rows)}}
+        decoded = self.write(f'lane/tables/{table_name}.json', json_bytes(table))
         inventory = self.write('lane/inventory.json', json_bytes(self.inventory))
         coverage = self.write('lane/coverage.json', json_bytes({**self.coverage, 'inventorySha256': inventory['sha256']}))
         return {'corpus': {'root': 'lane', 'inventory': inventory, 'coverage': coverage},
-                'tables': {'npcgrp': {'original': original, 'decoded': decoded}}}
+                'tables': {table_name: {'original': original, 'decoded': decoded}}}
 
     def built_manifest(self, routes=BOUND_ROUTES):
-        recipe = build_actor_sound_recipe('npc:20001', [GREMLIN_ACTOR_ROW], routes, self.recipe_inputs())
+        recipe = build_actor_sound_recipe('npc:20001', [GREMLIN_ACTOR_ROW], [self.rows[1]], routes, self.recipe_inputs())
         self.write('lane/recipe.json', json_bytes(recipe))
         manifest, _, _ = combat_audio_bundle.prepare(self.root, self.root / 'lane/recipe.json')
         return recipe, manifest
@@ -112,7 +113,7 @@ class ActorSoundCorpusFixture(unittest.TestCase):
 
 class ActorSoundRecipeTests(ActorSoundCorpusFixture):
     def test_the_recipe_holds_one_actor_selection_routed_only_by_bound_routes(self):
-        recipe = build_actor_sound_recipe('npc:20001', [GREMLIN_ACTOR_ROW], BOUND_ROUTES, self.recipe_inputs())
+        recipe = build_actor_sound_recipe('npc:20001', [GREMLIN_ACTOR_ROW], [GREMLIN_ROW], BOUND_ROUTES, self.recipe_inputs())
         self.assertEqual(recipe['kind'], combat_audio_bundle.RECIPE_KIND)
         self.assertEqual(recipe['referencePolicy'], combat_audio_bundle.POLICY)
         self.assertEqual(len(recipe['selections']), 1)
@@ -149,7 +150,7 @@ class ActorSoundRecipeTests(ActorSoundCorpusFixture):
             validate_gap_row(row, reason_patterns)
 
     def test_with_no_bound_route_the_selection_is_left_out_and_every_role_is_a_gap_row(self):
-        self.assertIsNone(build_actor_sound_recipe('npc:20001', [GREMLIN_ACTOR_ROW], NO_BOUND_ROUTES, self.recipe_inputs()))
+        self.assertIsNone(build_actor_sound_recipe('npc:20001', [GREMLIN_ACTOR_ROW], [GREMLIN_ROW], NO_BOUND_ROUTES, self.recipe_inputs()))
         rows = actor_sound_gap_rows('npc:20001', [GREMLIN_ACTOR_ROW], NO_BOUND_ROUTES, None, {'npcgrp': NPCGRP_IDENTITY}, EVIDENCE, {})
         self.assertEqual([row['reason'] for row in rows], [f'combat-role-route-unresolved:npcgrp/{role}'
                                                            for role in ('attackItem', 'attackVoice', 'defense', 'damage')])
@@ -201,31 +202,56 @@ class ActorSoundSourceRuleTests(unittest.TestCase):
                 self.assertNotIn('previousValue', source)
 
 
-SOUND_ROWS = [{'skill_id': 3, 'skill_level': 1, 'spelleffect_sound_1': 'SkillSound.power_strike'}, {'skill_id': 3, 'skill_level': 2}]
+SKILL_SOUND_ROW = {'skill_id': 4, 'skill_level': 1, 'cast_first': 'SkillSound.dash_cast', 'cast_second': '', 'cast_third': 'SkillSound.dash_echo',
+                   'shot_first': 'SkillSound.dash_shot', 'shot_second': '', 'shot_third': ''}
 
 
-class ActorSoundSkillAndCharacterTests(unittest.TestCase):
-    def test_a_skill_bundle_takes_only_the_exact_skillsound_row_of_its_binding(self):
-        binding = {'key': 'skill:3:2', 'skillId': 3, 'level': 2, 'soundRowOrdinal': 1}
-        self.assertEqual(skill_actor_row(binding, SOUND_ROWS), {
-            'table': 'skillsoundgrp', 'kind': 'skill', 'label': 'skill:3:2 (skillsoundgrp row 1)', 'skillId': 3, 'level': 2,
-            'match': [{'pointer': '/skill_id', 'value': 3}, {'pointer': '/skill_level', 'value': 2}]})
-        with self.assertRaisesRegex(ValueError, 'does not belong to skill:3:1'):
-            skill_actor_row({**binding, 'key': 'skill:3:1', 'level': 1}, SOUND_ROWS)
+def skill_member_route(field_name, ordinal, member):
+    return {'table': 'skillsoundgrp', 'descriptorSha256': 'c' * 64, 'fieldOrdinal': ordinal, 'fieldName': field_name, 'routeProof': BOUND_PROOF,
+            'member': member}
 
-    def test_a_skill_key_without_an_exact_row_gets_no_sound_and_keeps_the_no_exact_skillsound_row_gap(self):
-        self.assertIsNone(skill_actor_row({'key': 'skill:9:1', 'skillId': 9, 'level': 1, 'soundRowOrdinal': None}, SOUND_ROWS))
-        self.assertEqual(NO_EXACT_SKILL_SOUND_ROW_REASON, 'no-exact-skillsound-row')
-        validate_gap_row(actor_sound_gap_row('skill:9:1', NO_EXACT_SKILL_SOUND_ROW_REASON, NPCGRP_IDENTITY, EVIDENCE), load_gap_reason_patterns())
 
-    def test_skill_routes_stay_unbound_so_a_skill_bundle_builds_no_recipe(self):
-        routes = {'skillsoundgrp': {'table': 'skillsoundgrp', 'routes': {}, 'unresolved': {
-            role: {'reason': f'combat-role-route-unresolved:skillsoundgrp/{role}', 'detail': 'no anchor'} for role in ('cast', 'shot')}}}
-        actor_row = skill_actor_row({'key': 'skill:3:1', 'skillId': 3, 'level': 1, 'soundRowOrdinal': 0}, SOUND_ROWS)
-        self.assertIsNone(build_actor_sound_recipe('skill:3:1', [actor_row], routes, {'corpus': {}, 'tables': {}}))
-        rows = actor_sound_gap_rows('skill:3:1', [actor_row], routes, None, {'skillsoundgrp': NPCGRP_IDENTITY}, EVIDENCE, {})
-        self.assertEqual([row['reason'] for row in rows], ['combat-role-route-unresolved:skillsoundgrp/cast',
-                                                           'combat-role-route-unresolved:skillsoundgrp/shot'])
+SKILL_ROUTES = {'skillsoundgrp': {'table': 'skillsoundgrp', 'unresolved': {}, 'routes': {
+    'cast': [skill_member_route('cast_first', 2, 0), skill_member_route('cast_second', 11, 1), skill_member_route('cast_third', 20, 2)],
+    'shot': [skill_member_route('shot_first', 3, 0), skill_member_route('shot_second', 12, 1), skill_member_route('shot_third', 21, 2)]}}}
+
+
+class ActorSoundSkillAndCharacterTests(ActorSoundCorpusFixture):
+    def test_a_skill_sound_row_actor_row_matches_its_skill_id_and_level(self):
+        self.assertEqual(skill_sound_row_actor_row(3, SKILL_SOUND_ROW), {
+            'table': 'skillsoundgrp', 'kind': 'skill', 'label': 'skillsoundgrp row 3 (skill 4 level 1)', 'skillId': 4, 'level': 1,
+            'match': [{'pointer': '/skill_id', 'value': 4}, {'pointer': '/skill_level', 'value': 1}]})
+
+    def test_a_skill_sound_row_yields_one_selection_per_member_that_names_a_sound(self):
+        actor_row = skill_sound_row_actor_row(3, SKILL_SOUND_ROW)
+        selections = actor_sound_selections('skill-sound-row:3', actor_row, SKILL_ROUTES['skillsoundgrp']['routes'], SKILL_SOUND_ROW)
+        self.assertEqual([(selection['id'], selection['roles']) for selection in selections], [
+            ('skill-sound-row-3-skillsoundgrp-cast-member-0', {'cast': 'cast_first'}),
+            ('skill-sound-row-3-skillsoundgrp-cast-member-2', {'cast': 'cast_third'}),
+            ('skill-sound-row-3-skillsoundgrp-shot-member-0', {'shot': 'shot_first'})])
+        self.assertEqual({(selection['kind'], selection['skillId'], selection['level']) for selection in selections}, {('skill', 4, 1)})
+        self.assertEqual(selections[1]['label'], 'skillsoundgrp row 3 (skill 4 level 1) cast member 2')
+
+    def test_an_npc_actor_row_keeps_one_selection_with_its_id_unchanged(self):
+        selections = actor_sound_selections('npc:20001', GREMLIN_ACTOR_ROW, BOUND_ROUTES['npcgrp']['routes'], GREMLIN_ROW)
+        self.assertEqual([(selection['id'], sorted(selection['roles'])) for selection in selections],
+                         [('npc-20001-npcgrp', ['attackItem', 'damage', 'defense'])])
+
+    def test_the_builder_accepts_the_member_selections_of_a_skill_sound_row(self):
+        recipe = build_actor_sound_recipe('skill-sound-row:0', [skill_sound_row_actor_row(0, SKILL_SOUND_ROW)], [SKILL_SOUND_ROW], SKILL_ROUTES,
+                                          self.recipe_inputs('skillsoundgrp', 'skillsound', [SKILL_SOUND_ROW]))
+        self.write('lane/recipe.json', json_bytes(recipe))
+        manifest, _, _ = combat_audio_bundle.prepare(self.root, self.root / 'lane/recipe.json')
+        self.assertEqual([(selection['id'], list(selection['roles']), selection['rowOrdinal']) for selection in manifest['selections']], [
+            ('skill-sound-row-0-skillsoundgrp-cast-member-0', ['cast'], 0), ('skill-sound-row-0-skillsoundgrp-cast-member-2', ['cast'], 0),
+            ('skill-sound-row-0-skillsoundgrp-shot-member-0', ['shot'], 0)])
+        self.assertEqual(recipe['routes'], {'skillsoundgrp': SKILL_ROUTES['skillsoundgrp']['routes']})
+
+    def test_the_skill_sound_row_no_sound_reasons_are_listed_gap_reasons(self):
+        reason_patterns = load_gap_reason_patterns()
+        for reason in (SKILL_SOUND_ROW_NAMES_NO_SOUND_REASON, f'{SKILL_SOUND_ROW_MATCH_AMBIGUOUS_REASON_PREFIX}2'):
+            with self.subTest(reason):
+                validate_gap_row(actor_sound_gap_row('skill-sound-row:0', reason, NPCGRP_IDENTITY, EVIDENCE), reason_patterns)
 
     def test_characters_are_skipped_with_their_census_reasons_and_an_absent_census_is_named(self):
         with tempfile.TemporaryDirectory(prefix='character-census-') as temporary:
@@ -243,10 +269,12 @@ class ActorSoundSkillAndCharacterTests(unittest.TestCase):
             self.assertEqual(skipped_character_bundles(temporary), {'count': 0, 'skippedReason': None, 'skippedByReason': {
                 'character-profile-pending': 1, 'character-sound-bundle-not-built': 1, 'class-template-mapping-undecoded': 2}})
 
-    def test_a_character_key_is_refused_as_an_actor_sound_bundle(self):
-        with self.assertRaises(argparse.ArgumentTypeError):
-            actor_sound_key_argument('character:0')
-        self.assertEqual(actor_sound_key_argument('skill:4:2'), 'skill:4:2')
+    def test_a_character_or_per_skill_key_is_refused_as_an_actor_sound_bundle(self):
+        for key in ('character:0', 'skill:4:2'):
+            with self.subTest(key), self.assertRaises(argparse.ArgumentTypeError):
+                actor_sound_key_argument(key)
+        self.assertEqual(actor_sound_key_argument('skill-sound-row:3'), 'skill-sound-row:3')
+
 
 class FakeSoundBundles:
     def __init__(self, keys, sealed_keys):
@@ -264,9 +292,9 @@ class FakeSoundBundles:
 
 
 class ActorSoundBatchSliceTests(unittest.TestCase):
-    def test_bundle_keys_order_npcs_then_skills_by_number(self):
-        keys = ['skill:3:2', 'npc:100', 'skill:3:10', 'npc:20001', 'npc:9']
-        self.assertEqual(sorted(keys, key=bundle_sort_key), ['npc:9', 'npc:100', 'npc:20001', 'skill:3:2', 'skill:3:10'])
+    def test_bundle_keys_order_npcs_then_skill_sound_rows_by_number(self):
+        keys = ['skill-sound-row:2', 'npc:100', 'skill-sound-row:10', 'npc:20001', 'npc:9']
+        self.assertEqual(sorted(keys, key=bundle_sort_key), ['npc:9', 'npc:100', 'npc:20001', 'skill-sound-row:2', 'skill-sound-row:10'])
 
     def test_a_slice_skips_sealed_bundles_converts_up_to_the_limit_and_runs_the_preflight_before_each(self):
         sealed_keys = ('npc:1', 'npc:3')
