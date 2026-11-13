@@ -10,6 +10,182 @@
     "npc": 5177,
     "skillSoundRow": 1398
   },
+  "casterIndexedRoutes": {
+    "skillsoundgrp": {
+      "cast": [
+        {
+          "fieldName": "mfighter_cast",
+          "fieldOrdinal": 29,
+          "meshClass": "LineageWarrior.MFighter",
+          "meshType": 0
+        },
+        {
+          "fieldName": "ffighter_cast",
+          "fieldOrdinal": 30,
+          "meshClass": "LineageWarrior.FFighter",
+          "meshType": 1
+        },
+        {
+          "fieldName": "mdarkelf_cast",
+          "fieldOrdinal": 31,
+          "meshClass": "LineageWarrior.MDarkElf",
+          "meshType": 2
+        },
+        {
+          "fieldName": "fdarkelf_cast",
+          "fieldOrdinal": 32,
+          "meshClass": "LineageWarrior.FDarkElf",
+          "meshType": 3
+        },
+        {
+          "fieldName": "mdwarf_cast",
+          "fieldOrdinal": 33,
+          "meshClass": "LineageWarrior.MDwarf",
+          "meshType": 4
+        },
+        {
+          "fieldName": "fdwarf_cast",
+          "fieldOrdinal": 34,
+          "meshClass": "LineageWarrior.FDwarf",
+          "meshType": 5
+        },
+        {
+          "fieldName": "melf_cast",
+          "fieldOrdinal": 35,
+          "meshClass": "LineageWarrior.MElf",
+          "meshType": 6
+        },
+        {
+          "fieldName": "felf_cast",
+          "fieldOrdinal": 36,
+          "meshClass": "LineageWarrior.FElf",
+          "meshType": 7
+        },
+        {
+          "fieldName": "mmagic_cast",
+          "fieldOrdinal": 37,
+          "meshClass": "LineageWarrior.MMagic",
+          "meshType": 8
+        },
+        {
+          "fieldName": "fmagic_cast",
+          "fieldOrdinal": 38,
+          "meshClass": "LineageWarrior.FMagic",
+          "meshType": 9
+        },
+        {
+          "fieldName": "morc_cast",
+          "fieldOrdinal": 39,
+          "meshClass": "LineageWarrior.MOrc",
+          "meshType": 10
+        },
+        {
+          "fieldName": "forc_cast",
+          "fieldOrdinal": 40,
+          "meshClass": "LineageWarrior.FOrc",
+          "meshType": 11
+        },
+        {
+          "fieldName": "mshaman_sub",
+          "fieldOrdinal": 41,
+          "meshClass": "LineageWarrior.MShaman",
+          "meshType": 12
+        },
+        {
+          "fieldName": "fshaman_sub",
+          "fieldOrdinal": 42,
+          "meshClass": "LineageWarrior.FShaman",
+          "meshType": 13
+        }
+      ],
+      "shot": [
+        {
+          "fieldName": "mfighter_magic",
+          "fieldOrdinal": 44,
+          "meshClass": "LineageWarrior.MFighter",
+          "meshType": 0
+        },
+        {
+          "fieldName": "ffighter_magic",
+          "fieldOrdinal": 45,
+          "meshClass": "LineageWarrior.FFighter",
+          "meshType": 1
+        },
+        {
+          "fieldName": "mdarkelf_magic",
+          "fieldOrdinal": 46,
+          "meshClass": "LineageWarrior.MDarkElf",
+          "meshType": 2
+        },
+        {
+          "fieldName": "fdarkelf_magic",
+          "fieldOrdinal": 47,
+          "meshClass": "LineageWarrior.FDarkElf",
+          "meshType": 3
+        },
+        {
+          "fieldName": "mdwarf_magic",
+          "fieldOrdinal": 48,
+          "meshClass": "LineageWarrior.MDwarf",
+          "meshType": 4
+        },
+        {
+          "fieldName": "fdwarf_magic",
+          "fieldOrdinal": 49,
+          "meshClass": "LineageWarrior.FDwarf",
+          "meshType": 5
+        },
+        {
+          "fieldName": "melf_magic",
+          "fieldOrdinal": 50,
+          "meshClass": "LineageWarrior.MElf",
+          "meshType": 6
+        },
+        {
+          "fieldName": "felf_magic",
+          "fieldOrdinal": 51,
+          "meshClass": "LineageWarrior.FElf",
+          "meshType": 7
+        },
+        {
+          "fieldName": "mmagic_throw",
+          "fieldOrdinal": 52,
+          "meshClass": "LineageWarrior.MMagic",
+          "meshType": 8
+        },
+        {
+          "fieldName": "fmagic_throw",
+          "fieldOrdinal": 53,
+          "meshClass": "LineageWarrior.FMagic",
+          "meshType": 9
+        },
+        {
+          "fieldName": "morc_magic",
+          "fieldOrdinal": 54,
+          "meshClass": "LineageWarrior.MOrc",
+          "meshType": 10
+        },
+        {
+          "fieldName": "forc_magic",
+          "fieldOrdinal": 55,
+          "meshClass": "LineageWarrior.FOrc",
+          "meshType": 11
+        },
+        {
+          "fieldName": "mshaman_magic",
+          "fieldOrdinal": 56,
+          "meshClass": "LineageWarrior.MShaman",
+          "meshType": 12
+        },
+        {
+          "fieldName": "fshaman_magic",
+          "fieldOrdinal": 57,
+          "meshClass": "LineageWarrior.FShaman",
+          "meshType": 13
+        }
+      ]
+    }
+  },
   "perTable": {
     "npcgrp": {
       "empty": 2566,
@@ -20,14 +196,14 @@
     "skillsoundgrp": {
       "empty": 0,
       "exactIdentity": 0,
-      "uniquePackageLeafCandidate": 2,
+      "uniquePackageLeafCandidate": 32,
       "unresolved": 0
     }
   },
   "references": {
     "empty": 2566,
     "exactIdentity": 0,
-    "uniquePackageLeafCandidate": 46082,
+    "uniquePackageLeafCandidate": 46112,
     "unresolved": 76
   },
   "routeProof": {
@@ -36,7 +212,7 @@
   },
   "routeRecipe": {
     "path": "recipes/actors/combat-sound-routes.json",
-    "sha256": "d8673d20dbc9297edb5e61addf7c9a9c9c51af4e4389905db404ee4fd4047438"
+    "sha256": "c3f53ef0a1ac0923432a0fdc9d31b9e62872ff8856a81e12e7c032f26f30a8b2"
   },
   "routes": {
     "alaudio": {
@@ -50,50 +226,114 @@
         "status": "bound"
       },
       "soulshot": {
-        "detail": "Action_Attack branch ss names no [Section] key",
-        "fieldName": null,
-        "fieldOrdinal": null,
-        "reason": "combat-role-route-unresolved:alaudio/soulshot",
-        "status": "unresolved"
+        "anchors": [
+          "Action_Attack 0x10626bb0",
+          "Action_Attack 0x10626210"
+        ],
+        "fieldName": "EtcSound.SoulShotSound",
+        "fieldOrdinal": 39,
+        "reason": null,
+        "status": "bound"
       }
     },
     "armorgrp": {
       "defense": {
-        "detail": "route proof names no serialization anchor for armorgrp",
-        "fieldName": null,
-        "fieldOrdinal": null,
-        "reason": "combat-role-route-unresolved:armorgrp/defense",
-        "status": "unresolved"
+        "anchors": [
+          "FL2ArmorItemData::Serialize 0x1044d1b0",
+          "item base serialize 0x1044c5f0",
+          "APawn::GetDefenseItemSound 0x1061f0a0",
+          "Action_Attack 0x10626bb0"
+        ],
+        "fieldName": "item_sound",
+        "fieldOrdinal": 48,
+        "reason": null,
+        "status": "bound"
       }
     },
     "chargrp": {
       "attackItem": {
-        "detail": "char loader names no sound member in DAT order",
-        "fieldName": null,
-        "fieldOrdinal": null,
-        "reason": "combat-role-route-unresolved:chargrp/attackItem",
-        "status": "unresolved"
+        "anchors": [
+          "FL2CharData::Serialize 0x1044c2c0",
+          "APawn::GetAttackItemSound 0x1061ec50",
+          "UAnimNotify_AttackItem::Notify 0x106bce40"
+        ],
+        "fieldName": "attack_sound",
+        "fieldOrdinal": 9,
+        "reason": null,
+        "status": "bound"
       },
       "attackVoice": {
-        "detail": "char loader names no sound member in DAT order",
-        "fieldName": null,
-        "fieldOrdinal": null,
-        "reason": "combat-role-route-unresolved:chargrp/attackVoice",
-        "status": "unresolved"
+        "anchors": [
+          "FL2CharData::Serialize 0x1044c2c0",
+          "APawn::GetAttackVoiceSound 0x10615810",
+          "UAnimNotify_AttackVoice::Notify 0x106bd860"
+        ],
+        "members": [
+          {
+            "fieldName": "voice_snd_hand",
+            "fieldOrdinal": 12,
+            "member": 0
+          },
+          {
+            "fieldName": "voice_snd_1hs",
+            "fieldOrdinal": 13,
+            "member": 1
+          },
+          {
+            "fieldName": "voice_snd_2hs",
+            "fieldOrdinal": 14,
+            "member": 2
+          },
+          {
+            "fieldName": "voice_snd_dual",
+            "fieldOrdinal": 15,
+            "member": 3
+          },
+          {
+            "fieldName": "voice_snd_pole",
+            "fieldOrdinal": 16,
+            "member": 4
+          },
+          {
+            "fieldName": "voice_snd_bow",
+            "fieldOrdinal": 17,
+            "member": 5
+          },
+          {
+            "fieldName": "voice_snd_unknown",
+            "fieldOrdinal": 18,
+            "member": 6
+          },
+          {
+            "fieldName": "voice_snd_fist",
+            "fieldOrdinal": 19,
+            "member": 7
+          }
+        ],
+        "reason": null,
+        "status": "bound"
       },
       "damage": {
-        "detail": "char loader names no sound member in DAT order",
-        "fieldName": null,
-        "fieldOrdinal": null,
-        "reason": "combat-role-route-unresolved:chargrp/damage",
-        "status": "unresolved"
+        "anchors": [
+          "FL2CharData::Serialize 0x1044c2c0",
+          "damage sound 0x1061f9a0",
+          "Action_Attack 0x10626bb0"
+        ],
+        "fieldName": "damage_sound",
+        "fieldOrdinal": 11,
+        "reason": null,
+        "status": "bound"
       },
       "defense": {
-        "detail": "char loader names no sound member in DAT order",
-        "fieldName": null,
-        "fieldOrdinal": null,
-        "reason": "combat-role-route-unresolved:chargrp/defense",
-        "status": "unresolved"
+        "anchors": [
+          "FL2CharData::Serialize 0x1044c2c0",
+          "APawn::GetDefenseItemSound 0x1061f0a0",
+          "Action_Attack 0x10626bb0"
+        ],
+        "fieldName": "defense_sound",
+        "fieldOrdinal": 10,
+        "reason": null,
+        "status": "bound"
       }
     },
     "npcgrp": {
@@ -193,11 +433,16 @@
     },
     "weapongrp": {
       "attackItem": {
-        "detail": "item base serialize 0x1044c5f0 names no sound member in DAT order",
-        "fieldName": null,
-        "fieldOrdinal": null,
-        "reason": "combat-role-route-unresolved:weapongrp/attackItem",
-        "status": "unresolved"
+        "anchors": [
+          "weapon serialize 0x1044dc60",
+          "item base serialize 0x1044c5f0",
+          "APawn::GetAttackItemSound 0x1061ec50",
+          "UAnimNotify_AttackItem::Notify 0x106bce40"
+        ],
+        "fieldName": "item_sound",
+        "fieldOrdinal": 19,
+        "reason": null,
+        "status": "bound"
       }
     }
   },
@@ -5380,6 +5625,168 @@
     "npc:35645",
     "npc:35646",
     "npc:35647",
-    "skill-sound-row:3"
-  ]
+    "skill-sound-row:3",
+    "skill-sound-row:288"
+  ],
+  "unroutedFields": {
+    "skillsoundgrp": [
+      {
+        "fields": [
+          {
+            "fieldName": "mfighter_cast",
+            "fieldOrdinal": 29
+          },
+          {
+            "fieldName": "ffighter_cast",
+            "fieldOrdinal": 30
+          },
+          {
+            "fieldName": "mdarkelf_cast",
+            "fieldOrdinal": 31
+          },
+          {
+            "fieldName": "fdarkelf_cast",
+            "fieldOrdinal": 32
+          },
+          {
+            "fieldName": "mdwarf_cast",
+            "fieldOrdinal": 33
+          },
+          {
+            "fieldName": "fdwarf_cast",
+            "fieldOrdinal": 34
+          },
+          {
+            "fieldName": "melf_cast",
+            "fieldOrdinal": 35
+          },
+          {
+            "fieldName": "felf_cast",
+            "fieldOrdinal": 36
+          },
+          {
+            "fieldName": "mmagic_cast",
+            "fieldOrdinal": 37
+          },
+          {
+            "fieldName": "fmagic_cast",
+            "fieldOrdinal": 38
+          },
+          {
+            "fieldName": "morc_cast",
+            "fieldOrdinal": 39
+          },
+          {
+            "fieldName": "forc_cast",
+            "fieldOrdinal": 40
+          },
+          {
+            "fieldName": "mshaman_sub",
+            "fieldOrdinal": 41
+          },
+          {
+            "fieldName": "fshaman_sub",
+            "fieldOrdinal": 42
+          },
+          {
+            "fieldName": "RESERVED_sub_",
+            "fieldOrdinal": 43
+          }
+        ],
+        "reason": "skill-sound-caster-index-unresolved:cast"
+      },
+      {
+        "fields": [
+          {
+            "fieldName": "mfighter_magic",
+            "fieldOrdinal": 44
+          },
+          {
+            "fieldName": "ffighter_magic",
+            "fieldOrdinal": 45
+          },
+          {
+            "fieldName": "mdarkelf_magic",
+            "fieldOrdinal": 46
+          },
+          {
+            "fieldName": "fdarkelf_magic",
+            "fieldOrdinal": 47
+          },
+          {
+            "fieldName": "mdwarf_magic",
+            "fieldOrdinal": 48
+          },
+          {
+            "fieldName": "fdwarf_magic",
+            "fieldOrdinal": 49
+          },
+          {
+            "fieldName": "melf_magic",
+            "fieldOrdinal": 50
+          },
+          {
+            "fieldName": "felf_magic",
+            "fieldOrdinal": 51
+          },
+          {
+            "fieldName": "mmagic_throw",
+            "fieldOrdinal": 52
+          },
+          {
+            "fieldName": "fmagic_throw",
+            "fieldOrdinal": 53
+          },
+          {
+            "fieldName": "morc_magic",
+            "fieldOrdinal": 54
+          },
+          {
+            "fieldName": "forc_magic",
+            "fieldOrdinal": 55
+          },
+          {
+            "fieldName": "mshaman_magic",
+            "fieldOrdinal": 56
+          },
+          {
+            "fieldName": "fshaman_magic",
+            "fieldOrdinal": 57
+          },
+          {
+            "fieldName": "RESERVED_throw_?",
+            "fieldOrdinal": 58
+          }
+        ],
+        "reason": "skill-sound-caster-index-unresolved:shot"
+      },
+      {
+        "fields": [
+          {
+            "fieldName": "spelleffect_sound_3",
+            "fieldOrdinal": 4
+          }
+        ],
+        "reason": "skill-sound-member-unrouted:4"
+      },
+      {
+        "fields": [
+          {
+            "fieldName": "shoteffect_sound_3",
+            "fieldOrdinal": 13
+          }
+        ],
+        "reason": "skill-sound-member-unrouted:13"
+      },
+      {
+        "fields": [
+          {
+            "fieldName": "expeffect_sound_3",
+            "fieldOrdinal": 22
+          }
+        ],
+        "reason": "skill-sound-member-unrouted:22"
+      }
+    ]
+  }
 }
