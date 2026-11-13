@@ -15,8 +15,8 @@ from reference_client_guard import require_reference_client
 from world.committed_world_data import REPOSITORY_ROOT, require_committed_destination, write_committed_world_bytes
 from world.minimap_join import (HUNTINGZONE_TABLE_ROLE, RADAR_PACKAGE_ROLE, TEXTURE_SOURCE_READABLE_STATUS, TOWN_MAP_PACKAGE_ROLE, ZONE_NAME_PACKAGE_ROLE,
                                 ZONENAME_TABLE_ROLE, join_minimap_sources, locked_tile_grid)
-from world.minimap_sources import MINIMAP_PACKAGE_PATHS, MINIMAP_TABLE_PATHS, locked_tile_ids, tile_frame_extent
-from world.minimap_step import read_minimap_sources, read_texture_package_index
+from world.minimap_sources import MINIMAP_PACKAGE_PATHS, MINIMAP_TABLE_PATHS, MinimapSources, decoded_table_rows, locked_tile_ids, tile_frame_extent
+from world.minimap_textures import read_texture_package_index
 from world.raw_map_step import read_tile_map_lock_record
 from world.tile_census import reference_tree_lock_sha256
 from world.tile_chunk_plan import ChunkPlanStepError, sealed_chunk_plan
@@ -29,6 +29,13 @@ ELBERA_MINIMAP_CITATION = 'Elbera tools/maps/build_minimap.py at 12c9656'
 MINIMAP_CONTROL_TYPE = 'MinimapCtrl'
 DATA_SCRIPTS_ROOT = SCRIPTS_ROOT / 'data'
 UNAVAILABLE_PREFIX = 'unavailable: '
+
+
+def read_minimap_sources(client_access):
+    packages = {role: read_texture_package_index(client_access.root, path) if client_access.is_in_read_scope(path) else None
+                for role, path in MINIMAP_PACKAGE_PATHS.items()}
+    tables = {role: decoded_table_rows(client_access.root, role) if client_access.is_in_read_scope(path) else None for role, path in MINIMAP_TABLE_PATHS.items()}
+    return MinimapSources(packages, tables)
 
 
 def extracted_tile_frames(project_root, tile_ids):
@@ -125,7 +132,7 @@ def build_minimap_join_census(client_access):
     tile_ids = locked_tile_ids()
     lock_equal = client_access.is_in_read_scope(WORLD_MAP_PIECES_PACKAGE_PATH)
     world_map_package = read_texture_package_index(client_access.root, WORLD_MAP_PIECES_PACKAGE_PATH) if lock_equal else None
-    return minimap_join_census(reference_tree_lock_sha256(client_access.lock.document), read_minimap_sources(client_access.root), tile_ids,
+    return minimap_join_census(reference_tree_lock_sha256(client_access.lock.document), read_minimap_sources(client_access), tile_ids,
                                extracted_tile_frames(REPOSITORY_ROOT, tile_ids), world_map_pieces(world_map_package), decoded_minimap_controls(client_access))
 
 

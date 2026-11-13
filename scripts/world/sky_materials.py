@@ -1,10 +1,9 @@
 import hashlib
 import io
-from pathlib import Path
 from typing import NamedTuple
 
 import PIL
-from PIL import DdsImagePlugin, Image
+from PIL import Image
 
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib.material_graph import read_material_graph
@@ -13,13 +12,10 @@ from native_assets_lib.texture_dds import UnsupportedTextureDDS, build_texture_d
 from native_assets_lib.texture_mips import UnsupportedTextureSource, build_texture_source
 from native_assets_lib.texture_source_reader import TEXTURE_FORMAT_UNSUPPORTED_REASON_PREFIX
 from native_catalog.ue2 import FormatError
-from world.bsp_reader_binding import pinned_bytes
 from world.class_default_reads import kept_material_class_defaults
 from world.material_texture_images import TEXTURE_CLASS, material_texture_image_pins, reviewed_texture_nodes
+from world.pinned_image_decoder import DDS_PLUGIN_SHA256, IMAGING_BINARY_SHA256, require_pinned_image_decoder
 
-PINNED_PILLOW_VERSION = '12.3.0'
-DDS_PLUGIN_SHA256 = 'eae2016bb3476be917ff549086c18b89d8e911d0f6d3f0900486a90fe2808cac'
-IMAGING_BINARY_SHA256 = 'c8c519ec72bf75b2945b4fc4afa854af2fca8b970a403134f9ddda3e164d85e9'
 OBJECT_PROPERTY_IMPORT_TARGET = 'import'
 SKY_MATERIAL_EXTERNAL_REASON_PREFIX = 'sky-material-external:'
 SKY_TEXTURE_FORMAT_UNSUPPORTED_REASON_PREFIX = 'sky-texture-format-unsupported:'
@@ -85,20 +81,13 @@ def native_texture_source(package, item):
         raise SkyTextureUnsupported(error.reason, str(error)) from error
 
 
-def require_pinned_decoder():
-    if PIL.__version__ != PINNED_PILLOW_VERSION:
-        raise FormatError(f'sky textures decode only with the pinned Pillow {PINNED_PILLOW_VERSION}, found {PIL.__version__}')
-    pinned_bytes(Path(DdsImagePlugin.__file__), DDS_PLUGIN_SHA256)
-    pinned_bytes(Path(Image.core.__file__), IMAGING_BINARY_SHA256)
-
-
 def sky_texture_products(package, texture_export):
     metadata, originals = native_texture_source(package, texture_export)
     try:
         dds_metadata, dds_files = build_texture_dds(metadata, originals)
     except UnsupportedTextureDDS as error:
         raise format_unsupported(metadata['format']['id'], str(error)) from error
-    require_pinned_decoder()
+    require_pinned_image_decoder()
     dds = dds_files['texture.dds']
     width, height = metadata['mips'][0]['width'], metadata['mips'][0]['height']
     image = Image.open(io.BytesIO(dds)).convert('RGBA')

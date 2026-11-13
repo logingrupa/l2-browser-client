@@ -64,7 +64,7 @@ describe("planWorldMapView", () => {
     const plan = planWorldMapView({ controlWidth: 3 * size, controlHeight: size, tiles: [tile("20_21"), tile("21_21", false)],
       playerScenePosition: centreOf2021 });
     expect(plan.cells.find(cell => cell.tileId === "19_21")).toMatchObject({ status: "gap", reason: notInCatalogReason });
-    expect(plan.cells.find(cell => cell.tileId === "21_21")).toMatchObject({ status: "gap", reason: "minimap-join-unresolved:radar-texture" });
+    expect(plan.cells.find(cell => cell.tileId === "21_21")).toMatchObject({ status: "gap", reason: "minimap-join-unresolved:zone-title-source" });
     const absentResource = planWorldMapView({ controlWidth: 3 * size, controlHeight: size, tiles: [tile("20_21"), { tileId: "21_21", minimap: null }],
       playerScenePosition: centreOf2021 });
     expect(absentResource.cells.find(cell => cell.tileId === "21_21")).toMatchObject({ status: "gap", reason: notInCatalogReason });

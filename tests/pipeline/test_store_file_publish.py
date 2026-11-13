@@ -21,7 +21,7 @@ from support.item_unit_worker_runs import wait_until_path_exists
 from support.store_file_publish_programs import synthetic_store_files
 from synthetic_class_scripts import scratch_work_root
 from test_material_program_images import synthetic_png_bytes
-from world import bsp_step, material_texture_images, minimap_step, static_mesh_step, tile_json_resource
+from world import bsp_step, material_texture_images, minimap_textures, static_mesh_step, tile_json_resource
 from world.static_mesh_step import ConvertedStaticMesh
 
 STORE_FILE_PUBLISH_PROGRAM = '\n'.join([
@@ -35,7 +35,7 @@ PUBLISHING_PROCESS_NAMES = ('first', 'second')
 FILE_COUNT_OF_THE_TWO_PROCESS_PUBLISH = 600
 OTHER_WRITER_PAYLOAD = b'bytes of another writer'
 CATALOG_BYTES = b'{"schemaVersion": 1, "models": []}'
-WORLD_MODULES_THAT_PUBLISH_STORE_FILES = {'bsp_step', 'material_texture_images', 'minimap_step', 'static_mesh_step', 'tile_json_resource'}
+WORLD_MODULES_THAT_PUBLISH_STORE_FILES = {'bsp_step', 'material_texture_images', 'minimap_textures', 'static_mesh_step', 'tile_json_resource'}
 WORLD_MODULE_THAT_WRITES_A_PRIVATE_ASSET_FOLDER = 'typed_payload'
 
 
@@ -157,13 +157,13 @@ class WorldStepStorePublishTests(StoreLockRecordingTestCase):
         self.assert_every_call_held_the_store_lock(['immutable_write'] * 2)
         self.assertEqual([output['path'] for output in outputs], [f'l2/{relative}' for relative in self.published_relative_paths()])
 
-    def test_a_converted_radar_texture_is_published_under_the_store_lock(self):
-        archive, converted_folder = b'synthetic radar texture archive', self.project_root / 'converted'
+    def test_a_converted_minimap_texture_is_published_under_the_store_lock(self):
+        archive, converted_folder = b'synthetic minimap texture archive', self.project_root / 'converted'
         converted_folder.mkdir()
-        (converted_folder / minimap_step.TEXTURE_ARCHIVE_NAME).write_bytes(archive)
-        (converted_folder / minimap_step.TEXTURE_IMAGE_NAME).write_bytes(synthetic_png_bytes())
-        conversion = {'file': str(converted_folder / minimap_step.TEXTURE_ARCHIVE_NAME), 'sha256': hashlib.sha256(archive).hexdigest()}
-        _, _, output = minimap_step.store_converted_radar_texture(self.store_root, conversion, {'object': 'L2_Radar.Radar_20_20', 'rule': 'radar-name'})
+        (converted_folder / minimap_textures.TEXTURE_ARCHIVE_NAME).write_bytes(archive)
+        conversion = {'file': str(converted_folder / minimap_textures.TEXTURE_ARCHIVE_NAME), 'sha256': hashlib.sha256(archive).hexdigest()}
+        texture_conversion = minimap_textures.MinimapTextureConversion(conversion, synthetic_png_bytes())
+        _, _, output = minimap_textures.store_converted_texture(self.store_root, texture_conversion, {'object': 'l2zonename.20_20', 'rule': 'zone-sampler-tile'})
         self.assert_every_call_held_the_store_lock(['immutable_write'])
         self.assertEqual(self.published_relative_paths(), [output['path'].removeprefix('l2/')])
 

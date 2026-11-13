@@ -86,7 +86,7 @@ describe("renderMinimapControl", () => {
     const cells = control.querySelectorAll("[data-native-minimap-tile]");
     expect(cells.map(cell => cell.getAttribute("data-native-minimap-tile"))).toEqual(["19_20", "20_20", "19_21", "20_21"]);
     expect(cells.map(cell => cell.getAttribute("data-native-gap"))).toEqual([
-      "tile minimap resource not in catalog", "tile minimap resource not in catalog", "minimap-join-unresolved:radar-texture", null]);
+      "tile minimap resource not in catalog", "tile minimap resource not in catalog", "minimap-join-unresolved:zone-title-source", null]);
     expect(control.getAttribute("data-native-minimap-arrangement")).toBe("tile-grid, unverified");
     expect(control.getAttribute("data-native-minimap-scale")).toBe("one texture pixel per CSS pixel, presentation");
     expect(control.style.overflow).toBe("hidden");

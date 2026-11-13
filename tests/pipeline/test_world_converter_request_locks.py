@@ -16,9 +16,8 @@ sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 from native_store.interprocess_lock import lane_lock_folder
 from native_store.store_paths import lane_work_root
 from test_world_audio_step import wav_bytes
-from world import exact_sound_sources, minimap_step, mover_step, static_mesh_step
+from world import exact_sound_sources, minimap_textures, mover_step, static_mesh_step
 from world.exact_sound_sources import ResolvedSound
-from world.minimap_join import RADAR_PACKAGE_ROLE
 from world.mover_class_defaults import MOVER_CLASS_UNIT_KEY
 from world.tile_census import WORLD_LANE_NAME
 
@@ -82,20 +81,18 @@ class ConverterRequestLockTests(unittest.TestCase):
         converter.convert.assert_not_called()
         self.assertEqual((converted.wav, converted.archive_sha256), (audio, 'b' * 64))
 
-    def test_a_radar_texture_conversion_goes_through_the_request_lock(self):
+    def test_a_minimap_texture_conversion_goes_through_the_request_lock(self):
         converter = mock.Mock()
-        radar_texture = {'object': 'L2_Radar.Radar_20_20', 'rule': 'radar-name'}
-        sources = mock.Mock(packages={RADAR_PACKAGE_ROLE: {'packageName': 'L2_Radar'}})
-        conversion = {'file': 'converted/asset.l2asset', 'sha256': 'a' * 64}
-        radar_record, output = {'archive': '/l2/a/asset.l2asset'}, {'path': 'l2/a/asset.l2asset'}
-        with mock.patch.object(minimap_step, 'convert_under_request_lock', return_value=conversion) as request_lock, \
-                mock.patch.object(minimap_step, 'join_tile_minimap', return_value={'radarTexture': radar_texture}) as join, \
-                mock.patch.object(minimap_step, 'store_converted_radar_texture', return_value=(radar_record, (256, 256), output)) as store:
-            minimap = minimap_step.tile_minimap('project', 'client', 'store', TILE_ID, 'frame', sources, converter)
-        request_lock.assert_called_once_with(converter, {'kind': 'texture', 'package': 'L2_Radar', 'object': 'L2_Radar.Radar_20_20'})
-        store.assert_called_once_with('store', conversion, radar_texture)
+        with tempfile.TemporaryDirectory() as directory:
+            archive_path = Path(directory) / 'asset.l2asset'
+            archive_path.write_bytes(b'synthetic minimap texture archive')
+            (Path(directory) / 'texture.png').write_bytes(b'png')
+            conversion = {'file': str(archive_path), 'sha256': hashlib.sha256(archive_path.read_bytes()).hexdigest()}
+            with mock.patch.object(minimap_textures, 'convert_under_request_lock', return_value=conversion) as request_lock:
+                converted, reason = minimap_textures.convert_minimap_texture(converter, 'l2zonename', 'l2zonename.20_21')
+        request_lock.assert_called_once_with(converter, {'kind': 'texture', 'package': 'l2zonename', 'object': 'l2zonename.20_21'})
         converter.convert.assert_not_called()
-        self.assertEqual(minimap, (join.return_value, radar_record, [output], []))
+        self.assertEqual((converted.conversion, converted.image, reason), (conversion, b'png', None))
 
 
 class MoverClassUnitLockTests(unittest.TestCase):

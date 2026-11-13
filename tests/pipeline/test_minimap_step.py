@@ -10,17 +10,17 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
-from native_assets_lib.lineage_material_prefix import NO_MATERIAL_PREFIX
-from native_assets_lib.texture_package_118 import read_unreal_package
+from minimap_route_fixture import seal_synthetic_minimap_route
 from native_store.gap_rows import is_listed_reason, load_gap_reason_patterns
 from native_store.store_paths import lane_work_root
 from native_store.tile_manifest_validation import (TILE_MANIFEST_KIND, TILE_MANIFEST_SCHEMA_VERSION, TileManifestError, load_tile_manifest_vocabulary,
                                                    validate_tile_manifest)
 from native_store.unit_ledger import UnitLedger
-from world.minimap_join import RADAR_PACKAGE_ROLE, TOWN_MAP_PACKAGE_ROLE, ZONE_NAME_PACKAGE_ROLE, ZONENAME_TABLE_ROLE, HUNTINGZONE_TABLE_ROLE
-from world import minimap_step
+from world import minimap_route_step, minimap_step
+from world.minimap_join import HUNTINGZONE_TABLE_ROLE, ZONE_NAME_PACKAGE_ROLE, ZONENAME_TABLE_ROLE
 from world.minimap_sources import MinimapSources, locked_tile_ids, tile_frame_extent
-from world.minimap_step import MINIMAP_STEP_NAME, MinimapStepError, run_minimap_step, sealed_minimap, texture_package_index
+from world.minimap_step import MINIMAP_STEP_NAME, run_minimap_step, sealed_minimap
+from world.minimap_textures import MinimapTextureError
 from world.raw_map_step import (PRODUCTS_FOLDER_NAME, RAW_MAP_STEP_ALGORITHM_VERSION, RAW_STEP_NAME, raw_map_recipe, read_tile_map_lock_record,
                                 tile_unit_key)
 from world.tile_census import WORLD_LANE_NAME
@@ -28,18 +28,13 @@ from world.tile_census_validation import ELIGIBLE_STATUS, TILE_CENSUS_RELATIVE_P
 from world.tile_chunk_plan import CHUNK_PLAN_PRODUCT_NAME, CHUNK_PLAN_STEP_ALGORITHM_VERSION, CHUNK_PLAN_STEP_NAME, chunk_plan_unit_config
 from world.tile_manifest_step import TILE_MANIFEST_STEP_NAME, tile_resources
 from world.tile_step_registry import TILE_STEP_NAMES
-from texture_layout_fixture import PACKAGE_VERSION_OFFSET, TEXTURE_CLASS_REFERENCE, TEXTURE_IMPORTS, TEXTURE_PROPERTY_NAMES, synthetic_texture_body
-from ue2_package_fixture import package_bytes
 
 TILE_ID = '20_21'
 CLIENT_ROOT = Path('E:/Lineage2-client')
 PACKAGE_SHA256 = '3' * 64
 TABLE_SHA256 = '4' * 64
-RADAR_PACKAGE_FILENAME = 'L2_RadarMap.utx'
-RADAR_PACKAGE_PATH = f'systextures/{RADAR_PACKAGE_FILENAME}'
-DXT1_FORMAT = 3
-RGBA8_FORMAT = 5
-READABLE_DXT1_SOURCE = {'status': 'readable', 'format': 'DXT1'}
+ROUTE_REASONS = ['minimap-join-unresolved:zone-title-source', 'minimap-join-unresolved:radar-anchor']
+READABLE_P8_SOURCE = {'status': 'readable', 'format': 'P8'}
 CHUNK_PLAN_FRAME = {'heightmapDimensions': [256, 256], 'location': [16384.0, 114688.0, 160.0], 'terrainScale': [128.0, 128.0, 76.0],
                     'terrainInfo': '20_21.TerrainInfo0'}
 
@@ -76,34 +71,24 @@ def write_project(project_root, census_status=ELIGIBLE_STATUS, seal_raw=True, se
                      json.dumps({'tileId': TILE_ID, 'frame': CHUNK_PLAN_FRAME}).encode('utf-8'))
 
 
-def texture_package(name, export_names, version):
-    return {'path': f'systextures/{name}.utx', 'sha256': PACKAGE_SHA256, 'packageVersion': version[0], 'licensee': version[1], 'packageName': name,
-            'exports': [{'exportIndex': index, 'name': export_name, 'object': f'{name}.Maps.{export_name}', 'textureSource': dict(READABLE_DXT1_SOURCE)}
-                        for index, export_name in enumerate(export_names, 1)]}
+def zone_name_package(export_names):
+    return {'path': 'systextures/l2zonename.utx', 'sha256': PACKAGE_SHA256, 'packageVersion': 123, 'licensee': 28, 'packageName': 'l2zonename',
+            'exports': [{'exportIndex': index, 'name': name, 'object': f'l2zonename.{name}', 'textureSource': dict(READABLE_P8_SOURCE)}
+                        for index, name in enumerate(export_names, 1)]}
 
 
-def synthetic_radar_package_index(package_version, licensee, format_id=DXT1_FORMAT):
-    fixture = {'packageVersion': package_version, 'licensee': licensee, 'materialPrefix': NO_MATERIAL_PREFIX,
-               'syntheticBody': {'formatId': format_id, 'reservedInt32': 0, 'mips': [[2, 2], [1, 1]]}}
-    data = bytearray(package_bytes(TEXTURE_PROPERTY_NAMES, TEXTURE_IMPORTS,
-                                   [{'name': TILE_ID, 'class': TEXTURE_CLASS_REFERENCE, 'body': synthetic_texture_body(fixture)}]))
-    struct.pack_into('<HH', data, PACKAGE_VERSION_OFFSET, package_version, licensee)
-    return texture_package_index(read_unreal_package(bytes(data), RADAR_PACKAGE_FILENAME), RADAR_PACKAGE_PATH)
-
-
-def synthetic_sources(radar_index=None):
+def synthetic_sources(export_names=(TILE_ID,)):
     table = lambda name, rows: {'table': name, 'path': f'system/{name}-e.dat', 'sha256': TABLE_SHA256, 'rows': rows}
     return MinimapSources(
-        {RADAR_PACKAGE_ROLE: radar_index or texture_package('Radar', [TILE_ID], (123, 28)), TOWN_MAP_PACKAGE_ROLE: texture_package('town_map', [], (123, 23)),
-         ZONE_NAME_PACKAGE_ROLE: texture_package('l2zonename', [TILE_ID], (123, 28))},
-        {ZONENAME_TABLE_ROLE: table('zonename', [{'ID': 1, 'MapX': 20, 'MapY': 21, 'Name': 'Gludio Territory', 'map': ''}]),
+        {ZONE_NAME_PACKAGE_ROLE: zone_name_package(list(export_names))},
+        {ZONENAME_TABLE_ROLE: table('zonename', [{'ID': 1, 'Color': 210, 'MapX': 20, 'MapY': 21, 'Top': 1.0, 'Bottom': -1.0, 'Name': 'Here', 'map': ''}]),
          HUNTINGZONE_TABLE_ROLE: table('huntingzone', [{'id': 4, 'name': 'Cruma Marshlands', 'loc': {'start_npc_x': 5106.0, 'start_npc_y': 126916.0,
                                                                                                       'start_npc_z': -3664.0}}])})
 
 
 class SyntheticTextureConverter:
-    def __init__(self, output, dimensions=(256, 256)):
-        self.output, self.dimensions, self.requests = Path(output), dimensions, []
+    def __init__(self, output):
+        self.output, self.requests = Path(output), []
 
     def convert(self, request):
         self.requests.append(request)
@@ -111,7 +96,7 @@ class SyntheticTextureConverter:
         target = self.output / hashlib.sha256(archive).hexdigest()
         target.mkdir(parents=True, exist_ok=True)
         (target / 'asset.l2asset').write_bytes(archive)
-        (target / 'texture.png').write_bytes(png_header(*self.dimensions))
+        (target / 'texture.png').write_bytes(png_header(128, 128))
         return {'file': str(target / 'asset.l2asset'), 'sha256': hashlib.sha256(archive).hexdigest()}
 
 
@@ -130,96 +115,106 @@ class MisreportedArchiveConverter(SyntheticTextureConverter):
 
 class MinimapStepTests(unittest.TestCase):
     def setUp(self):
-        self.temporary_directory = tempfile.TemporaryDirectory()
-        self.project_root = Path(self.temporary_directory.name)
+        temporary_directory = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary_directory.cleanup)
+        self.project_root = Path(temporary_directory.name)
         self.converter = SyntheticTextureConverter(self.project_root / 'converter')
-
-    def tearDown(self):
-        self.temporary_directory.cleanup()
+        self.store_root = self.project_root / 'artifacts' / 'lane-store' / WORLD_LANE_NAME / 'l2'
 
     def read_manifest(self):
         _, product = sealed_minimap(self.project_root, TILE_ID, read_tile_map_lock_record(TILE_ID))
-        store_root = self.project_root / 'artifacts' / 'lane-store' / WORLD_LANE_NAME
-        return product, json.loads((store_root / product['manifest']['resource'].removeprefix('/')).read_bytes())
+        return product, json.loads((self.store_root / product['manifest']['resource'].removeprefix('/l2/')).read_bytes())
 
-    def test_the_step_writes_the_manifest_seals_the_unit_and_skips_on_rerun(self):
+    def run_step(self, sources=None, converter=None):
+        return run_minimap_step(self.project_root, CLIENT_ROOT, TILE_ID, sources or synthetic_sources(), converter or self.converter)
+
+    def test_the_step_writes_schema_2_pinning_the_route_and_the_zone_key_texture_and_skips_on_rerun(self):
         write_project(self.project_root)
-        row = run_minimap_step(self.project_root, CLIENT_ROOT, TILE_ID, synthetic_sources(), self.converter)
-        self.assertEqual((row['step'], row['status'], row['reason']), (MINIMAP_STEP_NAME, 'pass', None))
+        route_record = seal_synthetic_minimap_route(self.project_root)
+        row = self.run_step()
+        self.assertEqual((row['step'], row['status'], row['reason']), (MINIMAP_STEP_NAME, 'gap', ROUTE_REASONS[1]))
         product, manifest = self.read_manifest()
         self.assertRegex(product['manifest']['resource'], r'^/l2/maps/[a-f0-9]{64}/native-tile-minimap/manifest\.json$')
-        self.assertEqual((manifest['kind'], manifest['schemaVersion'], manifest['tileId']), ('native-tile-minimap', 1, TILE_ID))
-        self.assertEqual(manifest['radarTexture']['rule'], 'tile-id')
-        self.assertEqual(manifest['radarTexture']['archive'], f'/l2/{manifest["radarTexture"]["archiveSha256"]}/asset.l2asset')
-        self.assertEqual(manifest['projection']['frameMinimumNative'], [0.0, 98304.0])
-        self.assertEqual(manifest['projection']['frameMaximumNative'], [32640.0, 130944.0])
-        self.assertEqual([zone['id'] for zone in manifest['zones']], [1])
+        self.assertEqual((manifest['kind'], manifest['schemaVersion'], manifest['tileId']), ('native-tile-minimap', 2, TILE_ID))
+        self.assertEqual(manifest['route'], {'manifest': route_record['resource'], 'manifestSha256': route_record['sha256'],
+                                             'manifestBytes': route_record['bytes']})
+        self.assertEqual((manifest['radarTexture'], manifest['projection']), (None, None))
+        texture = manifest['zoneKeyTexture']
+        self.assertEqual((texture['sourceObject'], texture['rule'], texture['source']['exportIndex']), (f'l2zonename.{TILE_ID}', 'zone-sampler-tile', 1))
+        self.assertTrue((self.store_root / texture['archiveSha256'] / 'asset.l2asset').is_file())
         self.assertEqual([zone['id'] for zone in manifest['huntingZones']], [4])
-        self.assertEqual(manifest['labels'], {'schemaFieldMeaning': 'schema field name, meaning unverified on IMPORTA'})
-        store_root = self.project_root / 'artifacts' / 'lane-store' / WORLD_LANE_NAME / 'l2'
-        self.assertTrue((store_root / manifest['radarTexture']['archiveSha256'] / 'asset.l2asset').is_file())
-        rerun = run_minimap_step(self.project_root, CLIENT_ROOT, TILE_ID, synthetic_sources(), self.converter)
-        self.assertEqual(rerun['status'], 'pass')
+        self.assertEqual([gap['reason'] for gap in manifest['gaps']], ROUTE_REASONS)
+        self.assertEqual(sorted(gap['reason'] for gap in product['gapRows']), sorted(ROUTE_REASONS))
+        self.assertEqual(self.converter.requests, [{'kind': 'texture', 'package': 'l2zonename', 'object': f'l2zonename.{TILE_ID}'}])
+        self.assertEqual(self.run_step()['reason'], ROUTE_REASONS[1])
         self.assertEqual(len(self.converter.requests), 1)
+
+    def test_a_tile_with_an_overlapping_key_run_lists_the_zone_key_run_gap(self):
+        write_project(self.project_root)
+        seal_synthetic_minimap_route(self.project_root, [TILE_ID])
+        self.run_step()
+        _, manifest = self.read_manifest()
+        self.assertEqual([gap['reason'] for gap in manifest['gaps']], [*ROUTE_REASONS, 'minimap-join-unresolved:zone-key-run'])
+
+    def test_a_changed_route_fingerprint_reseals_the_tile(self):
+        write_project(self.project_root)
+        seal_synthetic_minimap_route(self.project_root)
+        self.run_step()
+        changed_config = {'recipeSha256': '1' * 64, 'converterSha256': '2' * 64}
+        with mock.patch.object(minimap_route_step, 'minimap_route_config', return_value=changed_config):
+            self.assertEqual(sealed_minimap(self.project_root, TILE_ID, read_tile_map_lock_record(TILE_ID)), (None, None))
+            seal_synthetic_minimap_route(self.project_root)
+            self.run_step()
+            self.assertIsNotNone(sealed_minimap(self.project_root, TILE_ID, read_tile_map_lock_record(TILE_ID))[0])
+        self.assertEqual(len(self.converter.requests), 2)
 
     def test_a_changed_converter_implementation_reconverts_a_sealed_tile(self):
         write_project(self.project_root)
+        seal_synthetic_minimap_route(self.project_root)
         with mock.patch.object(minimap_step, 'implementation_hash', return_value='a' * 64):
-            run_minimap_step(self.project_root, CLIENT_ROOT, TILE_ID, synthetic_sources(), self.converter)
+            self.run_step()
         with mock.patch.object(minimap_step, 'implementation_hash', return_value='b' * 64):
-            rerun = run_minimap_step(self.project_root, CLIENT_ROOT, TILE_ID, synthetic_sources(), self.converter)
-        self.assertEqual(rerun['status'], 'pass')
+            self.run_step()
         self.assertEqual(len(self.converter.requests), 2)
 
-    def test_a_converter_refusal_of_the_radar_texture_is_a_sealed_decode_gap(self):
+    def test_a_tile_without_a_current_route_runs_the_route_unit_first(self):
         write_project(self.project_root)
-        converter = FailingTextureConverter(self.project_root / 'converter', ValueError('UModel failed or reported an error; inspect export.log'))
-        row = run_minimap_step(self.project_root, CLIENT_ROOT, TILE_ID, synthetic_sources(), converter)
-        self.assertEqual((row['status'], row['reason']), ('gap', 'decode-failed:ValueError:UModel failed or reported an error'))
+        with mock.patch.object(minimap_step, 'run_minimap_route_step', side_effect=lambda project_root, client, converter:
+                               seal_synthetic_minimap_route(project_root)) as route_step:
+            self.run_step()
+        route_step.assert_called_once()
         self.assertIsNotNone(sealed_minimap(self.project_root, TILE_ID, read_tile_map_lock_record(TILE_ID))[0])
 
-    def test_an_environment_failure_during_radar_conversion_propagates_and_leaves_the_unit_unsealed(self):
+    def test_a_converter_refusal_of_the_zone_key_texture_is_a_sealed_decode_gap(self):
         write_project(self.project_root)
-        converter = FailingTextureConverter(self.project_root / 'converter', PermissionError('umodel.exe is locked'))
+        seal_synthetic_minimap_route(self.project_root)
+        self.run_step(converter=FailingTextureConverter(self.project_root / 'converter', ValueError('UModel failed or reported an error; inspect export.log')))
+        product, manifest = self.read_manifest()
+        self.assertIsNone(manifest['zoneKeyTexture'])
+        self.assertEqual(manifest['gaps'][-1], {'reason': 'decode-failed:ValueError:UModel failed or reported an error', 'evidence': f'l2zonename.{TILE_ID}'})
+        self.assertIn(f'l2zonename.{TILE_ID}', [row['sourceIdentity'].get('object') for row in product['gapRows']])
+
+    def test_a_tile_without_a_zone_key_texture_export_keeps_a_null_texture_without_a_conversion(self):
+        write_project(self.project_root)
+        seal_synthetic_minimap_route(self.project_root)
+        self.run_step(sources=synthetic_sources(['21_21']))
+        _, manifest = self.read_manifest()
+        self.assertIsNone(manifest['zoneKeyTexture'])
+        self.assertEqual(self.converter.requests, [])
+
+    def test_an_environment_failure_during_conversion_propagates_and_leaves_the_unit_unsealed(self):
+        write_project(self.project_root)
+        seal_synthetic_minimap_route(self.project_root)
         with self.assertRaises(PermissionError):
-            run_minimap_step(self.project_root, CLIENT_ROOT, TILE_ID, synthetic_sources(), converter)
+            self.run_step(converter=FailingTextureConverter(self.project_root / 'converter', PermissionError('umodel.exe is locked')))
         self.assertEqual(sealed_minimap(self.project_root, TILE_ID, read_tile_map_lock_record(TILE_ID)), (None, None))
 
     def test_a_converted_archive_that_differs_from_its_reported_hash_propagates_and_leaves_the_unit_unsealed(self):
         write_project(self.project_root)
-        converter = MisreportedArchiveConverter(self.project_root / 'converter')
-        with self.assertRaisesRegex(MinimapStepError, 'differs from its reported SHA-256'):
-            run_minimap_step(self.project_root, CLIENT_ROOT, TILE_ID, synthetic_sources(), converter)
+        seal_synthetic_minimap_route(self.project_root)
+        with self.assertRaisesRegex(MinimapTextureError, 'differs from its reported SHA-256'):
+            self.run_step(converter=MisreportedArchiveConverter(self.project_root / 'converter'))
         self.assertEqual(sealed_minimap(self.project_root, TILE_ID, read_tile_map_lock_record(TILE_ID)), (None, None))
-
-    def test_a_joined_118_0_radar_texture_reads_through_the_shared_texture_library_and_converts_into_the_tile_minimap(self):
-        write_project(self.project_root)
-        radar_index = synthetic_radar_package_index(118, 0)
-        self.assertEqual([(export['object'], export['textureSource']) for export in radar_index['exports']],
-                         [(f'L2_RadarMap.{TILE_ID}', READABLE_DXT1_SOURCE)])
-        row = run_minimap_step(self.project_root, CLIENT_ROOT, TILE_ID, synthetic_sources(radar_index), self.converter)
-        self.assertEqual((row['status'], row['reason']), ('pass', None))
-        self.assertEqual(self.converter.requests, [{'kind': 'texture', 'package': 'L2_RadarMap', 'object': f'L2_RadarMap.{TILE_ID}'}])
-        _, manifest = self.read_manifest()
-        self.assertEqual((manifest['radarTexture']['sourceObject'], manifest['radarTexture']['rule']), (f'L2_RadarMap.{TILE_ID}', 'tile-id'))
-        self.assertEqual(manifest['gaps'], [])
-
-    def assert_radar_cell_gap_without_texture_output(self, radar_index, reason):
-        write_project(self.project_root)
-        row = run_minimap_step(self.project_root, CLIENT_ROOT, TILE_ID, synthetic_sources(radar_index), self.converter)
-        self.assertEqual((row['status'], row['reason']), ('gap', reason))
-        product, manifest = self.read_manifest()
-        self.assertIsNone(manifest['radarTexture'])
-        self.assertEqual([(gap['reason'], gap['sourceIdentity'].get('object')) for gap in product['gapRows'] if gap['reason'] == reason],
-                         [(reason, f'L2_RadarMap.{TILE_ID}')])
-        self.assertEqual(self.converter.requests, [])
-        self.assertTrue(is_listed_reason(reason, load_gap_reason_patterns()))
-
-    def test_a_joined_radar_texture_of_an_unreviewed_format_is_a_format_gap_on_the_radar_cell(self):
-        self.assert_radar_cell_gap_without_texture_output(synthetic_radar_package_index(118, 0, RGBA8_FORMAT), f'texture-format-unsupported:{RGBA8_FORMAT}')
-
-    def test_a_joined_radar_texture_in_an_unreviewed_layout_is_the_library_licensee_gap(self):
-        self.assert_radar_cell_gap_without_texture_output(synthetic_radar_package_index(123, 31), 'texture-licensee-unsupported:123/31')
 
     def test_a_census_gap_tile_returns_its_census_gap_without_touching_the_client(self):
         write_project(self.project_root, census_status='gap', seal_raw=False)
@@ -242,9 +237,13 @@ class MinimapRegistrationTests(unittest.TestCase):
 
     def test_every_minimap_gap_reason_is_listed(self):
         patterns = load_gap_reason_patterns()
-        for what in ('radar-texture', 'radar-texture-conflict', 'zone-grid', 'zone-rows', 'hunting-zone-rows', 'projection', 'source-package-absent'):
+        for what in ('zone-title-source', 'radar-anchor', 'zone-key-run', 'texture-layout-differs', 'route-texture-absent', 'hunting-zone-rows',
+                     'source-package-absent'):
             self.assertTrue(is_listed_reason(f'minimap-join-unresolved:{what}', patterns), what)
-        self.assertTrue(is_listed_reason('texture-licensee-unsupported:118/11', patterns))
+
+    def test_the_tile_inputs_drop_the_radar_and_town_map_packages(self):
+        paths = [record['path'] for record in minimap_step.minimap_input_records(TILE_ID)]
+        self.assertEqual(paths, ['maps/20_21.unr', 'system/huntingzone-e.dat', 'system/zonename-e.dat', 'systextures/l2zonename.utx'])
 
     def test_the_lock_names_the_153_locked_tiles(self):
         self.assertEqual(len(locked_tile_ids()), 153)
@@ -274,12 +273,12 @@ class MinimapRegistrationTests(unittest.TestCase):
 
 @unittest.skipUnless(CLIENT_ROOT.is_dir(), 'the reference client E:/Lineage2-client is absent on this host')
 class RealClientMinimapTests(unittest.TestCase):
-    def test_tile_20_21_joins_its_zone_name_texture_by_tile_id_and_lists_its_radar_gap(self):
-        from world.minimap_step import join_tile_minimap
-        from world.minimap_step import read_minimap_sources
-        tile = join_tile_minimap(TILE_ID, tile_frame_extent(CHUNK_PLAN_FRAME), read_minimap_sources(CLIENT_ROOT.resolve()))
-        self.assertEqual([(item['object'], item['rule']) for item in tile['zoneNameTextures']], [('l2zonename.20_21', 'tile-id')])
-        self.assertIn('minimap-join-unresolved:radar-texture', [gap['reason'] for gap in tile['gaps']])
+    def test_tile_20_21_takes_its_zone_key_texture_by_the_sampler_name(self):
+        from world.minimap_join import join_tile_route_half
+        sources = minimap_step.read_minimap_sources(CLIENT_ROOT.resolve())
+        tile = join_tile_route_half(TILE_ID, tile_frame_extent(CHUNK_PLAN_FRAME), sources.packages[ZONE_NAME_PACKAGE_ROLE], sources.tables, set())
+        self.assertEqual((tile['zoneKeyTexture']['object'], tile['zoneKeyTexture']['rule']), (f'l2zonename.{TILE_ID}', 'zone-sampler-tile'))
+        self.assertEqual(tile['gaps'], [])
 
 
 if __name__ == '__main__':
