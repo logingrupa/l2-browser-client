@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 02-88-PLAN.md
-last_updated: "2026-11-13T15:39:41.863Z"
+stopped_at: Completed 02-95-PLAN.md
+last_updated: "2026-11-13T17:54:55.491Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 03 plan 03-01 complete (side-by-side check record writer and key content digest; Phase 3 start commit cb09cdc)
-state_head: 4f7a987e9decbaf64cf180bd09969cc869d9b237
+state_head: 719fa2e679afddd7c96bcc344db548d60f8a557e
 progress:
   total_phases: 6
   completed_phases: 0
-  total_plans: 133
-  completed_plans: 113
+  total_plans: 136
+  completed_plans: 114
   percent: 0
 ---
 
@@ -159,6 +159,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P87 | 31min | 3 tasks | 15 files |
 | Phase 02 P91 | 72min | 3 tasks | 22 files |
 | Phase 02 P88 | 20h | 3 tasks | 11 files |
+| Phase 02 P95 | 65 min | 3 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -427,6 +428,11 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-87: the played-cue browser check uses npc:14663, the lowest of 591 of 5,175 npcs whose bundle binds a notify; npc:12077 binds none (row 1061)
 - [Phase 02]: 02-91: residency chunk events drive per-chunk visibility and lightmap binding on every streamed tile; neighbour tile systems attach on the first resident chunk and release on the last, the selected tile keeps its systems; culling reaches every tile; the row 735 ring and cull are presentation limit rows in the visibility inspection (OVERNIGHT-DECISIONS rows 1062 to 1066)
 - [Phase 02]: 02-88: world lane catalog b4d451dc holds 143 tiles with no batch-pending row; the batch runs seam neighbours first (d18a51d) and a passing derived key of a recordless tile counts as its manifest gap (35a4362); 125 passing tiles walked, 59 pass, 66 failed (rows 1067 to 1074)
+- [Phase 02]: 02-95: skill sound units per skillsoundgrp row (skill-sound-row:<n>, 1,398 rows), the per-skill-key kind deleted (P1157)
+- [Phase 02]: 02-95: npcgrp and alaudio critical stay on the Q4 proof so the NPC binding stays byte-identical and no NPC unit reseals (P1158)
+- [Phase 02]: 02-95: roles read from several row members bind to ordered member lists, one bundle selection per member that names a sound (P1159)
+- [Phase 02]: 02-95: the route recipe is pinned to LF line endings because its SHA-256 is in every skill-sound-row fingerprint (P1160)
+- [Phase 02]: 02-95: the caster-indexed skill sound table binds mesh types 0 to 13 for player casters; NPC casters keep skill-sound-caster-index-unresolved (P1162)
 
 ### Pending Todos
 
@@ -516,7 +522,8 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 - Two converted-key owners (03-03, P816): the load-check harness list (`buildNativeCatalogIndex`) has `npc:21622` and `skill:3:1` as converted on the union, while `scripts/native_store/catalog_index_keys.py` does not; 03-11 takes the disagreement as a key index defect.
 - World lane walks (02-88, rows 1073 and 1074): on world lane catalog `b4d451dc...` every one of the 125 tiles whose load check passed has a walk record, 59 pass and 66 failed: 38 stay in the run animation at their start and never come to idle within 90 s, 19 fall below their terrain minimum (most to about -163.8 m), and 9 load no BSP mesh in the section (`world.bspMeshes` 0). `world-tile-border.spec.ts` (15_20 to 15_21) drops the pawn 113.57 m in the seam strip. The movement and world owners read the failing walks from `artifacts/lane-store/world/measurements/tile-walks-b4d451dc....json`; WORLD-05 closes when every passing tile walks.
 - Actors lane shared-store row (02-78, row 1021): npc:21622 and npc-sounds:21622 stay pending in the actors lane coverage; they clear with the restage that writes the shared-store profile with `modelCatalogId` and the 03-11 key index fix (P816). Every other npcgrp row is converted or a listed gap on lane catalog `a1562da9...`.
-- Actor-sounds batch speed (02-78, row 1022): `run_actor_sound_slice` recomputes the fingerprint of every sealed bundle before converting new ones (about 0.5 s each) and each bundle rewrites the whole lane catalog; make both incremental before the 3,064 skill bundles run.
+- Actor-sounds batch speed (02-78, row 1022): `run_actor_sound_slice` recomputes the fingerprint of every sealed bundle before converting new ones; the 02-95 batch of 1,396 skill-sound-row units with the 5,177 sealed NPC checks ran in 27 minutes, so this stays a speed item only.
+- Skill sound playback and coverage (02-95, P1157 to P1162; SC3b narrowed): every skillsoundgrp row is a sealed `skill-sound-row:<n>` unit (1,365 bundles), but (1) no runtime plays them on the skill-cast event (GetSkillSoundData join, cast members on the init-stage effect actor, shot members at the shot stage, the caster mesh type slot on the pawn; actors lane runtime plan, then integration with the world mixer); (2) `scripts/native_store/gap_census_derived_parts.py` still lists the rows `step-pending:skill-sounds` (integration coverage rule); (3) NPC casters and slot 14 keep `skill-sound-caster-index-unresolved:<stage>` until a native answer names their index; (4) third members DAT 4, 13, 22 keep `skill-sound-member-unrouted:<ordinal>` until a consumer or negative is verified; (5) whether a stage plays one or all non-empty members needs an IMPORTA-PC native session. The recipe LF pin in the git attributes file is the one foreign path of the actors lane for integration (P1160).
 - BSP surface material files and texture image pins (02-30, 02-60, 02-64, rows 250, 518, 693 and 1042 to 1045): plan 02-86 converts every reviewed Texture node of a BSP or sky program to `native-materials/textures/<sha>/texture.png`, pins it on the program through the one writer `write_material_program_record`, and each tile manifest pins one `surface-materials` listing whose files map the lane merge walk follows. On 20_21 114 of 125 BSP sections draw through the library (was 0), 110 lightmapped; 20_21 and 20_20 are re-run and the world lane catalog is 19f8d1dd. Open: the other world tiles reseal in the 02-88 batch (bsp version 5, sky version 2, manifest version 12), and the shared store carries the files only after the owner restage.
 - Library vertex lighting and terrain layers (02-64, row 695): static mesh slots and terrain layers carry no program pin and the library has no vertex-colour or layer input; the lighting resource already holds the light lists, visibility bits and terrain shadow maps. Sky surfaces carry no program pin either (row 694).
 - Materials overlap review (DEC-OWN-12, 02-64, row 702): the materials area reports 35 blocking and 313 unreviewed runs and 34 stale sign-offs after the library lightmap input (report `artifacts/reference-overlap/02-64-materials.json`); independent review before the push.
@@ -564,6 +571,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-13T15:39:41.140Z
-Stopped at: Completed 02-88-PLAN.md
+Last session: 2026-11-13T17:54:28.782Z
+Stopped at: Completed 02-95-PLAN.md
 Resume file: None
