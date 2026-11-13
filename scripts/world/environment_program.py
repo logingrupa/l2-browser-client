@@ -3,8 +3,8 @@ import re
 
 from native_catalog.ue2 import FormatError
 from native_environment import decode_environment, parse_records
-from native_store.unit_ledger import locked_input_records
-from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, ReferenceClientLockError, read_reference_client_lock
+from native_store.unit_ledger import locked_input_records, process_reference_client_lock
+from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, ReferenceClientLockError
 
 ENVIRONMENT_PROGRAM_SCHEMA_VERSION = 1
 ENVIRONMENT_PROGRAM_KIND = 'native-environment-program'
@@ -120,7 +120,7 @@ def read_environment_program(client_access):
 
 
 def environment_lock_input_records(lock_path=REFERENCE_CLIENT_LOCK_PATH):
-    lock = read_reference_client_lock(lock_path)
+    lock = process_reference_client_lock(lock_path)
     paths = sorted(path for path, record in lock.records_by_path.items()
                    if ENVIRONMENT_LOCK_PATH_PATTERN.fullmatch(path) and record['class'] == LOCK_EQUAL_CLASS)
     return locked_input_records(paths, lock_path)

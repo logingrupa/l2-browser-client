@@ -6,6 +6,7 @@ from typing import NamedTuple
 import reference_client_guard
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import sha256_hex
+from native_store.unit_ledger import process_reference_client_lock
 from world.eligible_tiles import read_tile_census, select_eligible_tiles
 from world.native_terrain_sectors import vertex_normal
 from world.raw_map_step import raw_map_ledger, raw_map_unit_fingerprint, tile_map_path, tile_unit_key
@@ -85,7 +86,7 @@ def neighbour_tile_id(tile_id, role):
 
 def seam_neighbour_inputs(project_root, tile_id):
     eligible = set(select_eligible_tiles(read_tile_census(project_root)))
-    lock = reference_client_guard.read_reference_client_lock(reference_client_guard.REFERENCE_CLIENT_LOCK_PATH)
+    lock = process_reference_client_lock(reference_client_guard.REFERENCE_CLIENT_LOCK_PATH)
     ledger = raw_map_ledger(project_root)
     inputs = []
     for role in SEAM_ROLE_TILE_STEPS:

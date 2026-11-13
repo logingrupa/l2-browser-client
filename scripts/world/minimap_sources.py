@@ -2,7 +2,8 @@ import re
 from typing import NamedTuple
 
 from native_catalog.tables import decode_table
-from reference_client_guard import read_reference_client_lock, REFERENCE_CLIENT_LOCK_PATH
+from native_store.unit_ledger import process_reference_client_lock
+from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH
 from world.minimap_join import HUNTINGZONE_TABLE_ROLE, RADAR_PACKAGE_ROLE, TOWN_MAP_PACKAGE_ROLE, ZONE_NAME_PACKAGE_ROLE, ZONENAME_TABLE_ROLE
 from world.terrain_coordinates import calculated_coords, coords_point
 
@@ -24,13 +25,13 @@ class MinimapSources(NamedTuple):
 
 
 def lock_equal_minimap_source_paths(lock_path=REFERENCE_CLIENT_LOCK_PATH):
-    lock = read_reference_client_lock(lock_path)
+    lock = process_reference_client_lock(lock_path)
     paths = [*MINIMAP_PACKAGE_PATHS.values(), *MINIMAP_TABLE_PATHS.values()]
     return sorted(path for path in paths if (record := lock.record(path)) is not None and record['class'] == LOCK_EQUAL_CLASS)
 
 
 def locked_tile_ids(lock_path=REFERENCE_CLIENT_LOCK_PATH):
-    lock = read_reference_client_lock(lock_path)
+    lock = process_reference_client_lock(lock_path)
     return sorted(match['tile_id'] for path in lock.records_by_path if (match := LOCKED_TILE_MAP_PATTERN.fullmatch(path)))
 
 

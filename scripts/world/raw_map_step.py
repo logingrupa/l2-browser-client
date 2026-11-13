@@ -9,7 +9,7 @@ from native_assets_lib.gltf import json_bytes
 from native_catalog.ue2 import FormatError
 from world.raw_map_extraction import build_map
 from native_store.store_paths import lane_work_root
-from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger
+from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, process_reference_client_lock
 from world.map_sources import safe_path
 from world.tile_census import WORLD_LANE_NAME, WORLD_PART_NAME
 from world.tile_census_validation import ELIGIBLE_STATUS, GAP_STATUS, NON_TILE_KIND, TILE_CENSUS_RELATIVE_PATH
@@ -101,7 +101,7 @@ def raw_map_unit_fingerprint(project_root, map_path, lock_record):
 
 
 def read_map_lock_record(map_path):
-    lock = reference_client_guard.read_reference_client_lock(reference_client_guard.REFERENCE_CLIENT_LOCK_PATH)
+    lock = process_reference_client_lock(reference_client_guard.REFERENCE_CLIENT_LOCK_PATH)
     record = lock.record(map_path)
     if record is None:
         raise RawMapStepError(f'reference client lock has no record for {map_path}')
