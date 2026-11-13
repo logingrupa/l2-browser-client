@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 11,
+  "listVersion": 12,
   "reasons": [
     "conversion-pending",
     "mesh-package-not-in-client:<package>",
@@ -24,6 +24,7 @@
     "skill-sound-row-names-no-sound",
     "skillsound-row-match-ambiguous:<count>",
     "skill-sound-caster-index-unresolved:<stage>",
-    "skill-sound-member-unrouted:<ordinal>"
+    "skill-sound-member-unrouted:<ordinal>",
+    "skill-dispatch-candidate-runtime-unresolved"
   ]
 }

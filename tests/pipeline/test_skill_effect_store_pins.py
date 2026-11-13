@@ -9,7 +9,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from actors.skill_effect_conversion import add_staged_effect_store_files, skill_effect_component_record, stage_effect_bundle
+from actors.skill_effect_conversion import (add_staged_effect_store_files, skill_dispatch_class_component_record, skill_effect_component_record,
+                                            stage_effect_bundle)
 from effect_source_bundle_fixture import write_sprite_effect_source_bundle
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import CatalogWriteError, merge_catalog_slice, write_store
@@ -56,6 +57,16 @@ class StagedSkillEffectStoreTests(unittest.TestCase):
         expected = {self.effect_store_relative(member) for member in
                     {'manifest.json', source_bundle['manifest']['file'], source_bundle['graph']['file'], *resource_files}}
         self.assertEqual(pinned_relatives, expected)
+
+    def test_a_dispatch_class_record_on_the_same_staged_root_pins_the_same_files(self):
+        record = skill_dispatch_class_component_record('LineageEffect.s_u010_b', self.manifest_sha256)
+        self.assertEqual(record, {'id': 'interlude:skill-dispatch-class:LineageEffect.s_u010_b',
+                                  'bundleId': 'interlude:skill-dispatch-class:LineageEffect.s_u010_b',
+                                  'manifest': f'/l2/effects/{self.manifest_sha256}/manifest.json', 'manifestSha256': self.manifest_sha256})
+        class_catalog = merge_catalog_slice({'schemaVersion': 1, 'models': []}, 'effectComponents', record, 1)
+        class_files = verify_pinned_store_files(self.store_root, class_catalog, PINNED_STORE_VERIFICATION_WORKER_COUNT)
+        skill_files = verify_pinned_store_files(self.store_root, self.catalog, PINNED_STORE_VERIFICATION_WORKER_COUNT)
+        self.assertEqual({entry.relative for entry in class_files.values()}, {entry.relative for entry in skill_files.values()})
 
     def test_a_store_missing_the_source_graph_is_still_refused_by_the_pin_check(self):
         (self.store_root / self.effect_store_relative(self.staged_manifest['sourceBundle']['graph']['file'])).unlink()

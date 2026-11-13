@@ -1,10 +1,27 @@
 {
   "anomalies": [],
+  "dispatchCandidates": {
+    "animationNotifyBindings": 4,
+    "animationNotifyClasses": 2,
+    "animationNotifyRows": 4,
+    "bindings": 1483,
+    "classes": 234,
+    "gatesByBinding": {
+      "none": 1328,
+      "transient": 139,
+      "union-target": 16
+    },
+    "recipe": "recipes/actors/skill-dispatch-candidates.json",
+    "recipeRows": 11211,
+    "recipeSha256": "316bba1fe9ce5ba72ef36127bccb6082c670db4939f7aa45b79dff13f3d792fa"
+  },
   "distinctSkillIds": 2694,
   "keys": {
     "gap": {
-      "native-skill-dispatch-required": 17575
+      "native-skill-dispatch-required": 6361
     },
+    "reviewedAnimationNotifyCandidates": 4,
+    "reviewedNativeDispatchCandidates": 11210,
     "reviewedSourceDispatch": 1,
     "visualRoot": 12236
   },

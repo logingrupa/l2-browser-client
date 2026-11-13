@@ -11,9 +11,12 @@ from actors.emitter_feature_coverage import read_emitter_feature_rules, unported
 from actors.npc_requests import CONVERTER_REFUSED_REASON_PREFIX, FAILED_STATUS, GAP_STATUS, TRANSIENT_FAILURES
 from actors.npc_store_records import file_output_record
 from actors.path_free_messages import path_free_reason
-from actors.skill_binding_table import (EFFECT_BUNDLE_CLASS_LIMIT_REASON_PREFIX, NO_EXACT_SKILLSOUND_ROW_REASON, SKILLS_GAP_ROW_STEP,
-                                        VISUAL_ROOT_STATUS, DecodedSkillTables, emitter_class_root_outcome, representative_skill_binding,
-                                        skill_binding_gap_rows, skill_bindings_by_visual_root, visual_roots_in_first_key_order)
+from actors.skill_binding_table import (DISPATCH_CANDIDATE_STATUSES, EFFECT_BUNDLE_CLASS_LIMIT_REASON_PREFIX, NO_EXACT_SKILLSOUND_ROW_REASON,
+                                        SKILLS_GAP_ROW_STEP, VISUAL_ROOT_STATUS, DecodedSkillTables, emitter_class_root_outcome,
+                                        representative_skill_binding, skill_binding_gap_rows, skill_bindings_by_visual_root,
+                                        visual_roots_in_first_key_order)
+from actors.skill_dispatch_class_conversion import (SKILL_DISPATCH_CLASS_BUNDLE_ID_PREFIX, SkillDispatchClassUnits,
+                                                    skill_dispatch_class_bundle_id)
 from actors.skill_unit_inventory import skill_root_key
 from native_assets import UMODEL_SHA256, implementation_hash
 from native_assets_lib.gltf import json_bytes
@@ -109,6 +112,12 @@ def skill_effect_component_record(skill_id, level, visual_root, manifest_sha256)
             'manifest': f'/l2/{EFFECT_STORE_FOLDER}/{manifest_sha256}/{STAGED_MANIFEST_NAME}', 'manifestSha256': manifest_sha256}
 
 
+def skill_dispatch_class_component_record(effect_object, manifest_sha256):
+    bundle_id = skill_dispatch_class_bundle_id(effect_object)
+    return {'id': bundle_id, 'bundleId': bundle_id, 'manifest': f'/l2/{EFFECT_STORE_FOLDER}/{manifest_sha256}/{STAGED_MANIFEST_NAME}',
+            'manifestSha256': manifest_sha256}
+
+
 def read_staged_manifest(step_directory, manifest_sha256):
     return json.loads((step_directory / STAGED_EFFECTS_FOLDER / manifest_sha256 / STAGED_MANIFEST_NAME).read_bytes())
 
@@ -151,6 +160,7 @@ class SkillEffectConversionRun:
         self.tool_identity = {'umodelSha256': UMODEL_SHA256, 'uelibSha256': UELIB_SHA256, 'converterSha256': implementation_hash(),
                               **{path: hashlib.sha256((self.project_root / path).read_bytes()).hexdigest() for path in TOOL_IDENTITY_FILES}}
         self.input_records = locked_input_records(sorted({self.tables.skill_table['source'], self.tables.sound_table['source']}))
+        self.dispatch_classes = SkillDispatchClassUnits(self, self.tables.dispatch_candidates['document'], self.tables.binding_rows)
 
     def root_work(self, visual_root):
         representative = representative_skill_binding(self.bindings_by_root[visual_root])
@@ -159,43 +169,56 @@ class SkillEffectConversionRun:
         fingerprint = self.ledger.unit_fingerprint([record['sha256'] for record in self.input_records], config)
         return skill_root_key(visual_root), representative, config, fingerprint
 
+    def sealed_bundle_outcome(self, ledger, unit_key, fingerprint, outcome_record_name):
+        if not ledger.is_sealed(unit_key, fingerprint):
+            return None
+        step_directory = ledger.unit_step_directory(unit_key)
+        return {**json.loads((step_directory / outcome_record_name).read_bytes()),
+                'evidence': (step_directory / RECEIPT_RECORD_NAME).relative_to(ledger.lane_folder).as_posix()}
+
     def sealed_root_outcome(self, visual_root):
         unit_key, _, _, fingerprint = self.root_work(visual_root)
-        if not self.ledger.is_sealed(unit_key, fingerprint):
-            return None
-        step_directory = self.ledger.unit_step_directory(unit_key)
-        return {**json.loads((step_directory / ROOT_OUTCOME_RECORD_NAME).read_bytes()),
-                'evidence': (step_directory / RECEIPT_RECORD_NAME).relative_to(self.ledger.lane_folder).as_posix()}
+        return self.sealed_bundle_outcome(self.ledger, unit_key, fingerprint, ROOT_OUTCOME_RECORD_NAME)
 
-    def convert_root(self, visual_root):
-        unit_key, representative, config, fingerprint = self.root_work(visual_root)
-        if self.ledger.is_sealed(unit_key, fingerprint):
+    def convert_bundle_unit(self, ledger, unit_key, config, fingerprint, outcome_record_name, bundle_outcome):
+        if ledger.is_sealed(unit_key, fingerprint):
             return {'key': unit_key, 'status': 'skipped', 'reason': 'already sealed', 'cacheHit': True}
-        step_directory = self.ledger.begin(unit_key, fingerprint)
+        step_directory = ledger.begin(unit_key, fingerprint)
         try:
-            outcome = self.root_conversion_outcome(visual_root, representative, step_directory)
+            outcome = bundle_outcome(step_directory)
         except ReferenceClientLockError:
             raise
         except TRANSIENT_FAILURES as error:
             return {'key': unit_key, 'status': FAILED_STATUS, 'reason': path_free_reason(str(error), self.client_access.root, step_directory),
                     'cacheHit': False}
-        outcome_path = step_directory / ROOT_OUTCOME_RECORD_NAME
+        outcome_path = step_directory / outcome_record_name
         outcome_path.write_bytes(canonical_json_bytes(outcome))
         staged_files = sorted(path for path in (step_directory / STAGED_EFFECTS_FOLDER).rglob('*') if path.is_file()) \
             if outcome['status'] == CONVERTED_ROOT_STATUS else []
-        outputs = [file_output_record(self.ledger.lane_folder, path) for path in [outcome_path, *staged_files]]
-        self.ledger.seal(unit_key, fingerprint, {'config': config, 'inputs': self.input_records, 'outputs': outputs, 'gapRows': []})
+        outputs = [file_output_record(ledger.lane_folder, path) for path in [outcome_path, *staged_files]]
+        ledger.seal(unit_key, fingerprint, {'config': config, 'inputs': self.input_records, 'outputs': outputs, 'gapRows': []})
         return {'key': unit_key, 'status': outcome['status'], 'reason': outcome['reason'], 'cacheHit': False}
+
+    def convert_root(self, visual_root):
+        unit_key, representative, config, fingerprint = self.root_work(visual_root)
+        return self.convert_bundle_unit(self.ledger, unit_key, config, fingerprint, ROOT_OUTCOME_RECORD_NAME,
+                                        lambda step_directory: self.root_conversion_outcome(visual_root, representative, step_directory))
+
+    def gap_outcome(self, reason):
+        return {'status': GAP_STATUS, 'reason': reason, 'emitterClasses': [], 'manifestSha256': None}
 
     def root_conversion_outcome(self, visual_root, representative, step_directory):
         if representative is None:
-            return {'status': GAP_STATUS, 'reason': NO_EXACT_SKILLSOUND_ROW_REASON, 'emitterClasses': [], 'manifestSha256': None}
+            return self.gap_outcome(NO_EXACT_SKILLSOUND_ROW_REASON)
+        recipe = {'schemaVersion': 1, 'id': skill_root_bundle_id(visual_root), 'skillId': representative['skillId'],
+                  'level': representative['level']}
+        return self.migrated_bundle_outcome(recipe, visual_root, lambda root: skill_root_class_closure(self.packages, root), step_directory)
+
+    def migrated_bundle_outcome(self, recipe, closure_item, closure_of, step_directory):
         try:
-            limit_reason = class_limit_reason(visual_root, lambda root: skill_root_class_closure(self.packages, root))
+            limit_reason = class_limit_reason(closure_item, closure_of)
             if limit_reason is not None:
-                return {'status': GAP_STATUS, 'reason': limit_reason, 'emitterClasses': [], 'manifestSha256': None}
-            recipe = {'schemaVersion': 1, 'id': skill_root_bundle_id(visual_root), 'skillId': representative['skillId'],
-                      'level': representative['level']}
+                return self.gap_outcome(limit_reason)
             migrate_effect_bundle(self.client_access.root, recipe, step_directory / SOURCE_BUNDLE_FOLDER,
                                   self.ledger.lane_folder / CONVERTER_WORK_FOLDER)
             manifest_sha256 = stage_effect_bundle(self.project_root, step_directory / SOURCE_BUNDLE_FOLDER,
@@ -203,16 +226,16 @@ class SkillEffectConversionRun:
         except (FormatError, SkillEffectConversionError) as error:
             message = str(error)
             if DEFAULT_READER_CLASS_LIMIT_MESSAGE in message:
-                return {'status': GAP_STATUS, 'reason': f'{EFFECT_BUNDLE_CLASS_LIMIT_REASON_PREFIX}{MAX_CLASSES + 1}', 'emitterClasses': [],
-                        'manifestSha256': None}
-            reason = CONVERTER_REFUSED_REASON_PREFIX + path_free_reason(message, self.client_access.root, step_directory)
-            return {'status': GAP_STATUS, 'reason': reason, 'emitterClasses': [], 'manifestSha256': None}
+                return self.gap_outcome(f'{EFFECT_BUNDLE_CLASS_LIMIT_REASON_PREFIX}{MAX_CLASSES + 1}')
+            return self.gap_outcome(CONVERTER_REFUSED_REASON_PREFIX + path_free_reason(message, self.client_access.root, step_directory))
         manifest = read_staged_manifest(step_directory, manifest_sha256)
         return {'status': CONVERTED_ROOT_STATUS, 'reason': None, 'emitterClasses': staged_emitter_classes(manifest),
                 'manifestSha256': manifest_sha256}
 
-    def converted_root_outcome(self, visual_root, sealed):
-        manifest = read_staged_manifest(self.ledger.unit_step_directory(skill_root_key(visual_root)), sealed['manifestSha256'])
+    def published_bundle_outcome(self, step_directory, sealed):
+        if sealed['status'] != CONVERTED_ROOT_STATUS:
+            return {**sealed, 'converted': False}
+        manifest = read_staged_manifest(step_directory, sealed['manifestSha256'])
         unbound_reason = unbound_simulated_component_reason(manifest, self.simulated_emitter_classes)
         if unbound_reason is not None:
             return {**sealed, 'status': GAP_STATUS, 'reason': unbound_reason, 'converted': False}
@@ -226,12 +249,8 @@ class SkillEffectConversionRun:
         outcomes = {}
         for visual_root in self.bindings_by_root:
             sealed = self.sealed_root_outcome(visual_root)
-            if sealed is None:
-                continue
-            if sealed['status'] == CONVERTED_ROOT_STATUS:
-                outcomes[visual_root] = self.converted_root_outcome(visual_root, sealed)
-            else:
-                outcomes[visual_root] = {**sealed, 'converted': False}
+            if sealed is not None:
+                outcomes[visual_root] = self.published_bundle_outcome(self.ledger.unit_step_directory(skill_root_key(visual_root)), sealed)
         return outcomes
 
     def write_gap_rows(self, root_outcomes):
@@ -239,10 +258,11 @@ class SkillEffectConversionRun:
         write_gap_rows(self.project_root, self.ledger.lane_name, SKILLS_GAP_ROW_STEP, rows)
         return rows
 
-    def write_store_records(self, root_outcomes):
+    def write_store_records(self, root_outcomes, class_outcomes):
         catalog, before = read_store_catalog(self.store_root)
         catalog['effectComponents'] = [record for record in catalog.get('effectComponents', [])
-                                       if not str(record.get('bundleId', '')).startswith(SKILL_ROOT_BUNDLE_ID_PREFIX)]
+                                       if not str(record.get('bundleId', '')).startswith((SKILL_ROOT_BUNDLE_ID_PREFIX,
+                                                                                         SKILL_DISPATCH_CLASS_BUNDLE_ID_PREFIX))]
         files, records = {}, []
         for visual_root, outcome in sorted(root_outcomes.items()):
             if not outcome['converted']:
@@ -251,16 +271,25 @@ class SkillEffectConversionRun:
             add_staged_effect_store_files(files, staged_root, outcome['manifestSha256'])
             records += [skill_effect_component_record(binding['skillId'], binding['level'], visual_root, outcome['manifestSha256'])
                         for binding in self.bindings_by_root[visual_root]]
+        for effect_object, outcome in sorted(class_outcomes.items()):
+            if not outcome['converted']:
+                continue
+            unit_key = self.dispatch_classes.class_work(effect_object)[0]
+            staged_root = self.dispatch_classes.ledger.unit_step_directory(unit_key) / STAGED_EFFECTS_FOLDER / outcome['manifestSha256']
+            add_staged_effect_store_files(files, staged_root, outcome['manifestSha256'])
+            records.append(skill_dispatch_class_component_record(effect_object, outcome['manifestSha256']))
         if records:
-            catalog = merge_catalog_slice_records(catalog, 'effectComponents', records, len(self.tables.binding_rows))
+            catalog = merge_catalog_slice_records(catalog, 'effectComponents', records,
+                                                  len(self.tables.binding_rows) + len(self.dispatch_classes.classes))
         catalog['effectComponents'] = sorted(catalog.get('effectComponents', []), key=lambda record: record['id'])
         after = json_bytes(catalog)
         return write_store(self.store_root, files, before, after)
 
     def finish(self):
         root_outcomes = self.root_outcomes()
+        class_outcomes = self.dispatch_classes.class_outcomes()
         gap_rows = self.write_gap_rows(root_outcomes)
-        store = self.write_store_records(root_outcomes)
+        store = self.write_store_records(root_outcomes, class_outcomes)
         return {'store': store, 'gapRowStatuses': {status: sum(1 for row in gap_rows if row['status'] == status)
                                                    for status in sorted({row['status'] for row in gap_rows})},
                 'emitterFeatureGapRoots': emitter_feature_gap_roots_by_reason(root_outcomes)}
@@ -273,28 +302,43 @@ def binding_of_skill(run, skill_id, level):
     return matches[0]
 
 
+def candidate_classes_of_binding(binding):
+    return sorted({effect_object for entry in binding['dispatchCandidates'] for effect_object in entry['candidateClasses']})
+
+
 def convert_skill(run, skill_id, level):
     binding = binding_of_skill(run, skill_id, level)
-    outcomes = []
     if binding['status'] == VISUAL_ROOT_STATUS:
-        outcomes.append(run.convert_root(binding['visualRoot']))
+        outcomes = [run.convert_root(binding['visualRoot'])]
+    elif binding['status'] in DISPATCH_CANDIDATE_STATUSES:
+        outcomes = [run.dispatch_classes.convert_class(effect_object) for effect_object in candidate_classes_of_binding(binding)]
     else:
-        outcomes.append({'key': binding['key'], 'status': binding['status'], 'reason': binding['reason'], 'cacheHit': False})
+        outcomes = [{'key': binding['key'], 'status': binding['status'], 'reason': binding['reason'], 'cacheHit': False}]
     return outcomes, run.finish()
 
 
-def convert_skill_batch_slice(run, limit, preflight):
-    outcomes, already_sealed = [], 0
+def pending_skill_units(run):
     for visual_root in visual_roots_in_first_key_order(run.tables.binding_rows):
+        unit_key, _, _, fingerprint = run.root_work(visual_root)
+        yield 'root', run.ledger.is_sealed(unit_key, fingerprint), lambda visual_root=visual_root: run.convert_root(visual_root)
+    for effect_object in run.dispatch_classes.classes_in_first_row_order():
+        yield ('dispatchClass', run.dispatch_classes.is_sealed(effect_object),
+               lambda effect_object=effect_object: run.dispatch_classes.convert_class(effect_object))
+
+
+def convert_skill_batch_slice(run, limit, preflight):
+    outcomes, converted, already_sealed = [], Counter(), Counter()
+    for unit_kind, sealed, convert in pending_skill_units(run):
         if len(outcomes) >= limit:
             break
-        unit_key, _, _, fingerprint = run.root_work(visual_root)
-        if run.ledger.is_sealed(unit_key, fingerprint):
-            already_sealed += 1
+        if sealed:
+            already_sealed[unit_kind] += 1
             continue
         preflight()
-        outcomes.append(run.convert_root(visual_root))
-    return outcomes, {**run.finish(), 'convertedRoots': len(outcomes), 'alreadySealedRoots': already_sealed}
+        outcomes.append(convert())
+        converted[unit_kind] += 1
+    return outcomes, {**run.finish(), 'convertedRoots': converted['root'], 'alreadySealedRoots': already_sealed['root'],
+                      'convertedDispatchClasses': converted['dispatchClass'], 'alreadySealedDispatchClasses': already_sealed['dispatchClass']}
 
 
 def printed_skill_outcome(outcome):
