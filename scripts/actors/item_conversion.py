@@ -1,5 +1,4 @@
 import json
-import shutil
 from collections import namedtuple
 from pathlib import Path
 
@@ -19,6 +18,7 @@ from native_assets_lib.gltf import json_bytes
 from native_store.catalog_writer import read_store_catalog, write_store
 from native_store.data_ui_table_manifest import data_ui_table_manifest
 from native_store.gap_census_denominators import decoded_item_ids
+from native_store.linked_file_copy import link_or_copy_file
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from reference_client_guard import ReferenceClientLockError
 
@@ -168,7 +168,7 @@ class ItemConversionRun:
         outputs = []
         if result is not None:
             archive_copy = step_directory / MODEL_ARCHIVE_FILE_NAME
-            shutil.copyfile(result['file'], archive_copy)
+            link_or_copy_file(result['file'], archive_copy)
             outputs.append(file_output_record(self.ledger.lane_folder, archive_copy))
         evidence = (step_directory / RECEIPT_RECORD_NAME).relative_to(self.ledger.lane_folder).as_posix()
         gap_rows = [{**item_gap_row(unit['firstItemId'], GAP_STATUS, reason, self.sources.identities[self.item_table_of(unit)]),

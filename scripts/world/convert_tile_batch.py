@@ -12,8 +12,10 @@ from typing import NamedTuple
 
 from native_store.build_coverage_report import write_coverage_report
 from native_store.gap_rows import read_gap_rows, sorted_gap_rows, write_gap_rows
+from native_store.interprocess_lock import LaneInUseError, lane_batch_lock
 from native_store.lane_roots import create_lane_work_and_store_roots
-from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, require_converter_output
+from native_store.share_identical_lane_files import share_identical_files_of_batch_lane
+from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root, require_converter_output
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, require_batch_preflight, run_at_below_normal_priority
 from native_store.worker_count_argument import worker_count_argument
 from native_store.write_lane_catalog import write_lane_catalog
@@ -274,17 +276,20 @@ def main(argv=None):
         arguments = batch_argument_parser().parse_args(argv)
         require_reference_client(arguments.client)
         store_root = require_converter_output(REPOSITORY_ROOT, REPOSITORY_ROOT / arguments.output)
-        outcome = run_tile_batch(arguments.limit, arguments.workers, world_tile_step_run,
-                                 (REPOSITORY_ROOT, arguments.client, store_root, arguments.workers),
-                                 tile_source_identity=locked_tile_source_identity, tile_expected_cost=locked_tile_map_bytes,
-                                 retry_tile_ids=arguments.retry_tiles)
-        lane_outputs = refresh_world_lane_outputs(REPOSITORY_ROOT) if outcome.exit_code == BATCH_EXIT_DONE else None
-    except (OSError, ValueError) as error:
+        with lane_batch_lock(lane_work_root(REPOSITORY_ROOT, WORLD_LANE_NAME)) as held_lane_lock:
+            outcome = run_tile_batch(arguments.limit, arguments.workers, world_tile_step_run,
+                                     (REPOSITORY_ROOT, arguments.client, store_root, arguments.workers),
+                                     tile_source_identity=locked_tile_source_identity, tile_expected_cost=locked_tile_map_bytes,
+                                     retry_tile_ids=arguments.retry_tiles)
+            lane_outputs = refresh_world_lane_outputs(REPOSITORY_ROOT) if outcome.exit_code == BATCH_EXIT_DONE else None
+            if outcome.stop is None and not outcome.attempted_tile_ids:
+                print(NOTHING_TO_DO_MESSAGE)
+            print(json.dumps(batch_summary(outcome, lane_outputs), indent=1), flush=True)
+            if lane_outputs is not None and not share_identical_files_of_batch_lane(REPOSITORY_ROOT, WORLD_LANE_NAME, held_lane_lock):
+                return BATCH_EXIT_ERROR
+    except (OSError, ValueError, LaneInUseError) as error:
         print(f'Tile batch failed: {error}', file=sys.stderr)
         return BATCH_EXIT_ERROR
-    if outcome.stop is None and not outcome.attempted_tile_ids:
-        print(NOTHING_TO_DO_MESSAGE)
-    print(json.dumps(batch_summary(outcome, lane_outputs), indent=1))
     return outcome.exit_code
 
 

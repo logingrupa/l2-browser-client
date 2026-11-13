@@ -12,6 +12,9 @@ How the lane-store batches use the machine, what was measured, and what is still
 - World tiles convert in worker processes: `scripts/world/convert_tile_batch.py --eligible --limit N --workers W` (default 1). The batch runs in three phases. First the raw step of every selected tile and of its seam neighbours, so terrain fingerprints are final on the first run and no second pass is needed. Then every step except raw and manifest, one tile per worker. Then the manifests, in tile order, in the coordinator. The disk floor of the preflight rises by 1 GiB per added worker.
 - Worker processes of one lane share three things under an inter-process lock (`scripts/native_store/interprocess_lock.py`): the frozen converter's request folders, the mover class unit, and the publishing of store files (`scripts/native_store/store_file_publish.py`). A store file is published only if it is absent.
 - The dev server builds the lane union catalog once per catalog file identity (`vite/nativeStoreRootPlugin.ts`) instead of starting python for every `/l2/catalog.json` request.
+- A lane store keeps one copy of each distinct large file. `python -B scripts/native_store/share_identical_lane_files.py <checkout>/artifacts/lane-store` turns byte-identical files into hard links and removes the converter `.work` scratch of `actors` and `world`; `--plan` only reports. No path, byte, fingerprint or receipt changes. A done batch of `convert_tile_batch.py` or `convert_actors.py --batch` runs the same pass for its lane at its end and prints `identical lane files shared:` on standard error; a pass that fails ends the batch with its error exit.
+- Every converting process of `actors` and `world` holds a lane lock, pool workers included. A second batch or a sharing run on a held lane refuses at once. A worker left by a killed batch still holds it.
+- The actors unit archive and the files of a union are hard links, not copies. A merge into `public/l2` still copies.
 - Never start two convert processes on one lane side by side. They select the same units and `UnitLedger.begin` removes the other one's folder.
 - A Defender exclusion covers `artifacts\lane-store` of the roadmap worktree and of the `l2b-speed` lane. A new lane needs its own.
 
@@ -30,6 +33,9 @@ How the lane-store batches use the machine, what was measured, and what is still
 | World tile 18_20, all 14 steps from scratch under the same profiler | 2,281 s (lighting 786, collision 556, meshes 534, visibility 210) | 439 s (lighting 33, collision 22, meshes 247, visibility 10) |
 | The same tile without a profiler | 1,005 s for its five slow steps in the plan 02-47 run | 346 to 352 s for all 14 steps (meshes 234, audio 38) |
 | The first 30 eligible world tiles into an empty world lane store (drive E:, no Defender exclusion) | 2,912 s for the first pass plus 1,027 s for a second pass that redoes terrain and manifests | 3,116 s in one pass with 1 worker, 1,208 s with 6 workers (2.7 cores on average, 2.4 GiB peak for the whole job) |
+| A 60-tile world lane copy (87,161 files) | 12.16 GiB | 5.69 GiB after one sharing run of 111 s; every kept file byte-identical; a second run hashes nothing in 6 s |
+| The real lane store (808,557 files, about 178 GiB), plan mode only | 178 GiB | 110.2 GiB would come back: 99.0 from identical files, 11.1 from scratch |
+| One check of the pinned music encoder | 591 ms, the whole executable read each time | 14 ms after the first call of a process |
 | One `/l2/catalog.json` request of the dev server on the actors lane | 1.61 s (a python start per request) | 456 ms for the first request, under 1 ms after it |
 
 - The "before" numbers of the first row come from the live runs of plan 02-79; the others are the unchanged code at `bf14fb8` run in the lane checkout.
@@ -64,12 +70,15 @@ How the lane-store batches use the machine, what was measured, and what is still
   - Each model is stored about five times: converter cache as archive and as model, ledger folder, store archive (`.l2asset`, a zip without compression) and store model (`.glb`). 118.7 GiB of the 175 are files that repeat another file's name and size.
   - A model file carries its own copy of what the client shares. Actor models: 13.9 GiB of `.glb` hold 5.8 GiB of animation tracks of which 0.16 GiB are distinct (one animation set sits in 225 models), 7.3 GiB of glTF text that describes 220,228 clips, 0.7 GiB of pictures and 0.13 GiB of geometry. World models: 10.9 GiB hold 6.2 GiB of embedded PNG pictures of which 1.06 GiB are distinct (one picture sits in 164 models), 3.15 GiB are whole files that repeat under another address, and 1.6 GiB are everything else.
   - Work files stay after success: 115,348 exported PNG files (15.9 GiB) under `world/work/static-mesh-converter`, 7.4 GiB of `.u` copies under `actors/work`.
-  A converter that keeps animation sets and pictures as shared store files, writes one model file instead of an archive plus a model, and removes its work folders would need roughly a tenth of the space. That is the planned converter change above and an owner decision.
+  The sharing command answers the first and third cause without touching the converter. The second cause (animation sets and pictures inside every model, a model inside its archive and again beside it) needs a format change in the converter and the browser loader.
+- The real store is sealed under `implementation_hash()` of the roadmap worktree's bytes (`c4bf8e6c...`, 40 of the 55 hashed files with CRLF, 15 with LF); a clean LF checkout computes `0bb618...`. A fixed version value in place of the byte hash removes this risk and the freeze; it must be set in the worktree that owns the store.
+- The six-worker run after quick task 261113-4mx gave identical outputs but no better wall time (1,334 s against 1,208 s on a busier machine). Its gain is unproven.
 - NPC profile packs spend most of their 156 s re-reading a table and re-hashing one package per NPC (`scripts/native_actor_profiles.py`, a pinned file: a fix reseals the 34 packs).
 
 ## Pointers
 
 - Code: `scripts/native_store/pinned_store_verification.py`, `scripts/native_store/store_file_copy.py`, `scripts/actors/item_unit_workers.py`, `scripts/actors/item_census.py`.
 - Code of the tile workers: `scripts/world/convert_tile_batch.py`, `scripts/world/tile_step_workers.py`, `scripts/world/class_default_reads.py`, `scripts/native_store/interprocess_lock.py`, `scripts/native_store/store_file_publish.py`, `scripts/native_store/lane_roots.py`.
-- Plans, summaries and verification reports: `.planning/quick/261112-i67-*`, `261112-i80-*`, `261112-l5d-*`, `261112-kzq-*`, `261112-vod-*`, `261112-vj5-*`, `261113-4mx-*` (context only).
+- Plans, summaries and verification reports: `.planning/quick/261112-i67-*`, `261112-i80-*`, `261112-l5d-*`, `261112-kzq-*`, `261112-vod-*`, `261112-vj5-*`, `261113-4mx-*`, `261113-h7k-*`.
+- Code of the sharing: `scripts/native_store/share_identical_lane_files.py`, `identical_file_sharing.py`, `lane_sharing_candidates.py`, `examined_file_record.py`, `converter_scratch_removal.py`, `linked_file_copy.py`, `interprocess_lock.py` (lane lock).
 - Measurement scripts and raw results (outside the repository): `C:\laragon\l2b-orchestration\pipeline-speed`.

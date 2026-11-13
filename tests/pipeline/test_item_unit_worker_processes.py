@@ -17,7 +17,7 @@ from actors.item_conversion import ITEM_ALGORITHM_VERSION
 from actors.item_requests import ITEM_CENSUS_RELATIVE_PATH, ITEM_STEP
 from native_assets_lib.gltf import json_bytes
 from native_store.canonical_json import canonical_json_bytes
-from native_store.interprocess_lock import LOCK_FILE_SUFFIX, STORE_LOCK_KEY_PREFIX, lane_lock_folder, lock_file_path
+from native_store.interprocess_lock import LOCK_FILE_SUFFIX, STORE_LOCK_KEY_PREFIX, lane_lock_file_path, lane_lock_folder, lock_file_path
 from native_store.store_paths import lane_gap_rows_path, lane_store_root, lane_work_root
 from native_store.unit_ledger import (BELOW_NORMAL_PRIORITY_CLASS, OWNER_RECORD_NAME, RECEIPT_RECORD_NAME, RUNNING_MARKER_NAME, SEAL_RECORD_NAME,
                                       UnitLedger)
@@ -127,9 +127,11 @@ class PooledItemBatchByteIdentityTests(unittest.TestCase):
         self.assertEqual(pooled_work_paths, sorted(sha256_by_relative_path(one_process_work_root)))
         self.assertEqual([path for path in pooled_work_paths if path.endswith(RUNNING_MARKER_NAME)], [])
 
-    def test_each_run_leaves_the_lock_file_of_its_own_store_root_and_no_other_lock_file(self):
-        for project_root in (self.one_process_project_root, self.pooled_project_root):
-            self.assertEqual(lock_file_paths(project_root), [store_lock_file_path(project_root)])
+    def test_each_run_leaves_the_lock_file_of_its_own_store_root_and_the_pooled_run_also_its_lane_lock_file(self):
+        self.assertEqual(lock_file_paths(self.one_process_project_root), [store_lock_file_path(self.one_process_project_root)])
+        self.assertEqual(lock_file_paths(self.pooled_project_root),
+                         sorted([store_lock_file_path(self.pooled_project_root),
+                                 lane_lock_file_path(lane_work_root(self.pooled_project_root, 'actors'))]))
 
     def test_the_receipts_owner_records_and_seals_differ_in_clock_pid_free_byte_and_receipt_hash_fields_only(self):
         for record_name, dropped_field_names in ((RECEIPT_RECORD_NAME, RECEIPT_CLOCK_AND_FREE_BYTE_FIELDS),

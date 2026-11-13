@@ -5,10 +5,13 @@ import contextlib
 import multiprocessing
 from typing import NamedTuple
 
+from native_store.interprocess_lock import hold_lane_in_use_part_until_process_end
+from native_store.store_paths import lane_work_root
 from native_store.unit_ledger import FreeDiskFloorRefusedError, MachineWindowRefusedError
 from world.eligible_tile_selection import (FAILED_STATUS, PASS_STATUS, StepSealMissingError, failed_step_row, own_step_row, sealed_tile_step,
                                            unit_step_evidence)
 from world.raw_map_step import tile_unit_key
+from world.tile_census import WORLD_LANE_NAME
 from world.tile_step_gap_rows import upstream_failed_row
 
 BATCH_EXIT_DONE = 0
@@ -110,6 +113,7 @@ def ordered_tile_steps_outcome(tile_step_run, first_stopped_position, task):
 def initialize_tile_step_worker(run_factory, run_factory_arguments, first_stopped_position):
     global tile_step_worker
     tile_step_worker = TileStepWorker(run_factory(*run_factory_arguments), first_stopped_position)
+    hold_lane_in_use_part_until_process_end(lane_work_root(tile_step_worker.run.project_root, WORLD_LANE_NAME))
 
 
 def worker_tile_steps_outcome(task):

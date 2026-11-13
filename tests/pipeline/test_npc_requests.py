@@ -1,9 +1,12 @@
+import hashlib
 import io
 import json
+import os
 from pathlib import Path, PurePosixPath
 import shutil
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
@@ -255,6 +258,22 @@ class ConvertNpcGapTests(unittest.TestCase):
         receipt = json.loads((lane_work_root(self.project_root, 'actors') / 'npc__2' / 'npc-profile' / 'receipt.json').read_bytes())
         self.assertEqual(receipt['config']['profileToolPins'], CHANGED_PROFILE_TOOL_PINS)
 
+    def test_a_converted_model_archive_is_a_second_name_of_its_converter_file_and_its_receipt_holds_its_sha256_and_size(self):
+        converted_archive = self.project_root / 'converted.l2asset'
+        converted_archive.write_bytes(b'synthetic converted archive')
+        self.converter.package.return_value = (None, SimpleNamespace(package_name='LineageMonsters'))
+        self.converter.convert.return_value = {'file': converted_archive, 'cacheHit': False}
+        run, unit_key = self.conversion_run(), model_catalog_id_of(self.convertible_selection)
+        with patch.object(convert_actors, 'serialized_animation_reference', return_value='LineageMonsters.synthetic_anim'):
+            outcome = run.convert_model('npc:1', self.npcgrp['data']['npc'][0])
+        archive_copy = run.model_ledger.unit_step_directory(unit_key) / 'asset.l2asset'
+        converted_bytes = converted_archive.read_bytes()
+        self.assertEqual((os.stat(archive_copy).st_ino, os.stat(archive_copy).st_nlink), (os.stat(converted_archive).st_ino, 2))
+        archive_record = {'path': archive_copy.relative_to(run.model_ledger.lane_folder).as_posix(),
+                          'sha256': hashlib.sha256(converted_bytes).hexdigest(), 'bytes': len(converted_bytes)}
+        self.assertEqual((outcome['status'], outcome['outputs'], run.model_ledger.sealed_receipt(unit_key)['outputs']),
+                         ('pass', [archive_record], [archive_record]))
+
     def test_a_converter_refusal_is_a_path_free_listed_gap_and_an_os_error_is_failed_and_unsealed(self):
         unit_key = model_catalog_id_of(self.convertible_selection)
         self.converter.package.side_effect = ValueError(f'Package table adapter refused {self.converter.output}\\.work\\x.log')
@@ -301,7 +320,6 @@ class ConvertNpcGapTests(unittest.TestCase):
         self.assertEqual((outcome['status'], outcome['reason']), ('gap', 'npc-name-row-missing'))
         self.assertEqual(lane_reasons_at_each_seal, [{('npc:2', 'npc-profile'): 'npc-name-row-missing',
                                                       ('npc:2', 'npc-sound-identities'): 'sound-identity-unresolved'}])
-
 
 
 class ActorsLaneStoreOutputTests(unittest.TestCase):

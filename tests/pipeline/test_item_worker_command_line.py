@@ -34,7 +34,8 @@ WORKER_COUNT_REFUSAL = '--workers must be an integer from 1 to 61: '
 PRINTED_PASS_OUTCOMES = [{'key': f'synthetic item unit {number}', 'step': 'items', 'status': 'pass', 'reason': None, 'cacheHit': False}
                          for number in (1, 2)]
 CONVERT_ACTORS_NAMES_REPLACED_BY_DEFAULT_MOCKS = ('require_actors_lane_store_output', 'require_reference_client', 'require_batch_preflight',
-                                                  'run_at_below_normal_priority', 'Converter')
+                                                  'run_at_below_normal_priority', 'Converter', 'lane_batch_lock',
+                                                  'share_identical_files_of_batch_lane')
 
 
 class ItemConversionWorkerWiringTests(ItemBatchFixture, unittest.TestCase):

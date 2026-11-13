@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 from pathlib import Path
 import shutil
 import tempfile
@@ -8,6 +9,8 @@ from typing import NamedTuple
 
 from native_store.catalog_writer import (STORE_CATALOG_NAME, CatalogWriteError, replace_file, require_catalog_unchanged,
                                          require_catalog_within_byte_limit, sha256_hex, sha256_of_file, store_file_key)
+from native_store.interprocess_lock import is_lane_store_root
+from native_store.linked_file_copy import source_can_be_linked
 from native_store.store_paths import confined_child_path, refuse_reparse_points
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, nearest_existing_ancestor
 
@@ -40,10 +43,15 @@ def missing_store_file_sources(target_root, store_file_sources):
     return missing_sources
 
 
+def store_file_is_linked(target_root, store_file_source):
+    return is_lane_store_root(target_root) and source_can_be_linked(store_file_source.source_path, target_root)
+
+
 def require_free_bytes_for_missing_store_files(target_root, missing_sources, disk_usage):
     if not missing_sources:
         return
-    missing_bytes = sum(store_file_source.source_path.stat().st_size for store_file_source in missing_sources)
+    missing_bytes = sum(store_file_source.source_path.stat().st_size for store_file_source in missing_sources
+                        if not store_file_is_linked(target_root, store_file_source))
     free_bytes = disk_usage(nearest_existing_ancestor(target_root)).free
     if missing_bytes + BATCH_MINIMUM_FREE_BYTES > free_bytes:
         raise CatalogWriteError(f'Missing store files of {missing_bytes} bytes plus the floor of {BATCH_MINIMUM_FREE_BYTES} bytes exceed the '
@@ -64,12 +72,16 @@ def write_hashed_source_chunks(source_path, temporary_file):
     return copied_bytes_digest.hexdigest()
 
 
+def require_source_bytes_hold_expected_sha256(store_file_source, source_bytes_sha256):
+    if source_bytes_sha256 != store_file_source.sha256:
+        raise CatalogWriteError(f'Store file source no longer has its expected SHA-256 {store_file_source.sha256}; '
+                                f'copy stopped: {store_file_source.source_path}')
+
+
 def write_temporary_copy_of_expected_source(store_file_source, temporary_file):
     with temporary_file:
         copied_sha256 = write_hashed_source_chunks(store_file_source.source_path, temporary_file)
-    if copied_sha256 != store_file_source.sha256:
-        raise CatalogWriteError(f'Store file source no longer has its expected SHA-256 {store_file_source.sha256}; '
-                                f'copy stopped: {store_file_source.source_path}')
+    require_source_bytes_hold_expected_sha256(store_file_source, copied_sha256)
 
 
 def copy_source_to_absent_destination(store_file_source, destination):
@@ -88,12 +100,28 @@ def copy_source_to_absent_destination(store_file_source, destination):
         raise CatalogWriteError('Runtime copy hash differs: ' + str(destination))
 
 
+def link_source_to_absent_destination(store_file_source, destination):
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        os.link(store_file_source.source_path, destination)
+    except FileExistsError:
+        require_existing_destination_holds_expected_sha256(destination, store_file_source.sha256)
+        return
+    try:
+        require_source_bytes_hold_expected_sha256(store_file_source, sha256_of_file(destination))
+    except CatalogWriteError:
+        destination.unlink()
+        raise
+
+
 def copy_immutable_store_file(target_root, store_file_source):
     destination = confined_child_path(target_root, store_file_source.relative)
     if destination.exists():
         require_existing_destination_holds_expected_sha256(destination, store_file_source.sha256)
-        return
-    copy_source_to_absent_destination(store_file_source, destination)
+    elif store_file_is_linked(target_root, store_file_source):
+        link_source_to_absent_destination(store_file_source, destination)
+    else:
+        copy_source_to_absent_destination(store_file_source, destination)
 
 
 def copy_store_files(target_root, store_file_sources, before, after, *, disk_usage=shutil.disk_usage):

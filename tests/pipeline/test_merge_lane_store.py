@@ -128,6 +128,14 @@ class LaneStoreMergeTests(unittest.TestCase):
             merge_lane_store(self.fixture.lane_root, target_root, base_sha256)
         self.assertEqual(snapshot_tree(target_root), snapshot)
 
+    def test_a_merge_on_one_volume_copies_and_no_target_file_shares_a_lane_file(self):
+        self.fixture.merge()
+        for resource_path in self.fixture.lane_files:
+            lane_file, target_file = (root / relative_resource(resource_path) for root in (self.fixture.lane_root, self.fixture.target_root))
+            self.assertNotEqual(os.stat(target_file).st_ino, os.stat(lane_file).st_ino, resource_path)
+        for store_root in (self.fixture.lane_root, self.fixture.target_root):
+            self.assertEqual({os.stat(path).st_nlink for path in store_root.rglob('*') if path.is_file()}, {1})
+
     def test_two_fresh_targets_merged_with_one_lane_store_get_byte_identical_catalogs(self):
         second_target_root = self.fixture.temporary_root / 'second-target' / 'l2'
         LaneStoreFixture.build_target_store(second_target_root)
