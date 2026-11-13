@@ -34,7 +34,7 @@ How the lane-store batches use the machine, what was measured, and what is still
 | The same tile without a profiler | 1,005 s for its five slow steps in the plan 02-47 run | 346 to 352 s for all 14 steps (meshes 234, audio 38) |
 | The first 30 eligible world tiles into an empty world lane store (drive E:, no Defender exclusion) | 2,912 s for the first pass plus 1,027 s for a second pass that redoes terrain and manifests | 3,116 s in one pass with 1 worker, 1,208 s with 6 workers (2.7 cores on average, 2.4 GiB peak for the whole job) |
 | A 60-tile world lane copy (87,161 files) | 12.16 GiB | 5.69 GiB after one sharing run of 111 s; every kept file byte-identical; a second run hashes nothing in 6 s |
-| The real lane store (808,557 files, about 178 GiB), plan mode only | 178 GiB | 110.2 GiB would come back: 99.0 from identical files, 11.1 from scratch |
+| The real lane store (808,557 files, about 178 GiB), run by the roadmap thread on 2026-11-13 | 19.4 GiB free on C: | 129.8 GiB free: 110.4 GiB back (99.2 from 222,643 shared names, 11.2 from 17,187 scratch folders); the pinned file walk passes on all four lanes and a plan rerun hashes nothing |
 | One check of the pinned music encoder | 591 ms, the whole executable read each time | 14 ms after the first call of a process |
 | One `/l2/catalog.json` request of the dev server on the actors lane | 1.61 s (a python start per request) | 456 ms for the first request, under 1 ms after it |
 
