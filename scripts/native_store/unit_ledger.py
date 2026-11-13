@@ -10,8 +10,10 @@ import shutil
 import socket
 import subprocess
 import sys
+from typing import NamedTuple
 
 from native_store.canonical_json import canonical_json_bytes
+from native_store.file_identity import file_identity
 from native_store.gap_rows import load_gap_reason_patterns, sorted_gap_rows, validate_gap_row
 from native_store.store_paths import (REPOSITORY_ROOT, SHA256_PATTERN, STEP_NAME_PATTERN, StorePathError, confined_child_path,
                                       lane_store_root, lane_work_root, refuse_reparse_points, require_known_lane_name,
@@ -115,6 +117,14 @@ def locked_input_records(relative_paths, lock_path=REFERENCE_CLIENT_LOCK_PATH):
             raise UnitLedgerError(f'reference client file {relative_path} has lock class {record["class"]}, not equal')
         records.append({'path': relative_path, 'sha256': require_sha256(record['eSha256'], f'lock eSha256 of {relative_path}')})
     return sorted(records, key=lambda record: record['path'])
+
+
+class VerifiedReceipt(NamedTuple):
+    record_identities: tuple
+    receipt_bytes: bytes
+
+
+verified_receipts_by_step_directory_and_unit_key = {}
 
 
 def run_at_below_normal_priority():
@@ -248,6 +258,20 @@ class UnitLedger:
 
     def sealed_receipt(self, unit_key):
         step_directory = self.unit_step_directory(unit_key)
+        record_identities = (file_identity(step_directory / SEAL_RECORD_NAME), file_identity(step_directory / RECEIPT_RECORD_NAME))
+        receipt_key = (str(step_directory), unit_key)
+        kept_receipt = verified_receipts_by_step_directory_and_unit_key.get(receipt_key)
+        if kept_receipt is not None and kept_receipt.record_identities == record_identities:
+            return json.loads(kept_receipt.receipt_bytes)
+        verified_receipts_by_step_directory_and_unit_key.pop(receipt_key, None)
+        receipt_bytes = self.verified_receipt_bytes(unit_key, step_directory)
+        if receipt_bytes is None:
+            return None
+        if None not in record_identities:
+            verified_receipts_by_step_directory_and_unit_key[receipt_key] = VerifiedReceipt(record_identities, receipt_bytes)
+        return json.loads(receipt_bytes)
+
+    def verified_receipt_bytes(self, unit_key, step_directory):
         seal_path = step_directory / SEAL_RECORD_NAME
         if not seal_path.is_file():
             return None
@@ -263,7 +287,7 @@ class UnitLedger:
             output_path = self.lane_output_path(output['path'])
             if not (output_path.is_file() and output_path.stat().st_size == output['bytes']):
                 raise UnitLedgerError(f'sealed output {output["path"]} of {unit_key} is missing or changed; remove {step_directory} to redo it')
-        return receipt
+        return receipt_bytes
 
     def is_sealed(self, unit_key, fingerprint):
         receipt = self.sealed_receipt(unit_key)

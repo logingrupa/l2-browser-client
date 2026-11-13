@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { createReadStream, existsSync, lstatSync, readFileSync, realpathSync, type Stats } from "node:fs";
+import { createReadStream, existsSync, lstatSync, readFileSync, realpathSync, statSync, type Stats } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { dirname, extname, relative, resolve, isAbsolute } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -55,10 +55,17 @@ export interface ServedNativeCatalog {
 	readonly bytes: Buffer;
 }
 
+export type LaneUnionCatalogBuild = (nativeStoreRoot: NativeStoreRoot) => Promise<ServedNativeCatalog>;
+
 interface NativeStoreFile {
 	readonly source: NativeStoreSource;
 	readonly filePath: string;
 	readonly size: number;
+}
+
+interface KeptLaneUnionCatalog {
+	readonly sourceIdentity: string;
+	readonly servedCatalog: Promise<ServedNativeCatalog>;
 }
 
 export function nativeStoreRootNames(): readonly string[] {
@@ -183,7 +190,7 @@ function commandFailureText(error: unknown): string {
 	return standardError || (error instanceof Error ? error.message : String(error));
 }
 
-async function readLaneUnionCatalog(nativeStoreRoot: NativeStoreRoot): Promise<ServedNativeCatalog> {
+async function buildLaneUnionCatalog(nativeStoreRoot: NativeStoreRoot): Promise<ServedNativeCatalog> {
 	const commandArguments = ["-B", laneUnionCatalogScriptPath, "--lane-store", nativeStoreRoot.storeRoot, "--shared-store", nativeStoreRoot.sharedStoreRoot];
 	let standardOutput: string;
 	try {
@@ -194,6 +201,35 @@ async function readLaneUnionCatalog(nativeStoreRoot: NativeStoreRoot): Promise<S
 	}
 	return parseLaneUnionCatalogDocument(standardOutput, nativeStoreRoot.rootName);
 }
+
+function storeCatalogFileIdentity(catalogFilePath: string): string {
+	const stats = statSync(catalogFilePath, { bigint: true, throwIfNoEntry: false });
+	return stats === undefined ? "absent" : [stats.dev, stats.ino, stats.size, stats.mtimeNs].join(":");
+}
+
+function laneUnionCatalogSourceIdentity(nativeStoreRoot: NativeStoreRoot): string {
+	return [nativeStoreRoot.storeRoot, nativeStoreRoot.sharedStoreRoot]
+		.map((storeRoot) => storeCatalogFileIdentity(resolve(storeRoot, storeCatalogFileName)))
+		.join("|");
+}
+
+export function createKeptLaneUnionCatalogReader(buildLaneUnionCatalog: LaneUnionCatalogBuild): LaneUnionCatalogBuild {
+	const keptCatalogsByNativeStoreRoot = new Map<string, KeptLaneUnionCatalog>();
+	return async (nativeStoreRoot) => {
+		const sourceIdentity = laneUnionCatalogSourceIdentity(nativeStoreRoot);
+		const nativeStoreRootKey = JSON.stringify([comparablePath(nativeStoreRoot.storeRoot), comparablePath(nativeStoreRoot.sharedStoreRoot)]);
+		const keptCatalog = keptCatalogsByNativeStoreRoot.get(nativeStoreRootKey);
+		if (keptCatalog?.sourceIdentity === sourceIdentity) return keptCatalog.servedCatalog;
+		const startedCatalog: KeptLaneUnionCatalog = { sourceIdentity, servedCatalog: buildLaneUnionCatalog(nativeStoreRoot) };
+		keptCatalogsByNativeStoreRoot.set(nativeStoreRootKey, startedCatalog);
+		startedCatalog.servedCatalog.catch(() => {
+			if (keptCatalogsByNativeStoreRoot.get(nativeStoreRootKey) === startedCatalog) keptCatalogsByNativeStoreRoot.delete(nativeStoreRootKey);
+		});
+		return startedCatalog.servedCatalog;
+	};
+}
+
+const readLaneUnionCatalog = createKeptLaneUnionCatalogReader(buildLaneUnionCatalog);
 
 export async function readServedNativeCatalog(nativeStoreRoot: NativeStoreRoot): Promise<ServedNativeCatalog | undefined> {
 	const laneCatalogFile = confinedNativeStoreFile("lane", nativeStoreRoot.storeRoot, storeCatalogFileName);

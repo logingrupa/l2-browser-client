@@ -192,7 +192,7 @@ class SurfaceMaterialTests(unittest.TestCase):
         converter = SimpleNamespace(output=scratch_work_root(self, 'bsp-material-'), texture=texture,
                                     material_texture=lambda work, identity: (synthetic_png_bytes(), {}, identity, []))
         store_root = scratch_work_root(self, 'bsp-store-') / 'l2'
-        with patch.object(bsp_surface_materials, 'read_material_class_defaults', return_value=SYNTHETIC_CLASS_DEFAULTS):
+        with patch.object(bsp_surface_materials, 'kept_material_class_defaults', return_value=SYNTHETIC_CLASS_DEFAULTS):
             outcome = convert_surface_material(TEXTURED_MATERIAL, map_sources, converter, store_root, None, store_root)
         program_path = store_root / outcome.material.program['directory'] / 'program.json'
         return outcome, json.loads(program_path.read_bytes()), store_root, converted_references
@@ -231,7 +231,7 @@ class SurfaceMaterialTests(unittest.TestCase):
         store_root = scratch_work_root(self, 'bsp-store-')
         texture_declarations = [{'field': 'USize', 'declaredType': 'int', 'declaringClass': 'Engine.Texture', 'enumMembers': None,
                                  'classDefault': {'field': 'USize', 'value': None, 'provenance': 'ue-zero', 'declaringClass': 'Engine.Texture'}}]
-        with patch.object(bsp_surface_materials, 'read_material_class_defaults', return_value={'Engine.Texture': texture_declarations}):
+        with patch.object(bsp_surface_materials, 'kept_material_class_defaults', return_value={'Engine.Texture': texture_declarations}):
             outcome = convert_surface_material('SyntheticUnported.TriggeredOscillator', map_sources, converter, store_root, None, store_root)
         self.assertIsNone(outcome.material.png)
         self.assertIn('material-class-unported:Engine.TexOscillatorTriggered', outcome.gap_reasons)

@@ -102,7 +102,7 @@ class ExactSoundTests(unittest.TestCase):
             archive.writestr('asset.json', asset)
             archive.writestr('provenance.json', provenance)
             archive.writestr('audio.wav', audio)
-        return resolved, SimpleNamespace(convert=lambda request: {'file': str(archive_path)})
+        return resolved, SimpleNamespace(output=Path(directory) / 'sound-converter', convert=lambda request: {'file': str(archive_path)})
 
     def test_a_converted_wav_must_record_its_payload_unchanged(self):
         with tempfile.TemporaryDirectory() as directory, patch.object(exact_sound_sources, 'verify_archive', return_value={'sha256': 'b' * 64}):

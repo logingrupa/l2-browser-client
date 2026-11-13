@@ -18,6 +18,7 @@ from native_assets_lib.gltf import json_bytes
 from native_store import catalog_writer
 from native_store.catalog_writer import (CatalogWriteError, NATIVE_RESOURCE_PATH_PATTERN, add_store_file, merge_catalog_slice,
                                          read_store_catalog, write_store)
+from native_store.interprocess_lock import LOCK_FILE_SUFFIX
 from native_store.merge_lane_store import main_checkout_root
 from native_store.store_paths import StorePathError, lane_store_root
 from native_store.unit_ledger import UnitLedgerError
@@ -65,7 +66,7 @@ def git_absolute_path(directory, query):
 
 def snapshot_tree(root):
     return {path.relative_to(root).as_posix(): (path.read_bytes(), path.stat().st_mtime_ns)
-            for path in root.rglob('*') if path.is_file()}
+            for path in root.rglob('*') if path.is_file() and path.suffix != LOCK_FILE_SUFFIX}
 
 
 class LaneCatalogWriterTests(unittest.TestCase):

@@ -140,7 +140,7 @@ class SkyProgramTextureImageTests(unittest.TestCase):
         package = read_unreal_package(data, SKY_PACKAGE_FILENAME)
         graph = read_material_graph(package, package.exports[0])
         products, gap_reasons = sky_texture_products_by_node(package, graph)
-        with patch.object(sky_materials, 'read_material_class_defaults', return_value=self.texture_declarations):
+        with patch.object(sky_materials, 'kept_material_class_defaults', return_value=self.texture_declarations):
             program = sky_material_program(graph, None, None, sky_texture_pngs_by_node(products))
         return program, products, gap_reasons
 

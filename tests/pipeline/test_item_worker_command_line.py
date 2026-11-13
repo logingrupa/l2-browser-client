@@ -17,6 +17,7 @@ from actors.item_census import run_item_conversion
 from actors.item_requests import ITEM_CENSUS_RELATIVE_PATH
 from native_catalog.tables import decode_table
 from native_store.store_paths import lane_work_root
+from native_store.worker_count_argument import worker_count_argument
 from test_item_batch_bookkeeping import SLICE_LIMIT, BookkeepingItemRun, ItemBatchFixture
 from test_item_unit_worker_processes import build_project_tree
 
@@ -119,7 +120,7 @@ class WorkersArgumentTests(unittest.TestCase):
             with self.subTest(worker_count_text=worker_count_text):
                 self.assertIn(WORKER_COUNT_REFUSAL + repr(worker_count_text),
                               self.argument_error_text(['--batch', 'items', '--limit', '1', '--workers', worker_count_text]))
-        self.assertEqual([item_unit_workers.worker_count_argument(text) for text in ('1', '61')], [1, 61])
+        self.assertEqual([worker_count_argument(text) for text in ('1', '61')], [1, 61])
 
     def test_the_items_batch_accepts_workers_and_hands_the_count_to_the_item_conversion(self):
         run_item_conversion_of_the_command = mock.Mock(return_value=PRINTED_PASS_OUTCOMES)

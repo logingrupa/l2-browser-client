@@ -7,6 +7,7 @@ from actors.item_requests import (ARMORGRP_TABLE_NAME, ITEM_CENSUS_RELATIVE_PATH
                                   grouped_item_status, item_gap_rows, ungrouped_item_reason)
 from actors.item_unit_workers import item_worker_run, outcomes_converted_by_workers
 from native_store.gap_rows import write_gap_rows
+from native_store.lane_roots import create_lane_work_and_store_roots
 from native_store.store_paths import lane_work_root
 
 ITEM_CENSUS_SCHEMA_VERSION = 1
@@ -103,6 +104,7 @@ def run_item_batch(run, limit, preflight):
 
 def run_pooled_item_batch(run, limit, preflight, worker_count, worker_run_factory, worker_run_arguments):
     slice_units, unsealed_units = selected_slice_units(run, limit)
+    create_lane_work_and_store_roots(run.project_root, ITEM_LANE_NAME)
     converted_outcomes = outcomes_converted_by_workers([unit['unitKey'] for unit in unsealed_units], worker_count, worker_run_factory,
                                                        worker_run_arguments, preflight)
     for unit, outcome in zip(unsealed_units, converted_outcomes, strict=True):

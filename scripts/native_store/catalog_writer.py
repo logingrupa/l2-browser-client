@@ -9,6 +9,7 @@ import re
 import tempfile
 from typing import NamedTuple
 
+from native_store.interprocess_lock import lane_store_publish_lock
 from native_store.native_material_program_pins import (MATERIAL_PROGRAM_FILE_NAME, glb_native_material_program_sha256s,
                                                        native_material_program_directory)
 from native_store.store_paths import (SHA256_PATTERN, StorePathError, confined_child_path, refuse_reparse_points,
@@ -88,12 +89,28 @@ def replace_file(path, payload):
         raise CatalogWriteError('Runtime copy hash differs: ' + str(path))
 
 
+def require_same_immutable_file(path, payload):
+    if sha256_of_file(path) != sha256_hex(payload):
+        raise CatalogWriteError('Existing immutable runtime asset is corrupt; preserved: ' + str(path))
+
+
 def immutable_write(path, payload):
     if path.exists():
-        if sha256_of_file(path) != sha256_hex(payload):
-            raise CatalogWriteError('Existing immutable runtime asset is corrupt; preserved: ' + str(path))
+        require_same_immutable_file(path, payload)
         return
-    replace_file(path, payload)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(dir=path.parent, prefix=path.name + '.', suffix='.tmp', delete=False) as output:
+        temporary = Path(output.name)
+        output.write(payload)
+    try:
+        os.link(temporary, path)
+    except FileExistsError:
+        require_same_immutable_file(path, payload)
+        return
+    finally:
+        temporary.unlink(missing_ok=True)
+    if sha256_of_file(path) != sha256_hex(payload):
+        raise CatalogWriteError('Runtime copy hash differs: ' + str(path))
 
 
 def store_file_key(relative):
@@ -399,15 +416,20 @@ def require_catalog_within_byte_limit(catalog_path, after):
         raise CatalogWriteError(f'Store catalog of {len(after)} bytes exceeds {MAXIMUM_CATALOG_BYTES} bytes; preserved: {catalog_path}')
 
 
+def write_store_files(store_root, files):
+    for relative, payload in files.values():
+        immutable_write(confined_child_path(store_root, relative), payload)
+
+
 def write_store(store_root, files, before, after):
     root = refuse_reparse_points(store_root)
-    missing_relative_paths = verify_store_destinations(root, files)
-    require_catalog_unchanged(root, before)
-    require_catalog_within_byte_limit(confined_child_path(root, STORE_CATALOG_NAME), after)
-    for relative, payload in files.values():
-        immutable_write(confined_child_path(root, relative), payload)
-    require_catalog_unchanged(root, before)
-    catalog_replaced = after != before
-    if catalog_replaced:
-        replace_file(confined_child_path(root, STORE_CATALOG_NAME), after)
+    with lane_store_publish_lock(root):
+        missing_relative_paths = verify_store_destinations(root, files)
+        require_catalog_unchanged(root, before)
+        require_catalog_within_byte_limit(confined_child_path(root, STORE_CATALOG_NAME), after)
+        write_store_files(root, files)
+        require_catalog_unchanged(root, before)
+        catalog_replaced = after != before
+        if catalog_replaced:
+            replace_file(confined_child_path(root, STORE_CATALOG_NAME), after)
     return {'filesWritten': len(missing_relative_paths) + int(catalog_replaced), 'catalogSha256': sha256_hex(after)}
