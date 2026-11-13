@@ -12,9 +12,14 @@ DECODED_PROPERTY_TYPES = (ARRAY_PROPERTY_TYPE, STRUCT_PROPERTY_TYPE)
 NUMERIC_ELEMENT_FORMATS = {'float': 'f', 'int': 'i', 'byte': 'B'}
 NAME_ELEMENT_TYPE = 'name'
 BYTE_ELEMENT_FORMAT = 'B'
+FROZEN_NON_FINITE_PROPERTY_MESSAGE = 'Non-finite property'
 
 
 class StructPropertyValueError(FormatError):
+    pass
+
+
+class NonFinitePropertyValueError(StructPropertyValueError):
     pass
 
 
@@ -33,7 +38,7 @@ def payload_end(tag):
 
 def finite_numbers(values, path):
     if not all(math.isfinite(value) for value in values.values() if isinstance(value, float)):
-        raise StructPropertyValueError(f'{path} holds a non-finite number')
+        raise NonFinitePropertyValueError(f'{path} holds a non-finite number')
     return values
 
 
@@ -55,7 +60,10 @@ class StructPropertyDecoder:
             if tag['type'] not in DECODED_PROPERTY_TYPES:
                 continue
             array_index = tag['arrayIndex'] if tag['arrayIndex'] is not None else (0 if tag['name'] in indexed_names else None)
-            value = self.tag_value(tag, scope, member_path(parent_path, tag['name'], array_index), depth)
+            try:
+                value = self.tag_value(tag, scope, member_path(parent_path, tag['name'], array_index), depth)
+            except NonFinitePropertyValueError:
+                value = unparsed_value(tag)
             if array_index is None:
                 values[tag['name']] = value
             else:
@@ -94,7 +102,8 @@ class StructPropertyDecoder:
         except StructPropertyValueError:
             raise
         except FormatError as error:
-            raise StructPropertyValueError(f'{path} at offset {start}: {error}') from error
+            error_class = NonFinitePropertyValueError if str(error) == FROZEN_NON_FINITE_PROPERTY_MESSAGE else StructPropertyValueError
+            raise error_class(f'{path} at offset {start}: {error}') from error
 
     def array_payload_value(self, tag, scope, path, depth):
         element_type = container_inner_type(self.declared_types.property_type(scope, tag['name']), 'array')
@@ -104,9 +113,11 @@ class StructPropertyDecoder:
         reader = Reader(self.package.data, tag['payloadOffset'], payload_end(tag))
         try:
             count = reader.count(MAXIMUM_ARRAY_ELEMENTS)
+            values = [read_element(reader, f'{path}[{index}]') for index in range(count)]
+        except StructPropertyValueError:
+            raise
         except FormatError as error:
-            raise StructPropertyValueError(f'{path} at offset {tag["payloadOffset"]}: {error}') from error
-        values = [read_element(reader, f'{path}[{index}]') for index in range(count)]
+            raise StructPropertyValueError(f'{path} at offset {reader.position}: {error}') from error
         if reader.position != reader.end:
             raise StructPropertyValueError(f'{path} at offset {reader.position}: {reader.end - reader.position} bytes follow its {count} elements')
         return values
@@ -117,7 +128,7 @@ class StructPropertyDecoder:
         if element_type.casefold() in NUMERIC_ELEMENT_FORMATS:
             return self.number_element_reader(NUMERIC_ELEMENT_FORMATS[element_type.casefold()])
         if element_type.casefold() == NAME_ELEMENT_TYPE:
-            return lambda reader, path: self.package.name(self.element_compact(reader, path))
+            return lambda reader, path: self.package.name(reader.compact())
         if self.declared_types.is_enum(scope, element_type):
             return self.number_element_reader(BYTE_ELEMENT_FORMAT)
         if self.declared_types.is_object_class(scope, element_type):
@@ -126,27 +137,15 @@ class StructPropertyDecoder:
 
     def number_element_reader(self, element_format):
         def read_number(reader, path):
-            value = self.element_number(reader, element_format, path)
+            value = reader.number(element_format)
             if isinstance(value, float) and not math.isfinite(value):
-                raise StructPropertyValueError(f'{path} holds a non-finite number')
+                raise NonFinitePropertyValueError(f'{path} holds a non-finite number')
             return value
         return read_number
 
     def object_element(self, reader, path):
-        object_name = self.package.object_name(self.element_compact(reader, path))
+        object_name = self.package.object_name(reader.compact())
         return {'class': 'Object', 'object': object_name} if object_name else None
-
-    def element_number(self, reader, element_format, path):
-        try:
-            return reader.number(element_format)
-        except FormatError as error:
-            raise StructPropertyValueError(f'{path} at offset {reader.position}: {error}') from error
-
-    def element_compact(self, reader, path):
-        try:
-            return reader.compact()
-        except FormatError as error:
-            raise StructPropertyValueError(f'{path} at offset {reader.position}: {error}') from error
 
 
 def decode_property_tags(package, tags, owner_class, declared_types, rules):

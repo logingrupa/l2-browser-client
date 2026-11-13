@@ -183,6 +183,19 @@ class DynamicArrayTests(unittest.TestCase):
         self.assertEqual(values['Unknowns']['unparsedHex'], '0107')
         self.assertEqual(values['Count']['unparsedHex'], '0107')
 
+    def test_a_non_finite_number_keeps_its_nearest_struct_or_array_tag_as_the_unparsed_record(self):
+        not_a_number = struct.pack('<f', float('nan'))
+        def body(names):
+            nested_nan = float_tag(names, 'Min', 1.0) + compact(names['Max']) + bytes([FLOAT_PROPERTY_TYPE | (2 << 4)]) + not_a_number + compact(names['None'])
+            return (array_tag(names, 'Weights', 2, struct.pack('<f', 1.0) + not_a_number) + struct_tag(names, 'Spot', 'Vector', not_a_number * 3)
+                    + struct_tag(names, 'Turn', 'RangeVector', struct_tag(names, 'X', 'Range', nested_nan) + compact(names['None']))
+                    + struct_tag(names, 'Fog', 'Range', range_body(names, 1.0, 2.0)))
+        values = decoded_holder(body)
+        self.assertEqual((values['Weights']['type'], values['Spot']['struct']), (ARRAY_PROPERTY_TYPE, 'Vector'))
+        self.assertEqual(values['Turn']['X']['struct'], 'Range')
+        self.assertTrue(values['Turn']['X']['unparsedHex'].endswith(not_a_number.hex() + '00'))
+        self.assertEqual(values['Fog'], {'Min': 1.0, 'Max': 2.0})
+
     def test_an_array_that_leaves_bytes_after_its_elements_is_refused_with_its_path(self):
         with self.assertRaisesRegex(StructPropertyValueError, r'^Weights at offset \d+: 1 bytes follow its 1 elements'):
             decoded_holder(lambda names: array_tag(names, 'Weights', 1, struct.pack('<f', 1.0) + b'\x00'))
