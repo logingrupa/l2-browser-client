@@ -1,16 +1,18 @@
 import hashlib
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import struct
 
 from native_assets import UMODEL, Converter
 from native_assets_lib.texture_mips import UnsupportedTextureSource, build_texture_source
 from native_assets_lib.texture_package_118 import read_unreal_package
+from native_assets_lib.umodel_import_closure import UMODEL_PACKAGE_SUFFIXES
 from native_catalog.ue2 import FormatError
 from native_store.catalog_writer import add_store_file
 from native_store.interprocess_lock import convert_under_request_lock
 from native_store.store_file_publish import publish_store_files
 from native_store.store_paths import lane_work_root
-from reference_client_guard import require_reference_client
+from native_store.unit_ledger import process_reference_client_lock
+from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, require_reference_client
 from world.static_mesh_step import MODEL_CONVERSION_ERRORS, conversion_failure_reason
 from world.tile_census import WORLD_LANE_NAME
 
@@ -69,13 +71,20 @@ def png_dimensions(png_bytes):
     return list(struct.unpack('>II', png_bytes[16:24]))
 
 
+def converter_package_request(relative_path, lock_path=REFERENCE_CLIENT_LOCK_PATH):
+    stem = PurePosixPath(relative_path).stem.casefold()
+    same_stem = [path for path in process_reference_client_lock(lock_path).records_by_path
+                 if PurePosixPath(path).stem.casefold() == stem and PurePosixPath(path).suffix.casefold() in UMODEL_PACKAGE_SUFFIXES]
+    return PurePosixPath(relative_path).stem if len(same_stem) == 1 else relative_path
+
+
 def minimap_texture_converter(project_root, client):
     return Converter(client, lane_work_root(project_root, WORLD_LANE_NAME) / MINIMAP_TEXTURE_CONVERTER_FOLDER, UMODEL, project_root=project_root)
 
 
-def convert_minimap_texture(converter, package_name, object_name):
+def convert_minimap_texture(converter, package_request, object_name):
     try:
-        conversion = convert_under_request_lock(converter, {'kind': 'texture', 'package': package_name, 'object': object_name})
+        conversion = convert_under_request_lock(converter, {'kind': 'texture', 'package': package_request, 'object': object_name})
     except MODEL_CONVERSION_ERRORS as error:
         return None, conversion_failure_reason(error)
     archive_path = Path(conversion['file'])

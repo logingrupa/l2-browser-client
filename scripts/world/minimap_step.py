@@ -11,7 +11,8 @@ from world.minimap_join import (HUNTINGZONE_TABLE_ROLE, SCHEMA_FIELD_MEANING_LAB
 from world.minimap_route_step import current_minimap_route, run_minimap_route_step
 from world.minimap_sources import (MINIMAP_TABLE_PATHS, MINIMAP_TILE_PACKAGE_PATHS, MinimapSources, decoded_table_rows,
                                    lock_equal_minimap_source_paths, tile_frame_extent)
-from world.minimap_textures import convert_minimap_texture, minimap_texture_converter, read_texture_package_index, store_converted_texture
+from world.minimap_textures import (convert_minimap_texture, converter_package_request, minimap_texture_converter, read_texture_package_index,
+                                    store_converted_texture)
 from world.raw_map_step import (PRODUCTS_FOLDER_NAME, RAW_STEP_NAME, read_tile_census_row, read_tile_map_lock_record, require_tile_id,
                                 tile_map_path, tile_step_row, tile_unit_key)
 from world.tile_census import WORLD_LANE_NAME
@@ -105,7 +106,8 @@ def converted_zone_key_texture(project_root, client, store_root, sources, item, 
     if item is None:
         return None, [], []
     package = sources.packages[ZONE_NAME_PACKAGE_ROLE]
-    conversion, failure_reason = convert_minimap_texture(converter or minimap_texture_converter(project_root, client), package['packageName'], item['object'])
+    conversion, failure_reason = convert_minimap_texture(converter or minimap_texture_converter(project_root, client), converter_package_request(package['path']),
+                                                         item['object'])
     if conversion is None:
         return None, [], [{'reason': failure_reason, 'evidence': item['object']}]
     record, _, output = store_converted_texture(store_root, conversion, item)

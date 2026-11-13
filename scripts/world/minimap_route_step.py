@@ -18,8 +18,8 @@ from reference_client_guard import require_reference_client
 from world.format5_texture_pixels import Format5PixelMismatch, require_png_equals_format5_mip0, texture_format_id
 from world.minimap_radar_route_recipe import JOIN_UNRESOLVED_REASON_PREFIX, read_minimap_radar_route_recipe
 from world.minimap_sources import decoded_table_rows
-from world.minimap_textures import (TEXTURE_SOURCE_READABLE_STATUS, convert_minimap_texture, export_named, minimap_texture_converter,
-                                    read_texture_package, store_converted_texture, texture_package_index)
+from world.minimap_textures import (TEXTURE_SOURCE_READABLE_STATUS, convert_minimap_texture, converter_package_request, export_named,
+                                    minimap_texture_converter, read_texture_package, store_converted_texture, texture_package_index)
 from world.raw_map_step import PRODUCTS_FOLDER_NAME
 from world.tile_census import WORLD_LANE_NAME
 from world.tile_json_resource import write_tile_json_resource
@@ -129,7 +129,7 @@ class RouteTextureConverter:
         if texture_format is None:
             return self.add_gap(format_rule_or_reason, index_entry['object'])
         converter = self.converter or minimap_texture_converter(self.project_root, self.client)
-        conversion, failure_reason = convert_minimap_texture(converter, package.package_name, index_entry['object'])
+        conversion, failure_reason = convert_minimap_texture(converter, converter_package_request(relative_path), index_entry['object'])
         if conversion is None:
             return self.add_gap(failure_reason, index_entry['object'])
         pixel_check = None

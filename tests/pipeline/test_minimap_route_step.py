@@ -17,6 +17,7 @@ from world import minimap_route_step
 from world.format5_texture_pixels import Format5PixelMismatch, require_png_equals_format5_pixels
 from world.minimap_radar_route_recipe import read_minimap_radar_route_recipe
 from world.minimap_route_step import MINIMAP_ROUTE_UNIT_KEY, current_minimap_route, run_minimap_route_step
+from world.minimap_textures import converter_package_request
 from world.tile_census import WORLD_LANE_NAME
 
 CLIENT_ROOT = Path('E:/Lineage2-client')
@@ -164,6 +165,13 @@ class MinimapRouteStepTests(unittest.TestCase):
 
     def test_the_route_unit_key_names_one_interlude_unit(self):
         self.assertEqual(MINIMAP_ROUTE_UNIT_KEY, 'minimap-route:interlude')
+
+    def test_a_package_name_two_client_files_share_is_requested_by_its_pinned_path(self):
+        converter = SyntheticTextureConverter(self.project_root / 'converter')
+        self.run_route(converter)
+        packages = {request['package'] for request in converter.requests}
+        self.assertEqual(packages, {'L2_RadarMap', 'systextures/L2Font-e.utx'})
+        self.assertEqual(converter_package_request('systextures/l2zonename.utx'), 'l2zonename')
 
 
 if __name__ == '__main__':
