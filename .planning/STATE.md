@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 02-95-PLAN.md
-last_updated: "2026-11-13T17:54:55.491Z"
+stopped_at: Completed 02-96-PLAN.md
+last_updated: "2026-11-13T19:02:12.265Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 03 plan 03-01 complete (side-by-side check record writer and key content digest; Phase 3 start commit cb09cdc)
-state_head: 719fa2e679afddd7c96bcc344db548d60f8a557e
+state_head: 0ca67d3b6d723cf58c848d78d045b17737c0979d
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 136
-  completed_plans: 114
+  completed_plans: 115
   percent: 0
 ---
 
@@ -160,6 +160,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P91 | 72min | 3 tasks | 22 files |
 | Phase 02 P88 | 20h | 3 tasks | 11 files |
 | Phase 02 P95 | 65 min | 3 tasks | 17 files |
+| Phase 02 P96 | 95min | 3 tasks | 22 files |
 
 ## Accumulated Context
 
@@ -433,6 +434,9 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-95: roles read from several row members bind to ordered member lists, one bundle selection per member that names a sound (P1159)
 - [Phase 02]: 02-95: the route recipe is pinned to LF line endings because its SHA-256 is in every skill-sound-row fingerprint (P1160)
 - [Phase 02]: 02-95: the caster-indexed skill sound table binds mesh types 0 to 13 for player casters; NPC casters keep skill-sound-caster-index-unresolved (P1162)
+- [Phase 02]: 02-96: the level model reader reads the ULevel prefix for every licensee by recipes/world/bsp-model-licensee-rules.json (Engine.dll 4dd2f63c, P1152 and P1153); the vendored level_model_binding stays byte-identical as the 23+ cross-check (row 1075)
+- [Phase 02]: 02-96: convert_tile_batch.py --retry-tiles retries named eligible tiles whose recorded gap or failed rows would settle them (row 1076)
+- [Phase 02]: 02-96: licensees 18, 19 and 20 reviewed with equal Elbera rows; the 13 level model tiles hold sealed bsp, collision and bsp-visibility on world lane catalog 420deb2f; 11 of 12 load checks pass, none fails on missing collision; 18_15 has no record (rows 1077 to 1081)
 
 ### Pending Todos
 
@@ -521,6 +525,7 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 - Load-check infrastructure records (03-03, P815): `npc:18168` on `bba52c47...` failed with a hot-reload module error from a concurrent `src` commit during the sweep, and `tile:16_10` with `read ECONNRESET`; 03-11 lists neither as a converter defect.
 - Two converted-key owners (03-03, P816): the load-check harness list (`buildNativeCatalogIndex`) has `npc:21622` and `skill:3:1` as converted on the union, while `scripts/native_store/catalog_index_keys.py` does not; 03-11 takes the disagreement as a key index defect.
 - World lane walks (02-88, rows 1073 and 1074): on world lane catalog `b4d451dc...` every one of the 125 tiles whose load check passed has a walk record, 59 pass and 66 failed: 38 stay in the run animation at their start and never come to idle within 90 s, 19 fall below their terrain minimum (most to about -163.8 m), and 9 load no BSP mesh in the section (`world.bspMeshes` 0). `world-tile-border.spec.ts` (15_20 to 15_21) drops the pawn 113.57 m in the seam strip. The movement and world owners read the failing walks from `artifacts/lane-store/world/measurements/tile-walks-b4d451dc....json`; WORLD-05 closes when every passing tile walks.
+- World level model tiles (02-96, rows 1077 to 1081, for 02-89): the 13 tiles of licensees 18, 19, 20 and 31 hold sealed bsp, collision and bsp-visibility on world lane catalog `420deb2f...`; 11 of the 12 with a record pass the load check (24_14 `The tile anchor lies outside every chunk terrain`), 2 of 11 walks pass (24_20, 26_12). Open, each with its unblocking step: 18_15 has no tile record (manifest gap `player-start-missing`; a tile anchor rule for a tile without an enabled PlayerStart); the model lightmap tail below LicenseeVer 24 is not verified end to end and 18_15 leaves 163,885 tail bytes unwalked with 0 records (a byte replay of the loader against 18_15); the names of ULevelBase+0x48, FBspSurf+0x40, FBspSection+0x28 and the FBspSection and FBspVertex serializer addresses (a verified facts update of `recipes/world/bsp-model-licensee-rules.json`).
 - Actors lane shared-store row (02-78, row 1021): npc:21622 and npc-sounds:21622 stay pending in the actors lane coverage; they clear with the restage that writes the shared-store profile with `modelCatalogId` and the 03-11 key index fix (P816). Every other npcgrp row is converted or a listed gap on lane catalog `a1562da9...`.
 - Actor-sounds batch speed (02-78, row 1022): `run_actor_sound_slice` recomputes the fingerprint of every sealed bundle before converting new ones; the 02-95 batch of 1,396 skill-sound-row units with the 5,177 sealed NPC checks ran in 27 minutes, so this stays a speed item only.
 - Skill sound playback and coverage (02-95, P1157 to P1162; SC3b narrowed): every skillsoundgrp row is a sealed `skill-sound-row:<n>` unit (1,365 bundles), but (1) no runtime plays them on the skill-cast event (GetSkillSoundData join, cast members on the init-stage effect actor, shot members at the shot stage, the caster mesh type slot on the pawn; actors lane runtime plan, then integration with the world mixer); (2) `scripts/native_store/gap_census_derived_parts.py` still lists the rows `step-pending:skill-sounds` (integration coverage rule); (3) NPC casters and slot 14 keep `skill-sound-caster-index-unresolved:<stage>` until a native answer names their index; (4) third members DAT 4, 13, 22 keep `skill-sound-member-unrouted:<ordinal>` until a consumer or negative is verified; (5) whether a stage plays one or all non-empty members needs an IMPORTA-PC native session. The recipe LF pin in the git attributes file is the one foreign path of the actors lane for integration (P1160).
@@ -571,6 +576,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-13T17:54:28.782Z
-Stopped at: Completed 02-95-PLAN.md
+Last session: 2026-11-13T19:02:11.226Z
+Stopped at: Completed 02-96-PLAN.md
 Resume file: None
