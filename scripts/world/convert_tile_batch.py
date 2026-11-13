@@ -20,6 +20,7 @@ from world.eligible_tile_selection import (FAILED_STATUS, GAP_STATUS, PASS_STATU
                                            own_step_row, sealed_step_of_current_seal, sealed_tile_step, step_level_rows, unit_step_evidence)
 from world.eligible_tiles import read_tile_census, select_eligible_tiles
 from world.raw_map_step import tile_unit_key
+from world.terrain_seam_facts import tile_grid_position
 from world.tile_census import DEFAULT_CONVERSION_CLIENT_ROOT, WORLD_LANE_NAME
 from world.tile_manifest_step import TILE_MANIFEST_STEP_NAME
 from world.tile_step_current_seals import CURRENT_SEAL_STATE, STALE_SEAL_STATE, TILE_STEP_SEAL_CHECKS, UNSEALED_STATE, unit_step_seal
@@ -177,6 +178,10 @@ def write_tile_step_rows(project_root, step_names, tile_ids, rows):
             write_gap_rows(project_root, WORLD_LANE_NAME, step, desired_rows)
 
 
+def seam_neighbours_first_order(tile_ids):
+    return sorted(tile_ids, key=lambda tile_id: tuple(-position for position in tile_grid_position(tile_id)))
+
+
 def run_tile_batch(project_root, limit, step_runner, preflight, step_seal_checks, step_names=TILE_STEP_NAMES,
                    tile_source_identity=locked_tile_source_identity):
     if not (type(limit) is int and limit >= 1):
@@ -186,7 +191,7 @@ def run_tile_batch(project_root, limit, step_runner, preflight, step_seal_checks
     source_identities = {tile_id: tile_source_identity(tile_id) for tile_id in tile_ids}
     tile_step_run = TileStepRun(project_root, step_runner, preflight, step_names, step_seal_checks)
     step_results_by_tile, attempted_tile_ids, stop = {}, [], None
-    for tile_id in tile_ids:
+    for tile_id in seam_neighbours_first_order(tile_ids):
         if len(attempted_tile_ids) >= limit:
             break
         if not tile_has_work(project_root, tile_id, step_names, recorded_rows, step_seal_checks):

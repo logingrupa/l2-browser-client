@@ -23,6 +23,7 @@ from world.convert_tile_batch import (BATCH_EXIT_DISK_FLOOR, BATCH_EXIT_DONE, BA
 from world.eligible_tile_selection import SealedTileStep, seal_derived_step_row, step_level_rows
 from world.eligible_tiles import select_eligible_tiles
 from world.raw_map_step import read_tile_map_lock_record, tile_step_row, tile_unit_key
+from world.terrain_seam_strip import SEAM_ROLE_TILE_STEPS, neighbour_tile_id
 from world.tile_census_validation import CENSUS_READER_NAMES, TILE_CENSUS_RELATIVE_PATH, TileCensusError
 from world.tile_music import pinned_music_encoder
 from world.tile_step_current_seals import CURRENT_SEAL_STATE, TILE_STEP_SEAL_CHECKS, TileStepSealCheck, unit_step_seal
@@ -197,15 +198,15 @@ class EligibleTileSelectionTests(unittest.TestCase):
 
 class TileBatchOrderTests(TileBatchTestCase):
     def test_runs_registry_steps_in_order_on_the_first_unsealed_tile_and_marks_the_rest_pending(self):
-        steps = LedgerBackedSteps(self.project_root, object_gaps={('10_11', 'meshes'): 3})
+        steps = LedgerBackedSteps(self.project_root, object_gaps={('14_15', 'meshes'): 3})
         outcome = self.run_batch(steps)
         self.assertEqual(outcome.exit_code, BATCH_EXIT_DONE)
-        self.assertEqual(outcome.attempted_tile_ids, ['10_11'])
-        self.assertEqual(steps.calls, [('10_11', step) for step in SYNTHETIC_STEP_NAMES])
+        self.assertEqual(outcome.attempted_tile_ids, ['14_15'])
+        self.assertEqual(steps.calls, [('14_15', step) for step in SYNTHETIC_STEP_NAMES])
         rows = self.rows_by_tile_and_step()
         self.assertEqual(len(rows), len(self.eligible_tile_ids) * len(SYNTHETIC_STEP_NAMES))
-        self.assertEqual(rows[('tile:10_11', 'meshes')]['reason'], 'object-gaps:3')
-        self.assertEqual(rows[('tile:10_11', 'raw')]['status'], 'pass')
+        self.assertEqual(rows[('tile:14_15', 'meshes')]['reason'], 'object-gaps:3')
+        self.assertEqual(rows[('tile:14_15', 'raw')]['status'], 'pass')
         self.assertEqual({rows[('tile:12_13', step)]['reason'] for step in SYNTHETIC_STEP_NAMES}, {'batch-pending'})
 
     def test_a_sealed_tile_is_not_counted_and_none_of_its_steps_run_again(self):
@@ -215,56 +216,56 @@ class TileBatchOrderTests(TileBatchTestCase):
         outcome = self.run_batch(steps)
         self.assertEqual(outcome.attempted_tile_ids, ['12_13'])
         self.assertEqual(steps.calls, [('12_13', step) for step in SYNTHETIC_STEP_NAMES])
-        self.assertEqual(self.rows_by_tile_and_step()[('tile:10_11', 'manifest')]['status'], 'pass')
+        self.assertEqual(self.rows_by_tile_and_step()[('tile:14_15', 'manifest')]['status'], 'pass')
 
     def test_a_partly_sealed_tile_reruns_only_its_unsealed_units(self):
         steps = LedgerBackedSteps(self.project_root)
         for step in ('raw', 'chunks'):
-            steps(step, '10_11')
+            steps(step, '14_15')
         steps.begun.clear()
         self.run_batch(steps)
-        self.assertEqual(steps.begun, [('10_11', 'meshes'), ('10_11', 'manifest')])
+        self.assertEqual(steps.begun, [('14_15', 'meshes'), ('14_15', 'manifest')])
 
     def test_a_raising_step_fails_its_row_cascades_pending_and_the_next_tile_runs(self):
-        steps = LedgerBackedSteps(self.project_root, failing={('10_11', 'chunks')})
+        steps = LedgerBackedSteps(self.project_root, failing={('14_15', 'chunks')})
         outcome = self.run_batch(steps, limit=2)
-        self.assertEqual(outcome.attempted_tile_ids, ['10_11', '12_13'])
+        self.assertEqual(outcome.attempted_tile_ids, ['14_15', '12_13'])
         rows = self.rows_by_tile_and_step()
-        self.assertEqual((rows[('tile:10_11', 'chunks')]['status'], rows[('tile:10_11', 'chunks')]['reason']),
+        self.assertEqual((rows[('tile:14_15', 'chunks')]['status'], rows[('tile:14_15', 'chunks')]['reason']),
                          ('failed', 'decode-failed:ValueError:synthetic decode failure'))
-        self.assertEqual(rows[('tile:10_11', 'meshes')]['reason'], 'upstream-step-failed:chunks')
-        self.assertIn(('10_11', 'manifest'), steps.calls)
-        self.assertNotIn(('10_11', 'meshes'), steps.calls)
+        self.assertEqual(rows[('tile:14_15', 'meshes')]['reason'], 'upstream-step-failed:chunks')
+        self.assertIn(('14_15', 'manifest'), steps.calls)
+        self.assertNotIn(('14_15', 'meshes'), steps.calls)
         self.assertEqual(rows[('tile:12_13', 'manifest')]['status'], 'pass')
 
     def test_a_recorded_failure_settles_its_tile_until_the_failed_step_seals(self):
-        steps = LedgerBackedSteps(self.project_root, failing={('10_11', 'chunks')})
+        steps = LedgerBackedSteps(self.project_root, failing={('14_15', 'chunks')})
         self.run_batch(steps)
         failed_rows = self.gap_row_file_bytes()
         steps.calls.clear()
         outcome = self.run_batch(steps)
         self.assertEqual(outcome.attempted_tile_ids, ['12_13'])
-        self.assertNotIn(('10_11', 'chunks'), steps.calls)
-        self.assertEqual(self.rows_by_tile_and_step()[('tile:10_11', 'chunks')]['reason'], 'decode-failed:ValueError:synthetic decode failure')
+        self.assertNotIn(('14_15', 'chunks'), steps.calls)
+        self.assertEqual(self.rows_by_tile_and_step()[('tile:14_15', 'chunks')]['reason'], 'decode-failed:ValueError:synthetic decode failure')
         self.assertNotEqual(self.gap_row_file_bytes(), failed_rows)
         steps.failing.clear()
-        steps('chunks', '10_11')
+        steps('chunks', '14_15')
         retried = self.run_batch(steps)
-        self.assertEqual(retried.attempted_tile_ids, ['10_11'])
-        self.assertEqual(self.rows_by_tile_and_step()[('tile:10_11', 'manifest')]['status'], 'pass')
+        self.assertEqual(retried.attempted_tile_ids, ['14_15'])
+        self.assertEqual(self.rows_by_tile_and_step()[('tile:14_15', 'manifest')]['status'], 'pass')
 
     def test_an_unsealed_step_level_gap_settles_its_tile_like_a_recorded_failure(self):
-        steps = LedgerBackedSteps(self.project_root, layout_gaps={('10_11', 'chunks')})
+        steps = LedgerBackedSteps(self.project_root, layout_gaps={('14_15', 'chunks')})
         first = self.run_batch(steps)
-        self.assertEqual(first.attempted_tile_ids, ['10_11'])
-        self.assertEqual(self.rows_by_tile_and_step()[('tile:10_11', 'chunks')]['reason'], SYNTHETIC_LAYOUT_GAP_REASON)
+        self.assertEqual(first.attempted_tile_ids, ['14_15'])
+        self.assertEqual(self.rows_by_tile_and_step()[('tile:14_15', 'chunks')]['reason'], SYNTHETIC_LAYOUT_GAP_REASON)
         steps.calls.clear()
         self.assertEqual(self.run_batch(steps).attempted_tile_ids, ['12_13'])
-        self.assertNotIn(('10_11', 'chunks'), steps.calls)
-        self.assertEqual(self.rows_by_tile_and_step()[('tile:10_11', 'chunks')]['reason'], SYNTHETIC_LAYOUT_GAP_REASON)
+        self.assertNotIn(('14_15', 'chunks'), steps.calls)
+        self.assertEqual(self.rows_by_tile_and_step()[('tile:14_15', 'chunks')]['reason'], SYNTHETIC_LAYOUT_GAP_REASON)
 
     def test_two_runs_over_the_same_sealed_state_write_byte_identical_rows(self):
-        steps = LedgerBackedSteps(self.project_root, object_gaps={('10_11', 'raw'): 1})
+        steps = LedgerBackedSteps(self.project_root, object_gaps={('14_15', 'raw'): 1})
         self.run_batch(steps, limit=3)
         first_bytes = self.gap_row_file_bytes()
         self.run_batch(steps, limit=3)
@@ -272,12 +273,12 @@ class TileBatchOrderTests(TileBatchTestCase):
         self.assertEqual(sorted(first_bytes), sorted(f'{step}.json' for step in SYNTHETIC_STEP_NAMES))
 
     def test_the_single_step_row_follows_the_same_seal_rule_as_the_batch(self):
-        steps = LedgerBackedSteps(self.project_root, object_gaps={('10_11', 'meshes'): 2})
-        [meshes_row] = steps('meshes', '10_11')
+        steps = LedgerBackedSteps(self.project_root, object_gaps={('14_15', 'meshes'): 2})
+        [meshes_row] = steps('meshes', '14_15')
         self.assertEqual(seal_derived_step_row(self.project_root, meshes_row, synthetic_seal_checks())['reason'], 'object-gaps:2')
         failed_row = {**meshes_row, 'status': 'failed', 'reason': 'decode-failed:ValueError:later attempt'}
         self.assertEqual(seal_derived_step_row(self.project_root, failed_row, synthetic_seal_checks()), failed_row)
-        unsealed_row = tile_step_row('10_11', 'raw', 'gap', 'player-start-missing', synthetic_source_identity('10_11'), 'evidence.json')
+        unsealed_row = tile_step_row('14_15', 'raw', 'gap', 'player-start-missing', synthetic_source_identity('14_15'), 'evidence.json')
         self.assertEqual(seal_derived_step_row(self.project_root, unsealed_row, synthetic_seal_checks()), unsealed_row)
 
     def test_refuses_a_limit_below_one(self):
@@ -285,31 +286,51 @@ class TileBatchOrderTests(TileBatchTestCase):
             self.run_batch(LedgerBackedSteps(self.project_root), limit=0)
 
 
+class SeamNeighbourOrderTests(TileBatchTestCase):
+    eligible_tile_ids = ('10_10', '10_11', '11_10', '11_11', '12_13')
+
+    def test_the_raw_step_of_every_eligible_seam_neighbour_runs_before_any_later_step_of_the_tile(self):
+        steps = LedgerBackedSteps(self.project_root)
+        outcome = self.run_batch(steps, limit=len(self.eligible_tile_ids))
+        self.assertEqual(sorted(outcome.attempted_tile_ids), sorted(self.eligible_tile_ids))
+        neighbour_pairs = [(tile_id, neighbour_tile_id(tile_id, role)) for tile_id in self.eligible_tile_ids for role in SEAM_ROLE_TILE_STEPS
+                           if neighbour_tile_id(tile_id, role) in self.eligible_tile_ids]
+        self.assertEqual(len(neighbour_pairs), 5)
+        for tile_id, neighbour_id in neighbour_pairs:
+            with self.subTest(tile=tile_id, neighbour=neighbour_id):
+                self.assertLess(steps.calls.index((neighbour_id, 'raw')), steps.calls.index((tile_id, 'chunks')))
+
+    def test_a_limit_of_one_attempts_a_tile_with_no_unconverted_seam_neighbour(self):
+        outcome = self.run_batch(LedgerBackedSteps(self.project_root), limit=1)
+        self.assertEqual(outcome.attempted_tile_ids, ['12_13'])
+        self.assertEqual(self.run_batch(LedgerBackedSteps(self.project_root), limit=1).attempted_tile_ids, ['11_11'])
+
+
 class TileBatchInterruptionTests(TileBatchTestCase):
     def test_a_killed_step_leaves_a_running_marker_and_the_next_run_redoes_only_that_step(self):
-        steps = LedgerBackedSteps(self.project_root, killed_at=('10_11', 'chunks'))
+        steps = LedgerBackedSteps(self.project_root, killed_at=('14_15', 'chunks'))
         with self.assertRaises(SimulatedProcessKill):
             self.run_batch(steps)
-        chunks_directory = lane_work_root(self.project_root, 'world') / 'tile__10_11' / 'chunks'
+        chunks_directory = lane_work_root(self.project_root, 'world') / 'tile__14_15' / 'chunks'
         self.assertTrue((chunks_directory / RUNNING_MARKER_NAME).is_file())
         self.assertFalse((chunks_directory / SEAL_RECORD_NAME).exists())
         steps.killed_at, steps.begun = None, []
         self.run_batch(steps)
-        self.assertEqual(steps.begun, [('10_11', 'chunks'), ('10_11', 'meshes'), ('10_11', 'manifest')])
+        self.assertEqual(steps.begun, [('14_15', 'chunks'), ('14_15', 'meshes'), ('14_15', 'manifest')])
 
     def assert_refusal_stops_at_the_step_boundary(self, refusal, expected_exit_code):
         steps = LedgerBackedSteps(self.project_root)
         outcome = self.run_batch(steps, preflight=RecordingPreflight({3: refusal}))
         self.assertEqual(outcome.exit_code, expected_exit_code)
-        self.assertEqual((outcome.stop.tile_id, outcome.stop.step), ('10_11', 'meshes'))
-        self.assertEqual(steps.begun, [('10_11', 'raw'), ('10_11', 'chunks')])
+        self.assertEqual((outcome.stop.tile_id, outcome.stop.step), ('14_15', 'meshes'))
+        self.assertEqual(steps.begun, [('14_15', 'raw'), ('14_15', 'chunks')])
         rows = self.rows_by_tile_and_step()
-        self.assertEqual([rows[('tile:10_11', step)]['status'] for step in SYNTHETIC_STEP_NAMES], ['pass', 'pass', 'pending', 'pending'])
+        self.assertEqual([rows[('tile:14_15', step)]['status'] for step in SYNTHETIC_STEP_NAMES], ['pass', 'pass', 'pending', 'pending'])
         self.assertEqual(len(rows), len(self.eligible_tile_ids) * len(SYNTHETIC_STEP_NAMES))
         steps.begun = []
         resumed = self.run_batch(steps)
         self.assertEqual(resumed.exit_code, BATCH_EXIT_DONE)
-        self.assertEqual(steps.begun, [('10_11', 'meshes'), ('10_11', 'manifest')])
+        self.assertEqual(steps.begun, [('14_15', 'meshes'), ('14_15', 'manifest')])
 
     def test_a_machine_window_returns_exit_two_with_sealed_steps_and_flushed_rows(self):
         self.assert_refusal_stops_at_the_step_boundary(MachineWindowRefusedError('inside nightly backup window'), BATCH_EXIT_MACHINE_WINDOW)
