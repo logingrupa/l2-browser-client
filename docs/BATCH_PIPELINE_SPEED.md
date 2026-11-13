@@ -1,6 +1,6 @@
 # Lane batch speed and parallel work
 
-How the lane-store batches use the machine, what was measured, and what is still slow. Asset pipeline overview: [ASSET_PIPELINE.md](ASSET_PIPELINE.md). All numbers are from DATABASE-PC (Ryzen 7 PRO 4750G, 8 cores, 16 threads, 64 GB) on 2026-11-12, at BelowNormal priority, with other agent threads running.
+How the lane-store batches use the machine, what was measured, and what is still slow. Asset pipeline overview: [ASSET_PIPELINE.md](ASSET_PIPELINE.md). All numbers are from DATABASE-PC (Ryzen 7 PRO 4750G, 8 cores, 16 threads, 64 GB) on 2026-11-12 and 2026-11-13, at BelowNormal priority, with other agent threads running.
 
 ## Now
 
@@ -9,6 +9,9 @@ How the lane-store batches use the machine, what was measured, and what is still
 - `scripts/native_store/write_lane_catalog.py` verifies every pinned file with 12 worker processes and keeps no payload. Run it once when a batch ends, then `--plan`. A rewrite in the middle of a batch changes nothing.
 - A lane union (`--union`) and `scripts/native_store/merge_lane_store.py` copy one file at a time in hashed chunks and refuse before the first write when the missing bytes plus the 4 GiB floor exceed the free disk.
 - Catalog records of a slice merge in one call. Each sealed unit is checked once per process. The reference client lock is parsed once per process. Actor sounds and NPCs write the catalog and their gap rows once per slice.
+- World tiles convert in worker processes: `scripts/world/convert_tile_batch.py --eligible --limit N --workers W` (default 1). The batch runs in three phases. First the raw step of every selected tile and of its seam neighbours, so terrain fingerprints are final on the first run and no second pass is needed. Then every step except raw and manifest, one tile per worker. Then the manifests, in tile order, in the coordinator. The disk floor of the preflight rises by 1 GiB per added worker.
+- Worker processes of one lane share three things under an inter-process lock (`scripts/native_store/interprocess_lock.py`): the frozen converter's request folders, the mover class unit, and the publishing of store files (`scripts/native_store/store_file_publish.py`). A store file is published only if it is absent.
+- The dev server builds the lane union catalog once per catalog file identity (`vite/nativeStoreRootPlugin.ts`) instead of starting python for every `/l2/catalog.json` request.
 - Never start two convert processes on one lane side by side. They select the same units and `UnitLedger.begin` removes the other one's folder.
 - A Defender exclusion covers `artifacts\lane-store` of the roadmap worktree and of the `l2b-speed` lane. A new lane needs its own.
 
@@ -26,11 +29,14 @@ How the lane-store batches use the machine, what was measured, and what is still
 | Union of a 2.75 GB lane into an empty store | whole lane held in memory | 28 s, 0.06 GiB peak |
 | World tile 18_20, all 14 steps from scratch under the same profiler | 2,281 s (lighting 786, collision 556, meshes 534, visibility 210) | 439 s (lighting 33, collision 22, meshes 247, visibility 10) |
 | The same tile without a profiler | 1,005 s for its five slow steps in the plan 02-47 run | 346 to 352 s for all 14 steps (meshes 234, audio 38) |
+| The first 30 eligible world tiles into an empty world lane store (drive E:, no Defender exclusion) | 2,912 s for the first pass plus 1,027 s for a second pass that redoes terrain and manifests | 3,116 s in one pass with 1 worker, 1,208 s with 6 workers (2.7 cores on average, 2.4 GiB peak for the whole job) |
+| One `/l2/catalog.json` request of the dev server on the actors lane | 1.61 s (a python start per request) | 456 ms for the first request, under 1 ms after it |
 
 - The "before" numbers of the first row come from the live runs of plan 02-79; the others are the unchanged code at `bf14fb8` run in the lane checkout.
 - Outputs are byte-identical. Old against new code on 301 item units, 20 skill roots and 350 actor-sound bundles: `catalog.json`, 621 store files, the gap-row files, both census files and 671 receipts (clock and free-byte fields dropped). One worker against six on 301 item units: the same check over 451 store files and 301 receipts.
 - Worker memory: 1.4, 2.8, 5.5, 8.1, 10.7 and 15.0 GiB peak for 1, 2, 4, 6, 8 and 12 workers.
 - World tiles: every step asked `ClassDefaults.values` (`scripts/world/static_placement.py`) for the same class and field list once per placed actor, 1,778 s of the 2,281 s. It now reads each list once per step. The outputs and receipts of all 14 steps of tile 18_20 are identical before and after.
+- World tile batch: the one-worker run, the six-worker run and the settled result of the old code are identical over 420 units (fingerprints and receipts), 6,063 store files and 30 catalog records. The old code needed two passes to settle.
 
 ## Rules for parallel work
 
@@ -42,19 +48,28 @@ How the lane-store batches use the machine, what was measured, and what is still
 - A pool needs an `if __name__ == '__main__'` guard in its entry script. `scripts/test_pipeline.py` has none, so tests start pools only in a child interpreter (`POOLED_WALK_PROGRAM` in `tests/pipeline/test_bundle_member_pins.py`, `tests/pipeline/support/item_unit_worker_runs.py`).
 - Keep process memory small so Windows can use the RAM as file cache. The old walk held 29 GiB and pushed the store out of the cache it was reading from.
 - Prove a speed change with a byte comparison of real outputs, not only with unit tests.
+- Create every shared folder before the pool starts. On Windows `Path.resolve()` of a path whose parent another process is creating at that moment keeps a `\\?\` prefix, and the frozen path guard then refuses with "Path escapes its root". Unit tests with thread pools never showed it; 23 to 90 refusals per process appeared with real worker processes, none with the lane roots created first and the store publish lock.
+- Order the inputs so that no unit depends on a later one. The old tile batch sealed terrain before the raw step of the neighbour tiles existed, so every batch went stale and ran twice.
 
 ## Open
 
 - Unit fingerprints hash the on-disk bytes of the frozen converter sources (`implementation_hash` in `scripts/native_assets.py`), line endings included. `core.autocrlf` is true and the roadmap worktree holds some of those files with CRLF and some with LF. A git operation that rewrites one of them unseals every converted unit. A line-ending-proof hash belongs in the one planned converter change.
 - That planned converter change (rule G6 freezes the files until then) also carries: an atomic converter publish, without which skill roots and world tiles cannot convert in parallel; one class-defaults cache per run for skill roots (one PowerShell start per class is about half of a root's 26 s); decoded animation tracks kept per process for armor units; cheaper path checks in `scripts/native_store/store_paths.py`; removal of converter work folders after success.
-- World tiles still run on one core. What is left of a heavy tile is the mesh step: 1,585 UModel runs for 184 meshes, 1,225 of them one texture export each, inside the frozen converter. A texture export kept per process and parallel mesh conversion belong to the planned converter change.
+- Six tile workers use 2.7 cores on average, not 6. Three known causes, from the 30-tile run: the coordinator inspects every seal alone after the last step (233 s of 1,208 s; `UnitLedger.sealed_receipt` is called 4,672 times for 420 units and the reference client lock is parsed 613 times); the heaviest tiles sit late in census order and run alone at the end (355 s with one or two tiles running); the mesh step of one tile is serial (1,664 s of 3,582 worker step seconds). Quick task 261113-4mx holds the decisions for the first two and is not built.
+- What is left of a heavy tile is the mesh step: 1,585 UModel runs for 184 meshes, 1,225 of them one texture export each, inside the frozen converter. A texture export kept per process and parallel mesh conversion belong to the planned converter change.
+- A selection over sealed tiles costs about 7.5 s per sealed tile before the batch can say there is nothing to do.
 - The load sweeps check one browser page at a time.
 - Profile before adding workers: `python -B -m cProfile -o step.prof scripts/world/convert_tile.py --client E:/Lineage2-client --map XX_YY --step <step>` found the tile cost in ten minutes.
-- Each item model is stored five times (converter cache twice, ledger folder, store archive, store model) and the actors lane held about 94 GB after plan 02-79. Drive C: decides how much can run, not the CPU.
+- Drive C: decides how much can run, not the CPU. The 7.3 GiB client had become a 175 GiB lane store on 2026-11-13 (actors 98.8, world 66.7, integration 9.3), measured read only. Three causes, all inside the frozen converter and its file format:
+  - Each model is stored about five times: converter cache as archive and as model, ledger folder, store archive (`.l2asset`, a zip without compression) and store model (`.glb`). 118.7 GiB of the 175 are files that repeat another file's name and size.
+  - A model file carries its own copy of what the client shares. Actor models: 13.9 GiB of `.glb` hold 5.8 GiB of animation tracks of which 0.16 GiB are distinct (one animation set sits in 225 models), 7.3 GiB of glTF text that describes 220,228 clips, 0.7 GiB of pictures and 0.13 GiB of geometry. World models: 10.9 GiB hold 6.2 GiB of embedded PNG pictures of which 1.06 GiB are distinct (one picture sits in 164 models), 3.15 GiB are whole files that repeat under another address, and 1.6 GiB are everything else.
+  - Work files stay after success: 115,348 exported PNG files (15.9 GiB) under `world/work/static-mesh-converter`, 7.4 GiB of `.u` copies under `actors/work`.
+  A converter that keeps animation sets and pictures as shared store files, writes one model file instead of an archive plus a model, and removes its work folders would need roughly a tenth of the space. That is the planned converter change above and an owner decision.
 - NPC profile packs spend most of their 156 s re-reading a table and re-hashing one package per NPC (`scripts/native_actor_profiles.py`, a pinned file: a fix reseals the 34 packs).
 
 ## Pointers
 
 - Code: `scripts/native_store/pinned_store_verification.py`, `scripts/native_store/store_file_copy.py`, `scripts/actors/item_unit_workers.py`, `scripts/actors/item_census.py`.
-- Plans, summaries and verification reports: `.planning/quick/261112-i67-*`, `261112-i80-*`, `261112-l5d-*`, `261112-kzq-*`.
+- Code of the tile workers: `scripts/world/convert_tile_batch.py`, `scripts/world/tile_step_workers.py`, `scripts/world/class_default_reads.py`, `scripts/native_store/interprocess_lock.py`, `scripts/native_store/store_file_publish.py`, `scripts/native_store/lane_roots.py`.
+- Plans, summaries and verification reports: `.planning/quick/261112-i67-*`, `261112-i80-*`, `261112-l5d-*`, `261112-kzq-*`, `261112-vod-*`, `261112-vj5-*`, `261113-4mx-*` (context only).
 - Measurement scripts and raw results (outside the repository): `C:\laragon\l2b-orchestration\pipeline-speed`.
