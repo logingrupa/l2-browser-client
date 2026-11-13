@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 02-97-PLAN.md
-last_updated: "2026-11-13T21:45:47.557Z"
+stopped_at: Completed 02-98-PLAN.md
+last_updated: "2026-11-13T23:21:50.650Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 03 plan 03-01 complete (side-by-side check record writer and key content digest; Phase 3 start commit cb09cdc)
-state_head: 12a8374cd5aa877d5b96fcba2c9ee2fa0602e086
+state_head: cadd784ddc4a3a2221c5e919043898cb5fddcc50
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 136
-  completed_plans: 116
+  completed_plans: 117
   percent: 0
 ---
 
@@ -162,6 +162,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P95 | 65 min | 3 tasks | 17 files |
 | Phase 02 P96 | 95min | 3 tasks | 22 files |
 | Phase 2 P97 | 95min | 3 tasks | 36 files |
+| Phase 02 P98 | 95min | 3 tasks | 19 files |
 
 ## Accumulated Context
 
@@ -441,6 +442,8 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 2]: 02-97: the minimap follows the verified route from recipes/world/minimap-radar-route.json; one minimap-route:interlude unit converts the 24 route textures once (17 format 5 maps pixel-checked) and 146 tile minimaps are schema 2 pinning it (rows 1082 to 1086)
 - [Phase 2]: 02-97: schema 2 keeps radarTexture and projection null as the 02-51 view contract until the data-ui view reads native-minimap-route (row 1083)
 - [Phase 2]: 02-97: the Task 3 gap row sub-check stays red because a step row names its first reason in sort order (radar-anchor); the products show zone-title-source on 146 of 146 gapped tiles (row 1090)
+- [Phase 02]: 02-98: lighting, zone and emitter struct and array values decode through one reader (struct_property_values.py) by the pinned Core.dll rules recipe recipes/world/struct-property-tag-rules.json; Color reads B, G, R, A; 0 struct-unparsed emitter rows and 0 unparsed lighting values on world lane catalog ba87e45c (rows 1092 to 1095)
+- [Phase 02]: 02-98: a non-finite authored number keeps its nearest struct or array tag unparsed instead of failing the tile; 20_17 resealed by one retry process (row 1096)
 
 ### Pending Todos
 
@@ -526,7 +529,8 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 - Minimap radar source (02-50, rows 710 to 717; 02-82, rows 976 to 980): no export of `L2_RadarMap.utx` (118/0, 18 town-named textures) equals a tile id, `<tile id>_map` or a zone `map` value, so all 153 census tiles are `minimap-join-unresolved:radar-texture` gaps; 21 zonename rows hold MapX or MapY outside the locked grid, so zone joins are `zone-grid` gaps. Find the client data that names the per-tile radar image or a sourced georeference for the `int_worldmap` pieces, and settle the out-of-grid rows on IMPORTA, before 02-51 draws the minimap. Since 02-82 the shared texture library reads the package: 1 export (`RadarMaps.Global`) is readable DXT1 and the 17 town exports are `texture-format-unsupported:5` (RGBA8), so a sourced join of a town map also needs an RGBA8 layout cross-checked like the 02-73 rows.
 - Minimap view (02-51, row 751): the real-data case "shows the 20_21 radar texture cell and the marker" in `tests/browser/world-minimap.spec.ts` stays skipped and unverified until the radar source above joins a tile; the marker texture and zone name text stay unresolved because both decoded MinimapCtrl records have an empty `textures` list
 
-- Map emitter playback (02-61, 02-69, 02-64, rows 651 and 696): the tile inspection lists each placement with its `memberVisible` gate, but none reaches `playTileMapEmitters`: the emitter records keep unparsed struct fields (row 668), no class defaults are merged and their meshes and textures are unconverted. Merge the class defaults in the emitters step, decode the structs, convert the referenced resources, then start the playable placements with a placement view.
+- Map emitter playback (02-61, 02-69, 02-64, 02-98, rows 651 and 696): the tile inspection lists each placement with its `memberVisible` gate, but none reaches `playTileMapEmitters`: no class defaults are merged and their meshes and textures are unconverted (6,984 `map-emitter-resource-unconverted` rows on world lane catalog `ba87e45c...`); since 02-98 the struct and array fields are values (0 struct rows), but `tileMapEmitterPlacements.ts` still flags only top-level values. Merge the class defaults in the emitters step, convert the referenced resources, teach the placement inspection nested values, then start the playable placements with a placement view.
+- Struct values (02-98, rows 1092 to 1099, for 02-89): lighting, zone and emitter struct and array values decode by `recipes/world/struct-property-tag-rules.json` on world lane catalog `ba87e45c...` (0 unparsed lighting values, 0 struct emitter rows). Open, each with its unblocking step: 20_17 VertMeshEmitter `AnimRate` stays unparsed (a non-finite float element) until VertMeshEmitter is ported with a rule for non-finite authored floats; 770,309,184 bytes of 146 superseded lighting payloads stay in the lane store for the owner's C: disk decision; 87 bsp-visibility units resealed with an equal product (a narrower key needs a rule for authored zone colours); the raw actor records keep the six-struct branch of `map_actor_properties.decode_property` until a planned raw step change; the runtime does not read the decoded L2FogInfo ranges and colours yet (a runtime plan wires them into zone fog).
 - Union tile loads (02-55, row 763; 03-03): every union tile on `bba52c47...` has a load record: 22 pass and 40 fail, 39 of them for want of a native-tile-collision resource (map licensees 18, 23, 25 and 30) and `tile:16_10` (licensee 25, no collision pin) with an infrastructure `read ECONNRESET` the tiles spec no longer produces; the collision pins for those licensees stay a world follow-up, and the next union rebuild re-sweeps them.
 - Load-check infrastructure records (03-03, P815): `npc:18168` on `bba52c47...` failed with a hot-reload module error from a concurrent `src` commit during the sweep, and `tile:16_10` with `read ECONNRESET`; 03-11 lists neither as a converter defect.
 - Two converted-key owners (03-03, P816): the load-check harness list (`buildNativeCatalogIndex`) has `npc:21622` and `skill:3:1` as converted on the union, while `scripts/native_store/catalog_index_keys.py` does not; 03-11 takes the disagreement as a key index defect.
@@ -583,6 +587,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-13T21:45:46.772Z
-Stopped at: Completed 02-97-PLAN.md
+Last session: 2026-11-13T23:21:49.866Z
+Stopped at: Completed 02-98-PLAN.md
 Resume file: None
