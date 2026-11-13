@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter, defaultdict
+import contextlib
 import json
 import os
 from pathlib import Path, PurePosixPath
@@ -10,17 +11,20 @@ import sys
 SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS_ROOT))
 
+from native_store.converter_scratch_removal import lane_scratch_removal
 from native_store.examined_file_record import identical_file_sharing_folder, read_examined_file_record, write_examined_file_record
 from native_store.file_identity import file_identity
 from native_store.identical_file_sharing import (SIZE_POSITION, IdenticalFileSharingError, best_name_order, hash_unhashed_files,
                                                  planned_links, replace_name_by_hard_link)
-from native_store.interprocess_lock import ARTIFACTS_FOLDER_NAME, LANE_STORES_FOLDER_NAME
-from native_store.lane_sharing_candidates import survey_lane
+from native_store.interprocess_lock import (ARTIFACTS_FOLDER_NAME, LANE_STORES_FOLDER_NAME, LANE_WORK_FOLDER_NAME, InterprocessLockError,
+                                            lane_sharing_lock)
+from native_store.lane_sharing_candidates import LANES_WHOSE_CONVERSIONS_HOLD_THE_LANE_LOCK, lane_is_held_free_of_conversions, survey_lane
 from native_store.store_paths import refuse_reparse_points
 from native_store.unit_ledger import run_at_below_normal_priority
 
 IDENTICAL_FILE_SHARING_DESCRIPTION = ('Turn identical large files of every lane under an artifacts/lane-store folder into hard links of one '
-                                      'file without changing a path or a byte, or report what a run would share with --plan.')
+                                      'file without changing a path or a byte, and remove the converter scratch job folders of the actors '
+                                      'and world lanes, under the lock of every lane; --plan takes no lock and reports what a run would do.')
 TEMPORARY_LINKS_FOLDER_NAME = 'temporary-links'
 REPORTED_PLACE_PART_COUNT = 2
 FILE_TYPE_WITHOUT_SUFFIX = 'no-suffix'
@@ -98,6 +102,10 @@ def share_identical_lane_files(lane_stores_root, lane_names, plan_only, lanes_fr
     lane_names = sorted(lane_names)
     for lane_name in lane_names:
         refuse_reparse_points(root / lane_name)
+    scratch_removal_by_lane_name = {
+        lane_name: lane_scratch_removal(root / lane_name, lane_is_held_free_of_conversions(lane_name, lane_name in lanes_free_of_conversions),
+                                        plan_only)
+        for lane_name in lane_names}
     leftover_links_removed, leftover_links_kept = leftover_temporary_links(root, lane_names, plan_only)
     candidates, skipped_file_count_by_rule = [], Counter()
     for lane_name in lane_names:
@@ -131,7 +139,11 @@ def share_identical_lane_files(lane_stores_root, lane_names, plan_only, lanes_fr
             'sharedBytes': sum(candidate.identity[SIZE_POSITION] for candidate in freed_file_names),
             'sharedBytesByPlace': shared_bytes_by(two_folder_place_of, freed_file_names),
             'sharedBytesByFileType': shared_bytes_by(file_type_of, freed_file_names),
-            'leftoverLinksRemoved': leftover_links_removed, 'leftoverLinksKept': leftover_links_kept}
+            'leftoverLinksRemoved': leftover_links_removed, 'leftoverLinksKept': leftover_links_kept,
+            'scratchJobFoldersRemoved': sum(removal.job_folders_removed for removal in scratch_removal_by_lane_name.values()),
+            'scratchJobFoldersNotRemoved': sum(removal.job_folders_not_removed for removal in scratch_removal_by_lane_name.values()),
+            'scratchBytesRemoved': sum(removal.bytes_removed for removal in scratch_removal_by_lane_name.values()),
+            'scratchBytesLeftByLane': {lane_name: removal.bytes_left for lane_name, removal in scratch_removal_by_lane_name.items()}}
 
 
 def main(argv=None):
@@ -142,9 +154,14 @@ def main(argv=None):
     try:
         run_at_below_normal_priority()
         root = require_lane_stores_root(arguments.lane_stores_root)
-        lane_names = [entry.name for entry in os.scandir(root) if entry.is_dir()]
-        report = share_identical_lane_files(root, lane_names, arguments.plan, ())
-    except (ValueError, OSError) as error:
+        lane_names = sorted(entry.name for entry in os.scandir(root) if entry.is_dir())
+        with contextlib.ExitStack() as lane_locks:
+            if not arguments.plan:
+                for lane_name in lane_names:
+                    lane_locks.enter_context(lane_sharing_lock(refuse_reparse_points(root / lane_name) / LANE_WORK_FOLDER_NAME))
+            report = share_identical_lane_files(root, lane_names, arguments.plan,
+                                                LANES_WHOSE_CONVERSIONS_HOLD_THE_LANE_LOCK if arguments.plan else lane_names)
+    except (ValueError, OSError, InterprocessLockError) as error:
         print(str(error), file=sys.stderr)
         return 1
     print(json.dumps(report, sort_keys=True))

@@ -19,10 +19,12 @@ from native_catalog.ue2 import FormatError
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import is_table_name_index_id, read_store_catalog
 from native_store.data_ui_table_manifest import DATA_UI_LANE_NAME, ELBERA_ADAPTER_ROUTE, LOCAL_DESCRIPTOR_ROUTE, data_ui_table_manifest
+from native_store.interprocess_lock import LaneInUseError, lane_batch_lock
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root
 from reference_client_guard import require_reference_client
 from world.committed_world_data import require_committed_destination, write_committed_world_bytes
 
+ACTORS_LANE_NAME = 'actors'
 CHARACTER_CLASS_SOURCES_SCHEMA_VERSION = 1
 CLASS_DEFAULT_FIELDS = (HEAD_BONE_FIELD, CLASS_MESH_FIELD, SUB_MESHES_FIELD)
 CHARGRP_INDEX_FIELD_FRAGMENT = 'chargrp'
@@ -246,9 +248,15 @@ def main(argv=None):
     require_committed_destination(CHARACTER_CLASS_SOURCES_RELATIVE_PATH)
     from native_catalog.tables import decode_table
     client_root = arguments.client.resolve(strict=True)
-    document = character_class_sources_document(REPOSITORY_ROOT, client_root, decode_table(client_root, CHARGRP_TABLE_NAME),
-                                                lane_work_root(REPOSITORY_ROOT, 'actors'))
-    write_committed_world_bytes(CHARACTER_CLASS_SOURCES_RELATIVE_PATH, canonical_json_bytes(document))
+    actors_work_root = lane_work_root(REPOSITORY_ROOT, ACTORS_LANE_NAME)
+    try:
+        with lane_batch_lock(actors_work_root):
+            document = character_class_sources_document(REPOSITORY_ROOT, client_root, decode_table(client_root, CHARGRP_TABLE_NAME),
+                                                        actors_work_root)
+            write_committed_world_bytes(CHARACTER_CLASS_SOURCES_RELATIVE_PATH, canonical_json_bytes(document))
+    except LaneInUseError as error:
+        print(str(error), file=sys.stderr)
+        return 1
     print(json.dumps({'verdict': document['verdict'], 'rows': {row: entry['actorClass'] for row, entry in document['rows'].items()}}, sort_keys=True))
     return 0
 

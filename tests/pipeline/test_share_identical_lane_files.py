@@ -1,5 +1,3 @@
-import contextlib
-import io
 import json
 import os
 from pathlib import Path
@@ -20,7 +18,7 @@ from native_store.share_identical_lane_files import share_identical_lane_files, 
 from native_store.store_paths import StorePathError
 from support.shared_lane_fixture import (SHARED_FILE_BYTES, SharedLaneFixture, SharedLaneTestCase, file_bytes_outside_the_sharing_folders,
                                          file_number, hold_file_open_without_sharing, link_count, payload_of, replace_by_a_new_file,
-                                         snapshot_of_every_entry, write_file)
+                                         run_sharing_command, snapshot_of_every_entry, write_file)
 
 try:
     import _winapi
@@ -34,9 +32,12 @@ NEVER_SHARED_RELATIVE_PATHS = (
     'l2/catalog.json', 'l2/models/.work/twin.bin', 'l2/models/index/twin.bin', 'l2/models/interprocess-locks/twin.bin',
     'l2/models/class-defaults/twin.bin', 'l2/skills/bundle/twin.bin', 'l2/classes/0123abcd/decoded/twin.bin', 'l2/models/owner.json',
     'l2/models/.running.json', 'l2/models/receipt.json', 'l2/models/complete.json', 'l2/models/twin.bin.tmp',
-    'work/static-mesh-converter/.work/job/twin.png', 'work/static-mesh-converter/index/twin.json', 'gap-rows/twin.json')
+    'work/static-mesh-converter/index/twin.json', 'gap-rows/twin.json')
+CONVERTER_SCRATCH_RELATIVE_PATH = 'work/static-mesh-converter/.work/job/twin.png'
 REPORT_KEYS_A_PLAN_SHARES_WITH_A_RUN = ('lanes', 'filesExamined', 'filesSkippedByRule', 'filesHashed', 'sharedNames', 'sharedBytes',
-                                        'sharedBytesByPlace', 'sharedBytesByFileType', 'leftoverLinksRemoved', 'leftoverLinksKept')
+                                        'sharedBytesByPlace', 'sharedBytesByFileType', 'leftoverLinksRemoved', 'leftoverLinksKept',
+                                        'scratchJobFoldersRemoved', 'scratchJobFoldersNotRemoved', 'scratchBytesRemoved',
+                                        'scratchBytesLeftByLane')
 
 
 class IdenticalFileSharingTests(SharedLaneTestCase):
@@ -79,6 +80,8 @@ class IdenticalFileSharingTests(SharedLaneTestCase):
         self.lanes.converter_folder('actors')
         shared_paths = [self.lanes.write_store_file('actors', f'models/twin-{name}.bin', TWIN) for name in ('first', 'second')]
         paths = [self.lanes.write_lane_file('actors', relative, TWIN) for relative in NEVER_SHARED_RELATIVE_PATHS]
+        self.lanes.converter_folder('integration')
+        paths.append(self.lanes.write_lane_file('integration', CONVERTER_SCRATCH_RELATIVE_PATH, TWIN))
         running_step_directory = self.lanes.begin_unit('actors', 'mesh:running', {'asset.l2asset': TWIN})[3]
         self.lanes.seal_unit('world', 'class:Engine.Mover', {'products': TWIN}, step='class-defaults')
         self.share(lanes_free_of_conversions=['actors', 'world'])
@@ -306,30 +309,25 @@ class IdenticalFileSharingTests(SharedLaneTestCase):
                 self.assertEqual(record_path.read_bytes(), payload)
         self.assertEqual([link_count(path) for path in paths], [1, 1])
 
-    def run_main(self, *arguments):
-        standard_output, standard_error = io.StringIO(), io.StringIO()
-        with (patch.object(sharing_command, 'run_at_below_normal_priority') as below_normal_priority,
-              contextlib.redirect_stdout(standard_output), contextlib.redirect_stderr(standard_error)):
-            exit_code = sharing_command.main([str(argument) for argument in arguments])
-        return exit_code, standard_output.getvalue(), standard_error.getvalue(), below_normal_priority.call_count
-
-    def test_main_plans_and_shares_every_lane_of_the_root_at_below_normal_priority_and_names_no_lane_free(self):
+    def test_main_plans_and_shares_every_lane_of_the_root_at_below_normal_priority_with_the_sealed_unit_outputs_of_actors(self):
         actors_path = self.lanes.write_store_file('actors', 'models/twin.bin', TWIN)
         integration_path = self.lanes.write_store_file('integration', 'models/twin.bin', TWIN)
-        step_directory = self.lanes.seal_unit('actors', 'mesh:first', {'asset.l2asset': TWIN})
-        exit_code, output, error, priority_call_count = self.run_main(self.lanes.lane_stores_root, '--plan')
-        self.assertEqual((exit_code, error, priority_call_count, json.loads(output)['planOnly'], json.loads(output)['sharedNames']),
-                         (0, '', 1, True, 1))
+        unit_path = self.lanes.seal_unit('actors', 'mesh:first', {'asset.l2asset': TWIN}) / 'asset.l2asset'
+        exit_code, output, error, priority_call_count = run_sharing_command(self.lanes.lane_stores_root, '--plan')
+        plan = json.loads(output)
+        self.assertEqual((exit_code, error, priority_call_count, plan['planOnly'], plan['sharedNames'], plan['filesSkippedByRule']),
+                         (0, '', 1, True, 2, {'ledger-record': 3}))
         self.assertEqual(link_count(actors_path), 1)
-        exit_code, output, error, priority_call_count = self.run_main(self.lanes.lane_stores_root)
+        exit_code, output, error, priority_call_count = run_sharing_command(self.lanes.lane_stores_root)
         report = json.loads(output)
         self.assertEqual((exit_code, error, priority_call_count, report['planOnly'], report['sharedNames'], report['lanes']),
-                         (0, '', 1, False, 1, ['actors', 'integration']))
-        self.assertEqual(report['filesSkippedByRule'], {'ledger-record': 3, 'unit-step-of-a-lane-in-use': 1})
-        self.assertEqual((file_number(integration_path), link_count(step_directory / 'asset.l2asset')), (file_number(actors_path), 1))
+                         (0, '', 1, False, 2, ['actors', 'integration']))
+        self.assertEqual(report['filesSkippedByRule'], {'ledger-record': 3, 'outside-the-shared-places': 2})
+        self.assertEqual((file_number(integration_path), file_number(unit_path), link_count(unit_path)),
+                         (file_number(actors_path), file_number(actors_path), 3))
 
     def test_main_prints_a_refusal_on_standard_error_and_exits_with_1(self):
-        exit_code, output, error, _ = self.run_main(self.lanes.project)
+        exit_code, output, error, _ = run_sharing_command(self.lanes.project)
         self.assertEqual((exit_code, output), (1, ''))
         self.assertIn('artifacts/lane-store', error)
 

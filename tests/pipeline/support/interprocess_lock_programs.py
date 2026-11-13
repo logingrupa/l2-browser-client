@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from native_store.interprocess_lock import interprocess_lock
+from native_store.interprocess_lock import hold_lane_in_use_part_until_process_end, interprocess_lock, lane_batch_lock, lane_sharing_lock
 from support.item_unit_worker_runs import wait_until_path_exists
 
 EVENT_LOG_NAME = 'events.log'
@@ -45,8 +45,27 @@ def exit_while_holding_the_lock(lock_folder, key, events_folder, process_name):
         os._exit(0)
 
 
+def hold_the_lane_batch_parts_until_released(lane_work_root, events_folder, process_name, release_path):
+    with lane_batch_lock(Path(lane_work_root)):
+        record_event(events_folder, process_name + ' entered')
+        wait_until_path_exists(Path(release_path))
+
+
+def hold_the_lane_in_use_part_until_released(lane_work_root, events_folder, process_name, release_path):
+    hold_lane_in_use_part_until_process_end(Path(lane_work_root))
+    record_event(events_folder, process_name + ' entered')
+    wait_until_path_exists(Path(release_path))
+
+
+def hold_the_whole_lane_until_released(lane_work_root, events_folder, process_name, release_path):
+    with lane_sharing_lock(Path(lane_work_root)):
+        record_event(events_folder, process_name + ' entered')
+        wait_until_path_exists(Path(release_path))
+
+
 LOCK_PROGRAMS = {'hold-until-released': hold_the_lock_until_released, 'announce-then-enter': announce_then_enter_the_lock,
-                 'exit-while-holding': exit_while_holding_the_lock}
+                 'exit-while-holding': exit_while_holding_the_lock, 'hold-lane-batch-parts': hold_the_lane_batch_parts_until_released,
+                 'hold-lane-in-use-part': hold_the_lane_in_use_part_until_released, 'hold-whole-lane': hold_the_whole_lane_until_released}
 
 
 def run_lock_program(arguments):

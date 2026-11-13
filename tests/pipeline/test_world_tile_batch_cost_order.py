@@ -117,7 +117,8 @@ class TileBatchExpectedCostTests(TileBatchTestCase):
             return pools[-1]
 
         with (patch.object(tile_step_workers, 'ProcessPoolExecutor', pool_running_in_this_process),
-              patch.object(tile_step_workers, 'tile_step_worker', None)):
+              patch.object(tile_step_workers, 'tile_step_worker', None),
+              patch.object(tile_step_workers, 'hold_lane_in_use_part_until_process_end')):
             outcome = run_tile_batch(2, 2, TileStepRun, (self.project_root, steps, RecordingPreflight(), synthetic_seal_checks()),
                                      step_names=SYNTHETIC_STEP_NAMES, tile_source_identity=synthetic_source_identity,
                                      tile_expected_cost=costs_of_the_two_selected_tiles.__getitem__)

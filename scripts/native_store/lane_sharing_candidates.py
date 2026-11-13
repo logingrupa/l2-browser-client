@@ -69,6 +69,10 @@ def lane_converter_folders(lane_folder):
             if entry.is_dir(follow_symlinks=False) and (Path(entry.path) / CONVERTER_INDEX_FOLDER_NAME).is_dir()]
 
 
+def lane_is_held_free_of_conversions(lane_name, lane_is_named_free_of_conversions):
+    return lane_is_named_free_of_conversions and lane_name in LANES_WHOSE_CONVERSIONS_HOLD_THE_LANE_LOCK
+
+
 def lane_relative_file_paths(folder, lane_relative_parts):
     for entry in directory_entries(folder):
         if entry.is_dir(follow_symlinks=False):
@@ -119,7 +123,7 @@ class LaneSurveyor:
     def __init__(self, lane_stores_root, lane_name, lane_is_free_of_conversions):
         self.lane_name = lane_name
         self.lane_folder = Path(lane_stores_root) / lane_name
-        self.unit_steps_are_shared = lane_is_free_of_conversions and lane_name in LANES_WHOSE_CONVERSIONS_HOLD_THE_LANE_LOCK
+        self.unit_steps_are_shared = lane_is_held_free_of_conversions(lane_name, lane_is_free_of_conversions)
         self.converter_folder_parts = [folder.relative_to(self.lane_folder).parts for folder in lane_converter_folders(self.lane_folder)]
         self.sealed_output_bytes_by_step_folder_parts = {}
 

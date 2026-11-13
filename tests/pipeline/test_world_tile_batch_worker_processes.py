@@ -11,7 +11,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from native_store.gap_rows import read_gap_rows
-from native_store.store_paths import lane_gap_rows_folder
+from native_store.interprocess_lock import STORE_LOCK_KEY_PREFIX, lane_lock_file_path, lane_lock_folder, lock_file_path
+from native_store.store_paths import lane_gap_rows_folder, lane_store_root, lane_work_root
 from support.tile_step_worker_runs import (FOUR_SEPARATE_TILE_IDS, RAW_FAILED_ONCE_MESSAGE, SEPARATE_TILE_IDS, SYNTHETIC_FLOOR_REFUSAL_MESSAGE,
                                            TWO_COSTLIEST_OF_FOUR_TILE_IDS)
 from test_convert_tile_batch import SYNTHETIC_STEP_NAMES
@@ -194,6 +195,30 @@ class TwoWorkerStopTests(TileBatchWorkerProcessTestCase):
         self.assertEqual(tile_step_rows(run.project_root, FIRST_TILE_ID), [PASS_ROW] * len(SYNTHETIC_STEP_NAMES))
         self.assertEqual(tile_step_rows(run.project_root, SECOND_TILE_ID), [PASS_ROW, BATCH_PENDING_ROW, BATCH_PENDING_ROW, BATCH_PENDING_ROW])
         self.assertEqual(tile_step_rows(run.project_root, THIRD_TILE_ID), [BATCH_PENDING_ROW] * len(SYNTHETIC_STEP_NAMES))
+
+
+class LocksUnderTheLaneLockTests(TileBatchWorkerProcessTestCase):
+    def test_a_worker_and_the_coordinator_still_take_a_request_lock_and_the_store_lock_while_the_lane_lock_is_held(self):
+        run = scenario_run(self.temporary_root(), 'locks-under-the-lane-lock', 2)
+        summary = run.report['summary']
+        self.assertEqual((summary['exitCode'], summary['attemptedTiles'], summary['stop']), (BATCH_EXIT_DONE, list(SEPARATE_TILE_IDS), None))
+        for tile_id in SEPARATE_TILE_IDS:
+            self.assertEqual(tile_step_rows(run.project_root, tile_id), [PASS_ROW] * len(SYNTHETIC_STEP_NAMES))
+        work_root = lane_work_root(run.project_root, 'world')
+        lane_lock_file = str(lane_lock_file_path(work_root))
+        store_lock_file = str(lock_file_path(lane_lock_folder(work_root), STORE_LOCK_KEY_PREFIX + lane_store_root(run.project_root, 'world').as_posix()))
+        lock_records_by_process_id = dict(run.report['lockRecordsByProcessId'])
+        coordinator_record = lock_records_by_process_id.pop(str(run.report['coordinatorProcessId']))
+        [worker_record] = lock_records_by_process_id.values()
+        for record in (coordinator_record, worker_record):
+            self.assertEqual(record['storeLockFile'], store_lock_file)
+            self.assertEqual(Path(record['requestLockFile']).parent, lane_lock_folder(work_root))
+            self.assertNotIn(record['requestLockFile'], (store_lock_file, lane_lock_file))
+            self.assertEqual(record['laneBatchLockRefusal'], 'lane world is in use by another batch, conversion or sharing run and this run '
+                                                             f'does not wait for it: {lane_lock_file}')
+        self.assertEqual(worker_record['requestLockFile'], coordinator_record['requestLockFile'])
+        self.assertEqual((coordinator_record['laneLockFilesHeldUntilProcessEnd'], worker_record['laneLockFilesHeldUntilProcessEnd']),
+                         ([], [lane_lock_file]))
 
 
 class HeavyTilesFirstWorkerProcessTests(TileBatchWorkerProcessTestCase):

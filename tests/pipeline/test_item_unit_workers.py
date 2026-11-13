@@ -66,7 +66,8 @@ class DeferredPoolFixture(ItemBatchFixture):
     def setUp(self):
         super().setUp()
         self.executors, self.worker_runs = [], []
-        for name, replacement in (('ProcessPoolExecutor', self.deferred_executor), ('item_unit_worker', None)):
+        for name, replacement in (('ProcessPoolExecutor', self.deferred_executor), ('item_unit_worker', None),
+                                  ('hold_lane_in_use_part_until_process_end', mock.Mock())):
             patcher = mock.patch.object(item_unit_workers, name, replacement)
             patcher.start()
             self.addCleanup(patcher.stop)

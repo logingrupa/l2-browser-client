@@ -370,7 +370,7 @@ class ConvertTileCommandTests(SyntheticTileTestCase):
         exit_code, errors = self.run_refused_command(['--client', str(self.client), '--map', '../maps/20_21', '--step', 'raw'])
         self.assertNotEqual(exit_code, 0)
         self.assertIn("'../maps/20_21'", errors)
-        self.assertFalse((self.project_root / 'artifacts/lane-store/world/work').exists())
+        self.assertEqual([path.name for path in (self.project_root / 'artifacts/lane-store/world/work').iterdir()], ['interprocess-locks'])
 
 
 @unittest.skipUnless((REAL_CLIENT_ROOT / MAP_PATH).is_file(), 'the conversion client E:/Lineage2-client is absent on this host')

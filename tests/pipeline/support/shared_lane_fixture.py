@@ -1,17 +1,24 @@
+import contextlib
 import ctypes
 from ctypes import wintypes
 import hashlib
+import io
 import os
 from pathlib import Path
+import struct
 import tempfile
 import unittest
 from unittest.mock import patch
 
-from native_store import identical_file_sharing
+from native_assets import Converter, sha
+from native_store import identical_file_sharing, share_identical_lane_files as sharing_command
 from native_store.share_identical_lane_files import share_identical_lane_files
 from native_store.unit_ledger import UnitLedger
+from reference_client_lock_fixture import lock_client_as_reference_root
 
 SHARED_FILE_BYTES = 4096
+WAVE_SAMPLE_COUNT = 4000
+SOUND_CONVERTER_RELATIVE_FOLDER = 'work/sound-converter'
 FIXTURE_HOST = 'DATABASE-PC'
 FIXTURE_RIGA_TIME = '2026-11-13T12:00:00+02:00'
 FIXTURE_INPUT_SHA256 = 'a' * 64
@@ -81,6 +88,30 @@ def hold_file_open_without_sharing(test_case, path):
     if handle in (None, wintypes.HANDLE(-1).value):
         raise ctypes.WinError(ctypes.get_last_error())
     test_case.addCleanup(kernel32.CloseHandle, handle)
+
+
+def synthetic_audio_converter_and_request(test_case, lanes):
+    client = lanes.project / 'source'
+    client.mkdir()
+    lock_client_as_reference_root(test_case, client)
+    samples = b''.join(struct.pack('<h', (index * 7919) % 30000 - 15000) for index in range(WAVE_SAMPLE_COUNT))
+    wave_header = b'RIFF' + struct.pack('<I', 36 + len(samples)) + b'WAVEfmt ' + struct.pack('<IHHIIHH', 16, 1, 1, 8000, 16000, 2, 16)
+    (client / 'sample.wav').write_bytes(wave_header + b'data' + struct.pack('<I', len(samples)) + samples)
+    tool = lanes.project / 'tool.exe'
+    tool.write_bytes(b'not executed by the media adapter')
+    pinned_tool = patch('native_assets.UMODEL_SHA256', sha(tool.read_bytes()))
+    pinned_tool.start()
+    test_case.addCleanup(pinned_tool.stop)
+    converter = Converter(client, lanes.lane_folder('actors') / SOUND_CONVERTER_RELATIVE_FOLDER, tool, project_root=lanes.project)
+    return converter, {'kind': 'audio', 'media': 'sample.wav'}
+
+
+def run_sharing_command(*arguments):
+    standard_output, standard_error = io.StringIO(), io.StringIO()
+    with (patch.object(sharing_command, 'run_at_below_normal_priority') as below_normal_priority,
+          contextlib.redirect_stdout(standard_output), contextlib.redirect_stderr(standard_error)):
+        exit_code = sharing_command.main([str(argument) for argument in arguments])
+    return exit_code, standard_output.getvalue(), standard_error.getvalue(), below_normal_priority.call_count
 
 
 class SharedLaneFixture:

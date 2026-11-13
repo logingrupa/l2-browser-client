@@ -37,6 +37,7 @@ from native_catalog.tables import decode_table
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import read_store_catalog, write_store
 from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN
+from native_store.interprocess_lock import LaneInUseError, lane_batch_lock
 from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
 from native_store.linked_file_copy import link_or_copy_file
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root, require_converter_output
@@ -374,7 +375,7 @@ def main(argv=None):
             return 0
         require_batch_preflight(REPOSITORY_ROOT, LANE_NAME, BATCH_MINIMUM_FREE_BYTES)
         run_at_below_normal_priority()
-        with lane_coverage_refreshed_at_exit(REPOSITORY_ROOT, LANE_NAME):
+        with lane_batch_lock(lane_work_root(REPOSITORY_ROOT, LANE_NAME)), lane_coverage_refreshed_at_exit(REPOSITORY_ROOT, LANE_NAME):
             if arguments.skill is not None or arguments.batch == SKILL_BATCH_NAME:
                 return 1 if run_skill_conversion(client_access, output_root, arguments) else 0
             converter = Converter(client_access.root, output_root.parent / CONVERTER_WORK_FOLDER, arguments.umodel)
@@ -391,7 +392,7 @@ def main(argv=None):
                             convert_npc(REPOSITORY_ROOT, client_access, converter, arguments.npc, lane_work_root(REPOSITORY_ROOT, LANE_NAME), output_root))
                 for outcome in outcomes:
                     print(json.dumps(printed_outcome(outcome), sort_keys=True), flush=True)
-    except (OSError, ValueError) as error:
+    except (OSError, ValueError, LaneInUseError) as error:
         print(f'Actor conversion failed: {error}', file=sys.stderr)
         return 1
     return 1 if any(outcome['status'] == FAILED_STATUS for outcome in outcomes) else 0

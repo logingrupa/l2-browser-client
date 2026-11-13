@@ -5,14 +5,21 @@ from pathlib import Path
 import shutil
 import time
 
+from native_store import interprocess_lock
+from native_store.interprocess_lock import LaneInUseError, convert_under_request_lock, lane_batch_lock, lane_store_publish_lock
+from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import SEAL_RECORD_NAME, FreeDiskFloorRefusedError, current_riga_timestamp
 from test_convert_tile_batch import (SYNTHETIC_EXPECTED_COST, SYNTHETIC_STEP_NAMES, LedgerBackedSteps, synthetic_seal_checks,
                                      synthetic_source_identity, synthetic_step_ledger, write_synthetic_tile_census)
 from test_world_tile_batch_phases import raw_is_sealed
 from world import tile_step_workers
 from world.convert_tile_batch import batch_summary, run_tile_batch
+from world.tile_census import WORLD_LANE_NAME
 from world.tile_step_workers import NO_STOPPED_POSITION, TileStepRun
 
+LOCK_RECORDS_FOLDER_NAME = 'locks-under-the-lane-lock'
+SCENARIO_CONVERTER_FOLDER_NAME = 'static-mesh-converter'
+SCENARIO_REQUEST = {'kind': 'model', 'package': 'staticmeshes/Rock.usx', 'object': 'Rock.Rock_S'}
 GATE_POLL_SECONDS = 0.01
 GATE_TIMEOUT_SECONDS = 60
 STEP_CALL_RECORDS_FOLDER_NAME = 'tile-step-calls'
@@ -27,6 +34,7 @@ OWNER_AND_ROW_NEIGHBOUR_TILE_IDS = ('10_11', '10_12', '14_15')
 OWNER_AND_SEAM_NEIGHBOUR_TILE_IDS = ('10_11', '10_12', '11_11', '11_12', '14_15')
 ROW_NEIGHBOUR_RAW_CALL = ('10_12', 'raw')
 FIRST_TILE_CHUNKS_CALL = (SEPARATE_TILE_IDS[0], 'chunks')
+FIRST_TILE_MANIFEST_CALL = (SEPARATE_TILE_IDS[0], 'manifest')
 SECOND_TILE_CHUNKS_CALL = (SEPARATE_TILE_IDS[1], 'chunks')
 THIRD_TILE_CHUNKS_CALL = (SEPARATE_TILE_IDS[2], 'chunks')
 PreflightRefusal = namedtuple('PreflightRefusal', 'after_call wait_before_refusing')
@@ -92,6 +100,39 @@ def end_this_process_once_the_first_manifest_is_sealed(project_root):
     os._exit(WORKER_DEATH_EXIT_CODE)
 
 
+class HeldLockRecordingConverter:
+    def __init__(self, output):
+        self.output = output
+
+    def convert(self, request):
+        return str(interprocess_lock.held_lock_file_path)
+
+
+def lane_batch_lock_refusal(work_root):
+    try:
+        with lane_batch_lock(work_root):
+            return None
+    except LaneInUseError as refusal:
+        return str(refusal)
+
+
+def record_the_locks_taken_under_the_lane_lock(project_root):
+    work_root, store_root = lane_work_root(project_root, WORLD_LANE_NAME), lane_store_root(project_root, WORLD_LANE_NAME)
+    request_lock_file = convert_under_request_lock(HeldLockRecordingConverter(work_root / SCENARIO_CONVERTER_FOLDER_NAME), SCENARIO_REQUEST)
+    with lane_store_publish_lock(store_root):
+        store_lock_file = str(interprocess_lock.held_lock_file_path)
+    records_folder = project_root.parent / LOCK_RECORDS_FOLDER_NAME
+    records_folder.mkdir(exist_ok=True)
+    (records_folder / f'{os.getpid()}.json').write_text(json.dumps({
+        'processId': os.getpid(), 'requestLockFile': request_lock_file, 'storeLockFile': store_lock_file,
+        'laneLockFilesHeldUntilProcessEnd': [lock_file.name for lock_file in interprocess_lock.lane_lock_files_held_until_process_end],
+        'laneBatchLockRefusal': lane_batch_lock_refusal(work_root)}), encoding='utf-8')
+
+
+def lock_records_by_process_id(project_root):
+    return {path.stem: json.loads(path.read_text(encoding='utf-8')) for path in (project_root.parent / LOCK_RECORDS_FOLDER_NAME).glob('*.json')}
+
+
 def ascending_expected_costs(tile_ids):
     return {tile_id: cost for cost, tile_id in enumerate(tile_ids, start=SYNTHETIC_EXPECTED_COST)}
 
@@ -114,6 +155,9 @@ TILE_BATCH_SCENARIOS_BY_NAME = {
         FOUR_SEPARATE_TILE_IDS, 4, expected_costs=ascending_expected_costs(FOUR_SEPARATE_TILE_IDS),
         actions_before_a_step={(tile_id, 'chunks'): wait_in_a_pool_worker_for_the_chunks_call_of(other_tile_id)
                                for tile_id, other_tile_id in (TWO_COSTLIEST_OF_FOUR_TILE_IDS, TWO_COSTLIEST_OF_FOUR_TILE_IDS[::-1])}),
+    'locks-under-the-lane-lock': TileBatchScenario(
+        SEPARATE_TILE_IDS, 3, actions_before_a_step={FIRST_TILE_CHUNKS_CALL: record_the_locks_taken_under_the_lane_lock,
+                                                     FIRST_TILE_MANIFEST_CALL: record_the_locks_taken_under_the_lane_lock}),
     'first-tile-stops-after-the-costliest-last-tile': TileBatchScenario(
         SEPARATE_TILE_IDS, 3, expected_costs=ascending_expected_costs(SEPARATE_TILE_IDS),
         actions_before_a_step={SECOND_TILE_CHUNKS_CALL: wait_until_the_first_tile_has_stopped},
@@ -166,11 +210,13 @@ def scenario_tile_expected_cost(scenario):
 def tile_batch_report(scenario_name, project_root, worker_count):
     scenario = TILE_BATCH_SCENARIOS_BY_NAME[scenario_name]
     write_synthetic_tile_census(project_root, scenario.eligible_tile_ids)
-    outcome = run_tile_batch(scenario.limit, worker_count, scenario_tile_step_run, (project_root, scenario_name),
-                             step_names=SYNTHETIC_STEP_NAMES, tile_source_identity=synthetic_source_identity,
-                             tile_expected_cost=scenario_tile_expected_cost(scenario))
+    with lane_batch_lock(lane_work_root(project_root, WORLD_LANE_NAME)):
+        outcome = run_tile_batch(scenario.limit, worker_count, scenario_tile_step_run, (project_root, scenario_name),
+                                 step_names=SYNTHETIC_STEP_NAMES, tile_source_identity=synthetic_source_identity,
+                                 tile_expected_cost=scenario_tile_expected_cost(scenario))
     return {'summary': batch_summary(outcome, None), 'coordinatorProcessId': os.getpid(), 'stepCalls': step_call_records(project_root),
-            'tilesWithARawSeal': [tile_id for tile_id in scenario.eligible_tile_ids if raw_is_sealed(project_root, tile_id)]}
+            'tilesWithARawSeal': [tile_id for tile_id in scenario.eligible_tile_ids if raw_is_sealed(project_root, tile_id)],
+            'lockRecordsByProcessId': lock_records_by_process_id(project_root)}
 
 
 def print_tile_batch_report(program_arguments):
