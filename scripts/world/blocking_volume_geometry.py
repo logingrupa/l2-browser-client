@@ -1,6 +1,6 @@
 from native_assets_lib.class_defaults import ClassDefaultError
 from native_catalog.ue2 import FormatError
-from world.level_model import SURFACE_LIGHTMAP_INDEX_LAYOUT, require_level_model_ranges
+from world.level_model import read_model_body, require_level_model_ranges
 from world.static_collision_sources import (BLOCKING_DECISION, DECLARED_NONE_DECISION, GAP_DECISION, SLOTS_DECISION, blocking_decision,
                                             resolve_actor_flags, serialized_actor_value)
 from world.static_placement import TransformFieldError, resolved_transform_values, static_matrix
@@ -62,7 +62,7 @@ def read_volume(package, adapter, reader, actor, class_evidence, rules):
     if not 0 < reference <= len(adapter.exports) or package.exports[reference - 1]['classObject'] != MODEL_CLASS:
         return volume_record(actor, GAP_DECISION, ['field:Brush'], provenance, transform)
     try:
-        model = reader._read_model(adapter, adapter.exports[reference - 1], SURFACE_LIGHTMAP_INDEX_LAYOUT)
+        model = read_model_body(adapter, reader, adapter.exports[reference - 1])
         reader.validate_graph(model.nodes)
         require_level_model_ranges(model)
     except ValueError:

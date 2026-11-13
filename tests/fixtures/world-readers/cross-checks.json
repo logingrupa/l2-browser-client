@@ -186,7 +186,7 @@
   "tile": "17_18",
   "package": "maps/17_18.unr",
   "lockSha256": "c46277211a86a6779b41079bba9ac1c72438d4c4e025361628afb51915e578fb",
-  "ourDecodeSha256": null,
+  "ourDecodeSha256": "0bdd4050187d5d484d19501873a91b904e8006365fc4d48a480b909273019fd7",
   "crossCheckDecodeSha256": "0bdd4050187d5d484d19501873a91b904e8006365fc4d48a480b909273019fd7",
   "tool": {
    "name": "Elbera l2lib",
@@ -195,8 +195,8 @@
     "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
    }
   },
-  "equal": false,
-  "refusalReason": "vendored reader: 17_18.unr Level.Model: unsupported serialized Level layout (requires version123/licensee>=23)"
+  "equal": true,
+  "refusalReason": null
  },
  {
   "reader": "level-model",
@@ -205,7 +205,7 @@
   "tile": "26_11",
   "package": "maps/26_11.unr",
   "lockSha256": "2fb069c0acdc50eae8669fb8130aabb592b01047e6e2f1b89b1f044563a0cc7d",
-  "ourDecodeSha256": null,
+  "ourDecodeSha256": "3a8d4461b9d0bcc3c80fd8a1a70118f016d1bb88ebd346ef834d777a347c80dd",
   "crossCheckDecodeSha256": "3a8d4461b9d0bcc3c80fd8a1a70118f016d1bb88ebd346ef834d777a347c80dd",
   "tool": {
    "name": "Elbera l2lib",
@@ -214,8 +214,8 @@
     "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
    }
   },
-  "equal": false,
-  "refusalReason": "vendored reader: 26_11.unr Level.Model: unsupported serialized Level layout (requires version123/licensee>=23)"
+  "equal": true,
+  "refusalReason": null
  },
  {
   "reader": "level-model",
@@ -224,7 +224,7 @@
   "tile": "24_26",
   "package": "maps/24_26.unr",
   "lockSha256": "674761350b425835cfdf534d75730f29fd2b6d950e8967a3c207215d7f4bb69c",
-  "ourDecodeSha256": null,
+  "ourDecodeSha256": "92e1ee166a503035eef6f711b9e426a05293640503a12bb31d20e26a8c7c5261",
   "crossCheckDecodeSha256": "92e1ee166a503035eef6f711b9e426a05293640503a12bb31d20e26a8c7c5261",
   "tool": {
    "name": "Elbera l2lib",
@@ -233,8 +233,8 @@
     "tools/l2lib/ue2package.py": "18fc5bf7b6e5a8758a426a7264b103f34ddbdad6fb9b784319ef7ba6bfe050fe"
    }
   },
-  "equal": false,
-  "refusalReason": "vendored reader: 24_26.unr Level.Model: unsupported serialized Level layout (requires version123/licensee>=23)"
+  "equal": true,
+  "refusalReason": null
  },
  {
   "reader": "level-model",

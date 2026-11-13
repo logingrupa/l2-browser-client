@@ -2,6 +2,7 @@ import struct
 from types import SimpleNamespace
 
 from world.bsp_lightmaps import LIGHTMAP_PAGE_MIPS, LIGHTMAP_PROJECTION_FLOAT_COUNT, LIGHTMAP_RECORD_TRAILER_BYTES
+from world.reader_licensee_layouts import REVIEWED_PACKAGE_VERSION
 
 RENDER_VERTEX_PREFIX_BYTES = 20
 RENDER_VERTEX_NORMAL = (0.0, 0.0, 1.0)
@@ -21,10 +22,10 @@ def compact_index_bytes(value):
     return bytes(encoded)
 
 
-def render_section_bytes(vertex_uvs, polygon_count, lightmap_texture, material_reference=1, poly_flags=0):
+def render_section_bytes(vertex_uvs, node_count, lightmap_texture, material_reference=1, poly_flags=0, revision=None):
     vertices = b''.join(bytes(RENDER_VERTEX_PREFIX_BYTES) + struct.pack('<2f', *uv) + struct.pack('<3f', *RENDER_VERTEX_NORMAL) for uv in vertex_uvs)
-    return (compact_index_bytes(len(vertex_uvs)) + vertices + struct.pack('<i', polygon_count) + compact_index_bytes(material_reference)
-            + struct.pack('<iIi', polygon_count, poly_flags, lightmap_texture))
+    return (compact_index_bytes(len(vertex_uvs)) + vertices + struct.pack('<i', node_count if revision is None else revision)
+            + compact_index_bytes(material_reference) + struct.pack('<iIi', node_count, poly_flags, lightmap_texture))
 
 
 def lightmap_record_bytes(surface, rectangle):
@@ -71,4 +72,4 @@ def lightmap_node(light_map, section, vertex_offset, vertex_count):
 def lightmap_model_and_package(tail, nodes, surface_count):
     model = SimpleNamespace(export=SimpleNamespace(serial_offset=0, serial_size=len(tail)), lightmap_tail=len(tail), nodes=list(nodes),
                             surfs=[SimpleNamespace() for _ in range(surface_count)])
-    return model, SimpleNamespace(data=tail)
+    return model, SimpleNamespace(data=tail, summary={'version': REVIEWED_PACKAGE_VERSION})

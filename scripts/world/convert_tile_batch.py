@@ -21,7 +21,7 @@ from reference_client_guard import require_reference_client
 from world.eligible_tile_selection import (FAILED_STATUS, GAP_STATUS, PASS_STATUS, failed_step_row, locked_tile_source_identity,
                                            sealed_step_of_current_seal, step_level_rows, unit_step_evidence)
 from world.eligible_tiles import read_tile_census, select_eligible_tiles
-from world.raw_map_step import RAW_STEP_NAME, locked_tile_map_bytes, tile_unit_key
+from world.raw_map_step import RAW_STEP_NAME, TILE_ID_PATTERN, locked_tile_map_bytes, tile_unit_key
 from world.terrain_seam_strip import SEAM_ROLE_TILE_STEPS, neighbour_tile_id
 from world.tile_census import DEFAULT_CONVERSION_CLIENT_ROOT, WORLD_LANE_NAME
 from world.tile_manifest_step import TILE_MANIFEST_STEP_NAME
@@ -85,6 +85,14 @@ def tile_has_work(project_root, tile_id, step_names, recorded_rows, step_seal_ch
 def selected_tile_ids(project_root, tile_ids, limit, step_names, recorded_rows, step_seal_checks):
     tiles_with_work = (tile_id for tile_id in tile_ids if tile_has_work(project_root, tile_id, step_names, recorded_rows, step_seal_checks))
     return list(itertools.islice(tiles_with_work, limit))
+
+
+def selected_retry_tile_ids(project_root, tile_ids, retry_tile_ids, limit, step_names, step_seal_checks):
+    outside_census = sorted(set(retry_tile_ids) - set(tile_ids))
+    if outside_census:
+        raise TileBatchUsageError(f'--retry-tiles names tiles outside the eligible census: {outside_census}')
+    retried = [tile_id for tile_id in tile_ids if tile_id in retry_tile_ids]
+    return selected_tile_ids(project_root, retried, limit, step_names, {}, step_seal_checks)
 
 
 def seam_input_tile_ids(project_root, tile_ids, selected, recorded_rows, step_seal_checks):
@@ -173,7 +181,7 @@ def selected_tile_step_results(workers, selected, source_identities, expected_co
 
 
 def run_tile_batch(limit, worker_count, tile_step_run_factory, tile_step_run_arguments, step_names=TILE_STEP_NAMES,
-                   tile_source_identity=locked_tile_source_identity, tile_expected_cost=locked_tile_map_bytes):
+                   tile_source_identity=locked_tile_source_identity, tile_expected_cost=locked_tile_map_bytes, retry_tile_ids=None):
     if not (type(limit) is int and limit >= 1):
         raise TileBatchUsageError(f'batch limit must be a whole number of at least 1: {limit!r}')
     coordinator_run = tile_step_run_factory(*tile_step_run_arguments)
@@ -181,7 +189,8 @@ def run_tile_batch(limit, worker_count, tile_step_run_factory, tile_step_run_arg
     tile_ids = select_eligible_tiles(read_tile_census(project_root))
     recorded_rows = {(row['key'], row['step']): row for row in read_gap_rows(project_root, WORLD_LANE_NAME)}
     source_identities = {tile_id: tile_source_identity(tile_id) for tile_id in tile_ids}
-    selected = selected_tile_ids(project_root, tile_ids, limit, step_names, recorded_rows, step_seal_checks)
+    selected = (selected_tile_ids(project_root, tile_ids, limit, step_names, recorded_rows, step_seal_checks) if retry_tile_ids is None
+                else selected_retry_tile_ids(project_root, tile_ids, retry_tile_ids, limit, step_names, step_seal_checks))
     seam_inputs = seam_input_tile_ids(project_root, tile_ids, selected, recorded_rows, step_seal_checks)
     expected_costs = {tile_id: tile_expected_cost(tile_id) for tile_id in seam_inputs}
     step_results_by_tile, preflights_by_tile = {}, {tile_id: [] for tile_id in tile_ids}
@@ -239,6 +248,14 @@ def batch_summary(outcome, lane_outputs):
             'rowStatusCounts': row_status_counts(outcome.rows), 'laneOutputs': lane_outputs}
 
 
+def retry_tile_ids_argument(value):
+    tile_ids = value.split(',')
+    malformed = [tile_id for tile_id in tile_ids if not TILE_ID_PATTERN.fullmatch(tile_id)]
+    if malformed:
+        raise argparse.ArgumentTypeError(f'--retry-tiles takes comma-separated tile ids like 17_18: {malformed}')
+    return frozenset(tile_ids)
+
+
 def batch_argument_parser():
     parser = BatchArgumentParser(description='Run every registered world step on the next eligible tiles of the committed tile census.')
     parser.add_argument('--client', type=Path, default=DEFAULT_CONVERSION_CLIENT_ROOT)
@@ -247,6 +264,8 @@ def batch_argument_parser():
     parser.add_argument('--eligible', action='store_true', required=True, help='select the tiles from the committed census status eligible')
     parser.add_argument('--limit', type=positive_limit_argument, required=True)
     parser.add_argument('--workers', type=worker_count_argument, default=1, help='worker processes that run the steps of the selected tiles')
+    parser.add_argument('--retry-tiles', type=retry_tile_ids_argument, default=None,
+                        help='comma-separated eligible tile ids; only these run, and their recorded gap or failed rows do not settle them')
     return parser
 
 
@@ -257,7 +276,8 @@ def main(argv=None):
         store_root = require_converter_output(REPOSITORY_ROOT, REPOSITORY_ROOT / arguments.output)
         outcome = run_tile_batch(arguments.limit, arguments.workers, world_tile_step_run,
                                  (REPOSITORY_ROOT, arguments.client, store_root, arguments.workers),
-                                 tile_source_identity=locked_tile_source_identity, tile_expected_cost=locked_tile_map_bytes)
+                                 tile_source_identity=locked_tile_source_identity, tile_expected_cost=locked_tile_map_bytes,
+                                 retry_tile_ids=arguments.retry_tiles)
         lane_outputs = refresh_world_lane_outputs(REPOSITORY_ROOT) if outcome.exit_code == BATCH_EXIT_DONE else None
     except (OSError, ValueError) as error:
         print(f'Tile batch failed: {error}', file=sys.stderr)

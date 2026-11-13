@@ -115,21 +115,35 @@ class StaticMeshTriangleTests(unittest.TestCase):
 class VolumeTests(unittest.TestCase):
     def test_a_volume_keeps_rotation_draw_scale_draw_scale_3d_and_pre_pivot(self):
         brush = build_synthetic_level_model([synthetic_polygon(square_points(0, 0, 64))], root_outside=1)
-        reader = SimpleNamespace(_read_model=lambda adapter, export, layout: brush, validate_graph=lambda nodes: len(nodes))
+        surface_layouts = []
+        reader = SimpleNamespace(_read_model=lambda adapter, export, layout: surface_layouts.append(layout) or brush,
+                                 validate_graph=lambda nodes: len(nodes))
         package = SimpleNamespace(exports=[{'classObject': 'Engine.Model', 'object': 'Fixture.Model1'}])
         transform = {'Location': serialized({'X': 10.0, 'Y': 20.0, 'Z': 30.0}), 'Rotation': serialized({'Pitch': 0, 'Yaw': 16384, 'Roll': 0}),
                      'DrawScale': serialized(2.0), 'DrawScale3D': serialized({'X': 1.0, 'Y': 3.0, 'Z': 1.0}),
                      'PrePivot': serialized({'X': 4.0, 'Y': 5.0, 'Z': 6.0})}
-        volume = read_volume(package, SimpleNamespace(exports=[object()]), reader,
+        volume = read_volume(package, SimpleNamespace(exports=[object()], licensee_version=28), reader,
                              actor('Engine.BlockingVolume', properties=[('Brush', {'index': 1, 'object': 'Fixture.Model1'})], transform=transform),
                              SyntheticActorClassDefaults(), RULES)
         self.assertEqual((volume['decision'], volume['rootOutside'], len(volume['nodes'])), ('blocking', 1, 1))
+        self.assertEqual(surface_layouts, [True])
         unresolved = {'field': None, 'value': None, 'provenance': 'unresolved'}
         arrays = {array.name: array.values for array in vols_arrays([{**volume, 'kind': 'blocking',
                                                                       'physicsFields': dict.fromkeys(('water', 'priority', 'gravity', 'terminalVelocity'), unresolved)}])}
         self.assertEqual(arrays['VOLS.rotation'], (0, 16384, 0))
         self.assertEqual((arrays['VOLS.drawScale'], arrays['VOLS.drawScale3D'], arrays['VOLS.prePivot']), ((2.0,), (1.0, 3.0, 1.0), (4.0, 5.0, 6.0)))
         self.assertEqual(arrays['VOLS.transformProvenance'], (0, 0, 0, 0, 0))
+
+    def test_a_licensee_18_brush_model_reads_its_surfaces_without_the_trailing_integer(self):
+        brush = build_synthetic_level_model([synthetic_polygon(square_points(0, 0, 64))], root_outside=1)
+        surface_layouts = []
+        reader = SimpleNamespace(_read_model=lambda adapter, export, layout: surface_layouts.append(layout) or brush,
+                                 validate_graph=lambda nodes: len(nodes))
+        package = SimpleNamespace(exports=[{'classObject': 'Engine.Model', 'object': 'Fixture.Model1'}])
+        volume = read_volume(package, SimpleNamespace(exports=[object()], licensee_version=18), reader,
+                             actor('Engine.BlockingVolume', properties=[('Brush', {'index': 1, 'object': 'Fixture.Model1'})]),
+                             SyntheticActorClassDefaults(), RULES)
+        self.assertEqual((volume['decision'], surface_layouts), ('blocking', [False]))
 
     def test_a_volume_without_a_brush_is_declared_none_and_zero_volumes_write_empty_groups(self):
         volume = read_volume(SimpleNamespace(exports=[]), SimpleNamespace(exports=[]), None, actor('Engine.PhysicsVolume'), SyntheticActorClassDefaults(), RULES)

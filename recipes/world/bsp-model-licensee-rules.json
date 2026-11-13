@@ -1,0 +1,69 @@
+{
+ "schemaVersion": 1,
+ "kind": "bsp-model-licensee-rules",
+ "engine": {"path": "system/Engine.dll", "sha256": "4dd2f63c606df5671702911fa1f8ddcc4099bf2b98b81e8aa88eed47f5405b08", "imageBase": "0x10300000"},
+ "verification": {
+  "date": "2026-11-13",
+  "method": "Byte replay of every rule claim on the lock-equal Engine.dll and the lock-equal E: maps, every claim supported, no lock mismatch",
+  "workflow": "wf_684b2535-75f",
+  "instructions": {"replayed": 93, "supported": 93},
+  "dataRows": {"replayed": 17, "supported": 17},
+  "decisionRows": ["P1152", "P1153"],
+  "verifiedFactsSha256": "79d11661af9e67ea4f4090185012ec6220d562380b6322a14df272edf23d7ae5"
+ },
+ "rules": {
+  "levelBaseReferenceArrays": {
+   "function": "ULevelBase::Serialize",
+   "address": "0x105cf110",
+   "condition": "UObject::Serialize, then the object reference array at +0x48 only when LicenseeVer >= 23 (cmp 0x17), then the +0x38 array, then FURL at +0x78",
+   "minimumLicensee": 23,
+   "arrays": [{"nativeField": "0x48", "minimumLicensee": 23}, {"nativeField": "0x38", "minimumLicensee": 0}],
+   "urlNativeField": "0x78"
+  },
+  "levelModelReference": {
+   "function": "ULevel::Serialize",
+   "address": "0x105d07f0",
+   "condition": "tests the package Ver, not LicenseeVer; the Model reference is ULevel+0xc0",
+   "nativeField": "0xc0"
+  },
+  "surfaceTrailingInteger": {
+   "function": "FBspSurf serializer",
+   "address": "0x105ea020",
+   "condition": "after the float32 at +0x3c, one int32 at +0x40 only when LicenseeVer >= 21 (cmp 0x15, jl); below 21 no bytes are read and loading sets +0x40 to -1",
+   "minimumLicensee": 21,
+   "nativeField": "0x40",
+   "valueBelowMinimum": -1
+  }
+ },
+ "layouts": {
+  "renderSection": {
+   "structure": "FBspSection",
+   "condition": "every licensee: vertex array, revision, material object reference, node count, flags, final int32",
+   "fieldOrder": ["0x0c", "0x18", "0x20", "0x1c", "0x24", "0x28"],
+   "revision": "GetRevision of FBspVertexStream; it rises with the node count when a node is added, so it is never compared with the node count or the model node array length",
+   "nodeCount": "the assigned non-empty nodes: node +0x56 above 0 with node +0x60 the section index and node +0x64 the first vertex",
+   "vertexCheck": "the vertex array length equals the summed vertex counts of the assigned nodes"
+  },
+  "renderVertex": {
+   "structure": "FBspVertex",
+   "condition": "the trailing members are serialized when the package Ver >= 109",
+   "memberBytes": 4,
+   "wireOrder": ["0x00", "0x04", "0x08", "0x18", "0x1c", "0x20", "0x24"],
+   "trailingMembers": ["0x0c", "0x10", "0x14"],
+   "trailingMinimumPackageVersion": 109
+  }
+ },
+ "mapLicensees": {
+  "17_18": 18, "17_19": 18, "18_15": 18, "18_18": 18, "23_10": 18, "26_12": 18,
+  "26_11": 19,
+  "24_26": 20,
+  "20_16": 31, "23_25": 31, "24_14": 31, "24_20": 31, "25_20": 31
+ },
+ "open": [
+  "the name of ULevelBase+0x48",
+  "the name of FBspSurf+0x40",
+  "the name of FBspSection+0x28",
+  "the serializer addresses of FBspSection and FBspVertex are not part of the verified facts",
+  "model lightmaps: below LicenseeVer 24 the loader copies the arrays in memory with no stream bytes, and the data check did not consume the model lightmap tail end to end"
+ ]
+}

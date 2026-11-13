@@ -18,7 +18,7 @@ from reference_client_guard import require_reference_client
 from world.elbera_reader_cross_check import (ElberaCrossCheckError, elbera_actor_properties, elbera_level_model_projection,
                                              elbera_terrain_sector_properties, elbera_texture_mip_bytes, elbera_tool_record,
                                              level_model_projection)
-from world.level_model import read_vendored_level_model
+from world.level_model import read_level_model_without_layout_gate
 from world.map_actor_properties import HAS_STACK, actor_properties, property_value
 from world.map_sources import MapSources, safe_path
 from world.native_terrain_sectors import native_terrain
@@ -156,7 +156,7 @@ def level_model_decodes(access, sources, tile_id, licensee):
     require_package_licensee(map_package, licensee, tile_id)
     ours = theirs = refusal = None
     try:
-        ours = canonical_json_sha256(our_level_model_projection(read_vendored_level_model(map_package)))
+        ours = canonical_json_sha256(our_level_model_projection(read_level_model_without_layout_gate(map_package)))
     except FormatError as error:
         refusal = f'vendored reader: {error}'
     try:
@@ -196,7 +196,7 @@ def level_model_reader_fixture(client, licensee, tile_id):
     relative_path = tile_map_path(tile_id)
     map_package = MapSources(Path(client).resolve()).get(relative_path)
     require_package_licensee(map_package, licensee, tile_id)
-    level = read_vendored_level_model(map_package)
+    level = read_level_model_without_layout_gate(map_package)
     _, package_sha256 = access.require_equal_file_with_sha256(relative_path)
     export_start = level.export.serial_offset
     export_bytes = map_package.data[export_start:export_start + level.export.serial_size]

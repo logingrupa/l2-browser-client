@@ -164,10 +164,11 @@ class TileBatchTestCase(unittest.TestCase):
         write_synthetic_tile_census(self.project_root, self.eligible_tile_ids)
 
     def run_batch(self, steps, limit=1, preflight=None, step_names=SYNTHETIC_STEP_NAMES, step_seal_checks=None,
-                  tile_expected_cost=synthetic_expected_cost):
+                  tile_expected_cost=synthetic_expected_cost, retry_tile_ids=None):
         return run_tile_batch(limit, 1, TileStepRun,
                               (self.project_root, steps, preflight or RecordingPreflight(), step_seal_checks or synthetic_seal_checks()),
-                              step_names=step_names, tile_source_identity=synthetic_source_identity, tile_expected_cost=tile_expected_cost)
+                              step_names=step_names, tile_source_identity=synthetic_source_identity, tile_expected_cost=tile_expected_cost,
+                              retry_tile_ids=retry_tile_ids)
 
     def rows_by_tile_and_step(self):
         return {(row['key'], row['step']): row for row in read_gap_rows(self.project_root, 'world')}
@@ -273,6 +274,28 @@ class TileBatchOrderTests(TileBatchTestCase):
         self.assertEqual(self.run_batch(steps).attempted_tile_ids, ['12_13'])
         self.assertNotIn(('10_11', 'chunks'), steps.calls)
         self.assertEqual(self.rows_by_tile_and_step()[('tile:10_11', 'chunks')]['reason'], SYNTHETIC_LAYOUT_GAP_REASON)
+
+    def test_a_retried_tile_attempts_its_recorded_gap_while_current_seals_still_skip_steps(self):
+        steps = LedgerBackedSteps(self.project_root, layout_gaps={('10_11', 'chunks')})
+        self.run_batch(steps)
+        steps.layout_gaps.clear()
+        steps.calls.clear()
+        retried = self.run_batch(steps, limit=3, retry_tile_ids=frozenset({'10_11'}))
+        self.assertEqual(retried.attempted_tile_ids, ['10_11'])
+        self.assertEqual(steps.begun.count(('10_11', 'raw')), 1)
+        self.assertIn(('10_11', 'chunks'), steps.begun)
+        self.assertEqual(self.rows_by_tile_and_step()[('tile:10_11', 'manifest')]['status'], 'pass')
+        self.assertEqual(self.rows_by_tile_and_step()[('tile:12_13', 'raw')]['status'], 'pending')
+
+    def test_a_retried_tile_whose_every_seal_is_current_has_no_work(self):
+        steps = LedgerBackedSteps(self.project_root)
+        self.run_batch(steps)
+        steps.calls.clear()
+        self.assertEqual(self.run_batch(steps, retry_tile_ids=frozenset({'10_11'})).attempted_tile_ids, [])
+
+    def test_a_retry_tile_outside_the_eligible_census_is_a_usage_error(self):
+        with self.assertRaisesRegex(TileBatchUsageError, r"outside the eligible census: \['99_99'\]"):
+            self.run_batch(LedgerBackedSteps(self.project_root), retry_tile_ids=frozenset({'10_11', '99_99'}))
 
     def test_two_runs_over_the_same_sealed_state_write_byte_identical_rows(self):
         steps = LedgerBackedSteps(self.project_root, object_gaps={('10_11', 'raw'): 1})
@@ -396,6 +419,11 @@ class TileBatchCommandLineTests(TileBatchTestCase):
                 exit_code, _, errors = self.run_main(arguments)
                 self.assertEqual(exit_code, BATCH_EXIT_ERROR)
                 self.assertIn('error:', errors)
+
+    def test_a_malformed_retry_tile_list_is_a_usage_error(self):
+        exit_code, _, errors = self.run_main(['--eligible', '--limit', '1', '--retry-tiles', '10_11,tile'])
+        self.assertEqual(exit_code, BATCH_EXIT_ERROR)
+        self.assertIn('--retry-tiles takes comma-separated tile ids', errors)
 
     def test_a_census_with_every_eligible_tile_sealed_prints_nothing_to_do_and_exits_zero(self):
         steps = LedgerBackedSteps(self.project_root)

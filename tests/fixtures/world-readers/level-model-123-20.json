@@ -1,0 +1,96 @@
+{
+ "packageVersion": 123,
+ "licenseeVersion": 20,
+ "tile": "24_26",
+ "package": "maps/24_26.unr",
+ "lockSha256": "674761350b425835cfdf534d75730f29fd2b6d950e8967a3c207215d7f4bb69c",
+ "levelModel": "24_26.Model29",
+ "exportBytes": 1350841,
+ "exportSha256": "d66805e1fb45fcfd08bf09db48f22110a7db897a85507ae8bf56e96550fedb3e",
+ "levelBinding": {
+  "levelSHA256": "69b3b2a253e90fe265a5b2593a7923c9e67696b70e2344cd77babc66379208a2",
+  "decodedPrefixSHA256": "e96042fb9a0d316c9b138094857c08118eb19ddc6e791415588e06565969d8aa",
+  "decodedPrefixBytes": 76,
+  "remainingTailBytes": 22,
+  "remainingTailSHA256": "534f074b62609b6e33aac958af6382df49b369e11762c275b9aeb0a1ebbc16cb"
+ },
+ "spans": {
+  "properties": {
+   "bytes": 1,
+   "sha256": "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d"
+  },
+  "primitive": {
+   "bytes": 41,
+   "sha256": "9e1736c43d19118e6ce4302118af337109491ecc52757dfb949bad6a7940b0c2"
+  },
+  "vectors": {
+   "bytes": 685,
+   "sha256": "17554b01e63841d6127a7a601d03f74e713c9832acc8056162daabb3d6347050"
+  },
+  "points": {
+   "bytes": 1106,
+   "sha256": "920d14d54fa691ded2732c0d7ba09c34e197986656fc695d901bda001d84fedf"
+  },
+  "nodes": {
+   "bytes": 5270,
+   "sha256": "bcf7ae8e15d2e490dfa8aff94867d50769b64a266349dddd54cdd49bd01ebc31"
+  },
+  "surfs": {
+   "bytes": 1179,
+   "sha256": "d791cd167004f51046392f7e1b47eb6d83e9a263e8ce8efb03b76488bfb0840b"
+  },
+  "verts": {
+   "bytes": 2552,
+   "sha256": "7a6f995bad8a670ca5507e2ff26d343460ffcf3120c5f4732d1523fc7f821f1c"
+  },
+  "zones_and_polys": {
+   "bytes": 73,
+   "sha256": "6f6b754902bc87f9f8e1327ed90aaf9807b6189fd191b5dba9f68e4c9f7db789"
+  },
+  "bounds": {
+   "bytes": 776,
+   "sha256": "16e4dff0d29e85855493998dc394b52f59f1789baa9ed0291e3de30991d54926"
+  },
+  "leaf_hulls": {
+   "bytes": 458,
+   "sha256": "f8e2f1dce862151ff5225288f155dbce379e90cd20b31704af70f8f64498c73b"
+  },
+  "leaves": {
+   "bytes": 254,
+   "sha256": "cace2446fc747a3709a0ed810972a9c12ce3c2dcf7258a9f9f32ef0b8642f64a"
+  },
+  "lights": {
+   "bytes": 9,
+   "sha256": "1cedd3556fc705a86adc96f4dfcde7da9a470a7cbd73e5fbfd54192db5b69d8c"
+  },
+  "root_outside_and_linked": {
+   "bytes": 8,
+   "sha256": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc"
+  },
+  "undecoded_tail": {
+   "bytes": 1338429,
+   "sha256": "827543151b35373d213dc48fad4d10db8d1ace0955111fa7d7c38e76ffefc0fc"
+  }
+ },
+ "counts": {
+  "object": "24_26.Model29",
+  "nodes": 60,
+  "surfaces": 38,
+  "points": 92,
+  "vertices": 966,
+  "leaves": 23,
+  "tailBytes": 1338429
+ },
+ "countsSha256": "92e1ee166a503035eef6f711b9e426a05293640503a12bb31d20e26a8c7c5261",
+ "checks": {
+  "root0ReachableNodes": 60,
+  "unreachableNodes": 0,
+  "activeVertexSlots": 210,
+  "unusedVertexSlots": 756,
+  "unusedOutOfRangePointSlots": 332,
+  "nodeFlagHistogram": {
+   "0": 16,
+   "1": 44
+  }
+ }
+}

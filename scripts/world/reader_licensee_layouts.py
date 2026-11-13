@@ -2,6 +2,7 @@ from data.pinned_elbera_module import ELBERA_COMMIT
 from native_assets_lib.lineage_material_prefix import (ELBERA_L2LIB_README_PATH, ELBERA_L2LIB_README_SHA256, ELBERA_SOURCE_NAME,
                                                      MATERIAL_PREFIX_EVIDENCE, layout_evidence, lineage_material_prefix)
 from native_catalog.ue2 import FormatError
+from world.bsp_model_licensee_rules import LICENSEE_GATED_RULE_NAMES, RULE_NAMES, read_bsp_model_licensee_rules
 from world.bsp_reader_binding import READER_SHA as VENDORED_BSP_READER_SHA256
 from world.elbera_reader_cross_check import ELBERA_L2LIB_PINS, ELBERA_UE2PACKAGE_PATH
 
@@ -18,7 +19,9 @@ ELBERA_TERRAIN_SERIALIZE_PATH = 'docs/native-terrain-collision-inputs.md'
 ELBERA_TERRAIN_SERIALIZE_SHA256 = 'eee0d53e2d84c8a8c51c2b8854c5fe842a78e3cfbf77256b46cedd7d58f7da03'
 VENDORED_BSP_READER_SOURCE_NAME = 'Elbera vendored BSP reader'
 VENDORED_BSP_READER_PATH = 'scripts/vendor/lineage2elbera_bsp/__init__.py'
-REVIEWED_LEVEL_MODEL_LICENSEES = (28, 23, 25, 30, 31)
+REVIEWED_LEVEL_MODEL_LICENSEES = (28, 23, 25, 30, 31, 18, 19, 20)
+LEVEL_MODEL_RULES_SOURCE_NAME = 'Engine.dll level model rules'
+LEVEL_MODEL_RULES_COMMIT = '4dd2f63c'
 READER_GAP_REASON_TEMPLATES = {
     G16_HEIGHTMAP_READER: ('terrain-height-version-unsupported:{version}', 'terrain-height-licensee-unsupported:{version}/{licensee}'),
     **{reader: ('map-version-unsupported:{version}', 'map-licensee-unsupported:{version}/{licensee}')
@@ -43,6 +46,30 @@ LEVEL_MODEL_EVIDENCE = (
     layout_evidence(VENDORED_BSP_READER_SOURCE_NAME, ELBERA_COMMIT, VENDORED_BSP_READER_PATH, VENDORED_BSP_READER_SHA256,
                     'level_model_binding: ULevelBase::Serialize writes its first actor array for LicenseeVersion 23 or later; validate_model'),
 )
+
+
+def level_model_rule_minimums_above(licensee_version):
+    rules = read_bsp_model_licensee_rules()['document']['rules']
+    return [(name, rules[name]) for name in LICENSEE_GATED_RULE_NAMES if licensee_version < rules[name]['minimumLicensee']]
+
+
+def level_model_rule_differences(licensee_version):
+    return [f'{name} at {rule["function"]} {rule["address"]} applies from LicenseeVer {rule["minimumLicensee"]}; '
+            f'{REVIEWED_PACKAGE_VERSION}/{licensee_version} is below it' for name, rule in level_model_rule_minimums_above(licensee_version)]
+
+
+def level_model_rules_evidence():
+    recipe = read_bsp_model_licensee_rules()
+    rules = recipe['document']['rules']
+    addresses = ', '.join(f'{rules[name]["function"]} {rules[name]["address"]}' for name in RULE_NAMES)
+    return (
+        LEVEL_MODEL_EVIDENCE[0],
+        layout_evidence(LEVEL_MODEL_RULES_SOURCE_NAME, LEVEL_MODEL_RULES_COMMIT, recipe['path'], recipe['sha256'], addresses),
+        layout_evidence(VENDORED_BSP_READER_SOURCE_NAME, ELBERA_COMMIT, VENDORED_BSP_READER_PATH, VENDORED_BSP_READER_SHA256,
+                        '_read_model and validate_model'),
+    )
+
+
 READER_EVIDENCE = {G16_HEIGHTMAP_READER: MATERIAL_PREFIX_EVIDENCE, MAP_ACTOR_READER: ACTOR_PROPERTY_EVIDENCE,
                    TERRAIN_INFO_READER: TERRAIN_INFO_EVIDENCE, RAW_MAP_READER: ACTOR_PROPERTY_EVIDENCE, LEVEL_MODEL_READER: LEVEL_MODEL_EVIDENCE}
 READER_FIXTURE_STEMS = {G16_HEIGHTMAP_READER: 'g16-heightmap', **{reader: 'map' for reader in MAP_READERS}, LEVEL_MODEL_READER: 'level-model'}
@@ -82,8 +109,8 @@ def reviewed_reader_layout(reader, licensee_version, cross_check_tile):
         record['materialPrefix'] = lineage_material_prefix(REVIEWED_PACKAGE_VERSION, licensee_version)
         evidence = READER_EVIDENCE[reader]
     elif reader == LEVEL_MODEL_READER:
-        record['differencesFrom123_28'] = []
-        evidence = READER_EVIDENCE[reader]
+        record['differencesFrom123_28'] = level_model_rule_differences(licensee_version)
+        evidence = level_model_rules_evidence() if record['differencesFrom123_28'] else READER_EVIDENCE[reader]
     else:
         record['differencesFrom123_28'] = map_material_export_differences(licensee_version)
         evidence = (*READER_EVIDENCE[reader], *(MATERIAL_PREFIX_EVIDENCE if record['differencesFrom123_28'] else ()))

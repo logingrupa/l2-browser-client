@@ -3,8 +3,8 @@ import struct
 from typing import NamedTuple
 
 from native_catalog.ue2 import FormatError, Reader
+from world.bsp_model_licensee_rules import read_bsp_model_licensee_rules
 
-RENDER_VERTEX_BYTES = 40
 RENDER_VERTEX_LIGHTMAP_UV_OFFSET = 20
 LIGHTMAP_ATLAS_EDGE = 512
 LIGHTMAP_PROJECTION_FLOAT_COUNT = 25
@@ -26,8 +26,9 @@ LIGHTMAP_INDEX_INVALID_REASON_PREFIX = 'lighting-lightmap-index-invalid:'
 class RenderSection(NamedTuple):
     vertex_count: int
     vertex_offset: int
-    polygon_count: int
+    revision: int
     material_reference: int
+    node_count: int
     poly_flags: int
     lightmap_texture: int
 
@@ -78,22 +79,41 @@ def model_tail_bounds(model):
     return end - model.lightmap_tail, end
 
 
-def read_render_sections(reader, node_count):
+def render_vertex_bytes(package_version):
+    vertex_layout = read_bsp_model_licensee_rules()['document']['layouts']['renderVertex']
+    trailing_members = vertex_layout['trailingMembers'] if package_version >= vertex_layout['trailingMinimumPackageVersion'] else []
+    return vertex_layout['memberBytes'] * (len(vertex_layout['wireOrder']) + len(trailing_members))
+
+
+def assigned_section_totals(nodes):
+    totals = {}
+    for node in nodes:
+        if node.num_vertices > 0:
+            node_count, vertex_count = totals.get(node.i_section, (0, 0))
+            totals[node.i_section] = (node_count + 1, vertex_count + node.num_vertices)
+    return totals
+
+
+def read_render_sections(reader, nodes, package_version):
     section_count = reader.compact()
     if not 0 <= section_count <= MAXIMUM_RENDER_SECTIONS:
         raise FormatError(f'render section count {section_count} is outside 0..{MAXIMUM_RENDER_SECTIONS}')
+    vertex_bytes, totals = render_vertex_bytes(package_version), assigned_section_totals(nodes)
     sections = []
     for section_index in range(section_count):
         vertex_count = reader.compact()
         if not 0 <= vertex_count <= MAXIMUM_RENDER_VERTICES:
             raise FormatError(f'render section {section_index} declares {vertex_count} vertices')
         vertex_offset = reader.position
-        reader.take(RENDER_VERTEX_BYTES * vertex_count)
-        declared_polygons, material_reference, polygon_count = reader.number('i'), reader.compact(), reader.number('i')
+        reader.take(vertex_bytes * vertex_count)
+        revision, material_reference, node_count = reader.number('i'), reader.compact(), reader.number('i')
         poly_flags, lightmap_texture = reader.number('I'), reader.number('i')
-        if declared_polygons != polygon_count or not 0 <= polygon_count <= node_count:
-            raise FormatError(f'render section {section_index} declares {declared_polygons} and {polygon_count} polygons for {node_count} nodes')
-        sections.append(RenderSection(vertex_count, vertex_offset, polygon_count, material_reference, poly_flags, lightmap_texture))
+        assigned_nodes, assigned_vertices = totals.get(section_index, (0, 0))
+        if vertex_count != assigned_vertices:
+            raise FormatError(f'render section {section_index} holds {vertex_count} vertices, but its assigned nodes hold {assigned_vertices}')
+        if node_count != assigned_nodes:
+            raise FormatError(f'render section {section_index} declares {node_count} nodes, but {assigned_nodes} nodes with vertices are assigned to it')
+        sections.append(RenderSection(vertex_count, vertex_offset, revision, material_reference, node_count, poly_flags, lightmap_texture))
     return tuple(sections)
 
 
@@ -189,7 +209,7 @@ def read_lightmap_textures(reader, end, records):
 def read_bsp_lightmaps(package, model):
     start, end = model_tail_bounds(model)
     reader = Reader(package.data, start, end)
-    sections = read_render_sections(reader, len(model.nodes))
+    sections = read_render_sections(reader, model.nodes, package.summary['version'])
     record_count = reader.compact()
     if not 0 <= record_count <= MAXIMUM_LIGHTMAP_RECORDS:
         raise FormatError(f'lightmap record count {record_count} is outside 0..{MAXIMUM_LIGHTMAP_RECORDS}')
@@ -232,9 +252,9 @@ def node_lightmap_uvs(package, lightmaps, node):
     section = lightmaps.sections[node.i_section]
     if node.i_vert_offset < 0 or node.i_vert_offset + node.num_vertices > section.vertex_count:
         raise FormatError(f'node vertex offset {node.i_vert_offset} leaves render section {node.i_section}')
-    uvs = []
+    uvs, vertex_bytes = [], render_vertex_bytes(package.summary['version'])
     for vertex in range(node.i_vert_offset, node.i_vert_offset + node.num_vertices):
-        position = section.vertex_offset + RENDER_VERTEX_BYTES * vertex + RENDER_VERTEX_LIGHTMAP_UV_OFFSET
+        position = section.vertex_offset + vertex_bytes * vertex + RENDER_VERTEX_LIGHTMAP_UV_OFFSET
         uv = struct.unpack_from('<2f', package.data, position)
         if not all(math.isfinite(value) for value in uv):
             raise FormatError(f'render vertex {vertex} of section {node.i_section} holds a non-finite lightmap UV')
