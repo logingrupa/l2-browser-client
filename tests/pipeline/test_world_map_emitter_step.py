@@ -1,8 +1,11 @@
 import hashlib
+import json
 from pathlib import Path
 import struct
 import sys
+import tempfile
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
@@ -16,7 +19,10 @@ from support.bsp_room_fixture import ROOM_ZONES, room_model
 from ue2_package_fixture import compact, package_bytes, tag
 from world.bsp_visibility_step import load_bsp_visibility_rules, tile_visibility_payload
 from world.map_emitter_records import ACTOR_RULE_FIELDS, EMITTER_RULE_FIELDS, emitter_record_gap_reason
-from world.map_emitter_step import MAP_EMITTER_STEP_ALGORITHM_VERSION, MAP_EMITTER_STEP_NAME, read_tile_map_emitters, tile_map_emitter_row
+from world.map_emitter_step import (MAP_EMITTER_STEP_ALGORITHM_VERSION, MAP_EMITTER_STEP_NAME, map_emitter_unit, read_tile_map_emitters,
+                                    tile_map_emitter_row)
+from world.raw_map_step import read_tile_map_lock_record
+from world.struct_property_tag_rules import read_struct_property_tag_rules
 from world.tile_manifest_step import tile_resources
 from world.visibility_members import MAP_EMITTER_MEMBER_KIND, map_emitter_members
 
@@ -134,6 +140,17 @@ class MapEmitterExportTests(unittest.TestCase):
             validate_gap_row({'key': f'tile:{TILE_ID}', 'part': 'world', 'step': MAP_EMITTER_STEP_NAME, 'status': 'gap', 'reason': reason,
                               'sourceIdentity': {**SOURCE_IDENTITY, 'object': f'{TILE_ID}.SpriteEmitter0'}, 'evidence': EVIDENCE})
 
+    def test_nested_values_name_their_dotted_path_and_a_nested_object_reference_is_a_resource_gap(self):
+        color = {'B': 1, 'G': 2, 'R': 3, 'A': 4}
+        unparsed = {'unparsedHex': '01020304', 'type': 10, 'struct': 'Color'}
+        sprite = {'class': 'Engine.SpriteEmitter', 'properties': {'StartSizeRange': {'X': {'Min': 1.0, 'Max': 2.0}},
+                                                                  'ColorScale': [{'RelativeTime': 0.0, 'Color': color}, {'RelativeTime': 1.0, 'Color': unparsed}]}}
+        self.assertEqual(emitter_record_gap_reason(sprite, SIMULATED_EMITTER_CLASSES), 'map-emitter-struct-unparsed:ColorScale[1].Color')
+        sprite['properties']['ColorScale'][1]['Color'] = color
+        self.assertIsNone(emitter_record_gap_reason(sprite, SIMULATED_EMITTER_CLASSES))
+        sprite['properties']['Sounds'] = [{'Sound': {'class': 'Object', 'object': 'AmbSound.Wind'}, 'Weight': 1}]
+        self.assertEqual(emitter_record_gap_reason(sprite, SIMULATED_EMITTER_CLASSES), 'map-emitter-resource-unconverted:AmbSound.Wind')
+
     def test_a_map_without_emitter_actors_passes_with_no_resource(self):
         placements, gap_rows = read_tile_map_emitters(emitter_package(with_emitters=False), {}, CLASS_DEFAULTS, SIMULATED_EMITTER_CLASSES, TILE_ID,
                                                       SOURCE_IDENTITY, EVIDENCE)
@@ -165,6 +182,21 @@ class MapEmitterExportTests(unittest.TestCase):
 
     def test_the_step_name_and_version_are_pinned(self):
         self.assertEqual((MAP_EMITTER_STEP_NAME, MAP_EMITTER_STEP_ALGORITHM_VERSION), ('emitters', 3))
+
+
+class MapEmitterUnitConfigTests(unittest.TestCase):
+    def unit_config(self, by_class):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        raw_products = Path(temporary.name)
+        (raw_products / 'manifest.json').write_text(json.dumps({'coverage': {'byClass': by_class}}), encoding='utf-8')
+        with mock.patch('world.map_emitter_step.sealed_chunk_plan', return_value=('c' * 64, raw_products, {})):
+            return map_emitter_unit(ROOT, '20_21', read_tile_map_lock_record('20_21')).config
+
+    def test_the_struct_rules_key_is_in_the_config_only_when_the_raw_manifest_counts_an_emitter_export(self):
+        self.assertEqual(self.unit_config({'Emitter': 6, 'Light': 2})['structPropertyRulesSha256'], read_struct_property_tag_rules().sha256)
+        self.assertNotIn('structPropertyRulesSha256', self.unit_config({'Emitter': 0, 'Light': 2}))
+        self.assertNotIn('structPropertyRulesSha256', self.unit_config({'Light': 2}))
 
 
 class MapEmitterMembershipTests(unittest.TestCase):

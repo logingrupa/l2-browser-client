@@ -1,8 +1,8 @@
 import hashlib
-import json
 from pathlib import Path
 import sys
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
@@ -14,8 +14,10 @@ from support.converted_model_fixture import converted_model_glb
 from support.bsp_room_fixture import ROOM_ZONES, room_model
 from world.bsp_visibility_census import build_bsp_visibility_census
 from world.bsp_leaf_membership import INDEX_NONE, leaf_for_point, leaves_for_box, point_check_outside, solidity_disagreements, zones_for_box
-from world.bsp_visibility_step import (BSP_VISIBILITY_STEP_ALGORITHM_VERSION, BSP_VISIBILITY_STEP_NAME, load_bsp_visibility_rules,
+from world.bsp_visibility_step import (BSP_VISIBILITY_STEP_ALGORITHM_VERSION, BSP_VISIBILITY_STEP_NAME, bsp_visibility_unit, load_bsp_visibility_rules,
                                        model_unreadable_reason, solidity_census, solidity_gap_rows, tile_bsp_visibility_row, tile_visibility_payload)
+from world.raw_map_step import read_tile_map_lock_record
+from world.struct_property_tag_rules import read_struct_property_tag_rules
 from world.level_model import LevelModelRangeError
 from world.tile_manifest_step import tile_resources
 from world.typed_payload import ARRAY_NAME_PATTERN, typed_payload_asset
@@ -177,6 +179,14 @@ class VisibilityRecipeAndRegistrationTests(unittest.TestCase):
 
     def test_the_step_name_and_version_are_pinned(self):
         self.assertEqual((BSP_VISIBILITY_STEP_NAME, BSP_VISIBILITY_STEP_ALGORITHM_VERSION), ('bsp-visibility', 3))
+
+    def test_the_unit_config_holds_the_struct_property_rules_sha256_because_the_product_embeds_the_zone_records(self):
+        with (mock.patch('world.bsp_visibility_step.sealed_chunk_plan', return_value=('c' * 64, ROOT, {})),
+              mock.patch('world.bsp_visibility_step.sealed_bsp_chunks', return_value=('b' * 64, {})),
+              mock.patch('world.bsp_visibility_step.sealed_static_meshes', return_value=('m' * 64, {})),
+              mock.patch('world.bsp_visibility_step.sealed_map_emitters', return_value=(None, None))):
+            config = bsp_visibility_unit(ROOT, '20_21', read_tile_map_lock_record('20_21')).config
+        self.assertEqual(config['structPropertyRulesSha256'], read_struct_property_tag_rules().sha256)
 
 
 if __name__ == '__main__':

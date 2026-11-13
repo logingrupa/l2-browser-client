@@ -1,6 +1,7 @@
 from pathlib import Path
 import sys
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
@@ -21,7 +22,9 @@ from world.tile_step_registry import TILE_STEP_NAMES
 from world.light_actors import ClassChains, LightingActor, read_lighting_actors, read_static_mesh_light_lists
 from world.lighting_payload import bsp_lightmap_arrays, static_mesh_light_list_arrays, terrain_lighting_arrays, typed_payload_byte_count
 from world.lighting_step import (APPLIED_LIGHTING_RULES, LIGHTING_STEP_ALGORITHM_VERSION, LIGHTING_STEP_NAME, class_chain_unresolved_reasons,
-                                 load_lighting_rules, water_volume_links)
+                                 lighting_unit, load_lighting_rules, water_volume_links)
+from world.raw_map_step import read_tile_map_lock_record
+from world.struct_property_tag_rules import read_struct_property_tag_rules
 from world.terrain_lighting import read_terrain_sector_lighting
 from world.typed_payload import typed_payload_asset
 
@@ -186,6 +189,13 @@ class LightingRegistrationTests(unittest.TestCase):
         for reason in ('lighting-lightmap-index-invalid:<index>', 'lighting-payload-too-large', 'environment-program-unresolved:<file>',
                        'lighting-water-volume-unlinked:<class>', 'lighting-class-chain-unresolved:<class>'):
             self.assertIn(reason, patterns)
+
+    def test_the_unit_config_holds_the_struct_property_rules_sha256(self):
+        with (mock.patch('world.lighting_step.sealed_chunk_plan', return_value=('c' * 64, ROOT, {})),
+              mock.patch('world.lighting_step.sealed_bsp_chunks', return_value=('b' * 64, {})),
+              mock.patch('world.lighting_step.sealed_collision', return_value=('d' * 64, {}))):
+            config = lighting_unit(ROOT, '20_21', read_tile_map_lock_record('20_21')).config
+        self.assertEqual(config['structPropertyRulesSha256'], read_struct_property_tag_rules().sha256)
 
     def test_every_rule_row_is_sourced_with_unconfirmed_or_stronger_status_and_every_applied_rule_has_a_row(self):
         rows = load_lighting_rules()['rows']

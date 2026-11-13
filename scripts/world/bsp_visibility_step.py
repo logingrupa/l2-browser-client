@@ -19,6 +19,7 @@ from world.map_emitter_step import sealed_map_emitters
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
 from world.static_mesh_step import sealed_static_meshes
 from world.static_placement import ClassDefaults
+from world.struct_property_tag_rules import read_struct_property_tag_rules
 from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
@@ -72,7 +73,7 @@ def bsp_visibility_unit(project_root, tile_id, lock_record):
     emitters_fingerprint, map_emitters = sealed_map_emitters(project_root, tile_id, lock_record)
     document, _ = load_bsp_visibility_rules()
     config = {'bspFingerprint': bsp_fingerprint, 'meshesFingerprint': meshes_fingerprint, 'emittersFingerprint': emitters_fingerprint,
-              'rulesSha256': sha256_hex(canonical_json_bytes(document))}
+              'rulesSha256': sha256_hex(canonical_json_bytes(document)), 'structPropertyRulesSha256': read_struct_property_tag_rules().sha256}
     inputs = locked_input_records([tile_map_path(tile_id)])
     ledger = bsp_visibility_ledger(project_root)
     fingerprint = ledger.unit_fingerprint([record['sha256'] for record in inputs], config)

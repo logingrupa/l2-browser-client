@@ -1,6 +1,7 @@
 recipes/*.lock.json text eol=lf
 recipes/actors/combat-sound-routes.json text eol=lf
 recipes/world/bsp-model-licensee-rules.json text eol=lf
+recipes/world/struct-property-tag-rules.json text eol=lf
 recipes/world/minimap-radar-route.json text eol=lf
 recipes/data/table-layouts/*.xml text eol=lf
 tests/fixtures/golden/** -text

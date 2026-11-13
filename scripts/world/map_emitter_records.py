@@ -1,10 +1,13 @@
 from typing import NamedTuple
 
 from native_catalog.ue2 import FormatError, Reader
-from native_effect_bundle import CONVERTED_EMITTER_CLASSES, object_values
-from world.actor_field_values import resolved_actor_field
+from native_effect_bundle import CONVERTED_EMITTER_CLASSES
+from world.actor_field_values import resolved_actor_field, serialized_property_tags
+from world.declared_property_types import declared_property_types
 from world.map_actor_properties import MAXIMUM_ARRAY_ELEMENTS, actor_properties
 from world.static_placement import TransformFieldError, resolved_transform_values, static_matrix
+from world.struct_property_tag_rules import read_struct_property_tag_rules
+from world.struct_property_values import decode_property_tags
 
 EMITTER_ACTOR_CLASS = 'Engine.Emitter'
 EMITTERS_PROPERTY = 'Emitters'
@@ -51,19 +54,29 @@ def emitter_record(package, reference, class_defaults):
         raise FormatError(f'Emitter actor names emitter export {reference} outside the export table of {len(package.exports)} exports')
     item = package.exports[reference - 1]
     tags, reader = package.properties(item)
-    values = object_values(package, tags)
+    serialized_tags = serialized_property_tags(package, tags)
+    properties = decode_property_tags(package, tags, item['classObject'], declared_property_types(class_defaults), read_struct_property_tag_rules())
     return {'object': item['object'], 'class': item['classObject'], 'exportIndex': item['exportIndex'],
             'converted': item['classObject'] in CONVERTED_EMITTER_CLASSES, 'trailingNativeBytes': reader.end - reader.position,
-            'rules': [resolved_actor_field(field, values, item['classObject'], class_defaults).to_record() for field in EMITTER_RULE_FIELDS],
-            'properties': values}
+            'rules': [resolved_actor_field(field, serialized_tags, item['classObject'], class_defaults).to_record() for field in EMITTER_RULE_FIELDS],
+            'properties': properties}
+
+
+def nested_value_entries(label, value):
+    yield label, value
+    if is_unparsed_struct(value) or is_object_reference(value):
+        return
+    if isinstance(value, dict):
+        for member, member_value in value.items():
+            yield from nested_value_entries(f'{label}.{member}', member_value)
+    elif isinstance(value, list):
+        for index, element in enumerate(value):
+            yield from nested_value_entries(f'{label}[{index}]', element)
 
 
 def emitter_property_entries(properties):
     for name, value in properties.items():
-        if isinstance(value, list):
-            yield from ((f'{name}[{index}]', element) for index, element in enumerate(value))
-        else:
-            yield name, value
+        yield from nested_value_entries(name, value)
 
 
 def is_unparsed_struct(value):
@@ -105,13 +118,13 @@ def emitter_source_rows(actor, class_defaults):
 
 def read_map_emitter_placement(package, item, actor, class_defaults, simulated_emitter_classes):
     tags, _, _, _ = actor_properties(package, item)
-    values = object_values(package, tags)
+    serialized_tags = serialized_property_tags(package, tags)
     try:
         rows = emitter_source_rows(actor, class_defaults)
     except TransformFieldError as error:
         return None, MapEmitterGap(item['object'], ACTOR_DEFAULT_UNRESOLVED_REASON_PREFIX + error.field)
     bundle, gaps = emitter_bundle(package, emitter_references(tags), class_defaults, simulated_emitter_classes)
     record = {'id': actor['id'], 'exportIndex': item['exportIndex'], 'transform': rows,
-              'actorRules': [resolved_actor_field(field, values, EMITTER_ACTOR_CLASS, class_defaults).to_record() for field in ACTOR_RULE_FIELDS],
+              'actorRules': [resolved_actor_field(field, serialized_tags, EMITTER_ACTOR_CLASS, class_defaults).to_record() for field in ACTOR_RULE_FIELDS],
               'bundle': bundle}
     return MapEmitterPlacement(record, tuple(rows[3][:3]), tuple(gaps)), None

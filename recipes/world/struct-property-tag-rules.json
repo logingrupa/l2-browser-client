@@ -1,0 +1,74 @@
+{
+ "schemaVersion": 1,
+ "kind": "struct-property-tag-rules",
+ "coreDll": {"path": "system/Core.dll", "bytes": 1372180, "sha256": "9462f87a5e77d21865e2e00264efd44df25feb47aa78f8a72e9cf66ce4e919bf", "imageBase": "0x10100000"},
+ "verification": {
+  "date": "2026-11-13",
+  "method": "Byte replay of every struct tag claim on the lock-equal Core.dll and the lock-equal E: maps, every claim supported",
+  "workflow": "wf_c74f1a43-96a",
+  "instructions": {"replayed": 154, "supported": 154},
+  "dataRows": {"replayed": 117, "supported": 117},
+  "decisionRows": ["P1153"],
+  "verifiedFactsSha256": "5910698900707c74dbd95372bc72d49c6a1c84d0398242bccda0c386db924144"
+ },
+ "rules": {
+  "structDispatch": {
+   "tagged": {
+    "function": "SerializeTaggedProperties",
+    "address": "0x88",
+    "addressKind": "vtable-offset",
+    "condition": "every struct other than the binary ones, when the package Ver is at least 118 and the archive is a package load",
+    "minimumPackageVersion": 118
+   },
+   "binary": {
+    "function": "SerializeBin",
+    "address": "0x84",
+    "addressKind": "vtable-offset",
+    "condition": "the struct FName id is 0x57 Vector, 0x58 Rotator or 0x5a Color; members follow the struct child order",
+    "structs": [
+     {"fnameId": "0x57", "name": "Vector", "members": [{"name": "X", "type": "float32"}, {"name": "Y", "type": "float32"}, {"name": "Z", "type": "float32"}]},
+     {"fnameId": "0x58", "name": "Rotator", "members": [{"name": "Pitch", "type": "int32"}, {"name": "Yaw", "type": "int32"}, {"name": "Roll", "type": "int32"}]},
+     {"fnameId": "0x5a", "name": "Color", "members": [{"name": "B", "type": "uint8"}, {"name": "G", "type": "uint8"}, {"name": "R", "type": "uint8"}, {"name": "A", "type": "uint8"}]}
+    ]
+   }
+  },
+  "tag": {
+   "condition": "a compact name index, where None ends the stream; then the info byte: type is the low nibble, the size code is info & 0x70 and 0x80 is the array flag; type 10 (struct) reads the struct FName before the size",
+   "sizeCodes": {"fixedBytes": [1, 2, 4, 12, 16], "sizeHeaders": ["uint8", "uint16", "uint32"]}
+  },
+  "arrayIndex": {
+   "condition": "read when the info array flag 0x80 is set, never for bool: 1 byte; 2 bytes ((b & 0x7f) << 8 | next) when b & 0x80; 4 bytes ((b & 0x3f) << 24 ...) when b & 0xc0 == 0xc0"
+  },
+  "bool": {
+   "condition": "type 3: the value is the 0x80 info bit and there is no payload, but the size header is still read, for example 13 53 00 is size code 5 with a uint8 size of 0"
+  },
+  "nestedStruct": {
+   "condition": "a nested custom struct is tagged and ends with its own None"
+  },
+  "dynamicArray": {
+   "condition": "a compact count, then each element through the inner property SerializeItem; a struct inner is tagged unless it is Vector, Rotator or Color"
+  }
+ },
+ "actorClasses": [{"class": "Engine.L2FogInfo", "superChain": ["Engine.Info", "Engine.Actor"]}],
+ "oracles": {
+  "map": "maps/20_21.unr",
+  "streamsEndAtExportEnd": true,
+  "exports": [
+   {"exportIndex": 9236, "object": "L2FogInfo46", "class": "Engine.L2FogInfo", "values": [
+    {"path": "AffectRange", "streamValues": [3000, 4000]},
+    {"path": "FogRange1", "members": {"Min": 0, "Max": 2000}},
+    {"path": "FogRange2", "members": {"Min": 0, "Max": 4000}},
+    {"path": "FogRange3", "members": {"Min": 0, "Max": 6000}},
+    {"path": "FogRange4", "members": {"Min": 0, "Max": 8000}},
+    {"path": "FogRange5", "members": {"Min": 0, "Max": 10000}},
+    {"path": "Colors", "elementStruct": "L2EnvironmentColorInfo", "elementCount": 7}
+   ]},
+   {"exportIndex": 11402, "object": "SpriteEmitter0", "values": [
+    {"path": "StartSizeRange.X", "streamValues": [150, 150]},
+    {"path": "StartSizeRange.Y", "streamValues": [150, 150]},
+    {"path": "StartSizeRange.Z", "streamValues": [150, 150]},
+    {"path": "LifetimeRange", "streamValues": [100, 100]}
+   ]}
+  ]
+ }
+}

@@ -67,7 +67,7 @@ class LevelZoneTableTests(unittest.TestCase):
     def test_serialized_fields_are_authored_and_omitted_fields_carry_class_default_provenance(self):
         indoor = self.zones[1]
         self.assertEqual((indoor.sun_affect.value, indoor.sun_affect.provenance), (False, AUTHORED_PROVENANCE))
-        self.assertEqual(self.field(indoor, 'DistanceFogColor').value, {'R': 10, 'G': 20, 'B': 30, 'A': 40})
+        self.assertEqual(list(self.field(indoor, 'DistanceFogColor').value.items()), [('B', 10), ('G', 20), ('R', 30), ('A', 40)])
         self.assertEqual(self.field(indoor, 'DistanceFogEnd').to_record(),
                          {'field': 'DistanceFogEnd', 'value': 12000.0, 'provenance': AUTHORED_PROVENANCE, 'declaringClass': ZONE_INFO})
         self.assertEqual(self.field(indoor, 'DistanceFogStart').to_record(),
