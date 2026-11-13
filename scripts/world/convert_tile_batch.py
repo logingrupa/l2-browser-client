@@ -21,7 +21,7 @@ from reference_client_guard import require_reference_client
 from world.eligible_tile_selection import (FAILED_STATUS, GAP_STATUS, PASS_STATUS, failed_step_row, locked_tile_source_identity,
                                            sealed_step_of_current_seal, step_level_rows, unit_step_evidence)
 from world.eligible_tiles import read_tile_census, select_eligible_tiles
-from world.raw_map_step import RAW_STEP_NAME, tile_unit_key
+from world.raw_map_step import RAW_STEP_NAME, locked_tile_map_bytes, tile_unit_key
 from world.terrain_seam_strip import SEAM_ROLE_TILE_STEPS, neighbour_tile_id
 from world.tile_census import DEFAULT_CONVERSION_CLIENT_ROOT, WORLD_LANE_NAME
 from world.tile_manifest_step import TILE_MANIFEST_STEP_NAME
@@ -134,9 +134,10 @@ def write_tile_step_rows(project_root, step_names, tile_ids, rows):
             write_gap_rows(project_root, WORLD_LANE_NAME, step, desired_rows)
 
 
-def seam_input_raw_results(workers, seam_inputs, selected, source_identities, preflights_by_tile):
+def seam_input_raw_results(workers, seam_inputs, selected, source_identities, expected_costs, preflights_by_tile):
     raw_results_by_tile, stop = {}, None
-    tasks = [TileStepsTask(position, tile_id, source_identities[tile_id], (RAW_STEP_NAME,), None) for position, tile_id in enumerate(seam_inputs)]
+    tasks = [TileStepsTask(position, tile_id, source_identities[tile_id], (RAW_STEP_NAME,), None, expected_costs[tile_id])
+             for position, tile_id in enumerate(seam_inputs)]
     for task, outcome in zip(tasks, workers.outcomes(tasks), strict=True):
         preflights_by_tile[task.tile_id].extend(outcome.preflights)
         if stop is None:
@@ -150,10 +151,11 @@ def failed_raw_step(raw_results):
     return RAW_STEP_NAME if RAW_STEP_NAME in raw_results and raw_results[RAW_STEP_NAME]['status'] == FAILED_STATUS else None
 
 
-def selected_tile_step_results(workers, selected, source_identities, step_names, raw_results_by_tile, preflights_by_tile):
+def selected_tile_step_results(workers, selected, source_identities, expected_costs, step_names, raw_results_by_tile, preflights_by_tile):
     step_results_by_tile, stop = {}, None
     worker_step_names = tuple(step for step in step_names if step not in (RAW_STEP_NAME, TILE_MANIFEST_STEP_NAME))
-    tasks = [TileStepsTask(position, tile_id, source_identities[tile_id], worker_step_names, failed_raw_step(raw_results_by_tile[tile_id]))
+    tasks = [TileStepsTask(position, tile_id, source_identities[tile_id], worker_step_names, failed_raw_step(raw_results_by_tile[tile_id]),
+                           expected_costs[tile_id])
              for position, tile_id in enumerate(selected)]
     for task, outcome in zip(tasks, workers.outcomes(tasks), strict=True):
         if stop is None:
@@ -171,7 +173,7 @@ def selected_tile_step_results(workers, selected, source_identities, step_names,
 
 
 def run_tile_batch(limit, worker_count, tile_step_run_factory, tile_step_run_arguments, step_names=TILE_STEP_NAMES,
-                   tile_source_identity=locked_tile_source_identity):
+                   tile_source_identity=locked_tile_source_identity, tile_expected_cost=locked_tile_map_bytes):
     if not (type(limit) is int and limit >= 1):
         raise TileBatchUsageError(f'batch limit must be a whole number of at least 1: {limit!r}')
     coordinator_run = tile_step_run_factory(*tile_step_run_arguments)
@@ -181,14 +183,15 @@ def run_tile_batch(limit, worker_count, tile_step_run_factory, tile_step_run_arg
     source_identities = {tile_id: tile_source_identity(tile_id) for tile_id in tile_ids}
     selected = selected_tile_ids(project_root, tile_ids, limit, step_names, recorded_rows, step_seal_checks)
     seam_inputs = seam_input_tile_ids(project_root, tile_ids, selected, recorded_rows, step_seal_checks)
+    expected_costs = {tile_id: tile_expected_cost(tile_id) for tile_id in seam_inputs}
     step_results_by_tile, preflights_by_tile = {}, {tile_id: [] for tile_id in tile_ids}
     create_lane_work_and_store_roots(project_root, WORLD_LANE_NAME)
     workers = TileStepWorkers(worker_count, coordinator_run, tile_step_run_factory, tile_step_run_arguments)
     try:
-        raw_results_by_tile, stop = seam_input_raw_results(workers, seam_inputs, selected, source_identities, preflights_by_tile)
+        raw_results_by_tile, stop = seam_input_raw_results(workers, seam_inputs, selected, source_identities, expected_costs, preflights_by_tile)
         if stop is None:
-            step_results_by_tile, stop = selected_tile_step_results(workers, selected, source_identities, step_names, raw_results_by_tile,
-                                                                    preflights_by_tile)
+            step_results_by_tile, stop = selected_tile_step_results(workers, selected, source_identities, expected_costs, step_names,
+                                                                    raw_results_by_tile, preflights_by_tile)
     finally:
         workers.close()
     rows = [row for tile_id in tile_ids
@@ -254,7 +257,7 @@ def main(argv=None):
         store_root = require_converter_output(REPOSITORY_ROOT, REPOSITORY_ROOT / arguments.output)
         outcome = run_tile_batch(arguments.limit, arguments.workers, world_tile_step_run,
                                  (REPOSITORY_ROOT, arguments.client, store_root, arguments.workers),
-                                 tile_source_identity=locked_tile_source_identity)
+                                 tile_source_identity=locked_tile_source_identity, tile_expected_cost=locked_tile_map_bytes)
         lane_outputs = refresh_world_lane_outputs(REPOSITORY_ROOT) if outcome.exit_code == BATCH_EXIT_DONE else None
     except (OSError, ValueError) as error:
         print(f'Tile batch failed: {error}', file=sys.stderr)

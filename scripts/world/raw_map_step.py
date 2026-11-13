@@ -112,6 +112,13 @@ def read_tile_map_lock_record(tile_id):
     return read_map_lock_record(tile_map_path(tile_id))
 
 
+def locked_tile_map_bytes(tile_id):
+    map_bytes = read_tile_map_lock_record(tile_id)['eBytes']
+    if not (type(map_bytes) is int and map_bytes >= 0):
+        raise RawMapStepError(f'reference client lock holds no whole byte size for {tile_map_path(tile_id)}: {map_bytes!r}')
+    return map_bytes
+
+
 def map_raw_recipe(map_path, lock_record):
     return {'schemaVersion': RAW_MAP_RECIPE_SCHEMA_VERSION, 'kind': RAW_MAP_RECIPE_KIND, 'map': map_path, 'sourceSha256': lock_record['eSha256']}
 

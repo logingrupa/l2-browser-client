@@ -6,8 +6,8 @@ import shutil
 import time
 
 from native_store.unit_ledger import SEAL_RECORD_NAME, FreeDiskFloorRefusedError, current_riga_timestamp
-from test_convert_tile_batch import (SYNTHETIC_STEP_NAMES, LedgerBackedSteps, synthetic_seal_checks, synthetic_source_identity,
-                                     synthetic_step_ledger, write_synthetic_tile_census)
+from test_convert_tile_batch import (SYNTHETIC_EXPECTED_COST, SYNTHETIC_STEP_NAMES, LedgerBackedSteps, synthetic_seal_checks,
+                                     synthetic_source_identity, synthetic_step_ledger, write_synthetic_tile_census)
 from test_world_tile_batch_phases import raw_is_sealed
 from world import tile_step_workers
 from world.convert_tile_batch import batch_summary, run_tile_batch
@@ -21,9 +21,12 @@ RAW_FAILED_ONCE_MESSAGE = 'synthetic raw failure of the first call'
 SYNTHETIC_FLOOR_REFUSAL_MESSAGE = 'synthetic free disk floor refusal after the chunks step of the second tile'
 WORKER_DEATH_EXIT_CODE = 1
 SEPARATE_TILE_IDS = ('10_11', '12_13', '14_15')
+FOUR_SEPARATE_TILE_IDS = (*SEPARATE_TILE_IDS, '16_17')
+TWO_COSTLIEST_OF_FOUR_TILE_IDS = FOUR_SEPARATE_TILE_IDS[2:]
 OWNER_AND_ROW_NEIGHBOUR_TILE_IDS = ('10_11', '10_12', '14_15')
 OWNER_AND_SEAM_NEIGHBOUR_TILE_IDS = ('10_11', '10_12', '11_11', '11_12', '14_15')
 ROW_NEIGHBOUR_RAW_CALL = ('10_12', 'raw')
+FIRST_TILE_CHUNKS_CALL = (SEPARATE_TILE_IDS[0], 'chunks')
 SECOND_TILE_CHUNKS_CALL = (SEPARATE_TILE_IDS[1], 'chunks')
 THIRD_TILE_CHUNKS_CALL = (SEPARATE_TILE_IDS[2], 'chunks')
 PreflightRefusal = namedtuple('PreflightRefusal', 'after_call wait_before_refusing')
@@ -61,9 +64,22 @@ def fail_the_first_raw_call(project_root):
         raise OSError(RAW_FAILED_ONCE_MESSAGE)
 
 
-def wait_until_an_earlier_tile_has_stopped(project_root):
+def wait_until_a_tile_has_stopped(project_root):
     first_stopped_position = tile_step_workers.tile_step_worker.first_stopped_position
-    wait_at_the_gate_until(lambda: first_stopped_position.value < NO_STOPPED_POSITION, 'the stop of an earlier tile')
+    wait_at_the_gate_until(lambda: first_stopped_position.value < NO_STOPPED_POSITION, 'the stop of a tile')
+
+
+def wait_until_the_first_tile_has_stopped(project_root):
+    first_stopped_position = tile_step_workers.tile_step_worker.first_stopped_position
+    wait_at_the_gate_until(lambda: first_stopped_position.value == 0, 'the stop of the first tile')
+
+
+def wait_in_a_pool_worker_for_the_chunks_call_of(awaited_tile_id):
+    def wait_for_the_chunks_call(project_root):
+        if tile_step_workers.tile_step_worker is not None:
+            wait_at_the_gate_until(lambda: step_call_is_recorded(project_root, awaited_tile_id, 'chunks'),
+                                   f'the chunks call of {awaited_tile_id}')
+    return wait_for_the_chunks_call
 
 
 def wait_for_the_chunks_call_of_the_third_tile(project_root):
@@ -76,19 +92,32 @@ def end_this_process_once_the_first_manifest_is_sealed(project_root):
     os._exit(WORKER_DEATH_EXIT_CODE)
 
 
-NO_REFUSAL = PreflightRefusal(None, do_nothing)
-TileBatchScenario = namedtuple('TileBatchScenario', 'eligible_tile_ids limit failing actions_before_a_step refusal', defaults=((), {}, NO_REFUSAL))
+def ascending_expected_costs(tile_ids):
+    return {tile_id: cost for cost, tile_id in enumerate(tile_ids, start=SYNTHETIC_EXPECTED_COST)}
+
+
+TileBatchScenario = namedtuple('TileBatchScenario', 'eligible_tile_ids limit failing actions_before_a_step refusals expected_costs',
+                               defaults=((), {}, (), {}))
 TILE_BATCH_SCENARIOS_BY_NAME = {
     'plain': TileBatchScenario(SEPARATE_TILE_IDS, 3),
     'one-tile-fails-a-step': TileBatchScenario(SEPARATE_TILE_IDS, 3, failing=(SECOND_TILE_CHUNKS_CALL,)),
-    'preflight-refuses-on-the-second-tile': TileBatchScenario(SEPARATE_TILE_IDS, 2, refusal=PreflightRefusal(SECOND_TILE_CHUNKS_CALL, do_nothing)),
+    'preflight-refuses-on-the-second-tile': TileBatchScenario(SEPARATE_TILE_IDS, 2,
+                                                              refusals=(PreflightRefusal(SECOND_TILE_CHUNKS_CALL, do_nothing),)),
     'seam-neighbours-that-are-not-selected': TileBatchScenario(OWNER_AND_SEAM_NEIGHBOUR_TILE_IDS, 2),
     'raw-fails-once': TileBatchScenario(OWNER_AND_ROW_NEIGHBOUR_TILE_IDS, 2, actions_before_a_step={ROW_NEIGHBOUR_RAW_CALL: fail_the_first_raw_call}),
     'later-tile-running-at-the-refusal': TileBatchScenario(
-        SEPARATE_TILE_IDS, 3, actions_before_a_step={THIRD_TILE_CHUNKS_CALL: wait_until_an_earlier_tile_has_stopped},
-        refusal=PreflightRefusal(SECOND_TILE_CHUNKS_CALL, wait_for_the_chunks_call_of_the_third_tile)),
+        SEPARATE_TILE_IDS, 3, actions_before_a_step={THIRD_TILE_CHUNKS_CALL: wait_until_a_tile_has_stopped},
+        refusals=(PreflightRefusal(SECOND_TILE_CHUNKS_CALL, wait_for_the_chunks_call_of_the_third_tile),)),
     'worker-dies': TileBatchScenario(SEPARATE_TILE_IDS, 2,
-                                     actions_before_a_step={SECOND_TILE_CHUNKS_CALL: end_this_process_once_the_first_manifest_is_sealed})}
+                                     actions_before_a_step={SECOND_TILE_CHUNKS_CALL: end_this_process_once_the_first_manifest_is_sealed}),
+    'costliest-tiles-last': TileBatchScenario(
+        FOUR_SEPARATE_TILE_IDS, 4, expected_costs=ascending_expected_costs(FOUR_SEPARATE_TILE_IDS),
+        actions_before_a_step={(tile_id, 'chunks'): wait_in_a_pool_worker_for_the_chunks_call_of(other_tile_id)
+                               for tile_id, other_tile_id in (TWO_COSTLIEST_OF_FOUR_TILE_IDS, TWO_COSTLIEST_OF_FOUR_TILE_IDS[::-1])}),
+    'first-tile-stops-after-the-costliest-last-tile': TileBatchScenario(
+        SEPARATE_TILE_IDS, 3, expected_costs=ascending_expected_costs(SEPARATE_TILE_IDS),
+        actions_before_a_step={SECOND_TILE_CHUNKS_CALL: wait_until_the_first_tile_has_stopped},
+        refusals=(PreflightRefusal(THIRD_TILE_CHUNKS_CALL, do_nothing), PreflightRefusal(FIRST_TILE_CHUNKS_CALL, wait_until_a_tile_has_stopped)))}
 
 
 class RecordedSteps(LedgerBackedSteps):
@@ -101,34 +130,45 @@ class RecordedSteps(LedgerBackedSteps):
         process_id, call_number = os.getpid(), len(self.started_calls)
         records_folder = step_call_records_folder(self.project_root)
         records_folder.mkdir(exist_ok=True)
+        calls_recorded_before = sorted(path.name.split('.')[:2] for path in records_folder.glob('*.json'))
         (records_folder / f'{tile_id}.{step}.{process_id}.{call_number}.json').write_text(
-            json.dumps({'tile': tile_id, 'step': step, 'processId': process_id, 'callNumber': call_number}), encoding='utf-8')
+            json.dumps({'tile': tile_id, 'step': step, 'processId': process_id, 'callNumber': call_number,
+                        'callsRecordedBefore': calls_recorded_before}), encoding='utf-8')
         self.actions_before_a_step.get((tile_id, step), do_nothing)(self.project_root)
         return super().__call__(step, tile_id)
 
 
 class ScenarioPreflight:
-    def __init__(self, project_root, steps, refusal):
-        self.project_root, self.steps, self.refusal = project_root, steps, refusal
+    def __init__(self, project_root, steps, refusals):
+        self.project_root, self.steps, self.refusals_not_raised_in_this_process = project_root, steps, list(refusals)
 
     def __call__(self):
-        if self.steps.started_calls[-1:] == [self.refusal.after_call]:
-            self.refusal.wait_before_refusing(self.project_root)
-            raise FreeDiskFloorRefusedError(SYNTHETIC_FLOOR_REFUSAL_MESSAGE)
+        for refusal in self.refusals_not_raised_in_this_process:
+            if self.steps.started_calls[-1:] == [refusal.after_call]:
+                self.refusals_not_raised_in_this_process.remove(refusal)
+                refusal.wait_before_refusing(self.project_root)
+                raise FreeDiskFloorRefusedError(SYNTHETIC_FLOOR_REFUSAL_MESSAGE)
         return {'rigaTime': current_riga_timestamp(), 'freeBytes': shutil.disk_usage(self.project_root).free}
 
 
 def scenario_tile_step_run(project_root, scenario_name):
     scenario = TILE_BATCH_SCENARIOS_BY_NAME[scenario_name]
     steps = RecordedSteps(project_root, scenario.failing, scenario.actions_before_a_step)
-    return TileStepRun(project_root, steps, ScenarioPreflight(project_root, steps, scenario.refusal), synthetic_seal_checks())
+    return TileStepRun(project_root, steps, ScenarioPreflight(project_root, steps, scenario.refusals), synthetic_seal_checks())
+
+
+def scenario_tile_expected_cost(scenario):
+    def tile_expected_cost(tile_id):
+        return scenario.expected_costs.get(tile_id, 0)
+    return tile_expected_cost
 
 
 def tile_batch_report(scenario_name, project_root, worker_count):
     scenario = TILE_BATCH_SCENARIOS_BY_NAME[scenario_name]
     write_synthetic_tile_census(project_root, scenario.eligible_tile_ids)
     outcome = run_tile_batch(scenario.limit, worker_count, scenario_tile_step_run, (project_root, scenario_name),
-                             step_names=SYNTHETIC_STEP_NAMES, tile_source_identity=synthetic_source_identity)
+                             step_names=SYNTHETIC_STEP_NAMES, tile_source_identity=synthetic_source_identity,
+                             tile_expected_cost=scenario_tile_expected_cost(scenario))
     return {'summary': batch_summary(outcome, None), 'coordinatorProcessId': os.getpid(), 'stepCalls': step_call_records(project_root),
             'tilesWithARawSeal': [tile_id for tile_id in scenario.eligible_tile_ids if raw_is_sealed(project_root, tile_id)]}
 

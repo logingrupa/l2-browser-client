@@ -2,7 +2,6 @@ from collections import namedtuple
 from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures.process import BrokenProcessPool
 import contextlib
-import itertools
 import multiprocessing
 from typing import NamedTuple
 
@@ -37,6 +36,7 @@ class TileStepsTask(NamedTuple):
     source_identity: dict
     step_names: tuple
     failed_earlier_step: str | None
+    expected_cost: int
 
 
 class TileStepsOutcome(NamedTuple):
@@ -139,18 +139,18 @@ class TileStepWorkers:
         return ordered_tile_steps_outcome(self.coordinator_run, self.first_stopped_position, task)
 
     def futures_submitted_until_the_pool_breaks(self, tasks):
-        futures = []
+        futures_by_position = {}
         with contextlib.suppress(BrokenProcessPool):
-            for task in tasks:
-                futures.append(self.executor.submit(worker_tile_steps_outcome, task))
-        return futures
+            for task in sorted(tasks, key=lambda task: task.expected_cost, reverse=True):
+                futures_by_position[task.position] = self.executor.submit(worker_tile_steps_outcome, task)
+        return futures_by_position
 
     def outcomes(self, tasks):
         if self.executor is None:
             return (self.coordinator_outcome(task) for task in tasks)
-        futures = self.futures_submitted_until_the_pool_breaks(tasks)
-        return (worker_died_outcome(task) if future is None else future_outcome(future, task)
-                for task, future in itertools.zip_longest(tasks, futures))
+        futures_by_position = self.futures_submitted_until_the_pool_breaks(tasks)
+        return (future_outcome(futures_by_position[task.position], task) if task.position in futures_by_position else worker_died_outcome(task)
+                for task in tasks)
 
     def close(self):
         if self.executor is not None:

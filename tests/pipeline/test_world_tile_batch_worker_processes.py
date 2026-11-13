@@ -12,7 +12,8 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from native_store.gap_rows import read_gap_rows
 from native_store.store_paths import lane_gap_rows_folder
-from support.tile_step_worker_runs import RAW_FAILED_ONCE_MESSAGE, SEPARATE_TILE_IDS, SYNTHETIC_FLOOR_REFUSAL_MESSAGE
+from support.tile_step_worker_runs import (FOUR_SEPARATE_TILE_IDS, RAW_FAILED_ONCE_MESSAGE, SEPARATE_TILE_IDS, SYNTHETIC_FLOOR_REFUSAL_MESSAGE,
+                                           TWO_COSTLIEST_OF_FOUR_TILE_IDS)
 from test_convert_tile_batch import SYNTHETIC_STEP_NAMES
 from world.tile_step_workers import BATCH_EXIT_DISK_FLOOR, BATCH_EXIT_DONE, BATCH_EXIT_ERROR, WORKER_DIED_MESSAGE
 
@@ -34,6 +35,7 @@ RAW_FAILED_ROW = ('failed', f'decode-failed:OSError:{RAW_FAILED_ONCE_MESSAGE}')
 CHUNKS_FAILED_ROW = ('failed', 'decode-failed:ValueError:synthetic decode failure')
 CLOCK_AND_FREE_BYTE_FIELDS = ('rigaTime', 'freeBytes')
 STEPS_SEALED_BEFORE_THE_STOP = ['raw', 'chunks']
+TWO_CHEAPEST_OF_FOUR_TILE_IDS = FOUR_SEPARATE_TILE_IDS[:2]
 
 
 class ScenarioRun(NamedTuple):
@@ -63,6 +65,10 @@ def tile_step_rows(project_root, tile_id):
 
 def called_steps_of_tile(report, tile_id):
     return sorted(record['step'] for record in report['stepCalls'] if record['tile'] == tile_id)
+
+
+def calls_recorded_before_the_chunks_call_of_each_tile(report):
+    return {record['tile']: record['callsRecordedBefore'] for record in report['stepCalls'] if record['step'] == 'chunks'}
 
 
 def summary_without_clock_and_free_bytes(report):
@@ -188,6 +194,46 @@ class TwoWorkerStopTests(TileBatchWorkerProcessTestCase):
         self.assertEqual(tile_step_rows(run.project_root, FIRST_TILE_ID), [PASS_ROW] * len(SYNTHETIC_STEP_NAMES))
         self.assertEqual(tile_step_rows(run.project_root, SECOND_TILE_ID), [PASS_ROW, BATCH_PENDING_ROW, BATCH_PENDING_ROW, BATCH_PENDING_ROW])
         self.assertEqual(tile_step_rows(run.project_root, THIRD_TILE_ID), [BATCH_PENDING_ROW] * len(SYNTHETIC_STEP_NAMES))
+
+
+class HeavyTilesFirstWorkerProcessTests(TileBatchWorkerProcessTestCase):
+    @classmethod
+    def setUpClass(cls):
+        temporary_directory = tempfile.TemporaryDirectory()
+        cls.addClassCleanup(temporary_directory.cleanup)
+        temporary_root = Path(temporary_directory.name).resolve()
+        cls.one_worker_run, cls.two_worker_run = (scenario_run(temporary_root, 'costliest-tiles-last', worker_count)
+                                                  for worker_count in WORKER_COUNTS)
+
+    def test_two_workers_start_the_costliest_tiles_first_and_give_the_outcome_of_one_worker(self):
+        self.assert_two_workers_gave_the_outcome_of_one_worker(self.one_worker_run, self.two_worker_run)
+        report = self.two_worker_run.report
+        summary = report['summary']
+        self.assertEqual((summary['exitCode'], summary['attemptedTiles'], summary['stop']), (BATCH_EXIT_DONE, list(FOUR_SEPARATE_TILE_IDS), None))
+        calls_recorded_before = calls_recorded_before_the_chunks_call_of_each_tile(report)
+        for cheap_tile_id in TWO_CHEAPEST_OF_FOUR_TILE_IDS:
+            for costly_tile_id in TWO_COSTLIEST_OF_FOUR_TILE_IDS:
+                self.assertIn([costly_tile_id, 'chunks'], calls_recorded_before[cheap_tile_id], cheap_tile_id)
+        self.assertEqual([(record['tile'], record['processId']) for record in report['stepCalls'] if record['step'] == 'manifest'],
+                         [(tile_id, report['coordinatorProcessId']) for tile_id in FOUR_SEPARATE_TILE_IDS])
+
+    def test_one_worker_runs_the_tiles_in_tile_order_when_the_costliest_tiles_are_last(self):
+        report = self.one_worker_run.report
+        self.assertEqual({record['processId'] for record in report['stepCalls']}, {report['coordinatorProcessId']})
+        self.assertEqual([(record['tile'], record['step']) for record in report['stepCalls']],
+                         [*((tile_id, 'raw') for tile_id in FOUR_SEPARATE_TILE_IDS),
+                          *((tile_id, step) for tile_id in FOUR_SEPARATE_TILE_IDS for step in SYNTHETIC_STEP_NAMES[1:])])
+
+    def test_the_stop_of_the_first_tile_is_reported_when_a_costlier_later_tile_stopped_first(self):
+        run = scenario_run(self.temporary_root(), 'first-tile-stops-after-the-costliest-last-tile', 2)
+        summary = run.report['summary']
+        self.assertEqual((summary['exitCode'], summary['attemptedTiles'], summary['stop']),
+                         (BATCH_EXIT_DISK_FLOOR, list(SEPARATE_TILE_IDS),
+                          {'exit_code': BATCH_EXIT_DISK_FLOOR, 'tile_id': FIRST_TILE_ID, 'step': 'meshes', 'message': SYNTHETIC_FLOOR_REFUSAL_MESSAGE}))
+        self.assertIn([THIRD_TILE_ID, 'chunks'], calls_recorded_before_the_chunks_call_of_each_tile(run.report)[FIRST_TILE_ID])
+        for tile_id in SEPARATE_TILE_IDS:
+            self.assertEqual(tile_step_rows(run.project_root, tile_id), [PASS_ROW, PASS_ROW, BATCH_PENDING_ROW, BATCH_PENDING_ROW])
+            self.assertEqual(called_steps_of_tile(run.report, tile_id), sorted(STEPS_SEALED_BEFORE_THE_STOP))
 
 
 if __name__ == '__main__':

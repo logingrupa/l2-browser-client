@@ -32,6 +32,7 @@ from world.world_audio_step import WORLD_AUDIO_STEP_NAME, world_audio_unit_confi
 SYNTHETIC_STEP_NAMES = ('raw', 'chunks', 'meshes', 'manifest')
 SYNTHETIC_MAP_SHA256 = 'a' * 64
 SYNTHETIC_ALGORITHM_VERSION = 1
+SYNTHETIC_EXPECTED_COST = 1
 FIRST_TILE_COLUMN = 10
 TILE_COLUMN_COUNT = 17
 TILE_ROW_COUNT = 9
@@ -77,6 +78,10 @@ def synthetic_census(eligible_tile_ids, schema_version=1):
 
 def synthetic_source_identity(tile_id):
     return {'path': f'maps/{tile_id}.unr', 'sha256': SYNTHETIC_MAP_SHA256}
+
+
+def synthetic_expected_cost(tile_id):
+    return SYNTHETIC_EXPECTED_COST
 
 
 def synthetic_step_ledger(project_root, step):
@@ -158,10 +163,11 @@ class TileBatchTestCase(unittest.TestCase):
         self.project_root = Path(temporary_directory.name).resolve() / 'project'
         write_synthetic_tile_census(self.project_root, self.eligible_tile_ids)
 
-    def run_batch(self, steps, limit=1, preflight=None, step_names=SYNTHETIC_STEP_NAMES, step_seal_checks=None):
+    def run_batch(self, steps, limit=1, preflight=None, step_names=SYNTHETIC_STEP_NAMES, step_seal_checks=None,
+                  tile_expected_cost=synthetic_expected_cost):
         return run_tile_batch(limit, 1, TileStepRun,
                               (self.project_root, steps, preflight or RecordingPreflight(), step_seal_checks or synthetic_seal_checks()),
-                              step_names=step_names, tile_source_identity=synthetic_source_identity)
+                              step_names=step_names, tile_source_identity=synthetic_source_identity, tile_expected_cost=tile_expected_cost)
 
     def rows_by_tile_and_step(self):
         return {(row['key'], row['step']): row for row in read_gap_rows(self.project_root, 'world')}
@@ -377,6 +383,7 @@ class TileBatchCommandLineTests(TileBatchTestCase):
               patch.object(convert_tile_batch, 'TILE_STEP_SEAL_CHECKS', synthetic_seal_checks()),
               patch.object(convert_tile_batch, 'world_batch_preflight', lambda project_root, worker_count: RecordingPreflight()),
               patch.object(convert_tile_batch, 'locked_tile_source_identity', synthetic_source_identity),
+              patch.object(convert_tile_batch, 'locked_tile_map_bytes', synthetic_expected_cost),
               patch.object(convert_tile_batch, 'refresh_world_lane_outputs', lambda project_root: {'refreshed': True}),
               patch.object(convert_tile_batch, 'run_tile_step', refused_step_runner),
               contextlib.redirect_stdout(printed), contextlib.redirect_stderr(errors)):
@@ -406,6 +413,7 @@ class TileBatchCommandLineTests(TileBatchTestCase):
                   patch.object(convert_tile_batch, 'require_reference_client'),
                   patch.object(convert_tile_batch, 'TILE_STEP_SEAL_CHECKS', synthetic_seal_checks()),
                   patch.object(convert_tile_batch, 'locked_tile_source_identity', synthetic_source_identity),
+                  patch.object(convert_tile_batch, 'locked_tile_map_bytes', synthetic_expected_cost),
                   patch.object(convert_tile_batch, 'refresh_world_lane_outputs', lambda project_root: self.fail('refresh in a machine window')),
                   contextlib.redirect_stdout(io.StringIO()) as printed):
                 exit_code = convert_tile_batch.main(['--eligible', '--limit', '1'])

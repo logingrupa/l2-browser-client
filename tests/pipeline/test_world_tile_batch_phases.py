@@ -16,8 +16,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from native_store.gap_rows import sorted_gap_rows, write_gap_rows
 from native_store.store_paths import lane_store_root, lane_work_root
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, FreeDiskFloorRefusedError
-from test_convert_tile_batch import (SYNTHETIC_LAYOUT_GAP_REASON, SYNTHETIC_STEP_NAMES, LedgerBackedSteps, RecordingPreflight, TileBatchTestCase,
-                                     synthetic_seal_checks, synthetic_source_identity, synthetic_step_ledger, synthetic_unit_fingerprint)
+from test_convert_tile_batch import (SYNTHETIC_EXPECTED_COST, SYNTHETIC_LAYOUT_GAP_REASON, SYNTHETIC_STEP_NAMES, LedgerBackedSteps,
+                                     RecordingPreflight, TileBatchTestCase, synthetic_expected_cost, synthetic_seal_checks,
+                                     synthetic_source_identity, synthetic_step_ledger, synthetic_unit_fingerprint)
 from world import convert_tile_batch, tile_step_workers
 from world.raw_map_step import tile_step_row
 from world.tile_census_validation import TILE_CENSUS_RELATIVE_PATH
@@ -128,6 +129,7 @@ class TileBatchPhaseTestCase(TileBatchTestCase):
               patch.object(convert_tile_batch, 'TILE_STEP_SEAL_CHECKS', synthetic_seal_checks()),
               patch.object(convert_tile_batch, 'world_batch_preflight', preflight_of_worker_count),
               patch.object(convert_tile_batch, 'locked_tile_source_identity', synthetic_source_identity),
+              patch.object(convert_tile_batch, 'locked_tile_map_bytes', synthetic_expected_cost),
               patch.object(convert_tile_batch, 'refresh_world_lane_outputs', lambda project_root: {'refreshed': True}),
               patch.object(convert_tile_batch, 'run_tile_step', lambda project_root, step, client, tile_id, store_root: steps(step, tile_id)),
               patch.object(tile_step_workers, 'ProcessPoolExecutor', side_effect=AssertionError('no process pool may be built')),
@@ -283,7 +285,8 @@ class TileStepsPhaseTests(TileBatchPhaseTestCase):
 
         tile_step_run = TileStepRun(self.project_root, steps_with_a_refusal_of_another_worker, preflight, synthetic_seal_checks())
         outcome = ordered_tile_steps_outcome(tile_step_run, first_stopped_position,
-                                             TileStepsTask(2, LONE_TILE_ID, synthetic_source_identity(LONE_TILE_ID), ('chunks', 'meshes'), None))
+                                             TileStepsTask(2, LONE_TILE_ID, synthetic_source_identity(LONE_TILE_ID), ('chunks', 'meshes'), None,
+                                                           SYNTHETIC_EXPECTED_COST))
         self.assertEqual((outcome.started, outcome.stop, list(outcome.step_results)), (True, None, ['chunks']))
         self.assertEqual([(record['tile'], record['step']) for record in outcome.preflights], [(LONE_TILE_ID, 'chunks')])
         self.assertEqual((steps.calls, preflight.calls, first_stopped_position.value), ([(LONE_TILE_ID, 'chunks')], 1, 1))
@@ -293,7 +296,8 @@ class TileStepsPhaseTests(TileBatchPhaseTestCase):
         first_stopped_position = multiprocessing.Value('q', 1)
         tile_step_run = TileStepRun(self.project_root, steps, preflight, synthetic_seal_checks())
         outcome = ordered_tile_steps_outcome(tile_step_run, first_stopped_position,
-                                             TileStepsTask(0, OWNER_TILE_ID, synthetic_source_identity(OWNER_TILE_ID), ('chunks', 'meshes'), None))
+                                             TileStepsTask(0, OWNER_TILE_ID, synthetic_source_identity(OWNER_TILE_ID), ('chunks', 'meshes'), None,
+                                                           SYNTHETIC_EXPECTED_COST))
         self.assertEqual((outcome.started, outcome.stop), (True, None))
         self.assertEqual((steps.calls, preflight.calls, first_stopped_position.value), ([(OWNER_TILE_ID, 'chunks'), (OWNER_TILE_ID, 'meshes')], 2, 1))
 
@@ -309,7 +313,7 @@ class TileStepsPhaseTests(TileBatchPhaseTestCase):
         self.assertEqual(lane_roots_existed, [(True, True)])
 
     def test_a_pool_that_breaks_while_tasks_are_submitted_gives_the_worker_died_outcome_for_every_task_without_a_future(self):
-        tasks = [TileStepsTask(position, tile_id, synthetic_source_identity(tile_id), ('chunks',), None)
+        tasks = [TileStepsTask(position, tile_id, synthetic_source_identity(tile_id), ('chunks',), None, SYNTHETIC_EXPECTED_COST)
                  for position, tile_id in enumerate((OWNER_TILE_ID, ROW_NEIGHBOUR_TILE_ID, COLUMN_NEIGHBOUR_TILE_ID))]
         with patch.object(tile_step_workers, 'ProcessPoolExecutor', PoolBrokenAtTheSecondSubmit):
             workers = TileStepWorkers(2, None, TileStepRun, ())
