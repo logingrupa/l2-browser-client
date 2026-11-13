@@ -1,5 +1,4 @@
 import json
-import shutil
 from collections import namedtuple
 from pathlib import Path
 
@@ -19,6 +18,7 @@ from native_assets import UMODEL_SHA256, implementation_hash
 from native_assets_lib.gltf import json_bytes
 from native_store.catalog_writer import read_store_catalog, write_store
 from native_store.data_ui_table_manifest import ELBERA_ADAPTER_ROUTE, data_ui_table_manifest
+from native_store.linked_file_copy import link_or_copy_file
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from reference_client_guard import ReferenceClientLockError
 
@@ -158,7 +158,7 @@ class CharacterConversionRun:
                         'status': FAILED_STATUS}
             if result is not None:
                 archive_copy = step_directory / MODEL_ARCHIVE_FILE_NAME
-                shutil.copyfile(result['file'], archive_copy)
+                link_or_copy_file(result['file'], archive_copy)
                 outputs.append(file_output_record(self.ledger.lane_folder, archive_copy))
         reason = model_reason or generated['profileFields']['reason']
         gap_row = self.gap_row(row_index, reason) if reason else None

@@ -1,4 +1,6 @@
+import hashlib
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
@@ -85,6 +87,17 @@ class CharacterConversionRunTests(unittest.TestCase):
         catalog, _ = read_store_catalog(lane_store_root(self.project_root, 'actors'))
         return [record['id'] for record in catalog['models']]
 
+    def test_a_converted_row_archive_is_a_second_name_of_its_converter_file_and_its_receipt_holds_its_sha256_and_size(self):
+        run = SyntheticCharacterRun(self.project_root, self.client_root)
+        with mock.patch.object(character_conversion, 'implementation_hash', return_value=FIRST_CONVERTER_SHA256):
+            outcome = run.convert(1)
+        archive_copy = run.ledger.unit_step_directory('character:1') / 'asset.l2asset'
+        converted_bytes = run.converted_archive.read_bytes()
+        self.assertEqual((os.stat(archive_copy).st_ino, os.stat(archive_copy).st_nlink), (os.stat(run.converted_archive).st_ino, 2))
+        archive_record = {'path': archive_copy.relative_to(run.ledger.lane_folder).as_posix(),
+                          'sha256': hashlib.sha256(converted_bytes).hexdigest(), 'bytes': len(converted_bytes)}
+        self.assertEqual((outcome['outputs'], run.ledger.sealed_receipt('character:1')['outputs']), ([archive_record], [archive_record]))
+
     def test_a_row_reconverted_into_a_model_gap_loses_its_catalog_model_record(self):
         self.converted_outcomes(FIRST_CONVERTER_SHA256, [1])
         self.assertEqual(self.catalog_model_ids(), [CHARACTER_MODEL_ID_PREFIX + '1'])
@@ -100,7 +113,6 @@ class CharacterConversionRunTests(unittest.TestCase):
             census = character_census(run)
         self.assertEqual([row['model'] for row in census['rows']], [None, 'converted', PENDING_STATUS, PENDING_STATUS])
         self.assertEqual((census['counts']['modelsConverted'], census['counts']['pendingKeys']), (1, 2))
-
 
     def test_an_unchanged_row_is_a_cache_hit_that_keeps_its_model_record_without_converting_again(self):
         self.converted_outcomes(FIRST_CONVERTER_SHA256, [1])

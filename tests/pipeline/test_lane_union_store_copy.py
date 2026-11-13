@@ -1,4 +1,5 @@
 from functools import partial
+import os
 from pathlib import Path
 import re
 import sys
@@ -17,6 +18,7 @@ from native_store.store_paths import lane_store_root
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES
 from native_store import write_lane_catalog as lane_catalog_module
 from native_store.write_lane_catalog import UNION_EXCLUDED_STORE_FILES, write_lane_catalog
+from support.second_volume_simulation import simulate_a_second_volume
 from test_bundle_member_pins import ProfileBundleProjectTestCase, snapshot_tree, write_file
 
 
@@ -70,10 +72,27 @@ class LaneUnionStoreCopyTests(ProfileBundleProjectTestCase):
         self.assertFalse(self.integration_store.exists())
 
     def test_a_union_whose_missing_files_and_floor_exceed_the_free_bytes_is_refused_and_writes_nothing(self):
+        simulate_a_second_volume(self)
         disk_usage = self.drive_the_free_bytes_of_the_union_copy(BATCH_MINIMUM_FREE_BYTES)
-        with self.assertRaisesRegex(CatalogWriteError, '; nothing was written$'):
+        with self.assertRaisesRegex(CatalogWriteError, '^Missing store files of [1-9][0-9]* bytes plus the floor .*; nothing was written$'):
             write_lane_catalog(self.project, 'integration', ('actors',))
         disk_usage.assert_called_once()
+        self.assertFalse(self.integration_store.exists())
+
+    def test_a_union_on_one_volume_with_only_the_floor_free_links_every_file_of_the_union_lane(self):
+        disk_usage = self.drive_the_free_bytes_of_the_union_copy(BATCH_MINIMUM_FREE_BYTES)
+        union_relative_paths = [*self.bundle.pinned_relative_paths(), self.receipt_relative]
+        self.assertEqual(write_lane_catalog(self.project, 'integration', ('actors',))['filesWritten'], len(union_relative_paths) + 1)
+        disk_usage.assert_called_once()
+        for relative in union_relative_paths:
+            with self.subTest(relative=relative):
+                self.assertEqual((os.stat(self.integration_store / relative).st_ino, os.stat(self.actors_store / relative).st_nlink),
+                                 (os.stat(self.actors_store / relative).st_ino, 2))
+
+    def test_a_linking_union_with_less_than_the_floor_free_is_refused_with_zero_missing_bytes_and_writes_nothing(self):
+        self.drive_the_free_bytes_of_the_union_copy(BATCH_MINIMUM_FREE_BYTES - 1)
+        with self.assertRaisesRegex(CatalogWriteError, '^Missing store files of 0 bytes plus the floor .*; nothing was written$'):
+            write_lane_catalog(self.project, 'integration', ('actors',))
         self.assertFalse(self.integration_store.exists())
 
     def test_a_union_rerun_with_no_file_to_copy_is_not_refused_for_low_free_space(self):
@@ -85,6 +104,7 @@ class LaneUnionStoreCopyTests(ProfileBundleProjectTestCase):
         self.assertEqual(snapshot_tree(self.project), snapshot)
 
     def test_a_differing_file_in_the_target_lane_is_refused_by_the_plan_check_and_by_the_union(self):
+        simulate_a_second_volume(self)
         write_lane_catalog(self.project, 'integration', ('actors',))
         write_file(self.integration_store / self.receipt_relative, b'receipt bytes of another writer')
         snapshot = snapshot_tree(self.project)

@@ -13,6 +13,7 @@ from unittest.mock import Mock, patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
+sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
 from native_assets_lib.gltf import json_bytes
 from native_store import catalog_writer
@@ -24,6 +25,7 @@ from native_store.store_paths import StorePathError, lane_store_root
 from native_store.unit_ledger import UnitLedgerError
 from native_store import write_lane_catalog as lane_catalog_module
 from native_store.write_lane_catalog import LaneCatalogError, write_lane_catalog
+from support.second_volume_simulation import simulate_a_second_volume
 
 GOLDEN_ROOT = ROOT / 'tests' / 'fixtures' / 'golden'
 GOLDEN_CATALOG_BYTES = (GOLDEN_ROOT / 'l2' / 'catalog.json').read_bytes()
@@ -107,6 +109,12 @@ class LaneCatalogWriterTests(unittest.TestCase):
         write_lane_catalog(self.project, 'world')
         write_lane_catalog(self.project, 'actors')
         self.integration_store = lane_store_root(self.project, 'integration')
+
+    def union_files_name_their_lane_files_and_lane_file_name_counts(self):
+        lane_files = ((self.world_store, MODEL_VERSION_TWO_ARCHIVE), (self.actors_store, MODEL_VERSION_ONE_ARCHIVE),
+                      (self.actors_store, 'notes/actors-only.bin'))
+        return [(os.stat(self.integration_store / relative).st_ino == os.stat(store / relative).st_ino, os.stat(store / relative).st_nlink)
+                for store, relative in lane_files]
 
     def run_main(self, arguments):
         output, errors = io.StringIO(), io.StringIO()
@@ -328,6 +336,18 @@ class LaneCatalogWriterTests(unittest.TestCase):
         self.assertEqual(write_lane_catalog(self.project, 'integration', ('world', 'actors'))['filesWritten'], 0)
         self.assertEqual((self.integration_store / 'catalog.json').read_bytes(), catalog_bytes)
         self.assertEqual(snapshot_tree(self.project), before_rerun)
+
+    def test_union_on_one_volume_makes_every_lane_file_a_second_name_and_writes_its_own_catalog(self):
+        self.build_world_and_actors_lanes()
+        self.assertEqual(write_lane_catalog(self.project, 'integration', ('world', 'actors'))['filesWritten'], 4)
+        self.assertEqual(self.union_files_name_their_lane_files_and_lane_file_name_counts(), [(True, 2)] * 3)
+        self.assertEqual(os.stat(self.integration_store / 'catalog.json').st_nlink, 1)
+
+    def test_union_on_two_volumes_copies_every_lane_file(self):
+        simulate_a_second_volume(self)
+        self.build_world_and_actors_lanes()
+        self.assertEqual(write_lane_catalog(self.project, 'integration', ('world', 'actors'))['filesWritten'], 4)
+        self.assertEqual(self.union_files_name_their_lane_files_and_lane_file_name_counts(), [(False, 1)] * 3)
 
     def test_union_refuses_a_differing_duplicate_record_before_any_write_and_keeps_an_identical_one_once(self):
         self.build_world_and_actors_lanes()

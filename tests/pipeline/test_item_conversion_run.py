@@ -1,4 +1,6 @@
+import hashlib
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
@@ -84,6 +86,16 @@ class ItemConversionRunTests(unittest.TestCase):
     def catalog_model_ids(self):
         catalog, _ = read_store_catalog(lane_store_root(self.project_root, 'actors'))
         return [record['id'] for record in catalog['models']]
+
+    def test_a_converted_unit_archive_is_a_second_name_of_its_converter_file_and_its_receipt_holds_its_sha256_and_size(self):
+        run = SyntheticItemRun(self.project_root, self.client_root)
+        outcome = run.convert(run.units[0])
+        archive_copy = run.ledger.unit_step_directory(run.units[0]['unitKey']) / 'asset.l2asset'
+        converted_bytes = run.converted_archive.read_bytes()
+        self.assertEqual((os.stat(archive_copy).st_ino, os.stat(archive_copy).st_nlink), (os.stat(run.converted_archive).st_ino, 2))
+        archive_record = {'path': archive_copy.relative_to(run.ledger.lane_folder).as_posix(),
+                          'sha256': hashlib.sha256(converted_bytes).hexdigest(), 'bytes': len(converted_bytes)}
+        self.assertEqual((outcome['outputs'], run.ledger.sealed_receipt(run.units[0]['unitKey'])['outputs']), ([archive_record], [archive_record]))
 
     def test_a_run_hashes_the_converter_and_reads_the_client_lock_once_for_all_of_its_units(self):
         run = SyntheticItemRun(self.project_root, self.client_root)

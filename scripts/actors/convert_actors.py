@@ -7,7 +7,6 @@ if str(SCRIPTS_ROOT) not in sys.path:
 
 import argparse
 import json
-import shutil
 
 from actors.actor_arguments import chargrp_index_argument, skill_level_argument, slice_limit_argument, table_id_argument
 from actors.actor_census import SOUND_PACKAGE_SUFFIXES, TEXTURE_PACKAGE_SUFFIXES, ActorPackageCensus
@@ -39,6 +38,7 @@ from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import read_store_catalog, write_store
 from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN
 from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
+from native_store.linked_file_copy import link_or_copy_file
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root, require_converter_output
 from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, RECEIPT_RECORD_NAME, UnitLedger, locked_input_records,
                                       require_batch_preflight, run_at_below_normal_priority)
@@ -167,7 +167,7 @@ class NpcConversionRun:
                       self.gap_row(npc_key, self.model_ledger, unit_key, reason, unit['sourceIdentity']))
             return self.unit_outcome(self.model_ledger, unit_key, GAP_STATUS, reason, False)
         archive_copy = step_directory / MODEL_ARCHIVE_FILE_NAME
-        shutil.copyfile(result['file'], archive_copy)
+        link_or_copy_file(result['file'], archive_copy)
         outputs = [file_output_record(self.model_ledger.lane_folder, archive_copy)]
         self.seal(npc_key, self.model_ledger, unit_key, fingerprint, inputs, config, outputs, None)
         return self.unit_outcome(self.model_ledger, unit_key, PASS_STATUS, None, result['cacheHit'], outputs)

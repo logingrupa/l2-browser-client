@@ -19,6 +19,7 @@ from native_store import store_file_copy
 from native_store.store_file_copy import STORE_FILE_COPY_CHUNK_BYTES, StoreFileSource, add_store_file_source, copy_store_files
 from native_store.store_paths import StorePathError
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES
+from support.second_volume_simulation import simulate_a_second_volume
 from test_bundle_member_pins import TemporaryStoreTestCase, sha256_hex, snapshot_tree, write_file
 
 STORE_FILES = (('models/Synthetic-Archive.bin', b'synthetic archive bytes'), ('notes/second.bin', b'second store file bytes'))
@@ -43,11 +44,13 @@ def temporary_file_paths(root):
     return sorted(root.rglob('*.tmp'))
 
 
-class StoreFileCopyTests(TemporaryStoreTestCase):
+class StoreFileSourcesTestCase(TemporaryStoreTestCase):
+    target_relative_folder = 'target/l2'
+
     def setUp(self):
         super().setUp()
         self.source_root = self.temporary_root / 'source' / 'l2'
-        self.target_root = self.temporary_root / 'target' / 'l2'
+        self.target_root = self.temporary_root / self.target_relative_folder
         for relative, payload in STORE_FILES:
             write_file(self.source_root / relative, payload)
 
@@ -66,6 +69,8 @@ class StoreFileCopyTests(TemporaryStoreTestCase):
     def copy_with_free_bytes(self, free_bytes, before, after):
         return copy_store_files(self.target_root, self.store_file_sources(), before, after, disk_usage=disk_usage_reader(free_bytes))
 
+
+class StoreFileCopyTests(StoreFileSourcesTestCase):
     def test_the_copy_returns_and_leaves_what_write_store_does_and_a_second_copy_writes_nothing(self):
         twin_root = self.temporary_root / 'twin' / 'l2'
         written = write_store(twin_root, self.store_file_payloads(), None, EMPTY_CATALOG_BYTES)
@@ -329,6 +334,78 @@ class StoreFileCopyTests(TemporaryStoreTestCase):
             tracemalloc.stop()
         self.assertLess(traced_peak_bytes, LARGE_FILE_CHUNK_COUNT * STORE_FILE_COPY_CHUNK_BYTES)
         self.assertEqual(sha256_of_file(self.target_root / relative), large_source.sha256)
+
+
+class StoreFileLinkTests(StoreFileSourcesTestCase):
+    target_relative_folder = 'artifacts/lane-store/integration/l2'
+
+    def name_counts(self, root):
+        return [os.stat(root / relative).st_nlink for relative, _ in STORE_FILES]
+
+    def file_numbers(self, root):
+        return [os.stat(root / relative).st_ino for relative, _ in STORE_FILES]
+
+    def test_the_files_of_a_lane_store_root_are_second_names_of_their_sources_and_need_only_the_floor_free(self):
+        self.assertEqual(self.copy_with_free_bytes(BATCH_MINIMUM_FREE_BYTES, None, EMPTY_CATALOG_BYTES)['filesWritten'], 3)
+        self.assertEqual((self.file_numbers(self.target_root), self.name_counts(self.source_root)), (self.file_numbers(self.source_root), [2, 2]))
+        self.assertEqual(bytes_by_relative_path(self.target_root), {**dict(STORE_FILES), 'catalog.json': EMPTY_CATALOG_BYTES})
+        snapshot = snapshot_tree(self.target_root)
+        self.assertEqual(self.copy_with_free_bytes(0, EMPTY_CATALOG_BYTES, EMPTY_CATALOG_BYTES)['filesWritten'], 0)
+        self.assertEqual(snapshot_tree(self.target_root), snapshot)
+
+    def test_a_target_that_is_no_lane_store_root_is_copied(self):
+        shared_store_root = self.temporary_root / 'public' / 'l2'
+        copy_store_files(shared_store_root, self.store_file_sources(), None, EMPTY_CATALOG_BYTES, disk_usage=disk_usage_reader(AMPLE_FREE_BYTES))
+        self.assertEqual(bytes_by_relative_path(shared_store_root), {**dict(STORE_FILES), 'catalog.json': EMPTY_CATALOG_BYTES})
+        self.assertEqual((self.name_counts(shared_store_root), self.name_counts(self.source_root)), ([1, 1], [1, 1]))
+
+    def test_a_lane_store_root_on_a_second_volume_is_copied_and_needs_the_missing_bytes_free(self):
+        simulate_a_second_volume(self)
+        with self.assertRaisesRegex(CatalogWriteError, '; nothing was written$'):
+            self.copy_with_free_bytes(BATCH_MINIMUM_FREE_BYTES, None, EMPTY_CATALOG_BYTES)
+        self.assertEqual(self.copy_with_free_bytes(AMPLE_FREE_BYTES, None, EMPTY_CATALOG_BYTES)['filesWritten'], 3)
+        self.assertEqual((self.name_counts(self.target_root), self.name_counts(self.source_root)), ([1, 1], [1, 1]))
+
+    def test_a_source_changed_after_its_sha256_was_taken_is_refused_and_leaves_no_destination(self):
+        write_file(self.target_root / 'catalog.json', EMPTY_CATALOG_BYTES)
+        store_file_sources = self.store_file_sources()
+        first_relative, first_payload = STORE_FILES[0]
+        write_file(self.source_root / first_relative, b'bytes written after the verification')
+        snapshot = snapshot_tree(self.target_root)
+        with self.assertRaises(CatalogWriteError) as refusal:
+            copy_store_files(self.target_root, store_file_sources, EMPTY_CATALOG_BYTES, PINNED_CATALOG_BYTES,
+                             disk_usage=disk_usage_reader(AMPLE_FREE_BYTES))
+        self.assertEqual(str(refusal.exception), f'Store file source no longer has its expected SHA-256 {sha256_hex(first_payload)}; '
+                                                 f'copy stopped: {self.source_root / first_relative}')
+        self.assertEqual((snapshot_tree(self.target_root), self.name_counts(self.source_root)), (snapshot, [1, 1]))
+
+    def link_while_another_writer_publishes_the_first_destination(self, other_writer_payload):
+        destination = self.target_root / STORE_FILES[0][0]
+        link_source_to_absent_destination = store_file_copy.link_source_to_absent_destination
+
+        def publish_the_first_destination_then_link(store_file_source, link_destination):
+            if link_destination == destination:
+                write_file(destination, other_writer_payload)
+                os.utime(destination, ns=(FIXED_PAST_MODIFICATION_TIME_NS, FIXED_PAST_MODIFICATION_TIME_NS))
+            link_source_to_absent_destination(store_file_source, link_destination)
+
+        with patch.object(store_file_copy, 'link_source_to_absent_destination', publish_the_first_destination_then_link):
+            return self.copy_with_free_bytes(AMPLE_FREE_BYTES, None, EMPTY_CATALOG_BYTES)
+
+    def test_a_destination_published_meanwhile_with_identical_bytes_is_verified_and_never_replaced(self):
+        first_relative, first_payload = STORE_FILES[0]
+        destination = self.target_root / first_relative
+        self.assertEqual(self.link_while_another_writer_publishes_the_first_destination(first_payload)['filesWritten'], 3)
+        self.assertEqual((destination.read_bytes(), destination.stat().st_mtime_ns), (first_payload, FIXED_PAST_MODIFICATION_TIME_NS))
+        self.assertEqual((self.name_counts(self.target_root), self.name_counts(self.source_root)), ([1, 2], [1, 2]))
+
+    def test_a_destination_published_meanwhile_with_other_bytes_is_refused_and_never_replaced(self):
+        destination = self.target_root / STORE_FILES[0][0]
+        with self.assertRaises(CatalogWriteError) as refusal:
+            self.link_while_another_writer_publishes_the_first_destination(OTHER_WRITER_BYTES)
+        self.assertEqual(str(refusal.exception), f'Existing immutable runtime asset is corrupt; preserved: {destination}')
+        self.assertEqual((destination.read_bytes(), os.stat(destination).st_nlink), (OTHER_WRITER_BYTES, 1))
+        self.assertFalse((self.target_root / 'catalog.json').exists())
 
 
 if __name__ == '__main__':
