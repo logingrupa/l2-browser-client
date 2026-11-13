@@ -3,12 +3,12 @@
     "character": {
       "count": 0,
       "skippedByReason": {
-        "class-template-mapping-undecoded": 14
+        "actor-default-unresolved:WaitAnimName": 14
       },
       "skippedReason": null
     },
     "npc": 5177,
-    "skill": 3064
+    "skillSoundRow": 1398
   },
   "perTable": {
     "npcgrp": {
@@ -16,17 +16,27 @@
       "exactIdentity": 0,
       "uniquePackageLeafCandidate": 46080,
       "unresolved": 76
+    },
+    "skillsoundgrp": {
+      "empty": 0,
+      "exactIdentity": 0,
+      "uniquePackageLeafCandidate": 2,
+      "unresolved": 0
     }
   },
   "references": {
     "empty": 2566,
     "exactIdentity": 0,
-    "uniquePackageLeafCandidate": 46080,
+    "uniquePackageLeafCandidate": 46082,
     "unresolved": 76
   },
   "routeProof": {
     "path": "artifacts/native-parity/research/native-sound-answers-20261107/evidence/q4-hit-sounds-verify/verify_anchors.json",
     "sha256": "03c3a03627d8c71527ef93c23f79cc574b34d27450b76a3b7a7d44810a4ab785"
+  },
+  "routeRecipe": {
+    "path": "recipes/actors/combat-sound-routes.json",
+    "sha256": "d8673d20dbc9297edb5e61addf7c9a9c9c51af4e4389905db404ee4fd4047438"
   },
   "routes": {
     "alaudio": {
@@ -127,18 +137,58 @@
     },
     "skillsoundgrp": {
       "cast": {
-        "detail": "route proof names no serialization anchor for skillsoundgrp",
-        "fieldName": null,
-        "fieldOrdinal": null,
-        "reason": "combat-role-route-unresolved:skillsoundgrp/cast",
-        "status": "unresolved"
+        "anchors": [
+          "FL2SkillSoundData::Serialize 0x1044ec30",
+          "GetSkillSoundData 0x10478280",
+          "APawn::PlaySkillSound 0x104ee5a0",
+          "APawn::SkillEffectInit 0x104fa6ad"
+        ],
+        "members": [
+          {
+            "fieldName": "spelleffect_sound_1",
+            "fieldOrdinal": 2,
+            "member": 0
+          },
+          {
+            "fieldName": "shoteffect_sound_1",
+            "fieldOrdinal": 11,
+            "member": 1
+          },
+          {
+            "fieldName": "expeffect_sound_1",
+            "fieldOrdinal": 20,
+            "member": 2
+          }
+        ],
+        "reason": null,
+        "status": "bound"
       },
       "shot": {
-        "detail": "route proof names no serialization anchor for skillsoundgrp",
-        "fieldName": null,
-        "fieldOrdinal": null,
-        "reason": "combat-role-route-unresolved:skillsoundgrp/shot",
-        "status": "unresolved"
+        "anchors": [
+          "FL2SkillSoundData::Serialize 0x1044ec30",
+          "GetSkillSoundData 0x10478280",
+          "APawn::PlaySkillSound 0x104ee5a0",
+          "APawn::SkillEffectShot 0x1050ceb2"
+        ],
+        "members": [
+          {
+            "fieldName": "spelleffect_sound_2",
+            "fieldOrdinal": 3,
+            "member": 0
+          },
+          {
+            "fieldName": "shoteffect_sound_2",
+            "fieldOrdinal": 12,
+            "member": 1
+          },
+          {
+            "fieldName": "expeffect_sound_2",
+            "fieldOrdinal": 21,
+            "member": 2
+          }
+        ],
+        "reason": null,
+        "status": "bound"
       }
     },
     "weapongrp": {
@@ -5329,6 +5379,7 @@
     "npc:35644",
     "npc:35645",
     "npc:35646",
-    "npc:35647"
+    "npc:35647",
+    "skill-sound-row:3"
   ]
 }
