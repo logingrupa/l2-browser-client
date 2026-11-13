@@ -15,6 +15,7 @@ from data.pinned_elbera_module import ELBERA_ROOT
 from native_catalog.ue2 import FormatError
 from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, BatchPreflightRefusedError, require_batch_preflight, run_at_below_normal_priority
 from test_world_reader_licensees import layout_completeness_problems
+from world.bsp_model_licensee_rules import BSP_MODEL_LICENSEE_RULES_RELATIVE_PATH
 from world.bsp_step import RAW_MANIFEST_PRODUCT_NAME, bsp_unit_config, tile_level_model_layout
 from world.elbera_reader_cross_check import ElberaCrossCheckError, elbera_level_model_projection
 from world.level_model import LevelModelLayoutError, read_level_model
@@ -105,18 +106,30 @@ class LevelModelRecordTests(unittest.TestCase):
     def test_every_eligible_map_licensee_has_a_level_model_verdict_row(self):
         self.assertEqual(sorted(level_model_rows(read_cross_check_rows(ROOT))), sorted(ELIGIBLE_MAP_LICENSEES))
 
-    def test_each_level_model_row_is_either_an_adopted_equal_pair_or_a_refusal_naming_its_failing_check(self):
+    def test_every_eligible_map_licensee_is_reviewed_by_an_equal_row_without_a_refusal(self):
         rows = level_model_rows(read_cross_check_rows(ROOT))
         reviewed = {licensee for _, licensee in READER_LICENSEE_LAYOUTS[LEVEL_MODEL_READER]}
+        self.assertEqual(sorted(reviewed), sorted(ELIGIBLE_MAP_LICENSEES))
         for licensee, row in rows.items():
             with self.subTest(licensee=licensee):
                 self.assertEqual(row['tile'], MAP_ACTOR_CROSS_CHECK_TILES[licensee])
-                if row['equal']:
-                    self.assertIsNone(row['refusalReason'])
-                    self.assertIn(licensee, reviewed)
-                else:
-                    self.assertTrue(row['refusalReason'])
-                    self.assertNotIn(licensee, reviewed)
+                self.assertTrue(row['equal'])
+                self.assertIsNone(row['refusalReason'])
+
+    def test_licensees_below_a_rule_minimum_name_each_rule_and_cite_the_recipe(self):
+        for licensee in (18, 19, 20):
+            record = READER_LICENSEE_LAYOUTS[LEVEL_MODEL_READER][(123, licensee)]
+            with self.subTest(licensee=licensee):
+                self.assertEqual(len(record['differencesFrom123_28']), 2)
+                self.assertIn('levelBaseReferenceArrays at ULevelBase::Serialize 0x105cf110 applies from LicenseeVer 23', record['differencesFrom123_28'][0])
+                self.assertIn('surfaceTrailingInteger at FBspSurf serializer 0x105ea020 applies from LicenseeVer 21', record['differencesFrom123_28'][1])
+                recipe_entries = [entry for entry in record['evidence'] if entry['file'] == BSP_MODEL_LICENSEE_RULES_RELATIVE_PATH]
+                self.assertEqual(len(recipe_entries), 1)
+                self.assertEqual((recipe_entries[0]['source'], recipe_entries[0]['commit']), ('Engine.dll level model rules', '4dd2f63c'))
+                self.assertEqual(recipe_entries[0]['sha256'], hashlib.sha256((ROOT / BSP_MODEL_LICENSEE_RULES_RELATIVE_PATH).read_bytes()).hexdigest())
+        for licensee in (23, 25, 28, 30, 31):
+            with self.subTest(licensee=licensee):
+                self.assertEqual(READER_LICENSEE_LAYOUTS[LEVEL_MODEL_READER][(123, licensee)]['differencesFrom123_28'], [])
 
 
 class BspUnitConfigTests(unittest.TestCase):

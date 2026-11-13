@@ -9,15 +9,20 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
+from data.pinned_elbera_module import ELBERA_ROOT
 from native_catalog.ue2 import FormatError, Reader
-from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, read_reference_client_lock
+from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, BatchPreflightRefusedError, require_batch_preflight, run_at_below_normal_priority
+from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, read_reference_client_lock, require_reference_client
 from support.lightmap_tail_fixture import compact_index_bytes, lightmap_node, render_section_bytes
-from world.bsp_lightmaps import read_render_sections, render_vertex_bytes
+from world.bsp_lightmaps import model_tail_bounds, read_bsp_lightmaps, read_render_sections, render_vertex_bytes
 from world.bsp_model_licensee_rules import (BSP_MODEL_LICENSEE_RULES_RELATIVE_PATH, BspModelLicenseeRulesError, load_bsp_model_licensee_rules,
                                             read_bsp_model_licensee_rules)
-from world.bsp_reader_binding import reviewed_reader
-from world.level_model import read_model_body
+from world.bsp_reader_binding import PackageAdapter, reviewed_reader
+from world.level_model import read_level_model, read_model_body
 from world.level_model_reference import read_level_model_reference
+from world.map_sources import MapSources
+from world.reader_licensee_layouts import LEVEL_MODEL_READER, READER_LICENSEE_LAYOUTS
+from world.tile_census import WORLD_LANE_NAME
 
 RECIPE_PATH = ROOT / BSP_MODEL_LICENSEE_RULES_RELATIVE_PATH
 VERIFIED_FACTS_SHA256 = '79d11661af9e67ea4f4090185012ec6220d562380b6322a14df272edf23d7ae5'
@@ -39,6 +44,11 @@ URL_STRING_COUNT = 4
 FIRST_ARRAY_REFERENCES = (0, LEVEL_EXPORT_REFERENCE)
 SECOND_ARRAY_REFERENCES = (MODEL_EXPORT_REFERENCE,)
 SQUARE_UVS = ((0.0, 0.0), (0.25, 0.0), (0.25, 0.25), (0.0, 0.25))
+REAL_CLIENT_ROOT = Path('E:/Lineage2-client')
+BLOCKED_TILE_IDS = ('17_18', '17_19', '18_15', '18_18', '23_10', '26_12', '26_11', '24_26', '20_16', '23_25', '24_14', '24_20', '25_20')
+VENDORED_BINDING_MINIMUM_LICENSEE = 23
+UNWALKED_LIGHTMAP_TAILS = {'18_15': 163885}
+REVISION_AHEAD_LICENSEE = 31
 
 
 def recipe_document():
@@ -189,6 +199,74 @@ class RenderSectionRuleTests(unittest.TestCase):
     def test_a_node_count_other_than_the_assigned_nodes_with_vertices_is_refused_with_both_numbers(self):
         with self.assertRaisesRegex(FormatError, 'render section 0 declares 3 nodes, but 2 nodes with vertices are assigned to it'):
             self.read_one_section(render_section_bytes(SQUARE_UVS * 2, 3, 0), self.two_square_nodes())
+
+
+def read_real_map(tile_id):
+    relative_path = f'maps/{tile_id}.unr'
+    require_reference_client(REAL_CLIENT_ROOT).require_equal_file_with_sha256(relative_path)
+    return MapSources(REAL_CLIENT_ROOT.resolve()).get(relative_path)
+
+
+def real_client_skip_reason():
+    if not REAL_CLIENT_ROOT.is_dir():
+        return 'the conversion client E:/Lineage2-client is absent on this host'
+    if not REFERENCE_CLIENT_LOCK_PATH.is_file():
+        return 'the reference client lock is absent'
+    if not ELBERA_ROOT.is_dir():
+        return 'the pinned Elbera checkout is absent on this host'
+    return None
+
+
+@unittest.skipIf(real_client_skip_reason() is not None, real_client_skip_reason() or '')
+class RealMapLicenseeRuleTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        try:
+            require_batch_preflight(ROOT, WORLD_LANE_NAME, BATCH_MINIMUM_FREE_BYTES)
+        except BatchPreflightRefusedError as error:
+            raise unittest.SkipTest(f'the real-map licensee rule checks wait for the batch preflight: {error}')
+        run_at_below_normal_priority()
+
+    def assert_sections_end_before_the_tail_end(self, package, model, lightmaps):
+        start, end = model_tail_bounds(model)
+        vertex_bytes = render_vertex_bytes(package.summary['version'])
+        vertex_ends = [section.vertex_offset + vertex_bytes * section.vertex_count for section in lightmaps.sections]
+        self.assertTrue(all(start < section.vertex_offset for section in lightmaps.sections))
+        self.assertTrue(all(vertex_end < following.vertex_offset for vertex_end, following in zip(vertex_ends, lightmaps.sections[1:])))
+        self.assertLess(vertex_ends[-1], end)
+
+    def test_each_of_the_13_maps_reads_by_the_recipe_rules_and_walks_its_lightmap_tail(self):
+        map_licensees = read_bsp_model_licensee_rules()['document']['mapLicensees']
+        self.assertEqual(sorted(map_licensees), sorted(BLOCKED_TILE_IDS))
+        for tile_id in BLOCKED_TILE_IDS:
+            with self.subTest(tile=tile_id):
+                package = read_real_map(tile_id)
+                licensee = package.summary['licenseeVersion']
+                self.assertEqual((package.summary['version'], licensee), (PACKAGE_VERSION, map_licensees[tile_id]))
+                level = read_level_model(package)
+                arrays = [array['nativeField'] for array in level.binding['actorArrays']]
+                self.assertEqual(arrays, ['0x38'] if licensee < VENDORED_BINDING_MINIMUM_LICENSEE else ['0x48', '0x38'])
+                lightmaps = read_bsp_lightmaps(package, level.model)
+                self.assert_sections_end_before_the_tail_end(package, level.model, lightmaps)
+                if tile_id in UNWALKED_LIGHTMAP_TAILS:
+                    self.assertEqual((len(lightmaps.records), lightmaps.unwalked_tail_bytes), (0, UNWALKED_LIGHTMAP_TAILS[tile_id]))
+                else:
+                    self.assertGreater(len(lightmaps.records), 0)
+                    self.assertEqual(lightmaps.unwalked_tail_bytes, 0)
+                if licensee == REVISION_AHEAD_LICENSEE:
+                    self.assertTrue(any(section.revision != section.node_count for section in lightmaps.sections))
+
+    def test_the_prefix_reader_equals_the_vendored_binding_on_the_five_reviewed_cross_check_tiles(self):
+        rules = read_bsp_model_licensee_rules()['document']['rules']
+        cross_check_tiles = {licensee: record['crossCheck']['tile'] for (_, licensee), record in READER_LICENSEE_LAYOUTS[LEVEL_MODEL_READER].items()
+                             if licensee >= VENDORED_BINDING_MINIMUM_LICENSEE}
+        self.assertEqual(sorted(cross_check_tiles.values()), ['15_20', '17_20', '17_22', '19_23', '20_21'])
+        for licensee, tile_id in cross_check_tiles.items():
+            with self.subTest(tile=tile_id):
+                package = read_real_map(tile_id)
+                self.assertEqual((package.summary['version'], package.summary['licenseeVersion']), (PACKAGE_VERSION, licensee))
+                adapter, reader_module = PackageAdapter(package), reviewed_reader()
+                self.assertEqual(read_level_model_reference(adapter, reader_module, rules), reader_module.level_model_binding(adapter))
 
 
 if __name__ == '__main__':
