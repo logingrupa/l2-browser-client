@@ -7,6 +7,7 @@ from native_assets_lib.gltf import json_bytes
 from native_assets_lib.world_music import KIND as MUSIC_KIND, encode, encoder_identity, music_volumes, restore_l2_ogg, unpatch
 from native_catalog.tables import decode_table
 from native_store.catalog_writer import sha256_hex
+from native_store.file_identity import file_identity
 from native_store.store_paths import REPOSITORY_ROOT
 from world.music_volume_join import MUSICINFO_TABLE, join_music_volumes, musicinfo_rows
 from world.static_placement_plan import FAILED_STATUS
@@ -27,6 +28,7 @@ MUSIC_LIMITS = ['Ordered musicinfo strings are source facts; sequential/random s
                 'Point-in-volume uses the brush BSP planes with identity Rotation/DrawScale assumed; native Encompasses is unverified.',
                 'The restored Ogg differs from the original only by the documented capture/trailer patch; the AAC file is a lossy derivative.',
                 'Native music gain (historical l2.ini MusicVolume=0.1), default/no-volume music and native audible parity remain unverified.']
+music_encoder_identities_by_executable_and_pin = {}
 
 
 class TileMusic(NamedTuple):
@@ -84,9 +86,13 @@ def tile_music_volumes(map_data, map_path, gaps):
 def pinned_music_encoder():
     executable = shutil.which('ffmpeg')
     try:
-        return PinnedMusicEncoder(executable, encoder_identity(executable, music_derivative_spec()['encoder']))
+        encoder_pin = music_derivative_spec()['encoder']
+        executable_and_pin = (executable, None if executable is None else file_identity(executable), json.dumps(encoder_pin, sort_keys=True))
+        if executable_and_pin not in music_encoder_identities_by_executable_and_pin:
+            music_encoder_identities_by_executable_and_pin[executable_and_pin] = encoder_identity(executable, encoder_pin)
     except ENCODER_FAILURES:
         return PinnedMusicEncoder(None, None)
+    return PinnedMusicEncoder(executable, dict(music_encoder_identities_by_executable_and_pin[executable_and_pin]))
 
 
 def joined_volume_tracks(client_access, join, tracks, payloads, derivative, music_encoder, gaps):
