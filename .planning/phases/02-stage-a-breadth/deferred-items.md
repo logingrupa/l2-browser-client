@@ -40,3 +40,7 @@ Out-of-scope problems found while executing a plan. Each is left for its owning 
 ## Found during 02-85
 
 - `python -B -m unittest discover -s tests/pipeline -p "test_converter_output_guard.py"`, 2026-11-12 17:34 Riga: `test_every_lane_entry_point_with_an_output_option_calls_the_guard` fails on `scripts/actors/character_class_sources.py` (added by 02-83 commit 2d018f8, actors lane), an entry point with an output option that does not call the converter output guard. 02-85 did not touch that file; the other 11 cases pass.
+
+## Found during 02-97
+
+- `python scripts/test_pipeline.py`, 2026-11-13 22:30 Riga: `test_world_tile_general_steps.TileGeneralWorldStepTests.test_no_world_step_module_names_a_tile_identity_or_the_20_20_map_hash` fails on `scripts/world/convert_tile_batch.py:257`, the `--retry-tiles` usage error text `like 17_18` added by 02-96. Outside the minimap files this plan changes; the fix is a tile-free example in that message. The same run also failed `test_client_entry_points` on the new route command, fixed by this plan in 038466f.
