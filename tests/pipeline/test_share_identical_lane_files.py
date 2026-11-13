@@ -101,6 +101,15 @@ class IdenticalFileSharingTests(SharedLaneTestCase):
         self.assertEqual([file_number(converter_path), file_number(store_path)], [kept_file_numbers[0]] * 2)
         self.assertEqual([file_number(first_path), file_number(second_path)], [kept_file_numbers[1]] * 2)
 
+    def test_a_new_twin_whose_name_sorts_first_joins_the_file_with_the_most_names_and_no_other_name_is_replaced(self):
+        shared_paths = [self.lanes.write_store_file('actors', f'models/twin-{name}.bin', TWIN) for name in ('m', 'n', 'o')]
+        self.share()
+        shared_file_number = file_number(shared_paths[0])
+        new_twin_path = self.lanes.write_store_file('actors', 'models/twin-a.bin', TWIN)
+        report = self.share()
+        self.assertEqual([file_number(path) for path in [new_twin_path, *shared_paths]], [shared_file_number] * 4)
+        self.assertEqual((report['sharedNames'], link_count(new_twin_path)), (1, 4))
+
     def test_files_on_two_devices_are_never_planned_as_one_file(self):
         on_the_first_device = SharingCandidate(Path('a'), 'actors/l2/models/a.bin', (1, 10, SHARED_FILE_BYTES, 5), 1)
         on_the_second_device = SharingCandidate(Path('b'), 'actors/l2/models/b.bin', (2, 10, SHARED_FILE_BYTES, 5), 1)

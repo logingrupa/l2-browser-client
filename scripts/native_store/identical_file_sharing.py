@@ -128,9 +128,10 @@ def planned_links(candidates, sha256_by_identity):
             identities_by_device_size_and_sha256[(identity[DEVICE_POSITION], identity[SIZE_POSITION], sha256_by_identity[identity])].append(identity)
     links = []
     for identical_files in identities_by_device_size_and_sha256.values():
-        kept_names = names_by_identity[identical_files[0]]
+        files_with_the_most_names_first = sorted(identical_files, key=lambda identity: -names_on_disk(names_by_identity[identity]))
+        kept_names = names_by_identity[files_with_the_most_names_first[0]]
         kept_name_count = names_on_disk(kept_names)
-        for identity in identical_files[1:]:
+        for identity in files_with_the_most_names_first[1:]:
             names = names_by_identity[identity]
             if kept_name_count + len(names) > MAXIMUM_NAMES_PER_SHARED_FILE:
                 kept_names, kept_name_count = names, names_on_disk(names)
