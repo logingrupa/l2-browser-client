@@ -4,7 +4,8 @@ import json
 import re
 
 from native_store.store_paths import REPOSITORY_ROOT
-from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, read_reference_client_lock
+from native_store.unit_ledger import process_reference_client_lock
+from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH
 
 BSP_MODEL_LICENSEE_RULES_RELATIVE_PATH = 'recipes/world/bsp-model-licensee-rules.json'
 BSP_MODEL_LICENSEE_RULES_KIND = 'bsp-model-licensee-rules'
@@ -54,7 +55,7 @@ def is_hex_list(value):
 def require_locked_engine(engine, lock_path):
     require(isinstance(engine, dict) and set(engine) == {'path', 'sha256', 'imageBase'}, 'engine must hold path, sha256 and imageBase')
     require(engine['path'] == ENGINE_RELATIVE_PATH and HEX_VALUE.fullmatch(str(engine['imageBase'])), 'engine names another file or no image base')
-    record = read_reference_client_lock(lock_path).record(engine['path'])
+    record = process_reference_client_lock(lock_path).record(engine['path'])
     require(record is not None and record['class'] == 'equal' and record['eSha256'] == record['importaSha256'] == engine['sha256'],
             f'engine pin {engine["sha256"]} differs from the {engine["path"].casefold()} entry of the reference client lock')
 

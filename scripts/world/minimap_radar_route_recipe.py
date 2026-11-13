@@ -4,7 +4,8 @@ import json
 import re
 
 from native_store.store_paths import REPOSITORY_ROOT
-from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, read_reference_client_lock
+from native_store.unit_ledger import process_reference_client_lock
+from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH
 
 MINIMAP_RADAR_ROUTE_RECIPE_RELATIVE_PATH = 'recipes/world/minimap-radar-route.json'
 MINIMAP_RADAR_ROUTE_KIND = 'minimap-radar-route'
@@ -73,7 +74,7 @@ def require_binaries(binaries, lock_path):
     paths = [binary.get('path') for binary in binaries]
     require(sorted(map(str.casefold, map(str, paths))) == sorted(path.casefold() for path in PINNED_BINARY_PATHS),
             f'binaries must pin exactly {list(PINNED_BINARY_PATHS)}')
-    lock = read_reference_client_lock(lock_path)
+    lock = process_reference_client_lock(lock_path)
     for binary in binaries:
         require(set(binary) <= {'path', 'eSha256', 'lockClass', 'imageBase'} and SHA256_HEX.fullmatch(str(binary.get('eSha256'))),
                 f'binary {binary["path"]} needs its eSha256 and lock class')
