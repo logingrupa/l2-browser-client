@@ -19,7 +19,7 @@ from native_store.identical_file_sharing import (SIZE_POSITION, IdenticalFileSha
 from native_store.interprocess_lock import (ARTIFACTS_FOLDER_NAME, LANE_STORES_FOLDER_NAME, LANE_WORK_FOLDER_NAME, InterprocessLockError,
                                             lane_sharing_lock)
 from native_store.lane_sharing_candidates import LANES_WHOSE_CONVERSIONS_HOLD_THE_LANE_LOCK, lane_is_held_free_of_conversions, survey_lane
-from native_store.store_paths import refuse_reparse_points
+from native_store.store_paths import lane_folder, refuse_reparse_points
 from native_store.unit_ledger import run_at_below_normal_priority
 
 IDENTICAL_FILE_SHARING_DESCRIPTION = ('Turn identical large files of every lane under an artifacts/lane-store folder into hard links of one '
@@ -28,6 +28,9 @@ IDENTICAL_FILE_SHARING_DESCRIPTION = ('Turn identical large files of every lane 
 TEMPORARY_LINKS_FOLDER_NAME = 'temporary-links'
 REPORTED_PLACE_PART_COUNT = 2
 FILE_TYPE_WITHOUT_SUFFIX = 'no-suffix'
+BATCH_LANE_SHARED_MESSAGE_PREFIX = 'identical lane files shared: '
+BATCH_LANE_NOT_SHARED_MESSAGE_PREFIX = 'identical lane files not shared: '
+COMPACT_JSON_SEPARATORS = (',', ':')
 
 
 def temporary_links_folder(lane_folder):
@@ -144,6 +147,17 @@ def share_identical_lane_files(lane_stores_root, lane_names, plan_only, lanes_fr
             'scratchJobFoldersNotRemoved': sum(removal.job_folders_not_removed for removal in scratch_removal_by_lane_name.values()),
             'scratchBytesRemoved': sum(removal.bytes_removed for removal in scratch_removal_by_lane_name.values()),
             'scratchBytesLeftByLane': {lane_name: removal.bytes_left for lane_name, removal in scratch_removal_by_lane_name.items()}}
+
+
+def share_identical_files_of_batch_lane(project_root, lane_name, held_lane_lock):
+    try:
+        held_lane_lock.hold_the_lane_in_use_part_exclusively()
+        report = share_identical_lane_files(lane_folder(project_root, lane_name).parent, [lane_name], False, [lane_name])
+    except (OSError, ValueError, InterprocessLockError) as error:
+        print(f'{BATCH_LANE_NOT_SHARED_MESSAGE_PREFIX}{error}', file=sys.stderr)
+        return False
+    print(BATCH_LANE_SHARED_MESSAGE_PREFIX + json.dumps(report, sort_keys=True, separators=COMPACT_JSON_SEPARATORS), file=sys.stderr)
+    return True
 
 
 def main(argv=None):

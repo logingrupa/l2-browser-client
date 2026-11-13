@@ -40,6 +40,7 @@ from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN
 from native_store.interprocess_lock import LaneInUseError, lane_batch_lock
 from native_store.lane_coverage_refresh import lane_coverage_refreshed_at_exit
 from native_store.linked_file_copy import link_or_copy_file
+from native_store.share_identical_lane_files import share_identical_files_of_batch_lane
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root, require_converter_output
 from native_store.unit_ledger import (BATCH_MINIMUM_FREE_BYTES, RECEIPT_RECORD_NAME, UnitLedger, locked_input_records,
                                       require_batch_preflight, run_at_below_normal_priority)
@@ -344,6 +345,26 @@ def run_skill_conversion(client_access, output_root, arguments):
     return skill_outcomes_failed(outcomes)
 
 
+def selected_conversion_failed(client_access, output_root, arguments):
+    if arguments.skill is not None or arguments.batch == SKILL_BATCH_NAME:
+        return run_skill_conversion(client_access, output_root, arguments)
+    converter = Converter(client_access.root, output_root.parent / CONVERTER_WORK_FOLDER, arguments.umodel)
+    if arguments.actor_sounds is not None or arguments.batch == ACTOR_SOUNDS_BATCH_NAME:
+        outcomes = run_actor_sound_conversion(REPOSITORY_ROOT, client_access, converter, output_root, lane_work_root(REPOSITORY_ROOT, LANE_NAME),
+                                              decode_table, arguments.actor_sounds, arguments.limit, lane_batch_preflight)
+    elif arguments.batch == NPC_BATCH_NAME:
+        outcomes = run_batch_slice(client_access, output_root, converter, arguments.limit)
+    else:
+        row_conversion = (run_character_conversion if arguments.character is not None or arguments.batch == CHARACTER_BATCH_NAME else
+                          run_item_conversion if arguments.item is not None or arguments.batch == ITEM_BATCH_NAME else None)
+        outcomes = (row_conversion(REPOSITORY_ROOT, client_access, converter, output_root, decode_table, arguments, lane_batch_preflight)
+                    if row_conversion else
+                    convert_npc(REPOSITORY_ROOT, client_access, converter, arguments.npc, lane_work_root(REPOSITORY_ROOT, LANE_NAME), output_root))
+        for outcome in outcomes:
+            print(json.dumps(printed_outcome(outcome), sort_keys=True), flush=True)
+    return any(outcome['status'] == FAILED_STATUS for outcome in outcomes)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=CONVERT_ACTORS_DESCRIPTION)
     parser.add_argument('--client', type=Path, required=True)
@@ -375,27 +396,14 @@ def main(argv=None):
             return 0
         require_batch_preflight(REPOSITORY_ROOT, LANE_NAME, BATCH_MINIMUM_FREE_BYTES)
         run_at_below_normal_priority()
-        with lane_batch_lock(lane_work_root(REPOSITORY_ROOT, LANE_NAME)), lane_coverage_refreshed_at_exit(REPOSITORY_ROOT, LANE_NAME):
-            if arguments.skill is not None or arguments.batch == SKILL_BATCH_NAME:
-                return 1 if run_skill_conversion(client_access, output_root, arguments) else 0
-            converter = Converter(client_access.root, output_root.parent / CONVERTER_WORK_FOLDER, arguments.umodel)
-            if arguments.actor_sounds is not None or arguments.batch == ACTOR_SOUNDS_BATCH_NAME:
-                outcomes = run_actor_sound_conversion(REPOSITORY_ROOT, client_access, converter, output_root, lane_work_root(REPOSITORY_ROOT, LANE_NAME),
-                                                      decode_table, arguments.actor_sounds, arguments.limit, lane_batch_preflight)
-            elif arguments.batch == NPC_BATCH_NAME:
-                outcomes = run_batch_slice(client_access, output_root, converter, arguments.limit)
-            else:
-                row_conversion = (run_character_conversion if arguments.character is not None or arguments.batch == CHARACTER_BATCH_NAME else
-                                  run_item_conversion if arguments.item is not None or arguments.batch == ITEM_BATCH_NAME else None)
-                outcomes = (row_conversion(REPOSITORY_ROOT, client_access, converter, output_root, decode_table, arguments, lane_batch_preflight)
-                            if row_conversion else
-                            convert_npc(REPOSITORY_ROOT, client_access, converter, arguments.npc, lane_work_root(REPOSITORY_ROOT, LANE_NAME), output_root))
-                for outcome in outcomes:
-                    print(json.dumps(printed_outcome(outcome), sort_keys=True), flush=True)
+        with lane_batch_lock(lane_work_root(REPOSITORY_ROOT, LANE_NAME)) as held_lane_lock:
+            with lane_coverage_refreshed_at_exit(REPOSITORY_ROOT, LANE_NAME):
+                conversion_failed = selected_conversion_failed(client_access, output_root, arguments)
+            lane_was_shared = arguments.batch is None or share_identical_files_of_batch_lane(REPOSITORY_ROOT, LANE_NAME, held_lane_lock)
     except (OSError, ValueError, LaneInUseError) as error:
         print(f'Actor conversion failed: {error}', file=sys.stderr)
         return 1
-    return 1 if any(outcome['status'] == FAILED_STATUS for outcome in outcomes) else 0
+    return 1 if conversion_failed or not lane_was_shared else 0
 
 
 if __name__ == '__main__':
