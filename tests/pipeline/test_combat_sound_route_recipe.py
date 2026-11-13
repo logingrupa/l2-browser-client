@@ -12,7 +12,8 @@ from actors.combat_role_routes import descriptor_record_field_names
 from actors.combat_sound_route_recipe import (COMBAT_SOUND_ROUTE_RECIPE_RELATIVE_PATH, CombatSoundRouteRecipeError, read_combat_sound_route_recipe,
                                               recipe_strings, validate_combat_sound_route_document)
 from actors.dat_field_ordinals import descriptor_field_ordinal_terms, descriptor_record_collection
-from native_assets_lib.combat_audio_bundle import TABLES
+from native_assets_lib.combat_audio_bundle import TABLES, config_sections
+from native_assets_lib.footstep_config import decode_config
 from native_catalog.tables import decode_table, interlude_table_layout
 from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH, require_reference_client
 
@@ -59,7 +60,8 @@ class CombatSoundRouteRecipeStructureTests(unittest.TestCase):
 
     def test_no_recipe_key_or_string_equals_a_descriptor_field_name_of_its_tables(self):
         document = committed_document()
-        tables = {entry['table'] for entry in document['routes']}
+        tables = {entry['table'] for section in ('routes', 'confirmedUnresolved', 'casterIndexedRoutes', 'unroutedFields') for entry in document[section]}
+        self.assertEqual(tables, {'skillsoundgrp', 'chargrp', 'armorgrp', 'weapongrp', 'npcgrp'})
         field_names = {name for table in tables for name in descriptor_record_field_names(interlude_table_layout(table)[1])}
         self.assertEqual(field_names.intersection(recipe_strings(document)), set())
 
@@ -148,6 +150,72 @@ class CombatSoundRouteRederivationTests(unittest.TestCase):
                     values = [row[field_name] for row in rows if row[field_name]]
                     self.assertEqual(len(values), SKILL_SOUND_NON_EMPTY_COUNTS[(role, member['member'])])
                     self.assertEqual([value for value in values if not PACKAGE_NAME_FORM.fullmatch(value)], [])
+
+    def bound_list_entries(self, table, member):
+        layout = interlude_table_layout(table)[1]
+        rows = self.decoded_rows(table)
+        field_name = field_named_by_terms(descriptor_field_ordinal_terms(layout, rows), member)
+        self.assertTrue(all(row['_counts'][field_name] == len(row[field_name]) for row in rows))
+        return rows, field_name, [[next(iter(entry.values())) for entry in row[field_name]] for row in rows]
+
+    def test_every_chargrp_route_binds_one_counted_sound_list_and_attack_voice_binds_eight_groups(self):
+        names_by_role = {}
+        for role in ('attackItem', 'defense', 'damage', 'attackVoice'):
+            for member in route_entry(self.document, 'chargrp', role)['members']:
+                with self.subTest(role=role, member=member['member']):
+                    rows, field_name, entries = self.bound_list_entries('chargrp', member)
+                    names_by_role.setdefault(role, []).append(field_name)
+                    self.assertEqual([name for row in entries for name in row if name and not PACKAGE_NAME_FORM.fullmatch(name)], [])
+        self.assertEqual(len(set(names_by_role['attackVoice'])), 8)
+        terms = descriptor_field_ordinal_terms(interlude_table_layout('chargrp')[1], self.decoded_rows('chargrp'))
+        self.assertNotIn({'ordinalConstant': 27, 'ordinalCountTerms': 15}, terms.values())
+        _, _, group_five = self.bound_list_entries('chargrp', route_entry(self.document, 'chargrp', 'attackVoice')['members'][5])
+        _, _, group_zero = self.bound_list_entries('chargrp', route_entry(self.document, 'chargrp', 'attackVoice')['members'][0])
+        self.assertEqual({tuple(entries) for entries, first in zip(group_five, group_zero) if first}, {('',)})
+        self.assertEqual(sum(1 for first in group_zero if first), 14)
+
+    def test_the_armorgrp_defense_list_holds_816_empty_placeholders_and_package_names_otherwise(self):
+        _, _, entries = self.bound_list_entries('armorgrp', route_entry(self.document, 'armorgrp', 'defense')['members'][0])
+        self.assertEqual(sum(1 for row in entries if row == ['']), 816)
+        self.assertEqual([name for row in entries if row != [''] for name in row if not PACKAGE_NAME_FORM.fullmatch(name)], [])
+
+    def test_the_weapongrp_attack_item_list_holds_54_empty_and_4_malformed_entries_in_1313_rows(self):
+        rows, _, entries = self.bound_list_entries('weapongrp', route_entry(self.document, 'weapongrp', 'attackItem')['members'][0])
+        names = [name for row in entries for name in row]
+        self.assertEqual((len(rows), names.count(''), sum(1 for name in names if name and not PACKAGE_NAME_FORM.fullmatch(name))), (1313, 54, 4))
+
+    def test_the_alaudio_config_holds_the_recipe_soulshot_values(self):
+        entry = self.document['configRoutes'][0]
+        path, sha256 = require_reference_client(CONVERSION_CLIENT_ROOT).require_equal_file_with_sha256(entry['file'])
+        self.assertEqual(sha256, entry['sha256'])
+        decoded, _ = decode_config(path.read_bytes())
+        keys = [name for name in entry['values'] if name.startswith(entry['key'])]
+        values = config_sections(decoded, {entry['section']: keys})
+        self.assertEqual({name: values[f'{entry["section"]}.{name}'].get('number', values[f'{entry["section"]}.{name}']['value']) for name in keys},
+                         {name: entry['values'][name] for name in keys})
+
+    def test_the_caster_indexed_entries_hold_names_for_mesh_types_0_to_13_and_slot_14_stays_empty(self):
+        layout = interlude_table_layout('skillsoundgrp')[1]
+        rows = self.decoded_rows('skillsoundgrp')
+        terms = descriptor_field_ordinal_terms(layout, rows)
+        for entry, rows_with_names in zip(self.document['casterIndexedRoutes'], (362, 404), strict=True):
+            with self.subTest(entry['role']):
+                names = [field_named_by_terms(terms, {**mesh_type, 'member': mesh_type['meshType']}) for mesh_type in entry['meshTypes']]
+                slot_fourteen = field_named_by_terms(terms, {'member': 14, 'ordinalConstant': entry['meshTypes'][-1]['ordinalConstant'] + 1,
+                                                             'ordinalCountTerms': 0})
+                self.assertEqual(sum(1 for row in rows if any(row[name] for name in names)), rows_with_names)
+                self.assertEqual(sum(1 for row in rows if row[slot_fourteen]), 0)
+
+
+class CasterMeshClassTests(unittest.TestCase):
+    def test_every_caster_mesh_class_is_a_lineage_warrior_class_this_repository_already_knows(self):
+        sources = json.loads((ROOT / 'docs' / 'parts' / 'player-characters' / 'character-class-sources.json').read_bytes())
+        known_classes = {entry['class'] for entry in sources['candidates']['classDefaults']}
+        for entry in committed_document()['casterIndexedRoutes']:
+            with self.subTest(entry['role']):
+                self.assertEqual([mesh_type['meshType'] for mesh_type in entry['meshTypes']], list(range(14)))
+                self.assertLessEqual({mesh_type['meshClass'] for mesh_type in entry['meshTypes']}, known_classes)
+                self.assertEqual(len({mesh_type['meshClass'] for mesh_type in entry['meshTypes']}), 14)
 
 
 if __name__ == '__main__':

@@ -55,7 +55,16 @@ def member_selection(bundle_key, actor_row, role, record):
     return selection
 
 
-def actor_sound_selections(bundle_key, actor_row, routes, decoded_row):
+def caster_indexed_selection(bundle_key, actor_row, role, record):
+    selection_id = f'{actor_sound_selection_id(bundle_key, actor_row["table"])}-{selection_role_token(role)}-caster-mesh-type-{record["meshType"]}'
+    selection = base_actor_sound_selection(selection_id, actor_row, {role: record['fieldName']})
+    selection['label'] = f'{actor_row["label"]} {role} caster mesh type {record["meshType"]} ({record["meshClass"]})'
+    selection['sourceObject'] = record['meshClass']
+    return selection
+
+
+def actor_sound_selections(bundle_key, actor_row, binding, decoded_row):
+    routes = binding['routes']
     single_roles = {role: route['fieldName'] for role, route in routes.items() if not isinstance(route, list)}
     selections = []
     if single_roles:
@@ -65,6 +74,8 @@ def actor_sound_selections(bundle_key, actor_row, routes, decoded_row):
         selections.append(selection)
     selections += [member_selection(bundle_key, actor_row, role, record) for role, route in routes.items() if isinstance(route, list)
                    for record in route if field_names_a_sound(decoded_row, record['fieldName'])]
+    selections += [caster_indexed_selection(bundle_key, actor_row, role, record) for role, records in binding.get('casterIndexedRoutes', {}).items()
+                   for record in records if field_names_a_sound(decoded_row, record['fieldName'])]
     return selections
 
 
@@ -81,7 +92,7 @@ def skill_sound_row_actor_row(row_ordinal, sound_row):
 
 def build_actor_sound_recipe(bundle_key, actor_rows, decoded_rows, routes_by_table, recipe_inputs):
     selections = [selection for actor_row, decoded_row in zip(actor_rows, decoded_rows, strict=True)
-                  for selection in actor_sound_selections(bundle_key, actor_row, routes_by_table[actor_row['table']]['routes'], decoded_row)]
+                  for selection in actor_sound_selections(bundle_key, actor_row, routes_by_table[actor_row['table']], decoded_row)]
     if not selections:
         return None
     tables = sorted({selection['table'] for selection in selections})
@@ -94,6 +105,13 @@ def build_actor_sound_recipe(bundle_key, actor_rows, decoded_rows, routes_by_tab
 def actor_sound_gap_row(bundle_key, reason, source_identity, evidence):
     return {'key': bundle_key, 'part': AUDIO_PART_NAME, 'step': ACTOR_SOUND_STEP, 'status': GAP_STATUS, 'reason': reason,
             'sourceIdentity': source_identity, 'evidence': evidence}
+
+
+def unrouted_field_gap_rows(bundle_key, actor_rows, decoded_rows, routes_by_table, table_identities, evidence):
+    return [actor_sound_gap_row(bundle_key, entry['reason'], dict(table_identities[actor_row['table']]), evidence)
+            for actor_row, decoded_row in zip(actor_rows, decoded_rows, strict=True)
+            for entry in routes_by_table[actor_row['table']].get('unroutedFields', [])
+            if any(field_names_a_sound(decoded_row, field['fieldName']) for field in entry['fields'])]
 
 
 def reference_source_identity(table_identity, reference):

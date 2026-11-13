@@ -15,7 +15,8 @@ from actors.actor_sound_batch import (CHARACTER_CENSUS_RELATIVE_PATH, actor_soun
                                       run_actor_sound_slice, skipped_character_bundles, write_bundle_catalog_records)
 from actors.actor_sound_bindings import (ACTOR_SOUND_BUNDLE_ID_PREFIX, NPC_NATIVE_NUMERIC_FIELDS, SKILL_SOUND_ROW_MATCH_AMBIGUOUS_REASON_PREFIX,
                                          SKILL_SOUND_ROW_NAMES_NO_SOUND_REASON, actor_sound_bundle_id, actor_sound_gap_row, actor_sound_gap_rows,
-                                         actor_sound_reference_counts, actor_sound_selections, build_actor_sound_recipe, skill_sound_row_actor_row)
+                                         actor_sound_reference_counts, actor_sound_selections, build_actor_sound_recipe, skill_sound_row_actor_row,
+                                         unrouted_field_gap_rows)
 from actors.actor_sound_conversion import BundleStoreState, bundle_store_state
 from native_assets import archive_bytes
 from native_assets_lib import combat_audio_bundle
@@ -203,7 +204,8 @@ class ActorSoundSourceRuleTests(unittest.TestCase):
 
 
 SKILL_SOUND_ROW = {'skill_id': 4, 'skill_level': 1, 'cast_first': 'SkillSound.dash_cast', 'cast_second': '', 'cast_third': 'SkillSound.dash_echo',
-                   'shot_first': 'SkillSound.dash_shot', 'shot_second': '', 'shot_third': ''}
+                   'shot_first': 'SkillSound.dash_shot', 'shot_second': '', 'shot_third': '', 'unread_third': 'SkillSound.dash_echo',
+                   'caster_first': 'chrsound.m_hfighter_white', 'caster_second': '', 'caster_reserved': ''}
 
 
 def skill_member_route(field_name, ordinal, member):
@@ -211,9 +213,20 @@ def skill_member_route(field_name, ordinal, member):
             'member': member}
 
 
+def caster_route(field_name, ordinal, mesh_type, mesh_class):
+    return {'table': 'skillsoundgrp', 'descriptorSha256': 'c' * 64, 'fieldOrdinal': ordinal, 'fieldName': field_name, 'routeProof': BOUND_PROOF,
+            'meshType': mesh_type, 'meshClass': mesh_class}
+
+
 SKILL_ROUTES = {'skillsoundgrp': {'table': 'skillsoundgrp', 'unresolved': {}, 'routes': {
     'cast': [skill_member_route('cast_first', 2, 0), skill_member_route('cast_second', 11, 1), skill_member_route('cast_third', 20, 2)],
     'shot': [skill_member_route('shot_first', 3, 0), skill_member_route('shot_second', 12, 1), skill_member_route('shot_third', 21, 2)]}}}
+CASTER_SKILL_ROUTES = {'skillsoundgrp': {**SKILL_ROUTES['skillsoundgrp'], 'casterIndexedRoutes': {
+    'cast': [caster_route('caster_first', 29, 0, 'LineageWarrior.MFighter'), caster_route('caster_second', 30, 1, 'LineageWarrior.FFighter')]},
+    'unroutedFields': [{'reason': 'skill-sound-caster-index-unresolved:cast',
+                        'fields': [{'fieldOrdinal': 29, 'fieldName': 'caster_first'}, {'fieldOrdinal': 43, 'fieldName': 'caster_reserved'}]},
+                       {'reason': 'skill-sound-member-unrouted:4', 'fields': [{'fieldOrdinal': 4, 'fieldName': 'unread_third'}]},
+                       {'reason': 'skill-sound-member-unrouted:13', 'fields': [{'fieldOrdinal': 13, 'fieldName': 'shot_second'}]}]}}
 
 
 class ActorSoundSkillAndCharacterTests(ActorSoundCorpusFixture):
@@ -224,7 +237,7 @@ class ActorSoundSkillAndCharacterTests(ActorSoundCorpusFixture):
 
     def test_a_skill_sound_row_yields_one_selection_per_member_that_names_a_sound(self):
         actor_row = skill_sound_row_actor_row(3, SKILL_SOUND_ROW)
-        selections = actor_sound_selections('skill-sound-row:3', actor_row, SKILL_ROUTES['skillsoundgrp']['routes'], SKILL_SOUND_ROW)
+        selections = actor_sound_selections('skill-sound-row:3', actor_row, SKILL_ROUTES['skillsoundgrp'], SKILL_SOUND_ROW)
         self.assertEqual([(selection['id'], selection['roles']) for selection in selections], [
             ('skill-sound-row-3-skillsoundgrp-cast-member-0', {'cast': 'cast_first'}),
             ('skill-sound-row-3-skillsoundgrp-cast-member-2', {'cast': 'cast_third'}),
@@ -232,8 +245,27 @@ class ActorSoundSkillAndCharacterTests(ActorSoundCorpusFixture):
         self.assertEqual({(selection['kind'], selection['skillId'], selection['level']) for selection in selections}, {('skill', 4, 1)})
         self.assertEqual(selections[1]['label'], 'skillsoundgrp row 3 (skill 4 level 1) cast member 2')
 
+    def test_a_caster_indexed_entry_that_names_a_sound_gets_a_selection_labelled_with_its_mesh_class(self):
+        actor_row = skill_sound_row_actor_row(3, SKILL_SOUND_ROW)
+        selections = actor_sound_selections('skill-sound-row:3', actor_row, CASTER_SKILL_ROUTES['skillsoundgrp'], SKILL_SOUND_ROW)
+        caster = [selection for selection in selections if 'caster' in selection['id']]
+        self.assertEqual([(selection['id'], selection['roles'], selection['sourceObject'], selection['label']) for selection in caster], [
+            ('skill-sound-row-3-skillsoundgrp-cast-caster-mesh-type-0', {'cast': 'caster_first'}, 'LineageWarrior.MFighter',
+             'skillsoundgrp row 3 (skill 4 level 1) cast caster mesh type 0 (LineageWarrior.MFighter)')])
+
+    def test_unrouted_fields_become_gap_rows_only_when_the_row_names_a_sound_there(self):
+        actor_row = skill_sound_row_actor_row(3, SKILL_SOUND_ROW)
+        rows = unrouted_field_gap_rows('skill-sound-row:3', [actor_row], [SKILL_SOUND_ROW], CASTER_SKILL_ROUTES, {'skillsoundgrp': NPCGRP_IDENTITY},
+                                       EVIDENCE)
+        self.assertEqual([row['reason'] for row in rows], ['skill-sound-caster-index-unresolved:cast', 'skill-sound-member-unrouted:4'])
+        reason_patterns = load_gap_reason_patterns()
+        for row in rows:
+            validate_gap_row(row, reason_patterns)
+        self.assertEqual(unrouted_field_gap_rows('npc:20001', [GREMLIN_ACTOR_ROW], [GREMLIN_ROW], BOUND_ROUTES, {'npcgrp': NPCGRP_IDENTITY},
+                                                 EVIDENCE), [])
+
     def test_an_npc_actor_row_keeps_one_selection_with_its_id_unchanged(self):
-        selections = actor_sound_selections('npc:20001', GREMLIN_ACTOR_ROW, BOUND_ROUTES['npcgrp']['routes'], GREMLIN_ROW)
+        selections = actor_sound_selections('npc:20001', GREMLIN_ACTOR_ROW, BOUND_ROUTES['npcgrp'], GREMLIN_ROW)
         self.assertEqual([(selection['id'], sorted(selection['roles'])) for selection in selections],
                          [('npc-20001-npcgrp', ['attackItem', 'damage', 'defense'])])
 

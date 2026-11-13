@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 10,
+  "listVersion": 11,
   "reasons": [
     "conversion-pending",
     "mesh-package-not-in-client:<package>",
@@ -22,6 +22,8 @@
     "mesh-texture-pairing-undecoded:<meshes>/<textures>",
     "npc-names-no-sound",
     "skill-sound-row-names-no-sound",
-    "skillsound-row-match-ambiguous:<count>"
+    "skillsound-row-match-ambiguous:<count>",
+    "skill-sound-caster-index-unresolved:<stage>",
+    "skill-sound-member-unrouted:<ordinal>"
   ]
 }

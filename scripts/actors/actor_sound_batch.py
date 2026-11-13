@@ -249,8 +249,14 @@ def summed_counts(counts):
     return total
 
 
+def caster_indexed_census_entries(binding):
+    return {role: [{key: record[key] for key in ('meshType', 'meshClass', 'fieldOrdinal', 'fieldName')} for record in records]
+            for role, records in binding['casterIndexedRoutes'].items()}
+
+
 def actor_sound_census(run, bundles):
-    routes = {table: route_census_entries(run.routes(table)) for table in ROUTE_CENSUS_TABLES}
+    bindings = {table: run.routes(table) for table in ROUTE_CENSUS_TABLES}
+    routes = {table: route_census_entries(binding) for table, binding in bindings.items()}
     routes['alaudio'] = route_census_entries(config_routes(run))
     per_table, sealed = {}, []
     for receipt in run.bundle_ledger.sealed_receipts():
@@ -264,6 +270,9 @@ def actor_sound_census(run, bundles):
                                                'sha256': run.route_proof['sha256'] if run.route_proof else None},
             'routeRecipe': {'path': run.route_recipe['path'], 'sha256': run.route_recipe['sha256']},
             'routes': routes,
+            'casterIndexedRoutes': {table: caster_indexed_census_entries(binding) for table, binding in bindings.items()
+                                    if 'casterIndexedRoutes' in binding},
+            'unroutedFields': {table: binding['unroutedFields'] for table, binding in bindings.items() if 'unroutedFields' in binding},
             'bundles': {'npc': len(bundles.npc_profiles), 'skillSoundRow': len(bundles.skill_sound_row_ordinals),
                         'character': bundles.skipped_characters},
             'references': summed_counts(count for counts in per_table.values() for count in counts),

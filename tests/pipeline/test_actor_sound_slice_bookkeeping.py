@@ -71,6 +71,7 @@ def expected_census():
                        'weapongrp': synthetic_table_routes, 'skillsoundgrp': synthetic_table_routes,
                        'alaudio': {role: unresolved_route_entry('alaudio', role, ALAUDIO_LOCK_REFUSAL) for role in ('critical', 'soulshot')}},
             'bundles': {'npc': 2, 'skillSoundRow': 0, 'character': {'count': 0, 'skippedReason': 'character-census-absent', 'skippedByReason': {}}},
+            'casterIndexedRoutes': {}, 'unroutedFields': {},
             'references': NO_REFERENCES, 'perTable': {'npcgrp': NO_REFERENCES}, 'sealedBundles': [GREMLIN_KEY, SILENT_KEY]}
 
 

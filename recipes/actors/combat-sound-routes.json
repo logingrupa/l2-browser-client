@@ -11,7 +11,10 @@
     "method": "Two independent lenses per route: capstone disassembly of the lock-equal Engine.dll and a full decode of every DAT row, by fresh-context agents that did not open the claims evidence.",
     "workflow": "wf_9c5d90a4-15c",
     "decisionRow": "P1147",
-    "verifiedFactsSha256": "005bb99792867cb6a9782c51c556af7fa92f13096cc1395eb78b95c84472fc45"
+    "verifiedFactsSha256": "005bb99792867cb6a9782c51c556af7fa92f13096cc1395eb78b95c84472fc45",
+    "meshTypeFactsSha256": "c64255952883708dd3c0bf46a172514e970df878a5087132cb7141b43b1d6453",
+    "meshTypeMethod": "Byte replay of the mesh type claims on the lock-equal Engine.dll and DAT rows: 127 of 127 instructions and 46 of 46 data rows, decision row P1153.",
+    "meshTypeWorkflow": "wf_1821e7d7-8fe"
   },
   "ordinalNotation": "Zero-based logical DAT field ordinals: a length-prefixed string is one field, a count is one field, and a counted list expands by its count. ordinalConstant is the ordinal with every count term at zero, and ordinalCountTerms is the number of counted lists the ordinal sums.",
   "routes": [
@@ -27,9 +30,27 @@
       "selector": "GetSkillSoundData 0x10478280 takes the row of the skill id and level, else the level 1 row of the skill id.",
       "trigger": "APawn::SkillEffectInit 0x104fa6ad calls APawn::PlaySkillSound 0x104ee5a0 stage 1 with a non-null effect actor; the sound plays on the effect actor.",
       "members": [
-        {"member": 0, "rowMember": "+0x08", "datFieldOrdinal": "2", "ordinalConstant": 2, "ordinalCountTerms": 0},
-        {"member": 1, "rowMember": "+0x0c", "datFieldOrdinal": "11", "ordinalConstant": 11, "ordinalCountTerms": 0},
-        {"member": 2, "rowMember": "+0x10", "datFieldOrdinal": "20", "ordinalConstant": 20, "ordinalCountTerms": 0}
+        {
+          "member": 0,
+          "rowMember": "+0x08",
+          "datFieldOrdinal": "2",
+          "ordinalConstant": 2,
+          "ordinalCountTerms": 0
+        },
+        {
+          "member": 1,
+          "rowMember": "+0x0c",
+          "datFieldOrdinal": "11",
+          "ordinalConstant": 11,
+          "ordinalCountTerms": 0
+        },
+        {
+          "member": 2,
+          "rowMember": "+0x10",
+          "datFieldOrdinal": "20",
+          "ordinalConstant": 20,
+          "ordinalCountTerms": 0
+        }
       ]
     },
     {
@@ -44,10 +65,513 @@
       "selector": "GetSkillSoundData 0x10478280 takes the row of the skill id and level, else the level 1 row of the skill id.",
       "trigger": "APawn::SkillEffectShot 0x1050ceb2 calls APawn::PlaySkillSound 0x104ee5a0 stage 2.",
       "members": [
-        {"member": 0, "rowMember": "+0x14", "datFieldOrdinal": "3", "ordinalConstant": 3, "ordinalCountTerms": 0},
-        {"member": 1, "rowMember": "+0x18", "datFieldOrdinal": "12", "ordinalConstant": 12, "ordinalCountTerms": 0},
-        {"member": 2, "rowMember": "+0x1c", "datFieldOrdinal": "21", "ordinalConstant": 21, "ordinalCountTerms": 0}
+        {
+          "member": 0,
+          "rowMember": "+0x14",
+          "datFieldOrdinal": "3",
+          "ordinalConstant": 3,
+          "ordinalCountTerms": 0
+        },
+        {
+          "member": 1,
+          "rowMember": "+0x18",
+          "datFieldOrdinal": "12",
+          "ordinalConstant": 12,
+          "ordinalCountTerms": 0
+        },
+        {
+          "member": 2,
+          "rowMember": "+0x1c",
+          "datFieldOrdinal": "21",
+          "ordinalConstant": 21,
+          "ordinalCountTerms": 0
+        }
       ]
+    },
+    {
+      "table": "chargrp",
+      "role": "attackItem",
+      "anchors": [
+        "FL2CharData::Serialize 0x1044c2c0",
+        "APawn::GetAttackItemSound 0x1061ec50",
+        "UAnimNotify_AttackItem::Notify 0x106bce40"
+      ],
+      "selector": "APawn::GetAttackItemSound 0x1061ec50 reads pawn+0x6a0 and the item with item+4 == 0 and picks appRand() % count; the chargrp list is the fallback for pawns without pawn+0x694 bit 0x04.",
+      "trigger": "UAnimNotify_AttackItem::Notify 0x106bce40 through vtable +0x1fc.",
+      "members": [
+        {
+          "member": 0,
+          "rowMember": "+0x1a8, count +0x17c",
+          "datFieldOrdinal": "18 + S + j",
+          "ordinalConstant": 18,
+          "ordinalCountTerms": 4
+        }
+      ]
+    },
+    {
+      "table": "chargrp",
+      "role": "defense",
+      "anchors": [
+        "FL2CharData::Serialize 0x1044c2c0",
+        "APawn::GetDefenseItemSound 0x1061f0a0",
+        "Action_Attack 0x10626bb0"
+      ],
+      "selector": "APawn::GetDefenseItemSound 0x1061f0a0 reads pawn+0x6a4 and the item with item+4 == 1 and picks appRand() % count; the chargrp list is its fallback.",
+      "trigger": "The eight-argument Action_Attack overload 0x10626bb0, defense branch through target vtable +0x200 (one of three branches: +0x204 or an ini default on the others), from the AttackShot notify.",
+      "members": [
+        {
+          "member": 0,
+          "rowMember": "+0x1b4, count +0x180",
+          "datFieldOrdinal": "18 + S + A + j",
+          "ordinalConstant": 18,
+          "ordinalCountTerms": 5
+        }
+      ]
+    },
+    {
+      "table": "chargrp",
+      "role": "damage",
+      "anchors": [
+        "FL2CharData::Serialize 0x1044c2c0",
+        "damage sound 0x1061f9a0",
+        "Action_Attack 0x10626bb0"
+      ],
+      "selector": "0x1061f9a0 picks the damage sound after the first impact sound, gated by the CharSound Random ini threshold.",
+      "trigger": "Action_Attack through target vtable +0x208.",
+      "members": [
+        {
+          "member": 0,
+          "rowMember": "+0x1c8, count +0x184",
+          "datFieldOrdinal": "18 + S + A + D + j",
+          "ordinalConstant": 18,
+          "ordinalCountTerms": 6
+        }
+      ]
+    },
+    {
+      "table": "chargrp",
+      "role": "attackVoice",
+      "anchors": [
+        "FL2CharData::Serialize 0x1044c2c0",
+        "APawn::GetAttackVoiceSound 0x10615810",
+        "UAnimNotify_AttackVoice::Notify 0x106bd860"
+      ],
+      "selector": "APawn::GetAttackVoiceSound 0x10615810 rolls appRand() % 100 against the threshold inside the getter.",
+      "trigger": "UAnimNotify_AttackVoice::Notify 0x106bd860 through vtable +0x20c, with notify member +0x40 as the threshold; it skips pawns with pawn+0x694 bit 0x04.",
+      "memberCountDerivation": "The eight groups are derived from the member offsets, not a verified fact: the group counts at +0x188 + 4g end where the attackItem list member +0x1a8 begins. The client-gated re-derivation test checks the eight groups against the real rows.",
+      "members": [
+        {
+          "member": 0,
+          "rowMember": "+0x1d4 + 4j, count +0x188",
+          "datFieldOrdinal": "19 + S + A + D + H + sum(k<g, 1+V[k]) + j with g = 0",
+          "ordinalConstant": 19,
+          "ordinalCountTerms": 7
+        },
+        {
+          "member": 1,
+          "rowMember": "+0x1e8 + 4j, count +0x18c",
+          "datFieldOrdinal": "19 + S + A + D + H + sum(k<g, 1+V[k]) + j with g = 1",
+          "ordinalConstant": 20,
+          "ordinalCountTerms": 8
+        },
+        {
+          "member": 2,
+          "rowMember": "+0x1fc + 4j, count +0x190",
+          "datFieldOrdinal": "19 + S + A + D + H + sum(k<g, 1+V[k]) + j with g = 2",
+          "ordinalConstant": 21,
+          "ordinalCountTerms": 9
+        },
+        {
+          "member": 3,
+          "rowMember": "+0x210 + 4j, count +0x194",
+          "datFieldOrdinal": "19 + S + A + D + H + sum(k<g, 1+V[k]) + j with g = 3",
+          "ordinalConstant": 22,
+          "ordinalCountTerms": 10
+        },
+        {
+          "member": 4,
+          "rowMember": "+0x224 + 4j, count +0x198",
+          "datFieldOrdinal": "19 + S + A + D + H + sum(k<g, 1+V[k]) + j with g = 4",
+          "ordinalConstant": 23,
+          "ordinalCountTerms": 11
+        },
+        {
+          "member": 5,
+          "rowMember": "+0x238 + 4j, count +0x19c",
+          "datFieldOrdinal": "19 + S + A + D + H + sum(k<g, 1+V[k]) + j with g = 5",
+          "ordinalConstant": 24,
+          "ordinalCountTerms": 12
+        },
+        {
+          "member": 6,
+          "rowMember": "+0x24c + 4j, count +0x1a0",
+          "datFieldOrdinal": "19 + S + A + D + H + sum(k<g, 1+V[k]) + j with g = 6",
+          "ordinalConstant": 25,
+          "ordinalCountTerms": 13
+        },
+        {
+          "member": 7,
+          "rowMember": "+0x260 + 4j, count +0x1a4",
+          "datFieldOrdinal": "19 + S + A + D + H + sum(k<g, 1+V[k]) + j with g = 7",
+          "ordinalConstant": 26,
+          "ordinalCountTerms": 14
+        }
+      ]
+    },
+    {
+      "table": "armorgrp",
+      "role": "defense",
+      "anchors": [
+        "FL2ArmorItemData::Serialize 0x1044d1b0",
+        "item base serialize 0x1044c5f0",
+        "APawn::GetDefenseItemSound 0x1061f0a0",
+        "Action_Attack 0x10626bb0"
+      ],
+      "selector": "APawn::GetDefenseItemSound 0x1061f0a0 reads pawn+0x6a4 and the item with item+4 == 1 and picks appRand() % count.",
+      "trigger": "The eight-argument Action_Attack overload 0x10626bb0, defense branch through target vtable +0x200, from the AttackShot notify.",
+      "members": [
+        {
+          "member": 0,
+          "rowMember": "list +0x5b8, count +0x5b4",
+          "datFieldOrdinal": "88 + M + u32(+0x588) + u32(+0x59c) + j",
+          "ordinalConstant": 88,
+          "ordinalCountTerms": 62
+        }
+      ]
+    },
+    {
+      "table": "weapongrp",
+      "role": "attackItem",
+      "anchors": [
+        "weapon serialize 0x1044dc60",
+        "item base serialize 0x1044c5f0",
+        "APawn::GetAttackItemSound 0x1061ec50",
+        "UAnimNotify_AttackItem::Notify 0x106bce40"
+      ],
+      "selector": "APawn::GetAttackItemSound 0x1061ec50 reads pawn+0x6a0 and the item with item+4 == 0 and picks appRand() % count.",
+      "trigger": "UAnimNotify_AttackItem::Notify 0x106bce40 through vtable +0x1fc.",
+      "members": [
+        {
+          "member": 0,
+          "rowMember": "list +0x108, count +0x104",
+          "datFieldOrdinal": "28 + u32(+0xdc) + u32(+0xf0) + j",
+          "ordinalConstant": 28,
+          "ordinalCountTerms": 2
+        }
+      ]
+    }
+  ],
+  "ordinalTermDefinitions": {
+    "S": "u32(+0x04) + u32(+0x08) + u32(+0x0c) + u32(+0x10)",
+    "A": "u32(+0x17c)",
+    "D": "u32(+0x180)",
+    "H": "u32(+0x184)",
+    "V[k]": "u32(+0x188 + 4k)",
+    "M": "sum k=0..14 of u32(+0xd8 + 4k) + u32(+0x204 + 4k) + u32(+0x330 + 4k) + u32(+0x45c + 4k)",
+    "j": "element index"
+  },
+  "configRoutes": [
+    {
+      "table": "alaudio",
+      "role": "soulshot",
+      "file": "system/ALAudio.int",
+      "sha256": "25f4e583409d798cd10cdca79eb8620395ca383a50cdecedd2ab3d501eba803c",
+      "section": "EtcSound",
+      "key": "SoulShotSound",
+      "values": {
+        "SoulShotSound": "SkillSound.Soul_Shot_Shot",
+        "SoulShotSound_Vol": 250.0,
+        "SoulShotSound_Radius": 50.0,
+        "nativeDefaultVolume": 255.0
+      },
+      "anchors": [
+        "Action_Attack 0x10626bb0",
+        "Action_Attack 0x10626210"
+      ],
+      "selector": "The section, key and file name are literal pushed arguments of the GConfig GetString and GetFloat calls; the native default volume is 255.0.",
+      "trigger": "Both Action_Attack overloads read the sound, 0x10626bb0 (eight arguments) and 0x10626210 (one argument); the branch tests pawn+0x1820 mask 0x04 at all three sites, and the AttackShot notify unpacks pawn+0x634 bits 0, 2, 1 and 3 into arguments 3 to 6."
+    }
+  ],
+  "confirmedUnresolved": [
+    {
+      "table": "npcgrp",
+      "role": "attackVoice",
+      "detail": "No FL2NpcData::Serialize 0x104654f0 member reaches an attack-voice consumer; the only attack-voice path reads chargrp and skips actors with pawn+0x694 bit 0x04. The negative rests on a vtable-slot sweep inside Engine.dll only."
+    }
+  ],
+  "casterIndexedRoutes": [
+    {
+      "table": "skillsoundgrp",
+      "role": "cast",
+      "tableMember": "+0x74 + 4 * meshType",
+      "address": "[row + (stage*15 + meshType)*4 + 0x38] with stage 1, floats +0xec and +0xf0",
+      "anchors": [
+        "APawn::PlaySkillSound 0x104ee5a0",
+        "User::GetMeshType 0x10480bb0",
+        "APawn::SkillEffectInit 0x104fa6ad"
+      ],
+      "selector": "pawn+0x698 holds User::GetMeshType 0x10480bb0, written when pawn+0x694 bit 0x04 is clear; when +0x718 is non-null the mesh type of that other pawn is used.",
+      "trigger": "APawn::PlaySkillSound 0x104ee5a0 stage 1 plays the entry of the caster mesh type on the pawn.",
+      "meshTypes": [
+        {
+          "meshType": 0,
+          "meshClass": "LineageWarrior.MFighter",
+          "ordinalConstant": 29,
+          "ordinalCountTerms": 0
+        },
+        {
+          "meshType": 1,
+          "meshClass": "LineageWarrior.FFighter",
+          "ordinalConstant": 30,
+          "ordinalCountTerms": 0
+        },
+        {
+          "meshType": 2,
+          "meshClass": "LineageWarrior.MDarkElf",
+          "ordinalConstant": 31,
+          "ordinalCountTerms": 0
+        },
+        {
+          "meshType": 3,
+          "meshClass": "LineageWarrior.FDarkElf",
+          "ordinalConstant": 32,
+          "ordinalCountTerms": 0
+        },
+        {
+          "meshType": 4,
+          "meshClass": "LineageWarrior.MDwarf",
+          "ordinalConstant": 33,
+          "ordinalCountTerms": 0
+        },
+        {
+          "meshType": 5,
+          "meshClass": "LineageWarrior.FDwarf",
+          "ordinalConstant": 34,
+          "ordinalCountTerms": 0
+        },
+        {
+          "meshType": 6,
+          "meshClass": "LineageWarrior.MElf",
+          "ordinalConstant": 35,
+          "ordinalCountTerms": 0
+        },
+        {
+          "meshType": 7,
+          "meshClass": "LineageWarrior.FElf",
+          "ordinalConstant": 36,
+          "ordinalCountTerms": 0
+        },
+        {
+          "meshType": 8,
+          "meshClass": "LineageWarrior.MMagic",
+          "ordinalConstant": 37,
+          "ordinalCountTerms": 0
+        },
+        {
+          "meshType": 9,
+          "meshClass": "LineageWarrior.FMagic",
+          "ordinalConstant": 38,
+          "ordinalCountTerms": 0
+        },
+        {
+          "meshType": 10,
+          "meshClass": "LineageWarrior.MOrc",
+          "ordinalConstant": 39,
+          "ordinalCountTerms": 0
+        },
+        {
+          "meshType": 11,
+          "meshClass": "LineageWarrior.FOrc",
+          "ordinalConstant": 40,
+          "ordinalCountTerms": 0
+        },
+        {
+          "meshType": 12,
+          "meshClass": "LineageWarrior.MShaman",
+          "ordinalConstant": 41,
+          "ordinalCountTerms": 0
+        },
+        {
+          "meshType": 13,
+          "meshClass": "LineageWarrior.FShaman",
+          "ordinalConstant": 42,
+          "ordinalCountTerms": 0
+        }
+      ]
+    },
+    {
+      "table": "skillsoundgrp",
+      "role": "shot",
+      "tableMember": "+0xb0 + 4 * meshType",
+      "address": "[row + (stage*15 + meshType)*4 + 0x38] with stage 2, floats +0xec and +0xf0",
+      "anchors": [
+        "APawn::PlaySkillSound 0x104ee5a0",
+        "User::GetMeshType 0x10480bb0",
+        "APawn::SkillEffectShot 0x1050ceb2"
+      ],
+      "selector": "pawn+0x698 holds User::GetMeshType 0x10480bb0, written when pawn+0x694 bit 0x04 is clear; when +0x718 is non-null the mesh type of that other pawn is used.",
+      "trigger": "APawn::PlaySkillSound 0x104ee5a0 stage 2 plays the entry of the caster mesh type on the pawn.",
+      "meshTypes": [
+        {
+          "meshType": 0,
+          "meshClass": "LineageWarrior.MFighter",
+          "ordinalConstant": 44,
+          "ordinalCountTerms": 0
+        },
+        {
+          "meshType": 1,
+          "meshClass": "LineageWarrior.FFighter",
+          "ordinalConstant": 45,
+          "ordinalCountTerms": 0
+        },
+        {
+          "meshType": 2,
+          "meshClass": "LineageWarrior.MDarkElf",
+          "ordinalConstant": 46,
+          "ordinalCountTerms": 0
+        },
+        {
+          "meshType": 3,
+          "meshClass": "LineageWarrior.FDarkElf",
+          "ordinalConstant": 47,
+          "ordinalCountTerms": 0
+        },
+        {
+          "meshType": 4,
+          "meshClass": "LineageWarrior.MDwarf",
+          "ordinalConstant": 48,
+          "ordinalCountTerms": 0
+        },
+        {
+          "meshType": 5,
+          "meshClass": "LineageWarrior.FDwarf",
+          "ordinalConstant": 49,
+          "ordinalCountTerms": 0
+        },
+        {
+          "meshType": 6,
+          "meshClass": "LineageWarrior.MElf",
+          "ordinalConstant": 50,
+          "ordinalCountTerms": 0
+        },
+        {
+          "meshType": 7,
+          "meshClass": "LineageWarrior.FElf",
+          "ordinalConstant": 51,
+          "ordinalCountTerms": 0
+        },
+        {
+          "meshType": 8,
+          "meshClass": "LineageWarrior.MMagic",
+          "ordinalConstant": 52,
+          "ordinalCountTerms": 0
+        },
+        {
+          "meshType": 9,
+          "meshClass": "LineageWarrior.FMagic",
+          "ordinalConstant": 53,
+          "ordinalCountTerms": 0
+        },
+        {
+          "meshType": 10,
+          "meshClass": "LineageWarrior.MOrc",
+          "ordinalConstant": 54,
+          "ordinalCountTerms": 0
+        },
+        {
+          "meshType": 11,
+          "meshClass": "LineageWarrior.FOrc",
+          "ordinalConstant": 55,
+          "ordinalCountTerms": 0
+        },
+        {
+          "meshType": 12,
+          "meshClass": "LineageWarrior.MShaman",
+          "ordinalConstant": 56,
+          "ordinalCountTerms": 0
+        },
+        {
+          "meshType": 13,
+          "meshClass": "LineageWarrior.FShaman",
+          "ordinalConstant": 57,
+          "ordinalCountTerms": 0
+        }
+      ]
+    }
+  ],
+  "unroutedFields": [
+    {
+      "table": "skillsoundgrp",
+      "reason": "skill-sound-caster-index-unresolved:cast",
+      "ordinalConstants": [
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43
+      ],
+      "ordinalCountTerms": 0,
+      "detail": "Casters without a known mesh type, such as NPCs, have no index: with pawn+0x694 bit 0x04 set, User::GetMeshType is not written to pawn+0x698, and GetMeshType returns no slot 14."
+    },
+    {
+      "table": "skillsoundgrp",
+      "reason": "skill-sound-caster-index-unresolved:shot",
+      "ordinalConstants": [
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58
+      ],
+      "ordinalCountTerms": 0,
+      "detail": "Casters without a known mesh type, such as NPCs, have no index: with pawn+0x694 bit 0x04 set, User::GetMeshType is not written to pawn+0x698, and GetMeshType returns no slot 14."
+    },
+    {
+      "table": "skillsoundgrp",
+      "reason": "skill-sound-member-unrouted:4",
+      "ordinalConstants": [
+        4
+      ],
+      "ordinalCountTerms": 0,
+      "detail": "No verified consumer reads this third string member of the stage."
+    },
+    {
+      "table": "skillsoundgrp",
+      "reason": "skill-sound-member-unrouted:13",
+      "ordinalConstants": [
+        13
+      ],
+      "ordinalCountTerms": 0,
+      "detail": "No verified consumer reads this third string member of the stage."
+    },
+    {
+      "table": "skillsoundgrp",
+      "reason": "skill-sound-member-unrouted:22",
+      "ordinalConstants": [
+        22
+      ],
+      "ordinalCountTerms": 0,
+      "detail": "No verified consumer reads this third string member of the stage."
     }
   ]
 }

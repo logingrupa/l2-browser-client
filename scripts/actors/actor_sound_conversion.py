@@ -7,7 +7,7 @@ from pathlib import Path, PurePosixPath
 from actors.actor_census import SOUND_PACKAGE_SUFFIXES, ActorPackageCensus, package_name_of
 from actors.actor_sound_bindings import (ACTOR_SOUND_STEP, actor_sound_bundle_id, actor_sound_gap_row,
                                          actor_sound_gap_rows, actor_sound_reference_counts, build_actor_sound_recipe,
-                                         unresolved_reference_entries)
+                                         unresolved_reference_entries, unrouted_field_gap_rows)
 from actors.actor_unit_inventory import decoded_string_values
 from actors.combat_role_routes import (bind_combat_role_routes, bound_route_records, combat_route_table_manifest,
                                        read_combat_role_route_proof)
@@ -311,6 +311,8 @@ class ActorSoundConversionRun:
         manifest, outputs, refusal = self.built_bundle(bundle_key, actor_rows, work.routes_by_table, work.inventory, work.coverage_rows, step_directory)
         identities = {table: self.table(table)['identity'] for table in work.tables}
         gap_rows = actor_sound_gap_rows(bundle_key, actor_rows, work.routes_by_table, manifest, identities, evidence, work.converter_reasons)
+        gap_rows += unrouted_field_gap_rows(bundle_key, actor_rows, [self.actor_table_row(actor_row) for actor_row in actor_rows],
+                                            work.routes_by_table, identities, evidence)
         if refusal is not None:
             gap_rows.append(actor_sound_gap_row(bundle_key, refusal, dict(identities[work.tables[0]]), evidence))
         (step_directory / 'unresolved-references.json').write_bytes(canonical_json_bytes(unresolved_reference_entries(manifest, work.converter_reasons)))

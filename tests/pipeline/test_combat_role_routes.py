@@ -37,6 +37,7 @@ SYNTHETIC_NATIVE = {
     'Action_Attack 0x6': 'a3 miss -> return. a5 crit -> [EtcSound] CriticalSound/_Vol (0x7). a6 ss or attacker flag -> SoulShotSound (0x8). else defense',
     'char loader': '15 records, Serialize into this+0x10 in DAT order',
 }
+ALAUDIO_SHA256 = '25f4e583409d798cd10cdca79eb8620395ca383a50cdecedd2ab3d501eba803c'
 NO_RECIPE_ROUTES = {'path': 'recipes/actors/combat-sound-routes.json', 'sha256': 'e' * 64, 'document': {'routes': []}}
 SKILL_SOUND_READERS = ['UINT', 'UINT'] + (['UNICODE'] * 3 + ['FLOAT'] * 6) * 3 + ['UNICODE'] * 30 + ['FLOAT', 'FLOAT']
 SKILL_SOUND_LAYOUT = ET.fromstring(
@@ -84,6 +85,84 @@ def skill_sound_manifest():
 
 def committed_recipe():
     return read_combat_sound_route_recipe(ROOT)
+
+
+def scalar_nodes(names, reader='UINT'):
+    return ''.join(f'<node name="{name}" reader="{reader}"/>' for name in names)
+
+
+def counted_list(name):
+    return f'<for name="{name}" size="#{name}"><node name="{name}_entry" reader="UNICODE"/></for>'
+
+
+def wrapper(name, size):
+    return f'<wrapper name="{name}">{scalar_nodes([f"{name}_{index}" for index in range(size)], "UNICODE")}</wrapper>'
+
+
+def layout_with_collection(collection, body):
+    return ET.fromstring(f'<file pattern="Interlude"><node name="data" reader="UINT"/><for name="{collection}" size="#data" hidden="false">{body}'
+                         '</for></file>')
+
+
+CHARACTER_LISTS = ['hair_a', 'hair_b', 'face_a', 'face_b']
+CHARACTER_SOUND_LISTS = ['strike', 'guard', 'hurt']
+CHARACTER_VOICE_LISTS = [f'voice_{group}' for group in range(8)]
+CHARACTER_LAYOUT = layout_with_collection('Char', scalar_nodes(['portrait'], 'UNICODE') + scalar_nodes(CHARACTER_LISTS)
+                                          + ''.join(counted_list(name) for name in CHARACTER_LISTS) + wrapper('body', 4) + wrapper('skin', 4)
+                                          + scalar_nodes(['trail'], 'UNICODE') + scalar_nodes(['frames']) + scalar_nodes(CHARACTER_SOUND_LISTS)
+                                          + ''.join(counted_list(name) for name in CHARACTER_SOUND_LISTS)
+                                          + ''.join(scalar_nodes([name]) + counted_list(name) for name in CHARACTER_VOICE_LISTS))
+MESH_BLOCKS = [f'mesh_block_{index}' for index in range(31)]
+ARMOR_LAYOUT = layout_with_collection('item', scalar_nodes([f'head_{index}' for index in range(7)]) + wrapper('drop_a', 3) + wrapper('drop_b', 3)
+                                      + wrapper('icons', 5) + scalar_nodes([f'middle_{index}' for index in range(6)])
+                                      + ''.join(f'<node name="{name}" reader="MTX"/>' for name in MESH_BLOCKS) + scalar_nodes(['trail'], 'UNICODE')
+                                      + scalar_nodes(['clank']) + counted_list('clank') + scalar_nodes(['fall', 'wear'], 'UNICODE'))
+WEAPON_LAYOUT = layout_with_collection('item', scalar_nodes([f'head_{index}' for index in range(7)]) + wrapper('drop_a', 3) + wrapper('drop_b', 3)
+                                       + wrapper('icons', 5) + scalar_nodes([f'middle_{index}' for index in range(7)])
+                                       + '<wrapper name="blade"><node name="blade" reader="UINT"/><for name="blade_meshes" size="#blade">'
+                                         '<node name="blade_mesh" reader="UNICODE"/></for></wrapper>'
+                                       + scalar_nodes(['tint']) + counted_list('tint') + scalar_nodes(['swing']) + counted_list('swing')
+                                       + scalar_nodes(['fall'], 'UNICODE')
+                                       + '<if name="dual" param="#blade" val="2"><node name="second_trail" reader="UNICODE"/></if>'
+                                       + scalar_nodes(['range'], 'UNICODE'))
+
+
+def listed(name, count):
+    return [{f'{name}_entry': f'Pkg.{name}_{index}'} for index in range(count)]
+
+
+def character_row(counts):
+    row = {'portrait': 'Pkg.portrait', 'trail': 'Pkg.trail', 'frames': 1, 'body': {f'body_{index}': 'Pkg.body' for index in range(4)},
+           'skin': {f'skin_{index}': 'Pkg.skin' for index in range(4)}, '_counts': {}}
+    for name, count in zip(CHARACTER_LISTS + CHARACTER_SOUND_LISTS + CHARACTER_VOICE_LISTS, counts, strict=True):
+        row[name], row['_counts'][name] = listed(name, count), count
+    return row
+
+
+def mesh_block(meshes, textures):
+    return {'var_0_': {'mtx_size_1_': meshes, 'for_mtx_size_1_': [{'mtx_mesh_': 'Pkg.mesh'}] * meshes,
+                       'mtx_size_2_': textures, 'for_mtx_size_2_': [{'mtx_text_': 'Pkg.texture'}] * textures}}
+
+
+def item_head():
+    return {**{f'head_{index}': 0 for index in range(7)}, 'drop_a': {f'drop_a_{index}': '' for index in range(3)},
+            'drop_b': {f'drop_b_{index}': '' for index in range(3)}, 'icons': {f'icons_{index}': '' for index in range(5)}}
+
+
+def armor_row(mesh_counts, clank_count):
+    return {**item_head(), **{f'middle_{index}': 0 for index in range(6)}, 'trail': '', 'fall': '', 'wear': '', 'clank': listed('clank', clank_count),
+            '_counts': {'clank': clank_count}, **{name: mesh_block(*counts) for name, counts in zip(MESH_BLOCKS, mesh_counts, strict=True)}}
+
+
+def weapon_row(blades, tints, swings):
+    row = {**item_head(), **{f'middle_{index}': 0 for index in range(7)}, 'fall': '', 'range': '',
+           'blade': {'blade': blades, 'blade_meshes': [{'blade_mesh': 'Pkg.blade'}] * blades}, 'tint': listed('tint', tints),
+           'swing': listed('swing', swings), '_counts': {'tint': tints, 'swing': swings}}
+    return {**row, 'second_trail': 'Pkg.trail'} if blades == 2 else row
+
+
+def shaped_manifest(table, layout, rows):
+    return combat_route_table_manifest(table, DESCRIPTOR_SHA256, layout, rows, is_synthetic_sound_reference)
 
 
 class DescriptorFieldOrderTests(unittest.TestCase):
@@ -183,7 +262,6 @@ class RecipeRouteBindingTests(unittest.TestCase):
             'proofPath': 'recipes/actors/combat-sound-routes.json', 'proofSha256': recipe['sha256'],
             'anchors': ['FL2SkillSoundData::Serialize 0x1044ec30', 'GetSkillSoundData 0x10478280', 'APawn::PlaySkillSound 0x104ee5a0',
                         'APawn::SkillEffectInit 0x104fa6ad']})
-        self.assertEqual(len(bound_route_records(result)), 6)
 
     def test_a_member_that_matches_zero_or_two_fields_stays_unresolved_with_the_match_count(self):
         recipe = copy.deepcopy(committed_recipe())
@@ -193,9 +271,67 @@ class RecipeRouteBindingTests(unittest.TestCase):
         self.assertEqual(result['unresolved']['cast'], {'reason': 'combat-role-route-unresolved:skillsoundgrp/cast',
                                                         'detail': 'recipe member 1 at DAT field 11 matches 0 decoded skillsoundgrp fields'})
         manifest = skill_sound_manifest()
-        manifest['fields'][4]['ordinalTerms'] = dict(manifest['fields'][3]['ordinalTerms'])
+        manifest['fields'][5]['ordinalTerms'] = dict(manifest['fields'][3]['ordinalTerms'])
         doubled = bind_combat_role_routes(manifest, None, committed_recipe())
         self.assertEqual(doubled['unresolved']['shot']['detail'], 'recipe member 0 at DAT field 3 matches 2 decoded skillsoundgrp fields')
+
+    def test_the_chargrp_terms_bind_attack_defense_damage_and_eight_voice_groups_in_group_order(self):
+        rows = [character_row([1, 1, 1, 3, 3, 5, 3, 5, 5, 5, 5, 5, 1, 0, 5]), character_row([2, 1, 3, 1, 2, 4, 2, 4, 4, 4, 4, 4, 1, 1, 4])]
+        result = bind_combat_role_routes(shaped_manifest('chargrp', CHARACTER_LAYOUT, rows), None, committed_recipe())
+        self.assertEqual(result['unresolved'], {})
+        self.assertEqual({role: result['routes'][role]['fieldName'] for role in ('attackItem', 'defense', 'damage')},
+                         {'attackItem': 'strike', 'defense': 'guard', 'damage': 'hurt'})
+        self.assertEqual([(record['member'], record['fieldName']) for record in result['routes']['attackVoice']],
+                         list(enumerate(CHARACTER_VOICE_LISTS)))
+
+    def test_the_armorgrp_and_weapongrp_terms_bind_one_list_each_past_mesh_blocks_and_wrapped_counts(self):
+        armor_rows = [armor_row([(1, 1)] * 31, 4), armor_row([(index % 3, 1) for index in range(31)], 1)]
+        armor = bind_combat_role_routes(shaped_manifest('armorgrp', ARMOR_LAYOUT, armor_rows), None, committed_recipe())
+        self.assertEqual((armor['routes']['defense']['fieldName'], armor['unresolved']), ('clank', {}))
+        weapon_rows = [weapon_row(1, 1, 4), weapon_row(2, 3, 1)]
+        weapon = bind_combat_role_routes(shaped_manifest('weapongrp', WEAPON_LAYOUT, weapon_rows), None, committed_recipe())
+        self.assertEqual((weapon['routes']['attackItem']['fieldName'], weapon['unresolved']), ('swing', {}))
+
+    def test_the_retired_proof_branches_no_longer_bind_chargrp_weapongrp_or_soulshot(self):
+        rows = [character_row([1] * 15)]
+        chargrp = bind_combat_role_routes(shaped_manifest('chargrp', CHARACTER_LAYOUT, rows), synthetic_proof(), NO_RECIPE_ROUTES)
+        self.assertEqual(chargrp['unresolved']['attackItem']['detail'], 'route proof names no serialization anchor for chargrp')
+        config = combat_route_config_manifest('f' * 64, ['EtcSound.CriticalSound', 'EtcSound.SoulShotSound'])
+        self.assertEqual(bind_combat_role_routes(config, synthetic_proof(), NO_RECIPE_ROUTES)['unresolved']['soulshot']['detail'],
+                         'Action_Attack 0x6 holds 0 branches for role soulshot')
+
+    def test_soulshot_binds_only_to_the_single_decoded_key_of_the_pinned_alaudio_config(self):
+        keys = ['EtcSound.CriticalSound', 'EtcSound.SoulShotSound', 'EtcSound.SoulShotSound_Vol']
+        recipe = committed_recipe()
+        pinned = bind_combat_role_routes(combat_route_config_manifest(ALAUDIO_SHA256, keys), synthetic_proof(), recipe)
+        self.assertEqual((pinned['routes']['soulshot']['fieldName'], pinned['routes']['soulshot']['routeProof']['proofSha256']),
+                         ('EtcSound.SoulShotSound', recipe['sha256']))
+        self.assertEqual(pinned['routes']['critical']['routeProof']['proofSha256'], COMBAT_ROLE_ROUTE_PROOF['sha256'])
+        other = bind_combat_role_routes(combat_route_config_manifest('f' * 64, keys), synthetic_proof(), recipe)
+        self.assertEqual(other['unresolved']['soulshot'], {'reason': 'combat-role-route-unresolved:alaudio/soulshot',
+                                                           'detail': f'decoded system/ALAudio.int SHA-256 {"f" * 64} differs from the recipe pin'})
+        missing = bind_combat_role_routes(combat_route_config_manifest(ALAUDIO_SHA256, keys[:1]), synthetic_proof(), recipe)
+        self.assertEqual(missing['unresolved']['soulshot']['detail'], 'decoded system/ALAudio.int config holds 0 EtcSound.SoulShotSound keys')
+
+    def test_a_confirmed_unresolved_role_never_binds_even_when_the_proof_would_bind_it(self):
+        native = {**SYNTHETIC_NATIVE, 'GetAttackVoiceSound 0x4': 'NPC voice +0x20/+0x24'}
+        self.assertEqual(bind_combat_role_routes(synthetic_manifest(), synthetic_proof(native), NO_RECIPE_ROUTES)['routes']['attackVoice']['fieldName'],
+                         'first_field')
+        result = bind_combat_role_routes(synthetic_manifest(), synthetic_proof(native), committed_recipe())
+        self.assertNotIn('attackVoice', result['routes'])
+        self.assertTrue(result['unresolved']['attackVoice']['detail'].startswith('No FL2NpcData::Serialize 0x104654f0 member'))
+
+    def test_the_skillsoundgrp_binding_carries_the_caster_indexed_routes_and_the_unrouted_fields(self):
+        result = bind_combat_role_routes(skill_sound_manifest(), None, committed_recipe())
+        for role, base in (('cast', 29), ('shot', 44)):
+            with self.subTest(role):
+                records = result['casterIndexedRoutes'][role]
+                self.assertEqual([(record['meshType'], record['fieldOrdinal']) for record in records], [(index, base + index) for index in range(14)])
+                self.assertEqual((records[0]['meshClass'], records[13]['meshClass']), ('LineageWarrior.MFighter', 'LineageWarrior.FShaman'))
+        self.assertEqual([(entry['reason'], [field['fieldOrdinal'] for field in entry['fields']]) for entry in result['unroutedFields']],
+                         [('skill-sound-caster-index-unresolved:cast', list(range(29, 44))), ('skill-sound-caster-index-unresolved:shot', list(range(44, 59))),
+                          ('skill-sound-member-unrouted:4', [4]), ('skill-sound-member-unrouted:13', [13]), ('skill-sound-member-unrouted:22', [22])])
+        self.assertEqual(len(bound_route_records(result)), 6 + 28)
 
     def test_a_table_role_claimed_by_both_the_recipe_and_the_proof_is_refused(self):
         recipe = copy.deepcopy(committed_recipe())
@@ -206,9 +342,9 @@ class RecipeRouteBindingTests(unittest.TestCase):
 
 HAND_RECIPE_COMPARISON = {
     'npcgrp': {'attackItem': 'agree', 'attackVoice': 'not-bound', 'defense': 'agree', 'damage': 'agree'},
-    'alaudio': {'critical': 'agree', 'soulshot': 'not-bound'},
-    'chargrp': {'attackItem': 'not-bound', 'attackVoice': 'not-bound', 'defense': 'not-bound', 'damage': 'not-bound'},
-    'armorgrp': {'defense': 'not-bound'}, 'weapongrp': {'attackItem': 'not-bound'}, 'skillsoundgrp': {'cast': 'agree', 'shot': 'agree'},
+    'alaudio': {'critical': 'agree', 'soulshot': 'agree'},
+    'chargrp': {'attackItem': 'agree', 'attackVoice': 'agree', 'defense': 'agree', 'damage': 'agree'},
+    'armorgrp': {'defense': 'agree'}, 'weapongrp': {'attackItem': 'agree'}, 'skillsoundgrp': {'cast': 'agree', 'shot': 'agree'},
 }
 
 
