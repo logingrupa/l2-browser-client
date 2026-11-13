@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 02-91-PLAN.md
-last_updated: "2026-11-12T19:30:24.532Z"
+stopped_at: Completed 02-88-PLAN.md
+last_updated: "2026-11-13T15:39:41.863Z"
 last_activity: 2026-11-11
 last_activity_desc: Phase 03 plan 03-01 complete (side-by-side check record writer and key content digest; Phase 3 start commit cb09cdc)
-state_head: cda6e15ffe7521afab07202f84527376ec63364b
+state_head: 4f7a987e9decbaf64cf180bd09969cc869d9b237
 progress:
   total_phases: 6
   completed_phases: 0
-  total_plans: 131
-  completed_plans: 112
+  total_plans: 133
+  completed_plans: 113
   percent: 0
 ---
 
@@ -158,6 +158,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 2 P86 | 1h 13m | 3 tasks | 17 files |
 | Phase 02 P87 | 31min | 3 tasks | 15 files |
 | Phase 02 P91 | 72min | 3 tasks | 22 files |
+| Phase 02 P88 | 20h | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -425,6 +426,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-87: wireSpawnedActorSounds (src/runtime) binds actor-sounds:<key> on adapter spawn once the clip hub lists clips; bindSpawnedActorSoundCues takes parsed clip events, one actors-lane foreign path (rows 1057 to 1060)
 - [Phase 02]: 02-87: the played-cue browser check uses npc:14663, the lowest of 591 of 5,175 npcs whose bundle binds a notify; npc:12077 binds none (row 1061)
 - [Phase 02]: 02-91: residency chunk events drive per-chunk visibility and lightmap binding on every streamed tile; neighbour tile systems attach on the first resident chunk and release on the last, the selected tile keeps its systems; culling reaches every tile; the row 735 ring and cull are presentation limit rows in the visibility inspection (OVERNIGHT-DECISIONS rows 1062 to 1066)
+- [Phase 02]: 02-88: world lane catalog b4d451dc holds 143 tiles with no batch-pending row; the batch runs seam neighbours first (d18a51d) and a passing derived key of a recordless tile counts as its manifest gap (35a4362); 125 passing tiles walked, 59 pass, 66 failed (rows 1067 to 1074)
 
 ### Pending Todos
 
@@ -501,7 +503,6 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 - Camera environment accessor (02-67, row 725): the runtime re-reads the tile lighting inspection when the camera zone changes; the world lane exposes the camera environment from `NativeSection` once fog info or water volumes become inputs.
 - Behind-view trace cost (02-67, row 723): `calculateBehindView` walks every resident primitive for its box trace; the movement core adds spatial culling before PERF-02 measures movement on the GTX 1060.
 - Arrival on slopes (02-67, row 728): one 20_21 walk ended 0.02 units from its goal, past the 0.01 arrival slack, and closed with a stuck cannot-move; the movement core checks the floor-band step against the arrival rule.
-- WORLD-05 tile sweep (02-67, row 730): the port walk passes on 20_21 (`world-movement-port.spec.ts`, `world-tile-walk.spec.ts`) and on `/` over tile 20_20 (`nativeSlice.spec.ts`); run the same walk on the other 9 converted tiles of the world lane catalog, then WORLD-05 closes.
 - `tests/browser/nativeBsp.spec.ts` still pins mesh-contact heights from the absent Actor940 oracle (it skips); rewrite it against the collision world once the oracle is restaged (02-67).
 
 - Minimap radar source (02-50, rows 710 to 717; 02-82, rows 976 to 980): no export of `L2_RadarMap.utx` (118/0, 18 town-named textures) equals a tile id, `<tile id>_map` or a zone `map` value, so all 153 census tiles are `minimap-join-unresolved:radar-texture` gaps; 21 zonename rows hold MapX or MapY outside the locked grid, so zone joins are `zone-grid` gaps. Find the client data that names the per-tile radar image or a sourced georeference for the `int_worldmap` pieces, and settle the out-of-grid rows on IMPORTA, before 02-51 draws the minimap. Since 02-82 the shared texture library reads the package: 1 export (`RadarMaps.Global`) is readable DXT1 and the 17 town exports are `texture-format-unsupported:5` (RGBA8), so a sourced join of a town map also needs an RGBA8 layout cross-checked like the 02-73 rows.
@@ -511,7 +512,7 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 - Union tile loads (02-55, row 763; 03-03): every union tile on `bba52c47...` has a load record: 22 pass and 40 fail, 39 of them for want of a native-tile-collision resource (map licensees 18, 23, 25 and 30) and `tile:16_10` (licensee 25, no collision pin) with an infrastructure `read ECONNRESET` the tiles spec no longer produces; the collision pins for those licensees stay a world follow-up, and the next union rebuild re-sweeps them.
 - Load-check infrastructure records (03-03, P815): `npc:18168` on `bba52c47...` failed with a hot-reload module error from a concurrent `src` commit during the sweep, and `tile:16_10` with `read ECONNRESET`; 03-11 lists neither as a converter defect.
 - Two converted-key owners (03-03, P816): the load-check harness list (`buildNativeCatalogIndex`) has `npc:21622` and `skill:3:1` as converted on the union, while `scripts/native_store/catalog_index_keys.py` does not; 03-11 takes the disagreement as a key index defect.
-- Eligible tile batch (02-47, 02-54, rows 681 to 690 and 752 to 761): 79 of 148 eligible tiles are `batch-pending` (20_22 onward in census order); continue `node scripts/check-machine-schedule.mjs && python -B scripts/world/convert_tile_batch.py --eligible --limit 4` until it prints nothing to do, then the tiles sweep with `LOAD_CHECK_LIMIT=<catalog tile count>`. Terrain fails on 16_25 (`Terrain layer 10 names only one of Texture and AlphaMap`) and on 18_23, 19_23, 19_24, 20_16 and 20_17 (`Non-XY/rotated layer requires a separately verified UV adapter`); fix the terrain layer reader, then `convert_tile.py --step terrain` on those tiles.
+- World lane walks (02-88, rows 1073 and 1074): on world lane catalog `b4d451dc...` every one of the 125 tiles whose load check passed has a walk record, 59 pass and 66 failed: 38 stay in the run animation at their start and never come to idle within 90 s, 19 fall below their terrain minimum (most to about -163.8 m), and 9 load no BSP mesh in the section (`world.bspMeshes` 0). `world-tile-border.spec.ts` (15_20 to 15_21) drops the pawn 113.57 m in the seam strip. The movement and world owners read the failing walks from `artifacts/lane-store/world/measurements/tile-walks-b4d451dc....json`; WORLD-05 closes when every passing tile walks.
 - Actors lane shared-store row (02-78, row 1021): npc:21622 and npc-sounds:21622 stay pending in the actors lane coverage; they clear with the restage that writes the shared-store profile with `modelCatalogId` and the 03-11 key index fix (P816). Every other npcgrp row is converted or a listed gap on lane catalog `a1562da9...`.
 - Actor-sounds batch speed (02-78, row 1022): `run_actor_sound_slice` recomputes the fingerprint of every sealed bundle before converting new ones (about 0.5 s each) and each bundle rewrites the whole lane catalog; make both incremental before the 3,064 skill bundles run.
 - BSP surface material files and texture image pins (02-30, 02-60, 02-64, rows 250, 518, 693 and 1042 to 1045): plan 02-86 converts every reviewed Texture node of a BSP or sky program to `native-materials/textures/<sha>/texture.png`, pins it on the program through the one writer `write_material_program_record`, and each tile manifest pins one `surface-materials` listing whose files map the lane merge walk follows. On 20_21 114 of 125 BSP sections draw through the library (was 0), 110 lightmapped; 20_21 and 20_20 are re-run and the world lane catalog is 19f8d1dd. Open: the other world tiles reseal in the 02-88 batch (bsp version 5, sky version 2, manifest version 12), and the shared store carries the files only after the owner restage.
@@ -534,7 +535,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 - Stale chunk collision on the world lane (02-91): 18_24, 18_10, 20_10, 18_22 and 19_16, the tiles whose own chunks lie beyond the startup ring, stop at "Typed payload: array VOLS.water is not in the payload." because their chunk collision payloads predate the 02-77 VOLS fields; only 17_12, 18_12, 20_20 and 20_21 carry them. `tests/browser/world-tile-streamed-systems.spec.ts` therefore proves the after-startup chunk on 20_21's neighbour 20_20, and proves an own-tile chunk once the world batch reconverts those tiles' collision.
 - BSP visibility overlap review (DEC-OWN-12, 02-91, rows 1062 to 1066): after the per-chunk visibility targets the bsp-visibility area reports 23 blocking and 406 unreviewed runs and 17 stale sign-offs, in `attachTileVisibility.ts`, `babylonTileVisibilityTargets.ts`, `bindTileVisibility.ts` and `core/tileVisibilityFrame.ts` (report `artifacts/reference-overlap/02-91-bsp-visibility.json`); independent review before the push.
 - Movement overlap review (DEC-OWN-12, 02-48 and 02-65, row 638): the movement area reported 108 blocking and 1,732 unreviewed runs in the collision world code (02-48), and now 83 blocking and 2,727 unreviewed runs in the 02-65 trace and MoveActor code (local report `artifacts/plan-starts/02-65-reference-overlap-movement.json`); independent review before the push.
-- World evidence size (found in 02-65, row 640): `tests/unit/laneOwnership.test.ts` fails because `docs/parts/world/EVIDENCE.md` is 30,917 bytes after 02-63, over the 30 KB limit; the world part trims it, which makes `pnpm test:unit` green again.
 - Lane catalog plan memory (02-79): `write_lane_catalog.py --plan` reads every pinned store file into memory (29.7 GB working set on the actors lane after the item batch); one run reported `pinned store file SHA-256 differs from its pin 9e1c2f79...: 9e1c2f79.../asset.l2asset` although the file bytes match the pin, and the next run passed; hash pinned files with a streaming digest so memory stays bounded and a repeat mismatch is a real one.
 - Particle overlap review (DEC-OWN-12, 02-69, row 654): the particles area reports 547 blocking and 2,552 unreviewed reviewer runs and 4 stale sign-offs (report `artifacts/reference-overlap/02-69-particles.json`); 479 blocking runs are the GLSL line array of `particleMaterialBinding.ts`, and the ribbon Hermite basis line in `ribbonEmitter.ts` matches the reference cubic point at 88 tokens. The independent reviewers check them and refresh the sign-offs.
 - Library exports (02-69, rows 653 and 692): `src/materials/ue2/babylon/material.ts` re-exports `FOG_DISABLED`, the fog evaluator and `loadNativeMaterial` since 02-64; `particleMaterialBinding.ts` and `NativeActor.ts` (actors lane) still import them from `model/fog` and `babylon/loadNativeMaterial` and move to material.ts. `src/materials/ue2/model/constants/blendConstants.ts` provenance still cites the deleted `src/effects/nativeEffectMaterial.ts:152`; the shipped pairs now live only in its own runtimeDefault.
@@ -562,6 +562,6 @@ Landed on 2026-11-09 (row 444): the actors pack rebuild and lane catalog `7ab1cd
 
 ## Session Continuity
 
-Last session: 2026-11-12T19:30:23.802Z
-Stopped at: Completed 02-91-PLAN.md
+Last session: 2026-11-13T15:39:41.140Z
+Stopped at: Completed 02-88-PLAN.md
 Resume file: None
