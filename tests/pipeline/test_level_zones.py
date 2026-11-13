@@ -6,12 +6,23 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).parent))
+from native_assets_lib.class_defaults import ReferenceClientClassScripts
 from native_catalog.ue2 import Package
+from native_store.store_paths import lane_work_root
+from native_store.unit_ledger import BATCH_MINIMUM_FREE_BYTES, BatchPreflightRefusedError, require_batch_preflight, run_at_below_normal_priority
+from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH
 from support.actor_class_defaults import SyntheticActorClassDefaults
 from support.level_model_fixture import build_synthetic_level_model, square_points, synthetic_polygon, synthetic_zone
 from ue2_package_fixture import compact, package_bytes, tag
 from world.actor_field_values import AUTHORED_PROVENANCE, UNRESOLVED_PROVENANCE
+from world.bsp_step import sealed_bsp_chunks
+from world.level_model import read_level_model
 from world.level_zones import outdoor_zone_indices, read_level_zones, sky_zone_indices
+from world.raw_map_step import read_tile_map_lock_record
+from world.sky_step import sealed_sky
+from world.static_placement import ClassDefaults
+from world.tile_census import WORLD_LANE_NAME
+from world.tile_chunk_plan import read_locked_map_package
 
 BOOL_PROPERTY_TYPE = 3
 FLOAT_PROPERTY_TYPE = 4
@@ -95,6 +106,42 @@ class LevelZoneTableTests(unittest.TestCase):
 
     def test_connectivity_and_visibility_masks_come_from_the_model_zones(self):
         self.assertEqual({(zone.connectivity, zone.visibility) for zone in self.zones}, {((1 << 64) - 1, (1 << 64) - 1)})
+
+
+REAL_CLIENT_ROOT = Path('E:/Lineage2-client')
+REAL_TILE_ID = '20_21'
+
+
+def real_client_skip_reason():
+    if not REAL_CLIENT_ROOT.is_dir():
+        return 'the conversion client E:/Lineage2-client is absent on this host'
+    if not REFERENCE_CLIENT_LOCK_PATH.is_file():
+        return 'the reference client lock is absent'
+    return None
+
+
+@unittest.skipIf(real_client_skip_reason() is not None, real_client_skip_reason() or '')
+class RealMapZoneInputTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        try:
+            require_batch_preflight(ROOT, WORLD_LANE_NAME, BATCH_MINIMUM_FREE_BYTES)
+        except BatchPreflightRefusedError as error:
+            raise unittest.SkipTest(f'the real-map zone input check waits for the batch preflight: {error}')
+        run_at_below_normal_priority()
+
+    def test_the_outdoor_and_sky_zone_sets_of_20_21_equal_the_sealed_bsp_and_sky_products(self):
+        lock_record = read_tile_map_lock_record(REAL_TILE_ID)
+        _, bsp = sealed_bsp_chunks(ROOT, REAL_TILE_ID, lock_record)
+        _, sky = sealed_sky(ROOT, REAL_TILE_ID, lock_record)
+        if bsp is None or sky is None:
+            self.skipTest(f'the bsp and sky units of {REAL_TILE_ID} are not sealed in this lane')
+        package = read_locked_map_package(REAL_CLIENT_ROOT, REAL_TILE_ID, lock_record)
+        class_defaults = ClassDefaults(lane_work_root(ROOT, WORLD_LANE_NAME), ReferenceClientClassScripts(REAL_CLIENT_ROOT))
+        zones = read_level_zones(package, read_level_model(package).model, class_defaults)
+        self.assertEqual(sorted(outdoor_zone_indices(zones)), bsp['outdoorZones'])
+        self.assertEqual(sorted(sky_zone_indices(zones)), bsp['skyZones'])
+        self.assertEqual(sorted(sky_zone_indices(zones)), sky['skyZones'])
 
 
 if __name__ == '__main__':
