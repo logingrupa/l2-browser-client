@@ -25,7 +25,7 @@ CHUNK_MANIFEST_SHA256 = 'c' * 64
 COMBAT_AUDIO_SHA256 = 'd' * 64
 JOINED_TILE_ID = '20_20'
 UNJOINED_TILE_ID = '20_21'
-UNJOINED_MINIMAP_REASON = 'minimap-join-unresolved:radar-texture'
+UNJOINED_MINIMAP_REASON = 'minimap-join-unresolved:zone-title-source'
 RESOURCE_PATH_TEMPLATES = {'minimap': '/l2/maps/{sha256}/native-tile-minimap/manifest.json',
                            'native-tile-collision': '/l2/maps/{sha256}/native-tile-collision/asset.json',
                            'world-audio': '/l2/world-audio/{sha256}/manifest.json'}

@@ -1,3 +1,4 @@
+import contextlib
 import hashlib
 import io
 import json
@@ -13,6 +14,8 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
+from native_store.interprocess_lock import lane_batch_lock
+from native_store.store_paths import lane_work_root
 from world import minimap_route_step
 from world.format5_texture_pixels import Format5PixelMismatch, require_png_equals_format5_pixels
 from world.minimap_radar_route_recipe import read_minimap_radar_route_recipe
@@ -172,6 +175,20 @@ class MinimapRouteStepTests(unittest.TestCase):
         packages = {request['package'] for request in converter.requests}
         self.assertEqual(packages, {'L2_RadarMap', 'systextures/L2Font-e.utx'})
         self.assertEqual(converter_package_request('systextures/l2zonename.utx'), 'l2zonename')
+
+    def test_the_command_guards_the_parsed_client_and_refuses_a_held_world_lane_without_work(self):
+        no_work = mock.Mock(side_effect=AssertionError('the route ran beside a held lane'))
+        work_root = lane_work_root(self.project_root, WORLD_LANE_NAME)
+        guard = mock.Mock(return_value=SimpleNamespace(root=CLIENT_ROOT))
+        standard_output = io.StringIO()
+        with mock.patch.multiple(minimap_route_step, REPOSITORY_ROOT=self.project_root, require_reference_client=guard,
+                                 run_at_below_normal_priority=mock.DEFAULT, run_minimap_route_step=no_work), \
+                lane_batch_lock(work_root), contextlib.redirect_stdout(standard_output):
+            exit_code = minimap_route_step.main(['--client', 'client'])
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(guard.call_args_list, [mock.call(Path('client'))])
+        self.assertEqual(json.loads(standard_output.getvalue())['status'], 'failed')
+        self.assertIn('lane world is in use', json.loads(standard_output.getvalue())['error'])
 
 
 if __name__ == '__main__':

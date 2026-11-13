@@ -12,11 +12,13 @@ from typing import NamedTuple
 from native_assets import implementation_hash
 from native_assets_lib.gltf import json_bytes
 from native_store.catalog_writer import sha256_hex
+from native_store.interprocess_lock import LaneInUseError, lane_batch_lock
 from native_store.store_paths import REPOSITORY_ROOT, lane_store_root, lane_work_root
 from native_store.unit_ledger import UnitLedger, locked_input_records, run_at_below_normal_priority
 from reference_client_guard import require_reference_client
 from world.format5_texture_pixels import Format5PixelMismatch, require_png_equals_format5_mip0, texture_format_id
-from world.minimap_radar_route_recipe import JOIN_UNRESOLVED_REASON_PREFIX, read_minimap_radar_route_recipe
+from world.minimap_join import join_unresolved_reason
+from world.minimap_radar_route_recipe import read_minimap_radar_route_recipe
 from world.minimap_sources import decoded_table_rows
 from world.minimap_textures import (TEXTURE_SOURCE_READABLE_STATUS, convert_minimap_texture, converter_package_request, export_named,
                                     minimap_texture_converter, read_texture_package, store_converted_texture, texture_package_index)
@@ -81,10 +83,6 @@ def current_minimap_route(project_root):
     return MinimapRoute(fingerprint, json.loads(minimap_route_product_path(ledger).read_text(encoding='utf-8')))
 
 
-def join_unresolved(what):
-    return JOIN_UNRESOLVED_REASON_PREFIX + what
-
-
 def route_textures(radar, world_map):
     group = radar['textureGroup']
     display = world_map['initializeMapDisplay']
@@ -92,6 +90,15 @@ def route_textures(radar, world_map):
     textures.append((f'{group}.{radar["default"]["texture"]}', RADAR_DEFAULT_RULE))
     textures.extend((f'{display["english"]}{suffix}', WORLD_MAP_PIECE_RULE) for suffix in display['suffixes'])
     return textures
+
+
+def route_texture_format(package, export, index_entry, format_rule):
+    source = index_entry['textureSource']
+    if source['status'] == TEXTURE_SOURCE_READABLE_STATUS:
+        return source['format'], None
+    if texture_format_id(package, export) == format_rule['formatId']:
+        return format_rule['formatName'], format_rule
+    return None, source['reason']
 
 
 class RouteTextureConverter:
@@ -110,22 +117,13 @@ class RouteTextureConverter:
         self.gaps.append({'reason': reason, 'evidence': evidence})
         return None
 
-    def texture_format(self, package, export, index_entry):
-        source = index_entry['textureSource']
-        if source['status'] == TEXTURE_SOURCE_READABLE_STATUS:
-            return source['format'], None
-        format_rule = self.recipe['textureFormat5']
-        if texture_format_id(package, export) == format_rule['formatId']:
-            return format_rule['formatName'], format_rule
-        return None, source['reason']
-
     def convert(self, relative_path, object_name, rule):
         package, index = self.package(relative_path)
         index_entry = export_named(index, object_name)
         if index_entry is None:
-            return self.add_gap(join_unresolved(TEXTURE_ABSENT), object_name)
+            return self.add_gap(join_unresolved_reason(TEXTURE_ABSENT), object_name)
         export = package.exports[index_entry['exportIndex'] - 1]
-        texture_format, format_rule_or_reason = self.texture_format(package, export, index_entry)
+        texture_format, format_rule_or_reason = route_texture_format(package, export, index_entry, self.recipe['textureFormat5'])
         if texture_format is None:
             return self.add_gap(format_rule_or_reason, index_entry['object'])
         converter = self.converter or minimap_texture_converter(self.project_root, self.client)
@@ -137,7 +135,7 @@ class RouteTextureConverter:
             try:
                 pixel_check = require_png_equals_format5_mip0(package, export, conversion.image, format_rule_or_reason)
             except Format5PixelMismatch as mismatch:
-                return self.add_gap(join_unresolved(TEXTURE_LAYOUT_DIFFERS), f'{index_entry["object"]}: {mismatch}')
+                return self.add_gap(join_unresolved_reason(TEXTURE_LAYOUT_DIFFERS), f'{index_entry["object"]}: {mismatch}')
         stored, _, output = store_converted_texture(self.store_root, conversion, {'object': index_entry['object'], 'rule': rule})
         self.outputs.append(output)
         record = {'object': index_entry['object'], 'rule': rule, 'archive': stored['archive'], 'archiveSha256': stored['archiveSha256'],
@@ -220,8 +218,10 @@ def main(argv=None):
     arguments = parser.parse_args(argv)
     run_at_below_normal_priority()
     try:
-        result = run_minimap_route_step(REPOSITORY_ROOT, arguments.client)
-    except (OSError, ValueError) as error:
+        client_access = require_reference_client(arguments.client)
+        with lane_batch_lock(lane_work_root(REPOSITORY_ROOT, WORLD_LANE_NAME)):
+            result = run_minimap_route_step(REPOSITORY_ROOT, client_access.root)
+    except (OSError, ValueError, LaneInUseError) as error:
         print(json.dumps({'unitKey': MINIMAP_ROUTE_UNIT_KEY, 'status': 'failed', 'error': f'{type(error).__name__}: {error}'}))
         return 1
     print(json.dumps(result, sort_keys=True))

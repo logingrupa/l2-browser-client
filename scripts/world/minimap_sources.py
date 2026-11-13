@@ -4,12 +4,10 @@ from typing import NamedTuple
 from native_catalog.tables import decode_table
 from native_store.unit_ledger import process_reference_client_lock
 from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH
-from world.minimap_join import HUNTINGZONE_TABLE_ROLE, RADAR_PACKAGE_ROLE, TOWN_MAP_PACKAGE_ROLE, ZONE_NAME_PACKAGE_ROLE, ZONENAME_TABLE_ROLE
+from world.minimap_join import HUNTINGZONE_TABLE_ROLE, ZONE_NAME_PACKAGE_ROLE, ZONENAME_TABLE_ROLE
 from world.terrain_coordinates import calculated_coords, coords_point
 
-MINIMAP_PACKAGE_PATHS = {RADAR_PACKAGE_ROLE: 'systextures/L2_RadarMap.utx', TOWN_MAP_PACKAGE_ROLE: 'systextures/town_map.utx',
-                         ZONE_NAME_PACKAGE_ROLE: 'systextures/l2zonename.utx'}
-MINIMAP_TILE_PACKAGE_PATHS = {ZONE_NAME_PACKAGE_ROLE: MINIMAP_PACKAGE_PATHS[ZONE_NAME_PACKAGE_ROLE]}
+MINIMAP_TILE_PACKAGE_PATHS = {ZONE_NAME_PACKAGE_ROLE: 'systextures/l2zonename.utx'}
 MINIMAP_TABLE_PATHS = {ZONENAME_TABLE_ROLE: 'system/zonename-e.dat', HUNTINGZONE_TABLE_ROLE: 'system/huntingzone-e.dat'}
 MINIMAP_TABLE_LAYOUTS = {ZONENAME_TABLE_ROLE: 'zonename', HUNTINGZONE_TABLE_ROLE: 'huntingzone'}
 LOCKED_TILE_MAP_PATTERN = re.compile(r'^maps/(?P<tile_id>\d{2}_\d{2})\.unr$')
