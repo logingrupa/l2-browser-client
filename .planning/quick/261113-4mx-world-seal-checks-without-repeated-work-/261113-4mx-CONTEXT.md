@@ -34,6 +34,24 @@ The world tile batch stops re-checking the same sealed units and re-parsing the 
    - The stop rule keeps its text: a tile at a position after the first stopped position does not start or ends before its next step; the batch reports the stop of the first stopped tile in tile order. With cost order a tile at an earlier position can still be waiting when a later one stops; it then runs, as an earlier tile does today.
 5. **Not in scope:** pooling the seal inspection itself (measure it again after decisions 1 to 3; the orchestrator decides), a mesh-level pool, any change to what a seal check verifies on its first call, the actors batches' own bookkeeping.
 
+## Rulings of the orchestrator on the plan (2026-11-13, these win over the text above)
+
+The planner listed six points under "Decisions the orchestrator must revisit". All six are accepted as the plan states them:
+
+1. Decision 1 uses a new `file_identity` with device, inode, size and modification time. `lock_file_identity` of the frozen guard stays as it is and keeps serving the lock of decision 2.
+2. The key of a kept receipt is the step directory together with the unit key.
+3. The same-fingerprint reseal test removes the step directory first, as the present refusal tells a person to do.
+4. The share rule of decision 3 is applied to the profile of the two sealed tiles of this checkout. Next to each measured share the summary gives a projection for the 30-tile inspection: seconds per call times the call count in `C:/laragon/l2b-orchestration/pipeline-speed/results/tile-seal-inspection-profile.json`. The real 30-tile profile is the orchestrator's proof.
+5. The cost is the map file byte size (`eBytes`), also for phase A. It is a ranking that puts the three measured heavy tiles into the first six starts, not a prediction of their order.
+6. The step directory is still resolved through the frozen path guard on every call. Accepted.
+
+The four advisories of the plan checker are adopted:
+
+- The threat register gets one accepted row: a ledger record rewritten in place with the same size within the clock tick of the kept identity. No production writer does that (`write_new_record` opens with `xb`).
+- The counting wrap of the output check must run the real method with its instance (`autospec=True` with a side effect that calls the original, or a wrap of the path check filtered by the lane folder).
+- `tests/pipeline/test_convert_tile_batch.py` already has 417 lines. New tests of task 3 go into a new test file; shared helpers move to `tests/pipeline/support` instead of being copied.
+- `docs/BATCH_PIPELINE_SPEED.md` and `.planning/STATE.md` are committed at `fd2cd24` and stay the orchestrator's files.
+
 ## Tests the plan must require
 
 - `sealed_receipt`: many calls on one sealed unit read the receipt file and check the outputs once (count through a patched reader or a counting path check); a second ledger object for the same lane and step shares the kept answer; after the unit is begun and sealed again (same fingerprint and a different one) the next call verifies again and returns the new receipt; after the seal file or the receipt file is replaced by a file with other content the next call verifies again (and raises the present mismatch error where today's code raises it); a missing seal returns None every time; a caller that changes the returned receipt does not change what the next caller gets; two different step directories do not share an answer.
