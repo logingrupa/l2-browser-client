@@ -34,6 +34,7 @@ CONVERTER_DESCRIPTION = 'Convert native Interlude client objects into reproducib
 
 UMODEL = Path('C:/laragon/www/l2-browser-client/.assets/native-tools/umodel/umodel.exe')
 UMODEL_SHA256 = '13502e5a4d8f6b5f32252afebd6360f7302ccfaccf6b8dda65beff0be2d364a0'
+CONVERTER_OUTPUT_VERSION_RAISED_BY_HAND_ONLY_WHEN_OUTPUTS_CHANGE = 'c4bf8e6cf5f61bddf65a35e6fb65f6af34199e0589b978930aeb92d2f15a2bd8'
 SOURCE_TO_GLTF = [.01, 0, 0, 0, 0, 0, .01, 0, 0, .01, 0, 0, 0, 0, 0, 1]
 MAX_ARCHIVE = 128 * 1024 * 1024
 MAX_PAYLOAD = 96 * 1024 * 1024
@@ -158,8 +159,7 @@ def implementation_source_paths():
 
 
 def implementation_hash():
-    scripts = Path(__file__).parent
-    return sha(json_bytes({path.relative_to(scripts).as_posix(): hash_file(path) for path in implementation_source_paths()}))
+    return CONVERTER_OUTPUT_VERSION_RAISED_BY_HAND_ONLY_WHEN_OUTPUTS_CHANGE
 
 
 class Converter:

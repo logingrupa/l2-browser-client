@@ -18,6 +18,7 @@ from test_reference_client_guard import GuardedConversionRootTestCase, write_tre
 
 MEDIA_RELATIVE_PATH = 'media/sample.wav'
 MEDIA_REQUEST = {'kind': 'audio', 'media': MEDIA_RELATIVE_PATH}
+MEDIA_REQUEST_KEY_UNDER_THE_CONVERTER_OUTPUT_VERSION = '7cbe13a29e5dd8dff91794646ae911241bef77dbb97c4fa97b6f6a467959fb78'
 FILETIME_TICK_NANOSECONDS = 100
 
 
@@ -145,11 +146,12 @@ class SourceDigestMemoTests(LockedSourceTestCase):
             self.converter.require_unchanged_dependencies()
         digest_of.assert_not_called()
 
-    def test_one_conversion_computes_the_implementation_hash_once(self):
-        with patch.object(native_assets, 'implementation_hash', wraps=native_assets.implementation_hash) as implementation_hash:
-            result = self.converter.convert(MEDIA_REQUEST)
-        self.assertEqual(implementation_hash.call_count, 1)
-        self.assertEqual(archived_json(result, 'provenance.json')['converterSha256'], archived_json(result, 'asset.json')['converterVersion'])
+    def test_one_conversion_keys_and_stamps_its_archive_with_the_converter_output_version(self):
+        result = self.converter.convert(MEDIA_REQUEST)
+        self.assertEqual([index_record.stem for index_record in (self.converter.output / 'index').iterdir()],
+                         [MEDIA_REQUEST_KEY_UNDER_THE_CONVERTER_OUTPUT_VERSION])
+        self.assertEqual([archived_json(result, 'provenance.json')['converterSha256'], archived_json(result, 'asset.json')['converterVersion']],
+                         [native_assets.CONVERTER_OUTPUT_VERSION_RAISED_BY_HAND_ONLY_WHEN_OUTPUTS_CHANGE] * 2)
 
     def test_recorded_source_sha256_reads_only_digests_source_recorded(self):
         self.converter.source(self.media)
