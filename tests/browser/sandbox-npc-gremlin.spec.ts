@@ -14,6 +14,7 @@ const rabbitKey = "npc:20002";
 const modelCatalogIdPattern = /^npc-model:[a-f0-9]{64}$/;
 const harnessLoadTimeout = 90_000;
 const sandboxGremlinEntityId = "npc-20001-1";
+const gremlinLibraryMaterialRoot = "lineagemonsterstex.gremlin.gremlin_t00";
 const worldReadyTimeout = 240_000;
 const portraitPhone = { viewport: { width: 430, height: 932 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 };
 
@@ -139,6 +140,9 @@ test.describe("clip picker on the native route at 1440 x 900", () => {
     test.setTimeout(worldReadyTimeout + harnessLoadTimeout * 2);
     const pageErrors = collectPageErrors(page);
     const clipName = await playFirstGremlinClipFromPicker(page);
+    const gremlinParts = (await sandboxEntities(page)).find(entity => entity.id === sandboxGremlinEntityId)?.parts ?? [];
+    expect(gremlinParts.length).toBeGreaterThan(0);
+    expect(new Set(gremlinParts.map(part => part.material))).toEqual(new Set([`UE2 material: ${gremlinLibraryMaterialRoot}`]));
     await page.mouse.move(0, 0);
     await page.getByTestId("sandbox-clips-clip-0").hover();
     await expect(page.getByTestId("dev-hovercard").locator('[data-variable="clips.previewing"] .dev-variable-value')).toHaveText(clipName);
