@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 03-05-PLAN.md
-last_updated: "2026-11-14T06:51:41.221Z"
+stopped_at: Completed 03-06-PLAN.md
+last_updated: "2026-11-14T07:30:52.581Z"
 last_activity: 2026-11-14
-last_activity_desc: Phase 03 plan 03-04 complete (pair queue on union e25d005e and the queue, ingest and judge record CLI)
-state_head: 0ebf24903d56ac409ce5e2236bf547527ade23ca
+last_activity_desc: Phase 03 plan 03-06 complete (native capture driver and import, transcript-tested, not run against IMPORTA-PC)
+state_head: 28e20d2fcc80e3040d1d2b0a49da01735f14f46d
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 152
-  completed_plans: 121
+  completed_plans: 122
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 03 (Stage A checks) - EXECUTING; Phase 2 gap round plans 02-72 to 02-99 executed
-Plan: 02-89 complete (Phase 2 gap closure bookkeeping); Phase 3 at 03-05 complete (stage A exit report on coverage.json schema 2), 5 of 36 plans summarized (gap plans 03-21 to 03-36 added 2026-11-14)
+Plan: 02-89 complete (Phase 2 gap closure bookkeeping); Phase 3 at 03-06 complete (native capture driver and import, transcript-tested), 6 of 36 plans summarized (gap plans 03-21 to 03-36 added 2026-11-14)
 Status: Executing Phase 3 from start commit cb09cdc; Phase 1 is verification_deferred_human (see Deferred Verification); the union is rebuilt as e25d005e and its restage waits on the owner (Needs Human plan 02-89)
-Last activity: 2026-11-14 - 03-05: the union coverage.json on e25d005e and the world, actors and data-ui lane reports were regenerated at schema 2 with the reference block (1957c968, Engine.dll 4dd2f63c) and balanced stage A counts; no part has a committed check record yet, so checked is 0 everywhere
+Last activity: 2026-11-14 - 03-06: native_capture_driver.py (batch dry run, preflight, capture) and import_native_captures.py are built and tested on synthetic transcripts; nothing ran against IMPORTA-PC except a read-only query at 09:14 Riga (controller and CONTROL.md pins and Engine.dll 4dd2f63c hold, l2.ini is the LAN profile 0809edc9, no Lineage II client or levelup process, session 1 Active)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -167,6 +167,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P89 | 77min | 3 tasks | 10 files |
 | Phase 03 P04 | 47min | 3 tasks | 11 files |
 | Phase 03 P05 | 31min | 3 tasks | 16 files |
+| Phase 03 P06 | 35min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -454,6 +455,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-89: the tables load sweep checks native-table manifests by table and recordCount and name index manifests by source table and entryCount (P1175)
 - [Phase 03]: 03-04: pair queue eligibility is converted, census pass (coverage status not gap or failed) and union load pass; on e25d005e world and items have no eligible key and 25 npc, 2 window and 3 skill keys are eligible (P1174 to P1183, provisional)
 - [Phase 03]: 03-05: coverage.json schema 2 adds reference (reference_client_build of the lock plus IMPORTA 5629 files, 7814256191 bytes) and parts[part].stageA from committed records, failure files and union-only load records; stage A converted is census pass; sandbox, audio, minimap and movement-geodata keep stage A converted unknown; on e25d005e checked is 0 for every part (P1184 to P1190, provisional)
+- [Phase 03]: 03-06: native halves enter the records only through import_native_captures.py after every PNG re-hashes to the SHA-256 computed on IMPORTA-PC; imported nv and pv pairs are native-selection-unconfirmed and sv and startup pairs review-pending (one rule, reason_with_native_half); the preflight ties Engine.dll and the Debug l2.ini profile to the lock and refuses l2.exe or l2.bin outside C:/Lineage2-client, the levelup bot and an inactive session 1 (P1191 to P1202, provisional)
 
 ### Pending Todos
 
@@ -572,6 +574,7 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 - Union resealed record files (INT-01, 02-89): Missing: the old files of records resealed since union bba52c47 stay in the integration store. Unblocked by: the same unpinned-file cleanup in the union step.
 - Pair queue size on union e25d005e (CHECK-01, 03-04, P1174): the queue holds 33 entries (25 npc, 3 skill, 2 window keys plus their steps); 5,152 npc, 588 skill and 44 window census-pass keys are `loads-unrecorded`, and every tile and item key is a census gap, so the waiting rules sky-20-20, minimap-projection and statuswnd have no key. Unblocked by: the full union load sweeps on e25d005e, then `record_side_by_side_checks.py queue` again; the tile and item census gaps close through 03-22, 03-23 and 03-30.
 - Stage A denominators of audio, minimap and movement-geodata (CHECK-05, 03-05, P1186): stage A reports converted unknown for these parts and counts their check records, following P15 until the owner answers the Needs Human line on the P15 supersession by 02-72. Missing: a join from the census keys (`tile-audio:`, `npc-sounds:`, `skill-sound-row:`, `minimap:`, `tile-collision:`) to the catalog keys the check records use. Unblocked by: that owner answer, then a key join in `scripts/native_store/stage_a_exit_counts.py` that moves the confirmed parts out of `STAGE_A_REASON_BY_PART_WITHOUT_DENOMINATOR`.
+- Native capture first live run (CHECK-01, 03-06, P1193 to P1197): the capture program and the batch script of `scripts/side_by_side/native_capture_driver.py` have run only against synthetic transcripts. Unverified on IMPORTA-PC: the levelup bot process name (`l2-levelup-assistant`, not running at 09:14 Riga), whether nv and pv apply the typed text without another key, and the time PlaySkill needs before the screenshot. Unblocked by: the 03-17 offline Debug batch through this driver.
 - Intermittent world reader test (03-04 pipeline run 2): one full `scripts/test_pipeline.py` run had `test_world_reader_licensees` read a truncated temporary actors JSON for 20_21 (`build_map_into_temporary_directory`); the file passed 24 of 24 alone and in two other full runs. Unblocked by: the world lane finding why the temporary output was read before it was complete.
 
 ## Deferred Verification
@@ -594,6 +597,6 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 
 ## Session Continuity
 
-Last session: 2026-11-14T06:51:40.393Z
-Stopped at: Completed 03-05-PLAN.md
+Last session: 2026-11-14T07:30:51.813Z
+Stopped at: Completed 03-06-PLAN.md
 Resume file: None
