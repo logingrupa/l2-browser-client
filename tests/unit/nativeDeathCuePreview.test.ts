@@ -12,6 +12,7 @@ import { nativeCharacterFactory } from "../../src/assets/native/NativeCharacterV
 import type { WorldEntity } from "../../src/world/worldTypes";
 import { nativeVisualClips, nativeVisualFixture } from "../fixtures/nativeVisualFixture";
 import { itemlessEquippedItemSource } from "../fixtures/nativeEquippedItemSourceFixture";
+import { unlistedActorMaterialPrograms } from "../fixtures/actorMaterialProgramsFixture";
 
 const fighterHash = "678067311414990c82307a045f01b3da0cb083d2075ed927c83372ca647bd2d5";
 const monsterHash = "6b6f7d72b2f81bdcca2991bcc84b0eb908a689eadcda8bc7f9b94c78c290fd03";
@@ -300,7 +301,7 @@ describe("native visual audio lifecycle (original synthetic geometry)", () => {
     const preview = { bindActor: vi.fn(() => cues) } as unknown as NativeActionCuePreview;
     const entity: WorldEntity = { id: "attack-fixture", kind: "monster", displayName: "Fixture", appearanceId: "fixture",
       health: 100, maximumHealth: 100, position: { x: 0, y: 0, z: 0 }, orientationRadians: 0, animation: "idle" };
-    const visual = nativeCharacterFactory(new Map([["fixture", { asset: await nativeVisualFixture(), clips: nativeVisualClips }]]), itemlessEquippedItemSource, preview)(scene, entity);
+    const visual = nativeCharacterFactory(new Map([["fixture", { asset: await nativeVisualFixture(), clips: nativeVisualClips }]]), itemlessEquippedItemSource, unlistedActorMaterialPrograms, preview)(scene, entity);
     try {
       await visual.ready; cues.start.mockClear();
       visual.animation.setState("attack"); visual.animation.update(.5);
@@ -323,7 +324,7 @@ describe("native visual audio lifecycle (original synthetic geometry)", () => {
     const entity: WorldEntity = { id: "audio-fixture", kind: "local-player", displayName: "Fixture", appearanceId: "fixture",
       health: 100, maximumHealth: 100, position: { x: 0, y: 0, z: 0 }, orientationRadians: 0, animation: "idle" };
     const asset = await nativeVisualFixture(), item = await nativeVisualFixture({ parts: ["Upper"], material: "replacement" });
-    const visual = nativeCharacterFactory(new Map([["fixture", { asset, clips: nativeVisualClips, upperItems: new Map([[22, item]]) }]]), itemlessEquippedItemSource, preview)(scene, entity);
+    const visual = nativeCharacterFactory(new Map([["fixture", { asset, clips: nativeVisualClips, upperItems: new Map([[22, item]]) }]]), itemlessEquippedItemSource, unlistedActorMaterialPrograms, preview)(scene, entity);
     try {
       await visual.ready;
       visual.setEntity({ ...entity, health: 0 });
@@ -347,7 +348,7 @@ describe("native visual audio lifecycle (original synthetic geometry)", () => {
     const preview = { bindActor: vi.fn(() => cues) } as unknown as NativeActionCuePreview;
     const entity: WorldEntity = { id: "failed", kind: "local-player", displayName: "Fixture", appearanceId: "fixture", equipment: { upper: 999 },
       health: 100, maximumHealth: 100, position: { x: 0, y: 0, z: 0 }, orientationRadians: 0, animation: "idle" };
-    const visual = nativeCharacterFactory(new Map([["fixture", { asset: await nativeVisualFixture(), clips: nativeVisualClips }]]), itemlessEquippedItemSource, preview)(scene, entity);
+    const visual = nativeCharacterFactory(new Map([["fixture", { asset: await nativeVisualFixture(), clips: nativeVisualClips }]]), itemlessEquippedItemSource, unlistedActorMaterialPrograms, preview)(scene, entity);
     try {
       await expect(visual.ready).rejects.toThrow("no verified upper-body binding");
       expect(cues.dispose).toHaveBeenCalledOnce(); expect(scene.meshes).toHaveLength(0);

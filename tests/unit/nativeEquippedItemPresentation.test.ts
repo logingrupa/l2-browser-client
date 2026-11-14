@@ -9,6 +9,7 @@ import type { NativeEquippedItemSource } from "../../src/assets/native/nativeEqu
 import { nativeCharacterFactory } from "../../src/assets/native/NativeCharacterVisual";
 import type { WorldEntity } from "../../src/world/worldTypes";
 import { nativeVisualClips, nativeVisualFixture } from "../fixtures/nativeVisualFixture";
+import { unlistedActorMaterialPrograms } from "../fixtures/actorMaterialProgramsFixture";
 
 const weaponRecordId = "interlude:item:1:body-part:7:weapon";
 const weaponLookup: NativeCatalogLookup = { status: "converted", key: "item:1", namedGaps: [],
@@ -81,7 +82,7 @@ describe("body-part items on a native character visual", () => {
     };
     const statuses: string[] = [];
     const visual = nativeCharacterFactory(new Map([["fixture", { asset: await nativeVisualFixture({ skinned: true }), clips: nativeVisualClips,
-      generatedProfile }]]), source)(scene, initial, message => statuses.push(message));
+      generatedProfile }]]), source, unlistedActorMaterialPrograms)(scene, initial, message => statuses.push(message));
     releases.push(() => visual.dispose());
     await visual.ready;
     const meshesBeforeEquip = scene.meshes.length;

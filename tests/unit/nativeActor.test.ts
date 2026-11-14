@@ -10,6 +10,7 @@ import type { AssetContainer } from "@babylonjs/core/assetContainer";
 import { NativeActor } from "../../src/assets/native/NativeActor";
 import { readAssetPackage, sha256, type AssetPackageManifest } from "../../src/assets/package/readAssetPackage";
 import { storedPackage } from "../fixtures/assetPackageFixture";
+import { unlistedActorMaterialPrograms } from "../fixtures/actorMaterialProgramsFixture";
 
 const attack = "Native_Attack", wait = "Native_Wait", upper = "Fixture.Upper";
 const loadGate = vi.hoisted(() => ({ next: undefined as ((container: AssetContainer) => Promise<void>) | undefined }));
@@ -22,8 +23,6 @@ vi.mock("@babylonjs/core/Loading/sceneLoader", async importOriginal => {
   } };
 });
 
-/** Embedded original triangle rigs. The two parts deliberately share bone
- * names, but have independent skeletons, animation targets and materials. */
 async function nativeFixture(options: {
   parts?: string[]; material?: string; omitAttack?: boolean; duration?: number; invalidJoint?: boolean; primitives?: number;
 } = {}) {
@@ -87,8 +86,6 @@ describe("native actor part assembly", () => {
   let sceneBaseline: ReturnType<typeof resources>;
   beforeEach(() => {
     engine = new NullEngine(); scene = new Scene(engine);
-    // The loader's PBR materials share a scene-owned BRDF texture. Warm this
-    // explicit baseline so disposal assertions still account for every owned texture.
     GetEnvironmentBRDFTexture(scene); sceneBaseline = resources();
     actors = []; releases = []; operations = []; loadGate.next = undefined;
   });
@@ -99,7 +96,7 @@ describe("native actor part assembly", () => {
     scene.dispose(); engine.dispose(); vi.restoreAllMocks();
   });
   async function create(options: Parameters<typeof nativeFixture>[0] = {}) {
-    const actor = await NativeActor.create(scene, await nativeFixture(options), new AbortController().signal);
+    const actor = await NativeActor.create(scene, await nativeFixture(options), unlistedActorMaterialPrograms, new AbortController().signal);
     actors.push(actor); return actor;
   }
   function resources() {
@@ -241,15 +238,15 @@ describe("native actor part assembly", () => {
 
   it("rejects an aborted create and malformed custom skin without leaving presentation resources", async () => {
     const aborted = new AbortController(); aborted.abort();
-    await expect(NativeActor.create(scene, await nativeFixture(), aborted.signal)).rejects.toHaveProperty("name", "AbortError");
+    await expect(NativeActor.create(scene, await nativeFixture(), unlistedActorMaterialPrograms, aborted.signal)).rejects.toHaveProperty("name", "AbortError");
     expect(resources()).toEqual(sceneBaseline);
-    await expect(NativeActor.create(scene, await nativeFixture({ invalidJoint: true }), new AbortController().signal)).rejects.toThrow("invalid weight or joint");
+    await expect(NativeActor.create(scene, await nativeFixture({ invalidJoint: true }), unlistedActorMaterialPrograms, new AbortController().signal)).rejects.toThrow("invalid weight or joint");
     expect(resources()).toEqual(sceneBaseline);
   });
 
   it("disposes a base model whose creation is aborted while the loader is pending", async () => {
     const asset = await nativeFixture(), aborted = new AbortController(), gate = gatedLoad();
-    const result = NativeActor.create(scene, asset, aborted.signal).catch(error => error as Error); operations.push(result);
+    const result = NativeActor.create(scene, asset, unlistedActorMaterialPrograms, aborted.signal).catch(error => error as Error); operations.push(result);
     const container = await gate.ready; aborted.abort(); gate.release();
     expect(await result).toMatchObject({ name: "AbortError" });
     expect(container.meshes).toHaveLength(0);
@@ -291,8 +288,6 @@ describe("native actor part assembly", () => {
     expect(result.anchorWorldMatrix).toEqual(Array.from(joint.getWorldMatrix().asArray()));
     expect(result.anchorLocalMatrix).toEqual(Array.from(Matrix.Identity().asArray()));
     const modelRoot = scene.transformNodes.find(node => node.uniqueId === result.baseModelRootUniqueId)!;
-    // The loaded glTF __root__ supplies the source handedness transform; derive
-    // the expected point from its actual parent, with no second conversion.
     const expected = Vector3.TransformCoordinates(new Vector3(3, 0, 0), joint.parent!.getWorldMatrix());
     expect(anchor.root.getAbsolutePosition().subtract(expected).length()).toBeLessThan(1e-5);
     expect(result.baseModelRootWorldMatrix).toEqual(Array.from(modelRoot.computeWorldMatrix(true).asArray()));

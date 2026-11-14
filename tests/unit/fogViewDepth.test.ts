@@ -60,14 +60,14 @@ describe("fog view depth in the native material and particle vertex stages", () 
   it("negates view-space z in a right-handed scene, where Babylon places geometry ahead of the camera at negative z", () => {
     const scene = sceneWithHandedness(true);
     expect(viewSpaceDepthOfPointAhead(scene, 50)).toBeCloseTo(-50, 6);
-    expect(nativeMaterialVertexSource(scene)).toContain("ue2ViewDepth = -(worldView * vec4(position, 1.0)).z;");
+    expect(nativeMaterialVertexSource(scene)).toContain("ue2ViewDepth = -(view * ue2WorldPosition).z;");
     expect(particleMaterialVertexSource(scene)).toContain("particleViewDepth = -(view * vec4(worldPosition, 1.0)).z;");
   });
 
   it("keeps view-space z in a left-handed scene, where Babylon places geometry ahead of the camera at positive z", () => {
     const scene = sceneWithHandedness(false);
     expect(viewSpaceDepthOfPointAhead(scene, 50)).toBeCloseTo(50, 6);
-    expect(nativeMaterialVertexSource(scene)).toContain("ue2ViewDepth = (worldView * vec4(position, 1.0)).z;");
+    expect(nativeMaterialVertexSource(scene)).toContain("ue2ViewDepth = (view * ue2WorldPosition).z;");
     expect(particleMaterialVertexSource(scene)).toContain("particleViewDepth = (view * vec4(worldPosition, 1.0)).z;");
   });
 });

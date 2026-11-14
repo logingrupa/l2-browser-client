@@ -11,6 +11,7 @@ import type { CharacterVisual } from "../../src/assets/CharacterVisual";
 import type { WorldEntity } from "../../src/world/worldTypes";
 import { nativeVisualClips, nativeVisualFixture } from "../fixtures/nativeVisualFixture";
 import { itemlessEquippedItemSource } from "../fixtures/nativeEquippedItemSourceFixture";
+import { unlistedActorMaterialPrograms } from "../fixtures/actorMaterialProgramsFixture";
 
 const initial: WorldEntity = { id: "fixture-evented-actor", kind: "monster", displayName: "Fixture evented actor", appearanceId: "fixture",
   health: 100, maximumHealth: 100, position: { x: 0, y: 0, z: 0 }, orientationRadians: 0, animation: "idle" };
@@ -120,7 +121,7 @@ describe("actor clip playback from asset.json events through the clip hub", () =
 
   it("lists a loaded actor's evented clip and plays it once through the hub", async () => {
     const hub = createNativeClipPreviewHub();
-    const visual = nativeCharacterFactory(new Map([["fixture", { asset: await eventedFixtureAsset(), clips: nativeVisualClips }]]), itemlessEquippedItemSource, undefined, undefined, hub)(scene, initial);
+    const visual = nativeCharacterFactory(new Map([["fixture", { asset: await eventedFixtureAsset(), clips: nativeVisualClips }]]), itemlessEquippedItemSource, unlistedActorMaterialPrograms, undefined, undefined, hub)(scene, initial);
     visuals.push(visual);
     expect(hub.actorClipEntityIds()).toEqual([]);
     expect(hub.actorClipListing(initial.id)).toBeNull();

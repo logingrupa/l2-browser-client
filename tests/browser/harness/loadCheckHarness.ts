@@ -4,6 +4,7 @@ import { loadConvertedNpcModel } from "../../../src/assets/native/loadConvertedN
 import { loadNativeModelPackages } from "../../../src/assets/native/loadNativeCatalog";
 import { loadNativeNpcProfiles } from "../../../src/assets/native/loadNativeNpcProfiles";
 import { NativeActor } from "../../../src/assets/native/NativeActor";
+import { actorMaterialProgramsOfCatalog } from "../../../src/assets/native/actorMaterialPrograms";
 import {
   buildNativeCatalogIndex, type NativeCatalogRecord, type NativeItemCatalogRecord, type NativeNpcCatalogRecord, type NativeSkillCatalogRecord,
 } from "../../../src/assets/native/nativeCatalogIndex";
@@ -79,7 +80,7 @@ export async function checkNpcLoadKey(page: LoadCheckPage, key: string, record: 
   const profile = (await loadNativeNpcProfiles(page.catalog.npcProfiles, page.signal)).get(record.profileId);
   if (profile === undefined) throw new Error(`${key} names NPC profile ${record.profileId}, which is not loaded`);
   const asset = await loadConvertedNpcModel(page.catalog, record, profile, page.signal);
-  const actor = await NativeActor.create(await page.scene(), asset, page.signal);
+  const actor = await NativeActor.create(await page.scene(), asset, actorMaterialProgramsOfCatalog(page.catalog), page.signal);
   try {
     if (!actor.ownedMeshes().some(mesh => mesh.getTotalVertices() > 0)) throw new Error(`${key} built a NativeActor without a mesh with vertices`);
   } finally {

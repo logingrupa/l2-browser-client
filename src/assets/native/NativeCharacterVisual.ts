@@ -13,6 +13,7 @@ import { listActorClips } from "../../animation/actorClipPlayback";
 import { presentEquippedItem, type GeneratedCharacterProfile } from "./nativeEquippedItemPresentation";
 import { NativeEquippedBodyPartItems, type EquippedItemPresenter } from "./nativeEquippedBodyPartItems";
 import type { NativeEquippedItemSource } from "./nativeEquippedItemSource";
+import type { ActorMaterialPrograms } from "./actorMaterialPrograms";
 
 export type NativeCharacterAssetLoader = (signal: AbortSignal) => Promise<AssetPackage>;
 
@@ -102,7 +103,7 @@ class NativeActorDriver implements CharacterAnimationDriver {
 }
 
 export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeCharacterProfile>, equippedItemSource: NativeEquippedItemSource,
-  actionCuePreview?: NativeActionCuePreview, footstepPreview?: Pick<NativeActionCuePreview, "bindActor">,
+  materialPrograms: ActorMaterialPrograms, actionCuePreview?: NativeActionCuePreview, footstepPreview?: Pick<NativeActionCuePreview, "bindActor">,
   clipPreview?: Pick<NativeClipPreviewHub, "register">): CharacterVisualFactory {
   return (scene: Scene, initial: WorldEntity, status?: (message: string) => void): CharacterVisual => {
     let unregisterPreview: (() => void) | undefined;
@@ -126,7 +127,7 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
     let bounds: CharacterBounds = { minimum: new Vector3(-.2, 0, -.2), maximum: new Vector3(.2, .45, .2),
       labelHeight: .6, selectionRadius: .25 };
     const profile = profiles.get(initial.appearanceId ?? "");
-    const bodyPartItems = new NativeEquippedBodyPartItems(scene, equippedItemSource, lifetime.signal, message => status?.(message));
+    const bodyPartItems = new NativeEquippedBodyPartItems(scene, equippedItemSource, materialPrograms, lifetime.signal, message => status?.(message));
     const presentBodyPartItem: EquippedItemPresenter = (slot, lookup) => presentEquippedItem(slot, lookup,
       { asset: characterAsset!, ...(profile?.generatedProfile ? { generatedProfile: profile.generatedProfile } : {}) });
     const updateBodyPartItems = () => { if (actor && initialized && !disposed) bodyPartItems.update(actor, current.equipment, presentBodyPartItem); };
@@ -189,7 +190,7 @@ export function nativeCharacterFactory(profiles: ReadonlyMap<string, NativeChara
       if (!profile) throw new Error(`${initial.displayName}: native profile unavailable.`);
       const asset = await loadNativeCharacterAsset(profile.asset, lifetime.signal);
       characterAsset = asset;
-      const loaded = await NativeActor.create(scene, asset, lifetime.signal);
+      const loaded = await NativeActor.create(scene, asset, materialPrograms, lifetime.signal);
       if (disposed) { loaded.dispose(); lifetime.signal.throwIfAborted(); }
       actor = loaded;
       loaded.root.setEnabled(false);

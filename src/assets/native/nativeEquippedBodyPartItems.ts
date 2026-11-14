@@ -2,6 +2,7 @@ import type { Scene } from "@babylonjs/core/scene";
 import type { BodyPartEquipmentSlot, WorldEntity } from "../../world/worldTypes";
 import { isEquipmentSlot } from "../../world/sandboxCommands";
 import { NativeActor, type NativeBoneAnchor, type NativeBoneAnchorInspection } from "./NativeActor";
+import type { ActorMaterialPrograms } from "./actorMaterialPrograms";
 import type { NativeCatalogLookup } from "./nativeCatalogIndex";
 import type { EquippedItemPresentation } from "./nativeEquippedItemPresentation";
 import type { NativeEquippedItemSource } from "./nativeEquippedItemSource";
@@ -37,8 +38,8 @@ export class NativeEquippedBodyPartItems {
   private readonly items = new Map<BodyPartEquipmentSlot, EquippedBodyPartItem>();
   private canonicalSlotOrder: readonly BodyPartEquipmentSlot[] = [];
 
-  constructor(private readonly scene: Scene, private readonly source: NativeEquippedItemSource, private readonly lifetime: AbortSignal,
-    private readonly reportDiagnostic: (diagnostic: string) => void) {}
+  constructor(private readonly scene: Scene, private readonly source: NativeEquippedItemSource, private readonly materialPrograms: ActorMaterialPrograms,
+    private readonly lifetime: AbortSignal, private readonly reportDiagnostic: (diagnostic: string) => void) {}
 
   update(actor: NativeActor, equipment: WorldEntity["equipment"], present: EquippedItemPresenter): void {
     const wanted = equippedBodyPartItemIds(equipment);
@@ -67,7 +68,7 @@ export class NativeEquippedBodyPartItems {
     signal.throwIfAborted();
     if (presentation.kind === "gap") { this.recordDiagnostic(state, presentation.reason); return; }
     const asset = await this.source.loadModel(presentation.catalogId, signal);
-    const model = await NativeActor.create(this.scene, asset, signal);
+    const model = await NativeActor.create(this.scene, asset, this.materialPrograms, signal);
     try {
       signal.throwIfAborted();
       const anchor = actor.createBoneAnchor(presentation.sourceObject, presentation.boneName);

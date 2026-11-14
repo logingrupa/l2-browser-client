@@ -9,6 +9,7 @@ import { presentEquippedItem, type GeneratedCharacterProfile } from "../../src/a
 import type { NativeEquippedItemSource } from "../../src/assets/native/nativeEquippedItemSource";
 import type { AssetPackage } from "../../src/assets/package/readAssetPackage";
 import { nativeVisualFixture } from "../fixtures/nativeVisualFixture";
+import { unlistedActorMaterialPrograms } from "../fixtures/actorMaterialProgramsFixture";
 
 interface Deferred<Value> {
   readonly promise: Promise<Value>;
@@ -39,7 +40,7 @@ async function fixture() {
   const lifetime = new AbortController();
   releases.push(() => { lifetime.abort(); scene.dispose(); engine.dispose(); });
   const characterAsset = await nativeVisualFixture({ skinned: true });
-  const character = await NativeActor.create(scene, characterAsset, lifetime.signal);
+  const character = await NativeActor.create(scene, characterAsset, unlistedActorMaterialPrograms, lifetime.signal);
   const presentAtGeneratedHand: EquippedItemPresenter = (slot, lookup) => presentEquippedItem(slot, lookup, { asset: characterAsset, generatedProfile });
   releases.push(() => character.dispose());
   const weapon = await nativeVisualFixture({ skinned: true, parts: ["Sword"], material: "sword" });
@@ -58,7 +59,7 @@ async function fixture() {
     },
   };
   const diagnostics: string[] = [];
-  const items = new NativeEquippedBodyPartItems(scene, source, lifetime.signal, diagnostic => diagnostics.push(diagnostic));
+  const items = new NativeEquippedBodyPartItems(scene, source, unlistedActorMaterialPrograms, lifetime.signal, diagnostic => diagnostics.push(diagnostic));
   releases.push(() => items.dispose());
   const createdModels = vi.spyOn(NativeActor, "create");
   const modelCreationsSettled = async () => { await Promise.allSettled(createdModels.mock.results.map(result => result.value)); await drainPendingCallbacks(); };

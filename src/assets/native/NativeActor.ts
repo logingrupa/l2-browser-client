@@ -11,6 +11,7 @@ import { createNativeClipPlayback, validateNativeClipDuration, type NativeClipPl
 import { loadNativeMaterial } from "../../materials/ue2/babylon/loadNativeMaterial";
 import { readRetainedGlbBoneIdentity } from "./nativeGlbBoneIdentity";
 import { drawNativeSessionSeed } from "./nativeSessionSeed";
+import { readActorModelSlotSourceObjects, type ActorMaterialPrograms } from "./actorMaterialPrograms";
 import { bindSkeletalSlotMaterials, type SkeletalSlotMaterialBinding } from "./nativeSkeletalMaterials";
 
 interface NativeModel {
@@ -71,7 +72,7 @@ function gltfPointers(node: TransformNode): readonly string[] {
   return Array.isArray(pointers) ? pointers.filter((pointer): pointer is string => typeof pointer === "string") : [];
 }
 
-async function loadModel(scene: Scene, asset: AssetPackage, parent: TransformNode, signal: AbortSignal): Promise<NativeModel> {
+async function loadModel(scene: Scene, asset: AssetPackage, parent: TransformNode, materialPrograms: ActorMaterialPrograms, signal: AbortSignal): Promise<NativeModel> {
   if (asset.manifest.kind !== "model" || !asset.manifest.model) throw new Error("A native actor requires a model package.");
   signal.throwIfAborted();
   const bytes = asset.files.get(asset.manifest.model.file);
@@ -91,7 +92,8 @@ async function loadModel(scene: Scene, asset: AssetPackage, parent: TransformNod
       clips.set(group.name, { index, duration: source.nativeDurationSeconds });
       group.stop();
     });
-    slotMaterials = await bindSkeletalSlotMaterials(scene, container, { sessionSeed: drawNativeSessionSeed(), loadProgram: loadNativeMaterial }, signal);
+    slotMaterials = await bindSkeletalSlotMaterials(scene, container, { sessionSeed: drawNativeSessionSeed(), loadProgram: loadNativeMaterial,
+      slotSourceObjects: readActorModelSlotSourceObjects(asset), materialPrograms }, signal);
     root = new TransformNode(asset.manifest.id, scene);
     root.parent = parent;
     root.setEnabled(false);
@@ -123,17 +125,18 @@ export class NativeActor {
   private currentMode: "loop" | "once" = "loop";
   private disposed = false;
 
-  private constructor(private readonly scene: Scene, private readonly asset: AssetPackage, private readonly base: NativeModel, root: TransformNode) {
+  private constructor(private readonly scene: Scene, private readonly asset: AssetPackage, private readonly materialPrograms: ActorMaterialPrograms,
+    private readonly base: NativeModel, root: TransformNode) {
     this.root = root;
     base.root.setEnabled(true);
   }
 
-  static async create(scene: Scene, asset: AssetPackage, signal: AbortSignal): Promise<NativeActor> {
+  static async create(scene: Scene, asset: AssetPackage, materialPrograms: ActorMaterialPrograms, signal: AbortSignal): Promise<NativeActor> {
     const root = new TransformNode("Native actor", scene);
     root.id = `native-actor:${root.uniqueId}`;
     try {
-      const base = await loadModel(scene, asset, root, signal);
-      return new NativeActor(scene, asset, base, root);
+      const base = await loadModel(scene, asset, root, materialPrograms, signal);
+      return new NativeActor(scene, asset, materialPrograms, base, root);
     } catch (error) { root.dispose(); throw error; }
   }
 
@@ -261,7 +264,7 @@ export class NativeActor {
     const signal = AbortSignal.any([request.signal, this.lifetime.signal]);
     let candidate: NativeModel | undefined;
     try {
-      candidate = await loadModel(this.scene, replacement, this.root, signal);
+      candidate = await loadModel(this.scene, replacement, this.root, this.materialPrograms, signal);
       if (candidate.clips.size !== this.base.clips.size || [...this.base.clips].some(([name, clip]) => candidate!.clips.get(name)?.duration !== clip.duration)) {
         throw new Error("Equipment does not share the original native animation relationships.");
       }

@@ -16,6 +16,7 @@ import type { GameWorldAdapter } from "../../src/world/GameWorldAdapter";
 import type { WorldEntity, WorldEvent } from "../../src/world/worldTypes";
 import { installMiniDom, type FakeElement, type MiniDom } from "./support/miniDom";
 import { itemlessEquippedItemSource } from "../fixtures/nativeEquippedItemSourceFixture";
+import { unlistedActorMaterialPrograms } from "../fixtures/actorMaterialProgramsFixture";
 
 const convertedNpcLookups: ReadonlyMap<string, NativeCatalogLookup> = new Map([
   ["npc:21622", { status: "converted", key: "npc:21622", namedGaps: [], record: { npcId: 21622, profileId: "native-npc-profiles", modelCatalogId: "musveren:0", join: "legacy-single-mesh-match" } }],
@@ -124,7 +125,7 @@ describe("sandbox NPC presentation through the catalog index", () => {
   it("shows the reason on the label and in the snapshot when a converted NPC model fails to load on spawn", async () => {
     const loadFailure = "Converted NPC model source differs from its profile mesh.";
     const nativeFactory = nativeCharacterFactory(new Map([["native-musveren", {
-      asset: () => Promise.reject(new Error(loadFailure)), clips: nativeNpcStateClips }]]), itemlessEquippedItemSource);
+      asset: () => Promise.reject(new Error(loadFailure)), clips: nativeNpcStateClips }]]), itemlessEquippedItemSource, unlistedActorMaterialPrograms);
     const { registry, spawnNpc, labelOf } = registryWithSandboxFactory((visualScene, entity, onAssetStatus) =>
       entity.npcId === undefined ? nativeFactoryDouble()(visualScene, entity, onAssetStatus) : nativeFactory(visualScene, entity, onAssetStatus));
     spawnNpc(21622, 1);

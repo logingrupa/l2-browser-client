@@ -7,6 +7,8 @@ import { RawTexture } from "@babylonjs/core/Materials/Textures/rawTexture";
 import type { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import type { Scene } from "@babylonjs/core/scene";
+import "@babylonjs/core/Shaders/ShadersInclude/bonesDeclaration";
+import "@babylonjs/core/Shaders/ShadersInclude/bonesVertex";
 import { createRandomStream, deriveStreamSeed, type RandomStream } from "../../../shared/random";
 import type { ResolvedMaterialBlend } from "../model/blendTable";
 import { DIAGNOSTIC_CONSTANTS } from "../model/constants/diagnosticConstants";
@@ -69,6 +71,7 @@ export interface NativeMaterial {
 }
 
 const lightmapCoordinatesAttribute = "uv2";
+const vertexStageUniforms = ["world", "view", "viewProjection"];
 
 function vertexSourceFor(scene: Scene, lighting: MaterialLighting): string {
   const lightmapped = lighting === "lightmap";
@@ -77,15 +80,20 @@ function vertexSourceFor(scene: Scene, lighting: MaterialLighting): string {
     "attribute vec3 position;",
     "attribute vec2 uv;",
     ...(lightmapped ? [`attribute vec2 ${lightmapCoordinatesAttribute};`, `varying vec2 ${lightmapCoordinatesVaryingName};`] : []),
-    "uniform mat4 worldViewProjection;",
-    "uniform mat4 worldView;",
+    "#include<bonesDeclaration>",
+    "uniform mat4 world;",
+    "uniform mat4 view;",
+    "uniform mat4 viewProjection;",
     "varying vec2 ue2TextureCoordinates;",
     "varying float ue2ViewDepth;",
     "void main() {",
+    "  mat4 finalWorld = world;",
+    "#include<bonesVertex>",
+    "  vec4 ue2WorldPosition = finalWorld * vec4(position, 1.0);",
     "  ue2TextureCoordinates = uv;",
     ...(lightmapped ? [`  ${lightmapCoordinatesVaryingName} = ${lightmapCoordinatesAttribute};`] : []),
-    `  ue2ViewDepth = ${forwardViewDepthExpression(scene, "worldView * vec4(position, 1.0)")};`,
-    "  gl_Position = worldViewProjection * vec4(position, 1.0);",
+    `  ue2ViewDepth = ${forwardViewDepthExpression(scene, "view * ue2WorldPosition")};`,
+    "  gl_Position = viewProjection * ue2WorldPosition;",
     "}",
   ].join("\n");
 }
@@ -114,7 +122,7 @@ export interface DiagnosticMaterialMetadata {
 function createDiagnosticMaterial(scene: Scene, loaded: LoadedNativeMaterial, lighting: MaterialLighting, reasons: readonly string[], unportedClass: string | null): NativeMaterial {
   const diagnostic: DiagnosticMaterialRecord = { root: loaded.program.root, unportedClass, reasons: [...reasons] };
   const material = new ShaderMaterial(`UE2 diagnostic: ${diagnostic.root}`, scene, { vertexSource: vertexSourceFor(scene, "unlit"), fragmentSource: diagnosticFragmentSource }, {
-    attributes: vertexAttributesFor("unlit"), uniforms: ["worldViewProjection", "worldView", diagnosticColourUniform], samplers: [],
+    attributes: vertexAttributesFor("unlit"), uniforms: [...vertexStageUniforms, diagnosticColourUniform], samplers: [],
   });
   material.doNotSerialize = true;
   const diagnosticMetadata: DiagnosticMaterialMetadata = { ue2Diagnostic: diagnostic };
@@ -175,7 +183,7 @@ function createCompiledMaterial(scene: Scene, loaded: LoadedNativeMaterial, plan
   const chain = buildFragmentChain(plan, lighting);
   const textures = createSamplerTextures(scene, loaded, plan);
   const material = new ShaderMaterial(`UE2 material: ${plan.root}`, scene, { vertexSource: vertexSourceFor(scene, lighting), fragmentSource: chain.fragmentSource }, {
-    attributes: vertexAttributesFor(lighting), uniforms: ["worldViewProjection", "worldView", ...chain.uniforms], samplers: [...chain.samplers],
+    attributes: vertexAttributesFor(lighting), uniforms: [...vertexStageUniforms, ...chain.uniforms], samplers: [...chain.samplers],
     needAlphaBlending: babylonBlend.alphaMode !== Constants.ALPHA_DISABLE, needAlphaTesting: plan.blend.alphaTest,
   });
   material.doNotSerialize = true;

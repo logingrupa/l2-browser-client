@@ -9,6 +9,7 @@ import type { WorldEntity, WorldEvent } from "../../src/world/worldTypes";
 import type { WorldPosition } from "../../src/world/sourceFrame";
 import { nativeVisualClips, nativeVisualFixture } from "../fixtures/nativeVisualFixture";
 import { itemlessEquippedItemSource } from "../fixtures/nativeEquippedItemSourceFixture";
+import { unlistedActorMaterialPrograms } from "../fixtures/actorMaterialProgramsFixture";
 
 vi.mock("../../src/ui/EntityLabel", () => ({ EntityLabel: class {
   select() {} setState() {} setDiagnostic() {} update() {} dispose() {}
@@ -29,7 +30,7 @@ describe("native entity support placement", () => {
       verticalMotion: { idle: [.25, .25], attack: [0, 1], death: [0, -1] } });
     const ground = vi.fn((position: WorldPosition) => ({ ...position, y: 4 }));
     registry = new EntityRegistry(scene, adapter, {} as HTMLElement, () => {}, {
-      createVisual: nativeCharacterFactory(new Map([["fixture", { asset, clips: nativeVisualClips }]]), itemlessEquippedItemSource),
+      createVisual: nativeCharacterFactory(new Map([["fixture", { asset, clips: nativeVisualClips }]]), itemlessEquippedItemSource, unlistedActorMaterialPrograms),
       ...withGround ? { ground } : {},
     });
     await vi.waitFor(() => expect(registry!.snapshot()[0]!.hasNativeModel).toBe(true));

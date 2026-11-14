@@ -9,6 +9,7 @@ import { createNativeFootstepPreview, NATIVE_FOOTSTEP_WORLD_DEFAULT, type Native
   type NativeFootstepPreview, type NativeFootstepPreviewOptions } from "../../src/audio/nativeFootstepPreview";
 import type { FootstepGroundContext } from "../../src/audio/footstepSurfaceAuto";
 import { nativeVisualClips, nativeVisualFixture } from "../fixtures/nativeVisualFixture";
+import { unlistedActorMaterialPrograms } from "../fixtures/actorMaterialProgramsFixture";
 
 const asset = { manifest: { id: "synthetic:human", kind: "model" }, files: new Map() } as unknown as AssetPackage;
 const arrays = {
@@ -36,7 +37,6 @@ function setup(definitions = [definition()], maxOffset = Infinity, options: Nati
   previews.push(preview);
   return { output, preview, player: preview.bindActor("human", definitions[0]!.asset) };
 }
-/** Auto without a support context resolves LAND: the authored Default{Walk,Run}Sound arrays. */
 const select = (preview: NativeFootstepPreview) => preview.setSurfaceSelection(NATIVE_FOOTSTEP_WORLD_DEFAULT);
 const off = (preview: NativeFootstepPreview) => preview.setSurfaceSelection({ ...NATIVE_FOOTSTEP_WORLD_DEFAULT, mode: "off" });
 const grassTerrain: FootstepGroundContext = { kind: "terrain", meshName: "terrain", sourceId: "20_20.TerrainInfo0", material: null, nativeXY: [0, 0],
@@ -149,10 +149,8 @@ describe("original-notify footstep timing", () => {
     expect(output.play.mock.calls[0]![0]).toBe("def-run1");
     const owner = output.play.mock.calls[0]![1]; output.stopOwner.mockClear();
     preview.setSurfaceSelection({ mode: "manual", surface: "Grass", variation: 0 }); expect(output.stopOwner).toHaveBeenCalledExactlyOnceWith(owner);
-    // Manual needs the stepsound package; without it the step stays unresolved.
     player.advance(clock(.25), clock(.75)); expect(preview.inspection().recent.at(-1)).toMatchObject({ mode: "manual", reason: "unresolved-selection" });
     select(preview); player.advance(clock(.75), clock(1.25));
-    // Slot 2 of DefaultRunSound repeats Run1 in the source array.
     expect(output.play.mock.calls[1]![0]).toBe("def-run1");
     expect(preview.inspection().recent.map(row => [row.property, row.variationIndex])).toEqual([["DefaultRunSound", 1], [null, null], ["DefaultRunSound", 2]]);
     expect(preview.inspection().recent.at(-1)).toMatchObject({ group: "LAND", generation: 1, occurrenceTimeSeconds: 1.25 });
@@ -218,7 +216,7 @@ describe("original-notify footstep timing", () => {
   it("uses one real NativeActor base clock across equipment replacement and loop boundaries", async () => {
     const engine = new NullEngine(), scene = new Scene(engine); GetEnvironmentBRDFTexture(scene);
     const body = await nativeVisualFixture(), shirt = await nativeVisualFixture({ parts: ["Upper"], material: "shirt" });
-    const actor = await NativeActor.create(scene, body, new AbortController().signal);
+    const actor = await NativeActor.create(scene, body, unlistedActorMaterialPrograms, new AbortController().signal);
     const { preview, player, output } = setup([definition([event(1, .5), event(2, 1.5)], { asset: body, clip: nativeVisualClips.run, durationSeconds: 2 })]);
     try {
       select(preview); actor.play(nativeVisualClips.run, "loop"); player.start(actor.clock());
