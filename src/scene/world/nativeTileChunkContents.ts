@@ -63,8 +63,19 @@ export function authoredAnchorPosition(manifest: NativeTileManifest): Vector3 {
 const footprintHolds = (footprint: WorldResidencyFootprint, x: number, z: number) =>
   x >= footprint.minimumX && x <= footprint.maximumX && z >= footprint.minimumZ && z <= footprint.maximumZ;
 
-export function collisionFloorBelow(world: CollisionWorld, authored: Vector3, lowestHeightMetres: number): TileAnchorFloor | null {
-  const start = worldPositionToSource(authored), end = worldPositionToSource({ x: authored.x, y: lowestHeightMetres, z: authored.z });
+function lowestResidentBspPointZ(world: CollisionWorld): number {
+  let lowestZ = Infinity;
+  for (const tileId of new Set(world.residentCells().map(cell => cell.tileId))) {
+    const points = world.tileBspTree(tileId)?.points ?? [];
+    for (let zIndex = 2; zIndex < points.length; zIndex += 3) lowestZ = Math.min(lowestZ, points[zIndex]!);
+  }
+  return lowestZ;
+}
+
+export function collisionFloorBelow(world: CollisionWorld, authored: Vector3, lowestTerrainHeightMetres: number): TileAnchorFloor | null {
+  const start = worldPositionToSource(authored);
+  const lowestTerrainZ = worldPositionToSource({ x: authored.x, y: lowestTerrainHeightMetres, z: authored.z }).z;
+  const end = { ...start, z: Math.min(lowestTerrainZ, lowestResidentBspPointZ(world)) - committedMovementRules.pawn.maxStepHeight };
   if (!(end.z < start.z)) return null;
   const hit = singleLineCheck(world, { start, end, extent: zeroExtent }, committedMovementRules);
   if (hit === null) return null;

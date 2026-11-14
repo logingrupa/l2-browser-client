@@ -102,8 +102,9 @@ async function walkTheTile(page: Page, tileRecord: TileCatalogRecord, screenshot
   const pageErrors: string[] = [];
   const world = await openTile(page, tileRecord, pageErrors);
   const end = await walkAlongX(page);
-  const terrainMinimumHeight = world.terrainBounds!.minimum[1]!;
-  expect(end.y, `the walk ended at height ${end.y} m, below the terrain minimum ${terrainMinimumHeight} m`).toBeGreaterThanOrEqual(terrainMinimumHeight);
+  const lowestStartHeight = Math.min(world.terrainBounds!.minimum[1]!, world.tileAnchor!.floorPosition[1]!);
+  expect(end.y, `the walk ended at height ${end.y} m, below the terrain minimum and the anchor floor ${lowestStartHeight} m`)
+    .toBeGreaterThanOrEqual(lowestStartHeight);
   const floorFailure = walkEndFloorFailure((await worldSnapshot(page))?.walkTrace ?? null);
   if (floorFailure !== null) throw new Error(floorFailure);
   await page.screenshot({ path: `test-results/${screenshotName}` });

@@ -9,7 +9,9 @@ import {
   anchorOnChunkFloor, collisionFloorBelow, tileAnchorHasNoFloor, tileAnchorOutsideChunkFootprints, type TileAnchorCandidate,
 } from "../../src/scene/world/nativeTileChunkContents";
 import { replaceFixtureArray } from "../support/nativeTileCollisionFixture";
-import { collisionWorldFromFixtures, emptyChunkArrays, fixtureCellId } from "../fixtures/movement/movementCollisionFixtures";
+import {
+  collisionWorldFromFixtures, emptyChunkArrays, fixtureCellId, volumeArrays, wallTreeArrays,
+} from "../fixtures/movement/movementCollisionFixtures";
 import {
   boxVolumeWorld, blockingBox, committedMoveTypes, floorSlab, pawnRules, sourcedHumanFighterSpeed, syntheticPawnHalfHeight, waterBox,
 } from "../fixtures/movement/pawnWorldFixtures";
@@ -155,10 +157,17 @@ describe("tile walk failure classes at their root cause", () => {
       .toThrow(`${tileAnchorHasNoFloor}: no collision lies below the authored PlayerStart in 90_90/chunk-1-0.`);
   });
 
-  it("tile-did-not-start: a floor probe ends at the lowest loaded terrain and finds nothing for an authored location below it", () => {
+  it("tile-did-not-start: a floor probe ends maxStepHeight below the lowest loaded terrain and finds nothing for an authored location below it", () => {
     const world = boxVolumeWorld([floorSlab(0)]);
-    expect(collisionFloorBelow(world, worldVector({ x: 0, y: 0, z: 200 }), 1)).toBeNull();
+    expect(collisionFloorBelow(world, worldVector({ x: 0, y: 0, z: 200 }), 1 + pawnRules.pawn.maxStepHeight / 100)).toBeNull();
+    expect(collisionFloorBelow(world, worldVector({ x: 0, y: 0, z: 200 }), pawnRules.pawn.maxStepHeight / 100 - 0.01)).toMatchObject({ primitiveKind: "volume" });
     expect(collisionFloorBelow(world, worldVector({ x: 0, y: 0, z: -300 }), -1)).toBeNull();
-    expect(collisionFloorBelow(world, worldVector({ x: 0, y: 0, z: 200 }), -1)).toMatchObject({ primitiveKind: "volume" });
+  });
+
+  it("tile-did-not-start: a floor probe reaches a floor below the loaded terrain when a resident BSP tree reaches lower", () => {
+    const otherArrays = emptyChunkArrays().filter(array => !array.name.startsWith("VOLS."));
+    const world = collisionWorldFromFixtures([...volumeArrays([floorSlab(-500)]), ...otherArrays], wallTreeArrays());
+    expect(collisionFloorBelow(boxVolumeWorld([floorSlab(-500)]), worldVector({ x: 0, y: 0, z: 200 }), 0)).toBeNull();
+    expect(collisionFloorBelow(world, worldVector({ x: 0, y: 0, z: 200 }), 0)).toMatchObject({ primitiveKind: "volume" });
   });
 });
