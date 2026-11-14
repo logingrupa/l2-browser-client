@@ -9,7 +9,7 @@ SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS_ROOT))
 
 from native_assets_lib.gltf import json_bytes
-from native_store.catalog_index_keys import catalog_record_unit_key, require_npc_profiles_join_models_of_their_mesh
+from native_store.catalog_index_keys import catalog_record_unit, require_npc_profiles_join_models_of_their_mesh
 from native_store.catalog_writer import (KNOWN_CATALOG_SLICES, empty_store_catalog, merge_catalog_slice_records, read_store_catalog,
                                          sha256_hex, sha256_of_file, validate_catalog_record, write_store)
 from native_store.gap_rows import read_gap_rows
@@ -17,7 +17,7 @@ from native_store.lane_coverage_refresh import refresh_lane_coverage
 from native_store.merge_lane_store import main_checkout_root
 from native_store.pinned_store_verification import PINNED_STORE_VERIFICATION_WORKER_COUNT, verify_pinned_store_files
 from native_store.store_file_copy import add_store_file_source, copy_store_files, missing_store_file_sources
-from native_store.store_paths import REPOSITORY_ROOT, confined_child_path, lane_store_root, read_lane_parts_by_name
+from native_store.store_paths import REPOSITORY_ROOT, confined_child_path, lane_store_root, read_lane_parts_by_name, refuse_reparse_points
 from native_store.unit_ledger import run_at_below_normal_priority
 
 LANE_CATALOG_DESCRIPTION = ('Pin a lane store catalog to the SHA-256 of the shared public/l2 catalog it was built on, '
@@ -26,7 +26,7 @@ UNION_EXCLUDED_STORE_FILES = ('catalog.json', 'coverage.json')
 MERGE_LANE_STORE_SCRIPT = Path(__file__).resolve().parent / 'merge_lane_store.py'
 MAIN_CHECKOUT_STORE_TARGET = 'public/l2'
 UNION_CATALOG_FIELDS = frozenset({'schemaVersion', 'sourceCatalogSha256', *KNOWN_CATALOG_SLICES})
-RETIRING_GAP_ROW_STATUSES = ('gap', 'failed')
+RETIRING_GAP_ROW_STATUS = 'gap'
 
 
 class LaneCatalogError(ValueError):
@@ -102,36 +102,65 @@ def unowned_earlier_records(earlier_catalog, union_catalog):
         for earlier_record in earlier_catalog.get(slice_name, []):
             earlier_record_id = validate_catalog_record(slice_name, earlier_record)['id']
             if earlier_record_id not in union_record_ids:
-                unowned.append((slice_name, earlier_record_id))
+                unowned.append((slice_name, earlier_record))
     return unowned
 
 
-def retiring_gap_rows_by_unit_key(project_root, union_lane_names):
+def owned_gap_rows_by_unit_key_and_step(project_root, union_lane_names):
     parts_by_lane_name = read_lane_parts_by_name()
-    retiring_rows_by_unit_key = {}
+    owned_rows_by_unit_key_and_step = {}
     for union_lane_name in union_lane_names:
         for row in read_gap_rows(project_root, union_lane_name):
-            if row['status'] in RETIRING_GAP_ROW_STATUSES and row['part'] in parts_by_lane_name[union_lane_name]:
-                retiring_rows_by_unit_key.setdefault(row['key'], (union_lane_name, row))
-    return retiring_rows_by_unit_key
+            if row['part'] in parts_by_lane_name[union_lane_name]:
+                owned_rows_by_unit_key_and_step.setdefault((row['key'], row['step']), []).append((union_lane_name, row))
+    return owned_rows_by_unit_key_and_step
 
 
-def retired_earlier_records(project_root, lane_name, union_lane_names, earlier_catalog, union_catalog):
+def owning_step_gap_row(lane_name, slice_name, record_id, owned_rows_by_unit_key_and_step):
+    refused_record = f'lane {lane_name} catalog {slice_name} record {record_id} is owned by no union lane'
+    unit = catalog_record_unit(slice_name, record_id)
+    if unit is None:
+        raise LaneCatalogError(f'{refused_record}, and its id maps to no unit key; preserved')
+    owning_step_rows = owned_rows_by_unit_key_and_step.get((unit.key, unit.owning_step), [])
+    if not owning_step_rows:
+        raise LaneCatalogError(f'{refused_record}, and no union lane {unit.owning_step} row records its unit {unit.key}; preserved')
+    for owning_lane_name, row in owning_step_rows:
+        if row['status'] != RETIRING_GAP_ROW_STATUS:
+            raise LaneCatalogError(f'{refused_record}, and union lane {owning_lane_name} records its unit {unit.key} at step '
+                                   f'{unit.owning_step} as {row["status"]}; only a {RETIRING_GAP_ROW_STATUS} row of that step retires it; '
+                                   'preserved')
+    return unit, owning_step_rows[0]
+
+
+def store_files_pinned_by_record(store_root, slice_name, record):
+    return verify_pinned_store_files(store_root, {slice_name: [record]}, PINNED_STORE_VERIFICATION_WORKER_COUNT)
+
+
+def retired_earlier_records(project_root, lane_name, union_lane_names, earlier_catalog, union_catalog, store_file_sources):
     unowned = unowned_earlier_records(earlier_catalog, union_catalog)
     if not unowned:
         return []
-    retiring_rows_by_unit_key = retiring_gap_rows_by_unit_key(project_root, union_lane_names)
+    owned_rows_by_unit_key_and_step = owned_gap_rows_by_unit_key_and_step(project_root, union_lane_names)
+    store_root = lane_store_root(project_root, lane_name)
     retired = []
-    for slice_name, record_id in unowned:
-        unit_key = catalog_record_unit_key(slice_name, record_id)
-        if unit_key not in retiring_rows_by_unit_key:
-            unexplained_unit = f'its unit {unit_key}' if unit_key else 'it, as its id maps to no unit key'
-            raise LaneCatalogError(f'lane {lane_name} catalog {slice_name} record {record_id} is owned by no union lane, and no union lane '
-                                   f'gap or failed row explains {unexplained_unit}; preserved')
-        owning_lane_name, row = retiring_rows_by_unit_key[unit_key]
-        retired.append({'slice': slice_name, 'id': record_id, 'unitKey': unit_key, 'lane': owning_lane_name, 'step': row['step'],
-                        'status': row['status'], 'reason': row['reason']})
+    for slice_name, record in unowned:
+        unit, (owning_lane_name, row) = owning_step_gap_row(lane_name, slice_name, record['id'], owned_rows_by_unit_key_and_step)
+        pinned_store_file_by_key = store_files_pinned_by_record(store_root, slice_name, record)
+        removed_store_files = sorted(store_file.relative for key, store_file in pinned_store_file_by_key.items() if key not in store_file_sources)
+        retired.append({'slice': slice_name, 'id': record['id'], 'unitKey': unit.key, 'lane': owning_lane_name, 'step': row['step'],
+                        'status': row['status'], 'reason': row['reason'], 'removedStoreFiles': removed_store_files})
     return retired
+
+
+def remove_retired_store_files(store_root, retired_records):
+    root = refuse_reparse_points(store_root)
+    for relative in sorted({relative for retired_record in retired_records for relative in retired_record['removedStoreFiles']}):
+        store_file = confined_child_path(root, relative)
+        store_file.unlink()
+        folder = store_file.parent
+        while folder != root and not any(folder.iterdir()):
+            folder.rmdir()
+            folder = folder.parent
 
 
 def union_catalog_of_lanes(project_root, lane_name, union_lane_names, base_sha256, earlier_catalog, store_file_sources):
@@ -141,7 +170,8 @@ def union_catalog_of_lanes(project_root, lane_name, union_lane_names, base_sha25
     for union_lane_name in union_lane_names:
         union_catalog = merge_union_lane(project_root, union_lane_name, base_sha256, union_catalog, store_file_sources,
                                          owner_and_record_by_record_key)
-    return union_catalog, retired_earlier_records(project_root, lane_name, union_lane_names, earlier_catalog, union_catalog)
+    retired_records = retired_earlier_records(project_root, lane_name, union_lane_names, earlier_catalog, union_catalog, store_file_sources)
+    return union_catalog, retired_records
 
 
 def require_distinct_union_lanes(lane_name, union_lane_names):
@@ -188,6 +218,7 @@ def write_lane_catalog(project_root, lane_name, union_lane_names=(), plan_only=F
                 'restageCommand': restage_command(project_root, lane_name, base_sha256)}
     if union_lane_names:
         files_written = copy_store_files(store_root, store_file_sources, before, after)['filesWritten']
+        remove_retired_store_files(store_root, union_report['retiredRecords'])
     else:
         files_written = write_store(store_root, {}, before, after)['filesWritten']
     refresh_lane_coverage(project_root, lane_name)

@@ -8,11 +8,22 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
+sys.path.insert(0, str(ROOT / 'scripts' / 'data'))
 sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
+from actors.character_requests import CHARACTER_STEP
+from actors.item_requests import ITEM_STEP
+from actors.skill_binding_table import SKILLS_GAP_ROW_STEP
 from catalog_store_fixture import model_record, write_profile_manifest
-from native_store.catalog_index_keys import catalog_index_keys, catalog_record_unit_key, character_model_record_id
+from convert_tables import DECODE_STEP
+from convert_ui import LAYOUT_STEP
+from native_store.catalog_index_keys import (CHARACTER_MODEL_STEP_NAME, ITEM_MODEL_STEP_NAME, SKILL_EFFECT_GAP_ROW_STEP_NAME,
+                                             TABLE_DECODE_STEP_NAME, TABLE_NAME_INDEX_STEP_NAME, TILE_MANIFEST_STEP_NAME, WINDOW_LAYOUT_STEP_NAME,
+                                             CatalogRecordUnit, catalog_index_keys, catalog_record_unit, catalog_record_unit_key,
+                                             character_model_record_id)
 from native_store.coverage_denominators import CoverageReportError
+from table_name_indexes import NAME_INDEX_STEP
+from world.tile_manifest_step import TILE_MANIFEST_STEP_NAME as CONVERTER_TILE_MANIFEST_STEP_NAME
 
 GOLDEN_STORE_ROOT = ROOT / 'tests' / 'fixtures' / 'golden' / 'l2'
 CATALOG_INDEX_KEYS_FIXTURE_PATH = ROOT / 'tests' / 'fixtures' / 'catalog-index-keys.json'
@@ -166,6 +177,28 @@ class CatalogRecordUnitKeyTests(unittest.TestCase):
         for (slice_name, record_id), unit_key in expected_unit_key_by_record.items():
             with self.subTest(slice_name=slice_name, record_id=record_id):
                 self.assertEqual(catalog_record_unit_key(slice_name, record_id), unit_key)
+
+    def test_each_record_maps_to_the_step_that_writes_its_slice(self):
+        expected_unit_by_record = {
+            ('models', character_model_record_id(8)): CatalogRecordUnit('character:8', 'characters'),
+            ('models', 'interlude:item:26:body-part:6:armor:2'): CatalogRecordUnit('item:26', 'items'),
+            ('tiles', '20_21'): CatalogRecordUnit('tile:20_21', 'manifest'),
+            ('sections', 'map-20-20-section'): CatalogRecordUnit('tile:20_20', 'manifest'),
+            ('tables', 'actionname-e'): CatalogRecordUnit('table:actionname-e', 'decode'),
+            ('tables', 'itemname_e_names'): CatalogRecordUnit('table:itemname_e_names', 'name-index'),
+            ('windows', 'StatusWnd#2'): CatalogRecordUnit('window:StatusWnd#2', 'layout'),
+            ('effectComponents', 'interlude:skill:3:level:1:raw-source-dispatch'): CatalogRecordUnit('skill:3:1', 'skills'),
+            ('models', 'npc-model:' + 'c' * 64): None,
+        }
+        for (slice_name, record_id), unit in expected_unit_by_record.items():
+            with self.subTest(slice_name=slice_name, record_id=record_id):
+                self.assertEqual(catalog_record_unit(slice_name, record_id), unit)
+
+    def test_each_owning_step_name_is_the_step_name_its_converter_writes(self):
+        self.assertEqual((CHARACTER_MODEL_STEP_NAME, ITEM_MODEL_STEP_NAME, TILE_MANIFEST_STEP_NAME, TABLE_DECODE_STEP_NAME,
+                          TABLE_NAME_INDEX_STEP_NAME, WINDOW_LAYOUT_STEP_NAME, SKILL_EFFECT_GAP_ROW_STEP_NAME),
+                         (CHARACTER_STEP, ITEM_STEP, CONVERTER_TILE_MANIFEST_STEP_NAME, DECODE_STEP, NAME_INDEX_STEP, LAYOUT_STEP,
+                          SKILLS_GAP_ROW_STEP))
 
 
 if __name__ == '__main__':

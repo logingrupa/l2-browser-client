@@ -18,7 +18,6 @@ from native_store.catalog_writer import (CatalogWriteError, PinnedFileReference,
 from native_store import pinned_store_verification
 from native_store.pinned_store_verification import (PINNED_STORE_VERIFICATION_WORKER_COUNT, verified_chunk_outcomes,
                                                     verified_file_child_references, verify_pinned_store_files)
-from native_store.store_paths import lane_store_root
 from native_store import write_lane_catalog as lane_catalog_module
 from native_store.write_lane_catalog import write_lane_catalog
 from test_bundle_member_pins import (POOLED_WALK_WORKER_COUNT, ProfileBundle, ProfileBundleProjectTestCase, SyntheticEffectBundle,
@@ -151,13 +150,12 @@ class StagedSkillEffectStoreWalkTests(TemporaryStoreTestCase):
 
 
 class LaneCatalogVerificationCallSiteTests(ProfileBundleProjectTestCase):
-    def test_the_lane_catalog_verifies_the_target_lane_and_each_union_lane_without_collecting_payloads(self):
+    def test_the_lane_catalog_verifies_a_lane_alone_and_each_union_lane_of_a_union_without_collecting_payloads(self):
         with patch.object(lane_catalog_module, 'verify_pinned_store_files', wraps=verify_pinned_store_files) as verify_only_walk_calls:
             write_lane_catalog(self.project, 'actors')
             write_lane_catalog(self.project, 'integration', ('actors',))
         self.assertEqual([(call.args[0], call.args[2]) for call in verify_only_walk_calls.call_args_list],
                          [(self.actors_store, PINNED_STORE_VERIFICATION_WORKER_COUNT),
-                          (lane_store_root(self.project, 'integration'), PINNED_STORE_VERIFICATION_WORKER_COUNT),
                           (self.actors_store, PINNED_STORE_VERIFICATION_WORKER_COUNT)])
         self.assertFalse(hasattr(lane_catalog_module, 'add_store_file'))
         self.assertEqual(PINNED_STORE_VERIFICATION_WORKER_COUNT, 12)

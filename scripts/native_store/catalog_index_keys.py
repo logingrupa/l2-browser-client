@@ -4,10 +4,11 @@ import json
 import os
 from pathlib import Path
 import re
+from typing import NamedTuple
 
 from native_store.catalog_writer import (MAXIMUM_CATALOG_BYTES, MAXIMUM_SAFE_INTEGER, STORE_CATALOG_NAME, CatalogWriteError,
-                                         decode_store_catalog, refuse_duplicate_json_keys, refuse_non_finite_json_number, require_byte_length,
-                                         require_pinned_path, sha256_hex, validate_catalog_record)
+                                         decode_store_catalog, is_table_name_index_id, refuse_duplicate_json_keys, refuse_non_finite_json_number,
+                                         require_byte_length, require_pinned_path, sha256_hex, validate_catalog_record)
 from native_store.coverage_denominators import CoverageReportError
 from native_store.gap_rows import CATALOG_KEY_PATTERNS
 
@@ -26,6 +27,27 @@ LEGACY_SECTION_ID_PATTERN = re.compile(r'^map-(?P<column>\d{2})-(?P<row>\d{2})-s
 CHARACTER_MODEL_RECORD_ID_PREFIX = 'character-model:'
 CHARACTER_MODEL_RECORD_ID_PATTERN = re.compile('^' + re.escape(CHARACTER_MODEL_RECORD_ID_PREFIX) + r'(?P<character>0|[1-9]\d{0,3})$')
 SINGLE_RECORD_KEY_PREFIX_BY_SLICE = {'tiles': 'tile', 'windows': 'window', 'tables': 'table'}
+CHARACTER_MODEL_STEP_NAME = 'characters'
+ITEM_MODEL_STEP_NAME = 'items'
+TILE_MANIFEST_STEP_NAME = 'manifest'
+TABLE_DECODE_STEP_NAME = 'decode'
+TABLE_NAME_INDEX_STEP_NAME = 'name-index'
+WINDOW_LAYOUT_STEP_NAME = 'layout'
+SKILL_EFFECT_GAP_ROW_STEP_NAME = 'skills'
+OWNING_STEP_BY_SLICE_AND_UNIT_KIND = {
+    ('models', 'character'): CHARACTER_MODEL_STEP_NAME,
+    ('models', 'item'): ITEM_MODEL_STEP_NAME,
+    ('tiles', 'tile'): TILE_MANIFEST_STEP_NAME,
+    ('sections', 'tile'): TILE_MANIFEST_STEP_NAME,
+    ('tables', 'table'): TABLE_DECODE_STEP_NAME,
+    ('windows', 'window'): WINDOW_LAYOUT_STEP_NAME,
+    ('effectComponents', 'skill'): SKILL_EFFECT_GAP_ROW_STEP_NAME,
+}
+
+
+class CatalogRecordUnit(NamedTuple):
+    key: str
+    owning_step: str
 
 
 def character_model_record_id(chargrp_index):
@@ -50,6 +72,15 @@ def catalog_record_unit_key(slice_name, record_id):
         return f'tile:{section_match["column"]}_{section_match["row"]}'
     skill_match = SKILL_EFFECT_COMPONENT_ID_PATTERN.match(record_id) if slice_name == 'effectComponents' else None
     return f'skill:{skill_match["skill"]}:{skill_match["level"]}' if skill_match else None
+
+
+def catalog_record_unit(slice_name, record_id):
+    unit_key = catalog_record_unit_key(slice_name, record_id)
+    if unit_key is None:
+        return None
+    if slice_name == 'tables' and is_table_name_index_id(record_id):
+        return CatalogRecordUnit(unit_key, TABLE_NAME_INDEX_STEP_NAME)
+    return CatalogRecordUnit(unit_key, OWNING_STEP_BY_SLICE_AND_UNIT_KIND[(slice_name, unit_key.split(':', 1)[0])])
 
 
 def read_measured_catalog(store_root):
