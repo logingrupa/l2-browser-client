@@ -18,11 +18,10 @@ export interface NativeTerrainPreview {
   dispose(): void;
 }
 const HASH = /^[a-f0-9]{64}$/;
+const webGpuGuaranteedTextureDimension2D = 8192;
 const isObject = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 const finite = (value: unknown, length: number): value is number[] => Array.isArray(value) && value.length === length && value.every(item => typeof item === "number" && Number.isFinite(item));
 
-/** Decode this exporter's RGB/RGBA8 PNGs directly. Canvas/ImageBitmap drawing
- * would premultiply partially transparent mask channels before readback. */
 export async function decodeNativePreviewPng(bytes: Uint8Array<ArrayBuffer>, signal: AbortSignal): Promise<NativePreviewPixels> {
   signal.throwIfAborted();
   if (bytes.length < 45 || bytes.length > 32 * 1024 * 1024 ||
@@ -37,8 +36,10 @@ export async function decodeNativePreviewPng(bytes: Uint8Array<ArrayBuffer>, sig
       if (offset !== 8 || length !== 13) throw new Error("Native preview PNG header order is invalid.");
       width = view.getUint32(begin); height = view.getUint32(begin + 4);
       channels = bytes[begin + 9] === 2 ? 3 : bytes[begin + 9] === 6 ? 4 : 0;
-      if (!channels || width < 1 || height < 1 || width > 1024 || height > 1024 || bytes[begin + 8] !== 8 ||
-        bytes[begin + 10] !== 0 || bytes[begin + 11] !== 0 || bytes[begin + 12] !== 0) throw new Error("Native preview supports only noninterlaced RGB/RGBA8 PNGs up to 1024 pixels.");
+      if (!channels || width < 1 || height < 1 || width > webGpuGuaranteedTextureDimension2D || height > webGpuGuaranteedTextureDimension2D ||
+        bytes[begin + 8] !== 8 || bytes[begin + 10] !== 0 || bytes[begin + 11] !== 0 || bytes[begin + 12] !== 0) {
+        throw new Error(`Native PNG decoding supports only noninterlaced RGB/RGBA8 images up to ${webGpuGuaranteedTextureDimension2D} pixels per edge.`);
+      }
     } else if (type === "IDAT") {
       if (!width || idatEnded) throw new Error("Native preview PNG data order is invalid.");
       blocks.push(bytes.slice(begin, end));
@@ -50,9 +51,7 @@ export async function decodeNativePreviewPng(bytes: Uint8Array<ArrayBuffer>, sig
     offset = end + 4;
   }
   if (!ended || !blocks.length || !channels) throw new Error("Native preview PNG is incomplete.");
-  // Hash verification at the fetch boundary covers PNG CRC/chunk bytes. Bound
-  // decompression separately rather than trusting a compressed allocation size.
-  const stride = width * channels, expected = (stride + 1) * height, packed = new Uint8Array(expected);
+  const stride = width * channels, filteredScanlineBytes = (stride + 1) * height, packed = new Uint8Array(filteredScanlineBytes);
   const reader = new Blob(blocks).stream().pipeThrough(new DecompressionStream("deflate")).getReader();
   let used = 0;
   try {
@@ -60,12 +59,12 @@ export async function decodeNativePreviewPng(bytes: Uint8Array<ArrayBuffer>, sig
       signal.throwIfAborted();
       const part = await reader.read();
       if (part.done) break;
-      if (used + part.value.length > expected) throw new Error("Native preview PNG decompressed size exceeds dimensions.");
+      if (used + part.value.length > filteredScanlineBytes) throw new Error("Native preview PNG decompressed size exceeds dimensions.");
       packed.set(part.value, used); used += part.value.length;
     }
   } finally { await reader.cancel(); reader.releaseLock(); }
   signal.throwIfAborted();
-  if (used !== expected) throw new Error("Native preview PNG decompressed size differs from dimensions.");
+  if (used !== filteredScanlineBytes) throw new Error("Native preview PNG decompressed size differs from dimensions.");
   const scan = new Uint8Array(stride * height), rgba = new Uint8Array(width * height * 4);
   for (let y = 0; y < height; y++) {
     const filter = packed[y * (stride + 1)]!;
@@ -130,14 +129,10 @@ function textureRecords(catalog: unknown): Map<string, TextureRecord> {
   return records;
 }
 
-/** Optional, explicitly unverified source-texture visualization. Nothing changes
- * until all inputs and the shader are ready; callers retain neutral fallback. */
 export async function applyNativeTerrainPreview(scene: Scene, meshes: readonly AbstractMesh[], catalog: unknown, signal: AbortSignal): Promise<NativeTerrainPreview> {
   signal.throwIfAborted();
   if (!meshes.length || scene.isDisposed || !scene.useRightHandedSystem) throw new Error("Native preview requires live right-handed terrain.");
   const layers = layersFor(meshes[0]!);
-  // Provenance differs between separately qualified sectors. Sharing is safe
-  // only when every field consumed by this shader is identical; keep metadata.
   if (meshes.some(mesh => terrainMaterialBindingKey(layersFor(mesh)) !== terrainMaterialBindingKey(layers))) throw new Error("Native preview terrain layer bindings differ between meshes.");
   if (scene.getEngine().getCaps().maxTexturesImageUnits < 12) throw new Error("Native preview requires 12 fragment texture samplers.");
   const records = textureRecords(catalog), textures: RawTexture[] = [], original = meshes.map(mesh => ({ mesh, material: mesh.material }));

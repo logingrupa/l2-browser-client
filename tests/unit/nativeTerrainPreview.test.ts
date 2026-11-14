@@ -70,6 +70,16 @@ describe("native terrain PNG and byte packing", () => {
     await expect(decodeNativePreviewPng(bytes, abort.signal)).rejects.toHaveProperty("name", "AbortError");
   });
 
+  it("accepts every edge a WebGPU 2D texture takes on any adapter and refuses one pixel more", async () => {
+    for (const edge of [1024, 1025, 2048, 8192]) {
+      const row = new Uint8Array(edge * 3).fill(77);
+      expect(await decodeNativePreviewPng(png(edge, 1, 3, row), signal())).toMatchObject({ width: edge, height: 1 });
+      expect(await decodeNativePreviewPng(png(1, edge, 3, row), signal())).toMatchObject({ width: 1, height: edge });
+    }
+    await expect(decodeNativePreviewPng(png(8193, 1, 3, new Uint8Array(8193 * 3)), signal())).rejects.toThrow("up to 8192 pixels per edge");
+    await expect(decodeNativePreviewPng(png(1, 8193, 3, new Uint8Array(8193 * 3)), signal())).rejects.toThrow("up to 8192 pixels per edge");
+  });
+
   it("packs one equal scalar per source texel without interpolation or alpha premultiplication", () => {
     const mask = (a: number, b: number) => ({ width: 2, height: 1, rgba: new Uint8Array([a, a, a, a, b, b, b, b]) });
     const first = mask(3, 97), second = mask(215, 0), before = first.rgba.slice();
