@@ -101,19 +101,32 @@ const diagnosticFragmentSource = [
   `void main() { gl_FragColor = ${diagnosticColourUniform}; }`,
 ].join("\n");
 
+export interface DiagnosticMaterialRecord {
+  readonly root: string;
+  readonly unportedClass: string | null;
+  readonly reasons: readonly string[];
+}
+
+export interface DiagnosticMaterialMetadata {
+  readonly ue2Diagnostic: DiagnosticMaterialRecord;
+}
+
 function createDiagnosticMaterial(scene: Scene, loaded: LoadedNativeMaterial, lighting: MaterialLighting, reasons: readonly string[], unportedClass: string | null): NativeMaterial {
-  const material = new ShaderMaterial(`UE2 diagnostic: ${loaded.program.root}`, scene, { vertexSource: vertexSourceFor(scene, "unlit"), fragmentSource: diagnosticFragmentSource }, {
+  const diagnostic: DiagnosticMaterialRecord = { root: loaded.program.root, unportedClass, reasons: [...reasons] };
+  const material = new ShaderMaterial(`UE2 diagnostic: ${diagnostic.root}`, scene, { vertexSource: vertexSourceFor(scene, "unlit"), fragmentSource: diagnosticFragmentSource }, {
     attributes: vertexAttributesFor("unlit"), uniforms: ["worldViewProjection", "worldView", diagnosticColourUniform], samplers: [],
   });
   material.doNotSerialize = true;
+  const diagnosticMetadata: DiagnosticMaterialMetadata = { ue2Diagnostic: diagnostic };
+  material.metadata = diagnosticMetadata;
   material.setColor4(diagnosticColourUniform, new Color4(...DIAGNOSTIC_CONSTANTS.magenta.runtimeDefault));
   let lastUniforms: NativeMaterialUniforms | null = null;
   return {
     material,
     update: uniforms => { lastUniforms = uniforms; },
     setLightmap: () => {},
-    inspect: () => ({ materialId: loaded.materialId, root: loaded.program.root, status: "diagnostic", lighting, lightmapBound: false, reasons: [...reasons],
-      unportedClass, blend: null, samplerCount: 0, colourSourceCount: 0, uniforms: lastUniforms, frame: null }),
+    inspect: () => ({ materialId: loaded.materialId, root: diagnostic.root, status: "diagnostic", lighting, lightmapBound: false, reasons: [...diagnostic.reasons],
+      unportedClass: diagnostic.unportedClass, blend: null, samplerCount: 0, colourSourceCount: 0, uniforms: lastUniforms, frame: null }),
     dispose: () => material.dispose(true, false),
   };
 }

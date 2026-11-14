@@ -1,29 +1,14 @@
 import { expect, test, type Page } from "@playwright/test";
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { desktopViewport } from "./browserViewports";
 import { collectBrowserErrors } from "./browserErrors";
+import { captureStoreName, captureStoreRequirement, captureTileId, captureTileRecord, captureTileRequirement, openCaptureTile } from "./captureTileRoute";
 
-interface TileCatalogRecord { readonly id: string; readonly manifestSha256: string }
-
-const captureStoreName = "integration";
-const tileId = "20_20";
-const captureCatalogPath = resolve("artifacts/lane-store", captureStoreName, "l2/catalog.json");
-const captureCatalog: { tiles?: TileCatalogRecord[] } | null = existsSync(captureCatalogPath) ? JSON.parse(readFileSync(captureCatalogPath, "utf8")) : null;
-const tileRecord = captureCatalog?.tiles?.find(record => record.id === tileId) ?? null;
-const tileLoadTimeout = 240_000;
 const alphaChangeRadians = .5;
 const radiusBeyondUpperLimitMetres = 1;
 const framingGameMinutes = 720;
 
-test.skip(process.env.NATIVE_STORE_ROOT !== captureStoreName, "run with NATIVE_STORE_ROOT=integration, the store sandbox halves are captured on");
-test.skip(tileRecord === null, "the integration union catalog has no tiles record 20_20");
-
-async function openCaptureTile(page: Page): Promise<void> {
-  await page.goto(`/?map=${tileId}`);
-  await expect.poll(() => page.evaluate(() => Boolean(window.__nativeSlice?.snapshot().world)), { timeout: tileLoadTimeout, intervals: [1_000] }).toBe(true);
-  expect(await page.evaluate(() => window.__nativeSlice!.snapshot().world!.manifestSha256)).toBe(tileRecord!.manifestSha256);
-}
+test.skip(process.env.NATIVE_STORE_ROOT !== captureStoreName, captureStoreRequirement);
+test.skip(captureTileRecord === null, captureTileRequirement);
 
 async function readSnapshotCamera(page: Page) {
   return page.evaluate(() => {
@@ -74,7 +59,7 @@ test.describe("sandbox framing for side-by-side halves", () => {
     }
 
     const environmentBefore = await readEnvironmentInspection(page);
-    if (!environmentBefore.clock) throw new Error(`Tile ${tileId} has no environment clock: ${environmentBefore.lastRejectedEvent ?? "no lighting resource"}.`);
+    if (!environmentBefore.clock) throw new Error(`Tile ${captureTileId} has no environment clock: ${environmentBefore.lastRejectedEvent ?? "no lighting resource"}.`);
     const currentEnvironmentType = environmentBefore.clock.environmentType;
     await page.evaluate(([gameMinutes, environmentType]) => {
       window.__nativeSlice!.dispatch({ type: "set-environment", gameMinutes, environmentType });

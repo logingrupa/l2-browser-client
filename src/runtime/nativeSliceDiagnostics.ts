@@ -34,6 +34,8 @@ import type { NativeSliceEffects } from "./createNativeSliceEffects";
 import type { WorldMovement, WorldMovementCollisionCells, WorldMovementInspection } from "./worldMovementWiring";
 import type { WorldEnvironment, WorldEnvironmentInspection } from "./worldEnvironmentWiring";
 import type { NativeSliceCameraPose } from "./nativeSliceCameraPose";
+import type { DiagnosticMaterialRecord } from "../materials/ue2/babylon/material";
+import { visibleDiagnosticMaterials } from "../materials/ue2/babylon/visibleDiagnosticMaterials";
 
 export interface NativeSliceDiagnosticInputs {
   scene: Scene;
@@ -82,7 +84,7 @@ function nativeSliceSnapshot(inputs: NativeSliceDiagnosticInputs) {
     doors: doors ? { manifestSha256: world.movers!.manifestSha256, ...doors.inspection() } : null,
     skinMeshes: scene.meshes.filter(mesh => mesh.metadata?.l2NativeSkinWeights).map(mesh => ({ name: mesh.name, ...mesh.metadata.l2NativeSkinWeights })),
     nativeAttackReference: "unverified", nativeNpcProfile: inputs.musveren ?? null,
-    materialOverride: inputs.materialOverrides.snapshot(),
+    materialOverride: inputs.materialOverrides.snapshot(), diagnosticMaterials: visibleDiagnosticMaterials(scene),
     nativeFlames: flames.presentation?.inspect() ?? null, flameFailure: flames.failure ?? null,
     nativeSky: world.sky?.inspection() ?? null, skyFailure: world.skyFailure,
     nativeAudio: { ...audio.mixer.inspection(), cues: audio.actionCues.inspection(), footsteps: inputs.footsteps.inspection(),
@@ -155,7 +157,7 @@ declare global { interface Window { __nativeSlice?: { snapshot(): { entities: Re
   groundContact?: ReturnType<typeof inspectNativeGroundContact>;
   doors?: (ReturnType<ReturnType<typeof createNativeDoorInteractions>["inspection"]> & { manifestSha256: string }) | null;
   nativeAttackReference: string; nativeNpcProfile: NativeNpcProfile | null; nativeTerrain: string; phase2Networking: boolean; worldFailure: string | null;
-  materialOverride?: ReturnType<ReturnType<typeof createNativeMaterialOverrides>["snapshot"]>;
+  materialOverride?: ReturnType<ReturnType<typeof createNativeMaterialOverrides>["snapshot"]>; diagnosticMaterials?: DiagnosticMaterialRecord[];
   nativeFlames?: ReturnType<NativeFlamePresentation["inspect"]> | null; flameFailure?: string | null;
   nativeSky?: ReturnType<NativeSkyPresentation["inspection"]> | null; skyFailure?: string | null;
   nativeAudio?: ReturnType<WorldAudioMixer["inspection"]> & { cues: ReturnType<Awaited<ReturnType<typeof createNativeActionCuePreview>>["inspection"]>;
