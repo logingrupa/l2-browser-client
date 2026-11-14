@@ -38,13 +38,13 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 
 - [ ] **DATA-01**: All 40 `.dat` tables decoded to JSON once per client build; where the local hash-pinned descriptor (`06_interlude.xml`) covers a table it is authoritative; the inventory is updated per table.
 - [x] **DATA-02**: Tables the local route lacks (`hairgrp`, `helmetgrp`, others) are decoded by Elbera code behind an adapter; Elbera verifiers pinned to Engine.dll `07b24af4...` are not used.
-- [ ] **DATA-03**: The identical sysstring-e / systemmsg-e count (2,083) is investigated and fixed or explained.
+- [x] **DATA-03**: The identical sysstring-e / systemmsg-e count (2,083) is investigated and fixed or explained.
 
 ### UI lane L3 (Phase 2)
 
 - [x] **UI-01**: `interface.xdat` (lock-equal, SHA-256 `b5b37678...1b641`; 165 declared windows, 248 root records and 2,638 records decoded by the pinned Elbera parser) is decoded to a layout tree with a source-hash pin.
-- [x] **UI-02**: Windows are built from the decoded layout and filled with sandbox data; no hardcoded control names (this client uses `StatusLeftTex`, `CPBarTex`, `HPBarTex`, `MPBarTex`); each window opens by ID in the sandbox.
-- [x] **UI-03**: Only the original Interlude interface: window layout from `interface.xdat`, and skin, fonts and icons from the client's converted UI textures. No custom HUD styling (DEC-OWN-10).
+- [ ] **UI-02**: Windows are built from the decoded layout and filled with sandbox data; no hardcoded control names (this client uses `StatusLeftTex`, `CPBarTex`, `HPBarTex`, `MPBarTex`); each window opens by ID in the sandbox.
+- [ ] **UI-03**: Only the original Interlude interface: window layout from `interface.xdat`, and skin, fonts and icons from the client's converted UI textures. No custom HUD styling (DEC-OWN-10).
 
 ### World lane L1 (Phase 2)
 
@@ -73,7 +73,7 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 ### Integration and conversion rules (Phase 2)
 
 - [ ] **INT-01**: The integration lane stages lane output in the main checkout and publishes one coverage report from the catalog (per part: converted, loads, gap); the sandbox marks IDs as available or gap.
-- [ ] **CONV-01**: Conversion is independent per-system scripts sharing readers and packaging helpers; one character, skill or tile converts without running all extraction; `assets:pipeline` stays optional.
+- [x] **CONV-01**: Conversion is independent per-system scripts sharing readers and packaging helpers; one character, skill or tile converts without running all extraction; `assets:pipeline` stays optional.
 - [ ] **CONV-02**: Source-preserving conversion: UModel build1590 pinned (SHA-256 `13502e5a...364a0`); no 1.8 m normalization, ground fitting, root-drift removal or weight normalization; unbound material slots become a visible magenta diagnostic; repairs only for a demonstrated defect; `.l2asset` limits respected. Material graphs are preserved, never flattened; a typed program derived next to the raw graph records which values are authored and which are class defaults.
 - [ ] **MAT-01** (provisional, owner review): Native materials render through one UE2 material library. The converter keeps each material graph source-preserving (`native-materials/graph.json`) for any root owner: static mesh slot, BSP surface, terrain layer, skeletal slot, emitter or sky surface. Beside it the converter writes a typed `native-materials/program.json` that records per field whether the value is authored, a class default or a UE zero. Every class in the Interlude material census is either reviewed or recorded with gap reason `material-class-unported:<class>`, which renders as a named magenta diagnostic. The runtime evaluates Shader, Combiner with all colour and alpha operations, FinalBlend (FB_Add once its factors are confirmed), ColorModifier, FadeColor, ConstantColor, TexPanner, TexRotator, TexOscillator, TexScaler, TexEnvMap, TexCoordSource, MaterialSequence and AnimNext textures. Triggered modifiers stay unported until a typed server record supplies the trigger. Colour stays in the byte domain with no sRGB step, and the L2 fog targets and the display gamma ramp apply. `src/materials/ue2/model/**` imports no Babylon code and nothing outside itself except `src/shared/**`. A swatch route renders any material id at a given level time, hour and environment type.
 
@@ -186,10 +186,10 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 | SAND-02 | Phase 2 | Complete |
 | DATA-01 | Phase 2 | Pending |
 | DATA-02 | Phase 2 | Complete |
-| DATA-03 | Phase 2 | Pending |
+| DATA-03 | Phase 2 | Complete |
 | UI-01 | Phase 2 | Complete |
-| UI-02 | Phase 2 | Complete |
-| UI-03 | Phase 2 | Complete |
+| UI-02 | Phase 2 | Pending (regression 02-VERIFICATION: the "filled with sandbox data" clause is unmet: only StatusWnd.HPBarTex binds sandbox data, CPBarTex and MPBarTex are adapter-field-absent (NET-05), every TextBox label is unresolved and 460 controls of 25 unsupported types are gaps; decision row P743) |
+| UI-03 | Phase 2 | Pending (regression 02-VERIFICATION: the procedural HUD is still the visible game UI and waits for the owner decision, the UE2 118 package reader leaves UI skin textures unconverted (213 references are gaps, 862 drawn textures carry texture-format-unsupported:5 or :7) and TextBox label text is unresolved; decision row P743) |
 | WORLD-01 | Phase 2 | Pending |
 | WORLD-02 | Phase 2 | Pending |
 | WORLD-03 | Phase 2 | Pending |
@@ -209,7 +209,7 @@ Source intel: `.planning/intel/requirements.md`, `constraints.md`, `decisions.md
 | ACT-06 | Phase 2 | Pending |
 | FX-01 | Phase 2 | Pending (provisional, owner review) |
 | INT-01 | Phase 2 | Pending |
-| CONV-01 | Phase 2 | Pending |
+| CONV-01 | Phase 2 | Complete |
 | CONV-02 | Phase 2 | Pending |
 | MAT-01 | Phase 2 | Pending (provisional, owner review) |
 | CHECK-01 | Phase 3 | Pending |
