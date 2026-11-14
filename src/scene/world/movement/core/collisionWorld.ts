@@ -35,12 +35,23 @@ export interface CollisionWorld {
   collisionReadiness(position: CollisionHorizontalPosition): CollisionReadiness;
   setTileBspTree(tileId: string, tree: CollisionBspTree): void;
   tileBspTree(tileId: string): CollisionBspTree | null;
+  lowestBspPointZ(): number | null;
   residentCells(): readonly CollisionCell[];
   inspection(): CollisionWorldInspection;
   clear(): void;
 }
 
 const compareCellIds = (left: string, right: string) => left < right ? -1 : left > right ? 1 : 0;
+const lowestPointZByBspTree = new WeakMap<CollisionBspTree, number>();
+
+function lowestPointZOfBspTree(tree: CollisionBspTree): number {
+  const cached = lowestPointZByBspTree.get(tree);
+  if (cached !== undefined) return cached;
+  let lowestZ = Infinity;
+  for (let zIndex = 2; zIndex < tree.points.length; zIndex += 3) lowestZ = Math.min(lowestZ, tree.points[zIndex]!);
+  lowestPointZByBspTree.set(tree, lowestZ);
+  return lowestZ;
+}
 
 function requireCellId(cellId: unknown, operation: string): asserts cellId is string {
   if (typeof cellId !== "string" || cellId.length === 0) throw new CollisionWorldError(`${operation} needs a non-empty cell id, not ${JSON.stringify(cellId)}.`);
@@ -118,6 +129,10 @@ export function createCollisionWorld(): CollisionWorld {
     },
     tileBspTree(tileId) {
       return bspTreesByTileId.get(tileId) ?? null;
+    },
+    lowestBspPointZ() {
+      const lowestZ = Math.min(...[...bspTreesByTileId.values()].map(lowestPointZOfBspTree));
+      return Number.isFinite(lowestZ) ? lowestZ : null;
     },
     residentCells() {
       return [...cellsByCellId.keys()].sort(compareCellIds).map(cellId => cellsByCellId.get(cellId)!);

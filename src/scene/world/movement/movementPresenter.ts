@@ -56,6 +56,7 @@ export interface MovementWalkTrace {
   readonly lastMoveResult: MovementMoveResult | null;
   readonly fallStartPosition: SourcePosition | null;
   readonly endPosition: SourcePosition;
+  readonly restsOnLevelBottom: boolean;
   readonly residentCellIds: readonly string[];
 }
 
@@ -293,8 +294,9 @@ export function createMovementPresenter(options: MovementPresenterOptions): Move
       const pawn = pawnsByEntityId.get(entityId);
       if (pawn === undefined) return null;
       const { body } = pawn.simulation;
-      return { physicsMode: body.mode, floorHit: floorHitOf(body.floor), lastMoveResult: pawn.lastMoveResult, fallStartPosition: pawn.fallStartPosition,
-        endPosition: feetOf(pawn.simulation),
+      const endPosition = feetOf(pawn.simulation), levelBottomZ = collisionWorld.lowestBspPointZ();
+      return { physicsMode: body.mode, floorHit: floorHitOf(body.floor), lastMoveResult: pawn.lastMoveResult, fallStartPosition: pawn.fallStartPosition, endPosition,
+        restsOnLevelBottom: levelBottomZ !== null && endPosition.z - levelBottomZ <= rules.pawn.maxStepHeight,
         residentCellIds: collisionWorld.residentCells().map(cell => cell.cellId) };
     },
   };

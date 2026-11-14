@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { MovementMoveResult } from "../../src/scene/world/movement/movementPresenter";
 import {
   createTileWalkOutcome, requestedWalkTileIds, settleViewportWalk, startChunkBspFailure, tileWalkFailureClass, tileWalkRecordFilePath, tileWalkTrace,
-  walkEndFloorFailure,
+  walkEndFailure,
   type ObservedTileWalk, type TileWalkFailure,
 } from "../browser/support/tileWalkRecords";
 
@@ -44,7 +44,7 @@ const residentWalk = (pawn: ObservedTileWalk["pawn"]): ObservedTileWalk => ({
 });
 const walkingPawn = (lastMoveResult: MovementMoveResult | null): ObservedTileWalk["pawn"] => ({
   physicsMode: "walking", floorHit: { primitiveKind: "terrain", cellId: "15_22/chunk-0-0" }, lastMoveResult, fallStartPosition: null,
-  endPosition: { x: 1, y: 2, z: 3 },
+  endPosition: { x: 1, y: 2, z: 3 }, restsOnLevelBottom: false,
   residentCellIds: ["15_22/chunk-0-0"],
 });
 const idleTimeout = "Error: the local player did not walk more than 1 m and come to idle within 90000 ms: animation run";
@@ -55,10 +55,11 @@ describe("tileWalkFailureClass", () => {
     expect(tileWalkFailureClass("Error: tile:24_14 did not start on the native route: error: tile-anchor-has-no-floor: no collision lies below the authored PlayerStart", null)).toBe("tile-did-not-start");
     expect(tileWalkFailureClass("Error: the native route loaded no world section for tile:15_22", null)).toBe("no-world-section");
     expect(tileWalkFailureClass("Error: the loaded section holds 0 BSP meshes", residentWalk(null))).toBe("bsp-mesh-count");
-    expect(tileWalkFailureClass("Error: the walk ended at height -163.8 m, below the terrain minimum -50.2 m", residentWalk(walkingPawn(null)))).toBe("below-terrain-minimum");
-    expect(tileWalkFailureClass(`Error: ${walkEndFloorFailure({ ...walkingPawn(null)!, physicsMode: "falling", floorHit: null })}`, residentWalk(walkingPawn(null))))
+    expect(tileWalkFailureClass(`Error: ${walkEndFailure({ ...walkingPawn(null)!, restsOnLevelBottom: true })}`, residentWalk(walkingPawn(null))))
+      .toBe("fell-to-level-bottom");
+    expect(tileWalkFailureClass(`Error: ${walkEndFailure({ ...walkingPawn(null)!, physicsMode: "falling", floorHit: null })}`, residentWalk(walkingPawn(null))))
       .toBe("ended-without-floor");
-    expect(tileWalkFailureClass(`Error: ${walkEndFloorFailure(null)}`, residentWalk(null))).toBe("ended-without-floor");
+    expect(tileWalkFailureClass(`Error: ${walkEndFailure(null)}`, residentWalk(null))).toBe("ended-without-floor");
   });
 
   it("classes an idle timeout by the collision load and the last move result of its trace", () => {
@@ -131,15 +132,16 @@ describe("startChunkBspFailure", () => {
   });
 });
 
-describe("walkEndFloorFailure", () => {
-  it("accepts a walk that ends walking on a floor or swimming", () => {
-    expect(walkEndFloorFailure(walkingPawn(null))).toBeNull();
-    expect(walkEndFloorFailure({ ...walkingPawn(null)!, physicsMode: "swimming", floorHit: null })).toBeNull();
+describe("walkEndFailure", () => {
+  it("accepts a walk that ends walking on a floor or swimming above the level bottom", () => {
+    expect(walkEndFailure(walkingPawn(null))).toBeNull();
+    expect(walkEndFailure({ ...walkingPawn(null)!, physicsMode: "swimming", floorHit: null })).toBeNull();
   });
 
-  it("names a walk that ends falling, walking with no floor or with no pawn", () => {
-    expect(walkEndFloorFailure({ ...walkingPawn(null)!, physicsMode: "falling", floorHit: null })).toBe('the walk ended falling with no floor at {"x":1,"y":2,"z":3}');
-    expect(walkEndFloorFailure({ ...walkingPawn(null)!, floorHit: null })).toBe('the walk ended walking with no floor at {"x":1,"y":2,"z":3}');
-    expect(walkEndFloorFailure(null)).toBe("the walk ended with no pawn trace");
+  it("names a walk that ends on the level bottom, falling, walking with no floor or with no pawn", () => {
+    expect(walkEndFailure({ ...walkingPawn(null)!, restsOnLevelBottom: true })).toBe('the walk ended on the level bottom at {"x":1,"y":2,"z":3}');
+    expect(walkEndFailure({ ...walkingPawn(null)!, physicsMode: "falling", floorHit: null })).toBe('the walk ended falling with no floor at {"x":1,"y":2,"z":3}');
+    expect(walkEndFailure({ ...walkingPawn(null)!, floorHit: null })).toBe('the walk ended walking with no floor at {"x":1,"y":2,"z":3}');
+    expect(walkEndFailure(null)).toBe("the walk ended with no pawn trace");
   });
 });

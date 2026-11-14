@@ -124,7 +124,7 @@ describe("tile walk failure classes at their root cause", () => {
     adapter.dispose();
   });
 
-  it("below-terrain-minimum: feet half a unit under the collision terrain fall through it, and the collision floor anchor stands the pawn on it", () => {
+  it("fell-to-level-bottom: feet half a unit under the collision terrain fall through it, and the collision floor anchor stands the pawn on it", () => {
     const authored = worldVector({ x: -500, y: 0, z: 200 });
     const floor = collisionFloorBelow(flatTerrainWorld(), authored, -1)!;
     expect(floor.primitiveKind).toBe("terrain");
@@ -162,6 +162,20 @@ describe("tile walk failure classes at their root cause", () => {
     expect(collisionFloorBelow(world, worldVector({ x: 0, y: 0, z: 200 }), 1 + pawnRules.pawn.maxStepHeight / 100)).toBeNull();
     expect(collisionFloorBelow(world, worldVector({ x: 0, y: 0, z: 200 }), pawnRules.pawn.maxStepHeight / 100 - 0.01)).toMatchObject({ primitiveKind: "volume" });
     expect(collisionFloorBelow(world, worldVector({ x: 0, y: 0, z: -300 }), -1)).toBeNull();
+  });
+
+  it("fell-to-level-bottom: the walk trace marks a pawn resting within maxStepHeight of the lowest resident BSP point", () => {
+    const otherArrays = emptyChunkArrays().filter(array => !array.name.startsWith("VOLS."));
+    const levelBottomZ = -1024;
+    const restingZAfterWalk = (floorTopZ: number) => {
+      const { presenter, advanceFrames } = presenterOn(collisionWorldFromFixtures([...volumeArrays([floorSlab(floorTopZ)]), ...otherArrays], wallTreeArrays()));
+      presenter.applyEvent(groundMoveEvent({ x: 0, y: 0, z: floorTopZ + feetZ }, { x: 100, y: 0, z: floorTopZ + feetZ }));
+      advanceFrames(2 * 60);
+      return presenter.walkTrace(localPlayerId)!;
+    };
+    expect(restingZAfterWalk(levelBottomZ)).toMatchObject({ physicsMode: "walking", restsOnLevelBottom: true });
+    expect(restingZAfterWalk(0)).toMatchObject({ physicsMode: "walking", restsOnLevelBottom: false });
+    expect(presenterOn(boxVolumeWorld([floorSlab(0)])).presenter.walkTrace(localPlayerId)).toBeNull();
   });
 
   it("tile-did-not-start: a floor probe reaches a floor below the loaded terrain when a resident BSP tree reaches lower", () => {

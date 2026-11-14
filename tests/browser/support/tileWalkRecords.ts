@@ -17,7 +17,7 @@ export interface ObservedTileWalk {
 export type TileWalkFailureClass =
   | "tile-did-not-start" | "no-world-section" | "bsp-mesh-count" | "collision-not-resident"
   | "held-collision-not-ready" | "held-collision-cell-absent" | "held-speed-unresolved" | "cannot-move"
-  | "below-terrain-minimum" | "ended-without-floor" | "walk-did-not-settle" | "other";
+  | "fell-to-level-bottom" | "ended-without-floor" | "walk-did-not-settle" | "other";
 
 export interface TileWalkTrace extends ObservedTileWalk {
   readonly failureClass: TileWalkFailureClass;
@@ -54,7 +54,7 @@ const failureClassByReasonPattern: readonly (readonly [RegExp, TileWalkFailureCl
   [/did not start on the native route/, "tile-did-not-start"],
   [/loaded no world section/, "no-world-section"],
   [/BSP meshes/, "bsp-mesh-count"],
-  [/below the terrain minimum/, "below-terrain-minimum"],
+  [/the walk ended on the level bottom/, "fell-to-level-bottom"],
   [/the walk ended (?:\w+ with no floor|with no pawn trace)/, "ended-without-floor"],
 ];
 
@@ -113,8 +113,9 @@ export function startChunkBspFailure(loaded: LoadedSectionBsp, startChunk: Start
     + `BSP resource ${startChunk.bsp.resource}`;
 }
 
-export function walkEndFloorFailure(pawn: MovementWalkTrace | null): string | null {
+export function walkEndFailure(pawn: MovementWalkTrace | null): string | null {
   if (pawn === null) return "the walk ended with no pawn trace";
+  if (pawn.restsOnLevelBottom) return `the walk ended on the level bottom at ${JSON.stringify(pawn.endPosition)}`;
   if (pawn.physicsMode === "swimming" || (pawn.physicsMode === "walking" && pawn.floorHit !== null)) return null;
   return `the walk ended ${pawn.physicsMode} with no floor at ${JSON.stringify(pawn.endPosition)}`;
 }

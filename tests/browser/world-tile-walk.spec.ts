@@ -5,7 +5,7 @@ import { formatRigaTimestamp } from "../../scripts/check-machine-schedule.mjs";
 import { desktopViewport, landscapePhone } from "./browserViewports";
 import { servedLaneCatalogSha256, writeLoadCheckRecordFile } from "./support/loadCheckRecordFile";
 import {
-  createTileWalkOutcome, requestedWalkTileIds, settleViewportWalk, startChunkBspFailure, tileWalkRecordFilePath, tileWalkTrace, walkEndFloorFailure,
+  createTileWalkOutcome, requestedWalkTileIds, settleViewportWalk, startChunkBspFailure, tileWalkRecordFilePath, tileWalkTrace, walkEndFailure,
   type ObservedTileWalk, type StartChunkBsp,
 } from "./support/tileWalkRecords";
 
@@ -95,18 +95,14 @@ async function walkAlongX(page: Page) {
   }
   expect(end.modelId).not.toBeNull();
   expect(end.missingAssetDiagnostic).toBeNull();
-  return end.authoritativePosition;
 }
 
 async function walkTheTile(page: Page, tileRecord: TileCatalogRecord, screenshotName: string) {
   const pageErrors: string[] = [];
-  const world = await openTile(page, tileRecord, pageErrors);
-  const end = await walkAlongX(page);
-  const lowestStartHeight = Math.min(world.terrainBounds!.minimum[1]!, world.tileAnchor!.floorPosition[1]!);
-  expect(end.y, `the walk ended at height ${end.y} m, below the terrain minimum and the anchor floor ${lowestStartHeight} m`)
-    .toBeGreaterThanOrEqual(lowestStartHeight);
-  const floorFailure = walkEndFloorFailure((await worldSnapshot(page))?.walkTrace ?? null);
-  if (floorFailure !== null) throw new Error(floorFailure);
+  await openTile(page, tileRecord, pageErrors);
+  await walkAlongX(page);
+  const walkEnd = walkEndFailure((await worldSnapshot(page))?.walkTrace ?? null);
+  if (walkEnd !== null) throw new Error(walkEnd);
   await page.screenshot({ path: `test-results/${screenshotName}` });
   expect(pageErrors).toEqual([]);
 }
