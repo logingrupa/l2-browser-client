@@ -12,9 +12,9 @@ function swatchProgramWithTextureSize(image: FixtureTextureImage, width: number,
     entry.field === "USize" ? { ...entry, value: width } : entry.field === "VSize" ? { ...entry, value: height } : entry) }) };
 }
 
-function serveSwatchProgramWithTexture(width: number, height: number) {
+function serveSwatchProgramWithTexture(width: number, height: number, programSize: readonly [number, number] = [width, height]) {
   const png = encodeSolidRgbaPng(width, height, swatchTextureRgba), image = textureImageFor(png);
-  const programBytes = canonicalProgramBytes(swatchProgramWithTextureSize(image, width, height)), materialId = sha256Hex(programBytes);
+  const programBytes = canonicalProgramBytes(swatchProgramWithTextureSize(image, ...programSize)), materialId = sha256Hex(programBytes);
   const servedFiles = new Map<string, Uint8Array>([[nativeMaterialProgramPath(materialId), programBytes], [image.path, png]]);
   vi.stubGlobal("fetch", vi.fn(async (url: string) => {
     const bytes = servedFiles.get(url);
@@ -32,5 +32,11 @@ describe("UE2 material library texture loading", () => {
     expect(pixels).toMatchObject({ width, height });
     expect([...pixels!.rgba.subarray(0, 4)]).toEqual([...swatchTextureRgba]);
     expect([...pixels!.rgba.subarray(pixels!.rgba.length - 4)]).toEqual([...swatchTextureRgba]);
+  });
+
+  it("refuses a texture whose decoded size differs from its program's Engine.Texture USize and VSize", async () => {
+    const served = serveSwatchProgramWithTexture(512, 256, [256, 512]);
+    await expect(loadNativeMaterial(served.materialId, new AbortController().signal))
+      .rejects.toThrow(/decodes to 512 x 256, not its Engine.Texture USize x VSize 256 x 512/);
   });
 });

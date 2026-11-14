@@ -2,7 +2,7 @@ import { RawTexture } from "@babylonjs/core/Materials/Textures/rawTexture";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import type { Scene } from "@babylonjs/core/scene";
 import { sha256 } from "../assets/package/readAssetPackage";
-import { decodeNativePreviewPng } from "../scene/world/nativeTerrainPreview";
+import { decodeNativeStorePng } from "../assets/native/decodeNativeStorePng";
 import type { EffectResource } from "./nativeEffectComponents";
 
 const maximumTextureBytes = 32 * 1024 * 1024;
@@ -17,7 +17,7 @@ export async function createNativeEffectTexture(scene: Scene, resource: EffectRe
   requireTexture(/^[a-f0-9]{64}$/.test(resource.sha256) && resource.file.endsWith(".png"), `${resource.object} is not a content-addressed PNG resource.`);
   requireTexture(bytes.length === resource.bytes && bytes.length > 0 && bytes.length <= maximumTextureBytes, `${resource.object} holds ${bytes.length} bytes, not ${resource.bytes}.`);
   requireTexture(await sha256(bytes) === resource.sha256, `${resource.object} differs from its SHA-256.`);
-  const pixels = await decodeNativePreviewPng(bytes, signal);
+  const pixels = await decodeNativeStorePng(bytes, signal);
   signal.throwIfAborted();
   requireTexture(!scene.isDisposed, "the scene was disposed during texture decoding.");
   const texture = RawTexture.CreateRGBATexture(pixels.rgba, pixels.width, pixels.height, scene, false, false, Texture.BILINEAR_SAMPLINGMODE);

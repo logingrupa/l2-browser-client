@@ -1,6 +1,6 @@
 import { nativeResourceUrl } from "../../../assets/native/nativeResourceUrl";
 import { sha256 } from "../../../assets/package/readAssetPackage";
-import { decodeNativePreviewPng, type NativePreviewPixels } from "../../../scene/world/nativeTerrainPreview";
+import { decodeNativeStorePng, type NativeStorePngPixels } from "../../../assets/native/decodeNativeStorePng";
 import { parseMaterialProgram, type MaterialProgram, type MaterialTextureImage } from "../model/materialProgram";
 import { compileMaterialStagePlan, type MaterialStagePlan } from "../model/stagePlan";
 
@@ -8,7 +8,7 @@ export interface LoadedNativeMaterial {
   readonly materialId: string;
   readonly program: MaterialProgram;
   readonly plan: MaterialStagePlan;
-  readonly texturePixels: ReadonlyMap<string, NativePreviewPixels>;
+  readonly texturePixels: ReadonlyMap<string, NativeStorePngPixels>;
 }
 
 export class NativeMaterialLoadError extends Error {
@@ -32,20 +32,27 @@ async function fetchPinnedBytes(path: string, expectedSha256: string, maximumByt
   return bytes;
 }
 
-async function loadTextureImage(image: MaterialTextureImage, signal: AbortSignal): Promise<NativePreviewPixels> {
+async function loadTextureImage(image: MaterialTextureImage, signal: AbortSignal): Promise<NativeStorePngPixels> {
   const bytes = await fetchPinnedBytes(image.path, image.sha256, image.bytes, signal);
   if (bytes.length !== image.bytes) throw new NativeMaterialLoadError(`Native texture ${image.path} holds ${bytes.length} bytes, not ${image.bytes}.`);
-  return decodeNativePreviewPng(bytes, signal);
+  return decodeNativeStorePng(bytes, signal);
 }
 
 export async function loadNativeMaterial(materialId: string, signal: AbortSignal): Promise<LoadedNativeMaterial> {
   const programBytes = await fetchPinnedBytes(nativeMaterialProgramPath(materialId), materialId, maximumProgramBytes, signal);
   const program = parseMaterialProgram(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(programBytes)));
   const plan = compileMaterialStagePlan(program);
-  const texturePixels = new Map<string, NativePreviewPixels>();
+  const texturePixels = new Map<string, NativeStorePngPixels>();
   if (plan.status === "compiled") {
-    for (const image of plan.samplers.flatMap(sampler => sampler.frameImages)) {
-      if (!texturePixels.has(image.sha256)) texturePixels.set(image.sha256, await loadTextureImage(image, signal));
+    for (const sampler of plan.samplers) {
+      for (const [frameIndex, image] of sampler.frameImages.entries()) {
+        const pixels = texturePixels.get(image.sha256) ?? await loadTextureImage(image, signal);
+        const size = sampler.frameSizes[frameIndex]!;
+        if (pixels.width !== size.width || pixels.height !== size.height) {
+          throw new NativeMaterialLoadError(`Native texture ${sampler.frameNodes[frameIndex]} decodes to ${pixels.width} x ${pixels.height}, not its Engine.Texture USize x VSize ${size.width} x ${size.height}.`);
+        }
+        texturePixels.set(image.sha256, pixels);
+      }
     }
   }
   signal.throwIfAborted();

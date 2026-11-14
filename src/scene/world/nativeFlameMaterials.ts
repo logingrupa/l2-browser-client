@@ -8,14 +8,12 @@ import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Scene } from "@babylonjs/core/scene";
 import { sha256 } from "../../assets/package/readAssetPackage";
 import type { NativeFlamePlan } from "./nativeMaterialGraph";
-import { decodeNativePreviewPng } from "./nativeTerrainPreview";
+import { decodeNativeStorePng } from "../../assets/native/decodeNativeStorePng";
 
 type RGBA = [number, number, number, number];
 type Fade = NativeFlamePlan["fade"];
 type Animation = Pick<NativeFlamePlan["animation"], "maxFrameRate" | "totalFrameNum">;
 export interface NativeFlameReplayTime { textureSeconds: number; fadeSeconds: number; }
-/** Each binding is a whole render mesh already resolved to a native section.
- * slot is the source shader slot, not a Babylon MultiMaterial submaterial index. */
 export interface NativeFlameMaterialBinding {
   readonly mesh: AbstractMesh; readonly slot: 0 | 1; readonly expectedMaterial: Material | null;
 }
@@ -70,8 +68,6 @@ function validateFade(fade: Fade): void {
   for (const color of [fade.color1, fade.color2]) requireValue(color.rgbaBytes.length === 4 && color.rgbaBytes.every(value => Number.isInteger(value) && value >= 0 && value <= 255), "invalid source color bytes.");
 }
 
-/** Source store boundaries with an explicitly bounded JS numerical model.
- * Math.cos is not established as native Core.appCos, nor JS as x87 extended FP. */
 export function evaluateNativeFlameFade(fadeSeconds: number, fade: Fade) {
   finite(fadeSeconds, "fadeSeconds"); validateFade(fade);
   const timeFloat32 = Math.fround(fadeSeconds);
@@ -88,8 +84,6 @@ export function evaluateNativeFlameFade(fadeSeconds: number, fade: Fade) {
   return { timeFloat32, qFloat32, cosArgumentFloat64, weightFloat32, oppositeWeightFloat32, planeFloat32, scaledFloat32, rgbaBytes };
 }
 
-/** Tick(double) precision53 model, including its repeated subtraction stores.
- * Deliberately does not use floor(modulo * fps), which differs at frame seams. */
 export function selectNativeFlameFrame(textureSeconds: number, animation: Animation) {
   requireValue(Number.isFinite(textureSeconds) && textureSeconds >= 0, "textureSeconds must be finite and nonnegative.");
   requireValue(Number.isFinite(animation.maxFrameRate) && animation.maxFrameRate > 0 && Number.isInteger(animation.totalFrameNum) && animation.totalFrameNum >= 1 && animation.totalFrameNum <= 64, "unsupported texture animation parameters.");
@@ -120,17 +114,12 @@ function validatePlan(plan: NativeFlamePlan): void {
     (texture.uClampMode === 0 || texture.uClampMode === 1) && (texture.vClampMode === 0 || texture.vClampMode === 1) && texture.format === (texture === plan.glow ? 8 : 3), "unsupported texture dimensions, format or addressing.");
 }
 
-/** Create a scene-local, reversible projection of a prepared source graph.
- * Preparation never changes source assignments. A changed binding is permanently
- * relinquished; later updates cannot reacquire an authored assignment. */
 export async function createNativeFlameMaterials(scene: Scene, plan: NativeFlamePlan, bindings: readonly NativeFlameMaterialBinding[], signal: AbortSignal): Promise<NativeFlameMaterials> {
   signal.throwIfAborted(); requireValue(!scene.isDisposed, "scene is disposed."); validatePlan(plan);
   requireValue(bindings.length <= 256 && new Set(bindings.map(binding => binding.mesh)).size === bindings.length, "duplicate or excessive mesh bindings.");
   for (const { mesh, slot, expectedMaterial } of bindings) requireValue((slot === 0 || slot === 1) && mesh.getScene() === scene && (!expectedMaterial || expectedMaterial.getScene() === scene) &&
     !mesh.skeleton && !mesh.morphTargetManager && !mesh.isAnInstance && !mesh.hasInstances && !mesh.hasThinInstances && mesh.isVerticesDataPresent("position") && mesh.isVerticesDataPresent("uv"), "binding requires a same-scene static mesh with source UVs.");
 
-  // Snapshot mutable caller data before any await; resources are copied and
-  // rehashed before decode, so caller edits cannot become a later upload.
   const animation = { ...plan.animation, frames: plan.animation.frames.map(texture => ({ ...texture, image: { ...texture.image } })) };
   const glow = { ...plan.glow, image: { ...plan.glow.image } };
   const fade: Fade = { ...plan.fade, color1: { ...plan.fade.color1, rgbaBytes: [...plan.fade.color1.rgbaBytes] }, color2: { ...plan.fade.color2, rgbaBytes: [...plan.fade.color2.rgbaBytes] } };
@@ -154,8 +143,8 @@ export async function createNativeFlameMaterials(scene: Scene, plan: NativeFlame
       if (!entry.mesh.isDisposed() && entry.mesh.material === entry.replacement) entry.mesh.material = entry.expectedMaterial;
       entry.state = "released";
     }
-    // Do not let Material.dispose walk unrelated source meshes/geometry.
-    for (const material of materials) material.dispose(false, false, true);
+    const disposeWithoutWalkingSourceMeshes = true;
+    for (const material of materials) material.dispose(false, false, disposeWithoutWalkingSourceMeshes);
     for (const texture of textures) texture.dispose();
   };
   const sceneObserver = scene.onDisposeObservable.add(dispose);
@@ -175,8 +164,6 @@ export async function createNativeFlameMaterials(scene: Scene, plan: NativeFlame
     try { const result = await Promise.race([operation(), aborted]); alive(); return result; }
     finally { lifetime.signal.removeEventListener("abort", cancel); }
   };
-  // Own the readiness timer so abort/scene teardown cancels it. Babylon's
-  // forceCompilationAsync has an internal polling timer without cancellation.
   const compile = (material: ShaderMaterial, mesh: AbstractMesh) => new Promise<void>((resolve, reject) => {
     let timer: ReturnType<typeof setTimeout> | undefined, attempts = 0;
     const finish = (error?: unknown) => { if (timer !== undefined) clearTimeout(timer); lifetime.signal.removeEventListener("abort", cancel); error === undefined ? resolve() : reject(error); };
@@ -204,7 +191,7 @@ export async function createNativeFlameMaterials(scene: Scene, plan: NativeFlame
     if (records.some(entry => entry.state === "pending")) for (const source of sources) {
       const bytes = copied.get(source.image.path)!;
       requireValue(await abortable(() => sha256(bytes)) === source.image.sha256, `image hash differs: ${source.object}.`);
-      const pixels = await abortable(() => decodeNativePreviewPng(bytes, lifetime.signal));
+      const pixels = await abortable(() => decodeNativeStorePng(bytes, lifetime.signal));
       requireValue(pixels.width === source.width && pixels.height === source.height, `decoded dimensions differ: ${source.object}.`);
       const texture = RawTexture.CreateRGBATexture(pixels.rgba, pixels.width, pixels.height, scene, false, false, Texture.BILINEAR_SAMPLINGMODE);
       textures.push(texture); texture.name = source.object;
@@ -224,8 +211,6 @@ export async function createNativeFlameMaterials(scene: Scene, plan: NativeFlame
           attributes: ["position", "uv"], uniforms: ["worldViewProjection", "quantizedFade"], samplers: ["sourceTexture"], needAlphaBlending: true, needAlphaTesting: false,
         }, false);
         materials.push(material); candidates.set(key, material);
-        // Pinned AlphaState: screen=(ONE,INV_SRC_COLOR,ONE,INV_SRC_ALPHA),
-        // oneone=(ONE,ONE,ONE,ONE). Glow alpha is zero, not an opacity weight.
         material.alphaMode = entry.slot === 0 ? Constants.ALPHA_SCREENMODE : Constants.ALPHA_ONEONE_ONEONE;
         material.transparencyMode = Material.MATERIAL_ALPHABLEND;
         material.disableDepthWrite = true; material.forceDepthWrite = false;
@@ -233,8 +218,6 @@ export async function createNativeFlameMaterials(scene: Scene, plan: NativeFlame
         material.sideOrientation = sideOrientation; material.cullBackFaces = cullBackFaces;
         material.doNotSerialize = true;
         material.setTexture("sourceTexture", gpu.get(entry.slot === 0 ? animation.frames[0]!.object : glow.object)!);
-        // The shader declares one vec3. An array setter requires array stride
-        // metadata in WebGPU's uniform buffer, even for three components.
         material.setColor3("quantizedFade", new Color3(current.fadeRgbaBytes[0] / 255, current.fadeRgbaBytes[1] / 255, current.fadeRgbaBytes[2] / 255));
       }
       entry.replacement = material;
@@ -252,8 +235,6 @@ export async function createNativeFlameMaterials(scene: Scene, plan: NativeFlame
     alive();
     const update = (time: NativeFlameReplayTime) => {
       if (disposed) return;
-      // Validate both inputs before any uniform changes; neither clock is
-      // derived from the other, from render delta, nor from wall-clock time.
       const selected = selectNativeFlameFrame(time.textureSeconds, animation), evaluated = evaluateNativeFlameFade(time.fadeSeconds, fade);
       for (const entry of records) if (entry.state === "active" && (entry.mesh.isDisposed() || entry.mesh.material !== entry.replacement)) lose(entry, entry.mesh.isDisposed() ? "mesh-disposed" : "material-assignment-changed");
       for (const [key, material] of candidates) {

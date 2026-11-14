@@ -58,7 +58,7 @@ describe("static mesh slot to library program join", () => {
 });
 
 describe("static mesh materials listing parser", () => {
-  it("refuses an unknown field, another tile, a repeated material and a program that is no pin", () => {
+  it("refuses an unknown field, another tile, a repeated material, a program that is no pin and an unported root without a reason", () => {
     expect(() => parseStaticMeshMaterialsListing(listing([portedEntry], { extraField: true }), tileId)).toThrow(/holding exactly kind, schemaVersion/);
     expect(() => parseStaticMeshMaterialsListing(listing([portedEntry]), "20_20")).toThrow(/names tile "20_21"/);
     expect(() => parseStaticMeshMaterialsListing(listing([portedEntry, { ...portedEntry, sourceObject: portedEntry.sourceObject.toUpperCase() }]), tileId))
@@ -67,6 +67,7 @@ describe("static mesh materials listing parser", () => {
       .toThrow(/no native-materials program pin/);
     expect(() => parseStaticMeshMaterialsListing(listing([{ ...portedEntry, extraField: 1 }]), tileId)).toThrow(/materials must hold exactly/);
     expect(() => parseStaticMeshMaterialsListing(listing([{ ...failedEntry, rootPorted: true }]), tileId)).toThrow(/ported root without a program/);
+    expect(() => parseStaticMeshMaterialsListing(listing([{ ...failedEntry, gapReasons: [] }]), tileId)).toThrow(/unported root without a gap reason/);
   });
 
   it("is a tile manifest resource kind at its hash-addressed native-materials path", () => {

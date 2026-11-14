@@ -63,6 +63,7 @@ function parseMaterialEntry(value: unknown, label: string): StaticMeshMaterialEn
   }
   const programMaterialId = parseProgramPin(value.program, entryLabel);
   if (value.rootPorted && programMaterialId === null) listingError(entryLabel, "names a ported root without a program.");
+  if (!value.rootPorted && value.gapReasons.length === 0) listingError(entryLabel, "names an unported root without a gap reason.");
   return { sourceObject: value.sourceObject, programMaterialId, rootPorted: value.rootPorted, gapReasons: [...value.gapReasons as string[]] };
 }
 

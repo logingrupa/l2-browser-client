@@ -12,7 +12,7 @@ import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import { AlphaState } from "@babylonjs/core/States/alphaCullingState";
 import { crc32, readAssetPackage, sha256, type AssetPackageFile } from "../../src/assets/package/readAssetPackage";
 import { prepareNativeFlameGraph, type NativeFlamePlan, type NativeFlameTexture } from "../../src/scene/world/nativeMaterialGraph";
-import * as pngDecoder from "../../src/scene/world/nativeTerrainPreview";
+import * as pngDecoder from "../../src/assets/native/decodeNativeStorePng";
 import { createNativeFlameMaterials, evaluateNativeFlameFade, selectNativeFlameFrame } from "../../src/scene/world/nativeFlameMaterials";
 
 const prefix = "FX_E_T.Flameset.", signal = () => new AbortController().signal;
@@ -68,8 +68,6 @@ beforeEach(() => vi.spyOn(ShaderMaterial.prototype, "isReady").mockReturnValue(t
 afterEach(() => { for (const cleanup of cleanups.splice(0).reverse()) cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); });
 
 describe("retained flame numerical models", () => {
-  // These source-research probes use independent Python Fraction arithmetic,
-  // explicit binary rounding and math.cos. They are not native process traces.
   const probePath = "artifacts/native-parity/research/flame-runtime/formula-probes.json";
   it.skipIf(!existsSync(probePath))("matches all independent float-store fade and precision53 texture seam probes", () => {
     const probes = JSON.parse(readFileSync(probePath, "utf8")) as {
@@ -100,8 +98,6 @@ describe("retained flame numerical models", () => {
   });
 
   it("retains independent precision53 seam expectations without local source artifacts", () => {
-    // Copied results of the independent Fraction/binary-rounding source probe.
-    // Several values intentionally differ from floor((time % cycle) * 30).
     const seams = [
       [0.033333333333333326, 0], [0.03333333333333333, 1], [0.03333333333333334, 1],
       [0.06666666666666665, 1], [0.06666666666666667, 2], [0.06666666666666668, 2],
@@ -258,17 +254,15 @@ describe("scene-owned native flame materials", () => {
     const pending = createNativeFlameMaterials(value.scene, value.plan, value.bindings, controller.signal);
     await started; expect(vi.getTimerCount()).toBe(1); controller.abort();
     await expect(pending).rejects.toHaveProperty("name", "AbortError");
-    // Babylon Observable.remove defers seven observer removals with zero-delay
-    // timers. Flush those only; the owner's 16ms readiness timer must be gone.
     await vi.advanceTimersByTimeAsync(0); expect(vi.getTimerCount()).toBe(0);
     expect(value.meshes.every(mesh => mesh.material === value.original)).toBe(true); expect(value.scene.textures).toHaveLength(0);
   });
 
   it.each(["abort", "scene"])("ends pending decode promptly on %s without late GPU allocation", async kind => {
     const value = await fixture(), controller = new AbortController();
-    let start!: () => void, finish!: (value: pngDecoder.NativePreviewPixels) => void;
+    let start!: () => void, finish!: (value: pngDecoder.NativeStorePngPixels) => void;
     const started = new Promise<void>(resolve => { start = resolve; });
-    vi.spyOn(pngDecoder, "decodeNativePreviewPng").mockImplementationOnce(() => new Promise(resolve => { finish = resolve; start(); }));
+    vi.spyOn(pngDecoder, "decodeNativeStorePng").mockImplementationOnce(() => new Promise(resolve => { finish = resolve; start(); }));
     const pending = createNativeFlameMaterials(value.scene, value.plan, value.bindings, controller.signal);
     await started; if (kind === "abort") controller.abort(); else value.scene.dispose();
     await expect(pending).rejects.toHaveProperty("name", "AbortError");

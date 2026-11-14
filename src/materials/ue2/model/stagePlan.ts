@@ -42,7 +42,10 @@ export interface MaterialSampler {
   readonly clampV: boolean;
   readonly width: number;
   readonly height: number;
+  readonly frameSizes: readonly MaterialTextureSize[];
 }
+
+export interface MaterialTextureSize { readonly width: number; readonly height: number }
 
 export interface MaterialColourSource { readonly node: string; readonly kind: ColourSourceKind }
 
@@ -115,6 +118,7 @@ function compileTexture(state: CompileState, node: MaterialProgramNode, modifier
     maximumFrameRate: readNumberField(node, "MaxFrameRate"), textureCoordinateModifiers: modifiers,
     clampU: readEnumOrdinal(node, "UClampMode") === clampModeOrdinal, clampV: readEnumOrdinal(node, "VClampMode") === clampModeOrdinal,
     width: readNumberField(node, "USize"), height: readNumberField(node, "VSize"),
+    frameSizes: frames.map(frame => ({ width: readNumberField(frame, "USize"), height: readNumberField(frame, "VSize") })),
   });
   return { kind: "texture", samplerIndex };
 }
