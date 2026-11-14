@@ -112885,6 +112885,3782 @@
       "unitKind": "npc-model"
     },
     {
+      "key": "skill-dispatch-class:LineageEffect.NSpear_sp",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.NSpear_sp",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.NSpear_sp",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.at_fatal_strike_ta",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.at_fatal_strike_ta",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.at_fatal_strike_ta",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.bl_curse_poison_ta",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.bl_curse_poison_ta",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.bl_curse_poison_ta",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u001_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u001_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u001_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u002_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u002_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u002_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u003_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u003_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u003_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u005_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u005_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u005_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u011_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u011_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u011_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u031_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u031_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u031_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u032_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u032_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u032_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u033_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u033_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u033_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u033_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u033_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u033_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u033_c",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u033_c",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u033_c",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u034_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u034_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u034_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u034_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u034_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u034_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u034_c",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u034_c",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u034_c",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u042_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u042_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u042_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u043_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u043_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u043_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u044_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u044_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u044_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u046_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u046_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u046_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u046_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u046_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u046_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u046_c",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u046_c",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u046_c",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u049_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u049_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u049_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u050_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u050_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u050_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u051_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u051_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u051_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u058_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u058_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u058_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u058_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u058_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u058_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u058_l",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u058_l",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u058_l",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u058_r",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u058_r",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u058_r",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u059_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u059_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u059_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u060_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u060_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u060_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u060_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u060_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u060_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u063_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u063_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u063_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u064_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u064_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u064_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u064_cloud",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u064_cloud",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u064_cloud",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u065_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u065_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u065_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u066_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u066_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u066_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u067_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u067_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u067_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u067_hand",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u067_hand",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u067_hand",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u071_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u071_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u071_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u071_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u071_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u071_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u072_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u072_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u072_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u072_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u072_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u072_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u073_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u073_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u073_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u073_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u073_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u073_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u073_door",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u073_door",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u073_door",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u073_ground",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u073_ground",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u073_ground",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u082_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u082_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u082_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u082_core",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u082_core",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u082_core",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u082_rainbow",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u082_rainbow",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u082_rainbow",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u300_heart_arrow",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u300_heart_arrow",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u300_heart_arrow",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u300_heart_ca",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u300_heart_ca",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u300_heart_ca",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u300_heart_cs",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u300_heart_cs",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u300_heart_cs",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u300_heart_cs_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u300_heart_cs_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u300_heart_cs_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u300_heart_fl",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u300_heart_fl",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u300_heart_fl",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u300_heart_ta",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u300_heart_ta",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u300_heart_ta",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u504_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u504_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u504_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u504_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u504_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u504_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u504_rh",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u504_rh",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u504_rh",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u505_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u505_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u505_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u505_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u505_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u505_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u506_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u506_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u506_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u506_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u506_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u506_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u507_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u507_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u507_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u507_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u507_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u507_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u508_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u508_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u508_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u508_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u508_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u508_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u509_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u509_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u509_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u509_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u509_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u509_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u510_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u510_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u510_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u510_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u510_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u510_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u512_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u512_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u512_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u512_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u512_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u512_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u513_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u513_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u513_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u513_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u513_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u513_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u514_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u514_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u514_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u514_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u514_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u514_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u515_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u515_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u515_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u515_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u515_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u515_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u516_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u516_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u516_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u516_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u516_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u516_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u517_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u517_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u517_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u517_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u517_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u517_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u519_firecracker_0",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u519_firecracker_0",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u519_firecracker_0",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u519_firecracker_1",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u519_firecracker_1",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u519_firecracker_1",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u519_firecracker_2",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u519_firecracker_2",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u519_firecracker_2",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u519_firecracker_3",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u519_firecracker_3",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u519_firecracker_3",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u519_fireseed_0",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u519_fireseed_0",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u519_fireseed_0",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u519_fireseed_1",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u519_fireseed_1",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u519_fireseed_1",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u519_fireseed_2",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u519_fireseed_2",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u519_fireseed_2",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u519_fireseed_3",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u519_fireseed_3",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u519_fireseed_3",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u524_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u524_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u524_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u524_meteor",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u524_meteor",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u524_meteor",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u541_big_ta",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u541_big_ta",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u541_big_ta",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u541_cannon_fl",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u541_cannon_fl",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u541_cannon_fl",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u541_cannon_shot",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u541_cannon_shot",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u541_cannon_shot",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u802_fallback",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u802_fallback",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u802_fallback",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u802_refract",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u802_refract",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u802_refract",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.e_u829_ca_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.e_u829_ca_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.e_u829_ca_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.el_flame_strike_ta",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.el_flame_strike_ta",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.el_flame_strike_ta",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.el_hurricane_ta",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.el_hurricane_ta",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.el_hurricane_ta",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.el_hydro_blast_ta",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.el_hydro_blast_ta",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.el_hydro_blast_ta",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.it_scroll_of_escape_ta",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.it_scroll_of_escape_ta",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.it_scroll_of_escape_ta",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u000_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u000_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u000_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u000_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u000_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u000_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u000_c",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u000_c",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u000_c",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u000_d",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u000_d",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u000_d",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u001_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u001_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u001_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u001_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u001_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u001_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u003_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u003_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u003_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u003_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u003_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u003_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u003_c",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u003_c",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u003_c",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u004_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u004_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u004_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u004_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u004_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u004_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u006_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u006_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u006_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u006_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u006_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u006_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u006_c",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u006_c",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u006_c",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u006_d",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u006_d",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u006_d",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u006_e",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u006_e",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u006_e",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u007_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u007_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u007_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u007_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u007_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u007_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u008_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u008_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u008_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u008_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u008_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u008_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u009_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u009_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u009_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u009_c",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u009_c",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u009_c",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u010_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u010_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u010_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u010_c",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u010_c",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u010_c",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u013_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u013_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u013_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u013_c",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u013_c",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u013_c",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u014_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u014_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u014_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u014_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u014_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u014_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u015_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u015_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u015_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u016_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u016_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u016_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u016_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u016_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u016_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u017_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u017_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u017_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u017_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u017_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u017_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u018_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u018_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u018_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u018_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u018_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u018_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u019_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u019_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u019_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u019_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u019_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u019_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u021_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u021_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u021_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u021_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u021_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u021_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u022_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u022_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u022_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u022_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u022_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u022_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u023_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u023_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u023_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u023_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u023_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u023_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u024_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u024_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u024_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u024_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u024_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u024_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u024_c",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u024_c",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u024_c",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u025_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u025_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u025_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u025_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u025_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u025_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u025_c",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u025_c",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u025_c",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u026_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u026_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u026_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u026_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u026_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u026_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u026_c",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u026_c",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u026_c",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u026_d",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u026_d",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u026_d",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u027_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u027_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u027_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u027_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u027_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u027_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u028_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u028_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u028_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u028_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u028_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u028_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u028_c",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u028_c",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u028_c",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u030_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u030_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u030_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u030_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u030_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u030_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u033_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u033_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u033_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u033_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u033_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u033_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u034_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u034_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u034_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u034_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u034_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u034_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u034_c",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u034_c",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u034_c",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u036_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u036_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u036_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u036_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u036_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u036_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u037_d",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u037_d",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u037_d",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u037_e",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u037_e",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u037_e",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u038_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u038_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u038_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u038_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u038_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u038_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u038_c",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u038_c",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u038_c",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u038_d",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u038_d",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u038_d",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u044_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u044_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u044_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u044_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u044_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u044_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u800_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u800_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u800_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.m_u800_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.m_u800_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.m_u800_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.mb_frintessa_arrow_ca",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.mb_frintessa_arrow_ca",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.mb_frintessa_arrow_ca",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.mb_frintessa_arrow_fl",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.mb_frintessa_arrow_fl",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.mb_frintessa_arrow_fl",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.mb_frintessa_arrow_pr",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.mb_frintessa_arrow_pr",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.mb_frintessa_arrow_pr",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.mb_frintessa_arrow_ta",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.mb_frintessa_arrow_ta",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.mb_frintessa_arrow_ta",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.mb_frintessa_organ_heal",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.mb_frintessa_organ_heal",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.mb_frintessa_organ_heal",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.mb_frintessa_organ_plague",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.mb_frintessa_organ_plague",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.mb_frintessa_organ_plague",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.mb_frintessa_organ_psycho",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.mb_frintessa_organ_psycho",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.mb_frintessa_organ_psycho",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.mb_frintessa_organ_rampage",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.mb_frintessa_organ_rampage",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.mb_frintessa_organ_rampage",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.mb_valakas_trample_ca",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.mb_valakas_trample_ca",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.mb_valakas_trample_ca",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.p_u004_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.p_u004_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.p_u004_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.ph_hate_ta",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.ph_hate_ta",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.ph_hate_ta",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u001_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u001_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u001_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u001_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u001_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u001_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u002_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u002_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u002_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u003_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u003_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u003_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u003_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u003_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u003_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u003_d",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u003_d",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u003_d",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u006_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u006_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u006_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u006_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u006_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u006_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u007_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u007_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u007_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u007_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u007_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u007_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u009_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u009_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u009_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u010_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u010_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u010_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u010_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u010_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u010_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u011_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u011_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u011_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u012_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u012_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u012_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u013_x",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u013_x",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u013_x",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u015_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u015_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u015_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u015_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u015_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u015_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u017_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u017_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u017_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u017_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u017_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u017_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u019_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u019_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u019_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u019_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u019_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u019_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u019_c",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u019_c",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u019_c",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u020_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u020_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u020_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u020_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u020_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u020_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u020_c",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u020_c",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u020_c",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u505_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u505_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u505_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u505_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u505_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u505_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u505_c",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u505_c",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u505_c",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u509_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u509_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u509_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u509_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u509_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u509_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u509_c",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u509_c",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u509_c",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u509_d",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u509_d",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u509_d",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u509_e",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u509_e",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u509_e",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u513_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u513_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u513_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u513_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u513_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u513_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u513_c",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u513_c",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u513_c",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u807_mage_ca",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u807_mage_ca",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u807_mage_ca",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u808_red_a",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u808_red_a",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u808_red_a",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.s_u808_red_b",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.s_u808_red_b",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.s_u808_red_b",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.sp_agility_ta",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.sp_agility_ta",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.sp_agility_ta",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.su_acumen_ta",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.su_acumen_ta",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.su_acumen_ta",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.su_guidance_ta",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.su_guidance_ta",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.su_guidance_ta",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.wh_bless_the_body_ta",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.wh_bless_the_body_ta",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.wh_bless_the_body_ta",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
+      "key": "skill-dispatch-class:LineageEffect.wh_mental_shield_ta",
+      "part": "skills-effects",
+      "reason": null,
+      "selection": {
+        "effectObject": "LineageEffect.wh_mental_shield_ta",
+        "packageSha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "sourceIdentity": {
+        "object": "LineageEffect.wh_mental_shield_ta",
+        "path": "system/lineageeffect.u",
+        "sha256": "ea090154c4b8eb2f4fafab331c85fd8f7e42869ec71eb4f11323b546b550114a"
+      },
+      "status": "convertible",
+      "unitKind": "skill-dispatch-class"
+    },
+    {
       "key": "skill-root:skill.at.100",
       "part": "skills-effects",
       "reason": null,

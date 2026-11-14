@@ -103,6 +103,15 @@ describe("native catalog L2-ID index", () => {
     expect(index.keys("skill:")).toEqual(["skill:1011:1", "skill:1011:2"]);
   });
 
+  it("yields no skill key for a shared skill dispatch class record", async () => {
+    serveFiles(new Map());
+    const classId = "interlude:skill-dispatch-class:LineageEffect.s_u010_b";
+    const index = await buildNativeCatalogIndex(catalogWith({ effectComponents: [{ id: classId, bundleId: classId,
+      manifest: `/l2/effects/${"b".repeat(64)}/manifest.json`, manifestSha256: "b".repeat(64) }] }), new AbortController().signal);
+    expect(index.keys("skill:")).toEqual([]);
+    expect(index.lookup(skillCatalogKey(1, 1)).status).not.toBe("converted");
+  });
+
   it("reports every lookup as not in catalog for a catalog with only an empty model list", async () => {
     serveFiles(new Map());
     const index = await buildNativeCatalogIndex(catalogWith({}), new AbortController().signal);

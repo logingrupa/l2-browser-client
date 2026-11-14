@@ -12,6 +12,7 @@ from pathlib import PurePosixPath
 
 from actors.actor_unit_inventory import ACTOR_UNIT_CENSUS_RELATIVE_PATH, character_units_and_rows, decoded_table_rows, npc_units_and_rows
 from actors.item_unit_inventory import armorgrp_mtx_column_names, item_units_and_rows
+from actors.skill_dispatch_candidates import read_skill_dispatch_candidates
 from actors.skill_unit_inventory import skill_units_and_rows
 from native_assets_lib.asset_manifest import reference_client_build
 from native_assets_lib.texture_mips import REVIEWED_VERSIONS
@@ -176,21 +177,21 @@ def decoded_table_census_row(table_name, decoded_table):
             'rowCount': len(decoded_table_rows(decoded_table))}
 
 
-def actor_units_and_rows(tables, armor_mesh_columns, package_census):
+def actor_units_and_rows(tables, armor_mesh_columns, package_census, dispatch_candidates):
     units, rows = [], []
     for kind_units, kind_rows in (
             npc_units_and_rows(tables['npcgrp'], package_census),
             character_units_and_rows(tables['chargrp'], package_census),
             item_units_and_rows(tables['weapongrp'], tables['armorgrp'], armor_mesh_columns, package_census),
-            skill_units_and_rows(tables['skillgrp'], tables['skillsoundgrp'], package_census)):
+            skill_units_and_rows(tables['skillgrp'], tables['skillsoundgrp'], package_census, dispatch_candidates)):
         units.extend(kind_units)
         rows.extend(kind_rows)
     return sorted(units, key=lambda unit: unit['key']), rows
 
 
-def build_actor_census(client_access, tables, armor_mesh_columns):
+def build_actor_census(client_access, tables, armor_mesh_columns, dispatch_candidates):
     package_census = ActorPackageCensus(client_access, lock_skeletal_package_paths(client_access.lock))
-    units, rows = actor_units_and_rows(tables, armor_mesh_columns, package_census)
+    units, rows = actor_units_and_rows(tables, armor_mesh_columns, package_census, dispatch_candidates)
     census = {
         'schemaVersion': ACTOR_UNIT_CENSUS_SCHEMA_VERSION,
         'referenceTreeLockSha256': reference_client_build(client_access.lock)['referenceTreeLockSha256'],
@@ -254,7 +255,8 @@ def main(argv=None):
         client_access = require_reference_client(arguments.client)
         run_at_below_normal_priority()
         tables = decode_actor_tables(client_access.root)
-        census, rows = build_actor_census(client_access, tables, armorgrp_mtx_column_names(tables['armorgrp']))
+        census, rows = build_actor_census(client_access, tables, armorgrp_mtx_column_names(tables['armorgrp']),
+                                          read_skill_dispatch_candidates(REPOSITORY_ROOT)['document'])
         if arguments.check:
             differing_key = check_committed_census(census, ACTOR_UNIT_CENSUS_PATH)
             if differing_key is not None:

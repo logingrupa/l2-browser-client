@@ -102,7 +102,7 @@ Plan 02-21 adds a census only. It converts nothing and loads nothing. A "load" c
 - ACT-04 presentation: the sandbox `play-clip` command that plays a listed clip through this API (02-37) and the developer sheet clip picker that reads `actorClipListing` (02-39) are open. Nothing yet shows events in a browser.
 - 6,519 `npcgrp` rows, spawnable by NPC ID (ACT-02): the 02-78 counts are under Passes now. The one pending row, npc:21622 (Greater Musveren), is profiled only in the shared-store record `native-npc-profiles` with the legacy join, so lane packs leave it out (rows 354, 360); it leaves pending with the restage (Needs Human) and the key index disagreement P816 of 03-11. Skeletal licensees 31 and 0 wait on reader work.
 - chargrp hair and helmet layouts stay explicit gaps (`hair-layout-undecoded`, `helmet-layout-undecoded`) until 02-28 and 02-40 decode them.
-- 17,576 skillgrp rows have an empty description and need native skill dispatch (ACT-06).
+- 17,576 skillgrp rows have an empty description (ACT-06). Since 02-99, 11,215 of them read `skill-dispatch-candidate-runtime-unresolved` (the 11,211 R2 dispatch rows of `recipes/actors/skill-dispatch-candidates.json` and its 4 animation notify rows; the census does not know the Power Strike recipe, so skill 3 level 1 counts here) and 6,361 keep `native-skill-dispatch-required`.
 - Etcitem rows are not in this census; 02-26 adds their gap rows from the data lane decode.
 - One npcgrp row has a non-empty `texture_name_second` list; the census unit uses `texture_name` only, as the plan defines it.
 
@@ -122,7 +122,7 @@ The first command writes the committed census and the lane gap rows. `--check` r
 Rules the census follows:
 
 - NPC units are one per exact (`mesh_name`, ordered `texture_name` list) pair, empty slots kept in place. Weapon units are one per weapongrp (`wp_mesh`, `texture`) selection. Armor units are one per (armorgrp MTX column, mesh and texture lists); the MTX columns come from the decoded schema layout.
-- Unit keys are `<kind>:<sha256>` over canonical ASCII JSON of the exact selection (`conversion_unit_key`). chargrp rows are `character:<index>`, with `character:<index>:hair` and `character:<index>:helmet` gap units. Skill roots are `skill-root:<description>`; skill sound rows are `skill-sound-row:<rowIndex>`.
+- Unit keys are `<kind>:<sha256>` over canonical ASCII JSON of the exact selection (`conversion_unit_key`). chargrp rows are `character:<index>`, with `character:<index>:hair` and `character:<index>:helmet` gap units. Skill roots are `skill-root:<description>`; candidate classes of the dispatch candidate recipe are `skill-dispatch-class:<effectObject>`; skill sound rows are `skill-sound-row:<rowIndex>`.
 - Package names resolve by case-insensitive stem against lock-equal files: meshes against `.ukx`, textures against `.utx` and `.ukx`, skill roots against every native package suffix, sounds against `.uax`. More than one match is `package-name-ambiguous:<package>`.
 - Gap reason order for a unit: mesh package missing or ambiguous, skeletal licensee, texture package missing or ambiguous, texture licensee. Multi-texture NPC units are convertible since 02-32 and 02-34.
 - The skeletal gate is the `SkeletalReader` version check run on a header-only package view; the texture gate is `texture_mips.REVIEWED_VERSIONS`.
@@ -157,6 +157,7 @@ The census lists 47 packages (`packages` in the committed census, with version, 
 | chargrp-helmet | 0 | 15 | `helmet-layout-undecoded` |
 | chargrp-row | 14 | 1 | `no-mesh-in-row` |
 | npc-model | 539 | 94 | `skeletal-licensee-unsupported:123/0` 16, `123/31` 78 |
+| skill-dispatch-class | 236 | 0 | |
 | skill-root | 245 | 0 | |
 | skill-sound-row | 1398 | 0 | |
 | weapon-mesh | 523 | 0 | |
@@ -177,7 +178,8 @@ The census lists 47 packages (`packages` in the committed census, with version, 
 | npc | `skeletal-licensee-unsupported:123/0` | 246 |
 | npc | `skeletal-licensee-unsupported:123/31` | 239 |
 | skill | `conversion-pending` | 12236 |
-| skill | `native-skill-dispatch-required` | 17576 |
+| skill | `native-skill-dispatch-required` | 6361 |
+| skill | `skill-dispatch-candidate-runtime-unresolved` | 11215 |
 
 ## Evidence
 

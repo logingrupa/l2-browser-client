@@ -7,9 +7,9 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from actors.actor_unit_inventory import character_units_and_rows, conversion_unit_key
 from actors.item_unit_inventory import armorgrp_mtx_column_names, item_units_and_rows
 from actors.skill_unit_inventory import skill_units_and_rows
-from actor_census_fixture import (SYNTHETIC_ARMOR_COLUMNS, SYNTHETIC_FIRST_TEXTURE, SYNTHETIC_MESH, SYNTHETIC_SECOND_TEXTURE, SyntheticActorClient,
-                                  synthetic_armorgrp, synthetic_character, synthetic_chargrp, synthetic_skillgrp, synthetic_skillsoundgrp,
-                                  synthetic_weapongrp)
+from actor_census_fixture import (NO_DISPATCH_CANDIDATES, SYNTHETIC_ARMOR_COLUMNS, SYNTHETIC_FIRST_TEXTURE, SYNTHETIC_MESH, SYNTHETIC_SECOND_TEXTURE,
+                                  SyntheticActorClient, synthetic_armorgrp, synthetic_character, synthetic_chargrp, synthetic_dispatch_candidates,
+                                  synthetic_skillgrp, synthetic_skillsoundgrp, synthetic_weapongrp)
 from native_catalog.tables import CRYPTO_SOURCE, SCHEMA_ROOT, decode_table
 from native_store.gap_rows import validate_gap_row
 from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH
@@ -17,6 +17,7 @@ from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH
 CONVERSION_CLIENT_ROOT = Path('E:/Lineage2-client')
 SYNTHETIC_SKILL_ROOT = 'SyntheticSkill.synthetic_root'
 SYNTHETIC_SOUND = 'SyntheticSound.cast_1'
+SYNTHETIC_CLASS = 'SyntheticSkill.class_b'
 
 
 def units_by_key(units):
@@ -111,12 +112,30 @@ class SkillUnitInventoryTests(InventoryTestCase):
     def test_duplicate_pairs_stay_ambiguous_and_levels_stay_decoded(self):
         skillgrp = synthetic_skillgrp([(3, 1, SYNTHETIC_SKILL_ROOT), (3, 1, SYNTHETIC_SKILL_ROOT), (3, 2, ''), (5, 101, SYNTHETIC_SKILL_ROOT),
                                        (6, 1, 'AbsentEffects.root')])
-        units, rows = skill_units_and_rows(skillgrp, synthetic_skillsoundgrp([]), self.package_census)
+        units, rows = skill_units_and_rows(skillgrp, synthetic_skillsoundgrp([]), self.package_census, NO_DISPATCH_CANDIDATES)
         self.assertEqual(reasons_by_key(rows), {'skill:3:1': 'skill-row-ambiguous:2', 'skill:3:2': 'native-skill-dispatch-required',
                                                 'skill:5:101': 'conversion-pending', 'skill:6:1': 'mesh-package-not-in-client:AbsentEffects'})
         units = units_by_key(units)
         self.assertEqual(sorted(units), ['skill-root:AbsentEffects.root', 'skill-root:' + SYNTHETIC_SKILL_ROOT])
         self.assertEqual(units['skill-root:' + SYNTHETIC_SKILL_ROOT]['sourceIdentity']['path'], 'animations/SyntheticSkill.usk')
+        self.assert_valid_gap_rows(rows)
+
+    def test_rows_the_recipe_names_read_the_candidate_reason_and_every_recipe_class_is_one_unit(self):
+        skillgrp = synthetic_skillgrp([(3, 1, ''), (3, 2, ''), (4, 1, ''), (4681, 1, ''), (5, 101, SYNTHETIC_SKILL_ROOT)])
+        candidates = synthetic_dispatch_candidates([(3, 1, SYNTHETIC_CLASS), (3, 2, SYNTHETIC_CLASS), (3, 2, 'AbsentEffects.class_a')],
+                                                   [SYNTHETIC_CLASS, 'AbsentEffects.class_a'], [(4681, 1, 'SyntheticSkill.notify_class')],
+                                                   ['SyntheticSkill.notify_class'])
+        units, rows = skill_units_and_rows(skillgrp, synthetic_skillsoundgrp([]), self.package_census, candidates)
+        self.assertEqual(reasons_by_key(rows), {'skill:3:1': 'skill-dispatch-candidate-runtime-unresolved',
+                                                'skill:3:2': 'skill-dispatch-candidate-runtime-unresolved',
+                                                'skill:4:1': 'native-skill-dispatch-required',
+                                                'skill:4681:1': 'skill-dispatch-candidate-runtime-unresolved', 'skill:5:101': 'conversion-pending'})
+        class_units = {key: unit for key, unit in units_by_key(units).items() if key.startswith('skill-dispatch-class:')}
+        self.assertEqual({key: (unit['part'], unit['unitKind'], unit['status'], unit['reason']) for key, unit in class_units.items()}, {
+            'skill-dispatch-class:AbsentEffects.class_a': ('skills-effects', 'skill-dispatch-class', 'gap', 'mesh-package-not-in-client:AbsentEffects'),
+            'skill-dispatch-class:' + SYNTHETIC_CLASS: ('skills-effects', 'skill-dispatch-class', 'convertible', None),
+            'skill-dispatch-class:SyntheticSkill.notify_class': ('skills-effects', 'skill-dispatch-class', 'convertible', None)})
+        self.assertEqual(class_units['skill-dispatch-class:' + SYNTHETIC_CLASS]['selection'], {'effectObject': SYNTHETIC_CLASS, 'packageSha256': 'e' * 64})
         self.assert_valid_gap_rows(rows)
 
     def test_every_sound_row_is_its_own_unit_without_fallback(self):
@@ -125,7 +144,7 @@ class SkillUnitInventoryTests(InventoryTestCase):
             (4, 1, {'spelleffect_sound_1': SYNTHETIC_SOUND, 'mfighter_cast': 'AbsentSounds.cast'}),
             (4, 2, {'shoteffect_sound_2': 'unqualified_sound'}),
         ])
-        units, rows = skill_units_and_rows(synthetic_skillgrp([]), skillsoundgrp, self.package_census)
+        units, rows = skill_units_and_rows(synthetic_skillgrp([]), skillsoundgrp, self.package_census, NO_DISPATCH_CANDIDATES)
         self.assertEqual(rows, [])
         self.assertEqual({unit['key']: (unit['status'], unit['reason']) for unit in units}, {
             'skill-sound-row:0': ('convertible', None),

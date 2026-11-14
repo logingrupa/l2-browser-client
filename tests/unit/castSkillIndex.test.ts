@@ -62,6 +62,13 @@ describe("skill effect component identity", () => {
     expect(lookupCastSkill(index, 1011, 2)).toBeNull();
   });
 
+  it("gives no cast record for a shared skill dispatch class record", () => {
+    const classId = "interlude:skill-dispatch-class:LineageEffect.s_u010_b";
+    expect(parseSkillEffectComponentId(classId)).toBeNull();
+    const index = buildCastSkillIndex([{ id: classId, bundleId: classId, manifest: `/l2/effects/${"b".repeat(64)}/manifest.json`, manifestSha256: "b".repeat(64) }]);
+    expect(lookupCastSkill(index, 1, 1)).toBeNull();
+  });
+
   it("refuses two records for one skill key", () => {
     expect(() => buildCastSkillIndex([{ id: "interlude:skill:3:level:1:a" }, { id: "interlude:skill:3:level:1:b" }]))
       .toThrow("Cast skill index: skill:3:1 has two effect component records, interlude:skill:3:level:1:a and interlude:skill:3:level:1:b.");
