@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from native_store.canonical_json import canonical_json_bytes
-from native_store.catalog_index_keys import (ITEM_MODEL_RECORD_ID_PATTERN, LEGACY_SECTION_ID_PATTERN, SKILL_EFFECT_COMPONENT_ID_PATTERN,
+from native_store.catalog_index_keys import (ITEM_MODEL_RECORD_ID_PATTERN, LEGACY_SECTION_ID_PATTERN, SINGLE_RECORD_KEY_PREFIX_BY_SLICE,
+                                             SKILL_EFFECT_COMPONENT_ID_PATTERN,
                                              catalog_index_keys, legacy_single_mesh_candidate_model_ids_by_source_object,
                                              model_source_objects_by_id,
                                              npc_profile_model_id, npc_profile_npc_key, player_profile_model_ids_by_key,
@@ -10,7 +11,6 @@ from native_store.catalog_writer import sha256_hex
 from native_store.coverage_denominators import CoverageReportError
 from native_store.store_paths import SHA256_PATTERN
 
-SINGLE_RECORD_KEY_PREFIX_BY_SLICE = {'tiles': 'tile', 'windows': 'window', 'tables': 'table'}
 CONTENT_PIN_FIELDS = ('manifestSha256', 'archiveSha256', 'modelSha256', 'imageSha256')
 
 

@@ -21,8 +21,35 @@ PROFILE_MANIFEST_PATH_PATTERNS = {
 NPC_MODEL_CATALOG_ID_PATTERN = re.compile(r'^npc-model:[a-f0-9]{64}$')
 SHARED_STORE_NPC_PROFILE_RECORD_ID = 'native-npc-profiles'
 ITEM_MODEL_RECORD_ID_PATTERN = re.compile(r'^interlude:item:(?P<item>0|[1-9]\d{0,8}):body-part:(?:0|[1-9]\d{0,8}):(?:weapon|armor:(?:0|[1-9]\d{0,8}))$')
-SKILL_EFFECT_COMPONENT_ID_PATTERN =re.compile(r'^interlude:skill:(?P<skill>\d{1,9}):level:(?P<level>[1-9]\d{0,3}):')
+SKILL_EFFECT_COMPONENT_ID_PATTERN = re.compile(r'^interlude:skill:(?P<skill>\d{1,9}):level:(?P<level>[1-9]\d{0,3}):')
 LEGACY_SECTION_ID_PATTERN = re.compile(r'^map-(?P<column>\d{2})-(?P<row>\d{2})-section$')
+CHARACTER_MODEL_RECORD_ID_PREFIX = 'character-model:'
+CHARACTER_MODEL_RECORD_ID_PATTERN = re.compile('^' + re.escape(CHARACTER_MODEL_RECORD_ID_PREFIX) + r'(?P<character>0|[1-9]\d{0,3})$')
+SINGLE_RECORD_KEY_PREFIX_BY_SLICE = {'tiles': 'tile', 'windows': 'window', 'tables': 'table'}
+
+
+def character_model_record_id(chargrp_index):
+    return f'{CHARACTER_MODEL_RECORD_ID_PREFIX}{chargrp_index}'
+
+
+def model_record_unit_key(record_id):
+    item_match = ITEM_MODEL_RECORD_ID_PATTERN.fullmatch(record_id)
+    if item_match:
+        return f'item:{item_match["item"]}'
+    character_match = CHARACTER_MODEL_RECORD_ID_PATTERN.fullmatch(record_id)
+    return f'character:{character_match["character"]}' if character_match else None
+
+
+def catalog_record_unit_key(slice_name, record_id):
+    if slice_name in SINGLE_RECORD_KEY_PREFIX_BY_SLICE:
+        return f'{SINGLE_RECORD_KEY_PREFIX_BY_SLICE[slice_name]}:{record_id}'
+    if slice_name == 'models':
+        return model_record_unit_key(record_id)
+    section_match = LEGACY_SECTION_ID_PATTERN.fullmatch(record_id) if slice_name == 'sections' else None
+    if section_match:
+        return f'tile:{section_match["column"]}_{section_match["row"]}'
+    skill_match = SKILL_EFFECT_COMPONENT_ID_PATTERN.match(record_id) if slice_name == 'effectComponents' else None
+    return f'skill:{skill_match["skill"]}:{skill_match["level"]}' if skill_match else None
 
 
 def read_measured_catalog(store_root):

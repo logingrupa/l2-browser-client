@@ -15,10 +15,11 @@ sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 from actors import character_conversion
 from actors.actor_unit_inventory import ACTOR_UNIT_CENSUS_RELATIVE_PATH, CHARGRP_ROW_UNIT_KIND, CONVERTIBLE_UNIT_STATUS
 from actors.character_census import CONVERTED_STATUS, PENDING_STATUS, character_census, run_character_batch
-from actors.character_conversion import CHARACTER_MODEL_ID_PREFIX, PADDING_STATUS, CharacterConversionRun
+from actors.character_conversion import PADDING_STATUS, CharacterConversionRun
 from actors.character_requests import GAP_STATUS
 from actors.npc_requests import CONVERTER_REFUSED_REASON_PREFIX
 from catalog_store_fixture import model_record
+from native_store.catalog_index_keys import character_model_record_id
 from native_store.catalog_writer import read_store_catalog
 from native_store.gap_rows import read_gap_rows
 from native_store.store_paths import lane_store_root, lane_work_root
@@ -100,7 +101,7 @@ class CharacterConversionRunTests(unittest.TestCase):
 
     def test_a_row_reconverted_into_a_model_gap_loses_its_catalog_model_record(self):
         self.converted_outcomes(FIRST_CONVERTER_SHA256, [1])
-        self.assertEqual(self.catalog_model_ids(), [CHARACTER_MODEL_ID_PREFIX + '1'])
+        self.assertEqual(self.catalog_model_ids(), [character_model_record_id(1)])
         [outcome] = self.converted_outcomes(CHANGED_CONVERTER_SHA256, [1], SYNTHETIC_REFUSAL)
         self.assertEqual((outcome['outputs'], outcome['reason']), ([], CONVERTER_REFUSED_REASON_PREFIX + SYNTHETIC_REFUSAL))
         self.assertEqual(self.catalog_model_ids(), [])
@@ -120,7 +121,7 @@ class CharacterConversionRunTests(unittest.TestCase):
         with mock.patch.object(character_conversion, 'implementation_hash', return_value=FIRST_CONVERTER_SHA256):
             outcome = run.convert(1)
         self.assertEqual((outcome['cacheHit'], len(outcome['outputs']), run.converted_rows), (True, 1, []))
-        self.assertEqual(self.catalog_model_ids(), [CHARACTER_MODEL_ID_PREFIX + '1'])
+        self.assertEqual(self.catalog_model_ids(), [character_model_record_id(1)])
 
     def test_a_refused_conversion_seals_a_model_gap_row_and_writes_no_model_record(self):
         [outcome] = self.converted_outcomes(FIRST_CONVERTER_SHA256, [2], SYNTHETIC_REFUSAL)

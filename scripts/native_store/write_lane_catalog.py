@@ -9,9 +9,10 @@ SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS_ROOT))
 
 from native_assets_lib.gltf import json_bytes
-from native_store.catalog_index_keys import require_npc_profiles_join_models_of_their_mesh
+from native_store.catalog_index_keys import catalog_record_unit_key, require_npc_profiles_join_models_of_their_mesh
 from native_store.catalog_writer import (KNOWN_CATALOG_SLICES, empty_store_catalog, merge_catalog_slice_records, read_store_catalog,
                                          sha256_hex, sha256_of_file, validate_catalog_record, write_store)
+from native_store.gap_rows import read_gap_rows
 from native_store.lane_coverage_refresh import refresh_lane_coverage
 from native_store.merge_lane_store import main_checkout_root
 from native_store.pinned_store_verification import PINNED_STORE_VERIFICATION_WORKER_COUNT, verify_pinned_store_files
@@ -24,6 +25,8 @@ LANE_CATALOG_DESCRIPTION = ('Pin a lane store catalog to the SHA-256 of the shar
 UNION_EXCLUDED_STORE_FILES = ('catalog.json', 'coverage.json')
 MERGE_LANE_STORE_SCRIPT = Path(__file__).resolve().parent / 'merge_lane_store.py'
 MAIN_CHECKOUT_STORE_TARGET = 'public/l2'
+UNION_CATALOG_FIELDS = frozenset({'schemaVersion', 'sourceCatalogSha256', *KNOWN_CATALOG_SLICES})
+RETIRING_GAP_ROW_STATUSES = ('gap', 'failed')
 
 
 class LaneCatalogError(ValueError):
@@ -52,11 +55,30 @@ def union_lane_store_relative_paths(union_store_root):
     return sorted(relative for relative in relative_paths if relative not in UNION_EXCLUDED_STORE_FILES)
 
 
-def merge_union_lane(project_root, union_lane_name, base_sha256, catalog, store_file_sources):
+def require_known_catalog_fields(catalog_label, catalog):
+    unknown_fields = sorted(set(catalog) - UNION_CATALOG_FIELDS)
+    if unknown_fields:
+        raise LaneCatalogError(f'{catalog_label} catalog holds unknown fields {", ".join(unknown_fields)}; preserved')
+    for slice_name in KNOWN_CATALOG_SLICES:
+        if not isinstance(catalog.get(slice_name, []), list):
+            raise LaneCatalogError(f'{catalog_label} catalog {slice_name} is not a list; preserved')
+
+
+def require_union_lanes_agree(union_lane_name, slice_name, incoming_records, owner_and_record_by_record_key):
+    for record in incoming_records:
+        record_id = validate_catalog_record(slice_name, record)['id']
+        owner_lane_name, owned_record = owner_and_record_by_record_key.setdefault((slice_name, record_id), (union_lane_name, record))
+        if owned_record != record:
+            raise LaneCatalogError(f'catalog {slice_name} record {record_id} differs between union lanes {owner_lane_name} and '
+                                   f'{union_lane_name}; preserved')
+
+
+def merge_union_lane(project_root, union_lane_name, base_sha256, catalog, store_file_sources, owner_and_record_by_record_key):
     union_store_root = lane_store_root(project_root, union_lane_name)
     union_catalog, union_catalog_bytes = read_store_catalog(union_store_root)
     if union_catalog_bytes is None:
         raise LaneCatalogError(f'union lane {union_lane_name} has no catalog: {union_store_root / "catalog.json"}')
+    require_known_catalog_fields(f'union lane {union_lane_name}', union_catalog)
     union_base_sha256 = union_catalog.get('sourceCatalogSha256')
     if union_base_sha256 != base_sha256:
         raise LaneCatalogError(f'union lane {union_lane_name} was built on base catalog sha256 {union_base_sha256}; '
@@ -68,25 +90,58 @@ def merge_union_lane(project_root, union_lane_name, base_sha256, catalog, store_
     for slice_name in KNOWN_CATALOG_SLICES:
         incoming_records = union_catalog.get(slice_name, [])
         if incoming_records:
+            require_union_lanes_agree(union_lane_name, slice_name, incoming_records, owner_and_record_by_record_key)
             catalog = merge_catalog_slice_records(catalog, slice_name, incoming_records, len(catalog.get(slice_name, [])) + len(incoming_records))
     return catalog
 
 
-def require_union_owns_every_earlier_record(lane_name, earlier_catalog, union_catalog):
+def unowned_earlier_records(earlier_catalog, union_catalog):
+    unowned = []
     for slice_name in KNOWN_CATALOG_SLICES:
         union_record_ids = {record['id'] for record in union_catalog.get(slice_name, [])}
         for earlier_record in earlier_catalog.get(slice_name, []):
             earlier_record_id = validate_catalog_record(slice_name, earlier_record)['id']
             if earlier_record_id not in union_record_ids:
-                raise LaneCatalogError(f'lane {lane_name} catalog {slice_name} record {earlier_record_id} is owned by no union lane; preserved')
+                unowned.append((slice_name, earlier_record_id))
+    return unowned
+
+
+def retiring_gap_rows_by_unit_key(project_root, union_lane_names):
+    parts_by_lane_name = read_lane_parts_by_name()
+    retiring_rows_by_unit_key = {}
+    for union_lane_name in union_lane_names:
+        for row in read_gap_rows(project_root, union_lane_name):
+            if row['status'] in RETIRING_GAP_ROW_STATUSES and row['part'] in parts_by_lane_name[union_lane_name]:
+                retiring_rows_by_unit_key.setdefault(row['key'], (union_lane_name, row))
+    return retiring_rows_by_unit_key
+
+
+def retired_earlier_records(project_root, lane_name, union_lane_names, earlier_catalog, union_catalog):
+    unowned = unowned_earlier_records(earlier_catalog, union_catalog)
+    if not unowned:
+        return []
+    retiring_rows_by_unit_key = retiring_gap_rows_by_unit_key(project_root, union_lane_names)
+    retired = []
+    for slice_name, record_id in unowned:
+        unit_key = catalog_record_unit_key(slice_name, record_id)
+        if unit_key not in retiring_rows_by_unit_key:
+            unexplained_unit = f'its unit {unit_key}' if unit_key else 'it, as its id maps to no unit key'
+            raise LaneCatalogError(f'lane {lane_name} catalog {slice_name} record {record_id} is owned by no union lane, and no union lane '
+                                   f'gap or failed row explains {unexplained_unit}; preserved')
+        owning_lane_name, row = retiring_rows_by_unit_key[unit_key]
+        retired.append({'slice': slice_name, 'id': record_id, 'unitKey': unit_key, 'lane': owning_lane_name, 'step': row['step'],
+                        'status': row['status'], 'reason': row['reason']})
+    return retired
 
 
 def union_catalog_of_lanes(project_root, lane_name, union_lane_names, base_sha256, earlier_catalog, store_file_sources):
+    require_known_catalog_fields(f'lane {lane_name}', earlier_catalog)
     union_catalog = empty_store_catalog()
+    owner_and_record_by_record_key = {}
     for union_lane_name in union_lane_names:
-        union_catalog = merge_union_lane(project_root, union_lane_name, base_sha256, union_catalog, store_file_sources)
-    require_union_owns_every_earlier_record(lane_name, earlier_catalog, union_catalog)
-    return union_catalog
+        union_catalog = merge_union_lane(project_root, union_lane_name, base_sha256, union_catalog, store_file_sources,
+                                         owner_and_record_by_record_key)
+    return union_catalog, retired_earlier_records(project_root, lane_name, union_lane_names, earlier_catalog, union_catalog)
 
 
 def require_distinct_union_lanes(lane_name, union_lane_names):
@@ -115,15 +170,17 @@ def write_lane_catalog(project_root, lane_name, union_lane_names=(), plan_only=F
     if plan_only and before is None:
         raise LaneCatalogError(f'lane {lane_name} has no catalog: {store_root / "catalog.json"}')
     store_file_sources = {}
+    union_report = {}
     if union_lane_names:
-        catalog = union_catalog_of_lanes(project_root, lane_name, union_lane_names, base_sha256, catalog, store_file_sources)
+        catalog, retired_records = union_catalog_of_lanes(project_root, lane_name, union_lane_names, base_sha256, catalog, store_file_sources)
+        union_report = {'retiredRecords': retired_records}
     else:
         verify_pinned_store_files(store_root, catalog, PINNED_STORE_VERIFICATION_WORKER_COUNT)
         require_npc_profiles_join_models_of_their_mesh(store_root, catalog, shared_store_root(project_root))
     catalog['sourceCatalogSha256'] = base_sha256
     after = json_bytes(catalog)
     summary = {'lane': lane_name, 'laneStoreRoot': store_root.as_posix(), 'catalogSha256': sha256_hex(after),
-               'sourceCatalogSha256': base_sha256, 'recordsBySlice': records_by_slice(catalog)}
+               'sourceCatalogSha256': base_sha256, 'recordsBySlice': records_by_slice(catalog), **union_report}
     if plan_only:
         if missing_store_file_sources(store_root, store_file_sources) or after != before:
             raise LaneCatalogError(f'lane {lane_name} is not written yet; run write_lane_catalog.py without --plan first')

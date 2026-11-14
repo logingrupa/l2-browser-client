@@ -11,7 +11,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
 from catalog_store_fixture import model_record, write_profile_manifest
-from native_store.catalog_index_keys import catalog_index_keys
+from native_store.catalog_index_keys import catalog_index_keys, catalog_record_unit_key, character_model_record_id
 from native_store.coverage_denominators import CoverageReportError
 
 GOLDEN_STORE_ROOT = ROOT / 'tests' / 'fixtures' / 'golden' / 'l2'
@@ -144,6 +144,28 @@ class CatalogIndexKeysJoinTests(unittest.TestCase):
         self.assertEqual(catalog_index_keys(self.store_root, catalog, self.shared_store_root), ('npc:21622',))
         with self.assertRaisesRegex(CoverageReportError, 'in neither store root'):
             catalog_index_keys(self.store_root, catalog)
+
+
+class CatalogRecordUnitKeyTests(unittest.TestCase):
+    def test_each_record_id_maps_to_the_unit_key_its_converter_writes_or_to_none(self):
+        expected_unit_key_by_record = {
+            ('models', character_model_record_id(8)): 'character:8',
+            ('models', 'interlude:item:26:body-part:6:armor:2'): 'item:26',
+            ('models', 'interlude:item:01:body-part:7:weapon'): None,
+            ('models', 'character-model:08'): None,
+            ('models', 'npc-model:' + 'c' * 64): None,
+            ('tiles', '20_21'): 'tile:20_21',
+            ('tables', 'actionname-e'): 'table:actionname-e',
+            ('windows', 'StatusWnd#2'): 'window:StatusWnd#2',
+            ('sections', 'map-20-20-section'): 'tile:20_20',
+            ('sections', 'map-20-20-movers'): None,
+            ('effectComponents', 'interlude:skill:3:level:1:raw-source-dispatch'): 'skill:3:1',
+            ('effectComponents', 'interlude:footsteps'): None,
+            ('npcProfiles', 'native-npc-profiles'): None,
+        }
+        for (slice_name, record_id), unit_key in expected_unit_key_by_record.items():
+            with self.subTest(slice_name=slice_name, record_id=record_id):
+                self.assertEqual(catalog_record_unit_key(slice_name, record_id), unit_key)
 
 
 if __name__ == '__main__':

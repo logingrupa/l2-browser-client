@@ -362,7 +362,8 @@ class LaneCatalogWriterTests(unittest.TestCase):
                          extra_files=(('notes/data-ui-only.bin', b'data-ui lane file'),))
         write_lane_catalog(self.project, 'data-ui')
         snapshot = snapshot_tree(self.project)
-        with self.assertRaisesRegex(CatalogWriteError, f'catalog models record {MODEL_VERSION_TWO_RECORD["id"]} differs; preserved'):
+        with self.assertRaisesRegex(LaneCatalogError, f'catalog models record {MODEL_VERSION_TWO_RECORD["id"]} differs between union lanes '
+                                                      'world and data-ui; preserved'):
             write_lane_catalog(self.project, 'integration', ('world', 'data-ui'))
         self.assertEqual(snapshot_tree(self.project), snapshot)
 
@@ -434,8 +435,9 @@ class LaneCatalogWriterTests(unittest.TestCase):
         exit_code, output, errors = self.run_main(['--lane', 'integration', '--union', 'world', '--union', 'actors'])
         self.assertEqual((exit_code, errors), (0, ''))
         summary = json.loads(output)
-        self.assertEqual(sorted(summary), ['catalogSha256', 'filesWritten', 'lane', 'laneStoreRoot', 'recordsBySlice', 'sourceCatalogSha256'])
-        self.assertEqual((summary['lane'], summary['filesWritten']), ('integration', 4))
+        self.assertEqual(sorted(summary), ['catalogSha256', 'filesWritten', 'lane', 'laneStoreRoot', 'recordsBySlice', 'retiredRecords',
+                                           'sourceCatalogSha256'])
+        self.assertEqual((summary['lane'], summary['filesWritten'], summary['retiredRecords']), ('integration', 4, []))
 
     def test_main_sets_below_normal_priority_before_it_writes_the_lane_catalog(self):
         main_calls = Mock()

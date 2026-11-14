@@ -16,6 +16,7 @@ from actors.npc_store_records import (MODEL_ARCHIVE_FILE_NAME, catalog_with_reco
 from data.lane_unit_outcomes import replace_step_gap_row
 from native_assets import UMODEL_SHA256, implementation_hash
 from native_assets_lib.gltf import json_bytes
+from native_store.catalog_index_keys import character_model_record_id
 from native_store.catalog_writer import read_store_catalog, write_store
 from native_store.data_ui_table_manifest import ELBERA_ADAPTER_ROUTE, data_ui_table_manifest
 from native_store.linked_file_copy import link_or_copy_file
@@ -24,7 +25,6 @@ from reference_client_guard import ReferenceClientLockError
 
 CHARACTER_ALGORITHM_VERSION = 1
 CHARACTER_LANE_NAME = 'actors'
-CHARACTER_MODEL_ID_PREFIX = 'character-model:'
 PADDING_STATUS = 'padding'
 CharacterSources = namedtuple('CharacterSources', 'chargrp classinfo hairgrp helmetgrp read_class_definition class_sources')
 
@@ -167,7 +167,7 @@ class CharacterConversionRun:
         return self.synchronize_model_record(row_index, self.outcome(row_index, reason, False, outputs))
 
     def synchronize_model_record(self, row_index, outcome):
-        record_id = CHARACTER_MODEL_ID_PREFIX + str(row_index)
+        record_id = character_model_record_id(row_index)
         if not outcome['outputs']:
             write_catalog_without_record(self.store_root, 'models', record_id)
             return outcome
