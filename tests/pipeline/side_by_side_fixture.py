@@ -29,6 +29,7 @@ NATIVE_CAPTURED_BY = 'executor:03-17'
 FRESH_REVIEWER = 'reviewer:agent-7f3a'
 JUDGED_AT_RIGA = '2026-11-11T10:00:00+02:00'
 DESKTOP_VIEWPORT = {'width': 1440, 'height': 900}
+SYNTHETIC_IMPORTA_HOST = {'fileCount': 1, 'host': 'IMPORTA-PC', 'root': 'C:/Lineage2-client', 'totalBytes': 24}
 
 
 def pinned_manifest_record(record_id, folder, file_name, extra_fields=None):
@@ -145,6 +146,7 @@ def write_reference_client_lock(project_root):
         'schemaVersion': REFERENCE_CLIENT_LOCK_SCHEMA_VERSION, 'referenceHost': 'IMPORTA-PC', 'referenceRoot': 'C:/Lineage2-client',
         'fileFields': REFERENCE_CLIENT_LOCK_FILE_FIELDS,
         'files': {ENGINE_LIBRARY_RELATIVE_PATH: ['equal', 24, engine_library_sha256, 24, engine_library_sha256, 0]},
+        'hosts': {'importa': dict(SYNTHETIC_IMPORTA_HOST)},
     }).encode('utf-8'))
     return lock_path
 

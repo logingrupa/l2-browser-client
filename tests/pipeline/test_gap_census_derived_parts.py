@@ -18,6 +18,7 @@ from native_store.gap_census import GapCensusIncompleteError, build_gap_census
 from native_store.gap_census_denominators import load_census_denominators, skill_sound_census_row
 from native_store.gap_census_derived_parts import derived_converted_keys, derived_part_rows, derived_tile_denominator
 from native_store.gap_rows import write_gap_rows
+from native_store.stage_a_exit_counts import reference_client_block
 
 GENERATED_AT_RIGA = '2026-11-11T13:30:00+02:00'
 SOURCE_SHA256 = 'b' * 64
@@ -275,7 +276,7 @@ def skills_coverage_report(rows, denominator_count):
     stage_a = {'converted': 1, 'loadsPass': 1, 'checked': 0, 'pass': 0, 'mismatch': 0, 'unverified': 1,
                'unverifiedByReason': {'not-yet-queued': 1}, 'recordsWithoutDenominator': 0}
     return {'schemaVersion': 2, 'catalogSha256': 'a' * 64, 'storeRoot': 'artifacts/lane-store/integration/l2',
-            'generatedAtRiga': GENERATED_AT_RIGA,
+            'generatedAtRiga': GENERATED_AT_RIGA, 'reference': reference_client_block(),
             'denominators': {'skills-effects': {'count': denominator_count, 'source': 'synthetic committed count'}},
             'parts': {'skills-effects': {**count_part_rows(rows, denominator_count), 'stageA': stage_a}}, 'rows': rows}
 

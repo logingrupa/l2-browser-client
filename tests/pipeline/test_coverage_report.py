@@ -13,9 +13,9 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
 from catalog_store_fixture import write_store_catalog
+from coverage_census_fixture import (DECODE_FAILED_REASON, DECODE_PENDING_REASON, SOURCE_SHA256, load_check_record, stage_a_counts,
+                                     table_record, write_load_check_file, write_table_decode_rows, write_window_layout_rows)
 from side_by_side_fixture import unverified_record, window_record
-from coverage_census_fixture import (DECODE_FAILED_REASON, DECODE_PENDING_REASON, SOURCE_SHA256, write_table_decode_rows,
-                                     write_window_layout_rows)
 from native_store.build_coverage_report import (CoverageReportError, build_coverage_report, coverage_markdown, coverage_output_path,
                                                 coverage_report_bytes, main, validate_coverage_report)
 from native_store.coverage_denominators import COVERAGE_PART_ORDER
@@ -28,8 +28,6 @@ from native_store.stage_a_exit_counts import StageAExitCountsError
 from native_store.store_paths import lane_load_check_path, read_lane_parts_by_name
 
 GENERATED_AT_RIGA = '2026-11-08T22:30:00+02:00'
-CHECKED_AT_RIGA = '2026-11-08T21:00:00+02:00'
-TABLE_MANIFEST_SHA256 = 'a' * 64
 NON_TILE_MAP_NAMES = ('Auto0', 'Auto1', 'Auto2', 'Auto3', 'Auto4', 'Auto5', 'Lobby', 'entry', 'ship_position', 'skylevel')
 ACTOR_DENOMINATORS = (('npcs', 'docs/parts/npcs/actor-unit-census.json npcgrp rowCount', 6519),
                       ('items', 'docs/parts/data/dat-table-inventory.json itemname-e recordCount', 9238),
@@ -42,37 +40,14 @@ COVERAGE_MODULE_PATHS = (ROOT / 'scripts' / 'native_store' / 'build_coverage_rep
                          ROOT / 'scripts' / 'native_store' / 'gap_census_derived_parts.py')
 
 
-def table_record(table_name):
-    return {'id': table_name, 'manifest': f'/l2/tables/{TABLE_MANIFEST_SHA256}/{table_name}.json',
-            'manifestSha256': TABLE_MANIFEST_SHA256, 'manifestBytes': 10, 'recordCount': 1, 'sourceSha256': SOURCE_SHA256}
-
-
 def world_gap_row(key, step, status, reason):
     return {'key': key, 'part': 'world', 'step': step, 'status': status, 'reason': reason,
             'sourceIdentity': {'path': f'maps/{key.split(":", 1)[1]}.unr', 'sha256': SOURCE_SHA256},
             'evidence': 'docs/parts/world/EVIDENCE.md'}
 
 
-def load_check_record(key, status='pass', reason=None):
-    return {'key': key, 'status': status, 'reason': reason, 'atRiga': CHECKED_AT_RIGA, 'assetManifestSchemaVersion': None}
-
-
-def write_load_check_file(project_root, lane_name, catalog_sha256, records, document_changes=None):
-    path = lane_load_check_path(project_root, lane_name, catalog_sha256)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    document = {'schemaVersion': 1, 'lane': lane_name, 'catalogSha256': catalog_sha256, 'records': records, **(document_changes or {})}
-    path.write_text(json.dumps(document), encoding='utf-8')
-    return path
-
-
 def rows_by_key(report):
     return {row['key']: row for row in report['rows']}
-
-
-def stage_a_counts(converted, loads_pass, unverified_by_reason, passed=0, mismatched=0, records_without_denominator=0):
-    return {'converted': converted, 'loadsPass': loads_pass, 'checked': passed + mismatched, 'pass': passed, 'mismatch': mismatched,
-            'unverified': sum(unverified_by_reason.values()), 'unverifiedByReason': unverified_by_reason,
-            'recordsWithoutDenominator': records_without_denominator}
 
 
 class CoverageProjectTestCase(unittest.TestCase):
@@ -97,7 +72,7 @@ class CoverageReportTablesTests(CoverageProjectTestCase):
     def test_the_data_part_counts_census_rows_and_load_checks(self):
         report = self.build_report()
         self.assertEqual(report['parts']['data'], {'denominator': 40, 'converted': 1, 'loads': {'pass': 1, 'failed': 0, 'unverified': 0},
-                                                   'gap': 1, 'pending': 38, 'stageA': stage_a_counts(1, 1, {'not-yet-queued': 1})})
+                                                   'gap': 1, 'pending': 38, 'stageA': stage_a_counts(1, 1, {'no-pair-shows-table': 1})})
         self.assertEqual(tuple(report['parts']), ('data', 'sandbox', 'ui'))
         self.assertEqual(report['denominators']['data']['count'], 40)
         self.assertIn('docs/parts/data/dat-table-inventory.json', report['denominators']['data']['source'])

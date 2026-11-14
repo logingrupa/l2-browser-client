@@ -22,13 +22,15 @@ from native_store.gap_census_derived_parts import DERIVED_PARTS, DERIVED_SOURCE_
 from native_store.gap_rows import (GAP_ROW_STATUSES, INTEGRATION_LANE_NAME, is_listed_reason, load_gap_reason_patterns, read_gap_rows,
                                    write_gap_rows)
 from native_store.load_check_records import is_catalog_key, is_riga_timestamp, read_load_check_records
-from native_store.stage_a_exit_counts import StageAExitInputs, stage_a_markdown, stage_a_part_counts, validate_stage_a_counts
+from native_store.stage_a_exit_counts import (StageAExitInputs, reference_client_block, stage_a_markdown, stage_a_part_counts,
+                                              validate_reference_block, validate_stage_a_counts)
 from native_store.store_paths import (REPOSITORY_ROOT, SHA256_PATTERN, StorePathError, confined_child_path, lane_store_root,
                                       read_lane_parts_by_name, require_converter_output)
 from native_store.unit_ledger import MACHINE_SCHEDULE_EXIT_INSIDE_WINDOW, read_machine_schedule, require_host_clock_on_riga_time
 
 COVERAGE_REPORT_SCHEMA_VERSION = 2
-COVERAGE_REPORT_FIELDS = frozenset({'schemaVersion', 'catalogSha256', 'storeRoot', 'generatedAtRiga', 'denominators', 'parts', 'rows'})
+COVERAGE_REPORT_FIELDS = frozenset({'schemaVersion', 'catalogSha256', 'storeRoot', 'generatedAtRiga', 'reference', 'denominators', 'parts',
+                                    'rows'})
 COVERAGE_ROW_FIELDS = frozenset({'key', 'part', 'status', 'reason', 'converted', 'loads', 'steps'})
 COVERAGE_STEP_FIELDS = frozenset({'step', 'status', 'reason'})
 COVERAGE_OUTPUT_NAME = 'coverage.json'
@@ -154,6 +156,7 @@ def build_coverage_report(project_root, store_root, lane_names, generated_at_rig
         'catalogSha256': catalog_sha256,
         'storeRoot': store_root_text(project_root, store_root),
         'generatedAtRiga': generated_at_riga,
+        'reference': reference_client_block(),
         'denominators': {part: {'count': denominator['count'], 'source': denominator['source']} for part, denominator in denominators.items()},
         'parts': {part: {**count_part_rows(rows_by_part[part], denominators[part]['count']),
                          'stageA': stage_a_part_counts(exit_inputs, rows_by_part[part], part)} for part in part_names},
@@ -206,6 +209,7 @@ def validate_coverage_report(report):
         raise CoverageReportError(f'coverage catalogSha256 must be 64 lowercase hex characters: {report["catalogSha256"]!r}')
     if not (isinstance(report['storeRoot'], str) and report['storeRoot'] and is_riga_timestamp(report['generatedAtRiga'])):
         raise CoverageReportError('coverage report needs a storeRoot and a generatedAtRiga in ISO 8601 with the Riga offset')
+    validate_reference_block(report['reference'])
     validate_coverage_denominators(report['denominators'])
     part_names = tuple(report['denominators'])
     if not isinstance(report['rows'], list):

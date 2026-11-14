@@ -3,11 +3,14 @@ from __future__ import annotations
 from functools import cached_property
 from pathlib import Path
 
-from native_store.coverage_denominators import COVERAGE_PART_ORDER, CoverageReportError
+import reference_client_guard
+from native_assets_lib.asset_manifest import reference_client_build
+from native_store.coverage_denominators import COVERAGE_PART_ORDER, UNKNOWN_DENOMINATOR, CoverageReportError
 from native_store.side_by_side_check_halves import SIDE_BY_SIDE_ARTIFACTS_FOLDER, is_non_negative_integer, is_sha256, key_file_stem
-from native_store.side_by_side_check_records import (COMPUTED_UNVERIFIED_REASONS, STORED_UNVERIFIED_REASONS, decode_side_by_side_document,
-                                                     read_side_by_side_records)
+from native_store.side_by_side_check_records import (COMPUTED_UNVERIFIED_REASONS, STORED_UNVERIFIED_REASONS, TABLE_KEY_PREFIX,
+                                                     decode_side_by_side_document, read_side_by_side_records)
 from native_store.side_by_side_key_digest import key_content_sha256_by_key
+from reference_client_guard import read_reference_client_lock
 
 STAGE_A_COUNT_FIELDS = ('checked', 'pass', 'mismatch', 'unverified', 'recordsWithoutDenominator')
 STAGE_A_FIELDS = frozenset({'converted', 'loadsPass', 'unverifiedByReason', *STAGE_A_COUNT_FIELDS})
@@ -19,11 +22,20 @@ SANDBOX_CAPTURE_FAILED_REASON = 'sandbox-capture-failed'
 LOADS_FAILED_REASON = 'loads-failed'
 LOADS_UNRECORDED_REASON = 'loads-unrecorded'
 NOT_YET_QUEUED_REASON = 'not-yet-queued'
+NO_PAIR_SHOWS_TABLE_REASON = 'no-pair-shows-table'
 CONVERTED_CENSUS_STATUS = 'pass'
 CAPTURE_FAILURES_FOLDER_NAME = 'failures'
+IMPORTA_HOST_NAME = 'importa'
+REFERENCE_FIELDS = frozenset({'referenceTreeLockSha256', 'engineDllSha256', 'importaFileCount', 'importaTotalBytes'})
+STAGE_A_REASON_BY_PART_WITHOUT_DENOMINATOR = {
+    'sandbox': 'the sandbox is the checking tool and has no pair of its own',
+    'audio': 'the audio census counts bound bundles, not catalog keys',
+    'minimap': 'minimap census keys would collide with the world tile keys',
+    'movement-geodata': 'movement-geodata has no stage A pair; traversal against L2.exe is POL-03',
+}
 STAGE_A_RULE_TEXT = ('Checked counts only judged pairs (pass or mismatch) on the key content digest of this catalog; every other converted key '
                      'is unverified with one reason, so converted equals checked plus unverified and checked equals pass plus mismatch. '
-                     'Loads pass counts only load records on this catalog.')
+                     'Loads pass counts only load records on this catalog. A table counts only through a pair that lists it as displayed.')
 STAGE_A_TABLE_HEADER = ('| Part | Converted | Loads pass | Checked | Pass | Mismatch | Unverified | Unverified by reason | Gap | Pending |\n'
                         '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n')
 
@@ -32,12 +44,35 @@ class StageAExitCountsError(CoverageReportError):
     pass
 
 
+def reference_client_block():
+    lock_path = Path(reference_client_guard.REFERENCE_CLIENT_LOCK_PATH)
+    try:
+        lock = read_reference_client_lock(lock_path)
+        build = reference_client_build(lock)
+    except (OSError, ValueError) as error:
+        raise StageAExitCountsError(f'reference client lock gives no reference block: {lock_path}: {error}') from error
+    hosts = lock.document.get('hosts')
+    importa = hosts.get(IMPORTA_HOST_NAME) if isinstance(hosts, dict) else None
+    if not (isinstance(importa, dict) and is_non_negative_integer(importa.get('fileCount'))
+            and is_non_negative_integer(importa.get('totalBytes'))):
+        raise StageAExitCountsError(f'reference client lock needs hosts.{IMPORTA_HOST_NAME} with fileCount and totalBytes: {lock_path}')
+    return {**build, 'importaFileCount': importa['fileCount'], 'importaTotalBytes': importa['totalBytes']}
+
+
 def record_outcome(record, current_key_content_sha256):
     if record['sandboxHalf']['keyContentSha256'] != current_key_content_sha256:
         return UNVERIFIED_VERDICT, STALE_AFTER_FIX_REASON
     if record['verdict'] in JUDGED_VERDICTS:
         return record['verdict'], None
     return UNVERIFIED_VERDICT, record['reason']
+
+
+def combined_table_outcome(outcomes_in_key_order):
+    verdicts = {verdict for verdict, _ in outcomes_in_key_order}
+    for verdict in ('mismatch', 'pass'):
+        if verdict in verdicts:
+            return verdict, None
+    return outcomes_in_key_order[0]
 
 
 class StageAExitInputs:
@@ -58,6 +93,17 @@ class StageAExitInputs:
     def record_outcome(self, record):
         return record_outcome(record, self.key_content_sha256_by_key.get(record['key']))
 
+    @cached_property
+    def table_outcome_by_key(self):
+        displaying_records = sorted((record['key'], COVERAGE_PART_ORDER.index(part), index, record)
+                                    for part, records in self.records_by_part.items() for index, record in enumerate(records)
+                                    if record['displayedTableRows'])
+        outcomes_by_table_key = {}
+        for _, _, _, record in displaying_records:
+            for entry in record['displayedTableRows']:
+                outcomes_by_table_key.setdefault(entry['tableKey'], []).append(self.record_outcome(record))
+        return {table_key: combined_table_outcome(outcomes) for table_key, outcomes in outcomes_by_table_key.items()}
+
     def records_by_key(self, part):
         return {record['key']: record for record in self.records_by_part[part]}
 
@@ -71,6 +117,8 @@ class StageAExitInputs:
         return failure['keyContentSha256']
 
     def key_outcome(self, part, key, records_by_key):
+        if key.startswith(TABLE_KEY_PREFIX):
+            return self.table_outcome_by_key.get(key, (UNVERIFIED_VERDICT, NO_PAIR_SHOWS_TABLE_REASON))
         if key in records_by_key:
             return self.record_outcome(records_by_key[key])
         failure_sha256 = self.capture_failure_key_content_sha256(part, key)
@@ -99,6 +147,10 @@ def converted_part_keys(part_rows):
 
 
 def stage_a_part_counts(exit_inputs, part_rows, part):
+    if part in STAGE_A_REASON_BY_PART_WITHOUT_DENOMINATOR:
+        records = exit_inputs.records_by_part[part]
+        return stage_a_counts_of_outcomes([exit_inputs.record_outcome(record) for record in records], UNKNOWN_DENOMINATOR,
+                                          UNKNOWN_DENOMINATOR, len(records))
     keys = converted_part_keys(part_rows)
     records_by_key = exit_inputs.records_by_key(part)
     loads_pass = sum(1 for key in keys if exit_inputs.load_status_by_key.get(key) == 'pass')
@@ -119,9 +171,13 @@ def validate_stage_a_counts(part, stage_a, part_rows):
         raise StageAExitCountsError(f'stage A counts of {part} must be non-negative integers: {stage_a!r}')
     if stage_a['checked'] != stage_a['pass'] + stage_a['mismatch'] or stage_a['unverified'] != sum(stage_a['unverifiedByReason'].values()):
         raise StageAExitCountsError(f'stage A counts of {part} do not balance checked and unverified: {stage_a!r}')
-    converted = len(converted_part_keys(part_rows))
-    balanced = (stage_a['converted'] == converted == stage_a['checked'] + stage_a['unverified'] and stage_a['recordsWithoutDenominator'] == 0
-                and is_non_negative_integer(stage_a['loadsPass']) and stage_a['loadsPass'] <= converted)
+    if part in STAGE_A_REASON_BY_PART_WITHOUT_DENOMINATOR:
+        balanced = (stage_a['converted'] == stage_a['loadsPass'] == UNKNOWN_DENOMINATOR
+                    and stage_a['checked'] + stage_a['unverified'] == stage_a['recordsWithoutDenominator'])
+    else:
+        converted = len(converted_part_keys(part_rows))
+        balanced = (stage_a['converted'] == converted == stage_a['checked'] + stage_a['unverified'] and stage_a['recordsWithoutDenominator'] == 0
+                    and is_non_negative_integer(stage_a['loadsPass']) and stage_a['loadsPass'] <= converted)
     if not balanced:
         raise StageAExitCountsError(f'stage A counts of {part} do not balance converted with checked plus unverified: {stage_a!r}')
 
@@ -137,6 +193,26 @@ def stage_a_markdown_row(part, counts):
     return '| ' + ' | '.join(str(cell) for cell in cells) + ' |\n'
 
 
+def parts_without_denominator_text(parts):
+    return ''.join(f'- {part}: converted unknown because {STAGE_A_REASON_BY_PART_WITHOUT_DENOMINATOR[part]}; '
+                   f'{counts["stageA"]["recordsWithoutDenominator"]} check records counted.\n'
+                   for part, counts in parts.items() if part in STAGE_A_REASON_BY_PART_WITHOUT_DENOMINATOR)
+
+
 def stage_a_markdown(report):
+    reference = report['reference']
     table_rows = ''.join(stage_a_markdown_row(part, counts) for part, counts in report['parts'].items())
-    return f'## Stage A exit\n\n{STAGE_A_TABLE_HEADER}{table_rows}\n{STAGE_A_RULE_TEXT}\n'
+    return (f'## Stage A exit\n\n'
+            f'Reference client: tree lock `{reference["referenceTreeLockSha256"]}`, Engine.dll `{reference["engineDllSha256"]}`, '
+            f'IMPORTA-PC {reference["importaFileCount"]} files and {reference["importaTotalBytes"]} bytes.\n\n'
+            f'{STAGE_A_TABLE_HEADER}{table_rows}\n'
+            f'{STAGE_A_RULE_TEXT}\n\n'
+            f'{parts_without_denominator_text(report["parts"])}')
+
+
+def validate_reference_block(reference):
+    if not (isinstance(reference, dict) and set(reference) == REFERENCE_FIELDS):
+        raise StageAExitCountsError(f'coverage reference must hold exactly {", ".join(sorted(REFERENCE_FIELDS))}: {reference!r}')
+    expected_reference = reference_client_block()
+    if reference != expected_reference:
+        raise StageAExitCountsError(f'coverage reference {reference!r} differs from reference_client_build of the lock {expected_reference!r}')

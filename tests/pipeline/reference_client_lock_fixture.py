@@ -44,6 +44,7 @@ def use_synthetic_reference_client_lock(test_case, reference_root, files):
         'referenceRoot': Path(reference_root).resolve().as_posix(),
         'fileFields': REFERENCE_CLIENT_LOCK_FILE_FIELDS,
         'files': files,
+        'hosts': {'importa': {'fileCount': len(files), 'totalBytes': sum(record[1] for record in files.values())}},
     }).encode('utf-8'))
     use_reference_client_lock(test_case, lock_path)
     return lock_path
