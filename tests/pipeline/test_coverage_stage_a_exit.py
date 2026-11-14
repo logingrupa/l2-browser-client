@@ -20,7 +20,8 @@ from reference_client_lock_fixture import use_reference_client_lock
 from side_by_side_fixture import (FRESH_REVIEWER, JUDGED_AT_RIGA, SYNTHETIC_IMPORTA_HOST, audio_record, native_half, tile_record,
                                   unverified_record, window_record, write_reference_client_lock)
 from native_assets_lib.asset_manifest import reference_client_build
-from native_store.build_coverage_report import build_coverage_report, coverage_markdown, main, validate_coverage_report
+from native_store.build_coverage_report import (CoverageReportError, build_coverage_report, coverage_markdown, coverage_report_bytes, main,
+                                                validate_coverage_report)
 from native_store.side_by_side_check_records import current_reference_tree_lock_sha256, write_side_by_side_records
 from native_store.stage_a_exit_counts import (StageAExitCountsError, StageAExitInputs, reference_client_block, stage_a_markdown,
                                               stage_a_part_counts, validate_stage_a_counts)
@@ -168,7 +169,7 @@ class StageAPartsWithoutDenominatorTests(StageAExitProjectTestCase):
         with self.assertRaisesRegex(StageAExitCountsError, 'stage A counts of minimap do not balance converted'):
             validate_stage_a_counts('minimap', {**minimap_counts, 'converted': 1}, [])
         markdown = stage_a_markdown({'reference': reference_client_block(), 'parts': {'minimap': {'stageA': minimap_counts, 'gap': 0,
-                                                                                                    'pending': 153}}})
+                                                                                                    'pending': 153}}}, ('minimap',))
         self.assertIn('| minimap | unknown | unknown | 0 | 0 | 0 | 1 | `native-needs-server` 1 | 0 | 153 |\n', markdown)
         self.assertIn('- minimap: converted unknown because the minimap census counts minimap:<XX_YY> keys while its check records are '
                       'keyed by the world tile key; 1 check records counted.\n', markdown)
@@ -177,6 +178,23 @@ class StageAPartsWithoutDenominatorTests(StageAExitProjectTestCase):
         sandbox = self.build_report()['parts']['sandbox']['stageA']
         self.assertEqual(sandbox, stage_a_counts('unknown', 'unknown', {}))
         self.assertIn('- sandbox: converted unknown because the sandbox is the checking tool', coverage_markdown(self.build_report()))
+
+
+class StageAReportReadBackTests(StageAExitProjectTestCase):
+    def test_a_report_read_back_with_its_part_keys_in_another_order_validates_and_renders_the_same_markdown(self):
+        report = self.build_report()
+        read_back_report = json.loads(coverage_report_bytes(report))
+        for field in ('denominators', 'parts'):
+            read_back_report[field] = dict(reversed(read_back_report[field].items()))
+        self.assertEqual(list(read_back_report['parts']), ['ui', 'sandbox', 'data'])
+        self.assertEqual(validate_coverage_report(read_back_report), read_back_report)
+        self.assertEqual(coverage_markdown(read_back_report), coverage_markdown(report))
+
+    def test_a_report_naming_an_unknown_part_is_refused(self):
+        report = self.build_report()
+        report['denominators']['weather'] = {'count': 1, 'source': 'synthetic'}
+        with self.assertRaisesRegex(CoverageReportError, 'coverage denominators must name parts of'):
+            validate_coverage_report(report)
 
 
 class StageARerunTests(StageAExitProjectTestCase):

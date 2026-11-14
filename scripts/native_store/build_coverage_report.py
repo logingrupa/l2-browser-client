@@ -189,9 +189,13 @@ def validate_coverage_row(row, part_names, reason_patterns):
         raise CoverageReportError(f'coverage row {key} steps must be sorted by step with one entry per step')
 
 
+def measured_part_names_in_order(report):
+    return tuple(part for part in COVERAGE_PART_ORDER if part in report['denominators'])
+
+
 def validate_coverage_denominators(denominators):
-    if not (isinstance(denominators, dict) and list(denominators) == [part for part in COVERAGE_PART_ORDER if part in denominators]):
-        raise CoverageReportError(f'coverage denominators must list measured parts in the order {", ".join(COVERAGE_PART_ORDER)}')
+    if not (isinstance(denominators, dict) and set(denominators) <= set(COVERAGE_PART_ORDER)):
+        raise CoverageReportError(f'coverage denominators must name parts of {", ".join(COVERAGE_PART_ORDER)}')
     for part, denominator in denominators.items():
         if not (isinstance(denominator, dict) and set(denominator) == {'count', 'source'}):
             raise CoverageReportError(f'coverage denominator of {part} must be {{count, source}}: {denominator!r}')
@@ -211,7 +215,7 @@ def validate_coverage_report(report):
         raise CoverageReportError('coverage report needs a storeRoot and a generatedAtRiga in ISO 8601 with the Riga offset')
     validate_reference_block(report['reference'])
     validate_coverage_denominators(report['denominators'])
-    part_names = tuple(report['denominators'])
+    part_names = measured_part_names_in_order(report)
     if not isinstance(report['rows'], list):
         raise CoverageReportError('coverage rows must be a list')
     reason_patterns = load_gap_reason_patterns()
@@ -220,7 +224,7 @@ def validate_coverage_report(report):
     row_order = [(part_names.index(row['part']), row['key']) for row in report['rows']]
     if row_order != sorted(set(row_order)):
         raise CoverageReportError('coverage rows must be sorted by part order, then key, with one row per part and key')
-    if not (isinstance(report['parts'], dict) and list(report['parts']) == list(part_names)
+    if not (isinstance(report['parts'], dict) and set(report['parts']) == set(part_names)
             and all(isinstance(counts, dict) for counts in report['parts'].values())):
         raise CoverageReportError(f'coverage parts must list the measured parts {", ".join(part_names)}')
     for part in part_names:
@@ -291,7 +295,8 @@ def census_lanes_text(census_lane_names):
 
 def coverage_markdown(report, census_lane_names=()):
     validate_coverage_report(report)
-    table_rows = ''.join(coverage_markdown_row(part, report['denominators'][part], report['parts'][part]) for part in report['parts'])
+    part_names = measured_part_names_in_order(report)
+    table_rows = ''.join(coverage_markdown_row(part, report['denominators'][part], report['parts'][part]) for part in part_names)
     return (f'# Coverage\n\n'
             f'Store root `{report["storeRoot"]}`, catalog SHA-256 `{report["catalogSha256"]}`, generated at {report["generatedAtRiga"]} '
             f'(Riga) by `pnpm report:coverage`.{census_lanes_text(census_lane_names)}\n\n'
@@ -299,7 +304,7 @@ def coverage_markdown(report, census_lane_names=()):
             f'{CENSUS_RULE_TEXT} {LOADS_RULE_TEXT}\n\n'
             f'{named_emitter_gaps_text(report)}'
             f'{lobby_status_text(report)}\n'
-            f'{stage_a_markdown(report)}')
+            f'{stage_a_markdown(report, part_names)}')
 
 
 def coverage_output_path(project_root, store_root, output):

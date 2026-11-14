@@ -193,21 +193,21 @@ def stage_a_markdown_row(part, counts):
     return '| ' + ' | '.join(str(cell) for cell in cells) + ' |\n'
 
 
-def parts_without_denominator_text(parts):
+def parts_without_denominator_text(parts, part_names):
     return ''.join(f'- {part}: converted unknown because {STAGE_A_REASON_BY_PART_WITHOUT_DENOMINATOR[part]}; '
-                   f'{counts["stageA"]["recordsWithoutDenominator"]} check records counted.\n'
-                   for part, counts in parts.items() if part in STAGE_A_REASON_BY_PART_WITHOUT_DENOMINATOR)
+                   f'{parts[part]["stageA"]["recordsWithoutDenominator"]} check records counted.\n'
+                   for part in part_names if part in STAGE_A_REASON_BY_PART_WITHOUT_DENOMINATOR)
 
 
-def stage_a_markdown(report):
+def stage_a_markdown(report, part_names):
     reference = report['reference']
-    table_rows = ''.join(stage_a_markdown_row(part, counts) for part, counts in report['parts'].items())
+    table_rows = ''.join(stage_a_markdown_row(part, report['parts'][part]) for part in part_names)
     return (f'## Stage A exit\n\n'
             f'Reference client: tree lock `{reference["referenceTreeLockSha256"]}`, Engine.dll `{reference["engineDllSha256"]}`, '
             f'IMPORTA-PC {reference["importaFileCount"]} files and {reference["importaTotalBytes"]} bytes.\n\n'
             f'{STAGE_A_TABLE_HEADER}{table_rows}\n'
             f'{STAGE_A_RULE_TEXT}\n\n'
-            f'{parts_without_denominator_text(report["parts"])}')
+            f'{parts_without_denominator_text(report["parts"], part_names)}')
 
 
 def validate_reference_block(reference):
