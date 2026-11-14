@@ -55,7 +55,7 @@ function fakeSliceActions(store: FakeRecordStore, options: {
 
 describe("load-check slice settings", () => {
 	it("maps every kind to its catalog key prefix", () => {
-		expect(LOAD_CHECK_KINDS.map(loadCheckKindKeyPrefix)).toEqual(["tile:", "npc:", "item:", "skill:", "window:"]);
+		expect(LOAD_CHECK_KINDS.map(loadCheckKindKeyPrefix)).toEqual(["tile:", "npc:", "item:", "skill:", "window:", "table:"]);
 	});
 
 	it("returns null while any sweep variable is unset", () => {
@@ -93,7 +93,7 @@ describe("load-check slice settings", () => {
 	it("refuses a lane that is not in lanes.json, an unknown kind and a limit that is not a positive safe integer", () => {
 		const request = { NATIVE_STORE_ROOT: "data-ui", LOAD_CHECK_KIND: "windows", LOAD_CHECK_LIMIT: "2" };
 		expect(() => readLoadCheckSliceSettings({ ...request, NATIVE_STORE_ROOT: "fixture" }, laneNames)).toThrow("NATIVE_STORE_ROOT");
-		expect(() => readLoadCheckSliceSettings({ ...request, LOAD_CHECK_KIND: "tables" }, laneNames)).toThrow("LOAD_CHECK_KIND");
+		expect(() => readLoadCheckSliceSettings({ ...request, LOAD_CHECK_KIND: "sounds" }, laneNames)).toThrow("LOAD_CHECK_KIND");
 		for (const limit of ["0", "-1", "1.5", "2e3", " 2", "+2", "9007199254740993", "two"]) {
 			expect(() => readLoadCheckSliceSettings({ ...request, LOAD_CHECK_LIMIT: limit }, laneNames)).toThrow("LOAD_CHECK_LIMIT");
 		}
@@ -127,6 +127,18 @@ describe("pending load-check keys", () => {
 	it("keeps the selected order, skips selected keys already recorded and applies the limit", () => {
 		expect(pendingLoadCheckKeys(convertedKeys, recordedKeys, 10, ["window:D", "window:B", "window:A"])).toEqual(["window:D", "window:A"]);
 		expect(pendingLoadCheckKeys(convertedKeys, recordedKeys, 1, ["window:D", "window:A"])).toEqual(["window:D"]);
+	});
+
+	it("lists the table: keys of the served catalog that are not yet recorded for kind tables", async () => {
+		const store = createFakeRecordStore();
+		store.recordsByCatalog.set(firstCatalogSha256, [{ key: "table:armorgrp", ...passOutcome, atRiga: "2026-11-09T01:00:00+02:00" }]);
+		const tablesSettings: LoadCheckSliceSettings = { laneName: "integration", kind: "tables", limit: 10, selectedKeys: null };
+		const summary = await runLoadCheckSlice(tablesSettings, fakeSliceActions(store, {
+			convertedKeys: ["table:actionname-e", "table:armorgrp", "table:itemname_e_names", "window:StatusWnd"],
+		}));
+		expect(summary).toEqual({ catalogSha256: firstCatalogSha256, checkedKeys: ["table:actionname-e", "table:itemname_e_names"], skippedAsRecorded: 1 });
+		expect(readLoadCheckSliceSettings({ NATIVE_STORE_ROOT: "integration", LOAD_CHECK_KIND: "tables", LOAD_CHECK_LIMIT: "1", LOAD_CHECK_KEYS: "table:skillgrp" }, laneNames))
+			.toEqual({ laneName: "integration", kind: "tables", limit: 1, selectedKeys: ["table:skillgrp"] });
 	});
 
 	it("refuses a selected key that is not converted", () => {

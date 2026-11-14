@@ -6,7 +6,7 @@ import { formatRigaTimestamp } from "../../../scripts/check-machine-schedule.mjs
 import type { LoadCheckHarnessState } from "../harness/loadCheckHarness";
 import { isCatalogKey, servedLaneCatalogSha256, readLoadCheckRecords, writeLoadCheckRecord, type LoadCheckRecord } from "./loadCheckRecordFile";
 
-export const LOAD_CHECK_KINDS = ["tiles", "npcs", "items", "skills", "windows"] as const;
+export const LOAD_CHECK_KINDS = ["tiles", "npcs", "items", "skills", "windows", "tables"] as const;
 export type LoadCheckKind = (typeof LOAD_CHECK_KINDS)[number];
 export type AssetManifestSchemaVersion = Exclude<LoadCheckRecord["assetManifestSchemaVersion"], null>;
 export type LoadCheckOutcome = Omit<LoadCheckRecord, "key" | "atRiga">;
@@ -19,7 +19,7 @@ const laneOwnershipFilePath = resolve(dirname(fileURLToPath(import.meta.url)), "
 const plainDecimalPattern = /^[1-9]\d*$/;
 
 const loadCheckKeyPrefixes: Readonly<Record<LoadCheckKind, string>> = {
-  tiles: "tile:", npcs: "npc:", items: "item:", skills: "skill:", windows: "window:",
+  tiles: "tile:", npcs: "npc:", items: "item:", skills: "skill:", windows: "window:", tables: "table:",
 };
 
 export interface LoadCheckSliceSettings {

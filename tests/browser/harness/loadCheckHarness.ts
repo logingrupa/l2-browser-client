@@ -1,4 +1,5 @@
 import { Scene } from "@babylonjs/core/scene";
+import { fetchVerifiedNativeResource } from "../../../src/assets/native/fetchVerifiedNativeResource";
 import { loadConvertedNpcModel } from "../../../src/assets/native/loadConvertedNpcModel";
 import { loadNativeModelPackages } from "../../../src/assets/native/loadNativeCatalog";
 import { loadNativeNpcProfiles } from "../../../src/assets/native/loadNativeNpcProfiles";
@@ -6,12 +7,14 @@ import { NativeActor } from "../../../src/assets/native/NativeActor";
 import {
   buildNativeCatalogIndex, type NativeCatalogRecord, type NativeItemCatalogRecord, type NativeNpcCatalogRecord, type NativeSkillCatalogRecord,
 } from "../../../src/assets/native/nativeCatalogIndex";
+import type { NativeTableCatalogRecord } from "../../../src/assets/native/nativeCatalogRecords";
 import { readNativeCatalog, type NativeCatalog } from "../../../src/assets/native/readNativeCatalog";
 import { createPackagePreview, type PackagePreview } from "../../../src/assets/package/PackagePreview";
 import type { AssetPackage } from "../../../src/assets/package/readAssetPackage";
 import { loadEffectComponent, type LoadedEffectComponent } from "../../../src/effects/loadEffectComponent";
 import { loadNativeSkillEffectComponents, simulatedEffectEmitterClasses } from "../../../src/effects/nativeEffectComponents";
 import { createWebGPUEngine } from "../../../src/engine/createWebGPUEngine";
+import { nativeTableManifestMismatch } from "../support/nativeTableLoadCheck";
 
 export interface LoadCheckHarnessKeyResult {
   readonly assetManifestSchemaVersions: readonly AssetPackage["manifest"]["schemaVersion"][];
@@ -68,6 +71,10 @@ function isSkillRecord(record: NativeCatalogRecord): record is NativeSkillCatalo
   return "skillId" in record && "effectComponentId" in record;
 }
 
+function isTableRecord(record: NativeCatalogRecord): record is NativeTableCatalogRecord {
+  return "table" in record && "recordCount" in record && "manifestSha256" in record;
+}
+
 export async function checkNpcLoadKey(page: LoadCheckPage, key: string, record: NativeNpcCatalogRecord): Promise<LoadCheckHarnessKeyResult> {
   const profile = (await loadNativeNpcProfiles(page.catalog.npcProfiles, page.signal)).get(record.profileId);
   if (profile === undefined) throw new Error(`${key} names NPC profile ${record.profileId}, which is not loaded`);
@@ -97,6 +104,13 @@ export async function checkItemLoadKey(page: LoadCheckPage, key: string, record:
   return { assetManifestSchemaVersions: versions };
 }
 
+export async function checkTableLoadKey(page: LoadCheckPage, key: string, record: NativeTableCatalogRecord): Promise<LoadCheckHarnessKeyResult> {
+  const bytes = await fetchVerifiedNativeResource(record.manifest, record.manifestSha256, page.signal, record.manifestBytes);
+  const mismatch = nativeTableManifestMismatch(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)), record);
+  if (mismatch !== null) throw new Error(`${key} ${mismatch}`);
+  return { assetManifestSchemaVersions: [] };
+}
+
 export async function checkSkillLoadKey(page: LoadCheckPage, key: string, record: NativeSkillCatalogRecord): Promise<LoadCheckHarnessKeyResult> {
   const bundle = await loadNativeSkillEffectComponents(page.signal, record);
   if (bundle === null) throw new Error(`effect component ${record.effectComponentId} is not in the served catalog`);
@@ -121,7 +135,8 @@ async function checkKey(page: LoadCheckPage, key: string): Promise<LoadCheckHarn
   if (key.startsWith("npc:") && isNpcRecord(record)) return checkNpcLoadKey(page, key, record);
   if (key.startsWith("item:") && isItemRecord(record)) return checkItemLoadKey(page, key, record);
   if (key.startsWith("skill:") && isSkillRecord(record)) return checkSkillLoadKey(page, key, record);
-  throw new Error(`the load-check harness checks npc:, item: and skill: keys; ${key} is not one of them`);
+  if (key.startsWith("table:") && isTableRecord(record)) return checkTableLoadKey(page, key, record);
+  throw new Error(`the load-check harness checks npc:, item:, skill: and table: keys; ${key} is not one of them`);
 }
 
 async function listConvertedKeys(catalog: NativeCatalog, prefix: string): Promise<readonly string[]> {
