@@ -554,12 +554,24 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 - Library exports (MAT-01, 02-69, rows 653 and 692): `particleMaterialBinding.ts` and `NativeActor.ts` still import fog and `loadNativeMaterial` from `model/fog` and `babylon/loadNativeMaterial` instead of `src/materials/ue2/babylon/material.ts`, and `blendConstants.ts` provenance cites the deleted `src/effects/nativeEffectMaterial.ts:152`. Unblocked by: the import move and a provenance fix.
 - Overlap reviews (DEC-OWN-12): materials 35 blocking and 313 unreviewed (`artifacts/reference-overlap/02-64-materials.json`); bsp-visibility 290 blocking and 3,521 unreviewed (02-63) and 23 blocking and 406 unreviewed with 17 stale (02-91); movement 83 blocking and 2,727 unreviewed (02-65); particles 547 blocking and 2,552 unreviewed (02-69); the 02-93 Python converter runs (bsp-visibility 3 blocking and 128 unreviewed, movement 1 blocking and 163 unreviewed, `artifacts/reference-overlap-02-93/`). Unblocked by: the orchestrator's independent review after the wave.
 - Headless WebGPU refusal (02-39): in one full run of `tests/browser/sandbox-npc-gremlin.spec.ts` the SwiftShader adapter answered "WebGPU is required" on the seventh world load. Unblocked by: finding why the adapter refuses after several world loads in one worker.
+- Gap SC1a (WORLD-01, WORLD-05), Phase 3 replan: Missing: 75 tile walks fail on runtime defects (run animation, below terrain minimum, no BSP mesh) and 7 tiles fail the anchor check. Unblocked by: the runtime walk fixes of "World lane walks", then a re-walk.
+- Gap SC1d (WORLD-06), Phase 3 replan (03-08 records the minimap half only): Missing: no view reads the `minimap-route:interlude` unit. Unblocked by: the 02-51 view of "Minimap route" with the radar anchor and zone title source.
+- Gap SC2b (ACT-01), Phase 3 replan (03-19 records evidence only): Missing: 0 of 15 character keys convert. Unblocked by: the sources and converter change of "Character keys".
+- Gap SC2c (ACT-03), Phase 3 replan: Missing: 0 of 9,238 item keys pass; equipment slot meaning undecoded. Unblocked by: "Armor slot meaning and weapon socket transform".
+- Gap SC2e (ACT-05), Phase 3 replan: Missing: spawned bundle role slots never play (`combat-role-route-unresolved` in `src/audio/spawnedActorSoundCues.ts` although 02-95 verified the routes); characters have no bundle. Unblocked by: binding the 02-95 routes to the role slots and the character bundles.
+- Gap SC3b (ACT-05), Phase 3 replan (03-10 records clips only): Missing: no skill sound playback on cast; 1,403 skill sound rows pending for want of a coverage rule. Unblocked by: the playback join and coverage rule of "Skill sound through skillsoundgrp".
+- Gap SC4e (UI-02), Phase 3 replan: Missing: TextBox labels and 25 control types unrendered (CP and MP deferred to Phase 4, NET-05). Unblocked by: the label source and renderers of "Window data".
+- Gap SC5c (WORLD-04, MOVE-01), Phase 3 replan: Missing: the pawn falls 113.57 m in the 128-unit seam strip on 15_20 to 15_21. Unblocked by: the reference strip floor rule (APawn physWalking, ULevel floor traces) and collision that follows it.
+- Gap materials (MAT-01, MAT-02), Phase 3 replan (03-11 cites `material-class-unported` diagnostics as listed gaps): Missing: no library programs for static mesh, terrain, sky or skeletal surfaces; no runtime zone fog values. Unblocked by: "Library programs for static mesh, terrain and skeletal owners" and runtime fog values.
+- Union retirement interruption (INT-01, 7605c7d): Missing: a stop between the union catalog write and the removal of retired store files leaves orphan files in the integration store. Unblocked by: a union step that finds and removes files no catalog record pins.
+- Union resealed record files (INT-01, 02-89): Missing: the old files of records resealed since union bba52c47 stay in the integration store. Unblocked by: the same unpinned-file cleanup in the union step.
 
 ## Deferred Verification
 
 | Phase | State | Resume |
 |-------|-------|--------|
 | 1 | verification_deferred_human | /gsd-verify-work 1 |
+| 2 | verification_deferred_gaps | /gsd-verify-work 2 |
 
 ## Deferred Items
 
