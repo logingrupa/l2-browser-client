@@ -198,8 +198,8 @@ describe("named gaps on converted catalog keys", () => {
 
   async function skillIndexWithCoverage(rows: unknown[]) {
     const catalog = catalogWith({ effectComponents: [skillRecord(1011), skillRecord(3)] });
-    serveFiles(new Map(), { schemaVersion: 1, catalogSha256: catalog.servedCatalogSha256, storeRoot: "artifacts/lane-store/integration/l2",
-      generatedAtRiga: "2026-11-11T13:32:14+02:00", denominators: {}, parts: {}, rows });
+    serveFiles(new Map(), { schemaVersion: 2, catalogSha256: catalog.servedCatalogSha256, storeRoot: "artifacts/lane-store/integration/l2",
+      generatedAtRiga: "2026-11-11T13:32:14+02:00", reference: {}, denominators: {}, parts: {}, rows });
     return buildNativeCatalogIndex(catalog, new AbortController().signal);
   }
 

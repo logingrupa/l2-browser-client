@@ -8,7 +8,7 @@ function coverageRow(key: string, status: string, reason: string | null) {
 }
 
 function coverageFor(catalogSha256: string, rows: unknown[]) {
-  return { schemaVersion: 1, catalogSha256, storeRoot: "artifacts/lane-store/actors/l2", generatedAtRiga: "2026-11-08T22:00:00+02:00",
+  return { schemaVersion: 2, catalogSha256, storeRoot: "artifacts/lane-store/actors/l2", generatedAtRiga: "2026-11-08T22:00:00+02:00", reference: {},
     denominators: {}, parts: {}, rows };
 }
 

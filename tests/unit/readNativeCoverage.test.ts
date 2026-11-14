@@ -10,10 +10,14 @@ const gapRow = { key: "npc:20001", part: "npcs", status: "gap", reason: "skeleta
 const passRow = { key: "table:npcgrp", part: "tables", status: "pass", reason: null, converted: true, loads: "pass",
   steps: [{ step: "decode", status: "pass", reason: null }] };
 
+const reference = { referenceTreeLockSha256: "1".repeat(64), engineDllSha256: "2".repeat(64), importaFileCount: 5629, importaTotalBytes: 7814256191 };
+const npcStageA = { converted: 0, loadsPass: 0, checked: 0, pass: 0, mismatch: 0, unverified: 0, unverifiedByReason: {}, recordsWithoutDenominator: 0 };
+
 function coverageBody(overrides: Record<string, unknown> = {}) {
-  return { schemaVersion: 1, catalogSha256: servedCatalogSha256, storeRoot: "artifacts/lane-store/actors/l2",
-    generatedAtRiga: "2026-11-08T22:00:00+02:00", denominators: { npcs: { count: "unknown", source: "docs/parts/npcs/actor-unit-census.json" } },
-    parts: { npcs: { denominator: "unknown", converted: 0, loads: { pass: 0, failed: 0, unverified: 1 }, gap: 1, pending: 0 } },
+  return { schemaVersion: 2, catalogSha256: servedCatalogSha256, storeRoot: "artifacts/lane-store/actors/l2",
+    generatedAtRiga: "2026-11-08T22:00:00+02:00", reference,
+    denominators: { npcs: { count: "unknown", source: "docs/parts/npcs/actor-unit-census.json" } },
+    parts: { npcs: { denominator: "unknown", converted: 0, loads: { pass: 0, failed: 0, unverified: 1 }, gap: 1, pending: 0, stageA: npcStageA } },
     rows: [gapRow, passRow], ...overrides };
 }
 
@@ -30,17 +34,17 @@ describe("native coverage report reader", () => {
     const fetchResource = coverageFetch(() => Response.json(coverageBody()));
     const coverage = await readNativeCoverageUnlessAbsent(new AbortController().signal, servedCatalogSha256, null, fetchResource);
     expect(fetchResource.mock.calls[0]![0]).toBe("/l2/coverage.json");
-    expect(coverage).toEqual({ schemaVersion: 1, catalogSha256: servedCatalogSha256, rows: [gapRow, passRow] });
+    expect(coverage).toEqual({ schemaVersion: 2, catalogSha256: servedCatalogSha256, rows: [gapRow, passRow] });
   });
 
   it("reads a coverage report pinned to the served catalog when a lane catalog is attested", async () => {
     await expect(readCoverage(() => Response.json(coverageBody()), laneCatalogSha256))
-      .resolves.toEqual({ schemaVersion: 1, catalogSha256: servedCatalogSha256, rows: [gapRow, passRow] });
+      .resolves.toEqual({ schemaVersion: 2, catalogSha256: servedCatalogSha256, rows: [gapRow, passRow] });
   });
 
   it("reads a coverage report pinned to the attested lane catalog the served union came from", async () => {
     await expect(readCoverage(() => Response.json(coverageBody({ catalogSha256: laneCatalogSha256 })), laneCatalogSha256))
-      .resolves.toEqual({ schemaVersion: 1, catalogSha256: laneCatalogSha256, rows: [gapRow, passRow] });
+      .resolves.toEqual({ schemaVersion: 2, catalogSha256: laneCatalogSha256, rows: [gapRow, passRow] });
   });
 
   it.each([
@@ -55,7 +59,10 @@ describe("native coverage report reader", () => {
   });
 
   it.each([
-    ["schemaVersion 2", coverageBody({ schemaVersion: 2 })],
+    ["schemaVersion 1", coverageBody({ schemaVersion: 1 })],
+    ["schemaVersion 1 without a reference", (({ reference: _reference, ...rest }) => ({ ...rest, schemaVersion: 1 }))(coverageBody())],
+    ["schemaVersion 2 without a reference", (({ reference: _reference, ...rest }) => rest)(coverageBody())],
+    ["a reference that is not an object", coverageBody({ reference: "1957c968" })],
     ["a row with status done", coverageBody({ rows: [{ ...gapRow, status: "done" }] })],
     ["a gap row with reason null", coverageBody({ rows: [{ ...gapRow, reason: null }] })],
     ["a pass row with a reason", coverageBody({ rows: [{ ...passRow, reason: "texture-missing" }] })],

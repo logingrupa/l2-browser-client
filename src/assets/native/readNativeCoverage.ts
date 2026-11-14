@@ -18,7 +18,7 @@ export type NativeCoverageRow = {
 } & NativeCoverageVerdict;
 
 export interface NativeCoverage {
-  readonly schemaVersion: 1;
+  readonly schemaVersion: 2;
   readonly catalogSha256: string;
   readonly rows: readonly NativeCoverageRow[];
 }
@@ -42,7 +42,8 @@ const sha256Pattern = /^[a-f0-9]{64}$/;
 const stepNamePattern = /^[a-z][a-z0-9-]{0,63}$/;
 const coverageStatuses: ReadonlySet<string> = new Set<NativeCoverageStatus>(["pass", "gap", "pending", "failed"]);
 const coverageLoads: ReadonlySet<string> = new Set<NativeCoverageLoads>(["pass", "failed", "unverified"]);
-const coverageFields = ["schemaVersion", "catalogSha256", "storeRoot", "generatedAtRiga", "denominators", "parts", "rows"];
+const nativeCoverageSchemaVersion = 2;
+const coverageFields = ["schemaVersion", "catalogSha256", "storeRoot", "generatedAtRiga", "reference", "denominators", "parts", "rows"];
 const rowFields = ["key", "part", "status", "reason", "converted", "loads", "steps"];
 const stepFields = ["step", "status", "reason"];
 
@@ -92,14 +93,17 @@ function readCoverageRow(value: unknown): NativeCoverageRow {
 
 function validateNativeCoverage(input: unknown): NativeCoverage {
   const coverage = exactObject(input, coverageFields);
-  if (coverage.schemaVersion !== 1 || typeof coverage.catalogSha256 !== "string" || !sha256Pattern.test(coverage.catalogSha256)) throw invalidCoverage();
+  if (coverage.schemaVersion !== nativeCoverageSchemaVersion || typeof coverage.catalogSha256 !== "string" || !sha256Pattern.test(coverage.catalogSha256)) {
+    throw invalidCoverage();
+  }
   if (typeof coverage.storeRoot !== "string" || typeof coverage.generatedAtRiga !== "string") throw invalidCoverage();
+  plainObject(coverage.reference);
   plainObject(coverage.denominators);
   plainObject(coverage.parts);
   if (!Array.isArray(coverage.rows)) throw invalidCoverage();
   const rows = coverage.rows.map(readCoverageRow);
   if (new Set(rows.map(row => row.key)).size !== rows.length) throw invalidCoverage();
-  return { schemaVersion: 1, catalogSha256: coverage.catalogSha256, rows };
+  return { schemaVersion: nativeCoverageSchemaVersion, catalogSha256: coverage.catalogSha256, rows };
 }
 
 function decodeCoverageBody(bytes: Uint8Array): string {
