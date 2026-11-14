@@ -203,7 +203,7 @@ Plans:
   2. For world, actor and skill audio, listen-check results are recorded as labelled audible clips with verdicts; successful extraction or decoding is never recorded as a pass.
   3. Each mismatch becomes a converter fix (re-run shows the corrected result in the sandbox) or a listed gap; no tile is hand-patched.
   4. A stage A exit report states per part how many items were converted, load, were checked, and how many pass, mismatch, are unverified or are gaps, tied to the IMPORTA-PC hash lock.
-**Plans**: 3/20 plans executed
+**Plans**: 3/36 plans executed (gap plans 03-21 to 03-36 added 2026-11-14 for the Phase 2 gaps)
 
 Plans:
 **Wave 1**
@@ -217,37 +217,53 @@ Plans:
 - [ ] 03-06-PLAN.md - Native capture driver and import, transcript-tested, not run against IMPORTA (CHECK-01, CHECK-02)
 - [ ] 03-18-PLAN.md - Visible diagnostic materials in the sandbox snapshot, split from 03-02 (CHECK-01, CHECK-04)
 
-**Wave 3** *(blocked on Wave 2 completion)*
+**Waves 3 to 6** *(gap plans, early block)*
+- [ ] 03-21-PLAN.md - Gap SC1a: tile walk fixes and the anchor rule (WORLD-01, WORLD-05)
+- [ ] 03-22-PLAN.md - Gap SC1d: minimap and world map views on the route unit (WORLD-06)
+- [ ] 03-23-PLAN.md - Gap SC1d: tile minimap schema 3 (WORLD-06)
+- [ ] 03-24-PLAN.md - Gap MAT: static mesh library programs; tile batch and chain (MAT-01, MAT-02)
+- [ ] 03-25-PLAN.md - Gap MAT: shared skeletal material programs; batch and chain (MAT-01, MAT-02)
+
+**Wave 7**
 - [ ] 03-07-PLAN.md - Sandbox-half slice runner and every queued window half (CHECK-01, CHECK-03)
 
-**Wave 4** *(blocked on Wave 3 completion)*
+**Wave 8**
 - [ ] 03-08-PLAN.md - Tile and minimap sandbox halves (CHECK-01, CHECK-03)
 - [ ] 03-09-PLAN.md - NPC, item and skill sandbox halves (CHECK-01, CHECK-03)
 
-**Wave 5** *(blocked on Wave 4 completion)*
+**Wave 9**
 - [ ] 03-10-PLAN.md - Labelled audio clips for queued keys, listen-needs-owner (CHECK-02, CHECK-03)
 
-**Wave 6** *(blocked on Wave 5 completion)*
+**Wave 10**
 - [ ] 03-11-PLAN.md - Defect list from the halves and the union loads (CHECK-04)
 
-**Wave 7** *(blocked on Wave 6 completion)*
+**Waves 11 to 13**
 - [ ] 03-12-PLAN.md - World converter fixes and the re-run chain (CHECK-04)
-
-**Wave 8** *(blocked on Wave 7 completion)*
 - [ ] 03-13-PLAN.md - Actors converter fixes and the re-run chain (CHECK-04)
-
-**Wave 9** *(blocked on Wave 8 completion)*
 - [ ] 03-14-PLAN.md - Data and UI converter fixes and the re-run chain (CHECK-04)
 
-**Wave 10** *(blocked on Wave 9 completion)*
+**Waves 14 to 21** *(gap plans, late block, gated on REA answers Q1 to Q12)*
+- [ ] 03-26-PLAN.md - Gap SC5c: seam strip floor rule (WORLD-04, MOVE-01)
+- [ ] 03-27-PLAN.md - Gap SC2b: character keys (ACT-01)
+- [ ] 03-28-PLAN.md - Gap SC2e: role slots on verified routes, adapter attack event, character bundles (ACT-05)
+- [ ] 03-29-PLAN.md - Gap SC2e: delete the legacy combat audio route (ACT-05)
+- [ ] 03-30-PLAN.md - Gap SC2c: equipment slots and weapon attach (ACT-03)
+- [ ] 03-31-PLAN.md - Gap SC3b: skill sound join, stage playback, coverage rule (ACT-05)
+- [ ] 03-32-PLAN.md - Gap SC4e: client fonts and TextBox labels (UI-02)
+- [ ] 03-33-PLAN.md - Gap SC4e: control tail layouts (UI-02)
+- [ ] 03-34-PLAN.md - Gap SC4e: skin, state and gauge control renderers (UI-02)
+- [ ] 03-36-PLAN.md - Gap MAT: terrain layer programs and L2FogInfo values (MAT-01, MAT-02)
+- [ ] 03-35-PLAN.md - Gap SC4e: content control renderers (UI-02)
+
+**Wave 22**
 - [ ] 03-15-PLAN.md - Final union sweeps and the generated stage A exit report (CHECK-05)
 
-**Wave 11** *(blocked on Wave 10 completion)*
+**Wave 23**
 - [ ] 03-16-PLAN.md - Stage A check sections in the world-lane EVIDENCE docs: world, minimap, movement-geodata (CHECK-03)
 - [ ] 03-19-PLAN.md - Stage A check sections in the actors-lane EVIDENCE docs, split from 03-16 (CHECK-03)
 - [ ] 03-20-PLAN.md - Stage A check sections in the data-ui-lane EVIDENCE docs, split from 03-16 (CHECK-03)
 
-**Wave 12** *(blocked on Wave 11 completion)*
+**Wave 24**
 - [ ] 03-17-PLAN.md - Needs Human session lines, VERIFICATION Open, STATUS, phase gate (CHECK-01, CHECK-02, CHECK-03)
 
 ### Phase 4: Stage B adapter

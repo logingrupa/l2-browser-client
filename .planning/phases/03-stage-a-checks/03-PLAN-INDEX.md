@@ -1,6 +1,6 @@
 # Phase 3: Stage A checks - plan index
 
-Planned 2026-11-11 (autonomous; the owner is away), revised twice after the plan check (20 plans in 12 waves). Binding inputs: `03-CONTEXT.md` (P1 to P20), the research refinements P21 to P23 and the planning rows P24 to P44, P91 and P92 in `C:/laragon/l2b-orchestration/autonomous-roadmap/pending-decision-rows.md` (all provisional, owner review). Every plan reads this file; its rules and definitions are part of each plan.
+Planned 2026-11-11 (autonomous; the owner is away), revised twice after the plan check (20 plans in 12 waves). On 2026-11-14 the gap plans 03-21 to 03-36 were added for the 9 Phase 2 gaps that `02-VERIFICATION.md` (f9cd9d6) left as "Phase 3 replan" (36 plans in 24 waves). Binding inputs: `03-CONTEXT.md` (P1 to P20), the research refinements P21 to P23 and the planning rows P24 to P44, P91 and P92 in `C:/laragon/l2b-orchestration/autonomous-roadmap/pending-decision-rows.md` (all provisional, owner review). Every plan reads this file; its rules and definitions are part of each plan.
 
 ## Plans and waves
 
@@ -13,21 +13,39 @@ Planned 2026-11-11 (autonomous; the owner is away), revised twice after the plan
 | 2 | 03-05 | integration then actors | Stage A exit report on the coverage owner, schema 2, TS reader | CHECK-05 |
 | 2 | 03-06 | integration, adapter-dispatch | Native capture driver and import, transcript-tested; 03-17 runs them against IMPORTA (DEC-OWN-13) | CHECK-01, CHECK-02 |
 | 2 | 03-18 | integration, adapter-dispatch | Visible diagnostic materials in the `__nativeSlice` snapshot (split from 03-02 in revision 1, P44; after 03-02 because both edit `nativeSliceDiagnostics.ts`) | CHECK-01, CHECK-04 |
-| 3 | 03-07 | data-ui, ui | Sandbox-half slice runner, windows spec, all queued window halves | CHECK-01, CHECK-03 |
-| 4 | 03-08 | world, world | Tile and minimap halves | CHECK-01, CHECK-03 |
-| 4 | 03-09 | actors, npcs | NPC, item and skill halves | CHECK-01, CHECK-03 |
-| 5 | 03-10 | actors, audio | Labelled audio clips for queued keys | CHECK-02, CHECK-03 |
-| 6 | 03-11 | integration, adapter-dispatch | Defect list from the halves and the union loads | CHECK-04 |
-| 7 | 03-12 | world, world | World converter fixes and the re-run chain | CHECK-04 |
-| 8 | 03-13 | actors, npcs | Actors converter fixes and the re-run chain | CHECK-04 |
-| 9 | 03-14 | data-ui, ui | Data and UI converter fixes and the re-run chain | CHECK-04 |
-| 10 | 03-15 | integration, adapter-dispatch | Final union sweeps and the generated stage A exit report | CHECK-05 |
-| 11 | 03-16 | world, world | Stage A check sections in the world, minimap and movement-geodata EVIDENCE docs (split by lane in revision 2, P91) | CHECK-03 |
-| 11 | 03-19 | actors, npcs | Stage A check sections in the npcs, items, skills-effects, player-characters and audio EVIDENCE docs (split from 03-16, P91) | CHECK-03 |
-| 11 | 03-20 | data-ui, ui | Stage A check sections in the ui, data and sandbox EVIDENCE docs (split from 03-16, P91) | CHECK-03 |
-| 12 | 03-17 | integration, adapter-dispatch | Needs Human session lines, VERIFICATION Open, STATUS, adapter-dispatch evidence | CHECK-01, CHECK-02, CHECK-03 |
+| 3 | 03-21 | world, world | Gap SC1a: walk trace, root-cause walk fixes, anchor rule for 7 tiles, one walk over every tile | WORLD-01, WORLD-05 |
+| 3 | 03-22 | data-ui, ui | Gap SC1d: minimap and world map views on the `minimap-route:interlude` unit, zone sampler | WORLD-06 |
+| 4 | 03-23 | world, minimap | Gap SC1d: tile minimap schema 3 without the per-tile radar fields; tracer tile only | WORLD-06 |
+| 5 | 03-24 | world then integration | Gap MAT: static mesh library programs and the vertex colour input; tile batch and chain | MAT-01, MAT-02 |
+| 6 | 03-25 | actors then integration | Gap MAT: shared skeletal material programs and the bone-influence input; batch and chain | MAT-01, MAT-02 |
+| 7 | 03-07 | data-ui, ui | Sandbox-half slice runner, windows spec, all queued window halves | CHECK-01, CHECK-03 |
+| 8 | 03-08 | world, world | Tile and minimap halves | CHECK-01, CHECK-03 |
+| 8 | 03-09 | actors, npcs | NPC, item and skill halves | CHECK-01, CHECK-03 |
+| 9 | 03-10 | actors, audio | Labelled audio clips for queued keys | CHECK-02, CHECK-03 |
+| 10 | 03-11 | integration, adapter-dispatch | Defect list from the halves and the union loads | CHECK-04 |
+| 11 | 03-12 | world, world | World converter fixes and the re-run chain | CHECK-04 |
+| 12 | 03-13 | actors, npcs | Actors converter fixes and the re-run chain | CHECK-04 |
+| 13 | 03-14 | data-ui, ui | Data and UI converter fixes and the re-run chain | CHECK-04 |
+| 14 | 03-26 | world, movement-geodata | Gap SC5c: seam strip floor rule (Q1) or its named reason; border walk | WORLD-04, MOVE-01 |
+| 15 | 03-27 | actors, player-characters | Gap SC2b: skinned head parts, idle family (Q2), animation packages (Q3); characters batch and chain | ACT-01 |
+| 16 | 03-28 | actors then integration | Gap SC2e: adapter `attack` event, role slots on verified routes (Q4, Q5), character sound bundles; chain | ACT-05 |
+| 17 | 03-29 | integration then actors | Gap SC2e: delete the legacy combat audio route and its sheet controls | ACT-05 |
+| 17 | 03-30 | actors, items | Gap SC2c: equipment slot recipe (Q6) and weapon attach (Q7), item gap rule, equip; sweeps and halves | ACT-03 |
+| 18 | 03-31 | actors then integration | Gap SC3b: GetSkillSoundData join, stage playback (Q8), caster slot, skill sound coverage rule | ACT-05 |
+| 18 | 03-32 | data-ui, ui | Gap SC4e: client fonts (Q9) and TextBox labels; font batch and chain | UI-02 |
+| 19 | 03-33 | data-ui, ui | Gap SC4e: interface.xdat control tail layouts (Q10), exact decode; window batch and chain | UI-02 |
+| 20 | 03-34 | data-ui, ui | Gap SC4e: skin, state and gauge control renderers | UI-02 |
+| 20 | 03-36 | world then integration | Gap MAT: terrain layer programs (Q11) and decoded L2FogInfo values (Q12); tile batch and chain | MAT-01, MAT-02 |
+| 21 | 03-35 | data-ui, ui | Gap SC4e: content control renderers on adapter data | UI-02 |
+| 22 | 03-15 | integration, adapter-dispatch | Final union sweeps and the generated stage A exit report | CHECK-05 |
+| 23 | 03-16 | world, world | Stage A check sections in the world, minimap and movement-geodata EVIDENCE docs (split by lane in revision 2, P91) | CHECK-03 |
+| 23 | 03-19 | actors, npcs | Stage A check sections in the npcs, items, skills-effects, player-characters and audio EVIDENCE docs (split from 03-16, P91) | CHECK-03 |
+| 23 | 03-20 | data-ui, ui | Stage A check sections in the ui, data and sandbox EVIDENCE docs (split from 03-16, P91) | CHECK-03 |
+| 24 | 03-17 | integration, adapter-dispatch | Needs Human session lines, VERIFICATION Open, STATUS, adapter-dispatch evidence | CHECK-01, CHECK-02, CHECK-03 |
 
-The fix plans 03-12, 03-13 and 03-14 are chained because each rebuilds the integration union. Waves state dependencies; execution stays one sequential executor (rule 1). 03-08 and 03-09 depend on 03-18 as well as 03-07, because their sandbox halves record `diagnosticMaterials`. 03-16, 03-19 and 03-20 each write one lane's EVIDENCE docs, share no file and run in wave 11 after 03-15; 03-17 depends on all three.
+Gap plans run in two blocks. The early block (waves 3 to 6) needs no new native fact and precedes the sandbox halves: 03-21 and 03-24 precede 03-08, 03-22 and 03-25 precede 03-07, and 03-25 leaves the union that 03-07 to 03-10 capture. The late block (waves 14 to 21) is gated on REA answers and follows 03-14, so those answers have time to arrive. 03-15 depends on the whole late block. Each gap plan that changes a converter runs the re-run chain, and the union-rebuilding plans form one chain in wave order: 03-24, 03-25, then 03-12 to 03-14, then 03-26 (when its Q1 answer needs a converter change), 03-27, 03-28, 03-32, 03-33 and 03-36. At most one batch-running plan runs per wave (DATABASE-PC crashed under parallel load), and same-wave plans share no file.
+
+The fix plans 03-12, 03-13 and 03-14 are chained because each rebuilds the integration union. Waves state dependencies; execution stays one sequential executor (rule 1). 03-08 and 03-09 depend on 03-18 as well as 03-07, because their sandbox halves record `diagnosticMaterials`. 03-16, 03-19 and 03-20 each write one lane's EVIDENCE docs, share no file and run in wave 23 after 03-15; 03-17 depends on all three.
 
 Phase exit (P16, P43, DEC-OWN-13): 03-17 runs the offline Debug batch on IMPORTA-PC and its pairs are judged by a fresh reviewer. ROADMAP Phase 3 success criteria 1 and 2 stay human_needed until the server batch (Phase 4 Mobius) and the listen batch (the owner's ears) run. 03-17 and the phase verification report them human_needed with those Needs Human lines, never passed; the phase closes human_needed with Stage A not yet proven. Phase 4 may proceed (its server closes the server batch); Phase 5, which depends on Phase 3 stage A complete, waits for the server and listen sessions.
 
@@ -43,6 +61,40 @@ Phase exit (P16, P43, DEC-OWN-13): 03-17 runs the offline Debug batch on IMPORTA
 8. Record the plan start with `git rev-parse HEAD` before Task 1. Before each docs commit run `node scripts/check-lane-ownership.mjs --base <base> --part <slug>`; a plan that writes files of several lanes runs the check at the end of each task with that task's start commit as base, before the next task commits.
 9. Docs use plain hyphens and sentence-case headings. EVIDENCE.md stays under 30,720 bytes with exactly the headings `## Passes now`, `## Open` and `## Evidence`, in that order. A plan that touches a doc with any other `##` heading makes it a `###` sub-heading under the heading its content belongs to, with its text unchanged (planning row P92). STATUS.md stays one line per part, rewritten in place.
 10. The last task of every plan stops what the plan started (Playwright `webServer`, browsers, Vitest workers, Python runs, ssh) by PID or by a command line holding this worktree path or port 5173 or 5175, never by image name, and confirms no listener remains on 5173 or 5175.
+
+## Gap plan rules (03-21 to 03-36)
+
+Every gap plan carries rules 1 to 10 above and these. Each plan sets `gap_closure: true` and follows the 02-99 plan format.
+
+1. GP1 Commits: commit only the plan's paths with `git commit --only -m "<message>" -- <paths>` (`git add` a new file first). Messages are sentence-case and carry no attribution.
+2. GP2 Frozen sources: edit none of the 55 files `implementation_source_paths()` lists (`scripts/native_assets.py`, `native_audio.py`, `native_animation_families.py`, `native_effect_bundle.py`, `reference_client_guard.py`, `native_store/store_paths.py`, `data/pinned_elbera_module.py`, `native_catalog/*`, `native_assets_lib/*`). Edit no byte-pinned file either: the NPC profile tool pins, the skill tool files, the actor sound builder whose `builderSha256` the bundles record, the class-defaults helper and `extract_ue_defaults.ps1`. `implementation_hash()` stays the constant, and `tests/pipeline/test_converter_implementation_hash.py` passes unchanged. A converter change lives in a lane step module, so only that step's units reseal. Record `print_fingerprint_inputs.py` before the first edit and after the last batch. Never rewrite a file's line endings.
+3. GP3 Reuse: converters read the staged snapshot or the lock-equal `E:/Lineage2-client` through `require_reference_client`, and reuse sealed lane products. Nothing sealed is extracted again. One shared unit per distinct source object.
+4. GP4 Facts: values come only from the client through pinned recipes. Native facts come only from `C:/laragon/l2b-orchestration/rea-in/20261113-roadmap-verify/verified-*.md` or a later `verified-*.md` under `C:/laragon/l2b-orchestration/rea-in/`. A step marked fact-gated Qn runs only when such a file answers Qn with a replay-checked claim. Otherwise it writes no code for that fact, keeps or narrows the named gap reason, records "Qn unanswered" under the SUMMARY open questions, and the plan goes on with its other steps. No executor disassembles or traces a binary.
+5. GP5 Server boundary: runtime state enters only through `GameWorldAdapter`. A sandbox command carries the developer's input (flags, equip, cast) and computes no outcome.
+6. GP6 Batches: at most one batch-running plan per wave. Use one process per batch with `--limit` at the pending count (executor run rules "Batch runs"). A converter change runs the re-run chain to step 7. Before 03-07, steps 6 and 7 record "no sandbox halves yet".
+7. GP7 Tracking: gap plans report in their SUMMARY. They write no EVIDENCE.md, STATUS.md, STATE.md or REQUIREMENTS.md. 03-16, 03-19 and 03-20 state each gap plan's result in their lane's EVIDENCE docs. 03-15 reads the SUMMARYs of the gap plans that ran the chain as it reads those of 03-12 to 03-14. 03-17 rewrites the STATE gap follow-ups and the REQUIREMENTS statuses from the gap SUMMARYs, and lists each unanswered question.
+8. GP8 Legacy: a plan that replaces a route deletes the old route, its tests and its citations in the same plan, or in the plan it names (03-23 after 03-22, 03-29 after 03-28).
+
+### Open questions for the IMPORTA-PC REA thread
+
+The orchestrator sends these before the late block. The full text is in each plan's `<open_questions>`.
+
+| Q | Plan | Topic |
+| --- | --- | --- |
+| Q1 | 03-26 | Floor trace and miss rule in the 128-unit terrain seam strip |
+| Q2 | 03-27 | Source of a player pawn's WaitAnimName per mesh type and weapon type |
+| Q3 | 03-27 | MeshAnimation bound to chargrp rows 1, 2, 9 and 13 |
+| Q4 | 03-28 | Getters of the npcgrp attack, defense and damage sounds |
+| Q5 | 03-28 | Action_Attack branch selection by pawn+0x634 bits, and the attackVoice group selector |
+| Q6 | 03-30 | armorgrp body part to pawn mesh slot |
+| Q7 | 03-30 | Weapon attach bone and transform |
+| Q8 | 03-31 | Effect actors and triggers of PlaySkillSound stages 1 and 2 |
+| Q9 | 03-32 | Font that a TextBox fontType selects |
+| Q10 | 03-33 | interface.xdat tail layout of the 25 unsupported control types |
+| Q11 | 03-36 | Terrain layer UV mapping and alpha blend |
+| Q12 | 03-36 | Runtime selection and precedence of L2FogInfo |
+
+Already open in STATE Needs Human (IMPORTA-PC minimap line) and cited by 03-22: radar-anchor, zone-title-source, zone-key-run, specialHiddenMap.
 
 ## Shared definitions
 

@@ -11,7 +11,7 @@ state_head: 80b033eb38c8c32403d85b05da6a75dd7dedfbfd
 progress:
   total_phases: 6
   completed_phases: 0
-  total_plans: 136
+  total_plans: 152
   completed_plans: 119
   percent: 0
 ---
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 03 (Stage A checks) - EXECUTING; Phase 2 gap round plans 02-72 to 02-99 executed
-Plan: 02-89 complete (Phase 2 gap closure bookkeeping); Phase 3 at 03-03 complete, 3 of 20 plans summarized
+Plan: 02-89 complete (Phase 2 gap closure bookkeeping); Phase 3 at 03-03 complete, 3 of 36 plans summarized (gap plans 03-21 to 03-36 added 2026-11-14)
 Status: Executing Phase 3 from start commit cb09cdc; Phase 1 is verification_deferred_human (see Deferred Verification); the union is rebuilt as e25d005e and its restage waits on the owner (Needs Human plan 02-89)
 Last activity: 2026-11-14 - Union rebuild after writer fixes f5e047f and 7605c7d exited 0: catalog e25d005e, character-model:8 retired on the actors `characters` gap row, 122,817 files written, free bytes 148025196544 before and 147860516864 after; `--plan` printed the restage command (Needs Human plan 02-89); pin check, union slices and union coverage not run yet
 
@@ -554,15 +554,16 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 - Library exports (MAT-01, 02-69, rows 653 and 692): `particleMaterialBinding.ts` and `NativeActor.ts` still import fog and `loadNativeMaterial` from `model/fog` and `babylon/loadNativeMaterial` instead of `src/materials/ue2/babylon/material.ts`, and `blendConstants.ts` provenance cites the deleted `src/effects/nativeEffectMaterial.ts:152`. Unblocked by: the import move and a provenance fix.
 - Overlap reviews (DEC-OWN-12): materials 35 blocking and 313 unreviewed (`artifacts/reference-overlap/02-64-materials.json`); bsp-visibility 290 blocking and 3,521 unreviewed (02-63) and 23 blocking and 406 unreviewed with 17 stale (02-91); movement 83 blocking and 2,727 unreviewed (02-65); particles 547 blocking and 2,552 unreviewed (02-69); the 02-93 Python converter runs (bsp-visibility 3 blocking and 128 unreviewed, movement 1 blocking and 163 unreviewed, `artifacts/reference-overlap-02-93/`). Unblocked by: the orchestrator's independent review after the wave.
 - Headless WebGPU refusal (02-39): in one full run of `tests/browser/sandbox-npc-gremlin.spec.ts` the SwiftShader adapter answered "WebGPU is required" on the seventh world load. Unblocked by: finding why the adapter refuses after several world loads in one worker.
-- Gap SC1a (WORLD-01, WORLD-05), Phase 3 replan: Missing: 75 tile walks fail on runtime defects (run animation, below terrain minimum, no BSP mesh) and 7 tiles fail the anchor check. Unblocked by: the runtime walk fixes of "World lane walks", then a re-walk.
-- Gap SC1d (WORLD-06), Phase 3 replan (03-08 records the minimap half only): Missing: no view reads the `minimap-route:interlude` unit. Unblocked by: the 02-51 view of "Minimap route" with the radar anchor and zone title source.
-- Gap SC2b (ACT-01), Phase 3 replan (03-19 records evidence only): Missing: 0 of 15 character keys convert. Unblocked by: the sources and converter change of "Character keys".
-- Gap SC2c (ACT-03), Phase 3 replan: Missing: 0 of 9,238 item keys pass; equipment slot meaning undecoded. Unblocked by: "Armor slot meaning and weapon socket transform".
-- Gap SC2e (ACT-05), Phase 3 replan: Missing: spawned bundle role slots never play (`combat-role-route-unresolved` in `src/audio/spawnedActorSoundCues.ts` although 02-95 verified the routes); characters have no bundle. Unblocked by: binding the 02-95 routes to the role slots and the character bundles.
-- Gap SC3b (ACT-05), Phase 3 replan (03-10 records clips only): Missing: no skill sound playback on cast; 1,403 skill sound rows pending for want of a coverage rule. Unblocked by: the playback join and coverage rule of "Skill sound through skillsoundgrp".
-- Gap SC4e (UI-02), Phase 3 replan: Missing: TextBox labels and 25 control types unrendered (CP and MP deferred to Phase 4, NET-05). Unblocked by: the label source and renderers of "Window data".
-- Gap SC5c (WORLD-04, MOVE-01), Phase 3 replan: Missing: the pawn falls 113.57 m in the 128-unit seam strip on 15_20 to 15_21. Unblocked by: the reference strip floor rule (APawn physWalking, ULevel floor traces) and collision that follows it.
-- Gap materials (MAT-01, MAT-02), Phase 3 replan (03-11 cites `material-class-unported` diagnostics as listed gaps): Missing: no library programs for static mesh, terrain, sky or skeletal surfaces; no runtime zone fog values. Unblocked by: "Library programs for static mesh, terrain and skeletal owners" and runtime fog values.
+- Gap SC1a (WORLD-01, WORLD-05), Phase 3 plan 03-21 (wave 3, before 03-08): Missing: 75 tile walks fail on runtime defects (run animation, below terrain minimum, no BSP mesh) and 7 tiles fail the anchor check. Unblocked by: 03-21 (walk trace, root-cause fixes, anchor rule, one walk over every tile).
+- Gap SC1d (WORLD-06), Phase 3 plans 03-22 and 03-23 (waves 3 and 4, before 03-07 and 03-08): Missing: no view reads the `minimap-route:interlude` unit. Unblocked by: 03-22 (world map pieces, GetLocInfo texture choice, zone sampler) and 03-23 (schema 3 without the per-tile radar fields; its re-run runs in the 03-24 batch); radar-anchor, zone-title-source and zone-key-run stay on the Needs Human IMPORTA-PC minimap line.
+- Gap SC2b (ACT-01), Phase 3 plan 03-27 (wave 15): Missing: 0 of 15 character keys convert. Unblocked by: 03-27 (skinned head parts, then the idle family and animation packages once the REA thread answers Q2 and Q3).
+- Gap SC2c (ACT-03), Phase 3 plan 03-30 (wave 17, after 03-27): Missing: 0 of 9,238 item keys pass; equipment slot meaning undecoded. Unblocked by: 03-30 once the REA thread answers Q6 (armor body part slot) and Q7 (weapon attach transform).
+- Gap SC2e (ACT-05), Phase 3 plans 03-28 and 03-29 (waves 16 and 17): Missing: spawned bundle role slots never play (`combat-role-route-unresolved` in `src/audio/spawnedActorSoundCues.ts` although 02-95 verified the routes); characters have no bundle. Unblocked by: 03-28 (adapter `attack` event, verified role routes, character bundles; npcgrp roles wait on Q4, defense and damage branches on Q5) and 03-29 (legacy combat audio route deleted).
+- Gap SC3b (ACT-05), Phase 3 plan 03-31 (wave 18): Missing: no skill sound playback on cast; 1,403 skill sound rows pending for want of a coverage rule. Unblocked by: 03-31 (GetSkillSoundData join, coverage rule; stage playback waits on Q8).
+- Gap SC4e (UI-02), Phase 3 plans 03-32 to 03-35 (waves 18 to 21): Missing: TextBox labels and 25 control types unrendered (CP and MP deferred to Phase 4, NET-05). Unblocked by: 03-32 (client fonts, Q9), 03-33 (control tail layouts, Q10), 03-34 (skin, state and gauge renderers) and 03-35 (content renderers).
+- Gap SC5c (WORLD-04, MOVE-01), Phase 3 plan 03-26 (wave 14): Missing: the pawn falls 113.57 m in the 128-unit seam strip on 15_20 to 15_21. Unblocked by: 03-26 once the REA thread answers Q1 (the strip floor trace and its miss rule); until then the fall carries the named reason `terrain-seam-floor-rule-unresolved`.
+- Gap materials (MAT-01, MAT-02), Phase 3 plans 03-24, 03-25 and 03-36 (waves 5, 6 and 20; 03-11 cites `material-class-unported` diagnostics as listed gaps): Missing: no library programs for static mesh, terrain, sky or skeletal surfaces; no runtime zone fog values. Unblocked by: 03-24 (static mesh programs, vertex colour input), 03-25 (shared skeletal programs, bone-influence input), and 03-36 (terrain layers on Q11, L2FogInfo values on Q12).
+- Phase 3 gap plan questions Q1 to Q12 (03-PLAN-INDEX.md "Open questions for the IMPORTA-PC REA thread"): Missing: the twelve native facts the late gap plans are gated on. Unblocked by: the orchestrator sending each question from its plan's `<open_questions>` to the IMPORTA-PC REA thread before wave 14, and recording each verified answer as a `verified-*.md` under `C:/laragon/l2b-orchestration/rea-in/`.
 - Union retirement interruption (INT-01, 7605c7d): Missing: a stop between the union catalog write and the removal of retired store files leaves orphan files in the integration store. Unblocked by: a union step that finds and removes files no catalog record pins.
 - Union resealed record files (INT-01, 02-89): Missing: the old files of records resealed since union bba52c47 stay in the integration store. Unblocked by: the same unpinned-file cleanup in the union step.
 
