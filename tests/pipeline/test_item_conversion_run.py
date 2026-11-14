@@ -97,7 +97,7 @@ class ItemConversionRunTests(unittest.TestCase):
                           'sha256': hashlib.sha256(converted_bytes).hexdigest(), 'bytes': len(converted_bytes)}
         self.assertEqual((outcome['outputs'], run.ledger.sealed_receipt(run.units[0]['unitKey'])['outputs']), ([archive_record], [archive_record]))
 
-    def test_a_run_hashes_the_converter_and_reads_the_client_lock_once_for_all_of_its_units(self):
+    def test_a_run_asks_for_the_converter_version_and_reads_the_client_lock_once_for_all_of_its_units(self):
         run = SyntheticItemRun(self.project_root, self.client_root)
         outcomes = [run.convert(unit) for unit in run.units]
         run.sealed_outcomes_by_unit_key()
