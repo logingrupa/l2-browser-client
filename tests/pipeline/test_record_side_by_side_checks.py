@@ -73,6 +73,31 @@ class RecordSideBySideChecksTestCase(unittest.TestCase):
                          [(PASSING_WINDOW_KEY, 'unverified', 'native-needs-server')])
         self.assertEqual(records[0]['nativeSelection'], {'route': 'server-world', 'window': 'StatusWnd'})
 
+    def test_a_recaptured_sandbox_half_beside_a_native_half_keeps_the_npc_selection_unconfirmed(self):
+        npc_key = 'npc:1001'
+        write_sandbox_receipt(self.project_root, 'npcs', npc_key, self.key_content_sha256(npc_key), self.catalog_sha256)
+        self.assertEqual(self.run_command('ingest-sandbox-halves', '--part', 'npcs', '--store-root', str(self.store_root))[0], 0)
+        write_reference_client_lock(self.project_root)
+        record = read_side_by_side_records(self.project_root, 'npcs')[0]
+        lock_sha256 = current_reference_tree_lock_sha256(self.project_root)
+        write_side_by_side_records(self.project_root, 'npcs', [
+            {**record, 'reason': 'native-selection-unconfirmed', 'nativeHalf': native_half('npcs', npc_key, lock_sha256)}])
+        write_sandbox_receipt(self.project_root, 'npcs', npc_key, self.key_content_sha256(npc_key), self.catalog_sha256,
+                              png_bytes=b'a recaptured sandbox png')
+        exit_code, _, stderr = self.run_command('ingest-sandbox-halves', '--part', 'npcs', '--store-root', str(self.store_root))
+        self.assertEqual(exit_code, 0, stderr)
+        recaptured = read_side_by_side_records(self.project_root, 'npcs')[0]
+        self.assertEqual((recaptured['reason'], len(recaptured['sandboxHalfHistory'])), ('native-selection-unconfirmed', 1))
+
+    def test_a_recaptured_window_half_beside_a_native_half_is_review_pending(self):
+        self.ingest_window_record()
+        self.add_native_half()
+        write_sandbox_receipt(self.project_root, UI_PART, PASSING_WINDOW_KEY, self.key_content_sha256(PASSING_WINDOW_KEY), self.catalog_sha256,
+                              png_bytes=b'a recaptured window png')
+        exit_code, _, stderr = self.run_command('ingest-sandbox-halves', '--part', UI_PART, '--store-root', str(self.store_root))
+        self.assertEqual(exit_code, 0, stderr)
+        self.assertEqual(read_side_by_side_records(self.project_root, UI_PART)[0]['reason'], 'review-pending')
+
     def test_queue_refuses_a_coverage_report_of_another_catalog(self):
         write_union_coverage_report(self.store_root, 'f' * 64, [coverage_row(PASSING_WINDOW_KEY, UI_PART)])
         exit_code, _, stderr = self.run_command('queue', '--store-root', str(self.store_root))

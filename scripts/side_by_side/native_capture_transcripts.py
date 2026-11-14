@@ -4,6 +4,7 @@ from native_assets_lib.asset_manifest import reference_client_build
 from native_store.load_check_records import is_catalog_key, is_riga_timestamp
 from native_store.side_by_side_check_halves import (EXECUTOR_CAPTURE_PATTERN, OWNER_IDENTITY, is_non_empty_text, is_positive_integer,
                                                     is_sha256)
+from side_by_side.build_pair_queue import ITEM_VIEWER, NPC_VIEWER, OFFLINE_DEBUG_STARTUP_ROUTE, PART_BY_KIND, SKILL_VIEWER
 
 REFERENCE_CLIENT_ROOT = 'C:/Lineage2-client'
 CONTROLLER_SHA256 = '542b89cc299dae3ac0d045d272d309f72936af8b39fab22ee1a57a6a24caeadc'
@@ -11,7 +12,9 @@ CONTROL_DOCUMENT_SHA256 = 'acd93f64580261369a4f209c81cee7d48694d0299160467d844ec
 DEBUG_PROFILE_LOCK_PATH = 'connection-profiles/l2-Debug.ini'
 INTERACTIVE_SESSION_ID = 1
 ACTIVE_SESSION_STATE = 'Active'
-NATIVE_BATCH_PARTS = ('world', 'npcs', 'items', 'skills-effects')
+NATIVE_BATCH_PART_BY_VIEWER = {OFFLINE_DEBUG_STARTUP_ROUTE: PART_BY_KIND['tile'], NPC_VIEWER: PART_BY_KIND['npc'],
+                               ITEM_VIEWER: PART_BY_KIND['item'], SKILL_VIEWER: PART_BY_KIND['skill']}
+NATIVE_BATCH_PARTS = tuple(NATIVE_BATCH_PART_BY_VIEWER.values())
 PROCESS_FIELDS = frozenset({'processId', 'name', 'path'})
 PREFLIGHT_TRANSCRIPT_FIELDS = frozenset({'program', 'host', 'controllerSha256', 'controlDocumentSha256', 'engineDllSha256', 'l2IniSha256',
                                          'clientProcesses', 'botProcesses', 'sessionId', 'sessionState'})
@@ -133,11 +136,12 @@ def native_capture_receipt_problems(receipt, batch_id, expected_png_path, lock):
     if not (isinstance(receipt, dict) and set(receipt) == NATIVE_CAPTURE_RECEIPT_FIELDS):
         return [f'must hold exactly {", ".join(sorted(NATIVE_CAPTURE_RECEIPT_FIELDS))}']
     problems = [f'{field} must be 64 lowercase hex characters' for field in RECEIPT_SHA256_FIELDS if not is_sha256(receipt[field])]
+    viewer = batch_id.rsplit('-', 1)[0]
     checks = (
         (is_catalog_key(receipt['key']), 'key must be a catalog key'),
-        (receipt['part'] in NATIVE_BATCH_PARTS, f'part must be one of {", ".join(NATIVE_BATCH_PARTS)}'),
         (receipt['batchId'] == batch_id, f'batchId must be {batch_id}'),
-        (receipt['viewer'] == batch_id.rsplit('-', 1)[0], 'viewer must be the viewer of its batch'),
+        (receipt['viewer'] == viewer, f'viewer must be {viewer}, the viewer of its batch'),
+        (receipt['part'] == NATIVE_BATCH_PART_BY_VIEWER.get(viewer), f'part must be {NATIVE_BATCH_PART_BY_VIEWER.get(viewer)}, the part of {viewer}'),
         (is_captured_by_identity(receipt['capturedBy']), f'capturedBy must match {EXECUTOR_CAPTURE_PATTERN.pattern} or {OWNER_IDENTITY}'),
         (is_size(receipt['windowSize']) and is_size(receipt['clientSize']), 'windowSize and clientSize must hold positive width and height'),
         (isinstance(receipt['actionStatuses'], list) and all(is_non_empty_text(status) for status in receipt['actionStatuses']),

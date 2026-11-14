@@ -4,6 +4,7 @@ from pathlib import Path
 
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import replace_file
+from native_store.side_by_side_check_records import NATIVE_SELECTION_UNCONFIRMED_REASON, REVIEW_PENDING_REASON
 from native_store.store_paths import SHA256_PATTERN
 from side_by_side.pair_queue_key_facts import PairQueueKeyFacts
 from side_by_side.pair_queue_union import PairQueueError, PairQueueUnion
@@ -104,6 +105,12 @@ def native_selection_for_key(facts, part, key):
 
 def stored_reason_for_session_kind(session_kind):
     return STORED_REASON_BY_SESSION_KIND[session_kind]
+
+
+def reason_with_native_half(native_selection):
+    if native_selection.get('viewer') in (NPC_VIEWER, ITEM_VIEWER):
+        return NATIVE_SELECTION_UNCONFIRMED_REASON
+    return REVIEW_PENDING_REASON
 
 
 def class_value_for_key(facts, key):

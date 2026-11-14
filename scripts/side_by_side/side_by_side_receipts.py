@@ -4,9 +4,10 @@ from pathlib import Path
 
 from native_store.catalog_writer import sha256_of_file
 from native_store.side_by_side_check_halves import IMAGE_SANDBOX_HALF_FIELDS, key_file_stem
-from native_store.side_by_side_check_records import REVIEW_PENDING_REASON, read_side_by_side_records, write_side_by_side_records
+from native_store.side_by_side_check_records import read_side_by_side_records, write_side_by_side_records
 from native_store.store_paths import StorePathError, confined_child_path
-from side_by_side.build_pair_queue import native_selection_for_key, require_part_of_key, session_kind_for_key, stored_reason_for_session_kind
+from side_by_side.build_pair_queue import (native_selection_for_key, reason_with_native_half, require_part_of_key, session_kind_for_key,
+                                           stored_reason_for_session_kind)
 from side_by_side.pair_queue_key_facts import PairQueueKeyFacts
 from side_by_side.pair_queue_union import PairQueueError, PairQueueUnion, read_strict_json_file
 
@@ -70,10 +71,10 @@ def validated_sandbox_receipt(project_root, union, part, receipt_path, receipt):
 
 def ingested_sandbox_record(facts, part, receipt, stored_record):
     native_half = None if stored_record is None else stored_record['nativeHalf']
-    reason = (REVIEW_PENDING_REASON if native_half is not None
+    native_selection = native_selection_for_key(facts, part, receipt['key'])
+    reason = (reason_with_native_half(native_selection) if native_half is not None
               else stored_reason_for_session_kind(session_kind_for_key(facts, part, receipt['key'])))
-    return {'key': receipt['key'], 'verdict': 'unverified', 'reason': reason,
-            'nativeSelection': native_selection_for_key(facts, part, receipt['key']),
+    return {'key': receipt['key'], 'verdict': 'unverified', 'reason': reason, 'nativeSelection': native_selection,
             'sandboxHalf': {field: receipt[field] for field in IMAGE_SANDBOX_HALF_FIELDS}, 'nativeHalf': native_half,
             'difference': None, 'suspectedStep': None, 'reviewer': None, 'judgedAtRiga': None, 'sandboxHalfHistory': [],
             'displayedTableRows': receipt['displayedTableRows']}

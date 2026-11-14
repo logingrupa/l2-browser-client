@@ -121,6 +121,28 @@ def prepare_folder_transcript(input_document):
     return {'program': 'prepare-capture-folder', 'captureFolder': input_document['captureFolder']}
 
 
+def write_captured_batch_folder(batch_folder, batch, png_bytes_by_key=None, receipt_changes_by_key=None, completion_status='complete'):
+    batch_folder.mkdir(parents=True, exist_ok=True)
+    keys = [capture_key.key for capture_key in batch.keys]
+    (batch_folder / 'batch-input.json').write_text(json.dumps({'batchId': batch.batch_id, 'keys': [{'key': key} for key in keys]}),
+                                                   encoding='utf-8')
+    for capture_key in batch.keys:
+        stem = capture_key.key.replace(':', '_')
+        (batch_folder / f'{stem}.png').write_bytes((png_bytes_by_key or {}).get(capture_key.key, synthetic_native_png_bytes(capture_key.key)))
+        receipt = native_capture_receipt(batch.batch_id, capture_key.key, capture_key.part, capture_key.viewer,
+                                         hashlib.sha256(synthetic_native_png_bytes(capture_key.key)).hexdigest(),
+                                         **(receipt_changes_by_key or {}).get(capture_key.key, {}))
+        (batch_folder / f'{stem}.json').write_text(json.dumps(receipt, separators=(',', ':')), encoding='utf-8')
+    (batch_folder / 'batch-complete.json').write_text(json.dumps({'batchId': batch.batch_id, 'status': completion_status, 'error': None,
+                                                                  'receiptCount': len(keys)}), encoding='utf-8')
+
+
+def scp_download_of(batch, **folder_changes):
+    def download(command):
+        write_captured_batch_folder(Path(command[-1]) / batch.batch_id, batch, **folder_changes)
+    return download
+
+
 class NativeCaptureProjectTestCase(unittest.TestCase):
     def setUp(self):
         self.project_root = self.empty_project_root()

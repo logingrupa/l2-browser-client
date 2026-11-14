@@ -24,6 +24,7 @@ COMPUTED_UNVERIFIED_REASONS = ('sandbox-capture-failed', 'loads-failed', 'loads-
                                'no-pair-shows-table')
 LISTEN_NEEDS_OWNER_REASON = 'listen-needs-owner'
 REVIEW_PENDING_REASON = 'review-pending'
+NATIVE_SELECTION_UNCONFIRMED_REASON = 'native-selection-unconfirmed'
 REVIEWER_UNCERTAIN_REASON = 'reviewer-uncertain'
 AUDIO_ROLES = ('ambience', 'placement', 'music', 'voice', 'combat', 'skill')
 SIDE_BY_SIDE_DOCUMENT_FIELDS = frozenset({'schemaVersion', 'part', 'records'})

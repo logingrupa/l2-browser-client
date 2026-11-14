@@ -22,8 +22,8 @@ from side_by_side.build_pair_queue import (ITEM_VIEWER, NPC_VIEWER, OFFLINE_DEBU
 from side_by_side.native_capture_remote_programs import (BATCH_INPUT_FILE_NAME, BATCH_SCRIPT, BATCH_SCRIPT_FILE_NAME, CAPTURE_PROGRAM_NAME,
                                                          COMPLETION_MARKER_FILE_NAME, PREFLIGHT_PROGRAM_NAME, PREPARE_FOLDER_PROGRAM_NAME,
                                                          TASK_REMOVAL_PROGRAM_NAME, encoded_powershell_command)
-from side_by_side.native_capture_transcripts import (COMPLETE_STATUS, INTERACTIVE_SESSION_ID, NATIVE_BATCH_PARTS, REFERENCE_CLIENT_ROOT,
-                                                     NativeCaptureError, NativeCapturePreflightRefused, is_captured_by_identity,
+from side_by_side.native_capture_transcripts import (COMPLETE_STATUS, INTERACTIVE_SESSION_ID, NATIVE_BATCH_PART_BY_VIEWER, NATIVE_BATCH_PARTS,
+                                                     REFERENCE_CLIENT_ROOT, NativeCaptureError, NativeCapturePreflightRefused, is_captured_by_identity,
                                                      native_capture_receipt_problems, preflight_refusals, validate_capture_transcript,
                                                      validate_preflight_transcript, validate_task_removal_transcript)
 
@@ -43,10 +43,10 @@ RIGA_TIME_ZONE_ID = 'FLE Standard Time'
 BATCH_BASE_SECONDS = 120
 BATCH_SECONDS_PER_KEY = 30
 REMOTE_PROGRAM_TIMEOUT_SECONDS = 180
-NATIVE_BATCH_VIEWERS = (OFFLINE_DEBUG_STARTUP_ROUTE, NPC_VIEWER, ITEM_VIEWER, SKILL_VIEWER)
+NATIVE_BATCH_VIEWERS = tuple(NATIVE_BATCH_PART_BY_VIEWER)
 VIEWER_COMMANDS = {OFFLINE_DEBUG_STARTUP_ROUTE: None, NPC_VIEWER: NPC_VIEWER, ITEM_VIEWER: ITEM_VIEWER, SKILL_VIEWER: SKILL_VIEWER}
 NATIVE_SESSION_REASON = stored_reason_for_session_kind(OFFLINE_DEBUG_SESSION_KIND)
-BATCH_ID_PATTERN = re.compile(r'^(?:offline-debug-startup|nv|pv|sv)-[0-9a-f]{12}$')
+BATCH_ID_PATTERN = re.compile('^(?:' + '|'.join(re.escape(viewer) for viewer in NATIVE_BATCH_VIEWERS) + ')-[0-9a-f]{12}$')
 REMOTE_FILE_NAME_PATTERN = re.compile(r'^[A-Za-z0-9_][A-Za-z0-9_-]{0,119}\.(?:png|json|ps1)$')
 SEND_KEYS_LITERAL_PATTERN = re.compile(r"^[A-Za-z0-9 '.,-]{1,64}$")
 LOCAL_CAPTURE_FOLDER = Path('artifacts/side-by-side/native-capture')
