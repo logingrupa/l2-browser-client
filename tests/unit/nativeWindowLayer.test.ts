@@ -45,7 +45,7 @@ function textureImagePath(reference: string): string {
 function syntheticCatalog(): NativeCatalog {
   return {
     schemaVersion: 1, models: [], sections: [], movers: [], npcProfiles: [], playerProfiles: [], animationAudio: [], combatAudio: [],
-    worldAudio: [], effectComponents: [], tables: [], tiles: [], servedCatalogSha256: "f".repeat(64), laneCatalogSha256: null,
+    worldAudio: [], effectComponents: [], tables: [], tiles: [], materialPrograms: [], servedCatalogSha256: "f".repeat(64), laneCatalogSha256: null,
     windows: [plainWindowId, statusWindowId].map(windowId => ({ id: windowId, manifest: windowManifestPath(windowId),
       manifestSha256: windowManifestSha256(windowId), manifestBytes: 1 })),
     textures: statusTextureReferences.map(reference => ({ id: `ui-texture:${reference}`, archiveSha256: textureArchiveSha256,

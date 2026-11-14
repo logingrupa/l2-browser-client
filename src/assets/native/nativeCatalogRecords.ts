@@ -9,8 +9,11 @@ export interface NativeTableCatalogRecord {
 export interface NativeWindowCatalogRecord {
   readonly window: string; readonly manifest: string; readonly manifestSha256: string; readonly manifestBytes: number;
 }
+export interface NativeMaterialProgramCatalogRecord {
+  readonly sourceObject: string; readonly manifest: string; readonly manifestSha256: string; readonly manifestBytes: number;
+}
 
-type PinnedManifestSliceName = "tiles" | "tables" | "windows";
+type PinnedManifestSliceName = "tiles" | "tables" | "windows" | "materialPrograms";
 
 interface PinnedManifestRecordShape {
   readonly fields: readonly string[];
@@ -24,6 +27,8 @@ interface PinnedManifestFields { readonly id: string; readonly manifest: string;
 export const tileIdPattern = /^\d{2}_\d{2}$/;
 export const tableIdPattern = /^[a-z][a-z0-9_]*(?:-[a-z])?$/;
 export const windowIdPattern = /^[A-Za-z][A-Za-z0-9_]{0,63}(?:#[1-9]\d{0,3})?$/;
+export const materialProgramRecordIdPrefix = "material-program:";
+const materialProgramRecordIdPattern = /^material-program:[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+$/;
 const sha256Pattern = /^[a-f0-9]{64}$/;
 const pinnedManifestRecordFields = ["id", "manifest", "manifestSha256", "manifestBytes"];
 const pinnedManifestRecordShapes: Readonly<Record<PinnedManifestSliceName, PinnedManifestRecordShape>> = {
@@ -33,6 +38,8 @@ const pinnedManifestRecordShapes: Readonly<Record<PinnedManifestSliceName, Pinne
     manifestPathPattern: /^\/l2\/tables\/(?<sha256>[a-f0-9]{64})\/(?<id>[a-z][a-z0-9_]*(?:-[a-z])?)\.json$/, maximumManifestBytes: 33_554_432 },
   windows: { fields: pinnedManifestRecordFields, idPattern: windowIdPattern,
     manifestPathPattern: /^\/l2\/windows\/(?<sha256>[a-f0-9]{64})\/window\.json$/, maximumManifestBytes: 8_000_000 },
+  materialPrograms: { fields: pinnedManifestRecordFields, idPattern: materialProgramRecordIdPattern,
+    manifestPathPattern: /^\/l2\/native-materials\/material-program-(?<sha256>[a-f0-9]{64})\.json$/, maximumManifestBytes: 1_000_000 },
 };
 
 function invalidCatalogRecord(sliceName: PinnedManifestSliceName): Error {
@@ -72,4 +79,9 @@ export function readTableCatalogRecord(value: unknown): NativeTableCatalogRecord
 export function readWindowCatalogRecord(value: unknown): NativeWindowCatalogRecord {
   const { id, manifest, manifestSha256, manifestBytes } = readPinnedManifestRecord(value, "windows");
   return { window: id, manifest, manifestSha256, manifestBytes };
+}
+
+export function readMaterialProgramCatalogRecord(value: unknown): NativeMaterialProgramCatalogRecord {
+  const { id, manifest, manifestSha256, manifestBytes } = readPinnedManifestRecord(value, "materialPrograms");
+  return { sourceObject: id.slice(materialProgramRecordIdPrefix.length), manifest, manifestSha256, manifestBytes };
 }

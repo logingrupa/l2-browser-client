@@ -5,6 +5,7 @@ TABLE_ID_PATTERN = re.compile(r'^[0-9]{1,10}$')
 MAXIMUM_SAFE_INTEGER = 2 ** 53 - 1
 SLICE_LIMIT_PATTERN = re.compile(r'^[1-9][0-9]{0,5}$')
 CHARGRP_INDEX_PATTERN = re.compile(r'^(?:0|[1-9][0-9]{0,3})$')
+ACTOR_MODEL_KEY_PATTERN = re.compile(r'^(?:npc|item):(?:0|[1-9][0-9]{0,8})$|^character:(?:0|[1-9][0-9]{0,3})$')
 
 
 def table_id_argument(flag):
@@ -31,3 +32,9 @@ def chargrp_index_argument(text):
     if not CHARGRP_INDEX_PATTERN.fullmatch(text):
         raise argparse.ArgumentTypeError(f'--character must be an unpadded chargrp row index from 0 to 9999: {text!r}')
     return int(text)
+
+
+def actor_model_key_argument(text):
+    if not ACTOR_MODEL_KEY_PATTERN.fullmatch(text):
+        raise argparse.ArgumentTypeError(f'--material-programs-of must be an npc:, item: or character: catalog key: {text!r}')
+    return text

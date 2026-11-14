@@ -8,8 +8,10 @@ if str(SCRIPTS_ROOT) not in sys.path:
 import argparse
 import json
 
-from actors.actor_arguments import chargrp_index_argument, skill_level_argument, slice_limit_argument, table_id_argument
+from actors.actor_arguments import (actor_model_key_argument, chargrp_index_argument, skill_level_argument, slice_limit_argument,
+                                    table_id_argument)
 from actors.actor_census import SOUND_PACKAGE_SUFFIXES, TEXTURE_PACKAGE_SUFFIXES, ActorPackageCensus
+from actors.actor_material_programs import MATERIAL_PROGRAMS_BATCH_NAME, run_actor_material_program_conversion
 from actors.actor_unit_inventory import (ACTOR_UNIT_CENSUS_RELATIVE_PATH, CONVERTIBLE_UNIT_STATUS, NO_MESH_IN_ROW_REASON, NPC_MODEL_UNIT_KIND,
                                          NPC_PART_NAME, conversion_unit_key, model_record_capacity, decoded_table_identity)
 from actors.character_census import CHARACTER_BATCH_NAME, run_character_conversion
@@ -58,11 +60,12 @@ IDENTITY_RECORD_NAME = 'sound-and-effect-identities.json'
 NPC_BATCH_NAME = 'npcs'
 SKILL_BATCH_NAME = 'skills'
 ACTOR_SOUNDS_BATCH_NAME = 'actor-sounds'
-CONVERT_ACTORS_DESCRIPTION = ('Convert one NPC id, one skill id and level, one actor sound bundle, one chargrp row or one item id, or the next '
-                              'slice of the NPC, skill, actor-sounds, characters or items batch, into the actors lane store as sealed ledger '
-                              'units: NPC models and profile bundles, skill visual roots, per-bundle combat sounds, item weapon and armor '
-                              'models, or generated character assemblies with their '
-                              'census. --print-batch-plan prints the NPC batch plan and writes nothing.')
+CONVERT_ACTORS_DESCRIPTION = ('Convert one NPC id, one skill id and level, one actor sound bundle, one chargrp row, one item id or the '
+                              'material objects of one catalog key, or the next slice of the NPC, skill, actor-sounds, characters, items or '
+                              'material-programs batch, into the actors lane store as sealed ledger units: NPC models and profile bundles, '
+                              'skill visual roots, per-bundle combat sounds, item weapon and armor models, generated character assemblies '
+                              'with their census, or one shared UE2 material program per material object of the sealed models. '
+                              '--print-batch-plan prints the NPC batch plan and writes nothing.')
 
 
 class ConvertActorsError(ValueError):
@@ -349,7 +352,10 @@ def selected_conversion_failed(client_access, output_root, arguments):
     if arguments.skill is not None or arguments.batch == SKILL_BATCH_NAME:
         return run_skill_conversion(client_access, output_root, arguments)
     converter = Converter(client_access.root, output_root.parent / CONVERTER_WORK_FOLDER, arguments.umodel)
-    if arguments.actor_sounds is not None or arguments.batch == ACTOR_SOUNDS_BATCH_NAME:
+    if arguments.material_programs_of is not None or arguments.batch == MATERIAL_PROGRAMS_BATCH_NAME:
+        outcomes = run_actor_material_program_conversion(REPOSITORY_ROOT, client_access.root, converter, output_root, lane_batch_preflight,
+                                                         arguments.limit, arguments.material_programs_of)
+    elif arguments.actor_sounds is not None or arguments.batch == ACTOR_SOUNDS_BATCH_NAME:
         outcomes = run_actor_sound_conversion(REPOSITORY_ROOT, client_access, converter, output_root, lane_work_root(REPOSITORY_ROOT, LANE_NAME),
                                               decode_table, arguments.actor_sounds, arguments.limit, lane_batch_preflight)
     elif arguments.batch == NPC_BATCH_NAME:
@@ -376,7 +382,9 @@ def main(argv=None):
     mode.add_argument('--actor-sounds', type=actor_sound_key_argument)
     mode.add_argument('--character', type=chargrp_index_argument)
     mode.add_argument('--item', type=table_id_argument('--item'))
-    mode.add_argument('--batch', choices=[NPC_BATCH_NAME, SKILL_BATCH_NAME, ACTOR_SOUNDS_BATCH_NAME, CHARACTER_BATCH_NAME, ITEM_BATCH_NAME])
+    mode.add_argument('--material-programs-of', type=actor_model_key_argument)
+    mode.add_argument('--batch', choices=[NPC_BATCH_NAME, SKILL_BATCH_NAME, ACTOR_SOUNDS_BATCH_NAME, CHARACTER_BATCH_NAME, ITEM_BATCH_NAME,
+                                          MATERIAL_PROGRAMS_BATCH_NAME])
     mode.add_argument('--print-batch-plan', action='store_true')
     parser.add_argument('--level', type=skill_level_argument)
     parser.add_argument('--limit', type=slice_limit_argument)

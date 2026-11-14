@@ -16,7 +16,8 @@ from native_store.store_paths import (SHA256_PATTERN, StorePathError, confined_c
                                       require_portable_relative_path)
 
 KNOWN_CATALOG_SLICES = ('models', 'textures', 'sections', 'movers', 'npcProfiles', 'playerProfiles',
-                        'animationAudio', 'combatAudio', 'worldAudio', 'effectComponents', 'tiles', 'tables', 'windows')
+                        'animationAudio', 'combatAudio', 'worldAudio', 'effectComponents', 'tiles', 'tables', 'windows',
+                        'materialPrograms')
 NATIVE_RESOURCE_PATH_PATTERN = re.compile(r'^\/l2\/(?:[A-Za-z0-9_-][A-Za-z0-9._-]*\/)*[A-Za-z0-9_-][A-Za-z0-9._-]*$')
 MAXIMUM_CATALOG_BYTES = 32 * 1024 * 1024
 MAXIMUM_SAFE_INTEGER = 2 ** 53 - 1
@@ -31,6 +32,10 @@ TABLE_NAME_INDEX_ID_SUFFIX = '_names'
 WINDOW_ID_PATTERN = re.compile(r'^[A-Za-z][A-Za-z0-9_]{0,63}(?:#[1-9]\d{0,3})?$')
 WINDOW_MANIFEST_PATH_PATTERN = re.compile(r'^/l2/windows/(?P<sha256>[a-f0-9]{64})/window\.json$')
 WINDOW_MANIFEST_MAXIMUM_BYTES = 8_000_000
+MATERIAL_PROGRAM_RECORD_ID_PREFIX = 'material-program:'
+MATERIAL_PROGRAM_RECORD_ID_PATTERN = re.compile('^' + re.escape(MATERIAL_PROGRAM_RECORD_ID_PREFIX) + r'[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+$')
+MATERIAL_PROGRAM_MANIFEST_PATH_PATTERN = re.compile(r'^/l2/native-materials/material-program-(?P<sha256>[a-f0-9]{64})\.json$')
+MATERIAL_PROGRAM_MANIFEST_MAXIMUM_BYTES = 1_000_000
 PINNED_MANIFEST_RECORD_FIELDS = ('id', 'manifest', 'manifestSha256', 'manifestBytes')
 TABLE_RECORD_FIELDS = (*PINNED_MANIFEST_RECORD_FIELDS, 'recordCount', 'sourceSha256')
 NATIVE_RESOURCE_PREFIX = '/l2/'
@@ -64,6 +69,8 @@ PINNED_MANIFEST_RECORD_SHAPES = {
     'tables': PinnedManifestRecordShape(TABLE_RECORD_FIELDS, TABLE_ID_PATTERN, TABLE_MANIFEST_PATH_PATTERN, TABLE_MANIFEST_MAXIMUM_BYTES),
     'windows': PinnedManifestRecordShape(PINNED_MANIFEST_RECORD_FIELDS, WINDOW_ID_PATTERN, WINDOW_MANIFEST_PATH_PATTERN,
                                          WINDOW_MANIFEST_MAXIMUM_BYTES),
+    'materialPrograms': PinnedManifestRecordShape(PINNED_MANIFEST_RECORD_FIELDS, MATERIAL_PROGRAM_RECORD_ID_PATTERN,
+                                                  MATERIAL_PROGRAM_MANIFEST_PATH_PATTERN, MATERIAL_PROGRAM_MANIFEST_MAXIMUM_BYTES),
 }
 
 

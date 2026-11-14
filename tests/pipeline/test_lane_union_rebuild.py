@@ -99,6 +99,42 @@ class LaneUnionRebuildTests(unittest.TestCase):
             write_lane_catalog(self.project, 'integration', UNION_LANE_NAMES)
         self.assertEqual(snapshot_tree(self.project), snapshot)
 
+    def stage_material_program(self, store_root):
+        program_bytes = b'{"kind": "synthetic program"}'
+        program_sha256 = sha256_hex(program_bytes)
+        listing = {'kind': 'native-actor-material-program', 'schemaVersion': 1, 'sourceObject': 'Synthetic.Material',
+                   'program': {'directory': f'native-materials/{program_sha256}', 'programSha256': program_sha256}, 'rootPorted': True,
+                   'gapReasons': [], 'files': {f'{program_sha256}/program.json': {'sha256': program_sha256, 'bytes': len(program_bytes)}}}
+        listing_bytes = json_bytes(listing)
+        listing_relative = f'native-materials/material-program-{sha256_hex(listing_bytes)}.json'
+        record = {'id': 'material-program:Synthetic.Material', 'manifest': f'/l2/{listing_relative}', 'manifestSha256': sha256_hex(listing_bytes),
+                  'manifestBytes': len(listing_bytes)}
+        catalog, before = read_store_catalog(store_root)
+        files = {}
+        add_store_file(files, f'native-materials/{program_sha256}/program.json', program_bytes)
+        add_store_file(files, listing_relative, listing_bytes)
+        write_store(store_root, files, before, json_bytes(merge_catalog_slice(catalog, 'materialPrograms', record, 4)))
+        return record, f'native-materials/{program_sha256}/program.json', listing_relative
+
+    def test_the_union_merges_material_program_records_and_copies_every_file_their_listing_pins(self):
+        record, program_relative, listing_relative = self.stage_material_program(self.actors_store)
+        write_lane_catalog(self.project, 'actors')
+        rebuilt = write_lane_catalog(self.project, 'integration', UNION_LANE_NAMES)
+        self.assertEqual(json.loads((self.integration_store / 'catalog.json').read_bytes())['materialPrograms'], [record])
+        self.assertEqual(rebuilt['recordsBySlice'], {'models': 2, 'materialPrograms': 1})
+        for relative in (program_relative, listing_relative):
+            self.assertEqual((self.integration_store / relative).read_bytes(), (self.actors_store / relative).read_bytes())
+
+    def test_a_material_program_listing_missing_its_program_file_and_an_unknown_slice_are_refused_before_any_write(self):
+        _, program_relative, _ = self.stage_material_program(self.actors_store)
+        (self.actors_store / program_relative).unlink()
+        snapshot = snapshot_tree(self.project)
+        with self.assertRaisesRegex(CatalogWriteError, f'pinned store file is missing from .*: {program_relative}'):
+            write_lane_catalog(self.project, 'actors')
+        self.assertEqual(snapshot_tree(self.project), snapshot)
+        self.replace_lane_catalog(self.actors_store, materialProgramsDraft=[])
+        self.assert_union_rebuild_refused_before_any_write('union lane actors catalog holds unknown fields materialProgramsDraft')
+
     def test_a_resealed_lane_record_replaces_the_earlier_union_record(self):
         self.replace_lane_catalog(self.actors_store, models=[RESEALED_MODEL_VERSION_ONE_RECORD])
         write_lane_catalog(self.project, 'actors')
