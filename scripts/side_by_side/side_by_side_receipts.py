@@ -7,6 +7,7 @@ from native_store.side_by_side_check_halves import IMAGE_SANDBOX_HALF_FIELDS
 from native_store.side_by_side_check_records import REVIEW_PENDING_REASON, read_side_by_side_records, write_side_by_side_records
 from native_store.store_paths import StorePathError, confined_child_path
 from side_by_side.build_pair_queue import native_selection_for_key, require_part_of_key, session_kind_for_key, stored_reason_for_session_kind
+from side_by_side.pair_queue_key_facts import PairQueueKeyFacts
 from side_by_side.pair_queue_union import PairQueueError, PairQueueUnion, read_strict_json_file
 
 SIDE_BY_SIDE_ARTIFACTS_FOLDER = Path('artifacts/side-by-side')
@@ -67,12 +68,12 @@ def validated_sandbox_receipt(project_root, union, part, receipt_path, receipt):
     return receipt
 
 
-def ingested_sandbox_record(union, part, receipt, stored_record):
+def ingested_sandbox_record(facts, part, receipt, stored_record):
     native_half = None if stored_record is None else stored_record['nativeHalf']
     reason = (REVIEW_PENDING_REASON if native_half is not None
-              else stored_reason_for_session_kind(session_kind_for_key(union, part, receipt['key'])))
+              else stored_reason_for_session_kind(session_kind_for_key(facts, part, receipt['key'])))
     return {'key': receipt['key'], 'verdict': 'unverified', 'reason': reason,
-            'nativeSelection': native_selection_for_key(union, part, receipt['key']),
+            'nativeSelection': native_selection_for_key(facts, part, receipt['key']),
             'sandboxHalf': {field: receipt[field] for field in IMAGE_SANDBOX_HALF_FIELDS}, 'nativeHalf': native_half,
             'difference': None, 'suspectedStep': None, 'reviewer': None, 'judgedAtRiga': None, 'sandboxHalfHistory': [],
             'displayedTableRows': receipt['displayedTableRows']}
@@ -87,7 +88,8 @@ def ingest_sandbox_halves(project_root, part, store_root):
     union = PairQueueUnion(project_root, store_root)
     stored_records_by_key = {record['key']: record for record in read_side_by_side_records(project_root, part)}
     receipts = [validated_sandbox_receipt(project_root, union, part, path, receipt) for path, receipt in read_receipts(project_root, part)]
-    records = [ingested_sandbox_record(union, part, receipt, stored_records_by_key.get(receipt['key'])) for receipt in receipts
+    facts = PairQueueKeyFacts(union)
+    records = [ingested_sandbox_record(facts, part, receipt, stored_records_by_key.get(receipt['key'])) for receipt in receipts
                if not is_unchanged_sandbox_receipt(receipt, stored_records_by_key.get(receipt['key']))]
     if records:
         write_side_by_side_records(project_root, part, records)

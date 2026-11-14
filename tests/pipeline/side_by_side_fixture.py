@@ -211,6 +211,93 @@ def write_sandbox_receipt(project_root, part, key, key_content_sha256, catalog_s
     return receipt_path, receipt
 
 
+def write_pinned_json(store_root, folder, file_name, document):
+    payload = json.dumps(document, sort_keys=True).encode()
+    manifest_sha256 = hashlib.sha256(payload).hexdigest()
+    path = Path(store_root) / folder / manifest_sha256 / file_name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(payload)
+    return {'manifest': f'/l2/{folder}/{manifest_sha256}/{file_name}', 'manifestSha256': manifest_sha256, 'manifestBytes': len(payload)}
+
+
+def write_json(path, document):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(document), encoding='utf-8')
+
+
+def queue_npc(npc_id, package, textures):
+    model_id = 'npc-model:' + hashlib.sha256(f'npc-model:{npc_id}'.encode()).hexdigest()
+    mesh = f'{package}.npc_{npc_id}_m00'
+    model = {**model_record(model_id, mesh), 'source': {'object': mesh, 'package': package}}
+    profile = {'id': f'npc:{npc_id}', 'npcId': npc_id, 'name': f'Npc {npc_id}', 'mesh': mesh, 'modelCatalogId': model_id}
+    unit = {'key': model_id, 'unitKind': 'npc-model', 'selection': {'mesh': mesh, 'textures': textures}}
+    return model, profile, unit
+
+
+def queue_item_model(record_id, package, unit_kind, selection):
+    model = {**model_record(record_id, f'{package}.{record_id.replace(":", "_")}'), 'source': {'object': record_id, 'package': package}}
+    unit = {'key': f'{unit_kind}:' + hashlib.sha256(record_id.encode()).hexdigest(), 'unitKind': unit_kind, 'selection': selection}
+    return model, unit, {'recordIds': [record_id], 'unitKey': unit['key']}
+
+
+def queue_skill_component(store_root, skill_id, level, emitter_class, draw_style):
+    manifest = {'id': f'synthetic-skill-{skill_id}-{level}',
+                'classEnums': [{'object': 'Engine.ParticleEmitter', 'enums': {'EParticleDrawStyle': {'PTDS_Translucent': 3, 'PTDS_Brighten': 6}}}],
+                'components': [{'class': emitter_class, 'object': f'emitter{level}', 'effectiveProperties': {'DrawStyle': draw_style}}]}
+    pin = write_pinned_json(store_root, 'effects', 'manifest.json', manifest)
+    return {'id': f'interlude:skill:{skill_id}:level:{level}:native-description-action', **pin}
+
+
+def queue_tile(store_root, tile_id, minimap_window_function=None):
+    resources = []
+    if minimap_window_function is not None:
+        route = write_pinned_json(store_root, 'maps', 'native-minimap-route/manifest.json',
+                                  {'radar': {'getLocInfo': {'function': minimap_window_function}}})
+        resources.append({'kind': 'minimap', **write_pinned_json(store_root, 'maps', 'native-tile-minimap/manifest.json', {'route': route})})
+    return {'id': tile_id, **write_pinned_json(store_root, 'tiles', 'tile.json', {'tileId': tile_id, 'resources': resources})}
+
+
+def write_queue_union(project_root, census_gap_keys=(), load_status_changes=None):
+    store_root = union_store_root(project_root)
+    npcs = [queue_npc(1001, 'LineageMonsters', ['LineageMonstersTex.npc_1001_t00']),
+            queue_npc(1002, 'LineageNpcs', ['LineageNpcsTex.npc_1002_t00', 'LineageNpcsTex.npc_1002_t01']),
+            queue_npc(1003, 'LineageMonsters', ['LineageMonstersTex.npc_1003_t00'])]
+    items = [queue_item_model('interlude:item:57:body-part:7:weapon', 'LineageWeapons', 'weapon-mesh',
+                              {'meshes': ['LineageWeapons.blade_m00_wp'], 'textures': ['LineageWeaponsTex.blade_t00_wp']}),
+             queue_item_model('interlude:item:58:body-part:10:armor:1', 'DarkElf', 'armor-mesh',
+                              {'column': 'f_DarkElf', 'meshes': ['DarkElf.FDarkElf_m001_u'], 'textures': ['DarkElf.FDarkElf_t01']})]
+    pawn_unit = {'key': 'armor-mesh:' + 'b' * 64, 'unitKind': 'armor-mesh', 'selection': {'column': 'm_HumnFigh', 'meshes': [], 'textures': []}}
+    tables_record = write_pinned_json(store_root, 'tables', 'npcname-e.json',
+                                      {'records': {'npc': [{'id': npc_id, 'name': f'Npc {npc_id}'} for npc_id in (1001, 1002, 1003)]}})
+    catalog = {'schemaVersion': 1, 'models': [model for model, _, _ in npcs] + [model for model, _, _ in items],
+               'npcProfiles': [write_profile_manifest(store_root, 'native-npc-profiles', [profile for _, profile, _ in npcs])],
+               'tables': [{'id': 'npcname-e', **tables_record, 'recordCount': 3, 'sourceSha256': 'e' * 64}],
+               'effectComponents': [queue_skill_component(store_root, 1011, 1, 'Engine.SpriteEmitter', 3),
+                                    queue_skill_component(store_root, 1011, 2, 'Engine.MeshEmitter', 'PTDS_Brighten')],
+               'tiles': [queue_tile(store_root, '20_20', 'interface.NewRadarWnd.GetLocInfo'), queue_tile(store_root, '20_21'),
+                         queue_tile(store_root, '21_20')],
+               'windows': [window_record('StatusWnd'), window_record('NewRadarWnd'), window_record('ChatTexture')]}
+    catalog_sha256 = write_store_catalog(store_root, catalog)
+    write_json(Path(project_root) / 'docs/parts/npcs/actor-unit-census.json',
+               {'units': [unit for _, _, unit in npcs] + [unit for _, unit, _ in items] + [pawn_unit]})
+    write_json(Path(project_root) / 'docs/parts/items/item-census.json', {'sealedUnits': [sealed for _, _, sealed in items]})
+    write_json(Path(project_root) / 'docs/parts/world/tile-census.json',
+               {'maps': [{'key': 'tile:20_20', 'licensee': 28}, {'key': 'tile:20_21', 'licensee': 28}, {'key': 'tile:21_20', 'licensee': 23}]})
+    write_json(Path(project_root) / 'docs/parts/ui/interface-window-census.json',
+               {'windows': [{'windowId': 'StatusWnd', 'type': 'Window'}, {'windowId': 'NewRadarWnd', 'type': 'Window'},
+                            {'windowId': 'ChatTexture', 'type': 'Texture'}]})
+    queue_keys = {'world': ['tile:20_20', 'tile:20_21', 'tile:21_20'], 'ui': ['window:ChatTexture', 'window:NewRadarWnd', 'window:StatusWnd'],
+                  'npcs': ['npc:1001', 'npc:1002', 'npc:1003'], 'items': ['item:57', 'item:58'],
+                  'skills-effects': ['skill:1011:1', 'skill:1011:2'], 'player-characters': ['character:0']}
+    rows = [coverage_row(key, part, 'gap', 'synthetic-gap', converted=not key.startswith('character:'))
+            if key in census_gap_keys or key.startswith('character:') else coverage_row(key, part)
+            for part, keys in queue_keys.items() for key in keys]
+    write_union_coverage_report(store_root, catalog_sha256, rows)
+    load_statuses = {key: 'pass' for keys in queue_keys.values() for key in keys if not key.startswith('character:')}
+    write_union_load_checks(project_root, catalog_sha256, {**load_statuses, **(load_status_changes or {})})
+    return store_root, catalog, catalog_sha256
+
+
 def audio_record(key='npc:1001', role='combat', source_sha256='6' * 64, clip_sha256='7' * 64):
     return {'key': key, 'role': role, 'sourcePackage': 'SyntheticSounds', 'sourceObject': 'synthetic.attack', 'sourceSha256': source_sha256,
             'verdict': 'unverified', 'reason': 'listen-needs-owner', 'nativeSelection': {'route': 'listen', 'role': role},

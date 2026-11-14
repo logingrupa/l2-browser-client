@@ -12,17 +12,15 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
-from catalog_store_fixture import write_store_catalog
 from native_store.side_by_side_check_records import read_side_by_side_records
 from native_store.side_by_side_key_digest import key_content_sha256_by_key
 from side_by_side.build_pair_queue import queue_file_path
 from side_by_side.record_side_by_side_checks import main
-from side_by_side_fixture import (coverage_row, union_store_root, window_record, write_sandbox_receipt, write_union_coverage_report,
-                                  write_union_load_checks)
+from side_by_side_fixture import coverage_row, write_queue_union, write_sandbox_receipt, write_union_coverage_report
 
 UI_PART = 'ui'
 PASSING_WINDOW_KEY = 'window:StatusWnd'
-FAILING_WINDOW_KEY = 'window:TargetStatusWnd'
+FAILING_WINDOW_KEY = 'window:ChatTexture'
 
 
 class RecordSideBySideChecksTestCase(unittest.TestCase):
@@ -30,12 +28,8 @@ class RecordSideBySideChecksTestCase(unittest.TestCase):
         temporary_directory = tempfile.TemporaryDirectory()
         self.addCleanup(temporary_directory.cleanup)
         self.project_root = Path(temporary_directory.name).resolve()
-        self.store_root = union_store_root(self.project_root)
-        self.catalog = {'schemaVersion': 1, 'models': [], 'windows': [window_record('StatusWnd'), window_record('TargetStatusWnd')]}
-        self.catalog_sha256 = write_store_catalog(self.store_root, self.catalog)
-        write_union_load_checks(self.project_root, self.catalog_sha256, {PASSING_WINDOW_KEY: 'pass', FAILING_WINDOW_KEY: 'failed'})
-        write_union_coverage_report(self.store_root, self.catalog_sha256, [coverage_row(PASSING_WINDOW_KEY, UI_PART),
-                                                                           coverage_row(FAILING_WINDOW_KEY, UI_PART)])
+        self.store_root, self.catalog, self.catalog_sha256 = write_queue_union(
+            self.project_root, census_gap_keys=('window:NewRadarWnd',), load_status_changes={FAILING_WINDOW_KEY: 'failed'})
 
     def run_command(self, *arguments):
         stdout, stderr = io.StringIO(), io.StringIO()

@@ -10,10 +10,8 @@ SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS_ROOT))
 
 from native_store.store_paths import REPOSITORY_ROOT
-from side_by_side.build_pair_queue import PART_BY_KIND, queue_entry_counts, write_pair_queue
+from side_by_side.build_pair_queue import IMAGE_PARTS, queue_entry_counts, write_pair_queue
 from side_by_side.side_by_side_receipts import ingest_sandbox_halves
-
-IMAGE_PARTS = tuple(sorted(set(PART_BY_KIND.values())))
 
 
 def project_relative_text(project_root, path):
