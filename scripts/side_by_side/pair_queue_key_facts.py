@@ -8,7 +8,7 @@ from native_store.catalog_index_keys import (ITEM_MODEL_RECORD_ID_PATTERN, SKILL
                                              npc_profile_model_id, npc_profile_npc_key, read_profile_manifest_profiles, store_root_candidates,
                                              validated_slice_records)
 from native_store.catalog_writer import CatalogWriteError, read_pinned_file, require_file_pin
-from side_by_side.pair_queue_union import PairQueueError, decode_strict_json, read_strict_json_file
+from side_by_side.pair_queue_union import PairQueueError, decode_strict_store_json, read_strict_json_file
 
 TILE_CENSUS_PATH = 'docs/parts/world/tile-census.json'
 WINDOW_CENSUS_PATH = 'docs/parts/ui/interface-window-census.json'
@@ -52,7 +52,7 @@ class PairQueueKeyFacts:
                 payload = read_pinned_file(self.union.store_root, require_file_pin(record, 'manifest', 'manifestSha256', None, label))
             except CatalogWriteError as error:
                 raise PairQueueError(f'{label} manifest is not readable: {error}') from error
-            self.manifests_by_sha256[record['manifestSha256']] = decode_strict_json(payload, f'{label} manifest')
+            self.manifests_by_sha256[record['manifestSha256']] = decode_strict_store_json(payload, f'{label} manifest')
         return self.manifests_by_sha256[record['manifestSha256']]
 
     @cached_property

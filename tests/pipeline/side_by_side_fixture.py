@@ -211,6 +211,21 @@ def write_sandbox_receipt(project_root, part, key, key_content_sha256, catalog_s
     return receipt_path, receipt
 
 
+def write_audio_clip_receipt(project_root, key, role, key_content_sha256, catalog_sha256, clip_bytes=b'synthetic clip', **receipt_changes):
+    clip_relative = f'artifacts/side-by-side/audio/clips/{key.replace(":", "_")}-{role}.wav'
+    clip_path = Path(project_root) / clip_relative
+    clip_path.parent.mkdir(parents=True, exist_ok=True)
+    clip_path.write_bytes(clip_bytes)
+    record = audio_record(key=key, role=role, clip_sha256=hashlib.sha256(clip_bytes).hexdigest())
+    receipt = {**{field: record[field] for field in ('key', 'role', 'sourcePackage', 'sourceObject', 'sourceSha256')},
+               **record['sandboxHalf'], 'clipPath': clip_relative, 'catalogSha256': catalog_sha256, 'keyContentSha256': key_content_sha256,
+               **receipt_changes}
+    receipt_path = (Path(project_root) / 'artifacts/side-by-side/audio/receipts'
+                    / f'{key.replace(":", "_")}-{role}-{receipt["sourceSha256"]}.json')
+    write_json(receipt_path, receipt)
+    return receipt_path, receipt
+
+
 def write_pinned_json(store_root, folder, file_name, document):
     payload = json.dumps(document, sort_keys=True).encode()
     manifest_sha256 = hashlib.sha256(payload).hexdigest()

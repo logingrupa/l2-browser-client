@@ -21,7 +21,7 @@ class PairQueueError(ValueError):
     pass
 
 
-def decode_strict_json(payload, label):
+def decode_strict_store_json(payload, label):
     try:
         return json.loads(payload, object_pairs_hook=refuse_duplicate_json_keys, parse_constant=refuse_non_finite_json_number)
     except (CatalogWriteError, ValueError) as error:
@@ -35,7 +35,7 @@ def read_strict_json_file(path, label):
         payload = stream.read(STRICT_JSON_MAXIMUM_BYTES + 1)
     if len(payload) > STRICT_JSON_MAXIMUM_BYTES:
         raise PairQueueError(f'{label} exceeds {STRICT_JSON_MAXIMUM_BYTES} bytes: {path}')
-    return decode_strict_json(payload, f'{label} {path}')
+    return decode_strict_store_json(payload, f'{label} {path}')
 
 
 class PairQueueUnion:

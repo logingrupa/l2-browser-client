@@ -15,8 +15,12 @@ RECEIPTS_FOLDER_NAME = 'receipts'
 SANDBOX_RECEIPT_FIELDS = IMAGE_SANDBOX_HALF_FIELDS | {'key', 'part', 'displayedTableRows'}
 
 
-def receipt_file_name(key):
-    return key.replace(':', '_') + '.json'
+def key_file_stem(key):
+    return str(key).replace(':', '_')
+
+
+def sandbox_receipt_file_name(receipt):
+    return key_file_stem(receipt['key']) + '.json'
 
 
 def receipt_folder(project_root, part):
@@ -30,11 +34,11 @@ def read_receipts(project_root, part):
     return [(path, read_strict_json_file(path, 'side-by-side receipt')) for path in sorted(folder.glob('*.json'))]
 
 
-def require_receipt_fields(receipt, fields, path):
+def require_receipt_fields(receipt, fields, path, expected_file_name):
     if not (isinstance(receipt, dict) and set(receipt) == fields):
         raise PairQueueError(f'side-by-side receipt must hold exactly {", ".join(sorted(fields))}: {path}')
-    if not isinstance(receipt['key'], str) or path.name != receipt_file_name(receipt['key']):
-        raise PairQueueError(f'side-by-side receipt file name must be {receipt_file_name(str(receipt["key"]))}: {path}')
+    if path.name != expected_file_name(receipt):
+        raise PairQueueError(f'side-by-side receipt file name must be {expected_file_name(receipt)}: {path}')
 
 
 def require_artifact_sha256(project_root, relative_path, expected_sha256, label, receipt_path):
@@ -59,7 +63,7 @@ def require_current_key_content(union, receipt, receipt_path):
 
 
 def validated_sandbox_receipt(project_root, union, part, receipt_path, receipt):
-    require_receipt_fields(receipt, SANDBOX_RECEIPT_FIELDS, receipt_path)
+    require_receipt_fields(receipt, SANDBOX_RECEIPT_FIELDS, receipt_path, sandbox_receipt_file_name)
     if receipt['part'] != part:
         raise PairQueueError(f'side-by-side receipt part {receipt["part"]!r} differs from {part}: {receipt_path}')
     require_part_of_key(part, receipt['key'])
