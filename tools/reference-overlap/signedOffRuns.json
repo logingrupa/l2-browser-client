@@ -20786,6 +20786,97 @@
       "reviewedOn": "2026-11-12",
       "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
       "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/babylon/visibleDiagnosticMaterials.ts",
+      "tokenCount": 25,
+      "sourceTokensSha256": "3d49105ccae49e851ba0570064887e8615d7c4e1603cfffa1d4aa0bea24e6327",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/objects/bsp-collider.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-14",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/babylon/visibleDiagnosticMaterials.ts",
+      "tokenCount": 20,
+      "sourceTokensSha256": "589303ce746119471b296b92069ad3c55f009c5c892a64bb3c0ed63a8c9d5ffb",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/objects/terrain.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-14",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/babylon/visibleDiagnosticMaterials.ts",
+      "tokenCount": 24,
+      "sourceTokensSha256": "8aac9432d260753bc6318e1af6c30d9f2d7e4607ff0ddaadcf50f9b990aa2b33",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/rendering/nameplate-depth-culling.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-14",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/babylon/visibleDiagnosticMaterials.ts",
+      "tokenCount": 22,
+      "sourceTokensSha256": "b0dcc598ee641267d3872d121f1bbe927f37510f5a4e8b8d79c78908d2cce1b3",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decode-worker/decode-engine.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-14",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/babylon/visibleDiagnosticMaterials.ts",
+      "tokenCount": 20,
+      "sourceTokensSha256": "14492e0fce610248d49f0065aec9b52f332e57ba237c998829056ac51b7f66f0",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decode-worker/decode-engine.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-14",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/babylon/visibleDiagnosticMaterials.ts",
+      "tokenCount": 26,
+      "sourceTokensSha256": "b0121d8d4ccfbf1434de4e2cbea25ef6096471b40a2ab601d45a634402c1119f",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decode-worker/decode-engine.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-14",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
+    },
+    {
+      "area": "materials",
+      "sourceFile": "src/materials/ue2/babylon/visibleDiagnosticMaterials.ts",
+      "tokenCount": 26,
+      "sourceTokensSha256": "0e3302db962c2ac653ec8cb57bb781149ca141df75c811e22480643cc1ec21d2",
+      "referenceFiles": [
+        ".assets/reference/lineage2js/src/assets/decode-worker/decode-engine.ts"
+      ],
+      "verdict": "generic",
+      "reviewedOn": "2026-11-14",
+      "review": "Three independent fresh-context Claude reviewers (idiom, side-by-side provenance, and a skeptic defaulting to derived) reviewed this run in a batch and judged it a generic shape, not a port; a run any lens did not mark generic with high confidence was escalated to three more reviewers and signed off only on a unanimous high-confidence generic verdict.",
+      "evidence": "docs/parts/adapter-dispatch/EVIDENCE.md"
     }
   ]
 }
