@@ -128,17 +128,18 @@ class MinimapStepTests(unittest.TestCase):
     def run_step(self, sources=None, converter=None):
         return run_minimap_step(self.project_root, CLIENT_ROOT, TILE_ID, sources or synthetic_sources(), converter or self.converter)
 
-    def test_the_step_writes_schema_2_pinning_the_route_and_the_zone_key_texture_and_skips_on_rerun(self):
+    def test_the_step_writes_schema_3_pinning_the_route_and_the_zone_key_texture_and_skips_on_rerun(self):
         write_project(self.project_root)
         route_record = seal_synthetic_minimap_route(self.project_root)
         row = self.run_step()
         self.assertEqual((row['step'], row['status'], row['reason']), (MINIMAP_STEP_NAME, 'gap', ROUTE_REASONS[1]))
         product, manifest = self.read_manifest()
         self.assertRegex(product['manifest']['resource'], r'^/l2/maps/[a-f0-9]{64}/native-tile-minimap/manifest\.json$')
-        self.assertEqual((manifest['kind'], manifest['schemaVersion'], manifest['tileId']), ('native-tile-minimap', 2, TILE_ID))
+        self.assertEqual((manifest['kind'], manifest['schemaVersion'], manifest['tileId']), ('native-tile-minimap', 3, TILE_ID))
         self.assertEqual(manifest['route'], {'manifest': route_record['resource'], 'manifestSha256': route_record['sha256'],
                                              'manifestBytes': route_record['bytes']})
-        self.assertEqual((manifest['radarTexture'], manifest['projection']), (None, None))
+        self.assertEqual(sorted(manifest), ['gaps', 'huntingZones', 'kind', 'labels', 'route', 'schemaVersion', 'sourceInputs', 'tileId',
+                                            'zoneKeyTexture'])
         texture = manifest['zoneKeyTexture']
         self.assertEqual((texture['sourceObject'], texture['rule'], texture['source']['exportIndex']), (f'l2zonename.{TILE_ID}', 'zone-sampler-tile', 1))
         self.assertTrue((self.store_root / texture['archiveSha256'] / 'asset.l2asset').is_file())
@@ -146,6 +147,7 @@ class MinimapStepTests(unittest.TestCase):
         self.assertEqual([gap['reason'] for gap in manifest['gaps']], ROUTE_REASONS)
         self.assertEqual(sorted(gap['reason'] for gap in product['gapRows']), sorted(ROUTE_REASONS))
         self.assertEqual(self.converter.requests, [{'kind': 'texture', 'package': 'l2zonename', 'object': f'l2zonename.{TILE_ID}'}])
+        self.assertEqual(minimap_step.minimap_ledger(self.project_root).sealed_receipt(tile_unit_key(TILE_ID))['algorithmVersion'], 3)
         self.assertEqual(self.run_step()['reason'], ROUTE_REASONS[1])
         self.assertEqual(len(self.converter.requests), 1)
 

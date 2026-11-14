@@ -5,7 +5,6 @@ import type { NativeWindowMinimapSource, NativeWindowTextureResolution } from ".
 import type { ZoneKeyMipLoad } from "../../../src/ui/nativeWindows/radarZoneName";
 import type { WorldEntity } from "../../../src/world/worldTypes";
 import { syntheticArchiveSha256, syntheticMinimapRouteManifest, type SyntheticMinimapRouteOptions } from "../../fixtures/minimapRouteManifestFixture";
-import { syntheticTileMinimapManifest } from "../../fixtures/tileMinimapManifestFixture";
 
 export interface SyntheticTileMinimapOptions {
   readonly zoneKeyTexture?: boolean;
@@ -20,16 +19,18 @@ export function syntheticZoneKeyObject(tileId: string): string {
 }
 
 export function syntheticTileMinimap(tileId: string, options: SyntheticTileMinimapOptions = {}): NativeTileMinimap {
-  const manifest = syntheticTileMinimapManifest(tileId, null);
   const zoneKeyArchiveSha256 = syntheticArchiveSha256(syntheticZoneKeyObject(tileId));
   const routeManifestSha256 = options.routeManifestSha256 ?? "f".repeat(64);
   return parseNativeTileMinimapManifest({
-    ...manifest,
+    kind: "native-tile-minimap", schemaVersion: 3, tileId,
+    sourceInputs: [{ path: "systextures/l2zonename.utx", sha256: zoneNamePackageSha256 }],
     route: { manifest: `/l2/maps/${routeManifestSha256}/native-minimap-route/manifest.json`, manifestSha256: routeManifestSha256, manifestBytes: 4096 },
     zoneKeyTexture: options.zoneKeyTexture === false ? null : { archive: `/l2/${zoneKeyArchiveSha256}/asset.l2asset`, archiveSha256: zoneKeyArchiveSha256,
       archiveBytes: 2048, sourceObject: syntheticZoneKeyObject(tileId), rule: "zone-sampler-tile",
       source: { path: "systextures/l2zonename.utx", sha256: zoneNamePackageSha256, exportIndex: 93 } },
+    huntingZones: [],
     gaps: options.gaps ?? [{ reason: "minimap-join-unresolved:zone-title-source", evidence: "synthetic zone title gap" }],
+    labels: { schemaFieldMeaning: "synthetic fixture, not client data" },
   }, tileId);
 }
 

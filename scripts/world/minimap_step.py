@@ -21,11 +21,11 @@ from world.tile_chunk_plan import CHUNK_PLAN_STEP_NAME, ChunkPlanStepError, raw_
 from world.tile_json_resource import write_tile_json_resource
 from world.tile_step_gap_rows import TileStepGapRows, tile_step_summary_row, upstream_failed_row
 
-MINIMAP_STEP_ALGORITHM_VERSION = 2
+MINIMAP_STEP_ALGORITHM_VERSION = 3
 MINIMAP_STEP_NAME = 'minimap'
 MINIMAP_PRODUCT_NAME = 'minimap.json'
 NATIVE_TILE_MINIMAP_KIND = 'native-tile-minimap'
-NATIVE_TILE_MINIMAP_SCHEMA_VERSION = 2
+NATIVE_TILE_MINIMAP_SCHEMA_VERSION = 3
 MINIMAP_STORE_FOLDER = 'maps'
 MINIMAP_MANIFEST_NAME = f'{NATIVE_TILE_MINIMAP_KIND}/manifest.json'
 
@@ -117,7 +117,7 @@ def converted_zone_key_texture(project_root, client, store_root, sources, item, 
 def minimap_manifest(tile_id, inputs, route_product, tile_half, zone_key_texture, gaps):
     return {'kind': NATIVE_TILE_MINIMAP_KIND, 'schemaVersion': NATIVE_TILE_MINIMAP_SCHEMA_VERSION, 'tileId': tile_id,
             'sourceInputs': [{'path': record['path'], 'sha256': record['sha256']} for record in inputs], 'route': route_pin(route_product),
-            'zoneKeyTexture': zone_key_texture, 'huntingZones': tile_half['huntingZones'], 'radarTexture': None, 'projection': None, 'gaps': gaps,
+            'zoneKeyTexture': zone_key_texture, 'huntingZones': tile_half['huntingZones'], 'gaps': gaps,
             'labels': {'schemaFieldMeaning': SCHEMA_FIELD_MEANING_LABEL}}
 
 
