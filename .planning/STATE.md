@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 03-24-PLAN.md
-last_updated: "2026-11-14T17:11:35.038Z"
+stopped_at: Completed 03-25-PLAN.md
+last_updated: "2026-11-14T20:51:27.000Z"
 last_activity: 2026-11-14
-last_activity_desc: Phase 03 plan 03-23 complete (tile minimap schema 3 without radarTexture and projection; tracer tile 20_21 resealed, 145 tiles left for 03-24)
-state_head: e910edae9d7af1aaf8daab5748ed05466ee959ec
+last_activity_desc: Phase 03 plan 03-25 complete (shared skeletal material programs: 3,381 material-program units in the materialPrograms slice; skinned slots draw through the UE2 library with bone influences)
+state_head: 25261f1c2032a6771e91cca05c9abdc4e9431619
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 152
-  completed_plans: 127
+  completed_plans: 128
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 03 (Stage A checks) - EXECUTING; Phase 2 gap round plans 02-72 to 02-99 executed
-Plan: 02-89 complete (Phase 2 gap closure bookkeeping); Phase 3 at 03-24 complete (gap MAT: static mesh library programs), 11 of 36 plans summarized (gap plans 03-21 to 03-36 added 2026-11-14)
+Plan: 02-89 complete (Phase 2 gap closure bookkeeping); Phase 3 at 03-25 complete (gap MAT: shared skeletal material programs), 12 of 36 plans summarized (gap plans 03-21 to 03-36 added 2026-11-14)
 Status: Executing Phase 3 from start commit cb09cdc; Phase 1 is verification_deferred_human (see Deferred Verification); the union is rebuilt as bfd4c648 and its restage waits on the owner (Needs Human plan 02-89)
-Last activity: 2026-11-14 - 03-24: a static-mesh-materials tile step derives one UE2 program per slot material through the program path shared with BSP, and static mesh slots with a ported root draw through the library (20_21: 11,665 of 12,286); the world lane batch resealed 146 static-mesh-materials units, 145 schema 3 minimaps and 143 manifests (lane catalog cddfe152); the union rebuild exited 1 on a bit flip during a pinned read, and its one re-run exited 0 as union bfd4c648 (143 touched tiles swept: 136 pass, 7 failed; queue 2 entries)
+Last activity: 2026-11-14 - 03-25: each material object of the sealed actors lane models converts once as a shared material-program unit through the 03-24 program path (3,381 objects: 3,348 ported roots, 33 GlowModifier gaps); the materialPrograms slice reaches the union; skinned NPC, item and character slots whose plan compiles draw through the UE2 library with Babylon bone influences (2,421 compiled, 927 diagnostic keep their texture material)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -173,6 +173,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 03 P22 | 25min | 3 tasks | 20 files |
 | Phase 03 P23 | 8min | 2 tasks | 7 files |
 | Phase 03 P24 | 1h 50m | 3 tasks | 27 files |
+| Phase 03 P25 | 1h 30m | 3 tasks | 52 files |
 
 ## Accumulated Context
 
@@ -466,6 +467,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 03]: 03-22: MinimapCtrl draws the six route world map pieces with the GetMinimapPosition marker; the zone sampler (verified-q7) reads the pinned L2ZoneName mip 0 byte, keys it with the recipe helper and picks the zonename row with Bottom < Z < Top, zone-key-run only when more than one row of a run holds Z; NewRadarWnd.texMap shows the case-insensitive whole-name GetLocInfo choice (names from the recipe radar.onLoad) with zone-title-source and radar-anchor listed (decision rows for the orchestrator in the SUMMARY)
 - [Phase 03]: 03-23: tile minimap schema 3 and minimap step version 3 drop radarTexture and projection; no sealed schema 2 unit is reused, 145 tiles re-run in 03-24
 - [Phase 03]: 03-24: static mesh slots draw through the UE2 library from a per-tile static-mesh-materials listing (shared program path with BSP); no COLOR_0 vertex colour input because no program or reviewed lighting row names one (P1212 to P1215)
+- [Phase 03]: 03-25: one shared material-program:<object> unit per root object the converter resolved in the sealed actor archives, published as pinned listings in the materialPrograms slice; no key-level gap rows; the library vertex stage skins through bonesDeclaration and bonesVertex; diagnostic plans keep the texture material (P1216 to P1222)
 
 ### Pending Todos
 
@@ -505,7 +507,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 ## Needs Human
 
 Owner decisions:
-- Needs Human (2026-11-14, DATABASE-PC hardware): a pinned file read with one flipped bit in memory (the file on disk is intact), after two 0x0A bugchecks (11-12, 11-13), Windows removing bad memory regions (11-12), WHEA events on four days and a stornvme reset on C: (11-13). Check the RAM (memory diagnostic) and the NVMe drive and move the page file off the failing D: disk; until then every union and catalog write keeps its pin check, which refuses on a bad read.
+- Needs Human (2026-11-14, DATABASE-PC hardware): a pinned file read with one flipped bit in memory (the file on disk is intact), after two 0x0A bugchecks (11-12, 11-13), Windows removing bad memory regions (11-12), WHEA events on four days and a stornvme reset on C: (11-13). Check the RAM (memory diagnostic) and the NVMe drive and move the page file off the failing D: disk; until then every union and catalog write keeps its pin check, which refuses on a bad read. Second occurrence (03-25 union, 22:47 Riga): actors b9973a89.../model.glb read with one bit flipped (offset 5,484,658, 0xeb as 0xfb) on every cached read, while an unbuffered read of the disk matches its pin.
 - Needs Human (phase 1 code review, OVERNIGHT-DECISIONS row 49, now with P810): review the behaviour-changing fixes CR-101, CR-102, WR-102, WR-401, CR-301 and the partial WR-310 and WR-501, and P810 (02-93: a profile with no sourced speed is refused with `speed-unresolved` instead of the 70 UU/s stand-in). Steps: read the row 49 and P810 entries, then either accept them or restore a labelled stand-in in `src/world/NativeSliceAdapter.ts` with its unit case and run `pnpm vitest run tests/unit/nativeSliceAdapter.test.ts`.
 - Needs Human (01-VERIFICATION.md): confirm the five prohibitions that can only be judged, not tested.
 - Needs Human (phase 1 verification): Phase 1 is human_needed with 6 of 6 criteria verified; it stays pending until the two items above are reviewed (OVERNIGHT-DECISIONS row 59); Phase 1 is not marked complete.
@@ -548,7 +550,7 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 - Status icons route (UI, NET): AbnormalStatusUpdatePacket 0x104120c0 reads a 16-bit count and (SkillID, SkillLevel, RemainTime) tuples, leading to event 950 and AbnormalStatusWnd.AddCol icons (background L2UI.EtcWndBack.AbnormalBack) (IMPORTA-PC skill-status-packet-route.json 15471a73...205a7a, not replay-checked; nwindow facts are for the IMPORTA copy 7c12fb6b, not E: c673288a). Missing: a skill id to abnormal mask or emitter join and the RemainTime unit. Unblocked by: a replay check on E:, then the native status window plan.
 - Visual modifiers and variation effects (FX-01, ACT-06): 4687/1 NPC 29028 social02 two ViewShake notifies; 5017/1 NPC 29046 social02 BoneScale bones 83 and 103 plus two ViewShake notifies; InitBoneScaler 0x1062cf20 rebuilds BoneScale from every matching notify on each pawn animation update 0x1062fae0; GetVariationEffectData 0x10462140 (caller 0x1062c500) matches int1, int2, int5 by equality and int3..int4 as an inclusive range from variation options, pawn and weapon fields, with no skill join (IMPORTA-PC r3 a74fe99e...e61a, not replay-checked; the scan of 2,053 sequences in 21 MeshAnimation exports of seven player packages found no Engine.AnimNotify_Effect, which does not show that player skills never spawn effects through animations). Missing: the camera shake and bone scale routes and the variation effect route. Unblocked by: a replay check when a plan uses them.
 - Effect sounds through SpawnSound (FX-01, ACT-05): 22 SpawnSound links among 861 Emitters arrays with 3,720 component refs in 2,916 class tails of the 25 system packages (for example e_u005_d -> SkillSound.Teleport.teleport_out; IMPORTA-PC class-defaults-and-asset-links.json 38220eb1...4e78, not replay-checked). Missing: a route that plays them, and a cross-check of the repo's class-defaults extraction against that report. Unblocked by: a replay check, then an effects playback plan.
-- Library programs for static mesh, terrain and skeletal owners (MAT-01, MAT-02, WORLD-08): 02-92 diagnostic slots keep geometry and collision but bind no library program; static mesh slots and terrain layers carry no program pin and the library has no vertex-colour or layer input (row 695), sky surfaces carry none (row 694), skinned skeletal slots keep their converted texture material (`library-vertex-stage-unskinned`, row 652). Unblocked by: program pins per slot and layer in the converters, then library vertex-colour, layer and bone-influence inputs.
+- Library programs for static mesh, terrain and skeletal owners (MAT-01, MAT-02, WORLD-08): 02-92 diagnostic slots keep geometry and collision but bind no library program; static mesh slots and terrain layers carry no program pin and the library has no vertex-colour or layer input (row 695), sky surfaces carry none (row 694), skeletal slots bind through the materialPrograms join with bone influences (03-25); 927 actor plans stay diagnostic (895 material-reference-external to CubeMaps.*). Unblocked by: program pins per slot and layer in the converters, then library vertex-colour, layer and bone-influence inputs.
 - UseMeshBlendMode mesh-materials route (FX-01, 02-94): a MeshEmitter with UseMeshBlendMode is an `emitter-feature-unported:UseMeshBlendMode` gap. Unblocked by: the mesh-materials route in the effects lane.
 - Ribbon drawing (FX-01, 02-69, row 648): the staged manifest binds no texture to a RibbonEmitter, so ribbons simulate but `loadEffectComponent` refuses them with ribbon-texture-unstaged. Unblocked by: staging the ribbon texture and the point-strip renderer.
 - Emitter natives and placement fields (ACT-06, FX-01, 02-84, 02-87): no served effect manifest records a native call with its arguments, so AdjustparticleLife, SetSizeScale and SetDelayed have no caller and `attachWeaponTrail` none; AttachOn bones, offsets, `bRelativeToCylinder` and stage timing stay `placements[].unappliedFields`. Unblocked by: the converter recording the native calls and placement fields.
@@ -590,6 +592,9 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 - Native capture first live run (CHECK-01, 03-06, P1193 to P1197): the capture program and the batch script of `scripts/side_by_side/native_capture_driver.py` have run only against synthetic transcripts. Unverified on IMPORTA-PC: the levelup bot process name (`l2-levelup-assistant`, not running at 09:14 Riga), whether nv and pv apply the typed text without another key, and the time PlaySkill needs before the screenshot. Unblocked by: the 03-17 offline Debug batch through this driver.
 - Default sandbox route on the integration store (03-18, P1204): Missing: `/` with `NATIVE_STORE_ROOT=integration` stops at "Native preview texture catalog identity/hash/path is invalid." (`src/scene/world/nativeTerrainPreview.ts`); the capture tile route `/?map=20_20` loads. Unblocked by: a check of the union's terrain preview texture records against that validator.
 - Intermittent world reader test (03-04 pipeline run 2): one full `scripts/test_pipeline.py` run had `test_world_reader_licensees` read a truncated temporary actors JSON for 20_21 (`build_map_into_temporary_directory`); the file passed 24 of 24 alone and in two other full runs. Unblocked by: the world lane finding why the temporary output was read before it was complete.
+- Key content digests and material programs (CHECK-02, 03-25): `scripts/native_store/side_by_side_key_digest.py` attributes no materialPrograms record to the npc:, item: or character: keys whose models name it, so a program reseal touches no key and the chain step 4 sweep cannot see it (03-25 touched no key). Unblocked by: attributing listing pins to keys through the model provenance slots in the digest owner.
+- Actor material programs left diagnostic or gapped (MAT-01, MAT-02, 03-25): 895 plans are material-reference-external (specular TexEnvMap to `CubeMaps.*` in another package), 21 material-feature-unported, 10 texture-image-absent, 1 material-class-unported; 33 objects are material-class-unported:Engine.GlowModifier. Unblocked by: cross-package texture nodes in the shared material graph and the GlowModifier class port.
+- Union rebuild for 03-25 (INT-01, P1223): exit 1 with union bfd4c648 unchanged; `actors/l2/b9973a89.../model.glb` (item:429 armor, pin c8fce657...) read through the page cache with one bit flipped at offset 5,484,658 (0xeb as 0xfb), while an unbuffered read of the disk matches the pin. Missing: the union with the materialPrograms slice and 03-25 chain steps 4 and 5. Unblocked by: one re-run of the union after the flipped page leaves memory (for example after a restart), then the touched-key sweep, the queue and a 25-key npcs load slice.
 
 ## Deferred Verification
 
@@ -611,6 +616,6 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 
 ## Session Continuity
 
-Last session: 2026-11-14T17:11:34.086Z
-Stopped at: Completed 03-24-PLAN.md
+Last session: 2026-11-14T20:51:27.000Z
+Stopped at: Completed 03-25-PLAN.md
 Resume file: None
