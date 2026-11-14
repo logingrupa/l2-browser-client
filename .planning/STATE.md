@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 02-99-PLAN.md
-last_updated: "2026-11-14T01:49:36.076Z"
-last_activity: 2026-11-11
+stopped_at: Completed 02-89-PLAN.md
+last_updated: "2026-11-14T02:31:05.033Z"
+last_activity: 2026-11-14
 last_activity_desc: Phase 03 plan 03-01 complete (side-by-side check record writer and key content digest; Phase 3 start commit cb09cdc)
-state_head: 93bcb621fc9f4670cdbd4f74cc508d095d8185f3
+state_head: 80b033eb38c8c32403d85b05da6a75dd7dedfbfd
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 136
-  completed_plans: 118
+  completed_plans: 119
   percent: 0
 ---
 
@@ -164,6 +164,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 2 P97 | 95min | 3 tasks | 36 files |
 | Phase 02 P98 | 95min | 3 tasks | 19 files |
 | Phase 02 P99 | 150min | 3 tasks | 30 files |
+| Phase 02 P89 | 77min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -447,6 +448,8 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 02]: 02-98: a non-finite authored number keeps its nearest struct or array tag unparsed instead of failing the tile; 20_17 resealed by one retry process (row 1096)
 - [Phase 02]: 02-99: 11,210 empty-description rows bind to the replay-verified R2 dispatch candidates of recipes/actors/skill-dispatch-candidates.json (generated, --check byte-equal) and 4 rows to the animation notify candidates; all stay gaps under skill-dispatch-candidate-runtime-unresolved, 6,361 keep native-skill-dispatch-required (rows P1165 to P1173)
 - [Phase 02]: 02-99: one shared skill-dispatch-class unit per candidate class (236): 216 converted, 196 published as interlude:skill-dispatch-class records that no skill lookup reads; no sealed receipt resealed
+- [Phase 02]: 02-89: the one union rebuild exited 1 with 'catalog tiles record 20_21 differs; preserved' (it merges onto the earlier union catalog bba52c47); recorded as a failed union step, the pin check, union slices, union coverage and --plan not run, the writer fix an Open follow-up (P1174)
+- [Phase 02]: 02-89: the tables load sweep checks native-table manifests by table and recordCount and name index manifests by source table and entryCount (P1175)
 
 ### Pending Todos
 
@@ -572,6 +575,6 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 
 ## Session Continuity
 
-Last session: 2026-11-14T01:49:35.118Z
-Stopped at: Completed 02-99-PLAN.md
+Last session: 2026-11-14T02:31:04.096Z
+Stopped at: Completed 02-89-PLAN.md
 Resume file: None
