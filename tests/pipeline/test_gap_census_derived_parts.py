@@ -25,7 +25,7 @@ CHUNK_MANIFEST_SHA256 = 'c' * 64
 COMBAT_AUDIO_SHA256 = 'd' * 64
 JOINED_TILE_ID = '20_20'
 UNJOINED_TILE_ID = '20_21'
-UNJOINED_MINIMAP_REASON = 'minimap-join-unresolved:radar-texture'
+UNJOINED_MINIMAP_REASON = 'minimap-join-unresolved:zone-title-source'
 RESOURCE_PATH_TEMPLATES = {'minimap': '/l2/maps/{sha256}/native-tile-minimap/manifest.json',
                            'native-tile-collision': '/l2/maps/{sha256}/native-tile-collision/asset.json',
                            'world-audio': '/l2/world-audio/{sha256}/manifest.json'}
@@ -175,6 +175,21 @@ class MovementGeodataAndTileAudioTests(DerivedPartsTestCase):
                           ('audio', 'pending', 'upstream-step-failed:collision', False),
                           ('movement-geodata', 'pending', 'step-pending:collision', False),
                           ('audio', 'converted', None, True)])
+
+    def test_a_passing_collision_or_audio_step_of_a_tile_without_a_record_takes_the_manifest_gap_of_its_tile(self):
+        denominators = {'movement-geodata': derived_tile_denominator('tile-collision'), 'audio': derived_tile_denominator('tile-audio')}
+        source_rows = [*self.world_census_rows, world_row('tile:20_25', 'collision', 'pass', None), world_row('tile:20_25', 'audio', 'pass', None),
+                       world_row('tile:20_25', 'manifest', 'gap', 'player-start-missing'), world_row('tile:20_25', 'raw', 'pass', None)]
+        census_rows = census_by_key(build_gap_census(denominators, derived_part_rows(denominators, source_rows, set()), set(), {}))
+        self.assertEqual([(census_rows[key]['part'], census_rows[key]['status'], census_rows[key]['reason'], census_rows[key]['converted'])
+                          for key in ('tile-collision:20_25', 'tile-audio:20_25')],
+                         [('movement-geodata', 'gap', 'player-start-missing', False), ('audio', 'gap', 'player-start-missing', False)])
+
+    def test_a_passing_collision_step_of_a_tile_whose_manifest_passed_without_a_record_stays_unstated(self):
+        denominators = {'movement-geodata': derived_tile_denominator('tile-collision')}
+        source_rows = [*self.world_census_rows, world_row('tile:20_25', 'collision', 'pass', None), world_row('tile:20_25', 'manifest', 'pass', None)]
+        with self.assertRaisesRegex(GapCensusIncompleteError, 'tile-collision:20_25'):
+            build_gap_census(denominators, derived_part_rows(denominators, source_rows, set()), set(), {})
 
 
 class OtherSourceLaneConvertedKeysTests(DerivedPartsTestCase):

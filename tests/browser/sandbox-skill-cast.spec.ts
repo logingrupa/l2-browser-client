@@ -17,8 +17,10 @@ const evidenceDirectory = resolve("artifacts/skill-evidence");
 const tracerSkill = "1011:1";
 const tracerKey = "skill:1011:1";
 const tracerRootBundleId = "interlude:skill-root:skill.wh.1011";
-const dispatchRequiredSkill = "3:2";
-const dispatchRequiredKey = "skill:3:2";
+const dispatchCandidateSkill = "3:2";
+const dispatchCandidateKey = "skill:3:2";
+const lowestUnresolvedDispatchSkill = "42:1";
+const lowestUnresolvedDispatchKey = "skill:42:1";
 const harnessLoadTimeout = 120_000;
 const portraitPhone = { viewport: { width: 430, height: 932 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 };
 const powerStrikeSkill = "3:1";
@@ -115,15 +117,25 @@ test.describe("actors lane store", () => {
     writeLoadCheckRecord(laneName, await servedLaneCatalogSha256(baseURL), { key: tracerKey, ...outcome, atRiga: formatRigaTimestamp(new Date()) });
   });
 
-  test("shows the native-skill-dispatch-required gap of skill 3 level 2 from the lane coverage with no effect component loaded", async ({ page }) => {
+  test("shows the dispatch candidate gap of skill 3 level 2 from the lane coverage with no effect component loaded", async ({ page }) => {
     test.setTimeout(harnessLoadTimeout * 2);
-    const state = await openSkill(page, dispatchRequiredSkill);
-    expect(state).toMatchObject({ key: dispatchRequiredKey, lookupStatus: "gap", note: `${dispatchRequiredKey} gap: native-skill-dispatch-required`, preview: null });
-    await expect(page.locator("#native-skill-effect-note")).toHaveText(`${dispatchRequiredKey} gap: native-skill-dispatch-required`);
+    const state = await openSkill(page, dispatchCandidateSkill);
+    const note = `${dispatchCandidateKey} gap: skill-dispatch-candidate-runtime-unresolved`;
+    expect(state).toMatchObject({ key: dispatchCandidateKey, lookupStatus: "gap", note, preview: null });
+    await expect(page.locator("#native-skill-effect-note")).toHaveText(note);
     await expect(page.locator("[data-effect-component]")).toHaveCount(0);
     await page.setViewportSize(desktopViewport);
     mkdirSync(evidenceDirectory, { recursive: true });
     await page.screenshot({ path: resolve(evidenceDirectory, "skill-3-2-gap-1440x900.png") });
+  });
+
+  test("shows the native-skill-dispatch-required gap of the lowest unresolved row, skill 42 level 1, with no effect component loaded", async ({ page }) => {
+    test.setTimeout(harnessLoadTimeout * 2);
+    const state = await openSkill(page, lowestUnresolvedDispatchSkill);
+    const note = `${lowestUnresolvedDispatchKey} gap: native-skill-dispatch-required`;
+    expect(state).toMatchObject({ key: lowestUnresolvedDispatchKey, lookupStatus: "gap", note, preview: null });
+    await expect(page.locator("#native-skill-effect-note")).toHaveText(note);
+    await expect(page.locator("[data-effect-component]")).toHaveCount(0);
   });
 
   for (const [label, contextOptions, screenshotName] of [

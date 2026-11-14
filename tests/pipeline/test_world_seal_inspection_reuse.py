@@ -38,7 +38,7 @@ OWNER_MAP_PATH, COLUMN_NEIGHBOUR_MAP_PATH, ROW_NEIGHBOUR_MAP_PATH, CORNER_NEIGHB
 FIRST_MAP_SHA256, SECOND_MAP_SHA256, THIRD_MAP_SHA256 = 'c' * 64, 'd' * 64, 'e' * 64
 ENVIRONMENT_SETUP_PATH = 'system/Env.int'
 ENVIRONMENT_TYPE_PATH = 'system/TimeEnv0.int'
-RADAR_PACKAGE_PATH = 'systextures/L2_RadarMap.utx'
+ZONE_NAME_PACKAGE_PATH = 'systextures/l2zonename.utx'
 
 
 class CountedLockParses(NamedTuple):
@@ -111,19 +111,19 @@ class LockParseReuseTests(unittest.TestCase):
 
     def test_the_environment_and_minimap_lock_readers_parse_the_lock_once_and_again_after_the_file_is_replaced(self):
         locked_sources = {ENVIRONMENT_SETUP_PATH: FIRST_MAP_SHA256, ENVIRONMENT_TYPE_PATH: SECOND_MAP_SHA256,
-                          RADAR_PACKAGE_PATH: THIRD_MAP_SHA256, OWNER_MAP_PATH: FIRST_MAP_SHA256}
+                          ZONE_NAME_PACKAGE_PATH: THIRD_MAP_SHA256, OWNER_MAP_PATH: FIRST_MAP_SHA256}
         self.write_lock(locked_sources)
         with counted_lock_parses() as lock_parses:
             for _ in range(5):
                 self.assertEqual(environment_lock_input_records(self.lock_path),
                                  [{'path': ENVIRONMENT_SETUP_PATH, 'sha256': FIRST_MAP_SHA256}, {'path': ENVIRONMENT_TYPE_PATH, 'sha256': SECOND_MAP_SHA256}])
-                self.assertEqual(lock_equal_minimap_source_paths(self.lock_path), [RADAR_PACKAGE_PATH])
+                self.assertEqual(lock_equal_minimap_source_paths(self.lock_path), [ZONE_NAME_PACKAGE_PATH])
                 self.assertEqual(locked_tile_ids(self.lock_path), [OWNER_TILE_ID])
             self.assertEqual(lock_parses.counts(), (1, 0, 1))
             self.replace_lock_with_one_more_record(locked_sources, ROW_NEIGHBOUR_MAP_PATH, SECOND_MAP_SHA256)
             for _ in range(5):
                 self.assertEqual(locked_tile_ids(self.lock_path), [OWNER_TILE_ID, ROW_NEIGHBOUR_TILE_ID])
-                self.assertEqual(lock_equal_minimap_source_paths(self.lock_path), [RADAR_PACKAGE_PATH])
+                self.assertEqual(lock_equal_minimap_source_paths(self.lock_path), [ZONE_NAME_PACKAGE_PATH])
                 self.assertEqual(len(environment_lock_input_records(self.lock_path)), 2)
         self.assertEqual(lock_parses.counts(), (2, 0, 2))
 

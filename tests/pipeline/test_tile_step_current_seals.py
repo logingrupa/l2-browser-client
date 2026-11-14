@@ -8,6 +8,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from minimap_route_fixture import seal_synthetic_minimap_route
 from tile_step_seal_fixture import (LOCKED_TILE_ID, object_gap_rows, seal_raw_unit, seal_unit, tile_map_inputs, unpinned_music_encoder,
                                     write_single_tile_census)
 from native_store.unit_ledger import locked_input_records
@@ -227,12 +228,14 @@ class LockedInputConfigStepCurrentSealTests(CurrentSealTestCase):
 
 
 class MinimapAndTileManifestCurrentSealTests(CurrentSealTestCase):
-    def test_a_minimap_receipt_answers_on_its_upstream_config_and_waits_for_its_upstream_units(self):
+    def test_a_minimap_receipt_answers_on_its_upstream_config_and_route_and_waits_for_its_upstream_units(self):
         current_config = upstream_config(CURRENT_UPSTREAM_FINGERPRINT)
         inputs = minimap_input_records(LOCKED_TILE_ID)
         with patch.object(tile_step_current_seals, 'upstream_sealed_fingerprints', lambda *arguments: (None, (current_config, None))):
             self.seal_step(MINIMAP_STEP_NAME, current_config, inputs)
-            states = [(self.seal_state(MINIMAP_STEP_NAME).state, CURRENT_SEAL_STATE)]
+            states = [(self.seal_state(MINIMAP_STEP_NAME).state, STALE_SEAL_STATE)]
+            seal_synthetic_minimap_route(self.project_root)
+            states.append((self.seal_state(MINIMAP_STEP_NAME).state, CURRENT_SEAL_STATE))
             self.seal_step(MINIMAP_STEP_NAME, upstream_config(OLDER_UPSTREAM_FINGERPRINT), inputs)
             states.append((self.seal_state(MINIMAP_STEP_NAME).state, STALE_SEAL_STATE))
         with patch.object(tile_step_current_seals, 'upstream_sealed_fingerprints', lambda *arguments: (RAW_STEP_NAME, None)):

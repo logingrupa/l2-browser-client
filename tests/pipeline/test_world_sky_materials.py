@@ -14,7 +14,7 @@ from native_assets_lib.texture_package_118 import PACKAGE_118_LICENSEE, PACKAGE_
 from native_catalog.ue2 import FormatError, Package
 from native_store.gap_rows import is_listed_reason, load_gap_reason_patterns
 from ue2_package_fixture import compact, package_bytes, tag
-from world import sky_materials, sky_step
+from world import pinned_image_decoder, sky_materials, sky_step
 from world.sky_materials import SkyTextureUnsupported, native_texture_source, sky_material_program, sky_texture_pngs_by_node, \
     sky_texture_products_by_node
 
@@ -129,6 +129,20 @@ class SkyTexture118Tests(unittest.TestCase):
         with self.assertRaises(SkyTextureUnsupported) as caught:
             texture_118_source(package_118_bytes(format_id=UNREVIEWED_FORMAT))
         self.assertEqual(caught.exception.reason, f'sky-texture-format-unsupported:{UNREVIEWED_FORMAT}')
+
+
+class SharedPinnedImageDecoderTests(unittest.TestCase):
+    def test_sky_textures_decode_through_the_shared_pinned_image_decoder(self):
+        self.assertIs(sky_materials.require_pinned_image_decoder, pinned_image_decoder.require_pinned_image_decoder)
+        pinned_image_decoder.require_pinned_image_decoder()
+
+    def test_another_pillow_version_is_refused(self):
+        with patch.object(pinned_image_decoder.PIL, '__version__', '0.0.0'), self.assertRaisesRegex(FormatError, 'pinned Pillow 12.3.0, found 0.0.0'):
+            pinned_image_decoder.require_pinned_image_decoder()
+
+    def test_a_changed_png_plugin_is_refused(self):
+        with patch.object(pinned_image_decoder, 'PNG_PLUGIN_SHA256', '0' * 64), self.assertRaisesRegex(FormatError, 'Pinned input changed'):
+            pinned_image_decoder.require_pinned_image_decoder()
 
 
 class SkyProgramTextureImageTests(unittest.TestCase):

@@ -4,15 +4,17 @@ import json
 import re
 from pathlib import Path
 
-from actors.actor_sound_bindings import (ACTOR_SOUND_STEP, NO_EXACT_SKILL_SOUND_ROW_REASON, NPC_NAMES_NO_SOUND_REASON, actor_sound_bundle_id,
-                                         actor_sound_reference_counts, skill_actor_row)
+from actors.actor_sound_bindings import (ACTOR_SOUND_STEP, NPC_NAMES_NO_SOUND_REASON, SKILL_SOUND_ROW_MATCH_AMBIGUOUS_REASON_PREFIX,
+                                         SKILL_SOUND_ROW_NAMES_NO_SOUND_REASON, SKILL_SOUND_TABLE_NAME, actor_sound_bundle_id,
+                                         actor_sound_reference_counts, skill_sound_row_actor_row, skill_sound_row_key)
 from actors.actor_sound_conversion import (ACTOR_SOUND_GAP_ROWS_RELATIVE_PATH, ActorSoundConversionRun, NoSoundBundle, bundle_store_state,
                                            combat_audio_manifest_outputs)
+from actors.actor_unit_inventory import decoded_string_values
 from actors.character_census import CHARACTER_CENSUS_RELATIVE_PATH, CHARACTER_CENSUS_SCHEMA_VERSION, PENDING_STATUS
 from actors.character_requests import GAP_STATUS
 from actors.combat_role_routes import (COMBAT_ROLE_ROUTE_PROOF, bind_combat_role_routes, combat_route_config_manifest)
 from actors.npc_store_records import catalog_with_records_replaced, catalog_without_records
-from actors.skill_binding_table import DecodedSkillTables
+from actors.skill_unit_inventory import SKILL_SOUND_ROW_UNIT_KIND
 from native_assets_lib.footstep_config import decode_config
 from native_assets_lib.gltf import json_bytes
 from native_assets_lib.sha256_identity import sha256_hex_digest
@@ -27,12 +29,10 @@ CHARACTER_PROFILE_PENDING_REASON = 'character-profile-pending'
 CHARACTER_SOUND_BUNDLE_NOT_BUILT_REASON = 'character-sound-bundle-not-built'
 ALAUDIO_CONFIG_RELATIVE_PATH = 'system/ALAudio.int'
 ROUTE_CENSUS_TABLES = ('chargrp', 'npcgrp', 'armorgrp', 'weapongrp', 'skillsoundgrp')
-SKILL_COMPONENT_ID = re.compile(r'^interlude:skill:(?P<id>[0-9]{1,9}):level:(?P<level>[1-9][0-9]{0,3}):native-description-action$')
 CONFIG_SECTION_HEADER = re.compile(r'^\[(?P<section>[A-Za-z_][A-Za-z_0-9]*)\]$')
 CONFIG_ASSIGNMENT = re.compile(r'^\s*(?P<key>[A-Za-z_][A-Za-z_0-9]*)\s*=')
-BUNDLE_KIND_ORDER = ('npc', 'skill')
-NO_SOUND_ROW_BINDING_FIELDS = ('key', 'skillId', 'level', 'soundRowOrdinal', 'soundReason')
-ACTOR_SOUND_KEY = re.compile(r'^(?:npc:[0-9]{1,9}|skill:[0-9]{1,9}:[1-9][0-9]{0,3})$')
+BUNDLE_KIND_ORDER = ('npc', SKILL_SOUND_ROW_UNIT_KIND)
+ACTOR_SOUND_KEY = re.compile(rf'^(?:npc:[0-9]{{1,9}}|{SKILL_SOUND_ROW_UNIT_KIND}:[0-9]{{1,5}})$')
 
 
 def npc_profile_rows(store_root, catalog):
@@ -48,15 +48,6 @@ def npc_profile_rows(store_root, catalog):
 def npc_actor_row(profile):
     return {'table': 'npcgrp', 'kind': 'actor', 'label': f'{profile["name"]} (npcgrp npc_id {profile["npcId"]})',
             'catalogId': profile['modelCatalogId'], 'sourceObject': profile['mesh'], 'match': [{'pointer': '/npc_id', 'value': profile['npcId']}]}
-
-
-def skill_bundle_keys(catalog):
-    keys = set()
-    for record in catalog.get('effectComponents', []):
-        match = SKILL_COMPONENT_ID.fullmatch(record['id'])
-        if match:
-            keys.add(f'skill:{int(match["id"])}:{int(match["level"])}')
-    return keys
 
 
 def character_census_skipped_reason(census_row):
@@ -121,31 +112,42 @@ def write_bundle_gap_rows(lane_folder, lane_name, converted_states, skipped_seal
     replace_file(path, canonical_json_bytes(document))
 
 
+def skill_sound_row_match_identity(sound_row):
+    return sound_row['skill_id'], sound_row['skill_level']
+
+
+def skill_sound_row_no_sound_reason(sound_row, match_counts):
+    match_count = match_counts[skill_sound_row_match_identity(sound_row)]
+    if match_count > 1:
+        return f'{SKILL_SOUND_ROW_MATCH_AMBIGUOUS_REASON_PREFIX}{match_count}'
+    if not any(string for value in sound_row.values() for string in decoded_string_values(value)):
+        return SKILL_SOUND_ROW_NAMES_NO_SOUND_REASON
+    return None
+
+
 class ActorSoundBundles:
-    def __init__(self, project_root, store_root):
+    def __init__(self, project_root, store_root, skill_sound_rows):
         catalog, _ = read_store_catalog(store_root)
         self.npc_profiles = npc_profile_rows(store_root, catalog)
-        self.skill_keys = skill_bundle_keys(catalog)
+        self.skill_sound_rows = skill_sound_rows
+        self.skill_sound_row_match_counts = Counter(skill_sound_row_match_identity(row) for row in skill_sound_rows)
+        self.skill_sound_row_ordinals = {skill_sound_row_key(row_ordinal): row_ordinal for row_ordinal in range(len(skill_sound_rows))}
         self.skipped_characters = skipped_character_bundles(project_root)
-        self.keys = sorted([*self.npc_profiles, *self.skill_keys], key=bundle_sort_key)
-        self.skill_tables, self.skill_bindings_by_key = None, None
+        self.keys = sorted([*self.npc_profiles, *self.skill_sound_row_ordinals], key=bundle_sort_key)
 
     def capacity(self):
         return max(1, len(self.keys))
 
-    def skill_binding(self, run, bundle_key):
-        if self.skill_tables is None:
-            self.skill_tables = DecodedSkillTables(run.project_root, run.client_access.root, run.decode_table)
-            self.skill_bindings_by_key = {row['key']: row for row in self.skill_tables.binding_rows}
-        return self.skill_bindings_by_key[bundle_key]
-
-    def sound_table_identity(self):
-        return {'path': self.skill_tables.sound_table['source'], 'sha256': self.skill_tables.sound_table['sourceSha256']}
+    def skill_sound_row_ordinal(self, bundle_key):
+        if bundle_key not in self.skill_sound_row_ordinals:
+            raise ValueError(f'{bundle_key} is neither an NPC of the actors lane catalog nor a decoded {SKILL_SOUND_TABLE_NAME} row')
+        return self.skill_sound_row_ordinals[bundle_key]
 
     def actor_rows(self, run, bundle_key):
         if bundle_key in self.npc_profiles:
             return [npc_actor_row(self.npc_profiles[bundle_key])]
-        return [skill_actor_row(self.skill_binding(run, bundle_key), self.skill_tables.sound_rows)]
+        row_ordinal = self.skill_sound_row_ordinal(bundle_key)
+        return [skill_sound_row_actor_row(row_ordinal, self.skill_sound_rows[row_ordinal])]
 
     def no_sound_bundle(self, run, bundle_key):
         if bundle_key in self.npc_profiles:
@@ -154,13 +156,13 @@ class ActorSoundBundles:
                 return None
             return NoSoundBundle(bundle_key, NPC_NAMES_NO_SOUND_REASON, run.table(actor_row['table'])['identity'],
                                  {'npcMatch': actor_row['match']})
-        if bundle_key not in self.skill_keys:
-            raise ValueError(f'{bundle_key} is not an actor bundle of the actors lane catalog')
-        skill_binding = self.skill_binding(run, bundle_key)
-        if skill_binding['soundRowOrdinal'] is not None:
+        row_ordinal = self.skill_sound_row_ordinal(bundle_key)
+        reason = skill_sound_row_no_sound_reason(self.skill_sound_rows[row_ordinal], self.skill_sound_row_match_counts)
+        if reason is None:
             return None
-        return NoSoundBundle(bundle_key, NO_EXACT_SKILL_SOUND_ROW_REASON, self.sound_table_identity(),
-                             {'skillBinding': {field: skill_binding[field] for field in NO_SOUND_ROW_BINDING_FIELDS}})
+        actor_row = skill_sound_row_actor_row(row_ordinal, self.skill_sound_rows[row_ordinal])
+        return NoSoundBundle(bundle_key, reason, run.table(SKILL_SOUND_TABLE_NAME)['identity'],
+                             {'skillSoundRow': {'rowOrdinal': row_ordinal, 'match': actor_row['match']}})
 
     def sealed_store_state(self, run, bundle_key):
         no_sound_bundle = self.no_sound_bundle(run, bundle_key)
@@ -220,12 +222,20 @@ def config_routes(run):
                                              for role in ('critical', 'soulshot')}}
     original = path.read_bytes()
     decoded, _ = decode_config(original)
-    return bind_combat_role_routes(combat_route_config_manifest(sha256_hex_digest(original), decoded_config_keys(decoded)), run.route_proof)
+    return bind_combat_role_routes(combat_route_config_manifest(sha256_hex_digest(original), decoded_config_keys(decoded)), run.route_proof,
+                                   run.route_recipe)
+
+
+def bound_route_census_entry(route):
+    if isinstance(route, list):
+        return {'status': 'bound', 'members': [{'member': record['member'], 'fieldOrdinal': record['fieldOrdinal'], 'fieldName': record['fieldName']}
+                                               for record in route], 'reason': None, 'anchors': route[0]['routeProof']['anchors']}
+    return {'status': 'bound', 'fieldOrdinal': route['fieldOrdinal'], 'fieldName': route['fieldName'], 'reason': None,
+            'anchors': route['routeProof']['anchors']}
 
 
 def route_census_entries(binding):
-    entries = {role: {'status': 'bound', 'fieldOrdinal': route['fieldOrdinal'], 'fieldName': route['fieldName'], 'reason': None,
-                      'anchors': route['routeProof']['anchors']} for role, route in binding['routes'].items()}
+    entries = {role: bound_route_census_entry(route) for role, route in binding['routes'].items()}
     entries.update({role: {'status': 'unresolved', 'fieldOrdinal': None, 'fieldName': None, 'reason': entry['reason'], 'detail': entry['detail']}
                     for role, entry in binding['unresolved'].items()})
     return entries
@@ -239,8 +249,14 @@ def summed_counts(counts):
     return total
 
 
+def caster_indexed_census_entries(binding):
+    return {role: [{key: record[key] for key in ('meshType', 'meshClass', 'fieldOrdinal', 'fieldName')} for record in records]
+            for role, records in binding['casterIndexedRoutes'].items()}
+
+
 def actor_sound_census(run, bundles):
-    routes = {table: route_census_entries(run.routes(table)) for table in ROUTE_CENSUS_TABLES}
+    bindings = {table: run.routes(table) for table in ROUTE_CENSUS_TABLES}
+    routes = {table: route_census_entries(binding) for table, binding in bindings.items()}
     routes['alaudio'] = route_census_entries(config_routes(run))
     per_table, sealed = {}, []
     for receipt in run.bundle_ledger.sealed_receipts():
@@ -252,8 +268,12 @@ def actor_sound_census(run, bundles):
                 {'selections': [row for row in manifest['selections'] if row['table'] == table]} if manifest else None))
     return {'schemaVersion': 1, 'routeProof': {'path': COMBAT_ROLE_ROUTE_PROOF['path'],
                                                'sha256': run.route_proof['sha256'] if run.route_proof else None},
+            'routeRecipe': {'path': run.route_recipe['path'], 'sha256': run.route_recipe['sha256']},
             'routes': routes,
-            'bundles': {'npc': len(bundles.npc_profiles), 'skill': len(bundles.skill_keys),
+            'casterIndexedRoutes': {table: caster_indexed_census_entries(binding) for table, binding in bindings.items()
+                                    if 'casterIndexedRoutes' in binding},
+            'unroutedFields': {table: binding['unroutedFields'] for table, binding in bindings.items() if 'unroutedFields' in binding},
+            'bundles': {'npc': len(bundles.npc_profiles), 'skillSoundRow': len(bundles.skill_sound_row_ordinals),
                         'character': bundles.skipped_characters},
             'references': summed_counts(count for counts in per_table.values() for count in counts),
             'perTable': {table: summed_counts(counts) for table, counts in sorted(per_table.items())},
@@ -280,7 +300,7 @@ def printed_actor_sound_outcome(outcome):
 
 def run_actor_sound_conversion(project_root, client_access, converter, store_root, work_root, decode_table, bundle_key, limit, preflight):
     run = ActorSoundConversionRun(project_root, client_access, converter, store_root, work_root, decode_table)
-    bundles = ActorSoundBundles(project_root, store_root)
+    bundles = ActorSoundBundles(project_root, store_root, run.table(SKILL_SOUND_TABLE_NAME)['rows'])
     if bundle_key is None:
         outcomes = run_actor_sound_slice(run, bundles, limit, preflight)
     else:

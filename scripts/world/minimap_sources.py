@@ -4,11 +4,10 @@ from typing import NamedTuple
 from native_catalog.tables import decode_table
 from native_store.unit_ledger import process_reference_client_lock
 from reference_client_guard import REFERENCE_CLIENT_LOCK_PATH
-from world.minimap_join import HUNTINGZONE_TABLE_ROLE, RADAR_PACKAGE_ROLE, TOWN_MAP_PACKAGE_ROLE, ZONE_NAME_PACKAGE_ROLE, ZONENAME_TABLE_ROLE
+from world.minimap_join import HUNTINGZONE_TABLE_ROLE, ZONE_NAME_PACKAGE_ROLE, ZONENAME_TABLE_ROLE
 from world.terrain_coordinates import calculated_coords, coords_point
 
-MINIMAP_PACKAGE_PATHS = {RADAR_PACKAGE_ROLE: 'systextures/L2_RadarMap.utx', TOWN_MAP_PACKAGE_ROLE: 'systextures/town_map.utx',
-                         ZONE_NAME_PACKAGE_ROLE: 'systextures/l2zonename.utx'}
+MINIMAP_TILE_PACKAGE_PATHS = {ZONE_NAME_PACKAGE_ROLE: 'systextures/l2zonename.utx'}
 MINIMAP_TABLE_PATHS = {ZONENAME_TABLE_ROLE: 'system/zonename-e.dat', HUNTINGZONE_TABLE_ROLE: 'system/huntingzone-e.dat'}
 MINIMAP_TABLE_LAYOUTS = {ZONENAME_TABLE_ROLE: 'zonename', HUNTINGZONE_TABLE_ROLE: 'huntingzone'}
 LOCKED_TILE_MAP_PATTERN = re.compile(r'^maps/(?P<tile_id>\d{2}_\d{2})\.unr$')
@@ -26,7 +25,7 @@ class MinimapSources(NamedTuple):
 
 def lock_equal_minimap_source_paths(lock_path=REFERENCE_CLIENT_LOCK_PATH):
     lock = process_reference_client_lock(lock_path)
-    paths = [*MINIMAP_PACKAGE_PATHS.values(), *MINIMAP_TABLE_PATHS.values()]
+    paths = [*MINIMAP_TILE_PACKAGE_PATHS.values(), *MINIMAP_TABLE_PATHS.values()]
     return sorted(path for path in paths if (record := lock.record(path)) is not None and record['class'] == LOCK_EQUAL_CLASS)
 
 
@@ -43,7 +42,6 @@ def decoded_table_rows(client, role):
     if len(record_lists) != 1:
         raise MinimapSourceError(f'decoded {decoded["source"]} has {len(record_lists)} record lists, expected 1')
     return {'table': MINIMAP_TABLE_LAYOUTS[role], 'path': decoded['source'], 'sha256': decoded['sourceSha256'], 'rows': record_lists[0]}
-
 
 
 def tile_frame_extent(chunk_plan_frame):

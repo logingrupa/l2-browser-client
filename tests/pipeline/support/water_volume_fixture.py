@@ -64,6 +64,6 @@ def synthetic_volume_map():
     brush = build_synthetic_level_model([synthetic_polygon(square_points(0, 0, 64))], root_outside=1)
     reader = SimpleNamespace(_read_model=lambda adapter, export, layout: brush, validate_graph=lambda nodes: len(nodes))
     package = SimpleNamespace(exports=[{'classObject': 'Engine.Model', 'object': 'Fixture.Model1'}])
-    level = SimpleNamespace(adapter=SimpleNamespace(exports=[object()]), reader=reader)
+    level = SimpleNamespace(adapter=SimpleNamespace(exports=[object()], licensee_version=28), reader=reader)
     rectangles = [SimpleNamespace(minimum=(-4096.0, -4096.0), maximum=(4096.0, 4096.0), chunk_id=SYNTHETIC_CHUNK_ID)]
     return package, level, rectangles

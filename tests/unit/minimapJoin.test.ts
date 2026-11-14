@@ -6,19 +6,21 @@ import {
 import { parseNativeTileManifest } from "../../src/scene/world/nativeTileManifest";
 
 const archiveSha256 = "a".repeat(64);
+const zoneKeyArchiveSha256 = "d".repeat(64);
 const packageSha256 = "b".repeat(64);
 const tableSha256 = "c".repeat(64);
+const routeSha256 = "e".repeat(64);
+const zoneTitleReason = "minimap-join-unresolved:zone-title-source";
+const radarAnchorReason = "minimap-join-unresolved:radar-anchor";
 
 function minimapManifest(overrides: Record<string, unknown> = {}) {
   return {
-    kind: "native-tile-minimap", schemaVersion: 1, tileId: "20_21",
-    sourceInputs: [{ path: "systextures/L2_RadarMap.utx", sha256: packageSha256 }, { path: "system/zonename-e.dat", sha256: tableSha256 }],
-    radarTexture: { archive: `/l2/${archiveSha256}/asset.l2asset`, archiveSha256, archiveBytes: 4096, sourceObject: "Radar.Maps.20_21", rule: "tile-id" },
-    townMapTextures: [{ object: "town_map.Town.20_21_map", rule: "tile-id-map", citation: "Elbera tools/maps/build_minimap.py at 12c9656",
-      source: { path: "systextures/town_map.utx", sha256: packageSha256, exportIndex: 3 } }],
-    zoneNameTextures: [{ object: "l2zonename.20_21", rule: "tile-id", source: { path: "systextures/l2zonename.utx", sha256: packageSha256, exportIndex: 93 } }],
-    zones: [{ id: 7, name: "Gludio Territory", map: "", rule: "zonename-grid",
-      source: { table: "zonename", path: "system/zonename-e.dat", sha256: tableSha256, rowIndex: 7, field: "MapX,MapY" } }],
+    kind: "native-tile-minimap", schemaVersion: 2, tileId: "20_21",
+    sourceInputs: [{ path: "systextures/l2zonename.utx", sha256: packageSha256 }, { path: "system/zonename-e.dat", sha256: tableSha256 }],
+    route: { manifest: `/l2/maps/${routeSha256}/native-minimap-route/manifest.json`, manifestSha256: routeSha256, manifestBytes: 60000 },
+    zoneKeyTexture: { archive: `/l2/${zoneKeyArchiveSha256}/asset.l2asset`, archiveSha256: zoneKeyArchiveSha256, archiveBytes: 2048,
+      sourceObject: "l2zonename.20_21", rule: "zone-sampler-tile", source: { path: "systextures/l2zonename.utx", sha256: packageSha256, exportIndex: 93 } },
+    radarTexture: { archive: `/l2/${archiveSha256}/asset.l2asset`, archiveSha256, archiveBytes: 4096, sourceObject: "Radar.Maps.20_21", rule: "radar-case" },
     huntingZones: [{ id: 4, name: "Cruma Marshlands", rule: "huntingzone-start-in-frame", startLocation: [5106, 126916, -3664],
       source: { table: "huntingzone", path: "system/huntingzone-e.dat", sha256: tableSha256, rowIndex: 3, field: "loc" } }],
     projection: { rule: "tile-frame-extent", status: "unverified", frameMinimumNative: [-12800, 0], frameMaximumNative: [12800, 25600],
@@ -29,37 +31,40 @@ function minimapManifest(overrides: Record<string, unknown> = {}) {
   };
 }
 
-const gapManifest = () => minimapManifest({ radarTexture: null, projection: null, townMapTextures: [],
-  gaps: [{ reason: "minimap-join-unresolved:zone-grid", evidence: "21 zonename rows hold MapX or MapY outside the locked tile grid" },
-    { reason: "minimap-join-unresolved:radar-texture", evidence: "no radar export equals the tile id" }] });
+const gapManifest = () => minimapManifest({ radarTexture: null, projection: null,
+  gaps: [{ reason: zoneTitleReason, evidence: "the ShowZoneTitle caller chain is not derived" }, { reason: radarAnchorReason, evidence: "anchor" }] });
 
 describe("parseNativeTileMinimapManifest", () => {
-  it("accepts the fixture manifest and keeps every joined item with its rule and source", () => {
+  it("accepts schema 2 with its route pin, zone key texture and hunting zones", () => {
     const minimap = parseNativeTileMinimapManifest(minimapManifest(), "20_21");
-    expect(minimap.radarTexture?.rule).toBe("tile-id");
-    expect(minimap.townMapTextures[0]?.citation).toMatch(/12c9656/);
-    expect(minimap.zoneNameTextures[0]?.citation).toBeNull();
+    expect(minimap.route.manifestSha256).toBe(routeSha256);
+    expect(minimap.zoneKeyTexture?.rule).toBe("zone-sampler-tile");
+    expect(minimap.zoneKeyTexture?.source.exportIndex).toBe(93);
     expect(minimap.huntingZones[0]?.startLocation).toEqual([5106, 126916, -3664]);
     expect(minimap.labels.schemaFieldMeaning).toBe("schema field name, meaning unverified on IMPORTA");
   });
 
-  it("keeps gaps as data when the radar texture and projection are gaps", () => {
+  it("keeps the route gaps as data when the radar texture and projection are null", () => {
     const minimap = parseNativeTileMinimapManifest(gapManifest(), "20_21");
     expect(minimap.radarTexture).toBeNull();
-    expect(minimap.gaps.map(gap => gap.reason)).toEqual(["minimap-join-unresolved:zone-grid", "minimap-join-unresolved:radar-texture"]);
+    expect(minimap.gaps.map(gap => gap.reason)).toEqual([zoneTitleReason, radarAnchorReason]);
+    expect(parseNativeTileMinimapManifest(minimapManifest({ zoneKeyTexture: null }), "20_21").zoneKeyTexture).toBeNull();
   });
 
-  it("refuses a wrong kind, schema version, tile id, hash, archive path or a missing explaining gap", () => {
+  it("refuses schema 1, a route pin that does not name its SHA-256, another zone key rule and the other invalid fields", () => {
+    const zoneKeyTexture = minimapManifest().zoneKeyTexture;
     const refusals: readonly [Record<string, unknown>, RegExp][] = [
       [{ kind: "native-tile-sky" }, /kind or schema version/],
-      [{ schemaVersion: 2 }, /kind or schema version/],
+      [{ schemaVersion: 1 }, /kind or schema version/],
       [{ tileId: "20_20" }, /names another tile/],
-      [{ sourceInputs: [{ path: "systextures/L2_RadarMap.utx", sha256: "A".repeat(64) }] }, /source input/],
+      [{ sourceInputs: [{ path: "systextures/l2zonename.utx", sha256: "A".repeat(64) }] }, /source input/],
+      [{ route: { ...minimapManifest().route, manifestSha256: "9".repeat(64) } }, /native-minimap-route\/manifest\.json/],
+      [{ route: { ...minimapManifest().route, manifest: `/l2/maps/${routeSha256}/native-tile-minimap/manifest.json` } }, /native-minimap-route/],
+      [{ zoneKeyTexture: { ...zoneKeyTexture, rule: "tile-id" } }, /zone key texture rule must be zone-sampler-tile/],
+      [{ zoneKeyTexture: { ...zoneKeyTexture, source: { ...zoneKeyTexture.source, exportIndex: 0 } } }, /texture source/],
       [{ radarTexture: { ...minimapManifest().radarTexture, archiveSha256: "d".repeat(64) } }, /asset\.l2asset/],
       [{ radarTexture: { ...minimapManifest().radarTexture, archive: `/l2/../${archiveSha256}/asset.l2asset` } }, /asset\.l2asset/],
       [{ projection: null }, /must list the gap/],
-      [{ zoneNameTextures: [{ object: "l2zonename.20_21", rule: "prefix", source: { path: "systextures/l2zonename.utx", sha256: packageSha256, exportIndex: 1 } }] },
-        /exact join rule/],
       [{ projection: { ...minimapManifest().projection, textureHeight: 128 } }, /square texture/],
     ];
     for (const [override, message] of refusals) {
@@ -77,13 +82,10 @@ describe("minimapTexturePosition", () => {
     expect(minimapTexturePosition(minimap, { x: 128, y: 0, z: 256 })).toEqual({ position: { u: 1, v: 1, status: "unverified" }, reason: null });
   });
 
-  it("returns null with the reason outside the frame or when the projection is a gap", () => {
+  it("returns null with the reason outside the frame or the first gap reason when the projection is null", () => {
     expect(minimapTexturePosition(minimap, { x: 128.5, y: 0, z: 100 })).toEqual({ position: null, reason: "outside-tile-frame" });
     expect(minimapTexturePosition(parseNativeTileMinimapManifest(gapManifest(), "20_21"), { x: 0, y: 0, z: 0 }))
-      .toEqual({ position: null, reason: "minimap-join-unresolved:zone-grid" });
-    const projectionGap = parseNativeTileMinimapManifest(minimapManifest({ projection: null,
-      gaps: [{ reason: "texture-licensee-unsupported:118/0", evidence: "radar" }, { reason: "minimap-join-unresolved:projection", evidence: "frame" }] }), "20_21");
-    expect(minimapTexturePosition(projectionGap, { x: 0, y: 0, z: 0 })).toEqual({ position: null, reason: "minimap-join-unresolved:projection" });
+      .toEqual({ position: null, reason: zoneTitleReason });
   });
 });
 

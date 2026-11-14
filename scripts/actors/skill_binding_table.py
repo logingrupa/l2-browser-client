@@ -8,8 +8,12 @@ if str(SCRIPTS_ROOT) not in sys.path:
 import argparse
 from collections import Counter, defaultdict
 import json
+from typing import NamedTuple
 
 from actors.actor_unit_inventory import CONVERSION_PENDING_REASON, decoded_table_identity, decoded_table_rows
+from actors.skill_dispatch_candidates import (SKILL_DISPATCH_CANDIDATE_RUNTIME_UNRESOLVED_REASON, SKILL_DISPATCH_CANDIDATES_RELATIVE_PATH,
+                                              animation_notify_candidates_by_skill_key, dispatch_candidate_census,
+                                              dispatch_candidates_by_skill_key, read_skill_dispatch_candidates)
 from actors.skill_unit_inventory import NATIVE_SKILL_DISPATCH_REQUIRED_REASON, SKILL_PART_NAME
 from native_catalog.tables import decode_table
 from native_store.canonical_json import canonical_json_bytes
@@ -19,9 +23,12 @@ from native_store.unit_ledger import run_at_below_normal_priority
 from reference_client_guard import require_reference_client
 
 REPOSITORY_ROOT = SCRIPTS_ROOT.parent
-SKILL_BINDING_STATUSES = ('visual-root', 'reviewed-source-dispatch', 'gap')
-VISUAL_ROOT_STATUS, REVIEWED_SOURCE_DISPATCH_STATUS, BINDING_GAP_STATUS = SKILL_BINDING_STATUSES
-SKILL_BINDING_ROW_FIELDS = ('key', 'skillId', 'level', 'status', 'visualRoot', 'soundRowOrdinal', 'soundReason', 'reason')
+SKILL_BINDING_STATUSES = ('visual-root', 'reviewed-source-dispatch', 'reviewed-native-dispatch-candidates', 'reviewed-animation-notify-candidates',
+                          'gap')
+(VISUAL_ROOT_STATUS, REVIEWED_SOURCE_DISPATCH_STATUS, REVIEWED_NATIVE_DISPATCH_CANDIDATES_STATUS, REVIEWED_ANIMATION_NOTIFY_CANDIDATES_STATUS,
+ BINDING_GAP_STATUS) = SKILL_BINDING_STATUSES
+DISPATCH_CANDIDATE_STATUSES = (REVIEWED_NATIVE_DISPATCH_CANDIDATES_STATUS, REVIEWED_ANIMATION_NOTIFY_CANDIDATES_STATUS)
+SKILL_BINDING_ROW_FIELDS = ('key', 'skillId', 'level', 'status', 'visualRoot', 'dispatchCandidates', 'soundRowOrdinal', 'soundReason', 'reason')
 SKILL_BINDING_ANOMALY_FIELDS = ('rowOrdinal', 'reason')
 SKILLS_GAP_ROW_STEP = 'skills'
 NO_EXACT_SKILLSOUND_ROW_REASON = 'no-exact-skillsound-row'
@@ -35,18 +42,34 @@ SKILL_TABLE_NAME = 'skillgrp'
 SKILL_SOUND_TABLE_NAME = 'skillsoundgrp'
 SKILL_BINDING_CENSUS_RELATIVE_PATH = 'docs/parts/skills-effects/skill-binding-census.json'
 SKILL_BINDING_CENSUS_SCHEMA_VERSION = 1
-SKILL_BINDING_CENSUS_FIELDS = ('schemaVersion', 'sources', 'rowCount', 'distinctSkillIds', 'keys', 'sound', 'visualRoots', 'anomalies')
+SKILL_BINDING_CENSUS_FIELDS = ('schemaVersion', 'sources', 'rowCount', 'distinctSkillIds', 'keys', 'sound', 'visualRoots', 'dispatchCandidates',
+                               'anomalies')
+CENSUS_KEY_BY_STATUS = {VISUAL_ROOT_STATUS: 'visualRoot', REVIEWED_SOURCE_DISPATCH_STATUS: 'reviewedSourceDispatch',
+                        REVIEWED_NATIVE_DISPATCH_CANDIDATES_STATUS: 'reviewedNativeDispatchCandidates',
+                        REVIEWED_ANIMATION_NOTIFY_CANDIDATES_STATUS: 'reviewedAnimationNotifyCandidates'}
 REVIEWED_SOURCE_DISPATCH_RECIPE_PATHS = ('recipes/native-power-strike.json',)
-SKILL_BINDING_DESCRIPTION = ('Bind every decoded skillgrp row to one visual root, reviewed source dispatch or listed gap, and every skill key '
-                             'to its exact skillsoundgrp row, then write the committed binding census. --check compares and writes nothing.')
+SKILL_BINDING_DESCRIPTION = ('Bind every decoded skillgrp row to one visual root, reviewed source dispatch, reviewed dispatch or animation notify '
+                             'candidates or listed gap, and every skill key to its exact skillsoundgrp row, then write the committed binding '
+                             'census. --check compares and writes nothing.')
 
 
 class SkillBindingTableError(ValueError):
     pass
 
 
+class SkillDispatchCandidateRows(NamedTuple):
+    native_dispatch: dict
+    animation_notify: dict
+
+
 def skill_binding_key(skill_id, level):
     return f'skill:{skill_id}:{level}'
+
+
+def skill_dispatch_candidate_rows(document):
+    return SkillDispatchCandidateRows(
+        *({skill_binding_key(skill_id, level): entries for (skill_id, level), entries in by_skill_key(document).items()}
+          for by_skill_key in (dispatch_candidates_by_skill_key, animation_notify_candidates_by_skill_key)))
 
 
 def is_non_negative_integer(value):
@@ -79,35 +102,43 @@ def exact_sound_binding(sound_ordinals):
     return None, NO_EXACT_SKILLSOUND_ROW_REASON
 
 
-def visual_binding(skill_rows, skill_key, reviewed_dispatch_keys):
+def empty_description_binding(skill_key, reviewed_dispatch_keys, candidate_rows):
+    if skill_key in reviewed_dispatch_keys:
+        return REVIEWED_SOURCE_DISPATCH_STATUS, None, None, None
+    if skill_key in candidate_rows.native_dispatch:
+        return REVIEWED_NATIVE_DISPATCH_CANDIDATES_STATUS, None, candidate_rows.native_dispatch[skill_key], None
+    if skill_key in candidate_rows.animation_notify:
+        return REVIEWED_ANIMATION_NOTIFY_CANDIDATES_STATUS, None, candidate_rows.animation_notify[skill_key], None
+    return BINDING_GAP_STATUS, None, None, NATIVE_SKILL_DISPATCH_REQUIRED_REASON
+
+
+def visual_binding(skill_rows, skill_key, reviewed_dispatch_keys, candidate_rows):
     if len(skill_rows) > 1:
-        return BINDING_GAP_STATUS, None, f'{SKILL_ROW_AMBIGUOUS_REASON_PREFIX}{len(skill_rows)}'
+        return BINDING_GAP_STATUS, None, None, f'{SKILL_ROW_AMBIGUOUS_REASON_PREFIX}{len(skill_rows)}'
     description = skill_rows[0]['description']
     if not description:
-        if skill_key in reviewed_dispatch_keys:
-            return REVIEWED_SOURCE_DISPATCH_STATUS, None, None
-        return BINDING_GAP_STATUS, None, NATIVE_SKILL_DISPATCH_REQUIRED_REASON
+        return empty_description_binding(skill_key, reviewed_dispatch_keys, candidate_rows)
     if not (isinstance(description, str) and QUALIFIED_OBJECT_NAME_PATTERN.fullmatch(description)):
-        return BINDING_GAP_STATUS, None, SKILL_VISUAL_REFERENCE_UNQUALIFIED_REASON
-    return VISUAL_ROOT_STATUS, description, None
+        return BINDING_GAP_STATUS, None, None, SKILL_VISUAL_REFERENCE_UNQUALIFIED_REASON
+    return VISUAL_ROOT_STATUS, description, None, None
 
 
-def skill_binding_row(skill_id, level, skill_rows, sound_ordinals, reviewed_dispatch_keys):
+def skill_binding_row(skill_id, level, skill_rows, sound_ordinals, reviewed_dispatch_keys, candidate_rows):
     key = skill_binding_key(skill_id, level)
-    status, visual_root, reason = visual_binding(skill_rows, key, reviewed_dispatch_keys)
+    status, visual_root, dispatch_candidates, reason = visual_binding(skill_rows, key, reviewed_dispatch_keys, candidate_rows)
     sound_row_ordinal, sound_reason = exact_sound_binding(sound_ordinals)
     return {'key': key, 'skillId': skill_id, 'level': level, 'status': status, 'visualRoot': visual_root,
-            'soundRowOrdinal': sound_row_ordinal, 'soundReason': sound_reason, 'reason': reason}
+            'dispatchCandidates': dispatch_candidates, 'soundRowOrdinal': sound_row_ordinal, 'soundReason': sound_reason, 'reason': reason}
 
 
-def build_skill_binding_rows(skill_rows, sound_rows, reviewed_dispatch_keys):
+def build_skill_binding_rows(skill_rows, sound_rows, reviewed_dispatch_keys, candidate_rows):
     rows_by_skill_key = defaultdict(list)
     for row in skill_rows:
         if skill_binding_anomaly_reason(row) is None:
             rows_by_skill_key[(row['skill_id'], row['skill_level'])].append(row)
     sound_ordinals = sound_row_ordinals_by_skill_key(sound_rows)
     return [skill_binding_row(skill_id, level, rows_by_skill_key[(skill_id, level)], sound_ordinals.get((skill_id, level), []),
-                              frozenset(reviewed_dispatch_keys))
+                              frozenset(reviewed_dispatch_keys), candidate_rows)
             for skill_id, level in sorted(rows_by_skill_key)]
 
 
@@ -138,6 +169,8 @@ def emitter_class_root_outcome(emitter_classes, simulated_emitter_classes):
 def skill_binding_gap_row(binding_row, root_outcomes, source_identity, census_evidence):
     if binding_row['status'] == BINDING_GAP_STATUS:
         status, reason, evidence = 'gap', binding_row['reason'], census_evidence
+    elif binding_row['status'] in DISPATCH_CANDIDATE_STATUSES:
+        status, reason, evidence = 'gap', SKILL_DISPATCH_CANDIDATE_RUNTIME_UNRESOLVED_REASON, SKILL_DISPATCH_CANDIDATES_RELATIVE_PATH
     elif binding_row['status'] == VISUAL_ROOT_STATUS and binding_row['visualRoot'] in root_outcomes:
         outcome = root_outcomes[binding_row['visualRoot']]
         status, reason, evidence = outcome['status'], outcome['reason'], outcome['evidence']
@@ -156,7 +189,7 @@ def skill_rows_covered_by_binding(binding_row):
     return int(reason[len(SKILL_ROW_AMBIGUOUS_REASON_PREFIX):]) if reason.startswith(SKILL_ROW_AMBIGUOUS_REASON_PREFIX) else 1
 
 
-def skill_binding_census(skill_table, sound_table, binding_rows, anomalies):
+def skill_binding_census(skill_table, sound_table, binding_rows, anomalies, dispatch_candidates):
     skill_rows = decoded_table_rows(skill_table)
     status_rows = Counter()
     gap_rows_by_reason = Counter()
@@ -171,11 +204,11 @@ def skill_binding_census(skill_table, sound_table, binding_rows, anomalies):
         'sources': {SKILL_TABLE_NAME: skill_table['sourceSha256'], SKILL_SOUND_TABLE_NAME: sound_table['sourceSha256']},
         'rowCount': len(skill_rows),
         'distinctSkillIds': len({row['skillId'] for row in binding_rows}),
-        'keys': {'visualRoot': status_rows[VISUAL_ROOT_STATUS], 'reviewedSourceDispatch': status_rows[REVIEWED_SOURCE_DISPATCH_STATUS],
-                 'gap': dict(sorted(gap_rows_by_reason.items()))},
+        'keys': {**{key: status_rows[status] for status, key in CENSUS_KEY_BY_STATUS.items()}, 'gap': dict(sorted(gap_rows_by_reason.items()))},
         'sound': {'exactRow': sum(1 for row in binding_rows if row['soundRowOrdinal'] is not None),
                   'noExactRow': sum(1 for row in binding_rows if row['soundRowOrdinal'] is None)},
         'visualRoots': len(skill_bindings_by_visual_root(binding_rows)),
+        'dispatchCandidates': dispatch_candidates,
         'anomalies': list(anomalies)}
     require_census_totals(census)
     return census
@@ -183,7 +216,7 @@ def skill_binding_census(skill_table, sound_table, binding_rows, anomalies):
 
 def require_census_totals(census):
     keys = census['keys']
-    total = keys['visualRoot'] + keys['reviewedSourceDispatch'] + sum(keys['gap'].values()) + len(census['anomalies'])
+    total = sum(keys[key] for key in CENSUS_KEY_BY_STATUS.values()) + sum(keys['gap'].values()) + len(census['anomalies'])
     if total != census['rowCount']:
         raise SkillBindingTableError(f'skill binding census covers {total} rows, but skillgrp decodes {census["rowCount"]}')
 
@@ -204,12 +237,16 @@ class DecodedSkillTables:
         self.sound_table = decode(Path(client_root), SKILL_SOUND_TABLE_NAME)
         self.skill_rows = decoded_table_rows(self.skill_table)
         self.sound_rows = decoded_table_rows(self.sound_table)
-        self.binding_rows = build_skill_binding_rows(self.skill_rows, self.sound_rows, reviewed_source_dispatch_keys(project_root))
+        self.dispatch_candidates = read_skill_dispatch_candidates(project_root)
+        self.candidate_rows = skill_dispatch_candidate_rows(self.dispatch_candidates['document'])
+        self.binding_rows = build_skill_binding_rows(self.skill_rows, self.sound_rows, reviewed_source_dispatch_keys(project_root),
+                                                     self.candidate_rows)
         self.anomalies = skill_binding_anomalies(self.skill_rows)
         self.skill_table_identity = decoded_table_identity(self.skill_table)
 
     def census(self):
-        return skill_binding_census(self.skill_table, self.sound_table, self.binding_rows, self.anomalies)
+        return skill_binding_census(self.skill_table, self.sound_table, self.binding_rows, self.anomalies,
+                                    dispatch_candidate_census(self.dispatch_candidates))
 
 
 def write_skill_binding_census(project_root, client_root, check):
@@ -236,7 +273,8 @@ def main(argv=None):
     except (OSError, ValueError) as error:
         print(f'Skill binding census failed: {error}', file=sys.stderr)
         return 1
-    print(json.dumps({key: census[key] for key in ('rowCount', 'distinctSkillIds', 'keys', 'sound', 'visualRoots')}, sort_keys=True))
+    print(json.dumps({key: census[key] for key in ('rowCount', 'distinctSkillIds', 'keys', 'sound', 'visualRoots', 'dispatchCandidates')},
+                     sort_keys=True))
     return 0
 
 

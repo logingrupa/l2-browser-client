@@ -1,9 +1,10 @@
 import { expect, test, type Browser, type BrowserContextOptions, type Page } from "@playwright/test";
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { sourcePositionToWorld } from "../../src/world/sourceFrame";
 import type { WorldPosition } from "../../src/world/sourceFrame";
-import { syntheticTileFrameCentreScene } from "../fixtures/tileMinimapManifestFixture";
+import { syntheticTileFrameCentreScene, syntheticZoneTitleGapReason } from "../fixtures/tileMinimapManifestFixture";
 import { desktopViewport, expectNoHorizontalScrollOnPortraitPhone, landscapePhone } from "./browserViewports";
 import { syntheticMinimapTiles, type SyntheticMinimapTiles } from "./support/syntheticMinimapTiles";
 import { routeTwoLaneStores } from "./support/twoLaneStoreRoutes";
@@ -23,7 +24,18 @@ const syntheticRadarGapTileId = "21_21";
 interface CensusMinimapControl { readonly windowId: string; readonly controlNames: readonly string[] }
 interface LaneCatalogRecord { readonly id: string; readonly manifest: string }
 interface LaneCatalog { readonly windows?: readonly LaneCatalogRecord[]; readonly tiles?: readonly LaneCatalogRecord[] }
-interface RealTileMinimap { readonly projection: unknown; readonly gaps: readonly { readonly reason: string }[] }
+interface PinnedArchive { readonly archive: string; readonly archiveSha256: string }
+interface RealRoutePin { readonly manifest: string; readonly manifestSha256: string }
+interface RealTileMinimap {
+  readonly projection: unknown;
+  readonly route: RealRoutePin;
+  readonly zoneKeyTexture: PinnedArchive | null;
+  readonly gaps: readonly { readonly reason: string }[];
+}
+interface RealRouteManifest {
+  readonly radar: { readonly cases: readonly { readonly texture: PinnedArchive | null }[]; readonly default: { readonly texture: PinnedArchive | null } };
+  readonly worldMap: { readonly pieces: readonly { readonly texture: PinnedArchive | null }[] };
+}
 interface RealTile { readonly playerScenePosition: WorldPosition; readonly minimap: RealTileMinimap }
 interface ViewportCase { readonly name: string; readonly options: BrowserContextOptions }
 
@@ -41,8 +53,16 @@ function readLaneCatalog(laneName: string): LaneCatalog | null {
   return existsSync(catalogPath) ? JSON.parse(readFileSync(catalogPath, "utf8")) as LaneCatalog : null;
 }
 
+function readLaneResourceBytes(laneName: string, path: string): Buffer {
+  return readFileSync(resolve(laneStoreRoot(laneName), path.slice(nativeResourcePrefix.length)));
+}
+
 function readLaneResource<Resource>(laneName: string, path: string): Resource {
-  return JSON.parse(readFileSync(resolve(laneStoreRoot(laneName), path.slice(nativeResourcePrefix.length)), "utf8")) as Resource;
+  return JSON.parse(readLaneResourceBytes(laneName, path).toString("utf8")) as Resource;
+}
+
+function sha256Hex(bytes: Buffer): string {
+  return createHash("sha256").update(bytes).digest("hex");
 }
 
 function firstCensusMinimapWindow(): CensusMinimapControl | null {
@@ -154,7 +174,7 @@ test.describe("MinimapCtrl from the decoded interface", () => {
         const radarCell = minimapTileLocator(page, syntheticRadarTileId);
         await expect(radarCell).toHaveAttribute("data-native-minimap-cell", "texture");
         await expect.poll(() => radarCell.locator("img").evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
-        await expect(minimapTileLocator(page, syntheticRadarGapTileId)).toHaveAttribute("data-native-gap", "minimap-join-unresolved:radar-texture");
+        await expect(minimapTileLocator(page, syntheticRadarGapTileId)).toHaveAttribute("data-native-gap", syntheticZoneTitleGapReason);
         await expect(minimapControlLocator(page).locator(`[data-native-gap=${JSON.stringify(notInCatalogReason)}]`).first()).toBeAttached();
         await expect(minimapControlLocator(page)).toHaveAttribute("data-native-minimap-arrangement", "tile-grid, unverified");
         await expectMarkerInsideControl(page);
@@ -210,5 +230,20 @@ test.describe("MinimapCtrl over the data-ui and world lane stores", () => {
       await openMinimapWindow(page, playerQuery(realTile!.playerScenePosition));
       await expectNoHorizontalScrollOnPortraitPhone(page);
     });
+  });
+});
+
+test.describe("minimap route in the world lane store", () => {
+  test.skip(realTile === null, `tile ${realTileId} has no minimap resource in the world lane store`);
+
+  test(`holds the route manifest and every texture archive that the ${realTileId} minimap pins`, () => {
+    const route = realTile!.minimap.route;
+    const routeBytes = readLaneResourceBytes(tileLaneName, route.manifest);
+    expect(sha256Hex(routeBytes)).toBe(route.manifestSha256);
+    const routeManifest = JSON.parse(routeBytes.toString("utf8")) as RealRouteManifest;
+    const archives = [...routeManifest.radar.cases.map(entry => entry.texture), routeManifest.radar.default.texture,
+      ...routeManifest.worldMap.pieces.map(piece => piece.texture), realTile!.minimap.zoneKeyTexture].filter(texture => texture !== null);
+    expect(archives.length).toBeGreaterThan(0);
+    for (const texture of archives) expect(sha256Hex(readLaneResourceBytes(tileLaneName, texture!.archive))).toBe(texture!.archiveSha256);
   });
 });

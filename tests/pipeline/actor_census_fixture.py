@@ -106,6 +106,23 @@ def synthetic_skillgrp(skills):
         for skill_id, skill_level, description in skills])
 
 
+def synthetic_dispatch_candidates(candidate_rows, class_names, notify_rows=(), notify_class_names=()):
+    def class_record(effect_object):
+        return {'effectObject': effect_object, 'packageSha256': 'e' * 64, 'nativeSuperClass': 'Engine.Emitter'}
+
+    return {'classes': [class_record(name) for name in class_names],
+            'bindings': [{'stage': 'init', 'skillId': skill_id, 'levelRuns': [[level, level]], 'dispatchKind': 'selector-table', 'caseIndex': 0,
+                          'caseVA': '0x104f3bec', 'entryGate': 'none', 'effectObject': effect_object}
+                         for skill_id, level, effect_object in candidate_rows],
+            'animationNotify': {'classes': [class_record(name) for name in notify_class_names],
+                                'bindings': [{'skillId': skill_id, 'level': level, 'routes': [{'npcId': 1, 'sequence': 'atk01',
+                                                                                               'effects': [{'effectObject': effect_object}]}]}
+                                             for skill_id, level, effect_object in notify_rows]}}
+
+
+NO_DISPATCH_CANDIDATES = synthetic_dispatch_candidates((), ())
+
+
 def synthetic_skill_sound_row(skill_id, skill_level, references_by_field):
     return {'skill_id': skill_id, 'skill_level': skill_level, **{field: references_by_field.get(field, '') for field in REFERENCE_FIELDS},
             'cast_volume': 250.0, 'cast_rad': 50.0}

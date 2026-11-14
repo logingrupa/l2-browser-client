@@ -11,6 +11,7 @@ from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_inp
 from world.map_emitter_records import MapEmitterGap, emitter_actor_exports, read_map_emitter_placement
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
 from world.static_placement import ClassDefaults
+from world.struct_property_tag_rules import read_struct_property_tag_rules
 from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
@@ -24,6 +25,8 @@ TILE_MAP_EMITTERS_SCHEMA_VERSION = 1
 TILE_MAP_EMITTERS_FOLDER = 'map-emitters'
 TILE_MAP_EMITTERS_NAME = 'tile-emitters.json'
 EMITTER_ACTOR_NOT_EXTRACTED_REASON = 'decode-failed:emitter-actor-not-extracted'
+RAW_MANIFEST_NAME = 'manifest.json'
+EMITTER_ACTOR_CLASS_NAME = 'Emitter'
 
 
 class MapEmitterUnit(NamedTuple):
@@ -39,10 +42,17 @@ def map_emitter_ledger(project_root):
     return UnitLedger(lane_work_root(project_root, WORLD_LANE_NAME), MAP_EMITTER_STEP_NAME, MAP_EMITTER_STEP_ALGORITHM_VERSION)
 
 
+def raw_manifest_counts_emitters(raw_products):
+    coverage = json.loads((raw_products / RAW_MANIFEST_NAME).read_text(encoding='utf-8'))['coverage']
+    return coverage['byClass'].get(EMITTER_ACTOR_CLASS_NAME, 0) > 0
+
+
 def map_emitter_unit(project_root, tile_id, lock_record):
     chunks_fingerprint, raw_products, _ = sealed_chunk_plan(project_root, tile_id, lock_record)
     inputs = locked_input_records([tile_map_path(tile_id)])
     config = {'chunksFingerprint': chunks_fingerprint, 'simulatedEmitterClasses': sorted(read_simulated_emitter_classes(project_root))}
+    if raw_manifest_counts_emitters(raw_products):
+        config['structPropertyRulesSha256'] = read_struct_property_tag_rules().sha256
     ledger = map_emitter_ledger(project_root)
     fingerprint = ledger.unit_fingerprint([record['sha256'] for record in inputs], config)
     return MapEmitterUnit(ledger, tile_unit_key(tile_id), fingerprint, config, inputs, raw_products)

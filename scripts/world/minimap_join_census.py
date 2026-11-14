@@ -9,26 +9,41 @@ import argparse
 from collections import Counter
 import hashlib
 import json
+from typing import NamedTuple
 
 from native_store.unit_ledger import run_at_below_normal_priority
 from reference_client_guard import require_reference_client
 from world.committed_world_data import REPOSITORY_ROOT, require_committed_destination, write_committed_world_bytes
-from world.minimap_join import (HUNTINGZONE_TABLE_ROLE, RADAR_PACKAGE_ROLE, TEXTURE_SOURCE_READABLE_STATUS, TOWN_MAP_PACKAGE_ROLE, ZONE_NAME_PACKAGE_ROLE,
-                                ZONENAME_TABLE_ROLE, join_minimap_sources, locked_tile_grid)
-from world.minimap_sources import MINIMAP_PACKAGE_PATHS, MINIMAP_TABLE_PATHS, locked_tile_ids, tile_frame_extent
-from world.minimap_step import read_minimap_sources, read_texture_package_index
+from world.minimap_join import (HUNTINGZONE_TABLE_ROLE, ZONE_NAME_PACKAGE_ROLE, ZONENAME_TABLE_ROLE, join_tile_route_half, join_unresolved_reason)
+from world.minimap_radar_route_recipe import read_minimap_radar_route_recipe
+from world.minimap_route_step import (EVERY_TILE_OPEN_IDS, RADAR_CASE_RULE, RADAR_DEFAULT_RULE, TEXTURE_ABSENT, WORLD_MAP_PACKAGE_PATH, WORLD_MAP_PIECE_RULE,
+                                      route_texture_format, route_textures)
+from world.minimap_sources import MINIMAP_TABLE_PATHS, MINIMAP_TILE_PACKAGE_PATHS, decoded_table_rows, locked_tile_ids, tile_frame_extent
+from world.minimap_textures import export_named, read_texture_package, texture_package_index
 from world.raw_map_step import read_tile_map_lock_record
 from world.tile_census import reference_tree_lock_sha256
 from world.tile_chunk_plan import ChunkPlanStepError, sealed_chunk_plan
+from world.zone_name_keys import zone_key_table
 
-MINIMAP_JOIN_CENSUS_SCHEMA_VERSION = 1
+MINIMAP_JOIN_CENSUS_SCHEMA_VERSION = 2
 MINIMAP_JOIN_CENSUS_RELATIVE_PATH = 'docs/parts/minimap/minimap-join-census.json'
-WORLD_MAP_PIECES_PACKAGE_PATH = 'systextures/L2Font-e.utx'
-WORLD_MAP_PIECE_NAMES = tuple(f'int_worldmap{number}' for number in range(1, 7))
-ELBERA_MINIMAP_CITATION = 'Elbera tools/maps/build_minimap.py at 12c9656'
 MINIMAP_CONTROL_TYPE = 'MinimapCtrl'
 DATA_SCRIPTS_ROOT = SCRIPTS_ROOT / 'data'
 UNAVAILABLE_PREFIX = 'unavailable: '
+JOINED_STATUS = 'joined'
+GAP_STATUS = 'gap'
+
+
+class MinimapCensusSources(NamedTuple):
+    packages: dict
+    route_texture_statuses: dict
+    zone_name_package: dict | None
+    tables: dict
+
+
+def package_summary(package_index):
+    return {'path': package_index['path'], 'sha256': package_index['sha256'], 'packageVersion': package_index['packageVersion'],
+            'licensee': package_index['licensee'], 'textureExportCount': len(package_index['exports'])}
 
 
 def extracted_tile_frames(project_root, tile_ids):
@@ -42,23 +57,56 @@ def extracted_tile_frames(project_root, tile_ids):
     return frames
 
 
-def texture_source_label(export):
-    texture_source = export['textureSource']
-    return texture_source['format'] if texture_source['status'] == TEXTURE_SOURCE_READABLE_STATUS else texture_source['reason']
+def route_texture_status(statuses, object_name):
+    return statuses.get(object_name, {'reason': join_unresolved_reason(TEXTURE_ABSENT)})
 
 
-def package_rows(packages):
-    rows = []
-    for role, path in MINIMAP_PACKAGE_PATHS.items():
-        package = packages[role]
-        if package is None:
-            rows.append({'role': role, 'path': path, 'lockEqual': False})
-            continue
-        rows.append({'role': role, 'path': path, 'lockEqual': True, 'sha256': package['sha256'], 'packageVersion': package['packageVersion'],
-                     'licensee': package['licensee'], 'textureExportCount': len(package['exports']),
-                     'textureSourceCounts': dict(sorted(Counter(texture_source_label(export) for export in package['exports']).items())),
-                     'textureExports': [{'object': export['object'], 'textureSource': export['textureSource']} for export in package['exports']]})
-    return rows
+def zonename_rows_with_name(zonename_rows, zone_name):
+    return sum(1 for row in zonename_rows if row['Name'].casefold() == zone_name.casefold())
+
+
+def census_route(recipe, statuses, zonename_rows):
+    textures = route_textures(recipe['radar'], recipe['worldMap'])
+    cases = [{'zoneName': case['zoneName'], 'texture': object_name, **route_texture_status(statuses, object_name),
+              'zonenameRowsWithName': zonename_rows_with_name(zonename_rows, case['zoneName'])}
+             for case, (object_name, _) in zip(recipe['radar']['cases'], [texture for texture in textures if texture[1] == RADAR_CASE_RULE])]
+    default_object = next(object_name for object_name, rule in textures if rule == RADAR_DEFAULT_RULE)
+    pieces = [{'suffix': suffix, 'texture': object_name, **route_texture_status(statuses, object_name)}
+              for suffix, (object_name, _) in zip(recipe['worldMap']['initializeMapDisplay']['suffixes'],
+                                                  [texture for texture in textures if texture[1] == WORLD_MAP_PIECE_RULE])]
+    return {'cases': cases, 'default': {'texture': default_object, **route_texture_status(statuses, default_object)}, 'worldMapPieces': pieces}
+
+
+def route_gap_reasons(recipe, route):
+    open_reasons = {item['id']: item['tileGap'] for item in recipe['open']}
+    texture_rows = [*route['cases'], route['default'], *route['worldMapPieces']]
+    texture_reasons = sorted({row['reason'] for row in texture_rows if 'reason' in row})
+    return [*(open_reasons[open_id] for open_id in EVERY_TILE_OPEN_IDS), *texture_reasons]
+
+
+def zone_key_summary(zone_keys, tile_ids):
+    locked = set(tile_ids)
+    return {'rows': len(zone_keys['rows']), 'keys': zone_keys['keyCount'], 'globalKeyRows': zone_keys['globalRowCount'],
+            'rowsOutsideLockedTiles': sum(1 for row in zone_keys['rows'] if row['tileId'] is not None and row['tileId'] not in locked),
+            'sharedKeys': zone_keys['sharedKeyCount'], 'rowsInSharedKeys': zone_keys['rowsInSharedKeys'], 'overlappingRuns': zone_keys['overlappingRuns']}
+
+
+def zone_ids_by_key(zone_keys, tile_id):
+    ids_by_key = {}
+    for row in zone_keys['rows']:
+        if row['tileId'] == tile_id:
+            ids_by_key.setdefault(str(row['key']), []).append(row['id'])
+    return ids_by_key
+
+
+def census_tile_row_and_gap_reasons(tile_id, frame, sources, zone_keys, overlapping_run_tile_ids, route_reasons):
+    tables = {ZONENAME_TABLE_ROLE: sources.tables[ZONENAME_TABLE_ROLE], HUNTINGZONE_TABLE_ROLE: sources.tables[HUNTINGZONE_TABLE_ROLE]}
+    tile = join_tile_route_half(tile_id, frame, sources.zone_name_package, tables, overlapping_run_tile_ids)
+    tile_reasons = [gap['reason'] for gap in tile['gaps']]
+    row = {'tileId': tile_id, 'status': GAP_STATUS if route_reasons or tile_reasons else JOINED_STATUS,
+           'zoneKeyTexture': None if tile['zoneKeyTexture'] is None else tile['zoneKeyTexture']['object'],
+           'zoneIdsByKey': zone_ids_by_key(zone_keys, tile_id), 'huntingZoneIds': None if frame is None else [zone['id'] for zone in tile['huntingZones']]}
+    return row, tile_reasons
 
 
 def table_rows(tables):
@@ -67,39 +115,39 @@ def table_rows(tables):
             for role, path in MINIMAP_TABLE_PATHS.items()]
 
 
-def world_map_pieces(world_map_package):
-    if world_map_package is None:
-        return {'path': WORLD_MAP_PIECES_PACKAGE_PATH, 'lockEqual': False, 'citation': ELBERA_MINIMAP_CITATION, 'pieces': []}
-    names = {export['name'].casefold(): export['object'] for export in world_map_package['exports']}
-    return {'path': WORLD_MAP_PIECES_PACKAGE_PATH, 'lockEqual': True, 'sha256': world_map_package['sha256'], 'citation': ELBERA_MINIMAP_CITATION,
-            'usedByJoin': False, 'pieces': [names[name.casefold()] for name in WORLD_MAP_PIECE_NAMES if name.casefold() in names]}
-
-
-def census_tile_row(tile):
-    radar_texture = tile['radarTexture']
-    return {'tileId': tile['tileId'], 'status': tile['status'], 'reason': tile['gaps'][0]['reason'] if tile['gaps'] else None,
-            'gapReasons': [gap['reason'] for gap in tile['gaps']],
-            'radarTexture': None if radar_texture is None else {'object': radar_texture['object'], 'rule': radar_texture['rule']},
-            'zoneIds': [zone['id'] for zone in tile['zones']], 'huntingZoneIds': [zone['id'] for zone in tile['huntingZones']],
-            'zoneNameTextures': [item['object'] for item in tile['zoneNameTextures']], 'townMapTextures': [item['object'] for item in tile['townMapTextures']],
-            'projection': None if tile['projection'] is None else {'rule': tile['projection']['rule'], 'status': tile['projection']['status']}}
-
-
-def minimap_join_census(lock_sha256, sources, tile_ids, tile_frames, world_map_pieces_row, minimap_controls):
-    joined = join_minimap_sources(tile_ids, tile_frames, sources.packages[RADAR_PACKAGE_ROLE], sources.packages[TOWN_MAP_PACKAGE_ROLE],
-                                  sources.packages[ZONE_NAME_PACKAGE_ROLE], sources.tables[ZONENAME_TABLE_ROLE], sources.tables[HUNTINGZONE_TABLE_ROLE],
-                                  locked_tile_grid(tile_ids))
-    tiles = [census_tile_row(tile) for tile in joined['tiles']]
-    return {'schemaVersion': MINIMAP_JOIN_CENSUS_SCHEMA_VERSION, 'referenceTreeLockSha256': lock_sha256, 'algorithmVersion': joined['algorithmVersion'],
-            'lockedGrid': joined['lockedGrid'], 'zoneRowsOutsideGrid': joined['zoneRowsOutsideGrid'], 'packages': package_rows(sources.packages),
-            'tables': table_rows(sources.tables), 'ruleMatchCounts': joined['ruleMatchCounts'],
+def minimap_join_census(lock_sha256, recipe_record, sources, tile_ids, tile_frames, minimap_controls):
+    recipe = recipe_record['document']
+    zonename_rows = [] if sources.tables[ZONENAME_TABLE_ROLE] is None else sources.tables[ZONENAME_TABLE_ROLE]['rows']
+    zone_keys = zone_key_table(zonename_rows)
+    route = census_route(recipe, sources.route_texture_statuses, zonename_rows)
+    route_reasons = route_gap_reasons(recipe, route)
+    overlapping_run_tile_ids = {run['tileId'] for run in zone_keys['overlappingRuns'] if run['tileId'] is not None}
+    tile_rows = [census_tile_row_and_gap_reasons(tile_id, tile_frames.get(tile_id), sources, zone_keys, overlapping_run_tile_ids, route_reasons)
+                 for tile_id in sorted(tile_ids)]
+    tiles = [row for row, _ in tile_rows]
+    tile_gap_reasons = {row['tileId']: reasons for row, reasons in tile_rows if reasons}
+    return {'schemaVersion': MINIMAP_JOIN_CENSUS_SCHEMA_VERSION, 'referenceTreeLockSha256': lock_sha256,
+            'recipe': {'path': recipe_record['path'], 'sha256': recipe_record['sha256']}, 'route': route, 'routeGapReasons': route_reasons,
+            'zoneKeys': zone_key_summary(zone_keys, tile_ids), 'packages': [sources.packages[path] for path in sorted(sources.packages)],
+            'tables': table_rows(sources.tables), 'minimapControls': minimap_controls, 'tilesWithFrame': len(tile_frames),
             'statusCounts': dict(sorted(Counter(tile['status'] for tile in tiles).items())),
-            'gapReasonCounts': dict(sorted(Counter(reason for tile in tiles for reason in tile['gapReasons']).items())),
-            'tilesWithFrame': len(tile_frames), 'worldMapPieces': world_map_pieces_row, 'minimapControls': minimap_controls, 'tiles': tiles}
+            'gapReasonCounts': dict(sorted(Counter(reason for tile in tiles for reason in (*route_reasons, *tile_gap_reasons.get(tile['tileId'], []))).items())),
+            'tileGapReasons': tile_gap_reasons, 'tiles': tiles}
+
+
+def compact_json(value):
+    return json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(',', ':'))
+
+
+def census_field_json(value):
+    if isinstance(value, list) and value:
+        return '[\n  ' + ',\n  '.join(compact_json(item) for item in value) + '\n ]'
+    return compact_json(value)
 
 
 def minimap_join_census_bytes(census):
-    return (json.dumps(census, indent=1, sort_keys=True, ensure_ascii=False) + '\n').encode('utf-8')
+    fields = ',\n'.join(f' {compact_json(key)}:{census_field_json(census[key])}' for key in sorted(census))
+    return ('{\n' + fields + '\n}\n').encode('utf-8')
 
 
 def decoded_minimap_controls(client_access):
@@ -121,16 +169,44 @@ def decoded_minimap_controls(client_access):
     return controls
 
 
+def client_route_texture_statuses(client, recipe):
+    package_paths = {RADAR_CASE_RULE: recipe['radar']['texturePackage'], RADAR_DEFAULT_RULE: recipe['radar']['texturePackage'],
+                     WORLD_MAP_PIECE_RULE: WORLD_MAP_PACKAGE_PATH}
+    packages, statuses = {}, {}
+    for object_name, rule in route_textures(recipe['radar'], recipe['worldMap']):
+        relative_path = package_paths[rule]
+        if relative_path not in packages:
+            package = read_texture_package(client, relative_path)
+            packages[relative_path] = (package, texture_package_index(package, relative_path))
+        package, index = packages[relative_path]
+        index_entry = export_named(index, object_name)
+        if index_entry is None:
+            continue
+        texture_format, rule_or_reason = route_texture_format(package, package.exports[index_entry['exportIndex'] - 1], index_entry, recipe['textureFormat5'])
+        statuses[object_name] ={'format': texture_format} if texture_format is not None else {'reason': rule_or_reason}
+    return {path: package_summary(index) for path, (_, index) in packages.items()}, statuses
+
+
+def read_census_sources(client_access, recipe):
+    packages, statuses = client_route_texture_statuses(client_access.root, recipe)
+    zone_name_path = MINIMAP_TILE_PACKAGE_PATHS[ZONE_NAME_PACKAGE_ROLE]
+    zone_name_package = None
+    if client_access.is_in_read_scope(zone_name_path):
+        zone_name_package = texture_package_index(read_texture_package(client_access.root, zone_name_path), zone_name_path)
+        packages[zone_name_path] = package_summary(zone_name_package)
+    tables = {role: decoded_table_rows(client_access.root, role) if client_access.is_in_read_scope(path) else None for role, path in MINIMAP_TABLE_PATHS.items()}
+    return MinimapCensusSources(packages, statuses, zone_name_package, tables)
+
+
 def build_minimap_join_census(client_access):
     tile_ids = locked_tile_ids()
-    lock_equal = client_access.is_in_read_scope(WORLD_MAP_PIECES_PACKAGE_PATH)
-    world_map_package = read_texture_package_index(client_access.root, WORLD_MAP_PIECES_PACKAGE_PATH) if lock_equal else None
-    return minimap_join_census(reference_tree_lock_sha256(client_access.lock.document), read_minimap_sources(client_access.root), tile_ids,
-                               extracted_tile_frames(REPOSITORY_ROOT, tile_ids), world_map_pieces(world_map_package), decoded_minimap_controls(client_access))
+    recipe_record = read_minimap_radar_route_recipe()
+    return minimap_join_census(reference_tree_lock_sha256(client_access.lock.document), recipe_record, read_census_sources(client_access, recipe_record['document']),
+                               tile_ids, extracted_tile_frames(REPOSITORY_ROOT, tile_ids), decoded_minimap_controls(client_access))
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description='Census the exact-name minimap join of every locked tile into a tracked doc.')
+    parser = argparse.ArgumentParser(description='Census the verified minimap route and the tile half of every locked tile into a tracked doc.')
     parser.add_argument('--client', type=Path, required=True)
     arguments = parser.parse_args(argv)
     try:

@@ -124,7 +124,8 @@ class CatalogIndexKeysJoinTests(unittest.TestCase):
 
     def test_skill_keys_come_from_effect_component_ids_and_tile_keys_from_tiles_and_legacy_sections(self):
         catalog = {'schemaVersion': 1, 'models': [],
-                   'effectComponents': [{'id': 'interlude:skill:3:level:1:raw-source-dispatch'}, {'id': 'interlude:footsteps'}],
+                   'effectComponents': [{'id': 'interlude:skill:3:level:1:raw-source-dispatch'}, {'id': 'interlude:footsteps'},
+                                        {'id': 'interlude:skill-dispatch-class:LineageEffect.s_u010_b'}],
                    'sections': [{'id': 'map-20-20-section'}, {'id': 'map-00-00-section'}, {'id': 'map-20-20-movers'}],
                    'tiles': golden_catalog()['tiles']}
         self.assertEqual(catalog_index_keys(self.store_root, catalog, self.shared_store_root), ('skill:3:1', 'tile:00_00', 'tile:20_20'))

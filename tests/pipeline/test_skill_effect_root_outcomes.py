@@ -13,6 +13,7 @@ from actors.skill_effect_conversion import (ROOT_OUTCOME_RECORD_NAME, SKILL_EFFE
                                             STAGED_EFFECTS_FOLDER, STAGED_MANIFEST_NAME, SkillEffectConversionRun,
                                             emitter_feature_gap_roots_by_reason)
 from actors.npc_store_records import file_output_record
+from actors.skill_dispatch_class_conversion import SkillDispatchClassUnits
 from native_assets_lib.gltf import json_bytes
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_writer import STORE_CATALOG_NAME, read_store_catalog
@@ -27,6 +28,7 @@ SIMULATED_WITH_RIBBON = SIMULATED_BEFORE_RIBBON | {'Engine.RibbonEmitter'}
 SYNTHETIC_CLASS_DEFAULTS = json.loads((ROOT / 'tests' / 'fixtures' / 'particles' / 'synthetic-class-defaults.json').read_text(encoding='utf-8'))
 EMITTER_FEATURE_RULES = read_emitter_feature_rules(ROOT)
 BOUND_MESH = {'mesh': {'assetId': 'm'}, 'texture': None, 'primitiveMaterials': [{'textureResourceKey': 't'}]}
+NO_CANDIDATE_DOCUMENT = {'classes': [], 'bindings': [], 'animationNotify': {'classes': [], 'bindings': []}}
 
 
 def synthetic_effective_properties(emitter_class, overrides):
@@ -45,7 +47,7 @@ def sprite_feature_reasons(overrides):
 
 
 class SyntheticSkillEffectRun(SkillEffectConversionRun):
-    def __init__(self, project_root, simulated_emitter_classes):
+    def __init__(self, project_root, simulated_emitter_classes, candidate_document=NO_CANDIDATE_DOCUMENT, candidate_binding_rows=()):
         self.project_root = Path(project_root)
         self.ledger = UnitLedger(lane_work_root(project_root, 'actors'), SKILL_EFFECT_ROOT_STEP, SKILL_EFFECT_ROOT_ALGORITHM_VERSION)
         self.store_root = self.project_root / 'artifacts' / 'lane-store' / 'actors' / 'l2'
@@ -55,6 +57,7 @@ class SyntheticSkillEffectRun(SkillEffectConversionRun):
         self.emitter_feature_rules = EMITTER_FEATURE_RULES
         self.tool_identity = {'converterSha256': 'b' * 64}
         self.input_records = INPUT_RECORDS
+        self.dispatch_classes = SkillDispatchClassUnits(self, candidate_document, list(candidate_binding_rows))
 
     def seal_converted_root(self, components):
         unit_key, _, config, fingerprint = self.root_work(VISUAL_ROOT)
@@ -92,11 +95,11 @@ class SealedSkillRootOutcomeTests(unittest.TestCase):
 
     def test_a_rewrite_with_unchanged_outcomes_keeps_the_compact_lane_catalog_bytes_the_other_actor_writers_wrote(self):
         run = SyntheticSkillEffectRun(self.project_root, SIMULATED_BEFORE_RIBBON)
-        run.write_store_records(run.root_outcomes())
+        run.write_store_records(run.root_outcomes(), {})
         catalog, _ = read_store_catalog(run.store_root)
         compact_catalog_bytes = json_bytes(catalog)
         (run.store_root / STORE_CATALOG_NAME).write_bytes(compact_catalog_bytes)
-        run.write_store_records(run.root_outcomes())
+        run.write_store_records(run.root_outcomes(), {})
         self.assertEqual((run.store_root / STORE_CATALOG_NAME).read_bytes(), compact_catalog_bytes)
 
 

@@ -7,6 +7,7 @@ from world.collision_step import COLLISION_STEP_NAME, collision_ledger, collisio
 from world.lighting_step import LIGHTING_STEP_NAME, lighting_ledger, lighting_unit
 from world.locked_input_receipt import receipt_with_current_version_config_and_locked_inputs
 from world.map_emitter_step import MAP_EMITTER_STEP_NAME, map_emitter_ledger, map_emitter_unit
+from world.minimap_route_step import current_minimap_route
 from world.minimap_step import MINIMAP_STEP_NAME, current_minimap_receipt, minimap_input_records, minimap_ledger, upstream_sealed_fingerprints
 from world.mover_step import MOVER_STEP_NAME, mover_ledger, sealed_mover_unit_config
 from world.raw_map_step import (RAW_STEP_NAME, raw_map_ledger, raw_map_unit, raw_map_unit_fingerprint, read_map_lock_record, read_tile_map_lock_record,
@@ -131,7 +132,7 @@ def minimap_seal_is_current(project_root, unit_key, ledger):
     if pending_upstream_step is not None:
         raise UpstreamUnitPendingError(f'minimap of {unit_key} waits for its {pending_upstream_step} unit')
     config, _ = upstream
-    return current_minimap_receipt(ledger, unit_key, config, minimap_input_records(tile_id)) is not None
+    return current_minimap_route(project_root).product is not None and current_minimap_receipt(ledger, unit_key, config, minimap_input_records(tile_id)) is not None
 
 
 def tile_manifest_seal_is_current(project_root, unit_key, ledger):

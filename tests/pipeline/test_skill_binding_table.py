@@ -6,10 +6,10 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPOSITORY_ROOT / 'scripts'))
 
 from actors.skill_binding_table import (SKILL_BINDING_ANOMALY_FIELDS, SKILL_BINDING_CENSUS_FIELDS, SKILL_BINDING_ROW_FIELDS,
-                                        SKILL_BINDING_STATUSES, SkillBindingTableError, build_skill_binding_rows, emitter_class_root_outcome,
-                                        representative_skill_binding, require_census_totals, reviewed_source_dispatch_keys,
-                                        skill_binding_anomalies, skill_binding_census, skill_binding_gap_rows, skill_bindings_by_visual_root,
-                                        visual_roots_in_first_key_order)
+                                        SKILL_BINDING_STATUSES, SkillBindingTableError, SkillDispatchCandidateRows, build_skill_binding_rows,
+                                        emitter_class_root_outcome, representative_skill_binding, require_census_totals,
+                                        reviewed_source_dispatch_keys, skill_binding_anomalies, skill_binding_census, skill_binding_gap_rows,
+                                        skill_bindings_by_visual_root, visual_roots_in_first_key_order)
 from actors.skill_effect_conversion import (MAXIMUM_SKILL_ROOT_CLASS_CLOSURE, class_limit_reason, read_simulated_emitter_classes,
                                             skill_effect_component_id, skill_root_bundle_id, unbound_simulated_component_reason)
 from native_effect_bundle import CONVERTED_EMITTER_CLASSES, MAX_CLASSES
@@ -17,6 +17,16 @@ from native_store.gap_rows import load_gap_reason_patterns, validate_gap_row
 
 GAMEPLAY_FIELDS = ('mp_consume', 'hp_consume', 'cast_range', 'hit_time', 'is_magic', 'operate_type', 'reuse_delay', 'power')
 SKILL_TABLE_IDENTITY = {'path': 'system/skillgrp.dat', 'sha256': 'a' * 64}
+CENSUS_EVIDENCE = 'docs/parts/skills-effects/skill-binding-census.json'
+CANDIDATE_RECIPE_EVIDENCE = 'recipes/actors/skill-dispatch-candidates.json'
+NO_CANDIDATE_ROWS = SkillDispatchCandidateRows({}, {})
+DISPATCH_CANDIDATE_ENTRY = {'stage': 'init', 'case': {'dispatchKind': 'selector-table', 'caseIndex': 2, 'caseVA': '0x104f5e83'},
+                            'candidateClasses': ['LineageEffect.s_u002_a'], 'entryGate': 'none'}
+NOTIFY_CANDIDATE_ENTRY = {'stage': 'animation-notify', 'notifyRoutes': [{'npcId': 29028, 'sequence': 'atk01'}],
+                          'candidateClasses': ['LineageEffect.mb_valakas_trample_ca']}
+CANDIDATE_ROWS = SkillDispatchCandidateRows({'skill:3:1': [DISPATCH_CANDIDATE_ENTRY], 'skill:3:2': [DISPATCH_CANDIDATE_ENTRY]},
+                                            {'skill:4681:1': [NOTIFY_CANDIDATE_ENTRY]})
+DISPATCH_CANDIDATE_CENSUS = {'recipe': CANDIDATE_RECIPE_EVIDENCE, 'bindings': 1}
 
 
 def skill_row(skill_id, level, description):
@@ -32,8 +42,8 @@ def decoded_table(name, rows, sha256):
     return {'source': f'system/{name}.dat', 'sourceSha256': sha256, 'data': {name.replace('grp', ''): rows}}
 
 
-def binding_of(skill_rows, sound_rows, reviewed=frozenset()):
-    rows = build_skill_binding_rows(skill_rows, sound_rows, reviewed)
+def binding_of(skill_rows, sound_rows, reviewed=frozenset(), candidate_rows=NO_CANDIDATE_ROWS):
+    rows = build_skill_binding_rows(skill_rows, sound_rows, reviewed, candidate_rows)
     if len(rows) != 1:
         raise AssertionError(f'expected one binding, got {rows}')
     return rows[0]
@@ -45,9 +55,10 @@ def staged_component(object_name, emitter_class, mesh=None, texture=None, primit
 
 class VisualRootBindingTests(unittest.TestCase):
     def test_a_qualified_description_with_one_exact_sound_row_binds_the_visual_root_and_the_sound_row_ordinal(self):
-        rows = build_skill_binding_rows([skill_row(1011, 1, 'skill.wh.1011')], [sound_row(4, 1), sound_row(1011, 1)], frozenset())
+        rows = build_skill_binding_rows([skill_row(1011, 1, 'skill.wh.1011')], [sound_row(4, 1), sound_row(1011, 1)], frozenset(),
+                                        NO_CANDIDATE_ROWS)
         self.assertEqual(rows, [{'key': 'skill:1011:1', 'skillId': 1011, 'level': 1, 'status': 'visual-root', 'visualRoot': 'skill.wh.1011',
-                                 'soundRowOrdinal': 1, 'soundReason': None, 'reason': None}])
+                                 'dispatchCandidates': None, 'soundRowOrdinal': 1, 'soundReason': None, 'reason': None}])
         self.assertIn(rows[0]['status'], SKILL_BINDING_STATUSES)
         self.assertEqual(tuple(rows[0]), SKILL_BINDING_ROW_FIELDS)
 
@@ -58,6 +69,22 @@ class VisualRootBindingTests(unittest.TestCase):
         self.assertEqual(binding_of([skill_row(4, 1, '')], [])['reason'], 'native-skill-dispatch-required')
         reviewed = binding_of([skill_row(3, 1, '')], [sound_row(3, 1)], frozenset({'skill:3:1'}))
         self.assertEqual((reviewed['status'], reviewed['visualRoot'], reviewed['reason']), ('reviewed-source-dispatch', None, None))
+
+    def test_an_empty_description_takes_the_reviewed_recipe_then_the_dispatch_then_the_notify_candidates_then_the_gap(self):
+        reviewed = binding_of([skill_row(3, 1, '')], [], frozenset({'skill:3:1'}), CANDIDATE_ROWS)
+        self.assertEqual((reviewed['status'], reviewed['dispatchCandidates']), ('reviewed-source-dispatch', None))
+        candidate = binding_of([skill_row(3, 2, '')], [], frozenset({'skill:3:1'}), CANDIDATE_ROWS)
+        self.assertEqual((candidate['status'], candidate['dispatchCandidates'], candidate['reason']),
+                         ('reviewed-native-dispatch-candidates', [DISPATCH_CANDIDATE_ENTRY], None))
+        notify = binding_of([skill_row(4681, 1, '')], [], frozenset(), CANDIDATE_ROWS)
+        self.assertEqual((notify['status'], notify['dispatchCandidates']), ('reviewed-animation-notify-candidates', [NOTIFY_CANDIDATE_ENTRY]))
+        unresolved = binding_of([skill_row(7035, 1, '')], [], frozenset(), CANDIDATE_ROWS)
+        self.assertEqual((unresolved['status'], unresolved['dispatchCandidates'], unresolved['reason']),
+                         ('gap', None, 'native-skill-dispatch-required'))
+
+    def test_a_candidate_row_with_a_description_stays_a_visual_root(self):
+        binding = binding_of([skill_row(3, 2, 'skill.wh.3')], [], frozenset(), CANDIDATE_ROWS)
+        self.assertEqual((binding['status'], binding['visualRoot'], binding['dispatchCandidates']), ('visual-root', 'skill.wh.3', None))
 
     def test_a_description_without_a_package_qualifier_is_an_unqualified_reference_gap(self):
         binding = binding_of([skill_row(5, 1, 'heal')], [sound_row(5, 1)])
@@ -77,13 +104,13 @@ class ExactSoundBindingTests(unittest.TestCase):
 
     def test_a_level_two_skill_with_only_a_level_one_sound_row_binds_no_sound(self):
         rows = build_skill_binding_rows([skill_row(1011, 1, 'skill.wh.1011'), skill_row(1011, 2, 'skill.wh.1011')], [sound_row(1011, 1)],
-                                        frozenset())
+                                        frozenset(), NO_CANDIDATE_ROWS)
         self.assertEqual([(row['key'], row['soundRowOrdinal'], row['soundReason']) for row in rows],
                          [('skill:1011:1', 0, None), ('skill:1011:2', None, 'no-exact-skillsound-row')])
 
     def test_the_root_unit_is_converted_from_the_first_key_with_an_exact_sound_row(self):
         rows = build_skill_binding_rows([skill_row(1011, 1, 'skill.wh.1011'), skill_row(1011, 2, 'skill.wh.1011')], [sound_row(1011, 2)],
-                                        frozenset())
+                                        frozenset(), NO_CANDIDATE_ROWS)
         self.assertEqual(representative_skill_binding(skill_bindings_by_visual_root(rows)['skill.wh.1011'])['key'], 'skill:1011:2')
         self.assertIsNone(representative_skill_binding(skill_bindings_by_visual_root(rows[:1])['skill.wh.1011']))
 
@@ -91,7 +118,7 @@ class ExactSoundBindingTests(unittest.TestCase):
 class LevelAndPrecisionTests(unittest.TestCase):
     def test_levels_below_one_are_census_anomalies_and_never_keys(self):
         skill_rows = [skill_row(1011, 0, 'skill.wh.1011'), skill_row(1011, -1, 'skill.wh.1011'), skill_row(1011, 1, 'skill.wh.1011')]
-        self.assertEqual([row['key'] for row in build_skill_binding_rows(skill_rows, [], frozenset())], ['skill:1011:1'])
+        self.assertEqual([row['key'] for row in build_skill_binding_rows(skill_rows, [], frozenset(), NO_CANDIDATE_ROWS)], ['skill:1011:1'])
         anomalies = skill_binding_anomalies(skill_rows)
         self.assertEqual(anomalies, [{'rowOrdinal': 0, 'reason': 'skill-level-below-one'}, {'rowOrdinal': 1, 'reason': 'skill-level-below-one'}])
         self.assertTrue(all(tuple(anomaly) == SKILL_BINDING_ANOMALY_FIELDS for anomaly in anomalies))
@@ -103,31 +130,35 @@ class LevelAndPrecisionTests(unittest.TestCase):
         self.assertEqual(skill_root_bundle_id('skill.mo.7'), 'interlude:skill-root:skill.mo.7')
 
     def test_the_census_counts_every_decoded_row_once_and_copies_identities_unchanged(self):
-        skill_rows = [skill_row(3, 1, ''), skill_row(4, 1, ''), skill_row(1011, 1, 'skill.wh.1011'), skill_row(1011, 2, 'skill.wh.1011'),
-                      skill_row(5, 1, 'heal'), skill_row(6, 1, 'skill.a.6'), skill_row(6, 1, 'skill.b.6'), skill_row(8, 0, 'skill.mo.8')]
+        skill_rows = [skill_row(3, 1, ''), skill_row(3, 2, ''), skill_row(4, 1, ''), skill_row(4681, 1, ''), skill_row(1011, 1, 'skill.wh.1011'),
+                      skill_row(1011, 2, 'skill.wh.1011'), skill_row(5, 1, 'heal'), skill_row(6, 1, 'skill.a.6'), skill_row(6, 1, 'skill.b.6'),
+                      skill_row(8, 0, 'skill.mo.8')]
         sound_rows = [sound_row(1011, 1), sound_row(3, 1)]
-        bindings = build_skill_binding_rows(skill_rows, sound_rows, frozenset({'skill:3:1'}))
+        bindings = build_skill_binding_rows(skill_rows, sound_rows, frozenset({'skill:3:1'}), CANDIDATE_ROWS)
         census = skill_binding_census(decoded_table('skillgrp', skill_rows, 'b' * 64), decoded_table('skillsoundgrp', sound_rows, 'c' * 64),
-                                      bindings, skill_binding_anomalies(skill_rows))
+                                      bindings, skill_binding_anomalies(skill_rows), DISPATCH_CANDIDATE_CENSUS)
         self.assertEqual(census, {
-            'schemaVersion': 1, 'sources': {'skillgrp': 'b' * 64, 'skillsoundgrp': 'c' * 64}, 'rowCount': 8, 'distinctSkillIds': 5,
-            'keys': {'visualRoot': 2, 'reviewedSourceDispatch': 1,
+            'schemaVersion': 1, 'sources': {'skillgrp': 'b' * 64, 'skillsoundgrp': 'c' * 64}, 'rowCount': 10, 'distinctSkillIds': 6,
+            'keys': {'visualRoot': 2, 'reviewedSourceDispatch': 1, 'reviewedNativeDispatchCandidates': 1, 'reviewedAnimationNotifyCandidates': 1,
                      'gap': {'native-skill-dispatch-required': 1, 'skill-row-ambiguous:2': 2, 'skill-visual-reference-unqualified': 1}},
-            'sound': {'exactRow': 2, 'noExactRow': 4}, 'visualRoots': 1, 'anomalies': [{'rowOrdinal': 7, 'reason': 'skill-level-below-one'}]})
+            'sound': {'exactRow': 2, 'noExactRow': 6}, 'visualRoots': 1, 'dispatchCandidates': DISPATCH_CANDIDATE_CENSUS,
+            'anomalies': [{'rowOrdinal': 9, 'reason': 'skill-level-below-one'}]})
         self.assertEqual(tuple(census), SKILL_BINDING_CENSUS_FIELDS)
 
     def test_a_census_whose_counts_miss_a_row_is_refused(self):
-        census = {'rowCount': 3, 'keys': {'visualRoot': 1, 'reviewedSourceDispatch': 0, 'gap': {'native-skill-dispatch-required': 1}},
+        census = {'rowCount': 4, 'keys': {'visualRoot': 1, 'reviewedSourceDispatch': 0, 'reviewedNativeDispatchCandidates': 1,
+                                          'reviewedAnimationNotifyCandidates': 0, 'gap': {'native-skill-dispatch-required': 1}},
                   'anomalies': []}
-        with self.assertRaisesRegex(SkillBindingTableError, 'covers 2 rows'):
+        with self.assertRaisesRegex(SkillBindingTableError, 'covers 3 rows'):
             require_census_totals(census)
 
 
 class GameplayFieldProhibitionTests(unittest.TestCase):
     def test_binding_rows_and_the_census_hold_only_presentation_identity_fields(self):
         skill_rows = [skill_row(1011, 1, 'skill.wh.1011'), skill_row(4, 1, '')]
-        bindings = build_skill_binding_rows(skill_rows, [sound_row(1011, 1)], frozenset())
-        census = skill_binding_census(decoded_table('skillgrp', skill_rows, 'b' * 64), decoded_table('skillsoundgrp', [], 'c' * 64), bindings, [])
+        bindings = build_skill_binding_rows(skill_rows, [sound_row(1011, 1)], frozenset(), NO_CANDIDATE_ROWS)
+        census = skill_binding_census(decoded_table('skillgrp', skill_rows, 'b' * 64), decoded_table('skillsoundgrp', [], 'c' * 64), bindings, [],
+                                      DISPATCH_CANDIDATE_CENSUS)
         for row in bindings:
             self.assertEqual(set(row), set(SKILL_BINDING_ROW_FIELDS))
         self.assertEqual(set(census), set(SKILL_BINDING_CENSUS_FIELDS))
@@ -171,24 +202,28 @@ class ClassLimitTests(unittest.TestCase):
 
 
 class SkillsGapRowTests(unittest.TestCase):
-    def test_every_key_gets_one_listed_skills_row_from_its_binding_or_its_sealed_root(self):
-        skill_rows = [skill_row(3, 1, ''), skill_row(4, 1, ''), skill_row(1011, 1, 'skill.wh.1011'), skill_row(1012, 1, 'skill.wh.1012'),
-                      skill_row(1013, 1, 'skill.wh.1013')]
-        bindings = build_skill_binding_rows(skill_rows, [sound_row(1011, 1), sound_row(1012, 1)], frozenset({'skill:3:1'}))
+    def test_every_key_gets_one_listed_skills_row_from_its_binding_its_candidates_or_its_sealed_root(self):
+        skill_rows = [skill_row(3, 1, ''), skill_row(3, 2, ''), skill_row(4, 1, ''), skill_row(4681, 1, ''), skill_row(1011, 1, 'skill.wh.1011'),
+                      skill_row(1012, 1, 'skill.wh.1012'), skill_row(1013, 1, 'skill.wh.1013')]
+        bindings = build_skill_binding_rows(skill_rows, [sound_row(1011, 1), sound_row(1012, 1)], frozenset({'skill:3:1'}), CANDIDATE_ROWS)
         root_outcomes = {'skill.wh.1011': {'status': 'gap', 'reason': 'emitter-class-unported:Engine.BeamEmitter', 'evidence': 'work/r/receipt.json'},
                          'skill.wh.1012': {'status': 'pass', 'reason': None, 'evidence': 'work/s/receipt.json'}}
         rows = skill_binding_gap_rows(bindings, root_outcomes, SKILL_TABLE_IDENTITY)
-        self.assertEqual([(row['key'], row['status'], row['reason']) for row in rows], [
-            ('skill:3:1', 'pending', 'conversion-pending'), ('skill:4:1', 'gap', 'native-skill-dispatch-required'),
-            ('skill:1011:1', 'gap', 'emitter-class-unported:Engine.BeamEmitter'), ('skill:1012:1', 'pass', None),
-            ('skill:1013:1', 'pending', 'conversion-pending')])
+        self.assertEqual([(row['key'], row['status'], row['reason'], row['evidence']) for row in rows], [
+            ('skill:3:1', 'pending', 'conversion-pending', CENSUS_EVIDENCE),
+            ('skill:3:2', 'gap', 'skill-dispatch-candidate-runtime-unresolved', CANDIDATE_RECIPE_EVIDENCE),
+            ('skill:4:1', 'gap', 'native-skill-dispatch-required', CENSUS_EVIDENCE),
+            ('skill:1011:1', 'gap', 'emitter-class-unported:Engine.BeamEmitter', 'work/r/receipt.json'),
+            ('skill:1012:1', 'pass', None, 'work/s/receipt.json'),
+            ('skill:1013:1', 'pending', 'conversion-pending', CENSUS_EVIDENCE),
+            ('skill:4681:1', 'gap', 'skill-dispatch-candidate-runtime-unresolved', CANDIDATE_RECIPE_EVIDENCE)])
         patterns = load_gap_reason_patterns()
         for row in rows:
             validate_gap_row(row, patterns)
 
     def test_roots_are_converted_in_the_order_of_their_first_key(self):
         bindings = build_skill_binding_rows([skill_row(1011, 1, 'skill.wh.1011'), skill_row(4, 1, 'skill.mo.4'), skill_row(4, 2, 'skill.wh.1011')],
-                                            [], frozenset())
+                                            [], frozenset(), NO_CANDIDATE_ROWS)
         self.assertEqual(visual_roots_in_first_key_order(bindings), ['skill.mo.4', 'skill.wh.1011'])
 
 

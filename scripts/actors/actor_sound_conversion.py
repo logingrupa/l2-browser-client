@@ -7,10 +7,11 @@ from pathlib import Path, PurePosixPath
 from actors.actor_census import SOUND_PACKAGE_SUFFIXES, ActorPackageCensus, package_name_of
 from actors.actor_sound_bindings import (ACTOR_SOUND_STEP, actor_sound_bundle_id, actor_sound_gap_row,
                                          actor_sound_gap_rows, actor_sound_reference_counts, build_actor_sound_recipe,
-                                         unresolved_reference_entries)
+                                         unresolved_reference_entries, unrouted_field_gap_rows)
 from actors.actor_unit_inventory import decoded_string_values
-from actors.combat_role_routes import (bind_combat_role_routes, combat_route_table_manifest, descriptor_record_field_names,
+from actors.combat_role_routes import (bind_combat_role_routes, bound_route_records, combat_route_table_manifest,
                                        read_combat_role_route_proof)
+from actors.combat_sound_route_recipe import read_combat_sound_route_recipe
 from actors.npc_requests import CONVERTER_REFUSED_REASON_PREFIX, npc_sound_references
 from actors.npc_store_records import file_output_record
 from actors.path_free_messages import path_free_reason
@@ -23,6 +24,7 @@ from native_assets_lib.skill_audio_bundle import REFERENCE, reference_candidates
 from native_catalog.tables import interlude_table_layout
 from native_store.canonical_json import canonical_json_bytes
 from native_store.data_ui_table_manifest import DATA_UI_LANE_NAME, data_ui_table_manifest
+from native_store.store_paths import REPOSITORY_ROOT
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from reference_client_guard import ReferenceClientLockError
 
@@ -101,6 +103,7 @@ class ActorSoundConversionRun:
         self.lane_folder = self.bundle_ledger.lane_folder
         self.package_census = ActorPackageCensus(client_access, [])
         self.route_proof = read_combat_role_route_proof()
+        self.route_recipe = read_combat_sound_route_recipe(REPOSITORY_ROOT)
         self.converter_implementation_sha256 = implementation_hash()
         self.combat_audio_builder_sha256 = sha256_hex_digest(Path(combat_audio_bundle.__file__).read_bytes())
         self.tables, self.routes_by_table, self.packages = {}, {}, {}
@@ -153,9 +156,8 @@ class ActorSoundConversionRun:
             manifest = self.required_data_ui_table_manifest(name)
             rows = manifest['records'][combat_audio_bundle.TABLES[name]]
             _, layout, _ = interlude_table_layout(name)
-            route_manifest = combat_route_table_manifest(name, manifest['descriptorSha256'], descriptor_record_field_names(layout), rows,
-                                                         self.is_sound_package_reference)
-            self.routes_by_table[name] = bind_combat_role_routes(route_manifest, self.route_proof)
+            route_manifest = combat_route_table_manifest(name, manifest['descriptorSha256'], layout, rows, self.is_sound_package_reference)
+            self.routes_by_table[name] = bind_combat_role_routes(route_manifest, self.route_proof, self.route_recipe)
         return self.routes_by_table[name]
 
     def sound_package(self, reference):
@@ -180,7 +182,7 @@ class ActorSoundConversionRun:
         references = []
         for actor_row in actor_rows:
             row = self.actor_table_row(actor_row)
-            for route in self.routes(actor_row['table'])['routes'].values():
+            for route in bound_route_records(self.routes(actor_row['table'])):
                 references += [reference for reference in decoded_string_values(row.get(route['fieldName'])) if reference]
         return references
 
@@ -309,6 +311,8 @@ class ActorSoundConversionRun:
         manifest, outputs, refusal = self.built_bundle(bundle_key, actor_rows, work.routes_by_table, work.inventory, work.coverage_rows, step_directory)
         identities = {table: self.table(table)['identity'] for table in work.tables}
         gap_rows = actor_sound_gap_rows(bundle_key, actor_rows, work.routes_by_table, manifest, identities, evidence, work.converter_reasons)
+        gap_rows += unrouted_field_gap_rows(bundle_key, actor_rows, [self.actor_table_row(actor_row) for actor_row in actor_rows],
+                                            work.routes_by_table, identities, evidence)
         if refusal is not None:
             gap_rows.append(actor_sound_gap_row(bundle_key, refusal, dict(identities[work.tables[0]]), evidence))
         (step_directory / 'unresolved-references.json').write_bytes(canonical_json_bytes(unresolved_reference_entries(manifest, work.converter_reasons)))
@@ -350,7 +354,8 @@ class ActorSoundConversionRun:
         recipe_inputs = {'corpus': {'root': self.repository_relative(self.lane_folder),
                                     **{name.removesuffix('.json'): self.input_pin(step_directory / name) for name in documents}},
                          'tables': {table: self.table_pins(table) for table in routes_by_table}}
-        recipe = build_actor_sound_recipe(bundle_key, actor_rows, routes_by_table, recipe_inputs)
+        recipe = build_actor_sound_recipe(bundle_key, actor_rows, [self.actor_table_row(actor_row) for actor_row in actor_rows], routes_by_table,
+                                          recipe_inputs)
         outputs = [file_output_record(self.lane_folder, step_directory / name) for name in documents]
         if recipe is None:
             return None, outputs, None

@@ -9,8 +9,8 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from actors import actor_census
 from actors.actor_census import build_actor_census, check_committed_census, lock_skeletal_package_paths, main, skeletal_reader_gate, write_actor_census
 from actors.actor_unit_inventory import conversion_unit_key, npc_units_and_rows
-from actor_census_fixture import (SYNTHETIC_ARMOR_COLUMNS, SYNTHETIC_FIRST_TEXTURE, SYNTHETIC_MESH, SYNTHETIC_SECOND_TEXTURE, SyntheticActorClient,
-                                  synthetic_actor_tables, synthetic_npcgrp, unwrapped_package_header)
+from actor_census_fixture import (NO_DISPATCH_CANDIDATES, SYNTHETIC_ARMOR_COLUMNS, SYNTHETIC_FIRST_TEXTURE, SYNTHETIC_MESH, SYNTHETIC_SECOND_TEXTURE,
+                                  SyntheticActorClient, synthetic_actor_tables, synthetic_npcgrp, unwrapped_package_header)
 from native_catalog.ue2 import summary
 from native_store.canonical_json import canonical_json_bytes
 from native_store.gap_rows import validate_gap_row
@@ -143,7 +143,7 @@ class ActorCensusBuildTests(unittest.TestCase):
         })
 
     def build(self):
-        return build_actor_census(self.client.access, self.tables, SYNTHETIC_ARMOR_COLUMNS)
+        return build_actor_census(self.client.access, self.tables, SYNTHETIC_ARMOR_COLUMNS, NO_DISPATCH_CANDIDATES)
 
     def test_census_is_byte_identical_across_builds_and_sorted_by_unit_key(self):
         first_census, first_rows = self.build()

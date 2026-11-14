@@ -26,6 +26,7 @@ from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, 
 from world.static_mesh_step import conversion_failure_reason
 from world.static_placement import ClassDefaults
 from world.static_placement_plan import FAILED_STATUS
+from world.struct_property_tag_rules import read_struct_property_tag_rules
 from world.terrain_lighting import read_terrain_lighting
 from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
@@ -80,7 +81,7 @@ def lighting_unit(project_root, tile_id, lock_record):
     bsp_fingerprint, bsp = sealed_bsp_chunks(project_root, tile_id, lock_record)
     collision_fingerprint, collision = sealed_collision(project_root, tile_id, lock_record)
     config = {'chunksFingerprint': chunks_fingerprint, 'bspFingerprint': bsp_fingerprint, 'collisionFingerprint': collision_fingerprint,
-              'rulesSha256': sha256_hex(canonical_json_bytes(load_lighting_rules()))}
+              'rulesSha256': sha256_hex(canonical_json_bytes(load_lighting_rules())), 'structPropertyRulesSha256': read_struct_property_tag_rules().sha256}
     inputs = sorted([*locked_input_records([tile_map_path(tile_id)]), *environment_lock_input_records()], key=lambda record: record['path'])
     ledger = lighting_ledger(project_root)
     fingerprint = ledger.unit_fingerprint([record['sha256'] for record in inputs], config)

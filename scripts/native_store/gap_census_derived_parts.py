@@ -17,6 +17,8 @@ NPC_KEY_KIND = 'npc'
 NPC_SOUNDS_KEY_KIND = 'npc-sounds'
 NPC_SOUND_IDENTITY_STEP = 'npc-sound-identities'
 SOURCE_ANCHOR_STEP = 'census'
+TILE_RECORD_STEP = 'manifest'
+PASS_STATUS = 'pass'
 STEP_PENDING_REASON_PREFIX = 'step-pending:'
 MINIMAP_RESOURCE_KIND = 'minimap'
 SKILL_SOUND_ROW_STEP = 'skill-sounds'
@@ -148,14 +150,22 @@ def source_anchor_row(source_rows, source_key, derived_key):
     return anchor_rows[0]
 
 
+def unpublished_tile_record_rows(key, derived_part, source_rows):
+    if derived_part.source_key_kind != TILE_KEY_KIND:
+        return []
+    return [rekeyed_row(row, key, derived_part.part) for row in source_rows if row['step'] == TILE_RECORD_STEP and row['status'] != PASS_STATUS]
+
+
 def derived_key_rows(key, derived_part, source_rows_by_key, converted_keys):
     source_key = f'{derived_part.source_key_kind}:{key_suffix(key)}'
     source_rows = source_rows_by_key.get((derived_part.source_part, source_key), [])
     if derived_part.source_key_kind == NPC_KEY_KIND and source_key not in converted_keys:
         return [rekeyed_row(row, key, derived_part.part) for row in source_rows]
     step_rows = [rekeyed_row(row, key, derived_part.part) for row in source_rows if row['step'] == derived_part.source_step]
-    if step_rows or key in converted_keys:
+    if key in converted_keys or any(row['status'] != PASS_STATUS for row in step_rows):
         return step_rows
+    if step_rows:
+        return [*step_rows, *unpublished_tile_record_rows(key, derived_part, source_rows)]
     return [step_pending_row(key, derived_part.part, derived_part.pending_step, source_anchor_row(source_rows, source_key, key))]
 
 

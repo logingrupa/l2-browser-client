@@ -2,7 +2,7 @@ import { nativeResourceUrl } from "../../assets/native/nativeResourceUrl";
 import { worldPositionToSource, type WorldPosition } from "../../world/sourceFrame";
 import { fetchVerifiedNativeResource } from "../../assets/native/fetchVerifiedNativeResource";
 import { decodeNativeJsonResource } from "./loadNativeSection";
-import { hasExactKeys, isPlainRecord, nativeTileSha256Pattern } from "./nativeManifestRecordGuards";
+import { hasExactKeys, nativeTileSha256Pattern } from "./nativeManifestRecordGuards";
 import type { NativeTileManifest } from "./nativeTileManifest";
 
 export class NativeTileMinimapError extends Error {
@@ -22,11 +22,21 @@ export interface NativeTileMinimapRadarTexture {
   readonly rule: string;
 }
 
-export interface NativeTileMinimapTexture {
-  readonly object: string;
-  readonly rule: string;
-  readonly source: { readonly path: string; readonly sha256: string; readonly exportIndex: number };
-  readonly citation: string | null;
+export interface NativeTileMinimapTextureSource {
+  readonly path: string;
+  readonly sha256: string;
+  readonly exportIndex: number;
+}
+
+export interface NativeTileMinimapZoneKeyTexture extends NativeTileMinimapRadarTexture {
+  readonly rule: "zone-sampler-tile";
+  readonly source: NativeTileMinimapTextureSource;
+}
+
+export interface NativeTileMinimapRoutePin {
+  readonly manifest: string;
+  readonly manifestSha256: string;
+  readonly manifestBytes: number;
 }
 
 export interface NativeTileMinimapRowSource {
@@ -35,14 +45,6 @@ export interface NativeTileMinimapRowSource {
   readonly sha256: string;
   readonly rowIndex: number;
   readonly field: string;
-}
-
-export interface NativeTileMinimapZone {
-  readonly id: number;
-  readonly name: string;
-  readonly map: string;
-  readonly rule: string;
-  readonly source: NativeTileMinimapRowSource;
 }
 
 export interface NativeTileMinimapHuntingZone {
@@ -69,13 +71,12 @@ export interface NativeTileMinimapGap {
 
 export interface NativeTileMinimap {
   readonly kind: "native-tile-minimap";
-  readonly schemaVersion: 1;
+  readonly schemaVersion: 2;
   readonly tileId: string;
   readonly sourceInputs: readonly NativeTileMinimapSourceInput[];
+  readonly route: NativeTileMinimapRoutePin;
+  readonly zoneKeyTexture: NativeTileMinimapZoneKeyTexture | null;
   readonly radarTexture: NativeTileMinimapRadarTexture | null;
-  readonly townMapTextures: readonly NativeTileMinimapTexture[];
-  readonly zoneNameTextures: readonly NativeTileMinimapTexture[];
-  readonly zones: readonly NativeTileMinimapZone[];
   readonly huntingZones: readonly NativeTileMinimapHuntingZone[];
   readonly projection: NativeTileMinimapProjection | null;
   readonly gaps: readonly NativeTileMinimapGap[];
@@ -86,24 +87,25 @@ export type NativeTileMinimapTexturePosition =
   | { readonly position: { readonly u: number; readonly v: number; readonly status: "unverified" }; readonly reason: null }
   | { readonly position: null; readonly reason: string };
 
-const manifestFields = ["kind", "schemaVersion", "tileId", "sourceInputs", "radarTexture", "townMapTextures", "zoneNameTextures", "zones",
-  "huntingZones", "projection", "gaps", "labels"];
+const manifestFields = ["kind", "schemaVersion", "tileId", "sourceInputs", "route", "zoneKeyTexture", "radarTexture", "huntingZones", "projection",
+  "gaps", "labels"];
 const radarTextureFields = ["archive", "archiveSha256", "archiveBytes", "sourceObject", "rule"];
+const zoneKeyTextureFields = [...radarTextureFields, "source"];
+const routePinFields = ["manifest", "manifestSha256", "manifestBytes"];
 const textureSourceFields = ["path", "sha256", "exportIndex"];
 const rowSourceFields = ["table", "path", "sha256", "rowIndex", "field"];
-const zoneFields = ["id", "name", "map", "rule", "source"];
 const huntingZoneFields = ["id", "name", "rule", "startLocation", "source"];
 const projectionFields = ["rule", "status", "frameMinimumNative", "frameMaximumNative", "textureWidth", "textureHeight"];
-const textureRules = ["tile-id", "tile-id-map", "zonename-map", "zonename-name", "huntingzone-name"];
-const radarTextureRules = ["tile-id", "tile-id-map", "zonename-map"];
+const radarTextureRules = ["radar-case", "radar-default"];
+const zoneKeyTextureRule = "zone-sampler-tile";
 const clientRelativePathPattern = /^(?:[A-Za-z0-9_-][A-Za-z0-9._-]*\/)*[A-Za-z0-9_-][A-Za-z0-9._-]*$/;
 const qualifiedObjectPattern = /^[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)+$/;
 const tileIdPattern = /^\d{2}_\d{2}$/;
 const maximumArchiveBytes = 64 * 1024 * 1024;
+const maximumRouteManifestBytes = 16 * 1024 * 1024;
 const maximumTextureDimension = 16384;
 const maximumListedItems = 4096;
 const outsideTileFrameReason = "outside-tile-frame";
-const projectionGapReason = "minimap-join-unresolved:projection";
 
 function fail(label: string, message: string): never {
   throw new NativeTileMinimapError(`${label} ${message}`);
@@ -137,33 +139,50 @@ function parseSourceInput(value: unknown, label: string): NativeTileMinimapSourc
   return { path: value.path, sha256: value.sha256 };
 }
 
-function parseRadarTexture(value: unknown, label: string): NativeTileMinimapRadarTexture | null {
-  if (value === null) return null;
-  if (!hasExactKeys(value, radarTextureFields) || !isSha256(value.archiveSha256) || !isBoundedInteger(value.archiveBytes, 1, maximumArchiveBytes) ||
-    typeof value.sourceObject !== "string" || !qualifiedObjectPattern.test(value.sourceObject) || !radarTextureRules.includes(value.rule as string)) {
-    fail(label, "radar texture must pin its archive, byte size, source object and join rule.");
+function parseArchiveFields(value: Record<string, unknown>, label: string, rules: readonly string[], what: string): NativeTileMinimapRadarTexture {
+  if (!isSha256(value.archiveSha256) || !isBoundedInteger(value.archiveBytes, 1, maximumArchiveBytes) || typeof value.sourceObject !== "string" ||
+    !qualifiedObjectPattern.test(value.sourceObject) || !rules.includes(value.rule as string)) {
+    fail(label, `${what} must pin its archive, byte size, source object and route rule.`);
   }
   if (typeof value.archive !== "string" || value.archive !== `/l2/${value.archiveSha256}/asset.l2asset`) {
-    fail(label, "radar texture archive must be /l2/<archiveSha256>/asset.l2asset.");
+    fail(label, `${what} archive must be /l2/<archiveSha256>/asset.l2asset.`);
   }
   nativeResourceUrl(value.archive);
   return { archive: value.archive, archiveSha256: value.archiveSha256, archiveBytes: value.archiveBytes, sourceObject: value.sourceObject,
     rule: value.rule as string };
 }
 
-function parseTexture(value: unknown, label: string): NativeTileMinimapTexture {
-  const fields = isPlainRecord(value) && "citation" in value ? ["object", "rule", "source", "citation"] : ["object", "rule", "source"];
-  if (!hasExactKeys(value, fields) || typeof value.object !== "string" || !qualifiedObjectPattern.test(value.object) ||
-    !textureRules.includes(value.rule as string) || ("citation" in value && !isNonEmptyText(value.citation))) {
-    fail(label, "texture must name its object, an exact join rule and its source.");
-  }
-  const source = value.source;
-  if (!hasExactKeys(source, textureSourceFields) || typeof source.path !== "string" || !clientRelativePathPattern.test(source.path) ||
-    !isSha256(source.sha256) || !isBoundedInteger(source.exportIndex, 1, Number.MAX_SAFE_INTEGER)) {
+function parseRadarTexture(value: unknown, label: string): NativeTileMinimapRadarTexture | null {
+  if (value === null) return null;
+  if (!hasExactKeys(value, radarTextureFields)) fail(label, "radar texture must pin its archive, byte size, source object and route rule.");
+  return parseArchiveFields(value, label, radarTextureRules, "radar texture");
+}
+
+function parseTextureSource(value: unknown, label: string): NativeTileMinimapTextureSource {
+  if (!hasExactKeys(value, textureSourceFields) || typeof value.path !== "string" || !clientRelativePathPattern.test(value.path) ||
+    !isSha256(value.sha256) || !isBoundedInteger(value.exportIndex, 1, Number.MAX_SAFE_INTEGER)) {
     fail(label, "texture source must hold a package path, its SHA-256 and an export index.");
   }
-  return { object: value.object, rule: value.rule as string, citation: (value.citation as string | undefined) ?? null,
-    source: { path: source.path, sha256: source.sha256, exportIndex: source.exportIndex } };
+  return { path: value.path, sha256: value.sha256, exportIndex: value.exportIndex };
+}
+
+function parseZoneKeyTexture(value: unknown, label: string): NativeTileMinimapZoneKeyTexture | null {
+  if (value === null) return null;
+  if (!hasExactKeys(value, zoneKeyTextureFields)) fail(label, "zone key texture must pin its archive and its export source.");
+  if (value.rule !== zoneKeyTextureRule) fail(label, `zone key texture rule must be ${zoneKeyTextureRule}.`);
+  return { ...parseArchiveFields(value, label, [zoneKeyTextureRule], "zone key texture"), rule: zoneKeyTextureRule,
+    source: parseTextureSource(value.source, label) };
+}
+
+function parseRoutePin(value: unknown, label: string): NativeTileMinimapRoutePin {
+  if (!hasExactKeys(value, routePinFields) || !isSha256(value.manifestSha256) || !isBoundedInteger(value.manifestBytes, 1, maximumRouteManifestBytes)) {
+    fail(label, "route pin must hold its manifest, SHA-256 and byte size.");
+  }
+  if (value.manifest !== `/l2/maps/${value.manifestSha256}/native-minimap-route/manifest.json`) {
+    fail(label, "route pin manifest must be /l2/maps/<manifestSha256>/native-minimap-route/manifest.json.");
+  }
+  nativeResourceUrl(value.manifest);
+  return { manifest: value.manifest, manifestSha256: value.manifestSha256, manifestBytes: value.manifestBytes };
 }
 
 function parseRowSource(value: unknown, label: string): NativeTileMinimapRowSource {
@@ -172,14 +191,6 @@ function parseRowSource(value: unknown, label: string): NativeTileMinimapRowSour
     fail(label, "row source must hold a table, its path and SHA-256, a row index and a field.");
   }
   return { table: value.table, path: value.path, sha256: value.sha256, rowIndex: value.rowIndex, field: value.field };
-}
-
-function parseZone(value: unknown, label: string): NativeTileMinimapZone {
-  if (!hasExactKeys(value, zoneFields) || !isBoundedInteger(value.id, 0, Number.MAX_SAFE_INTEGER) || typeof value.name !== "string" ||
-    typeof value.map !== "string" || value.rule !== "zonename-grid") {
-    fail(label, "zone must hold an id, name, map and the zonename-grid rule.");
-  }
-  return { id: value.id, name: value.name, map: value.map, rule: value.rule, source: parseRowSource(value.source, label) };
 }
 
 function parseHuntingZone(value: unknown, label: string): NativeTileMinimapHuntingZone {
@@ -213,7 +224,7 @@ function parseGap(value: unknown, label: string): NativeTileMinimapGap {
 
 export function parseNativeTileMinimapManifest(input: unknown, expectedTileId: string): NativeTileMinimap {
   const label = `Native tile ${expectedTileId} minimap manifest`;
-  if (!hasExactKeys(input, manifestFields) || input.kind !== "native-tile-minimap" || input.schemaVersion !== 1) {
+  if (!hasExactKeys(input, manifestFields) || input.kind !== "native-tile-minimap" || input.schemaVersion !== 2) {
     fail(label, "kind or schema version is invalid.");
   }
   if (typeof input.tileId !== "string" || !tileIdPattern.test(input.tileId) || input.tileId !== expectedTileId) fail(label, "names another tile.");
@@ -222,12 +233,10 @@ export function parseNativeTileMinimapManifest(input: unknown, expectedTileId: s
   const gaps = boundedList(input.gaps, `${label} gaps`).map(gap => parseGap(gap, label));
   const projection = parseProjection(input.projection, label);
   if (projection === null && gaps.length === 0) fail(label, "without a projection must list the gap that explains it.");
-  return { kind: "native-tile-minimap", schemaVersion: 1, tileId: input.tileId,
+  return { kind: "native-tile-minimap", schemaVersion: 2, tileId: input.tileId,
     sourceInputs: boundedList(input.sourceInputs, `${label} sourceInputs`).map(entry => parseSourceInput(entry, label)),
+    route: parseRoutePin(input.route, label), zoneKeyTexture: parseZoneKeyTexture(input.zoneKeyTexture, label),
     radarTexture: parseRadarTexture(input.radarTexture, label),
-    townMapTextures: boundedList(input.townMapTextures, `${label} townMapTextures`).map(entry => parseTexture(entry, label)),
-    zoneNameTextures: boundedList(input.zoneNameTextures, `${label} zoneNameTextures`).map(entry => parseTexture(entry, label)),
-    zones: boundedList(input.zones, `${label} zones`).map(entry => parseZone(entry, label)),
     huntingZones: boundedList(input.huntingZones, `${label} huntingZones`).map(entry => parseHuntingZone(entry, label)),
     projection, gaps, labels: { schemaFieldMeaning: labels.schemaFieldMeaning } };
 }
@@ -241,9 +250,7 @@ export async function loadNativeTileMinimap(tileManifest: NativeTileManifest, si
 
 export function minimapTexturePosition(minimap: NativeTileMinimap, scenePosition: WorldPosition): NativeTileMinimapTexturePosition {
   const projection = minimap.projection;
-  if (projection === null) {
-    return { position: null, reason: (minimap.gaps.find(gap => gap.reason === projectionGapReason) ?? minimap.gaps[0]!).reason };
-  }
+  if (projection === null) return { position: null, reason: minimap.gaps[0]!.reason };
   const { x: nativeX, y: nativeY } = worldPositionToSource(scenePosition);
   const [minimumX, minimumY] = projection.frameMinimumNative, [maximumX, maximumY] = projection.frameMaximumNative;
   if (nativeX < minimumX || nativeX > maximumX || nativeY < minimumY || nativeY > maximumY) return { position: null, reason: outsideTileFrameReason };

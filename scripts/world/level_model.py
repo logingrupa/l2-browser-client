@@ -1,10 +1,11 @@
 from typing import NamedTuple
 
 from native_catalog.ue2 import FormatError
+from world.bsp_model_licensee_rules import read_bsp_model_licensee_rules
 from world.bsp_reader_binding import PackageAdapter, reviewed_reader
+from world.level_model_reference import read_level_model_reference
 from world.reader_licensee_layouts import LEVEL_MODEL_READER, require_reviewed_reader_layout
 
-SURFACE_LIGHTMAP_INDEX_LAYOUT = True
 INDEX_NONE = -1
 LEAF_HULL_BOUND_WORDS = 6
 
@@ -62,11 +63,19 @@ def require_level_model_ranges(model):
             leaf_hull_run_end(model.leaf_hulls, node.i_collision_bound, node_index)
 
 
-def read_vendored_level_model(package):
+def surface_reads_trailing_integer(licensee_version):
+    return licensee_version >= read_bsp_model_licensee_rules()['document']['rules']['surfaceTrailingInteger']['minimumLicensee']
+
+
+def read_model_body(adapter, reader_module, export):
+    return reader_module._read_model(adapter, export, surface_reads_trailing_integer(adapter.licensee_version))
+
+
+def read_level_model_without_layout_gate(package):
     adapter, reader = PackageAdapter(package), reviewed_reader()
     try:
-        export, binding = reader.level_model_binding(adapter)
-        model = reader._read_model(adapter, export, SURFACE_LIGHTMAP_INDEX_LAYOUT)
+        export, binding = read_level_model_reference(adapter, reader, read_bsp_model_licensee_rules()['document']['rules'])
+        model = read_model_body(adapter, reader, export)
         checks = reader.validate_model(model)
     except ValueError as error:
         raise FormatError(f'{package.filename} Level.Model: {error}') from error
@@ -76,4 +85,4 @@ def read_vendored_level_model(package):
 
 def read_level_model(package):
     reviewed_level_model_layout(package.summary, package.filename)
-    return read_vendored_level_model(package)
+    return read_level_model_without_layout_gate(package)
