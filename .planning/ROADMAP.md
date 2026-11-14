@@ -203,7 +203,7 @@ Plans:
   2. For world, actor and skill audio, listen-check results are recorded as labelled audible clips with verdicts; successful extraction or decoding is never recorded as a pass.
   3. Each mismatch becomes a converter fix (re-run shows the corrected result in the sandbox) or a listed gap; no tile is hand-patched.
   4. A stage A exit report states per part how many items were converted, load, were checked, and how many pass, mismatch, are unverified or are gaps, tied to the IMPORTA-PC hash lock.
-**Plans**: 7/36 plans executed (gap plans 03-21 to 03-36 added 2026-11-14 for the Phase 2 gaps)
+**Plans**: 8/36 plans executed (gap plans 03-21 to 03-36 added 2026-11-14 for the Phase 2 gaps)
 
 Plans:
 **Wave 1**
@@ -218,7 +218,7 @@ Plans:
 - [x] 03-18-PLAN.md - Visible diagnostic materials in the sandbox snapshot, split from 03-02 (CHECK-01, CHECK-04)
 
 **Waves 3 to 6** *(gap plans, early block)*
-- [ ] 03-21-PLAN.md - Gap SC1a: tile walk fixes and the anchor rule (WORLD-01, WORLD-05)
+- [x] 03-21-PLAN.md - Gap SC1a: tile walk fixes and the anchor rule (WORLD-01, WORLD-05)
 - [ ] 03-22-PLAN.md - Gap SC1d: minimap and world map views on the route unit (WORLD-06)
 - [ ] 03-23-PLAN.md - Gap SC1d: tile minimap schema 3 (WORLD-06)
 - [ ] 03-24-PLAN.md - Gap MAT: static mesh library programs; tile batch and chain (MAT-01, MAT-02)
@@ -311,7 +311,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 (Phase 5 may start b
 |-------|----------------|--------|-----------|
 | 1. Foundations | 17/17 | In Progress | - |
 | 2. Stage A breadth | 99/99 | In Progress | - |
-| 3. Stage A checks | 7/36 | In Progress | - |
+| 3. Stage A checks | 8/36 | In Progress | - |
 | 4. Stage B adapter | 0/TBD | Not started | - |
 | 5. Native-parity polish | 0/TBD | Not started | - |
 | 6. Performance and build reproducibility | 0/TBD | Not started | - |
