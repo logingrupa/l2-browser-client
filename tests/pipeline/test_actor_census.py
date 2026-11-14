@@ -200,7 +200,7 @@ class CommittedActorCensusTests(unittest.TestCase):
     def test_committed_census_holds_every_unit_kind_and_no_encoded_bytes(self):
         census = json.loads(actor_census.ACTOR_UNIT_CENSUS_PATH.read_bytes())
         self.assertEqual({unit['unitKind'] for unit in census['units']}, {
-            'npc-model', 'chargrp-row', 'chargrp-hair', 'chargrp-helmet', 'weapon-mesh', 'armor-mesh', 'skill-root', 'skill-sound-row'})
+            'npc-model', 'chargrp-row', 'chargrp-hair', 'chargrp-helmet', 'weapon-mesh', 'armor-mesh', 'skill-root', 'skill-sound-row', 'skill-dispatch-class'})
         for value in string_values(census):
             self.assertIsNone(LONG_ENCODED_BYTES_PATTERN.search(value), value)
 

@@ -254,7 +254,7 @@ def retry_tile_ids_argument(value):
     tile_ids = value.split(',')
     malformed = [tile_id for tile_id in tile_ids if not TILE_ID_PATTERN.fullmatch(tile_id)]
     if malformed:
-        raise argparse.ArgumentTypeError(f'--retry-tiles takes comma-separated tile ids like 17_18: {malformed}')
+        raise argparse.ArgumentTypeError(f'--retry-tiles takes comma-separated tile ids of the form XX_YY: {malformed}')
     return frozenset(tile_ids)
 
 
