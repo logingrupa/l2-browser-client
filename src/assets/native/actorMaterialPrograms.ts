@@ -1,7 +1,7 @@
 import type { AssetPackage } from "../package/readAssetPackage";
 import { hasExactKeys, isPlainRecord, nativeTileSha256Pattern } from "../../scene/world/nativeManifestRecordGuards";
 import { fetchVerifiedNativeResource } from "./fetchVerifiedNativeResource";
-import { readMaterialProgramCatalogRecord, type NativeMaterialProgramCatalogRecord } from "./nativeCatalogRecords";
+import { readMaterialProgramCatalogRecord, ue2ObjectPathPattern, type NativeMaterialProgramCatalogRecord } from "./nativeCatalogRecords";
 import type { NativeCatalog } from "./readNativeCatalog";
 
 export interface ActorMaterialProgramListing {
@@ -29,7 +29,6 @@ const listingKind = "native-actor-material-program";
 const listingSchemaVersion = 1;
 const listingFields = ["kind", "schemaVersion", "sourceObject", "program", "rootPorted", "gapReasons", "files"];
 const programPinFields = ["directory", "programSha256"];
-const qualifiedObjectNamePattern = /^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+$/;
 const provenanceFileName = "provenance.json";
 
 const sourceObjectKey = (sourceObject: string) => sourceObject.toLowerCase();
@@ -128,7 +127,7 @@ export function readActorModelSlotSourceObjects(asset: AssetPackage): ActorModel
     sourceObjects: slots.map((slot, index) => {
       const materialObject = resolvedSlotMaterialObject(slot);
       if (materialObject === undefined || materialObject === null) return null;
-      if (typeof materialObject !== "string" || !qualifiedObjectNamePattern.test(materialObject)) {
+      if (typeof materialObject !== "string" || !ue2ObjectPathPattern.test(materialObject)) {
         throw new Error(`Native actor ${asset.manifest.id} material slot ${index} names ${JSON.stringify(materialObject)}, which is no qualified object name.`);
       }
       return materialObject;

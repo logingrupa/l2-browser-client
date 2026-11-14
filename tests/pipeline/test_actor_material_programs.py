@@ -167,6 +167,11 @@ class ActorMaterialProgramTests(unittest.TestCase):
             {'binding': 'unbound-source-slot'}]})])
         self.assertEqual(model_slot_source_objects(self.store_root, models[0]),
                          ['Pack.Group.TextureRoot', 'Pack.Group.ShaderRoot', 'pack.group.combinerroot', None])
+        apostrophe = "LineageWeaponsTex.knife_o'_silenus.knife_o'_silenus_t00_wp"
+        self.stage_models([('interlude:item:241:body-part:7:weapon', {'materialSlots': [{'texture': apostrophe}]})])
+        self.assertEqual(actor_material_object_inventory(self.store_root, self.catalog()['models']), [apostrophe])
+        self.assertEqual(validate_catalog_record('materialPrograms', {'id': f'material-program:{apostrophe}', 'manifest': f'/l2/native-materials/material-program-{"e" * 64}.json',
+                                                                       'manifestSha256': 'e' * 64, 'manifestBytes': 10})['id'], f'material-program:{apostrophe}')
         self.stage_models([('npc-model:' + '1' * 64, {'materialSlots': [{'texture': 'Pack.Group.Same'}]}),
                            ('npc-model:' + '2' * 64, {'materialSlots': [{'texture': 'pack.group.same'}]})])
         self.assertEqual(actor_material_object_inventory(self.store_root, self.catalog()['models']), ['Pack.Group.Same'])

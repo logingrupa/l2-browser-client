@@ -183,7 +183,9 @@ class UnitLedgerLifecycleTests(unittest.TestCase):
         self.assertEqual(unit_directory_name('tile:20_21'), 'tile__20_21')
         self.assertEqual(unit_directory_name('skill:3:1'), 'skill__3__1')
         self.assertEqual(unit_directory_name('mesh:LineageMonsters.gremlin_m00'), 'mesh__LineageMonsters.gremlin_m00')
-        for unit_key in ('', 'tile', 'tile:../x', 'tile:a/b', 'tile:' + 'x' * 156):
+        self.assertEqual(unit_directory_name("material-program:LineageWeaponsTex.knife_o'_silenus.knife_o'_silenus_t00_wp"),
+                         "material-program__LineageWeaponsTex.knife_o'_silenus.knife_o'_silenus_t00_wp")
+        for unit_key in ('', 'tile', 'tile:../x', 'tile:a/b', 'tile:a"b', 'tile:' + 'x' * 156):
             with self.subTest(unit_key=unit_key), self.assertRaises(UnitLedgerError):
                 unit_directory_name(unit_key)
 

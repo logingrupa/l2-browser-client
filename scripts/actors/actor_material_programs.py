@@ -1,5 +1,6 @@
 import io
 import json
+import re
 import zipfile
 
 from native_assets import implementation_hash
@@ -7,8 +8,8 @@ from native_assets_lib.class_defaults import ReferenceClientClassScripts
 from native_assets_lib.gltf import json_bytes
 from native_store.canonical_json import canonical_json_bytes
 from native_store.catalog_index_keys import model_record_unit_key, read_profile_manifest_profiles, store_root_candidates
-from native_store.catalog_writer import (MATERIAL_PROGRAM_RECORD_ID_PREFIX, add_store_file, read_store_catalog, sha256_hex, write_store)
-from native_store.gap_rows import QUALIFIED_OBJECT_NAME_PATTERN
+from native_store.catalog_writer import (MATERIAL_PROGRAM_RECORD_ID_PREFIX, UE2_OBJECT_PATH_PATTERN_TEXT, add_store_file, read_store_catalog,
+                                         sha256_hex, write_store)
 from native_store.native_material_program_pins import NATIVE_MATERIALS_FOLDER
 from native_store.store_file_publish import publish_store_files
 from native_store.store_paths import confined_child_path, lane_store_root, lane_work_root
@@ -33,6 +34,7 @@ NATIVE_RESOURCE_PREFIX = '/l2/'
 PASS_STATUS = 'pass'
 GAP_STATUS = 'gap'
 NPC_KEY_PREFIX = 'npc:'
+UE2_OBJECT_PATH_PATTERN = re.compile('^' + UE2_OBJECT_PATH_PATTERN_TEXT + '$')
 
 
 class ActorMaterialProgramError(ValueError):
@@ -62,7 +64,7 @@ def model_slot_source_objects(store_root, model_record):
     source_objects = []
     for slot in provenance_material_slots(metadata, label):
         material_object = resolved_slot_material_object(slot)
-        if material_object is not None and not (isinstance(material_object, str) and QUALIFIED_OBJECT_NAME_PATTERN.fullmatch(material_object)):
+        if material_object is not None and not (isinstance(material_object, str) and UE2_OBJECT_PATH_PATTERN.fullmatch(material_object)):
             raise ActorMaterialProgramError(f'{label} names a slot material that is no qualified object name: {material_object!r}')
         source_objects.append(material_object)
     return source_objects

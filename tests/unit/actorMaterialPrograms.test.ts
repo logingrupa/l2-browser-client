@@ -59,6 +59,13 @@ describe("the actor material program listing", () => {
 });
 
 describe("the slot to program join of the materialPrograms catalog slice", () => {
+  it("joins an object whose UE2 name holds an apostrophe", async () => {
+    const apostrophe = "LineageWeaponsTex.knife_o'_silenus.knife_o'_silenus_t00_wp";
+    const { records } = await servedListings([listing({ sourceObject: apostrophe })]);
+    expect(await actorMaterialProgramsOfCatalog({ materialPrograms: records }).joinSlot(apostrophe, signal()))
+      .toEqual({ kind: "program", sourceObject: apostrophe, programMaterialId: programSha256 });
+  });
+
   it("joins a slot object to its ported program without regard to case and fetches each listing once", async () => {
     const { records, fetchResource } = await servedListings([listing()]);
     const programs = actorMaterialProgramsOfCatalog({ materialPrograms: records });
@@ -99,6 +106,8 @@ describe("the slot source objects of an actor model package", () => {
       .toEqual({ kind: "slots", sourceObjects: [portedObject, "Pack.Group.TextureRoot", "pack.group.combinerroot", null] });
     expect(readActorModelSlotSourceObjects(assetWithProvenance({ metadata: { parts: [{ materialSlots: [{ texture: "A.B" }] }, { materialSlots: [{ texture: "C.D" }] }] } })))
       .toEqual({ kind: "slots", sourceObjects: ["A.B", "C.D"] });
+    expect(readActorModelSlotSourceObjects(assetWithProvenance({ metadata: { materialSlots: [{ texture: "LineageWeaponsTex.knife_o'_silenus.knife_o'_silenus_t00_wp" }] } })))
+      .toEqual({ kind: "slots", sourceObjects: ["LineageWeaponsTex.knife_o'_silenus.knife_o'_silenus_t00_wp"] });
   });
 
   it("states an absent slot list and refuses a slot reference that is no object name", () => {
