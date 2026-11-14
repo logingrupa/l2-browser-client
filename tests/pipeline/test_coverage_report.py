@@ -13,6 +13,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
 from catalog_store_fixture import write_store_catalog
+from side_by_side_fixture import unverified_record, window_record
 from coverage_census_fixture import (DECODE_FAILED_REASON, DECODE_PENDING_REASON, SOURCE_SHA256, write_table_decode_rows,
                                      write_window_layout_rows)
 from native_store.build_coverage_report import (CoverageReportError, build_coverage_report, coverage_markdown, coverage_output_path,
@@ -22,6 +23,8 @@ from native_store.gap_census import GapCensusIncompleteError
 from native_store.gap_census_denominators import load_census_denominators
 from native_store.gap_rows import stage_a_part_names, write_gap_rows
 from native_store.load_check_records import LoadCheckRecordError, read_load_check_records
+from native_store.side_by_side_check_records import write_side_by_side_records
+from native_store.stage_a_exit_counts import StageAExitCountsError
 from native_store.store_paths import lane_load_check_path, read_lane_parts_by_name
 
 GENERATED_AT_RIGA = '2026-11-08T22:30:00+02:00'
@@ -66,6 +69,12 @@ def rows_by_key(report):
     return {row['key']: row for row in report['rows']}
 
 
+def stage_a_counts(converted, loads_pass, unverified_by_reason, passed=0, mismatched=0, records_without_denominator=0):
+    return {'converted': converted, 'loadsPass': loads_pass, 'checked': passed + mismatched, 'pass': passed, 'mismatch': mismatched,
+            'unverified': sum(unverified_by_reason.values()), 'unverifiedByReason': unverified_by_reason,
+            'recordsWithoutDenominator': records_without_denominator}
+
+
 class CoverageProjectTestCase(unittest.TestCase):
     def setUp(self):
         temporary_directory = tempfile.TemporaryDirectory()
@@ -88,7 +97,7 @@ class CoverageReportTablesTests(CoverageProjectTestCase):
     def test_the_data_part_counts_census_rows_and_load_checks(self):
         report = self.build_report()
         self.assertEqual(report['parts']['data'], {'denominator': 40, 'converted': 1, 'loads': {'pass': 1, 'failed': 0, 'unverified': 0},
-                                                   'gap': 1, 'pending': 38})
+                                                   'gap': 1, 'pending': 38, 'stageA': stage_a_counts(1, 1, {'not-yet-queued': 1})})
         self.assertEqual(tuple(report['parts']), ('data', 'sandbox', 'ui'))
         self.assertEqual(report['denominators']['data']['count'], 40)
         self.assertIn('docs/parts/data/dat-table-inventory.json', report['denominators']['data']['source'])
@@ -139,6 +148,36 @@ class CoverageReportTablesTests(CoverageProjectTestCase):
         report = self.build_report()
         report['parts']['data']['converted'] = 2
         with self.assertRaisesRegex(CoverageReportError, 'part counts'):
+            validate_coverage_report(report)
+
+
+class CoverageReportStageATests(CoverageProjectTestCase):
+    def setUp(self):
+        super().setUp()
+        write_table_decode_rows(self.project_root)
+        write_window_layout_rows(self.project_root)
+        self.status_window = window_record('StatusWnd')
+        self.catalog_sha256 = write_store_catalog(self.store_root, {'schemaVersion': 1, 'models': [], 'tables': [table_record('itemname-e')],
+                                                                    'windows': [window_record('NewRadarWnd'), self.status_window]})
+        write_load_check_file(self.project_root, 'data-ui', self.catalog_sha256, [load_check_record('table:itemname-e'),
+                                                                                  load_check_record('window:NewRadarWnd')])
+        write_side_by_side_records(self.project_root, 'ui', [unverified_record(
+            'ui', 'window:StatusWnd', {'route': 'server-world', 'window': 'StatusWnd'}, reason='native-needs-server',
+            key_content_sha256=self.status_window['manifestSha256'])])
+
+    def test_window_stage_a_counts_come_from_the_committed_record_and_the_store_load_checks(self):
+        report = self.build_report()
+        self.assertEqual(report['parts']['ui']['stageA'], stage_a_counts(2, 1, {'native-needs-server': 1, 'not-yet-queued': 1}))
+        self.assertEqual(report['schemaVersion'], 2)
+        markdown = coverage_markdown(report)
+        self.assertIn('## Stage A exit\n', markdown)
+        self.assertIn('| ui | 2 | 1 | 0 | 0 | 0 | 2 | `native-needs-server` 1, `not-yet-queued` 1 | 0 | 246 |\n', markdown)
+        self.assertIn('converted equals checked plus unverified and checked equals pass plus mismatch', markdown)
+
+    def test_a_hand_altered_stage_a_count_is_refused(self):
+        report = self.build_report()
+        report['parts']['ui']['stageA']['checked'] = 1
+        with self.assertRaisesRegex(StageAExitCountsError, 'stage A counts of ui do not balance'):
             validate_coverage_report(report)
 
 
@@ -276,7 +315,7 @@ class CoverageReportWorldTests(CoverageProjectTestCase):
         self.assertEqual((report_rows['tile:20_20']['status'], report_rows['tile:20_20']['converted']), ('pass', True))
         self.assertEqual((report_rows['map:Lobby']['status'], report_rows['map:Lobby']['reason']), ('gap', 'census-pending'))
         self.assertEqual(report['parts']['world'], {'denominator': 163, 'converted': 1, 'loads': {'pass': 0, 'failed': 0, 'unverified': 1},
-                                                    'gap': 161, 'pending': 1})
+                                                    'gap': 161, 'pending': 1, 'stageA': stage_a_counts(1, 0, {'loads-unrecorded': 1})})
         self.assertEqual((report['parts']['minimap']['denominator'], report['parts']['minimap']['pending']), (153, 153))
         self.assertIn('Lobby (`map:Lobby`) has the census status gap `census-pending`.', coverage_markdown(report))
 
@@ -287,7 +326,7 @@ class CoverageReportWorldTests(CoverageProjectTestCase):
         tile_row = rows_by_key(report)['tile:20_20']
         self.assertEqual((tile_row['status'], tile_row['reason'], tile_row['converted']), ('failed', 'decode-failed:FormatError', True))
         self.assertEqual(report['parts']['world'], {'denominator': 163, 'converted': 0, 'loads': {'pass': 0, 'failed': 0, 'unverified': 1},
-                                                    'gap': 162, 'pending': 1})
+                                                    'gap': 162, 'pending': 1, 'stageA': stage_a_counts(0, 0, {})})
         self.assertEqual(validate_coverage_report(report), report)
 
     def test_a_pass_row_that_is_not_converted_is_refused(self):

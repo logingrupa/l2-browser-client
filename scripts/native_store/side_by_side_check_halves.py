@@ -42,6 +42,10 @@ class RecordContext:
         raise SideBySideCheckRecordError(f'side-by-side record {self.identity} of part {self.part} {rule}: {self.path}')
 
 
+def key_file_stem(key):
+    return str(key).replace(':', '_')
+
+
 def is_sha256(value):
     return isinstance(value, str) and SHA256_PATTERN.fullmatch(value) is not None
 

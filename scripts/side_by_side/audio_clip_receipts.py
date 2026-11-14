@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from native_store.side_by_side_check_halves import AUDIO_PART, AUDIO_SANDBOX_HALF_FIELDS
+from native_store.side_by_side_check_halves import AUDIO_PART, AUDIO_SANDBOX_HALF_FIELDS, key_file_stem
 from native_store.side_by_side_check_records import (LISTEN_NEEDS_OWNER_REASON, record_identity, read_side_by_side_records,
                                                      write_side_by_side_records)
 from side_by_side.pair_queue_union import PairQueueUnion
-from side_by_side.side_by_side_receipts import (key_file_stem, read_receipts, require_artifact_sha256, require_current_key_content,
-                                                require_receipt_fields)
+from side_by_side.side_by_side_receipts import read_receipts, require_artifact_sha256, require_current_key_content, require_receipt_fields
 
 AUDIO_IDENTITY_FIELDS = ('role', 'sourcePackage', 'sourceObject', 'sourceSha256')
 AUDIO_RECEIPT_FIELDS = AUDIO_SANDBOX_HALF_FIELDS | {'key', *AUDIO_IDENTITY_FIELDS}

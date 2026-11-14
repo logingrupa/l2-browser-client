@@ -271,6 +271,15 @@ def skills_coverage_row(key, status, reason, converted):
             'loads': 'pass' if converted else 'unverified', 'steps': [{'step': 'skills', 'status': status, 'reason': reason}]}
 
 
+def skills_coverage_report(rows, denominator_count):
+    stage_a = {'converted': 1, 'loadsPass': 1, 'checked': 0, 'pass': 0, 'mismatch': 0, 'unverified': 1,
+               'unverifiedByReason': {'not-yet-queued': 1}, 'recordsWithoutDenominator': 0}
+    return {'schemaVersion': 2, 'catalogSha256': 'a' * 64, 'storeRoot': 'artifacts/lane-store/integration/l2',
+            'generatedAtRiga': GENERATED_AT_RIGA,
+            'denominators': {'skills-effects': {'count': denominator_count, 'source': 'synthetic committed count'}},
+            'parts': {'skills-effects': {**count_part_rows(rows, denominator_count), 'stageA': stage_a}}, 'rows': rows}
+
+
 class NamedEmitterGapReportTests(unittest.TestCase):
     def test_converted_named_emitter_gaps_count_as_gap_and_are_listed_per_part_and_reason(self):
         rows = [skills_coverage_row('skill:1011:1', 'gap', 'emitter-class-unported:Engine.BeamEmitter', True),
@@ -278,9 +287,7 @@ class NamedEmitterGapReportTests(unittest.TestCase):
                 skills_coverage_row('skill:1012:1', 'gap', 'emitter-feature-unported:UseMeshBlendMode', True),
                 skills_coverage_row('skill:1013:1', 'gap', 'converter-refused:FormatError', False),
                 skills_coverage_row('skill:3:1', 'pass', None, True)]
-        report = {'schemaVersion': 1, 'catalogSha256': 'a' * 64, 'storeRoot': 'artifacts/lane-store/integration/l2',
-                  'generatedAtRiga': GENERATED_AT_RIGA, 'denominators': {'skills-effects': {'count': 5, 'source': 'synthetic committed count'}},
-                  'parts': {'skills-effects': count_part_rows(rows, 5)}, 'rows': rows}
+        report = skills_coverage_report(rows, 5)
         self.assertEqual(validate_coverage_report(report), report)
         counts = report['parts']['skills-effects']
         self.assertEqual((counts['converted'], counts['gap'], counts['pending'], counts['loads']['pass']), (1, 4, 0, 4))
@@ -290,9 +297,7 @@ class NamedEmitterGapReportTests(unittest.TestCase):
 
     def test_a_report_without_named_emitter_gaps_has_no_named_gap_line(self):
         rows = [skills_coverage_row('skill:3:1', 'pass', None, True)]
-        report = {'schemaVersion': 1, 'catalogSha256': 'a' * 64, 'storeRoot': 'artifacts/lane-store/integration/l2',
-                  'generatedAtRiga': GENERATED_AT_RIGA, 'denominators': {'skills-effects': {'count': 1, 'source': 'synthetic committed count'}},
-                  'parts': {'skills-effects': count_part_rows(rows, 1)}, 'rows': rows}
+        report = skills_coverage_report(rows, 1)
         self.assertNotIn('named emitter gap', coverage_markdown(report))
 
 

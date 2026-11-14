@@ -22,11 +22,12 @@ from native_store.gap_census_derived_parts import DERIVED_PARTS, DERIVED_SOURCE_
 from native_store.gap_rows import (GAP_ROW_STATUSES, INTEGRATION_LANE_NAME, is_listed_reason, load_gap_reason_patterns, read_gap_rows,
                                    write_gap_rows)
 from native_store.load_check_records import is_catalog_key, is_riga_timestamp, read_load_check_records
+from native_store.stage_a_exit_counts import StageAExitInputs, stage_a_markdown, stage_a_part_counts, validate_stage_a_counts
 from native_store.store_paths import (REPOSITORY_ROOT, SHA256_PATTERN, StorePathError, confined_child_path, lane_store_root,
                                       read_lane_parts_by_name, require_converter_output)
 from native_store.unit_ledger import MACHINE_SCHEDULE_EXIT_INSIDE_WINDOW, read_machine_schedule, require_host_clock_on_riga_time
 
-COVERAGE_REPORT_SCHEMA_VERSION = 1
+COVERAGE_REPORT_SCHEMA_VERSION = 2
 COVERAGE_REPORT_FIELDS = frozenset({'schemaVersion', 'catalogSha256', 'storeRoot', 'generatedAtRiga', 'denominators', 'parts', 'rows'})
 COVERAGE_ROW_FIELDS = frozenset({'key', 'part', 'status', 'reason', 'converted', 'loads', 'steps'})
 COVERAGE_STEP_FIELDS = frozenset({'step', 'status', 'reason'})
@@ -136,6 +137,7 @@ def build_coverage_report(project_root, store_root, lane_names, generated_at_rig
     converted_keys = store_converted_keys(project_root, store_root, catalog)
     converted_keys |= other_source_lane_derived_converted_keys(project_root, lane_names, part_names)
     lane_names_by_catalog_sha256 = {catalog_sha256: set(lane_names)}
+    exit_inputs = StageAExitInputs(project_root, store_root, catalog, merged_load_statuses(project_root, lane_names_by_catalog_sha256))
     for census_lane_name in census_lane_names:
         census_store_root = lane_store_root(project_root, census_lane_name)
         census_catalog, census_catalog_sha256 = read_measured_catalog(census_store_root)
@@ -146,13 +148,15 @@ def build_coverage_report(project_root, store_root, lane_names, generated_at_rig
     census_rows = build_gap_census(denominators, gap_rows, converted_keys, merged_load_statuses(project_root, lane_names_by_catalog_sha256))
     steps_by_key = coverage_steps_by_key(gap_rows)
     rows = [coverage_row(census_row, steps_by_key.get(census_row['key'], [])) for census_row in census_rows]
+    rows_by_part = {part: [row for row in rows if row['part'] == part] for part in part_names}
     return validate_coverage_report({
         'schemaVersion': COVERAGE_REPORT_SCHEMA_VERSION,
         'catalogSha256': catalog_sha256,
         'storeRoot': store_root_text(project_root, store_root),
         'generatedAtRiga': generated_at_riga,
         'denominators': {part: {'count': denominator['count'], 'source': denominator['source']} for part, denominator in denominators.items()},
-        'parts': {part: count_part_rows([row for row in rows if row['part'] == part], denominators[part]['count']) for part in part_names},
+        'parts': {part: {**count_part_rows(rows_by_part[part], denominators[part]['count']),
+                         'stageA': stage_a_part_counts(exit_inputs, rows_by_part[part], part)} for part in part_names},
         'rows': rows,
     })
 
@@ -212,10 +216,16 @@ def validate_coverage_report(report):
     row_order = [(part_names.index(row['part']), row['key']) for row in report['rows']]
     if row_order != sorted(set(row_order)):
         raise CoverageReportError('coverage rows must be sorted by part order, then key, with one row per part and key')
-    expected_parts = {part: count_part_rows([row for row in report['rows'] if row['part'] == part], report['denominators'][part]['count'])
-                      for part in part_names}
-    if report['parts'] != expected_parts:
-        raise CoverageReportError('coverage part counts differ from the counts of their rows')
+    if not (isinstance(report['parts'], dict) and list(report['parts']) == list(part_names)
+            and all(isinstance(counts, dict) for counts in report['parts'].values())):
+        raise CoverageReportError(f'coverage parts must list the measured parts {", ".join(part_names)}')
+    for part in part_names:
+        part_rows = [row for row in report['rows'] if row['part'] == part]
+        counts = report['parts'][part]
+        row_counts = {field: value for field, value in counts.items() if field != 'stageA'}
+        if row_counts != count_part_rows(part_rows, report['denominators'][part]['count']):
+            raise CoverageReportError('coverage part counts differ from the counts of their rows')
+        validate_stage_a_counts(part, counts.get('stageA'), part_rows)
     return report
 
 
@@ -284,7 +294,8 @@ def coverage_markdown(report, census_lane_names=()):
             f'{MARKDOWN_TABLE_HEADER}{table_rows}\n'
             f'{CENSUS_RULE_TEXT} {LOADS_RULE_TEXT}\n\n'
             f'{named_emitter_gaps_text(report)}'
-            f'{lobby_status_text(report)}')
+            f'{lobby_status_text(report)}\n'
+            f'{stage_a_markdown(report)}')
 
 
 def coverage_output_path(project_root, store_root, output):

@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from native_store.catalog_writer import sha256_of_file
-from native_store.side_by_side_check_halves import IMAGE_SANDBOX_HALF_FIELDS
+from native_store.side_by_side_check_halves import IMAGE_SANDBOX_HALF_FIELDS, key_file_stem
 from native_store.side_by_side_check_records import REVIEW_PENDING_REASON, read_side_by_side_records, write_side_by_side_records
 from native_store.store_paths import StorePathError, confined_child_path
 from side_by_side.build_pair_queue import native_selection_for_key, require_part_of_key, session_kind_for_key, stored_reason_for_session_kind
@@ -13,10 +13,6 @@ from side_by_side.pair_queue_union import PairQueueError, PairQueueUnion, read_s
 SIDE_BY_SIDE_ARTIFACTS_FOLDER = Path('artifacts/side-by-side')
 RECEIPTS_FOLDER_NAME = 'receipts'
 SANDBOX_RECEIPT_FIELDS = IMAGE_SANDBOX_HALF_FIELDS | {'key', 'part', 'displayedTableRows'}
-
-
-def key_file_stem(key):
-    return str(key).replace(':', '_')
 
 
 def sandbox_receipt_file_name(receipt):
