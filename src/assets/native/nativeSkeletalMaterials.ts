@@ -58,12 +58,18 @@ export async function bindSkeletalSlotMaterials(scene: Scene, container: AssetCo
         continue;
       }
       const nativeMaterial = createNativeMaterial(scene, await options.loadProgram(join.programMaterialId, signal), { sessionSeed: options.sessionSeed, lighting: "unlit" });
+      const inspection = nativeMaterial.inspect();
+      if (inspection.status !== "compiled") {
+        nativeMaterial.dispose();
+        slots.push({ slot: slotMaterial.name, sourceObject: join.sourceObject, status: "library-diagnostic", programMaterialId: join.programMaterialId,
+          reasons: inspection.reasons, meshes: users.length });
+        continue;
+      }
       created.push(nativeMaterial);
       signal.throwIfAborted();
       for (const mesh of users) mesh.material = nativeMaterial.material;
-      const inspection = nativeMaterial.inspect();
-      slots.push({ slot: slotMaterial.name, sourceObject: join.sourceObject, status: inspection.status === "compiled" ? "library-compiled" : "library-diagnostic",
-        programMaterialId: join.programMaterialId, reasons: inspection.reasons, meshes: users.length });
+      slots.push({ slot: slotMaterial.name, sourceObject: join.sourceObject, status: "library-compiled", programMaterialId: join.programMaterialId, reasons: [],
+        meshes: users.length });
     }
   } catch (error) {
     for (const nativeMaterial of created) nativeMaterial.dispose();

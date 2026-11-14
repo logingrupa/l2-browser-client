@@ -69,15 +69,17 @@ function slotContainer(slots: readonly { name: string; skinned?: boolean; pointe
 }
 
 describe("skeletal slot materials through the UE2 material library", () => {
-  it("draws a skinned slot with a ported program through a library material whose vertex stage takes the mesh's bone influences", async () => {
+  it("draws a skinned slot whose plan compiles through a library material whose vertex stage takes the mesh's bone influences, and keeps the texture material of a diagnostic plan", async () => {
     const f = slotContainer([{ name: "Body.Compiled", skinned: true }, { name: "Body.Unported", skinned: true }]);
+    const textureMaterialOfTheDiagnosticSlot = f.meshes[1]!.material;
     const binding = await f.bind({ kind: "slots", sourceObjects: [compiledObject, unportedObject] });
     expect(binding.slots[0]).toEqual({ slot: "Body.Compiled", sourceObject: compiledObject, status: "library-compiled", programMaterialId: compiledProgramId, reasons: [], meshes: 1 });
     expect(binding.slots[1]).toMatchObject({ slot: "Body.Unported", sourceObject: unportedObject, status: "library-diagnostic", programMaterialId: unportedProgramId, meshes: 1 });
     expect(binding.slots[1]!.reasons.length).toBeGreaterThan(0);
     const libraryMaterial = f.meshes[0]!.material as ShaderMaterial;
     expect(libraryMaterial.name).toBe("UE2 material: SyntheticSwatch.SwatchFinalBlend");
-    expect(f.meshes[1]!.material!.name).toMatch(/^UE2 diagnostic: /);
+    expect(f.meshes[1]!.material).toBe(textureMaterialOfTheDiagnosticSlot);
+    expect(f.scene.materials.filter(material => material.name.startsWith("UE2 diagnostic: "))).toEqual([]);
     for (const texture of f.scene.textures) {
       const uploadedOnTheNullEngine = texture.getInternalTexture();
       if (uploadedOnTheNullEngine) uploadedOnTheNullEngine.isReady = true;
