@@ -2,7 +2,8 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { MovementMoveResult } from "../../src/scene/world/movement/movementPresenter";
 import {
-  createTileWalkOutcome, requestedWalkTileIds, settleViewportWalk, tileWalkFailureClass, tileWalkRecordFilePath, tileWalkTrace,
+  createTileWalkOutcome, requestedWalkTileIds, settleViewportWalk, startChunkBspFailure, tileWalkFailureClass, tileWalkRecordFilePath, tileWalkTrace,
+  walkEndFloorFailure,
   type ObservedTileWalk, type TileWalkFailure,
 } from "../browser/support/tileWalkRecords";
 
@@ -51,11 +52,13 @@ const failureOf = (reason: string): TileWalkFailure => ({ reason, walkTrace: til
 
 describe("tileWalkFailureClass", () => {
   it("classes load and assertion failures by their first failure line", () => {
-    expect(tileWalkFailureClass("Error: tile:24_14 did not start on the native route: error: The tile anchor lies outside every chunk terrain.", null)).toBe("tile-did-not-start");
+    expect(tileWalkFailureClass("Error: tile:24_14 did not start on the native route: error: tile-anchor-has-no-floor: no collision lies below the authored PlayerStart", null)).toBe("tile-did-not-start");
     expect(tileWalkFailureClass("Error: the native route loaded no world section for tile:15_22", null)).toBe("no-world-section");
     expect(tileWalkFailureClass("Error: the loaded section holds 0 BSP meshes", residentWalk(null))).toBe("bsp-mesh-count");
     expect(tileWalkFailureClass("Error: the walk ended at height -163.8 m, below the terrain minimum -50.2 m", residentWalk(walkingPawn(null)))).toBe("below-terrain-minimum");
-    expect(tileWalkFailureClass("Error: the walk ended at height 90 m, above the terrain maximum 80 m", residentWalk(walkingPawn(null)))).toBe("above-terrain-maximum");
+    expect(tileWalkFailureClass(`Error: ${walkEndFloorFailure({ ...walkingPawn(null)!, physicsMode: "falling", floorHit: null })}`, residentWalk(walkingPawn(null))))
+      .toBe("ended-without-floor");
+    expect(tileWalkFailureClass(`Error: ${walkEndFloorFailure(null)}`, residentWalk(null))).toBe("ended-without-floor");
   });
 
   it("classes an idle timeout by the collision load and the last move result of its trace", () => {
@@ -106,5 +109,37 @@ describe("settleViewportWalk", () => {
     settleViewportWalk(failedTile, failureOf("failed tile"));
     expect(settleViewportWalk(passingTile, null)).toBeNull();
     expect(settleViewportWalk(passingTile, null)).toEqual({ status: "pass", reason: null });
+  });
+});
+
+describe("startChunkBspFailure", () => {
+  const pinnedResource = "/l2/maps/" + "d".repeat(64) + "/native-tile-chunk-bsp/bsp.glb";
+
+  it("expects no BSP mesh for a start chunk that pins no BSP resource", () => {
+    expect(startChunkBspFailure({ bspMeshes: 0, bspResources: [] }, { chunkId: "chunk-1-1", bsp: null })).toBeNull();
+  });
+
+  it("passes a start chunk whose pinned BSP resource loaded with meshes", () => {
+    expect(startChunkBspFailure({ bspMeshes: 3, bspResources: [pinnedResource] }, { chunkId: "chunk-1-1", bsp: { resource: pinnedResource } })).toBeNull();
+  });
+
+  it("names the BSP meshes and resources the section holds for a pinned start chunk BSP resource that did not load", () => {
+    expect(startChunkBspFailure({ bspMeshes: 0, bspResources: [] }, { chunkId: "chunk-1-1", bsp: { resource: pinnedResource } }))
+      .toBe(`the loaded section holds 0 BSP meshes from [] for the start chunk chunk-1-1 BSP resource ${pinnedResource}`);
+    expect(tileWalkFailureClass(`Error: ${startChunkBspFailure({ bspMeshes: 0, bspResources: [] }, { chunkId: "chunk-1-1", bsp: { resource: pinnedResource } })}`,
+      residentWalk(null))).toBe("bsp-mesh-count");
+  });
+});
+
+describe("walkEndFloorFailure", () => {
+  it("accepts a walk that ends walking on a floor or swimming", () => {
+    expect(walkEndFloorFailure(walkingPawn(null))).toBeNull();
+    expect(walkEndFloorFailure({ ...walkingPawn(null)!, physicsMode: "swimming", floorHit: null })).toBeNull();
+  });
+
+  it("names a walk that ends falling, walking with no floor or with no pawn", () => {
+    expect(walkEndFloorFailure({ ...walkingPawn(null)!, physicsMode: "falling", floorHit: null })).toBe('the walk ended falling with no floor at {"x":1,"y":2,"z":3}');
+    expect(walkEndFloorFailure({ ...walkingPawn(null)!, floorHit: null })).toBe('the walk ended walking with no floor at {"x":1,"y":2,"z":3}');
+    expect(walkEndFloorFailure(null)).toBe("the walk ended with no pawn trace");
   });
 });

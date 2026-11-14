@@ -17,7 +17,9 @@ describe("native slice walk/run speed (aCis server data)", () => {
   it("converts walk 80 / run 115 source units per second with sourceUnitsPerMetre 100 and labels the source", () => {
     expect(native).toMatchObject({ walkMetresPerSecond: .8, runMetresPerSecond: 1.15, runStartSeconds: .4 });
     expect(native.source).toContain("aCis server data");
-    expect(ACIS_HUMAN_FIGHTER_SPEED).toMatchObject({ walkUnitsPerSecond: 80, runUnitsPerSecond: 115 });
+    expect(ACIS_HUMAN_FIGHTER_SPEED).toMatchObject({ walkUnitsPerSecond: 80, runUnitsPerSecond: 115, swimUnitsPerSecond: 50 });
+    expect(native).toMatchObject({ swimSourceUnitsPerSecond: 50 });
+    expect(native.source).toContain("swimSpd 50");
     expect(nativeSliceSpeedProfile("human-male-fighter", 50)).toMatchObject({ walkMetresPerSecond: 1.6 });
     expect(() => nativeSliceSpeedProfile("human-male-fighter", 0)).toThrow("units");
     expect(new NativeSliceAdapter(origin).speedProfile).toEqual({ isSourced: false, playerProfileId: "no-speed-profile",
@@ -38,14 +40,15 @@ describe("native slice walk/run speed (aCis server data)", () => {
     expect(native.isSourced).toBe(true);
   });
 
-  it("sends walk 80 and run 115 source units per second in every move record, with the committed walk and run move types", () => {
+  it("sends walk 80, run 115 and swim 50 source units per second in every move record, with the committed walk and run move types", () => {
     const value = adapter(), events: WorldEvent[] = [];
     value.subscribe(event => events.push(event));
     value.dispatch({ type: "move-local", position: { x: 0, y: 0, z: 10 } });
     value.dispatch({ type: "set-locomotion", mode: "walk" });
     value.dispatch({ type: "move-local", position: { x: 0, y: 0, z: 10 } });
     const moves = events.flatMap(event => event.type === "move" ? [[event.moveType, event.speeds]] : []);
-    expect(moves).toEqual([[pawnRules.pawn.runMoveType, { walk: 80, run: 115 }], [pawnRules.pawn.walkMoveType, { walk: 80, run: 115 }]]);
+    const sourcedSpeeds = { walk: 80, run: 115, swimWalk: 50, swimRun: 50 };
+    expect(moves).toEqual([[pawnRules.pawn.runMoveType, sourcedSpeeds], [pawnRules.pawn.walkMoveType, sourcedSpeeds]]);
     expect(player(value).position).toEqual(origin);
   });
 

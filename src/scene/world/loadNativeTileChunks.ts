@@ -5,8 +5,9 @@ import { nativeMeshBounds, type NativeSection, type NativeSectionManifest } from
 import { attachNativeTileSystems, type AttachedNativeTileSystems, type NativeTileChunkSystemContents } from "./attachNativeTileSystems";
 import type { NativeBspNodeRange, NativeBspSection } from "./nativeBspResources";
 import { collisionCellContextFor } from "./movement/collisionCellContext";
+import type { CollisionPrimitive } from "./movement/core/collisionTrace";
 import {
-  anchorOnChunkTerrain, authoredAnchorPosition, describeTerrainChunks, loadChunkBsp, loadChunkTerrain, loadTileModelTemplate, readTileChunkManifests, tileSpawnAnchor,
+  anchorOnChunkFloor, authoredAnchorPosition, collisionFloorBelow, describeTerrainChunks, loadChunkBsp, loadChunkTerrain, loadTileModelTemplate, tileSpawnAnchor,
   type LoadedChunkTerrain, type TileSpawnAnchorRule,
 } from "./nativeTileChunkContents";
 import { inspectNativeTileSection } from "./nativeTileSectionInspection";
@@ -15,7 +16,7 @@ import {
   describeNativeTileGapRow, type NativeTileChunkManifest, type NativeTileChunkModel, type NativeTileChunkPlacement, type NativeTileChunkTerrain,
   type NativeTileVector,
 } from "./nativeTileChunkManifest";
-import { readNativeTileManifest } from "./nativeTileManifest";
+import { loadResidencyTileCollisionWorld, readResidencyTile } from "./nativeTileResidencyTiles";
 import { streamNativeTileChunks } from "./streamNativeTileChunks";
 
 export interface NativeTileTerrainChunk {
@@ -27,8 +28,10 @@ export interface NativeTileTerrainChunk {
 export interface NativeTileSpawnAnchor {
   readonly playerStart: string;
   readonly authoredSourceLocation: NativeTileVector;
-  readonly terrainSurfacePosition: readonly number[];
-  readonly authoredHeightAboveTerrainMetres: number;
+  readonly anchorChunk: { readonly tileId: string; readonly chunkId: string };
+  readonly floorPosition: readonly number[];
+  readonly floorPrimitiveKind: CollisionPrimitive["kind"];
+  readonly authoredHeightAboveFloorMetres: number;
   readonly rule: TileSpawnAnchorRule;
 }
 
@@ -93,11 +96,11 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
   const observer = scene.onDisposeObservable.addOnce(dispose);
   signal.addEventListener("abort", dispose, { once: true });
   try {
-    const pinnedManifest = await readNativeTileManifest(tileId, lifetime.signal);
-    if (!pinnedManifest) { dispose(); return null; }
-    const manifest = pinnedManifest.manifest;
-    const chunks = await readTileChunkManifests(manifest, lifetime.signal);
+    const tile = await readResidencyTile(tileId, lifetime.signal);
+    if (!tile) { dispose(); return null; }
+    const { manifest, chunks } = tile;
     const loaded: LoadedChunkTerrain[] = [], terrainMeshesByChunkId = new Map<string, readonly AbstractMesh[]>();
+    const loadedTerrainByChunkId = new Map<string, LoadedChunkTerrain>();
     for (const chunk of chunks) {
       if (!chunk.terrain) continue;
       const terrain = await loadChunkTerrain(scene, chunk, chunk.terrain, lifetime.signal);
@@ -105,11 +108,18 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
       containers.push(terrain.container);
       for (const mesh of terrain.meshes) mesh.metadata = { ...mesh.metadata, worldSupportsWalking: true };
       loaded.push(terrain);
+      loadedTerrainByChunkId.set(chunk.chunkId, terrain);
       terrainMeshesByChunkId.set(chunk.chunkId, terrain.meshes);
     }
+    const anchorCollisionWorld = await loadResidencyTileCollisionWorld(tile, lifetime.signal);
     const authoredAnchor = authoredAnchorPosition(manifest);
-    const { chunk: anchorChunk, surface: spawnCandidate } = anchorOnChunkTerrain(loaded, authoredAnchor);
-    const anchor = tileSpawnAnchor(manifest, authoredAnchor, spawnCandidate);
+    const terrainExtent = nativeMeshBounds(loaded.flatMap(entry => entry.meshes));
+    const placement = anchorOnChunkFloor(tile.residencyChunks, authoredAnchor,
+      authored => collisionFloorBelow(anchorCollisionWorld, authored, terrainExtent.minimum.y));
+    const anchorTerrain = loadedTerrainByChunkId.get(placement.chunk.chunkId);
+    if (anchorTerrain === undefined) throw new Error(`Native tile anchor chunk ${placement.chunk.chunkId} has no loaded terrain.`);
+    const anchor = tileSpawnAnchor(manifest, authoredAnchor, placement);
+    const spawnCandidate = placement.floor.position;
     for (const model of tileModelsById(chunks).values()) {
       const template = await loadTileModelTemplate(scene, model, lifetime.signal);
       if (disposed || scene.isDisposed) { template.dispose(); throw disposedDuringLoading(); }
@@ -131,12 +141,12 @@ export async function loadNativeTileChunks(scene: Scene, signal: AbortSignal, ti
     systems = attached;
     for (const container of containers) container.addAllToScene();
     const view: NativeTileSectionView = { kind: "native-tile-runtime", tileId, terrainChunks: describeTerrainChunks(chunks), bspChunks, anchor, models: [], placements: [],
-      terrain: { file: "terrain.glb", sha256: anchorChunk.terrain.sha256, bytes: anchorChunk.bytes, materialStatus: "neutral-inspection" },
+      terrain: { file: "terrain.glb", sha256: anchorTerrain.terrain.sha256, bytes: anchorTerrain.bytes, materialStatus: "neutral-inspection" },
       gaps: manifest.gaps.filter(row => row.status !== "pass").map(describeNativeTileGapRow) };
     const extent = nativeMeshBounds(terrainMeshes);
     const countedMeshes = () => [...terrainMeshes, ...bspChunks.flatMap(chunk => chunk.meshes), ...instances.flatMap(instance => instance.root.getChildMeshes())];
     lifetime.signal.throwIfAborted();
-    return { manifest: view, manifestSha256: pinnedManifest.manifestSha256, terrainMeshes, supportMeshes: [], ...extent, spawnCandidate,
+    return { manifest: view, manifestSha256: tile.manifestSha256, terrainMeshes, supportMeshes: [], ...extent, spawnCandidate,
       tileMovers: attached.movers, tileVisibility: attached.visibility.binding, environmentClock: attached.lighting.environmentClock,
       inspection: () => inspectNativeTileSection({ tileId, chunks, terrainMeshes, instances, bspChunks, modelCount: templates.size, disposed, anchor,
         systems: attached, loadedChunkCount: chunks.length, countedMeshes: countedMeshes() }),

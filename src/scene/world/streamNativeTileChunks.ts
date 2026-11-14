@@ -4,7 +4,7 @@ import { nativeMeshBounds, type NativeSection, type NativeWorldSceneInspection }
 import type { NativeTileSectionView } from "./loadNativeTileChunks";
 import { createTileModelTemplates, loadResidencyChunk, type LoadedTileResidencyChunk, type TileModelTemplates } from "./loadResidencyChunk";
 import type { CollisionCellContext } from "./movement/collisionCellContext";
-import { anchorOnChunkTerrain, authoredAnchorPosition, describeTerrainChunks, tileSpawnAnchor } from "./nativeTileChunkContents";
+import { anchorOnChunkFloor, authoredAnchorPosition, collisionFloorBelow, describeTerrainChunks, tileSpawnAnchor } from "./nativeTileChunkContents";
 import { createNativeTileChunkResidency, type NativeTileChunkResidency, type ResidencyChunk, type ResidentChunk } from "./nativeTileChunkResidency";
 import { describeNativeTileGapRow } from "./nativeTileChunkManifest";
 import { readCatalogTileIds, readResidencyTile, type ResidencyTile } from "./nativeTileResidencyTiles";
@@ -98,16 +98,19 @@ export async function streamNativeTileChunks(scene: Scene, signal: AbortSignal, 
     if (disposed || scene.isDisposed) throw disposedDuringLoading();
     const startupResident = activeResidency.residentChunks();
     const selectedResident = startupResident.filter(({ chunk }) => chunk.tileId === tileId);
-    const terrainEntries = selectedResident.flatMap(({ loaded }) => loaded.terrain === null ? [] : [loaded.terrain]);
-    const { chunk: anchorChunk, surface: spawnCandidate } = anchorOnChunkTerrain(terrainEntries, authoredAnchor);
-    const anchor = tileSpawnAnchor(selected.manifest, authoredAnchor, spawnCandidate);
+    const startupExtent = nativeMeshBounds(startupResident.flatMap(({ loaded }) => loaded.terrainMeshes));
+    const placement = anchorOnChunkFloor(startupResident.map(({ chunk, loaded }) => ({ ...chunk, terrain: loaded.terrain })), authoredAnchor,
+      authored => collisionFloorBelow(context.world, authored, startupExtent.minimum.y));
+    const anchorTerrain = placement.chunk.terrain;
+    if (anchorTerrain === null) throw new Error(`Native tile anchor chunk ${placement.chunk.cellId} has no loaded terrain.`);
+    const anchor = tileSpawnAnchor(selected.manifest, authoredAnchor, placement);
+    const spawnCandidate = placement.floor.position;
     const bspChunks = selectedResident.flatMap(({ loaded }) => loaded.bspChunk === null ? [] : [loaded.bspChunk]);
     const attached = await activeTileSystems.attachSelectedTile();
     const selectedVisibility = attached.visibility.binding;
     const view: NativeTileSectionView = { kind: "native-tile-runtime", tileId, terrainChunks: describeTerrainChunks(selected.chunks), bspChunks, anchor, models: [], placements: [],
-      terrain: { file: "terrain.glb", sha256: anchorChunk.terrain.sha256, bytes: anchorChunk.bytes, materialStatus: "neutral-inspection" },
+      terrain: { file: "terrain.glb", sha256: anchorTerrain.terrain.sha256, bytes: anchorTerrain.bytes, materialStatus: "neutral-inspection" },
       gaps: selected.manifest.gaps.filter(row => row.status !== "pass").map(describeNativeTileGapRow) };
-    const startupExtent = nativeMeshBounds(startupResident.flatMap(({ loaded }) => loaded.terrainMeshes));
     const residentTerrainExtent = () => {
       const residentTerrain = activeResidency.residentChunks().flatMap(({ loaded }) => loaded.terrainMeshes);
       return residentTerrain.length === 0 ? startupExtent : nativeMeshBounds(residentTerrain);

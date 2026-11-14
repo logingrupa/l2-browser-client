@@ -1,12 +1,16 @@
-import { Ray } from "@babylonjs/core/Culling/ray";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { AssetContainer } from "@babylonjs/core/assetContainer";
 import type { Scene } from "@babylonjs/core/scene";
 import { assetPackageLimits, readAssetPackage } from "../../assets/package/readAssetPackage";
-import { sourcePositionToWorld } from "../../world/sourceFrame";
+import { committedMovementRules } from "../../runtime/committedMovementRules";
+import { sourcePositionToWorld, worldPositionToSource } from "../../world/sourceFrame";
 import { fetchVerifiedNativeResource } from "../../assets/native/fetchVerifiedNativeResource";
-import { decodeNativeJsonResource, loadNativeGlbContainer, nativeMeshBounds, validateSectionGlb } from "./loadNativeSection";
+import { decodeNativeJsonResource, loadNativeGlbContainer, validateSectionGlb } from "./loadNativeSection";
+import type { CollisionPrimitive } from "./movement/core/collisionTrace";
+import type { CollisionWorld } from "./movement/core/collisionWorld";
+import { singleLineCheck } from "./movement/core/lineCheck";
+import type { WorldResidencyFootprint } from "./worldResidencyRing";
 import type { NativeTileBspChunk, NativeTileSpawnAnchor, NativeTileTerrainChunk } from "./loadNativeTileChunks";
 import { parseNativeBspSectionExtras, type NativeTileBspResource } from "./nativeBspResources";
 import {
@@ -21,22 +25,32 @@ export interface LoadedChunkTerrain {
   readonly meshes: readonly AbstractMesh[];
 }
 
-export interface TerrainChunkForAnchor {
-  readonly terrain: NativeTileChunkTerrain;
-  readonly bytes: number;
-  readonly meshes: readonly AbstractMesh[];
+export interface TileAnchorCandidate {
+  readonly tileId: string;
+  readonly chunkId: string;
+  readonly footprint: WorldResidencyFootprint;
 }
 
-export interface AnchorOnChunkTerrain<Entry extends TerrainChunkForAnchor> {
-  readonly chunk: Entry;
-  readonly surface: Vector3;
+export interface TileAnchorFloor {
+  readonly position: Vector3;
+  readonly primitiveKind: CollisionPrimitive["kind"];
 }
+
+export interface TileAnchorPlacement<Candidate extends TileAnchorCandidate> {
+  readonly chunk: Candidate;
+  readonly floor: TileAnchorFloor;
+}
+
+export type TileAnchorFloorProbe = (authored: Vector3) => TileAnchorFloor | null;
 
 const maximumChunkTerrainBytes = 128 * 1024 * 1024;
 const maximumChunkBspBytes = 128 * 1024 * 1024;
-const tileSpawnAnchorRule = "authored PlayerStart XY on the chunk terrain surface; authored Z kept as a diagnostic";
-const surfaceRayClearanceMetres = 1;
+const tileSpawnAnchorRule = "authored PlayerStart XY in the chunk plan footprint; first collision hit below the authored location; authored Z kept as a diagnostic";
 const staticMeshStep = "meshes";
+const zeroExtent = { x: 0, y: 0, z: 0 };
+
+export const tileAnchorOutsideChunkFootprints = "tile-anchor-outside-every-chunk-footprint";
+export const tileAnchorHasNoFloor = "tile-anchor-has-no-floor";
 
 export type TileSpawnAnchorRule = typeof tileSpawnAnchorRule;
 
@@ -46,27 +60,32 @@ export function authoredAnchorPosition(manifest: NativeTileManifest): Vector3 {
   return new Vector3(world.x, world.y, world.z);
 }
 
-function terrainSurfaceHeight(meshes: readonly AbstractMesh[], position: Vector3, minimumY: number, maximumY: number): number | null {
-  const ray = new Ray(new Vector3(position.x, maximumY + surfaceRayClearanceMetres, position.z), new Vector3(0, -1, 0),
-    maximumY - minimumY + 2 * surfaceRayClearanceMetres);
-  const heights = meshes.map(mesh => mesh.intersects(Ray.Transform(ray, mesh.computeWorldMatrix(true).clone().invert()), false).pickedPoint?.y)
-    .filter((height): height is number => height !== undefined);
-  return heights.length ? Math.max(...heights) : null;
+const footprintHolds = (footprint: WorldResidencyFootprint, x: number, z: number) =>
+  x >= footprint.minimumX && x <= footprint.maximumX && z >= footprint.minimumZ && z <= footprint.maximumZ;
+
+export function collisionFloorBelow(world: CollisionWorld, authored: Vector3, lowestHeightMetres: number): TileAnchorFloor | null {
+  const start = worldPositionToSource(authored), end = worldPositionToSource({ x: authored.x, y: lowestHeightMetres, z: authored.z });
+  if (!(end.z < start.z)) return null;
+  const hit = singleLineCheck(world, { start, end, extent: zeroExtent }, committedMovementRules);
+  if (hit === null) return null;
+  const floor = sourcePositionToWorld(hit.location);
+  return { position: new Vector3(floor.x, floor.y, floor.z), primitiveKind: hit.primitive.kind };
 }
 
-export function anchorOnChunkTerrain<Entry extends TerrainChunkForAnchor>(loaded: readonly Entry[], authored: Vector3): AnchorOnChunkTerrain<Entry> {
-  for (const entry of loaded) {
-    const { minimum, maximum } = nativeMeshBounds(entry.meshes);
-    if (authored.x < minimum.x || authored.x > maximum.x || authored.z < minimum.z || authored.z > maximum.z) continue;
-    const height = terrainSurfaceHeight(entry.meshes, authored, minimum.y, maximum.y);
-    if (height !== null) return { chunk: entry, surface: new Vector3(authored.x, height, authored.z) };
-  }
-  throw new Error("The tile anchor lies outside every chunk terrain.");
+export function anchorOnChunkFloor<Candidate extends TileAnchorCandidate>(candidates: readonly Candidate[], authored: Vector3,
+  floorBelow: TileAnchorFloorProbe): TileAnchorPlacement<Candidate> {
+  const chunk = candidates.find(candidate => footprintHolds(candidate.footprint, authored.x, authored.z));
+  if (chunk === undefined) throw new Error(`${tileAnchorOutsideChunkFootprints}: the authored PlayerStart XY lies in no loaded chunk plan footprint.`);
+  const floor = floorBelow(authored);
+  if (floor === null) throw new Error(`${tileAnchorHasNoFloor}: no collision lies below the authored PlayerStart in ${chunk.tileId}/${chunk.chunkId}.`);
+  return { chunk, floor };
 }
 
-export function tileSpawnAnchor(manifest: NativeTileManifest, authored: Vector3, spawnCandidate: Vector3): NativeTileSpawnAnchor {
-  return { playerStart: manifest.anchor.playerStart, authoredSourceLocation: manifest.anchor.location,
-    terrainSurfacePosition: spawnCandidate.asArray(), authoredHeightAboveTerrainMetres: authored.y - spawnCandidate.y, rule: tileSpawnAnchorRule };
+export function tileSpawnAnchor(manifest: NativeTileManifest, authored: Vector3, placement: TileAnchorPlacement<TileAnchorCandidate>): NativeTileSpawnAnchor {
+  const { chunk, floor } = placement;
+  return { playerStart: manifest.anchor.playerStart, authoredSourceLocation: manifest.anchor.location, anchorChunk: { tileId: chunk.tileId, chunkId: chunk.chunkId },
+    floorPosition: floor.position.asArray(), floorPrimitiveKind: floor.primitiveKind, authoredHeightAboveFloorMetres: authored.y - floor.position.y,
+    rule: tileSpawnAnchorRule };
 }
 
 export async function readTileChunkManifests(manifest: NativeTileManifest, signal: AbortSignal): Promise<NativeTileChunkManifest[]> {

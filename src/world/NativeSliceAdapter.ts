@@ -31,6 +31,7 @@ export interface SourcedNativeSliceSpeedProfile {
   readonly runMetresPerSecond: number;
   readonly walkSourceUnitsPerSecond: number;
   readonly runSourceUnitsPerSecond: number;
+  readonly swimSourceUnitsPerSecond: number;
   readonly runStartSeconds: number;
   readonly source: string;
 }
@@ -41,8 +42,9 @@ export interface UnresolvedNativeSliceSpeedProfile {
 }
 export type NativeSliceSpeedProfile = SourcedNativeSliceSpeedProfile | UnresolvedNativeSliceSpeedProfile;
 export type NativeSliceAdapterWithSourcedSpeed = NativeSliceAdapter & { readonly speedProfile: SourcedNativeSliceSpeedProfile };
-export const ACIS_HUMAN_FIGHTER_SPEED = Object.freeze({ walkUnitsPerSecond: 80, runUnitsPerSecond: 115, runStartSeconds: 12 / 30,
-  source: "aCis server data, not client data (humanFighter.xml line 6, sha256 6f7ef9f6b5cb8e5e…, class 0, both sexes: walkSpd 80, runSpd 115 UU/s, move multiplier 1.0; " +
+export const ACIS_HUMAN_FIGHTER_SPEED = Object.freeze({ walkUnitsPerSecond: 80, runUnitsPerSecond: 115, swimUnitsPerSecond: 50, runStartSeconds: 12 / 30,
+  source: "aCis server data, not client data (humanFighter.xml line 6, sha256 6f7ef9f6b5cb8e5e…, class 0, both sexes: walkSpd 80, runSpd 115, swimSpd 50 UU/s, move multiplier 1.0; " +
+    "UserInfo.java lines 141-146, sha256 199507324bd130da…, writes swimSpd as both the swim run and the swim walk speed; " +
     `chargrp walkanimframe 12/30 s run start, rows 0..13, ${runStartAtWalkSpeedRoutine}; no acceleration ramp, ${velocityWithoutAccelerationRampRoutine})` });
 const sourcedServerSpeedByPlayerProfileId: ReadonlyMap<string, typeof ACIS_HUMAN_FIGHTER_SPEED> = new Map([
   ["human-male-fighter", ACIS_HUMAN_FIGHTER_SPEED], ["human-female-fighter", ACIS_HUMAN_FIGHTER_SPEED]]);
@@ -59,7 +61,7 @@ export function nativeSliceSpeedProfile(playerProfileId: string, sourceUnitsPerM
   return Object.freeze({ isSourced: true, walkMetresPerSecond: sourcedServerSpeed.walkUnitsPerSecond / sourceUnitsPerMetre,
     runMetresPerSecond: sourcedServerSpeed.runUnitsPerSecond / sourceUnitsPerMetre,
     walkSourceUnitsPerSecond: sourcedServerSpeed.walkUnitsPerSecond, runSourceUnitsPerSecond: sourcedServerSpeed.runUnitsPerSecond,
-    runStartSeconds: sourcedServerSpeed.runStartSeconds, source: sourcedServerSpeed.source });
+    swimSourceUnitsPerSecond: sourcedServerSpeed.swimUnitsPerSecond, runStartSeconds: sourcedServerSpeed.runStartSeconds, source: sourcedServerSpeed.source });
 }
 export function isNativeSliceAdapterWithSourcedSpeed(adapter: NativeSliceAdapter): adapter is NativeSliceAdapterWithSourcedSpeed {
   return adapter.speedProfile.isSourced;
@@ -91,7 +93,8 @@ export class NativeSliceAdapter implements GameWorldAdapter {
     this.localCollision = collision;
     this.moveTypes = locomotion.moveTypes ?? null;
     const speed = locomotion.speed ?? speedProfileAbsent;
-    if (speed.isSourced && (![speed.walkMetresPerSecond, speed.runMetresPerSecond, speed.walkSourceUnitsPerSecond, speed.runSourceUnitsPerSecond].every(value => Number.isFinite(value) && value > 0) ||
+    if (speed.isSourced && (![speed.walkMetresPerSecond, speed.runMetresPerSecond, speed.walkSourceUnitsPerSecond, speed.runSourceUnitsPerSecond,
+      speed.swimSourceUnitsPerSecond].every(value => Number.isFinite(value) && value > 0) ||
       !Number.isFinite(speed.runStartSeconds) || speed.runStartSeconds < 0)) throw new Error("Invalid native slice speed profile.");
     this.speed = speed;
     this.specialAttackPreviewSupported = locomotion.specialAttackPreviewSupported === true;
@@ -209,7 +212,8 @@ export class NativeSliceAdapter implements GameWorldAdapter {
     if (actionPreview !== undefined || actionTargetId !== undefined || player.animation !== "idle") this.update({ ...ordinary, animation: "idle" });
     this.emit({ type: "move", entityId: player.id, origin: worldPositionToSource(origin), destination: worldPositionToSource(destination),
       moveType: this.locomotionMode === "walk" ? this.moveTypes.walk : this.moveTypes.run,
-      speeds: { walk: speed.walkSourceUnitsPerSecond, run: speed.runSourceUnitsPerSecond },
+      speeds: { walk: speed.walkSourceUnitsPerSecond, run: speed.runSourceUnitsPerSecond,
+        swimWalk: speed.swimSourceUnitsPerSecond, swimRun: speed.swimSourceUnitsPerSecond },
       collision: { radius: this.localCollision.radius, height: this.localCollision.height } });
   }
   private stopLocalMove(player: WorldEntity): void {

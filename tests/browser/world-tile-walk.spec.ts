@@ -5,7 +5,8 @@ import { formatRigaTimestamp } from "../../scripts/check-machine-schedule.mjs";
 import { desktopViewport, landscapePhone } from "./browserViewports";
 import { servedLaneCatalogSha256, writeLoadCheckRecordFile } from "./support/loadCheckRecordFile";
 import {
-  createTileWalkOutcome, requestedWalkTileIds, settleViewportWalk, tileWalkRecordFilePath, tileWalkTrace, type ObservedTileWalk,
+  createTileWalkOutcome, requestedWalkTileIds, settleViewportWalk, startChunkBspFailure, tileWalkRecordFilePath, tileWalkTrace, walkEndFloorFailure,
+  type ObservedTileWalk, type StartChunkBsp,
 } from "./support/tileWalkRecords";
 
 interface TileCatalogRecord { readonly id: string; readonly manifest: string; readonly manifestSha256: string; readonly manifestBytes: number }
@@ -19,6 +20,17 @@ const walkTimeout = 90_000;
 const walkDistanceMetres = 4;
 const minimumWalkedMetres = 1;
 const portraitPhoneViewport = { width: 430, height: 932 };
+
+const readLaneStoreJson = (servedPath: string): unknown => JSON.parse(readFileSync(resolve("artifacts/lane-store", laneName, `.${servedPath}`), "utf8"));
+
+function startChunkBsp(tileRecord: TileCatalogRecord, anchorChunk: { readonly tileId: string; readonly chunkId: string }): StartChunkBsp {
+  if (anchorChunk.tileId !== tileRecord.id) return { chunkId: `${anchorChunk.tileId}/${anchorChunk.chunkId}`, bsp: null };
+  const tileManifest = readLaneStoreJson(tileRecord.manifest) as { chunks: { chunkId: string; manifest: string }[] };
+  const chunkRecord = tileManifest.chunks.find(chunk => chunk.chunkId === anchorChunk.chunkId);
+  if (chunkRecord === undefined) throw new Error(`tile:${tileRecord.id} lists no anchor chunk ${anchorChunk.chunkId}`);
+  const chunkManifest = readLaneStoreJson(chunkRecord.manifest) as { bsp: { resource: string } | null };
+  return { chunkId: anchorChunk.chunkId, bsp: chunkManifest.bsp };
+}
 const terminalColourCodes = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g");
 
 function firstFailureLine(testInfo: TestInfo): string {
@@ -55,7 +67,9 @@ async function openTile(page: Page, tileRecord: TileCatalogRecord, pageErrors: s
   expect(world.manifestSha256).toBe(tileRecord.manifestSha256);
   expect(world.terrainTriangles).toBeGreaterThan(0);
   expect(world).toMatchObject({ collisionVerified: false });
-  expect(world.bspMeshes, `the loaded section holds ${world.bspMeshes} BSP meshes`).toBeGreaterThan(0);
+  if (!world.tileAnchor) throw new Error(`${tileKey} loaded no tile anchor`);
+  const bspFailure = startChunkBspFailure({ bspMeshes: world.bspMeshes, bspResources: world.bspResources ?? [] }, startChunkBsp(tileRecord, world.tileAnchor.anchorChunk));
+  if (bspFailure !== null) throw new Error(bspFailure);
   expect(world.sectionWindow).toEqual({ basis: "terrain-info-chunk-plan", status: "source-derived" });
   await expect(page.locator(".world-location h1")).toHaveText(`${tileRecord.id} · native world tile`);
   return world;
@@ -89,9 +103,9 @@ async function walkTheTile(page: Page, tileRecord: TileCatalogRecord, screenshot
   const world = await openTile(page, tileRecord, pageErrors);
   const end = await walkAlongX(page);
   const terrainMinimumHeight = world.terrainBounds!.minimum[1]!;
-  const terrainMaximumHeight = world.terrainBounds!.maximum[1]!;
   expect(end.y, `the walk ended at height ${end.y} m, below the terrain minimum ${terrainMinimumHeight} m`).toBeGreaterThanOrEqual(terrainMinimumHeight);
-  expect(end.y, `the walk ended at height ${end.y} m, above the terrain maximum ${terrainMaximumHeight} m`).toBeLessThanOrEqual(terrainMaximumHeight);
+  const floorFailure = walkEndFloorFailure((await worldSnapshot(page))?.walkTrace ?? null);
+  if (floorFailure !== null) throw new Error(floorFailure);
   await page.screenshot({ path: `test-results/${screenshotName}` });
   expect(pageErrors).toEqual([]);
 }

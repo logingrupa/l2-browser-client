@@ -1,6 +1,6 @@
 import { readTileCatalogRecord } from "../../assets/native/nativeCatalogRecords";
 import { readNativeCatalogUnlessNotStaged } from "../../assets/native/readNativeCatalog";
-import type { CollisionCellFootprint } from "./movement/core/collisionWorld";
+import { createCollisionWorld, type CollisionCellFootprint, type CollisionWorld } from "./movement/core/collisionWorld";
 import type { CollisionBspTree } from "./movement/core/collisionCell";
 import { loadChunkCollisionCell, loadTileBspTree, nativeTileCollisionCellId } from "./movement/loadCollisionCells";
 import { readTileChunkManifests } from "./nativeTileChunkContents";
@@ -48,4 +48,15 @@ export async function readResidencyTile(tileId: string, lifetimeSignal: AbortSig
   return { tileId, manifest, manifestSha256: pinned.manifestSha256, chunks, chunkManifestsById: new Map(chunks.map(chunk => [chunk.chunkId, chunk])),
     tileCollision, grid, residencyChunks, expectedSourceFootprints,
     tileBspTree: () => tileBspTreeLoad ??= loadTileBspTree(tileId, tileCollision, lifetimeSignal) };
+}
+
+export async function loadResidencyTileCollisionWorld(tile: ResidencyTile, signal: AbortSignal): Promise<CollisionWorld> {
+  const world = createCollisionWorld();
+  const collisionChunks = tile.chunks.filter(chunk => chunk.collision !== null);
+  const [cells, tileBspTree] = await Promise.all([Promise.all(collisionChunks.map(chunk => loadChunkCollisionCell(chunk, signal))), tile.tileBspTree()]);
+  signal.throwIfAborted();
+  cells.forEach((cell, index) => world.requireCell(cell.cellId, tile.expectedSourceFootprints.get(collisionChunks[index]!.chunkId)!));
+  for (const cell of cells) world.addCell(cell.cellId, cell);
+  if (cells.length > 0) world.setTileBspTree(tile.tileId, tileBspTree);
+  return world;
 }

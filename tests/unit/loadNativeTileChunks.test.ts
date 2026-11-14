@@ -13,6 +13,9 @@ import { loadNativeSection, type NativeSection } from "../../src/scene/world/loa
 import { loadNativeTileChunks, type NativeTileSectionView } from "../../src/scene/world/loadNativeTileChunks";
 import { decodeJsonDocument, fixtureTileId, jsonBytes, readFixtureTileFiles, sha256Hex } from "../support/nativeTileFixtureStore";
 import { assetFixture } from "../fixtures/assetPackageFixture";
+import { emptyChunkArrays, wallTreeArrays } from "../fixtures/movement/movementCollisionFixtures";
+import { replaceFixtureArray, writeCollisionFixture } from "../support/nativeTileCollisionFixture";
+import type { TypedPayloadFixtureArray } from "../support/typedPayloadFixture";
 
 vi.mock("@babylonjs/core/Loading/sceneLoader", () => ({ LoadAssetContainerAsync: vi.fn() }));
 vi.mock("../../src/scene/world/loadNativeMovers", () => ({ loadNativeMovers: vi.fn(async () => null) }));
@@ -55,6 +58,26 @@ function tileMoverResponses(serverRealId: number): { readonly resource: Document
     responses: [[resource, bytes], [`/l2/${archiveSha256}/model.glb`, model]] };
 }
 
+const flatCollisionTerrainHeight = 32767;
+
+function flatCollisionTerrainArrays(): TypedPayloadFixtureArray[] {
+  const terrainArrays: readonly [string, readonly number[]][] = [
+    ["TERR.location", [128, 128, 0]], ["TERR.terrainScale", [128, 128, 256]], ["TERR.heightmapSize", [4, 4]], ["TERR.vertexRectangle", [0, 0, 4, 4]],
+    ["TERR.heights", Array.from({ length: 16 }, () => flatCollisionTerrainHeight)], ["TERR.quadVisibility", Array.from({ length: 9 }, () => 1)],
+    ["TERR.edgeTurn", Array.from({ length: 9 }, () => 0)],
+  ];
+  return terrainArrays.reduce((arrays, [name, values]) => replaceFixtureArray(arrays, name, values), emptyChunkArrays());
+}
+
+function storedCollisionResource(folder: string, arrays: readonly TypedPayloadFixtureArray[]) {
+  const fixture = writeCollisionFixture(arrays);
+  const payloadBytes = new Uint8Array(fixture.payloadBytes);
+  const assetBytes = jsonBytes({ ...fixture.assetRecord, payload: { file: "payload.bin", sha256: sha256Hex(payloadBytes), bytes: payloadBytes.byteLength } });
+  const assetSha256 = sha256Hex(assetBytes), directory = `/l2/maps/${assetSha256}/${folder}`;
+  return { resource: `${directory}/asset.json`, sha256: assetSha256, bytes: assetBytes.byteLength,
+    responses: [[`${directory}/asset.json`, assetBytes], [`${directory}/payload.bin`, payloadBytes]] as [string, Uint8Array<ArrayBuffer>][] };
+}
+
 function chunkBspGlb(sectionCount: number): Uint8Array<ArrayBuffer> {
   const sections = Array.from({ length: sectionCount }, (_, primitive) => ({ primitive, material: "Fixture_T.Floor", unlit: false, lightmap: -1,
     outdoor: true, translucent: false }));
@@ -91,17 +114,26 @@ function tileStore(options: TileStoreOptions = {}) {
     bspResponses.push([resource, options.secondChunkBsp.served ?? options.secondChunkBsp.glb]);
   }
   const secondChunkBytes = jsonBytes(secondChunk), secondChunkSha256 = sha256Hex(secondChunkBytes);
+  const chunkCollision = storedCollisionResource("native-tile-chunk-collision", flatCollisionTerrainArrays());
+  const tileCollision = storedCollisionResource("native-tile-collision", wallTreeArrays());
+  const firstChunk = decodeJsonDocument(fixture.chunk.bytes);
+  firstChunk.collision = { resource: chunkCollision.resource, sha256: chunkCollision.sha256 };
+  const firstChunkBytes = jsonBytes(firstChunk), firstChunkSha256 = sha256Hex(firstChunkBytes);
+  const firstChunkPath = `/l2/maps/${firstChunkSha256}/native-tile-chunk-runtime/manifest.json`;
   const tile = decodeJsonDocument(fixture.tile.bytes);
   if (options.anchorLocation) tile.anchor = { ...(tile.anchor as Document), location: options.anchorLocation };
   const movers = options.tileMovers ? tileMoverResponses(options.tileMoverServerRealId ?? 0) : null;
-  if (movers) tile.resources = [movers.resource];
-  tile.chunks = [...(tile.chunks as Document[]), { chunkId: "chunk-0-1", manifestSha256: secondChunkSha256, manifestBytes: secondChunkBytes.byteLength,
-    manifest: `/l2/maps/${secondChunkSha256}/native-tile-chunk-runtime/manifest.json` }];
+  tile.resources = [{ kind: "native-tile-collision", manifest: tileCollision.resource, manifestSha256: tileCollision.sha256, manifestBytes: tileCollision.bytes },
+    ...(movers ? [movers.resource] : [])];
+  tile.chunks = [{ chunkId: "chunk-0-0", manifestSha256: firstChunkSha256, manifestBytes: firstChunkBytes.byteLength, manifest: firstChunkPath },
+    { chunkId: "chunk-0-1", manifestSha256: secondChunkSha256, manifestBytes: secondChunkBytes.byteLength,
+      manifest: `/l2/maps/${secondChunkSha256}/native-tile-chunk-runtime/manifest.json` }];
   const tileBytes = jsonBytes(tile), tileSha256 = sha256Hex(tileBytes);
   const tilePath = `/l2/tiles/${tileSha256}/tile.json`;
   const catalog = { schemaVersion: 1, models: [], tiles: [{ id: fixtureTileId, manifest: tilePath, manifestSha256: tileSha256, manifestBytes: tileBytes.byteLength }] };
   const responses = new Map<string, Uint8Array<ArrayBuffer>>([
-    ["/l2/catalog.json", jsonBytes(catalog)], [tilePath, tileBytes], [fixture.chunk.path, fixture.chunk.bytes], [fixture.terrain.path, fixture.terrain.bytes],
+    ["/l2/catalog.json", jsonBytes(catalog)], [tilePath, tileBytes], [firstChunkPath, firstChunkBytes], [fixture.terrain.path, fixture.terrain.bytes],
+    ...chunkCollision.responses, ...tileCollision.responses,
     [`/l2/maps/${secondChunkSha256}/native-tile-chunk-runtime/manifest.json`, secondChunkBytes],
     [`/l2/maps/${secondTerrainSha256}/native-tile-chunk-terrain/terrain.glb`, secondTerrainBytes], ...(options.archives ?? []), ...bspResponses,
     ...(movers?.responses ?? []),
@@ -144,7 +176,7 @@ describe("native tile chunk loading", () => {
     return section;
   }
 
-  it("loads every chunk terrain in manifest order and spawns on the terrain surface at the anchor XY in glTF axes", async () => {
+  it("loads every chunk terrain in manifest order and spawns on the first collision hit below the anchor in glTF axes", async () => {
     const store = tileStore(); serve(store);
     const section = (await load())!;
     const view = section.manifest as NativeTileSectionView;
@@ -155,10 +187,14 @@ describe("native tile chunk loading", () => {
     expect(section.terrainMeshes.map(mesh => mesh.metadata.nativeTileChunk)).toEqual([
       { tileId: fixtureTileId, chunkId: "chunk-0-0" }, { tileId: fixtureTileId, chunkId: "chunk-0-1" }]);
     expect(section.terrainMeshes.every(mesh => mesh.metadata.worldTerrain && mesh.metadata.worldSupportsWalking && mesh.isPickable)).toBe(true);
-    expect(section.spawnCandidate!.asArray().map(value => Number(value.toFixed(6)))).toEqual([1.28, 0.05, 1.28]);
+    const spawn = section.spawnCandidate!;
+    expect([spawn.x, spawn.z]).toEqual([1.28, 1.28]);
+    expect(spawn.y).toBeGreaterThanOrEqual(0);
+    expect(spawn.y).toBeLessThan(0.01);
     expect(view.anchor).toMatchObject({ playerStart: "Fixture.PlayerStart0", authoredSourceLocation: [128, 128, 200],
-      rule: "authored PlayerStart XY on the chunk terrain surface; authored Z kept as a diagnostic" });
-    expect(view.anchor.authoredHeightAboveTerrainMetres).toBeCloseTo(1.95, 6);
+      anchorChunk: { tileId: fixtureTileId, chunkId: "chunk-0-0" }, floorPrimitiveKind: "terrain", floorPosition: spawn.asArray(),
+      rule: "authored PlayerStart XY in the chunk plan footprint; first collision hit below the authored location; authored Z kept as a diagnostic" });
+    expect(view.anchor.authoredHeightAboveFloorMetres).toBeCloseTo(2 - spawn.y, 6);
     expect(section.inspection().tileAnchor).toEqual(view.anchor);
     expect(section.supportMeshes).toEqual([]);
     expect(section.inspection()).toMatchObject({ modelCount: 0, placementCount: 0, bspMeshes: 0, collisionVerified: false, terrainMaterial: "neutral-inspection" });
@@ -199,7 +235,7 @@ describe("native tile chunk loading", () => {
     expect(world.movers).toBe(world.section!.tileMovers);
     expect(world.movers!.targets.map(target => target.source.id)).toEqual([`interlude:${fixtureTileId}.Mover3`, `interlude:${fixtureTileId}.Mover7`]);
     const tile = decodeJsonDocument(store.responses.get(store.tilePath)!);
-    expect(world.movers!.manifestSha256).toBe((tile.resources as Document[])[0]!.manifestSha256);
+    expect(world.movers!.manifestSha256).toBe((tile.resources as Document[]).find(resource => resource.kind === "movers")!.manifestSha256);
     world.release();
     expect(scene.transformNodes.filter(node => node.name.includes(".Mover"))).toEqual([]);
   });
@@ -280,9 +316,15 @@ describe("native tile chunk loading", () => {
     expect(hiddenChunk.gaps).toContain("terrain: terrain-quads-all-hidden");
   });
 
-  it("refuses an anchor whose XY lies on no chunk terrain and leaves no mesh", async () => {
+  it("refuses an anchor whose XY lies in no chunk plan footprint and leaves no mesh", async () => {
     serve(tileStore({ anchorLocation: [128, 50_000, 200] }));
-    await expect(load()).rejects.toThrow("The tile anchor lies outside every chunk terrain.");
+    await expect(load()).rejects.toThrow("tile-anchor-outside-every-chunk-footprint");
+    expect(scene.meshes).toHaveLength(0);
+  });
+
+  it("refuses an anchor with no collision below it with tile-anchor-has-no-floor and leaves no mesh", async () => {
+    serve(tileStore({ anchorLocation: [128, 128, -500] }));
+    await expect(load()).rejects.toThrow("tile-anchor-has-no-floor: no collision lies below the authored PlayerStart in 00_00/chunk-0-0.");
     expect(scene.meshes).toHaveLength(0);
   });
 

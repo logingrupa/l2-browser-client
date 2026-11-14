@@ -23,7 +23,9 @@ vi.mock("../../src/scene/world/attachNativeTileSystems", () => ({ attachNativeTi
 vi.mock("../../src/scene/world/nativeTileSectionInspection", () => ({ inspectNativeTileSection: vi.fn(() => ({})) }));
 vi.mock("../../src/scene/world/nativeTileChunkContents", () => ({
   authoredAnchorPosition: vi.fn(() => new Vector3(0, 2, 0)),
-  anchorOnChunkTerrain: vi.fn(() => ({ chunk: { terrain: { sha256: "a".repeat(64) }, bytes: 64 }, surface: new Vector3(0, 0, 0) })),
+  anchorOnChunkFloor: vi.fn(() => ({ chunk: { tileId: "20_20", chunkId: "chunk-0-0", terrain: { terrain: { sha256: "a".repeat(64) }, bytes: 64 } },
+    floor: { position: new Vector3(0, 0, 0), primitiveKind: "terrain" } })),
+  collisionFloorBelow: vi.fn(() => null),
   tileSpawnAnchor: vi.fn(() => ({ playerStart: "Fixture.PlayerStart0" })),
   describeTerrainChunks: vi.fn(() => []),
 }));

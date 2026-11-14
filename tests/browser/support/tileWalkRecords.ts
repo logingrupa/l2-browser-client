@@ -17,7 +17,7 @@ export interface ObservedTileWalk {
 export type TileWalkFailureClass =
   | "tile-did-not-start" | "no-world-section" | "bsp-mesh-count" | "collision-not-resident"
   | "held-collision-not-ready" | "held-collision-cell-absent" | "held-speed-unresolved" | "cannot-move"
-  | "below-terrain-minimum" | "above-terrain-maximum" | "walk-did-not-settle" | "other";
+  | "below-terrain-minimum" | "ended-without-floor" | "walk-did-not-settle" | "other";
 
 export interface TileWalkTrace extends ObservedTileWalk {
   readonly failureClass: TileWalkFailureClass;
@@ -34,6 +34,16 @@ export interface TileWalkOutcome {
   firstFailure: TileWalkFailure | null;
 }
 
+export interface StartChunkBsp {
+  readonly chunkId: string;
+  readonly bsp: { readonly resource: string } | null;
+}
+
+export interface LoadedSectionBsp {
+  readonly bspMeshes: number;
+  readonly bspResources: readonly string[];
+}
+
 export type SettledTileWalk =
   | { readonly status: Extract<LoadCheckStatus, "pass">; readonly reason: null }
   | { readonly status: Extract<LoadCheckStatus, "failed">; readonly reason: string; readonly walkTrace: TileWalkTrace };
@@ -45,7 +55,7 @@ const failureClassByReasonPattern: readonly (readonly [RegExp, TileWalkFailureCl
   [/loaded no world section/, "no-world-section"],
   [/BSP meshes/, "bsp-mesh-count"],
   [/below the terrain minimum/, "below-terrain-minimum"],
-  [/above the terrain maximum/, "above-terrain-maximum"],
+  [/the walk ended (?:\w+ with no floor|with no pawn trace)/, "ended-without-floor"],
 ];
 
 export function requestedWalkTileIds(walkTileIdsVariable: string | undefined): readonly string[] {
@@ -94,4 +104,17 @@ export function settleViewportWalk(outcome: TileWalkOutcome, viewportFailure: Ti
   else outcome.firstFailure ??= viewportFailure;
   if (outcome.firstFailure !== null) return { status: "failed", ...outcome.firstFailure };
   return outcome.passedViewportCount >= outcome.walkViewportCount ? { status: "pass", reason: null } : null;
+}
+
+export function startChunkBspFailure(loaded: LoadedSectionBsp, startChunk: StartChunkBsp): string | null {
+  if (startChunk.bsp === null) return null;
+  if (loaded.bspMeshes > 0 && loaded.bspResources.includes(startChunk.bsp.resource)) return null;
+  return `the loaded section holds ${loaded.bspMeshes} BSP meshes from ${JSON.stringify(loaded.bspResources)} for the start chunk ${startChunk.chunkId} `
+    + `BSP resource ${startChunk.bsp.resource}`;
+}
+
+export function walkEndFloorFailure(pawn: MovementWalkTrace | null): string | null {
+  if (pawn === null) return "the walk ended with no pawn trace";
+  if (pawn.physicsMode === "swimming" || (pawn.physicsMode === "walking" && pawn.floorHit !== null)) return null;
+  return `the walk ended ${pawn.physicsMode} with no floor at ${JSON.stringify(pawn.endPosition)}`;
 }

@@ -22,7 +22,7 @@ describe("native slice adapter boundary", () => {
     const events = recorded(adapter);
     adapter.dispatch({ type: "move-local", position: new Vector3(2.7, 900, 4) });
     expect(events).toEqual([{ type: "move", entityId: "local-player", origin: { x: 200, y: 400, z: 300 }, destination: { x: 270, y: 400, z: 90000 },
-      moveType: moveTypes.run, speeds: { walk: 80, run: 115 }, collision }]);
+      moveType: moveTypes.run, speeds: { walk: 80, run: 115, swimWalk: 50, swimRun: 50 }, collision }]);
     expect(player(adapter)).toMatchObject({ position: origin, animation: "idle" });
     adapter.dispose();
   });
