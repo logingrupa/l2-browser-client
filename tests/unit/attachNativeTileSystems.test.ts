@@ -68,16 +68,10 @@ describe("attachNativeTileSystems", () => {
 
   it("takes a chunk whose lighting refuses it back out of the visibility walk", async () => {
     const systems = await attachNativeTileSystems(scene, systemsTileManifest(), { initialChunks: [], drawLimitRules: [] }, new AbortController().signal, () => false);
-    const placedMesh = new Mesh("placed static mesh", scene), data = new VertexData();
-    data.positions = [0, 0, 0, 1, 0, 0, 0, 1, 0];
-    data.indices = [0, 1, 2];
-    data.applyToMesh(placedMesh, false);
-    placedMesh.material = new StandardMaterial("malformed-pin", scene);
-    placedMesh.material.metadata = { gltf: { extras: { nativeMaterialProgram: { directory: "native-materials/not-a-digest", programSha256: "not-a-digest" } } } };
-    const root = new Mesh("placement root", scene);
-    placedMesh.parent = root;
-    const instance = { root, source: { exportIndex: 200 } } as unknown as NativeModelInstance<NativeTileChunkPlacement>;
-    await expect(systems.addChunk(wallsChunk([instance]))).rejects.toThrow(/is not a native-materials program pin/);
+    const terrainMesh = new Mesh("terrain with a malformed pin", scene);
+    terrainMesh.material = new StandardMaterial("malformed-pin", scene);
+    terrainMesh.material.metadata = { gltf: { extras: { nativeMaterialProgram: { directory: "native-materials/not-a-digest", programSha256: "not-a-digest" } } } };
+    await expect(systems.addChunk({ ...wallsChunk(), terrainMeshes: [terrainMesh] })).rejects.toThrow(/is not a native-materials program pin/);
     expect(systems.boundChunkIds()).toEqual([]);
     expect((systems.visibility.inspection() as BoundTileVisibilityRuntimeInspection).targetChunkIds).toEqual([]);
     systems.dispose();

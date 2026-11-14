@@ -10,6 +10,7 @@ import { attachTileLighting, type TileLightingRuntimeInspection } from "../../sr
 import type { TileLightingBspChunk } from "../../src/scene/world/lighting/bindTileLighting";
 import type { NativeBspSection } from "../../src/scene/world/nativeBspResources";
 import { parseNativeTileManifest } from "../../src/scene/world/nativeTileManifest";
+import { staticMeshMaterialsResourceAbsentReason } from "../../src/scene/world/staticMeshLibraryMaterials";
 
 vi.mock("../../src/scene/world/lighting/loadTileLighting", async () => {
   const { tileLightingModel } = await import("../support/tileLightingFixture");
@@ -52,19 +53,19 @@ function lightmappedSectionsOf(inspection: ReturnType<Awaited<ReturnType<typeof 
 }
 
 describe("attachTileLighting", () => {
-  it("refuses a chunk whose static mesh holds a malformed material program pin and leaves no per-frame observer after dispose", async () => {
+  it("refuses a chunk whose terrain mesh holds a malformed material program pin and leaves no per-frame observer after dispose", async () => {
     const engine = new NullEngine();
     const scene = new Scene(engine);
     scene.activeCamera = new FreeCamera("camera", Vector3.Zero(), scene);
     const malformedPinMaterial = new StandardMaterial("malformed-pin", scene);
     malformedPinMaterial.metadata = { gltf: { extras: { nativeMaterialProgram: { directory: "native-materials/not-a-digest", programSha256: "not-a-digest" } } } };
-    const staticMesh = new Mesh("static-mesh", scene);
-    staticMesh.material = malformedPinMaterial;
+    const terrainMesh = new Mesh("terrain-mesh", scene);
+    terrainMesh.material = malformedPinMaterial;
     const observersBefore = scene.onBeforeRenderObservable.observers.length;
     const attached = await attachTileLighting(scene, lightingTileManifest(), () => null, new AbortController().signal);
-    await expect(attached.addChunk({ chunkId: lateChunkId, bspChunk: null, staticMeshes: [staticMesh], terrainMeshes: [] }))
+    await expect(attached.addChunk({ chunkId: lateChunkId, bspChunk: null, staticMeshes: [], terrainMeshes: [terrainMesh] }))
       .rejects.toThrow(/is not a native-materials program pin/);
-    expect((attached.inspection() as TileLightingRuntimeInspection).staticMeshSlots).toEqual({});
+    expect((attached.inspection() as TileLightingRuntimeInspection).terrainLayers).toEqual({});
     attached.dispose();
     await new Promise(resolve => setTimeout(resolve, 0));
     expect(scene.onBeforeRenderObservable.observers.length).toBe(observersBefore);
@@ -90,10 +91,11 @@ describe("attachTileLighting", () => {
     const staticMesh = new Mesh("late static mesh", scene);
     await attached.addChunk({ chunkId: lateChunkId, bspChunk: lateBspChunk(scene), staticMeshes: [staticMesh], terrainMeshes: [] });
     expect(lightmappedSectionsOf(attached.inspection(), lateChunkId)).toBe(2);
-    expect((attached.inspection() as TileLightingRuntimeInspection).staticMeshSlots).toEqual({ "program-unconverted": 1 });
+    expect((attached.inspection() as TileLightingRuntimeInspection).staticMeshSlots).toMatchObject({ gap: staticMeshMaterialsResourceAbsentReason, meshCount: 1,
+      statusCounts: { "library-compiled": 0, "library-diagnostic": 0, "program-gap": 1 } });
     attached.removeChunk(lateChunkId);
     expect(lightmappedSectionsOf(attached.inspection(), lateChunkId)).toBe(0);
-    expect((attached.inspection() as TileLightingRuntimeInspection).staticMeshSlots).toEqual({});
+    expect((attached.inspection() as TileLightingRuntimeInspection).staticMeshSlots.meshCount).toBe(0);
     await attached.addChunk({ chunkId: lateChunkId, bspChunk: lateBspChunk(scene), staticMeshes: [staticMesh], terrainMeshes: [] });
     expect(lightmappedSectionsOf(attached.inspection(), lateChunkId)).toBe(2);
     attached.dispose();

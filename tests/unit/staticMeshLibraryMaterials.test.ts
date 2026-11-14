@@ -1,9 +1,20 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
 import type { Material } from "@babylonjs/core/Materials/material";
-import { describe, expect, it } from "vitest";
+import { PBRMaterial } from "@babylonjs/core/Materials/PBR/pbrMaterial";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { Scene } from "@babylonjs/core/scene";
+import type { LoadedNativeMaterial } from "../../src/materials/ue2/babylon/loadNativeMaterial";
+import { FOG_DISABLED } from "../../src/materials/ue2/babylon/material";
+import { parseMaterialProgram } from "../../src/materials/ue2/model/materialProgram";
+import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
+import { bindStaticMeshLibraryMaterials, staticMeshVertexLightingUnportedReason } from "../../src/scene/world/lighting/bindStaticMeshLibraryMaterials";
 import { parseNativeTileManifest } from "../../src/scene/world/nativeTileManifest";
 import {
-  joinStaticMeshSlot, parseStaticMeshMaterialsListing, readStaticMeshSlotSourceObject, staticMeshSlotMaterialNoneReason, staticMeshSlotMaterialUnlistedReason,
+  joinStaticMeshSlot, parseStaticMeshMaterialsListing, readStaticMeshSlotSourceObject, staticMeshMaterialsResourceAbsentReason, staticMeshSlotMaterialNoneReason,
+  staticMeshSlotMaterialUnlistedReason,
 } from "../../src/scene/world/staticMeshLibraryMaterials";
+import { swatchTexturePng, syntheticSwatchProgram, syntheticUnportedProgram, textureImageFor, type FixtureProgram } from "../support/materialProgramFixture";
 
 const tileId = "20_21";
 const portedProgramSha256 = "a".repeat(64);
@@ -71,5 +82,101 @@ describe("static mesh materials listing parser", () => {
     expect(() => parseNativeTileManifest(manifest([{ ...resource, manifest: `/l2/native-materials/${listingSha256}/listing.json` }])))
       .toThrow(/static-mesh-materials resource must be \/l2\/native-materials\/static-mesh-materials-<sha256>\.json/);
     expect(() => parseNativeTileManifest(manifest([resource, resource]))).toThrow(/lists more than one static-mesh-materials resource/);
+  });
+});
+
+const swatchImage = textureImageFor(swatchTexturePng());
+const diagnosticProgramSha256 = "c".repeat(64);
+const diagnosticEntry = { sourceObject: "Giran_T.Deep.Oscillator", program: { directory: `native-materials/${diagnosticProgramSha256}`,
+  programSha256: diagnosticProgramSha256 }, rootPorted: true, gapReasons: [] };
+const releases: (() => void)[] = [];
+afterEach(() => { releases.splice(0).reverse().forEach(release => release()); });
+
+function loadedProgram(materialId: string, program: FixtureProgram): LoadedNativeMaterial {
+  const parsedProgram = parseMaterialProgram(JSON.parse(JSON.stringify(program)));
+  return { materialId, program: parsedProgram, plan: compileMaterialStagePlan(parsedProgram),
+    texturePixels: new Map([[swatchImage.sha256, { width: 4, height: 4, rgba: new Uint8Array(64).fill(255) }]]) };
+}
+
+function slotMeshes(sourceObjects: readonly (string | null)[]) {
+  const engine = new NullEngine(), scene = new Scene(engine);
+  releases.push(() => { scene.dispose(); engine.dispose(); });
+  const meshes = sourceObjects.map((sourceObject, index) => {
+    const material = new PBRMaterial(`slot ${index}`, scene);
+    material.metadata = { gltf: { extras: { nativeSectionIndex: 0, nativeSourceReference: sourceObject } } };
+    const mesh = new Mesh(`static mesh ${index}`, scene);
+    mesh.material = material;
+    return mesh;
+  });
+  const loadProgram = vi.fn(async (materialId: string) =>
+    loadedProgram(materialId, materialId === portedProgramSha256 ? syntheticSwatchProgram(swatchImage) : syntheticUnportedProgram()));
+  return { scene, meshes, loadProgram };
+}
+
+const materialUniforms = () => ({ levelSeconds: 0, hour: 12, environmentType: 0, fog: FOG_DISABLED });
+
+describe("static mesh slots through the UE2 material library", () => {
+  const parsed = parseStaticMeshMaterialsListing(listing([portedEntry, unportedEntry, diagnosticEntry]), tileId);
+
+  it("draws a ported slot through one shared library material and keeps the texture material of every other slot with its reasons", async () => {
+    const f = slotMeshes([portedEntry.sourceObject, portedEntry.sourceObject.toUpperCase(), unportedEntry.sourceObject, diagnosticEntry.sourceObject, null]);
+    const textureMaterials = f.meshes.map(mesh => mesh.material);
+    const binding = bindStaticMeshLibraryMaterials({ scene: f.scene, load: { listing: parsed, gap: null }, sessionSeed: 3, uniforms: materialUniforms,
+      loadProgram: f.loadProgram });
+    await binding.addChunk("chunk-0-0", f.meshes);
+    expect(f.meshes[0]!.material).toBe(f.meshes[1]!.material);
+    expect(f.meshes[0]!.material?.name).toBe("UE2 material: SyntheticSwatch.SwatchFinalBlend");
+    expect(f.meshes.slice(2).map(mesh => mesh.material)).toEqual(textureMaterials.slice(2));
+    expect(f.loadProgram.mock.calls.map(([materialId]) => materialId).sort()).toEqual([portedProgramSha256, diagnosticProgramSha256]);
+    const inspection = binding.inspection();
+    expect(inspection).toMatchObject({ gap: null, lighting: "unlit", lightingReasons: [staticMeshVertexLightingUnportedReason], meshCount: 5,
+      statusCounts: { "library-compiled": 2, "library-diagnostic": 1, "program-gap": 2 } });
+    expect(inspection.slots).toEqual([
+      { sourceObject: null, status: "program-gap", programMaterialId: null, reasons: [staticMeshSlotMaterialNoneReason], meshes: 1 },
+      { sourceObject: portedEntry.sourceObject, status: "library-compiled", programMaterialId: portedProgramSha256, reasons: [], meshes: 2 },
+      { sourceObject: unportedEntry.sourceObject, status: "program-gap", programMaterialId: null, reasons: [unportedReason], meshes: 1 },
+      { sourceObject: diagnosticEntry.sourceObject, status: "library-diagnostic", programMaterialId: diagnosticProgramSha256,
+        reasons: ["material-class-unported:Engine.TexOscillatorTriggered"], meshes: 1 },
+    ]);
+    binding.dispose();
+  });
+
+  it("joins a returning chunk from the remembered slot material and loads no program twice", async () => {
+    const f = slotMeshes([portedEntry.sourceObject]);
+    const binding = bindStaticMeshLibraryMaterials({ scene: f.scene, load: { listing: parsed, gap: null }, sessionSeed: 3, uniforms: materialUniforms,
+      loadProgram: f.loadProgram });
+    await binding.addChunk("chunk-0-0", f.meshes);
+    binding.removeChunk("chunk-0-0");
+    expect(binding.inspection().meshCount).toBe(0);
+    await binding.addChunk("chunk-0-0", f.meshes);
+    expect(binding.inspection().statusCounts["library-compiled"]).toBe(1);
+    expect(f.loadProgram).toHaveBeenCalledTimes(1);
+    binding.dispose();
+  });
+
+  it("keeps every texture material and names the listing gap when the tile pins no static mesh materials", async () => {
+    const f = slotMeshes([portedEntry.sourceObject, null]);
+    const textureMaterials = f.meshes.map(mesh => mesh.material);
+    const binding = bindStaticMeshLibraryMaterials({ scene: f.scene, load: { listing: null, gap: staticMeshMaterialsResourceAbsentReason }, sessionSeed: 3,
+      uniforms: materialUniforms, loadProgram: f.loadProgram });
+    await binding.addChunk("chunk-0-0", f.meshes);
+    expect(f.meshes.map(mesh => mesh.material)).toEqual(textureMaterials);
+    expect(binding.inspection()).toMatchObject({ gap: staticMeshMaterialsResourceAbsentReason, meshCount: 2,
+      statusCounts: { "library-compiled": 0, "library-diagnostic": 0, "program-gap": 2 } });
+    expect(f.loadProgram).not.toHaveBeenCalled();
+    binding.dispose();
+  });
+
+  it("updates the bound library materials every frame and leaves no observer after dispose", async () => {
+    const f = slotMeshes([portedEntry.sourceObject]);
+    const observersBefore = f.scene.onBeforeRenderObservable.observers.length;
+    const uniforms = vi.fn(materialUniforms);
+    const binding = bindStaticMeshLibraryMaterials({ scene: f.scene, load: { listing: parsed, gap: null }, sessionSeed: 3, uniforms, loadProgram: f.loadProgram });
+    await binding.addChunk("chunk-0-0", f.meshes);
+    f.scene.onBeforeRenderObservable.notifyObservers(f.scene);
+    expect(uniforms).toHaveBeenCalled();
+    binding.dispose();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(f.scene.onBeforeRenderObservable.observers.length).toBe(observersBefore);
   });
 });

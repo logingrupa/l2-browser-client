@@ -1,12 +1,14 @@
 import type { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import type { Scene } from "@babylonjs/core/scene";
 import { drawNativeSessionSeed } from "../../../assets/native/nativeSessionSeed";
-import { loadNativeMaterial } from "../../../materials/ue2/babylon/material";
+import { loadNativeMaterial, type NativeMaterialUniforms } from "../../../materials/ue2/babylon/material";
 import { createPresentationClock } from "../../../shared/presentationClock";
 import { worldPositionToSource } from "../../../world/sourceFrame";
 import type { TileVisibilityFrame } from "../bspVisibility/core/tileVisibilityFrame";
 import { computeCameraEnvironment, type CameraEnvironment } from "../cameraEnvironment";
 import type { NativeTileManifest } from "../nativeTileManifest";
+import { loadStaticMeshMaterialsListing } from "../staticMeshLibraryMaterials";
+import { bindStaticMeshLibraryMaterials, type StaticMeshLibraryBinding, type StaticMeshLibraryInspection } from "./bindStaticMeshLibraryMaterials";
 import { bindTileLighting, type TileLightingBinding, type TileLightingBspChunk, type TileLightingInspection } from "./bindTileLighting";
 import type { TileLightingModel } from "./decodeTileLighting";
 import { loadTileLighting } from "./loadTileLighting";
@@ -17,14 +19,14 @@ export interface TileLightingGapInspection {
   readonly gap: string;
 }
 
-export type UnlitSurfaceStatus = "program-unconverted" | "library-vertex-lighting-unported" | "library-terrain-layers-unported";
+export type TerrainLayerStatus = "program-unconverted" | "library-terrain-layers-unported";
 
-type UnlitSurfaceCounts = Partial<Record<UnlitSurfaceStatus, number>>;
+type TerrainLayerCounts = Partial<Record<TerrainLayerStatus, number>>;
 
 export interface TileLightingRuntimeInspection extends TileLightingInspection {
   readonly cameraEnvironment: CameraEnvironment;
-  readonly staticMeshSlots: Readonly<UnlitSurfaceCounts>;
-  readonly terrainLayers: Readonly<UnlitSurfaceCounts>;
+  readonly staticMeshSlots: StaticMeshLibraryInspection;
+  readonly terrainLayers: Readonly<TerrainLayerCounts>;
 }
 
 export interface TileLightingChunkSurfaces {
@@ -43,11 +45,6 @@ export interface AttachedTileLighting {
   dispose(): void;
 }
 
-interface ChunkUnlitSurfaceCounts {
-  readonly staticMeshSlots: UnlitSurfaceCounts;
-  readonly terrainLayers: UnlitSurfaceCounts;
-}
-
 const lightingResourceKind = "lighting";
 export const lightingResourceAbsentReason = "lighting-resource-absent";
 const payloadInvalidReasonPrefix = "lighting-payload-invalid:";
@@ -57,19 +54,19 @@ function unboundTileLighting(gap: string): AttachedTileLighting {
   return { environmentClock: null, binding: null, addChunk: async () => {}, removeChunk() {}, inspection: () => ({ gap }), dispose() {} };
 }
 
-function unlitSurfaceCounts(meshes: readonly AbstractMesh[], programStatus: UnlitSurfaceStatus): UnlitSurfaceCounts {
-  const counts: UnlitSurfaceCounts = {};
+function terrainLayerCounts(meshes: readonly AbstractMesh[]): TerrainLayerCounts {
+  const counts: TerrainLayerCounts = {};
   for (const mesh of meshes) {
-    const status = readNativeMaterialProgramPin(mesh.material) === null ? "program-unconverted" : programStatus;
+    const status = readNativeMaterialProgramPin(mesh.material) === null ? "program-unconverted" : "library-terrain-layers-unported";
     counts[status] = (counts[status] ?? 0) + 1;
   }
   return counts;
 }
 
-function summedSurfaceCounts(perChunk: readonly UnlitSurfaceCounts[]): UnlitSurfaceCounts {
-  const sum: UnlitSurfaceCounts = {};
+function summedTerrainLayerCounts(perChunk: readonly TerrainLayerCounts[]): TerrainLayerCounts {
+  const sum: TerrainLayerCounts = {};
   for (const counts of perChunk) {
-    for (const [status, count] of Object.entries(counts) as [UnlitSurfaceStatus, number][]) sum[status] = (sum[status] ?? 0) + count;
+    for (const [status, count] of Object.entries(counts) as [TerrainLayerStatus, number][]) sum[status] = (sum[status] ?? 0) + count;
   }
   return sum;
 }
@@ -92,6 +89,7 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
     const name = error instanceof Error ? error.name : "Error", message = error instanceof Error ? error.message : String(error);
     return unboundTileLighting(`${payloadInvalidReasonPrefix}${name}: ${message}`);
   }
+  const staticMeshMaterials = await loadStaticMeshMaterialsListing(manifest, signal);
   const presentationClock = createPresentationClock();
   const environmentClock = createWorldEnvironmentClock({ program: model.records.environmentProgram, presentationClock });
   let cameraEnvironment = cameraEnvironmentOf(scene, model, cameraFrame);
@@ -99,26 +97,31 @@ export async function attachTileLighting(scene: Scene, manifest: NativeTileManif
     presentationClock.advance(scene.getEngine().getDeltaTime() / millisecondsPerSecond);
     cameraEnvironment = cameraEnvironmentOf(scene, model, cameraFrame);
   });
-  const binding = bindTileLighting({ scene, model, sessionSeed: drawNativeSessionSeed(), environment: () => environmentClock.sample(),
+  const sessionSeed = drawNativeSessionSeed();
+  const materialUniforms = (): NativeMaterialUniforms => {
+    const environment = environmentClock.sample();
+    return { levelSeconds: presentationClock.levelSeconds, hour: environment.hour, environmentType: environment.environmentType, fog: cameraEnvironment.fog };
+  };
+  const binding = bindTileLighting({ scene, model, sessionSeed, environment: () => environmentClock.sample(),
     levelSeconds: () => presentationClock.levelSeconds, fog: () => cameraEnvironment.fog, loadProgram: loadNativeMaterial });
-  const surfaceCountsByChunk = new Map<string, ChunkUnlitSurfaceCounts>();
+  const staticMeshBinding: StaticMeshLibraryBinding = bindStaticMeshLibraryMaterials({ scene, load: staticMeshMaterials, sessionSeed,
+    uniforms: materialUniforms, loadProgram: loadNativeMaterial });
+  const terrainLayerCountsByChunk = new Map<string, TerrainLayerCounts>();
   return {
     environmentClock, binding,
     async addChunk(surfaces) {
-      const counts: ChunkUnlitSurfaceCounts = { staticMeshSlots: unlitSurfaceCounts(surfaces.staticMeshes, "library-vertex-lighting-unported"),
-        terrainLayers: unlitSurfaceCounts(surfaces.terrainMeshes, "library-terrain-layers-unported") };
+      const counts = terrainLayerCounts(surfaces.terrainMeshes);
       if (surfaces.bspChunk !== null) await binding.addChunk(surfaces.bspChunk);
-      surfaceCountsByChunk.set(surfaces.chunkId, counts);
+      await staticMeshBinding.addChunk(surfaces.chunkId, surfaces.staticMeshes);
+      terrainLayerCountsByChunk.set(surfaces.chunkId, counts);
     },
     removeChunk(chunkId) {
-      surfaceCountsByChunk.delete(chunkId);
+      terrainLayerCountsByChunk.delete(chunkId);
       binding.removeChunk(chunkId);
+      staticMeshBinding.removeChunk(chunkId);
     },
-    inspection: () => {
-      const counts = [...surfaceCountsByChunk.values()];
-      return { ...binding.inspection(), cameraEnvironment, staticMeshSlots: summedSurfaceCounts(counts.map(entry => entry.staticMeshSlots)),
-        terrainLayers: summedSurfaceCounts(counts.map(entry => entry.terrainLayers)) };
-    },
-    dispose() { scene.onBeforeRenderObservable.remove(advance); binding.dispose(); },
+    inspection: () => ({ ...binding.inspection(), cameraEnvironment, staticMeshSlots: staticMeshBinding.inspection(),
+      terrainLayers: summedTerrainLayerCounts([...terrainLayerCountsByChunk.values()]) }),
+    dispose() { scene.onBeforeRenderObservable.remove(advance); binding.dispose(); staticMeshBinding.dispose(); },
   };
 }
