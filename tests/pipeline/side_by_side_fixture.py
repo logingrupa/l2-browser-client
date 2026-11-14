@@ -6,6 +6,9 @@ import json
 from pathlib import Path
 
 from catalog_store_fixture import model_record, write_profile_manifest, write_store_catalog
+from native_store.build_coverage_report import count_part_rows
+from native_store.coverage_denominators import COVERAGE_PART_ORDER
+from native_store.store_paths import lane_load_check_path
 from reference_client_guard import (ENGINE_LIBRARY_RELATIVE_PATH, REFERENCE_CLIENT_LOCK_FILE_FIELDS, REFERENCE_CLIENT_LOCK_PATH,
                                     REFERENCE_CLIENT_LOCK_SCHEMA_VERSION, REPOSITORY_ROOT)
 
@@ -161,6 +164,51 @@ def judged_tile_record(verdict, reference_tree_lock_sha256, reviewer=FRESH_REVIE
     if verdict == 'mismatch':
         record.update({'difference': 'The sandbox sky is darker than the native sky.', 'suspectedStep': 'environment-program'})
     return record
+
+
+def union_store_root(project_root):
+    return Path(project_root) / 'artifacts' / 'lane-store' / 'integration' / 'l2'
+
+
+def write_union_load_checks(project_root, catalog_sha256, status_by_key):
+    path = lane_load_check_path(project_root, 'integration', catalog_sha256)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    records = [{'key': key, 'status': status, 'reason': None if status == 'pass' else 'synthetic load failure', 'atRiga': CAPTURED_AT_RIGA,
+                'assetManifestSchemaVersion': None} for key, status in sorted(status_by_key.items())]
+    path.write_text(json.dumps({'schemaVersion': 1, 'lane': 'integration', 'catalogSha256': catalog_sha256, 'records': records}),
+                    encoding='utf-8')
+    return path
+
+
+def coverage_row(key, part, status='pass', reason=None, converted=True, loads='pass'):
+    return {'key': key, 'part': part, 'status': status, 'reason': reason, 'converted': converted, 'loads': loads, 'steps': []}
+
+
+def write_union_coverage_report(store_root, catalog_sha256, rows):
+    parts = [part for part in COVERAGE_PART_ORDER if any(row['part'] == part for row in rows)]
+    ordered_rows = sorted(rows, key=lambda row: (parts.index(row['part']), row['key']))
+    part_rows = {part: [row for row in ordered_rows if row['part'] == part] for part in parts}
+    report = {'schemaVersion': 1, 'catalogSha256': catalog_sha256, 'storeRoot': 'artifacts/lane-store/integration/l2',
+              'generatedAtRiga': CAPTURED_AT_RIGA,
+              'denominators': {part: {'count': len(part_rows[part]), 'source': 'synthetic census'} for part in parts},
+              'parts': {part: count_part_rows(part_rows[part], len(part_rows[part])) for part in parts}, 'rows': ordered_rows}
+    path = Path(store_root) / 'coverage.json'
+    path.write_text(json.dumps(report), encoding='utf-8')
+    return path
+
+
+def write_sandbox_receipt(project_root, part, key, key_content_sha256, catalog_sha256, png_bytes=b'synthetic png', **receipt_changes):
+    png_relative = f'artifacts/side-by-side/{part}/sandbox/{key.replace(":", "_")}.png'
+    png_path = Path(project_root) / png_relative
+    png_path.parent.mkdir(parents=True, exist_ok=True)
+    png_path.write_bytes(png_bytes)
+    half = image_sandbox_half(part, key, key_content_sha256=key_content_sha256, png_sha256=hashlib.sha256(png_bytes).hexdigest(),
+                              png_path=png_relative)
+    receipt = {**half, 'catalogSha256': catalog_sha256, 'key': key, 'part': part, 'displayedTableRows': [], **receipt_changes}
+    receipt_path = Path(project_root) / 'artifacts' / 'side-by-side' / part / 'receipts' / f'{key.replace(":", "_")}.json'
+    receipt_path.parent.mkdir(parents=True, exist_ok=True)
+    receipt_path.write_text(json.dumps(receipt), encoding='utf-8')
+    return receipt_path, receipt
 
 
 def audio_record(key='npc:1001', role='combat', source_sha256='6' * 64, clip_sha256='7' * 64):
