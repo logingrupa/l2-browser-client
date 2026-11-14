@@ -66,9 +66,12 @@ def side_by_side_checks_path(project_root, part):
     return Path(project_root) / 'docs' / 'parts' / require_known_part(part) / SIDE_BY_SIDE_CHECKS_FILE_NAME
 
 
+def read_project_reference_client_lock(project_root):
+    return read_reference_client_lock(Path(project_root) / REFERENCE_CLIENT_LOCK_PATH.relative_to(REPOSITORY_ROOT))
+
+
 def current_reference_tree_lock_sha256(project_root):
-    lock_path = Path(project_root) / REFERENCE_CLIENT_LOCK_PATH.relative_to(REPOSITORY_ROOT)
-    return reference_client_build(read_reference_client_lock(lock_path))['referenceTreeLockSha256']
+    return reference_client_build(read_project_reference_client_lock(project_root))['referenceTreeLockSha256']
 
 
 def record_identity(record, part):

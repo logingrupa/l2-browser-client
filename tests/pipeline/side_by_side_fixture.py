@@ -29,7 +29,13 @@ NATIVE_CAPTURED_BY = 'executor:03-17'
 FRESH_REVIEWER = 'reviewer:agent-7f3a'
 JUDGED_AT_RIGA = '2026-11-11T10:00:00+02:00'
 DESKTOP_VIEWPORT = {'width': 1440, 'height': 900}
-SYNTHETIC_IMPORTA_HOST = {'fileCount': 1, 'host': 'IMPORTA-PC', 'root': 'C:/Lineage2-client', 'totalBytes': 24}
+SYNTHETIC_ENGINE_LIBRARY_BYTES = b'synthetic engine library'
+SYNTHETIC_DEBUG_PROFILE_BYTES = b'synthetic debug profile'
+SYNTHETIC_DEBUG_PROFILE_SHA256 = hashlib.sha256(SYNTHETIC_DEBUG_PROFILE_BYTES).hexdigest()
+SYNTHETIC_ENGINE_LIBRARY_SHA256 = hashlib.sha256(SYNTHETIC_ENGINE_LIBRARY_BYTES).hexdigest()
+DEBUG_PROFILE_RELATIVE_PATH = 'connection-profiles/l2-Debug.ini'
+SYNTHETIC_IMPORTA_HOST = {'fileCount': 2, 'host': 'IMPORTA-PC', 'root': 'C:/Lineage2-client',
+                          'totalBytes': len(SYNTHETIC_ENGINE_LIBRARY_BYTES) + len(SYNTHETIC_DEBUG_PROFILE_BYTES)}
 
 
 def pinned_manifest_record(record_id, folder, file_name, extra_fields=None):
@@ -141,11 +147,14 @@ def unverified_tile_record(key='tile:20_20', **sandbox_half_changes):
 def write_reference_client_lock(project_root):
     lock_path = Path(project_root) / REFERENCE_CLIENT_LOCK_PATH.relative_to(REPOSITORY_ROOT)
     lock_path.parent.mkdir(parents=True, exist_ok=True)
-    engine_library_sha256 = hashlib.sha256(b'synthetic engine library').hexdigest()
+    engine_library_bytes = len(SYNTHETIC_ENGINE_LIBRARY_BYTES)
     lock_path.write_bytes(json.dumps({
         'schemaVersion': REFERENCE_CLIENT_LOCK_SCHEMA_VERSION, 'referenceHost': 'IMPORTA-PC', 'referenceRoot': 'C:/Lineage2-client',
         'fileFields': REFERENCE_CLIENT_LOCK_FILE_FIELDS,
-        'files': {ENGINE_LIBRARY_RELATIVE_PATH: ['equal', 24, engine_library_sha256, 24, engine_library_sha256, 0]},
+        'files': {ENGINE_LIBRARY_RELATIVE_PATH: ['equal', engine_library_bytes, SYNTHETIC_ENGINE_LIBRARY_SHA256, engine_library_bytes,
+                                                 SYNTHETIC_ENGINE_LIBRARY_SHA256, 0],
+                  DEBUG_PROFILE_RELATIVE_PATH: ['volatile-config', len(SYNTHETIC_DEBUG_PROFILE_BYTES), SYNTHETIC_DEBUG_PROFILE_SHA256, None, None,
+                                                None]},
         'hosts': {'importa': dict(SYNTHETIC_IMPORTA_HOST)},
     }).encode('utf-8'))
     return lock_path

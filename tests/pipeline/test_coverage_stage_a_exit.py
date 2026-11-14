@@ -135,7 +135,8 @@ class StageAReferenceTests(StageAExitProjectTestCase):
         report = self.build_report()
         self.assertEqual(report['reference'], expected)
         self.assertIn(f'Reference client: tree lock `{expected["referenceTreeLockSha256"]}`, Engine.dll `{expected["engineDllSha256"]}`, '
-                      f'IMPORTA-PC 1 files and 24 bytes.\n\n| Part | Converted | Loads pass | Checked |', coverage_markdown(report))
+                      f'IMPORTA-PC {SYNTHETIC_IMPORTA_HOST["fileCount"]} files and {SYNTHETIC_IMPORTA_HOST["totalBytes"]} bytes.\n\n'
+                      '| Part | Converted | Loads pass | Checked |', coverage_markdown(report))
 
     def test_a_report_carrying_the_raw_lock_file_hash_is_refused(self):
         report = self.build_report()
