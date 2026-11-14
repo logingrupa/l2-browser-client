@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 03-21-PLAN.md
-last_updated: "2026-11-14T13:55:03.399Z"
+stopped_at: Completed 03-22-PLAN.md
+last_updated: "2026-11-14T14:24:08.730Z"
 last_activity: 2026-11-14
-last_activity_desc: Phase 03 plan 03-21 complete (walk trace, aCis swim speed, collision floor anchor; 139 of 143 world lane tiles walk on catalog ba87e45c)
-state_head: 573286e1d67b2f06a504faa92f9dc46392d32944
+last_activity_desc: Phase 03 plan 03-22 complete (minimap and NewRadarWnd views on the minimap-route unit; zone sampler; Giran Castle Town at 22_22, RadarMaps.Global at 20_21)
+state_head: 42f904be2a5d61148b4e25b25900490a6abe55f0
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 152
-  completed_plans: 124
+  completed_plans: 125
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 03 (Stage A checks) - EXECUTING; Phase 2 gap round plans 02-72 to 02-99 executed
-Plan: 02-89 complete (Phase 2 gap closure bookkeeping); Phase 3 at 03-21 complete (gap SC1a: walk trace, root-cause walk fixes and the collision floor anchor), 8 of 36 plans summarized (gap plans 03-21 to 03-36 added 2026-11-14)
+Plan: 02-89 complete (Phase 2 gap closure bookkeeping); Phase 3 at 03-22 complete (gap SC1d view side: world map pieces, GetLocInfo texture choice and zone sampler on the minimap-route unit), 9 of 36 plans summarized (gap plans 03-21 to 03-36 added 2026-11-14)
 Status: Executing Phase 3 from start commit cb09cdc; Phase 1 is verification_deferred_human (see Deferred Verification); the union is rebuilt as e25d005e and its restage waits on the owner (Needs Human plan 02-89)
-Last activity: 2026-11-14 - 03-21: every failed tile walk record carries a walk trace; the sandbox move record carries the aCis swim speed; each tile anchors on its chunk plan footprint and the first collision hit below the authored PlayerStart (tile-anchor-has-no-floor otherwise); one walk over all 143 world lane tiles on ba87e45c: 139 pass, 4 named failures (19_21 and 23_24 blocked by source walls, 24_25 PlayerStart under the terrain, 25_14 SwiftShader device loss)
+Last activity: 2026-11-14 - 03-22: MinimapWnd draws the six route world map pieces with the GetMinimapPosition marker; the zone sampler names the zone from the pinned L2ZoneName mip 0 byte and the zonename row with Bottom < Z < Top; NewRadarWnd.texMap shows giran_castle_town at the 22_22 anchor and RadarMaps.Global at the 20_21 anchor (8 browser tests pass on the data-ui and world lane stores); no view reads the per-tile radarTexture or projection fields, so 03-23 can drop them
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -170,6 +170,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 03 P06 | 35min | 3 tasks | 13 files |
 | Phase 03 P18 | 13min | 2 tasks | 7 files |
 | Phase 03 P21 | 5h 50m | 3 tasks | 19 files |
+| Phase 03 P22 | 25min | 3 tasks | 20 files |
 
 ## Accumulated Context
 
@@ -460,6 +461,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 03]: 03-06: native halves enter the records only through import_native_captures.py after every PNG re-hashes to the SHA-256 computed on IMPORTA-PC; imported nv and pv pairs are native-selection-unconfirmed and sv and startup pairs review-pending (one rule, reason_with_native_half); the preflight ties Engine.dll and the Debug l2.ini profile to the lock and refuses l2.exe or l2.bin outside C:/Lineage2-client, the levelup bot and an inactive session 1 (P1191 to P1202, provisional)
 - [Phase 03]: 03-18: snapshot().diagnosticMaterials reads the ue2Diagnostic record createDiagnosticMaterial sets from its own inspect() values, once per root, sorted, over enabled visible meshes; the field is optional in the global type; the diagnostic spec runs on the default route (main-checkout store) and the capture tile 20_20 (integration store) through the shared captureTileRoute.ts (P1203, P1204, provisional)
 - [Phase 03]: 03-21: tile anchor = chunk plan footprint holding the authored PlayerStart XY plus the first collision hit below it (probe to maxStepHeight below the lowest loaded terrain or resident BSP point), tile-anchor-has-no-floor otherwise; the sandbox move record carries the aCis swim speed 50; the walk spec checks the start chunk BSP pin, a floor or swim at the end and no rest on the level bottom (P1205 to P1211)
+- [Phase 03]: 03-22: MinimapCtrl draws the six route world map pieces with the GetMinimapPosition marker; the zone sampler (verified-q7) reads the pinned L2ZoneName mip 0 byte, keys it with the recipe helper and picks the zonename row with Bottom < Z < Top, zone-key-run only when more than one row of a run holds Z; NewRadarWnd.texMap shows the case-insensitive whole-name GetLocInfo choice (names from the recipe radar.onLoad) with zone-title-source and radar-anchor listed (decision rows for the orchestrator in the SUMMARY)
 
 ### Pending Todos
 
@@ -602,6 +604,6 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 
 ## Session Continuity
 
-Last session: 2026-11-14T13:55:02.615Z
-Stopped at: Completed 03-21-PLAN.md
+Last session: 2026-11-14T14:24:07.888Z
+Stopped at: Completed 03-22-PLAN.md
 Resume file: None
