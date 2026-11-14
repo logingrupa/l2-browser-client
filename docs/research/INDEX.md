@@ -14,9 +14,9 @@ An entry moved to the archive when it was not current and no tracked code, test,
 
 ## Totals
 
-- Entries: 81. Current 63, superseded 10, moot 5, orphan 3.
-- Sound 66, partly-sound 10, unsupported 4, contradicted 1.
-- Archived 17, in place 62, tracked 1, deleted 1.
+- Entries: 82. Current 64, superseded 10, moot 5, orphan 3.
+- Sound 66, partly-sound 11, unsupported 4, contradicted 1.
+- Archived 17, in place 62, tracked 2, deleted 1.
 
 ## Entries
 
@@ -27,6 +27,7 @@ An entry moved to the archive when it was not current and no tracked code, test,
 | dev-sheet-audio-20261107 | current | partly-sound | yes: recipes/native-player-mystics-stage.json, native-player-aliases-stage.json, native-human-mystic-footstep-audio.json; scripts/prepare-native-player-aliases.py, report-native-animation-aliases.py; 6 tests/pipeline tests | in place | The mystic model packages, alias reports (models/ALIAS_COVERAGE.md, models/PROFILE_EVIDENCE.json) and footstep/ambience bundles are hash-pinned live inputs, and docs/NATIVE_AUDIO.md and docs/VERIFICATION.md cite round1/. Some runs are incomplete: round3/GPU_INCIDENTS.json records target crashes, round2/STAGE_VERIFY.json reports 2 missing breath WAVs, and integration/vitest-full.log ends with exit=1. About 6.4 GB, 26.5k files. |
 | docs/research/genericity-audit-20261108.md | superseded (deleted by the owner in commit d05e7eb; docs/NATIVE_WORLD.md is now the world lane starting input) | sound | no | deleted | Its 115-step audit and evidence stay in the artifacts folder genericity-audit-20261108 (INVENTORY.json, REPORT.md, probe logs), rated in its own row. The tracked summary was removed when the docs were cut to short summaries. |
 | docs/research/lineage2elbera/ (inventory.json) | current | sound | no | tracked | inventory.json lists 406 Elbera tools/ files pinned to revision 12c9656e; per-area counts add up to 406. A file list, not a conclusion; not rechecked against upstream. Backs docs/LINEAGE2ELBERA_REUSE_AUDIT.md (DATA-02, DEC-OWN-4). |
+| docs/research/shared-animation-sets.md | current | partly-sound | no | tracked | Added 2026-11-14. Store sample of 800 actor archives: 0 of 365,820 tracks differ between models when keyed by animation bone index; archives 4,215 MiB now, 837 MiB without animation. The Babylon.js design (shared set package, index binding, per-entity reuse, immutable caching) is not built or tested yet. |
 | editor-color-authoring | moot (DEC-OWN-8) | sound | no | archived | README.md explains why typed RGB values in Editor 5.5.3 are not saved, backed by hashed extracts (sources.json) and a headless repro (probe.json). Editor-only fact, listed only in docs/EDITOR_VIEWER.md. |
 | editor-dev-startup | current | partly-sound | no | in place | README.md and analysis.json measure the dev-start module waterfall (262/288 JS requests, 21-23 s gap); README.md says the cause is not established. Before-measurement for the NOED-02/03 re-measure in .planning/ROADMAP.md and docs/EDITOR_VIEWER.md. |
 | editor-plugin-dependencies | moot (DEC-OWN-8) | sound | no | archived | README.md: @babylonjs/addons 9.27.1 and Recast 0.43.0 are pinned only because the Editor's generated src/scripts.ts imports them, backed by before/after logs, a 436-test unit.log and build.log. NOED-02 removes this need (docs/ARCHITECTURE.md). Only the Vite artifacts watch exclusion (docs/VERIFICATION.md) still applies. |
