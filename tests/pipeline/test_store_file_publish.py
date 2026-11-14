@@ -35,7 +35,7 @@ PUBLISHING_PROCESS_NAMES = ('first', 'second')
 FILE_COUNT_OF_THE_TWO_PROCESS_PUBLISH = 600
 OTHER_WRITER_PAYLOAD = b'bytes of another writer'
 CATALOG_BYTES = b'{"schemaVersion": 1, "models": []}'
-WORLD_MODULES_THAT_PUBLISH_STORE_FILES = {'bsp_step', 'material_texture_images', 'minimap_textures', 'static_mesh_step', 'tile_json_resource'}
+WORLD_MODULES_THAT_PUBLISH_STORE_FILES = {'bsp_step', 'material_texture_images', 'minimap_textures', 'static_mesh_materials_step', 'static_mesh_step', 'tile_json_resource'}
 WORLD_MODULE_THAT_WRITES_A_PRIVATE_ASSET_FOLDER = 'typed_payload'
 
 

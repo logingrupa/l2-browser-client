@@ -10,7 +10,7 @@ GAP_CENSUS_STATUS_PRECEDENCE = ('failed', 'gap', 'converted', 'pending')
 CONVERTED_CENSUS_STATUS = 'converted'
 CONVERTED_OVERRIDING_STATUSES = GAP_CENSUS_STATUS_PRECEDENCE[:GAP_CENSUS_STATUS_PRECEDENCE.index(CONVERTED_CENSUS_STATUS)]
 GAP_ROW_STATUS_PRECEDENCE = tuple(status for status in GAP_CENSUS_STATUS_PRECEDENCE if status != CONVERTED_CENSUS_STATUS)
-GAP_CENSUS_STEP_ORDER = ('census', 'raw', 'chunks', 'terrain', 'manifest', 'meshes', 'bsp', 'collision', 'movers', 'emitters', 'bsp-visibility',
+GAP_CENSUS_STEP_ORDER = ('census', 'raw', 'chunks', 'terrain', 'manifest', 'meshes', 'static-mesh-materials', 'bsp', 'collision', 'movers', 'emitters', 'bsp-visibility',
                          'sky', 'audio', 'lighting', 'minimap', 'terrain-material', 'decode', 'name-index', 'layout', 'controls', 'textures', 'field-cp', 'field-mp',
                          'npc-model', 'npc-profile', 'npc-sound-identities', 'actor-sounds', 'skill-sounds', 'skills', 'characters', 'items')
 GAP_CENSUS_LOAD_STATUSES = ('pass', 'failed', 'unverified')

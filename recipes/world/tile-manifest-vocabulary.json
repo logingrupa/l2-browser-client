@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "listVersion": 10,
-  "resourceKinds": ["native-tile-collision", "movers", "bsp-visibility", "map-emitters", "sky", "world-audio", "lighting", "minimap", "surface-materials"],
+  "listVersion": 11,
+  "resourceKinds": ["native-tile-collision", "movers", "bsp-visibility", "map-emitters", "sky", "world-audio", "lighting", "minimap", "surface-materials", "static-mesh-materials"],
   "maskUvRules": []
 }

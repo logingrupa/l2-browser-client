@@ -24,6 +24,7 @@ from world.mover_step import MOVER_STEP_NAME
 from world.raw_map_step import (RAW_MAP_STEP_ALGORITHM_VERSION, RAW_STEP_NAME, raw_map_recipe, read_tile_map_lock_record, tile_map_path,
                                 tile_step_row, tile_unit_key)
 from world.sky_step import SKY_STEP_NAME
+from world.static_mesh_materials_step import STATIC_MESH_MATERIALS_STEP_NAME
 from world.static_mesh_step import STATIC_MESH_STEP_NAME
 from world.terrain_chunk_step import TERRAIN_STEP_NAME, TerrainChunkStepError
 from world.tile_census_validation import TILE_CENSUS_RELATIVE_PATH
@@ -43,7 +44,8 @@ UNIT_FINGERPRINT_STEP_UNITS = {TERRAIN_STEP_NAME: 'terrain_unit', STATIC_MESH_ST
                                MAP_EMITTER_STEP_NAME: 'map_emitter_unit', BSP_VISIBILITY_STEP_NAME: 'bsp_visibility_unit',
                                LIGHTING_STEP_NAME: 'lighting_unit'}
 UPSTREAM_SEALED_TILE_MANIFEST_STEPS = (STATIC_MESH_STEP_NAME, BSP_STEP_NAME, COLLISION_STEP_NAME, MOVER_STEP_NAME, BSP_VISIBILITY_STEP_NAME,
-                                       MAP_EMITTER_STEP_NAME, SKY_STEP_NAME, WORLD_AUDIO_STEP_NAME, LIGHTING_STEP_NAME, MINIMAP_STEP_NAME)
+                                       MAP_EMITTER_STEP_NAME, SKY_STEP_NAME, WORLD_AUDIO_STEP_NAME, LIGHTING_STEP_NAME, MINIMAP_STEP_NAME,
+                                       STATIC_MESH_MATERIALS_STEP_NAME)
 
 
 def upstream_config(fingerprint):
@@ -98,7 +100,7 @@ class CurrentSealTestCase(unittest.TestCase):
 class RegistryCoverageTests(unittest.TestCase):
     def test_every_registered_tile_step_has_one_current_seal_check(self):
         self.assertEqual(set(TILE_STEP_SEAL_CHECKS), set(TILE_STEP_NAMES))
-        self.assertEqual(len(TILE_STEP_NAMES), 14)
+        self.assertEqual(len(TILE_STEP_NAMES), 15)
 
     def test_a_registered_step_without_a_current_seal_check_refuses_the_registry(self):
         checks_without_sky = {step: check for step, check in TILE_STEP_SEAL_CHECKS.items() if step != SKY_STEP_NAME}
@@ -212,6 +214,13 @@ class LockedInputConfigStepCurrentSealTests(CurrentSealTestCase):
             self.assert_locked_input_config_states(BSP_STEP_NAME, current_config)
         with patch.object(tile_step_current_seals, 'sealed_bsp_unit_config', raising(ChunkPlanStepError('chunk plan is not sealed'))):
             self.assertEqual(self.seal_state(BSP_STEP_NAME).state, PENDING_SEAL_STATE)
+
+    def test_a_static_mesh_materials_receipt_answers_on_its_meshes_config_and_its_material_package_lock_records(self):
+        current_config = upstream_config(CURRENT_UPSTREAM_FINGERPRINT)
+        with patch.object(tile_step_current_seals, 'static_mesh_materials_unit_config', lambda *arguments: current_config):
+            self.assert_locked_input_config_states(STATIC_MESH_MATERIALS_STEP_NAME, current_config)
+        with patch.object(tile_step_current_seals, 'static_mesh_materials_unit_config', raising(ChunkPlanStepError('chunk plan is not sealed'))):
+            self.assertEqual(self.seal_state(STATIC_MESH_MATERIALS_STEP_NAME).state, PENDING_SEAL_STATE)
 
     def test_a_sky_receipt_answers_on_its_raw_seal_and_its_discovered_input_lock_records(self):
         self.seal_step(SKY_STEP_NAME, {'rawFingerprint': OLDER_UPSTREAM_FINGERPRINT}, discovered_inputs())

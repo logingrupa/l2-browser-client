@@ -18,7 +18,7 @@ from synthetic_class_scripts import scratch_work_root
 from test_material_graph import SYNTHETIC_CLASS_DEFAULTS
 from test_material_program_images import synthetic_png_bytes
 from test_tile_manifest_step import synthetic_tile
-from world import bsp_surface_materials
+from world import surface_material_programs
 from world.bsp_chunk_geometry import (BspPolyFlags, BspSurfaceMaterial, assign_nodes_to_chunks, build_chunk_sections, chunk_bsp_glb,
                                       drawn_node_indices, load_bsp_poly_flags)
 from world.bsp_step import BSP_STEP_ALGORITHM_VERSION, BspGapRows, chunk_grid_nodes, drawable_chunk_nodes, sealed_bsp_chunks
@@ -27,7 +27,8 @@ from world.level_model import LevelModelLayoutError, LevelModelRangeError, read_
 from world.raw_map_step import read_tile_map_lock_record
 from world.static_mesh_step import conversion_failure_reason
 from world.static_placement_plan import ChunkRectangle
-from world.tile_manifest_step import TileManifestStepError, build_tile_chunk_manifest, tile_store_files
+from world.native_material_listings import NativeMaterialListingError
+from world.tile_manifest_step import build_tile_chunk_manifest, tile_store_files
 
 TILE_ID = '00_00'
 SOURCE_IDENTITY = {'path': f'maps/{TILE_ID}.unr', 'sha256': hashlib.sha256(b'synthetic bsp tile').hexdigest()}
@@ -192,7 +193,7 @@ class SurfaceMaterialTests(unittest.TestCase):
         converter = SimpleNamespace(output=scratch_work_root(self, 'bsp-material-'), texture=texture,
                                     material_texture=lambda work, identity: (synthetic_png_bytes(), {}, identity, []))
         store_root = scratch_work_root(self, 'bsp-store-') / 'l2'
-        with patch.object(bsp_surface_materials, 'kept_material_class_defaults', return_value=SYNTHETIC_CLASS_DEFAULTS):
+        with patch.object(surface_material_programs, 'kept_material_class_defaults', return_value=SYNTHETIC_CLASS_DEFAULTS):
             outcome = convert_surface_material(TEXTURED_MATERIAL, map_sources, converter, store_root, None, store_root)
         program_path = store_root / outcome.material.program['directory'] / 'program.json'
         return outcome, json.loads(program_path.read_bytes()), store_root, converted_references
@@ -231,7 +232,7 @@ class SurfaceMaterialTests(unittest.TestCase):
         store_root = scratch_work_root(self, 'bsp-store-')
         texture_declarations = [{'field': 'USize', 'declaredType': 'int', 'declaringClass': 'Engine.Texture', 'enumMembers': None,
                                  'classDefault': {'field': 'USize', 'value': None, 'provenance': 'ue-zero', 'declaringClass': 'Engine.Texture'}}]
-        with patch.object(bsp_surface_materials, 'kept_material_class_defaults', return_value={'Engine.Texture': texture_declarations}):
+        with patch.object(surface_material_programs, 'kept_material_class_defaults', return_value={'Engine.Texture': texture_declarations}):
             outcome = convert_surface_material('SyntheticUnported.TriggeredOscillator', map_sources, converter, store_root, None, store_root)
         self.assertIsNone(outcome.material.png)
         self.assertIn('material-class-unported:Engine.TexOscillatorTriggered', outcome.gap_reasons)
@@ -348,7 +349,7 @@ class SurfaceMaterialsResourceTests(unittest.TestCase):
 
     def test_a_material_file_named_with_two_pins_is_refused(self):
         path = sorted(self.records)[0]
-        with self.assertRaisesRegex(TileManifestStepError, 'two different pins'):
+        with self.assertRaisesRegex(NativeMaterialListingError, 'two different pins'):
             self.tile_files([self.records[path]], [{**self.records[path], 'bytes': 1}])
 
 

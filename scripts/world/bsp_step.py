@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from native_assets import UMODEL, Converter, implementation_hash
+from native_assets import implementation_hash
 from native_assets_lib.class_defaults import ReferenceClientClassScripts
 from native_assets_lib.gltf import json_bytes
 from native_store.canonical_json import canonical_json_bytes
@@ -17,12 +17,12 @@ from world.bsp_surface_materials import convert_surface_material, surface_materi
 from world.level_model import LevelModelLayoutError, read_level_model, reviewed_level_model_layout
 from world.level_zones import outdoor_zone_indices, read_level_zones, sky_zone_indices
 from world.locked_input_receipt import receipt_with_current_version_config_and_locked_inputs
-from world.map_sources import MapSources
 from world.native_terrain_sectors import native_terrain
 from world.raw_map_step import PRODUCTS_FOLDER_NAME, read_tile_map_lock_record, require_tile_id, tile_map_path, tile_step_row, tile_unit_key
-from world.static_mesh_step import STATIC_MESH_CONVERTER_FOLDER, conversion_failure_reason
+from world.static_mesh_step import conversion_failure_reason
 from world.static_placement import ClassDefaults
 from world.static_placement_plan import FAILED_STATUS, chunk_rectangles
+from world.surface_material_programs import material_package_paths, world_material_sources
 from world.tile_census import WORLD_LANE_NAME
 from world.tile_census_validation import GAP_STATUS
 from world.tile_chunk_plan import read_locked_map_package, sealed_chunk_plan
@@ -130,15 +130,9 @@ def drawable_chunk_nodes(model, package, nodes_by_chunk, gaps):
 
 
 def surface_materials(identities, client, project_root):
-    converter = Converter(client, lane_work_root(project_root, WORLD_LANE_NAME) / STATIC_MESH_CONVERTER_FOLDER, UMODEL, project_root=project_root)
-    map_sources, class_scripts = MapSources(client), ReferenceClientClassScripts(client)
-    store_root, class_work_root = lane_store_root(project_root, WORLD_LANE_NAME), lane_work_root(project_root, WORLD_LANE_NAME)
-    return {identity: convert_surface_material(identity, map_sources, converter, class_work_root, class_scripts, store_root)
-            for identity in sorted(identities, key=lambda identity: (identity.casefold(), identity))}, map_sources
-
-
-def material_package_paths(map_sources, identities):
-    return sorted({paths[0] for identity in identities if len(paths := map_sources.paths.get(identity.split('.')[0].casefold(), [])) == 1})
+    sources = world_material_sources(client, project_root)
+    return {identity: convert_surface_material(identity, *sources)
+            for identity in sorted(identities, key=lambda identity: (identity.casefold(), identity))}, sources.map_sources
 
 
 def write_chunk_glbs(project_root, chunk_glbs):

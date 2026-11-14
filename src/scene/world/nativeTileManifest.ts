@@ -24,6 +24,7 @@ const tileResourcePathTemplates = {
   lighting: "/l2/maps/<sha256>/native-tile-lighting/asset.json",
   minimap: "/l2/maps/<sha256>/native-tile-minimap/manifest.json",
   "surface-materials": "/l2/native-materials/surface-materials-<sha256>.json",
+  "static-mesh-materials": "/l2/native-materials/static-mesh-materials-<sha256>.json",
 } as const;
 
 export type NativeTileResourceKind = keyof typeof tileResourcePathTemplates;

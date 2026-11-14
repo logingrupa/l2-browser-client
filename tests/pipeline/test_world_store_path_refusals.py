@@ -13,7 +13,7 @@ from support.level_model_fixture import build_synthetic_level_model, square_poin
 from synthetic_class_scripts import scratch_work_root
 from test_material_graph import SYNTHETIC_CLASS_DEFAULTS
 from test_material_program_images import synthetic_png_bytes
-from world import bsp_step, bsp_surface_materials, material_texture_images, sky_step
+from world import bsp_step, material_texture_images, sky_step, surface_material_programs
 from world.bsp_step import BSP_STEP_NAME, bsp_ledger, run_bsp_step
 from world.bsp_surface_materials import convert_surface_material
 from world.sky_step import SkyRootConversion
@@ -42,7 +42,7 @@ class SurfaceMaterialStorePathRefusalTests(unittest.TestCase):
         self.converter = SimpleNamespace(output=scratch_work_root(self, 'bsp-material-'),
                                          texture=lambda work, reference: (synthetic_png_bytes(), {}, reference),
                                          material_texture=lambda work, identity: (synthetic_png_bytes(), {}, identity, []))
-        self.start_patch(bsp_surface_materials, 'kept_material_class_defaults', mock.Mock(return_value=SYNTHETIC_CLASS_DEFAULTS))
+        self.start_patch(surface_material_programs, 'kept_material_class_defaults', mock.Mock(return_value=SYNTHETIC_CLASS_DEFAULTS))
 
     def start_patch(self, owner, name, replacement):
         patcher = mock.patch.object(owner, name, replacement)
@@ -64,15 +64,18 @@ class SurfaceMaterialStorePathRefusalTests(unittest.TestCase):
             'read_level_zones': mock.Mock(), 'sky_zone_indices': mock.Mock(return_value=frozenset()),
             'outdoor_zone_indices': mock.Mock(return_value=frozenset()), 'ClassDefaults': mock.Mock(), 'ReferenceClientClassScripts': mock.Mock(),
             'read_bsp_lightmaps': mock.Mock(), 'lightmap_texture_of_record': mock.Mock(return_value={}),
-            'Converter': mock.Mock(return_value=self.converter), 'MapSources': mock.Mock(return_value=self.map_sources),
             'locked_input_records': mock.Mock(return_value=[SOURCE_IDENTITY])}
         for name, replacement in replacements.items():
             self.start_patch(bsp_step, name, replacement)
+        material_source_replacements = {'Converter': mock.Mock(return_value=self.converter), 'MapSources': mock.Mock(return_value=self.map_sources),
+                                        'ReferenceClientClassScripts': mock.Mock()}
+        for name, replacement in material_source_replacements.items():
+            self.start_patch(surface_material_programs, name, replacement)
 
     def test_a_store_path_refusal_while_a_surface_material_is_published_is_raised_and_is_no_gap_reason(self):
         store_root = scratch_work_root(self, 'bsp-store-') / 'l2'
         for publisher_name, refusal in PUBLISH_REFUSALS:
-            with self.subTest(publisher=publisher_name), mock.patch.object(bsp_surface_materials, publisher_name, side_effect=refusal):
+            with self.subTest(publisher=publisher_name), mock.patch.object(surface_material_programs, publisher_name, side_effect=refusal):
                 with self.assertRaises(StorePathError) as raised:
                     convert_surface_material(TEXTURED_MATERIAL, self.map_sources, self.converter, store_root, None, store_root)
                 self.assertIs(raised.exception, refusal)
@@ -101,7 +104,7 @@ class SurfaceMaterialStorePathRefusalTests(unittest.TestCase):
 
     def test_a_conversion_refusal_that_is_no_store_path_refusal_stays_a_gap_reason(self):
         store_root = scratch_work_root(self, 'bsp-store-') / 'l2'
-        with mock.patch.object(bsp_surface_materials, 'write_material_texture_images', side_effect=ValueError('synthetic conversion refusal')):
+        with mock.patch.object(surface_material_programs, 'write_material_texture_images', side_effect=ValueError('synthetic conversion refusal')):
             outcome = convert_surface_material(TEXTURED_MATERIAL, self.map_sources, self.converter, store_root, None, store_root)
         self.assertEqual((outcome.material.png, outcome.gap_reasons), (None, ['decode-failed:ValueError:synthetic conversion refusal']))
 
