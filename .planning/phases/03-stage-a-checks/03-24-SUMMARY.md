@@ -109,12 +109,13 @@ Static mesh slots now get UE2 material programs, as BSP surfaces already had. A 
 | 1 Lane re-run | `convert_tile_batch.py --client E:/Lineage2-client --eligible --limit 145` | exit 0. Free bytes 147,405,283,328 before, 147,023,384,576 after |
 | 2 Lane catalog | `write_lane_catalog.py --lane world`, then `--plan` | exit 0 and 0. World lane catalog `cddfe152...` (143 tiles); restage base `55c12147...` |
 | 3 Union rebuild | `write_lane_catalog.py --lane integration --union world --union actors --union data-ui` | **exit 1, failed**: `Existing immutable runtime asset is corrupt; preserved: ...\integration\l2\475f47eb...\model.glb`. Union catalog `e25d005e...` before and after. Free bytes 146,988,167,168 before, 147,054,370,816 after |
-| 4 Touched-key sweep | - | not run: union rebuild did not exit 0 (same stderr line) |
-| 5 Queue | - | not run: union rebuild did not exit 0 |
+| 3 Union rebuild, re-run | same command, once, after the read-only store scan | exit 0, empty stderr. Union catalog `e25d005e...` before, `bfd4c64834c123682ff48257382a31ed4c7f7a11f5b57873ed8aab2c7a63fbe6` after (source catalog `55c12147...`). Free bytes 146,999,955,456 before, 147,046,547,456 after |
+| 4 Touched-key sweep | `NATIVE_STORE_ROOT=integration LOAD_CHECK_KIND=tiles LOAD_CHECK_LIMIT=143 LOAD_CHECK_KEYS=<143 keys> pnpm test:e2e tests/browser/load-sweep-tiles.spec.ts`, port 5173 free | exit 0 in 52 min. The touched keys are the 143 tile keys whose content SHA-256 changed (no key added, removed or changed in another kind). 136 pass, 7 failed with "Unable to enter the world" at step 2: `tile:18_24`, `20_16`, `21_16`, `22_16`, `22_19`, `22_20`, `23_14`. Records `load-checks/bfd4c648...json` (`57c68303...`) |
+| 5 Queue | `record_side_by_side_checks.py queue --store-root artifacts/lane-store/integration/l2` | exit 0. 2 waiting entries, both `tile:20_20` (sky-20-20, minimap-projection); queue file `909948e6...` |
 | 6 Re-capture | - | not run: no sandbox halves yet |
 | 7 Ingest | - | not run: no sandbox halves yet |
 
-Cause of the union failure, found by inspection only (no retry): the actors lane file `actors/l2/475f47eb.../model.glb` (catalog records `interlude:item:2429` and `item:4227` body-part 12, pin `modelSha256` `1c94850c...`, which equals the `model.glb` inside its own `asset.l2asset`) now holds bytes `f4dfe4cc...`. It is hard-linked to `actors/converter/475f47eb.../model.glb` and to the integration copy (`fsutil hardlink list`, 3 links). A later write to the converter output changed the store file through the link. This is an actors lane store fault, not a world lane one.
+Cause of the first union failure: the actors lane file `actors/l2/475f47eb.../model.glb` (pin `modelSha256` `1c94850c...`) read as `f4dfe4cc...`, one bit flipped in memory during the read (offset 3,093,746). The file on disk still hashes to its pin, and a read-only scan of all four lanes found no mismatch (STATE 2e935d7). The one re-run of the union then exited 0.
 
 ## Task commits
 
@@ -157,7 +158,7 @@ Cause of the union failure, found by inspection only (no retry): the actors lane
 
 ## Open follow-ups
 
-- **Union rebuild blocked by the actors lane store** (chain step 3, exit 1). `actors/l2/475f47eb.../model.glb` no longer matches its catalog pin `1c94850c...`, because a later converter write changed it through its hard link to `actors/converter/475f47eb.../model.glb`. The actors lane needs that file restored from its own `asset.l2asset` and a rule that store files are never hard-linked to converter outputs that get rewritten. Then run the union `write_lane_catalog.py --lane integration --union world --union actors --union data-ui`, and chain steps 4 (touched-key sweep: every tile key whose manifest changed) and 5 (queue). The union may hold unreferenced world files from the failed copy; its catalog is unchanged.
+- Seven touched tiles fail the union load sweep (step 4): `tile:18_24` (passed on union bba52c47), `20_16`, `21_16`, `22_16`, `22_19`, `22_20` and `23_14`; tracked in STATE open follow-ups.
 - MAT-01 and MAT-02 stay open: static mesh vertex lighting has no colour source (the lighting payload carries StaticMeshActor light list counts, not colours), and terrain layers are 03-36.
 - 03-25 reuses `surface_material_programs.py` for skeletal slots.
 
@@ -178,6 +179,7 @@ None.
 - This plan started:
   - the tracer and manifest `convert_tile.py` runs, the BSP byte check, unittest and Vitest runs, and three Playwright runs (each started its own webServer on 5173 and stopped it);
   - the batch (PIDs 43652, 88800 and 95476, exited 0), the lane catalog runs and the union rebuild (exited 1).
+- The union re-run started the union, two key digest reads, the tile sweep (its own webServer on 5173) and the queue; all exited.
 - One slow `grep` that this plan started was stopped by PID (33644 and its child 61124).
 - `Get-CimInstance Win32_Process` filtered on `autonomous-roadmap` and `03-24` shows no remaining process. `netstat` shows no listener on 5173 or 5175.
 
