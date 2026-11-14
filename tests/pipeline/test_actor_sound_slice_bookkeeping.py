@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 sys.path.insert(0, str(ROOT / 'tests' / 'pipeline'))
 
+import native_assets
 from actors import actor_sound_batch, actor_sound_conversion
 from actors.actor_sound_batch import ActorSoundBundles, run_actor_sound_slice, write_actor_sound_census
 from actors.actor_sound_conversion import ACTOR_SOUND_GAP_ROWS_RELATIVE_PATH, ActorSoundConversionRun
@@ -37,7 +38,7 @@ STALE_SILENT_COMBAT_AUDIO_RECORD = {**STALE_GREMLIN_COMBAT_AUDIO_RECORD, 'id': '
 NPCGRP_ROLES = ('attackItem', 'attackVoice', 'defense', 'damage')
 ALAUDIO_LOCK_REFUSAL = 'synthetic lock holds no system/ALAudio.int'
 ACTOR_SOUND_CENSUS_RELATIVE_PATH = 'docs/parts/audio/actor-sound-census.json'
-CONVERTER_SHA256 = '9' * 64
+FIRST_SOUND_UNIT_FINGERPRINT_UNDER_THE_CONVERTER_OUTPUT_VERSION = 'e0b0b5e96ef673a264fa6dae580904668576043953e59b538e35f2c8ac20c13c'
 LOCKED_SOUND_PACKAGE_RECORD = {'path': 'Sounds/MonSound.uax', 'sha256': '8' * 64}
 SOUND_PACKAGE_RECORD = {'path': 'Sounds/MonSound.uax', 'package': SimpleNamespace(source_hash='7' * 64)}
 NO_REFERENCES = {'exactIdentity': 0, 'uniquePackageLeafCandidate': 0, 'unresolved': 0, 'empty': 0}
@@ -181,7 +182,7 @@ class ActorSoundSliceWriteCountTests(ActorSoundSliceFixture, unittest.TestCase):
 
 
 class ActorSoundHashReuseTests(ActorSoundSliceFixture, unittest.TestCase):
-    def test_the_converter_sources_and_the_builder_are_hashed_once_per_run_object(self):
+    def test_the_builder_is_hashed_once_and_sound_units_hold_the_converter_output_version(self):
         builder_path = Path(combat_audio_bundle.__file__)
         builder_reads = []
         read_bytes = Path.read_bytes
@@ -191,8 +192,7 @@ class ActorSoundHashReuseTests(ActorSoundSliceFixture, unittest.TestCase):
                 builder_reads.append(path)
             return read_bytes(path)
 
-        with mock.patch.object(actor_sound_conversion, 'implementation_hash', return_value=CONVERTER_SHA256) as implementation_hash, \
-                mock.patch.object(actor_sound_conversion, 'ActorPackageCensus'), \
+        with mock.patch.object(actor_sound_conversion, 'ActorPackageCensus'), \
                 mock.patch.object(actor_sound_conversion, 'read_combat_role_route_proof', return_value=None), \
                 mock.patch.object(actor_sound_conversion, 'locked_input_records', return_value=[LOCKED_SOUND_PACKAGE_RECORD]), \
                 mock.patch.object(Path, 'read_bytes', recorded_read_bytes):
@@ -200,8 +200,10 @@ class ActorSoundHashReuseTests(ActorSoundSliceFixture, unittest.TestCase):
             sound_works = [run.sound_unit_work(SOUND_PACKAGE_RECORD, {'object': f'MonSound.hit_{export_index}', 'exportIndex': export_index},
                                                {'stableId': f'SYNTHETIC:{export_index}'}) for export_index in (1, 2, 3)]
             outcomes = run_actor_sound_slice(run, ActorSoundBundles(self.project_root, run.store_root, []), 5, lambda: None)
-        self.assertEqual((implementation_hash.call_count, len(builder_reads), len(outcomes)), (1, 1, 2))
-        self.assertEqual([work.config['converterSha256'] for work in sound_works], [CONVERTER_SHA256] * 3)
+        self.assertEqual((len(builder_reads), len(outcomes)), (1, 2))
+        self.assertEqual([work.config['converterSha256'] for work in sound_works],
+                         [native_assets.CONVERTER_OUTPUT_VERSION_RAISED_BY_HAND_ONLY_WHEN_OUTPUTS_CHANGE] * 3)
+        self.assertEqual(sound_works[0].fingerprint, FIRST_SOUND_UNIT_FINGERPRINT_UNDER_THE_CONVERTER_OUTPUT_VERSION)
         gremlin_receipt = next(receipt for receipt in run.bundle_ledger.sealed_receipts() if receipt['unitKey'] == GREMLIN_KEY)
         self.assertEqual(gremlin_receipt['config']['builderSha256'], hashlib.sha256(builder_path.read_bytes()).hexdigest())
 

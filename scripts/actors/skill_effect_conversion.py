@@ -15,6 +15,7 @@ from actors.skill_binding_table import (DISPATCH_CANDIDATE_STATUSES, EFFECT_BUND
                                         SKILLS_GAP_ROW_STEP, VISUAL_ROOT_STATUS, DecodedSkillTables, emitter_class_root_outcome,
                                         representative_skill_binding, skill_binding_gap_rows, skill_bindings_by_visual_root,
                                         visual_roots_in_first_key_order)
+from actors.skill_bundle_step_names import SKILL_EFFECT_ROOT_STEP, SOURCE_BUNDLE_FOLDER
 from actors.skill_dispatch_class_conversion import (SKILL_DISPATCH_CLASS_BUNDLE_ID_PREFIX, SkillDispatchClassUnits,
                                                     skill_dispatch_class_bundle_id)
 from actors.skill_unit_inventory import skill_root_key
@@ -29,7 +30,6 @@ from native_store.gap_rows import write_gap_rows
 from native_store.unit_ledger import RECEIPT_RECORD_NAME, UnitLedger, locked_input_records
 from reference_client_guard import ReferenceClientLockError
 
-SKILL_EFFECT_ROOT_STEP = 'skill-effect-root'
 SKILL_EFFECT_ROOT_ALGORITHM_VERSION = 1
 SKILL_EFFECT_COMPONENT_SUFFIX = 'native-description-action'
 SKILL_ROOT_BUNDLE_ID_PREFIX = 'interlude:skill-root:'
@@ -37,7 +37,6 @@ EMITTER_CLASS_COVERAGE_RELATIVE_PATH = 'recipes/actors/emitter-class-coverage.js
 EMITTER_CLASS_COVERAGE_FIELDS = frozenset({'schemaVersion', 'listVersion', 'simulated', 'source'})
 EFFECT_STORE_FOLDER = 'effects'
 STAGED_MANIFEST_NAME = 'manifest.json'
-SOURCE_BUNDLE_FOLDER = 'bundle'
 STAGED_EFFECTS_FOLDER = 'effects'
 ROOT_OUTCOME_RECORD_NAME = 'root-outcome.json'
 CONVERTER_WORK_FOLDER = 'converter'

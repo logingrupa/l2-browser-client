@@ -1,9 +1,9 @@
 from actors.effect_bundle_packing import native_class_closure
 from actors.skill_binding_table import BINDING_GAP_STATUS, NO_EXACT_SKILLSOUND_ROW_REASON, skill_binding_key
+from actors.skill_bundle_step_names import SKILL_DISPATCH_CLASS_STEP
 from actors.skill_dispatch_candidates import candidate_class_records, candidate_rows_by_class, skill_dispatch_class_key
 from native_store.unit_ledger import UnitLedger
 
-SKILL_DISPATCH_CLASS_STEP = 'skill-dispatch-class'
 SKILL_DISPATCH_CLASS_ALGORITHM_VERSION = 1
 SKILL_DISPATCH_CLASS_BUNDLE_ID_PREFIX = 'interlude:skill-dispatch-class:'
 CLASS_OUTCOME_RECORD_NAME = 'class-outcome.json'
