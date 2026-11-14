@@ -60,7 +60,8 @@ try{
  $taskGone=$null -eq (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue)
 }
 $completion=if($completed){[IO.File]::ReadAllText($NativeCaptureInput.completionMarkerPath,[Text.Encoding]::UTF8)|ConvertFrom-Json}else{$null}
-$receipts=@(foreach($receiptPath in @($NativeCaptureInput.receiptPaths)){if(Test-Path -LiteralPath $receiptPath){[IO.File]::ReadAllText($receiptPath,[Text.Encoding]::UTF8)|ConvertFrom-Json}})
+$batchInput=[IO.File]::ReadAllText($NativeCaptureInput.batchInputPath,[Text.Encoding]::UTF8)|ConvertFrom-Json
+$receipts=@(foreach($entry in @($batchInput.keys)){if(Test-Path -LiteralPath $entry.receiptPath){[IO.File]::ReadAllText($entry.receiptPath,[Text.Encoding]::UTF8)|ConvertFrom-Json}})
 [ordered]@{program=$NativeCaptureInput.program;taskName=$taskName;registered=$registered;completed=$completed;taskGone=$taskGone;completion=$completion;l2IniSha256After=(Read-Sha256 $NativeCaptureInput.l2IniPath);receipts=$receipts}|ConvertTo-Json -Depth 6 -Compress
 """
 

@@ -12,16 +12,20 @@ from typing import NamedTuple
 SCRIPTS_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS_ROOT))
 
-from native_assets_lib.asset_manifest import reference_client_build
 from native_store.canonical_json import canonical_json_bytes
-from native_store.side_by_side_check_halves import is_sha256, key_file_stem
+from native_store.catalog_writer import replace_file
+from native_store.side_by_side_check_halves import key_file_stem
 from native_store.side_by_side_check_records import read_project_reference_client_lock, read_side_by_side_records
 from native_store.store_paths import REPOSITORY_ROOT
 from side_by_side.build_pair_queue import (ITEM_VIEWER, NPC_VIEWER, OFFLINE_DEBUG_SESSION_KIND, OFFLINE_DEBUG_STARTUP_ROUTE, SKILL_VIEWER,
                                            stored_reason_for_session_kind)
-from side_by_side.native_capture_remote_programs import (BATCH_INPUT_FILE_NAME, BATCH_SCRIPT_FILE_NAME, CAPTURE_PROGRAM_NAME,
+from side_by_side.native_capture_remote_programs import (BATCH_INPUT_FILE_NAME, BATCH_SCRIPT, BATCH_SCRIPT_FILE_NAME, CAPTURE_PROGRAM_NAME,
                                                          COMPLETION_MARKER_FILE_NAME, PREFLIGHT_PROGRAM_NAME, PREPARE_FOLDER_PROGRAM_NAME,
                                                          TASK_REMOVAL_PROGRAM_NAME, encoded_powershell_command)
+from side_by_side.native_capture_transcripts import (COMPLETE_STATUS, INTERACTIVE_SESSION_ID, NATIVE_BATCH_PARTS, REFERENCE_CLIENT_ROOT,
+                                                     NativeCaptureError, NativeCapturePreflightRefused, is_captured_by_identity,
+                                                     native_capture_receipt_problems, preflight_refusals, validate_capture_transcript,
+                                                     validate_preflight_transcript, validate_task_removal_transcript)
 
 IMPORTA_SSH_ALIAS = 'fleet-importa-pc'
 SSH_OPTIONS = ('-o', 'BatchMode=yes', '-o', 'ConnectTimeout=8')
@@ -29,23 +33,16 @@ REMOTE_SUPPORT_ROOT = 'C:/Lineage2-client-support/debug-control'
 REMOTE_CONTROLLER_PATH = f'{REMOTE_SUPPORT_ROOT}/Control-L2.ps1'
 REMOTE_CONTROL_DOCUMENT_PATH = f'{REMOTE_SUPPORT_ROOT}/CONTROL.md'
 REMOTE_CAPTURE_ROOT = f'{REMOTE_SUPPORT_ROOT}/captures'
-REFERENCE_CLIENT_ROOT = 'C:/Lineage2-client'
 REMOTE_ENGINE_LIBRARY_PATH = f'{REFERENCE_CLIENT_ROOT}/system/Engine.dll'
 REMOTE_L2_INI_PATH = f'{REFERENCE_CLIENT_ROOT}/system/l2.ini'
-CONTROLLER_SHA256 = '542b89cc299dae3ac0d045d272d309f72936af8b39fab22ee1a57a6a24caeadc'
-CONTROL_DOCUMENT_SHA256 = 'acd93f64580261369a4f209c81cee7d48694d0299160467d844ec9c6a3137262'
-DEBUG_PROFILE_LOCK_PATH = 'connection-profiles/l2-Debug.ini'
 LINEAGE_CLIENT_PROCESS_NAMES = ('l2.exe', 'l2.bin')
 LEVELUP_BOT_PROCESS_TEXT = 'l2-levelup-assistant'
-INTERACTIVE_SESSION_ID = 1
-ACTIVE_SESSION_STATE = 'Active'
 TASK_USER_NAME = 'rolan'
 TASK_NAME_PREFIX = 'L2b-NativeCapture-'
 RIGA_TIME_ZONE_ID = 'FLE Standard Time'
 BATCH_BASE_SECONDS = 120
 BATCH_SECONDS_PER_KEY = 30
 REMOTE_PROGRAM_TIMEOUT_SECONDS = 180
-NATIVE_BATCH_PARTS = ('world', 'npcs', 'items', 'skills-effects')
 NATIVE_BATCH_VIEWERS = (OFFLINE_DEBUG_STARTUP_ROUTE, NPC_VIEWER, ITEM_VIEWER, SKILL_VIEWER)
 VIEWER_COMMANDS = {OFFLINE_DEBUG_STARTUP_ROUTE: None, NPC_VIEWER: NPC_VIEWER, ITEM_VIEWER: ITEM_VIEWER, SKILL_VIEWER: SKILL_VIEWER}
 NATIVE_SESSION_REASON = stored_reason_for_session_kind(OFFLINE_DEBUG_SESSION_KIND)
@@ -53,14 +50,8 @@ BATCH_ID_PATTERN = re.compile(r'^(?:offline-debug-startup|nv|pv|sv)-[0-9a-f]{12}
 REMOTE_FILE_NAME_PATTERN = re.compile(r'^[A-Za-z0-9_][A-Za-z0-9_-]{0,119}\.(?:png|json|ps1)$')
 SEND_KEYS_LITERAL_PATTERN = re.compile(r"^[A-Za-z0-9 '.,-]{1,64}$")
 LOCAL_CAPTURE_FOLDER = Path('artifacts/side-by-side/native-capture')
-PROCESS_FIELDS = frozenset({'processId', 'name', 'path'})
-PREFLIGHT_TRANSCRIPT_FIELDS = frozenset({'program', 'host', 'controllerSha256', 'controlDocumentSha256', 'engineDllSha256', 'l2IniSha256',
-                                         'clientProcesses', 'botProcesses', 'sessionId', 'sessionState'})
-PREFLIGHT_SHA256_FIELDS = ('controllerSha256', 'controlDocumentSha256', 'engineDllSha256', 'l2IniSha256')
-
-
-class NativeCaptureError(ValueError):
-    pass
+UPLOAD_TIMEOUT_SECONDS = 120
+IMPORT_COMMAND_TEXT = 'python -B scripts/side_by_side/import_native_captures.py --batch '
 
 
 class NativeCaptureKey(NamedTuple):
@@ -174,7 +165,7 @@ def capture_input(batch):
             'batchScriptPath': confined_remote_capture_path(batch.batch_id, BATCH_SCRIPT_FILE_NAME),
             'timeLimitSeconds': batch.time_limit_seconds(), 'l2IniPath': REMOTE_L2_INI_PATH,
             'completionMarkerPath': confined_remote_capture_path(batch.batch_id, COMPLETION_MARKER_FILE_NAME),
-            'receiptPaths': [confined_remote_capture_path(batch.batch_id, key_receipt_file_name(capture_key.key)) for capture_key in batch.keys]}
+            'batchInputPath': confined_remote_capture_path(batch.batch_id, BATCH_INPUT_FILE_NAME)}
 
 
 def task_removal_input(batch):
@@ -232,71 +223,114 @@ def run_remote_program(run_command, program_name, input_document, timeout_second
     return transcript
 
 
-def is_process_entry(entry):
-    return (isinstance(entry, dict) and set(entry) == PROCESS_FIELDS and type(entry['processId']) is int
-            and isinstance(entry['name'], str) and (entry['path'] is None or isinstance(entry['path'], str)))
-
-
-def validate_preflight_transcript(transcript):
-    if set(transcript) != PREFLIGHT_TRANSCRIPT_FIELDS:
-        raise NativeCaptureError(f'preflight transcript must hold exactly {", ".join(sorted(PREFLIGHT_TRANSCRIPT_FIELDS))}')
-    for field in PREFLIGHT_SHA256_FIELDS:
-        if not is_sha256(transcript[field]):
-            raise NativeCaptureError(f'preflight transcript {field} must be 64 lowercase hex characters, not {transcript[field]!r}')
-    for field in ('clientProcesses', 'botProcesses'):
-        if not (isinstance(transcript[field], list) and all(is_process_entry(entry) for entry in transcript[field])):
-            raise NativeCaptureError(f'preflight transcript {field} must be a list of processes with processId, name and path')
-    if not (transcript['sessionState'] is None or isinstance(transcript['sessionState'], str)):
-        raise NativeCaptureError('preflight transcript sessionState must be text or null')
-    return transcript
-
-
-def debug_profile_sha256(lock):
-    record = lock.record(DEBUG_PROFILE_LOCK_PATH)
-    if record is None or not is_sha256(record['importaSha256']):
-        raise NativeCaptureError(f'reference client lock records no IMPORTA SHA-256 of {DEBUG_PROFILE_LOCK_PATH}')
-    return record['importaSha256']
-
-
-def is_reference_client_process_path(path):
-    reference_root = REFERENCE_CLIENT_ROOT.replace('/', '\\').casefold() + '\\'
-    return isinstance(path, str) and path.replace('/', '\\').casefold().startswith(reference_root)
-
-
-def preflight_refusals(transcript, lock):
-    refusals = []
-    for field, pinned_sha256, name in (('controllerSha256', CONTROLLER_SHA256, 'Control-L2.ps1'),
-                                       ('controlDocumentSha256', CONTROL_DOCUMENT_SHA256, 'CONTROL.md')):
-        if transcript[field] != pinned_sha256:
-            refusals.append(f'{name} SHA-256 {transcript[field]} differs from the pinned {pinned_sha256}; re-pin it before a capture')
-    engine_dll_sha256 = reference_client_build(lock)['engineDllSha256']
-    if transcript['engineDllSha256'] != engine_dll_sha256:
-        refusals.append(f'system/Engine.dll SHA-256 {transcript["engineDllSha256"]} differs from the reference client lock {engine_dll_sha256}')
-    for process in transcript['clientProcesses']:
-        if not is_reference_client_process_path(process['path']):
-            refusals.append(f'a Lineage II client outside {REFERENCE_CLIENT_ROOT} runs: process {process["processId"]} {process["path"]}')
-    for process in transcript['botProcesses']:
-        refusals.append(f'the levelup bot runs: process {process["processId"]} {process["name"]} {process["path"]}')
-    if transcript['sessionState'] != ACTIVE_SESSION_STATE:
-        refusals.append(f'session {INTERACTIVE_SESSION_ID} is not active: {transcript["sessionState"]}')
-    debug_sha256 = debug_profile_sha256(lock)
-    if transcript['l2IniSha256'] != debug_sha256:
-        refusals.append(f'system/l2.ini SHA-256 {transcript["l2IniSha256"]} is not the Debug profile {debug_sha256} of {DEBUG_PROFILE_LOCK_PATH}')
-    return refusals
-
-
-class NativeCapturePreflightRefused(NativeCaptureError):
-    def __init__(self, refusals):
-        super().__init__('; '.join(refusals))
-        self.refusals = refusals
-
-
 def run_preflight(project_root, run_command):
     transcript = validate_preflight_transcript(run_remote_program(run_command, PREFLIGHT_PROGRAM_NAME, preflight_input()))
     refusals = preflight_refusals(transcript, read_project_reference_client_lock(project_root))
     if refusals:
         raise NativeCapturePreflightRefused(refusals)
     return {'preflight': 'clear', 'host': transcript['host'], 'l2IniSha256': transcript['l2IniSha256']}
+
+
+class NativeCaptureBatchFailed(NativeCaptureError):
+    def __init__(self, result):
+        super().__init__('; '.join(result['failures']))
+        self.result = result
+
+
+def write_local_batch_files(project_root, batch, captured_by):
+    local_folder = local_batch_folder(project_root, batch.batch_id)
+    replace_file(local_folder / BATCH_SCRIPT_FILE_NAME, BATCH_SCRIPT.encode('utf-8'))
+    replace_file(local_folder / BATCH_INPUT_FILE_NAME, canonical_json_bytes(batch_input_document(batch, captured_by)))
+    return local_folder
+
+
+def run_upload(run_command, local_path, remote_path):
+    completed = run_command(scp_upload_command(local_path, remote_path), capture_output=True, text=True, timeout=UPLOAD_TIMEOUT_SECONDS,
+                            check=False)
+    if completed.returncode != 0:
+        raise NativeCaptureError(f'scp of {Path(local_path).name} to {remote_path} exited {completed.returncode}: {first_line(completed.stderr)}')
+
+
+def still_registered_failure(batch):
+    return f'temporary task {batch.task_name()} is still registered after unregistering'
+
+
+def receipt_failures(project_root, batch, receipts):
+    lock = read_project_reference_client_lock(project_root)
+    batch_keys = [capture_key.key for capture_key in batch.keys]
+    failures = []
+    for receipt in receipts:
+        key = receipt.get('key')
+        if key not in batch_keys:
+            failures.append(f'receipt of {key!r} is not a key of batch {batch.batch_id}')
+            continue
+        expected_png_path = confined_remote_capture_path(batch.batch_id, key_png_file_name(key))
+        failures += [f'receipt of {key} {problem}' for problem in native_capture_receipt_problems(receipt, batch.batch_id, expected_png_path, lock)]
+    received_keys = {receipt.get('key') for receipt in receipts}
+    missing_keys = [key for key in batch_keys if key not in received_keys]
+    if missing_keys:
+        failures.append(f'no receipt for {", ".join(missing_keys)}')
+    return failures
+
+
+def capture_transcript_failures(project_root, batch, transcript, l2_ini_before):
+    failures = [] if transcript['taskGone'] else [still_registered_failure(batch)]
+    if transcript['l2IniSha256After'] != l2_ini_before:
+        failures.append(f'system/l2.ini changed during the batch: {l2_ini_before} before, {transcript["l2IniSha256After"]} after')
+    completion = transcript['completion']
+    if not transcript['completed']:
+        failures.append(f'the batch wrote no completion marker within {batch.time_limit_seconds()} seconds')
+    elif completion is None or completion['status'] != COMPLETE_STATUS:
+        failures.append(f'the batch script did not complete: {first_line((completion or {}).get("error"))}')
+    return failures + receipt_failures(project_root, batch, transcript['receipts'])
+
+
+def run_capture_step(run_command, batch):
+    transcript = run_remote_program(run_command, CAPTURE_PROGRAM_NAME, capture_input(batch),
+                                    batch.time_limit_seconds() + REMOTE_PROGRAM_TIMEOUT_SECONDS)
+    return validate_capture_transcript(transcript)
+
+
+def run_task_removal(run_command, batch):
+    return validate_task_removal_transcript(run_remote_program(run_command, TASK_REMOVAL_PROGRAM_NAME, task_removal_input(batch)))
+
+
+def require_capturable_batch(project_root, batch, captured_by):
+    if not is_captured_by_identity(captured_by):
+        raise NativeCaptureError(f'--captured-by must be executor:03-NN or owner, not {captured_by!r}')
+    if not batch.keys:
+        raise NativeCaptureError(f'native batch {batch.batch_id} has no keys; nothing to capture')
+    native_capture_steps(project_root, batch)
+    batch_input_document(batch, captured_by)
+
+
+def run_native_capture(project_root, batch, captured_by, run_command):
+    require_capturable_batch(project_root, batch, captured_by)
+    preflight = run_preflight(project_root, run_command)
+    run_remote_program(run_command, PREPARE_FOLDER_PROGRAM_NAME, prepare_folder_input(batch))
+    local_folder = write_local_batch_files(project_root, batch, captured_by)
+    for file_name in (BATCH_SCRIPT_FILE_NAME, BATCH_INPUT_FILE_NAME):
+        run_upload(run_command, local_folder / file_name, confined_remote_capture_path(batch.batch_id, file_name))
+    failures, transcript = [], None
+    try:
+        transcript = run_capture_step(run_command, batch)
+    except (NativeCaptureError, subprocess.TimeoutExpired) as error:
+        failures.append(str(error))
+    finally:
+        removal = run_task_removal(run_command, batch)
+    if not removal['taskGone']:
+        failures.append(still_registered_failure(batch))
+    if transcript is not None:
+        failures += capture_transcript_failures(project_root, batch, transcript, preflight['l2IniSha256'])
+    failures = list(dict.fromkeys(failures))
+    result = {'batchId': batch.batch_id, 'viewer': batch.viewer, 'status': 'failed' if failures else 'captured', 'failures': failures,
+              'taskName': batch.task_name(), 'taskGone': removal['taskGone'], 'l2IniSha256Before': preflight['l2IniSha256'],
+              'l2IniSha256After': None if transcript is None else transcript['l2IniSha256After'],
+              'receipts': 0 if transcript is None else len(transcript['receipts']),
+              'importCommand': None if failures else IMPORT_COMMAND_TEXT + batch.batch_id}
+    if failures:
+        raise NativeCaptureBatchFailed(result)
+    return result
 
 
 def run_batch_dry_run(project_root, arguments, run_command):
@@ -308,6 +342,10 @@ def run_preflight_command(project_root, arguments, run_command):
     return run_preflight(project_root, run_command)
 
 
+def run_capture_command(project_root, arguments, run_command):
+    return run_native_capture(project_root, select_native_batch(project_root, arguments.batch), arguments.captured_by, run_command)
+
+
 def command_parser():
     parser = argparse.ArgumentParser(description='Select, preflight and capture native halves on IMPORTA-PC through Control-L2.ps1.')
     subparsers = parser.add_subparsers(dest='command', required=True)
@@ -317,6 +355,10 @@ def command_parser():
     batch_parser.set_defaults(run=run_batch_dry_run)
     preflight_parser = subparsers.add_parser('preflight', help='check the controller pins, Engine.dll, session 1, foreign clients and l2.ini')
     preflight_parser.set_defaults(run=run_preflight_command)
+    capture_parser = subparsers.add_parser('capture', help='run one native batch through one temporary interactive task in session 1')
+    capture_parser.add_argument('--batch', choices=NATIVE_BATCH_VIEWERS, required=True)
+    capture_parser.add_argument('--captured-by', required=True)
+    capture_parser.set_defaults(run=run_capture_command)
     return parser
 
 
@@ -327,6 +369,11 @@ def main(argv=None, project_root=REPOSITORY_ROOT, run_command=subprocess.run):
     except NativeCapturePreflightRefused as refusal:
         for line in refusal.refusals:
             print(f'Native capture preflight refused: {line}', file=sys.stderr)
+        return 1
+    except NativeCaptureBatchFailed as failure:
+        print(json.dumps(failure.result, sort_keys=True))
+        for line in failure.result['failures']:
+            print(f'Native capture batch failed: {line}', file=sys.stderr)
         return 1
     except (OSError, ValueError, subprocess.TimeoutExpired) as error:
         print(f'Native capture {arguments.command} failed: {error}', file=sys.stderr)

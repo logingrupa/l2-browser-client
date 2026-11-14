@@ -13,7 +13,8 @@ import tempfile
 import unittest
 
 from native_store.side_by_side_check_records import write_side_by_side_records
-from side_by_side.native_capture_driver import CONTROL_DOCUMENT_SHA256, CONTROLLER_SHA256, main
+from side_by_side.native_capture_driver import main
+from side_by_side.native_capture_transcripts import CONTROL_DOCUMENT_SHA256, CONTROLLER_SHA256
 from side_by_side_fixture import SYNTHETIC_DEBUG_PROFILE_SHA256, SYNTHETIC_ENGINE_LIBRARY_SHA256, unverified_record, write_reference_client_lock
 
 SYNTHETIC_LAN_PROFILE_SHA256 = hashlib.sha256(b'synthetic lan profile').hexdigest()
