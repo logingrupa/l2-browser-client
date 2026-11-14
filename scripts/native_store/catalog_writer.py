@@ -161,10 +161,14 @@ def decode_store_catalog(payload):
     return catalog
 
 
+def empty_store_catalog():
+    return {'schemaVersion': 1, 'models': []}
+
+
 def read_store_catalog(store_root):
     payload = read_current_catalog_bytes(store_root)
     if payload is None:
-        return {'schemaVersion': 1, 'models': []}, None
+        return empty_store_catalog(), None
     return decode_store_catalog(payload), payload
 
 

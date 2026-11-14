@@ -10,8 +10,8 @@ sys.path.insert(0, str(SCRIPTS_ROOT))
 
 from native_assets_lib.gltf import json_bytes
 from native_store.catalog_index_keys import require_npc_profiles_join_models_of_their_mesh
-from native_store.catalog_writer import (KNOWN_CATALOG_SLICES, merge_catalog_slice_records, read_store_catalog, sha256_hex, sha256_of_file,
-                                         write_store)
+from native_store.catalog_writer import (KNOWN_CATALOG_SLICES, empty_store_catalog, merge_catalog_slice_records, read_store_catalog,
+                                         sha256_hex, sha256_of_file, validate_catalog_record, write_store)
 from native_store.lane_coverage_refresh import refresh_lane_coverage
 from native_store.merge_lane_store import main_checkout_root
 from native_store.pinned_store_verification import PINNED_STORE_VERIFICATION_WORKER_COUNT, verify_pinned_store_files
@@ -72,6 +72,23 @@ def merge_union_lane(project_root, union_lane_name, base_sha256, catalog, store_
     return catalog
 
 
+def require_union_owns_every_earlier_record(lane_name, earlier_catalog, union_catalog):
+    for slice_name in KNOWN_CATALOG_SLICES:
+        union_record_ids = {record['id'] for record in union_catalog.get(slice_name, [])}
+        for earlier_record in earlier_catalog.get(slice_name, []):
+            earlier_record_id = validate_catalog_record(slice_name, earlier_record)['id']
+            if earlier_record_id not in union_record_ids:
+                raise LaneCatalogError(f'lane {lane_name} catalog {slice_name} record {earlier_record_id} is owned by no union lane; preserved')
+
+
+def union_catalog_of_lanes(project_root, lane_name, union_lane_names, base_sha256, earlier_catalog, store_file_sources):
+    union_catalog = empty_store_catalog()
+    for union_lane_name in union_lane_names:
+        union_catalog = merge_union_lane(project_root, union_lane_name, base_sha256, union_catalog, store_file_sources)
+    require_union_owns_every_earlier_record(lane_name, earlier_catalog, union_catalog)
+    return union_catalog
+
+
 def require_distinct_union_lanes(lane_name, union_lane_names):
     if lane_name in union_lane_names:
         raise LaneCatalogError(f'target lane {lane_name} cannot also be a union lane')
@@ -97,11 +114,12 @@ def write_lane_catalog(project_root, lane_name, union_lane_names=(), plan_only=F
     catalog, before = read_store_catalog(store_root)
     if plan_only and before is None:
         raise LaneCatalogError(f'lane {lane_name} has no catalog: {store_root / "catalog.json"}')
-    verify_pinned_store_files(store_root, catalog, PINNED_STORE_VERIFICATION_WORKER_COUNT)
-    require_npc_profiles_join_models_of_their_mesh(store_root, catalog, shared_store_root(project_root))
     store_file_sources = {}
-    for union_lane_name in union_lane_names:
-        catalog = merge_union_lane(project_root, union_lane_name, base_sha256, catalog, store_file_sources)
+    if union_lane_names:
+        catalog = union_catalog_of_lanes(project_root, lane_name, union_lane_names, base_sha256, catalog, store_file_sources)
+    else:
+        verify_pinned_store_files(store_root, catalog, PINNED_STORE_VERIFICATION_WORKER_COUNT)
+        require_npc_profiles_join_models_of_their_mesh(store_root, catalog, shared_store_root(project_root))
     catalog['sourceCatalogSha256'] = base_sha256
     after = json_bytes(catalog)
     summary = {'lane': lane_name, 'laneStoreRoot': store_root.as_posix(), 'catalogSha256': sha256_hex(after),
