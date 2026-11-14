@@ -9,9 +9,9 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 
 from actors.emitter_feature_coverage import EmitterFeatureCoverageError, read_emitter_feature_rules, unported_emitter_feature_reasons
-from actors.skill_effect_conversion import (ROOT_OUTCOME_RECORD_NAME, SKILL_EFFECT_ROOT_ALGORITHM_VERSION, SKILL_EFFECT_ROOT_STEP,
-                                            STAGED_EFFECTS_FOLDER, STAGED_MANIFEST_NAME, SkillEffectConversionRun,
-                                            emitter_feature_gap_roots_by_reason)
+from actors.skill_bundle_step_names import SKILL_EFFECT_ROOT_STEP
+from actors.skill_effect_conversion import (ROOT_OUTCOME_RECORD_NAME, SKILL_EFFECT_ROOT_ALGORITHM_VERSION, STAGED_EFFECTS_FOLDER,
+                                            STAGED_MANIFEST_NAME, SkillEffectConversionRun, emitter_feature_gap_roots_by_reason)
 from actors.npc_store_records import file_output_record
 from actors.skill_dispatch_class_conversion import SkillDispatchClassUnits
 from native_assets_lib.gltf import json_bytes

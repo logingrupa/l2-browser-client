@@ -23,8 +23,9 @@ from native_store.store_paths import lane_folder, refuse_reparse_points
 from native_store.unit_ledger import run_at_below_normal_priority
 
 IDENTICAL_FILE_SHARING_DESCRIPTION = ('Turn identical large files of every lane under an artifacts/lane-store folder into hard links of one '
-                                      'file without changing a path or a byte, and remove the converter scratch job folders of the actors '
-                                      'and world lanes, under the lock of every lane; --plan takes no lock and reports what a run would do.')
+                                      'file without changing a path or a byte, and remove the converter scratch job folders and the bundle '
+                                      'scratch of sealed skill effect units of the actors and world lanes, under the lock of every lane; '
+                                      '--plan takes no lock and reports what a run would do.')
 TEMPORARY_LINKS_FOLDER_NAME = 'temporary-links'
 REPORTED_PLACE_PART_COUNT = 2
 FILE_TYPE_WITHOUT_SUFFIX = 'no-suffix'
@@ -143,8 +144,8 @@ def share_identical_lane_files(lane_stores_root, lane_names, plan_only, lanes_fr
             'sharedBytesByPlace': shared_bytes_by(two_folder_place_of, freed_file_names),
             'sharedBytesByFileType': shared_bytes_by(file_type_of, freed_file_names),
             'leftoverLinksRemoved': leftover_links_removed, 'leftoverLinksKept': leftover_links_kept,
-            'scratchJobFoldersRemoved': sum(removal.job_folders_removed for removal in scratch_removal_by_lane_name.values()),
-            'scratchJobFoldersNotRemoved': sum(removal.job_folders_not_removed for removal in scratch_removal_by_lane_name.values()),
+            'scratchJobFoldersRemoved': sum(removal.scratch_folders_removed for removal in scratch_removal_by_lane_name.values()),
+            'scratchJobFoldersNotRemoved': sum(removal.scratch_folders_not_removed for removal in scratch_removal_by_lane_name.values()),
             'scratchBytesRemoved': sum(removal.bytes_removed for removal in scratch_removal_by_lane_name.values()),
             'scratchBytesLeftByLane': {lane_name: removal.bytes_left for lane_name, removal in scratch_removal_by_lane_name.items()}}
 
