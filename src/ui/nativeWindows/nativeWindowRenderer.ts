@@ -2,7 +2,7 @@ import type { WorldEntity } from "../../world/worldTypes";
 import { resolveNativeWindowRectangles, type NativeWindowRectangle, type NativeWindowScreen } from "./nativeWindowAnchors";
 import type { NativeWindowFieldBinding } from "./nativeWindowFieldBindings";
 import type { NativeWindowManifest, NativeWindowNode } from "./nativeWindowLayoutTree";
-import type { NativeWindowMinimapTileSource, NativeWindowTextureResolution } from "./nativeWindowManifestLoader";
+import type { NativeWindowMinimapSource, NativeWindowTextureResolution } from "./nativeWindowManifestLoader";
 import { minimapControlType, renderMinimapControl, type RenderedMinimapControl } from "./minimapControl";
 import { placeNativeWindowElement } from "./nativeWindowPlacement";
 
@@ -13,7 +13,7 @@ export interface NativeWindowRenderInputs {
   readonly textures: ReadonlyMap<string, NativeWindowTextureResolution>;
   readonly fieldBindings: readonly NativeWindowFieldBinding[];
   readonly screen: NativeWindowScreen;
-  readonly minimapTileSource: NativeWindowMinimapTileSource;
+  readonly minimapSource: NativeWindowMinimapSource;
 }
 
 export interface NativeWindowControlGap { readonly controlName: string; readonly reason: string }
@@ -42,7 +42,7 @@ interface RenderedControl {
   readonly textureImage: HTMLImageElement | null;
   readonly staticGaps: readonly string[];
   readonly gauge: RenderedGauge | null;
-  readonly minimap: RenderedMinimapControl | null;
+  minimap: RenderedMinimapControl | null;
 }
 
 interface RenderedGauge {
@@ -134,7 +134,7 @@ function refreshGauge(control: RenderedControl, gauge: RenderedGauge, localPlaye
 }
 
 function controlGapReasons(control: RenderedControl): readonly string[] {
-  return [...new Set([...control.staticGaps, ...(control.gauge?.liveGap ? [control.gauge.liveGap] : [])])];
+  return [...new Set([...control.staticGaps, ...(control.gauge?.liveGap ? [control.gauge.liveGap] : []), ...(control.minimap?.gaps ?? [])])];
 }
 
 function markControlGaps(control: RenderedControl): void {
@@ -160,9 +160,12 @@ export function renderNativeWindow(container: HTMLElement, windowManifest: Nativ
     const nodeAnchorGaps = anchorGaps.filter(gap => gap.node === node).map(gap => gap.reason);
     const staticGaps = [...staticControlGaps(node, nodeAnchorGaps), ...(texture.gap === null ? [] : [texture.gap]), ...bound.gaps,
       ...(node === windowManifest.root ? unplacedBindingGaps : [])];
-    const minimap = node.type === minimapControlType
-      ? renderMinimapControl(element, rectangle, { localPlayer: renderInputs.localPlayer, tileSource: renderInputs.minimapTileSource }) : null;
-    controls.push({ node, parent, element, rectangle, textureImage: texture.image, staticGaps, gauge: bound.gauge, minimap });
+    const control: RenderedControl = { node, parent, element, rectangle, textureImage: texture.image, staticGaps, gauge: bound.gauge, minimap: null };
+    if (node.type === minimapControlType) {
+      control.minimap = renderMinimapControl(element, rectangle, { localPlayer: renderInputs.localPlayer, minimapSource: renderInputs.minimapSource,
+        onGapsChanged: () => markControlGaps(control) });
+    }
+    controls.push(control);
     node.children.forEach(child => element.append(renderNode(child, node)));
     return element;
   };

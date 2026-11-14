@@ -2,9 +2,11 @@ import { readTileCatalogRecord, readWindowCatalogRecord } from "../../assets/nat
 import { windowCatalogKey } from "../../assets/native/nativeCatalogIndex";
 import { readNativeCatalog, type NativeCatalog } from "../../assets/native/readNativeCatalog";
 import { readAssetPackage } from "../../assets/package/readAssetPackage";
-import { loadNativeTileMinimap, type NativeTileMinimap, type NativeTileMinimapRadarTexture } from "../../scene/world/minimapJoin";
+import { decodeNativeJsonResource } from "../../scene/world/loadNativeSection";
+import { loadNativeTileMinimap, type NativeTileMinimap, type NativeTileMinimapRoutePin } from "../../scene/world/minimapJoin";
 import { readNativeTileManifest } from "../../scene/world/nativeTileManifest";
 import { fetchVerifiedNativeResource } from "../../assets/native/fetchVerifiedNativeResource";
+import { parseNativeMinimapRoute, type NativeMinimapRoute, type NativeTextureArchivePin } from "./nativeMinimapRoute";
 import { parseNativeWindowManifest, type NativeWindowManifest } from "./nativeWindowLayoutTree";
 
 export type NativeWindowManifestLoad =
@@ -15,10 +17,11 @@ export type NativeWindowTextureResolution =
   | { readonly status: "resolved"; readonly url: string }
   | { readonly status: "gap"; readonly reason: string };
 
-export interface NativeWindowMinimapTileSource {
+export interface NativeWindowMinimapSource {
   readonly tileIds: readonly string[];
   loadTileMinimap(tileId: string): Promise<NativeTileMinimap | null>;
-  loadRadarImage(radarTexture: NativeTileMinimapRadarTexture): Promise<NativeWindowTextureResolution>;
+  loadMinimapRoute(routePin: NativeTileMinimapRoutePin): Promise<NativeMinimapRoute>;
+  loadTextureImage(texture: NativeTextureArchivePin): Promise<NativeWindowTextureResolution>;
 }
 
 interface UiTextureCatalogRecord { readonly image: string; readonly imageBytes: number; readonly imageSha256: string }
@@ -91,8 +94,8 @@ export async function resolveNativeWindowTextures(catalog: NativeCatalog, refere
   return resolutions;
 }
 
-async function resolveRadarTextureArchiveImage(radarTexture: NativeTileMinimapRadarTexture, signal: AbortSignal): Promise<NativeWindowTextureResolution> {
-  const archiveBytes = await fetchVerifiedNativeResource(radarTexture.archive, radarTexture.archiveSha256, signal, radarTexture.archiveBytes);
+async function resolveTextureArchiveImage(texture: NativeTextureArchivePin, signal: AbortSignal): Promise<NativeWindowTextureResolution> {
+  const archiveBytes = await fetchVerifiedNativeResource(texture.archive, texture.archiveSha256, signal, texture.archiveBytes);
   const texturePackage = await readAssetPackage(archiveBytes);
   const imageFile = texturePackage.manifest.kind === "texture" ? texturePackage.manifest.image?.file : undefined;
   const inventory = texturePackage.manifest.files.find(file => file.path === imageFile);
@@ -101,14 +104,20 @@ async function resolveRadarTextureArchiveImage(radarTexture: NativeTileMinimapRa
   return { status: "resolved", url: URL.createObjectURL(new Blob([imageBytes.slice()], { type: pngMimeType })) };
 }
 
-export function nativeWindowMinimapTileSource(catalog: NativeCatalog, signal: AbortSignal): NativeWindowMinimapTileSource {
+async function loadNativeMinimapRoute(routePin: NativeTileMinimapRoutePin, signal: AbortSignal): Promise<NativeMinimapRoute> {
+  const bytes = await fetchVerifiedNativeResource(routePin.manifest, routePin.manifestSha256, signal, routePin.manifestBytes);
+  return parseNativeMinimapRoute(decodeNativeJsonResource(bytes, "Native minimap route manifest"));
+}
+
+export function nativeWindowMinimapSource(catalog: NativeCatalog, signal: AbortSignal): NativeWindowMinimapSource {
   return {
     tileIds: catalog.tiles.map(record => readTileCatalogRecord(record).tile),
     loadTileMinimap: async tileId => {
       const pinnedTileManifest = await readNativeTileManifest(tileId, signal);
       return pinnedTileManifest === null ? null : loadNativeTileMinimap(pinnedTileManifest.manifest, signal);
     },
-    loadRadarImage: radarTexture => resolveRadarTextureArchiveImage(radarTexture, signal),
+    loadMinimapRoute: routePin => loadNativeMinimapRoute(routePin, signal),
+    loadTextureImage: texture => resolveTextureArchiveImage(texture, signal),
   };
 }
 

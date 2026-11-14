@@ -1,16 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderNativeWindow } from "../../src/ui/nativeWindows/nativeWindowRenderer";
-import type { NativeWindowMinimapTileSource, NativeWindowTextureResolution } from "../../src/ui/nativeWindows/nativeWindowManifestLoader";
+import type { NativeWindowMinimapSource, NativeWindowTextureResolution } from "../../src/ui/nativeWindows/nativeWindowManifestLoader";
 import type { WorldEntity } from "../../src/world/worldTypes";
+import { syntheticArchiveSha256 } from "../fixtures/minimapRouteManifestFixture";
 import { installMiniDom, type FakeElement, type MiniDom } from "./support/miniDom";
 import {
-  syntheticLocalPlayerAt, syntheticMinimapTileSource, syntheticMinimapWindowManifest, syntheticRadarImageUrl, syntheticTileMinimap,
+  syntheticLocalPlayerAtSource, syntheticMinimapSource, syntheticMinimapWindowManifest, syntheticTextureImageUrl, syntheticTileMinimap,
 } from "./support/tileMinimapFixtures";
 
 const screen = { width: 1440, height: 900 };
 const controlWidth = 256;
 const controlHeight = 256;
-const noConvertedTileReason = "no converted tile at the player position";
+const worldMapPieceObject = (suffix: number) => `L2Font-e.Minimap.int_worldmap${suffix}`;
 
 function minimapElement(container: FakeElement): FakeElement {
   const element = container.querySelector('[data-native-type="MinimapCtrl"]');
@@ -22,6 +23,10 @@ function minimapPart(container: FakeElement, part: string): FakeElement | null {
   return minimapElement(container).querySelector(`[data-native-minimap-part="${part}"]`);
 }
 
+function oneTileSource(): NativeWindowMinimapSource {
+  return syntheticMinimapSource({ tileMinimaps: new Map([["20_21", syntheticTileMinimap("20_21")]]) });
+}
+
 describe("renderMinimapControl", () => {
   let miniDom: MiniDom;
   let container: FakeElement;
@@ -31,9 +36,9 @@ describe("renderMinimapControl", () => {
   });
   afterEach(() => miniDom.restore());
 
-  function render(localPlayer: WorldEntity | null, minimapTileSource: NativeWindowMinimapTileSource) {
+  function render(localPlayer: WorldEntity | null, minimapSource: NativeWindowMinimapSource) {
     return renderNativeWindow(container as unknown as HTMLElement, syntheticMinimapWindowManifest(controlWidth, controlHeight),
-      { localPlayer, textures: new Map(), fieldBindings: [], screen, minimapTileSource });
+      { localPlayer, textures: new Map(), fieldBindings: [], screen, minimapSource });
   }
 
   async function readyMinimap(): Promise<FakeElement> {
@@ -41,87 +46,81 @@ describe("renderMinimapControl", () => {
     return minimapElement(container);
   }
 
-  it("renders a MinimapCtrl control instead of the unsupported control gap", async () => {
-    const rendered = render(null, syntheticMinimapTileSource(new Map()));
+  it("draws the six world map pieces of the route through the pinned route and the marker at the control centre", async () => {
+    const rendered = render(syntheticLocalPlayerAtSource(0, 0), oneTileSource());
     const control = await readyMinimap();
-    expect(control.getAttribute("data-native-gap")).toBeNull();
+    await vi.waitFor(() => expect(control.querySelectorAll("[data-native-world-map-piece] img")).toHaveLength(6));
+    const pieces = control.querySelectorAll("[data-native-world-map-piece]");
+    expect(pieces.map(piece => piece.getAttribute("data-native-world-map-piece"))).toEqual(["1", "2", "3", "4", "5", "6"]);
+    expect(pieces.map(piece => piece.querySelector("img")?.getAttribute("src")))
+      .toEqual([1, 2, 3, 4, 5, 6].map(suffix => syntheticTextureImageUrl(syntheticArchiveSha256(worldMapPieceObject(suffix)))));
+    expect([pieces[3]?.style.left, pieces[3]?.style.top]).toEqual([`${128 - 656 + 1024}px`, `${128 - 1312 + 1024}px`]);
+    const marker = minimapPart(container, "marker");
+    expect([marker?.style.left, marker?.style.top]).toEqual(["128px", "128px"]);
+    expect([marker?.getAttribute("data-native-map-x"), marker?.getAttribute("data-native-map-y")]).toEqual(["656", "1312"]);
+    expect(marker?.getAttribute("data-native-gap")).toBe("texture-reference-unresolved");
+    expect(control.getAttribute("data-native-minimap-view-origin")).toBe("centred on the marker, presentation");
     expect(rendered.gaps.map(gap => gap.reason)).not.toContain("control-type-unsupported:MinimapCtrl");
   });
 
-  it("shows the radar texture of the tile holding the player through the tile source and an unverified marker", async () => {
-    render(syntheticLocalPlayerAt(64, 320), syntheticMinimapTileSource(new Map([["20_21", syntheticTileMinimap("20_21")]])));
-    const control = await readyMinimap();
-    await vi.waitFor(() => expect(control.querySelector("img")?.getAttribute("src")).toBe(syntheticRadarImageUrl("20_21")));
-    const marker = minimapPart(container, "marker");
-    expect(marker?.getAttribute("data-native-status")).toBe("unverified");
-    expect(minimapPart(container, "state")).toBeNull();
+  it("lists every unresolved minimap item in the control gaps", async () => {
+    const rendered = render(syntheticLocalPlayerAtSource(0, 0), oneTileSource());
+    await readyMinimap();
+    expect(rendered.gaps.filter(gap => gap.controlName === "SyntheticMinimap").map(gap => gap.reason)).toEqual(expect.arrayContaining([
+      "minimap-join-unresolved:zone-title-source", "minimap-join-unresolved:radar-anchor", "texture-reference-unresolved",
+      "presentation:view-origin-centred-on-marker", "label-unresolved"]));
+    expect(minimapPart(container, "zone-name")?.getAttribute("data-native-gap")).toBe("label-unresolved");
+    expect(minimapPart(container, "zone-name")?.textContent).toBe("");
   });
 
-  it("shows one gap with its reason and no marker when no converted tile holds the player", async () => {
-    render(syntheticLocalPlayerAt(-500, -500), syntheticMinimapTileSource(new Map([["20_21", syntheticTileMinimap("20_21")]])));
+  it("moves the view origin on a world state update and reuses the piece images", async () => {
+    const rendered = render(syntheticLocalPlayerAtSource(0, 0), oneTileSource());
     const control = await readyMinimap();
-    expect(control.querySelectorAll(`[data-native-gap="${noConvertedTileReason}"]`)).toHaveLength(1);
-    expect(minimapPart(container, "marker")).toBeNull();
-    expect(control.querySelector("img")).toBeNull();
+    await vi.waitFor(() => expect(control.querySelectorAll("[data-native-world-map-piece] img")).toHaveLength(6));
+    const firstImage = control.querySelector("[data-native-world-map-piece] img");
+    rendered.refresh(syntheticLocalPlayerAtSource(8192, -8192));
+    const firstPiece = control.querySelector("[data-native-world-map-piece]");
+    expect([firstPiece?.style.left, firstPiece?.style.top]).toEqual([`${128 - 697}px`, `${128 - 1271}px`]);
+    expect(control.querySelector("[data-native-world-map-piece] img")).toBe(firstImage);
+    expect(minimapPart(container, "marker")?.getAttribute("data-native-map-x")).toBe("697");
   });
 
-  it("keeps the marker on the control centre, moves the tile cells on a world state update and reuses their texture elements", async () => {
-    const rendered = render(syntheticLocalPlayerAt(64, 320), syntheticMinimapTileSource(new Map([["20_21", syntheticTileMinimap("20_21")]])));
-    const control = await readyMinimap();
-    await vi.waitFor(() => expect(control.querySelector("img")).not.toBeNull());
-    const image = control.querySelector("img");
-    const cell = () => control.querySelector('[data-native-minimap-tile="20_21"]');
-    expect([cell()?.style.left, cell()?.style.top]).toEqual(["64px", "64px"]);
-    rendered.refresh(syntheticLocalPlayerAt(65, 330));
-    expect([cell()?.style.left, cell()?.style.top]).toEqual(["63px", "54px"]);
-    expect(control.querySelector("img")).toBe(image);
-    expect([minimapPart(container, "marker")?.style.left, minimapPart(container, "marker")?.style.top]).toEqual(["128px", "128px"]);
+  it("shows the route gap when the served catalog holds no tile minimap", async () => {
+    render(syntheticLocalPlayerAtSource(0, 0), syntheticMinimapSource({ tileMinimaps: new Map() }));
+    await readyMinimap();
+    expect(minimapPart(container, "state")?.getAttribute("data-native-gap")).toBe("minimap-route-not-in-catalog");
+    expect(minimapElement(container).querySelectorAll("[data-native-world-map-piece]")).toHaveLength(0);
   });
 
-  it("draws the tile grid around the player with gap cells carrying their reasons and labels the arrangement and scale", async () => {
-    render(syntheticLocalPlayerAt(64, 320), syntheticMinimapTileSource(new Map([["20_21", syntheticTileMinimap("20_21")],
-      ["19_21", syntheticTileMinimap("19_21", { radar: false })]])));
-    const control = await readyMinimap();
-    await vi.waitFor(() => expect(control.querySelector("img")).not.toBeNull());
-    const cells = control.querySelectorAll("[data-native-minimap-tile]");
-    expect(cells.map(cell => cell.getAttribute("data-native-minimap-tile"))).toEqual(["19_20", "20_20", "19_21", "20_21"]);
-    expect(cells.map(cell => cell.getAttribute("data-native-gap"))).toEqual([
-      "tile minimap resource not in catalog", "tile minimap resource not in catalog", "minimap-join-unresolved:zone-title-source", null]);
-    expect(control.getAttribute("data-native-minimap-arrangement")).toBe("tile-grid, unverified");
-    expect(control.getAttribute("data-native-minimap-scale")).toBe("one texture pixel per CSS pixel, presentation");
-    expect(control.style.overflow).toBe("hidden");
+  it("fails with the error text when two tile minimaps pin different routes", async () => {
+    render(syntheticLocalPlayerAtSource(0, 0), syntheticMinimapSource({ tileMinimaps: new Map([["20_21", syntheticTileMinimap("20_21")],
+      ["20_22", syntheticTileMinimap("20_22", { routeManifestSha256: "e".repeat(64) })]]) }));
+    await vi.waitFor(() => expect(minimapElement(container).getAttribute("data-native-minimap-state")).toBe("failed"));
+    expect(minimapPart(container, "state")?.getAttribute("data-native-gap")).toBe("minimap-load-failed");
+    expect(minimapElement(container).getAttribute("data-native-minimap-error")).toMatch(/different minimap routes/);
   });
 
   it("shows the load failure as the control gap with the error text", async () => {
-    const failingSource: NativeWindowMinimapTileSource = { ...syntheticMinimapTileSource(new Map([["20_21", null]])),
+    const failingSource: NativeWindowMinimapSource = { ...oneTileSource(),
       loadTileMinimap: async () => { throw new Error("Native tile 20_21 minimap manifest kind or schema version is invalid."); } };
-    render(syntheticLocalPlayerAt(64, 320), failingSource);
+    render(syntheticLocalPlayerAtSource(0, 0), failingSource);
     await vi.waitFor(() => expect(minimapElement(container).getAttribute("data-native-minimap-state")).toBe("failed"));
     expect(minimapPart(container, "state")?.getAttribute("data-native-gap")).toBe("minimap-load-failed");
     expect(minimapElement(container).getAttribute("data-native-minimap-error")).toMatch(/20_21/);
   });
 
-  it("keeps the marker texture and the zone name text as explicit unresolved elements", async () => {
-    render(syntheticLocalPlayerAt(64, 320), syntheticMinimapTileSource(new Map([["20_21", syntheticTileMinimap("20_21")]])));
-    await readyMinimap();
-    expect(minimapPart(container, "marker")?.getAttribute("data-native-gap")).toBe("texture-reference-unresolved");
-    expect(minimapPart(container, "zone-name")?.getAttribute("data-native-gap")).toBe("label-unresolved");
-    expect(minimapPart(container, "zone-name")?.textContent).toBe("");
-  });
-
-  it("revokes a radar image URL that resolves after the window is disposed and draws no image for it", async () => {
+  it("revokes a piece image URL that resolves after the window is disposed and draws no image for it", async () => {
     const revokeObjectUrlSpy = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
     try {
-      let resolveRadarImage: (resolution: NativeWindowTextureResolution) => void = () => undefined;
-      const tileSource: NativeWindowMinimapTileSource = {
-        ...syntheticMinimapTileSource(new Map([["20_21", syntheticTileMinimap("20_21")]])),
-        loadRadarImage: () => new Promise<NativeWindowTextureResolution>(resolve => { resolveRadarImage = resolve; }),
-      };
-      const rendered = render(syntheticLocalPlayerAt(64, 320), tileSource);
+      const resolvers: ((resolution: NativeWindowTextureResolution) => void)[] = [];
+      const source: NativeWindowMinimapSource = { ...oneTileSource(),
+        loadTextureImage: () => new Promise<NativeWindowTextureResolution>(resolve => { resolvers.push(resolve); }) };
+      const rendered = render(syntheticLocalPlayerAtSource(0, 0), source);
       const control = await readyMinimap();
+      await vi.waitFor(() => expect(resolvers.length).toBeGreaterThan(0));
       rendered.dispose();
-      resolveRadarImage({ status: "resolved", url: syntheticRadarImageUrl("20_21") });
-      await vi.waitFor(() => expect(revokeObjectUrlSpy).toHaveBeenCalledWith(syntheticRadarImageUrl("20_21")));
+      resolvers[0]!({ status: "resolved", url: "blob:synthetic/late" });
+      await vi.waitFor(() => expect(revokeObjectUrlSpy).toHaveBeenCalledWith("blob:synthetic/late"));
       expect(control.querySelector("img")).toBeNull();
     } finally {
       revokeObjectUrlSpy.mockRestore();
@@ -129,7 +128,7 @@ describe("renderMinimapControl", () => {
   });
 
   it("shows the adapter position gap when the adapter reports no local player", async () => {
-    render(null, syntheticMinimapTileSource(new Map([["20_21", syntheticTileMinimap("20_21")]])));
+    render(null, oneTileSource());
     const control = await readyMinimap();
     expect(minimapPart(container, "state")?.getAttribute("data-native-gap")).toBe("adapter-field-absent:position");
     expect(control.querySelector("img")).toBeNull();

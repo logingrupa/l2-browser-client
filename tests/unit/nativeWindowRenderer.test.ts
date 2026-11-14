@@ -8,7 +8,7 @@ import type { WorldEntity } from "../../src/world/worldTypes";
 import { listTypeScriptModules, readSourceModuleText } from "../support/sourceImportSpecifiers";
 import { moduleStringLiterals } from "../support/sourceStringLiterals";
 import { installMiniDom, type FakeElement, type MiniDom } from "./support/miniDom";
-import { emptyMinimapTileSource } from "./support/tileMinimapFixtures";
+import { emptyMinimapSource } from "./support/tileMinimapFixtures";
 
 function decodedWindowAndControlNames(): ReadonlySet<string> {
   const census = JSON.parse(readFileSync("docs/parts/ui/interface-window-census.json", "utf8")) as {
@@ -81,7 +81,7 @@ describe("renderNativeWindow", () => {
   function render(bindings: readonly NativeWindowFieldBinding[], localPlayer: WorldEntity | null = localPlayerWithHealth(100),
     textures: ReadonlyMap<string, NativeWindowTextureResolution> = resolvedTextures) {
     return renderNativeWindow(container as unknown as HTMLElement, syntheticStatusManifest(), { localPlayer, textures, fieldBindings: bindings, screen,
-      minimapTileSource: emptyMinimapTileSource });
+      minimapSource: emptyMinimapSource });
   }
 
   it("places one element per node in source order with positions relative to the parent in px", () => {
@@ -151,7 +151,7 @@ describe("renderNativeWindow", () => {
   it("marks the window root with a gap for a field binding whose control is missing or ambiguous and draws no gauge for it", () => {
     const rendered = renderNativeWindow(container as unknown as HTMLElement, syntheticStatusManifest(2), { localPlayer: localPlayerWithHealth(100),
       textures: resolvedTextures, fieldBindings: [healthBinding("SyntheticRenamedBar", null), healthBinding("SyntheticLevelText", null)], screen,
-      minimapTileSource: emptyMinimapTileSource });
+      minimapSource: emptyMinimapSource });
     expect(rendered.element.getAttribute("data-native-gap"))
       .toBe("binding-control-missing:SyntheticRenamedBar binding-control-ambiguous:SyntheticLevelText");
     expect(rendered.gaps).toEqual(expect.arrayContaining([
@@ -164,7 +164,7 @@ describe("renderNativeWindow", () => {
   it("renders an empty positioned box for a control without textures and the root box only for an empty window", () => {
     const plain = parseNativeWindowManifest(syntheticManifests.find(manifest => manifest.windowId === "SyntheticPlainWnd"));
     const rendered = renderNativeWindow(container as unknown as HTMLElement, plain, { localPlayer: null, textures: new Map(), fieldBindings: [], screen,
-      minimapTileSource: emptyMinimapTileSource });
+      minimapSource: emptyMinimapSource });
     expect(childElements(rendered.element as unknown as FakeElement)).toEqual([]);
     expect([rendered.element.style.left, rendered.element.style.top]).toEqual(["1380px", "870px"]);
     expect(rendered.gaps).toEqual([]);
