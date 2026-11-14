@@ -10,7 +10,7 @@ import { traceClickDestination } from "../scene/world/movement/core/clickTrace";
 import { calculateBehindView, type BehindView } from "../scene/world/movement/core/behindViewCamera";
 import { singleLineCheck } from "../scene/world/movement/core/lineCheck";
 import {
-  createMovementPresenter, MovementPresenterError, type MovementIntent, type MovementPresenterInspection,
+  createMovementPresenter, MovementPresenterError, type MovementIntent, type MovementPresenterInspection, type MovementWalkTrace,
 } from "../scene/world/movement/movementPresenter";
 import type { TileCollisionLoad } from "./tileCollisionCells";
 
@@ -70,6 +70,7 @@ export interface WorldMovement {
   groundBelow(feetPosition: WorldPosition): WorldPosition | null;
   isStraightWalkBlocked(fromFeet: WorldPosition, toFeet: WorldPosition, cylinder: SourceCollisionCylinder): boolean;
   inspection(): WorldMovementInspection;
+  localWalkTrace(): MovementWalkTrace | null;
   release(): void;
 }
 
@@ -206,6 +207,9 @@ export function wireWorldMovement(options: WorldMovementOptions): WorldMovement 
         collisionCells: { ...collisionWorld.inspection(), status, failure, load },
         presenter: presenter.inspection(), rejectedRecordCount, lastRejectedRecord, lastLocalDestination, dispatchedIntentCounts: { ...dispatchedIntentCounts }, followCamera: { desiredRadius, appliedRadius, hitDistance },
       };
+    },
+    localWalkTrace() {
+      return presenter.walkTrace(localPlayerId);
     },
     release() {
       if (released) return;

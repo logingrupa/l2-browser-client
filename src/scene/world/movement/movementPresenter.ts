@@ -4,7 +4,8 @@ import type { WorldCommand, WorldEvent } from "../../../world/worldTypes";
 import type { CollisionPrimitive } from "./core/collisionTrace";
 import type { CollisionReadiness, CollisionWorld } from "./core/collisionWorld";
 import type { MovementNativeRules } from "./core/movementRules";
-import { ZERO_VELOCITY, type PawnPhysicsContext, type PawnPhysicsMode } from "./core/pawnBody";
+import { singleLineCheck } from "./core/lineCheck";
+import { pawnExtent, ZERO_VELOCITY, type PawnPhysicsContext, type PawnPhysicsMode } from "./core/pawnBody";
 import { advancePawnSimulation, type PawnSimulation, type PawnTraits } from "./core/pawnPhysics";
 import type { PawnSpeeds } from "./core/pawnVelocity";
 import { advancePositionReports, INITIAL_POSITION_REPORT_STATE, type PositionReportState } from "./core/positionReports";
@@ -35,10 +36,34 @@ export interface MovementPresenterInspection {
   readonly pawns: readonly MovementPawnInspection[];
 }
 
+export interface MovementFloorHit {
+  readonly primitiveKind: CollisionPrimitive["kind"];
+  readonly cellId: string | null;
+}
+
+export interface MovementBlockingHit extends MovementFloorHit {
+  readonly distanceSourceUnits: number;
+}
+
+export type MovementMoveResult =
+  | { readonly kind: "advanced"; readonly hasGoal: boolean; readonly movedSourceUnits: number }
+  | { readonly kind: "held"; readonly heldReason: MovementHeldReason }
+  | { readonly kind: "cannot-move"; readonly blockingHit: MovementBlockingHit | null };
+
+export interface MovementWalkTrace {
+  readonly physicsMode: PawnPhysicsMode;
+  readonly floorHit: MovementFloorHit | null;
+  readonly lastMoveResult: MovementMoveResult | null;
+  readonly fallStartPosition: SourcePosition | null;
+  readonly endPosition: SourcePosition;
+  readonly residentCellIds: readonly string[];
+}
+
 export interface MovementPresenter {
   applyEvent(event: WorldEvent): void;
   advance(frameSeconds: number): void;
   inspection(): MovementPresenterInspection;
+  walkTrace(entityId: string): MovementWalkTrace | null;
 }
 
 export class MovementPresenterError extends Error {
@@ -52,6 +77,8 @@ interface PresentedPawn {
   readonly simulation: PawnSimulation;
   readonly reports: PositionReportState;
   readonly heldReason: MovementHeldReason | null;
+  readonly lastMoveResult: MovementMoveResult | null;
+  readonly fallStartPosition: SourcePosition | null;
 }
 
 type MoveEvent = Extract<WorldEvent, { readonly type: "move" }>;
@@ -109,8 +136,17 @@ function requireMoveEvent(event: MoveEvent): void {
 const distanceBetween = (left: Vector3, right: Vector3) => Math.hypot(left.x - right.x, left.y - right.y, left.z - right.z);
 
 const holdPawn = (pawn: PresentedPawn, heldReason: MovementHeldReason): PresentedPawn => ({
-  ...pawn, reports: { ...pawn.reports, progressAnchor: null }, heldReason,
+  ...pawn, reports: { ...pawn.reports, progressAnchor: null }, heldReason, lastMoveResult: { kind: "held", heldReason },
 });
+
+function advancedMoveResult(previous: PresentedPawn, advanced: PresentedPawn): MovementMoveResult | null {
+  const hasGoal = previous.simulation.goal !== null;
+  const movedSourceUnits = distanceBetween(previous.simulation.body.location, advanced.simulation.body.location);
+  return hasGoal || movedSourceUnits > 0 ? { kind: "advanced", hasGoal, movedSourceUnits } : previous.lastMoveResult;
+}
+
+const floorHitOf = (floor: CollisionPrimitive | null): MovementFloorHit | null =>
+  floor === null ? null : { primitiveKind: floor.kind, cellId: "cellId" in floor ? floor.cellId : null };
 
 export function createMovementPresenter(options: MovementPresenterOptions): MovementPresenter {
   const { collisionWorld, rules, reportIntent, pawnTraits } = options;
@@ -152,6 +188,7 @@ export function createMovementPresenter(options: MovementPresenterOptions): Move
       };
       pawnsByEntityId.set(entityId, {
         simulation: { body, yaw: 0, goal, moveTimerSeconds: 0, speedUnresolved: false }, reports: INITIAL_POSITION_REPORT_STATE, heldReason: null,
+        lastMoveResult: null, fallStartPosition: null,
       });
       return;
     }
@@ -196,6 +233,22 @@ export function createMovementPresenter(options: MovementPresenterOptions): Move
     return { ...pawn, simulation, reports: outcome.state };
   }
 
+  function blockingHitAhead(simulation: PawnSimulation): MovementBlockingHit | null {
+    const { body, goal } = simulation;
+    if (goal === null) return null;
+    const towardGoal = { x: goal.destination.x - body.location.x, y: goal.destination.y - body.location.y };
+    const remainingDistance = Math.hypot(towardGoal.x, towardGoal.y);
+    if (remainingDistance === 0) return null;
+    const end = { x: body.location.x + towardGoal.x, y: body.location.y + towardGoal.y, z: body.location.z };
+    const hit = singleLineCheck(collisionWorld, { start: body.location, end, extent: pawnExtent(body) }, rules);
+    return hit === null ? null : { ...floorHitOf(hit.primitive)!, distanceSourceUnits: Math.fround(remainingDistance * hit.time) };
+  }
+
+  function withFallStart(previous: PresentedPawn, advanced: PresentedPawn): PresentedPawn {
+    const startsFalling = advanced.simulation.body.mode === "falling" && previous.simulation.body.mode !== "falling";
+    return startsFalling ? { ...advanced, fallStartPosition: feetOf(previous.simulation) } : advanced;
+  }
+
   function advancePawn(entityId: string, pawn: PresentedPawn, frameSeconds: number): PresentedPawn {
     const { location } = pawn.simulation.body;
     const readiness = collisionWorld.collisionReadiness({ x: location.x, y: location.y });
@@ -203,8 +256,13 @@ export function createMovementPresenter(options: MovementPresenterOptions): Move
     const traits = pawnTraits(entityId);
     const simulation = advancePawnSimulation(context, pawn.simulation, traits, frameSeconds);
     if (simulation.speedUnresolved) return holdPawn({ ...pawn, simulation }, "speed-unresolved");
-    const advanced: PresentedPawn = { ...pawn, simulation, heldReason: null };
-    return traits.isLocalPlayer ? emitReports(entityId, advanced) : advanced;
+    const advanced = withFallStart(pawn, { ...pawn, simulation, heldReason: null });
+    if (!traits.isLocalPlayer) return { ...advanced, lastMoveResult: advancedMoveResult(pawn, advanced) };
+    const reported = emitReports(entityId, advanced);
+    const reportedCannotMove = advanced.simulation.goal !== null && reported.simulation.goal === null;
+    const lastMoveResult: MovementMoveResult | null = reportedCannotMove
+      ? { kind: "cannot-move", blockingHit: blockingHitAhead(advanced.simulation) } : advancedMoveResult(pawn, reported);
+    return { ...reported, lastMoveResult };
   }
 
   return {
@@ -230,6 +288,14 @@ export function createMovementPresenter(options: MovementPresenterOptions): Move
           mode: pawn.simulation.body.mode, floor: pawn.simulation.body.floor, isMoving: pawn.simulation.goal !== null, heldReason: pawn.heldReason,
         })),
       };
+    },
+    walkTrace(entityId) {
+      const pawn = pawnsByEntityId.get(entityId);
+      if (pawn === undefined) return null;
+      const { body } = pawn.simulation;
+      return { physicsMode: body.mode, floorHit: floorHitOf(body.floor), lastMoveResult: pawn.lastMoveResult, fallStartPosition: pawn.fallStartPosition,
+        endPosition: feetOf(pawn.simulation),
+        residentCellIds: collisionWorld.residentCells().map(cell => cell.cellId) };
     },
   };
 }

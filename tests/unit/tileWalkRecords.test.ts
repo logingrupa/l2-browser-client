@@ -1,6 +1,10 @@
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { createTileWalkOutcome, requestedWalkTileIds, settleViewportWalk, tileWalkRecordFilePath } from "../browser/support/tileWalkRecords";
+import type { MovementMoveResult } from "../../src/scene/world/movement/movementPresenter";
+import {
+  createTileWalkOutcome, requestedWalkTileIds, settleViewportWalk, tileWalkFailureClass, tileWalkRecordFilePath, tileWalkTrace,
+  type ObservedTileWalk, type TileWalkFailure,
+} from "../browser/support/tileWalkRecords";
 
 describe("requestedWalkTileIds", () => {
   it("walks 20_21 when WALK_TILE_IDS is unset", () => {
@@ -34,6 +38,47 @@ describe("tileWalkRecordFilePath", () => {
   });
 });
 
+const residentWalk = (pawn: ObservedTileWalk["pawn"]): ObservedTileWalk => ({
+  worldLoaded: true, collisionStatus: "resident", collisionFailure: null, missingCellIds: [], sourceSpawn: [1, 2, 3], tileAnchor: null, pawn,
+});
+const walkingPawn = (lastMoveResult: MovementMoveResult | null): ObservedTileWalk["pawn"] => ({
+  physicsMode: "walking", floorHit: { primitiveKind: "terrain", cellId: "15_22/chunk-0-0" }, lastMoveResult, fallStartPosition: null,
+  endPosition: { x: 1, y: 2, z: 3 },
+  residentCellIds: ["15_22/chunk-0-0"],
+});
+const idleTimeout = "Error: the local player did not walk more than 1 m and come to idle within 90000 ms: animation run";
+const failureOf = (reason: string): TileWalkFailure => ({ reason, walkTrace: tileWalkTrace(reason, residentWalk(walkingPawn(null))) });
+
+describe("tileWalkFailureClass", () => {
+  it("classes load and assertion failures by their first failure line", () => {
+    expect(tileWalkFailureClass("Error: tile:24_14 did not start on the native route: error: The tile anchor lies outside every chunk terrain.", null)).toBe("tile-did-not-start");
+    expect(tileWalkFailureClass("Error: the native route loaded no world section for tile:15_22", null)).toBe("no-world-section");
+    expect(tileWalkFailureClass("Error: the loaded section holds 0 BSP meshes", residentWalk(null))).toBe("bsp-mesh-count");
+    expect(tileWalkFailureClass("Error: the walk ended at height -163.8 m, below the terrain minimum -50.2 m", residentWalk(walkingPawn(null)))).toBe("below-terrain-minimum");
+    expect(tileWalkFailureClass("Error: the walk ended at height 90 m, above the terrain maximum 80 m", residentWalk(walkingPawn(null)))).toBe("above-terrain-maximum");
+  });
+
+  it("classes an idle timeout by the collision load and the last move result of its trace", () => {
+    expect(tileWalkFailureClass(idleTimeout, { ...residentWalk(null), collisionStatus: "loading" })).toBe("collision-not-resident");
+    expect(tileWalkFailureClass(idleTimeout, residentWalk(walkingPawn({ kind: "held", heldReason: "speed-unresolved" })))).toBe("held-speed-unresolved");
+    expect(tileWalkFailureClass(idleTimeout, residentWalk(walkingPawn({ kind: "held", heldReason: "collision-cell-absent" })))).toBe("held-collision-cell-absent");
+    expect(tileWalkFailureClass(idleTimeout, residentWalk(walkingPawn({ kind: "cannot-move", blockingHit: null })))).toBe("cannot-move");
+    expect(tileWalkFailureClass(idleTimeout, residentWalk(walkingPawn({ kind: "advanced", hasGoal: true, movedSourceUnits: 3 })))).toBe("walk-did-not-settle");
+  });
+
+  it("classes a failure with no native slice on the page as a tile that did not start", () => {
+    expect(tileWalkFailureClass(idleTimeout, null)).toBe("tile-did-not-start");
+    expect(tileWalkTrace(idleTimeout, null)).toEqual({
+      failureClass: "tile-did-not-start", worldLoaded: false, collisionStatus: null, collisionFailure: null, missingCellIds: [], sourceSpawn: null, tileAnchor: null,
+      pawn: null,
+    });
+  });
+
+  it("names a failure line it does not know as other", () => {
+    expect(tileWalkFailureClass("Error: expect(received).toEqual(expected)", residentWalk(null))).toBe("other");
+  });
+});
+
 describe("settleViewportWalk", () => {
   it("settles a pass only when every viewport walk passed", () => {
     const outcome = createTileWalkOutcome(2);
@@ -41,22 +86,24 @@ describe("settleViewportWalk", () => {
     expect(settleViewportWalk(outcome, null)).toEqual({ status: "pass", reason: null });
   });
 
-  it("settles a failure with the first failure line as soon as one viewport fails", () => {
+  it("settles a failure with the first failure line and its walk trace as soon as one viewport fails", () => {
     const outcome = createTileWalkOutcome(2);
     expect(settleViewportWalk(outcome, null)).toBeNull();
-    expect(settleViewportWalk(outcome, "tile:17_12 did not start on the native route")).toEqual({ status: "failed", reason: "tile:17_12 did not start on the native route" });
+    const failure = failureOf(idleTimeout);
+    expect(settleViewportWalk(outcome, failure)).toEqual({ status: "failed", reason: idleTimeout, walkTrace: failure.walkTrace });
   });
 
-  it("keeps the first failure line of a tile when a later viewport fails too", () => {
+  it("keeps the first failure line and trace of a tile when a later viewport fails too", () => {
     const outcome = createTileWalkOutcome(2);
-    expect(settleViewportWalk(outcome, "first failure")).toEqual({ status: "failed", reason: "first failure" });
-    expect(settleViewportWalk(outcome, "second failure")).toEqual({ status: "failed", reason: "first failure" });
+    const first = failureOf("first failure"), second = failureOf("second failure");
+    expect(settleViewportWalk(outcome, first)).toEqual({ status: "failed", reason: "first failure", walkTrace: first.walkTrace });
+    expect(settleViewportWalk(outcome, second)).toEqual({ status: "failed", reason: "first failure", walkTrace: first.walkTrace });
   });
 
   it("keeps one outcome per tile", () => {
     const failedTile = createTileWalkOutcome(2);
     const passingTile = createTileWalkOutcome(2);
-    settleViewportWalk(failedTile, "failed tile");
+    settleViewportWalk(failedTile, failureOf("failed tile"));
     expect(settleViewportWalk(passingTile, null)).toBeNull();
     expect(settleViewportWalk(passingTile, null)).toEqual({ status: "pass", reason: null });
   });

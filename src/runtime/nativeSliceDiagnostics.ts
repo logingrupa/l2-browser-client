@@ -32,6 +32,7 @@ import type { NativeFlameReplayClock, NativeSliceWorld } from "./loadNativeSlice
 import type { NativeSliceAudio } from "./loadNativeSliceAudio";
 import type { NativeSliceEffects } from "./createNativeSliceEffects";
 import type { WorldMovement, WorldMovementCollisionCells, WorldMovementInspection } from "./worldMovementWiring";
+import type { MovementWalkTrace } from "../scene/world/movement/movementPresenter";
 import type { WorldEnvironment, WorldEnvironmentInspection } from "./worldEnvironmentWiring";
 import type { NativeSliceCameraPose } from "./nativeSliceCameraPose";
 import type { DiagnosticMaterialRecord } from "../materials/ue2/babylon/material";
@@ -101,7 +102,7 @@ function nativeSliceSnapshot(inputs: NativeSliceDiagnosticInputs) {
     worldFailure: world.worldFailure ?? null,
     fog: { enabled: scene.fogEnabled, mode: scene.fogMode, start: scene.fogStart, end: scene.fogEnd },
     world: section ? { manifestSha256: section.manifestSha256, ...section.inspection(),
-      sourceSpawn: sourcePositionComponents(worldPositionToSource(origin)), nativeLocationMatch: "unverified",
+      sourceSpawn: sourcePositionComponents(worldPositionToSource(origin)), nativeLocationMatch: "unverified", walkTrace: inputs.movement.localWalkTrace(),
       collision: "MOVE-01 collision world over native-tile-collision cells; native server geodata unverified" } : null,
     fps: scene.getEngine().getFps(), camera: { target: camera.target.asArray(), alpha: camera.alpha, beta: camera.beta, radius: camera.radius,
       lowerRadiusLimit: camera.lowerRadiusLimit, upperRadiusLimit: camera.upperRadiusLimit, lowerBetaLimit: camera.lowerBetaLimit, upperBetaLimit: camera.upperBetaLimit } };
@@ -171,6 +172,7 @@ declare global { interface Window { __nativeSlice?: { snapshot(): { entities: Re
   devSheet?: ReturnType<WorldInterface["sheet"]["inspect"]>;
   flameReplay?: (ReturnType<NativeFlameReplayClock["inspect"]> & { billboardTarget: string }) | null;
   fog?: { enabled: boolean; mode: number; start: number; end: number };
-  world?: (ReturnType<NativeSection["inspection"]> & { manifestSha256: string; sourceSpawn: number[]; nativeLocationMatch: string; collision: string }) | null;
+  world?: (ReturnType<NativeSection["inspection"]> & { manifestSha256: string; sourceSpawn: number[]; nativeLocationMatch: string; collision: string;
+    walkTrace: MovementWalkTrace | null }) | null;
   fps?: number; camera?: { target: number[]; alpha: number; beta: number; radius: number;
     lowerRadiusLimit: number | null; upperRadiusLimit: number | null; lowerBetaLimit: number | null; upperBetaLimit: number | null } }; dispatch: NativeSliceAdapter["dispatch"]; performance(): Promise<ReturnType<typeof createWorldPerformanceProbe>>; captureAudio?(): MediaStream | null; setWorldAudioEnabled?(enabled: boolean): void; setFlameReplay?(time: NativeFlameReplayTime): void; frameFlame?(placementId: string): void; setCameraPose?(pose: NativeSliceCameraPose): void; collisionSurfaceHeightsAt?(x: number, z: number): number[]; interactDoor?(id: string): void } } }

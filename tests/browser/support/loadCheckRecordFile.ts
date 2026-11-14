@@ -13,6 +13,7 @@ export interface LoadCheckRecord {
   readonly reason: string | null;
   readonly atRiga: string;
   readonly assetManifestSchemaVersion: 1 | 2 | null;
+  readonly walkTrace?: object;
 }
 
 export interface LoadCheckRecordFile {
@@ -25,6 +26,7 @@ export interface LoadCheckRecordFile {
 const laneOwnershipFilePath = resolve(dirname(fileURLToPath(import.meta.url)), "../../../.planning/lanes.json");
 const loadCheckRecordFileSchemaVersion = 1;
 const loadCheckRecordFields = ["assetManifestSchemaVersion", "atRiga", "key", "reason", "status"];
+const walkTracedRecordFields = [...loadCheckRecordFields, "walkTrace"].sort();
 const loadCheckRecordFileFields = ["catalogSha256", "lane", "records", "schemaVersion"];
 const catalogSha256Pattern = /^[0-9a-f]{64}$/;
 const rigaTimestampPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/;
@@ -62,8 +64,10 @@ function requireCatalogSha256(catalogSha256: string): void {
 
 function validateLoadCheckRecord(value: unknown): LoadCheckRecord {
   const refuse = (problem: string) => new Error(`load-check record ${JSON.stringify(value)} refused: ${problem}`);
-  if (!isPlainObject(value) || !hasExactlyFields(value, loadCheckRecordFields)) throw refuse(`fields must be exactly ${loadCheckRecordFields.join(", ")}`);
-  const { key, status, reason, atRiga, assetManifestSchemaVersion } = value;
+  if (!isPlainObject(value) || !(hasExactlyFields(value, loadCheckRecordFields) || hasExactlyFields(value, walkTracedRecordFields))) {
+    throw refuse(`fields must be exactly ${loadCheckRecordFields.join(", ")}, plus walkTrace on a failed walk`);
+  }
+  const { key, status, reason, atRiga, assetManifestSchemaVersion, walkTrace } = value;
   if (typeof key !== "string" || !isCatalogKey(key)) {
     throw refuse(`key is not a catalog key (${Object.keys(catalogKeyPatterns).join(", ")})`);
   }
@@ -78,7 +82,9 @@ function validateLoadCheckRecord(value: unknown): LoadCheckRecord {
   if (assetManifestSchemaVersion !== 1 && assetManifestSchemaVersion !== 2 && assetManifestSchemaVersion !== null) {
     throw refuse("assetManifestSchemaVersion must be 1, 2 or null");
   }
-  return { key, status, reason, atRiga, assetManifestSchemaVersion };
+  if (walkTrace === undefined) return { key, status, reason, atRiga, assetManifestSchemaVersion };
+  if (status !== "failed" || !isPlainObject(walkTrace)) throw refuse("a walk trace is an object on a failed record only");
+  return { key, status, reason, atRiga, assetManifestSchemaVersion, walkTrace };
 }
 
 function validateLoadCheckRecordFile(value: unknown, filePath: string, laneName: string, catalogSha256: string): LoadCheckRecordFile {

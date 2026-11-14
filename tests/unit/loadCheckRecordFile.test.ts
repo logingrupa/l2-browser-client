@@ -74,11 +74,21 @@ describe("load-check record file writes", () => {
 			{ ...passRecord("tile:20_21"), atRiga: "2026-11-08 10:00" },
 			{ ...passRecord("tile:20_21"), atRiga: "2026-11-08T10:00:00" },
 			{ ...passRecord("tile:20_21"), assetManifestSchemaVersion: 3 },
+			{ ...passRecord("tile:20_21"), walkTrace: { failureClass: "cannot-move" } },
+			{ ...passRecord("tile:20_21"), status: "failed", reason: "walk failed", walkTrace: "cannot-move" },
+			{ ...passRecord("tile:20_21"), status: "failed", reason: "walk failed", walkTrace: null },
 		];
 		for (const record of refusedRecords) {
 			expect(() => writeLoadCheckRecordFile(filePath, "world", catalogSha256, record as LoadCheckRecord), JSON.stringify(record)).toThrow("load-check record");
 		}
 		expect(existsSync(filePath)).toBe(false);
+	});
+
+	it("keeps the walk trace of a failed walk record beside its reason", () => {
+		const filePath = temporaryRecordFilePath();
+		const failedWalk: LoadCheckRecord = { ...passRecord("tile:15_22"), status: "failed", reason: "walk failed", walkTrace: { failureClass: "held-speed-unresolved" } };
+		writeLoadCheckRecordFile(filePath, "world", catalogSha256, failedWalk);
+		expect(readLoadCheckRecordFile(filePath, "world", catalogSha256)).toEqual([failedWalk]);
 	});
 
 	it("accepts every gap-row key kind", () => {

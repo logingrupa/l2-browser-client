@@ -4,7 +4,9 @@ import { resolve } from "node:path";
 import { formatRigaTimestamp } from "../../scripts/check-machine-schedule.mjs";
 import { desktopViewport, landscapePhone } from "./browserViewports";
 import { servedLaneCatalogSha256, writeLoadCheckRecordFile } from "./support/loadCheckRecordFile";
-import { createTileWalkOutcome, requestedWalkTileIds, settleViewportWalk, tileWalkRecordFilePath } from "./support/tileWalkRecords";
+import {
+  createTileWalkOutcome, requestedWalkTileIds, settleViewportWalk, tileWalkRecordFilePath, tileWalkTrace, type ObservedTileWalk,
+} from "./support/tileWalkRecords";
 
 interface TileCatalogRecord { readonly id: string; readonly manifest: string; readonly manifestSha256: string; readonly manifestBytes: number }
 
@@ -23,6 +25,15 @@ function firstFailureLine(testInfo: TestInfo): string {
   const message = (testInfo.errors[0]?.message ?? "").replace(terminalColourCodes, "").split("\n")[0]!.trim();
   return message || `walk ${testInfo.status}`;
 }
+
+const observedTileWalk = (page: Page): Promise<ObservedTileWalk | null> => page.evaluate(() => {
+  const snapshot = window.__nativeSlice?.snapshot();
+  if (snapshot === undefined) return null;
+  const collisionCells = snapshot.movement?.collisionCells;
+  return { worldLoaded: Boolean(snapshot.world), collisionStatus: collisionCells?.status ?? null, collisionFailure: collisionCells?.failure ?? null,
+    missingCellIds: collisionCells?.missingCellIds ?? [], sourceSpawn: snapshot.world?.sourceSpawn ?? null, tileAnchor: snapshot.world?.tileAnchor ?? null,
+    pawn: snapshot.world?.walkTrace ?? null };
+}).catch(() => null);
 
 const localPlayer = (page: Page) => page.evaluate(() => window.__nativeSlice!.snapshot().entities.find(entity => entity.id === "local-player")!);
 const worldSnapshot = (page: Page) => page.evaluate(() => window.__nativeSlice!.snapshot().world);
@@ -44,7 +55,7 @@ async function openTile(page: Page, tileRecord: TileCatalogRecord, pageErrors: s
   expect(world.manifestSha256).toBe(tileRecord.manifestSha256);
   expect(world.terrainTriangles).toBeGreaterThan(0);
   expect(world).toMatchObject({ collisionVerified: false });
-  expect(world.bspMeshes).toBeGreaterThan(0);
+  expect(world.bspMeshes, `the loaded section holds ${world.bspMeshes} BSP meshes`).toBeGreaterThan(0);
   expect(world.sectionWindow).toEqual({ basis: "terrain-info-chunk-plan", status: "source-derived" });
   await expect(page.locator(".world-location h1")).toHaveText(`${tileRecord.id} · native world tile`);
   return world;
@@ -102,9 +113,11 @@ for (const tileId of requestedWalkTileIds(process.env.WALK_TILE_IDS)) {
       laneCatalogSha256 = await servedLaneCatalogSha256(baseURL);
     });
 
-    test.afterEach(async ({}, testInfo: TestInfo) => {
+    test.afterEach(async ({ page }, testInfo: TestInfo) => {
       if (testInfo.status === "skipped" || laneCatalogSha256 === null) return;
-      const settledWalk = settleViewportWalk(tileWalkOutcome, testInfo.status === "passed" ? null : firstFailureLine(testInfo));
+      const reason = testInfo.status === "passed" ? null : firstFailureLine(testInfo);
+      const viewportFailure = reason === null ? null : { reason, walkTrace: tileWalkTrace(reason, await observedTileWalk(page)) };
+      const settledWalk = settleViewportWalk(tileWalkOutcome, viewportFailure);
       if (settledWalk === null) return;
       writeLoadCheckRecordFile(tileWalkRecordFilePath(process.cwd(), laneName, laneCatalogSha256), laneName, laneCatalogSha256, {
         key: `tile:${tileId}`, ...settledWalk, atRiga: formatRigaTimestamp(new Date()), assetManifestSchemaVersion: null,
