@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 current_phase: 03
 current_phase_name: Stage A checks
 status: executing
-stopped_at: Completed 03-23-PLAN.md
-last_updated: "2026-11-14T14:58:29.647Z"
+stopped_at: Completed 03-24-PLAN.md
+last_updated: "2026-11-14T17:11:35.038Z"
 last_activity: 2026-11-14
 last_activity_desc: Phase 03 plan 03-23 complete (tile minimap schema 3 without radarTexture and projection; tracer tile 20_21 resealed, 145 tiles left for 03-24)
-state_head: 74307a228f902154b5e09ad8c6fe6b42842a4884
+state_head: e910edae9d7af1aaf8daab5748ed05466ee959ec
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 152
-  completed_plans: 126
+  completed_plans: 127
   percent: 0
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-11-08)
 ## Current Position
 
 Phase: 03 (Stage A checks) - EXECUTING; Phase 2 gap round plans 02-72 to 02-99 executed
-Plan: 02-89 complete (Phase 2 gap closure bookkeeping); Phase 3 at 03-23 complete (gap SC1d world side: tile minimap schema 3), 10 of 36 plans summarized (gap plans 03-21 to 03-36 added 2026-11-14)
+Plan: 02-89 complete (Phase 2 gap closure bookkeeping); Phase 3 at 03-24 complete (gap MAT: static mesh library programs), 11 of 36 plans summarized (gap plans 03-21 to 03-36 added 2026-11-14)
 Status: Executing Phase 3 from start commit cb09cdc; Phase 1 is verification_deferred_human (see Deferred Verification); the union is rebuilt as e25d005e and its restage waits on the owner (Needs Human plan 02-89)
-Last activity: 2026-11-14 - 03-23: the minimap step writes and minimapJoin.ts parses schema 3 only, without the per-tile radarTexture and projection fields; the synthetic radar fixtures and minimapTexturePosition are deleted; tracer tile 20_21 holds minimap c6984cc0 and tile manifest 9b9db450 in the world lane store; the other 145 tiles re-run in the 03-24 batch
+Last activity: 2026-11-14 - 03-24: a static-mesh-materials tile step derives one UE2 program per slot material through the program path shared with BSP, and static mesh slots with a ported root draw through the library (20_21: 11,665 of 12,286); the world lane batch resealed 146 static-mesh-materials units, 145 schema 3 minimaps and 143 manifests (lane catalog cddfe152); the union rebuild exited 1 on a corrupt actors lane model file, so the union stays e25d005e
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -172,6 +172,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 03 P21 | 5h 50m | 3 tasks | 19 files |
 | Phase 03 P22 | 25min | 3 tasks | 20 files |
 | Phase 03 P23 | 8min | 2 tasks | 7 files |
+| Phase 03 P24 | 1h 50m | 3 tasks | 27 files |
 
 ## Accumulated Context
 
@@ -464,6 +465,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 - [Phase 03]: 03-21: tile anchor = chunk plan footprint holding the authored PlayerStart XY plus the first collision hit below it (probe to maxStepHeight below the lowest loaded terrain or resident BSP point), tile-anchor-has-no-floor otherwise; the sandbox move record carries the aCis swim speed 50; the walk spec checks the start chunk BSP pin, a floor or swim at the end and no rest on the level bottom (P1205 to P1211)
 - [Phase 03]: 03-22: MinimapCtrl draws the six route world map pieces with the GetMinimapPosition marker; the zone sampler (verified-q7) reads the pinned L2ZoneName mip 0 byte, keys it with the recipe helper and picks the zonename row with Bottom < Z < Top, zone-key-run only when more than one row of a run holds Z; NewRadarWnd.texMap shows the case-insensitive whole-name GetLocInfo choice (names from the recipe radar.onLoad) with zone-title-source and radar-anchor listed (decision rows for the orchestrator in the SUMMARY)
 - [Phase 03]: 03-23: tile minimap schema 3 and minimap step version 3 drop radarTexture and projection; no sealed schema 2 unit is reused, 145 tiles re-run in 03-24
+- [Phase 03]: 03-24: static mesh slots draw through the UE2 library from a per-tile static-mesh-materials listing (shared program path with BSP); no COLOR_0 vertex colour input because no program or reviewed lighting row names one (P1212 to P1215)
 
 ### Pending Todos
 
@@ -534,6 +536,8 @@ Integration thread (rule 4: only the integration thread writes the main checkout
 ## Open follow-ups
 
 Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in this run and leaves this list when it lands.
+
+- Union rebuild blocked by the actors lane store (03-24 chain step 3, exit 1): `artifacts/lane-store/actors/l2/475f47eb.../model.glb` holds `f4dfe4cc...`, not its catalog pin `1c94850c...` (the `model.glb` inside its own `asset.l2asset`), because it is hard-linked to `actors/converter/475f47eb.../model.glb` and a later converter write changed it through the link. Unblocked by: restoring that store file from its archive, a rule that store files are never hard-linked to rewritable converter outputs, then the union `write_lane_catalog.py --lane integration --union world --union actors --union data-ui` and 03-24 chain steps 4 (touched tile keys) and 5 (queue).
 
 - Skill sound through skillsoundgrp (SC3b, ACT-05): narrowed (02-95). Every skillsoundgrp row is a sealed `actor-sounds:skill-sound-row:<n>` unit (1,365 bundles, 11 no-sound, 22 ambiguous) on the routes of `recipes/actors/combat-sound-routes.json`; census `docs/parts/audio/actor-sound-census.json`. Missing: playback of the cast and shot member slots on the skill-cast event, joined from skill id and level through GetSkillSoundData 0x10478280 (the level row, else the level 1 row) to `actor-sounds:skill-sound-row:<n>`; the converted coverage rule for `skill-sound-row:<n>` keys in `scripts/native_store/gap_census_derived_parts.py` (1,403 rows read `step-pending:skill-sounds`); the caster-indexed 2 x 15 table (`skill-sound-caster-index-unresolved:<stage>`, cast 356 and shot 398 rows, index pawn+0x698 unnamed, NPC casters and slot 14); the unrouted third members DAT 4, 13 and 22 (`skill-sound-member-unrouted:<ordinal>`, 143, 13 and 1 rows); whether a stage with several non-empty members plays one or all; skill 5006 init plays PlaySkillSound(caster, caster, 1) at 0x104fa6ad with no effect spawn, and DAT sound names without a group (SkillSound6.frintessa_08) resolve to grouped exports (skillsound6.frintessa.frintessa_08) by a resolver not yet proved (IMPORTA-PC new-skill-row-bindings.json 63cbc253...a1fb, not replay-checked). Unblocked by: an actors-lane playback module plus its integration wiring with the world mixer through `createSkillCastPresentation` (02-84); integration reading the sealed skill-sound-row receipts in the coverage rule; a native answer for the NPC index path and the packet field that sets the mesh type; a verified consumer or verified negative for the third members; an IMPORTA-PC native session capturing a skill with two cast members; a replay check of the 5006 call and of the grouped-name resolver.
 - Window data (SC4e, UI-02, NET-05): Missing: `CPBarTex` and `MPBarTex` stay `adapter-field-absent:cp` and `:mp`; every TextBox renders `label-unresolved`; the data-ui lane window gap rows hold 110 `control-type-unsupported:<type>` rows from `scripts/data/window_control_gaps.py`, one per window over 20 first types (02-VERIFICATION: 460 controls of 25 types in 110 windows); lane ui coverage 46/248 converted, 202 gap. Unblocked by: CP and MP from server data (the Needs Human SC4e line, NET-05); TextBox labels by the client source that names each TextBox's text, read with a cited layout and an exact cross-check (rule G7); the control types by one renderer each, declared in `recipes/data/native-window-control-types.json` with its agreement test.
@@ -606,6 +610,6 @@ Work items, not owner decisions (OVERNIGHT-DECISIONS row 376); each is done in t
 
 ## Session Continuity
 
-Last session: 2026-11-14T14:58:28.812Z
-Stopped at: Completed 03-23-PLAN.md
+Last session: 2026-11-14T17:11:34.086Z
+Stopped at: Completed 03-24-PLAN.md
 Resume file: None
