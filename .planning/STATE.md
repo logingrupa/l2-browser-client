@@ -505,6 +505,7 @@ Locked set is in PROJECT.md `<decisions>`: DEC-OWN-1..12 and DEC-PORT-1..3.
 ## Needs Human
 
 Owner decisions:
+- Needs Human (2026-11-14, DATABASE-PC hardware): a pinned file read with one flipped bit in memory (the file on disk is intact), after two 0x0A bugchecks (11-12, 11-13), Windows removing bad memory regions (11-12), WHEA events on four days and a stornvme reset on C: (11-13). Check the RAM (memory diagnostic) and the NVMe drive and move the page file off the failing D: disk; until then every union and catalog write keeps its pin check, which refuses on a bad read.
 - Needs Human (phase 1 code review, OVERNIGHT-DECISIONS row 49, now with P810): review the behaviour-changing fixes CR-101, CR-102, WR-102, WR-401, CR-301 and the partial WR-310 and WR-501, and P810 (02-93: a profile with no sourced speed is refused with `speed-unresolved` instead of the 70 UU/s stand-in). Steps: read the row 49 and P810 entries, then either accept them or restore a labelled stand-in in `src/world/NativeSliceAdapter.ts` with its unit case and run `pnpm vitest run tests/unit/nativeSliceAdapter.test.ts`.
 - Needs Human (01-VERIFICATION.md): confirm the five prohibitions that can only be judged, not tested.
 - Needs Human (phase 1 verification): Phase 1 is human_needed with 6 of 6 criteria verified; it stays pending until the two items above are reviewed (OVERNIGHT-DECISIONS row 59); Phase 1 is not marked complete.
