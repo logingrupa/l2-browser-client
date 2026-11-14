@@ -1,9 +1,12 @@
 import type { NativeTileMinimap, NativeTileMinimapRoutePin } from "../../scene/world/minimapJoin";
-import { worldPositionToSource } from "../../world/sourceFrame";
+import { worldPositionToSource, type SourcePosition } from "../../world/sourceFrame";
 import type { WorldEntity } from "../../world/worldTypes";
 import type { NativeMinimapRoute, NativeTextureArchivePin } from "./nativeMinimapRoute";
 import type { NativeWindowMinimapSource, NativeWindowTextureResolution } from "./nativeWindowManifestLoader";
 import { placeNativeWindowElement } from "./nativeWindowPlacement";
+import { showTextureImage, type TextureImageState } from "./nativeTextureImageElement";
+import { renderNewRadarTextureMap, type RadarZoneNameState } from "./newRadarTextureMap";
+import { sampleRadarZoneName, zoneSamplerTile, type ZoneKeyMipLoad } from "./radarZoneName";
 import { planWorldMapView, worldMapViewOriginPresentationReason, type WorldMapPiecePlacement } from "./worldMapView";
 
 export const minimapControlType = "MinimapCtrl";
@@ -13,6 +16,7 @@ export interface MinimapControlSize { readonly width: number; readonly height: n
 export interface MinimapControlContext {
   readonly localPlayer: WorldEntity | null;
   readonly minimapSource: NativeWindowMinimapSource;
+  readonly radarTextureMap: HTMLElement | null;
   readonly onGapsChanged: () => void;
 }
 
@@ -28,12 +32,11 @@ interface LoadedMinimapRoute {
   readonly tileMinimaps: ReadonlyMap<string, NativeTileMinimap>;
 }
 
-type TextureImageState = { readonly status: "loading" } | NativeWindowTextureResolution;
-
 const minimapLoadFailedReason = "minimap-load-failed";
 const minimapRouteNotInCatalogReason = "minimap-route-not-in-catalog";
 const markerTextureGapReason = "texture-reference-unresolved";
 const zoneNameTextGapReason = "label-unresolved";
+const tileMinimapNotInCatalogReason = "tile minimap resource not in catalog";
 const clippedOverflow = "hidden";
 
 function minimapPartElement(part: string): HTMLElement {
@@ -68,8 +71,11 @@ export function renderMinimapControl(element: HTMLElement, initialControlSize: M
   let loadFailure: string | null = null;
   let stateGap: string | null = null;
   let pieceGaps: readonly string[] = [];
+  let zoneGaps: readonly string[] = [];
   let disposed = false;
   const textureImages = new Map<string, TextureImageState>();
+  const zoneKeyMips = new Map<string, { readonly status: "loading" } | ZoneKeyMipLoad>();
+  const newRadarTextureMap = context.radarTextureMap === null ? null : renderNewRadarTextureMap(context.radarTextureMap);
   const pieceElements = new Map<number, HTMLElement>();
   const stateGapElement = minimapPartElement("state");
   placeNativeWindowElement(stateGapElement, 0, 0, controlSize.width, controlSize.height);
@@ -98,25 +104,46 @@ export function renderMinimapControl(element: HTMLElement, initialControlSize: M
     return { status: "loading" };
   };
 
-  const showTexture = (target: HTMLElement, state: TextureImageState, width: number, height: number): void => {
-    target.setAttribute("data-native-texture-state", state.status);
-    if (state.status === "gap") target.setAttribute("data-native-gap", state.reason);
-    else target.removeAttribute("data-native-gap");
-    if (state.status !== "resolved") return;
-    const existing = target.querySelector("img");
-    if (existing?.getAttribute("src") === state.url) return placeNativeWindowElement(existing, 0, 0, width, height);
-    existing?.remove();
-    const imageElement = document.createElement("img");
-    imageElement.setAttribute("alt", "");
-    imageElement.setAttribute("src", state.url);
-    placeNativeWindowElement(imageElement, 0, 0, width, height);
-    target.append(imageElement);
+  const zoneKeyMip = (tileId: string, minimap: NativeTileMinimap): { readonly status: "loading" } | ZoneKeyMipLoad => {
+    const known = zoneKeyMips.get(tileId);
+    if (known !== undefined) return known;
+    zoneKeyMips.set(tileId, { status: "loading" });
+    void context.minimapSource.loadZoneKeyMip(minimap.zoneKeyTexture!).then(
+      load => load,
+      (error: unknown): ZoneKeyMipLoad => ({ status: "gap", reason: errorText(error) }),
+    ).then(load => {
+      zoneKeyMips.set(tileId, load);
+      draw();
+    });
+    return { status: "loading" };
+  };
+
+  const sampleZoneName = (route: NativeMinimapRoute, tileMinimaps: ReadonlyMap<string, NativeTileMinimap>, sourcePosition: SourcePosition): RadarZoneNameState => {
+    const tileId = zoneSamplerTile(route.zoneSampler, sourcePosition).tileId;
+    const minimap = tileMinimaps.get(tileId);
+    if (minimap === undefined) return { status: "gap", reason: tileMinimapNotInCatalogReason };
+    zoneGaps = minimap.gaps.map(gap => gap.reason);
+    if (minimap.zoneKeyTexture === null) return sampleRadarZoneName({ route, sourcePosition, zoneKeyMip: null });
+    const mip = zoneKeyMip(tileId, minimap);
+    if (mip.status !== "loaded") return mip;
+    return sampleRadarZoneName({ route, sourcePosition, zoneKeyMip: mip.mip });
+  };
+
+  const drawZoneName = (route: NativeMinimapRoute, tileMinimaps: ReadonlyMap<string, NativeTileMinimap>, sourcePosition: SourcePosition): void => {
+    zoneGaps = [];
+    const zoneName = sampleZoneName(route, tileMinimaps, sourcePosition);
+    if (zoneName.status === "gap") zoneGaps = [...zoneGaps, zoneName.reason];
+    if (zoneName.status === "named") zoneNameElement.setAttribute("data-native-zone-name", zoneName.zoneName);
+    else zoneNameElement.removeAttribute("data-native-zone-name");
+    newRadarTextureMap?.show(zoneName, route.radar, textureImage);
   };
 
   const removePieces = (): void => {
     for (const pieceElement of pieceElements.values()) pieceElement.remove();
     pieceElements.clear();
     pieceGaps = [];
+    zoneGaps = [];
+    zoneNameElement.removeAttribute("data-native-zone-name");
   };
 
   const showStateGap = (reason: string): void => {
@@ -138,7 +165,9 @@ export function renderMinimapControl(element: HTMLElement, initialControlSize: M
     }
     placeNativeWindowElement(pieceElement, piece.left, piece.top, piece.width, piece.height);
     const state: TextureImageState = piece.texture === null ? { status: "gap", reason: piece.gap! } : textureImage(piece.texture);
-    showTexture(pieceElement, state, piece.width, piece.height);
+    showTextureImage(pieceElement, state, image => placeNativeWindowElement(image, 0, 0, piece.width, piece.height));
+    if (state.status === "gap") pieceElement.setAttribute("data-native-gap", state.reason);
+    else pieceElement.removeAttribute("data-native-gap");
   };
 
   const draw = (): void => {
@@ -161,6 +190,7 @@ export function renderMinimapControl(element: HTMLElement, initialControlSize: M
     markerElement.setAttribute("data-native-map-x", String(marker.mapX));
     markerElement.setAttribute("data-native-map-y", String(marker.mapY));
     if (markerElement.parentNode !== element) element.append(markerElement);
+    drawZoneName(loadedRoute.route, loadedRoute.tileMinimaps, playerSourcePosition!);
     context.onGapsChanged();
   };
 
@@ -180,7 +210,7 @@ export function renderMinimapControl(element: HTMLElement, initialControlSize: M
   return {
     get gaps() {
       const routeGaps = loadedRoute?.route?.gaps.map(gap => gap.reason) ?? [];
-      return [...new Set([...(stateGap === null ? [] : [stateGap]), ...routeGaps, ...pieceGaps, markerTextureGapReason, worldMapViewOriginPresentationReason,
+      return [...new Set([...(stateGap === null ? [] : [stateGap]), ...routeGaps, ...pieceGaps, ...zoneGaps, markerTextureGapReason, worldMapViewOriginPresentationReason,
         zoneNameTextGapReason])];
     },
     refresh: nextLocalPlayer => {

@@ -2,6 +2,7 @@ import { parseNativeTileMinimapManifest, type NativeTileMinimap } from "../../..
 import { parseNativeMinimapRoute, type NativeMinimapRoute } from "../../../src/ui/nativeWindows/nativeMinimapRoute";
 import { parseNativeWindowManifest, type NativeWindowManifest } from "../../../src/ui/nativeWindows/nativeWindowLayoutTree";
 import type { NativeWindowMinimapSource, NativeWindowTextureResolution } from "../../../src/ui/nativeWindows/nativeWindowManifestLoader";
+import type { ZoneKeyMipLoad } from "../../../src/ui/nativeWindows/radarZoneName";
 import type { WorldEntity } from "../../../src/world/worldTypes";
 import { syntheticArchiveSha256, syntheticMinimapRouteManifest, type SyntheticMinimapRouteOptions } from "../../fixtures/minimapRouteManifestFixture";
 import { syntheticTileMinimapManifest } from "../../fixtures/tileMinimapManifestFixture";
@@ -44,6 +45,7 @@ export function syntheticTextureImageUrl(archiveSha256: string): string {
 export interface SyntheticMinimapSourceInput {
   readonly tileMinimaps: ReadonlyMap<string, NativeTileMinimap | null>;
   readonly route?: SyntheticMinimapRouteOptions;
+  readonly zoneKeyMips?: ReadonlyMap<string, ZoneKeyMipLoad>;
 }
 
 export function syntheticRoute(options: SyntheticMinimapRouteOptions = {}): NativeMinimapRoute {
@@ -57,6 +59,7 @@ export function syntheticMinimapSource(input: SyntheticMinimapSourceInput): Nati
     loadTileMinimap: async tileId => input.tileMinimaps.get(tileId) ?? null,
     loadMinimapRoute: async () => route,
     loadTextureImage: async (texture): Promise<NativeWindowTextureResolution> => ({ status: "resolved", url: syntheticTextureImageUrl(texture.archiveSha256) }),
+    loadZoneKeyMip: async zoneKeyTexture => input.zoneKeyMips?.get(zoneKeyTexture.sourceObject) ?? { status: "gap", reason: "minimap-join-unresolved:zone-key-bytes" },
   };
 }
 

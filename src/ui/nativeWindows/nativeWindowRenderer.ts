@@ -4,6 +4,7 @@ import type { NativeWindowFieldBinding } from "./nativeWindowFieldBindings";
 import type { NativeWindowManifest, NativeWindowNode } from "./nativeWindowLayoutTree";
 import type { NativeWindowMinimapSource, NativeWindowTextureResolution } from "./nativeWindowManifestLoader";
 import { minimapControlType, renderMinimapControl, type RenderedMinimapControl } from "./minimapControl";
+import { radarTextureMapBinding } from "./minimapRadarRouteRecipe";
 import { placeNativeWindowElement } from "./nativeWindowPlacement";
 
 export const nativeWindowRenderedControlTypes: readonly string[] = ["Window", "Texture", "Button", "TextBox", minimapControlType];
@@ -160,17 +161,18 @@ export function renderNativeWindow(container: HTMLElement, windowManifest: Nativ
     const nodeAnchorGaps = anchorGaps.filter(gap => gap.node === node).map(gap => gap.reason);
     const staticGaps = [...staticControlGaps(node, nodeAnchorGaps), ...(texture.gap === null ? [] : [texture.gap]), ...bound.gaps,
       ...(node === windowManifest.root ? unplacedBindingGaps : [])];
-    const control: RenderedControl = { node, parent, element, rectangle, textureImage: texture.image, staticGaps, gauge: bound.gauge, minimap: null };
-    if (node.type === minimapControlType) {
-      control.minimap = renderMinimapControl(element, rectangle, { localPlayer: renderInputs.localPlayer, minimapSource: renderInputs.minimapSource,
-        onGapsChanged: () => markControlGaps(control) });
-    }
-    controls.push(control);
+    controls.push({ node, parent, element, rectangle, textureImage: texture.image, staticGaps, gauge: bound.gauge, minimap: null });
     node.children.forEach(child => element.append(renderNode(child, node)));
     return element;
   };
   const element = renderNode(windowManifest.root, null);
   element.setAttribute("data-native-window", windowManifest.windowId);
+  const radarTextureMap = windowManifest.windowId === radarTextureMapBinding.windowId
+    ? controls.find(control => control.node.name === radarTextureMapBinding.controlName)?.element ?? null : null;
+  for (const control of controls.filter(candidate => candidate.node.type === minimapControlType)) {
+    control.minimap = renderMinimapControl(control.element, control.rectangle, { localPlayer: renderInputs.localPlayer,
+      minimapSource: renderInputs.minimapSource, radarTextureMap, onGapsChanged: () => markControlGaps(control) });
+  }
   let currentLocalPlayer = renderInputs.localPlayer;
   const refresh = (localPlayer: WorldEntity | null): void => {
     currentLocalPlayer = localPlayer;

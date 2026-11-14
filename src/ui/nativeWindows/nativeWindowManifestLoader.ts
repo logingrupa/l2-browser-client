@@ -3,11 +3,12 @@ import { windowCatalogKey } from "../../assets/native/nativeCatalogIndex";
 import { readNativeCatalog, type NativeCatalog } from "../../assets/native/readNativeCatalog";
 import { readAssetPackage } from "../../assets/package/readAssetPackage";
 import { decodeNativeJsonResource } from "../../scene/world/loadNativeSection";
-import { loadNativeTileMinimap, type NativeTileMinimap, type NativeTileMinimapRoutePin } from "../../scene/world/minimapJoin";
+import { loadNativeTileMinimap, type NativeTileMinimap, type NativeTileMinimapRoutePin, type NativeTileMinimapZoneKeyTexture } from "../../scene/world/minimapJoin";
 import { readNativeTileManifest } from "../../scene/world/nativeTileManifest";
 import { fetchVerifiedNativeResource } from "../../assets/native/fetchVerifiedNativeResource";
 import { parseNativeMinimapRoute, type NativeMinimapRoute, type NativeTextureArchivePin } from "./nativeMinimapRoute";
 import { parseNativeWindowManifest, type NativeWindowManifest } from "./nativeWindowLayoutTree";
+import { zoneKeyMipFromTexturePackage, type ZoneKeyMipLoad } from "./radarZoneName";
 
 export type NativeWindowManifestLoad =
   | { readonly status: "loaded"; readonly key: string; readonly manifest: NativeWindowManifest; readonly catalog: NativeCatalog }
@@ -22,6 +23,7 @@ export interface NativeWindowMinimapSource {
   loadTileMinimap(tileId: string): Promise<NativeTileMinimap | null>;
   loadMinimapRoute(routePin: NativeTileMinimapRoutePin): Promise<NativeMinimapRoute>;
   loadTextureImage(texture: NativeTextureArchivePin): Promise<NativeWindowTextureResolution>;
+  loadZoneKeyMip(zoneKeyTexture: NativeTileMinimapZoneKeyTexture): Promise<ZoneKeyMipLoad>;
 }
 
 interface UiTextureCatalogRecord { readonly image: string; readonly imageBytes: number; readonly imageSha256: string }
@@ -109,6 +111,11 @@ async function loadNativeMinimapRoute(routePin: NativeTileMinimapRoutePin, signa
   return parseNativeMinimapRoute(decodeNativeJsonResource(bytes, "Native minimap route manifest"));
 }
 
+async function loadZoneKeyMip(zoneKeyTexture: NativeTileMinimapZoneKeyTexture, signal: AbortSignal): Promise<ZoneKeyMipLoad> {
+  const archiveBytes = await fetchVerifiedNativeResource(zoneKeyTexture.archive, zoneKeyTexture.archiveSha256, signal, zoneKeyTexture.archiveBytes);
+  return zoneKeyMipFromTexturePackage((await readAssetPackage(archiveBytes)).files);
+}
+
 export function nativeWindowMinimapSource(catalog: NativeCatalog, signal: AbortSignal): NativeWindowMinimapSource {
   return {
     tileIds: catalog.tiles.map(record => readTileCatalogRecord(record).tile),
@@ -118,6 +125,7 @@ export function nativeWindowMinimapSource(catalog: NativeCatalog, signal: AbortS
     },
     loadMinimapRoute: routePin => loadNativeMinimapRoute(routePin, signal),
     loadTextureImage: texture => resolveTextureArchiveImage(texture, signal),
+    loadZoneKeyMip: zoneKeyTexture => loadZoneKeyMip(zoneKeyTexture, signal),
   };
 }
 
