@@ -2,11 +2,8 @@ import { expect, test, type Browser, type BrowserContextOptions, type Page } fro
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { sourcePositionToWorld } from "../../src/world/sourceFrame";
-import type { WorldPosition } from "../../src/world/sourceFrame";
-import { syntheticTileFrameCentreScene, syntheticZoneTitleGapReason } from "../fixtures/tileMinimapManifestFixture";
+import { sourcePositionToWorld, worldPositionToSource, type WorldPosition } from "../../src/world/sourceFrame";
 import { desktopViewport, expectNoHorizontalScrollOnPortraitPhone, landscapePhone } from "./browserViewports";
-import { syntheticMinimapTiles, type SyntheticMinimapTiles } from "./support/syntheticMinimapTiles";
 import { routeTwoLaneStores } from "./support/twoLaneStoreRoutes";
 
 const windowLaneName = "data-ui";
@@ -14,29 +11,26 @@ const tileLaneName = "world";
 const nativeResourcePrefix = "/l2/";
 const censusPath = resolve("docs/parts/minimap/minimap-join-census.json");
 const evidenceDirectory = resolve("artifacts/ui-evidence");
-const noConvertedTileReason = "no converted tile at the player position";
-const unsupportedMinimapReason = "control-type-unsupported:MinimapCtrl";
-const notInCatalogReason = "tile minimap resource not in catalog";
-const realTileId = "20_21";
-const syntheticRadarTileId = "20_21";
-const syntheticRadarGapTileId = "21_21";
+const getLocInfoCaseTileId = "22_22";
+const getLocInfoCaseZoneName = "Giran Castle Town";
+const globalRadarTileId = "20_21";
+const radarTextureMapBinding = { windowId: "NewRadarWnd", controlName: "texMap" };
+const unresolvedMinimapReasons = ["minimap-join-unresolved:zone-title-source", "minimap-join-unresolved:radar-anchor", "texture-reference-unresolved",
+  "presentation:view-origin-centred-on-marker", "label-unresolved"];
 
 interface CensusMinimapControl { readonly windowId: string; readonly controlNames: readonly string[] }
 interface LaneCatalogRecord { readonly id: string; readonly manifest: string }
 interface LaneCatalog { readonly windows?: readonly LaneCatalogRecord[]; readonly tiles?: readonly LaneCatalogRecord[] }
-interface PinnedArchive { readonly archive: string; readonly archiveSha256: string }
+interface PinnedArchive { readonly archive: string; readonly archiveSha256: string; readonly object?: string }
 interface RealRoutePin { readonly manifest: string; readonly manifestSha256: string }
-interface RealTileMinimap {
-  readonly projection: unknown;
-  readonly route: RealRoutePin;
-  readonly zoneKeyTexture: PinnedArchive | null;
-  readonly gaps: readonly { readonly reason: string }[];
-}
+interface RealTileMinimap { readonly route: RealRoutePin; readonly zoneKeyTexture: PinnedArchive | null }
 interface RealRouteManifest {
-  readonly radar: { readonly cases: readonly { readonly texture: PinnedArchive | null }[]; readonly default: { readonly texture: PinnedArchive | null } };
-  readonly worldMap: { readonly pieces: readonly { readonly texture: PinnedArchive | null }[] };
+  readonly radar: { readonly cases: readonly { readonly zoneName: string; readonly texture: PinnedArchive | null }[];
+    readonly default: { readonly texture: PinnedArchive | null } };
+  readonly worldMap: { readonly pieces: readonly { readonly suffix: number; readonly texture: PinnedArchive | null }[];
+    readonly projection: { readonly offsetX: number; readonly offsetY: number; readonly scaleNumerator: number; readonly scaleDenominator: number } };
 }
-interface RealTile { readonly playerScenePosition: WorldPosition; readonly minimap: RealTileMinimap }
+interface RealTile { readonly tileId: string; readonly playerScenePosition: WorldPosition; readonly minimap: RealTileMinimap }
 interface ViewportCase { readonly name: string; readonly options: BrowserContextOptions }
 
 const viewportCases: readonly ViewportCase[] = [
@@ -65,76 +59,57 @@ function sha256Hex(bytes: Buffer): string {
   return createHash("sha256").update(bytes).digest("hex");
 }
 
-function firstCensusMinimapWindow(): CensusMinimapControl | null {
+function censusMinimapWindow(windowId: string): CensusMinimapControl | null {
   const census = JSON.parse(readFileSync(censusPath, "utf8")) as { readonly minimapControls: readonly CensusMinimapControl[] };
-  return census.minimapControls[0] ?? null;
+  return census.minimapControls.find(entry => entry.windowId === windowId) ?? null;
 }
 
-function realLaneTile(): RealTile | null {
-  const record = readLaneCatalog(tileLaneName)?.tiles?.find(tile => tile.id === realTileId);
+function realLaneTile(tileId: string): RealTile | null {
+  const record = readLaneCatalog(tileLaneName)?.tiles?.find(tile => tile.id === tileId);
   if (record === undefined) return null;
   const tileManifest = readLaneResource<{ readonly anchor: { readonly location: readonly [number, number, number] };
     readonly resources: readonly { readonly kind: string; readonly manifest: string }[] }>(tileLaneName, record.manifest);
   const resource = tileManifest.resources.find(entry => entry.kind === "minimap");
   if (resource === undefined) return null;
-  const minimap = readLaneResource<RealTileMinimap & { readonly projection: { readonly frameMinimumNative: readonly number[];
-    readonly frameMaximumNative: readonly number[] } | null }>(tileLaneName, resource.manifest);
-  const [anchorX, anchorY, anchorZ] = tileManifest.anchor.location;
-  const nativePosition = minimap.projection === null ? { x: anchorX, y: anchorY, z: anchorZ } : {
-    x: (minimap.projection.frameMinimumNative[0]! + minimap.projection.frameMaximumNative[0]!) / 2,
-    y: (minimap.projection.frameMinimumNative[1]! + minimap.projection.frameMaximumNative[1]!) / 2, z: anchorZ };
-  return { playerScenePosition: sourcePositionToWorld(nativePosition), minimap };
+  const [x, y, z] = tileManifest.anchor.location;
+  return { tileId, playerScenePosition: sourcePositionToWorld({ x, y, z }), minimap: readLaneResource<RealTileMinimap>(tileLaneName, resource.manifest) };
 }
 
-const minimapWindow = firstCensusMinimapWindow();
-const windowLaneHoldsMinimapWindow = minimapWindow !== null && (readLaneCatalog(windowLaneName)?.windows?.some(record => record.id === minimapWindow.windowId) ?? false);
-const realTile = realLaneTile();
+const minimapWindow = censusMinimapWindow("MinimapWnd");
+const radarWindow = censusMinimapWindow(radarTextureMapBinding.windowId);
+const windowLaneWindowIds = new Set(readLaneCatalog(windowLaneName)?.windows?.map(record => record.id) ?? []);
+const caseTile = realLaneTile(getLocInfoCaseTileId);
+const globalTile = realLaneTile(globalRadarTileId);
+const routeManifest = caseTile === null ? null : readLaneResource<RealRouteManifest>(tileLaneName, caseTile.minimap.route.manifest);
 
 function playerQuery(position: WorldPosition): string {
   return `&playerScenePosition=${[position.x, position.y, position.z].join(",")}`;
 }
 
-async function openMinimapWindow(page: Page, query: string): Promise<void> {
+function minimapControlLocator(page: Page, windowEntry: CensusMinimapControl) {
+  return page.locator(`[data-native-window=${JSON.stringify(windowEntry.windowId)}] [data-native-control=${JSON.stringify(windowEntry.controlNames[0])}]`);
+}
+
+async function openWindowAt(page: Page, windowEntry: CensusMinimapControl, tile: RealTile): Promise<void> {
   const pageErrors: string[] = [];
   page.on("pageerror", error => pageErrors.push(error.message));
-  await page.goto(`/tests/browser/harness/native-window.html?window=${encodeURIComponent(minimapWindow!.windowId)}${query}`);
+  await routeTwoLaneStores(page, { windowLane: windowLaneName, tileLane: tileLaneName });
+  await page.goto(`/tests/browser/harness/native-window.html?window=${encodeURIComponent(windowEntry.windowId)}${playerQuery(tile.playerScenePosition)}`);
   await expect(page.locator("#native-window-harness")).toHaveAttribute("data-status", /^(opened|not-in-catalog|failed)$/, { timeout: 30_000 });
   expect(await page.evaluate(() => window.__nativeWindowHarness?.result.reason ?? null)).toBeNull();
-  await expect(minimapControlLocator(page)).toHaveAttribute("data-native-minimap-state", /^(ready|failed)$/, { timeout: 30_000 });
+  await expect(minimapControlLocator(page, windowEntry)).toHaveAttribute("data-native-minimap-state", "ready", { timeout: 30_000 });
   expect(pageErrors).toEqual([]);
 }
 
-function minimapControlLocator(page: Page) {
-  return page.locator(`[data-native-window=${JSON.stringify(minimapWindow!.windowId)}] [data-native-control=${JSON.stringify(minimapWindow!.controlNames[0])}]`);
+async function expectImageDecoded(locator: ReturnType<Page["locator"]>): Promise<void> {
+  await expect.poll(() => locator.evaluate(image => (image as HTMLImageElement).naturalWidth), { timeout: 30_000 }).toBeGreaterThan(0);
 }
 
-function minimapTileLocator(page: Page, tileId: string) {
-  return minimapControlLocator(page).locator(`[data-native-minimap-tile=${JSON.stringify(tileId)}]`);
-}
-
-async function expectMarkerInsideControl(page: Page): Promise<void> {
-  const marker = minimapControlLocator(page).locator('[data-native-minimap-part="marker"]');
-  await expect(marker).toHaveAttribute("data-native-status", "unverified");
-  await expect(marker).toHaveAttribute("data-native-gap", "texture-reference-unresolved");
-  const [markerRectangle, controlRectangle] = await Promise.all([
-    marker.evaluate(element => element.getBoundingClientRect().toJSON() as DOMRect),
-    minimapControlLocator(page).evaluate(element => element.getBoundingClientRect().toJSON() as DOMRect)]);
-  expect(markerRectangle.left).toBeGreaterThan(controlRectangle.left);
-  expect(markerRectangle.left).toBeLessThan(controlRectangle.right);
-  expect(markerRectangle.top).toBeGreaterThan(controlRectangle.top);
-  expect(markerRectangle.top).toBeLessThan(controlRectangle.bottom);
-}
-
-async function routeSyntheticTiles(page: Page, synthetic: SyntheticMinimapTiles): Promise<void> {
-  const windowCatalog = readLaneCatalog(windowLaneName)!;
-  const catalogBody = JSON.stringify({ ...windowCatalog, tiles: synthetic.tiles });
-  await page.route(url => url.pathname.startsWith(nativeResourcePrefix), async route => {
-    const path = new URL(route.request().url()).pathname;
-    if (path === "/l2/catalog.json") return route.fulfill({ status: 200, contentType: "application/json", body: catalogBody });
-    const resource = synthetic.resources.get(path);
-    if (resource !== undefined) return route.fulfill({ status: 200, body: Buffer.from(resource) });
-    return route.fallback();
-  });
+function expectedMarkerMapPosition(tile: RealTile): { readonly mapX: number; readonly mapY: number } {
+  const projection = routeManifest!.worldMap.projection;
+  const source = worldPositionToSource(tile.playerScenePosition);
+  const scale = projection.scaleNumerator / projection.scaleDenominator;
+  return { mapX: Math.trunc((source.x + projection.offsetX) * scale), mapY: Math.trunc((source.y + projection.offsetY) * scale) };
 }
 
 async function checkInNewPage(browser: Browser, options: BrowserContextOptions, check: (page: Page) => Promise<void>): Promise<void> {
@@ -148,101 +123,80 @@ async function saveEvidenceScreenshot(page: Page, name: string): Promise<void> {
   await page.screenshot({ path: resolve(evidenceDirectory, name) });
 }
 
-test.describe("MinimapCtrl from the decoded interface", () => {
-  test.skip(process.env.NATIVE_STORE_ROOT !== windowLaneName, "run with NATIVE_STORE_ROOT=data-ui");
-  test.skip(minimapWindow === null, "the minimap census lists no window with a MinimapCtrl control");
-  test.skip(!windowLaneHoldsMinimapWindow, "the census MinimapCtrl window is not converted in the data-ui lane store");
+async function expectRadarTexture(page: Page, tile: RealTile, textureObject: string, isGlobal: boolean): Promise<void> {
+  await openWindowAt(page, radarWindow!, tile);
+  const textureMap = page.locator(`[data-native-window=${JSON.stringify(radarTextureMapBinding.windowId)}] ` +
+    `[data-native-control=${JSON.stringify(radarTextureMapBinding.controlName)}] [data-native-radar-texture-map]`);
+  await expect(textureMap).toHaveAttribute("data-native-radar-texture", textureObject, { timeout: 30_000 });
+  await expect(textureMap).toHaveAttribute("data-native-radar-is-global", String(isGlobal));
+  await expect(textureMap).toHaveAttribute("data-native-gap", /minimap-join-unresolved:zone-title-source/);
+  await expectImageDecoded(textureMap.locator("img"));
+}
 
-  test("renders the control and shows the sourced gap when the served catalog holds no tile minimap", async ({ page }) => {
-    await openMinimapWindow(page, "");
-    const control = minimapControlLocator(page);
-    await expect(control).toHaveAttribute("data-native-type", "MinimapCtrl");
-    await expect(control).not.toHaveAttribute("data-native-gap", new RegExp(unsupportedMinimapReason));
-    await expect(control).toHaveAttribute("data-native-minimap-state", "ready");
-    await expect(control.locator(`[data-native-gap=${JSON.stringify(noConvertedTileReason)}]`)).toHaveCount(1);
-    await expect(control.locator('[data-native-minimap-part="marker"]')).toHaveCount(0);
-    const gaps = await page.evaluate(() => window.__nativeWindowHarness!.result.gaps.map(gap => gap.reason));
-    expect(gaps).not.toContain(unsupportedMinimapReason);
-  });
+test.describe("MinimapCtrl and NewRadarWnd.texMap on the minimap route", () => {
+  test.skip(process.env.NATIVE_STORE_ROOT !== tileLaneName, "run with NATIVE_STORE_ROOT=world");
+  test.skip(minimapWindow === null || radarWindow === null, "the minimap census lists no MinimapWnd or NewRadarWnd MinimapCtrl control");
+  test.skip(!windowLaneWindowIds.has("MinimapWnd") || !windowLaneWindowIds.has(radarTextureMapBinding.windowId),
+    "the census minimap windows are not converted in the data-ui lane store");
+  test.skip(caseTile === null || globalTile === null, `tiles ${getLocInfoCaseTileId} and ${globalRadarTileId} need a minimap resource in the world lane store`);
 
   for (const viewportCase of viewportCases) {
-    test(`draws the tile grid around the player from synthetic tile fixtures at ${viewportCase.name}`, async ({ browser }) => {
-      const synthetic = await syntheticMinimapTiles([syntheticRadarTileId], [syntheticRadarGapTileId]);
+    test(`MinimapWnd draws the six world map pieces and the marker at the ${getLocInfoCaseTileId} anchor at ${viewportCase.name}`, async ({ browser }) => {
       await checkInNewPage(browser, viewportCase.options, async page => {
-        await routeSyntheticTiles(page, synthetic);
-        await openMinimapWindow(page, playerQuery(syntheticTileFrameCentreScene(syntheticRadarTileId)));
-        const radarCell = minimapTileLocator(page, syntheticRadarTileId);
-        await expect(radarCell).toHaveAttribute("data-native-minimap-cell", "texture");
-        await expect.poll(() => radarCell.locator("img").evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
-        await expect(minimapTileLocator(page, syntheticRadarGapTileId)).toHaveAttribute("data-native-gap", syntheticZoneTitleGapReason);
-        await expect(minimapControlLocator(page).locator(`[data-native-gap=${JSON.stringify(notInCatalogReason)}]`).first()).toBeAttached();
-        await expect(minimapControlLocator(page)).toHaveAttribute("data-native-minimap-arrangement", "tile-grid, unverified");
-        await expectMarkerInsideControl(page);
-        await saveEvidenceScreenshot(page, `minimap-synthetic-${viewportCase.name}.png`);
+        await openWindowAt(page, minimapWindow!, caseTile!);
+        const control = minimapControlLocator(page, minimapWindow!);
+        const pieces = control.locator("[data-native-world-map-piece]");
+        await expect(pieces).toHaveCount(routeManifest!.worldMap.pieces.length);
+        expect(routeManifest!.worldMap.pieces.map(piece => piece.suffix)).toEqual([1, 2, 3, 4, 5, 6]);
+        for (const suffix of [1, 2, 3, 4, 5, 6]) await expectImageDecoded(control.locator(`[data-native-world-map-piece="${suffix}"] img`));
+        const marker = control.locator('[data-native-minimap-part="marker"]');
+        const expected = expectedMarkerMapPosition(caseTile!);
+        await expect(marker).toHaveAttribute("data-native-map-x", String(expected.mapX));
+        await expect(marker).toHaveAttribute("data-native-map-y", String(expected.mapY));
+        await expect(marker).toHaveAttribute("data-native-gap", "texture-reference-unresolved");
+        await expect(control.locator('[data-native-minimap-part="zone-name"]')).toHaveAttribute("data-native-zone-name", getLocInfoCaseZoneName);
+        const gaps = await page.evaluate(() => window.__nativeWindowHarness!.result.gaps.map(gap => gap.reason));
+        expect(gaps).toEqual(expect.arrayContaining(unresolvedMinimapReasons));
+        expect(gaps).not.toContain("control-type-unsupported:MinimapCtrl");
+        await saveEvidenceScreenshot(page, `minimap-route-${getLocInfoCaseTileId}-${viewportCase.name}.png`);
+      });
+    });
+
+    test(`NewRadarWnd.texMap shows the GetLocInfo texture of ${getLocInfoCaseZoneName} at the ${getLocInfoCaseTileId} anchor at ${viewportCase.name}`,
+      async ({ browser }) => {
+        const radarCase = routeManifest!.radar.cases.find(entry => entry.zoneName === getLocInfoCaseZoneName);
+        expect(radarCase?.texture?.object).toBe("L2_RadarMap.RadarMaps.giran_castle_town");
+        await checkInNewPage(browser, viewportCase.options, async page => {
+          await expectRadarTexture(page, caseTile!, radarCase!.texture!.object!, false);
+          await saveEvidenceScreenshot(page, `radar-texmap-${getLocInfoCaseTileId}-${viewportCase.name}.png`);
+        });
+      });
+
+    test(`NewRadarWnd.texMap shows RadarMaps.Global at the ${globalRadarTileId} anchor at ${viewportCase.name}`, async ({ browser }) => {
+      await checkInNewPage(browser, viewportCase.options, async page => {
+        await expectRadarTexture(page, globalTile!, routeManifest!.radar.default.texture!.object!, true);
+        await saveEvidenceScreenshot(page, `radar-texmap-${globalRadarTileId}-${viewportCase.name}.png`);
       });
     });
   }
 
-  test("has no horizontal scroll at 430 x 932 portrait with the synthetic tile grid", async ({ browser }) => {
-    const synthetic = await syntheticMinimapTiles([syntheticRadarTileId], [syntheticRadarGapTileId]);
+  test("has no horizontal scroll at 430 x 932 portrait with the route world map", async ({ browser }) => {
     await checkInNewPage(browser, landscapePhone, async page => {
-      await routeSyntheticTiles(page, synthetic);
-      await openMinimapWindow(page, playerQuery(syntheticTileFrameCentreScene(syntheticRadarTileId)));
-      await expectNoHorizontalScrollOnPortraitPhone(page);
-    });
-  });
-});
-
-test.describe("MinimapCtrl over the data-ui and world lane stores", () => {
-  test.skip(process.env.NATIVE_STORE_ROOT !== windowLaneName, "run with NATIVE_STORE_ROOT=data-ui");
-  test.skip(!windowLaneHoldsMinimapWindow, "the census MinimapCtrl window is not converted in the data-ui lane store");
-  test.skip(realTile === null, `tile ${realTileId} has no minimap resource in the world lane store`);
-
-  test(`shows the ${realTileId} radar texture cell and the marker`, async ({ browser }) => {
-    test.skip(realTile!.minimap.projection === null,
-      `tile ${realTileId} minimap has no radar projection: ${realTile!.minimap.gaps.map(gap => gap.reason).join(" ")}`);
-    for (const viewportCase of viewportCases) {
-      await checkInNewPage(browser, viewportCase.options, async page => {
-        await routeTwoLaneStores(page, { windowLane: windowLaneName, tileLane: tileLaneName });
-        await openMinimapWindow(page, playerQuery(realTile!.playerScenePosition));
-        await expect(minimapTileLocator(page, realTileId)).toHaveAttribute("data-native-minimap-cell", "texture");
-        await expectMarkerInsideControl(page);
-        await saveEvidenceScreenshot(page, `minimap-${realTileId}-${viewportCase.name}.png`);
-      });
-    }
-  });
-
-  test(`shows the sourced gap state at the ${realTileId} anchor while its radar texture is unresolved`, async ({ browser }) => {
-    test.skip(realTile!.minimap.projection !== null, `tile ${realTileId} minimap has a radar projection`);
-    for (const viewportCase of viewportCases) {
-      await checkInNewPage(browser, viewportCase.options, async page => {
-        await routeTwoLaneStores(page, { windowLane: windowLaneName, tileLane: tileLaneName });
-        await openMinimapWindow(page, playerQuery(realTile!.playerScenePosition));
-        const control = minimapControlLocator(page);
-        await expect(control).toHaveAttribute("data-native-minimap-state", "ready");
-        await expect(control.locator('[data-native-minimap-part="state"]')).toHaveAttribute("data-native-gap", noConvertedTileReason);
-        await expect(control.locator('[data-native-minimap-part="marker"]')).toHaveCount(0);
-        await saveEvidenceScreenshot(page, `minimap-${realTileId}-gap-${viewportCase.name}.png`);
-      });
-    }
-    await checkInNewPage(browser, landscapePhone, async page => {
-      await routeTwoLaneStores(page, { windowLane: windowLaneName, tileLane: tileLaneName });
-      await openMinimapWindow(page, playerQuery(realTile!.playerScenePosition));
+      await openWindowAt(page, minimapWindow!, caseTile!);
       await expectNoHorizontalScrollOnPortraitPhone(page);
     });
   });
 });
 
 test.describe("minimap route in the world lane store", () => {
-  test.skip(realTile === null, `tile ${realTileId} has no minimap resource in the world lane store`);
+  test.skip(caseTile === null, `tile ${getLocInfoCaseTileId} has no minimap resource in the world lane store`);
 
-  test(`holds the route manifest and every texture archive that the ${realTileId} minimap pins`, () => {
-    const route = realTile!.minimap.route;
+  test(`holds the route manifest and every texture archive that the ${getLocInfoCaseTileId} minimap pins`, () => {
+    const route = caseTile!.minimap.route;
     const routeBytes = readLaneResourceBytes(tileLaneName, route.manifest);
     expect(sha256Hex(routeBytes)).toBe(route.manifestSha256);
-    const routeManifest = JSON.parse(routeBytes.toString("utf8")) as RealRouteManifest;
-    const archives = [...routeManifest.radar.cases.map(entry => entry.texture), routeManifest.radar.default.texture,
-      ...routeManifest.worldMap.pieces.map(piece => piece.texture), realTile!.minimap.zoneKeyTexture].filter(texture => texture !== null);
+    const archives = [...routeManifest!.radar.cases.map(entry => entry.texture), routeManifest!.radar.default.texture,
+      ...routeManifest!.worldMap.pieces.map(piece => piece.texture), caseTile!.minimap.zoneKeyTexture].filter(texture => texture !== null);
     expect(archives.length).toBeGreaterThan(0);
     for (const texture of archives) expect(sha256Hex(readLaneResourceBytes(tileLaneName, texture!.archive))).toBe(texture!.archiveSha256);
   });
