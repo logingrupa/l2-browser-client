@@ -170,8 +170,8 @@ class StageAPartsWithoutDenominatorTests(StageAExitProjectTestCase):
         markdown = stage_a_markdown({'reference': reference_client_block(), 'parts': {'minimap': {'stageA': minimap_counts, 'gap': 0,
                                                                                                     'pending': 153}}})
         self.assertIn('| minimap | unknown | unknown | 0 | 0 | 0 | 1 | `native-needs-server` 1 | 0 | 153 |\n', markdown)
-        self.assertIn('- minimap: converted unknown because minimap census keys would collide with the world tile keys; '
-                      '1 check records counted.\n', markdown)
+        self.assertIn('- minimap: converted unknown because the minimap census counts minimap:<XX_YY> keys while its check records are '
+                      'keyed by the world tile key; 1 check records counted.\n', markdown)
 
     def test_the_sandbox_part_keeps_an_unknown_stage_a_denominator_with_its_reason(self):
         sandbox = self.build_report()['parts']['sandbox']['stageA']

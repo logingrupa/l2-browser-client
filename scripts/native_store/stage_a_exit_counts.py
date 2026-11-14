@@ -29,8 +29,8 @@ IMPORTA_HOST_NAME = 'importa'
 REFERENCE_FIELDS = frozenset({'referenceTreeLockSha256', 'engineDllSha256', 'importaFileCount', 'importaTotalBytes'})
 STAGE_A_REASON_BY_PART_WITHOUT_DENOMINATOR = {
     'sandbox': 'the sandbox is the checking tool and has no pair of its own',
-    'audio': 'the audio census counts bound bundles, not catalog keys',
-    'minimap': 'minimap census keys would collide with the world tile keys',
+    'audio': 'the audio census counts bound sound bundles while its check records are keyed by key, role and source',
+    'minimap': 'the minimap census counts minimap:<XX_YY> keys while its check records are keyed by the world tile key',
     'movement-geodata': 'movement-geodata has no stage A pair; traversal against L2.exe is POL-03',
 }
 STAGE_A_RULE_TEXT = ('Checked counts only judged pairs (pass or mismatch) on the key content digest of this catalog; every other converted key '

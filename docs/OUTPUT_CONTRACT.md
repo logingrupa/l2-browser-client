@@ -429,17 +429,30 @@ key and one row per key, through the one atomic writer
 
 ## Coverage report
 
-`coverage.json` v1 lives at `<store root>/coverage.json`, served as
+`coverage.json` v2 lives at `<store root>/coverage.json`, served as
 `/l2/coverage.json`, outside the catalog so that no SHA-256 becomes circular.
-Plan 02-07 writes it and 02-26 completes it.
+Plan 02-07 writes it, 02-26 completes it and 03-05 adds the stage A exit
+counts (schema 2).
 
 ```
-{"schemaVersion": 1, "catalogSha256": "<64 hex>", "storeRoot": "<path>",
+{"schemaVersion": 2, "catalogSha256": "<64 hex>", "storeRoot": "<path>",
  "generatedAtRiga": "<ISO 8601 with the Riga offset>",
+ "reference": {"referenceTreeLockSha256", "engineDllSha256", "importaFileCount", "importaTotalBytes"},
  "denominators": {"<part>": {"count": <integer> | "unknown", "source": "<committed file>"}},
- "parts": {"<part>": {"denominator", "converted", "loads": {"pass", "failed", "unverified"}, "gap", "pending"}},
+ "parts": {"<part>": {"denominator", "converted", "loads": {"pass", "failed", "unverified"}, "gap", "pending",
+   "stageA": {"converted", "loadsPass", "checked", "pass", "mismatch", "unverified", "unverifiedByReason", "recordsWithoutDenominator"}}},
  "rows": [{"key", "part", "status", "reason", "converted", "loads", "steps": [{"step", "status", "reason"}]}]}
 ```
+
+- `reference` is `reference_client_build(lock)` plus the lock's
+  `hosts.importa` file count and bytes, never the raw lock file hash.
+- `stageA` (`scripts/native_store/stage_a_exit_counts.py`) joins each
+  converted row to `docs/parts/<part>/side-by-side-checks.json`, the capture
+  failure files and the load records on this catalog only, with the reason
+  precedence of `03-PLAN-INDEX.md`. The validator refuses a report unless
+  converted equals checked plus unverified and checked equals pass plus
+  mismatch. Sandbox, audio, minimap and movement-geodata keep stage A
+  converted `unknown` and count their check records instead.
 
 - `rows` holds one row per denominator key. `steps` lists that key's gap
   rows, one per step, so each tile records pass or gap per step (WORLD-03).
