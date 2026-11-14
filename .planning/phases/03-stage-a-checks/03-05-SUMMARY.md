@@ -16,9 +16,9 @@ affects: [03-07, 03-08, 03-09, 03-10, 03-11, 03-15, 03-17]
 actuals:
   tokens: 15750
   tasks: 3
-  commits: 4
+  commits: 6
 plan_head_before: 615b132eb5f50a58cf056593f8704b48f05818a8
-plan_head_after: a32adfc39c5f239e7bac7a2b96e0593564e28c2a
+plan_head_after: 0ebf24903d56ac409ce5e2236bf547527ade23ca
 tech-stack:
   added: []
   patterns:
@@ -97,8 +97,9 @@ Every omitted pass, mismatch and recordsWithoutDenominator above is 0. No part h
 1. **Task 1: Tracer: stage A counts through the report, validator and markdown** - `ee393cc`
 2. **Task 2: Reference block, every reason, tables, unknown denominators, real union run** - `1b77c3c`, follow-up `409a8c5` (contract doc and the measured audio and minimap reasons)
 3. **Task 3: Schema 2 in the TS reader and every lane store** - `a32adfc`
+4. **03-04 follow-up: a coverage report read back from disk validates** - `0ebf249`
 
-`git rev-list --count 615b132..HEAD` measured 4.
+The first summary commit is `c2bd5cd`. `git rev-list --count 615b132..HEAD` measured 6 at `0ebf249`.
 
 ## Verification
 
@@ -147,7 +148,13 @@ Rows P1184 to P1190 were appended to `C:/laragon/l2b-orchestration/autonomous-ro
 **6. [Scope] `docs/OUTPUT_CONTRACT.md` updated**
 - Its coverage section described v1. Docs must match `.planning`, so the v2 fields and the stage A rule were stated in the same plan (`409a8c5`).
 
-**7. [Requirements] CHECK-05 not marked complete**
+**7. [Rule 1 - Bug, the 03-04 follow-up for 03-05] A re-read coverage.json failed validation**
+- **Issue:** `canonical_json_bytes` sorts the `denominators` and `parts` keys, so `validate_coverage_report` refused a report read back from disk on the part key order. The schema 2 parts check had the same dependence.
+- **Fix:** The validator checks the part sets and takes the order from `COVERAGE_PART_ORDER`. Both markdown tables render in that order. A test reverses the part keys of a re-read report and gets the same markdown. The union `coverage.json` read from disk now validates.
+- **Verification:** the seven coverage, census, lane refresh, queue and record test files passed after the fix (targeted runs; the full pipeline suite ran before it).
+- **Commit:** `0ebf249`
+
+**8. [Requirements] CHECK-05 not marked complete**
 - This plan builds the generator. The committed `docs/coverage.md` and the final union sweeps belong to 03-15, so CHECK-05 is listed as addressed and stays Pending.
 
 ## Known stubs
@@ -160,6 +167,7 @@ None.
 
 ## Open follow-ups
 
+- Stage A for audio, minimap and movement-geodata follows P15 (converted unknown, records counted) until the owner answers the existing STATE Needs Human line on the P15 supersession by 02-72. A confirmed supersession still needs a join from the census keys (`tile-audio:`, `npc-sounds:`, `skill-sound-row:`, `minimap:`, `tile-collision:`) to the catalog keys of the check records. This is recorded in STATE Open follow-ups.
 - The union census on `e25d005e` reports world converted 0 (163 gap) and items converted 0 (9238 gap). The census counts are unchanged by this plan, because the validator still matches them to the rows. 03-15 should read these numbers from the final union before it quotes the Stage A exit table.
 - `tests/pipeline/side_by_side_fixture.py` `write_union_coverage_report` still writes a rows-only report with `schemaVersion: 1` for the queue tests. The queue reads only rows and the catalog SHA-256, so nothing depends on that version number.
 
@@ -170,4 +178,4 @@ This plan started: Python unittest runs; two BelowNormal report runs (the union 
 ## Self-check: PASSED
 
 - FOUND: scripts/native_store/stage_a_exit_counts.py, tests/pipeline/test_coverage_stage_a_exit.py, scripts/native_store/build_coverage_report.py (`COVERAGE_REPORT_SCHEMA_VERSION = 2`)
-- FOUND: ee393cc, 1b77c3c, 409a8c5, a32adfc (ancestors of HEAD)
+- FOUND: ee393cc, 1b77c3c, 409a8c5, a32adfc, c2bd5cd, 0ebf249 (listed by `git log 615b132..HEAD`)

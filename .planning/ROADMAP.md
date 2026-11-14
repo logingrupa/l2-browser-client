@@ -203,7 +203,7 @@ Plans:
   2. For world, actor and skill audio, listen-check results are recorded as labelled audible clips with verdicts; successful extraction or decoding is never recorded as a pass.
   3. Each mismatch becomes a converter fix (re-run shows the corrected result in the sandbox) or a listed gap; no tile is hand-patched.
   4. A stage A exit report states per part how many items were converted, load, were checked, and how many pass, mismatch, are unverified or are gaps, tied to the IMPORTA-PC hash lock.
-**Plans**: 4/36 plans executed (gap plans 03-21 to 03-36 added 2026-11-14 for the Phase 2 gaps)
+**Plans**: 5/36 plans executed (gap plans 03-21 to 03-36 added 2026-11-14 for the Phase 2 gaps)
 
 Plans:
 **Wave 1**
@@ -213,7 +213,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [x] 03-04-PLAN.md - Pair queue and the record writer CLI: queue, ingest, judge (CHECK-01, CHECK-02, CHECK-03)
-- [ ] 03-05-PLAN.md - Stage A exit report on the coverage owner, schema 2, TS reader (CHECK-05)
+- [x] 03-05-PLAN.md - Stage A exit report on the coverage owner, schema 2, TS reader (CHECK-05)
 - [ ] 03-06-PLAN.md - Native capture driver and import, transcript-tested, not run against IMPORTA (CHECK-01, CHECK-02)
 - [ ] 03-18-PLAN.md - Visible diagnostic materials in the sandbox snapshot, split from 03-02 (CHECK-01, CHECK-04)
 
@@ -311,7 +311,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 (Phase 5 may start b
 |-------|----------------|--------|-----------|
 | 1. Foundations | 17/17 | In Progress | - |
 | 2. Stage A breadth | 99/99 | In Progress | - |
-| 3. Stage A checks | 4/36 | In Progress | - |
+| 3. Stage A checks | 5/36 | In Progress | - |
 | 4. Stage B adapter | 0/TBD | Not started | - |
 | 5. Native-parity polish | 0/TBD | Not started | - |
 | 6. Performance and build reproducibility | 0/TBD | Not started | - |
