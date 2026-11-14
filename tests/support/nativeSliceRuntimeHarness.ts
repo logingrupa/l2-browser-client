@@ -74,7 +74,7 @@ vi.mock("../../src/entities/EntityRegistry", () => ({ EntityRegistry: class {
 export { runtimeBoundaryMocks };
 
 export const emptyNativeCatalog = { schemaVersion: 1, models: [], textures: [], sections: [], movers: [], npcProfiles: [], playerProfiles: [],
-  animationAudio: [], combatAudio: [], worldAudio: [], effectComponents: [], tables: [], windows: [], tiles: [], servedCatalogSha256: "c".repeat(64),
+  animationAudio: [], combatAudio: [], worldAudio: [], effectComponents: [], tables: [], windows: [], tiles: [], materialPrograms: [], servedCatalogSha256: "c".repeat(64),
   laneCatalogSha256: null };
 
 export const baseRuntimeSettings: NativeSliceSettings = { origin: new Vector3(2, 3, 4), leatherShirt: true };
