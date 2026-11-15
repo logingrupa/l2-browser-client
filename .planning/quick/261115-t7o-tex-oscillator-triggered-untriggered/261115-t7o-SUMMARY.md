@@ -33,6 +33,18 @@ Source: DB-2 `tex-oscillator-triggered.json` 053c115e (Engine.dll 4dd2f63c, D3DD
 - Whole unit suite: 2,917 passed, 101 skipped; 3 files do not load because this lane lacks `artifacts/native-parity/research/*`.
 - `material-swatch.spec.ts` on 5176 with `NATIVE_STORE_ROOT=fixture`: 4 passed. Nothing left on 5176, no process with the lane path.
 
+## Converter guard: merge blocker, owner decision
+
+- `test_the_recorded_digest_matches_this_checkout` fails at 69a72e8 and after the review fixes: digest `0806b95c...fabfdb2c`, recorded `a2321966...`. The 69a72e8 SUMMARY gate did not run it.
+- Outputs change: all 46 FX_E_T roots derived read-only with and without the class (`db2-texosc-20261115-verify/fix-69a72e8/compare.out`): 35 byte-equal, 11 differ in graph and program, each holding TexOscillatorTriggered (WaterShader01, com, ocn_s, reflection, six VariableWaterSet roots, Flameset_a.FX_E_under_sh); none without it changed.
+- So the way out is a raise of `CONVERTER_OUTPUT_VERSION_RAISED_BY_HAND_ONLY_WHEN_OUTPUTS_CHANGE`, which converts every sealed unit again. That breaks the owner's 261114-c7v condition (nothing converted is converted again), so the raise and the new digest wait for the owner. Do not merge before that decision.
+
+## Review fixes
+
+- Window tests use the DB-2 fixture values (fresh-t0.25 0.046193976, fresh-t0.5 0.044550326) within 2e-7, not the formula.
+- Chain order is pinned by the DB-2 order fixture (D3DDrv 0x10011f42 to 0x100121b7, child [[0.75,-0.5],[0.5,0.75]]); the ocn_rot test is separate and uses its authored cached M.
+- `texOscillatorTriggeredMatrix` takes TriggeredTime; a test feeds the Reset value -1 and holds +0.047552824 at t 0, 1, 60 (DB-2 reset cases).
+
 ## Water and stored programs
 
 - Fresh WaterShader01 (`db2-texosc/fresh-programs/abd93efe...`): no gap reasons, compiles. Frame evaluation stops at `material-feature-unported:TexRotationType`: ocn_rot leaves TexRotationType unset.

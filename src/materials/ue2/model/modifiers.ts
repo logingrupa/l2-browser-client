@@ -113,8 +113,8 @@ function texOscillatorTriggeredSeconds(node: MaterialProgramNode, levelSeconds: 
   return Math.min(levelSeconds - triggeredTime, readNumberField(node, "StopAfterPeriod") / fastestRate);
 }
 
-function texOscillatorTriggeredMatrix(node: MaterialProgramNode, context: TextureCoordinateContext): TextureCoordinateEvaluation {
-  const triggeredSeconds = texOscillatorTriggeredSeconds(node, context.levelSeconds, triggeredOscillatorStartTriggeredTime);
+export function texOscillatorTriggeredMatrix(node: MaterialProgramNode, context: TextureCoordinateContext, triggeredTime: number): TextureCoordinateEvaluation {
+  const triggeredSeconds = texOscillatorTriggeredSeconds(node, context.levelSeconds, triggeredTime);
   if (triggeredSeconds === null) return { status: "unported", reason: "material-feature-unported:StopAfterPeriod" };
   return texOscillatorMatrix(node, { ...context, levelSeconds: triggeredSeconds });
 }
@@ -134,7 +134,7 @@ export function textureCoordinateModifierMatrix(node: MaterialProgramNode, conte
     case "Engine.TexPanner": return { status: "evaluated", matrix: texPannerMatrix(node, context.levelSeconds) };
     case "Engine.TexRotator": return texRotatorMatrix(node, context);
     case "Engine.TexOscillator": return texOscillatorMatrix(node, context);
-    case "Engine.TexOscillatorTriggered": return texOscillatorTriggeredMatrix(node, context);
+    case "Engine.TexOscillatorTriggered": return texOscillatorTriggeredMatrix(node, context, triggeredOscillatorStartTriggeredTime);
     case "Engine.TexScaler": return { status: "evaluated", matrix: texScalerMatrix(node) };
     case "Engine.TexCoordSource": return texCoordSourceMatrix(node);
     case "Engine.TexEnvMap": return { status: "unported", reason: "material-feature-unported:EnvMapType" };

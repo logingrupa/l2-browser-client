@@ -5,8 +5,8 @@ import { createRandomStream, deriveStreamSeed, randomRange } from "../../src/sha
 import { evaluateMaterialFrame } from "../../src/materials/ue2/model/materialFrame";
 import { parseMaterialProgram, programNode, type MaterialProgram } from "../../src/materials/ue2/model/materialProgram";
 import {
-  colourSourceValue, fadeColourBytes, IDENTITY_TEXTURE_COORDINATE_MATRIX, textureCoordinateChainMatrix, textureCoordinateModifierMatrix,
-  type TextureCoordinateMatrix,
+  colourSourceValue, fadeColourBytes, IDENTITY_TEXTURE_COORDINATE_MATRIX, multiplyTextureCoordinateMatrices, texOscillatorTriggeredMatrix,
+  textureCoordinateChainMatrix, textureCoordinateModifierMatrix, type TextureCoordinateMatrix,
 } from "../../src/materials/ue2/model/modifiers";
 import { TEXTURE_COORDINATE_CONSTANTS } from "../../src/materials/ue2/model/constants/textureCoordinateConstants";
 import { compileMaterialStagePlan } from "../../src/materials/ue2/model/stagePlan";
@@ -152,13 +152,17 @@ describe("texture coordinate modifiers", () => {
   });
 });
 
-const float32 = Math.fround;
 const oceanSId = "Synthetic.ocean-s";
 const oceanRotatorId = "Synthetic.ocn_rot";
 const db2Tolerance = 2e-7;
 const coldOceanVOffsetAtStart = 0.047552824;
 const coldOceanVOffsetAfterWindow = 0.040450849;
-const db2OceanRotatorRows = [[0.9238795042037964, 0.3826834261417389, 0], [-0.3826834261417389, 0.9238795042037964, 0], [0, 0, 1]] as const;
+const coldOceanVOffsetAtQuarterSecond = 0.046193976;
+const coldOceanVOffsetAtHalfSecond = 0.044550326;
+const resetTriggeredTime = -1;
+const db2OrderChildFixtureColumnMatrix: TextureCoordinateMatrix = [0.75, 0.5, 0, -0.5, 0.75, 0];
+const db2OrderNativeResultColumnMatrix: TextureCoordinateMatrix = [0.75, 0.5, 0.02377641201019287, -0.5, 0.75, 0.03566461801528931];
+const oceanRotatorAuthoredCachedRows = [[0.9238795042037964, 0.3826834261417389, 0], [-0.3826834261417389, 0.9238795042037964, 0], [0, 0, 1]] as const;
 
 function oceanProgram(overrides: FixtureProgramField[] = []): MaterialProgram {
   return programWith([
@@ -198,23 +202,41 @@ describe("TexOscillatorTriggered in its untriggered state", () => {
     expect(Math.abs(evaluation.matrix[5] - coldOceanVOffsetAfterWindow)).toBeLessThanOrEqual(db2Tolerance);
   });
 
-  it("runs the TexOscillator formula on the windowed time inside the window", () => {
-    const evaluation = oceanMatrix(oceanProgram(), 0.5);
+  it.each([[0.25, coldOceanVOffsetAtQuarterSecond], [0.5, coldOceanVOffsetAtHalfSecond]])(
+    "cold ocean-s inside its window at t = %f gives the DB-2 fixture V offset %f within 2e-7", (levelSeconds, expectedVOffset) => {
+      const evaluation = oceanMatrix(oceanProgram(), levelSeconds);
+      if (evaluation.status !== "evaluated") throw new Error(evaluation.reason);
+      expect(evaluation.matrix.slice(0, 5)).toEqual([1, 0, 0, 0, 1]);
+      expect(Math.abs(evaluation.matrix[5] - expectedVOffset)).toBeLessThanOrEqual(db2Tolerance);
+    });
+
+  it.each([0, 1, 60])("ocean-s after Reset, TriggeredTime -1, holds the initial phase V +0.047552824 at t = %f", levelSeconds => {
+    const evaluation = texOscillatorTriggeredMatrix(programNode(oceanProgram(), oceanSId), oceanContext(levelSeconds), resetTriggeredTime);
     if (evaluation.status !== "evaluated") throw new Error(evaluation.reason);
-    expect(evaluation.matrix[5]).toBeCloseTo(float32(0.05) * Math.sin(2 * Math.PI * (0.5 * float32(0.05) + float32(0.3))), 12);
+    expect(evaluation.matrix.slice(0, 5)).toEqual([1, 0, 0, 0, 1]);
+    expect(Math.abs(evaluation.matrix[5] - coldOceanVOffsetAtStart)).toBeLessThanOrEqual(db2Tolerance);
   });
 
   it("reports a window with no positive oscillation rate unported", () => {
     expect(oceanMatrix(oceanProgram([field("VOscillationRate", 0)]), 3)).toEqual({ status: "unported", reason: "material-feature-unported:StopAfterPeriod" });
   });
 
-  it("composes ocean-s * ocn_rot in row vectors as D3DDrv 0x10011ca0 does, ocean-s first", () => {
+  it("applies ocean-s before its child as DB-2's order fixture from D3DDrv 0x10011f42 to 0x100121b7 does", () => {
+    const oceanS = oceanMatrix(oceanProgram(), 0);
+    if (oceanS.status !== "evaluated") throw new Error(oceanS.reason);
+    const combined = multiplyTextureCoordinateMatrices(db2OrderChildFixtureColumnMatrix, oceanS.matrix);
+    combined.forEach((value, index) => expect(Math.abs(value - db2OrderNativeResultColumnMatrix[index]!)).toBeLessThanOrEqual(db2Tolerance));
+    const reversed = multiplyTextureCoordinateMatrices(oceanS.matrix, db2OrderChildFixtureColumnMatrix);
+    expect(Math.abs(reversed[2] - db2OrderNativeResultColumnMatrix[2])).toBeGreaterThan(1e-3);
+  });
+
+  it("composes ocean-s with ocn_rot's authored cached M in row vectors, which is not traced TexRotator output", () => {
     const program = oceanProgram();
     const chain = textureCoordinateChainMatrix(program, [oceanSId, oceanRotatorId], oceanContext(0));
     if (chain.status !== "evaluated") throw new Error(chain.reason);
     const oceanRows = [[1, 0, 0], [0, 1, 0], [0, coldOceanVOffsetAtStart, 1]];
-    const nativeOrder = rowVectorProduct(oceanRows, db2OceanRotatorRows);
-    const reversedOrder = rowVectorProduct(db2OceanRotatorRows, oceanRows);
+    const nativeOrder = rowVectorProduct(oceanRows, oceanRotatorAuthoredCachedRows);
+    const reversedOrder = rowVectorProduct(oceanRotatorAuthoredCachedRows, oceanRows);
     for (const [u, v] of [[0, 0], [1, 0], [0.25, 0.75]] as const) {
       const actual = transformedCoordinates(chain.matrix, u, v);
       const expected = rowVectorTransform(nativeOrder, u, v);
