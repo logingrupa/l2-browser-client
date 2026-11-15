@@ -1,5 +1,8 @@
 [CmdletBinding()]
-param([ValidateSet('Start','Stop','Status')][string]$Action = 'Status')
+param(
+    [ValidateSet('Start','Stop','Status')][string]$Action = 'Status',
+    [ValidateSet('static','dev')][string]$Mode = 'static'
+)
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $root = Split-Path -Parent $PSScriptRoot
@@ -50,7 +53,7 @@ if ($Action -eq 'Status') {
     @{hostname=$identity.hostname;configured=$true;running=[bool]$owned;pid=$(if($owned){$owned.ProcessId}else{$null});origin='http://127.0.0.1:8189'} | ConvertTo-Json
     return
 }
-& node (Join-Path $PSScriptRoot 'private-preview.mjs') start
+& node (Join-Path $PSScriptRoot 'private-preview.mjs') start $Mode
 if ($LASTEXITCODE -ne 0) { throw 'Private origin startup failed.' }
 if (-not $owned) {
     $metricProbe = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, 20259)

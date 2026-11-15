@@ -6,7 +6,8 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import net from 'node:net';
 import http from 'node:http';
-import { privatePreviewHostname, privatePreviewOrigin, privatePreviewWorldPath } from './private-preview-targets.mjs';
+import { privatePreviewHostname, privatePreviewOrigin } from './private-preview-targets.mjs';
+import { buildPrivatePreviewNginxConfig, devServerPort, privatePreviewModes, slash } from './private-preview-nginx-config.mjs';
 
 const execute = promisify(execFile);
 const project = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -22,7 +23,6 @@ const dist = path.join(project, 'dist');
 const cookieName = '__Host-l2_preview';
 const hostname = privatePreviewHostname;
 const port = 8189;
-const slash = (value) => value.replaceAll('\\', '/');
 const quotePs = (value) => `'${value.replaceAll("'", "''")}'`;
 const digest = (value) => createHash('sha256').update(value).digest('hex');
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -39,6 +39,13 @@ async function portAvailable() {
     const server = net.createServer();
     server.once('error', () => resolve(false));
     server.listen({ host: '127.0.0.1', port, exclusive: true }, () => server.close(() => resolve(true)));
+  });
+}
+async function devServerListening() {
+  return new Promise((resolve) => {
+    const socket = net.connect({ host: '127.0.0.1', port: devServerPort });
+    socket.once('connect', () => { socket.destroy(); resolve(true); });
+    socket.once('error', () => resolve(false));
   });
 }
 async function processInfo(pid) {
@@ -95,56 +102,6 @@ async function validateDist() {
   await walk(dist);
   return files;
 }
-function configuration(key) {
-  const headers = `add_header Cache-Control "private, no-store" always;
-    add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
-    add_header Referrer-Policy "no-referrer" always;
-    add_header X-Content-Type-Options "nosniff" always;`;
-  return `worker_processes 1;
-pid "${slash(pidFile)}";
-error_log "${slash(directory)}/origin-error.log" warn;
-events { worker_connections 1024; }
-http {
-  include "${path.posix.dirname(nginx)}/conf/mime.types";
-  default_type application/octet-stream;
-  access_log off;
-  server_tokens off;
-  client_body_temp_path "${slash(directory)}/temp";
-  map $http_cookie $preview_cookie_ok { default 0; "~(?:^|;[ ]*)${cookieName}=${key}(?:;|$)" 1; }
-  map $arg_key $preview_key_ok { default 0; ~^${key}$ 1; }
-  map "$preview_key_ok:$request_method" $preview_set_cookie {
-    default "";
-    "1:GET" "${cookieName}=${key}; Path=/; Secure; HttpOnly; SameSite=Lax";
-    "1:HEAD" "${cookieName}=${key}; Path=/; Secure; HttpOnly; SameSite=Lax";
-  }
-  map "$preview_cookie_ok:$preview_key_ok:$uri" $preview_allowed {
-    default 0;
-    ~^1: 1;
-    "0:1:/enter" 1;
-  }
-  server {
-    listen 127.0.0.1:${port} default_server backlog=1024;
-    server_name ${hostname};
-    root "${slash(dist)}";
-    index index.html;
-    autoindex off;
-    absolute_redirect off;
-    if ($request_method !~ ^(GET|HEAD)$) { return 403; }
-    if ($preview_allowed = 0) { return 403; }
-    ${headers}
-    location = /enter {
-      if ($preview_key_ok = 0) { return 403; }
-      add_header Set-Cookie $preview_set_cookie always;
-      ${headers}
-      return 303 "${privatePreviewWorldPath}";
-    }
-    location ~ (^|/)\\. { return 404; }
-    location ~* \\.(map|ts|tsx|jsx|mjs|cjs)$ { return 404; }
-    location / { try_files $uri $uri/ =404; }
-  }
-}
-`;
-}
 async function ownedState() {
   await validateOwner();
   if (!await exists(stateFile)) {
@@ -173,15 +130,20 @@ async function anonymousStatus() {
     request.on('error', reject); request.on('timeout', () => request.destroy(Error('Origin probe timed out.')));
   });
 }
-async function start() {
+async function start(mode) {
   if (await exists(directory)) {
     const existing = await ownedState();
-    if (existing) { await initialize(); return { status: 'running', pid: existing.pid, port, inviteFile }; }
+    if (existing) {
+      if (existing.mode !== mode) throw Error(`Private preview is running in ${existing.mode} mode; stop it before starting ${mode} mode.`);
+      await initialize();
+      return { status: 'running', mode, pid: existing.pid, port, inviteFile };
+    }
   }
   if (!await portAvailable()) throw Error('Port 8189 is occupied; no existing process was changed.');
-  const files = await validateDist();
+  if (mode === 'dev' && !await devServerListening()) throw Error(`Start the dev server on port ${devServerPort} before starting dev mode.`);
+  const files = mode === 'static' ? await validateDist() : null;
   const key = await initialize();
-  await fs.writeFile(config, configuration(key), 'utf8');
+  await fs.writeFile(config, buildPrivatePreviewNginxConfig({ key, mode, pidFile, directory, nginxExecutable: nginx, distDirectory: dist, cookieName, hostname, port }), 'utf8');
   if (await exists(pidFile)) await fs.unlink(pidFile);
   if (await exists(stateFile)) await fs.unlink(stateFile);
   await nginxCommand(['-t', '-q']);
@@ -198,7 +160,7 @@ async function start() {
       const info = await processInfo(pid);
       if (!info) { await sleep(100); continue; }
       if (!matchingProcess(info)) throw Error('Started process did not match the private preview identity.');
-      state = { pid, created: info.created, configSha256: digest(await fs.readFile(config)), distIndexSha256: digest(await fs.readFile(path.join(dist, 'index.html'))), files };
+      state = { pid, mode, created: info.created, configSha256: digest(await fs.readFile(config)), ...(mode === 'static' ? { distIndexSha256: digest(await fs.readFile(path.join(dist, 'index.html'))), files } : {}) };
       await fs.writeFile(stateFile, `${JSON.stringify(state, null, 2)}\n`);
       break;
     }
@@ -206,7 +168,7 @@ async function start() {
   }
   if (!state) throw Error('Private nginx did not publish its owned PID.');
   if (await anonymousStatus() !== 403) { await stop(); throw Error('Anonymous gate check failed; private origin stopped.'); }
-  return { status: 'running', pid: state.pid, port, files, inviteFile };
+  return { status: 'running', mode, pid: state.pid, port, ...(files === null ? {} : { files }), inviteFile };
 }
 async function stop() {
   if (!await exists(directory)) return { status: 'stopped', port };
@@ -225,14 +187,16 @@ async function stop() {
 
 try {
   if (process.platform !== 'win32') throw Error('Private preview currently supports this Windows nginx installation only.');
-  const command = process.argv[2];
-  if (!['start', 'stop', 'status'].includes(command) || process.argv.length !== 3) throw Error('Usage: pnpm preview:private start|stop|status');
+  const [command, modeArgument, ...extraArguments] = process.argv.slice(2);
+  const requestedMode = modeArgument ?? 'static';
+  const usageIsValid = ['start', 'stop', 'status'].includes(command) && extraArguments.length === 0 && privatePreviewModes.includes(requestedMode) && (modeArgument === undefined || command === 'start');
+  if (!usageIsValid) throw Error('Usage: pnpm preview:private start [static|dev]|stop|status');
   let result;
-  if (command === 'start') result = await start();
+  if (command === 'start') result = await start(requestedMode);
   else if (command === 'stop') result = await stop();
   else {
     const state = await exists(directory) ? await ownedState() : null;
-    result = { status: state ? 'running' : 'stopped', port, ...(state ? { pid: state.pid, anonymousStatus: await anonymousStatus(), inviteFile } : {}) };
+    result = { status: state ? 'running' : 'stopped', port, ...(state ? { mode: state.mode, pid: state.pid, anonymousStatus: await anonymousStatus(), inviteFile } : {}) };
   }
   console.log(JSON.stringify(result, null, 2));
 } catch (error) {
