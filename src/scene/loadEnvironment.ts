@@ -8,6 +8,7 @@ import { nativeSandboxPresentation } from "./presentationConfiguration";
 import { nativeSliceDocumentTitle } from "./documentTitles";
 import { startNativeSandboxRuntime } from "../runtime/startNativeSandboxRuntime";
 import { nativeSandboxConfiguration } from "../runtime/nativeSandboxConfiguration";
+import { isAuthoredWorldSelected } from "./authoredWorldSelection";
 
 type EnvironmentStatusListener = SceneStartupOptions["onStatus"];
 
@@ -37,6 +38,6 @@ async function loadAuthoredNativeWorldOnDemand(engine: AbstractEngine, onStatus:
 }
 
 export async function loadEnvironment(engine: AbstractEngine, onStatus?: EnvironmentStatusListener): Promise<Scene> {
-  if (new URLSearchParams(window.location.search).get("authored") === "1") return loadAuthoredNativeWorldOnDemand(engine, onStatus);
+  if (isAuthoredWorldSelected(window.location.search)) return loadAuthoredNativeWorldOnDemand(engine, onStatus);
   return loadNativeSandboxWorld(engine);
 }

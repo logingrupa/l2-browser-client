@@ -5,6 +5,7 @@ import type { DevSection } from "../ui/devSheet/DevSheet";
 import type { VariableInfo } from "../ui/devSheet/types";
 import type { NativePlayerProfile } from "../assets/native/loadNativePlayerProfiles";
 import { worldPositionToSource } from "../world/sourceFrame";
+import { authoredWorldParameter, isAuthoredWorldSelected, selectAuthoredWorld } from "../scene/authoredWorldSelection";
 import { readout } from "./nativeSliceSheet";
 
 export interface NativeSliceDebugOptions {
@@ -51,9 +52,9 @@ export function attachNativeSliceDebugSection(section: DevSection, options: Nati
   });
   const urlVariable = (name: string, values: string, source: string): VariableInfo =>
     ({ name: `url.${name}`, value: () => currentQueryParameters().get(name) ?? "(not set)", values, source, status: "presentation" });
-  readout(url, "authored", () => currentQueryParameters().get("authored") ?? "(not set)", "native-debug-url-authored",
+  readout(url, authoredWorldParameter, () => currentQueryParameters().get(authoredWorldParameter) ?? "(not set)", "native-debug-url-authored",
     "authored=1 loads the Babylon Editor saved world (public/scene/native-world.babylon) instead of building the scene in code and loading the staged source section.",
-    () => [urlVariable("authored", "1 | (not set)", "src/scene/loadEnvironment.ts")]);
+    () => [urlVariable(authoredWorldParameter, "1 | (not set)", "src/scene/authoredWorldSelection.ts")]);
   readout(url, "character", () => currentQueryParameters().get("character") ?? `(not set → ${playerProfile.id})`, "native-debug-url-character",
     "Player profile id from catalog.playerProfiles. Use Character › Play as… to switch.", () => [
       urlVariable("character", [...playerChoices.keys()].join(" | "), "catalog.playerProfiles (src/runtime/createNativeSliceRuntime.ts)"),
@@ -61,11 +62,11 @@ export function attachNativeSliceDebugSection(section: DevSection, options: Nati
         source: "loadNativeActorCatalog playerProfile", status: "native" },
     ]);
   const addWorldReloadButton = (label: string, testId: string, authored: boolean, hint: string) => {
-    const current = (currentQueryParameters().get("authored") === "1") === authored;
+    const current = isAuthoredWorldSelected(globalThis.location?.search ?? "") === authored;
     const button = url.button({ label, testId, hint, disabled: current });
     button.addEventListener("click", () => {
       const next = new URL(globalThis.location.href);
-      if (authored) next.searchParams.set("authored", "1"); else next.searchParams.delete("authored");
+      selectAuthoredWorld(next.searchParams, authored);
       globalThis.location.assign(next.href);
     }, { signal: events });
   };

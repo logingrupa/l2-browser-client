@@ -1,6 +1,7 @@
 import type { ActorClipListingSource } from "../animation/actorClipPlayback";
 import { describeNativeCatalogLookup } from "../assets/native/nativeCatalogIndex";
 import { tileIdPattern } from "../assets/native/nativeCatalogRecords";
+import { isAuthoredWorldSelected, selectAuthoredWorld } from "../scene/authoredWorldSelection";
 import { selectedNativeTileIdentity } from "../scene/world/selectedNativeTile";
 import type { SandboxActionOutcome, SandboxPickerHost } from "../ui/devSheet/sandboxPickerHost";
 import type { NativeWindowLayer, NativeWindowOpenResult } from "../ui/nativeWindows/nativeWindowLayer";
@@ -28,6 +29,7 @@ function outcomeOfWindowOpen(result: NativeWindowOpenResult): SandboxActionOutco
 function locationWithSelectedTile(location: SandboxTileLocation, tileId: string): string {
   const url = new URL(location.href);
   const parameters = new URLSearchParams(url.search);
+  selectAuthoredWorld(parameters, false);
   parameters.set("map", tileId);
   url.search = parameters.toString();
   return url.href;
@@ -39,7 +41,7 @@ export function createSandboxRuntimeActions(options: SandboxRuntimeActionsOption
     dispatch: command => { adapter.dispatch(command); },
     reloadTile: tileId => {
       if (!tileIdPattern.test(tileId)) return { tone: "warning", text: `tile ${tileId} is not an XX_YY tile id; nothing was reloaded` };
-      if (selectedNativeTileIdentity(location) === tileId) return { tone: "info", text: `tile ${tileId} already loaded` };
+      if (!isAuthoredWorldSelected(location.search) && selectedNativeTileIdentity(location) === tileId) return { tone: "info", text: `tile ${tileId} already loaded` };
       location.assign(locationWithSelectedTile(location, tileId));
       return { tone: "info", text: `tile ${tileId} reloading` };
     },

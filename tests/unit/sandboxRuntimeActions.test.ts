@@ -52,6 +52,18 @@ describe("createSandboxRuntimeActions reloadTile", () => {
     expect(adapter.dispatch).not.toHaveBeenCalled();
   });
 
+  it("leaves the authored world, which ignores map, when a tile is picked", () => {
+    const { actions, assigned } = createActions("http://127.0.0.1:5173/?authored=1&character=human-male-fighter");
+    expect(actions.reloadTile("15_20")).toEqual({ tone: "info", text: "tile 15_20 reloading" });
+    expect(assigned).toEqual(["http://127.0.0.1:5173/?character=human-male-fighter&map=15_20"]);
+  });
+
+  it("reloads a tile the URL names while the authored world is what loaded", () => {
+    const { actions, assigned } = createActions("http://127.0.0.1:5173/?authored=1&map=20_20");
+    expect(actions.reloadTile("20_20")).toEqual({ tone: "info", text: "tile 20_20 reloading" });
+    expect(assigned).toEqual(["http://127.0.0.1:5173/?map=20_20"]);
+  });
+
   it("appends map after the other parameters when the URL selects no tile", () => {
     const { actions, assigned } = createActions("http://127.0.0.1:5173/?character=human-male-fighter");
     actions.reloadTile("20_21");
