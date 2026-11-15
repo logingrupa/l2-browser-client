@@ -43,3 +43,4 @@ assets/native-world.scene/
 assets/native-generated/
 assets/native-sky-textures/
 assets/*.scene.native-editor-channels.json
+.claude/worktrees/
